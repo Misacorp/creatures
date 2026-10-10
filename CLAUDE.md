@@ -22,7 +22,8 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 ## Pull requests
 
 - `main` is protected; every change goes through a PR. **Merging to `main` deploys to production.** Pushing any other branch in this repo deploys to staging (`creatures-staging.misacorp.dev`, wired to the dev Discord app) so Misa can test before merging.
-- Small, focused PRs: one feature or fix each.
+- **Batch work into fewer PRs** (Misa's preference): agents may use several local branches, but merge finished work together locally and open one PR for Misa to merge into `main`. Large PRs are fine; each commit inside should still be one coherent change.
+- **Other repositories** (for example `Misacorp/leetbot-aws`): only open PRs there; Misa merges them manually. Never push to their default branch.
 - Every PR description has:
   1. What the PR does, in simple technical English (a few short paragraphs or a list).
   2. How Misa can test it (if anything to test).
