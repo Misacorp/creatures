@@ -11,7 +11,8 @@ const MAX_PAGE_DAYS = 100;
 const DEFAULT_PAGE_DAYS = 31;
 const MAX_PARTICIPANTS_PER_DAY = 500;
 const MAX_RESPONSE_CHARS = 2_000_000;
-const DEFAULT_TIMEOUT_MS = 5000;
+/** Timeout of one HTTP call to the leet bot. Keep it below the sync budget in guild-core. */
+export const DEFAULT_TIMEOUT_MS = 5000;
 
 export interface LeetParticipant {
   userId: string;
@@ -43,6 +44,8 @@ export interface LeetDaysOptions {
 
 /** Read-only source of finalised leet days, matching docs/design/leet-api.md. */
 export interface LeetSource {
+  /** Which kind of source this is, shown to players in the sync status. Absent means "mock". */
+  readonly kind?: 'http' | 'mock';
   getDays(guildId: string, opts: LeetDaysOptions): Promise<LeetDaysPage>;
 }
 
@@ -55,6 +58,9 @@ export type LeetSourceErrorKind =
   | 'network'
   | 'invalid_response'
   | 'invalid_request';
+
+/** Why the last sync failed, as stored and shown to players. Only ever a kind, never a message. */
+export type LeetSyncErrorKind = LeetSourceErrorKind | 'disabled' | 'internal';
 
 /** Failure of a leet source. The message never contains upstream data or secrets. */
 export class LeetSourceError extends Error {
@@ -135,6 +141,7 @@ export function createHttpLeetSource(options: HttpLeetSourceOptions): LeetSource
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
   return {
+    kind: 'http',
     async getDays(guildId, opts) {
       if (!SNOWFLAKE_RE.test(guildId)) throw new LeetSourceError('invalid_request');
       const query = new URLSearchParams();
@@ -155,10 +162,16 @@ export function createHttpLeetSource(options: HttpLeetSourceOptions): LeetSource
             method: 'GET',
             headers: { Authorization: `Bearer ${options.apiKey}`, Accept: 'application/json' },
             signal: controller.signal,
-            redirect: 'error',
+            // Workers only support 'follow' and 'manual'; we never follow redirects (see below).
+            redirect: 'manual',
           });
         } catch {
           throw new LeetSourceError(controller.signal.aborted ? 'timeout' : 'network');
+        }
+        // A redirect (3xx; status 0 in browsers' opaque mode) is never followed: treat it as an
+        // upstream error so the API key is never sent to another host.
+        if ((res.status >= 300 && res.status < 400) || res.status === 0) {
+          throw new LeetSourceError('upstream');
         }
         if (res.status === 401 || res.status === 403) throw new LeetSourceError('unauthorized');
         if (res.status === 404) throw new LeetSourceError('not_found');
@@ -262,6 +275,7 @@ export function createMockLeetSource(options: MockLeetSourceOptions): LeetSource
   }
 
   return {
+    kind: 'mock',
     async getDays(guildId, opts) {
       if (!SNOWFLAKE_RE.test(guildId) || !isValidTimeZone(opts.timezone)) {
         throw new LeetSourceError('invalid_request');

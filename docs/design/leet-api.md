@@ -50,7 +50,7 @@ Response `200`:
 }
 ```
 
-- `id` is stable and unique per server and day. The game uses `(day id, userId)` as the idempotency key for the Bait credit.
+- `id` is stable and unique per server and day. The game credits each `(day id, userId)` once: the idempotency key is `leet:<day id>`, unique per (user, key).
 - Days with no participants are **omitted** (the bot stores leet messages, not days). Days are derived by grouping the guild's 13:37 leet messages by server-local date, earliest leet per user. A day is finalised after 13:40 server-local time.
 - Once a day is returned, it is **immutable**. If the bot ever corrects a past day, it should be a new, explicit mechanism (out of scope for now).
 - `404` if the bot doesn't know the server. `401` for a missing or invalid key.
@@ -75,7 +75,7 @@ Not needed until the seasonal-feature system (post-MVP). Listed so the leet bot 
 ## How the game uses it
 
 1. A per-server Durable Object alarm runs daily at about 13:40 in the guild's timezone (default Europe/Helsinki; after the leet window closes), plus a throttled pull when a player opens the Activity.
-2. It requests `days?after=<stored cursor>`, and for each participant of each day computes leet points with the game's rules (see `decisions.md`), converts to Bait, and appends a ledger credit with idempotency key `leet:<day id>:<userId>` and `source = "leet"`.
+2. It requests `days?after=<stored cursor>`, and for each participant of each day computes leet points with the game's rules (see `decisions.md`), converts to Bait, and appends a ledger credit with idempotency key `leet:<day id>` and `source = "leet"`. The ledger's key is unique per (user, key), so each participant is credited once per day.
 3. It stores `nextCursor` only after the credits commit, in the same transaction.
 4. Players who haven't opened the game yet still accrue: credits are keyed by Discord user ID and become visible when they first launch.
 

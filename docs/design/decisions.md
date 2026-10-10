@@ -140,3 +140,21 @@ Misa reviewed the research defaults (`docs/research/`). **[Misa]** on all of the
 **Decision.** Each guild's timezone is stored in that guild's data (`guild_meta.timezone`, an IANA name, added by migration 5) and `Europe/Helsinki` is only the default (`DEFAULT_GUILD_TIMEZONE`). The guild object resolves the timezone once per operation (cached in memory, cleared when it changes) and passes it explicitly to everything that computes guild-local dates: the leet sync (including `since_date` and the mock source), alarm scheduling, and later the raid calendar. No function has a default timezone parameter, so a missing timezone is a compile error. A stored value that is not a valid zone falls back to the default and logs a warning without the value. `GET /api/state` and `GET /api/me` return `timezone` so the client can show guild-local times. There is no endpoint to change it yet; `GuildCore.setTimezone` validates (`isValidTimeZone`) and re-arms the alarm for when an admin setting is added.
 
 **Reasoning.** Servers outside Finland need their daily leet and weekly raid times in their own timezone. Passing the value explicitly keeps the engine and scheduling pure and testable, and avoids a hidden Helsinki assumption creeping back in. This replaces "Helsinki time" in the scheduling entry above wherever it describes behaviour: schedules are guild-local.
+
+## 2026-10-10: Leet sync status visible to players
+
+**Decision.** The leet sync records its own health in `leet_sync` (migration 6): `last_attempt_at`, `last_error` (an error kind such as `unauthorized`, `not_found`, `timeout`, `network`, `rate_limited`, `upstream`, `invalid_response`, `invalid_request`, `disabled` or `internal`; never a message, URL or key) and `last_days` (days processed by the last successful run). These are written in their own small transaction, apart from the credit transactions. `GET /api/state` and `GET /api/me` return `leetSync: { source, lastAttemptAt, lastSyncedAt, lastError, lastDays }`, and the Activity footer shows one text line from it: "synced 5 minutes ago (3 days)", "not synced yet", or a warning with a plain-English reason and "Tell the game admin." A guild with no leet source stores `disabled`.
+
+**Reasoning.** A production player saw 0 Bait and no history, and Worker logs are not visible from the development environment. Showing the sync's state in the app makes a rejected key, an unknown server or a slow bot diagnosable by anyone, without leaking any upstream data (only a fixed set of kinds ever leaves the server).
+
+**Follow-up.** `/api/me` and `/api/state` now wait up to 6 s for a sync (was 3 s), longer than the 5 s HTTP timeout, so one slow first call to the leet bot can finish in time. If the first sync is still running when the Activity loads (an attempt, nothing synced, no error), the Activity re-asks `/api/state` every 3 s, at most 5 times, and updates the balance, history and footer as the credits arrive.
+
+## 2026-10-10: Leet points table
+
+**Decision.** Leet points per day come from a fixed table by the number of players who leeted that day **[Misa]**:
+
+| Leeters     | 1   | 2   | 3   | 4   | 5   | 6   | 7   | 8   | 9   | 10  | 11  | 12+ |
+| ----------- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Points each | 5   | 5   | 6   | 6   | 7   | 7   | 8   | 8   | 9   | 9   | 9   | 10  |
+
+Rules behind it: more leeters never pays anyone less; a solo leet pays the same as a double; each extra leeter adds less than the one before; at most 10 points a day (multi-leet awards cap at 10 too). It counts only who actually leeted, so inactive server members don't matter. The rate drops from 10 to **7 Bait per point** so total income stays near the simulator-tuned level (`docs/balance/report-2026-10-10-points.md`): small servers now earn about two thirds of what a big one does instead of under half, and the top-earner vs casual power ratio now meets its target. This replaces the earlier n-points / solo-2 / cap-8 rule.

@@ -29,10 +29,20 @@ export interface Balances {
   essence: number;
 }
 
+/** How healthy the server's leet sync is. `lastError` is an error kind, never a message. */
+export interface LeetSyncStatus {
+  source: 'http' | 'mock' | 'disabled';
+  lastAttemptAt: number | null;
+  lastSyncedAt: number | null;
+  lastError: string | null;
+  lastDays: number | null;
+}
+
 export interface Me {
   user: SessionUser;
   guildId: string;
   balances: Balances;
+  leetSync: LeetSyncStatus;
 }
 
 export interface LedgerEntry {
@@ -177,17 +187,38 @@ function isBalances(value: unknown): value is Balances {
   );
 }
 
+const isInt = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isInteger(value);
+const isNullableInt = (value: unknown): value is number | null => value === null || isInt(value);
+
+export function isLeetSyncStatus(value: unknown): value is LeetSyncStatus {
+  return (
+    isRecord(value) &&
+    (value['source'] === 'http' || value['source'] === 'mock' || value['source'] === 'disabled') &&
+    isNullableInt(value['lastAttemptAt']) &&
+    isNullableInt(value['lastSyncedAt']) &&
+    (value['lastError'] === null || typeof value['lastError'] === 'string') &&
+    isNullableInt(value['lastDays'])
+  );
+}
+
 export async function fetchMe(): Promise<Me> {
   const data = await apiFetch('/api/me');
   if (
     !isRecord(data) ||
     typeof data['guildId'] !== 'string' ||
     !isSessionUser(data['user']) ||
-    !isBalances(data['balances'])
+    !isBalances(data['balances']) ||
+    !isLeetSyncStatus(data['leetSync'])
   ) {
     throw new Error('/api/me returned an unexpected shape');
   }
-  return { user: data['user'], guildId: data['guildId'], balances: data['balances'] };
+  return {
+    user: data['user'],
+    guildId: data['guildId'],
+    balances: data['balances'],
+    leetSync: data['leetSync'],
+  };
 }
 
 function isLedgerEntry(value: unknown): value is LedgerEntry {
@@ -278,10 +309,10 @@ export interface GameState {
   slots: { total: number; used: number };
   trainingMedianLevel: number | null;
   serverFirsts: ServerFirst[];
+  /** Present on GET /api/state only; action responses leave it out. */
+  leetSync: LeetSyncStatus | null;
 }
 
-const isInt = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isInteger(value);
 const isStr = (value: unknown): value is string => typeof value === 'string';
 const isDuration = (value: unknown): value is DurationId =>
   value === 'short' || value === 'medium' || value === 'long';
@@ -385,6 +416,7 @@ export function parseGameState(data: unknown): GameState {
     !(data['trainingMedianLevel'] === null || typeof data['trainingMedianLevel'] === 'number') ||
     !Array.isArray(data['serverFirsts']) ||
     !data['serverFirsts'].every(isServerFirst) ||
+    !(data['leetSync'] === undefined || isLeetSyncStatus(data['leetSync'])) ||
     !(
       data['starterOptions'] === undefined ||
       (Array.isArray(data['starterOptions']) && data['starterOptions'].every(isStr))
@@ -402,6 +434,7 @@ export function parseGameState(data: unknown): GameState {
     slots: { total: data['slots']['total'], used: data['slots']['used'] },
     trainingMedianLevel: data['trainingMedianLevel'],
     serverFirsts: data['serverFirsts'],
+    leetSync: data['leetSync'] ?? null,
   };
 }
 

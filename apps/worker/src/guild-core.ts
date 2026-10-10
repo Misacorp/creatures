@@ -4,7 +4,12 @@ import { Collection } from './collection';
 import { collectionRoutes } from './collection-routes';
 import { baitForDay, leetPointsForDay } from './economy';
 import { dispatch, errorResponse, json, matchTemplate, type Routes } from './http';
-import { LEET_BACKFILL_DAYS, LeetSourceError, type LeetSource } from './leet';
+import {
+  LEET_BACKFILL_DAYS,
+  LeetSourceError,
+  type LeetSource,
+  type LeetSyncErrorKind,
+} from './leet';
 import {
   credit,
   getBalances,
@@ -45,8 +50,11 @@ const SYNC_MINUTE = 40;
 const SYNC_STALE_MS = 15 * 60 * 1000;
 /** After a failed sync, wait this long before /api/me triggers another attempt. */
 const SYNC_RETRY_MS = 60 * 1000;
-/** How long /api/me waits for a sync before answering with stale data. */
-const SYNC_BUDGET_MS = 3000;
+/**
+ * How long /api/me waits for a sync before answering with stale data. Longer than the HTTP
+ * source's 5000 ms timeout, so one slow upstream call (a cold start) can still finish in time.
+ */
+export const SYNC_BUDGET_MS = 6000;
 const SYNC_MAX_PAGES = 20;
 const SYNC_PAGE_LIMIT = 31;
 /** Alarms re-arm from slightly in the future so a marginally early wake-up cannot fire twice. */
@@ -163,6 +171,18 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
     // migration must never change; it equals DEFAULT_GUILD_TIMEZONE.
     sql.exec("ALTER TABLE guild_meta ADD COLUMN timezone TEXT NOT NULL DEFAULT 'Europe/Helsinki'");
   },
+  (sql) => {
+    // Sync health, shown to players. `last_error` is an error kind only (never a message, URL or
+    // key); `last_days` is the number of days processed by the last successful run.
+    sql.exec('ALTER TABLE leet_sync ADD COLUMN last_attempt_at INTEGER');
+    sql.exec('ALTER TABLE leet_sync ADD COLUMN last_error TEXT');
+    sql.exec('ALTER TABLE leet_sync ADD COLUMN last_days INTEGER');
+  },
+  (sql) => {
+    // Which kind of leet source ('http' or 'mock') the stored cursor belongs to. When the
+    // configured source changes, the cursor from the old source is meaningless and is reset.
+    sql.exec('ALTER TABLE leet_sync ADD COLUMN source TEXT');
+  },
 ];
 
 export interface SessionUser {
@@ -208,7 +228,13 @@ const routes: Routes<RequestContext> = {
   '/api/me': {
     GET: async (_request, { user, guildId, core }) => {
       await core.syncIfStale();
-      return json({ user, guildId, timezone: core.timezone(), balances: core.balances(user.id) });
+      return json({
+        user,
+        guildId,
+        timezone: core.timezone(),
+        balances: core.balances(user.id),
+        leetSync: core.leetSyncStatus(),
+      });
     },
   },
   '/api/ledger': {
@@ -236,6 +262,15 @@ export interface GuildCoreOptions {
 export interface LeetSyncResult {
   daysProcessed: number;
   creditsApplied: number;
+}
+
+/** How healthy the leet sync is, as shown to players. Contains no messages, URLs or keys. */
+export interface LeetSyncStatus {
+  source: 'http' | 'mock' | 'disabled';
+  lastAttemptAt: number | null;
+  lastSyncedAt: number | null;
+  lastError: LeetSyncErrorKind | null;
+  lastDays: number | null;
 }
 
 type CoreStorage = Pick<DurableObjectStorage, 'sql' | 'transactionSync' | 'getAlarm' | 'setAlarm'>;
@@ -495,6 +530,26 @@ export class GuildCore {
   }
 
   /**
+   * A cursor only means something to the source that issued it. When the configured source kind
+   * changes (for example from the mock to the real leet bot), forget the cursor and backfill again
+   * from the guild-local date `LEET_BACKFILL_DAYS` ago. Credits are keyed by day id, so days that
+   * were already credited are not paid twice.
+   */
+  private resetSyncIfSourceChanged(kind: 'http' | 'mock', timezone: string): void {
+    this.getSyncState(timezone);
+    const row = this.sql
+      .exec<{ source: string | null }>('SELECT source FROM leet_sync WHERE id = 1')
+      .one();
+    if (row.source === kind) return;
+    const since = addDays(zonedDate(this.now(), timezone), -LEET_BACKFILL_DAYS);
+    this.sql.exec(
+      'UPDATE leet_sync SET source = ?, cursor = NULL, since_date = ? WHERE id = 1',
+      kind,
+      since,
+    );
+  }
+
+  /**
    * Pulls finalised leet days and credits Bait. Concurrent calls share one run. The await on the
    * source happens between page transactions, never inside one. Safe to repeat: credits are
    * keyed by day id.
@@ -509,15 +564,35 @@ export class GuildCore {
   }
 
   private async runLeetSync(): Promise<LeetSyncResult> {
-    const result: LeetSyncResult = { daysProcessed: 0, creditsApplied: 0 };
     const source = this.leetSource;
-    if (source === null) return result;
+    if (source === null) {
+      this.recordSyncOutcome({ error: 'disabled' });
+      return { daysProcessed: 0, creditsApplied: 0 };
+    }
     const guildId = this.storedGuildId() ?? this.options.guildId?.();
     if (guildId === undefined) {
       console.warn('leet sync skipped: guild id unknown');
-      return result;
+      return { daysProcessed: 0, creditsApplied: 0 };
     }
     const timezone = this.timezone();
+    this.recordSyncAttempt(timezone);
+    try {
+      const result = await this.pullLeetPages(source, guildId, timezone);
+      this.recordSyncOutcome({ days: result.daysProcessed });
+      return result;
+    } catch (err) {
+      this.recordSyncOutcome({ error: err instanceof LeetSourceError ? err.kind : 'internal' });
+      throw err;
+    }
+  }
+
+  private async pullLeetPages(
+    source: LeetSource,
+    guildId: string,
+    timezone: string,
+  ): Promise<LeetSyncResult> {
+    const result: LeetSyncResult = { daysProcessed: 0, creditsApplied: 0 };
+    this.resetSyncIfSourceChanged(source.kind ?? 'mock', timezone);
     const state = this.getSyncState(timezone);
     let cursor = state.cursor;
 
@@ -564,12 +639,83 @@ export class GuildCore {
     return result;
   }
 
+  /** Notes that a sync attempt started. Its own small transaction, apart from the credits. */
+  private recordSyncAttempt(timezone: string): void {
+    this.getSyncState(timezone);
+    this.storage.transactionSync(() => {
+      this.sql.exec('UPDATE leet_sync SET last_attempt_at = ? WHERE id = 1', this.now());
+    });
+  }
+
+  /**
+   * Stores how a sync attempt ended: an error kind (never a message), or success with the number of
+   * days processed. Its own small transaction, apart from the credits.
+   */
+  private recordSyncOutcome(outcome: { days: number } | { error: LeetSyncErrorKind }): void {
+    this.getSyncState(this.timezone());
+    const t = this.now();
+    this.storage.transactionSync(() => {
+      if ('error' in outcome) {
+        this.sql.exec(
+          'UPDATE leet_sync SET last_attempt_at = ?, last_error = ? WHERE id = 1',
+          t,
+          outcome.error,
+        );
+      } else {
+        this.sql.exec(
+          'UPDATE leet_sync SET last_error = NULL, last_days = ?, last_synced_at = ? WHERE id = 1',
+          outcome.days,
+          t,
+        );
+      }
+    });
+  }
+
+  /** The sync's health for the API. Read-only; the source kind comes from the configured source. */
+  private readSyncRow():
+    | {
+        last_attempt_at: number | null;
+        last_synced_at: number | null;
+        last_error: string | null;
+        last_days: number | null;
+      }
+    | undefined {
+    return this.sql
+      .exec<{
+        last_attempt_at: number | null;
+        last_synced_at: number | null;
+        last_error: string | null;
+        last_days: number | null;
+      }>(
+        'SELECT last_attempt_at, last_synced_at, last_error, last_days FROM leet_sync WHERE id = 1',
+      )
+      .toArray()[0];
+  }
+
+  leetSyncStatus(): LeetSyncStatus {
+    const row = this.readSyncRow();
+    const source = this.leetSource === null ? 'disabled' : (this.leetSource.kind ?? 'mock');
+    return {
+      source,
+      lastAttemptAt: row?.last_attempt_at ?? null,
+      lastSyncedAt: row?.last_synced_at ?? null,
+      lastError: source === 'disabled' ? 'disabled' : toErrorKind(row?.last_error ?? null),
+      lastDays: row?.last_days ?? null,
+    };
+  }
+
   /**
    * Runs a sync from /api/me when the last one is stale, waiting at most the budget. On timeout or
    * error it returns anyway: stale data is fine. The sync keeps going in the background.
    */
   async syncIfStale(): Promise<void> {
-    if (this.leetSource === null) return;
+    if (this.leetSource === null) {
+      // Nothing to sync: make the reason visible, writing only when it is not stored yet.
+      if (this.readSyncRow()?.last_error !== 'disabled') {
+        this.recordSyncOutcome({ error: 'disabled' });
+      }
+      return;
+    }
     const t = this.now();
     const last = this.getSyncState(this.timezone()).lastSyncedAt;
     if (last !== null && t - last < SYNC_STALE_MS) return;
@@ -617,6 +763,25 @@ export class GuildCore {
     }
     await this.storage.setAlarm(this.nextSyncAt(this.now() + ALARM_REARM_SKEW_MS));
   }
+}
+
+const ERROR_KINDS: ReadonlySet<string> = new Set<LeetSyncErrorKind>([
+  'unauthorized',
+  'not_found',
+  'rate_limited',
+  'upstream',
+  'timeout',
+  'network',
+  'invalid_response',
+  'invalid_request',
+  'disabled',
+  'internal',
+]);
+
+/** Only known kinds leave the object, so a stored value can never leak anything else. */
+function toErrorKind(stored: string | null): LeetSyncErrorKind | null {
+  if (stored === null) return null;
+  return ERROR_KINDS.has(stored) ? (stored as LeetSyncErrorKind) : 'internal';
 }
 
 /** Logs only the error kind or type: messages could carry upstream data. */

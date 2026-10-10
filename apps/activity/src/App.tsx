@@ -10,9 +10,11 @@ import {
   setReauthenticator,
   type AppConfig,
   type GameState,
+  type LeetSyncStatus,
   type Me,
 } from './api';
 import { Game } from './Game';
+import { leetStatusLine } from './leet-status';
 import { RecentActivity } from './RecentActivity';
 
 type Status<T> =
@@ -93,8 +95,26 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
+/** The newest known sync status: from polling, else the state call, else the /api/me call. */
+function shownLeetSync(boot: Boot, polled: LeetSyncStatus | null): LeetSyncStatus | null {
+  return polled ?? boot.game?.leetSync ?? boot.me?.leetSync ?? null;
+}
+
+/** One line about the leet sync; text only. A failed sync is a warning players can report. */
+function LeetStatus({ status }: { status: LeetSyncStatus | null }) {
+  if (status === null) return null;
+  const line = leetStatusLine(status, Date.now());
+  return (
+    <p class={line.tone === 'warning' ? 'small error' : 'small'} role="status">
+      {line.text}
+    </p>
+  );
+}
+
 export function App() {
   const bootStatus = useAsync(boot);
+  // The footer's sync status; refreshed by the game while the first sync is still running.
+  const [leetSync, setLeetSync] = useState<LeetSyncStatus | null>(null);
   const healthStatus = useAsync(fetchHealth);
 
   const healthText =
@@ -118,11 +138,13 @@ export function App() {
             <p>This is a Discord Activity. Launch it from Discord to play.</p>
           ) : (
             <>
-              <Game initial={bootStatus.value.game} />
+              <Game initial={bootStatus.value.game} onLeetSync={setLeetSync} />
               {bootStatus.value.config.leetSource === 'mock' && (
                 <p class="note">Leet points are simulated until the leet bot API is live</p>
               )}
-              <RecentActivity />
+              <RecentActivity
+                refreshKey={shownLeetSync(bootStatus.value, leetSync)?.lastSyncedAt ?? null}
+              />
             </>
           )}
         </>
@@ -131,6 +153,9 @@ export function App() {
       <footer>
         {bootStatus.state === 'ok' && bootStatus.value.me !== null && (
           <p class="small">Signed in as {bootStatus.value.me.user.displayName}</p>
+        )}
+        {bootStatus.state === 'ok' && bootStatus.value.me !== null && (
+          <LeetStatus status={shownLeetSync(bootStatus.value, leetSync)} />
         )}
         <dl>
           {bootStatus.state === 'ok' && (

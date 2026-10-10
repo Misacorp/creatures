@@ -154,12 +154,25 @@ describe('parseGameState', () => {
     ]);
   });
 
+  it('reads the leet sync status when present and leaves it null otherwise', () => {
+    const leetSync = {
+      source: 'http',
+      lastAttemptAt: 10,
+      lastSyncedAt: null,
+      lastError: 'unauthorized',
+      lastDays: null,
+    };
+    expect(parseGameState({ ...valid, leetSync }).leetSync).toEqual(leetSync);
+    expect(parseGameState(valid).leetSync).toBeNull();
+  });
+
   it.each([
     ['null', null],
     ['a missing field', { ...valid, slots: undefined }],
     ['a bad creature', { ...valid, creatures: [{ ...creature, level: 'x' }] }],
     ['fractional balances', { ...valid, balances: { bait: 1.5, essence: 0 } }],
     ['bad starter options', { ...valid, starterOptions: [1] }],
+    ['a malformed leet status', { ...valid, leetSync: { source: 'http' } }],
   ])('rejects %s', (_name, data) => {
     expect(() => parseGameState(data)).toThrow();
   });

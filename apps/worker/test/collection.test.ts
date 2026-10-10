@@ -117,6 +117,13 @@ interface StateBody {
   serverNow: number;
   /** Only in GET /api/state, not in the `state` echoed by POST routes. */
   timezone: string;
+  leetSync: {
+    source: string;
+    lastAttemptAt: number | null;
+    lastSyncedAt: number | null;
+    lastError: string | null;
+    lastDays: number | null;
+  };
   balances: { bait: number; essence: number };
   starterChosen: boolean;
   starterOptions?: string[];
@@ -228,14 +235,18 @@ describe('migration 4', () => {
         sql.exec(`DROP TABLE ${table}`);
       }
       sql.exec('ALTER TABLE guild_meta DROP COLUMN timezone');
-      sql.exec('DELETE FROM schema_version WHERE version IN (4, 5)');
+      sql.exec('ALTER TABLE leet_sync DROP COLUMN last_attempt_at');
+      sql.exec('ALTER TABLE leet_sync DROP COLUMN last_error');
+      sql.exec('ALTER TABLE leet_sync DROP COLUMN last_days');
+      sql.exec('ALTER TABLE leet_sync DROP COLUMN source');
+      sql.exec('DELETE FROM schema_version WHERE version IN (4, 5, 6, 7)');
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
         3,
       );
 
       core.migrate();
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        5,
+        7,
       );
       expect(core.balances(USER_ID).bait).toBe(42);
       const res = await ctx.request(secret, '/api/state');
@@ -280,6 +291,7 @@ describe('GET /api/state', () => {
             'balances',
             'creatures',
             'expeditions',
+            'leetSync',
             'serverFirsts',
             'serverNow',
             'slots',
@@ -291,6 +303,14 @@ describe('GET /api/state', () => {
         );
         expect(before.serverNow).toBe(T0);
         expect(before.timezone).toBe('Europe/Helsinki');
+        // No leet source in this test, so the status reports it as switched off.
+        expect(before.leetSync).toEqual({
+          source: 'disabled',
+          lastAttemptAt: T0,
+          lastSyncedAt: null,
+          lastError: 'disabled',
+          lastDays: null,
+        });
         expect(before.balances).toEqual({ bait: 30, essence: 0 });
         expect(before.starterChosen).toBe(false);
         expect(before.starterOptions).toEqual(['splashet', 'cindle', 'sproutle']);
