@@ -1,6 +1,6 @@
 # Leet bot API contract (proposal)
 
-Status: **proposal**, not built yet. The game builds against a mock of this contract (M1) until the real API exists in the leet bot's repo.
+Status: **implemented** in `Misacorp/leetbot-aws` (PR #21, awaiting merge and deploy). The game uses a mock of this contract until `LEET_SOURCE` is switched to `http`.
 
 ## Principles
 
@@ -11,10 +11,10 @@ Status: **proposal**, not built yet. The game builds against a mock of this cont
 ## Authentication
 
 - A bearer API key per consumer: `Authorization: Bearer <key>`.
-  - Leet bot side: keys stored hashed (SHA-256) in AWS Secrets Manager or SSM Parameter Store (SecureString), compared in constant time. Support two active keys at once, so a key can be rotated without downtime.
+  - Leet bot side: SHA-256 hashes of valid keys in the SSM SecureString parameter `/leetbot/<env>/api/consumer-key-hashes` (comma-separated, at most two, for rotation), compared in constant time. `scripts/createApiKey.sh` creates a key and stores its hash. Key changes take up to 5 minutes to apply (SSM cache).
   - Game side: the key is a Cloudflare Worker secret `LEET_API_KEY`, set from GitHub environment secrets by CI. One key for staging, one for production.
 - Keys are read-only and scoped to the API; they grant nothing else.
-- HTTPS only. API Gateway throttling (for example 5 requests/second, burst 10) per key.
+- HTTPS only. API Gateway HTTP APIs have no per-key throttling; the stage is throttled to 5 requests/second, burst 10.
 - Why not AWS IAM (SigV4): the caller is a Cloudflare Worker, so IAM would need long-lived AWS access keys stored in Cloudflare anyway. A dedicated API key is simpler and just as narrow.
 
 ## Endpoints
@@ -51,7 +51,7 @@ Response `200`:
 ```
 
 - `id` is stable and unique per server and day. The game uses `(day id, userId)` as the idempotency key for the Bait credit.
-- Days with no participants may be included or omitted; the game handles both.
+- Days with no participants are **omitted** (the bot stores leet messages, not days). Days are derived by grouping the guild's 13:37 leet messages by Helsinki date, earliest leet per user. A day is finalised after 13:40 Helsinki.
 - Once a day is returned, it is **immutable**. If the bot ever corrects a past day, it should be a new, explicit mechanism (out of scope for now).
 - `404` if the bot doesn't know the server. `401` for a missing or invalid key.
 
