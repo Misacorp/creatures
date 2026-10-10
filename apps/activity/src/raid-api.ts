@@ -89,13 +89,10 @@ export interface RaidView {
     canEdit: boolean;
     canOptOut: boolean;
     team: { mode: 'auto' | 'chosen'; creatures: TeamCreatureView[] } | null;
-    /**
-     * The finale ability: `chosen` is false when it was assigned automatically. Missing on servers
-     * from before M5, so treat undefined like null.
-     */
-    ability?: { abilityId: string; chosen: boolean } | null;
-    /** A finale result the player has not seen yet. Missing on servers from before M5. */
-    reveal?: RaidReveal | null;
+    /** The finale ability: `chosen` is false when it was assigned automatically. Null outside a party. */
+    ability: { abilityId: string; chosen: boolean } | null;
+    /** A finale result the player has not seen yet. */
+    reveal: RaidReveal | null;
   };
   party: null | {
     party: number;
@@ -266,12 +263,8 @@ function isYou(value: unknown): value is RaidView['you'] {
     !(value['party'] === null || isInt(value['party'])) ||
     !isBool(value['canEdit']) ||
     !isBool(value['canOptOut']) ||
-    !(
-      value['ability'] === undefined ||
-      value['ability'] === null ||
-      isAbilityPick(value['ability'])
-    ) ||
-    !(value['reveal'] === undefined || value['reveal'] === null || isReveal(value['reveal']))
+    !(value['ability'] === null || isAbilityPick(value['ability'])) ||
+    !(value['reveal'] === null || isReveal(value['reveal']))
   ) {
     return false;
   }
@@ -371,7 +364,15 @@ export function isReplayRow(value: unknown): value is ReplayRowEntry {
 
 export function isEventNames(value: unknown): value is EventNames {
   if (!isRecord(value) || !isStr(value['boss']) || !isStrRecord(value['creatures'])) return false;
-  const optional = ['players', 'reactions', 'gimmicks', 'abilities', 'marks', 'elements'] as const;
+  const optional = [
+    'players',
+    'reactions',
+    'gimmicks',
+    'abilities',
+    'marks',
+    'elements',
+    'adaptations',
+  ] as const;
   return optional.every((key) => value[key] === undefined || isStrRecord(value[key]));
 }
 

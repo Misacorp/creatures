@@ -131,7 +131,7 @@ export function Raid({
     if (revealWeek !== null) onBalanceChange();
   }, [revealWeek]);
 
-  /** Runs one change. After a definite "no"   /** Runs one change. After a definite "no" the screen was probably stale, so it reloads. */
+  /** Runs one change. After a definite "no" the screen was probably stale, so it reloads. */
   async function mutate(task: () => Promise<RaidView>): Promise<boolean> {
     if (inFlight.current) return false;
     inFlight.current = true;
@@ -183,6 +183,10 @@ export function Raid({
         if (err instanceof ApiError && err.status === 404) {
           setPracticeGone(true);
           setError('Practice fights are only available on the test server.');
+        } else if (err instanceof ApiError && err.code === 'practice_cooldown') {
+          // The party's earlier practice fight is still on show: join it.
+          setLiveInitial(null);
+          setLiveOpen(true);
         } else {
           setError(errorText(err));
         }
@@ -219,6 +223,7 @@ export function Raid({
   const team = view.you.team;
   const locked = busy || !view.you.canEdit;
   const rosterNames = view.roster.map((r) => r.displayName);
+  const { reveal } = view.you;
 
   if (liveOpen) {
     return (
@@ -258,15 +263,13 @@ export function Raid({
           {error}
         </p>
       )}
-      {view.you.reveal != null && (
+      {reveal !== null && (
         <RevealCard
-          reveal={view.you.reveal}
+          reveal={reveal}
           pity={null}
           busy={busy}
           onDismiss={() => {
-            const week = view.you.reveal?.week;
-            if (week === undefined) return;
-            void mutate(() => markRevealSeen(week)).then((ok) => {
+            void mutate(() => markRevealSeen(reveal.week)).then((ok) => {
               if (ok) onBalanceChange();
             });
           }}
@@ -311,7 +314,7 @@ export function Raid({
           void mutate(() => setRaidOptOut(optOut));
         }}
       />
-      {view.you.ability != null && (
+      {view.you.ability !== null && (
         <AbilityPicker
           current={view.you.ability}
           editable={serverNow < view.schedule.finale}

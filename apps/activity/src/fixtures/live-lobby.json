@@ -1,0 +1,26 @@
+{
+  "status": "lobby",
+  "practice": false,
+  "week": "2027-W02",
+  "party": 1,
+  "you": null,
+  "startsAt": 1800208800000,
+  "roundMs": 10000,
+  "rounds": 12,
+  "round": 0,
+  "serverNow": 1800208560000,
+  "boss": {
+    "id": "storm-sovereign",
+    "name": "Storm Sovereign",
+    "element": "spark",
+    "hpMax": 50000000,
+    "hpStart": 50000000
+  },
+  "row": [],
+  "names": null,
+  "abilities": [],
+  "events": [],
+  "bossHp": null,
+  "watching": ["Player 1"],
+  "loot": null
+}

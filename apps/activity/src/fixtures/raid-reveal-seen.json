@@ -1,0 +1,187 @@
+{
+  "weekId": "2027-W02",
+  "status": "finale",
+  "timezone": "Europe/Helsinki",
+  "boss": {
+    "id": "storm-sovereign",
+    "name": "Storm Sovereign",
+    "element": "spark",
+    "turnOrder": "left_to_right",
+    "gimmicks": [
+      {
+        "id": "lightning-rod",
+        "name": "Lightning Rod"
+      }
+    ],
+    "finaleRounds": 12
+  },
+  "schedule": {
+    "weekStart": 1799667420000,
+    "phase1": 1800013020000,
+    "phase2": 1800099420000,
+    "finale": 1800208800000
+  },
+  "next": null,
+  "serverNow": 1800208800000,
+  "roster": [
+    {
+      "displayName": "Player 1",
+      "you": true,
+      "party": 1
+    },
+    {
+      "displayName": "Player 2",
+      "you": false,
+      "party": 1
+    }
+  ],
+  "parties": [
+    {
+      "party": 1,
+      "size": 2
+    }
+  ],
+  "you": {
+    "inRoster": true,
+    "optOut": false,
+    "party": 1,
+    "canEdit": false,
+    "canOptOut": false,
+    "ability": {
+      "abilityId": "rally",
+      "chosen": false
+    },
+    "reveal": null,
+    "team": {
+      "mode": "auto",
+      "creatures": [
+        {
+          "creatureId": "d5d9bbd1-38ec-4476-9973-f680d9e1490a",
+          "species": "cindle",
+          "name": "Cindle",
+          "level": 12,
+          "slot": 1
+        },
+        {
+          "creatureId": "e8224374-20ce-4a27-aacf-26fcffe016f9",
+          "species": "zipmouse",
+          "name": "Zipmouse",
+          "level": 12,
+          "slot": null
+        },
+        {
+          "creatureId": "90687a5d-949e-482e-8296-be75d9091104",
+          "species": "sproutle",
+          "name": "Sproutle",
+          "level": 12,
+          "slot": null
+        }
+      ]
+    }
+  },
+  "party": {
+    "party": 1,
+    "rowLength": 9,
+    "row": [
+      {
+        "slot": 0,
+        "zone": "front",
+        "creature": null
+      },
+      {
+        "slot": 1,
+        "zone": "front",
+        "creature": {
+          "ownerName": "Player 1",
+          "species": "cindle",
+          "name": "Cindle",
+          "level": 12,
+          "mine": true,
+          "creatureId": "d5d9bbd1-38ec-4476-9973-f680d9e1490a"
+        }
+      },
+      {
+        "slot": 2,
+        "zone": "front",
+        "creature": null
+      },
+      {
+        "slot": 4,
+        "zone": "middle",
+        "creature": {
+          "ownerName": "Player 2",
+          "species": "sproutle",
+          "name": "Sproutle",
+          "level": 12,
+          "mine": false
+        }
+      }
+    ],
+    "guests": true,
+    "bossHp": {
+      "max": 50000000,
+      "current": 0
+    },
+    "adaptation": {
+      "description": "Storm Sovereign now resists Spark damage by 25% (the element that dealt the most damage).",
+      "rule": "resist-top-element",
+      "target": "spark"
+    },
+    "results": [
+      {
+        "phase": "phase1",
+        "at": 1800100800000,
+        "cleared": true,
+        "rounds": 10,
+        "bossHpMax": 23343,
+        "bossHpStart": 23343,
+        "bossHpEnd": 14437,
+        "damage": 4311,
+        "reactions": 25,
+        "top": [
+          {
+            "displayName": "Player 1",
+            "damage": 2098,
+            "contribution": 3103,
+            "you": true
+          },
+          {
+            "displayName": "Player 2",
+            "damage": 2213,
+            "contribution": 2934,
+            "you": false
+          }
+        ],
+        "essence": 14,
+        "jackpot": []
+      },
+      {
+        "phase": "phase2",
+        "at": 1800100800000,
+        "cleared": true,
+        "rounds": 10,
+        "bossHpMax": 23343,
+        "bossHpStart": 14437,
+        "bossHpEnd": 6483,
+        "damage": 3913,
+        "reactions": 25,
+        "top": [
+          {
+            "displayName": "Player 1",
+            "damage": 1968,
+            "contribution": 2973,
+            "you": true
+          },
+          {
+            "displayName": "Player 2",
+            "damage": 1945,
+            "contribution": 2625,
+            "you": false
+          }
+        ],
+        "essence": 21,
+        "jackpot": []
+      }
+    ]
+  }
+}

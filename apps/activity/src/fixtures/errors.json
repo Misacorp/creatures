@@ -1,0 +1,114 @@
+[
+  {
+    "route": "PUT /api/raid/ability",
+    "status": 400,
+    "body": {
+      "error": "invalid_body"
+    }
+  },
+  {
+    "route": "POST /api/raid/live/action",
+    "status": 409,
+    "body": {
+      "error": "not_in_fight"
+    }
+  },
+  {
+    "route": "POST /api/raid/live/action",
+    "status": 400,
+    "body": {
+      "error": "invalid_body"
+    }
+  },
+  {
+    "route": "POST /api/raid/live/action",
+    "status": 409,
+    "body": {
+      "error": "already_fired"
+    }
+  },
+  {
+    "route": "PUT /api/raid/ability",
+    "status": 409,
+    "body": {
+      "error": "locked"
+    }
+  },
+  {
+    "route": "POST /api/raid/live/action",
+    "status": 409,
+    "body": {
+      "error": "too_late"
+    }
+  },
+  {
+    "route": "POST /api/raid/reveal-seen",
+    "status": 400,
+    "body": {
+      "error": "invalid_body"
+    }
+  },
+  {
+    "route": "POST /api/raid/reveal-seen",
+    "status": 404,
+    "body": {
+      "error": "not_found"
+    }
+  },
+  {
+    "route": "POST /api/raid/live/action",
+    "status": 409,
+    "body": {
+      "error": "hold_too_late"
+    }
+  },
+  {
+    "route": "POST /api/raid/practice",
+    "status": 409,
+    "body": {
+      "error": "not_in_roster"
+    }
+  },
+  {
+    "route": "POST /api/raid/practice",
+    "status": 400,
+    "body": {
+      "error": "invalid_body"
+    }
+  },
+  {
+    "route": "POST /api/raid/practice",
+    "status": 409,
+    "body": {
+      "error": "practice_cooldown"
+    }
+  },
+  {
+    "route": "POST /api/raid/practice",
+    "status": 409,
+    "body": {
+      "error": "practice_blocked"
+    }
+  },
+  {
+    "route": "POST /api/raid/practice",
+    "status": 404,
+    "body": {
+      "error": "not_found"
+    }
+  },
+  {
+    "route": "GET /api/raid/live",
+    "status": 401,
+    "body": {
+      "error": "invalid_session"
+    }
+  },
+  {
+    "route": "GET /api/raid/live",
+    "status": 429,
+    "body": {
+      "error": "rate_limited"
+    }
+  }
+]

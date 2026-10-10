@@ -95,7 +95,6 @@ export function isRetryableStatus(status: number | null): boolean {
 /** Keeps the newer of two snapshots, so a slow poll never overwrites a fresher action result. */
 export function pickNewer(current: LiveSnapshot | null, next: LiveSnapshot): LiveSnapshot {
   if (current === null) return next;
-  if (current.serverNow === null || next.serverNow === null) return next;
   return next.serverNow >= current.serverNow ? next : current;
 }
 
@@ -162,25 +161,24 @@ export function abilityPlanText(def: FinaleAbilityDef): string {
 }
 
 /**
- * The round an ability fires by default: the server's own number when it sent one, otherwise the
- * content default (a display fallback).
+ * The round an ability fires in if nobody touches it. That is the server's own number (the engine's
+ * default, which for Shield Wall depends on the boss); 0 means the server does not know the ability.
  */
 export function defaultRoundOf(ability: LiveAbility): number | null {
-  if (ability.firedAtRound !== null) return ability.firedAtRound;
-  return ABILITIES.get(ability.abilityId)?.defaultRound ?? null;
+  return ability.defaultRound > 0 ? ability.defaultRound : null;
 }
 
 /** One line about an ability's state. `mine` words it for the player's own ability. */
 export function abilityStateText(ability: LiveAbility, rounds: number, mine: boolean): string {
-  const at = ability.firedAtRound;
+  const used = ability.firedAtRound;
   if (ability.fired) {
-    return at === null ? 'Used' : `Used in round ${String(at)}`;
+    return used === null ? 'Used' : `Used in round ${String(used)}`;
   }
   switch (ability.mode) {
     case 'fired':
-      return at === null
+      return ability.fireAtRound === null
         ? 'Fires at the start of the next round'
-        : `Fires at the start of round ${String(at)}`;
+        : `Fires at the start of round ${String(ability.fireAtRound)}`;
     case 'held':
       return mine
         ? "Held: fires in the last round if you don't"
@@ -238,9 +236,8 @@ export function buildAction(
   if (kind === 'zone' && (zone === 'front' || zone === 'middle' || zone === 'back')) {
     return { action: 'fire', zone };
   }
-  if (kind === 'element' && content.elements.some((e) => e.id === element)) {
-    return { action: 'fire', element };
-  }
+  const chosen = content.elements.find((e) => e.id === element);
+  if (kind === 'element' && chosen !== undefined) return { action: 'fire', element: chosen.id };
   return { action: 'fire' };
 }
 

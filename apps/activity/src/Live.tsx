@@ -25,7 +25,7 @@ import {
   sendLiveAction,
   type LiveAbility,
   type LiveActionRequest,
-  type LiveFight,
+  type LiveRunning,
   type LiveSnapshot,
 } from './live-api';
 import { ownerColour } from './raid-slots';
@@ -74,7 +74,7 @@ export function Live({
     const kept = pickNewer(latest.current, next);
     latest.current = kept;
     if (kept !== next) return;
-    if (next.serverNow !== null) offset.current = clockOffset(next.serverNow, Date.now());
+    offset.current = clockOffset(next.serverNow, Date.now());
     setSnapshot(next);
   }
 
@@ -192,6 +192,38 @@ export function Live({
   const fight = snapshot;
   const serverNow = now + offset.current;
   const progress = progressText(fight, serverNow);
+  if (fight.status === 'lobby') {
+    return (
+      <section class="raid-section" aria-labelledby="live-heading">
+        <h3 id="live-heading">Finale: {fight.boss.name}</h3>
+        {back}
+        {errors}
+        {fight.practice && <p class="badge first practice-label">{PRACTICE_LABEL}</p>}
+        <p class="live-round" role="status" aria-live="off">
+          <strong>{progress.headline}</strong>
+          {progress.countdown !== '' && <span class="live-countdown"> {progress.countdown}</span>}
+        </p>
+        {fight.boss.hpMax !== null && (
+          <p>
+            <label for="live-hp">
+              {fight.boss.name} HP: {fight.boss.hpStart ?? fight.boss.hpMax} / {fight.boss.hpMax}
+            </label>
+            <progress
+              id="live-hp"
+              class="hp-bar"
+              max={fight.boss.hpMax}
+              value={fight.boss.hpStart ?? fight.boss.hpMax}
+            />
+          </p>
+        )}
+        <p class="muted">
+          Your ability can be used once the fight starts. The fight plays on its own whether you
+          watch or not.
+        </p>
+        <Watching names={fight.watching} />
+      </section>
+    );
+  }
   const mine = fight.abilities.find((a) => a.alias === fight.you) ?? null;
   const knockedOut = new Set(
     stateAt(fight.events, fight.events.length, fight.boss.hpStart).knockedOut,
@@ -290,18 +322,7 @@ export function Live({
         ))}
       </ul>
 
-      <h4>Watching ({fight.watching.length})</h4>
-      {fight.watching.length === 0 ? (
-        <p class="muted">Nobody yet.</p>
-      ) : (
-        <ul class="roster">
-          {fight.watching.map((name, index) => (
-            <li key={index} class="roster-entry">
-              {name}
-            </li>
-          ))}
-        </ul>
-      )}
+      <Watching names={fight.watching} />
 
       <h4>This round</h4>
       {feed.length === 0 ? (
@@ -331,6 +352,25 @@ export function Live({
   );
 }
 
+function Watching({ names }: { names: readonly string[] }) {
+  return (
+    <>
+      <h4>Watching ({names.length})</h4>
+      {names.length === 0 ? (
+        <p class="muted">Nobody yet.</p>
+      ) : (
+        <ul class="roster">
+          {names.map((name, index) => (
+            <li key={index} class="roster-entry">
+              {name}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
 function FeedItems({ lines }: { lines: readonly FeedLine[] }) {
   return (
     <>
@@ -354,7 +394,7 @@ function AbilityPanel({
   onElement,
   onAct,
 }: {
-  fight: LiveFight;
+  fight: LiveRunning;
   ability: LiveAbility;
   busy: boolean;
   zone: string;

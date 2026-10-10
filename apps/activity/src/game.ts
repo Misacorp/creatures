@@ -157,8 +157,15 @@ const ERROR_TEXT: Record<string, string> = {
   too_late: 'Too late: the fight is in its last round or already over.',
   not_in_fight: 'You are not in this fight.',
   hold_too_late: 'Too late to hold: your ability is already due.',
+  // Practice fights (the test server only).
+  practice_blocked:
+    'Practice fights are closed from 30 minutes before the finale until it has finished.',
+  practice_cooldown: 'Your party already had a practice fight in the last 10 minutes.',
+  // Any request.
   invalid_body:
     'The server did not understand that. Close and reopen the Activity if it keeps happening.',
+  invalid_id: 'The server did not understand that. Close and reopen the Activity.',
+  internal_error: 'The server had a problem. Try again in a moment.',
 };
 
 const NICKNAME_REASONS: Record<string, string> = {

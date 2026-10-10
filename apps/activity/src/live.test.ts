@@ -1,7 +1,7 @@
 import type { EventNames, FightEvent } from '@creatures/engine';
 import { content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import type { LiveAbility, LiveFight, LiveNone } from './live-api';
+import type { LiveAbility, LiveLobby, LiveNone, LiveRunning } from './live-api';
 import {
   abilityControls,
   abilityDef,
@@ -30,7 +30,7 @@ import {
 
 const START = 1_000_000;
 
-function fightOf(over: Partial<LiveFight> = {}): LiveFight {
+function fightOf(over: Partial<LiveRunning> = {}): LiveRunning {
   return {
     status: 'live',
     practice: false,
@@ -54,6 +54,30 @@ function fightOf(over: Partial<LiveFight> = {}): LiveFight {
   };
 }
 
+function lobbyOf(over: Partial<LiveLobby> = {}): LiveLobby {
+  return {
+    status: 'lobby',
+    practice: false,
+    week: '2026-W41',
+    party: 1,
+    you: null,
+    startsAt: START,
+    roundMs: 10_000,
+    rounds: 12,
+    round: 0,
+    serverNow: START - 60_000,
+    boss: { id: 'b', name: 'Tidal Colossus', element: 'tide', hpMax: null, hpStart: null },
+    row: [],
+    names: null,
+    abilities: [],
+    events: [],
+    bossHp: null,
+    watching: [],
+    loot: null,
+    ...over,
+  };
+}
+
 function abilityOf(over: Partial<LiveAbility> = {}): LiveAbility {
   return {
     alias: 'p1',
@@ -61,6 +85,8 @@ function abilityOf(over: Partial<LiveAbility> = {}): LiveAbility {
     mode: 'default',
     fired: false,
     firedAtRound: null,
+    fireAtRound: null,
+    defaultRound: 6,
     ...over,
   };
 }
@@ -137,7 +163,7 @@ describe('nextPollDelay', () => {
   });
 
   it('waits for the start in the lobby', () => {
-    const lobby = fightOf({ status: 'lobby', round: 0 });
+    const lobby = lobbyOf();
     expect(nextPollDelay(lobby, START - 60_000)).toBe(2000);
     expect(nextPollDelay(lobby, START - 1_000)).toBe(1300);
   });
@@ -176,8 +202,8 @@ describe('pickNewer', () => {
     expect(pickNewer(a, fightOf({ serverNow: 100 }))).not.toBe(a);
   });
 
-  it('takes a snapshot with no clock', () => {
-    const none: LiveNone = { status: 'none', serverNow: null };
+  it('takes a snapshot of another kind when it is not older', () => {
+    const none: LiveNone = { status: 'none', serverNow: START + 30_000 };
     expect(pickNewer(fightOf(), none)).toBe(none);
   });
 });
@@ -192,7 +218,7 @@ describe('progressText', () => {
   });
 
   it('counts down to the start in the lobby', () => {
-    const lobby = fightOf({ status: 'lobby', round: 0 });
+    const lobby = lobbyOf();
     expect(progressText(lobby, START - 252_000)).toEqual({
       headline: 'Waiting for the finale to start',
       countdown: 'Starts in 4:12',
@@ -230,12 +256,12 @@ describe('ability texts', () => {
   });
 
   it('says what each state means', () => {
-    expect(abilityStateText(abilityOf({ firedAtRound: 6 }), 12, true)).toBe(
-      'Fires on its own in round 6',
-    );
     expect(abilityStateText(abilityOf(), 12, true)).toBe('Fires on its own in round 6');
-    expect(abilityStateText(abilityOf({ mode: 'fired', firedAtRound: 7 }), 12, true)).toBe(
+    expect(abilityStateText(abilityOf({ mode: 'fired', fireAtRound: 7 }), 12, true)).toBe(
       'Fires at the start of round 7',
+    );
+    expect(abilityStateText(abilityOf({ mode: 'fired' }), 12, true)).toBe(
+      'Fires at the start of the next round',
     );
     expect(abilityStateText(abilityOf({ mode: 'held' }), 12, true)).toBe(
       "Held: fires in the last round if you don't",
@@ -248,10 +274,18 @@ describe('ability texts', () => {
   });
 
   it('falls back when the ability is unknown', () => {
-    expect(abilityStateText(abilityOf({ abilityId: 'mystery' }), 12, true)).toBe(
-      'Fires on its own',
-    );
-    expect(defaultRoundOf(abilityOf({ abilityId: 'mystery' }))).toBeNull();
+    const unknown = abilityOf({ abilityId: 'mystery', defaultRound: 0 });
+    expect(abilityStateText(unknown, 12, true)).toBe('Fires on its own');
+    expect(defaultRoundOf(unknown)).toBeNull();
+  });
+
+  it("uses the server's default round, not the content's", () => {
+    // Shield Wall's default depends on the boss: the content says 3, the server says 5.
+    const wall = abilityOf({ abilityId: 'shield-wall', defaultRound: 5 });
+    expect(defaultRoundOf(wall)).toBe(5);
+    expect(abilityStateText(wall, 12, true)).toBe('Fires on its own in round 5');
+    expect(abilityControls(fightOf({ round: 4 }), wall).canHold).toBe(true);
+    expect(abilityControls(fightOf({ round: 5 }), wall).canHold).toBe(false);
   });
 
   it('knows which abilities ask for something', () => {
@@ -265,12 +299,12 @@ describe('ability texts', () => {
 
 describe('abilityControls', () => {
   it('offers Fire and Hold before the default round', () => {
-    const c = abilityControls(fightOf({ round: 3 }), abilityOf({ firedAtRound: 6 }));
+    const c = abilityControls(fightOf({ round: 3 }), abilityOf());
     expect(c).toEqual({ canFire: true, canHold: true, note: '' });
   });
 
   it('offers only Fire from the default round on', () => {
-    const c = abilityControls(fightOf({ round: 6 }), abilityOf({ firedAtRound: 6 }));
+    const c = abilityControls(fightOf({ round: 6 }), abilityOf());
     expect(c.canFire).toBe(true);
     expect(c.canHold).toBe(false);
   });
@@ -283,13 +317,13 @@ describe('abilityControls', () => {
 
   it('offers nothing once it is fired or used', () => {
     const none = { canFire: false, canHold: false, note: '' };
-    expect(abilityControls(fightOf(), abilityOf({ mode: 'fired', firedAtRound: 5 }))).toEqual(none);
+    expect(abilityControls(fightOf(), abilityOf({ mode: 'fired', fireAtRound: 5 }))).toEqual(none);
     expect(abilityControls(fightOf(), abilityOf({ fired: true }))).toEqual(none);
     expect(abilityControls(fightOf({ status: 'done' }), abilityOf())).toEqual(none);
   });
 
   it('offers nothing in the lobby and explains why', () => {
-    const c = abilityControls(fightOf({ status: 'lobby', round: 0 }), abilityOf());
+    const c = abilityControls(lobbyOf(), abilityOf());
     expect(c.canFire).toBe(false);
     expect(c.note).toContain('once the fight starts');
   });

@@ -1,0 +1,26 @@
+{
+  "status": "none",
+  "practice": false,
+  "week": "2027-W02",
+  "party": 1,
+  "you": null,
+  "startsAt": null,
+  "roundMs": 10000,
+  "rounds": 12,
+  "round": 0,
+  "serverNow": 1800208200000,
+  "boss": {
+    "id": "storm-sovereign",
+    "name": "Storm Sovereign",
+    "element": "spark",
+    "hpMax": null,
+    "hpStart": null
+  },
+  "row": [],
+  "names": null,
+  "abilities": [],
+  "events": [],
+  "bossHp": null,
+  "watching": [],
+  "loot": null
+}
