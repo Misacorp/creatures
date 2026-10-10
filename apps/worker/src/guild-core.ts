@@ -178,6 +178,11 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
     sql.exec('ALTER TABLE leet_sync ADD COLUMN last_error TEXT');
     sql.exec('ALTER TABLE leet_sync ADD COLUMN last_days INTEGER');
   },
+  (sql) => {
+    // Which kind of leet source ('http' or 'mock') the stored cursor belongs to. When the
+    // configured source changes, the cursor from the old source is meaningless and is reset.
+    sql.exec('ALTER TABLE leet_sync ADD COLUMN source TEXT');
+  },
 ];
 
 export interface SessionUser {
@@ -525,6 +530,26 @@ export class GuildCore {
   }
 
   /**
+   * A cursor only means something to the source that issued it. When the configured source kind
+   * changes (for example from the mock to the real leet bot), forget the cursor and backfill again
+   * from the guild-local date `LEET_BACKFILL_DAYS` ago. Credits are keyed by day id, so days that
+   * were already credited are not paid twice.
+   */
+  private resetSyncIfSourceChanged(kind: 'http' | 'mock', timezone: string): void {
+    this.getSyncState(timezone);
+    const row = this.sql
+      .exec<{ source: string | null }>('SELECT source FROM leet_sync WHERE id = 1')
+      .one();
+    if (row.source === kind) return;
+    const since = addDays(zonedDate(this.now(), timezone), -LEET_BACKFILL_DAYS);
+    this.sql.exec(
+      'UPDATE leet_sync SET source = ?, cursor = NULL, since_date = ? WHERE id = 1',
+      kind,
+      since,
+    );
+  }
+
+  /**
    * Pulls finalised leet days and credits Bait. Concurrent calls share one run. The await on the
    * source happens between page transactions, never inside one. Safe to repeat: credits are
    * keyed by day id.
@@ -567,6 +592,7 @@ export class GuildCore {
     timezone: string,
   ): Promise<LeetSyncResult> {
     const result: LeetSyncResult = { daysProcessed: 0, creditsApplied: 0 };
+    this.resetSyncIfSourceChanged(source.kind ?? 'mock', timezone);
     const state = this.getSyncState(timezone);
     let cursor = state.cursor;
 

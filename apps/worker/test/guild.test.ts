@@ -73,10 +73,10 @@ describe('schema migrations', () => {
         ]),
       );
       const version = sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one();
-      expect(version.v).toBe(6);
+      expect(version.v).toBe(7);
       // Running migrations again is a no-op.
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(6);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(7);
       return Promise.resolve();
     });
   });
@@ -91,7 +91,8 @@ describe('migration 5 (guild timezone)', () => {
       sql.exec('ALTER TABLE leet_sync DROP COLUMN last_attempt_at');
       sql.exec('ALTER TABLE leet_sync DROP COLUMN last_error');
       sql.exec('ALTER TABLE leet_sync DROP COLUMN last_days');
-      sql.exec('DELETE FROM schema_version WHERE version IN (5, 6)');
+      sql.exec('ALTER TABLE leet_sync DROP COLUMN source');
+      sql.exec('DELETE FROM schema_version WHERE version IN (5, 6, 7)');
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
         4,
       );
@@ -105,7 +106,7 @@ describe('migration 5 (guild timezone)', () => {
       core.migrate();
 
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        6,
+        7,
       );
       expect(sql.exec('SELECT id, guild_id, timezone FROM guild_meta').toArray()).toEqual([
         { id: 1, guild_id: '740000000000000010', timezone: 'Europe/Helsinki' },
