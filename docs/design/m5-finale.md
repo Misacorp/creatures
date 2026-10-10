@@ -23,45 +23,35 @@ This keeps "absent players fire at default" and "present players choose when", a
 
 ## How the server runs it
 
-The engine stays pure and unchanged. The live finale uses one property of it, the **prefix property**: rounds 1..r of a fight depend only on the input, the seed and the abilities that fire in rounds 1..r. A new engine test pins this down: adding an ability at round k leaves every event before round k unchanged.
+The engine stays pure and unchanged. The live finale relies on one property of it, the **prefix property**: rounds 1..r of a fight depend only on the input, the seed and the abilities that fire in rounds 1..r. A new engine test pins this down: adding an ability at round k leaves every event before round k unchanged.
 
-1. **Start (the finale event at 20:00):** for each party, in one transaction:
-   - build the fight input exactly as M4 does: row from the creatures' current stats, carried HP pool, Phase 2 adaptation. From here on the row is frozen.
+1. **Start (the finale event at 20:00, from the guild alarm):** for each party, in one transaction:
+   - build the fight input exactly as M4 does: row from the creatures' current stats, carried HP pool, Phase 2 adaptation. From here on the row is frozen;
    - draw the seed from live crypto randomness;
-   - store both in `raid_live` with `started_at`, `round_ms` (10 000), the round count, and each member's ability state (`abilityId`, `mode` default | held | fired, `fireAtRound`, `params`).
-     The seed never leaves the server before the fight has resolved.
-2. **Ticks:** the guild alarm wakes every `round_ms` while a fight is live (one alarm, multiplexed with the other schedules). On each tick, the server works out the current round from the wall clock: `round = floor((now - started_at) / round_ms) + 1`. It runs `simulateFight` on the stored input with the abilities known so far, and broadcasts the events of every round that has newly started. Held abilities count as firing at the last round while the simulation runs; abilities fired after round r was broadcast take `fireAtRound = r + 1`. Re-running a 12-round fight on each tick is cheap and keeps the code simple.
-3. **Late or missed ticks:** if a tick is late, the next tick catches up and broadcasts all the rounds it missed at once. If the object wakes after the fight should have ended, it resolves at once.
-4. **End:** when the last round has played, or the boss has fallen, the server resolves the party with the stored input, the stored seed and the final ability list, through the same code as M4's resolve: Essence, jackpot rolls (fresh live randomness at that moment), pity, server firsts and the Discord post. The result row stores the input with the final `fireAtRound` values, so the replay shows exactly what players watched.
-5. **Idempotency:** the result row is still the done marker. A crash mid-fight leaves `raid_live` in storage, and the next wake carries on from the wall clock.
+   - store both in `raid_live`, with `started_at`, `round_ms` (10 000), the round count and each member's ability state (`abilityId`, `mode` default | held | fired, `fireAtRound`, `params`).
 
-`resolveParty` is split into `buildFinaleInput` (shared by phases and the live start) and `settleParty` (shared by phases and the live end). Phases 1 and 2 keep resolving instantly.
+   The seed never leaves the server before the fight has resolved.
 
-## Transport: WebSockets on the guild Durable Object
+2. **The current round comes from the clock:** `round = min(rounds, floor((now - started_at) / round_ms) + 1)`. Nothing has to tick. Every read runs `simulateFight` on the stored input with the abilities known so far, and returns the events of rounds 1..round. Held abilities count as firing at the last round in that simulation. Re-running a 12-round fight is cheap (well under a millisecond of work per party).
+3. **Fire and Hold** are written in a transaction, with the round taken from the clock at that moment: Fire sets `fireAtRound = round + 1`. Fire in the last round, or after the end, gets `too_late`. Hold is only allowed while the current round is before the ability's default round. The default round comes from a new engine helper, `defaultAbilityRound(boss, ability, rounds)`, which shares the engine's own logic, so Shield Wall's "first zone hit" default can never disagree with the fight.
+4. **End:** the fight is over once round `rounds` has played, or as soon as the events up to the current round show the boss falling. The server then resolves the party with the stored input, the stored seed and the final ability list, through the same code as M4: Essence, jackpot rolls (fresh live randomness at that moment), pity, server firsts and the Discord post. The result row stores the input with the final `fireAtRound` values, so the replay shows exactly what players watched. Resolution happens on whichever comes first: a live read that sees the end, or the guild alarm, which is armed for `started_at + rounds × round_ms` (multiplexed with the other schedules, as ever).
+5. **Idempotency:** the result row is still the done marker. A crash mid-fight leaves `raid_live` in storage, and the clock carries the fight on.
 
-- **Ticket:** a browser WebSocket can't send an `Authorization` header. The client first calls `POST /api/raid/live/ticket` with its bearer session and gets a **one-time ticket**: `w1.<guildId>.<secret>.<mac>`, the session-token format with its own HKDF info string. It lasts 60 s, only its SHA-256 is stored, and it is consumed on use. The client then opens `wss://<same host>/api/raid/live?ticket=…`.
-- **Upgrade:** the Worker checks the ticket's MAC before waking any object (like sessions), then forwards the upgrade request to the guild object. The object consumes the ticket, checks that the user is a member of a party this week, and accepts with the Hibernation API. The socket is tagged `party:<n>`, and its attachment is `{ userId, party, alias }`.
-- **Limits:** at most 3 sockets per user (the oldest is closed) and 64 per party. Client messages are at most 512 bytes, schema-validated (strict), and limited to 5 per second per socket. Above that the socket is closed with 1008.
-- **Origin:** the upgrade must come from our own origins: the custom domain or `<client_id>.discordsays.com`. Anything else is refused.
-- **CSP:** `connect-src` gains an explicit `wss:` source for the same host if research shows `'self'` isn't enough in every Discord client.
+`resolveParty` is split into `buildPhaseInput` (shared by phases and the live start) and `settleParty` (shared by phases and the live end). Phases 1 and 2 keep resolving instantly.
 
-### Messages (JSON)
+## Transport: short polling (WebSocket push later)
 
-Server → client:
+Discord's proxy does support WebSockets, but it documents little about them: the URL form, limits, mobile behaviour (`docs/research/platform.md`, live-finale section). Plain HTTPS through the proxy already works for everything else. So M5 uses **short polling**, which needs nothing new from the proxy:
 
-- `{ t: "hello", week, party, you, status: "lobby" | "live" | "done", startsAt, roundMs, rounds, row, boss: { name, element, hpMax, hpStart }, abilities: [{ alias, name, abilityId, mode, fired }], watching: [displayName] }`. Sent on connect. It is the full snapshot, so a reconnect is just a fresh hello.
-- `{ t: "round", round, at, events: FightEvent[], bossHp }`. Sent once per round, in order. A reconnecting client gets a hello and then every round so far.
-- `{ t: "ability", alias, mode }`. Someone held or fired an ability (the effect shows up in the next round's events).
-- `{ t: "watching", names }`. Who is connected.
-- `{ t: "done", cleared, bossHpEnd }`, followed by `{ t: "loot", essence, jackpot: null | { essence, firstOnServer }, pity }`, which only goes to that player's own sockets.
-- `{ t: "error", code }`, for example `already_fired`, `too_late` or `rate_limited`.
-
-Client → server:
-
-- `{ t: "fire", zone?, element? }` fires the player's own ability.
-- `{ t: "hold" }` holds the player's own ability.
-
-Player identity always comes from the socket's attachment, never from a message.
+- `GET /api/raid/live` (bearer session, as for every API call) returns the caller's party's live state:
+  `{ status: "none" | "lobby" | "live" | "done", practice, week, party, you, startsAt, roundMs, rounds, round, serverNow, boss: { id, name, element, hpMax, hpStart }, row, names, abilities: [{ alias, abilityId, mode, fired, firedAtRound }], events: FightEvent[], bossHp, watching: [displayName], loot }`.
+  - `events` holds every event up to the current round. Each response is the full snapshot, so a client that misses a poll or reconnects just catches up.
+  - `loot` is null until the end. Then it is the caller's own loot: `{ cleared, essence, jackpot: null | { essence, firstOnServer }, pity }`.
+  - `watching` lists the players who polled in the last 10 s, tracked in memory in the guild object (best effort).
+  - The lobby is from 5 minutes before the start. `none` means there is no finale soon.
+- `POST /api/raid/live/action` with `{ action: "fire" | "hold", zone?, element? }` (strict schema) returns the new snapshot. The player's identity always comes from the session.
+- The client polls every 2 s in the lobby and during the fight, a little after each round boundary (it knows `serverNow`, `startsAt` and `roundMs`), and stops at `done`. That is at most 15 players × 0.5 requests per second per party, well inside the per-player rate limit (burst 30, 1 per second).
+- **Later (M5.1):** a WebSocket push channel on the same object (Hibernation API, one-time ticket in the query string because a browser WebSocket can't send `Authorization`, origin check, app-level ping), once a staging spike shows it works in Discord on desktop, iOS and Android. The snapshot format stays the same, so the client only swaps how it receives it.
 
 ## The loot reveal for people who missed it
 
@@ -74,7 +64,7 @@ Player identity always comes from the socket's attachment, never from a message.
 Waiting for Sunday is too slow for testing, so staging gets a **practice finale**. It only exists when the Worker var `RAID_PRACTICE` is `"on"` (staging only, in `wrangler.jsonc`; production returns 404).
 
 - `POST /api/raid/practice` starts a live practice fight for the caller's party now. It uses this week's boss and the party's current row, at full HP, without the adaptation.
-- It runs the same live loop, but it doesn't pay rewards and doesn't store a result.
+- It runs the same live loop (`practice: true` in the snapshot), but it doesn't pay rewards and doesn't store a result or a Discord post.
 - It is limited to one practice per party per 10 minutes.
 
 ## Not in M5
