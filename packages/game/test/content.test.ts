@@ -304,9 +304,13 @@ describe('raid content', () => {
       overgrown: ['grove', 'ember', 'Wildfire'],
       scorched: ['ember', 'tide', 'Steam'],
     });
+    // Every reaction uses the same multipliers; their values are balance tuning (the simulator).
+    const [first] = content.reactions;
     for (const r of content.reactions) {
-      expect(r.multiplierBp).toBe(25_000);
-      expect(r.payoffBonusBp).toBe(12_500);
+      expect(r.multiplierBp).toBe(first?.multiplierBp);
+      expect(r.payoffBonusBp).toBe(first?.payoffBonusBp);
+      expect(r.multiplierBp).toBeGreaterThan(10_000);
+      expect(r.payoffBonusBp).toBeGreaterThanOrEqual(10_000);
     }
   });
 

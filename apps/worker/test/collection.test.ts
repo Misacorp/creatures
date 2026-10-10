@@ -25,6 +25,10 @@ import {
 import { createHandler } from '../src/index';
 
 const HOUR = 3_600_000;
+
+/** Bait to train from `level` to the next one (the game's rule, so retuning does not break tests). */
+const trainCostAt = (level: number): number =>
+  RULES.training.baseCost + RULES.training.perLevel * level;
 const USER = { id: USER_ID, displayName: 'Misa' };
 const OTHER = { id: OTHER_USER_ID, displayName: 'Other' };
 
@@ -341,7 +345,7 @@ describe('GET /api/state', () => {
           origin: 'starter',
           caughtAt: T0,
           stats: { hp: 96, atk: 40, spd: 28 },
-          trainCost: 15,
+          trainCost: trainCostAt(1),
           evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: false },
         });
       },
@@ -1222,13 +1226,13 @@ describe('POST /api/creatures/{id}/train', () => {
         expect(res.status).toBe(200);
         expect(res.body['level']).toBe(2);
         const state = res.body['state'] as StateBody;
-        expect(state.balances.bait).toBe(85); // 10 + 5 x 1 = 15
-        expect(state.creatures[0]).toMatchObject({ level: 2, trainCost: 20 });
+        expect(state.balances.bait).toBe(100 - trainCostAt(1));
+        expect(state.creatures[0]).toMatchObject({ level: 2, trainCost: trainCostAt(2) });
         expect(
           ctx.sql
             .exec<{ amount: number }>("SELECT amount FROM ledger WHERE source = 'training'")
             .toArray(),
-        ).toEqual([{ amount: -15 }]);
+        ).toEqual([{ amount: -trainCostAt(1) }]);
       },
       seeded(),
     );
@@ -1244,7 +1248,7 @@ describe('POST /api/creatures/{id}/train', () => {
         const again = await train(p, p.starterId, key);
         expect(again.status).toBe(200);
         expect(again.body['level']).toBe(2);
-        expect((again.body['state'] as StateBody).balances.bait).toBe(85);
+        expect((again.body['state'] as StateBody).balances.bait).toBe(100 - trainCostAt(1));
         expect((again.body['state'] as StateBody).creatures[0]?.level).toBe(2);
         expect(count(ctx.sql, 'ledger', "source = 'training'")).toBe(1);
       },
@@ -1268,7 +1272,7 @@ describe('POST /api/creatures/{id}/train', () => {
         const res = await train(p, '00000000-0000-4000-8000-000000000008', key);
         expect(res.status).toBe(409);
         expect(res.body).toEqual({ error: 'key_conflict' });
-        expect(ctx.core.balances(USER_ID).bait).toBe(85);
+        expect(ctx.core.balances(USER_ID).bait).toBe(100 - trainCostAt(1));
       },
       seeded(),
     );
@@ -1310,7 +1314,7 @@ describe('POST /api/creatures/{id}/train', () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
-        const p = await joinWithStarter(ctx, USER, 14);
+        const p = await joinWithStarter(ctx, USER, trainCostAt(1) - 1);
         const ledger = count(ctx.sql, 'ledger');
         const res = await train(p, p.starterId);
         expect(res.status).toBe(409);
@@ -1329,15 +1333,19 @@ describe('POST /api/creatures/{id}/train', () => {
         const a = await joinWithStarter(ctx, USER, 100);
         await joinWithStarter(ctx, OTHER, 500, 'cindle');
         ctx.sql.exec('UPDATE creatures SET level = 15 WHERE user_id = ?', OTHER_USER_ID);
-        // Top levels are 1 and 15: median 8, so level 1 < 8 - 5 gets half price (15 -> 8).
+        // Top levels are 1 and 15: median 8, so level 1 < 8 - 5 gets half price (rounded up).
         const state = await a.state();
         expect(state.trainingMedianLevel).toBe(8);
-        expect(state.creatures[0]?.trainCost).toBe(8);
+        expect(state.creatures[0]?.trainCost).toBe(Math.ceil(trainCostAt(1) / 2));
         const res = await train(a, a.starterId);
         expect(res.status).toBe(200);
-        expect((res.body['state'] as StateBody).balances.bait).toBe(92);
-        // Level 2 is still more than 5 below 8 (2 < 3): 10 + 5 x 2 = 20, half is 10.
-        expect((res.body['state'] as StateBody).creatures[0]?.trainCost).toBe(10);
+        expect((res.body['state'] as StateBody).balances.bait).toBe(
+          100 - Math.ceil(trainCostAt(1) / 2),
+        );
+        // Level 2 is still more than 5 below 8 (2 < 3): half price again.
+        expect((res.body['state'] as StateBody).creatures[0]?.trainCost).toBe(
+          Math.ceil(trainCostAt(2) / 2),
+        );
       },
       seeded(),
     );
@@ -1353,7 +1361,7 @@ describe('POST /api/creatures/{id}/train', () => {
         // Tops 1 and 6: median 3.5; 1 < -1.5 is false.
         const state = await a.state();
         expect(state.trainingMedianLevel).toBe(3.5);
-        expect(state.creatures[0]?.trainCost).toBe(15);
+        expect(state.creatures[0]?.trainCost).toBe(trainCostAt(1));
       },
       seeded(),
     );

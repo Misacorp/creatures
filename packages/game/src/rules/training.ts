@@ -6,7 +6,7 @@ function assertLevel(level: number): void {
   }
 }
 
-/** Bait needed to go from `level` to `level + 1`: 10 + 5 x level. */
+/** Bait needed to go from `level` to `level + 1`: baseCost + perLevel x level (3 + 2 x level). */
 export function trainingCost(level: number): number {
   assertLevel(level);
   return RULES.training.baseCost + RULES.training.perLevel * level;

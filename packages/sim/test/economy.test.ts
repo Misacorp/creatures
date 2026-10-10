@@ -176,7 +176,7 @@ describe('policy pieces', () => {
     expect(all.reduce((s, o) => s + o.cost, 0)).toBeLessThanOrEqual(100);
   });
 
-  it('trains the weakest of the 3 strongest trainable creatures', () => {
+  it('pushes the furthest-along creature towards its evolution, else trains the weakest', () => {
     const mk = (line: string, level: number) => ({
       id: `p/${line}`,
       line,
@@ -184,15 +184,18 @@ describe('policy pieces', () => {
       level,
       fusionCount: 0,
     });
+    // Coralynx has no evolution; Stormray and Cindle do. Of those, Cindle is further along.
     const creatures = [mk('coralynx', 6), mk('stormray', 4), mk('cindle', 5), mk('splashet', 1)];
-    expect(chooseTrainee(creatures)?.line).toBe('stormray');
+    expect(chooseTrainee(creatures)?.line).toBe('cindle');
+    // With no evolution to work towards, the weakest of the strongest three goes first.
+    expect(chooseTrainee([mk('coralynx', 10), mk('gaiadrake', 4)])?.line).toBe('gaiadrake');
     // A creature at its stage-1 cap is skipped.
     expect(chooseTrainee([mk('cindle', 15), mk('splashet', 3)])?.line).toBe('splashet');
     expect(chooseTrainee([mk('cindle', 15)])).toBeNull();
   });
 
   it('uses the game training costs', () => {
-    expect(trainingCost(1)).toBe(15);
+    expect(trainingCost(1)).toBe(RULES.training.baseCost + RULES.training.perLevel);
     expect(RULES.expedition.durations.long.rolls).toBe(3);
     expect(speciesOf('splashet').evolvesTo?.essence).toBe(20);
   });

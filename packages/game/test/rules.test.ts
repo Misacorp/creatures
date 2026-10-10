@@ -38,10 +38,11 @@ function baseCtx(overrides: Partial<CatchContext> = {}): CatchContext {
 const catchableLines = content.creatures.filter((c) => c.catchable).map((c) => c.line);
 
 describe('training', () => {
-  it('costs 10 + 5 x level', () => {
-    expect(trainingCost(1)).toBe(15);
-    expect(trainingCost(14)).toBe(80);
-    expect(trainingCost(29)).toBe(155);
+  it('costs baseCost + perLevel x level', () => {
+    const { baseCost, perLevel } = RULES.training;
+    for (const level of [1, 14, 29]) {
+      expect(trainingCost(level)).toBe(baseCost + perLevel * level);
+    }
   });
 
   it('rejects bad levels', () => {
@@ -49,12 +50,14 @@ describe('training', () => {
     expect(() => trainingCost(1.5)).toThrow(RangeError);
   });
 
-  it('halves (rounded up) only when more than 5 below the median', () => {
-    expect(discountedTrainingCost(4, 10)).toBe(15); // 4 < 10 - 5, cost 30
-    expect(discountedTrainingCost(3, 9)).toBe(13); // 4 < ... cost 25, half rounded up
-    expect(discountedTrainingCost(5, 10)).toBe(35); // exactly 5 below: no discount
-    expect(discountedTrainingCost(5, 10.5)).toBe(18); // fractional median: 5 < 5.5, cost 35
-    expect(discountedTrainingCost(20, 10)).toBe(110); // above the median
+  it('halves (rounded up) only when more than the discount gap below the median', () => {
+    const gap = RULES.training.discountLevelsBelowMedian;
+    const half = (level: number): number => Math.ceil(trainingCost(level) / 2);
+    expect(discountedTrainingCost(4, 4 + gap + 1)).toBe(half(4)); // gap + 1 below: discount
+    expect(discountedTrainingCost(3, 3 + gap + 1)).toBe(half(3));
+    expect(discountedTrainingCost(5, 5 + gap)).toBe(trainingCost(5)); // exactly gap below: none
+    expect(discountedTrainingCost(5, 5 + gap + 0.5)).toBe(half(5)); // fractional median
+    expect(discountedTrainingCost(20, 10)).toBe(trainingCost(20)); // above the median
   });
 
   it('canTrain checks the cap and the away flag', () => {
