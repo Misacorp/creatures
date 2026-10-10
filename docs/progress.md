@@ -11,13 +11,13 @@ Where the project is against the plan. Newest state at the top of each section. 
 | M2 starters, expeditions, training, fusion | ✅ merged (PR #1)                                                                                                                 |
 | M3 combat engine, balance simulator        | ✅ merged (PR #1). First tuning pass done; deeper tuning still open.                                                              |
 | M4 weekly raid                             | 🚧 branch `m4-raids`: M4a server ✅ committed; M4b Discord posts and M4c Raid tab in progress                                     |
-| M5 live finale and loot reveal             | ⏳ not started                                                                                                                    |
+| M5 live finale and loot reveal             | 🚧 branch `m5-finale`: design ✅, M5a server + M5b client in progress                                                             |
 | M6 polish, pixel art, retro UI             | ⏳ not started                                                                                                                    |
 
 ## Now
 
 - M4 is complete on `m4-raids`: **PR #5** (https://github.com/Misacorp/creatures/pull/5), green locally, on staging, waiting for Misa to test and merge. Includes balance pass 2 (`docs/balance/report-2026-10-11.md`, full sim 19/21).
-- Next up: M5 design (`docs/design/m5-finale.md`), then build on branch `m5-finale` (based on `m4-raids` until #5 merges).
+- M5 on branch `m5-finale` (based on `m4-raids` until #5 merges): design done (`docs/design/m5-finale.md`, short polling first; WebSocket push later). In flight: M5a server (`apps/worker`, `packages/engine` helper) and M5b client (`apps/activity`).
 
 ## Next
 
