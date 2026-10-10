@@ -1,6 +1,13 @@
 import * as v from 'valibot';
 import type { Outcome } from './collection';
-import { errorResponse, json, readJsonBody, readLimitedText, type Routes } from './http';
+import {
+  errorResponse,
+  json,
+  parseJsonObject,
+  readJsonBody,
+  readLimitedText,
+  type Routes,
+} from './http';
 import type { Raid } from './raid';
 import {
   AbilityBodySchema,
@@ -42,12 +49,8 @@ async function hasNoPayload(request: Request): Promise<boolean> {
   const raw = await readLimitedText(request, MAX_BODY_BYTES);
   if (raw === null) return false;
   if (raw.trim() === '') return true;
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return !Array.isArray(parsed) && v.safeParse(v.strictObject({}), parsed).success;
-  } catch {
-    return false;
-  }
+  const parsed = parseJsonObject(raw);
+  return parsed !== undefined && v.safeParse(v.strictObject({}), parsed).success;
 }
 
 const invalidBody = (): Response => errorResponse('invalid_body', 400);

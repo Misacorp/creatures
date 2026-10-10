@@ -905,6 +905,10 @@ describe('POST /api/expeditions/{id}/claim', () => {
         const extra = await p.call('POST', `/api/expeditions/${exp.id}/claim`, { userId: 'x' });
         expect(extra.status).toBe(400);
         expect(extra.body).toEqual({ error: 'invalid_body' });
+        // An array is not an object, even though the claim schema has no keys.
+        const array = await p.call('POST', `/api/expeditions/${exp.id}/claim`, []);
+        expect(array.status).toBe(400);
+        expect(array.body).toEqual({ error: 'invalid_body' });
         expect(count(ctx.sql, 'expeditions', "status = 'active'")).toBe(1);
       },
       seeded(),

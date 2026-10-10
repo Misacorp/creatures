@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 import { DiscordError, type DiscordApi } from './discord';
-import { errorResponse, json, readLimitedText } from './http';
+import { errorResponse, json, readJsonBody } from './http';
 import type { SessionUser } from './guild-core';
 import { sanitizeDisplayName } from './names';
 import type { TokenBucketLimiter } from './ratelimit';
@@ -22,14 +22,8 @@ export interface AuthDeps {
 }
 
 export async function handleAuthSession(request: Request, deps: AuthDeps): Promise<Response> {
-  const text = await readLimitedText(request, MAX_BODY_BYTES);
-  if (text === null) return errorResponse('invalid_body', 400);
-  let raw: unknown;
-  try {
-    raw = JSON.parse(text);
-  } catch {
-    return errorResponse('invalid_body', 400);
-  }
+  const raw = await readJsonBody(request, MAX_BODY_BYTES);
+  if (raw === undefined) return errorResponse('invalid_body', 400);
   const parsed = v.safeParse(AuthSessionBodySchema, raw);
   if (!parsed.success) return errorResponse('invalid_body', 400);
   const { code, instanceId } = parsed.output;
