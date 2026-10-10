@@ -101,6 +101,7 @@ describe('migration 5 (guild timezone)', () => {
       sql.exec('ALTER TABLE leet_sync DROP COLUMN last_attempt_at');
       sql.exec('ALTER TABLE leet_sync DROP COLUMN last_error');
       sql.exec('ALTER TABLE leet_sync DROP COLUMN last_days');
+      sql.exec('ALTER TABLE leet_sync DROP COLUMN source');
       sql.exec('DELETE FROM schema_version WHERE version IN (5, 6)');
       undoRaidMigration(sql);
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(

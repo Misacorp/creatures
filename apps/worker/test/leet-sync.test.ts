@@ -5,6 +5,7 @@ import { ECONOMY, baitForDay, leetPointsForDay } from '../src/economy';
 import { SYNC_BUDGET_MS, type GuildCoreOptions } from '../src/guild-core';
 import {
   DEFAULT_TIMEOUT_MS,
+  LEET_BACKFILL_DAYS,
   LeetSourceError,
   createMockLeetSource,
   type LeetDay,
@@ -13,7 +14,7 @@ import {
   type LeetSource,
   type LeetSourceErrorKind,
 } from '../src/leet';
-import { DEFAULT_GUILD_TIMEZONE, nextOccurrence } from '../src/time';
+import { DEFAULT_GUILD_TIMEZONE, addDays, nextOccurrence, zonedDate } from '../src/time';
 import {
   OTHER_USER_ID,
   ORIGIN,
@@ -115,6 +116,54 @@ describe('syncLeet', () => {
         });
       },
       using(source),
+    );
+  });
+
+  it('forgets the cursor and backfills again when the source kind changes', async () => {
+    const guild = nextGuild();
+    // First the mock source (no kind = "mock") hands out its own cursor.
+    const mock = scripted(() => ({
+      days: [day(guild, '2026-10-09', [USER_ID])],
+      nextCursor: 'mock-cursor',
+      hasMore: false,
+    }));
+    await runCore(
+      guild,
+      async ({ core, sql }) => {
+        await core.syncLeet();
+        expect(syncState(sql)[0]?.cursor).toBe('mock-cursor');
+      },
+      using(mock.source),
+    );
+
+    // Then the real leet bot: the mock cursor must not be sent; the sync starts from `since`.
+    const real = scripted(() => ({
+      days: [day(guild, '2026-10-09', [USER_ID]), day(guild, '2026-10-10', [USER_ID])],
+      nextCursor: 'real-cursor',
+      hasMore: false,
+    }));
+    const httpSource: LeetSource = { ...real.source, kind: 'http' };
+    await runCore(
+      guild,
+      async ({ core, sql }) => {
+        await core.syncLeet();
+        expect(real.calls).toHaveLength(1);
+        expect(real.calls[0]?.opts.after).toBeUndefined();
+        expect(real.calls[0]?.opts.since).toBe(
+          addDays(zonedDate(T0, DEFAULT_GUILD_TIMEZONE), -LEET_BACKFILL_DAYS),
+        );
+        expect(syncState(sql)[0]?.cursor).toBe('real-cursor');
+        // 2026-10-09 was already credited, so only 2026-10-10 is new.
+        expect(baitRows(sql).map((r) => r.idempotency_key)).toEqual([
+          `leet:${guild}:2026-10-09`,
+          `leet:${guild}:2026-10-10`,
+        ]);
+
+        // The same source again keeps its cursor.
+        await core.syncLeet();
+        expect(real.calls[1]?.opts.after).toBe('real-cursor');
+      },
+      using(httpSource),
     );
   });
 
@@ -984,6 +1033,7 @@ describe('leet sync status', () => {
         sql.exec('ALTER TABLE leet_sync DROP COLUMN last_attempt_at');
         sql.exec('ALTER TABLE leet_sync DROP COLUMN last_error');
         sql.exec('ALTER TABLE leet_sync DROP COLUMN last_days');
+        sql.exec('ALTER TABLE leet_sync DROP COLUMN source');
         sql.exec('DELETE FROM schema_version WHERE version = 6');
         undoRaidMigration(sql);
         expect(columns(sql)).toEqual(['id', 'cursor', 'since_date', 'last_synced_at']);
@@ -998,6 +1048,7 @@ describe('leet sync status', () => {
           'last_attempt_at',
           'last_error',
           'last_days',
+          'source',
         ]);
         expect(
           sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,

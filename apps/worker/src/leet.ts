@@ -162,10 +162,16 @@ export function createHttpLeetSource(options: HttpLeetSourceOptions): LeetSource
             method: 'GET',
             headers: { Authorization: `Bearer ${options.apiKey}`, Accept: 'application/json' },
             signal: controller.signal,
-            redirect: 'error',
+            // Workers only support 'follow' and 'manual'; we never follow redirects (see below).
+            redirect: 'manual',
           });
         } catch {
           throw new LeetSourceError(controller.signal.aborted ? 'timeout' : 'network');
+        }
+        // A redirect (3xx; status 0 in browsers' opaque mode) is never followed: treat it as an
+        // upstream error so the API key is never sent to another host.
+        if ((res.status >= 300 && res.status < 400) || res.status === 0) {
+          throw new LeetSourceError('upstream');
         }
         if (res.status === 401 || res.status === 403) throw new LeetSourceError('unauthorized');
         if (res.status === 404) throw new LeetSourceError('not_found');
