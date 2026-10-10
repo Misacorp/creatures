@@ -52,10 +52,11 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          LEET_API_KEY: ${{ secrets.LEET_API_KEY }}
           GIT_SHA: ${{ github.sha }}
         run: |
           missing=""
-          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID DISCORD_CLIENT_SECRET DISCORD_BOT_TOKEN; do
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID DISCORD_CLIENT_SECRET DISCORD_BOT_TOKEN LEET_API_KEY; do
             if [ -z "${!name}" ]; then missing="$missing $name"; fi
           done
           if [ -n "$missing" ]; then
@@ -64,6 +65,6 @@ jobs:
           fi
           secrets_file="$(mktemp -p "$RUNNER_TEMP" secrets.XXXXXX.json)"
           trap 'rm -f "$secrets_file"' EXIT
-          jq -n --arg cs "$DISCORD_CLIENT_SECRET" --arg bt "$DISCORD_BOT_TOKEN" \
-            '{DISCORD_CLIENT_SECRET: $cs, DISCORD_BOT_TOKEN: $bt}' > "$secrets_file"
+          jq -n --arg cs "$DISCORD_CLIENT_SECRET" --arg bt "$DISCORD_BOT_TOKEN" --arg lk "$LEET_API_KEY" \
+            '{DISCORD_CLIENT_SECRET: $cs, DISCORD_BOT_TOKEN: $bt, LEET_API_KEY: $lk}' > "$secrets_file"
           pnpm exec wrangler deploy --env "$TARGET_ENV" --var "VERSION:${GIT_SHA}" --secrets-file "$secrets_file"

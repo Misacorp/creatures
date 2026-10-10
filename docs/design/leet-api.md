@@ -1,6 +1,6 @@
 # Leet bot API contract (proposal)
 
-Status: **implemented** in `Misacorp/leetbot-aws` (PR #21, awaiting merge and deploy). The game uses a mock of this contract until `LEET_SOURCE` is switched to `http`.
+Status: **live**. Implemented in `Misacorp/leetbot-aws` (PR #21, merged and deployed). Staging reads the dev API and production reads the prd API (`LEET_SOURCE=http`); local development uses the mock. The response also carries `timezone`, the IANA zone that `date` refers to.
 
 ## Principles
 

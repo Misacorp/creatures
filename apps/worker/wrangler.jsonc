@@ -15,8 +15,8 @@
   // Secrets are set by CI (Cloudflare Worker secrets) or in .dev.vars locally; never committed.
   "secrets": { "required": ["DISCORD_CLIENT_SECRET", "DISCORD_BOT_TOKEN"] },
   // VERSION is overridden at deploy time: wrangler deploy --var VERSION:<git sha>
-  // LEET_SOURCE is "mock" until the leet bot API is live; any other value than "mock" or "http"
-  // disables the sync. An optional secret LEET_API_KEY is only read when LEET_SOURCE is "http".
+  // LEET_SOURCE: "http" reads the leet bot API at LEET_API_URL with the LEET_API_KEY secret (staging
+  // and production); "mock" simulates leets (local dev). Any other value disables the sync.
   "vars": {
     "ENVIRONMENT": "local",
     "DISCORD_CLIENT_ID": "000000000000000000",
@@ -34,8 +34,8 @@
         "ENVIRONMENT": "staging",
         "DISCORD_CLIENT_ID": "1558536384380145734",
         "VERSION": "dev",
-        "LEET_SOURCE": "mock",
-        "LEET_API_URL": ""
+        "LEET_SOURCE": "http",
+        "LEET_API_URL": "https://o0q1uz3be0.execute-api.eu-north-1.amazonaws.com"
       }
     },
     "production": {
@@ -47,8 +47,8 @@
         "ENVIRONMENT": "production",
         "DISCORD_CLIENT_ID": "1558533284072267896",
         "VERSION": "dev",
-        "LEET_SOURCE": "mock",
-        "LEET_API_URL": ""
+        "LEET_SOURCE": "http",
+        "LEET_API_URL": "https://rwozj697u0.execute-api.eu-north-1.amazonaws.com"
       }
     }
   }
