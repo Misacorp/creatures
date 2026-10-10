@@ -10,20 +10,21 @@ Where the project is against the plan. Newest state at the top of each section. 
 | M1 Discord login, leet API, Bait ledger    | ✅ merged (PR #1, #3). Real leet points live in production (#4 fixed the CI timeout that blocked #3's deploy; prod runs 13081d4). |
 | M2 starters, expeditions, training, fusion | ✅ merged (PR #1)                                                                                                                 |
 | M3 combat engine, balance simulator        | ✅ merged (PR #1). First tuning pass done; deeper tuning still open.                                                              |
-| M4 weekly raid                             | 🚧 branch `m4-raids`: M4a server ✅ committed; M4b Discord posts and M4c Raid tab in progress                                     |
-| M5 live finale and loot reveal             | 🚧 branch `m5-finale`: design ✅, M5a server + M5b client in progress                                                             |
+| M4 weekly raid                             | ✅ in PR #5 (waiting for Misa)                                                                                                    |
+| M5 live finale and loot reveal             | ✅ in PR #5 (waiting for Misa); WebSocket push deferred                                                                           |
 | M6 polish, pixel art, retro UI             | ⏳ not started                                                                                                                    |
 
 ## Now
 
-- M4 is complete on `m4-raids`: **PR #5** (https://github.com/Misacorp/creatures/pull/5), green locally, on staging, waiting for Misa to test and merge. Includes balance pass 2 (`docs/balance/report-2026-10-11.md`, full sim 19/21).
-- M5 on branch `m5-finale` (based on `m4-raids` until #5 merges): design done (`docs/design/m5-finale.md`, short polling first; WebSocket push later). In flight: M5a server (`apps/worker`, `packages/engine` helper) and M5b client (`apps/activity`).
+- **PR #5** (https://github.com/Misacorp/creatures/pull/5), head branch `m4-raids` (= `m5-finale`): M4 raid + M5 live finale + balance pass 2. All checks green locally; staging runs it. Waiting for Misa to test (practice finale on staging) and merge.
 
 ## Next
 
-1. M5: live Sunday finale over WebSockets on the guild Durable Object, manual ability timing (absent players fire at default), loot reveal.
-2. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
-3. Later: an admin setting for the raid post channel (today it is the channel the Activity was last launched from); Essence sinks (gear).
+1. After #5 merges: verify the production deploy (`/api/config` version), watch the first real Sunday finale.
+2. WebSocket push for the live finale (M5.1), after a staging spike in real Discord on desktop, iOS, Android (`docs/design/m5-finale.md`).
+3. Apply Misa's answers (pity rule, reactions share, Hold rule, post channel).
+4. M6: polish, pixel art, retro UI; Essence sinks (gear); admin setting for the post channel; swap requests.
+5. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
 
 ## Open questions for Misa
 
@@ -32,6 +33,7 @@ Where the project is against the plan. Newest state at the top of each section. 
 - Pity: should a lost finale count toward the hard-pity jackpot? (Balance report: counting losses makes 66% of players hit hard pity in 20 weeks.)
 - Reactions are about half of all damage after balance pass 2. OK?
 - Raid posts follow the channel the Activity was last launched from. OK, or a fixed channel?
+- Live finale Fire/Hold rule (held ability fires in the last round if forgotten). OK?
 
 ## Notes for future agents
 
