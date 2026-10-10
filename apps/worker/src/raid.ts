@@ -9,9 +9,35 @@
 import { content, type Rng } from '@creatures/game';
 import type { Outcome } from './collection';
 import type { LedgerStorage } from './ledger';
+import {
+  LATE_START_LIMIT_MS,
+  LOBBY_MS,
+  PRACTICE_BLOCK_MS,
+  PRACTICE_COOLDOWN_MS,
+  START_GRACE_MS,
+  WATCH_WINDOW_MS,
+  applyAction,
+  evaluate,
+  finaleResolved,
+  loadLive,
+  settleLive,
+  startFinaleParty,
+  startPracticeParty,
+  unresolvedReal,
+  type ActionInput,
+  type LiveRow,
+} from './raid-live';
+import { emptySnapshot, liveSnapshot, type LiveContext, type LiveSnapshot } from './raid-live-view';
 import { queueBossReveal } from './raid-posts';
 import { resolveParty } from './raid-resolve';
-import { buildRaidView, buildReplayView, type RaidView, type ReplayView } from './raid-view';
+import { markRevealSeen } from './raid-reveal';
+import {
+  buildRaidView,
+  buildReplayView,
+  displayNames,
+  type RaidView,
+  type ReplayView,
+} from './raid-view';
 import {
   eligiblePlayerIds,
   createParties,
@@ -45,6 +71,8 @@ export interface RaidDeps {
   now: () => number;
   /** Live randomness for fight seeds and jackpot rolls. */
   rng: Rng;
+  /** Staging only: lets players start a practice finale (`RAID_PRACTICE` is "on"). */
+  practice?: boolean;
 }
 
 export interface WeekRow {
@@ -60,6 +88,8 @@ const MAX_EVENTS_PER_RUN = 200;
 export class Raid {
   /** The next not-done event, cached until its time: most requests then skip the calendar maths. */
   private nextCache: { tz: string; from: number; at: number } | null = null;
+  /** When each player last polled the live finale. In memory and best effort: it is only "who is here". */
+  private readonly watchers = new Map<string, number>();
 
   constructor(private readonly deps: RaidDeps) {}
 
@@ -264,7 +294,38 @@ export class Raid {
       this.markDone(weekId, event, 'skipped');
       return;
     }
+    if (event === 'finale') {
+      this.startFinale(week, scheduled.at);
+      return;
+    }
     this.resolvePhase(week, event);
+  }
+
+  /**
+   * The finale event: each party starts its live fight (see `raid-live.ts`) and the week locks
+   * (status 'finale'). If the event runs too late for anyone to watch (the object slept through it),
+   * it resolves instantly with every ability at its default round, as a phase does.
+   */
+  private startFinale(week: WeekRow, scheduledAt: number): void {
+    if (this.isDone(week.weekId, 'finale')) return;
+    const now = this.deps.now();
+    if (now - scheduledAt > LATE_START_LIMIT_MS) {
+      this.resolvePhase(week, 'finale');
+      return;
+    }
+    // A start a moment after the scheduled time still counts from it, so the lobby countdown and the
+    // rounds line up with the schedule players were shown.
+    const startedAt = now - scheduledAt <= START_GRACE_MS ? scheduledAt : now;
+    const parties = this.sql
+      .exec<{
+        party: number;
+      }>('SELECT party FROM raid_parties WHERE week_id = ? ORDER BY party', week.weekId)
+      .toArray();
+    for (const { party } of parties) startFinaleParty(this.deps, week, party, startedAt);
+    this.deps.storage.transactionSync(() => {
+      this.sql.exec('UPDATE raid_weeks SET status = ? WHERE week_id = ?', 'finale', week.weekId);
+      this.markDone(week.weekId, 'finale', 'ran');
+    });
   }
 
   /**
@@ -482,6 +543,41 @@ export class Raid {
     });
   }
 
+  /**
+   * Picks the finale ability the player brings, until the finale starts. Without a pick they get the
+   * round-robin default. Idempotent.
+   */
+  setAbility(userId: string, tz: string, abilityId: string): Outcome<null> {
+    this.runDue(tz);
+    return this.atomically(() => {
+      const { week } = this.memberContext(userId, tz);
+      if (week.status === 'finale' || this.deps.now() >= eventTimes(week.weekId, tz).finale) {
+        throw new RaidError(409, 'locked');
+      }
+      if (!content.finaleAbilities.some((a) => a.id === abilityId)) {
+        throw new RaidError(400, 'invalid_body');
+      }
+      this.sql.exec(
+        `INSERT INTO raid_abilities (week_id, user_id, ability_id) VALUES (?, ?, ?)
+         ON CONFLICT(week_id, user_id) DO UPDATE SET ability_id = excluded.ability_id`,
+        week.weekId,
+        userId,
+        abilityId,
+      );
+      return null;
+    });
+  }
+
+  /** Marks the loot reveal of a finale as seen. Idempotent. 404 if the player was not in that finale. */
+  markRevealSeen(userId: string, weekId: string): Outcome<null> {
+    return this.atomically(() => {
+      if (!markRevealSeen(this.sql, userId, weekId, this.deps.now())) {
+        throw new RaidError(404, 'not_found');
+      }
+      return null;
+    });
+  }
+
   isOptedOut(weekId: string, userId: string): boolean {
     return (
       this.sql
@@ -495,8 +591,174 @@ export class Raid {
     return chosenTeamIds(this.sql, weekId, userId);
   }
 
+  // --- The live finale ---
+
+  /**
+   * What the caller's party has right now. A real finale that is still going comes first, then the
+   * lobby, then a practice fight that is still visible, then the resolved real finale.
+   */
+  private selectLive(
+    week: WeekRow,
+    party: number,
+    tz: string,
+    now: number,
+  ): { row: LiveRow } | { lobbyAt: number } | null {
+    const real = loadLive(this.sql, week.weekId, party, false);
+    if (real !== null && !finaleResolved(this.sql, week.weekId, party)) return { row: real };
+    const finaleAt = eventTimes(week.weekId, tz).finale;
+    if (real === null && !this.isDone(week.weekId, 'finale') && now >= finaleAt - LOBBY_MS) {
+      return { lobbyAt: finaleAt };
+    }
+    const practice = loadLive(this.sql, week.weekId, party, true);
+    if (practice !== null && now < practice.startedAt + PRACTICE_COOLDOWN_MS) {
+      return { row: practice };
+    }
+    return real === null ? null : { row: real };
+  }
+
+  /** Resolves a real fight that is over. Never throws: a failure is retried on the next read. */
+  private trySettle(weekId: string, party: number, now: number): boolean {
+    try {
+      return settleLive(this.deps, weekId, party, now);
+    } catch (err) {
+      console.error('live finale resolve failed', err instanceof Error ? err.name : 'unknown');
+      return false;
+    }
+  }
+
+  /**
+   * Resolves every real fight that is over: its last round has played, or the rounds shown include
+   * the boss falling. The alarm and every request run this. Between fights the table has no
+   * unresolved rows, so it costs one empty query.
+   */
+  settleDueLive(): number {
+    const now = this.deps.now();
+    let settled = 0;
+    for (const fight of unresolvedReal(this.sql)) {
+      if (this.trySettle(fight.weekId, fight.party, now)) settled++;
+    }
+    return settled;
+  }
+
+  /** When the last round of the earliest unresolved real fight ends (the alarm wakes for it), or null. */
+  nextLiveEndAt(): number | null {
+    return unresolvedReal(this.sql)[0]?.endsAt ?? null;
+  }
+
+  /** Notes that the player is here and lists who is, by display name (the caller's party only). */
+  private touchWatching(
+    userId: string,
+    weekId: string,
+    party: number,
+    now: number,
+    names: ReadonlyMap<string, string>,
+  ): string[] {
+    this.watchers.set(userId, now);
+    for (const [id, at] of this.watchers) {
+      if (now - at >= WATCH_WINDOW_MS) this.watchers.delete(id);
+    }
+    return partyMembers(this.sql, weekId, party)
+      .filter((id) => this.watchers.has(id))
+      .map((id) => names.get(id) ?? 'Unknown');
+  }
+
+  /**
+   * The live finale as the caller's party sees it right now: nothing soon, the lobby, the fight or
+   * the finished fight with the caller's loot. A read that sees the end resolves the fight. Never
+   * contains the seed.
+   */
+  liveSnapshot(userId: string, tz: string): LiveSnapshot {
+    const week = this.currentWeek(tz);
+    const now = this.deps.now();
+    const party = partyOf(this.sql, week.weekId, userId);
+    const names = displayNames(this.sql);
+    const base: LiveContext = {
+      sql: this.sql,
+      now,
+      weekId: week.weekId,
+      bossId: week.bossId,
+      party,
+      userId,
+      names,
+      watching: [],
+    };
+    const selected = party === null ? null : this.selectLive(week, party, tz, now);
+    if (party === null || selected === null) return emptySnapshot(base, 'none', null);
+    const watching = this.touchWatching(userId, week.weekId, party, now, names);
+    const ctx = { ...base, watching };
+    if ('lobbyAt' in selected) return emptySnapshot(ctx, 'lobby', selected.lobbyAt);
+    const { row } = selected;
+    const state = evaluate(row, now);
+    let resolved = false;
+    if (!row.practice) {
+      resolved = finaleResolved(this.sql, row.weekId, row.party);
+      if (!resolved && state.ended) resolved = this.trySettle(row.weekId, row.party, now);
+    }
+    return liveSnapshot(ctx, row, state, resolved);
+  }
+
+  /**
+   * The caller's Fire or Hold, written in a transaction with the round taken from the clock at that
+   * moment. Returns the new snapshot.
+   */
+  liveAction(userId: string, tz: string, body: ActionInput): Outcome<LiveSnapshot> {
+    const week = this.currentWeek(tz);
+    const now = this.deps.now();
+    const party = partyOf(this.sql, week.weekId, userId);
+    const selected = party === null ? null : this.selectLive(week, party, tz, now);
+    if (party === null || selected === null || !('row' in selected)) {
+      return { ok: false, status: 409, error: 'not_in_fight' };
+    }
+    const { practice } = selected.row;
+    // A fight that is over is resolved first, so the action is judged against the final state.
+    if (!practice) this.trySettle(week.weekId, party, now);
+    const outcome = this.atomically(() => {
+      const row = loadLive(this.sql, week.weekId, party, practice);
+      if (row === null) throw new RaidError(409, 'not_in_fight');
+      applyAction(this.sql, row, userId, body, now);
+      return null;
+    });
+    if (!outcome.ok) return outcome;
+    return { ok: true, value: this.liveSnapshot(userId, tz) };
+  }
+
+  /** True when the staging-only practice finale is available. */
+  practiceEnabled(): boolean {
+    return this.deps.practice === true;
+  }
+
+  /**
+   * Staging only: starts a practice fight for the caller's party now (this week's boss, the current
+   * row, full HP, no adaptation, the current ability picks). It pays nothing and stores no result.
+   * Refused from 30 minutes before the finale until it has resolved, and once per party per 10
+   * minutes. 404 unless the `RAID_PRACTICE` var is "on".
+   */
+  startPractice(userId: string, tz: string): Outcome<LiveSnapshot> {
+    if (this.deps.practice !== true) return { ok: false, status: 404, error: 'not_found' };
+    this.runDue(tz);
+    const started = this.atomically(() => {
+      const { week, party } = this.memberContext(userId, tz);
+      const now = this.deps.now();
+      const finaleAt = eventTimes(week.weekId, tz).finale;
+      if (now >= finaleAt - PRACTICE_BLOCK_MS && !finaleResolved(this.sql, week.weekId, party)) {
+        throw new RaidError(409, 'practice_blocked');
+      }
+      const last = loadLive(this.sql, week.weekId, party, true);
+      if (last !== null && now < last.startedAt + PRACTICE_COOLDOWN_MS) {
+        throw new RaidError(409, 'practice_cooldown');
+      }
+      if (!startPracticeParty(this.deps, week, party, now)) {
+        throw new RaidError(409, 'not_in_roster');
+      }
+      return null;
+    });
+    if (!started.ok) return started;
+    return { ok: true, value: this.liveSnapshot(userId, tz) };
+  }
+
   /** The current week as the caller sees it (creates the week if needed). */
   view(userId: string, tz: string): RaidView {
+    this.settleDueLive();
     return buildRaidView(this, this.sql, userId, tz, this.deps.now());
   }
 

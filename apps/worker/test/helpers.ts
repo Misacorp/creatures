@@ -146,6 +146,15 @@ export async function runCore<R>(
   });
 }
 
+/** Tables created by migration 10 (the live finale). */
+export const LIVE_TABLES = ['raid_abilities', 'raid_live', 'raid_reveal_seen'] as const;
+
+/** Puts a database back to before migration 10 (the live finale). */
+export function undoLiveMigration(sql: SqlStorage): void {
+  for (const table of LIVE_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
+  sql.exec('DELETE FROM schema_version WHERE version = 10');
+}
+
 /** Tables created by migration 8 (the weekly raid). */
 export const RAID_TABLES = [
   'raid_weeks',
@@ -161,13 +170,15 @@ export const RAID_TABLES = [
 
 /** Puts a database back to before migration 9 (the announcement channel and the post queue). */
 export function undoDiscordPostsMigration(sql: SqlStorage): void {
+  undoLiveMigration(sql);
   sql.exec('DROP TABLE IF EXISTS discord_posts');
   sql.exec('ALTER TABLE guild_meta DROP COLUMN announce_channel_id');
   sql.exec('DELETE FROM schema_version WHERE version = 9');
 }
 
 /**
- * Puts a database back to before migration 7 (reserved), 8 (the raid) and 9 (Discord posts), for
+ * Puts a database back to before migration 7 (reserved), 8 (the raid), 9 (Discord posts) and 10
+ * (the live finale), for
  * tests that replay older migrations. The wider `server_firsts` check stays: migration 8 recreates
  * that table with its rows anyway.
  */

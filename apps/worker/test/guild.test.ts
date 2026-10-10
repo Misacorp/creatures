@@ -19,6 +19,7 @@ import {
   runCore,
   tokenFor,
   undoDiscordPostsMigration,
+  undoLiveMigration,
   undoRaidMigration,
 } from './helpers';
 
@@ -82,13 +83,16 @@ describe('schema migrations', () => {
           'raid_events',
           'jackpot_pity',
           'discord_posts',
+          'raid_abilities',
+          'raid_live',
+          'raid_reveal_seen',
         ]),
       );
       const version = sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one();
-      expect(version.v).toBe(9);
+      expect(version.v).toBe(10);
       // Running migrations again is a no-op.
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(9);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(10);
       return Promise.resolve();
     });
   });
@@ -119,7 +123,7 @@ describe('migration 5 (guild timezone)', () => {
       core.migrate();
 
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        9,
+        10,
       );
       expect(sql.exec('SELECT id, guild_id, timezone FROM guild_meta').toArray()).toEqual([
         { id: 1, guild_id: '740000000000000010', timezone: 'Europe/Helsinki' },
@@ -162,7 +166,7 @@ describe('migration 9 (announcement channel and Discord posts)', () => {
       core.migrate();
 
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        9,
+        10,
       );
       expect(columns()).toEqual(['id', 'guild_id', 'timezone', 'announce_channel_id']);
       expect(
@@ -186,6 +190,83 @@ describe('migration 9 (announcement channel and Discord posts)', () => {
         'next_attempt_at',
         'created_at',
       ]);
+    });
+  });
+});
+
+describe('migration 10 (the live finale)', () => {
+  const columns = (sql: SqlStorage, table: string) =>
+    sql
+      .exec<{ name: string }>('SELECT name FROM pragma_table_info(?)', table)
+      .toArray()
+      .map((c) => c.name);
+  const version = (sql: SqlStorage) =>
+    sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v;
+
+  it('applies on a schema-9 object and keeps the raid data', async () => {
+    await runCore('740000000000000030', async ({ core, sql }) => {
+      await core.createSession('740000000000000030', USER, '555555555555555555');
+      sql.exec("INSERT INTO jackpot_pity (user_id, counter) VALUES ('u1', 4)");
+      sql.exec(
+        "INSERT INTO raid_weeks (week_id, boss_id, status, created_at) VALUES ('2026-W40', 'b', 'phase2', 1)",
+      );
+      undoLiveMigration(sql);
+      expect(version(sql)).toBe(9);
+      for (const table of ['raid_abilities', 'raid_live', 'raid_reveal_seen']) {
+        expect(sql.exec('SELECT name FROM sqlite_master WHERE name = ?', table).toArray()).toEqual(
+          [],
+        );
+      }
+
+      core.migrate();
+
+      expect(version(sql)).toBe(10);
+      expect(columns(sql, 'raid_abilities')).toEqual(['week_id', 'user_id', 'ability_id']);
+      expect(columns(sql, 'raid_live')).toEqual([
+        'week_id',
+        'party',
+        'practice',
+        'seed',
+        'input',
+        'members',
+        'abilities',
+        'started_at',
+        'round_ms',
+        'rounds',
+      ]);
+      expect(columns(sql, 'raid_reveal_seen')).toEqual(['user_id', 'week_id', 'seen_at']);
+      // Everything from before is still there.
+      expect(sql.exec('SELECT user_id, counter FROM jackpot_pity').toArray()).toEqual([
+        { user_id: 'u1', counter: 4 },
+      ]);
+      expect(
+        sql.exec("SELECT week_id, status FROM raid_weeks WHERE week_id = '2026-W40'").toArray(),
+      ).toEqual([{ week_id: '2026-W40', status: 'phase2' }]);
+      expect(sql.exec('SELECT announce_channel_id FROM guild_meta').one()).toEqual({
+        announce_channel_id: '555555555555555555',
+      });
+      // The tables hold what the rules say: one pick per player and week, practice is 0 or 1.
+      const live = (practice: number, party = 1) =>
+        sql.exec(
+          "INSERT INTO raid_live (week_id, party, practice, seed, input, members, abilities, started_at, round_ms, rounds) VALUES ('w', ?, ?, 's', '{}', '[]', '[]', 0, 10000, 12)",
+          party,
+          practice,
+        );
+      live(0);
+      live(1);
+      expect(() => live(0)).toThrow(/UNIQUE|constraint/i);
+      expect(() => live(2, 2)).toThrow(/CHECK|constraint/i);
+      sql.exec(
+        "INSERT INTO raid_abilities (week_id, user_id, ability_id) VALUES ('w', 'u', 'rally')",
+      );
+      expect(() =>
+        sql.exec(
+          "INSERT INTO raid_abilities (week_id, user_id, ability_id) VALUES ('w', 'u', 'purge')",
+        ),
+      ).toThrow(/UNIQUE|constraint/i);
+      // Running the migrations again is a no-op.
+      core.migrate();
+      expect(version(sql)).toBe(10);
     });
   });
 });

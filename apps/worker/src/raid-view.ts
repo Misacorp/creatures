@@ -15,7 +15,8 @@ import {
 import { content } from '@creatures/game';
 import { speciesOf } from './collection';
 import type { Raid } from './raid';
-import { bossFor, type StoredSummary } from './raid-resolve';
+import { abilityFor, bossFor, type StoredSummary } from './raid-resolve';
+import { latestReveal, type RevealView } from './raid-reveal';
 import { partyMembers, partyOf } from './raid-roster';
 import { RAID_PHASES, isWeekId, type RaidEvent, type RaidPhase } from './raid-schedule';
 import { effectiveTeam, rowLength, type RaidStatus } from './raid-teams';
@@ -86,6 +87,17 @@ export interface RaidView {
     canEdit: boolean;
     /** The caller may still sit the week out or rejoin. */
     canOptOut: boolean;
+    /**
+     * The caller's finale ability: their pick (`chosen`) or the default they get if they pick
+     * nothing. It can be changed (`PUT /api/raid/ability`) until the finale starts. Null when the
+     * caller is not in a party.
+     */
+    ability: { abilityId: string; chosen: boolean } | null;
+    /**
+     * The loot reveal of the latest finale the caller took part in, until they mark it seen
+     * (`POST /api/raid/reveal-seen`). Only the caller's own.
+     */
+    reveal: RevealView | null;
     team: {
       mode: 'auto' | 'chosen';
       creatures: {
@@ -113,7 +125,7 @@ export interface RaidView {
 
 const PHASE_ORDER: readonly RaidStatus[] = ['open', 'phase1', 'phase2', 'finale'];
 
-function displayNames(sql: SqlStorage): Map<string, string> {
+export function displayNames(sql: SqlStorage): Map<string, string> {
   return new Map(
     sql
       .exec<{ user_id: string; display_name: string }>('SELECT user_id, display_name FROM players')
@@ -279,6 +291,11 @@ export function buildRaidView(
       party: myParty,
       canEdit: myParty !== null && week.status !== 'finale',
       canOptOut: week.status === 'open',
+      ability:
+        myParty === null
+          ? null
+          : abilityFor(sql, week.weekId, partyMembers(sql, week.weekId, myParty), userId),
+      reveal: latestReveal(sql, userId),
       team:
         team === null
           ? null

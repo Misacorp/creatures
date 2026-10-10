@@ -27,6 +27,7 @@ import {
   type SpendResult,
 } from './ledger';
 import { Raid } from './raid';
+import { raidLiveMigration } from './raid-live-migration';
 import { raidMigration } from './raid-migration';
 import { raidRoutes } from './raid-routes';
 import { TokenBucketLimiter } from './ratelimit';
@@ -219,6 +220,8 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
     )`);
     sql.exec('CREATE INDEX discord_posts_due ON discord_posts(status, next_attempt_at)');
   },
+  // Version 10: the live finale (see raid-live-migration.ts).
+  raidLiveMigration,
 ];
 
 export interface SessionUser {
@@ -301,6 +304,8 @@ export interface GuildCoreOptions {
   syncBudgetMs?: number;
   /** Delivers Discord posts. Without one, posts stay queued and the alarm ignores them. */
   postSender?: PostSender | null;
+  /** Staging only: the practice finale is available (the `RAID_PRACTICE` var is "on"). */
+  raidPractice?: boolean;
 }
 
 export interface LeetSyncResult {
@@ -351,6 +356,7 @@ export class GuildCore {
       storage,
       now,
       rng: options.raidRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+      practice: options.raidPractice === true,
     });
     this.limiter = new TokenBucketLimiter({
       capacity: RATE_CAPACITY,
@@ -822,6 +828,12 @@ export class GuildCore {
       // An event that is still due after the catch-up keeps failing: retry it later, not in a loop.
       candidates.push(raidAt > this.now() ? raidAt : this.now() + RAID_RETRY_MS);
     }
+    // A live finale that is over resolves at the end of its last round (earlier if a read sees the
+    // boss fall). One that is still unresolved after that keeps failing: retry it later.
+    const liveEndAt = this.raid.nextLiveEndAt();
+    if (liveEndAt !== null) {
+      candidates.push(liveEndAt > this.now() ? liveEndAt : this.now() + RAID_RETRY_MS);
+    }
     if (this.options.postSender != null) {
       const postAt = nextPostAt(this.sql);
       // A post that is still due keeps failing to go out: look again later, not in a loop.
@@ -836,10 +848,14 @@ export class GuildCore {
     if (at !== null) await this.storage.setAlarm(at);
   }
 
-  /** Runs raid events that are due (missed ones run late, in order). Failures never reach callers. */
+  /**
+   * Runs raid events that are due (missed ones run late, in order) and resolves live finales whose
+   * last round has played. Failures never reach callers.
+   */
   private catchUpRaid(until?: number): void {
     try {
       this.raid.runDue(this.timezone(), until);
+      this.raid.settleDueLive();
     } catch (err) {
       console.error('raid catch-up failed', err instanceof Error ? err.name : 'unknown');
     }

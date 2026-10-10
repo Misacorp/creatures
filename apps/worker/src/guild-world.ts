@@ -15,6 +15,7 @@ export class GuildWorld extends DurableObject<Env> {
     super(ctx, env);
     this.core = new GuildCore(ctx.storage, Date.now, {
       guildId: () => ctx.id.name,
+      raidPractice: env.RAID_PRACTICE === 'on',
       postSender: createPostSender({
         botToken: env.DISCORD_BOT_TOKEN,
         fetch: (input, init) => fetch(input, init),

@@ -1,11 +1,14 @@
 import * as v from 'valibot';
 import type { Outcome } from './collection';
-import { errorResponse, json, readJsonBody, type Routes } from './http';
+import { errorResponse, json, readJsonBody, readLimitedText, type Routes } from './http';
 import type { Raid } from './raid';
 import {
+  AbilityBodySchema,
+  LiveActionBodySchema,
   OptOutBodySchema,
   PlacementBodySchema,
   ReplayParamsSchema,
+  RevealSeenBodySchema,
   TeamBodySchema,
   UnplaceBodySchema,
 } from './raid-schemas';
@@ -32,6 +35,19 @@ async function parseBody<S extends v.GenericSchema>(
   if (raw === undefined) return undefined;
   const parsed = v.safeParse(schema, raw);
   return parsed.success ? parsed.output : undefined;
+}
+
+/** A POST that takes no payload: no body, or an empty JSON object. Anything else is invalid. */
+async function hasNoPayload(request: Request): Promise<boolean> {
+  const raw = await readLimitedText(request, MAX_BODY_BYTES);
+  if (raw === null) return false;
+  if (raw.trim() === '') return true;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return !Array.isArray(parsed) && v.safeParse(v.strictObject({}), parsed).success;
+  } catch {
+    return false;
+  }
 }
 
 const invalidBody = (): Response => errorResponse('invalid_body', 400);
@@ -80,6 +96,47 @@ export const raidRoutes: Routes<RaidRouteContext> = {
       const outcome = core.raid.setOptOut(user.id, tz, body.optOut);
       if (!outcome.ok) return failure(outcome);
       return json(core.raid.view(user.id, tz));
+    },
+  },
+  '/api/raid/ability': {
+    PUT: async (request, { user, core }) => {
+      const body = await parseBody(request, AbilityBodySchema);
+      if (body === undefined) return invalidBody();
+      const tz = core.timezone();
+      const outcome = core.raid.setAbility(user.id, tz, body.abilityId);
+      if (!outcome.ok) return failure(outcome);
+      return json(core.raid.view(user.id, tz));
+    },
+  },
+  '/api/raid/live': {
+    GET: (_request, { user, core }) => json(core.raid.liveSnapshot(user.id, core.timezone())),
+  },
+  '/api/raid/live/action': {
+    POST: async (request, { user, core }) => {
+      const body = await parseBody(request, LiveActionBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = core.raid.liveAction(user.id, core.timezone(), body);
+      if (!outcome.ok) return failure(outcome);
+      return json(outcome.value);
+    },
+  },
+  '/api/raid/reveal-seen': {
+    POST: async (request, { user, core }) => {
+      const body = await parseBody(request, RevealSeenBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = core.raid.markRevealSeen(user.id, body.week);
+      if (!outcome.ok) return failure(outcome);
+      return json(core.raid.view(user.id, core.timezone()));
+    },
+  },
+  '/api/raid/practice': {
+    POST: async (request, { user, core }) => {
+      // Off (production, local): the route does not exist.
+      if (!core.raid.practiceEnabled()) return errorResponse('not_found', 404);
+      if (!(await hasNoPayload(request))) return invalidBody();
+      const outcome = core.raid.startPractice(user.id, core.timezone());
+      if (!outcome.ok) return failure(outcome);
+      return json(outcome.value);
     },
   },
   '/api/raid/replay/:week/:party/:phase': {
