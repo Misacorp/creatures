@@ -150,7 +150,6 @@ export function Raid({ creatures }: { creatures: Creature[] }) {
       <Replay
         view={view}
         phase={replay}
-        myCreatureIds={creatures.map((c) => c.id)}
         onClose={() => {
           setReplay(null);
         }}

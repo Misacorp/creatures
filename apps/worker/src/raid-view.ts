@@ -334,8 +334,11 @@ export interface ReplayView {
   boss: { id: string; name: string };
   rounds: number;
   cleared: boolean;
+  bossHpMax: number;
   bossHpStart: number;
   bossHpEnd: number;
+  /** The caller's opaque owner key in this fight (see `row[].owner`), or null if they were not in it. */
+  you: string | null;
   /** The fighting row, left to right (guests included). */
   row: {
     position: number;
@@ -360,6 +363,7 @@ export interface ReplayView {
  */
 export function buildReplayView(
   sql: SqlStorage,
+  userId: string,
   weekId: string,
   party: number,
   phase: RaidPhase,
@@ -389,8 +393,10 @@ export function buildReplayView(
     boss: { id: input.boss.id, name: input.boss.name },
     rounds: result.rounds,
     cleared: result.cleared,
+    bossHpMax: summary.bossHpMax,
     bossHpStart: result.bossHpStart,
     bossHpEnd: result.bossHpEnd,
+    you: summary.members.find((m) => m.userId === userId)?.alias ?? null,
     row: input.row.map((s, position) => ({
       position,
       id: s.id,

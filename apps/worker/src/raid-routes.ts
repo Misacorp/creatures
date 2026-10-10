@@ -83,7 +83,7 @@ export const raidRoutes: Routes<RaidRouteContext> = {
     },
   },
   '/api/raid/replay/:week/:party/:phase': {
-    GET: (_request, { params, core }) => {
+    GET: (_request, { params, user, core }) => {
       const parsed = v.safeParse(ReplayParamsSchema, {
         week: params['week'],
         party: params['party'],
@@ -91,7 +91,7 @@ export const raidRoutes: Routes<RaidRouteContext> = {
       });
       if (!parsed.success) return errorResponse('invalid_id', 400);
       const { week, party, phase } = parsed.output;
-      const replay = core.raid.replay(week, party, phase);
+      const replay = core.raid.replay(user.id, week, party, phase);
       if (replay === null) return errorResponse('not_found', 404);
       return json(replay);
     },

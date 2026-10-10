@@ -265,13 +265,14 @@ export interface Recap {
   hint: string;
 }
 
-/** The ids of the replay row's creatures that belong to the player (their creature ids). */
-export function mineInRow(
-  row: readonly ReplayRowEntry[],
-  myCreatureIds: readonly string[],
-): string[] {
-  const mine = new Set(myCreatureIds);
-  return row.filter((r) => mine.has(r.id)).map((r) => r.id);
+/**
+ * The ids of the replay row's creatures that belong to the player, by their owner key in this fight
+ * (`ReplayView.you`). With no key (the player was not in the fight) nothing is theirs; guests
+ * (owner null) never are.
+ */
+export function mineInRow(row: readonly ReplayRowEntry[], you: string | null): string[] {
+  if (you === null) return [];
+  return row.filter((r) => r.owner === you).map((r) => r.id);
 }
 
 /** What the player's own creatures did in this fight, and one concrete thing to try next. */

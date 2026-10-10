@@ -89,8 +89,10 @@ const replay = {
   boss: { id: 'tidal-colossus', name: 'Tidal Colossus' },
   rounds: 1,
   cleared: false,
+  bossHpMax: 100,
   bossHpStart: 100,
   bossHpEnd: 90,
+  you: 'm1',
   row: [
     {
       position: 0,
@@ -112,7 +114,22 @@ const replay = {
 
 describe('parseReplayView', () => {
   it('accepts the server shape', () => {
-    expect(parseReplayView(replay).events).toHaveLength(2);
+    const parsed = parseReplayView(replay);
+    expect(parsed.events).toHaveLength(2);
+    expect(parsed.you).toBe('m1');
+    expect(parsed.bossHpMax).toBe(100);
+  });
+
+  it('accepts a caller who was not in the fight (you is null)', () => {
+    expect(parseReplayView({ ...replay, you: null }).you).toBeNull();
+  });
+
+  it('refuses a missing or badly typed you or bossHpMax', () => {
+    expect(() => parseReplayView({ ...replay, you: undefined })).toThrow();
+    expect(() => parseReplayView({ ...replay, bossHpMax: undefined })).toThrow();
+    expect(() => parseReplayView({ ...replay, you: 1 })).toThrow();
+    expect(() => parseReplayView({ ...replay, bossHpMax: 100.5 })).toThrow();
+    expect(() => parseReplayView({ ...replay, bossHpMax: '100' })).toThrow();
   });
 
   it('refuses unknown event types and bad names', () => {

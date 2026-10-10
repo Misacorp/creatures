@@ -301,9 +301,20 @@ describe('keyMoments', () => {
 });
 
 describe('personalRecap', () => {
-  it('finds my creatures by id', () => {
-    expect(mineInRow(row, ['a', 'b', 'not-in-fight'])).toEqual(['a', 'b']);
-    expect(mineInRow(row, [])).toEqual([]);
+  it('finds my creatures by my owner key in the fight', () => {
+    expect(mineInRow(row, 'm1')).toEqual(['a', 'b']);
+    expect(mineInRow(row, 'm2')).toEqual(['x']);
+    expect(mineInRow(row, 'm9')).toEqual([]);
+  });
+
+  it('treats nothing as mine when I was not in the fight, and never a guest', () => {
+    expect(mineInRow(row, null)).toEqual([]);
+    const withGuest: ReplayRowEntry[] = [
+      ...row,
+      { ...(row[0] as ReplayRowEntry), id: 'g', owner: null },
+    ];
+    expect(mineInRow(withGuest, null)).toEqual([]);
+    expect(mineInRow(withGuest, 'm1')).toEqual(['a', 'b']);
   });
 
   it('adds up damage, setup credit and reactions for my creatures only', () => {

@@ -113,8 +113,11 @@ export interface ReplayView {
   boss: { id: string; name: string };
   rounds: number;
   cleared: boolean;
+  bossHpMax: number;
   bossHpStart: number;
   bossHpEnd: number;
+  /** The caller's opaque owner key in this fight (see `ReplayRowEntry.owner`), or null if not in it. */
+  you: string | null;
   row: ReplayRowEntry[];
   events: FightEvent[];
   names: EventNames;
@@ -342,8 +345,10 @@ export function parseReplayView(data: unknown): ReplayView {
     !(isRecord(data['boss']) && isStr(data['boss']['id']) && isStr(data['boss']['name'])) ||
     !isInt(data['rounds']) ||
     !isBool(data['cleared']) ||
+    !isInt(data['bossHpMax']) ||
     !isInt(data['bossHpStart']) ||
     !isInt(data['bossHpEnd']) ||
+    !isNullableStr(data['you']) ||
     !isArrayOf(data['row'], isReplayRow) ||
     !isArrayOf(data['events'], isEvent) ||
     !isEventNames(data['names'])

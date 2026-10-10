@@ -10,6 +10,7 @@ import {
   rows,
   runRaid,
   seedPlayer,
+  storedRuns,
   type Seeded,
 } from './raid-helpers';
 
@@ -536,6 +537,71 @@ describe('GET /api/raid/replay/:week/:party/:phase', () => {
       for (const id of [me.id, ...['2', '3'].map((n) => `8${n.padStart(17, '0')}`)]) {
         expect(text).not.toContain(id);
       }
+    });
+  });
+
+  it('names the caller by their owner key, and has the boss maximum HP', async () => {
+    await runRaid(async (ctx) => {
+      const me = seedPlayer(ctx, 1, { name: 'Misa' });
+      const bobPlayer = seedPlayer(ctx, 2, { name: 'Bob' });
+      seedPlayer(ctx, 3, { name: 'Cy' });
+      ctx.core.raid.currentWeek(HELSINKI);
+      ctx.clock.t = Date.parse('2027-01-15T12:00:00Z');
+      const secret = await login(ctx, me);
+      const res = await api<ReplayView>(ctx, secret, 'GET', '/api/raid/replay/2027-W02/1/phase1');
+      expect(res.status).toBe(200);
+      const run = storedRuns(ctx.sql)[0];
+      const alias = run?.summary.members.find((m) => m.userId === me.id)?.alias;
+      expect(alias).toMatch(/^m\d+$/);
+      expect(res.body.you).toBe(alias);
+      expect(res.body.names.players?.[res.body.you as string]).toBe('Misa');
+      expect(res.body.row.some((r) => r.owner === res.body.you)).toBe(true);
+      // The same source as the raid view's phase result.
+      const view = await api(ctx, secret, 'GET', '/api/raid');
+      const phase1 = view.body.party?.results.find((r) => r.phase === 'phase1');
+      expect(res.body.bossHpMax).toBe(phase1?.bossHpMax);
+      expect(Number.isInteger(res.body.bossHpMax)).toBe(true);
+      expect(res.body.bossHpMax).toBeGreaterThan(0);
+      // Another member sees their own key.
+      const bobSecret = await login(ctx, bobPlayer);
+      const bob = await api<ReplayView>(
+        ctx,
+        bobSecret,
+        'GET',
+        '/api/raid/replay/2027-W02/1/phase1',
+      );
+      expect(bob.body.you).not.toBe(alias);
+      expect(bob.body.names.players?.[bob.body.you as string]).toBe('Bob');
+    });
+  });
+
+  it('has no owner key for a guild member who was not in that fight', async () => {
+    await runRaid(async (ctx) => {
+      // 16 players do not fit one party of at most 15, so there are two parties.
+      const players = Array.from({ length: 16 }, (_, i) => seedPlayer(ctx, i + 1));
+      ctx.core.raid.currentWeek(HELSINKI);
+      ctx.clock.t = Date.parse('2027-01-15T12:00:00Z');
+      const outsider = players.find((p) => ctx.core.raid.view(p.id, HELSINKI).you.party === 2);
+      const insider = players.find((p) => ctx.core.raid.view(p.id, HELSINKI).you.party === 1);
+      expect(outsider).toBeDefined();
+      expect(insider).toBeDefined();
+      const outsiderSecret = await login(ctx, outsider as Seeded);
+      const res = await api<ReplayView>(
+        ctx,
+        outsiderSecret,
+        'GET',
+        '/api/raid/replay/2027-W02/1/phase1',
+      );
+      expect(res.status).toBe(200);
+      expect(res.body.you).toBeNull();
+      const insiderSecret = await login(ctx, insider as Seeded);
+      const own = await api<ReplayView>(
+        ctx,
+        insiderSecret,
+        'GET',
+        '/api/raid/replay/2027-W02/1/phase1',
+      );
+      expect(own.body.you).toMatch(/^m\d+$/);
     });
   });
 

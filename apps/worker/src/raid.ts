@@ -501,8 +501,8 @@ export class Raid {
   }
 
   /** A resolved phase's stored events, or null if it has not resolved. */
-  replay(weekId: string, party: number, phase: RaidPhase): ReplayView | null {
-    return buildReplayView(this.sql, weekId, party, phase);
+  replay(userId: string, weekId: string, party: number, phase: RaidPhase): ReplayView | null {
+    return buildReplayView(this.sql, userId, weekId, party, phase);
   }
 
   /** Event times of a week in the guild's timezone. */

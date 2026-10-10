@@ -18,12 +18,10 @@ import {
 export function Replay({
   view,
   phase,
-  myCreatureIds,
   onClose,
 }: {
   view: RaidView;
   phase: RaidPhaseId;
-  myCreatureIds: readonly string[];
   onClose: () => void;
 }) {
   const [data, setData] = useState<ReplayView | null>(null);
@@ -46,8 +44,6 @@ export function Replay({
     };
   }, [view.weekId, party, phase]);
 
-  const bossHpMax = view.party?.results.find((r) => r.phase === phase)?.bossHpMax;
-
   return (
     <section class="raid-section" aria-labelledby="replay-heading">
       <h3 id="replay-heading">Replay: {phaseName(phase)}</h3>
@@ -62,26 +58,12 @@ export function Replay({
         </p>
       )}
       {data === null && error === null && <p class="muted">Loading the replay...</p>}
-      {data !== null && (
-        <Player
-          data={data}
-          bossHpMax={bossHpMax ?? data.bossHpStart}
-          myCreatureIds={myCreatureIds}
-        />
-      )}
+      {data !== null && <Player data={data} />}
     </section>
   );
 }
 
-function Player({
-  data,
-  bossHpMax,
-  myCreatureIds,
-}: {
-  data: ReplayView;
-  bossHpMax: number;
-  myCreatureIds: readonly string[];
-}) {
+function Player({ data }: { data: ReplayView }) {
   const ends = beatEnds(data.events);
   const total = ends.length;
   const [beat, setBeat] = useState(0);
@@ -114,7 +96,7 @@ function Player({
   const step = stateAt(data.events, index, data.bossHpStart);
   const finished = beat >= total;
   const rowById = new Map(data.row.map((r) => [r.id, r]));
-  const mineIds = new Set(mineInRow(data.row, myCreatureIds));
+  const mineIds = new Set(mineInRow(data.row, data.you));
   const order = turnOrderOfRound(data.events, Math.max(1, step.round));
   const markName = step.mark === null ? null : (data.names.marks?.[step.mark] ?? step.mark);
   const ownerName = (owner: string | null): string =>
@@ -170,9 +152,9 @@ function Player({
       <h4>Boss</h4>
       <p>
         <label for="replay-hp">
-          {data.boss.name} HP: {step.bossHp} / {bossHpMax}
+          {data.boss.name} HP: {step.bossHp} / {data.bossHpMax}
         </label>
-        <progress id="replay-hp" class="hp-bar" max={bossHpMax} value={step.bossHp} />
+        <progress id="replay-hp" class="hp-bar" max={data.bossHpMax} value={step.bossHp} />
       </p>
       <p>
         Mark:{' '}
