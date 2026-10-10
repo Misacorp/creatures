@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { content } from '@creatures/game';
+import { RULES, content } from '@creatures/game';
 import { simulateFight } from '../src/index';
 import { eventsOf, input, inRound, rng, run, slot } from './helpers';
 
@@ -322,17 +322,30 @@ describe('ending and clearing', () => {
 
   it('applies the clear thresholds to cumulative loss and carries the pool across phases', () => {
     const one = (atk: number) => [slot('a', { atk })]; // tide into tide: atk per round
-    const pool = { max: 1000, current: 1000 };
-    // Phase 1: 10 rounds x 30 = 300 = exactly 30% -> cleared; 29 per round is not.
-    const p1 = run(one(30), { phase: 'phase1', bossHpPool: pool });
-    expect(p1).toMatchObject({ rounds: 10, bossHpEnd: 700, cleared: true });
-    expect(run(one(29), { phase: 'phase1', bossHpPool: pool }).cleared).toBe(false);
-    // Phase 2 starts from what phase 1 left: needs 600 lost in total.
-    const p2 = run(one(30), { phase: 'phase2', bossHpPool: { max: 1000, current: p1.bossHpEnd } });
-    expect(p2).toMatchObject({ bossHpStart: 700, bossHpEnd: 400, cleared: true });
-    expect(run(one(29), { phase: 'phase2', bossHpPool: { max: 1000, current: 700 } }).cleared).toBe(
-      false,
-    );
+    const need = (id: string) => RULES.raid.phases.find((p) => p.id === id)!.clearAtLossBp;
+    const max = 1000;
+    // Per-round attack that loses exactly the phase threshold over 10 rounds.
+    const p1Atk = (need('phase1') * max) / 10_000 / 10;
+    const p2Atk = ((need('phase2') - need('phase1')) * max) / 10_000 / 10;
+    expect(Number.isInteger(p1Atk) && Number.isInteger(p2Atk)).toBe(true);
+    const pool = { max, current: max };
+    // Phase 1: exactly the threshold -> cleared; one less per round is not.
+    const p1 = run(one(p1Atk), { phase: 'phase1', bossHpPool: pool });
+    expect(p1).toMatchObject({ rounds: 10, bossHpEnd: max - p1Atk * 10, cleared: true });
+    expect(run(one(p1Atk - 1), { phase: 'phase1', bossHpPool: pool }).cleared).toBe(false);
+    // Phase 2 starts from what phase 1 left and needs the cumulative phase 2 threshold.
+    const p2 = run(one(p2Atk), {
+      phase: 'phase2',
+      bossHpPool: { max, current: p1.bossHpEnd },
+    });
+    expect(p2).toMatchObject({
+      bossHpStart: p1.bossHpEnd,
+      bossHpEnd: p1.bossHpEnd - p2Atk * 10,
+      cleared: true,
+    });
+    expect(
+      run(one(p2Atk - 1), { phase: 'phase2', bossHpPool: { max, current: p1.bossHpEnd } }).cleared,
+    ).toBe(false);
     // Finale: only a dead boss counts, and it runs boss.finaleRounds rounds (12).
     const f = run(one(30), { phase: 'finale', bossHpPool: { max: 1000, current: 400 } });
     expect(f).toMatchObject({ rounds: 12, bossHpEnd: 40, cleared: false });

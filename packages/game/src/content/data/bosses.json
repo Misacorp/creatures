@@ -24,7 +24,7 @@
     "id": "cinder-wyrm",
     "name": "Cinder Wyrm",
     "element": "ember",
-    "baseHp": 8500,
+    "baseHp": 6000,
     "baseAtk": 30,
     "turnOrder": "speed",
     "gimmicks": [

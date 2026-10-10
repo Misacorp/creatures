@@ -67,8 +67,8 @@ export const RULES = {
      * (cumulative over the week). The finale's round count comes from the boss (`finaleRounds`).
      */
     phases: [
-      { id: 'phase1', rounds: 10, clearAtLossBp: 3_000 },
-      { id: 'phase2', rounds: 10, clearAtLossBp: 6_000 },
+      { id: 'phase1', rounds: 10, clearAtLossBp: 2_000 },
+      { id: 'phase2', rounds: 10, clearAtLossBp: 4_500 },
       { id: 'finale', rounds: 12, clearAtLossBp: 10_000 },
     ],
     scaling: {

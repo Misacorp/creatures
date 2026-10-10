@@ -68,7 +68,7 @@ Gimmicks are data, built from effect operations. Examples for the four MVP bosse
 
 - The boss has **one HP pool for the whole week**: Phase 1, Phase 2 and the finale all chip away at it.
 - **Phase 1** (Fri 13:37, auto): 10 rounds. **Phase 2** (Sat 13:37, auto): 10 rounds. **Finale** (Sun 20:00, live): 12 rounds of about 10 seconds (2 minutes, configurable per boss, at most 5 minutes) **[Misa]**.
-- **Clear thresholds** (config): Phase 1 is cleared when the pool is down 30%; Phase 2 when it's down 60%; the finale when the boss is defeated.
+- **Clear thresholds** (config): Phase 1 is cleared when the pool is down 20%; Phase 2 when it's down 45%; the finale when the boss is defeated (tuned from 30% / 60% by the first simulator pass).
 - **Phase 2 adaptation:** after Phase 1 the boss gains one counter, chosen by a plain-language rule shown to players. Example: "the reaction you used most is resisted 50%", or "the element that dealt most damage is resisted 25%". It is stored in the event log.
 - **Finale abilities:** before the finale, each signed-up player picks one ability from a small content-defined list, each with a **default round** **[Misa]**:
   - **Rally:** all creatures +40% damage this round. Default round 6.

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { RULES } from '@creatures/game';
 import { simulateFight, type FightInput, type FightResult } from '../src/index';
 import { randomInput, rng } from './helpers';
 
@@ -85,7 +86,7 @@ function checkResult(inp: FightInput, r: FightResult): void {
     }
   }
   const lossBp = ((inp.bossHpPool.max - r.bossHpEnd) * 10_000) / inp.bossHpPool.max;
-  const need = { phase1: 3000, phase2: 6000, finale: 10_000 }[inp.phase];
+  const need = RULES.raid.phases.find((p) => p.id === inp.phase)!.clearAtLossBp;
   expect(r.cleared).toBe(lossBp >= need);
   // Knocked-out creatures never act afterwards.
   const out = new Map<string, number>();
