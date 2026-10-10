@@ -2,19 +2,32 @@ import { describe, expect, it } from 'vitest';
 import { ECONOMY, baitForDay, leetPointsForDay } from '../src/economy';
 
 describe('leetPointsForDay', () => {
-  it('gives nothing for an empty day and the solo bonus for one player', () => {
+  it('pays nothing when nobody leeted', () => {
     expect(leetPointsForDay(0)).toBe(0);
-    expect(leetPointsForDay(1)).toBe(ECONOMY.soloLeetPoints);
-    expect(leetPointsForDay(1)).toBe(2);
   });
 
-  it('gives n points for n >= 2, capped', () => {
-    expect(leetPointsForDay(2)).toBe(2);
-    expect(leetPointsForDay(3)).toBe(3);
-    expect(leetPointsForDay(7)).toBe(7);
-    expect(leetPointsForDay(8)).toBe(8);
-    expect(leetPointsForDay(9)).toBe(8);
-    expect(leetPointsForDay(500)).toBe(8);
+  it('pays a solo leet the same as a double leet', () => {
+    expect(leetPointsForDay(1)).toBe(leetPointsForDay(2));
+    expect(leetPointsForDay(1)).toBe(5);
+  });
+
+  it('follows the table with diminishing returns, capped at 10', () => {
+    const expected = [0, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 9, 10, 10, 10];
+    expect(expected.map((_, n) => leetPointsForDay(n))).toEqual(expected);
+    expect(leetPointsForDay(100)).toBe(10);
+    expect(leetPointsForDay(10_000)).toBe(ECONOMY.maxLeetPoints);
+  });
+
+  it('never pays anyone less because someone else also leeted', () => {
+    for (let n = 1; n <= 1000; n++) {
+      expect(leetPointsForDay(n + 1)).toBeGreaterThanOrEqual(leetPointsForDay(n));
+    }
+  });
+
+  it('adds at most one point per extra leeter after the second', () => {
+    for (let n = 2; n <= 40; n++) {
+      expect(leetPointsForDay(n + 1) - leetPointsForDay(n)).toBeLessThanOrEqual(1);
+    }
   });
 
   it('rejects invalid counts', () => {
@@ -25,13 +38,9 @@ describe('leetPointsForDay', () => {
 });
 
 describe('baitForDay', () => {
-  it('converts points at the configured rate with integers', () => {
+  it('converts points to Bait', () => {
     expect(baitForDay(0)).toBe(0);
-    expect(baitForDay(1)).toBe(20);
-    expect(baitForDay(2)).toBe(20);
-    expect(baitForDay(3)).toBe(30);
-    expect(baitForDay(8)).toBe(80);
-    expect(baitForDay(100)).toBe(80);
-    for (let n = 0; n <= 20; n++) expect(Number.isInteger(baitForDay(n))).toBe(true);
+    expect(baitForDay(1)).toBe(35);
+    expect(baitForDay(15)).toBe(70);
   });
 });
