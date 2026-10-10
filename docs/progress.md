@@ -16,20 +16,22 @@ Where the project is against the plan. Newest state at the top of each section. 
 
 ## Now
 
-- `m4-raids` (local, in `/home/user/creatures`): M4a committed and merged with main (migration 7 = leet_sync source, 8 = raid, 9 = Discord posts in M4b).
-- In flight: M4b (Discord raid posts, `apps/worker`), M4c (Raid tab + replay viewer, `apps/activity`).
-- Then: merge main (PR #4 vitest timeouts) into `m4-raids`, review both agents' work, full checks, push, open one M4 PR, update Misa's overnight page.
+- `m4-raids` (pushed; staging): M4a server, M4b Discord posts, M4c Raid tab all committed, reviewed, main merged in (migrations: 7 = leet_sync source, 8 = raid, 9 = Discord posts).
+- In flight: replay API follow-up (`you` alias + `bossHpMax` in the replay, on `m4-raids` working tree); balance pass on local branch `balance-2` in an agent worktree.
+- Then: merge `balance-2` into `m4-raids`, full checks incl. `pnpm sim`, open one M4 PR to main.
 
 ## Next
 
-1. M4 PR green on staging.
-2. Balance pass with the simulator now that raids are real (Phase 2 / finale too easy, 15-player raids too easy, guards never picked, casual progression slow, hard pity too common).
-3. M5: live Sunday finale over WebSockets on the guild Durable Object, manual ability timing, loot reveal.
-4. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
+1. M4 PR green; Misa tests on staging.
+2. M5: live Sunday finale over WebSockets on the guild Durable Object, manual ability timing, loot reveal.
+3. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
+4. Later: an admin setting for the raid post channel (today it is the channel the Activity was last launched from).
 
 ## Open questions for Misa
 
-(Also on the overnight page.) None blocking right now.
+(Also on the overnight page.)
+
+- Raid posts go to the channel the Activity was last launched from. OK, or should a fixed channel be set? The bot needs View Channel + Send Messages there.
 
 ## Notes for future agents
 
