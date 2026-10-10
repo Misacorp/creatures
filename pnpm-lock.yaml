@@ -191,6 +191,9 @@ catalogs:
     typescript-eslint:
       specifier: 8.71.0
       version: 8.71.0
+    valibot:
+      specifier: 1.5.0
+      version: 1.5.0
     vite:
       specifier: 8.3.2
       version: 8.3.2
@@ -244,6 +247,10 @@ importers:
         version: 8.3.2(esbuild@0.28.1)
 
   apps/worker:
+    dependencies:
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@6.0.3)
     devDependencies:
       '@cloudflare/vitest-plugin':
         specifier: 'catalog:'
@@ -1707,6 +1714,14 @@ packages:
   uuid@11.1.1:
     resolution: {integrity: sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==}
     hasBin: true
+
+  valibot@1.5.0:
+    resolution: {integrity: sha512-nil6AkP2TChWL43Z5uJ6GTxX01CUA+g8LWUM+N/rB9NBbkUMaUsi9PUNzlUPgoKASgmx9f7eGOYpJ04/fSa6FQ==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   vite-prerender-plugin@0.5.14:
     resolution: {integrity: sha512-X2w9AS1OhwEUec9HSryGAmEnEQJGhW6eFoiCVJv8BfOTVpM8SOjk75cEw/IC28APDHZudeIRbP8Sp7wfABq+Aw==}
@@ -3184,6 +3199,10 @@ snapshots:
       punycode: 2.3.1
 
   uuid@11.1.1: {}
+
+  valibot@1.5.0(typescript@6.0.3):
+    optionalDependencies:
+      typescript: 6.0.3
 
   vite-prerender-plugin@0.5.14(vite@8.3.2(esbuild@0.28.1)):
     dependencies:

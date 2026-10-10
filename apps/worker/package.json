@@ -10,6 +10,9 @@
     "test": "vitest run",
     "cf-typegen": "wrangler types --strict-vars=false"
   },
+  "dependencies": {
+    "valibot": "catalog:"
+  },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "typescript": "catalog:",

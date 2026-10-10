@@ -37,13 +37,17 @@ describe('GET /api/config', () => {
   });
 });
 
-describe('unknown API routes', () => {
-  it.each(['/api/nope', '/api/health/', '/api', '/api/constructor'])('404s on %s', async (path) => {
-    const res = await call(path);
-    expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ error: 'not_found' });
-    expectApiHeaders(res);
-  });
+describe('non-public API routes', () => {
+  // Everything that is not a public route needs a session; 404 only happens after authentication.
+  it.each(['/api/nope', '/api/health/', '/api', '/api/constructor', '/api/me'])(
+    '401s without a session on %s',
+    async (path) => {
+      const res = await call(path);
+      expect(res.status).toBe(401);
+      expect(await res.json()).toEqual({ error: 'invalid_session' });
+      expectApiHeaders(res);
+    },
+  );
 });
 
 describe('method handling', () => {

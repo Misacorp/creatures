@@ -58,22 +58,22 @@ Sources: pnpm.io/supply-chain-security · docs.github.com Dependabot options ref
 - 🔜 M1+ **Server-authoritative.** The client sends intents ("start expedition with creature X at tier Y"); the server validates and computes everything. User identity comes from the session, never the request body.
 - 🔜 M1+ **RNG:** `crypto.getRandomValues` drawn server-side at the moment of the roll; integer ranges use rejection sampling (no modulo bias). Raid fights draw a fresh 128-bit seed when the phase resolves (never before), run the deterministic engine, and store the seed so replays are exact. Content data being public doesn't help predict outcomes. `Math.random` is banned by lint.
 - 🔜 M1 **Ledger:** append-only, integer amounts, `CHECK (balance >= 0)`. Every spend has a client-generated idempotency key with a `UNIQUE` constraint; the check, debit and grant run in one synchronous SQLite transaction inside the guild's Durable Object (no `await` between check and write); retries return the stored result.
-- 🔜 M1 **Rate limiting:** per-player token bucket inside the Durable Object (exact), plus a coarse per-IP limit at the edge.
+- ✅ M1 **Rate limiting:** per-player token bucket inside the guild's Durable Object (30 burst, 1/s), plus a best-effort per-activity-instance limit on login in the Worker. 🔜 A coarse edge rule (Cloudflare WAF) if abuse appears.
 - 🔜 M1 Constant-time comparison (`crypto.subtle.timingSafeEqual`) for any secret or token comparison.
 
 Sources: developers.cloudflare.com/workers/runtime-apis/web-crypto · developers.cloudflare.com/durable-objects
 
 ## 6. Discord identity and sessions
 
-- 🔜 M1 Flow: the SDK's `authorize()` gives a code → the Worker exchanges it at `POST https://discord.com/api/oauth2/token` (form-encoded, client secret server-side only) → the Worker calls `GET /users/@me` to learn who the player really is → the Worker checks the activity instance exists and the user is in it (`GET /applications/{id}/activity-instances/{instance_id}`, bot token) → the Worker issues **its own session token**.
-- 🔜 M1 Session token: 32 random bytes, opaque; only its SHA-256 hash is stored server-side, bound to user ID and guild ID; short idle expiry with sliding renewal and an absolute maximum. Held **in memory only** in the iframe and sent as `Authorization: Bearer` (and in the WebSocket handshake). Never in URLs.
-- 🔜 M1 The Discord access token is used once to identify the player and returned to the client only for the SDK's `authenticate()` call; it isn't stored.
+- ✅ M1 Flow: the SDK's `authorize()` gives a code → the Worker exchanges it at `POST https://discord.com/api/oauth2/token` (form-encoded, client secret server-side only) → the Worker calls `GET /users/@me` to learn who the player really is → the Worker checks the activity instance exists and the user is in it (`GET /applications/{id}/activity-instances/{instance_id}`, bot token) → the Worker issues **its own session token**.
+- ✅ M1 Session token `s1.<guildId>.<secret>.<mac>`: the secret is 32 random bytes and only its SHA-256 hash is stored, in the guild's Durable Object. The MAC is HMAC-SHA256 with a key derived (HKDF) from the Discord client secret; the Worker verifies it in constant time before addressing any Durable Object, so forged guild IDs can't create or wake objects. Idle expiry 1 h (sliding), absolute 12 h, at most 10 sessions per player. Rotating the Discord client secret logs everyone out. Held **in memory only** in the iframe and sent as `Authorization: Bearer` (and in the WebSocket handshake). Never in URLs.
+- ✅ M1 The Discord access token is used once to identify the player and returned to the client only for the SDK's `authenticate()` call; it isn't stored.
 
 Sources: docs.discord.com/developers/activities/building-an-activity · docs.discord.com/developers/activities/development-guides/networking · docs.discord.com/developers/resources/application (activity instances)
 
 ## 7. Input handling
 
-- 🔜 M1 Every request body, query and WebSocket message is validated with a strict **Valibot** schema (unknown keys rejected, size limits).
+- ✅ M1 Every request body is validated with a strict **Valibot** schema (unknown keys rejected, 4 KB body cap); Discord API responses are validated too. The same applies to WebSocket messages when they arrive (M5).
 - 🔜 M2 **Nicknames:** NFKC-normalise, trim, collapse whitespace; 1–20 code points; reject control (`\p{Cc}`), format (`\p{Cf}`, which includes zero-width and bidi override characters) and unassigned (`\p{Cn}`) characters. Server-side; client checks are UX only.
 - ✅ Rendering: JSX text only. `dangerouslySetInnerHTML` and `innerHTML` are banned by lint.
 - 🔜 M4 **Posting to Discord:** escape markdown in any player text and always send `allowed_mentions: { parse: [] }` (otherwise bot messages parse `@everyone`, roles and users by default). Messages capped at 2,000 characters.

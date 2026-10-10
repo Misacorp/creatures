@@ -1,19 +1,22 @@
 import { DiscordSDK } from '@discord/embedded-app-sdk';
 import { useEffect, useState } from 'preact/hooks';
-import { fetchConfig, fetchHealth, type AppConfig } from './api';
-
-interface DiscordInfo {
-  guildId: string | null;
-  channelId: string | null;
-  instanceId: string;
-}
+import {
+  ApiError,
+  createSession,
+  fetchConfig,
+  fetchHealth,
+  fetchMe,
+  type AppConfig,
+  type Me,
+} from './api';
 
 type Status<T> =
   { state: 'loading' } | { state: 'error'; message: string } | { state: 'ok'; value: T };
 
 interface Boot {
   config: AppConfig;
-  discord: DiscordInfo | null;
+  /** Null when running outside Discord (no sign-in possible). */
+  me: Me | null;
 }
 
 // Discord adds frame_id (among others) to the URL when it launches an Activity.
@@ -22,17 +25,29 @@ const insideDiscord = new URLSearchParams(window.location.search).has('frame_id'
 async function boot(): Promise<Boot> {
   const config = await fetchConfig();
   if (!insideDiscord) {
-    return { config, discord: null };
+    return { config, me: null };
   }
   const sdk = new DiscordSDK(config.discordClientId);
   await sdk.ready();
-  return {
-    config,
-    discord: { guildId: sdk.guildId, channelId: sdk.channelId, instanceId: sdk.instanceId },
-  };
+  const { code } = await sdk.commands.authorize({
+    client_id: config.discordClientId,
+    response_type: 'code',
+    state: '',
+    prompt: 'none',
+    scope: ['identify'],
+  });
+  // The server decides the guild and verifies the player; the client only passes the code and the
+  // instance id.
+  const session = await createSession(code, sdk.instanceId);
+  // Discord requires authenticate() with the access token to unlock the rest of the SDK.
+  await sdk.commands.authenticate({ access_token: session.accessToken });
+  return { config, me: await fetchMe() };
 }
 
 function errorMessage(err: unknown): string {
+  if (err instanceof ApiError && err.code === 'guild_required') {
+    return 'Launch Leet Creatures from a server channel, not a DM.';
+  }
   return err instanceof Error ? err.message : String(err);
 }
 
@@ -85,18 +100,16 @@ export function App() {
       {bootStatus.state === 'error' && <p class="error">Failed to start: {bootStatus.message}</p>}
       {bootStatus.state === 'ok' && (
         <>
-          <p class="hello">Hello from {bootStatus.value.config.environment}</p>
-          {bootStatus.value.discord === null && (
+          {bootStatus.value.me === null ? (
             <p>This is a Discord Activity. Launch it from Discord to play.</p>
+          ) : (
+            <p class="hello">Signed in as {bootStatus.value.me.user.displayName}</p>
           )}
           <dl>
+            <Row label="Environment" value={bootStatus.value.config.environment} />
             <Row label="Server version" value={bootStatus.value.config.version} />
-            {bootStatus.value.discord !== null && (
-              <>
-                <Row label="Guild ID" value={bootStatus.value.discord.guildId ?? '(none)'} />
-                <Row label="Channel ID" value={bootStatus.value.discord.channelId ?? '(none)'} />
-                <Row label="Instance ID" value={bootStatus.value.discord.instanceId} />
-              </>
+            {bootStatus.value.me !== null && (
+              <Row label="Guild ID" value={bootStatus.value.me.guildId} />
             )}
           </dl>
         </>

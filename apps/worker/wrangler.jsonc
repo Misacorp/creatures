@@ -10,6 +10,10 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   },
+  "durable_objects": { "bindings": [{ "name": "GUILD_WORLD", "class_name": "GuildWorld" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GuildWorld"] }],
+  // Secrets are set by CI (Cloudflare Worker secrets) or in .dev.vars locally; never committed.
+  "secrets": { "required": ["DISCORD_CLIENT_SECRET", "DISCORD_BOT_TOKEN"] },
   // VERSION is overridden at deploy time: wrangler deploy --var VERSION:<git sha>
   "vars": {
     "ENVIRONMENT": "local",
@@ -19,6 +23,10 @@
   "env": {
     "staging": {
       "name": "creatures-staging",
+      "durable_objects": { "bindings": [{ "name": "GUILD_WORLD", "class_name": "GuildWorld" }] },
+      "secrets": { "required": ["DISCORD_CLIENT_SECRET", "DISCORD_BOT_TOKEN"] },
+      "durable_objects": { "bindings": [{ "name": "GUILD_WORLD", "class_name": "GuildWorld" }] },
+      "secrets": { "required": ["DISCORD_CLIENT_SECRET", "DISCORD_BOT_TOKEN"] },
       "routes": [{ "pattern": "creatures-staging.misacorp.dev", "custom_domain": true }],
       "vars": {
         "ENVIRONMENT": "staging",
@@ -28,6 +36,10 @@
     },
     "production": {
       "name": "creatures",
+      "durable_objects": { "bindings": [{ "name": "GUILD_WORLD", "class_name": "GuildWorld" }] },
+      "secrets": { "required": ["DISCORD_CLIENT_SECRET", "DISCORD_BOT_TOKEN"] },
+      "durable_objects": { "bindings": [{ "name": "GUILD_WORLD", "class_name": "GuildWorld" }] },
+      "secrets": { "required": ["DISCORD_CLIENT_SECRET", "DISCORD_BOT_TOKEN"] },
       "routes": [{ "pattern": "creatures.misacorp.dev", "custom_domain": true }],
       "vars": {
         "ENVIRONMENT": "production",
