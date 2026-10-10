@@ -7,7 +7,7 @@ Where the project is against the plan. Newest state at the top of each section. 
 | Milestone | State |
 |---|---|
 | M0 foundation, CI, deploys | ✅ merged (PR #1) |
-| M1 Discord login, leet API, Bait ledger | ✅ merged (PR #1, #3). Real leet points live. #4 fixes a CI timeout that blocked the prod deploy of #3. |
+| M1 Discord login, leet API, Bait ledger | ✅ merged (PR #1, #3). Real leet points live in production (#4 fixed the CI timeout that blocked #3's deploy; prod runs 13081d4). |
 | M2 starters, expeditions, training, fusion | ✅ merged (PR #1) |
 | M3 combat engine, balance simulator | ✅ merged (PR #1). First tuning pass done; deeper tuning still open. |
 | M4 weekly raid | 🚧 branch `m4-raids`: M4a server ✅ committed; M4b Discord posts and M4c Raid tab in progress |
@@ -18,7 +18,7 @@ Where the project is against the plan. Newest state at the top of each section. 
 
 - `m4-raids` (local, in `/home/user/creatures`): M4a committed and merged with main (migration 7 = leet_sync source, 8 = raid, 9 = Discord posts in M4b).
 - In flight: M4b (Discord raid posts, `apps/worker`), M4c (Raid tab + replay viewer, `apps/activity`).
-- Then: review both, full checks, push, open one M4 PR, update the PR description and Misa's overnight page.
+- Then: merge main (PR #4 vitest timeouts) into `m4-raids`, review both agents' work, full checks, push, open one M4 PR, update Misa's overnight page.
 
 ## Next
 
