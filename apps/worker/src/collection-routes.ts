@@ -2,6 +2,7 @@ import * as v from 'valibot';
 import type { Collection, Outcome } from './collection';
 import {
   ClaimBodySchema,
+  EvolveBodySchema,
   IdSchema,
   NicknameBodySchema,
   StartExpeditionBodySchema,
@@ -103,6 +104,21 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
       const outcome = ctx.core.collection.train(ctx.user.id, id, body.idempotencyKey);
       if (!outcome.ok) return failure(outcome);
       return json({ level: outcome.value.level, state: ctx.core.collection.state(ctx.user.id) });
+    },
+  },
+  '/api/creatures/:id/evolve': {
+    POST: async (request, ctx) => {
+      const id = pathId(ctx);
+      if (id === undefined) return invalidId();
+      const body = await parseBody(request, EvolveBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = ctx.core.collection.evolve(ctx.user.id, id, body.idempotencyKey);
+      if (!outcome.ok) return failure(outcome);
+      return json({
+        species: outcome.value.species,
+        firstOnServer: outcome.value.firstOnServer,
+        state: ctx.core.collection.state(ctx.user.id),
+      });
     },
   },
   '/api/creatures/:id': {

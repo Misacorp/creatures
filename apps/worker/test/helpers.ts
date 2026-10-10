@@ -145,3 +145,25 @@ export async function runCore<R>(
     return fn({ guildId, core, clock, sql: state.storage.sql, storage: state.storage, request });
   });
 }
+
+/** Tables created by migration 8 (the weekly raid). */
+export const RAID_TABLES = [
+  'raid_weeks',
+  'raid_parties',
+  'raid_party_members',
+  'raid_opt_outs',
+  'raid_teams',
+  'raid_placements',
+  'raid_results',
+  'raid_events',
+  'jackpot_pity',
+] as const;
+
+/**
+ * Puts a database back to before migration 7 (reserved) and 8 (the raid), for tests that replay older migrations. The wider
+ * `server_firsts` check stays: migration 8 recreates that table with its rows anyway.
+ */
+export function undoRaidMigration(sql: SqlStorage): void {
+  for (const table of RAID_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
+  sql.exec('DELETE FROM schema_version WHERE version IN (7, 8)');
+}

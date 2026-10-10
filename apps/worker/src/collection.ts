@@ -31,6 +31,7 @@ import {
   type Currency,
   type LedgerStorage,
 } from './ledger';
+import { recordServerFirst, type ServerFirstKind } from './server-firsts';
 
 /** Expedition slots per player. */
 export const EXPEDITION_SLOTS = 3;
@@ -39,7 +40,7 @@ const RECENT_CLAIMED = 5;
 
 const SPECIES = new Map<string, CreatureSpecies>(content.creatures.map((c) => [c.id, c]));
 
-function speciesOf(id: string): CreatureSpecies {
+export function speciesOf(id: string): CreatureSpecies {
   const species = SPECIES.get(id);
   if (species === undefined) throw new Error('stored creature has an unknown species');
   return species;
@@ -106,8 +107,11 @@ export interface CreatureView {
   stats: Stats;
   /** Bait for the next level (discount applied), or null at the level cap. */
   trainCost: number | null;
-  /** The evolution this creature could reach. Locked in M2: there is no Essence source yet. */
-  evolution?: { toSpecies: string; level: number; essence: number; available: false };
+  /**
+   * The evolution this creature could reach. `available` is true when the evolution level is
+   * reached and the player holds enough Essence right now.
+   */
+  evolution?: { toSpecies: string; level: number; essence: number; available: boolean };
 }
 
 export interface CatchView {
@@ -142,7 +146,7 @@ export interface ExpeditionView {
 }
 
 export interface ServerFirstView {
-  kind: 'catch' | 'evolve';
+  kind: ServerFirstKind;
   species: string;
   at: number;
   /** True if the signed-in player shares this record. */
@@ -262,7 +266,11 @@ export class Collection {
       .one().n;
   }
 
-  private creatureView(row: CreatureRow, medianLevel: number | null): CreatureView {
+  private creatureView(
+    row: CreatureRow,
+    medianLevel: number | null,
+    essence: number,
+  ): CreatureView {
     const species = speciesOf(row.species);
     const away = row.away_expedition_id !== null;
     const trainable = canTrain({ level: row.level, levelCap: species.levelCap, away: false });
@@ -289,7 +297,8 @@ export class Collection {
               toSpecies: species.evolvesTo.species,
               level: species.evolvesTo.level,
               essence: species.evolvesTo.essence,
-              available: false as const,
+              available:
+                row.level >= species.evolvesTo.level && essence >= species.evolvesTo.essence,
             },
           }),
     };
@@ -330,7 +339,7 @@ export class Collection {
   private serverFirsts(userId: string): ServerFirstView[] {
     const rows = this.sql
       .exec<{
-        kind: 'catch' | 'evolve';
+        kind: ServerFirstKind;
         species: string;
         user_id: string;
         at: number;
@@ -359,6 +368,7 @@ export class Collection {
   state(userId: string): PlayerState {
     const medianLevel = this.trainingMedianLevel();
     const starterChosen = this.starterSpecies(userId) !== null;
+    const balances = getBalances(this.sql, userId);
     const active = this.sql
       .exec<ExpeditionRow>(
         "SELECT * FROM expeditions WHERE user_id = ? AND status = 'active' ORDER BY ends_at, rowid",
@@ -375,12 +385,14 @@ export class Collection {
       .toArray();
     return {
       serverNow: this.deps.now(),
-      balances: getBalances(this.sql, userId),
+      balances,
       starterChosen,
       ...(starterChosen
         ? {}
         : { starterOptions: content.creatures.filter((c) => c.starter).map((c) => c.id) }),
-      creatures: this.creatureRows(userId).map((row) => this.creatureView(row, medianLevel)),
+      creatures: this.creatureRows(userId).map((row) =>
+        this.creatureView(row, medianLevel, balances.essence),
+      ),
       expeditions: [...active, ...claimed].map((row) => this.expeditionView(row)),
       slots: { total: EXPEDITION_SLOTS, used: active.length },
       trainingMedianLevel: medianLevel,
@@ -635,36 +647,15 @@ export class Collection {
     }
   }
 
-  /**
-   * Records "first on server" for a species: the first drop to produce it owns the record, and
-   * every user who got it in that same drop shares it. Returns true if this user holds it now.
-   */
+  /** See `recordServerFirst`. Returns true if this user holds the record now. */
   private recordFirst(
-    kind: 'catch' | 'evolve',
+    kind: ServerFirstKind,
     species: string,
     userId: string,
     dropId: string,
     at: number,
   ): boolean {
-    const existing = this.sql
-      .exec<{
-        drop_id: string;
-      }>('SELECT drop_id FROM server_firsts WHERE kind = ? AND species = ? LIMIT 1', kind, species)
-      .toArray()[0];
-    if (existing !== undefined && existing.drop_id !== dropId) return false;
-    return (
-      this.sql
-        .exec(
-          `INSERT INTO server_firsts (kind, species, user_id, drop_id, at) VALUES (?, ?, ?, ?, ?)
-           ON CONFLICT(kind, species, user_id) DO NOTHING RETURNING user_id`,
-          kind,
-          species,
-          userId,
-          dropId,
-          at,
-        )
-        .toArray().length > 0
-    );
+    return recordServerFirst(this.sql, kind, species, userId, dropId, at);
   }
 
   // --- Training ---
@@ -722,6 +713,77 @@ export class Collection {
           return { level: spent.result.level };
         case 'ok':
           return { level: spent.result.level };
+      }
+    });
+  }
+
+  // --- Evolution ---
+
+  /**
+   * Evolves a stage-1 creature at its evolution level for Essence. The species switches to the
+   * stage-2 species; level, fusion, shininess and nickname stay. The first evolution of a line on
+   * the server records "first on server" (kind `evolve`, keyed by the stage-2 species). A retry
+   * with the same key returns the stored result and charges nothing.
+   */
+  evolve(
+    userId: string,
+    creatureId: string,
+    idempotencyKey: string,
+  ): Outcome<{ creatureId: string; species: string; firstOnServer: boolean }> {
+    return this.atomically(() => {
+      const creature = this.ownedCreature(userId, creatureId);
+      const prior = lookupSpend(this.sql, userId, idempotencyKey);
+      let amount: number;
+      let target: string | null = null;
+      if (prior === null) {
+        const evolvesTo = speciesOf(creature.species).evolvesTo;
+        if (evolvesTo === undefined) throw new CollectionError(409, 'not_evolvable');
+        if (creature.level < evolvesTo.level) throw new CollectionError(409, 'level_too_low');
+        amount = evolvesTo.essence;
+        target = evolvesTo.species;
+      } else {
+        // A retry is not re-checked: the creature has already evolved.
+        amount = prior.amount;
+      }
+      const now = this.deps.now();
+      const spent = spend(
+        this.deps.storage,
+        {
+          userId,
+          currency: 'essence',
+          amount,
+          purpose: 'evolution',
+          idempotencyKey,
+          apply: () => {
+            if (target === null) throw new Error('evolution without a target');
+            this.sql.exec('UPDATE creatures SET species = ? WHERE id = ?', target, creature.id);
+            const firstOnServer = this.recordFirst(
+              'evolve',
+              target,
+              userId,
+              `evolve:${creature.id}`,
+              now,
+            );
+            return { creatureId: creature.id, species: target, firstOnServer };
+          },
+        },
+        now,
+      );
+      switch (spent.status) {
+        case 'insufficient_funds':
+          throw new CollectionError(409, 'insufficient_funds');
+        case 'key_conflict':
+          throw new CollectionError(409, 'key_conflict');
+        case 'replayed':
+          if (
+            prior?.purpose !== 'evolution' ||
+            storedString(spent.result, 'creatureId') !== creature.id
+          ) {
+            throw new CollectionError(409, 'key_conflict');
+          }
+          return spent.result;
+        case 'ok':
+          return spent.result;
       }
     });
   }

@@ -99,6 +99,25 @@ export const RULES = {
        */
       poolBp: 4_286,
     },
+    /**
+     * The weekly calendar, in the guild's local time. `weekday` is the ISO weekday (1 = Monday ...
+     * 7 = Sunday). A raid week starts at `weekStart` and runs to the next one, so Monday 00:00 to
+     * 13:36 still belongs to the previous week. The events must be in chronological order.
+     */
+    schedule: {
+      weekStart: { weekday: 1, hour: 13, minute: 37 },
+      phase1: { weekday: 5, hour: 13, minute: 37 },
+      phase2: { weekday: 6, hour: 13, minute: 37 },
+      finale: { weekday: 7, hour: 20, minute: 0 },
+    },
+    /** Most players in one party; a bigger roster is split into balanced parties. */
+    maxPartySize: 15,
+    /** Creatures a player brings to a raid. */
+    teamSize: 3,
+    /** A player is on the roster if they opened the game or earned a leet credit this recently. */
+    activeWindowDays: 14,
+    /** Essence paid for a finale jackpot until gear and jackpot items arrive. */
+    jackpotEssence: 100,
     jackpot: {
       baseBp: 600,
       /** From this raid without a jackpot on, the chance rises by `softPityStepBp` per raid. */

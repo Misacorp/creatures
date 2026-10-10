@@ -4,6 +4,7 @@ import {
   applyCatchToCollection,
   canTrain,
   content,
+  creaturePower,
   createSeededRng,
   discountedTrainingCost,
   effectiveStats,
@@ -529,6 +530,24 @@ describe('sanitizeNickname', () => {
   it('rejects very long input quickly', () => {
     expect(sanitizeNickname('a'.repeat(1_000_000))).toEqual({ ok: false, reason: 'too_long' });
     expect(sanitizeNickname(' '.repeat(1_000_000))).toEqual({ ok: false, reason: 'too_long' });
+  });
+});
+
+describe('creaturePower', () => {
+  it('is Attack plus a tenth of HP, rounded down', () => {
+    expect(creaturePower({ atk: 28, hp: 112 })).toBe(39);
+    expect(creaturePower({ atk: 28, hp: 119 })).toBe(39);
+    expect(creaturePower({ atk: 28, hp: 120 })).toBe(40);
+    expect(creaturePower({ atk: 1, hp: 9 })).toBe(1);
+  });
+
+  it('uses effective stats, so fusion and level count', () => {
+    const splashet = content.creatures.find((c) => c.id === 'splashet');
+    if (splashet === undefined) throw new Error('missing species');
+    const plain = creaturePower(effectiveStats(splashet, 1, 0));
+    expect(plain).toBe(28 + 11);
+    expect(creaturePower(effectiveStats(splashet, 15, 0))).toBeGreaterThan(plain);
+    expect(creaturePower(effectiveStats(splashet, 1, 5))).toBeGreaterThan(plain);
   });
 });
 

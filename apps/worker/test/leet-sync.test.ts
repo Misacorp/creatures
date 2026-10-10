@@ -14,7 +14,16 @@ import {
   type LeetSourceErrorKind,
 } from '../src/leet';
 import { DEFAULT_GUILD_TIMEZONE, nextOccurrence } from '../src/time';
-import { OTHER_USER_ID, ORIGIN, T0, USER_ID, expectApiHeaders, runCore, tokenFor } from './helpers';
+import {
+  OTHER_USER_ID,
+  ORIGIN,
+  T0,
+  USER_ID,
+  expectApiHeaders,
+  runCore,
+  tokenFor,
+  undoRaidMigration,
+} from './helpers';
 
 const MINUTE = 60_000;
 const HELSINKI = 'Europe/Helsinki';
@@ -420,7 +429,7 @@ describe('syncLeet', () => {
 });
 
 describe('fail closed', () => {
-  it('does nothing without a leet source: no sync, no alarm', async () => {
+  it('does nothing without a leet source: no sync, only the raid alarm', async () => {
     await runCore(
       nextGuild(),
       async ({ guildId, core, storage, sql }) => {
@@ -429,7 +438,8 @@ describe('fail closed', () => {
         await core.createSession(guildId, USER);
         await core.ensureAlarm();
         await core.alarm();
-        expect(await storage.getAlarm()).toBeNull();
+        // Raids still need their alarm: Friday's phase 1 at 13:37 Helsinki (T0 is Friday 12:00).
+        expect(await storage.getAlarm()).toBe(Date.parse('2027-01-15T11:37:00Z'));
         expect(sql.exec('SELECT * FROM ledger').toArray()).toHaveLength(0);
       },
       { createLeetSource: () => null },
@@ -632,9 +642,12 @@ describe('daily alarm', () => {
       async ({ guildId, core, storage, request, clock }) => {
         expect(await storage.getAlarm()).toBeNull();
         const secret = await core.createSession(guildId, USER);
-        // T0 is 10:00 Europe/Helsinki on 2027-01-15 (UTC+2), so the alarm is today at 11:40Z.
-        const expected = Date.parse('2027-01-15T11:40:00Z');
-        expect(expected).toBe(nextOccurrence(T0, 13, 40, DEFAULT_GUILD_TIMEZONE));
+        // T0 is Friday 12:00 Europe/Helsinki (UTC+2). The sync is at 13:40 (11:40Z) but one alarm
+        // serves every schedule and Friday's raid phase 1 (13:37, 11:37Z) comes first.
+        expect(Date.parse('2027-01-15T11:40:00Z')).toBe(
+          nextOccurrence(T0, 13, 40, DEFAULT_GUILD_TIMEZONE),
+        );
+        const expected = Date.parse('2027-01-15T11:37:00Z');
         expect(await storage.getAlarm()).toBe(expected);
 
         // An existing alarm is left alone.
@@ -657,11 +670,12 @@ describe('daily alarm', () => {
     await runCore(
       guild,
       async ({ core, storage, clock }) => {
-        clock.t = Date.parse('2027-01-15T11:40:00.200Z');
+        // Saturday, so no raid event comes between this sync and the next one.
+        clock.t = Date.parse('2027-01-16T11:40:00.200Z');
         await core.alarm();
         expect(calls).toHaveLength(1);
         expect(core.balances(USER_ID).bait).toBe(baitForDay(1));
-        expect(await storage.getAlarm()).toBe(Date.parse('2027-01-16T11:40:00Z'));
+        expect(await storage.getAlarm()).toBe(Date.parse('2027-01-17T11:40:00Z'));
       },
       using(source),
     );
@@ -673,9 +687,9 @@ describe('daily alarm', () => {
     await runCore(
       guild,
       async ({ core, storage, clock }) => {
-        clock.t = Date.parse('2027-01-15T11:39:59.500Z');
+        clock.t = Date.parse('2027-01-16T11:39:59.500Z');
         await core.alarm();
-        expect(await storage.getAlarm()).toBe(Date.parse('2027-01-16T11:40:00Z'));
+        expect(await storage.getAlarm()).toBe(Date.parse('2027-01-17T11:40:00Z'));
       },
       using(source),
     );
@@ -711,9 +725,9 @@ describe('daily alarm', () => {
     await runCore(
       guild,
       async ({ core, storage, clock }) => {
-        clock.t = Date.parse('2027-01-15T11:40:00Z');
+        clock.t = Date.parse('2027-01-16T11:40:00Z');
         await core.alarm();
-        expect(await storage.getAlarm()).toBe(Date.parse('2027-01-16T11:40:00Z'));
+        expect(await storage.getAlarm()).toBe(Date.parse('2027-01-17T11:40:00Z'));
         expect(error).toHaveBeenCalledWith('leet sync failed', 'Error');
         expect(JSON.stringify(error.mock.calls)).not.toContain('12345');
       },
@@ -801,9 +815,10 @@ describe('guild timezone', () => {
       async ({ guildId, core, storage, sql }) => {
         bindWith(sql, guildId, NEW_YORK);
         await core.createSession(guildId, USER);
-        // T0 is 2027-01-15 10:00Z = 05:00 EST, so the alarm is today 13:40 EST = 18:40Z.
-        expect(await storage.getAlarm()).toBe(Date.parse('2027-01-15T18:40:00Z'));
-        expect(await storage.getAlarm()).toBe(nextOccurrence(T0, 13, 40, NEW_YORK));
+        // T0 is 2027-01-15 10:00Z = 05:00 EST. The sync is today 13:40 EST = 18:40Z, but Friday's
+        // raid phase 1 (13:37 EST = 18:37Z) comes first and shares the one alarm.
+        expect(nextOccurrence(T0, 13, 40, NEW_YORK)).toBe(Date.parse('2027-01-15T18:40:00Z'));
+        expect(await storage.getAlarm()).toBe(Date.parse('2027-01-15T18:37:00Z'));
       },
       using(source),
     );
@@ -885,7 +900,8 @@ describe('guild timezone', () => {
         await core.syncLeet();
         expect(calls[0]?.opts.timezone).toBe(DEFAULT_GUILD_TIMEZONE);
         await core.ensureAlarm();
-        expect(await storage.getAlarm()).toBe(nextOccurrence(T0, 13, 40, DEFAULT_GUILD_TIMEZONE));
+        // Default zone: Friday's raid phase 1 (13:37 Helsinki) comes before the 13:40 sync.
+        expect(await storage.getAlarm()).toBe(Date.parse('2027-01-15T11:37:00Z'));
         expect(warn).toHaveBeenCalled();
         expect(JSON.stringify(warn.mock.calls)).not.toContain('Mars');
       },
@@ -902,7 +918,7 @@ describe('guild timezone', () => {
         await core.createSession(guildId, USER);
         expect(core.timezone()).toBe(DEFAULT_GUILD_TIMEZONE);
         const helsinkiAlarm = await storage.getAlarm();
-        expect(helsinkiAlarm).toBe(nextOccurrence(T0, 13, 40, DEFAULT_GUILD_TIMEZONE));
+        expect(helsinkiAlarm).toBe(Date.parse('2027-01-15T11:37:00Z')); // raid phase 1, then sync
 
         // Cached: an out-of-band write is not seen until the cache is invalidated.
         sql.exec('UPDATE guild_meta SET timezone = ?', NEW_YORK);
@@ -916,7 +932,10 @@ describe('guild timezone', () => {
         expect(sql.exec('SELECT timezone FROM guild_meta').toArray()).toEqual([
           { timezone: 'Asia/Tokyo' },
         ]);
-        expect(await storage.getAlarm()).toBe(nextOccurrence(T0, 13, 40, 'Asia/Tokyo'));
+        // T0 is Friday 19:00 in Tokyo: phase 1 (13:37 JST) was due, so it ran at once, and the
+        // alarm is now Saturday's phase 2 (04:37Z), three minutes before the 13:40 JST sync.
+        expect(await storage.getAlarm()).toBe(Date.parse('2027-01-16T04:37:00Z'));
+        expect(nextOccurrence(T0, 13, 40, 'Asia/Tokyo')).toBe(Date.parse('2027-01-16T04:40:00Z'));
       },
       using(source),
     );
@@ -966,6 +985,7 @@ describe('leet sync status', () => {
         sql.exec('ALTER TABLE leet_sync DROP COLUMN last_error');
         sql.exec('ALTER TABLE leet_sync DROP COLUMN last_days');
         sql.exec('DELETE FROM schema_version WHERE version = 6');
+        undoRaidMigration(sql);
         expect(columns(sql)).toEqual(['id', 'cursor', 'since_date', 'last_synced_at']);
 
         core.migrate();
@@ -981,7 +1001,7 @@ describe('leet sync status', () => {
         ]);
         expect(
           sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
-        ).toBe(6);
+        ).toBe(8);
         expect(syncState(sql)[0]?.cursor).toBe('kept');
         expect(core.leetSyncStatus()).toMatchObject({
           lastAttemptAt: null,

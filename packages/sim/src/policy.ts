@@ -9,7 +9,7 @@ import {
   type DurationId,
   type SuppliesId,
 } from '@creatures/game';
-import { CATCHABLE, byPowerDesc, creaturePower10, speciesOf, type OwnedCreature } from './data';
+import { CATCHABLE, byPowerDesc, creaturePower, speciesOf, type OwnedCreature } from './data';
 
 /**
  * The spending policy every simulated player follows (archetypes differ only in how often they
@@ -117,7 +117,7 @@ export function chooseTrainee(creatures: readonly OwnedCreature[]): OwnedCreatur
     if (
       best === null ||
       c.level < best.level ||
-      (c.level === best.level && creaturePower10(c) > creaturePower10(best))
+      (c.level === best.level && creaturePower(c) > creaturePower(best))
     ) {
       best = c;
     }

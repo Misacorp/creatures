@@ -1,0 +1,407 @@
+/**
+ * Read models of the raid for the API. Only display data leaves here: players appear by display
+ * name and a `you` / `mine` flag, never by user id, and creature ids are only given for the
+ * caller's own creatures.
+ */
+import {
+  buildNames,
+  zoneOfIndex,
+  type EventNames,
+  type FightEvent,
+  type FightInput,
+  type FightResult,
+  type Zone,
+} from '@creatures/engine';
+import { content } from '@creatures/game';
+import { speciesOf } from './collection';
+import type { Raid } from './raid';
+import { bossFor, type StoredSummary } from './raid-resolve';
+import { partyMembers, partyOf } from './raid-roster';
+import { RAID_PHASES, isWeekId, type RaidEvent, type RaidPhase } from './raid-schedule';
+import { effectiveTeam, rowLength, type RaidStatus } from './raid-teams';
+
+export interface RosterEntry {
+  displayName: string;
+  you: boolean;
+  party: number;
+}
+
+export interface RowSlotView {
+  slot: number;
+  zone: Zone;
+  creature: null | {
+    ownerName: string;
+    species: string;
+    name: string;
+    level: number;
+    mine: boolean;
+    /** Only for the caller's own creatures. */
+    creatureId?: string;
+  };
+}
+
+export interface PhaseResultView {
+  phase: RaidPhase;
+  at: number;
+  cleared: boolean;
+  rounds: number;
+  bossHpMax: number;
+  bossHpStart: number;
+  bossHpEnd: number;
+  /** Total damage the party's players dealt in this phase. */
+  damage: number;
+  /** Reactions that happened in this phase. */
+  reactions: number;
+  /** The best contributors by display name (at most three). */
+  top: { displayName: string; damage: number; contribution: number; you: boolean }[];
+  /** Essence the caller earned in this phase. */
+  essence: number;
+  /** Finale only: display names of the players who hit the jackpot. */
+  jackpot: string[];
+}
+
+export interface RaidView {
+  weekId: string;
+  status: RaidStatus;
+  timezone: string;
+  boss: {
+    id: string;
+    name: string;
+    element: string;
+    turnOrder: string;
+    gimmicks: { id: string; name: string }[];
+    finaleRounds: number;
+  };
+  schedule: Record<RaidEvent, number>;
+  /** The next event that has not run yet. */
+  next: { event: RaidEvent; at: number } | null;
+  serverNow: number;
+  roster: RosterEntry[];
+  parties: { party: number; size: number }[];
+  you: {
+    inRoster: boolean;
+    optOut: boolean;
+    party: number | null;
+    /** The caller may change their team and placement. */
+    canEdit: boolean;
+    /** The caller may still sit the week out or rejoin. */
+    canOptOut: boolean;
+    team: {
+      mode: 'auto' | 'chosen';
+      creatures: {
+        creatureId: string;
+        species: string;
+        name: string;
+        level: number;
+        slot: number | null;
+      }[];
+    } | null;
+  };
+  /** The caller's party; null when they are not in one. */
+  party: null | {
+    party: number;
+    rowLength: number;
+    /** Slots; creatures that are not placed are auto-placed when a phase resolves. */
+    row: RowSlotView[];
+    guests: boolean;
+    bossHp: { max: number; current: number } | null;
+    /** The boss's phase 2 counter-move, once phase 1 has resolved. */
+    adaptation: { description: string; rule: string | null; target: string | null } | null;
+    results: PhaseResultView[];
+  };
+}
+
+const PHASE_ORDER: readonly RaidStatus[] = ['open', 'phase1', 'phase2', 'finale'];
+
+function displayNames(sql: SqlStorage): Map<string, string> {
+  return new Map(
+    sql
+      .exec<{ user_id: string; display_name: string }>('SELECT user_id, display_name FROM players')
+      .toArray()
+      .map((r) => [r.user_id, r.display_name]),
+  );
+}
+
+/** The current week as the caller sees it. Creates the week if needed. */
+export function buildRaidView(
+  raid: Raid,
+  sql: SqlStorage,
+  userId: string,
+  tz: string,
+  now: number,
+): RaidView {
+  const week = raid.currentWeek(tz);
+  raid.syncRoster(week.weekId);
+  const names = displayNames(sql);
+  const boss = bossFor(week.bossId);
+  const schedule = raid.schedule(week.weekId, tz);
+  const pending = RAID_PHASES.find(
+    (p) => PHASE_ORDER.indexOf(p) > PHASE_ORDER.indexOf(week.status),
+  );
+
+  const memberRows = sql
+    .exec<{ user_id: string; party: number }>(
+      'SELECT user_id, party FROM raid_party_members WHERE week_id = ? ORDER BY party, joined_at, rowid',
+      week.weekId,
+    )
+    .toArray();
+  const roster: RosterEntry[] = memberRows.map((m) => ({
+    displayName: names.get(m.user_id) ?? 'Unknown',
+    you: m.user_id === userId,
+    party: m.party,
+  }));
+  const sizes = new Map<number, number>();
+  for (const m of memberRows) sizes.set(m.party, (sizes.get(m.party) ?? 0) + 1);
+  const parties = [...sizes].map(([party, size]) => ({ party, size }));
+
+  const myParty = partyOf(sql, week.weekId, userId);
+  const team = myParty === null ? null : effectiveTeam(sql, week.weekId, userId);
+  const placements =
+    myParty === null
+      ? []
+      : sql
+          .exec<{ slot: number; user_id: string; creature_id: string }>(
+            'SELECT slot, user_id, creature_id FROM raid_placements WHERE week_id = ? AND party = ?',
+            week.weekId,
+            myParty,
+          )
+          .toArray();
+  const slotOf = new Map(placements.map((p) => [p.creature_id, p.slot]));
+
+  let partyView: RaidView['party'] = null;
+  if (myParty !== null) {
+    const members = partyMembers(sql, week.weekId, myParty);
+    const length = rowLength(members.length);
+    const creatureInfo = new Map<string, { species: string; name: string; level: number }>();
+    for (const p of placements) {
+      const c = sql
+        .exec<{ species: string; level: number; nickname: string | null }>(
+          'SELECT species, level, nickname FROM creatures WHERE id = ?',
+          p.creature_id,
+        )
+        .toArray()[0];
+      if (c !== undefined) {
+        creatureInfo.set(p.creature_id, {
+          species: c.species,
+          name: c.nickname ?? speciesOf(c.species).name,
+          level: c.level,
+        });
+      }
+    }
+    const bySlot = new Map(placements.map((p) => [p.slot, p]));
+    const row: RowSlotView[] = [];
+    for (let slot = 0; slot < length; slot++) {
+      const p = bySlot.get(slot);
+      const info = p === undefined ? undefined : creatureInfo.get(p.creature_id);
+      const mine = p?.user_id === userId;
+      row.push({
+        slot,
+        zone: zoneOfIndex(slot, length),
+        creature:
+          p === undefined || info === undefined
+            ? null
+            : {
+                ownerName: names.get(p.user_id) ?? 'Unknown',
+                species: info.species,
+                name: info.name,
+                level: info.level,
+                mine,
+                ...(mine ? { creatureId: p.creature_id } : {}),
+              },
+      });
+    }
+    const pool = sql
+      .exec<{
+        hp_max: number | null;
+        hp_current: number | null;
+        adaptation_rule: string | null;
+        adaptation_target: string | null;
+        adaptation_description: string | null;
+      }>(
+        `SELECT hp_max, hp_current, adaptation_rule, adaptation_target, adaptation_description
+         FROM raid_parties WHERE week_id = ? AND party = ?`,
+        week.weekId,
+        myParty,
+      )
+      .one();
+    const results = sql
+      .exec<{ phase: RaidPhase; summary: string; created_at: number }>(
+        'SELECT phase, summary, created_at FROM raid_results WHERE week_id = ? AND party = ?',
+        week.weekId,
+        myParty,
+      )
+      .toArray()
+      .sort((a, b) => RAID_PHASES.indexOf(a.phase) - RAID_PHASES.indexOf(b.phase))
+      .map((r) =>
+        resultView(r.phase, JSON.parse(r.summary) as StoredSummary, r.created_at, userId, names),
+      );
+    partyView = {
+      party: myParty,
+      rowLength: length,
+      row,
+      guests: members.length < 3,
+      bossHp:
+        pool.hp_max === null || pool.hp_current === null
+          ? null
+          : { max: pool.hp_max, current: pool.hp_current },
+      adaptation:
+        pool.adaptation_description === null
+          ? null
+          : {
+              description: pool.adaptation_description,
+              rule: pool.adaptation_rule,
+              target: pool.adaptation_target,
+            },
+      results,
+    };
+  }
+
+  return {
+    weekId: week.weekId,
+    status: week.status,
+    timezone: tz,
+    boss: {
+      id: boss.id,
+      name: boss.name,
+      element: boss.element,
+      turnOrder: boss.turnOrder,
+      gimmicks: boss.gimmicks.map((g) => ({ id: g.id, name: g.name })),
+      finaleRounds: boss.finaleRounds,
+    },
+    schedule,
+    next: pending === undefined ? null : { event: pending, at: schedule[pending] },
+    serverNow: now,
+    roster,
+    parties,
+    you: {
+      inRoster: myParty !== null,
+      optOut: raid.isOptedOut(week.weekId, userId),
+      party: myParty,
+      canEdit: myParty !== null && week.status !== 'finale',
+      canOptOut: week.status === 'open',
+      team:
+        team === null
+          ? null
+          : {
+              mode: team.mode,
+              creatures: team.creatures.map((c) => ({
+                creatureId: c.id,
+                species: c.species.id,
+                name: c.nickname ?? c.species.name,
+                level: c.level,
+                slot: slotOf.get(c.id) ?? null,
+              })),
+            },
+    },
+    party: partyView,
+  };
+}
+
+function resultView(
+  phase: RaidPhase,
+  summary: StoredSummary,
+  at: number,
+  userId: string,
+  names: ReadonlyMap<string, string>,
+): PhaseResultView {
+  return {
+    phase,
+    at,
+    cleared: summary.cleared,
+    rounds: summary.rounds,
+    bossHpMax: summary.bossHpMax,
+    bossHpStart: summary.bossHpStart,
+    bossHpEnd: summary.bossHpEnd,
+    damage: summary.damage,
+    reactions: summary.reactions,
+    top: summary.contributors.slice(0, 3).map((c) => ({
+      displayName: names.get(c.userId) ?? 'Unknown',
+      damage: c.damage,
+      contribution: c.contribution,
+      you: c.userId === userId,
+    })),
+    essence: summary.essence[userId] ?? 0,
+    jackpot: summary.jackpot.map((id) => names.get(id) ?? 'Unknown'),
+  };
+}
+
+export interface ReplayView {
+  weekId: string;
+  party: number;
+  phase: RaidPhase;
+  seed: string;
+  at: number;
+  boss: { id: string; name: string };
+  rounds: number;
+  cleared: boolean;
+  bossHpStart: number;
+  bossHpEnd: number;
+  /** The fighting row, left to right (guests included). */
+  row: {
+    position: number;
+    id: string;
+    name: string;
+    species: string;
+    element: string;
+    role: string;
+    level: number;
+    /** An opaque per-fight player key (see `names.players`), or null for a guest. */
+    owner: string | null;
+  }[];
+  events: FightEvent[];
+  /** For `describeEvent`; `players` maps the opaque owner keys to display names. */
+  names: EventNames;
+}
+
+/**
+ * The stored events of a resolved phase, with names. Null if that phase has not resolved (or the
+ * party or week does not exist). Players are opaque keys (`m1`, `m2`, ...) in the events; their
+ * display names are in `names.players`.
+ */
+export function buildReplayView(
+  sql: SqlStorage,
+  weekId: string,
+  party: number,
+  phase: RaidPhase,
+): ReplayView | null {
+  if (!isWeekId(weekId)) return null;
+  const row = sql
+    .exec<{ seed: string; input: string; result: string; summary: string; created_at: number }>(
+      'SELECT seed, input, result, summary, created_at FROM raid_results WHERE week_id = ? AND party = ? AND phase = ?',
+      weekId,
+      party,
+      phase,
+    )
+    .toArray()[0];
+  if (row === undefined) return null;
+  const input = JSON.parse(row.input) as FightInput;
+  const result = JSON.parse(row.result) as FightResult;
+  const summary = JSON.parse(row.summary) as StoredSummary;
+  const players = displayNames(sql);
+  const aliasNames: Record<string, string> = {};
+  for (const m of summary.members) aliasNames[m.alias] = players.get(m.userId) ?? 'Unknown';
+  return {
+    weekId,
+    party,
+    phase,
+    seed: row.seed,
+    at: row.created_at,
+    boss: { id: input.boss.id, name: input.boss.name },
+    rounds: result.rounds,
+    cleared: result.cleared,
+    bossHpStart: result.bossHpStart,
+    bossHpEnd: result.bossHpEnd,
+    row: input.row.map((s, position) => ({
+      position,
+      id: s.id,
+      name: s.name,
+      species: s.speciesId,
+      element: s.element,
+      role: s.role,
+      level: s.level,
+      owner: s.ownerId,
+    })),
+    events: result.events,
+    names: buildNames(input, aliasNames, content),
+  };
+}

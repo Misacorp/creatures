@@ -19,6 +19,7 @@ import {
   postAuth,
   runCore,
   tokenFor,
+  undoRaidMigration,
   type CoreContext,
 } from './helpers';
 import { createHandler } from '../src/index';
@@ -239,13 +240,14 @@ describe('migration 4', () => {
       sql.exec('ALTER TABLE leet_sync DROP COLUMN last_error');
       sql.exec('ALTER TABLE leet_sync DROP COLUMN last_days');
       sql.exec('DELETE FROM schema_version WHERE version IN (4, 5, 6)');
+      undoRaidMigration(sql);
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
         3,
       );
 
       core.migrate();
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        6,
+        8,
       );
       expect(core.balances(USER_ID).bait).toBe(42);
       const res = await ctx.request(secret, '/api/state');

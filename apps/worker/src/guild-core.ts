@@ -19,6 +19,9 @@ import {
   type SpendInput,
   type SpendResult,
 } from './ledger';
+import { Raid } from './raid';
+import { raidMigration } from './raid-migration';
+import { raidRoutes } from './raid-routes';
 import { TokenBucketLimiter } from './ratelimit';
 import {
   SESSION_ABSOLUTE_MS,
@@ -33,6 +36,7 @@ import {
   addDays,
   isValidTimeZone,
   nextOccurrence,
+  previousOccurrence,
   zonedDate,
 } from './time';
 
@@ -59,6 +63,8 @@ const SYNC_MAX_PAGES = 20;
 const SYNC_PAGE_LIMIT = 31;
 /** Alarms re-arm from slightly in the future so a marginally early wake-up cannot fire twice. */
 const ALARM_REARM_SKEW_MS = 60 * 1000;
+/** A raid event that keeps failing is retried this long after the last attempt. */
+const RAID_RETRY_MS = 60 * 1000;
 
 const LEDGER_DEFAULT_LIMIT = 20;
 const LEDGER_MAX_LIMIT = 50;
@@ -178,6 +184,11 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
     sql.exec('ALTER TABLE leet_sync ADD COLUMN last_error TEXT');
     sql.exec('ALTER TABLE leet_sync ADD COLUMN last_days INTEGER');
   },
+  // Version 7 is reserved for the leet_sync `source` column (added on another branch). Replace
+  // this placeholder with that migration when merging; it is a no-op until then.
+  () => undefined,
+  // Version 8: the weekly raid (see raid-migration.ts).
+  raidMigration,
 ];
 
 export interface SessionUser {
@@ -220,6 +231,7 @@ function parseLedgerQuery(url: URL): number | null {
 
 const routes: Routes<RequestContext> = {
   ...collectionRoutes,
+  ...raidRoutes,
   '/api/me': {
     GET: async (_request, { user, guildId, core }) => {
       await core.syncIfStale();
@@ -246,6 +258,11 @@ const ROUTE_KEYS = Object.keys(routes);
 export interface GuildCoreOptions {
   /** Live randomness for catches. Defaults to crypto.getRandomValues; tests inject a seeded one. */
   rng?: Rng;
+  /**
+   * Live randomness for raids (fight seeds, jackpot rolls). Defaults to crypto.getRandomValues. It
+   * is separate from `rng` so raid events never consume a test's scripted catch draws.
+   */
+  raidRng?: Rng;
   /** Fallback guild id (the Durable Object's name), used only until one is stored. */
   guildId?: () => string | undefined;
   /** Builds the leet source. Returning null disables syncing (fail closed). */
@@ -279,6 +296,7 @@ export class GuildCore {
   private readonly leetSource: LeetSource | null;
   private readonly syncBudgetMs: number;
   readonly collection: Collection;
+  readonly raid: Raid;
   private syncInFlight: Promise<LeetSyncResult> | null = null;
   private lastSyncAttemptAt: number | null = null;
   /** The guild's timezone, cached per object; cleared whenever it changes. */
@@ -295,6 +313,11 @@ export class GuildCore {
       storage,
       now,
       rng: options.rng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+    });
+    this.raid = new Raid({
+      storage,
+      now,
+      rng: options.raidRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
     });
     this.limiter = new TokenBucketLimiter({
       capacity: RATE_CAPACITY,
@@ -405,7 +428,8 @@ export class GuildCore {
     if (!isValidTimeZone(timezone) || this.storedGuildId() === null) return false;
     this.sql.exec('UPDATE guild_meta SET timezone = ? WHERE id = 1', timezone);
     this.cachedTimezone = null;
-    if (this.leetSource !== null) await this.storage.setAlarm(this.nextSyncAt(this.now()));
+    this.catchUpRaid();
+    await this.rearmAlarm(this.now());
     return true;
   }
 
@@ -720,22 +744,76 @@ export class GuildCore {
 
   // --- Scheduling ---
 
-  /** Arms the daily sync alarm if none is set. Cheap: one `getAlarm`. */
-  async ensureAlarm(): Promise<void> {
-    if (this.leetSource === null) return;
-    if ((await this.storage.getAlarm()) !== null) return;
-    await this.storage.setAlarm(this.nextSyncAt(this.now()));
+  /**
+   * One alarm serves every schedule of the guild: the daily leet sync (13:40 guild-local) and the
+   * raid events. The alarm is always set to the earliest of the next sync and the next raid event.
+   */
+  private desiredAlarmAt(from: number): number | null {
+    const candidates: number[] = [];
+    if (this.leetSource !== null) candidates.push(this.nextSyncAt(from));
+    const raidAt = this.raid.nextEventAt(this.timezone());
+    if (raidAt !== null) {
+      // An event that is still due after the catch-up keeps failing: retry it later, not in a loop.
+      candidates.push(raidAt > this.now() ? raidAt : this.now() + RAID_RETRY_MS);
+    }
+    return candidates.length === 0 ? null : Math.min(...candidates);
   }
 
-  /** Durable Object alarm handler: sync, then always re-arm for the next 13:40 guild-local. */
-  async alarm(): Promise<void> {
-    if (this.leetSource === null) return;
+  private async rearmAlarm(from: number): Promise<void> {
+    const at = this.desiredAlarmAt(from);
+    if (at !== null) await this.storage.setAlarm(at);
+  }
+
+  /** Runs raid events that are due (missed ones run late, in order). Failures never reach callers. */
+  private catchUpRaid(until?: number): void {
     try {
-      await this.syncLeet();
+      this.raid.runDue(this.timezone(), until);
     } catch (err) {
-      logSyncError(err);
+      console.error('raid catch-up failed', err instanceof Error ? err.name : 'unknown');
     }
-    await this.storage.setAlarm(this.nextSyncAt(this.now() + ALARM_REARM_SKEW_MS));
+  }
+
+  /**
+   * Arms the alarm for the earliest of the next leet sync and the next raid event, unless an alarm
+   * that is not later is already set. Runs due raid events first, so the alarm is never set in the
+   * past. Cheap: one `getAlarm` plus a cached calendar lookup.
+   */
+  async ensureAlarm(): Promise<void> {
+    this.catchUpRaid();
+    const at = this.desiredAlarmAt(this.now());
+    if (at === null) return;
+    const existing = await this.storage.getAlarm();
+    if (existing !== null && existing <= at) return;
+    await this.storage.setAlarm(at);
+  }
+
+  /** The 13:40 slot a sync is due for, or null if the latest slot has already been attempted. */
+  private dueSyncSlot(upTo: number): number | null {
+    if (this.leetSource === null) return null;
+    const slot = previousOccurrence(upTo, SYNC_HOUR, SYNC_MINUTE, this.timezone());
+    const last = this.readSyncRow()?.last_attempt_at ?? null;
+    return last === null || last < slot ? slot : null;
+  }
+
+  /**
+   * Durable Object alarm handler: runs everything that is due in time order (raid events, the leet
+   * sync), then always re-arms for the next one. Raid events are idempotent per (week, event), so a
+   * duplicate or late alarm changes nothing.
+   */
+  async alarm(): Promise<void> {
+    const now = this.now();
+    const slot = this.dueSyncSlot(now + ALARM_REARM_SKEW_MS);
+    // Raid events that came before the sync slot run first, then the sync, then the rest.
+    if (slot !== null) this.catchUpRaid(slot);
+    if (slot !== null) {
+      try {
+        await this.syncLeet();
+      } catch (err) {
+        logSyncError(err);
+      }
+    }
+    this.catchUpRaid();
+    await this.rearmAlarm(this.now() + ALARM_REARM_SKEW_MS);
   }
 }
 

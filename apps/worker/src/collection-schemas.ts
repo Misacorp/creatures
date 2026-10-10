@@ -29,6 +29,8 @@ export const ClaimBodySchema = v.strictObject({});
 
 export const TrainBodySchema = v.strictObject({ idempotencyKey });
 
+export const EvolveBodySchema = v.strictObject({ idempotencyKey });
+
 /** Length and character rules are applied by `sanitizeNickname`, which reports a reason. */
 export const NicknameBodySchema = v.strictObject({
   nickname: v.nullable(v.string()),

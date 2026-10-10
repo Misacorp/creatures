@@ -164,3 +164,16 @@ Rules behind it: more leeters never pays anyone less; a solo leet pays the same 
 **Decision.** Raids have no sign-up **[Misa]**. Every player with a starter who was active in the last 14 days (opened the game or leeted) is in the week's raid automatically, with an auto-picked team and auto-placement they can change, and can opt out for the week. A raid party holds at most 15 players; bigger rosters are split into balanced parties (snake draft on team power), each fighting the same boss with its own HP pool. Details: `docs/design/m4-raids.md`.
 
 **Reasoning.** Absent players should still count (the server's power doesn't drop), but long-gone players shouldn't inflate the boss or collect loot. A 15-player cap keeps the row readable and coordination possible; the engine itself handles hundreds of creatures in milliseconds, so the cap is about play, not performance.
+
+## 2026-10-10: M4 raid server (implementation choices)
+
+**Decision.**
+
+- The raid calendar is pure functions over `RULES.raid.schedule` (weekday + local time) and the guild timezone (`raid-schedule.ts`). A week id is the ISO week label of the day the week starts (for example `2027-W02`); Monday 00:00–13:36 belongs to the previous week.
+- One alarm per guild serves the leet sync and the raid events: it is set to the earliest of the next 13:40 sync and the next not-done raid event, and when it fires it runs everything due in time order. Raid events are idempotent per (week, event) through `raid_events` done markers; missed events run late in order, and events of a week that was never opened are marked skipped. Due events also run on any authenticated request and on session creation.
+- Schema migration 7 is reserved for the leet-sync `source` column; the raid tables are migration 8 (raid weeks, parties, members, opt-outs, teams, placements, results, event markers, jackpot pity; `server_firsts` is recreated to allow the `jackpot` kind).
+- Each party resolves a phase in one transaction: the stored result row is the done marker and Essence has the ledger key `raid:<week>:<party>:<phase>`. The fight seed is 128 live crypto bits stored as hex next to the exact fight input; the engine sees opaque player keys (`m1`, `m2`, ...), so stored inputs and replays contain no user ids. The adaptation (and the HP pool) are kept per party, since each party's phase 1 decides its own.
+- Auto team power is `atk + floor(hp / 10)` of the effective stats (`creaturePower` in `@creatures/game`, also used by the simulator). Away creatures still fight.
+- M4 finales give every member one default finale ability, round-robin over the content list, firing at its default round. A jackpot pays `RULES.raid.jackpotEssence` and records one shared `jackpot` server first (species `jackpot`) for everyone who hit in the same finale; a lost finale advances the pity counter like a miss.
+
+**Reasoning.** Server-authoritative and race-safe like the rest of the game, with one alarm to re-arm and no duplicated schedulers; replays are exact because input and seed are stored.
