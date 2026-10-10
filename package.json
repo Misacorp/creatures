@@ -13,7 +13,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --if-present test",
+    "sim": "node packages/sim/scripts/run.mjs",
+    "sim:quick": "node packages/sim/scripts/run.mjs --quick"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

@@ -1,0 +1,170 @@
+[
+  {
+    "id": "raid-phase1-typical",
+    "description": "Phase 1 clear rate, typical group (5-10 signed-up players, week 4 or later)",
+    "metric": "raid.typical.phase1ClearRate",
+    "comparator": "min",
+    "value": 0.95,
+    "unit": "percent"
+  },
+  {
+    "id": "raid-phase2-typical",
+    "description": "Phase 2 clear rate, typical group",
+    "metric": "raid.typical.phase2ClearRate",
+    "comparator": "range",
+    "value": [0.7, 0.85],
+    "unit": "percent"
+  },
+  {
+    "id": "raid-finale-typical",
+    "description": "Finale win rate, typical group",
+    "metric": "raid.typical.finaleWinRate",
+    "comparator": "range",
+    "value": [0.4, 0.6],
+    "unit": "percent"
+  },
+  {
+    "id": "raid-phase1-solo",
+    "description": "Phase 1 clear rate, 1 player with guests, week 4 or later",
+    "metric": "raid.solo.phase1ClearRate",
+    "comparator": "min",
+    "value": 0.8,
+    "unit": "percent"
+  },
+  {
+    "id": "raid-finale-15",
+    "description": "Finale win rate, 15 players (no easier-with-more-people cliff)",
+    "metric": "raid.fifteen.finaleWinRate",
+    "comparator": "range",
+    "value": [0.35, 0.65],
+    "unit": "percent"
+  },
+  {
+    "id": "raid-boss-spread",
+    "description": "Spread of finale win rate between bosses, typical group (percentage points)",
+    "metric": "raid.typical.bossSpread",
+    "comparator": "max",
+    "value": 0.15,
+    "unit": "percent"
+  },
+  {
+    "id": "raid-boss-extremes",
+    "description": "Bosses a typical group never beats or always beats in the finale (flagged)",
+    "metric": "raid.typical.extremeBosses",
+    "comparator": "max",
+    "value": 0,
+    "unit": "count"
+  },
+  {
+    "id": "fair-top-share",
+    "description": "Median top player's share of contribution, groups of 5+ players",
+    "metric": "fair.topShareMedian",
+    "comparator": "max",
+    "value": 0.35,
+    "unit": "percent"
+  },
+  {
+    "id": "fair-setup-share",
+    "description": "Setup credit share of total contribution (setters matter)",
+    "metric": "fair.setupShare",
+    "comparator": "min",
+    "value": 0.15,
+    "unit": "percent"
+  },
+  {
+    "id": "fair-reactions",
+    "description": "Reactions per round on average, groups of 5+ players",
+    "metric": "fair.reactionsPerRound",
+    "comparator": "min",
+    "value": 1.0,
+    "unit": "number"
+  },
+  {
+    "id": "fair-newcomer-essence",
+    "description": "Newcomer (joined week 4) Essence per week at week 6, relative to a top earner",
+    "metric": "econ.newcomerEssenceRatioWeek6",
+    "comparator": "min",
+    "value": 0.7,
+    "unit": "percent"
+  },
+  {
+    "id": "choice-element-min",
+    "description": "Lowest element pick rate in raids",
+    "metric": "choice.elementPickRateMin",
+    "comparator": "min",
+    "value": 0.15,
+    "unit": "percent"
+  },
+  {
+    "id": "choice-element-max",
+    "description": "Highest element pick rate in raids",
+    "metric": "choice.elementPickRateMax",
+    "comparator": "max",
+    "value": 0.35,
+    "unit": "percent"
+  },
+  {
+    "id": "choice-creature-max",
+    "description": "Highest creature contribution relative to the median creature of its rarity",
+    "metric": "choice.creatureRatioMax",
+    "comparator": "max",
+    "value": 1.6,
+    "unit": "ratio"
+  },
+  {
+    "id": "choice-creature-min",
+    "description": "Lowest creature contribution relative to the median creature of its rarity",
+    "metric": "choice.creatureRatioMin",
+    "comparator": "min",
+    "value": 0.6,
+    "unit": "ratio"
+  },
+  {
+    "id": "choice-dead-elements",
+    "description": "Elements picked in under 10% of raid slots (flagged as dead)",
+    "metric": "choice.deadElements",
+    "comparator": "max",
+    "value": 0,
+    "unit": "count"
+  },
+  {
+    "id": "econ-casual-level-15",
+    "description": "Casual player's highest creature level at the end of week 4 (evolution level 15)",
+    "metric": "econ.casualTopLevelWeek4",
+    "comparator": "min",
+    "value": 15,
+    "unit": "level"
+  },
+  {
+    "id": "econ-daily-species",
+    "description": "Daily player owns at least 8 of 12 catchable species by the end of week 6",
+    "metric": "econ.dailySpeciesWeek6",
+    "comparator": "min",
+    "value": 8,
+    "unit": "number"
+  },
+  {
+    "id": "econ-power-ratio",
+    "description": "Top earner vs casual average team power at week 8",
+    "metric": "econ.powerRatioTopVsCasualWeek8",
+    "comparator": "max",
+    "value": 1.6,
+    "unit": "ratio"
+  },
+  {
+    "id": "econ-jackpot-rate",
+    "description": "Jackpot rate per player per finale win, including pity",
+    "metric": "econ.jackpotRatePerWin",
+    "comparator": "range",
+    "value": [0.06, 0.15],
+    "unit": "percent"
+  },
+  {
+    "id": "econ-hard-pity",
+    "description": "Players reaching hard pity (10 raids without a jackpot) over 20 weeks",
+    "metric": "econ.hardPityShare20Weeks",
+    "comparator": "max",
+    "value": 0.15,
+    "unit": "percent"
+  }
+]
