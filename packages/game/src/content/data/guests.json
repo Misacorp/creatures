@@ -1,0 +1,5 @@
+[
+  { "id": "guest-warden", "name": "Guest Warden", "species": "sproutle" },
+  { "id": "guest-tidecaller", "name": "Guest Tidecaller", "species": "splashet" },
+  { "id": "guest-striker", "name": "Guest Striker", "species": "stormray" }
+]

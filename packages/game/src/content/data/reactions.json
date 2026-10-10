@@ -1,0 +1,42 @@
+[
+  {
+    "id": "overload",
+    "name": "Overload",
+    "markId": "soaked",
+    "markName": "Soaked",
+    "markElement": "tide",
+    "triggerElement": "spark",
+    "multiplierBp": 25000,
+    "payoffBonusBp": 12500
+  },
+  {
+    "id": "grounding",
+    "name": "Grounding",
+    "markId": "charged",
+    "markName": "Charged",
+    "markElement": "spark",
+    "triggerElement": "grove",
+    "multiplierBp": 25000,
+    "payoffBonusBp": 12500
+  },
+  {
+    "id": "wildfire",
+    "name": "Wildfire",
+    "markId": "overgrown",
+    "markName": "Overgrown",
+    "markElement": "grove",
+    "triggerElement": "ember",
+    "multiplierBp": 25000,
+    "payoffBonusBp": 12500
+  },
+  {
+    "id": "steam",
+    "name": "Steam",
+    "markId": "scorched",
+    "markName": "Scorched",
+    "markElement": "ember",
+    "triggerElement": "tide",
+    "multiplierBp": 25000,
+    "payoffBonusBp": 12500
+  }
+]

@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { content, loadContent, type ContentPack } from '../src/index';
 import creaturesJson from '../src/content/data/creatures.json';
 import elementsJson from '../src/content/data/elements.json';
+import reactionsJson from '../src/content/data/reactions.json';
+import bossesJson from '../src/content/data/bosses.json';
+import adaptationsJson from '../src/content/data/adaptations.json';
+import finaleAbilitiesJson from '../src/content/data/finale-abilities.json';
+import guestsJson from '../src/content/data/guests.json';
 
 function deepClone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -12,6 +17,11 @@ function clone(): ContentPack {
     version: 1,
     elements: elementsJson,
     creatures: creaturesJson,
+    reactions: reactionsJson,
+    bosses: bossesJson,
+    adaptations: adaptationsJson,
+    finaleAbilities: finaleAbilitiesJson,
+    guests: guestsJson,
   }) as ContentPack;
 }
 
@@ -280,5 +290,119 @@ describe('loadContent rejects invalid content', () => {
         }),
       ),
     ).toThrow(/duplicate element/);
+  });
+});
+
+describe('raid content', () => {
+  it('has the four marks and reactions with the specified triggers', () => {
+    const table = Object.fromEntries(
+      content.reactions.map((r) => [r.markId, [r.markElement, r.triggerElement, r.name]]),
+    );
+    expect(table).toEqual({
+      soaked: ['tide', 'spark', 'Overload'],
+      charged: ['spark', 'grove', 'Grounding'],
+      overgrown: ['grove', 'ember', 'Wildfire'],
+      scorched: ['ember', 'tide', 'Steam'],
+    });
+    for (const r of content.reactions) {
+      expect(r.multiplierBp).toBe(25_000);
+      expect(r.payoffBonusBp).toBe(12_500);
+    }
+  });
+
+  it('has the four bosses from the design doc', () => {
+    expect(
+      content.bosses.map((b) => [b.id, b.element, b.turnOrder, b.gimmicks.map((g) => g.op)]),
+    ).toEqual([
+      ['tidal-colossus', 'tide', 'left_to_right', ['hit_zone']],
+      ['cinder-wyrm', 'ember', 'speed', ['reflect_first_reaction']],
+      ['thornmother', 'grove', 'right_to_left', ['silence_ends']],
+      ['storm-sovereign', 'spark', 'left_to_right', ['strike_highest_atk']],
+    ]);
+    for (const b of content.bosses) expect(b.finaleRounds).toBe(12);
+  });
+
+  it('has the four finale abilities with default rounds and two adaptation rules', () => {
+    expect(content.finaleAbilities.map((a) => a.effect.op)).toEqual([
+      'rally',
+      'shield_wall',
+      're_mark',
+      'purge',
+    ]);
+    expect(content.adaptations.map((a) => [a.kind, a.resistBp])).toEqual([
+      ['top_reaction', 5000],
+      ['top_element', 2500],
+    ]);
+    expect(content.guests).toHaveLength(3);
+  });
+});
+
+describe('loadContent rejects invalid raid content', () => {
+  const boss = (p: ContentPack, id = 'tidal-colossus') => {
+    const b = p.bosses.find((x) => x.id === id);
+    if (!b) throw new Error('missing boss');
+    return b;
+  };
+
+  it('schema violations', () => {
+    expect(() => loadContent(mutate((p) => (boss(p).finaleRounds = 31)))).toThrow(/schema/);
+    expect(() => loadContent(mutate((p) => (boss(p).finaleRounds = 0)))).toThrow(/schema/);
+    expect(() => loadContent(mutate((p) => Object.assign(boss(p), { extra: 1 })))).toThrow(
+      /schema/,
+    );
+    expect(() =>
+      loadContent(mutate((p) => Object.assign(boss(p).gimmicks[0] as object, { op: 'explode' }))),
+    ).toThrow(/schema/);
+    expect(() =>
+      loadContent(mutate((p) => Object.assign(boss(p).gimmicks[0] as object, { zone: 'top' }))),
+    ).toThrow(/schema/);
+    expect(() =>
+      loadContent(
+        mutate((p) => Object.assign(boss(p).gimmicks[0] as object, { trigger: { every: 1 } })),
+      ),
+    ).toThrow(/schema/);
+  });
+
+  it('cross-reference errors', () => {
+    expect(() => loadContent(mutate((p) => (boss(p).adaptation = 'nothing')))).toThrow(
+      /unknown adaptation/,
+    );
+    expect(() => loadContent(mutate((p) => p.bosses.push(deepClone(boss(p)))))).toThrow(
+      /duplicate boss/,
+    );
+    expect(() =>
+      loadContent(
+        mutate((p) =>
+          boss(p).gimmicks.push(
+            deepClone(boss(p).gimmicks[0] as ContentPack['bosses'][number]['gimmicks'][number]),
+          ),
+        ),
+      ),
+    ).toThrow(/duplicate gimmick/);
+    expect(() =>
+      loadContent(mutate((p) => ((p.guests[0] as { species: string }).species = 'nothing'))),
+    ).toThrow(/unknown species/);
+    expect(() =>
+      loadContent(
+        mutate((p) => ((p.reactions[0] as { triggerElement: string }).triggerElement = 'grove')),
+      ),
+    ).toThrow(/triggered by/);
+    expect(() => loadContent(mutate((p) => p.reactions.pop()))).toThrow(/every element/);
+    expect(() =>
+      loadContent(
+        mutate((p) => ((p.reactions[1] as { markElement: string }).markElement = 'tide')),
+      ),
+    ).toThrow();
+    expect(() => loadContent(mutate((p) => p.finaleAbilities.pop()))).not.toThrow();
+    expect(() =>
+      loadContent(
+        mutate((p) =>
+          p.finaleAbilities.push({
+            ...deepClone(p.finaleAbilities[0] as ContentPack['finaleAbilities'][number]),
+            id: 'rally-2',
+          }),
+        ),
+      ),
+    ).toThrow(/two finale abilities/);
   });
 });

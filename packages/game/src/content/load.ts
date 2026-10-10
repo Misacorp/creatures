@@ -1,5 +1,11 @@
 import * as v from 'valibot';
-import { ContentPackSchema, ELEMENTS, type ContentPack, type CreatureSpecies } from './schema';
+import {
+  ContentPackSchema,
+  ELEMENTS,
+  type BossDef,
+  type ContentPack,
+  type CreatureSpecies,
+} from './schema';
 
 export const STARTER_COUNT = 3;
 
@@ -18,6 +24,8 @@ export function loadContent(raw: unknown): ContentPack {
   const pack = parsed.output;
   checkElementCycle(pack);
   checkCreatures(pack);
+  checkReactions(pack);
+  checkRaidContent(pack);
   return pack;
 }
 
@@ -105,5 +113,62 @@ function checkCreatures(pack: ContentPack): void {
   }
   if (new Set(starters.map((s) => s.element)).size !== STARTER_COUNT) {
     fail('starters must have different elements');
+  }
+}
+
+function checkUniqueIds(kind: string, items: readonly { id: string }[]): Map<string, number> {
+  const seen = new Map<string, number>();
+  items.forEach((item, index) => {
+    if (seen.has(item.id)) fail(`duplicate ${kind} id "${item.id}"`);
+    seen.set(item.id, index);
+  });
+  return seen;
+}
+
+function checkReactions(pack: ContentPack): void {
+  checkUniqueIds('reaction', pack.reactions);
+  const markIds = new Set<string>();
+  const markElements = new Set<string>();
+  for (const r of pack.reactions) {
+    if (markIds.has(r.markId)) fail(`duplicate mark id "${r.markId}"`);
+    markIds.add(r.markId);
+    if (markElements.has(r.markElement)) fail(`two marks for element "${r.markElement}"`);
+    markElements.add(r.markElement);
+    // The trigger is the element that is strong against the marked element.
+    const trigger = pack.elements.find((e) => e.strongAgainst === r.markElement);
+    if (trigger?.id !== r.triggerElement) {
+      fail(`reaction "${r.id}" must be triggered by the element strong against ${r.markElement}`);
+    }
+  }
+  if (markElements.size !== ELEMENTS.length) fail('every element needs exactly one mark');
+}
+
+function checkBoss(boss: BossDef, adaptationIds: ReadonlyMap<string, number>): void {
+  if (!adaptationIds.has(boss.adaptation)) {
+    fail(`boss "${boss.id}" names unknown adaptation "${boss.adaptation}"`);
+  }
+  const gimmickIds = new Set<string>();
+  for (const g of boss.gimmicks) {
+    if (gimmickIds.has(g.id)) fail(`boss "${boss.id}" has duplicate gimmick id "${g.id}"`);
+    gimmickIds.add(g.id);
+  }
+}
+
+function checkRaidContent(pack: ContentPack): void {
+  checkUniqueIds('boss', pack.bosses);
+  const adaptationIds = checkUniqueIds('adaptation', pack.adaptations);
+  for (const boss of pack.bosses) checkBoss(boss, adaptationIds);
+
+  checkUniqueIds('finale ability', pack.finaleAbilities);
+  const ops = new Set<string>();
+  for (const a of pack.finaleAbilities) {
+    if (ops.has(a.effect.op)) fail(`two finale abilities use the effect "${a.effect.op}"`);
+    ops.add(a.effect.op);
+  }
+
+  checkUniqueIds('guest', pack.guests);
+  const speciesIds = new Set(pack.creatures.map((c) => c.id));
+  for (const g of pack.guests) {
+    if (!speciesIds.has(g.species)) fail(`guest "${g.id}" uses unknown species "${g.species}"`);
   }
 }

@@ -5,3 +5,4 @@ export * from './catching';
 export * from './fusion';
 export * from './stats';
 export * from './nickname';
+export * from './loot';

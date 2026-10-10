@@ -1,0 +1,31 @@
+[
+  {
+    "id": "rally",
+    "name": "Rally",
+    "description": "All creatures deal 40% more damage this round.",
+    "effect": { "op": "rally", "damageBp": 4000 },
+    "defaultRound": 6
+  },
+  {
+    "id": "shield-wall",
+    "name": "Shield Wall",
+    "description": "One zone takes no damage this round.",
+    "effect": { "op": "shield_wall" },
+    "defaultRound": 3,
+    "defaultAtZoneHit": true
+  },
+  {
+    "id": "re-mark",
+    "name": "Re-mark",
+    "description": "Set the boss's mark to a chosen element.",
+    "effect": { "op": "re_mark" },
+    "defaultRound": 4
+  },
+  {
+    "id": "purge",
+    "name": "Purge",
+    "description": "Remove the boss's Phase 2 adaptation for the rest of the fight.",
+    "effect": { "op": "purge" },
+    "defaultRound": 2
+  }
+]

@@ -12,7 +12,7 @@ Status: **draft for M3**. Numbers are starting values; the simulator tunes them 
 ## The board
 
 - One shared **row** of slots, ordered left to right. Each signed-up player places their 3 creatures; only the owner can move them.
-- **Zones:** the row splits into three contiguous zones of (nearly) equal size, **front** (left), **middle**, **back** (right). Zone sizes follow the row length; leftover slots go to the middle.
+- **Zones:** the row splits into three contiguous zones, **front** (left), **middle**, **back** (right). Front and back each get `floor(n / 3)` slots of an `n`-slot row; everything left goes to the middle (a row of 1 or 2 is all middle).
 - **Adjacency:** a creature's neighbours are the slots directly left and right of it.
 - **Guests:** with fewer than 3 players, the row is filled to 9 slots with NPC guest creatures (content-defined, level scaled to the players' average). Guests earn no loot.
 - **Placement conflicts:** each slot holds one creature; first come, first served. Players coordinate in Discord. A player can offer a swap, and the other player accepts it (M4 UI). Unplaced creatures of signed-up players are auto-placed into free slots by a default rule (guards front, payoffs back, setters next to payoffs) **[Misa: absent players are auto-placed]**.
@@ -26,11 +26,11 @@ A boss (or modifier) sets one ordering for a fight: `left_to_right`, `right_to_l
 - Matchups: an attacker deals ×1.5 to an element it's strong against and ×0.75 to the one that's strong against it (`Tide > Ember > Grove > Spark > Tide`).
 - **Marks:** the boss carries at most **one mark**. Each element has a mark: Tide → _Soaked_, Ember → _Scorched_, Grove → _Overgrown_, Spark → _Charged_.
 - **Hit rules**, for each creature hit on the boss:
-  1. If the boss has a mark and the hit's element is that mark's **trigger**, a **reaction** fires: bonus damage ×2.5 on that hit, and the mark is consumed.
+  1. If the boss has a mark and the hit's element is that mark's **trigger**, a **reaction** fires: the hit's damage is multiplied by ×2.5 and the mark is consumed. The "bonus" is the damage above the plain hit.
   2. Else, if the boss has no mark, the hit applies its element's mark.
   3. Else (the boss has a different mark): a **Setter** overwrites it with its own mark; others leave it.
 - **Triggers:** Soaked ← Spark (_Overload_), Charged ← Grove (_Grounding_), Overgrown ← Ember (_Wildfire_), Scorched ← Tide (_Steam_).
-- **Credit:** a reaction's bonus damage is split 50/50 between the creature that applied the mark (setup) and the one that triggered it (payoff). Payoff creatures deal an extra ×1.25 on reactions.
+- **Credit:** a reaction's bonus damage is split 50/50 between the creature that applied the mark (setup) and the one that triggered it (payoff). Payoff creatures get an extra ×1.25 on reactions, combined with the ×2.5 into one multiplier of ×3.125 (one floor, in basis points). The setup creature gets `floor(bonus / 2)`, the payoff creature the rest.
 
 ## Creatures in combat
 
@@ -39,8 +39,8 @@ A boss (or modifier) sets one ordering for a fight: `left_to_right`, `right_to_l
 - **Roles:**
   - **Setter:** overwrites marks (see above).
   - **Payoff:** ×1.25 on reactions.
-  - **Support:** each round, gives its two neighbours +15% damage on their next hit.
-  - **Guard:** takes hits meant for its zone first and has +30% HP.
+  - **Support:** each round (if it is not silenced), gives its two neighbours +15% damage on their next hit. Buffs from the same supporter don't stack.
+  - **Guard:** has +30% HP and takes single-target hits (the boss's normal attack and "strike" gimmicks) meant for others in its zone, first living guard in position order. It does not intercept zone-wide hits (`hit_zone`) or reflected damage. Its credit is the damage it actually absorbed.
 - **HP:** creatures can be knocked out and sit out the rest of the phase. Knocked-out creatures still keep their credit.
 
 ## Bosses
@@ -56,7 +56,7 @@ Gimmicks are data, built from effect operations. Examples for the four MVP bosse
 
 | Boss            | Element | Turn order    | Gimmicks                                                                                                                   |
 | --------------- | ------- | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Tidal Colossus  | Tide    | left to right | _Undertow_: every 3rd round, hits the whole front zone                                                                     |
+| Tidal Colossus  | Tide    | left to right | _Undertow_: every 3rd round (`every: N` fires on rounds N, 2N, 3N, ...), hits the whole front zone                         |
 | Cinder Wyrm     | Ember   | speed         | _Backdraft_: the first reaction each round is reflected and damages the triggering creature instead of giving bonus damage |
 | Thornmother     | Grove   | right to left | _Bramble Bind_: every 2nd round, the creatures at both ends of the row are silenced for their next turn                    |
 | Storm Sovereign | Spark   | left to right | _Lightning Rod_: every round, strikes the creature with the highest Attack                                                 |
@@ -72,7 +72,7 @@ Gimmicks are data, built from effect operations. Examples for the four MVP bosse
 - **Phase 2 adaptation:** after Phase 1 the boss gains one counter, chosen by a plain-language rule shown to players. Example: "the reaction you used most is resisted 50%", or "the element that dealt most damage is resisted 25%". It is stored in the event log.
 - **Finale abilities:** before the finale, each signed-up player picks one ability from a small content-defined list, each with a **default round** **[Misa]**:
   - **Rally:** all creatures +40% damage this round. Default round 6.
-  - **Shield Wall:** one zone takes no damage this round. Default: the round before the boss's next big gimmick.
+  - **Shield Wall:** one zone takes no damage this round. Default: the round of the boss's first zone attack from round 2 on, on the zone it attacks (the effect lands that round, as if pressed during the round before); round 3 and the front zone if the boss has none.
   - **Re-mark:** set the boss's mark to a chosen element. Default round 4.
   - **Purge:** remove the boss's Phase 2 adaptation for the rest of the fight. Default round 2.
 
@@ -82,14 +82,14 @@ Gimmicks are data, built from effect operations. Examples for the four MVP bosse
 
 ## Contribution and loot (pure rules in `@creatures/game`)
 
-- **Contribution** per player = own damage + setup credit + support credit (bonus damage enabled for neighbours) + guard credit (damage absorbed).
+- **Contribution** per player = own damage + setup credit + support credit + guard credit (damage absorbed). Setup and support credit are **zero-sum**: the bonus damage they cause moves from the hitter's credit to the setter's or supporter's, so contributions add up to the damage dealt plus the damage guards absorbed.
 - **Soft cap:** a player's share of total contribution counts fully up to 35%; above that it counts at half rate, for loot weighting only. Damage itself is unchanged.
 - **Essence** (needed to evolve) per cleared stage:
   - Phase 1 cleared: 10 Essence to everyone who signed up.
   - Phase 2 cleared: +15.
   - Finale won: +25.
 
-  Plus a contribution-weighted pool of the same total size per stage. That makes about 70% flat and 30% contribution across the week.
+  Plus a contribution-weighted pool per stage worth 3/7 of that stage's flat total (`poolBp` 4286), split with largest-remainder rounding so it is paid out exactly. That makes about 70% flat and 30% contribution across the week.
 
 - **Gear rolls** (gear arrives with the gear step): one roll per cleared stage, rarity weighted by contribution share.
 - **Jackpot** (finale win only): each signed-up player rolls 6%. Pity: +8 points per raid without a jackpot from raid 6 on; guaranteed at raid 10 without one. The counter counts participation, never resets for skipping a week, and is shown privately.
