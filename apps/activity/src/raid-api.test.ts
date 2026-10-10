@@ -70,6 +70,54 @@ describe('parseRaidView', () => {
     expect(parseRaidView(out).party).toBeNull();
   });
 
+  it('works against a server that has no ability or reveal yet', () => {
+    const parsed = parseRaidView(raid);
+    expect(parsed.you.ability).toBeUndefined();
+    expect(parsed.you.reveal).toBeUndefined();
+  });
+
+  it('accepts the finale ability and a reveal, or null for both', () => {
+    const withBoth = {
+      ...raid,
+      you: {
+        ...raid.you,
+        ability: { abilityId: 'rally', chosen: true },
+        reveal: {
+          week: '2026-W40',
+          cleared: true,
+          essence: 30,
+          jackpot: { essence: 100, firstOnServer: false },
+        },
+      },
+    };
+    const parsed = parseRaidView(withBoth);
+    expect(parsed.you.ability?.abilityId).toBe('rally');
+    expect(parsed.you.reveal?.jackpot?.essence).toBe(100);
+    const empty = { ...raid, you: { ...raid.you, ability: null, reveal: null } };
+    expect(parseRaidView(empty).you.reveal).toBeNull();
+    const miss = {
+      ...raid,
+      you: { ...raid.you, reveal: { week: 'w', cleared: false, essence: 0, jackpot: null } },
+    };
+    expect(parseRaidView(miss).you.reveal?.jackpot).toBeNull();
+  });
+
+  it('refuses a broken ability or reveal', () => {
+    const you = (extra: Record<string, unknown>) => ({ ...raid, you: { ...raid.you, ...extra } });
+    expect(() => parseRaidView(you({ ability: { abilityId: 'rally' } }))).toThrow();
+    expect(() => parseRaidView(you({ ability: { abilityId: 1, chosen: true } }))).toThrow();
+    expect(() => parseRaidView(you({ ability: 'rally' }))).toThrow();
+    expect(() => parseRaidView(you({ reveal: { week: 'w', cleared: true } }))).toThrow();
+    expect(() =>
+      parseRaidView(you({ reveal: { week: 'w', cleared: true, essence: 1.5, jackpot: null } })),
+    ).toThrow();
+    expect(() =>
+      parseRaidView(
+        you({ reveal: { week: 'w', cleared: true, essence: 1, jackpot: { essence: 1 } } }),
+      ),
+    ).toThrow();
+  });
+
   it('refuses broken shapes', () => {
     expect(() => parseRaidView(null)).toThrow();
     expect(() => parseRaidView({ ...raid, status: 'weird' })).toThrow();

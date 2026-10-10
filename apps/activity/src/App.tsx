@@ -138,7 +138,11 @@ export function App() {
             <p>This is a Discord Activity. Launch it from Discord to play.</p>
           ) : (
             <>
-              <Game initial={bootStatus.value.game} onLeetSync={setLeetSync} />
+              <Game
+                initial={bootStatus.value.game}
+                onLeetSync={setLeetSync}
+                showPractice={bootStatus.value.config.environment !== 'production'}
+              />
               {bootStatus.value.config.leetSource === 'mock' && (
                 <p class="note">Leet points are simulated until the leet bot API is live</p>
               )}

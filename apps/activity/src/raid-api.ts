@@ -57,6 +57,14 @@ export interface PhaseResultView {
   jackpot: string[];
 }
 
+/** The loot of a finale the player took part in, shown once as a reveal. */
+export interface RaidReveal {
+  week: string;
+  cleared: boolean;
+  essence: number;
+  jackpot: null | { essence: number; firstOnServer: boolean };
+}
+
 export interface RaidView {
   weekId: string;
   status: RaidStatus;
@@ -81,6 +89,13 @@ export interface RaidView {
     canEdit: boolean;
     canOptOut: boolean;
     team: { mode: 'auto' | 'chosen'; creatures: TeamCreatureView[] } | null;
+    /**
+     * The finale ability: `chosen` is false when it was assigned automatically. Missing on servers
+     * from before M5, so treat undefined like null.
+     */
+    ability?: { abilityId: string; chosen: boolean } | null;
+    /** A finale result the player has not seen yet. Missing on servers from before M5. */
+    reveal?: RaidReveal | null;
   };
   party: null | {
     party: number;
@@ -125,15 +140,16 @@ export interface ReplayView {
 
 // --- Shape checks ---
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
-const isStr = (value: unknown): value is string => typeof value === 'string';
-const isBool = (value: unknown): value is boolean => typeof value === 'boolean';
-const isInt = (value: unknown): value is number =>
+export const isStr = (value: unknown): value is string => typeof value === 'string';
+export const isBool = (value: unknown): value is boolean => typeof value === 'boolean';
+export const isInt = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value);
-const isNullableStr = (value: unknown): value is string | null => value === null || isStr(value);
-const isArrayOf = <T>(value: unknown, check: (item: unknown) => item is T): value is T[] =>
+export const isNullableStr = (value: unknown): value is string | null =>
+  value === null || isStr(value);
+export const isArrayOf = <T>(value: unknown, check: (item: unknown) => item is T): value is T[] =>
   Array.isArray(value) && value.every(check);
 const isStrRecord = (value: unknown): value is Record<string, string> =>
   isRecord(value) && Object.values(value).every(isStr);
@@ -224,6 +240,24 @@ function isBoss(value: unknown): value is RaidView['boss'] {
   );
 }
 
+function isAbilityPick(value: unknown): value is NonNullable<RaidView['you']['ability']> {
+  return isRecord(value) && isStr(value['abilityId']) && isBool(value['chosen']);
+}
+
+export function isJackpot(value: unknown): value is { essence: number; firstOnServer: boolean } {
+  return isRecord(value) && isInt(value['essence']) && isBool(value['firstOnServer']);
+}
+
+function isReveal(value: unknown): value is RaidReveal {
+  return (
+    isRecord(value) &&
+    isStr(value['week']) &&
+    isBool(value['cleared']) &&
+    isInt(value['essence']) &&
+    (value['jackpot'] === null || isJackpot(value['jackpot']))
+  );
+}
+
 function isYou(value: unknown): value is RaidView['you'] {
   if (
     !isRecord(value) ||
@@ -231,7 +265,13 @@ function isYou(value: unknown): value is RaidView['you'] {
     !isBool(value['optOut']) ||
     !(value['party'] === null || isInt(value['party'])) ||
     !isBool(value['canEdit']) ||
-    !isBool(value['canOptOut'])
+    !isBool(value['canOptOut']) ||
+    !(
+      value['ability'] === undefined ||
+      value['ability'] === null ||
+      isAbilityPick(value['ability'])
+    ) ||
+    !(value['reveal'] === undefined || value['reveal'] === null || isReveal(value['reveal']))
   ) {
     return false;
   }
@@ -312,10 +352,10 @@ const EVENT_TYPES: ReadonlySet<string> = new Set([
   'round_end',
 ]);
 
-const isEvent = (value: unknown): value is FightEvent =>
+export const isEvent = (value: unknown): value is FightEvent =>
   isRecord(value) && isStr(value['t']) && EVENT_TYPES.has(value['t']) && isInt(value['round']);
 
-function isReplayRow(value: unknown): value is ReplayRowEntry {
+export function isReplayRow(value: unknown): value is ReplayRowEntry {
   return (
     isRecord(value) &&
     isInt(value['position']) &&
@@ -329,7 +369,7 @@ function isReplayRow(value: unknown): value is ReplayRowEntry {
   );
 }
 
-function isEventNames(value: unknown): value is EventNames {
+export function isEventNames(value: unknown): value is EventNames {
   if (!isRecord(value) || !isStr(value['boss']) || !isStrRecord(value['creatures'])) return false;
   const optional = ['players', 'reactions', 'gimmicks', 'abilities', 'marks', 'elements'] as const;
   return optional.every((key) => value[key] === undefined || isStrRecord(value[key]));
@@ -397,4 +437,14 @@ export async function fetchReplay(
   // The week id comes from the server's own view; encode anyway so a path can never be injected.
   const path = `/api/raid/replay/${encodeURIComponent(weekId)}/${String(party)}/${phase}`;
   return parseReplayView(await apiFetch(path));
+}
+
+/** Picks the finale ability (any time before the finale starts). */
+export async function setRaidAbility(abilityId: string): Promise<RaidView> {
+  return parseRaidView(await send('/api/raid/ability', 'PUT', { abilityId }));
+}
+
+/** Marks a finale reveal as seen. Idempotent on the server. */
+export async function markRevealSeen(week: string): Promise<RaidView> {
+  return parseRaidView(await send('/api/raid/reveal-seen', 'POST', { week }));
 }

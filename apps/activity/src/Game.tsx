@@ -42,8 +42,11 @@ function loaded(game: GameState): Loaded {
 export function Game({
   initial,
   onLeetSync,
+  showPractice,
 }: {
   initial: GameState;
+  /** True on staging and local runs, where the server can start a practice finale. */
+  showPractice: boolean;
   /** Called with the sync status of every state this component loads, so the footer stays current. */
   onLeetSync: (status: LeetSyncStatus) => void;
 }) {
@@ -256,7 +259,13 @@ export function Game({
             }}
           />
         )}
-        {tab === 'raid' && <Raid creatures={game.creatures} />}
+        {tab === 'raid' && (
+          <Raid
+            creatures={game.creatures}
+            showPractice={showPractice}
+            onBalanceChange={refreshState}
+          />
+        )}
       </div>
     </>
   );

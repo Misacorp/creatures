@@ -1,12 +1,19 @@
 import { RULES } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { AbilityPicker } from './AbilityPicker';
 import { ApiError, type Creature } from './api';
 import { clockOffset, creatureName, errorText, speciesName } from './game';
 import { useNow } from './hooks';
+import { bannerText, finaleWindow } from './live';
+import { startPractice, type LiveSnapshot } from './live-api';
+import { Live } from './Live';
 import { Replay } from './Replay';
+import { RevealCard } from './Reveal';
 import {
   fetchRaid,
+  markRevealSeen,
   placeCreature,
+  setRaidAbility,
   setRaidOptOut,
   setRaidTeam,
   unplaceCreature,
@@ -40,7 +47,17 @@ const ZONES = ['front', 'middle', 'back'] as const;
 /** Extra wait after an event is due before asking the server what happened. */
 const REFRESH_GRACE_MS = 3000;
 
-export function Raid({ creatures }: { creatures: Creature[] }) {
+export function Raid({
+  creatures,
+  showPractice,
+  onBalanceChange,
+}: {
+  creatures: Creature[];
+  /** True on staging and local runs, where the server can start a practice finale. */
+  showPractice: boolean;
+  /** Called when the Essence balance may have changed (a finale reveal was seen). */
+  onBalanceChange: () => void;
+}) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -49,7 +66,13 @@ export function Raid({ creatures }: { creatures: Creature[] }) {
   const [hint, setHint] = useState<string | null>(null);
   const [picking, setPicking] = useState<string[] | null>(null);
   const [replay, setReplay] = useState<RaidPhaseId | null>(null);
+  const [liveOpen, setLiveOpen] = useState(false);
+  const [liveInitial, setLiveInitial] = useState<LiveSnapshot | null>(null);
+  const [practiceGone, setPracticeGone] = useState(false);
   const inFlight = useRef(false);
+  const practiceInFlight = useRef(false);
+  /** The finale view opens by itself once, when the fight starts; closing it keeps it closed. */
+  const autoOpened = useRef(false);
   const now = useNow(loaded !== null);
 
   function apply(view: RaidView): void {
@@ -89,7 +112,26 @@ export function Raid({ creatures }: { creatures: Creature[] }) {
     };
   }, [nextAt, offset]);
 
-  /** Runs one change. After a definite "no" the screen was probably stale, so it reloads. */
+  // The finale view opens by itself when the fight starts, for players who are in a party.
+  const finaleAt = loaded?.view.schedule.finale ?? null;
+  const finaleRounds = loaded?.view.boss.finaleRounds ?? 1;
+  const inParty = loaded?.view.you.party != null;
+  const finaleState =
+    finaleAt === null ? 'before' : finaleWindow(finaleAt, finaleRounds, now + offset);
+  useEffect(() => {
+    if (finaleState === 'live' && inParty && !autoOpened.current) {
+      autoOpened.current = true;
+      setLiveOpen(true);
+    }
+  }, [finaleState, inParty]);
+
+  // A reveal the player has not seen yet means the Essence balance may have moved.
+  const revealWeek = loaded?.view.you.reveal?.week ?? null;
+  useEffect(() => {
+    if (revealWeek !== null) onBalanceChange();
+  }, [revealWeek]);
+
+  /** Runs one change. After a definite "no"   /** Runs one change. After a definite "no" the screen was probably stale, so it reloads. */
   async function mutate(task: () => Promise<RaidView>): Promise<boolean> {
     if (inFlight.current) return false;
     inFlight.current = true;
@@ -113,6 +155,39 @@ export function Raid({ creatures }: { creatures: Creature[] }) {
       inFlight.current = false;
       setBusy(false);
     }
+  }
+
+  function closeLive(): void {
+    autoOpened.current = true;
+    setLiveOpen(false);
+    setLiveInitial(null);
+    // The result may have landed while the fight was on.
+    fetchRaid().then(apply, () => undefined);
+  }
+
+  function startPracticeFight(): void {
+    if (practiceInFlight.current) return;
+    practiceInFlight.current = true;
+    setBusy(true);
+    setError(null);
+    startPractice().then(
+      (snapshot) => {
+        practiceInFlight.current = false;
+        setBusy(false);
+        setLiveInitial(snapshot);
+        setLiveOpen(true);
+      },
+      (err: unknown) => {
+        practiceInFlight.current = false;
+        setBusy(false);
+        if (err instanceof ApiError && err.status === 404) {
+          setPracticeGone(true);
+          setError('Practice fights are only available on the test server.');
+        } else {
+          setError(errorText(err));
+        }
+      },
+    );
   }
 
   function runIntent(intent: Intent): void {
@@ -145,6 +220,19 @@ export function Raid({ creatures }: { creatures: Creature[] }) {
   const locked = busy || !view.you.canEdit;
   const rosterNames = view.roster.map((r) => r.displayName);
 
+  if (liveOpen) {
+    return (
+      <Live
+        initial={liveInitial}
+        onClose={closeLive}
+        onBalanceChange={onBalanceChange}
+        onRevealSeen={(week) => {
+          markRevealSeen(week).then(apply, () => undefined);
+        }}
+      />
+    );
+  }
+
   if (replay !== null && party !== null) {
     return (
       <Replay
@@ -170,6 +258,50 @@ export function Raid({ creatures }: { creatures: Creature[] }) {
           {error}
         </p>
       )}
+      {view.you.reveal != null && (
+        <RevealCard
+          reveal={view.you.reveal}
+          pity={null}
+          busy={busy}
+          onDismiss={() => {
+            const week = view.you.reveal?.week;
+            if (week === undefined) return;
+            void mutate(() => markRevealSeen(week)).then((ok) => {
+              if (ok) onBalanceChange();
+            });
+          }}
+        />
+      )}
+      {party !== null && (finaleState === 'lobby' || finaleState === 'live') && (
+        <section class="raid-section live-banner" aria-labelledby="live-banner-heading">
+          <h3 id="live-banner-heading" class="visually-hidden">
+            Live finale
+          </h3>
+          <p class="live-banner-text" role="status" aria-live="off">
+            <strong>{bannerText(finaleState, view.schedule.finale, serverNow)}</strong>
+          </p>
+          <button
+            type="button"
+            class="primary"
+            onClick={() => {
+              autoOpened.current = true;
+              setLiveInitial(null);
+              setLiveOpen(true);
+            }}
+          >
+            Join
+          </button>
+        </section>
+      )}
+      {showPractice && !practiceGone && (
+        <details class="practice">
+          <summary>Testing tools</summary>
+          <p class="muted">Practice fights only exist on the test server and give no rewards.</p>
+          <button type="button" disabled={busy} onClick={startPracticeFight}>
+            Start practice fight
+          </button>
+        </details>
+      )}
       <BossCard view={view} />
       <ScheduleStrip view={view} serverNow={serverNow} />
       <Roster
@@ -179,6 +311,16 @@ export function Raid({ creatures }: { creatures: Creature[] }) {
           void mutate(() => setRaidOptOut(optOut));
         }}
       />
+      {view.you.ability != null && (
+        <AbilityPicker
+          current={view.you.ability}
+          editable={serverNow < view.schedule.finale}
+          busy={busy}
+          onPick={(abilityId) => {
+            void mutate(() => setRaidAbility(abilityId));
+          }}
+        />
+      )}
       {party !== null && team !== null && (
         <>
           <section class="raid-section" aria-labelledby="raid-team-heading">

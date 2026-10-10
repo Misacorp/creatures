@@ -103,6 +103,11 @@ describe('display helpers', () => {
     'not_in_roster',
     'duplicate_creatures',
     'invalid_slot',
+    'already_fired',
+    'too_late',
+    'not_in_fight',
+    'hold_too_late',
+    'invalid_body',
   ])('has a plain message for the raid error "%s"', (code) => {
     const text = errorText(new ApiError(409, code));
     expect(text).not.toContain('_');

@@ -152,6 +152,13 @@ const ERROR_TEXT: Record<string, string> = {
   not_in_roster: "You are not in this week's raid.",
   duplicate_creatures: 'Pick three different creatures.',
   invalid_slot: 'That slot does not exist.',
+  // The live finale.
+  already_fired: 'Your ability has already been used.',
+  too_late: 'Too late: the fight is in its last round or already over.',
+  not_in_fight: 'You are not in this fight.',
+  hold_too_late: 'Too late to hold: your ability is already due.',
+  invalid_body:
+    'The server did not understand that. Close and reopen the Activity if it keeps happening.',
 };
 
 const NICKNAME_REASONS: Record<string, string> = {
