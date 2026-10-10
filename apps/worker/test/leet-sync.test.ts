@@ -791,7 +791,7 @@ describe('real Durable Object with the mock source', () => {
   it('syncs on /api/me, arms an alarm and runs it', async () => {
     const guild = nextGuild();
     const stub = stubFor(guild);
-    const secret = await stub.createSession(guild, USER);
+    const secret = await stub.createSession(guild, USER, null);
     const token = await tokenFor(guild, secret);
     const call = (path: string) =>
       exports.default.fetch(
@@ -1052,7 +1052,7 @@ describe('leet sync status', () => {
         ]);
         expect(
           sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
-        ).toBe(8);
+        ).toBe(9);
         expect(syncState(sql)[0]?.cursor).toBe('kept');
         expect(core.leetSyncStatus()).toMatchObject({
           lastAttemptAt: null,

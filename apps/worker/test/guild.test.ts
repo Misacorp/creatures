@@ -18,6 +18,7 @@ import {
   expectApiHeaders,
   runCore,
   tokenFor,
+  undoDiscordPostsMigration,
   undoRaidMigration,
 } from './helpers';
 
@@ -80,13 +81,14 @@ describe('schema migrations', () => {
           'raid_results',
           'raid_events',
           'jackpot_pity',
+          'discord_posts',
         ]),
       );
       const version = sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one();
-      expect(version.v).toBe(8);
+      expect(version.v).toBe(9);
       // Running migrations again is a no-op.
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(8);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(9);
       return Promise.resolve();
     });
   });
@@ -117,7 +119,7 @@ describe('migration 5 (guild timezone)', () => {
       core.migrate();
 
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        8,
+        9,
       );
       expect(sql.exec('SELECT id, guild_id, timezone FROM guild_meta').toArray()).toEqual([
         { id: 1, guild_id: '740000000000000010', timezone: 'Europe/Helsinki' },
@@ -132,6 +134,97 @@ describe('migration 5 (guild timezone)', () => {
         sql.exec("INSERT INTO guild_meta (id, guild_id, timezone) VALUES (1, 'a', NULL)"),
       ).toThrow(/NOT NULL/i);
       return Promise.resolve();
+    });
+  });
+});
+
+describe('migration 9 (announcement channel and Discord posts)', () => {
+  it('applies on a schema-8 object and keeps existing rows', async () => {
+    await runCore('740000000000000020', async ({ core, sql }) => {
+      await core.createSession('740000000000000020', USER, '555555555555555555');
+      sql.exec(
+        "INSERT INTO discord_posts (key, channel_id, content, status, attempts, next_attempt_at, created_at) VALUES ('k', '1', 'x', 'pending', 0, 0, 0)",
+      );
+      undoDiscordPostsMigration(sql);
+      expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
+        8,
+      );
+      const columns = () =>
+        sql
+          .exec<{ name: string }>('SELECT name FROM pragma_table_info(?)', 'guild_meta')
+          .toArray()
+          .map((c) => c.name);
+      expect(columns()).toEqual(['id', 'guild_id', 'timezone']);
+      expect(
+        sql.exec("SELECT name FROM sqlite_master WHERE name = 'discord_posts'").toArray(),
+      ).toEqual([]);
+
+      core.migrate();
+
+      expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
+        9,
+      );
+      expect(columns()).toEqual(['id', 'guild_id', 'timezone', 'announce_channel_id']);
+      expect(
+        sql.exec('SELECT guild_id, timezone, announce_channel_id FROM guild_meta').toArray(),
+      ).toEqual([
+        { guild_id: '740000000000000020', timezone: 'Europe/Helsinki', announce_channel_id: null },
+      ]);
+      expect(sql.exec('SELECT COUNT(*) AS n FROM discord_posts').one()).toEqual({ n: 0 });
+      expect(
+        sql
+          .exec<{ name: string }>('SELECT name FROM pragma_table_info(?)', 'discord_posts')
+          .toArray()
+          .map((c) => c.name),
+      ).toEqual([
+        'id',
+        'key',
+        'channel_id',
+        'content',
+        'status',
+        'attempts',
+        'next_attempt_at',
+        'created_at',
+      ]);
+    });
+  });
+});
+
+describe('the announcement channel', () => {
+  const channelOf = (sql: SqlStorage) =>
+    sql
+      .exec<{ announce_channel_id: string | null }>('SELECT announce_channel_id FROM guild_meta')
+      .one().announce_channel_id;
+
+  it('is the channel most recently launched from: updated on every login', async () => {
+    await runCore('740000000000000021', async ({ core, sql, guildId }) => {
+      await core.createSession(guildId, USER, null);
+      expect(channelOf(sql)).toBeNull();
+      await core.createSession(guildId, USER, '555555555555555551');
+      expect(channelOf(sql)).toBe('555555555555555551');
+      await core.createSession(guildId, USER, '555555555555555552');
+      expect(channelOf(sql)).toBe('555555555555555552');
+      // A login without a channel keeps the last known one.
+      await core.createSession(guildId, USER, null);
+      await core.createSession(guildId, USER);
+      expect(channelOf(sql)).toBe('555555555555555552');
+    });
+  });
+
+  it('ignores anything that is not a snowflake', async () => {
+    await runCore('740000000000000022', async ({ core, sql, guildId }) => {
+      await core.createSession(guildId, USER, '555555555555555551');
+      for (const bad of [
+        '',
+        'abc',
+        '12345',
+        '555555555555555551/../x',
+        '5'.repeat(30),
+        ' 555555555555555551',
+      ]) {
+        await core.createSession(guildId, USER, bad);
+        expect(channelOf(sql)).toBe('555555555555555551');
+      }
     });
   });
 });
@@ -384,6 +477,7 @@ describe('Worker routing to the guild Durable Object', () => {
     const secret = await env.GUILD_WORLD.get(env.GUILD_WORLD.idFromName(guildId)).createSession(
       guildId,
       USER,
+      null,
     );
     const good = await tokenFor(guildId, secret);
     const [version, , , mac] = good.split('.');
@@ -419,7 +513,7 @@ describe('Worker routing to the guild Durable Object', () => {
   it('does not accept a session token from another guild', async () => {
     const secret = await env.GUILD_WORLD.get(
       env.GUILD_WORLD.idFromName('800000000000000003'),
-    ).createSession('800000000000000003', USER);
+    ).createSession('800000000000000003', USER, null);
     const own = await call('/api/me', {
       Authorization: `Bearer ${await tokenFor('800000000000000003', secret)}`,
     });

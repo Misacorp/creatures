@@ -1,4 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
+import { createPostSender } from './discord-posts';
 import { GuildCore, type SessionUser } from './guild-core';
 import { LEET_BACKFILL_DAYS, createLeetSourceFromEnv } from './leet';
 
@@ -14,6 +15,10 @@ export class GuildWorld extends DurableObject<Env> {
     super(ctx, env);
     this.core = new GuildCore(ctx.storage, Date.now, {
       guildId: () => ctx.id.name,
+      postSender: createPostSender({
+        botToken: env.DISCORD_BOT_TOKEN,
+        fetch: (input, init) => fetch(input, init),
+      }),
       createLeetSource: (knownPlayers) =>
         createLeetSourceFromEnv(env, {
           now: Date.now,
@@ -28,8 +33,8 @@ export class GuildWorld extends DurableObject<Env> {
     });
   }
 
-  createSession(guildId: string, user: SessionUser): Promise<string> {
-    return this.core.createSession(guildId, user);
+  createSession(guildId: string, user: SessionUser, channelId: string | null): Promise<string> {
+    return this.core.createSession(guildId, user, channelId);
   }
 
   override fetch(request: Request): Promise<Response> {

@@ -159,11 +159,20 @@ export const RAID_TABLES = [
   'jackpot_pity',
 ] as const;
 
+/** Puts a database back to before migration 9 (the announcement channel and the post queue). */
+export function undoDiscordPostsMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS discord_posts');
+  sql.exec('ALTER TABLE guild_meta DROP COLUMN announce_channel_id');
+  sql.exec('DELETE FROM schema_version WHERE version = 9');
+}
+
 /**
- * Puts a database back to before migration 7 (reserved) and 8 (the raid), for tests that replay older migrations. The wider
- * `server_firsts` check stays: migration 8 recreates that table with its rows anyway.
+ * Puts a database back to before migration 7 (reserved), 8 (the raid) and 9 (Discord posts), for
+ * tests that replay older migrations. The wider `server_firsts` check stays: migration 8 recreates
+ * that table with its rows anyway.
  */
 export function undoRaidMigration(sql: SqlStorage): void {
+  undoDiscordPostsMigration(sql);
   for (const table of RAID_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
   sql.exec('DELETE FROM schema_version WHERE version IN (7, 8)');
 }

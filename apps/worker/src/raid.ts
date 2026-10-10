@@ -9,6 +9,7 @@
 import { content, type Rng } from '@creatures/game';
 import type { Outcome } from './collection';
 import type { LedgerStorage } from './ledger';
+import { queueBossReveal } from './raid-posts';
 import { resolveParty } from './raid-resolve';
 import { buildRaidView, buildReplayView, type RaidView, type ReplayView } from './raid-view';
 import {
@@ -247,8 +248,12 @@ export class Raid {
     if (event === 'weekStart') {
       // Only the week the clock is in is opened (an old week that was never opened stays absent).
       if (weekId === weekIdFor(this.deps.now(), tz) || this.week(weekId) !== null) {
-        this.ensureWeek(weekId);
-        this.markDone(weekId, event, 'ran');
+        // The week, its boss reveal post and the done marker commit together.
+        this.deps.storage.transactionSync(() => {
+          const week = this.ensureWeek(weekId);
+          queueBossReveal(this.sql, week, tz, this.deps.now());
+          this.markDone(weekId, event, 'ran');
+        });
       } else {
         this.markDone(weekId, event, 'skipped');
       }

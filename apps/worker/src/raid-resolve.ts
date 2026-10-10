@@ -30,6 +30,7 @@ import {
 } from '@creatures/engine';
 import { credit, type LedgerStorage } from './ledger';
 import { partyMembers } from './raid-roster';
+import { queuePhasePost } from './raid-posts';
 import type { RaidPhase } from './raid-schedule';
 import { effectiveTeam, rowLength, type TeamCreature } from './raid-teams';
 import { recordServerFirst } from './server-firsts';
@@ -299,6 +300,16 @@ export function resolveParty(
       JSON.stringify(summary),
       now,
     );
+    // Queued in this transaction, so the post exists exactly when the result does.
+    queuePhasePost(sql, {
+      weekId: week.weekId,
+      party,
+      phase,
+      now,
+      input,
+      result,
+      summary,
+    });
     return true;
   });
 }

@@ -28,6 +28,7 @@ export type DiscordUser = v.InferOutput<typeof DiscordUserSchema>;
 export const ActivityInstanceSchema = v.object({
   location: v.object({
     guild_id: v.nullish(v.string()),
+    channel_id: v.nullish(v.string()),
   }),
   users: v.array(v.string()),
 });
