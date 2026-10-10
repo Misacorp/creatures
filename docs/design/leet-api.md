@@ -23,7 +23,7 @@ Base URL: chosen by the leet bot stack (for example `https://leet-api.misacorp.d
 
 ### `GET /v1/guilds/{guildId}/days?after={cursor}&limit={n}`
 
-Finalised leet days for a server, oldest first. A day is **finalised** once its leet window (13:37–13:38 Europe/Helsinki) has closed and the bot has recorded all results. Days in progress are never returned.
+Finalised leet days for a server, oldest first. A day is **finalised** once its leet window (13:37–13:38 in the server's timezone, Europe/Helsinki by default) has closed and the bot has recorded all results. Days in progress are never returned.
 
 - `after` (optional): opaque cursor from a previous response. Omit to start from the beginning (or from `since`, below).
 - `since` (optional): `YYYY-MM-DD`; only used when `after` is absent. Lets a new server start from its install date.
@@ -51,7 +51,7 @@ Response `200`:
 ```
 
 - `id` is stable and unique per server and day. The game uses `(day id, userId)` as the idempotency key for the Bait credit.
-- Days with no participants are **omitted** (the bot stores leet messages, not days). Days are derived by grouping the guild's 13:37 leet messages by Helsinki date, earliest leet per user. A day is finalised after 13:40 Helsinki.
+- Days with no participants are **omitted** (the bot stores leet messages, not days). Days are derived by grouping the guild's 13:37 leet messages by server-local date, earliest leet per user. A day is finalised after 13:40 server-local time.
 - Once a day is returned, it is **immutable**. If the bot ever corrects a past day, it should be a new, explicit mechanism (out of scope for now).
 - `404` if the bot doesn't know the server. `401` for a missing or invalid key.
 
@@ -74,7 +74,7 @@ Not needed until the seasonal-feature system (post-MVP). Listed so the leet bot 
 
 ## How the game uses it
 
-1. A per-server Durable Object alarm runs daily at about 13:40 Europe/Helsinki (after the leet window closes), plus a throttled pull when a player opens the Activity.
+1. A per-server Durable Object alarm runs daily at about 13:40 in the guild's timezone (default Europe/Helsinki; after the leet window closes), plus a throttled pull when a player opens the Activity.
 2. It requests `days?after=<stored cursor>`, and for each participant of each day computes leet points with the game's rules (see `decisions.md`), converts to Bait, and appends a ledger credit with idempotency key `leet:<day id>:<userId>` and `source = "leet"`.
 3. It stores `nextCursor` only after the credits commit, in the same transaction.
 4. Players who haven't opened the game yet still accrue: credits are keyed by Discord user ID and become visible when they first launch.
@@ -82,5 +82,5 @@ Not needed until the seasonal-feature system (post-MVP). Listed so the leet bot 
 ## Questions for the leet bot side
 
 - Does DynamoDB already store per-day, per-user leet records with the guild ID and timestamp? If it only stores monthly totals, the API needs a new daily record (or a stream from the existing writes).
-- Which date convention does the bot use for a "day" (Helsinki calendar date is assumed)?
+- Which date convention does the bot use for a "day" (the server-local calendar date is assumed; the game uses the guild's timezone, Europe/Helsinki by default)?
 - Is there an existing custom domain for the leet bot's API Gateway?

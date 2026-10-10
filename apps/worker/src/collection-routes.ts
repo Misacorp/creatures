@@ -21,6 +21,8 @@ export interface CollectionRouteContext {
     collection: Collection;
     /** Runs the throttled leet sync, so the balance shown is fresh. */
     syncIfStale(): Promise<void>;
+    /** The guild's timezone, so the client can show guild-local times. */
+    timezone(): string;
   };
 }
 
@@ -54,7 +56,7 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
   '/api/state': {
     GET: async (_request, { user, core }) => {
       await core.syncIfStale();
-      return json(core.collection.state(user.id));
+      return json({ ...core.collection.state(user.id), timezone: core.timezone() });
     },
   },
   '/api/starter': {

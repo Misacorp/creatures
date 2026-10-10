@@ -73,10 +73,49 @@ describe('schema migrations', () => {
         ]),
       );
       const version = sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one();
-      expect(version.v).toBe(4);
+      expect(version.v).toBe(5);
       // Running migrations again is a no-op.
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(4);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(5);
+      return Promise.resolve();
+    });
+  });
+});
+
+describe('migration 5 (guild timezone)', () => {
+  it('applies on a schema-4 object and existing rows get the default timezone', async () => {
+    await runCore('740000000000000010', async ({ core, sql }) => {
+      await core.createSession('740000000000000010', USER);
+      // Put the database back the way it was at version 4: no timezone column.
+      sql.exec('ALTER TABLE guild_meta DROP COLUMN timezone');
+      sql.exec('DELETE FROM schema_version WHERE version = 5');
+      expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
+        4,
+      );
+      expect(
+        sql
+          .exec<{ name: string }>('SELECT name FROM pragma_table_info(?)', 'guild_meta')
+          .toArray()
+          .map((c) => c.name),
+      ).toEqual(['id', 'guild_id']);
+
+      core.migrate();
+
+      expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
+        5,
+      );
+      expect(sql.exec('SELECT id, guild_id, timezone FROM guild_meta').toArray()).toEqual([
+        { id: 1, guild_id: '740000000000000010', timezone: 'Europe/Helsinki' },
+      ]);
+      expect(core.timezone()).toBe('Europe/Helsinki');
+    });
+  });
+
+  it('rejects a NULL timezone', async () => {
+    await runCore('740000000000000011', ({ sql }) => {
+      expect(() =>
+        sql.exec("INSERT INTO guild_meta (id, guild_id, timezone) VALUES (1, 'a', NULL)"),
+      ).toThrow(/NOT NULL/i);
       return Promise.resolve();
     });
   });
@@ -206,7 +245,7 @@ describe('guild id binding', () => {
 });
 
 describe('authenticated routes in the Durable Object', () => {
-  it('GET /api/me returns the user, guild and balances', async () => {
+  it('GET /api/me returns the user, guild, timezone and balances', async () => {
     await withCore(GUILD_ID, async ({ guildId, core, request }) => {
       const secret = await core.createSession(guildId, USER);
       const res = await request(secret);
@@ -215,8 +254,21 @@ describe('authenticated routes in the Durable Object', () => {
       expect(await res.json()).toEqual({
         user: USER,
         guildId: GUILD_ID,
+        timezone: 'Europe/Helsinki',
         balances: { bait: 0, essence: 0 },
       });
+    });
+  });
+
+  it("GET /api/me returns the guild's stored timezone", async () => {
+    await runCore('740000000000000012', async ({ guildId, core, sql, request }) => {
+      sql.exec(
+        "INSERT INTO guild_meta (id, guild_id, timezone) VALUES (1, ?, 'America/New_York')",
+        guildId,
+      );
+      const secret = await core.createSession(guildId, USER);
+      const res = await request(secret);
+      expect((await res.json<{ timezone: string }>()).timezone).toBe('America/New_York');
     });
   });
 

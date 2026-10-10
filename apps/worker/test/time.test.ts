@@ -1,9 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { GAME_TZ, addDays, nextOccurrence, zonedDate, zonedTimeToEpoch } from '../src/time';
+import {
+  DEFAULT_GUILD_TIMEZONE,
+  addDays,
+  isValidTimeZone,
+  nextOccurrence,
+  zonedDate,
+  zonedTimeToEpoch,
+} from '../src/time';
+
+/** The zone these DST cases are written for. */
+const HELSINKI = 'Europe/Helsinki';
 
 const iso = (ms: number) => new Date(ms).toISOString();
 const at = (date: string, hour: number, minute: number) =>
-  iso(zonedTimeToEpoch(date, hour, minute, GAME_TZ));
+  iso(zonedTimeToEpoch(date, hour, minute, HELSINKI));
 
 describe('zonedTimeToEpoch', () => {
   it('uses UTC+3 in summer and UTC+2 in winter', () => {
@@ -43,12 +53,12 @@ describe('zonedTimeToEpoch', () => {
   });
 
   it('rejects invalid input', () => {
-    expect(() => zonedTimeToEpoch('2026-13-01', 1, 0, GAME_TZ)).toThrow();
-    expect(() => zonedTimeToEpoch('2026-02-30', 1, 0, GAME_TZ)).toThrow();
-    expect(() => zonedTimeToEpoch('26-02-03', 1, 0, GAME_TZ)).toThrow();
-    expect(() => zonedTimeToEpoch('2026-02-03', 24, 0, GAME_TZ)).toThrow();
-    expect(() => zonedTimeToEpoch('2026-02-03', 1, 60, GAME_TZ)).toThrow();
-    expect(() => zonedTimeToEpoch('2026-02-03', 1.5, 0, GAME_TZ)).toThrow();
+    expect(() => zonedTimeToEpoch('2026-13-01', 1, 0, HELSINKI)).toThrow();
+    expect(() => zonedTimeToEpoch('2026-02-30', 1, 0, HELSINKI)).toThrow();
+    expect(() => zonedTimeToEpoch('26-02-03', 1, 0, HELSINKI)).toThrow();
+    expect(() => zonedTimeToEpoch('2026-02-03', 24, 0, HELSINKI)).toThrow();
+    expect(() => zonedTimeToEpoch('2026-02-03', 1, 60, HELSINKI)).toThrow();
+    expect(() => zonedTimeToEpoch('2026-02-03', 1.5, 0, HELSINKI)).toThrow();
   });
 
   it('works for other zones', () => {
@@ -62,22 +72,22 @@ describe('zonedTimeToEpoch', () => {
 describe('zonedDate', () => {
   it('rolls over at local midnight, not UTC midnight', () => {
     // Summer: local midnight starting 2026-07-02 is 21:00Z on 2026-07-01.
-    expect(zonedDate(Date.parse('2026-07-01T20:59:59.999Z'), GAME_TZ)).toBe('2026-07-01');
-    expect(zonedDate(Date.parse('2026-07-01T21:00:00.000Z'), GAME_TZ)).toBe('2026-07-02');
+    expect(zonedDate(Date.parse('2026-07-01T20:59:59.999Z'), HELSINKI)).toBe('2026-07-01');
+    expect(zonedDate(Date.parse('2026-07-01T21:00:00.000Z'), HELSINKI)).toBe('2026-07-02');
     // Winter: local midnight starting 2026-12-02 is 22:00Z on 2026-12-01.
-    expect(zonedDate(Date.parse('2026-12-01T21:59:59.999Z'), GAME_TZ)).toBe('2026-12-01');
-    expect(zonedDate(Date.parse('2026-12-01T22:00:00.000Z'), GAME_TZ)).toBe('2026-12-02');
+    expect(zonedDate(Date.parse('2026-12-01T21:59:59.999Z'), HELSINKI)).toBe('2026-12-01');
+    expect(zonedDate(Date.parse('2026-12-01T22:00:00.000Z'), HELSINKI)).toBe('2026-12-02');
   });
 
   it('follows the DST switch days', () => {
-    expect(zonedDate(Date.parse('2026-03-29T00:59:59Z'), GAME_TZ)).toBe('2026-03-29');
-    expect(zonedDate(Date.parse('2026-10-24T20:59:59Z'), GAME_TZ)).toBe('2026-10-24');
-    expect(zonedDate(Date.parse('2026-10-24T21:00:00Z'), GAME_TZ)).toBe('2026-10-25');
+    expect(zonedDate(Date.parse('2026-03-29T00:59:59Z'), HELSINKI)).toBe('2026-03-29');
+    expect(zonedDate(Date.parse('2026-10-24T20:59:59Z'), HELSINKI)).toBe('2026-10-24');
+    expect(zonedDate(Date.parse('2026-10-24T21:00:00Z'), HELSINKI)).toBe('2026-10-25');
   });
 
   it('handles the New Year boundary', () => {
-    expect(zonedDate(Date.parse('2026-12-31T21:59:59Z'), GAME_TZ)).toBe('2026-12-31');
-    expect(zonedDate(Date.parse('2026-12-31T22:00:00Z'), GAME_TZ)).toBe('2027-01-01');
+    expect(zonedDate(Date.parse('2026-12-31T21:59:59Z'), HELSINKI)).toBe('2026-12-31');
+    expect(zonedDate(Date.parse('2026-12-31T22:00:00Z'), HELSINKI)).toBe('2027-01-01');
   });
 });
 
@@ -95,7 +105,7 @@ describe('addDays', () => {
 
 describe('nextOccurrence', () => {
   const next = (nowIso: string, hour = 13, minute = 40) =>
-    iso(nextOccurrence(Date.parse(nowIso), hour, minute, GAME_TZ));
+    iso(nextOccurrence(Date.parse(nowIso), hour, minute, HELSINKI));
 
   it('returns today when the time is still ahead, tomorrow once it has passed', () => {
     expect(next('2026-07-01T08:00:00Z')).toBe('2026-07-01T10:40:00.000Z');
@@ -109,7 +119,7 @@ describe('nextOccurrence', () => {
   });
 
   it('uses the local date, not the UTC date', () => {
-    // 22:30Z on 2026-07-01 is already 01:30 on 2026-07-02 in Helsinki.
+    // 22:30Z on 2026-07-01 is already 01:30 on 2026-07-02 in Europe/Helsinki.
     expect(next('2026-07-01T22:30:00Z')).toBe('2026-07-02T10:40:00.000Z');
   });
 
@@ -121,7 +131,7 @@ describe('nextOccurrence', () => {
       // One calendar day later but only 23 hours of real time.
       expect(next('2026-03-28T11:40:00Z')).toBe('2026-03-29T10:40:00.000Z');
       expect(
-        nextOccurrence(Date.parse('2026-03-28T11:40:00Z'), 13, 40, GAME_TZ) -
+        nextOccurrence(Date.parse('2026-03-28T11:40:00Z'), 13, 40, HELSINKI) -
           Date.parse('2026-03-28T11:40:00Z'),
       ).toBe(23 * 3600 * 1000);
     });
@@ -140,7 +150,7 @@ describe('nextOccurrence', () => {
       // One calendar day later but 25 hours of real time.
       expect(next('2026-10-24T10:40:00Z')).toBe('2026-10-25T11:40:00.000Z');
       expect(
-        nextOccurrence(Date.parse('2026-10-24T10:40:00Z'), 13, 40, GAME_TZ) -
+        nextOccurrence(Date.parse('2026-10-24T10:40:00Z'), 13, 40, HELSINKI) -
           Date.parse('2026-10-24T10:40:00Z'),
       ).toBe(25 * 3600 * 1000);
     });
@@ -157,5 +167,45 @@ describe('nextOccurrence', () => {
     expect(next('2026-10-24T22:00:00Z', 3, 30)).toBe('2026-10-25T00:30:00.000Z');
     // After the earlier 03:30 passed, the next is the following day, not the second 03:30.
     expect(next('2026-10-25T00:30:00Z', 3, 30)).toBe('2026-10-26T01:30:00.000Z');
+  });
+});
+
+describe('isValidTimeZone', () => {
+  it('accepts IANA zone names, including the default', () => {
+    for (const tz of [DEFAULT_GUILD_TIMEZONE, 'America/New_York', 'Asia/Tokyo', 'UTC']) {
+      expect(isValidTimeZone(tz)).toBe(true);
+    }
+  });
+
+  it('rejects unknown zones, fixed offsets, empty and oversized values and non-strings', () => {
+    for (const tz of [
+      'Mars/Olympus',
+      '',
+      ' ',
+      '+02:00',
+      'Europe/Helsinki ',
+      'Europe\u0000/Helsinki',
+      `${'a'.repeat(65)}`,
+      '../etc',
+    ]) {
+      expect(isValidTimeZone(tz)).toBe(false);
+    }
+    for (const tz of [undefined, null, 5, {}, ['UTC']]) {
+      expect(isValidTimeZone(tz)).toBe(false);
+    }
+  });
+});
+
+describe('time zones other than the default', () => {
+  it('finds 13:40 New York time across the US DST switches', () => {
+    const ny = (nowIso: string) =>
+      iso(nextOccurrence(Date.parse(nowIso), 13, 40, 'America/New_York'));
+    // Clocks go forward on 2027-03-14: Saturday 13:40 EST is 18:40Z, Sunday 13:40 EDT is 17:40Z.
+    expect(ny('2027-03-13T18:40:00Z')).toBe('2027-03-14T17:40:00.000Z');
+    // Clocks go back on 2027-11-07: Saturday 13:40 EDT is 17:40Z, Sunday 13:40 EST is 18:40Z.
+    expect(ny('2027-11-06T17:40:00Z')).toBe('2027-11-07T18:40:00.000Z');
+    // The 2026 switches too.
+    expect(ny('2026-03-07T18:40:00Z')).toBe('2026-03-08T17:40:00.000Z');
+    expect(ny('2026-10-31T17:40:00Z')).toBe('2026-11-01T18:40:00.000Z');
   });
 });

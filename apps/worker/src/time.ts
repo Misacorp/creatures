@@ -1,10 +1,34 @@
 /**
  * Time zone helpers built on `Intl.DateTimeFormat` only (no date libraries). All instants are UTC
- * epoch milliseconds; the game calendar lives in `GAME_TZ`, and this is the one place that
- * converts between the two.
+ * epoch milliseconds; the game calendar is guild-local, and this is the one place that converts
+ * between the two. Every function takes the zone as a required argument: callers resolve the
+ * guild's timezone once and pass it down.
  */
 
-export const GAME_TZ = 'Europe/Helsinki';
+/**
+ * The timezone of a guild that has none stored. Use it only where a guild's settings are created
+ * or read with no stored value, never as a default parameter.
+ */
+export const DEFAULT_GUILD_TIMEZONE = 'Europe/Helsinki';
+
+const TIMEZONE_NAME_RE = /^[A-Za-z][A-Za-z0-9_+\-/]*$/;
+const MAX_TIMEZONE_LENGTH = 64;
+
+/**
+ * True when `tz` is an IANA zone name this runtime understands. Fixed offsets such as "+02:00"
+ * are rejected: a guild's zone must follow daylight saving rules by name.
+ */
+export function isValidTimeZone(tz: unknown): tz is string {
+  if (typeof tz !== 'string' || tz.length > MAX_TIMEZONE_LENGTH || !TIMEZONE_NAME_RE.test(tz)) {
+    return false;
+  }
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const SECOND = 1000;
@@ -104,9 +128,9 @@ export function addDays(date: string, days: number): string {
 /**
  * Converts a local wall-clock time in `tz` to epoch milliseconds, correct across DST changes.
  *
- * - A nonexistent local time (the spring-forward gap, such as 03:30 on 2026-03-29 in Helsinki)
+ * - A nonexistent local time (the spring-forward gap, such as 03:30 on 2026-03-29 in Europe/Helsinki)
  *   resolves to the first instant after the gap, which is the moment the clocks jump (04:00).
- * - An ambiguous local time (the fall-back overlap, such as 03:30 on 2026-10-25 in Helsinki)
+ * - An ambiguous local time (the fall-back overlap, such as 03:30 on 2026-10-25 in Europe/Helsinki)
  *   resolves to the earlier of the two instants (the one before the clocks go back).
  */
 export function zonedTimeToEpoch(date: string, hour: number, minute: number, tz: string): number {

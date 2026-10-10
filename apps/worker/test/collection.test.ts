@@ -115,6 +115,8 @@ interface ExpeditionBody {
 
 interface StateBody {
   serverNow: number;
+  /** Only in GET /api/state, not in the `state` echoed by POST routes. */
+  timezone: string;
   balances: { bait: number; essence: number };
   starterChosen: boolean;
   starterOptions?: string[];
@@ -225,14 +227,15 @@ describe('migration 4', () => {
       for (const table of ['creatures', 'expeditions', 'player_progress', 'server_firsts']) {
         sql.exec(`DROP TABLE ${table}`);
       }
-      sql.exec('DELETE FROM schema_version WHERE version = 4');
+      sql.exec('ALTER TABLE guild_meta DROP COLUMN timezone');
+      sql.exec('DELETE FROM schema_version WHERE version IN (4, 5)');
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
         3,
       );
 
       core.migrate();
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        4,
+        5,
       );
       expect(core.balances(USER_ID).bait).toBe(42);
       const res = await ctx.request(secret, '/api/state');
@@ -282,10 +285,12 @@ describe('GET /api/state', () => {
             'slots',
             'starterChosen',
             'starterOptions',
+            'timezone',
             'trainingMedianLevel',
           ].sort(),
         );
         expect(before.serverNow).toBe(T0);
+        expect(before.timezone).toBe('Europe/Helsinki');
         expect(before.balances).toEqual({ bait: 30, essence: 0 });
         expect(before.starterChosen).toBe(false);
         expect(before.starterOptions).toEqual(['splashet', 'cindle', 'sproutle']);
@@ -404,6 +409,18 @@ describe('GET /api/state', () => {
       },
       { createLeetSource: () => source },
     );
+  });
+
+  it("returns the guild's stored timezone", async () => {
+    const guildId = nextGuild();
+    await runCore(guildId, async (ctx) => {
+      ctx.sql.exec(
+        "INSERT INTO guild_meta (id, guild_id, timezone) VALUES (1, ?, 'America/New_York')",
+        guildId,
+      );
+      const player = await join(ctx, USER);
+      expect((await player.state()).timezone).toBe('America/New_York');
+    });
   });
 
   it('requires a session', async () => {

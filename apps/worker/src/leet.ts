@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 import { SNOWFLAKE_RE } from './schemas';
-import { GAME_TZ, addDays, zonedDate, zonedTimeToEpoch } from './time';
+import { addDays, isValidTimeZone, zonedDate, zonedTimeToEpoch } from './time';
 
 /** How many days back a guild's history starts when it syncs for the first time. */
 export const LEET_BACKFILL_DAYS = 7;
@@ -31,6 +31,11 @@ export interface LeetDaysPage {
 }
 
 export interface LeetDaysOptions {
+  /**
+   * The guild's timezone, resolved once by the caller. Sources that work out day boundaries
+   * themselves (the mock) use it; the HTTP source leaves day boundaries to the bot.
+   */
+  timezone: string;
   after?: string;
   since?: string;
   limit?: number;
@@ -188,10 +193,10 @@ export interface MockLeetSourceOptions {
   backfillDays: number;
 }
 
-/** A day is finalised once its leet window has closed (13:38 Helsinki). */
+/** A day is finalised once its leet window has closed (13:38 guild-local time). */
 const FINALISED_HOUR = 13;
 const FINALISED_MINUTE = 38;
-/** The mock's leet happens at 13:37 Helsinki plus a hash-derived number of seconds. */
+/** The mock's leet happens at 13:37 guild-local time plus a hash-derived number of seconds. */
 const LEET_HOUR = 13;
 const LEET_MINUTE = 37;
 /** A player takes part when the first hash byte is below this: 154 / 256, about 60%. */
@@ -227,16 +232,21 @@ async function hashBytes(text: string): Promise<Uint8Array> {
  * that were already synced. No `Math.random`.
  */
 export function createMockLeetSource(options: MockLeetSourceOptions): LeetSource {
-  function lastFinalisedDate(): string {
+  function lastFinalisedDate(timezone: string): string {
     const now = options.now();
-    const today = zonedDate(now, GAME_TZ);
-    return now >= zonedTimeToEpoch(today, FINALISED_HOUR, FINALISED_MINUTE, GAME_TZ)
+    const today = zonedDate(now, timezone);
+    return now >= zonedTimeToEpoch(today, FINALISED_HOUR, FINALISED_MINUTE, timezone)
       ? today
       : addDays(today, -1);
   }
 
-  async function buildDay(guildId: string, date: string, players: string[]): Promise<LeetDay> {
-    const base = zonedTimeToEpoch(date, LEET_HOUR, LEET_MINUTE, GAME_TZ);
+  async function buildDay(
+    guildId: string,
+    timezone: string,
+    date: string,
+    players: string[],
+  ): Promise<LeetDay> {
+    const base = zonedTimeToEpoch(date, LEET_HOUR, LEET_MINUTE, timezone);
     const participants: LeetParticipant[] = [];
     for (const userId of players) {
       const hash = await hashBytes(`${guildId}:${date}:${userId}`);
@@ -253,7 +263,9 @@ export function createMockLeetSource(options: MockLeetSourceOptions): LeetSource
 
   return {
     async getDays(guildId, opts) {
-      if (!SNOWFLAKE_RE.test(guildId)) throw new LeetSourceError('invalid_request');
+      if (!SNOWFLAKE_RE.test(guildId) || !isValidTimeZone(opts.timezone)) {
+        throw new LeetSourceError('invalid_request');
+      }
       const limit = opts.limit ?? DEFAULT_PAGE_DAYS;
       if (!Number.isInteger(limit) || limit < 1 || limit > MAX_PAGE_DAYS) {
         throw new LeetSourceError('invalid_request');
@@ -265,16 +277,16 @@ export function createMockLeetSource(options: MockLeetSourceOptions): LeetSource
         if (!v.is(dateString, opts.since)) throw new LeetSourceError('invalid_request');
         first = opts.since;
       } else {
-        first = addDays(zonedDate(options.now(), GAME_TZ), -options.backfillDays);
+        first = addDays(zonedDate(options.now(), opts.timezone), -options.backfillDays);
       }
 
-      const last = lastFinalisedDate();
+      const last = lastFinalisedDate(opts.timezone);
       const players = [...new Set(options.knownPlayers())].sort();
       const days: LeetDay[] = [];
       let date = first;
       // ISO dates compare correctly as strings.
       while (date <= last && days.length < limit) {
-        days.push(await buildDay(guildId, date, players));
+        days.push(await buildDay(guildId, opts.timezone, date, players));
         date = addDays(date, 1);
       }
       const lastReturned = days[days.length - 1]?.date;

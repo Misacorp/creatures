@@ -23,7 +23,13 @@ import {
   hashSecret,
   parseAuthorization,
 } from './session';
-import { GAME_TZ, addDays, nextOccurrence, zonedDate } from './time';
+import {
+  DEFAULT_GUILD_TIMEZONE,
+  addDays,
+  isValidTimeZone,
+  nextOccurrence,
+  zonedDate,
+} from './time';
 
 /** Per-user session cap: older sessions are dropped so storage stays bounded. */
 const MAX_SESSIONS_PER_USER = 10;
@@ -32,7 +38,7 @@ const RATE_CAPACITY = 30;
 const RATE_REFILL_PER_SECOND = 1;
 const RATE_MAX_KEYS = 1000;
 
-/** The daily leet sync runs at 13:40 Helsinki time, just after the 13:37 leet window closes. */
+/** The daily leet sync runs at 13:40 guild-local time, just after the 13:37 leet window closes. */
 const SYNC_HOUR = 13;
 const SYNC_MINUTE = 40;
 /** A sync triggered by /api/me only runs when the last one is older than this. */
@@ -152,6 +158,11 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
       PRIMARY KEY (kind, species, user_id)
     )`);
   },
+  (sql) => {
+    // The guild's IANA timezone. The default is written out (not interpolated) because a released
+    // migration must never change; it equals DEFAULT_GUILD_TIMEZONE.
+    sql.exec("ALTER TABLE guild_meta ADD COLUMN timezone TEXT NOT NULL DEFAULT 'Europe/Helsinki'");
+  },
 ];
 
 export interface SessionUser {
@@ -197,7 +208,7 @@ const routes: Routes<RequestContext> = {
   '/api/me': {
     GET: async (_request, { user, guildId, core }) => {
       await core.syncIfStale();
-      return json({ user, guildId, balances: core.balances(user.id) });
+      return json({ user, guildId, timezone: core.timezone(), balances: core.balances(user.id) });
     },
   },
   '/api/ledger': {
@@ -240,6 +251,8 @@ export class GuildCore {
   readonly collection: Collection;
   private syncInFlight: Promise<LeetSyncResult> | null = null;
   private lastSyncAttemptAt: number | null = null;
+  /** The guild's timezone, cached per object; cleared whenever it changes. */
+  private cachedTimezone: string | null = null;
 
   constructor(
     private readonly storage: CoreStorage,
@@ -333,6 +346,43 @@ export class GuildCore {
     }
   }
 
+  /**
+   * The guild's timezone: the stored value, or the default when none is stored or the stored one is
+   * not valid (logged without the value). Cached in memory until it changes. Resolve it once per
+   * operation and pass it down explicitly.
+   */
+  timezone(): string {
+    if (this.cachedTimezone !== null) return this.cachedTimezone;
+    const row = this.sql
+      .exec<{ timezone: string }>('SELECT timezone FROM guild_meta WHERE id = 1')
+      .toArray()[0];
+    // No row yet: the guild is not bound, so there is nothing stored to cache.
+    if (row === undefined) return DEFAULT_GUILD_TIMEZONE;
+    if (isValidTimeZone(row.timezone)) {
+      this.cachedTimezone = row.timezone;
+    } else {
+      console.warn('stored guild timezone is invalid; using the default');
+      this.cachedTimezone = DEFAULT_GUILD_TIMEZONE;
+    }
+    return this.cachedTimezone;
+  }
+
+  /**
+   * Changes the guild's timezone and re-arms the alarm for it. Returns false (changing nothing)
+   * for an invalid zone or a guild that is not bound yet. Not reachable from any route yet.
+   */
+  async setTimezone(timezone: string): Promise<boolean> {
+    if (!isValidTimeZone(timezone) || this.storedGuildId() === null) return false;
+    this.sql.exec('UPDATE guild_meta SET timezone = ? WHERE id = 1', timezone);
+    this.cachedTimezone = null;
+    if (this.leetSource !== null) await this.storage.setAlarm(this.nextSyncAt(this.now()));
+    return true;
+  }
+
+  private nextSyncAt(fromMs: number): number {
+    return nextOccurrence(fromMs, SYNC_HOUR, SYNC_MINUTE, this.timezone());
+  }
+
   private storedGuildId(): string | null {
     const row = this.sql
       .exec<{ guild_id: string }>('SELECT guild_id FROM guild_meta WHERE id = 1')
@@ -424,12 +474,12 @@ export class GuildCore {
 
   // --- Leet sync ---
 
-  private getSyncState(): {
+  private getSyncState(timezone: string): {
     cursor: string | null;
     sinceDate: string;
     lastSyncedAt: number | null;
   } {
-    const since = addDays(zonedDate(this.now(), GAME_TZ), -LEET_BACKFILL_DAYS);
+    const since = addDays(zonedDate(this.now(), timezone), -LEET_BACKFILL_DAYS);
     this.sql.exec(
       'INSERT OR IGNORE INTO leet_sync (id, cursor, since_date) VALUES (1, NULL, ?)',
       since,
@@ -467,15 +517,16 @@ export class GuildCore {
       console.warn('leet sync skipped: guild id unknown');
       return result;
     }
-    const state = this.getSyncState();
+    const timezone = this.timezone();
+    const state = this.getSyncState(timezone);
     let cursor = state.cursor;
 
     for (let page = 0; page < SYNC_MAX_PAGES; page++) {
       const data = await source.getDays(
         guildId,
         cursor === null
-          ? { since: state.sinceDate, limit: SYNC_PAGE_LIMIT }
-          : { after: cursor, limit: SYNC_PAGE_LIMIT },
+          ? { timezone, since: state.sinceDate, limit: SYNC_PAGE_LIMIT }
+          : { timezone, after: cursor, limit: SYNC_PAGE_LIMIT },
       );
       const nextCursor = data.nextCursor ?? cursor;
       const applied = this.storage.transactionSync(() => {
@@ -520,7 +571,7 @@ export class GuildCore {
   async syncIfStale(): Promise<void> {
     if (this.leetSource === null) return;
     const t = this.now();
-    const last = this.getSyncState().lastSyncedAt;
+    const last = this.getSyncState(this.timezone()).lastSyncedAt;
     if (last !== null && t - last < SYNC_STALE_MS) return;
     if (
       this.syncInFlight === null &&
@@ -553,10 +604,10 @@ export class GuildCore {
   async ensureAlarm(): Promise<void> {
     if (this.leetSource === null) return;
     if ((await this.storage.getAlarm()) !== null) return;
-    await this.storage.setAlarm(nextOccurrence(this.now(), SYNC_HOUR, SYNC_MINUTE, GAME_TZ));
+    await this.storage.setAlarm(this.nextSyncAt(this.now()));
   }
 
-  /** Durable Object alarm handler: sync, then always re-arm for the next 13:40 Helsinki. */
+  /** Durable Object alarm handler: sync, then always re-arm for the next 13:40 guild-local. */
   async alarm(): Promise<void> {
     if (this.leetSource === null) return;
     try {
@@ -564,9 +615,7 @@ export class GuildCore {
     } catch (err) {
       logSyncError(err);
     }
-    await this.storage.setAlarm(
-      nextOccurrence(this.now() + ALARM_REARM_SKEW_MS, SYNC_HOUR, SYNC_MINUTE, GAME_TZ),
-    );
+    await this.storage.setAlarm(this.nextSyncAt(this.now() + ALARM_REARM_SKEW_MS));
   }
 }
 

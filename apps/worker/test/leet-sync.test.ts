@@ -11,10 +11,12 @@ import {
   type LeetDaysPage,
   type LeetSource,
 } from '../src/leet';
-import { GAME_TZ, nextOccurrence } from '../src/time';
+import { DEFAULT_GUILD_TIMEZONE, nextOccurrence } from '../src/time';
 import { OTHER_USER_ID, ORIGIN, T0, USER_ID, expectApiHeaders, runCore, tokenFor } from './helpers';
 
 const MINUTE = 60_000;
+const HELSINKI = 'Europe/Helsinki';
+const NEW_YORK = 'America/New_York';
 const USER = { id: USER_ID, displayName: 'Misa' };
 const OTHER = { id: OTHER_USER_ID, displayName: 'Other' };
 
@@ -167,7 +169,7 @@ describe('syncLeet', () => {
     );
   });
 
-  it('starts from since = today minus 7 days (Helsinki) and then follows the cursor', async () => {
+  it('starts from since = today minus 7 days (guild-local) and then follows the cursor', async () => {
     const guild = nextGuild();
     const { source, calls } = scripted((opts) =>
       opts.after === undefined
@@ -179,9 +181,15 @@ describe('syncLeet', () => {
       async ({ core, sql }) => {
         await core.syncLeet();
         await core.syncLeet();
-        // T0 is 2027-01-15 10:00 in Helsinki.
-        expect(calls[0]).toEqual({ guildId: guild, opts: { since: '2027-01-08', limit: 31 } });
-        expect(calls[1]).toEqual({ guildId: guild, opts: { after: 'cur-1', limit: 31 } });
+        // T0 is 2027-01-15 10:00 in Europe/Helsinki, and the timezone travels with every call.
+        expect(calls[0]).toEqual({
+          guildId: guild,
+          opts: { timezone: HELSINKI, since: '2027-01-08', limit: 31 },
+        });
+        expect(calls[1]).toEqual({
+          guildId: guild,
+          opts: { timezone: HELSINKI, after: 'cur-1', limit: 31 },
+        });
         expect(syncState(sql)).toEqual([
           { cursor: 'cur-1', since_date: '2027-01-08', last_synced_at: T0 },
         ]);
@@ -381,7 +389,7 @@ describe('syncLeet', () => {
           knownPlayers: () => [USER_ID, OTHER_USER_ID],
           backfillDays: 7,
         });
-        const history = await mock.getDays(guild, { since: '2027-01-08' });
+        const history = await mock.getDays(guild, { timezone: HELSINKI, since: '2027-01-08' });
         const expected = (userId: string) =>
           history.days
             .filter((d) => d.participants.some((p) => p.userId === userId))
@@ -588,7 +596,7 @@ describe('daily alarm', () => {
       hasMore: false,
     }));
 
-  it('arms the alarm for the next 13:40 Helsinki on session creation and on requests', async () => {
+  it('arms the alarm for the next 13:40 guild-local on session creation and on requests', async () => {
     const guild = nextGuild();
     const { source } = quiet(guild);
     await runCore(
@@ -596,9 +604,9 @@ describe('daily alarm', () => {
       async ({ guildId, core, storage, request, clock }) => {
         expect(await storage.getAlarm()).toBeNull();
         const secret = await core.createSession(guildId, USER);
-        // T0 is 10:00 Helsinki on 2027-01-15 (UTC+2), so the alarm is today at 11:40Z.
+        // T0 is 10:00 Europe/Helsinki on 2027-01-15 (UTC+2), so the alarm is today at 11:40Z.
         const expected = Date.parse('2027-01-15T11:40:00Z');
-        expect(expected).toBe(nextOccurrence(T0, 13, 40, GAME_TZ));
+        expect(expected).toBe(nextOccurrence(T0, 13, 40, DEFAULT_GUILD_TIMEZONE));
         expect(await storage.getAlarm()).toBe(expected);
 
         // An existing alarm is left alone.
@@ -729,5 +737,171 @@ describe('real Durable Object with the mock source', () => {
     // The alarm credited nothing twice.
     const after = await (await call('/api/me')).json<{ balances: { bait: number } }>();
     expect(after.balances.bait).toBe(body.balances.bait);
+  });
+});
+
+describe('guild timezone', () => {
+  const quiet = () => scripted(() => ({ days: [], nextCursor: null, hasMore: false }));
+
+  /** Stores the guild with a timezone before the object resolves anything, like a settings change. */
+  const bindWith = (sql: SqlStorage, guild: string, timezone: string) => {
+    sql.exec('INSERT INTO guild_meta (id, guild_id, timezone) VALUES (1, ?, ?)', guild, timezone);
+  };
+
+  it('defaults to the default timezone when none is stored, and stores it on first bind', async () => {
+    const guild = nextGuild();
+    const { source } = quiet();
+    await runCore(
+      guild,
+      async ({ guildId, core, sql }) => {
+        expect(core.timezone()).toBe(DEFAULT_GUILD_TIMEZONE);
+        await core.createSession(guildId, USER);
+        expect(sql.exec('SELECT timezone FROM guild_meta').toArray()).toEqual([
+          { timezone: DEFAULT_GUILD_TIMEZONE },
+        ]);
+        expect(core.timezone()).toBe(DEFAULT_GUILD_TIMEZONE);
+      },
+      using(source),
+    );
+  });
+
+  it('arms the alarm at 13:40 New York time', async () => {
+    const guild = nextGuild();
+    const { source } = quiet();
+    await runCore(
+      guild,
+      async ({ guildId, core, storage, sql }) => {
+        bindWith(sql, guildId, NEW_YORK);
+        await core.createSession(guildId, USER);
+        // T0 is 2027-01-15 10:00Z = 05:00 EST, so the alarm is today 13:40 EST = 18:40Z.
+        expect(await storage.getAlarm()).toBe(Date.parse('2027-01-15T18:40:00Z'));
+        expect(await storage.getAlarm()).toBe(nextOccurrence(T0, 13, 40, NEW_YORK));
+      },
+      using(source),
+    );
+  });
+
+  it('keeps 13:40 New York time across the US DST switches', async () => {
+    const guild = nextGuild();
+    const { source } = quiet();
+    await runCore(
+      guild,
+      async ({ guildId, core, storage, clock, sql }) => {
+        bindWith(sql, guildId, NEW_YORK);
+        // 2027 switch weeks (in the future of the real clock, so the test runtime never fires
+        // these alarms for real). US clocks go forward on Sunday 2027-03-14 at 02:00.
+        // Saturday 13:40 EST (18:40Z); the next one is Sunday 13:40 EDT (17:40Z).
+        clock.t = Date.parse('2027-03-13T18:40:00Z');
+        await core.alarm();
+        expect(await storage.getAlarm()).toBe(Date.parse('2027-03-14T17:40:00Z'));
+        // US clocks go back on Sunday 2027-11-07 at 02:00.
+        // Saturday 13:40 EDT (17:40Z); the next one is Sunday 13:40 EST (18:40Z).
+        clock.t = Date.parse('2027-11-06T17:40:00Z');
+        await core.alarm();
+        expect(await storage.getAlarm()).toBe(Date.parse('2027-11-07T18:40:00Z'));
+      },
+      using(source),
+    );
+  });
+
+  it('passes the stored timezone to the source and computes since_date in it', async () => {
+    const guild = nextGuild();
+    const { source, calls } = quiet();
+    await runCore(
+      guild,
+      async ({ guildId, core, clock, sql }) => {
+        bindWith(sql, guildId, NEW_YORK);
+        // 2027-01-16 02:00Z is still 2027-01-15 in New York, so since is 01-15 minus 7 days.
+        clock.t = Date.parse('2027-01-16T02:00:00Z');
+        await core.syncLeet();
+        expect(calls[0]?.opts).toEqual({ timezone: NEW_YORK, since: '2027-01-08', limit: 31 });
+        expect(sql.exec('SELECT since_date FROM leet_sync').toArray()).toEqual([
+          { since_date: '2027-01-08' },
+        ]);
+      },
+      using(source),
+    );
+  });
+
+  it('syncs the mock source in the guild timezone: days are finalised at 13:38 there', async () => {
+    const guild = nextGuild();
+    await runCore(
+      guild,
+      async ({ guildId, core, clock, sql }) => {
+        bindWith(sql, guildId, NEW_YORK);
+        await core.createSession(guildId, USER);
+        // 2027-01-15 18:37:59Z is 13:37:59 EST: the 15th is not finalised yet.
+        clock.t = Date.parse('2027-01-15T18:37:59Z');
+        const first = await core.syncLeet();
+        expect(first.daysProcessed).toBe(7); // 01-08 .. 01-14
+        clock.t = Date.parse('2027-01-15T18:38:00Z');
+        expect((await core.syncLeet()).daysProcessed).toBe(1); // 01-15
+        expect(syncState(sql)[0]?.since_date).toBe('2027-01-08');
+      },
+      (clock) => ({
+        createLeetSource: (known) =>
+          createMockLeetSource({ now: () => clock.t, knownPlayers: known, backfillDays: 7 }),
+      }),
+    );
+  });
+
+  it('falls back to the default for an invalid stored value, warning without the value', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const guild = nextGuild();
+    const { source, calls } = quiet();
+    await runCore(
+      guild,
+      async ({ guildId, core, storage, sql }) => {
+        bindWith(sql, guildId, 'Mars/Olympus-Mons');
+        expect(core.timezone()).toBe(DEFAULT_GUILD_TIMEZONE);
+        await core.syncLeet();
+        expect(calls[0]?.opts.timezone).toBe(DEFAULT_GUILD_TIMEZONE);
+        await core.ensureAlarm();
+        expect(await storage.getAlarm()).toBe(nextOccurrence(T0, 13, 40, DEFAULT_GUILD_TIMEZONE));
+        expect(warn).toHaveBeenCalled();
+        expect(JSON.stringify(warn.mock.calls)).not.toContain('Mars');
+      },
+      using(source),
+    );
+  });
+
+  it('caches the timezone until it changes, and setTimezone updates it and re-arms the alarm', async () => {
+    const guild = nextGuild();
+    const { source } = quiet();
+    await runCore(
+      guild,
+      async ({ guildId, core, storage, sql }) => {
+        await core.createSession(guildId, USER);
+        expect(core.timezone()).toBe(DEFAULT_GUILD_TIMEZONE);
+        const helsinkiAlarm = await storage.getAlarm();
+        expect(helsinkiAlarm).toBe(nextOccurrence(T0, 13, 40, DEFAULT_GUILD_TIMEZONE));
+
+        // Cached: an out-of-band write is not seen until the cache is invalidated.
+        sql.exec('UPDATE guild_meta SET timezone = ?', NEW_YORK);
+        expect(core.timezone()).toBe(DEFAULT_GUILD_TIMEZONE);
+
+        expect(await core.setTimezone('Mars/Olympus-Mons')).toBe(false);
+        expect(core.timezone()).toBe(DEFAULT_GUILD_TIMEZONE);
+
+        expect(await core.setTimezone('Asia/Tokyo')).toBe(true);
+        expect(core.timezone()).toBe('Asia/Tokyo');
+        expect(sql.exec('SELECT timezone FROM guild_meta').toArray()).toEqual([
+          { timezone: 'Asia/Tokyo' },
+        ]);
+        expect(await storage.getAlarm()).toBe(nextOccurrence(T0, 13, 40, 'Asia/Tokyo'));
+      },
+      using(source),
+    );
+  });
+
+  it('refuses setTimezone before the guild is bound', async () => {
+    await runCore(
+      nextGuild(),
+      async ({ core }) => {
+        expect(await core.setTimezone('Asia/Tokyo')).toBe(false);
+        expect(core.timezone()).toBe(DEFAULT_GUILD_TIMEZONE);
+      },
+      { createLeetSource: () => null },
+    );
   });
 });

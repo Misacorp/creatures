@@ -23,7 +23,7 @@ Researched 2026-10-10 by research subagents; reviewed by the lead agent. Unconfi
 - **Custom domains:** `routes: [{ pattern: "creatures.misacorp.dev", custom_domain: true }]`. Cloudflare creates the DNS record and certificate automatically; fails if a conflicting record exists.
 - **Durable Objects:** available on the Free plan (SQLite-backed). Free: 100k requests/day, 5 GB storage. Single-threaded per object; `transactionSync` for atomic SQL; WebSocket Hibernation API; one alarm per object (at-least-once, retried).
 - **D1:** no interactive transactions (`batch()` is atomic but can't branch). Not used for game state (see `decisions.md`).
-- **Cron triggers:** UTC only; 5 per account on Free. Hence Helsinki-time alarms.
+- **Cron triggers:** UTC only; 5 per account on Free. Hence alarms computed in the guild's timezone.
 - **Rate limiting:** Workers `ratelimit` binding is GA but per-location and approximate; Free-plan availability **(unconfirmed)**. Exact per-player limits go in the Durable Object.
 - **Plans:** Free gives 100k requests/day and **10 ms CPU per request**. Paid ($5/month per account) gives 10M requests/month plus CPU up to 5 minutes. Risk on Free: raid simulation CPU. Measure in M3.
 - **Testing:** `@cloudflare/vitest-pool-workers` is deprecated, replaced by `@cloudflare/vitest-plugin` (Vite plugin `cloudflareTest()`).

@@ -10,6 +10,7 @@ import {
 } from '../src/leet';
 
 const GUILD = '123456789012345678';
+const TZ = 'Europe/Helsinki';
 const USER_1 = '234567890123456789';
 const USER_2 = '345678901234567890';
 
@@ -130,7 +131,7 @@ describe('createHttpLeetSource', () => {
 
   it('calls the contract URL with a bearer token and parses the page', async () => {
     const { fn, calls } = fakeFetch(() => jsonResponse(validPage));
-    const page = await make(fn).getDays(GUILD, { after: 'abc', limit: 50 });
+    const page = await make(fn).getDays(GUILD, { timezone: TZ, after: 'abc', limit: 50 });
     expect(page.days).toHaveLength(2);
     expect(calls).toHaveLength(1);
     expect(calls[0]?.url).toBe(`https://leet.test/v1/guilds/${GUILD}/days?after=abc&limit=50`);
@@ -140,15 +141,15 @@ describe('createHttpLeetSource', () => {
   it('sends since only when there is no cursor', async () => {
     const { fn, calls } = fakeFetch(() => jsonResponse(validPage));
     const source = make(fn);
-    await source.getDays(GUILD, { since: '2026-10-03' });
-    await source.getDays(GUILD, { after: 'abc', since: '2026-10-03' });
+    await source.getDays(GUILD, { timezone: TZ, since: '2026-10-03' });
+    await source.getDays(GUILD, { timezone: TZ, after: 'abc', since: '2026-10-03' });
     expect(calls[0]?.url).toBe(`https://leet.test/v1/guilds/${GUILD}/days?since=2026-10-03`);
     expect(calls[1]?.url).toBe(`https://leet.test/v1/guilds/${GUILD}/days?after=abc`);
   });
 
   it('encodes cursors safely', async () => {
     const { fn, calls } = fakeFetch(() => jsonResponse(validPage));
-    await make(fn).getDays(GUILD, { after: 'a&b=c d' });
+    await make(fn).getDays(GUILD, { timezone: TZ, after: 'a&b=c d' });
     expect(calls[0]?.url).toBe(`https://leet.test/v1/guilds/${GUILD}/days?after=a%26b%3Dc+d`);
   });
 
@@ -162,7 +163,7 @@ describe('createHttpLeetSource', () => {
   ])('maps HTTP %i to %s', async (status, kind) => {
     const { fn } = fakeFetch(() => jsonResponse({ error: 'secret details' }, status));
     const err = await make(fn)
-      .getDays(GUILD, {})
+      .getDays(GUILD, { timezone: TZ })
       .catch((e: unknown) => e);
     expect(err).toBeInstanceOf(LeetSourceError);
     expect((err as LeetSourceError).kind).toBe(kind);
@@ -177,7 +178,7 @@ describe('createHttpLeetSource', () => {
     ]) {
       const { fn } = fakeFetch(respond);
       const err = await make(fn)
-        .getDays(GUILD, {})
+        .getDays(GUILD, { timezone: TZ })
         .catch((e: unknown) => e);
       expect((err as LeetSourceError).kind).toBe('invalid_response');
     }
@@ -186,7 +187,7 @@ describe('createHttpLeetSource', () => {
   it('maps network failures to network and never leaks the key', async () => {
     const fn = (() => Promise.reject(new Error('connect failed test-key'))) as typeof fetch;
     const err = await make(fn)
-      .getDays(GUILD, {})
+      .getDays(GUILD, { timezone: TZ })
       .catch((e: unknown) => e);
     expect((err as LeetSourceError).kind).toBe('network');
     expect((err as LeetSourceError).message).not.toContain('test-key');
@@ -200,7 +201,7 @@ describe('createHttpLeetSource', () => {
         });
       })) as typeof fetch;
     const err = await make(fn, { timeoutMs: 20 })
-      .getDays(GUILD, {})
+      .getDays(GUILD, { timezone: TZ })
       .catch((e: unknown) => e);
     expect((err as LeetSourceError).kind).toBe('timeout');
   });
@@ -208,7 +209,7 @@ describe('createHttpLeetSource', () => {
   it('rejects a response from another guild', async () => {
     const { fn } = fakeFetch(() => jsonResponse(validPage));
     const err = await make(fn)
-      .getDays('999999999999999999', {})
+      .getDays('999999999999999999', { timezone: TZ })
       .catch((e: unknown) => e);
     expect((err as LeetSourceError).kind).toBe('invalid_response');
   });
@@ -216,7 +217,7 @@ describe('createHttpLeetSource', () => {
   it('rejects bad guild ids before any request', async () => {
     const { fn, calls } = fakeFetch(() => jsonResponse(validPage));
     const err = await make(fn)
-      .getDays('../x', {})
+      .getDays('../x', { timezone: TZ })
       .catch((e: unknown) => e);
     expect((err as LeetSourceError).kind).toBe('invalid_request');
     expect(calls).toHaveLength(0);
@@ -232,7 +233,7 @@ describe('createHttpLeetSource', () => {
 });
 
 describe('createMockLeetSource', () => {
-  // 2027-01-15 10:00 in Helsinki (UTC+2): before the 13:38 finalisation.
+  // 2027-01-15 10:00 in Europe/Helsinki (UTC+2): before the 13:38 finalisation.
   const MORNING = Date.parse('2027-01-15T08:00:00Z');
   const players = [
     USER_1,
@@ -246,13 +247,13 @@ describe('createMockLeetSource', () => {
     createMockLeetSource({ now: () => now, knownPlayers: () => known, backfillDays });
 
   it('is deterministic', async () => {
-    const a = await make(MORNING).getDays(GUILD, {});
-    const b = await make(MORNING).getDays(GUILD, {});
+    const a = await make(MORNING).getDays(GUILD, { timezone: TZ });
+    const b = await make(MORNING).getDays(GUILD, { timezone: TZ });
     expect(a).toEqual(b);
   });
 
   it('starts backfillDays ago and stops at the last finalised date', async () => {
-    const page = await make(MORNING).getDays(GUILD, {});
+    const page = await make(MORNING).getDays(GUILD, { timezone: TZ });
     // Today (01-15) is not finalised before 13:38, so history ends on 01-14.
     expect(page.days.map((d) => d.date)).toEqual([
       '2027-01-08',
@@ -268,31 +269,87 @@ describe('createMockLeetSource', () => {
     expect(page.nextCursor).not.toBeNull();
   });
 
-  it('finalises a date exactly at 13:38 Helsinki', async () => {
+  it('finalises a date exactly at 13:38 in the guild timezone (Europe/Helsinki)', async () => {
     // 13:37:59 EET = 11:37:59Z, 13:38:00 EET = 11:38:00Z.
     const before = await make(Date.parse('2027-01-15T11:37:59Z')).getDays(GUILD, {
+      timezone: TZ,
       since: '2027-01-14',
     });
     const at = await make(Date.parse('2027-01-15T11:38:00Z')).getDays(GUILD, {
+      timezone: TZ,
       since: '2027-01-14',
     });
     expect(before.days.map((d) => d.date)).toEqual(['2027-01-14']);
     expect(at.days.map((d) => d.date)).toEqual(['2027-01-14', '2027-01-15']);
   });
 
+  it('finalises a date exactly at 13:38 New York time, in winter and summer', async () => {
+    const NY = 'America/New_York';
+    const dates = async (nowIso: string, since: string) =>
+      (await make(Date.parse(nowIso)).getDays(GUILD, { timezone: NY, since })).days.map(
+        (d) => d.date,
+      );
+    // Winter (EST, UTC-5): 13:38 is 18:38Z.
+    expect(await dates('2027-01-15T18:37:59Z', '2027-01-14')).toEqual(['2027-01-14']);
+    expect(await dates('2027-01-15T18:38:00Z', '2027-01-14')).toEqual(['2027-01-14', '2027-01-15']);
+    // Summer (EDT, UTC-4): 13:38 is 17:38Z.
+    expect(await dates('2027-07-01T17:37:59Z', '2027-07-01')).toEqual([]);
+    expect(await dates('2027-07-01T17:38:00Z', '2027-07-01')).toEqual(['2027-07-01']);
+  });
+
+  it('places the mock leets at 13:37 New York time plus under a minute', async () => {
+    const page = await make(MORNING).getDays(GUILD, {
+      timezone: 'America/New_York',
+      since: '2027-01-01',
+      limit: 14,
+    });
+    let seen = 0;
+    for (const day of page.days) {
+      const base = Date.parse(`${day.date}T18:37:00Z`); // 13:37 EST
+      for (const p of day.participants) {
+        const offset = Date.parse(p.leetAt) - base;
+        expect(offset).toBeGreaterThanOrEqual(0);
+        expect(offset).toBeLessThan(60_000);
+        seen++;
+      }
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
+
+  it('starts the default backfill from the guild-local date', async () => {
+    // 2027-01-16 02:00Z is still 2027-01-15 in New York (21:00 EST) but 2027-01-16 in Helsinki.
+    const now = Date.parse('2027-01-16T02:00:00Z');
+    const ny = await make(now).getDays(GUILD, { timezone: 'America/New_York' });
+    const hel = await make(now).getDays(GUILD, { timezone: TZ });
+    expect(ny.days[0]?.date).toBe('2027-01-08');
+    expect(hel.days[0]?.date).toBe('2027-01-09');
+  });
+
+  it('rejects an invalid timezone', async () => {
+    await expect(make(MORNING).getDays(GUILD, { timezone: 'Mars/Olympus' })).rejects.toMatchObject({
+      kind: 'invalid_request',
+    });
+  });
+
   it('finalises in summer time too (UTC+3)', async () => {
     const before = await make(Date.parse('2026-07-01T10:37:59Z')).getDays(GUILD, {
+      timezone: TZ,
       since: '2026-07-01',
     });
     const at = await make(Date.parse('2026-07-01T10:38:00Z')).getDays(GUILD, {
+      timezone: TZ,
       since: '2026-07-01',
     });
     expect(before.days).toHaveLength(0);
     expect(at.days.map((d) => d.date)).toEqual(['2026-07-01']);
   });
 
-  it('only lets known players take part, at 13:37 Helsinki plus under a minute', async () => {
-    const page = await make(MORNING).getDays(GUILD, { since: '2027-01-01', limit: 14 });
+  it('only lets known players take part, at 13:37 guild-local plus under a minute', async () => {
+    const page = await make(MORNING).getDays(GUILD, {
+      timezone: TZ,
+      since: '2027-01-01',
+      limit: 14,
+    });
     for (const day of page.days) {
       const base = Date.parse(`${day.date}T11:37:00Z`);
       for (const p of day.participants) {
@@ -308,7 +365,11 @@ describe('createMockLeetSource', () => {
 
   it('has roughly 60% participation, and a mix of busy and empty days', async () => {
     const many = Array.from({ length: 40 }, (_, i) => String(100000000000000000n + BigInt(i)));
-    const page = await make(MORNING, many).getDays(GUILD, { since: '2027-01-01', limit: 14 });
+    const page = await make(MORNING, many).getDays(GUILD, {
+      timezone: TZ,
+      since: '2027-01-01',
+      limit: 14,
+    });
     const total = page.days.reduce((n, d) => n + d.participants.length, 0);
     const rate = total / (many.length * page.days.length);
     expect(rate).toBeGreaterThan(0.5);
@@ -316,38 +377,50 @@ describe('createMockLeetSource', () => {
   });
 
   it('depends on guild, date and player', async () => {
-    const a = await make(MORNING).getDays(GUILD, {});
-    const b = await make(MORNING).getDays('999999999999999999', {});
+    const a = await make(MORNING).getDays(GUILD, { timezone: TZ });
+    const b = await make(MORNING).getDays('999999999999999999', { timezone: TZ });
     expect(a.days.map((d) => d.participants.length)).not.toEqual(
       b.days.map((d) => d.participants.length),
     );
   });
 
   it('does not depend on the order of known players', async () => {
-    const a = await make(MORNING, players).getDays(GUILD, {});
-    const b = await make(MORNING, [...players].reverse()).getDays(GUILD, {});
+    const a = await make(MORNING, players).getDays(GUILD, { timezone: TZ });
+    const b = await make(MORNING, [...players].reverse()).getDays(GUILD, { timezone: TZ });
     expect(a).toEqual(b);
   });
 
   it('returns days without participants when there are no players', async () => {
-    const page = await make(MORNING, []).getDays(GUILD, {});
+    const page = await make(MORNING, []).getDays(GUILD, { timezone: TZ });
     expect(page.days).toHaveLength(7);
     expect(page.days.every((d) => d.participants.length === 0)).toBe(true);
   });
 
   it('pages with an opaque base64url cursor and a limit', async () => {
     const source = make(MORNING);
-    const first = await source.getDays(GUILD, { limit: 3 });
+    const first = await source.getDays(GUILD, { timezone: TZ, limit: 3 });
     expect(first.days.map((d) => d.date)).toEqual(['2027-01-08', '2027-01-09', '2027-01-10']);
     expect(first.hasMore).toBe(true);
     expect(first.nextCursor).toMatch(/^[A-Za-z0-9_-]+$/);
-    const second = await source.getDays(GUILD, { after: first.nextCursor ?? '', limit: 3 });
+    const second = await source.getDays(GUILD, {
+      timezone: TZ,
+      after: first.nextCursor ?? '',
+      limit: 3,
+    });
     expect(second.days.map((d) => d.date)).toEqual(['2027-01-11', '2027-01-12', '2027-01-13']);
     expect(second.hasMore).toBe(true);
-    const third = await source.getDays(GUILD, { after: second.nextCursor ?? '', limit: 3 });
+    const third = await source.getDays(GUILD, {
+      timezone: TZ,
+      after: second.nextCursor ?? '',
+      limit: 3,
+    });
     expect(third.days.map((d) => d.date)).toEqual(['2027-01-14']);
     expect(third.hasMore).toBe(false);
-    const empty = await source.getDays(GUILD, { after: third.nextCursor ?? '', limit: 3 });
+    const empty = await source.getDays(GUILD, {
+      timezone: TZ,
+      after: third.nextCursor ?? '',
+      limit: 3,
+    });
     expect(empty.days).toEqual([]);
     expect(empty.hasMore).toBe(false);
     expect(empty.nextCursor).toBe(third.nextCursor);
@@ -355,13 +428,13 @@ describe('createMockLeetSource', () => {
 
   it('paged and unpaged histories are identical', async () => {
     const source = make(MORNING);
-    const all = await source.getDays(GUILD, {});
+    const all = await source.getDays(GUILD, { timezone: TZ });
     const days: LeetDaysPage['days'] = [];
     let after: string | undefined;
     for (;;) {
       const page = await source.getDays(
         GUILD,
-        after === undefined ? { limit: 2 } : { after, limit: 2 },
+        after === undefined ? { timezone: TZ, limit: 2 } : { timezone: TZ, after, limit: 2 },
       );
       days.push(...page.days);
       if (!page.hasMore) break;
@@ -372,10 +445,15 @@ describe('createMockLeetSource', () => {
 
   it('honours since, but after wins over since', async () => {
     const source = make(MORNING);
-    const since = await source.getDays(GUILD, { since: '2027-01-12' });
+    const since = await source.getDays(GUILD, { timezone: TZ, since: '2027-01-12' });
     expect(since.days.map((d) => d.date)).toEqual(['2027-01-12', '2027-01-13', '2027-01-14']);
-    const cursor = (await source.getDays(GUILD, { limit: 1 })).nextCursor ?? '';
-    const both = await source.getDays(GUILD, { after: cursor, since: '2027-01-13', limit: 1 });
+    const cursor = (await source.getDays(GUILD, { timezone: TZ, limit: 1 })).nextCursor ?? '';
+    const both = await source.getDays(GUILD, {
+      timezone: TZ,
+      after: cursor,
+      since: '2027-01-13',
+      limit: 1,
+    });
     expect(both.days.map((d) => d.date)).toEqual(['2027-01-09']);
   });
 
@@ -383,18 +461,22 @@ describe('createMockLeetSource', () => {
     const source = make(MORNING);
     const kind = (p: Promise<unknown>) =>
       p.catch((e: unknown) => (e instanceof LeetSourceError ? e.kind : 'other'));
-    expect(await kind(source.getDays(GUILD, { after: '!!!' }))).toBe('invalid_request');
-    expect(await kind(source.getDays(GUILD, { after: btoa('{"d":"nope"}') }))).toBe(
+    expect(await kind(source.getDays(GUILD, { timezone: TZ, after: '!!!' }))).toBe(
       'invalid_request',
     );
-    expect(await kind(source.getDays(GUILD, { since: '2027-1-1' }))).toBe('invalid_request');
-    expect(await kind(source.getDays(GUILD, { limit: 0 }))).toBe('invalid_request');
-    expect(await kind(source.getDays(GUILD, { limit: 101 }))).toBe('invalid_request');
-    expect(await kind(source.getDays('abc', {}))).toBe('invalid_request');
+    expect(await kind(source.getDays(GUILD, { timezone: TZ, after: btoa('{"d":"nope"}') }))).toBe(
+      'invalid_request',
+    );
+    expect(await kind(source.getDays(GUILD, { timezone: TZ, since: '2027-1-1' }))).toBe(
+      'invalid_request',
+    );
+    expect(await kind(source.getDays(GUILD, { timezone: TZ, limit: 0 }))).toBe('invalid_request');
+    expect(await kind(source.getDays(GUILD, { timezone: TZ, limit: 101 }))).toBe('invalid_request');
+    expect(await kind(source.getDays('abc', { timezone: TZ }))).toBe('invalid_request');
   });
 
   it('produces pages that pass the real page schema', async () => {
-    const page = await make(MORNING).getDays(GUILD, {});
+    const page = await make(MORNING).getDays(GUILD, { timezone: TZ });
     expect(parseLeetPage(GUILD, page)).toEqual(page);
   });
 });

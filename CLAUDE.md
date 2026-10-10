@@ -50,7 +50,7 @@ Full details and sources: `docs/security.md`.
 
 - **One Cloudflare Worker** serves the Activity frontend (static assets) and the API (`/api/*`). Discord's proxy fronts it at `<client_id>.discordsays.com`; the frontend uses relative URLs.
 - **Durable Objects** (SQLite-backed), one per Discord server (guild), hold that server's game state and serialise all writes. The live Sunday finale uses WebSockets on the same object.
-- **Scheduling** uses Durable Object alarms computed in `Europe/Helsinki` time (DST-safe, tested); each guild object re-arms its alarm on every authenticated request. Schedules are configuration, not hard-coded.
+- **Scheduling** uses Durable Object alarms computed in the guild's timezone (default `Europe/Helsinki`; DST-safe, tested); each guild object re-arms its alarm on every authenticated request. Schedules are configuration, not hard-coded.
 - **Content is data:** creatures, bosses, gimmicks, reactions, loot tables and gear are schema-validated data files. Add content without engine changes.
 - **One combat engine package** is shared by live raids and the balance simulator. It is pure (no I/O) and takes an injected RNG.
 - **Feature flags and mutator hooks** (on round start, on reaction, on catch, and so on) keep seasonal additions isolated and switchable.
@@ -76,5 +76,5 @@ Run all of these before proposing a PR. CI runs the same.
 
 - TypeScript strict everywhere. Small modules, plain functions, no frameworks in the Worker unless justified.
 - Tests for every behaviour change; deterministic seeds in tests.
-- Times are stored as UTC epoch milliseconds; game-calendar logic converts to `Europe/Helsinki` in one place.
+- Times are stored as UTC epoch milliseconds; game-calendar logic converts to the guild's timezone (default `Europe/Helsinki`) in one place, and the timezone is always passed explicitly, never defaulted in a function signature.
 - Integer amounts only for currencies; never negative balances.

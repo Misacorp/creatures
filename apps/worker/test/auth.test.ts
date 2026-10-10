@@ -53,6 +53,7 @@ describe('POST /api/auth/session', () => {
     expect(await me.json()).toEqual({
       user: body.user,
       guildId: GUILD_ID,
+      timezone: 'Europe/Helsinki',
       balances: { bait: expect.any(Number) as number, essence: 0 },
     });
   });
