@@ -57,7 +57,7 @@ Sources: pnpm.io/supply-chain-security · docs.github.com Dependabot options ref
 
 - 🔜 M1+ **Server-authoritative.** The client sends intents ("start expedition with creature X at tier Y"); the server validates and computes everything. User identity comes from the session, never the request body.
 - 🔜 M1+ **RNG:** `crypto.getRandomValues` drawn server-side at the moment of the roll; integer ranges use rejection sampling (no modulo bias). Raid fights draw a fresh 128-bit seed when the phase resolves (never before), run the deterministic engine, and store the seed so replays are exact. Content data being public doesn't help predict outcomes. `Math.random` is banned by lint.
-- 🔜 M1 **Ledger:** append-only, integer amounts, `CHECK (balance >= 0)`. Every spend has a client-generated idempotency key with a `UNIQUE` constraint; the check, debit and grant run in one synchronous SQLite transaction inside the guild's Durable Object (no `await` between check and write); retries return the stored result.
+- ✅ M1 **Ledger:** append-only, integer amounts, `CHECK (balance >= 0)`. Every spend has a client-generated idempotency key with a `UNIQUE` constraint; the check, debit and grant run in one synchronous SQLite transaction inside the guild's Durable Object (no `await` between check and write); retries return the stored result, and reusing a key for a different spend is refused.
 - ✅ M1 **Rate limiting:** per-player token bucket inside the guild's Durable Object (30 burst, 1/s), plus a best-effort per-activity-instance limit on login in the Worker. 🔜 A coarse edge rule (Cloudflare WAF) if abuse appears.
 - 🔜 M1 Constant-time comparison (`crypto.subtle.timingSafeEqual`) for any secret or token comparison.
 

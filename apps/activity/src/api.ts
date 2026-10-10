@@ -2,6 +2,8 @@ export interface AppConfig {
   discordClientId: string;
   environment: string;
   version: string;
+  /** "mock" while leet points are simulated; anything else means a real leet source. */
+  leetSource: string;
 }
 
 export interface Health {
@@ -20,9 +22,24 @@ export interface SessionResult {
   guildId: string;
 }
 
+export interface Balances {
+  bait: number;
+  essence: number;
+}
+
 export interface Me {
   user: SessionUser;
   guildId: string;
+  balances: Balances;
+}
+
+export interface LedgerEntry {
+  id: number;
+  currency: string;
+  amount: number;
+  source: string;
+  createdAt: number;
+  meta: Record<string, unknown> | null;
 }
 
 /** An API error carrying the server's machine-readable code (for example `guild_required`). */
@@ -84,7 +101,8 @@ export async function fetchConfig(): Promise<AppConfig> {
     !isRecord(data) ||
     typeof data['discordClientId'] !== 'string' ||
     typeof data['environment'] !== 'string' ||
-    typeof data['version'] !== 'string'
+    typeof data['version'] !== 'string' ||
+    typeof data['leetSource'] !== 'string'
   ) {
     throw new Error('/api/config returned an unexpected shape');
   }
@@ -92,6 +110,7 @@ export async function fetchConfig(): Promise<AppConfig> {
     discordClientId: data['discordClientId'],
     environment: data['environment'],
     version: data['version'],
+    leetSource: data['leetSource'],
   };
 }
 
@@ -123,10 +142,46 @@ export async function createSession(code: string, instanceId: string): Promise<S
   return { accessToken: data['accessToken'], user: data['user'], guildId: data['guildId'] };
 }
 
+function isBalances(value: unknown): value is Balances {
+  return (
+    isRecord(value) &&
+    typeof value['bait'] === 'number' &&
+    Number.isInteger(value['bait']) &&
+    typeof value['essence'] === 'number' &&
+    Number.isInteger(value['essence'])
+  );
+}
+
 export async function fetchMe(): Promise<Me> {
   const data = await apiFetch('/api/me');
-  if (!isRecord(data) || typeof data['guildId'] !== 'string' || !isSessionUser(data['user'])) {
+  if (
+    !isRecord(data) ||
+    typeof data['guildId'] !== 'string' ||
+    !isSessionUser(data['user']) ||
+    !isBalances(data['balances'])
+  ) {
     throw new Error('/api/me returned an unexpected shape');
   }
-  return { user: data['user'], guildId: data['guildId'] };
+  return { user: data['user'], guildId: data['guildId'], balances: data['balances'] };
+}
+
+function isLedgerEntry(value: unknown): value is LedgerEntry {
+  return (
+    isRecord(value) &&
+    typeof value['id'] === 'number' &&
+    typeof value['currency'] === 'string' &&
+    typeof value['amount'] === 'number' &&
+    typeof value['source'] === 'string' &&
+    typeof value['createdAt'] === 'number' &&
+    (value['meta'] === null || isRecord(value['meta']))
+  );
+}
+
+/** The signed-in player's most recent ledger entries, newest first. */
+export async function fetchLedger(limit: number): Promise<LedgerEntry[]> {
+  const data = await apiFetch(`/api/ledger?limit=${String(limit)}`);
+  if (!isRecord(data) || !Array.isArray(data['entries']) || !data['entries'].every(isLedgerEntry)) {
+    throw new Error('/api/ledger returned an unexpected shape');
+  }
+  return data['entries'];
 }

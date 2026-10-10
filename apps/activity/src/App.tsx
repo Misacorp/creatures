@@ -5,10 +5,13 @@ import {
   createSession,
   fetchConfig,
   fetchHealth,
+  fetchLedger,
   fetchMe,
   type AppConfig,
+  type LedgerEntry,
   type Me,
 } from './api';
+import { describeEntry } from './ledger-text';
 
 type Status<T> =
   { state: 'loading' } | { state: 'error'; message: string } | { state: 'ok'; value: T };
@@ -17,6 +20,7 @@ interface Boot {
   config: AppConfig;
   /** Null when running outside Discord (no sign-in possible). */
   me: Me | null;
+  recent: LedgerEntry[];
 }
 
 // Discord adds frame_id (among others) to the URL when it launches an Activity.
@@ -25,7 +29,7 @@ const insideDiscord = new URLSearchParams(window.location.search).has('frame_id'
 async function boot(): Promise<Boot> {
   const config = await fetchConfig();
   if (!insideDiscord) {
-    return { config, me: null };
+    return { config, me: null, recent: [] };
   }
   const sdk = new DiscordSDK(config.discordClientId);
   await sdk.ready();
@@ -41,7 +45,11 @@ async function boot(): Promise<Boot> {
   const session = await createSession(code, sdk.instanceId);
   // Discord requires authenticate() with the access token to unlock the rest of the SDK.
   await sdk.commands.authenticate({ access_token: session.accessToken });
-  return { config, me: await fetchMe() };
+  // /api/me runs the leet sync first, so fetch the history after it.
+  const me = await fetchMe();
+  // The balance matters more than the list: a failing history request must not block sign-in.
+  const recent = await fetchLedger(10).catch((): LedgerEntry[] => []);
+  return { config, me, recent };
 }
 
 function errorMessage(err: unknown): string {
@@ -103,7 +111,25 @@ export function App() {
           {bootStatus.value.me === null ? (
             <p>This is a Discord Activity. Launch it from Discord to play.</p>
           ) : (
-            <p class="hello">Signed in as {bootStatus.value.me.user.displayName}</p>
+            <>
+              <p class="hello">Signed in as {bootStatus.value.me.user.displayName}</p>
+              <p class="bait" aria-label="Bait balance">
+                <span class="bait-amount">{bootStatus.value.me.balances.bait}</span> Bait
+              </p>
+              {bootStatus.value.config.leetSource === 'mock' && (
+                <p class="note">Leet points are simulated until the leet bot API is live</p>
+              )}
+              <h2>Recent</h2>
+              {bootStatus.value.recent.length === 0 ? (
+                <p class="muted">Nothing yet.</p>
+              ) : (
+                <ul class="recent">
+                  {bootStatus.value.recent.map((entry) => (
+                    <li key={entry.id}>{describeEntry(entry)}</li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
           <dl>
             <Row label="Environment" value={bootStatus.value.config.environment} />

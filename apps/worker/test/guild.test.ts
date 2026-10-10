@@ -10,7 +10,15 @@ import {
   generateSessionSecret,
   getSessionKey,
 } from '../src/session';
-import { GUILD_ID, ORIGIN, USER_ID, expectApiHeaders, tokenFor } from './helpers';
+import {
+  GUILD_ID,
+  ORIGIN,
+  OTHER_USER_ID,
+  USER_ID,
+  expectApiHeaders,
+  runCore,
+  tokenFor,
+} from './helpers';
 
 const MINUTE = 60 * 1000;
 const T0 = 1_800_000_000_000;
@@ -20,6 +28,7 @@ const USER = { id: USER_ID, displayName: 'Misa' };
 async function withCore<R>(
   guildId: string,
   fn: (ctx: {
+    guildId: string;
     core: GuildCore;
     clock: { t: number };
     sql: SqlStorage;
@@ -37,7 +46,7 @@ async function withCore<R>(
           headers: { Authorization: `Bearer ${await tokenFor(guildId, secret)}` },
         }),
       );
-    return fn({ core, clock, sql: state.storage.sql, request });
+    return fn({ guildId, core, clock, sql: state.storage.sql, request });
   });
 }
 
@@ -48,12 +57,22 @@ describe('schema migrations', () => {
         .exec<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table'")
         .toArray()
         .map((r) => r.name);
-      expect(tables).toEqual(expect.arrayContaining(['players', 'sessions', 'schema_version']));
+      expect(tables).toEqual(
+        expect.arrayContaining([
+          'players',
+          'sessions',
+          'schema_version',
+          'ledger',
+          'balances',
+          'leet_sync',
+          'guild_meta',
+        ]),
+      );
       const version = sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one();
-      expect(version.v).toBe(1);
+      expect(version.v).toBe(3);
       // Running migrations again is a no-op.
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(1);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(3);
       return Promise.resolve();
     });
   });
@@ -61,24 +80,24 @@ describe('schema migrations', () => {
 
 describe('sessions', () => {
   it('verifies a fresh session and rejects unknown secrets', async () => {
-    await withCore('700000000000000002', async ({ core }) => {
-      const secret = await core.createSession(USER);
+    await withCore('700000000000000002', async ({ guildId, core }) => {
+      const secret = await core.createSession(guildId, USER);
       expect(await core.verifySession(secret)).toEqual(USER);
       expect(await core.verifySession(generateSessionSecret())).toBeNull();
     });
   });
 
   it('updates the display name on re-login', async () => {
-    await withCore('700000000000000003', async ({ core }) => {
-      const first = await core.createSession(USER);
-      await core.createSession({ id: USER_ID, displayName: 'Renamed' });
+    await withCore('700000000000000003', async ({ guildId, core }) => {
+      const first = await core.createSession(guildId, USER);
+      await core.createSession(guildId, { id: USER_ID, displayName: 'Renamed' });
       expect(await core.verifySession(first)).toEqual({ id: USER_ID, displayName: 'Renamed' });
     });
   });
 
   it('expires after the idle timeout', async () => {
-    await withCore('700000000000000004', async ({ core, clock, sql }) => {
-      const secret = await core.createSession(USER);
+    await withCore('700000000000000004', async ({ guildId, core, clock, sql }) => {
+      const secret = await core.createSession(guildId, USER);
       clock.t = T0 + SESSION_IDLE_MS - 1;
       expect(await core.verifySession(secret)).toEqual(USER);
       // That use slid the window; now go idle for the full hour.
@@ -89,8 +108,8 @@ describe('sessions', () => {
   });
 
   it('slides the idle window while in use', async () => {
-    await withCore('700000000000000005', async ({ core, clock }) => {
-      const secret = await core.createSession(USER);
+    await withCore('700000000000000005', async ({ guildId, core, clock }) => {
+      const secret = await core.createSession(guildId, USER);
       for (let i = 1; i <= 4; i++) {
         clock.t = T0 + i * 50 * MINUTE;
         expect(await core.verifySession(secret)).toEqual(USER);
@@ -99,8 +118,8 @@ describe('sessions', () => {
   });
 
   it('expires at the absolute limit even when continuously used', async () => {
-    await withCore('700000000000000006', async ({ core, clock }) => {
-      const secret = await core.createSession(USER);
+    await withCore('700000000000000006', async ({ guildId, core, clock }) => {
+      const secret = await core.createSession(guildId, USER);
       for (let t = 30 * MINUTE; t < SESSION_ABSOLUTE_MS; t += 30 * MINUTE) {
         clock.t = T0 + t;
         expect(await core.verifySession(secret)).toEqual(USER);
@@ -111,8 +130,8 @@ describe('sessions', () => {
   });
 
   it('writes last_used_at at most once per 5 minutes', async () => {
-    await withCore('700000000000000007', async ({ core, clock, sql }) => {
-      const secret = await core.createSession(USER);
+    await withCore('700000000000000007', async ({ guildId, core, clock, sql }) => {
+      const secret = await core.createSession(guildId, USER);
       const lastUsed = () =>
         sql.exec<{ last_used_at: number }>('SELECT last_used_at FROM sessions').one().last_used_at;
       clock.t = T0 + SESSION_TOUCH_INTERVAL_MS - 1;
@@ -125,21 +144,21 @@ describe('sessions', () => {
   });
 
   it('deletes expired sessions when a new one is created', async () => {
-    await withCore('700000000000000008', async ({ core, clock, sql }) => {
-      await core.createSession(USER);
-      await core.createSession({ id: '222222222222222222', displayName: 'Other' });
+    await withCore('700000000000000008', async ({ guildId, core, clock, sql }) => {
+      await core.createSession(guildId, USER);
+      await core.createSession(guildId, { id: '222222222222222222', displayName: 'Other' });
       clock.t = T0 + SESSION_ABSOLUTE_MS + 1;
-      await core.createSession(USER);
+      await core.createSession(guildId, USER);
       expect(sql.exec('SELECT * FROM sessions').toArray()).toHaveLength(1);
     });
   });
 
   it('keeps at most 10 sessions per user', async () => {
-    await withCore('700000000000000009', async ({ core, clock, sql }) => {
+    await withCore('700000000000000009', async ({ guildId, core, clock, sql }) => {
       const secrets: string[] = [];
       for (let i = 0; i < 12; i++) {
         clock.t = T0 + i;
-        secrets.push(await core.createSession(USER));
+        secrets.push(await core.createSession(guildId, USER));
       }
       expect(sql.exec('SELECT * FROM sessions').toArray()).toHaveLength(10);
       expect(await core.verifySession(secrets[0] ?? '')).toBeNull();
@@ -148,20 +167,58 @@ describe('sessions', () => {
   });
 });
 
+describe('guild id binding', () => {
+  it('stores the guild id on first session creation and keeps it', async () => {
+    await runCore('740000000000000001', async ({ core, sql }) => {
+      expect(sql.exec('SELECT * FROM guild_meta').toArray()).toEqual([]);
+      await core.createSession('740000000000000001', USER);
+      await core.createSession('740000000000000001', { id: OTHER_USER_ID, displayName: 'Other' });
+      expect(sql.exec('SELECT id, guild_id FROM guild_meta').toArray()).toEqual([
+        { id: 1, guild_id: '740000000000000001' },
+      ]);
+    });
+  });
+
+  it('throws on a different guild id and creates no session', async () => {
+    await runCore('740000000000000002', async ({ core, sql }) => {
+      await core.createSession('740000000000000002', USER);
+      await expect(core.createSession('740000000000000009', USER)).rejects.toThrow(/guild/);
+      expect(sql.exec('SELECT * FROM sessions').toArray()).toHaveLength(1);
+      expect(sql.exec<{ guild_id: string }>('SELECT guild_id FROM guild_meta').one().guild_id).toBe(
+        '740000000000000002',
+      );
+    });
+  });
+
+  it('allows only one guild_meta row', async () => {
+    await runCore('740000000000000003', ({ sql }) => {
+      sql.exec("INSERT INTO guild_meta (id, guild_id) VALUES (1, 'a')");
+      expect(() => sql.exec("INSERT INTO guild_meta (id, guild_id) VALUES (2, 'b')")).toThrow(
+        /CHECK/i,
+      );
+      return Promise.resolve();
+    });
+  });
+});
+
 describe('authenticated routes in the Durable Object', () => {
-  it('GET /api/me returns the user and guild', async () => {
-    await withCore(GUILD_ID, async ({ core, request }) => {
-      const secret = await core.createSession(USER);
+  it('GET /api/me returns the user, guild and balances', async () => {
+    await withCore(GUILD_ID, async ({ guildId, core, request }) => {
+      const secret = await core.createSession(guildId, USER);
       const res = await request(secret);
       expect(res.status).toBe(200);
       expectApiHeaders(res);
-      expect(await res.json()).toEqual({ user: USER, guildId: GUILD_ID });
+      expect(await res.json()).toEqual({
+        user: USER,
+        guildId: GUILD_ID,
+        balances: { bait: 0, essence: 0 },
+      });
     });
   });
 
   it('404s on unknown routes and 405s on wrong methods', async () => {
-    await withCore('700000000000000010', async ({ core, request }) => {
-      const secret = await core.createSession(USER);
+    await withCore('700000000000000010', async ({ guildId, core, request }) => {
+      const secret = await core.createSession(guildId, USER);
       const unknown = await request(secret, '/api/nope');
       expect(unknown.status).toBe(404);
       expect(await unknown.json()).toEqual({ error: 'not_found' });
@@ -176,8 +233,8 @@ describe('authenticated routes in the Durable Object', () => {
   });
 
   it('does not expose session creation over HTTP', async () => {
-    await withCore('700000000000000011', async ({ core, request }) => {
-      const secret = await core.createSession(USER);
+    await withCore('700000000000000011', async ({ guildId, core, request }) => {
+      const secret = await core.createSession(guildId, USER);
       for (const path of ['/api/auth/session', '/api/session', '/createSession']) {
         expect((await request(secret, path, 'POST')).status).toBe(404);
       }
@@ -185,8 +242,8 @@ describe('authenticated routes in the Durable Object', () => {
   });
 
   it('401s on expired sessions', async () => {
-    await withCore('700000000000000012', async ({ core, clock, request }) => {
-      const secret = await core.createSession(USER);
+    await withCore('700000000000000012', async ({ guildId, core, clock, request }) => {
+      const secret = await core.createSession(guildId, USER);
       clock.t = T0 + SESSION_IDLE_MS;
       const res = await request(secret);
       expect(res.status).toBe(401);
@@ -196,9 +253,12 @@ describe('authenticated routes in the Durable Object', () => {
   });
 
   it('rate limits per player with a token bucket', async () => {
-    await withCore('700000000000000013', async ({ core, clock, request }) => {
-      const secret = await core.createSession(USER);
-      const other = await core.createSession({ id: '222222222222222222', displayName: 'Other' });
+    await withCore('700000000000000013', async ({ guildId, core, clock, request }) => {
+      const secret = await core.createSession(guildId, USER);
+      const other = await core.createSession(guildId, {
+        id: '222222222222222222',
+        displayName: 'Other',
+      });
       for (let i = 0; i < 30; i++) expect((await request(secret)).status).toBe(200);
       const limited = await request(secret);
       expect(limited.status).toBe(429);
@@ -243,6 +303,7 @@ describe('Worker routing to the guild Durable Object', () => {
     const guildId = '800000000000000005';
     const forgedGuild = '800000000000000006';
     const secret = await env.GUILD_WORLD.get(env.GUILD_WORLD.idFromName(guildId)).createSession(
+      guildId,
       USER,
     );
     const good = await tokenFor(guildId, secret);
@@ -279,7 +340,7 @@ describe('Worker routing to the guild Durable Object', () => {
   it('does not accept a session token from another guild', async () => {
     const secret = await env.GUILD_WORLD.get(
       env.GUILD_WORLD.idFromName('800000000000000003'),
-    ).createSession(USER);
+    ).createSession('800000000000000003', USER);
     const own = await call('/api/me', {
       Authorization: `Bearer ${await tokenFor('800000000000000003', secret)}`,
     });

@@ -43,6 +43,7 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
           discordClientId: env.DISCORD_CLIENT_ID,
           environment: env.ENVIRONMENT,
           version: env.VERSION,
+          leetSource: env.LEET_SOURCE,
         }),
     },
     '/api/auth/session': {
@@ -51,7 +52,7 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
           discord: deps.createDiscord(env),
           limiter: authLimiter,
           createSession: (guildId, user) =>
-            env.GUILD_WORLD.get(env.GUILD_WORLD.idFromName(guildId)).createSession(user),
+            env.GUILD_WORLD.get(env.GUILD_WORLD.idFromName(guildId)).createSession(guildId, user),
           formatToken: async (guildId, secret) =>
             formatSessionToken(await getSessionKey(env.DISCORD_CLIENT_SECRET), guildId, secret),
         }),

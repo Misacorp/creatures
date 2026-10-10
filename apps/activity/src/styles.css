@@ -38,6 +38,34 @@ h1 {
   font-size: 1.125rem;
 }
 
+.bait {
+  margin: 0.5rem 0;
+  font-size: 1.25rem;
+}
+
+.bait-amount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.note,
+.muted {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+h2 {
+  margin: 1rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+.recent {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--muted);
+}
+
 .error {
   color: var(--danger);
 }

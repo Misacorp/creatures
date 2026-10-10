@@ -1,5 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import { GuildCore, type SessionUser } from './guild-core';
+import { LEET_BACKFILL_DAYS, createLeetSourceFromEnv } from './leet';
 
 /**
  * One Durable Object per Discord guild (`idFromName(guildId)`). Holds that guild's state in its
@@ -11,18 +12,31 @@ export class GuildWorld extends DurableObject<Env> {
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    this.core = new GuildCore(ctx.storage, Date.now);
+    this.core = new GuildCore(ctx.storage, Date.now, {
+      guildId: () => ctx.id.name,
+      createLeetSource: (knownPlayers) =>
+        createLeetSourceFromEnv(env, {
+          now: Date.now,
+          knownPlayers,
+          backfillDays: LEET_BACKFILL_DAYS,
+          fetch: (input, init) => fetch(input, init),
+        }),
+    });
     void ctx.blockConcurrencyWhile(() => {
       this.core.migrate();
       return Promise.resolve();
     });
   }
 
-  createSession(user: SessionUser): Promise<string> {
-    return this.core.createSession(user);
+  createSession(guildId: string, user: SessionUser): Promise<string> {
+    return this.core.createSession(guildId, user);
   }
 
   override fetch(request: Request): Promise<Response> {
     return this.core.handle(request);
+  }
+
+  override alarm(): Promise<void> {
+    return this.core.alarm();
   }
 }

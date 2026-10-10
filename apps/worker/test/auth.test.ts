@@ -49,7 +49,12 @@ describe('POST /api/auth/session', () => {
     // The new token works against /api/me.
     const me = await getWithToken(handler, '/api/me', body.sessionToken);
     expect(me.status).toBe(200);
-    expect(await me.json()).toEqual({ user: body.user, guildId: GUILD_ID });
+    // Balances come from the mock leet history, which depends on the real date: only check shape.
+    expect(await me.json()).toEqual({
+      user: body.user,
+      guildId: GUILD_ID,
+      balances: { bait: expect.any(Number) as number, essence: 0 },
+    });
   });
 
   it('takes the guild only from the instance response; a client-supplied guild is rejected', async () => {

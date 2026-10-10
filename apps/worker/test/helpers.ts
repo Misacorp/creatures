@@ -1,5 +1,7 @@
 import { expect } from 'vitest';
 import { env } from 'cloudflare:workers';
+import { runInDurableObject } from 'cloudflare:test';
+import { GuildCore, type GuildCoreOptions } from '../src/guild-core';
 import { DiscordError, type DiscordApi } from '../src/discord';
 import { createHandler } from '../src/index';
 import { formatSessionToken, getSessionKey } from '../src/session';
@@ -103,4 +105,42 @@ export function expectApiHeaders(res: Response): void {
 /** Builds a correctly signed token the way the Worker does, using the test env's client secret. */
 export async function tokenFor(guildId: string, secret: string): Promise<string> {
   return formatSessionToken(await getSessionKey(env.DISCORD_CLIENT_SECRET), guildId, secret);
+}
+
+export const T0 = 1_800_000_000_000;
+
+export interface CoreContext {
+  guildId: string;
+  core: GuildCore;
+  clock: { t: number };
+  sql: SqlStorage;
+  storage: DurableObjectStorage;
+  request: (secret: string, path?: string, method?: string) => Promise<Response>;
+}
+
+/**
+ * Runs `fn` inside the guild's real Durable Object with a GuildCore driven by a fake clock.
+ * The GuildCore gets no leet source unless `options.createLeetSource` is given.
+ */
+export async function runCore<R>(
+  guildId: string,
+  fn: (ctx: CoreContext) => Promise<R> | R,
+  options: GuildCoreOptions | ((clock: { t: number }) => GuildCoreOptions) = {},
+): Promise<R> {
+  const stub = env.GUILD_WORLD.get(env.GUILD_WORLD.idFromName(guildId));
+  return runInDurableObject(stub, async (_instance, state) => {
+    const clock = { t: T0 };
+    const core = new GuildCore(state.storage, () => clock.t, {
+      guildId: () => guildId,
+      ...(typeof options === 'function' ? options(clock) : options),
+    });
+    const request = async (secret: string, path = '/api/me', method = 'GET') =>
+      core.handle(
+        new Request(`${ORIGIN}${path}`, {
+          method,
+          headers: { Authorization: `Bearer ${await tokenFor(guildId, secret)}` },
+        }),
+      );
+    return fn({ guildId, core, clock, sql: state.storage.sql, storage: state.storage, request });
+  });
 }
