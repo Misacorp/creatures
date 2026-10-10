@@ -66,13 +66,17 @@ describe('schema migrations', () => {
           'balances',
           'leet_sync',
           'guild_meta',
+          'creatures',
+          'expeditions',
+          'player_progress',
+          'server_firsts',
         ]),
       );
       const version = sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one();
-      expect(version.v).toBe(3);
+      expect(version.v).toBe(4);
       // Running migrations again is a no-op.
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(3);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(4);
       return Promise.resolve();
     });
   });

@@ -1,3 +1,5 @@
+import { createReauth, type Reauth } from './reauth';
+
 export interface AppConfig {
   discordClientId: string;
   environment: string;
@@ -47,6 +49,8 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly code: string | null,
+    /** Extra detail some errors carry, for example why a nickname was refused. */
+    readonly reason: string | null = null,
   ) {
     super(code === null ? `request failed (${String(status)})` : `request failed (${code})`);
     this.name = 'ApiError';
@@ -80,19 +84,40 @@ async function request(path: string, init: RequestInit = {}): Promise<unknown> {
   }
   if (!res.ok) {
     const code = isRecord(body) && typeof body['error'] === 'string' ? body['error'] : null;
-    throw new ApiError(res.status, code);
+    const reason = isRecord(body) && typeof body['reason'] === 'string' ? body['reason'] : null;
+    throw new ApiError(res.status, code, reason);
   }
   return body;
 }
 
-/** Like `fetch` for the API, but sends the session token as a bearer token. */
-export function apiFetch(path: string, init: RequestInit = {}): Promise<unknown> {
+let reauth: Reauth | null = null;
+
+/** Installs the silent sign-in used when the session expires (for example during a long expedition). */
+export function setReauthenticator(reauthenticate: () => Promise<void>): void {
+  reauth = createReauth({
+    reauthenticate,
+    isSessionExpired: (err) =>
+      err instanceof ApiError && err.status === 401 && err.code === 'invalid_session',
+  });
+}
+
+function authedRequest(path: string, init: RequestInit): Promise<unknown> {
   if (sessionToken === null) {
     return Promise.reject(new Error('Not signed in'));
   }
   const headers = new Headers(init.headers);
   headers.set('Authorization', `Bearer ${sessionToken}`);
   return request(path, { ...init, headers });
+}
+
+/**
+ * Like `fetch` for the API, but sends the session token as a bearer token. If the session has
+ * expired it signs in again silently and retries once with the same request (same body, so the
+ * same idempotency key).
+ */
+export function apiFetch(path: string, init: RequestInit = {}): Promise<unknown> {
+  const attempt = () => authedRequest(path, init);
+  return reauth === null ? attempt() : reauth.run(attempt);
 }
 
 export async function fetchConfig(): Promise<AppConfig> {
@@ -184,4 +209,254 @@ export async function fetchLedger(limit: number): Promise<LedgerEntry[]> {
     throw new Error('/api/ledger returned an unexpected shape');
   }
   return data['entries'];
+}
+
+// --- Game state ---
+
+export type DurationId = 'short' | 'medium' | 'long';
+export type SuppliesId = 'basic' | 'good' | 'great';
+
+export interface Creature {
+  id: string;
+  species: string;
+  line: string;
+  level: number;
+  levelCap: number;
+  fusionCount: number;
+  shiny: boolean;
+  nickname: string | null;
+  away: boolean;
+  stats: { hp: number; atk: number; spd: number };
+  /** Bait for the next level with the discount applied; null at the level cap. */
+  trainCost: number | null;
+  evolution?: { toSpecies: string; level: number; essence: number; available: boolean };
+}
+
+export interface CatchResult {
+  species: string;
+  shiny: boolean;
+  outcome: 'new' | 'fused' | 'converted';
+  fusionCount?: number;
+  bait?: number;
+  firstOnServer: boolean;
+}
+
+export interface ClaimResult {
+  recalled: boolean;
+  catches: CatchResult[];
+}
+
+export interface Expedition {
+  id: string;
+  creatureId: string;
+  duration: DurationId;
+  supplies: SuppliesId;
+  rolls: number;
+  cost: number;
+  startedAt: number;
+  endsAt: number;
+  status: 'active' | 'claimed';
+  claimedAt: number | null;
+  result: ClaimResult | null;
+}
+
+export interface ServerFirst {
+  kind: 'catch' | 'evolve';
+  species: string;
+  at: number;
+  mine: boolean;
+  holders: string[];
+}
+
+export interface GameState {
+  serverNow: number;
+  balances: Balances;
+  starterChosen: boolean;
+  starterOptions: string[];
+  creatures: Creature[];
+  expeditions: Expedition[];
+  slots: { total: number; used: number };
+  trainingMedianLevel: number | null;
+  serverFirsts: ServerFirst[];
+}
+
+const isInt = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isInteger(value);
+const isStr = (value: unknown): value is string => typeof value === 'string';
+const isDuration = (value: unknown): value is DurationId =>
+  value === 'short' || value === 'medium' || value === 'long';
+const isSupplies = (value: unknown): value is SuppliesId =>
+  value === 'basic' || value === 'good' || value === 'great';
+
+function isStats(value: unknown): value is Creature['stats'] {
+  return isRecord(value) && isInt(value['hp']) && isInt(value['atk']) && isInt(value['spd']);
+}
+
+function isCreature(value: unknown): value is Creature {
+  if (!isRecord(value)) return false;
+  const evolution = value['evolution'];
+  return (
+    isStr(value['id']) &&
+    isStr(value['species']) &&
+    isStr(value['line']) &&
+    isInt(value['level']) &&
+    isInt(value['levelCap']) &&
+    isInt(value['fusionCount']) &&
+    typeof value['shiny'] === 'boolean' &&
+    (value['nickname'] === null || isStr(value['nickname'])) &&
+    typeof value['away'] === 'boolean' &&
+    isStats(value['stats']) &&
+    (value['trainCost'] === null || isInt(value['trainCost'])) &&
+    (evolution === undefined ||
+      (isRecord(evolution) &&
+        isStr(evolution['toSpecies']) &&
+        isInt(evolution['level']) &&
+        isInt(evolution['essence']) &&
+        typeof evolution['available'] === 'boolean'))
+  );
+}
+
+function isCatch(value: unknown): value is CatchResult {
+  return (
+    isRecord(value) &&
+    isStr(value['species']) &&
+    typeof value['shiny'] === 'boolean' &&
+    (value['outcome'] === 'new' ||
+      value['outcome'] === 'fused' ||
+      value['outcome'] === 'converted') &&
+    (value['fusionCount'] === undefined || isInt(value['fusionCount'])) &&
+    (value['bait'] === undefined || isInt(value['bait'])) &&
+    typeof value['firstOnServer'] === 'boolean'
+  );
+}
+
+function isClaimResult(value: unknown): value is ClaimResult {
+  return (
+    isRecord(value) &&
+    typeof value['recalled'] === 'boolean' &&
+    Array.isArray(value['catches']) &&
+    value['catches'].every(isCatch)
+  );
+}
+
+function isExpedition(value: unknown): value is Expedition {
+  return (
+    isRecord(value) &&
+    isStr(value['id']) &&
+    isStr(value['creatureId']) &&
+    isDuration(value['duration']) &&
+    isSupplies(value['supplies']) &&
+    isInt(value['rolls']) &&
+    isInt(value['cost']) &&
+    isInt(value['startedAt']) &&
+    isInt(value['endsAt']) &&
+    (value['status'] === 'active' || value['status'] === 'claimed') &&
+    (value['claimedAt'] === null || isInt(value['claimedAt'])) &&
+    (value['result'] === null || isClaimResult(value['result']))
+  );
+}
+
+function isServerFirst(value: unknown): value is ServerFirst {
+  return (
+    isRecord(value) &&
+    (value['kind'] === 'catch' || value['kind'] === 'evolve') &&
+    isStr(value['species']) &&
+    isInt(value['at']) &&
+    typeof value['mine'] === 'boolean' &&
+    Array.isArray(value['holders']) &&
+    value['holders'].every(isStr)
+  );
+}
+
+/** Checks the server's state payload and fills in `starterOptions` (absent once a starter is chosen). */
+export function parseGameState(data: unknown): GameState {
+  if (
+    !isRecord(data) ||
+    !isInt(data['serverNow']) ||
+    !isBalances(data['balances']) ||
+    typeof data['starterChosen'] !== 'boolean' ||
+    !Array.isArray(data['creatures']) ||
+    !data['creatures'].every(isCreature) ||
+    !Array.isArray(data['expeditions']) ||
+    !data['expeditions'].every(isExpedition) ||
+    !isRecord(data['slots']) ||
+    !isInt(data['slots']['total']) ||
+    !isInt(data['slots']['used']) ||
+    !(data['trainingMedianLevel'] === null || typeof data['trainingMedianLevel'] === 'number') ||
+    !Array.isArray(data['serverFirsts']) ||
+    !data['serverFirsts'].every(isServerFirst) ||
+    !(
+      data['starterOptions'] === undefined ||
+      (Array.isArray(data['starterOptions']) && data['starterOptions'].every(isStr))
+    )
+  ) {
+    throw new Error('the server returned an unexpected game state');
+  }
+  return {
+    serverNow: data['serverNow'],
+    balances: data['balances'],
+    starterChosen: data['starterChosen'],
+    starterOptions: data['starterOptions'] ?? [],
+    creatures: data['creatures'],
+    expeditions: data['expeditions'],
+    slots: { total: data['slots']['total'], used: data['slots']['used'] },
+    trainingMedianLevel: data['trainingMedianLevel'],
+    serverFirsts: data['serverFirsts'],
+  };
+}
+
+function postJson(path: string, method: string, body: unknown): Promise<unknown> {
+  return apiFetch(path, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+function stateFrom(data: unknown): GameState {
+  return parseGameState(isRecord(data) ? data['state'] : undefined);
+}
+
+export async function fetchState(): Promise<GameState> {
+  return parseGameState(await apiFetch('/api/state'));
+}
+
+export async function chooseStarter(species: string, idempotencyKey: string): Promise<GameState> {
+  return stateFrom(await postJson('/api/starter', 'POST', { species, idempotencyKey }));
+}
+
+export async function startExpedition(input: {
+  creatureId: string;
+  duration: DurationId;
+  supplies: SuppliesId;
+  idempotencyKey: string;
+}): Promise<GameState> {
+  return stateFrom(await postJson('/api/expeditions', 'POST', input));
+}
+
+export async function claimExpedition(
+  expeditionId: string,
+): Promise<{ result: ClaimResult; state: GameState }> {
+  // Claiming is idempotent on the server (an expedition is claimed once), so it needs no key.
+  const data = await postJson(`/api/expeditions/${expeditionId}/claim`, 'POST', {});
+  if (!isRecord(data) || !isClaimResult(data['result'])) {
+    throw new Error('the server returned an unexpected claim result');
+  }
+  return { result: data['result'], state: stateFrom(data) };
+}
+
+export async function trainCreature(
+  creatureId: string,
+  idempotencyKey: string,
+): Promise<GameState> {
+  return stateFrom(
+    await postJson(`/api/creatures/${creatureId}/train`, 'POST', { idempotencyKey }),
+  );
+}
+
+export async function renameCreature(
+  creatureId: string,
+  nickname: string | null,
+): Promise<GameState> {
+  return stateFrom(await postJson(`/api/creatures/${creatureId}`, 'PATCH', { nickname }));
 }

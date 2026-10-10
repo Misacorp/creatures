@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 import { DiscordError, type DiscordApi } from './discord';
-import { errorResponse, json } from './http';
+import { errorResponse, json, readLimitedText } from './http';
 import type { SessionUser } from './guild-core';
 import { sanitizeDisplayName } from './names';
 import type { TokenBucketLimiter } from './ratelimit';
@@ -16,37 +16,6 @@ export interface AuthDeps {
   formatToken(guildId: string, secret: string): Promise<string>;
   /** Coarse per-instance limiter (best effort, per isolate). */
   limiter: TokenBucketLimiter;
-}
-
-/** Reads the body as UTF-8 text, giving up (null) once it exceeds `maxBytes`. */
-async function readLimitedText(request: Request, maxBytes: number): Promise<string | null> {
-  const declared = request.headers.get('Content-Length');
-  if (declared !== null && Number(declared) > maxBytes) return null;
-  if (request.body === null) return '';
-  const reader = request.body.getReader() as ReadableStreamDefaultReader<Uint8Array>;
-  const chunks: Uint8Array[] = [];
-  let total = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    total += value.byteLength;
-    if (total > maxBytes) {
-      await reader.cancel();
-      return null;
-    }
-    chunks.push(value);
-  }
-  const bytes = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  try {
-    return new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes);
-  } catch {
-    return null;
-  }
 }
 
 export async function handleAuthSession(request: Request, deps: AuthDeps): Promise<Response> {

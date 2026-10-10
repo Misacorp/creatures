@@ -72,3 +72,91 @@ export function dispatch<C>(
       return methodNotAllowed(match.allow);
   }
 }
+
+/** Reads the body as UTF-8 text, giving up (null) once it exceeds `maxBytes`. */
+export async function readLimitedText(request: Request, maxBytes: number): Promise<string | null> {
+  const declared = request.headers.get('Content-Length');
+  if (declared !== null && Number(declared) > maxBytes) return null;
+  if (request.body === null) return '';
+  const reader = request.body.getReader() as ReadableStreamDefaultReader<Uint8Array>;
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes);
+  } catch {
+    return null;
+  }
+}
+
+/** Reads a small JSON body. Returns `undefined` when it is too large, not UTF-8 or not JSON. */
+export async function readJsonBody(request: Request, maxBytes: number): Promise<unknown> {
+  const text = await readLimitedText(request, maxBytes);
+  if (text === null) return undefined;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return undefined;
+  }
+}
+
+export interface TemplateMatch {
+  /** The matching route key, for example `/api/creatures/:id/train`. */
+  template: string;
+  params: Record<string, string>;
+}
+
+/**
+ * Finds the template route (segments starting with `:` match exactly one non-empty segment) that
+ * fits `pathname`. Only keys containing a `:` segment are considered; exact routes are matched by
+ * `matchRoute`. Parameter values are returned raw: validate them with a schema before use.
+ */
+export function matchTemplate(
+  routeKeys: readonly string[],
+  pathname: string,
+): TemplateMatch | null {
+  const parts = pathname.split('/');
+  for (const template of routeKeys) {
+    const templateParts = template.split('/');
+    if (templateParts.length !== parts.length || !templateParts.some((p) => p.startsWith(':'))) {
+      continue;
+    }
+    const params: Record<string, string> = Object.create(null) as Record<string, string>;
+    let matched = true;
+    for (let i = 0; i < parts.length; i++) {
+      const expected = templateParts[i];
+      const actual = parts[i];
+      if (expected === undefined || actual === undefined) {
+        matched = false;
+        break;
+      }
+      if (expected.startsWith(':')) {
+        if (actual === '') {
+          matched = false;
+          break;
+        }
+        params[expected.slice(1)] = actual;
+      } else if (expected !== actual) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) return { template, params };
+  }
+  return null;
+}

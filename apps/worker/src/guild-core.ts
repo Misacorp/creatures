@@ -1,6 +1,9 @@
+import { createCryptoRng, type Rng } from '@creatures/game';
 import * as v from 'valibot';
+import { Collection } from './collection';
+import { collectionRoutes } from './collection-routes';
 import { baitForDay, leetPointsForDay } from './economy';
-import { dispatch, errorResponse, json, type Routes } from './http';
+import { dispatch, errorResponse, json, matchTemplate, type Routes } from './http';
 import { LEET_BACKFILL_DAYS, LeetSourceError, type LeetSource } from './leet';
 import {
   credit,
@@ -101,6 +104,54 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
       guild_id TEXT NOT NULL
     )`);
   },
+  (sql) => {
+    // One creature per (player, line): duplicates fuse into it. No foreign keys, as in the ledger:
+    // rows are only written by this module, always inside a transaction.
+    sql.exec(`CREATE TABLE creatures (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      line TEXT NOT NULL,
+      species TEXT NOT NULL,
+      level INTEGER NOT NULL CHECK (level >= 1),
+      fusion_count INTEGER NOT NULL DEFAULT 0 CHECK (fusion_count BETWEEN 0 AND 5),
+      shiny INTEGER NOT NULL DEFAULT 0,
+      nickname TEXT,
+      away_expedition_id TEXT,
+      origin TEXT NOT NULL,
+      caught_at INTEGER NOT NULL,
+      UNIQUE (user_id, line)
+    )`);
+    sql.exec(`CREATE TABLE expeditions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      creature_id TEXT NOT NULL,
+      duration TEXT NOT NULL,
+      supplies TEXT NOT NULL,
+      rolls INTEGER NOT NULL,
+      cost INTEGER NOT NULL,
+      started_at INTEGER NOT NULL,
+      ends_at INTEGER NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('active', 'claimed')),
+      claimed_at INTEGER,
+      result TEXT
+    )`);
+    sql.exec('CREATE INDEX expeditions_user_status ON expeditions(user_id, status)');
+    sql.exec(`CREATE TABLE player_progress (
+      user_id TEXT PRIMARY KEY,
+      starter_species TEXT,
+      expeditions_claimed INTEGER NOT NULL DEFAULT 0,
+      dupe_streak INTEGER NOT NULL DEFAULT 0
+    )`);
+    // "First on server": every user who got the species in the drop that first produced it.
+    sql.exec(`CREATE TABLE server_firsts (
+      kind TEXT NOT NULL CHECK (kind IN ('catch', 'evolve')),
+      species TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      drop_id TEXT NOT NULL,
+      at INTEGER NOT NULL,
+      PRIMARY KEY (kind, species, user_id)
+    )`);
+  },
 ];
 
 export interface SessionUser {
@@ -112,6 +163,8 @@ interface RequestContext {
   user: SessionUser;
   guildId: string;
   core: GuildCore;
+  /** Raw path parameters of a template route such as `/api/creatures/:id/train`. */
+  params: Record<string, string>;
 }
 
 /** Query of GET /api/ledger: strict, only `limit`. Duplicates and unknown keys are rejected. */
@@ -140,6 +193,7 @@ function parseLedgerQuery(url: URL): number | null {
 }
 
 const routes: Routes<RequestContext> = {
+  ...collectionRoutes,
   '/api/me': {
     GET: async (_request, { user, guildId, core }) => {
       await core.syncIfStale();
@@ -155,7 +209,11 @@ const routes: Routes<RequestContext> = {
   },
 };
 
+const ROUTE_KEYS = Object.keys(routes);
+
 export interface GuildCoreOptions {
+  /** Live randomness for catches. Defaults to crypto.getRandomValues; tests inject a seeded one. */
+  rng?: Rng;
   /** Fallback guild id (the Durable Object's name), used only until one is stored. */
   guildId?: () => string | undefined;
   /** Builds the leet source. Returning null disables syncing (fail closed). */
@@ -179,6 +237,7 @@ export class GuildCore {
   private readonly limiter: TokenBucketLimiter;
   private readonly leetSource: LeetSource | null;
   private readonly syncBudgetMs: number;
+  readonly collection: Collection;
   private syncInFlight: Promise<LeetSyncResult> | null = null;
   private lastSyncAttemptAt: number | null = null;
 
@@ -189,6 +248,11 @@ export class GuildCore {
   ) {
     this.syncBudgetMs = options.syncBudgetMs ?? SYNC_BUDGET_MS;
     this.leetSource = options.createLeetSource?.(() => this.knownPlayers()) ?? null;
+    this.collection = new Collection({
+      storage,
+      now,
+      rng: options.rng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+    });
     this.limiter = new TokenBucketLimiter({
       capacity: RATE_CAPACITY,
       refillPerSecond: RATE_REFILL_PER_SECOND,
@@ -321,10 +385,13 @@ export class GuildCore {
       });
     }
     await this.ensureAlarm();
-    return dispatch(routes, request, new URL(request.url).pathname, {
+    const pathname = new URL(request.url).pathname;
+    const template = matchTemplate(ROUTE_KEYS, pathname);
+    return dispatch(routes, request, template?.template ?? pathname, {
       user,
       guildId: token.guildId,
       core: this,
+      params: template?.params ?? {},
     });
   }
 

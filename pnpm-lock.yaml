@@ -229,6 +229,9 @@ importers:
 
   apps/activity:
     dependencies:
+      '@creatures/game':
+        specifier: workspace:*
+        version: link:../../packages/game
       '@discord/embedded-app-sdk':
         specifier: 'catalog:'
         version: 2.5.0
@@ -245,6 +248,9 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 8.3.2(esbuild@0.28.1)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(vite@8.3.2(esbuild@0.28.1))
 
   apps/worker:
     dependencies:

@@ -97,3 +97,16 @@ Misa reviewed the research defaults (`docs/research/`). **[Misa]** on all of the
 - **"First on server":** a title goes to everyone who gets the item or creature **from the same drop instance** (for example two players who both receive an ultra-rare from one boss kill). No 7-day co-discoverer window.
 - **Expeditions:** 2–3 slots plus a free recall that pays out partial rewards.
 - **Shinies:** cosmetic only, no power.
+
+## 2026-10-10: M2 collection on the server (implementation choices)
+
+**Decision.**
+
+- One creature per (player, line); the game rules live in the pure `@creatures/game` package and the Worker's `collection.ts` only applies them inside one `transactionSync` per action.
+- Claiming an expedition rolls every catch inside that transaction from the live crypto RNG. Claiming again returns the stored result, so there is no second roll or payout. Claim needs no idempotency key: the expedition's `claimed` status is the key.
+- Training retries are not re-priced: a repeated key replays the amount that was charged the first time (the level, and so the price, has moved on).
+- A recall that earns zero catches does not use up the first-expedition Zipmouse guarantee (`expeditions_claimed` only counts claims that brought something back).
+- Starters are chosen, not caught, so they do not create "first on server" records. A second starter request always answers 409, also for a repeated key; the client reloads its state.
+- Every mutating route returns the fresh player state, so the Activity needs no second request. Errors are `{ error }` with 400 invalid, 404 not found or not yours, 409 conflict.
+
+**Reasoning.** Everything stays server-authoritative and race-safe: the Durable Object runs one request at a time and each action has no `await` between its checks and its writes.

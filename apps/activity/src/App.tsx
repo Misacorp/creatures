@@ -5,13 +5,15 @@ import {
   createSession,
   fetchConfig,
   fetchHealth,
-  fetchLedger,
   fetchMe,
+  fetchState,
+  setReauthenticator,
   type AppConfig,
-  type LedgerEntry,
+  type GameState,
   type Me,
 } from './api';
-import { describeEntry } from './ledger-text';
+import { Game } from './Game';
+import { RecentActivity } from './RecentActivity';
 
 type Status<T> =
   { state: 'loading' } | { state: 'error'; message: string } | { state: 'ok'; value: T };
@@ -20,7 +22,7 @@ interface Boot {
   config: AppConfig;
   /** Null when running outside Discord (no sign-in possible). */
   me: Me | null;
-  recent: LedgerEntry[];
+  game: GameState | null;
 }
 
 // Discord adds frame_id (among others) to the URL when it launches an Activity.
@@ -29,27 +31,31 @@ const insideDiscord = new URLSearchParams(window.location.search).has('frame_id'
 async function boot(): Promise<Boot> {
   const config = await fetchConfig();
   if (!insideDiscord) {
-    return { config, me: null, recent: [] };
+    return { config, me: null, game: null };
   }
   const sdk = new DiscordSDK(config.discordClientId);
   await sdk.ready();
-  const { code } = await sdk.commands.authorize({
-    client_id: config.discordClientId,
-    response_type: 'code',
-    state: '',
-    prompt: 'none',
-    scope: ['identify'],
-  });
-  // The server decides the guild and verifies the player; the client only passes the code and the
-  // instance id.
-  const session = await createSession(code, sdk.instanceId);
-  // Discord requires authenticate() with the access token to unlock the rest of the SDK.
-  await sdk.commands.authenticate({ access_token: session.accessToken });
-  // /api/me runs the leet sync first, so fetch the history after it.
+  const signIn = async (): Promise<void> => {
+    const { code } = await sdk.commands.authorize({
+      client_id: config.discordClientId,
+      response_type: 'code',
+      state: '',
+      prompt: 'none',
+      scope: ['identify'],
+    });
+    // The server decides the guild and verifies the player; the client only passes the code and
+    // the instance id.
+    const session = await createSession(code, sdk.instanceId);
+    // Discord requires authenticate() with the access token to unlock the rest of the SDK.
+    await sdk.commands.authenticate({ access_token: session.accessToken });
+  };
+  await signIn();
+  // Sessions idle out after an hour but expeditions last longer: sign in again silently.
+  setReauthenticator(signIn);
+  // Both requests run the (throttled) leet sync first, so the Bait balance is fresh.
   const me = await fetchMe();
-  // The balance matters more than the list: a failing history request must not block sign-in.
-  const recent = await fetchLedger(10).catch((): LedgerEntry[] => []);
-  return { config, me, recent };
+  const game = await fetchState();
+  return { config, me, game };
 }
 
 function errorMessage(err: unknown): string {
@@ -108,42 +114,37 @@ export function App() {
       {bootStatus.state === 'error' && <p class="error">Failed to start: {bootStatus.message}</p>}
       {bootStatus.state === 'ok' && (
         <>
-          {bootStatus.value.me === null ? (
+          {bootStatus.value.me === null || bootStatus.value.game === null ? (
             <p>This is a Discord Activity. Launch it from Discord to play.</p>
           ) : (
             <>
-              <p class="hello">Signed in as {bootStatus.value.me.user.displayName}</p>
-              <p class="bait" aria-label="Bait balance">
-                <span class="bait-amount">{bootStatus.value.me.balances.bait}</span> Bait
-              </p>
+              <Game initial={bootStatus.value.game} />
               {bootStatus.value.config.leetSource === 'mock' && (
                 <p class="note">Leet points are simulated until the leet bot API is live</p>
               )}
-              <h2>Recent</h2>
-              {bootStatus.value.recent.length === 0 ? (
-                <p class="muted">Nothing yet.</p>
-              ) : (
-                <ul class="recent">
-                  {bootStatus.value.recent.map((entry) => (
-                    <li key={entry.id}>{describeEntry(entry)}</li>
-                  ))}
-                </ul>
-              )}
+              <RecentActivity />
             </>
           )}
-          <dl>
-            <Row label="Environment" value={bootStatus.value.config.environment} />
-            <Row label="Server version" value={bootStatus.value.config.version} />
-            {bootStatus.value.me !== null && (
-              <Row label="Guild ID" value={bootStatus.value.me.guildId} />
-            )}
-          </dl>
         </>
       )}
 
-      <dl>
-        <Row label="API health" value={healthText} />
-      </dl>
+      <footer>
+        {bootStatus.state === 'ok' && bootStatus.value.me !== null && (
+          <p class="small">Signed in as {bootStatus.value.me.user.displayName}</p>
+        )}
+        <dl>
+          {bootStatus.state === 'ok' && (
+            <>
+              <Row label="Environment" value={bootStatus.value.config.environment} />
+              <Row label="Server version" value={bootStatus.value.config.version} />
+              {bootStatus.value.me !== null && (
+                <Row label="Guild ID" value={bootStatus.value.me.guildId} />
+              )}
+            </>
+          )}
+          <Row label="API health" value={healthText} />
+        </dl>
+      </footer>
     </main>
   );
 }

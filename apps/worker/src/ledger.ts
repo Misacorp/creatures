@@ -127,6 +127,38 @@ export function credit(
   });
 }
 
+/** A previous spend under an idempotency key, as stored by `spend`. */
+export interface PriorSpend {
+  currency: Currency;
+  /** Positive: the amount that was charged. */
+  amount: number;
+  /** The ledger `source` (the spend's purpose). */
+  purpose: string;
+  /** The stored result of `apply`, or null if the row is not a completed spend. */
+  result: unknown;
+}
+
+/**
+ * Looks up a previous spend by key, so callers whose price depends on mutable state (training)
+ * can replay with the originally charged amount instead of re-pricing a retry.
+ */
+export function lookupSpend(sql: SqlStorage, userId: string, key: string): PriorSpend | null {
+  const row = sql
+    .exec<{ currency: Currency; amount: number; source: string; result: string | null }>(
+      'SELECT currency, amount, source, result FROM ledger WHERE user_id = ? AND idempotency_key = ?',
+      userId,
+      key,
+    )
+    .toArray()[0];
+  if (row === undefined) return null;
+  return {
+    currency: row.currency,
+    amount: Math.abs(row.amount),
+    purpose: row.source,
+    result: parseMeta(row.result),
+  };
+}
+
 /**
  * Charges a balance and runs `apply` (the grant) in one synchronous transaction. A retry with the
  * same idempotency key returns the stored result and charges nothing. If `apply` throws, the

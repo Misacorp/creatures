@@ -115,7 +115,7 @@ export interface CoreContext {
   clock: { t: number };
   sql: SqlStorage;
   storage: DurableObjectStorage;
-  request: (secret: string, path?: string, method?: string) => Promise<Response>;
+  request: (secret: string, path?: string, method?: string, body?: unknown) => Promise<Response>;
 }
 
 /**
@@ -134,11 +134,12 @@ export async function runCore<R>(
       guildId: () => guildId,
       ...(typeof options === 'function' ? options(clock) : options),
     });
-    const request = async (secret: string, path = '/api/me', method = 'GET') =>
+    const request = async (secret: string, path = '/api/me', method = 'GET', body?: unknown) =>
       core.handle(
         new Request(`${ORIGIN}${path}`, {
           method,
           headers: { Authorization: `Bearer ${await tokenFor(guildId, secret)}` },
+          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         }),
       );
     return fn({ guildId, core, clock, sql: state.storage.sql, storage: state.storage, request });
