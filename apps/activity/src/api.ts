@@ -493,3 +493,22 @@ export async function renameCreature(
 ): Promise<GameState> {
   return stateFrom(await postJson(`/api/creatures/${creatureId}`, 'PATCH', { nickname }));
 }
+
+export interface EvolveResult {
+  /** The species the creature evolved into. */
+  species: string;
+  firstOnServer: boolean;
+  state: GameState;
+}
+
+/** Evolves a creature for Essence. The idempotency key makes a retry return the same result. */
+export async function evolveCreature(
+  creatureId: string,
+  idempotencyKey: string,
+): Promise<EvolveResult> {
+  const data = await postJson(`/api/creatures/${creatureId}/evolve`, 'POST', { idempotencyKey });
+  if (!isRecord(data) || !isStr(data['species']) || typeof data['firstOnServer'] !== 'boolean') {
+    throw new Error('the server returned an unexpected evolve result');
+  }
+  return { species: data['species'], firstOnServer: data['firstOnServer'], state: stateFrom(data) };
+}

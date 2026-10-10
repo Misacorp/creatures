@@ -4,15 +4,15 @@ Where the project is against the plan. Newest state at the top of each section. 
 
 ## Milestones
 
-| Milestone | State |
-|---|---|
-| M0 foundation, CI, deploys | ✅ merged (PR #1) |
-| M1 Discord login, leet API, Bait ledger | ✅ merged (PR #1, #3). Real leet points live in production (#4 fixed the CI timeout that blocked #3's deploy; prod runs 13081d4). |
-| M2 starters, expeditions, training, fusion | ✅ merged (PR #1) |
-| M3 combat engine, balance simulator | ✅ merged (PR #1). First tuning pass done; deeper tuning still open. |
-| M4 weekly raid | 🚧 branch `m4-raids`: M4a server ✅ committed; M4b Discord posts and M4c Raid tab in progress |
-| M5 live finale and loot reveal | ⏳ not started |
-| M6 polish, pixel art, retro UI | ⏳ not started |
+| Milestone                                  | State                                                                                                                             |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| M0 foundation, CI, deploys                 | ✅ merged (PR #1)                                                                                                                 |
+| M1 Discord login, leet API, Bait ledger    | ✅ merged (PR #1, #3). Real leet points live in production (#4 fixed the CI timeout that blocked #3's deploy; prod runs 13081d4). |
+| M2 starters, expeditions, training, fusion | ✅ merged (PR #1)                                                                                                                 |
+| M3 combat engine, balance simulator        | ✅ merged (PR #1). First tuning pass done; deeper tuning still open.                                                              |
+| M4 weekly raid                             | 🚧 branch `m4-raids`: M4a server ✅ committed; M4b Discord posts and M4c Raid tab in progress                                     |
+| M5 live finale and loot reveal             | ⏳ not started                                                                                                                    |
+| M6 polish, pixel art, retro UI             | ⏳ not started                                                                                                                    |
 
 ## Now
 

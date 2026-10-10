@@ -5,6 +5,7 @@ import {
   capitalize,
   creatureName,
   elementName,
+  evolutionText,
   fusionStars,
   getSpecies,
   isFirstOnServer,
@@ -15,6 +16,7 @@ interface Props {
   state: GameState;
   busy: boolean;
   onTrain: (creature: Creature) => void;
+  onEvolve: (creature: Creature) => void;
   onRename: (creature: Creature, nickname: string | null) => void;
 }
 
@@ -63,12 +65,17 @@ function CreatureCard({
   state,
   busy,
   onTrain,
+  onEvolve,
   onRename,
 }: { creature: Creature; state: GameState } & Omit<Props, 'state'>) {
   const species = getSpecies(creature.species);
   const cost = creature.trainCost;
   const canAfford = cost !== null && state.balances.bait >= cost;
   const discounted = cost !== null && cost < trainingCost(creature.level);
+  const evolve =
+    creature.evolution === undefined
+      ? null
+      : evolutionText(creature.level, creature.evolution, state.balances.essence);
   const trainLabel =
     cost === null
       ? 'Max level'
@@ -115,18 +122,29 @@ function CreatureCard({
         </button>
         {discounted && <span class="muted"> Catch-up discount</span>}
       </p>
-      {creature.evolution !== undefined && (
-        <p class="locked">
-          Locked: Evolve at level {creature.evolution.level} (needs {creature.evolution.essence}{' '}
-          Essence, from raids)
-        </p>
-      )}
+      {evolve !== null &&
+        (evolve.available ? (
+          <p>
+            <button
+              type="button"
+              class="primary"
+              disabled={busy}
+              onClick={() => {
+                onEvolve(creature);
+              }}
+            >
+              {evolve.label}
+            </button>
+          </p>
+        ) : (
+          <p class="locked">{evolve.label}</p>
+        ))}
       <RenameForm creature={creature} busy={busy} onRename={onRename} />
     </li>
   );
 }
 
-export function Collection({ state, busy, onTrain, onRename }: Props) {
+export function Collection({ state, busy, onTrain, onEvolve, onRename }: Props) {
   if (state.creatures.length === 0) return <p class="muted">No creatures yet.</p>;
   return (
     <ul class="cards">
@@ -137,6 +155,7 @@ export function Collection({ state, busy, onTrain, onRename }: Props) {
           state={state}
           busy={busy}
           onTrain={onTrain}
+          onEvolve={onEvolve}
           onRename={onRename}
         />
       ))}

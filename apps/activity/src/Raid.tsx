@@ -1,0 +1,501 @@
+import { RULES } from '@creatures/game';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { ApiError, type Creature } from './api';
+import { clockOffset, creatureName, errorText, speciesName } from './game';
+import { useNow } from './hooks';
+import { Replay } from './Replay';
+import {
+  fetchRaid,
+  placeCreature,
+  setRaidOptOut,
+  setRaidTeam,
+  unplaceCreature,
+  type PhaseResultView,
+  type RaidPhaseId,
+  type RaidView,
+  type RowSlotView,
+} from './raid-api';
+import {
+  adjacentSlots,
+  canUnplace,
+  ownerColour,
+  reduceTap,
+  togglePick,
+  unplaceIntent,
+  type Intent,
+  type Selection,
+  type TapResult,
+} from './raid-slots';
+import { phaseName } from './raid-text';
+import { BossCard, Roster, ScheduleStrip } from './RaidInfo';
+
+interface Loaded {
+  view: RaidView;
+  /** Server clock minus local clock when the view arrived. */
+  offset: number;
+}
+
+const ZONE_LABELS = { front: 'Front', middle: 'Middle', back: 'Back' } as const;
+const ZONES = ['front', 'middle', 'back'] as const;
+/** Extra wait after an event is due before asking the server what happened. */
+const REFRESH_GRACE_MS = 3000;
+
+export function Raid({ creatures }: { creatures: Creature[] }) {
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Selection>(null);
+  const [hint, setHint] = useState<string | null>(null);
+  const [picking, setPicking] = useState<string[] | null>(null);
+  const [replay, setReplay] = useState<RaidPhaseId | null>(null);
+  const inFlight = useRef(false);
+  const now = useNow(loaded !== null);
+
+  function apply(view: RaidView): void {
+    setLoaded({ view, offset: clockOffset(view.serverNow, Date.now()) });
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchRaid().then(
+      (view) => {
+        if (!cancelled) apply(view);
+      },
+      (err: unknown) => {
+        if (!cancelled) setLoadError(errorText(err));
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // When the next phase is due, ask again shortly after, so the results appear by themselves.
+  const nextAt = loaded?.view.next?.at ?? null;
+  const offset = loaded?.offset ?? 0;
+  useEffect(() => {
+    if (nextAt === null) return undefined;
+    const delay = nextAt - (Date.now() + offset) + REFRESH_GRACE_MS;
+    if (delay > 2_000_000_000) return undefined;
+    const timer = setTimeout(
+      () => {
+        fetchRaid().then(apply, () => undefined);
+      },
+      Math.max(delay, REFRESH_GRACE_MS),
+    );
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [nextAt, offset]);
+
+  /** Runs one change. After a definite "no" the screen was probably stale, so it reloads. */
+  async function mutate(task: () => Promise<RaidView>): Promise<boolean> {
+    if (inFlight.current) return false;
+    inFlight.current = true;
+    setBusy(true);
+    setError(null);
+    try {
+      apply(await task());
+      return true;
+    } catch (err) {
+      setError(errorText(err));
+      setSelected(null);
+      if (err instanceof ApiError && (err.status === 404 || err.status === 409)) {
+        try {
+          apply(await fetchRaid());
+        } catch {
+          // Keep the error above.
+        }
+      }
+      return false;
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+    }
+  }
+
+  function runIntent(intent: Intent): void {
+    void mutate(() =>
+      intent.type === 'place'
+        ? placeCreature(intent.creatureId, intent.slot)
+        : unplaceCreature(intent.creatureId),
+    );
+  }
+
+  function applyTap(result: TapResult): void {
+    setSelected(result.selected);
+    setHint(result.hint);
+    if (result.intent !== null) runIntent(result.intent);
+  }
+
+  if (loadError !== null) {
+    return (
+      <p class="error" role="alert">
+        {loadError}
+      </p>
+    );
+  }
+  if (loaded === null) return <p class="muted">Loading the raid...</p>;
+
+  const { view } = loaded;
+  const serverNow = now + loaded.offset;
+  const party = view.party;
+  const team = view.you.team;
+  const locked = busy || !view.you.canEdit;
+  const rosterNames = view.roster.map((r) => r.displayName);
+
+  if (replay !== null && party !== null) {
+    return (
+      <Replay
+        view={view}
+        phase={replay}
+        myCreatureIds={creatures.map((c) => c.id)}
+        onClose={() => {
+          setReplay(null);
+        }}
+      />
+    );
+  }
+
+  const ctx = {
+    locked: !view.you.canEdit,
+    row: party?.row ?? [],
+    teamIds: team?.creatures.map((c) => c.creatureId) ?? [],
+  };
+
+  return (
+    <>
+      {error !== null && (
+        <p class="error" role="alert">
+          {error}
+        </p>
+      )}
+      <BossCard view={view} />
+      <ScheduleStrip view={view} serverNow={serverNow} />
+      <Roster
+        view={view}
+        busy={busy}
+        onOptOut={(optOut) => {
+          void mutate(() => setRaidOptOut(optOut));
+        }}
+      />
+      {party !== null && team !== null && (
+        <>
+          <section class="raid-section" aria-labelledby="raid-team-heading">
+            <h3 id="raid-team-heading">My team</h3>
+            <p class="muted">
+              {team.mode === 'auto' ? 'Automatic: your strongest three.' : 'Chosen by you.'} Tap a
+              creature, then tap a slot below.
+            </p>
+            <ul class="team-list">
+              {team.creatures.map((c) => (
+                <li key={c.creatureId}>
+                  <button
+                    type="button"
+                    class={selected === c.creatureId ? 'team-chip selected' : 'team-chip'}
+                    aria-pressed={selected === c.creatureId}
+                    disabled={locked}
+                    onClick={() => {
+                      applyTap(
+                        reduceTap(ctx, selected, { kind: 'creature', creatureId: c.creatureId }),
+                      );
+                    }}
+                  >
+                    <span class="chip-name">{c.name}</span>
+                    <span class="muted">
+                      Lv {c.level} · {c.slot === null ? 'not placed' : `slot ${String(c.slot + 1)}`}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {view.you.canEdit && (
+              <TeamPicker
+                creatures={creatures}
+                picking={picking}
+                busy={busy}
+                mode={team.mode}
+                onStart={() => {
+                  setPicking(team.creatures.map((c) => c.creatureId));
+                }}
+                onCancel={() => {
+                  setPicking(null);
+                }}
+                onToggle={(id) => {
+                  setPicking((current) => togglePick(current ?? [], id, RULES.raid.teamSize));
+                }}
+                onSave={(ids) => {
+                  void mutate(() => setRaidTeam(ids)).then((ok) => {
+                    if (ok) setPicking(null);
+                  });
+                }}
+                onAuto={() => {
+                  void mutate(() => setRaidTeam(null)).then((ok) => {
+                    if (ok) setPicking(null);
+                  });
+                }}
+              />
+            )}
+          </section>
+
+          <section class="raid-section" aria-labelledby="raid-row-heading">
+            <h3 id="raid-row-heading">The party row</h3>
+            <p class="muted">
+              One row for the whole party. Creatures that are not placed are placed for you when the
+              phase starts. Supports power up the creatures next to them.
+            </p>
+            <PartyRow
+              row={party.row}
+              rowLength={party.rowLength}
+              selected={selected}
+              disabled={locked}
+              rosterNames={rosterNames}
+              onTap={(slot) => {
+                applyTap(reduceTap(ctx, selected, { kind: 'slot', slot }));
+              }}
+            />
+            <p>
+              <button
+                type="button"
+                disabled={locked || !canUnplace(party.row, selected)}
+                onClick={() => {
+                  applyTap(unplaceIntent(party.row, selected));
+                }}
+              >
+                Unplace
+              </button>
+            </p>
+            {hint !== null && (
+              <p class="muted" role="status">
+                {hint}
+              </p>
+            )}
+            {!view.you.canEdit && <p class="locked">The row is locked for this week.</p>}
+            {party.guests && (
+              <p class="muted">Guest creatures fill the row while fewer than 3 players are in.</p>
+            )}
+          </section>
+        </>
+      )}
+
+      {party !== null && (
+        <section class="raid-section" aria-labelledby="raid-results-heading">
+          <h3 id="raid-results-heading">Results</h3>
+          {party.results.length === 0 ? (
+            <p class="muted">Nothing has been fought yet. Phase 1 resolves on Friday.</p>
+          ) : (
+            <ul class="cards">
+              {party.results.map((result) => (
+                <ResultCard
+                  key={result.phase}
+                  result={result}
+                  onReplay={() => {
+                    setReplay(result.phase);
+                  }}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+    </>
+  );
+}
+
+function TeamPicker({
+  creatures,
+  picking,
+  busy,
+  mode,
+  onStart,
+  onCancel,
+  onToggle,
+  onSave,
+  onAuto,
+}: {
+  creatures: Creature[];
+  picking: string[] | null;
+  busy: boolean;
+  mode: 'auto' | 'chosen';
+  onStart: () => void;
+  onCancel: () => void;
+  onToggle: (id: string) => void;
+  onSave: (ids: string[]) => void;
+  onAuto: () => void;
+}) {
+  const size = RULES.raid.teamSize;
+  if (picking === null) {
+    return (
+      <p class="button-row">
+        <button type="button" disabled={busy} onClick={onStart}>
+          Choose team
+        </button>
+        <button type="button" disabled={busy || mode === 'auto'} onClick={onAuto}>
+          Use automatic team
+        </button>
+      </p>
+    );
+  }
+  return (
+    <fieldset class="picker">
+      <legend>
+        Pick exactly {size} creatures ({picking.length} of {size})
+      </legend>
+      {creatures.map((c) => {
+        const checked = picking.includes(c.id);
+        return (
+          <label key={c.id} class="pick">
+            <input
+              type="checkbox"
+              checked={checked}
+              disabled={busy || (!checked && picking.length >= size)}
+              onChange={() => {
+                onToggle(c.id);
+              }}
+            />
+            <span>
+              {creatureName(c)}{' '}
+              <span class="muted">
+                Lv {c.level}
+                {c.away ? ', away' : ''}
+              </span>
+            </span>
+          </label>
+        );
+      })}
+      <p class="button-row">
+        <button
+          type="button"
+          class="primary"
+          disabled={busy || picking.length !== size}
+          onClick={() => {
+            onSave(picking);
+          }}
+        >
+          Save team
+        </button>
+        <button type="button" disabled={busy} onClick={onCancel}>
+          Cancel
+        </button>
+      </p>
+    </fieldset>
+  );
+}
+
+function slotLabel(s: RowSlotView): string {
+  const where = `Slot ${String(s.slot + 1)}, ${ZONE_LABELS[s.zone]}`;
+  if (s.creature === null) return `${where}, empty`;
+  const owner = s.creature.mine ? 'you' : s.creature.ownerName;
+  return `${where}, ${speciesName(s.creature.species)} level ${String(s.creature.level)}, ${owner}`;
+}
+
+function PartyRow({
+  row,
+  rowLength,
+  selected,
+  disabled,
+  rosterNames,
+  onTap,
+}: {
+  row: readonly RowSlotView[];
+  rowLength: number;
+  selected: Selection;
+  disabled: boolean;
+  rosterNames: readonly string[];
+  onTap: (slot: number) => void;
+}) {
+  const adjacent = new Set(adjacentSlots(row, selected, rowLength));
+  return (
+    <div class="party-strip" role="group" aria-label="Party row, left to right">
+      {ZONES.map((zone) => {
+        const slots = row.filter((s) => s.zone === zone);
+        if (slots.length === 0) return null;
+        return (
+          <div key={zone} class="party-zone">
+            <p class="zone-label">{ZONE_LABELS[zone]}</p>
+            <div class="zone-slots">
+              {slots.map((s) => {
+                const c = s.creature;
+                const isSelected = c?.creatureId !== undefined && c.creatureId === selected;
+                const classes = ['party-slot'];
+                if (c === null) classes.push('empty');
+                else {
+                  classes.push(`owner-${String(ownerColour(c.ownerName, rosterNames))}`);
+                  if (c.mine) classes.push('mine');
+                }
+                if (isSelected) classes.push('selected');
+                if (adjacent.has(s.slot)) classes.push('adjacent');
+                if (c === null && selected !== null) classes.push('target');
+                return (
+                  <button
+                    key={s.slot}
+                    type="button"
+                    class={classes.join(' ')}
+                    aria-label={slotLabel(s)}
+                    aria-pressed={c?.mine === true ? isSelected : undefined}
+                    disabled={disabled}
+                    onClick={() => {
+                      onTap(s.slot);
+                    }}
+                  >
+                    <span class="slot-num">{s.slot + 1}</span>
+                    {c === null ? (
+                      <span class="slot-empty">empty</span>
+                    ) : (
+                      <>
+                        <span class="slot-species">{speciesName(c.species)}</span>
+                        <span class="slot-meta">Lv {c.level}</span>
+                        <span class="slot-owner">{c.mine ? 'You' : c.ownerName}</span>
+                      </>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ResultCard({ result, onReplay }: { result: PhaseResultView; onReplay: () => void }) {
+  return (
+    <li class="card-item">
+      <h4>
+        {phaseName(result.phase)}{' '}
+        <span class={result.cleared ? 'badge good' : 'badge bad'}>
+          {result.cleared ? 'Cleared' : 'Not cleared'}
+        </span>
+      </h4>
+      <p>
+        Boss HP left: {result.bossHpEnd} / {result.bossHpMax}
+      </p>
+      <progress class="hp-bar" max={result.bossHpMax} value={result.bossHpEnd} />
+      <p>Reactions: {result.reactions}</p>
+      {result.top.length > 0 && (
+        <>
+          <p class="muted">Top contributors</p>
+          <ol class="plain-list">
+            {result.top.map((t, index) => (
+              <li key={index}>
+                {t.displayName}
+                {t.you && <span class="badge you-badge">you</span>} {t.damage} damage
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
+      <p>
+        Essence you got: <strong>{result.essence}</strong>
+      </p>
+      {result.jackpot.length > 0 && <p class="badge first">Jackpot: {result.jackpot.join(', ')}</p>}
+      <p>
+        <button type="button" onClick={onReplay}>
+          Watch replay
+        </button>
+      </p>
+    </li>
+  );
+}

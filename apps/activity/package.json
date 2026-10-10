@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@creatures/engine": "workspace:*",
     "@creatures/game": "workspace:*",
     "@discord/embedded-app-sdk": "catalog:",
     "preact": "catalog:"
