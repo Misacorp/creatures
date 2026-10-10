@@ -22,7 +22,7 @@
       "routes": [{ "pattern": "creatures-staging.misacorp.dev", "custom_domain": true }],
       "vars": {
         "ENVIRONMENT": "staging",
-        "DISCORD_CLIENT_ID": "REPLACE_WITH_DEV_APP_CLIENT_ID",
+        "DISCORD_CLIENT_ID": "1558536384380145734",
         "VERSION": "dev"
       }
     },
@@ -31,7 +31,7 @@
       "routes": [{ "pattern": "creatures.misacorp.dev", "custom_domain": true }],
       "vars": {
         "ENVIRONMENT": "production",
-        "DISCORD_CLIENT_ID": "REPLACE_WITH_PROD_APP_CLIENT_ID",
+        "DISCORD_CLIENT_ID": "1558533284072267896",
         "VERSION": "dev"
       }
     }
