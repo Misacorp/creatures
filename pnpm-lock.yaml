@@ -248,6 +248,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@creatures/game':
+        specifier: workspace:*
+        version: link:../../packages/game
       valibot:
         specifier: 'catalog:'
         version: 1.5.0(typescript@6.0.3)
@@ -264,6 +267,19 @@ importers:
       wrangler:
         specifier: 'catalog:'
         version: 4.147.0
+
+  packages/game:
+    dependencies:
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@6.0.3)
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(vite@8.3.2(esbuild@0.28.1))
 
 packages:
 

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "tide",
+    "name": "Tide",
+    "strongAgainst": "ember"
+  },
+  {
+    "id": "ember",
+    "name": "Ember",
+    "strongAgainst": "grove"
+  },
+  {
+    "id": "grove",
+    "name": "Grove",
+    "strongAgainst": "spark"
+  },
+  {
+    "id": "spark",
+    "name": "Spark",
+    "strongAgainst": "tide"
+  }
+]
