@@ -1,0 +1,138 @@
+# M3 design: combat engine, raid loot rules, balance simulator
+
+Status: **draft for M3**. Numbers are starting values; the simulator tunes them against `balance-targets.md`. Rules Misa decided are in `decisions.md`.
+
+## Principles
+
+- **One engine** (`packages/engine`) runs live raids and simulations. It is pure (no I/O, no clock) and takes an injected `Rng` from `@creatures/game`.
+- **Readable, low-luck combat.** The engine is deterministic apart from the injected RNG, and uses the RNG only for tie-breaks and gimmicks that say so. Player choices (team, placement, finale ability timing) decide fights, not dice.
+- **Everything is data.** Bosses, gimmicks, abilities, reactions, finale abilities, loot tables and scaling live in schema-validated content. The engine interprets a small set of effect operations.
+- **Every fight produces an event log** that the replay UI and the reports read. Events are plain JSON.
+
+## The board
+
+- One shared **row** of slots, ordered left to right. Each signed-up player places their 3 creatures; only the owner can move them.
+- **Zones:** the row splits into three contiguous zones of (nearly) equal size, **front** (left), **middle**, **back** (right). Zone sizes follow the row length; leftover slots go to the middle.
+- **Adjacency:** a creature's neighbours are the slots directly left and right of it.
+- **Guests:** with fewer than 3 players, the row is filled to 9 slots with NPC guest creatures (content-defined, level scaled to the players' average). Guests earn no loot.
+- **Placement conflicts:** each slot holds one creature; first come, first served. Players coordinate in Discord. A player can offer a swap, and the other player accepts it (M4 UI). Unplaced creatures of signed-up players are auto-placed into free slots by a default rule (guards front, payoffs back, setters next to payoffs) **[Misa: absent players are auto-placed]**.
+
+## Turn order
+
+A boss (or modifier) sets one ordering for a fight: `left_to_right`, `right_to_left` or `speed` (highest Speed first, ties by position). The boss acts after every creature has acted in a round. The UI always shows the order as a portrait strip.
+
+## Elements and marks
+
+- Matchups: an attacker deals ×1.5 to an element it's strong against and ×0.75 to the one that's strong against it (`Tide > Ember > Grove > Spark > Tide`).
+- **Marks:** the boss carries at most **one mark**. Each element has a mark: Tide → _Soaked_, Ember → _Scorched_, Grove → _Overgrown_, Spark → _Charged_.
+- **Hit rules**, for each creature hit on the boss:
+  1. If the boss has a mark and the hit's element is that mark's **trigger**, a **reaction** fires: bonus damage ×2.5 on that hit, and the mark is consumed.
+  2. Else, if the boss has no mark, the hit applies its element's mark.
+  3. Else (the boss has a different mark): a **Setter** overwrites it with its own mark; others leave it.
+- **Triggers:** Soaked ← Spark (_Overload_), Charged ← Grove (_Grounding_), Overgrown ← Ember (_Wildfire_), Scorched ← Tide (_Steam_).
+- **Credit:** a reaction's bonus damage is split 50/50 between the creature that applied the mark (setup) and the one that triggered it (payoff). Payoff creatures deal an extra ×1.25 on reactions.
+
+## Creatures in combat
+
+- Effective stats come from `@creatures/game` (`effectiveStats`, including fusion), plus gear later.
+- **Basic hit:** damage = Attack × matchup × (reaction multiplier if any).
+- **Roles:**
+  - **Setter:** overwrites marks (see above).
+  - **Payoff:** ×1.25 on reactions.
+  - **Support:** each round, gives its two neighbours +15% damage on their next hit.
+  - **Guard:** takes hits meant for its zone first and has +30% HP.
+- **HP:** creatures can be knocked out and sit out the rest of the phase. Knocked-out creatures still keep their credit.
+
+## Bosses
+
+Content-defined:
+
+- name, element, base HP, base Attack, turn order;
+- **1–2 gimmicks** per phase;
+- a Phase 2 **adaptation rule**;
+- loot table id.
+
+Gimmicks are data, built from effect operations. Examples for the four MVP bosses (placeholder names):
+
+| Boss            | Element | Turn order    | Gimmicks                                                                                                                   |
+| --------------- | ------- | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Tidal Colossus  | Tide    | left to right | _Undertow_: every 3rd round, hits the whole front zone                                                                     |
+| Cinder Wyrm     | Ember   | speed         | _Backdraft_: the first reaction each round is reflected and damages the triggering creature instead of giving bonus damage |
+| Thornmother     | Grove   | right to left | _Bramble Bind_: every 2nd round, the creatures at both ends of the row are silenced for their next turn                    |
+| Storm Sovereign | Spark   | left to right | _Lightning Rod_: every round, strikes the creature with the highest Attack                                                 |
+
+- **Normal boss attack** (each round, after any gimmick): hits one creature, picked by a rule (front zone first, guards first).
+- Bosses rotate weekly in content order.
+
+## Raid structure (one boss, one week)
+
+- The boss has **one HP pool for the whole week**: Phase 1, Phase 2 and the finale all chip away at it.
+- **Phase 1** (Fri 13:37, auto): 10 rounds. **Phase 2** (Sat 13:37, auto): 10 rounds. **Finale** (Sun 20:00, live): 12 rounds of about 10 seconds (2 minutes, configurable per boss, at most 5 minutes) **[Misa]**.
+- **Clear thresholds** (config): Phase 1 is cleared when the pool is down 30%; Phase 2 when it's down 60%; the finale when the boss is defeated.
+- **Phase 2 adaptation:** after Phase 1 the boss gains one counter, chosen by a plain-language rule shown to players. Example: "the reaction you used most is resisted 50%", or "the element that dealt most damage is resisted 25%". It is stored in the event log.
+- **Finale abilities:** before the finale, each signed-up player picks one ability from a small content-defined list, each with a **default round** **[Misa]**:
+  - **Rally:** all creatures +40% damage this round. Default round 6.
+  - **Shield Wall:** one zone takes no damage this round. Default: the round before the boss's next big gimmick.
+  - **Re-mark:** set the boss's mark to a chosen element. Default round 4.
+  - **Purge:** remove the boss's Phase 2 adaptation for the rest of the fight. Default round 2.
+
+  A present player fires theirs whenever they choose. An absent player's fires at its default round, at full strength **[Misa]**.
+
+- **Scaling with players:** boss HP = `baseHp × N^0.9 × levelFactor`, where N is the number of signed-up players (minimum 1; guests fill the row). Boss Attack scales with the average creature level. The exponents are config.
+
+## Contribution and loot (pure rules in `@creatures/game`)
+
+- **Contribution** per player = own damage + setup credit + support credit (bonus damage enabled for neighbours) + guard credit (damage absorbed).
+- **Soft cap:** a player's share of total contribution counts fully up to 35%; above that it counts at half rate, for loot weighting only. Damage itself is unchanged.
+- **Essence** (needed to evolve) per cleared stage:
+  - Phase 1 cleared: 10 Essence to everyone who signed up.
+  - Phase 2 cleared: +15.
+  - Finale won: +25.
+
+  Plus a contribution-weighted pool of the same total size per stage. That makes about 70% flat and 30% contribution across the week.
+
+- **Gear rolls** (gear arrives with the gear step): one roll per cleared stage, rarity weighted by contribution share.
+- **Jackpot** (finale win only): each signed-up player rolls 6%. Pity: +8 points per raid without a jackpot from raid 6 on; guaranteed at raid 10 without one. The counter counts participation, never resets for skipping a week, and is shown privately.
+- **First on server:** everyone who gets a jackpot item from the same finale shares the record **[Misa]**.
+
+## Mutator hooks (for seasonal features)
+
+- The engine raises named hook points: `onFightStart`, `onRoundStart`, `onBeforeHit`, `onReaction`, `onKnockout`, `onRoundEnd`, `onFightEnd`.
+- A **mutator** is a named module registered in code and switched on by a feature flag in content (`mutators: ["season-2026-11-frost"]`). Mutators can change the numbers flowing through a hook, but can't reach outside the fight.
+- Disabled mutators never run. Each one is tested in isolation and can be turned off with a content change.
+
+## Event log
+
+A fight returns:
+
+```ts
+{ seed, rounds, bossHpStart, bossHpEnd, cleared, events: FightEvent[], perPlayer: {...}, perCreature: {...} }
+```
+
+`FightEvent` covers: round start, turn, hit (with matchup and mark state), mark applied, reaction (with setter and payoff), gimmick, knockout, silence, ability fired, adaptation, round end.
+
+- The **live** server draws a fresh 128-bit seed from `crypto.getRandomValues` at the moment a phase resolves, runs the engine and stores the seed and inputs. Replays re-run the engine from the stored seed. Players can't predict outcomes because the seed doesn't exist before the phase runs.
+
+## Balance simulator (`packages/sim`, CLI)
+
+- **Economy sim** over N weeks. Players follow archetype policies:
+  - **casual:** leets 2 days a week;
+  - **daily:** 6 of 7 days;
+  - **top earner:** every day;
+  - **newcomer:** joins in week 4.
+
+  Group sizes per day follow from who leets. A simple spending policy (expeditions vs training) produces rosters per week.
+
+- **Raid sim:** for player counts 1, 5, 10 and 15 and each boss:
+  - mixed-archetype groups with heuristic team picks and placements;
+  - many seeded runs;
+  - finale abilities at their default rounds.
+- **Report** (Markdown):
+  - clear rates per phase and boss;
+  - damage and contribution share per player and archetype;
+  - creature and element pick and performance;
+  - reaction frequency;
+  - Essence, gear and jackpot distribution, and pity triggers;
+  - outliers (dominant creatures, dead elements, unbeatable or trivial bosses);
+  - **violations** of `balance-targets.md`.
+- **CI:** a fast smoke run (small sample, fixed seeds) on PRs that touch `packages/game`, `packages/engine` or content. The full run is on demand (`pnpm sim`).
