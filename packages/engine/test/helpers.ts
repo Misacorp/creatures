@@ -1,5 +1,22 @@
-import { content, createSeededRng, type BossDef, type Element, type Role } from '@creatures/game';
+import {
+  content,
+  createSeededRng,
+  type BossDef,
+  type ContentPack,
+  type Element,
+  type Role,
+} from '@creatures/game';
 import { makeSlot, scaleBoss, type FightInput, type FightSlot, type PhaseId } from '../src/index';
+
+/**
+ * The shipped content with the reaction multipliers pinned to the original design values (x2.5,
+ * payoff x1.25), so the hand-checked numbers in these tests do not move when the balance
+ * simulator retunes the shipped reactions.
+ */
+export const TEST_PACK: ContentPack = {
+  ...content,
+  reactions: content.reactions.map((r) => ({ ...r, multiplierBp: 25_000, payoffBonusBp: 12_500 })),
+};
 
 export function boss(id: string): BossDef {
   const b = content.bosses.find((x) => x.id === id);
@@ -114,7 +131,7 @@ export function run(
   overrides: Partial<FightInput> = {},
   options?: Parameters<typeof simulateFight>[2],
 ): FightResult {
-  return simulateFight(input(row, overrides), rng(), options);
+  return simulateFight(input(row, overrides), rng(), { pack: TEST_PACK, ...options });
 }
 
 export function eventsOf<T extends FightEvent['t']>(

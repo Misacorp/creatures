@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { content } from '@creatures/game';
+import { RULES, content } from '@creatures/game';
 import {
   autoPlace,
   compactRow,
@@ -96,17 +96,17 @@ describe('scaleBoss', () => {
   const b = boss('tidal-colossus');
 
   it('pins the exponent maths so every runtime agrees', () => {
-    // floor(Math.pow(N, 0.9) * 10000): checked against another run of V8.
-    const baseHp = 10_000;
-    const expected: Record<number, number> = {
-      1: 10_000,
-      2: 18_660,
-      5: 42_566,
-      10: 79_432,
-      15: 114_414,
-      30: 213_505,
+    // floor(Math.pow(N, exponent) * 10000), checked against another run of V8. Every exponent the
+    // balance simulator has shipped is listed; moving the exponent means adding its row here.
+    const pinned: Record<string, Record<number, number>> = {
+      '9/10': { 1: 10_000, 2: 18_660, 5: 42_566, 10: 79_432, 15: 114_414, 30: 213_505 },
+      '12/10': { 1: 10_000, 2: 22_973, 5: 68_986, 10: 158_489, 15: 257_815, 30: 592_305 },
     };
-    for (const [n, bp] of Object.entries(expected)) {
+    const { num, den } = RULES.raid.scaling.hpExponent;
+    const expected = pinned[`${num}/${den}`];
+    expect(expected, 'pin the new exponent here').toBeDefined();
+    const baseHp = 10_000;
+    for (const [n, bp] of Object.entries(expected ?? {})) {
       expect(scaleBoss({ baseHp, baseAtk: 1 }, Number(n), 1).maxHp).toBe((baseHp * bp) / 10_000);
     }
   });
@@ -115,8 +115,12 @@ describe('scaleBoss', () => {
     expect(scaleBoss(b, 0, 1)).toEqual(scaleBoss(b, 1, 1));
     expect(scaleBoss(b, -5, 0)).toEqual(scaleBoss(b, 1, 1));
     expect(scaleBoss(b, 1, 1)).toEqual({ maxHp: b.baseHp, atk: b.baseAtk });
+    const { hpPerLevelBp, atkPerLevelBp } = RULES.raid.scaling;
     const l11 = scaleBoss({ baseHp: 1000, baseAtk: 100 }, 1, 11);
-    expect(l11).toEqual({ maxHp: 1000 * 1.7, atk: 100 * 1.6 });
+    expect(l11).toEqual({
+      maxHp: Math.floor((1000 * (10_000 + hpPerLevelBp * 10)) / 10_000),
+      atk: Math.floor((100 * (10_000 + atkPerLevelBp * 10)) / 10_000),
+    });
   });
 
   it('never decreases with more players or higher levels', () => {
@@ -134,8 +138,13 @@ describe('scaleBoss', () => {
       expect(next.atk).toBeGreaterThanOrEqual(prev.atk);
       prev = next;
     }
-    // Sub-linear in players (exponent 0.9): per-player HP falls as the group grows.
-    expect(scaleBoss(b, 15, 5).maxHp / 15).toBeLessThan(scaleBoss(b, 5, 5).maxHp / 5);
+    // Per-player HP follows the exponent: it falls below 1, rises above 1 (bigger servers earn
+    // more per player, so their bosses are tougher per head).
+    const { num, den } = RULES.raid.scaling.hpExponent;
+    const small = scaleBoss(b, 5, 5).maxHp / 5;
+    const large = scaleBoss(b, 15, 5).maxHp / 15;
+    if (num < den) expect(large).toBeLessThan(small);
+    else if (num > den) expect(large).toBeGreaterThan(small);
   });
 });
 

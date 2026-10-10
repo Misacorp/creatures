@@ -189,3 +189,17 @@ Rules behind it: more leeters never pays anyone less; a solo leet pays the same 
 - Content: Monday boss reveal (name, element, gimmicks in plain words, turn order, phase times as Discord timestamps, players in); Friday and Saturday per-party summary (cleared or not, boss HP left, top three by contribution, most used reaction, key moment, the flat Essence per player, and after phase 1 the boss's counter-move); Sunday finale result, jackpot hits, and this week's first-on-server records of the party's members.
 
 **Reasoning.** A queue in the same database as the raid state gives exactly-once queuing with the same transaction guarantees as the rest of the game, and keeps the slow, unreliable network call out of every transaction. Escaping plus `allowed_mentions` is defence in depth: the second alone already prevents pings, the first keeps the text clean. The bot needs View Channel and Send Messages in the announcement channel (usually the voice channel's text chat).
+
+## 2026-10-11: Second balance tuning pass
+
+**Decision.** From the simulator (full run, seed `leet`: 12 of 21 targets passed before, 19 after; `docs/balance/report-2026-10-11.md`):
+
+- Training costs `3 + 2 x level` (was `10 + 5 x level`). The simulator's players now push one creature at a time to its evolution level before spreading Bait over the team; the old "always train the weakest of the top 3" rule kept every casual's best creature at level 4.
+- Boss HP grows with `N^1.2` (was `N^0.9`) and 12% per average creature level (was 7%). Bigger servers earn more Bait per player, so with a sub-linear exponent 15-player raids were won 99% of the time; at 1.2 the finale win rate is flat from 5 to 15 players. The raid is now equally hard for a week-4 and a week-8 roster.
+- Phase 1 clears at 18% of the pool (was 20%), Phase 2 at 54% (was 45%).
+- Reactions deal x4.5 (was x2.5) and payoff creatures get an extra x1.1 (was x1.25). Setters now earn a real share of the credit (16.6%, target 15%) and no creature runs away from its rarity (highest 1.41x).
+- Boss base HP: Tidal Colossus 4724, Cinder Wyrm 2710, Thornmother 4296, Storm Sovereign 4380. Mistnewt and Fogwyrm get more Attack (a guard nobody picked), Gaiadrake and Pyrelynx a little less, Sproutle a little more.
+
+**Left failing on purpose.** The jackpot rate per finale win (18.9%, target 6-15%) and players reaching hard pity (66%, target <= 15%) cannot both be met while a lost finale advances the pity counter without a jackpot roll: at a 50% finale win rate a guaranteed jackpot every 10 raids is already 20% of a player's wins, and most players reach it. Counting only finale wins toward pity would pass both (measured: rate 11%, hard pity 18%, about 7% with soft pity starting at raid 5). That changes the pity rule, so it is an owner decision; nothing was changed in the worker.
+
+**Reasoning.** One lever at a time, checked on six seeds, with the fixed owner decisions (leet points table and cap, Bait per point, hard pity at 10 raids, 70/30 Essence split, schedule) untouched. Tests that hard-coded the old numbers now read them from `RULES`; the engine's hand-checked combat tests use a pinned copy of the original reaction multipliers so retuning the shipped content does not break them.

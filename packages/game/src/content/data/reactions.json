@@ -6,8 +6,8 @@
     "markName": "Soaked",
     "markElement": "tide",
     "triggerElement": "spark",
-    "multiplierBp": 25000,
-    "payoffBonusBp": 12500
+    "multiplierBp": 45000,
+    "payoffBonusBp": 11000
   },
   {
     "id": "grounding",
@@ -16,8 +16,8 @@
     "markName": "Charged",
     "markElement": "spark",
     "triggerElement": "grove",
-    "multiplierBp": 25000,
-    "payoffBonusBp": 12500
+    "multiplierBp": 45000,
+    "payoffBonusBp": 11000
   },
   {
     "id": "wildfire",
@@ -26,8 +26,8 @@
     "markName": "Overgrown",
     "markElement": "grove",
     "triggerElement": "ember",
-    "multiplierBp": 25000,
-    "payoffBonusBp": 12500
+    "multiplierBp": 45000,
+    "payoffBonusBp": 11000
   },
   {
     "id": "steam",
@@ -36,7 +36,7 @@
     "markName": "Scorched",
     "markElement": "ember",
     "triggerElement": "tide",
-    "multiplierBp": 25000,
-    "payoffBonusBp": 12500
+    "multiplierBp": 45000,
+    "payoffBonusBp": 11000
   }
 ]
