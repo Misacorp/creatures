@@ -1,15 +1,17 @@
 import { env, exports } from 'cloudflare:workers';
 import { runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { baitForDay } from '../src/economy';
-import type { GuildCoreOptions } from '../src/guild-core';
+import { ECONOMY, baitForDay, leetPointsForDay } from '../src/economy';
+import { SYNC_BUDGET_MS, type GuildCoreOptions } from '../src/guild-core';
 import {
+  DEFAULT_TIMEOUT_MS,
   LeetSourceError,
   createMockLeetSource,
   type LeetDay,
   type LeetDaysOptions,
   type LeetDaysPage,
   type LeetSource,
+  type LeetSourceErrorKind,
 } from '../src/leet';
 import { DEFAULT_GUILD_TIMEZONE, nextOccurrence } from '../src/time';
 import { OTHER_USER_ID, ORIGIN, T0, USER_ID, expectApiHeaders, runCore, tokenFor } from './helpers';
@@ -84,23 +86,23 @@ describe('syncLeet', () => {
       guild,
       async ({ core, sql }) => {
         expect(await core.syncLeet()).toEqual({ daysProcessed: 3, creditsApplied: 4 });
-        expect(core.balances(USER_ID).bait).toBe(20 + 30);
-        expect(core.balances(OTHER_USER_ID).bait).toBe(30);
-        expect(core.balances('333333333333333330').bait).toBe(30);
+        expect(core.balances(USER_ID).bait).toBe(baitForDay(1) + baitForDay(3));
+        expect(core.balances(OTHER_USER_ID).bait).toBe(baitForDay(3));
+        expect(core.balances('333333333333333330').bait).toBe(baitForDay(3));
         const mine = baitRows(sql).filter((r) => r.user_id === USER_ID);
         expect(mine.map((r) => [r.amount, r.idempotency_key])).toEqual([
-          [20, `leet:${guild}:2026-10-08`],
-          [30, `leet:${guild}:2026-10-09`],
+          [baitForDay(1), `leet:${guild}:2026-10-08`],
+          [baitForDay(3), `leet:${guild}:2026-10-09`],
         ]);
         expect(JSON.parse(mine[0]?.meta ?? '')).toEqual({
           date: '2026-10-08',
           participants: 1,
-          points: 2,
+          points: leetPointsForDay(1),
         });
         expect(JSON.parse(mine[1]?.meta ?? '')).toEqual({
           date: '2026-10-09',
           participants: 3,
-          points: 3,
+          points: leetPointsForDay(3),
         });
       },
       using(source),
@@ -120,14 +122,14 @@ describe('syncLeet', () => {
         expect((await core.syncLeet()).creditsApplied).toBe(2);
         // The source replays the same day even though the cursor was stored (overlapping pulls).
         expect(await core.syncLeet()).toEqual({ daysProcessed: 1, creditsApplied: 0 });
-        expect(core.balances(USER_ID).bait).toBe(20);
+        expect(core.balances(USER_ID).bait).toBe(baitForDay(2));
         expect(baitRows(sql)).toHaveLength(2);
       },
       using(source),
     );
   });
 
-  it('caps a day at 8 points and counts each user once', async () => {
+  it("caps a day's points and counts each user once", async () => {
     const guild = nextGuild();
     const crowd = Array.from({ length: 12 }, (_, i) => String(400000000000000000n + BigInt(i)));
     const { source } = scripted(() => ({
@@ -140,7 +142,8 @@ describe('syncLeet', () => {
       async ({ core }) => {
         await core.syncLeet();
         expect(core.balances(crowd[0] ?? '').bait).toBe(baitForDay(12));
-        expect(core.balances(crowd[0] ?? '').bait).toBe(80);
+        // A crowd this size is at the cap: more leeters would not pay more.
+        expect(core.balances(crowd[0] ?? '').bait).toBe(baitForDay(500));
       },
       using(source),
     );
@@ -161,7 +164,7 @@ describe('syncLeet', () => {
         const secret = await core.createSession(guildId, USER);
         const res = await request(secret);
         expect((await res.json<{ balances: unknown }>()).balances).toEqual({
-          bait: 20,
+          bait: baitForDay(1),
           essence: 0,
         });
       },
@@ -227,7 +230,7 @@ describe('syncLeet', () => {
         expect(await core.syncLeet()).toEqual({ daysProcessed: 3, creditsApplied: 3 });
         expect(calls.map((c) => c.opts.after)).toEqual([undefined, 'cur-1', 'cur-2']);
         expect(syncState(sql)[0]?.cursor).toBe('cur-3');
-        expect(core.balances(USER_ID).bait).toBe(60);
+        expect(core.balances(USER_ID).bait).toBe(3 * baitForDay(1));
       },
       using(source),
     );
@@ -291,11 +294,11 @@ describe('syncLeet', () => {
       guild,
       async ({ core, sql }) => {
         await expect(core.syncLeet()).rejects.toBeInstanceOf(LeetSourceError);
-        expect(core.balances(USER_ID).bait).toBe(20);
+        expect(core.balances(USER_ID).bait).toBe(baitForDay(1));
         expect(syncState(sql)[0]?.cursor).toBe('cur-1');
         expect(await core.syncLeet()).toEqual({ daysProcessed: 1, creditsApplied: 1 });
         expect(calls[2]?.opts.after).toBe('cur-1');
-        expect(core.balances(USER_ID).bait).toBe(40);
+        expect(core.balances(USER_ID).bait).toBe(2 * baitForDay(1));
       },
       using(source),
     );
@@ -501,7 +504,7 @@ describe('GET /api/me sync trigger', () => {
         const res = await request(secret);
         expect(res.status).toBe(200);
         expect((await res.json<{ balances: unknown }>()).balances).toEqual({
-          bait: 20,
+          bait: baitForDay(1),
           essence: 0,
         });
         expect(calls).toHaveLength(1);
@@ -557,6 +560,29 @@ describe('GET /api/me sync trigger', () => {
     );
   });
 
+  it('waits longer than one HTTP call can take, so a slow first sync still finishes', async () => {
+    expect(SYNC_BUDGET_MS).toBe(6000);
+    expect(DEFAULT_TIMEOUT_MS).toBe(5000);
+    expect(SYNC_BUDGET_MS).toBeGreaterThan(DEFAULT_TIMEOUT_MS);
+    const guild = nextGuild();
+    // No syncBudgetMs override: the default budget applies to a source that takes a moment.
+    const { source } = scripted(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      return { days: [day(guild, '2026-10-09', [USER_ID])], nextCursor: 'c', hasMore: false };
+    });
+    await runCore(
+      guild,
+      async ({ guildId, core, request }) => {
+        const secret = await core.createSession(guildId, USER);
+        const res = await request(secret);
+        expect((await res.json<{ balances: { bait: number } }>()).balances.bait).toBe(
+          baitForDay(1),
+        );
+      },
+      using(source),
+    );
+  });
+
   it('answers within the time budget when the source is slow', async () => {
     const guild = nextGuild();
     let release: () => void = () => undefined;
@@ -581,7 +607,9 @@ describe('GET /api/me sync trigger', () => {
         release();
         await core.syncLeet();
         const again = await request(secret);
-        expect((await again.json<{ balances: { bait: number } }>()).balances.bait).toBe(20);
+        expect((await again.json<{ balances: { bait: number } }>()).balances.bait).toBe(
+          baitForDay(1),
+        );
       },
       { ...using(source), syncBudgetMs: 30 },
     );
@@ -632,7 +660,7 @@ describe('daily alarm', () => {
         clock.t = Date.parse('2027-01-15T11:40:00.200Z');
         await core.alarm();
         expect(calls).toHaveLength(1);
-        expect(core.balances(USER_ID).bait).toBe(20);
+        expect(core.balances(USER_ID).bait).toBe(baitForDay(1));
         expect(await storage.getAlarm()).toBe(Date.parse('2027-01-16T11:40:00Z'));
       },
       using(source),
@@ -712,7 +740,7 @@ describe('real Durable Object with the mock source', () => {
     expectApiHeaders(me);
     const body = await me.json<{ balances: { bait: number; essence: number } }>();
     expect(Number.isInteger(body.balances.bait)).toBe(true);
-    expect(body.balances.bait % 10).toBe(0);
+    expect(body.balances.bait % ECONOMY.baitPerLeetPoint).toBe(0);
 
     const ledger = await call('/api/ledger?limit=50');
     const entries = (await ledger.json<{ entries: { amount: number; source: string }[] }>())
@@ -902,6 +930,322 @@ describe('guild timezone', () => {
         expect(core.timezone()).toBe(DEFAULT_GUILD_TIMEZONE);
       },
       { createLeetSource: () => null },
+    );
+  });
+});
+
+describe('leet sync status', () => {
+  const ALL_KINDS: LeetSourceErrorKind[] = [
+    'unauthorized',
+    'not_found',
+    'rate_limited',
+    'upstream',
+    'timeout',
+    'network',
+    'invalid_response',
+    'invalid_request',
+  ];
+  const columns = (sql: SqlStorage) =>
+    sql
+      .exec<{ name: string }>('SELECT name FROM pragma_table_info(?)', 'leet_sync')
+      .toArray()
+      .map((c) => c.name);
+
+  it('migration 6 applies on a schema-5 object and keeps the stored cursor', async () => {
+    const guild = nextGuild();
+    const { source } = scripted(() => ({
+      days: [day(guild, '2026-10-09', [USER_ID])],
+      nextCursor: 'kept',
+      hasMore: false,
+    }));
+    await runCore(
+      guild,
+      async ({ core, sql }) => {
+        await core.syncLeet();
+        sql.exec('ALTER TABLE leet_sync DROP COLUMN last_attempt_at');
+        sql.exec('ALTER TABLE leet_sync DROP COLUMN last_error');
+        sql.exec('ALTER TABLE leet_sync DROP COLUMN last_days');
+        sql.exec('DELETE FROM schema_version WHERE version = 6');
+        expect(columns(sql)).toEqual(['id', 'cursor', 'since_date', 'last_synced_at']);
+
+        core.migrate();
+
+        expect(columns(sql)).toEqual([
+          'id',
+          'cursor',
+          'since_date',
+          'last_synced_at',
+          'last_attempt_at',
+          'last_error',
+          'last_days',
+        ]);
+        expect(
+          sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
+        ).toBe(6);
+        expect(syncState(sql)[0]?.cursor).toBe('kept');
+        expect(core.leetSyncStatus()).toMatchObject({
+          lastAttemptAt: null,
+          lastError: null,
+          lastDays: null,
+        });
+      },
+      using(source),
+    );
+  });
+
+  it('is empty before any attempt, reporting the source kind', async () => {
+    const guild = nextGuild();
+    const { source } = scripted(() => ({ days: [], nextCursor: null, hasMore: false }));
+    await runCore(
+      guild,
+      ({ core }) => {
+        expect(core.leetSyncStatus()).toEqual({
+          source: 'mock',
+          lastAttemptAt: null,
+          lastSyncedAt: null,
+          lastError: null,
+          lastDays: null,
+        });
+        return Promise.resolve();
+      },
+      using(source),
+    );
+    await runCore(
+      nextGuild(),
+      ({ core }) => {
+        expect(core.leetSyncStatus().source).toBe('http');
+        return Promise.resolve();
+      },
+      using({ kind: 'http', getDays: (g, o) => source.getDays(g, o) }),
+    );
+  });
+
+  it('records attempt time, days and sync time on success', async () => {
+    const guild = nextGuild();
+    const { source } = scripted(() => ({
+      days: [day(guild, '2026-10-08', [USER_ID]), day(guild, '2026-10-09', [USER_ID])],
+      nextCursor: 'c',
+      hasMore: false,
+    }));
+    await runCore(
+      guild,
+      async ({ core, clock }) => {
+        clock.t = T0 + 5 * MINUTE;
+        await core.syncLeet();
+        expect(core.leetSyncStatus()).toEqual({
+          source: 'mock',
+          lastAttemptAt: T0 + 5 * MINUTE,
+          lastSyncedAt: T0 + 5 * MINUTE,
+          lastError: null,
+          lastDays: 2,
+        });
+      },
+      using(source),
+    );
+  });
+
+  it.each(ALL_KINDS)('stores and returns the error kind %s', async (kind) => {
+    const guild = nextGuild();
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { source } = scripted(() => {
+      throw new LeetSourceError(kind);
+    });
+    await runCore(
+      guild,
+      async ({ core, clock, sql }) => {
+        clock.t = T0 + MINUTE;
+        await expect(core.syncLeet()).rejects.toBeInstanceOf(LeetSourceError);
+        expect(core.leetSyncStatus()).toEqual({
+          source: 'mock',
+          lastAttemptAt: T0 + MINUTE,
+          lastSyncedAt: null,
+          lastError: kind,
+          lastDays: null,
+        });
+        // Only the kind is stored: no message, URL or key.
+        expect(sql.exec('SELECT last_error FROM leet_sync').toArray()).toEqual([
+          { last_error: kind },
+        ]);
+      },
+      using(source),
+    );
+  });
+
+  it('stores "internal" for any other error', async () => {
+    const guild = nextGuild();
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { source } = scripted(() => {
+      throw new Error('secret-looking message https://example.test/?key=abc');
+    });
+    await runCore(
+      guild,
+      async ({ core, sql }) => {
+        await expect(core.syncLeet()).rejects.toThrow();
+        expect(core.leetSyncStatus().lastError).toBe('internal');
+        expect(JSON.stringify(sql.exec('SELECT * FROM leet_sync').toArray())).not.toContain(
+          'secret-looking',
+        );
+      },
+      using(source),
+    );
+  });
+
+  it('stores "internal" when a credit transaction fails', async () => {
+    const guild = nextGuild();
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { source } = scripted(() => ({
+      // A key longer than the ledger allows: the ledger rejects it, rolling the page back.
+      days: [{ ...day(guild, '2026-10-02', [USER_ID]), id: 'x'.repeat(200) }],
+      nextCursor: 'c',
+      hasMore: false,
+    }));
+    await runCore(
+      guild,
+      async ({ core }) => {
+        await expect(core.syncLeet()).rejects.toThrow();
+        expect(core.leetSyncStatus().lastError).toBe('internal');
+      },
+      using(source),
+    );
+  });
+
+  it('a later success clears the error and records the days', async () => {
+    const guild = nextGuild();
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    let fail = true;
+    const { source } = scripted(() => {
+      if (fail) throw new LeetSourceError('unauthorized');
+      return { days: [day(guild, '2026-10-09', [USER_ID])], nextCursor: 'c', hasMore: false };
+    });
+    await runCore(
+      guild,
+      async ({ core, clock }) => {
+        await expect(core.syncLeet()).rejects.toThrow();
+        expect(core.leetSyncStatus().lastError).toBe('unauthorized');
+        fail = false;
+        clock.t = T0 + 2 * MINUTE;
+        await core.syncLeet();
+        expect(core.leetSyncStatus()).toEqual({
+          source: 'mock',
+          lastAttemptAt: T0 + 2 * MINUTE,
+          lastSyncedAt: T0 + 2 * MINUTE,
+          lastError: null,
+          lastDays: 1,
+        });
+      },
+      using(source),
+    );
+  });
+
+  it('a failure after earlier pages committed keeps the error visible', async () => {
+    const guild = nextGuild();
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { source } = scripted((_opts, call) => {
+      if (call === 2) throw new LeetSourceError('timeout');
+      return { days: [day(guild, '2026-10-08', [USER_ID])], nextCursor: 'c1', hasMore: true };
+    });
+    await runCore(
+      guild,
+      async ({ core }) => {
+        await expect(core.syncLeet()).rejects.toThrow();
+        expect(core.balances(USER_ID).bait).toBe(baitForDay(1));
+        expect(core.leetSyncStatus().lastError).toBe('timeout');
+      },
+      using(source),
+    );
+  });
+
+  it('reports "disabled" when there is no source, and stores it once', async () => {
+    await runCore(
+      nextGuild(),
+      async ({ guildId, core, clock, sql }) => {
+        await core.createSession(guildId, USER);
+        clock.t = T0 + MINUTE;
+        await core.syncIfStale();
+        const expected = {
+          source: 'disabled',
+          lastAttemptAt: T0 + MINUTE,
+          lastSyncedAt: null,
+          lastError: 'disabled',
+          lastDays: null,
+        };
+        expect(core.leetSyncStatus()).toEqual(expected);
+        expect(sql.exec('SELECT last_error FROM leet_sync').toArray()).toEqual([
+          { last_error: 'disabled' },
+        ]);
+        // Repeated requests do not keep writing.
+        clock.t = T0 + 2 * MINUTE;
+        await core.syncIfStale();
+        expect(core.leetSyncStatus().lastAttemptAt).toBe(T0 + MINUTE);
+        // A direct sync call is an attempt too.
+        await core.syncLeet();
+        expect(core.leetSyncStatus()).toEqual({ ...expected, lastAttemptAt: T0 + 2 * MINUTE });
+      },
+      { createLeetSource: () => null },
+    );
+  });
+
+  it('never returns an unknown stored value', async () => {
+    const guild = nextGuild();
+    const { source } = scripted(() => ({ days: [], nextCursor: null, hasMore: false }));
+    await runCore(
+      guild,
+      async ({ core, sql }) => {
+        await core.syncLeet();
+        sql.exec("UPDATE leet_sync SET last_error = 'https://x.test/?key=abc'");
+        expect(core.leetSyncStatus().lastError).toBe('internal');
+      },
+      using(source),
+    );
+  });
+
+  it('GET /api/state and /api/me return the same leetSync shape', async () => {
+    const guild = nextGuild();
+    const { source } = scripted(() => ({
+      days: [day(guild, '2026-10-09', [USER_ID])],
+      nextCursor: 'c',
+      hasMore: false,
+    }));
+    await runCore(
+      guild,
+      async ({ guildId, core, request }) => {
+        const secret = await core.createSession(guildId, USER);
+        const expected = {
+          source: 'mock',
+          lastAttemptAt: T0,
+          lastSyncedAt: T0,
+          lastError: null,
+          lastDays: 1,
+        };
+        const me = await (await request(secret, '/api/me')).json<{ leetSync: unknown }>();
+        expect(me.leetSync).toEqual(expected);
+        const state = await (await request(secret, '/api/state')).json<{ leetSync: unknown }>();
+        expect(state.leetSync).toEqual(expected);
+      },
+      using(source),
+    );
+  });
+
+  it('shows a failed first sync through /api/me', async () => {
+    const guild = nextGuild();
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { source } = scripted(() => {
+      throw new LeetSourceError('unauthorized');
+    });
+    await runCore(
+      guild,
+      async ({ guildId, core, request }) => {
+        const secret = await core.createSession(guildId, USER);
+        const me = await (await request(secret, '/api/me')).json<{ leetSync: unknown }>();
+        expect(me.leetSync).toEqual({
+          source: 'mock',
+          lastAttemptAt: T0,
+          lastSyncedAt: null,
+          lastError: 'unauthorized',
+          lastDays: null,
+        });
+      },
+      using(source),
     );
   });
 });

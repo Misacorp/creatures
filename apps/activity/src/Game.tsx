@@ -1,4 +1,4 @@
-import { useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   ApiError,
   chooseStarter,
@@ -9,11 +9,13 @@ import {
   trainCreature,
   type ClaimResult,
   type GameState,
+  type LeetSyncStatus,
 } from './api';
 import { createKeyStore } from './actions';
 import { Collection } from './Collection';
 import { Expeditions, type SendRequest } from './Expeditions';
 import { clockOffset, errorText } from './game';
+import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { StarterPicker } from './StarterPicker';
 
 type Tab = 'collection' | 'expeditions';
@@ -28,7 +30,14 @@ function loaded(game: GameState): Loaded {
   return { game, offset: clockOffset(game.serverNow, Date.now()) };
 }
 
-export function Game({ initial }: { initial: GameState }) {
+export function Game({
+  initial,
+  onLeetSync,
+}: {
+  initial: GameState;
+  /** Called with the sync status of every state this component loads, so the footer stays current. */
+  onLeetSync: (status: LeetSyncStatus) => void;
+}) {
   const [current, setCurrent] = useState<Loaded>(() => loaded(initial));
   const [tab, setTab] = useState<Tab>('collection');
   const [busy, setBusy] = useState(false);
@@ -37,7 +46,38 @@ export function Game({ initial }: { initial: GameState }) {
   const keys = useRef(createKeyStore()).current;
   // A second tap in the same tick must not start a second request, even before `busy` renders.
   const inFlight = useRef(false);
+  // Counts player actions, so a background refresh that started before one is never applied.
+  const actionCount = useRef(0);
   const { game, offset } = current;
+
+  // While the first leet sync is still running, ask again every few seconds (a few times at most)
+  // so the balance, the history and the footer update as soon as the credits land.
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const schedule = (status: LeetSyncStatus | null, attempts: number): void => {
+      if (cancelled || !shouldRefetchLeet(status, attempts)) return;
+      timer = setTimeout(() => {
+        const startedAt = actionCount.current;
+        fetchState().then(
+          (next) => {
+            if (cancelled) return;
+            if (!inFlight.current && actionCount.current === startedAt) setCurrent(loaded(next));
+            if (next.leetSync !== null) onLeetSync(next.leetSync);
+            schedule(next.leetSync, attempts + 1);
+          },
+          () => {
+            schedule(status, attempts + 1);
+          },
+        );
+      }, SYNC_POLL_INTERVAL_MS);
+    };
+    schedule(initial.leetSync, 0);
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) clearTimeout(timer);
+    };
+  }, []);
 
   /**
    * Runs one user action. Idempotency keys are reused when the outcome is unknown (network error)
@@ -47,6 +87,7 @@ export function Game({ initial }: { initial: GameState }) {
   async function run<T>(action: string, task: () => Promise<T>): Promise<T | undefined> {
     if (inFlight.current) return undefined;
     inFlight.current = true;
+    actionCount.current += 1;
     setBusy(true);
     setError(null);
     try {

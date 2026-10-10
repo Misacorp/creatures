@@ -55,6 +55,13 @@ describe('POST /api/auth/session', () => {
       guildId: GUILD_ID,
       timezone: 'Europe/Helsinki',
       balances: { bait: expect.any(Number) as number, essence: 0 },
+      leetSync: {
+        source: 'mock',
+        lastAttemptAt: expect.any(Number) as number,
+        lastSyncedAt: expect.any(Number) as number,
+        lastError: null,
+        lastDays: expect.any(Number) as number,
+      },
     });
   });
 

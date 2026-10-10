@@ -8,6 +8,7 @@ import {
   StarterBodySchema,
   TrainBodySchema,
 } from './collection-schemas';
+import type { LeetSyncStatus } from './guild-core';
 import { errorResponse, json, readJsonBody, type Routes } from './http';
 
 const MAX_BODY_BYTES = 2048;
@@ -23,6 +24,8 @@ export interface CollectionRouteContext {
     syncIfStale(): Promise<void>;
     /** The guild's timezone, so the client can show guild-local times. */
     timezone(): string;
+    /** How healthy the leet sync is, so players can see why Bait may be missing. */
+    leetSyncStatus(): LeetSyncStatus;
   };
 }
 
@@ -56,7 +59,11 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
   '/api/state': {
     GET: async (_request, { user, core }) => {
       await core.syncIfStale();
-      return json({ ...core.collection.state(user.id), timezone: core.timezone() });
+      return json({
+        ...core.collection.state(user.id),
+        timezone: core.timezone(),
+        leetSync: core.leetSyncStatus(),
+      });
     },
   },
   '/api/starter': {
