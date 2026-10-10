@@ -223,6 +223,29 @@ describe('createHttpLeetSource', () => {
     expect(calls).toHaveLength(0);
   });
 
+  it('builds requests the Workers runtime accepts (no unsupported redirect mode)', async () => {
+    // Regression: `redirect: 'error'` throws in workerd before any request is sent.
+    let built: Request | undefined;
+    const fn = ((input: RequestInfo | URL, init?: RequestInit) => {
+      built = new Request(input, init);
+      return Promise.resolve(jsonResponse(validPage));
+    }) as typeof fetch;
+    const page = await make(fn).getDays(GUILD, { timezone: TZ });
+    expect(page.days).toHaveLength(2);
+    expect(built?.redirect).toBe('manual');
+  });
+
+  it('never follows a redirect and reports it as an upstream error', async () => {
+    const { fn } = fakeFetch(
+      () => new Response(null, { status: 302, headers: { Location: 'https://elsewhere.test/' } }),
+    );
+    const err: unknown = await make(fn)
+      .getDays(GUILD, { timezone: TZ })
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(LeetSourceError);
+    expect((err as LeetSourceError).kind).toBe('upstream');
+  });
+
   it('refuses non-https base URLs and empty keys', () => {
     const { fn } = fakeFetch(() => jsonResponse(validPage));
     expect(() => make(fn, { baseUrl: 'http://leet.test' })).toThrow();
