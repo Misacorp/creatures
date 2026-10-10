@@ -1,0 +1,16 @@
+[
+  {
+    "id": "resist-top-reaction",
+    "name": "Reaction Resistance",
+    "kind": "top_reaction",
+    "resistBp": 5000,
+    "description": "The reaction used most in Phase 1 deals 50% less bonus damage."
+  },
+  {
+    "id": "resist-top-element",
+    "name": "Element Resistance",
+    "kind": "top_element",
+    "resistBp": 2500,
+    "description": "The element that dealt the most damage in Phase 1 deals 25% less damage."
+  }
+]

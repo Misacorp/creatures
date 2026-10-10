@@ -1,0 +1,82 @@
+[
+  {
+    "id": "tidal-colossus",
+    "name": "Tidal Colossus",
+    "element": "tide",
+    "baseHp": 8500,
+    "baseAtk": 30,
+    "turnOrder": "left_to_right",
+    "gimmicks": [
+      {
+        "id": "undertow",
+        "name": "Undertow",
+        "trigger": { "every": 3 },
+        "op": "hit_zone",
+        "zone": "front",
+        "power": 8000
+      }
+    ],
+    "adaptation": "resist-top-reaction",
+    "lootTable": "tidal-colossus",
+    "finaleRounds": 12
+  },
+  {
+    "id": "cinder-wyrm",
+    "name": "Cinder Wyrm",
+    "element": "ember",
+    "baseHp": 6000,
+    "baseAtk": 30,
+    "turnOrder": "speed",
+    "gimmicks": [
+      {
+        "id": "backdraft",
+        "name": "Backdraft",
+        "trigger": { "eachRound": true },
+        "op": "reflect_first_reaction"
+      }
+    ],
+    "adaptation": "resist-top-element",
+    "lootTable": "cinder-wyrm",
+    "finaleRounds": 12
+  },
+  {
+    "id": "thornmother",
+    "name": "Thornmother",
+    "element": "grove",
+    "baseHp": 8500,
+    "baseAtk": 30,
+    "turnOrder": "right_to_left",
+    "gimmicks": [
+      {
+        "id": "bramble-bind",
+        "name": "Bramble Bind",
+        "trigger": { "every": 2 },
+        "op": "silence_ends",
+        "turns": 1
+      }
+    ],
+    "adaptation": "resist-top-reaction",
+    "lootTable": "thornmother",
+    "finaleRounds": 12
+  },
+  {
+    "id": "storm-sovereign",
+    "name": "Storm Sovereign",
+    "element": "spark",
+    "baseHp": 8500,
+    "baseAtk": 30,
+    "turnOrder": "left_to_right",
+    "gimmicks": [
+      {
+        "id": "lightning-rod",
+        "name": "Lightning Rod",
+        "trigger": { "eachRound": true },
+        "op": "strike_highest_atk",
+        "power": 12000
+      }
+    ],
+    "adaptation": "resist-top-element",
+    "lootTable": "storm-sovereign",
+    "finaleRounds": 12
+  }
+]

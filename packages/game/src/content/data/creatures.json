@@ -1,0 +1,502 @@
+[
+  {
+    "id": "splashet",
+    "name": "Splashet",
+    "line": "splashet",
+    "stage": 1,
+    "element": "tide",
+    "rarity": "common",
+    "role": "setter",
+    "catchable": true,
+    "starter": true,
+    "baseStats": {
+      "hp": 112,
+      "atk": 28,
+      "spd": 32
+    },
+    "growth": {
+      "hp": 8,
+      "atk": 2,
+      "spd": 2
+    },
+    "levelCap": 15,
+    "evolvesTo": {
+      "species": "tidewing",
+      "level": 15,
+      "essence": 20
+    },
+    "flavor": "A small, playful creature that leaves wet footprints wherever it goes."
+  },
+  {
+    "id": "tidewing",
+    "name": "Tidewing",
+    "line": "splashet",
+    "stage": 2,
+    "element": "tide",
+    "rarity": "common",
+    "role": "setter",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 157,
+      "atk": 39,
+      "spd": 45
+    },
+    "growth": {
+      "hp": 11,
+      "atk": 3,
+      "spd": 3
+    },
+    "levelCap": 30,
+    "flavor": "Grows fins and glides over the waves on wide, shimmering wings."
+  },
+  {
+    "id": "cindle",
+    "name": "Cindle",
+    "line": "cindle",
+    "stage": 1,
+    "element": "ember",
+    "rarity": "common",
+    "role": "payoff",
+    "catchable": true,
+    "starter": true,
+    "baseStats": {
+      "hp": 96,
+      "atk": 40,
+      "spd": 28
+    },
+    "growth": {
+      "hp": 7,
+      "atk": 3,
+      "spd": 2
+    },
+    "levelCap": 15,
+    "evolvesTo": {
+      "species": "pyrelynx",
+      "level": 15,
+      "essence": 20
+    },
+    "flavor": "A kitten-sized cat with a flickering ember at the tip of its tail."
+  },
+  {
+    "id": "pyrelynx",
+    "name": "Pyrelynx",
+    "line": "cindle",
+    "stage": 2,
+    "element": "ember",
+    "rarity": "common",
+    "role": "payoff",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 134,
+      "atk": 56,
+      "spd": 39
+    },
+    "growth": {
+      "hp": 9,
+      "atk": 4,
+      "spd": 3
+    },
+    "levelCap": 30,
+    "flavor": "A sleek hunter whose fur glows like coals when it pounces."
+  },
+  {
+    "id": "sproutle",
+    "name": "Sproutle",
+    "line": "sproutle",
+    "stage": 1,
+    "element": "grove",
+    "rarity": "common",
+    "role": "guard",
+    "catchable": true,
+    "starter": true,
+    "baseStats": {
+      "hp": 160,
+      "atk": 20,
+      "spd": 16
+    },
+    "growth": {
+      "hp": 11,
+      "atk": 1,
+      "spd": 1
+    },
+    "levelCap": 15,
+    "evolvesTo": {
+      "species": "thornbuck",
+      "level": 15,
+      "essence": 20
+    },
+    "flavor": "A shy sprout-eared critter that naps in sunny patches of moss."
+  },
+  {
+    "id": "thornbuck",
+    "name": "Thornbuck",
+    "line": "sproutle",
+    "stage": 2,
+    "element": "grove",
+    "rarity": "common",
+    "role": "guard",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 224,
+      "atk": 28,
+      "spd": 22
+    },
+    "growth": {
+      "hp": 15,
+      "atk": 2,
+      "spd": 2
+    },
+    "levelCap": 30,
+    "flavor": "A sturdy stag with branching thorned antlers that shelter its herd."
+  },
+  {
+    "id": "zipmouse",
+    "name": "Zipmouse",
+    "line": "zipmouse",
+    "stage": 1,
+    "element": "spark",
+    "rarity": "common",
+    "role": "setter",
+    "catchable": true,
+    "starter": false,
+    "baseStats": {
+      "hp": 112,
+      "atk": 28,
+      "spd": 32
+    },
+    "growth": {
+      "hp": 8,
+      "atk": 2,
+      "spd": 2
+    },
+    "levelCap": 15,
+    "evolvesTo": {
+      "species": "voltaro",
+      "level": 15,
+      "essence": 20
+    },
+    "flavor": "A tiny mouse that crackles with static and never sits still."
+  },
+  {
+    "id": "voltaro",
+    "name": "Voltaro",
+    "line": "zipmouse",
+    "stage": 2,
+    "element": "spark",
+    "rarity": "common",
+    "role": "setter",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 157,
+      "atk": 39,
+      "spd": 45
+    },
+    "growth": {
+      "hp": 11,
+      "atk": 3,
+      "spd": 3
+    },
+    "levelCap": 30,
+    "flavor": "A fast and fearless runner that leaves a trail of bright sparks."
+  },
+  {
+    "id": "mistnewt",
+    "name": "Mistnewt",
+    "line": "mistnewt",
+    "stage": 1,
+    "element": "tide",
+    "rarity": "common",
+    "role": "guard",
+    "catchable": true,
+    "starter": false,
+    "baseStats": {
+      "hp": 160,
+      "atk": 20,
+      "spd": 16
+    },
+    "growth": {
+      "hp": 11,
+      "atk": 1,
+      "spd": 1
+    },
+    "levelCap": 15,
+    "evolvesTo": {
+      "species": "fogwyrm",
+      "level": 15,
+      "essence": 20
+    },
+    "flavor": "A slow newt that carries a soft cloud of mist on its back."
+  },
+  {
+    "id": "fogwyrm",
+    "name": "Fogwyrm",
+    "line": "mistnewt",
+    "stage": 2,
+    "element": "tide",
+    "rarity": "common",
+    "role": "guard",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 224,
+      "atk": 28,
+      "spd": 22
+    },
+    "growth": {
+      "hp": 15,
+      "atk": 2,
+      "spd": 2
+    },
+    "levelCap": 30,
+    "flavor": "A long serpent that hides entire valleys in thick, cool fog."
+  },
+  {
+    "id": "ashmole",
+    "name": "Ashmole",
+    "line": "ashmole",
+    "stage": 1,
+    "element": "ember",
+    "rarity": "common",
+    "role": "support",
+    "catchable": true,
+    "starter": false,
+    "baseStats": {
+      "hp": 128,
+      "atk": 24,
+      "spd": 28
+    },
+    "growth": {
+      "hp": 9,
+      "atk": 2,
+      "spd": 2
+    },
+    "levelCap": 15,
+    "evolvesTo": {
+      "species": "magmole",
+      "level": 15,
+      "essence": 20
+    },
+    "flavor": "A busy digger that warms its burrow with glowing ash."
+  },
+  {
+    "id": "magmole",
+    "name": "Magmole",
+    "line": "ashmole",
+    "stage": 2,
+    "element": "ember",
+    "rarity": "common",
+    "role": "support",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 179,
+      "atk": 34,
+      "spd": 39
+    },
+    "growth": {
+      "hp": 12,
+      "atk": 2,
+      "spd": 3
+    },
+    "levelCap": 30,
+    "flavor": "A heavy digger that carves tunnels through stone with molten claws."
+  },
+  {
+    "id": "stormray",
+    "name": "Stormray",
+    "line": "stormray",
+    "stage": 1,
+    "element": "spark",
+    "rarity": "rare",
+    "role": "payoff",
+    "catchable": true,
+    "starter": false,
+    "baseStats": {
+      "hp": 120,
+      "atk": 50,
+      "spd": 35
+    },
+    "growth": {
+      "hp": 8,
+      "atk": 3,
+      "spd": 2
+    },
+    "levelCap": 15,
+    "evolvesTo": {
+      "species": "tempestray",
+      "level": 15,
+      "essence": 40
+    },
+    "flavor": "A ray that rides the edge of thunderclouds."
+  },
+  {
+    "id": "tempestray",
+    "name": "Tempestray",
+    "line": "stormray",
+    "stage": 2,
+    "element": "spark",
+    "rarity": "rare",
+    "role": "payoff",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 168,
+      "atk": 70,
+      "spd": 49
+    },
+    "growth": {
+      "hp": 12,
+      "atk": 5,
+      "spd": 3
+    },
+    "levelCap": 30,
+    "flavor": "A vast ray whose wingbeats stir up lightning storms."
+  },
+  {
+    "id": "mossback",
+    "name": "Mossback",
+    "line": "mossback",
+    "stage": 1,
+    "element": "grove",
+    "rarity": "rare",
+    "role": "setter",
+    "catchable": true,
+    "starter": false,
+    "baseStats": {
+      "hp": 140,
+      "atk": 35,
+      "spd": 40
+    },
+    "growth": {
+      "hp": 10,
+      "atk": 2,
+      "spd": 3
+    },
+    "levelCap": 15,
+    "evolvesTo": {
+      "species": "ancientshell",
+      "level": 15,
+      "essence": 40
+    },
+    "flavor": "A patient turtle with a garden growing on its shell."
+  },
+  {
+    "id": "ancientshell",
+    "name": "Ancientshell",
+    "line": "mossback",
+    "stage": 2,
+    "element": "grove",
+    "rarity": "rare",
+    "role": "setter",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 196,
+      "atk": 49,
+      "spd": 56
+    },
+    "growth": {
+      "hp": 14,
+      "atk": 3,
+      "spd": 4
+    },
+    "levelCap": 30,
+    "flavor": "An ancient turtle whose shell has become a small, living forest."
+  },
+  {
+    "id": "coralynx",
+    "name": "Coralynx",
+    "line": "coralynx",
+    "stage": 1,
+    "element": "tide",
+    "rarity": "rare",
+    "role": "payoff",
+    "catchable": true,
+    "starter": false,
+    "baseStats": {
+      "hp": 120,
+      "atk": 50,
+      "spd": 35
+    },
+    "growth": {
+      "hp": 8,
+      "atk": 3,
+      "spd": 2
+    },
+    "levelCap": 30,
+    "flavor": "A reef-dwelling lynx with a crown of bright coral."
+  },
+  {
+    "id": "solmane",
+    "name": "Solmane",
+    "line": "solmane",
+    "stage": 1,
+    "element": "ember",
+    "rarity": "epic",
+    "role": "setter",
+    "catchable": true,
+    "starter": false,
+    "baseStats": {
+      "hp": 179,
+      "atk": 45,
+      "spd": 51
+    },
+    "growth": {
+      "hp": 12,
+      "atk": 3,
+      "spd": 4
+    },
+    "levelCap": 30,
+    "flavor": "A lion with a mane of living sunlight that warms everything near it."
+  },
+  {
+    "id": "gaiadrake",
+    "name": "Gaiadrake",
+    "line": "gaiadrake",
+    "stage": 1,
+    "element": "grove",
+    "rarity": "epic",
+    "role": "payoff",
+    "catchable": true,
+    "starter": false,
+    "baseStats": {
+      "hp": 154,
+      "atk": 64,
+      "spd": 45
+    },
+    "growth": {
+      "hp": 11,
+      "atk": 4,
+      "spd": 3
+    },
+    "levelCap": 30,
+    "flavor": "A mountain-sized drake wearing forests and rivers along its back."
+  },
+  {
+    "id": "aurorix",
+    "name": "Aurorix",
+    "line": "aurorix",
+    "stage": 1,
+    "element": "spark",
+    "rarity": "epic",
+    "role": "support",
+    "catchable": true,
+    "starter": false,
+    "baseStats": {
+      "hp": 205,
+      "atk": 38,
+      "spd": 45
+    },
+    "growth": {
+      "hp": 14,
+      "atk": 3,
+      "spd": 3
+    },
+    "levelCap": 30,
+    "flavor": "A graceful creature that trails ribbons of aurora light as it drifts."
+  }
+]

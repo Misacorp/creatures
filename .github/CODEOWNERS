@@ -1,0 +1,5 @@
+# Changes to automation, agent config and dependencies need Misa's eye on the PR description.
+/.github/            @Misacorp
+/.claude/            @Misacorp
+/CLAUDE.md           @Misacorp
+/docs/security.md    @Misacorp

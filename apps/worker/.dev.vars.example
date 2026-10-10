@@ -1,0 +1,3 @@
+# Copy to .dev.vars (gitignored) for local `wrangler dev`. Placeholders only.
+DISCORD_CLIENT_SECRET=replace-me
+DISCORD_BOT_TOKEN=replace-me

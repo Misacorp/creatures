@@ -1,0 +1,33 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Cloudflare / wrangler local state
+.wrangler/
+.mf/
+
+# Secrets — never commit. Use .dev.vars.example / .env.example for placeholders.
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+*.pem
+*.key
+*.p12
+
+# Simulator output (reports are generated; commit only curated ones under docs/)
+sim-out/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
+
+# Claude Code local-only settings
+.claude/settings.local.json

@@ -1,0 +1,4 @@
+{
+  "files": [],
+  "references": [{ "path": "apps/activity" }, { "path": "apps/worker" }]
+}
