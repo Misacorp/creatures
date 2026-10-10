@@ -1,0 +1,20 @@
+{
+  "name": "@creatures/activity",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@discord/embedded-app-sdk": "catalog:",
+    "preact": "catalog:"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

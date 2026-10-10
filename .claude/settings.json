@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/.env)",
+      "Read(./**/.env.*)",
+      "Read(./**/.dev.vars)",
+      "Read(./**/.dev.vars.*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gh/**)",
+      "Read(~/.wrangler/**)",
+      "Bash(wrangler deploy*)",
+      "Bash(wrangler secret*)",
+      "Bash(wrangler login*)",
+      "Bash(npx wrangler deploy*)",
+      "Bash(npx wrangler secret*)",
+      "Bash(pnpm exec wrangler deploy*)",
+      "Bash(pnpm exec wrangler secret*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(npm publish*)",
+      "Bash(pnpm publish*)",
+      "Bash(gh secret*)",
+      "Bash(curl *)",
+      "Bash(wget *)"
+    ]
+  }
+}
