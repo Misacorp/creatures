@@ -16,22 +16,22 @@ Where the project is against the plan. Newest state at the top of each section. 
 
 ## Now
 
-- `m4-raids` (pushed; staging): M4a server, M4b Discord posts, M4c Raid tab all committed, reviewed, main merged in (migrations: 7 = leet_sync source, 8 = raid, 9 = Discord posts).
-- In flight: replay API follow-up (`you` alias + `bossHpMax` in the replay, on `m4-raids` working tree); balance pass on local branch `balance-2` in an agent worktree.
-- Then: merge `balance-2` into `m4-raids`, full checks incl. `pnpm sim`, open one M4 PR to main.
+- M4 is complete on `m4-raids`: **PR #5** (https://github.com/Misacorp/creatures/pull/5), green locally, on staging, waiting for Misa to test and merge. Includes balance pass 2 (`docs/balance/report-2026-10-11.md`, full sim 19/21).
+- Next up: M5 design (`docs/design/m5-finale.md`), then build on branch `m5-finale` (based on `m4-raids` until #5 merges).
 
 ## Next
 
-1. M4 PR green; Misa tests on staging.
-2. M5: live Sunday finale over WebSockets on the guild Durable Object, manual ability timing, loot reveal.
-3. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
-4. Later: an admin setting for the raid post channel (today it is the channel the Activity was last launched from).
+1. M5: live Sunday finale over WebSockets on the guild Durable Object, manual ability timing (absent players fire at default), loot reveal.
+2. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
+3. Later: an admin setting for the raid post channel (today it is the channel the Activity was last launched from); Essence sinks (gear).
 
 ## Open questions for Misa
 
-(Also on the overnight page.)
+(Also on the overnight page and in PR #5.)
 
-- Raid posts go to the channel the Activity was last launched from. OK, or should a fixed channel be set? The bot needs View Channel + Send Messages there.
+- Pity: should a lost finale count toward the hard-pity jackpot? (Balance report: counting losses makes 66% of players hit hard pity in 20 weeks.)
+- Reactions are about half of all damage after balance pass 2. OK?
+- Raid posts follow the channel the Activity was last launched from. OK, or a fixed channel?
 
 ## Notes for future agents
 
