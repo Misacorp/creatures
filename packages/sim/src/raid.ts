@@ -8,6 +8,7 @@ import {
   type BossDef,
   createSeededRng,
   type Element,
+  type LuckConfig,
   type RaidStage,
   type Rng,
 } from '@creatures/game';
@@ -71,6 +72,12 @@ export interface RaidWeek {
   /** Finale event log, only kept when `keepFinale` is set. */
   finaleEvents: FightEvent[] | null;
   keepFinale: boolean;
+  /** Luck settings for every fight of the week; absent: the shipped rules (all off). */
+  luck: LuckConfig | undefined;
+  /** The stages that roll luck (all three unless limited). */
+  luckStages: readonly RaidStage[];
+  /** Finale ability timings that replace the default rounds, by ability key (the luck study). */
+  timings: Readonly<Record<string, number>>;
   /** Measure what the abilities add to the finale (three extra finale runs); see `AbilityImpact`. */
   measureAbilities: boolean;
   abilityImpact: AbilityImpact | null;
@@ -115,7 +122,13 @@ function slotFor(player: SimPlayer, creatureId: string): FightSlot {
 export function openRaidWeek(
   boss: BossDef,
   players: readonly SimPlayer[],
-  options: { keepFinale?: boolean; measureAbilities?: boolean } = {},
+  options: {
+    keepFinale?: boolean;
+    measureAbilities?: boolean;
+    luck?: LuckConfig;
+    luckStages?: readonly RaidStage[];
+    timings?: Readonly<Record<string, number>>;
+  } = {},
 ): RaidWeek {
   if (players.length === 0) throw new RangeError('a raid needs at least one player');
   const picks: RaidPick[] = [];
@@ -174,6 +187,9 @@ export function openRaidWeek(
     jackpot: { rolls: 0, hits: 0, guaranteed: 0 },
     finaleEvents: null,
     keepFinale: options.keepFinale === true,
+    luck: options.luck,
+    luckStages: options.luckStages ?? STAGES,
+    timings: options.timings ?? {},
     measureAbilities: options.measureAbilities === true,
     abilityImpact: null,
   };
@@ -202,7 +218,14 @@ export function fightFor(
     adaptation: stage === 'phase1' ? null : week.adaptation,
     row,
     players: week.players.map((p) => p.id),
-    finaleAbilities: stage === 'finale' ? [...week.abilities, ...creatureAbilities] : [],
+    finaleAbilities:
+      stage === 'finale'
+        ? [...week.abilities, ...creatureAbilities].map((a) => {
+            const at = week.timings[a.key];
+            return at === undefined ? a : { ...a, fireAtRound: at };
+          })
+        : [],
+    ...(week.luck === undefined || !week.luckStages.includes(stage) ? {} : { luck: week.luck }),
   };
   return { fight, creatureAbilities };
 }

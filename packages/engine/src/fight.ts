@@ -3,6 +3,8 @@ import {
   RULES,
   content,
   effectiveStats,
+  int,
+  NO_LUCK,
   type AdaptationDef,
   type BossDef,
   type ContentPack,
@@ -10,6 +12,7 @@ import {
   type Element,
   type FinaleAbilityDef,
   type Gimmick,
+  type LuckConfig,
   type ReactionDef,
   type Rng,
   type Role,
@@ -180,6 +183,23 @@ export function simulateFight(
     if (rule === null) fail(`unknown adaptation rule "${input.adaptation.rule}"`);
   }
   const adaptationTarget = input.adaptation?.target ?? '';
+
+  // ---- luck (all off by default) ----
+  const luck: LuckConfig = input.luck ?? NO_LUCK;
+  checkLuck(luck);
+  const critOn = luck.critChanceBp > 0;
+  const spreadOn = luck.spreadBp > 0;
+  const swingOn = luck.surgeChanceBp > 0 || luck.slumpChanceBp > 0;
+  /** This round's dice, drawn at the start of every round whatever happens, so a creature's roll depends on the seed, the round and its slot only. */
+  interface Dice {
+    crit: number;
+    spread: number;
+  }
+  let turnDice: Dice[] = [];
+  let strikeDice: Dice[] = [];
+  /** The running Surge (+) or Slump (-) in basis points of team damage, and its last round. */
+  let swingNow = 0;
+  let swingUntil = 0;
 
   // ---- state ----
   const creatures: Creature[] = input.row.map((s, idx) => {
@@ -422,6 +442,17 @@ export function simulateFight(
     const supportBp = buffs.reduce((sum, b) => sum + b.bp, 0);
     const markBefore = mark;
 
+    const dice = (strike === undefined ? turnDice : strikeDice)[c.idx];
+    let luckBp = swingNow;
+    let crit = false;
+    if (dice !== undefined) {
+      if (critOn && dice.crit < luck.critChanceBp) {
+        crit = true;
+        luckBp += luck.critBp;
+      }
+      luckBp += dice.spread;
+    }
+
     let reaction: ReactionDef | undefined;
     if (markBefore !== null) {
       const candidate = reactionByMark.get(markBefore.element);
@@ -478,7 +509,7 @@ export function simulateFight(
     };
 
     const rally = rallyBp();
-    const totalBp = supportBp + rally + roundBonusBp + hookBp;
+    const totalBp = supportBp + rally + roundBonusBp + hookBp + luckBp;
     const hit = calc(totalBp);
     bossHp = Math.max(0, bossHp - hit.damage);
     damageByElement[c.element] += hit.damage;
@@ -517,6 +548,8 @@ export function simulateFight(
       mark: markBefore?.element ?? null,
       bossHp,
       ...(strike === undefined ? {} : { ability: strike.ability, key: strike.key }),
+      ...(luckBp === 0 ? {} : { luckBp }),
+      ...(crit ? { crit: true as const } : {}),
     });
 
     if (reaction !== undefined && markBefore !== null) {
@@ -710,7 +743,33 @@ export function simulateFight(
   for (let round = 1; round <= rounds && bossHp > 0; round++) {
     played = round;
     currentRound = round;
-    events.push({ t: 'round_start', round, bossHp, mark: mark?.element ?? null });
+    // A Surge or Slump starts with this chance (one die every round, so the dice never depend on
+    // what the players do) and lasts `swingRounds` rounds; a new one cannot start inside one.
+    let started: { kind: 'surge' | 'slump'; bp: number; rounds: number } | undefined;
+    if (swingOn) {
+      const roll = int(rng, 10_000);
+      if (round > swingUntil) swingNow = 0;
+      if (swingNow === 0) {
+        const kind =
+          roll < luck.surgeChanceBp
+            ? 'surge'
+            : roll >= 10_000 - luck.slumpChanceBp
+              ? 'slump'
+              : undefined;
+        if (kind !== undefined) {
+          swingNow = kind === 'surge' ? luck.swingBp : -luck.swingBp;
+          swingUntil = round + luck.swingRounds - 1;
+          started = { kind, bp: luck.swingBp, rounds: luck.swingRounds };
+        }
+      }
+    }
+    events.push({
+      t: 'round_start',
+      round,
+      bossHp,
+      mark: mark?.element ?? null,
+      ...(started === undefined ? {} : { luck: started }),
+    });
     roundBonusBp = 0;
     reflectArmed = false;
     reflectUsed = false;
@@ -731,6 +790,15 @@ export function simulateFight(
     runHook('onRoundStart', baseContext, (r) => {
       roundBonusBp += sanitizeBp(pick(r, 'damageBonusBp'));
     });
+    if (critOn || spreadOn) {
+      const draw = (): Dice[] =>
+        creatures.map(() => ({
+          crit: critOn ? int(rng, 10_000) : 10_000,
+          spread: spreadOn ? int(rng, 2 * luck.spreadBp + 1) - luck.spreadBp : 0,
+        }));
+      turnDice = draw();
+      strikeDice = draw();
+    }
 
     for (const g of boss.gimmicks) {
       if (g.op === 'reflect_first_reaction' && gimmickDue(g, round)) {
@@ -825,6 +893,20 @@ export function simulateFight(
     damageByElement,
     adaptationSuggestion,
   };
+}
+
+function checkLuck(l: LuckConfig): void {
+  for (const [name, value, max] of [
+    ['critChanceBp', l.critChanceBp, 10_000],
+    ['critBp', l.critBp, 100_000],
+    ['spreadBp', l.spreadBp, 10_000],
+    ['surgeChanceBp', l.surgeChanceBp, 10_000],
+    ['slumpChanceBp', l.slumpChanceBp, 10_000 - l.surgeChanceBp],
+    ['swingBp', l.swingBp, 10_000],
+    ['swingRounds', l.swingRounds, 12],
+  ] as const) {
+    if (!isCount(value, 0) || value > max) fail(`luck.${name} must be an integer from 0 to ${max}`);
+  }
 }
 
 function statsFor(pack: ContentPack, speciesId: string, level: number, fusionCount: number): Stats {

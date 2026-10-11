@@ -6,6 +6,7 @@ import type {
   TurnOrder,
   Zone,
   AdaptationDef,
+  LuckConfig,
 } from '@creatures/game';
 
 export type { Zone, TurnOrder };
@@ -75,6 +76,11 @@ export interface FightInput {
   finaleAbilities: readonly AbilityChoice[];
   turnOrderOverride?: TurnOrder;
   /**
+   * Luck settings for this fight, stored with the input so a replay is exact. Absent: no luck.
+   * Whoever builds a live input copies `RULES.combat.luck` in.
+   */
+  luck?: LuckConfig;
+  /**
    * Ids of enabled mutators (the content feature flag), in the order they run. Only mutators that
    * are both listed here and passed in `options.mutators` run.
    */
@@ -82,7 +88,14 @@ export interface FightInput {
 }
 
 export type FightEvent =
-  | { t: 'round_start'; round: number; bossHp: number; mark: Element | null }
+  | {
+      t: 'round_start';
+      round: number;
+      bossHp: number;
+      mark: Element | null;
+      /** Set on the round a Surge ("Fortune smiles") or a Slump ("Bad omen") starts. */
+      luck?: { kind: 'surge' | 'slump'; bp: number; rounds: number };
+    }
   | { t: 'support_buff'; round: number; supporter: string; target: string; bp: number }
   | {
       t: 'ability';
@@ -120,6 +133,10 @@ export type FightEvent =
       /** Set when the hit is an ability's strike: the ability id and its fight key. */
       ability?: string;
       key?: string;
+      /** Luck's share of the damage bonus in basis points (crit and spread); absent if none. */
+      luckBp?: number;
+      /** Set when the hit was critical ("Critical!"). */
+      crit?: true;
     }
   | {
       t: 'mark';

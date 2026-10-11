@@ -60,6 +60,29 @@ export const RULES = {
     guardHpBp: 3_000,
     /** Boss normal attack as a share of boss Attack. */
     bossAttackBp: 10_000,
+    /**
+     * Luck: small, visible randomness in the player-side damage. All off. The engine never reads
+     * this itself: it uses the `luck` a fight input carries (absent means `NO_LUCK`), so whoever
+     * builds the input (the worker) copies this in and the stored input keeps what the fight used.
+     * See docs/design/luck.md.
+     */
+    luck: {
+      /** Chance (basis points) that a hit is critical. */
+      critChanceBp: 0,
+      /** A critical hit adds this much damage (basis points of the plain hit). */
+      critBp: 5_000,
+      /** Every hit is multiplied by 1 + u, u uniform in [-spreadBp, +spreadBp] basis points. */
+      spreadBp: 0,
+      /**
+       * Surge and Slump: each round a Surge (team damage + swingBp) starts with chance
+       * surgeChanceBp and a Slump (team damage - swingBp) with chance slumpChanceBp, and lasts
+       * swingRounds rounds. A new one cannot start while one is running.
+       */
+      surgeChanceBp: 0,
+      slumpChanceBp: 0,
+      swingBp: 5_000,
+      swingRounds: 3,
+    },
     /** Row size that guests fill up to when fewer than 3 players take part. */
     guestRowSize: 9,
     /** Guests are added when fewer than this many players take part. */
@@ -151,6 +174,31 @@ export const RULES = {
     maxRawLength: 256,
   },
 } as const;
+
+/** The shape of `RULES.combat.luck`; a fight input may carry its own. */
+export interface LuckConfig {
+  critChanceBp: number;
+  critBp: number;
+  spreadBp: number;
+  surgeChanceBp: number;
+  slumpChanceBp: number;
+  swingBp: number;
+  swingRounds: number;
+}
+
+/**
+ * No luck at all: what the engine uses when a fight input carries no `luck`, so a stored input from
+ * before luck existed replays exactly as it was fought, whatever `RULES.combat.luck` says later.
+ */
+export const NO_LUCK: LuckConfig = {
+  critChanceBp: 0,
+  critBp: 0,
+  spreadBp: 0,
+  surgeChanceBp: 0,
+  slumpChanceBp: 0,
+  swingBp: 0,
+  swingRounds: 1,
+};
 
 export const DURATION_IDS = ['short', 'medium', 'long'] as const;
 export const SUPPLIES_IDS = ['basic', 'good', 'great'] as const;

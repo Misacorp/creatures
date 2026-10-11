@@ -84,7 +84,7 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
         event.ability === undefined
           ? creature(event.creature)
           : `${creature(event.creature)}'s ${lookup(names.abilities, event.ability)}`
-      } hits ${names.boss} for ${event.damage}${
+      } hits ${names.boss} for ${event.damage}${event.crit === true ? ' (Critical!)' : ''}${
         event.matchupBp > 10_000
           ? ' (strong matchup)'
           : event.matchupBp < 10_000
