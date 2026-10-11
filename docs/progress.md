@@ -22,9 +22,10 @@ Where the project is against the plan. Newest state at the top of each section. 
 ## Next
 
 1. After #6/#7 merge: verify prod deploys; check the first live finale and its Discord post.
-2. M6 "feels like a game": pixel art creatures and bosses, retro UI, juice. Misa wants this before a multiplayer test.
-3. WebSocket push for the live finale after a staging spike in real Discord.
-4. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
+2. Luck: fights are fully deterministic today (the engine never draws from its RNG). Branch `luck-measure` (49463da, pushed) adds an off-by-default luck config to the engine plus a study CLI (`node packages/sim/scripts/luck.mjs`) and `docs/design/luck.md`. Recommended "Fortune" Surge/Slump streaks (±60%, 17%/side/round, 3 rounds, all phases); waiting for Misa's pick, then boss HP retune and client banners.
+3. M6 "feels like a game": pixel art creatures and bosses, retro UI, juice. Misa wants this before a multiplayer test.
+4. WebSocket push for the live finale after a staging spike in real Discord.
+5. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
 
 ## Open questions for Misa
 
