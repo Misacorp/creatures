@@ -1,7 +1,9 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { nextIndex } from './dnd-core';
+import { nextIndex, verticalNeighbour } from './dnd-core';
 import { speciesName } from './game';
+import { cssVars } from './css-vars';
+import { useElementWidth } from './hooks';
 import {
   CANCEL_ANNOUNCEMENT,
   ZONE_LABELS,
@@ -25,6 +27,7 @@ import {
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { useDragDrop } from './use-drag-drop';
+import { SLOT_FALLBACK_PX, SLOT_LAYOUT, layoutVars, zoneLayout } from './zone-layout';
 
 const ZONES = ['front', 'middle', 'back'] as const;
 
@@ -55,6 +58,7 @@ interface Props {
 export function Placement(props: Props) {
   const { party, team, ctx, disabled, selected, rosterNames } = props;
   const stripRef = useRef<HTMLDivElement>(null);
+  const stripWidth = useElementWidth(stripRef, SLOT_FALLBACK_PX);
   const trayRef = useRef<HTMLUListElement>(null);
   const [announcement, setAnnouncement] = useState('');
   /** Slot to focus again once a keyboard drop has finished (buttons are disabled meanwhile). */
@@ -121,12 +125,24 @@ export function Placement(props: Props) {
       return;
     }
     // Arrow keys walk along the slots: always when a slot has focus, and while carrying a creature.
+    // Left and right step through the slots in order; up and down move to the line above or below.
     if (control.dataset.slot === undefined && selected === null) return;
     const buttons = slotButtons();
     const current =
       control.dataset.slot === undefined
         ? cursorStart(ctx.row, selected)
         : Number(control.dataset.slot);
+    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      const rects = buttons.map((b) => ({
+        id: Number(b.dataset.slot),
+        rect: b.getBoundingClientRect(),
+      }));
+      const slot = verticalNeighbour(rects, current, event.key === 'ArrowUp' ? 'up' : 'down');
+      if (slot === null) return;
+      event.preventDefault();
+      buttons.find((b) => Number(b.dataset.slot) === slot)?.focus();
+      return;
+    }
     const to = nextIndex(
       Math.max(
         0,
@@ -201,26 +217,29 @@ export function Placement(props: Props) {
       <section class="raid-section" aria-labelledby="raid-row-heading">
         <h3 id="raid-row-heading">The party row</h3>
         <p class="muted">
-          One row for the whole party. Creatures that are not placed are placed for you when the
-          phase starts. Supports power up the creatures next to them.
+          One row for the whole party, shown as the fight shows it: the front zone is closest to the
+          boss, then the middle, then the back. Creatures that are not placed are placed for you
+          when the phase starts. Supports power up the creatures next to them.
         </p>
         <div
           ref={stripRef}
           class={dragging === null ? 'party-strip' : 'party-strip dragging'}
           role="group"
-          aria-label="Party row, left to right"
+          aria-label="Party row, front to back, each zone left to right"
         >
           {ZONES.map((zone) => {
             const slots = ctx.row.filter((s) => s.zone === zone);
             if (slots.length === 0) return null;
+            const layout = zoneLayout(slots.length, stripWidth, SLOT_LAYOUT);
             return (
-              <div key={zone} class="party-zone">
+              <div key={zone} class="party-zone" ref={cssVars(layoutVars(layout, SLOT_LAYOUT))}>
                 <p class="zone-label">{ZONE_LABELS[zone]}</p>
                 <div class="zone-slots">
                   {slots.map((s) => (
                     <SlotButton
                       key={s.slot}
                       slot={s}
+                      scale={layout.tier.scale}
                       rosterNames={rosterNames}
                       disabled={disabled}
                       selected={selected}
@@ -276,6 +295,7 @@ export function Placement(props: Props) {
 
 function SlotButton({
   slot: s,
+  scale,
   rosterNames,
   disabled,
   selected,
@@ -289,6 +309,8 @@ function SlotButton({
   onTap,
 }: {
   slot: RowSlotView;
+  /** Sprite scale: the layout shrinks the sprites when a zone is long. */
+  scale: number;
   rosterNames: readonly string[];
   disabled: boolean;
   selected: Selection;
@@ -305,6 +327,7 @@ function SlotButton({
   const own = c?.mine === true && c.creatureId !== undefined ? c.creatureId : null;
   const isSelected = own !== null && own === selected;
   const classes = ['party-slot'];
+  if (scale < 3) classes.push('compact');
   if (c === null) classes.push('empty');
   else {
     classes.push(`owner-${String(ownerColour(c.ownerName, rosterNames))}`);
@@ -343,7 +366,7 @@ function SlotButton({
         <span class="slot-empty">empty</span>
       ) : (
         <>
-          <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={3} />
+          <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={scale} />
           <span class="slot-species">{speciesName(c.species)}</span>
           <span class="slot-meta">Lv {c.level}</span>
           <span class="slot-owner">{c.mine ? 'You' : c.ownerName}</span>

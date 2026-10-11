@@ -8,6 +8,7 @@ import {
   abilityEffectLine,
   abilityParamKind,
   abilityStateText,
+  autoFireLabel,
   abilityTitle,
   buildAction,
   createKeyLock,
@@ -44,8 +45,8 @@ const ZONE_OPTIONS = [
 /**
  * The live Sunday finale: the lobby and the fight, with the boss HP, the row, the round's events
  * and the player's abilities (their basic one plus one for each unlocked team creature, each with its
- * own Fire and Hold). The view only displays the server's snapshot and sends Fire and
- * Hold; it polls while the finale is on and stops by itself when the fight is over.
+ * own Fire button and Auto fire toggle). The view only displays the server's snapshot and sends
+ * Fire and the toggle; it polls while the finale is on and stops by itself when the fight is over.
  */
 export function Live({
   initial,
@@ -137,14 +138,15 @@ export function Live({
     if (hasLoot) onBalanceChange();
   }, [hasLoot]);
 
-  /** Fire or Hold one ability. A second tap on it while its request is on its way is ignored. */
-  async function act(request: LiveActionRequest): Promise<void> {
+  /** Fire an ability or toggle its auto fire. A second tap on it while its request is on its way is ignored. */
+  async function act(request: LiveActionRequest): Promise<boolean> {
     const { key } = request;
-    if (!locks.current.acquire(key)) return;
+    if (!locks.current.acquire(key)) return false;
     setBusyKeys((keys) => [...keys, key]);
     setActionError(null);
     try {
       accept(await sendLiveAction(request));
+      return true;
     } catch (err) {
       setActionError({ key, text: errorText(err) });
       if (err instanceof ApiError && err.status === 409) {
@@ -155,6 +157,7 @@ export function Live({
           // Keep the error above; the next poll catches up.
         }
       }
+      return false;
     } finally {
       locks.current.release(key);
       setBusyKeys((keys) => keys.filter((k) => k !== key));
@@ -242,6 +245,41 @@ export function Live({
   );
   const playerName = (key: string | null): string =>
     key === null ? 'Guest' : (fight.names.players?.[key] ?? 'Unknown');
+  // The basic ability has no creature: it keeps a panel under the stage. Every creature ability
+  // sits on its creature on the stage (a badge, and a popover when it is tapped).
+  const basic = mine.filter((a) => a.creature === null);
+  const creatureAbilities = mine.filter((a) => a.creature !== null);
+
+  /** The pickers, Fire and Auto fire of one ability, wired to this screen's state. */
+  const actions = (ability: LiveAbility, afterSuccess?: () => void) => (
+    <AbilityActions
+      fight={fight}
+      ability={ability}
+      busy={busyKeys.includes(ability.key)}
+      zone={zones[ability.key] ?? ''}
+      element={elements[ability.key] ?? ''}
+      error={actionError?.key === ability.key ? actionError.text : null}
+      onZone={(value) => {
+        setZones((all) => ({ ...all, [ability.key]: value }));
+      }}
+      onElement={(value) => {
+        setElements((all) => ({ ...all, [ability.key]: value }));
+      }}
+      onAct={(action) => {
+        void act(
+          buildAction(
+            ability.key,
+            ability.abilityId,
+            action,
+            zones[ability.key] ?? '',
+            elements[ability.key] ?? '',
+          ),
+        ).then((ok) => {
+          if (ok) afterSuccess?.();
+        });
+      }}
+    />
+  );
 
   return (
     <section class="raid-section" aria-labelledby="live-heading">
@@ -288,43 +326,59 @@ export function Live({
         names={fight.names}
         events={fight.events}
         roundMs={fight.roundMs}
+        abilities={{
+          list: fight.abilities,
+          you: fight.you,
+          fight,
+          renderPopover: (ability, close) => (
+            <div class="ab-pop-body">
+              <h5>{abilityTitle(ability, fight.names)}</h5>
+              {abilityEffectLine(ability.abilityId) !== '' && (
+                <p class="muted">{abilityEffectLine(ability.abilityId)}</p>
+              )}
+              <p class="live-ability-state">{abilityStateText(ability, fight.rounds, true)}</p>
+              {actions(ability, close)}
+            </div>
+          ),
+        }}
       />
 
+      {creatureAbilities.length > 0 && (
+        <p class="muted small">
+          Your creatures with an ability wear a badge. Tap one to fire its ability or to turn its
+          auto fire on or off.
+        </p>
+      )}
       {mine.length > 0 && (
-        <section aria-labelledby="live-abilities-heading">
-          <h4 id="live-abilities-heading">Your abilities</h4>
-          <p class="muted">
-            Each ability fires once. Fire takes effect at the start of the next round. Hold keeps it
-            for later; an ability you hold still fires in the last round.
-          </p>
+        <ul class="visually-hidden" aria-label="Your abilities">
           {mine.map((ability) => (
-            <AbilityPanel
-              key={ability.key}
-              fight={fight}
-              ability={ability}
-              busy={busyKeys.includes(ability.key)}
-              zone={zones[ability.key] ?? ''}
-              element={elements[ability.key] ?? ''}
-              error={actionError?.key === ability.key ? actionError.text : null}
-              onZone={(value) => {
-                setZones((all) => ({ ...all, [ability.key]: value }));
-              }}
-              onElement={(value) => {
-                setElements((all) => ({ ...all, [ability.key]: value }));
-              }}
-              onAct={(action) => {
-                void act(
-                  buildAction(
-                    ability.key,
-                    ability.abilityId,
-                    action,
-                    zones[ability.key] ?? '',
-                    elements[ability.key] ?? '',
-                  ),
-                );
-              }}
-            />
+            <li key={ability.key}>
+              {abilityTitle(ability, fight.names)}: {abilityStateText(ability, fight.rounds, true)}
+            </li>
           ))}
+        </ul>
+      )}
+
+      {basic.length > 0 && (
+        <section aria-labelledby="live-abilities-heading">
+          <h4 id="live-abilities-heading">Your basic ability</h4>
+          <p class="muted">
+            Each ability fires once. Fire takes effect at the start of the next round. With auto
+            fire on, it fires by itself in its round; with auto fire off it waits for you, and still
+            fires in the last round if you do not.
+          </p>
+          {basic.map((ability) => {
+            const headingId = `live-ability-${ability.key}`;
+            const effect = abilityEffectLine(ability.abilityId);
+            return (
+              <div key={ability.key} class="ability-panel" role="group" aria-labelledby={headingId}>
+                <h5 id={headingId}>{abilityTitle(ability, fight.names)}</h5>
+                {effect !== '' && <p class="muted">{effect}</p>}
+                <p class="live-ability-state">{abilityStateText(ability, fight.rounds, true)}</p>
+                {actions(ability)}
+              </div>
+            );
+          })}
         </section>
       )}
       {mine.length === 0 && actionError !== null && (
@@ -415,7 +469,8 @@ function FeedItems({ lines }: { lines: readonly FeedLine[] }) {
   );
 }
 
-function AbilityPanel({
+/** The pickers, the Fire button, the Auto fire toggle and the notes of one ability. */
+function AbilityActions({
   fight,
   ability,
   busy,
@@ -434,17 +489,13 @@ function AbilityPanel({
   error: string | null;
   onZone: (zone: string) => void;
   onElement: (element: string) => void;
-  onAct: (action: 'fire' | 'hold') => void;
+  onAct: (action: 'fire' | 'hold' | 'unhold') => void;
 }) {
   const controls = abilityControls(fight, ability);
   const kind = abilityParamKind(ability.abilityId);
-  const effect = abilityEffectLine(ability.abilityId);
-  const headingId = `live-ability-${ability.key}`;
+  const autoLabel = autoFireLabel(ability);
   return (
-    <div class="ability-panel" role="group" aria-labelledby={headingId}>
-      <h5 id={headingId}>{abilityTitle(ability, fight.names)}</h5>
-      {effect !== '' && <p class="muted">{effect}</p>}
-      <p class="live-ability-state">{abilityStateText(ability, fight.rounds, true)}</p>
+    <>
       {controls.canFire && kind === 'zone' && (
         <>
           <label for={`live-zone-${ability.key}`}>Zone to protect</label>
@@ -485,10 +536,10 @@ function AbilityPanel({
           </select>
         </>
       )}
-      <p class="button-row">
+      <p>
         <button
           type="button"
-          class="primary"
+          class="primary fire-button"
           disabled={busy || !controls.canFire}
           onClick={() => {
             onAct('fire');
@@ -496,24 +547,29 @@ function AbilityPanel({
         >
           Fire
         </button>
-        {controls.canHold && (
+      </p>
+      {controls.canToggle && (
+        <p>
           <button
             type="button"
+            class={controls.autoOn ? 'toggle on auto-toggle' : 'toggle auto-toggle'}
+            aria-pressed={controls.autoOn}
             disabled={busy}
             onClick={() => {
-              onAct('hold');
+              onAct(controls.autoOn ? 'hold' : 'unhold');
             }}
           >
-            Hold
+            <span>{autoLabel.title}</span>
+            {autoLabel.detail !== '' && <small>{autoLabel.detail}</small>}
           </button>
-        )}
-      </p>
+        </p>
+      )}
       {controls.note !== '' && <p class="muted">{controls.note}</p>}
       {error !== null && (
         <p class="error" role="alert">
           {error}
         </p>
       )}
-    </div>
+    </>
   );
 }

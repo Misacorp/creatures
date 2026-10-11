@@ -100,7 +100,7 @@ export function cursorStart(row: readonly RowSlotView[], selected: string | null
 }
 
 export function pickUpAnnouncement(name: string): string {
-  return `${name} picked up. Use the left and right arrow keys to choose a slot, Enter to drop it, Escape to cancel.`;
+  return `${name} picked up. Use the arrow keys to choose a slot, Enter to drop it, Escape to cancel.`;
 }
 
 export const CANCEL_ANNOUNCEMENT = 'Cancelled.';

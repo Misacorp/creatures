@@ -8,9 +8,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { RefObject } from 'preact';
 import {
   SCROLL_EDGE,
-  autoScrollSpeed,
   hitTest,
   move,
+  pageScrollSpeed,
   press,
   type DragPhase,
   type Point,
@@ -19,8 +19,6 @@ import type { DropOutcome, DropTarget } from './raid-dnd';
 
 /** Pixels around each slot that still count as "on" it, so the small gaps are not dead zones. */
 const SLOT_SLOP = 6;
-/** How far above or below the strip the pointer may be and still auto-scroll it. */
-const SCROLL_BAND = 56;
 const SHAKE_MS = 450;
 
 export interface DragState {
@@ -31,7 +29,7 @@ export interface DragState {
 export interface UseDragDropArgs {
   /** No drags can start while true (locked row, or a request in flight). */
   disabled: boolean;
-  /** The scrollable strip holding the slots (`[data-slot]` buttons). */
+  /** The strip holding the slots (`[data-slot]` buttons), one row for each zone. */
   stripRef: RefObject<HTMLElement>;
   /** The team tray: dropping a placed creature here unplaces it. */
   trayRef: RefObject<HTMLElement>;
@@ -200,17 +198,15 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
       if (state.phase === 'dragging') e.preventDefault();
     };
 
+    // The zones are rows, so a tall party can be longer than the screen: near the top or bottom
+    // edge of the window the page scrolls, and the slots are measured again.
     function tick(): void {
       frame = requestAnimationFrame(tick);
-      const strip = latest.current.stripRef.current;
-      if (state.phase !== 'dragging' || strip === null) return;
-      const box = strip.getBoundingClientRect();
-      const { x, y } = pointer.current;
-      if (y < box.top - SCROLL_BAND || y > box.bottom + SCROLL_BAND) return;
-      const speed = autoScrollSpeed(x, box.left, box.right, SCROLL_EDGE);
+      if (state.phase !== 'dragging') return;
+      const speed = pageScrollSpeed(pointer.current.y, window.innerHeight, SCROLL_EDGE);
       if (speed === 0) return;
       // Whole pixels, at least one, or slow edge speeds would round to nothing.
-      strip.scrollLeft += Math.sign(speed) * Math.max(1, Math.round(Math.abs(speed)));
+      window.scrollBy(0, Math.sign(speed) * Math.max(1, Math.round(Math.abs(speed))));
       refreshOver();
     }
 

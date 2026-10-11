@@ -94,12 +94,12 @@ const aliasOf = (ctx: Ctx, p: Seeded): string => {
   )[0]?.party;
   return `m${membersOf(ctx.sql, party ?? 1).indexOf(p.id) + 1}`;
 };
-/** Fire or Hold; without `key` it is the caller's basic ability. */
+/** Fire, Hold or Unhold (the Auto fire toggle); without `key` it is the caller's basic ability. */
 const act = (
   ctx: Ctx,
   p: Seeded,
   body: {
-    action: 'fire' | 'hold';
+    action: 'fire' | 'hold' | 'unhold';
     zone?: 'front' | 'middle' | 'back';
     element?: 'tide';
     key?: string;
@@ -349,6 +349,70 @@ describe('Fire and Hold', () => {
       expect(err(act(ctx, b, { action: 'hold' }))).toBe('409 hold_too_late');
       inRound(ctx, 3);
       expect(err(act(ctx, b, { action: 'hold' }))).toBe('409 hold_too_late');
+    });
+  });
+
+  it('turns auto fire back on (Unhold) before the default round, and the ability fires by default again', async () => {
+    await runRaid((ctx) => {
+      const players = toFinale(ctx);
+      const [a] = inOrder(ctx, players) as [Seeded, Seeded];
+      pick(ctx, a, 'rally'); // default round 6
+      begin(ctx);
+      inRound(ctx, 2);
+      expect(act(ctx, a, { action: 'hold' }).ok).toBe(true);
+      expect(snap(ctx, a).abilities[0]).toMatchObject({ mode: 'held' });
+      inRound(ctx, 3);
+      expect(act(ctx, a, { action: 'unhold' }).ok).toBe(true);
+      expect(snap(ctx, a).abilities[0]).toMatchObject({ mode: 'default', fired: false });
+      // It can be switched off and on again, as often as the round allows.
+      expect(act(ctx, a, { action: 'hold' }).ok).toBe(true);
+      expect(act(ctx, a, { action: 'unhold' }).ok).toBe(true);
+      inRound(ctx, 12);
+      expect(abilityEvents(snap(ctx, a).events, 'm1')).toEqual([
+        expect.objectContaining({ round: 6, ability: 'rally', byDefault: true }),
+      ]);
+    });
+  });
+
+  it('refuses Unhold from the default round on (hold_too_late), and when not held (not_held)', async () => {
+    await runRaid((ctx) => {
+      const players = toFinale(ctx);
+      const [a, b] = inOrder(ctx, players) as [Seeded, Seeded];
+      pick(ctx, a, 'rally'); // default round 6
+      pick(ctx, b, 'purge'); // default round 2
+      begin(ctx);
+      inRound(ctx, 1);
+      expect(err(act(ctx, a, { action: 'unhold' }))).toBe('409 not_held');
+      expect(act(ctx, a, { action: 'hold' }).ok).toBe(true);
+      expect(act(ctx, b, { action: 'hold' }).ok).toBe(true);
+      expect(err(act(ctx, a, { action: 'unhold', element: 'tide' }))).toBe('400 invalid_body');
+      inRound(ctx, 2);
+      expect(err(act(ctx, b, { action: 'unhold' }))).toBe('409 hold_too_late');
+      expect(act(ctx, a, { action: 'unhold' }).ok).toBe(true);
+      expect(act(ctx, a, { action: 'hold' }).ok).toBe(true);
+      inRound(ctx, 6);
+      expect(err(act(ctx, a, { action: 'unhold' }))).toBe('409 hold_too_late');
+      // Still held: it fires in the last round, as before.
+      expect(snap(ctx, a).abilities[0]).toMatchObject({ mode: 'held', fired: false });
+    });
+  });
+
+  it('fires by hand after Unhold, and refuses Unhold once fired', async () => {
+    await runRaid((ctx) => {
+      const players = toFinale(ctx);
+      const [a] = inOrder(ctx, players) as [Seeded, Seeded];
+      pick(ctx, a, 'rally'); // default round 6
+      begin(ctx);
+      inRound(ctx, 2);
+      expect(act(ctx, a, { action: 'hold' }).ok).toBe(true);
+      expect(act(ctx, a, { action: 'unhold' }).ok).toBe(true);
+      inRound(ctx, 3);
+      expect(act(ctx, a, { action: 'fire' }).ok).toBe(true);
+      expect(err(act(ctx, a, { action: 'unhold' }))).toBe('409 already_fired');
+      inRound(ctx, 12);
+      expect(abilityEvents(snap(ctx, a).events, 'm1')).toEqual([
+        expect.objectContaining({ round: 4, ability: 'rally', byDefault: false }),
+      ]);
     });
   });
 
@@ -1669,6 +1733,12 @@ describe('the API contract with the client', () => {
         'hold_too_late',
       );
       await expectError(
+        'unhold when not held',
+        await post(sa, '/api/raid/live/action', { key: 'm1:basic', action: 'unhold' }),
+        409,
+        'not_held',
+      );
+      await expectError(
         'ability after the start',
         await post(sb, '/api/raid/ability', { abilityId: 'purge' }, 'PUT'),
         409,
@@ -1774,8 +1844,12 @@ describe('the API contract with the client', () => {
         expect(await send(sa, requestBodies['action-fire-zone'])).toBe(200);
         expect(await send(sb, requestBodies['action-fire-element'])).toBe(200);
         expect(await send(sc, requestBodies['action-hold'])).toBe(200);
+        expect(await send(sc, requestBodies['action-unhold'])).toBe(200);
+        expect(await send(sc, requestBodies['action-hold'])).toBe(200);
         expect(await send(sc, requestBodies['action-fire'])).toBe(200);
         // Creature abilities have their own keys (the level-10 creatures of this test).
+        expect(await send(sa, requestBodies['action-hold-creature'])).toBe(200);
+        expect(await send(sa, requestBodies['action-unhold-creature'])).toBe(200);
         expect(await send(sa, requestBodies['action-hold-creature'])).toBe(200);
         expect(await send(sa, requestBodies['action-fire-creature'])).toBe(200);
         at(ctx, 12 * ROUND);

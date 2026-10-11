@@ -83,6 +83,21 @@ export function autoScrollSpeed(
   return 0;
 }
 
+/**
+ * Signed scroll speed (pixels per frame) for the page, from the pointer's height in a viewport that
+ * is `viewportHeight` tall: negative near the top, positive near the bottom, zero between. The
+ * zones are rows now, so a long row of the party can be taller than the screen and the page, not
+ * the strip, is what scrolls while a creature is carried.
+ */
+export function pageScrollSpeed(
+  pointerY: number,
+  viewportHeight: number,
+  edge = SCROLL_EDGE,
+  maxSpeed = SCROLL_MAX_SPEED,
+): number {
+  return autoScrollSpeed(pointerY, 0, viewportHeight, edge, maxSpeed);
+}
+
 /** The pointer's drag phase. `pending` is a press that has not moved far enough yet. */
 export type DragPhase<S, T> =
   | { phase: 'idle' }
@@ -133,4 +148,34 @@ export function nextIndex(current: number, key: string, count: number): number |
     default:
       return null;
   }
+}
+
+/**
+ * The slot above or below `current` for the up and down arrow keys, from where the slots are on
+ * screen: the nearest line in that direction, and on it the slot whose centre is closest across.
+ * Null when there is no line that way (or `current` is unknown).
+ */
+export function verticalNeighbour<T>(
+  items: readonly { id: T; rect: Rect }[],
+  current: T,
+  direction: 'up' | 'down',
+): T | null {
+  const from = items.find((item) => item.id === current);
+  if (from === undefined) return null;
+  const centre = (r: Rect): Point => ({ x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2 });
+  const origin = centre(from.rect);
+  const half = (from.rect.bottom - from.rect.top) / 2;
+  const ahead = items
+    .filter((item) => item.id !== current)
+    .map((item) => ({ id: item.id, c: centre(item.rect) }))
+    .filter(({ c }) => (direction === 'down' ? c.y - origin.y > half : origin.y - c.y > half));
+  if (ahead.length === 0) return null;
+  const nearest = Math.min(...ahead.map(({ c }) => Math.abs(c.y - origin.y)));
+  // Everything within half a slot's height of the nearest line is on that line.
+  const line = ahead.filter(({ c }) => Math.abs(c.y - origin.y) - nearest < half);
+  let best = line[0] as (typeof line)[number];
+  for (const candidate of line) {
+    if (Math.abs(candidate.c.x - origin.x) < Math.abs(best.c.x - origin.x)) best = candidate;
+  }
+  return best.id;
 }

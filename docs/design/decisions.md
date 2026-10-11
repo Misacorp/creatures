@@ -402,3 +402,18 @@ PR #7 is merged and production runs it.
   - Tap-to-place and keyboard placement remain.
   - No optimistic UI; the server stays authoritative.
 - **Element icons:** each element always shows its icon (droplet, flame, leaf, bolt) next to its colour, so element colours are not confused with status colours **[Misa]**.
+
+## 2026-10-11: Live stage as rows, abilities on the creatures, Auto fire toggle **[Misa]**
+
+**Context.** Misa tried the practice fight on staging: the zones side by side did not fit a phone, names were cut off, and the ability cards under the stage were far from the creatures they belong to. He also asked to replace "Hold" with a clearer control.
+
+**Decision.**
+
+- **Zones are rows**, top to bottom: the boss, then Front (closest to it), Middle, Back. Each row has its label at the left and its creatures centred in slot order, wrapping onto more lines. Nothing scrolls sideways. The largest zone is 15 creatures (a party of 15 players, 45 slots). The sprite size follows the zone size and the measured width (`zone-layout.ts`), so a 15-creature zone uses 2x sprites on three lines at 360 px. The Placement strip in the Raid tab uses the same rows. Drag-and-drop hit-testing already used screen rectangles, so it works unchanged; auto-scroll while dragging now scrolls the page near the top and bottom of the window, and the up and down arrow keys move between lines.
+- **Creature abilities are used on the stage.** Your creature with an ability wears a badge and opens a popover when tapped (Fire, Auto fire toggle, the ability's text). The basic ability keeps one panel under the stage. Replays show only "used" marks, and are not interactive.
+- **Auto fire replaces Hold.** The popover and the basic panel have a big **Fire** button and an **Auto fire** toggle ("Auto fire, round 7" when on, "Auto fire off, last round" when off). The toggle works both ways until the ability's default round; the last-round safety net stays. New server action `unhold` on `POST /api/raid/live/action` (`not_held` if not held, `hold_too_late` after the default round); `hold` stays as the wire name for auto fire off. The word "Hold" is gone from player-facing text.
+- **Names** show in full under the sprite (two lines, then an ellipsis, full name as tooltip). "You" sits above the sprite, a knocked-out creature is a grey sprite with a skull.
+
+**Reasoning.** Rows fit narrow phones and match the order the boss attacks in. Putting each ability on its creature makes the choice obvious, and one toggle is easier to understand than a one-way "Hold".
+
+**Checked, not a bug.** The boss HP the stage shows equals the engine's `bossHpEnd` for whole fights, including practice-style inputs (tests in `stage.test.ts`). The odd "18689 / 18698" in the screenshot came from a dev test fight.

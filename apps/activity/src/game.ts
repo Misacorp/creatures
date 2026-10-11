@@ -222,7 +222,8 @@ const ERROR_TEXT: Record<string, string> = {
   not_your_ability: 'That ability is not yours. The screen was out of date.',
   too_late: 'Too late: the fight is in its last round or already over.',
   not_in_fight: 'You are not in this fight.',
-  hold_too_late: 'Too late to hold: your ability is already due.',
+  hold_too_late: 'Too late to change auto fire: your ability is already due.',
+  not_held: 'Auto fire is already on for that ability.',
   // Practice fights (the test server only).
   practice_blocked:
     'Practice fights are closed from 30 minutes before the finale until it has finished.',

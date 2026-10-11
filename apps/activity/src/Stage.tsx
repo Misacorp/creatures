@@ -1,26 +1,30 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 import type { EventNames, FightEvent, Zone } from '@creatures/engine';
 import { bossArt, elementClass, markPalette } from './art';
 import { cssVars } from './css-vars';
 import { gimmickGlyph, glyphOrUnknown } from './glyphs';
-import { usePrefersReducedMotion } from './hooks';
-import { abilityTitle } from './live';
+import { useElementWidth, usePrefersReducedMotion } from './hooks';
+import { abilityControls, abilityName, abilityTitle } from './live';
+import type { LiveAbility, LiveFight } from './live-api';
 import type { ReplayRowEntry } from './raid-api';
 import { stateAt } from './replay';
 import {
   HP_SEGMENTS,
+  abilityUsesAt,
   cuesForEvents,
   groupByZone,
   hpSegments,
-  scrollToShow,
   stageStateAt,
+  type AbilityUse,
   type Cue,
 } from './stage';
+import { badgeFor, placePopover, usedBadge, type Badge } from './stage-abilities';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { elementIcon } from './sprites/element-icons';
 import { useLiveStage, type Anim } from './use-live-stage';
+import { STAGE_FALLBACK_PX, STAGE_LAYOUT, layoutVars, zoneLayout } from './zone-layout';
 
 export type { Anim } from './use-live-stage';
 
@@ -133,6 +137,18 @@ function Bursts({ cues, target, names }: FloatsProps & { names: EventNames }) {
   );
 }
 
+/** What the live stage needs to put the player's abilities on their creatures. */
+export interface StageAbilities {
+  /** Every ability of the fight (the caller's own and the others'). */
+  list: readonly LiveAbility[];
+  /** The caller's player key in this fight. */
+  you: string | null;
+  /** The fight's status, round and round count, which decide whether Fire is on offer. */
+  fight: Pick<LiveFight, 'status' | 'round' | 'rounds'>;
+  /** The popover's content for one of the caller's creature abilities. `close` shuts the popover. */
+  renderPopover: (ability: LiveAbility, close: () => void) => ComponentChildren;
+}
+
 export interface StageProps {
   boss: { id: string; name: string };
   hpMax: number;
@@ -149,14 +165,212 @@ export interface StageProps {
   index: number;
   /** The beat to animate: events [from, to) of the log. Null: show the state without movement. */
   anim: Anim | null;
+  /**
+   * The live finale's abilities: the player's own creatures with an ability get a badge and open a
+   * popover when tapped. Without it (replays) the stage is not interactive and only shows which
+   * abilities have been used so far.
+   */
+  abilities?: StageAbilities;
+}
+
+/** The small badge on a creature's corner: what state its ability is in, by shape as well as colour. */
+function AbilityBadge({ badge }: { badge: Badge }) {
+  return (
+    <span
+      class={`ab-badge ab-${badge.kind}${badge.pulse ? ' pulse' : ''}`}
+      data-state={badge.kind}
+      aria-hidden="true"
+    >
+      {badge.kind === 'auto' && (
+        <>
+          <Sprite sprite={glyphOrUnknown('ability')} scale={2} />
+          {badge.round !== null && <span class="ab-round pix">{badge.round}</span>}
+        </>
+      )}
+      {badge.kind === 'manual' && <Sprite sprite={glyphOrUnknown('hand')} scale={2} />}
+      {badge.kind === 'pressed' && (
+        <span class="ab-round pix">{badge.round === null ? '>' : badge.round}</span>
+      )}
+      {badge.kind === 'used' && (
+        <>
+          <Sprite sprite={glyphOrUnknown('check')} scale={2} />
+          {badge.round !== null && <span class="ab-round pix">{badge.round}</span>}
+        </>
+      )}
+    </span>
+  );
+}
+
+interface UnitProps {
+  creature: ReplayRowEntry;
+  scale: number;
+  mine: boolean;
+  ko: boolean;
+  classes: readonly string[];
+  silenced: boolean;
+  cues: readonly Cue[];
+  names: EventNames;
+  badge: Badge | null;
+  /** The ability's id, for the label of the badge. */
+  abilityId: string | null;
+  /** True for the player's own creature with an ability: it can be tapped. */
+  interactive: boolean;
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  /** The popover's content, when this unit's popover is open. */
+  popover: ComponentChildren;
+  /** Changes when the layout does, so an open popover is put in place again. */
+  layoutKey: number;
 }
 
 /**
- * The fight stage: the boss on top with its HP bar, the row of creatures below grouped by zone. It
- * shows the state after `index` events and animates the beat `anim`: hops, white flashes, floating
- * numbers, reaction bursts, the mark, knockouts, zone frames and ability cards. Everything is drawn
- * from the event log; the animation classes are only decoration, and `prefers-reduced-motion`
- * (in styles.css) turns them into outlines and instant changes.
+ * One creature on the stage: its sprite with the corner marks (the "you" tag above it, the ability
+ * badge top right, the skull of a knocked-out creature bottom left, its element bottom right) and
+ * its name under it, two lines at most. The player's own creature with an ability is a button that
+ * opens the ability popover.
+ */
+function StageUnit(props: UnitProps) {
+  const { creature: c, mine, ko, badge, interactive, open } = props;
+  const itemRef = useRef<HTMLLIElement>(null);
+  const faceRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+  const icon = elementIcon(c.element);
+
+  // Put the popover next to the creature, inside the stage, and move focus into it.
+  const wasOpen = useRef(false);
+  useLayoutEffect(() => {
+    const pop = popRef.current;
+    const item = itemRef.current;
+    const face = faceRef.current;
+    if (!open || pop === null || item === null || face === null) {
+      wasOpen.current = false;
+      return;
+    }
+    const stage = item.closest('.stage');
+    if (stage !== null) {
+      const a = face.getBoundingClientRect();
+      const b = stage.getBoundingClientRect();
+      const origin = item.getBoundingClientRect();
+      const at = placePopover(
+        { left: a.left, top: a.top, width: a.width, height: a.height },
+        { left: b.left, top: b.top, width: b.width, height: b.height },
+        { width: pop.offsetWidth, height: pop.offsetHeight },
+      );
+      pop.style.setProperty('--pop-x', `${String(Math.round(at.x + a.left - origin.left))}px`);
+      pop.style.setProperty('--pop-y', `${String(Math.round(at.y + a.top - origin.top))}px`);
+      pop.style.setProperty('--pop-arrow', `${String(Math.round(at.arrowX))}px`);
+      pop.dataset['placement'] = at.placement;
+    }
+    if (!wasOpen.current) {
+      wasOpen.current = true;
+      (pop.querySelector<HTMLElement>('button:not(:disabled)') ?? pop).focus();
+    }
+  }, [open, props.layoutKey]);
+
+  // Escape or a tap outside closes the popover.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return;
+      props.onClose();
+      faceRef.current?.focus();
+    };
+    const onPointer = (event: PointerEvent): void => {
+      const target = event.target instanceof Node ? event.target : null;
+      if (target === null) return;
+      if (popRef.current?.contains(target) === true || faceRef.current?.contains(target) === true) {
+        return;
+      }
+      props.onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onPointer);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onPointer);
+    };
+  }, [open]);
+
+  const spoken =
+    `${c.name}${mine ? ', yours' : ''}${ko ? ', knocked out' : ''}` +
+    (badge === null
+      ? ''
+      : `, ${props.abilityId === null ? 'ability' : abilityName(props.abilityId)} ${badge.label.toLowerCase()}`);
+
+  const face = (
+    <>
+      <span class="unit-top">{mine && <span class="you-pip pix">you</span>}</span>
+      <span class="unit-art">
+        <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={props.scale} />
+        {icon !== undefined && (
+          <span class="unit-element">
+            <Sprite sprite={icon} scale={2} />
+          </span>
+        )}
+        {ko && (
+          <span class="ko-mark">
+            <Sprite sprite={glyphOrUnknown('skull')} scale={2} />
+          </span>
+        )}
+        {props.silenced && (
+          <span class="silence-tag">
+            <Sprite sprite={glyphOrUnknown('silence_ends')} scale={2} />
+          </span>
+        )}
+        {badge !== null && <AbilityBadge badge={badge} />}
+      </span>
+      <span class="unit-name pix">{c.name}</span>
+    </>
+  );
+
+  return (
+    <li
+      ref={itemRef}
+      class={[...props.classes, open ? 'open' : ''].filter(Boolean).join(' ')}
+      title={c.name}
+      aria-label={interactive ? undefined : spoken}
+    >
+      {interactive ? (
+        <button
+          type="button"
+          ref={faceRef}
+          class="unit-face"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label={`${spoken}. Opens the ability options.`}
+          onClick={props.onToggle}
+        >
+          {face}
+        </button>
+      ) : (
+        <span class="unit-face">{face}</span>
+      )}
+      <Floats cues={props.cues} target={c.id} />
+      <Bursts cues={props.cues} target={c.id} names={props.names} />
+      {open && (
+        <div
+          ref={popRef}
+          class="ab-pop"
+          role="dialog"
+          aria-label={`${c.name}'s ability`}
+          tabIndex={-1}
+        >
+          {props.popover}
+        </div>
+      )}
+    </li>
+  );
+}
+
+/**
+ * The fight stage: the boss on top with its HP bar, then the zones as rows under it, the front zone
+ * first (closest to the boss) and the back zone last. Each row is a zone label and its creatures,
+ * centred in slot order and wrapping onto more lines if needed. It shows the state after `index`
+ * events and animates the beat `anim`: hops, white flashes, floating numbers, reaction bursts,
+ * the mark, knockouts, zone frames and ability cards. Everything is drawn from the event log; the
+ * animation classes are only decoration, and `prefers-reduced-motion` (in styles.css) turns them
+ * into outlines and instant changes.
  */
 export function Stage({
   boss,
@@ -169,8 +383,11 @@ export function Stage({
   events,
   index,
   anim,
+  abilities,
 }: StageProps) {
-  const rowRef = useRef<HTMLDivElement>(null);
+  const rowsRef = useRef<HTMLDivElement>(null);
+  const width = useElementWidth(rowsRef, STAGE_FALLBACK_PX);
+  const [openKey, setOpenKey] = useState<string | null>(null);
   const rowIds = row.map((c) => c.id);
   const state = stageStateAt(events, index, hpStart);
   const cues =
@@ -195,20 +412,11 @@ export function Stage({
   const gimmickCue = cues.find((c) => c.kind === 'gimmick');
   const bannerCue = cues.find((c) => c.kind === 'banner');
 
-  // Keep the creature whose turn it is in view when the row scrolls.
-  const actor = [...hopping][0] ?? null;
-  useEffect(() => {
-    const box = rowRef.current;
-    if (box === null || actor === null || anim === null) return;
-    const el = box.querySelector<HTMLElement>('.stage-unit.actor');
-    if (el === null) return;
-    const boxRect = box.getBoundingClientRect();
-    const rect = el.getBoundingClientRect();
-    box.scrollLeft = scrollToShow(
-      { scrollLeft: box.scrollLeft, width: box.clientWidth },
-      { left: rect.left - boxRect.left + box.scrollLeft, width: rect.width },
-    );
-  }, [actor, anim?.seq]);
+  // The abilities that have been played so far, by key and by creature.
+  const uses = abilityUsesAt(events, index);
+  const useByKey = new Map<string, AbilityUse>(uses.map((u) => [u.key, u]));
+  const useByCreature = new Map<string, AbilityUse>();
+  for (const u of uses) if (u.creature !== null) useByCreature.set(u.creature, u);
 
   const parity = anim === null ? 0 : anim.seq % 2;
   const groups = groupByZone(row);
@@ -218,7 +426,6 @@ export function Stage({
   const markGlyph = glyphOrUnknown('mark');
   const shieldGlyph = glyphOrUnknown('shield');
   const abilityGlyph = glyphOrUnknown('ability');
-  const silenceGlyph = glyphOrUnknown('silence_ends');
   return (
     <section
       class={`stage p${String(parity)}`}
@@ -287,22 +494,18 @@ export function Stage({
         )}
       </ul>
 
-      <div
-        class="stage-row"
-        ref={rowRef}
-        tabIndex={0}
-        role="region"
-        aria-label="Row, left to right"
-      >
+      <div class="stage-rows" ref={rowsRef} role="group" aria-label="Zones, front to back">
         {groups.map(({ zone, items }) => {
           const fresh = cues.filter((c) => c.kind === 'zone' && c.zone === zone);
           const walled = state.shielded.includes(zone);
+          const layout = zoneLayout(items.length, width, STAGE_LAYOUT);
           return (
             <div
               key={zone}
               class={`stage-zone zone-${zone}${shaking.has(zone) ? ' shake' : ''}`}
               role="group"
               aria-label={`${ZONE_NAMES[zone]} zone`}
+              ref={cssVars(layoutVars(layout, STAGE_LAYOUT))}
             >
               <p class="zone-label pix">{ZONE_NAMES[zone]}</p>
               <ul class="zone-units">
@@ -316,32 +519,60 @@ export function Stage({
                   if (hit.has(c.id)) classes.push('hit');
                   if (dropped.has(c.id)) classes.push('drop');
                   if (silenced.has(c.id)) classes.push('silenced');
-                  const icon = elementIcon(c.element);
+
+                  // The player's own creature with an ability is a button with a badge; every
+                  // other creature only shows a "used" mark once its ability has fired.
+                  const own =
+                    abilities === undefined || abilities.you === null
+                      ? undefined
+                      : abilities.list.find(
+                          (a) => a.creature === c.id && a.alias === abilities.you,
+                        );
+                  const used = useByCreature.get(c.id) ?? null;
+                  let badge: Badge | null = null;
+                  let abilityId: string | null = null;
+                  if (own !== undefined && abilities !== undefined) {
+                    abilityId = own.abilityId;
+                    badge = badgeFor(
+                      own,
+                      useByKey.get(own.key) ?? null,
+                      abilityControls(abilities.fight, own).canFire,
+                    );
+                  } else if (used !== null) {
+                    abilityId = used.ability;
+                    badge = usedBadge(used.round);
+                  }
+                  const isOpen = own !== undefined && openKey === own.key;
                   return (
-                    <li
+                    <StageUnit
                       key={c.id}
-                      class={classes.join(' ')}
-                      aria-label={`${c.name}${mine ? ', yours' : ''}${ko ? ', knocked out' : ''}`}
-                    >
-                      {mine && <span class="you-pip pix">you</span>}
-                      <span class="unit-art">
-                        <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={3} />
-                        {icon !== undefined && (
-                          <span class="unit-element">
-                            <Sprite sprite={icon} scale={2} />
-                          </span>
-                        )}
-                      </span>
-                      <span class="unit-name pix">{c.name}</span>
-                      {ko && <span class="ko-tag pix">KO</span>}
-                      {silenced.has(c.id) && (
-                        <span class="silence-tag">
-                          <Sprite sprite={silenceGlyph} scale={2} />
-                        </span>
-                      )}
-                      <Floats cues={cues} target={c.id} />
-                      <Bursts cues={cues} target={c.id} names={names} />
-                    </li>
+                      creature={c}
+                      scale={layout.tier.scale}
+                      mine={mine}
+                      ko={ko}
+                      classes={classes}
+                      silenced={silenced.has(c.id)}
+                      cues={cues}
+                      names={names}
+                      badge={badge}
+                      abilityId={abilityId}
+                      interactive={own !== undefined}
+                      open={isOpen}
+                      layoutKey={width}
+                      onToggle={() => {
+                        setOpenKey(isOpen || own === undefined ? null : own.key);
+                      }}
+                      onClose={() => {
+                        setOpenKey(null);
+                      }}
+                      popover={
+                        isOpen && own !== undefined && abilities !== undefined
+                          ? abilities.renderPopover(own, () => {
+                              setOpenKey(null);
+                            })
+                          : null
+                      }
+                    />
                   );
                 })}
               </ul>

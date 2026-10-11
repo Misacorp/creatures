@@ -9,7 +9,7 @@
  *   engine on the stored input with the abilities known so far and shows rounds 1..round. That is
  *   consistent because of the engine's prefix property: rounds 1..r depend only on the abilities that
  *   fire in rounds 1..r, and Fire only ever sets a round after the current one.
- * - Fire and Hold are written in a transaction, with the round taken from the clock at that moment.
+ * - Fire, Hold and Unhold (the Auto fire toggle, off and on) are written in a transaction, with the round taken from the clock at that moment.
  * - The fight ends once its last round has played, or as soon as the rounds shown include the boss
  *   falling. It then resolves once through `settleParty` (Essence, jackpot rolls with fresh live
  *   randomness, server firsts, the Discord post). The result row is the done marker.
@@ -368,7 +368,7 @@ export function unresolvedReal(
 export interface ActionInput {
   /** The engine key of one of the caller's own ability uses (see `LiveAbility.key`). */
   key: string;
-  action: 'fire' | 'hold';
+  action: 'fire' | 'hold' | 'unhold';
   zone?: Zone | undefined;
   element?: Element | undefined;
 }
@@ -379,8 +379,10 @@ export interface ActionInput {
  *
  * - Fire takes effect at the start of the next round. Refused with `too_late` in the last round or
  *   after the end, and with `already_fired` once the ability has fired or been fired.
- * - Hold keeps an ability past its default round. Only allowed before the default round
- *   (`hold_too_late` otherwise), and an unused held ability fires at the start of the last round.
+ * - Hold (Auto fire off) keeps an ability past its default round. Only allowed before the default
+ *   round (`hold_too_late` otherwise), and an unused held ability fires at the start of the last round.
+ * - Unhold (Auto fire back on) returns a held ability to its default round. Only allowed while it is
+ *   held and unused, and before its default round (`not_held`, `already_fired`, `hold_too_late`).
  * - `zone` (Shield Wall) and `element` (Re-mark) go with Fire only, and only for those abilities.
  */
 export function applyAction(
@@ -403,7 +405,7 @@ export function applyAction(
   // Parameters belong to Fire, and only to the abilities that take them.
   const takesZone = def.effects.some((e) => e.op === 'shield_wall' && e.zone === 'choose');
   const takesElement = def.effects.some((e) => e.op === 're_mark' && e.element === 'choose');
-  if (body.action === 'hold' && (body.zone !== undefined || body.element !== undefined)) {
+  if (body.action !== 'fire' && (body.zone !== undefined || body.element !== undefined)) {
     throw new RaidError(400, 'invalid_body');
   }
   if ((body.zone !== undefined && !takesZone) || (body.element !== undefined && !takesElement)) {
@@ -423,6 +425,13 @@ export function applyAction(
     if (body.zone !== undefined) params.zone = body.zone;
     if (body.element !== undefined) params.element = body.element;
     ability.params = Object.keys(params).length === 0 ? null : params;
+  } else if (body.action === 'unhold') {
+    if (ability.mode === 'fired') throw new RaidError(409, 'already_fired');
+    if (ability.mode !== 'held') throw new RaidError(409, 'not_held');
+    if (firedNow) throw new RaidError(409, 'already_fired');
+    const defaultRound = defaultAbilityRound(row.input.boss, def, row.rounds);
+    if (over || state.clockRound >= defaultRound) throw new RaidError(409, 'hold_too_late');
+    ability.mode = 'default';
   } else {
     if (ability.mode === 'fired') throw new RaidError(409, 'already_fired');
     if (ability.mode === 'held') {

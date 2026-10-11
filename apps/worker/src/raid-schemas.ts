@@ -43,13 +43,13 @@ export const AbilityBodySchema = v.strictObject({ abilityId: v.picklist(ABILITY_
 
 /**
  * `POST /api/raid/live/action`. `key` names one use of one ability (the caller's own). `zone` (Shield Wall) and `element` (Re-mark) are only valid with
- * `fire`, and only for the ability that takes them: the server checks that against the caller's
+ * `fire` (`hold` and `unhold` are the Auto fire toggle: off and on again), and only for the ability that takes them: the server checks that against the caller's
  * ability, because the schema cannot know it.
  */
 export const LiveActionBodySchema = v.strictObject({
   /** `<alias>:basic` or `<alias>:c<team slot>`; the server checks that it is the caller's own. */
   key: v.pipe(v.string(), v.maxLength(16), v.regex(/^m[1-9]\d{0,2}:(basic|c\d)$/)),
-  action: v.picklist(['fire', 'hold']),
+  action: v.picklist(['fire', 'hold', 'unhold']),
   zone: v.optional(v.picklist(ZONES as [Zone, ...Zone[]])),
   element: v.optional(v.picklist(ELEMENTS as [Element, ...Element[]])),
 });

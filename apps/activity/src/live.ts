@@ -270,7 +270,7 @@ export function abilityPlanText(def: FinaleAbilityDef): string {
  * The round an ability fires in if nobody touches it. That is the server's own number (the engine's
  * default, which for Shield Wall depends on the boss); 0 means the server does not know the ability.
  */
-export function defaultRoundOf(ability: LiveAbility): number | null {
+export function defaultRoundOf(ability: Pick<LiveAbility, 'defaultRound'>): number | null {
   return ability.defaultRound > 0 ? ability.defaultRound : null;
 }
 
@@ -287,8 +287,8 @@ export function abilityStateText(ability: LiveAbility, rounds: number, mine: boo
         : `Fires at the start of round ${String(ability.fireAtRound)}`;
     case 'held':
       return mine
-        ? "Held: fires in the last round if you don't"
-        : `Held: fires in the last round (round ${String(rounds)}) at the latest`;
+        ? "Auto fire is off: it fires in the last round if you don't"
+        : `Auto fire is off: it fires in the last round (round ${String(rounds)}) at the latest`;
     case 'default': {
       const round = defaultRoundOf(ability);
       return round === null ? 'Fires on its own' : `Fires on its own in round ${String(round)}`;
@@ -298,50 +298,65 @@ export function abilityStateText(ability: LiveAbility, rounds: number, mine: boo
 
 export interface AbilityControls {
   canFire: boolean;
-  canHold: boolean;
+  /** The Auto fire toggle is on offer (before the ability's default round, while unused). */
+  canToggle: boolean;
+  /** True while the ability fires by itself at its default round; false once auto fire is off. */
+  autoOn: boolean;
   /** Why the buttons are off, or an empty string. */
   note: string;
 }
 
+/** The two lines of the Auto fire toggle: "Auto fire" and "round 7", or "Auto fire off" and "last round". */
+export function autoFireLabel(ability: Pick<LiveAbility, 'mode' | 'defaultRound'>): {
+  title: string;
+  detail: string;
+} {
+  if (ability.mode === 'held') return { title: 'Auto fire off', detail: 'last round' };
+  const round = defaultRoundOf(ability);
+  return { title: 'Auto fire', detail: round === null ? '' : `round ${String(round)}` };
+}
+
 /**
  * Which buttons to offer. This only mirrors the server's rules for display (Fire until the last
- * round, Hold before the default round); the server decides, and a stale screen gets a friendly
- * error from it.
+ * round, the Auto fire toggle before the default round); the server decides, and a stale screen
+ * gets a friendly error from it.
  */
 export function abilityControls(
   fight: Pick<LiveFight, 'status' | 'round' | 'rounds'>,
   ability: LiveAbility,
 ): AbilityControls {
+  const autoOn = ability.mode !== 'held';
+  const off = { canFire: false, canToggle: false, autoOn };
   if (fight.status === 'lobby') {
-    return {
-      canFire: false,
-      canHold: false,
-      note: 'You can use your ability once the fight starts.',
-    };
+    return { ...off, note: 'You can use your ability once the fight starts.' };
   }
-  if (fight.status === 'done') return { canFire: false, canHold: false, note: '' };
-  if (ability.fired) return { canFire: false, canHold: false, note: '' };
-  if (ability.mode === 'fired') return { canFire: false, canHold: false, note: '' };
+  if (fight.status === 'done') return { ...off, note: '' };
+  if (ability.fired) return { ...off, note: '' };
+  if (ability.mode === 'fired') return { ...off, note: '' };
   if (fight.round >= fight.rounds) {
-    return { canFire: false, canHold: false, note: 'It is too late to use it by hand now.' };
+    return { ...off, note: 'It is too late to use it by hand now.' };
   }
   const defaultRound = defaultRoundOf(ability);
-  const canHold = ability.mode === 'default' && defaultRound !== null && fight.round < defaultRound;
-  return { canFire: true, canHold, note: '' };
+  const canToggle =
+    (ability.mode === 'default' || ability.mode === 'held') &&
+    defaultRound !== null &&
+    fight.round < defaultRound;
+  return { canFire: true, canToggle, autoOn, note: '' };
 }
 
 /**
- * The request body for Fire or Hold of one ability, named by its `key`. Only the parameter that
+ * The request body for Fire or the Auto fire toggle (`hold` is auto fire off, `unhold` is on again)
+ * of one ability, named by its `key`. Only the parameter that
  * belongs to the ability is sent (none for creature abilities, whose effects never ask).
  */
 export function buildAction(
   key: string,
   abilityId: string,
-  action: 'fire' | 'hold',
+  action: 'fire' | 'hold' | 'unhold',
   zone: string,
   element: string,
 ): LiveActionRequest {
-  if (action === 'hold') return { key, action: 'hold' };
+  if (action === 'hold' || action === 'unhold') return { key, action };
   const kind = abilityParamKind(abilityId);
   if (kind === 'zone' && (zone === 'front' || zone === 'middle' || zone === 'back')) {
     return { key, action: 'fire', zone };

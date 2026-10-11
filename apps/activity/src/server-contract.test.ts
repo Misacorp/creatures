@@ -123,6 +123,7 @@ describe('the errors the server sends', () => {
       'already_fired',
       'not_your_ability',
       'hold_too_late',
+      'not_held',
       'locked',
       'not_in_roster',
       'not_found',

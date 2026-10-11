@@ -63,6 +63,13 @@
     }
   },
   {
+    "route": "POST /api/raid/live/action",
+    "status": 409,
+    "body": {
+      "error": "not_held"
+    }
+  },
+  {
     "route": "POST /api/raid/practice",
     "status": 409,
     "body": {

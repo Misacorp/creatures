@@ -7,6 +7,8 @@ import {
   hitTest,
   move,
   nextIndex,
+  pageScrollSpeed,
+  verticalNeighbour,
   press,
   type DragPhase,
   type Rect,
@@ -142,5 +144,67 @@ describe('nextIndex', () => {
     expect(nextIndex(2, 'a', 5)).toBeNull();
     expect(nextIndex(2, 'Enter', 5)).toBeNull();
     expect(nextIndex(0, 'ArrowRight', 0)).toBeNull();
+  });
+});
+
+// The zones are rows now: a zone's slots wrap onto several lines, one zone under the other.
+describe('slots laid out as rows', () => {
+  // Front zone: two slots on one line; middle zone: three slots wrapped onto two lines.
+  const slots = [
+    { id: 0, rect: rect(50, 0, 106, 80) },
+    { id: 1, rect: rect(110, 0, 166, 80) },
+    { id: 2, rect: rect(50, 90, 106, 170) },
+    { id: 3, rect: rect(110, 90, 166, 170) },
+    { id: 4, rect: rect(170, 90, 226, 170) },
+    { id: 5, rect: rect(80, 180, 136, 260) },
+  ];
+
+  it('finds the slot under the pointer in any row, and counts the gaps between rows with slop', () => {
+    expect(hitTest(slots, { x: 140, y: 120 })).toBe(3);
+    expect(hitTest(slots, { x: 100, y: 220 })).toBe(5);
+    expect(hitTest(slots, { x: 80, y: 85 })).toBeNull();
+    expect(hitTest(slots, { x: 80, y: 85 }, 6)).toBe(0);
+    expect(hitTest(slots, { x: 80, y: 87 }, 6)).toBe(2);
+  });
+
+  it('moves up and down to the nearest slot of the next line', () => {
+    expect(verticalNeighbour(slots, 0, 'down')).toBe(2);
+    expect(verticalNeighbour(slots, 1, 'down')).toBe(3);
+    expect(verticalNeighbour(slots, 4, 'down')).toBe(5);
+    expect(verticalNeighbour(slots, 3, 'down')).toBe(5);
+    expect(verticalNeighbour(slots, 5, 'up')).toBe(2);
+    expect(verticalNeighbour(slots, 4, 'up')).toBe(1);
+    expect(verticalNeighbour(slots, 2, 'up')).toBe(0);
+  });
+
+  it('stops at the first and last line', () => {
+    expect(verticalNeighbour(slots, 0, 'up')).toBeNull();
+    expect(verticalNeighbour(slots, 5, 'down')).toBeNull();
+    expect(verticalNeighbour(slots, 99, 'down')).toBeNull();
+    expect(verticalNeighbour([], 0, 'down')).toBeNull();
+  });
+
+  it('does not move sideways in a line', () => {
+    const line = [
+      { id: 'a', rect: rect(0, 0, 50, 50) },
+      { id: 'b', rect: rect(60, 0, 110, 50) },
+    ];
+    expect(verticalNeighbour(line, 'a', 'down')).toBeNull();
+    expect(verticalNeighbour(line, 'b', 'up')).toBeNull();
+  });
+});
+
+describe('pageScrollSpeed', () => {
+  it('scrolls up near the top of the window, down near the bottom, and not in between', () => {
+    expect(pageScrollSpeed(0, 700)).toBeLessThan(0);
+    expect(pageScrollSpeed(10, 700)).toBeLessThan(0);
+    expect(pageScrollSpeed(350, 700)).toBe(0);
+    expect(pageScrollSpeed(690, 700)).toBeGreaterThan(0);
+  });
+
+  it('is faster nearer the edge and capped', () => {
+    expect(Math.abs(pageScrollSpeed(5, 700))).toBeGreaterThan(Math.abs(pageScrollSpeed(40, 700)));
+    expect(pageScrollSpeed(-100, 700)).toBe(-16);
+    expect(pageScrollSpeed(900, 700)).toBe(16);
   });
 });

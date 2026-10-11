@@ -2,7 +2,7 @@
  * Live finale API: the snapshot types, a strict shape check and the requests. The shapes mirror the
  * server's `LiveSnapshot` (`apps/worker/src/raid-live-view.ts`) and `docs/design/m5-finale.md`; the
  * fixtures in `src/fixtures` are real server responses that the tests parse. Everything here is
- * display data: the server runs the fight and decides every outcome; the client sends Fire and Hold
+ * display data: the server runs the fight and decides every outcome; the client sends Fire and the Auto fire toggle
  * as intents.
  *
  * The server sends one object for every state, with nulls where there is nothing yet (no boss HP or
@@ -39,7 +39,7 @@ export type LiveAbilityMode = 'default' | 'held' | 'fired';
  * unlocked team creatures' abilities.
  */
 export interface LiveAbility {
-  /** Unique in the fight. The caller sends it to Fire or Hold their own ability. */
+  /** Unique in the fight. The caller sends it to Fire or toggle Auto fire on their own ability. */
   key: string;
   /** An opaque per-fight player key, the same keys as `names.players` and `LiveFight.you`. */
   alias: string;
@@ -133,9 +133,10 @@ export type LiveFight = LiveLobby | LiveRunning;
 
 export type LiveSnapshot = LiveNone | LiveFight;
 
-/** Fire or Hold one ability of the caller's, named by its `key`. */
+/** Fire an ability of the caller's, or toggle its Auto fire (`hold`: off, `unhold`: on), named by its `key`. */
 export type LiveActionRequest =
-  { key: string; action: 'hold' } | { key: string; action: 'fire'; zone?: Zone; element?: Element };
+  | { key: string; action: 'hold' | 'unhold' }
+  | { key: string; action: 'fire'; zone?: Zone; element?: Element };
 
 // --- Shape checks ---
 
@@ -238,7 +239,7 @@ export async function fetchLive(): Promise<LiveSnapshot> {
   return parseLiveSnapshot(await apiFetch('/api/raid/live'));
 }
 
-/** Fire or Hold one ability. Fire may carry the zone (Shield Wall) or the element (Re-mark). */
+/** Fire or toggle Auto fire on one ability. Fire may carry the zone (Shield Wall) or the element (Re-mark). */
 export async function sendLiveAction(request: LiveActionRequest): Promise<LiveSnapshot> {
   return parseLiveSnapshot(
     await apiFetch('/api/raid/live/action', {

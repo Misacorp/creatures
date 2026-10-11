@@ -25,7 +25,7 @@ import {
   liveBudgetMs,
   playStart,
   reactionElements,
-  scrollToShow,
+  abilityUsesAt,
   shieldedZones,
   stageStateAt,
   zoneOfCreature,
@@ -469,50 +469,51 @@ describe('hpSegments', () => {
   });
 });
 
+/** A whole fight from the engine: three players, level-10 creatures with abilities. */
+function realFight(): { input: FightInput; events: FightEvent[] } {
+  const stage1 = content.creatures.filter((c) => c.stage === 1).slice(0, 9);
+  const row: FightSlot[] = stage1.map((sp, k) =>
+    makeSlot(sp, {
+      id: `c${String(k)}`,
+      ownerId: `p${String(k % 3)}`,
+      level: RULES.abilities.unlockLevel,
+      fusionCount: 0,
+    }),
+  );
+  const boss = content.bosses[0];
+  if (boss === undefined) throw new Error('no boss');
+  const scaled = scaleBoss(boss, 3, 3);
+  const abilities: AbilityChoice[] = [
+    { playerId: 'p0', abilityId: 'shield-wall', key: 'p0:basic', params: { zone: 'front' } },
+    { playerId: 'p1', abilityId: 'rally', key: 'p1:basic', fireAtRound: 2 },
+  ];
+  for (const s of row) {
+    const abilityId = content.creatures.find((c) => c.id === s.speciesId)?.ability?.id;
+    if (abilityId !== undefined && s.ownerId !== null) {
+      abilities.push({
+        playerId: s.ownerId,
+        abilityId,
+        key: `${s.id}:ability`,
+        creatureId: s.id,
+      });
+    }
+  }
+  const input: FightInput = {
+    boss,
+    bossAtk: scaled.atk,
+    phase: 'finale',
+    bossHpPool: { max: scaled.maxHp, current: scaled.maxHp },
+    adaptation: null,
+    row,
+    players: ['p0', 'p1', 'p2'],
+    finaleAbilities: abilities,
+    luck: RULES.combat.luck,
+  };
+  return { input, events: simulateFight(input, createSeededRng('stage')).events };
+}
+
 // A real fight from the engine: every beat of it must be well-formed.
 describe('a whole simulated fight', () => {
-  function realFight(): { input: FightInput; events: FightEvent[] } {
-    const stage1 = content.creatures.filter((c) => c.stage === 1).slice(0, 9);
-    const row: FightSlot[] = stage1.map((sp, k) =>
-      makeSlot(sp, {
-        id: `c${String(k)}`,
-        ownerId: `p${String(k % 3)}`,
-        level: RULES.abilities.unlockLevel,
-        fusionCount: 0,
-      }),
-    );
-    const boss = content.bosses[0];
-    if (boss === undefined) throw new Error('no boss');
-    const scaled = scaleBoss(boss, 3, 3);
-    const abilities: AbilityChoice[] = [
-      { playerId: 'p0', abilityId: 'shield-wall', key: 'p0:basic', params: { zone: 'front' } },
-      { playerId: 'p1', abilityId: 'rally', key: 'p1:basic', fireAtRound: 2 },
-    ];
-    for (const s of row) {
-      const abilityId = content.creatures.find((c) => c.id === s.speciesId)?.ability?.id;
-      if (abilityId !== undefined && s.ownerId !== null) {
-        abilities.push({
-          playerId: s.ownerId,
-          abilityId,
-          key: `${s.id}:ability`,
-          creatureId: s.id,
-        });
-      }
-    }
-    const input: FightInput = {
-      boss,
-      bossAtk: scaled.atk,
-      phase: 'finale',
-      bossHpPool: { max: scaled.maxHp, current: scaled.maxHp },
-      adaptation: null,
-      row,
-      players: ['p0', 'p1', 'p2'],
-      finaleAbilities: abilities,
-      luck: RULES.combat.luck,
-    };
-    return { input, events: simulateFight(input, createSeededRng('stage')).events };
-  }
-
   it('turns every event into a short, well-formed beat', () => {
     const { input, events } = realFight();
     const rowIds = input.row.map((s) => s.id);
@@ -560,17 +561,117 @@ describe('a whole simulated fight', () => {
   });
 });
 
-describe('scrollToShow', () => {
-  const view = { scrollLeft: 100, width: 300 };
-
-  it('stays put when the item is fully in view', () => {
-    expect(scrollToShow(view, { left: 120, width: 60 })).toBe(100);
-    expect(scrollToShow(view, { left: 340, width: 60 })).toBe(100);
+describe('abilities that have fired', () => {
+  const ability = (round: number, key: string, creature?: string): FightEvent => ({
+    t: 'ability',
+    round,
+    player: 'p0',
+    ability: 'rally',
+    key,
+    ...(creature === undefined ? {} : { creature }),
+    byDefault: false,
   });
 
-  it('centres an item that is cut off or out of view', () => {
-    expect(scrollToShow(view, { left: 380, width: 60 })).toBe(260);
-    expect(scrollToShow(view, { left: 20, width: 60 })).toBe(0);
-    expect(scrollToShow(view, { left: 600, width: 60 })).toBe(480);
+  it('lists the uses in the part of the log that has been shown', () => {
+    const events = [roundStart(1), ability(1, 'p0:basic'), roundStart(2), ability(2, 'p0:c0', 'a')];
+    expect(abilityUsesAt(events, 0)).toEqual([]);
+    expect(abilityUsesAt(events, 2)).toEqual([
+      { key: 'p0:basic', ability: 'rally', creature: null, round: 1 },
+    ]);
+    expect(abilityUsesAt(events, 99).map((u) => [u.key, u.creature, u.round])).toEqual([
+      ['p0:basic', null, 1],
+      ['p0:c0', 'a', 2],
+    ]);
+  });
+
+  it('matches the ability events of a real fight, one for each use', () => {
+    const { input, events } = realFight();
+    const uses = abilityUsesAt(events, events.length);
+    expect(uses.length).toBe(events.filter((e) => e.t === 'ability').length);
+    const rowIds = new Set(input.row.map((s) => s.id));
+    for (const use of uses) {
+      if (use.creature !== null) expect(rowIds.has(use.creature)).toBe(true);
+    }
+  });
+});
+
+// The boss HP the stage shows must be the engine's own, for a whole fight and for a practice-style
+// one (a full pool, no adaptation, a small party with guests, a boss far above the party's level).
+describe('the boss HP on the stage', () => {
+  function practiceInput(level: number, rank: number, bossId: string): FightInput {
+    const boss = content.bosses.find((b) => b.id === bossId);
+    if (boss === undefined) throw new Error('no boss');
+    const species = content.creatures.filter((c) => c.stage === 1).slice(0, 9);
+    const row: FightSlot[] = species.map((sp, k) =>
+      makeSlot(sp, {
+        id: `c${String(k)}`,
+        ownerId: k < 3 ? 'm1' : null,
+        level,
+        fusionCount: 0,
+      }),
+    );
+    const scaled = scaleBoss(boss, 1, rank);
+    return {
+      boss,
+      bossAtk: scaled.atk,
+      phase: 'finale',
+      bossHpPool: { max: scaled.maxHp, current: scaled.maxHp },
+      adaptation: null,
+      row,
+      players: ['m1'],
+      finaleAbilities: [],
+      luck: { ...RULES.combat.luck },
+    };
+  }
+
+  const cases: [string, FightInput][] = [
+    ['the stage fight', realFight().input],
+    ['a practice fight, level 1, rank 4', practiceInput(1, 4, 'cinder-wyrm')],
+    ['a practice fight, level 10, rank 1', practiceInput(10, 1, 'cinder-wyrm')],
+    ['a practice fight against a very high rank', practiceInput(3, 20, 'tidal-colossus')],
+  ];
+
+  it.each(cases)('ends on the engine HP after the last round: %s', (_name, input) => {
+    const result = simulateFight(input, createSeededRng('hp'));
+    const state = stageStateAt(result.events, result.events.length, input.bossHpPool.current);
+    expect(state.bossHp).toBe(result.bossHpEnd);
+    expect(state.round).toBe(result.rounds);
+  });
+
+  it.each(cases)('is the engine HP at the end of every round: %s', (_name, input) => {
+    const result = simulateFight(input, createSeededRng('hp'));
+    const { events } = result;
+    let checked = 0;
+    events.forEach((e, i) => {
+      if (e.t !== 'round_end') return;
+      expect(stageStateAt(events, i + 1, input.bossHpPool.current).bossHp).toBe(e.bossHp);
+      checked += 1;
+    });
+    expect(checked).toBe(result.rounds);
+  });
+
+  it('never shows more HP than the round before, and drops by the damage that was dealt', () => {
+    const input = practiceInput(5, 4, 'cinder-wyrm');
+    const { events, bossHpStart, bossHpEnd } = simulateFight(input, createSeededRng('hp'));
+    let last = bossHpStart;
+    let dealt = 0;
+    for (let i = 1; i <= events.length; i++) {
+      const hp = stageStateAt(events, i, bossHpStart).bossHp;
+      expect(hp).toBeLessThanOrEqual(last);
+      last = hp;
+    }
+    for (const e of events) if (e.t === 'hit') dealt += e.damage;
+    expect(bossHpStart - dealt).toBe(bossHpEnd);
+  });
+
+  it('shows the whole fight even when the log is replayed from a later index', () => {
+    // A stage that joins late still adds up every hit from the start of the log.
+    const { input, events } = realFight();
+    const round12 = events.findIndex((e) => e.t === 'round_start' && e.round === 12);
+    if (round12 < 0) return;
+    const late = stageStateAt(events, round12 + 1, input.bossHpPool.max);
+    const start = events[round12];
+    expect(start?.t === 'round_start' && late.bossHp === start.bossHp).toBe(true);
+    expect(late.bossHp).toBeLessThan(input.bossHpPool.max);
   });
 });

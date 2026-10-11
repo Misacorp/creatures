@@ -207,6 +207,53 @@ const gem: SpriteDef = {
   rows: ['..kk', '.kwc', 'kwcc', 'kccc', '.kcc', '..kc', '...k', '....'],
 };
 
+// --- Creature states on the stage ---
+
+/** A skull: the creature is knocked out. */
+const skull: SpriteDef = {
+  palette: { w: BONE, k: INK },
+  rows: [
+    '..wwww..',
+    '.wwwwww.',
+    'wwwwwwww',
+    'wkkwwkkw',
+    'wkkwwkkw',
+    '.wwkkww.',
+    '..wwww..',
+    '..w.w.w.',
+  ],
+};
+
+/** A hand with a pointing finger: auto fire is off, the ability waits for its owner. */
+const hand: SpriteDef = {
+  palette: { w: BONE, k: INK },
+  rows: [
+    '...kk...',
+    '..kwwk..',
+    '..kwwk.k',
+    '..kwwkwk',
+    '.kkwwwwk',
+    'kwwwwwwk',
+    '.kwwwwk.',
+    '..kkkk..',
+  ],
+};
+
+/** A tick: the ability has been used. */
+const check: SpriteDef = {
+  palette: { h: HAZE },
+  rows: [
+    '........',
+    '......hh',
+    '.....hh.',
+    'h...hh..',
+    'hh.hh...',
+    '.hhh....',
+    '..h.....',
+    '........',
+  ],
+};
+
 export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   hit_zone: hitZone,
   silence_ends: silenceEnds,
@@ -224,6 +271,9 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   chest,
   chest_open: chestOpen,
   gem,
+  skull,
+  hand,
+  check,
 };
 
 /** A glyph by id, or undefined. */

@@ -17,6 +17,7 @@ import {
   abilityParamKind,
   abilityPlanText,
   abilityStateText,
+  autoFireLabel,
   bannerText,
   buildAction,
   defaultRoundOf,
@@ -275,7 +276,7 @@ describe('ability texts', () => {
       'Fires at the start of the next round',
     );
     expect(abilityStateText(abilityOf({ mode: 'held' }), 12, true)).toBe(
-      "Held: fires in the last round if you don't",
+      "Auto fire is off: it fires in the last round if you don't",
     );
     expect(abilityStateText(abilityOf({ mode: 'held' }), 12, false)).toContain('round 12');
     expect(
@@ -295,8 +296,8 @@ describe('ability texts', () => {
     const wall = abilityOf({ abilityId: 'shield-wall', defaultRound: 5 });
     expect(defaultRoundOf(wall)).toBe(5);
     expect(abilityStateText(wall, 12, true)).toBe('Fires on its own in round 5');
-    expect(abilityControls(fightOf({ round: 4 }), wall).canHold).toBe(true);
-    expect(abilityControls(fightOf({ round: 5 }), wall).canHold).toBe(false);
+    expect(abilityControls(fightOf({ round: 4 }), wall).canToggle).toBe(true);
+    expect(abilityControls(fightOf({ round: 5 }), wall).canToggle).toBe(false);
   });
 
   it('knows which abilities ask for something', () => {
@@ -309,25 +310,28 @@ describe('ability texts', () => {
 });
 
 describe('abilityControls', () => {
-  it('offers Fire and Hold before the default round', () => {
+  it('offers Fire and the Auto fire toggle (on) before the default round', () => {
     const c = abilityControls(fightOf({ round: 3 }), abilityOf());
-    expect(c).toEqual({ canFire: true, canHold: true, note: '' });
+    expect(c).toEqual({ canFire: true, canToggle: true, autoOn: true, note: '' });
   });
 
   it('offers only Fire from the default round on', () => {
     const c = abilityControls(fightOf({ round: 6 }), abilityOf());
     expect(c.canFire).toBe(true);
-    expect(c.canHold).toBe(false);
+    expect(c.canToggle).toBe(false);
   });
 
-  it('offers only Fire to a held ability', () => {
-    const c = abilityControls(fightOf({ round: 2 }), abilityOf({ mode: 'held' }));
-    expect(c.canFire).toBe(true);
-    expect(c.canHold).toBe(false);
+  it('offers the toggle both ways: a held ability can be turned back on before its default round', () => {
+    const early = abilityControls(fightOf({ round: 2 }), abilityOf({ mode: 'held' }));
+    expect(early).toEqual({ canFire: true, canToggle: true, autoOn: false, note: '' });
+    const late = abilityControls(fightOf({ round: 6 }), abilityOf({ mode: 'held' }));
+    expect(late.canFire).toBe(true);
+    expect(late.canToggle).toBe(false);
+    expect(late.autoOn).toBe(false);
   });
 
   it('offers nothing once it is fired or used', () => {
-    const none = { canFire: false, canHold: false, note: '' };
+    const none = { canFire: false, canToggle: false, autoOn: true, note: '' };
     expect(abilityControls(fightOf(), abilityOf({ mode: 'fired', fireAtRound: 5 }))).toEqual(none);
     expect(abilityControls(fightOf(), abilityOf({ fired: true }))).toEqual(none);
     expect(abilityControls(fightOf({ status: 'done' }), abilityOf())).toEqual(none);
@@ -342,7 +346,28 @@ describe('abilityControls', () => {
   it('offers nothing in the last round', () => {
     const c = abilityControls(fightOf({ round: 12 }), abilityOf({ mode: 'held' }));
     expect(c.canFire).toBe(false);
+    expect(c.canToggle).toBe(false);
     expect(c.note).toContain('too late');
+  });
+});
+
+describe('autoFireLabel', () => {
+  it('says "Auto fire" with the default round while it is on', () => {
+    expect(autoFireLabel(abilityOf({ defaultRound: 7 }))).toEqual({
+      title: 'Auto fire',
+      detail: 'round 7',
+    });
+  });
+
+  it('says "Auto fire off" with "last round" once it is off', () => {
+    expect(autoFireLabel(abilityOf({ mode: 'held' }))).toEqual({
+      title: 'Auto fire off',
+      detail: 'last round',
+    });
+  });
+
+  it('shows no round when the server does not know it', () => {
+    expect(autoFireLabel(abilityOf({ defaultRound: 0 })).detail).toBe('');
   });
 });
 
@@ -356,13 +381,19 @@ describe('buildAction', () => {
       key: 'm1:c2',
       action: 'hold',
     });
+    expect(buildAction('m1:c2', 'flare-strike', 'unhold', '', '')).toEqual({
+      key: 'm1:c2',
+      action: 'unhold',
+    });
   });
 
-  it('sends Hold with nothing else', () => {
-    expect(buildAction('m1:basic', 'rally', 'hold', 'front', 'ember')).toEqual({
-      key: 'm1:basic',
-      action: 'hold',
-    });
+  it('sends the auto fire toggle with nothing else', () => {
+    for (const action of ['hold', 'unhold'] as const) {
+      expect(buildAction('m1:basic', 'rally', action, 'front', 'ember')).toEqual({
+        key: 'm1:basic',
+        action,
+      });
+    }
   });
 
   it('sends the zone only for Shield Wall', () => {

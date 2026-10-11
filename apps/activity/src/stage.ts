@@ -362,6 +362,28 @@ export function stageStateAt(
   return { ...stateAt(events, index, bossHpStart), shielded: shieldedZones(events, index) };
 }
 
+// --- Abilities that have fired ---
+
+/** One ability that has taken effect: its key, the creature it belongs to (if any) and the round. */
+export interface AbilityUse {
+  key: string;
+  ability: string;
+  creature: string | null;
+  round: number;
+}
+
+/** The abilities that have fired in the first `index` events, in the order they fired. */
+export function abilityUsesAt(events: readonly FightEvent[], index: number): AbilityUse[] {
+  const end = Math.min(Math.max(0, Math.trunc(index)), events.length);
+  const out: AbilityUse[] = [];
+  for (let i = 0; i < end; i++) {
+    const e = events[i] as FightEvent;
+    if (e.t !== 'ability') continue;
+    out.push({ key: e.key, ability: e.ability, creature: e.creature ?? null, round: e.round });
+  }
+  return out;
+}
+
 // --- The HP bar ---
 
 export const HP_SEGMENTS = 20;
@@ -374,20 +396,4 @@ export function hpSegments(current: number, max: number, total = HP_SEGMENTS): n
   if (max <= 0 || current <= 0) return 0;
   if (current >= max) return total;
   return Math.min(total - 1, Math.max(1, Math.ceil((current * total) / max)));
-}
-
-// --- Scrolling the row ---
-
-/**
- * Where to scroll the row so that an item (its left edge and width, in the row's own coordinates)
- * is in view: unchanged when it already is, otherwise centred.
- */
-export function scrollToShow(
-  view: { scrollLeft: number; width: number },
-  item: { left: number; width: number },
-): number {
-  const visible =
-    item.left >= view.scrollLeft && item.left + item.width <= view.scrollLeft + view.width;
-  if (visible) return view.scrollLeft;
-  return Math.max(0, Math.round(item.left + item.width / 2 - view.width / 2));
 }
