@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createKeyStore, outcomeUnknown } from './actions';
+import collectionState from './fixtures/collection-state.json';
 import { ApiError, parseGameState, type Creature } from './api';
+import { abilityDef } from './live';
 import {
   catchBadges,
   clockOffset,
+  creatureAbilityText,
   creatureName,
   errorText,
   evolutionText,
@@ -25,6 +28,7 @@ const creature: Creature = {
   away: false,
   stats: { hp: 1, atk: 1, spd: 1 },
   trainCost: 15,
+  ability: { id: 'tidal-mark', unlocked: false, unlockLevel: 10, nextId: 'tidal-mark-2' },
 };
 
 describe('formatCountdown', () => {
@@ -181,6 +185,9 @@ describe('idempotency keys', () => {
   });
 });
 
+const withoutAbility: Record<string, unknown> = { ...creature };
+delete withoutAbility['ability'];
+
 describe('parseGameState', () => {
   const valid = {
     serverNow: 5,
@@ -230,7 +237,97 @@ describe('parseGameState', () => {
     ['fractional balances', { ...valid, balances: { bait: 1.5, essence: 0 } }],
     ['bad starter options', { ...valid, starterOptions: [1] }],
     ['a malformed leet status', { ...valid, leetSync: { source: 'http' } }],
+    ['a creature without the ability field', { ...valid, creatures: [withoutAbility] }],
+    [
+      'a bad creature ability',
+      { ...valid, creatures: [{ ...creature, ability: { id: 'x', unlocked: 'yes' } }] },
+    ],
+    [
+      'a fractional unlock level',
+      {
+        ...valid,
+        creatures: [{ ...creature, ability: { id: 'x', unlocked: true, unlockLevel: 9.5 } }],
+      },
+    ],
   ])('rejects %s', (_name, data) => {
     expect(() => parseGameState(data)).toThrow();
+  });
+});
+
+describe('parseGameState with a real server response (fixtures/collection-state.json)', () => {
+  it('reads the finale ability of every creature', () => {
+    const state = parseGameState(collectionState);
+    expect(state.creatures.length).toBeGreaterThan(0);
+    for (const c of state.creatures) {
+      expect(c.ability).not.toBeNull();
+      expect(abilityDef(c.ability?.id ?? '')).toBeDefined();
+    }
+    const cindle = state.creatures.find((c) => c.species === 'cindle');
+    expect(cindle?.ability).toEqual({
+      id: 'flare-strike',
+      unlocked: true,
+      unlockLevel: 10,
+      nextId: 'flare-strike-2',
+    });
+    // A creature below level 10 has its ability locked.
+    const low = state.creatures.find((c) => c.level < 10);
+    expect(low?.ability).toMatchObject({ unlocked: false, unlockLevel: 10 });
+  });
+});
+
+describe('parseGameState and the jackpot record', () => {
+  it('accepts the shared jackpot server first, which is not a creature', () => {
+    const state = parseGameState(collectionState);
+    expect(state.serverFirsts.some((f) => f.kind === 'jackpot' && f.mine)).toBe(true);
+    // A jackpot record never marks a creature as "first on server".
+    const first = state.creatures[0] as Creature;
+    expect(isFirstOnServer(first, state.serverFirsts)).toBe(false);
+  });
+});
+
+describe('creatureAbilityText', () => {
+  const evolving: Pick<Creature, 'ability' | 'evolution'> = {
+    ability: { id: 'flare-strike', unlocked: true, unlockLevel: 10, nextId: 'flare-strike-2' },
+    evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: false },
+  };
+
+  it('shows the name and one line when unlocked, with the evolved form as a teaser', () => {
+    const text = creatureAbilityText(evolving, abilityDef);
+    expect(text?.unlocked).toBe(true);
+    expect(text?.line).toBe('Flare Strike: Hits the boss at once for 220% of its Attack.');
+    expect(text?.teaser).toBe('Evolves into: Pyrelynx (Inferno Strike)');
+  });
+
+  it('says when it unlocks while it is locked', () => {
+    const text = creatureAbilityText(
+      {
+        ...evolving,
+        ability: { id: 'flare-strike', unlocked: false, unlockLevel: 10, nextId: 'flare-strike-2' },
+      },
+      abilityDef,
+    );
+    expect(text).toEqual({
+      line: 'Finale ability: unlocks at level 10',
+      unlocked: false,
+      teaser: 'Evolves into: Pyrelynx (Inferno Strike)',
+    });
+  });
+
+  it('has no teaser for a stage 2 creature or a species that never evolves', () => {
+    const text = creatureAbilityText(
+      { ability: { id: 'flare-strike-2', unlocked: true, unlockLevel: 10 } },
+      abilityDef,
+    );
+    expect(text?.teaser).toBeNull();
+    expect(text?.line).toContain('Inferno Strike');
+  });
+
+  it('shows nothing for a species without an ability, and copes with an unknown id', () => {
+    expect(creatureAbilityText({ ability: null }, abilityDef)).toBeNull();
+    const odd = creatureAbilityText(
+      { ability: { id: 'gone', unlocked: true, unlockLevel: 10 } },
+      abilityDef,
+    );
+    expect(odd?.line).toBe('gone');
   });
 });

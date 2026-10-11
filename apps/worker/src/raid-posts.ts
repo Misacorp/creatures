@@ -5,15 +5,18 @@
  *
  * A post never blocks the raid: `queue*` catch every error and log its type only.
  */
-import { RULES, content } from '@creatures/game';
+import { RULES, content, scaleEssence } from '@creatures/game';
 import type { FightEvent, FightInput, FightResult } from '@creatures/engine';
 import {
   describeGimmick,
   formatBossReveal,
   formatPhasePost,
   type KeyMoment,
+  type RankPost,
 } from './discord-format';
 import { announceChannelId, enqueuePost } from './discord-posts';
+import { festivalWinners } from './raid-festival';
+import { payoutWeek, rankChangeOf, readWeekProgression } from './raid-ladder';
 import type { StoredSummary } from './raid-resolve';
 import { eventTimes, type RaidPhase } from './raid-schedule';
 
@@ -43,6 +46,11 @@ export function queueBossReveal(
     const boss = content.bosses.find((b) => b.id === week.bossId);
     if (boss === undefined) return;
     const times = eventTimes(week.weekId, tz);
+    const progression = readWeekProgression(sql, week.weekId);
+    const festivalSpecies =
+      progression?.festivalSpecies === null || progression?.festivalSpecies === undefined
+        ? undefined
+        : content.creatures.find((c) => c.id === progression.festivalSpecies);
     const text = formatBossReveal({
       bossName: boss.name,
       elementName: content.elements.find((e) => e.id === boss.element)?.name ?? boss.element,
@@ -51,6 +59,8 @@ export function queueBossReveal(
       schedule: { phase1: times.phase1, phase2: times.phase2, finale: times.finale },
       players,
       parties: count(sql, 'raid_parties', week.weekId),
+      rank: progression?.rank ?? null,
+      festivalCreature: progression?.festival === true ? (festivalSpecies?.name ?? null) : null,
     });
     enqueuePost(sql, { key: `raid:${week.weekId}:weekStart:all`, content: text }, now);
   } catch (err) {
@@ -132,13 +142,52 @@ function firstsOf(
       const label =
         r.kind === 'jackpot'
           ? 'First jackpot'
-          : `${speciesName(r.species)} ${r.kind === 'evolve' ? 'evolved' : 'caught'}`;
+          : r.kind === 'festival'
+            ? `${speciesName(r.species)} won in a Festival`
+            : `${speciesName(r.species)} ${r.kind === 'evolve' ? 'evolved' : 'caught'}`;
       group = { label, names: [] };
       groups.set(key, group);
     }
     group.names.push(names.get(r.user_id) ?? 'Unknown');
   }
   return [...groups.values()];
+}
+
+/** The server's rank move for the finale post; null until every party has finished. */
+function ladderPost(sql: SqlStorage, weekId: string): RankPost | null {
+  const change = rankChangeOf(sql, weekId);
+  if (change === null) return null;
+  const finales = sql
+    .exec<{ summary: string }>(
+      "SELECT summary FROM raid_results WHERE week_id = ? AND phase = 'finale'",
+      weekId,
+    )
+    .toArray();
+  return {
+    before: change.before,
+    after: change.after,
+    festival: change.festival,
+    parties: finales.length,
+    partiesWon: finales.filter((f) => (JSON.parse(f.summary) as StoredSummary).cleared).length,
+  };
+}
+
+/** The Festival creature of a Festival week and the members of this party who got it. */
+function festivalPost(
+  sql: SqlStorage,
+  weekId: string,
+  summary: StoredSummary,
+  names: ReadonlyMap<string, string>,
+): { creature: string; winners: string[] } | null {
+  const progression = readWeekProgression(sql, weekId);
+  if (progression?.festival !== true || progression.festivalSpecies === null) return null;
+  const creature = speciesName(progression.festivalSpecies);
+  const winners = festivalWinners(
+    sql,
+    weekId,
+    summary.members.map((m) => m.userId),
+  ).map((id) => names.get(id) ?? 'Unknown');
+  return { creature, winners };
 }
 
 export interface PhasePostSource {
@@ -205,7 +254,9 @@ export function queuePhasePost(sql: SqlStorage, src: PhasePostSource): void {
         },
         reactionName,
       ),
-      essenceFlat: summary.cleared ? RULES.raid.essence.flat[phase] : null,
+      essenceFlat: summary.cleared
+        ? scaleEssence(RULES.raid.essence.flat[phase], payoutWeek(sql, src.weekId))
+        : null,
       counterMove: counter ?? null,
       ...(phase === 'finale'
         ? {
@@ -217,6 +268,8 @@ export function queuePhasePost(sql: SqlStorage, src: PhasePostSource): void {
                 new Set(summary.members.map((m) => m.userId)),
                 names,
               ),
+              rank: ladderPost(sql, src.weekId),
+              festival: festivalPost(sql, src.weekId, summary, names),
             },
           }
         : {}),

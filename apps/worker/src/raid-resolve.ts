@@ -11,16 +11,20 @@
  */
 import {
   RULES,
+  abilitiesFor,
+  basicAbilities,
   content,
   contributionWeights,
   createSeededRng,
   essenceForStage,
+  jackpotEssenceFor,
   rollJackpot,
   type BossDef,
   type Rng,
 } from '@creatures/game';
 import {
   autoPlace,
+  type AbilityChoice,
   compactRow,
   fillWithGuests,
   makeSlot,
@@ -33,6 +37,8 @@ import {
   type FightSlot,
 } from '@creatures/engine';
 import { credit, type LedgerStorage } from './ledger';
+import { grantFestivalCreature } from './raid-festival';
+import { fightRank, payoutWeek, readWeekProgression, updateLadder } from './raid-ladder';
 import { partyMembers } from './raid-roster';
 import { queuePhasePost } from './raid-posts';
 import type { RaidPhase } from './raid-schedule';
@@ -87,7 +93,7 @@ export function bossFor(bossId: string): BossDef {
   return boss;
 }
 
-const aliasFor = (index: number): string => `m${index + 1}`;
+export const aliasFor = (index: number): string => `m${index + 1}`;
 
 function slotFor(creature: TeamCreature, alias: string): FightSlot {
   return makeSlot(creature.species, {
@@ -99,10 +105,11 @@ function slotFor(creature: TeamCreature, alias: string): FightSlot {
   });
 }
 
-/** The finale ability a member gets when they did not pick one: round-robin over the content list. */
+/** The basic finale ability a member gets when they did not pick one: round-robin over the four. */
 export function defaultAbilityId(index: number): string {
-  const def = content.finaleAbilities[index % content.finaleAbilities.length];
-  if (def === undefined) throw new Error('content has no finale abilities');
+  const basics = basicAbilities();
+  const def = basics[index % basics.length];
+  if (def === undefined) throw new Error('content has no basic abilities');
   return def.id;
 }
 
@@ -126,7 +133,7 @@ export function abilityIdsFor(
   );
   return memberIds.map((userId, i) => {
     const picked = picks.get(userId);
-    return picked !== undefined && content.finaleAbilities.some((a) => a.id === picked)
+    return picked !== undefined && basicAbilities().some((a) => a.id === picked)
       ? picked
       : defaultAbilityId(i);
   });
@@ -152,6 +159,47 @@ export function abilityFor(
       )
       .toArray().length > 0;
   return { abilityId, chosen };
+}
+
+/** The engine key of a member's basic ability use. */
+export const basicKey = (alias: string): string => `${alias}:basic`;
+
+/**
+ * The engine key of a creature ability use: `n` is the creature's index in the member's team (so
+ * no raw creature id is in a key; the creature itself is `creatureId` on the choice).
+ */
+export const creatureKey = (alias: string, teamIndex: number): string => `${alias}:c${teamIndex}`;
+
+/**
+ * Everything one member brings to the finale, in order: their basic ability, then the ability of
+ * each team creature at or above the unlock level (`abilitiesFor`), each carrying its creature.
+ * `inRow` lists the creature ids that stand in the fighting row; a creature that does not is
+ * skipped (the engine needs the creature to be there). No `fireAtRound`: each fires at its default.
+ */
+export function memberChoices(
+  alias: string,
+  basicAbilityId: string,
+  team: readonly TeamCreature[],
+  inRow: ReadonlySet<string>,
+): AbilityChoice[] {
+  const choices: AbilityChoice[] = [
+    { playerId: alias, abilityId: basicAbilityId, key: basicKey(alias) },
+  ];
+  const sources = abilitiesFor(
+    team.map((c) => ({ id: c.id, speciesId: c.species.id, level: c.level })),
+    (c) => c.level,
+  );
+  for (const source of sources) {
+    if (!inRow.has(source.creatureId)) continue;
+    const teamIndex = team.findIndex((c) => c.id === source.creatureId);
+    choices.push({
+      playerId: alias,
+      abilityId: source.abilityId,
+      key: creatureKey(alias, teamIndex),
+      creatureId: source.creatureId,
+    });
+  }
+  return choices;
 }
 
 /** A fight input built for one party, with who is in it (`aliases[i]` belongs to `memberIds[i]`). */
@@ -240,7 +288,9 @@ export function buildPhaseInput(
   let hpCurrent = partyRow.hp_current;
   let bossAtk = partyRow.boss_atk;
   if (hpMax === null || hpCurrent === null || bossAtk === null) {
-    const scaled = scaleBoss(boss, memberIds.length, avgLevel);
+    // Scaled once, from the head count and the week's stored rank (a Festival's eased rank). A week
+    // from before the ladder has no stored rank and fights at rank 1, as it always did.
+    const scaled = scaleBoss(boss, memberIds.length, fightRank(sql, week.weekId));
     hpMax = scaled.maxHp;
     hpCurrent = scaled.maxHp;
     bossAtk = scaled.atk;
@@ -255,6 +305,7 @@ export function buildPhaseInput(
       ? { rule: partyRow.adaptation_rule, target: partyRow.adaptation_target }
       : null;
 
+  const rowIds = new Set(row.map((s) => s.id));
   const abilityIds = phase === 'finale' ? abilityIdsFor(sql, week.weekId, memberIds) : [];
   const input: FightInput = {
     boss,
@@ -264,10 +315,12 @@ export function buildPhaseInput(
     adaptation,
     row,
     players: aliases,
-    finaleAbilities: abilityIds.map((abilityId, i) => ({
-      playerId: aliases[i] as string,
-      abilityId,
-    })),
+    // Each member's basic pick plus the abilities of their (frozen) team's unlocked creatures.
+    finaleAbilities: abilityIds.flatMap((abilityId, i) =>
+      memberChoices(aliases[i] as string, abilityId, teams[i] as TeamCreature[], rowIds),
+    ),
+    // Crits and the rest of the luck rules, stored with the input so a replay is exact.
+    luck: { ...RULES.combat.luck },
   };
   return { memberIds, aliases, input };
 }
@@ -352,12 +405,13 @@ export function settleParty(
   }
 
   // --- Essence, for cleared stages, to members only ---
+  const payout = payoutWeek(sql, week.weekId);
   const userOf = new Map(aliases.map((alias, i) => [alias, memberIds[i] as string]));
   const essence: Record<string, number> = {};
   if (result.cleared) {
     const contribution: Record<string, number> = {};
     for (const alias of aliases) contribution[alias] = result.perPlayer[alias]?.contribution ?? 0;
-    const paid = essenceForStage(phase, aliases, contributionWeights(contribution));
+    const paid = essenceForStage(phase, aliases, contributionWeights(contribution), payout);
     for (const alias of aliases) {
       const amount = paid[alias] ?? 0;
       const userId = userOf.get(alias) as string;
@@ -380,7 +434,17 @@ export function settleParty(
 
   // --- Finale loot ---
   const jackpot =
-    phase === 'finale' ? rollJackpots(deps, week.weekId, party, memberIds, result) : [];
+    phase === 'finale' ? rollJackpots(deps, week.weekId, party, memberIds, result, payout) : [];
+
+  // --- The Festival creature, for every member of a party that won a Festival finale ---
+  if (phase === 'finale' && result.cleared) {
+    const progression = readWeekProgression(sql, week.weekId);
+    if (progression?.festival === true && progression.festivalSpecies !== null) {
+      for (const userId of memberIds) {
+        grantFestivalCreature(storage, week.weekId, userId, progression.festivalSpecies, now);
+      }
+    }
+  }
 
   // --- Store ---
   const contributors = aliases
@@ -415,6 +479,9 @@ export function settleParty(
     JSON.stringify(summary),
     now,
   );
+  // The ladder moves once the finale has resolved for every party (the last one to settle does it),
+  // before the post is queued so the post can say where the server stands.
+  if (phase === 'finale') updateLadder(sql, week.weekId, now);
   // Queued in this transaction, so the post exists exactly when the result does.
   queuePhasePost(sql, {
     weekId: week.weekId,
@@ -430,7 +497,8 @@ export function settleParty(
 /**
  * After a finale: every member rolls the jackpot against their own pity counter on a win (a hit
  * pays Essence and records "first on server", shared by everyone who hits in the same finale); on a
- * loss the counter just advances ("counts participation"). Returns the users who hit.
+ * loss nothing is rolled and the counter does not change (pity counts finale wins only). Returns the
+ * users who hit.
  */
 function rollJackpots(
   deps: ResolveDeps,
@@ -438,6 +506,7 @@ function rollJackpots(
   party: number,
   memberIds: readonly string[],
   result: FightResult,
+  payout: { rank: number; festival: boolean },
 ): string[] {
   const sql = deps.storage.sql;
   const now = deps.now();
@@ -447,10 +516,9 @@ function rollJackpots(
       .exec<{ counter: number }>('SELECT counter FROM jackpot_pity WHERE user_id = ?', userId)
       .toArray()[0];
     const counter = row?.counter ?? 0;
-    let next = counter + 1;
+    // Pity counts finale wins only: a lost finale rolls nothing and leaves the counter alone.
     if (result.cleared) {
       const roll = rollJackpot(deps.rng, counter);
-      next = roll.newCounter;
       if (roll.hit) {
         hits.push(userId);
         credit(
@@ -458,7 +526,7 @@ function rollJackpots(
           {
             userId,
             currency: 'essence',
-            amount: RULES.raid.jackpotEssence,
+            amount: jackpotEssenceFor(payout),
             source: 'raid',
             idempotencyKey: `raid:${weekId}:${party}:jackpot`,
             meta: { week: weekId, party, jackpot: true },
@@ -467,13 +535,13 @@ function rollJackpots(
         );
         recordServerFirst(sql, 'jackpot', 'jackpot', userId, `jackpot:${weekId}`, now);
       }
+      sql.exec(
+        `INSERT INTO jackpot_pity (user_id, counter) VALUES (?, ?)
+         ON CONFLICT(user_id) DO UPDATE SET counter = excluded.counter`,
+        userId,
+        roll.newCounter,
+      );
     }
-    sql.exec(
-      `INSERT INTO jackpot_pity (user_id, counter) VALUES (?, ?)
-       ON CONFLICT(user_id) DO UPDATE SET counter = excluded.counter`,
-      userId,
-      next,
-    );
   }
   return hits;
 }

@@ -1,6 +1,7 @@
+import { seasonOf } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { RaidView, ReplayView } from '../src/raid-view';
-import { eventTimes } from '../src/raid-schedule';
+import { eventTimes, weekIndex } from '../src/raid-schedule';
 import { OTHER_USER_ID, USER_ID, type CoreContext } from './helpers';
 import {
   HELSINKI,
@@ -292,12 +293,19 @@ describe('GET /api/raid', () => {
       const body = res.body;
       expect(Object.keys(body).sort()).toEqual(
         [
+          'bestRank',
           'boss',
+          'channel',
+          'effectiveRank',
+          'festival',
+          'festivalCreature',
           'next',
           'party',
           'parties',
+          'rank',
           'roster',
           'schedule',
+          'season',
           'serverNow',
           'status',
           'timezone',
@@ -306,6 +314,28 @@ describe('GET /api/raid', () => {
         ].sort(),
       );
       expect(body.weekId).toBe('2027-W02');
+      // A new server is placed at its first week, from its roster; a normal week is not a Festival.
+      const season = seasonOf(weekIndex('2027-W02'));
+      expect(body.rank).toBeGreaterThanOrEqual(1);
+      expect(body.effectiveRank).toBe(
+        season.festival ? Math.max(1, (body.rank as number) - 3) : body.rank,
+      );
+      expect(body.festival).toBe(season.festival);
+      expect(body.season).toEqual({ index: season.seasonIndex, week: season.weekInSeason + 1 });
+      expect(body.bestRank).toBeNull();
+      expect(Object.keys(body.party ?? {}).sort()).toEqual(
+        [
+          'adaptation',
+          'bossHp',
+          'guests',
+          'party',
+          'readiness',
+          'results',
+          'row',
+          'rowLength',
+        ].sort(),
+      );
+      expect(['long_shot', 'even', 'likely', 'strong']).toContain(body.party?.readiness);
       expect(body.status).toBe('open');
       expect(body.timezone).toBe(HELSINKI);
       expect(body.schedule).toEqual(eventTimes('2027-W02', HELSINKI));

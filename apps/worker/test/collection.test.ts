@@ -93,6 +93,7 @@ interface CreatureBody {
   stats: { hp: number; atk: number; spd: number };
   trainCost: number | null;
   evolution?: { toSpecies: string; level: number; essence: number; available: boolean };
+  ability: { id: string; unlocked: boolean; unlockLevel: number; nextId?: string } | null;
 }
 
 interface CatchBody {
@@ -252,7 +253,7 @@ describe('migration 4', () => {
 
       core.migrate();
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        10,
+        12,
       );
       expect(core.balances(USER_ID).bait).toBe(42);
       const res = await ctx.request(secret, '/api/state');
@@ -347,7 +348,69 @@ describe('GET /api/state', () => {
           stats: { hp: 96, atk: 40, spd: 28 },
           trainCost: trainCostAt(1),
           evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: false },
+          ability: {
+            id: 'flare-strike',
+            unlocked: false,
+            unlockLevel: 10,
+            nextId: 'flare-strike-2',
+          },
         });
+      },
+      seeded(),
+    );
+  });
+
+  it("shows each creature's finale ability: locked below level 10, the evolved form's as nextId", async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const player = await joinWithStarter(ctx, USER, 100, 'cindle');
+        const insert = (id: string, species: string, level: number): void => {
+          const def = content.creatures.find((c) => c.id === species);
+          ctx.sql.exec(
+            `INSERT INTO creatures (id, user_id, line, species, level, fusion_count, origin, caught_at)
+             VALUES (?, ?, ?, ?, ?, 0, 'test', ?)`,
+            id,
+            USER_ID,
+            def?.line,
+            species,
+            level,
+            T0 + 5,
+          );
+        };
+        insert('c-low', 'splashet', 9);
+        insert('c-unlocked', 'sproutle', 10);
+        insert('c-evolved', 'tempestray', 12);
+        insert('c-single', 'coralynx', 10);
+        const byId = new Map((await player.state()).creatures.map((c) => [c.id, c.ability]));
+        expect(byId.get('c-low')).toEqual({
+          id: 'tidal-mark',
+          unlocked: false,
+          unlockLevel: 10,
+          nextId: 'tidal-mark-2',
+        });
+        expect(byId.get('c-unlocked')).toEqual({
+          id: 'bark-guard',
+          unlocked: true,
+          unlockLevel: 10,
+          nextId: 'bark-guard-2',
+        });
+        // Stage 2 has no further evolution, so no teaser; so has a species that never evolves.
+        expect(byId.get('c-evolved')).toEqual({
+          id: 'thunder-strike-2',
+          unlocked: true,
+          unlockLevel: 10,
+        });
+        expect(byId.get('c-single')).toEqual({
+          id: 'coral-lance',
+          unlocked: true,
+          unlockLevel: 10,
+        });
+        // Every id is a real creature ability in the content.
+        for (const ability of byId.values()) {
+          const def = content.finaleAbilities.find((a) => a.id === ability?.id);
+          expect(def?.kind).toBe('creature');
+        }
       },
       seeded(),
     );
@@ -739,6 +802,36 @@ describe('POST /api/expeditions', () => {
         expect(res.status).toBe(400);
         expect(res.body).toEqual({ error: 'invalid_body' });
         expect(count(ctx.sql, 'expeditions')).toBe(0);
+      },
+      seeded(),
+    );
+  });
+});
+
+describe('Festival species', () => {
+  it('are never brought back from an expedition, and are not starters', async () => {
+    const festival = content.creatures.filter((c) => c.festival === true);
+    expect(festival.length).toBeGreaterThan(0);
+    for (const species of festival) {
+      expect(species.catchable).toBe(false);
+      expect(species.starter).toBe(false);
+    }
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await joinWithStarter(ctx, USER, 1_000_000);
+        const seen = new Set<string>();
+        for (let i = 0; i < 80; i++) {
+          const exp = expeditionOf(await send(p, p.starterId, 'long', 'great'));
+          ctx.clock.t = exp.endsAt;
+          const res = await claim(p, exp.id);
+          expect(res.status).toBe(200);
+          for (const c of resultOf(res).catches) seen.add(c.species);
+        }
+        // Plenty of the catchable species showed up, and no Festival species did. (A Festival
+        // species only ever comes from a won Festival finale, never from a claim.)
+        expect(seen.size).toBeGreaterThan(5);
+        for (const species of festival) expect(seen.has(species.id)).toBe(false);
       },
       seeded(),
     );

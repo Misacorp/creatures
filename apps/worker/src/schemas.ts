@@ -33,3 +33,25 @@ export const ActivityInstanceSchema = v.object({
   users: v.array(v.string()),
 });
 export type ActivityInstance = v.InferOutput<typeof ActivityInstanceSchema>;
+
+/** A permission bit field as Discord sends it: a decimal string of an unsigned 64-bit integer. */
+const permissionString = v.pipe(v.string(), v.regex(/^\d{1,20}$/));
+
+/** Discord allows 250 roles per guild; the limit here is generous but bounded. */
+const MAX_ROLES = 1000;
+
+/** `GET /guilds/{guild.id}`: only the owner matters. */
+export const DiscordGuildSchema = v.object({ owner_id: snowflake });
+
+/** `GET /guilds/{guild.id}/roles`: id and permission bits of every role (the @everyone role included). */
+export const DiscordRolesSchema = v.pipe(
+  v.array(v.object({ id: snowflake, permissions: permissionString })),
+  v.maxLength(MAX_ROLES),
+);
+export type DiscordRole = v.InferOutput<typeof DiscordRolesSchema>[number];
+
+/** `GET /guilds/{guild.id}/members/{user.id}`: the ids of the member's roles. */
+export const DiscordMemberSchema = v.object({
+  roles: v.pipe(v.array(snowflake), v.maxLength(MAX_ROLES)),
+});
+export type DiscordMember = v.InferOutput<typeof DiscordMemberSchema>;

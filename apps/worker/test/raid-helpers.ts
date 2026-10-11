@@ -191,3 +191,13 @@ export const raidLedger = (sql: SqlStorage) =>
     sql,
     "SELECT user_id, amount, idempotency_key FROM ledger WHERE source = 'raid' ORDER BY id",
   );
+
+/** The rank and Festival flag the (only) week of a test pays out with, as stored. */
+export function weekPayout(sql: SqlStorage, weekId = W02.id): { rank: number; festival: boolean } {
+  const week = rows<{ rank: number | null; festival: number | null }>(
+    sql,
+    'SELECT rank, festival FROM raid_weeks WHERE week_id = ?',
+    weekId,
+  )[0];
+  return { rank: week?.rank ?? 1, festival: week?.festival === 1 };
+}

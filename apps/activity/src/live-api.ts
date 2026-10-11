@@ -18,22 +18,34 @@ import {
   isBool,
   isEvent,
   isEventNames,
+  isFestivalGrant,
   isInt,
   isJackpot,
+  isRankChange,
   isNullableStr,
   isRecord,
   isReplayRow,
   isStr,
+  type FestivalGrant,
+  type RankChange,
   type ReplayRowEntry,
 } from './raid-api';
 
 export type LiveStatus = 'none' | 'lobby' | 'live' | 'done';
 export type LiveAbilityMode = 'default' | 'held' | 'fired';
 
+/**
+ * One use of an ability. A player has one entry for their basic ability and one for each of their
+ * unlocked team creatures' abilities.
+ */
 export interface LiveAbility {
+  /** Unique in the fight. The caller sends it to Fire or Hold their own ability. */
+  key: string;
   /** An opaque per-fight player key, the same keys as `names.players` and `LiveFight.you`. */
   alias: string;
   abilityId: string;
+  /** The row slot (creature id, as in `row[].id`) of a creature ability; null for a basic ability. */
+  creature: string | null;
   mode: LiveAbilityMode;
   /** True once the ability has taken effect. */
   fired: boolean;
@@ -51,6 +63,10 @@ export interface LiveLoot {
   jackpot: null | { essence: number; firstOnServer: boolean };
   /** Raids taken part in without a jackpot, after this one. */
   pity: number;
+  /** What the finale did to the server's rank; null until the ladder has moved, and in practice. */
+  rankChange: RankChange | null;
+  /** The Festival creature the finale gave the caller, or null. */
+  festivalGrant: FestivalGrant | null;
 }
 
 /** What every state carries (the fields that are the same in the lobby and in the fight). */
@@ -117,8 +133,9 @@ export type LiveFight = LiveLobby | LiveRunning;
 
 export type LiveSnapshot = LiveNone | LiveFight;
 
+/** Fire or Hold one ability of the caller's, named by its `key`. */
 export type LiveActionRequest =
-  { action: 'hold' } | { action: 'fire'; zone?: Zone; element?: Element };
+  { key: string; action: 'hold' } | { key: string; action: 'fire'; zone?: Zone; element?: Element };
 
 // --- Shape checks ---
 
@@ -131,8 +148,10 @@ const isNullableInt = (value: unknown): value is number | null => value === null
 function isLiveAbility(value: unknown): value is LiveAbility {
   return (
     isRecord(value) &&
+    isStr(value['key']) &&
     isStr(value['alias']) &&
     isStr(value['abilityId']) &&
+    isNullableStr(value['creature']) &&
     (value['mode'] === 'default' || value['mode'] === 'held' || value['mode'] === 'fired') &&
     isBool(value['fired']) &&
     (value['firedAtRound'] === null || isPositiveInt(value['firedAtRound'])) &&
@@ -147,7 +166,9 @@ function isLiveLoot(value: unknown): value is LiveLoot {
     isBool(value['cleared']) &&
     isNonNegativeInt(value['essence']) &&
     (value['jackpot'] === null || isJackpot(value['jackpot'])) &&
-    isNonNegativeInt(value['pity'])
+    isNonNegativeInt(value['pity']) &&
+    (value['rankChange'] === null || isRankChange(value['rankChange'])) &&
+    (value['festivalGrant'] === null || isFestivalGrant(value['festivalGrant']))
   );
 }
 
@@ -217,7 +238,7 @@ export async function fetchLive(): Promise<LiveSnapshot> {
   return parseLiveSnapshot(await apiFetch('/api/raid/live'));
 }
 
-/** Fire or Hold. Fire may carry the zone (Shield Wall) or the element (Re-mark). */
+/** Fire or Hold one ability. Fire may carry the zone (Shield Wall) or the element (Re-mark). */
 export async function sendLiveAction(request: LiveActionRequest): Promise<LiveSnapshot> {
   return parseLiveSnapshot(
     await apiFetch('/api/raid/live/action', {

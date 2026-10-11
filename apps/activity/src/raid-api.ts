@@ -55,14 +55,65 @@ export interface PhaseResultView {
   /** Essence the caller earned in this phase. */
   essence: number;
   jackpot: string[];
+  /** Finale only: what it did to the server's rank; null until the ladder has moved, and for phases. */
+  rankChange: RankChange | null;
+  /** Finale only: the Festival creature the caller got; null otherwise. */
+  festivalGrant: FestivalGrant | null;
+}
+
+/** The vague "how ready your team looks" band of a party. Never a number. */
+export type ReadinessBand = 'long_shot' | 'even' | 'likely' | 'strong';
+export const READINESS_BANDS: readonly ReadinessBand[] = ['long_shot', 'even', 'likely', 'strong'];
+
+/** What a finale did to the server's Boss Rank. */
+export interface RankChange {
+  /** The server's rank for the week that was played. */
+  before: number;
+  /** The server's rank for the next week. */
+  after: number;
+  /** The week was a Festival: a win does not raise the rank, and the rank eases afterwards. */
+  festival: boolean;
+  /** At least half of the server's parties won. */
+  serverWon: boolean;
+}
+
+/** The Festival creature a finale gave the caller. */
+export interface FestivalGrant {
+  species: string;
+  outcome: 'new' | 'fused' | 'converted';
+  /** Only for `fused`: the creature's fusion count now. */
+  fusionCount?: number;
+  /** Only for `converted`: the Bait it was worth. */
+  bait?: number;
+  firstOnServer: boolean;
 }
 
 /** The loot of a finale the player took part in, shown once as a reveal. */
 export interface RaidReveal {
   week: string;
+  /** The caller's party in that finale: with `week`, the key of its after-action stats. */
+  party: number;
   cleared: boolean;
   essence: number;
   jackpot: null | { essence: number; firstOnServer: boolean };
+  /** The ladder's move; null until every party of the server has finished (and for old weeks). */
+  rankChange: RankChange | null;
+  /** The Festival creature the caller got, or null. */
+  festivalGrant: FestivalGrant | null;
+}
+
+/** One ability the caller brings to the finale, or could once the creature is trained. */
+export interface AbilityPreview {
+  /** The key it will have in the fight. Missing for a locked ability: it will not be there. */
+  key?: string;
+  abilityId: string;
+  /** The caller's team creature it belongs to; null for the basic ability. */
+  creatureId: string | null;
+  /** The creature's species; null for the basic ability. */
+  species: string | null;
+  unlocked: boolean;
+  /** The creature level that unlocks it. */
+  unlockLevel: number;
 }
 
 export interface RaidView {
@@ -77,6 +128,18 @@ export interface RaidView {
     gimmicks: { id: string; name: string }[];
     finaleRounds: number;
   };
+  /** The server's Boss Rank this week; null for a week from before ranks, or while nobody is in. */
+  rank: number | null;
+  /** The rank the boss fights at (lower in a Festival week). Null with `rank`. */
+  effectiveRank: number | null;
+  /** A Festival week: easier boss, bonus Essence, a creature for every winner. */
+  festival: boolean;
+  /** The Festival creature's species id in a Festival week, else null. */
+  festivalCreature: string | null;
+  /** Where the week sits in its season; `week` is 1 to 5, the 5th being the Festival. */
+  season: { index: number; week: number } | null;
+  /** The highest rank the server has cleared in a normal week; null until it has cleared one. */
+  bestRank: number | null;
   schedule: Record<RaidEventId, number>;
   next: { event: RaidEventId; at: number } | null;
   serverNow: number;
@@ -91,6 +154,8 @@ export interface RaidView {
     team: { mode: 'auto' | 'chosen'; creatures: TeamCreatureView[] } | null;
     /** The finale ability: `chosen` is false when it was assigned automatically. Null outside a party. */
     ability: { abilityId: string; chosen: boolean } | null;
+    /** Everything the caller brings to the finale with their current team: basic ability first. */
+    abilities: AbilityPreview[];
     /** A finale result the player has not seen yet. */
     reveal: RaidReveal | null;
   };
@@ -102,6 +167,8 @@ export interface RaidView {
     bossHp: { max: number; current: number } | null;
     adaptation: { description: string; rule: string | null; target: string | null } | null;
     results: PhaseResultView[];
+    /** How ready the party's team looks; null when there is no band (the finale has started). */
+    readiness: ReadinessBand | null;
   };
 }
 
@@ -206,6 +273,8 @@ function isResult(value: unknown): value is PhaseResultView {
     isInt(value['reactions']) &&
     isInt(value['essence']) &&
     isArrayOf(value['jackpot'], isStr) &&
+    (value['rankChange'] === null || isRankChange(value['rankChange'])) &&
+    (value['festivalGrant'] === null || isFestivalGrant(value['festivalGrant'])) &&
     isArrayOf(
       value['top'],
       (t): t is PhaseResultView['top'][number] =>
@@ -220,6 +289,20 @@ function isResult(value: unknown): value is PhaseResultView {
 
 function isScheduleRecord(value: unknown): value is Record<RaidEventId, number> {
   return isRecord(value) && RAID_EVENT_IDS.every((id) => isInt(value[id]));
+}
+
+/** A rank is a whole number from 1, or null. */
+const isNullableRank = (value: unknown): value is number | null =>
+  value === null || (isInt(value) && value >= 1);
+
+function isSeason(value: unknown): value is NonNullable<RaidView['season']> {
+  return (
+    isRecord(value) &&
+    isInt(value['index']) &&
+    isInt(value['week']) &&
+    value['week'] >= 1 &&
+    value['week'] <= 5
+  );
 }
 
 function isBoss(value: unknown): value is RaidView['boss'] {
@@ -237,6 +320,18 @@ function isBoss(value: unknown): value is RaidView['boss'] {
   );
 }
 
+function isAbilityPreview(value: unknown): value is AbilityPreview {
+  return (
+    isRecord(value) &&
+    (value['key'] === undefined || isStr(value['key'])) &&
+    isStr(value['abilityId']) &&
+    isNullableStr(value['creatureId']) &&
+    isNullableStr(value['species']) &&
+    isBool(value['unlocked']) &&
+    isInt(value['unlockLevel'])
+  );
+}
+
 function isAbilityPick(value: unknown): value is NonNullable<RaidView['you']['ability']> {
   return isRecord(value) && isStr(value['abilityId']) && isBool(value['chosen']);
 }
@@ -245,15 +340,44 @@ export function isJackpot(value: unknown): value is { essence: number; firstOnSe
   return isRecord(value) && isInt(value['essence']) && isBool(value['firstOnServer']);
 }
 
+export function isRankChange(value: unknown): value is RankChange {
+  return (
+    isRecord(value) &&
+    isInt(value['before']) &&
+    isInt(value['after']) &&
+    isBool(value['festival']) &&
+    isBool(value['serverWon'])
+  );
+}
+
+export function isFestivalGrant(value: unknown): value is FestivalGrant {
+  return (
+    isRecord(value) &&
+    isStr(value['species']) &&
+    (value['outcome'] === 'new' ||
+      value['outcome'] === 'fused' ||
+      value['outcome'] === 'converted') &&
+    (value['fusionCount'] === undefined || isInt(value['fusionCount'])) &&
+    (value['bait'] === undefined || isInt(value['bait'])) &&
+    isBool(value['firstOnServer'])
+  );
+}
+
 function isReveal(value: unknown): value is RaidReveal {
   return (
     isRecord(value) &&
     isStr(value['week']) &&
+    isInt(value['party']) &&
     isBool(value['cleared']) &&
     isInt(value['essence']) &&
-    (value['jackpot'] === null || isJackpot(value['jackpot']))
+    (value['jackpot'] === null || isJackpot(value['jackpot'])) &&
+    (value['rankChange'] === null || isRankChange(value['rankChange'])) &&
+    (value['festivalGrant'] === null || isFestivalGrant(value['festivalGrant']))
   );
 }
+
+const isReadiness = (value: unknown): value is ReadinessBand =>
+  READINESS_BANDS.some((band) => band === value);
 
 function isYou(value: unknown): value is RaidView['you'] {
   if (
@@ -264,6 +388,7 @@ function isYou(value: unknown): value is RaidView['you'] {
     !isBool(value['canEdit']) ||
     !isBool(value['canOptOut']) ||
     !(value['ability'] === null || isAbilityPick(value['ability'])) ||
+    !isArrayOf(value['abilities'], isAbilityPreview) ||
     !(value['reveal'] === null || isReveal(value['reveal']))
   ) {
     return false;
@@ -284,7 +409,8 @@ function isPartyView(value: unknown): value is NonNullable<RaidView['party']> {
     !isInt(value['rowLength']) ||
     !isArrayOf(value['row'], isRowSlot) ||
     !isBool(value['guests']) ||
-    !isArrayOf(value['results'], isResult)
+    !isArrayOf(value['results'], isResult) ||
+    !(value['readiness'] === null || isReadiness(value['readiness']))
   ) {
     return false;
   }
@@ -308,6 +434,12 @@ export function parseRaidView(data: unknown): RaidView {
     !isStr(data['timezone']) ||
     !isBoss(data['boss']) ||
     !isScheduleRecord(data['schedule']) ||
+    !isNullableRank(data['rank']) ||
+    !isNullableRank(data['effectiveRank']) ||
+    !isBool(data['festival']) ||
+    !isNullableStr(data['festivalCreature']) ||
+    !(data['season'] === null || isSeason(data['season'])) ||
+    !isNullableRank(data['bestRank']) ||
     !(
       data['next'] === null ||
       (isRecord(data['next']) && isEventId(data['next']['event']) && isInt(data['next']['at']))
@@ -399,6 +531,173 @@ export function parseReplayView(data: unknown): ReplayView {
   return data as unknown as ReplayView;
 }
 
+// --- After-action stats (`GET /api/raid/stats/:week/:party/:phase`) ---
+
+export type StatsOutcome = 'cleared' | 'missed' | 'wiped';
+
+export interface StatsPlayer {
+  displayName: string;
+  you: boolean;
+  damage: number;
+  contribution: number;
+}
+
+export interface StatsCreature {
+  /** Place among all creatures in the fight, by damage. */
+  rank: number;
+  name: string;
+  species: string;
+  /** The owner's display name, or null for a guest. */
+  owner: string | null;
+  you: boolean;
+  damage: number;
+  contribution: number;
+}
+
+export interface StatsReaction {
+  name: string;
+  count: number;
+  reflected: number;
+}
+
+export interface StatsAbilityUse {
+  player: string;
+  you: boolean;
+  ability: string;
+  /** The creature it belongs to; null for a basic ability. */
+  creature: string | null;
+  round: number;
+  byDefault: boolean;
+}
+
+export interface StatsKnockout {
+  creature: string;
+  species: string;
+  owner: string | null;
+  you: boolean;
+  round: number;
+}
+
+export interface StatsAdaptation {
+  name: string;
+  target: string | null;
+  resistBp: number;
+  purged: boolean;
+  purgedRound: number | null;
+  restoredRound: number | null;
+}
+
+export interface AfterActionStats {
+  phase: RaidPhaseId;
+  outcome: StatsOutcome;
+  /** "Close one!": missed by little, or won with little to spare (the server decides). */
+  close: boolean;
+  rounds: number;
+  maxRounds: number;
+  boss: {
+    hpMax: number;
+    hpStart: number;
+    hpEnd: number;
+    /** The share of the whole pool left, in basis points. */
+    leftBp: number;
+    /** HP that had to come off the pool for the stage to be cleared. */
+    needed: number;
+    /** HP that has come off the pool. */
+    lost: number;
+  };
+  players: StatsPlayer[];
+  creatures: StatsCreature[];
+  reactions: StatsReaction[];
+  reactionsTotal: number;
+  abilities: { used: StatsAbilityUse[]; unused: number };
+  knockouts: StatsKnockout[];
+  adaptation: StatsAdaptation | null;
+}
+
+const isCount = (value: unknown): value is number => isInt(value) && value >= 0;
+
+const isStatsPlayer = (value: unknown): value is StatsPlayer =>
+  isRecord(value) &&
+  isStr(value['displayName']) &&
+  isBool(value['you']) &&
+  isCount(value['damage']) &&
+  isCount(value['contribution']);
+
+const isStatsCreature = (value: unknown): value is StatsCreature =>
+  isRecord(value) &&
+  isInt(value['rank']) &&
+  isStr(value['name']) &&
+  isStr(value['species']) &&
+  isNullableStr(value['owner']) &&
+  isBool(value['you']) &&
+  isCount(value['damage']) &&
+  isCount(value['contribution']);
+
+const isStatsReaction = (value: unknown): value is StatsReaction =>
+  isRecord(value) && isStr(value['name']) && isCount(value['count']) && isCount(value['reflected']);
+
+const isStatsAbilityUse = (value: unknown): value is StatsAbilityUse =>
+  isRecord(value) &&
+  isStr(value['player']) &&
+  isBool(value['you']) &&
+  isStr(value['ability']) &&
+  isNullableStr(value['creature']) &&
+  isInt(value['round']) &&
+  isBool(value['byDefault']);
+
+const isStatsKnockout = (value: unknown): value is StatsKnockout =>
+  isRecord(value) &&
+  isStr(value['creature']) &&
+  isStr(value['species']) &&
+  isNullableStr(value['owner']) &&
+  isBool(value['you']) &&
+  isInt(value['round']);
+
+const isNullableInt = (value: unknown): value is number | null => value === null || isInt(value);
+
+const isStatsAdaptation = (value: unknown): value is StatsAdaptation =>
+  isRecord(value) &&
+  isStr(value['name']) &&
+  isNullableStr(value['target']) &&
+  isCount(value['resistBp']) &&
+  isBool(value['purged']) &&
+  isNullableInt(value['purgedRound']) &&
+  isNullableInt(value['restoredRound']);
+
+const isStatsOutcome = (value: unknown): value is StatsOutcome =>
+  value === 'cleared' || value === 'missed' || value === 'wiped';
+
+/** Refuses anything that is not exactly the after-action shape; the card shows nothing half-parsed. */
+export function parseStats(data: unknown): AfterActionStats {
+  if (
+    !isRecord(data) ||
+    !isPhaseId(data['phase']) ||
+    !isStatsOutcome(data['outcome']) ||
+    !isBool(data['close']) ||
+    !isCount(data['rounds']) ||
+    !isCount(data['maxRounds']) ||
+    !isCount(data['reactionsTotal']) ||
+    !isRecord(data['boss']) ||
+    !isCount(data['boss']['hpMax']) ||
+    !isCount(data['boss']['hpStart']) ||
+    !isCount(data['boss']['hpEnd']) ||
+    !isCount(data['boss']['leftBp']) ||
+    !isCount(data['boss']['needed']) ||
+    !isInt(data['boss']['lost']) ||
+    !isArrayOf(data['players'], isStatsPlayer) ||
+    !isArrayOf(data['creatures'], isStatsCreature) ||
+    !isArrayOf(data['reactions'], isStatsReaction) ||
+    !isRecord(data['abilities']) ||
+    !isArrayOf(data['abilities']['used'], isStatsAbilityUse) ||
+    !isCount(data['abilities']['unused']) ||
+    !isArrayOf(data['knockouts'], isStatsKnockout) ||
+    !(data['adaptation'] === null || isStatsAdaptation(data['adaptation']))
+  ) {
+    throw new Error('the server returned unexpected fight stats');
+  }
+  return data as unknown as AfterActionStats;
+}
+
 // --- Requests ---
 
 function send(path: string, method: string, body: unknown): Promise<unknown> {
@@ -438,6 +737,16 @@ export async function fetchReplay(
   // The week id comes from the server's own view; encode anyway so a path can never be injected.
   const path = `/api/raid/replay/${encodeURIComponent(weekId)}/${String(party)}/${phase}`;
   return parseReplayView(await apiFetch(path));
+}
+
+/** The after-action stats of a resolved stage of the caller's own party. */
+export async function fetchStats(
+  weekId: string,
+  party: number,
+  phase: RaidPhaseId,
+): Promise<AfterActionStats> {
+  const path = `/api/raid/stats/${encodeURIComponent(weekId)}/${String(party)}/${phase}`;
+  return parseStats(await apiFetch(path));
 }
 
 /** Picks the finale ability (any time before the finale starts). */

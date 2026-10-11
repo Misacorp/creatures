@@ -2,30 +2,440 @@
   {
     "id": "rally",
     "name": "Rally",
-    "description": "All creatures deal 40% more damage this round.",
-    "effect": { "op": "rally", "damageBp": 4000 },
-    "defaultRound": 6
+    "kind": "basic",
+    "effects": [
+      {
+        "op": "rally",
+        "damageBp": 1000,
+        "rounds": 1
+      }
+    ],
+    "defaultRound": 6,
+    "description": "All creatures deal 10% more damage this round."
   },
   {
     "id": "shield-wall",
     "name": "Shield Wall",
-    "description": "One zone takes no damage this round.",
-    "effect": { "op": "shield_wall" },
+    "kind": "basic",
+    "effects": [
+      {
+        "op": "shield_wall",
+        "zone": "choose",
+        "reduceBp": 5000,
+        "rounds": 1
+      }
+    ],
     "defaultRound": 3,
-    "defaultAtZoneHit": true
+    "defaultAtZoneHit": true,
+    "description": "One zone takes 50% less damage this round."
   },
   {
     "id": "re-mark",
     "name": "Re-mark",
-    "description": "Set the boss's mark to a chosen element.",
-    "effect": { "op": "re_mark" },
-    "defaultRound": 4
+    "kind": "basic",
+    "effects": [
+      {
+        "op": "re_mark",
+        "element": "choose"
+      }
+    ],
+    "defaultRound": 4,
+    "description": "Set the boss's mark to a chosen element."
   },
   {
     "id": "purge",
     "name": "Purge",
-    "description": "Remove the boss's Phase 2 adaptation for the rest of the fight.",
-    "effect": { "op": "purge" },
-    "defaultRound": 2
+    "kind": "basic",
+    "effects": [
+      {
+        "op": "purge",
+        "rounds": 2
+      }
+    ],
+    "defaultRound": 2,
+    "description": "Remove the boss's Phase 2 adaptation for 2 rounds."
+  },
+  {
+    "id": "tidal-mark",
+    "name": "Tidal Mark",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "re_mark",
+        "element": "own"
+      },
+      {
+        "op": "rally",
+        "damageBp": 800,
+        "rounds": 1
+      }
+    ],
+    "defaultRound": 3,
+    "description": "Leaves the boss Soaked; all creatures hit 8% harder this round."
+  },
+  {
+    "id": "tidal-mark-2",
+    "name": "Riptide Mark",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "re_mark",
+        "element": "own"
+      },
+      {
+        "op": "rally",
+        "damageBp": 1200,
+        "rounds": 1
+      }
+    ],
+    "defaultRound": 3,
+    "description": "Leaves the boss Soaked; all creatures hit 12% harder this round."
+  },
+  {
+    "id": "flare-strike",
+    "name": "Flare Strike",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "strike",
+        "atkBp": 22000
+      }
+    ],
+    "defaultRound": 5,
+    "description": "Hits the boss at once for 220% of its Attack."
+  },
+  {
+    "id": "flare-strike-2",
+    "name": "Inferno Strike",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "strike",
+        "atkBp": 32000
+      }
+    ],
+    "defaultRound": 5,
+    "description": "Hits the boss at once for 320% of its Attack."
+  },
+  {
+    "id": "bark-guard",
+    "name": "Bark Guard",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "shield_wall",
+        "zone": "own",
+        "reduceBp": 6000,
+        "rounds": 2
+      },
+      {
+        "op": "rally",
+        "damageBp": 500,
+        "rounds": 1
+      }
+    ],
+    "defaultRound": 3,
+    "description": "Its zone takes 60% less damage for 2 rounds; all creatures hit 5% harder this round.",
+    "defaultAtZoneHit": true
+  },
+  {
+    "id": "bark-guard-2",
+    "name": "Ironbark Guard",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "shield_wall",
+        "zone": "own",
+        "reduceBp": 8000,
+        "rounds": 3
+      },
+      {
+        "op": "rally",
+        "damageBp": 1000,
+        "rounds": 1
+      }
+    ],
+    "defaultRound": 3,
+    "description": "Its zone takes 80% less damage for 3 rounds; all creatures hit 10% harder this round.",
+    "defaultAtZoneHit": true
+  },
+  {
+    "id": "static-zap",
+    "name": "Static Zap",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "strike",
+        "atkBp": 13000
+      },
+      {
+        "op": "re_mark",
+        "element": "own"
+      }
+    ],
+    "defaultRound": 4,
+    "description": "Hits the boss at once for 130% of its Attack; leaves the boss Charged."
+  },
+  {
+    "id": "static-zap-2",
+    "name": "Storm Zap",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "strike",
+        "atkBp": 19000
+      },
+      {
+        "op": "re_mark",
+        "element": "own"
+      }
+    ],
+    "defaultRound": 4,
+    "description": "Hits the boss at once for 190% of its Attack; leaves the boss Charged."
+  },
+  {
+    "id": "fog-veil",
+    "name": "Fog Veil",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "shield_wall",
+        "zone": "own",
+        "reduceBp": 5000,
+        "rounds": 1
+      },
+      {
+        "op": "purge",
+        "rounds": 3
+      }
+    ],
+    "defaultRound": 3,
+    "description": "Its zone takes 50% less damage this round; the boss's adaptation is off for 3 rounds.",
+    "defaultAtZoneHit": true
+  },
+  {
+    "id": "fog-veil-2",
+    "name": "Dense Fog",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "shield_wall",
+        "zone": "own",
+        "reduceBp": 7000,
+        "rounds": 2
+      },
+      {
+        "op": "purge",
+        "rounds": 5
+      }
+    ],
+    "defaultRound": 3,
+    "description": "Its zone takes 70% less damage for 2 rounds; the boss's adaptation is off for 5 rounds.",
+    "defaultAtZoneHit": true
+  },
+  {
+    "id": "warm-glow",
+    "name": "Warm Glow",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "rally",
+        "damageBp": 500,
+        "rounds": 2
+      }
+    ],
+    "defaultRound": 5,
+    "description": "All creatures hit 5% harder for 2 rounds."
+  },
+  {
+    "id": "warm-glow-2",
+    "name": "Magma Glow",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "rally",
+        "damageBp": 800,
+        "rounds": 2
+      }
+    ],
+    "defaultRound": 5,
+    "description": "All creatures hit 8% harder for 2 rounds."
+  },
+  {
+    "id": "thunder-strike",
+    "name": "Thunder Strike",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "strike",
+        "atkBp": 20000
+      }
+    ],
+    "defaultRound": 4,
+    "description": "Hits the boss at once for 200% of its Attack."
+  },
+  {
+    "id": "thunder-strike-2",
+    "name": "Tempest Strike",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "strike",
+        "atkBp": 30000
+      }
+    ],
+    "defaultRound": 4,
+    "description": "Hits the boss at once for 300% of its Attack."
+  },
+  {
+    "id": "moss-bloom",
+    "name": "Mossy Bloom",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "strike",
+        "atkBp": 9000
+      },
+      {
+        "op": "re_mark",
+        "element": "own"
+      },
+      {
+        "op": "shield_wall",
+        "zone": "own",
+        "reduceBp": 3000,
+        "rounds": 1
+      }
+    ],
+    "defaultRound": 3,
+    "description": "Hits the boss at once for 90% of its Attack; leaves the boss Overgrown; its zone takes 30% less damage this round."
+  },
+  {
+    "id": "moss-bloom-2",
+    "name": "Ancient Bloom",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "strike",
+        "atkBp": 14000
+      },
+      {
+        "op": "re_mark",
+        "element": "own"
+      },
+      {
+        "op": "shield_wall",
+        "zone": "own",
+        "reduceBp": 5000,
+        "rounds": 2
+      }
+    ],
+    "defaultRound": 3,
+    "description": "Hits the boss at once for 140% of its Attack; leaves the boss Overgrown; its zone takes 50% less damage for 2 rounds."
+  },
+  {
+    "id": "coral-lance",
+    "name": "Coral Lance",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "strike",
+        "atkBp": 27000
+      }
+    ],
+    "defaultRound": 6,
+    "description": "Hits the boss at once for 270% of its Attack."
+  },
+  {
+    "id": "solar-brand",
+    "name": "Solar Brand",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "strike",
+        "atkBp": 16000
+      },
+      {
+        "op": "re_mark",
+        "element": "own"
+      }
+    ],
+    "defaultRound": 4,
+    "description": "Hits the boss at once for 160% of its Attack; leaves the boss Scorched."
+  },
+  {
+    "id": "verdant-roar",
+    "name": "Verdant Roar",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "strike",
+        "atkBp": 27000
+      },
+      {
+        "op": "rally",
+        "damageBp": 500,
+        "rounds": 1
+      }
+    ],
+    "defaultRound": 7,
+    "description": "Hits the boss at once for 270% of its Attack; all creatures hit 5% harder this round."
+  },
+  {
+    "id": "aurora-surge",
+    "name": "Aurora Surge",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "rally",
+        "damageBp": 600,
+        "rounds": 2
+      },
+      {
+        "op": "purge",
+        "rounds": 2
+      }
+    ],
+    "defaultRound": 7,
+    "description": "All creatures hit 6% harder for 2 rounds; the boss's adaptation is off for 2 rounds."
+  },
+  {
+    "id": "lantern-glow",
+    "name": "Lantern Glow",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "rally",
+        "damageBp": 700,
+        "rounds": 2
+      },
+      {
+        "op": "re_mark",
+        "element": "own"
+      }
+    ],
+    "defaultRound": 5,
+    "description": "Leaves the boss Soaked; all creatures hit 7% harder for 2 rounds."
+  },
+  {
+    "id": "hearth-ward",
+    "name": "Hearth Ward",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "shield_wall",
+        "zone": "own",
+        "reduceBp": 7000,
+        "rounds": 3
+      },
+      {
+        "op": "rally",
+        "damageBp": 700,
+        "rounds": 1
+      }
+    ],
+    "defaultRound": 3,
+    "defaultAtZoneHit": true,
+    "description": "Its zone takes 70% less damage for 3 rounds; all creatures hit 7% harder this round."
   }
 ]

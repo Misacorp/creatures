@@ -1,4 +1,4 @@
-import { content } from '@creatures/game';
+import { RULES, content, scaleEssence } from '@creatures/game';
 import type { FightEvent } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { MAX_MESSAGE_CHARS } from '../src/discord-format';
@@ -21,6 +21,18 @@ import {
 const CHANNEL = '555555555555555555';
 const ZWSP = '\u200B';
 const NASTY = '@everyone <@123> **bold**';
+
+/** The flat Essence a cleared stage pays in the (only) week: the base amount scaled by its rank. */
+function flatPaid(ctx: Pick<CoreContext, 'sql'>, stage: 'phase1' | 'phase2' | 'finale'): number {
+  const week = rows<{ rank: number; festival: number }>(
+    ctx.sql,
+    'SELECT rank, festival FROM raid_weeks',
+  )[0] as { rank: number; festival: number };
+  return scaleEssence(RULES.raid.essence.flat[stage], {
+    rank: week.rank,
+    festival: week.festival === 1,
+  });
+}
 
 const posts = (ctx: Pick<CoreContext, 'sql'>) =>
   rows<{
@@ -79,6 +91,11 @@ describe('the Monday boss reveal', () => {
         expect(text).toContain(`Phase 2: <t:${String(times.phase2 / 1000)}:F>`);
         expect(text).toContain(`Finale: <t:${String(times.finale / 1000)}:F>`);
         expect(text).toContain('4 players are in this week.');
+        // The server's rank, as stored for the week; a normal week says nothing about a Festival.
+        const rank = rows<{ rank: number }>(ctx.sql, 'SELECT rank FROM raid_weeks')[0]?.rank;
+        expect(rank).toBeGreaterThanOrEqual(1);
+        expect(text).toContain(`Boss Rank ${String(rank)}.`);
+        expect(text).not.toContain('Festival');
         expect(text.length).toBeLessThanOrEqual(MAX_MESSAGE_CHARS);
         // Running the event again queues nothing new.
         ctx.sql.exec("DELETE FROM raid_events WHERE event = 'weekStart'");
@@ -160,7 +177,7 @@ describe('phase posts', () => {
         expect(text).toContain('Cleared. The boss has');
         expect(text).toContain('Top contributors:');
         expect(text).toContain(
-          'Essence: every player earned 10, plus a bonus share by contribution.',
+          `Essence: every player earned ${String(flatPaid(ctx, 'phase1'))}, plus a bonus share by contribution.`,
         );
         // Phase 1 posts the boss's counter-move.
         const counter = rows<{ adaptation_description: string }>(
@@ -339,7 +356,14 @@ describe('the finale post', () => {
         )[0];
         expect((JSON.parse(run?.summary ?? '{}') as { cleared: boolean }).cleared).toBe(true);
         expect(text.startsWith(`**Finale: `)).toBe(true);
-        expect(text).toContain('Essence: every player earned 25');
+        expect(text).toContain(`Essence: every player earned ${String(flatPaid(ctx, 'finale'))}`);
+        // One party that won: the post says where the server goes.
+        const rank = rows<{ rank: number; rank_after: number }>(
+          ctx.sql,
+          'SELECT rank, rank_after FROM raid_weeks',
+        )[0] as { rank: number; rank_after: number };
+        expect(rank.rank_after).toBe(rank.rank + 1);
+        expect(text).toContain(`The server climbs to Rank ${String(rank.rank_after)}.`);
         expect(text).toContain('Jackpot: \\_Ace\\_, Player 2.');
         expect(text).toContain('First on the server this week:');
         expect(text).toContain('First jackpot: \\_Ace\\_, Player 2');
@@ -354,6 +378,63 @@ describe('the finale post', () => {
         ]);
       },
       { start: W02.monday },
+    );
+  });
+});
+
+describe('a Festival week', () => {
+  const SHIFT = 4 * 7 * DAY; // 2027-W06
+  const FESTIVAL = {
+    id: '2027-W06',
+    monday: W02.monday + SHIFT,
+    afterFinale: W02.afterFinale + SHIFT,
+  };
+
+  it('says "Festival week" on Monday, and the finale post names the creature and the rank easing', async () => {
+    await runRaid(
+      async (ctx) => {
+        const players = await openWeek(ctx, 3, {
+          name: (i) => (i === 1 ? '_Ace_ @everyone' : `Player ${String(i)}`),
+        });
+        const creature = content.creatures.find(
+          (c) => c.festival === true && c.id === 'hearthshell',
+        );
+        expect(creature).toBeDefined();
+        const monday = posts(ctx)[0]?.content ?? '';
+        const rank = rows<{ rank: number }>(ctx.sql, 'SELECT rank FROM raid_weeks')[0]?.rank;
+        expect(monday).toContain(`Boss Rank ${String(rank)}.`);
+        expect(monday).toContain('Festival week: Hearthshell for every winner, bonus Essence.');
+
+        forcePool(ctx.sql, 3_000);
+        ctx.clock.t = FESTIVAL.afterFinale;
+        ctx.core.raid.runDue(HELSINKI);
+        const finale = posts(ctx).find((p) => p.key === `raid:${FESTIVAL.id}:finale:1`);
+        const text = finale?.content ?? '';
+        expect(text.startsWith('**Finale: ')).toBe(true);
+        // Every member of the winning party got it; names are escaped.
+        expect(text).toContain('Festival creature: Hearthshell for ');
+        expect(text).toContain('\\_Ace\\_ @\u200Beveryone');
+        expect(text).not.toMatch(/@(?!\u200B)/);
+        expect(text).toContain('Player 2');
+        expect(text).toContain('Player 3');
+        // The Festival is over: the server eases by one.
+        const week = rows<{ rank: number; rank_after: number }>(
+          ctx.sql,
+          'SELECT rank, rank_after FROM raid_weeks',
+        )[0] as { rank: number; rank_after: number };
+        expect(week.rank_after).toBe(Math.max(1, week.rank - 1));
+        expect(text).toContain(
+          week.rank_after < week.rank
+            ? `The Festival is over. The server eases to Rank ${String(week.rank_after)}.`
+            : `Rank ${String(week.rank_after)} stays.`,
+        );
+        // Bonus Essence is what the post says every player earned.
+        expect(text).toContain(`Essence: every player earned ${String(flatPaid(ctx, 'finale'))}`);
+        // The first Festival win on the server is one of the records.
+        expect(text).toContain('Hearthshell won in a Festival: ');
+        expect(players).toHaveLength(3);
+      },
+      { start: FESTIVAL.monday },
     );
   });
 });

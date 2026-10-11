@@ -44,7 +44,7 @@ describe('describeEvent', () => {
         { t: 'boss_hit', round: 1, source: 'gimmick', target: 'b', damage: 7, from: 'a' },
         { t: 'boss_hit', round: 1, source: 'reflect', target: 'a', damage: 9 },
         { t: 'adaptation', round: 2, rule: 'x', target: 't', status: 'purged' },
-        { t: 'ability', round: 3, player: 'p', ability: 'rally', byDefault: true },
+        { t: 'ability', round: 3, player: 'p', ability: 'rally', key: 'k', byDefault: true },
         { t: 'silence', round: 2, creature: 'a', turns: 2 },
       ]),
     ).toEqual([
@@ -54,6 +54,48 @@ describe('describeEvent', () => {
       "Boss's adaptation is purged.",
       'Pat uses rally at its default time.',
       'Ann is silenced for 2 turns.',
+    ]);
+  });
+
+  it('names the creature and its ability: "Cindle\'s Flare Strike"', () => {
+    const names = {
+      boss: 'Boss',
+      creatures: { c: 'Cindle' },
+      players: { p: 'Pat' },
+      abilities: { 'flare-strike': 'Flare Strike' },
+    };
+    const lines = (events: FightEvent[]) => events.map((e) => describeEvent(e, names));
+    expect(
+      lines([
+        {
+          t: 'ability',
+          round: 5,
+          player: 'p',
+          ability: 'flare-strike',
+          key: 'c:ability',
+          creature: 'c',
+          byDefault: true,
+        },
+        {
+          t: 'hit',
+          round: 5,
+          creature: 'c',
+          damage: 90,
+          matchupBp: 10_000,
+          bonusBp: 0,
+          mark: null,
+          bossHp: 500,
+          ability: 'flare-strike',
+          key: 'c:ability',
+        },
+        { t: 'boss_hit', round: 5, source: 'attack', target: 'c', damage: 30, reducedBp: 5_000 },
+        { t: 'adaptation', round: 6, rule: 'x', target: 't', status: 'restored' },
+      ]),
+    ).toEqual([
+      "Pat uses Cindle's Flare Strike at its default time.",
+      "Cindle's Flare Strike hits Boss for 90; 500 HP left.",
+      'Boss attacks Cindle for 30 (a Shield Wall softens it by 50%).',
+      "Boss's adaptation returns.",
     ]);
   });
 

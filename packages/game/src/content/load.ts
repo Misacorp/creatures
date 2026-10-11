@@ -5,6 +5,8 @@ import {
   type BossDef,
   type ContentPack,
   type CreatureSpecies,
+  type Effect,
+  type FinaleAbilityDef,
 } from './schema';
 
 export const STARTER_COUNT = 3;
@@ -26,6 +28,7 @@ export function loadContent(raw: unknown): ContentPack {
   checkCreatures(pack);
   checkReactions(pack);
   checkRaidContent(pack);
+  checkAbilities(pack);
   return pack;
 }
 
@@ -75,6 +78,14 @@ function checkCreatures(pack: ContentPack): void {
       if (c.catchable) fail(`stage-2 species "${c.id}" must not be catchable`);
       if (c.starter) fail(`stage-2 species "${c.id}" must not be a starter`);
       if (c.evolvesTo !== undefined) fail(`stage-2 species "${c.id}" must not evolve`);
+    }
+
+    if (c.festival === true) {
+      if (c.catchable) fail(`festival species "${c.id}" must not be catchable`);
+      if (c.starter) fail(`festival species "${c.id}" must not be a starter`);
+      if (c.stage !== 1 || c.evolvesTo !== undefined) {
+        fail(`festival species "${c.id}" must be a single-stage species`);
+      }
     }
 
     if (c.evolvesTo !== undefined) {
@@ -147,6 +158,10 @@ function checkBoss(boss: BossDef, adaptationIds: ReadonlyMap<string, number>): v
   if (!adaptationIds.has(boss.adaptation)) {
     fail(`boss "${boss.id}" names unknown adaptation "${boss.adaptation}"`);
   }
+  if (boss.hpExponent !== undefined) {
+    const e = boss.hpExponent.num / boss.hpExponent.den;
+    if (e < 0.5 || e > 2) fail(`boss "${boss.id}" has an HP exponent outside 0.5 to 2`);
+  }
   const gimmickIds = new Set<string>();
   for (const g of boss.gimmicks) {
     if (gimmickIds.has(g.id)) fail(`boss "${boss.id}" has duplicate gimmick id "${g.id}"`);
@@ -160,15 +175,126 @@ function checkRaidContent(pack: ContentPack): void {
   for (const boss of pack.bosses) checkBoss(boss, adaptationIds);
 
   checkUniqueIds('finale ability', pack.finaleAbilities);
-  const ops = new Set<string>();
-  for (const a of pack.finaleAbilities) {
-    if (ops.has(a.effect.op)) fail(`two finale abilities use the effect "${a.effect.op}"`);
-    ops.add(a.effect.op);
-  }
 
   checkUniqueIds('guest', pack.guests);
   const speciesIds = new Set(pack.creatures.map((c) => c.id));
   for (const g of pack.guests) {
     if (!speciesIds.has(g.species)) fail(`guest "${g.id}" uses unknown species "${g.species}"`);
+  }
+}
+
+/** Rounds an effect lasts; a purge without `rounds` lasts the rest of the fight. */
+function effectRounds(e: Effect): number {
+  if (e.op === 'purge') return e.rounds ?? Number.POSITIVE_INFINITY;
+  return 'rounds' in e ? e.rounds : 1;
+}
+
+/**
+ * Strength of an effect on one number: how much, in the unit of its main parameter. Used only to
+ * compare an effect with the same op of the stage-1 form.
+ */
+function effectAmount(e: Effect): number {
+  switch (e.op) {
+    case 'rally':
+      return e.damageBp;
+    case 'shield_wall':
+      return e.reduceBp;
+    case 'strike':
+      return e.atkBp;
+    case 're_mark':
+    case 'purge':
+      return 0;
+  }
+}
+
+/**
+ * "Stage 2 is at least as strong as stage 1", our simple measure: stage 2 has every op that
+ * stage 1 has, with the same `zone` / `element` choice, and for each shared op neither the amount
+ * (damage, reduction or strike power) nor the duration (`rounds`) is lower. Extra effects only make
+ * it stronger. It must also be stronger somewhere: a higher amount, a longer duration or an extra
+ * effect. Returns a problem description, or null if stage 2 qualifies.
+ */
+export function upgradeProblem(stage1: FinaleAbilityDef, stage2: FinaleAbilityDef): string | null {
+  let stronger = stage2.effects.length > stage1.effects.length;
+  for (const e1 of stage1.effects) {
+    const e2 = stage2.effects.find((e) => e.op === e1.op);
+    if (e2 === undefined) return `lacks the "${e1.op}" effect of the stage-1 ability`;
+    if ('zone' in e1 && 'zone' in e2 && e1.zone !== e2.zone)
+      return `changes the zone of "${e1.op}"`;
+    if ('element' in e1 && 'element' in e2 && e1.element !== e2.element) {
+      return `changes the element of "${e1.op}"`;
+    }
+    if (effectAmount(e2) < effectAmount(e1)) return `has a weaker "${e1.op}" amount`;
+    if (effectRounds(e2) < effectRounds(e1)) return `has a shorter "${e1.op}" duration`;
+    if (effectAmount(e2) > effectAmount(e1) || effectRounds(e2) > effectRounds(e1)) {
+      stronger = true;
+    }
+  }
+  return stronger ? null : 'is not stronger than the stage-1 ability';
+}
+
+function checkAbilities(pack: ContentPack): void {
+  const byId = new Map<string, FinaleAbilityDef>();
+  for (const a of pack.finaleAbilities) {
+    byId.set(a.id, a);
+    const ops = a.effects.map((e) => e.op);
+    if (new Set(ops).size !== ops.length) fail(`ability "${a.id}" repeats an effect`);
+    if (a.kind === 'basic') {
+      // Basic abilities are the four plain ops, with the player's pick: no creature is involved.
+      const [only] = a.effects;
+      if (a.effects.length !== 1 || only === undefined) {
+        fail(`basic ability "${a.id}" must have exactly one effect`);
+      }
+      if (only.op === 'strike') fail(`basic ability "${a.id}" cannot strike`);
+      if (
+        (only.op === 'shield_wall' && only.zone !== 'choose') ||
+        (only.op === 're_mark' && only.element !== 'choose')
+      ) {
+        fail(`basic ability "${a.id}" must let the player choose`);
+      }
+    }
+  }
+  const basicOps = new Set<string>();
+  for (const a of pack.finaleAbilities) {
+    if (a.kind !== 'basic') continue;
+    const op = (a.effects[0] as Effect).op;
+    if (basicOps.has(op)) fail(`two basic abilities use the effect "${op}"`);
+    basicOps.add(op);
+  }
+
+  const referenced = new Set<string>();
+  for (const c of pack.creatures) {
+    if (c.ability === undefined) {
+      if (c.festival === true) fail(`festival species "${c.id}" needs an ability`);
+      continue;
+    }
+    const def = byId.get(c.ability.id);
+    if (def === undefined) fail(`species "${c.id}" has unknown ability "${c.ability.id}"`);
+    if (def.kind !== 'creature') {
+      fail(`species "${c.id}" must use a creature ability, "${def.id}" is basic`);
+    }
+    if (referenced.has(def.id)) fail(`ability "${def.id}" belongs to more than one species`);
+    referenced.add(def.id);
+  }
+  for (const a of pack.finaleAbilities) {
+    if (a.kind === 'creature' && !referenced.has(a.id)) {
+      fail(`creature ability "${a.id}" belongs to no species`);
+    }
+  }
+
+  // Evolution lines: both forms have an ability, and the stage-2 one is stronger.
+  for (const c of pack.creatures) {
+    if (c.evolvesTo === undefined) continue;
+    const target = pack.creatures.find((s) => s.id === c.evolvesTo?.species);
+    if (target === undefined) continue; // checkCreatures reports this
+    const a1 = c.ability === undefined ? undefined : byId.get(c.ability.id);
+    const a2 = target.ability === undefined ? undefined : byId.get(target.ability.id);
+    if ((a1 === undefined) !== (a2 === undefined)) {
+      fail(`"${c.id}" and "${target.id}" must both have an ability or neither`);
+    }
+    if (a1 !== undefined && a2 !== undefined) {
+      const problem = upgradeProblem(a1, a2);
+      if (problem !== null) fail(`ability "${a2.id}" of "${target.id}" ${problem}`);
+    }
   }
 }

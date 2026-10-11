@@ -1,5 +1,6 @@
 import * as v from 'valibot';
 import type { Outcome } from './collection';
+import { DiscordError } from './discord';
 import {
   errorResponse,
   json,
@@ -14,6 +15,7 @@ import {
   LiveActionBodySchema,
   OptOutBodySchema,
   PlacementBodySchema,
+  RaidChannelBodySchema,
   ReplayParamsSchema,
   RevealSeenBodySchema,
   TeamBodySchema,
@@ -25,12 +27,20 @@ const MAX_BODY_BYTES = 2048;
 /** What these routes need from the request context (GuildCore's context satisfies it). */
 export interface RaidRouteContext {
   user: { id: string };
+  /** The channel the caller's session was launched from (Discord's verified location), if known. */
+  channelId: string | null;
   /** Path parameters of a template route, raw: validated here before use. */
   params: Record<string, string>;
   core: {
     raid: Raid;
     /** The guild's timezone: the raid calendar is guild-local. */
     timezone(): string;
+    channelPinned(): boolean;
+    isPinnedTo(channelId: string | null): boolean;
+    pinChannel(channelId: string): boolean;
+    unpinChannel(): void;
+    cachedCanManage(userId: string): boolean | null;
+    canManageServer(userId: string, options?: { fresh?: boolean }): Promise<boolean>;
   };
 }
 
@@ -55,13 +65,67 @@ async function hasNoPayload(request: Request): Promise<boolean> {
 
 const invalidBody = (): Response => errorResponse('invalid_body', 400);
 
+/**
+ * Whether the caller may manage the server, asked of Discord (or the 60 s cache). A Discord failure
+ * becomes the 503 answer. Only the error kind is logged.
+ */
+async function manageCheck(
+  core: RaidRouteContext['core'],
+  userId: string,
+  fresh: boolean,
+): Promise<boolean | Response> {
+  try {
+    return await core.canManageServer(userId, { fresh });
+  } catch (err) {
+    if (!(err instanceof DiscordError)) throw err;
+    console.error('discord permission check failed', err.kind);
+    return errorResponse('discord_unavailable', 503);
+  }
+}
+
+function channelAnswer(
+  core: RaidRouteContext['core'],
+  channelId: string | null,
+  canManage: boolean,
+): Response {
+  return json({ pinned: core.channelPinned(), here: core.isPinnedTo(channelId), canManage });
+}
+
 function failure(outcome: Extract<Outcome<unknown>, { ok: false }>): Response {
   return errorResponse(outcome.error, outcome.status);
 }
 
 export const raidRoutes: Routes<RaidRouteContext> = {
   '/api/raid': {
-    GET: (_request, { user, core }) => json(core.raid.view(user.id, core.timezone())),
+    GET: (_request, { user, core }) =>
+      json({
+        ...core.raid.view(user.id, core.timezone()),
+        // `canManage` is only known after the player asked (GET /api/raid/channel); no Discord call here.
+        channel: { pinned: core.channelPinned(), canManage: core.cachedCanManage(user.id) },
+      }),
+  },
+  '/api/raid/channel': {
+    GET: async (_request, { user, channelId, core }) => {
+      const canManage = await manageCheck(core, user.id, false);
+      if (typeof canManage !== 'boolean') return canManage;
+      return channelAnswer(core, channelId, canManage);
+    },
+    POST: async (request, { user, channelId, core }) => {
+      const body = await parseBody(request, RaidChannelBodySchema);
+      if (body === undefined) return invalidBody();
+      // A change always asks Discord again: a role may have just been given or taken away.
+      const canManage = await manageCheck(core, user.id, true);
+      if (typeof canManage !== 'boolean') return canManage;
+      if (!canManage) return errorResponse('forbidden', 403);
+      if (body.action === 'unpin') {
+        core.unpinChannel();
+      } else {
+        // Only the channel this session was launched from, as Discord reported it at login.
+        if (channelId === null) return errorResponse('channel_unknown', 409);
+        if (!core.pinChannel(channelId)) return errorResponse('channel_unknown', 409);
+      }
+      return channelAnswer(core, channelId, true);
+    },
   },
   '/api/raid/team': {
     PUT: async (request, { user, core }) => {
@@ -140,6 +204,21 @@ export const raidRoutes: Routes<RaidRouteContext> = {
       const outcome = core.raid.startPractice(user.id, core.timezone());
       if (!outcome.ok) return failure(outcome);
       return json(outcome.value);
+    },
+  },
+  '/api/raid/stats/:week/:party/:phase': {
+    GET: (_request, { params, user, core }) => {
+      const parsed = v.safeParse(ReplayParamsSchema, {
+        week: params['week'],
+        party: params['party'],
+        phase: params['phase'],
+      });
+      if (!parsed.success) return errorResponse('invalid_id', 400);
+      const { week, party, phase } = parsed.output;
+      // Members of that fight only; a missing fight and someone else's fight look the same.
+      const stats = core.raid.stats(user.id, week, party, phase);
+      if (stats === null) return errorResponse('not_found', 404);
+      return json(stats);
     },
   },
   '/api/raid/replay/:week/:party/:phase': {

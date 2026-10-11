@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { content, loadContent, type ContentPack } from '../src/index';
+import {
+  RULES,
+  abilitiesFor,
+  basicAbilities,
+  content,
+  loadContent,
+  upgradeProblem,
+  type ContentPack,
+} from '../src/index';
 import creaturesJson from '../src/content/data/creatures.json';
 import elementsJson from '../src/content/data/elements.json';
 import reactionsJson from '../src/content/data/reactions.json';
@@ -40,7 +48,7 @@ function creature(pack: ContentPack, id: string) {
 describe('shipped content', () => {
   it('loads', () => {
     expect(() => loadContent(clone())).not.toThrow();
-    expect(content.creatures).toHaveLength(20);
+    expect(content.creatures).toHaveLength(22);
   });
 
   it('has 12 catchable species and 3 common starters of different elements', () => {
@@ -326,18 +334,226 @@ describe('raid content', () => {
     for (const b of content.bosses) expect(b.finaleRounds).toBe(12);
   });
 
-  it('has the four finale abilities with default rounds and two adaptation rules', () => {
-    expect(content.finaleAbilities.map((a) => a.effect.op)).toEqual([
-      'rally',
-      'shield_wall',
-      're_mark',
-      'purge',
+  it('has the four basic abilities and two adaptation rules', () => {
+    const basic = content.finaleAbilities.filter((a) => a.kind === 'basic');
+    expect(basic.map((a) => a.effects.map((e) => e.op))).toEqual([
+      ['rally'],
+      ['shield_wall'],
+      ['re_mark'],
+      ['purge'],
     ]);
     expect(content.adaptations.map((a) => [a.kind, a.resistBp])).toEqual([
       ['top_reaction', 5000],
       ['top_element', 2500],
     ]);
     expect(content.guests).toHaveLength(3);
+  });
+});
+
+describe('creature abilities', () => {
+  const ability = (id: string) => {
+    const a = content.finaleAbilities.find((x) => x.id === id);
+    if (!a) throw new Error(`missing ${id}`);
+    return a;
+  };
+
+  it('gives all 22 species an ability: 8 lines with two strengths and 6 single species', () => {
+    for (const c of content.creatures) {
+      expect(c.ability, c.id).toBeDefined();
+      expect(ability(c.ability?.id ?? '').kind).toBe('creature');
+    }
+    expect(content.finaleAbilities.filter((a) => a.kind === 'creature')).toHaveLength(22);
+    expect(content.finaleAbilities.filter((a) => a.kind === 'basic')).toHaveLength(4);
+    // Every ability belongs to exactly one species.
+    const ids = content.creatures.map((c) => c.ability?.id);
+    expect(new Set(ids).size).toBe(22);
+  });
+
+  it('has a stage-2 ability that is stronger than stage 1 in every line', () => {
+    for (const c of content.creatures.filter((x) => x.evolvesTo)) {
+      const target = creature(content, c.evolvesTo?.species ?? '');
+      const a1 = ability(c.ability?.id ?? '');
+      const a2 = ability(target.ability?.id ?? '');
+      expect(upgradeProblem(a1, a2), `${c.id} -> ${target.id}`).toBeNull();
+      expect(upgradeProblem(a2, a1), `${target.id} -> ${c.id}`).not.toBeNull();
+    }
+  });
+
+  it('keeps the basic abilities weak (docs/design/creature-abilities.md)', () => {
+    expect(ability('rally').effects).toEqual([{ op: 'rally', damageBp: 1_000, rounds: 1 }]);
+    expect(ability('shield-wall').effects).toEqual([
+      { op: 'shield_wall', zone: 'choose', reduceBp: 5_000, rounds: 1 },
+    ]);
+    expect(ability('re-mark').effects).toEqual([{ op: 're_mark', element: 'choose' }]);
+    expect(ability('purge').effects).toEqual([{ op: 'purge', rounds: 2 }]);
+  });
+
+  it('keeps creature strikes between 90% and 400% of Attack, so abilities stay a bonus', () => {
+    for (const a of content.finaleAbilities.filter((x) => x.kind === 'creature')) {
+      for (const e of a.effects) {
+        if (e.op === 'strike') {
+          expect(e.atkBp).toBeGreaterThanOrEqual(9_000);
+          expect(e.atkBp).toBeLessThanOrEqual(40_000);
+        }
+      }
+    }
+  });
+
+  it('unlocks at level 10', () => {
+    expect(RULES.abilities.unlockLevel).toBe(10);
+  });
+});
+
+describe('crit archetype', () => {
+  it('gives a few payoff species a crit bonus, and nobody a bonus above the caps', () => {
+    const withCrit = content.creatures.filter((c) => c.crit !== undefined);
+    expect(withCrit.length).toBeGreaterThanOrEqual(2);
+    expect(withCrit.length).toBeLessThanOrEqual(6);
+    for (const c of withCrit) {
+      expect(c.role).toBe('payoff');
+      const baseChance = 500;
+      const baseDamage = 5_000;
+      // Baseline plus bonus stays inside the study's caps (30% chance, +150% damage).
+      expect(baseChance + (c.crit?.chanceBp ?? 0)).toBeLessThanOrEqual(3_000);
+      expect(baseDamage + (c.crit?.damageBp ?? 0)).toBeLessThanOrEqual(15_000);
+    }
+  });
+
+  it('ships with crits and boss crits switched on at 5% and +50%, and sane caps', () => {
+    expect(RULES.combat.luck.critChanceBp).toBe(500);
+    expect(RULES.combat.luck.critBp).toBe(5_000);
+    expect(RULES.combat.luck.bossCritChanceBp).toBe(500);
+    expect(RULES.combat.luck.bossCritBp).toBe(5_000);
+    expect(RULES.combat.luck.critMaxChanceBp).toBeLessThanOrEqual(3_000);
+    expect(RULES.combat.luck.critMaxBp).toBeLessThanOrEqual(15_000);
+  });
+});
+
+describe('festival creatures', () => {
+  const festival = content.creatures.filter((c) => c.festival === true);
+
+  it('ships two festival-only species: never catchable, single-stage, with an ability', () => {
+    expect(festival.map((c) => c.id)).toEqual(['lanternfin', 'hearthshell']);
+    for (const c of festival) {
+      expect(c.catchable, c.id).toBe(false);
+      expect(c.starter, c.id).toBe(false);
+      expect(c.stage, c.id).toBe(1);
+      expect(c.evolvesTo, c.id).toBeUndefined();
+      expect(c.ability, c.id).toBeDefined();
+      expect(c.levelCap, c.id).toBe(30);
+    }
+    // Nothing else is flagged, and the 12 catchable species are untouched.
+    expect(
+      content.creatures.filter((c) => c.festival !== true && !c.catchable && c.stage === 1),
+    ).toHaveLength(0);
+  });
+
+  it('gives them a role and an element the catchable epics lack, at epic strength', () => {
+    const [lantern, hearth] = festival;
+    expect([lantern?.element, lantern?.role, lantern?.rarity]).toEqual(['tide', 'support', 'epic']);
+    expect([hearth?.element, hearth?.role, hearth?.rarity]).toEqual(['ember', 'guard', 'epic']);
+    const epics = content.creatures.filter((c) => c.rarity === 'epic' && c.festival !== true);
+    const total = (c: { baseStats: { hp: number; atk: number; spd: number } }) =>
+      c.baseStats.hp + c.baseStats.atk + c.baseStats.spd;
+    const lo = Math.min(...epics.map(total));
+    const hi = Math.max(...epics.map(total));
+    for (const c of festival) {
+      expect(total(c)).toBeGreaterThanOrEqual(lo - 20);
+      expect(total(c)).toBeLessThanOrEqual(hi + 20);
+    }
+  });
+
+  it('is rejected when a festival species is catchable, a starter, evolves or has no ability', () => {
+    const lantern = (p: ContentPack) => creature(p, 'lanternfin');
+    expect(() => loadContent(mutate((p) => (lantern(p).catchable = true)))).toThrow(/festival/);
+    expect(() =>
+      loadContent(
+        mutate((p) => {
+          lantern(p).catchable = true;
+          lantern(p).starter = true;
+        }),
+      ),
+    ).toThrow();
+    expect(() => loadContent(mutate((p) => delete lantern(p).ability))).toThrow(/needs an ability/);
+    expect(() =>
+      loadContent(
+        mutate((p) => {
+          lantern(p).evolvesTo = { species: 'hearthshell', level: 15, essence: 10 };
+        }),
+      ),
+    ).toThrow();
+  });
+});
+
+describe('boss head-count exponent', () => {
+  it('ships a sensible exponent for every boss, between 1 and 1.3', () => {
+    for (const b of content.bosses) {
+      const e = (b.hpExponent?.num ?? 1) / (b.hpExponent?.den ?? 1);
+      expect(e, b.id).toBeGreaterThanOrEqual(1);
+      expect(e, b.id).toBeLessThanOrEqual(1.3);
+    }
+  });
+
+  it('rejects an exponent outside 0.5 to 2 and unknown keys', () => {
+    const boss = (p: ContentPack) => p.bosses[0] as ContentPack['bosses'][number];
+    expect(() => loadContent(mutate((p) => (boss(p).hpExponent = { num: 21, den: 10 })))).toThrow(
+      /exponent/,
+    );
+    expect(() => loadContent(mutate((p) => (boss(p).hpExponent = { num: 4, den: 10 })))).toThrow(
+      /exponent/,
+    );
+    expect(() =>
+      loadContent(mutate((p) => (boss(p).hpExponent = { num: 12, den: 10, x: 1 } as never))),
+    ).toThrow(/schema/);
+    expect(() => loadContent(mutate((p) => (boss(p).hpExponent = { num: 12, den: 0 })))).toThrow(
+      /schema/,
+    );
+  });
+});
+
+describe('abilitiesFor', () => {
+  const team = [
+    { id: 'c1', speciesId: 'cindle' },
+    { id: 'c2', speciesId: 'tidewing' },
+    { id: 'c3', speciesId: 'aurorix' },
+  ];
+  const levels = (l1: number, l2: number, l3: number) => (c: { id: string }) =>
+    ({ c1: l1, c2: l2, c3: l3 })[c.id] ?? 1;
+
+  it('returns the ability of every team creature at the unlock level or above, in team order', () => {
+    expect(abilitiesFor(team, levels(10, 15, 30))).toEqual([
+      { creatureId: 'c1', speciesId: 'cindle', abilityId: 'flare-strike' },
+      { creatureId: 'c2', speciesId: 'tidewing', abilityId: 'tidal-mark-2' },
+      { creatureId: 'c3', speciesId: 'aurorix', abilityId: 'aurora-surge' },
+    ]);
+  });
+
+  it('skips creatures below level 10', () => {
+    expect(abilitiesFor(team, levels(9, 10, 1)).map((a) => a.creatureId)).toEqual(['c2']);
+    expect(abilitiesFor(team, levels(1, 1, 9))).toEqual([]);
+    expect(abilitiesFor([], levels(1, 1, 1))).toEqual([]);
+  });
+
+  it('follows the species: an evolved creature brings the stronger form', () => {
+    const before = abilitiesFor([{ id: 'x', speciesId: 'splashet' }], () => 15);
+    const after = abilitiesFor([{ id: 'x', speciesId: 'tidewing' }], () => 15);
+    expect(before[0]?.abilityId).toBe('tidal-mark');
+    expect(after[0]?.abilityId).toBe('tidal-mark-2');
+  });
+
+  it('ignores species without an ability or unknown species', () => {
+    const pack = loadContent(
+      mutate((p) => {
+        delete (creature(p, 'coralynx') as { ability?: unknown }).ability;
+        p.finaleAbilities = p.finaleAbilities.filter((a) => a.id !== 'coral-lance');
+      }),
+    );
+    expect(abilitiesFor([{ id: 'x', speciesId: 'coralynx' }], () => 30, pack)).toEqual([]);
+    expect(abilitiesFor([{ id: 'x', speciesId: 'nothing' }], () => 30)).toEqual([]);
+  });
+
+  it('lists the four basic abilities', () => {
+    expect(basicAbilities().map((a) => a.id)).toEqual(['rally', 'shield-wall', 're-mark', 'purge']);
   });
 });
 
@@ -365,6 +581,27 @@ describe('loadContent rejects invalid raid content', () => {
         mutate((p) => Object.assign(boss(p).gimmicks[0] as object, { trigger: { every: 1 } })),
       ),
     ).toThrow(/schema/);
+  });
+
+  it('crit bonuses: optional, strict and in range', () => {
+    expect(() =>
+      loadContent(mutate((p) => (boss(p).crit = { chanceBp: 500, damageBp: 2_500 }))),
+    ).not.toThrow();
+    for (const bad of [
+      { chanceBp: -1, damageBp: 0 },
+      { chanceBp: 10_001, damageBp: 0 },
+      { chanceBp: 1.5, damageBp: 0 },
+      { chanceBp: 0, damageBp: 100_001 },
+      { chanceBp: 0 },
+      { chanceBp: 0, damageBp: 0, extra: 1 },
+    ]) {
+      expect(() => loadContent(mutate((p) => Object.assign(boss(p), { crit: bad })))).toThrow(
+        /schema/,
+      );
+      expect(() =>
+        loadContent(mutate((p) => Object.assign(p.creatures[0] as object, { crit: bad }))),
+      ).toThrow(/schema/);
+    }
   });
 
   it('cross-reference errors', () => {
@@ -397,16 +634,170 @@ describe('loadContent rejects invalid raid content', () => {
         mutate((p) => ((p.reactions[1] as { markElement: string }).markElement = 'tide')),
       ),
     ).toThrow();
-    expect(() => loadContent(mutate((p) => p.finaleAbilities.pop()))).not.toThrow();
-    expect(() =>
-      loadContent(
-        mutate((p) =>
-          p.finaleAbilities.push({
-            ...deepClone(p.finaleAbilities[0] as ContentPack['finaleAbilities'][number]),
-            id: 'rally-2',
+  });
+
+  describe('abilities', () => {
+    const abilityOf = (p: ContentPack, id: string) => {
+      const a = p.finaleAbilities.find((x) => x.id === id);
+      if (!a) throw new Error(`missing ability ${id}`);
+      return a;
+    };
+
+    it('schema violations', () => {
+      const bad = (fn: (a: ContentPack['finaleAbilities'][number]) => void) =>
+        loadContent(mutate((p) => fn(abilityOf(p, 'flare-strike'))));
+      expect(() => bad((a) => (a.effects = []))).toThrow(/schema/);
+      expect(() =>
+        bad((a) => (a.effects = [0, 1, 2, 3].map(() => ({ op: 'purge' as const })))),
+      ).toThrow(/schema/);
+      expect(() => bad((a) => Object.assign(a, { extra: 1 }))).toThrow(/schema/);
+      expect(() => bad((a) => Object.assign(a, { kind: 'epic' }))).toThrow(/schema/);
+      expect(() => bad((a) => (a.effects = [{ op: 'strike', atkBp: 1.5 }]))).toThrow(/schema/);
+      expect(() => bad((a) => (a.effects = [{ op: 'strike', atkBp: 0 }]))).toThrow(/schema/);
+      expect(() =>
+        bad((a) => (a.effects = [{ op: 'strike', atkBp: 100, extra: 1 } as never])),
+      ).toThrow(/schema/);
+      expect(() => bad((a) => (a.effects = [{ op: 'explode' } as never]))).toThrow(/schema/);
+      expect(() =>
+        bad((a) => (a.effects = [{ op: 'shield_wall', zone: 'front', reduceBp: 5000 } as never])),
+      ).toThrow(/schema/);
+      expect(() =>
+        bad((a) => (a.effects = [{ op: 'shield_wall', zone: 'own', reduceBp: 10_001, rounds: 1 }])),
+      ).toThrow(/schema/);
+      expect(() => bad((a) => (a.effects = [{ op: 'rally', damageBp: 1000, rounds: 0 }]))).toThrow(
+        /schema/,
+      );
+      expect(() => bad((a) => (a.effects = [{ op: 'purge', rounds: 31 }]))).toThrow(/schema/);
+      expect(() => bad((a) => (a.effects = [{ op: 're_mark', element: 'tide' } as never]))).toThrow(
+        /schema/,
+      );
+    });
+
+    it('fills in default rounds of 1 for rally and shield wall', () => {
+      const pack = loadContent(
+        mutate((p) => {
+          abilityOf(p, 'warm-glow').effects = [{ op: 'rally', damageBp: 1000 } as never];
+          abilityOf(p, 'warm-glow-2').effects = [{ op: 'rally', damageBp: 2000, rounds: 2 }];
+        }),
+      );
+      expect(abilityOf(pack, 'warm-glow').effects).toEqual([
+        { op: 'rally', damageBp: 1000, rounds: 1 },
+      ]);
+    });
+
+    it('cross-reference errors', () => {
+      expect(() =>
+        loadContent(mutate((p) => (creature(p, 'cindle').ability = { id: 'nothing' }))),
+      ).toThrow(/unknown ability/);
+      expect(() =>
+        loadContent(mutate((p) => (creature(p, 'cindle').ability = { id: 'rally' }))),
+      ).toThrow(/creature ability/);
+      expect(() =>
+        loadContent(mutate((p) => (creature(p, 'coralynx').ability = { id: 'flare-strike' }))),
+      ).toThrow(/more than one species/);
+      expect(() => loadContent(mutate((p) => p.finaleAbilities.pop()))).toThrow(/unknown ability/);
+      expect(() =>
+        loadContent(
+          mutate((p) =>
+            p.finaleAbilities.push({
+              ...deepClone(abilityOf(p, 'flare-strike')),
+              id: 'orphan',
+            }),
+          ),
+        ),
+      ).toThrow(/belongs to no species/);
+      // One form without an ability (and its ability removed so nothing is orphaned).
+      const without = (speciesId: string, abilityId: string) =>
+        loadContent(
+          mutate((p) => {
+            delete creature(p, speciesId).ability;
+            p.finaleAbilities = p.finaleAbilities.filter((x) => x.id !== abilityId);
+          }),
+        );
+      expect(() => without('cindle', 'flare-strike')).toThrow(/both have an ability or neither/);
+      expect(() => without('tidewing', 'tidal-mark-2')).toThrow(/both have an ability or neither/);
+    });
+
+    it('rules for basic abilities', () => {
+      const basic = (p: ContentPack) => abilityOf(p, 'shield-wall');
+      expect(() =>
+        loadContent(
+          mutate((p) =>
+            p.finaleAbilities.push({
+              ...deepClone(abilityOf(p, 'rally')),
+              id: 'rally-2',
+            }),
+          ),
+        ),
+      ).toThrow(/two basic abilities/);
+      expect(() =>
+        loadContent(mutate((p) => (basic(p).effects = [{ op: 'strike', atkBp: 1000 }]))),
+      ).toThrow(/cannot strike/);
+      expect(() =>
+        loadContent(
+          mutate(
+            (p) =>
+              (basic(p).effects = [{ op: 'shield_wall', zone: 'own', reduceBp: 5000, rounds: 1 }]),
+          ),
+        ),
+      ).toThrow(/choose/);
+      expect(() =>
+        loadContent(mutate((p) => (basic(p).effects = [...basic(p).effects, { op: 'purge' }]))),
+      ).toThrow(/exactly one effect/);
+    });
+
+    it('an ability may not repeat an effect', () => {
+      expect(() =>
+        loadContent(
+          mutate((p) => {
+            const a = abilityOf(p, 'flare-strike');
+            a.effects = [...a.effects, { op: 'strike', atkBp: 100 }];
           }),
         ),
-      ),
-    ).toThrow(/two finale abilities/);
+      ).toThrow(/repeats an effect/);
+    });
+
+    it('requires stage 2 to be stronger than stage 1', () => {
+      const set = (
+        p: ContentPack,
+        id: string,
+        effects: ContentPack['finaleAbilities'][number]['effects'],
+      ) => {
+        abilityOf(p, id).effects = effects;
+      };
+      // Equal strength is not "stronger".
+      expect(() =>
+        loadContent(mutate((p) => set(p, 'flare-strike-2', abilityOf(p, 'flare-strike').effects))),
+      ).toThrow(/not stronger/);
+      // Weaker amount.
+      expect(() =>
+        loadContent(mutate((p) => set(p, 'flare-strike-2', [{ op: 'strike', atkBp: 1000 }]))),
+      ).toThrow(/weaker/);
+      // Shorter duration, even with a bigger amount.
+      expect(() =>
+        loadContent(
+          mutate((p) =>
+            set(p, 'bark-guard-2', [{ op: 'shield_wall', zone: 'own', reduceBp: 9000, rounds: 1 }]),
+          ),
+        ),
+      ).toThrow(/shorter/);
+      // Missing the stage-1 effect.
+      expect(() =>
+        loadContent(mutate((p) => set(p, 'tidal-mark-2', [{ op: 're_mark', element: 'own' }]))),
+      ).toThrow(/lacks the "rally"/);
+      expect(() =>
+        loadContent(mutate((p) => set(p, 'static-zap-2', [{ op: 're_mark', element: 'own' }]))),
+      ).toThrow(/lacks the "strike"/);
+      // Changing own to choose.
+      expect(() =>
+        loadContent(
+          mutate((p) =>
+            set(p, 'bark-guard-2', [
+              { op: 'shield_wall', zone: 'choose', reduceBp: 9000, rounds: 3 },
+            ]),
+          ),
+        ),
+      ).toThrow(/zone/);
+    });
   });
 });

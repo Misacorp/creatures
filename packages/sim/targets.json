@@ -166,5 +166,53 @@
     "comparator": "max",
     "value": 0.15,
     "unit": "percent"
+  },
+  {
+    "id": "longrun-win-small",
+    "description": "Long-run finale win rate per server, Festivals included, small server (5 players, 30 weeks)",
+    "metric": "longrun.small.finaleWinRate",
+    "comparator": "range",
+    "value": [0.4, 0.6],
+    "unit": "percent"
+  },
+  {
+    "id": "longrun-win-typical",
+    "description": "Long-run finale win rate per server, Festivals included, typical server (10 players, 30 weeks)",
+    "metric": "longrun.typical.finaleWinRate",
+    "comparator": "range",
+    "value": [0.4, 0.6],
+    "unit": "percent"
+  },
+  {
+    "id": "longrun-win-fifteen",
+    "description": "Long-run finale win rate per server, Festivals included, 15-player server (30 weeks)",
+    "metric": "longrun.fifteen.finaleWinRate",
+    "comparator": "range",
+    "value": [0.4, 0.6],
+    "unit": "percent"
+  },
+  {
+    "id": "longrun-festival-win",
+    "description": "Festival finale win rate, lowest of the three server sizes",
+    "metric": "longrun.festivalWinRateMin",
+    "comparator": "min",
+    "value": 0.7,
+    "unit": "percent"
+  },
+  {
+    "id": "longrun-rankup-gap",
+    "description": "Median weeks between rank-ups, all long-run servers",
+    "metric": "longrun.rankUpGapMedian",
+    "comparator": "range",
+    "value": [2, 4],
+    "unit": "number"
+  },
+  {
+    "id": "longrun-loss-streak",
+    "description": "Share of servers with a loss streak of more than 4 weeks, worst of the three sizes",
+    "metric": "longrun.lossStreakShareMax",
+    "comparator": "max",
+    "value": 0.1,
+    "unit": "percent"
   }
 ]

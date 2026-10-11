@@ -1,0 +1,127 @@
+{
+  "serverNow": 1800208800000,
+  "balances": {
+    "bait": 0,
+    "essence": 179
+  },
+  "starterChosen": false,
+  "starterOptions": ["splashet", "cindle", "sproutle"],
+  "creatures": [
+    {
+      "id": "28bc8509-a652-456a-9410-1298b0da9bac",
+      "species": "cindle",
+      "line": "cindle",
+      "level": 10,
+      "levelCap": 15,
+      "fusionCount": 0,
+      "shiny": false,
+      "nickname": null,
+      "away": false,
+      "origin": "test",
+      "caughtAt": 1800007200000,
+      "stats": {
+        "hp": 159,
+        "atk": 67,
+        "spd": 46
+      },
+      "ability": {
+        "id": "flare-strike",
+        "unlocked": true,
+        "unlockLevel": 10,
+        "nextId": "flare-strike-2"
+      },
+      "trainCost": 23,
+      "evolution": {
+        "toSpecies": "pyrelynx",
+        "level": 15,
+        "essence": 20,
+        "available": false
+      }
+    },
+    {
+      "id": "78b34c14-f354-4da4-a3a1-969dc25a2f50",
+      "species": "sproutle",
+      "line": "sproutle",
+      "level": 10,
+      "levelCap": 15,
+      "fusionCount": 0,
+      "shiny": false,
+      "nickname": null,
+      "away": false,
+      "origin": "test",
+      "caughtAt": 1800007200001,
+      "stats": {
+        "hp": 259,
+        "atk": 31,
+        "spd": 25
+      },
+      "ability": {
+        "id": "bark-guard",
+        "unlocked": true,
+        "unlockLevel": 10,
+        "nextId": "bark-guard-2"
+      },
+      "trainCost": 23,
+      "evolution": {
+        "toSpecies": "thornbuck",
+        "level": 15,
+        "essence": 20,
+        "available": false
+      }
+    },
+    {
+      "id": "ea905f0e-815e-4bc4-bde3-56ef1d9cff0e",
+      "species": "zipmouse",
+      "line": "zipmouse",
+      "level": 7,
+      "levelCap": 15,
+      "fusionCount": 0,
+      "shiny": false,
+      "nickname": null,
+      "away": false,
+      "origin": "test",
+      "caughtAt": 1800007200002,
+      "stats": {
+        "hp": 160,
+        "atk": 40,
+        "spd": 44
+      },
+      "ability": {
+        "id": "static-zap",
+        "unlocked": false,
+        "unlockLevel": 10,
+        "nextId": "static-zap-2"
+      },
+      "trainCost": 17,
+      "evolution": {
+        "toSpecies": "voltaro",
+        "level": 15,
+        "essence": 20,
+        "available": false
+      }
+    }
+  ],
+  "expeditions": [],
+  "slots": {
+    "total": 3,
+    "used": 0
+  },
+  "trainingMedianLevel": 10,
+  "serverFirsts": [
+    {
+      "kind": "jackpot",
+      "species": "jackpot",
+      "at": 1800208800000,
+      "mine": true,
+      "holders": ["Player 1"]
+    }
+  ],
+  "timezone": "Europe/Helsinki",
+  "leetSync": {
+    "source": "disabled",
+    "lastAttemptAt": 1800208800000,
+    "lastSyncedAt": null,
+    "lastError": "disabled",
+    "lastDays": null
+  }
+}

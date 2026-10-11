@@ -3,11 +3,17 @@ import * as v from 'valibot';
 import { Collection } from './collection';
 import { collectionRoutes } from './collection-routes';
 import { baitForDay, leetPointsForDay } from './economy';
+import { DiscordError, type GuildApi } from './discord';
+import { canManageGuild } from './discord-permissions';
 import {
+  announceChannelId,
   claimNextPost,
   hasDuePosts,
+  isChannelPinned,
   nextPostAt,
+  pinAnnounceChannel,
   recordOutcome,
+  unpinAnnounceChannel,
   type PostSender,
 } from './discord-posts';
 import { dispatch, errorResponse, json, matchTemplate, type Routes } from './http';
@@ -29,6 +35,7 @@ import {
 import { Raid } from './raid';
 import { raidLiveMigration } from './raid-live-migration';
 import { raidMigration } from './raid-migration';
+import { raidProgressionMigration } from './raid-progression-migration';
 import { raidRoutes } from './raid-routes';
 import { TokenBucketLimiter } from './ratelimit';
 import { SNOWFLAKE_RE } from './schemas';
@@ -78,6 +85,10 @@ const RAID_RETRY_MS = 60 * 1000;
 const POST_RETRY_MS = 60 * 1000;
 /** Most posts one delivery run sends, so a run always ends. */
 const MAX_POSTS_PER_RUN = 20;
+/** How long a "may this player manage the server" answer from Discord is reused. */
+const MANAGE_CACHE_MS = 60 * 1000;
+/** Bound on remembered answers: one per player who asked. */
+const MANAGE_CACHE_MAX = 200;
 
 const LEDGER_DEFAULT_LIMIT = 20;
 const LEDGER_MAX_LIMIT = 50;
@@ -222,6 +233,17 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   },
   // Version 10: the live finale (see raid-live-migration.ts).
   raidLiveMigration,
+  (sql) => {
+    // A server admin can pin the announcement channel: while pinned, logins no longer change
+    // `announce_channel_id`. Each session also remembers the channel it was launched from (Discord's
+    // verified location; null for sessions made before this migration).
+    sql.exec(
+      'ALTER TABLE guild_meta ADD COLUMN announce_channel_pinned INTEGER NOT NULL DEFAULT 0',
+    );
+    sql.exec('ALTER TABLE sessions ADD COLUMN channel_id TEXT');
+  },
+  // Version 12: the Boss Rank ladder, seasons and Festival weeks (see raid-progression-migration.ts).
+  raidProgressionMigration,
 ];
 
 export interface SessionUser {
@@ -235,6 +257,8 @@ interface RequestContext {
   core: GuildCore;
   /** Raw path parameters of a template route such as `/api/creatures/:id/train`. */
   params: Record<string, string>;
+  /** The channel this session was launched from (Discord's verified location), if known. */
+  channelId: string | null;
 }
 
 /** Query of GET /api/ledger: strict, only `limit`. Duplicates and unknown keys are rejected. */
@@ -296,6 +320,11 @@ export interface GuildCoreOptions {
    * is separate from `rng` so raid events never consume a test's scripted catch draws.
    */
   raidRng?: Rng;
+  /**
+   * Fresh randomness for the readiness band (the forecast dice). Defaults to crypto.getRandomValues.
+   * Separate from `raidRng`, so a forecast never consumes the draws of a real fight.
+   */
+  readinessRng?: Rng;
   /** Fallback guild id (the Durable Object's name), used only until one is stored. */
   guildId?: () => string | undefined;
   /** Builds the leet source. Returning null disables syncing (fail closed). */
@@ -304,6 +333,11 @@ export interface GuildCoreOptions {
   syncBudgetMs?: number;
   /** Delivers Discord posts. Without one, posts stay queued and the alarm ignores them. */
   postSender?: PostSender | null;
+  /**
+   * Read-only guild lookups with the bot token, to check who may manage the server. Without one,
+   * the check fails as "Discord unavailable" (fail closed).
+   */
+  guildApi?: GuildApi | null;
   /** Staging only: the practice finale is available (the `RAID_PRACTICE` var is "on"). */
   raidPractice?: boolean;
 }
@@ -339,6 +373,9 @@ export class GuildCore {
   private lastSyncAttemptAt: number | null = null;
   /** The guild's timezone, cached per object; cleared whenever it changes. */
   private cachedTimezone: string | null = null;
+  /** Recent "may manage the server" answers per player, and lookups that are still running. */
+  private readonly manageCache = new Map<string, { allowed: boolean; until: number }>();
+  private readonly manageInFlight = new Map<string, Promise<boolean>>();
 
   constructor(
     private readonly storage: CoreStorage,
@@ -357,6 +394,7 @@ export class GuildCore {
       now,
       rng: options.raidRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
       practice: options.raidPractice === true,
+      ...(options.readinessRng === undefined ? {} : { readinessRng: options.readinessRng }),
     });
     this.limiter = new TokenBucketLimiter({
       capacity: RATE_CAPACITY,
@@ -389,8 +427,9 @@ export class GuildCore {
 
   /**
    * Upserts the player and creates a session. Returns the secret half of the token. `channelId` is
-   * the channel Discord says the Activity was launched from: it becomes the announcement channel
-   * ("the channel most recently launched from"). Anything that is not a snowflake is ignored.
+   * the channel Discord says the Activity was launched from: the session remembers it, and unless a
+   * server admin pinned the announcement channel it becomes the announcement channel ("the channel
+   * most recently launched from"). Anything that is not a snowflake is ignored.
    */
   async createSession(
     guildId: string,
@@ -402,8 +441,14 @@ export class GuildCore {
     const t = this.now();
     this.storage.transactionSync(() => {
       this.bindGuild(guildId);
-      if (typeof channelId === 'string' && SNOWFLAKE_RE.test(channelId)) {
-        this.sql.exec('UPDATE guild_meta SET announce_channel_id = ? WHERE id = 1', channelId);
+      const launchChannel =
+        typeof channelId === 'string' && SNOWFLAKE_RE.test(channelId) ? channelId : null;
+      if (launchChannel !== null) {
+        // A pinned channel stays put.
+        this.sql.exec(
+          'UPDATE guild_meta SET announce_channel_id = ? WHERE id = 1 AND announce_channel_pinned = 0',
+          launchChannel,
+        );
       }
       this.sql.exec(
         'DELETE FROM sessions WHERE expires_at <= ? OR last_used_at <= ?',
@@ -419,12 +464,13 @@ export class GuildCore {
         t,
       );
       this.sql.exec(
-        'INSERT INTO sessions (token_hash, user_id, created_at, last_used_at, expires_at) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO sessions (token_hash, user_id, created_at, last_used_at, expires_at, channel_id) VALUES (?, ?, ?, ?, ?, ?)',
         tokenHash,
         user.id,
         t,
         t,
         t + SESSION_ABSOLUTE_MS,
+        launchChannel,
       );
       this.sql.exec(
         `DELETE FROM sessions WHERE user_id = ? AND token_hash NOT IN (
@@ -497,6 +543,13 @@ export class GuildCore {
 
   /** Returns the session's user, or null if the secret is unknown or the session expired. */
   async verifySession(secret: string): Promise<SessionUser | null> {
+    return (await this.lookupSession(secret))?.user ?? null;
+  }
+
+  /** The session's user and the channel it was launched from, or null if unknown or expired. */
+  private async lookupSession(
+    secret: string,
+  ): Promise<{ user: SessionUser; channelId: string | null } | null> {
     const tokenHash = await hashSecret(secret);
     const t = this.now();
     const rows = this.sql
@@ -505,8 +558,9 @@ export class GuildCore {
         display_name: string;
         last_used_at: number;
         expires_at: number;
+        channel_id: string | null;
       }>(
-        `SELECT s.user_id, p.display_name, s.last_used_at, s.expires_at
+        `SELECT s.user_id, p.display_name, s.last_used_at, s.expires_at, s.channel_id
          FROM sessions s JOIN players p ON p.user_id = s.user_id WHERE s.token_hash = ?`,
         tokenHash,
       )
@@ -523,15 +577,20 @@ export class GuildCore {
         this.sql.exec('UPDATE players SET last_seen_at = ? WHERE user_id = ?', t, row.user_id);
       });
     }
-    return { id: row.user_id, displayName: row.display_name };
+    return {
+      user: { id: row.user_id, displayName: row.display_name },
+      channelId:
+        row.channel_id !== null && SNOWFLAKE_RE.test(row.channel_id) ? row.channel_id : null,
+    };
   }
 
   /** Handles an authenticated API request forwarded by the Worker. */
   async handle(request: Request): Promise<Response> {
     const token = parseAuthorization(request.headers.get('Authorization'));
     if (token === null) return errorResponse('invalid_session', 401);
-    const user = await this.verifySession(token.secret);
-    if (user === null) return errorResponse('invalid_session', 401);
+    const session = await this.lookupSession(token.secret);
+    if (session === null) return errorResponse('invalid_session', 401);
+    const { user } = session;
 
     const limit = this.limiter.take(user.id);
     if (!limit.allowed) {
@@ -547,7 +606,70 @@ export class GuildCore {
       guildId: token.guildId,
       core: this,
       params: template?.params ?? {},
+      channelId: session.channelId,
     });
+  }
+
+  // --- The raid-post channel ---
+
+  /** True while a server admin has pinned the raid-post channel. */
+  channelPinned(): boolean {
+    return isChannelPinned(this.sql);
+  }
+
+  /** True if the pinned channel is `channelId`. Channel ids never leave the server. */
+  isPinnedTo(channelId: string | null): boolean {
+    if (channelId === null || !isChannelPinned(this.sql)) return false;
+    return announceChannelId(this.sql) === channelId;
+  }
+
+  /** Pins the raid-post channel. False if the guild is not bound or the id is not a snowflake. */
+  pinChannel(channelId: string): boolean {
+    return pinAnnounceChannel(this.sql, channelId);
+  }
+
+  unpinChannel(): void {
+    unpinAnnounceChannel(this.sql);
+  }
+
+  /** A fresh remembered answer to "may this player manage the server", or null if there is none. */
+  cachedCanManage(userId: string): boolean | null {
+    const hit = this.manageCache.get(userId);
+    if (hit === undefined) return null;
+    if (this.now() >= hit.until) {
+      this.manageCache.delete(userId);
+      return null;
+    }
+    return hit.allowed;
+  }
+
+  /**
+   * Asks Discord (with the bot token) whether the player is the server's owner or has Manage Server
+   * or Administrator. Answers are remembered for 60 s per player; `fresh` skips the remembered
+   * answer (used before a change). Throws `DiscordError('unavailable')` when Discord cannot answer;
+   * failures are never remembered.
+   */
+  canManageServer(userId: string, options: { fresh?: boolean } = {}): Promise<boolean> {
+    if (options.fresh !== true) {
+      const cached = this.cachedCanManage(userId);
+      if (cached !== null) return Promise.resolve(cached);
+      const running = this.manageInFlight.get(userId);
+      if (running !== undefined) return running;
+    }
+    const guildId = this.storedGuildId();
+    const api = this.options.guildApi ?? null;
+    if (guildId === null || api === null) return Promise.reject(new DiscordError('unavailable'));
+    const run = canManageGuild(api, guildId, userId)
+      .then((allowed) => {
+        if (this.manageCache.size >= MANAGE_CACHE_MAX) this.manageCache.clear();
+        this.manageCache.set(userId, { allowed, until: this.now() + MANAGE_CACHE_MS });
+        return allowed;
+      })
+      .finally(() => {
+        if (this.manageInFlight.get(userId) === run) this.manageInFlight.delete(userId);
+      });
+    this.manageInFlight.set(userId, run);
+    return run;
   }
 
   // --- Ledger ---

@@ -10,6 +10,8 @@ import {
   type EventNames,
   type FightEvent,
 } from '@creatures/engine';
+import { readFestivalGrant, type FestivalGrantView } from './raid-festival';
+import { rankChangeOf, type RankChangeView } from './raid-ladder';
 import { bossFor, type StoredSummary } from './raid-resolve';
 import { jackpotOf } from './raid-reveal';
 import {
@@ -23,9 +25,14 @@ import type { ReplayView } from './raid-view';
 
 export type LiveStatus = 'none' | 'lobby' | 'live' | 'done';
 
+/** One use of an ability: a member's basic ability or one of their creatures' abilities. */
 export interface LiveAbilityView {
+  /** Unique in the fight; the caller sends it to Fire or Hold their own ability. */
+  key: string;
   alias: string;
   abilityId: string;
+  /** The row slot (creature id) of a creature ability; null for a basic ability. */
+  creature: string | null;
   mode: AbilityMode;
   fired: boolean;
   firedAtRound: number | null;
@@ -41,6 +48,10 @@ export interface LiveLoot {
   jackpot: null | { essence: number; firstOnServer: boolean };
   /** Raids taken part in without a jackpot, after this one. Private. */
   pity: number;
+  /** What the finale did to the server's rank; null until the ladder has moved (and in practice). */
+  rankChange: RankChangeView | null;
+  /** The Festival creature the caller got, or null. */
+  festivalGrant: FestivalGrantView | null;
 }
 
 export interface LiveSnapshot {
@@ -152,6 +163,8 @@ function realLoot(ctx: LiveContext, row: LiveRow): LiveLoot | null {
     essence: summary.essence[ctx.userId] ?? 0,
     jackpot: jackpotOf(ctx.sql, ctx.userId, row.weekId, summary),
     pity: pityOf(ctx.sql, ctx.userId),
+    rankChange: rankChangeOf(ctx.sql, row.weekId),
+    festivalGrant: readFestivalGrant(ctx.sql, row.weekId, ctx.userId),
   };
 }
 
@@ -188,10 +201,12 @@ export function liveSnapshot(
   for (const m of row.members) aliasNames[m.alias] = ctx.names.get(m.userId) ?? 'Unknown';
   const abilities: LiveAbilityView[] = row.abilities.map((a) => {
     const def = content.finaleAbilities.find((d) => d.id === a.abilityId);
-    const firedAtRound = firedRound(result, a.alias, state.clockRound);
+    const firedAtRound = firedRound(result, a.key, state.clockRound);
     return {
+      key: a.key,
       alias: a.alias,
       abilityId: a.abilityId,
+      creature: a.creatureId,
       mode: a.mode,
       fired: firedAtRound !== null,
       firedAtRound,
@@ -208,6 +223,8 @@ export function liveSnapshot(
           essence: 0,
           jackpot: null,
           pity: pityOf(ctx.sql, ctx.userId),
+          rankChange: null,
+          festivalGrant: null,
         }
       : realLoot(ctx, row);
   }

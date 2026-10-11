@@ -118,7 +118,10 @@ export function createPostSender(config: PostSenderConfig): PostSender {
 
 // --- The queue (guild Durable Object storage) ---
 
-/** The channel the Activity was most recently launched from, or null if none is known. */
+/**
+ * The channel raid posts go to, or null if none is known: the pinned channel while one is pinned
+ * (logins do not change it then), otherwise the channel the Activity was most recently launched from.
+ */
 export function announceChannelId(sql: SqlStorage): string | null {
   const row = sql
     .exec<{ announce_channel_id: string | null }>(
@@ -127,6 +130,34 @@ export function announceChannelId(sql: SqlStorage): string | null {
     .toArray()[0];
   const id = row?.announce_channel_id ?? null;
   return id !== null && SNOWFLAKE_RE.test(id) ? id : null;
+}
+
+/** True while a server admin has pinned the announcement channel. */
+export function isChannelPinned(sql: SqlStorage): boolean {
+  const row = sql
+    .exec<{ pinned: number }>(
+      'SELECT announce_channel_pinned AS pinned FROM guild_meta WHERE id = 1',
+    )
+    .toArray()[0];
+  return row?.pinned === 1;
+}
+
+/** Pins `channelId` (a verified snowflake) as the announcement channel. False if the guild is not bound. */
+export function pinAnnounceChannel(sql: SqlStorage, channelId: string): boolean {
+  if (!SNOWFLAKE_RE.test(channelId)) return false;
+  return (
+    sql
+      .exec(
+        'UPDATE guild_meta SET announce_channel_id = ?, announce_channel_pinned = 1 WHERE id = 1 RETURNING id',
+        channelId,
+      )
+      .toArray().length > 0
+  );
+}
+
+/** Unpins: the channel stays as it was until the next login, which then updates it again. */
+export function unpinAnnounceChannel(sql: SqlStorage): void {
+  sql.exec('UPDATE guild_meta SET announce_channel_pinned = 0 WHERE id = 1');
 }
 
 /**

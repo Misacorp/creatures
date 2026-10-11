@@ -1,9 +1,15 @@
 import * as v from 'valibot';
 import {
   ActivityInstanceSchema,
+  DiscordGuildSchema,
+  DiscordMemberSchema,
+  DiscordRolesSchema,
   DiscordTokenResponseSchema,
   DiscordUserSchema,
+  SNOWFLAKE_RE,
   type ActivityInstance,
+  type DiscordMember,
+  type DiscordRole,
   type DiscordUser,
 } from './schemas';
 
@@ -42,34 +48,43 @@ function isTransient(status: number): boolean {
   return status === 429 || status >= 500;
 }
 
+type Fetch = typeof fetch;
+
+async function sendRequest(
+  doFetch: Fetch,
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  try {
+    return await doFetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+  } catch {
+    // Network error or timeout. Details are dropped on purpose.
+    throw new DiscordError('unavailable');
+  }
+}
+
+async function parseResponse<S extends v.GenericSchema>(
+  res: Response,
+  schema: S,
+): Promise<v.InferOutput<S>> {
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    throw new DiscordError('unavailable');
+  }
+  const result = v.safeParse(schema, body);
+  if (!result.success) {
+    throw new DiscordError('unavailable');
+  }
+  return result.output;
+}
+
 export function createDiscordApi(config: DiscordConfig): DiscordApi {
   const doFetch = config.fetch ?? fetch;
-
-  async function send(url: string, init: RequestInit): Promise<Response> {
-    try {
-      return await doFetch(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
-    } catch {
-      // Network error or timeout. Details are dropped on purpose.
-      throw new DiscordError('unavailable');
-    }
-  }
-
-  async function parse<S extends v.GenericSchema>(
-    res: Response,
-    schema: S,
-  ): Promise<v.InferOutput<S>> {
-    let body: unknown;
-    try {
-      body = await res.json();
-    } catch {
-      throw new DiscordError('unavailable');
-    }
-    const result = v.safeParse(schema, body);
-    if (!result.success) {
-      throw new DiscordError('unavailable');
-    }
-    return result.output;
-  }
+  const send = (url: string, init: RequestInit) => sendRequest(doFetch, url, init, TIMEOUT_MS);
+  const parse = parseResponse;
 
   return {
     async exchangeCode(code) {
@@ -104,6 +119,72 @@ export function createDiscordApi(config: DiscordConfig): DiscordApi {
       // Any other failure here (including 401/403) is our configuration, not the player's fault.
       if (!res.ok) throw new DiscordError('unavailable');
       return parse(res, ActivityInstanceSchema);
+    },
+  };
+}
+
+/**
+ * Read-only guild lookups with the bot token, used to check who may manage the server. Every
+ * failure (network, timeout, redirect, 5xx, 429, our own missing access, a reply of the wrong
+ * shape) is `DiscordError('unavailable')`. The one exception is a member that does not exist.
+ */
+export interface GuildApi {
+  /** The id of the guild's owner. */
+  getGuildOwnerId(guildId: string): Promise<string>;
+  /** Every role of the guild, the @everyone role (whose id equals the guild id) included. */
+  getGuildRoles(guildId: string): Promise<DiscordRole[]>;
+  /** Resolves to null when the user is not a member of the guild. */
+  getGuildMember(guildId: string, userId: string): Promise<DiscordMember | null>;
+}
+
+export interface GuildApiConfig {
+  botToken: string;
+  fetch?: Fetch;
+}
+
+export function createGuildApi(config: GuildApiConfig): GuildApi {
+  const doFetch = config.fetch ?? fetch;
+
+  async function get(path: string): Promise<Response> {
+    return sendRequest(
+      doFetch,
+      `${API_BASE}${path}`,
+      {
+        headers: { Authorization: `Bot ${config.botToken}` },
+        // workerd rejects 'error'. A redirect is never expected from the API; it counts as a failure.
+        redirect: 'manual',
+      },
+      TIMEOUT_MS,
+    );
+  }
+
+  /** The ids go into URLs: only ever snowflakes. */
+  function checkIds(...ids: string[]): void {
+    if (!ids.every((id) => SNOWFLAKE_RE.test(id))) throw new DiscordError('unavailable');
+  }
+
+  return {
+    async getGuildOwnerId(guildId) {
+      checkIds(guildId);
+      const res = await get(`/guilds/${guildId}`);
+      // 401/403/404 here mean the bot is not in the guild or its token is wrong: our configuration.
+      if (!res.ok) throw new DiscordError('unavailable');
+      return (await parseResponse(res, DiscordGuildSchema)).owner_id;
+    },
+
+    async getGuildRoles(guildId) {
+      checkIds(guildId);
+      const res = await get(`/guilds/${guildId}/roles`);
+      if (!res.ok) throw new DiscordError('unavailable');
+      return parseResponse(res, DiscordRolesSchema);
+    },
+
+    async getGuildMember(guildId, userId) {
+      checkIds(guildId, userId);
+      const res = await get(`/guilds/${guildId}/members/${userId}`);
+      if (res.status === 404) return null;
+      if (!res.ok) throw new DiscordError('unavailable');
+      return parseResponse(res, DiscordMemberSchema);
     },
   };
 }

@@ -463,17 +463,23 @@ describe('input checks', () => {
       simulateFight({ ...ok(), adaptation: { rule: 'nope', target: 'x' } }, rng()),
     ).toThrow(/adaptation/);
     expect(() =>
-      simulateFight({ ...ok(), finaleAbilities: [{ playerId: 'p1', abilityId: 'nope' }] }, rng()),
+      simulateFight(
+        { ...ok(), finaleAbilities: [{ key: 'k', playerId: 'p1', abilityId: 'nope' }] },
+        rng(),
+      ),
     ).toThrow(/finale ability/);
     expect(() =>
       simulateFight(
-        { ...ok(), finaleAbilities: [{ playerId: 'ghost', abilityId: 'rally' }] },
+        { ...ok(), finaleAbilities: [{ key: 'k', playerId: 'ghost', abilityId: 'rally' }] },
         rng(),
       ),
     ).toThrow(/unknown player/);
     expect(() =>
       simulateFight(
-        { ...ok(), finaleAbilities: [{ playerId: 'p1', abilityId: 'rally', fireAtRound: 0 }] },
+        {
+          ...ok(),
+          finaleAbilities: [{ key: 'k', playerId: 'p1', abilityId: 'rally', fireAtRound: 0 }],
+        },
         rng(),
       ),
     ).toThrow(/fireAtRound/);

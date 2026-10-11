@@ -18,8 +18,10 @@ import {
   expectApiHeaders,
   runCore,
   tokenFor,
+  undoChannelPinMigration,
   undoDiscordPostsMigration,
   undoLiveMigration,
+  undoProgressionMigration,
   undoRaidMigration,
 } from './helpers';
 
@@ -89,10 +91,10 @@ describe('schema migrations', () => {
         ]),
       );
       const version = sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one();
-      expect(version.v).toBe(10);
+      expect(version.v).toBe(12);
       // Running migrations again is a no-op.
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(10);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(12);
       return Promise.resolve();
     });
   });
@@ -123,7 +125,7 @@ describe('migration 5 (guild timezone)', () => {
       core.migrate();
 
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        10,
+        12,
       );
       expect(sql.exec('SELECT id, guild_id, timezone FROM guild_meta').toArray()).toEqual([
         { id: 1, guild_id: '740000000000000010', timezone: 'Europe/Helsinki' },
@@ -166,9 +168,15 @@ describe('migration 9 (announcement channel and Discord posts)', () => {
       core.migrate();
 
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        10,
+        12,
       );
-      expect(columns()).toEqual(['id', 'guild_id', 'timezone', 'announce_channel_id']);
+      expect(columns()).toEqual([
+        'id',
+        'guild_id',
+        'timezone',
+        'announce_channel_id',
+        'announce_channel_pinned',
+      ]);
       expect(
         sql.exec('SELECT guild_id, timezone, announce_channel_id FROM guild_meta').toArray(),
       ).toEqual([
@@ -220,7 +228,7 @@ describe('migration 10 (the live finale)', () => {
 
       core.migrate();
 
-      expect(version(sql)).toBe(10);
+      expect(version(sql)).toBe(12);
       expect(columns(sql, 'raid_abilities')).toEqual(['week_id', 'user_id', 'ability_id']);
       expect(columns(sql, 'raid_live')).toEqual([
         'week_id',
@@ -266,7 +274,164 @@ describe('migration 10 (the live finale)', () => {
       ).toThrow(/UNIQUE|constraint/i);
       // Running the migrations again is a no-op.
       core.migrate();
+      expect(version(sql)).toBe(12);
+    });
+  });
+});
+
+describe('migration 11 (pinned announcement channel, session channel)', () => {
+  const columns = (sql: SqlStorage, table: string) =>
+    sql
+      .exec<{ name: string }>('SELECT name FROM pragma_table_info(?)', table)
+      .toArray()
+      .map((c) => c.name);
+  const version = (sql: SqlStorage) =>
+    sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v;
+
+  it('applies on a schema-10 object: nothing is pinned and old sessions have no channel', async () => {
+    await runCore('740000000000000040', async ({ core, sql, request }) => {
+      const secret = await core.createSession('740000000000000040', USER, '555555555555555555');
+      undoChannelPinMigration(sql);
       expect(version(sql)).toBe(10);
+      expect(columns(sql, 'guild_meta')).toEqual([
+        'id',
+        'guild_id',
+        'timezone',
+        'announce_channel_id',
+      ]);
+      expect(columns(sql, 'sessions')).not.toContain('channel_id');
+
+      core.migrate();
+
+      expect(version(sql)).toBe(12);
+      expect(columns(sql, 'guild_meta')).toEqual([
+        'id',
+        'guild_id',
+        'timezone',
+        'announce_channel_id',
+        'announce_channel_pinned',
+      ]);
+      expect(columns(sql, 'sessions')).toContain('channel_id');
+      expect(
+        sql.exec('SELECT announce_channel_id, announce_channel_pinned FROM guild_meta').one(),
+      ).toEqual({
+        announce_channel_id: '555555555555555555',
+        announce_channel_pinned: 0,
+      });
+      expect(sql.exec('SELECT channel_id FROM sessions').toArray()).toEqual([{ channel_id: null }]);
+      // The old session still works; it just has no launch channel.
+      expect((await request(secret, '/api/me')).status).toBe(200);
+      // Running the migrations again is a no-op.
+      core.migrate();
+      expect(version(sql)).toBe(12);
+    });
+  });
+});
+
+describe('migration 12 (Boss Rank ladder, seasons, Festival)', () => {
+  const columns = (sql: SqlStorage, table: string) =>
+    sql
+      .exec<{ name: string }>('SELECT name FROM pragma_table_info(?)', table)
+      .toArray()
+      .map((c) => c.name);
+  const version = (sql: SqlStorage) =>
+    sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v;
+
+  it('applies on a schema-11 object: an open week stays as it was and the ladder starts unplaced', async () => {
+    await runCore('740000000000000050', async ({ core, sql }) => {
+      await core.createSession('740000000000000050', USER);
+      sql.exec(
+        "INSERT INTO raid_weeks (week_id, boss_id, status, created_at) VALUES ('2026-W40', 'b', 'phase1', 1)",
+      );
+      sql.exec(
+        "INSERT INTO raid_parties (week_id, party, hp_max, hp_current, boss_atk) VALUES ('2026-W40', 1, 5000, 3000, 40)",
+      );
+      sql.exec(
+        "INSERT INTO server_firsts (kind, species, user_id, drop_id, at) VALUES ('jackpot', 'jackpot', 'u1', 'jackpot:2026-W39', 5)",
+      );
+      undoProgressionMigration(sql);
+      expect(version(sql)).toBe(11);
+      expect(columns(sql, 'raid_weeks')).toEqual(['week_id', 'boss_id', 'status', 'created_at']);
+      expect(
+        sql.exec('SELECT name FROM sqlite_master WHERE name = ?', 'raid_ladder').toArray(),
+      ).toEqual([]);
+
+      core.migrate();
+
+      expect(version(sql)).toBe(12);
+      expect(columns(sql, 'raid_weeks')).toEqual([
+        'week_id',
+        'boss_id',
+        'status',
+        'created_at',
+        'rank',
+        'effective_rank',
+        'festival',
+        'season_index',
+        'festival_species',
+        'ladder_at',
+        'ladder_won',
+        'rank_after',
+      ]);
+      // The week that was open keeps everything and has no rank or season: it behaves as before.
+      expect(
+        sql
+          .exec(
+            "SELECT week_id, status, rank, effective_rank, festival, season_index, festival_species, ladder_at FROM raid_weeks WHERE week_id = '2026-W40'",
+          )
+          .toArray(),
+      ).toEqual([
+        {
+          week_id: '2026-W40',
+          status: 'phase1',
+          rank: null,
+          effective_rank: null,
+          festival: null,
+          season_index: null,
+          festival_species: null,
+          ladder_at: null,
+        },
+      ]);
+      expect(sql.exec('SELECT hp_max, hp_current, boss_atk FROM raid_parties').one()).toEqual({
+        hp_max: 5000,
+        hp_current: 3000,
+        boss_atk: 40,
+      });
+      // The ladder is one row with no rank yet and no best rank.
+      expect(sql.exec('SELECT id, rank, best_rank FROM raid_ladder').toArray()).toEqual([
+        { id: 1, rank: null, best_rank: null },
+      ]);
+      expect(() => sql.exec('INSERT INTO raid_ladder (id, rank) VALUES (2, 1)')).toThrow(
+        /CHECK|constraint/i,
+      );
+      // server_firsts kept its rows and takes the new kind, and still refuses an unknown one.
+      expect(sql.exec('SELECT kind, species, user_id FROM server_firsts').toArray()).toEqual([
+        { kind: 'jackpot', species: 'jackpot', user_id: 'u1' },
+      ]);
+      sql.exec(
+        "INSERT INTO server_firsts (kind, species, user_id, drop_id, at) VALUES ('festival', 'lanternfin', 'u1', 'festival:2026-W45', 6)",
+      );
+      expect(() =>
+        sql.exec(
+          "INSERT INTO server_firsts (kind, species, user_id, drop_id, at) VALUES ('bogus', 'x', 'u1', 'd', 6)",
+        ),
+      ).toThrow(/CHECK|constraint/i);
+      // One Festival grant per player and week.
+      const grant = () =>
+        sql.exec(
+          "INSERT INTO raid_festival_grants (week_id, user_id, species, outcome, created_at) VALUES ('2026-W45', 'u1', 'lanternfin', 'new', 1)",
+        );
+      grant();
+      expect(grant).toThrow(/UNIQUE|constraint/i);
+      expect(() =>
+        sql.exec(
+          "INSERT INTO raid_festival_grants (week_id, user_id, species, outcome, created_at) VALUES ('2026-W45', 'u2', 'lanternfin', 'bogus', 1)",
+        ),
+      ).toThrow(/CHECK|constraint/i);
+      // Running the migrations again is a no-op.
+      core.migrate();
+      expect(version(sql)).toBe(12);
+      expect(sql.exec('SELECT id, rank, best_rank FROM raid_ladder').toArray()).toHaveLength(1);
     });
   });
 });

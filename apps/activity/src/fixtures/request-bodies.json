@@ -2,28 +2,84 @@
   "action-hold": {
     "method": "POST",
     "path": "/api/raid/live/action",
-    "body": { "action": "hold" }
+    "body": {
+      "key": "m3:basic",
+      "action": "hold"
+    }
   },
   "action-fire": {
     "method": "POST",
     "path": "/api/raid/live/action",
-    "body": { "action": "fire" }
+    "body": {
+      "key": "m3:basic",
+      "action": "fire"
+    }
   },
   "action-fire-zone": {
     "method": "POST",
     "path": "/api/raid/live/action",
-    "body": { "action": "fire", "zone": "back" }
+    "body": {
+      "key": "m1:basic",
+      "action": "fire",
+      "zone": "back"
+    }
   },
   "action-fire-element": {
     "method": "POST",
     "path": "/api/raid/live/action",
-    "body": { "action": "fire", "element": "tide" }
+    "body": {
+      "key": "m2:basic",
+      "action": "fire",
+      "element": "tide"
+    }
   },
-  "ability": { "method": "PUT", "path": "/api/raid/ability", "body": { "abilityId": "rally" } },
+  "ability": {
+    "method": "PUT",
+    "path": "/api/raid/ability",
+    "body": {
+      "abilityId": "rally"
+    }
+  },
   "reveal-seen": {
     "method": "POST",
     "path": "/api/raid/reveal-seen",
-    "body": { "week": "2027-W02" }
+    "body": {
+      "week": "2027-W02"
+    }
   },
-  "practice": { "method": "POST", "path": "/api/raid/practice", "body": {} }
+  "practice": {
+    "method": "POST",
+    "path": "/api/raid/practice",
+    "body": {}
+  },
+  "channel-pin": {
+    "method": "POST",
+    "path": "/api/raid/channel",
+    "body": {
+      "action": "pin"
+    }
+  },
+  "channel-unpin": {
+    "method": "POST",
+    "path": "/api/raid/channel",
+    "body": {
+      "action": "unpin"
+    }
+  },
+  "action-hold-creature": {
+    "method": "POST",
+    "path": "/api/raid/live/action",
+    "body": {
+      "key": "m1:c1",
+      "action": "hold"
+    }
+  },
+  "action-fire-creature": {
+    "method": "POST",
+    "path": "/api/raid/live/action",
+    "body": {
+      "key": "m1:c1",
+      "action": "fire"
+    }
+  }
 }

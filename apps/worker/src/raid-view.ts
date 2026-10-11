@@ -12,19 +12,79 @@ import {
   type FightResult,
   type Zone,
 } from '@creatures/engine';
-import { content } from '@creatures/game';
+import { RULES, content, seasonOf, type ReadinessBand } from '@creatures/game';
 import { speciesOf } from './collection';
+import { readFestivalGrant, type FestivalGrantView } from './raid-festival';
+import { rankChangeOf, readLadder, readWeekProgression, type RankChangeView } from './raid-ladder';
 import type { Raid } from './raid';
-import { abilityFor, bossFor, type StoredSummary } from './raid-resolve';
+import {
+  abilityFor,
+  aliasFor,
+  basicKey,
+  bossFor,
+  creatureKey,
+  type StoredSummary,
+} from './raid-resolve';
 import { latestReveal, type RevealView } from './raid-reveal';
 import { partyMembers, partyOf } from './raid-roster';
-import { RAID_PHASES, isWeekId, type RaidEvent, type RaidPhase } from './raid-schedule';
-import { effectiveTeam, rowLength, type RaidStatus } from './raid-teams';
+import { RAID_PHASES, isWeekId, weekIndex, type RaidEvent, type RaidPhase } from './raid-schedule';
+import { effectiveTeam, rowLength, type RaidStatus, type TeamCreature } from './raid-teams';
 
 export interface RosterEntry {
   displayName: string;
   you: boolean;
   party: number;
+}
+
+/** One ability the caller will bring to the finale (or could, once the creature is trained). */
+export interface AbilityPreview {
+  /** The engine key it will have in the fight. Absent for a locked ability (it will not be there). */
+  key?: string;
+  abilityId: string;
+  /** The team creature it belongs to (the caller's own); null for the basic ability. */
+  creatureId: string | null;
+  /** The creature's species; null for the basic ability. */
+  species: string | null;
+  unlocked: boolean;
+  /** The creature level that unlocks it (1 for the basic ability: always there). */
+  unlockLevel: number;
+}
+
+/**
+ * What the caller brings with their current effective team: the basic ability, then one entry for
+ * each team creature whose species has an ability (locked ones too, so the client can show when
+ * they unlock). Empty when the caller is not in a party.
+ */
+function abilityPreview(
+  basic: { abilityId: string } | null,
+  alias: string | null,
+  team: readonly TeamCreature[] | null,
+): AbilityPreview[] {
+  if (basic === null || alias === null || team === null) return [];
+  const out: AbilityPreview[] = [
+    {
+      key: basicKey(alias),
+      abilityId: basic.abilityId,
+      creatureId: null,
+      species: null,
+      unlocked: true,
+      unlockLevel: 1,
+    },
+  ];
+  team.forEach((c, index) => {
+    const abilityId = c.species.ability?.id;
+    if (abilityId === undefined) return;
+    const unlocked = c.level >= RULES.abilities.unlockLevel;
+    out.push({
+      ...(unlocked ? { key: creatureKey(alias, index) } : {}),
+      abilityId,
+      creatureId: c.id,
+      species: c.species.id,
+      unlocked,
+      unlockLevel: RULES.abilities.unlockLevel,
+    });
+  });
+  return out;
 }
 
 export interface RowSlotView {
@@ -59,6 +119,10 @@ export interface PhaseResultView {
   essence: number;
   /** Finale only: display names of the players who hit the jackpot. */
   jackpot: string[];
+  /** Finale only: what it did to the server's rank; null until the ladder has moved, and for phases. */
+  rankChange: RankChangeView | null;
+  /** Finale only: the Festival creature the caller got; null otherwise. */
+  festivalGrant: FestivalGrantView | null;
 }
 
 export interface RaidView {
@@ -73,6 +137,21 @@ export interface RaidView {
     gimmicks: { id: string; name: string }[];
     finaleRounds: number;
   };
+  /**
+   * The server's Boss Rank this week (what rewards follow); null for a week that was already open
+   * when ranks were introduced (it keeps its old rules) and while a new server has nobody in yet.
+   */
+  rank: number | null;
+  /** The rank the boss fights at: the rank, or lower in a Festival week. Null with `rank`. */
+  effectiveRank: number | null;
+  /** A Festival week: an easier boss, bonus Essence, and a creature for every winner. */
+  festival: boolean;
+  /** The Festival creature's species id of a Festival week; null otherwise. */
+  festivalCreature: string | null;
+  /** Where the week sits in its 5-week season (`week` is 1 to 5, the 5th is the Festival); null for an old week. */
+  season: { index: number; week: number } | null;
+  /** The highest rank the server has cleared in a normal week; null until it has cleared one. */
+  bestRank: number | null;
   schedule: Record<RaidEvent, number>;
   /** The next event that has not run yet. */
   next: { event: RaidEvent; at: number } | null;
@@ -93,6 +172,8 @@ export interface RaidView {
      * caller is not in a party.
      */
     ability: { abilityId: string; chosen: boolean } | null;
+    /** Everything the caller brings to the finale with their current team (see `AbilityPreview`). */
+    abilities: AbilityPreview[];
     /**
      * The loot reveal of the latest finale the caller took part in, until they mark it seen
      * (`POST /api/raid/reveal-seen`). Only the caller's own.
@@ -120,6 +201,11 @@ export interface RaidView {
     /** The boss's phase 2 counter-move, once phase 1 has resolved. */
     adaptation: { description: string; rule: string | null; target: string | null } | null;
     results: PhaseResultView[];
+    /**
+     * How ready the party's team looks: a vague band, never a number. Null when there is none (the
+     * finale has started or resolved).
+     */
+    readiness: ReadinessBand | null;
   };
 }
 
@@ -180,9 +266,13 @@ export function buildRaidView(
           .toArray();
   const slotOf = new Map(placements.map((p) => [p.creature_id, p.slot]));
 
+  const partyIds = myParty === null ? [] : partyMembers(sql, week.weekId, myParty);
+  const myAbility = myParty === null ? null : abilityFor(sql, week.weekId, partyIds, userId);
+  const myIndex = partyIds.indexOf(userId);
+
   let partyView: RaidView['party'] = null;
   if (myParty !== null) {
-    const members = partyMembers(sql, week.weekId, myParty);
+    const members = partyIds;
     const length = rowLength(members.length);
     const creatureInfo = new Map<string, { species: string; name: string; level: number }>();
     for (const p of placements) {
@@ -245,7 +335,15 @@ export function buildRaidView(
       .toArray()
       .sort((a, b) => RAID_PHASES.indexOf(a.phase) - RAID_PHASES.indexOf(b.phase))
       .map((r) =>
-        resultView(r.phase, JSON.parse(r.summary) as StoredSummary, r.created_at, userId, names),
+        resultView(
+          sql,
+          week.weekId,
+          r.phase,
+          JSON.parse(r.summary) as StoredSummary,
+          r.created_at,
+          userId,
+          names,
+        ),
       );
     partyView = {
       party: myParty,
@@ -265,8 +363,11 @@ export function buildRaidView(
               target: pool.adaptation_target,
             },
       results,
+      readiness: raid.readiness(week, myParty),
     };
   }
+
+  const progression = readWeekProgression(sql, week.weekId);
 
   return {
     weekId: week.weekId,
@@ -280,6 +381,18 @@ export function buildRaidView(
       gimmicks: boss.gimmicks.map((g) => ({ id: g.id, name: g.name })),
       finaleRounds: boss.finaleRounds,
     },
+    rank: progression?.rank ?? null,
+    effectiveRank: progression?.effectiveRank ?? null,
+    festival: progression?.festival === true,
+    festivalCreature: progression?.festivalSpecies ?? null,
+    season:
+      progression === null
+        ? null
+        : {
+            index: progression.seasonIndex,
+            week: seasonOf(weekIndex(week.weekId)).weekInSeason + 1,
+          },
+    bestRank: readLadder(sql).bestRank,
     schedule,
     next: pending === undefined ? null : { event: pending, at: schedule[pending] },
     serverNow: now,
@@ -291,10 +404,12 @@ export function buildRaidView(
       party: myParty,
       canEdit: myParty !== null && week.status !== 'finale',
       canOptOut: week.status === 'open',
-      ability:
-        myParty === null
-          ? null
-          : abilityFor(sql, week.weekId, partyMembers(sql, week.weekId, myParty), userId),
+      ability: myAbility,
+      abilities: abilityPreview(
+        myAbility,
+        myIndex < 0 ? null : aliasFor(myIndex),
+        team === null ? null : team.creatures,
+      ),
       reveal: latestReveal(sql, userId),
       team:
         team === null
@@ -315,6 +430,8 @@ export function buildRaidView(
 }
 
 function resultView(
+  sql: SqlStorage,
+  weekId: string,
   phase: RaidPhase,
   summary: StoredSummary,
   at: number,
@@ -339,6 +456,8 @@ function resultView(
     })),
     essence: summary.essence[userId] ?? 0,
     jackpot: summary.jackpot.map((id) => names.get(id) ?? 'Unknown'),
+    rankChange: phase === 'finale' ? rankChangeOf(sql, weekId) : null,
+    festivalGrant: phase === 'finale' ? readFestivalGrant(sql, weekId, userId) : null,
   };
 }
 

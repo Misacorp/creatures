@@ -3,12 +3,17 @@ import {
   RULES,
   content,
   effectiveStats,
+  int,
+  NO_LUCK,
   type AdaptationDef,
   type BossDef,
   type ContentPack,
+  type CritBonus,
+  type Effect,
   type Element,
   type FinaleAbilityDef,
   type Gimmick,
+  type LuckConfig,
   type ReactionDef,
   type Rng,
   type Role,
@@ -19,6 +24,7 @@ import {
 import { matchupBp } from './matchup';
 import { sanitizeBp, type CreatureView, type Mutator, type MutatorHooks } from './mutators';
 import type {
+  AbilityChoice,
   AdaptationSuggestion,
   CreatureTotals,
   FightEvent,
@@ -51,6 +57,9 @@ interface Creature {
   silenced: number;
   /** Support buffs waiting for this creature's next hit. */
   buffs: { from: number; bp: number }[];
+  /** This creature's crit chance and extra crit damage (basis points); 0 when crits are off. */
+  critChanceBp: number;
+  critBp: number;
 }
 
 interface Mark {
@@ -92,6 +101,16 @@ function firstZoneHit(boss: BossDef, rounds: number): { round: number; zone: Zon
     }
   }
   return null;
+}
+
+/** True if the ability can only work with a creature: it strikes or uses `own` zone or element. */
+export function needsCreature(def: FinaleAbilityDef): boolean {
+  return def.effects.some(
+    (e: Effect) =>
+      e.op === 'strike' ||
+      (e.op === 'shield_wall' && e.zone === 'own') ||
+      (e.op === 're_mark' && e.element === 'own'),
+  );
 }
 
 /**
@@ -161,17 +180,43 @@ export function simulateFight(
   for (const a of pack.finaleAbilities) abilityDefs.set(a.id, a);
 
   let rule: AdaptationDef | null = null;
-  let adaptationActive = false;
+  /** The last round the adaptation is switched off by a purge (0: never purged). */
+  let purgedThrough = 0;
   if (input.adaptation !== null) {
     rule = pack.adaptations.find((a) => a.id === input.adaptation?.rule) ?? null;
     if (rule === null) fail(`unknown adaptation rule "${input.adaptation.rule}"`);
-    adaptationActive = true;
   }
   const adaptationTarget = input.adaptation?.target ?? '';
+
+  // ---- luck (all off by default) ----
+  const luck: LuckConfig = input.luck ?? NO_LUCK;
+  checkLuck(luck);
+  const critOn = luck.critChanceBp > 0;
+  const bossCrit = bossCritStats(luck, boss.crit);
+  const bossCritOn = bossCrit.chanceBp > 0;
+  const randomTargetBp = luck.bossRandomTargetBp ?? 0;
+  const spreadOn = luck.spreadBp > 0;
+  const swingOn = luck.surgeChanceBp > 0 || luck.slumpChanceBp > 0;
+  /** This round's dice, drawn at the start of every round whatever happens, so a creature's roll depends on the seed, the round and its slot only. */
+  interface Dice {
+    crit: number;
+    spread: number;
+  }
+  let turnDice: Dice[] = [];
+  let strikeDice: Dice[] = [];
+  /** This round's boss crit dice by target slot: one set for its normal attack, one for gimmicks. */
+  let bossAttackDice: number[] = [];
+  let bossGimmickDice: number[] = [];
+  /** This round's dice for a random boss target: whether it applies, and which living creature. */
+  let targetDice = { use: 10_000, pick: 0 };
+  /** The running Surge (+) or Slump (-) in basis points of team damage, and its last round. */
+  let swingNow = 0;
+  let swingUntil = 0;
 
   // ---- state ----
   const creatures: Creature[] = input.row.map((s, idx) => {
     const stats: Stats = s.stats ?? statsFor(pack, s.speciesId, s.level, s.fusionCount);
+    const crit = critOn ? creatureCritStats(luck, s.crit) : { chanceBp: 0, damageBp: 0 };
     const maxHp =
       s.role === 'guard'
         ? Math.floor((stats.hp * (10_000 + RULES.combat.guardHpBp)) / 10_000)
@@ -190,6 +235,8 @@ export function simulateFight(
       alive: true,
       silenced: 0,
       buffs: [],
+      critChanceBp: crit.chanceBp,
+      critBp: crit.damageBp,
     };
   });
 
@@ -278,10 +325,15 @@ export function simulateFight(
 
   // ---- finale abilities ----
   const zoneHit = firstZoneHit(boss, rounds);
-  const abilitiesByRound = new Map<
-    number,
-    { choice: FightInput['finaleAbilities'][number]; def: FinaleAbilityDef; byDefault: boolean }[]
-  >();
+  interface Scheduled {
+    choice: AbilityChoice;
+    def: FinaleAbilityDef;
+    byDefault: boolean;
+    /** The creature the ability belongs to, if it has one. */
+    source: Creature | null;
+  }
+  const abilitiesByRound = new Map<number, Scheduled[]>();
+  const abilityKeys = new Set<string>();
   for (const choice of input.finaleAbilities) {
     const def = abilityDefs.get(choice.abilityId);
     if (def === undefined) fail(`unknown finale ability "${choice.abilityId}"`);
@@ -289,15 +341,30 @@ export function simulateFight(
     if (choice.fireAtRound !== undefined && !isCount(choice.fireAtRound, 1)) {
       fail('fireAtRound must be an integer >= 1');
     }
+    if (typeof choice.key !== 'string' || choice.key.length < 1 || choice.key.length > 64) {
+      fail('an ability key must be 1 to 64 characters');
+    }
+    if (abilityKeys.has(choice.key)) fail(`duplicate ability key "${choice.key}"`);
+    abilityKeys.add(choice.key);
+    let source: Creature | null = null;
+    if (choice.creatureId !== undefined) {
+      source = creatures.find((c) => c.id === choice.creatureId) ?? null;
+      if (source === null) fail(`ability "${choice.key}" names an unknown creature`);
+      if (source.ownerId !== choice.playerId) {
+        fail(`ability "${choice.key}" names a creature of another player`);
+      }
+    } else if (needsCreature(def)) {
+      fail(`ability "${choice.key}" needs a creature`);
+    }
     const byDefault = choice.fireAtRound === undefined;
     const round = choice.fireAtRound ?? defaultAbilityRound(boss, def, rounds);
     const list = abilitiesByRound.get(round) ?? [];
-    list.push({ choice, def, byDefault });
+    list.push({ choice, def, byDefault, source });
     abilitiesByRound.set(round, list);
   }
 
   // ---- damage to creatures ----
-  const shielded = new Set<Zone>();
+  const shields: { zone: Zone; reduceBp: number; until: number }[] = [];
   const livingIn = (zone: Zone): Creature[] =>
     zoneIndices(zone, n)
       .map((i) => creatures[i] as Creature)
@@ -308,10 +375,23 @@ export function simulateFight(
     rawAmount: number,
     source: 'attack' | 'gimmick' | 'reflect',
     interceptable: boolean,
+    /** The boss crit die of this hit (absent: the hit cannot crit). */
+    die?: number,
   ): void {
-    const amount = Math.max(0, Math.floor((rawAmount * (10_000 + bossDamageBp)) / 10_000));
+    const crit = die !== undefined && bossCritOn && die < bossCrit.chanceBp;
+    let amount = Math.max(
+      0,
+      Math.floor((rawAmount * (10_000 + bossDamageBp + (crit ? bossCrit.damageBp : 0))) / 10_000),
+    );
     const zone = zoneOfIndex(target.idx, n);
-    if (shielded.has(zone)) {
+    // Shield Walls on the zone multiply: two 50% walls leave 25% of the damage.
+    let remainingBp = 10_000;
+    for (const w of shields) {
+      if (w.zone === zone && w.until >= currentRound) {
+        remainingBp = Math.floor((remainingBp * (10_000 - w.reduceBp)) / 10_000);
+      }
+    }
+    if (remainingBp === 0) {
       events.push({
         t: 'boss_hit',
         round: currentRound,
@@ -322,6 +402,8 @@ export function simulateFight(
       });
       return;
     }
+    const reducedBp = 10_000 - remainingBp;
+    if (reducedBp > 0) amount = Math.floor((amount * remainingBp) / 10_000);
     let victim = target;
     if (interceptable && target.role !== 'guard') {
       const guard = livingIn(zone).find((c) => c.role === 'guard');
@@ -339,6 +421,8 @@ export function simulateFight(
         target: victim.id,
         damage: amount,
         from: target.id,
+        ...(reducedBp > 0 ? { reducedBp } : {}),
+        ...(crit && amount > 0 ? { crit: true as const, critBp: bossCrit.damageBp } : {}),
       });
     } else {
       events.push({
@@ -347,6 +431,8 @@ export function simulateFight(
         source,
         target: victim.id,
         damage: amount,
+        ...(reducedBp > 0 ? { reducedBp } : {}),
+        ...(crit && amount > 0 ? { crit: true as const, critBp: bossCrit.damageBp } : {}),
       });
     }
     if (victim.hp === 0 && victim.alive) {
@@ -359,23 +445,43 @@ export function simulateFight(
 
   // ---- a creature hits the boss ----
   let roundBonusBp = 0;
-  let rallyBp = 0;
+  const rallies: { bp: number; until: number }[] = [];
+  const rallyBp = (): number =>
+    rallies.reduce((sum, r) => (r.until >= currentRound ? sum + r.bp : sum), 0);
+  const adaptationOn = (): boolean => rule !== null && currentRound > purgedThrough;
   let reflectArmed = false;
   let reflectUsed = false;
 
-  function hitBoss(c: Creature): void {
+  /**
+   * A creature hits the boss: its turn, or (with `strike`) an ability's strike, which hits for a
+   * share of Attack, leaves the creature's support buffs for its next turn and lands even if the
+   * creature is knocked out.
+   */
+  function hitBoss(c: Creature, strike?: { atkBp: number; ability: string; key: string }): void {
     const matchup = matchupBp(c.element, boss.element, pack.elements);
-    const buffs = c.buffs;
-    c.buffs = [];
+    const atk = strike === undefined ? c.atk : Math.floor((c.atk * strike.atkBp) / 10_000);
+    const buffs = strike === undefined ? c.buffs : [];
+    if (strike === undefined) c.buffs = [];
     const supportBp = buffs.reduce((sum, b) => sum + b.bp, 0);
     const markBefore = mark;
+
+    const dice = (strike === undefined ? turnDice : strikeDice)[c.idx];
+    let luckBp = swingNow;
+    let crit = false;
+    if (dice !== undefined) {
+      if (critOn && dice.crit < c.critChanceBp) {
+        crit = true;
+        luckBp += c.critBp;
+      }
+      luckBp += dice.spread;
+    }
 
     let reaction: ReactionDef | undefined;
     if (markBefore !== null) {
       const candidate = reactionByMark.get(markBefore.element);
       if (candidate !== undefined && candidate.triggerElement === c.element) reaction = candidate;
     }
-    const reflected = reaction !== undefined && reflectArmed && !reflectUsed;
+    const reflected = reaction !== undefined && c.alive && reflectArmed && !reflectUsed;
     if (reflected) reflectUsed = true;
 
     let hookBp = 0;
@@ -398,12 +504,13 @@ export function simulateFight(
       );
     }
 
+    const adapting = adaptationOn();
     const elementResist =
-      adaptationActive && rule?.kind === 'top_element' && adaptationTarget === c.element
+      adapting && rule?.kind === 'top_element' && adaptationTarget === c.element
         ? rule.resistBp
         : 0;
     const reactionResist =
-      adaptationActive &&
+      adapting &&
       reaction !== undefined &&
       rule?.kind === 'top_reaction' &&
       adaptationTarget === reaction.id
@@ -412,7 +519,7 @@ export function simulateFight(
 
     const calc = (modBp: number): { damage: number; bonus: number; reflect: number } => {
       const factor = Math.max(0, 10_000 + Math.max(-10_000, modBp));
-      let plain = Math.floor((c.atk * matchup * factor) / 100_000_000);
+      let plain = Math.floor((atk * matchup * factor) / 100_000_000);
       if (elementResist > 0) plain = Math.floor((plain * (10_000 - elementResist)) / 10_000);
       if (reaction === undefined) return { damage: plain, bonus: 0, reflect: 0 };
       let mult = reaction.multiplierBp;
@@ -424,7 +531,8 @@ export function simulateFight(
       return { damage: plain + bonus, bonus, reflect: 0 };
     };
 
-    const totalBp = supportBp + rallyBp + roundBonusBp + hookBp;
+    const rally = rallyBp();
+    const totalBp = supportBp + rally + roundBonusBp + hookBp + luckBp;
     const hit = calc(totalBp);
     bossHp = Math.max(0, bossHp - hit.damage);
     damageByElement[c.element] += hit.damage;
@@ -462,6 +570,9 @@ export function simulateFight(
       bonusBp: totalBp,
       mark: markBefore?.element ?? null,
       bossHp,
+      ...(strike === undefined ? {} : { ability: strike.ability, key: strike.key }),
+      ...(luckBp === 0 ? {} : { luckBp }),
+      ...(crit ? { crit: true as const, critBp: c.critBp } : {}),
     });
 
     if (reaction !== undefined && markBefore !== null) {
@@ -503,57 +614,81 @@ export function simulateFight(
   }
 
   // ---- finale ability effects ----
-  function fireAbility(
-    choice: FightInput['finaleAbilities'][number],
-    def: FinaleAbilityDef,
-    byDefault: boolean,
-  ): void {
-    const base = {
-      t: 'ability' as const,
+  function fireAbility(a: Scheduled): void {
+    const { choice, def, byDefault, source } = a;
+    // Resolve what the effects need first, so the ability event can say it.
+    let zone: Zone | undefined;
+    let element: Element | undefined;
+    for (const e of def.effects) {
+      if (e.op === 'shield_wall') {
+        zone =
+          e.zone === 'own' && source !== null
+            ? zoneOfIndex(source.idx, n)
+            : (choice.params?.zone ?? zoneHit?.zone ?? 'front');
+      } else if (e.op === 're_mark') {
+        const own = creatures.find((c) => c.ownerId === choice.playerId);
+        element =
+          e.element === 'own' && source !== null
+            ? source.element
+            : (choice.params?.element ?? source?.element ?? own?.element ?? ELEMENTS[0] ?? 'tide');
+      }
+    }
+    events.push({
+      t: 'ability',
       round: currentRound,
       player: choice.playerId,
       ability: def.id,
+      key: choice.key,
+      ...(source === null ? {} : { creature: source.id }),
+      ...(zone === undefined ? {} : { zone }),
+      ...(element === undefined ? {} : { element }),
       byDefault,
-    };
-    switch (def.effect.op) {
-      case 'rally':
-        rallyBp += def.effect.damageBp;
-        events.push(base);
-        break;
-      case 'shield_wall': {
-        const zone = choice.params?.zone ?? zoneHit?.zone ?? 'front';
-        shielded.add(zone);
-        events.push({ ...base, zone });
-        break;
-      }
-      case 're_mark': {
-        const first = creatures.find((c) => c.ownerId === choice.playerId);
-        const element = choice.params?.element ?? first?.element ?? ELEMENTS[0] ?? 'tide';
-        events.push({ ...base, element });
-        events.push({
-          t: 'mark',
-          round: currentRound,
-          creature: null,
-          player: choice.playerId,
-          element,
-          replaced: mark?.element ?? null,
-        });
-        mark = { element, creature: null, player: choice.playerId };
-        break;
-      }
-      case 'purge':
-        events.push(base);
-        if (adaptationActive && rule !== null) {
-          adaptationActive = false;
-          events.push({
-            t: 'adaptation',
-            round: currentRound,
-            rule: rule.id,
-            target: adaptationTarget,
-            status: 'purged',
+    });
+    for (const e of def.effects) {
+      switch (e.op) {
+        case 'rally':
+          rallies.push({ bp: e.damageBp, until: currentRound + e.rounds - 1 });
+          break;
+        case 'shield_wall':
+          shields.push({
+            zone: zone as Zone,
+            reduceBp: e.reduceBp,
+            until: currentRound + e.rounds - 1,
           });
-        }
-        break;
+          break;
+        case 're_mark':
+          events.push({
+            t: 'mark',
+            round: currentRound,
+            creature: source?.id ?? null,
+            player: choice.playerId,
+            element: element as Element,
+            replaced: mark?.element ?? null,
+          });
+          mark = { element: element as Element, creature: source, player: choice.playerId };
+          break;
+        case 'purge':
+          if (rule !== null && adaptationOn()) {
+            events.push({
+              t: 'adaptation',
+              round: currentRound,
+              rule: rule.id,
+              target: adaptationTarget,
+              status: 'purged',
+            });
+          }
+          // A purge without `rounds` lasts to the end; the longest one wins.
+          purgedThrough = Math.max(
+            purgedThrough,
+            e.rounds === undefined ? Number.POSITIVE_INFINITY : currentRound + e.rounds - 1,
+          );
+          break;
+        case 'strike':
+          if (source !== null && bossHp > 0) {
+            hitBoss(source, { atkBp: e.atkBp, ability: def.id, key: choice.key });
+          }
+          break;
+      }
     }
   }
 
@@ -571,7 +706,7 @@ export function simulateFight(
     switch (g.op) {
       case 'hit_zone': {
         const amount = Math.floor((input.bossAtk * g.power) / 10_000);
-        for (const c of livingIn(g.zone)) hurt(c, amount, 'gimmick', false);
+        for (const c of livingIn(g.zone)) hurt(c, amount, 'gimmick', false, bossGimmickDice[c.idx]);
         break;
       }
       case 'silence_ends': {
@@ -588,7 +723,13 @@ export function simulateFight(
       case 'strike_highest_atk': {
         const target = livingTargetByAtk();
         if (target !== undefined) {
-          hurt(target, Math.floor((input.bossAtk * g.power) / 10_000), 'gimmick', true);
+          hurt(
+            target,
+            Math.floor((input.bossAtk * g.power) / 10_000),
+            'gimmick',
+            true,
+            bossGimmickDice[target.idx],
+          );
         }
         break;
       }
@@ -598,6 +739,20 @@ export function simulateFight(
   }
 
   function bossAttack(): void {
+    if (randomTargetBp > 0 && targetDice.use < randomTargetBp) {
+      const living = creatures.filter((c) => c.alive);
+      const target = living[Math.floor((targetDice.pick * living.length) / 1_000_000)];
+      if (target !== undefined) {
+        hurt(
+          target,
+          Math.floor((input.bossAtk * RULES.combat.bossAttackBp) / 10_000),
+          'attack',
+          true,
+          bossAttackDice[target.idx],
+        );
+        return;
+      }
+    }
     for (const zone of ZONES) {
       const living = livingIn(zone);
       const first = living[0];
@@ -608,6 +763,7 @@ export function simulateFight(
         Math.floor((input.bossAtk * RULES.combat.bossAttackBp) / 10_000),
         'attack',
         true,
+        bossAttackDice[target.idx],
       );
       return;
     }
@@ -631,15 +787,70 @@ export function simulateFight(
   for (let round = 1; round <= rounds && bossHp > 0; round++) {
     played = round;
     currentRound = round;
-    events.push({ t: 'round_start', round, bossHp, mark: mark?.element ?? null });
+    // A Surge or Slump starts with this chance (one die every round, so the dice never depend on
+    // what the players do) and lasts `swingRounds` rounds; a new one cannot start inside one.
+    let started: { kind: 'surge' | 'slump'; bp: number; rounds: number } | undefined;
+    if (swingOn) {
+      const roll = int(rng, 10_000);
+      if (round > swingUntil) swingNow = 0;
+      if (swingNow === 0) {
+        const kind =
+          roll < luck.surgeChanceBp
+            ? 'surge'
+            : roll >= 10_000 - luck.slumpChanceBp
+              ? 'slump'
+              : undefined;
+        if (kind !== undefined) {
+          swingNow = kind === 'surge' ? luck.swingBp : -luck.swingBp;
+          swingUntil = round + luck.swingRounds - 1;
+          started = { kind, bp: luck.swingBp, rounds: luck.swingRounds };
+        }
+      }
+    }
+    events.push({
+      t: 'round_start',
+      round,
+      bossHp,
+      mark: mark?.element ?? null,
+      ...(started === undefined ? {} : { luck: started }),
+    });
     roundBonusBp = 0;
-    rallyBp = 0;
     reflectArmed = false;
     reflectUsed = false;
-    shielded.clear();
+    if (
+      rule !== null &&
+      purgedThrough > 0 &&
+      Number.isFinite(purgedThrough) &&
+      purgedThrough === round - 1
+    ) {
+      events.push({
+        t: 'adaptation',
+        round,
+        rule: rule.id,
+        target: adaptationTarget,
+        status: 'restored',
+      });
+    }
     runHook('onRoundStart', baseContext, (r) => {
       roundBonusBp += sanitizeBp(pick(r, 'damageBonusBp'));
     });
+    if (critOn || spreadOn) {
+      const draw = (): Dice[] =>
+        creatures.map(() => ({
+          crit: critOn ? int(rng, 10_000) : 10_000,
+          spread: spreadOn ? int(rng, 2 * luck.spreadBp + 1) - luck.spreadBp : 0,
+        }));
+      turnDice = draw();
+      strikeDice = draw();
+    }
+    if (bossCritOn) {
+      // After the player dice, so switching boss crits on never moves the player dice.
+      bossAttackDice = creatures.map(() => int(rng, 10_000));
+      bossGimmickDice = creatures.map(() => int(rng, 10_000));
+    }
+    if (randomTargetBp > 0) {
+      targetDice = { use: int(rng, 10_000), pick: int(rng, 1_000_000) };
+    }
 
     for (const g of boss.gimmicks) {
       if (g.op === 'reflect_first_reaction' && gimmickDue(g, round)) {
@@ -666,9 +877,13 @@ export function simulateFight(
       }
     }
 
-    for (const a of abilitiesByRound.get(round) ?? []) fireAbility(a.choice, a.def, a.byDefault);
+    for (const a of abilitiesByRound.get(round) ?? []) {
+      if (bossHp === 0) break;
+      fireAbility(a);
+    }
 
     for (const idx of order) {
+      if (bossHp === 0) break;
       const c = creatures[idx] as Creature;
       if (!c.alive) continue;
       if (c.silenced > 0) {
@@ -678,7 +893,6 @@ export function simulateFight(
       }
       events.push({ t: 'turn', round, creature: c.id });
       hitBoss(c);
-      if (bossHp === 0) break;
     }
 
     if (bossHp > 0) {
@@ -730,6 +944,53 @@ export function simulateFight(
     reactions: { byType: reactionsByType, total: reactionTotal },
     damageByElement,
     adaptationSuggestion,
+  };
+}
+
+function checkLuck(l: LuckConfig): void {
+  for (const [name, value, max] of [
+    ['critChanceBp', l.critChanceBp, 10_000],
+    ['critBp', l.critBp, 100_000],
+    ['critMaxChanceBp', l.critMaxChanceBp ?? 0, 10_000],
+    ['critMaxBp', l.critMaxBp ?? 0, 100_000],
+    ['bossCritChanceBp', l.bossCritChanceBp ?? 0, 10_000],
+    ['bossCritBp', l.bossCritBp ?? 0, 100_000],
+    ['bossRandomTargetBp', l.bossRandomTargetBp ?? 0, 10_000],
+    ['spreadBp', l.spreadBp, 10_000],
+    ['surgeChanceBp', l.surgeChanceBp, 10_000],
+    ['slumpChanceBp', l.slumpChanceBp, 10_000 - l.surgeChanceBp],
+    ['swingBp', l.swingBp, 10_000],
+    ['swingRounds', l.swingRounds, 12],
+  ] as const) {
+    if (!isCount(value, 0) || value > max) fail(`luck.${name} must be an integer from 0 to ${max}`);
+  }
+}
+
+/**
+ * A creature's crit stats: the baseline plus its content bonus (`CritBonus`), each capped. Chance
+ * and damage are in basis points (damage is the extra share of the plain hit). Absent caps in a
+ * stored older `luck` mean no cap.
+ */
+export function creatureCritStats(
+  luck: LuckConfig,
+  bonus: CritBonus | undefined,
+): { chanceBp: number; damageBp: number } {
+  return {
+    chanceBp: Math.min(luck.critMaxChanceBp ?? 10_000, luck.critChanceBp + (bonus?.chanceBp ?? 0)),
+    damageBp: Math.min(luck.critMaxBp ?? 100_000, luck.critBp + (bonus?.damageBp ?? 0)),
+  };
+}
+
+/** The boss's crit stats: its own baseline plus the boss content bonus, with the same caps. */
+export function bossCritStats(
+  luck: LuckConfig,
+  bonus: CritBonus | undefined,
+): { chanceBp: number; damageBp: number } {
+  const chance = luck.bossCritChanceBp ?? 0;
+  if (chance <= 0) return { chanceBp: 0, damageBp: 0 };
+  return {
+    chanceBp: Math.min(luck.critMaxChanceBp ?? 10_000, chance + (bonus?.chanceBp ?? 0)),
+    damageBp: Math.min(luck.critMaxBp ?? 100_000, (luck.bossCritBp ?? 0) + (bonus?.damageBp ?? 0)),
   };
 }
 

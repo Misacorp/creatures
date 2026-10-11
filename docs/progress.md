@@ -16,24 +16,23 @@ Where the project is against the plan. Newest state at the top of each section. 
 
 ## Now
 
-- **PR #5** (https://github.com/Misacorp/creatures/pull/5), head branch `m4-raids` (= `m5-finale`): M4 raid + M5 live finale + balance pass 2. All checks green locally; staging runs it. Waiting for Misa to test (practice finale on staging) and merge.
+- **PR #7** (head `creature-abilities` = `progression`): creature abilities, Boss Rank ladder (migration 12), Festivals/seasons, crits, readiness band, after-action stats, wins-only pity, raid news pin (migration 11). Full sim 27/27. Waiting for Misa to test on staging and merge.
+- Production runs PR #5 + hotfix #6 (c53d6b7).
 
 ## Next
 
-1. After #5 merges: verify the production deploy (`/api/config` version), watch the first real Sunday finale.
-2. WebSocket push for the live finale (M5.1), after a staging spike in real Discord on desktop, iOS, Android (`docs/design/m5-finale.md`).
-3. Apply Misa's answers (pity rule, reactions share, Hold rule, post channel).
-4. M6: polish, pixel art, retro UI; Essence sinks (gear); admin setting for the post channel; swap requests.
+1. After #7 merges: verify prod deploy; watch the first ranked week (placement at next week creation or at Phase 1 for an open week).
+2. M6 "feels like a game": pixel art creatures and bosses, retro UI, juice. Misa wants this before a multiplayer test.
+3. Open game-feel questions on the ladder (see below).
+4. WebSocket push for the live finale after a staging spike in real Discord.
 5. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
 
 ## Open questions for Misa
 
-(Also on the overnight page and in PR #5.)
-
-- Pity: should a lost finale count toward the hard-pity jackpot? (Balance report: counting losses makes 66% of players hit hard pity in 20 weeks.)
-- Reactions are about half of all damage after balance pass 2. OK?
-- Raid posts follow the channel the Activity was last launched from. OK, or a fixed channel?
-- Live finale Fire/Hold rule (held ability fires in the last round if forgotten). OK?
+- Rank step is +40% boss HP per rank (big, visible). OK?
+- Plateau rhythm: win, then ~3 losses at the new rank, Festival, rank −1, climb again. Too many losses?
+- Festivals ~97% won: keep as a reliable break or make them a real fight?
+- Multi-party servers climb when at least half their parties win (lead's call).
 
 ## Notes for future agents
 

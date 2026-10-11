@@ -1,4 +1,4 @@
-import { createSeededRng, RULES } from '@creatures/game';
+import { RULES, createSeededRng, jackpotEssenceFor, scaleEssence } from '@creatures/game';
 import { scaleBoss, simulateFight } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { effectiveStats } from '@creatures/game';
@@ -50,7 +50,15 @@ describe('resolving a week', () => {
           expect(paid).toEqual([]);
           continue;
         }
-        const flat = RULES.raid.essence.flat[run.phase];
+        // The week's rank (placed from this roster) scales the payout; this is not a Festival week.
+        const week = rows<{ rank: number; festival: number }>(
+          ctx.sql,
+          'SELECT rank, festival FROM raid_weeks',
+        )[0] as { rank: number; festival: number };
+        const flat = scaleEssence(RULES.raid.essence.flat[run.phase], {
+          rank: week.rank,
+          festival: week.festival === 1,
+        });
         expect(paid).toHaveLength(5);
         expect(paid.every((p) => p.amount >= flat)).toBe(true);
         // The contribution pool is paid out exactly.
@@ -99,11 +107,13 @@ describe('resolving a week', () => {
         throw new Error('missing runs');
       const boss = content.bosses.find((b) => b.id === p1.input.boss.id);
       if (boss === undefined) throw new Error('boss');
-      const levels = rows<{ level: number }>(ctx.sql, 'SELECT level FROM creatures').map(
-        (r) => r.level,
-      );
-      const avg = Math.floor(levels.reduce((a, b) => a + b, 0) / levels.length);
-      const scaled = scaleBoss(boss, 6, avg);
+      // The week's stored effective rank, placed from this roster (level 12 creatures).
+      const stored = rows<{ effective_rank: number }>(
+        ctx.sql,
+        'SELECT effective_rank FROM raid_weeks',
+      )[0] as { effective_rank: number };
+      expect(stored.effective_rank).toBeGreaterThan(1);
+      const scaled = scaleBoss(boss, 6, stored.effective_rank);
       expect(p1.input.bossHpPool).toEqual({ max: scaled.maxHp, current: scaled.maxHp });
       expect(p1.input.bossAtk).toBe(scaled.atk);
       // Each phase starts where the one before ended.
@@ -257,9 +267,14 @@ describe('the finale jackpot', () => {
         expect(finale?.result.cleared).toBe(true);
         expect(finale?.summary.jackpot.sort()).toEqual([m1, m2].sort());
         const jackpots = raidLedger(ctx.sql).filter((l) => l.idempotency_key.endsWith(':jackpot'));
+        const week = rows<{ rank: number; festival: number }>(
+          ctx.sql,
+          'SELECT rank, festival FROM raid_weeks',
+        )[0] as { rank: number; festival: number };
+        const payout = { rank: week.rank, festival: week.festival === 1 };
         expect(jackpots.map((j) => j.amount)).toEqual([
-          RULES.raid.jackpotEssence,
-          RULES.raid.jackpotEssence,
+          jackpotEssenceFor(payout),
+          jackpotEssenceFor(payout),
         ]);
         expect(rows(ctx.sql, 'SELECT user_id, counter FROM jackpot_pity ORDER BY user_id')).toEqual(
           [m1, m2].sort().map((user_id) => ({ user_id, counter: 0 })),
@@ -327,8 +342,8 @@ describe('the finale jackpot', () => {
       (ctx) => {
         toFinale(ctx);
         const [m1, m2] = membersOf(ctx.sql) as [string, string];
-        // m1 has missed nine raids (the next win is certain); m2 five (chance 600 + 800 bp).
-        ctx.sql.exec('INSERT INTO jackpot_pity (user_id, counter) VALUES (?, 9), (?, 5)', m1, m2);
+        // m1 has missed nine wins (the next one is certain); m2 four (the 5th: chance 600 + 800 bp).
+        ctx.sql.exec('INSERT INTO jackpot_pity (user_id, counter) VALUES (?, 9), (?, 4)', m1, m2);
         ctx.core.raid.runDue(HELSINKI);
         const finale = storedRuns(ctx.sql).find((r) => r.phase === 'finale');
         expect(finale?.summary.jackpot.sort()).toEqual([m1, m2].sort());
@@ -337,23 +352,26 @@ describe('the finale jackpot', () => {
     );
   });
 
-  it('advances the counter after a lost finale without rolling or paying a jackpot', async () => {
+  it('leaves the counter alone after a lost finale, without rolling or paying a jackpot', async () => {
     const rng = scriptedThenSeeded([...seeds, ...seeds, ...seeds]);
     await runRaid(
       (ctx) => {
         openWeek(ctx, 2, 2);
         forcePool(ctx.sql, 50_000_000);
+        const [m1, m2] = membersOf(ctx.sql) as [string, string];
+        // Pity counts finale wins only: a lost finale changes nothing, for a member with a
+        // counter or without one (no row is written for them).
+        ctx.sql.exec('INSERT INTO jackpot_pity (user_id, counter) VALUES (?, 3)', m1);
         ctx.clock.t = SUNDAY;
         const before = rng.drawn();
         ctx.core.raid.runDue(HELSINKI);
         expect(storedRuns(ctx.sql).find((r) => r.phase === 'finale')?.result.cleared).toBe(false);
         // Exactly three seeds were drawn: no jackpot rolls.
         expect(rng.drawn() - before).toBe(12);
-        expect(
-          rows<{ counter: number }>(ctx.sql, 'SELECT counter FROM jackpot_pity').map(
-            (r) => r.counter,
-          ),
-        ).toEqual([1, 1]);
+        expect(rows(ctx.sql, 'SELECT user_id, counter FROM jackpot_pity')).toEqual([
+          { user_id: m1, counter: 3 },
+        ]);
+        expect(m2).toBeTruthy();
         expect(raidLedger(ctx.sql).filter((l) => l.idempotency_key.endsWith(':jackpot'))).toEqual(
           [],
         );

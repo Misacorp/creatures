@@ -262,7 +262,8 @@ export interface Recap {
   damage: number;
   setupCredit: number;
   setups: number;
-  hint: string;
+  /** Plain statements of fact about the player's creatures; never advice. Empty when there is nothing to say. */
+  notes: string[];
 }
 
 /**
@@ -275,7 +276,7 @@ export function mineInRow(row: readonly ReplayRowEntry[], you: string | null): s
   return row.filter((r) => r.owner === you).map((r) => r.id);
 }
 
-/** What the player's own creatures did in this fight, and one concrete thing to try next. */
+/** What the player's own creatures did in this fight. */
 export function personalRecap(
   events: readonly FightEvent[],
   row: readonly ReplayRowEntry[],
@@ -339,24 +340,26 @@ export function personalRecap(
     damage: list.reduce((sum, c) => sum + c.damage, 0),
     setupCredit: list.reduce((sum, c) => sum + c.setupCredit, 0),
     setups,
-    hint: recapHint(list),
+    notes: recapNotes(list),
   };
 }
 
-/** One short, concrete suggestion. The first rule that applies wins. */
-export function recapHint(list: readonly CreatureRecap[]): string {
-  if (list.length === 0) return 'None of your creatures were in this fight.';
+/** What happened to the player's creatures, as statements of fact (no advice). */
+export function recapNotes(list: readonly CreatureRecap[]): string[] {
+  if (list.length === 0) return ['None of your creatures were in this fight.'];
+  const notes: string[] = [];
   const setups = list.reduce((sum, c) => sum + c.setups, 0);
-  if (setups === 0) {
-    return 'None of your creatures set up a reaction. Try a Setter right before a Payoff in the turn order.';
-  }
+  if (setups === 0) notes.push('None of your creatures set up a reaction.');
   const wasted = list.reduce((sum, c) => sum + c.wasted, 0);
   if (wasted > 0) {
-    return `${String(wasted)} of your setups ${wasted === 1 ? 'was' : 'were'} overwritten before anyone cashed ${wasted === 1 ? 'it' : 'them'} in. Put a Payoff right after your Setter.`;
+    notes.push(
+      `${String(wasted)} of your setups ${wasted === 1 ? 'was' : 'were'} overwritten before anyone cashed ${wasted === 1 ? 'it' : 'them'} in.`,
+    );
   }
-  const down = list.find((c) => c.knockedOutRound !== null);
-  if (down !== undefined && down.knockedOutRound !== null) {
-    return `${down.name} was knocked out in round ${String(down.knockedOutRound)}. A Guard in the same zone takes hits for it.`;
+  for (const c of list) {
+    if (c.knockedOutRound !== null) {
+      notes.push(`${c.name} was knocked out in round ${String(c.knockedOutRound)}.`);
+    }
   }
-  return 'Your setups paid off. Try different slots to line up even more reactions.';
+  return notes;
 }

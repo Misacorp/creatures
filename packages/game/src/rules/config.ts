@@ -60,6 +60,53 @@ export const RULES = {
     guardHpBp: 3_000,
     /** Boss normal attack as a share of boss Attack. */
     bossAttackBp: 10_000,
+    /**
+     * Luck: small, visible randomness in the player-side damage. Crits (5%, +50%, for players and
+     * the boss) are on; Fortune streaks (surge and slump) and the damage spread stay in the code
+     * and default off [Misa / lead: crits in, streaks out for now]. The engine never reads
+     * this itself: it uses the `luck` a fight input carries (absent means `NO_LUCK`), so whoever
+     * builds the input (the worker) copies this in and the stored input keeps what the fight used.
+     * See docs/design/luck.md.
+     */
+    luck: {
+      /**
+       * Baseline crit chance (basis points) of every creature's hit; 0 switches crits off. A
+       * creature's own chance is this plus its species bonus (`crit` in content), capped at
+       * `critMaxChanceBp`. On since the progression work (Misa): 500 (5%).
+       */
+      critChanceBp: 500,
+      /**
+       * Baseline crit damage: a critical hit adds this much damage (basis points of the plain hit),
+       * plus the species bonus, capped at `critMaxBp`. Study proposal: 5000 (+50%).
+       */
+      critBp: 5_000,
+      /** Caps on a creature's or the boss's crit chance and crit damage (study proposal: 30%, +150%). */
+      critMaxChanceBp: 3_000,
+      critMaxBp: 15_000,
+      /**
+       * Boss crits: baseline chance and extra damage of the boss's hits on creatures (its own
+       * chance; `crit` in the boss content adds to both). 0 switches boss crits off. On (Misa): 5%, +50%.
+       */
+      bossCritChanceBp: 500,
+      bossCritBp: 5_000,
+      /**
+       * Prototype (study only): the chance that the boss's normal attack picks a random living
+       * creature from the whole row instead of the first one in front (a guard in the target's
+       * zone still takes the hit). 0: always the front, as shipped.
+       */
+      bossRandomTargetBp: 0,
+      /** Every hit is multiplied by 1 + u, u uniform in [-spreadBp, +spreadBp] basis points. */
+      spreadBp: 0,
+      /**
+       * Surge and Slump: each round a Surge (team damage + swingBp) starts with chance
+       * surgeChanceBp and a Slump (team damage - swingBp) with chance slumpChanceBp, and lasts
+       * swingRounds rounds. A new one cannot start while one is running.
+       */
+      surgeChanceBp: 0,
+      slumpChanceBp: 0,
+      swingBp: 5_000,
+      swingRounds: 3,
+    },
     /** Row size that guests fill up to when fewer than 3 players take part. */
     guestRowSize: 9,
     /** Guests are added when fewer than this many players take part. */
@@ -72,7 +119,7 @@ export const RULES = {
      */
     phases: [
       { id: 'phase1', rounds: 10, clearAtLossBp: 1_800 },
-      { id: 'phase2', rounds: 10, clearAtLossBp: 5_400 },
+      { id: 'phase2', rounds: 10, clearAtLossBp: 5_200 },
       { id: 'finale', rounds: 12, clearAtLossBp: 10_000 },
     ],
     scaling: {
@@ -82,17 +129,32 @@ export const RULES = {
        * results in V8 and workerd (the only runtimes we use), and a test pins the values; the
        * result is floored to integer basis points straight away, so nothing float-valued is stored
        * or compared afterwards.
+       *
+       * Every signed-up player counts once, whatever their level, power or gear, so the head count
+       * is weight-neutral: a veteran adds exactly what a newcomer adds, and one strong player
+       * cannot inflate the boss for everybody. That is why no per-player cap is needed (the old
+       * average-level factor, which could be pushed by a few veterans, is gone). A party is at
+       * most `maxPartySize` players, which bounds the factor.
        */
-      hpExponent: { num: 12, den: 10 },
+      hpExponent: { num: 11, den: 10 },
       /**
-       * Boss HP and Attack grow by this many basis points per average creature level above 1.
-       * The exponent above 1 and the per-level rate are balance tuning
-       * (docs/balance/report-2026-10-11.md): bigger servers earn more Bait per player, so the boss
-       * must grow faster than the head count to keep the finale win rate flat from 5 to 15
-       * players, and fast enough per level that a week-4 and a week-8 roster face the same odds.
+       * Boss Rank: every rank above 1 multiplies boss HP by this many basis points more than the
+       * rank below it, compounding (rank r is 1.20^(r-1) at 2000), floored to integer basis points
+       * at every step (`rankFactorBp`). Compounding rather than linear, so a rank always costs the
+       * same share of the team's damage and a high-ranked server keeps a real ladder instead of
+       * ever smaller steps. Tuned by the simulator (docs/balance/report-2026-10-11-progression.md).
        */
-      hpPerLevelBp: 1_200,
-      atkPerLevelBp: 600,
+      rankStepBp: 4_000,
+      /**
+       * Boss Attack follows the rank factor at this share (10000 = the same factor as HP). Half, as
+       * the old level scaling did (6% against 12% a level), so higher ranks do not knock out the row.
+       */
+      atkRankShareBp: 5_000,
+      /**
+       * Highest rank the ladder reaches. At 20% a step the top factor is about 197x, far beyond what
+       * any roster can beat, so nobody gets there; the cap only keeps every number small and safe.
+       */
+      maxRank: 30,
     },
     softCap: {
       /** A player's share of total contribution counts fully up to this many basis points... */
@@ -120,6 +182,18 @@ export const RULES = {
       phase2: { weekday: 6, hour: 13, minute: 37 },
       finale: { weekday: 7, hour: 20, minute: 0 },
     },
+    /**
+     * The "Close one!" rule of the after-action card, both in basis points of the stage's target:
+     * - `missBp`: a stage that was not cleared is close when it fell short of its target by at most
+     *   this much. A phase's target is the HP it had to take off the pool (its clear threshold,
+     *   `clearAtLossBp` of the maximum); the finale's target is the whole pool, so a finale is close
+     *   when the boss kept at most this share of its maximum HP.
+     * - `spareBp`: a cleared stage is close when it had at most this much to spare. A phase's spare
+     *   is the HP taken off beyond its threshold; a finale's spare is the rounds left over (the boss
+     *   fell with at most this share of the finale's rounds still to play), because a win always
+     *   empties the pool.
+     */
+    closeCall: { missBp: 1_000, spareBp: 1_000 },
     /** Most players in one party; a bigger roster is split into balanced parties. */
     maxPartySize: 15,
     /** Creatures a player brings to a raid. */
@@ -130,12 +204,68 @@ export const RULES = {
     jackpotEssence: 100,
     jackpot: {
       baseBp: 600,
-      /** From this raid without a jackpot on, the chance rises by `softPityStepBp` per raid. */
-      softPityFromRaid: 6,
+      /**
+       * From this raid without a jackpot on, the chance rises by `softPityStepBp` per raid. Pity
+       * counts finale wins only: a lost finale rolls nothing and changes nothing
+       * (docs/design/creature-abilities.md).
+       */
+      softPityFromRaid: 5,
       softPityStepBp: 800,
       /** The raid without a jackpot on which one is guaranteed. */
       hardPityRaid: 10,
     },
+  },
+  /**
+   * Week-to-week progression (docs/design/progression.md): the Boss Rank ladder, seasons and
+   * Festival weeks, rank-scaled rewards and the readiness band. All integers.
+   */
+  progression: {
+    /**
+     * A season is this many raid weeks: the first `seasonWeeks - 1` are normal, the last is a
+     * Festival. Weeks are counted by the global week index, so the worker needs no stored counter.
+     */
+    seasonWeeks: 5,
+    /** A finale win in a normal week raises the server's rank by this much. */
+    winRankUp: 1,
+    /**
+     * A finale win in a Festival week raises the rank by this much. 0: the Festival is a break from
+     * the ladder, its reward is the Essence bonus and the Festival creature.
+     */
+    festivalWinRankUp: 0,
+    /** The Festival boss fights at (rank - this), never below rank 1. */
+    festivalEaseRanks: 3,
+    /** After every Festival (won or lost) the server's rank eases by this much, never below 1. */
+    seasonResetRanks: 1,
+    /** Festival weeks pay this much more Essence (basis points; 5000 = +50%). */
+    festivalEssenceBp: 5_000,
+    /**
+     * Essence of every stage and the jackpot grows with the server's rank: the multiplier is
+     * 10000 + rankRewardBp x (rank - 1) basis points, capped at `rankRewardCapBp` (20000 = x2).
+     */
+    rankRewardBp: 600,
+    rankRewardCapBp: 20_000,
+    /**
+     * Placement rank for a new server: the rank whose boss is as hard as the old per-level rule would
+     * have made it. `legacyHpPerLevelBp` is that old rule (boss HP +12% per average creature level
+     * above 1), kept only to place a new server once.
+     */
+    placement: { legacyHpPerLevelBp: 1_200 },
+    /**
+     * Readiness band (long shot, even, likely, strong) from the forecast margin: mean finale damage
+     * over the boss HP left, in basis points (10000 = exactly enough). Bands start at these margins.
+     * Calibrated by the simulator (docs/balance/report-2026-10-11-progression.md).
+     */
+    readiness: {
+      evenFromBp: 8_000,
+      likelyFromBp: 8_800,
+      strongFromBp: 10_300,
+      /** Fresh seeds a forecast averages over. */
+      samples: 5,
+    },
+  },
+  abilities: {
+    /** Creature level at which a species' finale ability unlocks. */
+    unlockLevel: 10,
   },
   nickname: {
     maxCodePoints: 20,
@@ -143,6 +273,39 @@ export const RULES = {
     maxRawLength: 256,
   },
 } as const;
+
+/** The shape of `RULES.combat.luck`; a fight input may carry its own. */
+export interface LuckConfig {
+  critChanceBp: number;
+  critBp: number;
+  /** Caps for crit chance and damage (creatures and boss). Absent in older stored inputs: no cap. */
+  critMaxChanceBp?: number;
+  critMaxBp?: number;
+  /** Boss crits. Absent in older stored inputs: the boss never crits. */
+  bossCritChanceBp?: number;
+  bossCritBp?: number;
+  /** Chance the boss's normal attack picks a random living creature. Absent: never. */
+  bossRandomTargetBp?: number;
+  spreadBp: number;
+  surgeChanceBp: number;
+  slumpChanceBp: number;
+  swingBp: number;
+  swingRounds: number;
+}
+
+/**
+ * No luck at all: what the engine uses when a fight input carries no `luck`, so a stored input from
+ * before luck existed replays exactly as it was fought, whatever `RULES.combat.luck` says later.
+ */
+export const NO_LUCK: LuckConfig = {
+  critChanceBp: 0,
+  critBp: 0,
+  spreadBp: 0,
+  surgeChanceBp: 0,
+  slumpChanceBp: 0,
+  swingBp: 0,
+  swingRounds: 1,
+};
 
 export const DURATION_IDS = ['short', 'medium', 'long'] as const;
 export const SUPPLIES_IDS = ['basic', 'good', 'great'] as const;

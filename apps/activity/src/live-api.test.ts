@@ -67,7 +67,7 @@ describe('parseLiveSnapshot with real server responses', () => {
     expect(lobby(noPool).boss.hpMax).toBeNull();
   });
 
-  it('accepts a fight in progress: one ability fired, one held', () => {
+  it('accepts a fight in progress: one entry per ability use, fired, held and waiting', () => {
     const parsed = running(liveMid);
     expect(parsed).toMatchObject({ status: 'live', practice: false, round: 4, you: 'm2' });
     expect(parsed.bossHp).toBeLessThan(parsed.boss.hpStart);
@@ -75,31 +75,48 @@ describe('parseLiveSnapshot with real server responses', () => {
     expect(parsed.names.players).toEqual({ m1: 'Player 1', m2: 'Player 2' });
     expect(parsed.names.adaptations).toBeDefined();
     expect(parsed.events.some((e) => e.t === 'ability')).toBe(true);
-    expect(parsed.abilities).toEqual([
-      {
-        alias: 'm1',
-        abilityId: 'shield-wall',
-        mode: 'fired',
-        fired: true,
-        firedAtRound: 3,
-        fireAtRound: null,
-        defaultRound: 3,
-      },
-      {
-        alias: 'm2',
-        abilityId: 'rally',
-        mode: 'held',
-        fired: false,
-        firedAtRound: null,
-        fireAtRound: null,
-        defaultRound: 6,
-      },
+    // Each player has a basic ability and one for each of their unlocked team creatures.
+    expect(parsed.abilities.map((a) => a.key)).toEqual([
+      'm1:basic',
+      'm1:c0',
+      'm1:c1',
+      'm1:c2',
+      'm2:basic',
+      'm2:c0',
+      'm2:c1',
+      'm2:c2',
     ]);
+    expect(parsed.abilities[0]).toEqual({
+      key: 'm1:basic',
+      alias: 'm1',
+      abilityId: 'shield-wall',
+      creature: null,
+      mode: 'fired',
+      fired: true,
+      firedAtRound: 3,
+      fireAtRound: null,
+      defaultRound: 3,
+    });
+    expect(parsed.abilities[4]).toMatchObject({
+      key: 'm2:basic',
+      abilityId: 'rally',
+      mode: 'held',
+      fired: false,
+      firedAtRound: null,
+    });
+    // A creature ability names its creature: a slot of the row.
+    const strike = parsed.abilities[1];
+    expect(strike).toMatchObject({ key: 'm1:c0', abilityId: 'flare-strike', mode: 'fired' });
+    expect(parsed.row.some((slot) => slot.id === strike?.creature)).toBe(true);
+    // The events carry the key and the creature, and a strike hit its ability.
+    const used = parsed.events.find((e) => e.t === 'ability' && e.key === 'm1:c0');
+    expect(used).toMatchObject({ creature: strike?.creature, byDefault: false });
+    expect(parsed.events.some((e) => e.t === 'hit' && e.key === 'm1:c0')).toBe(true);
   });
 
   it('accepts what Fire and Hold answer: the new snapshot, with the ability waiting for its round', () => {
     const fired = running(actionFire);
-    expect(fired.abilities[0]).toMatchObject({
+    expect(fired.abilities.find((a) => a.key === 'm1:c0')).toMatchObject({
       alias: 'm1',
       mode: 'fired',
       fired: false,
@@ -107,7 +124,10 @@ describe('parseLiveSnapshot with real server responses', () => {
       fireAtRound: 3,
     });
     const held = running(actionHold);
-    expect(held.abilities[1]).toMatchObject({ alias: 'm2', mode: 'held', fired: false });
+    expect(held.abilities.find((a) => a.key === 'm2:basic')).toMatchObject({
+      mode: 'held',
+      fired: false,
+    });
   });
 
   it('accepts the finished fight with a jackpot, and without one', () => {
@@ -115,9 +135,11 @@ describe('parseLiveSnapshot with real server responses', () => {
     expect(hit).toMatchObject({ status: 'done', bossHp: 0 });
     expect(hit.loot).toEqual({
       cleared: true,
-      essence: 46,
-      jackpot: { essence: 100, firstOnServer: true },
+      essence: 28,
+      jackpot: { essence: 112, firstOnServer: true },
       pity: 0,
+      rankChange: { before: 3, after: 4, festival: false, serverWon: true },
+      festivalGrant: null,
     });
     const cleared = running(liveDoneCleared);
     expect(cleared.loot).toMatchObject({ cleared: true, jackpot: null, pity: 1 });
@@ -127,7 +149,16 @@ describe('parseLiveSnapshot with real server responses', () => {
   it('accepts the finished fight that was lost', () => {
     const missed = running(liveDoneMissed);
     expect(missed).toMatchObject({ status: 'done', round: 12, rounds: 12 });
-    expect(missed.loot).toEqual({ cleared: false, essence: 0, jackpot: null, pity: 1 });
+    // A lost finale leaves the pity counter alone.
+    expect(missed.loot).toEqual({
+      cleared: false,
+      essence: 0,
+      jackpot: null,
+      pity: 0,
+      // A lost normal week keeps the rank.
+      rankChange: { before: 3, after: 3, festival: false, serverWon: false },
+      festivalGrant: null,
+    });
     expect(missed.bossHp).toBeGreaterThan(0);
   });
 
@@ -137,7 +168,13 @@ describe('parseLiveSnapshot with real server responses', () => {
     expect(running(practiceLive)).toMatchObject({ status: 'live', practice: true });
     const done = running(practiceDone);
     expect(done).toMatchObject({ status: 'done', practice: true });
-    expect(done.loot).toMatchObject({ essence: 0, jackpot: null });
+    expect(done.loot).toMatchObject({
+      essence: 0,
+      jackpot: null,
+      rankChange: null,
+      festivalGrant: null,
+    });
+    expect(done.abilities).toHaveLength(7);
   });
 });
 
@@ -218,6 +255,14 @@ describe('parseLiveSnapshot is strict', () => {
       ...liveMid,
       abilities: [{ ...ability, ...over }],
     });
+    expect(() => parseLiveSnapshot(withAbility({ key: 7 }))).toThrow();
+    expect(() => parseLiveSnapshot(withAbility({ creature: 3 }))).toThrow();
+    expect(parseLiveSnapshot(withAbility({ creature: null }))).toBeDefined();
+    for (const field of ['key', 'creature']) {
+      const missing = { ...ability };
+      delete missing[field];
+      expect(() => parseLiveSnapshot({ ...liveMid, abilities: [missing] }), field).toThrow();
+    }
     expect(() => parseLiveSnapshot(withAbility({ mode: 'sleeping' }))).toThrow();
     expect(() => parseLiveSnapshot(withAbility({ fired: 'yes' }))).toThrow();
     expect(() => parseLiveSnapshot(withAbility({ firedAtRound: 0 }))).toThrow();
@@ -227,8 +272,28 @@ describe('parseLiveSnapshot is strict', () => {
     const noFireAt = { ...ability };
     delete noFireAt['fireAtRound'];
     expect(() => parseLiveSnapshot({ ...liveMid, abilities: [noFireAt] })).toThrow();
-    const loot = { cleared: true, essence: 1, jackpot: null, pity: 0 };
+    const loot = {
+      cleared: true,
+      essence: 1,
+      jackpot: null,
+      pity: 0,
+      rankChange: null,
+      festivalGrant: null,
+    };
+    expect(parseLiveSnapshot({ ...liveDoneHit, loot })).toBeDefined();
     expect(() => parseLiveSnapshot({ ...liveDoneHit, loot: { ...loot, pity: null } })).toThrow();
+    // The ladder and Festival parts of the loot are strict too, and required.
+    expect(() =>
+      parseLiveSnapshot({ ...liveDoneHit, loot: { ...loot, rankChange: { before: 1 } } }),
+    ).toThrow();
+    expect(() =>
+      parseLiveSnapshot({ ...liveDoneHit, loot: { ...loot, festivalGrant: { species: 'x' } } }),
+    ).toThrow();
+    for (const key of ['rankChange', 'festivalGrant']) {
+      const without: Record<string, unknown> = { ...loot };
+      delete without[key];
+      expect(() => parseLiveSnapshot({ ...liveDoneHit, loot: without }), key).toThrow();
+    }
     expect(() =>
       parseLiveSnapshot({ ...liveDoneHit, loot: { ...loot, jackpot: { essence: 1 } } }),
     ).toThrow();

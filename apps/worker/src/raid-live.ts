@@ -26,7 +26,7 @@ import {
   type Zone,
 } from '@creatures/engine';
 import type { LedgerStorage } from './ledger';
-import { buildPhaseInput, drawSeed, settleParty } from './raid-resolve';
+import { basicKey, buildPhaseInput, drawSeed, settleParty } from './raid-resolve';
 import { RaidError } from './raid-teams';
 
 /** One round of the live finale. */
@@ -46,10 +46,14 @@ export const WATCH_WINDOW_MS = 10_000;
 
 export type AbilityMode = 'default' | 'held' | 'fired';
 
-/** One member's finale ability and what they did with it. */
+/** One use of a finale ability (a member's basic ability or a creature's) and what they did with it. */
 export interface LiveAbility {
+  /** The engine key, unique in the fight: `<alias>:basic` or `<alias>:c<team slot>`. */
+  key: string;
   alias: string;
   abilityId: string;
+  /** The frozen row slot (creature id) a creature ability belongs to; null for the basic ability. */
+  creatureId: string | null;
   mode: AbilityMode;
   /** Mode 'fired': the round it fires in (the round after the press). */
   fireAtRound: number | null;
@@ -94,15 +98,52 @@ type LiveDbRow = {
 const COLUMNS =
   'week_id, party, practice, seed, input, members, abilities, started_at, round_ms, rounds';
 
+/**
+ * Reads stored abilities, tolerating rows written before creature abilities (no `key`, no
+ * `creatureId`) and content that has changed since: a choice without a key is that member's basic
+ * ability, and a choice whose ability no longer exists, whose key repeats, or whose creature is
+ * not in the frozen row is dropped, so a stored fight can always be simulated.
+ */
+export function normalizeAbilities(raw: unknown, input: FightInput): LiveAbility[] {
+  if (!Array.isArray(raw)) return [];
+  const rowIds = new Set(input.row.map((s) => s.id));
+  const keys = new Set<string>();
+  const out: LiveAbility[] = [];
+  for (const item of raw as Partial<LiveAbility>[]) {
+    if (typeof item.alias !== 'string' || typeof item.abilityId !== 'string') continue;
+    const def = content.finaleAbilities.find((a) => a.id === item.abilityId);
+    if (def === undefined) continue;
+    const creatureId = typeof item.creatureId === 'string' ? item.creatureId : null;
+    if (creatureId !== null && !rowIds.has(creatureId)) continue;
+    // A creature ability needs its creature (an old row cannot have one).
+    if (def.kind === 'creature' && creatureId === null) continue;
+    const key = typeof item.key === 'string' ? item.key : basicKey(item.alias);
+    if (keys.has(key)) continue;
+    keys.add(key);
+    const mode: AbilityMode = item.mode === 'held' || item.mode === 'fired' ? item.mode : 'default';
+    out.push({
+      key,
+      alias: item.alias,
+      abilityId: item.abilityId,
+      creatureId,
+      mode,
+      fireAtRound: typeof item.fireAtRound === 'number' ? item.fireAtRound : null,
+      params: item.params === undefined || item.params === null ? null : item.params,
+    });
+  }
+  return out;
+}
+
 function toRow(r: LiveDbRow): LiveRow {
+  const input = JSON.parse(r.input) as FightInput;
   return {
     weekId: r.week_id,
     party: r.party,
     practice: r.practice === 1,
     seed: r.seed,
-    input: JSON.parse(r.input) as FightInput,
+    input,
     members: JSON.parse(r.members) as LiveRow['members'],
-    abilities: JSON.parse(r.abilities) as LiveAbility[],
+    abilities: normalizeAbilities(JSON.parse(r.abilities), input),
     startedAt: r.started_at,
     roundMs: r.round_ms,
     rounds: r.rounds,
@@ -142,19 +183,22 @@ export function finaleResolved(sql: SqlStorage, weekId: string, party: number): 
 /** The engine's ability list for what the members have done so far. */
 export function engineAbilities(row: LiveRow): AbilityChoice[] {
   return row.abilities.map((a): AbilityChoice => {
+    const base = {
+      playerId: a.alias,
+      abilityId: a.abilityId,
+      key: a.key,
+      ...(a.creatureId === null ? {} : { creatureId: a.creatureId }),
+    };
     if (a.mode === 'fired' && a.fireAtRound !== null) {
       return {
-        playerId: a.alias,
-        abilityId: a.abilityId,
+        ...base,
         fireAtRound: a.fireAtRound,
         ...(a.params === null ? {} : { params: a.params }),
       };
     }
     // A held ability that is still unused fires at the start of the last round.
-    if (a.mode === 'held') {
-      return { playerId: a.alias, abilityId: a.abilityId, fireAtRound: row.rounds };
-    }
-    return { playerId: a.alias, abilityId: a.abilityId };
+    if (a.mode === 'held') return { ...base, fireAtRound: row.rounds };
+    return base;
   });
 }
 
@@ -176,18 +220,28 @@ export function evaluate(row: LiveRow, now: number): LiveState {
   const elapsed = Math.max(0, now - row.startedAt);
   const clockRound = Math.min(row.rounds, Math.floor(elapsed / row.roundMs) + 1);
   const timeUp = elapsed >= row.rounds * row.roundMs;
-  const input: FightInput = { ...row.input, finaleAbilities: engineAbilities(row) };
-  const result = simulateFight(input, createSeededRng(row.seed));
+  let input: FightInput = { ...row.input, finaleAbilities: engineAbilities(row) };
+  let result: FightResult;
+  try {
+    result = simulateFight(input, createSeededRng(row.seed));
+  } catch (err) {
+    // A stored fight that the current engine refuses (an old row whose content has changed) is
+    // fought without the abilities rather than failing every read.
+    if (row.abilities.length === 0) throw err;
+    console.error('live fight rejected its abilities', err instanceof Error ? err.name : 'unknown');
+    input = { ...row.input, finaleAbilities: [] };
+    result = simulateFight(input, createSeededRng(row.seed));
+  }
   const ended =
     timeUp ||
     (result.rounds <= clockRound && (result.bossHpEnd === 0 || result.rounds < row.rounds));
   return { clockRound, timeUp, ended, input, result };
 }
 
-/** Rounds `abilities` have fired in, from the visible events (round -> fired). */
-export function firedRound(result: FightResult, alias: string, upToRound: number): number | null {
+/** The round the ability with this key fired in, from the events up to `upToRound`, or null. */
+export function firedRound(result: FightResult, key: string, upToRound: number): number | null {
   for (const e of result.events) {
-    if (e.t === 'ability' && e.player === alias && e.round <= upToRound) return e.round;
+    if (e.t === 'ability' && e.key === key && e.round <= upToRound) return e.round;
   }
   return null;
 }
@@ -226,8 +280,10 @@ function insertLive(
 ): void {
   const { input, aliases, memberIds } = built;
   const abilities: LiveAbility[] = input.finaleAbilities.map((a) => ({
+    key: a.key,
     alias: a.playerId,
     abilityId: a.abilityId,
+    creatureId: a.creatureId ?? null,
     mode: 'default',
     fireAtRound: null,
     params: null,
@@ -308,13 +364,15 @@ export function unresolvedReal(
 }
 
 export interface ActionInput {
+  /** The engine key of one of the caller's own ability uses (see `LiveAbility.key`). */
+  key: string;
   action: 'fire' | 'hold';
   zone?: Zone | undefined;
   element?: Element | undefined;
 }
 
 /**
- * Fire or Hold for the caller's ability. Throws a `RaidError` (rolling the transaction back) for
+ * Fire or Hold for one of the caller's abilities (`body.key`). Throws a `RaidError` (rolling the transaction back) for
  * anything the rules refuse; call it inside a transaction.
  *
  * - Fire takes effect at the start of the next round. Refused with `too_late` in the last round or
@@ -331,15 +389,18 @@ export function applyAction(
   now: number,
 ): void {
   const member = row.members.find((m) => m.userId === userId);
-  const ability =
-    member === undefined ? undefined : row.abilities.find((a) => a.alias === member.alias);
-  if (member === undefined || ability === undefined) throw new RaidError(409, 'not_in_fight');
+  if (member === undefined) throw new RaidError(409, 'not_in_fight');
+  // A key that does not exist is treated like someone else's: the caller learns nothing about it.
+  const ability = row.abilities.find((a) => a.key === body.key);
+  if (ability === undefined || ability.alias !== member.alias) {
+    throw new RaidError(409, 'not_your_ability');
+  }
   const def = content.finaleAbilities.find((a) => a.id === ability.abilityId);
-  if (def === undefined) throw new RaidError(409, 'not_in_fight');
+  if (def === undefined) throw new RaidError(409, 'not_your_ability');
 
   // Parameters belong to Fire, and only to the abilities that take them.
-  const takesZone = def.effect.op === 'shield_wall';
-  const takesElement = def.effect.op === 're_mark';
+  const takesZone = def.effects.some((e) => e.op === 'shield_wall' && e.zone === 'choose');
+  const takesElement = def.effects.some((e) => e.op === 're_mark' && e.element === 'choose');
   if (body.action === 'hold' && (body.zone !== undefined || body.element !== undefined)) {
     throw new RaidError(400, 'invalid_body');
   }
@@ -348,7 +409,7 @@ export function applyAction(
   }
 
   const state = evaluate(row, now);
-  const firedNow = firedRound(state.result, member.alias, state.clockRound) !== null;
+  const firedNow = firedRound(state.result, ability.key, state.clockRound) !== null;
   const over = state.ended || state.clockRound >= row.rounds;
   if (body.action === 'fire') {
     // The last round and the end are too late for anything, whatever the ability did before.

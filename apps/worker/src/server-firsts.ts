@@ -1,6 +1,6 @@
-/** "First on server" records, shared by collection (catch, evolve) and raids (jackpot). */
+/** "First on server" records, shared by collection (catch, evolve) and raids (jackpot, festival). */
 
-export type ServerFirstKind = 'catch' | 'evolve' | 'jackpot';
+export type ServerFirstKind = 'catch' | 'evolve' | 'jackpot' | 'festival';
 
 /**
  * Records "first on server": the first drop to produce `species` owns the record, and every user

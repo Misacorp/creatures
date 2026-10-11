@@ -43,6 +43,17 @@ export const EvolutionSchema = v.strictObject({
 });
 export type Evolution = v.InferOutput<typeof EvolutionSchema>;
 
+/**
+ * Crit stat bonuses over the global baseline (`RULES.combat.luck`): extra chance and extra damage in
+ * basis points. Species and bosses may carry one (a few species as a high-crit archetype). The
+ * engine adds it to the baseline and applies the caps, so content never needs to know them.
+ */
+export const CritBonusSchema = v.strictObject({
+  chanceBp: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(10_000)),
+  damageBp: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(100_000)),
+});
+export type CritBonus = v.InferOutput<typeof CritBonusSchema>;
+
 export const CreatureSpeciesSchema = v.strictObject({
   id: IdSchema,
   name: NameSchema,
@@ -57,6 +68,15 @@ export const CreatureSpeciesSchema = v.strictObject({
   growth: GrowthSchema,
   levelCap: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(99)),
   evolvesTo: v.optional(EvolutionSchema),
+  /** The creature's finale ability (a `kind: 'creature'` entry of `finaleAbilities`). */
+  ability: v.optional(v.strictObject({ id: IdSchema })),
+  /** Optional crit bonus over the baseline (a high-crit archetype). */
+  crit: v.optional(CritBonusSchema),
+  /**
+   * Festival-only species: never catchable on expeditions, granted for winning a Festival finale
+   * (`festivalCreatureFor`). Must not be catchable, a starter or part of an evolution line.
+   */
+  festival: v.optional(v.boolean()),
   flavor: v.pipe(v.string(), v.minLength(1), v.maxLength(160)),
 });
 export type CreatureSpecies = v.InferOutput<typeof CreatureSpeciesSchema>;
@@ -144,6 +164,20 @@ export const BossSchema = v.strictObject({
   lootTable: IdSchema,
   /** Rounds in the live finale (default 12; at most 30, which is 5 minutes at 10 s a round). */
   finaleRounds: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(MAX_FINALE_ROUNDS)),
+  /** Optional crit bonus over the boss baseline (`RULES.combat.luck`). Inert while luck is off. */
+  crit: v.optional(CritBonusSchema),
+  /**
+   * Optional head-count exponent of this boss's HP, a fraction `num / den` (absent:
+   * `RULES.raid.scaling.hpExponent`). Bosses answer differently to a bigger raid (Backdraft's
+   * reflect matters less with many creatures, resisted reactions matter more), so each boss gets the
+   * exponent that keeps its odds flat from 5 to 15 players (docs/balance/report-2026-10-11-progression.md).
+   */
+  hpExponent: v.optional(
+    v.strictObject({
+      num: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(500)),
+      den: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(500)),
+    }),
+  ),
 });
 export type BossDef = v.InferOutput<typeof BossSchema>;
 
@@ -157,19 +191,48 @@ export const AdaptationSchema = v.strictObject({
 });
 export type AdaptationDef = v.InferOutput<typeof AdaptationSchema>;
 
-export const FinaleEffectSchema = v.variant('op', [
-  v.strictObject({ op: v.literal('rally'), damageBp: BasisPoints }),
-  v.strictObject({ op: v.literal('shield_wall') }),
-  v.strictObject({ op: v.literal('re_mark') }),
-  v.strictObject({ op: v.literal('purge') }),
+const MAX_EFFECT_ROUNDS = MAX_FINALE_ROUNDS;
+const EffectRounds = v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(MAX_EFFECT_ROUNDS));
+
+/** `choose`: the player's pick (with the documented default). `own`: taken from the ability's creature. */
+export const EffectTargetSchema = v.picklist(['choose', 'own']);
+export type EffectTarget = v.InferOutput<typeof EffectTargetSchema>;
+
+/**
+ * Finale ability effects: a small closed set the engine interprets (see `docs/design/creature-abilities.md`).
+ * All amounts are integer basis points. `rounds` counts the round the ability fires in.
+ */
+export const EffectSchema = v.variant('op', [
+  /** All creatures deal `damageBp` more damage for `rounds` rounds. */
+  v.strictObject({
+    op: v.literal('rally'),
+    damageBp: BasisPoints,
+    rounds: v.optional(EffectRounds, 1),
+  }),
+  /** One zone takes `reduceBp` less damage (10000 = no damage) for `rounds` rounds. */
+  v.strictObject({
+    op: v.literal('shield_wall'),
+    zone: EffectTargetSchema,
+    reduceBp: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(10_000)),
+    rounds: v.optional(EffectRounds, 1),
+  }),
+  /** Sets the boss's mark to a chosen element or the ability's creature's own element. */
+  v.strictObject({ op: v.literal('re_mark'), element: EffectTargetSchema }),
+  /** Turns off the Phase 2 adaptation for `rounds` rounds (absent: the rest of the fight). */
+  v.strictObject({ op: v.literal('purge'), rounds: v.optional(EffectRounds) }),
+  /** The ability's creature hits the boss at once for `atk x atkBp / 10000`. */
+  v.strictObject({ op: v.literal('strike'), atkBp: BasisPoints }),
 ]);
-export type FinaleEffect = v.InferOutput<typeof FinaleEffectSchema>;
+export type Effect = v.InferOutput<typeof EffectSchema>;
+export type EffectOp = Effect['op'];
 
 export const FinaleAbilitySchema = v.strictObject({
   id: IdSchema,
   name: NameSchema,
   description: Description,
-  effect: FinaleEffectSchema,
+  /** `basic`: one of the four everyone can pick. `creature`: belongs to a species (unlocks at a level). */
+  kind: v.picklist(['basic', 'creature']),
+  effects: v.pipe(v.array(EffectSchema), v.minLength(1), v.maxLength(3)),
   /** The round an absent player's ability fires (1-based). */
   defaultRound: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(MAX_FINALE_ROUNDS)),
   /**
@@ -196,7 +259,7 @@ export const ContentPackSchema = v.strictObject({
   reactions: v.pipe(v.array(ReactionDefSchema), v.maxLength(8)),
   bosses: v.pipe(v.array(BossSchema), v.maxLength(100)),
   adaptations: v.pipe(v.array(AdaptationSchema), v.maxLength(20)),
-  finaleAbilities: v.pipe(v.array(FinaleAbilitySchema), v.maxLength(20)),
+  finaleAbilities: v.pipe(v.array(FinaleAbilitySchema), v.maxLength(200)),
   guests: v.pipe(v.array(GuestSchema), v.maxLength(20)),
 });
 export type ContentPack = v.InferOutput<typeof ContentPackSchema>;

@@ -104,6 +104,7 @@ At the scheduled time, in one go per party:
 - `PUT /api/raid/placement` `{ creatureId, slot }` / `DELETE` to unplace.
 - `PUT /api/raid/opt-out` `{ optOut: boolean }`.
 - `GET /api/raid/replay/{week}/{party}/{phase}`: events, names and the summary.
+- `GET /api/raid/stats/{week}/{party}/{phase}`: the after-action stats of a resolved stage (members of that party only; 404 otherwise).
 - `POST /api/creatures/{id}/evolve` `{ idempotencyKey }`.
 
 All of these are validated and rate-limited. Changes are allowed only before the relevant lock, and identity comes from the session.

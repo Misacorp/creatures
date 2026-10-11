@@ -1,0 +1,200 @@
+{
+  "weekId": "2027-W06",
+  "status": "finale",
+  "timezone": "Europe/Helsinki",
+  "boss": {
+    "id": "storm-sovereign",
+    "name": "Storm Sovereign",
+    "element": "spark",
+    "turnOrder": "left_to_right",
+    "gimmicks": [{ "id": "lightning-rod", "name": "Lightning Rod" }],
+    "finaleRounds": 12
+  },
+  "rank": 6,
+  "effectiveRank": 3,
+  "festival": true,
+  "festivalCreature": "hearthshell",
+  "season": { "index": 595, "week": 5 },
+  "bestRank": 5,
+  "schedule": {
+    "weekStart": 1802086620000,
+    "phase1": 1802432220000,
+    "phase2": 1802518620000,
+    "finale": 1802628000000
+  },
+  "next": null,
+  "serverNow": 1802631600000,
+  "roster": [
+    { "displayName": "Player 4", "you": false, "party": 1 },
+    { "displayName": "Player 1", "you": true, "party": 1 },
+    { "displayName": "Player 3", "you": false, "party": 1 },
+    { "displayName": "Player 2", "you": false, "party": 1 }
+  ],
+  "parties": [{ "party": 1, "size": 4 }],
+  "you": {
+    "inRoster": true,
+    "optOut": false,
+    "party": 1,
+    "canEdit": false,
+    "canOptOut": false,
+    "ability": { "abilityId": "shield-wall", "chosen": false },
+    "abilities": [
+      {
+        "key": "m2:basic",
+        "abilityId": "shield-wall",
+        "creatureId": null,
+        "species": null,
+        "unlocked": true,
+        "unlockLevel": 1
+      },
+      {
+        "key": "m2:c0",
+        "abilityId": "flare-strike",
+        "creatureId": "1ebfa166-061e-4a8e-95d5-f650d0069052",
+        "species": "cindle",
+        "unlocked": true,
+        "unlockLevel": 10
+      },
+      {
+        "key": "m2:c1",
+        "abilityId": "static-zap",
+        "creatureId": "d4718af5-47cb-4e61-b4a0-8aae347aa978",
+        "species": "zipmouse",
+        "unlocked": true,
+        "unlockLevel": 10
+      },
+      {
+        "key": "m2:c2",
+        "abilityId": "bark-guard",
+        "creatureId": "e4ff715e-5e90-4149-b85a-bb88eff96bff",
+        "species": "sproutle",
+        "unlocked": true,
+        "unlockLevel": 10
+      }
+    ],
+    "reveal": {
+      "week": "2027-W06",
+      "party": 1,
+      "cleared": true,
+      "essence": 48,
+      "jackpot": null,
+      "rankChange": { "before": 6, "after": 5, "festival": true, "serverWon": true },
+      "festivalGrant": { "species": "hearthshell", "outcome": "new", "firstOnServer": true }
+    },
+    "team": {
+      "mode": "auto",
+      "creatures": [
+        {
+          "creatureId": "1ebfa166-061e-4a8e-95d5-f650d0069052",
+          "species": "cindle",
+          "name": "Cindle",
+          "level": 12,
+          "slot": null
+        },
+        {
+          "creatureId": "d4718af5-47cb-4e61-b4a0-8aae347aa978",
+          "species": "zipmouse",
+          "name": "Zipmouse",
+          "level": 12,
+          "slot": null
+        },
+        {
+          "creatureId": "e4ff715e-5e90-4149-b85a-bb88eff96bff",
+          "species": "sproutle",
+          "name": "Sproutle",
+          "level": 12,
+          "slot": null
+        }
+      ]
+    }
+  },
+  "party": {
+    "party": 1,
+    "rowLength": 12,
+    "row": [
+      { "slot": 0, "zone": "front", "creature": null },
+      { "slot": 1, "zone": "front", "creature": null },
+      { "slot": 2, "zone": "front", "creature": null },
+      { "slot": 3, "zone": "front", "creature": null },
+      { "slot": 4, "zone": "middle", "creature": null },
+      { "slot": 5, "zone": "middle", "creature": null },
+      { "slot": 6, "zone": "middle", "creature": null },
+      { "slot": 7, "zone": "middle", "creature": null },
+      { "slot": 8, "zone": "back", "creature": null },
+      { "slot": 9, "zone": "back", "creature": null },
+      { "slot": 10, "zone": "back", "creature": null },
+      { "slot": 11, "zone": "back", "creature": null }
+    ],
+    "guests": false,
+    "bossHp": { "max": 48845, "current": 0 },
+    "adaptation": {
+      "description": "Storm Sovereign now resists Spark damage by 25% (the element that dealt the most damage).",
+      "rule": "resist-top-element",
+      "target": "spark"
+    },
+    "results": [
+      {
+        "phase": "phase1",
+        "at": 1802520000000,
+        "cleared": true,
+        "rounds": 10,
+        "bossHpMax": 48845,
+        "bossHpStart": 48845,
+        "bossHpEnd": 39336,
+        "damage": 7210,
+        "reactions": 19,
+        "top": [
+          { "displayName": "Player 3", "damage": 1355, "contribution": 3425, "you": false },
+          { "displayName": "Player 1", "damage": 2525, "contribution": 2525, "you": true },
+          { "displayName": "Player 2", "damage": 2120, "contribution": 2120, "you": false }
+        ],
+        "essence": 28,
+        "jackpot": [],
+        "rankChange": null,
+        "festivalGrant": null
+      },
+      {
+        "phase": "phase2",
+        "at": 1802520000000,
+        "cleared": false,
+        "rounds": 10,
+        "bossHpMax": 48845,
+        "bossHpStart": 39336,
+        "bossHpEnd": 30917,
+        "damage": 6460,
+        "reactions": 19,
+        "top": [
+          { "displayName": "Player 3", "damage": 1200, "contribution": 2956, "you": false },
+          { "displayName": "Player 1", "damage": 2395, "contribution": 2395, "you": true },
+          { "displayName": "Player 2", "damage": 1815, "contribution": 1815, "you": false }
+        ],
+        "essence": 0,
+        "jackpot": [],
+        "rankChange": null,
+        "festivalGrant": null
+      },
+      {
+        "phase": "finale",
+        "at": 1802631600000,
+        "cleared": true,
+        "rounds": 1,
+        "bossHpMax": 48845,
+        "bossHpStart": 1,
+        "bossHpEnd": 0,
+        "damage": 37,
+        "reactions": 0,
+        "top": [
+          { "displayName": "Player 4", "damage": 37, "contribution": 37, "you": false },
+          { "displayName": "Player 1", "damage": 0, "contribution": 0, "you": true },
+          { "displayName": "Player 2", "damage": 0, "contribution": 0, "you": false }
+        ],
+        "essence": 48,
+        "jackpot": [],
+        "rankChange": { "before": 6, "after": 5, "festival": true, "serverWon": true },
+        "festivalGrant": { "species": "hearthshell", "outcome": "new", "firstOnServer": true }
+      }
+    ],
+    "readiness": null
+  },
+  "channel": { "pinned": false, "canManage": null }
+}

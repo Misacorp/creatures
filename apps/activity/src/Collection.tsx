@@ -1,13 +1,16 @@
 import { trainingCost } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
+import { abilityDef } from './live';
 import {
   capitalize,
+  creatureAbilityText,
   creatureName,
   elementName,
   evolutionText,
   fusionStars,
   getSpecies,
+  isFestivalSpecies,
   isFirstOnServer,
   speciesName,
 } from './game';
@@ -76,6 +79,7 @@ function CreatureCard({
     creature.evolution === undefined
       ? null
       : evolutionText(creature.level, creature.evolution, state.balances.essence);
+  const abilityText = creatureAbilityText(creature, abilityDef);
   const trainLabel =
     cost === null
       ? 'Max level'
@@ -94,18 +98,28 @@ function CreatureCard({
             <span class="tag">{capitalize(species.role)}</span>
           </>
         )}
+        {isFestivalSpecies(creature.species) && <span class="badge festival">Festival</span>}
         {creature.shiny && <span class="badge shiny">Shiny</span>}
         {creature.away && <span class="badge away">Away</span>}
         {isFirstOnServer(creature, state.serverFirsts) && (
           <span class="badge first">First on server</span>
         )}
       </p>
+      {isFestivalSpecies(creature.species) && (
+        <p class="muted">Won in a Festival week. It is not found on expeditions.</p>
+      )}
       <p>
         Level {creature.level} / {creature.levelCap}
       </p>
       <p class="stats">
         HP {creature.stats.hp} · ATK {creature.stats.atk} · SPD {creature.stats.spd}
       </p>
+      {abilityText !== null && (
+        <div class="creature-ability">
+          <p class={abilityText.unlocked ? undefined : 'locked'}>{abilityText.line}</p>
+          {abilityText.teaser !== null && <p class="muted">{abilityText.teaser}</p>}
+        </div>
+      )}
       <p class="stars" aria-label={`Fusion ${String(creature.fusionCount)} of 5`}>
         <span aria-hidden="true">{fusionStars(creature.fusionCount)}</span>
       </p>

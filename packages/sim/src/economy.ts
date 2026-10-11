@@ -4,9 +4,17 @@ import {
   content,
   createSeededRng,
   expeditionRolls,
+  festivalCreatureFor,
+  festivalGrantOutcome,
+  int,
+  nextRank,
+  placementRank,
+  raidWeekPlan,
   rollCatches,
   type BossDef,
   type Element,
+  type LuckConfig,
+  RULES,
   type Rng,
 } from '@creatures/game';
 import { baitForDay } from '../../../apps/worker/src/economy';
@@ -42,6 +50,14 @@ export interface EconomyOptions {
   mix: ArchetypeMix;
   /** Weeks (1-based) after which the rosters are snapshotted for the raid sweep. */
   snapshotWeeks: readonly number[];
+  /**
+   * The global week index of the first simulated week; it decides where the Festival weeks fall
+   * (every 5th week of the global calendar). Absent: drawn from the seed, so a batch of servers
+   * starts all over the season.
+   */
+  firstWeekIndex?: number;
+  /** Luck of every fight; absent: the shipped rules (`RULES.combat.luck`). */
+  luck?: LuckConfig;
 }
 
 /** One row of a player's history: the state at the end of a week. */
@@ -78,10 +94,24 @@ export interface Snapshot {
   players: SimPlayer[];
 }
 
+/** The ladder state of one raid week of a simulated server. */
+export interface LadderWeek {
+  /** The server's rank when the week started (placement at the first raid week). */
+  rank: number;
+  /** The rank the boss fought at (eased in a Festival week). */
+  effectiveRank: number;
+  festival: boolean;
+  won: boolean;
+  /** The rank for the next week. */
+  nextRank: number;
+}
+
 export interface EconomyResult {
   players: PlayerHistory[];
-  raids: { week: number; summary: RaidSummary }[];
+  raids: { week: number; summary: RaidSummary; ladder: LadderWeek }[];
   snapshots: Snapshot[];
+  /** The week index the first simulated week had. */
+  firstWeekIndex: number;
 }
 
 interface Streams {
@@ -263,7 +293,7 @@ function record(player: SimPlayer, week: number): WeekRecord {
     baitSpentExpeditions: player.week.baitSpentExpeditions,
     baitSpentTraining: player.week.baitSpentTraining,
     bait: player.bait,
-    speciesOwned: player.creatures.length,
+    speciesOwned: player.creatures.filter((c) => !speciesOf(c.speciesId).festival).length,
     top3Power: teamPower(player.creatures),
     top3Levels: team.map((c: OwnedCreature) => c.level),
     maxLevel: Math.max(0, ...player.creatures.map((c) => c.level)),
@@ -293,10 +323,45 @@ export function chooseSignUps(active: readonly SimPlayer[], signup: Rng, order: 
 }
 
 /**
+ * A Festival win grants every participant the season's Festival creature through the collection's
+ * duplicate rules: new (level 1), fused (+1 fusion) or converted to Bait.
+ */
+function grantFestivalCreature(players: readonly SimPlayer[], weekIndex: number): void {
+  const species = festivalCreatureFor(weekIndex);
+  if (species === null) return;
+  for (const p of players) {
+    const existing = p.creatures.find((c) => c.line === species.line);
+    const outcome = festivalGrantOutcome(
+      existing === undefined ? undefined : { fusionCount: existing.fusionCount, shiny: false },
+      species,
+    );
+    if (outcome.kind === 'new') {
+      p.creatures.push({
+        id: `${p.id}/${species.line}`,
+        line: species.line,
+        speciesId: species.id,
+        level: 1,
+        fusionCount: 0,
+      });
+    } else if (outcome.kind === 'fused') {
+      if (existing !== undefined) existing.fusionCount = outcome.newFusionCount;
+    } else {
+      p.bait += outcome.bait;
+      p.week.baitConverted += outcome.bait;
+    }
+  }
+}
+
+/**
  * Simulates one server for `weeks` weeks. Each week, Monday to Sunday: leet credit (the game's
  * `baitForDay` for that day's leeter count), check-ins, then Phase 1 on Friday after the morning
  * check-in, Phase 2 on Saturday and the finale on Sunday. Everything random comes from streams
  * derived from `seed`, so a seed always gives the same result.
+ *
+ * Boss Rank ladder: the first raid week places the server (`placementRank` of the creatures its
+ * players bring), then a finale win adds a rank, a Festival week (every 5th week of the global
+ * calendar) fights an eased boss for bonus Essence, grants the Festival creature on a win and eases
+ * the rank afterwards (`nextRank`).
  */
 export function runEconomy(options: EconomyOptions): EconomyResult {
   const { seed, weeks } = options;
@@ -317,6 +382,11 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
   );
   const raids: EconomyResult['raids'] = [];
   const snapshots: Snapshot[] = [];
+  const firstWeekIndex =
+    options.firstWeekIndex ??
+    int(createSeededRng(`${seed}:calendar`), RULES.progression.seasonWeeks);
+  const luck = options.luck ?? RULES.combat.luck;
+  let rank: number | null = null;
 
   for (let week = 1; week <= weeks; week++) {
     for (const p of players) {
@@ -325,8 +395,10 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
     }
     const active = players.filter((p) => p.joined);
     for (const p of active) p.leetDays = planLeetDays(rng.leet, p.archetype);
-    const boss = bossForWeek(week);
+    const weekIndex = firstWeekIndex + week - 1;
+    const boss = bossForWeek(weekIndex + 1);
     let raid: ReturnType<typeof openRaidWeek> | null = null;
+    let plan: ReturnType<typeof raidWeekPlan> | null = null;
 
     for (let day = 0; day < DAYS; day++) {
       const leeters = active.filter((p) => p.leetDays[day] === true);
@@ -346,7 +418,17 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
       if (day === RAID_DAY.phase1) {
         const signed = chooseSignUps(active, rng.signup, rng.order);
         for (const p of signed) p.week.signedUp = true;
-        if (signed.length > 0) raid = openRaidWeek(boss, signed);
+        if (signed.length > 0) {
+          if (rank === null) {
+            rank = placementRank(signed.flatMap((p) => pickTeam(p.creatures).map((c) => c.level)));
+          }
+          plan = raidWeekPlan(weekIndex, rank);
+          raid = openRaidWeek(boss, signed, {
+            rank: plan.effectiveRank,
+            reward: { rank: plan.rank, festival: plan.festival },
+            luck,
+          });
+        }
       }
       if (raid !== null) {
         if (day === RAID_DAY.phase1) playStage(raid, 'phase1', rng.fight, rng.loot);
@@ -361,7 +443,23 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
         }
       }
     }
-    if (raid !== null) raids.push({ week, summary: summarizeRaid(raid) });
+    if (raid !== null && plan !== null && rank !== null) {
+      const summary = summarizeRaid(raid);
+      const next = nextRank(rank, weekIndex, summary.finaleWon);
+      if (summary.finaleWon && plan.festival) grantFestivalCreature(raid.players, weekIndex);
+      raids.push({
+        week,
+        summary,
+        ladder: {
+          rank,
+          effectiveRank: plan.effectiveRank,
+          festival: plan.festival,
+          won: summary.finaleWon,
+          nextRank: next,
+        },
+      });
+      rank = next;
+    }
 
     for (const p of active) {
       const h = history.get(p.id);
@@ -375,5 +473,5 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
     }
   }
 
-  return { players: [...history.values()], raids, snapshots };
+  return { players: [...history.values()], raids, snapshots, firstWeekIndex };
 }
