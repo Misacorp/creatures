@@ -16,16 +16,15 @@ Where the project is against the plan. Newest state at the top of each section. 
 
 ## Now
 
-- **PR #5** (raid + live finale, branch `m4-raids`) is green; Misa tested it solo on staging and is merging.
-- Branch `creature-abilities` (from `m4-raids`): next work, see Next.
+- **PR #6** (hotfix, branch `ccr-8ffccd88-e59k13`): the Activity rejected jackpot first-on-server records; must merge before the first live finale (Sun 2026-10-11 20:00 Helsinki).
+- **PR #7** (branch `creature-abilities`): creature abilities (phase 1 content/engine/sim + phase 2 worker/client), wins-only pity, raid news channel pin (migration 11). Full sim 21/21. Waiting for Misa to test on staging and merge.
 
 ## Next
 
-1. ✅ Raid post channel button (Manage Server only, server-side permission check), committed on `creature-abilities` (migration 11). Confirm on staging that `GET guild member` works without the Server Members intent.
-2. Per-creature finale abilities (design in `docs/design/decisions.md` 2026-10-11, waiting for Misa's OK on defaults), with a sim pass.
-3. M6 "feels like a game": pixel art creatures and bosses, retro UI, juice. Misa wants this before a multiplayer test.
-4. WebSocket push for the live finale after a staging spike in real Discord.
-5. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
+1. After #6/#7 merge: verify prod deploys; check the first live finale and its Discord post.
+2. M6 "feels like a game": pixel art creatures and bosses, retro UI, juice. Misa wants this before a multiplayer test.
+3. WebSocket push for the live finale after a staging spike in real Discord.
+4. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
 
 ## Open questions for Misa
 
