@@ -8,6 +8,8 @@ export default defineConfig(
     '**/node_modules/**',
     '**/.wrangler/**',
     '**/worker-configuration.d.ts',
+    // Local agent worktrees (gitignored) are other checkouts of this repo.
+    '.claude/worktrees/**',
   ]),
   js.configs.recommended,
   {
