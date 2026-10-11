@@ -174,7 +174,6 @@ export interface PhasePost {
   counterMove: string | null;
   /** Finale only. */
   finale?: {
-    jackpot: readonly string[];
     firsts: readonly { label: string; names: readonly string[] }[];
     /** Where the server's rank went; null until the ladder has moved (not every party has finished). */
     rank?: RankPost | null;
@@ -242,12 +241,7 @@ export function formatPhasePost(post: PhasePost): string {
     lines.push(`The boss's counter-move for Phase 2: ${escapeMarkdown(post.counterMove)}`);
   }
   if (post.finale !== undefined) {
-    const { jackpot, firsts } = post.finale;
-    if (jackpot.length > 0) {
-      lines.push(`Jackpot: ${jackpot.map((n) => safeName(n)).join(', ')}.`);
-    } else if (post.cleared) {
-      lines.push('No jackpot this week.');
-    }
+    const { firsts } = post.finale;
     if (post.finale.festival != null && post.finale.festival.winners.length > 0) {
       lines.push(
         `Festival creature: ${escapeMarkdown(post.finale.festival.creature)} for ${post.finale.festival.winners.map((n) => safeName(n)).join(', ')}.`,

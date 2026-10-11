@@ -10,7 +10,6 @@ import {
   personalRecap,
   recapNotes,
   stateAt,
-  stepDelayMs,
   turnOrderOfRound,
 } from './replay';
 
@@ -199,10 +198,6 @@ describe('beats', () => {
     expect(indexAfterBeat(ends, ends.length)).toBe(events.length);
     expect(indexAfterBeat(ends, 999)).toBe(events.length);
     expect(indexAfterBeat([], 3)).toBe(0);
-  });
-
-  it('plays 2x faster', () => {
-    expect(stepDelayMs(2)).toBeLessThan(stepDelayMs(1));
   });
 });
 

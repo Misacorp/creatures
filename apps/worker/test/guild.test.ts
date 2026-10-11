@@ -1,3 +1,4 @@
+import { content, quirkText } from '@creatures/game';
 import { env, exports } from 'cloudflare:workers';
 import { listDurableObjectIds, runInDurableObject } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
@@ -22,6 +23,9 @@ import {
   undoDiscordPostsMigration,
   undoLiveMigration,
   undoProgressionMigration,
+  undoAutofireMigration,
+  undoPacingMigration,
+  undoQuirkMigration,
   undoRaidMigration,
 } from './helpers';
 
@@ -88,13 +92,14 @@ describe('schema migrations', () => {
           'raid_abilities',
           'raid_live',
           'raid_reveal_seen',
+          'raid_autofire',
         ]),
       );
       const version = sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one();
-      expect(version.v).toBe(12);
+      expect(version.v).toBe(15);
       // Running migrations again is a no-op.
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(12);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(15);
       return Promise.resolve();
     });
   });
@@ -125,7 +130,7 @@ describe('migration 5 (guild timezone)', () => {
       core.migrate();
 
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        12,
+        15,
       );
       expect(sql.exec('SELECT id, guild_id, timezone FROM guild_meta').toArray()).toEqual([
         { id: 1, guild_id: '740000000000000010', timezone: 'Europe/Helsinki' },
@@ -168,7 +173,7 @@ describe('migration 9 (announcement channel and Discord posts)', () => {
       core.migrate();
 
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        12,
+        15,
       );
       expect(columns()).toEqual([
         'id',
@@ -228,7 +233,7 @@ describe('migration 10 (the live finale)', () => {
 
       core.migrate();
 
-      expect(version(sql)).toBe(12);
+      expect(version(sql)).toBe(15);
       expect(columns(sql, 'raid_abilities')).toEqual(['week_id', 'user_id', 'ability_id']);
       expect(columns(sql, 'raid_live')).toEqual([
         'week_id',
@@ -241,6 +246,7 @@ describe('migration 10 (the live finale)', () => {
         'started_at',
         'round_ms',
         'rounds',
+        'pacing',
       ]);
       expect(columns(sql, 'raid_reveal_seen')).toEqual(['user_id', 'week_id', 'seen_at']);
       // Everything from before is still there.
@@ -256,7 +262,7 @@ describe('migration 10 (the live finale)', () => {
       // The tables hold what the rules say: one pick per player and week, practice is 0 or 1.
       const live = (practice: number, party = 1) =>
         sql.exec(
-          "INSERT INTO raid_live (week_id, party, practice, seed, input, members, abilities, started_at, round_ms, rounds) VALUES ('w', ?, ?, 's', '{}', '[]', '[]', 0, 10000, 12)",
+          "INSERT INTO raid_live (week_id, party, practice, seed, input, members, abilities, started_at, round_ms, rounds, pacing) VALUES ('w', ?, ?, 's', '{}', '[]', '[]', 0, 10000, 12, 1)",
           party,
           practice,
         );
@@ -274,7 +280,7 @@ describe('migration 10 (the live finale)', () => {
       ).toThrow(/UNIQUE|constraint/i);
       // Running the migrations again is a no-op.
       core.migrate();
-      expect(version(sql)).toBe(12);
+      expect(version(sql)).toBe(15);
     });
   });
 });
@@ -303,7 +309,7 @@ describe('migration 11 (pinned announcement channel, session channel)', () => {
 
       core.migrate();
 
-      expect(version(sql)).toBe(12);
+      expect(version(sql)).toBe(15);
       expect(columns(sql, 'guild_meta')).toEqual([
         'id',
         'guild_id',
@@ -323,7 +329,7 @@ describe('migration 11 (pinned announcement channel, session channel)', () => {
       expect((await request(secret, '/api/me')).status).toBe(200);
       // Running the migrations again is a no-op.
       core.migrate();
-      expect(version(sql)).toBe(12);
+      expect(version(sql)).toBe(15);
     });
   });
 });
@@ -358,7 +364,7 @@ describe('migration 12 (Boss Rank ladder, seasons, Festival)', () => {
 
       core.migrate();
 
-      expect(version(sql)).toBe(12);
+      expect(version(sql)).toBe(15);
       expect(columns(sql, 'raid_weeks')).toEqual([
         'week_id',
         'boss_id',
@@ -430,8 +436,235 @@ describe('migration 12 (Boss Rank ladder, seasons, Festival)', () => {
       ).toThrow(/CHECK|constraint/i);
       // Running the migrations again is a no-op.
       core.migrate();
-      expect(version(sql)).toBe(12);
+      expect(version(sql)).toBe(15);
       expect(sql.exec('SELECT id, rank, best_rank FROM raid_ladder').toArray()).toHaveLength(1);
+    });
+  });
+});
+
+describe('migration 13 (creature quirks)', () => {
+  const version = (sql: SqlStorage) =>
+    sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v;
+  const quirks = (sql: SqlStorage) =>
+    sql
+      .exec<{ id: string; quirk_id: string | null }>(
+        'SELECT id, quirk_id FROM creatures ORDER BY id',
+      )
+      .toArray();
+
+  /** One creature per species (and one of an unknown species), each for a different player. */
+  function seedCreatures(sql: SqlStorage): string[] {
+    const species = [...content.creatures.map((c) => c.id), 'removed-species'];
+    species.forEach((id, i) => {
+      sql.exec(
+        `INSERT INTO creatures (id, user_id, line, species, level, origin, caught_at)
+         VALUES (?, ?, ?, ?, 1, 'test', ?)`,
+        `c${String(i).padStart(2, '0')}`,
+        `u${String(i)}`,
+        id,
+        id,
+        i,
+      );
+    });
+    return species;
+  }
+
+  it('adds the column and gives every existing creature a quirk from the data', async () => {
+    await runCore('740000000000000060', async ({ core, sql }) => {
+      await core.createSession('740000000000000060', USER);
+      undoQuirkMigration(sql);
+      expect(version(sql)).toBe(12);
+      expect(
+        sql
+          .exec<{ name: string }>('SELECT name FROM pragma_table_info(?)', 'creatures')
+          .toArray()
+          .map((c) => c.name),
+      ).not.toContain('quirk_id');
+      const species = seedCreatures(sql);
+      expect(species).toHaveLength(content.creatures.length + 1);
+
+      core.migrate();
+
+      expect(version(sql)).toBe(15);
+      const after = quirks(sql);
+      expect(after).toHaveLength(species.length);
+      for (const row of after) {
+        expect(row.quirk_id, row.id).not.toBeNull();
+        expect(quirkText(row.quirk_id ?? ''), row.id).toBeDefined();
+      }
+      // Drawn from live randomness: with this many creatures the quirks are not all the same.
+      expect(new Set(after.map((r) => r.quirk_id)).size).toBeGreaterThan(5);
+      // The other columns are untouched.
+      expect(
+        sql
+          .exec('SELECT id, user_id, species, level, origin FROM creatures WHERE id = ?', 'c00')
+          .one(),
+      ).toEqual({ id: 'c00', user_id: 'u0', species: 'splashet', level: 1, origin: 'test' });
+    });
+  });
+
+  it('stores the quirk: running the migrations again changes nothing', async () => {
+    await runCore('740000000000000061', async ({ core, sql }) => {
+      await core.createSession('740000000000000061', USER);
+      undoQuirkMigration(sql);
+      seedCreatures(sql);
+      core.migrate();
+      const first = quirks(sql);
+      core.migrate();
+      expect(quirks(sql)).toEqual(first);
+      expect(version(sql)).toBe(15);
+    });
+  });
+
+  it('can be replayed after the column was dropped, and keeps the table writable', async () => {
+    await runCore('740000000000000062', async ({ core, sql }) => {
+      await core.createSession('740000000000000062', USER);
+      undoQuirkMigration(sql);
+      seedCreatures(sql);
+      core.migrate();
+      undoQuirkMigration(sql);
+      core.migrate();
+      for (const row of quirks(sql)) expect(quirkText(row.quirk_id ?? '')).toBeDefined();
+      sql.exec(
+        `INSERT INTO creatures (id, user_id, line, species, level, origin, caught_at, quirk_id)
+         VALUES ('new', 'nu', 'cindle', 'cindle', 1, 'test', 0, 'hums-quietly')`,
+      );
+      expect(sql.exec('SELECT quirk_id FROM creatures WHERE id = ?', 'new').one()).toEqual({
+        quirk_id: 'hums-quietly',
+      });
+    });
+  });
+
+  it('does nothing harmful on a database without creatures', async () => {
+    await runCore('740000000000000063', async ({ core, sql }) => {
+      await core.createSession('740000000000000063', USER);
+      undoQuirkMigration(sql);
+      core.migrate();
+      expect(version(sql)).toBe(15);
+      expect(quirks(sql)).toEqual([]);
+    });
+  });
+});
+
+describe('migration 14 (Auto fire preferences)', () => {
+  const version = (sql: SqlStorage) =>
+    sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v;
+  const columns = (sql: SqlStorage) =>
+    sql
+      .exec<{ name: string }>('SELECT name FROM pragma_table_info(?)', 'raid_autofire')
+      .toArray()
+      .map((c) => c.name);
+  const put = (sql: SqlStorage, week: string, user: string, target: string, on: number) =>
+    sql.exec('INSERT INTO raid_autofire VALUES (?, ?, ?, ?)', week, user, target, on);
+
+  it('adds the table on a schema-13 object and keeps everything else', async () => {
+    await runCore('740000000000000070', async ({ core, sql }) => {
+      await core.createSession('740000000000000070', USER, '555555555555555555');
+      sql.exec("INSERT INTO jackpot_pity (user_id, counter) VALUES ('u1', 4)");
+      undoAutofireMigration(sql);
+      expect(version(sql)).toBe(13);
+      expect(columns(sql)).toEqual([]);
+
+      core.migrate();
+
+      expect(version(sql)).toBe(15);
+      expect(columns(sql)).toEqual(['week_id', 'user_id', 'target', 'auto_fire']);
+      expect(sql.exec('SELECT user_id, counter FROM jackpot_pity').toArray()).toEqual([
+        { user_id: 'u1', counter: 4 },
+      ]);
+      expect(sql.exec('SELECT announce_channel_id FROM guild_meta').one()).toEqual({
+        announce_channel_id: '555555555555555555',
+      });
+      // Running the migrations again is a no-op.
+      core.migrate();
+      expect(version(sql)).toBe(15);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(15);
+    });
+  });
+
+  it('holds one preference per player, week and target, and only on or off', async () => {
+    await runCore('740000000000000071', async ({ core, sql }) => {
+      await core.createSession('740000000000000071', USER);
+      put(sql, 'w', 'u', 'basic', 0);
+      put(sql, 'w', 'u', 'c1', 1);
+      put(sql, 'w', 'v', 'basic', 1);
+      put(sql, 'x', 'u', 'basic', 1);
+      expect(() => put(sql, 'w', 'u', 'basic', 1)).toThrow(/UNIQUE|constraint/i);
+      expect(() => put(sql, 'w', 'u', 'c2', 2)).toThrow(/CHECK|constraint/i);
+      expect(sql.exec('SELECT COUNT(*) AS n FROM raid_autofire').one()).toEqual({ n: 4 });
+    });
+  });
+
+  it('can be replayed after the table was dropped', async () => {
+    await runCore('740000000000000072', async ({ core, sql }) => {
+      await core.createSession('740000000000000072', USER);
+      undoAutofireMigration(sql);
+      core.migrate();
+      undoAutofireMigration(sql);
+      core.migrate();
+      expect(version(sql)).toBe(15);
+      put(sql, 'w', 'u', 'basic', 0);
+      expect(sql.exec('SELECT auto_fire FROM raid_autofire').one()).toEqual({ auto_fire: 0 });
+    });
+  });
+});
+
+describe('migration 15 (content-paced live rounds)', () => {
+  const version = (sql: SqlStorage) =>
+    sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v;
+  const columns = (sql: SqlStorage) =>
+    sql
+      .exec<{ name: string }>('SELECT name FROM pragma_table_info(?)', 'raid_live')
+      .toArray()
+      .map((c) => c.name);
+  const insert = (sql: SqlStorage, party: number, withPacing: boolean) =>
+    sql.exec(
+      `INSERT INTO raid_live (week_id, party, practice, seed, input, members, abilities, started_at, round_ms, rounds${withPacing ? ', pacing' : ''}) VALUES ('w', ?, 0, 's', '{}', '[]', '[]', 0, 10000, 12${withPacing ? ', 1' : ''})`,
+      party,
+    );
+
+  it('adds the pacing column on a schema-14 object, and a fight stored before it reads as fixed rounds (0)', async () => {
+    await runCore('740000000000000080', async ({ core, sql }) => {
+      await core.createSession('740000000000000080', USER, '555555555555555555');
+      undoPacingMigration(sql);
+      expect(version(sql)).toBe(14);
+      expect(columns(sql)).not.toContain('pacing');
+      // A fight stored under the old fixed 10 second rounds.
+      insert(sql, 1, false);
+
+      core.migrate();
+
+      expect(version(sql)).toBe(15);
+      expect(columns(sql)).toContain('pacing');
+      expect(sql.exec('SELECT party, round_ms, pacing FROM raid_live').toArray()).toEqual([
+        { party: 1, round_ms: 10_000, pacing: 0 },
+      ]);
+      // New fights say 1, and everything else is still there.
+      insert(sql, 2, true);
+      expect(sql.exec('SELECT party, pacing FROM raid_live ORDER BY party').toArray()).toEqual([
+        { party: 1, pacing: 0 },
+        { party: 2, pacing: 1 },
+      ]);
+      expect(sql.exec('SELECT announce_channel_id FROM guild_meta').one()).toEqual({
+        announce_channel_id: '555555555555555555',
+      });
+      // Running the migrations again is a no-op.
+      core.migrate();
+      expect(version(sql)).toBe(15);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(15);
+    });
+  });
+
+  it('can be replayed after the column was dropped', async () => {
+    await runCore('740000000000000081', async ({ core, sql }) => {
+      await core.createSession('740000000000000081', USER);
+      undoPacingMigration(sql);
+      core.migrate();
+      undoPacingMigration(sql);
+      core.migrate();
+      expect(version(sql)).toBe(15);
+      insert(sql, 1, true);
+      expect(sql.exec('SELECT pacing FROM raid_live').one()).toEqual({ pacing: 1 });
     });
   });
 });

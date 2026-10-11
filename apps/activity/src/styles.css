@@ -1,14 +1,86 @@
+/*
+  Design tokens and base styles: a dithered night sky, dusk panels in hard pixel frames, ink
+  outlines and one gold accent. It is a game screen, so there is deliberately one dark theme.
+  Fonts are self-hosted (the CSP allows font-src 'self' only): Pixelify Sans for names, numbers and
+  buttons, Atkinson Hyperlegible for everything you read. Both are under the SIL Open Font License
+  (see the packages in node_modules/@fontsource).
+*/
+@font-face {
+  font-family: 'Pixelify Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('@fontsource/pixelify-sans/files/pixelify-sans-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Pixelify Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('@fontsource/pixelify-sans/files/pixelify-sans-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Pixelify Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url('@fontsource/pixelify-sans/files/pixelify-sans-latin-700-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('@fontsource/atkinson-hyperlegible/files/atkinson-hyperlegible-latin-400-normal.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url('@fontsource/atkinson-hyperlegible/files/atkinson-hyperlegible-latin-700-normal.woff2')
+    format('woff2');
+}
+
 :root {
   color-scheme: dark;
-  --bg: #1e1f22;
-  --panel: #2b2d31;
-  --panel-2: #313338;
-  --text: #f2f3f5;
-  --muted: #b5bac1;
-  --accent: #5865f2;
-  --danger: #f23f42;
-  --good: #3ba55d;
-  --gold: #f0b232;
+  --night: #17132b; /* page ground */
+  --dusk: #241e42; /* panel */
+  --dusk-2: #2f2857; /* raised panel and inset */
+  --ink: #0d0a1a; /* pixel outline */
+  --bone: #f4eedc; /* text */
+  --haze: #a69fc8; /* muted text */
+  --gold: #ffd25a; /* accent: Bait, crits, highlights */
+  --tide: #4f8fe6;
+  --ember: #ef6a3a;
+  --grove: #5cbf5a;
+  --spark: #f2d43d;
+  --good: #6fdc8c;
+  --bad: #ff5f6d;
+  --line: #4a4170; /* quiet outline between things on a panel */
+  --mine: #3a3270; /* a slot that holds your creature */
+  --adjacent: #443b82; /* a slot next to the selected creature */
+  --display: 'Pixelify Sans', 'Courier New', ui-monospace, monospace;
+  --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --px: 3px; /* one "pixel" of UI chrome */
+  --frame:
+    0 calc(var(--px) * -1) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
+    calc(var(--px) * -1) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink),
+    inset 0 var(--px) 0 0 #3d3570, inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+  --ring: 0 0 0 var(--px) var(--ink), 0 0 0 calc(var(--px) * 2) var(--gold);
+  /* Older names, kept so every screen picks the tokens up. */
+  --bg: var(--night);
+  --panel: var(--dusk);
+  --panel-2: var(--dusk-2);
+  --text: var(--bone);
+  --muted: var(--haze);
+  --accent: var(--gold);
+  --danger: var(--bad);
 }
 
 * {
@@ -18,10 +90,13 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--bg);
+  background-color: var(--night);
+  background-image: radial-gradient(var(--dusk) 1px, transparent 1px);
+  background-size: 6px 6px;
   color: var(--text);
-  font-family: system-ui, sans-serif;
-  line-height: 1.4;
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.5;
   /* Discord sets these on phones so content stays clear of notches and system bars. */
   padding-top: var(--discord-safe-area-inset-top, 0px);
   padding-right: var(--discord-safe-area-inset-right, 0px);
@@ -29,38 +104,55 @@ body {
   padding-left: var(--discord-safe-area-inset-left, 0px);
 }
 
+/* A pixel frame: hard steps, no rounded corners. */
 .card {
-  width: min(48rem, 100% - 1rem);
-  margin: 0.5rem auto;
+  position: relative;
+  width: min(48rem, 100% - 1.25rem);
+  margin: 0.625rem auto;
   padding: 1rem;
-  border-radius: 0.75rem;
   background: var(--panel);
+  box-shadow: var(--frame);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+.pix {
+  font-family: var(--display);
+  letter-spacing: 0.02em;
 }
 
 h1 {
   margin: 0 0 0.5rem;
-  color: var(--accent);
-  font-size: 1.5rem;
+  color: var(--gold);
+  font-size: clamp(1.75rem, 8vw, 2.5rem);
+  line-height: 1.1;
+  text-shadow:
+    var(--px) var(--px) 0 var(--ink),
+    calc(var(--px) * 2) calc(var(--px) * 2) 0 #6b3fa0;
+  text-wrap: balance;
 }
 
 h2 {
   margin: 1rem 0 0.25rem;
-  font-size: 1.125rem;
+  font-size: 1.375rem;
 }
 
 h3 {
   margin: 0 0 0.25rem;
-  font-size: 1rem;
+  font-size: 1.125rem;
 }
 
 h4 {
   margin: 0.75rem 0 0.25rem;
-  font-size: 0.9375rem;
+  font-size: 1rem;
 }
 
 h5 {
   margin: 0.5rem 0 0.25rem;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 p {
@@ -77,6 +169,7 @@ p {
 }
 
 .bait-amount {
+  font-family: var(--display);
   font-size: 2rem;
   font-weight: 700;
   color: var(--accent);
@@ -88,6 +181,7 @@ p {
 }
 
 .essence-amount {
+  font-family: var(--display);
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--gold);
@@ -96,7 +190,6 @@ p {
 .notice {
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--good);
-  border-radius: 0.5rem;
 }
 
 .note,
@@ -116,26 +209,45 @@ p {
   font-style: italic;
 }
 
-/* Buttons and form controls: large enough to tap on a phone. */
+/* Buttons and form controls: large enough to tap on a phone. Pixel frame, no rounded corners. */
 button,
 select,
 input[type='text'] {
   min-height: 2.5rem;
   padding: 0.4rem 0.75rem;
-  border: 1px solid #4e5058;
-  border-radius: 0.5rem;
+  border: 0;
   background: var(--panel-2);
   color: var(--text);
   font: inherit;
+  box-shadow: 0 0 0 var(--px) var(--ink);
 }
 
 button {
+  font-family: var(--display);
+  font-variant-ligatures: none;
+  font-size: 1rem;
   cursor: pointer;
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+  transition: transform 60ms steps(1);
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(var(--px));
+  box-shadow: 0 0 0 var(--px) var(--ink);
 }
 
 button.primary {
-  border-color: var(--accent);
-  background: var(--accent);
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 #c8952b;
 }
 
 button:disabled {
@@ -147,8 +259,8 @@ button:focus-visible,
 select:focus-visible,
 input:focus-visible,
 summary:focus-visible {
-  outline: 2px solid var(--gold);
-  outline-offset: 2px;
+  outline: var(--px) solid var(--bone);
+  outline-offset: calc(var(--px) * 2);
 }
 
 select,
@@ -166,17 +278,21 @@ label {
 
 .tabs {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: 0.625rem;
+  margin: 0.25rem 0 1rem;
 }
 
 .tab {
   flex: 1;
+  min-width: 0;
 }
 
 .tab.active {
-  border-color: var(--accent);
-  box-shadow: inset 0 -3px 0 var(--accent);
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 #c8952b;
 }
 
 .cards {
@@ -190,8 +306,8 @@ label {
 
 .card-item {
   padding: 0.75rem;
-  border-radius: 0.5rem;
   background: var(--panel-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
   overflow-wrap: anywhere;
 }
 
@@ -205,19 +321,26 @@ label {
 .badge {
   display: inline-block;
   padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  background: #404249;
-  font-size: 0.75rem;
+  background: var(--ink);
+  font-family: var(--display);
+  font-size: 0.8125rem;
 }
 
 .badge.shiny,
 .badge.first {
   background: var(--gold);
-  color: #1e1f22;
+  color: var(--ink);
 }
 
 .badge.away {
-  background: var(--accent);
+  background: var(--haze);
+  color: var(--ink);
+}
+
+.traits {
+  margin: 0.25rem 0;
+  padding: 0;
+  list-style: none;
 }
 
 .stars {
@@ -234,7 +357,6 @@ label {
   margin-bottom: 0.75rem;
   padding: 0.75rem;
   border: 1px solid var(--gold);
-  border-radius: 0.5rem;
 }
 
 .reveal ul {
@@ -242,6 +364,7 @@ label {
   padding-left: 1.25rem;
 }
 
+.about summary,
 .rename summary,
 .recent-activity summary {
   cursor: pointer;
@@ -257,7 +380,7 @@ label {
 footer {
   margin-top: 1rem;
   padding-top: 0.5rem;
-  border-top: 1px solid #404249;
+  border-top: 1px solid var(--ink);
 }
 
 dl {
@@ -287,8 +410,8 @@ dd {
 .raid-section {
   margin-bottom: 0.75rem;
   padding: 0.75rem;
-  border-radius: 0.5rem;
   background: var(--panel-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
   overflow-wrap: anywhere;
 }
 
@@ -305,21 +428,23 @@ dd {
 
 .badge.good {
   background: var(--good);
+  color: var(--ink);
 }
 
 .badge.bad {
-  background: var(--danger);
+  background: var(--bad);
+  color: var(--ink);
 }
 
 .you-badge {
   margin-left: 0.25rem;
   background: var(--gold);
-  color: #1e1f22;
+  color: var(--ink);
 }
 
 button.toggle.on {
-  border-color: var(--accent);
-  background: var(--accent);
+  background: var(--gold);
+  color: var(--ink);
 }
 
 .hp-bar {
@@ -342,8 +467,7 @@ button.toggle.on {
   display: flex;
   flex-direction: column;
   padding: 0.4rem 0.5rem;
-  border: 1px solid #4e5058;
-  border-radius: 0.5rem;
+  border: 1px solid var(--line);
   font-size: 0.875rem;
 }
 
@@ -352,8 +476,8 @@ button.toggle.on {
 }
 
 .schedule-step.next {
-  border-color: var(--accent);
-  box-shadow: inset 0 -3px 0 var(--accent);
+  border-color: var(--gold);
+  box-shadow: inset 0 calc(var(--px) * -1) 0 var(--gold);
 }
 
 .schedule-title {
@@ -379,7 +503,7 @@ button.toggle.on {
 
 .team-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 5.5rem), 1fr));
   gap: 0.5rem;
   margin: 0.5rem 0;
   padding: 0;
@@ -397,7 +521,7 @@ button.toggle.on {
 .team-chip.selected,
 .party-slot.selected {
   border-color: var(--gold);
-  box-shadow: 0 0 0 2px var(--gold);
+  box-shadow: var(--ring);
 }
 
 .chip-name {
@@ -407,8 +531,7 @@ button.toggle.on {
 .picker {
   margin: 0.5rem 0;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #4e5058;
-  border-radius: 0.5rem;
+  border: 1px solid var(--line);
 }
 
 .pick {
@@ -425,29 +548,41 @@ button.toggle.on {
   height: 1.25rem;
 }
 
-/* The party row: a horizontally scrollable strip, grouped by zone. */
+/*
+  The party row: one row for each zone, front first (closest to the boss), then middle, then back,
+  exactly as the fight stage shows them. A zone is its label at the left and its slots centred and
+  wrapping, so nothing scrolls sideways. The sizes come from zone-layout.ts as custom properties
+  (--unit-w, --unit-gap, --zone-label-w, --zone-label-gap).
+*/
 .party-strip {
   display: flex;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 0.5rem;
   padding: 0.25rem 0 0.5rem;
-  overflow-x: auto;
 }
 
 .party-zone {
-  flex: none;
+  display: grid;
+  grid-template-columns: var(--zone-label-w, 44px) minmax(0, 1fr);
+  gap: var(--zone-label-gap, 4px);
+  align-items: center;
 }
 
+/* The name of a zone, at the left of its row (the fight stage uses the same label). */
 .zone-label {
-  margin: 0 0 0.25rem;
-  color: var(--muted);
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  margin: 0;
+  color: var(--haze);
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 .zone-slots {
   display: flex;
-  gap: 0.375rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--unit-gap, 4px);
 }
 
 .party-slot {
@@ -456,27 +591,21 @@ button.toggle.on {
   flex: none;
   flex-direction: column;
   align-items: flex-start;
-  width: 5.5rem;
+  width: var(--unit-w, 5.5rem);
+  min-width: 0;
   min-height: 5.5rem;
-  padding: 0.3rem 0.4rem;
-  border: 2px solid var(--owner, #4e5058);
+  padding: 0.2rem;
+  border: 2px solid var(--owner, var(--line));
   background: var(--panel);
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
+  line-height: 1.2;
   text-align: left;
 }
 
-/* A thin line between neighbours shows who stands next to whom. */
-.party-slot::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: -0.4rem;
-  width: 0.375rem;
-  border-top: 1px solid #4e5058;
-}
-
-.zone-slots .party-slot:last-child::after {
-  display: none;
+/* Long zones use smaller sprites and smaller text. */
+.party-slot.compact {
+  padding: 0.125rem;
+  font-size: 0.625rem;
 }
 
 .party-slot.empty {
@@ -485,15 +614,15 @@ button.toggle.on {
 }
 
 .party-slot.target {
-  border-color: var(--accent);
+  border-color: var(--gold);
 }
 
 .party-slot.adjacent {
-  background: #3a3d5c;
+  background: var(--adjacent);
 }
 
 .party-slot.mine {
-  background: #35384a;
+  background: var(--mine);
 }
 
 .party-slot .slot-num {
@@ -501,12 +630,19 @@ button.toggle.on {
   font-size: 0.6875rem;
 }
 
+/* Names wrap to two lines at most; anything longer ends in an ellipsis. */
 .slot-species,
 .slot-owner {
+  display: -webkit-box;
   max-width: 100%;
   font-weight: 600;
+  line-clamp: 2;
   overflow: hidden;
+  overflow-wrap: anywhere;
+  text-align: center;
   text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .slot-meta,
@@ -549,9 +685,8 @@ button.toggle.on {
 /* Replay viewer. */
 .mark-badge {
   padding: 0.1rem 0.5rem;
-  border-radius: 999px;
   background: var(--gold);
-  color: #1e1f22;
+  color: var(--ink);
   font-weight: 600;
 }
 
@@ -567,15 +702,14 @@ button.toggle.on {
 .turn-chip {
   flex: none;
   padding: 0.25rem 0.6rem;
-  border: 1px solid #4e5058;
-  border-radius: 999px;
+  border: 1px solid var(--line);
   font-size: 0.8125rem;
 }
 
 .turn-chip.current,
 .replay-slot.current {
   border-color: var(--gold);
-  box-shadow: 0 0 0 2px var(--gold);
+  box-shadow: var(--ring);
 }
 
 .turn-chip.done {
@@ -603,21 +737,19 @@ button.toggle.on {
   flex-direction: column;
   width: 6rem;
   padding: 0.3rem 0.4rem;
-  border: 2px solid #4e5058;
-  border-radius: 0.5rem;
+  border: 2px solid var(--line);
   background: var(--panel);
   font-size: 0.8125rem;
 }
 
 .replay-slot.mine {
-  background: #35384a;
+  background: var(--mine);
 }
 
 .replay-log {
   max-height: 12rem;
   margin: 0.25rem 0;
   padding: 0.5rem 0.5rem 0.5rem 1.75rem;
-  border-radius: 0.5rem;
   background: var(--panel);
   font-size: 0.875rem;
   overflow-y: auto;
@@ -646,7 +778,7 @@ button.toggle.on {
 
 .ability-card.selected {
   border-color: var(--gold);
-  box-shadow: 0 0 0 2px var(--gold);
+  box-shadow: var(--ring);
 }
 
 .ability-badge {
@@ -696,23 +828,6 @@ button.toggle.on {
   color: var(--gold);
 }
 
-.ability-panel {
-  margin: 0.75rem 0;
-  padding: 0.75rem;
-  border: 2px solid var(--accent);
-  border-radius: 0.5rem;
-  background: var(--panel);
-}
-
-.ability-panel h5 {
-  margin: 0 0 0.25rem;
-  font-size: 0.9375rem;
-}
-
-.live-ability-state {
-  font-weight: 600;
-}
-
 .live-ability.you {
   color: var(--gold);
 }
@@ -724,7 +839,6 @@ button.toggle.on {
 .live-feed {
   margin: 0.25rem 0;
   padding: 0.5rem 0.5rem 0.5rem 1.75rem;
-  border-radius: 0.5rem;
   background: var(--panel);
   font-size: 0.875rem;
 }
@@ -741,19 +855,20 @@ button.toggle.on {
 
 /* Boss Rank, seasons and Festival weeks. Colours only; every state is also written in words. */
 .tag.rank {
-  background: var(--accent);
+  background: var(--gold);
+  color: var(--ink);
+  font-family: var(--display);
   font-weight: 700;
 }
 
 .badge.festival {
   background: var(--gold);
-  color: #1e1f22;
+  color: var(--ink);
   font-weight: 700;
 }
 
 .raid-section.festival {
   border: 2px solid var(--gold);
-  border-radius: 0.5rem;
   padding: 0.5rem 0.75rem;
 }
 
@@ -779,7 +894,6 @@ button.toggle.on {
   width: 0.875rem;
   height: 0.875rem;
   border: 2px solid var(--muted);
-  border-radius: 50%;
 }
 
 .season-pip.done {
@@ -787,8 +901,8 @@ button.toggle.on {
 }
 
 .season-pip.now {
-  border-color: var(--accent);
-  background: var(--accent);
+  border-color: var(--gold);
+  background: var(--gold);
 }
 
 .season-pip.festival {
@@ -806,21 +920,23 @@ button.toggle.on {
 .readiness-band {
   display: inline-block;
   padding: 0.1rem 0.6rem;
-  border-radius: 999px;
-  background: #404249;
+  background: var(--ink);
   font-weight: 700;
 }
 
 .readiness-band.long_shot {
-  background: var(--danger);
+  background: var(--bad);
+  color: var(--ink);
 }
 
 .readiness-band.likely {
-  background: var(--accent);
+  background: var(--gold);
+  color: var(--ink);
 }
 
 .readiness-band.strong {
   background: var(--good);
+  color: var(--ink);
 }
 
 .reveal-festival,
@@ -842,13 +958,8 @@ button.toggle.on {
   margin: 0.75rem 0;
   padding: 0.75rem;
   border: 2px solid var(--accent);
-  border-radius: 0.5rem;
   background: var(--panel);
   text-align: center;
-}
-
-.reveal-card.jackpot {
-  border-color: var(--gold);
 }
 
 .reveal-essence {
@@ -857,59 +968,77 @@ button.toggle.on {
   font-weight: 700;
 }
 
-.reveal-rolling {
-  display: none;
+.reveal-essence canvas.sprite {
+  display: inline-block;
+  vertical-align: middle;
 }
 
-.reveal-result {
-  font-size: 1.125rem;
-}
-
-.reveal-result.hit {
-  color: var(--gold);
+.reveal-count {
+  font-family: var(--display);
   font-size: 1.5rem;
-  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.reveal-result .badge {
-  margin-left: 0.5rem;
+.reveal-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 8rem;
+  margin: 0.5rem 0;
+}
+
+.reveal-prop {
+  position: relative;
+  z-index: 1;
+}
+
+.reveal-festival-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+}
+
+.banner-first {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+  padding: 0.125rem 0.75rem;
+  background: var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--gold);
+  color: var(--gold);
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .reveal-roll {
-    position: relative;
-    min-height: 3rem;
+  .reveal-festival-box:not(.done) {
+    opacity: 0;
   }
 
-  .reveal-rolling {
-    display: block;
-    position: absolute;
-    inset: 0;
-    margin: 0;
-    color: var(--muted);
-    animation:
-      reveal-roll-pulse 0.4s ease-in-out 2,
-      reveal-roll-out 0.2s ease-out 0.8s forwards;
+  .reveal-festival-box.done {
+    animation: reveal-pop 300ms steps(3) both;
   }
 
-  .reveal-result {
-    animation: reveal-pop 0.5s ease-out 1s both;
+  .reveal-festival-box.done .pop-in {
+    animation: reveal-pop-in 600ms steps(5) both;
   }
 
-  .reveal-result.hit {
-    animation: reveal-jackpot 0.9s ease-out 1s both;
+  .reveal-stage.phase-shake .reveal-prop {
+    animation: reveal-shake 240ms steps(1) infinite;
   }
 
-  @keyframes reveal-roll-pulse {
-    50% {
-      opacity: 0.3;
+  .reveal-stage:not(.phase-shake) .reveal-prop {
+    animation: reveal-pop-in 300ms steps(3) both;
+  }
+
+  @keyframes reveal-shake {
+    25% {
+      transform: translateX(-6px);
     }
-  }
 
-  @keyframes reveal-roll-out {
-    to {
-      opacity: 0;
-      visibility: hidden;
+    75% {
+      transform: translateX(6px);
     }
   }
 
@@ -925,7 +1054,7 @@ button.toggle.on {
     }
   }
 
-  @keyframes reveal-jackpot {
+  @keyframes reveal-pop-in {
     0% {
       opacity: 0;
       transform: scale(0.6);
@@ -947,7 +1076,6 @@ button.toggle.on {
   margin: 0.5rem 0;
   padding: 0.5rem 0.75rem;
   border-left: 3px solid var(--muted);
-  border-radius: 0.25rem;
   background: var(--panel);
   overflow-wrap: anywhere;
 }
@@ -1003,4 +1131,2358 @@ button.toggle.on {
 
 .after-action details {
   margin: 0.25rem 0;
+}
+
+/* --- M6 look: shared pixel components (from docs/design/assets/style-sample.html) --- */
+
+.frame {
+  position: relative;
+  margin: var(--px);
+  padding: 1rem;
+  background: var(--dusk);
+  box-shadow: var(--frame);
+}
+
+.label {
+  color: var(--muted);
+  font-family: var(--display);
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.portrait {
+  display: grid;
+  place-items: center;
+  padding: 0.625rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+/* Sprites are drawn on a canvas at a whole-number scale and must never be smoothed. */
+canvas.sprite {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.lvl {
+  color: var(--gold);
+  font-family: var(--display);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Element chip: the icon always comes with the colour and the name. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: fit-content;
+  padding: 0.125rem 0.5rem 0.125rem 0.25rem;
+  background: var(--ink);
+  font-family: var(--display);
+  font-size: 0.8125rem;
+  line-height: 1.25;
+}
+
+.chip canvas.sprite {
+  flex: none;
+}
+
+.t-tide {
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--tide);
+}
+
+.t-ember {
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--ember);
+}
+
+.t-grove {
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--grove);
+}
+
+.t-spark {
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--spark);
+}
+
+/* Progress, HP and season pips. */
+.xp {
+  position: relative;
+  height: 0.625rem;
+  background: var(--ink);
+}
+
+.xp > span {
+  position: absolute;
+  inset: 2px auto 2px 2px;
+  background: var(--gold);
+}
+
+.hpbar {
+  display: grid;
+  grid-template-columns: repeat(20, 1fr);
+  gap: 2px;
+  height: 1.375rem;
+  padding: var(--px);
+  background: var(--ink);
+}
+
+.hpbar > i {
+  background: var(--bad);
+}
+
+.hpbar > i.gone {
+  background: #3a2033;
+}
+
+.pips {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.pips > i {
+  width: 0.875rem;
+  height: 0.875rem;
+  background: var(--dusk-2);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.pips > i.on {
+  background: var(--haze);
+}
+
+.pips > i.now {
+  background: var(--gold);
+}
+
+.pips > i.fest {
+  background: transparent;
+  box-shadow: 0 0 0 2px var(--gold);
+}
+
+/* The existing HP progress element gets the same ink and red. */
+.hp-bar {
+  appearance: none;
+  height: 1.125rem;
+  border: 0;
+  background: var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
+.hp-bar::-webkit-progress-bar {
+  background: var(--ink);
+}
+
+.hp-bar::-webkit-progress-value {
+  background: var(--bad);
+}
+
+.hp-bar::-moz-progress-bar {
+  background: var(--bad);
+}
+
+@keyframes bob {
+  50% {
+    transform: translateY(calc(var(--px) * -1));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bob {
+    animation: bob 1.2s steps(2) infinite;
+  }
+}
+
+/* --- Placement: the team tray and the party row, with drag and drop --- */
+
+.team-chip canvas.sprite {
+  margin-bottom: 0.25rem;
+}
+
+.party-slot {
+  align-items: center;
+  min-height: 6rem;
+  text-align: center;
+}
+
+.party-slot .slot-num {
+  align-self: flex-start;
+  font-family: var(--display);
+}
+
+.party-slot canvas.sprite {
+  margin: 0.125rem 0;
+}
+
+.party-slot.empty {
+  justify-content: space-between;
+}
+
+/* Anything that can be picked up: no scrolling or text selection starts on it. */
+.draggable {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
+}
+
+.draggable:disabled {
+  cursor: not-allowed;
+}
+
+.party-strip.dragging .party-slot,
+.party-strip.dragging .draggable {
+  cursor: grabbing;
+}
+
+.dragging-source {
+  opacity: 0.4;
+}
+
+/* While dragging: every slot says whether the creature may go there. Valid is green with a solid
+   edge; refused is red and hatched, so the meaning never depends on colour alone. */
+.party-strip.dragging .party-slot.drop-valid {
+  outline: var(--px) dashed var(--good);
+  outline-offset: calc(var(--px) * -2);
+}
+
+.party-strip.dragging .party-slot.drop-invalid {
+  outline: var(--px) dashed var(--bad);
+  outline-offset: calc(var(--px) * -2);
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 5px,
+    rgb(255 95 109 / 35%) 5px 8px
+  );
+}
+
+.party-strip.dragging .party-slot.drop-over {
+  outline-style: solid;
+  background-color: var(--dusk-2);
+}
+
+.team-list.tray-target {
+  outline: var(--px) dashed var(--good);
+  outline-offset: calc(var(--px) * 2);
+}
+
+.team-list.drop-over {
+  outline-style: solid;
+}
+
+/* A refused drop: a red edge that stays, and a short shake for those who allow motion. */
+.party-slot.shake {
+  outline: var(--px) solid var(--bad);
+  outline-offset: calc(var(--px) * -2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .party-slot.shake {
+    animation: shake 400ms steps(1) both;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20%,
+  60% {
+    transform: translateX(-4px);
+  }
+
+  40%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+/* The ghost follows the pointer; its position comes from --drag-x and --drag-y (set in script). */
+.drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: var(--frame);
+  opacity: 0.92;
+  pointer-events: none;
+  transform: translate(calc(var(--drag-x, -999px) - 50%), calc(var(--drag-y, -999px) - 60%));
+}
+
+.drag-ghost-name {
+  font-family: var(--display);
+  font-size: 0.8125rem;
+}
+
+/* --- M6 look: cards, boss card, loot and after-action sprites --- */
+
+.el-tide {
+  --el: var(--tide);
+}
+
+.el-ember {
+  --el: var(--ember);
+}
+
+.el-grove {
+  --el: var(--grove);
+}
+
+.el-spark {
+  --el: var(--spark);
+}
+
+.name-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.name-row h3 {
+  margin: 0;
+}
+
+/* The level as a pixel tag. */
+.lvl-tag {
+  flex: none;
+  padding: 0 0.5rem;
+  background: var(--gold);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.creature-card .portrait {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.creature-card .xp {
+  margin: 0.5rem 0;
+}
+
+.xp > span {
+  width: var(--pct, 0%);
+}
+
+/* A shiny without its own palette: a gold dotted frame and two sparkles. */
+.portrait.sparkle-frame {
+  background-image: radial-gradient(var(--gold) 1px, transparent 1px);
+  background-size: 8px 8px;
+  box-shadow:
+    inset 0 0 0 var(--px) var(--gold),
+    inset 0 0 0 calc(var(--px) * 2) var(--ink);
+}
+
+.sparkle {
+  position: absolute;
+}
+
+.sparkle.one {
+  top: 0.5rem;
+  left: 0.5rem;
+}
+
+.sparkle.two {
+  right: 0.5rem;
+  bottom: 0.5rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sparkle {
+    animation: twinkle 1.2s steps(2) infinite;
+  }
+
+  .sparkle.two {
+    animation-delay: 0.6s;
+  }
+}
+
+@keyframes twinkle {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Boss card. */
+.boss {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.boss-portrait {
+  padding: 0.375rem;
+}
+
+.boss-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.boss-meta h3,
+.boss-meta .tags {
+  margin: 0;
+}
+
+.gimmicks {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.gimmick {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.gimmick canvas.sprite {
+  flex: none;
+}
+
+.gimmick-text {
+  min-width: 0;
+  font-size: 0.875rem;
+}
+
+/* After-action card: a small sprite next to each top creature. */
+.bar-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bar-sprite {
+  flex: none;
+}
+
+/* --- Fight stage (live finale and replay) --- */
+
+.stage {
+  --beat: 600ms;
+  position: relative;
+  margin: 0.5rem var(--px);
+  padding: 0.5rem;
+  overflow: hidden;
+  background: linear-gradient(var(--night), var(--dusk));
+  box-shadow: var(--frame);
+}
+
+.stage-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  color: var(--haze);
+  font-size: 0.8125rem;
+}
+
+.stage-round {
+  color: var(--gold);
+}
+
+.stage-head {
+  align-items: center;
+}
+
+.stage-head-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* The "?" button: how abilities work. Small, but with a full-size tap area around it. */
+button.stage-help {
+  position: relative;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  padding: 0 0.375rem;
+  font-size: 0.8125rem;
+  line-height: 1.5rem;
+}
+
+button.stage-help::after {
+  content: '';
+  position: absolute;
+  inset: -0.5rem;
+}
+
+.stage-boss {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.stage-boss .hpbar {
+  width: 100%;
+  max-width: 20rem;
+}
+
+.stage-boss-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0.25rem 0.25rem 1rem;
+}
+
+/* The mark on the boss: a ring glyph, the element's icon and the mark's name. */
+.stage-mark {
+  position: absolute;
+  bottom: -0.125rem;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.5rem 0 0.25rem;
+  background: var(--ink);
+  box-shadow: inset 0 calc(var(--px) * -1) 0 var(--el, var(--gold));
+  font-family: var(--display);
+  font-size: 0.75rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* What the boss just did, and a luck banner. */
+.stage-callout {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0 0.5rem;
+  background: var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--bad);
+  font-size: 0.875rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.stage-callout.banner {
+  box-shadow: 0 0 0 var(--px) var(--gold);
+  color: var(--gold);
+}
+
+/*
+  Ability cards: the creature's name and its ability, for about a second and a half after it fires.
+  The slot keeps one line of height, so nothing jumps; the cards sit on top of it and may spill over
+  the first zone for a moment (they let taps through).
+*/
+.stage-abilities-slot {
+  position: relative;
+  height: 2rem;
+}
+
+.stage-abilities {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0.125rem 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+.stage-ability {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  background: var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--gold);
+  color: var(--gold);
+  font-size: 0.8125rem;
+}
+
+.stage-ability.more {
+  color: var(--bone);
+  box-shadow: 0 0 0 var(--px) var(--haze);
+}
+
+/*
+  The boss's line under its HP bar: the label of the attack that just landed ("Undertow · whole FRONT
+  row"), over the forecast of the next round ("Next round: Undertow hits FRONT"). The slot keeps its
+  height, so nothing jumps; the label sits on top of the forecast while it shows.
+*/
+.stage-line {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+  min-height: 2.25rem;
+}
+
+/* While a label shows, the forecast under it steps aside (it is back when the label is gone). */
+.stage-line.has-strike .forecast {
+  visibility: hidden;
+}
+
+.stage-line > * {
+  grid-area: 1 / 1;
+  margin: 0;
+}
+
+.forecast {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--gold);
+  background: rgb(255 210 90 / 8%);
+  color: var(--gold);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+
+.forecast > canvas {
+  flex: none;
+}
+
+.strike-label {
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  max-width: 100%;
+  padding: 0.25rem 0.5rem;
+  background: var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--bad);
+  color: var(--bone);
+  font-size: 0.8125rem;
+  line-height: 1.2;
+}
+
+.strike-label > canvas {
+  flex: none;
+}
+
+.strike-label > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Crosshairs over a creature the boss is about to hit, and the frame it keeps for a moment after. */
+.reticle {
+  position: absolute;
+  inset: -3px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--bad);
+  background: rgb(255 95 109 / 16%);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.reticle.struck {
+  background: transparent;
+}
+
+.reticle > canvas {
+  opacity: 0.9;
+}
+
+.slash {
+  position: absolute;
+  top: 50%;
+  left: -10%;
+  z-index: 5;
+  width: 120%;
+  height: 3px;
+  background: var(--bone);
+  box-shadow: 0 0 0 1px var(--bad);
+  opacity: 0;
+  pointer-events: none;
+  transform: rotate(-35deg);
+  will-change: transform, opacity;
+}
+
+/* A Shield Wall stopped the hit, or a guard stepped in for this creature. */
+.block-mark {
+  position: absolute;
+  top: -0.5rem;
+  left: 50%;
+  z-index: 6;
+  padding: 1px;
+  background: var(--ink);
+  line-height: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  will-change: transform, opacity;
+}
+
+/* The boss will silence this creature next round. */
+.warn-mark {
+  position: absolute;
+  top: 50%;
+  left: -0.5rem;
+  z-index: 3;
+  padding: 1px;
+  background: var(--ink);
+  line-height: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+/* A zone the boss will hit next round: an amber dashed frame and a warning glyph, standing still. */
+.stage-zone.warned {
+  outline: 2px dashed var(--gold);
+  outline-offset: -2px;
+}
+
+.zone-warn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 3;
+  padding: 1px;
+  background: var(--ink);
+  line-height: 0;
+  pointer-events: none;
+}
+
+/* Beams from the boss to the creatures a strike hits are drawn in this layer. */
+.stage-strikes {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.strike-beam {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  width: var(--blen, 0);
+  height: 6px;
+  margin-top: -3px;
+  background: var(--bad);
+  box-shadow:
+    0 0 0 2px var(--ink),
+    0 0 8px 2px var(--bad);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad));
+  transform-origin: 0 50%;
+  will-change: transform, opacity;
+}
+
+.strike-beam.placed {
+  display: block;
+}
+
+/*
+  The zones as rows under the boss: the front zone first (closest to it), then middle, then back.
+  Each row is its label at the left and its creatures centred in slot order, wrapping onto more
+  lines when they do not fit; nothing scrolls sideways. The sizes come from zone-layout.ts as custom
+  properties (--unit-w, --unit-gap, --zone-label-w, --zone-label-gap).
+*/
+.stage-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.5rem 0 0.25rem;
+}
+
+.stage-zone {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--zone-label-w, 44px) minmax(0, 1fr);
+  gap: var(--zone-label-gap, 4px);
+  align-items: center;
+  padding: 0.25rem 4px;
+}
+
+.zone-units {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--unit-gap, 2px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stage-unit {
+  position: relative;
+  width: var(--unit-w, 52px);
+}
+
+/* The face of a creature: a plain box, or a button for your own creature with an ability. */
+.unit-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+  padding: 0 0 0.25rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+}
+
+button.unit-face {
+  cursor: pointer;
+  transition: none;
+}
+
+button.unit-face:hover:not(:disabled) {
+  filter: none;
+}
+
+button.unit-face:hover:not(:disabled) .unit-art,
+button.unit-face[aria-expanded='true'] .unit-art {
+  outline: 2px solid var(--gold);
+}
+
+button.unit-face:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
+button.unit-face:focus-visible {
+  outline: var(--px) solid var(--bone);
+  outline-offset: 1px;
+}
+
+/* The row above the sprite holds the "you" tag, so it never sits on the name or the face. */
+.unit-top {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 0.875rem;
+}
+
+.unit-art {
+  position: relative;
+  display: block;
+  padding: 2px;
+  line-height: 0;
+}
+
+.unit-element {
+  position: absolute;
+  right: -0.25rem;
+  bottom: -0.25rem;
+  line-height: 0;
+}
+
+/* Names: smaller, two lines at most, an ellipsis only beyond that (the full name is the accessible label). */
+.unit-name {
+  display: -webkit-box;
+  max-width: 100%;
+  margin-top: 0.125rem;
+  font-size: 0.625rem;
+  line-clamp: 2;
+  line-height: 1.15;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  text-align: center;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Your own creatures: a gold frame and a "you" tag, so it never rests on colour alone. */
+.stage-unit.mine {
+  background: var(--mine);
+  outline: var(--px) solid var(--gold);
+  outline-offset: 1px;
+}
+
+.you-pip {
+  padding: 0 0.25rem;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 0.5625rem;
+  line-height: 1.3;
+}
+
+/* A knocked-out creature: a grey sprite and a small skull in its corner. */
+.stage-unit.ko .unit-art > canvas.sprite {
+  filter: grayscale(1) brightness(0.55);
+}
+
+.stage-unit.ko .unit-name {
+  color: var(--haze);
+}
+
+.ko-mark {
+  position: absolute;
+  bottom: -0.125rem;
+  left: -0.125rem;
+  z-index: 2;
+  padding: 1px;
+  background: var(--ink);
+  line-height: 0;
+}
+
+.silence-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  line-height: 0;
+}
+
+/* The ability badge on a creature's corner. Every state has its own shape, not only its own colour. */
+.ab-badge {
+  position: absolute;
+  top: -0.375rem;
+  right: -0.375rem;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 2px;
+  background: var(--ink);
+  font-size: 0.6875rem;
+  line-height: 1;
+}
+
+/* Auto fire on: gold ring and the ability glyph; it pulses while it can still be used. */
+.ab-auto {
+  outline: 2px solid var(--gold);
+}
+
+/* Auto fire off (manual): a pause mark in a bone-coloured dotted ring. */
+.ab-manual {
+  outline: 2px dotted var(--bone);
+}
+
+/* Pressed: a dashed gold ring around the round it fires in. */
+.ab-pressed {
+  justify-content: center;
+  outline: 2px dashed var(--gold);
+  color: var(--gold);
+}
+
+/* Used: grey, a check and the round it fired in. */
+.ab-used {
+  background: var(--dusk-2);
+  outline: 2px solid var(--haze);
+  color: var(--haze);
+}
+
+.ab-round {
+  padding: 0 2px;
+}
+
+/*
+  The popover inside the stage (one at a time, placed by script through --pop-x, --pop-y and
+  --pop-arrow, set with style.setProperty): above its anchor with a pointer arrow, below when there
+  is no room above, and kept inside the stage. About 200px wide.
+*/
+.stage-pop {
+  position: absolute;
+  top: var(--pop-y, 0);
+  left: var(--pop-x, 0);
+  z-index: 20;
+  width: min(12.5rem, calc(100% - 8px));
+  padding: 0.375rem 0.5rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: var(--frame);
+  color: var(--bone);
+  font-family: var(--body);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-align: left;
+}
+
+/*
+  The pointer arrow: a stepped pixel triangle, an ink outline (::before) with the panel colour on top
+  (::after). It points down when the popover is above its anchor and up when it is below.
+*/
+.stage-pop::before,
+.stage-pop::after {
+  content: '';
+  position: absolute;
+  bottom: -9px;
+  height: 9px;
+}
+
+.stage-pop::before {
+  left: calc(var(--pop-arrow, 20px) - 9px);
+  width: 18px;
+  background: var(--ink);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 33.34%,
+    83.33% 33.34%,
+    83.33% 66.67%,
+    66.67% 66.67%,
+    66.67% 100%,
+    33.33% 100%,
+    33.33% 66.67%,
+    16.67% 66.67%,
+    16.67% 33.34%,
+    0 33.34%
+  );
+}
+
+.stage-pop::after {
+  left: calc(var(--pop-arrow, 20px) - 6px);
+  width: 12px;
+  background: var(--dusk-2);
+  clip-path: polygon(0 0, 100% 0, 100% 50%, 75% 50%, 75% 100%, 25% 100%, 25% 50%, 0 50%);
+}
+
+.stage-pop::after {
+  height: 6px;
+  bottom: -6px;
+}
+
+.stage-pop[data-placement='below']::before,
+.stage-pop[data-placement='below']::after {
+  top: auto;
+  transform: scaleY(-1);
+}
+
+.stage-pop[data-placement='below']::before {
+  top: -9px;
+  bottom: auto;
+}
+
+.stage-pop[data-placement='below']::after {
+  top: -6px;
+  bottom: auto;
+}
+
+.stage-pop:focus-visible {
+  outline: var(--px) solid var(--bone);
+}
+
+.stage-pop button:focus-visible {
+  outline-offset: 1px;
+}
+
+.stage-pop p {
+  margin: 0.125rem 0;
+}
+
+.ab-title {
+  color: var(--gold);
+  font-size: 0.9375rem;
+  line-height: 1.2;
+}
+
+.ab-state {
+  color: var(--haze);
+}
+
+.ab-note,
+.ab-help {
+  color: var(--haze);
+}
+
+.ab-error {
+  color: var(--bad);
+}
+
+.ab-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+}
+
+/* Fire and Auto fire sit side by side; Auto fire shows "on" or "off" in smaller type under its name. */
+.ab-buttons button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0.125rem 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.1;
+}
+
+.ab-buttons button:only-child {
+  grid-column: 1 / -1;
+}
+
+.ab-buttons small {
+  font-family: var(--display);
+  font-size: 0.6875rem;
+}
+
+/* The Auto fire toggle is not gold like Fire: on is a green bar and the word "on", off is plain. */
+button.ab-auto-toggle.on {
+  background: var(--dusk-2);
+  color: var(--bone);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 var(--good);
+}
+
+button.ab-auto-toggle.on small {
+  color: var(--good);
+}
+
+button.ab-auto-toggle:not(.on) small {
+  color: var(--haze);
+}
+
+.ab-pick {
+  margin-top: 0.25rem;
+}
+
+.ab-pick-label {
+  color: var(--haze);
+  font-size: 0.6875rem;
+}
+
+.ab-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.1875rem;
+  margin-top: 0.125rem;
+}
+
+.pick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+  min-height: 1.75rem;
+  padding: 0 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.pick-chip.on {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+/* The basic ability: a chip in the stage's bottom-left corner, with the same state badge as a creature. */
+.stage-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.25rem 4px 0.125rem;
+}
+
+.basic-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0.125rem 0.5rem 0.125rem 0.375rem;
+  font-size: 0.875rem;
+}
+
+.basic-chip .ab-badge {
+  position: static;
+}
+
+.basic-chip[aria-expanded='true'] {
+  outline: 2px solid var(--gold);
+}
+
+/* The "Others' abilities" list under the stage: closed by default. */
+.others {
+  margin: 0.5rem var(--px);
+}
+
+.others summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.others .plain-list {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+}
+
+/* Who acts, who is hit and which zone is under attack: outlines, which also work without motion. */
+.stage-unit.actor .unit-art {
+  outline: 2px dotted var(--bone);
+}
+
+.stage-unit.hit .unit-art,
+.stage-boss-art.hit canvas.sprite {
+  box-shadow: 0 0 0 var(--px) var(--bone);
+}
+
+.stage-zone.shake {
+  outline: 2px dashed var(--bad);
+}
+
+/* A coloured frame over a zone: shield (green, dashed), attack (red), rally (gold). */
+.zone-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 2px;
+  border: var(--px) solid var(--fx);
+  background: var(--fx-fill);
+  pointer-events: none;
+}
+
+.fx-shield {
+  --fx: var(--good);
+  --fx-fill: rgb(111 220 140 / 12%);
+  border-style: dashed;
+}
+
+.fx-hit {
+  --fx: var(--bad);
+  --fx-fill: rgb(255 95 109 / 14%);
+}
+
+.fx-rally {
+  --fx: var(--gold);
+  --fx-fill: rgb(255 210 90 / 12%);
+}
+
+/* The telegraph of a zone hit: the whole zone outlined in red before it lands. */
+.fx-windup {
+  --fx: var(--bad);
+  --fx-fill: rgb(255 95 109 / 10%);
+  z-index: 2;
+  border-style: dashed;
+}
+
+/* The shockwave of a zone hit: a bright band that sweeps across the whole row. */
+.strike-wave {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(255 95 109 / 60%) 50%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/*
+  Numbers that rise from a target. Crits are gold and bigger. The outer element only moves and the
+  inner one only fades and pops (both on the compositor: transform and opacity), so the motion is
+  smooth. Without motion a number just stands at its spot (stacked by --lane).
+*/
+.float {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 3;
+  color: var(--bone);
+  font-family: var(--display);
+  font-size: 1rem;
+  line-height: 1;
+  transform: translate(calc(-50% + var(--drift, 0) * 4px + var(--lx, 0px)), var(--ly, 0px));
+  white-space: nowrap;
+  pointer-events: none;
+  will-change: transform, opacity;
+  --ly: calc(var(--lane, 0) * -1.1rem);
+  --rise: 3.5rem;
+}
+
+.float-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-shadow:
+    2px 0 var(--ink),
+    -2px 0 var(--ink),
+    0 2px var(--ink),
+    0 -2px var(--ink);
+  will-change: transform, opacity;
+}
+
+/*
+  Numbers on the boss stand side by side instead of stacking, because the boss has the whole width:
+  the first in the middle, the next ones to its left and right, so a crit never sits on another number.
+*/
+.stage-boss-art .float {
+  top: 14%;
+  --ly: 0px;
+  --rise: 2.25rem;
+}
+
+.stage-boss-art .float.lane-1 {
+  --lx: -6.25rem;
+}
+
+.stage-boss-art .float.lane-2 {
+  --lx: 6.25rem;
+}
+
+.stage-boss-art .float.lane-3 {
+  --ly: -1.1rem;
+}
+
+.float-hurt {
+  color: var(--bad);
+}
+
+.float-blocked {
+  color: var(--haze);
+}
+
+.float-buff {
+  color: var(--good);
+}
+
+.float.crit {
+  z-index: 4;
+  color: var(--gold);
+  font-size: 1.75rem;
+}
+
+.crit-pop {
+  color: var(--gold);
+  font-size: 1rem;
+  will-change: transform;
+}
+
+/* "KO!" held on a knocked-out creature. */
+.ko-tag {
+  position: absolute;
+  top: 35%;
+  left: 50%;
+  z-index: 3;
+  color: var(--bad);
+  font-size: 1.25rem;
+  line-height: 1;
+  text-shadow:
+    2px 0 var(--ink),
+    -2px 0 var(--ink),
+    0 2px var(--ink),
+    0 -2px var(--ink);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* A reaction burst on the boss sits lower than its numbers, so the two never overlap. */
+.stage-boss-art .burst {
+  top: 68%;
+}
+
+/* A reaction burst: two rings in the colours of the two elements, and the reaction's name. */
+.burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.burst-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4rem;
+  height: 4rem;
+  margin: -2rem 0 0 -2rem;
+  border: calc(var(--px) * 2) solid var(--el, var(--bone));
+}
+
+.burst-ring.second {
+  width: 6rem;
+  height: 6rem;
+  margin: -3rem 0 0 -3rem;
+  border-style: dashed;
+}
+
+.burst-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem 0.375rem;
+  background: var(--ink);
+  font-family: var(--display);
+  font-size: 1.25rem;
+  line-height: 1.1;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}
+
+.burst-colours {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  height: calc(var(--px) * 2);
+}
+
+.burst-colours > i {
+  flex: 1;
+  background: var(--el, var(--bone));
+}
+
+/*
+  "Round N" over the stage when a round opens, in the countdown's pixel face. A dark veil keeps it
+  readable over the sprites; it lets taps through. Without motion it is plain text for the same time.
+*/
+.round-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  background: rgb(13 10 26 / 72%);
+  pointer-events: none;
+}
+
+.ri-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--gold);
+  line-height: 1;
+  text-shadow:
+    var(--px) 0 var(--ink),
+    calc(var(--px) * -1) 0 var(--ink),
+    0 var(--px) var(--ink),
+    0 calc(var(--px) * -1) var(--ink),
+    var(--px) var(--px) 0 var(--ink);
+}
+
+.ri-label {
+  display: flex;
+  align-items: baseline;
+  gap: 1.25rem;
+  font-size: 3.75rem;
+}
+
+.ri-of {
+  color: var(--bone);
+  font-size: 1.5rem;
+}
+
+.stage-log {
+  margin: 0.5rem 0;
+}
+
+/* The boss's segments that just emptied. */
+.hpbar > i.drain {
+  background: #3a2033;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Two copies of every keyframe, used on alternate beats, so a new beat restarts its animation. */
+  .stage.p0 {
+    --a-hop: stage-hop-0;
+    --a-flash: stage-flash-0;
+    --a-shake: stage-shake-0;
+    --a-drop: stage-drop-0;
+    --a-pop: stage-pop-0;
+  }
+
+  .stage.p1 {
+    --a-hop: stage-hop-1;
+    --a-flash: stage-flash-1;
+    --a-shake: stage-shake-1;
+    --a-drop: stage-drop-1;
+    --a-pop: stage-pop-1;
+  }
+
+  .stage-unit.actor .unit-art {
+    outline: none;
+    animation: var(--a-hop) var(--beat) steps(2) both;
+  }
+
+  .stage-unit.hit .unit-art,
+  .stage-boss-art.hit canvas.sprite {
+    box-shadow: none;
+  }
+
+  .stage-unit.hit .unit-art > canvas.sprite,
+  .stage-boss-art.hit canvas.sprite {
+    animation: var(--a-flash) var(--beat) steps(2) both;
+  }
+
+  .stage-unit.drop .unit-art {
+    animation: var(--a-drop) var(--beat) steps(3) both;
+  }
+
+  .stage-zone.shake {
+    outline: none;
+    animation: var(--a-shake) var(--beat) steps(1) both;
+  }
+
+  .stage-mark.pop {
+    animation: var(--a-pop) var(--beat) ease-out both;
+  }
+
+  /*
+    The effects that outlast their beat run for their own time (--fx-ms), set on each element. Their
+    floats, fades, bursts and pops use smooth easing and change only transform and opacity (both
+    kept on the compositor), never steps(): stepped timing is for the sprite hops and shakes above.
+  */
+  .zone-fx.fresh {
+    animation: zone-fade var(--fx-ms) ease-out both;
+  }
+
+  .fx-windup {
+    animation: windup-pulse var(--fx-ms) ease-in-out both;
+  }
+
+  .strike-wave {
+    animation: strike-wave 700ms ease-out both;
+  }
+
+  .stage-callout {
+    animation: callout-hold var(--fx-ms) ease-out both;
+  }
+
+  .strike-label {
+    animation: label-hold var(--fx-ms) ease-out both;
+  }
+
+  .crit-pop {
+    animation: crit-pop var(--fx-ms) ease-out both;
+  }
+
+  .ko-tag {
+    animation: ko-hold var(--fx-ms) ease-out both;
+  }
+
+  .stage-ability {
+    animation: card-hold var(--fx-ms) ease-out both;
+  }
+
+  .float {
+    animation: float-rise var(--fx-ms) linear both;
+  }
+
+  .float-body {
+    animation: float-fade var(--fx-ms) ease-out both;
+  }
+
+  .burst-ring {
+    animation: burst-grow var(--fx-ms) ease-out both;
+  }
+
+  .burst-ring.second {
+    animation-delay: calc(var(--fx-ms) / 8);
+  }
+
+  .burst-label {
+    animation: burst-label var(--fx-ms) ease-out both;
+  }
+
+  .round-intro {
+    animation: intro-veil var(--fx-ms) ease-in-out both;
+  }
+
+  .ri-text {
+    animation: intro-slam var(--fx-ms) ease-out both;
+  }
+
+  /* The boss leans in while it winds up its attack. */
+  .stage-boss-art.windup canvas.sprite {
+    animation: boss-lean var(--lean-ms, 600ms) ease-in-out both;
+    will-change: transform;
+  }
+
+  .reticle.windup {
+    animation: reticle-in var(--fx-ms) ease-out both;
+  }
+
+  .reticle.struck {
+    animation: reticle-out var(--fx-ms) ease-in both;
+  }
+
+  .slash {
+    animation: slash 450ms ease-out both;
+  }
+
+  .block-mark {
+    animation: block-pop var(--fx-ms) ease-out both;
+  }
+
+  .strike-beam.placed {
+    animation: beam-fire 650ms ease-out both;
+  }
+
+  .warn-mark,
+  .zone-warn {
+    animation: warn-pulse 1.4s ease-in-out infinite;
+    will-change: opacity;
+  }
+
+  .hpbar > i.drain {
+    animation: stage-drain var(--beat, 600ms) steps(3) both;
+  }
+
+  /* A gentle pulse for an ability that is ready to be used. */
+  .ab-badge.pulse {
+    animation: ab-pulse 1.4s steps(2) infinite;
+  }
+
+  @keyframes ab-pulse {
+    50% {
+      transform: translateY(-2px);
+    }
+  }
+
+  @keyframes stage-hop-0 {
+    25%,
+    75% {
+      transform: translateY(-0.5rem);
+    }
+  }
+
+  @keyframes stage-hop-1 {
+    25%,
+    75% {
+      transform: translateY(-0.5rem);
+    }
+  }
+
+  @keyframes stage-flash-0 {
+    0%,
+    50% {
+      filter: brightness(0) invert(1);
+    }
+
+    100% {
+      filter: none;
+    }
+  }
+
+  @keyframes stage-flash-1 {
+    0%,
+    50% {
+      filter: brightness(0) invert(1);
+    }
+
+    100% {
+      filter: none;
+    }
+  }
+
+  @keyframes stage-shake-0 {
+    25% {
+      transform: translateX(-4px);
+    }
+
+    50% {
+      transform: translateX(4px);
+    }
+
+    75% {
+      transform: translateX(-2px);
+    }
+  }
+
+  @keyframes stage-shake-1 {
+    25% {
+      transform: translateX(-4px);
+    }
+
+    50% {
+      transform: translateX(4px);
+    }
+
+    75% {
+      transform: translateX(-2px);
+    }
+  }
+
+  @keyframes stage-drop-0 {
+    from {
+      filter: none;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes stage-drop-1 {
+    from {
+      filter: none;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes stage-pop-0 {
+    0% {
+      transform: translateX(-50%) scale(1.8);
+    }
+
+    50% {
+      transform: translateX(-50%) scale(0.9);
+    }
+
+    100% {
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  @keyframes stage-pop-1 {
+    0% {
+      transform: translateX(-50%) scale(1.8);
+    }
+
+    50% {
+      transform: translateX(-50%) scale(0.9);
+    }
+
+    100% {
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  @keyframes zone-fade {
+    0% {
+      opacity: 0;
+    }
+
+    12% {
+      opacity: 1;
+    }
+
+    70% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes windup-pulse {
+    0% {
+      opacity: 0;
+    }
+
+    25% {
+      opacity: 1;
+    }
+
+    60% {
+      opacity: 0.6;
+    }
+
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes strike-wave {
+    0% {
+      opacity: 0;
+      transform: translateX(-60%);
+    }
+
+    25% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateX(60%);
+    }
+  }
+
+  @keyframes reticle-in {
+    0% {
+      opacity: 0;
+      transform: scale(1.6);
+    }
+
+    40% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    70% {
+      transform: scale(1.06);
+    }
+
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes reticle-out {
+    0% {
+      opacity: 1;
+    }
+
+    55% {
+      opacity: 0.9;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes slash {
+    0% {
+      opacity: 1;
+      transform: rotate(-35deg) scaleX(0);
+    }
+
+    35% {
+      opacity: 1;
+      transform: rotate(-35deg) scaleX(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: rotate(-35deg) scaleX(1);
+    }
+  }
+
+  @keyframes block-pop {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) scale(0.4);
+    }
+
+    10% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1.3);
+    }
+
+    20%,
+    75% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  @keyframes beam-fire {
+    0% {
+      opacity: 0;
+      transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad)) scaleX(0.02);
+    }
+
+    30% {
+      opacity: 1;
+      transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad)) scaleX(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad)) scaleX(1);
+    }
+  }
+
+  @keyframes boss-lean {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+
+    70%,
+    100% {
+      transform: translateY(8px) scale(1.12);
+    }
+  }
+
+  @keyframes warn-pulse {
+    50% {
+      opacity: 0.45;
+    }
+  }
+
+  /* An ability card pops in, holds and fades out. */
+  @keyframes card-hold {
+    0% {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+
+    8% {
+      opacity: 1;
+      transform: scale(1.12);
+    }
+
+    16% {
+      transform: scale(1);
+    }
+
+    85% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes callout-hold {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) scale(1.6);
+    }
+
+    10% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    80% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  @keyframes label-hold {
+    0% {
+      opacity: 0;
+      transform: scale(1.35);
+    }
+
+    8% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    82% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes ko-hold {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) scale(2);
+    }
+
+    12% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    80% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  /*
+    A number rises at a steady pace from where it spawns for its whole time, so a newer number on the
+    same creature starts at the base, below the older ones that have already risen. It drifts a little
+    sideways as it goes.
+  */
+  @keyframes float-rise {
+    0% {
+      transform: translate(calc(-50% + var(--drift, 0) * 2px + var(--lx, 0px)), var(--ly, 0px));
+    }
+
+    100% {
+      transform: translate(
+        calc(-50% + var(--drift, 0) * 8px + var(--lx, 0px)),
+        calc(var(--ly, 0px) - var(--rise, 3.5rem))
+      );
+    }
+  }
+
+  /* It pops in, stays readable for most of its time and fades out at the end. */
+  @keyframes float-fade {
+    0% {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+
+    5% {
+      opacity: 1;
+      transform: scale(1.25);
+    }
+
+    12% {
+      transform: scale(1);
+    }
+
+    75% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+      transform: scale(1);
+    }
+  }
+
+  /* "CRITICAL!" slams in big, settles, and holds. */
+  @keyframes crit-pop {
+    0% {
+      transform: scale(2.2);
+    }
+
+    12% {
+      transform: scale(0.9);
+    }
+
+    24% {
+      transform: scale(1.15);
+    }
+
+    36%,
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes burst-grow {
+    0% {
+      opacity: 1;
+      transform: scale(0.2);
+    }
+
+    30% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: scale(1.5);
+    }
+  }
+
+  @keyframes burst-label {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.6);
+    }
+
+    8%,
+    82% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  @keyframes intro-veil {
+    0% {
+      opacity: 0;
+    }
+
+    10%,
+    85% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes intro-slam {
+    0% {
+      transform: scale(2);
+    }
+
+    16%,
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes stage-drain {
+    0% {
+      background: var(--bone);
+    }
+
+    50% {
+      background: var(--bad);
+    }
+  }
+}
+
+/* The Auto fire toggle on the Raid tab's "Your finale abilities" card, next to its ability. */
+.ability-auto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.375rem 0;
+}
+
+.ability-auto button.ab-auto-toggle {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.875rem;
+}
+
+.ability-auto small {
+  font-family: var(--display);
+  font-size: 0.75rem;
+}
+
+/*
+  The countdown over the stage in the last 30 seconds before a fight: a dark veil with one big number
+  in the pixel face, which lets taps through so Auto fire can still be set on the creatures below.
+  The colour and size follow the second: gold and calm from 30 to 11, gold shifting to orange from 10
+  to 6, red and growing from 5 to 1. Motion (the pulse and the stepped shake) is only added below, for
+  people who have not asked for less of it; without it the number is still and only changes colour.
+*/
+.stage-wrap {
+  position: relative;
+}
+
+.countdown {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: start center;
+  padding-top: 2.75rem;
+  background: rgb(13 10 26 / 45%);
+  pointer-events: none;
+}
+
+.cd-text {
+  color: var(--cd-color, var(--gold));
+  font-size: var(--cd-size, 5rem);
+  line-height: 1;
+  text-shadow:
+    var(--px) 0 var(--ink),
+    calc(var(--px) * -1) 0 var(--ink),
+    0 var(--px) var(--ink),
+    0 calc(var(--px) * -1) var(--ink),
+    var(--px) var(--px) 0 var(--ink);
+}
+
+.cd-calm {
+  --cd-color: var(--gold);
+  --cd-size: 5rem;
+}
+
+.cd-n10 {
+  --cd-color: #ffcc3a;
+  --cd-size: 5.5rem;
+}
+
+.cd-n9 {
+  --cd-color: #ffb92f;
+  --cd-size: 5.5rem;
+}
+
+.cd-n8 {
+  --cd-color: #ffa52b;
+  --cd-size: 5.5rem;
+}
+
+.cd-n7 {
+  --cd-color: #ff9030;
+  --cd-size: 5.5rem;
+}
+
+.cd-n6 {
+  --cd-color: #ff7b35;
+  --cd-size: 5.5rem;
+}
+
+.cd-final {
+  --cd-color: var(--bad);
+}
+
+.cd-n5 {
+  --cd-size: 6.5rem;
+}
+
+.cd-n4 {
+  --cd-size: 7.5rem;
+}
+
+.cd-n3 {
+  --cd-size: 8.5rem;
+}
+
+.cd-n2 {
+  --cd-size: 9.5rem;
+}
+
+.cd-n1 {
+  --cd-size: 10.5rem;
+}
+
+.cd-fight {
+  --cd-color: var(--gold);
+  --cd-size: 3.75rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Calm: one slow beat a second. Fast: two quicker ones. Final: a shake of the whole stage. Smooth
+     easing on transform only, like the other text animations. */
+  .cd-text {
+    will-change: transform;
+  }
+
+  .cd-calm .cd-text {
+    animation: cd-beat 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .cd-fast .cd-text {
+    animation: cd-beat 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 2 both;
+  }
+
+  .cd-final .cd-text {
+    animation: cd-slam 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .cd-fight .cd-text {
+    animation: cd-slam 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .stage-wrap.cd-shake-a {
+    animation: cd-shake-a 0.5s ease-out both;
+  }
+
+  .stage-wrap.cd-shake-b {
+    animation: cd-shake-b 0.5s ease-out both;
+  }
+
+  @keyframes cd-beat {
+    0% {
+      transform: scale(1.18);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes cd-slam {
+    0% {
+      transform: scale(1.5);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* Two copies, used on alternate seconds, so every second restarts the shake. */
+  @keyframes cd-shake-a {
+    0% {
+      transform: translate(-4px, 2px);
+    }
+
+    17% {
+      transform: translate(4px, -2px);
+    }
+
+    34% {
+      transform: translate(-3px, -3px);
+    }
+
+    51% {
+      transform: translate(3px, 2px);
+    }
+
+    68% {
+      transform: translate(-2px, 1px);
+    }
+
+    85% {
+      transform: translate(1px, -1px);
+    }
+
+    100% {
+      transform: translate(0, 0);
+    }
+  }
+
+  @keyframes cd-shake-b {
+    0% {
+      transform: translate(4px, -2px);
+    }
+
+    17% {
+      transform: translate(-4px, 2px);
+    }
+
+    34% {
+      transform: translate(3px, 3px);
+    }
+
+    51% {
+      transform: translate(-3px, -2px);
+    }
+
+    68% {
+      transform: translate(2px, -1px);
+    }
+
+    85% {
+      transform: translate(-1px, 1px);
+    }
+
+    100% {
+      transform: translate(0, 0);
+    }
+  }
 }

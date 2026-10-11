@@ -11,7 +11,7 @@ interface EvolveBody {
   firstOnServer: boolean;
   state: {
     balances: { essence: number };
-    creatures: { id: string; species: string; evolution?: unknown }[];
+    creatures: { id: string; species: string; quirk: string | null; evolution?: unknown }[];
     serverFirsts: unknown[];
   };
 }
@@ -55,6 +55,9 @@ describe('POST /api/creatures/:id/evolve', () => {
         available: true,
       });
 
+      const quirk = ctx.core.collection.state(p.id).creatures.find((c) => c.id === splashet)?.quirk;
+      expect(quirk).toEqual(expect.any(String));
+
       const res = await evolve(ctx, secret, splashet);
       expect(res.status).toBe(200);
       expect(res.body.species).toBe('tidewing');
@@ -68,7 +71,11 @@ describe('POST /api/creatures/:id/evolve', () => {
         shiny: true,
         nickname: 'Bubbles',
         levelCap: 30,
+        quirk, // the personality quirk never changes
       });
+      expect(rows(ctx.sql, 'SELECT quirk_id FROM creatures WHERE id = ?', splashet)).toEqual([
+        { quirk_id: quirk },
+      ]);
       expect(after?.evolution).toBeUndefined(); // stage 2 evolves no further
       expect(res.body.state.balances.essence).toBe(30);
       expect(

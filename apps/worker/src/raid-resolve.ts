@@ -15,6 +15,7 @@ import {
   basicAbilities,
   content,
   contributionWeights,
+  createCryptoRng,
   createSeededRng,
   essenceForStage,
   jackpotEssenceFor,
@@ -37,6 +38,7 @@ import {
   type FightSlot,
 } from '@creatures/engine';
 import { credit, type LedgerStorage } from './ledger';
+import { loadAutofire, targetOf } from './raid-autofire';
 import { grantFestivalCreature } from './raid-festival';
 import { fightRank, payoutWeek, readWeekProgression, updateLadder } from './raid-ladder';
 import { partyMembers } from './raid-roster';
@@ -50,6 +52,8 @@ export interface ResolveDeps {
   now: () => number;
   /** Live randomness: the fight seed and the jackpot rolls. Crypto in production. */
   rng: Rng;
+  /** Live randomness for the quirk of a Festival creature. Defaults to crypto. */
+  quirkRng?: Rng;
 }
 
 /** What the API shows about a resolved phase. Contains user ids: map to names before sending. */
@@ -207,6 +211,11 @@ export interface BuiltPhase {
   memberIds: string[];
   aliases: string[];
   input: FightInput;
+  /**
+   * The keys of the finale abilities whose owners turned Auto fire off for this week (empty outside
+   * the finale). The live start stores them as 'held'; an instant finale gives them the last round.
+   */
+  held: ReadonlySet<string>;
 }
 
 export interface BuildOptions {
@@ -322,7 +331,21 @@ export function buildPhaseInput(
     // Crits and the rest of the luck rules, stored with the input so a replay is exact.
     luck: { ...RULES.combat.luck },
   };
-  return { memberIds, aliases, input };
+  // Auto fire preferences: only the finale has abilities, and only what the owner turned off matters.
+  const held = new Set<string>();
+  if (phase === 'finale') {
+    const prefs = loadAutofire(sql, week.weekId);
+    for (const choice of input.finaleAbilities) {
+      const userId = memberIds[aliases.indexOf(choice.playerId)];
+      if (
+        userId !== undefined &&
+        !prefs.isOn(userId, targetOf({ creatureId: choice.creatureId ?? null }))
+      ) {
+        held.add(choice.key);
+      }
+    }
+  }
+  return { memberIds, aliases, input, held };
 }
 
 /**
@@ -352,8 +375,18 @@ export function resolveParty(
     // The seed is drawn now, from live randomness, and stored with the input: the fight can be
     // replayed later, but nobody could have known the seed before this moment.
     const seed = drawSeed(deps.rng);
-    const result = simulateFight(built.input, createSeededRng(seed));
-    settleParty(deps, week, party, phase, built, seed, built.input, result);
+    // An ability whose owner turned Auto fire off waits for the last round (nobody is here to press it).
+    const input: FightInput =
+      built.held.size === 0
+        ? built.input
+        : {
+            ...built.input,
+            finaleAbilities: built.input.finaleAbilities.map((a) =>
+              built.held.has(a.key) ? { ...a, fireAtRound: built.input.boss.finaleRounds } : a,
+            ),
+          };
+    const result = simulateFight(input, createSeededRng(seed));
+    settleParty(deps, week, party, phase, built, seed, input, result);
     return true;
   });
 }
@@ -440,8 +473,16 @@ export function settleParty(
   if (phase === 'finale' && result.cleared) {
     const progression = readWeekProgression(sql, week.weekId);
     if (progression?.festival === true && progression.festivalSpecies !== null) {
+      const quirkRng = deps.quirkRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
       for (const userId of memberIds) {
-        grantFestivalCreature(storage, week.weekId, userId, progression.festivalSpecies, now);
+        grantFestivalCreature(
+          storage,
+          quirkRng,
+          week.weekId,
+          userId,
+          progression.festivalSpecies,
+          now,
+        );
       }
     }
   }

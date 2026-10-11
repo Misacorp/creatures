@@ -1,0 +1,158 @@
+{
+  "tidal-colossus": {
+    "description": "A mountain of sea water and barnacled stone that rises from the deep. Every few rounds it drags the front line under with a crushing Undertow.",
+    "appearance": {
+      "silhouette": "Huge hunched giant with broad wave-crest shoulders and long arms hanging to the ground.",
+      "size": "huge",
+      "palette": [
+        {
+          "name": "Deep Tide",
+          "hex": "#1f5f8b"
+        },
+        {
+          "name": "Wave Blue",
+          "hex": "#3fa7d6"
+        },
+        {
+          "name": "Barnacle Grey",
+          "hex": "#7b8a96"
+        },
+        {
+          "name": "Foam White",
+          "hex": "#e8fbff"
+        },
+        {
+          "name": "Eye Glow",
+          "hex": "#9fe3f0"
+        }
+      ],
+      "features": [
+        "Body of dark blue water and barnacled stone",
+        "Shoulders that curl like breaking waves, topped with foam",
+        "Two glowing pale-cyan eye pits in a low, heavy brow",
+        "Long arms with fists like boulders, dripping",
+        "A lower body that fades into waves"
+      ],
+      "pose": "Looming forward, arms hanging, one fist rising slowly like a tide.",
+      "always": ["Wave-crest shoulders", "Glowing eye pits", "Foam highlights on the water"],
+      "never": ["Fire or lightning", "A smile or any friendly look"]
+    }
+  },
+  "cinder-wyrm": {
+    "description": "A coiling wyrm of black stone and living magma that cooks the air around it. It turns the first reaction of every round back on the team with its Backdraft.",
+    "appearance": {
+      "silhouette": "Large wyrm coiled in a loose S with a wedge-shaped head and a tall frill of fins.",
+      "size": "huge",
+      "palette": [
+        {
+          "name": "Basalt",
+          "hex": "#3a2f3a"
+        },
+        {
+          "name": "Magma Orange",
+          "hex": "#ff6a2a"
+        },
+        {
+          "name": "Lava Yellow",
+          "hex": "#ffc23d"
+        },
+        {
+          "name": "Ember Red",
+          "hex": "#c2381e"
+        },
+        {
+          "name": "Ash Grey",
+          "hex": "#8d8a94"
+        }
+      ],
+      "features": [
+        "Body of cracked black stone with glowing orange seams",
+        "Wedge-shaped head with a mouth glowing yellow-white inside",
+        "Tall frill of jagged fins along the head and spine",
+        "Narrow, slit-pupil eyes in bright yellow",
+        "Smoke and a few embers drifting from its back"
+      ],
+      "pose": "Coiled and rearing, head lowered toward the viewer, jaw slightly open.",
+      "always": ["Glowing magma seams", "A coiled body"],
+      "never": ["Wings", "Water or ice colours"]
+    }
+  },
+  "thornmother": {
+    "description": "A towering briar queen who mothers every seed and every thorn. Her Bramble Bind snares the creatures at both ends of the line.",
+    "appearance": {
+      "silhouette": "Tall, stooped tree-woman with a wide crown of branches and long vine arms reaching forward.",
+      "size": "huge",
+      "palette": [
+        {
+          "name": "Bark Brown",
+          "hex": "#6b4a2e"
+        },
+        {
+          "name": "Deep Moss",
+          "hex": "#2f6b3a"
+        },
+        {
+          "name": "Thorn Green",
+          "hex": "#5fb04a"
+        },
+        {
+          "name": "Leaf Light",
+          "hex": "#b4e26a"
+        },
+        {
+          "name": "Bloom Pink",
+          "hex": "#e86a8a"
+        }
+      ],
+      "features": [
+        "Trunk-like body of dark bark with a hollow face",
+        "Crown of bare branches with a few pink blooms",
+        "Long vine arms covered in thorns",
+        "Two glowing pale-green eyes in the hollow face",
+        "A few small seedling sprouts clinging to her skirt of roots"
+      ],
+      "pose": "Leaning forward with both vine arms stretched wide, as if to scoop up the whole party.",
+      "always": ["Thorned vines", "A crown of branches"],
+      "never": ["Cute or friendly proportions", "Fire colours"]
+    }
+  },
+  "storm-sovereign": {
+    "description": "A crowned king of thunderclouds who looks down on everyone beneath him. His Lightning Rod always picks out the hardest hitter and strikes them first.",
+    "appearance": {
+      "silhouette": "Wide, floating cloud body with a jagged crown of lightning and a single raised bolt-spear.",
+      "size": "huge",
+      "palette": [
+        {
+          "name": "Storm Violet",
+          "hex": "#6b5bd6"
+        },
+        {
+          "name": "Night Indigo",
+          "hex": "#2d2a5e"
+        },
+        {
+          "name": "Bolt Yellow",
+          "hex": "#f2d12b"
+        },
+        {
+          "name": "Flash White",
+          "hex": "#fff3a0"
+        },
+        {
+          "name": "Cloud Grey",
+          "hex": "#8f94b8"
+        }
+      ],
+      "features": [
+        "Body of dark violet thundercloud with a lighter underside",
+        "A jagged crown made of yellow lightning bolts",
+        "Two sharp white eyes under a stern brow",
+        "One raised arm holding a long lightning rod",
+        "Cloud wisps instead of legs"
+      ],
+      "pose": "Hovering with his chin lifted and the lightning rod raised, looking down at the viewer.",
+      "always": ["The lightning crown", "The raised lightning rod"],
+      "never": ["Legs", "Warm fire colours"]
+    }
+  }
+}

@@ -255,10 +255,20 @@ export function listEntries(sql: SqlStorage, userId: string, limit: number): Led
     }));
 }
 
+/**
+ * The meta of an entry as clients see it. The `jackpot` flag of a raid payout stays in storage but is
+ * left out here: the jackpot is hidden from players.
+ */
 function parseMeta(meta: string | null): unknown {
   if (meta === null) return null;
   try {
-    return JSON.parse(meta);
+    const parsed: unknown = JSON.parse(meta);
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      const visible: Record<string, unknown> = { ...(parsed as Record<string, unknown>) };
+      delete visible['jackpot'];
+      return visible;
+    }
+    return parsed;
   } catch {
     return null;
   }

@@ -5,7 +5,7 @@
  * decide what to show and which buttons to offer.
  */
 import { content, RULES, type FinaleAbilityDef } from '@creatures/game';
-import { describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
+import { MAX_ROUND_MS, describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
 import type { LiveAbility, LiveActionRequest, LiveFight, LiveSnapshot } from './live-api';
 import type { AbilityPreview, RaidReveal, TeamCreatureView } from './raid-api';
 import { formatCountdown } from './game';
@@ -15,8 +15,11 @@ import { festivalGrantText, rankChangeText } from './raid-progress';
 
 /** The lobby opens this long before the start. */
 export const LOBBY_MS = 5 * 60_000;
-/** The round length of a finale (the server sends the real one with every snapshot). */
-export const DEFAULT_ROUND_MS = 10_000;
+/**
+ * The longest a round of a finale can take (the engine's pacing, 6 to 22 seconds, is what the server
+ * schedules by): only used to know when the Raid tab can stop expecting a result.
+ */
+export const LONGEST_ROUND_MS = MAX_ROUND_MS;
 /** How long after the last round the Raid tab keeps the finale view open for a result to show up. */
 export const FINISH_GRACE_MS = 30_000;
 
@@ -26,7 +29,7 @@ export type FinaleWindow = 'before' | 'lobby' | 'live' | 'after';
 export function finaleWindow(finaleAt: number, rounds: number, serverNow: number): FinaleWindow {
   if (serverNow < finaleAt - LOBBY_MS) return 'before';
   if (serverNow < finaleAt) return 'lobby';
-  if (serverNow < finaleAt + rounds * DEFAULT_ROUND_MS + FINISH_GRACE_MS) return 'live';
+  if (serverNow < finaleAt + rounds * LONGEST_ROUND_MS + FINISH_GRACE_MS) return 'live';
   return 'after';
 }
 
@@ -55,29 +58,36 @@ export const MIN_POLL_MS = 250;
 export const GIVE_UP_MS = 60_000;
 export const MAX_RETRY_MS = 15_000;
 
-/** The next moment the fight's state changes: the start, then the end of every round. */
+/**
+ * The next moment the fight's state changes, from the server's schedule: the start, then each
+ * round's start (and finally the end of the fight). Null when there is nothing to wait for.
+ */
 export function nextBoundaryAt(
-  startsAt: number,
-  roundMs: number,
-  rounds: number,
+  snapshot: Pick<LiveFight, 'startsAt' | 'nextRoundAt'>,
   serverNow: number,
 ): number | null {
-  if (serverNow < startsAt) return startsAt;
-  const k = Math.floor((serverNow - startsAt) / roundMs) + 1;
-  return k <= rounds ? startsAt + k * roundMs : null;
+  if (serverNow < snapshot.startsAt) return snapshot.startsAt;
+  return snapshot.nextRoundAt;
 }
 
 /**
  * Milliseconds until the next poll, or null to stop. Polls every 2 s, and once more just after
- * each round boundary, using the server's clock (`serverNow` here is the estimated server time).
+ * the server's next round start (`nextRoundAt`), using the server's clock (`serverNow` here is the
+ * estimated server time).
  */
 export function nextPollDelay(snapshot: LiveSnapshot, serverNow: number): number | null {
   if (snapshot.status === 'none' || snapshot.status === 'done') return null;
-  const { startsAt, roundMs, rounds } = snapshot;
-  if (serverNow > startsAt + rounds * roundMs + GIVE_UP_MS) return null;
+  const { startsAt, rounds } = snapshot;
+  if (serverNow > startsAt + rounds * LONGEST_ROUND_MS + GIVE_UP_MS) return null;
   let delay = POLL_MS;
-  const boundary = nextBoundaryAt(startsAt, roundMs, rounds, serverNow);
-  if (boundary !== null) delay = Math.min(delay, boundary + BOUNDARY_SLACK_MS - serverNow);
+  const boundary = nextBoundaryAt(snapshot, serverNow);
+  if (boundary !== null) {
+    const wait = boundary + BOUNDARY_SLACK_MS - serverNow;
+    if (wait >= MIN_POLL_MS) delay = Math.min(delay, wait);
+    // Just past the boundary and no news yet: ask again soon. Long past it, the snapshot is stale
+    // (or the clock estimate is off): do not hammer, go back to the normal pace.
+    else if (serverNow - boundary < POLL_MS) delay = MIN_POLL_MS;
+  }
   return Math.max(MIN_POLL_MS, delay);
 }
 
@@ -110,7 +120,7 @@ export interface Progress {
 
 /** The round counter and the countdown, from the snapshot and the estimated server time. */
 export function progressText(fight: LiveFight, serverNow: number): Progress {
-  const { status, round, rounds, startsAt, roundMs } = fight;
+  const { status, round, rounds, startsAt, nextRoundAt } = fight;
   if (status === 'done') return { headline: 'The fight is over', countdown: '' };
   if (status === 'lobby' || round < 1) {
     return {
@@ -118,15 +128,18 @@ export function progressText(fight: LiveFight, serverNow: number): Progress {
       countdown: `Starts in ${formatClock(startsAt - serverNow)}`,
     };
   }
-  if (round >= rounds) {
+  // The last round is the final one, or the one the boss has just fallen in.
+  const last = round >= rounds || fight.bossHp === 0;
+  const wait = nextRoundAt === null ? '' : formatCountdown(nextRoundAt - serverNow);
+  if (last) {
     return {
       headline: `Last round (${String(round)} of ${String(rounds)})`,
-      countdown: `Ends in ${formatCountdown(startsAt + rounds * roundMs - serverNow)}`,
+      countdown: wait === '' ? '' : `Ends in ${wait}`,
     };
   }
   return {
     headline: `Round ${String(round)} of ${String(rounds)}`,
-    countdown: `Next round in ${formatCountdown(startsAt + round * roundMs - serverNow)}`,
+    countdown: wait === '' ? '' : `Next round in ${wait}`,
   };
 }
 
@@ -193,6 +206,13 @@ export function otherUsage(abilities: readonly LiveAbility[], you: string | null
   return [...byAlias.values()];
 }
 
+/** The closed summary of the other players' abilities: "Others' abilities (3/7 used)". */
+export function othersSummary(others: readonly OtherUsage[]): string {
+  const used = others.reduce((sum, o) => sum + o.used, 0);
+  const total = others.reduce((sum, o) => sum + o.total, 0);
+  return `Others' abilities (${String(used)}/${String(total)} used)`;
+}
+
 /** "2 of 4 used. Latest: Cindle's Flare Strike (round 5)". */
 export function otherUsageText(usage: OtherUsage, names: Pick<EventNames, 'creatures'>): string {
   const head = `${String(usage.used)} of ${String(usage.total)} used`;
@@ -213,6 +233,8 @@ export interface CreatureAbilityRow {
   unlocked: boolean;
   /** "Ready for the finale" or "Unlocks at level 10 (now level 7)". */
   status: string;
+  /** The caller's Auto fire setting (on unless they turned it off). */
+  autoFire: boolean;
 }
 
 /**
@@ -242,9 +264,29 @@ export function creatureAbilityRows(
       effect: abilityEffectLine(entry.abilityId),
       unlocked: entry.unlocked,
       status,
+      autoFire: entry.autoFire,
     });
   }
   return rows;
+}
+
+/** The target of the Auto fire preference of an ability: its creature's id, or `basic`. */
+export function autoFireTarget(ability: Pick<LiveAbility, 'creature'>): string {
+  return ability.creature ?? 'basic';
+}
+
+/**
+ * What a tap on one of the player's own creatures that has no ability in this fight says: it is
+ * below the unlock level, or its species has no finale ability. Plain text.
+ */
+export function noAbilityText(speciesId: string, level: number): string {
+  const species = content.creatures.find((c) => c.id === speciesId);
+  if (species?.ability === undefined) return 'This creature has no finale ability.';
+  const unlock = RULES.abilities.unlockLevel;
+  if (level < unlock) {
+    return `Its ability unlocks at level ${String(unlock)}. It is level ${String(level)} now.`;
+  }
+  return 'Its ability is not part of this fight.';
 }
 
 /** What a finale ability asks for when it is fired by hand. */
@@ -270,7 +312,7 @@ export function abilityPlanText(def: FinaleAbilityDef): string {
  * The round an ability fires in if nobody touches it. That is the server's own number (the engine's
  * default, which for Shield Wall depends on the boss); 0 means the server does not know the ability.
  */
-export function defaultRoundOf(ability: LiveAbility): number | null {
+export function defaultRoundOf(ability: Pick<LiveAbility, 'defaultRound'>): number | null {
   return ability.defaultRound > 0 ? ability.defaultRound : null;
 }
 
@@ -287,8 +329,8 @@ export function abilityStateText(ability: LiveAbility, rounds: number, mine: boo
         : `Fires at the start of round ${String(ability.fireAtRound)}`;
     case 'held':
       return mine
-        ? "Held: fires in the last round if you don't"
-        : `Held: fires in the last round (round ${String(rounds)}) at the latest`;
+        ? "Auto fire is off: it fires in the last round if you don't"
+        : `Auto fire is off: it fires in the last round (round ${String(rounds)}) at the latest`;
     case 'default': {
       const round = defaultRoundOf(ability);
       return round === null ? 'Fires on its own' : `Fires on its own in round ${String(round)}`;
@@ -298,50 +340,66 @@ export function abilityStateText(ability: LiveAbility, rounds: number, mine: boo
 
 export interface AbilityControls {
   canFire: boolean;
-  canHold: boolean;
+  /** The Auto fire toggle is on offer (before the ability's default round, while unused). */
+  canToggle: boolean;
+  /** True while the ability fires by itself at its default round; false once auto fire is off. */
+  autoOn: boolean;
   /** Why the buttons are off, or an empty string. */
   note: string;
 }
 
+/** The two lines of the Auto fire toggle: "Auto fire" and "round 7", or "Auto fire off" and "last round". */
+export function autoFireLabel(ability: Pick<LiveAbility, 'mode' | 'defaultRound'>): {
+  title: string;
+  detail: string;
+} {
+  if (ability.mode === 'held') return { title: 'Auto fire off', detail: 'last round' };
+  const round = defaultRoundOf(ability);
+  return { title: 'Auto fire', detail: round === null ? '' : `round ${String(round)}` };
+}
+
 /**
  * Which buttons to offer. This only mirrors the server's rules for display (Fire until the last
- * round, Hold before the default round); the server decides, and a stale screen gets a friendly
- * error from it.
+ * round, the Auto fire toggle before the default round); the server decides, and a stale screen
+ * gets a friendly error from it.
  */
 export function abilityControls(
   fight: Pick<LiveFight, 'status' | 'round' | 'rounds'>,
   ability: LiveAbility,
 ): AbilityControls {
+  const autoOn = ability.mode !== 'held';
+  const off = { canFire: false, canToggle: false, autoOn };
   if (fight.status === 'lobby') {
-    return {
-      canFire: false,
-      canHold: false,
-      note: 'You can use your ability once the fight starts.',
-    };
+    // Before the start there is no Fire; the toggle sets the default Auto fire for the start.
+    return { canFire: false, canToggle: true, autoOn, note: '' };
   }
-  if (fight.status === 'done') return { canFire: false, canHold: false, note: '' };
-  if (ability.fired) return { canFire: false, canHold: false, note: '' };
-  if (ability.mode === 'fired') return { canFire: false, canHold: false, note: '' };
+  if (fight.status === 'done') return { ...off, note: '' };
+  if (ability.fired) return { ...off, note: '' };
+  if (ability.mode === 'fired') return { ...off, note: '' };
   if (fight.round >= fight.rounds) {
-    return { canFire: false, canHold: false, note: 'It is too late to use it by hand now.' };
+    return { ...off, note: 'It is too late to use it by hand now.' };
   }
   const defaultRound = defaultRoundOf(ability);
-  const canHold = ability.mode === 'default' && defaultRound !== null && fight.round < defaultRound;
-  return { canFire: true, canHold, note: '' };
+  const canToggle =
+    (ability.mode === 'default' || ability.mode === 'held') &&
+    defaultRound !== null &&
+    fight.round < defaultRound;
+  return { canFire: true, canToggle, autoOn, note: '' };
 }
 
 /**
- * The request body for Fire or Hold of one ability, named by its `key`. Only the parameter that
+ * The request body for Fire or the Auto fire toggle (`hold` is auto fire off, `unhold` is on again)
+ * of one ability, named by its `key`. Only the parameter that
  * belongs to the ability is sent (none for creature abilities, whose effects never ask).
  */
 export function buildAction(
   key: string,
   abilityId: string,
-  action: 'fire' | 'hold',
+  action: 'fire' | 'hold' | 'unhold',
   zone: string,
   element: string,
 ): LiveActionRequest {
-  if (action === 'hold') return { key, action: 'hold' };
+  if (action === 'hold' || action === 'unhold') return { key, action };
   const kind = abilityParamKind(abilityId);
   if (kind === 'zone' && (zone === 'front' || zone === 'middle' || zone === 'back')) {
     return { key, action: 'fire', zone };
@@ -445,21 +503,19 @@ export function earlierLines(events: readonly FightEvent[], names: EventNames): 
 export interface RevealSummary {
   outcome: string;
   cleared: boolean;
+  /** One figure: everything the finale paid the player. */
   essence: string;
-  jackpot: { hit: boolean; text: string; firstOnServer: boolean };
   /** Where the server's rank went; null until the ladder has moved (and for old weeks). */
   rank: string | null;
   /** The Festival creature the player got; null if none. */
   festival: { text: string; firstOnServer: boolean } | null;
 }
 
-/** Plain words for a finale reveal. `pity` is the counter after the fight, when known. */
+/** Plain words for a finale reveal. */
 export function revealSummary(
-  reveal: Pick<RaidReveal, 'cleared' | 'essence' | 'jackpot'> &
+  reveal: Pick<RaidReveal, 'cleared' | 'essence'> &
     Partial<Pick<RaidReveal, 'rankChange' | 'festivalGrant'>>,
-  pity: number | null,
 ): RevealSummary {
-  const { jackpot } = reveal;
   const rank = reveal.rankChange == null ? null : rankChangeText(reveal.rankChange);
   const festival =
     reveal.festivalGrant == null
@@ -468,37 +524,10 @@ export function revealSummary(
           text: festivalGrantText(reveal.festivalGrant),
           firstOnServer: reveal.festivalGrant.firstOnServer,
         };
-  const outcome = reveal.cleared
-    ? 'The boss fell. Finale cleared!'
-    : 'The boss held on. Not cleared.';
-  const essence = `You got ${String(reveal.essence)} Essence`;
-  if (jackpot !== null) {
-    return {
-      outcome,
-      cleared: reveal.cleared,
-      essence,
-      jackpot: {
-        hit: true,
-        text: `Jackpot! +${String(jackpot.essence)} Essence`,
-        firstOnServer: jackpot.firstOnServer,
-      },
-      rank,
-      festival,
-    };
-  }
-  const max = RULES.raid.jackpot.hardPityRaid;
   return {
-    outcome,
+    outcome: reveal.cleared ? 'The boss fell. Finale cleared!' : 'The boss held on. Not cleared.',
     cleared: reveal.cleared,
-    essence,
-    jackpot: {
-      hit: false,
-      text:
-        pity === null
-          ? 'No jackpot this time'
-          : `No jackpot this time (pity ${String(pity)}/${String(max)})`,
-      firstOnServer: false,
-    },
+    essence: `You got ${String(reveal.essence)} Essence`,
     rank,
     festival,
   };

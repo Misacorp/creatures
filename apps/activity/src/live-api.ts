@@ -2,7 +2,7 @@
  * Live finale API: the snapshot types, a strict shape check and the requests. The shapes mirror the
  * server's `LiveSnapshot` (`apps/worker/src/raid-live-view.ts`) and `docs/design/m5-finale.md`; the
  * fixtures in `src/fixtures` are real server responses that the tests parse. Everything here is
- * display data: the server runs the fight and decides every outcome; the client sends Fire and Hold
+ * display data: the server runs the fight and decides every outcome; the client sends Fire and the Auto fire toggle
  * as intents.
  *
  * The server sends one object for every state, with nulls where there is nothing yet (no boss HP or
@@ -20,7 +20,6 @@ import {
   isEventNames,
   isFestivalGrant,
   isInt,
-  isJackpot,
   isRankChange,
   isNullableStr,
   isRecord,
@@ -39,7 +38,7 @@ export type LiveAbilityMode = 'default' | 'held' | 'fired';
  * unlocked team creatures' abilities.
  */
 export interface LiveAbility {
-  /** Unique in the fight. The caller sends it to Fire or Hold their own ability. */
+  /** Unique in the fight. The caller sends it to Fire or toggle Auto fire on their own ability. */
   key: string;
   /** An opaque per-fight player key, the same keys as `names.players` and `LiveFight.you`. */
   alias: string;
@@ -47,6 +46,11 @@ export interface LiveAbility {
   /** The row slot (creature id, as in `row[].id`) of a creature ability; null for a basic ability. */
   creature: string | null;
   mode: LiveAbilityMode;
+  /**
+   * Auto fire is on: false exactly when the mode is `held`. In the lobby this is the player's
+   * preference for the start; once the fight is on it follows the toggle.
+   */
+  autoFire: boolean;
   /** True once the ability has taken effect. */
   fired: boolean;
   /** The round it took effect in, once it has. */
@@ -59,10 +63,8 @@ export interface LiveAbility {
 
 export interface LiveLoot {
   cleared: boolean;
+  /** Everything the finale paid the caller, as one figure. */
   essence: number;
-  jackpot: null | { essence: number; firstOnServer: boolean };
-  /** Raids taken part in without a jackpot, after this one. */
-  pity: number;
   /** What the finale did to the server's rank; null until the ladder has moved, and in practice. */
   rankChange: RankChange | null;
   /** The Festival creature the finale gave the caller, or null. */
@@ -76,10 +78,21 @@ interface LiveShared {
   week: string;
   /** The caller's opaque player key in this fight, or null. */
   you: string | null;
-  roundMs: number;
+  /**
+   * The fixed round length of a fight that was stored before content pacing; null otherwise. Rounds
+   * last as long as their events take to play (6 to 22 seconds): use `roundStarts` and `nextRoundAt`.
+   */
+  roundMs: number | null;
   rounds: number;
   /** The round being played now (0 before the start). */
   round: number;
+  /** When each round started, for rounds 1..`round` (server clock, UTC ms). */
+  roundStarts: number[];
+  /**
+   * When the state next changes: the start of the next round, or the end of the fight during its
+   * last round; the start in the lobby. Null when there is nothing to wait for.
+   */
+  nextRoundAt: number | null;
   serverNow: number;
   /** The frozen fighting row, left to right. Empty in the lobby. */
   row: ReplayRowEntry[];
@@ -106,8 +119,10 @@ export interface LiveNone {
 }
 
 /**
- * Before the start: the countdown and who is here. The boss HP is the party's pool, and may be
- * missing; there is no row, no names, no events and no abilities yet.
+ * Before the start: the countdown, who is here and a preview of the stage. The row, the names and the
+ * boss pool are what the fight would use now (a practice fight: what it was started with), and
+ * `abilities` holds only the caller's own, with their Auto fire setting. There are no events yet. The
+ * preview can be missing (an empty row, no names) when the party has none to show.
  */
 export interface LiveLobby extends LiveShared {
   status: 'lobby';
@@ -133,9 +148,10 @@ export type LiveFight = LiveLobby | LiveRunning;
 
 export type LiveSnapshot = LiveNone | LiveFight;
 
-/** Fire or Hold one ability of the caller's, named by its `key`. */
+/** Fire an ability of the caller's, or toggle its Auto fire (`hold`: off, `unhold`: on), named by its `key`. */
 export type LiveActionRequest =
-  { key: string; action: 'hold' } | { key: string; action: 'fire'; zone?: Zone; element?: Element };
+  | { key: string; action: 'hold' | 'unhold' }
+  | { key: string; action: 'fire'; zone?: Zone; element?: Element };
 
 // --- Shape checks ---
 
@@ -153,6 +169,7 @@ function isLiveAbility(value: unknown): value is LiveAbility {
     isStr(value['abilityId']) &&
     isNullableStr(value['creature']) &&
     (value['mode'] === 'default' || value['mode'] === 'held' || value['mode'] === 'fired') &&
+    isBool(value['autoFire']) &&
     isBool(value['fired']) &&
     (value['firedAtRound'] === null || isPositiveInt(value['firedAtRound'])) &&
     (value['fireAtRound'] === null || isPositiveInt(value['fireAtRound'])) &&
@@ -165,8 +182,6 @@ function isLiveLoot(value: unknown): value is LiveLoot {
     isRecord(value) &&
     isBool(value['cleared']) &&
     isNonNegativeInt(value['essence']) &&
-    (value['jackpot'] === null || isJackpot(value['jackpot'])) &&
-    isNonNegativeInt(value['pity']) &&
     (value['rankChange'] === null || isRankChange(value['rankChange'])) &&
     (value['festivalGrant'] === null || isFestivalGrant(value['festivalGrant']))
   );
@@ -192,9 +207,11 @@ function hasSharedShape(data: Record<string, unknown>): boolean {
     isNullableInt(data['party']) &&
     isNullableStr(data['you']) &&
     isNullableInt(data['startsAt']) &&
-    isPositiveInt(data['roundMs']) &&
+    (data['roundMs'] === null || isPositiveInt(data['roundMs'])) &&
     isPositiveInt(data['rounds']) &&
     isNonNegativeInt(data['round']) &&
+    isArrayOf(data['roundStarts'], isInt) &&
+    isNullableInt(data['nextRoundAt']) &&
     isInt(data['serverNow']) &&
     isLiveBoss(data['boss']) &&
     isArrayOf(data['row'], isReplayRow) &&
@@ -238,7 +255,7 @@ export async function fetchLive(): Promise<LiveSnapshot> {
   return parseLiveSnapshot(await apiFetch('/api/raid/live'));
 }
 
-/** Fire or Hold one ability. Fire may carry the zone (Shield Wall) or the element (Re-mark). */
+/** Fire or toggle Auto fire on one ability. Fire may carry the zone (Shield Wall) or the element (Re-mark). */
 export async function sendLiveAction(request: LiveActionRequest): Promise<LiveSnapshot> {
   return parseLiveSnapshot(
     await apiFetch('/api/raid/live/action', {

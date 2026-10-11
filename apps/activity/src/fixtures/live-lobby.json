@@ -3,11 +3,13 @@
   "practice": false,
   "week": "2027-W02",
   "party": 1,
-  "you": null,
+  "you": "m1",
   "startsAt": 1800208800000,
-  "roundMs": 10000,
+  "roundMs": null,
   "rounds": 12,
   "round": 0,
+  "roundStarts": [],
+  "nextRoundAt": 1800208800000,
   "serverNow": 1800208560000,
   "boss": {
     "id": "storm-sovereign",
@@ -16,11 +18,221 @@
     "hpMax": 50000000,
     "hpStart": 50000000
   },
-  "row": [],
-  "names": null,
-  "abilities": [],
+  "row": [
+    {
+      "position": 0,
+      "id": "0d16e5cb-e1fd-4923-905f-0286cd956793",
+      "name": "Mistnewt",
+      "species": "mistnewt",
+      "element": "tide",
+      "role": "guard",
+      "level": 10,
+      "owner": "m2"
+    },
+    {
+      "position": 1,
+      "id": "fa509774-409c-4571-b0e3-e0c03a862767",
+      "name": "Sproutle",
+      "species": "sproutle",
+      "element": "grove",
+      "role": "guard",
+      "level": 10,
+      "owner": "m2"
+    },
+    {
+      "position": 2,
+      "id": "guest:1",
+      "name": "Guest Warden",
+      "species": "sproutle",
+      "element": "grove",
+      "role": "guard",
+      "level": 10,
+      "owner": null
+    },
+    {
+      "position": 3,
+      "id": "guest:2",
+      "name": "Guest Tidecaller",
+      "species": "splashet",
+      "element": "tide",
+      "role": "setter",
+      "level": 10,
+      "owner": null
+    },
+    {
+      "position": 4,
+      "id": "afb9f81b-ff80-4da7-a765-0fd543c12e49",
+      "name": "Ashmole",
+      "species": "ashmole",
+      "element": "ember",
+      "role": "support",
+      "level": 10,
+      "owner": "m2"
+    },
+    {
+      "position": 5,
+      "id": "guest:3",
+      "name": "Guest Striker",
+      "species": "stormray",
+      "element": "spark",
+      "role": "payoff",
+      "level": 10,
+      "owner": null
+    },
+    {
+      "position": 6,
+      "id": "de06bb8a-109c-439a-bb7c-ab4040339ddb",
+      "name": "Zipmouse",
+      "species": "zipmouse",
+      "element": "spark",
+      "role": "setter",
+      "level": 10,
+      "owner": "m1"
+    },
+    {
+      "position": 7,
+      "id": "4a1780bc-8c3e-4476-91cf-1fcd97cbf66c",
+      "name": "Cindle",
+      "species": "cindle",
+      "element": "ember",
+      "role": "payoff",
+      "level": 10,
+      "owner": "m1"
+    },
+    {
+      "position": 8,
+      "id": "079f27ab-8884-48a5-896c-b642fb211659",
+      "name": "Stormray",
+      "species": "stormray",
+      "element": "spark",
+      "role": "payoff",
+      "level": 10,
+      "owner": "m1"
+    }
+  ],
+  "names": {
+    "boss": "Storm Sovereign",
+    "creatures": {
+      "0d16e5cb-e1fd-4923-905f-0286cd956793": "Mistnewt",
+      "fa509774-409c-4571-b0e3-e0c03a862767": "Sproutle",
+      "guest:1": "Guest Warden",
+      "guest:2": "Guest Tidecaller",
+      "afb9f81b-ff80-4da7-a765-0fd543c12e49": "Ashmole",
+      "guest:3": "Guest Striker",
+      "de06bb8a-109c-439a-bb7c-ab4040339ddb": "Zipmouse",
+      "4a1780bc-8c3e-4476-91cf-1fcd97cbf66c": "Cindle",
+      "079f27ab-8884-48a5-896c-b642fb211659": "Stormray"
+    },
+    "players": {
+      "m1": "Player 1",
+      "m2": "Player 2"
+    },
+    "reactions": {
+      "overload": "Overload",
+      "grounding": "Grounding",
+      "wildfire": "Wildfire",
+      "steam": "Steam"
+    },
+    "gimmicks": {
+      "lightning-rod": "Lightning Rod"
+    },
+    "abilities": {
+      "rally": "Rally",
+      "shield-wall": "Shield Wall",
+      "re-mark": "Re-mark",
+      "purge": "Purge",
+      "tidal-mark": "Tidal Mark",
+      "tidal-mark-2": "Riptide Mark",
+      "flare-strike": "Flare Strike",
+      "flare-strike-2": "Inferno Strike",
+      "bark-guard": "Bark Guard",
+      "bark-guard-2": "Ironbark Guard",
+      "static-zap": "Static Zap",
+      "static-zap-2": "Storm Zap",
+      "fog-veil": "Fog Veil",
+      "fog-veil-2": "Dense Fog",
+      "warm-glow": "Warm Glow",
+      "warm-glow-2": "Magma Glow",
+      "thunder-strike": "Thunder Strike",
+      "thunder-strike-2": "Tempest Strike",
+      "moss-bloom": "Mossy Bloom",
+      "moss-bloom-2": "Ancient Bloom",
+      "coral-lance": "Coral Lance",
+      "solar-brand": "Solar Brand",
+      "verdant-roar": "Verdant Roar",
+      "aurora-surge": "Aurora Surge",
+      "lantern-glow": "Lantern Glow",
+      "hearth-ward": "Hearth Ward"
+    },
+    "marks": {
+      "tide": "Soaked",
+      "spark": "Charged",
+      "grove": "Overgrown",
+      "ember": "Scorched"
+    },
+    "elements": {
+      "tide": "Tide",
+      "ember": "Ember",
+      "grove": "Grove",
+      "spark": "Spark"
+    },
+    "adaptations": {
+      "resist-top-reaction": "Reaction Resistance",
+      "resist-top-element": "Element Resistance"
+    }
+  },
+  "abilities": [
+    {
+      "key": "m1:basic",
+      "alias": "m1",
+      "abilityId": "shield-wall",
+      "creature": null,
+      "mode": "held",
+      "autoFire": false,
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": null,
+      "defaultRound": 3
+    },
+    {
+      "key": "m1:c0",
+      "alias": "m1",
+      "abilityId": "thunder-strike",
+      "creature": "079f27ab-8884-48a5-896c-b642fb211659",
+      "mode": "default",
+      "autoFire": true,
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": null,
+      "defaultRound": 4
+    },
+    {
+      "key": "m1:c1",
+      "alias": "m1",
+      "abilityId": "flare-strike",
+      "creature": "4a1780bc-8c3e-4476-91cf-1fcd97cbf66c",
+      "mode": "held",
+      "autoFire": false,
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": null,
+      "defaultRound": 5
+    },
+    {
+      "key": "m1:c2",
+      "alias": "m1",
+      "abilityId": "static-zap",
+      "creature": "de06bb8a-109c-439a-bb7c-ab4040339ddb",
+      "mode": "default",
+      "autoFire": true,
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": null,
+      "defaultRound": 4
+    }
+  ],
   "events": [],
-  "bossHp": null,
+  "bossHp": 50000000,
   "watching": ["Player 1"],
   "loot": null
 }

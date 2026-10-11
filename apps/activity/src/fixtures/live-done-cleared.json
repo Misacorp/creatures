@@ -8,6 +8,8 @@
   "roundMs": 10000,
   "rounds": 12,
   "round": 1,
+  "roundStarts": [1800208800000],
+  "nextRoundAt": null,
   "serverNow": 1800208800000,
   "boss": {
     "id": "storm-sovereign",
@@ -19,7 +21,7 @@
   "row": [
     {
       "position": 0,
-      "id": "66ba6cba-b9e2-43e0-a7f7-fad970b4bd00",
+      "id": "2ca2600e-fd5a-49da-a6ef-68707fa4d5ca",
       "name": "Sproutle",
       "species": "sproutle",
       "element": "grove",
@@ -29,7 +31,7 @@
     },
     {
       "position": 1,
-      "id": "df89d4f8-34b2-4d94-ab3c-ef4fad25e1ec",
+      "id": "8513fa8f-5509-4021-9938-bafae972a01c",
       "name": "Cindle",
       "species": "cindle",
       "element": "ember",
@@ -39,7 +41,7 @@
     },
     {
       "position": 2,
-      "id": "9de301b0-0c08-418e-8d85-b8fed15873ba",
+      "id": "78375287-9ce9-4718-a112-9092a649a23b",
       "name": "Mistnewt",
       "species": "mistnewt",
       "element": "tide",
@@ -59,7 +61,7 @@
     },
     {
       "position": 4,
-      "id": "fe5a7376-8ad2-41ee-9ecd-1a4b1df96e96",
+      "id": "73bd4cbe-db1d-4da9-a1c5-81b19f920c4b",
       "name": "Ashmole",
       "species": "ashmole",
       "element": "ember",
@@ -89,7 +91,7 @@
     },
     {
       "position": 7,
-      "id": "4ac084b3-78ce-4942-9eb9-04fd9279faec",
+      "id": "0a959705-8ccb-45d3-b14c-91eb1572b183",
       "name": "Zipmouse",
       "species": "zipmouse",
       "element": "spark",
@@ -99,7 +101,7 @@
     },
     {
       "position": 8,
-      "id": "d5de28dd-7275-4f5c-bc9b-2a9e3b2dfd84",
+      "id": "dfcf5743-d005-460b-b999-1791665e7039",
       "name": "Stormray",
       "species": "stormray",
       "element": "spark",
@@ -111,24 +113,29 @@
   "names": {
     "boss": "Storm Sovereign",
     "creatures": {
-      "66ba6cba-b9e2-43e0-a7f7-fad970b4bd00": "Sproutle",
-      "df89d4f8-34b2-4d94-ab3c-ef4fad25e1ec": "Cindle",
-      "9de301b0-0c08-418e-8d85-b8fed15873ba": "Mistnewt",
+      "2ca2600e-fd5a-49da-a6ef-68707fa4d5ca": "Sproutle",
+      "8513fa8f-5509-4021-9938-bafae972a01c": "Cindle",
+      "78375287-9ce9-4718-a112-9092a649a23b": "Mistnewt",
       "guest:1": "Guest Warden",
-      "fe5a7376-8ad2-41ee-9ecd-1a4b1df96e96": "Ashmole",
+      "73bd4cbe-db1d-4da9-a1c5-81b19f920c4b": "Ashmole",
       "guest:2": "Guest Tidecaller",
       "guest:3": "Guest Striker",
-      "4ac084b3-78ce-4942-9eb9-04fd9279faec": "Zipmouse",
-      "d5de28dd-7275-4f5c-bc9b-2a9e3b2dfd84": "Stormray"
+      "0a959705-8ccb-45d3-b14c-91eb1572b183": "Zipmouse",
+      "dfcf5743-d005-460b-b999-1791665e7039": "Stormray"
     },
-    "players": { "m1": "Player 1", "m2": "Player 2" },
+    "players": {
+      "m1": "Player 1",
+      "m2": "Player 2"
+    },
     "reactions": {
       "overload": "Overload",
       "grounding": "Grounding",
       "wildfire": "Wildfire",
       "steam": "Steam"
     },
-    "gimmicks": { "lightning-rod": "Lightning Rod" },
+    "gimmicks": {
+      "lightning-rod": "Lightning Rod"
+    },
     "abilities": {
       "rally": "Rally",
       "shield-wall": "Shield Wall",
@@ -157,8 +164,18 @@
       "lantern-glow": "Lantern Glow",
       "hearth-ward": "Hearth Ward"
     },
-    "marks": { "tide": "Soaked", "spark": "Charged", "grove": "Overgrown", "ember": "Scorched" },
-    "elements": { "tide": "Tide", "ember": "Ember", "grove": "Grove", "spark": "Spark" },
+    "marks": {
+      "tide": "Soaked",
+      "spark": "Charged",
+      "grove": "Overgrown",
+      "ember": "Scorched"
+    },
+    "elements": {
+      "tide": "Tide",
+      "ember": "Ember",
+      "grove": "Grove",
+      "spark": "Spark"
+    },
     "adaptations": {
       "resist-top-reaction": "Reaction Resistance",
       "resist-top-element": "Element Resistance"
@@ -171,6 +188,7 @@
       "abilityId": "rally",
       "creature": null,
       "mode": "default",
+      "autoFire": true,
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
@@ -180,8 +198,9 @@
       "key": "m1:c0",
       "alias": "m1",
       "abilityId": "thunder-strike",
-      "creature": "d5de28dd-7275-4f5c-bc9b-2a9e3b2dfd84",
+      "creature": "dfcf5743-d005-460b-b999-1791665e7039",
       "mode": "default",
+      "autoFire": true,
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
@@ -191,8 +210,9 @@
       "key": "m1:c1",
       "alias": "m1",
       "abilityId": "flare-strike",
-      "creature": "df89d4f8-34b2-4d94-ab3c-ef4fad25e1ec",
+      "creature": "8513fa8f-5509-4021-9938-bafae972a01c",
       "mode": "default",
+      "autoFire": true,
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
@@ -204,6 +224,7 @@
       "abilityId": "shield-wall",
       "creature": null,
       "mode": "default",
+      "autoFire": true,
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
@@ -213,8 +234,9 @@
       "key": "m2:c0",
       "alias": "m2",
       "abilityId": "fog-veil",
-      "creature": "9de301b0-0c08-418e-8d85-b8fed15873ba",
+      "creature": "78375287-9ce9-4718-a112-9092a649a23b",
       "mode": "default",
+      "autoFire": true,
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
@@ -224,8 +246,9 @@
       "key": "m2:c1",
       "alias": "m2",
       "abilityId": "warm-glow",
-      "creature": "fe5a7376-8ad2-41ee-9ecd-1a4b1df96e96",
+      "creature": "73bd4cbe-db1d-4da9-a1c5-81b19f920c4b",
       "mode": "default",
+      "autoFire": true,
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
@@ -235,8 +258,9 @@
       "key": "m2:c2",
       "alias": "m2",
       "abilityId": "bark-guard",
-      "creature": "66ba6cba-b9e2-43e0-a7f7-fad970b4bd00",
+      "creature": "2ca2600e-fd5a-49da-a6ef-68707fa4d5ca",
       "mode": "default",
+      "autoFire": true,
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
@@ -251,26 +275,35 @@
       "target": "spark",
       "status": "active"
     },
-    { "t": "round_start", "round": 1, "bossHp": 1, "mark": null },
+    {
+      "t": "round_start",
+      "round": 1,
+      "bossHp": 1,
+      "mark": null
+    },
     {
       "t": "support_buff",
       "round": 1,
-      "supporter": "fe5a7376-8ad2-41ee-9ecd-1a4b1df96e96",
+      "supporter": "73bd4cbe-db1d-4da9-a1c5-81b19f920c4b",
       "target": "guest:1",
       "bp": 1500
     },
     {
       "t": "support_buff",
       "round": 1,
-      "supporter": "fe5a7376-8ad2-41ee-9ecd-1a4b1df96e96",
+      "supporter": "73bd4cbe-db1d-4da9-a1c5-81b19f920c4b",
       "target": "guest:2",
       "bp": 1500
     },
-    { "t": "turn", "round": 1, "creature": "66ba6cba-b9e2-43e0-a7f7-fad970b4bd00" },
+    {
+      "t": "turn",
+      "round": 1,
+      "creature": "2ca2600e-fd5a-49da-a6ef-68707fa4d5ca"
+    },
     {
       "t": "hit",
       "round": 1,
-      "creature": "66ba6cba-b9e2-43e0-a7f7-fad970b4bd00",
+      "creature": "2ca2600e-fd5a-49da-a6ef-68707fa4d5ca",
       "damage": 46,
       "matchupBp": 15000,
       "bonusBp": 0,
@@ -280,21 +313,28 @@
     {
       "t": "mark",
       "round": 1,
-      "creature": "66ba6cba-b9e2-43e0-a7f7-fad970b4bd00",
+      "creature": "2ca2600e-fd5a-49da-a6ef-68707fa4d5ca",
       "player": "m2",
       "element": "grove",
       "replaced": null
     },
-    { "t": "round_end", "round": 1, "bossHp": 0 }
+    {
+      "t": "round_end",
+      "round": 1,
+      "bossHp": 0
+    }
   ],
   "bossHp": 0,
   "watching": ["Player 1", "Player 2"],
   "loot": {
     "cleared": true,
     "essence": 52,
-    "jackpot": null,
-    "pity": 1,
-    "rankChange": { "before": 3, "after": 4, "festival": false, "serverWon": true },
+    "rankChange": {
+      "before": 3,
+      "after": 4,
+      "festival": false,
+      "serverWon": true
+    },
     "festivalGrant": null
   }
 }

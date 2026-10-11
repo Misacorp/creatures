@@ -1,0 +1,1060 @@
+{
+  "splashet": {
+    "description": "A small, round pup of the shallows that splashes first and thinks later. It likes to leave its Soaked mark on a big foe so everyone else can follow up.",
+    "appearance": {
+      "silhouette": "Round water-drop body with a pointed tuft on top and four stubby paws.",
+      "size": "small",
+      "palette": [
+        {
+          "name": "Splash Blue",
+          "hex": "#3fa7d6"
+        },
+        {
+          "name": "Deep Pool",
+          "hex": "#1f5f8b"
+        },
+        {
+          "name": "Foam White",
+          "hex": "#e8fbff"
+        },
+        {
+          "name": "Belly Sand",
+          "hex": "#f4e3b8"
+        }
+      ],
+      "features": [
+        "Big round head that blends into the body like a water drop",
+        "One pointed droplet tuft on top of the head",
+        "Two large dark eyes with one white highlight each",
+        "Stubby flipper-paws with foam-white toes",
+        "Cream belly patch"
+      ],
+      "pose": "Sitting upright, head tilted, one paw lifted mid-splash.",
+      "always": ["The droplet tuft on the head", "A small puddle or wet footprints beside it"],
+      "never": ["Wings or fins on the back", "Sharp teeth or claws"]
+    },
+    "traits": [
+      "Playful and splashy",
+      "Leaves wet footprints wherever it goes",
+      "Easily distracted by anything shiny",
+      "Always first to say hello"
+    ]
+  },
+  "tidewing": {
+    "description": "Splashet all grown up. Its flippers have stretched into wide, shimmering wings, and it glides over the waves leaving an even bigger splash for its team.",
+    "appearance": {
+      "silhouette": "Teardrop body with two wide wing-fins spread like a manta ray and a small tail fin.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Wing Shimmer",
+          "hex": "#7fd4f0"
+        },
+        {
+          "name": "Splash Blue",
+          "hex": "#3fa7d6"
+        },
+        {
+          "name": "Deep Pool",
+          "hex": "#1f5f8b"
+        },
+        {
+          "name": "Foam White",
+          "hex": "#e8fbff"
+        },
+        {
+          "name": "Belly Sand",
+          "hex": "#f4e3b8"
+        }
+      ],
+      "features": [
+        "Droplet tuft on the head, a little longer than before",
+        "Large dark eyes with one white highlight each",
+        "Two wide translucent wing-fins with pale edge highlights",
+        "Small fish-tail fin behind the body",
+        "Cream belly patch"
+      ],
+      "pose": "Gliding with both wings fully open, head tilted down toward the viewer.",
+      "always": ["The droplet tuft on the head", "Wings clearly wider than the body"],
+      "never": ["Feathers (the wings are fins)", "Paws or legs dangling while it glides"],
+      "fromStage1": {
+        "keeps": [
+          "Droplet tuft",
+          "Round teardrop body and cream belly",
+          "Big eyes with white highlights",
+          "Blue and foam palette"
+        ],
+        "changes": [
+          "Flipper-paws become wide shimmering wing-fins",
+          "Gains a small tail fin",
+          "Adds a lighter shimmer blue",
+          "Longer, taller body"
+        ]
+      }
+    },
+    "traits": [
+      "Glides whenever there is a breeze",
+      "Still playful, just with a bigger splash",
+      "Loves to show off its wings",
+      "Circles its friends protectively"
+    ]
+  },
+  "cindle": {
+    "description": "A kitten-sized cat with a tiny ember at the tip of its tail. It pounces on the boss the moment it spots an opening, and now and then lands a lucky critical hit.",
+    "appearance": {
+      "silhouette": "Round kitten with two pointed ears and a short tail ending in a flame.",
+      "size": "small",
+      "palette": [
+        {
+          "name": "Cinder Orange",
+          "hex": "#e8582a"
+        },
+        {
+          "name": "Ember Glow",
+          "hex": "#ffb347"
+        },
+        {
+          "name": "Ash Cream",
+          "hex": "#f6d8b0"
+        },
+        {
+          "name": "Coal Plum",
+          "hex": "#5a2a2e"
+        }
+      ],
+      "features": [
+        "Round head and body, nearly the same width",
+        "Two small pointed ears with darker inner tips",
+        "Large amber eyes with one white highlight each",
+        "Short tail ending in a single flickering ember",
+        "Cream muzzle and chest"
+      ],
+      "pose": "Crouched low, rear up, tail flame lifted, ready to pounce.",
+      "always": ["The ember at the tail tip", "Round kitten proportions"],
+      "never": ["Long fangs or heavy claws", "Flames covering the whole body"]
+    },
+    "traits": [
+      "Curious and quick to pounce",
+      "Warm to the touch and proud of it",
+      "Chases flickers and sparks",
+      "Purrs like a tiny campfire"
+    ]
+  },
+  "pyrelynx": {
+    "description": "A sleek hunter whose fur glows like hot coals when it pounces. It still loves a good chase, but now it waits for the perfect moment to strike.",
+    "appearance": {
+      "silhouette": "Lean lynx with tall ear tufts, a long body and a long tail ending in a flame.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Coal Orange",
+          "hex": "#d94a1f"
+        },
+        {
+          "name": "Glow Orange",
+          "hex": "#ff9a3d"
+        },
+        {
+          "name": "Hot Yellow",
+          "hex": "#ffd36b"
+        },
+        {
+          "name": "Ash Cream",
+          "hex": "#f6d8b0"
+        },
+        {
+          "name": "Coal Plum",
+          "hex": "#5a2a2e"
+        }
+      ],
+      "features": [
+        "Longer, leaner body than Cindle",
+        "Pointed ears with tall dark tufts",
+        "Amber eyes with one white highlight each",
+        "Long tail ending in a larger ember flame",
+        "Glowing ember-coloured seams along the flanks and legs"
+      ],
+      "pose": "Mid-pounce, front paws stretched forward, tail flame streaming behind.",
+      "always": ["Ear tufts", "The ember at the tail tip, larger now"],
+      "never": ["Round kitten proportions", "A full mane or any lion features"],
+      "fromStage1": {
+        "keeps": [
+          "Pointed ears and amber eyes",
+          "Ember at the tail tip",
+          "Orange and cream palette"
+        ],
+        "changes": [
+          "Round kitten becomes a lean lynx",
+          "Ear tufts grow tall",
+          "Glowing coal seams on the flanks",
+          "Tail flame is larger"
+        ]
+      }
+    },
+    "traits": [
+      "Silent, patient hunter",
+      "Pounces only when the moment is perfect",
+      "Fiercely loyal to its team",
+      "Glows brighter when excited"
+    ]
+  },
+  "sproutle": {
+    "description": "A shy critter with a pair of sprout-shaped ears that naps in sunny patches of moss. It will stand close to its friends and soak up hits for them.",
+    "appearance": {
+      "silhouette": "Soft round bean body with two upright leaf-shaped ears and four tiny feet.",
+      "size": "small",
+      "palette": [
+        {
+          "name": "Sprout Green",
+          "hex": "#5fb04a"
+        },
+        {
+          "name": "Leaf Light",
+          "hex": "#b4e26a"
+        },
+        {
+          "name": "Deep Moss",
+          "hex": "#2f6b3a"
+        },
+        {
+          "name": "Petal Cream",
+          "hex": "#f4eccf"
+        }
+      ],
+      "features": [
+        "Round bean-shaped body, slightly wider than tall",
+        "Two upright leaf-shaped ears, one with a small curl",
+        "Sleepy half-closed dark eyes",
+        "Cream belly and muzzle",
+        "Tiny stubby feet, barely visible"
+      ],
+      "pose": "Curled up on a patch of moss, ears drooped, one eye half open.",
+      "always": ["The two leaf-shaped ears", "Sleepy, gentle eyes"],
+      "never": ["Thorns or spikes", "Antlers or horns"]
+    },
+    "traits": [
+      "Shy around strangers",
+      "Naps in any sunny patch",
+      "Perks up when it rains",
+      "Guards friends by standing close"
+    ]
+  },
+  "thornbuck": {
+    "description": "A sturdy stag with branching, thorned antlers that shelter the whole herd. It is calm and slow to anger, and very hard to move once it has dug in.",
+    "appearance": {
+      "silhouette": "Broad stag body with tall branching antlers and four strong legs.",
+      "size": "large",
+      "palette": [
+        {
+          "name": "Sprout Green",
+          "hex": "#5fb04a"
+        },
+        {
+          "name": "Deep Moss",
+          "hex": "#2f6b3a"
+        },
+        {
+          "name": "Antler Bark",
+          "hex": "#6b4a2e"
+        },
+        {
+          "name": "Leaf Light",
+          "hex": "#b4e26a"
+        },
+        {
+          "name": "Petal Cream",
+          "hex": "#f4eccf"
+        }
+      ],
+      "features": [
+        "Broad, sturdy deer body on four visible legs",
+        "Tall antlers branching in three tines per side, with small thorns",
+        "Leaf-shaped ears kept small under the antlers",
+        "Calm, half-lidded dark eyes",
+        "Cream chest and belly"
+      ],
+      "pose": "Standing square and facing forward, head slightly lowered, antlers up.",
+      "always": ["Branching thorned antlers", "Calm, steady eyes"],
+      "never": ["Sharp aggressive face", "A tiny, fragile-looking body"],
+      "fromStage1": {
+        "keeps": ["Leaf-green coat", "Leaf-shaped ears", "Cream chest", "Calm, sleepy eyes"],
+        "changes": [
+          "Round bean becomes a broad stag",
+          "Leaf ears are now small, and antlers grow above them",
+          "Four legs clearly visible",
+          "Bark brown added to the palette"
+        ]
+      }
+    },
+    "traits": [
+      "Calm and steady under pressure",
+      "Shelters smaller creatures",
+      "Stands guard through the night",
+      "Slow to anger and hard to move"
+    ]
+  },
+  "zipmouse": {
+    "description": "A tiny mouse that crackles with static and never sits still. It zips in first and makes the boss Charged, so your Grove friends can ground it.",
+    "appearance": {
+      "silhouette": "Tiny round body with two huge round ears and a zigzag tail.",
+      "size": "tiny",
+      "palette": [
+        {
+          "name": "Spark Yellow",
+          "hex": "#f2d12b"
+        },
+        {
+          "name": "Bright Flash",
+          "hex": "#fff3a0"
+        },
+        {
+          "name": "Storm Violet",
+          "hex": "#6b5bd6"
+        },
+        {
+          "name": "Night Indigo",
+          "hex": "#2d2a5e"
+        }
+      ],
+      "features": [
+        "Round body with fluffed fur that sticks out a little",
+        "Two oversized round ears with violet inner circles",
+        "Tiny black bead eyes with one white highlight each",
+        "Tail in a sharp zigzag, like a lightning bolt",
+        "Small pale flash-coloured belly"
+      ],
+      "pose": "Mid-scurry, leaning forward, one foot off the ground, tail zigzagging up.",
+      "always": ["The zigzag tail", "Oversized round ears"],
+      "never": ["A long, thin pink tail", "Heavy fur outlines or a grumpy look"]
+    },
+    "traits": [
+      "Never sits still",
+      "Fizzes with static when excited",
+      "Scurries off first, thinks later",
+      "Gets the zoomies at the slightest excuse"
+    ]
+  },
+  "voltaro": {
+    "description": "A fast, fearless runner that leaves a trail of bright sparks. It always wants to be first, and it will race anything that moves for the fun of it.",
+    "appearance": {
+      "silhouette": "Lean long-legged mouse with huge ears and a bolt-shaped tail, leaning into a run.",
+      "size": "small",
+      "palette": [
+        {
+          "name": "Spark Yellow",
+          "hex": "#f2d12b"
+        },
+        {
+          "name": "Bright Flash",
+          "hex": "#fff3a0"
+        },
+        {
+          "name": "Storm Violet",
+          "hex": "#6b5bd6"
+        },
+        {
+          "name": "Night Indigo",
+          "hex": "#2d2a5e"
+        },
+        {
+          "name": "Spark Orange",
+          "hex": "#ffa931"
+        }
+      ],
+      "features": [
+        "Longer legs and a slimmer body than Zipmouse",
+        "Two oversized round ears with violet inner circles",
+        "Black bead eyes with a white highlight each, set in a confident frown",
+        "Tail grown into a larger lightning bolt",
+        "A short trail of sparks behind its feet"
+      ],
+      "pose": "Full sprint, body low and leaning forward, sparks trailing behind.",
+      "always": ["Zigzag lightning-bolt tail", "Oversized round ears"],
+      "never": ["Standing still", "A rounder, plumper body than Zipmouse"],
+      "fromStage1": {
+        "keeps": [
+          "Huge round ears with violet inner circles",
+          "Zigzag tail",
+          "Yellow and violet palette",
+          "Black bead eyes"
+        ],
+        "changes": [
+          "Round blob becomes a lean sprinter",
+          "Longer legs",
+          "Larger bolt tail",
+          "Adds a trail of sparks"
+        ]
+      }
+    },
+    "traits": [
+      "Fast and fearless",
+      "Races anything that moves",
+      "Always wants a head start",
+      "Leaves a trail of sparks"
+    ]
+  },
+  "mistnewt": {
+    "description": "A slow, calm newt that carries a soft cloud of mist on its back. It tucks friends into the fog and turns off the boss's adaptation for a few rounds.",
+    "appearance": {
+      "silhouette": "Chunky low newt body with a round cloud puff on its back.",
+      "size": "small",
+      "palette": [
+        {
+          "name": "Mist Teal",
+          "hex": "#6fb8b0"
+        },
+        {
+          "name": "Fog Blue",
+          "hex": "#a9c7d6"
+        },
+        {
+          "name": "Deep Pool",
+          "hex": "#1f5f8b"
+        },
+        {
+          "name": "Foam White",
+          "hex": "#e8fbff"
+        }
+      ],
+      "features": [
+        "Wide, low newt body with a short, thick tail",
+        "One round, fluffy cloud puff on its back, rendered in foam white",
+        "Small dark eyes set wide apart with a white highlight each",
+        "Pale fog-blue belly",
+        "Four short legs with rounded toes"
+      ],
+      "pose": "Plodding forward with the cloud puff slightly bobbing, head low.",
+      "always": ["The cloud puff on its back", "Wide, low body"],
+      "never": ["Spikes or crest on the back", "A long, thin body"]
+    },
+    "traits": [
+      "Slow and unbothered",
+      "Hides friends inside its mist",
+      "Loves damp, cool mornings",
+      "Takes its time with everything"
+    ]
+  },
+  "fogwyrm": {
+    "description": "A long, quiet serpent that hides entire valleys in thick, cool fog. Its calm is deep, and so is its fog, so the boss loses its tricks for a good while.",
+    "appearance": {
+      "silhouette": "Long S-curved serpent body with a cloud mane running down its back.",
+      "size": "large",
+      "palette": [
+        {
+          "name": "Mist Teal",
+          "hex": "#6fb8b0"
+        },
+        {
+          "name": "Fog Blue",
+          "hex": "#a9c7d6"
+        },
+        {
+          "name": "Deep Pool",
+          "hex": "#1f5f8b"
+        },
+        {
+          "name": "Foam White",
+          "hex": "#e8fbff"
+        },
+        {
+          "name": "Wyrm Eye",
+          "hex": "#ffe08a"
+        }
+      ],
+      "features": [
+        "Long body curved into an S, filling the frame",
+        "A cloud mane of foam-white puffs along the spine",
+        "Small, calm eyes with a pale yellow glow",
+        "Short rounded snout and two short blunt horns",
+        "Lighter fog-blue belly with pale scales"
+      ],
+      "pose": "Coiled in a slow S-curve, head raised and watching, cloud mane drifting.",
+      "always": ["The cloud puffs on its back", "A long body"],
+      "never": ["Wings", "Fire or lightning", "Sharp or aggressive teeth"],
+      "fromStage1": {
+        "keeps": [
+          "Mist teal and fog-blue colours",
+          "Cloud puffs on the back",
+          "Small calm eyes",
+          "Pale belly"
+        ],
+        "changes": [
+          "Chunky newt becomes a long serpent",
+          "Single puff becomes a full cloud mane",
+          "Gains two short horns",
+          "Fills the whole frame"
+        ]
+      }
+    },
+    "traits": [
+      "Calm and very patient",
+      "Drifts through valleys without a sound",
+      "Hides friends in thick fog",
+      "Prefers misty mornings"
+    ]
+  },
+  "ashmole": {
+    "description": "A busy little digger that warms its burrow with glowing ash and invites everyone in. It cheers on the whole team so they hit a little harder.",
+    "appearance": {
+      "silhouette": "Round mole body with a pointed snout and two large shovel paws held out front.",
+      "size": "small",
+      "palette": [
+        {
+          "name": "Ash Grey",
+          "hex": "#8d8a94"
+        },
+        {
+          "name": "Ember Speck",
+          "hex": "#ff8a3d"
+        },
+        {
+          "name": "Warm Brown",
+          "hex": "#7a4a32"
+        },
+        {
+          "name": "Glow Yellow",
+          "hex": "#ffcf6b"
+        },
+        {
+          "name": "Snout Pink",
+          "hex": "#f2a0a0"
+        }
+      ],
+      "features": [
+        "Round plump body in warm brown and ash grey",
+        "Pointed pink snout",
+        "Two large shovel paws with pale claws",
+        "Tiny closed or squinting eyes",
+        "Orange ember specks scattered over the shoulders"
+      ],
+      "pose": "Standing upright, shovel paws held up, a little ash puff at its feet.",
+      "always": ["Glowing ember specks", "Large digging paws"],
+      "never": ["Large, round, wide-open eyes (they stay tiny)", "Wings, tails or spikes"]
+    },
+    "traits": [
+      "Busy and hardworking",
+      "Digs warm burrows for friends",
+      "Hoards cosy things",
+      "Cheerful even when covered in ash"
+    ]
+  },
+  "magmole": {
+    "description": "A heavy digger that carves tunnels through stone with molten claws and keeps the whole burrow toasty. It is gentle, but very stubborn.",
+    "appearance": {
+      "silhouette": "Wide, heavy mole body with a pointed snout and huge glowing claws.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Basalt Grey",
+          "hex": "#4a3f4a"
+        },
+        {
+          "name": "Magma Orange",
+          "hex": "#ff6a2a"
+        },
+        {
+          "name": "Lava Yellow",
+          "hex": "#ffc23d"
+        },
+        {
+          "name": "Warm Brown",
+          "hex": "#7a4a32"
+        },
+        {
+          "name": "Snout Pink",
+          "hex": "#f2a0a0"
+        }
+      ],
+      "features": [
+        "Broader, heavier body than Ashmole",
+        "Cracked rocky plates over the back, with magma seams between them",
+        "Pointed pink snout",
+        "Two huge claws glowing orange and yellow",
+        "Tiny squinting eyes"
+      ],
+      "pose": "Digging forward with both glowing claws raised, a small shower of embers behind.",
+      "always": ["Glowing claws", "Cracked rock plating with glowing seams"],
+      "never": ["A round, soft ash coat like Ashmole's", "Wings or long legs"],
+      "fromStage1": {
+        "keeps": ["Pointed pink snout", "Shovel paws", "Tiny squinting eyes", "Orange ember glow"],
+        "changes": [
+          "Soft ash fur becomes cracked rock plates",
+          "Paws become large molten claws",
+          "Bigger, broader body",
+          "Gains a darker basalt colour"
+        ]
+      }
+    },
+    "traits": [
+      "Tunnels through anything",
+      "Warms the whole burrow",
+      "Gentle but very stubborn",
+      "Loves a good hard day's work"
+    ]
+  },
+  "stormray": {
+    "description": "A ray that rides the very edge of thunderclouds. It is bold and a little showy, and it strikes hard and fast with a bolt of its own.",
+    "appearance": {
+      "silhouette": "Flat diamond-shaped body with two wide pointed wings and a bolt-shaped tail.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Spark Yellow",
+          "hex": "#f2d12b"
+        },
+        {
+          "name": "Bright Flash",
+          "hex": "#fff3a0"
+        },
+        {
+          "name": "Storm Violet",
+          "hex": "#6b5bd6"
+        },
+        {
+          "name": "Night Indigo",
+          "hex": "#2d2a5e"
+        }
+      ],
+      "features": [
+        "Wide diamond body that is wider than it is tall",
+        "Two pointed wing-fins with a pale yellow edge",
+        "Violet back with a lighter yellow belly",
+        "Two small, sharp white eyes with a yellow glint",
+        "Thin tail ending in a bolt"
+      ],
+      "pose": "Soaring sideways, wings level, a small cloud wisp beneath it.",
+      "always": ["Diamond silhouette", "Bolt-shaped tail"],
+      "never": ["Legs or paws", "Fire colours"]
+    },
+    "traits": [
+      "Bold and a little showy",
+      "Rides the edge of every storm",
+      "Loves loud, flashy entrances",
+      "Fast to strike, slow to sulk"
+    ]
+  },
+  "tempestray": {
+    "description": "A vast ray whose wingbeats stir up whole lightning storms. It is calm in the eye of its own thunder, and it hits harder than any other Spark creature.",
+    "appearance": {
+      "silhouette": "Huge diamond body with long swept wings and swirling cloud wisps and bolts around it.",
+      "size": "large",
+      "palette": [
+        {
+          "name": "Spark Yellow",
+          "hex": "#f2d12b"
+        },
+        {
+          "name": "Bright Flash",
+          "hex": "#fff3a0"
+        },
+        {
+          "name": "Storm Violet",
+          "hex": "#6b5bd6"
+        },
+        {
+          "name": "Night Indigo",
+          "hex": "#2d2a5e"
+        },
+        {
+          "name": "Cloud Lilac",
+          "hex": "#a79af0"
+        }
+      ],
+      "features": [
+        "Wider and longer wings than Stormray, reaching the frame edges",
+        "Violet back with a pale yellow belly",
+        "Calm white eyes with a yellow glint",
+        "Thicker tail with a large bolt at the tip",
+        "Curling cloud wisps and a few bolts around the wing tips"
+      ],
+      "pose": "Wings spread wide, rising slowly, storm clouds swirling at the wing tips.",
+      "always": ["Diamond silhouette", "Bolt at the tail tip", "Cloud wisps at the wing tips"],
+      "never": ["Legs or paws", "Fire colours"],
+      "fromStage1": {
+        "keeps": [
+          "Diamond body",
+          "Violet and yellow palette",
+          "White eyes with a yellow glint",
+          "Bolt-shaped tail"
+        ],
+        "changes": [
+          "Much larger and wider",
+          "Cloud wisps and bolts circle the wings",
+          "Thicker tail with a bigger bolt",
+          "Adds a lilac cloud colour"
+        ]
+      }
+    },
+    "traits": [
+      "Calm in the eye of a storm",
+      "Commands the sky with lazy wingbeats",
+      "Proud, but protective",
+      "Attracts storm clouds wherever it goes"
+    ]
+  },
+  "mossback": {
+    "description": "A patient turtle with a small garden growing on its shell. It plants a mark on the boss for friends to build on and keeps its own side of the line tidy.",
+    "appearance": {
+      "silhouette": "Dome-shaped shell on short legs with a small head poking out the front.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Sprout Green",
+          "hex": "#5fb04a"
+        },
+        {
+          "name": "Leaf Light",
+          "hex": "#b4e26a"
+        },
+        {
+          "name": "Deep Moss",
+          "hex": "#2f6b3a"
+        },
+        {
+          "name": "Shell Brown",
+          "hex": "#8b6b43"
+        },
+        {
+          "name": "Petal Pink",
+          "hex": "#f08fa8"
+        }
+      ],
+      "features": [
+        "Round dome shell in mossy green with a darker rim",
+        "A small tuft of grass and one tiny pink flower on top",
+        "Small head with calm dark eyes with a white highlight each",
+        "Short stout legs in lighter olive",
+        "Warm brown shell lines showing through the moss"
+      ],
+      "pose": "Walking slowly forward, head lifted a little, flower swaying.",
+      "always": ["The garden growing on its shell", "A single small pink flower"],
+      "never": ["A tall tree on its shell", "Spikes or a snapping beak"]
+    },
+    "traits": [
+      "Patient and thoughtful",
+      "Tends the garden on its shell",
+      "Moves slowly and carefully",
+      "Loves sunny rocks"
+    ]
+  },
+  "ancientshell": {
+    "description": "An ancient turtle whose shell has become a small, living forest. It remembers everything, forgives most things, and it plants a mark on the boss while shielding its own row.",
+    "appearance": {
+      "silhouette": "Tall, broad shell with a tiny forest on top, on four thick legs.",
+      "size": "large",
+      "palette": [
+        {
+          "name": "Deep Moss",
+          "hex": "#2f6b3a"
+        },
+        {
+          "name": "Sprout Green",
+          "hex": "#5fb04a"
+        },
+        {
+          "name": "Leaf Light",
+          "hex": "#b4e26a"
+        },
+        {
+          "name": "Shell Brown",
+          "hex": "#8b6b43"
+        },
+        {
+          "name": "Petal Pink",
+          "hex": "#f08fa8"
+        }
+      ],
+      "features": [
+        "High dome shell with visible bark-brown rings",
+        "Two or three tiny trees and a few flowers growing on top",
+        "Small wise head with half-closed dark eyes",
+        "Thick, stout legs in lighter olive",
+        "Vines hanging down the side of the shell"
+      ],
+      "pose": "Standing still and facing forward, tiny birds in the trees, a long calm gaze.",
+      "always": ["A forest growing on the shell", "Calm half-closed eyes"],
+      "never": ["Weapons or spikes", "A hurried look"],
+      "fromStage1": {
+        "keeps": ["Mossy green shell", "Pink flowers", "Short stout legs", "Calm dark eyes"],
+        "changes": [
+          "Small garden becomes a miniature forest",
+          "Shell is taller and has bark rings",
+          "Hanging vines",
+          "Much larger"
+        ]
+      }
+    },
+    "traits": [
+      "Wise and endlessly patient",
+      "Hosts small creatures in its forest",
+      "Remembers everything and forgives most things",
+      "Rarely makes a sound, and always kindly"
+    ]
+  },
+  "coralynx": {
+    "description": "A reef-dwelling lynx with a crown of bright coral. It is elegant and a little proud, and it strikes from the shadows with a lance of coral.",
+    "appearance": {
+      "silhouette": "Slender lynx body with tall, branching coral growing from its head like a crown.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Reef Teal",
+          "hex": "#2a9d9f"
+        },
+        {
+          "name": "Sea Deep",
+          "hex": "#17506b"
+        },
+        {
+          "name": "Coral Pink",
+          "hex": "#ff7f8a"
+        },
+        {
+          "name": "Foam White",
+          "hex": "#e8fbff"
+        },
+        {
+          "name": "Sand Cream",
+          "hex": "#f4e3b8"
+        }
+      ],
+      "features": [
+        "Slim lynx body in reef teal with darker stripes",
+        "Crown of three branching coral tines in coral pink",
+        "Pointed ears with small dark tufts",
+        "Bright eyes with a white highlight each",
+        "Foam-white chest and tail tip"
+      ],
+      "pose": "Stalking forward, one paw lifted, head level, coral crown high.",
+      "always": ["The coral crown", "Pointed ear tufts"],
+      "never": ["Heavy armour", "A fish tail or fins"]
+    },
+    "traits": [
+      "Elegant and a little proud",
+      "Patrols its reef at dusk",
+      "Moves in quiet, sudden bursts",
+      "Fierce about its territory"
+    ]
+  },
+  "solmane": {
+    "description": "A lion with a mane of living sunlight that warms everyone nearby. It is warm-hearted and regal, and it leaves a Scorched mark on the boss as it leads from the front.",
+    "appearance": {
+      "silhouette": "Large lion body with a huge rayed sun-like mane around its head.",
+      "size": "large",
+      "palette": [
+        {
+          "name": "Sun Gold",
+          "hex": "#ffc933"
+        },
+        {
+          "name": "Flare Orange",
+          "hex": "#f27a2a"
+        },
+        {
+          "name": "Mane Red",
+          "hex": "#d8452a"
+        },
+        {
+          "name": "Hearth Cream",
+          "hex": "#fff0c2"
+        },
+        {
+          "name": "Deep Rust",
+          "hex": "#7a2c22"
+        }
+      ],
+      "features": [
+        "Sun-shaped mane made of pointed rays in gold, orange and red",
+        "Strong lion body in flare orange",
+        "Calm dark eyes with a white highlight each",
+        "Cream muzzle and chest",
+        "Tail ending in a small golden flame tuft"
+      ],
+      "pose": "Standing tall, head high, mane fully blazing, front paw slightly forward.",
+      "always": ["The sun-like rayed mane", "Warm, calm face"],
+      "never": ["Cold colours", "An angry snarl"]
+    },
+    "traits": [
+      "Warm-hearted and regal",
+      "Lights up a room by walking in",
+      "Loves to lead from the front",
+      "Generous with its warmth"
+    ]
+  },
+  "gaiadrake": {
+    "description": "A mountain-sized drake that carries forests and rivers along its back. It is ancient and gentle, slow to move, and very hard to stop when it roars.",
+    "appearance": {
+      "silhouette": "Huge, low drake body with a ridge of trees and a thin river down its back.",
+      "size": "large",
+      "palette": [
+        {
+          "name": "Deep Moss",
+          "hex": "#2f6b3a"
+        },
+        {
+          "name": "Sprout Green",
+          "hex": "#5fb04a"
+        },
+        {
+          "name": "Leaf Light",
+          "hex": "#b4e26a"
+        },
+        {
+          "name": "Stone Brown",
+          "hex": "#6b4a2e"
+        },
+        {
+          "name": "River Blue",
+          "hex": "#4aa3d8"
+        }
+      ],
+      "features": [
+        "Wide, heavy drake body in mossy green",
+        "A ridge of tiny trees along the back, with a river-blue stripe",
+        "Two short stone-brown horns",
+        "Calm dark eyes with a white highlight each",
+        "Four short, thick legs and a long tail"
+      ],
+      "pose": "Standing still and looking forward, head lifted, a calm half-roar.",
+      "always": ["Trees and a river on the back", "Short stone-brown horns"],
+      "never": ["Fire breath", "Bat-like wings"]
+    },
+    "traits": [
+      "Ancient and gentle",
+      "Carries whole ecosystems on its back",
+      "Slow to move, impossible to stop",
+      "Protects every living thing it carries"
+    ]
+  },
+  "aurorix": {
+    "description": "A graceful creature that drifts above the noise, trailing ribbons of aurora light. It watches over the team from a distance and keeps everyone's spirits high.",
+    "appearance": {
+      "silhouette": "Slim floating fox-like body with three long flowing ribbon tails.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Aurora Violet",
+          "hex": "#8a6df0"
+        },
+        {
+          "name": "Spark Yellow",
+          "hex": "#ffe45e"
+        },
+        {
+          "name": "Night Plum",
+          "hex": "#3a2a6e"
+        },
+        {
+          "name": "Ribbon Mint",
+          "hex": "#7af0c4"
+        }
+      ],
+      "features": [
+        "Slim, fox-like body in aurora violet with a lighter belly",
+        "Three long ribbon tails, in violet, yellow and mint",
+        "Tall, pointed ears with yellow tips",
+        "Calm, narrow eyes with a white highlight each",
+        "No visible legs: the lower body fades into ribbons"
+      ],
+      "pose": "Floating gently upward, ribbons flowing in a slow curve, eyes half closed.",
+      "always": ["Three flowing ribbons", "A floating, legless lower body"],
+      "never": ["Visible walking legs", "Sharp teeth or claws"]
+    },
+    "traits": [
+      "Graceful and dreamy",
+      "Drifts above the noise",
+      "Loves quiet, starry nights",
+      "Looks after friends from a distance"
+    ]
+  },
+  "lanternfin": {
+    "description": "A round fish with a paper-bright lantern for a tail, seen only on festival nights. It lights the way and lends a hand with a soft, warm glow.",
+    "appearance": {
+      "silhouette": "Round fish body with a big glowing lantern in place of its tail.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Lantern Blue",
+          "hex": "#3b8fd0"
+        },
+        {
+          "name": "Deep Tide",
+          "hex": "#1d4f7e"
+        },
+        {
+          "name": "Foam White",
+          "hex": "#e8fbff"
+        },
+        {
+          "name": "Lantern Glow",
+          "hex": "#ffd27a"
+        },
+        {
+          "name": "Paper Red",
+          "hex": "#e0504a"
+        }
+      ],
+      "features": [
+        "Round, chubby fish body in lantern blue",
+        "Large round eyes with one white highlight each",
+        "Two small side fins in a paler blue",
+        "A paper lantern tail in warm glow yellow, with a red paper trim",
+        "A tiny golden tassel hanging below the lantern"
+      ],
+      "pose": "Floating upright, tilted slightly toward the viewer, lantern glowing behind.",
+      "always": ["The glowing paper lantern tail", "A warm yellow glow around it"],
+      "never": ["A normal fish tail", "Sharp teeth"]
+    },
+    "traits": [
+      "Gentle and festive",
+      "Guides friends through the dark",
+      "Appears only when a party begins",
+      "Hums happily when the lantern is lit"
+    ]
+  },
+  "hearthshell": {
+    "description": "A tortoise that carries a small bonfire on its shell and shows up when a festival begins. It is calm and warm, and happy to share both with the whole team.",
+    "appearance": {
+      "silhouette": "Big, broad tortoise with a small bonfire burning on top of its shell.",
+      "size": "large",
+      "palette": [
+        {
+          "name": "Terracotta Shell",
+          "hex": "#b5532c"
+        },
+        {
+          "name": "Flame Orange",
+          "hex": "#ff8a2a"
+        },
+        {
+          "name": "Flame Yellow",
+          "hex": "#ffd24d"
+        },
+        {
+          "name": "Stone Cream",
+          "hex": "#e9d8b8"
+        },
+        {
+          "name": "Deep Brick",
+          "hex": "#6b2d22"
+        }
+      ],
+      "features": [
+        "Round terracotta shell with a darker brick rim",
+        "A small bonfire burning on top, in orange and yellow",
+        "Small head with calm dark eyes and a white highlight each",
+        "Four thick cream legs",
+        "Warm glow on its face from the fire"
+      ],
+      "pose": "Plodding slowly, head forward, bonfire flickering gently.",
+      "always": ["The small bonfire on its shell", "A calm face"],
+      "never": ["Flames covering the whole body", "A sharp beak"]
+    },
+    "traits": [
+      "Calm, warm and reliable",
+      "Hosts friends around its fire",
+      "Slow and steady",
+      "Happy to share its warmth"
+    ]
+  }
+}

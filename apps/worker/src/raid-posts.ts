@@ -120,7 +120,10 @@ export function mostUsedReaction(
 
 const speciesName = (id: string): string => content.creatures.find((c) => c.id === id)?.name ?? id;
 
-/** "First on server" records made since `since` by members of this party, grouped by record. */
+/**
+ * "First on server" records made since `since` by members of this party, grouped by record. The
+ * jackpot record is kept in storage but never listed: the jackpot is hidden from players.
+ */
 function firstsOf(
   sql: SqlStorage,
   since: number,
@@ -129,7 +132,7 @@ function firstsOf(
 ): { label: string; names: string[] }[] {
   const rows = sql
     .exec<{ kind: string; species: string; user_id: string }>(
-      'SELECT kind, species, user_id FROM server_firsts WHERE at >= ? ORDER BY kind, species, rowid',
+      "SELECT kind, species, user_id FROM server_firsts WHERE at >= ? AND kind != 'jackpot' ORDER BY kind, species, rowid",
       since,
     )
     .toArray()
@@ -140,11 +143,9 @@ function firstsOf(
     let group = groups.get(key);
     if (group === undefined) {
       const label =
-        r.kind === 'jackpot'
-          ? 'First jackpot'
-          : r.kind === 'festival'
-            ? `${speciesName(r.species)} won in a Festival`
-            : `${speciesName(r.species)} ${r.kind === 'evolve' ? 'evolved' : 'caught'}`;
+        r.kind === 'festival'
+          ? `${speciesName(r.species)} won in a Festival`
+          : `${speciesName(r.species)} ${r.kind === 'evolve' ? 'evolved' : 'caught'}`;
       group = { label, names: [] };
       groups.set(key, group);
     }
@@ -261,7 +262,6 @@ export function queuePhasePost(sql: SqlStorage, src: PhasePostSource): void {
       ...(phase === 'finale'
         ? {
             finale: {
-              jackpot: summary.jackpot.map((id) => names.get(id) ?? 'Unknown'),
               firsts: firstsOf(
                 sql,
                 week?.created_at ?? 0,

@@ -16,23 +16,19 @@ Where the project is against the plan. Newest state at the top of each section. 
 
 ## Now
 
-- **PR #7** (head `creature-abilities` = `progression`): creature abilities, Boss Rank ladder (migration 12), Festivals/seasons, crits, readiness band, after-action stats, wins-only pity, raid news pin (migration 11). Full sim 27/27. Waiting for Misa to test on staging and merge.
-- Production runs PR #5 + hotfix #6 (c53d6b7).
+- **PR #8** (branch `m6-look`): M6 look: visual system, self-hosted fonts, element icons, sprites for all creatures and bosses, fight stage (show, don't tell), animated loot reveal, drag-and-drop placement, creature lore and quirks (migration 13). Waiting for Misa to test on staging and merge.
+- Production runs PR #7 (8cf2589).
 
 ## Next
 
-1. After #7 merges: verify prod deploy; watch the first ranked week (placement at next week creation or at Phase 1 for an open week).
-2. M6 "feels like a game": pixel art creatures and bosses, retro UI, juice. Misa wants this before a multiplayer test.
-3. Open game-feel questions on the ladder (see below).
-4. WebSocket push for the live finale after a staging spike in real Discord.
-5. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
+1. After #8: redraw any sprites Misa flags (Ashmole and Gaiadrake are the weakest); sprite sheet script `apps/activity/scripts/sprite-sheet.mjs`.
+2. Watch the first ranked week and first Festival in production.
+3. WebSocket push for the live finale after a staging spike in real Discord.
+4. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
 
 ## Open questions for Misa
 
-- Rank step is +40% boss HP per rank (big, visible). OK?
-- Plateau rhythm: win, then ~3 losses at the new rank, Festival, rank −1, climb again. Too many losses?
-- Festivals ~97% won: keep as a reliable break or make them a real fight?
-- Multi-party servers climb when at least half their parties win (lead's call).
+- Which sprites to redraw; DnD touch feel (long-press alternative).
 
 ## Notes for future agents
 

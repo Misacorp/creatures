@@ -1,4 +1,4 @@
-import { content, createSeededRng, type Rng } from '@creatures/game';
+import { content, createSeededRng, pickQuirk, type Rng } from '@creatures/game';
 import { runCore, type CoreContext } from './helpers';
 import type { GuildCoreOptions } from '../src/guild-core';
 
@@ -81,8 +81,8 @@ export function seedPlayer(
     const level = Math.min(o.level ?? 5 + (n % 20), species.levelCap);
     const creatureId = crypto.randomUUID();
     ctx.sql.exec(
-      `INSERT INTO creatures (id, user_id, line, species, level, fusion_count, origin, caught_at)
-       VALUES (?, ?, ?, ?, ?, ?, 'test', ?)`,
+      `INSERT INTO creatures (id, user_id, line, species, level, fusion_count, origin, caught_at, quirk_id)
+       VALUES (?, ?, ?, ?, ?, ?, 'test', ?, ?)`,
       creatureId,
       id,
       species.line,
@@ -90,6 +90,7 @@ export function seedPlayer(
       level,
       o.fusion ?? 0,
       ctx.clock.t + k,
+      pickQuirk(species.id, createSeededRng(`seed-quirk:${String(n)}:${String(k)}`)),
     );
     creatureIds.push(creatureId);
   }

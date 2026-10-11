@@ -1,14 +1,13 @@
-import { content } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiError } from './api';
-import { clockOffset, elementName, errorText, speciesName } from './game';
+import { Countdown } from './Countdown';
+import { countdownView, spokenCountdown } from './countdown';
+import { clockOffset, errorText } from './game';
 import { useNow } from './hooks';
 import {
-  abilityControls,
-  abilityEffectLine,
-  abilityParamKind,
   abilityStateText,
   abilityTitle,
+  autoFireTarget,
   buildAction,
   createKeyLock,
   earlierLines,
@@ -16,8 +15,10 @@ import {
   feedLines,
   isRetryableStatus,
   nextPollDelay,
+  noAbilityText,
   otherUsage,
   otherUsageText,
+  othersSummary,
   ownAbilities,
   pickNewer,
   PRACTICE_LABEL,
@@ -32,21 +33,19 @@ import {
   type LiveRunning,
   type LiveSnapshot,
 } from './live-api';
-import { ownerColour } from './raid-slots';
-import { stateAt } from './replay';
+import type { ReplayRowEntry } from './raid-api';
+import { AbilityPopoverBody } from './AbilityPopover';
+import { setRaidAutofire } from './raid-api';
 import { RevealCard } from './Reveal';
-
-const ZONE_OPTIONS = [
-  { id: 'front', label: 'Front' },
-  { id: 'middle', label: 'Middle' },
-  { id: 'back', label: 'Back' },
-] as const;
+import type { Badge } from './stage-abilities';
+import { HpBar, LiveStage, LogToggle } from './Stage';
+import { useRemaining } from './use-countdown';
 
 /**
  * The live Sunday finale: the lobby and the fight, with the boss HP, the row, the round's events
  * and the player's abilities (their basic one plus one for each unlocked team creature, each with its
- * own Fire and Hold). The view only displays the server's snapshot and sends Fire and
- * Hold; it polls while the finale is on and stops by itself when the fight is over.
+ * own Fire button and Auto fire toggle). The view only displays the server's snapshot and sends
+ * Fire and the toggle; it polls while the finale is on and stops by itself when the fight is over.
  */
 export function Live({
   initial,
@@ -80,6 +79,12 @@ export function Live({
   /** One request at a time per ability: a double tap on one ability sends one request. */
   const locks = useRef(createKeyLock());
   const now = useNow(true);
+  // The countdown over the stage in the last 30 seconds before the start: from the server's start
+  // time and the clock offset, so it follows the server's clock and needs no extra requests.
+  const startsAtLocal =
+    snapshot !== null && snapshot.status !== 'none' ? snapshot.startsAt - offset.current : null;
+  const remaining = useRemaining(startsAtLocal);
+  const countdown = countdownView(remaining ?? Number.POSITIVE_INFINITY);
 
   function accept(next: LiveSnapshot): void {
     const kept = pickNewer(latest.current, next);
@@ -138,14 +143,15 @@ export function Live({
     if (hasLoot) onBalanceChange();
   }, [hasLoot]);
 
-  /** Fire or Hold one ability. A second tap on it while its request is on its way is ignored. */
-  async function act(request: LiveActionRequest): Promise<void> {
+  /** Fire an ability or toggle its auto fire. A second tap on it while its request is on its way is ignored. */
+  async function act(request: LiveActionRequest): Promise<boolean> {
     const { key } = request;
-    if (!locks.current.acquire(key)) return;
+    if (!locks.current.acquire(key)) return false;
     setBusyKeys((keys) => [...keys, key]);
     setActionError(null);
     try {
       accept(await sendLiveAction(request));
+      return true;
     } catch (err) {
       setActionError({ key, text: errorText(err) });
       if (err instanceof ApiError && err.status === 409) {
@@ -156,6 +162,35 @@ export function Live({
           // Keep the error above; the next poll catches up.
         }
       }
+      return false;
+    } finally {
+      locks.current.release(key);
+      setBusyKeys((keys) => keys.filter((k) => k !== key));
+    }
+  }
+
+  /**
+   * Before the start: sets the Auto fire preference of one ability (the default for the start), then
+   * shows what the server says now. Same one-at-a-time rule as `act`.
+   */
+  async function setAutoFire(key: string, target: string, on: boolean): Promise<boolean> {
+    if (!locks.current.acquire(key)) return false;
+    setBusyKeys((keys) => [...keys, key]);
+    setActionError(null);
+    try {
+      await setRaidAutofire(target, on);
+      accept(await fetchLive());
+      return true;
+    } catch (err) {
+      setActionError({ key, text: errorText(err) });
+      if (err instanceof ApiError && err.status === 409) {
+        try {
+          accept(await fetchLive());
+        } catch {
+          // Keep the error above; the next poll catches up.
+        }
+      }
+      return false;
     } finally {
       locks.current.release(key);
       setBusyKeys((keys) => keys.filter((k) => k !== key));
@@ -203,48 +238,69 @@ export function Live({
   const fight = snapshot;
   const serverNow = now + offset.current;
   const progress = progressText(fight, serverNow);
-  if (fight.status === 'lobby') {
-    return (
-      <section class="raid-section" aria-labelledby="live-heading">
-        <h3 id="live-heading">Finale: {fight.boss.name}</h3>
-        {back}
-        {errors}
-        {fight.practice && <p class="badge first practice-label">{PRACTICE_LABEL}</p>}
-        <p class="live-round" role="status" aria-live="off">
-          <strong>{progress.headline}</strong>
-          {progress.countdown !== '' && <span class="live-countdown"> {progress.countdown}</span>}
-        </p>
-        {fight.boss.hpMax !== null && (
-          <p>
-            <label for="live-hp">
-              {fight.boss.name} HP: {fight.boss.hpStart ?? fight.boss.hpMax} / {fight.boss.hpMax}
-            </label>
-            <progress
-              id="live-hp"
-              class="hp-bar"
-              max={fight.boss.hpMax}
-              value={fight.boss.hpStart ?? fight.boss.hpMax}
-            />
-          </p>
-        )}
-        <p class="muted">
-          Your ability can be used once the fight starts. The fight plays on its own whether you
-          watch or not.
-        </p>
-        <Watching names={fight.watching} />
-      </section>
-    );
-  }
+  const lobby = fight.status === 'lobby';
   const mine = ownAbilities(fight.abilities, fight.you);
-  const others = otherUsage(fight.abilities, fight.you);
-  const knockedOut = new Set(
-    stateAt(fight.events, fight.events.length, fight.boss.hpStart).knockedOut,
+  const mineIds = new Set(
+    fight.row.filter((c) => c.owner !== null && c.owner === fight.you).map((c) => c.id),
   );
-  const feed = feedLines(fight.events, fight.names);
-  const earlier = earlierLines(fight.events, fight.names);
-  const playerKeys = Object.keys(fight.names.players ?? {});
-  const playerName = (key: string | null): string =>
-    key === null ? 'Guest' : (fight.names.players?.[key] ?? 'Unknown');
+  // Every ability sits on the stage: a creature's on the creature (a badge, and a popover when it
+  // is tapped), the basic one on a chip in the stage's corner. They open the same popover. In the
+  // lobby the popover only has the Auto fire toggle, which sets the default for the start.
+
+  /** The inside of an ability's popover, wired to this screen's state. */
+  const popoverBody = (ability: LiveAbility, badge: Badge, afterSuccess: () => void) => (
+    <AbilityPopoverBody
+      fight={fight}
+      ability={ability}
+      badge={badge}
+      busy={busyKeys.includes(ability.key)}
+      zone={zones[ability.key] ?? ''}
+      element={elements[ability.key] ?? ''}
+      error={actionError?.key === ability.key ? actionError.text : null}
+      onZone={(value) => {
+        setZones((all) => ({ ...all, [ability.key]: value }));
+      }}
+      onElement={(value) => {
+        setElements((all) => ({ ...all, [ability.key]: value }));
+      }}
+      onAct={(action) => {
+        const sent = lobby
+          ? setAutoFire(ability.key, autoFireTarget(ability), action === 'unhold')
+          : act(
+              buildAction(
+                ability.key,
+                ability.abilityId,
+                action,
+                zones[ability.key] ?? '',
+                elements[ability.key] ?? '',
+              ),
+            );
+        void sent.then((ok) => {
+          if (ok) afterSuccess();
+        });
+      }}
+    />
+  );
+
+  /** A tap on one of your creatures that has no ability in this fight says why. */
+  const noteBody = (creature: ReplayRowEntry) => (
+    <div class="ab-pop-body">
+      <p class="ab-title pix">{creature.name}</p>
+      <p class="ab-state">{noAbilityText(creature.species, creature.level)}</p>
+    </div>
+  );
+
+  // The stage needs the boss pool and the names; the lobby may not have them (no preview).
+  const { hpMax, hpStart } = fight.boss;
+  const stageNames = fight.names;
+  const showStage =
+    hpMax !== null && hpStart !== null && stageNames !== null && fight.row.length > 0;
+  const shake =
+    countdown !== null && countdown.phase === 'count' && countdown.tier === 'final'
+      ? countdown.n % 2 === 0
+        ? ' cd-shake-a'
+        : ' cd-shake-b'
+      : '';
 
   return (
     <section class="raid-section" aria-labelledby="live-heading">
@@ -252,10 +308,9 @@ export function Live({
       {back}
       {errors}
       {fight.practice && <p class="badge first practice-label">{PRACTICE_LABEL}</p>}
-      {fight.loot !== null && !fight.practice && !dismissed && (
+      {fight.status !== 'lobby' && fight.loot !== null && !fight.practice && !dismissed && (
         <RevealCard
           reveal={fight.loot}
-          pity={fight.loot.pity}
           busy={false}
           afterAction={{
             week: fight.week,
@@ -278,112 +333,81 @@ export function Live({
       </p>
       {/* Changes once per round, so a screen reader hears the round and not every tick. */}
       <p class="visually-hidden" role="status" aria-live="polite">
-        {progress.headline}
+        {countdown === null ? progress.headline : spokenCountdown(countdown)}
       </p>
 
-      <p>
-        <label for="live-hp">
-          {fight.boss.name} HP: {fight.bossHp} / {fight.boss.hpMax}
-        </label>
-        <progress id="live-hp" class="hp-bar" max={fight.boss.hpMax} value={fight.bossHp} />
-      </p>
-
-      {mine.length > 0 && (
-        <section aria-labelledby="live-abilities-heading">
-          <h4 id="live-abilities-heading">Your abilities</h4>
-          <p class="muted">
-            Each ability fires once. Fire takes effect at the start of the next round. Hold keeps it
-            for later; an ability you hold still fires in the last round.
+      {lobby && !showStage && fight.boss.hpMax !== null && (
+        <>
+          <HpBar
+            current={fight.boss.hpStart ?? fight.boss.hpMax}
+            max={fight.boss.hpMax}
+            label={`${fight.boss.name} HP: ${String(fight.boss.hpStart ?? fight.boss.hpMax)} of ${String(fight.boss.hpMax)}`}
+          />
+          <p class="muted small">
+            {fight.boss.name} HP: {fight.boss.hpStart ?? fight.boss.hpMax} / {fight.boss.hpMax}
           </p>
-          {mine.map((ability) => (
-            <AbilityPanel
-              key={ability.key}
-              fight={fight}
-              ability={ability}
-              busy={busyKeys.includes(ability.key)}
-              zone={zones[ability.key] ?? ''}
-              element={elements[ability.key] ?? ''}
-              error={actionError?.key === ability.key ? actionError.text : null}
-              onZone={(value) => {
-                setZones((all) => ({ ...all, [ability.key]: value }));
-              }}
-              onElement={(value) => {
-                setElements((all) => ({ ...all, [ability.key]: value }));
-              }}
-              onAct={(action) => {
-                void act(
-                  buildAction(
-                    ability.key,
-                    ability.abilityId,
-                    action,
-                    zones[ability.key] ?? '',
-                    elements[ability.key] ?? '',
-                  ),
-                );
-              }}
-            />
-          ))}
-        </section>
+        </>
       )}
-      {mine.length === 0 && actionError !== null && (
+
+      <div class={`stage-wrap${shake}`}>
+        {showStage && (
+          <LiveStage
+            boss={fight.boss}
+            hpMax={hpMax}
+            hpStart={hpStart}
+            rounds={fight.rounds}
+            row={fight.row}
+            lobby={lobby}
+            mineIds={mineIds}
+            names={stageNames}
+            events={fight.events}
+
+            hold={countdown !== null}
+            abilities={{
+              list: fight.abilities,
+              you: fight.you,
+              fight,
+              renderPopover: popoverBody,
+              renderNote: noteBody,
+              ...(mine.length > 0 ? { help: <AbilityHelp lobby={lobby} /> } : {}),
+            }}
+          />
+        )}
+        <Countdown view={countdown} />
+      </div>
+
+      {lobby && (
+        <p class="muted">
+          {showStage
+            ? 'Tap one of your creatures to set auto fire before the fight. The fight plays on its own whether you watch or not.'
+            : 'Your ability can be used once the fight starts. The fight plays on its own whether you watch or not.'}
+        </p>
+      )}
+      {lobby && showStage && mine.length === 0 && actionError !== null && (
         <p class="error" role="alert">
           {actionError.text}
         </p>
       )}
 
-      <h4>The row</h4>
-      <ul class="replay-row" aria-label="Row, left to right">
-        {fight.row.map((c) => {
-          const isMine = c.owner !== null && c.owner === fight.you;
-          const classes = ['replay-slot'];
-          if (c.owner !== null) classes.push(`owner-${String(ownerColour(c.owner, playerKeys))}`);
-          if (isMine) classes.push('mine');
-          if (knockedOut.has(c.id)) classes.push('ko');
-          return (
-            <li key={c.id} class={classes.join(' ')}>
-              <span class="slot-species">{c.name}</span>
-              <span class="slot-meta">
-                {speciesName(c.species)} Lv {c.level}
-              </span>
-              <span class="slot-owner">{isMine ? 'You' : playerName(c.owner)}</span>
-              {knockedOut.has(c.id) && <span class="badge bad">KO</span>}
+      {fight.status !== 'lobby' && mine.length > 0 && (
+        <ul class="visually-hidden" aria-label="Your abilities">
+          {mine.map((ability) => (
+            <li key={ability.key}>
+              {abilityTitle(ability, fight.names)}: {abilityStateText(ability, fight.rounds, true)}
             </li>
-          );
-        })}
-      </ul>
-
-      {others.length > 0 && (
-        <>
-          <h4>Other players' abilities</h4>
-          <ul class="plain-list">
-            {others.map((usage) => (
-              <li key={usage.alias} class="live-ability">
-                <strong>{playerName(usage.alias)}</strong>:{' '}
-                <span class="muted">{otherUsageText(usage, fight.names)}</span>
-              </li>
-            ))}
-          </ul>
-        </>
+          ))}
+        </ul>
       )}
+
+      {!lobby && mine.length === 0 && actionError !== null && (
+        <p class="error" role="alert">
+          {actionError.text}
+        </p>
+      )}
+
+      {fight.status !== 'lobby' && <LiveDetails fight={fight} />}
 
       <Watching names={fight.watching} />
-
-      <h4>This round</h4>
-      {feed.length === 0 ? (
-        <p class="muted">Nothing has happened yet.</p>
-      ) : (
-        <ol class="live-feed" aria-live="polite" aria-relevant="additions" aria-label="Round feed">
-          <FeedItems lines={feed} />
-        </ol>
-      )}
-      {earlier.length > 0 && (
-        <details class="live-earlier">
-          <summary>Earlier rounds</summary>
-          <ol class="live-feed">
-            <FeedItems lines={earlier} />
-          </ol>
-        </details>
-      )}
 
       {fight.status === 'done' && (
         <p>
@@ -393,6 +417,55 @@ export function Live({
         </p>
       )}
     </section>
+  );
+}
+
+/** The others' abilities and the plain-text log of a running or finished fight. */
+function LiveDetails({ fight }: { fight: LiveRunning }) {
+  const others = otherUsage(fight.abilities, fight.you);
+  const feed = feedLines(fight.events, fight.names);
+  const earlier = earlierLines(fight.events, fight.names);
+  const playerName = (key: string | null): string =>
+    key === null ? 'Guest' : (fight.names.players?.[key] ?? 'Unknown');
+  return (
+    <>
+      {others.length > 0 && (
+        <details class="others">
+          <summary>{othersSummary(others)}</summary>
+          <ul class="plain-list">
+            {others.map((usage) => (
+              <li key={usage.alias} class="live-ability">
+                <strong>{playerName(usage.alias)}</strong>:{' '}
+                <span class="muted">{otherUsageText(usage, fight.names)}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+      <LogToggle id="live-log">
+        <h4>This round</h4>
+        {feed.length === 0 ? (
+          <p class="muted">Nothing has happened yet.</p>
+        ) : (
+          <ol
+            class="live-feed"
+            aria-live="polite"
+            aria-relevant="additions"
+            aria-label="Round feed"
+          >
+            <FeedItems lines={feed} />
+          </ol>
+        )}
+        {earlier.length > 0 && (
+          <details class="live-earlier">
+            <summary>Earlier rounds</summary>
+            <ol class="live-feed">
+              <FeedItems lines={earlier} />
+            </ol>
+          </details>
+        )}
+      </LogToggle>
+    </>
   );
 }
 
@@ -427,105 +500,21 @@ function FeedItems({ lines }: { lines: readonly FeedLine[] }) {
   );
 }
 
-function AbilityPanel({
-  fight,
-  ability,
-  busy,
-  zone,
-  element,
-  error,
-  onZone,
-  onElement,
-  onAct,
-}: {
-  fight: LiveRunning;
-  ability: LiveAbility;
-  busy: boolean;
-  zone: string;
-  element: string;
-  error: string | null;
-  onZone: (zone: string) => void;
-  onElement: (element: string) => void;
-  onAct: (action: 'fire' | 'hold') => void;
-}) {
-  const controls = abilityControls(fight, ability);
-  const kind = abilityParamKind(ability.abilityId);
-  const effect = abilityEffectLine(ability.abilityId);
-  const headingId = `live-ability-${ability.key}`;
+/** The "?" popover of the stage: how abilities work, in a few short lines. */
+function AbilityHelp({ lobby }: { lobby: boolean }) {
   return (
-    <div class="ability-panel" role="group" aria-labelledby={headingId}>
-      <h5 id={headingId}>{abilityTitle(ability, fight.names)}</h5>
-      {effect !== '' && <p class="muted">{effect}</p>}
-      <p class="live-ability-state">{abilityStateText(ability, fight.rounds, true)}</p>
-      {controls.canFire && kind === 'zone' && (
-        <>
-          <label for={`live-zone-${ability.key}`}>Zone to protect</label>
-          <select
-            id={`live-zone-${ability.key}`}
-            value={zone}
-            disabled={busy}
-            onChange={(event) => {
-              onZone(event.currentTarget.value);
-            }}
-          >
-            <option value="">The zone the boss attacks first</option>
-            {ZONE_OPTIONS.map((z) => (
-              <option key={z.id} value={z.id}>
-                {z.label}
-              </option>
-            ))}
-          </select>
-        </>
-      )}
-      {controls.canFire && kind === 'element' && (
-        <>
-          <label for={`live-element-${ability.key}`}>Element to mark the boss with</label>
-          <select
-            id={`live-element-${ability.key}`}
-            value={element}
-            disabled={busy}
-            onChange={(event) => {
-              onElement(event.currentTarget.value);
-            }}
-          >
-            <option value="">The default element</option>
-            {content.elements.map((e) => (
-              <option key={e.id} value={e.id}>
-                {elementName(e.id)}
-              </option>
-            ))}
-          </select>
-        </>
-      )}
-      <p class="button-row">
-        <button
-          type="button"
-          class="primary"
-          disabled={busy || !controls.canFire}
-          onClick={() => {
-            onAct('fire');
-          }}
-        >
-          Fire
-        </button>
-        {controls.canHold && (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              onAct('hold');
-            }}
-          >
-            Hold
-          </button>
-        )}
+    <div class="ab-pop-body">
+      <p class="ab-title pix">Abilities</p>
+      <p class="ab-help">
+        {lobby
+          ? 'Tap one of your creatures, or the chip in the corner, to turn auto fire on or off before the fight.'
+          : 'Tap one of your creatures, or the chip in the corner, to fire its ability or to turn auto fire on or off.'}
       </p>
-      {controls.note !== '' && <p class="muted">{controls.note}</p>}
-      {error !== null && (
-        <p class="error" role="alert">
-          {error}
-        </p>
-      )}
+      <p class="ab-help">
+        {lobby
+          ? 'Each ability fires once. With auto fire on, it fires by itself in its round. With auto fire off it waits for you once the fight starts, and still fires in the last round if you do not.'
+          : 'Each ability fires once. Fire takes effect at the start of the next round. With auto fire on, it fires by itself in its round; with auto fire off it waits for you, and still fires in the last round if you do not.'}
+      </p>
     </div>
   );
 }

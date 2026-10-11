@@ -21,6 +21,7 @@ import {
   type TurnOrder,
   type Zone,
 } from '@creatures/game';
+import { gimmickDue } from './gimmick-schedule';
 import { matchupBp } from './matchup';
 import { sanitizeBp, type CreatureView, type Mutator, type MutatorHooks } from './mutators';
 import type {
@@ -86,11 +87,6 @@ function fail(message: string): never {
 
 function isCount(n: number, min: number): boolean {
   return Number.isSafeInteger(n) && n >= min;
-}
-
-/** True if a gimmick fires in `round` (`every: N` fires on rounds N, 2N, 3N, ...). */
-function gimmickDue(g: Gimmick, round: number): boolean {
-  return 'every' in g.trigger ? round % g.trigger.every === 0 : true;
 }
 
 /** The first zone attack of the boss from round 2 on (within `rounds`), or null if it has none. */

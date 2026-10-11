@@ -12,9 +12,11 @@ export interface RevealView {
   /** The caller's party in that finale: with `week`, the key of the after-action stats. */
   party: number;
   cleared: boolean;
-  /** The Essence the finale paid the player (not counting a jackpot). */
+  /**
+   * The Essence the finale paid the player in all: the stage payout plus the jackpot Essence, if the
+   * hidden roll hit. The roll and the pity counter never leave the server.
+   */
   essence: number;
-  jackpot: null | { essence: number; firstOnServer: boolean };
   /** What the finale did to the server's rank; null until the ladder has moved, and for old weeks. */
   rankChange: RankChangeView | null;
   /** The Festival creature the caller got for this finale, or null. */
@@ -22,27 +24,19 @@ export interface RevealView {
 }
 
 /**
- * The user's jackpot in a resolved finale, or null if they did not hit. `firstOnServer` is true when
- * that finale holds the server's first-jackpot record (everyone who hit in it shares the record).
+ * The Essence the user got in a resolved finale, as one figure for display: the stage payout plus the
+ * jackpot Essence when the (hidden) jackpot roll hit. Whether it hit is not exposed: players only see
+ * the total.
  */
-export function jackpotOf(
+export function totalEssenceOf(
   sql: SqlStorage,
   userId: string,
   weekId: string,
-  summary: Pick<StoredSummary, 'jackpot'>,
-): RevealView['jackpot'] {
-  if (!summary.jackpot.includes(userId)) return null;
-  const first = sql
-    .exec(
-      "SELECT 1 FROM server_firsts WHERE kind = 'jackpot' AND species = 'jackpot' AND user_id = ? AND drop_id = ?",
-      userId,
-      `jackpot:${weekId}`,
-    )
-    .toArray();
-  return {
-    essence: jackpotEssenceFor(payoutWeek(sql, weekId)),
-    firstOnServer: first.length > 0,
-  };
+  summary: Pick<StoredSummary, 'essence' | 'jackpot'>,
+): number {
+  const base = summary.essence[userId] ?? 0;
+  if (!summary.jackpot.includes(userId)) return base;
+  return base + jackpotEssenceFor(payoutWeek(sql, weekId));
 }
 
 /** The finales (newest first) whose stored summary lists the user, with that summary. */
@@ -87,8 +81,7 @@ export function latestReveal(sql: SqlStorage, userId: string): RevealView | null
     week: latest.weekId,
     party: latest.party,
     cleared: summary.cleared,
-    essence: summary.essence[userId] ?? 0,
-    jackpot: jackpotOf(sql, userId, latest.weekId, summary),
+    essence: totalEssenceOf(sql, userId, latest.weekId, summary),
     rankChange: rankChangeOf(sql, latest.weekId),
     festivalGrant: readFestivalGrant(sql, latest.weekId, userId),
   };

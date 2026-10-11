@@ -1,5 +1,5 @@
 import type { EventNames, FightEvent } from '@creatures/engine';
-import { content } from '@creatures/game';
+import { RULES, content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { LiveAbility, LiveLobby, LiveNone, LiveRunning } from './live-api';
 import type { AbilityPreview, RaidReveal } from './raid-api';
@@ -12,11 +12,15 @@ import {
   creatureAbilityRows,
   otherUsage,
   otherUsageText,
+  othersSummary,
   ownAbilities,
   type OtherUsage,
   abilityParamKind,
   abilityPlanText,
   abilityStateText,
+  autoFireLabel,
+  autoFireTarget,
+  noAbilityText,
   bannerText,
   buildAction,
   defaultRoundOf,
@@ -47,9 +51,12 @@ function fightOf(over: Partial<LiveRunning> = {}): LiveRunning {
     party: 1,
     you: 'p1',
     startsAt: START,
-    roundMs: 10_000,
+    roundMs: null,
     rounds: 12,
     round: 3,
+    // Rounds are as long as their content: these three are 9 s, 11 s and 10 s long.
+    roundStarts: [START, START + 9_000, START + 20_000],
+    nextRoundAt: START + 30_000,
     serverNow: START + 25_000,
     boss: { id: 'b', name: 'Tidal Colossus', element: 'tide', hpMax: 1000, hpStart: 1000 },
     row: [],
@@ -71,9 +78,11 @@ function lobbyOf(over: Partial<LiveLobby> = {}): LiveLobby {
     party: 1,
     you: null,
     startsAt: START,
-    roundMs: 10_000,
+    roundMs: null,
     rounds: 12,
     round: 0,
+    roundStarts: [],
+    nextRoundAt: START,
     serverNow: START - 60_000,
     boss: { id: 'b', name: 'Tidal Colossus', element: 'tide', hpMax: null, hpStart: null },
     row: [],
@@ -94,6 +103,7 @@ function abilityOf(over: Partial<LiveAbility> = {}): LiveAbility {
     abilityId: 'rally',
     creature: null,
     mode: 'default',
+    autoFire: over.mode !== 'held',
     fired: false,
     firedAtRound: null,
     fireAtRound: null,
@@ -109,8 +119,9 @@ describe('finaleWindow', () => {
     expect(finaleWindow(finale, 12, finale - LOBBY_MS)).toBe('lobby');
     expect(finaleWindow(finale, 12, finale - 1)).toBe('lobby');
     expect(finaleWindow(finale, 12, finale)).toBe('live');
-    expect(finaleWindow(finale, 12, finale + 12 * 10_000)).toBe('live');
-    expect(finaleWindow(finale, 12, finale + 12 * 10_000 + 30_000)).toBe('after');
+    // The longest finale is 12 rounds of 22 s.
+    expect(finaleWindow(finale, 12, finale + 12 * 22_000)).toBe('live');
+    expect(finaleWindow(finale, 12, finale + 12 * 22_000 + 30_000)).toBe('after');
   });
 });
 
@@ -134,16 +145,15 @@ describe('formatClock and bannerText', () => {
 });
 
 describe('nextBoundaryAt', () => {
-  it('is the start before the fight and the end of each round after', () => {
-    expect(nextBoundaryAt(START, 10_000, 12, START - 5)).toBe(START);
-    expect(nextBoundaryAt(START, 10_000, 12, START)).toBe(START + 10_000);
-    expect(nextBoundaryAt(START, 10_000, 12, START + 9_999)).toBe(START + 10_000);
-    expect(nextBoundaryAt(START, 10_000, 12, START + 10_000)).toBe(START + 20_000);
-    expect(nextBoundaryAt(START, 10_000, 12, START + 119_999)).toBe(START + 120_000);
+  it("is the start before the fight and the server's next round start after", () => {
+    const live = fightOf();
+    expect(nextBoundaryAt(live, START - 5)).toBe(START);
+    expect(nextBoundaryAt(live, START)).toBe(START + 30_000);
+    expect(nextBoundaryAt(live, START + 29_999)).toBe(START + 30_000);
   });
 
-  it('is null after the last round', () => {
-    expect(nextBoundaryAt(START, 10_000, 12, START + 120_000)).toBeNull();
+  it('is null when the server has nothing to wait for', () => {
+    expect(nextBoundaryAt(fightOf({ nextRoundAt: null }), START + 130_000)).toBeNull();
   });
 });
 
@@ -161,16 +171,22 @@ describe('nextPollDelay', () => {
     expect(nextPollDelay(live, START + 12_000)).toBe(2000);
   });
 
-  it('polls just after a round boundary', () => {
-    // 1 s before the boundary at +20 s: wait for it, plus the slack.
-    expect(nextPollDelay(live, START + 19_000)).toBe(1300);
+  it('polls just after the round start the server announced (nextRoundAt), however long the round is', () => {
+    // 1 s before the boundary at +30 s: wait for it, plus the slack.
+    expect(nextPollDelay(live, START + 29_000)).toBe(1300);
     // 100 ms before the boundary.
-    expect(nextPollDelay(live, START + 19_900)).toBe(400);
+    expect(nextPollDelay(live, START + 29_900)).toBe(400);
+    // A short round: the boundary is where the server says.
+    const short = fightOf({ nextRoundAt: START + 26_000 });
+    expect(nextPollDelay(short, START + 25_000)).toBe(1300);
   });
 
-  it('never polls faster than the minimum, even right at a boundary', () => {
-    expect(nextPollDelay(live, START + 20_000 - 1)).toBeGreaterThanOrEqual(250);
-    expect(nextPollDelay(live, START + 20_100)).toBe(2000);
+  it('never polls faster than the minimum, and does not hammer a stale snapshot', () => {
+    expect(nextPollDelay(live, START + 30_000 - 1)).toBeGreaterThanOrEqual(250);
+    // Just past the boundary and still no news: ask again quickly.
+    expect(nextPollDelay(live, START + 30_100)).toBe(250);
+    // Long past it (a stale snapshot, a clock estimate that is off): back to every 2 s.
+    expect(nextPollDelay(live, START + 33_000)).toBe(2000);
   });
 
   it('waits for the start in the lobby', () => {
@@ -179,10 +195,12 @@ describe('nextPollDelay', () => {
     expect(nextPollDelay(lobby, START - 1_000)).toBe(1300);
   });
 
-  it('keeps polling after the last round until "done" arrives, then gives up', () => {
-    const end = START + 120_000;
-    expect(nextPollDelay(live, end + 1_000)).toBe(2000);
-    expect(nextPollDelay(live, end + GIVE_UP_MS + 1)).toBeNull();
+  it('keeps polling after the last round until "done" arrives, then gives up after the longest finale', () => {
+    const ended = fightOf({ round: 12, nextRoundAt: null });
+    const end = START + 12 * 22_000;
+    expect(nextPollDelay(ended, end - 100_000)).toBe(2000);
+    expect(nextPollDelay(ended, end + 1_000)).toBe(2000);
+    expect(nextPollDelay(ended, end + GIVE_UP_MS + 1)).toBeNull();
   });
 });
 
@@ -220,12 +238,16 @@ describe('pickNewer', () => {
 });
 
 describe('progressText', () => {
-  it('counts the round and the time to the next one', () => {
+  it("counts the round and the time to the next one, from the server's schedule", () => {
     const fight = fightOf({ round: 3 });
     expect(progressText(fight, START + 25_000)).toEqual({
       headline: 'Round 3 of 12',
       countdown: 'Next round in 5s',
     });
+    // A shorter round counts down to its own end.
+    expect(progressText(fightOf({ nextRoundAt: START + 27_500 }), START + 25_000).countdown).toBe(
+      'Next round in 3s',
+    );
   });
 
   it('counts down to the start in the lobby', () => {
@@ -237,7 +259,7 @@ describe('progressText', () => {
   });
 
   it('says when it is the last round and when it is over', () => {
-    const last = fightOf({ round: 12 });
+    const last = fightOf({ round: 12, nextRoundAt: START + 120_000 });
     expect(progressText(last, START + 115_000)).toEqual({
       headline: 'Last round (12 of 12)',
       countdown: 'Ends in 5s',
@@ -246,6 +268,17 @@ describe('progressText', () => {
       headline: 'The fight is over',
       countdown: '',
     });
+  });
+
+  it('calls the round the boss has fallen in the last one, and says nothing without a next time', () => {
+    const fell = fightOf({ round: 5, bossHp: 0, nextRoundAt: START + 60_000 });
+    expect(progressText(fell, START + 55_000)).toEqual({
+      headline: 'Last round (5 of 12)',
+      countdown: 'Ends in 5s',
+    });
+    expect(progressText(fightOf({ round: 12, nextRoundAt: null }), START + 55_000).countdown).toBe(
+      '',
+    );
   });
 
   it('never shows a negative countdown', () => {
@@ -275,7 +308,7 @@ describe('ability texts', () => {
       'Fires at the start of the next round',
     );
     expect(abilityStateText(abilityOf({ mode: 'held' }), 12, true)).toBe(
-      "Held: fires in the last round if you don't",
+      "Auto fire is off: it fires in the last round if you don't",
     );
     expect(abilityStateText(abilityOf({ mode: 'held' }), 12, false)).toContain('round 12');
     expect(
@@ -295,8 +328,8 @@ describe('ability texts', () => {
     const wall = abilityOf({ abilityId: 'shield-wall', defaultRound: 5 });
     expect(defaultRoundOf(wall)).toBe(5);
     expect(abilityStateText(wall, 12, true)).toBe('Fires on its own in round 5');
-    expect(abilityControls(fightOf({ round: 4 }), wall).canHold).toBe(true);
-    expect(abilityControls(fightOf({ round: 5 }), wall).canHold).toBe(false);
+    expect(abilityControls(fightOf({ round: 4 }), wall).canToggle).toBe(true);
+    expect(abilityControls(fightOf({ round: 5 }), wall).canToggle).toBe(false);
   });
 
   it('knows which abilities ask for something', () => {
@@ -309,40 +342,67 @@ describe('ability texts', () => {
 });
 
 describe('abilityControls', () => {
-  it('offers Fire and Hold before the default round', () => {
+  it('offers Fire and the Auto fire toggle (on) before the default round', () => {
     const c = abilityControls(fightOf({ round: 3 }), abilityOf());
-    expect(c).toEqual({ canFire: true, canHold: true, note: '' });
+    expect(c).toEqual({ canFire: true, canToggle: true, autoOn: true, note: '' });
   });
 
   it('offers only Fire from the default round on', () => {
     const c = abilityControls(fightOf({ round: 6 }), abilityOf());
     expect(c.canFire).toBe(true);
-    expect(c.canHold).toBe(false);
+    expect(c.canToggle).toBe(false);
   });
 
-  it('offers only Fire to a held ability', () => {
-    const c = abilityControls(fightOf({ round: 2 }), abilityOf({ mode: 'held' }));
-    expect(c.canFire).toBe(true);
-    expect(c.canHold).toBe(false);
+  it('offers the toggle both ways: a held ability can be turned back on before its default round', () => {
+    const early = abilityControls(fightOf({ round: 2 }), abilityOf({ mode: 'held' }));
+    expect(early).toEqual({ canFire: true, canToggle: true, autoOn: false, note: '' });
+    const late = abilityControls(fightOf({ round: 6 }), abilityOf({ mode: 'held' }));
+    expect(late.canFire).toBe(true);
+    expect(late.canToggle).toBe(false);
+    expect(late.autoOn).toBe(false);
   });
 
   it('offers nothing once it is fired or used', () => {
-    const none = { canFire: false, canHold: false, note: '' };
+    const none = { canFire: false, canToggle: false, autoOn: true, note: '' };
     expect(abilityControls(fightOf(), abilityOf({ mode: 'fired', fireAtRound: 5 }))).toEqual(none);
     expect(abilityControls(fightOf(), abilityOf({ fired: true }))).toEqual(none);
     expect(abilityControls(fightOf({ status: 'done' }), abilityOf())).toEqual(none);
   });
 
-  it('offers nothing in the lobby and explains why', () => {
-    const c = abilityControls(lobbyOf(), abilityOf());
-    expect(c.canFire).toBe(false);
-    expect(c.note).toContain('once the fight starts');
+  it('offers only the Auto fire toggle in the lobby, as the preference for the start', () => {
+    const on = abilityControls(lobbyOf(), abilityOf());
+    expect(on).toEqual({ canFire: false, canToggle: true, autoOn: true, note: '' });
+    const off = abilityControls(lobbyOf(), abilityOf({ mode: 'held' }));
+    expect(off).toEqual({ canFire: false, canToggle: true, autoOn: false, note: '' });
+    // Also for an ability whose default round is not known to the client.
+    expect(abilityControls(lobbyOf(), abilityOf({ defaultRound: 0 })).canToggle).toBe(true);
   });
 
   it('offers nothing in the last round', () => {
     const c = abilityControls(fightOf({ round: 12 }), abilityOf({ mode: 'held' }));
     expect(c.canFire).toBe(false);
+    expect(c.canToggle).toBe(false);
     expect(c.note).toContain('too late');
+  });
+});
+
+describe('autoFireLabel', () => {
+  it('says "Auto fire" with the default round while it is on', () => {
+    expect(autoFireLabel(abilityOf({ defaultRound: 7 }))).toEqual({
+      title: 'Auto fire',
+      detail: 'round 7',
+    });
+  });
+
+  it('says "Auto fire off" with "last round" once it is off', () => {
+    expect(autoFireLabel(abilityOf({ mode: 'held' }))).toEqual({
+      title: 'Auto fire off',
+      detail: 'last round',
+    });
+  });
+
+  it('shows no round when the server does not know it', () => {
+    expect(autoFireLabel(abilityOf({ defaultRound: 0 })).detail).toBe('');
   });
 });
 
@@ -356,13 +416,19 @@ describe('buildAction', () => {
       key: 'm1:c2',
       action: 'hold',
     });
+    expect(buildAction('m1:c2', 'flare-strike', 'unhold', '', '')).toEqual({
+      key: 'm1:c2',
+      action: 'unhold',
+    });
   });
 
-  it('sends Hold with nothing else', () => {
-    expect(buildAction('m1:basic', 'rally', 'hold', 'front', 'ember')).toEqual({
-      key: 'm1:basic',
-      action: 'hold',
-    });
+  it('sends the auto fire toggle with nothing else', () => {
+    for (const action of ['hold', 'unhold'] as const) {
+      expect(buildAction('m1:basic', 'rally', action, 'front', 'ember')).toEqual({
+        key: 'm1:basic',
+        action,
+      });
+    }
   });
 
   it('sends the zone only for Shield Wall', () => {
@@ -493,6 +559,8 @@ describe('ability texts', () => {
       "2 of 3 used. Latest: Rex's Flare Strike (round 5)",
     );
     expect(otherUsageText(usage[1] as OtherUsage, names)).toBe('0 of 1 used');
+    expect(othersSummary(usage)).toBe("Others' abilities (2/4 used)");
+    expect(othersSummary([])).toBe("Others' abilities (0/0 used)");
   });
 
   it('lists creature abilities for the Raid tab, locked ones with the level they need', () => {
@@ -508,6 +576,7 @@ describe('ability texts', () => {
         species: null,
         unlocked: true,
         unlockLevel: 1,
+        autoFire: true,
       },
       {
         key: 'm1:c0',
@@ -516,6 +585,7 @@ describe('ability texts', () => {
         species: 'cindle',
         unlocked: true,
         unlockLevel: 10,
+        autoFire: false,
       },
       {
         abilityId: 'tidal-mark',
@@ -523,6 +593,7 @@ describe('ability texts', () => {
         species: 'splashet',
         unlocked: false,
         unlockLevel: 10,
+        autoFire: true,
       },
     ];
     const rows = creatureAbilityRows(preview, team);
@@ -532,13 +603,40 @@ describe('ability texts', () => {
       title: "Cindle's Flare Strike",
       unlocked: true,
       status: 'Ready for the finale',
+      autoFire: false,
     });
     expect(rows[1]).toMatchObject({
+      autoFire: true,
       title: "Bubbles's Tidal Mark",
       unlocked: false,
       status: 'Unlocks at level 10 (now level 7)',
     });
     expect(rows[1]?.effect).toContain('Soaked');
+  });
+});
+
+describe('the Auto fire preference target', () => {
+  it('is the creature id for a creature ability and "basic" for the basic ability', () => {
+    expect(autoFireTarget(abilityOf())).toBe('basic');
+    expect(autoFireTarget(abilityOf({ creature: 'c-1' }))).toBe('c-1');
+  });
+});
+
+describe('what a tap on a creature with no ability says', () => {
+  const unlock = RULES.abilities.unlockLevel;
+  it('says when the ability unlocks for a creature below the unlock level', () => {
+    expect(noAbilityText('cindle', unlock - 3)).toBe(
+      `Its ability unlocks at level ${String(unlock)}. It is level ${String(unlock - 3)} now.`,
+    );
+  });
+
+  it('says so when the species has no finale ability, and when the ability is just not here', () => {
+    const none = content.creatures.find((c) => c.ability === undefined);
+    if (none !== undefined) {
+      expect(noAbilityText(none.id, unlock)).toBe('This creature has no finale ability.');
+    }
+    expect(noAbilityText('no-such-species', 1)).toBe('This creature has no finale ability.');
+    expect(noAbilityText('cindle', unlock)).toBe('Its ability is not part of this fight.');
   });
 });
 
@@ -659,53 +757,34 @@ describe('the event feed', () => {
 });
 
 describe('revealSummary', () => {
-  it('shows a jackpot with the First on server flag', () => {
-    const s = revealSummary(
-      { cleared: true, essence: 40, jackpot: { essence: 100, firstOnServer: true } },
-      0,
-    );
+  it('shows one Essence figure and the outcome, and nothing about a jackpot or pity', () => {
+    const s = revealSummary({ cleared: true, essence: 140 });
     expect(s.outcome).toContain('cleared');
-    expect(s.essence).toBe('You got 40 Essence');
-    expect(s.jackpot).toEqual({ hit: true, text: 'Jackpot! +100 Essence', firstOnServer: true });
-  });
-
-  it('shows a jackpot that is not the first', () => {
-    const s = revealSummary(
-      { cleared: true, essence: 40, jackpot: { essence: 100, firstOnServer: false } },
-      null,
-    );
-    expect(s.jackpot.firstOnServer).toBe(false);
-    expect(s.jackpot.hit).toBe(true);
-  });
-
-  it('shows the pity counter on a miss', () => {
-    const s = revealSummary({ cleared: false, essence: 5, jackpot: null }, 4);
-    expect(s.cleared).toBe(false);
-    expect(s.outcome).toContain('Not cleared');
-    expect(s.jackpot).toEqual({
-      hit: false,
-      text: 'No jackpot this time (pity 4/10)',
-      firstOnServer: false,
-    });
+    expect(s.essence).toBe('You got 140 Essence');
+    expect(Object.keys(s).sort()).toEqual(['cleared', 'essence', 'festival', 'outcome', 'rank']);
+    expect(JSON.stringify(s)).not.toMatch(/jackpot|pity/i);
+    const lost = revealSummary({ cleared: false, essence: 5 });
+    expect(lost.cleared).toBe(false);
+    expect(lost.outcome).toContain('Not cleared');
+    expect(JSON.stringify(lost)).not.toMatch(/jackpot|pity/i);
   });
 
   it('says where the server’s rank went, and nothing before the ladder has moved', () => {
-    const base = { cleared: true, essence: 1, jackpot: null };
-    expect(revealSummary(base, null).rank).toBeNull();
-    expect(revealSummary({ ...base, rankChange: null, festivalGrant: null }, null).rank).toBeNull();
+    const base = { cleared: true, essence: 1 };
+    expect(revealSummary(base).rank).toBeNull();
+    expect(revealSummary({ ...base, rankChange: null, festivalGrant: null }).rank).toBeNull();
     const change = (before: number, after: number, festival = false) =>
-      revealSummary({ ...base, rankChange: { before, after, festival, serverWon: true } }, null)
-        .rank;
+      revealSummary({ ...base, rankChange: { before, after, festival, serverWon: true } }).rank;
     expect(change(4, 5)).toBe('The server climbs to Rank 5.');
     expect(change(4, 4)).toBe('Rank 4 stays.');
     expect(change(4, 3, true)).toBe('The Festival is over. The server eases to Rank 3.');
   });
 
   it('says what the Festival creature did, with the First on server flag', () => {
-    const base = { cleared: true, essence: 1, jackpot: null };
-    expect(revealSummary(base, null).festival).toBeNull();
+    const base = { cleared: true, essence: 1 };
+    expect(revealSummary(base).festival).toBeNull();
     const grant = (g: NonNullable<RaidReveal['festivalGrant']>) =>
-      revealSummary({ ...base, festivalGrant: g }, null).festival;
+      revealSummary({ ...base, festivalGrant: g }).festival;
     expect(grant({ species: 'hearthshell', outcome: 'new', firstOnServer: true })).toEqual({
       text: 'You won Hearthshell! A new level 1 creature for your collection.',
       firstOnServer: true,
@@ -717,10 +796,5 @@ describe('revealSummary', () => {
     expect(
       grant({ species: 'lanternfin', outcome: 'converted', bait: 80, firstOnServer: false })?.text,
     ).toBe('You already had a fully fused Lanternfin: +80 Bait instead.');
-  });
-
-  it('leaves the pity out when it is not known', () => {
-    const s = revealSummary({ cleared: true, essence: 0, jackpot: null }, null);
-    expect(s.jackpot.text).toBe('No jackpot this time');
   });
 });

@@ -289,6 +289,13 @@ describe('the finale jackpot', () => {
         expect(
           rows(ctx.sql, "SELECT DISTINCT drop_id FROM server_firsts WHERE kind = 'jackpot'"),
         ).toHaveLength(1);
+        // Hidden from players: the record stays in storage, but no list shows it, and the ledger
+        // entries the clients can read do not say it was a jackpot.
+        expect(ctx.core.collection.state(m1).serverFirsts).toEqual([]);
+        const shown = ctx.core.ledgerEntries(m1, 50);
+        expect(shown.length).toBeGreaterThan(0);
+        expect(JSON.stringify(shown)).not.toMatch(/jackpot/i);
+        expect(rows(ctx.sql, "SELECT 1 FROM ledger WHERE meta LIKE '%jackpot%'")).toHaveLength(2);
       },
       { core: { raidRng: rng } },
     );

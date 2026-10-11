@@ -10,7 +10,7 @@ Status: **agreed with Misa 2026-10-11**. Builds on `m3-combat.md` (finale abilit
   - The **stage 2** form has a stronger version of its line's ability. Species without an evolution have one strength, set between the two stages.
 - **In the finale** you get one use of each unlocked ability among the **3 creatures in your raid team**, plus your basic ability, so up to 4 uses. Each one fires once.
   - **Absent or idle players:** every ability fires on its own at its default round.
-  - **Present players:** Fire and Hold work per ability, exactly as in `m5-finale.md`.
+  - **Present players:** Fire and the Auto fire toggle work per ability, exactly as in `m5-finale.md`.
 - The Collection shows each creature's ability: "Unlocks at level 10", then the ability, and after evolving its stronger form. That is the payoff for training a creature: it finally gets its move.
 
 ## Effects (content data, interpreted by the engine)
@@ -52,7 +52,7 @@ An ability is a list of **effects**. The engine interprets a small set of operat
   - `POST /api/raid/live/action` gains a required `key` (strict schema; it must be one of the caller's own keys).
   - The raid view shows `you.abilities`, the abilities you will bring, before the fight.
 - **Client:**
-  - The live ability panel lists all your abilities, each with its own Fire/Hold.
+  - The live ability panel lists all your abilities, each with its own Fire button and Auto fire toggle (since the stage rework, creature abilities are used by tapping the creature on the stage; see `decisions.md`).
   - The Raid tab shows your finale abilities, including locked ones ("Ember Fang: unlocks at level 10").
   - The Collection card shows the creature's ability and its lock state.
   - The ability picker now picks only the basic ability.

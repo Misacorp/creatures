@@ -1,4 +1,5 @@
-import { elementName } from './game';
+import { bossArt } from './art';
+import { gimmickGlyph, turnOrderGlyph } from './glyphs';
 import type { RaidView } from './raid-api';
 import {
   READINESS_HINT,
@@ -11,6 +12,9 @@ import {
   seasonText,
 } from './raid-progress';
 import { countdownText, scheduleSteps } from './raid-time';
+import { HpBar } from './Stage';
+import { ElementChip } from './sprites/ElementChip';
+import { Sprite } from './sprites/Sprite';
 import { gimmickLines, turnOrderShort, turnOrderText } from './raid-text';
 
 /** The five weeks of the season as pips: the Festival is the last one. */
@@ -46,18 +50,41 @@ export function BossCard({ view }: { view: RaidView }) {
   const teaser = festivalTeaser(view);
   const band = readinessLabel(view.party?.readiness ?? null);
   const best = bestRankText(view.bestRank);
+  const art = bossArt(boss.id);
   return (
     <section
       class={view.festival ? 'raid-section festival' : 'raid-section'}
       aria-labelledby="raid-boss-name"
     >
-      <h3 id="raid-boss-name">{boss.name}</h3>
-      <p class="tags">
-        {rank !== null && <span class="tag rank">{rank}</span>}
-        {view.festival && <span class="badge festival">Festival week</span>}
-        <span class="tag">{elementName(boss.element)}</span>
-        <span class="tag">{turnOrderShort(boss.turnOrder)}</span>
-      </p>
+      <div class="boss">
+        <div class="portrait boss-portrait">
+          <Sprite sprite={art.sprite} scale={art.scale} alt={boss.name} bob />
+        </div>
+        <div class="boss-meta">
+          <h3 id="raid-boss-name">{boss.name}</h3>
+          <p class="tags">
+            {rank !== null && <span class="tag rank">{rank}</span>}
+            {view.festival && <span class="badge festival">Festival week</span>}
+            <ElementChip element={boss.element} />
+            <span class="chip" role="img" aria-label={turnOrderText(boss.turnOrder)}>
+              <Sprite sprite={turnOrderGlyph(boss.turnOrder)} scale={2} />
+              <span class="chip-text">{turnOrderShort(boss.turnOrder)}</span>
+            </span>
+          </p>
+          {hp !== null && (
+            <div class="boss-hp">
+              <HpBar
+                current={hp.current}
+                max={hp.max}
+                label={`Boss HP this week: ${String(hp.current)} of ${String(hp.max)}`}
+              />
+              <p class="muted small">
+                Boss HP this week: {hp.current} / {hp.max}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
       {banner !== null && <p class="festival-banner">{banner}</p>}
       {teaser !== null && <p class="muted">{teaser}</p>}
       <SeasonPips season={view.season} />
@@ -68,10 +95,26 @@ export function BossCard({ view }: { view: RaidView }) {
         </p>
       )}
       {best !== null && <p class="muted">{best}</p>}
-      <p>{turnOrderText(boss.turnOrder)}</p>
       {gimmicks.length > 0 && (
         <>
           <h4>Tricks</h4>
+          <ul class="gimmicks">
+            {gimmicks.map((g) => (
+              <li key={g.id} class="gimmick">
+                <Sprite sprite={gimmickGlyph(g.op ?? '')} scale={3} />
+                <span class="gimmick-text">
+                  <strong class="pix">{g.name}</strong>
+                  {g.short !== '' && <span class="muted"> {g.short}</span>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <details class="about">
+        <summary>How the boss fights</summary>
+        <p>{turnOrderText(boss.turnOrder)}</p>
+        {gimmicks.length > 0 && (
           <ul class="plain-list">
             {gimmicks.map((g) => (
               <li key={g.id}>
@@ -80,21 +123,13 @@ export function BossCard({ view }: { view: RaidView }) {
               </li>
             ))}
           </ul>
-        </>
-      )}
+        )}
+      </details>
       <h4>Phase 2 counter-move</h4>
       {adaptation === null ? (
         <p class="muted">The boss shows its counter-move after Phase 1.</p>
       ) : (
         <p>{adaptation.description}</p>
-      )}
-      {hp !== null && (
-        <p>
-          <label for="raid-boss-hp">
-            Boss HP this week: {hp.current} / {hp.max}
-          </label>
-          <progress id="raid-boss-hp" class="hp-bar" max={hp.max} value={hp.current} />
-        </p>
       )}
     </section>
   );

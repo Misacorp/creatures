@@ -63,6 +63,13 @@
     }
   },
   {
+    "route": "POST /api/raid/live/action",
+    "status": 409,
+    "body": {
+      "error": "not_held"
+    }
+  },
+  {
     "route": "POST /api/raid/practice",
     "status": 409,
     "body": {
@@ -116,6 +123,27 @@
     "status": 409,
     "body": {
       "error": "not_your_ability"
+    }
+  },
+  {
+    "route": "PUT /api/raid/autofire",
+    "status": 409,
+    "body": {
+      "error": "not_your_creature"
+    }
+  },
+  {
+    "route": "PUT /api/raid/autofire",
+    "status": 409,
+    "body": {
+      "error": "locked"
+    }
+  },
+  {
+    "route": "POST /api/raid/live/action",
+    "status": 409,
+    "body": {
+      "error": "not_started"
     }
   }
 ]

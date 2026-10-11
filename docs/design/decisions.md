@@ -367,3 +367,105 @@ On `docs/design/progression.md`:
 - **Client.** Boss card: the rank tag, "Festival week" styling and the creature teaser, five season pips (week 1 to 5, the 5th is the Festival, each pip also readable as text), and the band as a word (Long shot / Even / Likely / Strong) with the hint "How ready your team looks". The loot reveal (Raid tab and live finale) shows the Festival creature and the rank sentence. Collection shows a "Festival" badge on Festival species and says they are not found on expeditions; no screen offers them as catchable. No inline styles, text only.
 
 **Reasoning.** One stored plan per week and one done marker per ladder move make every step idempotent and replay-safe; legacy weeks are plain old data, so a deploy in the middle of a week breaks nothing; a separate readiness Rng keeps the forecast independent of any real fight.
+
+## 2026-10-11: Ladder feel accepted (Misa)
+
+Misa accepted the tuned ladder:
+
+- +40% boss HP per rank;
+- the plateau rhythm (a win, then a few losses at the new rank, the Festival, and the season ease of one rank);
+- Festivals as a near-sure win and a reliable break.
+
+PR #7 is merged and production runs it.
+
+## 2026-10-11: Creature lore, visual briefs, traits and personality quirks
+
+**Context.** Misa asked for every species to have a short written description, a visual identity that works as an input brief for art, behavioural traits, and a cosmetic personality quirk per individual creature, so things stay consistent as the game evolves. The art direction coming next is chunky pixel art (16×16 creatures, 24×24 bosses) on a dark night-sky UI.
+
+**Decision.** Details are in `docs/design/creatures.md`. The data files are the source of truth.
+
+- **Content:** `species-lore.json` (all 22 species), `bosses-lore.json` and `quirks.json` live in `packages/game`, validated at load like all content. Every species and boss must have an entry. A stage 2 form must also say what it keeps from stage 1 and what changes (`appearance.fromStage1`, an addition to the requested fields). Palettes must contain at least two colours of the element's hue family (a test).
+- **The visual brief is not shown to players.** The Collection card gets an "About" disclosure with the description, the traits as chips and "Personality: <quirk>". The lore ships to the client with the content package (about 50 KB of JSON before minifying and compression), instead of the server sending text.
+- **Quirks are cosmetic**: no gameplay effect, no visual change. About 40 general quirks plus 2 to 3 "against type" quirks per evolution line (keyed by the stage 1 species id, so a stage 2 form uses its line's). `pickQuirk(speciesId, rng)` is pure: 75% general, 25% against type. Quirks are stored by id, so text can be edited; ids are never changed.
+- **Server (migration 13):** `creatures.quirk_id`, assigned at creation (starter, expedition catch, Festival grant) with the live crypto RNG, in the same transaction. A **separate `quirkRng`** (like `readinessRng`) keeps quirks out of the catch and raid draws. Evolution, fusion and training never change it. Existing creatures are backfilled once in the migration from crypto randomness; the result is stored. The creature view carries `quirk` (the id, or null if unknown).
+
+**Reasoning.** One shared source keeps writers, the client and artists in step. Lore in the content package needs no new API, and an id-based quirk can be reworded later without touching creatures. Keeping the quirk RNG separate protects scripted-test draws and the rule that fights and catches use their own randomness.
+
+## 2026-10-11: M6 visual foundation choices
+
+- **Fonts:** Pixelify Sans (display) and Atkinson Hyperlegible (reading), both OFL.
+  - Self-hosted from the pinned `@fontsource/*` 5.3.0 packages, using only the latin woff2 files via our own `@font-face` rules. Vite emits them as same-origin assets, so `font-src 'self'` holds.
+  - The licence texts ship in `apps/activity/public/fonts-licence.txt`.
+- **Drag and drop:**
+  - Built on pointer events, not the HTML5 drag API, which fails on mobile. A drag lifts after 8 px of movement.
+  - Own creatures use `touch-action: none` so touch dragging works. Touch-scrolling the row therefore starts on an empty slot or a gap, and the row auto-scrolls while dragging. If that feels awkward, long-press-to-drag is the alternative.
+  - Tap-to-place and keyboard placement remain.
+  - No optimistic UI; the server stays authoritative.
+- **Element icons:** each element always shows its icon (droplet, flame, leaf, bolt) next to its colour, so element colours are not confused with status colours **[Misa]**.
+
+## 2026-10-11: Live stage as rows, abilities on the creatures, Auto fire toggle **[Misa]**
+
+**Context.** Misa tried the practice fight on staging: the zones side by side did not fit a phone, names were cut off, and the ability cards under the stage were far from the creatures they belong to. He also asked to replace "Hold" with a clearer control.
+
+**Decision.**
+
+- **Zones are rows**, top to bottom: the boss, then Front (closest to it), Middle, Back. Each row has its label at the left and its creatures centred in slot order, wrapping onto more lines. Nothing scrolls sideways. The largest zone is 15 creatures (a party of 15 players, 45 slots). The sprite size follows the zone size and the measured width (`zone-layout.ts`), so a 15-creature zone uses 2x sprites on three lines at 360 px. The Placement strip in the Raid tab uses the same rows. Drag-and-drop hit-testing already used screen rectangles, so it works unchanged; auto-scroll while dragging now scrolls the page near the top and bottom of the window, and the up and down arrow keys move between lines.
+- **Creature abilities are used on the stage.** Your creature with an ability wears a badge and opens a popover when tapped (Fire, Auto fire toggle, the ability's text). The basic ability keeps one panel under the stage. Replays show only "used" marks, and are not interactive.
+- **Auto fire replaces Hold.** The popover and the basic panel have a big **Fire** button and an **Auto fire** toggle ("Auto fire, round 7" when on, "Auto fire off, last round" when off). The toggle works both ways until the ability's default round; the last-round safety net stays. New server action `unhold` on `POST /api/raid/live/action` (`not_held` if not held, `hold_too_late` after the default round); `hold` stays as the wire name for auto fire off. The word "Hold" is gone from player-facing text.
+- **Names** show in full under the sprite (two lines, then an ellipsis, full name as tooltip). "You" sits above the sprite, a knocked-out creature is a grey sprite with a skull.
+
+**Reasoning.** Rows fit narrow phones and match the order the boss attacks in. Putting each ability on its creature makes the choice obvious, and one toggle is easier to understand than a one-way "Hold".
+
+**Checked, not a bug.** The boss HP the stage shows equals the engine's `bossHpEnd` for whole fights, including practice-style inputs (tests in `stage.test.ts`). The odd "18689 / 18698" in the screenshot came from a dev test fight.
+
+## 2026-10-11: Pre-fight countdown, Auto fire preferences, tap fix **[Misa]**
+
+**Context.** Misa tried the practice fight on the Discord mobile app: tapping his creatures opened nothing. He also asked for a dramatic countdown before a fight and for Auto fire to be settable before it.
+
+**Decision.**
+
+- **Countdown.** In the last 30 seconds before a live finale or practice fight, a big pixel-font number covers the stage (calm to 11, faster and gold to orange from 10 to 6, red with a stepped shake and a growing number from 5 to 1, then "FIGHT!"). It is computed from the server's `startsAt` and the clock offset and wakes exactly when the number changes (no extra polls). Reduced motion: a still number with colour changes only. The overlay does not take taps.
+- **Preview stage in the lobby.** The lobby snapshot now carries the party's row, the names, the boss pool and the caller's own abilities (read-only, same builder as the start). Tapping an ability creature opens the popover with only the Auto fire toggle.
+- **Auto fire preferences (migration 14, `raid_autofire`).** `PUT /api/raid/autofire { target, on }`, `target` = `basic` or an own team creature id, allowed until the finale starts (`locked` after). They set the first mode of each ability at the live start, the instant late finale and the practice start (off = `held`). Also settable in the Raid tab's abilities card. Every live ability has `autoFire`; each Raid-view ability preview has `autoFire`.
+- **Practice fights** start after a 30 second lobby; Fire before the start is `not_started`. The 10 minute cooldown counts from the request.
+- **The mobile tap bug.** Not reproducible by touch in Chromium with fixture data (real touch events, 90 ms holds, taps during beat playback: the popover always opened). The one real gap found: only creatures with an ability were buttons, and abilities unlock at level 10, so on staging a team below it had no tappable creature at all. Own creatures are now always buttons: one without an ability opens a note ("Its ability unlocks at level 10. It is level 4 now.").
+
+**Reasoning.** The server stays authoritative: preferences are validated and only ever read at the start. The lobby preview reuses the start's builder so it cannot drift from the fight.
+
+## 2026-10-11: Slower, readable fights, a round intro and a hidden jackpot **[Misa]**
+
+**Context.** Misa watched the first real live finale in production: "it feels like a speed run; combos and crits just aren't picked up by my eyes". He also asked to keep the jackpot and pity "behind the scenes".
+
+**Decision.**
+
+- **Round intro.** Every live round opens with a big "Round N" (pixel face, "of 12" under it) over the stage for 3 seconds, then the round's creature actions play. Replays show it for 1.5 s (0.9 s at 2x). With reduced motion it is plain text for the same time. It lets taps through, and the first round waits for the countdown's "FIGHT!" to end.
+- **Two clocks (`stage-fx.ts`).** The **stagger** (when each beat starts) is 500 ms by default and up to 700 ms for beats with a crit, reaction, ability, knockout or gimmick; it is compressed to fit the round and never goes below 250 ms. The **visible duration** is separate, so effects overlap the next beats: damage numbers 1.3 s, crits 2 s with a bigger "CRITICAL!" pop, reactions 1.5 s as a large burst with the reaction's name and both element colours, knockouts 1 s ("KO!" tag), ability cards 1.5 s (creature name and ability). The beat logic stays pure and tested.
+- **Live round budget.** 15 s per round: 3 s intro, the beats, and the last beat's effects end about 1.5 s before the next round (so 10.5 s for beats and effects). Replays keep the visible durations; 2x halves the stagger and shortens the durations by about 30%.
+- **Round length 10 s to 15 s** (`LIVE_ROUND_MS`): 12 rounds are 3 minutes, under Misa's 5 minute cap. The live finale and practice use it for fights **started after the change**; a stored `raid_live` row keeps its own `round_ms`, which the snapshot and the clock already read. The client's `DEFAULT_ROUND_MS` (used only to know when the Raid tab stops expecting a result) follows.
+- **Jackpot and pity are hidden from players.**
+  - Gone from the player-facing surfaces: the loot reveal's jackpot burst and "Jackpot!" / "No jackpot this time (pity N/10)" lines, the chest art, the pity number, the Discord finale post's jackpot lines (and its "First jackpot" record), the Raid tab's "Jackpot:" badge, and the jackpot "first on server" entry in the Collection's list.
+  - The jackpot Essence is still paid, with the same mechanics, storage (`jackpot_pity`, the `jackpot` server-first rows, the ledger entry) and idempotency. Players see it only inside one combined Essence figure: the live `loot.essence`, `you.reveal.essence` and the finale's `essence` in the result list now include it.
+  - The server no longer sends `pity`, `loot.jackpot`, `you.reveal.jackpot`, `party.results[].jackpot` (the list of display names) or `serverFirsts` entries of kind `jackpot`, and the ledger list leaves out the `jackpot` flag of a raid payout's meta, so none of it can be inspected from a client. Contract tests pin the key sets and check the responses for the words `jackpot` and `pity`.
+  - The after-action stats never carried a jackpot line, so there was nothing to remove there.
+
+**Reasoning.** Slow effects and a clear round marker are what let people read a combo; keeping the stagger and the visible duration apart lets rounds stay inside the time budget without making effects flash by. Hiding the jackpot keeps its fun as a surprise inside the total without turning the pity counter into something to game.
+
+**Fixtures.** The contract fixtures of the affected responses were edited to the new server shape by script, and the worker's contract test, which compares the real server output's key sets with them, passes. They were not re-captured from a running server (a capture would have changed unrelated recorded values); their old `roundMs` of 10 000 is legitimate for a fight stored under the old length.
+
+## 2026-10-11: Content-paced rounds, smooth effects and a boss telegraph **[Misa]**
+
+**Context.** Misa tried the slower stage on staging: more time to see damage and effects was a step in the right direction. His feedback: the round switch text should be 1 to 2 seconds shorter; damage numbers should linger even longer, overlap, and keep floating up so new ones appear below older ones; some numbers, especially on his creatures, were choppy; the idle wait at the end of each round dragged (give effects about 2 seconds, then go straight on); and he could not read when and whom the boss attacks.
+
+**Decision.**
+
+- **Rounds last as long as their content (server-authoritative).** A pure function in the engine, `roundPlaybackMs(roundEvents, options)`, gives a round's length: the intro (1.5 s live, 1 s in replays) + the staggers of every beat but the last visible one + that beat's wind-up + a **2 s tail** after the last effect appears, **clamped to 6..22 s** (12 rounds of 22 s are 4:24, under the 5 minute cap). The beat boundaries and staggers moved from the client into the engine (`beatEnds`, `beatTiming`, `planRounds`), so the client and the server use the same code. A beat's stagger is 500 ms, up to 700 ms for a crit, reaction, ability, knockout, boss gimmick or luck banner; a boss action adds a 600 ms wind-up. Rounds that would pass 22 s squeeze their staggers in proportion.
+- **The live schedule is cumulative.** Round 1 starts at `started_at`; round r+1 starts at `start(r) + roundPlaybackMs(events of round r)`. That is sound because of the prefix property (round r's events are fixed once it has started; Fire takes effect from the next round), pinned by tests on the engine and the server. The snapshot sends `roundStarts` and `nextRoundAt`, and the client polls just after `nextRoundAt`. The fight ends at the end of round 12, or of the round the boss falls in, plus its playback (it used to end as the boss-falling round began). The alarm is armed for the end of the schedule computed from the stored fight, and re-armed by every request. Practice fights use the same pacing.
+- **Legacy rows.** Migration 15 adds `raid_live.pacing` (default 0). A row stored before it keeps its fixed `round_ms` schedule and its old end rule; new rows store pacing 1 (and `round_ms` 22 000 as an upper bound). The snapshot's `roundMs` is null for new fights.
+- **Typical and longest finale.** 3 players (row of 9) about 2:00, 5 players about 2:35, 8 players about 3:35; from 12 players on the rounds hit the 22 s cap and the finale is the longest possible 4:24.
+- **Smoother, longer effects.** Damage numbers 2.5 s, crits 3 s, reaction bursts 2.5 s, ability cards 2 s, knockout tags 1.5 s, boss labels 2 s; effects overlap freely. Numbers rise continuously from their spawn point (a newer number on a creature sits below older ones; on the boss the side-by-side lanes stay).
+- **The cause of the choppiness.** Floating numbers (and the other effects) used `steps(10)`, `steps(8)` and so on: a 1.3 s number moved in 10 jumps, about 7 changes a second (a crit about 4.5), while the page itself ran at a steady 60 fps (measured in Chromium: 16.7 ms frames, 10 distinct transforms per number). It was not re-rendering or re-keying: numbers are keyed by event index and were not re-created. Now all floats, fades, bursts and pops use smooth easing on `transform` and `opacity` with `will-change`, `steps()` stays only for sprite hops, flashes and shakes, each effect keeps one ref function (no ref churn on every render), and the beams' positions are measured once. Measured after: a number's transform changes on 29 of 30 frames in a 500 ms window.
+- **Boss attack telegraph.** For every boss action (normal attack, zone hit, strike on the strongest, silence, reflect): 600 ms of red reticles on exactly the affected creatures (a zone outline for a zone hit) and a leaning boss; then a beam or shockwave, a slash, and a label with the attack's name and area ("Undertow · whole FRONT row", "Lightning Rod · Cindle", "Bramble Bind · both ends"); then the damage numbers and a blocked mark for shielded or guarded creatures. One round ahead the stage shows "Next round: ..." (derived purely from the boss content and the round number, `bossWarnings`), with a warning glyph on the target zone or on the ends of the row; a strike on the strongest creature is worded generically because the stage does not know the creatures' Attack. Reduced motion: static frames, outlines and labels.
+
+**Reasoning.** Pacing by content removes both the dead air after a short round and the cut-off of a crowded one, and keeping it in the engine means the server's clock and the stage cannot drift apart. The wind-up gives players a moment to read who is about to be hit, and the forecast gives them a round to react with Shield Wall.
+
+**Fixtures.** The `live-*`, `action-*` and `practice-*` contract fixtures were edited by script to add `roundStarts` and `nextRoundAt` (and `roundMs: null` in the lobby and none states), not re-captured, because a re-capture would have churned unrelated recorded values. Their `roundMs` of 10 000 and fixed schedule are what a legacy row sends. A new fixture, `live-paced.json`, was captured from the real server (a content-paced fight at round 4). The worker's contract test compares the real output's key sets with all of them.

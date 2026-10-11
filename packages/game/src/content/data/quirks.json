@@ -1,0 +1,362 @@
+{
+  "general": [
+    {
+      "id": "hums-quietly",
+      "text": "Hums a tiny tune when it thinks nobody is listening."
+    },
+    {
+      "id": "collects-pebbles",
+      "text": "Collects smooth pebbles and hides them in secret spots."
+    },
+    {
+      "id": "sleeps-sitting-up",
+      "text": "Falls asleep sitting up, then wakes up very confused."
+    },
+    {
+      "id": "brave-until-rustle",
+      "text": "Very brave, right up until something rustles."
+    },
+    {
+      "id": "cloud-follower",
+      "text": "Is convinced that one particular cloud is following it."
+    },
+    {
+      "id": "waves-at-everyone",
+      "text": "Waves at everyone it meets, even rocks."
+    },
+    {
+      "id": "sneezes-when-happy",
+      "text": "Sneezes whenever it is extremely happy."
+    },
+    {
+      "id": "counts-its-steps",
+      "text": "Counts its steps, and starts over when it loses track."
+    },
+    {
+      "id": "proud-hiccups",
+      "text": "Gets the hiccups whenever it is proud of itself."
+    },
+    {
+      "id": "snack-lines",
+      "text": "Lines up its snacks in neat little rows."
+    },
+    {
+      "id": "stargazer",
+      "text": "Stays up late watching the stars, then naps all morning."
+    },
+    {
+      "id": "boss-stare",
+      "text": "Practises a very serious boss stare in secret."
+    },
+    {
+      "id": "last-bite-sharer",
+      "text": "Always saves the last bite for a friend."
+    },
+    {
+      "id": "victory-dancer",
+      "text": "Practises a victory dance when it thinks no one is looking."
+    },
+    {
+      "id": "balloon-wary",
+      "text": "Is nervous about balloons and curious about them too."
+    },
+    {
+      "id": "names-everything",
+      "text": "Gives every stone and twig its own name."
+    },
+    {
+      "id": "dramatic-yawner",
+      "text": "Yawns very dramatically before every adventure."
+    },
+    {
+      "id": "moon-watcher",
+      "text": "Looks up at the moon whenever things get quiet."
+    },
+    {
+      "id": "lucky-spot",
+      "text": "Believes it has a lucky spot and always stands in it."
+    },
+    {
+      "id": "whistle-snorer",
+      "text": "Snores in one tiny, whistling note."
+    },
+    {
+      "id": "head-tilter",
+      "text": "Tilts its head at everything it does not understand."
+    },
+    {
+      "id": "shiny-chaser",
+      "text": "Chases anything shiny, then forgets why."
+    },
+    {
+      "id": "loud-whisperer",
+      "text": "Tries to whisper, but is somehow always loud."
+    },
+    {
+      "id": "polite-bower",
+      "text": "Bows politely to every creature it meets."
+    },
+    {
+      "id": "circle-walker",
+      "text": "Walks in a circle three times before it settles down."
+    },
+    {
+      "id": "berry-hider",
+      "text": "Hides berries for later and never finds them again."
+    },
+    {
+      "id": "loud-cheerer",
+      "text": "Cheers for friends who are just walking by."
+    },
+    {
+      "id": "eating-shy",
+      "text": "Gets shy when you watch it eat."
+    },
+    {
+      "id": "weather-prophet",
+      "text": "Is sure it can predict the weather, and is sometimes right."
+    },
+    {
+      "id": "shadow-racer",
+      "text": "Races its own shadow and always loses."
+    },
+    {
+      "id": "tall-dreamer",
+      "text": "Dreams of being very, very tall."
+    },
+    {
+      "id": "morning-grumbler",
+      "text": "Grumbles every morning, then is cheerful all day."
+    },
+    {
+      "id": "name-perker",
+      "text": "Perks up whenever it hears its own name."
+    },
+    {
+      "id": "secret-keeper",
+      "text": "Keeps a long list of secrets and will not tell you any."
+    },
+    {
+      "id": "big-stretcher",
+      "text": "Stretches for a full minute before doing anything."
+    },
+    {
+      "id": "nap-defender",
+      "text": "Has a favourite napping spot and defends it politely."
+    },
+    {
+      "id": "easy-giggler",
+      "text": "Giggles at the smallest things."
+    },
+    {
+      "id": "front-walker",
+      "text": "Insists on leading the way, then drifts to the back."
+    },
+    {
+      "id": "gift-bringer",
+      "text": "Brings you small gifts, like a leaf or a very old nut."
+    },
+    {
+      "id": "star-wisher",
+      "text": "Makes a wish on every shooting star it sees."
+    }
+  ],
+  "againstType": {
+    "splashet": [
+      {
+        "id": "splashet-dry-feet",
+        "text": "Keeps its feet very dry and hates a surprise puddle."
+      },
+      {
+        "id": "splashet-calm-sitter",
+        "text": "Prefers to sit quietly and watch the water go by."
+      },
+      {
+        "id": "splashet-tidy-bather",
+        "text": "Takes slow, careful baths and cannot be rushed."
+      }
+    ],
+    "cindle": [
+      {
+        "id": "cindle-napper",
+        "text": "Would rather nap in the shade than chase anything."
+      },
+      {
+        "id": "cindle-spark-shy",
+        "text": "Is a little scared of its own sparks."
+      },
+      {
+        "id": "cindle-purrs-at-prey",
+        "text": "Purrs at things it was meant to pounce on."
+      }
+    ],
+    "sproutle": [
+      {
+        "id": "sproutle-loud-waker",
+        "text": "Is surprisingly loud the moment it wakes up."
+      },
+      {
+        "id": "sproutle-sun-dancer",
+        "text": "Dances the second the sun comes out."
+      },
+      {
+        "id": "sproutle-wide-awake",
+        "text": "Never naps, and yawns all day to prove it."
+      }
+    ],
+    "zipmouse": [
+      {
+        "id": "zipmouse-statue",
+        "text": "Can freeze like a statue for an hour if asked nicely."
+      },
+      {
+        "id": "zipmouse-slow-walk",
+        "text": "Walks very slowly when it thinks it is being watched."
+      },
+      {
+        "id": "zipmouse-patient",
+        "text": "Waits patiently in every queue, which unnerves the others."
+      }
+    ],
+    "mistnewt": [
+      {
+        "id": "mistnewt-speed-dream",
+        "text": "Dreams of being a famous racer."
+      },
+      {
+        "id": "mistnewt-dry-days",
+        "text": "Complains on damp days and loves a dry one."
+      },
+      {
+        "id": "mistnewt-fusses",
+        "text": "Fusses over its own mist cloud more than anyone."
+      }
+    ],
+    "ashmole": [
+      {
+        "id": "ashmole-clean-paws",
+        "text": "Hates getting its paws dirty."
+      },
+      {
+        "id": "ashmole-fresh-air",
+        "text": "Prefers fresh air to tunnels and says so."
+      },
+      {
+        "id": "ashmole-daydreamer",
+        "text": "Leaves things half-dug and wanders off to daydream."
+      }
+    ],
+    "stormray": [
+      {
+        "id": "stormray-thunder-shy",
+        "text": "Is secretly afraid of thunder."
+      },
+      {
+        "id": "stormray-sunny-days",
+        "text": "Prefers sunny days and says so often."
+      },
+      {
+        "id": "stormray-shy-cheers",
+        "text": "Gets shy when it is cheered on."
+      }
+    ],
+    "mossback": [
+      {
+        "id": "mossback-toe-tapper",
+        "text": "Taps its foot when anyone else is slow."
+      },
+      {
+        "id": "mossback-in-a-hurry",
+        "text": "Is always in a hurry, even though it never arrives."
+      },
+      {
+        "id": "mossback-secret-gardener",
+        "text": "Pretends to ignore its garden, but checks it twice a day."
+      }
+    ],
+    "coralynx": [
+      {
+        "id": "coralynx-belly-rubs",
+        "text": "Cannot resist a belly rub."
+      },
+      {
+        "id": "coralynx-bad-swimmer",
+        "text": "Is a terrible swimmer and keeps it a secret."
+      },
+      {
+        "id": "coralynx-clumsy-pounce",
+        "text": "Misses its pounce, then pretends it meant to."
+      }
+    ],
+    "solmane": [
+      {
+        "id": "solmane-moonlover",
+        "text": "Prefers moonlight to sunlight."
+      },
+      {
+        "id": "solmane-quiet-nights",
+        "text": "Likes quiet nights better than big crowds."
+      },
+      {
+        "id": "solmane-dark-fear",
+        "text": "Is a little afraid of the dark, but denies it."
+      }
+    ],
+    "gaiadrake": [
+      {
+        "id": "gaiadrake-bird-startle",
+        "text": "Is easily startled by small birds."
+      },
+      {
+        "id": "gaiadrake-ticklish",
+        "text": "Is ticklish, and giggles when the wind blows."
+      },
+      {
+        "id": "gaiadrake-hides",
+        "text": "Tries to hide behind trees much smaller than itself."
+      }
+    ],
+    "aurorix": [
+      {
+        "id": "aurorix-bumper",
+        "text": "Bumps into things when it gets excited."
+      },
+      {
+        "id": "aurorix-star-chatter",
+        "text": "Cannot keep quiet and chatters to the stars."
+      },
+      {
+        "id": "aurorix-wants-to-walk",
+        "text": "Secretly wishes it could walk like everyone else."
+      }
+    ],
+    "lanternfin": [
+      {
+        "id": "lanternfin-dark-fear",
+        "text": "Is scared of the dark, which is a bit awkward."
+      },
+      {
+        "id": "lanternfin-crowd-shy",
+        "text": "Gets nervous in big festival crowds."
+      },
+      {
+        "id": "lanternfin-early-sleeper",
+        "text": "Falls asleep long before the party ends."
+      }
+    ],
+    "hearthshell": [
+      {
+        "id": "hearthshell-chilly",
+        "text": "Is always a little chilly and asks for a blanket."
+      },
+      {
+        "id": "hearthshell-hurrier",
+        "text": "Is always in a hurry, even when carrying a whole house."
+      },
+      {
+        "id": "hearthshell-party-wiggle",
+        "text": "Cannot hold still once the festival music starts."
+      }
+    ]
+  }
+}

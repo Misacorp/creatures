@@ -257,6 +257,8 @@ export interface Creature {
   shiny: boolean;
   nickname: string | null;
   away: boolean;
+  /** Id of the creature's cosmetic personality quirk (text is in the shared lore data); null if unknown. */
+  quirk: string | null;
   stats: { hp: number; atk: number; spd: number };
   /** Bait for the next level with the discount applied; null at the level cap. */
   trainCost: number | null;
@@ -302,11 +304,8 @@ export interface Expedition {
 }
 
 export interface ServerFirst {
-  /**
-   * `jackpot` is the shared finale jackpot record (species `jackpot`); it is not a creature.
-   * `festival` is the first win of a Festival creature (the species is that creature).
-   */
-  kind: 'catch' | 'evolve' | 'jackpot' | 'festival';
+  /** `festival` is the first win of a Festival creature (the species is that creature). */
+  kind: 'catch' | 'evolve' | 'festival';
   species: string;
   at: number;
   mine: boolean;
@@ -360,6 +359,7 @@ function isCreature(value: unknown): value is Creature {
     typeof value['shiny'] === 'boolean' &&
     (value['nickname'] === null || isStr(value['nickname'])) &&
     typeof value['away'] === 'boolean' &&
+    (value['quirk'] === null || isStr(value['quirk'])) &&
     isStats(value['stats']) &&
     (value['trainCost'] === null || isInt(value['trainCost'])) &&
     (value['ability'] === null || isCreatureAbility(value['ability'])) &&
@@ -415,10 +415,7 @@ function isExpedition(value: unknown): value is Expedition {
 function isServerFirst(value: unknown): value is ServerFirst {
   return (
     isRecord(value) &&
-    (value['kind'] === 'catch' ||
-      value['kind'] === 'evolve' ||
-      value['kind'] === 'jackpot' ||
-      value['kind'] === 'festival') &&
+    (value['kind'] === 'catch' || value['kind'] === 'evolve' || value['kind'] === 'festival') &&
     isStr(value['species']) &&
     isInt(value['at']) &&
     typeof value['mine'] === 'boolean' &&

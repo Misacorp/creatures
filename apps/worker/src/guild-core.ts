@@ -1,6 +1,7 @@
 import { createCryptoRng, type Rng } from '@creatures/game';
 import * as v from 'valibot';
 import { Collection } from './collection';
+import { creatureQuirkMigration } from './creature-quirk-migration';
 import { collectionRoutes } from './collection-routes';
 import { baitForDay, leetPointsForDay } from './economy';
 import { DiscordError, type GuildApi } from './discord';
@@ -33,6 +34,8 @@ import {
   type SpendResult,
 } from './ledger';
 import { Raid } from './raid';
+import { raidAutofireMigration } from './raid-autofire-migration';
+import { raidLivePacingMigration } from './raid-live-pacing-migration';
 import { raidLiveMigration } from './raid-live-migration';
 import { raidMigration } from './raid-migration';
 import { raidProgressionMigration } from './raid-progression-migration';
@@ -244,6 +247,12 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   },
   // Version 12: the Boss Rank ladder, seasons and Festival weeks (see raid-progression-migration.ts).
   raidProgressionMigration,
+  // Version 13: a personality quirk for every creature (see creature-quirk-migration.ts).
+  creatureQuirkMigration,
+  // Version 14: auto fire preferences for the finale (see raid-autofire-migration.ts).
+  raidAutofireMigration,
+  // Version 15: content-paced live rounds (see raid-live-pacing-migration.ts).
+  raidLivePacingMigration,
 ];
 
 export interface SessionUser {
@@ -325,6 +334,12 @@ export interface GuildCoreOptions {
    * Separate from `raidRng`, so a forecast never consumes the draws of a real fight.
    */
   readinessRng?: Rng;
+  /**
+   * Live randomness for the cosmetic quirk of a new creature (catch, starter, Festival grant).
+   * Defaults to crypto.getRandomValues. It is separate from `rng` and `raidRng`, so a new quirk
+   * never consumes a test's scripted catch draws or a raid's fight seeds.
+   */
+  quirkRng?: Rng;
   /** Fallback guild id (the Durable Object's name), used only until one is stored. */
   guildId?: () => string | undefined;
   /** Builds the leet source. Returning null disables syncing (fail closed). */
@@ -384,16 +399,19 @@ export class GuildCore {
   ) {
     this.syncBudgetMs = options.syncBudgetMs ?? SYNC_BUDGET_MS;
     this.leetSource = options.createLeetSource?.(() => this.knownPlayers()) ?? null;
+    const quirkRng = options.quirkRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
     this.collection = new Collection({
       storage,
       now,
       rng: options.rng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+      quirkRng,
     });
     this.raid = new Raid({
       storage,
       now,
       rng: options.raidRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
       practice: options.raidPractice === true,
+      quirkRng,
       ...(options.readinessRng === undefined ? {} : { readinessRng: options.readinessRng }),
     });
     this.limiter = new TokenBucketLimiter({
@@ -950,8 +968,10 @@ export class GuildCore {
       // An event that is still due after the catch-up keeps failing: retry it later, not in a loop.
       candidates.push(raidAt > this.now() ? raidAt : this.now() + RAID_RETRY_MS);
     }
-    // A live finale that is over resolves at the end of its last round (earlier if a read sees the
-    // boss fall). One that is still unresolved after that keeps failing: retry it later.
+    // A live finale resolves at the end of its last round: the 12th, or the one the boss falls in, plus
+    // its playback (computed from the stored fight, so it follows the content-paced schedule; every
+    // request that changes an ability re-arms the alarm). A read that sees the end resolves it earlier.
+    // One that is still unresolved after that keeps failing: retry it later.
     const liveEndAt = this.raid.nextLiveEndAt();
     if (liveEndAt !== null) {
       candidates.push(liveEndAt > this.now() ? liveEndAt : this.now() + RAID_RETRY_MS);

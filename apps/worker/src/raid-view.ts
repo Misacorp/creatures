@@ -14,6 +14,7 @@ import {
 } from '@creatures/engine';
 import { RULES, content, seasonOf, type ReadinessBand } from '@creatures/game';
 import { speciesOf } from './collection';
+import { BASIC_TARGET, loadAutofire } from './raid-autofire';
 import { readFestivalGrant, type FestivalGrantView } from './raid-festival';
 import { rankChangeOf, readLadder, readWeekProgression, type RankChangeView } from './raid-ladder';
 import type { Raid } from './raid';
@@ -25,7 +26,7 @@ import {
   creatureKey,
   type StoredSummary,
 } from './raid-resolve';
-import { latestReveal, type RevealView } from './raid-reveal';
+import { latestReveal, totalEssenceOf, type RevealView } from './raid-reveal';
 import { partyMembers, partyOf } from './raid-roster';
 import { RAID_PHASES, isWeekId, weekIndex, type RaidEvent, type RaidPhase } from './raid-schedule';
 import { effectiveTeam, rowLength, type RaidStatus, type TeamCreature } from './raid-teams';
@@ -48,6 +49,8 @@ export interface AbilityPreview {
   unlocked: boolean;
   /** The creature level that unlocks it (1 for the basic ability: always there). */
   unlockLevel: number;
+  /** The caller's Auto fire setting for the finale (on unless they turned it off). */
+  autoFire: boolean;
 }
 
 /**
@@ -59,6 +62,7 @@ function abilityPreview(
   basic: { abilityId: string } | null,
   alias: string | null,
   team: readonly TeamCreature[] | null,
+  autoFire: (target: string) => boolean,
 ): AbilityPreview[] {
   if (basic === null || alias === null || team === null) return [];
   const out: AbilityPreview[] = [
@@ -69,6 +73,7 @@ function abilityPreview(
       species: null,
       unlocked: true,
       unlockLevel: 1,
+      autoFire: autoFire(BASIC_TARGET),
     },
   ];
   team.forEach((c, index) => {
@@ -82,6 +87,7 @@ function abilityPreview(
       species: c.species.id,
       unlocked,
       unlockLevel: RULES.abilities.unlockLevel,
+      autoFire: autoFire(c.id),
     });
   });
   return out;
@@ -115,10 +121,8 @@ export interface PhaseResultView {
   reactions: number;
   /** The best contributors by display name (at most three). */
   top: { displayName: string; damage: number; contribution: number; you: boolean }[];
-  /** Essence the caller earned in this phase. */
+  /** Essence the caller earned in this phase (the finale's includes the hidden jackpot Essence). */
   essence: number;
-  /** Finale only: display names of the players who hit the jackpot. */
-  jackpot: string[];
   /** Finale only: what it did to the server's rank; null until the ladder has moved, and for phases. */
   rankChange: RankChangeView | null;
   /** Finale only: the Festival creature the caller got; null otherwise. */
@@ -368,6 +372,7 @@ export function buildRaidView(
   }
 
   const progression = readWeekProgression(sql, week.weekId);
+  const autofire = loadAutofire(sql, week.weekId);
 
   return {
     weekId: week.weekId,
@@ -409,6 +414,7 @@ export function buildRaidView(
         myAbility,
         myIndex < 0 ? null : aliasFor(myIndex),
         team === null ? null : team.creatures,
+        (target) => autofire.isOn(userId, target),
       ),
       reveal: latestReveal(sql, userId),
       team:
@@ -454,8 +460,10 @@ function resultView(
       contribution: c.contribution,
       you: c.userId === userId,
     })),
-    essence: summary.essence[userId] ?? 0,
-    jackpot: summary.jackpot.map((id) => names.get(id) ?? 'Unknown'),
+    essence:
+      phase === 'finale'
+        ? totalEssenceOf(sql, userId, weekId, summary)
+        : (summary.essence[userId] ?? 0),
     rankChange: phase === 'finale' ? rankChangeOf(sql, weekId) : null,
     festivalGrant: phase === 'finale' ? readFestivalGrant(sql, weekId, userId) : null,
   };

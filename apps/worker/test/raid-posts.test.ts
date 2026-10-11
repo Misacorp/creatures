@@ -320,7 +320,7 @@ describe('phase posts', () => {
 });
 
 describe('the finale post', () => {
-  it('lists jackpot hits and this week’s first-on-server records of the party', async () => {
+  it('lists this week’s first-on-server records of the party, and says nothing of the jackpot', async () => {
     await runRaid(
       async (ctx) => {
         const players = await openWeek(ctx, 3, {
@@ -364,9 +364,12 @@ describe('the finale post', () => {
         )[0] as { rank: number; rank_after: number };
         expect(rank.rank_after).toBe(rank.rank + 1);
         expect(text).toContain(`The server climbs to Rank ${String(rank.rank_after)}.`);
-        expect(text).toContain('Jackpot: \\_Ace\\_, Player 2.');
+        // The jackpot is rolled and recorded behind the scenes; the post never says so.
+        expect(
+          rows(ctx.sql, "SELECT user_id FROM server_firsts WHERE kind = 'jackpot'"),
+        ).toHaveLength(2);
+        expect(text.toLowerCase()).not.toContain('jackpot');
         expect(text).toContain('First on the server this week:');
-        expect(text).toContain('First jackpot: \\_Ace\\_, Player 2');
         expect(text).toContain('Splashet caught: Player 3');
         expect(text).not.toContain('Cindle');
         expect(text).not.toContain('Phase 2');

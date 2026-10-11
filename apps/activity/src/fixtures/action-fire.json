@@ -8,6 +8,8 @@
   "roundMs": 10000,
   "rounds": 12,
   "round": 2,
+  "roundStarts": [1800208800000, 1800208810000],
+  "nextRoundAt": 1800208820000,
   "serverNow": 1800208811000,
   "boss": {
     "id": "storm-sovereign",
@@ -19,17 +21,7 @@
   "row": [
     {
       "position": 0,
-      "id": "e6306665-5f46-4761-a9be-aec274af06a6",
-      "name": "Sproutle",
-      "species": "sproutle",
-      "element": "grove",
-      "role": "guard",
-      "level": 10,
-      "owner": "m1"
-    },
-    {
-      "position": 1,
-      "id": "930c0d17-2472-434e-a712-abdeba529cf2",
+      "id": "0d16e5cb-e1fd-4923-905f-0286cd956793",
       "name": "Mistnewt",
       "species": "mistnewt",
       "element": "tide",
@@ -38,8 +30,8 @@
       "owner": "m2"
     },
     {
-      "position": 2,
-      "id": "61b87b0e-5779-4988-b779-b9709a118a8f",
+      "position": 1,
+      "id": "fa509774-409c-4571-b0e3-e0c03a862767",
       "name": "Sproutle",
       "species": "sproutle",
       "element": "grove",
@@ -48,7 +40,7 @@
       "owner": "m2"
     },
     {
-      "position": 3,
+      "position": 2,
       "id": "guest:1",
       "name": "Guest Warden",
       "species": "sproutle",
@@ -58,7 +50,7 @@
       "owner": null
     },
     {
-      "position": 4,
+      "position": 3,
       "id": "guest:2",
       "name": "Guest Tidecaller",
       "species": "splashet",
@@ -66,6 +58,16 @@
       "role": "setter",
       "level": 10,
       "owner": null
+    },
+    {
+      "position": 4,
+      "id": "afb9f81b-ff80-4da7-a765-0fd543c12e49",
+      "name": "Ashmole",
+      "species": "ashmole",
+      "element": "ember",
+      "role": "support",
+      "level": 10,
+      "owner": "m2"
     },
     {
       "position": 5,
@@ -79,17 +81,7 @@
     },
     {
       "position": 6,
-      "id": "c3c39f76-4625-4c7c-9b4e-946e3a5ed5d2",
-      "name": "Zipmouse",
-      "species": "zipmouse",
-      "element": "spark",
-      "role": "setter",
-      "level": 10,
-      "owner": "m2"
-    },
-    {
-      "position": 7,
-      "id": "4cf59451-be89-47cf-977b-f634f7752556",
+      "id": "de06bb8a-109c-439a-bb7c-ab4040339ddb",
       "name": "Zipmouse",
       "species": "zipmouse",
       "element": "spark",
@@ -98,11 +90,21 @@
       "owner": "m1"
     },
     {
-      "position": 8,
-      "id": "8a243054-507a-4c60-b784-f6eb032c8f0c",
+      "position": 7,
+      "id": "4a1780bc-8c3e-4476-91cf-1fcd97cbf66c",
       "name": "Cindle",
       "species": "cindle",
       "element": "ember",
+      "role": "payoff",
+      "level": 10,
+      "owner": "m1"
+    },
+    {
+      "position": 8,
+      "id": "079f27ab-8884-48a5-896c-b642fb211659",
+      "name": "Stormray",
+      "species": "stormray",
+      "element": "spark",
       "role": "payoff",
       "level": 10,
       "owner": "m1"
@@ -111,15 +113,15 @@
   "names": {
     "boss": "Storm Sovereign",
     "creatures": {
-      "e6306665-5f46-4761-a9be-aec274af06a6": "Sproutle",
-      "930c0d17-2472-434e-a712-abdeba529cf2": "Mistnewt",
-      "61b87b0e-5779-4988-b779-b9709a118a8f": "Sproutle",
+      "0d16e5cb-e1fd-4923-905f-0286cd956793": "Mistnewt",
+      "fa509774-409c-4571-b0e3-e0c03a862767": "Sproutle",
       "guest:1": "Guest Warden",
       "guest:2": "Guest Tidecaller",
+      "afb9f81b-ff80-4da7-a765-0fd543c12e49": "Ashmole",
       "guest:3": "Guest Striker",
-      "c3c39f76-4625-4c7c-9b4e-946e3a5ed5d2": "Zipmouse",
-      "4cf59451-be89-47cf-977b-f634f7752556": "Zipmouse",
-      "8a243054-507a-4c60-b784-f6eb032c8f0c": "Cindle"
+      "de06bb8a-109c-439a-bb7c-ab4040339ddb": "Zipmouse",
+      "4a1780bc-8c3e-4476-91cf-1fcd97cbf66c": "Cindle",
+      "079f27ab-8884-48a5-896c-b642fb211659": "Stormray"
     },
     "players": {
       "m1": "Player 1",
@@ -158,7 +160,9 @@
       "coral-lance": "Coral Lance",
       "solar-brand": "Solar Brand",
       "verdant-roar": "Verdant Roar",
-      "aurora-surge": "Aurora Surge"
+      "aurora-surge": "Aurora Surge",
+      "lantern-glow": "Lantern Glow",
+      "hearth-ward": "Hearth Ward"
     },
     "marks": {
       "tide": "Soaked",
@@ -184,6 +188,7 @@
       "abilityId": "shield-wall",
       "creature": null,
       "mode": "fired",
+      "autoFire": true,
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": 3,
@@ -192,53 +197,58 @@
     {
       "key": "m1:c0",
       "alias": "m1",
-      "abilityId": "flare-strike",
-      "creature": "8a243054-507a-4c60-b784-f6eb032c8f0c",
-      "mode": "fired",
-      "fired": false,
-      "firedAtRound": null,
-      "fireAtRound": 3,
-      "defaultRound": 5
-    },
-    {
-      "key": "m1:c1",
-      "alias": "m1",
-      "abilityId": "static-zap",
-      "creature": "4cf59451-be89-47cf-977b-f634f7752556",
+      "abilityId": "thunder-strike",
+      "creature": "079f27ab-8884-48a5-896c-b642fb211659",
       "mode": "default",
+      "autoFire": true,
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
       "defaultRound": 4
     },
     {
-      "key": "m1:c2",
+      "key": "m1:c1",
       "alias": "m1",
-      "abilityId": "bark-guard",
-      "creature": "e6306665-5f46-4761-a9be-aec274af06a6",
-      "mode": "default",
+      "abilityId": "flare-strike",
+      "creature": "4a1780bc-8c3e-4476-91cf-1fcd97cbf66c",
+      "mode": "held",
+      "autoFire": false,
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
-      "defaultRound": 3
+      "defaultRound": 5
+    },
+    {
+      "key": "m1:c2",
+      "alias": "m1",
+      "abilityId": "static-zap",
+      "creature": "de06bb8a-109c-439a-bb7c-ab4040339ddb",
+      "mode": "default",
+      "autoFire": true,
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": null,
+      "defaultRound": 4
     },
     {
       "key": "m2:basic",
       "alias": "m2",
-      "abilityId": "rally",
+      "abilityId": "re-mark",
       "creature": null,
       "mode": "default",
+      "autoFire": true,
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
-      "defaultRound": 6
+      "defaultRound": 4
     },
     {
       "key": "m2:c0",
       "alias": "m2",
       "abilityId": "fog-veil",
-      "creature": "930c0d17-2472-434e-a712-abdeba529cf2",
+      "creature": "0d16e5cb-e1fd-4923-905f-0286cd956793",
       "mode": "default",
+      "autoFire": true,
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
@@ -247,20 +257,22 @@
     {
       "key": "m2:c1",
       "alias": "m2",
-      "abilityId": "static-zap",
-      "creature": "c3c39f76-4625-4c7c-9b4e-946e3a5ed5d2",
+      "abilityId": "warm-glow",
+      "creature": "afb9f81b-ff80-4da7-a765-0fd543c12e49",
       "mode": "default",
+      "autoFire": true,
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
-      "defaultRound": 4
+      "defaultRound": 5
     },
     {
       "key": "m2:c2",
       "alias": "m2",
       "abilityId": "bark-guard",
-      "creature": "61b87b0e-5779-4988-b779-b9709a118a8f",
+      "creature": "fa509774-409c-4571-b0e3-e0c03a862767",
       "mode": "default",
+      "autoFire": true,
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
@@ -282,19 +294,182 @@
       "mark": null
     },
     {
+      "t": "support_buff",
+      "round": 1,
+      "supporter": "afb9f81b-ff80-4da7-a765-0fd543c12e49",
+      "target": "guest:2",
+      "bp": 1500
+    },
+    {
+      "t": "support_buff",
+      "round": 1,
+      "supporter": "afb9f81b-ff80-4da7-a765-0fd543c12e49",
+      "target": "guest:3",
+      "bp": 1500
+    },
+    {
       "t": "turn",
       "round": 1,
-      "creature": "e6306665-5f46-4761-a9be-aec274af06a6"
+      "creature": "0d16e5cb-e1fd-4923-905f-0286cd956793"
+    },
+    {
+      "t": "hit",
+      "round": 1,
+      "creature": "0d16e5cb-e1fd-4923-905f-0286cd956793",
+      "damage": 34,
+      "matchupBp": 7500,
+      "bonusBp": 0,
+      "mark": null,
+      "bossHp": 49999966
+    },
+    {
+      "t": "mark",
+      "round": 1,
+      "creature": "0d16e5cb-e1fd-4923-905f-0286cd956793",
+      "player": "m2",
+      "element": "tide",
+      "replaced": null
+    },
+    {
+      "t": "turn",
+      "round": 1,
+      "creature": "fa509774-409c-4571-b0e3-e0c03a862767"
+    },
+    {
+      "t": "hit",
+      "round": 1,
+      "creature": "fa509774-409c-4571-b0e3-e0c03a862767",
+      "damage": 46,
+      "matchupBp": 15000,
+      "bonusBp": 0,
+      "mark": "tide",
+      "bossHp": 49999920
+    },
+    {
+      "t": "turn",
+      "round": 1,
+      "creature": "guest:1"
+    },
+    {
+      "t": "hit",
+      "round": 1,
+      "creature": "guest:1",
+      "damage": 46,
+      "matchupBp": 15000,
+      "bonusBp": 0,
+      "mark": "tide",
+      "bossHp": 49999874
+    },
+    {
+      "t": "turn",
+      "round": 1,
+      "creature": "guest:2"
+    },
+    {
+      "t": "hit",
+      "round": 1,
+      "creature": "guest:2",
+      "damage": 39,
+      "matchupBp": 7500,
+      "bonusBp": 1500,
+      "mark": "tide",
+      "bossHp": 49999835
+    },
+    {
+      "t": "turn",
+      "round": 1,
+      "creature": "afb9f81b-ff80-4da7-a765-0fd543c12e49"
+    },
+    {
+      "t": "hit",
+      "round": 1,
+      "creature": "afb9f81b-ff80-4da7-a765-0fd543c12e49",
+      "damage": 42,
+      "matchupBp": 10000,
+      "bonusBp": 0,
+      "mark": "tide",
+      "bossHp": 49999793
+    },
+    {
+      "t": "turn",
+      "round": 1,
+      "creature": "guest:3"
+    },
+    {
+      "t": "hit",
+      "round": 1,
+      "creature": "guest:3",
+      "damage": 539,
+      "matchupBp": 10000,
+      "bonusBp": 9000,
+      "mark": "tide",
+      "bossHp": 49999254,
+      "luckBp": 7500,
+      "crit": true,
+      "critBp": 7500
     },
     {
       "t": "reaction",
       "round": 1,
       "reaction": "overload",
-      "setupCreature": "guest:2",
-      "setupPlayer": null,
+      "setupCreature": "0d16e5cb-e1fd-4923-905f-0286cd956793",
+      "setupPlayer": "m2",
       "payoff": "guest:3",
-      "bonus": 225,
+      "bonus": 430,
       "reflected": false
+    },
+    {
+      "t": "turn",
+      "round": 1,
+      "creature": "de06bb8a-109c-439a-bb7c-ab4040339ddb"
+    },
+    {
+      "t": "hit",
+      "round": 1,
+      "creature": "de06bb8a-109c-439a-bb7c-ab4040339ddb",
+      "damage": 34,
+      "matchupBp": 10000,
+      "bonusBp": 0,
+      "mark": null,
+      "bossHp": 49999220
+    },
+    {
+      "t": "mark",
+      "round": 1,
+      "creature": "de06bb8a-109c-439a-bb7c-ab4040339ddb",
+      "player": "m1",
+      "element": "spark",
+      "replaced": null
+    },
+    {
+      "t": "turn",
+      "round": 1,
+      "creature": "4a1780bc-8c3e-4476-91cf-1fcd97cbf66c"
+    },
+    {
+      "t": "hit",
+      "round": 1,
+      "creature": "4a1780bc-8c3e-4476-91cf-1fcd97cbf66c",
+      "damage": 67,
+      "matchupBp": 10000,
+      "bonusBp": 0,
+      "mark": "spark",
+      "bossHp": 49999153
+    },
+    {
+      "t": "turn",
+      "round": 1,
+      "creature": "079f27ab-8884-48a5-896c-b642fb211659"
+    },
+    {
+      "t": "hit",
+      "round": 1,
+      "creature": "079f27ab-8884-48a5-896c-b642fb211659",
+      "damage": 57,
+      "matchupBp": 10000,
+      "bonusBp": 0,
+      "mark": "spark",
+      "bossHp": 49999096
     },
     {
       "t": "gimmick",
@@ -303,24 +478,222 @@
       "op": "strike_highest_atk"
     },
     {
+      "t": "boss_hit",
+      "round": 1,
+      "source": "gimmick",
+      "target": "guest:3",
+      "damage": 1
+    },
+    {
+      "t": "boss_hit",
+      "round": 1,
+      "source": "attack",
+      "target": "0d16e5cb-e1fd-4923-905f-0286cd956793",
+      "damage": 1
+    },
+    {
+      "t": "round_end",
+      "round": 1,
+      "bossHp": 49999096
+    },
+    {
+      "t": "round_start",
+      "round": 2,
+      "bossHp": 49999096,
+      "mark": "spark"
+    },
+    {
+      "t": "support_buff",
+      "round": 2,
+      "supporter": "afb9f81b-ff80-4da7-a765-0fd543c12e49",
+      "target": "guest:2",
+      "bp": 1500
+    },
+    {
+      "t": "support_buff",
+      "round": 2,
+      "supporter": "afb9f81b-ff80-4da7-a765-0fd543c12e49",
+      "target": "guest:3",
+      "bp": 1500
+    },
+    {
+      "t": "turn",
+      "round": 2,
+      "creature": "0d16e5cb-e1fd-4923-905f-0286cd956793"
+    },
+    {
+      "t": "hit",
+      "round": 2,
+      "creature": "0d16e5cb-e1fd-4923-905f-0286cd956793",
+      "damage": 34,
+      "matchupBp": 7500,
+      "bonusBp": 0,
+      "mark": "spark",
+      "bossHp": 49999062
+    },
+    {
+      "t": "turn",
+      "round": 2,
+      "creature": "fa509774-409c-4571-b0e3-e0c03a862767"
+    },
+    {
+      "t": "hit",
+      "round": 2,
+      "creature": "fa509774-409c-4571-b0e3-e0c03a862767",
+      "damage": 207,
+      "matchupBp": 15000,
+      "bonusBp": 0,
+      "mark": "spark",
+      "bossHp": 49998855
+    },
+    {
       "t": "reaction",
       "round": 2,
       "reaction": "grounding",
-      "setupCreature": "c3c39f76-4625-4c7c-9b4e-946e3a5ed5d2",
-      "setupPlayer": "m2",
-      "payoff": "e6306665-5f46-4761-a9be-aec274af06a6",
+      "setupCreature": "de06bb8a-109c-439a-bb7c-ab4040339ddb",
+      "setupPlayer": "m1",
+      "payoff": "fa509774-409c-4571-b0e3-e0c03a862767",
       "bonus": 161,
       "reflected": false
+    },
+    {
+      "t": "turn",
+      "round": 2,
+      "creature": "guest:1"
+    },
+    {
+      "t": "hit",
+      "round": 2,
+      "creature": "guest:1",
+      "damage": 46,
+      "matchupBp": 15000,
+      "bonusBp": 0,
+      "mark": null,
+      "bossHp": 49998809
+    },
+    {
+      "t": "mark",
+      "round": 2,
+      "creature": "guest:1",
+      "player": null,
+      "element": "grove",
+      "replaced": null
+    },
+    {
+      "t": "turn",
+      "round": 2,
+      "creature": "guest:2"
+    },
+    {
+      "t": "hit",
+      "round": 2,
+      "creature": "guest:2",
+      "damage": 39,
+      "matchupBp": 7500,
+      "bonusBp": 1500,
+      "mark": "grove",
+      "bossHp": 49998770
+    },
+    {
+      "t": "mark",
+      "round": 2,
+      "creature": "guest:2",
+      "player": null,
+      "element": "tide",
+      "replaced": "grove"
+    },
+    {
+      "t": "turn",
+      "round": 2,
+      "creature": "afb9f81b-ff80-4da7-a765-0fd543c12e49"
+    },
+    {
+      "t": "hit",
+      "round": 2,
+      "creature": "afb9f81b-ff80-4da7-a765-0fd543c12e49",
+      "damage": 42,
+      "matchupBp": 10000,
+      "bonusBp": 0,
+      "mark": "tide",
+      "bossHp": 49998728
+    },
+    {
+      "t": "turn",
+      "round": 2,
+      "creature": "guest:3"
+    },
+    {
+      "t": "hit",
+      "round": 2,
+      "creature": "guest:3",
+      "damage": 326,
+      "matchupBp": 10000,
+      "bonusBp": 1500,
+      "mark": "tide",
+      "bossHp": 49998402
     },
     {
       "t": "reaction",
       "round": 2,
       "reaction": "overload",
-      "setupCreature": "930c0d17-2472-434e-a712-abdeba529cf2",
-      "setupPlayer": "m2",
+      "setupCreature": "guest:2",
+      "setupPlayer": null,
       "payoff": "guest:3",
-      "bonus": 225,
+      "bonus": 260,
       "reflected": false
+    },
+    {
+      "t": "turn",
+      "round": 2,
+      "creature": "de06bb8a-109c-439a-bb7c-ab4040339ddb"
+    },
+    {
+      "t": "hit",
+      "round": 2,
+      "creature": "de06bb8a-109c-439a-bb7c-ab4040339ddb",
+      "damage": 34,
+      "matchupBp": 10000,
+      "bonusBp": 0,
+      "mark": null,
+      "bossHp": 49998368
+    },
+    {
+      "t": "mark",
+      "round": 2,
+      "creature": "de06bb8a-109c-439a-bb7c-ab4040339ddb",
+      "player": "m1",
+      "element": "spark",
+      "replaced": null
+    },
+    {
+      "t": "turn",
+      "round": 2,
+      "creature": "4a1780bc-8c3e-4476-91cf-1fcd97cbf66c"
+    },
+    {
+      "t": "hit",
+      "round": 2,
+      "creature": "4a1780bc-8c3e-4476-91cf-1fcd97cbf66c",
+      "damage": 67,
+      "matchupBp": 10000,
+      "bonusBp": 0,
+      "mark": "spark",
+      "bossHp": 49998301
+    },
+    {
+      "t": "turn",
+      "round": 2,
+      "creature": "079f27ab-8884-48a5-896c-b642fb211659"
+    },
+    {
+      "t": "hit",
+      "round": 2,
+      "creature": "079f27ab-8884-48a5-896c-b642fb211659",
+      "damage": 57,
+      "matchupBp": 10000,
+      "bonusBp": 0,
+      "mark": "spark",
+      "bossHp": 49998244
     },
     {
       "t": "gimmick",
@@ -332,24 +705,23 @@
       "t": "boss_hit",
       "round": 2,
       "source": "gimmick",
-      "target": "guest:1",
-      "damage": 1,
-      "from": "guest:3"
+      "target": "guest:3",
+      "damage": 1
     },
     {
       "t": "boss_hit",
       "round": 2,
       "source": "attack",
-      "target": "e6306665-5f46-4761-a9be-aec274af06a6",
+      "target": "0d16e5cb-e1fd-4923-905f-0286cd956793",
       "damage": 1
     },
     {
       "t": "round_end",
       "round": 2,
-      "bossHp": 49998593
+      "bossHp": 49998244
     }
   ],
-  "bossHp": 49998593,
-  "watching": ["Player 1", "Player 2"],
+  "bossHp": 49998244,
+  "watching": ["Player 1"],
   "loot": null
 }

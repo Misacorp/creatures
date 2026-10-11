@@ -132,8 +132,10 @@ describe('truncateMessage', () => {
     const phase = formatPhasePost({
       ...PHASE,
       finale: {
-        jackpot: Array.from({ length: 200 }, () => '*'.repeat(32)),
-        firsts: [],
+        firsts: Array.from({ length: 5 }, () => ({
+          label: 'L'.repeat(40),
+          names: Array.from({ length: 200 }, () => '*'.repeat(32)),
+        })),
       },
     });
     expect(phase.length).toBeLessThanOrEqual(MAX_MESSAGE_CHARS);
@@ -306,7 +308,7 @@ describe('formatPhasePost', () => {
     expect(text).not.toContain('Top contributors');
   });
 
-  it('matches the Sunday post: jackpot hits and first-on-server records', () => {
+  it('matches the Sunday post: first-on-server records, and no jackpot line', () => {
     expect(
       formatPhasePost({
         ...PHASE,
@@ -315,11 +317,7 @@ describe('formatPhasePost', () => {
         essenceFlat: 25,
         counterMove: null,
         finale: {
-          jackpot: ['Alice', 'Bob'],
-          firsts: [
-            { label: 'First jackpot', names: ['Alice', 'Bob'] },
-            { label: 'Aurorix evolved', names: ['Carol'] },
-          ],
+          firsts: [{ label: 'Aurorix evolved', names: ['Carol'] }],
         },
       }),
     ).toBe(
@@ -330,29 +328,23 @@ describe('formatPhasePost', () => {
         'Most used reaction: Steam (4 times).',
         'Key moment: in round 3, Flamy (Alice) hit for 320 damage.',
         'Essence: every player earned 25, plus a bonus share by contribution.',
-        'Jackpot: Alice, Bob.',
         'First on the server this week:',
-        'First jackpot: Alice, Bob',
         'Aurorix evolved: Carol',
       ].join('\n'),
     );
   });
 
-  it('says there was no jackpot after a win, and nothing about it after a loss', () => {
-    const won = formatPhasePost({
-      ...PHASE,
-      phase: 'finale',
-      finale: { jackpot: [], firsts: [] },
-    });
-    expect(won).toContain('No jackpot this week.');
+  it('never mentions a jackpot, after a win or a loss', () => {
+    const won = formatPhasePost({ ...PHASE, phase: 'finale', finale: { firsts: [] } });
+    expect(won.toLowerCase()).not.toContain('jackpot');
     const lost = formatPhasePost({
       ...PHASE,
       phase: 'finale',
       cleared: false,
       essenceFlat: null,
-      finale: { jackpot: [], firsts: [] },
+      finale: { firsts: [] },
     });
-    expect(lost).not.toContain('jackpot');
+    expect(lost.toLowerCase()).not.toContain('jackpot');
     expect(lost).toContain('Not cleared.');
   });
 
@@ -363,7 +355,6 @@ describe('formatPhasePost', () => {
       formatPhasePost({
         ...FINALE,
         finale: {
-          jackpot: [],
           firsts: [],
           rank: { before: 4, after, festival: false, parties: 1, partiesWon: 1, ...extra },
         },
@@ -378,16 +369,15 @@ describe('formatPhasePost', () => {
       '2 of 3 parties won. The server climbs to Rank 5.',
     );
     // Until every party has finished there is nothing to say.
-    expect(
-      formatPhasePost({ ...FINALE, finale: { jackpot: [], firsts: [], rank: null } }),
-    ).not.toContain('Rank');
+    expect(formatPhasePost({ ...FINALE, finale: { firsts: [], rank: null } })).not.toContain(
+      'Rank',
+    );
   });
 
   it('lists the Festival creature and who got it, with every name escaped', () => {
     const text = formatPhasePost({
       ...FINALE,
       finale: {
-        jackpot: [],
         firsts: [],
         festival: { creature: 'Lanternfin', winners: ['Alice', '@everyone <@1> **b**'] },
       },
@@ -399,7 +389,7 @@ describe('formatPhasePost', () => {
     expect(
       formatPhasePost({
         ...FINALE,
-        finale: { jackpot: [], firsts: [], festival: { creature: 'Lanternfin', winners: [] } },
+        finale: { firsts: [], festival: { creature: 'Lanternfin', winners: [] } },
       }),
     ).not.toContain('Festival');
   });
@@ -412,7 +402,6 @@ describe('formatPhasePost', () => {
     const text = formatPhasePost({
       ...FINALE,
       finale: {
-        jackpot: Array.from({ length: 15 }, () => 'J'.repeat(32)),
         firsts,
         rank: { before: 4, after: 5, festival: false, parties: 1, partiesWon: 1 },
         festival: { creature: 'Lanternfin', winners: ['Alice'] },
@@ -431,7 +420,7 @@ describe('formatPhasePost', () => {
     const text = formatPhasePost({
       ...PHASE,
       phase: 'finale',
-      finale: { jackpot: [], firsts },
+      finale: { firsts },
     });
     expect(text).toContain('Record 4: Alice');
     expect(text).not.toContain('Record 5');
@@ -445,7 +434,7 @@ describe('formatPhasePost', () => {
       phase: 'finale',
       top: [{ name: nasty, contribution: 1 }],
       keyMoment: { kind: 'hit', round: 1, creature: nasty, owner: nasty, damage: 2 },
-      finale: { jackpot: [nasty], firsts: [{ label: 'First jackpot', names: [nasty] }] },
+      finale: { firsts: [{ label: 'Splashet caught', names: [nasty] }] },
     });
     // No mention can resolve: every @ is followed by a zero-width space.
     expect(text).not.toMatch(/@(?!\u200B)/);

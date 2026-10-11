@@ -2,7 +2,7 @@
  * Display helpers for the collection UI. Names, elements and odds come from the shared game
  * content; every number that matters (costs, levels, catches) comes from the server.
  */
-import { RULES, content, type CreatureSpecies } from '@creatures/game';
+import { RULES, content, lore, quirkText, type CreatureSpecies } from '@creatures/game';
 import {
   ApiError,
   type CatchResult,
@@ -22,6 +22,24 @@ export function getSpecies(id: string): CreatureSpecies | undefined {
 /** True for a Festival species: only ever won in a Festival week, never found on expeditions. */
 export function isFestivalSpecies(id: string): boolean {
   return SPECIES.get(id)?.festival === true;
+}
+
+/**
+ * What players may read about a species: its description and behavioural traits. The visual brief
+ * (`appearance`) is for art and is never shown.
+ */
+export function speciesAbout(
+  id: string,
+): { description: string; traits: readonly string[] } | null {
+  const entry = lore.species[id];
+  return entry === undefined ? null : { description: entry.description, traits: entry.traits };
+}
+
+/** "Personality: ..." for a creature's quirk id, or null when it has none or the id is unknown. */
+export function personalityLine(quirk: string | null): string | null {
+  if (quirk === null) return null;
+  const text = quirkText(quirk);
+  return text === undefined ? null : `Personality: ${text}`;
 }
 
 export function speciesName(id: string): string {
@@ -204,7 +222,9 @@ const ERROR_TEXT: Record<string, string> = {
   not_your_ability: 'That ability is not yours. The screen was out of date.',
   too_late: 'Too late: the fight is in its last round or already over.',
   not_in_fight: 'You are not in this fight.',
-  hold_too_late: 'Too late to hold: your ability is already due.',
+  hold_too_late: 'Too late to change auto fire: your ability is already due.',
+  not_held: 'Auto fire is already on for that ability.',
+  not_started: 'The fight has not started yet. Set auto fire in the lobby.',
   // Practice fights (the test server only).
   practice_blocked:
     'Practice fights are closed from 30 minutes before the finale until it has finished.',
