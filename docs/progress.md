@@ -16,24 +16,23 @@ Where the project is against the plan. Newest state at the top of each section. 
 
 ## Now
 
-- **PR #5** (https://github.com/Misacorp/creatures/pull/5), head branch `m4-raids` (= `m5-finale`): M4 raid + M5 live finale + balance pass 2. All checks green locally; staging runs it. Waiting for Misa to test (practice finale on staging) and merge.
+- **PR #5** (raid + live finale, branch `m4-raids`) is green; Misa tested it solo on staging and is merging.
+- Branch `creature-abilities` (from `m4-raids`): next work, see Next.
 
 ## Next
 
-1. After #5 merges: verify the production deploy (`/api/config` version), watch the first real Sunday finale.
-2. WebSocket push for the live finale (M5.1), after a staging spike in real Discord on desktop, iOS, Android (`docs/design/m5-finale.md`).
-3. Apply Misa's answers (pity rule, reactions share, Hold rule, post channel).
-4. M6: polish, pixel art, retro UI; Essence sinks (gear); admin setting for the post channel; swap requests.
+1. Raid post channel button (Manage Server only, server-side permission check).
+2. Per-creature finale abilities (design in `docs/design/decisions.md` 2026-10-11, waiting for Misa's OK on defaults), with a sim pass.
+3. M6 "feels like a game": pixel art creatures and bosses, retro UI, juice. Misa wants this before a multiplayer test.
+4. WebSocket push for the live finale after a staging spike in real Discord.
 5. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
 
 ## Open questions for Misa
 
-(Also on the overnight page and in PR #5.)
+(On the setup checklist artifact, "Decisions" section.)
 
-- Pity: should a lost finale count toward the hard-pity jackpot? (Balance report: counting losses makes 66% of players hit hard pity in 20 weeks.)
-- Reactions are about half of all damage after balance pass 2. OK?
-- Raid posts follow the channel the Activity was last launched from. OK, or a fixed channel?
-- Live finale Fire/Hold rule (held ability fires in the last round if forgotten). OK?
+- Pity: count lost finales toward the hard-pity jackpot, wins only (recommended), or half?
+- Creature abilities defaults (unlock level 10, use every unlocked ability in your team of 3, basic ability for newcomers).
 
 ## Notes for future agents
 

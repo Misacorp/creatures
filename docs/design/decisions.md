@@ -226,3 +226,12 @@ Rules behind it: more leeters never pays anyone less; a solo leet pays the same 
 - **Rate limit.** Unchanged (burst 30, one per second per player). Polling every 2 s is 0.5 requests per second, and a test polls for 200 s without a 429.
 
 **Reasoning.** Keeping `raid_live` as the one source for both the live view and the resolution means the replay is exactly what was watched, and the prefix property (pinned by an engine test) keeps every re-simulation consistent. The instant fallback keeps a long outage from producing a "live" fight nobody can see.
+
+## 2026-10-11: Misa's answers after testing M4 and M5 on staging
+
+- **Reactions** at about half of all damage (balance pass 2): accepted **[Misa]**.
+- **Live finale Fire/Hold**: accepted **[Misa]**.
+- **Raid post channel:** a fixed channel per server, set by someone with Manage Server **[Misa: a specific channel]**. Plan: a "Post raid news here" button in the Raid tab, shown only to members with Manage Server (or Administrator, or the owner). The permission is checked on the server through Discord's API, and the channel is the one the Activity was launched from (verified, never typed in). Until it is set, posts follow the last launch channel.
+- **Creature abilities** (Misa's idea): finale abilities should come from the player's creatures and unlock as they level, so investing in a creature pays off. Proposed defaults, waiting for his OK: each species has its own ability, unlocked at level 10 and stronger after evolving; every creature in the raid team of 3 with an unlocked ability gives one use in the finale; a player with none still gets one basic ability (today's four); absent players' abilities fire at their default rounds.
+- **Pity rule:** still open (count lost finales or wins only).
+- Production leet points were confirmed correct by Misa.
