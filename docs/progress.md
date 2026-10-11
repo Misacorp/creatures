@@ -21,7 +21,7 @@ Where the project is against the plan. Newest state at the top of each section. 
 
 ## Next
 
-1. Raid post channel button (Manage Server only, server-side permission check).
+1. ✅ Raid post channel button (Manage Server only, server-side permission check), committed on `creature-abilities` (migration 11). Confirm on staging that `GET guild member` works without the Server Members intent.
 2. Per-creature finale abilities (design in `docs/design/decisions.md` 2026-10-11, waiting for Misa's OK on defaults), with a sim pass.
 3. M6 "feels like a game": pixel art creatures and bosses, retro UI, juice. Misa wants this before a multiplayer test.
 4. WebSocket push for the live finale after a staging spike in real Discord.
