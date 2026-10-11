@@ -13,7 +13,7 @@ export type SparseRow = readonly (FightSlot | null)[];
 
 type SpeciesForSlot = Pick<
   CreatureSpecies,
-  'id' | 'name' | 'element' | 'role' | 'baseStats' | 'growth' | 'levelCap'
+  'id' | 'name' | 'element' | 'role' | 'baseStats' | 'growth' | 'levelCap' | 'crit'
 >;
 
 /** Builds a fight slot with effective stats computed by @creatures/game. */
@@ -37,6 +37,7 @@ export function makeSlot(
     level: options.level,
     fusionCount: options.fusionCount,
     stats: effectiveStats(species, options.level, options.fusionCount),
+    ...(species.crit === undefined ? {} : { crit: { ...species.crit } }),
   };
 }
 

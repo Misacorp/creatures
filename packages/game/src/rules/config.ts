@@ -60,6 +60,51 @@ export const RULES = {
     guardHpBp: 3_000,
     /** Boss normal attack as a share of boss Attack. */
     bossAttackBp: 10_000,
+    /**
+     * Luck: small, visible randomness in the player-side damage. All off. The engine never reads
+     * this itself: it uses the `luck` a fight input carries (absent means `NO_LUCK`), so whoever
+     * builds the input (the worker) copies this in and the stored input keeps what the fight used.
+     * See docs/design/luck.md.
+     */
+    luck: {
+      /**
+       * Baseline crit chance (basis points) of every creature's hit; 0 switches crits off. A
+       * creature's own chance is this plus its species bonus (`crit` in content), capped at
+       * `critMaxChanceBp`. Study proposal: 500 (5%).
+       */
+      critChanceBp: 0,
+      /**
+       * Baseline crit damage: a critical hit adds this much damage (basis points of the plain hit),
+       * plus the species bonus, capped at `critMaxBp`. Study proposal: 5000 (+50%).
+       */
+      critBp: 5_000,
+      /** Caps on a creature's or the boss's crit chance and crit damage (study proposal: 30%, +150%). */
+      critMaxChanceBp: 3_000,
+      critMaxBp: 15_000,
+      /**
+       * Boss crits: baseline chance and extra damage of the boss's hits on creatures (its own
+       * chance; `crit` in the boss content adds to both). 0 switches boss crits off.
+       */
+      bossCritChanceBp: 0,
+      bossCritBp: 5_000,
+      /**
+       * Prototype (study only): the chance that the boss's normal attack picks a random living
+       * creature from the whole row instead of the first one in front (a guard in the target's
+       * zone still takes the hit). 0: always the front, as shipped.
+       */
+      bossRandomTargetBp: 0,
+      /** Every hit is multiplied by 1 + u, u uniform in [-spreadBp, +spreadBp] basis points. */
+      spreadBp: 0,
+      /**
+       * Surge and Slump: each round a Surge (team damage + swingBp) starts with chance
+       * surgeChanceBp and a Slump (team damage - swingBp) with chance slumpChanceBp, and lasts
+       * swingRounds rounds. A new one cannot start while one is running.
+       */
+      surgeChanceBp: 0,
+      slumpChanceBp: 0,
+      swingBp: 5_000,
+      swingRounds: 3,
+    },
     /** Row size that guests fill up to when fewer than 3 players take part. */
     guestRowSize: 9,
     /** Guests are added when fewer than this many players take part. */
@@ -163,6 +208,39 @@ export const RULES = {
     maxRawLength: 256,
   },
 } as const;
+
+/** The shape of `RULES.combat.luck`; a fight input may carry its own. */
+export interface LuckConfig {
+  critChanceBp: number;
+  critBp: number;
+  /** Caps for crit chance and damage (creatures and boss). Absent in older stored inputs: no cap. */
+  critMaxChanceBp?: number;
+  critMaxBp?: number;
+  /** Boss crits. Absent in older stored inputs: the boss never crits. */
+  bossCritChanceBp?: number;
+  bossCritBp?: number;
+  /** Chance the boss's normal attack picks a random living creature. Absent: never. */
+  bossRandomTargetBp?: number;
+  spreadBp: number;
+  surgeChanceBp: number;
+  slumpChanceBp: number;
+  swingBp: number;
+  swingRounds: number;
+}
+
+/**
+ * No luck at all: what the engine uses when a fight input carries no `luck`, so a stored input from
+ * before luck existed replays exactly as it was fought, whatever `RULES.combat.luck` says later.
+ */
+export const NO_LUCK: LuckConfig = {
+  critChanceBp: 0,
+  critBp: 0,
+  spreadBp: 0,
+  surgeChanceBp: 0,
+  slumpChanceBp: 0,
+  swingBp: 0,
+  swingRounds: 1,
+};
 
 export const DURATION_IDS = ['short', 'medium', 'long'] as const;
 export const SUPPLIES_IDS = ['basic', 'good', 'great'] as const;

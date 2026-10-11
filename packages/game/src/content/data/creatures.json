@@ -85,6 +85,10 @@
     "ability": {
       "id": "flare-strike"
     },
+    "crit": {
+      "chanceBp": 500,
+      "damageBp": 2500
+    },
     "flavor": "A kitten-sized cat with a flickering ember at the tip of its tail."
   },
   {
@@ -110,6 +114,10 @@
     "levelCap": 30,
     "ability": {
       "id": "flare-strike-2"
+    },
+    "crit": {
+      "chanceBp": 500,
+      "damageBp": 2500
     },
     "flavor": "A sleek hunter whose fur glows like coals when it pounces."
   },
@@ -370,6 +378,10 @@
     "ability": {
       "id": "thunder-strike"
     },
+    "crit": {
+      "chanceBp": 500,
+      "damageBp": 2500
+    },
     "flavor": "A ray that rides the edge of thunderclouds."
   },
   {
@@ -395,6 +407,10 @@
     "levelCap": 30,
     "ability": {
       "id": "thunder-strike-2"
+    },
+    "crit": {
+      "chanceBp": 500,
+      "damageBp": 2500
     },
     "flavor": "A vast ray whose wingbeats stir up lightning storms."
   },
