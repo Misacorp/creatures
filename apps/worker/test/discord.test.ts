@@ -121,7 +121,7 @@ describe('getActivityInstance', () => {
       jsonRes({ location: { kind: 'gc', channel_id: '1', guild_id: '2' }, users: ['3'] }),
     );
     expect(await api.getActivityInstance('a/b c')).toEqual({
-      location: { guild_id: '2' },
+      location: { channel_id: '1', guild_id: '2' },
       users: ['3'],
     });
     expect(captured[0]?.url).toBe(

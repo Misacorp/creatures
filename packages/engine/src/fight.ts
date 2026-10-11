@@ -4,6 +4,7 @@ import {
   content,
   effectiveStats,
   type AdaptationDef,
+  type BossDef,
   type ContentPack,
   type Element,
   type FinaleAbilityDef,
@@ -76,6 +77,40 @@ function fail(message: string): never {
 
 function isCount(n: number, min: number): boolean {
   return Number.isSafeInteger(n) && n >= min;
+}
+
+/** True if a gimmick fires in `round` (`every: N` fires on rounds N, 2N, 3N, ...). */
+function gimmickDue(g: Gimmick, round: number): boolean {
+  return 'every' in g.trigger ? round % g.trigger.every === 0 : true;
+}
+
+/** The first zone attack of the boss from round 2 on (within `rounds`), or null if it has none. */
+function firstZoneHit(boss: BossDef, rounds: number): { round: number; zone: Zone } | null {
+  for (let r = 2; r <= rounds; r++) {
+    for (const g of boss.gimmicks) {
+      if (g.op === 'hit_zone' && gimmickDue(g, r)) return { round: r, zone: g.zone };
+    }
+  }
+  return null;
+}
+
+/**
+ * The round (1-based) a finale ability fires at when its player does nothing: the content default
+ * round, or for abilities that default to the boss's first zone attack (Shield Wall), the round of
+ * that attack, falling back to the content default if the boss has none. `simulateFight` uses this
+ * same function, so the live finale and the engine can never disagree about default timing. Pass
+ * the number of rounds of the fight (`boss.finaleRounds` for a finale).
+ */
+export function defaultAbilityRound(
+  boss: BossDef,
+  ability: FinaleAbilityDef,
+  rounds: number,
+): number {
+  if (ability.defaultAtZoneHit === true) {
+    const hit = firstZoneHit(boss, rounds);
+    if (hit !== null) return hit.round;
+  }
+  return ability.defaultRound;
 }
 
 /**
@@ -242,17 +277,7 @@ export function simulateFight(
   const order = turnOrder(creatures, input.turnOrderOverride ?? boss.turnOrder);
 
   // ---- finale abilities ----
-  const gimmickDue = (g: Gimmick, round: number): boolean =>
-    'every' in g.trigger ? round % g.trigger.every === 0 : true;
-  let zoneHit: { round: number; zone: Zone } | null = null;
-  for (let r = 2; r <= rounds && zoneHit === null; r++) {
-    for (const g of boss.gimmicks) {
-      if (g.op === 'hit_zone' && gimmickDue(g, r)) {
-        zoneHit = { round: r, zone: g.zone };
-        break;
-      }
-    }
-  }
+  const zoneHit = firstZoneHit(boss, rounds);
   const abilitiesByRound = new Map<
     number,
     { choice: FightInput['finaleAbilities'][number]; def: FinaleAbilityDef; byDefault: boolean }[]
@@ -265,9 +290,7 @@ export function simulateFight(
       fail('fireAtRound must be an integer >= 1');
     }
     const byDefault = choice.fireAtRound === undefined;
-    const defaultRound =
-      def.defaultAtZoneHit === true && zoneHit !== null ? zoneHit.round : def.defaultRound;
-    const round = choice.fireAtRound ?? defaultRound;
+    const round = choice.fireAtRound ?? defaultAbilityRound(boss, def, rounds);
     const list = abilitiesByRound.get(round) ?? [];
     list.push({ choice, def, byDefault });
     abilitiesByRound.set(round, list);

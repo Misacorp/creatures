@@ -3,6 +3,13 @@ import * as v from 'valibot';
 import { Collection } from './collection';
 import { collectionRoutes } from './collection-routes';
 import { baitForDay, leetPointsForDay } from './economy';
+import {
+  claimNextPost,
+  hasDuePosts,
+  nextPostAt,
+  recordOutcome,
+  type PostSender,
+} from './discord-posts';
 import { dispatch, errorResponse, json, matchTemplate, type Routes } from './http';
 import {
   LEET_BACKFILL_DAYS,
@@ -19,7 +26,12 @@ import {
   type SpendInput,
   type SpendResult,
 } from './ledger';
+import { Raid } from './raid';
+import { raidLiveMigration } from './raid-live-migration';
+import { raidMigration } from './raid-migration';
+import { raidRoutes } from './raid-routes';
 import { TokenBucketLimiter } from './ratelimit';
+import { SNOWFLAKE_RE } from './schemas';
 import {
   SESSION_ABSOLUTE_MS,
   SESSION_IDLE_MS,
@@ -33,6 +45,7 @@ import {
   addDays,
   isValidTimeZone,
   nextOccurrence,
+  previousOccurrence,
   zonedDate,
 } from './time';
 
@@ -59,6 +72,12 @@ const SYNC_MAX_PAGES = 20;
 const SYNC_PAGE_LIMIT = 31;
 /** Alarms re-arm from slightly in the future so a marginally early wake-up cannot fire twice. */
 const ALARM_REARM_SKEW_MS = 60 * 1000;
+/** A raid event that keeps failing is retried this long after the last attempt. */
+const RAID_RETRY_MS = 60 * 1000;
+/** Posts that are due but not yet delivered are looked at again this long later by the alarm. */
+const POST_RETRY_MS = 60 * 1000;
+/** Most posts one delivery run sends, so a run always ends. */
+const MAX_POSTS_PER_RUN = 20;
 
 const LEDGER_DEFAULT_LIMIT = 20;
 const LEDGER_MAX_LIMIT = 50;
@@ -183,6 +202,26 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
     // configured source changes, the cursor from the old source is meaningless and is reset.
     sql.exec('ALTER TABLE leet_sync ADD COLUMN source TEXT');
   },
+  // Version 8: the weekly raid (see raid-migration.ts).
+  raidMigration,
+  (sql) => {
+    // The channel the Activity was most recently launched from (Discord's verified location), and
+    // the queue of posts to it. `key` is unique per announced thing, so a post is queued once.
+    sql.exec('ALTER TABLE guild_meta ADD COLUMN announce_channel_id TEXT');
+    sql.exec(`CREATE TABLE discord_posts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      key TEXT NOT NULL UNIQUE,
+      channel_id TEXT NOT NULL,
+      content TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('pending', 'sent', 'failed')),
+      attempts INTEGER NOT NULL DEFAULT 0,
+      next_attempt_at INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    )`);
+    sql.exec('CREATE INDEX discord_posts_due ON discord_posts(status, next_attempt_at)');
+  },
+  // Version 10: the live finale (see raid-live-migration.ts).
+  raidLiveMigration,
 ];
 
 export interface SessionUser {
@@ -225,6 +264,7 @@ function parseLedgerQuery(url: URL): number | null {
 
 const routes: Routes<RequestContext> = {
   ...collectionRoutes,
+  ...raidRoutes,
   '/api/me': {
     GET: async (_request, { user, guildId, core }) => {
       await core.syncIfStale();
@@ -251,12 +291,21 @@ const ROUTE_KEYS = Object.keys(routes);
 export interface GuildCoreOptions {
   /** Live randomness for catches. Defaults to crypto.getRandomValues; tests inject a seeded one. */
   rng?: Rng;
+  /**
+   * Live randomness for raids (fight seeds, jackpot rolls). Defaults to crypto.getRandomValues. It
+   * is separate from `rng` so raid events never consume a test's scripted catch draws.
+   */
+  raidRng?: Rng;
   /** Fallback guild id (the Durable Object's name), used only until one is stored. */
   guildId?: () => string | undefined;
   /** Builds the leet source. Returning null disables syncing (fail closed). */
   createLeetSource?: (knownPlayers: () => string[]) => LeetSource | null;
   /** How long /api/me waits for a sync before answering with stale data. */
   syncBudgetMs?: number;
+  /** Delivers Discord posts. Without one, posts stay queued and the alarm ignores them. */
+  postSender?: PostSender | null;
+  /** Staging only: the practice finale is available (the `RAID_PRACTICE` var is "on"). */
+  raidPractice?: boolean;
 }
 
 export interface LeetSyncResult {
@@ -284,7 +333,9 @@ export class GuildCore {
   private readonly leetSource: LeetSource | null;
   private readonly syncBudgetMs: number;
   readonly collection: Collection;
+  readonly raid: Raid;
   private syncInFlight: Promise<LeetSyncResult> | null = null;
+  private postsInFlight: Promise<void> | null = null;
   private lastSyncAttemptAt: number | null = null;
   /** The guild's timezone, cached per object; cleared whenever it changes. */
   private cachedTimezone: string | null = null;
@@ -300,6 +351,12 @@ export class GuildCore {
       storage,
       now,
       rng: options.rng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+    });
+    this.raid = new Raid({
+      storage,
+      now,
+      rng: options.raidRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+      practice: options.raidPractice === true,
     });
     this.limiter = new TokenBucketLimiter({
       capacity: RATE_CAPACITY,
@@ -330,13 +387,24 @@ export class GuildCore {
     }
   }
 
-  /** Upserts the player and creates a session. Returns the secret half of the token. */
-  async createSession(guildId: string, user: SessionUser): Promise<string> {
+  /**
+   * Upserts the player and creates a session. Returns the secret half of the token. `channelId` is
+   * the channel Discord says the Activity was launched from: it becomes the announcement channel
+   * ("the channel most recently launched from"). Anything that is not a snowflake is ignored.
+   */
+  async createSession(
+    guildId: string,
+    user: SessionUser,
+    channelId?: string | null,
+  ): Promise<string> {
     const secret = generateSessionSecret();
     const tokenHash = await hashSecret(secret);
     const t = this.now();
     this.storage.transactionSync(() => {
       this.bindGuild(guildId);
+      if (typeof channelId === 'string' && SNOWFLAKE_RE.test(channelId)) {
+        this.sql.exec('UPDATE guild_meta SET announce_channel_id = ? WHERE id = 1', channelId);
+      }
       this.sql.exec(
         'DELETE FROM sessions WHERE expires_at <= ? OR last_used_at <= ?',
         t,
@@ -410,7 +478,9 @@ export class GuildCore {
     if (!isValidTimeZone(timezone) || this.storedGuildId() === null) return false;
     this.sql.exec('UPDATE guild_meta SET timezone = ? WHERE id = 1', timezone);
     this.cachedTimezone = null;
-    if (this.leetSource !== null) await this.storage.setAlarm(this.nextSyncAt(this.now()));
+    this.catchUpRaid();
+    this.kickPosts();
+    await this.rearmAlarm(this.now());
     return true;
   }
 
@@ -746,22 +816,141 @@ export class GuildCore {
 
   // --- Scheduling ---
 
-  /** Arms the daily sync alarm if none is set. Cheap: one `getAlarm`. */
-  async ensureAlarm(): Promise<void> {
-    if (this.leetSource === null) return;
-    if ((await this.storage.getAlarm()) !== null) return;
-    await this.storage.setAlarm(this.nextSyncAt(this.now()));
+  /**
+   * One alarm serves every schedule of the guild: the daily leet sync (13:40 guild-local), the raid
+   * events and pending Discord posts. The alarm is always set to the earliest of them.
+   */
+  private desiredAlarmAt(from: number): number | null {
+    const candidates: number[] = [];
+    if (this.leetSource !== null) candidates.push(this.nextSyncAt(from));
+    const raidAt = this.raid.nextEventAt(this.timezone());
+    if (raidAt !== null) {
+      // An event that is still due after the catch-up keeps failing: retry it later, not in a loop.
+      candidates.push(raidAt > this.now() ? raidAt : this.now() + RAID_RETRY_MS);
+    }
+    // A live finale that is over resolves at the end of its last round (earlier if a read sees the
+    // boss fall). One that is still unresolved after that keeps failing: retry it later.
+    const liveEndAt = this.raid.nextLiveEndAt();
+    if (liveEndAt !== null) {
+      candidates.push(liveEndAt > this.now() ? liveEndAt : this.now() + RAID_RETRY_MS);
+    }
+    if (this.options.postSender != null) {
+      const postAt = nextPostAt(this.sql);
+      // A post that is still due keeps failing to go out: look again later, not in a loop.
+      if (postAt !== null)
+        candidates.push(postAt > this.now() ? postAt : this.now() + POST_RETRY_MS);
+    }
+    return candidates.length === 0 ? null : Math.min(...candidates);
   }
 
-  /** Durable Object alarm handler: sync, then always re-arm for the next 13:40 guild-local. */
-  async alarm(): Promise<void> {
-    if (this.leetSource === null) return;
+  private async rearmAlarm(from: number): Promise<void> {
+    const at = this.desiredAlarmAt(from);
+    if (at !== null) await this.storage.setAlarm(at);
+  }
+
+  /**
+   * Runs raid events that are due (missed ones run late, in order) and resolves live finales whose
+   * last round has played. Failures never reach callers.
+   */
+  private catchUpRaid(until?: number): void {
     try {
-      await this.syncLeet();
+      this.raid.runDue(this.timezone(), until);
+      this.raid.settleDueLive();
     } catch (err) {
-      logSyncError(err);
+      console.error('raid catch-up failed', err instanceof Error ? err.name : 'unknown');
     }
-    await this.storage.setAlarm(this.nextSyncAt(this.now() + ALARM_REARM_SKEW_MS));
+  }
+
+  // --- Discord posts ---
+
+  /**
+   * Delivers due posts, one at a time, oldest first. Concurrent calls share one run. Never throws:
+   * a post that cannot be delivered is retried later (see `recordOutcome`) and never blocks the
+   * game. A 429 ends the run so the next post waits too. The network call happens outside any
+   * transaction; claiming and recording are their own small ones.
+   */
+  deliverPosts(): Promise<void> {
+    if (this.postsInFlight !== null) return this.postsInFlight;
+    const run = this.runPostDelivery().finally(() => {
+      this.postsInFlight = null;
+    });
+    this.postsInFlight = run;
+    return run;
+  }
+
+  private async runPostDelivery(): Promise<void> {
+    const send = this.options.postSender;
+    if (send == null) return;
+    try {
+      for (let i = 0; i < MAX_POSTS_PER_RUN; i++) {
+        const post = this.storage.transactionSync(() => claimNextPost(this.sql, this.now()));
+        if (post === null) return;
+        let outcome;
+        try {
+          outcome = await send(post.channelId, post.content);
+        } catch {
+          outcome = { kind: 'retry', error: 'network', afterMs: null } as const;
+        }
+        const failure = this.storage.transactionSync(() =>
+          recordOutcome(this.sql, post, outcome, this.now()),
+        );
+        if (failure !== null) console.error('discord post failed', failure);
+        if (failure === 'rate_limited') return;
+      }
+    } catch (err) {
+      console.error('discord post delivery failed', err instanceof Error ? err.name : 'unknown');
+    }
+  }
+
+  /** Starts delivery in the background when a post is due; the caller does not wait for it. */
+  private kickPosts(): void {
+    if (this.options.postSender == null || !hasDuePosts(this.sql, this.now())) return;
+    void this.deliverPosts();
+  }
+
+  /**
+   * Arms the alarm for the earliest of the next leet sync and the next raid event, unless an alarm
+   * that is not later is already set. Runs due raid events first, so the alarm is never set in the
+   * past. Cheap: one `getAlarm` plus a cached calendar lookup.
+   */
+  async ensureAlarm(): Promise<void> {
+    this.catchUpRaid();
+    this.kickPosts();
+    const at = this.desiredAlarmAt(this.now());
+    if (at === null) return;
+    const existing = await this.storage.getAlarm();
+    if (existing !== null && existing <= at) return;
+    await this.storage.setAlarm(at);
+  }
+
+  /** The 13:40 slot a sync is due for, or null if the latest slot has already been attempted. */
+  private dueSyncSlot(upTo: number): number | null {
+    if (this.leetSource === null) return null;
+    const slot = previousOccurrence(upTo, SYNC_HOUR, SYNC_MINUTE, this.timezone());
+    const last = this.readSyncRow()?.last_attempt_at ?? null;
+    return last === null || last < slot ? slot : null;
+  }
+
+  /**
+   * Durable Object alarm handler: runs everything that is due in time order (raid events, the leet
+   * sync), then always re-arms for the next one. Raid events are idempotent per (week, event), so a
+   * duplicate or late alarm changes nothing.
+   */
+  async alarm(): Promise<void> {
+    const now = this.now();
+    const slot = this.dueSyncSlot(now + ALARM_REARM_SKEW_MS);
+    // Raid events that came before the sync slot run first, then the sync, then the rest.
+    if (slot !== null) this.catchUpRaid(slot);
+    if (slot !== null) {
+      try {
+        await this.syncLeet();
+      } catch (err) {
+        logSyncError(err);
+      }
+    }
+    this.catchUpRaid();
+    await this.deliverPosts();
+    await this.rearmAlarm(this.now() + ALARM_REARM_SKEW_MS);
   }
 }
 

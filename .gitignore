@@ -31,3 +31,6 @@ sim-out/
 
 # Claude Code local-only settings
 .claude/settings.local.json
+
+# Agent worktrees (local only)
+.claude/worktrees/

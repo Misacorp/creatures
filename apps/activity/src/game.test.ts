@@ -6,6 +6,7 @@ import {
   clockOffset,
   creatureName,
   errorText,
+  evolutionText,
   formatCountdown,
   fusionStars,
   isFirstOnServer,
@@ -86,6 +87,51 @@ describe('display helpers', () => {
     expect(errorText(new ApiError(400, 'invalid_nickname', 'too_long'))).toContain('20');
     expect(errorText(new ApiError(418, 'teapot'))).toContain('teapot');
     expect(errorText(new TypeError('Failed to fetch'))).toContain('connection');
+  });
+
+  it('names the currency that ran out', () => {
+    expect(errorText(new ApiError(409, 'insufficient_funds'), 'Essence')).toBe(
+      'Not enough Essence.',
+    );
+  });
+
+  it.each([
+    'locked',
+    'slot_taken',
+    'not_your_creature',
+    'not_in_team',
+    'not_in_roster',
+    'duplicate_creatures',
+    'invalid_slot',
+    'already_fired',
+    'too_late',
+    'not_in_fight',
+    'hold_too_late',
+    'invalid_body',
+  ])('has a plain message for the raid error "%s"', (code) => {
+    const text = errorText(new ApiError(409, code));
+    expect(text).not.toContain('_');
+    expect(text).not.toContain('Something went wrong');
+    expect(text.length).toBeGreaterThan(10);
+  });
+});
+
+describe('evolutionText', () => {
+  const evolution = { toSpecies: 'splashet', level: 15, essence: 40, available: false };
+
+  it('offers the evolution when the server says it is available', () => {
+    const text = evolutionText(15, { ...evolution, available: true }, 50);
+    expect(text.available).toBe(true);
+    expect(text.label).toContain('40 Essence');
+  });
+
+  it('says what is missing', () => {
+    expect(evolutionText(10, evolution, 100).label).toContain('needs level 15');
+    expect(evolutionText(10, evolution, 100).label).not.toContain('Essence');
+    expect(evolutionText(15, evolution, 5).label).toContain('needs 40 Essence');
+    const both = evolutionText(3, evolution, 0);
+    expect(both.label).toContain('level 15 and 40 Essence');
+    expect(both.available).toBe(false);
   });
 });
 

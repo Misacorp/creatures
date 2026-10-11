@@ -31,4 +31,23 @@ describe('performance', () => {
     );
     expect(median).toBeLessThan(50);
   });
+
+  it('resolves a 45-player week (three full parties, three phases each) well under budget', () => {
+    const phases = ['phase1', 'phase2', 'finale'] as const;
+    const times: number[] = [];
+    for (let party = 0; party < 3; party++) {
+      for (const phase of phases) {
+        const inp = randomInput(`perf-week-${party}`, 15, phase);
+        inp.bossHpPool = { max: 100_000_000, current: 100_000_000 };
+        simulateFight(inp, rng()); // warm up
+        const start = performance.now();
+        simulateFight(inp, rng());
+        times.push(performance.now() - start);
+      }
+    }
+    const worst = Math.max(...times);
+    console.log(`45-player week: worst single fight ${worst.toFixed(2)} ms`);
+    expect(worst).toBeLessThan(50);
+    expect(times.reduce((a, b) => a + b, 0)).toBeLessThan(250);
+  });
 });

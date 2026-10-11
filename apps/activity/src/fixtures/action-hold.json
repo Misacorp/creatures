@@ -1,0 +1,250 @@
+{
+  "status": "live",
+  "practice": false,
+  "week": "2027-W02",
+  "party": 1,
+  "you": "m2",
+  "startsAt": 1800208800000,
+  "roundMs": 10000,
+  "rounds": 12,
+  "round": 2,
+  "serverNow": 1800208811000,
+  "boss": {
+    "id": "storm-sovereign",
+    "name": "Storm Sovereign",
+    "element": "spark",
+    "hpMax": 50000000,
+    "hpStart": 50000000
+  },
+  "row": [
+    {
+      "position": 0,
+      "id": "68a60128-dfd5-4e6c-a989-dfb53340fda4",
+      "name": "Sproutle",
+      "species": "sproutle",
+      "element": "grove",
+      "role": "guard",
+      "level": 12,
+      "owner": "m1"
+    },
+    {
+      "position": 1,
+      "id": "c3cda7e5-dbda-4963-abfb-5988df4d07dc",
+      "name": "Mistnewt",
+      "species": "mistnewt",
+      "element": "tide",
+      "role": "guard",
+      "level": 12,
+      "owner": "m2"
+    },
+    {
+      "position": 2,
+      "id": "a3accda5-5dc4-406f-aec2-dda8a112cd57",
+      "name": "Sproutle",
+      "species": "sproutle",
+      "element": "grove",
+      "role": "guard",
+      "level": 12,
+      "owner": "m2"
+    },
+    {
+      "position": 3,
+      "id": "guest:1",
+      "name": "Guest Warden",
+      "species": "sproutle",
+      "element": "grove",
+      "role": "guard",
+      "level": 12,
+      "owner": null
+    },
+    {
+      "position": 4,
+      "id": "guest:2",
+      "name": "Guest Tidecaller",
+      "species": "splashet",
+      "element": "tide",
+      "role": "setter",
+      "level": 12,
+      "owner": null
+    },
+    {
+      "position": 5,
+      "id": "guest:3",
+      "name": "Guest Striker",
+      "species": "stormray",
+      "element": "spark",
+      "role": "payoff",
+      "level": 12,
+      "owner": null
+    },
+    {
+      "position": 6,
+      "id": "09a527ac-b509-401d-aa53-73bbc9e9207a",
+      "name": "Zipmouse",
+      "species": "zipmouse",
+      "element": "spark",
+      "role": "setter",
+      "level": 12,
+      "owner": "m2"
+    },
+    {
+      "position": 7,
+      "id": "c7abbca2-9eb1-4360-a352-8ef131c42e6a",
+      "name": "Zipmouse",
+      "species": "zipmouse",
+      "element": "spark",
+      "role": "setter",
+      "level": 12,
+      "owner": "m1"
+    },
+    {
+      "position": 8,
+      "id": "1ad02b96-4abe-4525-9321-1c510aab4f1f",
+      "name": "Cindle",
+      "species": "cindle",
+      "element": "ember",
+      "role": "payoff",
+      "level": 12,
+      "owner": "m1"
+    }
+  ],
+  "names": {
+    "boss": "Storm Sovereign",
+    "creatures": {
+      "68a60128-dfd5-4e6c-a989-dfb53340fda4": "Sproutle",
+      "c3cda7e5-dbda-4963-abfb-5988df4d07dc": "Mistnewt",
+      "a3accda5-5dc4-406f-aec2-dda8a112cd57": "Sproutle",
+      "guest:1": "Guest Warden",
+      "guest:2": "Guest Tidecaller",
+      "guest:3": "Guest Striker",
+      "09a527ac-b509-401d-aa53-73bbc9e9207a": "Zipmouse",
+      "c7abbca2-9eb1-4360-a352-8ef131c42e6a": "Zipmouse",
+      "1ad02b96-4abe-4525-9321-1c510aab4f1f": "Cindle"
+    },
+    "players": {
+      "m1": "Player 1",
+      "m2": "Player 2"
+    },
+    "reactions": {
+      "overload": "Overload",
+      "grounding": "Grounding",
+      "wildfire": "Wildfire",
+      "steam": "Steam"
+    },
+    "gimmicks": {
+      "lightning-rod": "Lightning Rod"
+    },
+    "abilities": {
+      "rally": "Rally",
+      "shield-wall": "Shield Wall",
+      "re-mark": "Re-mark",
+      "purge": "Purge"
+    },
+    "marks": {
+      "tide": "Soaked",
+      "spark": "Charged",
+      "grove": "Overgrown",
+      "ember": "Scorched"
+    },
+    "elements": {
+      "tide": "Tide",
+      "ember": "Ember",
+      "grove": "Grove",
+      "spark": "Spark"
+    },
+    "adaptations": {
+      "resist-top-reaction": "Reaction Resistance",
+      "resist-top-element": "Element Resistance"
+    }
+  },
+  "abilities": [
+    {
+      "alias": "m1",
+      "abilityId": "shield-wall",
+      "mode": "fired",
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": 3,
+      "defaultRound": 3
+    },
+    {
+      "alias": "m2",
+      "abilityId": "rally",
+      "mode": "held",
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": null,
+      "defaultRound": 6
+    }
+  ],
+  "events": [
+    {
+      "t": "adaptation",
+      "round": 0,
+      "rule": "resist-top-element",
+      "target": "spark",
+      "status": "active"
+    },
+    {
+      "t": "round_start",
+      "round": 1,
+      "bossHp": 50000000,
+      "mark": null
+    },
+    {
+      "t": "turn",
+      "round": 1,
+      "creature": "68a60128-dfd5-4e6c-a989-dfb53340fda4"
+    },
+    {
+      "t": "hit",
+      "round": 1,
+      "creature": "68a60128-dfd5-4e6c-a989-dfb53340fda4",
+      "damage": 49,
+      "matchupBp": 15000,
+      "bonusBp": 0,
+      "mark": null,
+      "bossHp": 49999951
+    },
+    {
+      "t": "mark",
+      "round": 1,
+      "creature": "68a60128-dfd5-4e6c-a989-dfb53340fda4",
+      "player": "m1",
+      "element": "grove",
+      "replaced": null
+    },
+    {
+      "t": "reaction",
+      "round": 1,
+      "reaction": "overload",
+      "setupCreature": "guest:2",
+      "setupPlayer": null,
+      "payoff": "guest:3",
+      "bonus": 244,
+      "reflected": false
+    },
+    {
+      "t": "gimmick",
+      "round": 1,
+      "gimmick": "lightning-rod",
+      "op": "strike_highest_atk"
+    },
+    {
+      "t": "boss_hit",
+      "round": 1,
+      "source": "gimmick",
+      "target": "guest:1",
+      "damage": 1,
+      "from": "guest:3"
+    },
+    {
+      "t": "round_end",
+      "round": 1,
+      "bossHp": 49999326
+    }
+  ],
+  "bossHp": 49998481,
+  "watching": ["Player 1", "Player 2"],
+  "loot": null
+}

@@ -229,6 +229,9 @@ importers:
 
   apps/activity:
     dependencies:
+      '@creatures/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
       '@creatures/game':
         specifier: workspace:*
         version: link:../../packages/game
@@ -254,6 +257,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@creatures/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
       '@creatures/game':
         specifier: workspace:*
         version: link:../../packages/game

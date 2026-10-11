@@ -26,11 +26,11 @@ A boss (or modifier) sets one ordering for a fight: `left_to_right`, `right_to_l
 - Matchups: an attacker deals ×1.5 to an element it's strong against and ×0.75 to the one that's strong against it (`Tide > Ember > Grove > Spark > Tide`).
 - **Marks:** the boss carries at most **one mark**. Each element has a mark: Tide → _Soaked_, Ember → _Scorched_, Grove → _Overgrown_, Spark → _Charged_.
 - **Hit rules**, for each creature hit on the boss:
-  1. If the boss has a mark and the hit's element is that mark's **trigger**, a **reaction** fires: the hit's damage is multiplied by ×2.5 and the mark is consumed. The "bonus" is the damage above the plain hit.
+  1. If the boss has a mark and the hit's element is that mark's **trigger**, a **reaction** fires: the hit's damage is multiplied by ×4.5 (content: `multiplierBp`) and the mark is consumed. The "bonus" is the damage above the plain hit.
   2. Else, if the boss has no mark, the hit applies its element's mark.
   3. Else (the boss has a different mark): a **Setter** overwrites it with its own mark; others leave it.
 - **Triggers:** Soaked ← Spark (_Overload_), Charged ← Grove (_Grounding_), Overgrown ← Ember (_Wildfire_), Scorched ← Tide (_Steam_).
-- **Credit:** a reaction's bonus damage is split 50/50 between the creature that applied the mark (setup) and the one that triggered it (payoff). Payoff creatures get an extra ×1.25 on reactions, combined with the ×2.5 into one multiplier of ×3.125 (one floor, in basis points). The setup creature gets `floor(bonus / 2)`, the payoff creature the rest.
+- **Credit:** a reaction's bonus damage is split 50/50 between the creature that applied the mark (setup) and the one that triggered it (payoff). Payoff creatures get an extra ×1.1 on reactions, combined with the ×4.5 into one multiplier of ×4.95 (one floor, in basis points). (Both numbers are tuned by the simulator; the first draft was ×2.5 and ×1.25.) The setup creature gets `floor(bonus / 2)`, the payoff creature the rest.
 
 ## Creatures in combat
 
@@ -68,7 +68,7 @@ Gimmicks are data, built from effect operations. Examples for the four MVP bosse
 
 - The boss has **one HP pool for the whole week**: Phase 1, Phase 2 and the finale all chip away at it.
 - **Phase 1** (Fri 13:37, auto): 10 rounds. **Phase 2** (Sat 13:37, auto): 10 rounds. **Finale** (Sun 20:00, live): 12 rounds of about 10 seconds (2 minutes, configurable per boss, at most 5 minutes) **[Misa]**.
-- **Clear thresholds** (config): Phase 1 is cleared when the pool is down 20%; Phase 2 when it's down 45%; the finale when the boss is defeated (tuned from 30% / 60% by the first simulator pass).
+- **Clear thresholds** (config): Phase 1 is cleared when the pool is down 18%; Phase 2 when it's down 54%; the finale when the boss is defeated (tuned from 30% / 60% by the simulator; see `docs/balance/`).
 - **Phase 2 adaptation:** after Phase 1 the boss gains one counter, chosen by a plain-language rule shown to players. Example: "the reaction you used most is resisted 50%", or "the element that dealt most damage is resisted 25%". It is stored in the event log.
 - **Finale abilities:** before the finale, each signed-up player picks one ability from a small content-defined list, each with a **default round** **[Misa]**:
   - **Rally:** all creatures +40% damage this round. Default round 6.
@@ -78,7 +78,7 @@ Gimmicks are data, built from effect operations. Examples for the four MVP bosse
 
   A present player fires theirs whenever they choose. An absent player's fires at its default round, at full strength **[Misa]**.
 
-- **Scaling with players:** boss HP = `baseHp × N^0.9 × levelFactor`, where N is the number of signed-up players (minimum 1; guests fill the row). Boss Attack scales with the average creature level. The exponents are config.
+- **Scaling with players:** boss HP = `baseHp × N^1.2 × levelFactor`, where N is the number of signed-up players (minimum 1; guests fill the row) and `levelFactor` is 1 + 12% per average creature level above 1. Boss Attack scales with the average creature level (6% per level). The exponent is above 1 on purpose: bigger servers earn more Bait per player (the leet points table) and cover more elements, so per head they are stronger; the simulator found 1.2 keeps the finale win rate flat from 5 to 15 players. All of these are config (`RULES.raid.scaling`).
 
 ## Contribution and loot (pure rules in `@creatures/game`)
 

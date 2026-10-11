@@ -3,22 +3,31 @@ import {
   ApiError,
   chooseStarter,
   claimExpedition,
+  evolveCreature,
   fetchState,
   renameCreature,
   startExpedition,
   trainCreature,
   type ClaimResult,
+  type EvolveResult,
   type GameState,
   type LeetSyncStatus,
 } from './api';
 import { createKeyStore } from './actions';
 import { Collection } from './Collection';
 import { Expeditions, type SendRequest } from './Expeditions';
-import { clockOffset, errorText } from './game';
+import { clockOffset, creatureName, errorText, speciesName } from './game';
+import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { StarterPicker } from './StarterPicker';
 
-type Tab = 'collection' | 'expeditions';
+type Tab = 'collection' | 'expeditions' | 'raid';
+
+const TABS: readonly { id: Tab; label: string }[] = [
+  { id: 'collection', label: 'Collection' },
+  { id: 'expeditions', label: 'Expeditions' },
+  { id: 'raid', label: 'Raid' },
+];
 
 interface Loaded {
   game: GameState;
@@ -33,8 +42,11 @@ function loaded(game: GameState): Loaded {
 export function Game({
   initial,
   onLeetSync,
+  showPractice,
 }: {
   initial: GameState;
+  /** True on staging and local runs, where the server can start a practice finale. */
+  showPractice: boolean;
   /** Called with the sync status of every state this component loads, so the footer stays current. */
   onLeetSync: (status: LeetSyncStatus) => void;
 }) {
@@ -43,6 +55,7 @@ export function Game({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reveal, setReveal] = useState<ClaimResult | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const keys = useRef(createKeyStore()).current;
   // A second tap in the same tick must not start a second request, even before `busy` renders.
   const inFlight = useRef(false);
@@ -84,19 +97,24 @@ export function Game({
    * so a retry cannot spend twice. After a definite "no" the state is reloaded, since the screen
    * was probably out of date.
    */
-  async function run<T>(action: string, task: () => Promise<T>): Promise<T | undefined> {
+  async function run<T>(
+    action: string,
+    task: () => Promise<T>,
+    currency?: string,
+  ): Promise<T | undefined> {
     if (inFlight.current) return undefined;
     inFlight.current = true;
     actionCount.current += 1;
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
       const value = await task();
       keys.settle(action);
       return value;
     } catch (err) {
       keys.settle(action, err);
-      setError(errorText(err));
+      setError(errorText(err, currency));
       if (err instanceof ApiError && (err.status === 404 || err.status === 409)) {
         try {
           setCurrent(loaded(await fetchState()));
@@ -114,6 +132,18 @@ export function Game({
   async function runState(action: string, task: () => Promise<GameState>): Promise<void> {
     const next = await run(action, task);
     if (next !== undefined) setCurrent(loaded(next));
+  }
+
+  /** Reloads the state in the background (balances move when raids pay Essence). */
+  function refreshState(): void {
+    if (inFlight.current) return;
+    const startedAt = actionCount.current;
+    fetchState().then(
+      (next) => {
+        if (!inFlight.current && actionCount.current === startedAt) setCurrent(loaded(next));
+      },
+      () => undefined,
+    );
   }
 
   if (!game.starterChosen) {
@@ -141,8 +171,11 @@ export function Game({
       <p class="bait" aria-label="Bait balance">
         <span class="bait-amount">{game.balances.bait}</span> Bait
       </p>
+      <p class="essence" aria-label="Essence balance">
+        <span class="essence-amount">{game.balances.essence}</span> Essence
+      </p>
       <div class="tabs" role="tablist" aria-label="Sections">
-        {(['collection', 'expeditions'] as const).map((id) => (
+        {TABS.map(({ id, label }) => (
           <button
             key={id}
             type="button"
@@ -153,9 +186,12 @@ export function Game({
             class={tab === id ? 'tab active' : 'tab'}
             onClick={() => {
               setTab(id);
+              setError(null);
+              setNotice(null);
+              refreshState();
             }}
           >
-            {id === 'collection' ? 'Collection' : 'Expeditions'}
+            {label}
           </button>
         ))}
       </div>
@@ -164,8 +200,13 @@ export function Game({
           {error}
         </p>
       )}
+      {notice !== null && (
+        <p class="notice" role="status">
+          {notice}
+        </p>
+      )}
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === 'collection' ? (
+        {tab === 'collection' && (
           <Collection
             state={game}
             busy={busy}
@@ -173,11 +214,26 @@ export function Game({
               const action = `train:${creature.id}`;
               void runState(action, () => trainCreature(creature.id, keys.keyFor(action)));
             }}
+            onEvolve={(creature) => {
+              const action = `evolve:${creature.id}`;
+              void run(
+                action,
+                () => evolveCreature(creature.id, keys.keyFor(action)),
+                'Essence',
+              ).then((done: EvolveResult | undefined) => {
+                if (done === undefined) return;
+                setCurrent(loaded(done.state));
+                setNotice(
+                  `${creatureName(creature)} evolved into ${speciesName(done.species)}!${done.firstOnServer ? ' First on server!' : ''}`,
+                );
+              });
+            }}
             onRename={(creature, nickname) => {
               void runState(`rename:${creature.id}`, () => renameCreature(creature.id, nickname));
             }}
           />
-        ) : (
+        )}
+        {tab === 'expeditions' && (
           <Expeditions
             state={game}
             offset={offset}
@@ -201,6 +257,13 @@ export function Game({
             onDismissReveal={() => {
               setReveal(null);
             }}
+          />
+        )}
+        {tab === 'raid' && (
+          <Raid
+            creatures={game.creatures}
+            showPractice={showPractice}
+            onBalanceChange={refreshState}
           />
         )}
       </div>

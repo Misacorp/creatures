@@ -11,6 +11,7 @@
     "cf-typegen": "wrangler types --strict-vars=false"
   },
   "dependencies": {
+    "@creatures/engine": "workspace:*",
     "@creatures/game": "workspace:*",
     "valibot": "catalog:"
   },

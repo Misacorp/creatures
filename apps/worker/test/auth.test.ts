@@ -75,6 +75,98 @@ describe('POST /api/auth/session', () => {
     expect((await res.json<{ guildId: string }>()).guildId).toBe('444444444444444444');
   });
 
+  describe('the announcement channel', () => {
+    const CHANNEL_A = '555555555555555551';
+    const CHANNEL_B = '555555555555555552';
+    const channelOf = (guildId: string) =>
+      runInDurableObject(
+        env.GUILD_WORLD.get(env.GUILD_WORLD.idFromName(guildId)),
+        (_i, state) =>
+          state.storage.sql
+            .exec<{ announce_channel_id: string | null }>(
+              'SELECT announce_channel_id FROM guild_meta',
+            )
+            .one().announce_channel_id,
+      );
+    const instance = (guildId: string, channelId: string | null | undefined) => ({
+      location: {
+        guild_id: guildId,
+        ...(channelId === undefined ? {} : { channel_id: channelId }),
+      },
+      users: [USER_ID],
+    });
+
+    it('is taken from the activity instance Discord reports and updated on every login', async () => {
+      const guildId = '777000000000000001';
+      let channel: string | null | undefined = CHANNEL_A;
+      const discord = fakeDiscord();
+      discord.getActivityInstance = () => Promise.resolve(instance(guildId, channel));
+      const handler = createHandler({ createDiscord: () => discord });
+
+      expect((await postAuth(handler, validBody)).status).toBe(200);
+      expect(await channelOf(guildId)).toBe(CHANNEL_A);
+      channel = CHANNEL_B;
+      await postAuth(handler, validBody);
+      expect(await channelOf(guildId)).toBe(CHANNEL_B);
+      // No channel in Discord's answer (or null): the last known one stays.
+      channel = undefined;
+      await postAuth(handler, validBody);
+      channel = null;
+      await postAuth(handler, validBody);
+      expect(await channelOf(guildId)).toBe(CHANNEL_B);
+    });
+
+    it('ignores a client-supplied channel: the body is strict, and Discord decides', async () => {
+      const guildId = '777000000000000002';
+      const { handler } = setup({ instance: instance(guildId, CHANNEL_A) });
+      for (const key of ['channelId', 'channel_id', 'announceChannelId']) {
+        const res = await postAuth(handler, { ...validBody, [key]: CHANNEL_B });
+        expect(res.status).toBe(400);
+      }
+      // Nothing was stored by the rejected requests: the guild was never created.
+      const ids = await listDurableObjectIds(env.GUILD_WORLD);
+      expect(ids.some((id) => id.name === guildId)).toBe(false);
+      expect((await postAuth(handler, validBody)).status).toBe(200);
+      expect(await channelOf(guildId)).toBe(CHANNEL_A);
+    });
+
+    it('ignores a channel id from Discord that is not a snowflake', async () => {
+      const guildId = '777000000000000003';
+      const { handler } = setup({ instance: instance(guildId, 'not-a-snowflake') });
+      expect((await postAuth(handler, validBody)).status).toBe(200);
+      expect(await channelOf(guildId)).toBeNull();
+    });
+
+    it('is passed from the verified instance into createSession', async () => {
+      const calls: (string | null)[] = [];
+      const discord = fakeDiscord({ instance: instance(GUILD_ID, CHANNEL_A) });
+      const { handleAuthSession } = await import('../src/auth');
+      const { TokenBucketLimiter } = await import('../src/ratelimit');
+      const res = await handleAuthSession(
+        new Request(`${ORIGIN}/api/auth/session`, {
+          method: 'POST',
+          body: JSON.stringify(validBody),
+        }),
+        {
+          discord,
+          limiter: new TokenBucketLimiter({
+            capacity: 10,
+            refillPerSecond: 1,
+            now: () => 0,
+            maxKeys: 10,
+          }),
+          createSession: (_guild, _user, channelId) => {
+            calls.push(channelId);
+            return Promise.resolve('secret');
+          },
+          formatToken: (_guild, secret) => Promise.resolve(secret),
+        },
+      );
+      expect(res.status).toBe(200);
+      expect(calls).toEqual([CHANNEL_A]);
+    });
+  });
+
   it('uses the username when there is no global name, and sanitises it', async () => {
     const { handler } = setup({
       user: { id: USER_ID, username: 'ev‮il​', global_name: null },

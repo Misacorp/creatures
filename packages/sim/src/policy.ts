@@ -9,7 +9,7 @@ import {
   type DurationId,
   type SuppliesId,
 } from '@creatures/game';
-import { CATCHABLE, byPowerDesc, creaturePower10, speciesOf, type OwnedCreature } from './data';
+import { CATCHABLE, byPowerDesc, creaturePower, speciesOf, type OwnedCreature } from './data';
 
 /**
  * The spending policy every simulated player follows (archetypes differ only in how often they
@@ -25,10 +25,11 @@ import { CATCHABLE, byPowerDesc, creaturePower10, speciesOf, type OwnedCreature 
  *    (common 1, rare 4, epic 10), so more Bait buys longer trips and better supplies. A slot that
  *    cannot afford the cheapest option stays idle. A player whose collection is complete (every
  *    catchable species owned with 5 fusions) stops sending expeditions: they would only convert.
- * 4. Train with the Bait that is left after the planned expeditions: repeatedly pick the weakest
- *    (lowest level) of the player's 3 strongest trainable creatures and train it while the
- *    (catch-up discounted) cost is affordable. Creatures at their level cap are not trainable, so
- *    the 3 strongest trainable creatures are used.
+ * 4. Train with the Bait that is left after the planned expeditions: repeatedly pick a creature
+ *    with `chooseTrainee` and train it while the (catch-up discounted) cost is affordable. A
+ *    creature still working towards its evolution level is trained until it gets there; otherwise
+ *    the weakest of the 3 strongest trainable creatures goes first. Creatures at their level cap
+ *    are not trainable.
  * 5. Send the planned expeditions. Explorers are the creatures whose element has the most
  *    catchable species the player does not own yet (ties by id), which uses explorer affinity.
  *
@@ -109,18 +110,32 @@ export function isTrainable(c: OwnedCreature): boolean {
   return c.level < speciesOf(c.speciesId).levelCap;
 }
 
-/** The weakest of the 3 strongest trainable creatures, or null if nothing can be trained. */
+/** True while the creature still has to reach the level at which it evolves. */
+export function isPreEvolution(c: OwnedCreature): boolean {
+  const evo = speciesOf(c.speciesId).evolvesTo;
+  return evo !== undefined && c.level < evo.level;
+}
+
+/**
+ * The creature to train next, or null if nothing can be trained. Of the player's 3 strongest
+ * trainable creatures, the one furthest along (highest level) among those that still have to
+ * reach their evolution level goes first: players push one creature to its evolution before
+ * starting on the next, so a creature caught today does not take over the training from the one
+ * that is almost there. When none of the three is working towards an evolution, the weakest
+ * (lowest level) goes first, so the team levels up evenly. Ties go to the stronger creature.
+ */
 export function chooseTrainee(creatures: readonly OwnedCreature[]): OwnedCreature | null {
   const top = byPowerDesc(creatures.filter(isTrainable)).slice(0, 3);
+  const evolvers = top.filter(isPreEvolution);
+  const pool = evolvers.length > 0 ? evolvers : top;
+  const towardsEvolution = evolvers.length > 0;
   let best: OwnedCreature | null = null;
-  for (const c of top) {
-    if (
+  for (const c of pool) {
+    const better =
       best === null ||
-      c.level < best.level ||
-      (c.level === best.level && creaturePower10(c) > creaturePower10(best))
-    ) {
-      best = c;
-    }
+      (towardsEvolution ? c.level > best.level : c.level < best.level) ||
+      (c.level === best.level && creaturePower(c) > creaturePower(best));
+    if (better) best = c;
   }
   return best;
 }

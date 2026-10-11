@@ -2,7 +2,7 @@ import { RULES, type BossDef } from '@creatures/game';
 
 /**
  * Boss HP and Attack for a fight.
- * HP = baseHp x N^0.9 x level factor; Attack = baseAtk x level factor, where N is the number of
+ * HP = baseHp x N^e x level factor (e = `RULES.raid.scaling.hpExponent`); Attack = baseAtk x level factor, where N is the number of
  * signed-up players (minimum 1) and the level factors grow linearly with the average creature
  * level (config: `RULES.raid.scaling`). All steps floor to integers; the player factor is
  * floor(Math.pow(N, exponent) x 10000), see the note on `hpExponent` in the config.

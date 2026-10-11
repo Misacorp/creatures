@@ -53,6 +53,29 @@ export function formatCountdown(ms: number): string {
   return `${String(seconds)}s`;
 }
 
+/** What the evolve control of a creature card shows. */
+export function evolutionText(
+  level: number,
+  evolution: NonNullable<Creature['evolution']>,
+  essence: number,
+): { available: boolean; label: string } {
+  const target = speciesName(evolution.toSpecies);
+  if (evolution.available) {
+    return {
+      available: true,
+      label: `Evolve into ${target} (${String(evolution.essence)} Essence)`,
+    };
+  }
+  const needs: string[] = [];
+  if (level < evolution.level) needs.push(`level ${String(evolution.level)}`);
+  if (essence < evolution.essence) needs.push(`${String(evolution.essence)} Essence`);
+  const raids = essence < evolution.essence ? ' (Essence comes from raids)' : '';
+  return {
+    available: false,
+    label: `Locked: evolving into ${target} needs ${needs.length === 0 ? 'more progress' : needs.join(' and ')}${raids}`,
+  };
+}
+
 /** Filled and empty stars for the fusion count (0 to 5). */
 export function fusionStars(count: number): string {
   const filled = Math.min(Math.max(count, 0), RULES.fusion.maxFusions);
@@ -118,6 +141,31 @@ const ERROR_TEXT: Record<string, string> = {
   not_found: 'That no longer exists. The page was refreshed.',
   rate_limited: 'Too many requests. Wait a moment and try again.',
   invalid_session: 'Your session ended. Close and reopen the Activity.',
+  // Evolution.
+  not_evolvable: 'That creature cannot evolve.',
+  level_too_low: 'That creature is not high enough level to evolve yet.',
+  // The raid.
+  locked: 'The raid is locked. Changes are closed for this week.',
+  slot_taken: 'Someone else already has that slot.',
+  not_your_creature: 'That is not one of your creatures.',
+  not_in_team: 'Only creatures in your team can be placed. Choose your team first.',
+  not_in_roster: "You are not in this week's raid.",
+  duplicate_creatures: 'Pick three different creatures.',
+  invalid_slot: 'That slot does not exist.',
+  // The live finale.
+  already_fired: 'Your ability has already been used.',
+  too_late: 'Too late: the fight is in its last round or already over.',
+  not_in_fight: 'You are not in this fight.',
+  hold_too_late: 'Too late to hold: your ability is already due.',
+  // Practice fights (the test server only).
+  practice_blocked:
+    'Practice fights are closed from 30 minutes before the finale until it has finished.',
+  practice_cooldown: 'Your party already had a practice fight in the last 10 minutes.',
+  // Any request.
+  invalid_body:
+    'The server did not understand that. Close and reopen the Activity if it keeps happening.',
+  invalid_id: 'The server did not understand that. Close and reopen the Activity.',
+  internal_error: 'The server had a problem. Try again in a moment.',
 };
 
 const NICKNAME_REASONS: Record<string, string> = {
@@ -126,12 +174,16 @@ const NICKNAME_REASONS: Record<string, string> = {
   no_visible_characters: 'That nickname has nothing visible in it.',
 };
 
-/** Plain-text message for a failed action. */
-export function errorText(err: unknown): string {
+/**
+ * Plain-text message for a failed action. `currency` names what ran out when the server says
+ * `insufficient_funds` (Bait by default; Essence for evolving).
+ */
+export function errorText(err: unknown, currency = 'Bait'): string {
   if (err instanceof ApiError) {
     if (err.code === 'invalid_nickname') {
       return NICKNAME_REASONS[err.reason ?? ''] ?? 'That nickname is not allowed.';
     }
+    if (err.code === 'insufficient_funds') return `Not enough ${currency}.`;
     return (
       ERROR_TEXT[err.code ?? ''] ?? `Something went wrong (${err.code ?? String(err.status)}).`
     );

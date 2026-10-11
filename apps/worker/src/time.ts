@@ -170,3 +170,18 @@ export function nextOccurrence(nowMs: number, hour: number, minute: number, tz: 
   }
   throw new Error('no occurrence found');
 }
+
+/** The latest instant at or before `nowMs` whose local wall time in `tz` is hour:minute. */
+export function previousOccurrence(
+  nowMs: number,
+  hour: number,
+  minute: number,
+  tz: string,
+): number {
+  const today = zonedDate(nowMs, tz);
+  for (let i = 0; i <= 3; i++) {
+    const candidate = zonedTimeToEpoch(addDays(today, -i), hour, minute, tz);
+    if (candidate <= nowMs) return candidate;
+  }
+  throw new Error('no occurrence found');
+}

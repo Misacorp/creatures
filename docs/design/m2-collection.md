@@ -46,7 +46,7 @@ Each creature has base stats (HP, Attack, Speed), per-level growth, a role tag (
 ## Levels, training and evolution
 
 - Creatures start at level 1. Stage 1 caps at level 15; evolving raises the cap to 30. Single-stage creatures cap at 30.
-- **Training** is instant: spend Bait, gain one level. Cost to go from level L to L+1: `10 + 5 × L` Bait (level 1→2 costs 15, 14→15 costs 80).
+- **Training** is instant: spend Bait, gain one level. Cost to go from level L to L+1: `3 + 2 × L` Bait (level 1→2 costs 5, 14→15 costs 31; the first draft was `10 + 5 × L`, cut by the balance simulator so a casual player can evolve a first creature within a month).
 - **Catch-up discount:** training costs half while the creature's level is more than 5 below the server's median top-creature level.
 - A creature that is on an expedition can't train.
 - **Evolution** (stage 1 at level 15): costs Essence, which only drops from raids (M4). In M2 the button shows the requirement but stays locked until raids exist.

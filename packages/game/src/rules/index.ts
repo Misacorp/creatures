@@ -6,3 +6,4 @@ export * from './fusion';
 export * from './stats';
 export * from './nickname';
 export * from './loot';
+export * from './power';

@@ -1,5 +1,5 @@
 import { expeditionCost, recallCatches } from '@creatures/game';
-import { useEffect, useState } from 'preact/hooks';
+import { useState } from 'preact/hooks';
 import type { ClaimResult, Creature, DurationId, Expedition, GameState, SuppliesId } from './api';
 import {
   DURATION_OPTIONS,
@@ -10,6 +10,7 @@ import {
   formatCountdown,
   speciesName,
 } from './game';
+import { useNow } from './hooks';
 
 export interface SendRequest {
   creatureId: string;
@@ -26,22 +27,6 @@ interface Props {
   onSend: (request: SendRequest) => void;
   onClaim: (expedition: Expedition) => void;
   onDismissReveal: () => void;
-}
-
-/** Local time in ms, refreshed every second while `active`. */
-function useNow(active: boolean): number {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    if (!active) return undefined;
-    setNow(Date.now());
-    const timer = setInterval(() => {
-      setNow(Date.now());
-    }, 1000);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [active]);
-  return now;
 }
 
 function SendForm({

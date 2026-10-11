@@ -4,6 +4,7 @@ import {
   addDays,
   isValidTimeZone,
   nextOccurrence,
+  previousOccurrence,
   zonedDate,
   zonedTimeToEpoch,
 } from '../src/time';
@@ -207,5 +208,22 @@ describe('time zones other than the default', () => {
     // The 2026 switches too.
     expect(ny('2026-03-07T18:40:00Z')).toBe('2026-03-08T17:40:00.000Z');
     expect(ny('2026-10-31T17:40:00Z')).toBe('2026-11-01T18:40:00.000Z');
+  });
+});
+
+describe('previousOccurrence', () => {
+  const prev = (nowIso: string, hour: number, minute: number) =>
+    iso(previousOccurrence(Date.parse(nowIso), hour, minute, HELSINKI));
+
+  it('is the latest 13:40 at or before now', () => {
+    expect(prev('2027-01-16T11:40:00Z', 13, 40)).toBe('2027-01-16T11:40:00.000Z');
+    expect(prev('2027-01-16T11:39:59Z', 13, 40)).toBe('2027-01-15T11:40:00.000Z');
+    expect(prev('2027-01-16T20:00:00Z', 13, 40)).toBe('2027-01-16T11:40:00.000Z');
+  });
+
+  it('follows the DST switches', () => {
+    // After the spring switch the local 13:40 is 10:40Z; the day before it was 11:40Z.
+    expect(prev('2026-03-29T12:00:00Z', 13, 40)).toBe('2026-03-29T10:40:00.000Z');
+    expect(prev('2026-03-29T10:39:00Z', 13, 40)).toBe('2026-03-28T11:40:00.000Z');
   });
 });

@@ -104,15 +104,30 @@ export async function readLimitedText(request: Request, maxBytes: number): Promi
   }
 }
 
-/** Reads a small JSON body. Returns `undefined` when it is too large, not UTF-8 or not JSON. */
-export async function readJsonBody(request: Request, maxBytes: number): Promise<unknown> {
-  const text = await readLimitedText(request, maxBytes);
-  if (text === null) return undefined;
+/**
+ * Parses JSON text that must be an object. Returns `undefined` for anything else: invalid JSON,
+ * arrays, null and primitives. valibot's `object`/`strictObject` accept an array when every key is
+ * optional (for example `[]` for `{}`), so this check lives here once instead of in every route.
+ */
+export function parseJsonObject(text: string): unknown {
+  let parsed: unknown;
   try {
-    return JSON.parse(text) as unknown;
+    parsed = JSON.parse(text);
   } catch {
     return undefined;
   }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return undefined;
+  return parsed;
+}
+
+/**
+ * Reads a small JSON object body. Returns `undefined` when it is too large, not UTF-8, not JSON or
+ * not a JSON object (arrays are rejected).
+ */
+export async function readJsonBody(request: Request, maxBytes: number): Promise<unknown> {
+  const text = await readLimitedText(request, maxBytes);
+  if (text === null) return undefined;
+  return parseJsonObject(text);
 }
 
 export interface TemplateMatch {
