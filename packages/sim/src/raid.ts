@@ -5,6 +5,7 @@ import {
   contributionWeights,
   essenceForStage,
   jackpotChanceBp,
+  placementRank,
   rollJackpot,
   type BossDef,
   createSeededRng,
@@ -56,6 +57,10 @@ export interface RaidWeek {
   /** The compact row, left to right (guests included). */
   row: FightSlot[];
   bossAtk: number;
+  /** The rank the boss fights at (the eased rank in a Festival week). */
+  rank: number;
+  /** What this week's payouts scale with: the server's rank and whether it is a Festival week. */
+  reward: { rank: number; festival: boolean };
   pool: { max: number; current: number };
   adaptation: ActiveAdaptation | null;
   avgLevel: number;
@@ -136,7 +141,7 @@ function slotFor(player: SimPlayer, creatureId: string): FightSlot {
  * Opens a raid week for the signed-up players (given in sign-up order) and boss: each player brings
  * their 3 highest-power creatures, `autoPlace` builds the row in sign-up order (guards front,
  * payoffs back), guests fill it when fewer than 3 players take part, and the boss is scaled with
- * the player count and the average level. Each player's basic ability goes round-robin over the
+ * the player count and a rank (given, or the old rule's equivalent for these creatures). Each player's basic ability goes round-robin over the
  * four; creature abilities (level 10 or above) are added when the finale is played, from the
  * creatures' levels and species at that time. All abilities fire at their default rounds.
  */
@@ -146,6 +151,13 @@ export function openRaidWeek(
   options: {
     keepFinale?: boolean;
     measureAbilities?: boolean;
+    /**
+     * Boss Rank the boss fights at. Absent: the rank the old per-level rule would have chosen for
+     * these creatures (`placementRank`), which is what the raid sweep calibrates the bosses at.
+     */
+    rank?: number;
+    /** The server's rank and Festival flag for payouts. Absent: the same rank, no Festival. */
+    reward?: { rank: number; festival: boolean };
     luck?: LuckConfig;
     luckStages?: readonly RaidStage[];
     timings?: Readonly<Record<string, number>>;
@@ -186,7 +198,8 @@ export function openRaidWeek(
   if (players.length < 3) sparse = fillWithGuests(sparse, resolveGuests(), avgLevel);
   const row = sparse.filter((s): s is FightSlot => s !== null);
 
-  const shipped = scaleBoss(boss, players.length, avgLevel);
+  const rank = options.rank ?? placementRank(levels);
+  const shipped = scaleBoss(boss, players.length, rank);
   const scaled = {
     atk: Math.max(1, Math.floor((shipped.atk * (options.bossAtkBp ?? 10_000)) / 10_000)),
     maxHp: Math.max(1, Math.floor((shipped.maxHp * (options.hpScaleBp ?? 10_000)) / 10_000)),
@@ -208,6 +221,8 @@ export function openRaidWeek(
     players: [...players],
     row,
     bossAtk: scaled.atk,
+    rank,
+    reward: options.reward ?? { rank, festival: false },
     pool: { max: scaled.maxHp, current: scaled.maxHp },
     adaptation: null,
     avgLevel,
@@ -310,7 +325,7 @@ export function playStage(week: RaidWeek, stage: RaidStage, fightRng: Rng, lootR
   }
 
   if (result.cleared) {
-    const paid = essenceForStage(stage, ids, contributionWeights(contribution));
+    const paid = essenceForStage(stage, ids, contributionWeights(contribution), week.reward);
     for (const p of week.players) {
       const amount = paid[p.id] ?? 0;
       p.essence += amount;
@@ -409,6 +424,9 @@ export interface PlayerRaidResult {
 /** Compact outcome of a raid week (no event logs). */
 export interface RaidSummary {
   boss: string;
+  /** The rank the boss fought at, and whether it was a Festival week. */
+  rank: number;
+  festival: boolean;
   signedUp: number;
   avgLevel: number;
   bossMaxHp: number;
@@ -449,6 +467,8 @@ export function summarizeRaid(week: RaidWeek): RaidSummary {
   }
   return {
     boss: week.boss.id,
+    rank: week.rank,
+    festival: week.reward.festival,
     signedUp: week.players.length,
     avgLevel: week.avgLevel,
     bossMaxHp: max,

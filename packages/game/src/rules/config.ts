@@ -61,7 +61,9 @@ export const RULES = {
     /** Boss normal attack as a share of boss Attack. */
     bossAttackBp: 10_000,
     /**
-     * Luck: small, visible randomness in the player-side damage. All off. The engine never reads
+     * Luck: small, visible randomness in the player-side damage. Crits (5%, +50%, for players and
+     * the boss) are on; Fortune streaks (surge and slump) and the damage spread stay in the code
+     * and default off [Misa / lead: crits in, streaks out for now]. The engine never reads
      * this itself: it uses the `luck` a fight input carries (absent means `NO_LUCK`), so whoever
      * builds the input (the worker) copies this in and the stored input keeps what the fight used.
      * See docs/design/luck.md.
@@ -70,9 +72,9 @@ export const RULES = {
       /**
        * Baseline crit chance (basis points) of every creature's hit; 0 switches crits off. A
        * creature's own chance is this plus its species bonus (`crit` in content), capped at
-       * `critMaxChanceBp`. Study proposal: 500 (5%).
+       * `critMaxChanceBp`. On since the progression work (Misa): 500 (5%).
        */
-      critChanceBp: 0,
+      critChanceBp: 500,
       /**
        * Baseline crit damage: a critical hit adds this much damage (basis points of the plain hit),
        * plus the species bonus, capped at `critMaxBp`. Study proposal: 5000 (+50%).
@@ -83,9 +85,9 @@ export const RULES = {
       critMaxBp: 15_000,
       /**
        * Boss crits: baseline chance and extra damage of the boss's hits on creatures (its own
-       * chance; `crit` in the boss content adds to both). 0 switches boss crits off.
+       * chance; `crit` in the boss content adds to both). 0 switches boss crits off. On (Misa): 5%, +50%.
        */
-      bossCritChanceBp: 0,
+      bossCritChanceBp: 500,
       bossCritBp: 5_000,
       /**
        * Prototype (study only): the chance that the boss's normal attack picks a random living
@@ -117,7 +119,7 @@ export const RULES = {
      */
     phases: [
       { id: 'phase1', rounds: 10, clearAtLossBp: 1_800 },
-      { id: 'phase2', rounds: 10, clearAtLossBp: 5_400 },
+      { id: 'phase2', rounds: 10, clearAtLossBp: 5_200 },
       { id: 'finale', rounds: 12, clearAtLossBp: 10_000 },
     ],
     scaling: {
@@ -127,17 +129,32 @@ export const RULES = {
        * results in V8 and workerd (the only runtimes we use), and a test pins the values; the
        * result is floored to integer basis points straight away, so nothing float-valued is stored
        * or compared afterwards.
+       *
+       * Every signed-up player counts once, whatever their level, power or gear, so the head count
+       * is weight-neutral: a veteran adds exactly what a newcomer adds, and one strong player
+       * cannot inflate the boss for everybody. That is why no per-player cap is needed (the old
+       * average-level factor, which could be pushed by a few veterans, is gone). A party is at
+       * most `maxPartySize` players, which bounds the factor.
        */
-      hpExponent: { num: 12, den: 10 },
+      hpExponent: { num: 11, den: 10 },
       /**
-       * Boss HP and Attack grow by this many basis points per average creature level above 1.
-       * The exponent above 1 and the per-level rate are balance tuning
-       * (docs/balance/report-2026-10-11.md): bigger servers earn more Bait per player, so the boss
-       * must grow faster than the head count to keep the finale win rate flat from 5 to 15
-       * players, and fast enough per level that a week-4 and a week-8 roster face the same odds.
+       * Boss Rank: every rank above 1 multiplies boss HP by this many basis points more than the
+       * rank below it, compounding (rank r is 1.20^(r-1) at 2000), floored to integer basis points
+       * at every step (`rankFactorBp`). Compounding rather than linear, so a rank always costs the
+       * same share of the team's damage and a high-ranked server keeps a real ladder instead of
+       * ever smaller steps. Tuned by the simulator (docs/balance/report-2026-10-11-progression.md).
        */
-      hpPerLevelBp: 1_200,
-      atkPerLevelBp: 600,
+      rankStepBp: 4_000,
+      /**
+       * Boss Attack follows the rank factor at this share (10000 = the same factor as HP). Half, as
+       * the old level scaling did (6% against 12% a level), so higher ranks do not knock out the row.
+       */
+      atkRankShareBp: 5_000,
+      /**
+       * Highest rank the ladder reaches. At 20% a step the top factor is about 197x, far beyond what
+       * any roster can beat, so nobody gets there; the cap only keeps every number small and safe.
+       */
+      maxRank: 30,
     },
     softCap: {
       /** A player's share of total contribution counts fully up to this many basis points... */
@@ -196,6 +213,54 @@ export const RULES = {
       softPityStepBp: 800,
       /** The raid without a jackpot on which one is guaranteed. */
       hardPityRaid: 10,
+    },
+  },
+  /**
+   * Week-to-week progression (docs/design/progression.md): the Boss Rank ladder, seasons and
+   * Festival weeks, rank-scaled rewards and the readiness band. All integers.
+   */
+  progression: {
+    /**
+     * A season is this many raid weeks: the first `seasonWeeks - 1` are normal, the last is a
+     * Festival. Weeks are counted by the global week index, so the worker needs no stored counter.
+     */
+    seasonWeeks: 5,
+    /** A finale win in a normal week raises the server's rank by this much. */
+    winRankUp: 1,
+    /**
+     * A finale win in a Festival week raises the rank by this much. 0: the Festival is a break from
+     * the ladder, its reward is the Essence bonus and the Festival creature.
+     */
+    festivalWinRankUp: 0,
+    /** The Festival boss fights at (rank - this), never below rank 1. */
+    festivalEaseRanks: 3,
+    /** After every Festival (won or lost) the server's rank eases by this much, never below 1. */
+    seasonResetRanks: 1,
+    /** Festival weeks pay this much more Essence (basis points; 5000 = +50%). */
+    festivalEssenceBp: 5_000,
+    /**
+     * Essence of every stage and the jackpot grows with the server's rank: the multiplier is
+     * 10000 + rankRewardBp x (rank - 1) basis points, capped at `rankRewardCapBp` (20000 = x2).
+     */
+    rankRewardBp: 600,
+    rankRewardCapBp: 20_000,
+    /**
+     * Placement rank for a new server: the rank whose boss is as hard as the old per-level rule would
+     * have made it. `legacyHpPerLevelBp` is that old rule (boss HP +12% per average creature level
+     * above 1), kept only to place a new server once.
+     */
+    placement: { legacyHpPerLevelBp: 1_200 },
+    /**
+     * Readiness band (long shot, even, likely, strong) from the forecast margin: mean finale damage
+     * over the boss HP left, in basis points (10000 = exactly enough). Bands start at these margins.
+     * Calibrated by the simulator (docs/balance/report-2026-10-11-progression.md).
+     */
+    readiness: {
+      evenFromBp: 8_000,
+      likelyFromBp: 8_800,
+      strongFromBp: 10_300,
+      /** Fresh seeds a forecast averages over. */
+      samples: 5,
     },
   },
   abilities: {

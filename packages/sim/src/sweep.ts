@@ -1,4 +1,4 @@
-import { content, createSeededRng, type Element } from '@creatures/game';
+import { RULES, content, createSeededRng, type Element } from '@creatures/game';
 import { buildNames, describeEvent, type EventNames } from '@creatures/engine';
 import type { ArchetypeId } from './archetypes';
 import { ARCHETYPES } from './archetypes';
@@ -127,6 +127,7 @@ export function runSweep(options: SweepOptions): SweepResult {
         const week = openRaidWeek(boss, signed, {
           keepFinale: wantExample,
           measureAbilities: true,
+          luck: RULES.combat.luck,
         });
         playWholeWeek(week, createSeededRng(`${base}:fight`), createSeededRng(`${base}:loot`));
         const s = summarizeRaid(week);

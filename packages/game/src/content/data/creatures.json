@@ -574,5 +574,59 @@
       "id": "aurora-surge"
     },
     "flavor": "A graceful creature that trails ribbons of aurora light as it drifts."
+  },
+  {
+    "id": "lanternfin",
+    "name": "Lanternfin",
+    "line": "lanternfin",
+    "stage": 1,
+    "element": "tide",
+    "rarity": "epic",
+    "role": "support",
+    "catchable": false,
+    "starter": false,
+    "festival": true,
+    "baseStats": {
+      "hp": 198,
+      "atk": 38,
+      "spd": 47
+    },
+    "growth": {
+      "hp": 13,
+      "atk": 3,
+      "spd": 3
+    },
+    "levelCap": 30,
+    "ability": {
+      "id": "lantern-glow"
+    },
+    "flavor": "A fish with a paper-bright lantern for a tail, seen only drifting through festival nights."
+  },
+  {
+    "id": "hearthshell",
+    "name": "Hearthshell",
+    "line": "hearthshell",
+    "stage": 1,
+    "element": "ember",
+    "rarity": "epic",
+    "role": "guard",
+    "catchable": false,
+    "starter": false,
+    "festival": true,
+    "baseStats": {
+      "hp": 236,
+      "atk": 34,
+      "spd": 22
+    },
+    "growth": {
+      "hp": 16,
+      "atk": 2,
+      "spd": 1
+    },
+    "levelCap": 30,
+    "ability": {
+      "id": "hearth-ward"
+    },
+    "flavor": "A tortoise that carries a small bonfire on its shell, and shows up when a festival starts."
   }
 ]

@@ -8,3 +8,4 @@ export * from './nickname';
 export * from './loot';
 export * from './power';
 export * from './abilities';
+export * from './progression';

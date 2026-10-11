@@ -2,6 +2,7 @@ export * from './types';
 export * from './zones';
 export * from './matchup';
 export * from './scaling';
+export * from './forecast';
 export * from './row';
 export * from './mutators';
 export * from './describe';

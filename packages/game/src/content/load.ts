@@ -80,6 +80,14 @@ function checkCreatures(pack: ContentPack): void {
       if (c.evolvesTo !== undefined) fail(`stage-2 species "${c.id}" must not evolve`);
     }
 
+    if (c.festival === true) {
+      if (c.catchable) fail(`festival species "${c.id}" must not be catchable`);
+      if (c.starter) fail(`festival species "${c.id}" must not be a starter`);
+      if (c.stage !== 1 || c.evolvesTo !== undefined) {
+        fail(`festival species "${c.id}" must be a single-stage species`);
+      }
+    }
+
     if (c.evolvesTo !== undefined) {
       const target = byId.get(c.evolvesTo.species);
       if (c.stage !== 1) fail(`only stage-1 species can evolve ("${c.id}")`);
@@ -149,6 +157,10 @@ function checkReactions(pack: ContentPack): void {
 function checkBoss(boss: BossDef, adaptationIds: ReadonlyMap<string, number>): void {
   if (!adaptationIds.has(boss.adaptation)) {
     fail(`boss "${boss.id}" names unknown adaptation "${boss.adaptation}"`);
+  }
+  if (boss.hpExponent !== undefined) {
+    const e = boss.hpExponent.num / boss.hpExponent.den;
+    if (e < 0.5 || e > 2) fail(`boss "${boss.id}" has an HP exponent outside 0.5 to 2`);
   }
   const gimmickIds = new Set<string>();
   for (const g of boss.gimmicks) {
@@ -252,7 +264,10 @@ function checkAbilities(pack: ContentPack): void {
 
   const referenced = new Set<string>();
   for (const c of pack.creatures) {
-    if (c.ability === undefined) continue;
+    if (c.ability === undefined) {
+      if (c.festival === true) fail(`festival species "${c.id}" needs an ability`);
+      continue;
+    }
     const def = byId.get(c.ability.id);
     if (def === undefined) fail(`species "${c.id}" has unknown ability "${c.ability.id}"`);
     if (def.kind !== 'creature') {

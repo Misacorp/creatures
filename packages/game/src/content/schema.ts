@@ -70,8 +70,13 @@ export const CreatureSpeciesSchema = v.strictObject({
   evolvesTo: v.optional(EvolutionSchema),
   /** The creature's finale ability (a `kind: 'creature'` entry of `finaleAbilities`). */
   ability: v.optional(v.strictObject({ id: IdSchema })),
-  /** Optional crit bonus over the baseline (a high-crit archetype). Inert while luck is off. */
+  /** Optional crit bonus over the baseline (a high-crit archetype). */
   crit: v.optional(CritBonusSchema),
+  /**
+   * Festival-only species: never catchable on expeditions, granted for winning a Festival finale
+   * (`festivalCreatureFor`). Must not be catchable, a starter or part of an evolution line.
+   */
+  festival: v.optional(v.boolean()),
   flavor: v.pipe(v.string(), v.minLength(1), v.maxLength(160)),
 });
 export type CreatureSpecies = v.InferOutput<typeof CreatureSpeciesSchema>;
@@ -161,6 +166,18 @@ export const BossSchema = v.strictObject({
   finaleRounds: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(MAX_FINALE_ROUNDS)),
   /** Optional crit bonus over the boss baseline (`RULES.combat.luck`). Inert while luck is off. */
   crit: v.optional(CritBonusSchema),
+  /**
+   * Optional head-count exponent of this boss's HP, a fraction `num / den` (absent:
+   * `RULES.raid.scaling.hpExponent`). Bosses answer differently to a bigger raid (Backdraft's
+   * reflect matters less with many creatures, resisted reactions matter more), so each boss gets the
+   * exponent that keeps its odds flat from 5 to 15 players (docs/balance/report-2026-10-11-progression.md).
+   */
+  hpExponent: v.optional(
+    v.strictObject({
+      num: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(500)),
+      den: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(500)),
+    }),
+  ),
 });
 export type BossDef = v.InferOutput<typeof BossSchema>;
 

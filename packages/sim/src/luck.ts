@@ -610,12 +610,26 @@ export interface LuckSetting {
 }
 
 /**
+ * The study's base: the shipped sizes and caps with every chance at zero (the shipped rules now
+ * have crits on, but the study compares settings against "no luck").
+ */
+const STUDY_BASE: LuckConfig = {
+  ...RULES.combat.luck,
+  critChanceBp: 0,
+  bossCritChanceBp: 0,
+  bossRandomTargetBp: 0,
+  spreadBp: 0,
+  surgeChanceBp: 0,
+  slumpChanceBp: 0,
+};
+
+/**
  * Parses `critChanceBp=1500,critBp=5000` over the shipped (all off) luck rules. Two study keys are
  * not luck settings: `bossAtkBp` (boss Attack in basis points of the shipped value, 20000 = double)
  * and `ko` (calibrate boss Attack for that many knockouts per typical finale).
  */
 export function parseLuck(text: string): LuckSetting {
-  const luck: Record<string, number> = { ...RULES.combat.luck };
+  const luck: Record<string, number> = { ...STUDY_BASE };
   const setting: LuckSetting = { label: text, luck: undefined };
   for (const part of text.split(',')) {
     const [key, value] = part.split('=');

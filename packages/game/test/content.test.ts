@@ -48,7 +48,7 @@ function creature(pack: ContentPack, id: string) {
 describe('shipped content', () => {
   it('loads', () => {
     expect(() => loadContent(clone())).not.toThrow();
-    expect(content.creatures).toHaveLength(20);
+    expect(content.creatures).toHaveLength(22);
   });
 
   it('has 12 catchable species and 3 common starters of different elements', () => {
@@ -357,16 +357,16 @@ describe('creature abilities', () => {
     return a;
   };
 
-  it('gives all 20 species an ability: 8 lines with two strengths and 4 single species', () => {
+  it('gives all 22 species an ability: 8 lines with two strengths and 6 single species', () => {
     for (const c of content.creatures) {
       expect(c.ability, c.id).toBeDefined();
       expect(ability(c.ability?.id ?? '').kind).toBe('creature');
     }
-    expect(content.finaleAbilities.filter((a) => a.kind === 'creature')).toHaveLength(20);
+    expect(content.finaleAbilities.filter((a) => a.kind === 'creature')).toHaveLength(22);
     expect(content.finaleAbilities.filter((a) => a.kind === 'basic')).toHaveLength(4);
     // Every ability belongs to exactly one species.
     const ids = content.creatures.map((c) => c.ability?.id);
-    expect(new Set(ids).size).toBe(20);
+    expect(new Set(ids).size).toBe(22);
   });
 
   it('has a stage-2 ability that is stronger than stage 1 in every line', () => {
@@ -419,11 +419,95 @@ describe('crit archetype', () => {
     }
   });
 
-  it('ships with crits and boss crits switched off, and sane caps', () => {
-    expect(RULES.combat.luck.critChanceBp).toBe(0);
-    expect(RULES.combat.luck.bossCritChanceBp).toBe(0);
+  it('ships with crits and boss crits switched on at 5% and +50%, and sane caps', () => {
+    expect(RULES.combat.luck.critChanceBp).toBe(500);
+    expect(RULES.combat.luck.critBp).toBe(5_000);
+    expect(RULES.combat.luck.bossCritChanceBp).toBe(500);
+    expect(RULES.combat.luck.bossCritBp).toBe(5_000);
     expect(RULES.combat.luck.critMaxChanceBp).toBeLessThanOrEqual(3_000);
     expect(RULES.combat.luck.critMaxBp).toBeLessThanOrEqual(15_000);
+  });
+});
+
+describe('festival creatures', () => {
+  const festival = content.creatures.filter((c) => c.festival === true);
+
+  it('ships two festival-only species: never catchable, single-stage, with an ability', () => {
+    expect(festival.map((c) => c.id)).toEqual(['lanternfin', 'hearthshell']);
+    for (const c of festival) {
+      expect(c.catchable, c.id).toBe(false);
+      expect(c.starter, c.id).toBe(false);
+      expect(c.stage, c.id).toBe(1);
+      expect(c.evolvesTo, c.id).toBeUndefined();
+      expect(c.ability, c.id).toBeDefined();
+      expect(c.levelCap, c.id).toBe(30);
+    }
+    // Nothing else is flagged, and the 12 catchable species are untouched.
+    expect(
+      content.creatures.filter((c) => c.festival !== true && !c.catchable && c.stage === 1),
+    ).toHaveLength(0);
+  });
+
+  it('gives them a role and an element the catchable epics lack, at epic strength', () => {
+    const [lantern, hearth] = festival;
+    expect([lantern?.element, lantern?.role, lantern?.rarity]).toEqual(['tide', 'support', 'epic']);
+    expect([hearth?.element, hearth?.role, hearth?.rarity]).toEqual(['ember', 'guard', 'epic']);
+    const epics = content.creatures.filter((c) => c.rarity === 'epic' && c.festival !== true);
+    const total = (c: { baseStats: { hp: number; atk: number; spd: number } }) =>
+      c.baseStats.hp + c.baseStats.atk + c.baseStats.spd;
+    const lo = Math.min(...epics.map(total));
+    const hi = Math.max(...epics.map(total));
+    for (const c of festival) {
+      expect(total(c)).toBeGreaterThanOrEqual(lo - 20);
+      expect(total(c)).toBeLessThanOrEqual(hi + 20);
+    }
+  });
+
+  it('is rejected when a festival species is catchable, a starter, evolves or has no ability', () => {
+    const lantern = (p: ContentPack) => creature(p, 'lanternfin');
+    expect(() => loadContent(mutate((p) => (lantern(p).catchable = true)))).toThrow(/festival/);
+    expect(() =>
+      loadContent(
+        mutate((p) => {
+          lantern(p).catchable = true;
+          lantern(p).starter = true;
+        }),
+      ),
+    ).toThrow();
+    expect(() => loadContent(mutate((p) => delete lantern(p).ability))).toThrow(/needs an ability/);
+    expect(() =>
+      loadContent(
+        mutate((p) => {
+          lantern(p).evolvesTo = { species: 'hearthshell', level: 15, essence: 10 };
+        }),
+      ),
+    ).toThrow();
+  });
+});
+
+describe('boss head-count exponent', () => {
+  it('ships a sensible exponent for every boss, between 1 and 1.3', () => {
+    for (const b of content.bosses) {
+      const e = (b.hpExponent?.num ?? 1) / (b.hpExponent?.den ?? 1);
+      expect(e, b.id).toBeGreaterThanOrEqual(1);
+      expect(e, b.id).toBeLessThanOrEqual(1.3);
+    }
+  });
+
+  it('rejects an exponent outside 0.5 to 2 and unknown keys', () => {
+    const boss = (p: ContentPack) => p.bosses[0] as ContentPack['bosses'][number];
+    expect(() => loadContent(mutate((p) => (boss(p).hpExponent = { num: 21, den: 10 })))).toThrow(
+      /exponent/,
+    );
+    expect(() => loadContent(mutate((p) => (boss(p).hpExponent = { num: 4, den: 10 })))).toThrow(
+      /exponent/,
+    );
+    expect(() =>
+      loadContent(mutate((p) => (boss(p).hpExponent = { num: 12, den: 10, x: 1 } as never))),
+    ).toThrow(/schema/);
+    expect(() => loadContent(mutate((p) => (boss(p).hpExponent = { num: 12, den: 0 })))).toThrow(
+      /schema/,
+    );
   });
 });
 

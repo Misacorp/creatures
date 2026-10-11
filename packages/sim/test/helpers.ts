@@ -8,6 +8,7 @@ export const TINY: RunSettings = {
   runsPerCell: 2,
   economySims: 1,
   pitySims: 1,
+  longRunSims: 1,
   counts: [1, 5],
 };
 

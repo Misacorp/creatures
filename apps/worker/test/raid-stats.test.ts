@@ -63,7 +63,7 @@ describe('the close rule', () => {
   it('reads its limits from RULES and needs the clear threshold of the stage', () => {
     expect(RULES.raid.closeCall).toEqual({ missBp: 1000, spareBp: 1000 });
     expect(needed).toBe(180);
-    expect(hpNeeded('phase2', 1000)).toBe(540);
+    expect(hpNeeded('phase2', 1000)).toBe(RULES.raid.phases[1].clearAtLossBp / 10);
     expect(hpNeeded('finale', 1000)).toBe(1000);
     // Rounded up: 18% of 1001 is 180.18, so 181 HP must come off.
     expect(hpNeeded('phase1', 1001)).toBe(181);
@@ -90,10 +90,17 @@ describe('the close rule', () => {
   it('phase 2 uses its own, cumulative threshold', () => {
     const threshold = hpNeeded('phase2', 1000);
     const args = { phase: 'phase2', hpMax: 1000, rounds: 10, maxRounds: 10 } as const;
-    expect(isCloseCall({ ...args, cleared: false, hpEnd: 1000 - (threshold - 54) })).toBe(true);
-    expect(isCloseCall({ ...args, cleared: false, hpEnd: 1000 - (threshold - 55) })).toBe(false);
-    expect(isCloseCall({ ...args, cleared: true, hpEnd: 1000 - (threshold + 54) })).toBe(true);
-    expect(isCloseCall({ ...args, cleared: true, hpEnd: 1000 - (threshold + 55) })).toBe(false);
+    // 10% of the threshold: the close rule's miss and spare margins.
+    const tenth = threshold / 10;
+    expect(Number.isInteger(tenth)).toBe(true);
+    expect(isCloseCall({ ...args, cleared: false, hpEnd: 1000 - (threshold - tenth) })).toBe(true);
+    expect(isCloseCall({ ...args, cleared: false, hpEnd: 1000 - (threshold - tenth - 1) })).toBe(
+      false,
+    );
+    expect(isCloseCall({ ...args, cleared: true, hpEnd: 1000 - (threshold + tenth) })).toBe(true);
+    expect(isCloseCall({ ...args, cleared: true, hpEnd: 1000 - (threshold + tenth + 1) })).toBe(
+      false,
+    );
   });
 
   it('finale loss: close when the boss kept at most 10% of its maximum HP', () => {

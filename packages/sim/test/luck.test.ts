@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RULES } from '@creatures/game';
+import { NO_LUCK, RULES } from '@creatures/game';
 import { main as luckMain } from '../src/luck-cli';
 import {
   buildCases,
@@ -83,7 +83,9 @@ describe('luck settings', () => {
 
   it('knows when no luck is on', () => {
     expect(luckIsOff(undefined)).toBe(true);
-    expect(luckIsOff(RULES.combat.luck)).toBe(true);
+    expect(luckIsOff(NO_LUCK)).toBe(true);
+    // The shipped rules have crits on.
+    expect(luckIsOff(RULES.combat.luck)).toBe(false);
     expect(luckIsOff(parseLuck('critBp=9000').luck)).toBe(true);
     expect(luckIsOff(parseLuck('critChanceBp=1').luck)).toBe(false);
     expect(luckIsOff(parseLuck('slumpChanceBp=1').luck)).toBe(false);

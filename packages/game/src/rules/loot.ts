@@ -1,5 +1,6 @@
 import { chance, type Rng } from '../rng';
 import { RULES } from './config';
+import { scaleEssence } from './progression';
 
 export type RaidStage = 'phase1' | 'phase2' | 'finale';
 
@@ -87,13 +88,18 @@ export function splitByWeight(
  * Essence for one cleared stage: a flat amount for everyone signed up plus a contribution-weighted
  * pool (default 3/7 of the flat total, so about 70% flat and 30% by contribution), split with largest-remainder rounding so
  * the pool is paid out exactly. Guests are never in `signedUp`, so they earn nothing.
+ *
+ * `week` scales the payout with the server's rank and the Festival bonus (`essenceMultiplierBp`):
+ * the flat amount is scaled first and the pool is 3/7 of the scaled flat total, so the split is
+ * still exact. Omitted: rank 1, no Festival (the base amounts).
  */
 export function essenceForStage(
   stage: RaidStage,
   signedUp: readonly string[],
   weights: Readonly<Record<string, number>>,
+  week: { rank: number; festival: boolean } = { rank: 1, festival: false },
 ): Record<string, number> {
-  const flat = RULES.raid.essence.flat[stage];
+  const flat = scaleEssence(RULES.raid.essence.flat[stage], week);
   const ids = [...new Set(signedUp)];
   const pool = Math.floor((flat * ids.length * RULES.raid.essence.poolBp) / 10_000);
   const shares = splitByWeight(pool, ids, weights);

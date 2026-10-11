@@ -285,7 +285,8 @@ export function buildPhaseInput(
   let hpCurrent = partyRow.hp_current;
   let bossAtk = partyRow.boss_atk;
   if (hpMax === null || hpCurrent === null || bossAtk === null) {
-    const scaled = scaleBoss(boss, memberIds.length, avgLevel);
+    // Boss Rank phase 1: the ladder is not stored yet, so every server fights at rank 1 for now.
+    const scaled = scaleBoss(boss, memberIds.length, 1);
     hpMax = scaled.maxHp;
     hpCurrent = scaled.maxHp;
     bossAtk = scaled.atk;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { content } from '@creatures/game';
+import { RULES, content } from '@creatures/game';
 import {
   defaultAbilityRound,
   needsCreature,
@@ -69,6 +69,23 @@ describe('the prefix property', () => {
       }
     }
     expect(compared).toBeGreaterThan(1000);
+  });
+
+  it('holds with the shipped luck rules (player and boss crits) switched on', () => {
+    let crits = 0;
+    for (let s = 0; s < 20; s++) {
+      const seed = `prefix-shipped-${s}`;
+      const base: FightInput = { ...finaleInput(seed, []), luck: RULES.combat.luck };
+      const baseResult = simulateFight(base, rng());
+      crits += baseResult.events.filter((e) => 'crit' in e && e.crit === true).length;
+      for (const k of [2, 5, 9]) {
+        const extra = extraAbility(base, s + k, k);
+        const result = simulateFight({ ...base, finaleAbilities: [extra] }, rng());
+        expect(eventsBefore(result.events, k)).toEqual(eventsBefore(baseResult.events, k));
+      }
+    }
+    // The comparison is not vacuous: crits really happen.
+    expect(crits).toBeGreaterThan(0);
   });
 
   it('moving a later ability between rounds after k changes nothing up to round k', () => {

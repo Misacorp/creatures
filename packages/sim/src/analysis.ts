@@ -1,6 +1,7 @@
 import { ELEMENTS, content, type Element, type Rarity } from '@creatures/game';
 import { ARCHETYPES, type ArchetypeId } from './archetypes';
 import type { EconomyResult, PlayerHistory, WeekRecord } from './economy';
+import { analyseLongRun, type LongRunInput, type LongRunStats } from './ladder';
 import type { RunRecord, SweepResult } from './sweep';
 import { mean, median, percentile, sum } from './util';
 
@@ -16,6 +17,8 @@ export interface AnalysisInput {
   /** Longer sims used for the jackpot and pity targets. */
   pitySims: readonly EconomyResult[];
   sweep: SweepResult;
+  /** Long-run sims (the ladder and Festivals) per server size. */
+  longRun: readonly LongRunInput[];
 }
 
 export interface CellStats {
@@ -47,6 +50,8 @@ export interface CreatureStats {
   rarity: Rarity;
   element: Element;
   role: string;
+  /** A Festival-only species: compared with the catchable median but left out of the balance targets. */
+  festival: boolean;
   appearances: number;
   pickRate: number;
   avgLevel: number;
@@ -114,6 +119,7 @@ export interface Analysis {
     max: number;
   }[];
   abilityShares: AbilityShareRow[];
+  longRun: LongRunStats[];
   jackpots: {
     source: string;
     rolls: number;
@@ -201,7 +207,7 @@ function progression(
 }
 
 export function analyse(input: AnalysisInput): Analysis {
-  const { sweep, defaultSims, pitySims, weeks } = input;
+  const { sweep, defaultSims, pitySims, weeks, longRun } = input;
   const records = sweep.records;
   const metrics: Record<string, number | null> = {
     'choice.elementPickRateMin': null,
@@ -304,6 +310,7 @@ export function analyse(input: AnalysisInput): Analysis {
       rarity: stage1.rarity,
       element: stage1.element,
       role: stage1.role,
+      festival: stage1.festival === true,
       appearances: agg.appearances,
       pickRate: totalPicks === 0 ? 0 : agg.appearances / totalPicks,
       avgLevel: agg.levelSum / agg.appearances,
@@ -312,15 +319,21 @@ export function analyse(input: AnalysisInput): Analysis {
     });
   }
   creatures.sort((a, b) => (a.line < b.line ? -1 : 1));
+  // The rarity median is taken over the catchable species. Festival species are compared with it
+  // (the report shows their ratio) but are not in the balance targets: players get them late, at
+  // level 1, so their averages say little about the species.
   for (const rarity of ['common', 'rare', 'epic'] as const) {
     const group = creatures.filter(
       (c) => c.rarity === rarity && c.appearances >= MIN_CREATURE_APPEARANCES,
     );
-    const med = median(group.map((c) => c.avgContribution));
+    const med = median(group.filter((c) => !c.festival).map((c) => c.avgContribution));
     if (med === null || med === 0) continue;
     for (const c of group) c.ratio = c.avgContribution / med;
   }
-  const ratios = creatures.map((c) => c.ratio).filter((x): x is number => x !== null);
+  const ratios = creatures
+    .filter((c) => !c.festival)
+    .map((c) => c.ratio)
+    .filter((x): x is number => x !== null);
   metrics['choice.creatureRatioMax'] = ratios.length === 0 ? null : Math.max(...ratios);
   metrics['choice.creatureRatioMin'] = ratios.length === 0 ? null : Math.min(...ratios);
 
@@ -426,12 +439,18 @@ export function analyse(input: AnalysisInput): Analysis {
   metrics['abilities.creatureShareLatestRoster'] = latest?.creatureShare ?? null;
   metrics['abilities.basicShareLatestRoster'] = latest?.basicShare ?? null;
 
+  // ---- long-running servers: the ladder, Festivals, seasons ----
+  const longRunResult = analyseLongRun(longRun);
+  Object.assign(metrics, longRunResult.metrics);
+
   // ---- outliers ----
   const outliers: Outliers = {
     dominantCreatures: creatures
-      .filter((c) => c.ratio !== null && c.ratio > 1.6)
+      .filter((c) => !c.festival && c.ratio !== null && c.ratio > 1.6)
       .map((c) => c.name),
-    weakCreatures: creatures.filter((c) => c.ratio !== null && c.ratio < 0.6).map((c) => c.name),
+    weakCreatures: creatures
+      .filter((c) => !c.festival && c.ratio !== null && c.ratio < 0.6)
+      .map((c) => c.name),
     deadElements: elements.filter((e) => e.pickRate < DEAD_ELEMENT_PICK_RATE).map((e) => e.element),
     unbeatableBosses: typicalByBoss.filter((b) => b.finaleWinRate === 0).map((b) => b.boss),
     trivialBosses: typicalByBoss.filter((b) => b.finaleWinRate === 1).map((b) => b.boss),
@@ -453,6 +472,7 @@ export function analyse(input: AnalysisInput): Analysis {
     archetypeShares,
     essence,
     abilityShares,
+    longRun: longRunResult.stats,
     jackpots,
     outliers,
   };

@@ -8,6 +8,7 @@ import {
   scaleMix,
 } from './archetypes';
 import { runEconomy, type EconomyResult } from './economy';
+import { LONG_RUN_GROUPS, LONG_RUN_WEEKS } from './ladder';
 import { TARGETS, evaluateTargets, type TargetResult } from './targets';
 import { runSweep, type ExampleFight } from './sweep';
 
@@ -23,6 +24,8 @@ export interface RunSettings {
   economySims: number;
   /** 20-week economy sims of the default server for the jackpot and pity targets. */
   pitySims: number;
+  /** Long-run sims (30 weeks, with the ladder and Festivals) per server size (5, 10 and 15 players). */
+  longRunSims: number;
   /** Player counts of the raid sweep. */
   counts: number[];
 }
@@ -42,6 +45,7 @@ export function defaultSettings(
     runsPerCell: quick ? 20 : 200,
     economySims: quick ? 4 : 24,
     pitySims: quick ? 8 : 40,
+    longRunSims: quick ? 6 : 40,
     counts: [...SWEEP_COUNTS],
   };
 }
@@ -59,10 +63,11 @@ export function snapshotWeeks(weeks: number): number[] {
   return wanted.length > 0 ? wanted : [weeks];
 }
 
-export function runSimulation(settings: RunSettings): RunOutput {
-  if (!Number.isInteger(settings.weeks) || settings.weeks < 1 || settings.weeks > 104) {
-    throw new RangeError('weeks must be an integer from 1 to 104');
-  }
+/** The economy sims behind the raid sweep: roster snapshots per player count, and the default server's sims. */
+export function runEconomies(settings: RunSettings): {
+  snapshots: Map<number, EconomyResult['snapshots']>;
+  defaultSims: EconomyResult[];
+} {
   const snapshots = new Map<number, EconomyResult['snapshots']>();
   let defaultSims: EconomyResult[] = [];
   const countsToRun = [...new Set([...settings.counts, DEFAULT_SERVER_SIZE])].sort((a, b) => a - b);
@@ -85,6 +90,14 @@ export function runSimulation(settings: RunSettings): RunOutput {
     );
     if (count === DEFAULT_SERVER_SIZE) defaultSims = sims;
   }
+  return { snapshots, defaultSims };
+}
+
+export function runSimulation(settings: RunSettings): RunOutput {
+  if (!Number.isInteger(settings.weeks) || settings.weeks < 1 || settings.weeks > 104) {
+    throw new RangeError('weeks must be an integer from 1 to 104');
+  }
+  const { snapshots, defaultSims } = runEconomies(settings);
 
   const pitySims: EconomyResult[] = [];
   for (let k = 0; k < settings.pitySims; k++) {
@@ -98,13 +111,25 @@ export function runSimulation(settings: RunSettings): RunOutput {
     );
   }
 
+  const longRun = LONG_RUN_GROUPS.map((g) => ({
+    id: g.id,
+    sims: Array.from({ length: settings.longRunSims }, (_, k) =>
+      runEconomy({
+        seed: `${settings.seed}:long:${g.count}:${k}`,
+        weeks: LONG_RUN_WEEKS,
+        mix: g.count === DEFAULT_SERVER_SIZE ? DEFAULT_MIX : scaleMix(g.count),
+        snapshotWeeks: [],
+      }),
+    ),
+  }));
+
   const sweep = runSweep({
     seed: settings.seed,
     runs: settings.runsPerCell,
     counts: settings.counts,
     snapshots,
   });
-  const analysis = analyse({ weeks: settings.weeks, defaultSims, pitySims, sweep });
+  const analysis = analyse({ weeks: settings.weeks, defaultSims, pitySims, sweep, longRun });
   return {
     settings,
     analysis,

@@ -12,7 +12,16 @@ import {
 import { describeEvent } from '../src/describe';
 import { eventsOf, input, randomInput, run, slot, species } from './helpers';
 
-const OFF: LuckConfig = RULES.combat.luck;
+/** Every chance at zero (the shipped caps and sizes), the base the luck tests switch things on from. */
+const OFF: LuckConfig = {
+  ...RULES.combat.luck,
+  critChanceBp: 0,
+  bossCritChanceBp: 0,
+  bossRandomTargetBp: 0,
+  spreadBp: 0,
+  surgeChanceBp: 0,
+  slumpChanceBp: 0,
+};
 const CRIT: LuckConfig = { ...OFF, critChanceBp: 3_000, critBp: 10_000 };
 const SPREAD: LuckConfig = { ...OFF, spreadBp: 3_000 };
 const STREAKS: LuckConfig = {
@@ -36,8 +45,14 @@ const damageOf = (events: readonly FightEvent[]): number =>
   events.reduce((n, e) => (e.t === 'hit' ? n + e.damage : n), 0);
 
 describe('luck is off by default', () => {
-  it('ships with every chance at zero', () => {
-    expect(RULES.combat.luck.critChanceBp).toBe(0);
+  it('ships crits on (5% and +50%, players and boss) and spread and streaks off', () => {
+    expect(RULES.combat.luck.critChanceBp).toBe(500);
+    expect(RULES.combat.luck.critBp).toBe(5_000);
+    expect(RULES.combat.luck.bossCritChanceBp).toBe(500);
+    expect(RULES.combat.luck.bossCritBp).toBe(5_000);
+    expect(RULES.combat.luck.critMaxChanceBp).toBe(3_000);
+    expect(RULES.combat.luck.critMaxBp).toBe(15_000);
+    expect(RULES.combat.luck.bossRandomTargetBp).toBe(0);
     expect(RULES.combat.luck.spreadBp).toBe(0);
     expect(RULES.combat.luck.surgeChanceBp).toBe(0);
     expect(RULES.combat.luck.slumpChanceBp).toBe(0);

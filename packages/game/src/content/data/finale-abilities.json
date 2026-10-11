@@ -398,5 +398,44 @@
     ],
     "defaultRound": 7,
     "description": "All creatures hit 6% harder for 2 rounds; the boss's adaptation is off for 2 rounds."
+  },
+  {
+    "id": "lantern-glow",
+    "name": "Lantern Glow",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "rally",
+        "damageBp": 700,
+        "rounds": 2
+      },
+      {
+        "op": "re_mark",
+        "element": "own"
+      }
+    ],
+    "defaultRound": 5,
+    "description": "Leaves the boss Soaked; all creatures hit 7% harder for 2 rounds."
+  },
+  {
+    "id": "hearth-ward",
+    "name": "Hearth Ward",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "shield_wall",
+        "zone": "own",
+        "reduceBp": 7000,
+        "rounds": 3
+      },
+      {
+        "op": "rally",
+        "damageBp": 700,
+        "rounds": 1
+      }
+    ],
+    "defaultRound": 3,
+    "defaultAtZoneHit": true,
+    "description": "Its zone takes 70% less damage for 3 rounds; all creatures hit 7% harder this round."
   }
 ]

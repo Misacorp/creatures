@@ -184,7 +184,9 @@ export function randomInput(seed: string, playerCount: number, phase: PhaseId): 
   }
   const b = content.bosses[pick(content.bosses.length)] ?? boss('tidal-colossus');
   const avg = Math.floor(row.reduce((s, c) => s + c.level, 0) / row.length);
-  const scaled = scaleBoss(b, playerCount, avg);
+  // The average level stands in for a rank here (random rows of every strength get a boss of a
+  // comparable strength); capped so Attack stays sensible.
+  const scaled = scaleBoss(b, playerCount, Math.min(avg, 8));
   const rule = content.adaptations.find((a) => a.id === b.adaptation);
   const basics = content.finaleAbilities.filter((a) => a.kind === 'basic');
   const abilities: AbilityChoice[] = players.map((playerId, i) => {

@@ -99,11 +99,8 @@ describe('resolving a week', () => {
         throw new Error('missing runs');
       const boss = content.bosses.find((b) => b.id === p1.input.boss.id);
       if (boss === undefined) throw new Error('boss');
-      const levels = rows<{ level: number }>(ctx.sql, 'SELECT level FROM creatures').map(
-        (r) => r.level,
-      );
-      const avg = Math.floor(levels.reduce((a, b) => a + b, 0) / levels.length);
-      const scaled = scaleBoss(boss, 6, avg);
+      // Rank 1 until the ladder is stored by the server (progression phase 2).
+      const scaled = scaleBoss(boss, 6, 1);
       expect(p1.input.bossHpPool).toEqual({ max: scaled.maxHp, current: scaled.maxHp });
       expect(p1.input.bossAtk).toBe(scaled.atk);
       // Each phase starts where the one before ended.
