@@ -25,12 +25,14 @@ const defaultIo: Io = {
   },
 };
 
-const USAGE = `Usage: node packages/sim/scripts/luck.mjs [--quick] [--seed <string>] [--seeds N] [--search N] [--passes N] [--cases N] [--stages finale|all] [--luck "critChanceBp=1500,critBp=5000;spreadBp=2000"]`;
+const USAGE = `Usage: node packages/sim/scripts/luck.mjs [--quick] [--seed <string>] [--seeds N] [--search N] [--passes N] [--cases N] [--stages finale|all] [--retune] [--json] [--luck "critChanceBp=500,bossCritChanceBp=500,ko=4;spreadBp=2000"]`;
 
 /** Runs the luck study and prints the report. Returns the exit code. */
 export function main(argv: readonly string[], io: Io = defaultIo): number {
   let settings: LuckStudySettings;
   let luck: LuckSetting[] = [];
+  let retune: boolean;
+  let json: boolean;
   try {
     const { values } = parseArgs({
       args: argv,
@@ -43,6 +45,8 @@ export function main(argv: readonly string[], io: Io = defaultIo): number {
         cases: { type: 'string' },
         stages: { type: 'string' },
         luck: { type: 'string' },
+        retune: { type: 'boolean' },
+        json: { type: 'boolean' },
         help: { type: 'boolean' },
       },
       strict: true,
@@ -73,12 +77,15 @@ export function main(argv: readonly string[], io: Io = defaultIo): number {
     if (stages === 'finale') settings.luckStages = ['finale'];
     else if (stages !== undefined && stages !== 'all')
       throw new Error('--stages must be finale or all');
+    retune = values['retune'] === true;
+    json = values['json'] === true;
     const luckText = values['luck'];
     if (typeof luckText === 'string') luck = luckText.split(';').map(parseLuck);
   } catch (error) {
     io.err(error instanceof Error ? error.message : String(error));
     return 2;
   }
-  io.out(formatLuckReport(runLuckStudy(settings, luck)));
+  const result = runLuckStudy(settings, luck, { retune });
+  io.out(json ? JSON.stringify(result) : formatLuckReport(result));
   return 0;
 }

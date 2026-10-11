@@ -110,16 +110,17 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
           : event.source === 'gimmick'
             ? 'strikes'
             : 'reflects damage onto';
+      const crit = event.crit === true ? ' Critical!' : '';
       if (event.shielded === true) {
         return `${names.boss} ${what} ${creature(event.target)}, but a Shield Wall stops it.`;
       }
       if (event.reducedBp !== undefined) {
-        return `${names.boss} ${what} ${creature(event.target)} for ${event.damage} (a Shield Wall softens it by ${event.reducedBp / 100}%).`;
+        return `${names.boss} ${what} ${creature(event.target)} for ${event.damage} (a Shield Wall softens it by ${event.reducedBp / 100}%).${crit}`;
       }
       if (event.from !== undefined) {
-        return `${creature(event.target)} takes the hit meant for ${creature(event.from)} (${event.damage}).`;
+        return `${creature(event.target)} takes the hit meant for ${creature(event.from)} (${event.damage}).${crit}`;
       }
-      return `${names.boss} ${what} ${creature(event.target)} for ${event.damage}.`;
+      return `${names.boss} ${what} ${creature(event.target)} for ${event.damage}.${crit}`;
     }
     case 'knockout':
       return `${creature(event.creature)} is knocked out.`;

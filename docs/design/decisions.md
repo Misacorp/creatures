@@ -285,3 +285,13 @@ Rules behind it: more leeters never pays anyone less; a solo leet pays the same 
 - **Ability weight:** creature and basic abilities at about a fifth of finale damage is right **[Misa]**.
 - **Defence:** keep it as it is. Harder future bosses will hit harder, which gives guard creatures and shields more value and a reason to build them for harder content **[Misa]**. Revisit when harder bosses arrive.
 - **Luck:** player skill (ability timing, coordination on defence) should push the odds up, not decide the outcome. A fight should keep an element of randomness **[Misa]**. Next step: measure how much a fixed roster's outcome varies with the seed alone, and if it is close to all-or-nothing, propose a small visible luck element (for example crits or a damage spread), tuned with the simulator.
+
+## 2026-10-11: Crits, boss crits, knockouts and guards measured (study, nothing switched on)
+
+**Decision.** Misa prefers crits to Fortune streaks, so crits were built as stats and measured together with boss crits and boss lethality (`docs/design/luck.md`, second study). Built, all default off and replay-safe: per-creature crit chance and crit damage (baseline in `RULES.combat.luck`, optional `crit` bonus on species and bosses in the content, caps 30% and +150%), boss crits (own chance and damage), "Critical!" on hits and boss hits, a prototype random boss target, and study-tool support for boss Attack dials, knockout targets, boss HP retuning and guard and shield measures. Four payoff species carry a +5% / +25% crit bonus, inert while luck is off.
+
+**Result.** Crits plus boss crits plus any boss lethality (up to 9 knockouts per finale, even with random targets) leave 74% to 94% of typical inputs decided and only 2% to 17% in the 15% to 85% band: the boss knocks out low-Attack front creatures, the same ones every seed, so knockouts are neither big nor random. Fortune streaks (17% each, plus or minus 60%, 3 rounds) on top reach 61% (finale) and 74% (week) in the band with a skilled uplift of +29 and +24. Boss Attack x3 (about 4 knockouts) makes Shield Walls count (leaving them out costs 8 points instead of 3) but the guard role stays worth about 1 point at any lethality.
+
+**Recommendation to Misa (pending his call).** Ship streaks plus crits as flavour; leave boss Attack at x1 until harder bosses arrive; for guard creatures to count, harder bosses need several hits a round or hits that reach key creatures and zone hits a guard can intercept.
+
+**Reasoning.** Variance has to be shared by the whole team to move outcomes; per-hit luck averages out and knockouts with front-first targeting are deterministic and cheap.

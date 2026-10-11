@@ -7,6 +7,7 @@ import type {
   Zone,
   AdaptationDef,
   LuckConfig,
+  CritBonus,
 } from '@creatures/game';
 
 export type { Zone, TurnOrder };
@@ -31,6 +32,8 @@ export interface FightSlot {
    * the species, level and fusion count. Guard's +30% HP is applied by the engine either way.
    */
   stats?: Stats;
+  /** Crit bonus over the baseline (from the species content); absent: none. */
+  crit?: CritBonus;
 }
 
 export interface AbilityChoice {
@@ -137,6 +140,8 @@ export type FightEvent =
       luckBp?: number;
       /** Set when the hit was critical ("Critical!"). */
       crit?: true;
+      /** The extra damage of that crit in basis points of the plain hit (this creature's crit damage). */
+      critBp?: number;
     }
   | {
       t: 'mark';
@@ -171,6 +176,10 @@ export type FightEvent =
       shielded?: boolean;
       /** Set when Shield Walls softened the hit (not fully): the total reduction in basis points. */
       reducedBp?: number;
+      /** Set when the boss's hit was critical ("Critical!"). */
+      crit?: true;
+      /** The extra damage of that crit in basis points (the boss's crit damage). */
+      critBp?: number;
     }
   | { t: 'knockout'; round: number; creature: string }
   | { t: 'silence'; round: number; creature: string; turns: number }

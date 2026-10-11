@@ -404,6 +404,29 @@ describe('creature abilities', () => {
   });
 });
 
+describe('crit archetype', () => {
+  it('gives a few payoff species a crit bonus, and nobody a bonus above the caps', () => {
+    const withCrit = content.creatures.filter((c) => c.crit !== undefined);
+    expect(withCrit.length).toBeGreaterThanOrEqual(2);
+    expect(withCrit.length).toBeLessThanOrEqual(6);
+    for (const c of withCrit) {
+      expect(c.role).toBe('payoff');
+      const baseChance = 500;
+      const baseDamage = 5_000;
+      // Baseline plus bonus stays inside the study's caps (30% chance, +150% damage).
+      expect(baseChance + (c.crit?.chanceBp ?? 0)).toBeLessThanOrEqual(3_000);
+      expect(baseDamage + (c.crit?.damageBp ?? 0)).toBeLessThanOrEqual(15_000);
+    }
+  });
+
+  it('ships with crits and boss crits switched off, and sane caps', () => {
+    expect(RULES.combat.luck.critChanceBp).toBe(0);
+    expect(RULES.combat.luck.bossCritChanceBp).toBe(0);
+    expect(RULES.combat.luck.critMaxChanceBp).toBeLessThanOrEqual(3_000);
+    expect(RULES.combat.luck.critMaxBp).toBeLessThanOrEqual(15_000);
+  });
+});
+
 describe('abilitiesFor', () => {
   const team = [
     { id: 'c1', speciesId: 'cindle' },
@@ -474,6 +497,27 @@ describe('loadContent rejects invalid raid content', () => {
         mutate((p) => Object.assign(boss(p).gimmicks[0] as object, { trigger: { every: 1 } })),
       ),
     ).toThrow(/schema/);
+  });
+
+  it('crit bonuses: optional, strict and in range', () => {
+    expect(() =>
+      loadContent(mutate((p) => (boss(p).crit = { chanceBp: 500, damageBp: 2_500 }))),
+    ).not.toThrow();
+    for (const bad of [
+      { chanceBp: -1, damageBp: 0 },
+      { chanceBp: 10_001, damageBp: 0 },
+      { chanceBp: 1.5, damageBp: 0 },
+      { chanceBp: 0, damageBp: 100_001 },
+      { chanceBp: 0 },
+      { chanceBp: 0, damageBp: 0, extra: 1 },
+    ]) {
+      expect(() => loadContent(mutate((p) => Object.assign(boss(p), { crit: bad })))).toThrow(
+        /schema/,
+      );
+      expect(() =>
+        loadContent(mutate((p) => Object.assign(p.creatures[0] as object, { crit: bad }))),
+      ).toThrow(/schema/);
+    }
   });
 
   it('cross-reference errors', () => {

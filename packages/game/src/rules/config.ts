@@ -67,10 +67,32 @@ export const RULES = {
      * See docs/design/luck.md.
      */
     luck: {
-      /** Chance (basis points) that a hit is critical. */
+      /**
+       * Baseline crit chance (basis points) of every creature's hit; 0 switches crits off. A
+       * creature's own chance is this plus its species bonus (`crit` in content), capped at
+       * `critMaxChanceBp`. Study proposal: 500 (5%).
+       */
       critChanceBp: 0,
-      /** A critical hit adds this much damage (basis points of the plain hit). */
+      /**
+       * Baseline crit damage: a critical hit adds this much damage (basis points of the plain hit),
+       * plus the species bonus, capped at `critMaxBp`. Study proposal: 5000 (+50%).
+       */
       critBp: 5_000,
+      /** Caps on a creature's or the boss's crit chance and crit damage (study proposal: 30%, +150%). */
+      critMaxChanceBp: 3_000,
+      critMaxBp: 15_000,
+      /**
+       * Boss crits: baseline chance and extra damage of the boss's hits on creatures (its own
+       * chance; `crit` in the boss content adds to both). 0 switches boss crits off.
+       */
+      bossCritChanceBp: 0,
+      bossCritBp: 5_000,
+      /**
+       * Prototype (study only): the chance that the boss's normal attack picks a random living
+       * creature from the whole row instead of the first one in front (a guard in the target's
+       * zone still takes the hit). 0: always the front, as shipped.
+       */
+      bossRandomTargetBp: 0,
       /** Every hit is multiplied by 1 + u, u uniform in [-spreadBp, +spreadBp] basis points. */
       spreadBp: 0,
       /**
@@ -179,6 +201,14 @@ export const RULES = {
 export interface LuckConfig {
   critChanceBp: number;
   critBp: number;
+  /** Caps for crit chance and damage (creatures and boss). Absent in older stored inputs: no cap. */
+  critMaxChanceBp?: number;
+  critMaxBp?: number;
+  /** Boss crits. Absent in older stored inputs: the boss never crits. */
+  bossCritChanceBp?: number;
+  bossCritBp?: number;
+  /** Chance the boss's normal attack picks a random living creature. Absent: never. */
+  bossRandomTargetBp?: number;
   spreadBp: number;
   surgeChanceBp: number;
   slumpChanceBp: number;

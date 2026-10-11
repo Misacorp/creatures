@@ -1,6 +1,7 @@
 import {
   abilitiesFor,
   basicAbilities,
+  content,
   contributionWeights,
   essenceForStage,
   jackpotChanceBp,
@@ -81,6 +82,9 @@ export interface RaidWeek {
   /** Measure what the abilities add to the finale (three extra finale runs); see `AbilityImpact`. */
   measureAbilities: boolean;
   abilityImpact: AbilityImpact | null;
+  /** Study switches (docs/design/luck.md): see `openRaidWeek`. */
+  dropShield: boolean;
+  neutralGuards: boolean;
 }
 
 /**
@@ -94,6 +98,23 @@ export interface AbilityImpact {
   basicOnly: number;
   none: number;
   creatureAbilities: number;
+}
+
+/** True if a finale ability has a Shield Wall effect. */
+export function hasShieldWall(abilityId: string): boolean {
+  return (
+    content.finaleAbilities
+      .find((a) => a.id === abilityId)
+      ?.effects.some((e) => e.op === 'shield_wall') === true
+  );
+}
+
+/**
+ * The slot of a guard with the guard role taken away (study): it fights as a plain payoff, whose
+ * only difference is a bonus on reactions, so it loses the extra HP and the interception.
+ */
+export function neutralGuard(slot: FightSlot): FightSlot {
+  return { ...slot, role: 'payoff' };
 }
 
 function emptyTotals(): PlayerTotals {
@@ -128,6 +149,14 @@ export function openRaidWeek(
     luck?: LuckConfig;
     luckStages?: readonly RaidStage[];
     timings?: Readonly<Record<string, number>>;
+    /** Study: boss Attack in basis points of the shipped value (10000: shipped), for every stage. */
+    bossAtkBp?: number;
+    /** Study: boss HP pool in basis points of the shipped value (10000: shipped). */
+    hpScaleBp?: number;
+    /** Study: no Shield Wall effect anywhere (abilities with that effect are left out). */
+    dropShield?: boolean;
+    /** Study: guards lose the guard role (no extra HP, no intercepting) and fight as plain payoffs. */
+    neutralGuards?: boolean;
   } = {},
 ): RaidWeek {
   if (players.length === 0) throw new RangeError('a raid needs at least one player');
@@ -157,7 +186,11 @@ export function openRaidWeek(
   if (players.length < 3) sparse = fillWithGuests(sparse, resolveGuests(), avgLevel);
   const row = sparse.filter((s): s is FightSlot => s !== null);
 
-  const scaled = scaleBoss(boss, players.length, avgLevel);
+  const shipped = scaleBoss(boss, players.length, avgLevel);
+  const scaled = {
+    atk: Math.max(1, Math.floor((shipped.atk * (options.bossAtkBp ?? 10_000)) / 10_000)),
+    maxHp: Math.max(1, Math.floor((shipped.maxHp * (options.hpScaleBp ?? 10_000)) / 10_000)),
+  };
   const basics = basicAbilities();
   const abilities = players.map((p, i): AbilityChoice => {
     const def = basics[i % basics.length];
@@ -192,6 +225,8 @@ export function openRaidWeek(
     timings: options.timings ?? {},
     measureAbilities: options.measureAbilities === true,
     abilityImpact: null,
+    dropShield: options.dropShield === true,
+    neutralGuards: options.neutralGuards === true,
   };
 }
 
@@ -207,7 +242,8 @@ export function fightFor(
   const byId = new Map(week.players.map((p) => [p.id, p]));
   const row = week.row.map((s) => {
     const owner = s.ownerId === null ? undefined : byId.get(s.ownerId);
-    return owner === undefined ? s : slotFor(owner, s.id);
+    const slot = owner === undefined ? s : slotFor(owner, s.id);
+    return week.neutralGuards && slot.role === 'guard' ? neutralGuard(slot) : slot;
   });
   const creatureAbilities = stage === 'finale' ? creatureAbilityChoices(week, row) : [];
   const fight: FightInput = {
@@ -220,10 +256,12 @@ export function fightFor(
     players: week.players.map((p) => p.id),
     finaleAbilities:
       stage === 'finale'
-        ? [...week.abilities, ...creatureAbilities].map((a) => {
-            const at = week.timings[a.key];
-            return at === undefined ? a : { ...a, fireAtRound: at };
-          })
+        ? [...week.abilities, ...creatureAbilities]
+            .filter((a) => !week.dropShield || !hasShieldWall(a.abilityId))
+            .map((a) => {
+              const at = week.timings[a.key];
+              return at === undefined ? a : { ...a, fireAtRound: at };
+            })
         : [],
     ...(week.luck === undefined || !week.luckStages.includes(stage) ? {} : { luck: week.luck }),
   };

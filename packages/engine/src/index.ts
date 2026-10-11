@@ -6,6 +6,8 @@ export * from './row';
 export * from './mutators';
 export * from './describe';
 export {
+  bossCritStats,
+  creatureCritStats,
   defaultAbilityRound,
   needsCreature,
   simulateFight,

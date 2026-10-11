@@ -43,6 +43,17 @@ export const EvolutionSchema = v.strictObject({
 });
 export type Evolution = v.InferOutput<typeof EvolutionSchema>;
 
+/**
+ * Crit stat bonuses over the global baseline (`RULES.combat.luck`): extra chance and extra damage in
+ * basis points. Species and bosses may carry one (a few species as a high-crit archetype). The
+ * engine adds it to the baseline and applies the caps, so content never needs to know them.
+ */
+export const CritBonusSchema = v.strictObject({
+  chanceBp: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(10_000)),
+  damageBp: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(100_000)),
+});
+export type CritBonus = v.InferOutput<typeof CritBonusSchema>;
+
 export const CreatureSpeciesSchema = v.strictObject({
   id: IdSchema,
   name: NameSchema,
@@ -59,6 +70,8 @@ export const CreatureSpeciesSchema = v.strictObject({
   evolvesTo: v.optional(EvolutionSchema),
   /** The creature's finale ability (a `kind: 'creature'` entry of `finaleAbilities`). */
   ability: v.optional(v.strictObject({ id: IdSchema })),
+  /** Optional crit bonus over the baseline (a high-crit archetype). Inert while luck is off. */
+  crit: v.optional(CritBonusSchema),
   flavor: v.pipe(v.string(), v.minLength(1), v.maxLength(160)),
 });
 export type CreatureSpecies = v.InferOutput<typeof CreatureSpeciesSchema>;
@@ -146,6 +159,8 @@ export const BossSchema = v.strictObject({
   lootTable: IdSchema,
   /** Rounds in the live finale (default 12; at most 30, which is 5 minutes at 10 s a round). */
   finaleRounds: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(MAX_FINALE_ROUNDS)),
+  /** Optional crit bonus over the boss baseline (`RULES.combat.luck`). Inert while luck is off. */
+  crit: v.optional(CritBonusSchema),
 });
 export type BossDef = v.InferOutput<typeof BossSchema>;
 
