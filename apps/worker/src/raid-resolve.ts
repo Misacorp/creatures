@@ -11,6 +11,7 @@
  */
 import {
   RULES,
+  abilitiesFor,
   basicAbilities,
   content,
   contributionWeights,
@@ -22,6 +23,7 @@ import {
 } from '@creatures/game';
 import {
   autoPlace,
+  type AbilityChoice,
   compactRow,
   fillWithGuests,
   makeSlot,
@@ -88,7 +90,7 @@ export function bossFor(bossId: string): BossDef {
   return boss;
 }
 
-const aliasFor = (index: number): string => `m${index + 1}`;
+export const aliasFor = (index: number): string => `m${index + 1}`;
 
 function slotFor(creature: TeamCreature, alias: string): FightSlot {
   return makeSlot(creature.species, {
@@ -154,6 +156,47 @@ export function abilityFor(
       )
       .toArray().length > 0;
   return { abilityId, chosen };
+}
+
+/** The engine key of a member's basic ability use. */
+export const basicKey = (alias: string): string => `${alias}:basic`;
+
+/**
+ * The engine key of a creature ability use: `n` is the creature's index in the member's team (so
+ * no raw creature id is in a key; the creature itself is `creatureId` on the choice).
+ */
+export const creatureKey = (alias: string, teamIndex: number): string => `${alias}:c${teamIndex}`;
+
+/**
+ * Everything one member brings to the finale, in order: their basic ability, then the ability of
+ * each team creature at or above the unlock level (`abilitiesFor`), each carrying its creature.
+ * `inRow` lists the creature ids that stand in the fighting row; a creature that does not is
+ * skipped (the engine needs the creature to be there). No `fireAtRound`: each fires at its default.
+ */
+export function memberChoices(
+  alias: string,
+  basicAbilityId: string,
+  team: readonly TeamCreature[],
+  inRow: ReadonlySet<string>,
+): AbilityChoice[] {
+  const choices: AbilityChoice[] = [
+    { playerId: alias, abilityId: basicAbilityId, key: basicKey(alias) },
+  ];
+  const sources = abilitiesFor(
+    team.map((c) => ({ id: c.id, speciesId: c.species.id, level: c.level })),
+    (c) => c.level,
+  );
+  for (const source of sources) {
+    if (!inRow.has(source.creatureId)) continue;
+    const teamIndex = team.findIndex((c) => c.id === source.creatureId);
+    choices.push({
+      playerId: alias,
+      abilityId: source.abilityId,
+      key: creatureKey(alias, teamIndex),
+      creatureId: source.creatureId,
+    });
+  }
+  return choices;
 }
 
 /** A fight input built for one party, with who is in it (`aliases[i]` belongs to `memberIds[i]`). */
@@ -257,6 +300,7 @@ export function buildPhaseInput(
       ? { rule: partyRow.adaptation_rule, target: partyRow.adaptation_target }
       : null;
 
+  const rowIds = new Set(row.map((s) => s.id));
   const abilityIds = phase === 'finale' ? abilityIdsFor(sql, week.weekId, memberIds) : [];
   const input: FightInput = {
     boss,
@@ -266,13 +310,10 @@ export function buildPhaseInput(
     adaptation,
     row,
     players: aliases,
-    // Phase 1 of creature abilities: each member brings their basic ability only. The key names
-    // the use; creature abilities will add `<alias>:<creature>` keys.
-    finaleAbilities: abilityIds.map((abilityId, i) => ({
-      playerId: aliases[i] as string,
-      abilityId,
-      key: `${aliases[i] as string}:basic`,
-    })),
+    // Each member's basic pick plus the abilities of their (frozen) team's unlocked creatures.
+    finaleAbilities: abilityIds.flatMap((abilityId, i) =>
+      memberChoices(aliases[i] as string, abilityId, teams[i] as TeamCreature[], rowIds),
+    ),
   };
   return { memberIds, aliases, input };
 }

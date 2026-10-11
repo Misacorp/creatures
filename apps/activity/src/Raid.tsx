@@ -318,6 +318,8 @@ export function Raid({
       {view.you.ability !== null && (
         <AbilityPicker
           current={view.you.ability}
+          abilities={view.you.abilities}
+          team={team?.creatures ?? []}
           editable={serverNow < view.schedule.finale}
           busy={busy}
           onPick={(abilityId) => {

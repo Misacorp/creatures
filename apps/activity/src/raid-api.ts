@@ -65,6 +65,20 @@ export interface RaidReveal {
   jackpot: null | { essence: number; firstOnServer: boolean };
 }
 
+/** One ability the caller brings to the finale, or could once the creature is trained. */
+export interface AbilityPreview {
+  /** The key it will have in the fight. Missing for a locked ability: it will not be there. */
+  key?: string;
+  abilityId: string;
+  /** The caller's team creature it belongs to; null for the basic ability. */
+  creatureId: string | null;
+  /** The creature's species; null for the basic ability. */
+  species: string | null;
+  unlocked: boolean;
+  /** The creature level that unlocks it. */
+  unlockLevel: number;
+}
+
 export interface RaidView {
   weekId: string;
   status: RaidStatus;
@@ -91,6 +105,8 @@ export interface RaidView {
     team: { mode: 'auto' | 'chosen'; creatures: TeamCreatureView[] } | null;
     /** The finale ability: `chosen` is false when it was assigned automatically. Null outside a party. */
     ability: { abilityId: string; chosen: boolean } | null;
+    /** Everything the caller brings to the finale with their current team: basic ability first. */
+    abilities: AbilityPreview[];
     /** A finale result the player has not seen yet. */
     reveal: RaidReveal | null;
   };
@@ -237,6 +253,18 @@ function isBoss(value: unknown): value is RaidView['boss'] {
   );
 }
 
+function isAbilityPreview(value: unknown): value is AbilityPreview {
+  return (
+    isRecord(value) &&
+    (value['key'] === undefined || isStr(value['key'])) &&
+    isStr(value['abilityId']) &&
+    isNullableStr(value['creatureId']) &&
+    isNullableStr(value['species']) &&
+    isBool(value['unlocked']) &&
+    isInt(value['unlockLevel'])
+  );
+}
+
 function isAbilityPick(value: unknown): value is NonNullable<RaidView['you']['ability']> {
   return isRecord(value) && isStr(value['abilityId']) && isBool(value['chosen']);
 }
@@ -264,6 +292,7 @@ function isYou(value: unknown): value is RaidView['you'] {
     !isBool(value['canEdit']) ||
     !isBool(value['canOptOut']) ||
     !(value['ability'] === null || isAbilityPick(value['ability'])) ||
+    !isArrayOf(value['abilities'], isAbilityPreview) ||
     !(value['reveal'] === null || isReveal(value['reveal']))
   ) {
     return false;

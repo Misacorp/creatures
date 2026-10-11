@@ -42,22 +42,34 @@ describe('the requests the client sends', () => {
     return { path, method, body };
   };
 
-  it('Hold is { action: "hold" } and Fire carries only the parameter its ability takes', async () => {
+  it('every action names its ability by key; Hold sends nothing else', async () => {
     apiFetch.mockResolvedValue(actionFire);
-    await sendLiveAction(buildAction('rally', 'hold', 'back', 'tide'));
+    await sendLiveAction(buildAction('m3:basic', 'rally', 'hold', 'back', 'tide'));
     expect(sent()).toEqual(expected('action-hold'));
 
     apiFetch.mockClear();
-    await sendLiveAction(buildAction('rally', 'fire', 'back', 'tide'));
+    await sendLiveAction(buildAction('m3:basic', 'rally', 'fire', 'back', 'tide'));
     expect(sent()).toEqual(expected('action-fire'));
+  });
 
-    apiFetch.mockClear();
-    await sendLiveAction(buildAction('shield-wall', 'fire', 'back', 'tide'));
+  it('Fire carries only the parameter its ability takes', async () => {
+    apiFetch.mockResolvedValue(actionFire);
+    await sendLiveAction(buildAction('m1:basic', 'shield-wall', 'fire', 'back', 'tide'));
     expect(sent()).toEqual(expected('action-fire-zone'));
 
     apiFetch.mockClear();
-    await sendLiveAction(buildAction('re-mark', 'fire', 'back', 'tide'));
+    await sendLiveAction(buildAction('m2:basic', 're-mark', 'fire', 'back', 'tide'));
     expect(sent()).toEqual(expected('action-fire-element'));
+  });
+
+  it('creature abilities are fired and held by their own key, with no parameters', async () => {
+    apiFetch.mockResolvedValue(actionFire);
+    await sendLiveAction(buildAction('m1:c1', 'static-zap', 'hold', 'back', 'tide'));
+    expect(sent()).toEqual(expected('action-hold-creature'));
+
+    apiFetch.mockClear();
+    await sendLiveAction(buildAction('m1:c1', 'static-zap', 'fire', 'back', 'tide'));
+    expect(sent()).toEqual(expected('action-fire-creature'));
   });
 
   it('the ability pick is { abilityId }', async () => {
@@ -100,6 +112,7 @@ describe('the errors the server sends', () => {
       'not_in_fight',
       'too_late',
       'already_fired',
+      'not_your_ability',
       'hold_too_late',
       'locked',
       'not_in_roster',

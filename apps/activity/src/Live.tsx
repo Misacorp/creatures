@@ -5,16 +5,20 @@ import { clockOffset, elementName, errorText, speciesName } from './game';
 import { useNow } from './hooks';
 import {
   abilityControls,
-  abilityDef,
-  abilityName,
+  abilityEffectLine,
   abilityParamKind,
   abilityStateText,
+  abilityTitle,
   buildAction,
+  createKeyLock,
   earlierLines,
   errorRetryDelayMs,
   feedLines,
   isRetryableStatus,
   nextPollDelay,
+  otherUsage,
+  otherUsageText,
+  ownAbilities,
   pickNewer,
   PRACTICE_LABEL,
   progressText,
@@ -40,7 +44,8 @@ const ZONE_OPTIONS = [
 
 /**
  * The live Sunday finale: the lobby and the fight, with the boss HP, the row, the round's events
- * and the player's one ability. The view only displays the server's snapshot and sends Fire and
+ * and the player's abilities (their basic one plus one for each unlocked team creature, each with its
+ * own Fire and Hold). The view only displays the server's snapshot and sends Fire and
  * Hold; it polls while the finale is on and stops by itself when the fight is over.
  */
 export function Live({
@@ -59,15 +64,18 @@ export function Live({
 }) {
   const [snapshot, setSnapshot] = useState<LiveSnapshot | null>(initial);
   const [pollError, setPollError] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [zone, setZone] = useState('');
-  const [element, setElement] = useState('');
+  const [actionError, setActionError] = useState<{ key: string; text: string } | null>(null);
+  /** Keys of the abilities with a request on its way (their buttons are off). */
+  const [busyKeys, setBusyKeys] = useState<readonly string[]>([]);
+  /** The zone and element picked for each ability that asks for one, by ability key. */
+  const [zones, setZones] = useState<Readonly<Record<string, string>>>({});
+  const [elements, setElements] = useState<Readonly<Record<string, string>>>({});
   const [dismissed, setDismissed] = useState(false);
   const latest = useRef<LiveSnapshot | null>(initial);
   /** Server clock minus local clock, from the newest snapshot. */
   const offset = useRef(0);
-  const inFlight = useRef(false);
+  /** One request at a time per ability: a double tap on one ability sends one request. */
+  const locks = useRef(createKeyLock());
   const now = useNow(true);
 
   function accept(next: LiveSnapshot): void {
@@ -127,16 +135,16 @@ export function Live({
     if (hasLoot) onBalanceChange();
   }, [hasLoot]);
 
-  /** Fire or Hold. A second tap while a request is on its way is ignored. */
+  /** Fire or Hold one ability. A second tap on it while its request is on its way is ignored. */
   async function act(request: LiveActionRequest): Promise<void> {
-    if (inFlight.current) return;
-    inFlight.current = true;
-    setBusy(true);
+    const { key } = request;
+    if (!locks.current.acquire(key)) return;
+    setBusyKeys((keys) => [...keys, key]);
     setActionError(null);
     try {
       accept(await sendLiveAction(request));
     } catch (err) {
-      setActionError(errorText(err));
+      setActionError({ key, text: errorText(err) });
       if (err instanceof ApiError && err.status === 409) {
         // The screen was probably out of date; show what the server says now.
         try {
@@ -146,8 +154,8 @@ export function Live({
         }
       }
     } finally {
-      inFlight.current = false;
-      setBusy(false);
+      locks.current.release(key);
+      setBusyKeys((keys) => keys.filter((k) => k !== key));
     }
   }
 
@@ -224,7 +232,8 @@ export function Live({
       </section>
     );
   }
-  const mine = fight.abilities.find((a) => a.alias === fight.you) ?? null;
+  const mine = ownAbilities(fight.abilities, fight.you);
+  const others = otherUsage(fight.abilities, fight.you);
   const knockedOut = new Set(
     stateAt(fight.events, fight.events.length, fight.boss.hpStart).knockedOut,
   );
@@ -269,24 +278,46 @@ export function Live({
         <progress id="live-hp" class="hp-bar" max={fight.boss.hpMax} value={fight.bossHp} />
       </p>
 
-      {mine !== null && (
-        <AbilityPanel
-          fight={fight}
-          ability={mine}
-          busy={busy}
-          zone={zone}
-          element={element}
-          error={actionError}
-          onZone={setZone}
-          onElement={setElement}
-          onAct={(action) => {
-            void act(buildAction(mine.abilityId, action, zone, element));
-          }}
-        />
+      {mine.length > 0 && (
+        <section aria-labelledby="live-abilities-heading">
+          <h4 id="live-abilities-heading">Your abilities</h4>
+          <p class="muted">
+            Each ability fires once. Fire takes effect at the start of the next round. Hold keeps it
+            for later; an ability you hold still fires in the last round.
+          </p>
+          {mine.map((ability) => (
+            <AbilityPanel
+              key={ability.key}
+              fight={fight}
+              ability={ability}
+              busy={busyKeys.includes(ability.key)}
+              zone={zones[ability.key] ?? ''}
+              element={elements[ability.key] ?? ''}
+              error={actionError?.key === ability.key ? actionError.text : null}
+              onZone={(value) => {
+                setZones((all) => ({ ...all, [ability.key]: value }));
+              }}
+              onElement={(value) => {
+                setElements((all) => ({ ...all, [ability.key]: value }));
+              }}
+              onAct={(action) => {
+                void act(
+                  buildAction(
+                    ability.key,
+                    ability.abilityId,
+                    action,
+                    zones[ability.key] ?? '',
+                    elements[ability.key] ?? '',
+                  ),
+                );
+              }}
+            />
+          ))}
+        </section>
       )}
-      {mine === null && actionError !== null && (
+      {mine.length === 0 && actionError !== null && (
         <p class="error" role="alert">
-          {actionError}
+          {actionError.text}
         </p>
       )}
 
@@ -311,16 +342,19 @@ export function Live({
         })}
       </ul>
 
-      <h4>Abilities</h4>
-      <ul class="plain-list">
-        {fight.abilities.map((a) => (
-          <li key={a.alias} class={a.alias === fight.you ? 'live-ability you' : 'live-ability'}>
-            <strong>{a.alias === fight.you ? 'You' : playerName(a.alias)}</strong>:{' '}
-            {abilityName(a.abilityId)}.{' '}
-            <span class="muted">{abilityStateText(a, fight.rounds, a.alias === fight.you)}</span>
-          </li>
-        ))}
-      </ul>
+      {others.length > 0 && (
+        <>
+          <h4>Other players' abilities</h4>
+          <ul class="plain-list">
+            {others.map((usage) => (
+              <li key={usage.alias} class="live-ability">
+                <strong>{playerName(usage.alias)}</strong>:{' '}
+                <span class="muted">{otherUsageText(usage, fight.names)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
       <Watching names={fight.watching} />
 
@@ -404,19 +438,20 @@ function AbilityPanel({
   onElement: (element: string) => void;
   onAct: (action: 'fire' | 'hold') => void;
 }) {
-  const def = abilityDef(ability.abilityId);
   const controls = abilityControls(fight, ability);
   const kind = abilityParamKind(ability.abilityId);
+  const effect = abilityEffectLine(ability.abilityId);
+  const headingId = `live-ability-${ability.key}`;
   return (
-    <div class="ability-panel" role="group" aria-labelledby="live-ability-heading">
-      <h4 id="live-ability-heading">Your ability: {abilityName(ability.abilityId)}</h4>
-      {def !== undefined && <p class="muted">{def.description}</p>}
+    <div class="ability-panel" role="group" aria-labelledby={headingId}>
+      <h5 id={headingId}>{abilityTitle(ability, fight.names)}</h5>
+      {effect !== '' && <p class="muted">{effect}</p>}
       <p class="live-ability-state">{abilityStateText(ability, fight.rounds, true)}</p>
       {controls.canFire && kind === 'zone' && (
         <>
-          <label for="live-zone">Zone to protect</label>
+          <label for={`live-zone-${ability.key}`}>Zone to protect</label>
           <select
-            id="live-zone"
+            id={`live-zone-${ability.key}`}
             value={zone}
             disabled={busy}
             onChange={(event) => {
@@ -434,9 +469,9 @@ function AbilityPanel({
       )}
       {controls.canFire && kind === 'element' && (
         <>
-          <label for="live-element">Element to mark the boss with</label>
+          <label for={`live-element-${ability.key}`}>Element to mark the boss with</label>
           <select
-            id="live-element"
+            id={`live-element-${ability.key}`}
             value={element}
             disabled={busy}
             onChange={(event) => {

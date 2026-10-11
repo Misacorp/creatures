@@ -1,31 +1,43 @@
-import { basicAbilities } from '@creatures/game';
-import { abilityName, abilityPlanText } from './live';
+import { RULES, basicAbilities } from '@creatures/game';
+import { abilityName, abilityPlanText, creatureAbilityRows } from './live';
+import type { AbilityPreview, TeamCreatureView } from './raid-api';
 
-/** The player's finale ability, one of the four from the content pack. */
+/**
+ * "Your finale abilities": the basic ability (one of the four basic abilities in the content pack,
+ * picked here) and the abilities of the team creatures that have reached their unlock level. Locked
+ * ones are listed too, so players can see what training a creature would give.
+ */
 export function AbilityPicker({
   current,
+  abilities,
+  team,
   editable,
   busy,
   onPick,
 }: {
   current: { abilityId: string; chosen: boolean };
+  /** What the player brings with their current team (`you.abilities` of the Raid view). */
+  abilities: readonly AbilityPreview[];
+  team: readonly TeamCreatureView[];
   /** False once the finale has started: the pick is locked. */
   editable: boolean;
   busy: boolean;
   onPick: (abilityId: string) => void;
 }) {
+  const creatureRows = creatureAbilityRows(abilities, team);
   return (
     <section class="raid-section" aria-labelledby="raid-ability-heading">
-      <h3 id="raid-ability-heading">Finale ability</h3>
+      <h3 id="raid-ability-heading">Your finale abilities</h3>
+      <h4>Basic ability</h4>
       <p>
-        Your ability: <strong>{abilityName(current.abilityId)}</strong>{' '}
+        Your basic ability: <strong>{abilityName(current.abilityId)}</strong>{' '}
         <span class="muted">
           {current.chosen ? '(chosen by you)' : '(assigned for you: pick one to choose)'}
         </span>
       </p>
       <p class="muted">
         {editable
-          ? 'Each player gets one ability for the live Sunday finale. If you do nothing it still fires on its own, at full strength. You can change your pick until the finale starts.'
+          ? "Everyone brings one basic ability to the live Sunday finale. It is weaker than a trained creature's ability. If you do nothing it still fires on its own. You can change your pick until the finale starts."
           : 'The finale has started, so your pick is locked.'}
       </p>
       <ul class="cards ability-cards">
@@ -54,6 +66,28 @@ export function AbilityPicker({
           );
         })}
       </ul>
+      <h4>Creature abilities</h4>
+      {creatureRows.length === 0 ? (
+        <p class="muted">
+          You have no team creatures yet. Every creature gets a finale ability at level{' '}
+          {String(RULES.abilities.unlockLevel)}.
+        </p>
+      ) : (
+        <>
+          <p class="muted">
+            Each team creature at the unlock level adds one more ability to the finale. Each fires
+            once.
+          </p>
+          <ul class="plain-list creature-abilities">
+            {creatureRows.map((row) => (
+              <li key={row.creatureId} class={row.unlocked ? 'live-ability you' : 'live-ability'}>
+                <strong>{row.title}</strong>. <span>{row.effect}</span>{' '}
+                <span class={row.unlocked ? 'muted' : 'locked'}>{row.status}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   );
 }

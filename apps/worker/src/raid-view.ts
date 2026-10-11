@@ -12,19 +12,77 @@ import {
   type FightResult,
   type Zone,
 } from '@creatures/engine';
-import { content } from '@creatures/game';
+import { RULES, content } from '@creatures/game';
 import { speciesOf } from './collection';
 import type { Raid } from './raid';
-import { abilityFor, bossFor, type StoredSummary } from './raid-resolve';
+import {
+  abilityFor,
+  aliasFor,
+  basicKey,
+  bossFor,
+  creatureKey,
+  type StoredSummary,
+} from './raid-resolve';
 import { latestReveal, type RevealView } from './raid-reveal';
 import { partyMembers, partyOf } from './raid-roster';
 import { RAID_PHASES, isWeekId, type RaidEvent, type RaidPhase } from './raid-schedule';
-import { effectiveTeam, rowLength, type RaidStatus } from './raid-teams';
+import { effectiveTeam, rowLength, type RaidStatus, type TeamCreature } from './raid-teams';
 
 export interface RosterEntry {
   displayName: string;
   you: boolean;
   party: number;
+}
+
+/** One ability the caller will bring to the finale (or could, once the creature is trained). */
+export interface AbilityPreview {
+  /** The engine key it will have in the fight. Absent for a locked ability (it will not be there). */
+  key?: string;
+  abilityId: string;
+  /** The team creature it belongs to (the caller's own); null for the basic ability. */
+  creatureId: string | null;
+  /** The creature's species; null for the basic ability. */
+  species: string | null;
+  unlocked: boolean;
+  /** The creature level that unlocks it (1 for the basic ability: always there). */
+  unlockLevel: number;
+}
+
+/**
+ * What the caller brings with their current effective team: the basic ability, then one entry for
+ * each team creature whose species has an ability (locked ones too, so the client can show when
+ * they unlock). Empty when the caller is not in a party.
+ */
+function abilityPreview(
+  basic: { abilityId: string } | null,
+  alias: string | null,
+  team: readonly TeamCreature[] | null,
+): AbilityPreview[] {
+  if (basic === null || alias === null || team === null) return [];
+  const out: AbilityPreview[] = [
+    {
+      key: basicKey(alias),
+      abilityId: basic.abilityId,
+      creatureId: null,
+      species: null,
+      unlocked: true,
+      unlockLevel: 1,
+    },
+  ];
+  team.forEach((c, index) => {
+    const abilityId = c.species.ability?.id;
+    if (abilityId === undefined) return;
+    const unlocked = c.level >= RULES.abilities.unlockLevel;
+    out.push({
+      ...(unlocked ? { key: creatureKey(alias, index) } : {}),
+      abilityId,
+      creatureId: c.id,
+      species: c.species.id,
+      unlocked,
+      unlockLevel: RULES.abilities.unlockLevel,
+    });
+  });
+  return out;
 }
 
 export interface RowSlotView {
@@ -93,6 +151,8 @@ export interface RaidView {
      * caller is not in a party.
      */
     ability: { abilityId: string; chosen: boolean } | null;
+    /** Everything the caller brings to the finale with their current team (see `AbilityPreview`). */
+    abilities: AbilityPreview[];
     /**
      * The loot reveal of the latest finale the caller took part in, until they mark it seen
      * (`POST /api/raid/reveal-seen`). Only the caller's own.
@@ -180,9 +240,13 @@ export function buildRaidView(
           .toArray();
   const slotOf = new Map(placements.map((p) => [p.creature_id, p.slot]));
 
+  const partyIds = myParty === null ? [] : partyMembers(sql, week.weekId, myParty);
+  const myAbility = myParty === null ? null : abilityFor(sql, week.weekId, partyIds, userId);
+  const myIndex = partyIds.indexOf(userId);
+
   let partyView: RaidView['party'] = null;
   if (myParty !== null) {
-    const members = partyMembers(sql, week.weekId, myParty);
+    const members = partyIds;
     const length = rowLength(members.length);
     const creatureInfo = new Map<string, { species: string; name: string; level: number }>();
     for (const p of placements) {
@@ -291,10 +355,12 @@ export function buildRaidView(
       party: myParty,
       canEdit: myParty !== null && week.status !== 'finale',
       canOptOut: week.status === 'open',
-      ability:
-        myParty === null
-          ? null
-          : abilityFor(sql, week.weekId, partyMembers(sql, week.weekId, myParty), userId),
+      ability: myAbility,
+      abilities: abilityPreview(
+        myAbility,
+        myIndex < 0 ? null : aliasFor(myIndex),
+        team === null ? null : team.creatures,
+      ),
       reveal: latestReveal(sql, userId),
       team:
         team === null

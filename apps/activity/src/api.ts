@@ -261,6 +261,16 @@ export interface Creature {
   /** Bait for the next level with the discount applied; null at the level cap. */
   trainCost: number | null;
   evolution?: { toSpecies: string; level: number; essence: number; available: boolean };
+  /** The creature's finale ability; null for a species without one. */
+  ability: CreatureAbility | null;
+}
+
+/** A creature's finale ability. `nextId` is the stronger one of its evolved form. */
+export interface CreatureAbility {
+  id: string;
+  unlocked: boolean;
+  unlockLevel: number;
+  nextId?: string;
 }
 
 export interface CatchResult {
@@ -292,7 +302,8 @@ export interface Expedition {
 }
 
 export interface ServerFirst {
-  kind: 'catch' | 'evolve';
+  /** `jackpot` is the shared finale jackpot record (species `jackpot`); it is not a creature. */
+  kind: 'catch' | 'evolve' | 'jackpot';
   species: string;
   at: number;
   mine: boolean;
@@ -323,6 +334,16 @@ function isStats(value: unknown): value is Creature['stats'] {
   return isRecord(value) && isInt(value['hp']) && isInt(value['atk']) && isInt(value['spd']);
 }
 
+function isCreatureAbility(value: unknown): value is CreatureAbility {
+  return (
+    isRecord(value) &&
+    isStr(value['id']) &&
+    typeof value['unlocked'] === 'boolean' &&
+    isInt(value['unlockLevel']) &&
+    (value['nextId'] === undefined || isStr(value['nextId']))
+  );
+}
+
 function isCreature(value: unknown): value is Creature {
   if (!isRecord(value)) return false;
   const evolution = value['evolution'];
@@ -338,6 +359,7 @@ function isCreature(value: unknown): value is Creature {
     typeof value['away'] === 'boolean' &&
     isStats(value['stats']) &&
     (value['trainCost'] === null || isInt(value['trainCost'])) &&
+    (value['ability'] === null || isCreatureAbility(value['ability'])) &&
     (evolution === undefined ||
       (isRecord(evolution) &&
         isStr(evolution['toSpecies']) &&
@@ -390,7 +412,7 @@ function isExpedition(value: unknown): value is Expedition {
 function isServerFirst(value: unknown): value is ServerFirst {
   return (
     isRecord(value) &&
-    (value['kind'] === 'catch' || value['kind'] === 'evolve') &&
+    (value['kind'] === 'catch' || value['kind'] === 'evolve' || value['kind'] === 'jackpot') &&
     isStr(value['species']) &&
     isInt(value['at']) &&
     typeof value['mine'] === 'boolean' &&

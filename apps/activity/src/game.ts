@@ -53,6 +53,48 @@ export function formatCountdown(ms: number): string {
   return `${String(seconds)}s`;
 }
 
+export interface CreatureAbilityText {
+  /** "Flare Strike: Hits the boss at once..." or "Finale ability: unlocks at level 10". */
+  line: string;
+  unlocked: boolean;
+  /** "Evolves into: Pyrelynx (Inferno Strike)" when the creature can evolve into a stronger version. */
+  teaser: string | null;
+}
+
+/**
+ * What a creature card says about its finale ability: the ability and what it does once unlocked,
+ * the unlock level before, and a teaser for the evolved form's stronger ability. Null when the
+ * species has no ability. Names and descriptions come from the content.
+ */
+export function creatureAbilityText(
+  creature: Pick<Creature, 'ability' | 'evolution'>,
+  abilityById: (id: string) => { name: string; description: string } | undefined,
+): CreatureAbilityText | null {
+  const { ability } = creature;
+  if (ability === null) return null;
+  const def = abilityById(ability.id);
+  let teaser: string | null = null;
+  if (ability.nextId !== undefined) {
+    const next = abilityById(ability.nextId)?.name ?? ability.nextId;
+    teaser =
+      creature.evolution === undefined
+        ? `Evolves into: ${next}`
+        : `Evolves into: ${speciesName(creature.evolution.toSpecies)} (${next})`;
+  }
+  if (!ability.unlocked) {
+    return {
+      line: `Finale ability: unlocks at level ${String(ability.unlockLevel)}`,
+      unlocked: false,
+      teaser,
+    };
+  }
+  return {
+    line: def === undefined ? ability.id : `${def.name}: ${def.description}`,
+    unlocked: true,
+    teaser,
+  };
+}
+
 /** What the evolve control of a creature card shows. */
 export function evolutionText(
   level: number,
@@ -154,6 +196,7 @@ const ERROR_TEXT: Record<string, string> = {
   invalid_slot: 'That slot does not exist.',
   // The live finale.
   already_fired: 'Your ability has already been used.',
+  not_your_ability: 'That ability is not yours. The screen was out of date.',
   too_late: 'Too late: the fight is in its last round or already over.',
   not_in_fight: 'You are not in this fight.',
   hold_too_late: 'Too late to hold: your ability is already due.',

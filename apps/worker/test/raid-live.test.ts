@@ -12,6 +12,7 @@ import liveDoneHit from '../../activity/src/fixtures/live-done-hit.json';
 import liveLobby from '../../activity/src/fixtures/live-lobby.json';
 import liveMid from '../../activity/src/fixtures/live-mid.json';
 import liveNone from '../../activity/src/fixtures/live-none.json';
+import collectionState from '../../activity/src/fixtures/collection-state.json';
 import raidReveal from '../../activity/src/fixtures/raid-reveal.json';
 import requestBodies from '../../activity/src/fixtures/request-bodies.json';
 import type { CoreContext } from './helpers';
@@ -37,6 +38,10 @@ const FINALE = eventTimes(W02.id, HELSINKI).finale;
 const ROUND = LIVE_ROUND_MS;
 const ROUNDS = 12;
 const BIG = 50_000_000;
+/** Below the ability unlock level: every member brings the basic ability only. */
+const BELOW_UNLOCK = RULES.abilities.unlockLevel - 1;
+/** At the unlock level: every creature with an ability brings it. */
+const UNLOCKED = RULES.abilities.unlockLevel;
 
 /**
  * Seeds `n` players, opens the week and resolves phases 1 and 2. The finale is left for the test,
@@ -48,7 +53,7 @@ function toFinale(
   options: { current?: number; level?: number; atk?: number } = {},
 ): Seeded[] {
   const players = Array.from({ length: n }, (_, i) =>
-    seedPlayer(ctx, i + 1, { level: options.level ?? 12 }),
+    seedPlayer(ctx, i + 1, { level: options.level ?? BELOW_UNLOCK }),
   );
   ctx.core.raid.currentWeek(HELSINKI);
   ctx.clock.t = W02.afterPhase2;
@@ -77,18 +82,38 @@ const begin = (ctx: Ctx): void => {
 const inRound = (ctx: Ctx, r: number): void => at(ctx, (r - 1) * ROUND + 1000);
 
 const snap = (ctx: Ctx, p: Seeded): LiveSnapshot => ctx.core.raid.liveSnapshot(p.id, HELSINKI);
+/** The engine alias of a party member (`m1`, ...). */
+const aliasOf = (ctx: Ctx, p: Seeded): string => {
+  const party = rows<{ party: number }>(
+    ctx.sql,
+    'SELECT party FROM raid_party_members WHERE user_id = ?',
+    p.id,
+  )[0]?.party;
+  return `m${membersOf(ctx.sql, party ?? 1).indexOf(p.id) + 1}`;
+};
+/** Fire or Hold; without `key` it is the caller's basic ability. */
 const act = (
   ctx: Ctx,
   p: Seeded,
-  body: { action: 'fire' | 'hold'; zone?: 'front' | 'middle' | 'back'; element?: 'tide' },
-) => ctx.core.raid.liveAction(p.id, HELSINKI, body);
+  body: {
+    action: 'fire' | 'hold';
+    zone?: 'front' | 'middle' | 'back';
+    element?: 'tide';
+    key?: string;
+  },
+) =>
+  ctx.core.raid.liveAction(p.id, HELSINKI, {
+    ...body,
+    key: body.key ?? `${aliasOf(ctx, p)}:basic`,
+  });
 const pick = (ctx: Ctx, p: Seeded, abilityId: string): void => {
   expect(ctx.core.raid.setAbility(p.id, HELSINKI, abilityId)).toEqual({ ok: true, value: null });
 };
 const finaleRows = (ctx: Ctx) => count(ctx.sql, 'raid_results', "phase = 'finale'");
 const abilityEvents = (events: readonly FightEvent[], alias: string) =>
   events.filter(
-    (e): e is Extract<FightEvent, { t: 'ability' }> => e.t === 'ability' && e.player === alias,
+    (e): e is Extract<FightEvent, { t: 'ability' }> =>
+      e.t === 'ability' && e.player === alias && e.key === `${alias}:basic`,
   );
 const err = (outcome: { ok: boolean } & Record<string, unknown>) =>
   outcome.ok ? 'ok' : `${String(outcome['status'])} ${String(outcome['error'])}`;
@@ -940,7 +965,7 @@ describe('the live routes', () => {
 
       const bad: unknown[] = [
         {},
-        { action: 'jump' },
+        { key: 'm1:basic', action: 'jump' },
         { action: 'fire', extra: true },
         { action: 'fire', zone: 'sideways' },
         { action: 'fire', element: 'plasma' },
@@ -952,13 +977,16 @@ describe('the live routes', () => {
         expect(r.status).toBe(400);
         expect(await r.json()).toEqual({ error: 'invalid_body' });
       }
-      const ok = await call('POST', '/api/raid/live/action', { action: 'hold' });
+      const ok = await call('POST', '/api/raid/live/action', { key: 'm1:basic', action: 'hold' });
       expect(ok.status).toBe(200);
       const after = await ok.json<LiveSnapshot>();
       expect(after.abilities[0]?.mode).toBe('held');
-      const dup = await call('POST', '/api/raid/live/action', { action: 'fire' });
+      const dup = await call('POST', '/api/raid/live/action', { key: 'm1:basic', action: 'fire' });
       expect(dup.status).toBe(200);
-      const twice = await call('POST', '/api/raid/live/action', { action: 'fire' });
+      const twice = await call('POST', '/api/raid/live/action', {
+        key: 'm1:basic',
+        action: 'fire',
+      });
       expect(twice.status).toBe(409);
       expect(await twice.json()).toEqual({ error: 'already_fired' });
 
@@ -1045,7 +1073,10 @@ describe('the practice finale', () => {
 
         // It runs through the same endpoints, with the same rules.
         ctx.clock.t = t0 + 2 * ROUND + 100;
-        const late = await ctx.request(secret, '/api/raid/live/action', 'POST', { action: 'hold' });
+        const late = await ctx.request(secret, '/api/raid/live/action', 'POST', {
+          key: 'm1:basic',
+          action: 'hold',
+        });
         expect(late.status).toBe(409); // purge's default round (2) has come
         expect(await late.json()).toEqual({ error: 'hold_too_late' });
         const poll = await ctx.request(secret, '/api/raid/live');
@@ -1267,12 +1298,15 @@ describe('the API contract with the client', () => {
   const ABILITY_KEYS = [
     'abilityId',
     'alias',
+    'creature',
     'defaultRound',
     'fireAtRound',
     'fired',
     'firedAtRound',
+    'key',
     'mode',
   ];
+  const PREVIEW_KEYS = ['abilityId', 'creatureId', 'key', 'species', 'unlockLevel', 'unlocked'];
   const ROW_KEYS = ['element', 'id', 'level', 'name', 'owner', 'position', 'role', 'species'];
   const LOOT_KEYS = ['cleared', 'essence', 'jackpot', 'pity'];
   const JACKPOT_KEYS = ['essence', 'firstOnServer'];
@@ -1291,6 +1325,9 @@ describe('the API contract with the client', () => {
     for (const a of value['abilities'] as unknown[]) {
       expect(keys(a), `${label}.abilities: ${UPDATE}`).toEqual(ABILITY_KEYS);
     }
+    // One entry per use, so keys are unique.
+    const useKeys = (value['abilities'] as { key: string }[]).map((a) => a.key);
+    expect(new Set(useKeys).size, `${label}.abilities keys`).toBe(useKeys.length);
     for (const r of value['row'] as unknown[]) {
       expect(keys(r), `${label}.row: ${UPDATE}`).toEqual(ROW_KEYS);
     }
@@ -1364,6 +1401,38 @@ describe('the API contract with the client', () => {
         const raid = await get(ctx, sa, '/api/raid');
         const you = raid['you'] as Record<string, unknown>;
         expect(keys(you['ability']), UPDATE).toEqual(['abilityId', 'chosen']);
+        // What the player brings: the basic ability, then each team creature's (locked ones lack a key).
+        const preview = you['abilities'] as Record<string, unknown>[];
+        expect(preview.length, UPDATE).toBeGreaterThan(1);
+        for (const entry of preview) {
+          expect(keys(entry), UPDATE).toEqual(
+            entry['unlocked'] === true ? PREVIEW_KEYS : PREVIEW_KEYS.filter((k) => k !== 'key'),
+          );
+        }
+        // The fixture has both kinds: unlocked with a key, and a locked one without.
+        expect(raidReveal.you.abilities.some((e) => !e.unlocked)).toBe(true);
+        for (const entry of raidReveal.you.abilities) {
+          expect(keys(entry), UPDATE).toEqual(
+            entry.unlocked ? PREVIEW_KEYS : PREVIEW_KEYS.filter((k) => k !== 'key'),
+          );
+        }
+
+        // The Collection's creature view carries the ability (and the fixture has the same keys).
+        const state = await get(ctx, sa, '/api/state');
+        const creature = (state['creatures'] as Record<string, unknown>[])[0] as Record<
+          string,
+          unknown
+        >;
+        const fixtureCreature = collectionState.creatures[0] as Record<string, unknown>;
+        expect(keys(creature), UPDATE).toEqual(keys(fixtureCreature));
+        expect(keys(creature['ability']), UPDATE).toEqual(keys(fixtureCreature['ability']));
+        expect(keys(creature['ability']), UPDATE).toEqual([
+          'id',
+          'nextId',
+          'unlockLevel',
+          'unlocked',
+        ]);
+        expect(keys(state), UPDATE).toEqual(keys(collectionState));
         expect(keys(you['reveal']), UPDATE).toEqual(REVEAL_KEYS);
         expect(keys(raid), UPDATE).toEqual(keys(raidReveal));
         expect(keys(you), UPDATE).toEqual(keys(raidReveal.you));
@@ -1384,10 +1453,14 @@ describe('the API contract with the client', () => {
       begin(ctx);
       inRound(ctx, 2);
       const fire = await ctx.request(sa, '/api/raid/live/action', 'POST', {
+        key: 'm1:basic',
         action: 'fire',
         zone: 'back',
       });
-      const hold = await ctx.request(sb, '/api/raid/live/action', 'POST', { action: 'hold' });
+      const hold = await ctx.request(sb, '/api/raid/live/action', 'POST', {
+        key: 'm2:basic',
+        action: 'hold',
+      });
       expect([fire.status, hold.status]).toEqual([200, 200]);
       const fired = await fire.json<LiveSnapshot>();
       expectShape(fired as unknown as Record<string, unknown>, 'action fire');
@@ -1447,7 +1520,7 @@ describe('the API contract with the client', () => {
       at(ctx, -3 * MINUTE);
       await expectError(
         'action in the lobby',
-        await post(sa, '/api/raid/live/action', { action: 'fire' }),
+        await post(sa, '/api/raid/live/action', { key: 'm1:basic', action: 'fire' }),
         409,
         'not_in_fight',
       );
@@ -1460,14 +1533,20 @@ describe('the API contract with the client', () => {
         'invalid_body',
       );
       await expectError(
+        'ability of someone else',
+        await post(sa, '/api/raid/live/action', { key: 'm2:basic', action: 'fire' }),
+        409,
+        'not_your_ability',
+      );
+      await expectError(
         'zone for purge',
-        await post(sa, '/api/raid/live/action', { action: 'fire', zone: 'back' }),
+        await post(sa, '/api/raid/live/action', { key: 'm1:basic', action: 'fire', zone: 'back' }),
         400,
         'invalid_body',
       );
       await expectError(
         'hold after the default round',
-        await post(sa, '/api/raid/live/action', { action: 'hold' }),
+        await post(sa, '/api/raid/live/action', { key: 'm1:basic', action: 'hold' }),
         409,
         'hold_too_late',
       );
@@ -1477,23 +1556,25 @@ describe('the API contract with the client', () => {
         409,
         'locked',
       );
-      expect((await post(sb, '/api/raid/live/action', { action: 'fire' })).status).toBe(200);
+      expect(
+        (await post(sb, '/api/raid/live/action', { key: 'm2:basic', action: 'fire' })).status,
+      ).toBe(200);
       await expectError(
         'fire twice',
-        await post(sb, '/api/raid/live/action', { action: 'fire' }),
+        await post(sb, '/api/raid/live/action', { key: 'm2:basic', action: 'fire' }),
         409,
         'already_fired',
       );
       inRound(ctx, 12);
       await expectError(
         'an outsider fires',
-        await post(so, '/api/raid/live/action', { action: 'fire' }),
+        await post(so, '/api/raid/live/action', { key: 'm1:basic', action: 'fire' }),
         409,
         'not_in_fight',
       );
       await expectError(
         'fire too late',
-        await post(sa, '/api/raid/live/action', { action: 'fire' }),
+        await post(sa, '/api/raid/live/action', { key: 'm1:basic', action: 'fire' }),
         409,
         'too_late',
       );
@@ -1550,7 +1631,7 @@ describe('the API contract with the client', () => {
   it('accepts the request bodies the client sends (apps/activity/src/fixtures/request-bodies.json)', async () => {
     await runRaid(
       async (ctx) => {
-        const players = toFinale(ctx, 3);
+        const players = toFinale(ctx, 3, { level: UNLOCKED });
         const [a, b, c] = inOrder(ctx, players) as [Seeded, Seeded, Seeded];
         const open = (p: Seeded) =>
           ctx.core.createSession(ctx.guildId, { id: p.id, displayName: p.name });
@@ -1576,6 +1657,9 @@ describe('the API contract with the client', () => {
         expect(await send(sb, requestBodies['action-fire-element'])).toBe(200);
         expect(await send(sc, requestBodies['action-hold'])).toBe(200);
         expect(await send(sc, requestBodies['action-fire'])).toBe(200);
+        // Creature abilities have their own keys (the level-10 creatures of this test).
+        expect(await send(sa, requestBodies['action-hold-creature'])).toBe(200);
+        expect(await send(sa, requestBodies['action-fire-creature'])).toBe(200);
         at(ctx, 12 * ROUND);
         expect(await send(sa, requestBodies['reveal-seen'])).toBe(200);
         // The week of the bodies is the week of these tests.
@@ -1583,5 +1667,375 @@ describe('the API contract with the client', () => {
       },
       { core: { raidPractice: true } },
     );
+  });
+});
+
+/** Creature abilities: what each member brings, the keys, per-ability Fire and Hold, legacy rows. */
+describe('creature abilities in the live finale', () => {
+  const ability = (id: string) => content.finaleAbilities.find((a) => a.id === id);
+  const abilityOfSpecies = (species: string): string =>
+    content.creatures.find((s) => s.id === species)?.ability?.id as string;
+  const teamOf = (ctx: Ctx, p: Seeded) => {
+    const team = ctx.core.raid.view(p.id, HELSINKI).you.team;
+    return team?.creatures ?? [];
+  };
+  const setLevel = (ctx: Ctx, creatureId: string, level: number): void => {
+    ctx.sql.exec('UPDATE creatures SET level = ? WHERE id = ?', level, creatureId);
+  };
+
+  it('brings the basic pick plus one ability per unlocked team creature, keyed by team slot', async () => {
+    await runRaid((ctx) => {
+      const players = toFinale(ctx, 2, { level: UNLOCKED });
+      const [a, b] = inOrder(ctx, players) as [Seeded, Seeded];
+      pick(ctx, a, 'purge');
+      const team = teamOf(ctx, a);
+      expect(team).toHaveLength(3);
+      begin(ctx);
+      const s = snap(ctx, a);
+      expect(s.abilities.filter((x) => x.alias === 'm1').map((x) => x.key)).toEqual([
+        'm1:basic',
+        'm1:c0',
+        'm1:c1',
+        'm1:c2',
+      ]);
+      expect(s.abilities.filter((x) => x.alias === 'm2')).toHaveLength(4);
+      expect(new Set(s.abilities.map((x) => x.key)).size).toBe(8);
+      const basic = s.abilities[0];
+      expect(basic).toMatchObject({ key: 'm1:basic', abilityId: 'purge', creature: null });
+      team.forEach((creature, n) => {
+        const entry = s.abilities.find((x) => x.key === `m1:c${n}`);
+        expect(entry).toMatchObject({
+          alias: 'm1',
+          abilityId: abilityOfSpecies(creature.species),
+          creature: creature.creatureId,
+          mode: 'default',
+          fired: false,
+          fireAtRound: null,
+        });
+        expect(entry?.defaultRound).toBeGreaterThan(0);
+        // Every creature of the ability stands in the frozen row.
+        expect(s.row.some((slot) => slot.id === creature.creatureId)).toBe(true);
+      });
+      // No raw creature id is ever in a key.
+      for (const x of s.abilities) {
+        for (const id of [...a.creatureIds, ...b.creatureIds]) expect(x.key).not.toContain(id);
+      }
+      // Every use fires on its own at its default round, and the events name the creature.
+      at(ctx, 8 * ROUND);
+      const later = snap(ctx, a);
+      const fired = later.events.filter(
+        (e): e is Extract<FightEvent, { t: 'ability' }> => e.t === 'ability',
+      );
+      expect(fired.map((e) => e.key).sort()).toEqual(later.abilities.map((x) => x.key).sort());
+      expect(fired.every((e) => e.byDefault)).toBe(true);
+      expect(later.abilities.every((x) => x.fired && x.firedAtRound !== null)).toBe(true);
+      for (const e of fired) {
+        const use = later.abilities.find((x) => x.key === e.key);
+        expect(e.creature ?? null).toBe(use?.creature ?? null);
+        expect(e.round).toBe(use?.firedAtRound);
+      }
+      // The stored fight remembers the creature of each use.
+      const stored = JSON.parse(
+        rows<{ abilities: string }>(ctx.sql, 'SELECT abilities FROM raid_live')[0]
+          ?.abilities as string,
+      ) as { key: string; creatureId: string | null }[];
+      expect(stored.find((x) => x.key === 'm1:c1')?.creatureId).toBe(team[1]?.creatureId);
+    });
+  });
+
+  it('skips creatures below the unlock level, and the end of the fight keeps the keys', async () => {
+    await runRaid((ctx) => {
+      const players = toFinale(ctx, 2, { level: UNLOCKED });
+      const [a] = inOrder(ctx, players) as [Seeded, Seeded];
+      const team = teamOf(ctx, a);
+      setLevel(ctx, team[1]?.creatureId as string, UNLOCKED - 1);
+      begin(ctx);
+      const mine = snap(ctx, a).abilities.filter((x) => x.alias === 'm1');
+      // The slot index follows the team, so the locked creature leaves a gap in the keys.
+      expect(mine.map((x) => x.key)).toEqual(['m1:basic', 'm1:c0', 'm1:c2']);
+      at(ctx, 12 * ROUND);
+      expect(snap(ctx, a).status).toBe('done');
+      const run = storedRuns(ctx.sql, W02.id).find((r) => r.phase === 'finale');
+      const stored = run?.input.finaleAbilities.filter((x) => x.playerId === 'm1');
+      expect(stored?.map((x) => x.key)).toEqual(['m1:basic', 'm1:c0', 'm1:c2']);
+      expect(stored?.[1]?.creatureId).toBe(team[0]?.creatureId);
+      // The saved replay is exactly what was fought.
+      const replay = ctx.core.raid.replay(a.id, W02.id, 1, 'finale') as ReplayView;
+      expect(replay.events.filter((e) => e.t === 'ability' && e.player === 'm1')).toHaveLength(3);
+    });
+  });
+
+  it('fires and holds each ability on its own key, only for its owner', async () => {
+    await runRaid((ctx) => {
+      const players = toFinale(ctx, 2, { level: UNLOCKED });
+      const [a, b] = inOrder(ctx, players) as [Seeded, Seeded];
+      begin(ctx);
+      inRound(ctx, 2);
+      expect(act(ctx, a, { key: 'm1:c0', action: 'fire' }).ok).toBe(true);
+      let s = snap(ctx, a);
+      const use = (key: string) => s.abilities.find((x) => x.key === key);
+      expect(use('m1:c0')).toMatchObject({ mode: 'fired', fired: false, fireAtRound: 3 });
+      for (const key of ['m1:basic', 'm1:c1', 'm1:c2', 'm2:basic', 'm2:c0']) {
+        expect(use(key)).toMatchObject({ mode: 'default', fireAtRound: null });
+      }
+      expect(err(act(ctx, a, { key: 'm1:c0', action: 'fire' }))).toBe('409 already_fired');
+      expect(err(act(ctx, a, { key: 'm1:c0', action: 'hold' }))).toBe('409 already_fired');
+      // A second use of the same player is unaffected, and Hold works per key.
+      const defaultRound = (key: string) => use(key)?.defaultRound as number;
+      const holdable = ['m1:basic', 'm1:c1', 'm1:c2'].find((k) => defaultRound(k) > 2);
+      expect(holdable).toBeDefined();
+      expect(act(ctx, a, { key: holdable as string, action: 'hold' }).ok).toBe(true);
+      s = snap(ctx, a);
+      expect(use(holdable as string)).toMatchObject({ mode: 'held' });
+      expect(use('m1:c1')?.mode === 'held' ? 1 : 0).toBe(holdable === 'm1:c1' ? 1 : 0);
+
+      // Someone else's key, and a key that does not exist, are both refused the same way.
+      expect(err(act(ctx, a, { key: 'm2:basic', action: 'fire' }))).toBe('409 not_your_ability');
+      expect(err(act(ctx, b, { key: 'm1:c1', action: 'fire' }))).toBe('409 not_your_ability');
+      expect(err(act(ctx, a, { key: 'm1:c7', action: 'fire' }))).toBe('409 not_your_ability');
+      expect(err(act(ctx, a, { key: 'm9:basic', action: 'hold' }))).toBe('409 not_your_ability');
+      // Nothing of theirs changed.
+      s = snap(ctx, b);
+      expect(s.abilities.filter((x) => x.alias === 'm2').every((x) => x.mode === 'default')).toBe(
+        true,
+      );
+
+      // The press takes effect next round, as that creature's ability.
+      inRound(ctx, 3);
+      s = snap(ctx, a);
+      expect(use('m1:c0')).toMatchObject({ fired: true, firedAtRound: 3, fireAtRound: null });
+      const event = s.events.find((e) => e.t === 'ability' && e.key === 'm1:c0');
+      expect(event).toMatchObject({ round: 3, byDefault: false });
+    });
+  });
+
+  it('accepts zone and element only for abilities whose effects choose', async () => {
+    await runRaid((ctx) => {
+      const players = toFinale(ctx, 2, { level: UNLOCKED });
+      const [a] = inOrder(ctx, players) as [Seeded, Seeded];
+      pick(ctx, a, 'shield-wall');
+      // No shipped creature ability chooses a zone or an element.
+      for (const def of content.finaleAbilities.filter((d) => d.kind === 'creature')) {
+        expect(
+          def.effects.some(
+            (e) =>
+              (e.op === 'shield_wall' && e.zone === 'choose') ||
+              (e.op === 're_mark' && e.element === 'choose'),
+          ),
+        ).toBe(false);
+      }
+      begin(ctx);
+      inRound(ctx, 2);
+      expect(err(act(ctx, a, { key: 'm1:c0', action: 'fire', zone: 'back' }))).toBe(
+        '400 invalid_body',
+      );
+      expect(err(act(ctx, a, { key: 'm1:c0', action: 'fire', element: 'tide' }))).toBe(
+        '400 invalid_body',
+      );
+      expect(snap(ctx, a).abilities.find((x) => x.key === 'm1:c0')?.mode).toBe('default');
+      // The basic Shield Wall still takes its zone.
+      expect(act(ctx, a, { key: 'm1:basic', action: 'fire', zone: 'back' }).ok).toBe(true);
+      expect(ability('shield-wall')?.effects[0]).toMatchObject({ zone: 'choose' });
+    });
+  });
+
+  it('previews what the caller will bring, with locked entries for creatures below the unlock level', async () => {
+    await runRaid((ctx) => {
+      const players = toFinale(ctx, 2, { level: UNLOCKED });
+      const [a, b] = inOrder(ctx, players) as [Seeded, Seeded];
+      const outsider = seedPlayer(ctx, 50, { lastSeenAt: ctx.clock.t - 30 * 86_400_000 });
+      pick(ctx, a, 're-mark');
+      const team = teamOf(ctx, a);
+      setLevel(ctx, team[2]?.creatureId as string, 7);
+      const view = ctx.core.raid.view(a.id, HELSINKI);
+      const preview = view.you.abilities;
+      expect(preview).toHaveLength(4);
+      expect(preview[0]).toEqual({
+        key: 'm1:basic',
+        abilityId: 're-mark',
+        creatureId: null,
+        species: null,
+        unlocked: true,
+        unlockLevel: 1,
+      });
+      expect(preview[1]).toEqual({
+        key: 'm1:c0',
+        abilityId: abilityOfSpecies(team[0]?.species as string),
+        creatureId: team[0]?.creatureId,
+        species: team[0]?.species,
+        unlocked: true,
+        unlockLevel: RULES.abilities.unlockLevel,
+      });
+      // A locked entry has no key: it will not be in the fight.
+      const locked = preview[3] as NonNullable<(typeof preview)[number]>;
+      expect(locked).toEqual({
+        abilityId: abilityOfSpecies(team[2]?.species as string),
+        creatureId: team[2]?.creatureId,
+        species: team[2]?.species,
+        unlocked: false,
+        unlockLevel: RULES.abilities.unlockLevel,
+      });
+      expect('key' in locked).toBe(false);
+      // The preview is the player's own: another player's differs, and a non-member has none.
+      expect(ctx.core.raid.view(b.id, HELSINKI).you.abilities[0]?.key).toBe('m2:basic');
+      expect(ctx.core.raid.view(outsider.id, HELSINKI).you.abilities).toEqual([]);
+      // What the preview promised is what the fight brings.
+      begin(ctx);
+      expect(
+        snap(ctx, a)
+          .abilities.filter((x) => x.alias === 'm1')
+          .map((x) => x.key),
+      ).toEqual(preview.flatMap((x) => (x.key === undefined ? [] : [x.key])));
+    });
+  });
+
+  it('builds the same abilities for the instant late finale and for a practice fight', async () => {
+    await runRaid((ctx) => {
+      const players = toFinale(ctx, 2, { level: UNLOCKED });
+      const [a] = inOrder(ctx, players) as [Seeded, Seeded];
+      // The event runs far too late for anyone to watch: it resolves at once.
+      ctx.clock.t = FINALE + 11 * MINUTE;
+      ctx.core.raid.runDue(HELSINKI);
+      const run = storedRuns(ctx.sql, W02.id).find((r) => r.phase === 'finale');
+      expect(run?.input.finaleAbilities.map((x) => x.key)).toEqual([
+        'm1:basic',
+        'm1:c0',
+        'm1:c1',
+        'm1:c2',
+        'm2:basic',
+        'm2:c0',
+        'm2:c1',
+        'm2:c2',
+      ]);
+      const events = run?.result.events.filter((e) => e.t === 'ability') ?? [];
+      expect(events).toHaveLength(8);
+      expect(ctx.core.raid.replay(a.id, W02.id, 1, 'finale')).not.toBeNull();
+    });
+    await runRaid(
+      (ctx) => {
+        const players = toFinale(ctx, 2, { level: UNLOCKED });
+        const [a] = inOrder(ctx, players) as [Seeded, Seeded];
+        ctx.clock.t = W02.afterPhase2 + 5000;
+        const started = ctx.core.raid.startPractice(a.id, HELSINKI);
+        expect(started.ok).toBe(true);
+        const s = snap(ctx, a);
+        expect(s.practice).toBe(true);
+        expect(s.abilities.filter((x) => x.alias === 'm1')).toHaveLength(4);
+        expect(act(ctx, a, { key: 'm1:c2', action: 'fire' }).ok).toBe(true);
+      },
+      { core: { raidPractice: true } },
+    );
+  });
+
+  /** A copy of `value` without the named fields (how rows looked before they existed). */
+  const omit = (value: Record<string, unknown>, ...fields: string[]): Record<string, unknown> =>
+    Object.fromEntries(Object.entries(value).filter(([field]) => !fields.includes(field)));
+
+  describe('a fight stored before creature abilities', () => {
+    /** Rewrites a stored fight's abilities into the old shape: no key, no creature. */
+    function makeLegacy(ctx: Ctx, extra: Record<string, unknown>[] = []): void {
+      const stored = rows<{ abilities: string }>(ctx.sql, 'SELECT abilities FROM raid_live')[0];
+      const legacy = (JSON.parse(stored?.abilities as string) as Record<string, unknown>[])
+        .filter((x) => x['creatureId'] === null)
+        .map((x) => omit(x, 'key', 'creatureId'));
+      ctx.sql.exec('UPDATE raid_live SET abilities = ?', JSON.stringify([...legacy, ...extra]));
+    }
+
+    it('keeps playing: legacy choices become <alias>:basic and the fight resolves', async () => {
+      await runRaid((ctx) => {
+        const players = toFinale(ctx, 2, { level: UNLOCKED });
+        const [a, b] = inOrder(ctx, players) as [Seeded, Seeded];
+        pick(ctx, a, 'shield-wall');
+        pick(ctx, b, 'rally');
+        begin(ctx);
+        makeLegacy(ctx);
+        inRound(ctx, 2);
+        const s = snap(ctx, a);
+        expect(s.status).toBe('live');
+        expect(s.abilities.map((x) => [x.key, x.abilityId, x.creature])).toEqual([
+          ['m1:basic', 'shield-wall', null],
+          ['m2:basic', 'rally', null],
+        ]);
+        // Fire and Hold work on the mapped key, and write the new shape back.
+        expect(act(ctx, a, { key: 'm1:basic', action: 'fire', zone: 'back' }).ok).toBe(true);
+        expect(err(act(ctx, a, { key: 'm2:basic', action: 'fire' }))).toBe('409 not_your_ability');
+        expect(act(ctx, b, { key: 'm2:basic', action: 'hold' }).ok).toBe(true);
+        const written = JSON.parse(
+          rows<{ abilities: string }>(ctx.sql, 'SELECT abilities FROM raid_live')[0]
+            ?.abilities as string,
+        ) as { key: string; mode: string }[];
+        expect(written.map((x) => [x.key, x.mode])).toEqual([
+          ['m1:basic', 'fired'],
+          ['m2:basic', 'held'],
+        ]);
+        at(ctx, 12 * ROUND);
+        expect(snap(ctx, a).status).toBe('done');
+        expect(finaleRows(ctx)).toBe(1);
+        const run = storedRuns(ctx.sql, W02.id).find((r) => r.phase === 'finale');
+        expect(run?.input.finaleAbilities.map((x) => x.key)).toEqual(['m1:basic', 'm2:basic']);
+        expect(ctx.core.raid.replay(a.id, W02.id, 1, 'finale')).not.toBeNull();
+      });
+    });
+
+    it('drops what the content no longer has instead of throwing', async () => {
+      await runRaid((ctx) => {
+        const players = toFinale(ctx, 2, { level: UNLOCKED });
+        const [a, b] = inOrder(ctx, players) as [Seeded, Seeded];
+        begin(ctx);
+        const old = (alias: string, abilityId: string) => ({
+          alias,
+          abilityId,
+          mode: 'default',
+          fireAtRound: null,
+          params: null,
+        });
+        // An ability id that was removed, a second choice for the same member, a creature
+        // ability that has lost its creature and one that cannot exist without one.
+        makeLegacy(ctx, [
+          old('m1', 'gone-ability'),
+          old('m2', 'rally'),
+          { ...old('m2', 'flare-strike'), key: 'm2:c0', creatureId: 'no-such-creature' },
+          old('m2', 'flare-strike'),
+        ]);
+        inRound(ctx, 4);
+        const s = snap(ctx, b);
+        expect(s.status).toBe('live');
+        expect(s.abilities.map((x) => x.key)).toEqual(['m1:basic', 'm2:basic']);
+        at(ctx, 12 * ROUND);
+        expect(snap(ctx, a).status).toBe('done');
+        expect(finaleRows(ctx)).toBe(1);
+      });
+    });
+
+    it('reads a stored replay from before creature abilities', async () => {
+      await runRaid((ctx) => {
+        const players = toFinale(ctx, 2);
+        const [a] = inOrder(ctx, players) as [Seeded, Seeded];
+        begin(ctx);
+        at(ctx, 12 * ROUND);
+        expect(snap(ctx, a).status).toBe('done');
+        // Strip the keys and creature ids from the stored result, as old rows had them.
+        const row = rows<{ input: string; result: string }>(
+          ctx.sql,
+          "SELECT input, result FROM raid_results WHERE phase = 'finale'",
+        )[0];
+        const input = JSON.parse(row?.input as string) as {
+          finaleAbilities: Record<string, unknown>[];
+        };
+        input.finaleAbilities = input.finaleAbilities.map((x) => omit(x, 'key'));
+        const result = JSON.parse(row?.result as string) as { events: Record<string, unknown>[] };
+        result.events = result.events.map((e) => {
+          return e['t'] === 'ability' ? omit(e, 'key') : e;
+        });
+        ctx.sql.exec(
+          "UPDATE raid_results SET input = ?, result = ? WHERE phase = 'finale'",
+          JSON.stringify(input),
+          JSON.stringify(result),
+        );
+        const replay = ctx.core.raid.replay(a.id, W02.id, 1, 'finale') as ReplayView;
+        expect(replay.events.filter((e) => e.t === 'ability')).toHaveLength(2);
+        expect(replay.names.abilities).toBeDefined();
+      });
+    });
   });
 });

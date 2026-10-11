@@ -27,6 +27,23 @@ const raid = {
     canEdit: true,
     canOptOut: true,
     ability: { abilityId: 'rally', chosen: false },
+    abilities: [
+      {
+        key: 'm1:basic',
+        abilityId: 'rally',
+        creatureId: null,
+        species: null,
+        unlocked: true,
+        unlockLevel: 1,
+      },
+      {
+        abilityId: 'tidal-mark',
+        creatureId: 'c1',
+        species: 'splashet',
+        unlocked: false,
+        unlockLevel: 10,
+      },
+    ],
     reveal: null,
     team: {
       mode: 'auto',
@@ -64,7 +81,7 @@ describe('parseRaidView with real server responses', () => {
   it('accepts the Raid view of a finale player: the ability, the reveal and a placed creature', () => {
     const parsed = parseRaidView(raidReveal);
     expect(parsed.status).toBe('finale');
-    expect(parsed.you.ability).toEqual({ abilityId: 'rally', chosen: false });
+    expect(parsed.you.ability).toEqual({ abilityId: 'rally', chosen: true });
     expect(parsed.you.reveal).toEqual({
       week: '2027-W02',
       cleared: true,
@@ -74,14 +91,30 @@ describe('parseRaidView with real server responses', () => {
     const mine = parsed.party?.row.find((slot) => slot.creature?.mine === true);
     expect(mine?.creature?.creatureId).toBeTypeOf('string');
     expect(parsed.party?.row.some((slot) => slot.creature?.mine === false)).toBe(true);
-    expect(parsed.party?.results.map((r) => r.phase)).toEqual(['phase1', 'phase2']);
+    expect(parsed.party?.results.map((r) => r.phase)).toEqual(['phase1', 'phase2', 'finale']);
     expect(parsed.party?.adaptation?.rule).toBe('resist-top-element');
+  });
+
+  it('reads what the player brings to the finale: the basic ability, then creature abilities, locked ones too', () => {
+    const { abilities } = parseRaidView(raidReveal).you;
+    expect(abilities[0]).toMatchObject({ key: 'm1:basic', abilityId: 'rally', creatureId: null });
+    const creatures = abilities.slice(1);
+    expect(creatures.length).toBeGreaterThan(1);
+    for (const entry of creatures) {
+      expect(entry.creatureId).toBeTypeOf('string');
+      expect(entry.species).toBeTypeOf('string');
+      expect(entry.unlockLevel).toBe(10);
+      // Only an unlocked ability has a key: a locked one will not be in the fight.
+      if (entry.unlocked) expect(entry.key).toMatch(/^m1:c\d$/);
+      else expect(entry).not.toHaveProperty('key');
+    }
+    expect(creatures.some((entry) => !entry.unlocked)).toBe(true);
   });
 
   it('accepts the Raid view that answers "reveal seen": no reveal any more', () => {
     const parsed = parseRaidView(raidRevealSeen);
     expect(parsed.you.reveal).toBeNull();
-    expect(parsed.you.ability).toEqual({ abilityId: 'rally', chosen: false });
+    expect(parsed.you.ability).toEqual({ abilityId: 'rally', chosen: true });
   });
 });
 
@@ -99,14 +132,38 @@ describe('parseRaidView', () => {
     expect(parseRaidView(out).party).toBeNull();
   });
 
+  it('accepts locked abilities without a key, and no abilities at all', () => {
+    const parsed = parseRaidView(raid);
+    expect(parsed.you.abilities[1]).not.toHaveProperty('key');
+    expect(parsed.you.abilities[1]?.unlocked).toBe(false);
+    expect(parseRaidView({ ...raid, you: { ...raid.you, abilities: [] } }).you.abilities).toEqual(
+      [],
+    );
+  });
+
+  it('refuses broken ability previews', () => {
+    const you = (abilities: unknown) => ({ ...raid, you: { ...raid.you, abilities } });
+    const entry = raid.you.abilities[0] as Record<string, unknown>;
+    expect(() => parseRaidView(you('rally'))).toThrow();
+    expect(() => parseRaidView(you([{ ...entry, key: 7 }]))).toThrow();
+    expect(() => parseRaidView(you([{ ...entry, unlocked: 'yes' }]))).toThrow();
+    expect(() => parseRaidView(you([{ ...entry, unlockLevel: 1.5 }]))).toThrow();
+    expect(() => parseRaidView(you([{ ...entry, creatureId: 3 }]))).toThrow();
+    expect(() => parseRaidView(you([{ ...entry, species: undefined }]))).toThrow();
+    const missing: Record<string, unknown> = { ...entry };
+    delete missing['abilityId'];
+    expect(() => parseRaidView(you([missing]))).toThrow();
+  });
+
   it('needs the ability and the reveal, as null when there is none', () => {
-    const without = (key: 'ability' | 'reveal') => {
+    const without = (key: 'ability' | 'reveal' | 'abilities') => {
       const you: Record<string, unknown> = { ...raid.you };
       delete you[key];
       return { ...raid, you };
     };
     expect(() => parseRaidView(without('ability'))).toThrow();
     expect(() => parseRaidView(without('reveal'))).toThrow();
+    expect(() => parseRaidView(without('abilities'))).toThrow();
     expect(parseRaidView({ ...raid, you: { ...raid.you, ability: null } }).you.ability).toBeNull();
   });
 

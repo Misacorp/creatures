@@ -3,6 +3,7 @@
     "method": "POST",
     "path": "/api/raid/live/action",
     "body": {
+      "key": "m3:basic",
       "action": "hold"
     }
   },
@@ -10,6 +11,7 @@
     "method": "POST",
     "path": "/api/raid/live/action",
     "body": {
+      "key": "m3:basic",
       "action": "fire"
     }
   },
@@ -17,6 +19,7 @@
     "method": "POST",
     "path": "/api/raid/live/action",
     "body": {
+      "key": "m1:basic",
       "action": "fire",
       "zone": "back"
     }
@@ -25,6 +28,7 @@
     "method": "POST",
     "path": "/api/raid/live/action",
     "body": {
+      "key": "m2:basic",
       "action": "fire",
       "element": "tide"
     }
@@ -60,6 +64,22 @@
     "path": "/api/raid/channel",
     "body": {
       "action": "unpin"
+    }
+  },
+  "action-hold-creature": {
+    "method": "POST",
+    "path": "/api/raid/live/action",
+    "body": {
+      "key": "m1:c1",
+      "action": "hold"
+    }
+  },
+  "action-fire-creature": {
+    "method": "POST",
+    "path": "/api/raid/live/action",
+    "body": {
+      "key": "m1:c1",
+      "action": "fire"
     }
   }
 }

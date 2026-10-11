@@ -110,5 +110,12 @@
     "body": {
       "error": "rate_limited"
     }
+  },
+  {
+    "route": "POST /api/raid/live/action",
+    "status": 409,
+    "body": {
+      "error": "not_your_ability"
+    }
   }
 ]

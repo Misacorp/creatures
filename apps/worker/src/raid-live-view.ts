@@ -23,9 +23,14 @@ import type { ReplayView } from './raid-view';
 
 export type LiveStatus = 'none' | 'lobby' | 'live' | 'done';
 
+/** One use of an ability: a member's basic ability or one of their creatures' abilities. */
 export interface LiveAbilityView {
+  /** Unique in the fight; the caller sends it to Fire or Hold their own ability. */
+  key: string;
   alias: string;
   abilityId: string;
+  /** The row slot (creature id) of a creature ability; null for a basic ability. */
+  creature: string | null;
   mode: AbilityMode;
   fired: boolean;
   firedAtRound: number | null;
@@ -188,10 +193,12 @@ export function liveSnapshot(
   for (const m of row.members) aliasNames[m.alias] = ctx.names.get(m.userId) ?? 'Unknown';
   const abilities: LiveAbilityView[] = row.abilities.map((a) => {
     const def = content.finaleAbilities.find((d) => d.id === a.abilityId);
-    const firedAtRound = firedRound(result, a.alias, state.clockRound);
+    const firedAtRound = firedRound(result, a.key, state.clockRound);
     return {
+      key: a.key,
       alias: a.alias,
       abilityId: a.abilityId,
+      creature: a.creatureId,
       mode: a.mode,
       fired: firedAtRound !== null,
       firedAtRound,

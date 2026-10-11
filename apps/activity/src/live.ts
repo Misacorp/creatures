@@ -7,7 +7,7 @@
 import { content, RULES, type FinaleAbilityDef } from '@creatures/game';
 import { describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
 import type { LiveAbility, LiveActionRequest, LiveFight, LiveSnapshot } from './live-api';
-import type { RaidReveal } from './raid-api';
+import type { AbilityPreview, RaidReveal, TeamCreatureView } from './raid-api';
 import { formatCountdown } from './game';
 
 // --- When the finale is on ---
@@ -141,6 +141,111 @@ export function abilityName(id: string): string {
   return ABILITIES.get(id)?.name ?? id;
 }
 
+/** The one-line effect text of an ability (from the content), or an empty string. */
+export function abilityEffectLine(id: string): string {
+  return ABILITIES.get(id)?.description ?? '';
+}
+
+/**
+ * What to call one use of an ability: "Cindle's Flare Strike" for a creature ability (the creature
+ * name comes from the fight's names, so a nickname shows as the player set it), and "Rally (basic)"
+ * for a basic ability. Plain text.
+ */
+export function abilityTitle(
+  ability: Pick<LiveAbility, 'abilityId' | 'creature'>,
+  names: Pick<EventNames, 'creatures'>,
+): string {
+  const name = abilityName(ability.abilityId);
+  if (ability.creature === null) return `${name} (basic)`;
+  const creature = names.creatures[ability.creature];
+  return creature === undefined ? name : `${creature}'s ${name}`;
+}
+
+/** The caller's own abilities, in the server's order (basic first). */
+export function ownAbilities(abilities: readonly LiveAbility[], you: string | null): LiveAbility[] {
+  return you === null ? [] : abilities.filter((a) => a.alias === you);
+}
+
+export interface OtherUsage {
+  alias: string;
+  total: number;
+  used: number;
+  /** The ability that took effect most recently (the later round, then the later in the list). */
+  latest: LiveAbility | null;
+}
+
+/** For each other player: how many of their abilities have been used, and the latest one. */
+export function otherUsage(abilities: readonly LiveAbility[], you: string | null): OtherUsage[] {
+  const byAlias = new Map<string, OtherUsage>();
+  for (const a of abilities) {
+    if (a.alias === you) continue;
+    const entry = byAlias.get(a.alias) ?? { alias: a.alias, total: 0, used: 0, latest: null };
+    entry.total += 1;
+    if (a.fired) {
+      entry.used += 1;
+      if (entry.latest === null || (a.firedAtRound ?? 0) >= (entry.latest.firedAtRound ?? 0)) {
+        entry.latest = a;
+      }
+    }
+    byAlias.set(a.alias, entry);
+  }
+  return [...byAlias.values()];
+}
+
+/** "2 of 4 used. Latest: Cindle's Flare Strike (round 5)". */
+export function otherUsageText(usage: OtherUsage, names: Pick<EventNames, 'creatures'>): string {
+  const head = `${String(usage.used)} of ${String(usage.total)} used`;
+  if (usage.latest === null) return head;
+  const round = usage.latest.firedAtRound;
+  return `${head}. Latest: ${abilityTitle(usage.latest, names)}${
+    round === null ? '' : ` (round ${String(round)})`
+  }`;
+}
+
+export interface CreatureAbilityRow {
+  /** The creature it belongs to. */
+  creatureId: string;
+  /** "Cindle's Flare Strike". */
+  title: string;
+  /** One line about what it does. */
+  effect: string;
+  unlocked: boolean;
+  /** "Ready for the finale" or "Unlocks at level 10 (now level 7)". */
+  status: string;
+}
+
+/**
+ * The Raid tab's creature abilities: one row for each team creature that has one, unlocked or not
+ * (the basic ability is picked in the picker, so it is not listed here). The level of a locked one
+ * comes from the team list.
+ */
+export function creatureAbilityRows(
+  preview: readonly AbilityPreview[],
+  team: readonly TeamCreatureView[],
+): CreatureAbilityRow[] {
+  const rows: CreatureAbilityRow[] = [];
+  for (const entry of preview) {
+    if (entry.creatureId === null) continue;
+    const creature = team.find((c) => c.creatureId === entry.creatureId);
+    const name = abilityName(entry.abilityId);
+    let status = 'Ready for the finale';
+    if (!entry.unlocked) {
+      status =
+        creature === undefined
+          ? `Unlocks at level ${String(entry.unlockLevel)}`
+          : `Unlocks at level ${String(entry.unlockLevel)} (now level ${String(creature.level)})`;
+    }
+    rows.push({
+      creatureId: entry.creatureId,
+      title: creature === undefined ? name : `${creature.name}'s ${name}`,
+      effect: abilityEffectLine(entry.abilityId),
+      unlocked: entry.unlocked,
+      status,
+    });
+  }
+  return rows;
+}
+
 /** What a finale ability asks for when it is fired by hand. */
 export type ParamKind = 'zone' | 'element' | null;
 
@@ -224,21 +329,52 @@ export function abilityControls(
   return { canFire: true, canHold, note: '' };
 }
 
-/** The request body for Fire or Hold. Only the parameter that belongs to the ability is sent. */
+/**
+ * The request body for Fire or Hold of one ability, named by its `key`. Only the parameter that
+ * belongs to the ability is sent (none for creature abilities, whose effects never ask).
+ */
 export function buildAction(
+  key: string,
   abilityId: string,
   action: 'fire' | 'hold',
   zone: string,
   element: string,
 ): LiveActionRequest {
-  if (action === 'hold') return { action: 'hold' };
+  if (action === 'hold') return { key, action: 'hold' };
   const kind = abilityParamKind(abilityId);
   if (kind === 'zone' && (zone === 'front' || zone === 'middle' || zone === 'back')) {
-    return { action: 'fire', zone };
+    return { key, action: 'fire', zone };
   }
   const chosen = content.elements.find((e) => e.id === element);
-  if (kind === 'element' && chosen !== undefined) return { action: 'fire', element: chosen.id };
-  return { action: 'fire' };
+  if (kind === 'element' && chosen !== undefined) {
+    return { key, action: 'fire', element: chosen.id };
+  }
+  return { key, action: 'fire' };
+}
+
+/**
+ * A lock per ability key, so a double tap on one ability sends one request while another ability
+ * can still be pressed. `acquire` is true for the first caller until `release`.
+ */
+export interface KeyLock {
+  acquire(key: string): boolean;
+  release(key: string): void;
+  has(key: string): boolean;
+}
+
+export function createKeyLock(): KeyLock {
+  const held = new Set<string>();
+  return {
+    acquire(key) {
+      if (held.has(key)) return false;
+      held.add(key);
+      return true;
+    },
+    release(key) {
+      held.delete(key);
+    },
+    has: (key) => held.has(key),
+  };
 }
 
 // --- The event feed ---

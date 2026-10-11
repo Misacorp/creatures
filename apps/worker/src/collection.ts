@@ -8,6 +8,7 @@
 import {
   applyCatchToCollection,
   canTrain,
+  RULES,
   content,
   discountedTrainingCost,
   effectiveStats,
@@ -112,6 +113,12 @@ export interface CreatureView {
    * reached and the player holds enough Essence right now.
    */
   evolution?: { toSpecies: string; level: number; essence: number; available: boolean };
+  /**
+   * The creature's finale ability (null for a species without one). `unlocked` once the creature
+   * has reached `unlockLevel`. `nextId` is the stronger ability of the evolved form, if the
+   * creature can still evolve into a species that has one.
+   */
+  ability: { id: string; unlocked: boolean; unlockLevel: number; nextId?: string } | null;
 }
 
 export interface CatchView {
@@ -274,6 +281,11 @@ export class Collection {
     const species = speciesOf(row.species);
     const away = row.away_expedition_id !== null;
     const trainable = canTrain({ level: row.level, levelCap: species.levelCap, away: false });
+    const abilityId = species.ability?.id;
+    const nextAbilityId =
+      species.evolvesTo === undefined
+        ? undefined
+        : speciesOf(species.evolvesTo.species).ability?.id;
     return {
       id: row.id,
       species: species.id,
@@ -287,6 +299,15 @@ export class Collection {
       origin: row.origin,
       caughtAt: row.caught_at,
       stats: effectiveStats(species, row.level, row.fusion_count),
+      ability:
+        abilityId === undefined
+          ? null
+          : {
+              id: abilityId,
+              unlocked: row.level >= RULES.abilities.unlockLevel,
+              unlockLevel: RULES.abilities.unlockLevel,
+              ...(nextAbilityId === undefined ? {} : { nextId: nextAbilityId }),
+            },
       trainCost: trainable
         ? discountedTrainingCost(row.level, medianLevel ?? Number.NEGATIVE_INFINITY)
         : null,

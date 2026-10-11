@@ -2,9 +2,18 @@ import type { EventNames, FightEvent } from '@creatures/engine';
 import { content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { LiveAbility, LiveLobby, LiveNone, LiveRunning } from './live-api';
+import type { AbilityPreview } from './raid-api';
 import {
   abilityControls,
   abilityDef,
+  abilityEffectLine,
+  abilityTitle,
+  createKeyLock,
+  creatureAbilityRows,
+  otherUsage,
+  otherUsageText,
+  ownAbilities,
+  type OtherUsage,
   abilityParamKind,
   abilityPlanText,
   abilityStateText,
@@ -80,8 +89,10 @@ function lobbyOf(over: Partial<LiveLobby> = {}): LiveLobby {
 
 function abilityOf(over: Partial<LiveAbility> = {}): LiveAbility {
   return {
+    key: 'p1:basic',
     alias: 'p1',
     abilityId: 'rally',
+    creature: null,
     mode: 'default',
     fired: false,
     firedAtRound: null,
@@ -336,28 +347,198 @@ describe('abilityControls', () => {
 });
 
 describe('buildAction', () => {
+  it('names the ability by its key in every request', () => {
+    expect(buildAction('m1:c2', 'flare-strike', 'fire', '', '')).toEqual({
+      key: 'm1:c2',
+      action: 'fire',
+    });
+    expect(buildAction('m1:c2', 'flare-strike', 'hold', '', '')).toEqual({
+      key: 'm1:c2',
+      action: 'hold',
+    });
+  });
+
   it('sends Hold with nothing else', () => {
-    expect(buildAction('rally', 'hold', 'front', 'ember')).toEqual({ action: 'hold' });
+    expect(buildAction('m1:basic', 'rally', 'hold', 'front', 'ember')).toEqual({
+      key: 'm1:basic',
+      action: 'hold',
+    });
   });
 
   it('sends the zone only for Shield Wall', () => {
-    expect(buildAction('shield-wall', 'fire', 'back', 'ember')).toEqual({
+    expect(buildAction('m1:basic', 'shield-wall', 'fire', 'back', 'ember')).toEqual({
+      key: 'm1:basic',
       action: 'fire',
       zone: 'back',
     });
-    expect(buildAction('shield-wall', 'fire', '', 'ember')).toEqual({ action: 'fire' });
-    expect(buildAction('shield-wall', 'fire', 'sideways', '')).toEqual({ action: 'fire' });
+    expect(buildAction('m1:basic', 'shield-wall', 'fire', '', 'ember')).toEqual({
+      key: 'm1:basic',
+      action: 'fire',
+    });
+    expect(buildAction('m1:basic', 'shield-wall', 'fire', 'sideways', '')).toEqual({
+      key: 'm1:basic',
+      action: 'fire',
+    });
   });
 
   it('sends the element only for Re-mark, and only a real one', () => {
     const element = content.elements[0]?.id ?? '';
-    expect(buildAction('re-mark', 'fire', 'front', element)).toEqual({ action: 'fire', element });
-    expect(buildAction('re-mark', 'fire', '', 'not-an-element')).toEqual({ action: 'fire' });
+    expect(buildAction('m1:basic', 're-mark', 'fire', 'front', element)).toEqual({
+      key: 'm1:basic',
+      action: 'fire',
+      element,
+    });
+    expect(buildAction('m1:basic', 're-mark', 'fire', '', 'not-an-element')).toEqual({
+      key: 'm1:basic',
+      action: 'fire',
+    });
   });
 
-  it('sends a plain Fire for abilities without parameters', () => {
-    expect(buildAction('rally', 'fire', 'front', 'tide')).toEqual({ action: 'fire' });
-    expect(buildAction('purge', 'fire', 'front', 'tide')).toEqual({ action: 'fire' });
+  it('sends a plain Fire for abilities without parameters, creature abilities included', () => {
+    expect(buildAction('m1:basic', 'rally', 'fire', 'front', 'tide')).toEqual({
+      key: 'm1:basic',
+      action: 'fire',
+    });
+    expect(buildAction('m1:basic', 'purge', 'fire', 'front', 'tide')).toEqual({
+      key: 'm1:basic',
+      action: 'fire',
+    });
+    // Whatever zone or element was picked on another ability never leaks into a creature ability.
+    expect(buildAction('m1:c0', 'tidal-mark', 'fire', 'back', 'tide')).toEqual({
+      key: 'm1:c0',
+      action: 'fire',
+    });
+  });
+});
+
+describe('the key lock (double-tap protection per ability)', () => {
+  it('lets the first tap through and refuses the second until released', () => {
+    const lock = createKeyLock();
+    expect(lock.acquire('m1:basic')).toBe(true);
+    expect(lock.has('m1:basic')).toBe(true);
+    expect(lock.acquire('m1:basic')).toBe(false);
+    lock.release('m1:basic');
+    expect(lock.acquire('m1:basic')).toBe(true);
+  });
+
+  it('does not block another ability while one is in flight', () => {
+    const lock = createKeyLock();
+    expect(lock.acquire('m1:basic')).toBe(true);
+    expect(lock.acquire('m1:c0')).toBe(true);
+    expect(lock.acquire('m1:c0')).toBe(false);
+    lock.release('m1:basic');
+    expect(lock.has('m1:c0')).toBe(true);
+    expect(lock.has('m1:basic')).toBe(false);
+  });
+});
+
+describe('ability texts', () => {
+  const names = { creatures: { 'cid-1': 'Cindle', 'cid-2': 'Rex' } };
+
+  it('labels a creature ability with its creature and a basic ability as basic', () => {
+    expect(abilityTitle({ abilityId: 'flare-strike', creature: 'cid-1' }, names)).toBe(
+      "Cindle's Flare Strike",
+    );
+    expect(abilityTitle({ abilityId: 'rally', creature: null }, names)).toBe('Rally (basic)');
+    // An unknown creature or ability still reads sensibly.
+    expect(abilityTitle({ abilityId: 'flare-strike', creature: 'gone' }, names)).toBe(
+      'Flare Strike',
+    );
+    expect(abilityTitle({ abilityId: 'mystery', creature: null }, names)).toBe('mystery (basic)');
+  });
+
+  it('has a one-line effect from the content', () => {
+    expect(abilityEffectLine('flare-strike')).toContain('220%');
+    expect(abilityEffectLine('nope')).toBe('');
+  });
+
+  it('keeps names as plain text: markup in a creature name stays markup text', () => {
+    const odd = { creatures: { x: '<img src=x onerror=alert(1)>' } };
+    expect(abilityTitle({ abilityId: 'flare-strike', creature: 'x' }, odd)).toBe(
+      "<img src=x onerror=alert(1)>'s Flare Strike",
+    );
+  });
+
+  it('lists only the caller own abilities', () => {
+    const list = [
+      abilityOf({ key: 'm1:basic', alias: 'm1' }),
+      abilityOf({ key: 'm1:c0', alias: 'm1', abilityId: 'flare-strike', creature: 'cid-1' }),
+      abilityOf({ key: 'm2:basic', alias: 'm2' }),
+    ];
+    expect(ownAbilities(list, 'm1').map((a) => a.key)).toEqual(['m1:basic', 'm1:c0']);
+    expect(ownAbilities(list, null)).toEqual([]);
+  });
+
+  it('summarises other players: used of total, and the latest used', () => {
+    const list = [
+      abilityOf({ key: 'm1:basic', alias: 'm1' }),
+      abilityOf({ key: 'm2:basic', alias: 'm2', fired: true, firedAtRound: 2 }),
+      abilityOf({
+        key: 'm2:c0',
+        alias: 'm2',
+        abilityId: 'flare-strike',
+        creature: 'cid-2',
+        fired: true,
+        firedAtRound: 5,
+      }),
+      abilityOf({ key: 'm2:c1', alias: 'm2', abilityId: 'flare-strike', creature: 'cid-1' }),
+      abilityOf({ key: 'm3:basic', alias: 'm3' }),
+    ];
+    const usage = otherUsage(list, 'm1');
+    expect(usage.map((u) => [u.alias, u.used, u.total])).toEqual([
+      ['m2', 2, 3],
+      ['m3', 0, 1],
+    ]);
+    expect(otherUsageText(usage[0] as OtherUsage, names)).toBe(
+      "2 of 3 used. Latest: Rex's Flare Strike (round 5)",
+    );
+    expect(otherUsageText(usage[1] as OtherUsage, names)).toBe('0 of 1 used');
+  });
+
+  it('lists creature abilities for the Raid tab, locked ones with the level they need', () => {
+    const team = [
+      { creatureId: 'a', species: 'cindle', name: 'Cindle', level: 12, slot: null },
+      { creatureId: 'b', species: 'splashet', name: 'Bubbles', level: 7, slot: 3 },
+    ];
+    const preview: AbilityPreview[] = [
+      {
+        key: 'm1:basic',
+        abilityId: 'rally',
+        creatureId: null,
+        species: null,
+        unlocked: true,
+        unlockLevel: 1,
+      },
+      {
+        key: 'm1:c0',
+        abilityId: 'flare-strike',
+        creatureId: 'a',
+        species: 'cindle',
+        unlocked: true,
+        unlockLevel: 10,
+      },
+      {
+        abilityId: 'tidal-mark',
+        creatureId: 'b',
+        species: 'splashet',
+        unlocked: false,
+        unlockLevel: 10,
+      },
+    ];
+    const rows = creatureAbilityRows(preview, team);
+    expect(rows).toHaveLength(2); // the basic ability is the picker's
+    expect(rows[0]).toMatchObject({
+      creatureId: 'a',
+      title: "Cindle's Flare Strike",
+      unlocked: true,
+      status: 'Ready for the finale',
+    });
+    expect(rows[1]).toMatchObject({
+      title: "Bubbles's Tidal Mark",
+      unlocked: false,
+      status: 'Unlocks at level 10 (now level 7)',
+    });
+    expect(rows[1]?.effect).toContain('Soaked');
   });
 });
 
@@ -401,6 +582,41 @@ describe('the event feed', () => {
       'Round 2: Colossus has 90 HP.',
     ]);
     expect(lines.map((l) => l.key)).toEqual([true, true, false]);
+  });
+
+  it("reads creature abilities by creature, and a strike hit as the ability's hit", () => {
+    const named: EventNames = {
+      ...names,
+      creatures: { ...names.creatures, c: 'Cindle' },
+      abilities: { rally: 'Rally', 'flare-strike': 'Flare Strike' },
+    };
+    const round: FightEvent[] = [
+      {
+        t: 'ability',
+        round: 3,
+        player: 'p1',
+        ability: 'flare-strike',
+        key: 'p1:c0',
+        creature: 'c',
+        byDefault: false,
+      },
+      {
+        t: 'hit',
+        round: 3,
+        creature: 'c',
+        ability: 'flare-strike',
+        key: 'p1:c0',
+        damage: 88,
+        matchupBp: 10_000,
+        bonusBp: 0,
+        mark: null,
+        bossHp: 2,
+      },
+    ];
+    expect(feedLines(round, named).map((l) => l.text)).toEqual([
+      "Cindle's Flare Strike hits Colossus for 88; 2 HP left.",
+      "Misa uses Cindle's Flare Strike.",
+    ]);
   });
 
   it('lists earlier rounds separately', () => {

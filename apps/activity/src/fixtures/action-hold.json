@@ -19,32 +19,32 @@
   "row": [
     {
       "position": 0,
-      "id": "68a60128-dfd5-4e6c-a989-dfb53340fda4",
+      "id": "e6306665-5f46-4761-a9be-aec274af06a6",
       "name": "Sproutle",
       "species": "sproutle",
       "element": "grove",
       "role": "guard",
-      "level": 12,
+      "level": 10,
       "owner": "m1"
     },
     {
       "position": 1,
-      "id": "c3cda7e5-dbda-4963-abfb-5988df4d07dc",
+      "id": "930c0d17-2472-434e-a712-abdeba529cf2",
       "name": "Mistnewt",
       "species": "mistnewt",
       "element": "tide",
       "role": "guard",
-      "level": 12,
+      "level": 10,
       "owner": "m2"
     },
     {
       "position": 2,
-      "id": "a3accda5-5dc4-406f-aec2-dda8a112cd57",
+      "id": "61b87b0e-5779-4988-b779-b9709a118a8f",
       "name": "Sproutle",
       "species": "sproutle",
       "element": "grove",
       "role": "guard",
-      "level": 12,
+      "level": 10,
       "owner": "m2"
     },
     {
@@ -54,7 +54,7 @@
       "species": "sproutle",
       "element": "grove",
       "role": "guard",
-      "level": 12,
+      "level": 10,
       "owner": null
     },
     {
@@ -64,7 +64,7 @@
       "species": "splashet",
       "element": "tide",
       "role": "setter",
-      "level": 12,
+      "level": 10,
       "owner": null
     },
     {
@@ -74,52 +74,52 @@
       "species": "stormray",
       "element": "spark",
       "role": "payoff",
-      "level": 12,
+      "level": 10,
       "owner": null
     },
     {
       "position": 6,
-      "id": "09a527ac-b509-401d-aa53-73bbc9e9207a",
+      "id": "c3c39f76-4625-4c7c-9b4e-946e3a5ed5d2",
       "name": "Zipmouse",
       "species": "zipmouse",
       "element": "spark",
       "role": "setter",
-      "level": 12,
+      "level": 10,
       "owner": "m2"
     },
     {
       "position": 7,
-      "id": "c7abbca2-9eb1-4360-a352-8ef131c42e6a",
+      "id": "4cf59451-be89-47cf-977b-f634f7752556",
       "name": "Zipmouse",
       "species": "zipmouse",
       "element": "spark",
       "role": "setter",
-      "level": 12,
+      "level": 10,
       "owner": "m1"
     },
     {
       "position": 8,
-      "id": "1ad02b96-4abe-4525-9321-1c510aab4f1f",
+      "id": "8a243054-507a-4c60-b784-f6eb032c8f0c",
       "name": "Cindle",
       "species": "cindle",
       "element": "ember",
       "role": "payoff",
-      "level": 12,
+      "level": 10,
       "owner": "m1"
     }
   ],
   "names": {
     "boss": "Storm Sovereign",
     "creatures": {
-      "68a60128-dfd5-4e6c-a989-dfb53340fda4": "Sproutle",
-      "c3cda7e5-dbda-4963-abfb-5988df4d07dc": "Mistnewt",
-      "a3accda5-5dc4-406f-aec2-dda8a112cd57": "Sproutle",
+      "e6306665-5f46-4761-a9be-aec274af06a6": "Sproutle",
+      "930c0d17-2472-434e-a712-abdeba529cf2": "Mistnewt",
+      "61b87b0e-5779-4988-b779-b9709a118a8f": "Sproutle",
       "guest:1": "Guest Warden",
       "guest:2": "Guest Tidecaller",
       "guest:3": "Guest Striker",
-      "09a527ac-b509-401d-aa53-73bbc9e9207a": "Zipmouse",
-      "c7abbca2-9eb1-4360-a352-8ef131c42e6a": "Zipmouse",
-      "1ad02b96-4abe-4525-9321-1c510aab4f1f": "Cindle"
+      "c3c39f76-4625-4c7c-9b4e-946e3a5ed5d2": "Zipmouse",
+      "4cf59451-be89-47cf-977b-f634f7752556": "Zipmouse",
+      "8a243054-507a-4c60-b784-f6eb032c8f0c": "Cindle"
     },
     "players": {
       "m1": "Player 1",
@@ -138,7 +138,27 @@
       "rally": "Rally",
       "shield-wall": "Shield Wall",
       "re-mark": "Re-mark",
-      "purge": "Purge"
+      "purge": "Purge",
+      "tidal-mark": "Tidal Mark",
+      "tidal-mark-2": "Riptide Mark",
+      "flare-strike": "Flare Strike",
+      "flare-strike-2": "Inferno Strike",
+      "bark-guard": "Bark Guard",
+      "bark-guard-2": "Ironbark Guard",
+      "static-zap": "Static Zap",
+      "static-zap-2": "Storm Zap",
+      "fog-veil": "Fog Veil",
+      "fog-veil-2": "Dense Fog",
+      "warm-glow": "Warm Glow",
+      "warm-glow-2": "Magma Glow",
+      "thunder-strike": "Thunder Strike",
+      "thunder-strike-2": "Tempest Strike",
+      "moss-bloom": "Mossy Bloom",
+      "moss-bloom-2": "Ancient Bloom",
+      "coral-lance": "Coral Lance",
+      "solar-brand": "Solar Brand",
+      "verdant-roar": "Verdant Roar",
+      "aurora-surge": "Aurora Surge"
     },
     "marks": {
       "tide": "Soaked",
@@ -159,8 +179,10 @@
   },
   "abilities": [
     {
+      "key": "m1:basic",
       "alias": "m1",
       "abilityId": "shield-wall",
+      "creature": null,
       "mode": "fired",
       "fired": false,
       "firedAtRound": null,
@@ -168,13 +190,81 @@
       "defaultRound": 3
     },
     {
+      "key": "m1:c0",
+      "alias": "m1",
+      "abilityId": "flare-strike",
+      "creature": "8a243054-507a-4c60-b784-f6eb032c8f0c",
+      "mode": "fired",
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": 3,
+      "defaultRound": 5
+    },
+    {
+      "key": "m1:c1",
+      "alias": "m1",
+      "abilityId": "static-zap",
+      "creature": "4cf59451-be89-47cf-977b-f634f7752556",
+      "mode": "default",
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": null,
+      "defaultRound": 4
+    },
+    {
+      "key": "m1:c2",
+      "alias": "m1",
+      "abilityId": "bark-guard",
+      "creature": "e6306665-5f46-4761-a9be-aec274af06a6",
+      "mode": "default",
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": null,
+      "defaultRound": 3
+    },
+    {
+      "key": "m2:basic",
       "alias": "m2",
       "abilityId": "rally",
+      "creature": null,
       "mode": "held",
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
       "defaultRound": 6
+    },
+    {
+      "key": "m2:c0",
+      "alias": "m2",
+      "abilityId": "fog-veil",
+      "creature": "930c0d17-2472-434e-a712-abdeba529cf2",
+      "mode": "default",
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": null,
+      "defaultRound": 3
+    },
+    {
+      "key": "m2:c1",
+      "alias": "m2",
+      "abilityId": "static-zap",
+      "creature": "c3c39f76-4625-4c7c-9b4e-946e3a5ed5d2",
+      "mode": "default",
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": null,
+      "defaultRound": 4
+    },
+    {
+      "key": "m2:c2",
+      "alias": "m2",
+      "abilityId": "bark-guard",
+      "creature": "61b87b0e-5779-4988-b779-b9709a118a8f",
+      "mode": "default",
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": null,
+      "defaultRound": 3
     }
   ],
   "events": [
@@ -194,25 +284,7 @@
     {
       "t": "turn",
       "round": 1,
-      "creature": "68a60128-dfd5-4e6c-a989-dfb53340fda4"
-    },
-    {
-      "t": "hit",
-      "round": 1,
-      "creature": "68a60128-dfd5-4e6c-a989-dfb53340fda4",
-      "damage": 49,
-      "matchupBp": 15000,
-      "bonusBp": 0,
-      "mark": null,
-      "bossHp": 49999951
-    },
-    {
-      "t": "mark",
-      "round": 1,
-      "creature": "68a60128-dfd5-4e6c-a989-dfb53340fda4",
-      "player": "m1",
-      "element": "grove",
-      "replaced": null
+      "creature": "e6306665-5f46-4761-a9be-aec274af06a6"
     },
     {
       "t": "reaction",
@@ -221,7 +293,7 @@
       "setupCreature": "guest:2",
       "setupPlayer": null,
       "payoff": "guest:3",
-      "bonus": 244,
+      "bonus": 225,
       "reflected": false
     },
     {
@@ -231,20 +303,53 @@
       "op": "strike_highest_atk"
     },
     {
+      "t": "reaction",
+      "round": 2,
+      "reaction": "grounding",
+      "setupCreature": "c3c39f76-4625-4c7c-9b4e-946e3a5ed5d2",
+      "setupPlayer": "m2",
+      "payoff": "e6306665-5f46-4761-a9be-aec274af06a6",
+      "bonus": 161,
+      "reflected": false
+    },
+    {
+      "t": "reaction",
+      "round": 2,
+      "reaction": "overload",
+      "setupCreature": "930c0d17-2472-434e-a712-abdeba529cf2",
+      "setupPlayer": "m2",
+      "payoff": "guest:3",
+      "bonus": 225,
+      "reflected": false
+    },
+    {
+      "t": "gimmick",
+      "round": 2,
+      "gimmick": "lightning-rod",
+      "op": "strike_highest_atk"
+    },
+    {
       "t": "boss_hit",
-      "round": 1,
+      "round": 2,
       "source": "gimmick",
       "target": "guest:1",
       "damage": 1,
       "from": "guest:3"
     },
     {
+      "t": "boss_hit",
+      "round": 2,
+      "source": "attack",
+      "target": "e6306665-5f46-4761-a9be-aec274af06a6",
+      "damage": 1
+    },
+    {
       "t": "round_end",
-      "round": 1,
-      "bossHp": 49999326
+      "round": 2,
+      "bossHp": 49998593
     }
   ],
-  "bossHp": 49998481,
+  "bossHp": 49998593,
   "watching": ["Player 1", "Player 2"],
   "loot": null
 }
