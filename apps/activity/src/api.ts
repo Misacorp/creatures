@@ -292,7 +292,8 @@ export interface Expedition {
 }
 
 export interface ServerFirst {
-  kind: 'catch' | 'evolve';
+  /** `jackpot` records (species `jackpot`) come from raid finales. */
+  kind: 'catch' | 'evolve' | 'jackpot';
   species: string;
   at: number;
   mine: boolean;
@@ -390,7 +391,7 @@ function isExpedition(value: unknown): value is Expedition {
 function isServerFirst(value: unknown): value is ServerFirst {
   return (
     isRecord(value) &&
-    (value['kind'] === 'catch' || value['kind'] === 'evolve') &&
+    (value['kind'] === 'catch' || value['kind'] === 'evolve' || value['kind'] === 'jackpot') &&
     isStr(value['species']) &&
     isInt(value['at']) &&
     typeof value['mine'] === 'boolean' &&

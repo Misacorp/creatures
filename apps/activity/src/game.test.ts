@@ -200,6 +200,17 @@ describe('parseGameState', () => {
     ]);
   });
 
+  it('accepts every kind of first-on-server record, including raid jackpots', () => {
+    const first = { species: 'jackpot', at: 7, mine: true, holders: ['Misa'] };
+    for (const kind of ['catch', 'evolve', 'jackpot']) {
+      const parsed = parseGameState({ ...valid, serverFirsts: [{ ...first, kind }] });
+      expect(parsed.serverFirsts[0]?.kind).toBe(kind);
+    }
+    expect(() =>
+      parseGameState({ ...valid, serverFirsts: [{ ...first, kind: 'other' }] }),
+    ).toThrow();
+  });
+
   it('reads the leet sync status when present and leaves it null otherwise', () => {
     const leetSync = {
       source: 'http',
