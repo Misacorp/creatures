@@ -3375,29 +3375,34 @@ button.ab-auto-toggle:not(.on) small {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* Calm: one slow beat a second. Fast: two quicker ones. Final: a stepped shake of the whole stage. */
+  /* Calm: one slow beat a second. Fast: two quicker ones. Final: a shake of the whole stage. Smooth
+     easing on transform only, like the other text animations. */
+  .cd-text {
+    will-change: transform;
+  }
+
   .cd-calm .cd-text {
-    animation: cd-beat 1s steps(4) both;
+    animation: cd-beat 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 
   .cd-fast .cd-text {
-    animation: cd-beat 0.5s steps(3) 2 both;
+    animation: cd-beat 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 2 both;
   }
 
   .cd-final .cd-text {
-    animation: cd-slam 1s steps(4) both;
+    animation: cd-slam 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 
   .cd-fight .cd-text {
-    animation: cd-slam 1.2s steps(5) both;
+    animation: cd-slam 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 
   .stage-wrap.cd-shake-a {
-    animation: cd-shake-a 0.5s steps(1) both;
+    animation: cd-shake-a 0.5s ease-out both;
   }
 
   .stage-wrap.cd-shake-b {
-    animation: cd-shake-b 0.5s steps(1) both;
+    animation: cd-shake-b 0.5s ease-out both;
   }
 
   @keyframes cd-beat {
