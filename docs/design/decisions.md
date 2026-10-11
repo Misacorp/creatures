@@ -279,3 +279,9 @@ Rules behind it: more leeters never pays anyone less; a solo leet pays the same 
 - **Fixtures** in `apps/activity/src/fixtures` were re-captured from real server output (live, action, practice, raid view, a new `collection-state.json`, and the new `not_your_ability` error). A lost finale's `pity` is 0 now (wins-only pity).
 
 **Reasoning.** One place builds abilities, so the live, instant and practice finales cannot differ. Keys by team slot are short, stable within a fight and leak nothing. Tolerant reading of old rows means a deploy during a live finale cannot break it, and old replays are plain stored data.
+
+## 2026-10-11: Ability weight, defence and luck (Misa)
+
+- **Ability weight:** creature and basic abilities at about a fifth of finale damage is right **[Misa]**.
+- **Defence:** keep it as it is. Harder future bosses will hit harder, which gives guard creatures and shields more value and a reason to build them for harder content **[Misa]**. Revisit when harder bosses arrive.
+- **Luck:** player skill (ability timing, coordination on defence) should push the odds up, not decide the outcome. A fight should keep an element of randomness **[Misa]**. Next step: measure how much a fixed roster's outcome varies with the seed alone, and if it is close to all-or-nothing, propose a small visible luck element (for example crits or a damage spread), tuned with the simulator.
