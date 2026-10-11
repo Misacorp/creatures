@@ -157,6 +157,28 @@ const ability: SpriteDef = {
   rows: ['...k', '..kg', 'kkgy', 'kggy', '.kgg', '.kgk', 'kg.k', 'k...'],
 };
 
+/** A warning triangle with an exclamation mark: the boss will do something next round. */
+const warning: SpriteDef = {
+  palette: { y: GOLD, k: INK },
+  rows: [
+    '...yy...',
+    '..yyyy..',
+    '..ykky..',
+    '.yykkyy.',
+    '.yykkyy.',
+    'yyyyyyyy',
+    'yyykkyyy',
+    'yyyyyyyy',
+  ],
+};
+
+/** Crosshairs: the boss is about to hit this creature. */
+const reticle: SpriteDef = {
+  mirror: true,
+  palette: { r: BAD, k: INK },
+  rows: ['..rr', '.r.r', 'r..r', 'rrr.', 'rrr.', 'r..r', '.r.r', '..rr'],
+};
+
 /** Shown for anything that has no glyph of its own. */
 const unknown: SpriteDef = {
   mirror: true,
@@ -244,6 +266,8 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   skull,
   hand,
   check,
+  warning,
+  reticle,
 };
 
 /** A glyph by id, or undefined. */

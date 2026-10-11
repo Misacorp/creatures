@@ -3,7 +3,7 @@
  * the personal recap. Nothing here touches the DOM or the network, and all text it returns is
  * plain text (it can contain player names).
  */
-import { describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
+import { beatEnds, describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
 import type { ReplayRowEntry } from './raid-api';
 
 // --- Stepping ---
@@ -104,35 +104,13 @@ export function stateAt(
   return { ...state, index: end };
 }
 
-/** True when this event starts a new playback step (a creature's turn, the boss acting, a round edge). */
-function startsBeat(e: FightEvent): boolean {
-  switch (e.t) {
-    case 'round_start':
-    case 'turn':
-    case 'skip':
-    case 'gimmick':
-    case 'round_end':
-      return true;
-    case 'boss_hit':
-      return e.source === 'attack';
-    default:
-      return false;
-  }
-}
-
 /**
  * Playback steps. Each step is a run of events that belong together (one creature's turn with its
  * hit, mark and reaction; one boss attack). Returns the event index each step ends at, so step `n`
- * leaves `ends[n - 1]` events applied.
+ * leaves `ends[n - 1]` events applied. It is the engine's, so the replay, the stage and the server's
+ * pacing cut the log in the same places.
  */
-export function beatEnds(events: readonly FightEvent[]): number[] {
-  const ends: number[] = [];
-  for (let i = 1; i < events.length; i++) {
-    if (startsBeat(events[i] as FightEvent)) ends.push(i);
-  }
-  if (events.length > 0) ends.push(events.length);
-  return ends;
-}
+export { beatEnds };
 
 /** Events applied after `beat` steps (0 = nothing yet). */
 export function indexAfterBeat(ends: readonly number[], beat: number): number {
@@ -151,7 +129,7 @@ export function turnOrderOfRound(events: readonly FightEvent[], round: number): 
   return out;
 }
 
-export type Speed = 1 | 2;
+export type { Speed } from '@creatures/engine';
 
 // --- Key moments ---
 

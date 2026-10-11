@@ -5,7 +5,7 @@
  * decide what to show and which buttons to offer.
  */
 import { content, RULES, type FinaleAbilityDef } from '@creatures/game';
-import { describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
+import { MAX_ROUND_MS, describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
 import type { LiveAbility, LiveActionRequest, LiveFight, LiveSnapshot } from './live-api';
 import type { AbilityPreview, RaidReveal, TeamCreatureView } from './raid-api';
 import { formatCountdown } from './game';
@@ -15,8 +15,11 @@ import { festivalGrantText, rankChangeText } from './raid-progress';
 
 /** The lobby opens this long before the start. */
 export const LOBBY_MS = 5 * 60_000;
-/** The round length of a finale (the server sends the real one with every snapshot): 15 seconds. */
-export const DEFAULT_ROUND_MS = 15_000;
+/**
+ * The longest a round of a finale can take (the engine's pacing, 6 to 22 seconds, is what the server
+ * schedules by): only used to know when the Raid tab can stop expecting a result.
+ */
+export const LONGEST_ROUND_MS = MAX_ROUND_MS;
 /** How long after the last round the Raid tab keeps the finale view open for a result to show up. */
 export const FINISH_GRACE_MS = 30_000;
 
@@ -26,7 +29,7 @@ export type FinaleWindow = 'before' | 'lobby' | 'live' | 'after';
 export function finaleWindow(finaleAt: number, rounds: number, serverNow: number): FinaleWindow {
   if (serverNow < finaleAt - LOBBY_MS) return 'before';
   if (serverNow < finaleAt) return 'lobby';
-  if (serverNow < finaleAt + rounds * DEFAULT_ROUND_MS + FINISH_GRACE_MS) return 'live';
+  if (serverNow < finaleAt + rounds * LONGEST_ROUND_MS + FINISH_GRACE_MS) return 'live';
   return 'after';
 }
 
@@ -55,29 +58,36 @@ export const MIN_POLL_MS = 250;
 export const GIVE_UP_MS = 60_000;
 export const MAX_RETRY_MS = 15_000;
 
-/** The next moment the fight's state changes: the start, then the end of every round. */
+/**
+ * The next moment the fight's state changes, from the server's schedule: the start, then each
+ * round's start (and finally the end of the fight). Null when there is nothing to wait for.
+ */
 export function nextBoundaryAt(
-  startsAt: number,
-  roundMs: number,
-  rounds: number,
+  snapshot: Pick<LiveFight, 'startsAt' | 'nextRoundAt'>,
   serverNow: number,
 ): number | null {
-  if (serverNow < startsAt) return startsAt;
-  const k = Math.floor((serverNow - startsAt) / roundMs) + 1;
-  return k <= rounds ? startsAt + k * roundMs : null;
+  if (serverNow < snapshot.startsAt) return snapshot.startsAt;
+  return snapshot.nextRoundAt;
 }
 
 /**
  * Milliseconds until the next poll, or null to stop. Polls every 2 s, and once more just after
- * each round boundary, using the server's clock (`serverNow` here is the estimated server time).
+ * the server's next round start (`nextRoundAt`), using the server's clock (`serverNow` here is the
+ * estimated server time).
  */
 export function nextPollDelay(snapshot: LiveSnapshot, serverNow: number): number | null {
   if (snapshot.status === 'none' || snapshot.status === 'done') return null;
-  const { startsAt, roundMs, rounds } = snapshot;
-  if (serverNow > startsAt + rounds * roundMs + GIVE_UP_MS) return null;
+  const { startsAt, rounds } = snapshot;
+  if (serverNow > startsAt + rounds * LONGEST_ROUND_MS + GIVE_UP_MS) return null;
   let delay = POLL_MS;
-  const boundary = nextBoundaryAt(startsAt, roundMs, rounds, serverNow);
-  if (boundary !== null) delay = Math.min(delay, boundary + BOUNDARY_SLACK_MS - serverNow);
+  const boundary = nextBoundaryAt(snapshot, serverNow);
+  if (boundary !== null) {
+    const wait = boundary + BOUNDARY_SLACK_MS - serverNow;
+    if (wait >= MIN_POLL_MS) delay = Math.min(delay, wait);
+    // Just past the boundary and no news yet: ask again soon. Long past it, the snapshot is stale
+    // (or the clock estimate is off): do not hammer, go back to the normal pace.
+    else if (serverNow - boundary < POLL_MS) delay = MIN_POLL_MS;
+  }
   return Math.max(MIN_POLL_MS, delay);
 }
 
@@ -110,7 +120,7 @@ export interface Progress {
 
 /** The round counter and the countdown, from the snapshot and the estimated server time. */
 export function progressText(fight: LiveFight, serverNow: number): Progress {
-  const { status, round, rounds, startsAt, roundMs } = fight;
+  const { status, round, rounds, startsAt, nextRoundAt } = fight;
   if (status === 'done') return { headline: 'The fight is over', countdown: '' };
   if (status === 'lobby' || round < 1) {
     return {
@@ -118,15 +128,18 @@ export function progressText(fight: LiveFight, serverNow: number): Progress {
       countdown: `Starts in ${formatClock(startsAt - serverNow)}`,
     };
   }
-  if (round >= rounds) {
+  // The last round is the final one, or the one the boss has just fallen in.
+  const last = round >= rounds || fight.bossHp === 0;
+  const wait = nextRoundAt === null ? '' : formatCountdown(nextRoundAt - serverNow);
+  if (last) {
     return {
       headline: `Last round (${String(round)} of ${String(rounds)})`,
-      countdown: `Ends in ${formatCountdown(startsAt + rounds * roundMs - serverNow)}`,
+      countdown: wait === '' ? '' : `Ends in ${wait}`,
     };
   }
   return {
     headline: `Round ${String(round)} of ${String(rounds)}`,
-    countdown: `Next round in ${formatCountdown(startsAt + round * roundMs - serverNow)}`,
+    countdown: wait === '' ? '' : `Next round in ${wait}`,
   };
 }
 

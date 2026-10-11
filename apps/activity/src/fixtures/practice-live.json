@@ -8,6 +8,8 @@
   "roundMs": 10000,
   "rounds": 12,
   "round": 5,
+  "roundStarts": [1800102630000, 1800102640000, 1800102650000, 1800102660000, 1800102670000],
+  "nextRoundAt": 1800102680000,
   "serverNow": 1800102670500,
   "boss": {
     "id": "storm-sovereign",

@@ -78,10 +78,21 @@ interface LiveShared {
   week: string;
   /** The caller's opaque player key in this fight, or null. */
   you: string | null;
-  roundMs: number;
+  /**
+   * The fixed round length of a fight that was stored before content pacing; null otherwise. Rounds
+   * last as long as their events take to play (6 to 22 seconds): use `roundStarts` and `nextRoundAt`.
+   */
+  roundMs: number | null;
   rounds: number;
   /** The round being played now (0 before the start). */
   round: number;
+  /** When each round started, for rounds 1..`round` (server clock, UTC ms). */
+  roundStarts: number[];
+  /**
+   * When the state next changes: the start of the next round, or the end of the fight during its
+   * last round; the start in the lobby. Null when there is nothing to wait for.
+   */
+  nextRoundAt: number | null;
   serverNow: number;
   /** The frozen fighting row, left to right. Empty in the lobby. */
   row: ReplayRowEntry[];
@@ -196,9 +207,11 @@ function hasSharedShape(data: Record<string, unknown>): boolean {
     isNullableInt(data['party']) &&
     isNullableStr(data['you']) &&
     isNullableInt(data['startsAt']) &&
-    isPositiveInt(data['roundMs']) &&
+    (data['roundMs'] === null || isPositiveInt(data['roundMs'])) &&
     isPositiveInt(data['rounds']) &&
     isNonNegativeInt(data['round']) &&
+    isArrayOf(data['roundStarts'], isInt) &&
+    isNullableInt(data['nextRoundAt']) &&
     isInt(data['serverNow']) &&
     isLiveBoss(data['boss']) &&
     isArrayOf(data['row'], isReplayRow) &&

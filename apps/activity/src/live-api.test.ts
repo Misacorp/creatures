@@ -7,6 +7,7 @@ import liveDoneMissed from './fixtures/live-done-missed.json';
 import liveLobby from './fixtures/live-lobby.json';
 import liveMid from './fixtures/live-mid.json';
 import liveNone from './fixtures/live-none.json';
+import livePaced from './fixtures/live-paced.json';
 import practiceDone from './fixtures/practice-done.json';
 import practiceLive from './fixtures/practice-live.json';
 import practiceStart from './fixtures/practice-start.json';
@@ -35,6 +36,36 @@ const copy = (data: unknown): Record<string, unknown> =>
   JSON.parse(JSON.stringify(data)) as Record<string, unknown>;
 
 describe('parseLiveSnapshot with real server responses', () => {
+  it('accepts a content-paced fight: the schedule is the rounds that have started and the next start', () => {
+    const parsed = running(livePaced);
+    expect(parsed).toMatchObject({ status: 'live', round: 4, roundMs: null });
+    expect(parsed.roundStarts).toHaveLength(4);
+    expect(parsed.roundStarts[0]).toBe(parsed.startsAt);
+    // Rounds are not all the same length: they last as long as their events take to play.
+    const lengths = parsed.roundStarts
+      .slice(1)
+      .map((t, i) => t - (parsed.roundStarts[i] as number));
+    expect(new Set(lengths).size).toBeGreaterThan(1);
+    expect(lengths.every((ms) => ms >= 6_000 && ms <= 22_000)).toBe(true);
+    expect(parsed.nextRoundAt).toBeGreaterThan(parsed.serverNow);
+    expect(parsed.nextRoundAt).toBeGreaterThan(parsed.roundStarts.at(-1) as number);
+  });
+
+  it('still reads a fight stored with fixed rounds, which keeps its roundMs', () => {
+    const parsed = running(liveMid);
+    expect(parsed.roundMs).toBe(10_000);
+    expect(parsed.roundStarts).toHaveLength(parsed.round);
+    expect(parsed.nextRoundAt).toBe((parsed.roundStarts.at(-1) as number) + 10_000);
+  });
+
+  it('wants the schedule in every state, and null for the next start only when there is none', () => {
+    expect(() => parseLiveSnapshot({ ...copy(liveMid), roundStarts: undefined })).toThrow();
+    expect(() => parseLiveSnapshot({ ...copy(liveMid), nextRoundAt: undefined })).toThrow();
+    expect(parseLiveSnapshot({ ...copy(liveMid), nextRoundAt: null }).status).toBe('live');
+    expect(running(liveDoneHit).nextRoundAt).toBeNull();
+    expect(lobby(liveLobby)).toMatchObject({ roundMs: null, roundStarts: [] });
+  });
+
   it('accepts "none", where nearly everything is null or empty', () => {
     expect(liveNone.party).toBe(1);
     expect(liveNone.startsAt).toBeNull();
@@ -249,6 +280,8 @@ describe('parseLiveSnapshot is strict', () => {
       you: 7,
       startsAt: '1',
       roundMs: 0,
+      roundStarts: [1.5],
+      nextRoundAt: 'soon',
       rounds: 0,
       round: 1.5,
       serverNow: '5',

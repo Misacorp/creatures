@@ -194,8 +194,19 @@ export async function runCore<R>(
 
 /** Puts a database back to before migration 14 (the Auto fire preferences). */
 export function undoAutofireMigration(sql: SqlStorage): void {
+  undoPacingMigration(sql);
   sql.exec('DROP TABLE IF EXISTS raid_autofire');
   sql.exec('DELETE FROM schema_version WHERE version = 14');
+}
+
+/** Puts a database back to before migration 15 (content-paced live rounds). */
+export function undoPacingMigration(sql: SqlStorage): void {
+  // Tests that rebuild an older schema may have dropped the table already.
+  const hasColumn = sql
+    .exec("SELECT 1 FROM pragma_table_info('raid_live') WHERE name = 'pacing'")
+    .toArray();
+  if (hasColumn.length > 0) sql.exec('ALTER TABLE raid_live DROP COLUMN pacing');
+  sql.exec('DELETE FROM schema_version WHERE version = 15');
 }
 
 /** Puts a database back to before migration 13 (the creature quirk). */

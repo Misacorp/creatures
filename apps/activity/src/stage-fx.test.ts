@@ -1,6 +1,12 @@
 import { RULES, content, createSeededRng } from '@creatures/game';
 import {
+  INTRO_LIVE_MS as ENGINE_INTRO_LIVE_MS,
+  MAX_ROUND_MS,
+  MIN_ROUND_MS,
+  TAIL_MS,
+  WINDUP_MS,
   makeSlot,
+  roundPlaybackMs,
   scaleBoss,
   simulateFight,
   type FightEvent,
@@ -8,23 +14,19 @@ import {
   type FightSlot,
 } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
-import { buildBeats, MIN_BEAT_MS, type Beat, type Cue } from './stage';
+import { buildBeats, type BossStrike, type Cue } from './stage';
 import {
   FX_MS,
   INTRO_LIVE_MS,
-  LIVE_TAIL_MS,
+  INTRO_REPLAY_MS,
   activeFx,
   addFx,
   beatHoldMs,
   cueMs,
   isFxCue,
-  liveBudgetMs,
+  liveTimeline,
   nextFxEnd,
-  planLiveRound,
-  replayIntroMs,
-  replayLead,
   shortEffectMs,
-  staggerMs,
   staticFx,
   type FxCue,
 } from './stage-fx';
@@ -49,17 +51,30 @@ const burst: Cue = {
 const ability: Cue = { kind: 'ability', i: 4, ability: 'rally', creature: null, player: 'p' };
 const ko: Cue = { kind: 'ko', i: 5, creature: 'a' };
 const hop: Cue = { kind: 'hop', i: 0, creature: 'a' };
+const strike: BossStrike = {
+  action: 'hit_zone',
+  gimmick: 'undertow',
+  targets: ['a'],
+  zone: 'front',
+  blocked: [],
+  guarded: null,
+};
 
 describe('visible durations', () => {
-  it('keeps damage numbers 1.3 s, crits 2 s, reactions and abilities 1.5 s, knockouts 1 s', () => {
-    expect(cueMs(float(1, null) as FxCue)).toBe(1300);
-    expect(cueMs(float(1, null, true) as FxCue)).toBe(2000);
-    expect(cueMs(burst as FxCue)).toBe(1500);
-    expect(cueMs(ability as FxCue)).toBe(1500);
-    expect(cueMs(ko as FxCue)).toBe(1000);
-    expect(cueMs({ kind: 'gimmick', i: 1, gimmick: 'g', op: 'hit_zone' })).toBe(FX_MS.callout);
-    expect(cueMs({ kind: 'banner', i: 1, text: 'Bad omen!' })).toBe(1500);
-    expect(cueMs({ kind: 'zone', i: 1, zone: 'front', effect: 'rally', op: null })).toBe(1000);
+  it('keeps damage numbers 2.5 s, crits 3 s, reactions 2.5 s, abilities 2 s and knockouts 1.5 s', () => {
+    expect(cueMs(float(1, null) as FxCue)).toBe(2500);
+    expect(cueMs(float(1, null, true) as FxCue)).toBe(3000);
+    expect(cueMs(burst as FxCue)).toBe(2500);
+    expect(cueMs(ability as FxCue)).toBe(2000);
+    expect(cueMs(ko as FxCue)).toBe(1500);
+    expect(cueMs({ kind: 'strike', i: 1, strike })).toBe(FX_MS.callout);
+    expect(cueMs({ kind: 'banner', i: 1, text: 'Bad omen!' })).toBe(2000);
+    expect(cueMs({ kind: 'zone', i: 1, zone: 'front', effect: 'rally' })).toBe(1200);
+  });
+
+  it('lasts as long as the engine says for a wind-up, so the telegraph ends where the hit lands', () => {
+    expect(cueMs({ kind: 'windup', i: 1, strike })).toBe(WINDUP_MS);
+    expect(cueMs({ kind: 'windup', i: 1, strike }, 2)).toBe(WINDUP_MS / 2);
   });
 
   it('shortens every duration by about 30% at 2x', () => {
@@ -68,11 +83,19 @@ describe('visible durations', () => {
       const fast = cueMs(cue, 2);
       expect(fast).toBe(Math.round(slow * 0.7));
     }
-    expect(cueMs(float(1, null, true) as FxCue, 2)).toBe(1400);
+    expect(cueMs(float(1, null, true) as FxCue, 2)).toBe(2100);
   });
 
   it('only keeps the effects that outlast their beat', () => {
-    expect([float(1, null), burst, ability, ko].every(isFxCue)).toBe(true);
+    const kept: Cue[] = [
+      float(1, null),
+      burst,
+      ability,
+      ko,
+      { kind: 'strike', i: 1, strike },
+      { kind: 'windup', i: 1, strike },
+    ];
+    expect(kept.every(isFxCue)).toBe(true);
     expect(isFxCue(hop)).toBe(false);
     expect(isFxCue({ kind: 'flash', i: 1, target: null })).toBe(false);
     expect(isFxCue({ kind: 'mark', i: 1, element: 'tide' })).toBe(false);
@@ -81,14 +104,12 @@ describe('visible durations', () => {
 
   it('holds a beat for its longest effect', () => {
     expect(beatHoldMs([hop])).toBe(0);
-    expect(beatHoldMs([hop, float(1, 'a'), ko])).toBe(1300);
-    expect(beatHoldMs([float(1, 'a', true), burst])).toBe(2000);
-    expect(beatHoldMs([float(1, 'a', true), burst], 2)).toBe(1400);
+    expect(beatHoldMs([hop, float(1, 'a'), ko])).toBe(2500);
+    expect(beatHoldMs([float(1, 'a', true), burst])).toBe(3000);
+    expect(beatHoldMs([float(1, 'a', true), burst], 2)).toBe(2100);
   });
 
-  it('halves the stagger at 2x and keeps the short animations visible', () => {
-    expect(staggerMs(600, 1)).toBe(600);
-    expect(staggerMs(600, 2)).toBe(300);
+  it('keeps the short animations visible whatever the stagger', () => {
     expect(shortEffectMs(250)).toBe(300);
     expect(shortEffectMs(500)).toBe(500);
     expect(shortEffectMs(900)).toBe(600);
@@ -96,25 +117,25 @@ describe('visible durations', () => {
 });
 
 describe('effects overlap the beats that follow', () => {
-  it('keeps a crit on screen while three more beats start 500 ms apart', () => {
+  it('keeps a crit on screen while five more beats start 500 ms apart', () => {
     let items = addFx([], [float(1, null, true), hop], 0);
     expect(items).toHaveLength(1);
     items = addFx(items, [float(5, 'a')], 500);
     items = addFx(items, [burst], 1000);
     items = addFx(items, [ability], 1500);
-    // At 1.6 s the crit (2 s), the first number (1.3 s from 0.5 s), the reaction and the ability show.
+    // At 1.6 s everything is on screen.
     expect(activeFx(items, 1600).map((i) => i.cue.kind)).toEqual([
       'float',
       'float',
       'burst',
       'ability',
     ]);
-    // The crit is still there at 1999 ms and gone at 2000 ms.
-    expect(activeFx(items, 1999).some((i) => i.cue.kind === 'float' && i.cue.crit)).toBe(true);
-    expect(activeFx(items, 2000).some((i) => i.cue.kind === 'float' && i.cue.crit)).toBe(false);
-    // The last effect ends 1.5 s after the last beat started.
-    expect(activeFx(items, 2999)).toHaveLength(1);
-    expect(activeFx(items, 3000)).toHaveLength(0);
+    // The crit (3 s) is still there at 2999 ms and gone at 3000 ms.
+    expect(activeFx(items, 2999).some((i) => i.cue.kind === 'float' && i.cue.crit)).toBe(true);
+    expect(activeFx(items, 3000).some((i) => i.cue.kind === 'float' && i.cue.crit)).toBe(false);
+    // The number on creature a (0.5 s + 2.5 s) goes at 3 s too; the reaction (1 s + 2.5 s) at 3.5 s.
+    expect(activeFx(items, 3499).map((i) => i.cue.kind)).toEqual(['burst', 'ability']);
+    expect(activeFx(items, 3500)).toHaveLength(0);
   });
 
   it('drops ended effects when new ones are added, and keeps nothing for plain cues', () => {
@@ -123,28 +144,41 @@ describe('effects overlap the beats that follow', () => {
     expect(second).toEqual([]);
   });
 
-  it('puts overlapping numbers on one target in different lanes, and frees a lane when it ends', () => {
+  it('lets numbers on a creature rise from the same spot: a newer one is always at the base', () => {
     let items = addFx([], [float(1, 'a', true)], 0);
     items = addFx(items, [float(2, 'a')], 500);
     items = addFx(items, [float(3, 'a')], 1000);
     items = addFx(items, [float(4, 'b')], 1000);
-    expect(items.map((i) => i.lane)).toEqual([0, 1, 2, 0]);
-    // The second number (0.5 s + 1.3 s) is over at 2 s, the crit too: a new one takes lane 0.
-    items = addFx(items, [float(5, 'a')], 2000);
-    expect(items.filter((i) => i.cue.kind === 'float' && i.cue.target === 'a')).toHaveLength(2);
+    // Every creature number is lane 0 (no stacking offset): the older ones have simply risen.
+    expect(items.map((i) => i.lane)).toEqual([0, 0, 0, 0]);
+  });
+
+  it('stands the boss numbers side by side, reusing the lane whose number has risen furthest', () => {
+    let items = addFx([], [float(1, null, true)], 0);
+    items = addFx(items, [float(2, null)], 500);
+    items = addFx(items, [float(3, null)], 1000);
+    items = addFx(items, [float(4, null)], 1500);
+    expect(items.map((i) => i.lane)).toEqual([0, 1, 2, 3]);
+    // All four lanes are busy: the next number takes the lane of the oldest one (lane 0, from 0 ms).
+    items = addFx(items, [float(5, null)], 2000);
     expect(items.at(-1)?.lane).toBe(0);
+    items = addFx(items, [float(6, null)], 2100);
+    expect(items.at(-1)?.lane).toBe(1);
+    // Once the numbers have gone, the first lane is free again.
+    items = addFx(items, [float(7, null)], 10_000);
+    expect(items.map((i) => i.lane)).toEqual([0]);
   });
 
   it('uses the 2x durations when asked', () => {
     const [item] = addFx([], [float(1, null, true)], 100, 2);
-    expect(item?.ms).toBe(1400);
-    expect(item?.until).toBe(1500);
+    expect(item?.ms).toBe(2100);
+    expect(item?.until).toBe(2200);
   });
 
   it('says when the next effect ends', () => {
     const items = addFx(addFx([], [float(1, null)], 0), [burst], 200);
-    expect(nextFxEnd(items, 300)).toBe(1000);
-    expect(nextFxEnd(items, 1300)).toBe(1);
+    expect(nextFxEnd(items, 300)).toBe(2200);
+    expect(nextFxEnd(items, 2500)).toBe(1);
     expect(nextFxEnd([], 0)).toBeNull();
     expect(nextFxEnd(staticFx([float(1, null)]), 0)).toBeNull();
   });
@@ -155,144 +189,138 @@ describe('effects overlap the beats that follow', () => {
     expect(items.every((i) => i.ms === 0 && i.until === Number.POSITIVE_INFINITY)).toBe(true);
     expect(activeFx(items, 1e12)).toHaveLength(2);
   });
-});
 
-describe('a live round', () => {
-  const beat = (ms: number, cues: Cue[] = [], from = 1): Beat => ({
-    from,
-    to: from + 1,
-    round: 1,
-    cues,
-    ms,
-  });
-  const opening: FightEvent = { t: 'round_start', round: 4, bossHp: 10, mark: null };
-  const turn: FightEvent = { t: 'turn', round: 4, creature: 'a' };
-
-  it('gives a 15 second round a 3 second intro and a 10.5 second budget', () => {
-    expect(INTRO_LIVE_MS).toBe(3000);
-    expect(LIVE_TAIL_MS).toBe(1500);
-    expect(liveBudgetMs(15_000)).toBe(10_500);
-    expect(liveBudgetMs(1_000)).toBe(2_000);
-  });
-
-  it('opens with the intro when the first new event starts a round', () => {
-    const plan = planLiveRound([beat(500, [], 0)], [opening, turn], 15_000);
-    expect(plan.introRound).toBe(4);
-    expect(plan.introMs).toBe(3000);
-  });
-
-  it('has no intro for a stage that joins in the middle of a round', () => {
-    const plan = planLiveRound([beat(500, [], 1)], [opening, turn], 15_000);
-    expect(plan.introRound).toBeNull();
-    expect(plan.introMs).toBe(0);
-  });
-
-  it('squeezes the staggers so the last effects end 1.5 s before the next round', () => {
-    // 30 beats of 700 ms would need 20 s; the last beat has a crit (2 s of effects).
-    const beats = Array.from({ length: 30 }, (_, k) =>
-      beat(700, k === 29 ? [float(1, null, true)] : [], 0),
-    );
-    const plan = planLiveRound(beats, [opening], 15_000);
-    const starts = plan.beats.slice(0, -1).reduce((sum, b) => sum + b.ms, 0);
-    expect(plan.introMs + starts + 2000).toBeLessThanOrEqual(15_000 - LIVE_TAIL_MS);
-    expect(plan.beats.slice(0, -1).every((b) => b.ms >= MIN_BEAT_MS)).toBe(true);
-    // The squeeze is gentle: it does not go lower than it has to.
-    expect(plan.introMs + starts + 2000).toBeGreaterThan(15_000 - LIVE_TAIL_MS - 300);
-  });
-
-  it('leaves a short round at its natural pace', () => {
-    const beats = [beat(500, [], 0), beat(600), beat(700, [float(1, null)])];
-    const plan = planLiveRound(beats, [opening], 15_000);
-    expect(plan.beats.map((b) => b.ms)).toEqual([500, 600, 700]);
-  });
-
-  function realRounds(): { beats: Beat[]; events: FightEvent[]; round: number }[] {
-    const species = content.creatures.filter((c) => c.stage === 1).slice(0, 9);
-    const row: FightSlot[] = species.map((sp, k) =>
-      makeSlot(sp, {
-        id: `c${String(k)}`,
-        ownerId: `p${String(k % 3)}`,
-        level: RULES.abilities.unlockLevel,
-        fusionCount: 0,
-      }),
-    );
-    const boss = content.bosses[0];
-    if (boss === undefined) throw new Error('no boss');
-    const scaled = scaleBoss(boss, 3, 3);
-    const input: FightInput = {
-      boss,
-      bossAtk: scaled.atk,
-      phase: 'finale',
-      bossHpPool: { max: scaled.maxHp, current: scaled.maxHp },
-      adaptation: null,
-      row,
-      players: ['p0', 'p1', 'p2'],
-      finaleAbilities: [{ playerId: 'p1', abilityId: 'rally', key: 'p1:basic', fireAtRound: 2 }],
-      luck: RULES.combat.luck,
-    };
-    const { events } = simulateFight(input, createSeededRng('fx'));
-    const ids = row.map((s) => s.id);
-    const out: { beats: Beat[]; events: FightEvent[]; round: number }[] = [];
-    for (let round = 1; round <= 12; round++) {
-      const from = events.findIndex((e) => e.t === 'round_start' && e.round === round);
-      if (from < 0) continue;
-      const next = events.findIndex((e) => e.t === 'round_start' && e.round === round + 1);
-      const upto = next < 0 ? events.length : next;
-      out.push({
-        beats: buildBeats(events.slice(0, upto), from, ids),
-        events: events.slice(0, upto),
-        round,
-      });
-    }
-    return out;
-  }
-
-  it('fits every round of a real fight: intro, beats, and effects over before the tail', () => {
-    const rounds = realRounds();
-    expect(rounds.length).toBeGreaterThan(3);
-    for (const { beats, events, round } of rounds) {
-      const plan = planLiveRound(beats, events, 15_000);
-      expect(plan.introRound, `round ${String(round)}`).not.toBeNull();
-      const last = plan.beats.at(-1) as Beat;
-      const starts = plan.beats.slice(0, -1).reduce((sum, b) => sum + b.ms, 0);
-      const end = plan.introMs + starts + beatHoldMs(last.cues);
-      const atMinimum = plan.beats.slice(0, -1).every((b) => b.ms === MIN_BEAT_MS);
-      expect(
-        end <= 15_000 - LIVE_TAIL_MS || atMinimum,
-        `round ${String(round)} ends at ${String(end)}`,
-      ).toBe(true);
-    }
+  it('stacks still numbers on one creature, since nothing rises', () => {
+    const items = staticFx([float(1, 'a'), float(2, 'a'), float(3, 'b')]);
+    expect(items.map((i) => i.lane)).toEqual([0, 1, 0]);
   });
 });
 
-describe('a replay round', () => {
-  const opening: FightEvent = { t: 'round_start', round: 2, bossHp: 10, mark: null };
-  const turn: FightEvent = { t: 'turn', round: 2, creature: 'a' };
-  const events: FightEvent[] = [opening, turn, { ...opening, round: 3 }];
-  const beats: Beat[] = [
-    { from: 0, to: 1, round: 2, cues: [], ms: 500 },
-    { from: 1, to: 2, round: 2, cues: [float(1, null, true)], ms: 600 },
-    { from: 2, to: 3, round: 3, cues: [], ms: 500 },
-  ];
+describe('the intro', () => {
+  it('is 1.5 s live and 1 s in a replay, as in the engine', () => {
+    expect(INTRO_LIVE_MS).toBe(1500);
+    expect(INTRO_LIVE_MS).toBe(ENGINE_INTRO_LIVE_MS);
+    expect(INTRO_REPLAY_MS).toBe(1000);
+  });
+});
 
-  it('shows a 1.5 s intro at 1x and a shorter one at 2x', () => {
-    expect(replayIntroMs(1)).toBe(1500);
-    expect(replayIntroMs(2)).toBeLessThan(replayIntroMs(1));
-    expect(replayIntroMs(2)).toBe(900);
+/** A fight with a boss that has a zone hit (round 3, 6...) and the creatures of a typical group. */
+function realFight(bossId: string, rowSize = 9): { events: FightEvent[]; ids: string[] } {
+  const species = content.creatures.filter((c) => c.stage === 1);
+  const row: FightSlot[] = Array.from({ length: rowSize }, (_, k) =>
+    makeSlot(species[k % species.length] as (typeof species)[number], {
+      id: `c${String(k)}`,
+      ownerId: `p${String(k % 3)}`,
+      level: RULES.abilities.unlockLevel,
+      fusionCount: 0,
+    }),
+  );
+  const boss = content.bosses.find((b) => b.id === bossId);
+  if (boss === undefined) throw new Error('no boss');
+  const scaled = scaleBoss(boss, 3, 3);
+  const input: FightInput = {
+    boss,
+    bossAtk: scaled.atk,
+    phase: 'finale',
+    bossHpPool: { max: scaled.maxHp * 1000, current: scaled.maxHp * 1000 },
+    adaptation: null,
+    row,
+    players: ['p0', 'p1', 'p2'],
+    finaleAbilities: [{ playerId: 'p1', abilityId: 'rally', key: 'p1:basic', fireAtRound: 2 }],
+    luck: RULES.combat.luck,
+  };
+  const { events } = simulateFight(input, createSeededRng('fx-' + bossId));
+  return { events, ids: row.map((s) => s.id) };
+}
+
+describe('a round on the stage plays as long as the server gives it', () => {
+  it('has the engine staggers, intro and wind-ups in its beats', () => {
+    const { events, ids } = realFight('tidal-colossus');
+    const beats = buildBeats(events, 0, ids, 'tidal-colossus');
+    const first = beats.find((b) => b.introMs > 0);
+    expect(first?.introMs).toBe(INTRO_LIVE_MS);
+    // Staggers are 500 to 700 ms, plus the 600 ms wind-up of a boss action (the last beat of a round has the tail).
+    const windups = beats.filter((b) => b.windupMs > 0);
+    expect(windups.length).toBeGreaterThan(10);
+    expect(windups.every((b) => b.windupMs === WINDUP_MS && b.windup.length > 0)).toBe(true);
+    expect(beats.filter((b) => b.windupMs === 0).every((b) => b.windup.length === 0)).toBe(true);
   });
 
-  it('opens the first round at once with the intro', () => {
-    expect(replayLead(beats, events, 0)).toEqual({ waitMs: 0, introMs: 1500, round: 2 });
+  it('is exactly the length of the server round: intro plus every stagger, clamped like the engine does', () => {
+    for (const [boss, size] of [
+      ['tidal-colossus', 9],
+      ['storm-sovereign', 9],
+      ['thornmother', 24],
+      ['cinder-wyrm', 45],
+    ] as const) {
+      const { events, ids } = realFight(boss, size);
+      const rounds = [...new Set(events.map((e) => e.round))].filter((r) => r > 0);
+      expect(rounds.length).toBeGreaterThan(3);
+      for (const round of rounds) {
+        const slice = events.filter((e) => e.round === round);
+        const from = events.indexOf(slice[0] as FightEvent);
+        const beats = buildBeats(events.slice(0, from + slice.length), from, ids, boss);
+        const played = beats.reduce((sum, b) => sum + b.introMs + b.ms, 0);
+        const server = roundPlaybackMs(slice);
+        // The beats play out the whole server round (a short round is padded up to 6 s, which is idle time).
+        expect(Math.max(MIN_ROUND_MS, played), `${boss} round ${String(round)}`).toBe(server);
+        expect(server).toBeLessThanOrEqual(MAX_ROUND_MS);
+      }
+    }
   });
 
-  it('waits the stagger between beats of one round, halved at 2x', () => {
-    expect(replayLead(beats, events, 1)).toEqual({ waitMs: 500, introMs: 0, round: null });
-    expect(replayLead(beats, events, 1, 2)).toEqual({ waitMs: 250, introMs: 0, round: null });
+  it('leaves 2 s after the last effect appears and no idle wait beyond it', () => {
+    const { events, ids } = realFight('tidal-colossus');
+    const from = events.findIndex((e) => e.t === 'round_start' && e.round === 4);
+    const to = events.findIndex((e) => e.t === 'round_start' && e.round === 5);
+    const beats = buildBeats(events.slice(0, to), from, ids, 'tidal-colossus');
+    const last = beats.findLast((b) => b.cues.length > 0);
+    expect(last).toBeDefined();
+    // From the moment its effects land, the tail is what is left of its stagger.
+    expect((last?.ms ?? 0) - (last?.windupMs ?? 0)).toBe(TAIL_MS);
+    // The beats after it (the round's end) only change state, and take no time of their own.
+    const after = beats.slice(beats.indexOf(last as (typeof beats)[number]) + 1);
+    expect(after.every((b) => b.ms === 0 && b.cues.length === 0)).toBe(true);
   });
 
-  it('lets the last effects of a round finish before the next intro', () => {
-    // The crit (2 s) outlasts the 600 ms stagger.
-    expect(replayLead(beats, events, 2)).toEqual({ waitMs: 2000, introMs: 1500, round: 3 });
-    expect(replayLead(beats, events, 2, 2)).toEqual({ waitMs: 1400, introMs: 900, round: 3 });
+  it('plays the live timeline in exactly the server round: intro, wind-ups, landings and the 2 s tail', () => {
+    for (const boss of ['tidal-colossus', 'storm-sovereign', 'thornmother', 'cinder-wyrm']) {
+      const { events, ids } = realFight(boss, 12);
+      const rounds = [...new Set(events.map((e) => e.round))].filter((r) => r > 0);
+      for (const round of rounds) {
+        const slice = events.filter((e) => e.round === round);
+        const from = events.indexOf(slice[0] as FightEvent);
+        const beats = buildBeats(events.slice(0, from + slice.length), from, ids, boss);
+        const { steps, endsAt } = liveTimeline(beats);
+        const server = roundPlaybackMs(slice);
+        expect(Math.max(MIN_ROUND_MS, endsAt), `${boss} round ${String(round)}`).toBe(server);
+        // It opens with the intro, in order, and nothing is scheduled after the end.
+        expect(steps[0]).toEqual({ at: 0, kind: 'intro', beat: 0 });
+        expect(steps[1]).toEqual({ at: INTRO_LIVE_MS, kind: 'intro-end', beat: 0 });
+        expect(steps.every((st, k) => k === 0 || st.at >= (steps[k - 1] as typeof st).at)).toBe(
+          true,
+        );
+        expect(steps.at(-1)?.at).toBeLessThanOrEqual(endsAt);
+        // Every wind-up lands 600 ms after it starts; the last effect appears 2 s before the end.
+        for (const st of steps.filter((x) => x.kind === 'windup')) {
+          const land = steps.find((x) => x.kind === 'land' && x.beat === st.beat);
+          expect((land?.at ?? 0) - st.at).toBe(WINDUP_MS);
+        }
+        const lastLand = steps.findLast(
+          (x) => x.kind === 'land' && (beats[x.beat] as (typeof beats)[number]).cues.length > 0,
+        );
+        expect(endsAt - (lastLand?.at ?? 0)).toBe(TAIL_MS);
+      }
+    }
+  });
+
+  it('has the intro only when the round opens, and none for a stage that joins mid-round', () => {
+    const { events, ids } = realFight('tidal-colossus', 9);
+    const from = events.findIndex((e) => e.t === 'round_start' && e.round === 3);
+    const to = events.findIndex((e) => e.t === 'round_start' && e.round === 4);
+    const midway = buildBeats(events.slice(0, to), from + 3, ids, 'tidal-colossus');
+    expect(midway[0]?.introMs).toBe(0);
+    expect(liveTimeline(midway).steps.some((st) => st.kind === 'intro')).toBe(false);
+    expect(liveTimeline([]).endsAt).toBe(0);
   });
 });

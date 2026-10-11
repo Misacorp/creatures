@@ -5,9 +5,11 @@
   "party": 1,
   "you": null,
   "startsAt": null,
-  "roundMs": 10000,
+  "roundMs": null,
   "rounds": 12,
   "round": 0,
+  "roundStarts": [],
+  "nextRoundAt": null,
   "serverNow": 1800208200000,
   "boss": {
     "id": "storm-sovereign",

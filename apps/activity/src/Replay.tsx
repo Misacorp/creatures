@@ -1,5 +1,5 @@
 import { describeEvent } from '@creatures/engine';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { errorText } from './game';
 import { fetchReplay, type RaidPhaseId, type ReplayView } from './raid-api';
 import { phaseName } from './raid-text';
@@ -15,7 +15,7 @@ import {
 } from './replay';
 import { usePrefersReducedMotion } from './hooks';
 import { buildBeats, cuesForEvents } from './stage';
-import { replayLead, staggerMs, staticFx, type IntroView } from './stage-fx';
+import { INTRO_REPLAY_MS, staticFx, type IntroView } from './stage-fx';
 import { LogToggle, Stage, type Anim } from './Stage';
 import { useFxTrail } from './use-fx-trail';
 
@@ -78,10 +78,14 @@ function Player({ data }: { data: ReplayView }) {
   const ends = beatEnds(data.events);
   const total = ends.length;
   const rowIds = data.row.map((r) => r.id);
-  const beats = buildBeats(data.events, 0, rowIds);
   const [pos, setPos] = useState<Position>({ beat: 0, prev: 0, seq: 0 });
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<Speed>(1);
+  // The same pacing as the live finale (the engine's), with a 1 second intro; 2x halves all of it.
+  const beats = useMemo(
+    () => buildBeats(data.events, 0, rowIds, data.boss.id, { introMs: INTRO_REPLAY_MS, speed }),
+    [data, speed],
+  );
   const [intro, setIntro] = useState<IntroView | null>(null);
   const reduced = usePrefersReducedMotion();
   const trail = useFxTrail();
@@ -92,37 +96,51 @@ function Player({ data }: { data: ReplayView }) {
     setPos((p) => ({ beat: to, prev: p.beat, seq: p.seq + 1 }));
   };
 
-  // Advance one step at a time while playing. A step that opens a round waits for the previous
-  // beat's effects, shows "Round N" for a moment (shorter at 2x) and then plays; the stagger between
-  // beats is the beat's own (500 to 700 ms, halved at 2x).
+  // Advance one step at a time while playing, on the same timeline the live stage runs. After the
+  // previous step lands, the rest of its stagger passes (for the last step of a round that is the 2
+  // second tail), then a step that opens a round shows "Round N" for a moment (1 s, 0.5 s at 2x),
+  // and a boss action is telegraphed for 600 ms (300 ms at 2x) before it lands.
   useEffect(() => {
     if (!playing) return undefined;
     if (beat >= total) {
       setPlaying(false);
       return undefined;
     }
-    const lead = replayLead(beats, data.events, beat, speed);
+    const next = beats[beat];
+    if (next === undefined) return undefined;
+    const previous = beats[beat - 1];
+    const lead = previous === undefined ? 0 : Math.max(0, previous.ms - previous.windupMs);
     const advance = (): void => {
       setPos((p) => ({ beat: p.beat + 1, prev: p.beat, seq: p.seq + 1 }));
     };
-    let introTimer: ReturnType<typeof setTimeout> | undefined;
-    const timer = setTimeout(() => {
-      if (lead.round === null) {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const later = (fn: () => void, ms: number): void => {
+      timers.push(setTimeout(fn, ms));
+    };
+    const telegraph = (): void => {
+      if (next.windupMs > 0) {
+        if (!reduced) trail.push(next.windup, speed);
+        later(advance, next.windupMs);
+      } else {
         advance();
+      }
+    };
+    later(() => {
+      if (next.introMs === 0) {
+        telegraph();
         return;
       }
-      setIntro({ round: lead.round, rounds: data.rounds, ms: lead.introMs, key: pos.seq + 1 });
-      introTimer = setTimeout(() => {
+      setIntro({ round: next.round, rounds: data.rounds, ms: next.introMs, key: pos.seq + 1 });
+      later(() => {
         setIntro(null);
-        advance();
-      }, lead.introMs);
-    }, lead.waitMs);
+        telegraph();
+      }, next.introMs);
+    }, lead);
     return () => {
-      clearTimeout(timer);
-      if (introTimer !== undefined) clearTimeout(introTimer);
+      for (const t of timers) clearTimeout(t);
       setIntro(null);
     };
-  }, [playing, beat, speed, total]);
+  }, [playing, beat, speed, total, reduced]);
 
   // Keep the newest log line in view (when the log is open).
   useEffect(() => {
@@ -145,7 +163,7 @@ function Player({ data }: { data: ReplayView }) {
       ? {
           from: indexAfterBeat(ends, pos.prev),
           to: index,
-          ms: staggerMs(stepBeat.ms, speed),
+          ms: stepBeat.ms,
           seq: pos.seq,
         }
       : null;
@@ -158,12 +176,14 @@ function Player({ data }: { data: ReplayView }) {
       trail.clear();
       return;
     }
-    if (!reduced) trail.push(cuesForEvents(data.events, anim.from, anim.to, rowIds), speed);
+    if (!reduced) {
+      trail.push(cuesForEvents(data.events, anim.from, anim.to, rowIds, data.boss.id), speed);
+    }
   }, [pos.seq]);
   const fx = reduced
     ? anim === null
       ? []
-      : staticFx(cuesForEvents(data.events, anim.from, anim.to, rowIds))
+      : staticFx(cuesForEvents(data.events, anim.from, anim.to, rowIds, data.boss.id))
     : trail.items;
 
   return (

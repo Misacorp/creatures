@@ -1,40 +1,44 @@
 /**
- * How long the stage's effects stay on screen, and when each round's pieces start. Pure (no DOM, no
- * timers), so it is unit-tested; `use-fx-trail.ts`, `use-live-stage.ts` and `Replay.tsx` run the clocks.
+ * How long the stage's effects stay on screen. Pure (no DOM, no timers), so it is unit-tested;
+ * `use-fx-trail.ts`, `use-live-stage.ts` and `Replay.tsx` run the clocks.
  *
  * Two clocks are kept apart on purpose:
- * - the **stagger** (`Beat.ms`, from `stage.ts`) is how long after a beat starts the next one starts;
+ * - the **stagger** (`Beat.ms`, from the engine's pacing, see `stage.ts`) is how long after a beat
+ *   starts the next one starts;
  * - the **visible duration** (here) is how long that beat's effects stay: a damage number floats for
- *   over a second, a crit for two, a reaction's name for a second and a half, and so on. Effects of
- *   one beat overlap the next beats, which is what keeps combos and crits readable.
+ *   2.5 seconds, a crit for 3, a reaction's name for 2.5, an ability card for 2, a knockout tag for
+ *   1.5 and a boss attack's label for 2. Effects of one beat overlap the next beats, which is what
+ *   keeps combos and crits readable. Effects overlap freely.
  *
- * A live round is 15 seconds: a 3 second "Round N" intro, then the beats, and the last beat's
- * effects are over about 1.5 seconds before the next round's intro. A replay plays the same intro
- * (1.5 seconds) and the same visible durations; at 2x the stagger is halved and the durations and
- * the intro are about 30% and 40% shorter.
+ * A live round is as long as its content (the engine's `roundPlaybackMs`, 6 to 22 seconds): a 1.5
+ * second "Round N" intro, the beats, and 2 seconds after the last effect appears. A replay plays the
+ * same pacing with a 1 second intro; at 2x the stagger, the intro and the tail are halved and the
+ * visible durations are about 30% shorter.
  */
-import type { FightEvent } from '@creatures/engine';
+import { INTRO_LIVE_MS, INTRO_REPLAY_MS, WINDUP_MS } from '@creatures/engine';
 import type { Speed } from './replay';
-import { fitBeats, type Beat, type Cue } from './stage';
+import type { Beat, Cue } from './stage';
+
+export { INTRO_LIVE_MS, INTRO_REPLAY_MS };
 
 // --- Visible durations (at 1x) ---
 
 /** How long each kind of effect stays on screen, in milliseconds. */
 export const FX_MS = {
-  /** A damage number floats up for this long. */
-  float: 1300,
-  /** A crit floats longer, with its "CRITICAL!" pop. */
-  crit: 2000,
+  /** A damage number rises for this long. */
+  float: 2500,
+  /** A crit rises longer, with its "CRITICAL!" pop. */
+  crit: 3000,
   /** A reaction's burst and its name. */
-  burst: 1500,
+  burst: 2500,
   /** A knockout is held on the creature. */
-  ko: 1000,
+  ko: 1500,
   /** An ability's card: the creature's name and the ability. */
-  ability: 1500,
-  /** The boss move or luck banner. */
-  callout: 1500,
+  ability: 2000,
+  /** The boss attack's label and the marks on its targets, and the luck banner. */
+  callout: 2000,
   /** A coloured frame over a zone. */
-  zone: 1000,
+  zone: 1200,
 } as const;
 
 /** At 2x the durations are this share of their length, in basis points (about 30% shorter). */
@@ -43,7 +47,7 @@ export const FAST_FX_BP = 7_000;
 /** The effects that stay on screen longer than their beat; the rest are short and only last for the beat. */
 export type FxCue = Extract<
   Cue,
-  { kind: 'float' | 'burst' | 'ko' | 'ability' | 'gimmick' | 'banner' | 'zone' }
+  { kind: 'float' | 'burst' | 'ko' | 'ability' | 'banner' | 'zone' | 'strike' | 'windup' }
 >;
 
 export function isFxCue(cue: Cue): cue is FxCue {
@@ -52,9 +56,10 @@ export function isFxCue(cue: Cue): cue is FxCue {
     case 'burst':
     case 'ko':
     case 'ability':
-    case 'gimmick':
     case 'banner':
     case 'zone':
+    case 'strike':
+    case 'windup':
       return true;
     default:
       return false;
@@ -64,7 +69,7 @@ export function isFxCue(cue: Cue): cue is FxCue {
 const scaled = (ms: number, speed: Speed): number =>
   speed === 2 ? Math.round((ms * FAST_FX_BP) / 10_000) : ms;
 
-/** How long an effect stays visible. */
+/** How long an effect stays visible. A wind-up lasts as long as the engine's wind-up (halved at 2x). */
 export function cueMs(cue: FxCue, speed: Speed = 1): number {
   switch (cue.kind) {
     case 'float':
@@ -75,11 +80,13 @@ export function cueMs(cue: FxCue, speed: Speed = 1): number {
       return scaled(FX_MS.ko, speed);
     case 'ability':
       return scaled(FX_MS.ability, speed);
-    case 'gimmick':
     case 'banner':
+    case 'strike':
       return scaled(FX_MS.callout, speed);
     case 'zone':
       return scaled(FX_MS.zone, speed);
+    case 'windup':
+      return speed === 2 ? Math.round(WINDUP_MS / 2) : WINDUP_MS;
   }
 }
 
@@ -90,29 +97,12 @@ export function beatHoldMs(cues: readonly Cue[], speed: Speed = 1): number {
   return hold;
 }
 
-/** The stagger at the replay's speed: 2x halves it. */
-export function staggerMs(ms: number, speed: Speed = 1): number {
-  return speed === 2 ? Math.round(ms / 2) : ms;
-}
-
 /** The length of the short stage animations of a beat (hop, flash, shake): never too quick to see. */
 export function shortEffectMs(beatStaggerMs: number): number {
   return Math.min(600, Math.max(300, beatStaggerMs));
 }
 
 // --- The round intro ---
-
-/** A live round opens with "Round N" for this long, then its beats play. */
-export const INTRO_LIVE_MS = 3_000;
-/** A replay's intro at 1x. */
-export const INTRO_REPLAY_MS = 1_500;
-/** The last beat's effects are over this long before the next round starts. */
-export const LIVE_TAIL_MS = 1_500;
-
-/** The intro of a replay round: 1.5 seconds, 0.9 at 2x. */
-export function replayIntroMs(speed: Speed = 1): number {
-  return speed === 2 ? 900 : INTRO_REPLAY_MS;
-}
 
 /** What the "Round N" overlay says. `key` makes a new round's overlay a new element. */
 export interface IntroView {
@@ -123,59 +113,42 @@ export interface IntroView {
   key: number;
 }
 
-/**
- * The time a live round's beats may use, from the first beat's start to the end of the last beat's
- * effects: the round length less the intro and the tail (10.5 s for a 15 s round), at least 2 s.
- */
-export function liveBudgetMs(roundMs: number): number {
-  return Math.max(2_000, roundMs - INTRO_LIVE_MS - LIVE_TAIL_MS);
+// --- The timeline of a live round ---
+
+/** One thing that happens while a live round plays, `at` ms after the round's playback starts. */
+export interface TimelineStep {
+  at: number;
+  /**
+   * `intro`: "Round N" appears; `intro-end`: it goes; `windup`: reticles on the targets of the boss
+   * action; `land`: the beat's events take effect (its effects start).
+   */
+  kind: 'intro' | 'intro-end' | 'windup' | 'land';
+  /** Index of the beat (the first beat for the intro). */
+  beat: number;
 }
 
 /**
- * Plans a live round: whether it opens with the intro (when the first new event is the round's
- * start), and the beats with their staggers squeezed so that the last beat's effects end within the
- * budget. Beats that continue a round (a stage that joined in the middle) get no intro and the
- * whole round length less the tail.
+ * When everything of a live round happens, from the beats the engine planned for it: the intro, then
+ * each beat starting its wind-up (if it has one) and landing 600 ms later, the next beat starting
+ * after the beat's stagger. `endsAt` is when the last (state-only) beat has landed: the intro plus
+ * every stagger, which is the length the server gives the round (`roundPlaybackMs`; a round shorter
+ * than 6 s is simply idle for the rest). Pure, so the pacing is tested without timers.
  */
-export function planLiveRound(
-  beats: readonly Beat[],
-  events: readonly FightEvent[],
-  roundMs: number,
-): { introRound: number | null; introMs: number; beats: Beat[] } {
+export function liveTimeline(beats: readonly Beat[]): { steps: TimelineStep[]; endsAt: number } {
+  const steps: TimelineStep[] = [];
+  let at = 0;
   const first = beats[0];
-  const opening = first === undefined ? undefined : events[first.from];
-  const introRound = opening?.t === 'round_start' ? opening.round : null;
-  const introMs = introRound === null ? 0 : INTRO_LIVE_MS;
-  const budget =
-    introRound === null ? Math.max(2_000, roundMs - LIVE_TAIL_MS) : liveBudgetMs(roundMs);
-  const last = beats.at(-1);
-  const hold = last === undefined ? 0 : beatHoldMs(last.cues);
-  return {
-    introRound,
-    introMs,
-    beats: fitBeats(beats, Math.max(0, budget - hold)),
-  };
-}
-
-/**
- * What a replay does before it shows beat `next`: how long to wait after the previous one, and
- * whether the beat opens a round (then the intro shows for `introMs` first). Before a round's intro
- * the previous round's effects are given time to finish.
- */
-export function replayLead(
-  beats: readonly Beat[],
-  events: readonly FightEvent[],
-  next: number,
-  speed: Speed = 1,
-): { waitMs: number; introMs: number; round: number | null } {
-  const beat = beats[next];
-  const opening = beat === undefined ? undefined : events[beat.from];
-  const round = opening?.t === 'round_start' ? opening.round : null;
-  const previous = next > 0 ? beats[next - 1] : undefined;
-  const stagger = previous === undefined ? 0 : staggerMs(previous.ms, speed);
-  if (round === null) return { waitMs: stagger, introMs: 0, round: null };
-  const hold = previous === undefined ? 0 : beatHoldMs(previous.cues, speed);
-  return { waitMs: Math.max(stagger, hold), introMs: replayIntroMs(speed), round };
+  if (first !== undefined && first.introMs > 0) {
+    steps.push({ at, kind: 'intro', beat: 0 });
+    at += first.introMs;
+    steps.push({ at, kind: 'intro-end', beat: 0 });
+  }
+  beats.forEach((beat, k) => {
+    if (beat.windupMs > 0) steps.push({ at, kind: 'windup', beat: k });
+    steps.push({ at: at + beat.windupMs, kind: 'land', beat: k });
+    at += beat.ms;
+  });
+  return { steps, endsAt: at };
 }
 
 // --- Effects on screen ---
@@ -185,7 +158,11 @@ export interface FxItem {
   cue: FxCue;
   /** How long it stays visible, for the animation (0: shown without motion, until replaced). */
   ms: number;
-  /** Floating numbers on one target stack in lanes (0 to 3) so overlapping ones do not sit on each other. */
+  /**
+   * Numbers on the boss stand side by side in lanes (0 to 3) so overlapping ones do not sit on each
+   * other. Numbers on a creature always spawn at the same base and keep rising, so a newer one sits
+   * below the older ones: they have lane 0.
+   */
   lane: number;
   /** Local time when it goes (`Infinity` when it stays until replaced). */
   until: number;
@@ -193,13 +170,25 @@ export interface FxItem {
 
 const LANES = 4;
 
-/** The smallest lane that no other number on the same target uses, or the least crowded one. */
+/**
+ * The lane of a new number. A creature's number is always lane 0: it rises from the same spot as the
+ * ones before it, which have moved up by then, so the newest sits lowest. The boss has the whole
+ * width, so its numbers stand side by side: the first lane no active number uses, or else the lane
+ * whose newest number has risen furthest.
+ */
 function freeLane(items: readonly FxItem[], target: string | null): number {
-  const used = items
-    .filter((i) => i.cue.kind === 'float' && i.cue.target === target)
-    .map((i) => i.lane);
-  for (let lane = 0; lane < LANES; lane++) if (!used.includes(lane)) return lane;
-  return used.length % LANES;
+  if (target !== null) return 0;
+  const newest = new Array<number>(LANES).fill(Number.NEGATIVE_INFINITY);
+  for (const i of items) {
+    if (i.cue.kind !== 'float' || i.cue.target !== null) continue;
+    const started = Number.isFinite(i.until) ? i.until - i.ms : Number.POSITIVE_INFINITY;
+    newest[i.lane] = Math.max(newest[i.lane] ?? Number.NEGATIVE_INFINITY, started);
+  }
+  let best = 0;
+  for (let lane = 1; lane < LANES; lane++) {
+    if ((newest[lane] as number) < (newest[best] as number)) best = lane;
+  }
+  return best;
 }
 
 /** Effects that are still on screen at `now`. */
@@ -232,7 +221,13 @@ export function staticFx(cues: readonly Cue[]): FxItem[] {
   const out: FxItem[] = [];
   for (const cue of cues) {
     if (!isFxCue(cue)) continue;
-    const lane = cue.kind === 'float' ? freeLane(out, cue.target) : 0;
+    // Nothing moves, so numbers on one creature are stacked instead of rising from the same spot.
+    const lane =
+      cue.kind !== 'float'
+        ? 0
+        : cue.target === null
+          ? freeLane(out, null)
+          : out.filter((i) => i.cue.kind === 'float' && i.cue.target === cue.target).length % LANES;
     out.push({ cue, ms: 0, lane, until: Number.POSITIVE_INFINITY });
   }
   return out;

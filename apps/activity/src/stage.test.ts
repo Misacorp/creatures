@@ -1,5 +1,9 @@
 import { RULES, content, createSeededRng } from '@creatures/game';
 import {
+  MAX_BEAT_MS,
+  MIN_BEAT_MS,
+  TAIL_MS,
+  WINDUP_MS,
   makeSlot,
   scaleBoss,
   simulateFight,
@@ -12,14 +16,10 @@ import { describe, expect, it } from 'vitest';
 import { beatEnds } from './replay';
 import {
   HP_SEGMENTS,
-  MAX_BEAT_MS,
-  MIN_BEAT_MS,
-  beatMs,
   beatOffsets,
   buildBeats,
   cuesForEvents,
   driftFor,
-  fitBeats,
   groupByZone,
   hpSegments,
   playStart,
@@ -27,6 +27,8 @@ import {
   abilityUsesAt,
   shieldedZones,
   stageStateAt,
+  strikesOf,
+  windupCuesForEvents,
   zoneOfCreature,
   type Cue,
 } from './stage';
@@ -178,7 +180,7 @@ describe('cuesForEvents', () => {
       },
     ];
     const cues = cuesForEvents(events, 0, 1, ROW);
-    expect(kinds(cues)).toEqual(['flash', 'float', 'shake']);
+    expect(kinds(cues)).toEqual(['flash', 'float', 'shake', 'strike']);
     expect(cues[0]).toEqual({ kind: 'flash', i: 0, target: 'e' });
     expect(cues[1]).toMatchObject({ target: 'e', text: '77', tone: 'hurt', crit: true });
     expect(cues[2]).toEqual({ kind: 'shake', i: 0, zone: 'back' });
@@ -193,7 +195,7 @@ describe('cuesForEvents', () => {
       text: 'BLOCKED',
       tone: 'blocked',
     });
-    expect(cues).toContainEqual({ kind: 'zone', i: 0, zone: 'front', effect: 'shield', op: null });
+    expect(cues).toContainEqual({ kind: 'zone', i: 0, zone: 'front', effect: 'shield' });
   });
 
   it('lights the ability card and draws a shield on the chosen zone', () => {
@@ -220,7 +222,7 @@ describe('cuesForEvents', () => {
       creature: null,
       player: 'p1',
     });
-    expect(cues).toContainEqual({ kind: 'zone', i: 0, zone: 'middle', effect: 'shield', op: null });
+    expect(cues).toContainEqual({ kind: 'zone', i: 0, zone: 'middle', effect: 'shield' });
   });
 
   it('covers every zone for a rally, and names the creature of a creature ability', () => {
@@ -248,18 +250,30 @@ describe('cuesForEvents', () => {
     ]);
   });
 
-  it('shows a zone gimmick over the zone it hurt', () => {
+  it('shows a zone hit as a strike on its zone, with a shockwave over the whole row', () => {
     const events: FightEvent[] = [
       { t: 'gimmick', round: 3, gimmick: 'undertow', op: 'hit_zone' },
       { t: 'boss_hit', round: 3, source: 'gimmick', target: 'a', damage: 10 },
       { t: 'boss_hit', round: 3, source: 'gimmick', target: 'b', damage: 10 },
     ];
-    const cues = cuesForEvents(events, 0, 3, ROW);
-    expect(cues[0]).toEqual({ kind: 'gimmick', i: 0, gimmick: 'undertow', op: 'hit_zone' });
+    const cues = cuesForEvents(events, 0, 3, ROW, 'tidal-colossus');
+    expect(cues.find((c) => c.kind === 'strike')).toEqual({
+      kind: 'strike',
+      i: 0,
+      strike: {
+        action: 'hit_zone',
+        gimmick: 'undertow',
+        targets: ['a', 'b'],
+        zone: 'front',
+        blocked: [],
+        guarded: null,
+      },
+    });
     expect(cues.filter((c) => c.kind === 'zone')).toEqual([
-      { kind: 'zone', i: 0, zone: 'front', effect: 'hit', op: 'hit_zone' },
+      { kind: 'zone', i: 0, zone: 'front', effect: 'hit' },
     ]);
     expect(cues.filter((c) => c.kind === 'shake').length).toBe(2);
+    expect(cues.filter((c) => c.kind === 'float')).toHaveLength(2);
   });
 
   it('shows silences, knockouts and luck banners', () => {
@@ -298,26 +312,132 @@ describe('cuesForEvents', () => {
   });
 });
 
-describe('beat lengths', () => {
-  it('never lets a beat run past the maximum or below the minimum', () => {
-    const everything: Cue[] = [
-      { kind: 'float', i: 0, target: null, text: '1', tone: 'hit', crit: true, drift: 0 },
-      { kind: 'burst', i: 0, target: null, reaction: 'x', elements: null, reflected: false },
-      { kind: 'ability', i: 0, ability: 'rally', creature: null, player: 'p' },
-      { kind: 'ko', i: 0, creature: 'a' },
-      { kind: 'gimmick', i: 0, gimmick: 'g', op: 'hit_zone' },
-      { kind: 'banner', i: 0, text: 'Bad omen!' },
+describe('boss actions', () => {
+  it('reads a plain attack: one target, its zone, and the creature a guard stepped in for', () => {
+    const events: FightEvent[] = [
+      { t: 'boss_hit', round: 1, source: 'attack', target: 'c', damage: 9, from: 'a' },
     ];
-    expect(beatMs(everything)).toBe(MAX_BEAT_MS);
-    expect(beatMs([])).toBe(MIN_BEAT_MS);
-    expect(beatMs([{ kind: 'hop', i: 0, creature: 'a' }])).toBeLessThan(MAX_BEAT_MS);
-    expect(beatMs([{ kind: 'hop', i: 0, creature: 'a' }])).toBeGreaterThanOrEqual(MIN_BEAT_MS);
+    expect(strikesOf(events, 0, 1, ROW)).toEqual([
+      {
+        i: 0,
+        strike: {
+          action: 'attack',
+          gimmick: null,
+          targets: ['c'],
+          zone: 'middle',
+          blocked: [],
+          guarded: 'a',
+        },
+      },
+    ]);
+    const stopped: FightEvent[] = [
+      { t: 'boss_hit', round: 1, source: 'attack', target: 'a', damage: 0, shielded: true },
+    ];
+    expect(strikesOf(stopped, 0, 1, ROW)[0]?.strike.blocked).toEqual(['a']);
   });
 
-  it('gives a crit a little longer than a plain hit', () => {
-    const plain = cuesForEvents([hit(1, 'a', 5)], 0, 1, ROW);
-    const crit = cuesForEvents([hit(1, 'a', 5, { crit: true })], 0, 1, ROW);
-    expect(beatMs(crit)).toBeGreaterThan(beatMs(plain));
+  it('reads a strike on the strongest creature from who was hurt', () => {
+    const events: FightEvent[] = [
+      { t: 'gimmick', round: 2, gimmick: 'lightning-rod', op: 'strike_highest_atk' },
+      { t: 'boss_hit', round: 2, source: 'gimmick', target: 'e', damage: 30, crit: true },
+    ];
+    expect(strikesOf(events, 0, 2, ROW, 'storm-sovereign')).toEqual([
+      {
+        i: 0,
+        strike: {
+          action: 'strike_highest_atk',
+          gimmick: 'lightning-rod',
+          targets: ['e'],
+          zone: 'back',
+          blocked: [],
+          guarded: null,
+        },
+      },
+    ]);
+  });
+
+  it('reads a silence of both ends, and only the ends that were still up', () => {
+    const both: FightEvent[] = [
+      { t: 'gimmick', round: 2, gimmick: 'bramble-bind', op: 'silence_ends' },
+      { t: 'silence', round: 2, creature: 'a', turns: 1 },
+      { t: 'silence', round: 2, creature: 'f', turns: 1 },
+    ];
+    expect(strikesOf(both, 0, 3, ROW)[0]?.strike).toMatchObject({
+      action: 'silence_ends',
+      targets: ['a', 'f'],
+      zone: 'front',
+    });
+    expect(strikesOf(both.slice(0, 2), 0, 2, ROW)[0]?.strike.targets).toEqual(['a']);
+  });
+
+  it('keeps a zone hit on its zone even when nobody in it is left to hit', () => {
+    const events: FightEvent[] = [{ t: 'gimmick', round: 3, gimmick: 'undertow', op: 'hit_zone' }];
+    expect(strikesOf(events, 0, 1, ROW, 'tidal-colossus')[0]?.strike).toMatchObject({
+      action: 'hit_zone',
+      targets: [],
+      zone: 'front',
+    });
+  });
+
+  it('stops a gimmick at the next beat: the attack after it is its own strike', () => {
+    const events: FightEvent[] = [
+      { t: 'gimmick', round: 3, gimmick: 'undertow', op: 'hit_zone' },
+      { t: 'boss_hit', round: 3, source: 'gimmick', target: 'a', damage: 10 },
+      { t: 'boss_hit', round: 3, source: 'attack', target: 'b', damage: 5 },
+    ];
+    const all = strikesOf(events, 0, 3, ROW, 'tidal-colossus');
+    expect(all.map((x) => [x.i, x.strike.action, x.strike.targets])).toEqual([
+      [0, 'hit_zone', ['a']],
+      [2, 'attack', ['b']],
+    ]);
+  });
+
+  it('shows the reflect trap once a round, even though the engine announces it twice, and the reflected hit', () => {
+    const events: FightEvent[] = [
+      roundStart(2),
+      { t: 'gimmick', round: 2, gimmick: 'backdraft', op: 'reflect_first_reaction' },
+      { t: 'turn', round: 2, creature: 'a' },
+      { t: 'boss_hit', round: 2, source: 'reflect', target: 'a', damage: 12 },
+      { t: 'gimmick', round: 2, gimmick: 'backdraft', op: 'reflect_first_reaction' },
+    ];
+    const all = strikesOf(events, 0, events.length, ROW, 'cinder-wyrm');
+    expect(all.map((x) => [x.i, x.strike.action])).toEqual([
+      [1, 'reflect_armed'],
+      [3, 'reflect'],
+    ]);
+    expect(all[1]?.strike).toMatchObject({ gimmick: 'backdraft', targets: ['a'] });
+  });
+
+  it('telegraphs every boss action except the trap being armed, on exactly its targets', () => {
+    const events: FightEvent[] = [
+      { t: 'gimmick', round: 2, gimmick: 'backdraft', op: 'reflect_first_reaction' },
+      { t: 'gimmick', round: 3, gimmick: 'undertow', op: 'hit_zone' },
+      { t: 'boss_hit', round: 3, source: 'gimmick', target: 'a', damage: 10 },
+      { t: 'boss_hit', round: 3, source: 'attack', target: 'c', damage: 5 },
+    ];
+    const wind = windupCuesForEvents(events, 0, events.length, ROW, 'tidal-colossus');
+    expect(wind.map((c) => [c.kind, c.i])).toEqual([
+      ['windup', 1],
+      ['windup', 3],
+    ]);
+    expect(wind[1]).toMatchObject({ strike: { action: 'attack', targets: ['c'] } });
+  });
+
+  it('gives the beats a wind-up of 600 ms before a boss action, and none before a creature acts', () => {
+    const events: FightEvent[] = [
+      roundStart(1),
+      { t: 'turn', round: 1, creature: 'a' },
+      hit(1, 'a', 10),
+      { t: 'boss_hit', round: 1, source: 'attack', target: 'a', damage: 5 },
+      { t: 'round_end', round: 1, bossHp: 870 },
+    ];
+    const beats = buildBeats(events, 0, ROW);
+    expect(beats.map((b) => b.windupMs)).toEqual([0, 0, WINDUP_MS, 0]);
+    expect(beats[2]?.windup).toHaveLength(1);
+    expect(beats[2]?.cues.some((c) => c.kind === 'strike')).toBe(true);
+    // The wind-up is part of the beat's stagger (a plain turn is 500 ms).
+    expect(beats[1]?.ms).toBe(500);
+    expect(beats[2]?.ms).toBe(WINDUP_MS + TAIL_MS);
   });
 });
 
@@ -340,8 +460,6 @@ describe('buildBeats', () => {
     for (const [k, beat] of beats.entries()) {
       if (k > 0) expect(beat.from).toBe(beats[k - 1]?.to);
       expect(beat.to).toBeGreaterThan(beat.from);
-      expect(beat.ms).toBeLessThanOrEqual(MAX_BEAT_MS);
-      expect(beat.ms).toBeGreaterThanOrEqual(MIN_BEAT_MS);
     }
     expect(beats.at(-1)?.to).toBe(events.length);
   });
@@ -356,8 +474,8 @@ describe('buildBeats', () => {
   it('puts the knockout in the beat of the boss attack that caused it', () => {
     const beats = buildBeats(events, 0, ROW);
     const attack = beats.find((b) => b.cues.some((c) => c.kind === 'shake'));
-    expect(attack && kinds(attack.cues)).toEqual(['flash', 'float', 'shake', 'ko']);
-    expect(attack?.ms).toBe(beatMs(attack?.cues ?? []));
+    expect(attack && kinds(attack.cues)).toEqual(['flash', 'float', 'shake', 'ko', 'strike']);
+    expect(attack?.windupMs).toBe(WINDUP_MS);
   });
 
   it('schedules beats back to back', () => {
@@ -367,29 +485,6 @@ describe('buildBeats', () => {
     for (let k = 1; k < beats.length; k++) {
       expect(offsets[k]).toBe((offsets[k - 1] ?? 0) + (beats[k - 1]?.ms ?? 0));
     }
-  });
-});
-
-describe('fitBeats', () => {
-  const beat = (ms: number) => ({ from: 0, to: 1, round: 1, cues: [], ms });
-
-  it('leaves beats alone when they fit the budget', () => {
-    const beats = [beat(500), beat(700), beat(500)];
-    // Only the beats before the last count: the last one has no next beat to wait for.
-    expect(fitBeats(beats, 1200)).toEqual(beats);
-  });
-
-  it('shortens the staggers in proportion to fit the budget, and keeps the last beat as it is', () => {
-    const fitted = fitBeats([beat(700), beat(700), beat(500), beat(600)], 1000);
-    const total = fitted.slice(0, -1).reduce((sum, b) => sum + b.ms, 0);
-    expect(total).toBeLessThanOrEqual(1000);
-    expect(fitted.map((b) => b.ms)).toEqual([368, 368, 263, 600]);
-  });
-
-  it('never goes below the 250 ms minimum, even for a tiny budget', () => {
-    const fitted = fitBeats([beat(700), beat(700), beat(500)], 10);
-    expect(fitted.slice(0, -1).every((b) => b.ms === MIN_BEAT_MS)).toBe(true);
-    expect(MIN_BEAT_MS).toBe(250);
   });
 });
 
@@ -520,9 +615,8 @@ describe('a whole simulated fight', () => {
     expect(beats.at(-1)?.to).toBe(events.length);
     const seen = new Set(rowIds);
     for (const beat of beats) {
-      expect(beat.ms).toBeGreaterThanOrEqual(MIN_BEAT_MS);
-      expect(beat.ms).toBeLessThanOrEqual(MAX_BEAT_MS);
-      for (const cue of beat.cues) {
+      expect(beat.ms).toBeGreaterThanOrEqual(0);
+      for (const cue of [...beat.windup, ...beat.cues]) {
         expect(cue.i).toBeGreaterThanOrEqual(beat.from);
         expect(cue.i).toBeLessThan(beat.to);
         if ('creature' in cue && cue.creature !== null) expect(seen.has(cue.creature)).toBe(true);
@@ -533,7 +627,7 @@ describe('a whole simulated fight', () => {
     }
   });
 
-  it('staggers the beats of a real round at 250 to 700 ms, and not at a flat pace', () => {
+  it('staggers the beats of a real round at 250 to 700 ms (plus a wind-up for the boss), and not at a flat pace', () => {
     const { input, events } = realFight();
     const rowIds = input.row.map((s) => s.id);
     const start = events.findIndex((e) => e.t === 'round_start' && e.round === 3);
@@ -542,9 +636,10 @@ describe('a whole simulated fight', () => {
     expect(end).toBeGreaterThan(start);
     const round = buildBeats(events.slice(0, end), start, rowIds);
     expect(round.length).toBeGreaterThan(2);
-    for (const b of round) {
-      expect(b.ms).toBeGreaterThanOrEqual(250);
-      expect(b.ms).toBeLessThanOrEqual(700);
+    // Every beat but the round's last two (the final effects and the round's end) has its own stagger.
+    for (const b of round.slice(0, -2)) {
+      expect(b.ms).toBeGreaterThanOrEqual(MIN_BEAT_MS + b.windupMs);
+      expect(b.ms).toBeLessThanOrEqual(MAX_BEAT_MS + b.windupMs);
     }
     expect(new Set(round.map((b) => b.ms)).size).toBeGreaterThan(1);
   });

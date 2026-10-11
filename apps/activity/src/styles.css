@@ -1728,6 +1728,182 @@ button.stage-help::after {
 }
 
 /*
+  The boss's line under its HP bar: the label of the attack that just landed ("Undertow · whole FRONT
+  row"), over the forecast of the next round ("Next round: Undertow hits FRONT"). The slot keeps its
+  height, so nothing jumps; the label sits on top of the forecast while it shows.
+*/
+.stage-line {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+  min-height: 2.25rem;
+}
+
+/* While a label shows, the forecast under it steps aside (it is back when the label is gone). */
+.stage-line.has-strike .forecast {
+  visibility: hidden;
+}
+
+.stage-line > * {
+  grid-area: 1 / 1;
+  margin: 0;
+}
+
+.forecast {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--gold);
+  background: rgb(255 210 90 / 8%);
+  color: var(--gold);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+
+.forecast > canvas {
+  flex: none;
+}
+
+.strike-label {
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  max-width: 100%;
+  padding: 0.25rem 0.5rem;
+  background: var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--bad);
+  color: var(--bone);
+  font-size: 0.8125rem;
+  line-height: 1.2;
+}
+
+.strike-label > canvas {
+  flex: none;
+}
+
+.strike-label > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Crosshairs over a creature the boss is about to hit, and the frame it keeps for a moment after. */
+.reticle {
+  position: absolute;
+  inset: -3px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--bad);
+  background: rgb(255 95 109 / 16%);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.reticle.struck {
+  background: transparent;
+}
+
+.reticle > canvas {
+  opacity: 0.9;
+}
+
+.slash {
+  position: absolute;
+  top: 50%;
+  left: -10%;
+  z-index: 5;
+  width: 120%;
+  height: 3px;
+  background: var(--bone);
+  box-shadow: 0 0 0 1px var(--bad);
+  opacity: 0;
+  pointer-events: none;
+  transform: rotate(-35deg);
+  will-change: transform, opacity;
+}
+
+/* A Shield Wall stopped the hit, or a guard stepped in for this creature. */
+.block-mark {
+  position: absolute;
+  top: -0.5rem;
+  left: 50%;
+  z-index: 6;
+  padding: 1px;
+  background: var(--ink);
+  line-height: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  will-change: transform, opacity;
+}
+
+/* The boss will silence this creature next round. */
+.warn-mark {
+  position: absolute;
+  top: 50%;
+  left: -0.5rem;
+  z-index: 3;
+  padding: 1px;
+  background: var(--ink);
+  line-height: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+/* A zone the boss will hit next round: an amber dashed frame and a warning glyph, standing still. */
+.stage-zone.warned {
+  outline: 2px dashed var(--gold);
+  outline-offset: -2px;
+}
+
+.zone-warn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 3;
+  padding: 1px;
+  background: var(--ink);
+  line-height: 0;
+  pointer-events: none;
+}
+
+/* Beams from the boss to the creatures a strike hits are drawn in this layer. */
+.stage-strikes {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.strike-beam {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  width: var(--blen, 0);
+  height: 6px;
+  margin-top: -3px;
+  background: var(--bad);
+  box-shadow:
+    0 0 0 2px var(--ink),
+    0 0 8px 2px var(--bad);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad));
+  transform-origin: 0 50%;
+  will-change: transform, opacity;
+}
+
+.strike-beam.placed {
+  display: block;
+}
+
+/*
   The zones as rows under the boss: the front zone first (closest to it), then middle, then back.
   Each row is its label at the left and its creatures centred in slot order, wrapping onto more
   lines when they do not fit; nothing scrolls sideways. The sizes come from zone-layout.ts as custom
@@ -2202,28 +2378,56 @@ button.ab-auto-toggle:not(.on) small {
   --fx-fill: rgb(255 210 90 / 12%);
 }
 
-/* Numbers that rise from a target. Crits are gold and bigger. */
+/* The telegraph of a zone hit: the whole zone outlined in red before it lands. */
+.fx-windup {
+  --fx: var(--bad);
+  --fx-fill: rgb(255 95 109 / 10%);
+  z-index: 2;
+  border-style: dashed;
+}
+
+/* The shockwave of a zone hit: a bright band that sweeps across the whole row. */
+.strike-wave {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(255 95 109 / 60%) 50%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/*
+  Numbers that rise from a target. Crits are gold and bigger. The outer element only moves and the
+  inner one only fades and pops (both on the compositor: transform and opacity), so the motion is
+  smooth. Without motion a number just stands at its spot (stacked by --lane).
+*/
 .float {
   position: absolute;
   top: 0;
   left: 50%;
   z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   color: var(--bone);
   font-family: var(--display);
   font-size: 1rem;
   line-height: 1;
+  transform: translate(calc(-50% + var(--drift, 0) * 4px + var(--lx, 0px)), var(--ly, 0px));
+  white-space: nowrap;
+  pointer-events: none;
+  will-change: transform, opacity;
+  --ly: calc(var(--lane, 0) * -1.1rem);
+  --rise: 3.5rem;
+}
+
+.float-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-shadow:
     2px 0 var(--ink),
     -2px 0 var(--ink),
     0 2px var(--ink),
     0 -2px var(--ink);
-  transform: translate(calc(-50% + var(--drift, 0) * 4px + var(--lx, 0px)), var(--ly, 0px));
-  white-space: nowrap;
-  pointer-events: none;
-  --ly: calc(var(--lane, 0) * -1.1rem);
+  will-change: transform, opacity;
 }
 
 /*
@@ -2233,6 +2437,7 @@ button.ab-auto-toggle:not(.on) small {
 .stage-boss-art .float {
   top: 14%;
   --ly: 0px;
+  --rise: 2.25rem;
 }
 
 .stage-boss-art .float.lane-1 {
@@ -2268,6 +2473,7 @@ button.ab-auto-toggle:not(.on) small {
 .crit-pop {
   color: var(--gold);
   font-size: 1rem;
+  will-change: transform;
 }
 
 /* "KO!" held on a knocked-out creature. */
@@ -2444,36 +2650,56 @@ button.ab-auto-toggle:not(.on) small {
   }
 
   .stage-mark.pop {
-    animation: var(--a-pop) var(--beat) steps(4) both;
+    animation: var(--a-pop) var(--beat) ease-out both;
   }
 
-  /* The effects that outlast their beat run for their own time (--fx-ms), set on each element. */
+  /*
+    The effects that outlast their beat run for their own time (--fx-ms), set on each element. Their
+    floats, fades, bursts and pops use smooth easing and change only transform and opacity (both
+    kept on the compositor), never steps(): stepped timing is for the sprite hops and shakes above.
+  */
   .zone-fx.fresh {
-    animation: stage-blink var(--fx-ms) steps(1) both;
+    animation: zone-fade var(--fx-ms) ease-out both;
+  }
+
+  .fx-windup {
+    animation: windup-pulse var(--fx-ms) ease-in-out both;
+  }
+
+  .strike-wave {
+    animation: strike-wave 700ms ease-out both;
   }
 
   .stage-callout {
-    animation: callout-hold var(--fx-ms) steps(6) both;
+    animation: callout-hold var(--fx-ms) ease-out both;
+  }
+
+  .strike-label {
+    animation: label-hold var(--fx-ms) ease-out both;
   }
 
   .crit-pop {
-    animation: crit-pop var(--fx-ms) steps(8) both;
+    animation: crit-pop var(--fx-ms) ease-out both;
   }
 
   .ko-tag {
-    animation: ko-hold var(--fx-ms) steps(6) both;
+    animation: ko-hold var(--fx-ms) ease-out both;
   }
 
   .stage-ability {
-    animation: card-hold var(--fx-ms) steps(6) both;
+    animation: card-hold var(--fx-ms) ease-out both;
   }
 
   .float {
-    animation: float-rise var(--fx-ms) steps(10) both;
+    animation: float-rise var(--fx-ms) linear both;
+  }
+
+  .float-body {
+    animation: float-fade var(--fx-ms) ease-out both;
   }
 
   .burst-ring {
-    animation: burst-grow var(--fx-ms) steps(8) both;
+    animation: burst-grow var(--fx-ms) ease-out both;
   }
 
   .burst-ring.second {
@@ -2481,15 +2707,47 @@ button.ab-auto-toggle:not(.on) small {
   }
 
   .burst-label {
-    animation: burst-label var(--fx-ms) steps(8) both;
+    animation: burst-label var(--fx-ms) ease-out both;
   }
 
   .round-intro {
-    animation: intro-veil var(--fx-ms) steps(6) both;
+    animation: intro-veil var(--fx-ms) ease-in-out both;
   }
 
   .ri-text {
-    animation: intro-slam var(--fx-ms) steps(8) both;
+    animation: intro-slam var(--fx-ms) ease-out both;
+  }
+
+  /* The boss leans in while it winds up its attack. */
+  .stage-boss-art.windup canvas.sprite {
+    animation: boss-lean var(--lean-ms, 600ms) ease-in-out both;
+    will-change: transform;
+  }
+
+  .reticle.windup {
+    animation: reticle-in var(--fx-ms) ease-out both;
+  }
+
+  .reticle.struck {
+    animation: reticle-out var(--fx-ms) ease-in both;
+  }
+
+  .slash {
+    animation: slash 450ms ease-out both;
+  }
+
+  .block-mark {
+    animation: block-pop var(--fx-ms) ease-out both;
+  }
+
+  .strike-beam.placed {
+    animation: beam-fire 650ms ease-out both;
+  }
+
+  .warn-mark,
+  .zone-warn {
+    animation: warn-pulse 1.4s ease-in-out infinite;
+    will-change: opacity;
   }
 
   .hpbar > i.drain {
@@ -2613,31 +2871,181 @@ button.ab-auto-toggle:not(.on) small {
     }
   }
 
-  @keyframes stage-blink {
-    0%,
-    40%,
-    80%,
-    100% {
+  @keyframes zone-fade {
+    0% {
+      opacity: 0;
+    }
+
+    12% {
       opacity: 1;
     }
 
-    20%,
-    60% {
-      opacity: 0.35;
+    70% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
     }
   }
 
-  /* An ability card flashes gold as it lights up, then stays until it fades out. */
-  @keyframes card-hold {
+  @keyframes windup-pulse {
     0% {
-      background: var(--gold);
-      color: var(--ink);
+      opacity: 0;
+    }
+
+    25% {
       opacity: 1;
     }
 
-    15% {
-      background: var(--ink);
-      color: var(--gold);
+    60% {
+      opacity: 0.6;
+    }
+
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes strike-wave {
+    0% {
+      opacity: 0;
+      transform: translateX(-60%);
+    }
+
+    25% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateX(60%);
+    }
+  }
+
+  @keyframes reticle-in {
+    0% {
+      opacity: 0;
+      transform: scale(1.6);
+    }
+
+    40% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    70% {
+      transform: scale(1.06);
+    }
+
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes reticle-out {
+    0% {
+      opacity: 1;
+    }
+
+    55% {
+      opacity: 0.9;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes slash {
+    0% {
+      opacity: 1;
+      transform: rotate(-35deg) scaleX(0);
+    }
+
+    35% {
+      opacity: 1;
+      transform: rotate(-35deg) scaleX(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: rotate(-35deg) scaleX(1);
+    }
+  }
+
+  @keyframes block-pop {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) scale(0.4);
+    }
+
+    10% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1.3);
+    }
+
+    20%,
+    75% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  @keyframes beam-fire {
+    0% {
+      opacity: 0;
+      transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad)) scaleX(0.02);
+    }
+
+    30% {
+      opacity: 1;
+      transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad)) scaleX(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad)) scaleX(1);
+    }
+  }
+
+  @keyframes boss-lean {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+
+    70%,
+    100% {
+      transform: translateY(8px) scale(1.12);
+    }
+  }
+
+  @keyframes warn-pulse {
+    50% {
+      opacity: 0.45;
+    }
+  }
+
+  /* An ability card pops in, holds and fades out. */
+  @keyframes card-hold {
+    0% {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+
+    8% {
+      opacity: 1;
+      transform: scale(1.12);
+    }
+
+    16% {
+      transform: scale(1);
     }
 
     85% {
@@ -2651,11 +3059,15 @@ button.ab-auto-toggle:not(.on) small {
 
   @keyframes callout-hold {
     0% {
-      opacity: 1;
-      transform: translateX(-50%) scale(1.8);
+      opacity: 0;
+      transform: translateX(-50%) scale(1.6);
     }
 
-    15%,
+    10% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
     80% {
       opacity: 1;
       transform: translateX(-50%) scale(1);
@@ -2664,16 +3076,40 @@ button.ab-auto-toggle:not(.on) small {
     100% {
       opacity: 0;
       transform: translateX(-50%) scale(1);
+    }
+  }
+
+  @keyframes label-hold {
+    0% {
+      opacity: 0;
+      transform: scale(1.35);
+    }
+
+    8% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    82% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
     }
   }
 
   @keyframes ko-hold {
     0% {
-      opacity: 1;
+      opacity: 0;
       transform: translateX(-50%) scale(2);
     }
 
-    20%,
+    12% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
     80% {
       opacity: 1;
       transform: translateX(-50%) scale(1);
@@ -2685,27 +3121,51 @@ button.ab-auto-toggle:not(.on) small {
     }
   }
 
-  /* The number floats up and stays readable for most of its time, fading in the last tenth. */
+  /*
+    A number rises at a steady pace from where it spawns for its whole time, so a newer number on the
+    same creature starts at the base, below the older ones that have already risen. It drifts a little
+    sideways as it goes.
+  */
   @keyframes float-rise {
     0% {
-      opacity: 1;
       transform: translate(calc(-50% + var(--drift, 0) * 2px + var(--lx, 0px)), var(--ly, 0px));
     }
 
-    85% {
+    100% {
+      transform: translate(
+        calc(-50% + var(--drift, 0) * 8px + var(--lx, 0px)),
+        calc(var(--ly, 0px) - var(--rise, 3.5rem))
+      );
+    }
+  }
+
+  /* It pops in, stays readable for most of its time and fades out at the end. */
+  @keyframes float-fade {
+    0% {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+
+    5% {
+      opacity: 1;
+      transform: scale(1.25);
+    }
+
+    12% {
+      transform: scale(1);
+    }
+
+    75% {
       opacity: 1;
     }
 
     100% {
       opacity: 0;
-      transform: translate(
-        calc(-50% + var(--drift, 0) * 6px + var(--lx, 0px)),
-        calc(var(--ly, 0px) - 1.5rem)
-      );
+      transform: scale(1);
     }
   }
 
-  /* "CRITICAL!" slams in big, shakes once, and holds. */
+  /* "CRITICAL!" slams in big, settles, and holds. */
   @keyframes crit-pop {
     0% {
       transform: scale(2.2);
@@ -2731,7 +3191,7 @@ button.ab-auto-toggle:not(.on) small {
       transform: scale(0.2);
     }
 
-    35% {
+    30% {
       opacity: 1;
       transform: scale(1);
     }
@@ -2744,11 +3204,12 @@ button.ab-auto-toggle:not(.on) small {
 
   @keyframes burst-label {
     0% {
+      opacity: 0;
       transform: translate(-50%, -50%) scale(1.6);
     }
 
-    15%,
-    85% {
+    8%,
+    82% {
       opacity: 1;
       transform: translate(-50%, -50%) scale(1);
     }
@@ -2764,8 +3225,8 @@ button.ab-auto-toggle:not(.on) small {
       opacity: 0;
     }
 
-    8%,
-    88% {
+    10%,
+    85% {
       opacity: 1;
     }
 
@@ -2779,7 +3240,7 @@ button.ab-auto-toggle:not(.on) small {
       transform: scale(2);
     }
 
-    12%,
+    16%,
     100% {
       transform: scale(1);
     }

@@ -6,6 +6,8 @@ export * from './forecast';
 export * from './row';
 export * from './mutators';
 export * from './describe';
+export * from './gimmick-schedule';
+export * from './playback';
 export {
   bossCritStats,
   creatureCritStats,

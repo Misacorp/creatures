@@ -16,7 +16,7 @@ import { rankChangeOf, type RankChangeView } from './raid-ladder';
 import { bossFor, type StoredSummary } from './raid-resolve';
 import { totalEssenceOf } from './raid-reveal';
 import {
-  LIVE_ROUND_MS,
+  PACING_CONTENT,
   firedRound,
   type AbilityMode,
   type LiveRow,
@@ -69,10 +69,25 @@ export interface LiveSnapshot {
   you: string | null;
   /** When the fight starts (lobby) or started (live, done). Null when there is no finale soon. */
   startsAt: number | null;
-  roundMs: number;
+  /**
+   * The fixed round length of a fight stored before content pacing; null for every other state.
+   * Rounds are as long as their content now: use `roundStarts` and `nextRoundAt`.
+   */
+  roundMs: number | null;
   rounds: number;
   /** The round that is playing (0 before the start). */
   round: number;
+  /**
+   * When each round started, for rounds 1..`round` (UTC ms). Rounds last as long as their events take
+   * to play (`roundPlaybackMs`, 6 to 22 seconds), so round r+1 starts that long after round r.
+   */
+  roundStarts: number[];
+  /**
+   * When the state next changes, for the countdown and the client's next poll: the start of the next
+   * round, or the end of the fight during its last round. In the lobby it is the start. Null when there
+   * is nothing to wait for (no finale soon, or the fight is over).
+   */
+  nextRoundAt: number | null;
   serverNow: number;
   boss: {
     id: string;
@@ -129,9 +144,11 @@ export function emptySnapshot(
     party: ctx.party,
     you: null,
     startsAt,
-    roundMs: LIVE_ROUND_MS,
+    roundMs: null,
     rounds: boss.finaleRounds,
     round: 0,
+    roundStarts: [],
+    nextRoundAt: status === 'lobby' ? startsAt : null,
     serverNow: ctx.now,
     boss: {
       id: boss.id,
@@ -214,9 +231,11 @@ export function lobbySnapshot(
     party: ctx.party,
     you: me?.alias ?? null,
     startsAt,
-    roundMs: LIVE_ROUND_MS,
+    roundMs: null,
     rounds: input.boss.finaleRounds,
     round: 0,
+    roundStarts: [],
+    nextRoundAt: startsAt,
     serverNow: ctx.now,
     boss: {
       id: input.boss.id,
@@ -323,9 +342,11 @@ export function liveSnapshot(
     party: row.party,
     you: me?.alias ?? null,
     startsAt: row.startedAt,
-    roundMs: row.roundMs,
+    roundMs: row.pacing < PACING_CONTENT ? row.roundMs : null,
     rounds: row.rounds,
     round,
+    roundStarts: state.roundStarts.slice(0, round),
+    nextRoundAt: done ? null : state.nextRoundAt,
     serverNow: ctx.now,
     boss: {
       id: row.input.boss.id,

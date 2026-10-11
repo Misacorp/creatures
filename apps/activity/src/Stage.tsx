@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
-import type { ComponentChildren, Ref } from 'preact';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { Fragment, type ComponentChildren, type Ref, type RefObject } from 'preact';
 import type { EventNames, FightEvent, Zone } from '@creatures/engine';
 import { bossArt, elementClass, markPalette } from './art';
 import { cssVars } from './css-vars';
@@ -20,6 +20,7 @@ import {
 } from './stage';
 import { badgeFor, unitTap, usedBadge, type Badge } from './stage-abilities';
 import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
+import { forecastNextRound, strikeLabel } from './telegraph';
 import { StagePopover } from './StagePopover';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -87,12 +88,28 @@ interface FxProps {
   target: string | null;
 }
 
-const fxVars = (item: FxItem, extra: Readonly<Record<string, string | number>> = {}) =>
-  cssVars({ '--fx-ms': `${String(item.ms)}ms`, ...extra });
+/**
+ * The ref of an effect's element: it sets the effect's own duration (and the extras) as custom
+ * properties. One function per effect, kept for as long as the effect lives: a ref whose identity
+ * changed on every render would be called again by every render of the whole stage.
+ */
+const fxRefs = new WeakMap<FxItem, (el: HTMLElement | null) => void>();
+function fxRef(item: FxItem, extra: Readonly<Record<string, string | number>> = {}) {
+  let ref = fxRefs.get(item);
+  if (ref === undefined) {
+    ref = cssVars({ '--fx-ms': `${String(item.ms)}ms`, ...extra });
+    fxRefs.set(item, ref);
+  }
+  return ref;
+}
 
 /**
- * The numbers floating up from a target. They stay for over a second (a crit for two) and may
- * overlap, each in its own lane. Crits are gold and bigger, with a "CRITICAL!" pop.
+ * The numbers rising from a target. They rise continuously from where they spawn for 2.5 seconds (a
+ * crit for 3) and overlap freely: a newer number on the same creature spawns at the base and sits
+ * below the older ones, which have risen by then. Crits are gold and bigger, with a "CRITICAL!" pop.
+ * The outer element only moves (a smooth transform) and the inner one only fades and pops, so the
+ * motion is never stepped. Each number's key is its event's index, which never changes, so it
+ * is not re-created while it animates; its spot is set by CSS once and never measured.
  */
 function Floats({ fx, target }: FxProps) {
   return (
@@ -104,10 +121,12 @@ function Floats({ fx, target }: FxProps) {
           <span
             key={`float-${String(cue.i)}`}
             class={`float float-${cue.tone}${cue.crit ? ' crit' : ''} lane-${String(item.lane)}`}
-            ref={fxVars(item, { '--drift': cue.drift, '--lane': item.lane })}
+            ref={fxRef(item, { '--drift': cue.drift, '--lane': item.lane })}
           >
-            {cue.crit && <span class="crit-pop">CRITICAL!</span>}
-            <span class="float-text">{cue.text}</span>
+            <span class="float-body">
+              {cue.crit && <span class="crit-pop">CRITICAL!</span>}
+              <span class="float-text">{cue.text}</span>
+            </span>
           </span>
         );
       })}
@@ -126,7 +145,7 @@ function Bursts({ fx, target, names }: FxProps & { names: EventNames }) {
         const iconA = a === null ? undefined : elementIcon(a);
         const iconB = b === null ? undefined : elementIcon(b);
         return (
-          <span key={`burst-${String(cue.i)}`} class="burst" aria-hidden="true" ref={fxVars(item)}>
+          <span key={`burst-${String(cue.i)}`} class="burst" aria-hidden="true" ref={fxRef(item)}>
             <span class={`burst-ring ${elementClass(a)}`} />
             <span class={`burst-ring second ${elementClass(b)}`} />
             <span class="burst-label">
@@ -155,7 +174,7 @@ function KoTags({ fx, creature }: { fx: readonly FxItem[]; creature: string }) {
             key={`ko-${String(item.cue.i)}`}
             class="ko-tag pix"
             aria-hidden="true"
-            ref={fxVars(item)}
+            ref={fxRef(item)}
           >
             KO!
           </span>
@@ -185,6 +204,109 @@ function RoundIntro({ intro }: { intro: IntroView }) {
       </span>
     </div>
   );
+}
+
+/** The glyph that goes with a boss action's label. */
+function strikeGlyph(action: string) {
+  switch (action) {
+    case 'hit_zone':
+    case 'silence_ends':
+    case 'strike_highest_atk':
+      return gimmickGlyph(action);
+    case 'reflect':
+    case 'reflect_armed':
+      return gimmickGlyph('reflect_first_reaction');
+    default:
+      return glyphOrUnknown('reticle');
+  }
+}
+
+/** True for the boss actions that hit one creature at a time (they get a beam, a slash and reticles). */
+const aimsAtCreatures = (action: string): boolean =>
+  action !== 'hit_zone' && action !== 'reflect_armed';
+
+/**
+ * The marks the boss telegraph puts on one creature: during the wind-up red crosshairs over exactly
+ * the creatures it will hit; when the hit lands a solid red frame, a slash and, on a creature a
+ * Shield Wall protected or that a guard stepped in for, a shield (the blocked mark). A zone hit
+ * marks its whole row instead (see `ZoneFx`). The frames are static outlines, so they also read
+ * without motion.
+ */
+function Marks({ fx, id }: { fx: readonly FxItem[]; id: string }) {
+  return (
+    <>
+      {fx.map((item) => {
+        const { cue } = item;
+        if (cue.kind === 'windup') {
+          if (!aimsAtCreatures(cue.strike.action) || !cue.strike.targets.includes(id)) return null;
+          return (
+            <span
+              key={`windup-${String(cue.i)}`}
+              class="reticle windup"
+              aria-hidden="true"
+              ref={fxRef(item)}
+            >
+              <Sprite sprite={glyphOrUnknown('reticle')} scale={2} />
+            </span>
+          );
+        }
+        if (cue.kind !== 'strike') return null;
+        const { strike } = cue;
+        const blocked = strike.blocked.includes(id) || strike.guarded === id;
+        const hit = aimsAtCreatures(strike.action) && strike.targets.includes(id);
+        if (!hit && !blocked) return null;
+        return (
+          <Fragment key={`strike-${String(cue.i)}`}>
+            {hit && <span class="reticle struck" aria-hidden="true" ref={fxRef(item)} />}
+            {hit && <span class="slash" aria-hidden="true" ref={fxRef(item)} />}
+            {blocked && (
+              <span class="block-mark" aria-hidden="true" ref={fxRef(item)}>
+                <Sprite sprite={glyphOrUnknown('shield')} scale={2} />
+              </span>
+            )}
+          </Fragment>
+        );
+      })}
+    </>
+  );
+}
+
+/**
+ * A beam from the boss to one target, drawn when a strike lands. Where it starts and ends is
+ * measured once, before the first paint (the boss's and the target's boxes are read together and
+ * the result is written as custom properties), and never again: the animation itself only changes
+ * `transform` and `opacity`.
+ */
+function Beam({
+  layer,
+  from,
+  to,
+  ms,
+}: {
+  layer: RefObject<HTMLElement>;
+  from: () => HTMLElement | null;
+  to: () => HTMLElement | null;
+  ms: number;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const base = layer.current?.getBoundingClientRect();
+    const a = from()?.getBoundingClientRect();
+    const b = to()?.getBoundingClientRect();
+    if (el === null || base === undefined || a === undefined || b === undefined) return;
+    const x1 = a.left + a.width / 2 - base.left;
+    const y1 = a.top + a.height * 0.75 - base.top;
+    const x2 = b.left + b.width / 2 - base.left;
+    const y2 = b.top + b.height / 2 - base.top;
+    el.style.setProperty('--bx', `${String(Math.round(x1))}px`);
+    el.style.setProperty('--by', `${String(Math.round(y1))}px`);
+    el.style.setProperty('--blen', `${String(Math.round(Math.hypot(x2 - x1, y2 - y1)))}px`);
+    el.style.setProperty('--bang', `${String(Math.atan2(y2 - y1, x2 - x1))}rad`);
+    el.style.setProperty('--fx-ms', `${String(ms)}ms`);
+    el.classList.add('placed');
+  }, []);
+  return <span ref={ref} class="strike-beam" aria-hidden="true" />;
 }
 
 /** What the live stage needs to put the player's abilities on their creatures. */
@@ -286,6 +408,10 @@ interface UnitProps {
   open: boolean;
   /** Registers the creature's button as the anchor of its popover. */
   anchorRef: Ref<HTMLButtonElement>;
+  /** Registers the creature's box, so a strike's beam can find its target. */
+  boxRef: Ref<HTMLLIElement>;
+  /** The boss will silence this creature next round (a warning glyph on it). */
+  warned: boolean;
   onToggle: () => void;
 }
 
@@ -327,6 +453,12 @@ function StageUnit(props: UnitProps) {
           </span>
         )}
         {badge !== null && <AbilityBadge badge={badge} />}
+        {props.warned && (
+          <span class="warn-mark" aria-hidden="true">
+            <Sprite sprite={glyphOrUnknown('warning')} scale={2} />
+          </span>
+        )}
+        <Marks fx={props.fx} id={c.id} />
       </span>
       <span class="unit-name pix" aria-hidden="true">
         {c.name}
@@ -335,7 +467,11 @@ function StageUnit(props: UnitProps) {
   );
 
   return (
-    <li class={props.classes.join(' ')} aria-label={interactive ? undefined : spoken}>
+    <li
+      class={props.classes.join(' ')}
+      aria-label={interactive ? undefined : spoken}
+      ref={props.boxRef}
+    >
       {interactive ? (
         <button
           type="button"
@@ -385,6 +521,14 @@ export function Stage({
 }: StageProps) {
   const rowsRef = useRef<HTMLDivElement>(null);
   const width = useElementWidth(rowsRef, STAGE_FALLBACK_PX);
+  /** The layer the strikes' beams are drawn in, the boss and each creature's box (for the beams to find). */
+  const layerRef = useRef<HTMLDivElement>(null);
+  const bossRef = useRef<HTMLDivElement>(null);
+  const boxes = useRef(new Map<string, HTMLElement>());
+  const boxRef = (id: string) => (el: HTMLElement | null) => {
+    if (el === null) boxes.current.delete(id);
+    else boxes.current.set(id, el);
+  };
   /** Which popover is open: "a:<ability key>" for an ability, "help" for the "?" button's. */
   const [openKey, setOpenKey] = useState<string | null>(null);
   const anchors = useRef(new Map<string, HTMLElement>());
@@ -395,7 +539,9 @@ export function Stage({
   const rowIds = row.map((c) => c.id);
   const state = stageStateAt(events, index, hpStart);
   const cues =
-    anim === null ? [] : cuesForEvents(events, anim.from, Math.min(anim.to, index), rowIds);
+    anim === null
+      ? []
+      : cuesForEvents(events, anim.from, Math.min(anim.to, index), rowIds, boss.id);
   const previousHp = anim === null ? state.bossHp : stateAt(events, anim.from, hpStart).bossHp;
   const art = bossArt(boss.id);
 
@@ -413,8 +559,13 @@ export function Stage({
     else if (cue.kind === 'shake') shaking.add(cue.zone);
   }
   const abilityCards = fx.filter((i) => i.cue.kind === 'ability');
-  const gimmickItem = fx.filter((i) => i.cue.kind === 'gimmick').at(-1);
   const bannerItem = fx.filter((i) => i.cue.kind === 'banner').at(-1);
+  // The boss leans in while it winds up, and the label of its newest hit shows in the boss's line.
+  const windupItem = fx.find((i) => i.cue.kind === 'windup');
+  const strikeItems = fx.filter((i) => i.cue.kind === 'strike');
+  const strikeItem = strikeItems.at(-1);
+  // One round ahead: what the boss will do next round, from its content and the round number.
+  const forecast = forecastNextRound(boss.id, state.round, rounds, rowIds, state.knockedOut, names);
 
   // The abilities that have been played so far, by key and by creature.
   const uses = abilityUsesAt(events, index);
@@ -484,7 +635,10 @@ export function Stage({
     <section
       class={`stage p${String(parity)}`}
       aria-label="Fight stage"
-      ref={cssVars({ '--beat': `${String(anim === null ? 600 : shortEffectMs(anim.ms))}ms` })}
+      ref={cssVars({
+        '--beat': `${String(anim === null ? 600 : shortEffectMs(anim.ms))}ms`,
+        '--lean-ms': `${String(windupItem?.ms ?? 600)}ms`,
+      })}
     >
       <div class="stage-head">
         <span class="stage-head-left">
@@ -517,7 +671,10 @@ export function Stage({
       </div>
 
       <div class="stage-boss">
-        <div class={`stage-boss-art${hit.has(null) ? ' hit' : ''}`}>
+        <div
+          ref={bossRef}
+          class={`stage-boss-art${hit.has(null) ? ' hit' : ''}${windupItem === undefined ? '' : ' windup'}`}
+        >
           <Sprite sprite={art.sprite} scale={art.scale} alt={boss.name} />
           {state.mark !== null && (
             <span
@@ -536,23 +693,12 @@ export function Stage({
           )}
           <Floats fx={fx} target={null} />
           <Bursts fx={fx} target={null} names={names} />
-          {gimmickItem?.cue.kind === 'gimmick' && (
-            <span
-              key={`gimmick-${String(gimmickItem.cue.i)}`}
-              class="stage-callout"
-              aria-hidden="true"
-              ref={fxVars(gimmickItem)}
-            >
-              <Sprite sprite={gimmickGlyph(gimmickItem.cue.op)} scale={3} />
-              <span class="pix">{nameOf(names.gimmicks, gimmickItem.cue.gimmick)}</span>
-            </span>
-          )}
           {bannerItem?.cue.kind === 'banner' && (
             <span
               key={`banner-${String(bannerItem.cue.i)}`}
               class="stage-callout banner"
               aria-hidden="true"
-              ref={fxVars(bannerItem)}
+              ref={fxRef(bannerItem)}
             >
               <span class="pix">{bannerItem.cue.text}</span>
             </span>
@@ -564,13 +710,32 @@ export function Stage({
           previous={previousHp}
           label={`${boss.name} HP: ${String(state.bossHp)} of ${String(hpMax)}`}
         />
+        <div class={`stage-line${strikeItem === undefined ? '' : ' has-strike'}`}>
+          {forecast !== null && (
+            <p class="forecast pix" role="note">
+              <Sprite sprite={glyphOrUnknown('warning')} scale={2} />
+              <span>{forecast.text}</span>
+            </p>
+          )}
+          {strikeItem?.cue.kind === 'strike' && (
+            <p
+              key={`strike-${String(strikeItem.cue.i)}`}
+              class={`strike-label pix act-${strikeItem.cue.strike.action}`}
+              aria-hidden="true"
+              ref={fxRef(strikeItem)}
+            >
+              <Sprite sprite={strikeGlyph(strikeItem.cue.strike.action)} scale={2} />
+              <span>{strikeLabel(strikeItem.cue.strike, names).text}</span>
+            </p>
+          )}
+        </div>
       </div>
 
       <div class="stage-abilities-slot">
         <ul class="stage-abilities" aria-label="Abilities that just fired">
           {abilityCards.slice(0, MAX_ABILITY_CARDS).map((item) =>
             item.cue.kind === 'ability' ? (
-              <li key={`ability-${String(item.cue.i)}`} class="stage-ability" ref={fxVars(item)}>
+              <li key={`ability-${String(item.cue.i)}`} class="stage-ability" ref={fxRef(item)}>
                 <Sprite sprite={abilityGlyph} scale={2} />
                 <span class="pix">
                   {abilityTitle(
@@ -595,15 +760,27 @@ export function Stage({
           const freshShield = fresh.find((f) => f.cue.kind === 'zone' && f.cue.effect === 'shield');
           const walled = state.shielded.includes(zone);
           const layout = zoneLayout(items.length, width, STAGE_LAYOUT);
+          const zoneWindup = fx.filter(
+            (i) =>
+              i.cue.kind === 'windup' &&
+              i.cue.strike.action === 'hit_zone' &&
+              i.cue.strike.zone === zone,
+          );
+          const warnedZone = forecast?.zones.includes(zone) === true;
           return (
             <div
               key={zone}
-              class={`stage-zone zone-${zone}${shaking.has(zone) ? ' shake' : ''}`}
+              class={`stage-zone zone-${zone}${shaking.has(zone) ? ' shake' : ''}${warnedZone ? ' warned' : ''}`}
               role="group"
               aria-label={`${ZONE_NAMES[zone]} zone`}
               ref={cssVars(layoutVars(layout, STAGE_LAYOUT))}
             >
               <p class="zone-label pix">{ZONE_NAMES[zone]}</p>
+              {warnedZone && (
+                <span class="zone-warn" aria-hidden="true">
+                  <Sprite sprite={glyphOrUnknown('warning')} scale={2} />
+                </span>
+              )}
               <ul class="zone-units">
                 {items.map((c) => {
                   const mine = mineIds.has(c.id);
@@ -656,6 +833,8 @@ export function Stage({
                       }
                       open={key !== null && openKey === key}
                       anchorRef={anchorRef(key ?? `none:${c.id}`)}
+                      boxRef={boxRef(c.id)}
+                      warned={forecast?.ends.includes(c.id) === true}
                       onToggle={() => {
                         if (key !== null) toggle(key);
                       }}
@@ -667,7 +846,7 @@ export function Stage({
                 <span
                   class={`zone-fx fx-shield${freshShield === undefined ? '' : ' fresh'}`}
                   aria-hidden="true"
-                  {...(freshShield === undefined ? {} : { ref: fxVars(freshShield) })}
+                  {...(freshShield === undefined ? {} : { ref: fxRef(freshShield) })}
                 >
                   <Sprite sprite={shieldGlyph} scale={2} />
                 </span>
@@ -680,18 +859,27 @@ export function Stage({
                     ? shieldGlyph
                     : f.effect === 'rally'
                       ? abilityGlyph
-                      : gimmickGlyph(f.op ?? '');
+                      : gimmickGlyph('hit_zone');
                 return (
                   <span
                     key={`${String(f.i)}-${f.effect}`}
                     class={`zone-fx fx-${f.effect} fresh`}
                     aria-hidden="true"
-                    ref={fxVars(item)}
+                    ref={fxRef(item)}
                   >
+                    {f.effect === 'hit' && <span class="strike-wave" />}
                     <Sprite sprite={icon} scale={2} />
                   </span>
                 );
               })}
+              {zoneWindup.map((item) => (
+                <span
+                  key={`windup-${String(item.cue.i)}`}
+                  class="zone-fx fx-windup"
+                  aria-hidden="true"
+                  ref={fxRef(item)}
+                />
+              ))}
             </div>
           );
         })}
@@ -755,6 +943,25 @@ export function Stage({
           {abilities.help}
         </StagePopover>
       )}
+      <div class="stage-strikes" ref={layerRef} aria-hidden="true">
+        {strikeItems.map((item) => {
+          const { cue } = item;
+          if (cue.kind !== 'strike' || item.ms === 0 || !aimsAtCreatures(cue.strike.action)) {
+            return null;
+          }
+          return cue.strike.targets
+            .slice(0, 4)
+            .map((target) => (
+              <Beam
+                key={`beam-${String(cue.i)}-${target}`}
+                layer={layerRef}
+                from={() => bossRef.current}
+                to={() => boxes.current.get(target) ?? null}
+                ms={item.ms}
+              />
+            ));
+        })}
+      </div>
       {intro !== null && <RoundIntro intro={intro} />}
     </section>
   );
@@ -766,14 +973,14 @@ export function Stage({
  * `useLiveStage`). `hold` keeps it waiting while the countdown's "FIGHT!" is on screen.
  */
 export function LiveStage(
-  props: Omit<StageProps, 'index' | 'anim' | 'fx' | 'intro'> & { roundMs: number; hold?: boolean },
+  props: Omit<StageProps, 'index' | 'anim' | 'fx' | 'intro'> & { hold?: boolean },
 ) {
-  const { roundMs, hold, ...rest } = props;
+  const { hold, ...rest } = props;
   const reduced = usePrefersReducedMotion();
   const view = useLiveStage(
     props.events,
     props.row.map((c) => c.id),
-    roundMs,
+    props.boss.id,
     props.rounds,
     reduced,
     hold === true,

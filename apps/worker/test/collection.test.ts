@@ -257,7 +257,7 @@ describe('migration 4', () => {
 
       core.migrate();
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        14,
+        15,
       );
       expect(core.balances(USER_ID).bait).toBe(42);
       const res = await ctx.request(secret, '/api/state');

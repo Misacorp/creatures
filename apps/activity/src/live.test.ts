@@ -51,9 +51,12 @@ function fightOf(over: Partial<LiveRunning> = {}): LiveRunning {
     party: 1,
     you: 'p1',
     startsAt: START,
-    roundMs: 10_000,
+    roundMs: null,
     rounds: 12,
     round: 3,
+    // Rounds are as long as their content: these three are 9 s, 11 s and 10 s long.
+    roundStarts: [START, START + 9_000, START + 20_000],
+    nextRoundAt: START + 30_000,
     serverNow: START + 25_000,
     boss: { id: 'b', name: 'Tidal Colossus', element: 'tide', hpMax: 1000, hpStart: 1000 },
     row: [],
@@ -75,9 +78,11 @@ function lobbyOf(over: Partial<LiveLobby> = {}): LiveLobby {
     party: 1,
     you: null,
     startsAt: START,
-    roundMs: 10_000,
+    roundMs: null,
     rounds: 12,
     round: 0,
+    roundStarts: [],
+    nextRoundAt: START,
     serverNow: START - 60_000,
     boss: { id: 'b', name: 'Tidal Colossus', element: 'tide', hpMax: null, hpStart: null },
     row: [],
@@ -114,8 +119,9 @@ describe('finaleWindow', () => {
     expect(finaleWindow(finale, 12, finale - LOBBY_MS)).toBe('lobby');
     expect(finaleWindow(finale, 12, finale - 1)).toBe('lobby');
     expect(finaleWindow(finale, 12, finale)).toBe('live');
-    expect(finaleWindow(finale, 12, finale + 12 * 15_000)).toBe('live');
-    expect(finaleWindow(finale, 12, finale + 12 * 15_000 + 30_000)).toBe('after');
+    // The longest finale is 12 rounds of 22 s.
+    expect(finaleWindow(finale, 12, finale + 12 * 22_000)).toBe('live');
+    expect(finaleWindow(finale, 12, finale + 12 * 22_000 + 30_000)).toBe('after');
   });
 });
 
@@ -139,16 +145,15 @@ describe('formatClock and bannerText', () => {
 });
 
 describe('nextBoundaryAt', () => {
-  it('is the start before the fight and the end of each round after', () => {
-    expect(nextBoundaryAt(START, 10_000, 12, START - 5)).toBe(START);
-    expect(nextBoundaryAt(START, 10_000, 12, START)).toBe(START + 10_000);
-    expect(nextBoundaryAt(START, 10_000, 12, START + 9_999)).toBe(START + 10_000);
-    expect(nextBoundaryAt(START, 10_000, 12, START + 10_000)).toBe(START + 20_000);
-    expect(nextBoundaryAt(START, 10_000, 12, START + 119_999)).toBe(START + 120_000);
+  it("is the start before the fight and the server's next round start after", () => {
+    const live = fightOf();
+    expect(nextBoundaryAt(live, START - 5)).toBe(START);
+    expect(nextBoundaryAt(live, START)).toBe(START + 30_000);
+    expect(nextBoundaryAt(live, START + 29_999)).toBe(START + 30_000);
   });
 
-  it('is null after the last round', () => {
-    expect(nextBoundaryAt(START, 10_000, 12, START + 120_000)).toBeNull();
+  it('is null when the server has nothing to wait for', () => {
+    expect(nextBoundaryAt(fightOf({ nextRoundAt: null }), START + 130_000)).toBeNull();
   });
 });
 
@@ -166,16 +171,22 @@ describe('nextPollDelay', () => {
     expect(nextPollDelay(live, START + 12_000)).toBe(2000);
   });
 
-  it('polls just after a round boundary', () => {
-    // 1 s before the boundary at +20 s: wait for it, plus the slack.
-    expect(nextPollDelay(live, START + 19_000)).toBe(1300);
+  it('polls just after the round start the server announced (nextRoundAt), however long the round is', () => {
+    // 1 s before the boundary at +30 s: wait for it, plus the slack.
+    expect(nextPollDelay(live, START + 29_000)).toBe(1300);
     // 100 ms before the boundary.
-    expect(nextPollDelay(live, START + 19_900)).toBe(400);
+    expect(nextPollDelay(live, START + 29_900)).toBe(400);
+    // A short round: the boundary is where the server says.
+    const short = fightOf({ nextRoundAt: START + 26_000 });
+    expect(nextPollDelay(short, START + 25_000)).toBe(1300);
   });
 
-  it('never polls faster than the minimum, even right at a boundary', () => {
-    expect(nextPollDelay(live, START + 20_000 - 1)).toBeGreaterThanOrEqual(250);
-    expect(nextPollDelay(live, START + 20_100)).toBe(2000);
+  it('never polls faster than the minimum, and does not hammer a stale snapshot', () => {
+    expect(nextPollDelay(live, START + 30_000 - 1)).toBeGreaterThanOrEqual(250);
+    // Just past the boundary and still no news: ask again quickly.
+    expect(nextPollDelay(live, START + 30_100)).toBe(250);
+    // Long past it (a stale snapshot, a clock estimate that is off): back to every 2 s.
+    expect(nextPollDelay(live, START + 33_000)).toBe(2000);
   });
 
   it('waits for the start in the lobby', () => {
@@ -184,10 +195,12 @@ describe('nextPollDelay', () => {
     expect(nextPollDelay(lobby, START - 1_000)).toBe(1300);
   });
 
-  it('keeps polling after the last round until "done" arrives, then gives up', () => {
-    const end = START + 120_000;
-    expect(nextPollDelay(live, end + 1_000)).toBe(2000);
-    expect(nextPollDelay(live, end + GIVE_UP_MS + 1)).toBeNull();
+  it('keeps polling after the last round until "done" arrives, then gives up after the longest finale', () => {
+    const ended = fightOf({ round: 12, nextRoundAt: null });
+    const end = START + 12 * 22_000;
+    expect(nextPollDelay(ended, end - 100_000)).toBe(2000);
+    expect(nextPollDelay(ended, end + 1_000)).toBe(2000);
+    expect(nextPollDelay(ended, end + GIVE_UP_MS + 1)).toBeNull();
   });
 });
 
@@ -225,12 +238,16 @@ describe('pickNewer', () => {
 });
 
 describe('progressText', () => {
-  it('counts the round and the time to the next one', () => {
+  it("counts the round and the time to the next one, from the server's schedule", () => {
     const fight = fightOf({ round: 3 });
     expect(progressText(fight, START + 25_000)).toEqual({
       headline: 'Round 3 of 12',
       countdown: 'Next round in 5s',
     });
+    // A shorter round counts down to its own end.
+    expect(progressText(fightOf({ nextRoundAt: START + 27_500 }), START + 25_000).countdown).toBe(
+      'Next round in 3s',
+    );
   });
 
   it('counts down to the start in the lobby', () => {
@@ -242,7 +259,7 @@ describe('progressText', () => {
   });
 
   it('says when it is the last round and when it is over', () => {
-    const last = fightOf({ round: 12 });
+    const last = fightOf({ round: 12, nextRoundAt: START + 120_000 });
     expect(progressText(last, START + 115_000)).toEqual({
       headline: 'Last round (12 of 12)',
       countdown: 'Ends in 5s',
@@ -251,6 +268,17 @@ describe('progressText', () => {
       headline: 'The fight is over',
       countdown: '',
     });
+  });
+
+  it('calls the round the boss has fallen in the last one, and says nothing without a next time', () => {
+    const fell = fightOf({ round: 5, bossHp: 0, nextRoundAt: START + 60_000 });
+    expect(progressText(fell, START + 55_000)).toEqual({
+      headline: 'Last round (5 of 12)',
+      countdown: 'Ends in 5s',
+    });
+    expect(progressText(fightOf({ round: 12, nextRoundAt: null }), START + 55_000).countdown).toBe(
+      '',
+    );
   });
 
   it('never shows a negative countdown', () => {

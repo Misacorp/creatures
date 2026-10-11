@@ -1,7 +1,21 @@
 import { RULES, content, createSeededRng, jackpotEssenceFor } from '@creatures/game';
-import { simulateFight, type FightEvent } from '@creatures/engine';
+import {
+  MAX_ROUND_MS,
+  MIN_ROUND_MS,
+  roundPlaybackMs,
+  simulateFight,
+  type FightEvent,
+} from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
-import { LIVE_ROUND_MS, PRACTICE_LOBBY_MS } from '../src/raid-live';
+import {
+  LIVE_ROUND_MS,
+  PACING_CONTENT,
+  PRACTICE_COOLDOWN_MS,
+  PRACTICE_LOBBY_MS,
+  evaluate,
+  loadLive,
+  roundStartsOf,
+} from '../src/raid-live';
 import type { LiveSnapshot } from '../src/raid-live-view';
 import { buildPhaseInput } from '../src/raid-resolve';
 import { eventTimes } from '../src/raid-schedule';
@@ -12,6 +26,7 @@ import liveDoneHit from '../../activity/src/fixtures/live-done-hit.json';
 import liveLobby from '../../activity/src/fixtures/live-lobby.json';
 import liveMid from '../../activity/src/fixtures/live-mid.json';
 import liveNone from '../../activity/src/fixtures/live-none.json';
+import livePaced from '../../activity/src/fixtures/live-paced.json';
 import collectionState from '../../activity/src/fixtures/collection-state.json';
 import raidAutofire from '../../activity/src/fixtures/raid-autofire.json';
 import raidFestival from '../../activity/src/fixtures/raid-festival.json';
@@ -82,8 +97,32 @@ const begin = (ctx: Ctx): void => {
   ctx.core.raid.runDue(HELSINKI);
   expect(count(ctx.sql, 'raid_live', 'practice = 0')).toBeGreaterThan(0);
 };
+/**
+ * The schedule of a party's stored fight (rounds are as long as their content, so the starts come
+ * from the fight itself): when each round starts and when the fight ends, with the abilities as
+ * stored now.
+ */
+const scheduleOf = (ctx: Ctx, party = 1, practice = false) => {
+  const row = loadLive(ctx.sql, W02.id, party, practice);
+  if (row === null) throw new Error('no stored fight');
+  return roundStartsOf(row, evaluate(row, ctx.clock.t).result);
+};
+/** `plus` ms after round `r` (1-based) starts. */
+const atRound = (ctx: Ctx, r: number, plus = 0, party = 1): void => {
+  ctx.clock.t = (scheduleOf(ctx, party).starts[r - 1] as number) + plus;
+};
+/** `plus` ms after the last round of the last real fight has played out. */
+const atEnd = (ctx: Ctx, plus = 0): void => {
+  const ends = rows<{ party: number }>(
+    ctx.sql,
+    'SELECT party FROM raid_live WHERE practice = 0',
+  ).map((r) => scheduleOf(ctx, r.party).endsAt);
+  ctx.clock.t = Math.max(...ends) + plus;
+};
 /** Within round `r` (1-based): one second after it starts. */
-const inRound = (ctx: Ctx, r: number): void => at(ctx, (r - 1) * ROUND + 1000);
+const inRound = (ctx: Ctx, r: number): void => {
+  atRound(ctx, r, 1000);
+};
 
 const snap = (ctx: Ctx, p: Seeded): LiveSnapshot => ctx.core.raid.liveSnapshot(p.id, HELSINKI);
 /** The engine alias of a party member (`m1`, ...). */
@@ -123,24 +162,107 @@ const err = (outcome: { ok: boolean } & Record<string, unknown>) =>
   outcome.ok ? 'ok' : `${String(outcome['status'])} ${String(outcome['error'])}`;
 
 describe('the live finale lifecycle', () => {
-  it('uses 15 second rounds for a new fight, and keeps the round length a stored fight started with', async () => {
-    expect(ROUND).toBe(15_000);
+  it('paces rounds by their content: each round starts when the one before has played out', async () => {
     await runRaid((ctx) => {
       const [a] = toFinale(ctx);
       const player = a as Seeded;
       begin(ctx);
-      expect(rows(ctx.sql, 'SELECT DISTINCT round_ms FROM raid_live')).toEqual([
-        { round_ms: 15_000 },
+      // A new fight stores the content pacing; `round_ms` only holds the upper bound of a round.
+      expect(rows(ctx.sql, 'SELECT DISTINCT round_ms, pacing FROM raid_live')).toEqual([
+        { round_ms: 22_000, pacing: PACING_CONTENT },
       ]);
-      // 12 rounds are 3 minutes.
-      expect(12 * ROUND).toBe(3 * MINUTE);
-      at(ctx, 25_000);
-      expect(snap(ctx, player)).toMatchObject({ roundMs: 15_000, round: 2 });
+      expect(ROUND).toBe(MAX_ROUND_MS);
+      // The longest finale is 12 rounds of 22 s: 4:24, inside the 5 minute cap.
+      expect(12 * ROUND).toBeLessThan(5 * MINUTE);
 
-      // A fight stored under the old 10 second rounds keeps them: the snapshot and the clock use the
-      // stored value, whatever the constant says now.
-      ctx.sql.exec('UPDATE raid_live SET round_ms = 10000');
-      expect(snap(ctx, player)).toMatchObject({ roundMs: 10_000, round: 3 });
+      let start = FINALE;
+      const lengths: number[] = [];
+      for (let r = 1; r <= ROUNDS; r++) {
+        ctx.clock.t = start;
+        const s = snap(ctx, player);
+        expect(s).toMatchObject({ status: 'live', round: r, roundMs: null });
+        expect(s.roundStarts).toHaveLength(r);
+        expect(s.roundStarts.at(-1)).toBe(start);
+        // The round's own length: the engine's pacing of its events, the same function the client plays by.
+        const length = roundPlaybackMs(s.events.filter((e) => e.round === r));
+        expect(length).toBeGreaterThanOrEqual(MIN_ROUND_MS);
+        expect(length).toBeLessThanOrEqual(MAX_ROUND_MS);
+        expect(s.nextRoundAt).toBe(start + length);
+        lengths.push(length);
+        // One millisecond before the next round it is still this one.
+        ctx.clock.t = start + length - 1;
+        expect(snap(ctx, player)).toMatchObject({ round: r, status: 'live' });
+        start += length;
+      }
+      // The snapshots agree on the starts of the rounds they share.
+      ctx.clock.t = start - 1;
+      const last = snap(ctx, player);
+      expect(last.roundStarts).toEqual(
+        lengths.map((_, i) => FINALE + lengths.slice(0, i).reduce((x, y) => x + y, 0)),
+      );
+      // The end is the end of round 12 plus its playback: 12 rounds are never under a minute and a
+      // quarter nor over 4:24.
+      expect(start - FINALE).toBeGreaterThanOrEqual(ROUNDS * MIN_ROUND_MS);
+      expect(start - FINALE).toBeLessThanOrEqual(ROUNDS * MAX_ROUND_MS);
+      expect(scheduleOf(ctx).endsAt).toBe(start);
+      expect(finaleRows(ctx)).toBe(0);
+      ctx.clock.t = start;
+      expect(snap(ctx, player)).toMatchObject({ status: 'done', nextRoundAt: null });
+      expect(finaleRows(ctx)).toBe(1);
+    });
+  });
+
+  it('keeps a fight stored before content pacing on its fixed round_ms schedule', async () => {
+    await runRaid((ctx) => {
+      const [a] = toFinale(ctx);
+      const player = a as Seeded;
+      begin(ctx);
+      // Make it a fight from before the change: no pacing version, 10 second rounds.
+      ctx.sql.exec('UPDATE raid_live SET pacing = 0, round_ms = 10000');
+      at(ctx, 25_000);
+      const s = snap(ctx, player);
+      expect(s).toMatchObject({ roundMs: 10_000, round: 3, nextRoundAt: FINALE + 30_000 });
+      expect(s.roundStarts).toEqual([FINALE, FINALE + 10_000, FINALE + 20_000]);
+      at(ctx, 120_000 - 1);
+      expect(snap(ctx, player)).toMatchObject({
+        round: 12,
+        status: 'live',
+        nextRoundAt: FINALE + 120_000,
+      });
+      expect(finaleRows(ctx)).toBe(0);
+      at(ctx, 120_000);
+      expect(snap(ctx, player)).toMatchObject({ status: 'done', nextRoundAt: null });
+      expect(finaleRows(ctx)).toBe(1);
+
+      // The column is added by migration 15 with the legacy value, so old rows are read as fixed.
+      expect(rows(ctx.sql, 'SELECT pacing FROM raid_live')).toEqual([{ pacing: 0 }]);
+    });
+  });
+
+  it('leaves the schedule alone when an ability is pressed: round r keeps its length', async () => {
+    await runRaid((ctx) => {
+      const players = toFinale(ctx);
+      const [a, b] = inOrder(ctx, players) as [Seeded, Seeded];
+      pick(ctx, a, 'rally');
+      pick(ctx, b, 'shield-wall');
+      begin(ctx);
+      const before = scheduleOf(ctx).starts;
+      const lengthOf = (r: number): number => {
+        const s = scheduleOf(ctx).starts;
+        return (s[r] as number) - (s[r - 1] as number);
+      };
+      const round2 = lengthOf(2) === undefined ? 0 : lengthOf(2);
+      inRound(ctx, 2);
+      expect(act(ctx, a, { action: 'fire' }).ok).toBe(true);
+      expect(act(ctx, b, { action: 'fire', zone: 'front' }).ok).toBe(true);
+      // The abilities fire in round 3: rounds 1 and 2 (and so the starts of rounds 1, 2 and 3) are unchanged.
+      const after = scheduleOf(ctx).starts;
+      expect(after.slice(0, 3)).toEqual(before.slice(0, 3));
+      expect(lengthOf(2)).toBe(round2);
+      // And the snapshot a moment later says the same.
+      expect(snap(ctx, a).roundStarts).toEqual(before.slice(0, 2));
+      atRound(ctx, 3, 1);
+      expect(snap(ctx, a).roundStarts).toEqual(before.slice(0, 3));
     });
   });
 
@@ -162,7 +284,9 @@ describe('the live finale lifecycle', () => {
         week: W02.id,
         party: 1,
         startsAt: FINALE,
-        roundMs: ROUND,
+        roundMs: null,
+        roundStarts: [],
+        nextRoundAt: FINALE,
         rounds: ROUNDS,
         round: 0,
         serverNow: FINALE - 4 * MINUTE,
@@ -205,12 +329,13 @@ describe('the live finale lifecycle', () => {
 
       // Rounds advance with the clock, and every snapshot extends the one before.
       let before = first.events;
+      const starts = scheduleOf(ctx).starts.map((t) => t - FINALE);
       for (const [offset, round] of [
-        [ROUND - 1, 1],
-        [ROUND, 2],
-        [2 * ROUND + 5000, 3],
-        [11 * ROUND, 12],
-        [12 * ROUND - 1, 12],
+        [(starts[1] as number) - 1, 1],
+        [starts[1] as number, 2],
+        [(starts[2] as number) + 5000, 3],
+        [starts[11] as number, 12],
+        [scheduleOf(ctx).endsAt - FINALE - 1, 12],
       ] as const) {
         at(ctx, offset);
         const s = snap(ctx, player);
@@ -229,7 +354,7 @@ describe('the live finale lifecycle', () => {
     await runRaid((ctx) => {
       const [a] = toFinale(ctx);
       begin(ctx);
-      at(ctx, 5 * ROUND);
+      atRound(ctx, 6);
       const live = snap(ctx, a as Seeded);
       expect(live.round).toBe(6);
       // A fresh object (nothing in memory) shows the same fight.
@@ -250,7 +375,7 @@ describe('the live finale lifecycle', () => {
       expect(err(ctx.core.raid.setAbility(b.id, HELSINKI, 'rally'))).toBe('409 locked');
       seen.push(act(ctx, a, { action: 'fire' }), act(ctx, b, { action: 'hold' }));
       seen.push(snap(ctx, b), ctx.core.raid.view(a.id, HELSINKI));
-      at(ctx, 12 * ROUND + 1);
+      atEnd(ctx, 1);
       seen.push(snap(ctx, a), snap(ctx, b));
       expect(finaleRows(ctx)).toBe(1);
       for (const response of seen) {
@@ -490,7 +615,7 @@ describe('Fire and Hold', () => {
       expect(err(act(ctx, b, { action: 'fire' }))).toBe('409 too_late');
       expect(err(act(ctx, b, { action: 'hold' }))).toBe('409 hold_too_late');
       expect(err(act(ctx, a, { action: 'fire' }))).toBe('409 too_late');
-      at(ctx, 12 * ROUND + 1);
+      atEnd(ctx, 1);
       expect(snap(ctx, b).status).toBe('done');
       expect(err(act(ctx, b, { action: 'fire' }))).toBe('409 too_late');
       expect(err(act(ctx, b, { action: 'hold' }))).toBe('409 hold_too_late');
@@ -503,9 +628,14 @@ describe('Fire and Hold', () => {
       const [a] = inOrder(ctx, players) as [Seeded, Seeded];
       pick(ctx, a, 'rally'); // default round 6: never reached
       begin(ctx);
-      expect(snap(ctx, a).status).toBe('done');
+      // The boss falls in round 1: that is the last round, so Fire is too late from its start on, and
+      // the fight is done once the round has played out.
+      expect(snap(ctx, a)).toMatchObject({ status: 'live', round: 1 });
       expect(err(act(ctx, a, { action: 'fire' }))).toBe('409 too_late');
       expect(err(act(ctx, a, { action: 'hold' }))).toBe('409 hold_too_late');
+      atEnd(ctx);
+      expect(snap(ctx, a).status).toBe('done');
+      expect(err(act(ctx, a, { action: 'fire' }))).toBe('409 too_late');
     });
   });
 
@@ -519,7 +649,7 @@ describe('Fire and Hold', () => {
       expect(err(act(ctx, a, { action: 'fire' }))).toBe('409 not_in_fight');
       at(ctx, 1000);
       expect(err(act(ctx, outsider, { action: 'fire' }))).toBe('409 not_in_fight');
-      expect(act(ctx, a, { action: 'fire' }).ok).toBe(true);
+      expect(err(act(ctx, a, { action: 'fire' }))).toBe('ok');
     });
   });
 
@@ -594,10 +724,18 @@ describe('the end of the fight', () => {
         expect(finaleRows(ctx)).toBe(0);
         expect(rng.drawn()).toBe(drawnBefore + 4); // only the seed, drawn when the fight started
 
+        // The boss falls in round 3, but the fight is over only when round 3 has played out.
         inRound(ctx, 3);
+        expect(snap(ctx, a)).toMatchObject({ status: 'live', round: 3 });
+        expect(finaleRows(ctx)).toBe(0);
+        expect(rng.drawn()).toBe(drawnBefore + 4);
+        atEnd(ctx, -1);
+        expect(snap(ctx, a).status).toBe('live');
+        atEnd(ctx);
         const done = snap(ctx, a);
         expect(done.status).toBe('done');
         expect(done.round).toBe(3);
+        expect(done.nextRoundAt).toBeNull();
         expect(done.bossHp).toBe(0);
         expect(done.events.at(-1)).toMatchObject({ t: 'round_end', round: 3, bossHp: 0 });
         expect(finaleRows(ctx)).toBe(1);
@@ -641,7 +779,7 @@ describe('the end of the fight', () => {
         // Reading again, later, changes nothing and draws nothing.
         const ledger = raidLedger(ctx.sql);
         const drawn = rng.drawn();
-        at(ctx, 12 * ROUND + 5000);
+        atEnd(ctx, 5000);
         expect(snap(ctx, a).events).toEqual(done.events);
         expect(snap(ctx, a).round).toBe(3);
         expect(finaleRows(ctx)).toBe(1);
@@ -658,10 +796,10 @@ describe('the end of the fight', () => {
       const [a] = inOrder(ctx, players) as [Seeded, Seeded];
       at(ctx, 0);
       expect(snap(ctx, a).status).toBe('live');
-      at(ctx, 12 * ROUND - 1);
+      atEnd(ctx, -1);
       expect(snap(ctx, a).status).toBe('live');
       expect(finaleRows(ctx)).toBe(0);
-      at(ctx, 12 * ROUND);
+      atEnd(ctx);
       const done = snap(ctx, a);
       expect(done).toMatchObject({ status: 'done', round: 12 });
       expect(finaleRows(ctx)).toBe(1);
@@ -692,8 +830,8 @@ describe('the end of the fight', () => {
       await ctx.core.alarm();
       expect(count(ctx.sql, 'raid_live')).toBe(1);
       expect(finaleRows(ctx)).toBe(0);
-      expect(await ctx.storage.getAlarm()).toBe(FINALE + 12 * ROUND);
-      at(ctx, 12 * ROUND);
+      expect(await ctx.storage.getAlarm()).toBe(scheduleOf(ctx).endsAt);
+      atEnd(ctx);
       await ctx.core.alarm();
       expect(finaleRows(ctx)).toBe(1);
       expect(count(ctx.sql, 'raid_results')).toBe(3);
@@ -711,6 +849,50 @@ describe('the end of the fight', () => {
     });
   });
 
+  it('arms the alarm at the end of the schedule, follows it when abilities change, and is idempotent', async () => {
+    await runRaid(async (ctx) => {
+      const players = toFinale(ctx);
+      const [a] = inOrder(ctx, players) as [Seeded, Seeded];
+      pick(ctx, a, 'rally');
+      at(ctx, 0);
+      await ctx.core.alarm();
+      const first = scheduleOf(ctx).endsAt;
+      expect(await ctx.storage.getAlarm()).toBe(first);
+      // Armed at the end of the whole schedule, which is well after the first round and inside the cap.
+      expect(first - FINALE).toBeGreaterThanOrEqual(ROUNDS * MIN_ROUND_MS);
+      expect(first - FINALE).toBeLessThanOrEqual(ROUNDS * MAX_ROUND_MS);
+
+      // A press changes later rounds, so the end may move; the alarm follows it, whatever it does.
+      inRound(ctx, 2);
+      expect(act(ctx, a, { action: 'fire' }).ok).toBe(true);
+      await ctx.core.alarm();
+      const second = scheduleOf(ctx).endsAt;
+      expect(await ctx.storage.getAlarm()).toBe(second);
+      // Setting it again changes nothing.
+      await ctx.core.alarm();
+      await ctx.core.ensureAlarm();
+      expect(await ctx.storage.getAlarm()).toBe(second);
+      expect(finaleRows(ctx)).toBe(0);
+      atEnd(ctx);
+      await ctx.core.alarm();
+      expect(finaleRows(ctx)).toBe(1);
+    });
+  });
+
+  it('arms the alarm at started_at + rounds * round_ms for a fight stored before content pacing', async () => {
+    await runRaid(async (ctx) => {
+      toFinale(ctx);
+      at(ctx, 0);
+      await ctx.core.alarm();
+      ctx.sql.exec('UPDATE raid_live SET pacing = 0, round_ms = 10000');
+      await ctx.core.alarm();
+      expect(await ctx.storage.getAlarm()).toBe(FINALE + 12 * 10_000);
+      at(ctx, 12 * 10_000);
+      await ctx.core.alarm();
+      expect(finaleRows(ctx)).toBe(1);
+    });
+  });
+
   it('also resolves on any request after the end, without an alarm', async () => {
     await runRaid(async (ctx) => {
       const players = toFinale(ctx);
@@ -719,7 +901,7 @@ describe('the end of the fight', () => {
       at(ctx, 0);
       await ctx.request(secret, '/api/me');
       expect(count(ctx.sql, 'raid_live')).toBe(1);
-      at(ctx, 12 * ROUND + 3 * MINUTE);
+      atEnd(ctx, 3 * MINUTE);
       // The session idled out in the meantime; a fresh one is a request like any other.
       const secret2 = await ctx.core.createSession(ctx.guildId, { id: a.id, displayName: a.name });
       await ctx.request(secret2, '/api/me');
@@ -743,7 +925,7 @@ describe('the end of the fight', () => {
         if (r === 1) act(ctx, b, { action: 'fire', zone: 'middle' }); // shield wall in round 2
         watched.push(snap(ctx, a));
       }
-      at(ctx, 12 * ROUND);
+      atEnd(ctx);
       const final = snap(ctx, a);
       expect(final.status).toBe('done');
 
@@ -787,7 +969,7 @@ describe('the end of the fight', () => {
       const players = toFinale(ctx);
       const [a] = inOrder(ctx, players) as [Seeded, Seeded];
       begin(ctx);
-      at(ctx, 12 * ROUND);
+      atEnd(ctx);
       snap(ctx, a);
       const stored = storedRuns(ctx.sql, W02.id).find((r) => r.phase === 'finale');
       expect(stored?.input.finaleAbilities).toEqual([
@@ -929,7 +1111,7 @@ describe('two parties', () => {
       expect(modes(2).some((m) => m !== 'default')).toBe(true);
       expect(modes(2).filter((m) => m !== 'default')).toHaveLength(1);
 
-      at(ctx, 12 * ROUND);
+      atEnd(ctx);
       expect(snap(ctx, a).status).toBe('done');
       expect(finaleRows(ctx)).toBe(1); // party 2 resolves on its own read or the alarm
       expect(snap(ctx, z).status).toBe('done');
@@ -945,7 +1127,7 @@ describe('two parties', () => {
       at(ctx, 0);
       await ctx.core.alarm();
       expect(count(ctx.sql, 'raid_live')).toBe(2);
-      at(ctx, 12 * ROUND);
+      atEnd(ctx);
       await ctx.core.alarm();
       expect(finaleRows(ctx)).toBe(2);
     });
@@ -1007,8 +1189,10 @@ describe('the loot reveal', () => {
         const revealOf = (p: Seeded) => ctx.core.raid.view(p.id, HELSINKI).you.reveal;
         at(ctx, -3 * MINUTE);
         expect(revealOf(a)).toBeNull();
-        // A did not watch: the fight resolves from a read by b only.
-        at(ctx, 0);
+        // A did not watch: the fight resolves from a read by b only, once its round has played out.
+        begin(ctx);
+        expect(snap(ctx, b).status).toBe('live');
+        atEnd(ctx);
         expect(snap(ctx, b).status).toBe('done');
         expect(finaleRows(ctx)).toBe(1);
 
@@ -1057,7 +1241,7 @@ describe('the loot reveal', () => {
       const players = toFinale(ctx);
       const [a] = inOrder(ctx, players) as [Seeded, Seeded];
       begin(ctx);
-      at(ctx, 12 * ROUND);
+      atEnd(ctx);
       snap(ctx, a);
       expect(ctx.core.raid.view(a.id, HELSINKI).you.reveal).toEqual({
         week: W02.id,
@@ -1083,6 +1267,9 @@ describe('the loot reveal', () => {
       const secret = await ctx.core.createSession(ctx.guildId, { id: a.id, displayName: a.name });
       at(ctx, 0);
       const get = async () => (await ctx.request(secret, '/api/raid')).json<RaidView>();
+      // The boss falls in round 1; nothing to reveal until that round has played out.
+      expect((await get()).you.reveal).toBeNull();
+      atEnd(ctx);
       expect((await get()).you.reveal?.week).toBe(W02.id);
       const post = (body: unknown) => ctx.request(secret, '/api/raid/reveal-seen', 'POST', body);
       expect((await post({ week: 'nope' })).status).toBe(400);
@@ -1242,7 +1429,12 @@ describe('the practice finale', () => {
         expect(JSON.parse(stored?.input ?? '{}')).toMatchObject({ adaptation: null });
 
         // It runs through the same endpoints, with the same rules.
-        ctx.clock.t = t0 + 2 * ROUND + 100;
+        // Practice is paced like the real thing: round 1 starts at t0, the rest by their content.
+        expect(first.roundStarts).toEqual([t0]);
+        expect(first.nextRoundAt).toBe(scheduleOf(ctx, 1, true).starts[1]);
+        expect(rows(ctx.sql, 'SELECT pacing FROM raid_live')).toEqual([{ pacing: PACING_CONTENT }]);
+        expect(scheduleOf(ctx, 1, true).starts[0]).toBe(t0);
+        ctx.clock.t = (scheduleOf(ctx, 1, true).starts[2] as number) + 100;
         const late = await ctx.request(secret, '/api/raid/live/action', 'POST', {
           key: 'm1:basic',
           action: 'hold',
@@ -1278,17 +1470,21 @@ describe('the practice finale', () => {
 
         const started = ctx.core.raid.startPractice(a.id, HELSINKI);
         expect(started.ok).toBe(true);
-        const t0 = ctx.clock.t + PRACTICE_LOBBY_MS;
         // The practice boss has full HP, whatever the real pool is.
         const first = started.ok ? started.value : null;
         expect(first?.boss.hpStart).toBe(first?.boss.hpMax);
         expect(first?.boss.hpMax).toBeGreaterThan(1);
 
         // Fire in practice.
-        ctx.clock.t = t0 + ROUND + 100;
+        ctx.clock.t = (scheduleOf(ctx, 1, true).starts[1] as number) + 100;
         expect(act(ctx, a, { action: 'fire' }).ok).toBe(true);
 
-        ctx.clock.t = t0 + 12 * ROUND;
+        // Even the longest practice fight (the lobby plus 12 rounds of 22 s) is over well inside its
+        // 10 minute window, so it never vanishes while it is still being watched.
+        expect(PRACTICE_LOBBY_MS + 12 * ROUND).toBeLessThan(PRACTICE_COOLDOWN_MS);
+        ctx.clock.t = scheduleOf(ctx, 1, true).endsAt - 1;
+        expect(snap(ctx, a).status).toBe('live');
+        ctx.clock.t = scheduleOf(ctx, 1, true).endsAt;
         const end = snap(ctx, a);
         expect(end).toMatchObject({ status: 'done', practice: true });
         expect(end.loot).toMatchObject({ essence: 0 });
@@ -1385,13 +1581,13 @@ describe('the practice finale', () => {
         const real = snap(ctx, a);
         expect(real).toMatchObject({ status: 'live', practice: false });
         expect(err(ctx.core.raid.startPractice(a.id, HELSINKI))).toBe('409 practice_blocked');
-        at(ctx, 12 * ROUND - 1);
+        atEnd(ctx, -1);
         expect(err(ctx.core.raid.startPractice(a.id, HELSINKI))).toBe('409 practice_blocked');
         expect(count(ctx.sql, 'raid_live', 'practice = 1')).toBe(1);
         expect(count(ctx.sql, 'raid_live', 'practice = 0')).toBe(1);
 
         // Resolved: practice is allowed again and then shown instead of the finished finale.
-        at(ctx, 12 * ROUND);
+        atEnd(ctx);
         expect(snap(ctx, a)).toMatchObject({ status: 'done', practice: false });
         expect(finaleRows(ctx)).toBe(1);
         const results = storedRuns(ctx.sql, W02.id).length;
@@ -1422,7 +1618,7 @@ describe('the engine and the stored fight agree', () => {
       act(ctx, a, { action: 'fire', element: 'tide' });
       inRound(ctx, 4);
       act(ctx, b, { action: 'hold' });
-      at(ctx, 12 * ROUND);
+      atEnd(ctx);
       const final = snap(ctx, a);
       const stored = storedRuns(ctx.sql, W02.id).find((r) => r.phase === 'finale');
       const seed = stored?.seed as string;
@@ -1454,10 +1650,12 @@ describe('the API contract with the client', () => {
     'events',
     'loot',
     'names',
+    'nextRoundAt',
     'party',
     'practice',
     'round',
     'roundMs',
+    'roundStarts',
     'rounds',
     'row',
     'serverNow',
@@ -1623,11 +1821,19 @@ describe('the API contract with the client', () => {
         expectShape(liveNone, 'fixture live-none');
         expectShape(liveLobby, 'fixture live-lobby');
         expectShape(liveMid, 'fixture live-mid');
+        expectShape(livePaced, 'fixture live-paced');
         expectShape(liveDoneHit, 'fixture live-done-hit');
         expectShape(actionFire, 'fixture action-fire');
 
-        // A fight that ends at once: both players see the end, each with their own loot.
+        // A fight that ends in its first round: both players see the end once that round has played
+        // out, each with their own loot.
         at(ctx, 0);
+        const running = await get(ctx, sa);
+        expectShape(running, 'live');
+        expect(running).toMatchObject({ status: 'live', roundMs: null, round: 1 });
+        expect((running['roundStarts'] as number[])[0]).toBe(FINALE);
+        expect(typeof running['nextRoundAt']).toBe('number');
+        atEnd(ctx);
         const done = await get(ctx, sa);
         expectShape(done, 'done');
         expect(done).toMatchObject({ status: 'done', practice: false, you: 'm1' });
@@ -2000,7 +2206,7 @@ describe('the API contract with the client', () => {
         expect(await send(sa, requestBodies['action-unhold-creature'])).toBe(200);
         expect(await send(sa, requestBodies['action-hold-creature'])).toBe(200);
         expect(await send(sa, requestBodies['action-fire-creature'])).toBe(200);
-        at(ctx, 12 * ROUND);
+        atEnd(ctx);
         expect(await send(sa, requestBodies['reveal-seen'])).toBe(200);
         // The week of the bodies is the week of these tests.
         expect(requestBodies['reveal-seen'].body.week).toBe(W02.id);
@@ -2185,7 +2391,7 @@ describe('Auto fire preferences', () => {
       expect(modes).toEqual(['held', 'default', 'held', 'default']);
 
       // Held abilities wait for the last round; the others fire at their default round.
-      at(ctx, 12 * ROUND - 1);
+      atEnd(ctx, -1);
       const end = snap(ctx, a);
       const defaults = new Map(end.abilities.map((x) => [x.key, x.defaultRound]));
       expect(firedRoundOf(end.events, 'm1:basic')).toBe(12);
@@ -2224,9 +2430,9 @@ describe('Auto fire preferences', () => {
       at(ctx, 0);
       expect(err(setAuto(ctx, a, 'basic', true))).toBe('409 locked');
       begin(ctx);
-      at(ctx, 5 * ROUND);
+      atRound(ctx, 6);
       expect(err(setAuto(ctx, a, c0, false))).toBe('409 locked');
-      at(ctx, 12 * ROUND);
+      atEnd(ctx);
       expect(err(setAuto(ctx, a, 'basic', true))).toBe('409 locked');
       // Nothing changed after the start: the stored preference is the one from before.
       expect(rows(ctx.sql, 'SELECT target, auto_fire FROM raid_autofire')).toEqual([
@@ -2405,7 +2611,7 @@ describe('creature abilities in the live finale', () => {
         for (const id of [...a.creatureIds, ...b.creatureIds]) expect(x.key).not.toContain(id);
       }
       // Every use fires on its own at its default round, and the events name the creature.
-      at(ctx, 8 * ROUND);
+      atRound(ctx, 9);
       const later = snap(ctx, a);
       const fired = later.events.filter(
         (e): e is Extract<FightEvent, { t: 'ability' }> => e.t === 'ability',
@@ -2437,7 +2643,7 @@ describe('creature abilities in the live finale', () => {
       const mine = snap(ctx, a).abilities.filter((x) => x.alias === 'm1');
       // The slot index follows the team, so the locked creature leaves a gap in the keys.
       expect(mine.map((x) => x.key)).toEqual(['m1:basic', 'm1:c0', 'm1:c2']);
-      at(ctx, 12 * ROUND);
+      atEnd(ctx);
       expect(snap(ctx, a).status).toBe('done');
       const run = storedRuns(ctx.sql, W02.id).find((r) => r.phase === 'finale');
       const stored = run?.input.finaleAbilities.filter((x) => x.playerId === 'm1');
@@ -2661,7 +2867,7 @@ describe('creature abilities in the live finale', () => {
           ['m1:basic', 'fired'],
           ['m2:basic', 'held'],
         ]);
-        at(ctx, 12 * ROUND);
+        atEnd(ctx);
         expect(snap(ctx, a).status).toBe('done');
         expect(finaleRows(ctx)).toBe(1);
         const run = storedRuns(ctx.sql, W02.id).find((r) => r.phase === 'finale');
@@ -2694,7 +2900,7 @@ describe('creature abilities in the live finale', () => {
         const s = snap(ctx, b);
         expect(s.status).toBe('live');
         expect(s.abilities.map((x) => x.key)).toEqual(['m1:basic', 'm2:basic']);
-        at(ctx, 12 * ROUND);
+        atEnd(ctx);
         expect(snap(ctx, a).status).toBe('done');
         expect(finaleRows(ctx)).toBe(1);
       });
@@ -2705,7 +2911,7 @@ describe('creature abilities in the live finale', () => {
         const players = toFinale(ctx, 2);
         const [a] = inOrder(ctx, players) as [Seeded, Seeded];
         begin(ctx);
-        at(ctx, 12 * ROUND);
+        atEnd(ctx);
         expect(snap(ctx, a).status).toBe('done');
         // Strip the keys and creature ids from the stored result, as old rows had them.
         const row = rows<{ input: string; result: string }>(

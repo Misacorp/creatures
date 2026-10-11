@@ -361,7 +361,7 @@ export function Live({
             mineIds={mineIds}
             names={stageNames}
             events={fight.events}
-            roundMs={fight.roundMs}
+
             hold={countdown !== null}
             abilities={{
               list: fight.abilities,

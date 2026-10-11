@@ -5,31 +5,28 @@
  *
  * A beat is one run of events that belong together, cut at the same places as the replay's steps
  * (`beatEnds`): a round opening with its abilities, one creature's turn with its hit, mark and
- * reaction, one boss attack, one boss gimmick. Each beat gets cues (what to show) and a stagger
- * (`ms`): how long after it starts the next beat starts. The stagger is not how long the effects
- * stay on screen. That is `stage-fx.ts` (a damage number floats for over a second, a crit for two),
- * and effects of one beat overlap the next beats. Anything that moves is only decoration: the state
+ * reaction, one boss attack, one boss gimmick. The timing of a beat (its stagger, its wind-up and the
+ * round's intro and tail) comes from the engine's `planRounds`, the same code the server paces the
+ * rounds with, so the stage and the clock cannot disagree. Each beat gets cues (what to show). The
+ * stagger is not how long the effects stay on screen. That is `stage-fx.ts` (a damage number floats
+ * for 2.5 seconds, a crit for 3), and effects of one beat overlap the next beats.
+ *
+ * A boss action (an attack, a zone hit, a strike on the strongest, a silence, a reflect) is shown in
+ * two steps. The beat's `windup` cues put red reticles on exactly the creatures it will hit, 600 ms
+ * before the hit; its `cues` then show the strike, with a label saying what it is and whom it hits. Anything that moves is only decoration: the state
  * after a beat (HP, the mark, who is knocked out, which zones are shielded) always comes from the
  * events themselves.
  */
-import { content } from '@creatures/game';
-import { zoneOfIndex, ZONES, type FightEvent, type Zone } from '@creatures/engine';
-import { beatEnds, stateAt, type StepState } from './replay';
-
-/** The stagger of a beat is at most `MAX_BEAT_MS`, and never below `MIN_BEAT_MS` (even when squeezed). */
-export const MAX_BEAT_MS = 700;
-export const MIN_BEAT_MS = 250;
-const BASE_BEAT_MS = 500;
-
-/** Extra stagger for the beats that carry something worth a second look. */
-const WEIGHT_MS = {
-  crit: 100,
-  burst: 100,
-  ability: 100,
-  ko: 100,
-  gimmick: 100,
-  banner: 100,
-} as const;
+import { content, type BossDef } from '@creatures/game';
+import {
+  planRounds,
+  zoneOfIndex,
+  ZONES,
+  type FightEvent,
+  type PlaybackOptions,
+  type Zone,
+} from '@creatures/engine';
+import { stateAt, type StepState } from './replay';
 
 export type FloatTone = 'hit' | 'hurt' | 'blocked' | 'buff';
 export type ZoneEffect = 'shield' | 'rally' | 'hit';
@@ -62,21 +59,54 @@ export type Cue =
     }
   | { kind: 'mark'; i: number; element: string }
   | { kind: 'ko'; i: number; creature: string }
-  | { kind: 'zone'; i: number; zone: Zone; effect: ZoneEffect; op: string | null }
+  | { kind: 'zone'; i: number; zone: Zone; effect: ZoneEffect }
   | { kind: 'shake'; i: number; zone: Zone }
   | { kind: 'ability'; i: number; ability: string; creature: string | null; player: string }
-  | { kind: 'gimmick'; i: number; gimmick: string; op: string }
+  | { kind: 'windup'; i: number; strike: BossStrike }
+  | { kind: 'strike'; i: number; strike: BossStrike }
   | { kind: 'silenced'; i: number; creature: string }
   | { kind: 'banner'; i: number; text: string };
+
+/** What the boss does. `reflect_armed` is the trap being set at the start of a round: it has no wind-up. */
+export type StrikeAction =
+  | 'attack'
+  | 'hit_zone'
+  | 'strike_highest_atk'
+  | 'silence_ends'
+  | 'reflect'
+  | 'reflect_armed'
+  | 'other';
+
+/** One boss action, read from the events of its beat. */
+export interface BossStrike {
+  action: StrikeAction;
+  /** The gimmick's content id (its name is in the fight's names); null for the plain attack. */
+  gimmick: string | null;
+  /** Exactly the creatures it hits or silences, in the order the events say. */
+  targets: readonly string[];
+  /** The zone a zone hit covers, or the zone of its first target; null if nobody was hit. */
+  zone: Zone | null;
+  /** Targets whose hit was stopped: a Shield Wall took it. */
+  blocked: readonly string[];
+  /** The creature a guard stepped in for (the guard is the target); null if no guard did. */
+  guarded: string | null;
+}
 
 export interface Beat {
   /** The events [from, to) of the log. */
   from: number;
   to: number;
   round: number;
+  /** What to show when the beat's events land (after the wind-up, if it has one). */
   cues: Cue[];
-  /** How long the beat lasts, in milliseconds. */
+  /** The telegraph shown during the wind-up: reticles on the targets of the boss action. */
+  windup: Cue[];
+  /** How long the wind-up lasts before the events land (0 for beats without a boss action). */
+  windupMs: number;
+  /** How long after the beat starts the next one starts, wind-up included. */
   ms: number;
+  /** How long "Round N" shows before this beat, when it opens a round; 0 otherwise. */
+  introMs: number;
 }
 
 // --- Visual randomness, without randomness ---
@@ -119,6 +149,149 @@ export function reactionElements(reactionId: string): readonly [string, string] 
 const abilityEffects = (abilityId: string) =>
   content.finaleAbilities.find((a) => a.id === abilityId)?.effects ?? [];
 
+// --- Boss actions ---
+
+const gimmickOf = (bossId: string | undefined, gimmickId: string) => {
+  const boss: BossDef | undefined =
+    bossId === undefined ? undefined : content.bosses.find((b) => b.id === bossId);
+  return (
+    boss?.gimmicks.find((g) => g.id === gimmickId) ??
+    content.bosses.flatMap((b) => b.gimmicks).find((g) => g.id === gimmickId)
+  );
+};
+
+/** The content id of the boss's reflect gimmick, for naming a reflected hit; null if it has none. */
+function reflectGimmick(bossId: string | undefined): string | null {
+  const boss = bossId === undefined ? undefined : content.bosses.find((b) => b.id === bossId);
+  return boss?.gimmicks.find((g) => g.op === 'reflect_first_reaction')?.id ?? null;
+}
+
+const KNOWN_ACTIONS: ReadonlySet<string> = new Set([
+  'hit_zone',
+  'strike_highest_atk',
+  'silence_ends',
+  'reflect_first_reaction',
+]);
+
+/**
+ * The boss actions in the events [from, to), each with the event index it starts at: a plain attack,
+ * a zone hit, a strike on the strongest creature, a silence, a reflected reaction, and the reflect
+ * trap being armed. The targets are read from the events themselves (whoever the engine hurt or
+ * silenced), so the telegraph shows exactly the affected creatures; only the zone of a zone hit comes
+ * from the boss's content (a zone whose creatures are all down still has its outline).
+ */
+export function strikesOf(
+  events: readonly FightEvent[],
+  from: number,
+  to: number,
+  rowIds: readonly string[],
+  bossId?: string,
+): { i: number; strike: BossStrike }[] {
+  const out: { i: number; strike: BossStrike }[] = [];
+  const end = Math.min(to, events.length);
+  for (let i = Math.max(0, from); i < end; i++) {
+    const e = events[i] as FightEvent;
+    if (e.t === 'boss_hit' && e.source === 'attack') {
+      out.push({
+        i,
+        strike: {
+          action: 'attack',
+          gimmick: null,
+          targets: [e.target],
+          zone: zoneOfCreature(rowIds, e.target),
+          blocked: e.shielded === true ? [e.target] : [],
+          guarded: e.from ?? null,
+        },
+      });
+    } else if (e.t === 'boss_hit' && e.source === 'reflect') {
+      out.push({
+        i,
+        strike: {
+          action: 'reflect',
+          gimmick: reflectGimmick(bossId),
+          targets: [e.target],
+          zone: zoneOfCreature(rowIds, e.target),
+          blocked: e.shielded === true ? [e.target] : [],
+          guarded: null,
+        },
+      });
+    } else if (e.t === 'gimmick') {
+      if (e.op === 'reflect_first_reaction') {
+        // The engine announces the trap twice a round (when it is armed and at the boss's turn): show it once.
+        const first = events.findIndex(
+          (x) => x.t === 'gimmick' && x.round === e.round && x.op === e.op,
+        );
+        if (first === i) {
+          out.push({
+            i,
+            strike: {
+              action: 'reflect_armed',
+              gimmick: e.gimmick,
+              targets: [],
+              zone: null,
+              blocked: [],
+              guarded: null,
+            },
+          });
+        }
+        continue;
+      }
+      const targets: string[] = [];
+      const blocked: string[] = [];
+      for (let k = i + 1; k < end; k++) {
+        const next = events[k] as FightEvent;
+        if (
+          next.t === 'gimmick' ||
+          next.t === 'turn' ||
+          next.t === 'skip' ||
+          next.t === 'round_end' ||
+          (next.t === 'boss_hit' && next.source === 'attack')
+        ) {
+          break;
+        }
+        if (next.t === 'boss_hit' && next.source === 'gimmick') {
+          if (!targets.includes(next.target)) targets.push(next.target);
+          if (next.shielded === true) blocked.push(next.target);
+        } else if (next.t === 'silence' && !targets.includes(next.creature)) {
+          targets.push(next.creature);
+        }
+      }
+      const def = gimmickOf(bossId, e.gimmick);
+      const zone =
+        def?.op === 'hit_zone'
+          ? def.zone
+          : targets[0] === undefined
+            ? null
+            : zoneOfCreature(rowIds, targets[0]);
+      out.push({
+        i,
+        strike: {
+          action: KNOWN_ACTIONS.has(e.op) ? (e.op as StrikeAction) : 'other',
+          gimmick: e.gimmick,
+          targets,
+          zone,
+          blocked,
+          guarded: null,
+        },
+      });
+    }
+  }
+  return out;
+}
+
+/** The telegraph of the boss actions in [from, to): a reticle cue for each (the trap being armed has none). */
+export function windupCuesForEvents(
+  events: readonly FightEvent[],
+  from: number,
+  to: number,
+  rowIds: readonly string[],
+  bossId?: string,
+): Cue[] {
+  return strikesOf(events, from, to, rowIds, bossId)
+    .filter(({ strike }) => strike.action !== 'reflect_armed')
+    .map(({ i, strike }): Cue => ({ kind: 'windup', i, strike }));
+}
+
 /**
  * The cues of the events [from, to). `rowIds` is the row, left to right (it decides which zone a
  * creature is in). Events that show nothing (the end of a round, an adaptation) give no cue; the
@@ -129,6 +302,7 @@ export function cuesForEvents(
   from: number,
   to: number,
   rowIds: readonly string[],
+  bossId?: string,
 ): Cue[] {
   const cues: Cue[] = [];
   const end = Math.min(to, events.length);
@@ -167,10 +341,9 @@ export function cuesForEvents(
         });
         for (const effect of abilityEffects(e.ability)) {
           if (effect.op === 'shield_wall' && e.zone !== undefined) {
-            cues.push({ kind: 'zone', i, zone: e.zone, effect: 'shield', op: null });
+            cues.push({ kind: 'zone', i, zone: e.zone, effect: 'shield' });
           } else if (effect.op === 'rally') {
-            for (const zone of ZONES)
-              cues.push({ kind: 'zone', i, zone, effect: 'rally', op: null });
+            for (const zone of ZONES) cues.push({ kind: 'zone', i, zone, effect: 'rally' });
           }
         }
         break;
@@ -206,22 +379,6 @@ export function cuesForEvents(
           reflected: e.reflected,
         });
         break;
-      case 'gimmick': {
-        cues.push({ kind: 'gimmick', i, gimmick: e.gimmick, op: e.op });
-        if (e.op === 'hit_zone' || e.op === 'strike_highest_atk') {
-          // The zone it hit is the zone of the first creature the gimmick hurt.
-          for (let k = i + 1; k < end; k++) {
-            const next = events[k] as FightEvent;
-            if (next.t === 'gimmick' || next.t === 'turn' || next.t === 'round_end') break;
-            if (next.t === 'boss_hit' && next.source === 'gimmick') {
-              const zone = zoneOf(next.target);
-              if (zone !== null) cues.push({ kind: 'zone', i, zone, effect: 'hit', op: e.op });
-              break;
-            }
-          }
-        }
-        break;
-      }
       case 'boss_hit': {
         const zone = zoneOf(e.target);
         cues.push({ kind: 'flash', i, target: e.target });
@@ -236,7 +393,7 @@ export function cuesForEvents(
         });
         if (zone !== null) {
           cues.push({ kind: 'shake', i, zone });
-          if (e.shielded === true) cues.push({ kind: 'zone', i, zone, effect: 'shield', op: null });
+          if (e.shielded === true) cues.push({ kind: 'zone', i, zone, effect: 'shield' });
         }
         break;
       }
@@ -250,69 +407,51 @@ export function cuesForEvents(
         break;
     }
   }
+  for (const { i, strike } of strikesOf(events, from, to, rowIds, bossId)) {
+    cues.push({ kind: 'strike', i, strike });
+    // A zone hit is a shockwave over the whole row of its zone.
+    if (strike.action === 'hit_zone' && strike.zone !== null) {
+      cues.push({ kind: 'zone', i, zone: strike.zone, effect: 'hit' });
+    }
+  }
   return cues;
 }
 
 // --- Beats ---
 
 /**
- * The stagger of a beat: how long after it starts the next one starts. A plain turn gets 500 ms, a
- * crit, a reaction, an ability, a knockout or a gimmick a little more, 700 ms at most. A beat with
- * nothing to show takes the minimum.
- */
-export function beatMs(cues: readonly Cue[]): number {
-  if (cues.length === 0) return MIN_BEAT_MS;
-  let ms = BASE_BEAT_MS;
-  const has = (match: (c: Cue) => boolean): boolean => cues.some(match);
-  if (has((c) => c.kind === 'float' && c.crit)) ms += WEIGHT_MS.crit;
-  if (has((c) => c.kind === 'burst')) ms += WEIGHT_MS.burst;
-  if (has((c) => c.kind === 'ability')) ms += WEIGHT_MS.ability;
-  if (has((c) => c.kind === 'ko')) ms += WEIGHT_MS.ko;
-  if (has((c) => c.kind === 'gimmick')) ms += WEIGHT_MS.gimmick;
-  if (has((c) => c.kind === 'banner')) ms += WEIGHT_MS.banner;
-  return Math.min(MAX_BEAT_MS, ms);
-}
-
-/**
- * The beats that cover the events from index `from` to the end of the log, in order. The first beat
- * may be a partial one (when `from` is inside a beat).
+ * The beats that cover the events from index `from` to the end of the log, in order, with the timing
+ * the engine plans for them (`options` picks the intro and the replay speed). The first beat may be
+ * a partial one (when `from` is inside a beat); it has no wind-up and no intro then.
  */
 export function buildBeats(
   events: readonly FightEvent[],
   from: number,
   rowIds: readonly string[],
+  bossId?: string,
+  options: PlaybackOptions = {},
 ): Beat[] {
   const beats: Beat[] = [];
-  let start = Math.max(0, from);
-  for (const end of beatEnds(events)) {
-    if (end <= start) continue;
-    const cues = cuesForEvents(events, start, end, rowIds);
-    beats.push({
-      from: start,
-      to: end,
-      round: (events[start] as FightEvent).round,
-      cues,
-      ms: beatMs(cues),
+  const first = Math.max(0, from);
+  for (const plan of planRounds(events, options)) {
+    plan.beats.forEach((b, k) => {
+      if (b.to <= first) return;
+      const start = Math.max(b.from, first);
+      const whole = start === b.from;
+      beats.push({
+        from: start,
+        to: b.to,
+        round: (events[start] as FightEvent).round,
+        cues: cuesForEvents(events, start, b.to, rowIds, bossId),
+        windup:
+          whole && b.windupMs > 0 ? windupCuesForEvents(events, start, b.to, rowIds, bossId) : [],
+        windupMs: whole ? b.windupMs : 0,
+        ms: b.ms,
+        introMs: whole && k === 0 ? plan.introMs : 0,
+      });
     });
-    start = end;
   }
   return beats;
-}
-
-/**
- * Squeezes the staggers so that every beat but the last starts within `budgetMs` of the first
- * (the last beat's own stagger has no next beat to wait for). Staggers shrink in proportion and never
- * go below the minimum, so a round with very many beats can still overrun its budget; the stage then
- * simply skips to the newest round when the next one arrives.
- */
-export function fitBeats(beats: readonly Beat[], budgetMs: number): Beat[] {
-  const last = beats.length - 1;
-  const total = beats.reduce((sum, b, k) => (k < last ? sum + b.ms : sum), 0);
-  if (total <= budgetMs || total === 0) return [...beats];
-  const scale = Math.max(0, budgetMs) / total;
-  return beats.map((b, k) =>
-    k < last ? { ...b, ms: Math.max(MIN_BEAT_MS, Math.floor(b.ms * scale)) } : b,
-  );
 }
 
 /** The start time of every beat, in ms from the first beat's start. */

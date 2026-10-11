@@ -12,8 +12,8 @@ Status: **direction agreed with Misa 2026-10-11** (style sample: `docs/design/as
 3. **Element colours are never status colours.**
    - Each element always shows with its **icon** (Tide, Ember, Grove, Spark) next to its colour.
    - Good and bad states use their own colours (green and red) and shapes (check, cross, arrows).
-4. **Motion is short, stepped and optional.**
-   - Animations use `steps()` timing for a pixel feel. Small movements (hops, flashes) last at most about 600 ms; the effects players have to read (numbers, crits, reactions, abilities) stay for 1 to 2 seconds.
+4. **Motion is short and optional, stepped where it is a sprite and smooth where it is a read.**
+   - Sprite hops, flashes and shakes use `steps()` timing for a pixel feel and last at most about 600 ms. The effects players have to read (floating numbers, fades, bursts, scale pops) use smooth easing on `transform` and `opacity` only, and stay for 1.5 to 3 seconds (`m5-finale.md`, "Playback").
    - Nothing important is shown only through motion.
    - `prefers-reduced-motion` turns animations into instant state changes.
 5. **Phones are first-class.** Everything works at 360 px wide and by touch.
@@ -56,10 +56,11 @@ Status: **direction agreed with Misa 2026-10-11** (style sample: `docs/design/as
   - **Boss card:** boss sprite, rank tag, HP bar, element and turn-order icon, gimmicks shown as icons with short labels.
   - **Placement:** the row as a strip of slots by zone (front, middle, back), with sprites. **Drag and drop [Misa]** uses pointer events, so it works with mouse and touch. It has a ghost image while dragging, valid and invalid drop highlights, auto-scroll at the strip's edges, and a swap when dropping on your own creature. Tap-to-select-then-tap-slot and keyboard (arrow keys plus Enter) remain as alternatives. The server still validates every move.
   - **Live finale and replay:** a stage with the boss sprite, the row of sprites and the round timer.
-    - Hits flash the target and float a damage number (1.3 s); crits float a bigger gold "CRITICAL!" (2 s).
-    - Reactions burst in the element colours with the reaction's name in big letters (1.5 s).
-    - Ability cards show the creature's name and the ability (1.5 s) and an effect over the affected zone.
-    - Every live round opens with a big "Round N" for 3 seconds (1.5 s in replays). Effects overlap the following beats so combos and crits can be read; see `m5-finale.md`, "Playback".
+    - Hits flash the target and float a damage number that keeps rising (2.5 s); crits float a bigger gold "CRITICAL!" (3 s).
+    - Reactions burst in the element colours with the reaction's name in big letters (2.5 s).
+    - Ability cards show the creature's name and the ability (2 s) and an effect over the affected zone.
+    - Boss attacks are telegraphed: red reticles on the targets 600 ms before the hit, a beam or shockwave and a label ("Undertow · whole FRONT row"), and a forecast of what the boss does next round.
+    - Every live round opens with a big "Round N" for 1.5 seconds (1 s in replays). Effects overlap the following beats so combos and crits can be read; see `m5-finale.md`, "Playback".
     - The text log is behind a "Log" toggle.
   - **Loot reveal:** a stepped orb animation, Essence counting up as one figure. No jackpot or pity cue: the jackpot is hidden from players **[Misa]**.
 
