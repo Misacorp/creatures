@@ -31,6 +31,7 @@ import { emptySnapshot, liveSnapshot, type LiveContext, type LiveSnapshot } from
 import { queueBossReveal } from './raid-posts';
 import { resolveParty } from './raid-resolve';
 import { markRevealSeen } from './raid-reveal';
+import { readStats, type AfterActionStats } from './raid-stats';
 import {
   buildRaidView,
   buildReplayView,
@@ -765,6 +766,11 @@ export class Raid {
   /** A resolved phase's stored events, or null if it has not resolved. */
   replay(userId: string, weekId: string, party: number, phase: RaidPhase): ReplayView | null {
     return buildReplayView(this.sql, userId, weekId, party, phase);
+  }
+
+  /** The after-action stats of a resolved stage, for a member of that fight; null otherwise. */
+  stats(userId: string, weekId: string, party: number, phase: RaidPhase): AfterActionStats | null {
+    return readStats(this.sql, userId, weekId, party, phase, displayNames(this.sql));
   }
 
   /** Event times of a week in the guild's timezone. */

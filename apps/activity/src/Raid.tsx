@@ -1,6 +1,7 @@
 import { RULES } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { AbilityPicker } from './AbilityPicker';
+import { AfterAction } from './AfterAction';
 import { ApiError, type Creature } from './api';
 import { clockOffset, creatureName, errorText, speciesName } from './game';
 import { useNow } from './hooks';
@@ -66,7 +67,12 @@ export function Raid({
   const [selected, setSelected] = useState<Selection>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [picking, setPicking] = useState<string[] | null>(null);
-  const [replay, setReplay] = useState<RaidPhaseId | null>(null);
+  /** The replay on screen: the week and party come from the result or reveal it was opened from. */
+  const [replay, setReplay] = useState<{
+    week: string;
+    party: number;
+    phase: RaidPhaseId;
+  } | null>(null);
   const [liveOpen, setLiveOpen] = useState(false);
   const [liveInitial, setLiveInitial] = useState<LiveSnapshot | null>(null);
   const [practiceGone, setPracticeGone] = useState(false);
@@ -235,15 +241,20 @@ export function Raid({
         onRevealSeen={(week) => {
           markRevealSeen(week).then(apply, () => undefined);
         }}
+        onReplay={(week, partyNumber) => {
+          closeLive();
+          setReplay({ week, party: partyNumber, phase: 'finale' });
+        }}
       />
     );
   }
 
-  if (replay !== null && party !== null) {
+  if (replay !== null) {
     return (
       <Replay
-        view={view}
-        phase={replay}
+        weekId={replay.week}
+        party={replay.party}
+        phase={replay.phase}
         onClose={() => {
           setReplay(null);
         }}
@@ -269,6 +280,13 @@ export function Raid({
           reveal={reveal}
           pity={null}
           busy={busy}
+          afterAction={{
+            week: reveal.week,
+            party: reveal.party,
+            onReplay: () => {
+              setReplay({ week: reveal.week, party: reveal.party, phase: 'finale' });
+            },
+          }}
           onDismiss={() => {
             void mutate(() => markRevealSeen(reveal.week)).then((ok) => {
               if (ok) onBalanceChange();
@@ -437,8 +455,10 @@ export function Raid({
                 <ResultCard
                   key={result.phase}
                   result={result}
+                  week={view.weekId}
+                  party={party.party}
                   onReplay={() => {
-                    setReplay(result.phase);
+                    setReplay({ week: view.weekId, party: party.party, phase: result.phase });
                   }}
                 />
               ))}
@@ -609,7 +629,17 @@ function PartyRow({
   );
 }
 
-function ResultCard({ result, onReplay }: { result: PhaseResultView; onReplay: () => void }) {
+function ResultCard({
+  result,
+  week,
+  party,
+  onReplay,
+}: {
+  result: PhaseResultView;
+  week: string;
+  party: number;
+  onReplay: () => void;
+}) {
   return (
     <li class="card-item">
       <h4>
@@ -619,32 +649,10 @@ function ResultCard({ result, onReplay }: { result: PhaseResultView; onReplay: (
         </span>
       </h4>
       <p>
-        Boss HP left: {result.bossHpEnd} / {result.bossHpMax}
-      </p>
-      <progress class="hp-bar" max={result.bossHpMax} value={result.bossHpEnd} />
-      <p>Reactions: {result.reactions}</p>
-      {result.top.length > 0 && (
-        <>
-          <p class="muted">Top contributors</p>
-          <ol class="plain-list">
-            {result.top.map((t, index) => (
-              <li key={index}>
-                {t.displayName}
-                {t.you && <span class="badge you-badge">you</span>} {t.damage} damage
-              </li>
-            ))}
-          </ol>
-        </>
-      )}
-      <p>
         Essence you got: <strong>{result.essence}</strong>
       </p>
       {result.jackpot.length > 0 && <p class="badge first">Jackpot: {result.jackpot.join(', ')}</p>}
-      <p>
-        <button type="button" onClick={onReplay}>
-          Watch replay
-        </button>
-      </p>
+      <AfterAction week={week} party={party} phase={result.phase} onReplay={onReplay} />
     </li>
   );
 }

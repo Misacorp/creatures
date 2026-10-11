@@ -1,0 +1,326 @@
+{
+  "phase": "finale",
+  "outcome": "missed",
+  "close": false,
+  "rounds": 12,
+  "maxRounds": 12,
+  "boss": {
+    "hpMax": 1000000,
+    "hpStart": 969290,
+    "hpEnd": 949731,
+    "leftBp": 9497,
+    "needed": 1000000,
+    "lost": 50269
+  },
+  "players": [
+    {
+      "displayName": "Eli",
+      "you": false,
+      "damage": 4757,
+      "contribution": 5108
+    },
+    {
+      "displayName": "Cy",
+      "you": false,
+      "damage": 2773,
+      "contribution": 3347
+    },
+    {
+      "displayName": "Dee",
+      "you": false,
+      "damage": 2739,
+      "contribution": 3272
+    },
+    {
+      "displayName": "Misa",
+      "you": false,
+      "damage": 2647,
+      "contribution": 4297
+    },
+    {
+      "displayName": "Bob",
+      "you": true,
+      "damage": 2022,
+      "contribution": 3535
+    }
+  ],
+  "creatures": [
+    {
+      "rank": 1,
+      "name": "Mossback",
+      "species": "mossback",
+      "owner": "Eli",
+      "you": false,
+      "damage": 2775,
+      "contribution": 2888
+    },
+    {
+      "rank": 2,
+      "name": "Ashmole",
+      "species": "ashmole",
+      "owner": "Cy",
+      "you": false,
+      "damage": 1478,
+      "contribution": 1654
+    },
+    {
+      "rank": 3,
+      "name": "Stormray",
+      "species": "stormray",
+      "owner": "Eli",
+      "you": false,
+      "damage": 1333,
+      "contribution": 1333
+    },
+    {
+      "rank": 4,
+      "name": "Cindle",
+      "species": "cindle",
+      "owner": "Misa",
+      "you": false,
+      "damage": 1222,
+      "contribution": 1908
+    },
+    {
+      "rank": 5,
+      "name": "Mistnewt",
+      "species": "mistnewt",
+      "owner": "Dee",
+      "you": false,
+      "damage": 1217,
+      "contribution": 1329
+    },
+    {
+      "rank": 6,
+      "name": "Zipmouse",
+      "species": "zipmouse",
+      "owner": "Bob",
+      "you": true,
+      "damage": 939,
+      "contribution": 2452
+    },
+    {
+      "rank": 13,
+      "name": "Sproutle",
+      "species": "sproutle",
+      "owner": "Bob",
+      "you": true,
+      "damage": 559,
+      "contribution": 559
+    },
+    {
+      "rank": 15,
+      "name": "Mistnewt",
+      "species": "mistnewt",
+      "owner": "Bob",
+      "you": true,
+      "damage": 524,
+      "contribution": 524
+    }
+  ],
+  "reactions": [
+    {
+      "name": "Grounding",
+      "count": 13,
+      "reflected": 0
+    },
+    {
+      "name": "Wildfire",
+      "count": 10,
+      "reflected": 0
+    },
+    {
+      "name": "Steam",
+      "count": 9,
+      "reflected": 0
+    },
+    {
+      "name": "Overload",
+      "count": 2,
+      "reflected": 0
+    }
+  ],
+  "reactionsTotal": 34,
+  "abilities": {
+    "used": [
+      {
+        "player": "Bob",
+        "you": true,
+        "ability": "Purge",
+        "creature": null,
+        "round": 2,
+        "byDefault": true
+      },
+      {
+        "player": "Eli",
+        "you": false,
+        "ability": "Mossy Bloom",
+        "creature": "Mossback",
+        "round": 3,
+        "byDefault": true
+      },
+      {
+        "player": "Dee",
+        "you": false,
+        "ability": "Shield Wall",
+        "creature": null,
+        "round": 3,
+        "byDefault": true
+      },
+      {
+        "player": "Dee",
+        "you": false,
+        "ability": "Fog Veil",
+        "creature": "Mistnewt",
+        "round": 3,
+        "byDefault": true
+      },
+      {
+        "player": "Misa",
+        "you": false,
+        "ability": "Bark Guard",
+        "creature": "Sproutle",
+        "round": 3,
+        "byDefault": true
+      },
+      {
+        "player": "Cy",
+        "you": false,
+        "ability": "Shield Wall",
+        "creature": null,
+        "round": 3,
+        "byDefault": true
+      },
+      {
+        "player": "Cy",
+        "you": false,
+        "ability": "Fog Veil",
+        "creature": "Mistnewt",
+        "round": 3,
+        "byDefault": true
+      },
+      {
+        "player": "Bob",
+        "you": true,
+        "ability": "Fog Veil",
+        "creature": "Mistnewt",
+        "round": 3,
+        "byDefault": true
+      },
+      {
+        "player": "Bob",
+        "you": true,
+        "ability": "Bark Guard",
+        "creature": "Sproutle",
+        "round": 3,
+        "byDefault": true
+      },
+      {
+        "player": "Eli",
+        "you": false,
+        "ability": "Thunder Strike",
+        "creature": "Stormray",
+        "round": 4,
+        "byDefault": true
+      },
+      {
+        "player": "Dee",
+        "you": false,
+        "ability": "Thunder Strike",
+        "creature": "Stormray",
+        "round": 4,
+        "byDefault": true
+      },
+      {
+        "player": "Misa",
+        "you": false,
+        "ability": "Re-mark",
+        "creature": null,
+        "round": 4,
+        "byDefault": true
+      },
+      {
+        "player": "Misa",
+        "you": false,
+        "ability": "Static Zap",
+        "creature": "Zipmouse",
+        "round": 4,
+        "byDefault": true
+      },
+      {
+        "player": "Cy",
+        "you": false,
+        "ability": "Static Zap",
+        "creature": "Zipmouse",
+        "round": 4,
+        "byDefault": true
+      },
+      {
+        "player": "Bob",
+        "you": true,
+        "ability": "Static Zap",
+        "creature": "Zipmouse",
+        "round": 4,
+        "byDefault": true
+      },
+      {
+        "player": "Eli",
+        "you": false,
+        "ability": "Warm Glow",
+        "creature": "Ashmole",
+        "round": 5,
+        "byDefault": true
+      },
+      {
+        "player": "Dee",
+        "you": false,
+        "ability": "Warm Glow",
+        "creature": "Ashmole",
+        "round": 5,
+        "byDefault": true
+      },
+      {
+        "player": "Misa",
+        "you": false,
+        "ability": "Flare Strike",
+        "creature": "Cindle",
+        "round": 5,
+        "byDefault": true
+      },
+      {
+        "player": "Cy",
+        "you": false,
+        "ability": "Warm Glow",
+        "creature": "Ashmole",
+        "round": 5,
+        "byDefault": true
+      },
+      {
+        "player": "Eli",
+        "you": false,
+        "ability": "Rally",
+        "creature": null,
+        "round": 6,
+        "byDefault": true
+      }
+    ],
+    "unused": 0
+  },
+  "knockouts": [
+    {
+      "creature": "Stormray",
+      "species": "stormray",
+      "owner": "Dee",
+      "you": false,
+      "round": 7
+    }
+  ],
+  "adaptation": {
+    "name": "Element Resistance",
+    "target": "Grove",
+    "resistBp": 2500,
+    "purged": true,
+    "purgedRound": 2,
+    "restoredRound": 6
+  }
+}

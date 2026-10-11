@@ -7,6 +7,8 @@ import type { StoredSummary } from './raid-resolve';
 
 export interface RevealView {
   week: string;
+  /** The caller's party in that finale: with `week`, the key of the after-action stats. */
+  party: number;
   cleared: boolean;
   /** The Essence the finale paid the player (not counting a jackpot). */
   essence: number;
@@ -39,12 +41,12 @@ function finalesOf(
   sql: SqlStorage,
   userId: string,
   limit = Number.POSITIVE_INFINITY,
-): { weekId: string; summary: StoredSummary }[] {
-  const out: { weekId: string; summary: StoredSummary }[] = [];
+): { weekId: string; party: number; summary: StoredSummary }[] {
+  const out: { weekId: string; party: number; summary: StoredSummary }[] = [];
   // The text match only narrows the rows; the parsed member list decides.
   const rows = sql
-    .exec<{ week_id: string; summary: string }>(
-      `SELECT week_id, summary FROM raid_results
+    .exec<{ week_id: string; party: number; summary: string }>(
+      `SELECT week_id, party, summary FROM raid_results
        WHERE phase = 'finale' AND instr(summary, ?) > 0
        ORDER BY created_at DESC, rowid DESC`,
       `"userId":"${userId}"`,
@@ -53,7 +55,7 @@ function finalesOf(
   for (const r of rows) {
     const summary = JSON.parse(r.summary) as StoredSummary;
     if (summary.members.some((m) => m.userId === userId)) {
-      out.push({ weekId: r.week_id, summary });
+      out.push({ weekId: r.week_id, party: r.party, summary });
       if (out.length >= limit) break;
     }
   }
@@ -74,6 +76,7 @@ export function latestReveal(sql: SqlStorage, userId: string): RevealView | null
   const { summary } = latest;
   return {
     week: latest.weekId,
+    party: latest.party,
     cleared: summary.cleared,
     essence: summary.essence[userId] ?? 0,
     jackpot: jackpotOf(sql, userId, latest.weekId, summary),

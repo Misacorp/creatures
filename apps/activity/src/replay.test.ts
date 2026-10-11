@@ -8,7 +8,7 @@ import {
   keyMoments,
   mineInRow,
   personalRecap,
-  recapHint,
+  recapNotes,
   stateAt,
   stepDelayMs,
   turnOrderOfRound,
@@ -357,21 +357,19 @@ describe('personalRecap', () => {
     expect(recap.setupCredit).toBe(0);
   });
 
-  it('gives the hint for a team that set up nothing', () => {
+  it('states that a team set up nothing, without advice', () => {
     const recap = personalRecap(events, row, ['b']);
-    expect(recap.hint).toBe(
-      'None of your creatures set up a reaction. Try a Setter right before a Payoff in the turn order.',
-    );
+    expect(recap.notes).toContain('None of your creatures set up a reaction.');
   });
 
   it('handles a player who had no creatures in the fight', () => {
     const recap = personalRecap(events, row, []);
     expect(recap.creatures).toEqual([]);
-    expect(recap.hint).toBe('None of your creatures were in this fight.');
+    expect(recap.notes).toEqual(['None of your creatures were in this fight.']);
   });
 });
 
-describe('recapHint', () => {
+describe('recapNotes', () => {
   const base = {
     id: 'a',
     name: 'Alpha',
@@ -384,18 +382,30 @@ describe('recapHint', () => {
     knockedOutRound: null,
   };
 
-  it('warns about wasted setups, with plurals', () => {
-    expect(recapHint([{ ...base, wasted: 1 }])).toContain('1 of your setups was overwritten');
-    expect(recapHint([{ ...base, wasted: 2 }])).toContain('2 of your setups were overwritten');
+  it('counts wasted setups, with plurals', () => {
+    expect(recapNotes([{ ...base, wasted: 1 }])).toEqual([
+      '1 of your setups was overwritten before anyone cashed it in.',
+    ]);
+    expect(recapNotes([{ ...base, wasted: 2 }])).toEqual([
+      '2 of your setups were overwritten before anyone cashed them in.',
+    ]);
   });
 
-  it('mentions a knockout when nothing else applies', () => {
-    expect(recapHint([{ ...base, knockedOutRound: 4 }])).toContain(
-      'Alpha was knocked out in round 4',
-    );
+  it('says when a creature was knocked out', () => {
+    expect(recapNotes([{ ...base, knockedOutRound: 4 }])).toEqual([
+      'Alpha was knocked out in round 4.',
+    ]);
   });
 
-  it('is encouraging when all went well', () => {
-    expect(recapHint([base])).toContain('paid off');
+  it('has nothing to say when all went well', () => {
+    expect(recapNotes([base])).toEqual([]);
+  });
+
+  it('never gives advice', () => {
+    const everything = recapNotes([
+      { ...base, setups: 0, wasted: 3, knockedOutRound: 2 },
+      { ...base, id: 'b', name: 'Beta' },
+    ]).join(' ');
+    expect(everything).not.toMatch(/\b(try|should|put|consider|better|instead)\b/i);
   });
 });

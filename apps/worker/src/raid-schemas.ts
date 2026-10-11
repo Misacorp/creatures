@@ -24,7 +24,7 @@ export const OptOutBodySchema = v.strictObject({ optOut: v.boolean() });
 /** Body of `POST /api/raid/channel`. The channel is never in the body: it is the session's own. */
 export const RaidChannelBodySchema = v.strictObject({ action: v.picklist(['pin', 'unpin']) });
 
-/** Path parameters of `GET /api/raid/replay/:week/:party/:phase`. */
+/** Path parameters of `GET /api/raid/replay/:week/:party/:phase` (and `/stats/...`). */
 export const ReplayParamsSchema = v.strictObject({
   week: v.pipe(
     v.string(),

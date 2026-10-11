@@ -4,6 +4,7 @@ import errorFixtures from './fixtures/errors.json';
 import practiceStart from './fixtures/practice-start.json';
 import raidReveal from './fixtures/raid-reveal.json';
 import raidRevealSeen from './fixtures/raid-reveal-seen.json';
+import statsFinale from './fixtures/raid-stats-finale.json';
 import requestBodies from './fixtures/request-bodies.json';
 
 const apiFetch = vi.hoisted(() => vi.fn());
@@ -16,7 +17,7 @@ import { ApiError } from './api';
 import { errorText } from './game';
 import { buildAction } from './live';
 import { sendLiveAction, startPractice } from './live-api';
-import { markRevealSeen, setRaidAbility } from './raid-api';
+import { fetchStats, markRevealSeen, setRaidAbility } from './raid-api';
 
 /**
  * The client against the Worker's strict schemas (`apps/worker/src/raid-schemas.ts`). The bodies in
@@ -84,6 +85,14 @@ describe('the requests the client sends', () => {
     const request = sent();
     expect(request).toEqual(expected('reveal-seen'));
     expect(request.body).toEqual({ week: expect.any(String) as string });
+  });
+
+  it('the stats are asked for by week, party and phase in the path, with no body', async () => {
+    apiFetch.mockResolvedValue(statsFinale);
+    const stats = await fetchStats('2027-W02', 1, 'finale');
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+    expect(apiFetch).toHaveBeenCalledWith('/api/raid/stats/2027-W02/1/finale');
+    expect(stats.phase).toBe('finale');
   });
 
   it('the practice start is an empty object', async () => {

@@ -1,7 +1,7 @@
 import { describeEvent } from '@creatures/engine';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { errorText, speciesName } from './game';
-import { fetchReplay, type RaidPhaseId, type RaidView, type ReplayView } from './raid-api';
+import { fetchReplay, type RaidPhaseId, type ReplayView } from './raid-api';
 import { phaseName } from './raid-text';
 import {
   beatEnds,
@@ -16,22 +16,22 @@ import {
 } from './replay';
 
 export function Replay({
-  view,
+  weekId,
+  party,
   phase,
   onClose,
 }: {
-  view: RaidView;
+  weekId: string;
+  party: number;
   phase: RaidPhaseId;
   onClose: () => void;
 }) {
   const [data, setData] = useState<ReplayView | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const party = view.party?.party ?? null;
 
   useEffect(() => {
-    if (party === null) return undefined;
     let cancelled = false;
-    fetchReplay(view.weekId, party, phase).then(
+    fetchReplay(weekId, party, phase).then(
       (next) => {
         if (!cancelled) setData(next);
       },
@@ -42,7 +42,7 @@ export function Replay({
     return () => {
       cancelled = true;
     };
-  }, [view.weekId, party, phase]);
+  }, [weekId, party, phase]);
 
   return (
     <section class="raid-section" aria-labelledby="replay-heading">
@@ -236,7 +236,9 @@ function Player({ data }: { data: ReplayView }) {
           ))}
         </ul>
       )}
-      <p>{recap.hint}</p>
+      {recap.notes.map((note, i) => (
+        <p key={i}>{note}</p>
+      ))}
     </>
   );
 }

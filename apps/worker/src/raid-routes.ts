@@ -206,6 +206,21 @@ export const raidRoutes: Routes<RaidRouteContext> = {
       return json(outcome.value);
     },
   },
+  '/api/raid/stats/:week/:party/:phase': {
+    GET: (_request, { params, user, core }) => {
+      const parsed = v.safeParse(ReplayParamsSchema, {
+        week: params['week'],
+        party: params['party'],
+        phase: params['phase'],
+      });
+      if (!parsed.success) return errorResponse('invalid_id', 400);
+      const { week, party, phase } = parsed.output;
+      // Members of that fight only; a missing fight and someone else's fight look the same.
+      const stats = core.raid.stats(user.id, week, party, phase);
+      if (stats === null) return errorResponse('not_found', 404);
+      return json(stats);
+    },
+  },
   '/api/raid/replay/:week/:party/:phase': {
     GET: (_request, { params, user, core }) => {
       const parsed = v.safeParse(ReplayParamsSchema, {

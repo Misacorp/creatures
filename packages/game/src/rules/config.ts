@@ -120,6 +120,18 @@ export const RULES = {
       phase2: { weekday: 6, hour: 13, minute: 37 },
       finale: { weekday: 7, hour: 20, minute: 0 },
     },
+    /**
+     * The "Close one!" rule of the after-action card, both in basis points of the stage's target:
+     * - `missBp`: a stage that was not cleared is close when it fell short of its target by at most
+     *   this much. A phase's target is the HP it had to take off the pool (its clear threshold,
+     *   `clearAtLossBp` of the maximum); the finale's target is the whole pool, so a finale is close
+     *   when the boss kept at most this share of its maximum HP.
+     * - `spareBp`: a cleared stage is close when it had at most this much to spare. A phase's spare
+     *   is the HP taken off beyond its threshold; a finale's spare is the rounds left over (the boss
+     *   fell with at most this share of the finale's rounds still to play), because a win always
+     *   empties the pool.
+     */
+    closeCall: { missBp: 1_000, spareBp: 1_000 },
     /** Most players in one party; a bigger roster is split into balanced parties. */
     maxPartySize: 15,
     /** Creatures a player brings to a raid. */

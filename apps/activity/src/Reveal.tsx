@@ -1,3 +1,4 @@
+import { AfterAction } from './AfterAction';
 import { revealSummary } from './live';
 import type { RaidReveal } from './raid-api';
 
@@ -10,12 +11,15 @@ export function RevealCard({
   reveal,
   pity,
   busy,
+  afterAction,
   onDismiss,
 }: {
   reveal: Pick<RaidReveal, 'cleared' | 'essence' | 'jackpot'>;
   /** The pity counter after the fight, when the server sent one. */
   pity: number | null;
   busy: boolean;
+  /** Where the finale's after-action card is asked for (the caller's party in that finale). */
+  afterAction?: { week: string; party: number; onReplay?: () => void };
   onDismiss: () => void;
 }) {
   const summary = revealSummary(reveal, pity);
@@ -42,6 +46,14 @@ export function RevealCard({
           {summary.jackpot.firstOnServer && <span class="badge first">First on server</span>}
         </p>
       </div>
+      {afterAction !== undefined && (
+        <AfterAction
+          week={afterAction.week}
+          party={afterAction.party}
+          phase="finale"
+          {...(afterAction.onReplay === undefined ? {} : { onReplay: afterAction.onReplay })}
+        />
+      )}
       <p>
         <button type="button" class="primary" disabled={busy} onClick={onDismiss}>
           Got it

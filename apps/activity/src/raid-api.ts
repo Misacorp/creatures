@@ -60,6 +60,8 @@ export interface PhaseResultView {
 /** The loot of a finale the player took part in, shown once as a reveal. */
 export interface RaidReveal {
   week: string;
+  /** The caller's party in that finale: with `week`, the key of its after-action stats. */
+  party: number;
   cleared: boolean;
   essence: number;
   jackpot: null | { essence: number; firstOnServer: boolean };
@@ -277,6 +279,7 @@ function isReveal(value: unknown): value is RaidReveal {
   return (
     isRecord(value) &&
     isStr(value['week']) &&
+    isInt(value['party']) &&
     isBool(value['cleared']) &&
     isInt(value['essence']) &&
     (value['jackpot'] === null || isJackpot(value['jackpot']))
@@ -428,6 +431,173 @@ export function parseReplayView(data: unknown): ReplayView {
   return data as unknown as ReplayView;
 }
 
+// --- After-action stats (`GET /api/raid/stats/:week/:party/:phase`) ---
+
+export type StatsOutcome = 'cleared' | 'missed' | 'wiped';
+
+export interface StatsPlayer {
+  displayName: string;
+  you: boolean;
+  damage: number;
+  contribution: number;
+}
+
+export interface StatsCreature {
+  /** Place among all creatures in the fight, by damage. */
+  rank: number;
+  name: string;
+  species: string;
+  /** The owner's display name, or null for a guest. */
+  owner: string | null;
+  you: boolean;
+  damage: number;
+  contribution: number;
+}
+
+export interface StatsReaction {
+  name: string;
+  count: number;
+  reflected: number;
+}
+
+export interface StatsAbilityUse {
+  player: string;
+  you: boolean;
+  ability: string;
+  /** The creature it belongs to; null for a basic ability. */
+  creature: string | null;
+  round: number;
+  byDefault: boolean;
+}
+
+export interface StatsKnockout {
+  creature: string;
+  species: string;
+  owner: string | null;
+  you: boolean;
+  round: number;
+}
+
+export interface StatsAdaptation {
+  name: string;
+  target: string | null;
+  resistBp: number;
+  purged: boolean;
+  purgedRound: number | null;
+  restoredRound: number | null;
+}
+
+export interface AfterActionStats {
+  phase: RaidPhaseId;
+  outcome: StatsOutcome;
+  /** "Close one!": missed by little, or won with little to spare (the server decides). */
+  close: boolean;
+  rounds: number;
+  maxRounds: number;
+  boss: {
+    hpMax: number;
+    hpStart: number;
+    hpEnd: number;
+    /** The share of the whole pool left, in basis points. */
+    leftBp: number;
+    /** HP that had to come off the pool for the stage to be cleared. */
+    needed: number;
+    /** HP that has come off the pool. */
+    lost: number;
+  };
+  players: StatsPlayer[];
+  creatures: StatsCreature[];
+  reactions: StatsReaction[];
+  reactionsTotal: number;
+  abilities: { used: StatsAbilityUse[]; unused: number };
+  knockouts: StatsKnockout[];
+  adaptation: StatsAdaptation | null;
+}
+
+const isCount = (value: unknown): value is number => isInt(value) && value >= 0;
+
+const isStatsPlayer = (value: unknown): value is StatsPlayer =>
+  isRecord(value) &&
+  isStr(value['displayName']) &&
+  isBool(value['you']) &&
+  isCount(value['damage']) &&
+  isCount(value['contribution']);
+
+const isStatsCreature = (value: unknown): value is StatsCreature =>
+  isRecord(value) &&
+  isInt(value['rank']) &&
+  isStr(value['name']) &&
+  isStr(value['species']) &&
+  isNullableStr(value['owner']) &&
+  isBool(value['you']) &&
+  isCount(value['damage']) &&
+  isCount(value['contribution']);
+
+const isStatsReaction = (value: unknown): value is StatsReaction =>
+  isRecord(value) && isStr(value['name']) && isCount(value['count']) && isCount(value['reflected']);
+
+const isStatsAbilityUse = (value: unknown): value is StatsAbilityUse =>
+  isRecord(value) &&
+  isStr(value['player']) &&
+  isBool(value['you']) &&
+  isStr(value['ability']) &&
+  isNullableStr(value['creature']) &&
+  isInt(value['round']) &&
+  isBool(value['byDefault']);
+
+const isStatsKnockout = (value: unknown): value is StatsKnockout =>
+  isRecord(value) &&
+  isStr(value['creature']) &&
+  isStr(value['species']) &&
+  isNullableStr(value['owner']) &&
+  isBool(value['you']) &&
+  isInt(value['round']);
+
+const isNullableInt = (value: unknown): value is number | null => value === null || isInt(value);
+
+const isStatsAdaptation = (value: unknown): value is StatsAdaptation =>
+  isRecord(value) &&
+  isStr(value['name']) &&
+  isNullableStr(value['target']) &&
+  isCount(value['resistBp']) &&
+  isBool(value['purged']) &&
+  isNullableInt(value['purgedRound']) &&
+  isNullableInt(value['restoredRound']);
+
+const isStatsOutcome = (value: unknown): value is StatsOutcome =>
+  value === 'cleared' || value === 'missed' || value === 'wiped';
+
+/** Refuses anything that is not exactly the after-action shape; the card shows nothing half-parsed. */
+export function parseStats(data: unknown): AfterActionStats {
+  if (
+    !isRecord(data) ||
+    !isPhaseId(data['phase']) ||
+    !isStatsOutcome(data['outcome']) ||
+    !isBool(data['close']) ||
+    !isCount(data['rounds']) ||
+    !isCount(data['maxRounds']) ||
+    !isCount(data['reactionsTotal']) ||
+    !isRecord(data['boss']) ||
+    !isCount(data['boss']['hpMax']) ||
+    !isCount(data['boss']['hpStart']) ||
+    !isCount(data['boss']['hpEnd']) ||
+    !isCount(data['boss']['leftBp']) ||
+    !isCount(data['boss']['needed']) ||
+    !isInt(data['boss']['lost']) ||
+    !isArrayOf(data['players'], isStatsPlayer) ||
+    !isArrayOf(data['creatures'], isStatsCreature) ||
+    !isArrayOf(data['reactions'], isStatsReaction) ||
+    !isRecord(data['abilities']) ||
+    !isArrayOf(data['abilities']['used'], isStatsAbilityUse) ||
+    !isCount(data['abilities']['unused']) ||
+    !isArrayOf(data['knockouts'], isStatsKnockout) ||
+    !(data['adaptation'] === null || isStatsAdaptation(data['adaptation']))
+  ) {
+    throw new Error('the server returned unexpected fight stats');
+  }
+  return data as unknown as AfterActionStats;
+}
+
 // --- Requests ---
 
 function send(path: string, method: string, body: unknown): Promise<unknown> {
@@ -467,6 +637,16 @@ export async function fetchReplay(
   // The week id comes from the server's own view; encode anyway so a path can never be injected.
   const path = `/api/raid/replay/${encodeURIComponent(weekId)}/${String(party)}/${phase}`;
   return parseReplayView(await apiFetch(path));
+}
+
+/** The after-action stats of a resolved stage of the caller's own party. */
+export async function fetchStats(
+  weekId: string,
+  party: number,
+  phase: RaidPhaseId,
+): Promise<AfterActionStats> {
+  const path = `/api/raid/stats/${encodeURIComponent(weekId)}/${String(party)}/${phase}`;
+  return parseStats(await apiFetch(path));
 }
 
 /** Picks the finale ability (any time before the finale starts). */

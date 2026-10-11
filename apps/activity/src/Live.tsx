@@ -53,6 +53,7 @@ export function Live({
   onClose,
   onBalanceChange,
   onRevealSeen,
+  onReplay,
 }: {
   /** A snapshot the caller already has (a practice fight that was just started). */
   initial: LiveSnapshot | null;
@@ -61,6 +62,8 @@ export function Live({
   onBalanceChange: () => void;
   /** Called when the player has seen the loot reveal. */
   onRevealSeen: (week: string) => void;
+  /** Opens the replay of a finished finale (it closes this view first). */
+  onReplay: (week: string, party: number) => void;
 }) {
   const [snapshot, setSnapshot] = useState<LiveSnapshot | null>(initial);
   const [pollError, setPollError] = useState<string | null>(null);
@@ -254,6 +257,13 @@ export function Live({
           reveal={fight.loot}
           pity={fight.loot.pity}
           busy={false}
+          afterAction={{
+            week: fight.week,
+            party: fight.party,
+            onReplay: () => {
+              onReplay(fight.week, fight.party);
+            },
+          }}
           onDismiss={() => {
             setDismissed(true);
             onRevealSeen(fight.week);

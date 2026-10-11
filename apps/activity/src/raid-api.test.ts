@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import raidReveal from './fixtures/raid-reveal.json';
 import raidRevealSeen from './fixtures/raid-reveal-seen.json';
-import { parseRaidView, parseReplayView } from './raid-api';
+import statsCloseLoss from './fixtures/raid-stats-close-loss.json';
+import statsCloseWin from './fixtures/raid-stats-close-win.json';
+import statsFinale from './fixtures/raid-stats-finale.json';
+import statsWiped from './fixtures/raid-stats-wiped.json';
+import { parseRaidView, parseReplayView, parseStats } from './raid-api';
 
 const raid = {
   weekId: '2026-W41',
@@ -84,6 +88,7 @@ describe('parseRaidView with real server responses', () => {
     expect(parsed.you.ability).toEqual({ abilityId: 'rally', chosen: true });
     expect(parsed.you.reveal).toEqual({
       week: '2027-W02',
+      party: 1,
       cleared: true,
       essence: 46,
       jackpot: { essence: 100, firstOnServer: true },
@@ -175,6 +180,7 @@ describe('parseRaidView', () => {
         ability: { abilityId: 'rally', chosen: true },
         reveal: {
           week: '2026-W40',
+          party: 1,
           cleared: true,
           essence: 30,
           jackpot: { essence: 100, firstOnServer: false },
@@ -188,7 +194,10 @@ describe('parseRaidView', () => {
     expect(parseRaidView(empty).you.reveal).toBeNull();
     const miss = {
       ...raid,
-      you: { ...raid.you, reveal: { week: 'w', cleared: false, essence: 0, jackpot: null } },
+      you: {
+        ...raid.you,
+        reveal: { week: 'w', party: 1, cleared: false, essence: 0, jackpot: null },
+      },
     };
     expect(parseRaidView(miss).you.reveal?.jackpot).toBeNull();
   });
@@ -199,6 +208,9 @@ describe('parseRaidView', () => {
     expect(() => parseRaidView(you({ ability: { abilityId: 1, chosen: true } }))).toThrow();
     expect(() => parseRaidView(you({ ability: 'rally' }))).toThrow();
     expect(() => parseRaidView(you({ reveal: { week: 'w', cleared: true } }))).toThrow();
+    expect(() =>
+      parseRaidView(you({ reveal: { week: 'w', cleared: true, essence: 1, jackpot: null } })),
+    ).toThrow();
     expect(() =>
       parseRaidView(you({ reveal: { week: 'w', cleared: true, essence: 1.5, jackpot: null } })),
     ).toThrow();
@@ -277,5 +289,45 @@ describe('parseReplayView', () => {
       parseReplayView({ ...replay, names: { boss: 'x', creatures: { a: 1 } } }),
     ).toThrow();
     expect(() => parseReplayView({ ...replay, phase: 'phase9' })).toThrow();
+  });
+});
+
+describe('parseStats with real server responses', () => {
+  it('accepts a close win, a close loss, a wipe-out and a finale', () => {
+    expect(parseStats(statsCloseWin)).toMatchObject({ outcome: 'cleared', close: true });
+    expect(parseStats(statsCloseLoss)).toMatchObject({ outcome: 'missed', close: true });
+    expect(parseStats(statsWiped)).toMatchObject({ outcome: 'wiped', close: false });
+    const finale = parseStats(statsFinale);
+    expect(finale.phase).toBe('finale');
+    expect(finale.adaptation).toMatchObject({ purged: true, purgedRound: 2 });
+    expect(finale.abilities.used.length).toBeGreaterThan(0);
+    expect(finale.players.filter((p) => p.you)).toHaveLength(1);
+    expect(parseStats(statsCloseWin).adaptation).toBeNull();
+  });
+
+  it('returns the data untouched', () => {
+    expect(parseStats(statsCloseWin)).toEqual(statsCloseWin);
+  });
+
+  it('refuses a shape that is not exactly the one the server sends', () => {
+    const bad = (patch: Record<string, unknown>) => () => parseStats({ ...statsFinale, ...patch });
+    expect(bad({ outcome: 'won' })).toThrow('unexpected fight stats');
+    expect(bad({ close: 'yes' })).toThrow();
+    expect(bad({ phase: 'phase9' })).toThrow();
+    expect(bad({ rounds: 1.5 })).toThrow();
+    expect(bad({ rounds: -1 })).toThrow();
+    expect(bad({ boss: { ...statsFinale.boss, leftBp: 'x' } })).toThrow();
+    expect(bad({ players: [{ displayName: 'A', you: true }] })).toThrow();
+    expect(bad({ creatures: [{ ...statsFinale.creatures[0], owner: 5 }] })).toThrow();
+    expect(bad({ abilities: { used: [], unused: -1 } })).toThrow();
+    expect(bad({ abilities: null })).toThrow();
+    expect(bad({ knockouts: 'none' })).toThrow();
+    expect(bad({ adaptation: { name: 'x' } })).toThrow();
+    expect(bad({ reactions: [{ name: 'Steam', count: 1 }] })).toThrow();
+    expect(() => parseStats(null)).toThrow();
+    expect(() => parseStats([])).toThrow();
+    const withoutBoss: Record<string, unknown> = { ...statsFinale };
+    delete withoutBoss['boss'];
+    expect(() => parseStats(withoutBoss)).toThrow();
   });
 });

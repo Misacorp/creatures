@@ -918,6 +918,7 @@ describe('the loot reveal', () => {
       snap(ctx, a);
       expect(ctx.core.raid.view(a.id, HELSINKI).you.reveal).toEqual({
         week: W02.id,
+        party: 1,
         cleared: false,
         essence: 0,
         jackpot: null,
@@ -1310,7 +1311,7 @@ describe('the API contract with the client', () => {
   const ROW_KEYS = ['element', 'id', 'level', 'name', 'owner', 'position', 'role', 'species'];
   const LOOT_KEYS = ['cleared', 'essence', 'jackpot', 'pity'];
   const JACKPOT_KEYS = ['essence', 'firstOnServer'];
-  const REVEAL_KEYS = ['cleared', 'essence', 'jackpot', 'week'];
+  const REVEAL_KEYS = ['cleared', 'essence', 'jackpot', 'party', 'week'];
 
   const get = async (ctx: Ctx, secret: string, path = '/api/raid/live') => {
     const res = await ctx.request(secret, path);
@@ -1434,6 +1435,7 @@ describe('the API contract with the client', () => {
         ]);
         expect(keys(state), UPDATE).toEqual(keys(collectionState));
         expect(keys(you['reveal']), UPDATE).toEqual(REVEAL_KEYS);
+        expect(keys(raidReveal.you.reveal), UPDATE).toEqual(REVEAL_KEYS);
         expect(keys(raid), UPDATE).toEqual(keys(raidReveal));
         expect(keys(you), UPDATE).toEqual(keys(raidReveal.you));
         expect(keys(raid['party']), UPDATE).toEqual(keys(raidReveal.party));

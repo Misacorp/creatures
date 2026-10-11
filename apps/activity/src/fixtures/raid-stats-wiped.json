@@ -1,0 +1,210 @@
+{
+  "phase": "phase1",
+  "outcome": "wiped",
+  "close": false,
+  "rounds": 6,
+  "maxRounds": 10,
+  "boss": {
+    "hpMax": 1000000000,
+    "hpStart": 1000000000,
+    "hpEnd": 999996507,
+    "leftBp": 9999,
+    "needed": 180000000,
+    "lost": 3493
+  },
+  "players": [
+    {
+      "displayName": "Bob",
+      "you": false,
+      "damage": 952,
+      "contribution": 1468
+    },
+    {
+      "displayName": "Cy",
+      "you": false,
+      "damage": 722,
+      "contribution": 1160
+    },
+    {
+      "displayName": "Misa",
+      "you": true,
+      "damage": 703,
+      "contribution": 703
+    },
+    {
+      "displayName": "Dee",
+      "you": false,
+      "damage": 342,
+      "contribution": 570
+    }
+  ],
+  "creatures": [
+    {
+      "rank": 1,
+      "name": "Zipmouse",
+      "species": "zipmouse",
+      "owner": "Bob",
+      "you": false,
+      "damage": 448,
+      "contribution": 556
+    },
+    {
+      "rank": 2,
+      "name": "Sproutle",
+      "species": "sproutle",
+      "owner": "Bob",
+      "you": false,
+      "damage": 378,
+      "contribution": 786
+    },
+    {
+      "rank": 3,
+      "name": "Zipmouse",
+      "species": "zipmouse",
+      "owner": "Cy",
+      "you": false,
+      "damage": 336,
+      "contribution": 538
+    },
+    {
+      "rank": 4,
+      "name": "Zipmouse",
+      "species": "zipmouse",
+      "owner": "Misa",
+      "you": true,
+      "damage": 336,
+      "contribution": 336
+    },
+    {
+      "rank": 5,
+      "name": "Ashmole",
+      "species": "ashmole",
+      "owner": "Cy",
+      "you": false,
+      "damage": 260,
+      "contribution": 384
+    },
+    {
+      "rank": 7,
+      "name": "Sproutle",
+      "species": "sproutle",
+      "owner": "Misa",
+      "you": true,
+      "damage": 203,
+      "contribution": 203
+    },
+    {
+      "rank": 8,
+      "name": "Cindle",
+      "species": "cindle",
+      "owner": "Misa",
+      "you": true,
+      "damage": 164,
+      "contribution": 164
+    }
+  ],
+  "reactions": [
+    {
+      "name": "Grounding",
+      "count": 3,
+      "reflected": 0
+    },
+    {
+      "name": "Overload",
+      "count": 2,
+      "reflected": 0
+    }
+  ],
+  "reactionsTotal": 5,
+  "abilities": {
+    "used": [],
+    "unused": 0
+  },
+  "knockouts": [
+    {
+      "creature": "Stormray",
+      "species": "stormray",
+      "owner": "Dee",
+      "you": false,
+      "round": 1
+    },
+    {
+      "creature": "Mistnewt",
+      "species": "mistnewt",
+      "owner": "Dee",
+      "you": false,
+      "round": 1
+    },
+    {
+      "creature": "Cindle",
+      "species": "cindle",
+      "owner": "Misa",
+      "you": true,
+      "round": 2
+    },
+    {
+      "creature": "Sproutle",
+      "species": "sproutle",
+      "owner": "Misa",
+      "you": true,
+      "round": 2
+    },
+    {
+      "creature": "Mistnewt",
+      "species": "mistnewt",
+      "owner": "Cy",
+      "you": false,
+      "round": 3
+    },
+    {
+      "creature": "Mistnewt",
+      "species": "mistnewt",
+      "owner": "Bob",
+      "you": false,
+      "round": 3
+    },
+    {
+      "creature": "Sproutle",
+      "species": "sproutle",
+      "owner": "Bob",
+      "you": false,
+      "round": 4
+    },
+    {
+      "creature": "Ashmole",
+      "species": "ashmole",
+      "owner": "Dee",
+      "you": false,
+      "round": 4
+    },
+    {
+      "creature": "Zipmouse",
+      "species": "zipmouse",
+      "owner": "Bob",
+      "you": false,
+      "round": 5
+    },
+    {
+      "creature": "Ashmole",
+      "species": "ashmole",
+      "owner": "Cy",
+      "you": false,
+      "round": 5
+    },
+    {
+      "creature": "Zipmouse",
+      "species": "zipmouse",
+      "owner": "Cy",
+      "you": false,
+      "round": 6
+    },
+    {
+      "creature": "Zipmouse",
+      "species": "zipmouse",
+      "owner": "Misa",
+      "you": true,
+      "round": 6
+    }
+  ],
+  "adaptation": null
+}
