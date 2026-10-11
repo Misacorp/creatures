@@ -1,12 +1,17 @@
 import { trainingCost } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
+import { shinyPalette } from './art';
+import { glyphOrUnknown } from './glyphs';
 import { abilityDef } from './live';
+import { PixelBar } from './PixelBar';
+import { ElementChip } from './sprites/ElementChip';
+import { Sprite } from './sprites/Sprite';
+import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import {
   capitalize,
   creatureAbilityText,
   creatureName,
-  elementName,
   evolutionText,
   fusionStars,
   getSpecies,
@@ -109,16 +114,37 @@ function CreatureCard({
       : creature.away
         ? `Train (${String(cost)} Bait), away`
         : `Train (${String(cost)} Bait)`;
+  const shinyColours = creature.shiny ? shinyPalette(creature.species) : undefined;
+  // A shiny without its own palette gets a sparkle frame instead.
+  const sparkleFrame = creature.shiny && shinyColours === undefined;
+  const sparkle = glyphOrUnknown('sparkle');
   return (
-    <li class="card-item">
-      <h3>{creatureName(creature)}</h3>
+    <li class="card-item creature-card">
+      <div class={sparkleFrame ? 'portrait sparkle-frame' : 'portrait'}>
+        <Sprite
+          sprite={creatureSpriteOrFallback(creature.species)}
+          scale={5}
+          bob
+          alt={`${creatureName(creature)}${creature.shiny ? ' (shiny)' : ''}`}
+          {...(shinyColours === undefined ? {} : { palette: shinyColours })}
+        />
+        {sparkleFrame && (
+          <>
+            <Sprite sprite={sparkle} scale={2} class="sparkle one" />
+            <Sprite sprite={sparkle} scale={2} class="sparkle two" />
+          </>
+        )}
+      </div>
+      <div class="name-row">
+        <h3>{creatureName(creature)}</h3>
+        <span class="lvl-tag pix">Lv {creature.level}</span>
+      </div>
       {creature.nickname !== null && <p class="muted">{speciesName(creature.species)}</p>}
       <p class="tags">
         {species !== undefined && (
           <>
-            <span class="tag">{elementName(species.element)}</span>
+            <ElementChip element={species.element} role={capitalize(species.role)} />
             <span class="tag">{capitalize(species.rarity)}</span>
-            <span class="tag">{capitalize(species.role)}</span>
           </>
         )}
         {isFestivalSpecies(creature.species) && <span class="badge festival">Festival</span>}
@@ -131,9 +157,11 @@ function CreatureCard({
       {isFestivalSpecies(creature.species) && (
         <p class="muted">Won in a Festival week. It is not found on expeditions.</p>
       )}
-      <p>
-        Level {creature.level} / {creature.levelCap}
-      </p>
+      <PixelBar
+        value={creature.level}
+        max={creature.levelCap}
+        label={`Training progress: level ${String(creature.level)} of ${String(creature.levelCap)}`}
+      />
       <p class="stats">
         HP {creature.stats.hp} · ATK {creature.stats.atk} · SPD {creature.stats.spd}
       </p>

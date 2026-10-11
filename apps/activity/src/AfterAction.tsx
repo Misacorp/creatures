@@ -18,6 +18,8 @@ import {
 } from './after-action';
 import { errorText } from './game';
 import { fetchStats, type AfterActionStats, type RaidPhaseId } from './raid-api';
+import { Sprite } from './sprites/Sprite';
+import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 
 /** Longer lists show this many lines and keep the rest behind "Show all". */
 const VISIBLE_LINES = 6;
@@ -133,7 +135,10 @@ export function AfterActionCard({ stats }: { stats: AfterActionStats }) {
       <ul class="bar-list">
         {stats.creatures.map((c) => (
           <li key={c.rank} class={c.you ? 'bar-row you' : 'bar-row'}>
-            <span class="bar-name">{creatureLine(c)}</span>
+            <span class="bar-name">
+              <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={2} class="bar-sprite" />
+              <span>{creatureLine(c)}</span>
+            </span>
             <progress
               class={c.you ? 'bar you' : 'bar'}
               max={creatureMax}

@@ -1,11 +1,8 @@
 import { describeEvent } from '@creatures/engine';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { errorText, speciesName } from './game';
+import { errorText } from './game';
 import { fetchReplay, type RaidPhaseId, type ReplayView } from './raid-api';
 import { phaseName } from './raid-text';
-import { ElementChip } from './sprites/ElementChip';
-import { Sprite } from './sprites/Sprite';
-import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import {
   beatEnds,
   indexAfterBeat,
@@ -17,6 +14,8 @@ import {
   turnOrderOfRound,
   type Speed,
 } from './replay';
+import { MAX_BEAT_MS } from './stage';
+import { LogToggle, Stage, type Anim } from './Stage';
 
 export function Replay({
   weekId,
@@ -66,13 +65,25 @@ export function Replay({
   );
 }
 
+/** Where the player is: the step number, the one before it and a counter that grows with every move. */
+interface Position {
+  beat: number;
+  prev: number;
+  seq: number;
+}
+
 function Player({ data }: { data: ReplayView }) {
   const ends = beatEnds(data.events);
   const total = ends.length;
-  const [beat, setBeat] = useState(0);
+  const [pos, setPos] = useState<Position>({ beat: 0, prev: 0, seq: 0 });
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<Speed>(1);
   const logRef = useRef<HTMLOListElement>(null);
+  const { beat } = pos;
+
+  const move = (to: number): void => {
+    setPos((p) => ({ beat: to, prev: p.beat, seq: p.seq + 1 }));
+  };
 
   // Advance one step at a time while playing.
   useEffect(() => {
@@ -82,14 +93,14 @@ function Player({ data }: { data: ReplayView }) {
       return undefined;
     }
     const timer = setTimeout(() => {
-      setBeat((b) => b + 1);
+      setPos((p) => ({ beat: p.beat + 1, prev: p.beat, seq: p.seq + 1 }));
     }, stepDelayMs(speed));
     return () => {
       clearTimeout(timer);
     };
   }, [playing, beat, speed, total]);
 
-  // Keep the newest log line in view.
+  // Keep the newest log line in view (when the log is open).
   useEffect(() => {
     const el = logRef.current;
     if (el !== null) el.scrollTop = el.scrollHeight;
@@ -101,11 +112,18 @@ function Player({ data }: { data: ReplayView }) {
   const rowById = new Map(data.row.map((r) => [r.id, r]));
   const mineIds = new Set(mineInRow(data.row, data.you));
   const order = turnOrderOfRound(data.events, Math.max(1, step.round));
-  const markName = step.mark === null ? null : (data.names.marks?.[step.mark] ?? step.mark);
-  const ownerName = (owner: string | null): string =>
-    owner === null ? 'Guest' : (data.names.players?.[owner] ?? 'Unknown');
   const moments = keyMoments(data.events, data.names);
   const recap = personalRecap(data.events, data.row, [...mineIds]);
+  // Only a single step forward is animated; a skip or a restart just shows the new state.
+  const anim: Anim | null =
+    beat >= 1 && beat === pos.prev + 1
+      ? {
+          from: indexAfterBeat(ends, pos.prev),
+          to: index,
+          ms: Math.min(MAX_BEAT_MS, stepDelayMs(speed)),
+          seq: pos.seq,
+        }
+      : null;
 
   return (
     <>
@@ -124,7 +142,7 @@ function Player({ data }: { data: ReplayView }) {
           type="button"
           class="primary"
           onClick={() => {
-            if (finished) setBeat(0);
+            if (finished) move(0);
             setPlaying(!playing);
           }}
         >
@@ -145,28 +163,25 @@ function Player({ data }: { data: ReplayView }) {
           disabled={finished}
           onClick={() => {
             setPlaying(false);
-            setBeat(total);
+            move(total);
           }}
         >
           Skip to end
         </button>
       </div>
 
-      <h4>Boss</h4>
-      <p>
-        <label for="replay-hp">
-          {data.boss.name} HP: {step.bossHp} / {data.bossHpMax}
-        </label>
-        <progress id="replay-hp" class="hp-bar" max={data.bossHpMax} value={step.bossHp} />
-      </p>
-      <p>
-        Mark:{' '}
-        {markName === null ? (
-          <span class="muted">none</span>
-        ) : (
-          <span class="mark-badge">{markName}</span>
-        )}
-      </p>
+      <Stage
+        boss={data.boss}
+        hpMax={data.bossHpMax}
+        hpStart={data.bossHpStart}
+        rounds={data.rounds}
+        row={data.row}
+        mineIds={mineIds}
+        names={data.names}
+        events={data.events}
+        index={index}
+        anim={anim}
+      />
 
       <h4>Turn order {step.bossActing && <span class="muted">(the boss is acting)</span>}</h4>
       <ol class="turn-strip" aria-label="Turn order this round">
@@ -188,34 +203,13 @@ function Player({ data }: { data: ReplayView }) {
         })}
       </ol>
 
-      <h4>The row</h4>
-      <ul class="replay-row" aria-label="Row, left to right">
-        {data.row.map((c) => {
-          const classes = ['replay-slot'];
-          if (step.actor === c.id) classes.push('current');
-          if (step.knockedOut.includes(c.id)) classes.push('ko');
-          if (mineIds.has(c.id)) classes.push('mine');
-          return (
-            <li key={c.id} class={classes.join(' ')}>
-              <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={3} />
-              <span class="slot-species">{c.name}</span>
-              <span class="slot-meta">
-                {speciesName(c.species)} Lv {c.level}
-              </span>
-              <ElementChip element={c.element} />
-              <span class="slot-owner">{mineIds.has(c.id) ? 'You' : ownerName(c.owner)}</span>
-              {step.knockedOut.includes(c.id) && <span class="badge bad">KO</span>}
-            </li>
-          );
-        })}
-      </ul>
-
-      <h4>Log</h4>
-      <ol class="replay-log" ref={logRef} tabIndex={0} aria-label="Fight log">
-        {data.events.slice(0, index).map((event, i) => (
-          <li key={i}>{describeEvent(event, data.names)}</li>
-        ))}
-      </ol>
+      <LogToggle id="replay-log">
+        <ol class="replay-log" ref={logRef} tabIndex={0} aria-label="Fight log">
+          {data.events.slice(0, index).map((event, i) => (
+            <li key={i}>{describeEvent(event, data.names)}</li>
+          ))}
+        </ol>
+      </LogToggle>
 
       <h4>Key moments</h4>
       {moments.length === 0 ? (

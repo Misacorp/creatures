@@ -1,6 +1,6 @@
 import { content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { gimmickLines, gimmickText, phaseName, turnOrderText } from './raid-text';
+import { gimmickLines, gimmickShort, gimmickText, phaseName, turnOrderText } from './raid-text';
 
 describe('turnOrderText', () => {
   it('explains each order', () => {
@@ -39,7 +39,22 @@ describe('gimmicks in plain words', () => {
       { id: 'mystery', name: 'Mystery' },
     ]);
     expect(lines[0]?.text).toContain('front zone');
-    expect(lines[1]).toEqual({ id: 'mystery', name: 'Mystery', text: '' });
+    expect(lines[0]).toMatchObject({
+      op: 'hit_zone',
+      short: 'Hits the front zone, every 3 rounds',
+    });
+    expect(lines[1]).toEqual({ id: 'mystery', name: 'Mystery', op: null, short: '', text: '' });
+  });
+
+  it('gives every gimmick of every boss a short label that is shorter than its sentence', () => {
+    for (const boss of content.bosses) {
+      for (const g of boss.gimmicks) {
+        const short = gimmickShort(g);
+        expect(short.length).toBeGreaterThan(8);
+        expect(short.length).toBeLessThan(gimmickText(g).length);
+        expect(short).not.toMatch(/\d{4,}/);
+      }
+    }
   });
 });
 

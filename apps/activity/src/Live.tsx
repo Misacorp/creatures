@@ -1,7 +1,7 @@
 import { content } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiError } from './api';
-import { clockOffset, elementName, errorText, speciesName } from './game';
+import { clockOffset, elementName, errorText } from './game';
 import { useNow } from './hooks';
 import {
   abilityControls,
@@ -32,12 +32,8 @@ import {
   type LiveRunning,
   type LiveSnapshot,
 } from './live-api';
-import { ownerColour } from './raid-slots';
-import { stateAt } from './replay';
 import { RevealCard } from './Reveal';
-import { ElementChip } from './sprites/ElementChip';
-import { Sprite } from './sprites/Sprite';
-import { creatureSpriteOrFallback } from './sprites/creature-sprites';
+import { HpBar, LiveStage, LogToggle } from './Stage';
 
 const ZONE_OPTIONS = [
   { id: 'front', label: 'Front' },
@@ -218,17 +214,16 @@ export function Live({
           {progress.countdown !== '' && <span class="live-countdown"> {progress.countdown}</span>}
         </p>
         {fight.boss.hpMax !== null && (
-          <p>
-            <label for="live-hp">
-              {fight.boss.name} HP: {fight.boss.hpStart ?? fight.boss.hpMax} / {fight.boss.hpMax}
-            </label>
-            <progress
-              id="live-hp"
-              class="hp-bar"
+          <>
+            <HpBar
+              current={fight.boss.hpStart ?? fight.boss.hpMax}
               max={fight.boss.hpMax}
-              value={fight.boss.hpStart ?? fight.boss.hpMax}
+              label={`${fight.boss.name} HP: ${String(fight.boss.hpStart ?? fight.boss.hpMax)} of ${String(fight.boss.hpMax)}`}
             />
-          </p>
+            <p class="muted small">
+              {fight.boss.name} HP: {fight.boss.hpStart ?? fight.boss.hpMax} / {fight.boss.hpMax}
+            </p>
+          </>
         )}
         <p class="muted">
           Your ability can be used once the fight starts. The fight plays on its own whether you
@@ -240,12 +235,11 @@ export function Live({
   }
   const mine = ownAbilities(fight.abilities, fight.you);
   const others = otherUsage(fight.abilities, fight.you);
-  const knockedOut = new Set(
-    stateAt(fight.events, fight.events.length, fight.boss.hpStart).knockedOut,
-  );
   const feed = feedLines(fight.events, fight.names);
   const earlier = earlierLines(fight.events, fight.names);
-  const playerKeys = Object.keys(fight.names.players ?? {});
+  const mineIds = new Set(
+    fight.row.filter((c) => c.owner !== null && c.owner === fight.you).map((c) => c.id),
+  );
   const playerName = (key: string | null): string =>
     key === null ? 'Guest' : (fight.names.players?.[key] ?? 'Unknown');
 
@@ -284,12 +278,17 @@ export function Live({
         {progress.headline}
       </p>
 
-      <p>
-        <label for="live-hp">
-          {fight.boss.name} HP: {fight.bossHp} / {fight.boss.hpMax}
-        </label>
-        <progress id="live-hp" class="hp-bar" max={fight.boss.hpMax} value={fight.bossHp} />
-      </p>
+      <LiveStage
+        boss={fight.boss}
+        hpMax={fight.boss.hpMax}
+        hpStart={fight.boss.hpStart}
+        rounds={fight.rounds}
+        row={fight.row}
+        mineIds={mineIds}
+        names={fight.names}
+        events={fight.events}
+        roundMs={fight.roundMs}
+      />
 
       {mine.length > 0 && (
         <section aria-labelledby="live-abilities-heading">
@@ -334,29 +333,6 @@ export function Live({
         </p>
       )}
 
-      <h4>The row</h4>
-      <ul class="replay-row" aria-label="Row, left to right">
-        {fight.row.map((c) => {
-          const isMine = c.owner !== null && c.owner === fight.you;
-          const classes = ['replay-slot'];
-          if (c.owner !== null) classes.push(`owner-${String(ownerColour(c.owner, playerKeys))}`);
-          if (isMine) classes.push('mine');
-          if (knockedOut.has(c.id)) classes.push('ko');
-          return (
-            <li key={c.id} class={classes.join(' ')}>
-              <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={3} />
-              <span class="slot-species">{c.name}</span>
-              <span class="slot-meta">
-                {speciesName(c.species)} Lv {c.level}
-              </span>
-              <ElementChip element={c.element} />
-              <span class="slot-owner">{isMine ? 'You' : playerName(c.owner)}</span>
-              {knockedOut.has(c.id) && <span class="badge bad">KO</span>}
-            </li>
-          );
-        })}
-      </ul>
-
       {others.length > 0 && (
         <>
           <h4>Other players' abilities</h4>
@@ -373,22 +349,29 @@ export function Live({
 
       <Watching names={fight.watching} />
 
-      <h4>This round</h4>
-      {feed.length === 0 ? (
-        <p class="muted">Nothing has happened yet.</p>
-      ) : (
-        <ol class="live-feed" aria-live="polite" aria-relevant="additions" aria-label="Round feed">
-          <FeedItems lines={feed} />
-        </ol>
-      )}
-      {earlier.length > 0 && (
-        <details class="live-earlier">
-          <summary>Earlier rounds</summary>
-          <ol class="live-feed">
-            <FeedItems lines={earlier} />
+      <LogToggle id="live-log">
+        <h4>This round</h4>
+        {feed.length === 0 ? (
+          <p class="muted">Nothing has happened yet.</p>
+        ) : (
+          <ol
+            class="live-feed"
+            aria-live="polite"
+            aria-relevant="additions"
+            aria-label="Round feed"
+          >
+            <FeedItems lines={feed} />
           </ol>
-        </details>
-      )}
+        )}
+        {earlier.length > 0 && (
+          <details class="live-earlier">
+            <summary>Earlier rounds</summary>
+            <ol class="live-feed">
+              <FeedItems lines={earlier} />
+            </ol>
+          </details>
+        )}
+      </LogToggle>
 
       {fight.status === 'done' && (
         <p>

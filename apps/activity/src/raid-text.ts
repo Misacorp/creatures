@@ -62,14 +62,39 @@ export function gimmickText(g: Gimmick): string {
   }
 }
 
-/** Plain-words gimmick lines for a boss id. Falls back to the gimmick names the server sent. */
+/** A few words for a gimmick's icon label, for example "Hits the front zone, every 3 rounds". */
+export function gimmickShort(g: Gimmick): string {
+  const every =
+    'eachRound' in g.trigger ? 'every round' : `every ${String(g.trigger.every)} rounds`;
+  switch (g.op) {
+    case 'hit_zone':
+      return `Hits the ${g.zone} zone, ${every}`;
+    case 'silence_ends':
+      return `Silences the row's ends, ${every}`;
+    case 'reflect_first_reaction':
+      return `Reflects a reaction, ${every}`;
+    case 'strike_highest_atk':
+      return `Strikes your top attacker, ${every}`;
+  }
+}
+
+/**
+ * Plain-words gimmick lines for a boss id: the server's name, the gimmick's `op` (it picks the icon),
+ * a short label and the full sentence. Falls back to the names the server sent, with no op.
+ */
 export function gimmickLines(
   bossId: string,
   fallback: readonly { id: string; name: string }[],
-): { id: string; name: string; text: string }[] {
+): { id: string; name: string; op: string | null; short: string; text: string }[] {
   const boss = content.bosses.find((b) => b.id === bossId);
   return fallback.map((g) => {
     const def = boss?.gimmicks.find((d) => d.id === g.id);
-    return { id: g.id, name: g.name, text: def === undefined ? '' : gimmickText(def) };
+    return {
+      id: g.id,
+      name: g.name,
+      op: def?.op ?? null,
+      short: def === undefined ? '' : gimmickShort(def),
+      text: def === undefined ? '' : gimmickText(def),
+    };
   });
 }
