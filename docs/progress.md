@@ -16,19 +16,19 @@ Where the project is against the plan. Newest state at the top of each section. 
 
 ## Now
 
-- Production runs PR #7 (8cf2589): creature abilities, Boss Rank ladder, Festivals, crits, readiness band, after-action stats, wins-only pity, raid news pin.
-- Branch `m6-look`: M6 "feels like a game". First a style sample artifact for Misa (palette, pixel font, sample sprites, boss card, UI panel), then the full pass.
+- **PR #8** (branch `m6-look`): M6 look: visual system, self-hosted fonts, element icons, sprites for all creatures and bosses, fight stage (show, don't tell), animated loot reveal, drag-and-drop placement, creature lore and quirks (migration 13). Waiting for Misa to test on staging and merge.
+- Production runs PR #7 (8cf2589).
 
 ## Next
 
-1. Watch the first ranked week in production (placement at next week creation, or at Phase 1 for an open week).
-2. M6 after Misa reacts to the style sample: sprites for every creature and boss, retro UI frame, juice (hit flash, "Critical!", loot reveal).
+1. After #8: redraw any sprites Misa flags (Ashmole and Gaiadrake are the weakest); sprite sheet script `apps/activity/scripts/sprite-sheet.mjs`.
+2. Watch the first ranked week and first Festival in production.
 3. WebSocket push for the live finale after a staging spike in real Discord.
 4. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
 
 ## Open questions for Misa
 
-- None blocking. Style sample feedback when it's ready.
+- Which sprites to redraw; DnD touch feel (long-press alternative).
 
 ## Notes for future agents
 
