@@ -65,7 +65,11 @@ describe('every content sprite', () => {
   });
 
   it('has a one-pixel ink outline that is not cut off by the canvas edge', () => {
-    for (const { id, def } of entries) {
+    // On the canvas edge a boss is ink or empty. A creature's ears, antlers, tail, wing or ray may
+    // touch the edge, but only in a feature colour of its own, never in a body colour (`b`, `h`, `s`
+    // or `p`), so the body itself is never cut off.
+    const bodyKeys = ['b', 'h', 's', 'p'];
+    for (const { id, kind, def } of entries) {
       if (def === undefined) continue;
       expect(def.palette.k, id).toBe(INK);
       const rows = expandRows(def);
@@ -73,9 +77,29 @@ describe('every content sprite', () => {
       for (const [y, row] of rows.entries()) {
         for (const [x, ch] of [...row].entries()) {
           const onEdge = x === 0 || y === 0 || x === row.length - 1 || y === last;
-          if (onEdge) expect(['.', 'k'], `${id} ${String(x)},${String(y)}`).toContain(ch);
+          if (!onEdge) continue;
+          const where = `${id} ${String(x)},${String(y)}`;
+          if (kind === 'boss') expect(['.', 'k'], where).toContain(ch);
+          else expect(bodyKeys, where).not.toContain(ch);
         }
       }
+    }
+  });
+
+  it('draws every creature with the same chibi face, in the same place', () => {
+    // Eyes: a 2x2 block with the white highlight at the top outer corner, rows 8-9, x 4-5 and 10-11.
+    // Blush at x 3 and 12 and a two-pixel mouth at x 7-8, all on row 10.
+    for (const c of content.creatures) {
+      const def = creatureSprite(c.id);
+      if (def === undefined) continue;
+      const rows = expandRows(def);
+      const at = (y: number, x: number): string => rows[y]?.[x] ?? '?';
+      expect([at(8, 4), at(8, 5), at(9, 4), at(9, 5)].join(''), c.id).toBe('ekkk');
+      expect([at(8, 10), at(8, 11), at(9, 10), at(9, 11)].join(''), c.id).toBe('kekk');
+      expect([at(10, 3), at(10, 12)].join(''), c.id).toBe('qq');
+      expect([at(10, 7), at(10, 8)].join(''), c.id).toBe('kk');
+      expect(def.palette.e, c.id).toBe('#fbf8ec');
+      expect(def.palette.q, c.id).toBe('#ff8fab');
     }
   });
 
@@ -106,6 +130,28 @@ describe('every content sprite', () => {
       const shape = silhouette(def);
       expect(seen.get(shape), `${id} repeats ${seen.get(shape) ?? ''}`).toBeUndefined();
       seen.set(shape, id);
+    }
+  });
+
+  it('keeps every creature clearly different from every other (all share a round chibi body)', () => {
+    // The creatures share one blob body, so what sets them apart is their top features, ears,
+    // wings and tails. Any two silhouettes must differ in at least this many pixels.
+    const MIN_DIFFERENT_PIXELS = 12;
+    const shapes = content.creatures.map((c) => {
+      const def = creatureSprite(c.id);
+      if (def === undefined) throw new Error(`no sprite for ${c.id}`);
+      return { id: c.id, rows: expandRows(def).map((row) => [...row].map((ch) => ch !== '.')) };
+    });
+    for (const [i, a] of shapes.entries()) {
+      for (const b of shapes.slice(i + 1)) {
+        let different = 0;
+        for (const [y, row] of a.rows.entries()) {
+          for (const [x, filled] of row.entries()) {
+            if (filled !== b.rows[y]?.[x]) different += 1;
+          }
+        }
+        expect(different, `${a.id} vs ${b.id}`).toBeGreaterThanOrEqual(MIN_DIFFERENT_PIXELS);
+      }
     }
   });
 
