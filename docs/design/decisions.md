@@ -367,3 +367,13 @@ On `docs/design/progression.md`:
 - **Client.** Boss card: the rank tag, "Festival week" styling and the creature teaser, five season pips (week 1 to 5, the 5th is the Festival, each pip also readable as text), and the band as a word (Long shot / Even / Likely / Strong) with the hint "How ready your team looks". The loot reveal (Raid tab and live finale) shows the Festival creature and the rank sentence. Collection shows a "Festival" badge on Festival species and says they are not found on expeditions; no screen offers them as catchable. No inline styles, text only.
 
 **Reasoning.** One stored plan per week and one done marker per ladder move make every step idempotent and replay-safe; legacy weeks are plain old data, so a deploy in the middle of a week breaks nothing; a separate readiness Rng keeps the forecast independent of any real fight.
+
+## 2026-10-11: Ladder feel accepted (Misa)
+
+Misa accepted the tuned ladder:
+
+- +40% boss HP per rank;
+- the plateau rhythm (a win, then a few losses at the new rank, the Festival, and the season ease of one rank);
+- Festivals as a near-sure win and a reliable break.
+
+PR #7 is merged and production runs it.
