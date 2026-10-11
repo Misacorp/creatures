@@ -1,0 +1,742 @@
+<title>Leet Creatures Look</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
+/>
+<style>
+  /* Layout: one game-screen column of chunky pixel-bordered panels on a dithered night sky; deliberately single dark theme (it is a game screen). */
+  :root {
+    color-scheme: dark;
+    --night: #17132b; /* page ground */
+    --dusk: #241e42; /* panel */
+    --dusk-2: #2f2857; /* raised panel / inset */
+    --ink: #0d0a1a; /* pixel outline */
+    --bone: #f4eedc; /* text */
+    --haze: #a69fc8; /* muted text */
+    --gold: #ffd25a; /* accent: Bait, crits, highlights */
+    --tide: #4f8fe6;
+    --ember: #ef6a3a;
+    --grove: #5cbf5a;
+    --spark: #f2d43d;
+    --good: #6fdc8c;
+    --bad: #ff5f6d;
+    --display: 'Pixelify Sans', 'Courier New', ui-monospace, monospace;
+    --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --px: 3px; /* one "pixel" of UI chrome */
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background-color: var(--night);
+    color: var(--bone);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.5;
+    background-image: radial-gradient(var(--dusk) 1px, transparent 1px);
+    background-size: 6px 6px;
+    padding-inline: 16px;
+    padding-block: 24px 56px;
+  }
+  .screen {
+    max-width: 760px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  h1,
+  h2,
+  h3,
+  .pix {
+    font-family: var(--display);
+    letter-spacing: 0.02em;
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(34px, 8vw, 54px);
+    line-height: 1;
+    color: var(--gold);
+    text-shadow:
+      var(--px) var(--px) 0 var(--ink),
+      calc(var(--px) * 2) calc(var(--px) * 2) 0 #6b3fa0;
+    text-wrap: balance;
+  }
+  h2 {
+    margin: 0;
+    font-size: 22px;
+    color: var(--bone);
+  }
+  h3 {
+    margin: 0;
+    font-size: 18px;
+  }
+  p {
+    margin: 0;
+    max-width: 65ch;
+  }
+  .lede {
+    color: var(--haze);
+  }
+  .label {
+    font-family: var(--display);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--haze);
+  }
+
+  /* Pixel frame: hard steps, no radius. */
+  .frame {
+    background: var(--dusk);
+    padding: 16px;
+    position: relative;
+    box-shadow:
+      0 calc(var(--px) * -1) 0 0 var(--ink),
+      0 var(--px) 0 0 var(--ink),
+      calc(var(--px) * -1) 0 0 0 var(--ink),
+      var(--px) 0 0 0 var(--ink),
+      inset 0 var(--px) 0 0 #3d3570,
+      inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+    margin: var(--px);
+  }
+  .section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  /* Palette */
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 10px;
+  }
+  .sw {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--haze);
+  }
+  .sw i {
+    display: block;
+    height: 40px;
+    box-shadow: 0 0 0 var(--px) var(--ink);
+  }
+
+  /* Creature cards */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .creature {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .portrait {
+    background: var(--dusk-2);
+    display: grid;
+    place-items: center;
+    padding: 10px;
+    box-shadow: inset 0 0 0 var(--px) var(--ink);
+  }
+  canvas.sprite {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    display: block;
+    max-width: 100%;
+  }
+  .bob {
+    animation: bob 1.2s steps(2) infinite;
+  }
+  @keyframes bob {
+    50% {
+      transform: translateY(calc(var(--px) * -1));
+    }
+  }
+  .name-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .lvl {
+    font-family: var(--display);
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--display);
+    font-size: 13px;
+    padding: 2px 8px;
+    background: var(--ink);
+    width: fit-content;
+  }
+  .chip b {
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+  }
+  .t-tide b {
+    background: var(--tide);
+  }
+  .t-ember b {
+    background: var(--ember);
+  }
+  .t-grove b {
+    background: var(--grove);
+  }
+  .t-spark b {
+    background: var(--spark);
+  }
+  .ability {
+    font-size: 14px;
+    color: var(--haze);
+  }
+  .ability strong {
+    color: var(--bone);
+  }
+  .locked {
+    color: var(--haze);
+    font-style: italic;
+  }
+  .xp {
+    height: 10px;
+    background: var(--ink);
+    position: relative;
+  }
+  .xp span {
+    position: absolute;
+    inset: 2px auto 2px 2px;
+    background: var(--gold);
+  }
+
+  /* Buttons */
+  .btn {
+    font-family: var(--display);
+    font-size: 16px;
+    color: var(--ink);
+    background: var(--gold);
+    border: 0;
+    padding: 8px 16px;
+    cursor: pointer;
+    box-shadow:
+      0 0 0 var(--px) var(--ink),
+      inset 0 calc(var(--px) * -1) 0 0 #c8952b;
+    transition: transform 60ms steps(1);
+  }
+  .btn:hover {
+    filter: brightness(1.08);
+  }
+  .btn:active {
+    transform: translateY(var(--px));
+    box-shadow: 0 0 0 var(--px) var(--ink);
+  }
+  .btn:focus-visible {
+    outline: var(--px) solid var(--bone);
+    outline-offset: calc(var(--px) * 2);
+  }
+  .btn.ghost {
+    background: var(--dusk-2);
+    color: var(--bone);
+    box-shadow:
+      0 0 0 var(--px) var(--ink),
+      inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+  }
+
+  /* Boss card */
+  .boss {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+  @media (max-width: 520px) {
+    .boss {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  .boss-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+  .rank {
+    font-family: var(--display);
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--gold);
+    padding: 2px 8px;
+    width: fit-content;
+    box-shadow: 0 0 0 var(--px) var(--ink);
+  }
+  .hpbar {
+    height: 22px;
+    background: var(--ink);
+    padding: var(--px);
+    display: grid;
+    grid-template-columns: repeat(20, 1fr);
+    gap: 2px;
+  }
+  .hpbar i {
+    background: var(--bad);
+  }
+  .hpbar i.gone {
+    background: #3a2033;
+  }
+  .pips {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .pips i {
+    width: 14px;
+    height: 14px;
+    background: var(--dusk-2);
+    box-shadow: 0 0 0 2px var(--ink);
+  }
+  .pips i.on {
+    background: var(--haze);
+  }
+  .pips i.now {
+    background: var(--gold);
+  }
+  .pips i.fest {
+    background: transparent;
+    box-shadow: 0 0 0 2px var(--gold);
+  }
+  .ready {
+    font-family: var(--display);
+    font-size: 20px;
+    color: var(--good);
+  }
+  .gimmick {
+    font-size: 14px;
+    color: var(--haze);
+  }
+  .gimmick strong {
+    color: var(--bone);
+  }
+
+  /* Live panel */
+  .live {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .round {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .feed {
+    list-style: none;
+    margin: 0;
+    padding: 12px;
+    background: var(--ink);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    min-height: 9em;
+  }
+  .feed li {
+    color: var(--haze);
+  }
+  .feed li.me {
+    color: var(--bone);
+  }
+  .feed .crit {
+    font-family: var(--display);
+    color: var(--gold);
+    display: inline-block;
+    animation: pop 600ms steps(4) both;
+  }
+  @keyframes pop {
+    0% {
+      transform: scale(1.8);
+    }
+    50% {
+      transform: scale(0.9);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  .abilities {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+  }
+  .ab {
+    background: var(--dusk-2);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: inset 0 0 0 var(--px) var(--ink);
+  }
+  .ab .when {
+    font-size: 13px;
+    color: var(--haze);
+  }
+  .ab .acts {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* Type specimen */
+  .spec {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .spec .big {
+    font-family: var(--display);
+    font-size: 30px;
+    line-height: 1.1;
+  }
+  .ask {
+    border-left: calc(var(--px) * 2) solid var(--gold);
+    padding-left: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ask ol {
+    margin: 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bob,
+    .feed .crit {
+      animation: none;
+    }
+  }
+</style>
+
+<div class="screen">
+  <header class="section">
+    <span class="label">Style sample for Misa · not final art</span>
+    <h1>LEET CREATURES</h1>
+    <p class="lede">
+      A proposed look: chunky pixel frames on a night-sky ground, hand-placed 16×16 creature sprites
+      drawn at 6× scale, a pixel display face for names and numbers, and a clear reading face for
+      everything you read.
+    </p>
+  </header>
+
+  <section class="frame section" aria-labelledby="h-creatures">
+    <h2 id="h-creatures">Collection</h2>
+    <div class="cards">
+      <article class="creature">
+        <div class="portrait">
+          <canvas
+            class="sprite bob"
+            data-sprite="cindle"
+            data-scale="6"
+            aria-label="Cindle sprite"
+          ></canvas>
+        </div>
+        <div class="name-row">
+          <h3>Cindle</h3>
+          <span class="lvl">Lv 12</span>
+        </div>
+        <span class="chip t-ember"><b></b>Ember · Payoff</span>
+        <div class="xp" aria-label="Training progress"><span style="width: 62%"></span></div>
+        <p class="ability"><strong>Flare Strike</strong>: hits the boss for 220% of its Attack.</p>
+        <button class="btn" type="button" id="b-train">Train · 27 Bait</button>
+      </article>
+      <article class="creature">
+        <div class="portrait">
+          <canvas
+            class="sprite bob"
+            data-sprite="splashet"
+            data-scale="6"
+            aria-label="Splashet sprite"
+          ></canvas>
+        </div>
+        <div class="name-row">
+          <h3>Splashet</h3>
+          <span class="lvl">Lv 7</span>
+        </div>
+        <span class="chip t-tide"><b></b>Tide · Setter</span>
+        <div class="xp" aria-label="Training progress"><span style="width: 30%"></span></div>
+        <p class="ability locked">Finale ability: unlocks at level 10.</p>
+        <button class="btn ghost" type="button" id="b-exp">Send on expedition</button>
+      </article>
+      <article class="creature">
+        <div class="portrait">
+          <canvas
+            class="sprite bob"
+            data-sprite="sproutle"
+            data-scale="6"
+            aria-label="Sproutle sprite"
+          ></canvas>
+        </div>
+        <div class="name-row">
+          <h3>Sproutle</h3>
+          <span class="lvl">Lv 15</span>
+        </div>
+        <span class="chip t-grove"><b></b>Grove · Guard</span>
+        <div class="xp" aria-label="Training progress"><span style="width: 96%"></span></div>
+        <p class="ability">
+          <strong>Bark Guard</strong>: its zone takes 60% less damage for 2 rounds.
+        </p>
+        <button class="btn" type="button" id="b-evolve">Evolve · 20 Essence</button>
+      </article>
+    </div>
+  </section>
+
+  <section class="frame section" aria-labelledby="h-boss">
+    <h2 id="h-boss">This week's boss</h2>
+    <div class="boss">
+      <div class="portrait">
+        <canvas
+          class="sprite"
+          data-sprite="wyrm"
+          data-scale="7"
+          aria-label="Cinder Wyrm sprite"
+        ></canvas>
+      </div>
+      <div class="boss-meta">
+        <span class="rank">Rank 7</span>
+        <h3 class="pix" style="font-size: 26px">Cinder Wyrm</h3>
+        <span class="chip t-ember"><b></b>Ember · acts fastest first</span>
+        <div class="hpbar" role="img" aria-label="Boss HP: 13 of 20 segments left">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
+          ><i class="gone"></i><i class="gone"></i><i class="gone"></i><i class="gone"></i
+          ><i class="gone"></i><i class="gone"></i><i class="gone"></i>
+        </div>
+        <p class="gimmick">
+          <strong>Backdraft</strong>: throws the first reaction each round back at your team.
+        </p>
+        <div class="row" style="align-items: center; gap: 24px">
+          <div>
+            <span class="label">Season</span>
+            <div class="pips" aria-label="Season week 3 of 5, week 5 is a Festival">
+              <i class="on"></i><i class="on"></i><i class="now"></i><i></i><i class="fest"></i>
+            </div>
+          </div>
+          <div>
+            <span class="label">How ready your team looks</span>
+            <div class="ready">Likely</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="frame live" aria-labelledby="h-live">
+    <div class="round">
+      <h2 id="h-live">Sunday finale</h2>
+      <span class="pix lvl">Round 6 / 12 · next in 0:07</span>
+    </div>
+    <ol class="feed" aria-live="polite">
+      <li class="me">
+        Cindle's Flare Strike hits Cinder Wyrm for 412. <span class="crit">CRITICAL!</span>
+      </li>
+      <li>Splashet marks the boss Soaked.</li>
+      <li>Voltaro sets off Conduction for 288 bonus damage.</li>
+      <li class="me">Your Rally fires: all creatures +10% this round.</li>
+      <li>Cinder Wyrm's Backdraft burns the front zone.</li>
+    </ol>
+    <div class="abilities">
+      <div class="ab">
+        <strong class="pix">Flare Strike</strong
+        ><span class="when">Cindle · fires on its own in round 5</span>
+        <div class="acts">
+          <button class="btn" type="button" id="b-fire">Fire</button
+          ><button class="btn ghost" type="button" id="b-hold">Hold</button>
+        </div>
+      </div>
+      <div class="ab">
+        <strong class="pix">Bark Guard</strong
+        ><span class="when">Sproutle · held: fires in the last round if you don't</span>
+        <div class="acts"><button class="btn" type="button" id="b-fire2">Fire</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="frame section" aria-labelledby="h-type">
+    <h2 id="h-type">Palette and type</h2>
+    <div class="swatches">
+      <div class="sw"><i style="background: var(--tide)"></i>Tide</div>
+      <div class="sw"><i style="background: var(--ember)"></i>Ember</div>
+      <div class="sw"><i style="background: var(--grove)"></i>Grove</div>
+      <div class="sw"><i style="background: var(--spark)"></i>Spark</div>
+      <div class="sw"><i style="background: var(--gold)"></i>Gold (Bait, crits)</div>
+      <div class="sw"><i style="background: var(--dusk)"></i>Panel</div>
+    </div>
+    <div class="spec">
+      <div>
+        <span class="label">Display: names, numbers, buttons</span>
+        <p class="big">Rank 7 · 412 dmg</p>
+      </div>
+      <div>
+        <span class="label">Reading: descriptions, the feed, help</span>
+        <p>Splashet marks the boss Soaked, so the next Spark hit sets off Conduction.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="ask">
+    <h2>What I'd like from you</h2>
+    <ol>
+      <li>Is this the right direction: pixel art, night-sky colours, chunky frames?</li>
+      <li>Creatures: cute and round like these, or cooler and more detailed?</li>
+      <li>Anything you'd change: colours, fonts, how busy it feels?</li>
+    </ol>
+    <p class="lede">
+      These four sprites are my quick placeholders to show the style. The real set (22 creatures, 4
+      bosses) gets a proper art pass in this style once you're happy with the direction.
+    </p>
+  </section>
+</div>
+
+<script>
+  (function () {
+    var P = {
+      k: '#0d0a1a',
+      e: '#fbf8ec',
+      q: '#ff8fab',
+      r: '#ef6a3a',
+      o: '#ffa83a',
+      y: '#ffe680',
+      d: '#a8361f',
+      c: '#7fc4f5',
+      w: '#e6f6ff',
+      b: '#4f8fe6',
+      n: '#2b4f99',
+      g: '#5cbf5a',
+      l: '#a6e36c',
+      m: '#2f7a3a',
+      t: '#c99a62',
+      u: '#8a5e33',
+    };
+    // Left halves; each row is mirrored to make a symmetric sprite.
+    var HALF = {
+      cindle: [
+        '......o.',
+        '.....oyo',
+        '..k..oyy',
+        '.krk.kor',
+        '.krrkrrr',
+        'krrrrrrr',
+        'krrekrrr',
+        'krrkkrrr',
+        'krqrrrrr',
+        'kdrrrrrd',
+        '.kdrrrrr',
+        '.kdyyyyy',
+        '..kdyyyy',
+        '...kdk..',
+        '...kk...',
+        '........',
+      ],
+      splashet: [
+        '........',
+        '.......k',
+        '......kc',
+        '.....kcw',
+        '....kccw',
+        '...kcccc',
+        '..kccccc',
+        '..kcekcc',
+        '.kccekcc',
+        '.kcqcccc',
+        '.kcccckk',
+        '.kbccccc',
+        '..kbbccc',
+        '..knbbbb',
+        '...knnnn',
+        '....kkkk',
+      ],
+      sproutle: [
+        '......l.',
+        '.....lgl',
+        '.......m',
+        '....kkkk',
+        '..kkmgmg',
+        '.kmgllgm',
+        '.kgllgmg',
+        'kmgmgmgm',
+        'kkkkkkkk',
+        'kttekttt',
+        'kttkkttt',
+        '.ktqtttt',
+        '.kttttkk',
+        '..ktkttt',
+        '..kk.kkk',
+        '........',
+      ],
+      wyrm: [
+        '..k.........',
+        '.kok........',
+        '.koyk.......',
+        '..koyk......',
+        '...kork.kkkk',
+        '....krrkrrrr',
+        '...krrrrrrrr',
+        '..krrrrrrrrr',
+        '.krrdrrrrrrr',
+        '.krdkyyrrrrr',
+        '.krdkkyrrrrr',
+        '.krrddrrrrrr',
+        '..krrrrrrrrr',
+        '..krrrrrrrrr',
+        '...krrrrrkrr',
+        '...krrrrrrrr',
+        '....krekekek',
+        '....kroooooo',
+        '.....kryyyyy',
+        '.....krrrrrr',
+        '......kddddd',
+        '.......kkkkk',
+        '............',
+        '............',
+      ],
+    };
+    function rows(name) {
+      return HALF[name].map(function (h) {
+        return h + h.split('').reverse().join('');
+      });
+    }
+    document.querySelectorAll('canvas[data-sprite]').forEach(function (cv) {
+      var grid = rows(cv.dataset.sprite),
+        s = Number(cv.dataset.scale) || 6;
+      cv.width = grid[0].length * s;
+      cv.height = grid.length * s;
+      var ctx = cv.getContext('2d');
+      grid.forEach(function (row, y) {
+        for (var x = 0; x < row.length; x++) {
+          var col = P[row[x]];
+          if (col) {
+            ctx.fillStyle = col;
+            ctx.fillRect(x * s, y * s, s, s);
+          }
+        }
+      });
+    });
+  })();
+</script>
