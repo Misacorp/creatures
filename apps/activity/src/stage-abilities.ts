@@ -69,6 +69,19 @@ export function badgeFor(
   return { kind: 'auto', round, pulse: canAct, label: badgeLabel('auto', round) };
 }
 
+/**
+ * What a tap on a creature of the stage does. The player's own creatures are always buttons: one with
+ * an ability in this fight opens its ability popover, and one without (below the unlock level, or a
+ * species with no ability) opens a short note saying why, so a tap never does nothing. Other
+ * players' creatures and guests are not interactive.
+ */
+export type UnitTap = 'ability' | 'note' | 'none';
+
+export function unitTap(mine: boolean, hasAbility: boolean): UnitTap {
+  if (!mine) return 'none';
+  return hasAbility ? 'ability' : 'note';
+}
+
 /** A rectangle in any one coordinate space (the viewport, usually). */
 export interface Box {
   left: number;

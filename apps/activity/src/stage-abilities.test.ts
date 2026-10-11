@@ -4,6 +4,7 @@ import {
   badgeLabel,
   placePopover,
   popoverStateLine,
+  unitTap,
   usedBadge,
   type Box,
 } from './stage-abilities';
@@ -157,5 +158,20 @@ describe('placePopover', () => {
     expect(520 + at.x).toBeGreaterThanOrEqual(500);
     expect(520 + at.x + size.width).toBeLessThanOrEqual(780);
     expect(at.placement).toBe('above');
+  });
+});
+
+describe('what a tap on a creature does', () => {
+  it('opens the ability popover for your creature with an ability', () => {
+    expect(unitTap(true, true)).toBe('ability');
+  });
+
+  it('opens a note for your creature without one, so a tap never does nothing', () => {
+    expect(unitTap(true, false)).toBe('note');
+  });
+
+  it('does nothing for other players and guests', () => {
+    expect(unitTap(false, false)).toBe('none');
+    expect(unitTap(false, true)).toBe('none');
   });
 });

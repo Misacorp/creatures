@@ -19,7 +19,7 @@ import {
   type AbilityUse,
   type Cue,
 } from './stage';
-import { badgeFor, usedBadge, type Badge } from './stage-abilities';
+import { badgeFor, unitTap, usedBadge, type Badge } from './stage-abilities';
 import { StagePopover } from './StagePopover';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -151,6 +151,11 @@ export interface StageAbilities {
    * chip). `badge` is what the stage shows for it; `close` shuts the popover.
    */
   renderPopover: (ability: LiveAbility, badge: Badge, close: () => void) => ComponentChildren;
+  /**
+   * The popover of one of the caller's creatures that has no ability in this fight (below the unlock
+   * level, say). Without it such a creature is not a button.
+   */
+  renderNote?: (creature: ReplayRowEntry, close: () => void) => ComponentChildren;
   /** The text of the "?" button's popover (how abilities work). Without it there is no button. */
   help?: ComponentChildren;
 }
@@ -163,6 +168,8 @@ export interface StageProps {
   rounds: number;
   /** The row, left to right. */
   row: readonly ReplayRowEntry[];
+  /** The lobby's preview: no round yet, so the head says to get ready instead of "Round 1". */
+  lobby?: boolean;
   /** The creatures that are the player's own: they are outlined and marked "you". */
   mineIds: ReadonlySet<string>;
   names: EventNames;
@@ -219,8 +226,10 @@ interface UnitProps {
   badge: Badge | null;
   /** The ability's id, for the label of the badge. */
   abilityId: string | null;
-  /** True for the player's own creature with an ability: it can be tapped. */
+  /** True for the player's own creatures: they can be tapped (an ability popover, or a note). */
   interactive: boolean;
+  /** What the button says it opens, for assistive technology. */
+  opens: string;
   open: boolean;
   /** Registers the creature's button as the anchor of its popover. */
   anchorRef: Ref<HTMLButtonElement>;
@@ -281,7 +290,7 @@ function StageUnit(props: UnitProps) {
           class="unit-face"
           aria-haspopup="dialog"
           aria-expanded={open}
-          aria-label={`${spoken}. Opens the ability options.`}
+          aria-label={`${spoken}. ${props.opens}`}
           onClick={props.onToggle}
         >
           {face}
@@ -310,6 +319,7 @@ export function Stage({
   hpStart,
   rounds,
   row,
+  lobby,
   mineIds,
   names,
   events,
@@ -372,6 +382,8 @@ export function Stage({
   const openAbility =
     openKey?.startsWith('a:') === true ? own.find((a) => `a:${a.key}` === openKey) : undefined;
   const openActionable = openAbility === undefined ? false : ownInfo(openAbility).actionable;
+  const openNote =
+    openKey?.startsWith('c:') === true ? row.find((c) => `c:${c.id}` === openKey) : undefined;
 
   // The popover closes by itself when its ability goes away, or when it was open on an ability
   // that could be used and no longer can be (the round moved on). A read-only popover (an ability
@@ -383,14 +395,19 @@ export function Stage({
   useEffect(() => {
     const before = seen.current;
     seen.current = { key: openKey, actionable: openActionable };
-    if (openKey === null || !openKey.startsWith('a:')) return;
+    if (openKey === null) return;
+    if (openKey.startsWith('c:')) {
+      if (openNote === undefined) setOpenKey(null);
+      return;
+    }
+    if (!openKey.startsWith('a:')) return;
     if (
       openAbility === undefined ||
       (before.key === openKey && before.actionable && !openActionable)
     ) {
       setOpenKey(null);
     }
-  }, [openKey, openActionable, openAbility === undefined]);
+  }, [openKey, openActionable, openAbility === undefined, openNote === undefined]);
 
   const close = (): void => {
     setOpenKey(null);
@@ -416,7 +433,11 @@ export function Stage({
       <div class="stage-head">
         <span class="stage-head-left">
           <span class="pix stage-round">
-            {state.round > 0 ? `Round ${String(state.round)} / ${String(rounds)}` : 'Round 1'}
+            {state.round > 0
+              ? `Round ${String(state.round)} / ${String(rounds)}`
+              : lobby === true
+                ? 'Get ready'
+                : 'Round 1'}
           </span>
           {abilities?.help !== undefined && (
             <button
@@ -531,7 +552,12 @@ export function Stage({
                     abilityId = used.ability;
                     badge = usedBadge(used.round);
                   }
-                  const key = mineAbility === undefined ? null : `a:${mineAbility.key}`;
+                  // Your own creatures are always buttons: the ability popover, or a note on why
+                  // there is no ability (the note needs the screen to supply its text).
+                  const tap = unitTap(mine && abilities !== undefined, mineAbility !== undefined);
+                  let key: string | null = null;
+                  if (tap === 'ability' && mineAbility !== undefined) key = `a:${mineAbility.key}`;
+                  else if (tap === 'note' && abilities?.renderNote !== undefined) key = `c:${c.id}`;
                   return (
                     <StageUnit
                       key={c.id}
@@ -546,6 +572,11 @@ export function Stage({
                       badge={badge}
                       abilityId={abilityId}
                       interactive={key !== null}
+                      opens={
+                        tap === 'note'
+                          ? 'Opens a note about its ability.'
+                          : 'Opens the ability options.'
+                      }
                       open={key !== null && openKey === key}
                       anchorRef={anchorRef(key ?? `none:${c.id}`)}
                       onToggle={() => {
@@ -621,6 +652,16 @@ export function Stage({
           onClose={close}
         >
           {abilities.renderPopover(openAbility, ownInfo(openAbility).badge, close)}
+        </StagePopover>
+      )}
+      {abilities?.renderNote !== undefined && openNote !== undefined && (
+        <StagePopover
+          key={openKey}
+          anchor={() => anchors.current.get(`c:${openNote.id}`) ?? null}
+          label={`${openNote.name}`}
+          onClose={close}
+        >
+          {abilities.renderNote(openNote, close)}
         </StagePopover>
       )}
       {abilities?.help !== undefined && openKey === 'help' && (

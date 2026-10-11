@@ -12,6 +12,7 @@ import {
 import type { Raid } from './raid';
 import {
   AbilityBodySchema,
+  AutofireBodySchema,
   LiveActionBodySchema,
   OptOutBodySchema,
   PlacementBodySchema,
@@ -171,6 +172,16 @@ export const raidRoutes: Routes<RaidRouteContext> = {
       if (body === undefined) return invalidBody();
       const tz = core.timezone();
       const outcome = core.raid.setAbility(user.id, tz, body.abilityId);
+      if (!outcome.ok) return failure(outcome);
+      return json(core.raid.view(user.id, tz));
+    },
+  },
+  '/api/raid/autofire': {
+    PUT: async (request, { user, core }) => {
+      const body = await parseBody(request, AutofireBodySchema);
+      if (body === undefined) return invalidBody();
+      const tz = core.timezone();
+      const outcome = core.raid.setAutofire(user.id, tz, body.target, body.on);
       if (!outcome.ok) return failure(outcome);
       return json(core.raid.view(user.id, tz));
     },

@@ -97,5 +97,21 @@
       "key": "m1:c1",
       "action": "fire"
     }
+  },
+  "autofire-basic": {
+    "method": "PUT",
+    "path": "/api/raid/autofire",
+    "body": {
+      "target": "basic",
+      "on": false
+    }
+  },
+  "autofire-creature": {
+    "method": "PUT",
+    "path": "/api/raid/autofire",
+    "body": {
+      "target": "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+      "on": true
+    }
   }
 }

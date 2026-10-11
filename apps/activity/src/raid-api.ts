@@ -114,6 +114,8 @@ export interface AbilityPreview {
   unlocked: boolean;
   /** The creature level that unlocks it. */
   unlockLevel: number;
+  /** The caller's Auto fire setting for the finale (on unless they turned it off). */
+  autoFire: boolean;
 }
 
 export interface RaidView {
@@ -328,7 +330,8 @@ function isAbilityPreview(value: unknown): value is AbilityPreview {
     isNullableStr(value['creatureId']) &&
     isNullableStr(value['species']) &&
     isBool(value['unlocked']) &&
-    isInt(value['unlockLevel'])
+    isInt(value['unlockLevel']) &&
+    isBool(value['autoFire'])
   );
 }
 
@@ -752,6 +755,14 @@ export async function fetchStats(
 /** Picks the finale ability (any time before the finale starts). */
 export async function setRaidAbility(abilityId: string): Promise<RaidView> {
   return parseRaidView(await send('/api/raid/ability', 'PUT', { abilityId }));
+}
+
+/**
+ * The Auto fire setting of one ability for this week's finale: `target` is `basic` or the id of one
+ * of the caller's own team creatures. Allowed until the finale starts. Answers with the new view.
+ */
+export async function setRaidAutofire(target: string, on: boolean): Promise<RaidView> {
+  return parseRaidView(await send('/api/raid/autofire', 'PUT', { target, on }));
 }
 
 /** Marks a finale reveal as seen. Idempotent on the server. */

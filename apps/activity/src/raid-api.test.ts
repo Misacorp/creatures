@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import raidAutofire from './fixtures/raid-autofire.json';
 import raidFestival from './fixtures/raid-festival.json';
 import raidFestivalReveal from './fixtures/raid-festival-reveal.json';
 import raidReveal from './fixtures/raid-reveal.json';
@@ -47,6 +48,7 @@ const raid = {
         species: null,
         unlocked: true,
         unlockLevel: 1,
+        autoFire: true,
       },
       {
         abilityId: 'tidal-mark',
@@ -54,6 +56,7 @@ const raid = {
         species: 'splashet',
         unlocked: false,
         unlockLevel: 10,
+        autoFire: false,
       },
     ],
     reveal: null,
@@ -351,6 +354,18 @@ describe('parseRaidView', () => {
     expect(parseRaidView(out).party).toBeNull();
   });
 
+  it('carries the Auto fire setting of every ability, on or off', () => {
+    const parsed = parseRaidView(raid);
+    expect(parsed.you.abilities.map((a) => a.autoFire)).toEqual([true, false]);
+    const real = parseRaidView(raidAutofire);
+    expect(real.you.abilities.map((a) => [a.abilityId, a.autoFire])).toEqual([
+      ['shield-wall', false],
+      ['thunder-strike', true],
+      ['flare-strike', false],
+      ['static-zap', true],
+    ]);
+  });
+
   it('accepts locked abilities without a key, and no abilities at all', () => {
     const parsed = parseRaidView(raid);
     expect(parsed.you.abilities[1]).not.toHaveProperty('key');
@@ -368,6 +383,8 @@ describe('parseRaidView', () => {
     expect(() => parseRaidView(you([{ ...entry, unlocked: 'yes' }]))).toThrow();
     expect(() => parseRaidView(you([{ ...entry, unlockLevel: 1.5 }]))).toThrow();
     expect(() => parseRaidView(you([{ ...entry, creatureId: 3 }]))).toThrow();
+    expect(() => parseRaidView(you([{ ...entry, autoFire: 'on' }]))).toThrow();
+    expect(() => parseRaidView(you([{ ...entry, autoFire: undefined }]))).toThrow();
     expect(() => parseRaidView(you([{ ...entry, species: undefined }]))).toThrow();
     const missing: Record<string, unknown> = { ...entry };
     delete missing['abilityId'];

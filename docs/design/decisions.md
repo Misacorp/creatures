@@ -417,3 +417,17 @@ PR #7 is merged and production runs it.
 **Reasoning.** Rows fit narrow phones and match the order the boss attacks in. Putting each ability on its creature makes the choice obvious, and one toggle is easier to understand than a one-way "Hold".
 
 **Checked, not a bug.** The boss HP the stage shows equals the engine's `bossHpEnd` for whole fights, including practice-style inputs (tests in `stage.test.ts`). The odd "18689 / 18698" in the screenshot came from a dev test fight.
+
+## 2026-10-11: Pre-fight countdown, Auto fire preferences, tap fix **[Misa]**
+
+**Context.** Misa tried the practice fight on the Discord mobile app: tapping his creatures opened nothing. He also asked for a dramatic countdown before a fight and for Auto fire to be settable before it.
+
+**Decision.**
+
+- **Countdown.** In the last 30 seconds before a live finale or practice fight, a big pixel-font number covers the stage (calm to 11, faster and gold to orange from 10 to 6, red with a stepped shake and a growing number from 5 to 1, then "FIGHT!"). It is computed from the server's `startsAt` and the clock offset and wakes exactly when the number changes (no extra polls). Reduced motion: a still number with colour changes only. The overlay does not take taps.
+- **Preview stage in the lobby.** The lobby snapshot now carries the party's row, the names, the boss pool and the caller's own abilities (read-only, same builder as the start). Tapping an ability creature opens the popover with only the Auto fire toggle.
+- **Auto fire preferences (migration 14, `raid_autofire`).** `PUT /api/raid/autofire { target, on }`, `target` = `basic` or an own team creature id, allowed until the finale starts (`locked` after). They set the first mode of each ability at the live start, the instant late finale and the practice start (off = `held`). Also settable in the Raid tab's abilities card. Every live ability has `autoFire`; each Raid-view ability preview has `autoFire`.
+- **Practice fights** start after a 30 second lobby; Fire before the start is `not_started`. The 10 minute cooldown counts from the request.
+- **The mobile tap bug.** Not reproducible by touch in Chromium with fixture data (real touch events, 90 ms holds, taps during beat playback: the popover always opened). The one real gap found: only creatures with an ability were buttons, and abilities unlock at level 10, so on staging a team below it had no tappable creature at all. Own creatures are now always buttons: one without an ability opens a note ("Its ability unlocks at level 10. It is level 4 now.").
+
+**Reasoning.** The server stays authoritative: preferences are validated and only ever read at the start. The lobby preview reuses the start's builder so it cannot drift from the fight.

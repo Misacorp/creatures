@@ -47,6 +47,11 @@ export interface LiveAbility {
   /** The row slot (creature id, as in `row[].id`) of a creature ability; null for a basic ability. */
   creature: string | null;
   mode: LiveAbilityMode;
+  /**
+   * Auto fire is on: false exactly when the mode is `held`. In the lobby this is the player's
+   * preference for the start; once the fight is on it follows the toggle.
+   */
+  autoFire: boolean;
   /** True once the ability has taken effect. */
   fired: boolean;
   /** The round it took effect in, once it has. */
@@ -106,8 +111,10 @@ export interface LiveNone {
 }
 
 /**
- * Before the start: the countdown and who is here. The boss HP is the party's pool, and may be
- * missing; there is no row, no names, no events and no abilities yet.
+ * Before the start: the countdown, who is here and a preview of the stage. The row, the names and the
+ * boss pool are what the fight would use now (a practice fight: what it was started with), and
+ * `abilities` holds only the caller's own, with their Auto fire setting. There are no events yet. The
+ * preview can be missing (an empty row, no names) when the party has none to show.
  */
 export interface LiveLobby extends LiveShared {
   status: 'lobby';
@@ -154,6 +161,7 @@ function isLiveAbility(value: unknown): value is LiveAbility {
     isStr(value['abilityId']) &&
     isNullableStr(value['creature']) &&
     (value['mode'] === 'default' || value['mode'] === 'held' || value['mode'] === 'fired') &&
+    isBool(value['autoFire']) &&
     isBool(value['fired']) &&
     (value['firedAtRound'] === null || isPositiveInt(value['firedAtRound'])) &&
     (value['fireAtRound'] === null || isPositiveInt(value['fireAtRound'])) &&

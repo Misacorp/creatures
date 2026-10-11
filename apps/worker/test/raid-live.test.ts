@@ -1,7 +1,7 @@
 import { RULES, content, createSeededRng, jackpotEssenceFor } from '@creatures/game';
 import { simulateFight, type FightEvent } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
-import { LIVE_ROUND_MS } from '../src/raid-live';
+import { LIVE_ROUND_MS, PRACTICE_LOBBY_MS } from '../src/raid-live';
 import type { LiveSnapshot } from '../src/raid-live-view';
 import { buildPhaseInput } from '../src/raid-resolve';
 import { eventTimes } from '../src/raid-schedule';
@@ -13,6 +13,7 @@ import liveLobby from '../../activity/src/fixtures/live-lobby.json';
 import liveMid from '../../activity/src/fixtures/live-mid.json';
 import liveNone from '../../activity/src/fixtures/live-none.json';
 import collectionState from '../../activity/src/fixtures/collection-state.json';
+import raidAutofire from '../../activity/src/fixtures/raid-autofire.json';
 import raidFestival from '../../activity/src/fixtures/raid-festival.json';
 import raidFestivalReveal from '../../activity/src/fixtures/raid-festival-reveal.json';
 import raidReveal from '../../activity/src/fixtures/raid-reveal.json';
@@ -145,12 +146,27 @@ describe('the live finale lifecycle', () => {
         round: 0,
         serverNow: FINALE - 4 * MINUTE,
         events: [],
-        abilities: [],
-        row: [],
         loot: null,
-        you: null,
+        you: 'm1',
       });
       expect(lobby.boss.name).toBeTruthy();
+      // The lobby already shows the stage: the row as it would fight now and the caller's abilities.
+      expect(lobby.row).toHaveLength(9); // two players: guests fill the row
+      expect(lobby.row.filter((c) => c.owner === 'm1')).toHaveLength(3);
+      expect(lobby.names?.players?.['m1']).toBe(player.name);
+      expect(lobby.abilities).toHaveLength(1); // below the unlock level: the basic ability only
+      expect(lobby.abilities[0]).toMatchObject({
+        key: 'm1:basic',
+        alias: 'm1',
+        creature: null,
+        mode: 'default',
+        autoFire: true,
+        fired: false,
+        firedAtRound: null,
+        fireAtRound: null,
+      });
+      expect(lobby.boss.hpMax).toBe(BIG);
+      expect(lobby.bossHp).toBe(BIG);
       expect(count(ctx.sql, 'raid_live')).toBe(0);
 
       // The finale event starts the fight.
@@ -1133,8 +1149,27 @@ describe('the practice finale', () => {
 
         const start = await ctx.request(secret, '/api/raid/practice', 'POST');
         expect(start.status).toBe(200);
-        const first = await start.json<LiveSnapshot>();
-        const t0 = ctx.clock.t;
+        const lobby = await start.json<LiveSnapshot>();
+        const asked = ctx.clock.t;
+        // It starts after a 30 second lobby: until then the party sees the stage as a preview.
+        const t0 = asked + PRACTICE_LOBBY_MS;
+        expect(lobby).toMatchObject({
+          status: 'lobby',
+          practice: true,
+          startsAt: t0,
+          round: 0,
+          serverNow: asked,
+          events: [],
+          you: 'm1',
+          party: 1,
+        });
+        expect(lobby.row).toHaveLength(9);
+        expect(lobby.abilities.map((x) => x.abilityId)).toEqual(['purge']); // the caller's own
+        expect(lobby.boss.hpStart).toBe(lobby.boss.hpMax);
+        ctx.clock.t = t0 - 1;
+        expect(snap(ctx, a)).toMatchObject({ status: 'lobby', events: [] });
+        ctx.clock.t = t0;
+        const first = snap(ctx, a);
         expect(first).toMatchObject({
           status: 'live',
           practice: true,
@@ -1187,7 +1222,7 @@ describe('the practice finale', () => {
 
         const started = ctx.core.raid.startPractice(a.id, HELSINKI);
         expect(started.ok).toBe(true);
-        const t0 = ctx.clock.t;
+        const t0 = ctx.clock.t + PRACTICE_LOBBY_MS;
         // The practice boss has full HP, whatever the real pool is.
         const first = started.ok ? started.value : null;
         expect(first?.boss.hpStart).toBe(first?.boss.hpMax);
@@ -1231,7 +1266,7 @@ describe('the practice finale', () => {
         const again = ctx.core.raid.startPractice(b.id, HELSINKI);
         expect(again.ok).toBe(true);
         expect(count(ctx.sql, 'raid_live')).toBe(1); // replaced, not piled up
-        expect(again.ok ? again.value.startsAt : 0).toBe(ctx.clock.t);
+        expect(again.ok ? again.value.startsAt : 0).toBe(ctx.clock.t + PRACTICE_LOBBY_MS);
         // A practice fight stops being shown once the limit has passed.
         ctx.clock.t += 10 * MINUTE;
         expect(snap(ctx, a).status).toBe('none');
@@ -1280,6 +1315,8 @@ describe('the practice finale', () => {
         const [a] = inOrder(ctx, players) as [Seeded, Seeded];
         at(ctx, -31 * MINUTE);
         expect(ctx.core.raid.startPractice(a.id, HELSINKI).ok).toBe(true);
+        at(ctx, -31 * MINUTE + PRACTICE_LOBBY_MS);
+        expect(snap(ctx, a)).toMatchObject({ status: 'live', practice: true });
         // 31 minutes before: allowed, and it is over (and out of the way) long before the lobby.
         at(ctx, -30 * MINUTE);
         expect(err(ctx.core.raid.startPractice(a.id, HELSINKI))).toBe('409 practice_blocked');
@@ -1305,7 +1342,7 @@ describe('the practice finale', () => {
         const practice = ctx.core.raid.startPractice(a.id, HELSINKI);
         expect(practice.ok).toBe(true);
         expect(practice.ok ? practice.value : null).toMatchObject({
-          status: 'live',
+          status: 'lobby',
           practice: true,
         });
         // The real result is untouched, and comes back after the practice window.
@@ -1377,6 +1414,7 @@ describe('the API contract with the client', () => {
   const ABILITY_KEYS = [
     'abilityId',
     'alias',
+    'autoFire',
     'creature',
     'defaultRound',
     'fireAtRound',
@@ -1385,7 +1423,15 @@ describe('the API contract with the client', () => {
     'key',
     'mode',
   ];
-  const PREVIEW_KEYS = ['abilityId', 'creatureId', 'key', 'species', 'unlockLevel', 'unlocked'];
+  const PREVIEW_KEYS = [
+    'abilityId',
+    'autoFire',
+    'creatureId',
+    'key',
+    'species',
+    'unlockLevel',
+    'unlocked',
+  ];
   const ROW_KEYS = ['element', 'id', 'level', 'name', 'owner', 'position', 'role', 'species'];
   const LOOT_KEYS = ['cleared', 'essence', 'festivalGrant', 'jackpot', 'pity', 'rankChange'];
   const JACKPOT_KEYS = ['essence', 'firstOnServer'];
@@ -1517,14 +1563,16 @@ describe('the API contract with the client', () => {
           status: 'lobby',
           party: 1,
           startsAt: FINALE,
-          names: null,
-          bossHp: null,
-          row: [],
+          you: 'm1',
           events: [],
-          abilities: [],
           loot: null,
         });
+        // The lobby previews the stage: the row, the names, the pool and the caller's abilities.
         expect(typeof (lobby['boss'] as { hpMax: unknown }).hpMax).toBe('number');
+        expect(typeof lobby['bossHp']).toBe('number');
+        expect((lobby['row'] as unknown[]).length).toBeGreaterThan(0);
+        expect(keys(lobby['names'])).toEqual(keys(liveDoneHit.names));
+        expect((lobby['abilities'] as unknown[]).length).toBeGreaterThan(0);
 
         // The fixtures were saved from these same states.
         expectShape(liveNone, 'fixture live-none');
@@ -1607,6 +1655,20 @@ describe('the API contract with the client', () => {
           ['phase2', false],
           ['finale', true],
         ]);
+        // The view with Auto fire turned off for some abilities has the same keys, and the flag.
+        expect(keys(raidAutofire), UPDATE).toEqual(RAID_KEYS);
+        expect(keys(raidAutofire.you), UPDATE).toEqual(keys(raidReveal.you));
+        expect(raidAutofire.you.abilities.map((e) => e.autoFire)).toEqual([
+          false,
+          true,
+          false,
+          true,
+        ]);
+        for (const entry of raidAutofire.you.abilities) {
+          expect(keys(entry), UPDATE).toEqual(
+            entry.unlocked ? PREVIEW_KEYS : PREVIEW_KEYS.filter((k) => k !== 'key'),
+          );
+        }
         // The Festival fixtures (a Monday view with the band, and the reveal of a won Festival).
         expect(keys(raidFestival), UPDATE).toEqual(RAID_KEYS);
         expect(keys(raidFestival.party), UPDATE).toEqual(PARTY_KEYS);
@@ -1699,6 +1761,18 @@ describe('the API contract with the client', () => {
       );
       pick(ctx, a, 'purge');
       pick(ctx, b, 'rally');
+      await expectError(
+        'auto fire for a creature that is not yours',
+        await post(sa, '/api/raid/autofire', { target: b.creatureIds[0], on: false }, 'PUT'),
+        409,
+        'not_your_creature',
+      );
+      await expectError(
+        'auto fire body',
+        await post(sa, '/api/raid/autofire', { target: 'basic' }, 'PUT'),
+        400,
+        'invalid_body',
+      );
       at(ctx, -3 * MINUTE);
       await expectError(
         'action in the lobby',
@@ -1741,6 +1815,12 @@ describe('the API contract with the client', () => {
       await expectError(
         'ability after the start',
         await post(sb, '/api/raid/ability', { abilityId: 'purge' }, 'PUT'),
+        409,
+        'locked',
+      );
+      await expectError(
+        'auto fire after the start',
+        await post(sb, '/api/raid/autofire', { target: 'basic', on: false }, 'PUT'),
         409,
         'locked',
       );
@@ -1809,6 +1889,12 @@ describe('the API contract with the client', () => {
         expect(await code(sa, { x: 1 })).toEqual([400, { error: 'invalid_body' }]);
         expect((await code(sa))[0]).toBe(200);
         expect(await code(sa)).toEqual([409, { error: 'practice_cooldown' }]);
+        // The practice fight is in its lobby: Fire is for the fight (Auto fire is set with the preference).
+        const early = await ctx.request(sa, '/api/raid/live/action', 'POST', {
+          key: 'm1:basic',
+          action: 'fire',
+        });
+        expect([early.status, await early.json()]).toEqual([409, { error: 'not_started' }]);
         at(ctx, -20 * MINUTE);
         expect(await code(sa)).toEqual([409, { error: 'practice_blocked' }]);
       },
@@ -1835,6 +1921,19 @@ describe('the API contract with the client', () => {
 
         // The pick, and a practice start that the rules refuse (not the schema).
         expect(await send(sa, requestBodies['ability'])).toBe(200);
+        // The Auto fire preference: the basic ability, and a creature of the caller (the fixture's
+        // id is a placeholder: only the shape matters, so the player's own creature stands in).
+        expect(await send(sa, requestBodies['autofire-basic'])).toBe(200);
+        const own = (ctx.core.raid.view(a.id, HELSINKI).you.team?.creatures ?? [])[0];
+        const creatureBody = requestBodies['autofire-creature'];
+        expect(Object.keys(creatureBody.body).sort()).toEqual(['on', 'target']);
+        expect(
+          await send(sa, {
+            ...creatureBody,
+            body: { ...creatureBody.body, target: own?.creatureId },
+          }),
+        ).toBe(200);
+        expect(creatureBody.body.target).toMatch(/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/);
         expect(await send(sa, requestBodies['practice'])).toBe(409); // blocked 10 minutes before
         pick(ctx, a, 'shield-wall');
         pick(ctx, b, 're-mark');
@@ -1858,6 +1957,350 @@ describe('the API contract with the client', () => {
         expect(requestBodies['reveal-seen'].body.week).toBe(W02.id);
       },
       { core: { raidPractice: true } },
+    );
+  });
+});
+
+/**
+ * Auto fire preferences (`PUT /api/raid/autofire`, table `raid_autofire`): the default Auto fire
+ * setting of each ability for the week's finale, applied at the live start (and at the instant late
+ * finale and the practice start), locked once the finale has started.
+ */
+describe('Auto fire preferences', () => {
+  const teamIds = (ctx: Ctx, p: Seeded): string[] =>
+    (ctx.core.raid.view(p.id, HELSINKI).you.team?.creatures ?? []).map((c) => c.creatureId);
+  const setAuto = (ctx: Ctx, p: Seeded, target: string, on: boolean) =>
+    ctx.core.raid.setAutofire(p.id, HELSINKI, target, on);
+  const ownAbilities = (s: LiveSnapshot, alias = 'm1') =>
+    s.abilities.filter((x) => x.alias === alias);
+  const prefOf = (ctx: Ctx, p: Seeded, target: string): boolean | undefined =>
+    ctx.core.raid
+      .view(p.id, HELSINKI)
+      .you.abilities.find((x) => (x.creatureId ?? 'basic') === target)?.autoFire;
+  const firedRoundOf = (events: readonly FightEvent[], key: string): number | undefined =>
+    events.find((e) => e.t === 'ability' && e.key === key)?.round;
+  const live = { raidPractice: true };
+
+  it('is on for every ability until the player turns it off, and shows in the Raid view', async () => {
+    await runRaid((ctx) => {
+      const players = toFinale(ctx, 2, { level: UNLOCKED });
+      const [a, b] = inOrder(ctx, players) as [Seeded, Seeded];
+      const [c0, c1] = teamIds(ctx, a) as [string, string, string];
+      const view = ctx.core.raid.view(a.id, HELSINKI);
+      expect(view.you.abilities.map((x) => x.autoFire)).toEqual([true, true, true, true]);
+
+      expect(setAuto(ctx, a, 'basic', false)).toEqual({ ok: true, value: null });
+      expect(setAuto(ctx, a, c1, false)).toEqual({ ok: true, value: null });
+      expect(ctx.core.raid.view(a.id, HELSINKI).you.abilities.map((x) => x.autoFire)).toEqual([
+        false,
+        true,
+        false,
+        true,
+      ]);
+      // Idempotent, and back on again.
+      expect(setAuto(ctx, a, 'basic', false).ok).toBe(true);
+      expect(count(ctx.sql, 'raid_autofire')).toBe(2);
+      expect(setAuto(ctx, a, c1, true).ok).toBe(true);
+      expect(prefOf(ctx, a, c1)).toBe(true);
+      expect(prefOf(ctx, a, c0)).toBe(true);
+      expect(prefOf(ctx, a, 'basic')).toBe(false);
+      // It is the player's own: another player's view is untouched.
+      expect(ctx.core.raid.view(b.id, HELSINKI).you.abilities.every((x) => x.autoFire)).toBe(true);
+    });
+  });
+
+  it('is changed over the API with a strict body, for the session user only', async () => {
+    await runRaid(async (ctx) => {
+      const players = toFinale(ctx, 2, { level: UNLOCKED });
+      const [a, b] = inOrder(ctx, players) as [Seeded, Seeded];
+      const outsider = seedPlayer(ctx, 50, { lastSeenAt: ctx.clock.t - 30 * 86_400_000 });
+      const open = (p: Seeded) =>
+        ctx.core.createSession(ctx.guildId, { id: p.id, displayName: p.name });
+      const sa = await open(a);
+      const so = await open(outsider);
+      const [c0] = teamIds(ctx, a) as [string];
+      const put = async (secret: string, body: unknown) => {
+        const res = await ctx.request(secret, '/api/raid/autofire', 'PUT', body);
+        return [res.status, await res.json<Record<string, unknown>>()] as const;
+      };
+
+      const ok = await put(sa, { target: 'basic', on: false });
+      expect(ok[0]).toBe(200);
+      // It answers with the Raid view, so the toggle shows the new state at once.
+      expect((ok[1]['you'] as RaidView['you']).abilities[0]).toMatchObject({ autoFire: false });
+      expect((await put(sa, { target: c0, on: false }))[0]).toBe(200);
+
+      const invalid = [
+        {},
+        { target: 'basic' },
+        { on: true },
+        { target: 'basic', on: 'yes' },
+        { target: 'basic', on: 1 },
+        { target: 'Basic', on: true },
+        { target: 'not-an-id', on: true },
+        { target: '', on: true },
+        { target: 'm1:basic', on: true },
+        { target: c0.toUpperCase().replace(/-/g, ''), on: true },
+        { target: c0, on: true, userId: b.id },
+        { target: 'basic', on: true, extra: 1 },
+        [],
+        'text',
+        null,
+      ];
+      for (const body of invalid) {
+        expect(await put(sa, body), JSON.stringify(body)).toEqual([400, { error: 'invalid_body' }]);
+      }
+      expect((await ctx.request(sa, '/api/raid/autofire', 'POST', {})).status).toBe(405);
+      expect(await put(so, { target: 'basic', on: false })).toEqual([
+        409,
+        { error: 'not_in_roster' },
+      ]);
+      // Only the caller's own rows were written, whatever the body said.
+      expect(
+        rows(ctx.sql, 'SELECT user_id, target, auto_fire FROM raid_autofire ORDER BY target'),
+      ).toEqual(
+        [
+          { user_id: a.id, target: 'basic', auto_fire: 0 },
+          { user_id: a.id, target: c0, auto_fire: 0 },
+        ].sort((x, y) => (x.target < y.target ? -1 : 1)),
+      );
+    });
+  });
+
+  it('refuses a creature that is not in the caller team', async () => {
+    await runRaid((ctx) => {
+      const players = Array.from({ length: 2 }, (_, i) =>
+        seedPlayer(ctx, i + 1, { level: UNLOCKED, creatures: i === 0 ? 4 : 3 }),
+      );
+      ctx.core.raid.currentWeek(HELSINKI);
+      ctx.clock.t = W02.afterPhase2;
+      ctx.core.raid.runDue(HELSINKI);
+      forcePool(ctx.sql, BIG, BIG, 1);
+      ctx.clock.t = FINALE - 10 * MINUTE;
+      const [a, b] = inOrder(ctx, players) as [Seeded, Seeded];
+      const team = new Set(teamIds(ctx, a));
+      // The caller's fourth creature is theirs but not in this week's team.
+      const benched = a.creatureIds.find((id) => !team.has(id)) as string;
+      expect(benched).toBeDefined();
+      expect(err(setAuto(ctx, a, benched, false))).toBe('409 not_your_creature');
+      // Someone else's creature, and one that does not exist.
+      expect(err(setAuto(ctx, a, b.creatureIds[0] as string, false))).toBe('409 not_your_creature');
+      expect(err(setAuto(ctx, a, '3f2504e0-4f89-41d3-9a0c-0305e82c3301', false))).toBe(
+        '409 not_your_creature',
+      );
+      expect(count(ctx.sql, 'raid_autofire')).toBe(0);
+    });
+  });
+
+  it('sets the first mode of each ability at the live start: off is held, with the last-round safety net', async () => {
+    await runRaid((ctx) => {
+      const players = toFinale(ctx, 2, { level: UNLOCKED });
+      const [a, b] = inOrder(ctx, players) as [Seeded, Seeded];
+      const [c0, c1] = teamIds(ctx, a) as [string, string, string];
+      pick(ctx, a, 'purge');
+      expect(setAuto(ctx, a, 'basic', false).ok).toBe(true);
+      expect(setAuto(ctx, a, c1, false).ok).toBe(true);
+
+      // The lobby already shows the settings, for the caller only.
+      at(ctx, -3 * MINUTE);
+      const lobby = snap(ctx, a);
+      expect(lobby.status).toBe('lobby');
+      expect(ownAbilities(lobby).map((x) => [x.key, x.mode, x.autoFire])).toEqual([
+        ['m1:basic', 'held', false],
+        ['m1:c0', 'default', true],
+        ['m1:c1', 'held', false],
+        ['m1:c2', 'default', true],
+      ]);
+      expect(lobby.abilities.every((x) => x.alias === 'm1')).toBe(true);
+      expect(ownAbilities(snap(ctx, b), 'm2').map((x) => x.autoFire)).toEqual([
+        true,
+        true,
+        true,
+        true,
+      ]);
+
+      begin(ctx);
+      const first = snap(ctx, a);
+      expect(ownAbilities(first).map((x) => [x.key, x.mode, x.autoFire])).toEqual([
+        ['m1:basic', 'held', false],
+        ['m1:c0', 'default', true],
+        ['m1:c1', 'held', false],
+        ['m1:c2', 'default', true],
+      ]);
+      expect(ownAbilities(first, 'm2').every((x) => x.mode === 'default' && x.autoFire)).toBe(true);
+      // The stored fight has them too, so a restart changes nothing.
+      const stored = rows<{ abilities: string }>(ctx.sql, 'SELECT abilities FROM raid_live')[0];
+      const modes = (JSON.parse(stored?.abilities as string) as { key: string; mode: string }[])
+        .filter((x) => x.key.startsWith('m1:'))
+        .map((x) => x.mode);
+      expect(modes).toEqual(['held', 'default', 'held', 'default']);
+
+      // Held abilities wait for the last round; the others fire at their default round.
+      at(ctx, 12 * ROUND - 1);
+      const end = snap(ctx, a);
+      const defaults = new Map(end.abilities.map((x) => [x.key, x.defaultRound]));
+      expect(firedRoundOf(end.events, 'm1:basic')).toBe(12);
+      expect(firedRoundOf(end.events, 'm1:c1')).toBe(12);
+      expect(firedRoundOf(end.events, 'm1:c0')).toBe(defaults.get('m1:c0'));
+      expect(firedRoundOf(end.events, 'm1:c2')).toBe(defaults.get('m1:c2'));
+      expect(c0).toBeTruthy();
+    });
+  });
+
+  it('turns an ability on again in the live fight with the usual actions, and Fire still works on a held one', async () => {
+    await runRaid((ctx) => {
+      const players = toFinale(ctx, 2, { level: UNLOCKED });
+      const [a] = inOrder(ctx, players) as [Seeded, Seeded];
+      const [, c1] = teamIds(ctx, a) as [string, string, string];
+      expect(setAuto(ctx, a, 'basic', false).ok).toBe(true);
+      expect(setAuto(ctx, a, c1, false).ok).toBe(true);
+      begin(ctx);
+      at(ctx, 500);
+      // Held at the start, so it can be turned on (before its default round) and fired by hand.
+      expect(act(ctx, a, { action: 'unhold' }).ok).toBe(true);
+      expect(ownAbilities(snap(ctx, a))[0]).toMatchObject({ mode: 'default', autoFire: true });
+      expect(act(ctx, a, { key: 'm1:c1', action: 'fire' }).ok).toBe(true);
+      expect(ownAbilities(snap(ctx, a))[2]).toMatchObject({ mode: 'fired', fireAtRound: 2 });
+    });
+  });
+
+  it('is locked once the finale has started (409 locked), also in the minute before the event runs', async () => {
+    await runRaid((ctx) => {
+      const players = toFinale(ctx, 2, { level: UNLOCKED });
+      const [a] = inOrder(ctx, players) as [Seeded, Seeded];
+      const [c0] = teamIds(ctx, a) as [string];
+      at(ctx, -1);
+      expect(setAuto(ctx, a, 'basic', false).ok).toBe(true);
+      // The finale time has come, whether or not the event has run yet.
+      at(ctx, 0);
+      expect(err(setAuto(ctx, a, 'basic', true))).toBe('409 locked');
+      begin(ctx);
+      at(ctx, 5 * ROUND);
+      expect(err(setAuto(ctx, a, c0, false))).toBe('409 locked');
+      at(ctx, 12 * ROUND);
+      expect(err(setAuto(ctx, a, 'basic', true))).toBe('409 locked');
+      // Nothing changed after the start: the stored preference is the one from before.
+      expect(rows(ctx.sql, 'SELECT target, auto_fire FROM raid_autofire')).toEqual([
+        { target: 'basic', auto_fire: 0 },
+      ]);
+      // Over HTTP it is the same refusal.
+    });
+  });
+
+  it('ignores a preference for a creature that left the team', async () => {
+    await runRaid((ctx) => {
+      const players = Array.from({ length: 2 }, (_, i) =>
+        seedPlayer(ctx, i + 1, { level: UNLOCKED, creatures: i === 0 ? 4 : 3 }),
+      );
+      ctx.core.raid.currentWeek(HELSINKI);
+      ctx.clock.t = W02.afterPhase2;
+      ctx.core.raid.runDue(HELSINKI);
+      forcePool(ctx.sql, BIG, BIG, 1);
+      ctx.clock.t = FINALE - 10 * MINUTE;
+      const [a] = inOrder(ctx, players) as [Seeded, Seeded];
+      const before = teamIds(ctx, a);
+      const leaving = before[0] as string;
+      expect(setAuto(ctx, a, leaving, false).ok).toBe(true);
+      expect(setAuto(ctx, a, before[1] as string, false).ok).toBe(true);
+      // Swap the first creature for the fourth: the preference stays in the table but is never read.
+      const fourth = a.creatureIds.find((id) => !before.includes(id)) as string;
+      expect(
+        ctx.core.raid.setTeam(a.id, HELSINKI, [fourth, before[1] as string, before[2] as string])
+          .ok,
+      ).toBe(true);
+      expect(count(ctx.sql, 'raid_autofire')).toBe(2);
+      const view = ctx.core.raid.view(a.id, HELSINKI);
+      expect(view.you.abilities.map((x) => x.creatureId)).toEqual([
+        null,
+        fourth,
+        before[1],
+        before[2],
+      ]);
+      expect(view.you.abilities.map((x) => x.autoFire)).toEqual([true, true, false, true]);
+
+      begin(ctx);
+      const s = snap(ctx, a);
+      expect(ownAbilities(s).map((x) => [x.creature, x.mode])).toEqual([
+        [null, 'default'],
+        [fourth, 'default'],
+        [before[1], 'held'],
+        [before[2], 'default'],
+      ]);
+      expect(ownAbilities(s).some((x) => x.creature === leaving)).toBe(false);
+    });
+  });
+
+  it('applies to the instant late finale too: held abilities fire in the last round', async () => {
+    await runRaid((ctx) => {
+      const players = toFinale(ctx, 2, { level: UNLOCKED });
+      const [a] = inOrder(ctx, players) as [Seeded, Seeded];
+      const [c0] = teamIds(ctx, a) as [string];
+      expect(setAuto(ctx, a, c0, false).ok).toBe(true);
+      expect(setAuto(ctx, a, 'basic', false).ok).toBe(true);
+      // The event runs far too late for anyone to watch: it resolves at once.
+      ctx.clock.t = FINALE + 11 * MINUTE;
+      ctx.core.raid.runDue(HELSINKI);
+      const run = storedRuns(ctx.sql, W02.id).find((r) => r.phase === 'finale');
+      const events = run?.result.events ?? [];
+      const rounds = run?.input.boss.finaleRounds as number;
+      expect(firedRoundOf(events, 'm1:c0')).toBe(rounds);
+      expect(firedRoundOf(events, 'm1:basic')).toBe(rounds);
+      // The others fire at their default round, well before.
+      expect(firedRoundOf(events, 'm1:c1')).toBeLessThan(rounds);
+      expect(firedRoundOf(events, 'm2:basic')).toBeLessThan(rounds);
+      // The stored input carries the last round, so the replay shows the same fight.
+      const stored = run?.input.finaleAbilities.find((x) => x.key === 'm1:c0');
+      expect(stored?.fireAtRound).toBe(rounds);
+    });
+  });
+
+  it('applies to a practice fight: at its start, and in its lobby; the fight then runs as usual', async () => {
+    await runRaid(
+      (ctx) => {
+        const players = toFinale(ctx, 2, { level: UNLOCKED });
+        const [a, b] = inOrder(ctx, players) as [Seeded, Seeded];
+        const [c0, c1] = teamIds(ctx, a) as [string, string, string];
+        ctx.clock.t = W02.afterPhase2 + 5000;
+        expect(setAuto(ctx, a, c0, false).ok).toBe(true);
+        const started = ctx.core.raid.startPractice(a.id, HELSINKI);
+        expect(started.ok ? started.value.status : null).toBe('lobby');
+        expect(ownAbilities(snap(ctx, a)).map((x) => x.autoFire)).toEqual([
+          true,
+          false,
+          true,
+          true,
+        ]);
+
+        // A change in the 30 second lobby is picked up by the practice fight; the other party
+        // member's lobby is theirs alone.
+        expect(setAuto(ctx, a, c1, false).ok).toBe(true);
+        expect(setAuto(ctx, a, c0, true).ok).toBe(true);
+        expect(ownAbilities(snap(ctx, a)).map((x) => [x.key, x.autoFire])).toEqual([
+          ['m1:basic', true],
+          ['m1:c0', true],
+          ['m1:c1', false],
+          ['m1:c2', true],
+        ]);
+        expect(ownAbilities(snap(ctx, b), 'm2').every((x) => x.autoFire)).toBe(true);
+
+        ctx.clock.t += PRACTICE_LOBBY_MS;
+        const first = snap(ctx, a);
+        expect(first.status).toBe('live');
+        expect(ownAbilities(first).map((x) => [x.key, x.mode])).toEqual([
+          ['m1:basic', 'default'],
+          ['m1:c0', 'default'],
+          ['m1:c1', 'held'],
+          ['m1:c2', 'default'],
+        ]);
+        // A practice fight has no real finale to lock against, and once it runs the live actions
+        // apply: the preference no longer touches it.
+        ctx.clock.t += 500;
+        expect(setAuto(ctx, a, c1, true).ok).toBe(true);
+        expect(ownAbilities(snap(ctx, a))[2]).toMatchObject({ mode: 'held', autoFire: false });
+        expect(act(ctx, a, { key: 'm1:c1', action: 'unhold' }).ok).toBe(true);
+        expect(ownAbilities(snap(ctx, a))[2]).toMatchObject({ mode: 'default', autoFire: true });
+      },
+      { core: live },
     );
   });
 });
@@ -2049,6 +2492,7 @@ describe('creature abilities in the live finale', () => {
         species: null,
         unlocked: true,
         unlockLevel: 1,
+        autoFire: true,
       });
       expect(preview[1]).toEqual({
         key: 'm1:c0',
@@ -2057,6 +2501,7 @@ describe('creature abilities in the live finale', () => {
         species: team[0]?.species,
         unlocked: true,
         unlockLevel: RULES.abilities.unlockLevel,
+        autoFire: true,
       });
       // A locked entry has no key: it will not be in the fight.
       const locked = preview[3] as NonNullable<(typeof preview)[number]>;
@@ -2066,6 +2511,7 @@ describe('creature abilities in the live finale', () => {
         species: team[2]?.species,
         unlocked: false,
         unlockLevel: RULES.abilities.unlockLevel,
+        autoFire: true,
       });
       expect('key' in locked).toBe(false);
       // The preview is the player's own: another player's differs, and a non-member has none.
@@ -2110,6 +2556,12 @@ describe('creature abilities in the live finale', () => {
         ctx.clock.t = W02.afterPhase2 + 5000;
         const started = ctx.core.raid.startPractice(a.id, HELSINKI);
         expect(started.ok).toBe(true);
+        const lobby = snap(ctx, a);
+        expect(lobby).toMatchObject({ status: 'lobby', practice: true });
+        expect(lobby.abilities).toHaveLength(4);
+        // Fire is for the fight: in the lobby it is refused.
+        expect(err(act(ctx, a, { key: 'm1:c2', action: 'fire' }))).toBe('409 not_started');
+        ctx.clock.t += PRACTICE_LOBBY_MS;
         const s = snap(ctx, a);
         expect(s.practice).toBe(true);
         expect(s.abilities.filter((x) => x.alias === 'm1')).toHaveLength(4);

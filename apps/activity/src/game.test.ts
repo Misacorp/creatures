@@ -115,6 +115,7 @@ describe('display helpers', () => {
     'not_in_fight',
     'hold_too_late',
     'not_held',
+    'not_started',
     'invalid_body',
   ])('has a plain message for the raid error "%s"', (code) => {
     const text = errorText(new ApiError(409, code));

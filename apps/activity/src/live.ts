@@ -220,6 +220,8 @@ export interface CreatureAbilityRow {
   unlocked: boolean;
   /** "Ready for the finale" or "Unlocks at level 10 (now level 7)". */
   status: string;
+  /** The caller's Auto fire setting (on unless they turned it off). */
+  autoFire: boolean;
 }
 
 /**
@@ -249,9 +251,29 @@ export function creatureAbilityRows(
       effect: abilityEffectLine(entry.abilityId),
       unlocked: entry.unlocked,
       status,
+      autoFire: entry.autoFire,
     });
   }
   return rows;
+}
+
+/** The target of the Auto fire preference of an ability: its creature's id, or `basic`. */
+export function autoFireTarget(ability: Pick<LiveAbility, 'creature'>): string {
+  return ability.creature ?? 'basic';
+}
+
+/**
+ * What a tap on one of the player's own creatures that has no ability in this fight says: it is
+ * below the unlock level, or its species has no finale ability. Plain text.
+ */
+export function noAbilityText(speciesId: string, level: number): string {
+  const species = content.creatures.find((c) => c.id === speciesId);
+  if (species?.ability === undefined) return 'This creature has no finale ability.';
+  const unlock = RULES.abilities.unlockLevel;
+  if (level < unlock) {
+    return `Its ability unlocks at level ${String(unlock)}. It is level ${String(level)} now.`;
+  }
+  return 'Its ability is not part of this fight.';
 }
 
 /** What a finale ability asks for when it is fired by hand. */
@@ -335,7 +357,8 @@ export function abilityControls(
   const autoOn = ability.mode !== 'held';
   const off = { canFire: false, canToggle: false, autoOn };
   if (fight.status === 'lobby') {
-    return { ...off, note: 'You can use your ability once the fight starts.' };
+    // Before the start there is no Fire; the toggle sets the default Auto fire for the start.
+    return { canFire: false, canToggle: true, autoOn, note: '' };
   }
   if (fight.status === 'done') return { ...off, note: '' };
   if (ability.fired) return { ...off, note: '' };

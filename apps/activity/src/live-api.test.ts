@@ -42,23 +42,38 @@ describe('parseLiveSnapshot with real server responses', () => {
     expect(parseLiveSnapshot(liveNone)).toEqual({ status: 'none', serverNow: liveNone.serverNow });
   });
 
-  it('accepts the lobby: a start time and the party pool, but no names, HP, row or abilities', () => {
+  it("accepts the lobby: a start time and a preview of the stage with the caller's own abilities", () => {
     const parsed = lobby(liveLobby);
     expect(parsed).toMatchObject({
       status: 'lobby',
       party: 1,
       round: 0,
-      names: null,
-      bossHp: null,
-      row: [],
-      abilities: [],
+      bossHp: 50_000_000,
       events: [],
       loot: null,
-      you: null,
+      you: 'm1',
       watching: ['Player 1'],
     });
     expect(parsed.startsAt).toBe(liveLobby.startsAt);
     expect(parsed.boss).toMatchObject({ name: 'Storm Sovereign', hpMax: 50_000_000 });
+    // The row, the names and the caller's abilities are there before the start.
+    expect(parsed.row).toHaveLength(9);
+    expect(parsed.row.filter((c) => c.owner === 'm1')).toHaveLength(3);
+    expect(parsed.names?.players).toEqual({ m1: 'Player 1', m2: 'Player 2' });
+    expect(parsed.abilities.every((a) => a.alias === 'm1' && !a.fired)).toBe(true);
+    // The player turned Auto fire off for the basic ability and the second creature.
+    expect(parsed.abilities.map((a) => [a.key, a.mode, a.autoFire])).toEqual([
+      ['m1:basic', 'held', false],
+      ['m1:c0', 'default', true],
+      ['m1:c1', 'held', false],
+      ['m1:c2', 'default', true],
+    ]);
+  });
+
+  it('accepts a lobby with no preview: an empty row and no names', () => {
+    const bare = copy(liveLobby);
+    Object.assign(bare, { row: [], names: null, abilities: [], bossHp: null, you: null });
+    expect(lobby(bare).row).toEqual([]);
   });
 
   it('accepts a lobby whose party has no boss pool yet', () => {
@@ -92,6 +107,7 @@ describe('parseLiveSnapshot with real server responses', () => {
       abilityId: 'shield-wall',
       creature: null,
       mode: 'fired',
+      autoFire: true,
       fired: true,
       firedAtRound: 3,
       fireAtRound: null,
@@ -99,24 +115,25 @@ describe('parseLiveSnapshot with real server responses', () => {
     });
     expect(parsed.abilities[4]).toMatchObject({
       key: 'm2:basic',
-      abilityId: 'rally',
+      abilityId: 're-mark',
       mode: 'held',
+      autoFire: false,
       fired: false,
       firedAtRound: null,
     });
     // A creature ability names its creature: a slot of the row.
     const strike = parsed.abilities[1];
-    expect(strike).toMatchObject({ key: 'm1:c0', abilityId: 'flare-strike', mode: 'fired' });
+    expect(strike).toMatchObject({ key: 'm1:c0', abilityId: 'thunder-strike', mode: 'default' });
     expect(parsed.row.some((slot) => slot.id === strike?.creature)).toBe(true);
     // The events carry the key and the creature, and a strike hit its ability.
     const used = parsed.events.find((e) => e.t === 'ability' && e.key === 'm1:c0');
-    expect(used).toMatchObject({ creature: strike?.creature, byDefault: false });
+    expect(used).toMatchObject({ creature: strike?.creature, byDefault: true });
     expect(parsed.events.some((e) => e.t === 'hit' && e.key === 'm1:c0')).toBe(true);
   });
 
   it('accepts what Fire and Hold answer: the new snapshot, with the ability waiting for its round', () => {
     const fired = running(actionFire);
-    expect(fired.abilities.find((a) => a.key === 'm1:c0')).toMatchObject({
+    expect(fired.abilities.find((a) => a.key === 'm1:basic')).toMatchObject({
       alias: 'm1',
       mode: 'fired',
       fired: false,
@@ -163,8 +180,13 @@ describe('parseLiveSnapshot with real server responses', () => {
   });
 
   it('accepts practice fights, from the start to the end, with no payout', () => {
-    expect(running(practiceStart)).toMatchObject({ status: 'live', practice: true, round: 1 });
-    expect(running(practiceStart).boss.hpStart).toBe(running(practiceStart).boss.hpMax);
+    // It starts as a lobby with the 30 second countdown ahead of it.
+    const start = lobby(practiceStart);
+    expect(start).toMatchObject({ status: 'lobby', practice: true, round: 0, events: [] });
+    expect(start.startsAt - start.serverNow).toBe(30_000);
+    expect(start.boss.hpStart).toBe(start.boss.hpMax);
+    expect(start.row).toHaveLength(9);
+    expect(start.abilities.every((a) => a.alias === start.you && a.autoFire)).toBe(true);
     expect(running(practiceLive)).toMatchObject({ status: 'live', practice: true });
     const done = running(practiceDone);
     expect(done).toMatchObject({ status: 'done', practice: true });

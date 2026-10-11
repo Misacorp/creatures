@@ -9,6 +9,7 @@ import {
   defaultAbilityRound,
   type EventNames,
   type FightEvent,
+  type FightInput,
 } from '@creatures/engine';
 import { readFestivalGrant, type FestivalGrantView } from './raid-festival';
 import { rankChangeOf, type RankChangeView } from './raid-ladder';
@@ -34,6 +35,11 @@ export interface LiveAbilityView {
   /** The row slot (creature id) of a creature ability; null for a basic ability. */
   creature: string | null;
   mode: AbilityMode;
+  /**
+   * Auto fire is on: true unless the owner turned it off (mode 'held'). In the lobby this is the
+   * owner's preference for the start; once the fight is on it follows the toggle.
+   */
+  autoFire: boolean;
   fired: boolean;
   firedAtRound: number | null;
   /** Mode 'fired' and not yet fired: the round it will fire in. */
@@ -146,6 +152,100 @@ export function emptySnapshot(
   };
 }
 
+/** One ability of the caller as the lobby previews it: what they will bring and its Auto fire setting. */
+export interface PreviewAbility {
+  key: string;
+  alias: string;
+  abilityId: string;
+  creatureId: string | null;
+  /** Auto fire is off for this ability. */
+  held: boolean;
+}
+
+/** What a lobby with a preview is made of: the row as it would fight now and the caller's abilities. */
+export interface LobbyPreview {
+  /** The fight input as it would be built now (or as it was built, for a practice fight). */
+  input: FightInput;
+  members: readonly { alias: string; userId: string }[];
+  abilities: readonly PreviewAbility[];
+}
+
+/**
+ * The lobby with a preview of the stage: the caller's party's row as it stands (from the teams and
+ * placements now, or as frozen for a practice fight), the boss with the pool it would fight, and only
+ * the caller's own abilities with their Auto fire setting. There are no events and no round yet. The
+ * preview is not a promise: until the start, teams, placements and picks can still change.
+ */
+export function lobbySnapshot(
+  ctx: LiveContext,
+  startsAt: number,
+  practice: boolean,
+  preview: LobbyPreview,
+): LiveSnapshot {
+  const { input } = preview;
+  const me = preview.members.find((m) => m.userId === ctx.userId);
+  const aliasNames: Record<string, string> = {};
+  for (const m of preview.members) aliasNames[m.alias] = ctx.names.get(m.userId) ?? 'Unknown';
+  const mine: LiveAbilityView[] =
+    me === undefined
+      ? []
+      : preview.abilities
+          .filter((a) => a.alias === me.alias)
+          .map((a) => {
+            const def = content.finaleAbilities.find((d) => d.id === a.abilityId);
+            return {
+              key: a.key,
+              alias: a.alias,
+              abilityId: a.abilityId,
+              creature: a.creatureId,
+              mode: a.held ? 'held' : 'default',
+              autoFire: !a.held,
+              fired: false,
+              firedAtRound: null,
+              fireAtRound: null,
+              defaultRound:
+                def === undefined
+                  ? 0
+                  : defaultAbilityRound(input.boss, def, input.boss.finaleRounds),
+            };
+          });
+  return {
+    status: 'lobby',
+    practice,
+    week: ctx.weekId,
+    party: ctx.party,
+    you: me?.alias ?? null,
+    startsAt,
+    roundMs: LIVE_ROUND_MS,
+    rounds: input.boss.finaleRounds,
+    round: 0,
+    serverNow: ctx.now,
+    boss: {
+      id: input.boss.id,
+      name: input.boss.name,
+      element: input.boss.element,
+      hpMax: input.bossHpPool.max,
+      hpStart: input.bossHpPool.current,
+    },
+    row: input.row.map((s, position) => ({
+      position,
+      id: s.id,
+      name: s.name,
+      species: s.speciesId,
+      element: s.element,
+      role: s.role,
+      level: s.level,
+      owner: s.ownerId,
+    })),
+    names: buildNames(input, aliasNames, content),
+    abilities: mine,
+    events: [],
+    bossHp: input.bossHpPool.current,
+    watching: ctx.watching,
+    loot: null,
+  };
+}
+
 /** The caller's own loot from a resolved real finale, or null if they were not in it. */
 function realLoot(ctx: LiveContext, row: LiveRow): LiveLoot | null {
   const stored = ctx.sql
@@ -208,6 +308,7 @@ export function liveSnapshot(
       abilityId: a.abilityId,
       creature: a.creatureId,
       mode: a.mode,
+      autoFire: a.mode !== 'held',
       fired: firedAtRound !== null,
       firedAtRound,
       fireAtRound: a.mode === 'fired' && firedAtRound === null ? a.fireAtRound : null,

@@ -192,8 +192,15 @@ export async function runCore<R>(
   });
 }
 
+/** Puts a database back to before migration 14 (the Auto fire preferences). */
+export function undoAutofireMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS raid_autofire');
+  sql.exec('DELETE FROM schema_version WHERE version = 14');
+}
+
 /** Puts a database back to before migration 13 (the creature quirk). */
 export function undoQuirkMigration(sql: SqlStorage): void {
+  undoAutofireMigration(sql);
   // Tests that rebuild an older schema may have dropped the table already.
   const hasColumn = sql
     .exec("SELECT 1 FROM pragma_table_info('creatures') WHERE name = 'quirk_id'")

@@ -14,6 +14,7 @@ import {
 } from '@creatures/engine';
 import { RULES, content, seasonOf, type ReadinessBand } from '@creatures/game';
 import { speciesOf } from './collection';
+import { BASIC_TARGET, loadAutofire } from './raid-autofire';
 import { readFestivalGrant, type FestivalGrantView } from './raid-festival';
 import { rankChangeOf, readLadder, readWeekProgression, type RankChangeView } from './raid-ladder';
 import type { Raid } from './raid';
@@ -48,6 +49,8 @@ export interface AbilityPreview {
   unlocked: boolean;
   /** The creature level that unlocks it (1 for the basic ability: always there). */
   unlockLevel: number;
+  /** The caller's Auto fire setting for the finale (on unless they turned it off). */
+  autoFire: boolean;
 }
 
 /**
@@ -59,6 +62,7 @@ function abilityPreview(
   basic: { abilityId: string } | null,
   alias: string | null,
   team: readonly TeamCreature[] | null,
+  autoFire: (target: string) => boolean,
 ): AbilityPreview[] {
   if (basic === null || alias === null || team === null) return [];
   const out: AbilityPreview[] = [
@@ -69,6 +73,7 @@ function abilityPreview(
       species: null,
       unlocked: true,
       unlockLevel: 1,
+      autoFire: autoFire(BASIC_TARGET),
     },
   ];
   team.forEach((c, index) => {
@@ -82,6 +87,7 @@ function abilityPreview(
       species: c.species.id,
       unlocked,
       unlockLevel: RULES.abilities.unlockLevel,
+      autoFire: autoFire(c.id),
     });
   });
   return out;
@@ -368,6 +374,7 @@ export function buildRaidView(
   }
 
   const progression = readWeekProgression(sql, week.weekId);
+  const autofire = loadAutofire(sql, week.weekId);
 
   return {
     weekId: week.weekId,
@@ -409,6 +416,7 @@ export function buildRaidView(
         myAbility,
         myIndex < 0 ? null : aliasFor(myIndex),
         team === null ? null : team.creatures,
+        (target) => autofire.isOn(userId, target),
       ),
       reveal: latestReveal(sql, userId),
       team:

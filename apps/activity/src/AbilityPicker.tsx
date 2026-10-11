@@ -1,4 +1,5 @@
 import { RULES, basicAbilities } from '@creatures/game';
+import { AutoFireToggle } from './AutoFireToggle';
 import { abilityName, abilityPlanText, creatureAbilityRows } from './live';
 import type { AbilityPreview, TeamCreatureView } from './raid-api';
 
@@ -14,6 +15,7 @@ export function AbilityPicker({
   editable,
   busy,
   onPick,
+  onAutoFire,
 }: {
   current: { abilityId: string; chosen: boolean };
   /** What the player brings with their current team (`you.abilities` of the Raid view). */
@@ -23,8 +25,11 @@ export function AbilityPicker({
   editable: boolean;
   busy: boolean;
   onPick: (abilityId: string) => void;
+  /** Sets the Auto fire preference of one ability: `target` is `basic` or a team creature's id. */
+  onAutoFire: (target: string, on: boolean) => void;
 }) {
   const creatureRows = creatureAbilityRows(abilities, team);
+  const basicAutoFire = abilities.find((a) => a.creatureId === null)?.autoFire ?? true;
   return (
     <section class="raid-section" aria-labelledby="raid-ability-heading">
       <h3 id="raid-ability-heading">Your finale abilities</h3>
@@ -39,6 +44,21 @@ export function AbilityPicker({
         {editable
           ? "Everyone brings one basic ability to the live Sunday finale. It is weaker than a trained creature's ability. If you do nothing it still fires on its own. You can change your pick until the finale starts."
           : 'The finale has started, so your pick is locked.'}
+      </p>
+      <p class="ability-auto">
+        <AutoFireToggle
+          on={basicAutoFire}
+          disabled={busy || !editable}
+          label={`your basic ability, ${abilityName(current.abilityId)}`}
+          onToggle={(on) => {
+            onAutoFire('basic', on);
+          }}
+        />
+        <span class="muted">
+          {basicAutoFire
+            ? 'Fires by itself in its round.'
+            : "Waits for you in the finale. It still fires in the last round if you don't."}
+        </span>
       </p>
       <ul class="cards ability-cards">
         {basicAbilities().map((def) => {
@@ -83,6 +103,18 @@ export function AbilityPicker({
               <li key={row.creatureId} class={row.unlocked ? 'live-ability you' : 'live-ability'}>
                 <strong>{row.title}</strong>. <span>{row.effect}</span>{' '}
                 <span class={row.unlocked ? 'muted' : 'locked'}>{row.status}</span>
+                {row.unlocked && (
+                  <span class="ability-auto">
+                    <AutoFireToggle
+                      on={row.autoFire}
+                      disabled={busy || !editable}
+                      label={row.title}
+                      onToggle={(on) => {
+                        onAutoFire(row.creatureId, on);
+                      }}
+                    />
+                  </span>
+                )}
               </li>
             ))}
           </ul>

@@ -41,6 +41,12 @@ export const START_GRACE_MS = 30_000;
 export const PRACTICE_BLOCK_MS = 30 * 60_000;
 /** One practice fight per party in this time. A practice fight stays visible for as long. */
 export const PRACTICE_COOLDOWN_MS = 10 * 60_000;
+/** A practice fight starts this long after it was asked for: a 30 second lobby with the countdown. */
+export const PRACTICE_LOBBY_MS = 30_000;
+
+/** When a practice fight's cooldown and visibility end: `PRACTICE_COOLDOWN_MS` after it was asked for. */
+export const practiceOverAt = (row: Pick<LiveRow, 'startedAt'>): number =>
+  row.startedAt - PRACTICE_LOBBY_MS + PRACTICE_COOLDOWN_MS;
 /** Players who polled this recently count as watching. */
 export const WATCH_WINDOW_MS = 10_000;
 
@@ -286,7 +292,9 @@ function insertLive(
     alias: a.playerId,
     abilityId: a.abilityId,
     creatureId: a.creatureId ?? null,
-    mode: 'default',
+    // Auto fire off (a preference of the owner) starts the ability held: it waits for its owner and
+    // still fires in the last round. Everything else fires at its default round.
+    mode: built.held.has(a.key) ? 'held' : 'default',
     fireAtRound: null,
     params: null,
   }));
@@ -305,7 +313,11 @@ function insertLive(
   );
 }
 
-/** Starts a practice fight for a party, replacing its earlier one. Call inside a transaction. */
+/**
+ * Starts a practice fight for a party, replacing its earlier one. `startedAt` is when its first round
+ * begins (the caller passes now plus `PRACTICE_LOBBY_MS`); until then the party sees a lobby. Call
+ * inside a transaction.
+ */
 export function startPracticeParty(
   deps: LiveDeps,
   week: { weekId: string; bossId: string },
@@ -394,6 +406,8 @@ export function applyAction(
 ): void {
   const member = row.members.find((m) => m.userId === userId);
   if (member === undefined) throw new RaidError(409, 'not_in_fight');
+  // A practice fight is a lobby until its start: the Auto fire preference is changed there instead.
+  if (now < row.startedAt) throw new RaidError(409, 'not_started');
   // A key that does not exist is treated like someone else's: the caller learns nothing about it.
   const ability = row.abilities.find((a) => a.key === body.key);
   if (ability === undefined || ability.alias !== member.alias) {

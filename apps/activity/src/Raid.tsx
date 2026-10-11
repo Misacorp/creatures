@@ -15,6 +15,7 @@ import {
   markRevealSeen,
   placeCreature,
   setRaidAbility,
+  setRaidAutofire,
   setRaidOptOut,
   setRaidTeam,
   unplaceCreature,
@@ -349,6 +350,9 @@ export function Raid({
           busy={busy}
           onPick={(abilityId) => {
             void mutate(() => setRaidAbility(abilityId));
+          }}
+          onAutoFire={(target, on) => {
+            void mutate(() => setRaidAutofire(target, on));
           }}
         />
       )}

@@ -1,7 +1,8 @@
 import { content } from '@creatures/game';
 import { elementName } from './game';
+import { AutoFireToggle } from './AutoFireToggle';
 import { abilityControls, abilityName, abilityParamKind } from './live';
-import type { LiveAbility, LiveRunning } from './live-api';
+import type { LiveAbility, LiveFight } from './live-api';
 import { popoverStateLine, type Badge } from './stage-abilities';
 import { Sprite } from './sprites/Sprite';
 import { elementIcon } from './sprites/element-icons';
@@ -56,7 +57,7 @@ function Chips({ label, value, disabled, onPick, children }: ChipsProps) {
 }
 
 export interface AbilityPopoverBodyProps {
-  fight: LiveRunning;
+  fight: Pick<LiveFight, 'status' | 'round' | 'rounds'>;
   ability: LiveAbility;
   /** What the stage shows for this ability (it follows the events that have played). */
   badge: Badge;
@@ -116,18 +117,13 @@ export function AbilityPopoverBody(props: AbilityPopoverBodyProps) {
             </button>
           )}
           {controls.canToggle && (
-            <button
-              type="button"
-              class={controls.autoOn ? 'toggle on ab-auto-toggle' : 'toggle ab-auto-toggle'}
-              aria-pressed={controls.autoOn}
+            <AutoFireToggle
+              on={controls.autoOn}
               disabled={busy}
-              onClick={() => {
-                props.onAct(controls.autoOn ? 'hold' : 'unhold');
+              onToggle={(on) => {
+                props.onAct(on ? 'unhold' : 'hold');
               }}
-            >
-              <span>Auto fire</span>
-              <small>{controls.autoOn ? 'on' : 'off'}</small>
-            </button>
+            />
           )}
         </div>
       )}

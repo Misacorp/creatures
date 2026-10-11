@@ -19,7 +19,8 @@ import {
   LATE_START_LIMIT_MS,
   LOBBY_MS,
   PRACTICE_BLOCK_MS,
-  PRACTICE_COOLDOWN_MS,
+  PRACTICE_LOBBY_MS,
+  practiceOverAt,
   START_GRACE_MS,
   WATCH_WINDOW_MS,
   applyAction,
@@ -33,11 +34,18 @@ import {
   type ActionInput,
   type LiveRow,
 } from './raid-live';
-import { emptySnapshot, liveSnapshot, type LiveContext, type LiveSnapshot } from './raid-live-view';
+import {
+  emptySnapshot,
+  liveSnapshot,
+  lobbySnapshot,
+  type LiveContext,
+  type LiveSnapshot,
+} from './raid-live-view';
+import { storeAutofire, targetOf } from './raid-autofire';
 import { convertLegacyWeek, ensureWeekRank, seasonColumns } from './raid-ladder';
 import { queueBossReveal } from './raid-posts';
 import { ReadinessCache } from './raid-readiness';
-import { resolveParty } from './raid-resolve';
+import { buildPhaseInput, resolveParty } from './raid-resolve';
 import { markRevealSeen } from './raid-reveal';
 import { readStats, type AfterActionStats } from './raid-stats';
 import {
@@ -621,6 +629,43 @@ export class Raid {
     });
   }
 
+  /**
+   * The caller's Auto fire preference for one ability of this week's finale: `target` is `basic` or the
+   * id of one of their own team creatures. It sets the ability's first mode at the live start (off is
+   * 'held': it waits for its owner, with the last-round safety net). Allowed until the finale starts
+   * (`locked` after); after that the live `hold` and `unhold` actions apply. A practice fight that is
+   * still in its lobby takes the change too. Idempotent.
+   */
+  setAutofire(userId: string, tz: string, target: string, on: boolean): Outcome<null> {
+    this.runDue(tz);
+    return this.atomically(() => {
+      const { week, party } = this.memberContext(userId, tz);
+      const now = this.deps.now();
+      if (week.status === 'finale' || now >= eventTimes(week.weekId, tz).finale) {
+        throw new RaidError(409, 'locked');
+      }
+      storeAutofire(this.sql, week.weekId, userId, target, on);
+      // A practice fight that has not started yet takes the new setting too.
+      const practice = loadLive(this.sql, week.weekId, party, true);
+      if (practice !== null && now < practice.startedAt) {
+        const me = practice.members.find((m) => m.userId === userId);
+        const ability = practice.abilities.find(
+          (a) => a.alias === me?.alias && targetOf(a) === target,
+        );
+        if (ability !== undefined && ability.mode !== 'fired') {
+          ability.mode = on ? 'default' : 'held';
+          this.sql.exec(
+            'UPDATE raid_live SET abilities = ? WHERE week_id = ? AND party = ? AND practice = 1',
+            JSON.stringify(practice.abilities),
+            week.weekId,
+            party,
+          );
+        }
+      }
+      return null;
+    });
+  }
+
   /** Marks the loot reveal of a finale as seen. Idempotent. 404 if the player was not in that finale. */
   markRevealSeen(userId: string, weekId: string): Outcome<null> {
     return this.atomically(() => {
@@ -663,7 +708,7 @@ export class Raid {
       return { lobbyAt: finaleAt };
     }
     const practice = loadLive(this.sql, week.weekId, party, true);
-    if (practice !== null && now < practice.startedAt + PRACTICE_COOLDOWN_MS) {
+    if (practice !== null && now < practiceOverAt(practice)) {
       return { row: practice };
     }
     return real === null ? null : { row: real };
@@ -739,8 +784,22 @@ export class Raid {
     if (party === null || selected === null) return emptySnapshot(base, 'none', null);
     const watching = this.touchWatching(userId, week.weekId, party, now, names);
     const ctx = { ...base, watching };
-    if ('lobbyAt' in selected) return emptySnapshot(ctx, 'lobby', selected.lobbyAt);
+    if ('lobbyAt' in selected) return this.realLobby(ctx, week, party, selected.lobbyAt);
     const { row } = selected;
+    // A practice fight is a lobby until its start (the 30 second countdown), with the row as frozen.
+    if (row.practice && now < row.startedAt) {
+      return lobbySnapshot(ctx, row.startedAt, true, {
+        input: row.input,
+        members: row.members,
+        abilities: row.abilities.map((a) => ({
+          key: a.key,
+          alias: a.alias,
+          abilityId: a.abilityId,
+          creatureId: a.creatureId,
+          held: a.mode === 'held',
+        })),
+      });
+    }
     const state = evaluate(row, now);
     let resolved = false;
     if (!row.practice) {
@@ -748,6 +807,36 @@ export class Raid {
       if (!resolved && state.ended) resolved = this.trySettle(row.weekId, row.party, now);
     }
     return liveSnapshot(ctx, row, state, resolved);
+  }
+
+  /**
+   * The lobby of the real finale: the caller's party's row as it would fight now, with the caller's
+   * abilities and their Auto fire settings. If the preview cannot be built (it should always be) the
+   * plain lobby is shown instead; a read never fails because of it.
+   */
+  private realLobby(ctx: LiveContext, week: WeekRow, party: number, lobbyAt: number): LiveSnapshot {
+    try {
+      const built = buildPhaseInput(this.sql, week, party, 'finale');
+      if (built !== null) {
+        return lobbySnapshot(ctx, lobbyAt, false, {
+          input: built.input,
+          members: built.memberIds.map((userId, i) => ({
+            alias: built.aliases[i] as string,
+            userId,
+          })),
+          abilities: built.input.finaleAbilities.map((a) => ({
+            key: a.key,
+            alias: a.playerId,
+            abilityId: a.abilityId,
+            creatureId: a.creatureId ?? null,
+            held: built.held.has(a.key),
+          })),
+        });
+      }
+    } catch (err) {
+      console.error('lobby preview failed', err instanceof Error ? err.name : 'unknown');
+    }
+    return emptySnapshot(ctx, 'lobby', lobbyAt);
   }
 
   /**
@@ -781,8 +870,9 @@ export class Raid {
   }
 
   /**
-   * Staging only: starts a practice fight for the caller's party now (this week's boss, the current
-   * row, full HP, no adaptation, the current ability picks). It pays nothing and stores no result.
+   * Staging only: starts a practice fight for the caller's party (this week's boss, the current
+   * row, full HP, no adaptation, the current ability picks and Auto fire preferences). It starts after
+   * a 30 second lobby (the countdown) and pays nothing and stores no result.
    * Refused from 30 minutes before the finale until it has resolved, and once per party per 10
    * minutes. 404 unless the `RAID_PRACTICE` var is "on".
    */
@@ -797,10 +887,11 @@ export class Raid {
         throw new RaidError(409, 'practice_blocked');
       }
       const last = loadLive(this.sql, week.weekId, party, true);
-      if (last !== null && now < last.startedAt + PRACTICE_COOLDOWN_MS) {
+      if (last !== null && now < practiceOverAt(last)) {
         throw new RaidError(409, 'practice_cooldown');
       }
-      if (!startPracticeParty(this.deps, week, party, now)) {
+      // The fight starts after a 30 second lobby with the countdown; the party sees a lobby until then.
+      if (!startPracticeParty(this.deps, week, party, now + PRACTICE_LOBBY_MS)) {
         throw new RaidError(409, 'not_in_roster');
       }
       return null;

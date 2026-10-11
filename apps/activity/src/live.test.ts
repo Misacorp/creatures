@@ -1,5 +1,5 @@
 import type { EventNames, FightEvent } from '@creatures/engine';
-import { content } from '@creatures/game';
+import { RULES, content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { LiveAbility, LiveLobby, LiveNone, LiveRunning } from './live-api';
 import type { AbilityPreview, RaidReveal } from './raid-api';
@@ -19,6 +19,8 @@ import {
   abilityPlanText,
   abilityStateText,
   autoFireLabel,
+  autoFireTarget,
+  noAbilityText,
   bannerText,
   buildAction,
   defaultRoundOf,
@@ -96,6 +98,7 @@ function abilityOf(over: Partial<LiveAbility> = {}): LiveAbility {
     abilityId: 'rally',
     creature: null,
     mode: 'default',
+    autoFire: over.mode !== 'held',
     fired: false,
     firedAtRound: null,
     fireAtRound: null,
@@ -338,10 +341,13 @@ describe('abilityControls', () => {
     expect(abilityControls(fightOf({ status: 'done' }), abilityOf())).toEqual(none);
   });
 
-  it('offers nothing in the lobby and explains why', () => {
-    const c = abilityControls(lobbyOf(), abilityOf());
-    expect(c.canFire).toBe(false);
-    expect(c.note).toContain('once the fight starts');
+  it('offers only the Auto fire toggle in the lobby, as the preference for the start', () => {
+    const on = abilityControls(lobbyOf(), abilityOf());
+    expect(on).toEqual({ canFire: false, canToggle: true, autoOn: true, note: '' });
+    const off = abilityControls(lobbyOf(), abilityOf({ mode: 'held' }));
+    expect(off).toEqual({ canFire: false, canToggle: true, autoOn: false, note: '' });
+    // Also for an ability whose default round is not known to the client.
+    expect(abilityControls(lobbyOf(), abilityOf({ defaultRound: 0 })).canToggle).toBe(true);
   });
 
   it('offers nothing in the last round', () => {
@@ -542,6 +548,7 @@ describe('ability texts', () => {
         species: null,
         unlocked: true,
         unlockLevel: 1,
+        autoFire: true,
       },
       {
         key: 'm1:c0',
@@ -550,6 +557,7 @@ describe('ability texts', () => {
         species: 'cindle',
         unlocked: true,
         unlockLevel: 10,
+        autoFire: false,
       },
       {
         abilityId: 'tidal-mark',
@@ -557,6 +565,7 @@ describe('ability texts', () => {
         species: 'splashet',
         unlocked: false,
         unlockLevel: 10,
+        autoFire: true,
       },
     ];
     const rows = creatureAbilityRows(preview, team);
@@ -566,13 +575,40 @@ describe('ability texts', () => {
       title: "Cindle's Flare Strike",
       unlocked: true,
       status: 'Ready for the finale',
+      autoFire: false,
     });
     expect(rows[1]).toMatchObject({
+      autoFire: true,
       title: "Bubbles's Tidal Mark",
       unlocked: false,
       status: 'Unlocks at level 10 (now level 7)',
     });
     expect(rows[1]?.effect).toContain('Soaked');
+  });
+});
+
+describe('the Auto fire preference target', () => {
+  it('is the creature id for a creature ability and "basic" for the basic ability', () => {
+    expect(autoFireTarget(abilityOf())).toBe('basic');
+    expect(autoFireTarget(abilityOf({ creature: 'c-1' }))).toBe('c-1');
+  });
+});
+
+describe('what a tap on a creature with no ability says', () => {
+  const unlock = RULES.abilities.unlockLevel;
+  it('says when the ability unlocks for a creature below the unlock level', () => {
+    expect(noAbilityText('cindle', unlock - 3)).toBe(
+      `Its ability unlocks at level ${String(unlock)}. It is level ${String(unlock - 3)} now.`,
+    );
+  });
+
+  it('says so when the species has no finale ability, and when the ability is just not here', () => {
+    const none = content.creatures.find((c) => c.ability === undefined);
+    if (none !== undefined) {
+      expect(noAbilityText(none.id, unlock)).toBe('This creature has no finale ability.');
+    }
+    expect(noAbilityText('no-such-species', 1)).toBe('This creature has no finale ability.');
+    expect(noAbilityText('cindle', unlock)).toBe('Its ability is not part of this fight.');
   });
 });
 

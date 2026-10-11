@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import actionFire from './fixtures/action-fire.json';
 import errorFixtures from './fixtures/errors.json';
 import practiceStart from './fixtures/practice-start.json';
+import raidAutofire from './fixtures/raid-autofire.json';
 import raidReveal from './fixtures/raid-reveal.json';
 import raidRevealSeen from './fixtures/raid-reveal-seen.json';
 import statsFinale from './fixtures/raid-stats-finale.json';
@@ -15,9 +16,9 @@ vi.mock('./api', async (importOriginal) => ({
 
 import { ApiError } from './api';
 import { errorText } from './game';
-import { buildAction } from './live';
+import { autoFireTarget, buildAction } from './live';
 import { sendLiveAction, startPractice } from './live-api';
-import { fetchStats, markRevealSeen, setRaidAbility } from './raid-api';
+import { fetchStats, markRevealSeen, setRaidAbility, setRaidAutofire } from './raid-api';
 
 /**
  * The client against the Worker's strict schemas (`apps/worker/src/raid-schemas.ts`). The bodies in
@@ -77,6 +78,23 @@ describe('the requests the client sends', () => {
     apiFetch.mockResolvedValue(raidReveal);
     await setRaidAbility('rally');
     expect(sent()).toEqual(expected('ability'));
+  });
+
+  it('the Auto fire preference is { target, on }: "basic" or a creature id', async () => {
+    apiFetch.mockResolvedValue(raidAutofire);
+    await setRaidAutofire('basic', false);
+    expect(sent()).toEqual(expected('autofire-basic'));
+
+    apiFetch.mockClear();
+    const creature = requestBodies['autofire-creature'];
+    await setRaidAutofire(creature.body.target, creature.body.on);
+    expect(sent()).toEqual(expected('autofire-creature'));
+  });
+
+  it('names the preference target the way the server expects', () => {
+    // A creature ability's target is its creature; the basic one is "basic".
+    expect(autoFireTarget({ creature: 'c-1' })).toBe('c-1');
+    expect(autoFireTarget({ creature: null })).toBe('basic');
   });
 
   it('"reveal seen" sends the week as a string, the week id the server gave', async () => {

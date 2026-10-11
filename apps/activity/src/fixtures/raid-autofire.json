@@ -1,0 +1,258 @@
+{
+  "weekId": "2027-W02",
+  "status": "phase2",
+  "timezone": "Europe/Helsinki",
+  "boss": {
+    "id": "storm-sovereign",
+    "name": "Storm Sovereign",
+    "element": "spark",
+    "turnOrder": "left_to_right",
+    "gimmicks": [
+      {
+        "id": "lightning-rod",
+        "name": "Lightning Rod"
+      }
+    ],
+    "finaleRounds": 12
+  },
+  "rank": 3,
+  "effectiveRank": 3,
+  "festival": false,
+  "festivalCreature": null,
+  "season": {
+    "index": 595,
+    "week": 1
+  },
+  "bestRank": null,
+  "schedule": {
+    "weekStart": 1799667420000,
+    "phase1": 1800013020000,
+    "phase2": 1800099420000,
+    "finale": 1800208800000
+  },
+  "next": {
+    "event": "finale",
+    "at": 1800208800000
+  },
+  "serverNow": 1800208560000,
+  "roster": [
+    {
+      "displayName": "Player 1",
+      "you": true,
+      "party": 1
+    },
+    {
+      "displayName": "Player 2",
+      "you": false,
+      "party": 1
+    }
+  ],
+  "parties": [
+    {
+      "party": 1,
+      "size": 2
+    }
+  ],
+  "you": {
+    "inRoster": true,
+    "optOut": false,
+    "party": 1,
+    "canEdit": true,
+    "canOptOut": false,
+    "ability": {
+      "abilityId": "shield-wall",
+      "chosen": true
+    },
+    "abilities": [
+      {
+        "key": "m1:basic",
+        "abilityId": "shield-wall",
+        "creatureId": null,
+        "species": null,
+        "unlocked": true,
+        "unlockLevel": 1,
+        "autoFire": false
+      },
+      {
+        "key": "m1:c0",
+        "abilityId": "thunder-strike",
+        "creatureId": "079f27ab-8884-48a5-896c-b642fb211659",
+        "species": "stormray",
+        "unlocked": true,
+        "unlockLevel": 10,
+        "autoFire": true
+      },
+      {
+        "key": "m1:c1",
+        "abilityId": "flare-strike",
+        "creatureId": "4a1780bc-8c3e-4476-91cf-1fcd97cbf66c",
+        "species": "cindle",
+        "unlocked": true,
+        "unlockLevel": 10,
+        "autoFire": false
+      },
+      {
+        "key": "m1:c2",
+        "abilityId": "static-zap",
+        "creatureId": "de06bb8a-109c-439a-bb7c-ab4040339ddb",
+        "species": "zipmouse",
+        "unlocked": true,
+        "unlockLevel": 10,
+        "autoFire": true
+      }
+    ],
+    "reveal": null,
+    "team": {
+      "mode": "auto",
+      "creatures": [
+        {
+          "creatureId": "079f27ab-8884-48a5-896c-b642fb211659",
+          "species": "stormray",
+          "name": "Stormray",
+          "level": 10,
+          "slot": null
+        },
+        {
+          "creatureId": "4a1780bc-8c3e-4476-91cf-1fcd97cbf66c",
+          "species": "cindle",
+          "name": "Cindle",
+          "level": 10,
+          "slot": null
+        },
+        {
+          "creatureId": "de06bb8a-109c-439a-bb7c-ab4040339ddb",
+          "species": "zipmouse",
+          "name": "Zipmouse",
+          "level": 10,
+          "slot": null
+        }
+      ]
+    }
+  },
+  "party": {
+    "party": 1,
+    "rowLength": 9,
+    "row": [
+      {
+        "slot": 0,
+        "zone": "front",
+        "creature": null
+      },
+      {
+        "slot": 1,
+        "zone": "front",
+        "creature": null
+      },
+      {
+        "slot": 2,
+        "zone": "front",
+        "creature": null
+      },
+      {
+        "slot": 3,
+        "zone": "middle",
+        "creature": null
+      },
+      {
+        "slot": 4,
+        "zone": "middle",
+        "creature": null
+      },
+      {
+        "slot": 5,
+        "zone": "middle",
+        "creature": null
+      },
+      {
+        "slot": 6,
+        "zone": "back",
+        "creature": null
+      },
+      {
+        "slot": 7,
+        "zone": "back",
+        "creature": null
+      },
+      {
+        "slot": 8,
+        "zone": "back",
+        "creature": null
+      }
+    ],
+    "guests": true,
+    "bossHp": {
+      "max": 50000000,
+      "current": 50000000
+    },
+    "adaptation": {
+      "description": "Storm Sovereign now resists Spark damage by 25% (the element that dealt the most damage).",
+      "rule": "resist-top-element",
+      "target": "spark"
+    },
+    "results": [
+      {
+        "phase": "phase1",
+        "at": 1800100800000,
+        "cleared": true,
+        "rounds": 10,
+        "bossHpMax": 22316,
+        "bossHpStart": 22316,
+        "bossHpEnd": 14542,
+        "damage": 4031,
+        "reactions": 18,
+        "top": [
+          {
+            "displayName": "Player 1",
+            "damage": 2231,
+            "contribution": 2916,
+            "you": true
+          },
+          {
+            "displayName": "Player 2",
+            "damage": 1800,
+            "contribution": 2256,
+            "you": false
+          }
+        ],
+        "essence": 16,
+        "jackpot": [],
+        "rankChange": null,
+        "festivalGrant": null
+      },
+      {
+        "phase": "phase2",
+        "at": 1800100800000,
+        "cleared": true,
+        "rounds": 10,
+        "bossHpMax": 22316,
+        "bossHpStart": 14542,
+        "bossHpEnd": 7520,
+        "damage": 3744,
+        "reactions": 18,
+        "top": [
+          {
+            "displayName": "Player 1",
+            "damage": 1852,
+            "contribution": 2567,
+            "you": true
+          },
+          {
+            "displayName": "Player 2",
+            "damage": 1892,
+            "contribution": 2265,
+            "you": false
+          }
+        ],
+        "essence": 23,
+        "jackpot": [],
+        "rankChange": null,
+        "festivalGrant": null
+      }
+    ],
+    "readiness": "long_shot"
+  },
+  "channel": {
+    "pinned": false,
+    "canManage": null
+  }
+}

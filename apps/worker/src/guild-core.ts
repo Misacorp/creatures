@@ -34,6 +34,7 @@ import {
   type SpendResult,
 } from './ledger';
 import { Raid } from './raid';
+import { raidAutofireMigration } from './raid-autofire-migration';
 import { raidLiveMigration } from './raid-live-migration';
 import { raidMigration } from './raid-migration';
 import { raidProgressionMigration } from './raid-progression-migration';
@@ -247,6 +248,8 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   raidProgressionMigration,
   // Version 13: a personality quirk for every creature (see creature-quirk-migration.ts).
   creatureQuirkMigration,
+  // Version 14: auto fire preferences for the finale (see raid-autofire-migration.ts).
+  raidAutofireMigration,
 ];
 
 export interface SessionUser {

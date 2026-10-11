@@ -62,3 +62,13 @@ export const RevealSeenBodySchema = v.strictObject({
     v.check((value) => isWeekId(value), 'not a raid week id'),
   ),
 });
+
+/**
+ * `PUT /api/raid/autofire`: the Auto fire setting of one ability for this week's finale. `target` is
+ * `basic` (the basic ability) or the id of one of the caller's own team creatures; the server checks
+ * that it is theirs, because the schema cannot know it. The player is the session's.
+ */
+export const AutofireBodySchema = v.strictObject({
+  target: v.union([v.literal('basic'), IdSchema]),
+  on: v.boolean(),
+});
