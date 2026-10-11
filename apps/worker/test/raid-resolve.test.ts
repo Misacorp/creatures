@@ -1,4 +1,4 @@
-import { createSeededRng, RULES } from '@creatures/game';
+import { RULES, createSeededRng, jackpotEssenceFor, scaleEssence } from '@creatures/game';
 import { scaleBoss, simulateFight } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { effectiveStats } from '@creatures/game';
@@ -50,7 +50,15 @@ describe('resolving a week', () => {
           expect(paid).toEqual([]);
           continue;
         }
-        const flat = RULES.raid.essence.flat[run.phase];
+        // The week's rank (placed from this roster) scales the payout; this is not a Festival week.
+        const week = rows<{ rank: number; festival: number }>(
+          ctx.sql,
+          'SELECT rank, festival FROM raid_weeks',
+        )[0] as { rank: number; festival: number };
+        const flat = scaleEssence(RULES.raid.essence.flat[run.phase], {
+          rank: week.rank,
+          festival: week.festival === 1,
+        });
         expect(paid).toHaveLength(5);
         expect(paid.every((p) => p.amount >= flat)).toBe(true);
         // The contribution pool is paid out exactly.
@@ -99,8 +107,13 @@ describe('resolving a week', () => {
         throw new Error('missing runs');
       const boss = content.bosses.find((b) => b.id === p1.input.boss.id);
       if (boss === undefined) throw new Error('boss');
-      // Rank 1 until the ladder is stored by the server (progression phase 2).
-      const scaled = scaleBoss(boss, 6, 1);
+      // The week's stored effective rank, placed from this roster (level 12 creatures).
+      const stored = rows<{ effective_rank: number }>(
+        ctx.sql,
+        'SELECT effective_rank FROM raid_weeks',
+      )[0] as { effective_rank: number };
+      expect(stored.effective_rank).toBeGreaterThan(1);
+      const scaled = scaleBoss(boss, 6, stored.effective_rank);
       expect(p1.input.bossHpPool).toEqual({ max: scaled.maxHp, current: scaled.maxHp });
       expect(p1.input.bossAtk).toBe(scaled.atk);
       // Each phase starts where the one before ended.
@@ -254,9 +267,14 @@ describe('the finale jackpot', () => {
         expect(finale?.result.cleared).toBe(true);
         expect(finale?.summary.jackpot.sort()).toEqual([m1, m2].sort());
         const jackpots = raidLedger(ctx.sql).filter((l) => l.idempotency_key.endsWith(':jackpot'));
+        const week = rows<{ rank: number; festival: number }>(
+          ctx.sql,
+          'SELECT rank, festival FROM raid_weeks',
+        )[0] as { rank: number; festival: number };
+        const payout = { rank: week.rank, festival: week.festival === 1 };
         expect(jackpots.map((j) => j.amount)).toEqual([
-          RULES.raid.jackpotEssence,
-          RULES.raid.jackpotEssence,
+          jackpotEssenceFor(payout),
+          jackpotEssenceFor(payout),
         ]);
         expect(rows(ctx.sql, 'SELECT user_id, counter FROM jackpot_pity ORDER BY user_id')).toEqual(
           [m1, m2].sort().map((user_id) => ({ user_id, counter: 0 })),

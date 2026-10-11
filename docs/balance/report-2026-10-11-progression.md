@@ -172,4 +172,4 @@ Both are `festival: true`, not catchable, not starters, single-stage (checked by
 - Long-run servers are very similar to each other (per-server win rate 50% to 57%): the structure (`wins = gain + resets`) leaves little room for randomness. Real servers will differ more, through player churn, which the sim does not model (a server that loses players loses rank-ups until the reset catches up).
 - The sim players never skip weeks and always bring their 3 strongest creatures; sign-up randomness (casuals 70%) is the only attendance noise.
 - Crits cost about 5% of boss HP and the boss HP retune is fitted on one 24-sim sample per size and four seeds; boss and size cells move 3 to 5 points between seeds.
-- The worker still fights every server at rank 1 and does not copy the luck rules into its inputs, so staging will have a trivial boss until phase 2.
+- (Written before phase 2.) The worker then still fought every server at rank 1 and did not copy the luck rules into its inputs. Phase 2 stores the ladder, scales the boss by it and copies the luck rules into every fight input.

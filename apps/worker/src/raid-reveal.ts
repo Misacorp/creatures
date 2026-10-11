@@ -2,7 +2,9 @@
  * The loot reveal for the finale a player took part in: shown in the Raid read model until they mark
  * it as seen. Only the player's own reveal is ever read, and the data comes from the stored result.
  */
-import { RULES } from '@creatures/game';
+import { jackpotEssenceFor } from '@creatures/game';
+import { readFestivalGrant, type FestivalGrantView } from './raid-festival';
+import { payoutWeek, rankChangeOf, type RankChangeView } from './raid-ladder';
 import type { StoredSummary } from './raid-resolve';
 
 export interface RevealView {
@@ -13,6 +15,10 @@ export interface RevealView {
   /** The Essence the finale paid the player (not counting a jackpot). */
   essence: number;
   jackpot: null | { essence: number; firstOnServer: boolean };
+  /** What the finale did to the server's rank; null until the ladder has moved, and for old weeks. */
+  rankChange: RankChangeView | null;
+  /** The Festival creature the caller got for this finale, or null. */
+  festivalGrant: FestivalGrantView | null;
 }
 
 /**
@@ -33,7 +39,10 @@ export function jackpotOf(
       `jackpot:${weekId}`,
     )
     .toArray();
-  return { essence: RULES.raid.jackpotEssence, firstOnServer: first.length > 0 };
+  return {
+    essence: jackpotEssenceFor(payoutWeek(sql, weekId)),
+    firstOnServer: first.length > 0,
+  };
 }
 
 /** The finales (newest first) whose stored summary lists the user, with that summary. */
@@ -80,6 +89,8 @@ export function latestReveal(sql: SqlStorage, userId: string): RevealView | null
     cleared: summary.cleared,
     essence: summary.essence[userId] ?? 0,
     jackpot: jackpotOf(sql, userId, latest.weekId, summary),
+    rankChange: rankChangeOf(sql, latest.weekId),
+    festivalGrant: readFestivalGrant(sql, latest.weekId, userId),
   };
 }
 

@@ -10,6 +10,8 @@ import {
   type EventNames,
   type FightEvent,
 } from '@creatures/engine';
+import { readFestivalGrant, type FestivalGrantView } from './raid-festival';
+import { rankChangeOf, type RankChangeView } from './raid-ladder';
 import { bossFor, type StoredSummary } from './raid-resolve';
 import { jackpotOf } from './raid-reveal';
 import {
@@ -46,6 +48,10 @@ export interface LiveLoot {
   jackpot: null | { essence: number; firstOnServer: boolean };
   /** Raids taken part in without a jackpot, after this one. Private. */
   pity: number;
+  /** What the finale did to the server's rank; null until the ladder has moved (and in practice). */
+  rankChange: RankChangeView | null;
+  /** The Festival creature the caller got, or null. */
+  festivalGrant: FestivalGrantView | null;
 }
 
 export interface LiveSnapshot {
@@ -157,6 +163,8 @@ function realLoot(ctx: LiveContext, row: LiveRow): LiveLoot | null {
     essence: summary.essence[ctx.userId] ?? 0,
     jackpot: jackpotOf(ctx.sql, ctx.userId, row.weekId, summary),
     pity: pityOf(ctx.sql, ctx.userId),
+    rankChange: rankChangeOf(ctx.sql, row.weekId),
+    festivalGrant: readFestivalGrant(ctx.sql, row.weekId, ctx.userId),
   };
 }
 
@@ -215,6 +223,8 @@ export function liveSnapshot(
           essence: 0,
           jackpot: null,
           pity: pityOf(ctx.sql, ctx.userId),
+          rankChange: null,
+          festivalGrant: null,
         }
       : realLoot(ctx, row);
   }

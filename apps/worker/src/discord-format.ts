@@ -103,6 +103,10 @@ export interface RevealPost {
   schedule: { phase1: number; phase2: number; finale: number };
   players: number;
   parties: number;
+  /** The server's Boss Rank this week; null when the week has none (an old week, or nobody in yet). */
+  rank: number | null;
+  /** Set in a Festival week: the name of the Festival creature every winner gets. */
+  festivalCreature: string | null;
 }
 
 /** Monday: the week's boss. */
@@ -111,6 +115,12 @@ export function formatBossReveal(post: RevealPost): string {
     `**A new raid week begins: ${escapeMarkdown(post.bossName)}**`,
     `Element: ${escapeMarkdown(post.elementName)}. ${TURN_ORDER_WORDS[post.turnOrder]}`,
   ];
+  if (post.rank !== null) lines.push(`Boss Rank ${String(post.rank)}.`);
+  if (post.festivalCreature !== null) {
+    lines.push(
+      `Festival week: ${escapeMarkdown(post.festivalCreature)} for every winner, bonus Essence.`,
+    );
+  }
   for (const g of post.gimmicks) {
     lines.push(`${escapeMarkdown(g.name)}: ${escapeMarkdown(g.text)}.`);
   }
@@ -136,6 +146,16 @@ export type KeyMoment =
       bonus: number;
     };
 
+/** The server's rank move after a finale. */
+export interface RankPost {
+  before: number;
+  after: number;
+  festival: boolean;
+  /** Parties that played, and how many of them won. */
+  parties: number;
+  partiesWon: number;
+}
+
 export interface PhasePost {
   phase: 'phase1' | 'phase2' | 'finale';
   bossName: string;
@@ -156,7 +176,22 @@ export interface PhasePost {
   finale?: {
     jackpot: readonly string[];
     firsts: readonly { label: string; names: readonly string[] }[];
+    /** Where the server's rank went; null until the ladder has moved (not every party has finished). */
+    rank?: RankPost | null;
+    /** Festival week only: the creature and the members of this party who got it. */
+    festival?: { creature: string; winners: readonly string[] } | null;
   };
+}
+
+/** The sentence about the server's rank after a finale. */
+function rankLine(rank: RankPost): string {
+  const lead =
+    rank.parties > 1 ? `${String(rank.partiesWon)} of ${String(rank.parties)} parties won. ` : '';
+  if (rank.after > rank.before) return `${lead}The server climbs to Rank ${String(rank.after)}.`;
+  if (rank.after < rank.before) {
+    return `${lead}${rank.festival ? 'The Festival is over. ' : ''}The server eases to Rank ${String(rank.after)}.`;
+  }
+  return `${lead}Rank ${String(rank.after)} stays.`;
 }
 
 const PHASE_TITLES = { phase1: 'Phase 1', phase2: 'Phase 2', finale: 'Finale' } as const;
@@ -213,6 +248,12 @@ export function formatPhasePost(post: PhasePost): string {
     } else if (post.cleared) {
       lines.push('No jackpot this week.');
     }
+    if (post.finale.festival != null && post.finale.festival.winners.length > 0) {
+      lines.push(
+        `Festival creature: ${escapeMarkdown(post.finale.festival.creature)} for ${post.finale.festival.winners.map((n) => safeName(n)).join(', ')}.`,
+      );
+    }
+    if (post.finale.rank != null) lines.push(rankLine(post.finale.rank));
     if (firsts.length > 0) {
       lines.push('First on the server this week:');
       for (const f of firsts.slice(0, MAX_FIRSTS_LISTED)) {

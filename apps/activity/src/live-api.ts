@@ -18,12 +18,16 @@ import {
   isBool,
   isEvent,
   isEventNames,
+  isFestivalGrant,
   isInt,
   isJackpot,
+  isRankChange,
   isNullableStr,
   isRecord,
   isReplayRow,
   isStr,
+  type FestivalGrant,
+  type RankChange,
   type ReplayRowEntry,
 } from './raid-api';
 
@@ -59,6 +63,10 @@ export interface LiveLoot {
   jackpot: null | { essence: number; firstOnServer: boolean };
   /** Raids taken part in without a jackpot, after this one. */
   pity: number;
+  /** What the finale did to the server's rank; null until the ladder has moved, and in practice. */
+  rankChange: RankChange | null;
+  /** The Festival creature the finale gave the caller, or null. */
+  festivalGrant: FestivalGrant | null;
 }
 
 /** What every state carries (the fields that are the same in the lobby and in the fight). */
@@ -158,7 +166,9 @@ function isLiveLoot(value: unknown): value is LiveLoot {
     isBool(value['cleared']) &&
     isNonNegativeInt(value['essence']) &&
     (value['jackpot'] === null || isJackpot(value['jackpot'])) &&
-    isNonNegativeInt(value['pity'])
+    isNonNegativeInt(value['pity']) &&
+    (value['rankChange'] === null || isRankChange(value['rankChange'])) &&
+    (value['festivalGrant'] === null || isFestivalGrant(value['festivalGrant']))
   );
 }
 

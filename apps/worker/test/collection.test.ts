@@ -253,7 +253,7 @@ describe('migration 4', () => {
 
       core.migrate();
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        11,
+        12,
       );
       expect(core.balances(USER_ID).bait).toBe(42);
       const res = await ctx.request(secret, '/api/state');
@@ -802,6 +802,36 @@ describe('POST /api/expeditions', () => {
         expect(res.status).toBe(400);
         expect(res.body).toEqual({ error: 'invalid_body' });
         expect(count(ctx.sql, 'expeditions')).toBe(0);
+      },
+      seeded(),
+    );
+  });
+});
+
+describe('Festival species', () => {
+  it('are never brought back from an expedition, and are not starters', async () => {
+    const festival = content.creatures.filter((c) => c.festival === true);
+    expect(festival.length).toBeGreaterThan(0);
+    for (const species of festival) {
+      expect(species.catchable).toBe(false);
+      expect(species.starter).toBe(false);
+    }
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await joinWithStarter(ctx, USER, 1_000_000);
+        const seen = new Set<string>();
+        for (let i = 0; i < 80; i++) {
+          const exp = expeditionOf(await send(p, p.starterId, 'long', 'great'));
+          ctx.clock.t = exp.endsAt;
+          const res = await claim(p, exp.id);
+          expect(res.status).toBe(200);
+          for (const c of resultOf(res).catches) seen.add(c.species);
+        }
+        // Plenty of the catchable species showed up, and no Festival species did. (A Festival
+        // species only ever comes from a won Festival finale, never from a claim.)
+        expect(seen.size).toBeGreaterThan(5);
+        for (const species of festival) expect(seen.has(species.id)).toBe(false);
       },
       seeded(),
     );

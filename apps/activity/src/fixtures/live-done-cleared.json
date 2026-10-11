@@ -19,17 +19,17 @@
   "row": [
     {
       "position": 0,
-      "id": "78b34c14-f354-4da4-a3a1-969dc25a2f50",
+      "id": "66ba6cba-b9e2-43e0-a7f7-fad970b4bd00",
       "name": "Sproutle",
       "species": "sproutle",
       "element": "grove",
       "role": "guard",
       "level": 10,
-      "owner": "m1"
+      "owner": "m2"
     },
     {
       "position": 1,
-      "id": "28bc8509-a652-456a-9410-1298b0da9bac",
+      "id": "df89d4f8-34b2-4d94-ab3c-ef4fad25e1ec",
       "name": "Cindle",
       "species": "cindle",
       "element": "ember",
@@ -39,7 +39,7 @@
     },
     {
       "position": 2,
-      "id": "c1392eb0-ff62-4702-a453-203ef08bf0d6",
+      "id": "9de301b0-0c08-418e-8d85-b8fed15873ba",
       "name": "Mistnewt",
       "species": "mistnewt",
       "element": "tide",
@@ -49,16 +49,6 @@
     },
     {
       "position": 3,
-      "id": "99ea6d51-4868-4644-9bf8-beff1776c43f",
-      "name": "Sproutle",
-      "species": "sproutle",
-      "element": "grove",
-      "role": "guard",
-      "level": 10,
-      "owner": "m2"
-    },
-    {
-      "position": 4,
       "id": "guest:1",
       "name": "Guest Warden",
       "species": "sproutle",
@@ -66,6 +56,16 @@
       "role": "guard",
       "level": 9,
       "owner": null
+    },
+    {
+      "position": 4,
+      "id": "fe5a7376-8ad2-41ee-9ecd-1a4b1df96e96",
+      "name": "Ashmole",
+      "species": "ashmole",
+      "element": "ember",
+      "role": "support",
+      "level": 10,
+      "owner": "m2"
     },
     {
       "position": 5,
@@ -89,51 +89,46 @@
     },
     {
       "position": 7,
-      "id": "5d3f27ad-eec1-43d9-b3c7-25dc603f9b4f",
-      "name": "Zipmouse",
-      "species": "zipmouse",
-      "element": "spark",
-      "role": "setter",
-      "level": 10,
-      "owner": "m2"
-    },
-    {
-      "position": 8,
-      "id": "ea905f0e-815e-4bc4-bde3-56ef1d9cff0e",
+      "id": "4ac084b3-78ce-4942-9eb9-04fd9279faec",
       "name": "Zipmouse",
       "species": "zipmouse",
       "element": "spark",
       "role": "setter",
       "level": 7,
       "owner": "m1"
+    },
+    {
+      "position": 8,
+      "id": "d5de28dd-7275-4f5c-bc9b-2a9e3b2dfd84",
+      "name": "Stormray",
+      "species": "stormray",
+      "element": "spark",
+      "role": "payoff",
+      "level": 10,
+      "owner": "m1"
     }
   ],
   "names": {
     "boss": "Storm Sovereign",
     "creatures": {
-      "78b34c14-f354-4da4-a3a1-969dc25a2f50": "Sproutle",
-      "28bc8509-a652-456a-9410-1298b0da9bac": "Cindle",
-      "c1392eb0-ff62-4702-a453-203ef08bf0d6": "Mistnewt",
-      "99ea6d51-4868-4644-9bf8-beff1776c43f": "Sproutle",
+      "66ba6cba-b9e2-43e0-a7f7-fad970b4bd00": "Sproutle",
+      "df89d4f8-34b2-4d94-ab3c-ef4fad25e1ec": "Cindle",
+      "9de301b0-0c08-418e-8d85-b8fed15873ba": "Mistnewt",
       "guest:1": "Guest Warden",
+      "fe5a7376-8ad2-41ee-9ecd-1a4b1df96e96": "Ashmole",
       "guest:2": "Guest Tidecaller",
       "guest:3": "Guest Striker",
-      "5d3f27ad-eec1-43d9-b3c7-25dc603f9b4f": "Zipmouse",
-      "ea905f0e-815e-4bc4-bde3-56ef1d9cff0e": "Zipmouse"
+      "4ac084b3-78ce-4942-9eb9-04fd9279faec": "Zipmouse",
+      "d5de28dd-7275-4f5c-bc9b-2a9e3b2dfd84": "Stormray"
     },
-    "players": {
-      "m1": "Player 1",
-      "m2": "Player 2"
-    },
+    "players": { "m1": "Player 1", "m2": "Player 2" },
     "reactions": {
       "overload": "Overload",
       "grounding": "Grounding",
       "wildfire": "Wildfire",
       "steam": "Steam"
     },
-    "gimmicks": {
-      "lightning-rod": "Lightning Rod"
-    },
+    "gimmicks": { "lightning-rod": "Lightning Rod" },
     "abilities": {
       "rally": "Rally",
       "shield-wall": "Shield Wall",
@@ -158,20 +153,12 @@
       "coral-lance": "Coral Lance",
       "solar-brand": "Solar Brand",
       "verdant-roar": "Verdant Roar",
-      "aurora-surge": "Aurora Surge"
+      "aurora-surge": "Aurora Surge",
+      "lantern-glow": "Lantern Glow",
+      "hearth-ward": "Hearth Ward"
     },
-    "marks": {
-      "tide": "Soaked",
-      "spark": "Charged",
-      "grove": "Overgrown",
-      "ember": "Scorched"
-    },
-    "elements": {
-      "tide": "Tide",
-      "ember": "Ember",
-      "grove": "Grove",
-      "spark": "Spark"
-    },
+    "marks": { "tide": "Soaked", "spark": "Charged", "grove": "Overgrown", "ember": "Scorched" },
+    "elements": { "tide": "Tide", "ember": "Ember", "grove": "Grove", "spark": "Spark" },
     "adaptations": {
       "resist-top-reaction": "Reaction Resistance",
       "resist-top-element": "Element Resistance"
@@ -192,24 +179,24 @@
     {
       "key": "m1:c0",
       "alias": "m1",
+      "abilityId": "thunder-strike",
+      "creature": "d5de28dd-7275-4f5c-bc9b-2a9e3b2dfd84",
+      "mode": "default",
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": null,
+      "defaultRound": 4
+    },
+    {
+      "key": "m1:c1",
+      "alias": "m1",
       "abilityId": "flare-strike",
-      "creature": "28bc8509-a652-456a-9410-1298b0da9bac",
+      "creature": "df89d4f8-34b2-4d94-ab3c-ef4fad25e1ec",
       "mode": "default",
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
       "defaultRound": 5
-    },
-    {
-      "key": "m1:c1",
-      "alias": "m1",
-      "abilityId": "bark-guard",
-      "creature": "78b34c14-f354-4da4-a3a1-969dc25a2f50",
-      "mode": "default",
-      "fired": false,
-      "firedAtRound": null,
-      "fireAtRound": null,
-      "defaultRound": 3
     },
     {
       "key": "m2:basic",
@@ -226,7 +213,7 @@
       "key": "m2:c0",
       "alias": "m2",
       "abilityId": "fog-veil",
-      "creature": "c1392eb0-ff62-4702-a453-203ef08bf0d6",
+      "creature": "9de301b0-0c08-418e-8d85-b8fed15873ba",
       "mode": "default",
       "fired": false,
       "firedAtRound": null,
@@ -236,19 +223,19 @@
     {
       "key": "m2:c1",
       "alias": "m2",
-      "abilityId": "static-zap",
-      "creature": "5d3f27ad-eec1-43d9-b3c7-25dc603f9b4f",
+      "abilityId": "warm-glow",
+      "creature": "fe5a7376-8ad2-41ee-9ecd-1a4b1df96e96",
       "mode": "default",
       "fired": false,
       "firedAtRound": null,
       "fireAtRound": null,
-      "defaultRound": 4
+      "defaultRound": 5
     },
     {
       "key": "m2:c2",
       "alias": "m2",
       "abilityId": "bark-guard",
-      "creature": "99ea6d51-4868-4644-9bf8-beff1776c43f",
+      "creature": "66ba6cba-b9e2-43e0-a7f7-fad970b4bd00",
       "mode": "default",
       "fired": false,
       "firedAtRound": null,
@@ -264,21 +251,26 @@
       "target": "spark",
       "status": "active"
     },
+    { "t": "round_start", "round": 1, "bossHp": 1, "mark": null },
     {
-      "t": "round_start",
+      "t": "support_buff",
       "round": 1,
-      "bossHp": 1,
-      "mark": null
+      "supporter": "fe5a7376-8ad2-41ee-9ecd-1a4b1df96e96",
+      "target": "guest:1",
+      "bp": 1500
     },
     {
-      "t": "turn",
+      "t": "support_buff",
       "round": 1,
-      "creature": "78b34c14-f354-4da4-a3a1-969dc25a2f50"
+      "supporter": "fe5a7376-8ad2-41ee-9ecd-1a4b1df96e96",
+      "target": "guest:2",
+      "bp": 1500
     },
+    { "t": "turn", "round": 1, "creature": "66ba6cba-b9e2-43e0-a7f7-fad970b4bd00" },
     {
       "t": "hit",
       "round": 1,
-      "creature": "78b34c14-f354-4da4-a3a1-969dc25a2f50",
+      "creature": "66ba6cba-b9e2-43e0-a7f7-fad970b4bd00",
       "damage": 46,
       "matchupBp": 15000,
       "bonusBp": 0,
@@ -288,23 +280,21 @@
     {
       "t": "mark",
       "round": 1,
-      "creature": "78b34c14-f354-4da4-a3a1-969dc25a2f50",
-      "player": "m1",
+      "creature": "66ba6cba-b9e2-43e0-a7f7-fad970b4bd00",
+      "player": "m2",
       "element": "grove",
       "replaced": null
     },
-    {
-      "t": "round_end",
-      "round": 1,
-      "bossHp": 0
-    }
+    { "t": "round_end", "round": 1, "bossHp": 0 }
   ],
   "bossHp": 0,
   "watching": ["Player 1", "Player 2"],
   "loot": {
     "cleared": true,
-    "essence": 25,
+    "essence": 52,
     "jackpot": null,
-    "pity": 1
+    "pity": 1,
+    "rankChange": { "before": 3, "after": 4, "festival": false, "serverWon": true },
+    "festivalGrant": null
   }
 }

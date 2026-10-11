@@ -1,20 +1,73 @@
 import { elementName } from './game';
 import type { RaidView } from './raid-api';
+import {
+  READINESS_HINT,
+  bestRankText,
+  festivalBanner,
+  festivalTeaser,
+  rankLabel,
+  readinessLabel,
+  seasonPips,
+  seasonText,
+} from './raid-progress';
 import { countdownText, scheduleSteps } from './raid-time';
 import { gimmickLines, turnOrderShort, turnOrderText } from './raid-text';
+
+/** The five weeks of the season as pips: the Festival is the last one. */
+function SeasonPips({ season }: { season: RaidView['season'] }) {
+  const pips = seasonPips(season);
+  const text = seasonText(season);
+  if (pips.length === 0 || text === null) return null;
+  return (
+    <div class="season">
+      <ol class="season-pips" aria-label={text}>
+        {pips.map((pip) => (
+          <li
+            key={pip.week}
+            class={`season-pip ${pip.state}${pip.festival ? ' festival' : ''}`}
+            aria-current={pip.state === 'now' ? 'step' : undefined}
+          >
+            <span class="visually-hidden">{pip.label}</span>
+          </li>
+        ))}
+      </ol>
+      <p class="muted">{text}</p>
+    </div>
+  );
+}
 
 export function BossCard({ view }: { view: RaidView }) {
   const { boss } = view;
   const gimmicks = gimmickLines(boss.id, boss.gimmicks);
   const adaptation = view.party?.adaptation ?? null;
   const hp = view.party?.bossHp ?? null;
+  const rank = rankLabel(view.rank);
+  const banner = festivalBanner(view);
+  const teaser = festivalTeaser(view);
+  const band = readinessLabel(view.party?.readiness ?? null);
+  const best = bestRankText(view.bestRank);
   return (
-    <section class="raid-section" aria-labelledby="raid-boss-name">
+    <section
+      class={view.festival ? 'raid-section festival' : 'raid-section'}
+      aria-labelledby="raid-boss-name"
+    >
       <h3 id="raid-boss-name">{boss.name}</h3>
       <p class="tags">
+        {rank !== null && <span class="tag rank">{rank}</span>}
+        {view.festival && <span class="badge festival">Festival week</span>}
         <span class="tag">{elementName(boss.element)}</span>
         <span class="tag">{turnOrderShort(boss.turnOrder)}</span>
       </p>
+      {banner !== null && <p class="festival-banner">{banner}</p>}
+      {teaser !== null && <p class="muted">{teaser}</p>}
+      <SeasonPips season={view.season} />
+      {band !== null && view.party?.readiness != null && (
+        <p class="readiness">
+          <span class={`readiness-band ${view.party.readiness}`}>{band}</span>{' '}
+          <span class="muted">{READINESS_HINT}</span>
+        </p>
+      )}
+      {best !== null && <p class="muted">{best}</p>}
       <p>{turnOrderText(boss.turnOrder)}</p>
       {gimmicks.length > 0 && (
         <>

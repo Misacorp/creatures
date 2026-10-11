@@ -3,7 +3,8 @@ import { revealSummary } from './live';
 import type { RaidReveal } from './raid-api';
 
 /**
- * The finale loot reveal: the outcome, the Essence and the jackpot roll. The roll plays a short
+ * The finale loot reveal: the outcome, the Essence, the jackpot roll, the Festival creature the
+ * player won and what the finale did to the server's rank. The roll plays a short
  * CSS-only animation (switched off for `prefers-reduced-motion`); the real text is in the page from
  * the start, so screen readers and reduced-motion users get the result at once.
  */
@@ -14,7 +15,8 @@ export function RevealCard({
   afterAction,
   onDismiss,
 }: {
-  reveal: Pick<RaidReveal, 'cleared' | 'essence' | 'jackpot'>;
+  reveal: Pick<RaidReveal, 'cleared' | 'essence' | 'jackpot'> &
+    Partial<Pick<RaidReveal, 'rankChange' | 'festivalGrant'>>;
   /** The pity counter after the fight, when the server sent one. */
   pity: number | null;
   busy: boolean;
@@ -46,6 +48,13 @@ export function RevealCard({
           {summary.jackpot.firstOnServer && <span class="badge first">First on server</span>}
         </p>
       </div>
+      {summary.festival !== null && (
+        <p class="reveal-festival">
+          {summary.festival.text}
+          {summary.festival.firstOnServer && <span class="badge first">First on server</span>}
+        </p>
+      )}
+      {summary.rank !== null && <p class="reveal-rank">{summary.rank}</p>}
       {afterAction !== undefined && (
         <AfterAction
           week={afterAction.week}

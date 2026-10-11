@@ -17,6 +17,7 @@ import {
   contributionWeights,
   createSeededRng,
   essenceForStage,
+  jackpotEssenceFor,
   rollJackpot,
   type BossDef,
   type Rng,
@@ -36,6 +37,8 @@ import {
   type FightSlot,
 } from '@creatures/engine';
 import { credit, type LedgerStorage } from './ledger';
+import { grantFestivalCreature } from './raid-festival';
+import { fightRank, payoutWeek, readWeekProgression, updateLadder } from './raid-ladder';
 import { partyMembers } from './raid-roster';
 import { queuePhasePost } from './raid-posts';
 import type { RaidPhase } from './raid-schedule';
@@ -285,8 +288,9 @@ export function buildPhaseInput(
   let hpCurrent = partyRow.hp_current;
   let bossAtk = partyRow.boss_atk;
   if (hpMax === null || hpCurrent === null || bossAtk === null) {
-    // Boss Rank phase 1: the ladder is not stored yet, so every server fights at rank 1 for now.
-    const scaled = scaleBoss(boss, memberIds.length, 1);
+    // Scaled once, from the head count and the week's stored rank (a Festival's eased rank). A week
+    // from before the ladder has no stored rank and fights at rank 1, as it always did.
+    const scaled = scaleBoss(boss, memberIds.length, fightRank(sql, week.weekId));
     hpMax = scaled.maxHp;
     hpCurrent = scaled.maxHp;
     bossAtk = scaled.atk;
@@ -315,6 +319,8 @@ export function buildPhaseInput(
     finaleAbilities: abilityIds.flatMap((abilityId, i) =>
       memberChoices(aliases[i] as string, abilityId, teams[i] as TeamCreature[], rowIds),
     ),
+    // Crits and the rest of the luck rules, stored with the input so a replay is exact.
+    luck: { ...RULES.combat.luck },
   };
   return { memberIds, aliases, input };
 }
@@ -399,12 +405,13 @@ export function settleParty(
   }
 
   // --- Essence, for cleared stages, to members only ---
+  const payout = payoutWeek(sql, week.weekId);
   const userOf = new Map(aliases.map((alias, i) => [alias, memberIds[i] as string]));
   const essence: Record<string, number> = {};
   if (result.cleared) {
     const contribution: Record<string, number> = {};
     for (const alias of aliases) contribution[alias] = result.perPlayer[alias]?.contribution ?? 0;
-    const paid = essenceForStage(phase, aliases, contributionWeights(contribution));
+    const paid = essenceForStage(phase, aliases, contributionWeights(contribution), payout);
     for (const alias of aliases) {
       const amount = paid[alias] ?? 0;
       const userId = userOf.get(alias) as string;
@@ -427,7 +434,17 @@ export function settleParty(
 
   // --- Finale loot ---
   const jackpot =
-    phase === 'finale' ? rollJackpots(deps, week.weekId, party, memberIds, result) : [];
+    phase === 'finale' ? rollJackpots(deps, week.weekId, party, memberIds, result, payout) : [];
+
+  // --- The Festival creature, for every member of a party that won a Festival finale ---
+  if (phase === 'finale' && result.cleared) {
+    const progression = readWeekProgression(sql, week.weekId);
+    if (progression?.festival === true && progression.festivalSpecies !== null) {
+      for (const userId of memberIds) {
+        grantFestivalCreature(storage, week.weekId, userId, progression.festivalSpecies, now);
+      }
+    }
+  }
 
   // --- Store ---
   const contributors = aliases
@@ -462,6 +479,9 @@ export function settleParty(
     JSON.stringify(summary),
     now,
   );
+  // The ladder moves once the finale has resolved for every party (the last one to settle does it),
+  // before the post is queued so the post can say where the server stands.
+  if (phase === 'finale') updateLadder(sql, week.weekId, now);
   // Queued in this transaction, so the post exists exactly when the result does.
   queuePhasePost(sql, {
     weekId: week.weekId,
@@ -486,6 +506,7 @@ function rollJackpots(
   party: number,
   memberIds: readonly string[],
   result: FightResult,
+  payout: { rank: number; festival: boolean },
 ): string[] {
   const sql = deps.storage.sql;
   const now = deps.now();
@@ -505,7 +526,7 @@ function rollJackpots(
           {
             userId,
             currency: 'essence',
-            amount: RULES.raid.jackpotEssence,
+            amount: jackpotEssenceFor(payout),
             source: 'raid',
             idempotencyKey: `raid:${weekId}:${party}:jackpot`,
             meta: { week: weekId, party, jackpot: true },

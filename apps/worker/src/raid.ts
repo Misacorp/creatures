@@ -6,7 +6,13 @@
  * depend on it can never be interleaved with another request. The user is always an argument from
  * the verified session. The guild's timezone is always passed in, never defaulted.
  */
-import { basicAbilities, content, type Rng } from '@creatures/game';
+import {
+  basicAbilities,
+  content,
+  createCryptoRng,
+  type ReadinessBand,
+  type Rng,
+} from '@creatures/game';
 import type { Outcome } from './collection';
 import type { LedgerStorage } from './ledger';
 import {
@@ -28,7 +34,9 @@ import {
   type LiveRow,
 } from './raid-live';
 import { emptySnapshot, liveSnapshot, type LiveContext, type LiveSnapshot } from './raid-live-view';
+import { convertLegacyWeek, ensureWeekRank, seasonColumns } from './raid-ladder';
 import { queueBossReveal } from './raid-posts';
+import { ReadinessCache } from './raid-readiness';
 import { resolveParty } from './raid-resolve';
 import { markRevealSeen } from './raid-reveal';
 import { readStats, type AfterActionStats } from './raid-stats';
@@ -74,6 +82,11 @@ export interface RaidDeps {
   rng: Rng;
   /** Staging only: lets players start a practice finale (`RAID_PRACTICE` is "on"). */
   practice?: boolean;
+  /**
+   * Fresh randomness for the readiness band. Crypto in production. It is separate from `rng`, so a
+   * forecast never consumes the draws of a real fight and never touches a stored seed.
+   */
+  readinessRng?: Rng;
 }
 
 export interface WeekRow {
@@ -91,8 +104,24 @@ export class Raid {
   private nextCache: { tz: string; from: number; at: number } | null = null;
   /** When each player last polled the live finale. In memory and best effort: it is only "who is here". */
   private readonly watchers = new Map<string, number>();
+  /** The readiness bands per party, cached in memory (see `raid-readiness.ts`). */
+  private readonly readinessCache: ReadinessCache;
 
-  constructor(private readonly deps: RaidDeps) {}
+  constructor(private readonly deps: RaidDeps) {
+    this.readinessCache = new ReadinessCache({
+      storage: deps.storage,
+      now: deps.now,
+      rng: deps.readinessRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+    });
+  }
+
+  /**
+   * The readiness band of a party for the view, or null (see `ReadinessCache`). Cheap when cached:
+   * a forecast runs at most every 30 seconds per party, and only when something changed.
+   */
+  readiness(week: WeekRow, party: number): ReadinessBand | null {
+    return this.readinessCache.get(week, party);
+  }
 
   private get sql(): SqlStorage {
     return this.deps.storage.sql;
@@ -139,13 +168,21 @@ export class Raid {
       const boss = bosses[weekIndex(weekId) % bosses.length];
       if (boss === undefined) throw new Error('content has no bosses');
       const now = this.deps.now();
+      const season = seasonColumns(weekId);
       this.sql.exec(
-        "INSERT INTO raid_weeks (week_id, boss_id, status, created_at) VALUES (?, ?, 'open', ?)",
+        `INSERT INTO raid_weeks (week_id, boss_id, status, created_at, season_index, festival, festival_species)
+         VALUES (?, ?, 'open', ?, ?, ?, ?)`,
         weekId,
         boss.id,
         now,
+        season.seasonIndex,
+        season.festival,
+        season.festivalSpecies,
       );
       createParties(this.sql, weekId, eligiblePlayerIds(this.sql, weekId, now), now);
+      // The week's rank is fixed now: the server's rank (placed from this roster if it has none
+      // yet). With nobody in on a server that has no rank, it is placed when the first player joins.
+      ensureWeekRank(this.sql, weekId);
       return { weekId, bossId: boss.id, status: 'open' as const, createdAt: now };
     });
   }
@@ -175,8 +212,11 @@ export class Raid {
       for (const userId of eligiblePlayerIds(this.sql, weekId, now)) {
         if (partyOf(this.sql, weekId, userId) === null) {
           joinSmallestParty(this.sql, weekId, userId, now);
+          this.readinessCache.invalidate();
         }
       }
+      // A server that has no rank yet is placed as soon as its week has someone in.
+      ensureWeekRank(this.sql, weekId);
     });
   }
 
@@ -336,8 +376,13 @@ export class Raid {
    */
   resolvePhase(week: WeekRow, phase: RaidPhase): void {
     if (this.isDone(week.weekId, phase)) return;
-    // Late joiners are added right before phase 1 locks the membership.
-    if (phase === 'phase1') this.syncRoster(week.weekId);
+    // Late joiners are added right before phase 1 locks the membership (which also places a server
+    // that still has no rank).
+    if (phase === 'phase1') {
+      this.syncRoster(week.weekId);
+      // A week from before the ladder, with no pool yet, is ranked now (see `convertLegacyWeek`).
+      this.deps.storage.transactionSync(() => convertLegacyWeek(this.sql, week.weekId));
+    }
     const parties = this.sql
       .exec<{
         party: number;
@@ -377,6 +422,7 @@ export class Raid {
     return this.atomically(() => {
       const { week } = this.memberContext(userId, tz);
       this.requireEditable(week);
+      this.readinessCache.invalidate();
       if (creatureIds !== null) {
         const owned = new Set(loadCreatures(this.sql, userId).map((c) => c.id));
         if (new Set(creatureIds).size !== creatureIds.length) {
@@ -425,6 +471,7 @@ export class Raid {
       const { week, party } = this.memberContext(userId, tz);
       this.requireEditable(week);
       this.requireOwnTeamCreature(week.weekId, userId, creatureId);
+      this.readinessCache.invalidate();
       const length = rowLength(partyMembers(this.sql, week.weekId, party).length);
       if (!Number.isInteger(slot) || slot < 0 || slot >= length) {
         throw new RaidError(400, 'invalid_slot');
@@ -479,6 +526,7 @@ export class Raid {
       this.requireEditable(week);
       const owned = loadCreatures(this.sql, userId).some((c) => c.id === creatureId);
       if (!owned) throw new RaidError(409, 'not_your_creature');
+      this.readinessCache.invalidate();
       this.sql.exec(
         'DELETE FROM raid_placements WHERE week_id = ? AND user_id = ? AND creature_id = ?',
         week.weekId,
@@ -525,6 +573,7 @@ export class Raid {
     return this.atomically(() => {
       const week = this.ensureWeek(weekIdFor(this.deps.now(), tz));
       if (week.status !== 'open') throw new RaidError(409, 'locked');
+      this.readinessCache.invalidate();
       if (optOut) {
         this.sql.exec(
           'INSERT OR IGNORE INTO raid_opt_outs (week_id, user_id) VALUES (?, ?)',
@@ -558,6 +607,7 @@ export class Raid {
       if (!basicAbilities().some((a) => a.id === abilityId)) {
         throw new RaidError(400, 'invalid_body');
       }
+      this.readinessCache.invalidate();
       this.sql.exec(
         `INSERT INTO raid_abilities (week_id, user_id, ability_id) VALUES (?, ?, ?)
          ON CONFLICT(week_id, user_id) DO UPDATE SET ability_id = excluded.ability_id`,

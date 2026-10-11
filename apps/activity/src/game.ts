@@ -19,6 +19,11 @@ export function getSpecies(id: string): CreatureSpecies | undefined {
   return SPECIES.get(id);
 }
 
+/** True for a Festival species: only ever won in a Festival week, never found on expeditions. */
+export function isFestivalSpecies(id: string): boolean {
+  return SPECIES.get(id)?.festival === true;
+}
+
 export function speciesName(id: string): string {
   return SPECIES.get(id)?.name ?? id;
 }

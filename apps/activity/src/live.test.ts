@@ -2,7 +2,7 @@ import type { EventNames, FightEvent } from '@creatures/engine';
 import { content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { LiveAbility, LiveLobby, LiveNone, LiveRunning } from './live-api';
-import type { AbilityPreview } from './raid-api';
+import type { AbilityPreview, RaidReveal } from './raid-api';
 import {
   abilityControls,
   abilityDef,
@@ -687,6 +687,36 @@ describe('revealSummary', () => {
       text: 'No jackpot this time (pity 4/10)',
       firstOnServer: false,
     });
+  });
+
+  it('says where the server’s rank went, and nothing before the ladder has moved', () => {
+    const base = { cleared: true, essence: 1, jackpot: null };
+    expect(revealSummary(base, null).rank).toBeNull();
+    expect(revealSummary({ ...base, rankChange: null, festivalGrant: null }, null).rank).toBeNull();
+    const change = (before: number, after: number, festival = false) =>
+      revealSummary({ ...base, rankChange: { before, after, festival, serverWon: true } }, null)
+        .rank;
+    expect(change(4, 5)).toBe('The server climbs to Rank 5.');
+    expect(change(4, 4)).toBe('Rank 4 stays.');
+    expect(change(4, 3, true)).toBe('The Festival is over. The server eases to Rank 3.');
+  });
+
+  it('says what the Festival creature did, with the First on server flag', () => {
+    const base = { cleared: true, essence: 1, jackpot: null };
+    expect(revealSummary(base, null).festival).toBeNull();
+    const grant = (g: NonNullable<RaidReveal['festivalGrant']>) =>
+      revealSummary({ ...base, festivalGrant: g }, null).festival;
+    expect(grant({ species: 'hearthshell', outcome: 'new', firstOnServer: true })).toEqual({
+      text: 'You won Hearthshell! A new level 1 creature for your collection.',
+      firstOnServer: true,
+    });
+    expect(
+      grant({ species: 'lanternfin', outcome: 'fused', fusionCount: 2, firstOnServer: false })
+        ?.text,
+    ).toBe('You won Lanternfin again: it fused with yours (fusion 2 of 5).');
+    expect(
+      grant({ species: 'lanternfin', outcome: 'converted', bait: 80, firstOnServer: false })?.text,
+    ).toBe('You already had a fully fused Lanternfin: +80 Bait instead.');
   });
 
   it('leaves the pity out when it is not known', () => {

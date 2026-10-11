@@ -55,6 +55,37 @@ export interface PhaseResultView {
   /** Essence the caller earned in this phase. */
   essence: number;
   jackpot: string[];
+  /** Finale only: what it did to the server's rank; null until the ladder has moved, and for phases. */
+  rankChange: RankChange | null;
+  /** Finale only: the Festival creature the caller got; null otherwise. */
+  festivalGrant: FestivalGrant | null;
+}
+
+/** The vague "how ready your team looks" band of a party. Never a number. */
+export type ReadinessBand = 'long_shot' | 'even' | 'likely' | 'strong';
+export const READINESS_BANDS: readonly ReadinessBand[] = ['long_shot', 'even', 'likely', 'strong'];
+
+/** What a finale did to the server's Boss Rank. */
+export interface RankChange {
+  /** The server's rank for the week that was played. */
+  before: number;
+  /** The server's rank for the next week. */
+  after: number;
+  /** The week was a Festival: a win does not raise the rank, and the rank eases afterwards. */
+  festival: boolean;
+  /** At least half of the server's parties won. */
+  serverWon: boolean;
+}
+
+/** The Festival creature a finale gave the caller. */
+export interface FestivalGrant {
+  species: string;
+  outcome: 'new' | 'fused' | 'converted';
+  /** Only for `fused`: the creature's fusion count now. */
+  fusionCount?: number;
+  /** Only for `converted`: the Bait it was worth. */
+  bait?: number;
+  firstOnServer: boolean;
 }
 
 /** The loot of a finale the player took part in, shown once as a reveal. */
@@ -65,6 +96,10 @@ export interface RaidReveal {
   cleared: boolean;
   essence: number;
   jackpot: null | { essence: number; firstOnServer: boolean };
+  /** The ladder's move; null until every party of the server has finished (and for old weeks). */
+  rankChange: RankChange | null;
+  /** The Festival creature the caller got, or null. */
+  festivalGrant: FestivalGrant | null;
 }
 
 /** One ability the caller brings to the finale, or could once the creature is trained. */
@@ -93,6 +128,18 @@ export interface RaidView {
     gimmicks: { id: string; name: string }[];
     finaleRounds: number;
   };
+  /** The server's Boss Rank this week; null for a week from before ranks, or while nobody is in. */
+  rank: number | null;
+  /** The rank the boss fights at (lower in a Festival week). Null with `rank`. */
+  effectiveRank: number | null;
+  /** A Festival week: easier boss, bonus Essence, a creature for every winner. */
+  festival: boolean;
+  /** The Festival creature's species id in a Festival week, else null. */
+  festivalCreature: string | null;
+  /** Where the week sits in its season; `week` is 1 to 5, the 5th being the Festival. */
+  season: { index: number; week: number } | null;
+  /** The highest rank the server has cleared in a normal week; null until it has cleared one. */
+  bestRank: number | null;
   schedule: Record<RaidEventId, number>;
   next: { event: RaidEventId; at: number } | null;
   serverNow: number;
@@ -120,6 +167,8 @@ export interface RaidView {
     bossHp: { max: number; current: number } | null;
     adaptation: { description: string; rule: string | null; target: string | null } | null;
     results: PhaseResultView[];
+    /** How ready the party's team looks; null when there is no band (the finale has started). */
+    readiness: ReadinessBand | null;
   };
 }
 
@@ -224,6 +273,8 @@ function isResult(value: unknown): value is PhaseResultView {
     isInt(value['reactions']) &&
     isInt(value['essence']) &&
     isArrayOf(value['jackpot'], isStr) &&
+    (value['rankChange'] === null || isRankChange(value['rankChange'])) &&
+    (value['festivalGrant'] === null || isFestivalGrant(value['festivalGrant'])) &&
     isArrayOf(
       value['top'],
       (t): t is PhaseResultView['top'][number] =>
@@ -238,6 +289,20 @@ function isResult(value: unknown): value is PhaseResultView {
 
 function isScheduleRecord(value: unknown): value is Record<RaidEventId, number> {
   return isRecord(value) && RAID_EVENT_IDS.every((id) => isInt(value[id]));
+}
+
+/** A rank is a whole number from 1, or null. */
+const isNullableRank = (value: unknown): value is number | null =>
+  value === null || (isInt(value) && value >= 1);
+
+function isSeason(value: unknown): value is NonNullable<RaidView['season']> {
+  return (
+    isRecord(value) &&
+    isInt(value['index']) &&
+    isInt(value['week']) &&
+    value['week'] >= 1 &&
+    value['week'] <= 5
+  );
 }
 
 function isBoss(value: unknown): value is RaidView['boss'] {
@@ -275,6 +340,29 @@ export function isJackpot(value: unknown): value is { essence: number; firstOnSe
   return isRecord(value) && isInt(value['essence']) && isBool(value['firstOnServer']);
 }
 
+export function isRankChange(value: unknown): value is RankChange {
+  return (
+    isRecord(value) &&
+    isInt(value['before']) &&
+    isInt(value['after']) &&
+    isBool(value['festival']) &&
+    isBool(value['serverWon'])
+  );
+}
+
+export function isFestivalGrant(value: unknown): value is FestivalGrant {
+  return (
+    isRecord(value) &&
+    isStr(value['species']) &&
+    (value['outcome'] === 'new' ||
+      value['outcome'] === 'fused' ||
+      value['outcome'] === 'converted') &&
+    (value['fusionCount'] === undefined || isInt(value['fusionCount'])) &&
+    (value['bait'] === undefined || isInt(value['bait'])) &&
+    isBool(value['firstOnServer'])
+  );
+}
+
 function isReveal(value: unknown): value is RaidReveal {
   return (
     isRecord(value) &&
@@ -282,9 +370,14 @@ function isReveal(value: unknown): value is RaidReveal {
     isInt(value['party']) &&
     isBool(value['cleared']) &&
     isInt(value['essence']) &&
-    (value['jackpot'] === null || isJackpot(value['jackpot']))
+    (value['jackpot'] === null || isJackpot(value['jackpot'])) &&
+    (value['rankChange'] === null || isRankChange(value['rankChange'])) &&
+    (value['festivalGrant'] === null || isFestivalGrant(value['festivalGrant']))
   );
 }
+
+const isReadiness = (value: unknown): value is ReadinessBand =>
+  READINESS_BANDS.some((band) => band === value);
 
 function isYou(value: unknown): value is RaidView['you'] {
   if (
@@ -316,7 +409,8 @@ function isPartyView(value: unknown): value is NonNullable<RaidView['party']> {
     !isInt(value['rowLength']) ||
     !isArrayOf(value['row'], isRowSlot) ||
     !isBool(value['guests']) ||
-    !isArrayOf(value['results'], isResult)
+    !isArrayOf(value['results'], isResult) ||
+    !(value['readiness'] === null || isReadiness(value['readiness']))
   ) {
     return false;
   }
@@ -340,6 +434,12 @@ export function parseRaidView(data: unknown): RaidView {
     !isStr(data['timezone']) ||
     !isBoss(data['boss']) ||
     !isScheduleRecord(data['schedule']) ||
+    !isNullableRank(data['rank']) ||
+    !isNullableRank(data['effectiveRank']) ||
+    !isBool(data['festival']) ||
+    !isNullableStr(data['festivalCreature']) ||
+    !(data['season'] === null || isSeason(data['season'])) ||
+    !isNullableRank(data['bestRank']) ||
     !(
       data['next'] === null ||
       (isRecord(data['next']) && isEventId(data['next']['event']) && isInt(data['next']['at']))

@@ -192,8 +192,34 @@ export async function runCore<R>(
   });
 }
 
+/** Columns migration 12 added to `raid_weeks`. */
+export const PROGRESSION_WEEK_COLUMNS = [
+  'rank',
+  'effective_rank',
+  'festival',
+  'season_index',
+  'festival_species',
+  'ladder_at',
+  'ladder_won',
+  'rank_after',
+] as const;
+
+/**
+ * Puts a database back to before migration 12 (the Boss Rank ladder). The wider `server_firsts`
+ * check stays, as with migration 8 (a migration only ever widens it).
+ */
+export function undoProgressionMigration(sql: SqlStorage): void {
+  for (const column of PROGRESSION_WEEK_COLUMNS) {
+    sql.exec(`ALTER TABLE raid_weeks DROP COLUMN ${column}`);
+  }
+  sql.exec('DROP TABLE IF EXISTS raid_ladder');
+  sql.exec('DROP TABLE IF EXISTS raid_festival_grants');
+  sql.exec('DELETE FROM schema_version WHERE version = 12');
+}
+
 /** Puts a database back to before migration 11 (the pinned announcement channel). */
 export function undoChannelPinMigration(sql: SqlStorage): void {
+  undoProgressionMigration(sql);
   sql.exec('ALTER TABLE guild_meta DROP COLUMN announce_channel_pinned');
   sql.exec('ALTER TABLE sessions DROP COLUMN channel_id');
   sql.exec('DELETE FROM schema_version WHERE version = 11');

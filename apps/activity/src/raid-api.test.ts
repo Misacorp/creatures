@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import raidFestival from './fixtures/raid-festival.json';
+import raidFestivalReveal from './fixtures/raid-festival-reveal.json';
 import raidReveal from './fixtures/raid-reveal.json';
 import raidRevealSeen from './fixtures/raid-reveal-seen.json';
 import statsCloseLoss from './fixtures/raid-stats-close-loss.json';
@@ -19,6 +21,12 @@ const raid = {
     gimmicks: [{ id: 'undertow', name: 'Undertow' }],
     finaleRounds: 12,
   },
+  rank: 4,
+  effectiveRank: 4,
+  festival: false,
+  festivalCreature: null,
+  season: { index: 595, week: 2 },
+  bestRank: 3,
   schedule: { weekStart: 1, phase1: 2, phase2: 3, finale: 4 },
   next: { event: 'phase1', at: 2 },
   serverNow: 1,
@@ -78,6 +86,7 @@ const raid = {
     bossHp: { max: 100, current: 100 },
     adaptation: null,
     results: [],
+    readiness: 'likely',
   },
 };
 
@@ -90,8 +99,28 @@ describe('parseRaidView with real server responses', () => {
       week: '2027-W02',
       party: 1,
       cleared: true,
-      essence: 46,
-      jackpot: { essence: 100, firstOnServer: true },
+      essence: 28,
+      jackpot: { essence: 112, firstOnServer: true },
+      rankChange: { before: 3, after: 4, festival: false, serverWon: true },
+      festivalGrant: null,
+    });
+    // Rank, season and best rank of a normal week; no band once the finale has started.
+    expect(parsed).toMatchObject({
+      rank: 3,
+      effectiveRank: 3,
+      festival: false,
+      festivalCreature: null,
+      season: { index: 595, week: 1 },
+      bestRank: 3,
+    });
+    expect(parsed.party?.readiness).toBeNull();
+    // Only the finale result carries the ladder's move.
+    expect(parsed.party?.results.map((r) => r.rankChange !== null)).toEqual([false, false, true]);
+    expect(parsed.party?.results[2]?.rankChange).toEqual({
+      before: 3,
+      after: 4,
+      festival: false,
+      serverWon: true,
     });
     const mine = parsed.party?.row.find((slot) => slot.creature?.mine === true);
     expect(mine?.creature?.creatureId).toBeTypeOf('string');
@@ -120,6 +149,191 @@ describe('parseRaidView with real server responses', () => {
     const parsed = parseRaidView(raidRevealSeen);
     expect(parsed.you.reveal).toBeNull();
     expect(parsed.you.ability).toEqual({ abilityId: 'rally', chosen: true });
+  });
+});
+
+describe('parseRaidView with a Festival week (real server responses)', () => {
+  it('reads the Monday view of a Festival week: rank, eased boss, creature, season and the band', () => {
+    const parsed = parseRaidView(raidFestival);
+    expect(parsed).toMatchObject({
+      status: 'open',
+      rank: 6,
+      effectiveRank: 3,
+      festival: true,
+      festivalCreature: 'hearthshell',
+      season: { week: 5 },
+      bestRank: 5,
+    });
+    expect(['long_shot', 'even', 'likely', 'strong']).toContain(parsed.party?.readiness);
+    // Only the band: nothing numeric about the forecast is in the party block.
+    expect(Object.keys(parsed.party ?? {}).sort()).toEqual(
+      [
+        'adaptation',
+        'bossHp',
+        'guests',
+        'party',
+        'readiness',
+        'results',
+        'row',
+        'rowLength',
+      ].sort(),
+    );
+  });
+
+  it('reads the reveal of a won Festival: the creature and the rank easing', () => {
+    const parsed = parseRaidView(raidFestivalReveal);
+    expect(parsed.you.reveal).toMatchObject({
+      cleared: true,
+      rankChange: { before: 6, after: 5, festival: true, serverWon: true },
+      festivalGrant: { species: 'hearthshell', outcome: 'new', firstOnServer: true },
+    });
+    // The finale's result card carries the same, so it stays after the reveal is dismissed.
+    expect(parsed.party?.results.at(-1)).toMatchObject({
+      phase: 'finale',
+      rankChange: { before: 6, after: 5, festival: true, serverWon: true },
+      festivalGrant: { species: 'hearthshell', outcome: 'new' },
+    });
+  });
+});
+
+describe('parseRaidView and the ladder fields', () => {
+  it('accepts a week with no rank (a week from before ranks, or a server nobody is in yet)', () => {
+    const old = {
+      ...raid,
+      rank: null,
+      effectiveRank: null,
+      season: null,
+      bestRank: null,
+      party: { ...raid.party, readiness: null },
+    };
+    const parsed = parseRaidView(old);
+    expect(parsed.rank).toBeNull();
+    expect(parsed.season).toBeNull();
+  });
+
+  it('accepts every band and refuses anything else', () => {
+    for (const band of ['long_shot', 'even', 'likely', 'strong']) {
+      expect(
+        parseRaidView({ ...raid, party: { ...raid.party, readiness: band } }).party?.readiness,
+      ).toBe(band);
+    }
+    for (const bad of ['weak', 'LIKELY', 7, 0.6, true, undefined]) {
+      expect(() => parseRaidView({ ...raid, party: { ...raid.party, readiness: bad } })).toThrow();
+    }
+  });
+
+  it('refuses broken ranks, seasons and Festival fields', () => {
+    for (const patch of [
+      { rank: 0 },
+      { rank: 1.5 },
+      { rank: '3' },
+      { effectiveRank: -1 },
+      { bestRank: 0 },
+      { festival: 'yes' },
+      { festivalCreature: 7 },
+      { season: { index: 1, week: 0 } },
+      { season: { index: 1, week: 6 } },
+      { season: { index: 1.5, week: 2 } },
+      { season: { week: 2 } },
+    ]) {
+      expect(() => parseRaidView({ ...raid, ...patch }), JSON.stringify(patch)).toThrow();
+    }
+    // Every new field is required: a server that stops sending one is noticed, not guessed.
+    for (const key of [
+      'rank',
+      'effectiveRank',
+      'festival',
+      'festivalCreature',
+      'season',
+      'bestRank',
+    ]) {
+      const without: Record<string, unknown> = { ...raid };
+      delete without[key];
+      expect(() => parseRaidView(without), key).toThrow();
+    }
+    const noBand: Record<string, unknown> = { ...raid.party };
+    delete noBand['readiness'];
+    expect(() => parseRaidView({ ...raid, party: noBand })).toThrow();
+  });
+
+  it('refuses a broken rank change or Festival grant in a reveal', () => {
+    const reveal = {
+      week: 'w',
+      party: 1,
+      cleared: true,
+      essence: 1,
+      jackpot: null,
+      rankChange: { before: 3, after: 4, festival: false, serverWon: true },
+      festivalGrant: {
+        species: 'hearthshell',
+        outcome: 'fused',
+        fusionCount: 2,
+        firstOnServer: false,
+      },
+    };
+    const view = (patch: Record<string, unknown>) => ({
+      ...raid,
+      you: { ...raid.you, reveal: { ...reveal, ...patch } },
+    });
+    expect(parseRaidView(view({})).you.reveal?.festivalGrant?.outcome).toBe('fused');
+    expect(
+      parseRaidView(view({ festivalGrant: { ...reveal.festivalGrant, fusionCount: undefined } })),
+    );
+    for (const patch of [
+      { rankChange: { before: 3, after: 4 } },
+      { rankChange: { before: 3.5, after: 4, festival: false, serverWon: true } },
+      { rankChange: 'up' },
+      { festivalGrant: { ...reveal.festivalGrant, outcome: 'stolen' } },
+      { festivalGrant: { ...reveal.festivalGrant, species: 3 } },
+      { festivalGrant: { ...reveal.festivalGrant, bait: 'many' } },
+      { festivalGrant: { species: 'hearthshell', outcome: 'new' } },
+      { rankChange: undefined },
+      { festivalGrant: undefined },
+    ]) {
+      expect(() => parseRaidView(view(patch)), JSON.stringify(patch)).toThrow();
+    }
+  });
+});
+
+describe('parseRaidView and the finale result', () => {
+  const result = {
+    phase: 'finale',
+    at: 1,
+    cleared: true,
+    rounds: 12,
+    bossHpMax: 10,
+    bossHpStart: 10,
+    bossHpEnd: 0,
+    damage: 10,
+    reactions: 0,
+    top: [],
+    essence: 5,
+    jackpot: [],
+    rankChange: null,
+    festivalGrant: null,
+  };
+  const withResult = (patch: Record<string, unknown>) => ({
+    ...raid,
+    party: { ...raid.party, results: [{ ...result, ...patch }] },
+  });
+
+  it('accepts a finale result with and without the ladder move', () => {
+    expect(parseRaidView(withResult({})).party?.results[0]?.rankChange).toBeNull();
+    const change = { before: 2, after: 3, festival: false, serverWon: true };
+    expect(parseRaidView(withResult({ rankChange: change })).party?.results[0]?.rankChange).toEqual(
+      change,
+    );
+  });
+
+  it('refuses a result without them, or with broken ones', () => {
+    for (const patch of [
+      { rankChange: undefined },
+      { festivalGrant: undefined },
+      { rankChange: { before: 2 } },
+      { festivalGrant: { species: 'x', outcome: 'gift', firstOnServer: false } },
+    ]) {
+      expect(() => parseRaidView(withResult(patch)), JSON.stringify(patch)).toThrow();
+    }
   });
 });
 
@@ -184,6 +398,8 @@ describe('parseRaidView', () => {
           cleared: true,
           essence: 30,
           jackpot: { essence: 100, firstOnServer: false },
+          rankChange: null,
+          festivalGrant: null,
         },
       },
     };
@@ -196,7 +412,15 @@ describe('parseRaidView', () => {
       ...raid,
       you: {
         ...raid.you,
-        reveal: { week: 'w', party: 1, cleared: false, essence: 0, jackpot: null },
+        reveal: {
+          week: 'w',
+          party: 1,
+          cleared: false,
+          essence: 0,
+          jackpot: null,
+          rankChange: null,
+          festivalGrant: null,
+        },
       },
     };
     expect(parseRaidView(miss).you.reveal?.jackpot).toBeNull();

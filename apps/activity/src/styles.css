@@ -739,6 +739,104 @@ button.toggle.on {
   color: var(--muted);
 }
 
+/* Boss Rank, seasons and Festival weeks. Colours only; every state is also written in words. */
+.tag.rank {
+  background: var(--accent);
+  font-weight: 700;
+}
+
+.badge.festival {
+  background: var(--gold);
+  color: #1e1f22;
+  font-weight: 700;
+}
+
+.raid-section.festival {
+  border: 2px solid var(--gold);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.festival-banner {
+  margin: 0.25rem 0;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.season {
+  margin: 0.5rem 0;
+}
+
+.season-pips {
+  display: flex;
+  gap: 0.375rem;
+  margin: 0 0 0.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.season-pip {
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 2px solid var(--muted);
+  border-radius: 50%;
+}
+
+.season-pip.done {
+  background: var(--muted);
+}
+
+.season-pip.now {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.season-pip.festival {
+  border-color: var(--gold);
+}
+
+.season-pip.festival.now {
+  background: var(--gold);
+}
+
+.readiness {
+  margin: 0.5rem 0;
+}
+
+.readiness-band {
+  display: inline-block;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: #404249;
+  font-weight: 700;
+}
+
+.readiness-band.long_shot {
+  background: var(--danger);
+}
+
+.readiness-band.likely {
+  background: var(--accent);
+}
+
+.readiness-band.strong {
+  background: var(--good);
+}
+
+.reveal-festival,
+.reveal-rank {
+  margin: 0.5rem 0;
+}
+
+.reveal-festival {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.reveal-festival .badge {
+  margin-left: 0.5rem;
+}
+
 /* The loot reveal. The text is always in the page; the animation only delays showing the result. */
 .reveal-card {
   margin: 0.75rem 0;

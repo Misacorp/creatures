@@ -10,6 +10,7 @@ import {
   safeName,
   truncateMessage,
   type PhasePost,
+  type RankPost,
   type RevealPost,
 } from '../src/discord-format';
 
@@ -185,6 +186,8 @@ const REVEAL: RevealPost = {
   },
   players: 7,
   parties: 1,
+  rank: 4,
+  festivalCreature: null,
 };
 
 describe('formatBossReveal', () => {
@@ -193,6 +196,7 @@ describe('formatBossReveal', () => {
       [
         '**A new raid week begins: Tidal Colossus**',
         'Element: Tide. Creatures act from left to right.',
+        'Boss Rank 4.',
         'Undertow: hits the front zone every 3 rounds.',
         'Phase 1: <t:1800013020:F> (<t:1800013020:R>)',
         'Phase 2: <t:1800099420:F> (<t:1800099420:R>)',
@@ -200,6 +204,19 @@ describe('formatBossReveal', () => {
         '7 players are in this week.',
       ].join('\n'),
     );
+  });
+
+  it('says nothing about the rank when the week has none, and announces a Festival', () => {
+    const none = formatBossReveal({ ...REVEAL, rank: null });
+    expect(none).not.toContain('Rank');
+    const festival = formatBossReveal({ ...REVEAL, rank: 7, festivalCreature: 'Lanternfin' });
+    expect(festival).toContain('Boss Rank 7.');
+    expect(festival).toContain('Festival week: Lanternfin for every winner, bonus Essence.');
+    // The creature name is escaped like every other name.
+    const nasty = formatBossReveal({ ...REVEAL, festivalCreature: '@everyone *x*' });
+    expect(nasty).not.toMatch(/@(?!\u200B)/);
+    expect(nasty).toContain('\\*x\\*');
+    expect(formatBossReveal({ ...REVEAL, rank: 7 })).not.toContain('Festival');
   });
 
   it('handles one player, several parties and other turn orders', () => {
@@ -337,6 +354,73 @@ describe('formatPhasePost', () => {
     });
     expect(lost).not.toContain('jackpot');
     expect(lost).toContain('Not cleared.');
+  });
+
+  const FINALE = { ...PHASE, phase: 'finale' as const, hpLeftPercent: 0, counterMove: null };
+
+  it('says where the server\u2019s rank went', () => {
+    const rank = (after: number, extra: Partial<RankPost> = {}) =>
+      formatPhasePost({
+        ...FINALE,
+        finale: {
+          jackpot: [],
+          firsts: [],
+          rank: { before: 4, after, festival: false, parties: 1, partiesWon: 1, ...extra },
+        },
+      });
+    expect(rank(5)).toContain('The server climbs to Rank 5.');
+    expect(rank(4)).toContain('Rank 4 stays.');
+    expect(rank(3, { festival: true })).toContain(
+      'The Festival is over. The server eases to Rank 3.',
+    );
+    // With several parties the post says how many won.
+    expect(rank(5, { parties: 3, partiesWon: 2 })).toContain(
+      '2 of 3 parties won. The server climbs to Rank 5.',
+    );
+    // Until every party has finished there is nothing to say.
+    expect(
+      formatPhasePost({ ...FINALE, finale: { jackpot: [], firsts: [], rank: null } }),
+    ).not.toContain('Rank');
+  });
+
+  it('lists the Festival creature and who got it, with every name escaped', () => {
+    const text = formatPhasePost({
+      ...FINALE,
+      finale: {
+        jackpot: [],
+        firsts: [],
+        festival: { creature: 'Lanternfin', winners: ['Alice', '@everyone <@1> **b**'] },
+      },
+    });
+    expect(text).toContain('Festival creature: Lanternfin for Alice, ');
+    expect(text).not.toMatch(/@(?!\u200B)/);
+    expect(text).not.toContain('**b**');
+    // Nobody got it (a lost Festival): no line.
+    expect(
+      formatPhasePost({
+        ...FINALE,
+        finale: { jackpot: [], firsts: [], festival: { creature: 'Lanternfin', winners: [] } },
+      }),
+    ).not.toContain('Festival');
+  });
+
+  it('puts the rank and the Festival lines before the records, so a long post keeps them', () => {
+    const firsts = Array.from({ length: 5 }, (_, i) => ({
+      label: 'L'.repeat(30) + String(i),
+      names: Array.from({ length: 15 }, () => 'N'.repeat(32)),
+    }));
+    const text = formatPhasePost({
+      ...FINALE,
+      finale: {
+        jackpot: Array.from({ length: 15 }, () => 'J'.repeat(32)),
+        firsts,
+        rank: { before: 4, after: 5, festival: false, parties: 1, partiesWon: 1 },
+        festival: { creature: 'Lanternfin', winners: ['Alice'] },
+      },
+    });
+    expect(text.length).toBeLessThanOrEqual(MAX_MESSAGE_CHARS);
+    expect(text).toContain('The server climbs to Rank 5.');
+    expect(text).toContain('Festival creature: Lanternfin for Alice.');
   });
 
   it('lists at most five records', () => {

@@ -10,6 +10,7 @@ import {
   evolutionText,
   fusionStars,
   getSpecies,
+  isFestivalSpecies,
   isFirstOnServer,
   speciesName,
 } from './game';
@@ -97,12 +98,16 @@ function CreatureCard({
             <span class="tag">{capitalize(species.role)}</span>
           </>
         )}
+        {isFestivalSpecies(creature.species) && <span class="badge festival">Festival</span>}
         {creature.shiny && <span class="badge shiny">Shiny</span>}
         {creature.away && <span class="badge away">Away</span>}
         {isFirstOnServer(creature, state.serverFirsts) && (
           <span class="badge first">First on server</span>
         )}
       </p>
+      {isFestivalSpecies(creature.species) && (
+        <p class="muted">Won in a Festival week. It is not found on expeditions.</p>
+      )}
       <p>
         Level {creature.level} / {creature.levelCap}
       </p>

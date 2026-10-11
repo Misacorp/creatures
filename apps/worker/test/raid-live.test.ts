@@ -1,4 +1,4 @@
-import { RULES, content, createSeededRng } from '@creatures/game';
+import { RULES, content, createSeededRng, jackpotEssenceFor } from '@creatures/game';
 import { simulateFight, type FightEvent } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { LIVE_ROUND_MS } from '../src/raid-live';
@@ -13,6 +13,8 @@ import liveLobby from '../../activity/src/fixtures/live-lobby.json';
 import liveMid from '../../activity/src/fixtures/live-mid.json';
 import liveNone from '../../activity/src/fixtures/live-none.json';
 import collectionState from '../../activity/src/fixtures/collection-state.json';
+import raidFestival from '../../activity/src/fixtures/raid-festival.json';
+import raidFestivalReveal from '../../activity/src/fixtures/raid-festival-reveal.json';
 import raidReveal from '../../activity/src/fixtures/raid-reveal.json';
 import requestBodies from '../../activity/src/fixtures/request-bodies.json';
 import type { CoreContext } from './helpers';
@@ -29,6 +31,7 @@ import {
   scriptedThenSeeded,
   seedPlayer,
   storedRuns,
+  weekPayout,
   type Seeded,
 } from './raid-helpers';
 
@@ -502,7 +505,7 @@ describe('the end of the fight', () => {
         expect(done.loot).toMatchObject({ cleared: true });
         expect(done.loot?.essence).toBeGreaterThanOrEqual(RULES.raid.essence.flat.finale);
         expect(done.loot?.jackpot).toEqual({
-          essence: RULES.raid.jackpotEssence,
+          essence: jackpotEssenceFor(weekPayout(ctx.sql)),
           firstOnServer: true,
         });
         expect(done.loot?.pity).toBe(0);
@@ -888,7 +891,10 @@ describe('the loot reveal', () => {
         const ra = revealOf(a);
         expect(ra).toMatchObject({ week: W02.id, cleared: true });
         expect(ra?.essence).toBeGreaterThanOrEqual(RULES.raid.essence.flat.finale);
-        expect(ra?.jackpot).toEqual({ essence: RULES.raid.jackpotEssence, firstOnServer: true });
+        expect(ra?.jackpot).toEqual({
+          essence: jackpotEssenceFor(weekPayout(ctx.sql)),
+          firstOnServer: true,
+        });
         expect(revealOf(b)?.jackpot).toBeNull();
         expect(revealOf(outsider)).toBeNull();
         // The reveal holds the player's own Essence, nothing else of anyone.
@@ -922,6 +928,14 @@ describe('the loot reveal', () => {
         cleared: false,
         essence: 0,
         jackpot: null,
+        // A lost finale keeps the rank, and a normal week has no Festival creature.
+        rankChange: {
+          before: weekPayout(ctx.sql).rank,
+          after: weekPayout(ctx.sql).rank,
+          festival: false,
+          serverWon: false,
+        },
+        festivalGrant: null,
       });
     });
   });
@@ -1309,9 +1323,67 @@ describe('the API contract with the client', () => {
   ];
   const PREVIEW_KEYS = ['abilityId', 'creatureId', 'key', 'species', 'unlockLevel', 'unlocked'];
   const ROW_KEYS = ['element', 'id', 'level', 'name', 'owner', 'position', 'role', 'species'];
-  const LOOT_KEYS = ['cleared', 'essence', 'jackpot', 'pity'];
+  const LOOT_KEYS = ['cleared', 'essence', 'festivalGrant', 'jackpot', 'pity', 'rankChange'];
   const JACKPOT_KEYS = ['essence', 'firstOnServer'];
-  const REVEAL_KEYS = ['cleared', 'essence', 'jackpot', 'party', 'week'];
+  const RANK_CHANGE_KEYS = ['after', 'before', 'festival', 'serverWon'];
+  const GRANT_KEYS = ['firstOnServer', 'outcome', 'species'];
+  const SEASON_KEYS = ['index', 'week'];
+  const RESULT_KEYS = [
+    'at',
+    'bossHpEnd',
+    'bossHpMax',
+    'bossHpStart',
+    'cleared',
+    'damage',
+    'essence',
+    'festivalGrant',
+    'jackpot',
+    'phase',
+    'rankChange',
+    'reactions',
+    'rounds',
+    'top',
+  ];
+  /** The Raid view as `GET /api/raid` sends it (the channel block is added by the route). */
+  const RAID_KEYS = [
+    'bestRank',
+    'boss',
+    'channel',
+    'effectiveRank',
+    'festival',
+    'festivalCreature',
+    'next',
+    'parties',
+    'party',
+    'rank',
+    'roster',
+    'schedule',
+    'season',
+    'serverNow',
+    'status',
+    'timezone',
+    'weekId',
+    'you',
+  ];
+  const PARTY_KEYS = [
+    'adaptation',
+    'bossHp',
+    'guests',
+    'party',
+    'readiness',
+    'results',
+    'row',
+    'rowLength',
+  ];
+  const REVEAL_KEYS = [
+    'cleared',
+    'essence',
+    'festivalGrant',
+    'jackpot',
+    'party',
+    'rankChange',
+    'week',
+  ];
 
   const get = async (ctx: Ctx, secret: string, path = '/api/raid/live') => {
     const res = await ctx.request(secret, path);
@@ -1336,6 +1408,17 @@ describe('the API contract with the client', () => {
       expect(keys(value['loot']), `${label}.loot: ${UPDATE}`).toEqual(LOOT_KEYS);
       const jackpot = (value['loot'] as { jackpot: unknown }).jackpot;
       if (jackpot !== null) expect(keys(jackpot), `${label}.loot.jackpot`).toEqual(JACKPOT_KEYS);
+      const loot = value['loot'] as { rankChange: unknown; festivalGrant: unknown };
+      if (loot.rankChange !== null) {
+        expect(keys(loot.rankChange), `${label}.loot.rankChange: ${UPDATE}`).toEqual(
+          RANK_CHANGE_KEYS,
+        );
+      }
+      if (loot.festivalGrant !== null) {
+        expect(keys(loot.festivalGrant), `${label}.loot.festivalGrant: ${UPDATE}`).toEqual(
+          GRANT_KEYS,
+        );
+      }
     }
   }
 
@@ -1436,6 +1519,39 @@ describe('the API contract with the client', () => {
         expect(keys(state), UPDATE).toEqual(keys(collectionState));
         expect(keys(you['reveal']), UPDATE).toEqual(REVEAL_KEYS);
         expect(keys(raidReveal.you.reveal), UPDATE).toEqual(REVEAL_KEYS);
+        // The ladder: rank, season and the band are in the view, the rank change is in the reveal.
+        expect(keys(raid), UPDATE).toEqual(RAID_KEYS);
+        expect(keys(raid['season']), UPDATE).toEqual(SEASON_KEYS);
+        expect(keys((you['reveal'] as { rankChange: unknown }).rankChange), UPDATE).toEqual(
+          RANK_CHANGE_KEYS,
+        );
+        expect(keys(raidReveal), UPDATE).toEqual(RAID_KEYS);
+        expect(keys(raidReveal.party), UPDATE).toEqual(PARTY_KEYS);
+        const results = (raid['party'] as { results: unknown[] }).results;
+        expect(results.length, UPDATE).toBe(3);
+        for (const result of [...results, ...raidReveal.party.results]) {
+          expect(keys(result), UPDATE).toEqual(RESULT_KEYS);
+        }
+        // Only the finale carries the ladder's move and the Festival creature.
+        expect(
+          (results as { phase: string; rankChange: unknown }[]).map((r) => [
+            r.phase,
+            r.rankChange !== null,
+          ]),
+        ).toEqual([
+          ['phase1', false],
+          ['phase2', false],
+          ['finale', true],
+        ]);
+        // The Festival fixtures (a Monday view with the band, and the reveal of a won Festival).
+        expect(keys(raidFestival), UPDATE).toEqual(RAID_KEYS);
+        expect(keys(raidFestival.party), UPDATE).toEqual(PARTY_KEYS);
+        expect(keys(raidFestivalReveal), UPDATE).toEqual(RAID_KEYS);
+        expect(keys(raidFestivalReveal.you.reveal), UPDATE).toEqual(REVEAL_KEYS);
+        expect(keys(raidFestivalReveal.you.reveal.rankChange), UPDATE).toEqual(RANK_CHANGE_KEYS);
+        expect(keys(raidFestivalReveal.you.reveal.festivalGrant), UPDATE).toEqual(GRANT_KEYS);
+        expect(keys(raidFestival.season), UPDATE).toEqual(SEASON_KEYS);
+        expect(['long_shot', 'even', 'likely', 'strong']).toContain(raidFestival.party.readiness);
         expect(keys(raid), UPDATE).toEqual(keys(raidReveal));
         expect(keys(you), UPDATE).toEqual(keys(raidReveal.you));
         expect(keys(raid['party']), UPDATE).toEqual(keys(raidReveal.party));

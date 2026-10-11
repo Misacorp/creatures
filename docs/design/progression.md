@@ -1,6 +1,6 @@
 # Week-by-week progression: design check and proposal
 
-Status: **decided and built in the rules, content and simulator 2026-10-11** (phase 1; the server and client follow in phase 2, see "Phase 1: what was built" at the end). Misa's answers (decisions log): ladder yes, no Resolve, Festival weeks with festival-only loot, season reset tied to the festival cycle, vague readiness band, after-action stats without advice. Originally a proposal for Misa, 2026-10-11. Based on a research pass, summarised here with sources at the end, plus `docs/design/luck.md`.
+Status: **decided and built 2026-10-11**: the rules, content and simulator (phase 1, see "Phase 1: what was built") and the worker and client (phase 2, see "Phase 2: what was built"). Misa's answers (decisions log): ladder yes, no Resolve, Festival weeks with festival-only loot, season reset tied to the festival cycle, vague readiness band, after-action stats without advice. Originally a proposal for Misa, 2026-10-11. Based on a research pass, summarised here with sources at the end, plus `docs/design/luck.md`.
 
 ## The question
 
@@ -103,8 +103,8 @@ Misa's view: a fight being roughly predictable is fine. The game is about growin
    - median weeks between rank-ups 2-4;
    - at most 10% of servers with a loss streak over 4 weeks;
    - rank spread between typical and 15-player servers: information only.
-3. Boss Rank on the server and the Monday post; rank-scaled rewards; Festival weeks and the Festival creature. **Phase 2 (worker and client).**
-4. Readiness band (rules and calibration done in phase 1; server and client in phase 2) and what-if.
+3. Boss Rank on the server and the Monday post; rank-scaled rewards; Festival weeks and the Festival creature. **Done in phase 2 (worker and client).**
+4. Readiness band (rules and calibration in phase 1, server and client in phase 2) and what-if. **Done**; the band follows team and placement changes within 30 seconds.
 5. After-action card (built, stats only; the one-change replay was dropped by Misa).
 6. Weekly twists; stretch goals. (The season reset is done.)
 
@@ -157,3 +157,16 @@ Code: `packages/game/src/rules/progression.ts` (rank, seasons, rewards, Festival
 **Per-boss exponents.** One exponent could not keep every boss flat from 5 to 15 players: Cinder Wyrm's Backdraft matters less with many creatures, Thornmother's resisted reaction matters more. Each boss now carries its own `hpExponent`, fitted on four seeds (`node packages/sim/scripts/tune.mjs --calibrate 5 --seeds 4`).
 
 **Festival creatures.** Lanternfin (tide, epic, support: Lantern Glow re-marks Soaked and rallies +7% for 2 rounds) and Hearthshell (ember, epic, guard: Hearth Ward gives its zone 70% less damage for 3 rounds and rallies +7%). Both are single-stage, level cap 30, `festival: true`, never catchable. The creature of a Festival is `festivalCreatureFor(weekIndex)`: the festival species in content order by season index, so Lanternfin, then Hearthshell, and so on. A repeat is the usual duplicate: fuse up to 5 times, then Bait by rarity (`festivalGrantOutcome`).
+
+## Phase 2: what was built (worker and client)
+
+Code: `apps/worker/src/raid-ladder.ts` (stored rank, placement, ladder update), `raid-festival.ts` (the Festival grant), `raid-readiness.ts` (the band and its cache), `raid-progression-migration.ts` (migration 12), and changes in `raid.ts`, `raid-resolve.ts`, `raid-view.ts`, `raid-reveal.ts`, `raid-live-view.ts`, `raid-posts.ts`, `discord-format.ts`; client in `raid-progress.ts`, `RaidInfo.tsx` (boss card), `Reveal.tsx`, `Collection.tsx`, `raid-api.ts`, `live-api.ts`. Interpretations and the reasons are in the decisions log ("Progression, phase 2").
+
+- **Placement** happens once, as soon as a week has a roster (usually when the week opens; on a brand-new server when its first player joins). Existing servers are placed when their next week is created. The week that is open at deploy keeps its stored pool and old rules if Phase 1 has already resolved; if not, it is ranked (the server is placed if needed) at its Phase 1.
+- **Each week** stores its plan when it is created: rank, the eased rank a Festival boss fights at, whether it is a Festival, its season and the Festival creature. The boss is scaled once, at Phase 1, from the head count and the stored effective rank (`scaleBoss`). Every fight input carries `RULES.combat.luck`.
+- **Payouts** use the week's rank and Festival flag for every stage's Essence and for the jackpot (`essenceForStage`, `jackpotEssenceFor`), and the numbers shown (reveal, live loot, Discord post) come from the same function.
+- **After the finale** has resolved for every party that has members, once: the server won if at least half of the parties won; then `nextRank`. A normal-week win records the best rank. A week with no finale changes nothing.
+- **Festival creature:** every member of a winning party gets the week's species (a new level 1 creature, a fusion, or Bait), once per player and week, and "first on server" is recorded with the new kind `festival`.
+- **Readiness band:** `forecastWeek` (Monday to Friday) or `forecastFinale` (after Saturday) with a fresh crypto Rng, cached per party, only the band is sent (`party.readiness`).
+
+`GET /api/raid` gains `rank`, `effectiveRank`, `festival`, `festivalCreature`, `season: { index, week }`, `bestRank` and `party.readiness`; `you.reveal` and the live finale's `loot` gain `rankChange` and `festivalGrant`. A week that was open before the ladder existed has `rank`, `effectiveRank` and `season` null.

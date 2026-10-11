@@ -35,6 +35,7 @@ import {
 import { Raid } from './raid';
 import { raidLiveMigration } from './raid-live-migration';
 import { raidMigration } from './raid-migration';
+import { raidProgressionMigration } from './raid-progression-migration';
 import { raidRoutes } from './raid-routes';
 import { TokenBucketLimiter } from './ratelimit';
 import { SNOWFLAKE_RE } from './schemas';
@@ -241,6 +242,8 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
     );
     sql.exec('ALTER TABLE sessions ADD COLUMN channel_id TEXT');
   },
+  // Version 12: the Boss Rank ladder, seasons and Festival weeks (see raid-progression-migration.ts).
+  raidProgressionMigration,
 ];
 
 export interface SessionUser {
@@ -317,6 +320,11 @@ export interface GuildCoreOptions {
    * is separate from `rng` so raid events never consume a test's scripted catch draws.
    */
   raidRng?: Rng;
+  /**
+   * Fresh randomness for the readiness band (the forecast dice). Defaults to crypto.getRandomValues.
+   * Separate from `raidRng`, so a forecast never consumes the draws of a real fight.
+   */
+  readinessRng?: Rng;
   /** Fallback guild id (the Durable Object's name), used only until one is stored. */
   guildId?: () => string | undefined;
   /** Builds the leet source. Returning null disables syncing (fail closed). */
@@ -386,6 +394,7 @@ export class GuildCore {
       now,
       rng: options.raidRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
       practice: options.raidPractice === true,
+      ...(options.readinessRng === undefined ? {} : { readinessRng: options.readinessRng }),
     });
     this.limiter = new TokenBucketLimiter({
       capacity: RATE_CAPACITY,

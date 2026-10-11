@@ -9,6 +9,7 @@ import { describeEvent, type EventNames, type FightEvent } from '@creatures/engi
 import type { LiveAbility, LiveActionRequest, LiveFight, LiveSnapshot } from './live-api';
 import type { AbilityPreview, RaidReveal, TeamCreatureView } from './raid-api';
 import { formatCountdown } from './game';
+import { festivalGrantText, rankChangeText } from './raid-progress';
 
 // --- When the finale is on ---
 
@@ -446,14 +447,27 @@ export interface RevealSummary {
   cleared: boolean;
   essence: string;
   jackpot: { hit: boolean; text: string; firstOnServer: boolean };
+  /** Where the server's rank went; null until the ladder has moved (and for old weeks). */
+  rank: string | null;
+  /** The Festival creature the player got; null if none. */
+  festival: { text: string; firstOnServer: boolean } | null;
 }
 
 /** Plain words for a finale reveal. `pity` is the counter after the fight, when known. */
 export function revealSummary(
-  reveal: Pick<RaidReveal, 'cleared' | 'essence' | 'jackpot'>,
+  reveal: Pick<RaidReveal, 'cleared' | 'essence' | 'jackpot'> &
+    Partial<Pick<RaidReveal, 'rankChange' | 'festivalGrant'>>,
   pity: number | null,
 ): RevealSummary {
   const { jackpot } = reveal;
+  const rank = reveal.rankChange == null ? null : rankChangeText(reveal.rankChange);
+  const festival =
+    reveal.festivalGrant == null
+      ? null
+      : {
+          text: festivalGrantText(reveal.festivalGrant),
+          firstOnServer: reveal.festivalGrant.firstOnServer,
+        };
   const outcome = reveal.cleared
     ? 'The boss fell. Finale cleared!'
     : 'The boss held on. Not cleared.';
@@ -468,6 +482,8 @@ export function revealSummary(
         text: `Jackpot! +${String(jackpot.essence)} Essence`,
         firstOnServer: jackpot.firstOnServer,
       },
+      rank,
+      festival,
     };
   }
   const max = RULES.raid.jackpot.hardPityRaid;
@@ -483,6 +499,8 @@ export function revealSummary(
           : `No jackpot this time (pity ${String(pity)}/${String(max)})`,
       firstOnServer: false,
     },
+    rank,
+    festival,
   };
 }
 

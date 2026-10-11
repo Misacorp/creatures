@@ -34,6 +34,7 @@ import {
   type Selection,
   type TapResult,
 } from './raid-slots';
+import { festivalGrantText, rankChangeText } from './raid-progress';
 import { phaseName } from './raid-text';
 import { BossCard, Roster, ScheduleStrip } from './RaidInfo';
 import { RaidNews } from './RaidNews';
@@ -652,6 +653,10 @@ function ResultCard({
         Essence you got: <strong>{result.essence}</strong>
       </p>
       {result.jackpot.length > 0 && <p class="badge first">Jackpot: {result.jackpot.join(', ')}</p>}
+      {result.festivalGrant !== null && (
+        <p class="reveal-festival">{festivalGrantText(result.festivalGrant)}</p>
+      )}
+      {result.rankChange !== null && <p class="reveal-rank">{rankChangeText(result.rankChange)}</p>}
       <AfterAction week={week} party={party} phase={result.phase} onReplay={onReplay} />
     </li>
   );
