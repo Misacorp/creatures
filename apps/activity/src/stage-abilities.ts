@@ -87,37 +87,63 @@ export interface PopoverPlacement {
 }
 
 const ARROW_MARGIN = 10;
+const EDGE_MARGIN = 4;
 
 /**
- * Puts a popover of `size` next to `anchor`, inside `bounds`: below the anchor if it fits there,
- * else above, else wherever it overlaps least (clamped into the bounds). It is centred on the
- * anchor and slid sideways to stay in the bounds, and the arrow still points at the anchor.
+ * Puts a popover of `size` next to `anchor`, inside `bounds`: above the anchor if it fits there,
+ * else below, else on the side with more room (clamped into the bounds, over the anchor if it has
+ * to). It is centred on the anchor and slid sideways to stay `margin` inside the bounds, and the
+ * arrow still points at the anchor.
  */
 export function placePopover(
   anchor: Box,
   bounds: Box,
   size: { width: number; height: number },
   gap = 6,
+  margin = EDGE_MARGIN,
 ): PopoverPlacement {
   const centre = anchor.left + anchor.width / 2;
-  const maxLeft = bounds.left + bounds.width - size.width;
-  const left = Math.max(bounds.left, Math.min(maxLeft, centre - size.width / 2));
+  const minLeft = bounds.left + margin;
+  const maxLeft = bounds.left + bounds.width - margin - size.width;
+  // A popover wider than the bounds starts at the bounds' edge.
+  const left =
+    maxLeft < minLeft ? bounds.left : Math.max(minLeft, Math.min(maxLeft, centre - size.width / 2));
 
-  const belowTop = anchor.top + anchor.height + gap;
   const aboveTop = anchor.top - gap - size.height;
+  const belowTop = anchor.top + anchor.height + gap;
   const boundsBottom = bounds.top + bounds.height;
-  const fitsBelow = belowTop + size.height <= boundsBottom;
   const fitsAbove = aboveTop >= bounds.top;
+  const fitsBelow = belowTop + size.height <= boundsBottom;
 
-  let placement: 'below' | 'above' = 'below';
-  let top = belowTop;
-  if (!fitsBelow && fitsAbove) {
-    placement = 'above';
-    top = aboveTop;
-  } else if (!fitsBelow) {
-    // Neither side has room: keep it inside the bounds, over the anchor if it has to.
-    top = Math.max(bounds.top, Math.min(boundsBottom - size.height, belowTop));
+  let placement: 'below' | 'above' = 'above';
+  let top = aboveTop;
+  if (!fitsAbove && fitsBelow) {
+    placement = 'below';
+    top = belowTop;
+  } else if (!fitsAbove) {
+    // Neither side has room: take the roomier side and keep the popover inside the bounds.
+    const roomAbove = anchor.top - bounds.top;
+    const roomBelow = boundsBottom - (anchor.top + anchor.height);
+    placement = roomBelow >= roomAbove ? 'below' : 'above';
+    const wanted = placement === 'below' ? belowTop : aboveTop;
+    top = Math.max(bounds.top, Math.min(boundsBottom - size.height, wanted));
   }
   const arrowX = Math.max(ARROW_MARGIN, Math.min(size.width - ARROW_MARGIN, centre - left));
   return { x: left - anchor.left, y: top - anchor.top, placement, arrowX };
+}
+
+/**
+ * The one short state line of an ability popover: "Auto fire · round 7", "Auto fire off · last
+ * round", "Fires next round" or "Used in round 5". Words as well as shape, like the badge.
+ */
+export function popoverStateLine(badge: Pick<Badge, 'kind' | 'round' | 'label'>): string {
+  switch (badge.kind) {
+    case 'auto':
+      return badge.round === null ? 'Auto fire' : `Auto fire \u00b7 round ${String(badge.round)}`;
+    case 'manual':
+      return 'Auto fire off \u00b7 last round';
+    case 'pressed':
+    case 'used':
+      return badge.label;
+  }
 }

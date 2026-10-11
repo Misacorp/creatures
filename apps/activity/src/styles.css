@@ -224,6 +224,7 @@ input[type='text'] {
 
 button {
   font-family: var(--display);
+  font-variant-ligatures: none;
   font-size: 1rem;
   cursor: pointer;
   box-shadow:
@@ -825,22 +826,6 @@ button.toggle.on {
 
 .live-countdown {
   color: var(--gold);
-}
-
-.ability-panel {
-  margin: 0.75rem 0;
-  padding: 0.75rem;
-  border: 2px solid var(--accent);
-  background: var(--panel);
-}
-
-.ability-panel h5 {
-  margin: 0 0 0.25rem;
-  font-size: 0.9375rem;
-}
-
-.live-ability-state {
-  font-weight: 600;
 }
 
 .live-ability.you {
@@ -1700,6 +1685,32 @@ canvas.sprite {
   color: var(--gold);
 }
 
+.stage-head {
+  align-items: center;
+}
+
+.stage-head-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* The "?" button: how abilities work. Small, but with a full-size tap area around it. */
+button.stage-help {
+  position: relative;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  padding: 0 0.375rem;
+  font-size: 0.8125rem;
+  line-height: 1.5rem;
+}
+
+button.stage-help::after {
+  content: '';
+  position: absolute;
+  inset: -0.5rem;
+}
+
 .stage-boss {
   display: flex;
   flex-direction: column;
@@ -1819,10 +1830,6 @@ canvas.sprite {
   width: var(--unit-w, 52px);
 }
 
-.stage-unit.open {
-  z-index: 20;
-}
-
 /* The face of a creature: a plain box, or a button for your own creature with an ability. */
 .unit-face {
   display: flex;
@@ -1848,7 +1855,8 @@ button.unit-face:hover:not(:disabled) {
   filter: none;
 }
 
-button.unit-face:hover:not(:disabled) .unit-art {
+button.unit-face:hover:not(:disabled) .unit-art,
+button.unit-face[aria-expanded='true'] .unit-art {
   outline: 2px solid var(--gold);
 }
 
@@ -1884,7 +1892,7 @@ button.unit-face:focus-visible {
   line-height: 0;
 }
 
-/* Names: smaller, two lines at most, an ellipsis only beyond that (the full name is the tooltip). */
+/* Names: smaller, two lines at most, an ellipsis only beyond that (the full name is the accessible label). */
 .unit-name {
   display: -webkit-box;
   max-width: 100%;
@@ -1987,72 +1995,233 @@ button.unit-face:focus-visible {
   padding: 0 2px;
 }
 
-/* The popover of an ability, next to the creature it belongs to (placed by script). */
-.ab-pop {
+/*
+  The popover inside the stage (one at a time, placed by script through --pop-x, --pop-y and
+  --pop-arrow, set with style.setProperty): above its anchor with a pointer arrow, below when there
+  is no room above, and kept inside the stage. About 200px wide.
+*/
+.stage-pop {
   position: absolute;
-  top: var(--pop-y, 100%);
+  top: var(--pop-y, 0);
   left: var(--pop-x, 0);
   z-index: 20;
-  width: 14.5rem;
-  max-width: calc(100vw - 1.5rem);
-  padding: 0.5rem 0.625rem;
+  width: min(12.5rem, calc(100% - 8px));
+  padding: 0.375rem 0.5rem 0.5rem;
   background: var(--dusk-2);
   box-shadow: var(--frame);
   color: var(--bone);
   font-family: var(--body);
-  font-size: 0.8125rem;
-  line-height: 1.35;
+  font-size: 0.75rem;
+  line-height: 1.3;
   text-align: left;
 }
 
-.ab-pop::before {
+/*
+  The pointer arrow: a stepped pixel triangle, an ink outline (::before) with the panel colour on top
+  (::after). It points down when the popover is above its anchor and up when it is below.
+*/
+.stage-pop::before,
+.stage-pop::after {
   content: '';
   position: absolute;
-  top: -4px;
-  left: calc(var(--pop-arrow, 20px) - 4px);
-  width: 8px;
-  height: 8px;
+  bottom: -9px;
+  height: 9px;
+}
+
+.stage-pop::before {
+  left: calc(var(--pop-arrow, 20px) - 9px);
+  width: 18px;
+  background: var(--ink);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 33.34%,
+    83.33% 33.34%,
+    83.33% 66.67%,
+    66.67% 66.67%,
+    66.67% 100%,
+    33.33% 100%,
+    33.33% 66.67%,
+    16.67% 66.67%,
+    16.67% 33.34%,
+    0 33.34%
+  );
+}
+
+.stage-pop::after {
+  left: calc(var(--pop-arrow, 20px) - 6px);
+  width: 12px;
   background: var(--dusk-2);
-  transform: rotate(45deg);
+  clip-path: polygon(0 0, 100% 0, 100% 50%, 75% 50%, 75% 100%, 25% 100%, 25% 50%, 0 50%);
 }
 
-.ab-pop[data-placement='above']::before {
+.stage-pop::after {
+  height: 6px;
+  bottom: -6px;
+}
+
+.stage-pop[data-placement='below']::before,
+.stage-pop[data-placement='below']::after {
   top: auto;
-  bottom: -4px;
+  transform: scaleY(-1);
 }
 
-.ab-pop:focus-visible {
+.stage-pop[data-placement='below']::before {
+  top: -9px;
+  bottom: auto;
+}
+
+.stage-pop[data-placement='below']::after {
+  top: -6px;
+  bottom: auto;
+}
+
+.stage-pop:focus-visible {
   outline: var(--px) solid var(--bone);
 }
 
-.fire-button {
-  width: 100%;
-  min-height: 3rem;
-  font-size: 1.125rem;
+.stage-pop button:focus-visible {
+  outline-offset: 1px;
 }
 
-/* The Auto fire toggle: its name and, smaller, the round it fires in. */
-.auto-toggle {
+.stage-pop p {
+  margin: 0.125rem 0;
+}
+
+.ab-title {
+  color: var(--gold);
+  font-size: 0.9375rem;
+  line-height: 1.2;
+}
+
+.ab-state {
+  color: var(--haze);
+}
+
+.ab-note,
+.ab-help {
+  color: var(--haze);
+}
+
+.ab-error {
+  color: var(--bad);
+}
+
+.ab-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+}
+
+/* Fire and Auto fire sit side by side; Auto fire shows "on" or "off" in smaller type under its name. */
+.ab-buttons button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0.125rem 0.25rem;
+  font-size: 0.875rem;
   line-height: 1.1;
 }
 
-.auto-toggle small {
-  font-family: var(--body);
+.ab-buttons button:only-child {
+  grid-column: 1 / -1;
+}
+
+.ab-buttons small {
+  font-family: var(--display);
+  font-size: 0.6875rem;
+}
+
+/* The Auto fire toggle is not gold like Fire: on is a green bar and the word "on", off is plain. */
+.ab-buttons button.ab-auto-toggle.on {
+  background: var(--dusk-2);
+  color: var(--bone);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 var(--good);
+}
+
+.ab-buttons button.ab-auto-toggle.on small {
+  color: var(--good);
+}
+
+.ab-buttons button.ab-auto-toggle:not(.on) small {
+  color: var(--haze);
+}
+
+.ab-pick {
+  margin-top: 0.25rem;
+}
+
+.ab-pick-label {
+  color: var(--haze);
+  font-size: 0.6875rem;
+}
+
+.ab-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.1875rem;
+  margin-top: 0.125rem;
+}
+
+.pick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+  min-height: 1.75rem;
+  padding: 0 0.25rem;
   font-size: 0.75rem;
+  line-height: 1;
 }
 
-.ab-pop h5 {
-  margin: 0 0 0.25rem;
-  color: var(--gold);
-  font-size: 0.9375rem;
+.pick-chip.on {
+  background: var(--gold);
+  color: var(--ink);
 }
 
-.ab-pop p {
-  margin: 0.25rem 0;
+/* The basic ability: a chip in the stage's bottom-left corner, with the same state badge as a creature. */
+.stage-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.25rem 4px 0.125rem;
+}
+
+.basic-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0.125rem 0.5rem 0.125rem 0.375rem;
+  font-size: 0.875rem;
+}
+
+.basic-chip .ab-badge {
+  position: static;
+}
+
+.basic-chip[aria-expanded='true'] {
+  outline: 2px solid var(--gold);
+}
+
+/* The "Others' abilities" list under the stage: closed by default. */
+.others {
+  margin: 0.5rem var(--px);
+}
+
+.others summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.others .plain-list {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
 }
 
 /* Who acts, who is hit and which zone is under attack: outlines, which also work without motion. */

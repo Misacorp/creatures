@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
-import type { ComponentChildren } from 'preact';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import type { ComponentChildren, Ref } from 'preact';
 import type { EventNames, FightEvent, Zone } from '@creatures/engine';
 import { bossArt, elementClass, markPalette } from './art';
 import { cssVars } from './css-vars';
@@ -19,7 +19,8 @@ import {
   type AbilityUse,
   type Cue,
 } from './stage';
-import { badgeFor, placePopover, usedBadge, type Badge } from './stage-abilities';
+import { badgeFor, usedBadge, type Badge } from './stage-abilities';
+import { StagePopover } from './StagePopover';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { elementIcon } from './sprites/element-icons';
@@ -145,8 +146,13 @@ export interface StageAbilities {
   you: string | null;
   /** The fight's status, round and round count, which decide whether Fire is on offer. */
   fight: Pick<LiveFight, 'status' | 'round' | 'rounds'>;
-  /** The popover's content for one of the caller's creature abilities. `close` shuts the popover. */
-  renderPopover: (ability: LiveAbility, close: () => void) => ComponentChildren;
+  /**
+   * The popover's content for one of the caller's abilities (a creature's, or the basic one on the
+   * chip). `badge` is what the stage shows for it; `close` shuts the popover.
+   */
+  renderPopover: (ability: LiveAbility, badge: Badge, close: () => void) => ComponentChildren;
+  /** The text of the "?" button's popover (how abilities work). Without it there is no button. */
+  help?: ComponentChildren;
 }
 
 export interface StageProps {
@@ -216,81 +222,21 @@ interface UnitProps {
   /** True for the player's own creature with an ability: it can be tapped. */
   interactive: boolean;
   open: boolean;
+  /** Registers the creature's button as the anchor of its popover. */
+  anchorRef: Ref<HTMLButtonElement>;
   onToggle: () => void;
-  onClose: () => void;
-  /** The popover's content, when this unit's popover is open. */
-  popover: ComponentChildren;
-  /** Changes when the layout does, so an open popover is put in place again. */
-  layoutKey: number;
 }
 
 /**
  * One creature on the stage: its sprite with the corner marks (the "you" tag above it, the ability
  * badge top right, the skull of a knocked-out creature bottom left, its element bottom right) and
  * its name under it, two lines at most. The player's own creature with an ability is a button that
- * opens the ability popover.
+ * opens the ability popover (drawn by the stage, which is its anchor's parent). The full name is
+ * the accessible label; no `title`, so no browser tooltip floats over the stage.
  */
 function StageUnit(props: UnitProps) {
   const { creature: c, mine, ko, badge, interactive, open } = props;
-  const itemRef = useRef<HTMLLIElement>(null);
-  const faceRef = useRef<HTMLButtonElement>(null);
-  const popRef = useRef<HTMLDivElement>(null);
   const icon = elementIcon(c.element);
-
-  // Put the popover next to the creature, inside the stage, and move focus into it.
-  const wasOpen = useRef(false);
-  useLayoutEffect(() => {
-    const pop = popRef.current;
-    const item = itemRef.current;
-    const face = faceRef.current;
-    if (!open || pop === null || item === null || face === null) {
-      wasOpen.current = false;
-      return;
-    }
-    const stage = item.closest('.stage');
-    if (stage !== null) {
-      const a = face.getBoundingClientRect();
-      const b = stage.getBoundingClientRect();
-      const origin = item.getBoundingClientRect();
-      const at = placePopover(
-        { left: a.left, top: a.top, width: a.width, height: a.height },
-        { left: b.left, top: b.top, width: b.width, height: b.height },
-        { width: pop.offsetWidth, height: pop.offsetHeight },
-      );
-      pop.style.setProperty('--pop-x', `${String(Math.round(at.x + a.left - origin.left))}px`);
-      pop.style.setProperty('--pop-y', `${String(Math.round(at.y + a.top - origin.top))}px`);
-      pop.style.setProperty('--pop-arrow', `${String(Math.round(at.arrowX))}px`);
-      pop.dataset['placement'] = at.placement;
-    }
-    if (!wasOpen.current) {
-      wasOpen.current = true;
-      (pop.querySelector<HTMLElement>('button:not(:disabled)') ?? pop).focus();
-    }
-  }, [open, props.layoutKey]);
-
-  // Escape or a tap outside closes the popover.
-  useEffect(() => {
-    if (!open) return undefined;
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape') return;
-      props.onClose();
-      faceRef.current?.focus();
-    };
-    const onPointer = (event: PointerEvent): void => {
-      const target = event.target instanceof Node ? event.target : null;
-      if (target === null) return;
-      if (popRef.current?.contains(target) === true || faceRef.current?.contains(target) === true) {
-        return;
-      }
-      props.onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    document.addEventListener('pointerdown', onPointer);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.removeEventListener('pointerdown', onPointer);
-    };
-  }, [open]);
 
   const spoken =
     `${c.name}${mine ? ', yours' : ''}${ko ? ', knocked out' : ''}` +
@@ -320,21 +266,18 @@ function StageUnit(props: UnitProps) {
         )}
         {badge !== null && <AbilityBadge badge={badge} />}
       </span>
-      <span class="unit-name pix">{c.name}</span>
+      <span class="unit-name pix" aria-hidden="true">
+        {c.name}
+      </span>
     </>
   );
 
   return (
-    <li
-      ref={itemRef}
-      class={[...props.classes, open ? 'open' : ''].filter(Boolean).join(' ')}
-      title={c.name}
-      aria-label={interactive ? undefined : spoken}
-    >
+    <li class={props.classes.join(' ')} aria-label={interactive ? undefined : spoken}>
       {interactive ? (
         <button
           type="button"
-          ref={faceRef}
+          ref={props.anchorRef}
           class="unit-face"
           aria-haspopup="dialog"
           aria-expanded={open}
@@ -348,17 +291,6 @@ function StageUnit(props: UnitProps) {
       )}
       <Floats cues={props.cues} target={c.id} />
       <Bursts cues={props.cues} target={c.id} names={props.names} />
-      {open && (
-        <div
-          ref={popRef}
-          class="ab-pop"
-          role="dialog"
-          aria-label={`${c.name}'s ability`}
-          tabIndex={-1}
-        >
-          {props.popover}
-        </div>
-      )}
     </li>
   );
 }
@@ -387,7 +319,13 @@ export function Stage({
 }: StageProps) {
   const rowsRef = useRef<HTMLDivElement>(null);
   const width = useElementWidth(rowsRef, STAGE_FALLBACK_PX);
+  /** Which popover is open: "a:<ability key>" for an ability, "help" for the "?" button's. */
   const [openKey, setOpenKey] = useState<string | null>(null);
+  const anchors = useRef(new Map<string, HTMLElement>());
+  const anchorRef = (id: string) => (el: HTMLElement | null) => {
+    if (el === null) anchors.current.delete(id);
+    else anchors.current.set(id, el);
+  };
   const rowIds = row.map((c) => c.id);
   const state = stageStateAt(events, index, hpStart);
   const cues =
@@ -418,6 +356,49 @@ export function Stage({
   const useByCreature = new Map<string, AbilityUse>();
   for (const u of uses) if (u.creature !== null) useByCreature.set(u.creature, u);
 
+  // The caller's own abilities, with what the badge says and whether Fire or Auto fire is on offer.
+  const own =
+    abilities === undefined || abilities.you === null
+      ? []
+      : abilities.list.filter((a) => a.alias === abilities.you);
+  const ownInfo = (ability: LiveAbility): { badge: Badge; actionable: boolean } => {
+    const controls = abilities === undefined ? null : abilityControls(abilities.fight, ability);
+    return {
+      badge: badgeFor(ability, useByKey.get(ability.key) ?? null, controls?.canFire ?? false),
+      actionable: controls !== null && (controls.canFire || controls.canToggle),
+    };
+  };
+  const basics = own.filter((a) => a.creature === null);
+  const openAbility =
+    openKey?.startsWith('a:') === true ? own.find((a) => `a:${a.key}` === openKey) : undefined;
+  const openActionable = openAbility === undefined ? false : ownInfo(openAbility).actionable;
+
+  // The popover closes by itself when its ability goes away, or when it was open on an ability
+  // that could be used and no longer can be (the round moved on). A read-only popover (an ability
+  // that was already used or pressed when it was opened) stays until it is dismissed.
+  const seen = useRef<{ key: string | null; actionable: boolean }>({
+    key: null,
+    actionable: false,
+  });
+  useEffect(() => {
+    const before = seen.current;
+    seen.current = { key: openKey, actionable: openActionable };
+    if (openKey === null || !openKey.startsWith('a:')) return;
+    if (
+      openAbility === undefined ||
+      (before.key === openKey && before.actionable && !openActionable)
+    ) {
+      setOpenKey(null);
+    }
+  }, [openKey, openActionable, openAbility === undefined]);
+
+  const close = (): void => {
+    setOpenKey(null);
+  };
+  const toggle = (key: string): void => {
+    setOpenKey(openKey === key ? null : key);
+  };
+
   const parity = anim === null ? 0 : anim.seq % 2;
   const groups = groupByZone(row);
   const markName = state.mark === null ? null : nameOf(names.marks, state.mark);
@@ -433,8 +414,25 @@ export function Stage({
       ref={cssVars({ '--beat': `${String(anim === null ? 600 : Math.max(anim.ms, 60))}ms` })}
     >
       <div class="stage-head">
-        <span class="pix stage-round">
-          {state.round > 0 ? `Round ${String(state.round)} / ${String(rounds)}` : 'Round 1'}
+        <span class="stage-head-left">
+          <span class="pix stage-round">
+            {state.round > 0 ? `Round ${String(state.round)} / ${String(rounds)}` : 'Round 1'}
+          </span>
+          {abilities?.help !== undefined && (
+            <button
+              type="button"
+              ref={anchorRef('help')}
+              class="stage-help pix"
+              aria-haspopup="dialog"
+              aria-expanded={openKey === 'help'}
+              aria-label="How abilities work"
+              onClick={() => {
+                toggle('help');
+              }}
+            >
+              ?
+            </button>
+          )}
         </span>
         <span class="pix stage-hp-text">
           {boss.name} HP {state.bossHp} / {hpMax}
@@ -522,27 +520,18 @@ export function Stage({
 
                   // The player's own creature with an ability is a button with a badge; every
                   // other creature only shows a "used" mark once its ability has fired.
-                  const own =
-                    abilities === undefined || abilities.you === null
-                      ? undefined
-                      : abilities.list.find(
-                          (a) => a.creature === c.id && a.alias === abilities.you,
-                        );
+                  const mineAbility = own.find((a) => a.creature === c.id);
                   const used = useByCreature.get(c.id) ?? null;
                   let badge: Badge | null = null;
                   let abilityId: string | null = null;
-                  if (own !== undefined && abilities !== undefined) {
-                    abilityId = own.abilityId;
-                    badge = badgeFor(
-                      own,
-                      useByKey.get(own.key) ?? null,
-                      abilityControls(abilities.fight, own).canFire,
-                    );
+                  if (mineAbility !== undefined) {
+                    abilityId = mineAbility.abilityId;
+                    badge = ownInfo(mineAbility).badge;
                   } else if (used !== null) {
                     abilityId = used.ability;
                     badge = usedBadge(used.round);
                   }
-                  const isOpen = own !== undefined && openKey === own.key;
+                  const key = mineAbility === undefined ? null : `a:${mineAbility.key}`;
                   return (
                     <StageUnit
                       key={c.id}
@@ -556,22 +545,12 @@ export function Stage({
                       names={names}
                       badge={badge}
                       abilityId={abilityId}
-                      interactive={own !== undefined}
-                      open={isOpen}
-                      layoutKey={width}
+                      interactive={key !== null}
+                      open={key !== null && openKey === key}
+                      anchorRef={anchorRef(key ?? `none:${c.id}`)}
                       onToggle={() => {
-                        setOpenKey(isOpen || own === undefined ? null : own.key);
+                        if (key !== null) toggle(key);
                       }}
-                      onClose={() => {
-                        setOpenKey(null);
-                      }}
-                      popover={
-                        isOpen && own !== undefined && abilities !== undefined
-                          ? abilities.renderPopover(own, () => {
-                              setOpenKey(null);
-                            })
-                          : null
-                      }
                     />
                   );
                 })}
@@ -606,6 +585,55 @@ export function Stage({
           );
         })}
       </div>
+
+      {abilities !== undefined && basics.length > 0 && (
+        <div class="stage-foot">
+          {basics.map((ability) => {
+            const { badge } = ownInfo(ability);
+            const key = `a:${ability.key}`;
+            return (
+              <button
+                key={ability.key}
+                type="button"
+                ref={anchorRef(key)}
+                class="basic-chip"
+                aria-haspopup="dialog"
+                aria-expanded={openKey === key}
+                aria-label={`${abilityName(ability.abilityId)} (basic ability), ${badge.label.toLowerCase()}. Opens the ability options.`}
+                onClick={() => {
+                  toggle(key);
+                }}
+              >
+                <Sprite sprite={abilityGlyph} scale={2} />
+                <span class="pix">{abilityName(ability.abilityId)}</span>
+                <AbilityBadge badge={badge} />
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {abilities !== undefined && openAbility !== undefined && (
+        <StagePopover
+          key={openKey}
+          anchor={() => anchors.current.get(`a:${openAbility.key}`) ?? null}
+          label={`${abilityName(openAbility.abilityId)} ability`}
+          onClose={close}
+        >
+          {abilities.renderPopover(openAbility, ownInfo(openAbility).badge, close)}
+        </StagePopover>
+      )}
+      {abilities?.help !== undefined && openKey === 'help' && (
+        <StagePopover
+          key="help"
+          class="help-pop"
+          anchor={() => anchors.current.get('help') ?? null}
+          label="How abilities work"
+          onClose={close}
+        >
+          {abilities.help}
+        </StagePopover>
+      )}
     </section>
   );
 }

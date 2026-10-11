@@ -1,14 +1,9 @@
-import { content } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiError } from './api';
-import { clockOffset, elementName, errorText } from './game';
+import { clockOffset, errorText } from './game';
 import { useNow } from './hooks';
 import {
-  abilityControls,
-  abilityEffectLine,
-  abilityParamKind,
   abilityStateText,
-  autoFireLabel,
   abilityTitle,
   buildAction,
   createKeyLock,
@@ -19,6 +14,7 @@ import {
   nextPollDelay,
   otherUsage,
   otherUsageText,
+  othersSummary,
   ownAbilities,
   pickNewer,
   PRACTICE_LABEL,
@@ -30,17 +26,12 @@ import {
   sendLiveAction,
   type LiveAbility,
   type LiveActionRequest,
-  type LiveRunning,
   type LiveSnapshot,
 } from './live-api';
+import { AbilityPopoverBody } from './AbilityPopover';
 import { RevealCard } from './Reveal';
+import type { Badge } from './stage-abilities';
 import { HpBar, LiveStage, LogToggle } from './Stage';
-
-const ZONE_OPTIONS = [
-  { id: 'front', label: 'Front' },
-  { id: 'middle', label: 'Middle' },
-  { id: 'back', label: 'Back' },
-] as const;
 
 /**
  * The live Sunday finale: the lobby and the fight, with the boss HP, the row, the round's events
@@ -245,16 +236,15 @@ export function Live({
   );
   const playerName = (key: string | null): string =>
     key === null ? 'Guest' : (fight.names.players?.[key] ?? 'Unknown');
-  // The basic ability has no creature: it keeps a panel under the stage. Every creature ability
-  // sits on its creature on the stage (a badge, and a popover when it is tapped).
-  const basic = mine.filter((a) => a.creature === null);
-  const creatureAbilities = mine.filter((a) => a.creature !== null);
+  // Every ability sits on the stage: a creature's on the creature (a badge, and a popover when it
+  // is tapped), the basic one on a chip in the stage's corner. They open the same popover.
 
-  /** The pickers, Fire and Auto fire of one ability, wired to this screen's state. */
-  const actions = (ability: LiveAbility, afterSuccess?: () => void) => (
-    <AbilityActions
+  /** The inside of an ability's popover, wired to this screen's state. */
+  const popoverBody = (ability: LiveAbility, badge: Badge, afterSuccess: () => void) => (
+    <AbilityPopoverBody
       fight={fight}
       ability={ability}
+      badge={badge}
       busy={busyKeys.includes(ability.key)}
       zone={zones[ability.key] ?? ''}
       element={elements[ability.key] ?? ''}
@@ -275,7 +265,7 @@ export function Live({
             elements[ability.key] ?? '',
           ),
         ).then((ok) => {
-          if (ok) afterSuccess?.();
+          if (ok) afterSuccess();
         });
       }}
     />
@@ -330,25 +320,11 @@ export function Live({
           list: fight.abilities,
           you: fight.you,
           fight,
-          renderPopover: (ability, close) => (
-            <div class="ab-pop-body">
-              <h5>{abilityTitle(ability, fight.names)}</h5>
-              {abilityEffectLine(ability.abilityId) !== '' && (
-                <p class="muted">{abilityEffectLine(ability.abilityId)}</p>
-              )}
-              <p class="live-ability-state">{abilityStateText(ability, fight.rounds, true)}</p>
-              {actions(ability, close)}
-            </div>
-          ),
+          renderPopover: popoverBody,
+          ...(mine.length > 0 ? { help: <AbilityHelp /> } : {}),
         }}
       />
 
-      {creatureAbilities.length > 0 && (
-        <p class="muted small">
-          Your creatures with an ability wear a badge. Tap one to fire its ability or to turn its
-          auto fire on or off.
-        </p>
-      )}
       {mine.length > 0 && (
         <ul class="visually-hidden" aria-label="Your abilities">
           {mine.map((ability) => (
@@ -359,28 +335,6 @@ export function Live({
         </ul>
       )}
 
-      {basic.length > 0 && (
-        <section aria-labelledby="live-abilities-heading">
-          <h4 id="live-abilities-heading">Your basic ability</h4>
-          <p class="muted">
-            Each ability fires once. Fire takes effect at the start of the next round. With auto
-            fire on, it fires by itself in its round; with auto fire off it waits for you, and still
-            fires in the last round if you do not.
-          </p>
-          {basic.map((ability) => {
-            const headingId = `live-ability-${ability.key}`;
-            const effect = abilityEffectLine(ability.abilityId);
-            return (
-              <div key={ability.key} class="ability-panel" role="group" aria-labelledby={headingId}>
-                <h5 id={headingId}>{abilityTitle(ability, fight.names)}</h5>
-                {effect !== '' && <p class="muted">{effect}</p>}
-                <p class="live-ability-state">{abilityStateText(ability, fight.rounds, true)}</p>
-                {actions(ability)}
-              </div>
-            );
-          })}
-        </section>
-      )}
       {mine.length === 0 && actionError !== null && (
         <p class="error" role="alert">
           {actionError.text}
@@ -388,8 +342,8 @@ export function Live({
       )}
 
       {others.length > 0 && (
-        <>
-          <h4>Other players' abilities</h4>
+        <details class="others">
+          <summary>{othersSummary(others)}</summary>
           <ul class="plain-list">
             {others.map((usage) => (
               <li key={usage.alias} class="live-ability">
@@ -398,7 +352,7 @@ export function Live({
               </li>
             ))}
           </ul>
-        </>
+        </details>
       )}
 
       <Watching names={fight.watching} />
@@ -469,107 +423,20 @@ function FeedItems({ lines }: { lines: readonly FeedLine[] }) {
   );
 }
 
-/** The pickers, the Fire button, the Auto fire toggle and the notes of one ability. */
-function AbilityActions({
-  fight,
-  ability,
-  busy,
-  zone,
-  element,
-  error,
-  onZone,
-  onElement,
-  onAct,
-}: {
-  fight: LiveRunning;
-  ability: LiveAbility;
-  busy: boolean;
-  zone: string;
-  element: string;
-  error: string | null;
-  onZone: (zone: string) => void;
-  onElement: (element: string) => void;
-  onAct: (action: 'fire' | 'hold' | 'unhold') => void;
-}) {
-  const controls = abilityControls(fight, ability);
-  const kind = abilityParamKind(ability.abilityId);
-  const autoLabel = autoFireLabel(ability);
+/** The "?" popover of the stage: how abilities work, in a few short lines. */
+function AbilityHelp() {
   return (
-    <>
-      {controls.canFire && kind === 'zone' && (
-        <>
-          <label for={`live-zone-${ability.key}`}>Zone to protect</label>
-          <select
-            id={`live-zone-${ability.key}`}
-            value={zone}
-            disabled={busy}
-            onChange={(event) => {
-              onZone(event.currentTarget.value);
-            }}
-          >
-            <option value="">The zone the boss attacks first</option>
-            {ZONE_OPTIONS.map((z) => (
-              <option key={z.id} value={z.id}>
-                {z.label}
-              </option>
-            ))}
-          </select>
-        </>
-      )}
-      {controls.canFire && kind === 'element' && (
-        <>
-          <label for={`live-element-${ability.key}`}>Element to mark the boss with</label>
-          <select
-            id={`live-element-${ability.key}`}
-            value={element}
-            disabled={busy}
-            onChange={(event) => {
-              onElement(event.currentTarget.value);
-            }}
-          >
-            <option value="">The default element</option>
-            {content.elements.map((e) => (
-              <option key={e.id} value={e.id}>
-                {elementName(e.id)}
-              </option>
-            ))}
-          </select>
-        </>
-      )}
-      <p>
-        <button
-          type="button"
-          class="primary fire-button"
-          disabled={busy || !controls.canFire}
-          onClick={() => {
-            onAct('fire');
-          }}
-        >
-          Fire
-        </button>
+    <div class="ab-pop-body">
+      <p class="ab-title pix">Abilities</p>
+      <p class="ab-help">
+        Tap one of your creatures, or the chip in the corner, to fire its ability or to turn auto
+        fire on or off.
       </p>
-      {controls.canToggle && (
-        <p>
-          <button
-            type="button"
-            class={controls.autoOn ? 'toggle on auto-toggle' : 'toggle auto-toggle'}
-            aria-pressed={controls.autoOn}
-            disabled={busy}
-            onClick={() => {
-              onAct(controls.autoOn ? 'hold' : 'unhold');
-            }}
-          >
-            <span>{autoLabel.title}</span>
-            {autoLabel.detail !== '' && <small>{autoLabel.detail}</small>}
-          </button>
-        </p>
-      )}
-      {controls.note !== '' && <p class="muted">{controls.note}</p>}
-      {error !== null && (
-        <p class="error" role="alert">
-          {error}
-        </p>
-      )}
-    </>
+      <p class="ab-help">
+        Each ability fires once. Fire takes effect at the start of the next round. With auto fire
+        on, it fires by itself in its round; with auto fire off it waits for you, and still fires in
+        the last round if you do not.
+      </p>
+    </div>
   );
 }

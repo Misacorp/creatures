@@ -12,6 +12,7 @@ import {
   creatureAbilityRows,
   otherUsage,
   otherUsageText,
+  othersSummary,
   ownAbilities,
   type OtherUsage,
   abilityParamKind,
@@ -524,6 +525,8 @@ describe('ability texts', () => {
       "2 of 3 used. Latest: Rex's Flare Strike (round 5)",
     );
     expect(otherUsageText(usage[1] as OtherUsage, names)).toBe('0 of 1 used');
+    expect(othersSummary(usage)).toBe("Others' abilities (2/4 used)");
+    expect(othersSummary([])).toBe("Others' abilities (0/0 used)");
   });
 
   it('lists creature abilities for the Raid tab, locked ones with the level they need', () => {

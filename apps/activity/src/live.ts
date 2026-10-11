@@ -193,6 +193,13 @@ export function otherUsage(abilities: readonly LiveAbility[], you: string | null
   return [...byAlias.values()];
 }
 
+/** The closed summary of the other players' abilities: "Others' abilities (3/7 used)". */
+export function othersSummary(others: readonly OtherUsage[]): string {
+  const used = others.reduce((sum, o) => sum + o.used, 0);
+  const total = others.reduce((sum, o) => sum + o.total, 0);
+  return `Others' abilities (${String(used)}/${String(total)} used)`;
+}
+
 /** "2 of 4 used. Latest: Cindle's Flare Strike (round 5)". */
 export function otherUsageText(usage: OtherUsage, names: Pick<EventNames, 'creatures'>): string {
   const head = `${String(usage.used)} of ${String(usage.total)} used`;
