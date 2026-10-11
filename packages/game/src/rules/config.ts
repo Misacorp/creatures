@@ -130,12 +130,20 @@ export const RULES = {
     jackpotEssence: 100,
     jackpot: {
       baseBp: 600,
-      /** From this raid without a jackpot on, the chance rises by `softPityStepBp` per raid. */
-      softPityFromRaid: 6,
+      /**
+       * From this raid without a jackpot on, the chance rises by `softPityStepBp` per raid. Pity
+       * counts finale wins only: a lost finale rolls nothing and changes nothing
+       * (docs/design/creature-abilities.md).
+       */
+      softPityFromRaid: 5,
       softPityStepBp: 800,
       /** The raid without a jackpot on which one is guaranteed. */
       hardPityRaid: 10,
     },
+  },
+  abilities: {
+    /** Creature level at which a species' finale ability unlocks. */
+    unlockLevel: 10,
   },
   nickname: {
     maxCodePoints: 20,

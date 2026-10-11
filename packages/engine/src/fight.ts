@@ -6,6 +6,7 @@ import {
   type AdaptationDef,
   type BossDef,
   type ContentPack,
+  type Effect,
   type Element,
   type FinaleAbilityDef,
   type Gimmick,
@@ -19,6 +20,7 @@ import {
 import { matchupBp } from './matchup';
 import { sanitizeBp, type CreatureView, type Mutator, type MutatorHooks } from './mutators';
 import type {
+  AbilityChoice,
   AdaptationSuggestion,
   CreatureTotals,
   FightEvent,
@@ -94,6 +96,16 @@ function firstZoneHit(boss: BossDef, rounds: number): { round: number; zone: Zon
   return null;
 }
 
+/** True if the ability can only work with a creature: it strikes or uses `own` zone or element. */
+export function needsCreature(def: FinaleAbilityDef): boolean {
+  return def.effects.some(
+    (e: Effect) =>
+      e.op === 'strike' ||
+      (e.op === 'shield_wall' && e.zone === 'own') ||
+      (e.op === 're_mark' && e.element === 'own'),
+  );
+}
+
 /**
  * The round (1-based) a finale ability fires at when its player does nothing: the content default
  * round, or for abilities that default to the boss's first zone attack (Shield Wall), the round of
@@ -161,11 +173,11 @@ export function simulateFight(
   for (const a of pack.finaleAbilities) abilityDefs.set(a.id, a);
 
   let rule: AdaptationDef | null = null;
-  let adaptationActive = false;
+  /** The last round the adaptation is switched off by a purge (0: never purged). */
+  let purgedThrough = 0;
   if (input.adaptation !== null) {
     rule = pack.adaptations.find((a) => a.id === input.adaptation?.rule) ?? null;
     if (rule === null) fail(`unknown adaptation rule "${input.adaptation.rule}"`);
-    adaptationActive = true;
   }
   const adaptationTarget = input.adaptation?.target ?? '';
 
@@ -278,10 +290,15 @@ export function simulateFight(
 
   // ---- finale abilities ----
   const zoneHit = firstZoneHit(boss, rounds);
-  const abilitiesByRound = new Map<
-    number,
-    { choice: FightInput['finaleAbilities'][number]; def: FinaleAbilityDef; byDefault: boolean }[]
-  >();
+  interface Scheduled {
+    choice: AbilityChoice;
+    def: FinaleAbilityDef;
+    byDefault: boolean;
+    /** The creature the ability belongs to, if it has one. */
+    source: Creature | null;
+  }
+  const abilitiesByRound = new Map<number, Scheduled[]>();
+  const abilityKeys = new Set<string>();
   for (const choice of input.finaleAbilities) {
     const def = abilityDefs.get(choice.abilityId);
     if (def === undefined) fail(`unknown finale ability "${choice.abilityId}"`);
@@ -289,15 +306,30 @@ export function simulateFight(
     if (choice.fireAtRound !== undefined && !isCount(choice.fireAtRound, 1)) {
       fail('fireAtRound must be an integer >= 1');
     }
+    if (typeof choice.key !== 'string' || choice.key.length < 1 || choice.key.length > 64) {
+      fail('an ability key must be 1 to 64 characters');
+    }
+    if (abilityKeys.has(choice.key)) fail(`duplicate ability key "${choice.key}"`);
+    abilityKeys.add(choice.key);
+    let source: Creature | null = null;
+    if (choice.creatureId !== undefined) {
+      source = creatures.find((c) => c.id === choice.creatureId) ?? null;
+      if (source === null) fail(`ability "${choice.key}" names an unknown creature`);
+      if (source.ownerId !== choice.playerId) {
+        fail(`ability "${choice.key}" names a creature of another player`);
+      }
+    } else if (needsCreature(def)) {
+      fail(`ability "${choice.key}" needs a creature`);
+    }
     const byDefault = choice.fireAtRound === undefined;
     const round = choice.fireAtRound ?? defaultAbilityRound(boss, def, rounds);
     const list = abilitiesByRound.get(round) ?? [];
-    list.push({ choice, def, byDefault });
+    list.push({ choice, def, byDefault, source });
     abilitiesByRound.set(round, list);
   }
 
   // ---- damage to creatures ----
-  const shielded = new Set<Zone>();
+  const shields: { zone: Zone; reduceBp: number; until: number }[] = [];
   const livingIn = (zone: Zone): Creature[] =>
     zoneIndices(zone, n)
       .map((i) => creatures[i] as Creature)
@@ -309,9 +341,16 @@ export function simulateFight(
     source: 'attack' | 'gimmick' | 'reflect',
     interceptable: boolean,
   ): void {
-    const amount = Math.max(0, Math.floor((rawAmount * (10_000 + bossDamageBp)) / 10_000));
+    let amount = Math.max(0, Math.floor((rawAmount * (10_000 + bossDamageBp)) / 10_000));
     const zone = zoneOfIndex(target.idx, n);
-    if (shielded.has(zone)) {
+    // Shield Walls on the zone multiply: two 50% walls leave 25% of the damage.
+    let remainingBp = 10_000;
+    for (const w of shields) {
+      if (w.zone === zone && w.until >= currentRound) {
+        remainingBp = Math.floor((remainingBp * (10_000 - w.reduceBp)) / 10_000);
+      }
+    }
+    if (remainingBp === 0) {
       events.push({
         t: 'boss_hit',
         round: currentRound,
@@ -322,6 +361,8 @@ export function simulateFight(
       });
       return;
     }
+    const reducedBp = 10_000 - remainingBp;
+    if (reducedBp > 0) amount = Math.floor((amount * remainingBp) / 10_000);
     let victim = target;
     if (interceptable && target.role !== 'guard') {
       const guard = livingIn(zone).find((c) => c.role === 'guard');
@@ -339,6 +380,7 @@ export function simulateFight(
         target: victim.id,
         damage: amount,
         from: target.id,
+        ...(reducedBp > 0 ? { reducedBp } : {}),
       });
     } else {
       events.push({
@@ -347,6 +389,7 @@ export function simulateFight(
         source,
         target: victim.id,
         damage: amount,
+        ...(reducedBp > 0 ? { reducedBp } : {}),
       });
     }
     if (victim.hp === 0 && victim.alive) {
@@ -359,14 +402,23 @@ export function simulateFight(
 
   // ---- a creature hits the boss ----
   let roundBonusBp = 0;
-  let rallyBp = 0;
+  const rallies: { bp: number; until: number }[] = [];
+  const rallyBp = (): number =>
+    rallies.reduce((sum, r) => (r.until >= currentRound ? sum + r.bp : sum), 0);
+  const adaptationOn = (): boolean => rule !== null && currentRound > purgedThrough;
   let reflectArmed = false;
   let reflectUsed = false;
 
-  function hitBoss(c: Creature): void {
+  /**
+   * A creature hits the boss: its turn, or (with `strike`) an ability's strike, which hits for a
+   * share of Attack, leaves the creature's support buffs for its next turn and lands even if the
+   * creature is knocked out.
+   */
+  function hitBoss(c: Creature, strike?: { atkBp: number; ability: string; key: string }): void {
     const matchup = matchupBp(c.element, boss.element, pack.elements);
-    const buffs = c.buffs;
-    c.buffs = [];
+    const atk = strike === undefined ? c.atk : Math.floor((c.atk * strike.atkBp) / 10_000);
+    const buffs = strike === undefined ? c.buffs : [];
+    if (strike === undefined) c.buffs = [];
     const supportBp = buffs.reduce((sum, b) => sum + b.bp, 0);
     const markBefore = mark;
 
@@ -375,7 +427,7 @@ export function simulateFight(
       const candidate = reactionByMark.get(markBefore.element);
       if (candidate !== undefined && candidate.triggerElement === c.element) reaction = candidate;
     }
-    const reflected = reaction !== undefined && reflectArmed && !reflectUsed;
+    const reflected = reaction !== undefined && c.alive && reflectArmed && !reflectUsed;
     if (reflected) reflectUsed = true;
 
     let hookBp = 0;
@@ -398,12 +450,13 @@ export function simulateFight(
       );
     }
 
+    const adapting = adaptationOn();
     const elementResist =
-      adaptationActive && rule?.kind === 'top_element' && adaptationTarget === c.element
+      adapting && rule?.kind === 'top_element' && adaptationTarget === c.element
         ? rule.resistBp
         : 0;
     const reactionResist =
-      adaptationActive &&
+      adapting &&
       reaction !== undefined &&
       rule?.kind === 'top_reaction' &&
       adaptationTarget === reaction.id
@@ -412,7 +465,7 @@ export function simulateFight(
 
     const calc = (modBp: number): { damage: number; bonus: number; reflect: number } => {
       const factor = Math.max(0, 10_000 + Math.max(-10_000, modBp));
-      let plain = Math.floor((c.atk * matchup * factor) / 100_000_000);
+      let plain = Math.floor((atk * matchup * factor) / 100_000_000);
       if (elementResist > 0) plain = Math.floor((plain * (10_000 - elementResist)) / 10_000);
       if (reaction === undefined) return { damage: plain, bonus: 0, reflect: 0 };
       let mult = reaction.multiplierBp;
@@ -424,7 +477,8 @@ export function simulateFight(
       return { damage: plain + bonus, bonus, reflect: 0 };
     };
 
-    const totalBp = supportBp + rallyBp + roundBonusBp + hookBp;
+    const rally = rallyBp();
+    const totalBp = supportBp + rally + roundBonusBp + hookBp;
     const hit = calc(totalBp);
     bossHp = Math.max(0, bossHp - hit.damage);
     damageByElement[c.element] += hit.damage;
@@ -462,6 +516,7 @@ export function simulateFight(
       bonusBp: totalBp,
       mark: markBefore?.element ?? null,
       bossHp,
+      ...(strike === undefined ? {} : { ability: strike.ability, key: strike.key }),
     });
 
     if (reaction !== undefined && markBefore !== null) {
@@ -503,57 +558,81 @@ export function simulateFight(
   }
 
   // ---- finale ability effects ----
-  function fireAbility(
-    choice: FightInput['finaleAbilities'][number],
-    def: FinaleAbilityDef,
-    byDefault: boolean,
-  ): void {
-    const base = {
-      t: 'ability' as const,
+  function fireAbility(a: Scheduled): void {
+    const { choice, def, byDefault, source } = a;
+    // Resolve what the effects need first, so the ability event can say it.
+    let zone: Zone | undefined;
+    let element: Element | undefined;
+    for (const e of def.effects) {
+      if (e.op === 'shield_wall') {
+        zone =
+          e.zone === 'own' && source !== null
+            ? zoneOfIndex(source.idx, n)
+            : (choice.params?.zone ?? zoneHit?.zone ?? 'front');
+      } else if (e.op === 're_mark') {
+        const own = creatures.find((c) => c.ownerId === choice.playerId);
+        element =
+          e.element === 'own' && source !== null
+            ? source.element
+            : (choice.params?.element ?? source?.element ?? own?.element ?? ELEMENTS[0] ?? 'tide');
+      }
+    }
+    events.push({
+      t: 'ability',
       round: currentRound,
       player: choice.playerId,
       ability: def.id,
+      key: choice.key,
+      ...(source === null ? {} : { creature: source.id }),
+      ...(zone === undefined ? {} : { zone }),
+      ...(element === undefined ? {} : { element }),
       byDefault,
-    };
-    switch (def.effect.op) {
-      case 'rally':
-        rallyBp += def.effect.damageBp;
-        events.push(base);
-        break;
-      case 'shield_wall': {
-        const zone = choice.params?.zone ?? zoneHit?.zone ?? 'front';
-        shielded.add(zone);
-        events.push({ ...base, zone });
-        break;
-      }
-      case 're_mark': {
-        const first = creatures.find((c) => c.ownerId === choice.playerId);
-        const element = choice.params?.element ?? first?.element ?? ELEMENTS[0] ?? 'tide';
-        events.push({ ...base, element });
-        events.push({
-          t: 'mark',
-          round: currentRound,
-          creature: null,
-          player: choice.playerId,
-          element,
-          replaced: mark?.element ?? null,
-        });
-        mark = { element, creature: null, player: choice.playerId };
-        break;
-      }
-      case 'purge':
-        events.push(base);
-        if (adaptationActive && rule !== null) {
-          adaptationActive = false;
-          events.push({
-            t: 'adaptation',
-            round: currentRound,
-            rule: rule.id,
-            target: adaptationTarget,
-            status: 'purged',
+    });
+    for (const e of def.effects) {
+      switch (e.op) {
+        case 'rally':
+          rallies.push({ bp: e.damageBp, until: currentRound + e.rounds - 1 });
+          break;
+        case 'shield_wall':
+          shields.push({
+            zone: zone as Zone,
+            reduceBp: e.reduceBp,
+            until: currentRound + e.rounds - 1,
           });
-        }
-        break;
+          break;
+        case 're_mark':
+          events.push({
+            t: 'mark',
+            round: currentRound,
+            creature: source?.id ?? null,
+            player: choice.playerId,
+            element: element as Element,
+            replaced: mark?.element ?? null,
+          });
+          mark = { element: element as Element, creature: source, player: choice.playerId };
+          break;
+        case 'purge':
+          if (rule !== null && adaptationOn()) {
+            events.push({
+              t: 'adaptation',
+              round: currentRound,
+              rule: rule.id,
+              target: adaptationTarget,
+              status: 'purged',
+            });
+          }
+          // A purge without `rounds` lasts to the end; the longest one wins.
+          purgedThrough = Math.max(
+            purgedThrough,
+            e.rounds === undefined ? Number.POSITIVE_INFINITY : currentRound + e.rounds - 1,
+          );
+          break;
+        case 'strike':
+          if (source !== null && bossHp > 0) {
+            hitBoss(source, { atkBp: e.atkBp, ability: def.id, key: choice.key });
+          }
+          break;
+      }
     }
   }
 
@@ -633,10 +712,22 @@ export function simulateFight(
     currentRound = round;
     events.push({ t: 'round_start', round, bossHp, mark: mark?.element ?? null });
     roundBonusBp = 0;
-    rallyBp = 0;
     reflectArmed = false;
     reflectUsed = false;
-    shielded.clear();
+    if (
+      rule !== null &&
+      purgedThrough > 0 &&
+      Number.isFinite(purgedThrough) &&
+      purgedThrough === round - 1
+    ) {
+      events.push({
+        t: 'adaptation',
+        round,
+        rule: rule.id,
+        target: adaptationTarget,
+        status: 'restored',
+      });
+    }
     runHook('onRoundStart', baseContext, (r) => {
       roundBonusBp += sanitizeBp(pick(r, 'damageBonusBp'));
     });
@@ -666,9 +757,13 @@ export function simulateFight(
       }
     }
 
-    for (const a of abilitiesByRound.get(round) ?? []) fireAbility(a.choice, a.def, a.byDefault);
+    for (const a of abilitiesByRound.get(round) ?? []) {
+      if (bossHp === 0) break;
+      fireAbility(a);
+    }
 
     for (const idx of order) {
+      if (bossHp === 0) break;
       const c = creatures[idx] as Creature;
       if (!c.alive) continue;
       if (c.silenced > 0) {
@@ -678,7 +773,6 @@ export function simulateFight(
       }
       events.push({ t: 'turn', round, creature: c.id });
       hitBoss(c);
-      if (bossHp === 0) break;
     }
 
     if (bossHp > 0) {

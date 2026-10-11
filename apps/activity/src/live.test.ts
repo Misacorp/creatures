@@ -383,7 +383,7 @@ describe('the event feed', () => {
     },
     { t: 'round_end', round: 1, bossHp: 90 },
     { t: 'round_start', round: 2, bossHp: 90, mark: null },
-    { t: 'ability', round: 2, player: 'p1', ability: 'rally', byDefault: false },
+    { t: 'ability', round: 2, player: 'p1', ability: 'rally', key: 'p1:basic', byDefault: false },
     { t: 'turn', round: 2, creature: 'b' },
     { t: 'knockout', round: 2, creature: 'b' },
   ];
@@ -415,7 +415,14 @@ describe('the event feed', () => {
   it('marks key moments', () => {
     expect(isKeyEvent({ t: 'knockout', round: 1, creature: 'a' })).toBe(true);
     expect(
-      isKeyEvent({ t: 'ability', round: 1, player: 'p', ability: 'rally', byDefault: true }),
+      isKeyEvent({
+        t: 'ability',
+        round: 1,
+        player: 'p',
+        ability: 'rally',
+        key: 'p:basic',
+        byDefault: true,
+      }),
     ).toBe(true);
     expect(isKeyEvent({ t: 'gimmick', round: 1, gimmick: 'g', op: 'hit_zone' })).toBe(true);
     expect(isKeyEvent({ t: 'boss_hit', round: 1, source: 'attack', target: 'a', damage: 1 })).toBe(

@@ -55,15 +55,21 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
       return `${creature(event.supporter)} powers up ${creature(event.target)} (+${event.bp / 100}% damage on its next hit).`;
     case 'ability': {
       const when = event.byDefault ? ' at its default time' : '';
+      const ability = lookup(names.abilities, event.ability);
+      const what =
+        event.creature === undefined ? ability : `${creature(event.creature)}'s ${ability}`;
       const detail = [
         event.zone === undefined ? '' : ` on the ${event.zone} zone`,
         event.element === undefined ? '' : ` for ${element(event.element)}`,
       ].join('');
-      return `${player(event.player)} uses ${lookup(names.abilities, event.ability)}${detail}${when}.`;
+      return `${player(event.player)} uses ${what}${detail}${when}.`;
     }
     case 'adaptation':
       if (event.status === 'purged') {
         return `${names.boss}'s adaptation is purged.`;
+      }
+      if (event.status === 'restored') {
+        return `${names.boss}'s adaptation returns.`;
       }
       if (event.target === null) return `${names.boss} has nothing to adapt to.`;
       return `${names.boss} ${
@@ -74,7 +80,11 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
     case 'skip':
       return `${creature(event.creature)} is silenced and misses its turn.`;
     case 'hit':
-      return `${creature(event.creature)} hits ${names.boss} for ${event.damage}${
+      return `${
+        event.ability === undefined
+          ? creature(event.creature)
+          : `${creature(event.creature)}'s ${lookup(names.abilities, event.ability)}`
+      } hits ${names.boss} for ${event.damage}${
         event.matchupBp > 10_000
           ? ' (strong matchup)'
           : event.matchupBp < 10_000
@@ -102,6 +112,9 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
             : 'reflects damage onto';
       if (event.shielded === true) {
         return `${names.boss} ${what} ${creature(event.target)}, but a Shield Wall stops it.`;
+      }
+      if (event.reducedBp !== undefined) {
+        return `${names.boss} ${what} ${creature(event.target)} for ${event.damage} (a Shield Wall softens it by ${event.reducedBp / 100}%).`;
       }
       if (event.from !== undefined) {
         return `${creature(event.target)} takes the hit meant for ${creature(event.from)} (${event.damage}).`;

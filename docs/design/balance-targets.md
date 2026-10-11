@@ -47,3 +47,12 @@ The machine-readable copy lives in `packages/sim/targets.json`. Keep the two in 
 | Top earner vs casual average team power at week 8                 | ≤ 1.6×                         |
 | Jackpot rate per player per finale win, including pity            | 6–15%                          |
 | Players reaching hard pity (10 raids)                             | ≤ 15% of players over 20 weeks |
+
+## Informational (no target)
+
+The simulator also reports these, to keep an eye on them. They are not checked in `targets.json`.
+
+| Measure                                                                                         | Aim             |
+| ----------------------------------------------------------------------------------------------- | --------------- |
+| Share of finale damage added by creature abilities, week-8 roster, typical group and 15 players | about 10-25%    |
+| Share of finale damage added by the basic abilities                                             | small (a few %) |

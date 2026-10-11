@@ -3,7 +3,13 @@ import { buildNames, describeEvent, type EventNames } from '@creatures/engine';
 import type { ArchetypeId } from './archetypes';
 import { ARCHETYPES } from './archetypes';
 import { chooseSignUps, type Snapshot } from './economy';
-import { playWholeWeek, openRaidWeek, summarizeRaid, type RaidWeek } from './raid';
+import {
+  playWholeWeek,
+  openRaidWeek,
+  summarizeRaid,
+  type AbilityImpact,
+  type RaidWeek,
+} from './raid';
 import { clonePlayer } from './state';
 
 /** The numbers kept from one simulated raid week. */
@@ -29,6 +35,8 @@ export interface RunRecord {
   jackpotRolls: number;
   jackpotHits: number;
   jackpotGuaranteed: number;
+  /** What the abilities added to the finale (see `AbilityImpact`); null if not measured. */
+  abilities: AbilityImpact | null;
 }
 
 export interface CreatureAggregate {
@@ -116,7 +124,10 @@ export function runSweep(options: SweepOptions): SweepResult {
         if (signed.length === 0) continue;
         const wantExample =
           example === null && count === exampleCount && boss === content.bosses[0];
-        const week = openRaidWeek(boss, signed, { keepFinale: wantExample });
+        const week = openRaidWeek(boss, signed, {
+          keepFinale: wantExample,
+          measureAbilities: true,
+        });
         playWholeWeek(week, createSeededRng(`${base}:fight`), createSeededRng(`${base}:loot`));
         const s = summarizeRaid(week);
 
@@ -143,6 +154,7 @@ export function runSweep(options: SweepOptions): SweepResult {
           jackpotRolls: s.jackpot.rolls,
           jackpotHits: s.jackpot.hits,
           jackpotGuaranteed: s.jackpot.guaranteed,
+          abilities: week.abilityImpact,
         });
 
         for (const pick of week.picks) {

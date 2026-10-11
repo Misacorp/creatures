@@ -76,8 +76,67 @@ describe('raid week', () => {
     playStage(w, 'finale', rng, rng);
     expect(w.stages.finale?.cleared).toBe(false);
     expect(w.jackpot.rolls).toBe(0);
-    expect(players.every((p) => p.pity === 4 && p.jackpots === 0)).toBe(true);
+    // Pity counts finale wins only: a lost finale leaves the counter alone.
+    expect(players.every((p) => p.pity === 3 && p.jackpots === 0)).toBe(true);
+    expect(players.every((p) => p.maxPity <= 3)).toBe(true);
     expect(Object.values(w.essence).every((e) => e === 0)).toBe(true);
+  });
+
+  it('advances the pity counter on a won finale without a jackpot, and resets it on a hit', () => {
+    const players = roster.slice(0, 4).map(clonePlayer);
+    const w = openRaidWeek(boss, players);
+    // A boss with 1 HP falls at once: the finale is a win and every player rolls.
+    w.pool = { max: 1, current: 1 };
+    for (const p of players) p.pity = 3;
+    const rng = createSeededRng('won');
+    playStage(w, 'finale', rng, createSeededRng('loot-won'));
+    expect(w.stages.finale?.cleared).toBe(true);
+    expect(w.jackpot.rolls).toBe(players.length);
+    for (const p of players) expect(p.pity === 0 ? p.jackpots === 1 : p.pity === 4).toBe(true);
+  });
+});
+
+describe('abilities in the finale', () => {
+  const players = () => roster.slice(0, 6).map(clonePlayer);
+
+  it('brings one basic ability per player (round-robin) and a creature ability for each team creature at level 10 or above', () => {
+    const w = openRaidWeek(boss, players(), { keepFinale: true });
+    playWholeWeek(w, createSeededRng('fight'), createSeededRng('loot'));
+    const events = (w.finaleEvents ?? []).flatMap((e) => (e.t === 'ability' ? [e] : []));
+    // The 12-round finale may end early when the boss falls, so look at the abilities that fired:
+    // every one is a basic ability of a player or a creature ability of a picked creature.
+    const basicIds = ['rally', 'shield-wall', 're-mark', 'purge'];
+    expect(w.abilities.map((a) => a.abilityId)).toEqual(w.players.map((_, i) => basicIds[i % 4]));
+    expect(w.abilities.map((a) => a.key)).toEqual(w.players.map((p) => `${p.id}:basic`));
+    const eligible = w.picks.filter((p) => p.level >= 10);
+    expect(eligible.length).toBeGreaterThan(0);
+    for (const e of events) {
+      if (e.creature === undefined) {
+        expect(e.key.endsWith(':basic')).toBe(true);
+      } else {
+        expect(e.key).toBe(`${e.creature}:ability`);
+        expect(eligible.map((p) => p.creatureId)).toContain(e.creature);
+      }
+    }
+  });
+
+  it('measures what abilities add, deterministically, and counts the creature abilities brought', () => {
+    const run = () => {
+      const w = openRaidWeek(boss, players(), { measureAbilities: true });
+      playWholeWeek(w, createSeededRng('fight'), createSeededRng('loot'));
+      return w;
+    };
+    const w = run();
+    const impact = w.abilityImpact;
+    expect(impact).not.toBeNull();
+    expect(impact?.none).toBeGreaterThan(0);
+    expect(impact?.all).toBeGreaterThan(0);
+    expect(impact?.creatureAbilities).toBeGreaterThan(0);
+    expect(run().abilityImpact).toEqual(impact);
+    // Not measured unless asked.
+    const plain = openRaidWeek(boss, players());
+    playWholeWeek(plain, createSeededRng('fight'), createSeededRng('loot'));
+    expect(plain.abilityImpact).toBeNull();
   });
 });
 

@@ -327,8 +327,8 @@ describe('the finale jackpot', () => {
       (ctx) => {
         toFinale(ctx);
         const [m1, m2] = membersOf(ctx.sql) as [string, string];
-        // m1 has missed nine raids (the next win is certain); m2 five (chance 600 + 800 bp).
-        ctx.sql.exec('INSERT INTO jackpot_pity (user_id, counter) VALUES (?, 9), (?, 5)', m1, m2);
+        // m1 has missed nine wins (the next one is certain); m2 four (the 5th: chance 600 + 800 bp).
+        ctx.sql.exec('INSERT INTO jackpot_pity (user_id, counter) VALUES (?, 9), (?, 4)', m1, m2);
         ctx.core.raid.runDue(HELSINKI);
         const finale = storedRuns(ctx.sql).find((r) => r.phase === 'finale');
         expect(finale?.summary.jackpot.sort()).toEqual([m1, m2].sort());
@@ -337,23 +337,26 @@ describe('the finale jackpot', () => {
     );
   });
 
-  it('advances the counter after a lost finale without rolling or paying a jackpot', async () => {
+  it('leaves the counter alone after a lost finale, without rolling or paying a jackpot', async () => {
     const rng = scriptedThenSeeded([...seeds, ...seeds, ...seeds]);
     await runRaid(
       (ctx) => {
         openWeek(ctx, 2, 2);
         forcePool(ctx.sql, 50_000_000);
+        const [m1, m2] = membersOf(ctx.sql) as [string, string];
+        // Pity counts finale wins only: a lost finale changes nothing, for a member with a
+        // counter or without one (no row is written for them).
+        ctx.sql.exec('INSERT INTO jackpot_pity (user_id, counter) VALUES (?, 3)', m1);
         ctx.clock.t = SUNDAY;
         const before = rng.drawn();
         ctx.core.raid.runDue(HELSINKI);
         expect(storedRuns(ctx.sql).find((r) => r.phase === 'finale')?.result.cleared).toBe(false);
         // Exactly three seeds were drawn: no jackpot rolls.
         expect(rng.drawn() - before).toBe(12);
-        expect(
-          rows<{ counter: number }>(ctx.sql, 'SELECT counter FROM jackpot_pity').map(
-            (r) => r.counter,
-          ),
-        ).toEqual([1, 1]);
+        expect(rows(ctx.sql, 'SELECT user_id, counter FROM jackpot_pity')).toEqual([
+          { user_id: m1, counter: 3 },
+        ]);
+        expect(m2).toBeTruthy();
         expect(raidLedger(ctx.sql).filter((l) => l.idempotency_key.endsWith(':jackpot'))).toEqual(
           [],
         );

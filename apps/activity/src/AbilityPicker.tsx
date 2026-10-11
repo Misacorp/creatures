@@ -1,4 +1,4 @@
-import { content } from '@creatures/game';
+import { basicAbilities } from '@creatures/game';
 import { abilityName, abilityPlanText } from './live';
 
 /** The player's finale ability, one of the four from the content pack. */
@@ -29,7 +29,7 @@ export function AbilityPicker({
           : 'The finale has started, so your pick is locked.'}
       </p>
       <ul class="cards ability-cards">
-        {content.finaleAbilities.map((def) => {
+        {basicAbilities().map((def) => {
           const selected = def.id === current.abilityId;
           const classes = selected ? 'ability-card selected' : 'ability-card';
           return (

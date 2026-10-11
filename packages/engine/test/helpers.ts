@@ -1,21 +1,108 @@
 import {
+  RULES,
   content,
   createSeededRng,
   type BossDef,
   type ContentPack,
   type Element,
+  type FinaleAbilityDef,
   type Role,
 } from '@creatures/game';
-import { makeSlot, scaleBoss, type FightInput, type FightSlot, type PhaseId } from '../src/index';
+import {
+  makeSlot,
+  scaleBoss,
+  type AbilityChoice,
+  type FightInput,
+  type FightSlot,
+  type PhaseId,
+} from '../src/index';
+
+/**
+ * The M3 basic abilities (Rally +40% for the round, Shield Wall stops all damage for the round,
+ * Re-mark, Purge for the rest of the fight), pinned so the hand-checked numbers in these tests do
+ * not move when the balance simulator retunes the shipped abilities.
+ */
+const M3_EFFECTS: Record<string, FinaleAbilityDef['effects']> = {
+  rally: [{ op: 'rally', damageBp: 4_000, rounds: 1 }],
+  'shield-wall': [{ op: 'shield_wall', zone: 'choose', reduceBp: 10_000, rounds: 1 }],
+  're-mark': [{ op: 're_mark', element: 'choose' }],
+  purge: [{ op: 'purge' }],
+};
+
+/** Ability definitions used only by tests (ids are not in the shipped content). */
+const TEST_ABILITIES: FinaleAbilityDef[] = [
+  {
+    id: 'test-strike',
+    name: 'Test Strike',
+    description: 'Hits at once for 200% of Attack.',
+    kind: 'creature',
+    effects: [{ op: 'strike', atkBp: 20_000 }],
+    defaultRound: 2,
+  },
+  {
+    id: 'test-half-wall',
+    name: 'Test Half Wall',
+    description: 'One chosen zone takes 50% less damage for 2 rounds.',
+    kind: 'creature',
+    effects: [{ op: 'shield_wall', zone: 'choose', reduceBp: 5_000, rounds: 2 }],
+    defaultRound: 2,
+  },
+  {
+    id: 'test-guard',
+    name: 'Test Guard',
+    description: 'Its zone takes 50% less damage for 2 rounds.',
+    kind: 'creature',
+    effects: [{ op: 'shield_wall', zone: 'own', reduceBp: 5_000, rounds: 2 }],
+    defaultRound: 2,
+  },
+  {
+    id: 'test-setter',
+    name: 'Test Setter',
+    description: 'Marks the boss with its own element and rallies 10% for 2 rounds.',
+    kind: 'creature',
+    effects: [
+      { op: 're_mark', element: 'own' },
+      { op: 'rally', damageBp: 1_000, rounds: 2 },
+    ],
+    defaultRound: 3,
+  },
+  {
+    id: 'test-purge',
+    name: 'Test Purge',
+    description: 'Removes the adaptation for 2 rounds.',
+    kind: 'creature',
+    effects: [{ op: 'purge', rounds: 2 }],
+    defaultRound: 2,
+  },
+  {
+    id: 'test-combo',
+    name: 'Test Combo',
+    description: 'A strike, then its own mark.',
+    kind: 'creature',
+    effects: [
+      { op: 'strike', atkBp: 10_000 },
+      { op: 're_mark', element: 'own' },
+    ],
+    defaultRound: 2,
+  },
+];
 
 /**
  * The shipped content with the reaction multipliers pinned to the original design values (x2.5,
- * payoff x1.25), so the hand-checked numbers in these tests do not move when the balance
- * simulator retunes the shipped reactions.
+ * payoff x1.25) and the basic abilities pinned to their M3 values, plus a few test abilities, so
+ * the hand-checked numbers in these tests do not move when the balance simulator retunes the
+ * shipped content.
  */
 export const TEST_PACK: ContentPack = {
   ...content,
   reactions: content.reactions.map((r) => ({ ...r, multiplierBp: 25_000, payoffBonusBp: 12_500 })),
+  finaleAbilities: [
+    ...content.finaleAbilities.map((a) => {
+      const effects = M3_EFFECTS[a.id];
+      return a.kind === 'basic' && effects !== undefined ? { ...a, effects } : a;
+    }),
+    ...TEST_ABILITIES,
+  ],
 };
 
 export function boss(id: string): BossDef {
@@ -99,14 +186,30 @@ export function randomInput(seed: string, playerCount: number, phase: PhaseId): 
   const avg = Math.floor(row.reduce((s, c) => s + c.level, 0) / row.length);
   const scaled = scaleBoss(b, playerCount, avg);
   const rule = content.adaptations.find((a) => a.id === b.adaptation);
-  const abilities = players.map((playerId, i) => {
-    const def = content.finaleAbilities[i % content.finaleAbilities.length];
+  const basics = content.finaleAbilities.filter((a) => a.kind === 'basic');
+  const abilities: AbilityChoice[] = players.map((playerId, i) => {
+    const def = basics[i % basics.length];
     return {
       playerId,
       abilityId: def?.id ?? 'rally',
+      key: `${playerId}:basic`,
       ...(i % 2 === 0 ? { fireAtRound: 1 + pick(12) } : {}),
     };
   });
+  // Creature abilities of every creature at the unlock level or above (several per player).
+  for (const s of row) {
+    const abilityId = species(s.speciesId).ability?.id;
+    if (abilityId === undefined || s.ownerId === null || s.level < RULES.abilities.unlockLevel) {
+      continue;
+    }
+    abilities.push({
+      playerId: s.ownerId,
+      abilityId,
+      key: `${s.id}:ability`,
+      creatureId: s.id,
+      ...(pick(2) === 0 ? { fireAtRound: 1 + pick(12) } : {}),
+    });
+  }
   return {
     boss: b,
     bossAtk: scaled.atk,

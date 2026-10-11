@@ -103,9 +103,9 @@ export function essenceForStage(
 }
 
 /**
- * Jackpot chance in basis points for a finale win, given how many earlier raids the player took
- * part in without a jackpot. 6% base; from the 6th raid without one it rises 8 points per raid; the
- * 10th raid without one is guaranteed.
+ * Jackpot chance in basis points for a finale win, given how many earlier finale wins the player had
+ * without a jackpot (a lost finale does not count). 6% base; from the 5th win without one it rises 8
+ * points per win; the 10th is guaranteed.
  */
 export function jackpotChanceBp(raidsWithoutJackpot: number): number {
   if (!Number.isInteger(raidsWithoutJackpot) || raidsWithoutJackpot < 0) {

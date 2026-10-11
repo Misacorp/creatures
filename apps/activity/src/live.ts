@@ -145,9 +145,9 @@ export function abilityName(id: string): string {
 export type ParamKind = 'zone' | 'element' | null;
 
 export function abilityParamKind(id: string): ParamKind {
-  const op = ABILITIES.get(id)?.effect.op;
-  if (op === 'shield_wall') return 'zone';
-  if (op === 're_mark') return 'element';
+  const effects = ABILITIES.get(id)?.effects ?? [];
+  if (effects.some((e) => e.op === 'shield_wall' && e.zone === 'choose')) return 'zone';
+  if (effects.some((e) => e.op === 're_mark' && e.element === 'choose')) return 'element';
   return null;
 }
 

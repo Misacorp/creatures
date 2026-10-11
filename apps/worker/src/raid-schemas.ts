@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import { ELEMENTS, RULES, content, type Element } from '@creatures/game';
+import { ELEMENTS, RULES, basicAbilities, type Element } from '@creatures/game';
 import { ZONES, type Zone } from '@creatures/engine';
 import { IdSchema } from './collection-schemas';
 import { isWeekId, RAID_PHASES } from './raid-schedule';
@@ -35,10 +35,10 @@ export const ReplayParamsSchema = v.strictObject({
   phase: v.picklist(RAID_PHASES),
 });
 
-/** The finale ability ids that exist in the content. */
-const ABILITY_IDS = content.finaleAbilities.map((a) => a.id) as [string, ...string[]];
+/** The basic finale ability ids (the ones a player picks). */
+const ABILITY_IDS = basicAbilities().map((a) => a.id) as [string, ...string[]];
 
-/** `PUT /api/raid/ability`: one of the content's finale abilities. */
+/** `PUT /api/raid/ability`: one of the content's basic finale abilities. */
 export const AbilityBodySchema = v.strictObject({ abilityId: v.picklist(ABILITY_IDS) });
 
 /**

@@ -5,4 +5,10 @@ export * from './scaling';
 export * from './row';
 export * from './mutators';
 export * from './describe';
-export { defaultAbilityRound, simulateFight, turnOrder, type FightOptions } from './fight';
+export {
+  defaultAbilityRound,
+  needsCreature,
+  simulateFight,
+  turnOrder,
+  type FightOptions,
+} from './fight';

@@ -111,11 +111,12 @@ describe('essenceForStage', () => {
 });
 
 describe('jackpot and pity', () => {
-  it('is 6% for the first 5 raids, rises 8 points a raid from the 6th, and is guaranteed at the 10th', () => {
+  it('is 6% for the first 4 raids, rises 8 points a raid from the 5th, and is guaranteed at the 10th', () => {
     const curve = Array.from({ length: 12 }, (_, i) => jackpotChanceBp(i));
     expect(curve).toEqual([
-      600, 600, 600, 600, 600, 1400, 2200, 3000, 3800, 10_000, 10_000, 10_000,
+      600, 600, 600, 600, 1400, 2200, 3000, 3800, 4600, 10_000, 10_000, 10_000,
     ]);
+    expect(RULES.raid.jackpot.softPityFromRaid).toBe(5);
     expect(RULES.raid.jackpot.hardPityRaid).toBe(10);
   });
 

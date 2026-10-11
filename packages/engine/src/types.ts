@@ -36,6 +36,16 @@ export interface AbilityChoice {
   playerId: string;
   /** Id of a content finale ability, for example "rally". */
   abilityId: string;
+  /**
+   * Unique within the fight (for example `m1:basic` or `m1:<creature id>`). A player may hold
+   * several choices; events carry the key so replays can tell them apart.
+   */
+  key: string;
+  /**
+   * The creature the ability belongs to: a slot in the row owned by `playerId`. Required for
+   * abilities with a `strike` or an `own` zone or element, optional otherwise.
+   */
+  creatureId?: string;
   /** Round (1-based) the present player fires it. Absent: the ability's default round. */
   fireAtRound?: number;
   /** Shield Wall: the zone. Re-mark: the element. Absent: a documented default. */
@@ -79,6 +89,9 @@ export type FightEvent =
       round: number;
       player: string;
       ability: string;
+      key: string;
+      /** The creature the ability belongs to, if any. */
+      creature?: string;
       zone?: Zone;
       element?: Element;
       byDefault: boolean;
@@ -88,7 +101,8 @@ export type FightEvent =
       round: number;
       rule: string;
       target: string | null;
-      status: 'active' | 'purged' | 'suggested';
+      /** `restored`: a timed purge ended and the adaptation applies again. */
+      status: 'active' | 'purged' | 'restored' | 'suggested';
     }
   | { t: 'turn'; round: number; creature: string }
   | { t: 'skip'; round: number; creature: string; reason: 'silenced' }
@@ -103,6 +117,9 @@ export type FightEvent =
       /** The boss's mark before the hit. */
       mark: Element | null;
       bossHp: number;
+      /** Set when the hit is an ability's strike: the ability id and its fight key. */
+      ability?: string;
+      key?: string;
     }
   | {
       t: 'mark';
@@ -135,6 +152,8 @@ export type FightEvent =
       from?: string;
       /** True when a Shield Wall stopped the damage. */
       shielded?: boolean;
+      /** Set when Shield Walls softened the hit (not fully): the total reduction in basis points. */
+      reducedBp?: number;
     }
   | { t: 'knockout'; round: number; creature: string }
   | { t: 'silence'; round: number; creature: string; turns: number }

@@ -1,10 +1,12 @@
 import {
-  content,
+  abilitiesFor,
+  basicAbilities,
   contributionWeights,
   essenceForStage,
   jackpotChanceBp,
   rollJackpot,
   type BossDef,
+  createSeededRng,
   type Element,
   type RaidStage,
   type Rng,
@@ -19,19 +21,13 @@ import {
   type AbilityChoice,
   type ActiveAdaptation,
   type FightEvent,
+  type FightInput,
   type FightSlot,
   type PlayerTotals,
 } from '@creatures/engine';
 import type { ArchetypeId } from './archetypes';
 import { pickTeam, speciesOf, TEAM_SIZE } from './data';
 import type { SimPlayer } from './state';
-
-/**
- * Whether a raid that is lost in the finale still advances the pity counter. The design says the
- * counter "counts participation", so it does; set this to false to count only finale wins (the
- * raids where a jackpot is actually rolled).
- */
-export const PITY_COUNTS_LOSSES = true;
 
 export const STAGES: readonly RaidStage[] = ['phase1', 'phase2', 'finale'];
 
@@ -61,6 +57,7 @@ export interface RaidWeek {
   pool: { max: number; current: number };
   adaptation: ActiveAdaptation | null;
   avgLevel: number;
+  /** Each player's basic ability (round-robin over the four). Creature abilities are added at the finale. */
   abilities: AbilityChoice[];
   picks: RaidPick[];
   stages: Partial<Record<RaidStage, StageSummary>>;
@@ -74,6 +71,22 @@ export interface RaidWeek {
   /** Finale event log, only kept when `keepFinale` is set. */
   finaleEvents: FightEvent[] | null;
   keepFinale: boolean;
+  /** Measure what the abilities add to the finale (three extra finale runs); see `AbilityImpact`. */
+  measureAbilities: boolean;
+  abilityImpact: AbilityImpact | null;
+}
+
+/**
+ * Damage the whole row deals in one finale against a boss with a pool that cannot run out (so all
+ * rounds are played), with every ability, with only the basic abilities, and with none. The
+ * difference is what abilities add; `creatureAbilities` is how many creature abilities were
+ * brought (level 10 or above).
+ */
+export interface AbilityImpact {
+  all: number;
+  basicOnly: number;
+  none: number;
+  creatureAbilities: number;
 }
 
 function emptyTotals(): PlayerTotals {
@@ -95,12 +108,14 @@ function slotFor(player: SimPlayer, creatureId: string): FightSlot {
  * Opens a raid week for the signed-up players (given in sign-up order) and boss: each player brings
  * their 3 highest-power creatures, `autoPlace` builds the row in sign-up order (guards front,
  * payoffs back), guests fill it when fewer than 3 players take part, and the boss is scaled with
- * the player count and the average level. Finale abilities go round-robin over the content list.
+ * the player count and the average level. Each player's basic ability goes round-robin over the
+ * four; creature abilities (level 10 or above) are added when the finale is played, from the
+ * creatures' levels and species at that time. All abilities fire at their default rounds.
  */
 export function openRaidWeek(
   boss: BossDef,
   players: readonly SimPlayer[],
-  options: { keepFinale?: boolean } = {},
+  options: { keepFinale?: boolean; measureAbilities?: boolean } = {},
 ): RaidWeek {
   if (players.length === 0) throw new RangeError('a raid needs at least one player');
   const picks: RaidPick[] = [];
@@ -130,10 +145,11 @@ export function openRaidWeek(
   const row = sparse.filter((s): s is FightSlot => s !== null);
 
   const scaled = scaleBoss(boss, players.length, avgLevel);
+  const basics = basicAbilities();
   const abilities = players.map((p, i): AbilityChoice => {
-    const def = content.finaleAbilities[i % content.finaleAbilities.length];
-    if (def === undefined) throw new Error('content has no finale abilities');
-    return { playerId: p.id, abilityId: def.id };
+    const def = basics[i % basics.length];
+    if (def === undefined) throw new Error('content has no basic abilities');
+    return { playerId: p.id, abilityId: def.id, key: `${p.id}:basic` };
   });
   const perPlayer: Record<string, PlayerTotals> = {};
   const essence: Record<string, number> = {};
@@ -158,7 +174,37 @@ export function openRaidWeek(
     jackpot: { rolls: 0, hits: 0, guaranteed: 0 },
     finaleEvents: null,
     keepFinale: options.keepFinale === true,
+    measureAbilities: options.measureAbilities === true,
+    abilityImpact: null,
   };
+}
+
+/**
+ * The fight input of a stage with the creatures' current stats (training between phases changes
+ * them, so the row is rebuilt from the players' creatures). In the finale it carries the basic
+ * abilities and `creatureAbilities`, the creature abilities brought.
+ */
+export function fightFor(
+  week: RaidWeek,
+  stage: RaidStage,
+): { fight: FightInput; creatureAbilities: AbilityChoice[] } {
+  const byId = new Map(week.players.map((p) => [p.id, p]));
+  const row = week.row.map((s) => {
+    const owner = s.ownerId === null ? undefined : byId.get(s.ownerId);
+    return owner === undefined ? s : slotFor(owner, s.id);
+  });
+  const creatureAbilities = stage === 'finale' ? creatureAbilityChoices(week, row) : [];
+  const fight: FightInput = {
+    boss: week.boss,
+    bossAtk: week.bossAtk,
+    phase: stage,
+    bossHpPool: { max: week.pool.max, current: week.pool.current },
+    adaptation: stage === 'phase1' ? null : week.adaptation,
+    row,
+    players: week.players.map((p) => p.id),
+    finaleAbilities: stage === 'finale' ? [...week.abilities, ...creatureAbilities] : [],
+  };
+  return { fight, creatureAbilities };
 }
 
 /**
@@ -167,26 +213,12 @@ export function openRaidWeek(
  * finale, rolls jackpots (on a win) and advances every player's pity counter.
  */
 export function playStage(week: RaidWeek, stage: RaidStage, fightRng: Rng, lootRng: Rng): void {
-  const byId = new Map(week.players.map((p) => [p.id, p]));
-  // Training between phases changes stats, so the row is rebuilt from the current creatures.
-  const row = week.row.map((s) => {
-    const owner = s.ownerId === null ? undefined : byId.get(s.ownerId);
-    return owner === undefined ? s : slotFor(owner, s.id);
-  });
   const ids = week.players.map((p) => p.id);
-  const result = simulateFight(
-    {
-      boss: week.boss,
-      bossAtk: week.bossAtk,
-      phase: stage,
-      bossHpPool: { max: week.pool.max, current: week.pool.current },
-      adaptation: stage === 'phase1' ? null : week.adaptation,
-      row,
-      players: ids,
-      finaleAbilities: stage === 'finale' ? week.abilities : [],
-    },
-    fightRng,
-  );
+  const { fight, creatureAbilities } = fightFor(week, stage);
+  const result = simulateFight(fight, fightRng);
+  if (stage === 'finale' && week.measureAbilities) {
+    week.abilityImpact = measureAbilities(week, fight, creatureAbilities.length);
+  }
   week.pool.current = result.bossHpEnd;
   week.stages[stage] = {
     cleared: result.cleared,
@@ -229,6 +261,7 @@ export function playStage(week: RaidWeek, stage: RaidStage, fightRng: Rng, lootR
   if (stage === 'finale') {
     for (const p of week.players) {
       p.raids += 1;
+      // Pity counts finale wins only: a lost finale rolls nothing and leaves the counter alone.
       if (result.cleared) {
         week.jackpot.rolls += 1;
         const guaranteed = jackpotChanceBp(p.pity) >= 10_000;
@@ -239,13 +272,64 @@ export function playStage(week: RaidWeek, stage: RaidStage, fightRng: Rng, lootR
           if (guaranteed) week.jackpot.guaranteed += 1;
         }
         p.pity = roll.newCounter;
-      } else {
-        // The counter counts participation: a raid without a jackpot advances it, win or not.
-        if (PITY_COUNTS_LOSSES) p.pity += 1;
       }
       p.maxPity = Math.max(p.maxPity, p.pity);
     }
   }
+}
+
+/**
+ * The creature abilities of every team in the finale: each team creature at level 10 or above
+ * (`abilitiesFor`), from the creatures' current species and level (they may have trained or evolved
+ * since the week opened). Fired at their default rounds.
+ */
+function creatureAbilityChoices(week: RaidWeek, row: readonly FightSlot[]): AbilityChoice[] {
+  const out: AbilityChoice[] = [];
+  for (const p of week.players) {
+    const team = row
+      .filter((s) => s.ownerId === p.id)
+      .map((s) => ({ id: s.id, speciesId: s.speciesId, level: s.level }));
+    for (const a of abilitiesFor(team, (c) => c.level)) {
+      out.push({
+        playerId: p.id,
+        abilityId: a.abilityId,
+        key: `${a.creatureId}:ability`,
+        creatureId: a.creatureId,
+      });
+    }
+  }
+  return out;
+}
+
+/** Total damage of the hit events of a fight. */
+function damageDealt(events: readonly FightEvent[]): number {
+  let total = 0;
+  for (const e of events) if (e.t === 'hit') total += e.damage;
+  return total;
+}
+
+/** See `AbilityImpact`: replays the finale three times against a boss that cannot fall. */
+function measureAbilities(
+  week: RaidWeek,
+  fight: FightInput,
+  creatureAbilities: number,
+): AbilityImpact {
+  const unbeatable = { max: 1_000_000_000_000, current: 1_000_000_000_000 };
+  const basicKeys = new Set(week.abilities.map((a) => a.key));
+  const run = (abilities: readonly AbilityChoice[]): number =>
+    damageDealt(
+      simulateFight(
+        { ...fight, bossHpPool: unbeatable, finaleAbilities: abilities },
+        // The fights draw no randomness; this stream is never read.
+        createSeededRng('ability-impact'),
+      ).events,
+    );
+  return {
+    all: run(fight.finaleAbilities),
+    basicOnly: run(fight.finaleAbilities.filter((a) => basicKeys.has(a.key))),
+    none: run([]),
+    creatureAbilities,
+  };
 }
 
 /** Plays all three stages back to back (used by the raid sweep). */

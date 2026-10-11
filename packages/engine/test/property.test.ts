@@ -88,11 +88,13 @@ function checkResult(inp: FightInput, r: FightResult): void {
   const lossBp = ((inp.bossHpPool.max - r.bossHpEnd) * 10_000) / inp.bossHpPool.max;
   const need = RULES.raid.phases.find((p) => p.id === inp.phase)!.clearAtLossBp;
   expect(r.cleared).toBe(lossBp >= need);
-  // Knocked-out creatures never act afterwards.
+  // Knocked-out creatures never act afterwards (an ability's strike still lands).
   const out = new Map<string, number>();
   for (const e of r.events) if (e.t === 'knockout') out.set(e.creature, e.round);
+  const fired = new Set(r.events.flatMap((e) => (e.t === 'ability' ? [e.key] : [])));
   for (const e of r.events) {
-    if (e.t === 'turn' || e.t === 'hit') {
+    if (e.t === 'hit' && e.key !== undefined) expect(fired.has(e.key)).toBe(true);
+    if (e.t === 'turn' || (e.t === 'hit' && e.key === undefined)) {
       const ko = out.get(e.creature);
       if (ko !== undefined) expect(e.round).toBeLessThanOrEqual(ko);
     }

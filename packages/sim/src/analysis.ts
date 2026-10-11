@@ -72,6 +72,20 @@ export interface ProgressionRow {
   pity: number;
 }
 
+/** What abilities add to the finale damage of one group of raid weeks (informational, no target). */
+export interface AbilityShareRow {
+  /** The roster snapshot week the groups were built from. */
+  snapshotWeek: number;
+  group: string;
+  runs: number;
+  /** Average creature abilities brought per raid (level 10 or above). */
+  creatureAbilities: number;
+  /** Share of finale damage added by the creature abilities (all abilities vs basic only). */
+  creatureShare: number | null;
+  /** Share of finale damage added by the basic abilities (basic only vs none). */
+  basicShare: number | null;
+}
+
 export interface Outliers {
   dominantCreatures: string[];
   weakCreatures: string[];
@@ -99,6 +113,7 @@ export interface Analysis {
     p90: number;
     max: number;
   }[];
+  abilityShares: AbilityShareRow[];
   jackpots: {
     source: string;
     rolls: number;
@@ -378,6 +393,39 @@ export function analyse(input: AnalysisInput): Analysis {
     guaranteed: sum(pityRaids.map((r) => r.jackpot.guaranteed)),
   });
 
+  // ---- ability damage share (informational) ----
+  const abilityShares: AbilityShareRow[] = [];
+  const snapshotWeeks = [...new Set(records.map((r) => r.snapshotWeek))].sort((a, b) => a - b);
+  const groups: { name: string; test: (r: RunRecord) => boolean }[] = [
+    { name: 'typical group (5-10 players)', test: isTypical },
+    { name: '15 players', test: (r) => r.count === 15 },
+    { name: '1 player with guests', test: (r) => r.count === 1 },
+  ];
+  for (const week of snapshotWeeks) {
+    for (const g of groups) {
+      const rs = records.filter(
+        (r) => r.snapshotWeek === week && g.test(r) && r.abilities !== null,
+      );
+      if (rs.length === 0) continue;
+      const imp = rs.map((r) => r.abilities as NonNullable<RunRecord['abilities']>);
+      const all = sum(imp.map((i) => i.all));
+      abilityShares.push({
+        snapshotWeek: week,
+        group: g.name,
+        runs: rs.length,
+        creatureAbilities: mean(imp.map((i) => i.creatureAbilities)) ?? 0,
+        creatureShare: all === 0 ? null : sum(imp.map((i) => i.all - i.basicOnly)) / all,
+        basicShare: all === 0 ? null : sum(imp.map((i) => i.basicOnly - i.none)) / all,
+      });
+    }
+  }
+  const latest = abilityShares.filter(
+    (a) =>
+      a.snapshotWeek === snapshotWeeks[snapshotWeeks.length - 1] && a.group.startsWith('typical'),
+  )[0];
+  metrics['abilities.creatureShareLatestRoster'] = latest?.creatureShare ?? null;
+  metrics['abilities.basicShareLatestRoster'] = latest?.basicShare ?? null;
+
   // ---- outliers ----
   const outliers: Outliers = {
     dominantCreatures: creatures
@@ -404,6 +452,7 @@ export function analyse(input: AnalysisInput): Analysis {
     creatures,
     archetypeShares,
     essence,
+    abilityShares,
     jackpots,
     outliers,
   };

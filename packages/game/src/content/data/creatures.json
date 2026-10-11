@@ -25,6 +25,9 @@
       "level": 15,
       "essence": 20
     },
+    "ability": {
+      "id": "tidal-mark"
+    },
     "flavor": "A small, playful creature that leaves wet footprints wherever it goes."
   },
   {
@@ -48,6 +51,9 @@
       "spd": 3
     },
     "levelCap": 30,
+    "ability": {
+      "id": "tidal-mark-2"
+    },
     "flavor": "Grows fins and glides over the waves on wide, shimmering wings."
   },
   {
@@ -76,6 +82,9 @@
       "level": 15,
       "essence": 20
     },
+    "ability": {
+      "id": "flare-strike"
+    },
     "flavor": "A kitten-sized cat with a flickering ember at the tip of its tail."
   },
   {
@@ -99,6 +108,9 @@
       "spd": 3
     },
     "levelCap": 30,
+    "ability": {
+      "id": "flare-strike-2"
+    },
     "flavor": "A sleek hunter whose fur glows like coals when it pounces."
   },
   {
@@ -127,6 +139,9 @@
       "level": 15,
       "essence": 20
     },
+    "ability": {
+      "id": "bark-guard"
+    },
     "flavor": "A shy sprout-eared critter that naps in sunny patches of moss."
   },
   {
@@ -150,6 +165,9 @@
       "spd": 2
     },
     "levelCap": 30,
+    "ability": {
+      "id": "bark-guard-2"
+    },
     "flavor": "A sturdy stag with branching thorned antlers that shelter its herd."
   },
   {
@@ -178,6 +196,9 @@
       "level": 15,
       "essence": 20
     },
+    "ability": {
+      "id": "static-zap"
+    },
     "flavor": "A tiny mouse that crackles with static and never sits still."
   },
   {
@@ -201,6 +222,9 @@
       "spd": 3
     },
     "levelCap": 30,
+    "ability": {
+      "id": "static-zap-2"
+    },
     "flavor": "A fast and fearless runner that leaves a trail of bright sparks."
   },
   {
@@ -229,6 +253,9 @@
       "level": 15,
       "essence": 20
     },
+    "ability": {
+      "id": "fog-veil"
+    },
     "flavor": "A slow newt that carries a soft cloud of mist on its back."
   },
   {
@@ -252,6 +279,9 @@
       "spd": 2
     },
     "levelCap": 30,
+    "ability": {
+      "id": "fog-veil-2"
+    },
     "flavor": "A long serpent that hides entire valleys in thick, cool fog."
   },
   {
@@ -280,6 +310,9 @@
       "level": 15,
       "essence": 20
     },
+    "ability": {
+      "id": "warm-glow"
+    },
     "flavor": "A busy digger that warms its burrow with glowing ash."
   },
   {
@@ -303,6 +336,9 @@
       "spd": 3
     },
     "levelCap": 30,
+    "ability": {
+      "id": "warm-glow-2"
+    },
     "flavor": "A heavy digger that carves tunnels through stone with molten claws."
   },
   {
@@ -331,6 +367,9 @@
       "level": 15,
       "essence": 40
     },
+    "ability": {
+      "id": "thunder-strike"
+    },
     "flavor": "A ray that rides the edge of thunderclouds."
   },
   {
@@ -354,6 +393,9 @@
       "spd": 3
     },
     "levelCap": 30,
+    "ability": {
+      "id": "thunder-strike-2"
+    },
     "flavor": "A vast ray whose wingbeats stir up lightning storms."
   },
   {
@@ -382,6 +424,9 @@
       "level": 15,
       "essence": 40
     },
+    "ability": {
+      "id": "moss-bloom"
+    },
     "flavor": "A patient turtle with a garden growing on its shell."
   },
   {
@@ -405,6 +450,9 @@
       "spd": 4
     },
     "levelCap": 30,
+    "ability": {
+      "id": "moss-bloom-2"
+    },
     "flavor": "An ancient turtle whose shell has become a small, living forest."
   },
   {
@@ -428,6 +476,9 @@
       "spd": 2
     },
     "levelCap": 30,
+    "ability": {
+      "id": "coral-lance"
+    },
     "flavor": "A reef-dwelling lynx with a crown of bright coral."
   },
   {
@@ -451,6 +502,9 @@
       "spd": 4
     },
     "levelCap": 30,
+    "ability": {
+      "id": "solar-brand"
+    },
     "flavor": "A lion with a mane of living sunlight that warms everything near it."
   },
   {
@@ -474,6 +528,9 @@
       "spd": 3
     },
     "levelCap": 30,
+    "ability": {
+      "id": "verdant-roar"
+    },
     "flavor": "A mountain-sized drake wearing forests and rivers along its back."
   },
   {
@@ -497,6 +554,9 @@
       "spd": 3
     },
     "levelCap": 30,
+    "ability": {
+      "id": "aurora-surge"
+    },
     "flavor": "A graceful creature that trails ribbons of aurora light as it drifts."
   }
 ]

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { content } from '@creatures/game';
 import {
   defaultAbilityRound,
+  needsCreature,
   simulateFight,
   type AbilityChoice,
   type FightEvent,
@@ -26,15 +27,22 @@ function finaleInput(seed: string, abilities: AbilityChoice[]): FightInput {
   return { ...base, finaleAbilities: abilities };
 }
 
-/** Every content ability, owned by the players in turn, with options that exercise the params. */
+/**
+ * Every content ability (basic and creature, strikes, timed rallies, shields and purges
+ * included), owned by the players in turn, with options that exercise the params. Abilities that
+ * need a creature get one of the owner's.
+ */
 function extraAbility(input: FightInput, index: number, round: number): AbilityChoice {
   const def = content.finaleAbilities[index % content.finaleAbilities.length];
   const playerId = input.players[index % input.players.length];
   if (def === undefined || playerId === undefined) throw new Error('no ability or player');
+  const creature = input.row.find((s) => s.ownerId === playerId);
   return {
     playerId,
     abilityId: def.id,
+    key: `extra:${index}:${round}`,
     fireAtRound: round,
+    ...(needsCreature(def) && creature !== undefined ? { creatureId: creature.id } : {}),
     ...(def.id === 'shield-wall' ? { params: { zone: 'middle' as const } } : {}),
     ...(def.id === 're-mark' ? { params: { element: 'grove' as const } } : {}),
   };
@@ -83,19 +91,63 @@ describe('the prefix property', () => {
     }
   });
 
+  it('holds for every content ability added at round k, one at a time', () => {
+    // Covers every op: rally, shield_wall (own and choose), re_mark (own and choose), purge, strike.
+    for (const [i, def] of content.finaleAbilities.entries()) {
+      for (const k of [3, 7]) {
+        const base = finaleInput(`prefix-each-${i}`, []);
+        const extra = extraAbility(base, i, k);
+        expect(extra.abilityId).toBe(def.id);
+        const baseResult = simulateFight(base, rng());
+        const result = simulateFight({ ...base, finaleAbilities: [extra] }, rng());
+        expect(eventsBefore(result.events, k)).toEqual(eventsBefore(baseResult.events, k));
+        // The ability really fires, so the comparison is not vacuous.
+        if (result.rounds >= k) {
+          expect(result.events.some((e) => e.t === 'ability' && e.key === extra.key)).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('holds with several abilities per player, creature abilities included', () => {
+    for (let s = 0; s < 10; s++) {
+      const base = finaleInput(`prefix-multi-${s}`, []);
+      // Everyone brings their basic ability and a creature ability per creature.
+      const mine: AbilityChoice[] = base.players.flatMap((_player, p) =>
+        [3, 5, 8].map((round, j) => extraAbility(base, s + p * 7 + j * 5, round)),
+      );
+      const keyed = new Set(mine.map((a) => a.key));
+      expect(keyed.size).toBe(mine.length);
+      const grouped = new Set(mine.map((a) => a.playerId));
+      expect(grouped.size).toBeGreaterThan(1);
+      for (const k of [3, 6, 9]) {
+        const without = simulateFight(
+          { ...base, finaleAbilities: mine.filter((a) => (a.fireAtRound ?? 0) < k) },
+          rng(),
+        );
+        const withAll = simulateFight({ ...base, finaleAbilities: mine }, rng());
+        expect(eventsBefore(withAll.events, k)).toEqual(eventsBefore(without.events, k));
+      }
+    }
+  });
+
   it('holds for abilities that fire at the last round and for defaults that fire later', () => {
     for (let s = 0; s < 10; s++) {
-      const base = finaleInput(`prefix-last-${s}`, []);
+      const base = randomInput(`prefix-last-${s}`, 4, 'finale');
       const rounds = base.boss.finaleRounds;
-      const withDefaults = {
+      // Every ability of every player (basic and creature) at its default round...
+      const withDefaults: FightInput = {
         ...base,
-        finaleAbilities: base.players.map((playerId, i) => ({
-          playerId,
-          abilityId: content.finaleAbilities[i % content.finaleAbilities.length]?.id ?? 'rally',
+        finaleAbilities: base.finaleAbilities.map((a) => ({
+          playerId: a.playerId,
+          abilityId: a.abilityId,
+          key: a.key,
+          ...(a.creatureId === undefined ? {} : { creatureId: a.creatureId }),
         })),
       };
-      // Pressing Hold on every ability turns "fires at its default round" into "fires in the last
-      // round": the rounds before the earliest default must not change.
+      expect(withDefaults.finaleAbilities.length).toBeGreaterThan(base.players.length);
+      // ...against pressing Hold on every ability, which turns "fires at its default round"
+      // into "fires in the last round": the rounds before the earliest default must not change.
       const held = {
         ...withDefaults,
         finaleAbilities: withDefaults.finaleAbilities.map((a) => ({ ...a, fireAtRound: rounds })),
@@ -119,7 +171,9 @@ describe('defaultAbilityRound', () => {
     const tidal = boss('tidal-colossus');
     const rounds = tidal.finaleRounds;
     const byId = Object.fromEntries(
-      content.finaleAbilities.map((a) => [a.id, defaultAbilityRound(tidal, a, rounds)]),
+      content.finaleAbilities
+        .filter((a) => a.kind === 'basic')
+        .map((a) => [a.id, defaultAbilityRound(tidal, a, rounds)]),
     );
     expect(byId['rally']).toBe(6);
     expect(byId['re-mark']).toBe(4);
@@ -152,7 +206,7 @@ describe('defaultAbilityRound', () => {
           boss: b,
           bossAtk: 100,
           phase: 'finale',
-          finaleAbilities: [{ playerId: 'p1', abilityId: def.id }],
+          finaleAbilities: [{ key: 'k', playerId: 'p1', abilityId: def.id, creatureId: 'f0' }],
         });
         const fired = eventsOf(r, 'ability');
         expect(fired).toHaveLength(1);

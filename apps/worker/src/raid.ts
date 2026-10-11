@@ -6,7 +6,7 @@
  * depend on it can never be interleaved with another request. The user is always an argument from
  * the verified session. The guild's timezone is always passed in, never defaulted.
  */
-import { content, type Rng } from '@creatures/game';
+import { basicAbilities, content, type Rng } from '@creatures/game';
 import type { Outcome } from './collection';
 import type { LedgerStorage } from './ledger';
 import {
@@ -554,7 +554,7 @@ export class Raid {
       if (week.status === 'finale' || this.deps.now() >= eventTimes(week.weekId, tz).finale) {
         throw new RaidError(409, 'locked');
       }
-      if (!content.finaleAbilities.some((a) => a.id === abilityId)) {
+      if (!basicAbilities().some((a) => a.id === abilityId)) {
         throw new RaidError(400, 'invalid_body');
       }
       this.sql.exec(

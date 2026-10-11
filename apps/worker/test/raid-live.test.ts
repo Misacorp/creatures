@@ -232,6 +232,7 @@ describe('Fire and Hold', () => {
           round: 3,
           player: 'm1',
           ability: 'shield-wall',
+          key: 'm1:basic',
           zone: 'back',
           byDefault: false,
         },
@@ -519,11 +520,8 @@ describe('the end of the fight', () => {
         posts: count(ctx.sql, 'discord_posts'),
       });
       const before = summary();
-      expect(before.pity).toEqual(
-        membersOf(ctx.sql)
-          .sort()
-          .map((user_id) => ({ user_id, counter: 1 })),
-      );
+      // This finale is lost, and pity counts wins only: nobody's counter was written.
+      expect(before.pity).toEqual([]);
       await ctx.core.alarm();
       await ctx.core.alarm();
       snap(ctx, a);
@@ -611,9 +609,15 @@ describe('the end of the fight', () => {
       const stored = storedRuns(ctx.sql, W02.id).find((r) => r.phase === 'finale');
       const choices = stored?.input.finaleAbilities;
       expect(choices).toEqual([
-        { playerId: 'm1', abilityId: 'rally', fireAtRound: 3 },
-        { playerId: 'm2', abilityId: 'shield-wall', fireAtRound: 2, params: { zone: 'middle' } },
-        { playerId: 'm3', abilityId: 'purge', fireAtRound: 12 },
+        { playerId: 'm1', abilityId: 'rally', key: 'm1:basic', fireAtRound: 3 },
+        {
+          playerId: 'm2',
+          abilityId: 'shield-wall',
+          key: 'm2:basic',
+          fireAtRound: 2,
+          params: { zone: 'middle' },
+        },
+        { playerId: 'm3', abilityId: 'purge', key: 'm3:basic', fireAtRound: 12 },
       ]);
       // The replay's ability events are exactly those rounds.
       expect(
@@ -635,8 +639,8 @@ describe('the end of the fight', () => {
       snap(ctx, a);
       const stored = storedRuns(ctx.sql, W02.id).find((r) => r.phase === 'finale');
       expect(stored?.input.finaleAbilities).toEqual([
-        { playerId: 'm1', abilityId: 'rally' },
-        { playerId: 'm2', abilityId: 'shield-wall' },
+        { playerId: 'm1', abilityId: 'rally', key: 'm1:basic' },
+        { playerId: 'm2', abilityId: 'shield-wall', key: 'm2:basic' },
       ]);
     });
   });
@@ -669,7 +673,11 @@ describe('starting the finale', () => {
       ctx.core.raid.runDue(HELSINKI);
       expect(count(ctx.sql, 'raid_live')).toBe(0);
       const stored = storedRuns(ctx.sql, W02.id).find((r) => r.phase === 'finale');
-      expect(stored?.input.finaleAbilities[0]).toEqual({ playerId: 'm1', abilityId: 'purge' });
+      expect(stored?.input.finaleAbilities[0]).toEqual({
+        playerId: 'm1',
+        abilityId: 'purge',
+        key: 'm1:basic',
+      });
       expect(snap(ctx, a).status).toBe('none');
     });
   });

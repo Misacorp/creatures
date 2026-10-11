@@ -139,6 +139,9 @@ export function finaleResolved(sql: SqlStorage, weekId: string, party: number): 
   );
 }
 
+/** The engine key of a member's basic ability (creature abilities come with the live API change). */
+const basicKey = (alias: string): string => `${alias}:basic`;
+
 /** The engine's ability list for what the members have done so far. */
 export function engineAbilities(row: LiveRow): AbilityChoice[] {
   return row.abilities.map((a): AbilityChoice => {
@@ -146,15 +149,21 @@ export function engineAbilities(row: LiveRow): AbilityChoice[] {
       return {
         playerId: a.alias,
         abilityId: a.abilityId,
+        key: basicKey(a.alias),
         fireAtRound: a.fireAtRound,
         ...(a.params === null ? {} : { params: a.params }),
       };
     }
     // A held ability that is still unused fires at the start of the last round.
     if (a.mode === 'held') {
-      return { playerId: a.alias, abilityId: a.abilityId, fireAtRound: row.rounds };
+      return {
+        playerId: a.alias,
+        abilityId: a.abilityId,
+        key: basicKey(a.alias),
+        fireAtRound: row.rounds,
+      };
     }
-    return { playerId: a.alias, abilityId: a.abilityId };
+    return { playerId: a.alias, abilityId: a.abilityId, key: basicKey(a.alias) };
   });
 }
 
@@ -338,8 +347,8 @@ export function applyAction(
   if (def === undefined) throw new RaidError(409, 'not_in_fight');
 
   // Parameters belong to Fire, and only to the abilities that take them.
-  const takesZone = def.effect.op === 'shield_wall';
-  const takesElement = def.effect.op === 're_mark';
+  const takesZone = def.effects.some((e) => e.op === 'shield_wall' && e.zone === 'choose');
+  const takesElement = def.effects.some((e) => e.op === 're_mark' && e.element === 'choose');
   if (body.action === 'hold' && (body.zone !== undefined || body.element !== undefined)) {
     throw new RaidError(400, 'invalid_body');
   }

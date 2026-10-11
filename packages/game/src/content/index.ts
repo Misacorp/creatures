@@ -8,7 +8,7 @@ import guests from './data/guests.json';
 import { loadContent } from './load';
 
 export * from './schema';
-export { loadContent, STARTER_COUNT } from './load';
+export { loadContent, upgradeProblem, STARTER_COUNT } from './load';
 
 /** The shipped content pack, validated at module load. */
 export const content = loadContent({

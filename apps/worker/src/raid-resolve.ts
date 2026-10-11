@@ -11,6 +11,7 @@
  */
 import {
   RULES,
+  basicAbilities,
   content,
   contributionWeights,
   createSeededRng,
@@ -99,10 +100,11 @@ function slotFor(creature: TeamCreature, alias: string): FightSlot {
   });
 }
 
-/** The finale ability a member gets when they did not pick one: round-robin over the content list. */
+/** The basic finale ability a member gets when they did not pick one: round-robin over the four. */
 export function defaultAbilityId(index: number): string {
-  const def = content.finaleAbilities[index % content.finaleAbilities.length];
-  if (def === undefined) throw new Error('content has no finale abilities');
+  const basics = basicAbilities();
+  const def = basics[index % basics.length];
+  if (def === undefined) throw new Error('content has no basic abilities');
   return def.id;
 }
 
@@ -126,7 +128,7 @@ export function abilityIdsFor(
   );
   return memberIds.map((userId, i) => {
     const picked = picks.get(userId);
-    return picked !== undefined && content.finaleAbilities.some((a) => a.id === picked)
+    return picked !== undefined && basicAbilities().some((a) => a.id === picked)
       ? picked
       : defaultAbilityId(i);
   });
@@ -264,9 +266,12 @@ export function buildPhaseInput(
     adaptation,
     row,
     players: aliases,
+    // Phase 1 of creature abilities: each member brings their basic ability only. The key names
+    // the use; creature abilities will add `<alias>:<creature>` keys.
     finaleAbilities: abilityIds.map((abilityId, i) => ({
       playerId: aliases[i] as string,
       abilityId,
+      key: `${aliases[i] as string}:basic`,
     })),
   };
   return { memberIds, aliases, input };
@@ -430,7 +435,8 @@ export function settleParty(
 /**
  * After a finale: every member rolls the jackpot against their own pity counter on a win (a hit
  * pays Essence and records "first on server", shared by everyone who hits in the same finale); on a
- * loss the counter just advances ("counts participation"). Returns the users who hit.
+ * loss nothing is rolled and the counter does not change (pity counts finale wins only). Returns the
+ * users who hit.
  */
 function rollJackpots(
   deps: ResolveDeps,
@@ -447,10 +453,9 @@ function rollJackpots(
       .exec<{ counter: number }>('SELECT counter FROM jackpot_pity WHERE user_id = ?', userId)
       .toArray()[0];
     const counter = row?.counter ?? 0;
-    let next = counter + 1;
+    // Pity counts finale wins only: a lost finale rolls nothing and leaves the counter alone.
     if (result.cleared) {
       const roll = rollJackpot(deps.rng, counter);
-      next = roll.newCounter;
       if (roll.hit) {
         hits.push(userId);
         credit(
@@ -467,13 +472,13 @@ function rollJackpots(
         );
         recordServerFirst(sql, 'jackpot', 'jackpot', userId, `jackpot:${weekId}`, now);
       }
+      sql.exec(
+        `INSERT INTO jackpot_pity (user_id, counter) VALUES (?, ?)
+         ON CONFLICT(user_id) DO UPDATE SET counter = excluded.counter`,
+        userId,
+        roll.newCounter,
+      );
     }
-    sql.exec(
-      `INSERT INTO jackpot_pity (user_id, counter) VALUES (?, ?)
-       ON CONFLICT(user_id) DO UPDATE SET counter = excluded.counter`,
-      userId,
-      next,
-    );
   }
   return hits;
 }

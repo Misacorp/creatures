@@ -70,13 +70,10 @@ Gimmicks are data, built from effect operations. Examples for the four MVP bosse
 - **Phase 1** (Fri 13:37, auto): 10 rounds. **Phase 2** (Sat 13:37, auto): 10 rounds. **Finale** (Sun 20:00, live): 12 rounds of about 10 seconds (2 minutes, configurable per boss, at most 5 minutes) **[Misa]**.
 - **Clear thresholds** (config): Phase 1 is cleared when the pool is down 18%; Phase 2 when it's down 54%; the finale when the boss is defeated (tuned from 30% / 60% by the simulator; see `docs/balance/`).
 - **Phase 2 adaptation:** after Phase 1 the boss gains one counter, chosen by a plain-language rule shown to players. Example: "the reaction you used most is resisted 50%", or "the element that dealt most damage is resisted 25%". It is stored in the event log.
-- **Finale abilities:** before the finale, each signed-up player picks one ability from a small content-defined list, each with a **default round** **[Misa]**:
-  - **Rally:** all creatures +40% damage this round. Default round 6.
-  - **Shield Wall:** one zone takes no damage this round. Default: the round of the boss's first zone attack from round 2 on, on the zone it attacks (the effect lands that round, as if pressed during the round before); round 3 and the front zone if the boss has none.
-  - **Re-mark:** set the boss's mark to a chosen element. Default round 4.
-  - **Purge:** remove the boss's Phase 2 adaptation for the rest of the fight. Default round 2.
-
-  A present player fires theirs whenever they choose. An absent player's fires at its default round, at full strength **[Misa]**.
+- **Finale abilities:** now built from effects and from the players' creatures: see `creature-abilities.md` (the current spec). In short:
+  - Each player picks one **basic** ability before the finale (Rally, Shield Wall, Re-mark or Purge), deliberately weak. They are the four effect operations at small values: Rally +10% for 1 round, Shield Wall 50% less damage in a chosen zone for 1 round, Re-mark a chosen element, Purge for 2 rounds.
+  - Every creature in the raid team of 3 at level 10 or above also brings its species' **creature ability** (one use, a stronger form after evolving). Creature abilities combine up to 3 effects: `rally`, `shield_wall`, `re_mark`, `purge` and `strike`.
+  - Each ability has a **default round** **[Misa]** (Rally 6, Shield Wall on the boss's first zone attack from round 2 on else round 3, Re-mark 4, Purge 2; creature abilities set their own). A present player fires theirs whenever they choose; an absent player's fires at its default round, at full strength **[Misa]**. Timing rules for the live finale are in `m5-finale.md`.
 
 - **Scaling with players:** boss HP = `baseHp × N^1.2 × levelFactor`, where N is the number of signed-up players (minimum 1; guests fill the row) and `levelFactor` is 1 + 12% per average creature level above 1. Boss Attack scales with the average creature level (6% per level). The exponent is above 1 on purpose: bigger servers earn more Bait per player (the leet points table) and cover more elements, so per head they are stronger; the simulator found 1.2 keeps the finale win rate flat from 5 to 15 players. All of these are config (`RULES.raid.scaling`).
 
@@ -92,7 +89,7 @@ Gimmicks are data, built from effect operations. Examples for the four MVP bosse
   Plus a contribution-weighted pool per stage worth 3/7 of that stage's flat total (`poolBp` 4286), split with largest-remainder rounding so it is paid out exactly. That makes about 70% flat and 30% contribution across the week.
 
 - **Gear rolls** (gear arrives with the gear step): one roll per cleared stage, rarity weighted by contribution share.
-- **Jackpot** (finale win only): each signed-up player rolls 6%. Pity: +8 points per raid without a jackpot from raid 6 on; guaranteed at raid 10 without one. The counter counts participation, never resets for skipping a week, and is shown privately.
+- **Jackpot** (finale win only): each signed-up player rolls 6%. Pity: +8 points per finale win without a jackpot from the 5th win on; guaranteed at the 10th. The counter advances only on a finale **win** (a lost finale changes nothing), never resets for skipping a week, and is shown privately **[Misa]**.
 - **First on server:** everyone who gets a jackpot item from the same finale shares the record **[Misa]**.
 
 ## Mutator hooks (for seasonal features)
@@ -126,7 +123,7 @@ A fight returns:
 - **Raid sim:** for player counts 1, 5, 10 and 15 and each boss:
   - mixed-archetype groups with heuristic team picks and placements;
   - many seeded runs;
-  - finale abilities at their default rounds.
+  - finale abilities at their default rounds: each player's basic ability (round-robin) plus the creature abilities of their team at level 10 or above.
 - **Report** (Markdown):
   - clear rates per phase and boss;
   - damage and contribution share per player and archetype;

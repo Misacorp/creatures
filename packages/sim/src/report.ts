@@ -132,6 +132,32 @@ function progressionSection(a: Analysis): string {
   return parts.join('\n\n');
 }
 
+function abilitySection(a: Analysis): string {
+  if (a.abilityShares.length === 0) return 'Not measured.';
+  return [
+    `What abilities add to the damage dealt in the finale, measured by replaying each finale three times against a boss that cannot fall (every ability, only the basic ones, none) so all ${content.bosses[0]?.finaleRounds ?? 12} rounds are played. Creature share = (all - basic only) / all; basic share = (basic only - none) / all. Creature abilities need creature level ${RULES.abilities.unlockLevel}. Informational: the aim is a creature share of about 10-25% for a week-8 roster, not a target.`,
+    '',
+    table(
+      [
+        'Roster week',
+        'Group',
+        'Raids',
+        'Creature abilities per raid',
+        'Creature share',
+        'Basic share',
+      ],
+      a.abilityShares.map((r) => [
+        String(r.snapshotWeek),
+        r.group,
+        String(r.runs),
+        num(r.creatureAbilities, 1),
+        pct(r.creatureShare),
+        pct(r.basicShare),
+      ]),
+    ),
+  ].join('\n');
+}
+
 function outlierList(title: string, items: readonly string[]): string {
   return items.length === 0 ? `- ${title}: none.` : `- ${title}: ${items.join('; ')}.`;
 }
@@ -164,8 +190,8 @@ const POLICY_TEXT = `
 - **At a check-in:** claim expeditions (game \`rollCatches\`, fusion and conversion rules), evolve creatures that are at level 15 when there is enough Essence, plan expeditions, train, then send the planned expeditions.
 - **Expeditions:** up to 3, one per creature. The budget is ${POLICY.expeditionShareBp / 100}% of the Bait held (all of it when nothing can be trained). Each free slot gets an equal share of the remaining budget and buys the option with the highest value that fits. Value = rolls x expected rarity score of a roll (common ${POLICY.rarityScore.common}, rare ${POLICY.rarityScore.rare}, epic ${POLICY.rarityScore.epic}). Explorers are creatures whose element has the most unowned catchable species. A player whose collection is complete (every catchable species owned with 5 fusions) stops sending expeditions.
 - **Training:** the rest of the Bait goes to one creature at a time, at the game's training cost with the catch-up discount: of the 3 strongest trainable creatures (not at their level cap), the furthest-along one that still has to reach its evolution level (players push one creature to its evolution before starting the next); if none of the three is working towards an evolution, the weakest of them. The median top level is computed across the simulated players.
-- **Raids:** everyone active signs up (casuals with 70% probability) and brings their 3 highest-power creatures. Sign-up order is shuffled each week; \`autoPlace\` builds the row in that order; \`fillWithGuests\` fills it to ${RULES.combat.guestRowSize} slots with fewer than 3 players. Phase 1 runs on Friday, Phase 2 on Saturday (with the adaptation Phase 1 suggested) and the finale on Sunday; the boss HP pool carries across them. Finale abilities are picked round-robin over the four types and fire at their default rounds. Bosses rotate in content order.
-- **Rewards:** Essence from \`essenceForStage\` for every cleared stage, weighted by the stage's contribution. Jackpots from \`rollJackpot\` on a finale win. The pity counter advances on every raid a player takes part in without a jackpot, win or loss (the counter counts participation). Set PITY_COUNTS_LOSSES in packages/sim/src/raid.ts to false to count only finale wins.
+- **Raids:** everyone active signs up (casuals with 70% probability) and brings their 3 highest-power creatures. Sign-up order is shuffled each week; \`autoPlace\` builds the row in that order; \`fillWithGuests\` fills it to ${RULES.combat.guestRowSize} slots with fewer than 3 players. Phase 1 runs on Friday, Phase 2 on Saturday (with the adaptation Phase 1 suggested) and the finale on Sunday; the boss HP pool carries across them. In the finale each player brings their basic ability (round-robin over the four) plus the creature ability of each team creature at level ${RULES.abilities.unlockLevel} or above; every ability fires at its default round. Bosses rotate in content order.
+- **Rewards:** Essence from \`essenceForStage\` for every cleared stage, weighted by the stage's contribution. Jackpots from \`rollJackpot\` on a finale win. The pity counter advances only on a finale win without a jackpot; a lost finale changes nothing (soft pity from raid ${RULES.raid.jackpot.softPityFromRaid}, hard pity at raid ${RULES.raid.jackpot.hardPityRaid}).
 - **Evolution:** at level 15 (stage 1 level cap) when the player has the Essence from the content; the species switches to its stage 2 form and keeps its fusion count.
 - **Team power** = sum over the top 3 creatures of \`atk + hp / 10\`, using \`effectiveStats\` (fusion included).
 - **Typical group:** a raid week with 5 to 10 signed-up players, on rosters from the end of week 4 or 8.
@@ -290,6 +316,7 @@ export function buildReportMarkdown(out: RunOutput): string {
     ),
     '',
   );
+  lines.push('## Ability damage share (informational)', '', abilitySection(a), '');
   lines.push('## Outliers', '', outliersSection(a), '');
   lines.push('## Example fight', '');
   if (out.example === null) {
@@ -334,6 +361,7 @@ export function buildReportJson(out: RunOutput): string {
     elements: analysis.elements,
     creatures: analysis.creatures,
     essence: analysis.essence,
+    abilityShares: analysis.abilityShares,
     jackpots: analysis.jackpots,
     outliers: analysis.outliers,
     exampleFight: example,
