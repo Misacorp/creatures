@@ -87,6 +87,8 @@ export interface RaidDeps {
    * forecast never consumes the draws of a real fight and never touches a stored seed.
    */
   readinessRng?: Rng;
+  /** Live randomness for the quirk of a Festival creature. Crypto in production. */
+  quirkRng?: Rng;
 }
 
 export interface WeekRow {

@@ -80,6 +80,8 @@ export interface LiveDeps {
   storage: LedgerStorage;
   now: () => number;
   rng: Rng;
+  /** Live randomness for the quirk of a Festival creature (passed on when the finale settles). */
+  quirkRng?: Rng;
 }
 
 type LiveDbRow = {

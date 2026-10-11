@@ -14,6 +14,8 @@ import {
   fusionStars,
   isFirstOnServer,
   oddsText,
+  personalityLine,
+  speciesAbout,
 } from './game';
 
 const creature: Creature = {
@@ -26,6 +28,7 @@ const creature: Creature = {
   shiny: false,
   nickname: null,
   away: false,
+  quirk: 'hums-quietly',
   stats: { hp: 1, atk: 1, spd: 1 },
   trainCost: 15,
   ability: { id: 'tidal-mark', unlocked: false, unlockLevel: 10, nextId: 'tidal-mark-2' },
@@ -187,6 +190,8 @@ describe('idempotency keys', () => {
 
 const withoutAbility: Record<string, unknown> = { ...creature };
 delete withoutAbility['ability'];
+const withoutQuirk: Record<string, unknown> = { ...creature };
+delete withoutQuirk['quirk'];
 
 describe('parseGameState', () => {
   const valid = {
@@ -238,6 +243,8 @@ describe('parseGameState', () => {
     ['bad starter options', { ...valid, starterOptions: [1] }],
     ['a malformed leet status', { ...valid, leetSync: { source: 'http' } }],
     ['a creature without the ability field', { ...valid, creatures: [withoutAbility] }],
+    ['a creature without the quirk field', { ...valid, creatures: [withoutQuirk] }],
+    ['a numeric quirk', { ...valid, creatures: [{ ...creature, quirk: 7 }] }],
     [
       'a bad creature ability',
       { ...valid, creatures: [{ ...creature, ability: { id: 'x', unlocked: 'yes' } }] },
@@ -251,6 +258,44 @@ describe('parseGameState', () => {
     ],
   ])('rejects %s', (_name, data) => {
     expect(() => parseGameState(data)).toThrow();
+  });
+});
+
+describe('quirks and species lore in the client', () => {
+  it('accepts a creature whose quirk is null', () => {
+    const state = parseGameState({
+      serverNow: 5,
+      balances: { bait: 1, essence: 0 },
+      starterChosen: true,
+      creatures: [{ ...creature, quirk: null }],
+      expeditions: [],
+      slots: { total: 3, used: 0 },
+      trainingMedianLevel: null,
+      serverFirsts: [],
+    });
+    expect(state.creatures[0]?.quirk).toBeNull();
+  });
+
+  it('shows the personality as "Personality: <text>", and nothing for an unknown id', () => {
+    expect(personalityLine('hums-quietly')).toBe(
+      'Personality: Hums a tiny tune when it thinks nobody is listening.',
+    );
+    expect(personalityLine(null)).toBeNull();
+    expect(personalityLine('removed-from-the-data')).toBeNull();
+  });
+
+  it('every creature in the real server response has a personality line', () => {
+    for (const c of parseGameState(collectionState).creatures) {
+      expect(personalityLine(c.quirk), c.species).toMatch(/^Personality: .+/);
+    }
+  });
+
+  it('gives players the description and traits of a species, and never the visual brief', () => {
+    const about = speciesAbout('hearthshell');
+    expect(about?.description).toContain('bonfire');
+    expect(about?.traits.length).toBeGreaterThanOrEqual(3);
+    expect(Object.keys(about ?? {}).sort()).toEqual(['description', 'traits']);
+    expect(speciesAbout('no-such-species')).toBeNull();
   });
 });
 

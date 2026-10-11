@@ -3,6 +3,9 @@ import {
   content,
   createSeededRng,
   expeditionCost,
+  lore,
+  pickQuirk,
+  quirkText,
   recallCatches,
   type Rng,
 } from '@creatures/game';
@@ -90,6 +93,7 @@ interface CreatureBody {
   shiny: boolean;
   nickname: string | null;
   away: boolean;
+  quirk: string | null;
   stats: { hp: number; atk: number; spd: number };
   trainCost: number | null;
   evolution?: { toSpecies: string; level: number; essence: number; available: boolean };
@@ -253,7 +257,7 @@ describe('migration 4', () => {
 
       core.migrate();
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        12,
+        13,
       );
       expect(core.balances(USER_ID).bait).toBe(42);
       const res = await ctx.request(secret, '/api/state');
@@ -343,6 +347,7 @@ describe('GET /api/state', () => {
           shiny: false,
           nickname: null,
           away: false,
+          quirk: expect.any(String) as string,
           origin: 'starter',
           caughtAt: T0,
           stats: { hp: 96, atk: 40, spd: 28 },
@@ -1677,6 +1682,123 @@ describe('nested credit inside a transaction', () => {
       storage.transactionSync(() => core.credit(input));
       expect(core.balances(USER_ID).bait).toBe(5);
       return Promise.resolve();
+    });
+  });
+});
+
+describe('creature quirks', () => {
+  const quirkOf = (ctx: CoreContext, id: string): string | null =>
+    ctx.sql
+      .exec<{ quirk_id: string | null }>('SELECT quirk_id FROM creatures WHERE id = ?', id)
+      .one().quirk_id;
+
+  it('gives the starter a quirk drawn from the quirk RNG at that moment, and shows it in the state', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await joinWithStarter(ctx, USER, 0, 'cindle');
+        const expected = pickQuirk('cindle', createSeededRng('quirk-starter'));
+        expect(quirkOf(ctx, p.starterId)).toBe(expected);
+        const view = (await p.state()).creatures[0];
+        expect(view?.quirk).toBe(expected);
+        expect(quirkText(expected)).toBeDefined();
+      },
+      { ...seeded(), quirkRng: createSeededRng('quirk-starter') },
+    );
+  });
+
+  it('uses the live crypto RNG by default: every creature has a quirk from the data', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const known = new Set([
+        ...lore.quirks.general.map((q) => q.id),
+        ...Object.values(lore.quirks.againstType).flatMap((list) => list.map((q) => q.id)),
+      ]);
+      const a = await joinWithStarter(ctx, USER, 0, 'splashet');
+      const b = await joinWithStarter(ctx, OTHER, 0, 'sproutle');
+      for (const player of [a, b]) {
+        const creature = (await player.state()).creatures[0];
+        expect(creature?.quirk).not.toBeNull();
+        expect(known.has(creature?.quirk ?? '')).toBe(true);
+      }
+    });
+  });
+
+  it('gives a caught creature a quirk, and the fusion of a duplicate changes nothing', async () => {
+    const quirkRng = createSeededRng('quirk-catch');
+    const replay = createSeededRng('quirk-catch');
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await joinWithStarter(ctx, USER, 100);
+        // The first expedition always brings back a Zipmouse, a new line for this player.
+        const first = expeditionOf(await send(p, p.starterId));
+        ctx.clock.t = first.endsAt;
+        const res = await claim(p, first.id);
+        expect(resultOf(res).catches[0]).toMatchObject({ species: 'zipmouse', outcome: 'new' });
+        const zipmouse = (await p.state()).creatures.find((c) => c.species === 'zipmouse');
+        // The starter took the first pick, the catch the second.
+        pickQuirk('splashet', replay);
+        const expected = pickQuirk('zipmouse', replay);
+        expect(zipmouse?.quirk).toBe(expected);
+        expect(quirkOf(ctx, zipmouse?.id ?? '')).toBe(expected);
+        // A replayed claim returns the stored result: nothing new is drawn or changed.
+        await claim(p, first.id);
+        expect(quirkOf(ctx, zipmouse?.id ?? '')).toBe(expected);
+      },
+      { ...seeded(), quirkRng },
+    );
+  });
+
+  it('keeps the quirk of an existing creature when a duplicate fuses, and draws nothing', async () => {
+    const quirkRng = countingRng('quirk-fuse');
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await joinWithStarter(ctx, USER, 100);
+        skipFirstExpedition(ctx.sql, USER_ID);
+        const drawnAfterStarter = quirkRng.drawn();
+        expect(drawnAfterStarter).toBeGreaterThanOrEqual(2);
+        ctx.sql.exec("UPDATE creatures SET quirk_id = 'hums-quietly' WHERE id = ?", p.starterId);
+        const exp = expeditionOf(await send(p, p.starterId));
+        ctx.clock.t = exp.endsAt;
+        const res = await claim(p, exp.id);
+        expect(resultOf(res).catches[0]).toMatchObject({ species: 'splashet', outcome: 'fused' });
+        expect(quirkOf(ctx, p.starterId)).toBe('hums-quietly');
+        expect(quirkRng.drawn()).toBe(drawnAfterStarter);
+        expect((await p.state()).creatures[0]?.quirk).toBe('hums-quietly');
+      },
+      { rng: scriptedRng(COMMON_SPLASHET_PLAIN), quirkRng },
+    );
+  });
+
+  it('never draws a quirk from the catch RNG, so a catch uses exactly its own draws', async () => {
+    const rng = scriptedRng([...COMMON_SPLASHET_PLAIN, 0, 1, 1]);
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await joinWithStarter(ctx, USER, 100);
+        skipFirstExpedition(ctx.sql, USER_ID);
+        // The starter was picked without touching the catch RNG.
+        expect(rng.drawn()).toBe(0);
+        const exp = expeditionOf(await send(p, p.starterId));
+        ctx.clock.t = exp.endsAt;
+        await claim(p, exp.id);
+        expect(rng.drawn()).toBe(COMMON_SPLASHET_PLAIN.length);
+      },
+      { rng },
+    );
+  });
+
+  it('shows no quirk for a missing or unknown quirk id, and keeps working', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const p = await joinWithStarter(ctx, USER, 0);
+      ctx.sql.exec('UPDATE creatures SET quirk_id = NULL WHERE id = ?', p.starterId);
+      expect((await p.state()).creatures[0]?.quirk).toBeNull();
+      ctx.sql.exec(
+        "UPDATE creatures SET quirk_id = 'removed-from-the-data' WHERE id = ?",
+        p.starterId,
+      );
+      expect((await p.state()).creatures[0]?.quirk).toBeNull();
     });
   });
 });

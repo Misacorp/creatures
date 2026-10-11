@@ -15,6 +15,8 @@ import {
   expeditionCost,
   expeditionDurationMs,
   expeditionRolls,
+  pickQuirk,
+  quirkText,
   recallCatches,
   rollCatches,
   sanitizeNickname,
@@ -76,6 +78,7 @@ type CreatureRow = {
   away_expedition_id: string | null;
   origin: string;
   caught_at: number;
+  quirk_id: string | null;
 };
 
 type ExpeditionRow = {
@@ -105,6 +108,12 @@ export interface CreatureView {
   away: boolean;
   origin: string;
   caughtAt: number;
+  /**
+   * The creature's cosmetic personality quirk: an id into the shared lore data (`lore.quirks`),
+   * whose text the client looks up. It changes nothing in the game. Null only for an id that is
+   * missing or no longer in the data.
+   */
+  quirk: string | null;
   stats: Stats;
   /** Bait for the next level (discount applied), or null at the level cap. */
   trainCost: number | null;
@@ -180,6 +189,11 @@ export interface CollectionDeps {
   storage: LedgerStorage;
   now: () => number;
   rng: Rng;
+  /**
+   * Live randomness for the quirk of a new creature. Separate from `rng`, so a quirk never
+   * consumes the draws of a catch.
+   */
+  quirkRng: Rng;
 }
 
 function median(values: number[]): number | null {
@@ -298,6 +312,7 @@ export class Collection {
       away,
       origin: row.origin,
       caughtAt: row.caught_at,
+      quirk: row.quirk_id !== null && quirkText(row.quirk_id) !== undefined ? row.quirk_id : null,
       stats: effectiveStats(species, row.level, row.fusion_count),
       ability:
         abilityId === undefined
@@ -436,13 +451,14 @@ export class Collection {
       }
       const creatureId = crypto.randomUUID();
       this.sql.exec(
-        `INSERT INTO creatures (id, user_id, line, species, level, origin, caught_at)
-         VALUES (?, ?, ?, ?, 1, 'starter', ?)`,
+        `INSERT INTO creatures (id, user_id, line, species, level, origin, caught_at, quirk_id)
+         VALUES (?, ?, ?, ?, 1, 'starter', ?, ?)`,
         creatureId,
         userId,
         species.line,
         species.id,
         this.deps.now(),
+        pickQuirk(species.id, this.deps.quirkRng),
       );
       this.sql.exec(
         `INSERT INTO player_progress (user_id, starter_species) VALUES (?, ?)
@@ -626,14 +642,16 @@ export class Collection {
     switch (outcome.kind) {
       case 'new':
         this.sql.exec(
-          `INSERT INTO creatures (id, user_id, line, species, level, shiny, origin, caught_at)
-           VALUES (?, ?, ?, ?, 1, ?, 'expedition', ?)`,
+          `INSERT INTO creatures (id, user_id, line, species, level, shiny, origin, caught_at, quirk_id)
+           VALUES (?, ?, ?, ?, 1, ?, 'expedition', ?, ?)`,
           crypto.randomUUID(),
           userId,
           species.line,
           species.id,
           caught.shiny ? 1 : 0,
           now,
+          // Drawn now from live randomness, after the catch itself is decided; cosmetic only.
+          pickQuirk(species.id, this.deps.quirkRng),
         );
         return { ...base, outcome: 'new' };
       case 'fused':
@@ -742,7 +760,7 @@ export class Collection {
 
   /**
    * Evolves a stage-1 creature at its evolution level for Essence. The species switches to the
-   * stage-2 species; level, fusion, shininess and nickname stay. The first evolution of a line on
+   * stage-2 species; level, fusion, shininess, nickname and quirk stay. The first evolution of a line on
    * the server records "first on server" (kind `evolve`, keyed by the stage-2 species). A retry
    * with the same key returns the stored result and charges nothing.
    */

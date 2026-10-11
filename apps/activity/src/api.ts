@@ -257,6 +257,8 @@ export interface Creature {
   shiny: boolean;
   nickname: string | null;
   away: boolean;
+  /** Id of the creature's cosmetic personality quirk (text is in the shared lore data); null if unknown. */
+  quirk: string | null;
   stats: { hp: number; atk: number; spd: number };
   /** Bait for the next level with the discount applied; null at the level cap. */
   trainCost: number | null;
@@ -360,6 +362,7 @@ function isCreature(value: unknown): value is Creature {
     typeof value['shiny'] === 'boolean' &&
     (value['nickname'] === null || isStr(value['nickname'])) &&
     typeof value['away'] === 'boolean' &&
+    (value['quirk'] === null || isStr(value['quirk'])) &&
     isStats(value['stats']) &&
     (value['trainCost'] === null || isInt(value['trainCost'])) &&
     (value['ability'] === null || isCreatureAbility(value['ability'])) &&

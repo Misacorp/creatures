@@ -6,6 +6,7 @@ import {
   festivalCreatureFor,
   jackpotEssenceFor,
   nextRank,
+  pickQuirk,
   placementRank,
   raidWeekPlan,
   scaleEssence,
@@ -525,6 +526,43 @@ describe('Festival weeks and the Festival creature', () => {
     );
   });
 
+  it('gives a new Festival creature a quirk from the quirk RNG, and leaves the quirk of a fused one alone', async () => {
+    const speciesId = (species as NonNullable<typeof species>).id;
+    const line = (species as NonNullable<typeof species>).line;
+    await runRaid(
+      (ctx) => {
+        const [fresh, owner, maxed] = seedMany(ctx, 3, 8) as [Seeded, Seeded, Seeded];
+        const give = (p: Seeded, fusion: number) =>
+          ctx.sql.exec(
+            `INSERT INTO creatures (id, user_id, line, species, level, fusion_count, origin, caught_at, quirk_id)
+             VALUES (?, ?, ?, ?, 3, ?, 'test', ?, 'hums-quietly')`,
+            crypto.randomUUID(),
+            p.id,
+            line,
+            speciesId,
+            fusion,
+            ctx.clock.t,
+          );
+        give(owner, 2);
+        give(maxed, RULES.fusion.maxFusions);
+        openWeek(ctx, festivalWeek);
+        playWeek(ctx, festivalWeek, [WIN]);
+        const quirkOf = (p: Seeded) =>
+          rows<{ quirk_id: string | null }>(
+            ctx.sql,
+            'SELECT quirk_id FROM creatures WHERE user_id = ? AND line = ?',
+            p.id,
+            line,
+          ).map((r) => r.quirk_id);
+        // Only the new creature drew a quirk, so it is the first pick of the quirk RNG.
+        expect(quirkOf(fresh)).toEqual([pickQuirk(speciesId, createSeededRng('festival-quirk'))]);
+        expect(quirkOf(owner)).toEqual(['hums-quietly']);
+        expect(quirkOf(maxed)).toEqual(['hums-quietly']);
+      },
+      { start: festivalWeek.monday, core: { quirkRng: createSeededRng('festival-quirk') } },
+    );
+  });
+
   it('grants a new level 1 creature, a fusion or Bait to each member of a winning party, once', async () => {
     await runRaid(
       (ctx) => {
@@ -607,7 +645,14 @@ describe('Festival weeks and the Festival creature', () => {
             false,
           );
           expect(
-            grantFestivalCreature(ctx.storage, festivalWeek.id, p.id, speciesId, ctx.clock.t + 1),
+            grantFestivalCreature(
+              ctx.storage,
+              createSeededRng('festival-again'),
+              festivalWeek.id,
+              p.id,
+              speciesId,
+              ctx.clock.t + 1,
+            ),
           ).toBeNull();
         }
         expect(rows(ctx.sql, 'SELECT * FROM creatures ORDER BY id')).toEqual(creaturesBefore);

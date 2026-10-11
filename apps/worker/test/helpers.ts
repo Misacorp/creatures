@@ -192,6 +192,16 @@ export async function runCore<R>(
   });
 }
 
+/** Puts a database back to before migration 13 (the creature quirk). */
+export function undoQuirkMigration(sql: SqlStorage): void {
+  // Tests that rebuild an older schema may have dropped the table already.
+  const hasColumn = sql
+    .exec("SELECT 1 FROM pragma_table_info('creatures') WHERE name = 'quirk_id'")
+    .toArray();
+  if (hasColumn.length > 0) sql.exec('ALTER TABLE creatures DROP COLUMN quirk_id');
+  sql.exec('DELETE FROM schema_version WHERE version = 13');
+}
+
 /** Columns migration 12 added to `raid_weeks`. */
 export const PROGRESSION_WEEK_COLUMNS = [
   'rank',
@@ -209,6 +219,7 @@ export const PROGRESSION_WEEK_COLUMNS = [
  * check stays, as with migration 8 (a migration only ever widens it).
  */
 export function undoProgressionMigration(sql: SqlStorage): void {
+  undoQuirkMigration(sql);
   for (const column of PROGRESSION_WEEK_COLUMNS) {
     sql.exec(`ALTER TABLE raid_weeks DROP COLUMN ${column}`);
   }

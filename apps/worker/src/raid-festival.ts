@@ -7,7 +7,7 @@
  * Idempotent per (week, user): `raid_festival_grants` has that primary key, and the Bait credit has
  * an idempotency key as well. Call it inside the transaction that settles the finale.
  */
-import { content, festivalGrantOutcome } from '@creatures/game';
+import { content, festivalGrantOutcome, pickQuirk, type Rng } from '@creatures/game';
 import { credit, type LedgerStorage } from './ledger';
 import { recordServerFirst } from './server-firsts';
 
@@ -29,6 +29,7 @@ export interface FestivalGrantView {
  */
 export function grantFestivalCreature(
   storage: LedgerStorage,
+  quirkRng: Rng,
   weekId: string,
   userId: string,
   speciesId: string,
@@ -75,13 +76,15 @@ export function grantFestivalCreature(
   switch (outcome.kind) {
     case 'new':
       sql.exec(
-        `INSERT INTO creatures (id, user_id, line, species, level, shiny, origin, caught_at)
-         VALUES (?, ?, ?, ?, 1, 0, 'festival', ?)`,
+        `INSERT INTO creatures (id, user_id, line, species, level, shiny, origin, caught_at, quirk_id)
+         VALUES (?, ?, ?, ?, 1, 0, 'festival', ?, ?)`,
         crypto.randomUUID(),
         userId,
         species.line,
         species.id,
         now,
+        // Drawn now from live randomness; cosmetic only.
+        pickQuirk(species.id, quirkRng),
       );
       view = { species: species.id, outcome: 'new', firstOnServer };
       break;

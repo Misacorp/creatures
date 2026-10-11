@@ -12,6 +12,8 @@ import {
   getSpecies,
   isFestivalSpecies,
   isFirstOnServer,
+  personalityLine,
+  speciesAbout,
   speciesName,
 } from './game';
 
@@ -59,6 +61,27 @@ function RenameForm({
           Save nickname
         </button>
       </form>
+    </details>
+  );
+}
+
+/** Description, traits and personality: a short read about the creature. No art notes. */
+function About({ creature }: { creature: Creature }) {
+  const about = speciesAbout(creature.species);
+  const personality = personalityLine(creature.quirk);
+  if (about === null) return null;
+  return (
+    <details class="about">
+      <summary>About</summary>
+      <p>{about.description}</p>
+      <ul class="tags traits" aria-label="Traits">
+        {about.traits.map((trait) => (
+          <li class="tag" key={trait}>
+            {trait}
+          </li>
+        ))}
+      </ul>
+      {personality !== null && <p class="muted">{personality}</p>}
     </details>
   );
 }
@@ -153,6 +176,7 @@ function CreatureCard({
         ) : (
           <p class="locked">{evolve.label}</p>
         ))}
+      <About creature={creature} />
       <RenameForm creature={creature} busy={busy} onRename={onRename} />
     </li>
   );

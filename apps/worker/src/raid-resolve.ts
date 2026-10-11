@@ -15,6 +15,7 @@ import {
   basicAbilities,
   content,
   contributionWeights,
+  createCryptoRng,
   createSeededRng,
   essenceForStage,
   jackpotEssenceFor,
@@ -50,6 +51,8 @@ export interface ResolveDeps {
   now: () => number;
   /** Live randomness: the fight seed and the jackpot rolls. Crypto in production. */
   rng: Rng;
+  /** Live randomness for the quirk of a Festival creature. Defaults to crypto. */
+  quirkRng?: Rng;
 }
 
 /** What the API shows about a resolved phase. Contains user ids: map to names before sending. */
@@ -440,8 +443,16 @@ export function settleParty(
   if (phase === 'finale' && result.cleared) {
     const progression = readWeekProgression(sql, week.weekId);
     if (progression?.festival === true && progression.festivalSpecies !== null) {
+      const quirkRng = deps.quirkRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
       for (const userId of memberIds) {
-        grantFestivalCreature(storage, week.weekId, userId, progression.festivalSpecies, now);
+        grantFestivalCreature(
+          storage,
+          quirkRng,
+          week.weekId,
+          userId,
+          progression.festivalSpecies,
+          now,
+        );
       }
     }
   }
