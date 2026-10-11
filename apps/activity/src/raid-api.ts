@@ -54,7 +54,6 @@ export interface PhaseResultView {
   top: { displayName: string; damage: number; contribution: number; you: boolean }[];
   /** Essence the caller earned in this phase. */
   essence: number;
-  jackpot: string[];
   /** Finale only: what it did to the server's rank; null until the ladder has moved, and for phases. */
   rankChange: RankChange | null;
   /** Finale only: the Festival creature the caller got; null otherwise. */
@@ -94,8 +93,8 @@ export interface RaidReveal {
   /** The caller's party in that finale: with `week`, the key of its after-action stats. */
   party: number;
   cleared: boolean;
+  /** Everything the finale paid the caller, as one figure. */
   essence: number;
-  jackpot: null | { essence: number; firstOnServer: boolean };
   /** The ladder's move; null until every party of the server has finished (and for old weeks). */
   rankChange: RankChange | null;
   /** The Festival creature the caller got, or null. */
@@ -274,7 +273,6 @@ function isResult(value: unknown): value is PhaseResultView {
     isInt(value['damage']) &&
     isInt(value['reactions']) &&
     isInt(value['essence']) &&
-    isArrayOf(value['jackpot'], isStr) &&
     (value['rankChange'] === null || isRankChange(value['rankChange'])) &&
     (value['festivalGrant'] === null || isFestivalGrant(value['festivalGrant'])) &&
     isArrayOf(
@@ -339,10 +337,6 @@ function isAbilityPick(value: unknown): value is NonNullable<RaidView['you']['ab
   return isRecord(value) && isStr(value['abilityId']) && isBool(value['chosen']);
 }
 
-export function isJackpot(value: unknown): value is { essence: number; firstOnServer: boolean } {
-  return isRecord(value) && isInt(value['essence']) && isBool(value['firstOnServer']);
-}
-
 export function isRankChange(value: unknown): value is RankChange {
   return (
     isRecord(value) &&
@@ -373,7 +367,6 @@ function isReveal(value: unknown): value is RaidReveal {
     isInt(value['party']) &&
     isBool(value['cleared']) &&
     isInt(value['essence']) &&
-    (value['jackpot'] === null || isJackpot(value['jackpot'])) &&
     (value['rankChange'] === null || isRankChange(value['rankChange'])) &&
     (value['festivalGrant'] === null || isFestivalGrant(value['festivalGrant']))
   );

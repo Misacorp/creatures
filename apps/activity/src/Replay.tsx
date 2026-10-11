@@ -10,12 +10,14 @@ import {
   mineInRow,
   personalRecap,
   stateAt,
-  stepDelayMs,
   turnOrderOfRound,
   type Speed,
 } from './replay';
-import { MAX_BEAT_MS } from './stage';
+import { usePrefersReducedMotion } from './hooks';
+import { buildBeats, cuesForEvents } from './stage';
+import { replayLead, staggerMs, staticFx, type IntroView } from './stage-fx';
 import { LogToggle, Stage, type Anim } from './Stage';
+import { useFxTrail } from './use-fx-trail';
 
 export function Replay({
   weekId,
@@ -75,9 +77,14 @@ interface Position {
 function Player({ data }: { data: ReplayView }) {
   const ends = beatEnds(data.events);
   const total = ends.length;
+  const rowIds = data.row.map((r) => r.id);
+  const beats = buildBeats(data.events, 0, rowIds);
   const [pos, setPos] = useState<Position>({ beat: 0, prev: 0, seq: 0 });
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<Speed>(1);
+  const [intro, setIntro] = useState<IntroView | null>(null);
+  const reduced = usePrefersReducedMotion();
+  const trail = useFxTrail();
   const logRef = useRef<HTMLOListElement>(null);
   const { beat } = pos;
 
@@ -85,18 +92,35 @@ function Player({ data }: { data: ReplayView }) {
     setPos((p) => ({ beat: to, prev: p.beat, seq: p.seq + 1 }));
   };
 
-  // Advance one step at a time while playing.
+  // Advance one step at a time while playing. A step that opens a round waits for the previous
+  // beat's effects, shows "Round N" for a moment (shorter at 2x) and then plays; the stagger between
+  // beats is the beat's own (500 to 700 ms, halved at 2x).
   useEffect(() => {
     if (!playing) return undefined;
     if (beat >= total) {
       setPlaying(false);
       return undefined;
     }
-    const timer = setTimeout(() => {
+    const lead = replayLead(beats, data.events, beat, speed);
+    const advance = (): void => {
       setPos((p) => ({ beat: p.beat + 1, prev: p.beat, seq: p.seq + 1 }));
-    }, stepDelayMs(speed));
+    };
+    let introTimer: ReturnType<typeof setTimeout> | undefined;
+    const timer = setTimeout(() => {
+      if (lead.round === null) {
+        advance();
+        return;
+      }
+      setIntro({ round: lead.round, rounds: data.rounds, ms: lead.introMs, key: pos.seq + 1 });
+      introTimer = setTimeout(() => {
+        setIntro(null);
+        advance();
+      }, lead.introMs);
+    }, lead.waitMs);
     return () => {
       clearTimeout(timer);
+      if (introTimer !== undefined) clearTimeout(introTimer);
+      setIntro(null);
     };
   }, [playing, beat, speed, total]);
 
@@ -115,15 +139,32 @@ function Player({ data }: { data: ReplayView }) {
   const moments = keyMoments(data.events, data.names);
   const recap = personalRecap(data.events, data.row, [...mineIds]);
   // Only a single step forward is animated; a skip or a restart just shows the new state.
+  const stepBeat = beats[beat - 1];
   const anim: Anim | null =
-    beat >= 1 && beat === pos.prev + 1
+    beat >= 1 && beat === pos.prev + 1 && stepBeat !== undefined
       ? {
           from: indexAfterBeat(ends, pos.prev),
           to: index,
-          ms: Math.min(MAX_BEAT_MS, stepDelayMs(speed)),
+          ms: staggerMs(stepBeat.ms, speed),
           seq: pos.seq,
         }
       : null;
+
+  // The effects of a step stay for their own time (the same at every speed but 2x, which is about
+  // 30% shorter) and overlap the next steps. A skip or a restart drops them. With reduced motion the
+  // newest step's effects are shown still.
+  useEffect(() => {
+    if (anim === null) {
+      trail.clear();
+      return;
+    }
+    if (!reduced) trail.push(cuesForEvents(data.events, anim.from, anim.to, rowIds), speed);
+  }, [pos.seq]);
+  const fx = reduced
+    ? anim === null
+      ? []
+      : staticFx(cuesForEvents(data.events, anim.from, anim.to, rowIds))
+    : trail.items;
 
   return (
     <>
@@ -181,6 +222,8 @@ function Player({ data }: { data: ReplayView }) {
         events={data.events}
         index={index}
         anim={anim}
+        fx={fx}
+        intro={intro}
       />
 
       <h4>Turn order {step.bossActing && <span class="muted">(the boss is acting)</span>}</h4>

@@ -147,31 +147,34 @@ describe('parseLiveSnapshot with real server responses', () => {
     });
   });
 
-  it('accepts the finished fight with a jackpot, and without one', () => {
+  it('accepts the finished fight: one Essence figure, no jackpot and no pity', () => {
     const hit = running(liveDoneHit);
     expect(hit).toMatchObject({ status: 'done', bossHp: 0 });
     expect(hit.loot).toEqual({
       cleared: true,
-      essence: 28,
-      jackpot: { essence: 112, firstOnServer: true },
-      pity: 0,
+      essence: 140,
       rankChange: { before: 3, after: 4, festival: false, serverWon: true },
       festivalGrant: null,
     });
     const cleared = running(liveDoneCleared);
-    expect(cleared.loot).toMatchObject({ cleared: true, jackpot: null, pity: 1 });
+    expect(cleared.loot).toMatchObject({ cleared: true });
     expect(cleared.loot?.essence).toBeGreaterThan(0);
+    for (const fight of [hit, cleared]) {
+      expect(Object.keys(fight.loot ?? {}).sort()).toEqual([
+        'cleared',
+        'essence',
+        'festivalGrant',
+        'rankChange',
+      ]);
+    }
   });
 
   it('accepts the finished fight that was lost', () => {
     const missed = running(liveDoneMissed);
     expect(missed).toMatchObject({ status: 'done', round: 12, rounds: 12 });
-    // A lost finale leaves the pity counter alone.
     expect(missed.loot).toEqual({
       cleared: false,
       essence: 0,
-      jackpot: null,
-      pity: 0,
       // A lost normal week keeps the rank.
       rankChange: { before: 3, after: 3, festival: false, serverWon: false },
       festivalGrant: null,
@@ -192,7 +195,6 @@ describe('parseLiveSnapshot with real server responses', () => {
     expect(done).toMatchObject({ status: 'done', practice: true });
     expect(done.loot).toMatchObject({
       essence: 0,
-      jackpot: null,
       rankChange: null,
       festivalGrant: null,
     });
@@ -255,7 +257,7 @@ describe('parseLiveSnapshot is strict', () => {
       row: [{ position: 'x' }],
       abilities: 'none',
       events: [{ t: 'explode', round: 1 }],
-      loot: { cleared: true, essence: 1, jackpot: null },
+      loot: { cleared: true, essence: 1.5 },
     };
     for (const [key, value] of Object.entries(bad)) {
       expect(() => parseLiveSnapshot({ ...liveMid, [key]: value }), key).toThrow();
@@ -297,13 +299,11 @@ describe('parseLiveSnapshot is strict', () => {
     const loot = {
       cleared: true,
       essence: 1,
-      jackpot: null,
-      pity: 0,
       rankChange: null,
       festivalGrant: null,
     };
     expect(parseLiveSnapshot({ ...liveDoneHit, loot })).toBeDefined();
-    expect(() => parseLiveSnapshot({ ...liveDoneHit, loot: { ...loot, pity: null } })).toThrow();
+    expect(() => parseLiveSnapshot({ ...liveDoneHit, loot: { ...loot, essence: -1 } })).toThrow();
     // The ladder and Festival parts of the loot are strict too, and required.
     expect(() =>
       parseLiveSnapshot({ ...liveDoneHit, loot: { ...loot, rankChange: { before: 1 } } }),
@@ -316,8 +316,5 @@ describe('parseLiveSnapshot is strict', () => {
       delete without[key];
       expect(() => parseLiveSnapshot({ ...liveDoneHit, loot: without }), key).toThrow();
     }
-    expect(() =>
-      parseLiveSnapshot({ ...liveDoneHit, loot: { ...loot, jackpot: { essence: 1 } } }),
-    ).toThrow();
   });
 });

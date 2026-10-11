@@ -214,14 +214,21 @@ describe('parseGameState', () => {
     ]);
   });
 
-  it('accepts every kind of first-on-server record, including raid jackpots', () => {
-    const first = { species: 'jackpot', at: 7, mine: true, holders: ['Misa'] };
-    for (const kind of ['catch', 'evolve', 'jackpot']) {
+  it('accepts every kind of first-on-server record the server lists, and refuses a jackpot one', () => {
+    const first = { species: 'splashet', at: 7, mine: true, holders: ['Misa'] };
+    for (const kind of ['catch', 'evolve', 'festival']) {
       const parsed = parseGameState({ ...valid, serverFirsts: [{ ...first, kind }] });
       expect(parsed.serverFirsts[0]?.kind).toBe(kind);
     }
     expect(() =>
       parseGameState({ ...valid, serverFirsts: [{ ...first, kind: 'other' }] }),
+    ).toThrow();
+    // The jackpot is hidden from players: the server never lists its record.
+    expect(() =>
+      parseGameState({
+        ...valid,
+        serverFirsts: [{ ...first, species: 'jackpot', kind: 'jackpot' }],
+      }),
     ).toThrow();
   });
 
@@ -322,11 +329,10 @@ describe('parseGameState with a real server response (fixtures/collection-state.
   });
 });
 
-describe('parseGameState and the jackpot record', () => {
-  it('accepts the shared jackpot server first, which is not a creature', () => {
+describe('parseGameState and the server firsts', () => {
+  it('has no jackpot record, and a server first never marks a creature that was not caught', () => {
     const state = parseGameState(collectionState);
-    expect(state.serverFirsts.some((f) => f.kind === 'jackpot' && f.mine)).toBe(true);
-    // A jackpot record never marks a creature as "first on server".
+    expect(JSON.stringify(state.serverFirsts)).not.toMatch(/jackpot/i);
     const first = state.creatures[0] as Creature;
     expect(isFirstOnServer(first, state.serverFirsts)).toBe(false);
   });

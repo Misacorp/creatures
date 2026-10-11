@@ -113,7 +113,6 @@
       "party": 1,
       "cleared": true,
       "essence": 48,
-      "jackpot": null,
       "rankChange": {
         "before": 6,
         "after": 5,
@@ -260,7 +259,6 @@
           }
         ],
         "essence": 28,
-        "jackpot": [],
         "rankChange": null,
         "festivalGrant": null
       },
@@ -295,7 +293,6 @@
           }
         ],
         "essence": 0,
-        "jackpot": [],
         "rankChange": null,
         "festivalGrant": null
       },
@@ -330,7 +327,6 @@
           }
         ],
         "essence": 48,
-        "jackpot": [],
         "rankChange": {
           "before": 6,
           "after": 5,

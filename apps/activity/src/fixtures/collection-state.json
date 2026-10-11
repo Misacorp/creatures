@@ -110,15 +110,7 @@
     "used": 0
   },
   "trainingMedianLevel": 10,
-  "serverFirsts": [
-    {
-      "kind": "jackpot",
-      "species": "jackpot",
-      "at": 1800208800000,
-      "mine": true,
-      "holders": ["Player 1"]
-    }
-  ],
+  "serverFirsts": [],
   "timezone": "Europe/Helsinki",
   "leetSync": {
     "source": "disabled",

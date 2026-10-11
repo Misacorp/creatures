@@ -17,9 +17,9 @@ import {
   hpSegments,
   stageStateAt,
   type AbilityUse,
-  type Cue,
 } from './stage';
 import { badgeFor, unitTap, usedBadge, type Badge } from './stage-abilities';
+import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
 import { StagePopover } from './StagePopover';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -82,49 +82,56 @@ export function LogToggle({ id, children }: { id: string; children: ComponentChi
   );
 }
 
-interface FloatsProps {
-  cues: readonly Cue[];
+interface FxProps {
+  fx: readonly FxItem[];
   target: string | null;
 }
 
-/** The numbers floating up from a target. Crits are gold and bigger, with a "CRITICAL!" pop. */
-function Floats({ cues, target }: FloatsProps) {
-  const mine = cues.filter((c) => c.kind === 'float' && c.target === target);
+const fxVars = (item: FxItem, extra: Readonly<Record<string, string | number>> = {}) =>
+  cssVars({ '--fx-ms': `${String(item.ms)}ms`, ...extra });
+
+/**
+ * The numbers floating up from a target. They stay for over a second (a crit for two) and may
+ * overlap, each in its own lane. Crits are gold and bigger, with a "CRITICAL!" pop.
+ */
+function Floats({ fx, target }: FxProps) {
   return (
     <>
-      {mine.map((cue, lane) =>
-        cue.kind === 'float' ? (
+      {fx.map((item) => {
+        const { cue } = item;
+        if (cue.kind !== 'float' || cue.target !== target) return null;
+        return (
           <span
-            key={cue.i}
-            class={`float float-${cue.tone}${cue.crit ? ' crit' : ''}`}
-            ref={cssVars({ '--drift': cue.drift, '--lane': lane % 3 })}
+            key={`float-${String(cue.i)}`}
+            class={`float float-${cue.tone}${cue.crit ? ' crit' : ''} lane-${String(item.lane)}`}
+            ref={fxVars(item, { '--drift': cue.drift, '--lane': item.lane })}
           >
             {cue.crit && <span class="crit-pop">CRITICAL!</span>}
             <span class="float-text">{cue.text}</span>
           </span>
-        ) : null,
-      )}
+        );
+      })}
     </>
   );
 }
 
-/** A reaction burst in the colours of its two elements, with the reaction's name. */
-function Bursts({ cues, target, names }: FloatsProps & { names: EventNames }) {
-  const mine = cues.filter((c) => c.kind === 'burst' && c.target === target);
+/** A reaction burst in the colours of its two elements, with the reaction's name in big letters. */
+function Bursts({ fx, target, names }: FxProps & { names: EventNames }) {
   return (
     <>
-      {mine.map((cue) => {
-        if (cue.kind !== 'burst') return null;
+      {fx.map((item) => {
+        const { cue } = item;
+        if (cue.kind !== 'burst' || cue.target !== target) return null;
         const [a, b] = cue.elements ?? [null, null];
         const iconA = a === null ? undefined : elementIcon(a);
         const iconB = b === null ? undefined : elementIcon(b);
         return (
-          <span key={cue.i} class="burst" aria-hidden="true">
+          <span key={`burst-${String(cue.i)}`} class="burst" aria-hidden="true" ref={fxVars(item)}>
             <span class={`burst-ring ${elementClass(a)}`} />
             <span class={`burst-ring second ${elementClass(b)}`} />
             <span class="burst-label">
               {iconA !== undefined && <Sprite sprite={iconA} scale={2} />}
-              <span>{nameOf(names.reactions, cue.reaction)}</span>
+              <span>{nameOf(names.reactions, cue.reaction)}!</span>
               {iconB !== undefined && <Sprite sprite={iconB} scale={2} />}
               <span class="burst-colours">
                 <i class={elementClass(a)} />
@@ -135,6 +142,48 @@ function Bursts({ cues, target, names }: FloatsProps & { names: EventNames }) {
         );
       })}
     </>
+  );
+}
+
+/** "KO!" held over a creature that was just knocked out. */
+function KoTags({ fx, creature }: { fx: readonly FxItem[]; creature: string }) {
+  return (
+    <>
+      {fx.map((item) =>
+        item.cue.kind === 'ko' && item.cue.creature === creature ? (
+          <span
+            key={`ko-${String(item.cue.i)}`}
+            class="ko-tag pix"
+            aria-hidden="true"
+            ref={fxVars(item)}
+          >
+            KO!
+          </span>
+        ) : null,
+      )}
+    </>
+  );
+}
+
+/** At most this many ability cards show at once; the rest are counted ("+3 more"). */
+const MAX_ABILITY_CARDS = 4;
+
+/** The big "Round N" over the stage when a round opens, in the countdown's pixel face. */
+function RoundIntro({ intro }: { intro: IntroView }) {
+  return (
+    <div
+      class="round-intro"
+      aria-hidden="true"
+      ref={cssVars({ '--fx-ms': `${String(intro.ms)}ms` })}
+    >
+      <span key={intro.key} class="ri-text pix">
+        <span class="ri-label">
+          <span>Round</span>
+          <span>{intro.round}</span>
+        </span>
+        <span class="ri-of">of {intro.rounds}</span>
+      </span>
+    </div>
   );
 }
 
@@ -176,8 +225,12 @@ export interface StageProps {
   events: readonly FightEvent[];
   /** How many events have happened. */
   index: number;
-  /** The beat to animate: events [from, to) of the log. Null: show the state without movement. */
+  /** The newest beat, for the short animations: events [from, to) of the log. Null: no movement. */
   anim: Anim | null;
+  /** Effects that stay on screen longer than their beat (numbers, bursts, ability cards, knockouts). */
+  fx?: readonly FxItem[];
+  /** The "Round N" overlay, while a round opens. */
+  intro?: IntroView | null;
   /**
    * The live finale's abilities: the player's own creatures with an ability get a badge and open a
    * popover when tapped. Without it (replays) the stage is not interactive and only shows which
@@ -221,7 +274,7 @@ interface UnitProps {
   ko: boolean;
   classes: readonly string[];
   silenced: boolean;
-  cues: readonly Cue[];
+  fx: readonly FxItem[];
   names: EventNames;
   badge: Badge | null;
   /** The ability's id, for the label of the badge. */
@@ -298,8 +351,9 @@ function StageUnit(props: UnitProps) {
       ) : (
         <span class="unit-face">{face}</span>
       )}
-      <Floats cues={props.cues} target={c.id} />
-      <Bursts cues={props.cues} target={c.id} names={props.names} />
+      <Floats fx={props.fx} target={c.id} />
+      <Bursts fx={props.fx} target={c.id} names={props.names} />
+      <KoTags fx={props.fx} creature={c.id} />
     </li>
   );
 }
@@ -325,6 +379,8 @@ export function Stage({
   events,
   index,
   anim,
+  fx = [],
+  intro = null,
   abilities,
 }: StageProps) {
   const rowsRef = useRef<HTMLDivElement>(null);
@@ -356,9 +412,9 @@ export function Stage({
     else if (cue.kind === 'silenced') silenced.add(cue.creature);
     else if (cue.kind === 'shake') shaking.add(cue.zone);
   }
-  const abilityCues = cues.filter((c) => c.kind === 'ability');
-  const gimmickCue = cues.find((c) => c.kind === 'gimmick');
-  const bannerCue = cues.find((c) => c.kind === 'banner');
+  const abilityCards = fx.filter((i) => i.cue.kind === 'ability');
+  const gimmickItem = fx.filter((i) => i.cue.kind === 'gimmick').at(-1);
+  const bannerItem = fx.filter((i) => i.cue.kind === 'banner').at(-1);
 
   // The abilities that have been played so far, by key and by creature.
   const uses = abilityUsesAt(events, index);
@@ -428,7 +484,7 @@ export function Stage({
     <section
       class={`stage p${String(parity)}`}
       aria-label="Fight stage"
-      ref={cssVars({ '--beat': `${String(anim === null ? 600 : Math.max(anim.ms, 60))}ms` })}
+      ref={cssVars({ '--beat': `${String(anim === null ? 600 : shortEffectMs(anim.ms))}ms` })}
     >
       <div class="stage-head">
         <span class="stage-head-left">
@@ -478,17 +534,27 @@ export function Stage({
               <span class="stage-mark-name">{markName}</span>
             </span>
           )}
-          <Floats cues={cues} target={null} />
-          <Bursts cues={cues} target={null} names={names} />
-          {gimmickCue?.kind === 'gimmick' && (
-            <span key={gimmickCue.i} class="stage-callout" aria-hidden="true">
-              <Sprite sprite={gimmickGlyph(gimmickCue.op)} scale={3} />
-              <span class="pix">{nameOf(names.gimmicks, gimmickCue.gimmick)}</span>
+          <Floats fx={fx} target={null} />
+          <Bursts fx={fx} target={null} names={names} />
+          {gimmickItem?.cue.kind === 'gimmick' && (
+            <span
+              key={`gimmick-${String(gimmickItem.cue.i)}`}
+              class="stage-callout"
+              aria-hidden="true"
+              ref={fxVars(gimmickItem)}
+            >
+              <Sprite sprite={gimmickGlyph(gimmickItem.cue.op)} scale={3} />
+              <span class="pix">{nameOf(names.gimmicks, gimmickItem.cue.gimmick)}</span>
             </span>
           )}
-          {bannerCue?.kind === 'banner' && (
-            <span key={bannerCue.i} class="stage-callout banner" aria-hidden="true">
-              <span class="pix">{bannerCue.text}</span>
+          {bannerItem?.cue.kind === 'banner' && (
+            <span
+              key={`banner-${String(bannerItem.cue.i)}`}
+              class="stage-callout banner"
+              aria-hidden="true"
+              ref={fxVars(bannerItem)}
+            >
+              <span class="pix">{bannerItem.cue.text}</span>
             </span>
           )}
         </div>
@@ -500,22 +566,33 @@ export function Stage({
         />
       </div>
 
-      <ul class="stage-abilities" aria-label="Abilities that just fired">
-        {abilityCues.map((cue) =>
-          cue.kind === 'ability' ? (
-            <li key={cue.i} class="stage-ability">
-              <Sprite sprite={abilityGlyph} scale={2} />
-              <span class="pix">
-                {abilityTitle({ abilityId: cue.ability, creature: cue.creature }, names)}
-              </span>
+      <div class="stage-abilities-slot">
+        <ul class="stage-abilities" aria-label="Abilities that just fired">
+          {abilityCards.slice(0, MAX_ABILITY_CARDS).map((item) =>
+            item.cue.kind === 'ability' ? (
+              <li key={`ability-${String(item.cue.i)}`} class="stage-ability" ref={fxVars(item)}>
+                <Sprite sprite={abilityGlyph} scale={2} />
+                <span class="pix">
+                  {abilityTitle(
+                    { abilityId: item.cue.ability, creature: item.cue.creature },
+                    names,
+                  )}
+                </span>
+              </li>
+            ) : null,
+          )}
+          {abilityCards.length > MAX_ABILITY_CARDS && (
+            <li class="stage-ability more">
+              <span class="pix">+{abilityCards.length - MAX_ABILITY_CARDS} more</span>
             </li>
-          ) : null,
-        )}
-      </ul>
+          )}
+        </ul>
+      </div>
 
       <div class="stage-rows" ref={rowsRef} role="group" aria-label="Zones, front to back">
         {groups.map(({ zone, items }) => {
-          const fresh = cues.filter((c) => c.kind === 'zone' && c.zone === zone);
+          const fresh = fx.filter((i) => i.cue.kind === 'zone' && i.cue.zone === zone);
+          const freshShield = fresh.find((f) => f.cue.kind === 'zone' && f.cue.effect === 'shield');
           const walled = state.shielded.includes(zone);
           const layout = zoneLayout(items.length, width, STAGE_LAYOUT);
           return (
@@ -567,7 +644,7 @@ export function Stage({
                       ko={ko}
                       classes={classes}
                       silenced={silenced.has(c.id)}
-                      cues={cues}
+                      fx={fx}
                       names={names}
                       badge={badge}
                       abilityId={abilityId}
@@ -588,13 +665,15 @@ export function Stage({
               </ul>
               {walled && (
                 <span
-                  class={`zone-fx fx-shield${fresh.some((f) => f.kind === 'zone' && f.effect === 'shield') ? ' fresh' : ''}`}
+                  class={`zone-fx fx-shield${freshShield === undefined ? '' : ' fresh'}`}
                   aria-hidden="true"
+                  {...(freshShield === undefined ? {} : { ref: fxVars(freshShield) })}
                 >
                   <Sprite sprite={shieldGlyph} scale={2} />
                 </span>
               )}
-              {fresh.map((f) => {
+              {fresh.map((item) => {
+                const f = item.cue;
                 if (f.kind !== 'zone' || (f.effect === 'shield' && walled)) return null;
                 const icon =
                   f.effect === 'shield'
@@ -607,6 +686,7 @@ export function Stage({
                     key={`${String(f.i)}-${f.effect}`}
                     class={`zone-fx fx-${f.effect} fresh`}
                     aria-hidden="true"
+                    ref={fxVars(item)}
                   >
                     <Sprite sprite={icon} scale={2} />
                   </span>
@@ -675,22 +755,28 @@ export function Stage({
           {abilities.help}
         </StagePopover>
       )}
+      {intro !== null && <RoundIntro intro={intro} />}
     </section>
   );
 }
 
 /**
- * The stage of the live finale: it steps through the events that come in with each poll, one short
- * beat at a time, and shows the state the server reports.
+ * The stage of the live finale: when a poll brings a new round it opens with "Round N", then steps
+ * through the round's beats, and shows the state the server reports. Effects overlap the beats (see
+ * `useLiveStage`). `hold` keeps it waiting while the countdown's "FIGHT!" is on screen.
  */
-export function LiveStage(props: Omit<StageProps, 'index' | 'anim'> & { roundMs: number }) {
-  const { roundMs, ...rest } = props;
+export function LiveStage(
+  props: Omit<StageProps, 'index' | 'anim' | 'fx' | 'intro'> & { roundMs: number; hold?: boolean },
+) {
+  const { roundMs, hold, ...rest } = props;
   const reduced = usePrefersReducedMotion();
   const view = useLiveStage(
     props.events,
     props.row.map((c) => c.id),
     roundMs,
+    props.rounds,
     reduced,
+    hold === true,
   );
-  return <Stage {...rest} index={view.index} anim={view.anim} />;
+  return <Stage {...rest} index={view.index} anim={view.anim} fx={view.fx} intro={view.intro} />;
 }

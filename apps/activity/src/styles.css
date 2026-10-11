@@ -962,10 +962,6 @@ button.toggle.on {
   text-align: center;
 }
 
-.reveal-card.jackpot {
-  border-color: var(--gold);
-}
-
 .reveal-essence {
   color: var(--gold);
   font-size: 1.25rem;
@@ -981,20 +977,6 @@ button.toggle.on {
   font-family: var(--display);
   font-size: 1.5rem;
   font-variant-numeric: tabular-nums;
-}
-
-.reveal-result {
-  font-size: 1.125rem;
-}
-
-.reveal-result.hit {
-  color: var(--gold);
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.reveal-result .badge {
-  margin-left: 0.5rem;
 }
 
 .reveal-stage {
@@ -1029,68 +1011,17 @@ button.toggle.on {
   color: var(--gold);
 }
 
-/* Rays around a jackpot chest. */
-.gold-burst {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-}
-
-.gold-burst > i {
-  position: absolute;
-  width: 0.375rem;
-  height: 1.5rem;
-  background: var(--gold);
-}
-
-.gold-burst > i:nth-child(1) {
-  transform: rotate(0deg) translateY(-3.5rem);
-}
-
-.gold-burst > i:nth-child(2) {
-  transform: rotate(45deg) translateY(-3.5rem);
-}
-
-.gold-burst > i:nth-child(3) {
-  transform: rotate(90deg) translateY(-3.5rem);
-}
-
-.gold-burst > i:nth-child(4) {
-  transform: rotate(135deg) translateY(-3.5rem);
-}
-
-.gold-burst > i:nth-child(5) {
-  transform: rotate(180deg) translateY(-3.5rem);
-}
-
-.gold-burst > i:nth-child(6) {
-  transform: rotate(225deg) translateY(-3.5rem);
-}
-
-.gold-burst > i:nth-child(7) {
-  transform: rotate(270deg) translateY(-3.5rem);
-}
-
-.gold-burst > i:nth-child(8) {
-  transform: rotate(315deg) translateY(-3.5rem);
-}
-
 @media (prefers-reduced-motion: no-preference) {
-  .reveal-roll:not(.done),
   .reveal-festival-box:not(.done) {
     opacity: 0;
   }
 
-  .reveal-roll.done .reveal-result,
   .reveal-festival-box.done {
     animation: reveal-pop 300ms steps(3) both;
   }
 
-  .reveal-roll.done .reveal-result.hit,
   .reveal-festival-box.done .pop-in {
-    animation: reveal-jackpot 600ms steps(5) both;
+    animation: reveal-pop-in 600ms steps(5) both;
   }
 
   .reveal-stage.phase-shake .reveal-prop {
@@ -1098,11 +1029,7 @@ button.toggle.on {
   }
 
   .reveal-stage:not(.phase-shake) .reveal-prop {
-    animation: reveal-jackpot 300ms steps(3) both;
-  }
-
-  .gold-burst {
-    animation: gold-burst 600ms steps(5) both;
+    animation: reveal-pop-in 300ms steps(3) both;
   }
 
   @keyframes reveal-shake {
@@ -1112,18 +1039,6 @@ button.toggle.on {
 
     75% {
       transform: translateX(6px);
-    }
-  }
-
-  @keyframes gold-burst {
-    from {
-      opacity: 1;
-      transform: scale(0.3);
-    }
-
-    to {
-      opacity: 0.85;
-      transform: scale(1.15);
     }
   }
 
@@ -1139,7 +1054,7 @@ button.toggle.on {
     }
   }
 
-  @keyframes reveal-jackpot {
+  @keyframes reveal-pop-in {
     0% {
       opacity: 0;
       transform: scale(0.6);
@@ -1770,16 +1685,30 @@ button.stage-help::after {
   color: var(--gold);
 }
 
-/* Ability cards light up for the beat an ability fires in. The strip keeps its height, so nothing jumps. */
+/*
+  Ability cards: the creature's name and its ability, for about a second and a half after it fires.
+  The slot keeps one line of height, so nothing jumps; the cards sit on top of it and may spill over
+  the first zone for a moment (they let taps through).
+*/
+.stage-abilities-slot {
+  position: relative;
+  height: 2rem;
+}
+
 .stage-abilities {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 5;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.375rem;
-  min-height: 2rem;
   margin: 0;
   padding: 0.125rem 0;
   list-style: none;
+  pointer-events: none;
 }
 
 .stage-ability {
@@ -1791,6 +1720,11 @@ button.stage-help::after {
   box-shadow: 0 0 0 var(--px) var(--gold);
   color: var(--gold);
   font-size: 0.8125rem;
+}
+
+.stage-ability.more {
+  color: var(--bone);
+  box-shadow: 0 0 0 var(--px) var(--haze);
 }
 
 /*
@@ -2286,13 +2220,31 @@ button.ab-auto-toggle:not(.on) small {
     -2px 0 var(--ink),
     0 2px var(--ink),
     0 -2px var(--ink);
-  transform: translate(calc(-50% + var(--drift, 0) * 4px), calc(var(--lane, 0) * -0.9rem));
+  transform: translate(calc(-50% + var(--drift, 0) * 4px + var(--lx, 0px)), var(--ly, 0px));
   white-space: nowrap;
   pointer-events: none;
+  --ly: calc(var(--lane, 0) * -1.1rem);
 }
 
+/*
+  Numbers on the boss stand side by side instead of stacking, because the boss has the whole width:
+  the first in the middle, the next ones to its left and right, so a crit never sits on another number.
+*/
 .stage-boss-art .float {
-  top: 25%;
+  top: 14%;
+  --ly: 0px;
+}
+
+.stage-boss-art .float.lane-1 {
+  --lx: -6.25rem;
+}
+
+.stage-boss-art .float.lane-2 {
+  --lx: 6.25rem;
+}
+
+.stage-boss-art .float.lane-3 {
+  --ly: -1.1rem;
 }
 
 .float-hurt {
@@ -2308,13 +2260,37 @@ button.ab-auto-toggle:not(.on) small {
 }
 
 .float.crit {
+  z-index: 4;
   color: var(--gold);
-  font-size: 1.375rem;
+  font-size: 1.75rem;
 }
 
 .crit-pop {
   color: var(--gold);
-  font-size: 0.75rem;
+  font-size: 1rem;
+}
+
+/* "KO!" held on a knocked-out creature. */
+.ko-tag {
+  position: absolute;
+  top: 35%;
+  left: 50%;
+  z-index: 3;
+  color: var(--bad);
+  font-size: 1.25rem;
+  line-height: 1;
+  text-shadow:
+    2px 0 var(--ink),
+    -2px 0 var(--ink),
+    0 2px var(--ink),
+    0 -2px var(--ink);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* A reaction burst on the boss sits lower than its numbers, so the two never overlap. */
+.stage-boss-art .burst {
+  top: 68%;
 }
 
 /* A reaction burst: two rings in the colours of the two elements, and the reaction's name. */
@@ -2332,16 +2308,16 @@ button.ab-auto-toggle:not(.on) small {
   position: absolute;
   top: 0;
   left: 0;
-  width: 3rem;
-  height: 3rem;
-  margin: -1.5rem 0 0 -1.5rem;
-  border: var(--px) solid var(--el, var(--bone));
+  width: 4rem;
+  height: 4rem;
+  margin: -2rem 0 0 -2rem;
+  border: calc(var(--px) * 2) solid var(--el, var(--bone));
 }
 
 .burst-ring.second {
-  width: 4.5rem;
-  height: 4.5rem;
-  margin: -2.25rem 0 0 -2.25rem;
+  width: 6rem;
+  height: 6rem;
+  margin: -3rem 0 0 -3rem;
   border-style: dashed;
 }
 
@@ -2352,10 +2328,11 @@ button.ab-auto-toggle:not(.on) small {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0 0.375rem 0.25rem;
+  padding: 0.125rem 0.5rem 0.375rem;
   background: var(--ink);
   font-family: var(--display);
-  font-size: 0.8125rem;
+  font-size: 1.25rem;
+  line-height: 1.1;
   transform: translate(-50%, -50%);
   white-space: nowrap;
 }
@@ -2366,12 +2343,53 @@ button.ab-auto-toggle:not(.on) small {
   bottom: 0;
   left: 0;
   display: flex;
-  height: var(--px);
+  height: calc(var(--px) * 2);
 }
 
 .burst-colours > i {
   flex: 1;
   background: var(--el, var(--bone));
+}
+
+/*
+  "Round N" over the stage when a round opens, in the countdown's pixel face. A dark veil keeps it
+  readable over the sprites; it lets taps through. Without motion it is plain text for the same time.
+*/
+.round-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  background: rgb(13 10 26 / 72%);
+  pointer-events: none;
+}
+
+.ri-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--gold);
+  line-height: 1;
+  text-shadow:
+    var(--px) 0 var(--ink),
+    calc(var(--px) * -1) 0 var(--ink),
+    0 var(--px) var(--ink),
+    0 calc(var(--px) * -1) var(--ink),
+    var(--px) var(--px) 0 var(--ink);
+}
+
+.ri-label {
+  display: flex;
+  align-items: baseline;
+  gap: 1.25rem;
+  font-size: 3.75rem;
+}
+
+.ri-of {
+  color: var(--bone);
+  font-size: 1.5rem;
 }
 
 .stage-log {
@@ -2429,33 +2447,49 @@ button.ab-auto-toggle:not(.on) small {
     animation: var(--a-pop) var(--beat) steps(4) both;
   }
 
+  /* The effects that outlast their beat run for their own time (--fx-ms), set on each element. */
   .zone-fx.fresh {
-    animation: stage-blink var(--beat) steps(1) both;
+    animation: stage-blink var(--fx-ms) steps(1) both;
   }
 
-  .stage-callout,
+  .stage-callout {
+    animation: callout-hold var(--fx-ms) steps(6) both;
+  }
+
   .crit-pop {
-    animation: stage-pop-0 var(--beat) steps(4) both;
+    animation: crit-pop var(--fx-ms) steps(8) both;
+  }
+
+  .ko-tag {
+    animation: ko-hold var(--fx-ms) steps(6) both;
   }
 
   .stage-ability {
-    animation: stage-light var(--beat) steps(4) both;
+    animation: card-hold var(--fx-ms) steps(6) both;
   }
 
   .float {
-    animation: float-rise var(--beat) steps(5) both;
+    animation: float-rise var(--fx-ms) steps(10) both;
   }
 
   .burst-ring {
-    animation: burst-grow var(--beat) steps(4) both;
+    animation: burst-grow var(--fx-ms) steps(8) both;
   }
 
   .burst-ring.second {
-    animation-delay: calc(var(--beat) / 6);
+    animation-delay: calc(var(--fx-ms) / 8);
   }
 
   .burst-label {
-    animation: burst-label var(--beat) steps(6) both;
+    animation: burst-label var(--fx-ms) steps(8) both;
+  }
+
+  .round-intro {
+    animation: intro-veil var(--fx-ms) steps(6) both;
+  }
+
+  .ri-text {
+    animation: intro-slam var(--fx-ms) steps(8) both;
   }
 
   .hpbar > i.drain {
@@ -2582,62 +2616,139 @@ button.ab-auto-toggle:not(.on) small {
   @keyframes stage-blink {
     0%,
     40%,
-    80% {
+    80%,
+    100% {
       opacity: 1;
     }
 
     20%,
-    60%,
-    100% {
+    60% {
       opacity: 0.35;
     }
   }
 
-  @keyframes stage-light {
+  /* An ability card flashes gold as it lights up, then stays until it fades out. */
+  @keyframes card-hold {
     0% {
       background: var(--gold);
       color: var(--ink);
+      opacity: 1;
+    }
+
+    15% {
+      background: var(--ink);
+      color: var(--gold);
+    }
+
+    85% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
     }
   }
 
+  @keyframes callout-hold {
+    0% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1.8);
+    }
+
+    15%,
+    80% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  @keyframes ko-hold {
+    0% {
+      opacity: 1;
+      transform: translateX(-50%) scale(2);
+    }
+
+    20%,
+    80% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  /* The number floats up and stays readable for most of its time, fading in the last tenth. */
   @keyframes float-rise {
     0% {
       opacity: 1;
-      transform: translate(calc(-50% + var(--drift, 0) * 2px), calc(var(--lane, 0) * -0.9rem));
+      transform: translate(calc(-50% + var(--drift, 0) * 2px + var(--lx, 0px)), var(--ly, 0px));
     }
 
-    70% {
+    85% {
       opacity: 1;
     }
 
     100% {
       opacity: 0;
       transform: translate(
-        calc(-50% + var(--drift, 0) * 6px),
-        calc(var(--lane, 0) * -0.9rem - 2.5rem)
+        calc(-50% + var(--drift, 0) * 6px + var(--lx, 0px)),
+        calc(var(--ly, 0px) - 1.5rem)
       );
     }
   }
 
+  /* "CRITICAL!" slams in big, shakes once, and holds. */
+  @keyframes crit-pop {
+    0% {
+      transform: scale(2.2);
+    }
+
+    12% {
+      transform: scale(0.9);
+    }
+
+    24% {
+      transform: scale(1.15);
+    }
+
+    36%,
+    100% {
+      transform: scale(1);
+    }
+  }
+
   @keyframes burst-grow {
-    from {
+    0% {
       opacity: 1;
       transform: scale(0.2);
     }
 
-    to {
+    35% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    100% {
       opacity: 0;
-      transform: scale(1.4);
+      transform: scale(1.5);
     }
   }
 
   @keyframes burst-label {
     0% {
-      transform: translate(-50%, -50%) scale(1.5);
+      transform: translate(-50%, -50%) scale(1.6);
     }
 
-    20%,
-    80% {
+    15%,
+    85% {
       opacity: 1;
       transform: translate(-50%, -50%) scale(1);
     }
@@ -2645,6 +2756,32 @@ button.ab-auto-toggle:not(.on) small {
     100% {
       opacity: 0;
       transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  @keyframes intro-veil {
+    0% {
+      opacity: 0;
+    }
+
+    8%,
+    88% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes intro-slam {
+    0% {
+      transform: scale(2);
+    }
+
+    12%,
+    100% {
+      transform: scale(1);
     }
   }
 

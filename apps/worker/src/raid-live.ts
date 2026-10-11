@@ -29,8 +29,11 @@ import type { LedgerStorage } from './ledger';
 import { basicKey, buildPhaseInput, drawSeed, settleParty } from './raid-resolve';
 import { RaidError } from './raid-teams';
 
-/** One round of the live finale. */
-export const LIVE_ROUND_MS = 10_000;
+/**
+ * One round of the live finale: 15 seconds, so 12 rounds take 3 minutes. A fight stores its own
+ * `round_ms` when it starts, so changing this only affects fights that start afterwards.
+ */
+export const LIVE_ROUND_MS = 15_000;
 /** The lobby opens this long before the finale. */
 export const LOBBY_MS = 5 * 60_000;
 /** A finale event that runs this late or earlier starts live; later than that nobody can watch. */

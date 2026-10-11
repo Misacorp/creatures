@@ -311,7 +311,6 @@ export function Live({
       {fight.status !== 'lobby' && fight.loot !== null && !fight.practice && !dismissed && (
         <RevealCard
           reveal={fight.loot}
-          pity={fight.loot.pity}
           busy={false}
           afterAction={{
             week: fight.week,
@@ -363,6 +362,7 @@ export function Live({
             names={stageNames}
             events={fight.events}
             roundMs={fight.roundMs}
+            hold={countdown !== null}
             abilities={{
               list: fight.abilities,
               you: fight.you,

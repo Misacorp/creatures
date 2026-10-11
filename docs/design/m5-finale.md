@@ -7,8 +7,9 @@ Status: **draft for M5**. Builds on `m3-combat.md` (engine, finale abilities), `
 1. **Before Sunday 20:00:** in the Raid tab, each player picks their **finale ability** (Rally, Shield Wall, Re-mark, Purge). If they don't pick, they get the M4 default (round-robin). The pick locks when the finale starts.
 2. **From 19:55 (lobby):** the Raid tab shows "Finale starts in 4:12" and connects to the live fight. Players see who else is watching. The lobby already shows the **stage as a preview**: the party's row as it would fight now, with the player's own creatures and their abilities. Tapping one opens a popover with only the **Auto fire** toggle (no Fire before the start).
    - **The last 30 seconds [Misa]:** a big countdown in the pixel display face covers the stage, driven by the server clock (`startsAt`, `serverNow` and the clock offset; no extra requests). From 30 to 11 a calm pulse; from 10 to 6 a faster pulse with the colour shifting from gold to orange; from 5 to 1 red, a stepped screen shake on each second and a bigger number each tick. At 0 it says "FIGHT!" for a moment and the stage takes over. With `prefers-reduced-motion` the number is still and only its colour changes. The overlay lets taps through, so Auto fire can be set during the countdown.
-3. **20:00–about 20:02 (live):** the boss and the party's row. A round plays every 10 seconds (12 rounds by default, the boss's `finaleRounds`). Players see the events of each round as they happen (the replay viewer's event text), the boss HP bar and a round counter. Each player has **one ability button**.
-4. **The end:** the fight ends after the last round or when the boss falls. Each player gets a **loot reveal**: the outcome, their Essence, and the jackpot roll. On a hit it shows a big reveal and "First on server" if theirs is the first. Players who weren't there see the same reveal the next time they open the Raid tab.
+3. **20:00–about 20:03 (live):** the boss and the party's row. A round plays every **15 seconds** (12 rounds by default, the boss's `finaleRounds`, so about 3 minutes; the cap is 5 minutes) **[Misa, 2026-10-11]**. Players see the events of each round as they happen as effects on the stage (and, behind a Log toggle, as text), the boss HP bar and a round counter. Each player has **one ability button**.
+   - **How a round plays [Misa]:** a big "Round N" in the pixel face covers the stage for 3 seconds, then the round's creature actions play, and their effects are over about 1.5 seconds before the next round. Details under "Playback" below.
+4. **The end:** the fight ends after the last round or when the boss falls. Each player gets a **loot reveal**: the outcome and one Essence figure. The jackpot roll and the pity counter are **hidden from players [Misa]**: a jackpot is still rolled and paid, but the reveal only shows everything as one Essence total. Players who weren't there see the same reveal the next time they open the Raid tab.
 
 The fight is the same for watchers and non-watchers: nobody's creatures are weaker for being absent **[Misa]**.
 
@@ -33,7 +34,7 @@ The engine stays pure and unchanged. The live finale relies on one property of i
 1. **Start (the finale event at 20:00, from the guild alarm):** for each party, in one transaction:
    - build the fight input exactly as M4 does: row from the creatures' current stats, carried HP pool, Phase 2 adaptation. From here on the row is frozen;
    - draw the seed from live crypto randomness;
-   - store both in `raid_live`, with `started_at`, `round_ms` (10 000), the round count and each member's ability state (`abilityId`, `mode` default | held | fired, `fireAtRound`, `params`).
+   - store both in `raid_live`, with `started_at`, `round_ms` (15 000, `LIVE_ROUND_MS`; a stored fight keeps the value it started with), the round count and each member's ability state (`abilityId`, `mode` default | held | fired, `fireAtRound`, `params`).
 
    The seed never leaves the server before the fight has resolved.
 
@@ -51,12 +52,23 @@ Discord's proxy does support WebSockets, but it documents little about them: the
 - `GET /api/raid/live` (bearer session, as for every API call) returns the caller's party's live state:
   `{ status: "none" | "lobby" | "live" | "done", practice, week, party, you, startsAt, roundMs, rounds, round, serverNow, boss: { id, name, element, hpMax, hpStart }, row, names, abilities: [{ alias, abilityId, mode, fired, firedAtRound }], events: FightEvent[], bossHp, watching: [displayName], loot }`.
   - `events` holds every event up to the current round. Each response is the full snapshot, so a client that misses a poll or reconnects just catches up.
-  - `loot` is null until the end. Then it is the caller's own loot: `{ cleared, essence, jackpot: null | { essence, firstOnServer }, pity }`.
+  - `loot` is null until the end. Then it is the caller's own loot: `{ cleared, essence, rankChange, festivalGrant }`. `essence` is the caller's whole payout for the finale, the jackpot Essence included. The jackpot roll, whether it hit, and the pity counter are never sent (they stay in storage).
   - `watching` lists the players who polled in the last 10 s, tracked in memory in the guild object (best effort).
   - The lobby is from 5 minutes before the start. `none` means there is no finale soon.
 - `POST /api/raid/live/action` with `{ key, action: "fire" | "hold" | "unhold", zone?, element? }` (strict schema) returns the new snapshot. The player's identity always comes from the session.
 - The client polls every 2 s in the lobby and during the fight, a little after each round boundary (it knows `serverNow`, `startsAt` and `roundMs`), and stops at `done`. That is at most 15 players × 0.5 requests per second per party, well inside the per-player rate limit (burst 30, 1 per second).
 - **Later (M5.1):** a WebSocket push channel on the same object (Hibernation API, one-time ticket in the query string because a browser WebSocket can't send `Authorization`, origin check, app-level ping), once a staging spike shows it works in Discord on desktop, iOS and Android. The snapshot format stays the same, so the client only swaps how it receives it.
+
+## Playback on the client [Misa, 2026-10-11]
+
+The server only says what happened; the client decides how to show it (`stage.ts`, `stage-fx.ts`, `use-live-stage.ts`). Two clocks are kept apart:
+
+- **Stagger:** how long after a beat starts the next one starts. 500 ms for a plain turn, up to 700 ms for a crit, reaction, ability, knockout or gimmick; compressed to fit the round, never below 250 ms.
+- **Visible duration:** how long a beat's effects stay. Damage numbers float for 1.3 s; a crit for 2 s with a big "CRITICAL!" pop; a reaction shows a large burst with its name ("Conduction!") in its two element colours for 1.5 s; a knockout is held (a "KO!" tag) for 1 s; an ability shows the creature's name and the ability for 1.5 s. Effects overlap the beats that follow.
+- **Budget per live round (15 s):** 3 s "Round N" intro, then the beats, and the last beat's effects end about 1.5 s before the next round (10.5 s for the beats and their effects). A round with very many beats runs at the 250 ms minimum and the next round simply replaces what is left.
+- **Replays** show the same intro for 1.5 s and the same visible durations. At 2x the stagger is halved, the durations are about 30% shorter and the intro is 0.9 s. Before a round's intro the previous round's effects get time to finish.
+- **Reduced motion:** the intro is plain text for the same time, and the newest beat's effects are shown without movement.
+- The intro waits for the countdown's "FIGHT!" to finish when a fight starts.
 
 ## Auto fire preferences
 
@@ -68,7 +80,7 @@ Discord's proxy does support WebSockets, but it documents little about them: the
 
 ## The loot reveal for people who missed it
 
-- The result read model (`GET /api/raid`) gains `you.reveal: null | { week, cleared, essence, jackpot }` for the latest finale the player took part in and hasn't seen yet.
+- The result read model (`GET /api/raid`) gains `you.reveal: null | { week, party, cleared, essence, rankChange, festivalGrant }` (`essence` includes the hidden jackpot Essence) for the latest finale the player took part in and hasn't seen yet.
 - `POST /api/raid/reveal-seen { week }` marks it as seen (idempotent).
 - Only the player's own reveal is ever sent.
 

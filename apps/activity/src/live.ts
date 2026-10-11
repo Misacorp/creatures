@@ -15,8 +15,8 @@ import { festivalGrantText, rankChangeText } from './raid-progress';
 
 /** The lobby opens this long before the start. */
 export const LOBBY_MS = 5 * 60_000;
-/** The round length of a finale (the server sends the real one with every snapshot). */
-export const DEFAULT_ROUND_MS = 10_000;
+/** The round length of a finale (the server sends the real one with every snapshot): 15 seconds. */
+export const DEFAULT_ROUND_MS = 15_000;
 /** How long after the last round the Raid tab keeps the finale view open for a result to show up. */
 export const FINISH_GRACE_MS = 30_000;
 
@@ -490,21 +490,19 @@ export function earlierLines(events: readonly FightEvent[], names: EventNames): 
 export interface RevealSummary {
   outcome: string;
   cleared: boolean;
+  /** One figure: everything the finale paid the player. */
   essence: string;
-  jackpot: { hit: boolean; text: string; firstOnServer: boolean };
   /** Where the server's rank went; null until the ladder has moved (and for old weeks). */
   rank: string | null;
   /** The Festival creature the player got; null if none. */
   festival: { text: string; firstOnServer: boolean } | null;
 }
 
-/** Plain words for a finale reveal. `pity` is the counter after the fight, when known. */
+/** Plain words for a finale reveal. */
 export function revealSummary(
-  reveal: Pick<RaidReveal, 'cleared' | 'essence' | 'jackpot'> &
+  reveal: Pick<RaidReveal, 'cleared' | 'essence'> &
     Partial<Pick<RaidReveal, 'rankChange' | 'festivalGrant'>>,
-  pity: number | null,
 ): RevealSummary {
-  const { jackpot } = reveal;
   const rank = reveal.rankChange == null ? null : rankChangeText(reveal.rankChange);
   const festival =
     reveal.festivalGrant == null
@@ -513,37 +511,10 @@ export function revealSummary(
           text: festivalGrantText(reveal.festivalGrant),
           firstOnServer: reveal.festivalGrant.firstOnServer,
         };
-  const outcome = reveal.cleared
-    ? 'The boss fell. Finale cleared!'
-    : 'The boss held on. Not cleared.';
-  const essence = `You got ${String(reveal.essence)} Essence`;
-  if (jackpot !== null) {
-    return {
-      outcome,
-      cleared: reveal.cleared,
-      essence,
-      jackpot: {
-        hit: true,
-        text: `Jackpot! +${String(jackpot.essence)} Essence`,
-        firstOnServer: jackpot.firstOnServer,
-      },
-      rank,
-      festival,
-    };
-  }
-  const max = RULES.raid.jackpot.hardPityRaid;
   return {
-    outcome,
+    outcome: reveal.cleared ? 'The boss fell. Finale cleared!' : 'The boss held on. Not cleared.',
     cleared: reveal.cleared,
-    essence,
-    jackpot: {
-      hit: false,
-      text:
-        pity === null
-          ? 'No jackpot this time'
-          : `No jackpot this time (pity ${String(pity)}/${String(max)})`,
-      firstOnServer: false,
-    },
+    essence: `You got ${String(reveal.essence)} Essence`,
     rank,
     festival,
   };

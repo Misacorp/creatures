@@ -326,12 +326,7 @@
   "watching": ["Player 1"],
   "loot": {
     "cleared": true,
-    "essence": 28,
-    "jackpot": {
-      "essence": 112,
-      "firstOnServer": true
-    },
-    "pity": 0,
+    "essence": 140,
     "rankChange": {
       "before": 3,
       "after": 4,

@@ -28,7 +28,7 @@ Misa's view: a fight being roughly predictable is fine. The game is about growin
    - Treat the team as "the player" (Valve, Left 4 Dead).
    - No public naming of the weakest member.
    - Absent and weaker members still earn a smaller reward (Clash Royale, Pokémon GO). We already do this.
-6. **Show odds as bands or frequencies, not decimals.** People read probabilities poorly. Always show pity.
+6. **Show odds as bands or frequencies, not decimals.** People read probabilities poorly. Always show pity. (Superseded for the jackpot by Misa on 2026-10-11: the jackpot and its pity are hidden from players; see `decisions.md`.)
 
 **Verdict:** Misa's view holds. Predictable fights are fine if the week-to-week path is visible and honest. The current "boss follows your level" scaling works against it, and should be replaced with a visible difficulty ladder.
 

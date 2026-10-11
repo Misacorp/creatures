@@ -123,6 +123,27 @@ const err = (outcome: { ok: boolean } & Record<string, unknown>) =>
   outcome.ok ? 'ok' : `${String(outcome['status'])} ${String(outcome['error'])}`;
 
 describe('the live finale lifecycle', () => {
+  it('uses 15 second rounds for a new fight, and keeps the round length a stored fight started with', async () => {
+    expect(ROUND).toBe(15_000);
+    await runRaid((ctx) => {
+      const [a] = toFinale(ctx);
+      const player = a as Seeded;
+      begin(ctx);
+      expect(rows(ctx.sql, 'SELECT DISTINCT round_ms FROM raid_live')).toEqual([
+        { round_ms: 15_000 },
+      ]);
+      // 12 rounds are 3 minutes.
+      expect(12 * ROUND).toBe(3 * MINUTE);
+      at(ctx, 25_000);
+      expect(snap(ctx, player)).toMatchObject({ roundMs: 15_000, round: 2 });
+
+      // A fight stored under the old 10 second rounds keeps them: the snapshot and the clock use the
+      // stored value, whatever the constant says now.
+      ctx.sql.exec('UPDATE raid_live SET round_ms = 10000');
+      expect(snap(ctx, player)).toMatchObject({ roundMs: 10_000, round: 3 });
+    });
+  });
+
   it('is quiet before the lobby, then lobby, then live with rounds from the clock', async () => {
     await runRaid((ctx) => {
       const [a] = toFinale(ctx);
@@ -584,15 +605,38 @@ describe('the end of the fight', () => {
         expect(rng.drawn()).toBe(drawnBefore + 4 + 2);
         expect(done.loot).toMatchObject({ cleared: true });
         expect(done.loot?.essence).toBeGreaterThanOrEqual(RULES.raid.essence.flat.finale);
-        expect(done.loot?.jackpot).toEqual({
-          essence: jackpotEssenceFor(weekPayout(ctx.sql)),
-          firstOnServer: true,
-        });
-        expect(done.loot?.pity).toBe(0);
+        // The jackpot is hidden: the loot is one combined Essence figure (a's roll hit, b's missed)
+        // and carries neither the jackpot nor the pity counter.
         const other = snap(ctx, b);
         expect(other.status).toBe('done');
-        expect(other.loot?.jackpot).toBeNull();
-        expect(other.loot?.pity).toBe(1);
+        const paidTo = (p: Seeded): number =>
+          raidLedger(ctx.sql)
+            .filter(
+              (l) =>
+                l.user_id === p.id &&
+                (l.idempotency_key.endsWith(':finale') || l.idempotency_key.endsWith(':jackpot')),
+            )
+            .reduce((sum, l) => sum + l.amount, 0);
+        expect(done.loot?.essence).toBe(paidTo(a));
+        expect(other.loot?.essence).toBe(paidTo(b));
+        // a's roll hit: the figure holds the jackpot Essence, and b's does not.
+        expect(
+          raidLedger(ctx.sql).filter(
+            (l) => l.user_id === a.id && l.idempotency_key.endsWith(':jackpot'),
+          ),
+        ).toHaveLength(1);
+        expect(paidTo(a) - jackpotEssenceFor(weekPayout(ctx.sql))).toBeGreaterThan(0);
+        expect(Object.keys(done.loot ?? {}).sort()).toEqual([
+          'cleared',
+          'essence',
+          'festivalGrant',
+          'rankChange',
+        ]);
+        expect(JSON.stringify(done)).not.toMatch(/jackpot|pity/i);
+        // Behind the scenes it is all still there.
+        expect(
+          rows(ctx.sql, 'SELECT user_id, counter FROM jackpot_pity ORDER BY user_id'),
+        ).toHaveLength(2);
 
         // Reading again, later, changes nothing and draws nothing.
         const ledger = raidLedger(ctx.sql);
@@ -971,11 +1015,24 @@ describe('the loot reveal', () => {
         const ra = revealOf(a);
         expect(ra).toMatchObject({ week: W02.id, cleared: true });
         expect(ra?.essence).toBeGreaterThanOrEqual(RULES.raid.essence.flat.finale);
-        expect(ra?.jackpot).toEqual({
-          essence: jackpotEssenceFor(weekPayout(ctx.sql)),
-          firstOnServer: true,
-        });
-        expect(revealOf(b)?.jackpot).toBeNull();
+        // One combined Essence figure: a's hidden jackpot roll hit, b's missed.
+        const paidTo = (p: Seeded): number =>
+          raidLedger(ctx.sql)
+            .filter(
+              (l) =>
+                l.user_id === p.id &&
+                (l.idempotency_key.endsWith(':finale') || l.idempotency_key.endsWith(':jackpot')),
+            )
+            .reduce((sum, l) => sum + l.amount, 0);
+        expect(ra?.essence).toBe(paidTo(a));
+        expect(revealOf(b)?.essence).toBe(paidTo(b));
+        expect(
+          raidLedger(ctx.sql).filter(
+            (l) => l.user_id === a.id && l.idempotency_key.endsWith(':jackpot'),
+          ),
+        ).toHaveLength(1);
+        expect(Object.keys(ra ?? {})).not.toContain('jackpot');
+        expect(JSON.stringify(ra)).not.toMatch(/jackpot|pity/i);
         expect(revealOf(outsider)).toBeNull();
         // The reveal holds the player's own Essence, nothing else of anyone.
         expect(JSON.stringify(ra)).not.toContain(b.id);
@@ -995,7 +1052,7 @@ describe('the loot reveal', () => {
     );
   });
 
-  it('shows the latest finale only, and a lost one without a jackpot', async () => {
+  it('shows the latest finale only, and a lost one with no Essence', async () => {
     await runRaid((ctx) => {
       const players = toFinale(ctx);
       const [a] = inOrder(ctx, players) as [Seeded, Seeded];
@@ -1007,7 +1064,6 @@ describe('the loot reveal', () => {
         party: 1,
         cleared: false,
         essence: 0,
-        jackpot: null,
         // A lost finale keeps the rank, and a normal week has no Festival creature.
         rankChange: {
           before: weekPayout(ctx.sql).rank,
@@ -1235,8 +1291,8 @@ describe('the practice finale', () => {
         ctx.clock.t = t0 + 12 * ROUND;
         const end = snap(ctx, a);
         expect(end).toMatchObject({ status: 'done', practice: true });
-        expect(end.loot).toMatchObject({ essence: 0, jackpot: null });
-        expect(snap(ctx, b).loot).toMatchObject({ essence: 0, jackpot: null });
+        expect(end.loot).toMatchObject({ essence: 0 });
+        expect(snap(ctx, b).loot).toMatchObject({ essence: 0 });
         await ctx.core.alarm();
         expect(rows(ctx.sql, 'SELECT hp_max, hp_current, boss_atk FROM raid_parties')).toEqual(
           poolBefore,
@@ -1361,6 +1417,7 @@ describe('the engine and the stored fight agree', () => {
       const players = toFinale(ctx);
       const [a, b] = inOrder(ctx, players) as [Seeded, Seeded];
       pick(ctx, a, 're-mark');
+      begin(ctx);
       inRound(ctx, 3);
       act(ctx, a, { action: 'fire', element: 'tide' });
       inRound(ctx, 4);
@@ -1433,8 +1490,7 @@ describe('the API contract with the client', () => {
     'unlocked',
   ];
   const ROW_KEYS = ['element', 'id', 'level', 'name', 'owner', 'position', 'role', 'species'];
-  const LOOT_KEYS = ['cleared', 'essence', 'festivalGrant', 'jackpot', 'pity', 'rankChange'];
-  const JACKPOT_KEYS = ['essence', 'firstOnServer'];
+  const LOOT_KEYS = ['cleared', 'essence', 'festivalGrant', 'rankChange'];
   const RANK_CHANGE_KEYS = ['after', 'before', 'festival', 'serverWon'];
   const GRANT_KEYS = ['firstOnServer', 'outcome', 'species'];
   const SEASON_KEYS = ['index', 'week'];
@@ -1447,7 +1503,6 @@ describe('the API contract with the client', () => {
     'damage',
     'essence',
     'festivalGrant',
-    'jackpot',
     'phase',
     'rankChange',
     'reactions',
@@ -1485,15 +1540,7 @@ describe('the API contract with the client', () => {
     'row',
     'rowLength',
   ];
-  const REVEAL_KEYS = [
-    'cleared',
-    'essence',
-    'festivalGrant',
-    'jackpot',
-    'party',
-    'rankChange',
-    'week',
-  ];
+  const REVEAL_KEYS = ['cleared', 'essence', 'festivalGrant', 'party', 'rankChange', 'week'];
 
   const get = async (ctx: Ctx, secret: string, path = '/api/raid/live') => {
     const res = await ctx.request(secret, path);
@@ -1516,8 +1563,6 @@ describe('the API contract with the client', () => {
     }
     if (value['loot'] !== null) {
       expect(keys(value['loot']), `${label}.loot: ${UPDATE}`).toEqual(LOOT_KEYS);
-      const jackpot = (value['loot'] as { jackpot: unknown }).jackpot;
-      if (jackpot !== null) expect(keys(jackpot), `${label}.loot.jackpot`).toEqual(JACKPOT_KEYS);
       const loot = value['loot'] as { rankChange: unknown; festivalGrant: unknown };
       if (loot.rankChange !== null) {
         expect(keys(loot.rankChange), `${label}.loot.rankChange: ${UPDATE}`).toEqual(
@@ -1589,13 +1634,16 @@ describe('the API contract with the client', () => {
         expect(typeof done['bossHp']).toBe('number');
         expect(typeof (done['names'] as { boss: unknown }).boss).toBe('string');
         expect(keys(done['names'])).toEqual(keys(liveDoneHit.names));
-        expect(keys((done['loot'] as { jackpot: unknown }).jackpot), UPDATE).toEqual(JACKPOT_KEYS);
+        // The jackpot and the pity counter are never sent, anywhere in the snapshot.
+        expect(JSON.stringify(done)).not.toMatch(/jackpot|pity/i);
         const other = await get(ctx, sb);
-        expect((other['loot'] as { jackpot: unknown }).jackpot).toBeNull();
+        expect(JSON.stringify(other)).not.toMatch(/jackpot|pity/i);
 
         // The Raid view carries the ability and the reveal.
         const raid = await get(ctx, sa, '/api/raid');
         const you = raid['you'] as Record<string, unknown>;
+        // No jackpot or pity in the Raid view either (the result list, the reveal), nor in the state.
+        expect(JSON.stringify(raid)).not.toMatch(/jackpot|pity/i);
         expect(keys(you['ability']), UPDATE).toEqual(['abilityId', 'chosen']);
         // What the player brings: the basic ability, then each team creature's (locked ones lack a key).
         const preview = you['abilities'] as Record<string, unknown>[];
@@ -1615,6 +1663,7 @@ describe('the API contract with the client', () => {
 
         // The Collection's creature view carries the ability (and the fixture has the same keys).
         const state = await get(ctx, sa, '/api/state');
+        expect(JSON.stringify(state)).not.toMatch(/jackpot|pity/i);
         const creature = (state['creatures'] as Record<string, unknown>[])[0] as Record<
           string,
           unknown

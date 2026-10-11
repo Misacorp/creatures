@@ -101,11 +101,7 @@
       "week": "2027-W02",
       "party": 1,
       "cleared": true,
-      "essence": 28,
-      "jackpot": {
-        "essence": 112,
-        "firstOnServer": true
-      },
+      "essence": 140,
       "rankChange": {
         "before": 3,
         "after": 4,
@@ -240,7 +236,6 @@
           }
         ],
         "essence": 15,
-        "jackpot": [],
         "rankChange": null,
         "festivalGrant": null
       },
@@ -269,7 +264,6 @@
           }
         ],
         "essence": 22,
-        "jackpot": [],
         "rankChange": null,
         "festivalGrant": null
       },
@@ -297,8 +291,7 @@
             "you": true
           }
         ],
-        "essence": 28,
-        "jackpot": ["Player 1"],
+        "essence": 140,
         "rankChange": {
           "before": 3,
           "after": 4,

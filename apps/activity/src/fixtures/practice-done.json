@@ -3382,8 +3382,6 @@
   "loot": {
     "cleared": false,
     "essence": 0,
-    "jackpot": null,
-    "pity": 0,
     "rankChange": null,
     "festivalGrant": null
   }

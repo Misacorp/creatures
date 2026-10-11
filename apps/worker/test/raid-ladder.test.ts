@@ -486,11 +486,13 @@ describe('rewards follow the rank', () => {
         expect(paid.reduce((t, p) => t + p.amount, 0)).toBe(
           Object.values(owed).reduce((a, b) => a + b, 0),
         );
-        // What the reveal shows is what was paid.
+        // What the reveal shows is what was paid: one combined figure, the jackpot included.
         const userId = finale?.summary.members[0]?.userId as string;
         const reveal = ctx.core.raid.view(userId, HELSINKI).you.reveal;
-        expect(reveal?.essence).toBe(paid.find((p) => p.user_id === userId)?.amount);
-        expect(reveal?.jackpot?.essence).toBe(jackpotEssenceFor(payout));
+        expect(reveal?.essence).toBe(
+          (paid.find((p) => p.user_id === userId)?.amount ?? 0) + jackpotEssenceFor(payout),
+        );
+        expect(Object.keys(reveal ?? {})).not.toContain('jackpot');
       },
       { start: W02.monday },
     );

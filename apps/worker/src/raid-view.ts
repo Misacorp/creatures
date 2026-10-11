@@ -26,7 +26,7 @@ import {
   creatureKey,
   type StoredSummary,
 } from './raid-resolve';
-import { latestReveal, type RevealView } from './raid-reveal';
+import { latestReveal, totalEssenceOf, type RevealView } from './raid-reveal';
 import { partyMembers, partyOf } from './raid-roster';
 import { RAID_PHASES, isWeekId, weekIndex, type RaidEvent, type RaidPhase } from './raid-schedule';
 import { effectiveTeam, rowLength, type RaidStatus, type TeamCreature } from './raid-teams';
@@ -121,10 +121,8 @@ export interface PhaseResultView {
   reactions: number;
   /** The best contributors by display name (at most three). */
   top: { displayName: string; damage: number; contribution: number; you: boolean }[];
-  /** Essence the caller earned in this phase. */
+  /** Essence the caller earned in this phase (the finale's includes the hidden jackpot Essence). */
   essence: number;
-  /** Finale only: display names of the players who hit the jackpot. */
-  jackpot: string[];
   /** Finale only: what it did to the server's rank; null until the ladder has moved, and for phases. */
   rankChange: RankChangeView | null;
   /** Finale only: the Festival creature the caller got; null otherwise. */
@@ -462,8 +460,10 @@ function resultView(
       contribution: c.contribution,
       you: c.userId === userId,
     })),
-    essence: summary.essence[userId] ?? 0,
-    jackpot: summary.jackpot.map((id) => names.get(id) ?? 'Unknown'),
+    essence:
+      phase === 'finale'
+        ? totalEssenceOf(sql, userId, weekId, summary)
+        : (summary.essence[userId] ?? 0),
     rankChange: phase === 'finale' ? rankChangeOf(sql, weekId) : null,
     festivalGrant: phase === 'finale' ? readFestivalGrant(sql, weekId, userId) : null,
   };

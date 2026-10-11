@@ -304,11 +304,8 @@ export interface Expedition {
 }
 
 export interface ServerFirst {
-  /**
-   * `jackpot` is the shared finale jackpot record (species `jackpot`); it is not a creature.
-   * `festival` is the first win of a Festival creature (the species is that creature).
-   */
-  kind: 'catch' | 'evolve' | 'jackpot' | 'festival';
+  /** `festival` is the first win of a Festival creature (the species is that creature). */
+  kind: 'catch' | 'evolve' | 'festival';
   species: string;
   at: number;
   mine: boolean;
@@ -418,10 +415,7 @@ function isExpedition(value: unknown): value is Expedition {
 function isServerFirst(value: unknown): value is ServerFirst {
   return (
     isRecord(value) &&
-    (value['kind'] === 'catch' ||
-      value['kind'] === 'evolve' ||
-      value['kind'] === 'jackpot' ||
-      value['kind'] === 'festival') &&
+    (value['kind'] === 'catch' || value['kind'] === 'evolve' || value['kind'] === 'festival') &&
     isStr(value['species']) &&
     isInt(value['at']) &&
     typeof value['mine'] === 'boolean' &&

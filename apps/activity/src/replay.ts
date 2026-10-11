@@ -153,11 +153,6 @@ export function turnOrderOfRound(events: readonly FightEvent[], round: number): 
 
 export type Speed = 1 | 2;
 
-/** Milliseconds between steps. */
-export function stepDelayMs(speed: Speed): number {
-  return speed === 2 ? 350 : 800;
-}
-
 // --- Key moments ---
 
 export interface KeyMoment {

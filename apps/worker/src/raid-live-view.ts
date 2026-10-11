@@ -14,7 +14,7 @@ import {
 import { readFestivalGrant, type FestivalGrantView } from './raid-festival';
 import { rankChangeOf, type RankChangeView } from './raid-ladder';
 import { bossFor, type StoredSummary } from './raid-resolve';
-import { jackpotOf } from './raid-reveal';
+import { totalEssenceOf } from './raid-reveal';
 import {
   LIVE_ROUND_MS,
   firedRound,
@@ -50,10 +50,8 @@ export interface LiveAbilityView {
 
 export interface LiveLoot {
   cleared: boolean;
+  /** All the Essence the finale paid the caller, jackpot included (the jackpot itself is hidden). */
   essence: number;
-  jackpot: null | { essence: number; firstOnServer: boolean };
-  /** Raids taken part in without a jackpot, after this one. Private. */
-  pity: number;
   /** What the finale did to the server's rank; null until the ladder has moved (and in practice). */
   rankChange: RankChangeView | null;
   /** The Festival creature the caller got, or null. */
@@ -260,20 +258,10 @@ function realLoot(ctx: LiveContext, row: LiveRow): LiveLoot | null {
   if (!summary.members.some((m) => m.userId === ctx.userId)) return null;
   return {
     cleared: summary.cleared,
-    essence: summary.essence[ctx.userId] ?? 0,
-    jackpot: jackpotOf(ctx.sql, ctx.userId, row.weekId, summary),
-    pity: pityOf(ctx.sql, ctx.userId),
+    essence: totalEssenceOf(ctx.sql, ctx.userId, row.weekId, summary),
     rankChange: rankChangeOf(ctx.sql, row.weekId),
     festivalGrant: readFestivalGrant(ctx.sql, row.weekId, ctx.userId),
   };
-}
-
-export function pityOf(sql: SqlStorage, userId: string): number {
-  return (
-    sql
-      .exec<{ counter: number }>('SELECT counter FROM jackpot_pity WHERE user_id = ?', userId)
-      .toArray()[0]?.counter ?? 0
-  );
 }
 
 /**
@@ -322,8 +310,6 @@ export function liveSnapshot(
       ? {
           cleared: result.cleared,
           essence: 0,
-          jackpot: null,
-          pity: pityOf(ctx.sql, ctx.userId),
           rankChange: null,
           festivalGrant: null,
         }

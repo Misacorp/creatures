@@ -102,8 +102,7 @@ describe('parseRaidView with real server responses', () => {
       week: '2027-W02',
       party: 1,
       cleared: true,
-      essence: 28,
-      jackpot: { essence: 112, firstOnServer: true },
+      essence: 140,
       rankChange: { before: 3, after: 4, festival: false, serverWon: true },
       festivalGrant: null,
     });
@@ -265,7 +264,6 @@ describe('parseRaidView and the ladder fields', () => {
       party: 1,
       cleared: true,
       essence: 1,
-      jackpot: null,
       rankChange: { before: 3, after: 4, festival: false, serverWon: true },
       festivalGrant: {
         species: 'hearthshell',
@@ -311,7 +309,6 @@ describe('parseRaidView and the finale result', () => {
     reactions: 0,
     top: [],
     essence: 5,
-    jackpot: [],
     rankChange: null,
     festivalGrant: null,
   };
@@ -414,7 +411,6 @@ describe('parseRaidView', () => {
           party: 1,
           cleared: true,
           essence: 30,
-          jackpot: { essence: 100, firstOnServer: false },
           rankChange: null,
           festivalGrant: null,
         },
@@ -422,7 +418,8 @@ describe('parseRaidView', () => {
     };
     const parsed = parseRaidView(withBoth);
     expect(parsed.you.ability?.abilityId).toBe('rally');
-    expect(parsed.you.reveal?.jackpot?.essence).toBe(100);
+    expect(parsed.you.reveal?.essence).toBe(30);
+    expect(parsed.you.reveal).not.toHaveProperty('jackpot');
     const empty = { ...raid, you: { ...raid.you, ability: null, reveal: null } };
     expect(parseRaidView(empty).you.reveal).toBeNull();
     const miss = {
@@ -434,13 +431,12 @@ describe('parseRaidView', () => {
           party: 1,
           cleared: false,
           essence: 0,
-          jackpot: null,
           rankChange: null,
           festivalGrant: null,
         },
       },
     };
-    expect(parseRaidView(miss).you.reveal?.jackpot).toBeNull();
+    expect(parseRaidView(miss).you.reveal?.essence).toBe(0);
   });
 
   it('refuses a broken ability or reveal', () => {
@@ -450,14 +446,17 @@ describe('parseRaidView', () => {
     expect(() => parseRaidView(you({ ability: 'rally' }))).toThrow();
     expect(() => parseRaidView(you({ reveal: { week: 'w', cleared: true } }))).toThrow();
     expect(() =>
-      parseRaidView(you({ reveal: { week: 'w', cleared: true, essence: 1, jackpot: null } })),
-    ).toThrow();
-    expect(() =>
-      parseRaidView(you({ reveal: { week: 'w', cleared: true, essence: 1.5, jackpot: null } })),
-    ).toThrow();
-    expect(() =>
       parseRaidView(
-        you({ reveal: { week: 'w', cleared: true, essence: 1, jackpot: { essence: 1 } } }),
+        you({
+          reveal: {
+            week: 'w',
+            party: 1,
+            cleared: true,
+            essence: 1.5,
+            rankChange: null,
+            festivalGrant: null,
+          },
+        }),
       ),
     ).toThrow();
   });

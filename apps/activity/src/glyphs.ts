@@ -1,7 +1,7 @@
 /**
  * 8x8 UI glyphs, in the same data format as the other sprites (draw them with `<Sprite>`): boss
  * gimmicks, turn orders, the mark on the boss, shields, sparkles and the loot reveal's orb and
- * chest. Every glyph has its own shape, so the meaning never depends on colour alone. Pure data.
+ * gem. Every glyph has its own shape, so the meaning never depends on colour alone. Pure data.
  */
 import type { SpriteDef } from './sprites/sprite-data';
 
@@ -172,34 +172,6 @@ const orb: SpriteDef = {
   rows: ['..kk', '.kcc', 'kcww', 'kcwc', 'kccc', 'kccb', '.kbb', '..kk'],
 };
 
-const chest: SpriteDef = {
-  palette: { k: INK, b: '#8a5e33', g: GOLD },
-  rows: [
-    '........',
-    '.kkkkkk.',
-    'kbbbbbbk',
-    'kbbbbbbk',
-    'kkkggkkk',
-    'kbbggbbk',
-    'kbbbbbbk',
-    'kkkkkkkk',
-  ],
-};
-
-const chestOpen: SpriteDef = {
-  palette: { k: INK, b: '#8a5e33', g: GOLD, y: BONE },
-  rows: [
-    '.kkkkkk.',
-    'kbbbbbbk',
-    'kkkkkkkk',
-    'kggyyggk',
-    'kyyyyyyk',
-    'kbbbbbbk',
-    'kbbbbbbk',
-    'kkkkkkkk',
-  ],
-};
-
 /** A cut gem: Essence. */
 const gem: SpriteDef = {
   mirror: true,
@@ -268,8 +240,6 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   ability,
   unknown,
   orb,
-  chest,
-  chest_open: chestOpen,
   gem,
   skull,
   hand,

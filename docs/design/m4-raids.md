@@ -68,7 +68,7 @@ At the scheduled time, in one go per party:
 
 - Essence per cleared stage, as in `m3-combat.md` (about 70% flat, 30% by contribution).
 - The jackpot roll after a finale win, with pity tracked per player. In M4 a jackpot pays a large Essence bundle plus a "Jackpot" record. Gear and jackpot items arrive with the gear step.
-- **"First on server"** for jackpots: everyone who hits it in the same finale shares it.
+- **"First on server"** for jackpots: everyone who hits it in the same finale shares it. (Still recorded, but no longer shown to players: see `decisions.md`, 2026-10-11, "Slower, readable fights, and a hidden jackpot".)
 
 ## Evolution
 

@@ -327,8 +327,6 @@
   "loot": {
     "cleared": true,
     "essence": 52,
-    "jackpot": null,
-    "pity": 1,
     "rankChange": {
       "before": 3,
       "after": 4,

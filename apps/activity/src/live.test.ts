@@ -114,8 +114,8 @@ describe('finaleWindow', () => {
     expect(finaleWindow(finale, 12, finale - LOBBY_MS)).toBe('lobby');
     expect(finaleWindow(finale, 12, finale - 1)).toBe('lobby');
     expect(finaleWindow(finale, 12, finale)).toBe('live');
-    expect(finaleWindow(finale, 12, finale + 12 * 10_000)).toBe('live');
-    expect(finaleWindow(finale, 12, finale + 12 * 10_000 + 30_000)).toBe('after');
+    expect(finaleWindow(finale, 12, finale + 12 * 15_000)).toBe('live');
+    expect(finaleWindow(finale, 12, finale + 12 * 15_000 + 30_000)).toBe('after');
   });
 });
 
@@ -729,53 +729,34 @@ describe('the event feed', () => {
 });
 
 describe('revealSummary', () => {
-  it('shows a jackpot with the First on server flag', () => {
-    const s = revealSummary(
-      { cleared: true, essence: 40, jackpot: { essence: 100, firstOnServer: true } },
-      0,
-    );
+  it('shows one Essence figure and the outcome, and nothing about a jackpot or pity', () => {
+    const s = revealSummary({ cleared: true, essence: 140 });
     expect(s.outcome).toContain('cleared');
-    expect(s.essence).toBe('You got 40 Essence');
-    expect(s.jackpot).toEqual({ hit: true, text: 'Jackpot! +100 Essence', firstOnServer: true });
-  });
-
-  it('shows a jackpot that is not the first', () => {
-    const s = revealSummary(
-      { cleared: true, essence: 40, jackpot: { essence: 100, firstOnServer: false } },
-      null,
-    );
-    expect(s.jackpot.firstOnServer).toBe(false);
-    expect(s.jackpot.hit).toBe(true);
-  });
-
-  it('shows the pity counter on a miss', () => {
-    const s = revealSummary({ cleared: false, essence: 5, jackpot: null }, 4);
-    expect(s.cleared).toBe(false);
-    expect(s.outcome).toContain('Not cleared');
-    expect(s.jackpot).toEqual({
-      hit: false,
-      text: 'No jackpot this time (pity 4/10)',
-      firstOnServer: false,
-    });
+    expect(s.essence).toBe('You got 140 Essence');
+    expect(Object.keys(s).sort()).toEqual(['cleared', 'essence', 'festival', 'outcome', 'rank']);
+    expect(JSON.stringify(s)).not.toMatch(/jackpot|pity/i);
+    const lost = revealSummary({ cleared: false, essence: 5 });
+    expect(lost.cleared).toBe(false);
+    expect(lost.outcome).toContain('Not cleared');
+    expect(JSON.stringify(lost)).not.toMatch(/jackpot|pity/i);
   });
 
   it('says where the server’s rank went, and nothing before the ladder has moved', () => {
-    const base = { cleared: true, essence: 1, jackpot: null };
-    expect(revealSummary(base, null).rank).toBeNull();
-    expect(revealSummary({ ...base, rankChange: null, festivalGrant: null }, null).rank).toBeNull();
+    const base = { cleared: true, essence: 1 };
+    expect(revealSummary(base).rank).toBeNull();
+    expect(revealSummary({ ...base, rankChange: null, festivalGrant: null }).rank).toBeNull();
     const change = (before: number, after: number, festival = false) =>
-      revealSummary({ ...base, rankChange: { before, after, festival, serverWon: true } }, null)
-        .rank;
+      revealSummary({ ...base, rankChange: { before, after, festival, serverWon: true } }).rank;
     expect(change(4, 5)).toBe('The server climbs to Rank 5.');
     expect(change(4, 4)).toBe('Rank 4 stays.');
     expect(change(4, 3, true)).toBe('The Festival is over. The server eases to Rank 3.');
   });
 
   it('says what the Festival creature did, with the First on server flag', () => {
-    const base = { cleared: true, essence: 1, jackpot: null };
-    expect(revealSummary(base, null).festival).toBeNull();
+    const base = { cleared: true, essence: 1 };
+    expect(revealSummary(base).festival).toBeNull();
     const grant = (g: NonNullable<RaidReveal['festivalGrant']>) =>
-      revealSummary({ ...base, festivalGrant: g }, null).festival;
+      revealSummary({ ...base, festivalGrant: g }).festival;
     expect(grant({ species: 'hearthshell', outcome: 'new', firstOnServer: true })).toEqual({
       text: 'You won Hearthshell! A new level 1 creature for your collection.',
       firstOnServer: true,
@@ -787,10 +768,5 @@ describe('revealSummary', () => {
     expect(
       grant({ species: 'lanternfin', outcome: 'converted', bait: 80, firstOnServer: false })?.text,
     ).toBe('You already had a fully fused Lanternfin: +80 Bait instead.');
-  });
-
-  it('leaves the pity out when it is not known', () => {
-    const s = revealSummary({ cleared: true, essence: 0, jackpot: null }, null);
-    expect(s.jackpot.text).toBe('No jackpot this time');
   });
 });

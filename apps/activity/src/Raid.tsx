@@ -286,7 +286,6 @@ export function Raid({
       {reveal !== null && (
         <RevealCard
           reveal={reveal}
-          pity={null}
           busy={busy}
           afterAction={{
             week: reveal.week,
@@ -538,7 +537,6 @@ function ResultCard({
       <p>
         Essence you got: <strong>{result.essence}</strong>
       </p>
-      {result.jackpot.length > 0 && <p class="badge first">Jackpot: {result.jackpot.join(', ')}</p>}
       {result.festivalGrant !== null && (
         <p class="reveal-festival">{festivalGrantText(result.festivalGrant)}</p>
       )}

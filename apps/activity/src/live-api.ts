@@ -20,7 +20,6 @@ import {
   isEventNames,
   isFestivalGrant,
   isInt,
-  isJackpot,
   isRankChange,
   isNullableStr,
   isRecord,
@@ -64,10 +63,8 @@ export interface LiveAbility {
 
 export interface LiveLoot {
   cleared: boolean;
+  /** Everything the finale paid the caller, as one figure. */
   essence: number;
-  jackpot: null | { essence: number; firstOnServer: boolean };
-  /** Raids taken part in without a jackpot, after this one. */
-  pity: number;
   /** What the finale did to the server's rank; null until the ladder has moved, and in practice. */
   rankChange: RankChange | null;
   /** The Festival creature the finale gave the caller, or null. */
@@ -174,8 +171,6 @@ function isLiveLoot(value: unknown): value is LiveLoot {
     isRecord(value) &&
     isBool(value['cleared']) &&
     isNonNegativeInt(value['essence']) &&
-    (value['jackpot'] === null || isJackpot(value['jackpot'])) &&
-    isNonNegativeInt(value['pity']) &&
     (value['rankChange'] === null || isRankChange(value['rankChange'])) &&
     (value['festivalGrant'] === null || isFestivalGrant(value['festivalGrant']))
   );

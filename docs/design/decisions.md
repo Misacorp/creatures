@@ -431,3 +431,23 @@ PR #7 is merged and production runs it.
 - **The mobile tap bug.** Not reproducible by touch in Chromium with fixture data (real touch events, 90 ms holds, taps during beat playback: the popover always opened). The one real gap found: only creatures with an ability were buttons, and abilities unlock at level 10, so on staging a team below it had no tappable creature at all. Own creatures are now always buttons: one without an ability opens a note ("Its ability unlocks at level 10. It is level 4 now.").
 
 **Reasoning.** The server stays authoritative: preferences are validated and only ever read at the start. The lobby preview reuses the start's builder so it cannot drift from the fight.
+
+## 2026-10-11: Slower, readable fights, a round intro and a hidden jackpot **[Misa]**
+
+**Context.** Misa watched the first real live finale in production: "it feels like a speed run; combos and crits just aren't picked up by my eyes". He also asked to keep the jackpot and pity "behind the scenes".
+
+**Decision.**
+
+- **Round intro.** Every live round opens with a big "Round N" (pixel face, "of 12" under it) over the stage for 3 seconds, then the round's creature actions play. Replays show it for 1.5 s (0.9 s at 2x). With reduced motion it is plain text for the same time. It lets taps through, and the first round waits for the countdown's "FIGHT!" to end.
+- **Two clocks (`stage-fx.ts`).** The **stagger** (when each beat starts) is 500 ms by default and up to 700 ms for beats with a crit, reaction, ability, knockout or gimmick; it is compressed to fit the round and never goes below 250 ms. The **visible duration** is separate, so effects overlap the next beats: damage numbers 1.3 s, crits 2 s with a bigger "CRITICAL!" pop, reactions 1.5 s as a large burst with the reaction's name and both element colours, knockouts 1 s ("KO!" tag), ability cards 1.5 s (creature name and ability). The beat logic stays pure and tested.
+- **Live round budget.** 15 s per round: 3 s intro, the beats, and the last beat's effects end about 1.5 s before the next round (so 10.5 s for beats and effects). Replays keep the visible durations; 2x halves the stagger and shortens the durations by about 30%.
+- **Round length 10 s to 15 s** (`LIVE_ROUND_MS`): 12 rounds are 3 minutes, under Misa's 5 minute cap. The live finale and practice use it for fights **started after the change**; a stored `raid_live` row keeps its own `round_ms`, which the snapshot and the clock already read. The client's `DEFAULT_ROUND_MS` (used only to know when the Raid tab stops expecting a result) follows.
+- **Jackpot and pity are hidden from players.**
+  - Gone from the player-facing surfaces: the loot reveal's jackpot burst and "Jackpot!" / "No jackpot this time (pity N/10)" lines, the chest art, the pity number, the Discord finale post's jackpot lines (and its "First jackpot" record), the Raid tab's "Jackpot:" badge, and the jackpot "first on server" entry in the Collection's list.
+  - The jackpot Essence is still paid, with the same mechanics, storage (`jackpot_pity`, the `jackpot` server-first rows, the ledger entry) and idempotency. Players see it only inside one combined Essence figure: the live `loot.essence`, `you.reveal.essence` and the finale's `essence` in the result list now include it.
+  - The server no longer sends `pity`, `loot.jackpot`, `you.reveal.jackpot`, `party.results[].jackpot` (the list of display names) or `serverFirsts` entries of kind `jackpot`, and the ledger list leaves out the `jackpot` flag of a raid payout's meta, so none of it can be inspected from a client. Contract tests pin the key sets and check the responses for the words `jackpot` and `pity`.
+  - The after-action stats never carried a jackpot line, so there was nothing to remove there.
+
+**Reasoning.** Slow effects and a clear round marker are what let people read a combo; keeping the stagger and the visible duration apart lets rounds stay inside the time budget without making effects flash by. Hiding the jackpot keeps its fun as a surprise inside the total without turning the pity counter into something to game.
+
+**Fixtures.** The contract fixtures of the affected responses were edited to the new server shape by script, and the worker's contract test, which compares the real server output's key sets with them, passes. They were not re-captured from a running server (a capture would have changed unrelated recorded values); their old `roundMs` of 10 000 is legitimate for a fight stored under the old length.

@@ -5,24 +5,27 @@
  *
  * A beat is one run of events that belong together, cut at the same places as the replay's steps
  * (`beatEnds`): a round opening with its abilities, one creature's turn with its hit, mark and
- * reaction, one boss attack, one boss gimmick. Each beat gets cues (what to show) and a length
- * of at most `MAX_BEAT_MS`. Anything that moves is only decoration: the state after a beat (HP, the
- * mark, who is knocked out, which zones are shielded) always comes from the events themselves.
+ * reaction, one boss attack, one boss gimmick. Each beat gets cues (what to show) and a stagger
+ * (`ms`): how long after it starts the next beat starts. The stagger is not how long the effects
+ * stay on screen. That is `stage-fx.ts` (a damage number floats for over a second, a crit for two),
+ * and effects of one beat overlap the next beats. Anything that moves is only decoration: the state
+ * after a beat (HP, the mark, who is knocked out, which zones are shielded) always comes from the
+ * events themselves.
  */
 import { content } from '@creatures/game';
 import { zoneOfIndex, ZONES, type FightEvent, type Zone } from '@creatures/engine';
 import { beatEnds, stateAt, type StepState } from './replay';
 
-/** No beat lasts longer than this, and none is shorter than the minimum. */
-export const MAX_BEAT_MS = 600;
-export const MIN_BEAT_MS = 120;
-const BASE_BEAT_MS = 300;
+/** The stagger of a beat is at most `MAX_BEAT_MS`, and never below `MIN_BEAT_MS` (even when squeezed). */
+export const MAX_BEAT_MS = 700;
+export const MIN_BEAT_MS = 250;
+const BASE_BEAT_MS = 500;
 
-/** Extra time for the beats that carry something worth a second look. */
+/** Extra stagger for the beats that carry something worth a second look. */
 const WEIGHT_MS = {
-  crit: 150,
-  burst: 150,
-  ability: 150,
+  crit: 100,
+  burst: 100,
+  ability: 100,
   ko: 100,
   gimmick: 100,
   banner: 100,
@@ -252,7 +255,11 @@ export function cuesForEvents(
 
 // --- Beats ---
 
-/** How long a beat lasts: a plain turn is short, a crit, a reaction or an ability gets a little longer. */
+/**
+ * The stagger of a beat: how long after it starts the next one starts. A plain turn gets 500 ms, a
+ * crit, a reaction, an ability, a knockout or a gimmick a little more, 700 ms at most. A beat with
+ * nothing to show takes the minimum.
+ */
 export function beatMs(cues: readonly Cue[]): number {
   if (cues.length === 0) return MIN_BEAT_MS;
   let ms = BASE_BEAT_MS;
@@ -292,17 +299,20 @@ export function buildBeats(
   return beats;
 }
 
-/** Shortens the beats so that together they take at most `budgetMs`, never below the minimum. */
+/**
+ * Squeezes the staggers so that every beat but the last starts within `budgetMs` of the first
+ * (the last beat's own stagger has no next beat to wait for). Staggers shrink in proportion and never
+ * go below the minimum, so a round with very many beats can still overrun its budget; the stage then
+ * simply skips to the newest round when the next one arrives.
+ */
 export function fitBeats(beats: readonly Beat[], budgetMs: number): Beat[] {
-  const total = beats.reduce((sum, b) => sum + b.ms, 0);
+  const last = beats.length - 1;
+  const total = beats.reduce((sum, b, k) => (k < last ? sum + b.ms : sum), 0);
   if (total <= budgetMs || total === 0) return [...beats];
   const scale = Math.max(0, budgetMs) / total;
-  return beats.map((b) => ({ ...b, ms: Math.max(MIN_BEAT_MS, Math.floor(b.ms * scale)) }));
-}
-
-/** The time a live round's beats may use: the round length, leaving room for the next poll. */
-export function liveBudgetMs(roundMs: number): number {
-  return Math.max(2000, roundMs - 1500);
+  return beats.map((b, k) =>
+    k < last ? { ...b, ms: Math.max(MIN_BEAT_MS, Math.floor(b.ms * scale)) } : b,
+  );
 }
 
 /** The start time of every beat, in ms from the first beat's start. */

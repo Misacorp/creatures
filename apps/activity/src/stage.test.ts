@@ -22,7 +22,6 @@ import {
   fitBeats,
   groupByZone,
   hpSegments,
-  liveBudgetMs,
   playStart,
   reactionElements,
   abilityUsesAt,
@@ -375,24 +374,22 @@ describe('fitBeats', () => {
   const beat = (ms: number) => ({ from: 0, to: 1, round: 1, cues: [], ms });
 
   it('leaves beats alone when they fit the budget', () => {
-    const beats = [beat(300), beat(500)];
-    expect(fitBeats(beats, 1000)).toEqual(beats);
+    const beats = [beat(500), beat(700), beat(500)];
+    // Only the beats before the last count: the last one has no next beat to wait for.
+    expect(fitBeats(beats, 1200)).toEqual(beats);
   });
 
-  it('shortens every beat in proportion to fit the budget', () => {
-    const fitted = fitBeats([beat(600), beat(300), beat(300)], 600);
-    expect(fitted.map((b) => b.ms)).toEqual([300, 150, 150]);
-    expect(fitted.reduce((s, b) => s + b.ms, 0)).toBeLessThanOrEqual(600);
+  it('shortens the staggers in proportion to fit the budget, and keeps the last beat as it is', () => {
+    const fitted = fitBeats([beat(700), beat(700), beat(500), beat(600)], 1000);
+    const total = fitted.slice(0, -1).reduce((sum, b) => sum + b.ms, 0);
+    expect(total).toBeLessThanOrEqual(1000);
+    expect(fitted.map((b) => b.ms)).toEqual([368, 368, 263, 600]);
   });
 
-  it('never goes below the minimum, even for a tiny budget', () => {
-    const fitted = fitBeats([beat(600), beat(600)], 10);
-    expect(fitted.every((b) => b.ms === MIN_BEAT_MS)).toBe(true);
-  });
-
-  it('gives a live round the round length less a margin, and at least two seconds', () => {
-    expect(liveBudgetMs(10_000)).toBe(8_500);
-    expect(liveBudgetMs(1_000)).toBe(2_000);
+  it('never goes below the 250 ms minimum, even for a tiny budget', () => {
+    const fitted = fitBeats([beat(700), beat(700), beat(500)], 10);
+    expect(fitted.slice(0, -1).every((b) => b.ms === MIN_BEAT_MS)).toBe(true);
+    expect(MIN_BEAT_MS).toBe(250);
   });
 });
 
@@ -536,7 +533,7 @@ describe('a whole simulated fight', () => {
     }
   });
 
-  it('plays a round within the live budget once it is fitted', () => {
+  it('staggers the beats of a real round at 250 to 700 ms, and not at a flat pace', () => {
     const { input, events } = realFight();
     const rowIds = input.row.map((s) => s.id);
     const start = events.findIndex((e) => e.t === 'round_start' && e.round === 3);
@@ -545,9 +542,11 @@ describe('a whole simulated fight', () => {
     expect(end).toBeGreaterThan(start);
     const round = buildBeats(events.slice(0, end), start, rowIds);
     expect(round.length).toBeGreaterThan(2);
-    const fitted = fitBeats(round, liveBudgetMs(10_000));
-    const total = fitted.reduce((sum, b) => sum + b.ms, 0);
-    expect(total).toBeLessThanOrEqual(liveBudgetMs(10_000));
+    for (const b of round) {
+      expect(b.ms).toBeGreaterThanOrEqual(250);
+      expect(b.ms).toBeLessThanOrEqual(700);
+    }
+    expect(new Set(round.map((b) => b.ms)).size).toBeGreaterThan(1);
   });
 
   it('ends with the boss HP and knockouts the log ends with', () => {

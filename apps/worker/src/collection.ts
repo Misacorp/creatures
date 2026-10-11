@@ -162,7 +162,7 @@ export interface ExpeditionView {
 }
 
 export interface ServerFirstView {
-  kind: ServerFirstKind;
+  kind: Exclude<ServerFirstKind, 'jackpot'>;
   species: string;
   at: number;
   /** True if the signed-in player shares this record. */
@@ -372,10 +372,11 @@ export class Collection {
     return row;
   }
 
+  /** The jackpot record is stored but never listed: the jackpot is hidden from players. */
   private serverFirsts(userId: string): ServerFirstView[] {
     const rows = this.sql
       .exec<{
-        kind: ServerFirstKind;
+        kind: Exclude<ServerFirstKind, 'jackpot'>;
         species: string;
         user_id: string;
         at: number;
@@ -383,6 +384,7 @@ export class Collection {
       }>(
         `SELECT f.kind, f.species, f.user_id, f.at, p.display_name
          FROM server_firsts f LEFT JOIN players p ON p.user_id = f.user_id
+         WHERE f.kind != 'jackpot'
          ORDER BY f.at, f.kind, f.species, f.user_id`,
       )
       .toArray();
