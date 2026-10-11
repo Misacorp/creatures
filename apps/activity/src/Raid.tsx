@@ -35,6 +35,7 @@ import {
 } from './raid-slots';
 import { phaseName } from './raid-text';
 import { BossCard, Roster, ScheduleStrip } from './RaidInfo';
+import { RaidNews } from './RaidNews';
 
 interface Loaded {
   view: RaidView;
@@ -443,6 +444,8 @@ export function Raid({
           )}
         </section>
       )}
+
+      <RaidNews />
     </>
   );
 }

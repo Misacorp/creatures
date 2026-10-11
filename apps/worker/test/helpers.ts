@@ -2,10 +2,10 @@ import { expect } from 'vitest';
 import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
 import { GuildCore, type GuildCoreOptions } from '../src/guild-core';
-import { DiscordError, type DiscordApi } from '../src/discord';
+import { DiscordError, type DiscordApi, type GuildApi } from '../src/discord';
 import { createHandler } from '../src/index';
 import { formatSessionToken, getSessionKey } from '../src/session';
-import type { ActivityInstance, DiscordUser } from '../src/schemas';
+import type { ActivityInstance, DiscordMember, DiscordRole, DiscordUser } from '../src/schemas';
 
 export const ORIGIN = 'https://creatures.test';
 
@@ -53,6 +53,52 @@ export function fakeDiscord(options: FakeDiscordOptions = {}): FakeDiscord {
       calls.getActivityInstance.push(instanceId);
       if (options.instanceError) return Promise.reject(options.instanceError);
       return Promise.resolve(instance);
+    },
+  };
+}
+
+export interface FakeGuildOptions {
+  ownerId?: string;
+  /** Roles besides @everyone; an @everyone role (id = the guild id) is added unless given. */
+  roles?: DiscordRole[];
+  /** The member's role ids per user id; a user not listed is not in the guild. */
+  members?: Record<string, string[]>;
+  /** Makes every call fail the way the real client does when Discord is down. */
+  failure?: DiscordError;
+  /** Makes the member lookup answer "not a member" for everyone (a 404). */
+  noMembers?: boolean;
+}
+
+export interface FakeGuildApi extends GuildApi {
+  calls: string[];
+}
+
+/** A mocked Discord guild API for the permission check. Records every call as `kind:id`. */
+export function fakeGuildApi(guildId: string, options: FakeGuildOptions = {}): FakeGuildApi {
+  const calls: string[] = [];
+  const roles = options.roles ?? [];
+  const allRoles = roles.some((r) => r.id === guildId)
+    ? roles
+    : [{ id: guildId, permissions: '0' }, ...roles];
+  const fail = () => Promise.reject(options.failure ?? new Error('no failure set'));
+  return {
+    calls,
+    getGuildOwnerId(id) {
+      calls.push(`guild:${id}`);
+      if (options.failure) return fail();
+      return Promise.resolve(options.ownerId ?? '999999999999999999');
+    },
+    getGuildRoles(id) {
+      calls.push(`roles:${id}`);
+      if (options.failure) return fail();
+      return Promise.resolve(allRoles);
+    },
+    getGuildMember(_id, userId): Promise<DiscordMember | null> {
+      calls.push(`member:${userId}`);
+      if (options.failure) return fail();
+      const memberRoles = options.members?.[userId];
+      if (options.noMembers === true || memberRoles === undefined) return Promise.resolve(null);
+      return Promise.resolve({ roles: memberRoles });
     },
   };
 }
@@ -146,11 +192,19 @@ export async function runCore<R>(
   });
 }
 
+/** Puts a database back to before migration 11 (the pinned announcement channel). */
+export function undoChannelPinMigration(sql: SqlStorage): void {
+  sql.exec('ALTER TABLE guild_meta DROP COLUMN announce_channel_pinned');
+  sql.exec('ALTER TABLE sessions DROP COLUMN channel_id');
+  sql.exec('DELETE FROM schema_version WHERE version = 11');
+}
+
 /** Tables created by migration 10 (the live finale). */
 export const LIVE_TABLES = ['raid_abilities', 'raid_live', 'raid_reveal_seen'] as const;
 
 /** Puts a database back to before migration 10 (the live finale). */
 export function undoLiveMigration(sql: SqlStorage): void {
+  undoChannelPinMigration(sql);
   for (const table of LIVE_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
   sql.exec('DELETE FROM schema_version WHERE version = 10');
 }

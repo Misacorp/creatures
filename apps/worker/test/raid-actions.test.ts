@@ -293,6 +293,7 @@ describe('GET /api/raid', () => {
       expect(Object.keys(body).sort()).toEqual(
         [
           'boss',
+          'channel',
           'next',
           'party',
           'parties',

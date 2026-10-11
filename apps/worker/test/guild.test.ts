@@ -18,6 +18,7 @@ import {
   expectApiHeaders,
   runCore,
   tokenFor,
+  undoChannelPinMigration,
   undoDiscordPostsMigration,
   undoLiveMigration,
   undoRaidMigration,
@@ -89,10 +90,10 @@ describe('schema migrations', () => {
         ]),
       );
       const version = sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one();
-      expect(version.v).toBe(10);
+      expect(version.v).toBe(11);
       // Running migrations again is a no-op.
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(10);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(11);
       return Promise.resolve();
     });
   });
@@ -123,7 +124,7 @@ describe('migration 5 (guild timezone)', () => {
       core.migrate();
 
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        10,
+        11,
       );
       expect(sql.exec('SELECT id, guild_id, timezone FROM guild_meta').toArray()).toEqual([
         { id: 1, guild_id: '740000000000000010', timezone: 'Europe/Helsinki' },
@@ -166,9 +167,15 @@ describe('migration 9 (announcement channel and Discord posts)', () => {
       core.migrate();
 
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        10,
+        11,
       );
-      expect(columns()).toEqual(['id', 'guild_id', 'timezone', 'announce_channel_id']);
+      expect(columns()).toEqual([
+        'id',
+        'guild_id',
+        'timezone',
+        'announce_channel_id',
+        'announce_channel_pinned',
+      ]);
       expect(
         sql.exec('SELECT guild_id, timezone, announce_channel_id FROM guild_meta').toArray(),
       ).toEqual([
@@ -220,7 +227,7 @@ describe('migration 10 (the live finale)', () => {
 
       core.migrate();
 
-      expect(version(sql)).toBe(10);
+      expect(version(sql)).toBe(11);
       expect(columns(sql, 'raid_abilities')).toEqual(['week_id', 'user_id', 'ability_id']);
       expect(columns(sql, 'raid_live')).toEqual([
         'week_id',
@@ -266,7 +273,56 @@ describe('migration 10 (the live finale)', () => {
       ).toThrow(/UNIQUE|constraint/i);
       // Running the migrations again is a no-op.
       core.migrate();
+      expect(version(sql)).toBe(11);
+    });
+  });
+});
+
+describe('migration 11 (pinned announcement channel, session channel)', () => {
+  const columns = (sql: SqlStorage, table: string) =>
+    sql
+      .exec<{ name: string }>('SELECT name FROM pragma_table_info(?)', table)
+      .toArray()
+      .map((c) => c.name);
+  const version = (sql: SqlStorage) =>
+    sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v;
+
+  it('applies on a schema-10 object: nothing is pinned and old sessions have no channel', async () => {
+    await runCore('740000000000000040', async ({ core, sql, request }) => {
+      const secret = await core.createSession('740000000000000040', USER, '555555555555555555');
+      undoChannelPinMigration(sql);
       expect(version(sql)).toBe(10);
+      expect(columns(sql, 'guild_meta')).toEqual([
+        'id',
+        'guild_id',
+        'timezone',
+        'announce_channel_id',
+      ]);
+      expect(columns(sql, 'sessions')).not.toContain('channel_id');
+
+      core.migrate();
+
+      expect(version(sql)).toBe(11);
+      expect(columns(sql, 'guild_meta')).toEqual([
+        'id',
+        'guild_id',
+        'timezone',
+        'announce_channel_id',
+        'announce_channel_pinned',
+      ]);
+      expect(columns(sql, 'sessions')).toContain('channel_id');
+      expect(
+        sql.exec('SELECT announce_channel_id, announce_channel_pinned FROM guild_meta').one(),
+      ).toEqual({
+        announce_channel_id: '555555555555555555',
+        announce_channel_pinned: 0,
+      });
+      expect(sql.exec('SELECT channel_id FROM sessions').toArray()).toEqual([{ channel_id: null }]);
+      // The old session still works; it just has no launch channel.
+      expect((await request(secret, '/api/me')).status).toBe(200);
+      // Running the migrations again is a no-op.
+      core.migrate();
+      expect(version(sql)).toBe(11);
     });
   });
 });

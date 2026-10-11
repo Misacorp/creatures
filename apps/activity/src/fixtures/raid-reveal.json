@@ -15,6 +15,10 @@
     ],
     "finaleRounds": 12
   },
+  "channel": {
+    "pinned": false,
+    "canManage": null
+  },
   "schedule": {
     "weekStart": 1799667420000,
     "phase1": 1800013020000,

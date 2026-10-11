@@ -161,6 +161,10 @@ const ERROR_TEXT: Record<string, string> = {
   practice_blocked:
     'Practice fights are closed from 30 minutes before the finale until it has finished.',
   practice_cooldown: 'Your party already had a practice fight in the last 10 minutes.',
+  // Raid news channel (server admins only).
+  forbidden: 'Only the server owner, or people who can manage the server, can change this.',
+  discord_unavailable: 'Discord did not answer. Try again in a moment.',
+  channel_unknown: 'The game does not know which channel this was opened in. Reopen the Activity.',
   // Any request.
   invalid_body:
     'The server did not understand that. Close and reopen the Activity if it keeps happening.',
