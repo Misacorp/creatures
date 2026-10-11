@@ -16,23 +16,23 @@ Where the project is against the plan. Newest state at the top of each section. 
 
 ## Now
 
-- **PR #6** (hotfix, branch `ccr-8ffccd88-e59k13`): the Activity rejected jackpot first-on-server records; must merge before the first live finale (Sun 2026-10-11 20:00 Helsinki).
-- **PR #7** (branch `creature-abilities`): creature abilities (phase 1 content/engine/sim + phase 2 worker/client), wins-only pity, raid news channel pin (migration 11). Full sim 21/21. Waiting for Misa to test on staging and merge.
+- **PR #7** (head `creature-abilities` = `progression`): creature abilities, Boss Rank ladder (migration 12), Festivals/seasons, crits, readiness band, after-action stats, wins-only pity, raid news pin (migration 11). Full sim 27/27. Waiting for Misa to test on staging and merge.
+- Production runs PR #5 + hotfix #6 (c53d6b7).
 
 ## Next
 
-1. After #6/#7 merge: verify prod deploys; check the first live finale and its Discord post.
-2. Luck: fights are fully deterministic today (the engine never draws from its RNG). Branch `luck-measure` (49463da, pushed) adds an off-by-default luck config to the engine plus a study CLI (`node packages/sim/scripts/luck.mjs`) and `docs/design/luck.md`. Recommended "Fortune" Surge/Slump streaks (±60%, 17%/side/round, 3 rounds, all phases); waiting for Misa's pick, then boss HP retune and client banners.
-3. M6 "feels like a game": pixel art creatures and bosses, retro UI, juice. Misa wants this before a multiplayer test.
+1. After #7 merges: verify prod deploy; watch the first ranked week (placement at next week creation or at Phase 1 for an open week).
+2. M6 "feels like a game": pixel art creatures and bosses, retro UI, juice. Misa wants this before a multiplayer test.
+3. Open game-feel questions on the ladder (see below).
 4. WebSocket push for the live finale after a staging spike in real Discord.
 5. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
 
 ## Open questions for Misa
 
-(On the setup checklist artifact, "Decisions" section.)
-
-- Pity: count lost finales toward the hard-pity jackpot, wins only (recommended), or half?
-- Creature abilities defaults (unlock level 10, use every unlocked ability in your team of 3, basic ability for newcomers).
+- Rank step is +40% boss HP per rank (big, visible). OK?
+- Plateau rhythm: win, then ~3 losses at the new rank, Festival, rank −1, climb again. Too many losses?
+- Festivals ~97% won: keep as a reliable break or make them a real fight?
+- Multi-party servers climb when at least half their parties win (lead's call).
 
 ## Notes for future agents
 
