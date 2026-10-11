@@ -8,9 +8,13 @@ import {
   creatureName,
   durationLabel,
   formatCountdown,
+  getSpecies,
   speciesName,
 } from './game';
 import { useNow } from './hooks';
+import { ElementChip } from './sprites/ElementChip';
+import { Sprite } from './sprites/Sprite';
+import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 
 export interface SendRequest {
   creatureId: string;
@@ -128,11 +132,22 @@ function ActiveSlot({
   const remaining = expedition.endsAt - serverNow;
   const finished = remaining <= 0;
   const keeps = recallCatches(expedition.rolls, expedition.startedAt, expedition.endsAt, serverNow);
+  const element = explorer === undefined ? undefined : getSpecies(explorer.species)?.element;
   return (
     <>
+      {explorer !== undefined && (
+        <div class="portrait">
+          <Sprite sprite={creatureSpriteOrFallback(explorer.species)} scale={4} />
+        </div>
+      )}
       <p>
         <strong>{explorer === undefined ? 'Explorer' : creatureName(explorer)}</strong> is away
       </p>
+      {element !== undefined && (
+        <p>
+          <ElementChip element={element} />
+        </p>
+      )}
       <p class="muted">
         {durationLabel(expedition.duration)}, {expedition.supplies} supplies
       </p>
@@ -163,7 +178,11 @@ function Reveal({ result, onDismiss }: { result: ClaimResult; onDismiss: () => v
         <ul>
           {result.catches.map((entry, index) => (
             <li key={index}>
+              <Sprite sprite={creatureSpriteOrFallback(entry.species)} scale={3} bob />
               <strong>{speciesName(entry.species)}</strong>{' '}
+              {getSpecies(entry.species) !== undefined && (
+                <ElementChip element={getSpecies(entry.species)?.element ?? ''} />
+              )}{' '}
               {catchBadges(entry).map((badge) => (
                 <span key={badge} class="badge">
                   {badge}

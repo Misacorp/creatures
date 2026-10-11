@@ -1,4 +1,7 @@
-import { capitalize, elementName, getSpecies } from './game';
+import { capitalize, getSpecies } from './game';
+import { ElementChip } from './sprites/ElementChip';
+import { Sprite } from './sprites/Sprite';
+import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 
 interface Props {
   options: string[];
@@ -17,10 +20,17 @@ export function StarterPicker({ options, busy, onChoose }: Props) {
           if (species === undefined) return null;
           return (
             <li key={id} class="card-item">
+              <div class="portrait">
+                <Sprite
+                  sprite={creatureSpriteOrFallback(id)}
+                  scale={6}
+                  alt={`${species.name} sprite`}
+                  bob
+                />
+              </div>
               <h3>{species.name}</h3>
               <p class="tags">
-                <span class="tag">{elementName(species.element)}</span>
-                <span class="tag">{capitalize(species.role)}</span>
+                <ElementChip element={species.element} role={capitalize(species.role)} />
               </p>
               <p class="flavor">{species.flavor}</p>
               <button

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { AbilityPicker } from './AbilityPicker';
 import { AfterAction } from './AfterAction';
 import { ApiError, type Creature } from './api';
-import { clockOffset, creatureName, errorText, speciesName } from './game';
+import { clockOffset, creatureName, errorText } from './game';
 import { useNow } from './hooks';
 import { bannerText, finaleWindow } from './live';
 import { startPractice, type LiveSnapshot } from './live-api';
@@ -21,12 +21,8 @@ import {
   type PhaseResultView,
   type RaidPhaseId,
   type RaidView,
-  type RowSlotView,
 } from './raid-api';
 import {
-  adjacentSlots,
-  canUnplace,
-  ownerColour,
   reduceTap,
   togglePick,
   unplaceIntent,
@@ -38,6 +34,8 @@ import { festivalGrantText, rankChangeText } from './raid-progress';
 import { phaseName } from './raid-text';
 import { BossCard, Roster, ScheduleStrip } from './RaidInfo';
 import { RaidNews } from './RaidNews';
+import { Placement } from './Placement';
+import { resolveDrop, type DropOutcome, type DropTarget } from './raid-dnd';
 
 interface Loaded {
   view: RaidView;
@@ -45,8 +43,6 @@ interface Loaded {
   offset: number;
 }
 
-const ZONE_LABELS = { front: 'Front', middle: 'Middle', back: 'Back' } as const;
-const ZONES = ['front', 'middle', 'back'] as const;
 /** Extra wait after an event is due before asking the server what happened. */
 const REFRESH_GRACE_MS = 3000;
 
@@ -269,6 +265,16 @@ export function Raid({
     teamIds: team?.creatures.map((c) => c.creatureId) ?? [],
   };
 
+  /** A creature was dropped: decide, then send what the server must do. The server still decides. */
+  function handleDrop(creatureId: string, target: DropTarget | null): DropOutcome {
+    const name = team?.creatures.find((c) => c.creatureId === creatureId)?.name ?? 'Creature';
+    const outcome = resolveDrop(ctx, creatureId, name, target);
+    setSelected(null);
+    setHint(outcome.hint);
+    if (outcome.intent !== null) runIntent(outcome.intent);
+    return outcome;
+  }
+
   return (
     <>
       {error !== null && (
@@ -347,102 +353,55 @@ export function Raid({
         />
       )}
       {party !== null && team !== null && (
-        <>
-          <section class="raid-section" aria-labelledby="raid-team-heading">
-            <h3 id="raid-team-heading">My team</h3>
-            <p class="muted">
-              {team.mode === 'auto' ? 'Automatic: your strongest three.' : 'Chosen by you.'} Tap a
-              creature, then tap a slot below.
-            </p>
-            <ul class="team-list">
-              {team.creatures.map((c) => (
-                <li key={c.creatureId}>
-                  <button
-                    type="button"
-                    class={selected === c.creatureId ? 'team-chip selected' : 'team-chip'}
-                    aria-pressed={selected === c.creatureId}
-                    disabled={locked}
-                    onClick={() => {
-                      applyTap(
-                        reduceTap(ctx, selected, { kind: 'creature', creatureId: c.creatureId }),
-                      );
-                    }}
-                  >
-                    <span class="chip-name">{c.name}</span>
-                    <span class="muted">
-                      Lv {c.level} · {c.slot === null ? 'not placed' : `slot ${String(c.slot + 1)}`}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            {view.you.canEdit && (
-              <TeamPicker
-                creatures={creatures}
-                picking={picking}
-                busy={busy}
-                mode={team.mode}
-                onStart={() => {
-                  setPicking(team.creatures.map((c) => c.creatureId));
-                }}
-                onCancel={() => {
-                  setPicking(null);
-                }}
-                onToggle={(id) => {
-                  setPicking((current) => togglePick(current ?? [], id, RULES.raid.teamSize));
-                }}
-                onSave={(ids) => {
-                  void mutate(() => setRaidTeam(ids)).then((ok) => {
-                    if (ok) setPicking(null);
-                  });
-                }}
-                onAuto={() => {
-                  void mutate(() => setRaidTeam(null)).then((ok) => {
-                    if (ok) setPicking(null);
-                  });
-                }}
-              />
-            )}
-          </section>
-
-          <section class="raid-section" aria-labelledby="raid-row-heading">
-            <h3 id="raid-row-heading">The party row</h3>
-            <p class="muted">
-              One row for the whole party. Creatures that are not placed are placed for you when the
-              phase starts. Supports power up the creatures next to them.
-            </p>
-            <PartyRow
-              row={party.row}
-              rowLength={party.rowLength}
-              selected={selected}
-              disabled={locked}
-              rosterNames={rosterNames}
-              onTap={(slot) => {
-                applyTap(reduceTap(ctx, selected, { kind: 'slot', slot }));
+        <Placement
+          party={party}
+          team={team}
+          ctx={ctx}
+          disabled={locked}
+          busy={busy}
+          canEdit={view.you.canEdit}
+          selected={selected}
+          hint={hint}
+          rosterNames={rosterNames}
+          teamControls={
+            <TeamPicker
+              creatures={creatures}
+              picking={picking}
+              busy={busy}
+              mode={team.mode}
+              onStart={() => {
+                setPicking(team.creatures.map((c) => c.creatureId));
+              }}
+              onCancel={() => {
+                setPicking(null);
+              }}
+              onToggle={(id) => {
+                setPicking((current) => togglePick(current ?? [], id, RULES.raid.teamSize));
+              }}
+              onSave={(ids) => {
+                void mutate(() => setRaidTeam(ids)).then((ok) => {
+                  if (ok) setPicking(null);
+                });
+              }}
+              onAuto={() => {
+                void mutate(() => setRaidTeam(null)).then((ok) => {
+                  if (ok) setPicking(null);
+                });
               }}
             />
-            <p>
-              <button
-                type="button"
-                disabled={locked || !canUnplace(party.row, selected)}
-                onClick={() => {
-                  applyTap(unplaceIntent(party.row, selected));
-                }}
-              >
-                Unplace
-              </button>
-            </p>
-            {hint !== null && (
-              <p class="muted" role="status">
-                {hint}
-              </p>
-            )}
-            {!view.you.canEdit && <p class="locked">The row is locked for this week.</p>}
-            {party.guests && (
-              <p class="muted">Guest creatures fill the row while fewer than 3 players are in.</p>
-            )}
-          </section>
-        </>
+          }
+          onTap={(tap) => {
+            applyTap(reduceTap(ctx, selected, tap));
+          }}
+          onUnplace={() => {
+            applyTap(unplaceIntent(ctx.row, selected));
+          }}
+          onDrop={handleDrop}
+          onCancel={() => {
+            setSelected(null);
+            setHint(null);
+          }}
+        />
       )}
 
       {party !== null && (
@@ -550,83 +509,6 @@ function TeamPicker({
         </button>
       </p>
     </fieldset>
-  );
-}
-
-function slotLabel(s: RowSlotView): string {
-  const where = `Slot ${String(s.slot + 1)}, ${ZONE_LABELS[s.zone]}`;
-  if (s.creature === null) return `${where}, empty`;
-  const owner = s.creature.mine ? 'you' : s.creature.ownerName;
-  return `${where}, ${speciesName(s.creature.species)} level ${String(s.creature.level)}, ${owner}`;
-}
-
-function PartyRow({
-  row,
-  rowLength,
-  selected,
-  disabled,
-  rosterNames,
-  onTap,
-}: {
-  row: readonly RowSlotView[];
-  rowLength: number;
-  selected: Selection;
-  disabled: boolean;
-  rosterNames: readonly string[];
-  onTap: (slot: number) => void;
-}) {
-  const adjacent = new Set(adjacentSlots(row, selected, rowLength));
-  return (
-    <div class="party-strip" role="group" aria-label="Party row, left to right">
-      {ZONES.map((zone) => {
-        const slots = row.filter((s) => s.zone === zone);
-        if (slots.length === 0) return null;
-        return (
-          <div key={zone} class="party-zone">
-            <p class="zone-label">{ZONE_LABELS[zone]}</p>
-            <div class="zone-slots">
-              {slots.map((s) => {
-                const c = s.creature;
-                const isSelected = c?.creatureId !== undefined && c.creatureId === selected;
-                const classes = ['party-slot'];
-                if (c === null) classes.push('empty');
-                else {
-                  classes.push(`owner-${String(ownerColour(c.ownerName, rosterNames))}`);
-                  if (c.mine) classes.push('mine');
-                }
-                if (isSelected) classes.push('selected');
-                if (adjacent.has(s.slot)) classes.push('adjacent');
-                if (c === null && selected !== null) classes.push('target');
-                return (
-                  <button
-                    key={s.slot}
-                    type="button"
-                    class={classes.join(' ')}
-                    aria-label={slotLabel(s)}
-                    aria-pressed={c?.mine === true ? isSelected : undefined}
-                    disabled={disabled}
-                    onClick={() => {
-                      onTap(s.slot);
-                    }}
-                  >
-                    <span class="slot-num">{s.slot + 1}</span>
-                    {c === null ? (
-                      <span class="slot-empty">empty</span>
-                    ) : (
-                      <>
-                        <span class="slot-species">{speciesName(c.species)}</span>
-                        <span class="slot-meta">Lv {c.level}</span>
-                        <span class="slot-owner">{c.mine ? 'You' : c.ownerName}</span>
-                      </>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-    </div>
   );
 }
 

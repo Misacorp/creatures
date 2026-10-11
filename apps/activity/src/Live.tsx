@@ -35,6 +35,9 @@ import {
 import { ownerColour } from './raid-slots';
 import { stateAt } from './replay';
 import { RevealCard } from './Reveal';
+import { ElementChip } from './sprites/ElementChip';
+import { Sprite } from './sprites/Sprite';
+import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 
 const ZONE_OPTIONS = [
   { id: 'front', label: 'Front' },
@@ -341,10 +344,12 @@ export function Live({
           if (knockedOut.has(c.id)) classes.push('ko');
           return (
             <li key={c.id} class={classes.join(' ')}>
+              <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={3} />
               <span class="slot-species">{c.name}</span>
               <span class="slot-meta">
                 {speciesName(c.species)} Lv {c.level}
               </span>
+              <ElementChip element={c.element} />
               <span class="slot-owner">{isMine ? 'You' : playerName(c.owner)}</span>
               {knockedOut.has(c.id) && <span class="badge bad">KO</span>}
             </li>

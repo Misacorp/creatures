@@ -1,4 +1,3 @@
-import { elementName } from './game';
 import type { RaidView } from './raid-api';
 import {
   READINESS_HINT,
@@ -11,6 +10,7 @@ import {
   seasonText,
 } from './raid-progress';
 import { countdownText, scheduleSteps } from './raid-time';
+import { ElementChip } from './sprites/ElementChip';
 import { gimmickLines, turnOrderShort, turnOrderText } from './raid-text';
 
 /** The five weeks of the season as pips: the Festival is the last one. */
@@ -55,7 +55,7 @@ export function BossCard({ view }: { view: RaidView }) {
       <p class="tags">
         {rank !== null && <span class="tag rank">{rank}</span>}
         {view.festival && <span class="badge festival">Festival week</span>}
-        <span class="tag">{elementName(boss.element)}</span>
+        <ElementChip element={boss.element} />
         <span class="tag">{turnOrderShort(boss.turnOrder)}</span>
       </p>
       {banner !== null && <p class="festival-banner">{banner}</p>}

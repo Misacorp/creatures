@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { errorText, speciesName } from './game';
 import { fetchReplay, type RaidPhaseId, type ReplayView } from './raid-api';
 import { phaseName } from './raid-text';
+import { ElementChip } from './sprites/ElementChip';
+import { Sprite } from './sprites/Sprite';
+import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import {
   beatEnds,
   indexAfterBeat,
@@ -194,10 +197,12 @@ function Player({ data }: { data: ReplayView }) {
           if (mineIds.has(c.id)) classes.push('mine');
           return (
             <li key={c.id} class={classes.join(' ')}>
+              <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={3} />
               <span class="slot-species">{c.name}</span>
               <span class="slot-meta">
                 {speciesName(c.species)} Lv {c.level}
               </span>
+              <ElementChip element={c.element} />
               <span class="slot-owner">{mineIds.has(c.id) ? 'You' : ownerName(c.owner)}</span>
               {step.knockedOut.includes(c.id) && <span class="badge bad">KO</span>}
             </li>

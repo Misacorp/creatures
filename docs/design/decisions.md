@@ -377,3 +377,28 @@ Misa accepted the tuned ladder:
 - Festivals as a near-sure win and a reliable break.
 
 PR #7 is merged and production runs it.
+
+## 2026-10-11: Creature lore, visual briefs, traits and personality quirks
+
+**Context.** Misa asked for every species to have a short written description, a visual identity that works as an input brief for art, behavioural traits, and a cosmetic personality quirk per individual creature, so things stay consistent as the game evolves. The art direction coming next is chunky pixel art (16×16 creatures, 24×24 bosses) on a dark night-sky UI.
+
+**Decision.** Details are in `docs/design/creatures.md`. The data files are the source of truth.
+
+- **Content:** `species-lore.json` (all 22 species), `bosses-lore.json` and `quirks.json` live in `packages/game`, validated at load like all content. Every species and boss must have an entry. A stage 2 form must also say what it keeps from stage 1 and what changes (`appearance.fromStage1`, an addition to the requested fields). Palettes must contain at least two colours of the element's hue family (a test).
+- **The visual brief is not shown to players.** The Collection card gets an "About" disclosure with the description, the traits as chips and "Personality: <quirk>". The lore ships to the client with the content package (about 50 KB of JSON before minifying and compression), instead of the server sending text.
+- **Quirks are cosmetic**: no gameplay effect, no visual change. About 40 general quirks plus 2 to 3 "against type" quirks per evolution line (keyed by the stage 1 species id, so a stage 2 form uses its line's). `pickQuirk(speciesId, rng)` is pure: 75% general, 25% against type. Quirks are stored by id, so text can be edited; ids are never changed.
+- **Server (migration 13):** `creatures.quirk_id`, assigned at creation (starter, expedition catch, Festival grant) with the live crypto RNG, in the same transaction. A **separate `quirkRng`** (like `readinessRng`) keeps quirks out of the catch and raid draws. Evolution, fusion and training never change it. Existing creatures are backfilled once in the migration from crypto randomness; the result is stored. The creature view carries `quirk` (the id, or null if unknown).
+
+**Reasoning.** One shared source keeps writers, the client and artists in step. Lore in the content package needs no new API, and an id-based quirk can be reworded later without touching creatures. Keeping the quirk RNG separate protects scripted-test draws and the rule that fights and catches use their own randomness.
+
+## 2026-10-11: M6 visual foundation choices
+
+- **Fonts:** Pixelify Sans (display) and Atkinson Hyperlegible (reading), both OFL.
+  - Self-hosted from the pinned `@fontsource/*` 5.3.0 packages, using only the latin woff2 files via our own `@font-face` rules. Vite emits them as same-origin assets, so `font-src 'self'` holds.
+  - The licence texts ship in `apps/activity/public/fonts-licence.txt`.
+- **Drag and drop:**
+  - Built on pointer events, not the HTML5 drag API, which fails on mobile. A drag lifts after 8 px of movement.
+  - Own creatures use `touch-action: none` so touch dragging works. Touch-scrolling the row therefore starts on an empty slot or a gap, and the row auto-scrolls while dragging. If that feels awkward, long-press-to-drag is the alternative.
+  - Tap-to-place and keyboard placement remain.
+  - No optimistic UI; the server stays authoritative.
+- **Element icons:** each element always shows its icon (droplet, flame, leaf, bolt) next to its colour, so element colours are not confused with status colours **[Misa]**.

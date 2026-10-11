@@ -1,14 +1,86 @@
+/*
+  Design tokens and base styles: a dithered night sky, dusk panels in hard pixel frames, ink
+  outlines and one gold accent. It is a game screen, so there is deliberately one dark theme.
+  Fonts are self-hosted (the CSP allows font-src 'self' only): Pixelify Sans for names, numbers and
+  buttons, Atkinson Hyperlegible for everything you read. Both are under the SIL Open Font License
+  (see the packages in node_modules/@fontsource).
+*/
+@font-face {
+  font-family: 'Pixelify Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('@fontsource/pixelify-sans/files/pixelify-sans-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Pixelify Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('@fontsource/pixelify-sans/files/pixelify-sans-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Pixelify Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url('@fontsource/pixelify-sans/files/pixelify-sans-latin-700-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('@fontsource/atkinson-hyperlegible/files/atkinson-hyperlegible-latin-400-normal.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url('@fontsource/atkinson-hyperlegible/files/atkinson-hyperlegible-latin-700-normal.woff2')
+    format('woff2');
+}
+
 :root {
   color-scheme: dark;
-  --bg: #1e1f22;
-  --panel: #2b2d31;
-  --panel-2: #313338;
-  --text: #f2f3f5;
-  --muted: #b5bac1;
-  --accent: #5865f2;
-  --danger: #f23f42;
-  --good: #3ba55d;
-  --gold: #f0b232;
+  --night: #17132b; /* page ground */
+  --dusk: #241e42; /* panel */
+  --dusk-2: #2f2857; /* raised panel and inset */
+  --ink: #0d0a1a; /* pixel outline */
+  --bone: #f4eedc; /* text */
+  --haze: #a69fc8; /* muted text */
+  --gold: #ffd25a; /* accent: Bait, crits, highlights */
+  --tide: #4f8fe6;
+  --ember: #ef6a3a;
+  --grove: #5cbf5a;
+  --spark: #f2d43d;
+  --good: #6fdc8c;
+  --bad: #ff5f6d;
+  --line: #4a4170; /* quiet outline between things on a panel */
+  --mine: #3a3270; /* a slot that holds your creature */
+  --adjacent: #443b82; /* a slot next to the selected creature */
+  --display: 'Pixelify Sans', 'Courier New', ui-monospace, monospace;
+  --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --px: 3px; /* one "pixel" of UI chrome */
+  --frame:
+    0 calc(var(--px) * -1) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
+    calc(var(--px) * -1) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink),
+    inset 0 var(--px) 0 0 #3d3570, inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+  --ring: 0 0 0 var(--px) var(--ink), 0 0 0 calc(var(--px) * 2) var(--gold);
+  /* Older names, kept so every screen picks the tokens up. */
+  --bg: var(--night);
+  --panel: var(--dusk);
+  --panel-2: var(--dusk-2);
+  --text: var(--bone);
+  --muted: var(--haze);
+  --accent: var(--gold);
+  --danger: var(--bad);
 }
 
 * {
@@ -18,10 +90,13 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--bg);
+  background-color: var(--night);
+  background-image: radial-gradient(var(--dusk) 1px, transparent 1px);
+  background-size: 6px 6px;
   color: var(--text);
-  font-family: system-ui, sans-serif;
-  line-height: 1.4;
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.5;
   /* Discord sets these on phones so content stays clear of notches and system bars. */
   padding-top: var(--discord-safe-area-inset-top, 0px);
   padding-right: var(--discord-safe-area-inset-right, 0px);
@@ -29,38 +104,55 @@ body {
   padding-left: var(--discord-safe-area-inset-left, 0px);
 }
 
+/* A pixel frame: hard steps, no rounded corners. */
 .card {
-  width: min(48rem, 100% - 1rem);
-  margin: 0.5rem auto;
+  position: relative;
+  width: min(48rem, 100% - 1.25rem);
+  margin: 0.625rem auto;
   padding: 1rem;
-  border-radius: 0.75rem;
   background: var(--panel);
+  box-shadow: var(--frame);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+.pix {
+  font-family: var(--display);
+  letter-spacing: 0.02em;
 }
 
 h1 {
   margin: 0 0 0.5rem;
-  color: var(--accent);
-  font-size: 1.5rem;
+  color: var(--gold);
+  font-size: clamp(1.75rem, 8vw, 2.5rem);
+  line-height: 1.1;
+  text-shadow:
+    var(--px) var(--px) 0 var(--ink),
+    calc(var(--px) * 2) calc(var(--px) * 2) 0 #6b3fa0;
+  text-wrap: balance;
 }
 
 h2 {
   margin: 1rem 0 0.25rem;
-  font-size: 1.125rem;
+  font-size: 1.375rem;
 }
 
 h3 {
   margin: 0 0 0.25rem;
-  font-size: 1rem;
+  font-size: 1.125rem;
 }
 
 h4 {
   margin: 0.75rem 0 0.25rem;
-  font-size: 0.9375rem;
+  font-size: 1rem;
 }
 
 h5 {
   margin: 0.5rem 0 0.25rem;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 p {
@@ -77,6 +169,7 @@ p {
 }
 
 .bait-amount {
+  font-family: var(--display);
   font-size: 2rem;
   font-weight: 700;
   color: var(--accent);
@@ -88,6 +181,7 @@ p {
 }
 
 .essence-amount {
+  font-family: var(--display);
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--gold);
@@ -96,7 +190,6 @@ p {
 .notice {
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--good);
-  border-radius: 0.5rem;
 }
 
 .note,
@@ -116,26 +209,44 @@ p {
   font-style: italic;
 }
 
-/* Buttons and form controls: large enough to tap on a phone. */
+/* Buttons and form controls: large enough to tap on a phone. Pixel frame, no rounded corners. */
 button,
 select,
 input[type='text'] {
   min-height: 2.5rem;
   padding: 0.4rem 0.75rem;
-  border: 1px solid #4e5058;
-  border-radius: 0.5rem;
+  border: 0;
   background: var(--panel-2);
   color: var(--text);
   font: inherit;
+  box-shadow: 0 0 0 var(--px) var(--ink);
 }
 
 button {
+  font-family: var(--display);
+  font-size: 1rem;
   cursor: pointer;
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+  transition: transform 60ms steps(1);
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(var(--px));
+  box-shadow: 0 0 0 var(--px) var(--ink);
 }
 
 button.primary {
-  border-color: var(--accent);
-  background: var(--accent);
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 #c8952b;
 }
 
 button:disabled {
@@ -147,8 +258,8 @@ button:focus-visible,
 select:focus-visible,
 input:focus-visible,
 summary:focus-visible {
-  outline: 2px solid var(--gold);
-  outline-offset: 2px;
+  outline: var(--px) solid var(--bone);
+  outline-offset: calc(var(--px) * 2);
 }
 
 select,
@@ -166,17 +277,21 @@ label {
 
 .tabs {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: 0.625rem;
+  margin: 0.25rem 0 1rem;
 }
 
 .tab {
   flex: 1;
+  min-width: 0;
 }
 
 .tab.active {
-  border-color: var(--accent);
-  box-shadow: inset 0 -3px 0 var(--accent);
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 #c8952b;
 }
 
 .cards {
@@ -190,8 +305,8 @@ label {
 
 .card-item {
   padding: 0.75rem;
-  border-radius: 0.5rem;
   background: var(--panel-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
   overflow-wrap: anywhere;
 }
 
@@ -205,19 +320,26 @@ label {
 .badge {
   display: inline-block;
   padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  background: #404249;
-  font-size: 0.75rem;
+  background: var(--ink);
+  font-family: var(--display);
+  font-size: 0.8125rem;
 }
 
 .badge.shiny,
 .badge.first {
   background: var(--gold);
-  color: #1e1f22;
+  color: var(--ink);
 }
 
 .badge.away {
-  background: var(--accent);
+  background: var(--haze);
+  color: var(--ink);
+}
+
+.traits {
+  margin: 0.25rem 0;
+  padding: 0;
+  list-style: none;
 }
 
 .stars {
@@ -234,7 +356,6 @@ label {
   margin-bottom: 0.75rem;
   padding: 0.75rem;
   border: 1px solid var(--gold);
-  border-radius: 0.5rem;
 }
 
 .reveal ul {
@@ -242,6 +363,7 @@ label {
   padding-left: 1.25rem;
 }
 
+.about summary,
 .rename summary,
 .recent-activity summary {
   cursor: pointer;
@@ -257,7 +379,7 @@ label {
 footer {
   margin-top: 1rem;
   padding-top: 0.5rem;
-  border-top: 1px solid #404249;
+  border-top: 1px solid var(--ink);
 }
 
 dl {
@@ -287,8 +409,8 @@ dd {
 .raid-section {
   margin-bottom: 0.75rem;
   padding: 0.75rem;
-  border-radius: 0.5rem;
   background: var(--panel-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
   overflow-wrap: anywhere;
 }
 
@@ -305,21 +427,23 @@ dd {
 
 .badge.good {
   background: var(--good);
+  color: var(--ink);
 }
 
 .badge.bad {
-  background: var(--danger);
+  background: var(--bad);
+  color: var(--ink);
 }
 
 .you-badge {
   margin-left: 0.25rem;
   background: var(--gold);
-  color: #1e1f22;
+  color: var(--ink);
 }
 
 button.toggle.on {
-  border-color: var(--accent);
-  background: var(--accent);
+  background: var(--gold);
+  color: var(--ink);
 }
 
 .hp-bar {
@@ -342,8 +466,7 @@ button.toggle.on {
   display: flex;
   flex-direction: column;
   padding: 0.4rem 0.5rem;
-  border: 1px solid #4e5058;
-  border-radius: 0.5rem;
+  border: 1px solid var(--line);
   font-size: 0.875rem;
 }
 
@@ -352,8 +475,8 @@ button.toggle.on {
 }
 
 .schedule-step.next {
-  border-color: var(--accent);
-  box-shadow: inset 0 -3px 0 var(--accent);
+  border-color: var(--gold);
+  box-shadow: inset 0 calc(var(--px) * -1) 0 var(--gold);
 }
 
 .schedule-title {
@@ -379,7 +502,7 @@ button.toggle.on {
 
 .team-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 5.5rem), 1fr));
   gap: 0.5rem;
   margin: 0.5rem 0;
   padding: 0;
@@ -397,7 +520,7 @@ button.toggle.on {
 .team-chip.selected,
 .party-slot.selected {
   border-color: var(--gold);
-  box-shadow: 0 0 0 2px var(--gold);
+  box-shadow: var(--ring);
 }
 
 .chip-name {
@@ -407,8 +530,7 @@ button.toggle.on {
 .picker {
   margin: 0.5rem 0;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #4e5058;
-  border-radius: 0.5rem;
+  border: 1px solid var(--line);
 }
 
 .pick {
@@ -459,7 +581,7 @@ button.toggle.on {
   width: 5.5rem;
   min-height: 5.5rem;
   padding: 0.3rem 0.4rem;
-  border: 2px solid var(--owner, #4e5058);
+  border: 2px solid var(--owner, var(--line));
   background: var(--panel);
   font-size: 0.8125rem;
   text-align: left;
@@ -472,7 +594,7 @@ button.toggle.on {
   top: 50%;
   right: -0.4rem;
   width: 0.375rem;
-  border-top: 1px solid #4e5058;
+  border-top: 1px solid var(--line);
 }
 
 .zone-slots .party-slot:last-child::after {
@@ -485,15 +607,15 @@ button.toggle.on {
 }
 
 .party-slot.target {
-  border-color: var(--accent);
+  border-color: var(--gold);
 }
 
 .party-slot.adjacent {
-  background: #3a3d5c;
+  background: var(--adjacent);
 }
 
 .party-slot.mine {
-  background: #35384a;
+  background: var(--mine);
 }
 
 .party-slot .slot-num {
@@ -549,9 +671,8 @@ button.toggle.on {
 /* Replay viewer. */
 .mark-badge {
   padding: 0.1rem 0.5rem;
-  border-radius: 999px;
   background: var(--gold);
-  color: #1e1f22;
+  color: var(--ink);
   font-weight: 600;
 }
 
@@ -567,15 +688,14 @@ button.toggle.on {
 .turn-chip {
   flex: none;
   padding: 0.25rem 0.6rem;
-  border: 1px solid #4e5058;
-  border-radius: 999px;
+  border: 1px solid var(--line);
   font-size: 0.8125rem;
 }
 
 .turn-chip.current,
 .replay-slot.current {
   border-color: var(--gold);
-  box-shadow: 0 0 0 2px var(--gold);
+  box-shadow: var(--ring);
 }
 
 .turn-chip.done {
@@ -603,21 +723,19 @@ button.toggle.on {
   flex-direction: column;
   width: 6rem;
   padding: 0.3rem 0.4rem;
-  border: 2px solid #4e5058;
-  border-radius: 0.5rem;
+  border: 2px solid var(--line);
   background: var(--panel);
   font-size: 0.8125rem;
 }
 
 .replay-slot.mine {
-  background: #35384a;
+  background: var(--mine);
 }
 
 .replay-log {
   max-height: 12rem;
   margin: 0.25rem 0;
   padding: 0.5rem 0.5rem 0.5rem 1.75rem;
-  border-radius: 0.5rem;
   background: var(--panel);
   font-size: 0.875rem;
   overflow-y: auto;
@@ -646,7 +764,7 @@ button.toggle.on {
 
 .ability-card.selected {
   border-color: var(--gold);
-  box-shadow: 0 0 0 2px var(--gold);
+  box-shadow: var(--ring);
 }
 
 .ability-badge {
@@ -700,7 +818,6 @@ button.toggle.on {
   margin: 0.75rem 0;
   padding: 0.75rem;
   border: 2px solid var(--accent);
-  border-radius: 0.5rem;
   background: var(--panel);
 }
 
@@ -724,7 +841,6 @@ button.toggle.on {
 .live-feed {
   margin: 0.25rem 0;
   padding: 0.5rem 0.5rem 0.5rem 1.75rem;
-  border-radius: 0.5rem;
   background: var(--panel);
   font-size: 0.875rem;
 }
@@ -741,19 +857,20 @@ button.toggle.on {
 
 /* Boss Rank, seasons and Festival weeks. Colours only; every state is also written in words. */
 .tag.rank {
-  background: var(--accent);
+  background: var(--gold);
+  color: var(--ink);
+  font-family: var(--display);
   font-weight: 700;
 }
 
 .badge.festival {
   background: var(--gold);
-  color: #1e1f22;
+  color: var(--ink);
   font-weight: 700;
 }
 
 .raid-section.festival {
   border: 2px solid var(--gold);
-  border-radius: 0.5rem;
   padding: 0.5rem 0.75rem;
 }
 
@@ -779,7 +896,6 @@ button.toggle.on {
   width: 0.875rem;
   height: 0.875rem;
   border: 2px solid var(--muted);
-  border-radius: 50%;
 }
 
 .season-pip.done {
@@ -787,8 +903,8 @@ button.toggle.on {
 }
 
 .season-pip.now {
-  border-color: var(--accent);
-  background: var(--accent);
+  border-color: var(--gold);
+  background: var(--gold);
 }
 
 .season-pip.festival {
@@ -806,21 +922,23 @@ button.toggle.on {
 .readiness-band {
   display: inline-block;
   padding: 0.1rem 0.6rem;
-  border-radius: 999px;
-  background: #404249;
+  background: var(--ink);
   font-weight: 700;
 }
 
 .readiness-band.long_shot {
-  background: var(--danger);
+  background: var(--bad);
+  color: var(--ink);
 }
 
 .readiness-band.likely {
-  background: var(--accent);
+  background: var(--gold);
+  color: var(--ink);
 }
 
 .readiness-band.strong {
   background: var(--good);
+  color: var(--ink);
 }
 
 .reveal-festival,
@@ -842,7 +960,6 @@ button.toggle.on {
   margin: 0.75rem 0;
   padding: 0.75rem;
   border: 2px solid var(--accent);
-  border-radius: 0.5rem;
   background: var(--panel);
   text-align: center;
 }
@@ -947,7 +1064,6 @@ button.toggle.on {
   margin: 0.5rem 0;
   padding: 0.5rem 0.75rem;
   border-left: 3px solid var(--muted);
-  border-radius: 0.25rem;
   background: var(--panel);
   overflow-wrap: anywhere;
 }
@@ -1003,4 +1119,296 @@ button.toggle.on {
 
 .after-action details {
   margin: 0.25rem 0;
+}
+
+/* --- M6 look: shared pixel components (from docs/design/assets/style-sample.html) --- */
+
+.frame {
+  position: relative;
+  margin: var(--px);
+  padding: 1rem;
+  background: var(--dusk);
+  box-shadow: var(--frame);
+}
+
+.label {
+  color: var(--muted);
+  font-family: var(--display);
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.portrait {
+  display: grid;
+  place-items: center;
+  padding: 0.625rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+/* Sprites are drawn on a canvas at a whole-number scale and must never be smoothed. */
+canvas.sprite {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.lvl {
+  color: var(--gold);
+  font-family: var(--display);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Element chip: the icon always comes with the colour and the name. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: fit-content;
+  padding: 0.125rem 0.5rem 0.125rem 0.25rem;
+  background: var(--ink);
+  font-family: var(--display);
+  font-size: 0.8125rem;
+  line-height: 1.25;
+}
+
+.chip canvas.sprite {
+  flex: none;
+}
+
+.t-tide {
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--tide);
+}
+
+.t-ember {
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--ember);
+}
+
+.t-grove {
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--grove);
+}
+
+.t-spark {
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--spark);
+}
+
+/* Progress, HP and season pips. */
+.xp {
+  position: relative;
+  height: 0.625rem;
+  background: var(--ink);
+}
+
+.xp > span {
+  position: absolute;
+  inset: 2px auto 2px 2px;
+  background: var(--gold);
+}
+
+.hpbar {
+  display: grid;
+  grid-template-columns: repeat(20, 1fr);
+  gap: 2px;
+  height: 1.375rem;
+  padding: var(--px);
+  background: var(--ink);
+}
+
+.hpbar > i {
+  background: var(--bad);
+}
+
+.hpbar > i.gone {
+  background: #3a2033;
+}
+
+.pips {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.pips > i {
+  width: 0.875rem;
+  height: 0.875rem;
+  background: var(--dusk-2);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.pips > i.on {
+  background: var(--haze);
+}
+
+.pips > i.now {
+  background: var(--gold);
+}
+
+.pips > i.fest {
+  background: transparent;
+  box-shadow: 0 0 0 2px var(--gold);
+}
+
+/* The existing HP progress element gets the same ink and red. */
+.hp-bar {
+  appearance: none;
+  height: 1.125rem;
+  border: 0;
+  background: var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
+.hp-bar::-webkit-progress-bar {
+  background: var(--ink);
+}
+
+.hp-bar::-webkit-progress-value {
+  background: var(--bad);
+}
+
+.hp-bar::-moz-progress-bar {
+  background: var(--bad);
+}
+
+@keyframes bob {
+  50% {
+    transform: translateY(calc(var(--px) * -1));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bob {
+    animation: bob 1.2s steps(2) infinite;
+  }
+}
+
+/* --- Placement: the team tray and the party row, with drag and drop --- */
+
+.team-chip canvas.sprite {
+  margin-bottom: 0.25rem;
+}
+
+.party-slot {
+  align-items: center;
+  min-height: 7.75rem;
+  text-align: center;
+}
+
+.party-slot .slot-num {
+  align-self: flex-start;
+  font-family: var(--display);
+}
+
+.party-slot canvas.sprite {
+  margin: 0.125rem 0;
+}
+
+.party-slot.empty {
+  justify-content: space-between;
+}
+
+/* Anything that can be picked up: no scrolling or text selection starts on it. */
+.draggable {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
+}
+
+.draggable:disabled {
+  cursor: not-allowed;
+}
+
+.party-strip.dragging .party-slot,
+.party-strip.dragging .draggable {
+  cursor: grabbing;
+}
+
+.dragging-source {
+  opacity: 0.4;
+}
+
+/* While dragging: every slot says whether the creature may go there. Valid is green with a solid
+   edge; refused is red and hatched, so the meaning never depends on colour alone. */
+.party-strip.dragging .party-slot.drop-valid {
+  outline: var(--px) dashed var(--good);
+  outline-offset: calc(var(--px) * -2);
+}
+
+.party-strip.dragging .party-slot.drop-invalid {
+  outline: var(--px) dashed var(--bad);
+  outline-offset: calc(var(--px) * -2);
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 5px,
+    rgb(255 95 109 / 35%) 5px 8px
+  );
+}
+
+.party-strip.dragging .party-slot.drop-over {
+  outline-style: solid;
+  background-color: var(--dusk-2);
+}
+
+.team-list.tray-target {
+  outline: var(--px) dashed var(--good);
+  outline-offset: calc(var(--px) * 2);
+}
+
+.team-list.drop-over {
+  outline-style: solid;
+}
+
+/* A refused drop: a red edge that stays, and a short shake for those who allow motion. */
+.party-slot.shake {
+  outline: var(--px) solid var(--bad);
+  outline-offset: calc(var(--px) * -2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .party-slot.shake {
+    animation: shake 400ms steps(1) both;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20%,
+  60% {
+    transform: translateX(-4px);
+  }
+
+  40%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+/* The ghost follows the pointer; its position comes from --drag-x and --drag-y (set in script). */
+.drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: var(--frame);
+  opacity: 0.92;
+  pointer-events: none;
+  transform: translate(calc(var(--drag-x, -999px) - 50%), calc(var(--drag-y, -999px) - 60%));
+}
+
+.drag-ghost-name {
+  font-family: var(--display);
+  font-size: 0.8125rem;
 }
