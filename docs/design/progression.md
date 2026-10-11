@@ -1,6 +1,6 @@
 # Week-by-week progression: design check and proposal
 
-Status: **proposal for Misa**, 2026-10-11. Based on a research pass, summarised here with sources at the end, plus `docs/design/luck.md`.
+Status: **decided 2026-10-11** (see the decisions log for Misa's answers: ladder yes, no Resolve, Festival weeks with festival-only loot, season reset tied to the festival cycle, vague readiness band, after-action stats without advice). Originally a proposal for Misa, 2026-10-11. Based on a research pass, summarised here with sources at the end, plus `docs/design/luck.md`.
 
 ## The question
 

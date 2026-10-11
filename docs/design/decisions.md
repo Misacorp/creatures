@@ -290,3 +290,14 @@ Rules behind it: more leeters never pays anyone less; a solo leet pays the same 
 
 - **Crits** go into combat regardless of the luck study: a small baseline crit chance and crit damage for every hit, crit stats with caps, and boss crits **[Misa]**. They are being built behind config on branch `luck-crits`. Boss HP is retuned when they are switched on.
 - **Pre-decided fights** are acceptable if the week-to-week path is visible and honest **[Misa]**. The research-backed proposal in `docs/design/progression.md` replaces the current "boss follows average level" scaling with a visible per-server Boss Rank ladder, with Resolve after a loss, Festival weeks, rank-scaled rewards and a readiness band. Waiting for Misa's calls on its five questions.
+
+## 2026-10-11: Progression decisions (Misa)
+
+On `docs/design/progression.md`:
+
+1. **Boss Rank ladder** replaces scaling by average level **[Misa]**. A finale win raises the server's rank by 1. A loss keeps the rank, and players grow their creatures and try a similar boss next week **[Misa]**. There is no Resolve and no demotion.
+2. **Festival weeks: yes**, with **festival-only loot** **[Misa]**. Plan: every 5th week is a Festival, with an easier variant and bonus Essence. A festival finale win gives each participant that festival's creature, which can't be caught any other way.
+3. **Season reset tied to the festival cycle** **[Misa]**. A season is 4 normal weeks plus 1 Festival week. After each Festival the rank eases back by a small amount, set by the simulator. This also keeps a stalled server from being stuck forever.
+4. **Readiness band: yes, kept vague** **[Misa]**. Only Long shot / Even / Likely / Strong. No numbers, no frequencies.
+5. **After-action card:** "Close one!" when the boss was nearly down, plus enough fight stats for players to work out what to change **[Misa]**. The card shows damage per player and creature, reactions, abilities and when they fired, knockouts and boss HP left. It gives no solutions.
+6. **Luck:** crits in, Fortune streaks out for now (lead's call, delegated by Misa). The final crit settings come from the crit study. Nothing here blocks the first full raid week.
