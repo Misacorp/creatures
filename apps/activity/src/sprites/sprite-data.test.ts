@@ -118,17 +118,13 @@ describe('swapPalette', () => {
 });
 
 describe('bundled sprites', () => {
-  it('has the four sample sprites at the right sizes', () => {
+  it('has every sprite at the right size', () => {
     for (const [id, def] of Object.entries(BUNDLED_CREATURE_SPRITES)) {
       expect(() => parseSprite(def, CREATURE_SIZE), id).not.toThrow();
     }
     for (const [id, def] of Object.entries(BUNDLED_BOSS_SPRITES)) {
       expect(() => parseSprite(def, BOSS_SIZE), id).not.toThrow();
     }
-    expect(Object.keys(BUNDLED_CREATURE_SPRITES).sort()).toEqual(
-      ['cindle', 'sproutle', 'splashet'].sort(),
-    );
-    expect(Object.keys(BUNDLED_BOSS_SPRITES)).toEqual(['cinder-wyrm']);
   });
 
   it('only has sprites for species and bosses that exist', () => {
@@ -138,13 +134,14 @@ describe('bundled sprites', () => {
     for (const id of Object.keys(BUNDLED_BOSS_SPRITES)) expect(bosses.has(id), id).toBe(true);
   });
 
-  it('falls back to a silhouette for species without a sprite', () => {
+  it('falls back to a silhouette for ids without a sprite', () => {
     expect(() => parseSprite(FALLBACK_SILHOUETTE, CREATURE_SIZE)).not.toThrow();
-    expect(creatureSprite('fogwyrm')).toBeUndefined();
-    expect(creatureSpriteOrFallback('fogwyrm')).toBe(FALLBACK_SILHOUETTE);
+    expect(creatureSprite('not-a-species')).toBeUndefined();
+    expect(creatureSpriteOrFallback('not-a-species')).toBe(FALLBACK_SILHOUETTE);
     expect(creatureSpriteOrFallback('cindle')).toBe(BUNDLED_CREATURE_SPRITES.cindle);
     expect(creatureSprite('constructor')).toBeUndefined();
     expect(bossSprite('nope')).toBeUndefined();
+    expect(bossSprite('constructor')).toBeUndefined();
     expect(bossSprite('cinder-wyrm')).toBeDefined();
   });
 
