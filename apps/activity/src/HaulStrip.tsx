@@ -1,5 +1,6 @@
 import type { ExpeditionLength } from './expedition-types';
-import { ExpIcon, Pips } from './ExpeditionIcons';
+import { Pips } from './ExpeditionIcons';
+import { GameIcon } from './ui/GameIcon';
 import { expectedHaul, haulTitle } from './haul-view';
 
 /**
@@ -33,7 +34,7 @@ export function HaulStrip({
             class={`worth-item${row.level === 0 ? ' none' : ''}${row.boosted ? ' boosted' : ''}`}
             title={row.detail}
           >
-            <ExpIcon icon={row.icon} scale={4} />
+            <GameIcon icon={row.icon} scale={4} />
             <Pips level={row.level} />
             <span class="worth-name">
               {row.label}

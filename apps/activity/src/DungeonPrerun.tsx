@@ -2,17 +2,11 @@ import { GLOSSARY_IDS } from '@creatures/game';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { ProgressTrack } from './ProgressTrack';
-import { depthTrack, roomPanels, type ModifierIcon } from './dungeon-rooms';
+import { depthTrack, roomPanels } from './dungeon-rooms';
 import { streakPips } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
 import { Sprite } from './sprites/Sprite';
-import { elementIcon } from './sprites/element-icons';
-
-/** The picture of a modifier: an element's icon or a glyph. */
-function ModifierPicture({ icon }: { icon: ModifierIcon }) {
-  const sprite = icon.kind === 'element' ? elementIcon(icon.element) : glyphOrUnknown(icon.id);
-  return <Sprite sprite={sprite ?? glyphOrUnknown('unknown')} scale={3} />;
-}
+import { GameIcon } from './ui/GameIcon';
 
 /**
  * A tiny row of pips for the streak (a cycle of days, lit up to today's count). On the pre-run screen
@@ -87,7 +81,7 @@ export function DungeonPrerun({ today }: { today: DungeonToday }) {
                   class="mod-icon"
                   label={`${panel.modifier.name}: ${panel.modifier.description}`}
                 >
-                  <ModifierPicture icon={panel.modifier.icon} />
+                  <GameIcon icon={panel.modifier.icon} scale={3} />
                 </GlossaryTag>
                 <span class="rp-mod" aria-hidden="true">
                   {panel.modifier.name}

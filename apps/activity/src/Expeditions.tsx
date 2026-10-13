@@ -10,6 +10,7 @@ import { RunningTrip } from './RunningTrip';
 import { SendTrip } from './SendTrip';
 import { SlotsStrip } from './SlotsStrip';
 import { TripReveal } from './TripReveal';
+import { ToggleButton } from './ui/ToggleButton';
 import { needsOfferRefresh } from './trip-view';
 import { useLoaded } from './use-loaded';
 
@@ -113,17 +114,15 @@ export function Expeditions({
       <SlotsStrip slots={state.slots} />
       <nav class="exp-nav" aria-label="Expeditions sections">
         {SCREENS.map(({ id, label }) => (
-          <button
+          <ToggleButton
             key={id}
-            type="button"
-            class={screen === id ? 'toggle on' : 'toggle'}
-            aria-pressed={screen === id}
-            onClick={() => {
+            pressed={screen === id}
+            onToggle={() => {
               setScreen(id);
             }}
           >
             {label}
-          </button>
+          </ToggleButton>
         ))}
       </nav>
       {screen !== 'trips' && <Book screen={screen} state={state} />}

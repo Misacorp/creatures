@@ -27,6 +27,7 @@ import {
   type TapContext,
 } from './raid-slots';
 import { ElementChip } from './sprites/ElementChip';
+import { LiveRegion } from './ui/LiveRegion';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { useDragDrop } from './use-drag-drop';
@@ -296,9 +297,7 @@ export function Placement(props: Props) {
         {props.canEdit && props.teamControls}
       </section>
 
-      <p class="visually-hidden" role="status" aria-live="polite">
-        {announcement}
-      </p>
+      <LiveRegion>{announcement}</LiveRegion>
       {draggedCreature !== undefined && (
         <div ref={ghostRef} class="drag-ghost" aria-hidden="true">
           <Sprite sprite={creatureSpriteOrFallback(draggedCreature.species)} scale={4} />

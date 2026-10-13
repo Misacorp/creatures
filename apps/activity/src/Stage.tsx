@@ -22,12 +22,14 @@ import {
   type AbilityUse,
 } from './stage';
 import { badgeFor, unitTap, usedBadge, type Badge } from './stage-abilities';
+import { creatureInfoOf } from './creature-popover';
 import { SmallCreature } from './SmallCreature';
 import { ElementChip } from './sprites/ElementChip';
 import { capitalize } from './game';
 import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
 import { forecastNextRound, strikeLabel, type Wording } from './telegraph';
 import { StagePopover } from './StagePopover';
+import { ToggleButton } from './ui/ToggleButton';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { elementIcon } from './sprites/element-icons';
@@ -73,17 +75,15 @@ export function LogToggle({ id, children }: { id: string; children: ComponentChi
   const [open, setOpen] = useState(false);
   return (
     <section class="stage-log" aria-label="Fight log">
-      <button
-        type="button"
-        class={open ? 'toggle on' : 'toggle'}
-        aria-expanded={open}
-        aria-controls={id}
-        onClick={() => {
+      <ToggleButton
+        pressed={open}
+        controls={id}
+        onToggle={() => {
           setOpen(!open);
         }}
       >
         {open ? 'Hide log' : 'Log'}
-      </button>
+      </ToggleButton>
       <div id={id} hidden={!open}>
         {open && children}
       </div>
@@ -527,13 +527,7 @@ function StageUnit(props: UnitProps) {
         // Display only: a tap shows the creature's role and element (`SmallCreature`).
         <SmallCreature
           id={c.id}
-          info={{
-            name: c.name,
-            species: c.species,
-            level: c.level,
-            element: c.element,
-            role: c.role,
-          }}
+          info={creatureInfoOf(c)}
           class="unit-face"
           label={`${spoken}. Level ${String(c.level)}. Shows its role and element.`}
         >

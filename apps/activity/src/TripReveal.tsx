@@ -16,7 +16,8 @@ import {
   xpView,
 } from './claim-view';
 import type { Trip } from './expedition-types';
-import { ExpIcon, Stars } from './ExpeditionIcons';
+import { Stars } from './ExpeditionIcons';
+import { GameIcon } from './ui/GameIcon';
 import { catchBadgeTags, creatureName, getSpecies, speciesName } from './game';
 import { PartCount } from './GearArt';
 import { LootList } from './GearLoot';
@@ -151,7 +152,7 @@ export function TripReveal({
               {supplies.map((s) => (
                 <li key={s.id}>
                   <span class="part-count supply-count">
-                    <ExpIcon
+                    <GameIcon
                       icon={{ kind: 'supply', id: supplyKindOf(s.id) ?? 'unknown' }}
                       scale={2}
                     />
@@ -196,7 +197,7 @@ export function TripReveal({
               <ul class="gift-lines" aria-label={gift.title}>
                 {gift.lines.map((line) => (
                   <li key={line.key}>
-                    <ExpIcon icon={line.icon} scale={3} />
+                    <GameIcon icon={line.icon} scale={3} />
                     <span>{line.text}</span>
                   </li>
                 ))}

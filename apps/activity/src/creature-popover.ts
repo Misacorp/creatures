@@ -19,6 +19,11 @@ export interface CreatureInfo {
   role: string;
 }
 
+/** The popover info of anything that is a creature on screen (a stage unit, a team member, an explorer). */
+export function creatureInfoOf(c: CreatureInfo): CreatureInfo {
+  return { name: c.name, species: c.species, level: c.level, element: c.element, role: c.role };
+}
+
 /** The face the popover shows: the creature itself, or one glossary entry reached from it. */
 export type PopView =
   { readonly kind: 'creature' } | { readonly kind: 'tag'; readonly entry: string };

@@ -1,6 +1,6 @@
 import { GLOSSARY_IDS } from '@creatures/game';
 import { useRef, useState } from 'preact/hooks';
-import { bossArt } from './art';
+import { bossArt, elementSlug } from './art';
 import { bossIcons, type BossIconInfo } from './boss-icons';
 import { GlossaryTag, useGlossary } from './Glossary';
 import { gimmickGlyph, turnOrderGlyph } from './glyphs';
@@ -137,7 +137,7 @@ export function BossCard({ view }: { view: RaidView }) {
   const readiness = view.party?.readiness ?? null;
   const best = bestRankText(view.bestRank);
   const art = bossArt(boss.id);
-  const element = /^[a-z-]+$/.test(boss.element) ? boss.element : 'unknown';
+  const element = elementSlug(boss.element);
   return (
     <section
       class={`raid-section boss-card el-${element}${view.festival ? ' festival' : ''}`}

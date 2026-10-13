@@ -17,6 +17,8 @@ import {
 import { capitalize, creatureName, getSpecies, speciesName } from './game';
 import { CANCEL_ANNOUNCEMENT, pickUpAnnouncement, type DropOutcome } from './raid-dnd';
 import { ElementChip } from './sprites/ElementChip';
+import { LiveRegion } from './ui/LiveRegion';
+import { ToggleButton } from './ui/ToggleButton';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { useDragDrop } from './use-drag-drop';
@@ -268,22 +270,18 @@ export function DungeonTeam(props: Props) {
       </ul>
       {unplaced.length > TRAY_PREVIEW && (
         <p>
-          <button
-            type="button"
-            class={showAll ? 'toggle on' : 'toggle'}
-            aria-pressed={showAll}
-            onClick={() => {
+          <ToggleButton
+            pressed={showAll}
+            onToggle={() => {
               setShowAll(!showAll);
             }}
           >
             {showAll ? 'Show fewer' : `Show all ${String(unplaced.length)} creatures`}
-          </button>
+          </ToggleButton>
         </p>
       )}
 
-      <p class="visually-hidden" role="status" aria-live="polite">
-        {announcement}
-      </p>
+      <LiveRegion>{announcement}</LiveRegion>
       {draggedCreature !== undefined && (
         <div ref={ghostRef} class="drag-ghost" aria-hidden="true">
           <Sprite sprite={creatureSpriteOrFallback(draggedCreature.species)} scale={4} />

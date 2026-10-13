@@ -20,7 +20,8 @@ import {
   type SupplyDef,
 } from '@creatures/game';
 import type { PartKind } from './gear-types';
-import { lengthLabel, supplyDefs, type WorthIcon } from './trip-view';
+import type { IconRef } from './icon-ref';
+import { lengthLabel, supplyDefs } from './trip-view';
 
 const BP = 10_000;
 /** How many pips a row can have. */
@@ -37,7 +38,7 @@ export const CHANCE_WORDS: readonly string[] = [
 
 interface HaulRow {
   key: string;
-  icon: WorthIcon;
+  icon: IconRef;
   /** The short word under the icon: "Catches", "Scrap". */
   label: string;
   /** One line for the hover text and assistive technology: what it is and how much, in words. */

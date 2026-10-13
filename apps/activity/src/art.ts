@@ -113,9 +113,16 @@ export function shinyPalette(speciesId: string): Readonly<Record<string, string>
   return Object.hasOwn(SHINY_PALETTES, speciesId) ? SHINY_PALETTES[speciesId] : undefined;
 }
 
+const ELEMENT_SLUG = /^[a-z-]+$/;
+
+/** An element id that is safe to put in a class name or a glossary id; anything else is "unknown". */
+export function elementSlug(element: string): string {
+  return ELEMENT_SLUG.test(element) ? element : 'unknown';
+}
+
 /** `el-tide` and so on: sets `--el` to the element's colour (see styles/components/creature-card.css). Unknown: no class. */
 export function elementClass(element: string | null): string {
-  return element !== null && /^[a-z-]+$/.test(element) ? `el-${element}` : '';
+  return element !== null && ELEMENT_SLUG.test(element) ? `el-${element}` : '';
 }
 
 /** The element colours of the stylesheet (`--tide` and so on), for sprites that are recoloured. */

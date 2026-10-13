@@ -9,7 +9,7 @@ import type { ClaimResult } from './api';
 import type { JournalFind, RankGift, TripResult } from './expedition-types';
 import { lootIsEmpty } from './gear-view';
 import { partName, partsEntries } from './gear-view';
-import type { PartKind } from './gear-types';
+import type { IconRef } from './icon-ref';
 import { rewardPileItems, type PileSource } from './reward-pile';
 import { goalName, kindName, supplyKindOf, supplyName } from './trip-view';
 
@@ -163,10 +163,7 @@ export function pileLabel(source: PileSource): string {
 /** One thing a rank-up gift gives: a picture and a few words. */
 interface GiftLine {
   key: string;
-  icon:
-    | { kind: 'glyph'; id: string }
-    | { kind: 'part'; part: PartKind }
-    | { kind: 'supply'; id: string };
+  icon: IconRef;
   text: string;
 }
 

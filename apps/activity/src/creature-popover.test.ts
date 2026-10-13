@@ -4,6 +4,7 @@ import {
   CREATURE_VIEW,
   backLabel,
   creatureButtonLabel,
+  creatureInfoOf,
   creatureTags,
   goBack,
   onEscape,
@@ -93,5 +94,19 @@ describe('the tags and the labels', () => {
   it('has a spoken label and a back label that name the creature', () => {
     expect(creatureButtonLabel(info)).toBe('Cindle, level 7. Shows its role and element.');
     expect(backLabel(info)).toBe('Back to Cindle');
+  });
+});
+
+describe('creatureInfoOf', () => {
+  it('keeps exactly the five popover fields of a bigger creature record', () => {
+    const unit = { ...info, id: 'u1', hp: 40, extra: { nested: true } };
+    expect(creatureInfoOf(unit)).toEqual(info);
+    expect(Object.keys(creatureInfoOf(unit)).sort()).toEqual([
+      'element',
+      'level',
+      'name',
+      'role',
+      'species',
+    ]);
   });
 });

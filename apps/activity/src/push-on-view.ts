@@ -8,14 +8,11 @@
 import { goalDef, partsOfSpec, type GoalReward } from '@creatures/game';
 import type { OfferedGoal } from './expedition-types';
 import { partName, partsEntries, rarityName } from './gear-view';
-import type { PartKind } from './gear-types';
-
-/** What a reward line draws. */
-export type RewardIcon = { kind: 'glyph'; id: string } | { kind: 'part'; part: PartKind };
+import type { IconRef } from './icon-ref';
 
 interface RewardLine {
   key: string;
-  icon: RewardIcon;
+  icon: IconRef;
   text: string;
 }
 

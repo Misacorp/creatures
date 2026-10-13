@@ -1,22 +1,7 @@
 import { GLOSSARY_IDS } from '@creatures/game';
 import { GlossaryTag } from './Glossary';
-import { partIcon } from './gear-sprites';
 import { glyphOrUnknown } from './glyphs';
-import type { RewardIcon } from './push-on-view';
 import { Sprite } from './sprites/Sprite';
-import type { WorthIcon } from './trip-view';
-
-/** One icon (a glyph or a part) at a small fixed size; decoration, so hidden from assistive technology. */
-export function ExpIcon({ icon, scale = 3 }: { icon: RewardIcon | WorthIcon; scale?: number }) {
-  switch (icon.kind) {
-    case 'part':
-      return <Sprite sprite={partIcon(icon.part)} scale={scale} />;
-    case 'glyph':
-      return <Sprite sprite={glyphOrUnknown(icon.id)} scale={scale} />;
-    case 'supply':
-      return <Sprite sprite={glyphOrUnknown(icon.id)} scale={scale} />;
-  }
-}
 
 /**
  * Familiarity stars, three places: a filled star for each earned and a hollow one for the rest. The

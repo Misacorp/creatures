@@ -3,7 +3,7 @@ import type { Creature } from './api';
 import { Banner } from './Banner';
 import { cssVars } from './css-vars';
 import type { Trip } from './expedition-types';
-import { ExpIcon } from './ExpeditionIcons';
+import { GameIcon } from './ui/GameIcon';
 import { creatureName, getSpecies } from './game';
 import { GlossaryTag } from './Glossary';
 import { PushOnChoice } from './PushOnChoice';
@@ -110,7 +110,7 @@ export function RunningTrip({
           <ul class="kit-line" aria-label="Supplies carried">
             {trip.kit.map((id) => (
               <li key={id}>
-                <ExpIcon icon={{ kind: 'supply', id: supplyKindOf(id) ?? 'unknown' }} scale={2} />
+                <GameIcon icon={{ kind: 'supply', id: supplyKindOf(id) ?? 'unknown' }} scale={2} />
                 <span>{supplyName(id)}</span>
               </li>
             ))}

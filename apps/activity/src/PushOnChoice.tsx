@@ -1,6 +1,6 @@
 import { GLOSSARY_IDS } from '@creatures/game';
 import type { OfferedGoal } from './expedition-types';
-import { ExpIcon } from './ExpeditionIcons';
+import { GameIcon } from './ui/GameIcon';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { goalCards, type GoalCard } from './push-on-view';
@@ -38,7 +38,7 @@ function GoalCardView({
       <ul class="goal-rewards">
         {card.rewards.map((reward) => (
           <li key={reward.key}>
-            <ExpIcon icon={reward.icon} scale={3} />
+            <GameIcon icon={reward.icon} scale={3} />
             <span>{reward.text}</span>
           </li>
         ))}

@@ -22,6 +22,7 @@ import { bossArt } from './art';
 import { depthChangeText, resultHeadline } from './dungeon-text';
 import { DungeonNext } from './DungeonNext';
 import type { DungeonRunSummary, DungeonToday } from './dungeon-types';
+import { creatureInfoOf } from './creature-popover';
 import { SmallCreature } from './SmallCreature';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -243,13 +244,7 @@ function TeamBreakdown({ team }: { team: readonly TeamEntry[] }) {
           <li key={m.id} class={m.knockedOut ? 'team-member ko' : 'team-member'}>
             <SmallCreature
               id={m.id}
-              info={{
-                name: m.name,
-                species: m.speciesId,
-                level: m.level,
-                element: m.element,
-                role: m.role,
-              }}
+              info={creatureInfoOf({ ...m, species: m.speciesId })}
               class="tm-face"
               label={`${m.spoken} Shows its role and element.`}
             >

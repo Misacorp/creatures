@@ -1,4 +1,5 @@
 import { GLOSSARY_IDS } from '@creatures/game';
+import { elementSlug } from '../art';
 import { elementName } from '../game';
 import { GlossaryTag } from '../Glossary';
 import { elementIcon } from './element-icons';
@@ -11,7 +12,7 @@ import { Sprite } from './Sprite';
  */
 export function ElementChip({ element, role }: { element: string; role?: string }) {
   const icon = elementIcon(element);
-  const safe = /^[a-z-]+$/.test(element) ? element : 'unknown';
+  const safe = elementSlug(element);
   const roleId = role === undefined ? '' : role.toLowerCase();
   return (
     <>

@@ -37,6 +37,7 @@ import type { ReplayRowEntry } from './raid-api';
 import { AbilityPopoverBody } from './AbilityPopover';
 import { setRaidAutofire } from './raid-api';
 import { RevealCard } from './Reveal';
+import { LiveRegion } from './ui/LiveRegion';
 import type { Badge } from './stage-abilities';
 import { HpBar, LiveStage, LogToggle } from './Stage';
 import { useRemaining } from './use-countdown';
@@ -332,9 +333,7 @@ export function Live({
         {progress.countdown !== '' && <span class="live-countdown"> {progress.countdown}</span>}
       </p>
       {/* Changes once per round, so a screen reader hears the round and not every tick. */}
-      <p class="visually-hidden" role="status" aria-live="polite">
-        {countdown === null ? progress.headline : spokenCountdown(countdown)}
-      </p>
+      <LiveRegion>{countdown === null ? progress.headline : spokenCountdown(countdown)}</LiveRegion>
 
       {lobby && !showStage && fight.boss.hpMax !== null && (
         <>

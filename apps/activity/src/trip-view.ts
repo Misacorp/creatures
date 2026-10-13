@@ -18,7 +18,6 @@ import {
   type SupplyDef,
 } from '@creatures/game';
 import type { ExpeditionLength, ExplorerView, Slots, SupplyPick, Trip } from './expedition-types';
-import type { PartKind } from './gear-types';
 import { formatDuration, formatHours } from './time-format';
 
 const BP = 10_000;
@@ -194,10 +193,6 @@ export function kitBlocker(
 }
 
 // --- What a trip is good for, in pictures ---
-
-/** What a worth row draws: a part's icon, a glyph, or the creature paw. */
-export type WorthIcon =
-  { kind: 'part'; part: PartKind } | { kind: 'glyph'; id: string } | { kind: 'supply'; id: string };
 
 // --- A running trip ---
 
