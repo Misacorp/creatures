@@ -1,6 +1,6 @@
 # Progress log
 
-Where the project is against the plan. Newest state at the top of each section. Agents: read this after `CLAUDE.md`; update it whenever a milestone step lands or the plan changes.
+Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/roadmap.md`** (the forward plan and its design docs), then this file. Update it whenever a step lands or the plan changes.
 
 ## Milestones
 
@@ -10,25 +10,25 @@ Where the project is against the plan. Newest state at the top of each section. 
 | M1 Discord login, leet API, Bait ledger    | ✅ merged (PR #1, #3). Real leet points live in production (#4 fixed the CI timeout that blocked #3's deploy; prod runs 13081d4). |
 | M2 starters, expeditions, training, fusion | ✅ merged (PR #1)                                                                                                                 |
 | M3 combat engine, balance simulator        | ✅ merged (PR #1). First tuning pass done; deeper tuning still open.                                                              |
-| M4 weekly raid                             | ✅ in PR #5 (waiting for Misa)                                                                                                    |
-| M5 live finale and loot reveal             | ✅ in PR #5 (waiting for Misa); WebSocket push deferred                                                                           |
-| M6 polish, pixel art, retro UI             | ⏳ not started                                                                                                                    |
+| M4 weekly raid                             | ✅ merged (PR #5, #7)                                                                                                             |
+| M5 live finale and loot reveal             | ✅ merged (PR #5, #7, #8); WebSocket push is roadmap item 8                                                                       |
+| M6 polish, pixel art, retro UI             | ✅ merged (PR #8, production d4b3191)                                                                                             |
 
 ## Now
 
-- **PR #8** (branch `m6-look`): M6 look: visual system, self-hosted fonts, element icons, sprites for all creatures and bosses, fight stage (show, don't tell), animated loot reveal, drag-and-drop placement, creature lore and quirks (migration 13). Waiting for Misa to test on staging and merge.
-- Production runs PR #7 (8cf2589).
+- Production runs PR #8 (`d4b3191`). First ranked week started 2026-10-12; first Festival five weeks later. Misa runs a multiplayer raid test this coming weekend.
+- Plans written on branch `plans` (2026-10-13): `docs/roadmap.md` plus `docs/design/{analytics,how-to-play,daily-dungeon,gear,expeditions-v2}.md`.
 
 ## Next
 
-1. After #8: redraw any sprites Misa flags (Ashmole and Gaiadrake are the weakest); sprite sheet script `apps/activity/scripts/sprite-sheet.mjs`.
-2. Watch the first ranked week and first Festival in production.
-3. WebSocket push for the live finale after a staging spike in real Discord.
-4. Dependabot PR #2 (vitest 5): wait until `@cloudflare/vitest-plugin` 1.4.x is 7 days old, then bump both together.
+Follow `docs/roadmap.md` (priority order and PR batching): 1 analytics, 2 how to play + clickable tags, 3 daily dungeon, 4 gear, 5 expeditions v2 (proposal awaiting Misa's ideas), 6 polish backlog, 7 upkeep, 8 WebSocket push, 9 content, 10 swap requests.
 
 ## Open questions for Misa
 
-- Which sprites to redraw; DnD touch feel (long-press alternative).
+- Expeditions v2: which proposal parts he wants, plus his own ideas.
+- Daily dungeon: attempts per day, leaderboards.
+- Gear: one or two slots.
+- Analytics: add the `OPS_TOKEN` secret when the report workflow lands (checklist will follow).
 
 ## Notes for future agents
 

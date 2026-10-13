@@ -469,3 +469,17 @@ PR #7 is merged and production runs it.
 **Reasoning.** Pacing by content removes both the dead air after a short round and the cut-off of a crowded one, and keeping it in the engine means the server's clock and the stage cannot drift apart. The wind-up gives players a moment to read who is about to be hit, and the forecast gives them a round to react with Shield Wall.
 
 **Fixtures.** The `live-*`, `action-*` and `practice-*` contract fixtures were edited by script to add `roundStarts` and `nextRoundAt` (and `roundMs: null` in the lobby and none states), not re-captured, because a re-capture would have churned unrelated recorded values. Their `roundMs` of 10 000 and fixed schedule are what a legacy row sends. A new fixture, `live-paced.json`, was captured from the real server (a content-paced fight at round 4). The worker's contract test compares the real output's key sets with all of them.
+
+## 2026-10-13: Roadmap after M6 (Misa)
+
+Misa set the forward plan, recorded in `docs/roadmap.md` with design docs for each bigger item:
+
+- **Analytics and reports:** agents need tools to understand how players play and whether the game is balanced.
+- **How to play,** with clickable tags: "the roles and elements are not intuitive".
+- **Daily dungeon:** solo, server-simulated, played back as if live, no real-time backend.
+- **Gear:** "absolutely".
+- **Expeditions v2:** something players "get better at"; a proposal first, then Misa adds his ideas.
+- **Polish and upkeep:** yes.
+- **WebSocket push:** interesting.
+- **More content:** eventually.
+- **Swap requests:** not a priority.
