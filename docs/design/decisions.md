@@ -770,17 +770,19 @@ Misa's review asked for every explorer rank to unlock something, and for the Exp
 
 | Rank | Bait | Scrap | Glimmer | Supplies                     |
 | ---- | ---- | ----- | ------- | ---------------------------- |
-| 2    | 5    | 1     | 0       | none                         |
-| 3    | 10   | 1     | 0       | none                         |
-| 4    | 15   | 2     | 0       | none                         |
-| 5    | 20   | 2     | 0       | none                         |
-| 6    | 30   | 3     | 1       | none                         |
+| 2    | 2    | 1     | 0       | none                         |
+| 3    | 3    | 1     | 0       | none                         |
+| 4    | 4    | 2     | 0       | none                         |
+| 5    | 5    | 2     | 0       | none                         |
+| 6    | 6    | 3     | 1       | none                         |
 | 7    | 50   | 5     | 2       | Glow Lantern, Sweet Lure     |
 | 8    | 75   | 8     | 3       | Inked Map, Sturdy Satchel    |
 | 9    | 100  | 10    | 4       | Golden Lure                  |
 | 10   | 150  | 15    | 6       | Trail Atlas, Explorer's Pack |
 
-Totals per creature over all nine ranks: 455 Bait, 47 scrap, 16 glimmer, 7 supplies (80 Bait and 7 scrap up to rank 5).
+Totals per creature over all nine ranks: 395 Bait, 47 scrap, 16 glimmer, 7 supplies (14 Bait and 6 scrap up to rank 5).
+
+**Retuned the same day (less Bait at ranks 2 to 6).** With the dungeon's basic ability removed, the first table (Bait 5, 10, 15, 20, 30 at ranks 2 to 6) and the dungeon change each passed 47/47 alone but failed together on `leet`: typical finale 61.1% (target 40 to 60%) and casual species discovery 0.32 (target at most 0.3). Extra Bait at the low ranks fed training and discovery. Only the gift numbers changed (no targets, boss, gear or dungeon numbers): Bait at ranks 2 to 6 is now 2, 3, 4, 5, 6, and the scrap, glimmer, supplies and ranks 7 to 10 are as before. Scrap is not the lever here: raising it at ranks 2 to 6 pushed the finale up again on seed `s2`. The table above is the shipped one. It passes 47/47 on `leet` (typical finale 53.8%, casual species 0.21). On seed `s2` it passes 46/47 and only `econ-hard-pity` (16.4%, at most 15%) fails, which also fails there with almost no gift at all, so it does not come from the gifts; the first table failed three targets on `s2` (phase 2 clear, typical finale, casual species).
 
 **How the numbers were found (seed `leet`, full run).** Baseline 47/47. The gift is per creature, so it multiplies with the number of creatures that explore. A first draft with Bait 15 to 150, scrap, glimmer and a basic or good supply at every rank failed 5 targets (phase 2 clear 93.1% against at most 85%, typical finale 80.7% against at most 60%, 15-player finale 83.3%, boss spread 20.0%, casual species 0.4 against at most 0.3). Splitting the gift by kind: parts alone 47/47, Bait alone 47/47, supplies alone 43/47 (phase 2 87.5%, typical finale 65.5%, 15-player finale 67.4%, casual species 0.3 with rounding). Supplies feed discovery, and discovery feeds raid readiness, so **supplies only come at ranks 7 to 10**, which a sim player hardly reaches inside its horizon. The shipped table passes 47/47 on `leet`. The sim now pays the gifts too (`packages/sim/src/trips.ts`), so this stays checked.
 

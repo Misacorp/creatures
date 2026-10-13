@@ -533,11 +533,11 @@ export const RULES = {
        * (creature, rank) on the claim that raises the rank. Kept modest: the sim checks the economy.
        */
       gifts: [
-        { bait: 5, scrap: 1, glimmer: 0, supplies: [] },
-        { bait: 10, scrap: 1, glimmer: 0, supplies: [] },
-        { bait: 15, scrap: 2, glimmer: 0, supplies: [] },
-        { bait: 20, scrap: 2, glimmer: 0, supplies: [] },
-        { bait: 30, scrap: 3, glimmer: 1, supplies: [] },
+        { bait: 2, scrap: 1, glimmer: 0, supplies: [] },
+        { bait: 3, scrap: 1, glimmer: 0, supplies: [] },
+        { bait: 4, scrap: 2, glimmer: 0, supplies: [] },
+        { bait: 5, scrap: 2, glimmer: 0, supplies: [] },
+        { bait: 6, scrap: 3, glimmer: 1, supplies: [] },
         { bait: 50, scrap: 5, glimmer: 2, supplies: ['lantern-good', 'lure-good'] },
         { bait: 75, scrap: 8, glimmer: 3, supplies: ['map-scrap-good', 'satchel-good'] },
         { bait: 100, scrap: 10, glimmer: 4, supplies: ['lure-great'] },
