@@ -15,6 +15,7 @@ import {
   HP_SEGMENTS,
   abilityUsesAt,
   cuesForEvents,
+  creatureHpAt,
   groupByZone,
   hpSegments,
   stageStateAt,
@@ -356,6 +357,12 @@ export interface StageProps {
   /** The "Round N" overlay, while a round opens. */
   intro?: IntroView | null;
   /**
+   * The creatures' own HP (the dungeon: their HP carries between rooms, and a creature that is hit is
+   * hurt, not only knocked out). It gives each creature a small HP bar that follows the boss hits in
+   * the events, from the HP it started the fight with. Without it (the raid) the stage draws none.
+   */
+  creatureHp?: { start: Readonly<Record<string, number>>; max: Readonly<Record<string, number>> };
+  /**
    * The live finale's abilities: the player's own creatures with an ability get a badge and open a
    * popover when tapped. Without it (replays) the stage is not interactive and only shows which
    * abilities have been used so far.
@@ -414,7 +421,23 @@ interface UnitProps {
   boxRef: Ref<HTMLLIElement>;
   /** The boss will silence this creature next round (a warning glyph on it). */
   warned: boolean;
+  /** The creature's HP now and at most (the dungeon); null when the stage shows no creature HP. */
+  hp: { current: number; max: number } | null;
   onToggle: () => void;
+}
+
+const UNIT_HP_SEGMENTS = 5;
+
+/** A creature's small HP bar: five stepped segments, so a hit takes a visible chunk. */
+function UnitHp({ current, max }: { current: number; max: number }) {
+  const lit = hpSegments(current, max, UNIT_HP_SEGMENTS);
+  return (
+    <span class="unit-hp" aria-hidden="true">
+      {Array.from({ length: UNIT_HP_SEGMENTS }, (_, k) => (
+        <i key={k} class={k < lit ? undefined : 'gone'} />
+      ))}
+    </span>
+  );
 }
 
 /**
@@ -430,6 +453,7 @@ function StageUnit(props: UnitProps) {
 
   const spoken =
     `${c.name}${mine ? ', yours' : ''}${ko ? ', knocked out' : ''}` +
+    (props.hp === null || ko ? '' : `, HP ${String(props.hp.current)} of ${String(props.hp.max)}`) +
     (badge === null
       ? ''
       : `, ${props.abilityId === null ? 'ability' : abilityName(props.abilityId)} ${badge.label.toLowerCase()}`);
@@ -465,6 +489,7 @@ function StageUnit(props: UnitProps) {
       <span class="unit-name pix" aria-hidden="true">
         {c.name}
       </span>
+      {props.hp !== null && <UnitHp current={props.hp.current} max={props.hp.max} />}
     </>
   );
 
@@ -519,6 +544,7 @@ export function Stage({
   anim,
   fx = [],
   intro = null,
+  creatureHp,
   abilities,
 }: StageProps) {
   const rowsRef = useRef<HTMLDivElement>(null);
@@ -544,6 +570,8 @@ export function Stage({
     anim === null
       ? []
       : cuesForEvents(events, anim.from, Math.min(anim.to, index), rowIds, boss.id);
+  const creatureHpNow =
+    creatureHp === undefined ? {} : creatureHpAt(events, index, creatureHp.start);
   const previousHp = anim === null ? state.bossHp : stateAt(events, anim.from, hpStart).bossHp;
   const art = bossArt(boss.id);
 
@@ -844,6 +872,14 @@ export function Stage({
                       anchorRef={anchorRef(key ?? `none:${c.id}`)}
                       boxRef={boxRef(c.id)}
                       warned={forecast?.ends.includes(c.id) === true}
+                      hp={
+                        creatureHp === undefined
+                          ? null
+                          : {
+                              current: creatureHpNow[c.id] ?? 0,
+                              max: creatureHp.max[c.id] ?? 0,
+                            }
+                      }
                       onToggle={() => {
                         if (key !== null) toggle(key);
                       }}

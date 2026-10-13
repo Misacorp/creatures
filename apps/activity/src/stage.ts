@@ -17,7 +17,7 @@
  * after a beat (HP, the mark, who is knocked out, which zones are shielded) always comes from the
  * events themselves.
  */
-import { content, type BossDef } from '@creatures/game';
+import { content, dungeonContent, type BossDef } from '@creatures/game';
 import {
   planRounds,
   zoneOfIndex,
@@ -151,19 +151,40 @@ const abilityEffects = (abilityId: string) =>
 
 // --- Boss actions ---
 
+/**
+ * Every gimmick a dungeon room can have: the foes' own, and the one a room modifier adds to its foe
+ * (Thorns). A fight in a dungeon room names its foe as the boss, so the lookups below find these
+ * after the raid bosses.
+ */
+const dungeonGimmicks = [
+  ...dungeonContent.foes.flatMap((f) => f.gimmicks),
+  ...dungeonContent.modifiers.flatMap((m) =>
+    m.effects.flatMap((e) => (e.op === 'foe_gimmick' ? [e.gimmick] : [])),
+  ),
+];
+
 const gimmickOf = (bossId: string | undefined, gimmickId: string) => {
   const boss: BossDef | undefined =
     bossId === undefined ? undefined : content.bosses.find((b) => b.id === bossId);
   return (
     boss?.gimmicks.find((g) => g.id === gimmickId) ??
-    content.bosses.flatMap((b) => b.gimmicks).find((g) => g.id === gimmickId)
+    content.bosses.flatMap((b) => b.gimmicks).find((g) => g.id === gimmickId) ??
+    dungeonGimmicks.find((g) => g.id === gimmickId)
   );
 };
 
 /** The content id of the boss's reflect gimmick, for naming a reflected hit; null if it has none. */
 function reflectGimmick(bossId: string | undefined): string | null {
   const boss = bossId === undefined ? undefined : content.bosses.find((b) => b.id === bossId);
-  return boss?.gimmicks.find((g) => g.op === 'reflect_first_reaction')?.id ?? null;
+  if (boss !== undefined) {
+    return boss.gimmicks.find((g) => g.op === 'reflect_first_reaction')?.id ?? null;
+  }
+  // A dungeon foe reflects through the Thorns modifier (or its own gimmick).
+  const foe = bossId === undefined ? undefined : dungeonContent.foes.find((f) => f.id === bossId);
+  if (foe === undefined) return null;
+  const own = foe.gimmicks.find((g) => g.op === 'reflect_first_reaction');
+  const added = dungeonGimmicks.find((g) => g.op === 'reflect_first_reaction');
+  return (own ?? added)?.id ?? null;
 }
 
 const KNOWN_ACTIONS: ReadonlySet<string> = new Set([
@@ -509,6 +530,28 @@ export function stageStateAt(
   bossHpStart: number,
 ): StageState {
   return { ...stateAt(events, index, bossHpStart), shielded: shieldedZones(events, index) };
+}
+
+/**
+ * Each creature's HP after the first `index` events, from the HP it started the fight with. The
+ * only thing that costs a creature HP is a boss hit (`boss_hit`, whose `damage` is what got through
+ * after guards and Shield Walls), and nothing heals, so the events are all there is to read. It
+ * never goes below 0. A creature missing from `start` is left out.
+ */
+export function creatureHpAt(
+  events: readonly FightEvent[],
+  index: number,
+  start: Readonly<Record<string, number>>,
+): Record<string, number> {
+  const hp: Record<string, number> = { ...start };
+  const end = Math.min(Math.max(0, Math.trunc(index)), events.length);
+  for (let i = 0; i < end; i++) {
+    const e = events[i] as FightEvent;
+    if (e.t !== 'boss_hit') continue;
+    const before = hp[e.target];
+    if (before !== undefined) hp[e.target] = Math.max(0, before - e.damage);
+  }
+  return hp;
 }
 
 // --- Abilities that have fired ---

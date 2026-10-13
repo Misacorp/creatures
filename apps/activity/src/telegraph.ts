@@ -9,9 +9,22 @@
  *   from the boss's content and the round number alone. A strike on the strongest creature depends
  *   on the creatures' Attack, which the stage does not know, so it is worded generically.
  */
-import { content } from '@creatures/game';
+import { content, dungeonContent, type BossDef } from '@creatures/game';
 import { bossWarnings, type EventNames, type Zone } from '@creatures/engine';
 import type { BossStrike } from './stage';
+
+/**
+ * The boss with this id, or a dungeon foe as the boss it fights as: `bossWarnings` reads only the
+ * gimmicks and the number of rounds, and a foe has both (its room's rounds).
+ */
+function bossOrFoe(bossId: string): BossDef | undefined {
+  const boss = content.bosses.find((b) => b.id === bossId);
+  if (boss !== undefined) return boss;
+  const foe = dungeonContent.foes.find((f) => f.id === bossId);
+  return foe === undefined
+    ? undefined
+    : ({ gimmicks: foe.gimmicks, finaleRounds: foe.rounds } as BossDef);
+}
 
 const creatureName = (names: Pick<EventNames, 'creatures'>, id: string): string =>
   names.creatures[id] ?? id;
@@ -108,7 +121,7 @@ export function forecastNextRound(
   names: Pick<EventNames, 'gimmicks'>,
 ): Forecast | null {
   if (round < 1 || round >= rounds) return null;
-  const boss = content.bosses.find((b) => b.id === bossId);
+  const boss = bossOrFoe(bossId);
   if (boss === undefined) return null;
   const warnings = bossWarnings(boss, round + 1);
   if (warnings.length === 0) return null;
