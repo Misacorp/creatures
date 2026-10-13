@@ -15,6 +15,7 @@ export const GLOSSARY_SECTIONS = [
   'raid-week',
   'finale',
   'expeditions',
+  'dungeon',
   'ranks',
   'rewards',
   'workshop',

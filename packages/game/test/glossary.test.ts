@@ -341,7 +341,7 @@ describe('the glossary text matches the rules', () => {
 });
 
 describe('the How to play text', () => {
-  it('has the nine sections in the page order, each with 3 to 5 lines', () => {
+  it('has the ten sections in the page order, each with 3 to 5 lines', () => {
     expect(howToPlay.sections.map((s) => s.id)).toEqual([...GLOSSARY_SECTIONS]);
     for (const s of howToPlay.sections) {
       expect(s.lines.length).toBeGreaterThanOrEqual(3);
@@ -573,10 +573,35 @@ describe('the glossary covers the daily dungeon', () => {
     expect(d.teamSize).toBe(3);
   });
 
-  it('sends the dungeon entries to a section the page has', () => {
+  it('sends the dungeon entries to the Daily dungeon section of the page', () => {
     const ids = new Set(howToPlay.sections.map((s) => s.id));
-    for (const e of glossary.filter((g) => g.id.startsWith('modifier-') || fixed.includes(g.id))) {
+    const entries = glossary.filter((g) => g.id.startsWith('modifier-') || fixed.includes(g.id));
+    expect(entries.length).toBe(fixed.length + dungeonContent.modifiers.length);
+    for (const e of entries) {
       expect(ids.has(e.section), e.id).toBe(true);
+      expect(e.section, e.id).toBe('dungeon');
     }
+  });
+
+  it('has a Daily dungeon section that says what the rules say', () => {
+    const section = howToPlay.sections.find((s) => s.id === 'dungeon');
+    expect(section?.title).toBe('Daily dungeon');
+    expect(section?.lines.length).toBeGreaterThanOrEqual(3);
+    expect(section?.lines.length).toBeLessThanOrEqual(5);
+    const words = (section?.lines ?? []).join(' ');
+    const d = RULES.dungeon;
+    expect(words).toContain('One run a day');
+    expect(words).toContain('retried once');
+    expect(words).toContain('team of three');
+    expect(d.teamSize).toBe(3);
+    expect(words).toContain('three rooms: two foes, then a room boss');
+    expect(d.rooms).toBe(3);
+    expect(words).toContain('HP carries over');
+    expect(words).toContain('one depth deeper');
+    expect(words).toContain(`${String(d.landmarkEvery)}th depth is a landmark`);
+    expect(words).toContain('gear for sure');
+    expect(d.streak.bonuses.map((b) => b.day)).toEqual([3, 7]);
+    expect(d.streak.cycleDays).toBe(7);
+    expect(words).toContain('3rd and 7th day of every 7');
   });
 });

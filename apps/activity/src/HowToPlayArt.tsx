@@ -3,6 +3,7 @@
  * already has (nothing is drawn from scratch), and from the content and the rules, so a picture
  * can never disagree with the game. Words that appear in a picture come from the glossary.
  */
+import { Fragment } from 'preact';
 import {
   GLOSSARY_IDS,
   JOB_KINDS,
@@ -19,7 +20,9 @@ import { partIcon } from './gear-sprites';
 import { GlossaryTag } from './Glossary';
 import { capitalize, speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
+import { streakPips } from './dungeon-text';
 import {
+  dungeonRooms,
   evolutionExample,
   exampleSeason,
   exampleSpecies,
@@ -318,6 +321,52 @@ function ExpeditionsArt() {
   );
 }
 
+/**
+ * The daily dungeon: the three rooms in a row (two foes, then a room boss) with HP carrying on
+ * between them, the depth step, a landmark and the streak pips with their two bonus days.
+ */
+function DungeonArt() {
+  const rooms = dungeonRooms();
+  const pips = streakPips(0);
+  return (
+    <div class="dungeon-art">
+      <ol class="art-row dungeon-art-rooms" aria-label="The rooms">
+        {rooms.map((room, i) => (
+          <Fragment key={room.id}>
+            {i > 0 && (
+              <li class="dungeon-art-arrow" aria-hidden="true">
+                <Arrow />
+              </li>
+            )}
+            <li>
+              <Sprite sprite={bossArt(room.id).sprite} scale={room.boss ? 2 : 3} />
+              <span class="pix">{room.boss ? 'Room boss' : `Room ${String(i + 1)}`}</span>
+              <span class="muted">{room.name}</span>
+            </li>
+          </Fragment>
+        ))}
+      </ol>
+      <p class="tags art-tags">
+        <GlossaryTag entry="depth" look="chip" class="chip">
+          <span class="chip-text">Depth +1</span>
+        </GlossaryTag>
+        <GlossaryTag entry="landmark" look="chip" class="chip dungeon-landmark-chip">
+          <Sprite sprite={glyphOrUnknown('flag')} scale={2} />
+          <span class="chip-text">Landmark</span>
+        </GlossaryTag>
+      </p>
+      <p class="art-streak">
+        <GlossaryTag entry="streak">{titleOf('streak')}</GlossaryTag>
+        <span class="pips" role="img" aria-label="A streak: the 3rd and 7th day of 7 pay a bonus">
+          {pips.map((p) => (
+            <i key={p.day} class={p.bonus ? 'fest' : ''} />
+          ))}
+        </span>
+      </p>
+    </div>
+  );
+}
+
 /** Ranks and Festivals: the season pips and the tags. */
 function RanksArt() {
   const pips = exampleSeason();
@@ -425,6 +474,8 @@ export function SectionArt({ id }: { id: GlossarySection }) {
       return <FinaleArt />;
     case 'expeditions':
       return <ExpeditionsArt />;
+    case 'dungeon':
+      return <DungeonArt />;
     case 'ranks':
       return <RanksArt />;
     case 'rewards':
