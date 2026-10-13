@@ -1,5 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import actionFire from './fixtures/action-fire.json';
+import collectionState from './fixtures/collection-state.json';
+import expeditionClaimLoot from './fixtures/expedition-claim-loot.json';
+import gearDismantle from './fixtures/gear-dismantle.json';
+import gearEquip from './fixtures/gear-equip.json';
+import gearErrors from './fixtures/gear-errors.json';
+import gearReady from './fixtures/gear-ready.json';
+import gearRequestBodies from './fixtures/gear-request-bodies.json';
+import gearRunning from './fixtures/gear-running.json';
+import gearState from './fixtures/gear-state.json';
+import gearUnequip from './fixtures/gear-unequip.json';
+import gearUpgrade from './fixtures/gear-upgrade.json';
+import gearWelcome from './fixtures/gear-welcome.json';
+import workshopClaimCraft from './fixtures/workshop-claim-craft.json';
+import workshopClaimEnchant from './fixtures/workshop-claim-enchant.json';
+import workshopClaimImprove from './fixtures/workshop-claim-improve.json';
+import workshopStartCraft from './fixtures/workshop-start-craft.json';
+import workshopStartEnchant from './fixtures/workshop-start-enchant.json';
+import workshopStartImprove from './fixtures/workshop-start-improve.json';
 import errorFixtures from './fixtures/errors.json';
 import practiceStart from './fixtures/practice-start.json';
 import raidAutofire from './fixtures/raid-autofire.json';
@@ -14,7 +32,10 @@ vi.mock('./api', async (importOriginal) => ({
   apiFetch,
 }));
 
-import { ApiError } from './api';
+import { ApiError, parseClaimResponse, parseGameState } from './api';
+import { claimJob, dismantleGear, equipGear, fetchGear, startJob, upgradeGear } from './gear-api';
+import { parseGearState } from './gear-parse';
+import type { StartJobRequest } from './gear-types';
 import { errorText } from './game';
 import { autoFireTarget, buildAction } from './live';
 import { sendLiveAction, startPractice } from './live-api';
@@ -158,5 +179,227 @@ describe('the errors the server sends', () => {
     expect(errorText(new ApiError(409, 'practice_blocked'))).toContain('30 minutes');
     expect(errorText(new ApiError(409, 'practice_cooldown'))).toContain('10 minutes');
     expect(errorText(new ApiError(404, 'not_found'))).toContain('no longer exists');
+  });
+});
+
+describe('the gear requests the client sends', () => {
+  beforeEach(() => {
+    apiFetch.mockReset();
+  });
+
+  function sent(): { path: string; method: string; body: unknown } {
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+    const [path, init] = apiFetch.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
+    return { path, method: init.method ?? 'GET', body: JSON.parse(init.body as string) };
+  }
+
+  const expected = (key: keyof typeof gearRequestBodies) => {
+    const { path, method, body } = gearRequestBodies[key];
+    return { path, method, body };
+  };
+
+  it('equip and unequip send { creatureId }, with null to take it off', async () => {
+    apiFetch.mockResolvedValue(gearEquip);
+    const equip = gearRequestBodies.equip;
+    await equipGear(equip.path.split('/')[3] as string, equip.body.creatureId);
+    expect(sent()).toEqual(expected('equip'));
+
+    apiFetch.mockClear();
+    apiFetch.mockResolvedValue(gearUnequip);
+    await equipGear(equip.path.split('/')[3] as string, null);
+    expect(sent()).toEqual(expected('unequip'));
+  });
+
+  it('upgrade and dismantle send only the idempotency key', async () => {
+    apiFetch.mockResolvedValue(gearUpgrade);
+    const up = gearRequestBodies.upgrade;
+    await upgradeGear(up.path.split('/')[3] as string, up.body.idempotencyKey);
+    expect(sent()).toEqual(expected('upgrade'));
+
+    apiFetch.mockClear();
+    apiFetch.mockResolvedValue(gearDismantle);
+    const dis = gearRequestBodies.dismantle;
+    await dismantleGear(dis.path.split('/')[3] as string, dis.body.idempotencyKey);
+    expect(sent()).toEqual(expected('dismantle'));
+  });
+
+  it('a craft, an improve and an enchant each send exactly their fields and a key', async () => {
+    apiFetch.mockResolvedValue(workshopStartCraft);
+    await startJob(gearRequestBodies['job-craft'].body as StartJobRequest);
+    expect(sent()).toEqual(expected('job-craft'));
+
+    apiFetch.mockClear();
+    apiFetch.mockResolvedValue(workshopStartImprove);
+    await startJob(gearRequestBodies['job-improve'].body as StartJobRequest);
+    expect(sent()).toEqual(expected('job-improve'));
+
+    apiFetch.mockClear();
+    apiFetch.mockResolvedValue(workshopStartEnchant);
+    await startJob(gearRequestBodies['job-enchant'].body as StartJobRequest);
+    expect(sent()).toEqual(expected('job-enchant'));
+  });
+
+  it('claiming a job sends the key; claiming an expedition still sends an empty object', async () => {
+    apiFetch.mockResolvedValue(workshopClaimCraft);
+    const claim = gearRequestBodies['job-claim'];
+    await claimJob(claim.path.split('/')[4] as string, claim.body.idempotencyKey);
+    expect(sent()).toEqual(expected('job-claim'));
+
+    // The expedition claim is sent by api.ts itself; its body is the empty object recorded here.
+    expect(gearRequestBodies['expedition-claim'].body).toEqual({});
+    expect(gearRequestBodies['expedition-claim'].path).toMatch(
+      /^\/api\/expeditions\/[^/]+\/claim$/,
+    );
+  });
+
+  it('asks for the gear view with a plain GET', async () => {
+    apiFetch.mockResolvedValue(gearState);
+    await fetchGear();
+    expect(apiFetch).toHaveBeenCalledWith('/api/gear');
+  });
+});
+
+describe('the gear responses the server sends', () => {
+  beforeEach(() => {
+    apiFetch.mockReset();
+  });
+
+  it('parses every GET /api/gear fixture', () => {
+    for (const fixture of [gearState, gearReady, gearRunning, gearWelcome]) {
+      const parsed = parseGearState(fixture);
+      expect(parsed.slots.total).toBeGreaterThan(0);
+      expect(Object.keys(parsed.parts)).toHaveLength(6);
+    }
+  });
+
+  it('reads the welcome kit, a running job and a ready job', () => {
+    expect(parseGearState(gearWelcome).grants[0]?.source).toBe('welcome');
+    expect(parseGearState(gearRunning).jobs.some((j) => j.status === 'running')).toBe(true);
+    expect(parseGearState(gearReady).jobs.some((j) => j.status === 'ready')).toBe(true);
+  });
+
+  it('parses the result, the gear view and the collection of every action', async () => {
+    const calls = [
+      [gearEquip, () => equipGear('g', 'c')],
+      [gearUnequip, () => equipGear('g', null)],
+      [gearUpgrade, () => upgradeGear('g', 'k')],
+      [gearDismantle, () => dismantleGear('g', 'k')],
+      [workshopStartCraft, () => startJob(gearRequestBodies['job-craft'].body as StartJobRequest)],
+      [
+        workshopStartImprove,
+        () => startJob(gearRequestBodies['job-improve'].body as StartJobRequest),
+      ],
+      [
+        workshopStartEnchant,
+        () => startJob(gearRequestBodies['job-enchant'].body as StartJobRequest),
+      ],
+      [workshopClaimCraft, () => claimJob('j', 'k')],
+      [workshopClaimImprove, () => claimJob('j', 'k')],
+      [workshopClaimEnchant, () => claimJob('j', 'k')],
+    ] as const;
+    for (const [fixture, call] of calls) {
+      apiFetch.mockResolvedValue(fixture);
+      const done = await call();
+      expect(done.gear.items.length).toBeGreaterThanOrEqual(0);
+      expect(done.state.creatures.length).toBeGreaterThan(0);
+      expect(done.state.creatures.every((c) => c.busy !== undefined)).toBe(true);
+    }
+  });
+
+  it('reads the claim results of the three kinds of job', async () => {
+    apiFetch.mockResolvedValue(workshopClaimCraft);
+    expect((await claimJob('j', 'k')).result.kind).toBe('craft');
+    apiFetch.mockResolvedValue(workshopClaimImprove);
+    expect((await claimJob('j', 'k')).result.kind).toBe('improve');
+    apiFetch.mockResolvedValue(workshopClaimEnchant);
+    expect((await claimJob('j', 'k')).result.kind).toBe('enchant');
+  });
+
+  it('refuses a payload that is not the shape the server sends', async () => {
+    expect(() => parseGearState({ ...gearState, parts: { scrap: 1 } })).toThrow();
+    expect(() => parseGearState({ ...gearState, items: [{ id: 'x' }] })).toThrow();
+    apiFetch.mockResolvedValue({ ...gearUpgrade, result: { gearId: 5 } });
+    await expect(upgradeGear('g', 'k')).rejects.toThrow('upgrade result');
+    apiFetch.mockResolvedValue({ result: {}, gear: gearState });
+    await expect(upgradeGear('g', 'k')).rejects.toThrow();
+  });
+
+  it('puts gear, statsWithGear and busy on every creature of the collection', () => {
+    const game = parseGameState(collectionState);
+    expect(game.creatures.some((c) => c.gear !== null)).toBe(true);
+    expect(game.creatures.some((c) => c.busy?.kind === 'job')).toBe(true);
+    for (const c of game.creatures) {
+      expect(c.statsWithGear.atk).toBeGreaterThanOrEqual(c.stats.atk);
+    }
+    expect(() =>
+      parseGameState({
+        ...collectionState,
+        creatures: collectionState.creatures.map((c) => ({ ...c, busy: undefined })),
+      }),
+    ).toThrow();
+  });
+
+  it('reads the loot of an expedition claim, and a claim without loot', () => {
+    const claimed = parseClaimResponse(expeditionClaimLoot);
+    expect(claimed.result.loot?.parts.scrap).toBe(6);
+    expect(claimed.result.loot?.blueprints).toHaveLength(1);
+    expect(claimed.result.catches).toHaveLength(3);
+    const older = parseClaimResponse({
+      ...expeditionClaimLoot,
+      result: { recalled: true, catches: [] },
+    });
+    expect(older.result.loot).toBeUndefined();
+    expect(() =>
+      parseClaimResponse({
+        ...expeditionClaimLoot,
+        result: { ...expeditionClaimLoot.result, loot: { gear: 1 } },
+      }),
+    ).toThrow();
+  });
+});
+
+describe('the gear errors the server sends', () => {
+  const GENERIC = /^Something went wrong/;
+
+  it('has a friendly text for every error code of the gear and workshop routes', () => {
+    expect(gearErrors.length).toBeGreaterThan(10);
+    for (const { route, status, body } of gearErrors) {
+      const text = errorText(new ApiError(status, body.error));
+      expect(text, `${route} ${String(status)} ${body.error}`).not.toMatch(GENERIC);
+      expect(text.length).toBeGreaterThan(10);
+    }
+  });
+
+  it('has a text for every code the server can send beyond the fixtures', () => {
+    for (const code of [
+      'insufficient_parts',
+      'creature_on_job',
+      'workshop_full',
+      'inventory_full',
+      'item_busy',
+      'not_ready',
+      'max_level',
+      'same_enchant',
+      'blueprint_unknown',
+      'nothing_to_improve',
+      'invalid_secondary',
+      'invalid_blueprint',
+      'invalid_enchant',
+      'item_gone',
+    ]) {
+      expect(errorText(new ApiError(409, code)), code).not.toMatch(GENERIC);
+    }
+  });
+
+  it('names Essence when an upgrade is refused for money', () => {
+    expect(errorText(new ApiError(409, 'insufficient_funds'), 'Essence')).toBe(
+      'Not enough Essence.',
+    );
+  });
+
+  it('says where a busy creature is, for an expedition and for a job', () => {
+    expect(errorText(new ApiError(409, 'creature_on_job'))).toContain('job');
+    expect(errorText(new ApiError(409, 'creature_away'))).toContain('expedition');
   });
 });

@@ -242,6 +242,21 @@ const ERROR_TEXT: Record<string, string> = {
   forbidden: 'Only the server owner, or people who can manage the server, can change this.',
   discord_unavailable: 'Discord did not answer. Try again in a moment.',
   channel_unknown: 'The game does not know which channel this was opened in. Reopen the Activity.',
+  // Gear and the Workshop.
+  insufficient_parts: 'You do not have the parts for that.',
+  creature_on_job: 'That creature is on a job in the Workshop. Claim it first.',
+  workshop_full: 'All Workshop slots are in use. Claim a finished job or wait for one to end.',
+  inventory_full: 'Your bag is full. Dismantle an item to make room.',
+  item_busy: 'That item is in a Workshop job. Claim the job first.',
+  not_ready: 'That job is not finished yet.',
+  max_level: 'That item is already at its top level.',
+  same_enchant: 'That item already has that enchant.',
+  blueprint_unknown: 'You have not learned that blueprint.',
+  nothing_to_improve: 'That item has no extra stat to improve.',
+  invalid_secondary: 'That item has no such extra stat.',
+  invalid_blueprint: 'That blueprint cannot be crafted.',
+  invalid_enchant: 'That enchant does not exist.',
+  item_gone: 'The item for that job is gone.',
   // Any request.
   invalid_body:
     'The server did not understand that. Close and reopen the Activity if it keeps happening.',
