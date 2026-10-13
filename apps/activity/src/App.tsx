@@ -183,6 +183,7 @@ export function App() {
                   initial={bootStatus.value.game}
                   onLeetSync={setLeetSync}
                   showPractice={bootStatus.value.config.environment !== 'production'}
+                  devTools={bootStatus.value.config.devTools || bootStatus.value.me.devTools}
                 />
                 {bootStatus.value.config.leetSource === 'mock' && (
                   <p class="note">Leet points are simulated until the leet bot API is live</p>

@@ -23,6 +23,8 @@ export interface AppConfig {
   version: string;
   /** "mock" while leet points are simulated; anything else means a real leet source. */
   leetSource: string;
+  /** True only on staging, where the server has the dev tools on (the debug panel loads). */
+  devTools: boolean;
 }
 
 export interface Health {
@@ -60,6 +62,8 @@ export interface Me {
   guildId: string;
   balances: Balances;
   leetSync: LeetSyncStatus;
+  /** True only on staging, where the server has the dev tools on. */
+  devTools: boolean;
 }
 
 export interface LedgerEntry {
@@ -163,6 +167,7 @@ export async function fetchConfig(): Promise<AppConfig> {
     environment: data['environment'],
     version: data['version'],
     leetSource: data['leetSource'],
+    devTools: data['devTools'] === true,
   };
 }
 
@@ -235,6 +240,7 @@ export async function fetchMe(): Promise<Me> {
     guildId: data['guildId'],
     balances: data['balances'],
     leetSync: data['leetSync'],
+    devTools: data['devTools'] === true,
   };
 }
 
