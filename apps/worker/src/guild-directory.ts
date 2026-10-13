@@ -3,7 +3,7 @@ import { SNOWFLAKE_RE } from './schemas';
 
 /** The directory is one object: every caller addresses it by this fixed name. */
 export const DIRECTORY_NAME = 'guild-directory';
-/** `list` never returns more guilds than this, so one call stays bounded. */
+/** `list` never returns more guilds than this, whatever limit the caller asks for. */
 const MAX_LISTED = 2000;
 /** The directory stops adding new guilds beyond this (existing ones keep updating). */
 const MAX_GUILDS = 5000;
@@ -47,14 +47,21 @@ export class GuildDirectory extends DurableObject<Env> {
     );
   }
 
-  /** The known guilds (ids), oldest first. */
-  list(): string[] {
-    return this.ctx.storage.sql
+  /**
+   * Up to `limit` known guilds (ids), most recently seen first so active guilds are covered when
+   * there are more than `limit`, and `total`, the true number of guilds in the directory.
+   */
+  list(limit: number): { ids: string[]; total: number } {
+    const cap = Math.max(0, Math.min(Math.floor(limit), MAX_LISTED));
+    const sql = this.ctx.storage.sql;
+    const ids = sql
       .exec<{ guild_id: string }>(
-        'SELECT guild_id FROM guild_directory ORDER BY first_seen, guild_id LIMIT ?',
-        MAX_LISTED,
+        'SELECT guild_id FROM guild_directory ORDER BY last_seen DESC, first_seen DESC, guild_id LIMIT ?',
+        cap,
       )
       .toArray()
       .map((r) => r.guild_id);
+    const total = sql.exec<{ n: number }>('SELECT COUNT(*) AS n FROM guild_directory').one().n;
+    return { ids, total };
   }
 }

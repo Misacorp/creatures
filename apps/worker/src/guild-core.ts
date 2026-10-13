@@ -781,17 +781,25 @@ export class GuildCore {
   }
 
   /**
-   * The analytics rollup rows of the game days `from` to `to` (inclusive), for the ops report. Counts
-   * only: no player, hash or text is in them. Called over RPC by the Worker, never from a route.
+   * The analytics rollup rows of the game days `from` to `to` (inclusive), and of the `compare` range
+   * when given, for the ops report: one call answers both ranges. Counts only: no player, hash or
+   * text is in them. Called over RPC by the Worker, never from a route.
    */
-  analyticsDaily(from: string, to: string): DailyRow[] {
-    return this.rollup.rows(from, to);
+  analyticsDaily(
+    from: string,
+    to: string,
+    compare: { from: string; to: string } | null = null,
+  ): { current: DailyRow[]; previous: DailyRow[] | null } {
+    return {
+      current: this.rollup.rows(from, to),
+      previous: compare === null ? null : this.rollup.rows(compare.from, compare.to),
+    };
   }
 
   /** Handles an authenticated API request forwarded by the Worker. */
   async handle(request: Request): Promise<Response> {
-    // The dev routes do not exist unless the dev tools are on: checked before anything else, with the
-    // answer of an unknown route.
+    // The dev routes do not exist unless the dev tools are on: checked before anything else, with a
+    // plain 404.
     const pathname = new URL(request.url).pathname;
     if (this.dev === null && isDevPath(pathname)) return notFound();
     const token = parseAuthorization(request.headers.get('Authorization'));

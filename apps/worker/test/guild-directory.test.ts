@@ -45,9 +45,23 @@ describe('GuildDirectory', () => {
       first_seen: '2027-01-11',
       last_seen: '2027-01-11',
     });
-    const listed = await directory().list();
+    const { ids: listed } = await directory().list(2000);
+    // Most recently seen first: a was seen last (2027-01-12), then b (2027-01-11).
     expect(listed.indexOf(a)).toBeLessThan(listed.indexOf(b));
     expect(listed.filter((id) => id === a)).toHaveLength(1);
+  });
+
+  it('caps the list but reports the true total', async () => {
+    const guilds = [nextGuild(), nextGuild(), nextGuild()];
+    await directory().note(guilds[0] ?? '', '2037-01-01');
+    await directory().note(guilds[1] ?? '', '2037-01-03');
+    await directory().note(guilds[2] ?? '', '2037-01-02');
+    const { ids, total } = await directory().list(2);
+    expect(ids).toEqual([guilds[1], guilds[2]]);
+    expect(total).toBe((await entries()).length);
+    expect(total).toBeGreaterThan(ids.length);
+    expect((await directory().list(0)).ids).toEqual([]);
+    expect((await directory().list(1_000_000)).total).toBe(total);
   });
 
   it('stores nothing but guild ids and days, and ignores anything else', async () => {

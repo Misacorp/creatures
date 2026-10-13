@@ -53,9 +53,12 @@ export const ReportSchema = v.strictObject({
     v.record(Day, Rows),
     v.check((d) => Object.keys(d).length <= MAX_DAYS, 'too many days'),
   ),
-  byGuild: v.pipe(
-    v.record(v.pipe(v.string(), v.regex(/^[a-z0-9]{1,32}$/)), Rows),
-    v.check((g) => Object.keys(g).length <= MAX_GUILDS, 'too many guilds'),
+  // Only present when the report was asked for with `byGuild=1`; the daily workflow never asks.
+  byGuild: v.optional(
+    v.pipe(
+      v.record(v.pipe(v.string(), v.regex(/^[a-z0-9-]{1,40}$/)), Rows),
+      v.check((g) => Object.keys(g).length <= MAX_GUILDS, 'too many guilds'),
+    ),
   ),
   previous: v.optional(PeriodSchema),
 });

@@ -23,6 +23,17 @@ describe('the report schema', () => {
     expect(parseReport(text).previous).toBeUndefined();
   });
 
+  it('accepts a report without byGuild, and one with g- aliases', () => {
+    const without = mutate((r) => {
+      delete r['byGuild'];
+    });
+    expect(parseReport(without).byGuild).toBeUndefined();
+    const withAlias = mutate((r) => {
+      r['byGuild'] = { 'g-0a1b2c': [] };
+    });
+    expect(Object.keys(parseReport(withAlias).byGuild ?? {})).toEqual(['g-0a1b2c']);
+  });
+
   it('rejects text that is not JSON', () => {
     expect(() => parseReport('not json')).toThrow('not valid JSON');
   });

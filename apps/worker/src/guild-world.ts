@@ -55,9 +55,16 @@ export class GuildWorld extends DurableObject<Env> {
     return secret;
   }
 
-  /** The analytics rollup rows of a range of game days, for the ops report (RPC only, counts only). */
-  analyticsDaily(from: string, to: string): DailyRow[] {
-    return this.core.analyticsDaily(from, to);
+  /**
+   * The analytics rollup rows of a range of game days, and of an optional compare range, for the
+   * ops report (RPC only, counts only).
+   */
+  analyticsDaily(
+    from: string,
+    to: string,
+    compare: { from: string; to: string } | null = null,
+  ): { current: DailyRow[]; previous: DailyRow[] | null } {
+    return this.core.analyticsDaily(from, to, compare);
   }
 
   /**

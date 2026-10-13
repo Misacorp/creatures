@@ -243,6 +243,10 @@ describe('GET /api/ops/report: access', () => {
       `${RANGE}&debug=1`,
       `${RANGE}&weekly=yes`,
       `${RANGE}&compareFrom=2027-01-01`,
+      `${RANGE}&byGuild=0`,
+      `${RANGE}&byGuild=true`,
+      `${RANGE}&byGuild=`,
+      `${RANGE}&byGuild=1&byGuild=1`,
     ];
     for (const query of bad) {
       const res = await call(query, { handler: createHandler() });
@@ -259,9 +263,29 @@ describe('GET /api/ops/report: access', () => {
 });
 
 describe('GET /api/ops/report: the report', () => {
-  it('sums the guilds, with stable aliases and per-guild buckets', async () => {
+  it('leaves out the per-server breakdown unless byGuild=1 is asked for', async () => {
     const { guilds } = await seed();
-    const body = await (await call(RANGE)).json<Report>();
+    for (const query of [RANGE, `${RANGE}&weekly=1`]) {
+      const body = await (await call(query, { handler: createHandler() })).json<Report>();
+      expect(body.byGuild, query).toBeUndefined();
+      expect(Object.keys(body)).not.toContain('byGuild');
+      expect(body.totals.length).toBeGreaterThan(0);
+    }
+    const md = await (await call(`${RANGE}&format=md&byGuild=1`)).text();
+    expect(md).not.toMatch(/g-[0-9a-f]{6}/);
+    for (const guild of guilds) expect(md).not.toContain(guild);
+  });
+
+  it('reports the true number of known guilds', async () => {
+    await seed();
+    const { total } = await directory().list(1);
+    const body = await (await call(RANGE, { handler: createHandler() })).json<Report>();
+    expect(body.guilds.known).toBe(total);
+  });
+
+  it('sums the guilds, with stable aliases and per-guild buckets (byGuild=1)', async () => {
+    const { guilds } = await seed();
+    const body = await (await call(`${RANGE}&byGuild=1`)).json<Report>();
     expect(body.version).toBe(1);
     expect(body).toMatchObject({ from: DAY, to: DAY, days: 1 });
     expect(body.guilds.known).toBeGreaterThanOrEqual(2);
@@ -282,12 +306,14 @@ describe('GET /api/ops/report: the report', () => {
     expect(total('flow', { currency: 'bait', dir: 'sink', label: 'training' })).toBe(80);
     expect(total('flow', { currency: 'tide-shard', dir: 'source', label: 'dungeon' })).toBe(2);
 
-    const aliases = Object.keys(body.byGuild);
+    const aliases = Object.keys(body.byGuild ?? {});
     expect(aliases.length).toBe(body.guilds.reporting);
     for (const alias of aliases) expect(alias).toMatch(/^g-[0-9a-f]{6}([0-9a-f]{2})*$/);
     for (const guild of guilds) expect(JSON.stringify(body)).not.toContain(guild);
-    const again = await (await call(RANGE, { handler: createHandler() })).json<Report>();
-    expect(Object.keys(again.byGuild)).toEqual(aliases);
+    const again = await (
+      await call(`${RANGE}&byGuild=1`, { handler: createHandler() })
+    ).json<Report>();
+    expect(Object.keys(again.byGuild ?? {})).toEqual(aliases);
     expect(body.daily[DAY]?.some((r) => r.metric === 'dau' && r.value === 2)).toBe(true);
   });
 
@@ -359,6 +385,7 @@ describe('GET /api/ops/report: privacy', () => {
       `${RANGE}&weekly=1`,
       `${RANGE}&format=md`,
       `${RANGE}&format=md&weekly=1`,
+      `${RANGE}&byGuild=1`,
       'from=2027-01-01&to=2027-03-31&format=json',
     ];
     for (const query of queries) {
@@ -379,10 +406,14 @@ describe('GET /api/ops/report: privacy', () => {
   it('writes only counts in the JSON: every value is an integer and every dim is an id or integer', async () => {
     await seed();
     const body = await (await call(RANGE)).json<Report>();
+    const withGuilds = await (
+      await call(`${RANGE}&byGuild=1`, { handler: createHandler() })
+    ).json<Report>();
+    expect(Object.keys(withGuilds.byGuild ?? {}).length).toBeGreaterThan(0);
     const all = [
       ...body.totals,
       ...Object.values(body.daily).flat(),
-      ...Object.values(body.byGuild).flat(),
+      ...Object.values(withGuilds.byGuild ?? {}).flat(),
     ];
     expect(all.length).toBeGreaterThan(10);
     for (const r of all) {
@@ -392,17 +423,7 @@ describe('GET /api/ops/report: privacy', () => {
       }
     }
     expect(Object.keys(body).sort()).toEqual(
-      [
-        'byGuild',
-        'daily',
-        'days',
-        'from',
-        'guilds',
-        'rolledDays',
-        'to',
-        'totals',
-        'version',
-      ].sort(),
+      ['daily', 'days', 'from', 'guilds', 'rolledDays', 'to', 'totals', 'version'].sort(),
     );
   });
 

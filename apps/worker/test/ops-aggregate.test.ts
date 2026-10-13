@@ -39,6 +39,11 @@ describe('parseRow', () => {
     const bad: RawRow[] = [
       raw('d', 'flow', { label: 'a'.repeat(32) }, 1),
       raw('d', 'flow', { label: `x${'0123456789abcdef'.repeat(4)}` }, 1),
+      raw('d', 'flow', { label: '123456789012345' }, 1),
+      raw('d', 'flow', { label: '700000000000000000' }, 1),
+      raw('d', 'flow', { label: '123e4567-e89b-12d3-a456-426614174000' }, 1),
+      raw('d', 'flow', { label: '123e4567e89b12d3a456426614174000' }, 1),
+      raw('d', 'flow', { label: '123E4567-E89B-12D3-A456-426614174000' }, 1),
       raw('d', 'flow', { label: 'Misa the Mighty' }, 1),
       raw('d', 'flow', { label: '<b>hi</b>' }, 1),
       raw('d', 'flow', { label: 'x'.repeat(49) }, 1),
@@ -110,11 +115,28 @@ describe('parseOpsQuery', () => {
       to: '2027-01-07',
       format: 'json',
       compare: null,
+      byGuild: false,
     });
     expect(query('from=2027-01-01&to=2027-01-01&format=md')).toMatchObject({
       ok: true,
       format: 'md',
     });
+  });
+
+  it('allows byGuild=1 only, and only once', () => {
+    expect(query('from=2027-01-01&to=2027-01-07&byGuild=1')).toMatchObject({
+      ok: true,
+      byGuild: true,
+    });
+    for (const value of ['0', '', 'true', 'yes', '2', '01']) {
+      expect(query(`from=2027-01-01&to=2027-01-07&byGuild=${value}`).ok, value).toBe(false);
+    }
+    expect(query('from=2027-01-01&to=2027-01-07&byGuild=1&byGuild=1').ok).toBe(false);
+  });
+
+  it('accepts short digit runs in labels', () => {
+    // 14 digits is not a snowflake.
+    expect(parseRow(raw('d', 'flow', { label: '12345678901234' }, 1))).not.toBeNull();
   });
 
   it('accepts exactly the longest range and refuses one day more', () => {

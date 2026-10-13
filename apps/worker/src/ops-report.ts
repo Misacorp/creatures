@@ -4,11 +4,12 @@
  *
  * - **Auth is a bearer `OPS_TOKEN`, nothing else.** Session tokens and cookies are never read here:
  *   a session token simply fails the comparison. With no `OPS_TOKEN` configured (unset or empty), a
- *   wrong token, or a method other than GET, the answer is the same plain 404, so the route does not
- *   show that it exists. The comparison hashes both sides with SHA-256 and compares the digests in
+ *   wrong token, or a method other than GET, the answer is the same plain 404 (not hidden: unknown
+ *   routes answer 401, as the session check comes first). The comparison hashes both sides with SHA-256 and compares the digests in
  *   constant time.
  * - Requests are rate-limited per caller (a hash of the connecting IP, kept in memory only).
- * - The report holds counts only. Rows come from each guild's rollup table (`analytics_daily`); every
+ * - The report holds counts only, summed across servers. A per-server breakdown (`byGuild`, under
+ *   stable aliases) is left out unless the query has `byGuild=1`. Rows come from each guild's rollup table (`analytics_daily`); every
  *   row is checked again here (`parseRow`), guild ids become stable short aliases, and nothing else
  *   about a guild or a player is read.
  */
@@ -23,6 +24,8 @@ export const OPS_REPORT_PATH = '/api/ops/report';
 
 /** Guild objects asked at once. */
 const FAN_OUT = 8;
+/** The most guilds one report asks (most recently seen first); `guilds.known` is the true count. */
+export const MAX_GUILDS_ASKED = 400;
 /** Alias lengths: at least 6 hex characters, longer only when two guilds would collide. */
 const MIN_ALIAS_HEX = 6;
 const MAX_ALIAS_HEX = 16;
@@ -153,7 +156,7 @@ export async function handleOpsReport(
   if (!query.ok) return errorResponse('invalid_query', 400);
 
   const directory = env.GUILD_DIRECTORY.get(env.GUILD_DIRECTORY.idFromName(DIRECTORY_NAME));
-  const guildIds = await directory.list();
+  const { ids: guildIds, total: guildsKnown } = await directory.list(MAX_GUILDS_ASKED);
   const aliases = await guildAliases(env.DISCORD_CLIENT_SECRET, guildIds);
 
   const loaded = await fanOut(guildIds, async (guildId) => {
@@ -161,11 +164,7 @@ export async function handleOpsReport(
     if (alias === undefined) return null;
     try {
       const stub = env.GUILD_WORLD.get(env.GUILD_WORLD.idFromName(guildId));
-      const current = await stub.analyticsDaily(query.from, query.to);
-      const previous =
-        query.compare === null
-          ? null
-          : await stub.analyticsDaily(query.compare.from, query.compare.to);
+      const { current, previous } = await stub.analyticsDaily(query.from, query.to, query.compare);
       return { alias, current, previous };
     } catch (err) {
       // Only the error type is logged: never a guild id or a message.
@@ -183,10 +182,11 @@ export async function handleOpsReport(
   const report: Report = {
     version: 1,
     ...built.period,
-    guilds: { known: guildIds.length, reporting: answered.length },
+    guilds: { known: guildsKnown, reporting: answered.length },
     daily: built.daily,
-    byGuild: built.byGuild,
   };
+  // Per-server totals are only for a deliberate `byGuild=1` request; the workflow never asks.
+  if (query.byGuild) report.byGuild = built.byGuild;
   if (query.compare !== null) {
     const previous: GuildRows[] = answered.map((e) => ({ alias: e.alias, rows: e.previous ?? [] }));
     report.previous = buildPeriod(query.compare.from, query.compare.to, previous).period;

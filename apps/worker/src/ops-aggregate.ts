@@ -40,8 +40,8 @@ export interface Report extends Period {
   guilds: { known: number; reporting: number };
   /** A few series by game day, summed over guilds (see `DAILY_SERIES`). */
   daily: Record<string, Row[]>;
-  /** The totals of every guild, under its stable alias (never the guild id). */
-  byGuild: Record<string, Row[]>;
+  /** The totals of every guild under its stable alias (never the guild id); only with `byGuild=1`. */
+  byGuild?: Record<string, Row[]>;
   /** The period to compare with, when one was asked for. */
   previous?: Period;
 }
@@ -66,12 +66,16 @@ const METRIC_RE = /^[a-z][a-z0-9_.]{0,63}$/;
 const DIM_KEY_RE = /^[a-z][A-Za-z0-9_]{0,23}$/;
 const DIM_VALUE_RE = /^[a-z0-9_.:-]{1,48}$/;
 const HASH_LIKE_RE = /[0-9a-f]{24,}/;
+/** A Discord snowflake: 15 or more digits and nothing else. */
+const SNOWFLAKE_LIKE_RE = /^\d{15,}$/;
+/** A UUID, with or without dashes, in any case. */
+const UUID_LIKE_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_DIMS = 6;
 
 /**
  * A stored rollup row as a safe `Row`, or null when anything about it is off (an odd metric name,
- * a dim that is not an id-like string or an integer, a hash-like string, a negative or fractional
+ * a dim that is not an id-like string or an integer, a hash-, snowflake- or UUID-like string, a negative or fractional
  * value). Nothing that fails here can reach a report.
  */
 export function parseRow(raw: RawRow): Row | null {
@@ -91,7 +95,13 @@ export function parseRow(raw: RawRow): Row | null {
     if (!DIM_KEY_RE.test(key)) return null;
     if (typeof value === 'number') {
       if (!Number.isSafeInteger(value) || value < 0) return null;
-    } else if (typeof value !== 'string' || !DIM_VALUE_RE.test(value) || HASH_LIKE_RE.test(value)) {
+    } else if (
+      typeof value !== 'string' ||
+      !DIM_VALUE_RE.test(value) ||
+      HASH_LIKE_RE.test(value) ||
+      SNOWFLAKE_LIKE_RE.test(value) ||
+      UUID_LIKE_RE.test(value)
+    ) {
       return null;
     }
     dims[key] = value;
@@ -194,6 +204,8 @@ export type OpsQuery =
       format: 'json' | 'md';
       /** The period to compare with, if any. */
       compare: { from: string; to: string } | null;
+      /** True only for `byGuild=1`: include the per-server breakdown. */
+      byGuild: boolean;
     }
   | { ok: false };
 
@@ -204,6 +216,7 @@ const ALLOWED_PARAMS: ReadonlySet<string> = new Set([
   'weekly',
   'compareFrom',
   'compareTo',
+  'byGuild',
 ]);
 
 /** A real 'YYYY-MM-DD' date, or null. */
@@ -239,16 +252,20 @@ export function parseOpsQuery(url: URL): OpsQuery {
   const weeklyRaw = single(params, 'weekly');
   const compareFromRaw = single(params, 'compareFrom');
   const compareToRaw = single(params, 'compareTo');
+  const byGuildRaw = single(params, 'byGuild');
   if (
     fromRaw === undefined ||
     toRaw === undefined ||
     formatRaw === undefined ||
     weeklyRaw === undefined ||
     compareFromRaw === undefined ||
-    compareToRaw === undefined
+    compareToRaw === undefined ||
+    byGuildRaw === undefined
   ) {
     return { ok: false };
   }
+  if (byGuildRaw !== null && byGuildRaw !== '1') return { ok: false };
+  const byGuild = byGuildRaw === '1';
   const from = realDate(fromRaw);
   const to = realDate(toRaw);
   if (from === null || to === null || from > to) return { ok: false };
@@ -267,7 +284,7 @@ export function parseOpsQuery(url: URL): OpsQuery {
     if (cFrom === null || cTo === null || cFrom > cTo || spanDays(cFrom, cTo) > MAX_REPORT_DAYS) {
       return { ok: false };
     }
-    return { ok: true, from, to, format, compare: { from: cFrom, to: cTo } };
+    return { ok: true, from, to, format, compare: { from: cFrom, to: cTo }, byGuild };
   }
   if (weekly) {
     // The previous period of the same length, ending the day before this one starts.
@@ -277,7 +294,8 @@ export function parseOpsQuery(url: URL): OpsQuery {
       to,
       format,
       compare: { from: addDays(from, -days), to: addDays(from, -1) },
+      byGuild,
     };
   }
-  return { ok: true, from, to, format, compare: null };
+  return { ok: true, from, to, format, compare: null, byGuild };
 }
