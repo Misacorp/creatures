@@ -31,6 +31,7 @@ import {
   type FightResult,
   type Zone,
 } from '@creatures/engine';
+import type { Analytics } from './analytics';
 import type { LedgerStorage } from './ledger';
 import { basicKey, buildPhaseInput, drawSeed, settleParty } from './raid-resolve';
 import { RaidError } from './raid-teams';
@@ -103,6 +104,8 @@ export interface LiveDeps {
   rng: Rng;
   /** Live randomness for the quirk of a Festival creature (passed on when the finale settles). */
   quirkRng?: Rng;
+  /** The analytics event log (passed on when the finale settles). Optional. */
+  analytics?: Analytics;
 }
 
 type LiveDbRow = {
@@ -501,8 +504,19 @@ export interface ActionInput {
   element?: Element | undefined;
 }
 
+/** What an applied action did, for the analytics log. */
+export interface AppliedAction {
+  action: ActionInput['action'];
+  abilityId: string;
+  /** Fire: the round it fires in. Hold and unhold: the round the clock was in. */
+  round: number;
+  /** The round the ability fires in when nobody presses anything. */
+  defaultRound: number;
+}
+
 /**
- * Fire or Hold for one of the caller's abilities (`body.key`). Throws a `RaidError` (rolling the transaction back) for
+ * Fire or Hold for one of the caller's abilities (`body.key`). Returns what changed, or null when
+ * nothing did (a Hold on an ability that is already held). Throws a `RaidError` (rolling the transaction back) for
  * anything the rules refuse; call it inside a transaction.
  *
  * - Fire takes effect at the start of the next round. Refused with `too_late` in the last round or
@@ -519,7 +533,7 @@ export function applyAction(
   userId: string,
   body: ActionInput,
   now: number,
-): void {
+): AppliedAction | null {
   const member = row.members.find((m) => m.userId === userId);
   if (member === undefined) throw new RaidError(409, 'not_in_fight');
   // A practice fight is a lobby until its start: the Auto fire preference is changed there instead.
@@ -546,6 +560,7 @@ export function applyAction(
   const firedNow = firedRound(state.result, ability.key, state.clockRound) !== null;
   // The last round is the 12th, or the one the boss falls in: Fire is too late from its start on.
   const over = state.ended || state.clockRound >= Math.min(row.rounds, state.result.rounds);
+  const defaultRound = defaultAbilityRound(row.input.boss, def, row.rounds);
   if (body.action === 'fire') {
     // The last round and the end are too late for anything, whatever the ability did before.
     if (over) throw new RaidError(409, 'too_late');
@@ -560,16 +575,14 @@ export function applyAction(
     if (ability.mode === 'fired') throw new RaidError(409, 'already_fired');
     if (ability.mode !== 'held') throw new RaidError(409, 'not_held');
     if (firedNow) throw new RaidError(409, 'already_fired');
-    const defaultRound = defaultAbilityRound(row.input.boss, def, row.rounds);
     if (over || state.clockRound >= defaultRound) throw new RaidError(409, 'hold_too_late');
     ability.mode = 'default';
   } else {
     if (ability.mode === 'fired') throw new RaidError(409, 'already_fired');
     if (ability.mode === 'held') {
       if (firedNow) throw new RaidError(409, 'already_fired');
-      return; // already held: nothing to change
+      return null; // already held: nothing to change
     }
-    const defaultRound = defaultAbilityRound(row.input.boss, def, row.rounds);
     if (over || state.clockRound >= defaultRound) throw new RaidError(409, 'hold_too_late');
     ability.mode = 'held';
   }
@@ -580,4 +593,10 @@ export function applyAction(
     row.party,
     row.practice ? 1 : 0,
   );
+  return {
+    action: body.action,
+    abilityId: ability.abilityId,
+    round: body.action === 'fire' ? (ability.fireAtRound ?? state.clockRound) : state.clockRound,
+    defaultRound,
+  };
 }

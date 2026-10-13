@@ -37,6 +37,7 @@ import {
   type FightResult,
   type FightSlot,
 } from '@creatures/engine';
+import type { Analytics } from './analytics';
 import { credit, type LedgerStorage } from './ledger';
 import { loadAutofire, targetOf } from './raid-autofire';
 import { grantFestivalCreature } from './raid-festival';
@@ -54,6 +55,8 @@ export interface ResolveDeps {
   rng: Rng;
   /** Live randomness for the quirk of a Festival creature. Defaults to crypto. */
   quirkRng?: Rng;
+  /** The analytics event log. Optional: without it nothing is logged. */
+  analytics?: Analytics;
 }
 
 /** What the API shows about a resolved phase. Contains user ids: map to names before sending. */
@@ -482,6 +485,7 @@ export function settleParty(
           userId,
           progression.festivalSpecies,
           now,
+          deps.analytics,
         );
       }
     }
@@ -520,9 +524,23 @@ export function settleParty(
     JSON.stringify(summary),
     now,
   );
+  logPhaseResult(deps.analytics, sql, week.weekId, phase, input, result, summary);
   // The ladder moves once the finale has resolved for every party (the last one to settle does it),
   // before the post is queued so the post can say where the server stands.
-  if (phase === 'finale') updateLadder(sql, week.weekId, now);
+  if (phase === 'finale') {
+    const moved = updateLadder(sql, week.weekId, now);
+    if (moved !== null) {
+      deps.analytics?.record({
+        kind: 'rank_change',
+        before: moved.rankBefore,
+        after: moved.rankAfter,
+        won: moved.won,
+        festival: readWeekProgression(sql, week.weekId)?.festival === true,
+        parties: moved.parties,
+        partiesWon: moved.partiesWon,
+      });
+    }
+  }
   // Queued in this transaction, so the post exists exactly when the result does.
   queuePhasePost(sql, {
     weekId: week.weekId,
@@ -532,6 +550,34 @@ export function settleParty(
     input,
     result,
     summary,
+  });
+}
+
+/**
+ * The guild-level analytics event of a resolved stage: the boss, the rank it fought at, the party's
+ * size, whether it was won and how much of the damage the top contributor did. No user is named.
+ */
+function logPhaseResult(
+  analytics: Analytics | undefined,
+  sql: SqlStorage,
+  weekId: string,
+  phase: RaidPhase,
+  input: FightInput,
+  result: FightResult,
+  summary: StoredSummary,
+): void {
+  if (analytics === undefined) return;
+  const top = summary.contributors.reduce((best, c) => Math.max(best, c.damage), 0);
+  analytics.record({
+    kind: 'phase_result',
+    phase,
+    boss: input.boss.id,
+    rank: fightRank(sql, weekId),
+    festival: readWeekProgression(sql, weekId)?.festival === true,
+    partySize: summary.members.length,
+    win: result.cleared,
+    rounds: result.rounds,
+    topShareBp: summary.damage > 0 ? Math.floor((top * 10_000) / summary.damage) : 0,
   });
 }
 

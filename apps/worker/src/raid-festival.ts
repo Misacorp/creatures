@@ -8,6 +8,7 @@
  * an idempotency key as well. Call it inside the transaction that settles the finale.
  */
 import { content, festivalGrantOutcome, pickQuirk, type Rng } from '@creatures/game';
+import type { Analytics } from './analytics';
 import { credit, type LedgerStorage } from './ledger';
 import { recordServerFirst } from './server-firsts';
 
@@ -34,6 +35,7 @@ export function grantFestivalCreature(
   userId: string,
   speciesId: string,
   now: number,
+  analytics?: Analytics,
 ): FestivalGrantView | null {
   const sql = storage.sql;
   const species = content.creatures.find((c) => c.id === speciesId && c.festival === true);
@@ -127,6 +129,8 @@ export function grantFestivalCreature(
     firstOnServer ? 1 : 0,
     now,
   );
+  // Guild-level: the grant is logged by species and result, with no player.
+  analytics?.record({ kind: 'festival_grant', species: species.id, result: view.outcome });
   return view;
 }
 

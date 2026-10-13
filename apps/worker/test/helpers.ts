@@ -178,6 +178,8 @@ export async function runCore<R>(
     const clock = { t: T0 };
     const core = new GuildCore(state.storage, () => clock.t, {
       guildId: () => guildId,
+      // The same secret source as the Worker's, so events carry real actor hashes.
+      analyticsSecret: env.DISCORD_CLIENT_SECRET,
       ...(typeof options === 'function' ? options(clock) : options),
     });
     const request = async (secret: string, path = '/api/me', method = 'GET', body?: unknown) =>
@@ -199,8 +201,18 @@ export function undoAutofireMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 14');
 }
 
+/** Tables created by migration 16 (the analytics event log). */
+export const ANALYTICS_TABLES = ['analytics_events', 'analytics_seen', 'analytics_once'] as const;
+
+/** Puts a database back to before migration 16 (the analytics event log). */
+export function undoAnalyticsMigration(sql: SqlStorage): void {
+  for (const table of ANALYTICS_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
+  sql.exec('DELETE FROM schema_version WHERE version = 16');
+}
+
 /** Puts a database back to before migration 15 (content-paced live rounds). */
 export function undoPacingMigration(sql: SqlStorage): void {
+  undoAnalyticsMigration(sql);
   // Tests that rebuild an older schema may have dropped the table already.
   const hasColumn = sql
     .exec("SELECT 1 FROM pragma_table_info('raid_live') WHERE name = 'pacing'")

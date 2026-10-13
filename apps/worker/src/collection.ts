@@ -26,6 +26,7 @@ import {
   type Stats,
   type SuppliesId,
 } from '@creatures/game';
+import type { Analytics, CatchProps } from './analytics';
 import {
   credit,
   getBalances,
@@ -194,6 +195,8 @@ export interface CollectionDeps {
    * consumes the draws of a catch.
    */
   quirkRng: Rng;
+  /** The analytics event log. Optional: without it nothing is logged. */
+  analytics?: Analytics;
 }
 
 function median(values: number[]): number | null {
@@ -468,6 +471,7 @@ export class Collection {
         userId,
         species.id,
       );
+      this.deps.analytics?.record({ kind: 'starter_chosen', species: species.id }, userId);
       return { creatureId };
     });
   }
@@ -522,6 +526,17 @@ export class Collection {
               'UPDATE creatures SET away_expedition_id = ? WHERE id = ?',
               id,
               creature.id,
+            );
+            // Only a first execution gets here: a replayed key returns the stored result unlogged.
+            this.deps.analytics?.record(
+              {
+                kind: 'expedition_send',
+                species: creature.species,
+                duration: input.duration,
+                supplies: input.supplies,
+                cost,
+              },
+              userId,
             );
             return { expeditionId: id, creatureId: creature.id };
           },
@@ -613,8 +628,35 @@ export class Collection {
         JSON.stringify(result),
         expedition.id,
       );
+      this.logClaim(userId, expedition, result, now);
       return result;
     });
+  }
+
+  /** One `expedition_claim` or `expedition_recall` event per claim that actually paid out. */
+  private logClaim(
+    userId: string,
+    expedition: ExpeditionRow,
+    result: ExpeditionResult,
+    now: number,
+  ): void {
+    const analytics = this.deps.analytics;
+    if (analytics === undefined) return;
+    const catches: CatchProps[] = result.catches.map((c) => ({
+      species: c.species,
+      rarity: speciesOf(c.species).rarity,
+      shiny: c.shiny,
+      result: c.outcome,
+    }));
+    const base = { duration: expedition.duration, supplies: expedition.supplies, catches };
+    if (result.recalled) {
+      const length = Math.max(1, expedition.ends_at - expedition.started_at);
+      const elapsedPct = Math.floor(((now - expedition.started_at) * 100) / length);
+      analytics.record({ kind: 'expedition_recall', ...base, elapsedPct }, userId);
+    } else {
+      const waitedMin = Math.floor((now - expedition.ends_at) / 60_000);
+      analytics.record({ kind: 'expedition_claim', ...base, waitedMin }, userId);
+    }
   }
 
   private applyCatch(
@@ -664,6 +706,17 @@ export class Collection {
           existing.shiny === 1 || outcome.becameShiny ? 1 : 0,
           existing.id,
         );
+        this.deps.analytics?.record(
+          {
+            kind: 'fuse',
+            species: species.id,
+            rarity: species.rarity,
+            converted: false,
+            fusionCount: outcome.newFusionCount,
+            bait: 0,
+          },
+          userId,
+        );
         return { ...base, outcome: 'fused', fusionCount: outcome.newFusionCount };
       case 'converted':
         if (existing === undefined) throw new Error('conversion without a creature');
@@ -683,6 +736,17 @@ export class Collection {
             meta: { species: species.id },
           },
           now,
+        );
+        this.deps.analytics?.record(
+          {
+            kind: 'fuse',
+            species: species.id,
+            rarity: species.rarity,
+            converted: true,
+            fusionCount: existing.fusion_count,
+            bait: outcome.bait,
+          },
+          userId,
         );
         return { ...base, outcome: 'converted', bait: outcome.bait };
     }
@@ -734,6 +798,10 @@ export class Collection {
                 level: number;
               }>('UPDATE creatures SET level = level + 1 WHERE id = ? RETURNING level', creature.id)
               .one();
+            this.deps.analytics?.record(
+              { kind: 'train', species: creature.species, level: row.level, cost: amount },
+              userId,
+            );
             return { creatureId: creature.id, level: row.level };
           },
         },
@@ -804,6 +872,10 @@ export class Collection {
               userId,
               `evolve:${creature.id}`,
               now,
+            );
+            this.deps.analytics?.record(
+              { kind: 'evolve', from: creature.species, to: target, cost: amount },
+              userId,
             );
             return { creatureId: creature.id, species: target, firstOnServer };
           },

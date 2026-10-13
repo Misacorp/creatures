@@ -13,6 +13,7 @@ import {
   type ReadinessBand,
   type Rng,
 } from '@creatures/game';
+import type { Analytics } from './analytics';
 import type { Outcome } from './collection';
 import type { LedgerStorage } from './ledger';
 import {
@@ -41,7 +42,7 @@ import {
   type LiveContext,
   type LiveSnapshot,
 } from './raid-live-view';
-import { storeAutofire, targetOf } from './raid-autofire';
+import { BASIC_TARGET, loadAutofire, storeAutofire, targetOf } from './raid-autofire';
 import { convertLegacyWeek, ensureWeekRank, seasonColumns } from './raid-ladder';
 import { queueBossReveal } from './raid-posts';
 import { ReadinessCache } from './raid-readiness';
@@ -97,6 +98,8 @@ export interface RaidDeps {
   readinessRng?: Rng;
   /** Live randomness for the quirk of a Festival creature. Crypto in production. */
   quirkRng?: Rng;
+  /** The analytics event log (see `analytics.ts`). Optional: without it nothing is logged. */
+  analytics?: Analytics;
 }
 
 export interface WeekRow {
@@ -433,6 +436,7 @@ export class Raid {
       const { week } = this.memberContext(userId, tz);
       this.requireEditable(week);
       this.readinessCache.invalidate();
+      const before = JSON.stringify(chosenTeamIds(this.sql, week.weekId, userId));
       if (creatureIds !== null) {
         const owned = new Set(loadCreatures(this.sql, userId).map((c) => c.id));
         if (new Set(creatureIds).size !== creatureIds.length) {
@@ -448,7 +452,19 @@ export class Raid {
         userId,
         creatureIds === null ? null : JSON.stringify(creatureIds),
       );
-      const team = new Set(effectiveTeam(this.sql, week.weekId, userId).creatures.map((c) => c.id));
+      const effective = effectiveTeam(this.sql, week.weekId, userId).creatures;
+      const team = new Set(effective.map((c) => c.id));
+      // Only a change is logged: choosing the same team again is a repeat.
+      if (JSON.stringify(creatureIds) !== before) {
+        this.deps.analytics?.record(
+          {
+            kind: 'team_set',
+            auto: creatureIds === null,
+            species: effective.map((c) => c.species.id),
+          },
+          userId,
+        );
+      }
       for (const row of this.sql
         .exec<{
           creature_id: string;
@@ -524,6 +540,16 @@ export class Raid {
       if (occupant !== undefined && mine !== undefined) {
         this.insertPlacement(week.weekId, party, mine.slot, userId, occupant.creature_id);
       }
+      this.deps.analytics?.record(
+        {
+          kind: 'placement',
+          action: 'place',
+          species: this.speciesOfOwned(userId, creatureId),
+          slot,
+          swap: occupant !== undefined,
+        },
+        userId,
+      );
       return null;
     });
   }
@@ -537,14 +563,36 @@ export class Raid {
       const owned = loadCreatures(this.sql, userId).some((c) => c.id === creatureId);
       if (!owned) throw new RaidError(409, 'not_your_creature');
       this.readinessCache.invalidate();
-      this.sql.exec(
-        'DELETE FROM raid_placements WHERE week_id = ? AND user_id = ? AND creature_id = ?',
-        week.weekId,
-        userId,
-        creatureId,
-      );
+      const removed = this.sql
+        .exec<{ slot: number }>(
+          'DELETE FROM raid_placements WHERE week_id = ? AND user_id = ? AND creature_id = ? RETURNING slot',
+          week.weekId,
+          userId,
+          creatureId,
+        )
+        .toArray()[0];
+      // Taking out a creature that was not placed changes nothing and is not logged.
+      if (removed !== undefined) {
+        this.deps.analytics?.record(
+          {
+            kind: 'placement',
+            action: 'unplace',
+            species: this.speciesOfOwned(userId, creatureId),
+            slot: removed.slot,
+            swap: false,
+          },
+          userId,
+        );
+      }
       return null;
     });
+  }
+
+  /** The species id of one of the player's creatures, for the analytics log. */
+  private speciesOfOwned(userId: string, creatureId: string): string {
+    return (
+      loadCreatures(this.sql, userId).find((c) => c.id === creatureId)?.species.id ?? 'unknown'
+    );
   }
 
   private insertPlacement(
@@ -584,6 +632,7 @@ export class Raid {
       const week = this.ensureWeek(weekIdFor(this.deps.now(), tz));
       if (week.status !== 'open') throw new RaidError(409, 'locked');
       this.readinessCache.invalidate();
+      const was = this.isOptedOut(week.weekId, userId);
       if (optOut) {
         this.sql.exec(
           'INSERT OR IGNORE INTO raid_opt_outs (week_id, user_id) VALUES (?, ?)',
@@ -599,6 +648,8 @@ export class Raid {
         );
         this.syncRoster(week.weekId);
       }
+      // Only a change is logged: sitting out twice is a repeat.
+      if (was !== optOut) this.deps.analytics?.record({ kind: 'roster_optout', optOut }, userId);
       return { optOut };
     });
   }
@@ -618,6 +669,15 @@ export class Raid {
         throw new RaidError(400, 'invalid_body');
       }
       this.readinessCache.invalidate();
+      const previous = this.sql
+        .exec<{
+          ability_id: string;
+        }>(
+          'SELECT ability_id FROM raid_abilities WHERE week_id = ? AND user_id = ?',
+          week.weekId,
+          userId,
+        )
+        .toArray()[0];
       this.sql.exec(
         `INSERT INTO raid_abilities (week_id, user_id, ability_id) VALUES (?, ?, ?)
          ON CONFLICT(week_id, user_id) DO UPDATE SET ability_id = excluded.ability_id`,
@@ -625,6 +685,10 @@ export class Raid {
         userId,
         abilityId,
       );
+      // Only a change is logged: picking the same ability again is a repeat.
+      if (previous?.ability_id !== abilityId) {
+        this.deps.analytics?.record({ kind: 'ability_pick', ability: abilityId }, userId);
+      }
       return null;
     });
   }
@@ -644,7 +708,20 @@ export class Raid {
       if (week.status === 'finale' || now >= eventTimes(week.weekId, tz).finale) {
         throw new RaidError(409, 'locked');
       }
+      const wasOn = loadAutofire(this.sql, week.weekId).isOn(userId, target);
       storeAutofire(this.sql, week.weekId, userId, target, on);
+      // Only a change is logged: setting the same value again is a repeat.
+      if (wasOn !== on) {
+        this.deps.analytics?.record(
+          {
+            kind: 'autofire_toggle',
+            target: target === BASIC_TARGET ? 'basic' : 'creature',
+            species: target === BASIC_TARGET ? null : this.speciesOfOwned(userId, target),
+            on,
+          },
+          userId,
+        );
+      }
       // A practice fight that has not started yet takes the new setting too.
       const practice = loadLive(this.sql, week.weekId, party, true);
       if (practice !== null && now < practice.startedAt) {
@@ -784,10 +861,15 @@ export class Raid {
     if (party === null || selected === null) return emptySnapshot(base, 'none', null);
     const watching = this.touchWatching(userId, week.weekId, party, now, names);
     const ctx = { ...base, watching };
-    if ('lobbyAt' in selected) return this.realLobby(ctx, week, party, selected.lobbyAt);
+    if ('lobbyAt' in selected) {
+      this.logJoin(userId, `join:${week.weekId}:real`, 'lobby', false);
+      return this.realLobby(ctx, week, party, selected.lobbyAt);
+    }
     const { row } = selected;
+    const joinLabel = `join:${week.weekId}:${row.practice ? `practice${String(row.startedAt)}` : 'real'}`;
     // A practice fight is a lobby until its start (the 30 second countdown), with the row as frozen.
     if (row.practice && now < row.startedAt) {
+      this.logJoin(userId, joinLabel, 'lobby', true);
       return lobbySnapshot(ctx, row.startedAt, true, {
         input: row.input,
         members: row.members,
@@ -801,12 +883,33 @@ export class Raid {
       });
     }
     const state = evaluate(row, now);
+    // Looking at a finished fight is not joining it.
+    if (!state.ended) this.logJoin(userId, joinLabel, 'fight', row.practice);
     let resolved = false;
     if (!row.practice) {
       resolved = finaleResolved(this.sql, row.weekId, row.party);
       if (!resolved && state.ended) resolved = this.trySettle(row.weekId, row.party, now);
     }
     return liveSnapshot(ctx, row, state, resolved);
+  }
+
+  /**
+   * Logs the player's first look at a live fight or its lobby (once per finale, however often they
+   * poll). A read that writes: the mark and the event commit together, and only on the first look.
+   */
+  private logJoin(
+    userId: string,
+    label: string,
+    stage: 'lobby' | 'fight',
+    practice: boolean,
+  ): void {
+    const analytics = this.deps.analytics;
+    if (analytics === undefined) return;
+    this.deps.storage.transactionSync(() => {
+      if (analytics.once(userId, label)) {
+        analytics.record({ kind: 'live_join', stage, practice }, userId);
+      }
+    });
   }
 
   /**
@@ -857,7 +960,20 @@ export class Raid {
     const outcome = this.atomically(() => {
       const row = loadLive(this.sql, week.weekId, party, practice);
       if (row === null) throw new RaidError(409, 'not_in_fight');
-      applyAction(this.sql, row, userId, body, now);
+      const done = applyAction(this.sql, row, userId, body, now);
+      if (done !== null) {
+        this.deps.analytics?.record(
+          {
+            kind: 'live_action',
+            action: done.action,
+            ability: done.abilityId,
+            round: done.round,
+            defaultRound: done.defaultRound,
+            practice,
+          },
+          userId,
+        );
+      }
       return null;
     });
     if (!outcome.ok) return outcome;

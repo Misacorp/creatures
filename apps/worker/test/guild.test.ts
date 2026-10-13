@@ -96,10 +96,10 @@ describe('schema migrations', () => {
         ]),
       );
       const version = sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one();
-      expect(version.v).toBe(15);
+      expect(version.v).toBe(16);
       // Running migrations again is a no-op.
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(15);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(16);
       return Promise.resolve();
     });
   });
@@ -130,7 +130,7 @@ describe('migration 5 (guild timezone)', () => {
       core.migrate();
 
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        15,
+        16,
       );
       expect(sql.exec('SELECT id, guild_id, timezone FROM guild_meta').toArray()).toEqual([
         { id: 1, guild_id: '740000000000000010', timezone: 'Europe/Helsinki' },
@@ -173,7 +173,7 @@ describe('migration 9 (announcement channel and Discord posts)', () => {
       core.migrate();
 
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        15,
+        16,
       );
       expect(columns()).toEqual([
         'id',
@@ -233,7 +233,7 @@ describe('migration 10 (the live finale)', () => {
 
       core.migrate();
 
-      expect(version(sql)).toBe(15);
+      expect(version(sql)).toBe(16);
       expect(columns(sql, 'raid_abilities')).toEqual(['week_id', 'user_id', 'ability_id']);
       expect(columns(sql, 'raid_live')).toEqual([
         'week_id',
@@ -280,7 +280,7 @@ describe('migration 10 (the live finale)', () => {
       ).toThrow(/UNIQUE|constraint/i);
       // Running the migrations again is a no-op.
       core.migrate();
-      expect(version(sql)).toBe(15);
+      expect(version(sql)).toBe(16);
     });
   });
 });
@@ -309,7 +309,7 @@ describe('migration 11 (pinned announcement channel, session channel)', () => {
 
       core.migrate();
 
-      expect(version(sql)).toBe(15);
+      expect(version(sql)).toBe(16);
       expect(columns(sql, 'guild_meta')).toEqual([
         'id',
         'guild_id',
@@ -329,7 +329,7 @@ describe('migration 11 (pinned announcement channel, session channel)', () => {
       expect((await request(secret, '/api/me')).status).toBe(200);
       // Running the migrations again is a no-op.
       core.migrate();
-      expect(version(sql)).toBe(15);
+      expect(version(sql)).toBe(16);
     });
   });
 });
@@ -364,7 +364,7 @@ describe('migration 12 (Boss Rank ladder, seasons, Festival)', () => {
 
       core.migrate();
 
-      expect(version(sql)).toBe(15);
+      expect(version(sql)).toBe(16);
       expect(columns(sql, 'raid_weeks')).toEqual([
         'week_id',
         'boss_id',
@@ -436,7 +436,7 @@ describe('migration 12 (Boss Rank ladder, seasons, Festival)', () => {
       ).toThrow(/CHECK|constraint/i);
       // Running the migrations again is a no-op.
       core.migrate();
-      expect(version(sql)).toBe(15);
+      expect(version(sql)).toBe(16);
       expect(sql.exec('SELECT id, rank, best_rank FROM raid_ladder').toArray()).toHaveLength(1);
     });
   });
@@ -485,7 +485,7 @@ describe('migration 13 (creature quirks)', () => {
 
       core.migrate();
 
-      expect(version(sql)).toBe(15);
+      expect(version(sql)).toBe(16);
       const after = quirks(sql);
       expect(after).toHaveLength(species.length);
       for (const row of after) {
@@ -512,7 +512,7 @@ describe('migration 13 (creature quirks)', () => {
       const first = quirks(sql);
       core.migrate();
       expect(quirks(sql)).toEqual(first);
-      expect(version(sql)).toBe(15);
+      expect(version(sql)).toBe(16);
     });
   });
 
@@ -540,7 +540,7 @@ describe('migration 13 (creature quirks)', () => {
       await core.createSession('740000000000000063', USER);
       undoQuirkMigration(sql);
       core.migrate();
-      expect(version(sql)).toBe(15);
+      expect(version(sql)).toBe(16);
       expect(quirks(sql)).toEqual([]);
     });
   });
@@ -567,7 +567,7 @@ describe('migration 14 (Auto fire preferences)', () => {
 
       core.migrate();
 
-      expect(version(sql)).toBe(15);
+      expect(version(sql)).toBe(16);
       expect(columns(sql)).toEqual(['week_id', 'user_id', 'target', 'auto_fire']);
       expect(sql.exec('SELECT user_id, counter FROM jackpot_pity').toArray()).toEqual([
         { user_id: 'u1', counter: 4 },
@@ -577,8 +577,8 @@ describe('migration 14 (Auto fire preferences)', () => {
       });
       // Running the migrations again is a no-op.
       core.migrate();
-      expect(version(sql)).toBe(15);
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(15);
+      expect(version(sql)).toBe(16);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(16);
     });
   });
 
@@ -602,7 +602,7 @@ describe('migration 14 (Auto fire preferences)', () => {
       core.migrate();
       undoAutofireMigration(sql);
       core.migrate();
-      expect(version(sql)).toBe(15);
+      expect(version(sql)).toBe(16);
       put(sql, 'w', 'u', 'basic', 0);
       expect(sql.exec('SELECT auto_fire FROM raid_autofire').one()).toEqual({ auto_fire: 0 });
     });
@@ -634,7 +634,7 @@ describe('migration 15 (content-paced live rounds)', () => {
 
       core.migrate();
 
-      expect(version(sql)).toBe(15);
+      expect(version(sql)).toBe(16);
       expect(columns(sql)).toContain('pacing');
       expect(sql.exec('SELECT party, round_ms, pacing FROM raid_live').toArray()).toEqual([
         { party: 1, round_ms: 10_000, pacing: 0 },
@@ -650,8 +650,8 @@ describe('migration 15 (content-paced live rounds)', () => {
       });
       // Running the migrations again is a no-op.
       core.migrate();
-      expect(version(sql)).toBe(15);
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(15);
+      expect(version(sql)).toBe(16);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(16);
     });
   });
 
@@ -662,7 +662,7 @@ describe('migration 15 (content-paced live rounds)', () => {
       core.migrate();
       undoPacingMigration(sql);
       core.migrate();
-      expect(version(sql)).toBe(15);
+      expect(version(sql)).toBe(16);
       insert(sql, 1, true);
       expect(sql.exec('SELECT pacing FROM raid_live').one()).toEqual({ pacing: 1 });
     });

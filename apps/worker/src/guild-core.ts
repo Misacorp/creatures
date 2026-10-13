@@ -1,5 +1,6 @@
 import { createCryptoRng, type Rng } from '@creatures/game';
 import * as v from 'valibot';
+import { Analytics } from './analytics';
 import { Collection } from './collection';
 import { creatureQuirkMigration } from './creature-quirk-migration';
 import { collectionRoutes } from './collection-routes';
@@ -253,6 +254,28 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   raidAutofireMigration,
   // Version 15: content-paced live rounds (see raid-live-pacing-migration.ts).
   raidLivePacingMigration,
+  (sql) => {
+    // Version 16: the analytics event log (see analytics.ts and docs/design/analytics.md). Events hold
+    // ids from content, enums, integers and booleans only, and a hashed actor; never names or text.
+    sql.exec(`CREATE TABLE analytics_events (
+      id INTEGER PRIMARY KEY,
+      at INTEGER NOT NULL,
+      kind TEXT NOT NULL,
+      actor_hash TEXT,
+      props_json TEXT NOT NULL
+    )`);
+    sql.exec('CREATE INDEX analytics_events_at ON analytics_events(at)');
+    // Session detection: when each (hashed) player was last seen.
+    sql.exec(`CREATE TABLE analytics_seen (
+      actor_hash TEXT PRIMARY KEY,
+      last_at INTEGER NOT NULL
+    )`);
+    // Once-only marks (for example one live join per player per finale), keyed by a hashed label.
+    sql.exec(`CREATE TABLE analytics_once (
+      key TEXT PRIMARY KEY,
+      at INTEGER NOT NULL
+    )`);
+  },
 ];
 
 export interface SessionUser {
@@ -355,6 +378,11 @@ export interface GuildCoreOptions {
   guildApi?: GuildApi | null;
   /** Staging only: the practice finale is available (the `RAID_PRACTICE` var is "on"). */
   raidPractice?: boolean;
+  /**
+   * The secret the analytics actor hash is keyed from (the Discord client secret, through HKDF with
+   * its own label). Without one, analytics events carry no actor and sessions are not tracked.
+   */
+  analyticsSecret?: string;
 }
 
 export interface LeetSyncResult {
@@ -383,8 +411,11 @@ export class GuildCore {
   private readonly syncBudgetMs: number;
   readonly collection: Collection;
   readonly raid: Raid;
+  readonly analytics: Analytics;
   private syncInFlight: Promise<LeetSyncResult> | null = null;
   private postsInFlight: Promise<void> | null = null;
+  /** The last analytics prune left old rows behind: the alarm comes back soon to continue. */
+  private pruneBacklog = false;
   private lastSyncAttemptAt: number | null = null;
   /** The guild's timezone, cached per object; cleared whenever it changes. */
   private cachedTimezone: string | null = null;
@@ -400,9 +431,15 @@ export class GuildCore {
     this.syncBudgetMs = options.syncBudgetMs ?? SYNC_BUDGET_MS;
     this.leetSource = options.createLeetSource?.(() => this.knownPlayers()) ?? null;
     const quirkRng = options.quirkRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+    this.analytics = new Analytics({
+      storage,
+      now,
+      ...(options.analyticsSecret === undefined ? {} : { secret: options.analyticsSecret }),
+    });
     this.collection = new Collection({
       storage,
       now,
+      analytics: this.analytics,
       rng: options.rng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
       quirkRng,
     });
@@ -411,6 +448,7 @@ export class GuildCore {
       now,
       rng: options.raidRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
       practice: options.raidPractice === true,
+      analytics: this.analytics,
       quirkRng,
       ...(options.readinessRng === undefined ? {} : { readinessRng: options.readinessRng }),
     });
@@ -616,6 +654,9 @@ export class GuildCore {
         'Retry-After': String(limit.retryAfterSeconds),
       });
     }
+    // The actor hash is computed here, before any transaction, and used by the events the request logs.
+    await this.analytics.prepare(user.id);
+    this.analytics.touch(user.id);
     await this.ensureAlarm();
     const pathname = new URL(request.url).pathname;
     const template = matchTemplate(ROUTE_KEYS, pathname);
@@ -982,6 +1023,7 @@ export class GuildCore {
       if (postAt !== null)
         candidates.push(postAt > this.now() ? postAt : this.now() + POST_RETRY_MS);
     }
+    if (this.pruneBacklog) candidates.push(this.now() + POST_RETRY_MS);
     return candidates.length === 0 ? null : Math.min(...candidates);
   }
 
@@ -1034,7 +1076,7 @@ export class GuildCore {
           outcome = { kind: 'retry', error: 'network', afterMs: null } as const;
         }
         const failure = this.storage.transactionSync(() =>
-          recordOutcome(this.sql, post, outcome, this.now()),
+          recordOutcome(this.sql, post, outcome, this.now(), this.analytics),
         );
         if (failure !== null) console.error('discord post failed', failure);
         if (failure === 'rate_limited') return;
@@ -1092,6 +1134,8 @@ export class GuildCore {
     }
     this.catchUpRaid();
     await this.deliverPosts();
+    // Old analytics rows go; a long backlog is worked off over the next alarms.
+    this.pruneBacklog = this.analytics.prune();
     await this.rearmAlarm(this.now() + ALARM_REARM_SKEW_MS);
   }
 }
