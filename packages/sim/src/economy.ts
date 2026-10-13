@@ -76,6 +76,21 @@ export interface EconomyOptions {
    * `false` plays the economy as it was before the dungeon existed.
    */
   dungeon?: boolean;
+  /**
+   * Behaviour knobs for fitting the sim to live data (`pnpm sim:live`); every one defaults to the
+   * shipped behaviour, and a run without them draws exactly the same random numbers as before.
+   */
+  behaviour?: Behaviour;
+}
+
+/** Optional behaviour overrides (see `EconomyOptions.behaviour`). */
+export interface Behaviour {
+  /** Leet days per week by archetype, replacing `ARCHETYPE_CONFIG[a].leetDaysPerWeek`. */
+  leetDaysPerWeek?: Partial<Record<ArchetypeId, number>>;
+  /** Chance (percent, 0 to 100) that a check-in sends trips into the free slots. Default 100. */
+  tripPercent?: number;
+  /** Chance (percent, 0 to 100) that a check-in runs the dungeon. Default 100. */
+  dungeonPercent?: number;
 }
 
 /** One row of a player's history: the state at the end of a week. */
@@ -180,6 +195,8 @@ interface Streams {
   dungeon: Rng;
   trip: Rng;
   taste: Rng;
+  /** Only drawn from when a behaviour percent is below 100. */
+  participation: Rng;
 }
 
 function createPlayers(mix: ArchetypeMix): SimPlayer[] {
@@ -231,10 +248,10 @@ function join(player: SimPlayer, all: readonly SimPlayer[], taste: Rng): void {
   });
 }
 
-function planLeetDays(rng: Rng, archetype: ArchetypeId): boolean[] {
-  const chosen = new Set(
-    shuffle(rng, [0, 1, 2, 3, 4, 5, 6]).slice(0, ARCHETYPE_CONFIG[archetype].leetDaysPerWeek),
-  );
+function planLeetDays(rng: Rng, archetype: ArchetypeId, behaviour: Behaviour): boolean[] {
+  const perWeek =
+    behaviour.leetDaysPerWeek?.[archetype] ?? ARCHETYPE_CONFIG[archetype].leetDaysPerWeek;
+  const chosen = new Set(shuffle(rng, [0, 1, 2, 3, 4, 5, 6]).slice(0, perWeek));
   return Array.from({ length: DAYS }, (_, d) => chosen.has(d));
 }
 
@@ -294,7 +311,12 @@ function explorerOrder(player: SimPlayer): (idle: OwnedCreature[]) => OwnedCreat
  * One check-in: claim trips (and take an end-of-trip goal), claim jobs, evolve, train with what the
  * supplies budget leaves, manage gear, send trips into the free slots and start jobs (see POLICY).
  */
-export function checkIn(player: SimPlayer, medianTopLevel: number, ctx: TripContext): void {
+export function checkIn(
+  player: SimPlayer,
+  medianTopLevel: number,
+  ctx: TripContext,
+  sendsTrips = true,
+): void {
   const gear = ctx.gear;
   claimTrips(player, ctx);
   if (gear !== undefined) claimJobs(player, gear);
@@ -306,7 +328,9 @@ export function checkIn(player: SimPlayer, medianTopLevel: number, ctx: TripCont
 
   // Trips go first, with supplies bought from the budget; what is not spent on them trains creatures.
   if (gear !== undefined) manageGear(player);
-  const spent = sendTrips(player, ctx, Math.min(budget, player.bait), explorerOrder(player));
+  const spent = sendsTrips
+    ? sendTrips(player, ctx, Math.min(budget, player.bait), explorerOrder(player))
+    : 0;
   player.bait -= spent;
   player.week.baitSpentExpeditions += spent;
 
@@ -434,7 +458,13 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
     dungeon: createSeededRng(`${seed}:dungeon`),
     trip: createSeededRng(`${seed}:trip`),
     taste: createSeededRng(`${seed}:taste`),
+    participation: createSeededRng(`${seed}:participation`),
   };
+  const behaviour = options.behaviour ?? {};
+  const tripPercent = behaviour.tripPercent ?? 100;
+  const dungeonPercent = behaviour.dungeonPercent ?? 100;
+  const takesPart = (percent: number): boolean =>
+    percent >= 100 || chance(rng.participation, percent, 100);
   const players = createPlayers(options.mix);
   const history = new Map<string, PlayerHistory>(
     players.map((p) => [
@@ -475,7 +505,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
       p.week = emptyWeek();
     }
     const active = players.filter((p) => p.joined);
-    for (const p of active) p.leetDays = planLeetDays(rng.leet, p.archetype);
+    for (const p of active) p.leetDays = planLeetDays(rng.leet, p.archetype, behaviour);
     const weekIndex = firstWeekIndex + week - 1;
     const boss = bossForWeek(weekIndex + 1);
     let raid: ReturnType<typeof openRaidWeek> | null = null;
@@ -506,7 +536,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
       for (const p of active) {
         const cfg = ARCHETYPE_CONFIG[p.archetype];
         if (cfg.checkIns === 'twice_daily' || p.leetDays[day] === true) {
-          checkIn(p, median, morning);
+          checkIn(p, median, morning, takesPart(tripPercent));
         }
       }
 
@@ -516,6 +546,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
         for (const p of active) {
           const cfg = ARCHETYPE_CONFIG[p.archetype];
           if (cfg.checkIns !== 'twice_daily' && p.leetDays[day] !== true) continue;
+          if (!takesPart(dungeonPercent)) continue;
           const runs = playDungeonDay(
             p,
             globalDay,
@@ -572,7 +603,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
       const evening = serverMedianTopLevel(active);
       for (const p of active) {
         if (ARCHETYPE_CONFIG[p.archetype].checkIns === 'twice_daily') {
-          checkIn(p, evening, eveningCtx);
+          checkIn(p, evening, eveningCtx, takesPart(tripPercent));
         }
         const h = history.get(p.id);
         const joined = p.gear.joinDay;
