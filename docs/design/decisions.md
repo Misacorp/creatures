@@ -794,3 +794,16 @@ Totals per creature over all nine ranks: 395 Bait, 47 scrap, 16 glimmer, 7 suppl
 - Kept as they are: the supplies' own effect lines (Misa likes them), the weekly special's description, the combat numbers, the profile's milestone bonuses.
 
 **Layout decisions.** Familiarity (stars and trips) moved from the place to the creature's row in "Who goes". The "Expected haul" is `haul-view.ts`: the same icons for every length plus a "Deeper area" icon when a lantern is carried; pips compare with the best any length does with the best supplies; a "+" marks what a chosen supply raises; chances are words ("rarely", "often"). The destination glossary entries (their "?" popup is gone) still exist because the content coverage test requires them; they are no longer reachable on screen and can be deleted with that test if Misa wants.
+
+## 2026-10-13: Compendium contradictions resolved
+
+The compendium author listed twelve places where content, glossary and design docs disagree (`docs/compendium/README.md`, "Known contradictions"). Fixed now, with the code as the judge:
+
+- **Ember burrow page** (`journal.json` `ember-ash-burrow`) said "the next day". The mechanic, Warm Glow, is an in-fight boost for a few rounds, so the page now says that, with no numbers.
+- **Daily dungeon design** said "Thorns: guards reflect" and "3 and 7 days in a row". Thorns makes the foe turn the first reaction of each round back on the team (as `room-modifiers.json` has it), and the streak pays on the 3rd and 7th day of each 7-day cycle (`RULES.dungeon.streak`). The doc now says both.
+- **Gear design** said about 12 bases and 8 enchants (shipped: 19 and 9), and listed raids, the dungeon and Festivals as blueprint sources. The code (`gear-grants.ts`, `rollBlueprint`) grants blueprints only from expedition claims, expedition push-on rewards and the welcome kit. The doc now says so. Side effect found: the glossary says Festival gear is "crafted only from Festival blueprints", but nothing grants one yet. Left for Misa to decide.
+- **Storm Ridge odds:** the schema falls back to `RULES.expeditions.defaultOddsBp` when a place has no block, so behaviour was always defined and the sim was tuned with it. Nothing records an intent to omit it, so the place now has an explicit block with the default values. No behaviour change.
+- "Row" against "zone" in raids is not a contradiction: zones are rows.
+- Still open: 3 (Festival residents text), 4 (night hours), 6 ("Very risky" wording), 12 (enchant costs).
+
+A new test, `packages/game/test/compendium.test.ts`, fails when shipped content has no compendium entry.

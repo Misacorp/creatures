@@ -25,7 +25,7 @@ No real-time backend is needed.
   - A short chain of **3 rooms**, generated from the seed: two encounters, then a room boss.
   - Each room is a small fight against content-defined dungeon foes (new content type, schema-validated), with an element, a turn order, gimmicks and an HP pool.
   - **Creature HP carries over between rooms**, and knocked-out creatures stay out, so order and guards matter.
-  - Each room also rolls a **room modifier** from content, shown before the run: for example "Flooded: Tide +20%", "Dark: crits +5%", "Thorns: guards reflect".
+  - Each room also rolls a **room modifier** from content, shown before the run: for example "Flooded: Tide +20%", "Dark: crits +5%", "Thorns: the foe turns the first reaction of each round back on your team".
 - **Depth ladder (personal):**
   - Each player has a **dungeon depth**, like the raid Boss Rank but personal.
   - Clearing all rooms gives +1 depth. Failing keeps the same depth.
@@ -36,7 +36,7 @@ No real-time backend is needed.
   - Per cleared room: a little Bait or Essence and **gear materials**.
   - A full clear adds a chance at a **gear drop** (see `gear.md`).
   - Landmark depths: a guaranteed gear drop.
-  - Daily streaks: a small bonus for 3 and 7 days in a row; missing a day resets the streak, gently.
+  - Daily streaks: a small bonus on the 3rd and 7th day of each 7-day cycle (the cycle length is `RULES.dungeon.streak.cycleDays`); missing a day starts the count again, and depth is kept.
   - All payouts follow the existing ledger rules (integers, an idempotency key per (player, day)).
 
 ## Server (authoritative)

@@ -167,9 +167,9 @@ Read `README.md` for the tags. Every thread names its source. Ideas are `(compen
 
 ### T22. The festival's warm hands
 
-- **Seed:** the Ashmole's burrow: "a team that shares a burrow hits a little harder the next day" `(content: journal.json ember-ash-burrow)`. The Festival Grounds have Ashmole and Solmane `(content: destinations.json)`.
-- **Open:** is the Ashmole burrow a home that becomes a festival place? Is "the next day" a tradition?
-- **Ideas:** the burrow is the first warm place a new explorer visits, and the next day's bonus is a tradition of sharing `(compendium detail, not shipped)`. See `README.md`, contradiction 2.
+- **Seed:** the Ashmole's burrow: "a team that shares a burrow glows with it for a few rounds, and hits a little harder while it lasts" `(content: journal.json ember-ash-burrow)`. The Festival Grounds have Ashmole and Solmane `(content: destinations.json)`.
+- **Open:** is the Ashmole burrow a home that becomes a festival place? Is the glow a tradition?
+- **Ideas:** the burrow is the first warm place a new explorer visits, and the glow is a tradition of sharing `(compendium detail, not shipped)`. See `README.md`, contradiction 2.
 - **Status:** open.
 
 ---

@@ -21,7 +21,7 @@ Read `README.md` for the tags. Banners, moods, residents, journal pages and the 
 
 `(content: destinations.json, weekly-specials.json, glossary.json "daily-dungeon")`
 
-The rarity mix is set per place in the data. In short: Tidepools and the Ember and Grove places are mostly common, the Storm Ridge has no odds block, the Old Crossroads and Moonlit Reef have a real rare share, and the Festival Grounds has epics and no rares `(content: destinations.json)`. The exact numbers are in the data and are not repeated here.
+The rarity mix is set per place in the data. In short: Tidepools and the Ember and Grove places are mostly common, the Storm Ridge uses the same mix as the default, the Old Crossroads and Moonlit Reef have a real rare share, and the Festival Grounds has epics and no rares `(content: destinations.json)`. The exact numbers are in the data and are not repeated here.
 
 ## Push-on goals (shipped, shared by every place)
 
@@ -276,7 +276,7 @@ From `glossary.json`, entry `destination-verdant-hollow`:
 
 **Flavour line** `(content)`: "A windy ridge where the air tingles and the thunder is close enough to touch."
 
-**Note:** this destination has no `odds` block in the data, unlike the others `(content: destinations.json; README.md, contradiction 5)`.
+**Note:** this destination used to have no `odds` block and fell back to the default mix. It now carries an explicit block with the same values `(content: destinations.json; README.md, contradiction 5)`.
 
 ### Mood and climate
 

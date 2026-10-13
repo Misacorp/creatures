@@ -147,6 +147,11 @@
     "access": {
       "minRank": 1
     },
+    "odds": {
+      "common": 8300,
+      "rare": 1500,
+      "epic": 200
+    },
     "species": ["zipmouse", "stormray"],
     "deep": {
       "species": ["aurorix"],

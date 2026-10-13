@@ -115,7 +115,7 @@ Parts are the raw material. They pay for upgrades, crafts, improving and enchant
 
 A blueprint teaches a creature to craft one kind of item. You learn each one once. A blueprint you already know turns into scrap `(content: glossary.json "blueprint")`.
 
-Sources, as the glossary has them: expeditions (more often on long ones) and the welcome kit. The design also lists raids, the dungeon and Festivals `(design: gear.md)`. See `README.md`, contradiction 10.
+Sources: expeditions (more often on long ones, and some push-on rewards) and the welcome kit `(content: glossary.json; design: gear.md, checked against the code)`. Raids, the dungeon and Festivals do not grant blueprints. See `README.md`, contradiction 10 (resolved).
 
 **Compendium detail, not shipped** (in-world): a blueprint is a folded sheet of crafting notes, written in a hand that is neat, dry and a little impatient. Someone wrote them down for the next explorer. The writer is an open thread (see `threads.md`). The **Lost Pages** journal set `(content: journal.json)` might be the same hand.
 
