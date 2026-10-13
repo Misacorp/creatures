@@ -28,11 +28,13 @@ import {
   RULES,
   SUPPLIES_IDS,
   content,
+  dungeonContent,
   gearContent,
   type DurationId,
   type GearRarity,
   type JobKind,
   type Rarity,
+  type Role,
   type SuppliesId,
 } from '@creatures/game';
 import type { PostFailureKind } from './discord-posts';
@@ -66,6 +68,7 @@ export const GEAR_SOURCES = [
   'festival',
   'expedition',
   'welcome',
+  'dungeon',
 ] as const;
 export type GearSource = (typeof GEAR_SOURCES)[number];
 
@@ -222,6 +225,37 @@ export type AnalyticsEvent =
       leveledUp: boolean;
     }
   | {
+      /** A daily dungeon run: how deep, how far it got, what the rooms rolled and who went. */
+      kind: 'dungeon_run';
+      depth: number;
+      /** 1, or 2 for the retry of the first day. */
+      attempt: number;
+      roomsCleared: number;
+      cleared: boolean;
+      landmark: boolean;
+      /** The room modifiers, by room. */
+      modifiers: readonly string[];
+      /** The team's species and roles, front to back. */
+      team: readonly { species: string; role: Role }[];
+      /** How many of the three creatures wore gear. */
+      gear: number;
+    }
+  | {
+      /** What a dungeon run paid. Amounts and content ids only. */
+      kind: 'dungeon_reward';
+      depth: number;
+      bait: number;
+      essence: number;
+      scrap: number;
+      shards: number;
+      glimmer: number;
+      /** Gear items that dropped (and fit, or became parts). */
+      gear: number;
+      landmark: boolean;
+      /** The day of the streak cycle whose bonus was paid (3 or 7), or 0. */
+      streakBonusDay: number;
+    }
+  | {
       kind: 'post_result';
       result: 'sent' | 'retry' | 'failed';
       error: PostFailureKind | null;
@@ -238,6 +272,8 @@ const BOSS_IDS: ReadonlySet<string> = new Set(content.bosses.map((b) => b.id));
 const ABILITY_IDS: ReadonlySet<string> = new Set(content.finaleAbilities.map((a) => a.id));
 const GEAR_BASE_IDS: ReadonlySet<string> = new Set(gearContent.bases.map((b) => b.id));
 const ENCHANT_IDS: ReadonlySet<string> = new Set(gearContent.enchants.map((e) => e.id));
+const MODIFIER_IDS: ReadonlySet<string> = new Set(dungeonContent.modifiers.map((m) => m.id));
+const ROLE_IDS = ['setter', 'payoff', 'support', 'guard'] as const;
 const POST_ERRORS: ReadonlySet<string> = new Set<PostFailureKind>([
   'rate_limited',
   'server_error',
@@ -424,6 +460,31 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         xp: int(event.xp, 100_000),
         skillLevel: int(event.skillLevel, 99),
         leveledUp: bool(event.leveledUp),
+      };
+    case 'dungeon_run':
+      return {
+        depth: int(event.depth, 9_999),
+        attempt: int(event.attempt, 2),
+        roomsCleared: int(event.roomsCleared, 99),
+        cleared: bool(event.cleared),
+        landmark: bool(event.landmark),
+        modifiers: event.modifiers.slice(0, 6).map((m) => fromSet(MODIFIER_IDS, m)),
+        team: event.team
+          .slice(0, 3)
+          .map((t) => ({ species: species(t.species), role: oneOf(ROLE_IDS, t.role, 'setter') })),
+        gear: int(event.gear, 3),
+      };
+    case 'dungeon_reward':
+      return {
+        depth: int(event.depth, 9_999),
+        bait: int(event.bait),
+        essence: int(event.essence),
+        scrap: int(event.scrap),
+        shards: int(event.shards),
+        glimmer: int(event.glimmer),
+        gear: int(event.gear, 99),
+        landmark: bool(event.landmark),
+        streakBonusDay: int(event.streakBonusDay, 99),
       };
     case 'post_result':
       return {

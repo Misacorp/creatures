@@ -1052,7 +1052,7 @@ describe('leet sync status', () => {
         ]);
         expect(
           sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
-        ).toBe(17);
+        ).toBe(18);
         expect(syncState(sql)[0]?.cursor).toBe('kept');
         expect(core.leetSyncStatus()).toMatchObject({
           lastAttemptAt: null,

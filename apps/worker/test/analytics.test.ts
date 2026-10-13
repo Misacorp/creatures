@@ -5,6 +5,7 @@ import {
   RULES,
   content,
   createSeededRng,
+  dungeonContent,
   expeditionCost,
   gearContent,
   rollGear,
@@ -231,6 +232,80 @@ describe('the event writer', () => {
     ).toMatchObject({ boss: 'unknown', rank: 0, topShareBp: 10_000 });
   });
 
+  it('rebuilds the dungeon events from content ids and numbers only', () => {
+    const run = propsOf({
+      kind: 'dungeon_run',
+      depth: 12.9,
+      attempt: 7,
+      roomsCleared: -3,
+      cleared: false,
+      landmark: true,
+      modifiers: ['flooded', 'Misa was here', 'fog', 'dark', 'dark', 'dark', 'dark'],
+      team: [
+        { species: 'cindle', role: 'payoff' },
+        { species: 'a nickname', role: 'king' as never },
+        { species: 'sproutle', role: 'guard' },
+        { species: 'zipmouse', role: 'setter' },
+      ],
+      gear: 99,
+    });
+    expect(run).toEqual({
+      depth: 12,
+      attempt: 2,
+      roomsCleared: 0,
+      cleared: false,
+      landmark: true,
+      modifiers: ['flooded', 'unknown', 'fog', 'dark', 'dark', 'dark'],
+      team: [
+        { species: 'cindle', role: 'payoff' },
+        { species: 'unknown', role: 'setter' },
+        { species: 'sproutle', role: 'guard' },
+      ],
+      gear: 3,
+    });
+    expect(
+      propsOf({
+        kind: 'dungeon_reward',
+        depth: 3,
+        bait: 13,
+        essence: -1,
+        scrap: 4,
+        shards: Number.NaN,
+        glimmer: 1,
+        gear: 1,
+        landmark: false,
+        streakBonusDay: 3,
+      }),
+    ).toEqual({
+      depth: 3,
+      bait: 13,
+      essence: 0,
+      scrap: 4,
+      shards: 0,
+      glimmer: 1,
+      gear: 1,
+      landmark: false,
+      streakBonusDay: 3,
+    });
+    const long = serializeProps({
+      kind: 'dungeon_run',
+      depth: 9_999,
+      attempt: 2,
+      roomsCleared: 3,
+      cleared: true,
+      landmark: true,
+      modifiers: ['overgrown', 'scorched', 'brittle'],
+      team: [
+        { species: 'coralynx', role: 'payoff' },
+        { species: 'hearthshell', role: 'guard' },
+        { species: 'lanternfin', role: 'support' },
+      ],
+      gear: 3,
+    });
+    expect(long.length).toBeLessThanOrEqual(MAX_PROPS_CHARS);
+    expect(long).not.toContain('truncated');
+  });
+
   it('caps the stored JSON', () => {
     expect(capJson('{"a":1}')).toBe('{"a":1}');
     const long = JSON.stringify({ text: 'x'.repeat(MAX_PROPS_CHARS) });
@@ -331,7 +406,7 @@ describe('migration 16 (the analytics event log)', () => {
           .toArray()
           .map((i) => i.name),
       ).toContain('analytics_events_at');
-      expect(version(sql)).toBe(17);
+      expect(version(sql)).toBe(18);
       return Promise.resolve();
     });
   });
@@ -344,14 +419,14 @@ describe('migration 16 (the analytics event log)', () => {
       expect(version(sql)).toBe(14);
       expect(tables(sql)).not.toContain('analytics_events');
       core.migrate();
-      expect(version(sql)).toBe(17);
+      expect(version(sql)).toBe(18);
       expect(tables(sql)).toContain('analytics_events');
       expect(sql.exec('SELECT announce_channel_id FROM guild_meta').one()).toEqual({
         announce_channel_id: '555555555555555555',
       });
       expect(sql.exec('SELECT user_id FROM players').toArray()).toEqual([{ user_id: USER_ID }]);
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(17);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(18);
     });
   });
 
@@ -361,7 +436,7 @@ describe('migration 16 (the analytics event log)', () => {
       undoAnalyticsMigration(sql);
       expect(version(sql)).toBe(15);
       core.migrate();
-      expect(version(sql)).toBe(17);
+      expect(version(sql)).toBe(18);
       sql.exec(
         "INSERT INTO analytics_events (at, kind, actor_hash, props_json) VALUES (1, 'x', NULL, '{}')",
       );
@@ -1198,6 +1273,11 @@ function vocabulary(): Set<string> {
     ...content.creatures.map((c) => c.id),
     ...content.bosses.map((b) => b.id),
     ...content.finaleAbilities.map((a) => a.id),
+    ...dungeonContent.modifiers.map((m) => m.id),
+    'setter',
+    'payoff',
+    'support',
+    'guard',
   ]);
 }
 
@@ -1314,6 +1394,24 @@ describe('privacy', () => {
         await call(ctx, a.secret, 'POST', `/api/gear/${rare}/dismantle`, {
           idempotencyKey: newKey(),
         });
+        // The daily dungeon: a player with a team of three runs it (with a nickname on one creature).
+        const diver = seedPlayer(ctx, 3, { name: 'Diver Dana', level: 8 });
+        const diverSecret = await ctx.core.createSession(ctx.guildId, {
+          id: diver.id,
+          displayName: diver.name,
+        });
+        ctx.sql.exec(
+          'UPDATE creatures SET nickname = ? WHERE id = ?',
+          'Quibbly',
+          diver.creatureIds[0],
+        );
+        const dived = await call(ctx, diverSecret, 'POST', '/api/dungeon/run', {
+          team: diver.creatureIds,
+          formation: ['front', 'middle', 'back'],
+          abilities: { basic: { abilityId: 'rally', fireAtRound: null }, creatures: [] },
+          idempotencyKey: newKey(),
+        });
+        expect(dived.status).toBe(200);
         // Sessions idle out after an hour: sign in again after the jumps.
         a.secret = await ctx.core.createSession(ctx.guildId, USER, '555555555555555555');
         b.secret = await ctx.core.createSession(ctx.guildId, OTHER);
@@ -1363,6 +1461,8 @@ describe('privacy', () => {
           'gear_dismantle',
           'job_start',
           'job_claim',
+          'dungeon_run',
+          'dungeon_reward',
         ]) {
           expect(seen.has(kind), kind).toBe(true);
         }
@@ -1375,6 +1475,9 @@ describe('privacy', () => {
           OTHER.displayName,
           'Misa',
           NICKNAME,
+          'Diver Dana',
+          'Quibbly',
+          diver.id,
           ctx.guildId,
           '555555555555555555',
           env.DISCORD_CLIENT_SECRET,
@@ -1405,6 +1508,7 @@ describe('privacy', () => {
         postSender: sender,
         raidRng: createSeededRng('privacy'),
         gearRng: createSeededRng('privacy-gear'),
+        dungeonRng: createSeededRng('privacy-dungeon'),
       },
     );
   });

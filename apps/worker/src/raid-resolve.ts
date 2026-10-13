@@ -110,7 +110,7 @@ export const aliasFor = (index: number): string => `m${index + 1}`;
  * capped) and the final crit bonus, so the stored fight input is self-contained: a replay never looks
  * at gear again, and changing or dismantling the item later cannot change an old fight.
  */
-function slotFor(creature: TeamCreature, alias: string): FightSlot {
+export function slotFor(creature: TeamCreature, alias: string): FightSlot {
   const slot = makeSlot(creature.species, {
     id: creature.id,
     ownerId: alias,

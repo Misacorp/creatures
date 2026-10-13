@@ -212,8 +212,18 @@ export const GEAR_TABLES = [
   'gear_actions',
 ] as const;
 
+/** Tables created by migration 18 (the daily dungeon). */
+export const DUNGEON_TABLES = ['dungeon_runs', 'dungeon_progress', 'dungeon_days'] as const;
+
+/** Puts a database back to before migration 18 (the daily dungeon). */
+export function undoDungeonMigration(sql: SqlStorage): void {
+  for (const table of DUNGEON_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
+  sql.exec('DELETE FROM schema_version WHERE version = 18');
+}
+
 /** Puts a database back to before migration 17 (gear and crafting). */
 export function undoGearMigration(sql: SqlStorage): void {
+  undoDungeonMigration(sql);
   for (const table of GEAR_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
   sql.exec('DELETE FROM schema_version WHERE version = 17');
 }
