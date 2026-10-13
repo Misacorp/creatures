@@ -33,7 +33,7 @@ export function Blueprints({
       </h3>
       {views.length === 0 ? (
         <p class="empty muted">
-          You do not know any blueprints yet. Long expeditions can bring one home.
+          You do not know any blueprints yet. Expeditions and raids can bring one home.
         </p>
       ) : (
         <ul class="blueprints">

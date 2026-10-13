@@ -38,6 +38,8 @@ export function startActionId(request: JobStart): string {
       return `job:improve:${request.creatureId}:${request.gearId}:${String(request.secondaryIndex)}`;
     case 'enchant':
       return `job:enchant:${request.creatureId}:${request.gearId}:${request.enchantId}`;
+    case 'supply':
+      return `job:supply:${request.creatureId}:${request.supplyId}`;
   }
 }
 

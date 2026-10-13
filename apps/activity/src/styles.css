@@ -5259,3 +5259,968 @@ button.cp-back {
     animation-delay: 360ms;
   }
 }
+
+/* --- Expeditions v2: banners, the catalogue, the send flow, running trips, the reveal, the journal --- */
+
+.good-note {
+  color: var(--good);
+}
+
+/* A destination's banner: a wide pixel strip at a whole-number scale, centred, with a walker on it. */
+.banner {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  background: var(--ink);
+}
+
+.banner-art {
+  position: relative;
+  flex: none;
+  width: var(--banner-w, 100%);
+  max-width: 100%;
+}
+
+.banner-art > canvas.sprite {
+  max-width: none;
+}
+
+/*
+  The explorer walks left to right: its place is the trip's progress (--p is 0 to 1). It moves a little
+  every second; the bob is two steps, and both stop with reduced motion (it stands at its place).
+*/
+.walker {
+  position: absolute;
+  bottom: 0.125rem;
+  left: calc((100% - var(--walker-w, 3rem)) * var(--p, 0));
+  line-height: 0;
+}
+
+.walker-bob {
+  display: block;
+}
+
+.walker button.small-creature {
+  line-height: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .walker {
+    transition: left 1s linear;
+  }
+
+  .walker-bob {
+    animation: walk-bob 0.5s steps(2) infinite;
+  }
+
+  @keyframes walk-bob {
+    50% {
+      transform: translateY(calc(var(--px) * -1));
+    }
+  }
+}
+
+/* The sub-navigation of the tab (Trips, Journal, Profile) and the slot strip. */
+.exp-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.exp-nav button {
+  flex: 1;
+  min-width: 0;
+}
+
+.slots-strip {
+  margin: 0.25rem 0;
+  padding: 0.5rem 0.625rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.slots-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.625rem;
+  margin: 0 0 0.25rem;
+}
+
+.slot-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.slot-pip {
+  display: inline-grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--haze);
+}
+
+.slot-pip.used {
+  background: var(--gold);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.slots-next {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+}
+
+/* The catalogue of places. */
+.catalogue {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.catalogue-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.catalogue-count {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+}
+
+.page-button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.75rem;
+  padding: 0;
+}
+
+.catalogue-dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0.625rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dot-button {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+}
+
+.dot-button.on {
+  background: var(--gold);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 #c8952b;
+}
+
+.dot-button.locked:not(.on) {
+  opacity: 0.7;
+}
+
+.place-card {
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+  overflow: hidden;
+}
+
+.place-card.locked .banner canvas.sprite {
+  filter: grayscale(0.55) brightness(0.8);
+}
+
+.place-body {
+  padding: 0.625rem 0.75rem 0.75rem;
+}
+
+.place-name {
+  margin: 0 0 0.25rem;
+}
+
+.place-tags {
+  margin: 0 0 0.25rem;
+}
+
+.place-flavor {
+  margin: 0.25rem 0;
+}
+
+.twist {
+  margin: 0.5rem 0;
+  padding: 0.375rem 0.5rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 2px var(--gold);
+  font-size: 0.875rem;
+}
+
+.place-lives .label {
+  margin: 0.5rem 0 0.125rem;
+}
+
+.residents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.625rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resident {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+}
+
+.resident.unknown .resident-name {
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+.resident.deep.known canvas.sprite {
+  filter: drop-shadow(0 0 2px var(--gold));
+}
+
+.place-stars {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin: 0.5rem 0 0;
+}
+
+.stars-row {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.stars-row .star {
+  display: inline-block;
+  line-height: 0;
+}
+
+.locks {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0 0;
+  padding: 0.375rem 0.5rem;
+  list-style: none;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 2px var(--bad);
+  font-size: 0.875rem;
+}
+
+.locks li {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.locks li span {
+  min-width: 0;
+}
+
+/* The send flow. */
+.send {
+  margin: 0.75rem 0;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 0.25rem;
+  font-size: 1.0625rem;
+}
+
+.step-n {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 0.9375rem;
+}
+
+.explorer-picker .pick-text {
+  flex: 1;
+  gap: 0.125rem;
+}
+
+.pick-xp {
+  margin: 0.25rem 0 0;
+}
+
+.pick-stars {
+  margin-top: 0.125rem;
+}
+
+.pick-help {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+}
+
+.lengths {
+  min-width: 0;
+  margin: 0.25rem 0;
+  padding: 0;
+  border: 0;
+}
+
+.explorer-picker legend,
+.lengths legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.length-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+label.length-option {
+  position: relative;
+  display: grid;
+  flex: 1 1 5rem;
+  justify-items: center;
+  gap: 0.125rem;
+  min-width: 0;
+  padding: 0.5rem 0.25rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+  color: var(--bone);
+  cursor: pointer;
+}
+
+label.length-option.on {
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}
+
+label.length-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+label.length-option:focus-within {
+  outline: var(--px) solid var(--bone);
+  outline-offset: calc(var(--px) * 2);
+}
+
+.length-label {
+  font-size: 1.25rem;
+}
+
+.length-takes {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* A trip's worth as pictures: icon over pips. */
+.worth {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem 0.25rem;
+  margin: 0.25rem 0;
+  padding: 0.5rem;
+  list-style: none;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.worth-item {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+}
+
+.worth-item.none {
+  opacity: 0.4;
+}
+
+.pips {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.pips i {
+  width: 0.375rem;
+  height: 0.375rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--haze);
+}
+
+.pips i.on {
+  background: var(--gold);
+  box-shadow: none;
+}
+
+/* Supplies. */
+.supply-kind {
+  margin: 0.5rem 0;
+}
+
+.supply-kind-name {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.supply-rows {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.supply-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem 0.5rem;
+  padding: 0.375rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.supply-row.on {
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}
+
+.supply-text {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.supply-name {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.supply-effect {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.supply-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.supply-buttons button {
+  min-height: 2.25rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.875rem;
+}
+
+.choice-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.choice-mark.guaranteed {
+  color: var(--gold);
+}
+
+.send-summary {
+  display: grid;
+  gap: 0.375rem;
+  margin: 1rem 0 0;
+  padding: 0.625rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.cost-line,
+.choice-line {
+  margin: 0;
+}
+
+.badge.free {
+  background: var(--good);
+  color: var(--ink);
+}
+
+.send-button {
+  width: 100%;
+  white-space: normal;
+}
+
+/* A trip that is out. */
+.trip-cards {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  margin: 0.5rem 0;
+}
+
+.trip-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.trip-body {
+  padding: 0.625rem 0.75rem 0.75rem;
+}
+
+.trip-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.0625rem;
+}
+
+.kit-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0.375rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+.kit-line li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.trip-bar {
+  margin: 0.625rem 0 0.25rem;
+}
+
+.trip-bar.pushing > span {
+  background: var(--spark);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .trip-bar > span {
+    transition: width 1s linear;
+  }
+}
+
+.trip-timer {
+  margin: 0.25rem 0 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.trip-timer.ready {
+  color: var(--gold);
+}
+
+.push-line {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* The end-of-trip choice. */
+.push-on {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}
+
+.push-on-title {
+  margin: 0 0 0.5rem;
+}
+
+.goal-cards {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.goal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.625rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--good);
+}
+
+.goal-card > button {
+  margin-top: auto;
+}
+
+.goal-card.risky {
+  box-shadow: inset 0 0 0 var(--px) var(--bad);
+}
+
+.goal-flag,
+.goal-name,
+.goal-flavor,
+.goal-odds {
+  margin: 0;
+}
+
+.goal-flag {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.goal-card.risky .goal-flag .tag {
+  background: var(--bad);
+  color: var(--ink);
+}
+
+.goal-card.safe .goal-flag .tag {
+  background: var(--good);
+  color: var(--ink);
+}
+
+.goal-odds {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+}
+
+.goal-odds-number {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.goal-extra {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  font-size: 0.8125rem;
+}
+
+.goal-rewards {
+  display: grid;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.goal-rewards li {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.goal-failure {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0.25rem 0.375rem;
+  background: var(--dusk);
+  box-shadow: inset 2px 0 0 var(--bad);
+  font-size: 0.875rem;
+}
+
+.goal-failure canvas.sprite {
+  flex: none;
+}
+
+.home-button {
+  width: 100%;
+}
+
+/* The claim reveal. */
+.trip-reveal {
+  text-align: left;
+}
+
+.trip-reveal.failed {
+  border-color: var(--bad);
+}
+
+.trip-reveal.recalled {
+  border-color: var(--haze);
+}
+
+.trip-reveal h3 {
+  margin: 0 0 0.5rem;
+  text-align: center;
+}
+
+.reveal-who {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+}
+
+.trip-failed {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  padding: 0.625rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--bad);
+}
+
+.trip-failed p {
+  margin: 0;
+}
+
+.trip-failed canvas.sprite {
+  flex: none;
+}
+
+.push-result {
+  margin: 0.25rem 0;
+}
+
+.reveal-catches {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reveal-catches li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+}
+
+.trip-loot,
+.trip-xp,
+.trip-pages {
+  margin: 0.75rem 0 0;
+  padding-top: 0.5rem;
+  border-top: 2px solid var(--ink);
+}
+
+.trip-loot .label,
+.trip-pages .label {
+  margin: 0 0 0.25rem;
+}
+
+.supply-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.trip-xp p {
+  margin: 0.25rem 0;
+}
+
+.rank-up {
+  color: var(--gold);
+  font-family: var(--display);
+  font-size: 1.125rem;
+}
+
+.trip-stars,
+.slot-unlocked {
+  margin: 0.5rem 0 0;
+}
+
+.slot-unlocked {
+  padding: 0.375rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+  font-family: var(--display);
+  font-size: 1.0625rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .trip-reveal .rank-up,
+  .trip-reveal .slot-unlocked {
+    animation: reveal-pop 400ms steps(4) both;
+  }
+}
+
+.journal-found,
+.journal-pages,
+.journal-sets {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0.25rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.journal-page {
+  padding: 0.5rem 0.625rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.journal-page.found {
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+}
+
+.journal-page p {
+  margin: 0;
+}
+
+.journal-page.blank {
+  opacity: 0.7;
+}
+
+.journal-text {
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
+.journal-place {
+  margin: 0.5rem 0;
+  padding: 0.375rem 0.5rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.journal-place > summary {
+  cursor: pointer;
+  min-height: 2.25rem;
+}
+
+/* The profile. */
+.profile h4 {
+  margin: 1rem 0 0.25rem;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.375rem;
+  margin: 0;
+}
+
+.stat {
+  padding: 0.375rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.stat dt {
+  font-size: 0.75rem;
+}
+
+.stat dd {
+  font-size: 1.25rem;
+  text-align: left;
+}
+
+.milestones,
+.explorer-rows {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0.25rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.milestone,
+.explorer-row {
+  padding: 0.375rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.milestone.reached {
+  box-shadow: inset 0 0 0 var(--px) var(--good);
+}
+
+.milestone p,
+.explorer-text p {
+  margin: 0.125rem 0;
+}
+
+.explorer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.explorer-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The one-time notice about the slot reset. */
+.wipe-notice {
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}
+
+.wipe-notice h3 {
+  margin: 0 0 0.25rem;
+}
+
+.wipe-notice p,
+.wipe-notice ul {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.wipe-notice ul {
+  padding-left: 1.25rem;
+}
+
+/* Supply crafting in the Workshop. */
+.supply-crafts {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.supply-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+@media (min-width: 40rem) {
+  .goal-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .worth {
+    grid-template-columns: repeat(8, 1fr);
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

@@ -1,6 +1,20 @@
-import type { SendBody } from './expedition-types';
-import { isGrantLoot } from './gear-parse';
-import type { CreatureGearFields, GrantLoot } from './gear-types';
+import {
+  isCancelledTrip,
+  isExplorerView,
+  isSlots,
+  isSupplyStock,
+  isTrip,
+} from './expedition-parse';
+import type {
+  CancelledTrip,
+  ExpeditionLength,
+  ExplorerView,
+  Slots,
+  Trip,
+  TripCatch,
+  TripResult,
+} from './expedition-types';
+import type { CreatureGearFields } from './gear-types';
 import { createReauth, type Reauth } from './reauth';
 
 export interface AppConfig {
@@ -247,8 +261,8 @@ export async function fetchLedger(limit: number): Promise<LedgerEntry[]> {
 
 // --- Game state ---
 
-export type DurationId = 'short' | 'medium' | 'long';
-export type SuppliesId = 'basic' | 'good' | 'great';
+/** The trip lengths of expeditions v2: 2, 6, 12 and (from explorer rank 5) 24 hours. */
+export type DurationId = ExpeditionLength;
 
 export interface Creature extends CreatureGearFields {
   id: string;
@@ -268,6 +282,8 @@ export interface Creature extends CreatureGearFields {
   evolution?: { toSpecies: string; level: number; essence: number; available: boolean };
   /** The creature's finale ability; null for a species without one. */
   ability: CreatureAbility | null;
+  /** What it has earned as an explorer (rank, XP and trips). */
+  explorer: ExplorerView;
 }
 
 /** A creature's finale ability. `nextId` is the stronger one of its evolved form. */
@@ -278,35 +294,13 @@ export interface CreatureAbility {
   nextId?: string;
 }
 
-export interface CatchResult {
-  species: string;
-  shiny: boolean;
-  outcome: 'new' | 'fused' | 'converted';
-  fusionCount?: number;
-  bait?: number;
-  firstOnServer: boolean;
-}
+export type CatchResult = TripCatch;
 
-export interface ClaimResult {
-  recalled: boolean;
-  catches: CatchResult[];
-  /** Parts, gear and blueprints the trip brought home; absent on a trip claimed before gear existed. */
-  loot?: GrantLoot;
-}
+/** What a claimed trip brought home (loot, XP, stars, journal pages, a push-on outcome). */
+export type ClaimResult = TripResult;
 
-export interface Expedition {
-  id: string;
-  creatureId: string;
-  duration: DurationId;
-  supplies: SuppliesId;
-  rolls: number;
-  cost: number;
-  startedAt: number;
-  endsAt: number;
-  status: 'active' | 'claimed';
-  claimedAt: number | null;
-  result: ClaimResult | null;
-}
+/** One trip, as GET /api/state lists it (running ones and the recent claimed ones). */
+export type Expedition = Trip;
 
 export interface ServerFirst {
   /** `festival` is the first win of a Festival creature (the species is that creature). */
@@ -324,18 +318,20 @@ export interface GameState {
   starterOptions: string[];
   creatures: Creature[];
   expeditions: Expedition[];
-  slots: { total: number; used: number };
+  /** Trips called home when the slots were reset (expeditions v2). */
+  cancelled: CancelledTrip[];
+  slots: Slots;
+  /** Supplies in stock: supply id to amount. */
+  supplies: Record<string, number>;
   trainingMedianLevel: number | null;
   serverFirsts: ServerFirst[];
   /** Present on GET /api/state only; action responses leave it out. */
   leetSync: LeetSyncStatus | null;
+  /** The guild's IANA timezone; present on GET /api/state only (null in action responses). */
+  timezone: string | null;
 }
 
 const isStr = (value: unknown): value is string => typeof value === 'string';
-const isDuration = (value: unknown): value is DurationId =>
-  value === 'short' || value === 'medium' || value === 'long';
-const isSupplies = (value: unknown): value is SuppliesId =>
-  value === 'basic' || value === 'good' || value === 'great';
 
 function isStats(value: unknown): value is Creature['stats'] {
   return isRecord(value) && isInt(value['hp']) && isInt(value['atk']) && isInt(value['spd']);
@@ -392,53 +388,13 @@ function isCreature(value: unknown): value is Creature {
     isStats(value['stats']) &&
     (value['trainCost'] === null || isInt(value['trainCost'])) &&
     (value['ability'] === null || isCreatureAbility(value['ability'])) &&
+    isExplorerView(value['explorer']) &&
     (evolution === undefined ||
       (isRecord(evolution) &&
         isStr(evolution['toSpecies']) &&
         isInt(evolution['level']) &&
         isInt(evolution['essence']) &&
         typeof evolution['available'] === 'boolean'))
-  );
-}
-
-function isCatch(value: unknown): value is CatchResult {
-  return (
-    isRecord(value) &&
-    isStr(value['species']) &&
-    typeof value['shiny'] === 'boolean' &&
-    (value['outcome'] === 'new' ||
-      value['outcome'] === 'fused' ||
-      value['outcome'] === 'converted') &&
-    (value['fusionCount'] === undefined || isInt(value['fusionCount'])) &&
-    (value['bait'] === undefined || isInt(value['bait'])) &&
-    typeof value['firstOnServer'] === 'boolean'
-  );
-}
-
-function isClaimResult(value: unknown): value is ClaimResult {
-  return (
-    isRecord(value) &&
-    typeof value['recalled'] === 'boolean' &&
-    Array.isArray(value['catches']) &&
-    value['catches'].every(isCatch) &&
-    (value['loot'] === undefined || isGrantLoot(value['loot']))
-  );
-}
-
-function isExpedition(value: unknown): value is Expedition {
-  return (
-    isRecord(value) &&
-    isStr(value['id']) &&
-    isStr(value['creatureId']) &&
-    isDuration(value['duration']) &&
-    isSupplies(value['supplies']) &&
-    isInt(value['rolls']) &&
-    isInt(value['cost']) &&
-    isInt(value['startedAt']) &&
-    isInt(value['endsAt']) &&
-    (value['status'] === 'active' || value['status'] === 'claimed') &&
-    (value['claimedAt'] === null || isInt(value['claimedAt'])) &&
-    (value['result'] === null || isClaimResult(value['result']))
   );
 }
 
@@ -464,14 +420,16 @@ export function parseGameState(data: unknown): GameState {
     !Array.isArray(data['creatures']) ||
     !data['creatures'].every(isCreature) ||
     !Array.isArray(data['expeditions']) ||
-    !data['expeditions'].every(isExpedition) ||
-    !isRecord(data['slots']) ||
-    !isInt(data['slots']['total']) ||
-    !isInt(data['slots']['used']) ||
+    !data['expeditions'].every(isTrip) ||
+    !Array.isArray(data['cancelled']) ||
+    !data['cancelled'].every(isCancelledTrip) ||
+    !isSlots(data['slots']) ||
+    !isSupplyStock(data['supplies']) ||
     !(data['trainingMedianLevel'] === null || typeof data['trainingMedianLevel'] === 'number') ||
     !Array.isArray(data['serverFirsts']) ||
     !data['serverFirsts'].every(isServerFirst) ||
     !(data['leetSync'] === undefined || isLeetSyncStatus(data['leetSync'])) ||
+    !(data['timezone'] === undefined || isStr(data['timezone'])) ||
     !(
       data['starterOptions'] === undefined ||
       (Array.isArray(data['starterOptions']) && data['starterOptions'].every(isStr))
@@ -486,10 +444,13 @@ export function parseGameState(data: unknown): GameState {
     starterOptions: data['starterOptions'] ?? [],
     creatures: data['creatures'],
     expeditions: data['expeditions'],
-    slots: { total: data['slots']['total'], used: data['slots']['used'] },
+    cancelled: data['cancelled'],
+    slots: data['slots'],
+    supplies: data['supplies'],
     trainingMedianLevel: data['trainingMedianLevel'],
     serverFirsts: data['serverFirsts'],
     leetSync: data['leetSync'] ?? null,
+    timezone: data['timezone'] ?? null,
   };
 }
 
@@ -501,7 +462,7 @@ function postJson(path: string, method: string, body: unknown): Promise<unknown>
   });
 }
 
-function stateFrom(data: unknown): GameState {
+export function stateFrom(data: unknown): GameState {
   return parseGameState(isRecord(data) ? data['state'] : undefined);
 }
 
@@ -511,50 +472,6 @@ export async function fetchState(): Promise<GameState> {
 
 export async function chooseStarter(species: string, idempotencyKey: string): Promise<GameState> {
   return stateFrom(await postJson('/api/starter', 'POST', { species, idempotencyKey }));
-}
-
-export async function startExpedition(input: {
-  creatureId: string;
-  duration: DurationId;
-  supplies: SuppliesId;
-  idempotencyKey: string;
-}): Promise<GameState> {
-  return stateFrom(await postJson('/api/expeditions', 'POST', expeditionBody(input)));
-}
-
-/**
- * The body of POST /api/expeditions for the v1 screen (stopgap until the expeditions UI is rebuilt): every
- * trip goes to the Tidepools, the old "basic" supplies mean none (a free trip) and "good" and "great" buy
- * the Lure of that tier.
- */
-export function expeditionBody(input: {
-  creatureId: string;
-  duration: DurationId;
-  supplies: SuppliesId;
-  idempotencyKey: string;
-}): SendBody {
-  return {
-    creatureId: input.creatureId,
-    destination: 'tidepools',
-    duration: input.duration,
-    supplies: input.supplies === 'basic' ? [] : [{ id: `lure-${input.supplies}`, source: 'buy' }],
-    idempotencyKey: input.idempotencyKey,
-  };
-}
-
-/** Checks the answer of an expedition claim: the result (with its loot) and the fresh collection. */
-export function parseClaimResponse(data: unknown): { result: ClaimResult; state: GameState } {
-  if (!isRecord(data) || !isClaimResult(data['result'])) {
-    throw new Error('the server returned an unexpected claim result');
-  }
-  return { result: data['result'], state: stateFrom(data) };
-}
-
-export async function claimExpedition(
-  expeditionId: string,
-): Promise<{ result: ClaimResult; state: GameState }> {
-  // Claiming is idempotent on the server (an expedition is claimed once), so it needs no key.
-  return parseClaimResponse(await postJson(`/api/expeditions/${expeditionId}/claim`, 'POST', {}));
 }
 
 export async function trainCreature(

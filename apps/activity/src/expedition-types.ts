@@ -9,6 +9,8 @@
  * looked up by id; the server sends ids and numbers only.
  */
 
+import type { GrantLoot } from './gear-types';
+
 export type ExpeditionLength = 'short' | 'medium' | 'long' | 'day';
 export type SupplyKind = 'lure' | 'map-scrap' | 'lantern' | 'satchel';
 export type SupplyTier = 'basic' | 'good' | 'great';
@@ -122,14 +124,8 @@ export interface TripCatch {
   bait?: number;
 }
 
-export interface TripLoot {
-  parts: Record<string, number>;
-  gear: unknown[];
-  blueprints: unknown[];
-  converted: unknown[];
-  /** Supply ids found on the trip. */
-  supplies?: string[];
-}
+/** What a claimed trip brought home: the usual grant, and the supplies it found (ids). */
+export type TripLoot = GrantLoot;
 
 export interface JournalFind {
   entryId: string;

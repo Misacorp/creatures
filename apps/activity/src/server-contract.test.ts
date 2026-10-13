@@ -1,8 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import actionFire from './fixtures/action-fire.json';
 import collectionState from './fixtures/collection-state.json';
+import expeditionClaimFailed from './fixtures/expedition-claim-failed.json';
 import expeditionClaimLoot from './fixtures/expedition-claim-loot.json';
+import expeditionClaimRecall from './fixtures/expedition-claim-recall.json';
+import expeditionClaimWorked from './fixtures/expedition-claim-worked.json';
+import expeditionDestinations from './fixtures/expedition-destinations.json';
+import expeditionErrors from './fixtures/expedition-errors.json';
+import expeditionProfile from './fixtures/expedition-profile.json';
+import expeditionPushOn from './fixtures/expedition-push-on.json';
 import expeditionRequestBodies from './fixtures/expedition-request-bodies.json';
+import expeditionSend from './fixtures/expedition-send.json';
+import expeditionSend2 from './fixtures/expedition-send-2.json';
+import expeditionSend3 from './fixtures/expedition-send-3.json';
 import expeditionStateAfter from './fixtures/expedition-state-after.json';
 import expeditionStateOffer from './fixtures/expedition-state-offer.json';
 import workshopClaimSupply from './fixtures/workshop-claim-supply.json';
@@ -50,7 +60,18 @@ vi.mock('./api', async (importOriginal) => ({
   apiFetch,
 }));
 
-import { ApiError, expeditionBody, parseClaimResponse, parseGameState, type Creature } from './api';
+import { ApiError, parseGameState, type Creature } from './api';
+import {
+  claimExpedition,
+  fetchDestinations,
+  fetchProfile,
+  parseClaimResponse,
+  pushOn,
+  sendBody,
+  sendExpedition,
+  type SendRequest,
+} from './expedition-api';
+import { parseDestinations, parseProfile } from './expedition-parse';
 import { fetchDungeonReplay, fetchDungeonToday, startDungeonRun } from './dungeon-api';
 import { parseDungeonReplay, parseDungeonRun, parseDungeonToday } from './dungeon-parse';
 import {
@@ -618,58 +639,306 @@ function bodyOf0(): DungeonRunRequest {
   return dungeonRequestBodies['dungeon-run-cleared'].body as unknown as DungeonRunRequest;
 }
 
-describe('expeditions v2 with the v1 screens (stopgap until the UI is rebuilt)', () => {
-  it('sends the v2 body: a destination and a list of supplies, nothing the server would reject', () => {
-    const recorded = expeditionRequestBodies['expedition-send'].body;
-    const body = expeditionBody({
-      creatureId: recorded.creatureId,
-      duration: 'long',
-      supplies: 'basic',
-      idempotencyKey: recorded.idempotencyKey,
-    });
-    expect(Object.keys(body).sort()).toEqual(Object.keys(recorded).sort());
-    expect(body).toMatchObject({ destination: 'tidepools', supplies: [] });
-    const input = {
-      creatureId: recorded.creatureId,
-      duration: 'short' as const,
-      idempotencyKey: 'k',
-    };
-    expect(expeditionBody({ ...input, supplies: 'good' }).supplies).toEqual([
-      { id: 'lure-good', source: 'buy' },
-    ]);
-    expect(expeditionBody({ ...input, supplies: 'great' }).supplies).toEqual([
-      { id: 'lure-great', source: 'buy' },
-    ]);
-    // Every supply of a body has the shape the server's schema takes.
-    for (const pick of recorded.supplies) {
-      expect(Object.keys(pick).sort()).toEqual(['id', 'source']);
+describe('the expedition requests the client sends', () => {
+  beforeEach(() => {
+    apiFetch.mockReset();
+  });
+
+  /** The path, method and parsed JSON body of the only request made. */
+  function sent(): { path: string; method: string; body: unknown } {
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+    const [path, init] = apiFetch.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
+    return { path, method: init.method ?? 'GET', body: JSON.parse(init.body as string) };
+  }
+
+  const recorded = (key: keyof typeof expeditionRequestBodies) => {
+    const { path, method, body } = expeditionRequestBodies[key];
+    return { path, method, body };
+  };
+
+  /** The request the screen would make for a recorded body (the key is added by the key store). */
+  const requestOf = (body: {
+    creatureId: string;
+    destination: string;
+    duration: string;
+    supplies: { id: string; source: string }[];
+  }): SendRequest => body as SendRequest;
+
+  it('sends exactly the keys and values the Worker accepted, for every recorded trip', async () => {
+    const cases = [
+      ['expedition-send', expeditionSend],
+      ['expedition-send-2', expeditionSend2],
+      ['expedition-send-3', expeditionSend3],
+    ] as const;
+    for (const [key, answer] of cases) {
+      apiFetch.mockReset();
+      apiFetch.mockResolvedValue(answer);
+      const { idempotencyKey, ...rest } = expeditionRequestBodies[key].body;
+      const done = await sendExpedition(requestOf(rest), idempotencyKey);
+      expect(sent(), key).toEqual(recorded(key));
+      expect(done.expedition.status).toBe('active');
+      expect(done.state.expeditions.some((e) => e.id === done.expedition.id)).toBe(true);
     }
   });
 
-  it('reads the state of a trip with a pending choice and of a claimed trip with its result', () => {
+  it('sends nothing the Worker would reject: no extra keys, whatever the screen holds', () => {
+    const extra = {
+      creatureId: 'c',
+      destination: 'tidepools',
+      duration: 'day' as const,
+      supplies: [{ id: 'lure-good', source: 'buy' as const, price: 30 }],
+      mood: 'happy',
+    };
+    const body = sendBody(extra, 'k');
+    expect(Object.keys(body).sort()).toEqual(
+      Object.keys(expeditionRequestBodies['expedition-send'].body).sort(),
+    );
+    expect(body.supplies).toEqual([{ id: 'lure-good', source: 'buy' }]);
+    expect(body.duration).toBe('day');
+  });
+
+  it('pushes on with only the goal, and claims with an empty body', async () => {
+    apiFetch.mockResolvedValue(expeditionPushOn);
+    const done = await pushOn(
+      expeditionPushOn.expedition.id,
+      expeditionRequestBodies['expedition-push-on'].body.goalId,
+    );
+    expect(sent()).toEqual(recorded('expedition-push-on'));
+    expect(done.expedition.pushOn?.goalId).toBe('shortcut');
+
+    apiFetch.mockReset();
+    apiFetch.mockResolvedValue(expeditionClaimWorked);
+    await claimExpedition('04d6cb1d-f054-4028-9034-7fd4c2bf80df');
+    expect(sent()).toEqual(recorded('expedition-claim-worked'));
+  });
+
+  it('reads every claim: worked, failed, recalled and one with loot, supplies and XP', async () => {
+    for (const fixture of [
+      expeditionClaimWorked,
+      expeditionClaimFailed,
+      expeditionClaimRecall,
+      expeditionClaimLoot,
+    ]) {
+      apiFetch.mockReset();
+      apiFetch.mockResolvedValue(fixture);
+      const done = await claimExpedition('x');
+      expect(done.state.expeditions.length).toBeGreaterThan(0);
+    }
+    const loot = parseClaimResponse(expeditionClaimLoot);
+    expect(loot.result.loot?.supplies).toEqual(['lure-basic']);
+    expect(loot.result.xp).toMatchObject({ gained: 300, rank: 2, rankBefore: 1 });
+    expect(loot.result.familiarity?.trips).toBe(1);
+    const failed = parseClaimResponse(expeditionClaimFailed);
+    expect(failed.result.failed).toBe(true);
+    expect(failed.result.pushOn).toMatchObject({ risk: 'risky', outcome: 'failed' });
+    const worked = parseClaimResponse(expeditionClaimWorked);
+    expect(worked.result.slotUnlocked?.total).toBe(2);
+    expect(worked.result.journal?.[0]?.entryId).toBe('tide-first-pool');
+    expect(parseClaimResponse(expeditionClaimRecall).result.recalled).toBe(true);
+  });
+
+  it('reads the destinations and the profile', async () => {
+    apiFetch.mockResolvedValue(expeditionDestinations);
+    const view = await fetchDestinations();
+    expect(view.destinations.map((d) => d.id)).toEqual([
+      'tidepools',
+      'ember-caves',
+      'verdant-hollow',
+      'storm-ridge',
+      'old-crossroads',
+      'moonlit-reef',
+      'festival-grounds',
+    ]);
+    expect(view.special.destination).toBe('moonlit-reef');
+    expect(view.familiarity[0]?.found).toEqual(['mistnewt']);
+
+    apiFetch.mockReset();
+    apiFetch.mockResolvedValue(expeditionProfile);
+    const profile = await fetchProfile();
+    expect(profile.journal.total).toBe(40);
+    expect(profile.explorers).toHaveLength(4);
+    expect(profile.milestones).toHaveLength(10);
+    expect(profile.slots.next).toEqual({ kind: 'rank_sum', at: 26 });
+  });
+
+  it('refuses destinations and a profile that are not the shape the server sends', () => {
+    expect(() => parseDestinations({ ...expeditionDestinations, night: 'yes' })).toThrow();
+    expect(() =>
+      parseDestinations({
+        ...expeditionDestinations,
+        destinations: [
+          { id: 'x', minRank: 1, nightOnly: false, festivalOnly: false, closed: ['x'] },
+        ],
+      }),
+    ).toThrow();
+    expect(() => parseProfile({ ...expeditionProfile, stats: { trips: -1 } })).toThrow();
+    expect(() => parseProfile({ ...expeditionProfile, slots: {} })).toThrow();
+  });
+});
+
+describe('the expedition state the server sends', () => {
+  it('reads a trip with a pending choice: its goals with exact odds, and the new fields', () => {
     const offer = parseGameState(expeditionStateOffer);
-    expect(offer.expeditions[0]?.status).toBe('active');
-    expect(offer.expeditions[0]?.supplies).toBe('great');
+    const trip = offer.expeditions[0];
+    expect(trip?.status).toBe('active');
+    expect(trip?.supplies).toBe('great');
+    expect(trip?.kit).toEqual(['lure-great', 'map-scrap-basic']);
+    expect(trip?.destination).toBe('tidepools');
+    expect(trip?.readyAt).toBe(trip?.endsAt);
+    expect(trip?.offer?.goals.map((g) => [g.id, g.risk, g.oddsBp])).toEqual([
+      ['forage', 'safe', 10000],
+      ['shortcut', 'risky', 6100],
+    ]);
+    expect(offer.slots).toMatchObject({ total: 1, used: 1, next: { kind: 'trips', at: 3 } });
+    expect(offer.supplies).toEqual({ 'lure-great': 2 });
+    expect(offer.timezone).toBe('Europe/Helsinki');
+    expect(offer.creatures.every((c) => c.explorer.rank >= 1)).toBe(true);
+  });
+
+  it('reads claimed trips with their results and a running push-on', () => {
     const after = parseGameState(expeditionStateAfter);
     expect(after.expeditions.some((e) => e.status === 'claimed' && e.result !== null)).toBe(true);
+    expect(after.expeditions.every((e) => e.pushOn !== null)).toBe(true);
+    const push = parseGameState(expeditionPushOn.state);
+    expect(push.expeditions[0]?.pushOn).toMatchObject({ goalId: 'shortcut', oddsBp: 6100 });
+    expect(push.expeditions[0]?.readyAt).toBeGreaterThan(push.expeditions[0]?.endsAt ?? 0);
   });
 
-  it('reads the claim of a trip with a push-on and a journal page', () => {
-    const claimed = parseClaimResponse({
-      result: expeditionStateAfter.expeditions[0]?.result,
-      state: expeditionStateAfter,
-    });
-    expect(claimed.result.catches.length).toBeGreaterThan(0);
+  it('keeps the whole state readable for a 24 hour trip and for every other length', () => {
+    for (const duration of ['short', 'medium', 'long', 'day']) {
+      const state = structuredClone(expeditionStateOffer);
+      (state.expeditions[0] as { duration: string }).duration = duration;
+      expect(parseGameState(state).expeditions[0]?.duration).toBe(duration);
+    }
+    const bad = structuredClone(expeditionStateOffer);
+    (bad.expeditions[0] as { duration: string }).duration = 'week';
+    expect(() => parseGameState(bad)).toThrow('game state');
   });
 
-  it('reads the Workshop view with a supply craft in it, leaving the supply job out of the list', () => {
-    for (const fixture of [workshopStartSupply, workshopClaimSupply]) {
-      const gear = parseGearState(fixture.gear);
-      expect(gear.jobs.every((j) => (j.kind as string) !== 'supply')).toBe(true);
-      expect(fixture.gear.jobs.some((j) => j.kind === 'supply')).toBe(true);
+  it('refuses a state without an explorer, with a broken slot or with a bad offer', () => {
+    const noExplorer = structuredClone(expeditionStateOffer);
+    delete (noExplorer.creatures[0] as { explorer?: unknown }).explorer;
+    expect(() => parseGameState(noExplorer)).toThrow('game state');
+    expect(() => parseGameState({ ...expeditionStateOffer, slots: { total: 1, used: 1 } })).toThrow(
+      'game state',
+    );
+    const badOffer = structuredClone(expeditionStateOffer);
+    (badOffer.expeditions[0] as { offer: unknown }).offer = { goals: [{ id: 'x' }] };
+    expect(() => parseGameState(badOffer)).toThrow('game state');
+    expect(() =>
+      parseGameState({ ...expeditionStateOffer, supplies: { 'lure-basic': -1 } }),
+    ).toThrow();
+  });
+
+  it('reads the trips that were called home when the slots were reset', () => {
+    const state = structuredClone(expeditionStateAfter);
+    (state as { cancelled: unknown[] }).cancelled = [
+      {
+        id: 't1',
+        creatureId: state.creatures[0]?.id,
+        destination: 'old-crossroads',
+        duration: 'long',
+        startedAt: 1,
+        reason: 'slot_wipe',
+      },
+    ];
+    expect(parseGameState(state).cancelled).toHaveLength(1);
+    (state as { cancelled: unknown[] }).cancelled = [{ id: 't1' }];
+    expect(() => parseGameState(state)).toThrow('game state');
+  });
+});
+
+describe('the expedition errors the server sends', () => {
+  const GENERIC = /^Something went wrong/;
+
+  it('has a friendly text for every error of the expedition routes, with its reason', () => {
+    expect(expeditionErrors.length).toBeGreaterThan(8);
+    for (const { route, status, body } of expeditionErrors) {
+      const reason = 'reason' in body ? body.reason : null;
+      const text = errorText(new ApiError(status, body.error, reason));
+      expect(text, `${route} ${String(status)} ${body.error}`).not.toMatch(GENERIC);
+      expect(text.length).toBeGreaterThan(10);
     }
   });
 
+  it('says why a place refused, by its reason', () => {
+    expect(errorText(new ApiError(409, 'destination_closed', 'night'))).toContain('night');
+    expect(errorText(new ApiError(409, 'destination_closed', 'festival'))).toContain('Festival');
+    expect(errorText(new ApiError(409, 'destination_closed', 'rank'))).toContain('rank');
+    expect(errorText(new ApiError(409, 'rank_too_low', 'length'))).toContain('long');
+  });
+
+  it('has a text for every code the server can send beyond the fixtures', () => {
+    for (const code of [
+      'no_offer',
+      'not_active',
+      'cancelled',
+      'invalid_destination',
+      'invalid_supply',
+      'skill_too_low',
+      'creature_on_job',
+    ]) {
+      expect(errorText(new ApiError(409, code)), code).not.toMatch(GENERIC);
+    }
+  });
+});
+
+describe('supply crafts in the Workshop', () => {
+  beforeEach(() => {
+    apiFetch.mockReset();
+  });
+
+  it('keeps the supply job in the Workshop view, with its supply and its result', () => {
+    for (const fixture of [workshopStartSupply, workshopClaimSupply]) {
+      const gear = parseGearState(fixture.gear);
+      const job = gear.jobs.find((j) => j.kind === 'supply');
+      expect(job?.input.supplyId).toBe('lure-basic');
+      expect(gear.jobs).toHaveLength(fixture.gear.jobs.length);
+    }
+    const claimed = parseGearState(workshopClaimSupply.gear).jobs[0];
+    expect(claimed?.result).toMatchObject({ kind: 'supply', supplyId: 'lure-basic', amount: 1 });
+  });
+
+  it('starts a supply craft with exactly the recorded body and claims it with a key', async () => {
+    apiFetch.mockResolvedValue(workshopStartSupply);
+    const recordedStart = expeditionRequestBodies['workshop-start-supply'];
+    const { idempotencyKey, ...rest } = recordedStart.body;
+    const request: StartJobRequest = {
+      ...(rest as { kind: 'supply'; creatureId: string; supplyId: string }),
+      idempotencyKey,
+    };
+    await startJob(request);
+    const [path, init] = apiFetch.mock.calls[0] as [string, RequestInit];
+    const startBody: unknown = JSON.parse(init.body as string);
+    expect({ path, method: init.method, body: startBody }).toEqual({
+      path: recordedStart.path,
+      method: recordedStart.method,
+      body: recordedStart.body,
+    });
+
+    apiFetch.mockReset();
+    apiFetch.mockResolvedValue(workshopClaimSupply);
+    const claimed = await claimJob(
+      'fa767c7b-b7fd-4c0e-88ba-38a6ff1b7cd4',
+      expeditionRequestBodies['workshop-claim-supply'].body.idempotencyKey,
+    );
+    expect(claimed.result).toMatchObject({ kind: 'supply', supplyId: 'lure-basic', amount: 1 });
+    expect(claimed.state.supplies).toEqual({ 'lure-basic': 1, 'lure-great': 1 });
+  });
+
+  it('refuses a supply result without a supply', () => {
+    const broken = structuredClone(workshopClaimSupply.gear) as unknown as {
+      jobs: { result: unknown }[];
+    };
+    const job = broken.jobs[0];
+    if (job === undefined) throw new Error('the fixture has no job');
+    job.result = { kind: 'supply', xp: 1, skillXp: 1, skillLevel: 1, leveledUp: false };
+    expect(() => parseGearState(broken)).toThrow('gear view');
+  });
+});
+
+describe('gear views of other sources', () => {
   it('reads a gear view whose newest grant is a daily dungeon drop', () => {
     const grant = gearWelcome.grants[0];
     if (grant === undefined) throw new Error('the fixture has no grant');

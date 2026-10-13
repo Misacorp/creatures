@@ -45,6 +45,7 @@ function make(id: string, species: string, level: number, extra: Partial<Creatur
     busy: null,
     trainCost: null,
     ability: null,
+    explorer: { rank: 1, xp: 0, nextRankXp: 200, trips: 0 },
     ...extra,
   };
 }

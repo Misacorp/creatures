@@ -3,14 +3,7 @@
  * content; every number that matters (costs, levels, catches) comes from the server.
  */
 import { RULES, content, lore, quirkText, type CreatureSpecies } from '@creatures/game';
-import {
-  ApiError,
-  type CatchResult,
-  type Creature,
-  type ServerFirst,
-  type SuppliesId,
-  type DurationId,
-} from './api';
+import { ApiError, type CatchResult, type Creature, type ServerFirst } from './api';
 
 const SPECIES = new Map<string, CreatureSpecies>(content.creatures.map((c) => [c.id, c]));
 const ELEMENT_NAMES = new Map<string, string>(content.elements.map((e) => [e.id, e.name]));
@@ -147,38 +140,6 @@ export function fusionStars(count: number): string {
   return '★'.repeat(filled) + '☆'.repeat(RULES.fusion.maxFusions - filled);
 }
 
-function percent(bp: number): string {
-  return `${String(bp / 100)}%`;
-}
-
-/** "Common 72% / Rare 25% / Epic 3%" from the shared rules. */
-export function oddsText(supplies: SuppliesId): string {
-  const odds = RULES.expedition.supplies[supplies].oddsBp;
-  return `Common ${percent(odds.common)} / Rare ${percent(odds.rare)} / Epic ${percent(odds.epic)}`;
-}
-
-export const DURATION_OPTIONS: readonly { id: DurationId; label: string }[] = (
-  Object.keys(RULES.expedition.durations) as DurationId[]
-).map((id) => {
-  const { ms, rolls } = RULES.expedition.durations[id];
-  const hours = ms / 3_600_000;
-  return {
-    id,
-    label: `${capitalize(id)} (${String(hours)} h, ${String(rolls)} ${rolls === 1 ? 'catch' : 'catches'})`,
-  };
-});
-
-export const SUPPLIES_OPTIONS: readonly { id: SuppliesId; label: string }[] = (
-  Object.keys(RULES.expedition.supplies) as SuppliesId[]
-).map((id) => ({
-  id,
-  label: `${capitalize(id)} (${String(RULES.expedition.supplies[id].costPerRoll)} Bait per catch): ${oddsText(id)}`,
-}));
-
-export function durationLabel(id: DurationId): string {
-  return DURATION_OPTIONS.find((d) => d.id === id)?.label ?? id;
-}
-
 /** Short badges for one reveal row, in display order. */
 export function catchBadges(entry: CatchResult): string[] {
   return catchBadgeTags(entry).map((badge) => badge.text);
@@ -248,7 +209,7 @@ const ERROR_TEXT: Record<string, string> = {
   workshop_full: 'All Workshop slots are in use. Claim a finished job or wait for one to end.',
   inventory_full: 'Your bag is full. Dismantle an item to make room.',
   item_busy: 'That item is in a Workshop job. Claim the job first.',
-  not_ready: 'That job is not finished yet.',
+  not_ready: 'That is not finished yet.',
   max_level: 'That item is already at its top level.',
   same_enchant: 'That item already has that enchant.',
   blueprint_unknown: 'You have not learned that blueprint.',
@@ -257,11 +218,31 @@ const ERROR_TEXT: Record<string, string> = {
   invalid_blueprint: 'That blueprint cannot be crafted.',
   invalid_enchant: 'That enchant does not exist.',
   item_gone: 'The item for that job is gone.',
+  skill_too_low: 'That creature needs a higher Crafting level for this supply.',
+  invalid_supply: 'That supply cannot be crafted.',
+  // Expeditions.
+  destination_closed: 'That place is closed to this explorer right now.',
+  rank_too_low: 'That explorer is not a high enough rank for that.',
+  supply_missing: 'You do not have that supply in stock any more.',
+  invalid_supplies: 'Those supplies cannot go together: at most two, never two of the same kind.',
+  invalid_destination: 'That place does not exist.',
+  not_active: 'That trip is already over.',
+  no_offer: 'That trip has no choice to make.',
+  not_offered: 'That goal was not on offer.',
+  already_chosen: 'You already chose a goal for that trip.',
+  cancelled: 'That trip was called home when the slots were reset.',
   // Any request.
   invalid_body:
     'The server did not understand that. Close and reopen the Activity if it keeps happening.',
   invalid_id: 'The server did not understand that. Close and reopen the Activity.',
   internal_error: 'The server had a problem. Try again in a moment.',
+};
+
+/** Why a place refused a trip (the server's `reason` of `destination_closed`). */
+const DESTINATION_CLOSED_REASONS: Record<string, string> = {
+  rank: 'That explorer is not a high enough rank for that place yet.',
+  night: 'That place only opens at night.',
+  festival: 'That place only opens in Festival weeks.',
 };
 
 const NICKNAME_REASONS: Record<string, string> = {
@@ -280,6 +261,12 @@ export function errorText(err: unknown, currency = 'Bait'): string {
       return NICKNAME_REASONS[err.reason ?? ''] ?? 'That nickname is not allowed.';
     }
     if (err.code === 'insufficient_funds') return `Not enough ${currency}.`;
+    if (err.code === 'destination_closed' && DESTINATION_CLOSED_REASONS[err.reason ?? '']) {
+      return DESTINATION_CLOSED_REASONS[err.reason ?? ''] as string;
+    }
+    if (err.code === 'rank_too_low' && err.reason === 'length') {
+      return 'That explorer is not a high enough rank for a trip that long.';
+    }
     return (
       ERROR_TEXT[err.code ?? ''] ?? `Something went wrong (${err.code ?? String(err.status)}).`
     );

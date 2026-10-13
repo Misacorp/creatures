@@ -10,9 +10,10 @@ import { InventoryGrid } from './InventoryGrid';
 import { ItemDetail } from './ItemDetail';
 import { JobReveal } from './JobReveal';
 import { JobSlots } from './JobSlots';
+import { SupplyCrafting } from './SupplyCrafting';
 
 /**
- * The Workshop tab: your parts, the two job slots (with timers and claims), the bag of gear with
+ * The Workshop tab: your parts, the job slots (with timers and claims), the bag of gear with
  * an item's details and actions, and the blueprints you can craft from. Everything shown comes from
  * the server's gear view; every action goes back to the server, which decides.
  */
@@ -123,6 +124,15 @@ export function Workshop({
         busy={busy}
         onCraft={async (baseId, creatureId) =>
           (await actions.startJob({ kind: 'craft', creatureId, blueprintId: baseId })) !== undefined
+        }
+      />
+      <SupplyCrafting
+        gear={gear}
+        creatures={state.creatures}
+        stock={state.supplies}
+        busy={busy}
+        onCraft={async (supplyId, creatureId) =>
+          (await actions.startJob({ kind: 'supply', creatureId, supplyId })) !== undefined
         }
       />
     </div>

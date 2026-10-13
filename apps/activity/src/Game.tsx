@@ -2,11 +2,9 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   ApiError,
   chooseStarter,
-  claimExpedition,
   evolveCreature,
   fetchState,
   renameCreature,
-  startExpedition,
   trainCreature,
   type ClaimResult,
   type EvolveResult,
@@ -15,7 +13,9 @@ import {
 } from './api';
 import { createKeyStore } from './actions';
 import { Collection } from './Collection';
-import { Expeditions, type SendRequest } from './Expeditions';
+import { claimExpedition, pushOn, sendExpedition, type SendRequest } from './expedition-api';
+import type { Trip } from './expedition-types';
+import { Expeditions } from './Expeditions';
 import { fetchGear } from './gear-api';
 import { createGearActions } from './gear-actions';
 import type { GearState, JobResult } from './gear-types';
@@ -28,6 +28,7 @@ import { Dungeon } from './Dungeon';
 import { Sprite } from './sprites/Sprite';
 import { StarterPicker } from './StarterPicker';
 import { TABS, tabAfterKey, tabPalette, type Tab } from './tabs';
+import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
 
 interface Loaded {
@@ -55,7 +56,9 @@ export function Game({
   const [tab, setTab] = useState<Tab>('collection');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [reveal, setReveal] = useState<ClaimResult | null>(null);
+  const [reveal, setReveal] = useState<{ result: ClaimResult; trip: Trip | undefined } | null>(
+    null,
+  );
   // Gear, parts, blueprints and jobs; null until the first load (or when it failed).
   const [gear, setGear] = useState<GearState | null>(null);
   const [gearFailed, setGearFailed] = useState(false);
@@ -69,6 +72,9 @@ export function Game({
   // Counts gear views that came from an action, so a slower load that started before one is dropped.
   const gearVersion = useRef(0);
   const { game, offset } = current;
+  // The guild's timezone comes with GET /api/state only; the answers of actions leave it out, so it is kept.
+  const timezone = useRef<string | null>(null);
+  if (game.timezone !== null) timezone.current = game.timezone;
 
   // While the first leet sync is still running, ask again every few seconds (a few times at most)
   // so the balance, the history and the footer update as soon as the credits land.
@@ -142,9 +148,12 @@ export function Game({
     if (next !== undefined) setCurrent(loaded(next));
   }
 
-  /** Reloads the state in the background (balances move when raids pay Essence). */
-  function refreshState(): void {
-    if (inFlight.current) return;
+  /**
+   * Reloads the state in the background (balances move when raids pay Essence). Returns false when it
+   * did not start because an action is running.
+   */
+  function refreshState(): boolean {
+    if (inFlight.current) return false;
     const startedAt = actionCount.current;
     fetchState().then(
       (next) => {
@@ -152,6 +161,7 @@ export function Game({
       },
       () => undefined,
     );
+    return true;
   }
 
   /** Loads the gear view (inventory, parts, jobs). The first call also gives the welcome kit, once. */
@@ -258,6 +268,7 @@ export function Game({
           </button>
         ))}
       </div>
+      <WipeNotice cancelled={game.cancelled} creatures={game.creatures} />
       {error !== null && (
         <p class="error" role="alert">
           {error}
@@ -306,23 +317,35 @@ export function Game({
             offset={offset}
             busy={busy}
             reveal={reveal}
-            onSend={(request: SendRequest) => {
-              const action = `send:${request.creatureId}:${request.duration}:${request.supplies}`;
-              void runState(action, () =>
-                startExpedition({ ...request, idempotencyKey: keys.keyFor(action) }),
-              );
+            timezone={timezone.current}
+            onSend={async (request: SendRequest) => {
+              const picks = request.supplies.map((p) => `${p.source}:${p.id}`).sort();
+              const action = `send:${request.creatureId}:${request.destination}:${request.duration}:${picks.join(',')}`;
+              const answer = await run(action, () => sendExpedition(request, keys.keyFor(action)));
+              if (answer === undefined) return false;
+              setCurrent(loaded(answer.state));
+              return true;
             }}
-            onClaim={(expedition) => {
-              void run(`claim:${expedition.id}`, () => claimExpedition(expedition.id)).then(
-                (done) => {
-                  if (done === undefined) return;
-                  setCurrent(loaded(done.state));
-                  setReveal(done.result);
-                  // The trip's parts and blueprints are in the Workshop now.
-                  loadGear();
+            onPushOn={(trip, goalId) => {
+              void run(`push-on:${trip.id}:${goalId}`, () => pushOn(trip.id, goalId)).then(
+                (answer) => {
+                  if (answer !== undefined) setCurrent(loaded(answer.state));
                 },
               );
             }}
+            onClaim={(trip) => {
+              void run(`claim:${trip.id}`, () => claimExpedition(trip.id)).then((done) => {
+                if (done === undefined) return;
+                setCurrent(loaded(done.state));
+                setReveal({
+                  result: done.result,
+                  trip: done.state.expeditions.find((e) => e.id === trip.id),
+                });
+                // The trip's parts, blueprints and gear are in the Workshop now.
+                loadGear();
+              });
+            }}
+            onRefresh={refreshState}
             onDismissReveal={() => {
               setReveal(null);
             }}

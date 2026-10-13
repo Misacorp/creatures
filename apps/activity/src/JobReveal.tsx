@@ -1,8 +1,11 @@
 import { GLOSSARY_IDS, entryView } from '@creatures/game';
 import { GlossaryTag } from './Glossary';
+import { glyphOrUnknown } from './glyphs';
 import { ItemFrame, ItemSprite, RarityTag } from './GearArt';
 import type { GearItem, JobResult } from './gear-types';
 import { gearName, improveMessage, jobVerb, rarityName } from './gear-view';
+import { Sprite } from './sprites/Sprite';
+import { supplyKindOf, supplyName } from './trip-view';
 import { usePrefersReducedMotion } from './hooks';
 import { RevealStage, useRevealFrame } from './Reveal';
 
@@ -36,6 +39,21 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
         </>
       );
     }
+    case 'supply':
+      return (
+        <>
+          <p>
+            <strong class="pix">
+              {result.amount > 1 ? `${String(result.amount)} \u00d7 ` : ''}
+              {supplyName(result.supplyId)}
+            </strong>
+          </p>
+          <p>
+            {result.amount === 1 ? 'It is' : 'They are'} in your supplies now, ready for the next
+            trip.
+          </p>
+        </>
+      );
     case 'enchant': {
       const item = items.find((i) => i.id === result.gearId);
       return (
@@ -83,7 +101,14 @@ export function JobReveal({
         frame={frame}
         opened={
           <ItemFrame rarity={rarity}>
-            <ItemSprite baseId={result.baseId} scale={8} />
+            {result.kind === 'supply' ? (
+              <Sprite
+                sprite={glyphOrUnknown(supplyKindOf(result.supplyId) ?? 'unknown')}
+                scale={10}
+              />
+            ) : (
+              <ItemSprite baseId={result.baseId} scale={8} />
+            )}
           </ItemFrame>
         }
       />
