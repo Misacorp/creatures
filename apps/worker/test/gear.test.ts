@@ -224,7 +224,7 @@ describe('migration 17', () => {
         expect(names).toContain(t);
       }
       expect(rows<{ v: number }>(sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v).toBe(
-        17,
+        18,
       );
       // Amounts cannot go negative.
       expect(() =>
@@ -295,11 +295,11 @@ describe('migration 17', () => {
       ctx.core.migrate();
       expect(
         rows<{ v: number }>(ctx.sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v,
-      ).toBe(17);
+      ).toBe(18);
       expect(count(ctx.sql, 'creatures')).toBe(3);
       expect(count(ctx.sql, 'gear_items')).toBe(0);
       ctx.core.migrate();
-      expect(count(ctx.sql, 'schema_version')).toBe(17);
+      expect(count(ctx.sql, 'schema_version')).toBe(18);
       expect((await p.gear()).inventory.used).toBe(1); // the welcome kit, on first load
     });
   });

@@ -217,6 +217,9 @@ export function simulateFight(
       s.role === 'guard'
         ? Math.floor((stats.hp * (10_000 + RULES.combat.guardHpBp)) / 10_000)
         : stats.hp;
+    if (s.hp !== undefined && !isCount(s.hp, 0))
+      fail(`creature "${s.id}" needs an integer hp >= 0`);
+    const startHp = s.hp === undefined ? maxHp : Math.min(maxHp, s.hp);
     return {
       idx,
       id: s.id,
@@ -226,9 +229,9 @@ export function simulateFight(
       role: s.role,
       atk: stats.atk,
       spd: stats.spd,
-      hp: maxHp,
+      hp: startHp,
       maxHp,
-      alive: true,
+      alive: startHp > 0,
       silenced: 0,
       buffs: [],
       critChanceBp: crit.chanceBp,
@@ -236,6 +239,7 @@ export function simulateFight(
     };
   });
 
+  const hpStartById = Object.fromEntries(creatures.map((c) => [c.id, c.hp]));
   const perPlayer: Record<string, PlayerTotals> = {};
   for (const p of input.players) perPlayer[p] = zeroTotals();
   const perCreature: Record<string, CreatureTotals> = {};
@@ -780,7 +784,7 @@ export function simulateFight(
   }
 
   let played = 0;
-  for (let round = 1; round <= rounds && bossHp > 0; round++) {
+  for (let round = 1; round <= rounds && bossHp > 0 && creatures.some((c) => c.alive); round++) {
     played = round;
     currentRound = round;
     // A Surge or Slump starts with this chance (one die every round, so the dice never depend on
@@ -939,6 +943,9 @@ export function simulateFight(
     perCreature,
     reactions: { byType: reactionsByType, total: reactionTotal },
     damageByElement,
+    hpStart: hpStartById,
+    hpEnd: Object.fromEntries(creatures.map((c) => [c.id, c.hp])),
+    hpMax: Object.fromEntries(creatures.map((c) => [c.id, c.maxHp])),
     adaptationSuggestion,
   };
 }

@@ -262,5 +262,37 @@
     "comparator": "min",
     "value": 0.6,
     "unit": "percent"
+  },
+  {
+    "id": "dungeon-first-week-clear",
+    "description": "Daily dungeon: depth 1 is cleared (all rooms) in a player's first 7 days, share of those runs",
+    "metric": "dungeon.firstWeekDepth1ClearRate",
+    "comparator": "min",
+    "value": 0.8,
+    "unit": "percent"
+  },
+  {
+    "id": "dungeon-depth-growth",
+    "description": "Daily dungeon: depth a median daily player gains per week, from the end of week 2 to the end of week 8",
+    "metric": "dungeon.dailyDepthGrowthPerWeek",
+    "comparator": "range",
+    "value": [1, 2],
+    "unit": "number"
+  },
+  {
+    "id": "dungeon-essence-share",
+    "description": "Daily dungeon: Essence as a share of a daily player's whole Essence income (raids, jackpots and dungeon)",
+    "metric": "dungeon.dailyEssenceShare",
+    "comparator": "max",
+    "value": 0.4,
+    "unit": "percent"
+  },
+  {
+    "id": "dungeon-gear-share-week8",
+    "description": "Gear's share of a daily player's raid-team power at week 8 with the dungeon's gear and parts in the game (must not pass 20%)",
+    "metric": "dungeon.dailyGearShareWeek8",
+    "comparator": "max",
+    "value": 0.2,
+    "unit": "percent"
   }
 ]

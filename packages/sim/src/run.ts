@@ -72,10 +72,13 @@ export function runEconomies(
   defaultSims: EconomyResult[];
   /** The default server's sims again, with the same seeds and no gear ("today"). */
   baselineSims: EconomyResult[];
+  /** The default server's sims again, with the same seeds, gear and no dungeon. */
+  noDungeonSims: EconomyResult[];
 } {
   const snapshots = new Map<number, EconomyResult['snapshots']>();
   let defaultSims: EconomyResult[] = [];
   let baselineSims: EconomyResult[] = [];
+  let noDungeonSims: EconomyResult[] = [];
   const countsToRun = [...new Set([...settings.counts, DEFAULT_SERVER_SIZE])].sort((a, b) => a - b);
   for (const count of countsToRun) {
     const mix = count === DEFAULT_SERVER_SIZE ? DEFAULT_MIX : scaleMix(count);
@@ -105,16 +108,25 @@ export function runEconomies(
           gear: false,
         }),
       );
+      noDungeonSims = (options.baseline === false ? [] : sims).map((_, k) =>
+        runEconomy({
+          seed: `${settings.seed}:econ:${count}:${k}`,
+          weeks: settings.weeks,
+          mix,
+          snapshotWeeks: [],
+          dungeon: false,
+        }),
+      );
     }
   }
-  return { snapshots, defaultSims, baselineSims };
+  return { snapshots, defaultSims, baselineSims, noDungeonSims };
 }
 
 export function runSimulation(settings: RunSettings): RunOutput {
   if (!Number.isInteger(settings.weeks) || settings.weeks < 1 || settings.weeks > 104) {
     throw new RangeError('weeks must be an integer from 1 to 104');
   }
-  const { snapshots, defaultSims, baselineSims } = runEconomies(settings);
+  const { snapshots, defaultSims, baselineSims, noDungeonSims } = runEconomies(settings);
 
   const pitySims: EconomyResult[] = [];
   for (let k = 0; k < settings.pitySims; k++) {
@@ -150,6 +162,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
     weeks: settings.weeks,
     defaultSims,
     baselineSims,
+    noDungeonSims,
     pitySims,
     sweep,
     longRun,

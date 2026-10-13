@@ -1,0 +1,265 @@
+{
+  "run": {
+    "id": "9f976da3-7f89-4b38-beea-2a43113628e1",
+    "day": "2027-01-12",
+    "attempt": 2,
+    "depth": 45,
+    "newDepth": 45,
+    "cleared": false,
+    "roomsCleared": 0,
+    "landmark": false,
+    "streak": 1,
+    "createdAt": 1799733600000,
+    "team": [
+      {
+        "id": "1ba4be37-f3d6-4481-8cf0-898d325925bb",
+        "name": "Mistnewt",
+        "speciesId": "mistnewt",
+        "element": "tide",
+        "role": "guard",
+        "level": 1,
+        "zone": "front",
+        "hpMax": 208,
+        "hpEnd": 0
+      },
+      {
+        "id": "10e3739d-6467-4b3d-a760-7019539caf07",
+        "name": "Ashmole",
+        "speciesId": "ashmole",
+        "element": "ember",
+        "role": "support",
+        "level": 1,
+        "zone": "middle",
+        "hpMax": 128,
+        "hpEnd": 0
+      },
+      {
+        "id": "f3f75cf1-bb98-4c31-83cb-846858049e19",
+        "name": "Stormray",
+        "speciesId": "stormray",
+        "element": "spark",
+        "role": "payoff",
+        "level": 1,
+        "zone": "back",
+        "hpMax": 120,
+        "hpEnd": 0
+      }
+    ],
+    "rooms": [
+      {
+        "index": 0,
+        "kind": "foe",
+        "foe": {
+          "id": "ember-mite",
+          "name": "Ember Mite",
+          "element": "ember",
+          "hpMax": 21611
+        },
+        "modifier": {
+          "id": "dark",
+          "name": "Dark",
+          "description": "Your creatures crit 5 points more often."
+        },
+        "played": true,
+        "cleared": false,
+        "rounds": 3,
+        "foeHpEnd": 21351
+      },
+      {
+        "index": 1,
+        "kind": "foe",
+        "foe": {
+          "id": "bramble-hound",
+          "name": "Bramble Hound",
+          "element": "grove",
+          "hpMax": 25370
+        },
+        "modifier": {
+          "id": "brittle",
+          "name": "Brittle",
+          "description": "The foe has 20% less HP but hits 25% harder."
+        },
+        "played": false,
+        "cleared": false,
+        "rounds": 0,
+        "foeHpEnd": 25370
+      },
+      {
+        "index": 2,
+        "kind": "boss",
+        "foe": {
+          "id": "coil-baron",
+          "name": "Coil Baron",
+          "element": "spark",
+          "hpMax": 36645
+        },
+        "modifier": {
+          "id": "thorns",
+          "name": "Thorns",
+          "description": "The foe turns the first reaction of each round back on your team."
+        },
+        "played": false,
+        "cleared": false,
+        "rounds": 0,
+        "foeHpEnd": 36645
+      }
+    ],
+    "rewards": {
+      "bait": 0,
+      "essence": 0,
+      "parts": {},
+      "gear": [],
+      "converted": [],
+      "landmark": false,
+      "streak": null
+    }
+  },
+  "today": {
+    "serverNow": 1799733600000,
+    "day": "2027-01-12",
+    "timezone": "Europe/Helsinki",
+    "resetsAt": 1799791200000,
+    "depth": 45,
+    "landmark": false,
+    "streak": 1,
+    "modifiers": [
+      {
+        "room": 0,
+        "id": "dark",
+        "name": "Dark",
+        "description": "Your creatures crit 5 points more often."
+      },
+      {
+        "room": 1,
+        "id": "brittle",
+        "name": "Brittle",
+        "description": "The foe has 20% less HP but hits 25% harder."
+      },
+      {
+        "room": 2,
+        "id": "thorns",
+        "name": "Thorns",
+        "description": "The foe turns the first reaction of each round back on your team."
+      }
+    ],
+    "attemptsToday": 2,
+    "attemptsAllowed": 2,
+    "canRun": false,
+    "blocked": "already_run",
+    "last": {
+      "id": "9f976da3-7f89-4b38-beea-2a43113628e1",
+      "day": "2027-01-12",
+      "attempt": 2,
+      "depth": 45,
+      "newDepth": 45,
+      "cleared": false,
+      "roomsCleared": 0,
+      "landmark": false,
+      "streak": 1,
+      "createdAt": 1799733600000,
+      "team": [
+        {
+          "id": "1ba4be37-f3d6-4481-8cf0-898d325925bb",
+          "name": "Mistnewt",
+          "speciesId": "mistnewt",
+          "element": "tide",
+          "role": "guard",
+          "level": 1,
+          "zone": "front",
+          "hpMax": 208,
+          "hpEnd": 0
+        },
+        {
+          "id": "10e3739d-6467-4b3d-a760-7019539caf07",
+          "name": "Ashmole",
+          "speciesId": "ashmole",
+          "element": "ember",
+          "role": "support",
+          "level": 1,
+          "zone": "middle",
+          "hpMax": 128,
+          "hpEnd": 0
+        },
+        {
+          "id": "f3f75cf1-bb98-4c31-83cb-846858049e19",
+          "name": "Stormray",
+          "speciesId": "stormray",
+          "element": "spark",
+          "role": "payoff",
+          "level": 1,
+          "zone": "back",
+          "hpMax": 120,
+          "hpEnd": 0
+        }
+      ],
+      "rooms": [
+        {
+          "index": 0,
+          "kind": "foe",
+          "foe": {
+            "id": "ember-mite",
+            "name": "Ember Mite",
+            "element": "ember",
+            "hpMax": 21611
+          },
+          "modifier": {
+            "id": "dark",
+            "name": "Dark",
+            "description": "Your creatures crit 5 points more often."
+          },
+          "played": true,
+          "cleared": false,
+          "rounds": 3,
+          "foeHpEnd": 21351
+        },
+        {
+          "index": 1,
+          "kind": "foe",
+          "foe": {
+            "id": "bramble-hound",
+            "name": "Bramble Hound",
+            "element": "grove",
+            "hpMax": 25370
+          },
+          "modifier": {
+            "id": "brittle",
+            "name": "Brittle",
+            "description": "The foe has 20% less HP but hits 25% harder."
+          },
+          "played": false,
+          "cleared": false,
+          "rounds": 0,
+          "foeHpEnd": 25370
+        },
+        {
+          "index": 2,
+          "kind": "boss",
+          "foe": {
+            "id": "coil-baron",
+            "name": "Coil Baron",
+            "element": "spark",
+            "hpMax": 36645
+          },
+          "modifier": {
+            "id": "thorns",
+            "name": "Thorns",
+            "description": "The foe turns the first reaction of each round back on your team."
+          },
+          "played": false,
+          "cleared": false,
+          "rounds": 0,
+          "foeHpEnd": 36645
+        }
+      ],
+      "rewards": {
+        "bait": 0,
+        "essence": 0,
+        "parts": {},
+        "gear": [],
+        "converted": [],
+        "landmark": false,
+        "streak": null
+      }
+    }
+  }
+}

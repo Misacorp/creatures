@@ -6,6 +6,7 @@ import {
   JOB_KINDS,
   PART_KINDS,
   GLOSSARY_SECTIONS,
+  dungeonContent,
   RULES,
   abilityView,
   content,
@@ -512,6 +513,70 @@ describe('the glossary covers gear and crafting', () => {
   it('shows an element picture on each shard entry', () => {
     for (const el of ['tide', 'ember', 'grove', 'spark']) {
       expect(entry(GLOSSARY_IDS.part(`${el}-shard`)).visual).toEqual({ kind: 'element', id: el });
+    }
+  });
+});
+
+describe('the glossary covers the daily dungeon', () => {
+  const fixed = ['dungeon', 'depth', 'room-modifiers', 'room-boss', 'landmark', 'streak'];
+
+  it('has an entry for every room modifier and every dungeon term', () => {
+    for (const m of dungeonContent.modifiers) {
+      expect(glossaryEntry(GLOSSARY_IDS.modifier(m.id)), m.id).toBeDefined();
+    }
+    for (const id of fixed) expect(glossaryEntry(id), id).toBeDefined();
+    expect(glossaryGaps(glossary, content)).toEqual([]);
+  });
+
+  it('fails when a modifier or a dungeon term has no entry', () => {
+    const without = (id: string): GlossaryEntry[] => glossary.filter((e) => e.id !== id);
+    for (const id of [
+      'modifier-flooded',
+      'modifier-fog',
+      'dungeon',
+      'depth',
+      'landmark',
+      'streak',
+    ]) {
+      expect(glossaryGaps(without(id)), id).toEqual([id]);
+    }
+    expect(requiredGlossaryIds(content)).toContain('modifier-brittle');
+  });
+
+  it('describes each modifier with its own name and text, and the element ones with a picture', () => {
+    for (const m of dungeonContent.modifiers) {
+      const e = entry(GLOSSARY_IDS.modifier(m.id));
+      expect(e.title).toBe(m.name);
+      expect(e.short).toBe(m.description);
+      const first = m.effects[0];
+      if (m.effects.length === 1 && first?.op === 'team_stat' && first.element !== undefined) {
+        expect(e.visual).toEqual({ kind: 'element', id: first.element });
+        expect(m.description).toContain(percent(first.bp));
+      }
+    }
+  });
+
+  it('gives depth, landmarks and streaks the numbers the rules have', () => {
+    const d = RULES.dungeon;
+    expect(text('depth')).toContain(`${percent(d.hpStepBp)} foe HP`);
+    expect(text('depth')).toContain(`${percent(d.atkStepBp)} foe Attack`);
+    expect(text('depth')).toContain(`${String(d.landmarkEvery)}th depth`);
+    expect(text('landmark')).toContain(
+      `${String(d.landmarkEvery)}, ${String(2 * d.landmarkEvery)}, ${String(3 * d.landmarkEvery)}`,
+    );
+    expect(text('landmark')).toContain('for certain');
+    expect(d.streak.bonuses.map((b) => b.day)).toEqual([3, 7]);
+    expect(d.streak.cycleDays).toBe(7);
+    expect(text('streak')).toContain('3rd and 7th day of every 7');
+    expect(d.rooms).toBe(3);
+    expect(text('dungeon')).toContain('Three rooms');
+    expect(d.teamSize).toBe(3);
+  });
+
+  it('sends the dungeon entries to a section the page has', () => {
+    const ids = new Set(howToPlay.sections.map((s) => s.id));
+    for (const e of glossary.filter((g) => g.id.startsWith('modifier-') || fixed.includes(g.id))) {
+      expect(ids.has(e.section), e.id).toBe(true);
     }
   });
 });

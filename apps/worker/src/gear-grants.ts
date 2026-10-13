@@ -10,6 +10,7 @@
  */
 import {
   RULES,
+  addParts,
   dismantleYield,
   gearBase,
   expeditionLoot,
@@ -253,6 +254,48 @@ export function grantWelcomeKit(
     },
     userId,
   );
+}
+
+/**
+ * What a dungeon run drops: the scrap, glimmer and shard of its rooms and the gear its dice gave.
+ * `draw` runs only for a first-time key, inside the transaction, and uses the live gear RNG. Key
+ * `dungeon:<day>:<attempt>`, so a player's run of a day is paid once however often it is retried.
+ */
+export function grantDungeonRun(
+  deps: GrantDeps,
+  userId: string,
+  day: string,
+  attempt: number,
+  draw: (rng: Rng) => { parts: PartsBundle; gear: Draft['gear'] },
+): GrantView {
+  return grantOnce(
+    deps,
+    userId,
+    `dungeon:${day}:${String(attempt)}`,
+    'dungeon',
+    () => {
+      const drawn = draw(deps.rng);
+      return { gear: drawn.gear, parts: addParts({}, drawn.parts), blueprints: [] };
+    },
+    userId,
+  ).view;
+}
+
+/** The parts of a streak bonus, paid once per day. Key `dungeon:<day>:streak`. */
+export function grantDungeonStreak(
+  deps: GrantDeps,
+  userId: string,
+  day: string,
+  parts: PartsBundle,
+): GrantView {
+  return grantOnce(
+    deps,
+    userId,
+    `dungeon:${day}:streak`,
+    'dungeon',
+    () => ({ gear: [], parts: addParts({}, parts), blueprints: [] }),
+    userId,
+  ).view;
 }
 
 /** The player's newest grants, newest first. */

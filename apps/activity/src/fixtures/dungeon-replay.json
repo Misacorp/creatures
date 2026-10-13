@@ -1,0 +1,1017 @@
+{
+  "summary": {
+    "id": "843c2bb6-80a1-4033-a9d0-9758671c75af",
+    "day": "2027-01-12",
+    "attempt": 1,
+    "depth": 1,
+    "newDepth": 2,
+    "cleared": true,
+    "roomsCleared": 3,
+    "landmark": false,
+    "streak": 1,
+    "createdAt": 1799733600000,
+    "team": [
+      {
+        "id": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+        "name": "Sproutle",
+        "speciesId": "sproutle",
+        "element": "grove",
+        "role": "guard",
+        "level": 12,
+        "zone": "front",
+        "hpMax": 365,
+        "hpEnd": 319
+      },
+      {
+        "id": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+        "name": "Splashet",
+        "speciesId": "splashet",
+        "element": "tide",
+        "role": "setter",
+        "level": 12,
+        "zone": "middle",
+        "hpMax": 200,
+        "hpEnd": 200
+      },
+      {
+        "id": "90449b1e-863f-4217-b128-eeebc88e85f2",
+        "name": "Cindle",
+        "speciesId": "cindle",
+        "element": "ember",
+        "role": "payoff",
+        "level": 12,
+        "zone": "back",
+        "hpMax": 173,
+        "hpEnd": 173
+      }
+    ],
+    "rooms": [
+      {
+        "index": 0,
+        "kind": "foe",
+        "foe": {
+          "id": "bramble-hound",
+          "name": "Bramble Hound",
+          "element": "grove",
+          "hpMax": 351
+        },
+        "modifier": {
+          "id": "dark",
+          "name": "Dark",
+          "description": "Your creatures crit 5 points more often."
+        },
+        "played": true,
+        "cleared": true,
+        "rounds": 2,
+        "foeHpEnd": 0
+      },
+      {
+        "index": 1,
+        "kind": "foe",
+        "foe": {
+          "id": "drift-wisp",
+          "name": "Drift Wisp",
+          "element": "tide",
+          "hpMax": 249
+        },
+        "modifier": {
+          "id": "brittle",
+          "name": "Brittle",
+          "description": "The foe has 20% less HP but hits 25% harder."
+        },
+        "played": true,
+        "cleared": true,
+        "rounds": 2,
+        "foeHpEnd": 0
+      },
+      {
+        "index": 2,
+        "kind": "boss",
+        "foe": {
+          "id": "drowned-warden",
+          "name": "Drowned Warden",
+          "element": "tide",
+          "hpMax": 546
+        },
+        "modifier": {
+          "id": "thorns",
+          "name": "Thorns",
+          "description": "The foe turns the first reaction of each round back on your team."
+        },
+        "played": true,
+        "cleared": true,
+        "rounds": 3,
+        "foeHpEnd": 0
+      }
+    ],
+    "rewards": {
+      "bait": 3,
+      "essence": 1,
+      "parts": {
+        "scrap": 1
+      },
+      "gear": [],
+      "converted": [],
+      "landmark": false,
+      "streak": null
+    }
+  },
+  "row": [
+    {
+      "position": 0,
+      "id": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+      "name": "Sproutle",
+      "species": "sproutle",
+      "element": "grove",
+      "role": "guard",
+      "level": 12,
+      "zone": "front"
+    },
+    {
+      "position": 1,
+      "id": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+      "name": "Splashet",
+      "species": "splashet",
+      "element": "tide",
+      "role": "setter",
+      "level": 12,
+      "zone": "middle"
+    },
+    {
+      "position": 2,
+      "id": "90449b1e-863f-4217-b128-eeebc88e85f2",
+      "name": "Cindle",
+      "species": "cindle",
+      "element": "ember",
+      "role": "payoff",
+      "level": 12,
+      "zone": "back"
+    }
+  ],
+  "rooms": [
+    {
+      "index": 0,
+      "kind": "foe",
+      "foe": {
+        "id": "bramble-hound",
+        "name": "Bramble Hound",
+        "element": "grove",
+        "hpMax": 351
+      },
+      "modifier": {
+        "id": "dark",
+        "name": "Dark",
+        "description": "Your creatures crit 5 points more often."
+      },
+      "cleared": true,
+      "rounds": 2,
+      "hpStart": {
+        "7845b045-3d6e-41ff-a088-8b40e68ca31a": 365,
+        "1f1cfd32-6a06-4a76-b571-493d3a538522": 200,
+        "90449b1e-863f-4217-b128-eeebc88e85f2": 173
+      },
+      "hpMax": {
+        "7845b045-3d6e-41ff-a088-8b40e68ca31a": 365,
+        "1f1cfd32-6a06-4a76-b571-493d3a538522": 200,
+        "90449b1e-863f-4217-b128-eeebc88e85f2": 173
+      },
+      "events": [
+        {
+          "t": "round_start",
+          "round": 1,
+          "bossHp": 351,
+          "mark": null
+        },
+        {
+          "t": "turn",
+          "round": 1,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a"
+        },
+        {
+          "t": "hit",
+          "round": 1,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "damage": 33,
+          "matchupBp": 10000,
+          "bonusBp": 0,
+          "mark": null,
+          "bossHp": 318
+        },
+        {
+          "t": "mark",
+          "round": 1,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "player": "p1",
+          "element": "grove",
+          "replaced": null
+        },
+        {
+          "t": "turn",
+          "round": 1,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522"
+        },
+        {
+          "t": "hit",
+          "round": 1,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+          "damage": 50,
+          "matchupBp": 10000,
+          "bonusBp": 0,
+          "mark": "grove",
+          "bossHp": 268
+        },
+        {
+          "t": "mark",
+          "round": 1,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+          "player": "p1",
+          "element": "tide",
+          "replaced": "grove"
+        },
+        {
+          "t": "turn",
+          "round": 1,
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2"
+        },
+        {
+          "t": "hit",
+          "round": 1,
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2",
+          "damage": 109,
+          "matchupBp": 15000,
+          "bonusBp": 0,
+          "mark": "tide",
+          "bossHp": 159
+        },
+        {
+          "t": "boss_hit",
+          "round": 1,
+          "source": "attack",
+          "target": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "damage": 12
+        },
+        {
+          "t": "round_end",
+          "round": 1,
+          "bossHp": 159
+        },
+        {
+          "t": "round_start",
+          "round": 2,
+          "bossHp": 159,
+          "mark": "tide"
+        },
+        {
+          "t": "ability",
+          "round": 2,
+          "player": "p1",
+          "ability": "shield-wall",
+          "key": "p1:basic",
+          "zone": "front",
+          "byDefault": false
+        },
+        {
+          "t": "turn",
+          "round": 2,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a"
+        },
+        {
+          "t": "hit",
+          "round": 2,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "damage": 33,
+          "matchupBp": 10000,
+          "bonusBp": 0,
+          "mark": "tide",
+          "bossHp": 126
+        },
+        {
+          "t": "turn",
+          "round": 2,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522"
+        },
+        {
+          "t": "hit",
+          "round": 2,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+          "damage": 50,
+          "matchupBp": 10000,
+          "bonusBp": 0,
+          "mark": "tide",
+          "bossHp": 76
+        },
+        {
+          "t": "turn",
+          "round": 2,
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2"
+        },
+        {
+          "t": "hit",
+          "round": 2,
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2",
+          "damage": 109,
+          "matchupBp": 15000,
+          "bonusBp": 0,
+          "mark": "tide",
+          "bossHp": 0
+        },
+        {
+          "t": "round_end",
+          "round": 2,
+          "bossHp": 0
+        }
+      ],
+      "names": {
+        "boss": "Bramble Hound",
+        "creatures": {
+          "7845b045-3d6e-41ff-a088-8b40e68ca31a": "Sproutle",
+          "1f1cfd32-6a06-4a76-b571-493d3a538522": "Splashet",
+          "90449b1e-863f-4217-b128-eeebc88e85f2": "Cindle"
+        },
+        "players": {
+          "p1": "Player 1"
+        },
+        "reactions": {
+          "overload": "Overload",
+          "grounding": "Grounding",
+          "wildfire": "Wildfire",
+          "steam": "Steam"
+        },
+        "gimmicks": {
+          "thorn-snap": "Thorn Snap"
+        },
+        "abilities": {
+          "rally": "Rally",
+          "shield-wall": "Shield Wall",
+          "re-mark": "Re-mark",
+          "purge": "Purge",
+          "tidal-mark": "Tidal Mark",
+          "tidal-mark-2": "Riptide Mark",
+          "flare-strike": "Flare Strike",
+          "flare-strike-2": "Inferno Strike",
+          "bark-guard": "Bark Guard",
+          "bark-guard-2": "Ironbark Guard",
+          "static-zap": "Static Zap",
+          "static-zap-2": "Storm Zap",
+          "fog-veil": "Fog Veil",
+          "fog-veil-2": "Dense Fog",
+          "warm-glow": "Warm Glow",
+          "warm-glow-2": "Magma Glow",
+          "thunder-strike": "Thunder Strike",
+          "thunder-strike-2": "Tempest Strike",
+          "moss-bloom": "Mossy Bloom",
+          "moss-bloom-2": "Ancient Bloom",
+          "coral-lance": "Coral Lance",
+          "solar-brand": "Solar Brand",
+          "verdant-roar": "Verdant Roar",
+          "aurora-surge": "Aurora Surge",
+          "lantern-glow": "Lantern Glow",
+          "hearth-ward": "Hearth Ward"
+        },
+        "marks": {
+          "tide": "Soaked",
+          "spark": "Charged",
+          "grove": "Overgrown",
+          "ember": "Scorched"
+        },
+        "elements": {
+          "tide": "Tide",
+          "ember": "Ember",
+          "grove": "Grove",
+          "spark": "Spark"
+        },
+        "adaptations": {
+          "resist-top-reaction": "Reaction Resistance",
+          "resist-top-element": "Element Resistance"
+        }
+      }
+    },
+    {
+      "index": 1,
+      "kind": "foe",
+      "foe": {
+        "id": "drift-wisp",
+        "name": "Drift Wisp",
+        "element": "tide",
+        "hpMax": 249
+      },
+      "modifier": {
+        "id": "brittle",
+        "name": "Brittle",
+        "description": "The foe has 20% less HP but hits 25% harder."
+      },
+      "cleared": true,
+      "rounds": 2,
+      "hpStart": {
+        "7845b045-3d6e-41ff-a088-8b40e68ca31a": 353,
+        "1f1cfd32-6a06-4a76-b571-493d3a538522": 200,
+        "90449b1e-863f-4217-b128-eeebc88e85f2": 173
+      },
+      "hpMax": {
+        "7845b045-3d6e-41ff-a088-8b40e68ca31a": 365,
+        "1f1cfd32-6a06-4a76-b571-493d3a538522": 200,
+        "90449b1e-863f-4217-b128-eeebc88e85f2": 173
+      },
+      "events": [
+        {
+          "t": "round_start",
+          "round": 1,
+          "bossHp": 249,
+          "mark": null
+        },
+        {
+          "t": "turn",
+          "round": 1,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a"
+        },
+        {
+          "t": "hit",
+          "round": 1,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "damage": 33,
+          "matchupBp": 10000,
+          "bonusBp": 0,
+          "mark": null,
+          "bossHp": 216
+        },
+        {
+          "t": "mark",
+          "round": 1,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "player": "p1",
+          "element": "grove",
+          "replaced": null
+        },
+        {
+          "t": "turn",
+          "round": 1,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522"
+        },
+        {
+          "t": "hit",
+          "round": 1,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+          "damage": 50,
+          "matchupBp": 10000,
+          "bonusBp": 0,
+          "mark": "grove",
+          "bossHp": 166
+        },
+        {
+          "t": "mark",
+          "round": 1,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+          "player": "p1",
+          "element": "tide",
+          "replaced": "grove"
+        },
+        {
+          "t": "turn",
+          "round": 1,
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2"
+        },
+        {
+          "t": "hit",
+          "round": 1,
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2",
+          "damage": 54,
+          "matchupBp": 7500,
+          "bonusBp": 0,
+          "mark": "tide",
+          "bossHp": 112
+        },
+        {
+          "t": "boss_hit",
+          "round": 1,
+          "source": "attack",
+          "target": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "damage": 13
+        },
+        {
+          "t": "round_end",
+          "round": 1,
+          "bossHp": 112
+        },
+        {
+          "t": "round_start",
+          "round": 2,
+          "bossHp": 112,
+          "mark": "tide"
+        },
+        {
+          "t": "ability",
+          "round": 2,
+          "player": "p1",
+          "ability": "shield-wall",
+          "key": "p1:basic",
+          "zone": "front",
+          "byDefault": false
+        },
+        {
+          "t": "turn",
+          "round": 2,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a"
+        },
+        {
+          "t": "hit",
+          "round": 2,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "damage": 33,
+          "matchupBp": 10000,
+          "bonusBp": 0,
+          "mark": "tide",
+          "bossHp": 79
+        },
+        {
+          "t": "turn",
+          "round": 2,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522"
+        },
+        {
+          "t": "hit",
+          "round": 2,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+          "damage": 75,
+          "matchupBp": 10000,
+          "bonusBp": 5000,
+          "mark": "tide",
+          "bossHp": 4,
+          "luckBp": 5000,
+          "crit": true,
+          "critBp": 5000
+        },
+        {
+          "t": "turn",
+          "round": 2,
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2"
+        },
+        {
+          "t": "hit",
+          "round": 2,
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2",
+          "damage": 95,
+          "matchupBp": 7500,
+          "bonusBp": 7500,
+          "mark": "tide",
+          "bossHp": 0,
+          "luckBp": 7500,
+          "crit": true,
+          "critBp": 7500
+        },
+        {
+          "t": "round_end",
+          "round": 2,
+          "bossHp": 0
+        }
+      ],
+      "names": {
+        "boss": "Drift Wisp",
+        "creatures": {
+          "7845b045-3d6e-41ff-a088-8b40e68ca31a": "Sproutle",
+          "1f1cfd32-6a06-4a76-b571-493d3a538522": "Splashet",
+          "90449b1e-863f-4217-b128-eeebc88e85f2": "Cindle"
+        },
+        "players": {
+          "p1": "Player 1"
+        },
+        "reactions": {
+          "overload": "Overload",
+          "grounding": "Grounding",
+          "wildfire": "Wildfire",
+          "steam": "Steam"
+        },
+        "gimmicks": {
+          "sea-mist": "Sea Mist"
+        },
+        "abilities": {
+          "rally": "Rally",
+          "shield-wall": "Shield Wall",
+          "re-mark": "Re-mark",
+          "purge": "Purge",
+          "tidal-mark": "Tidal Mark",
+          "tidal-mark-2": "Riptide Mark",
+          "flare-strike": "Flare Strike",
+          "flare-strike-2": "Inferno Strike",
+          "bark-guard": "Bark Guard",
+          "bark-guard-2": "Ironbark Guard",
+          "static-zap": "Static Zap",
+          "static-zap-2": "Storm Zap",
+          "fog-veil": "Fog Veil",
+          "fog-veil-2": "Dense Fog",
+          "warm-glow": "Warm Glow",
+          "warm-glow-2": "Magma Glow",
+          "thunder-strike": "Thunder Strike",
+          "thunder-strike-2": "Tempest Strike",
+          "moss-bloom": "Mossy Bloom",
+          "moss-bloom-2": "Ancient Bloom",
+          "coral-lance": "Coral Lance",
+          "solar-brand": "Solar Brand",
+          "verdant-roar": "Verdant Roar",
+          "aurora-surge": "Aurora Surge",
+          "lantern-glow": "Lantern Glow",
+          "hearth-ward": "Hearth Ward"
+        },
+        "marks": {
+          "tide": "Soaked",
+          "spark": "Charged",
+          "grove": "Overgrown",
+          "ember": "Scorched"
+        },
+        "elements": {
+          "tide": "Tide",
+          "ember": "Ember",
+          "grove": "Grove",
+          "spark": "Spark"
+        },
+        "adaptations": {
+          "resist-top-reaction": "Reaction Resistance",
+          "resist-top-element": "Element Resistance"
+        }
+      }
+    },
+    {
+      "index": 2,
+      "kind": "boss",
+      "foe": {
+        "id": "drowned-warden",
+        "name": "Drowned Warden",
+        "element": "tide",
+        "hpMax": 546
+      },
+      "modifier": {
+        "id": "thorns",
+        "name": "Thorns",
+        "description": "The foe turns the first reaction of each round back on your team."
+      },
+      "cleared": true,
+      "rounds": 3,
+      "hpStart": {
+        "7845b045-3d6e-41ff-a088-8b40e68ca31a": 340,
+        "1f1cfd32-6a06-4a76-b571-493d3a538522": 200,
+        "90449b1e-863f-4217-b128-eeebc88e85f2": 173
+      },
+      "hpMax": {
+        "7845b045-3d6e-41ff-a088-8b40e68ca31a": 365,
+        "1f1cfd32-6a06-4a76-b571-493d3a538522": 200,
+        "90449b1e-863f-4217-b128-eeebc88e85f2": 173
+      },
+      "events": [
+        {
+          "t": "round_start",
+          "round": 1,
+          "bossHp": 546,
+          "mark": null
+        },
+        {
+          "t": "gimmick",
+          "round": 1,
+          "gimmick": "thorns",
+          "op": "reflect_first_reaction"
+        },
+        {
+          "t": "turn",
+          "round": 1,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a"
+        },
+        {
+          "t": "hit",
+          "round": 1,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "damage": 33,
+          "matchupBp": 10000,
+          "bonusBp": 0,
+          "mark": null,
+          "bossHp": 513
+        },
+        {
+          "t": "mark",
+          "round": 1,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "player": "p1",
+          "element": "grove",
+          "replaced": null
+        },
+        {
+          "t": "turn",
+          "round": 1,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522"
+        },
+        {
+          "t": "hit",
+          "round": 1,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+          "damage": 50,
+          "matchupBp": 10000,
+          "bonusBp": 0,
+          "mark": "grove",
+          "bossHp": 463
+        },
+        {
+          "t": "mark",
+          "round": 1,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+          "player": "p1",
+          "element": "tide",
+          "replaced": "grove"
+        },
+        {
+          "t": "turn",
+          "round": 1,
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2"
+        },
+        {
+          "t": "hit",
+          "round": 1,
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2",
+          "damage": 95,
+          "matchupBp": 7500,
+          "bonusBp": 7500,
+          "mark": "tide",
+          "bossHp": 368,
+          "luckBp": 7500,
+          "crit": true,
+          "critBp": 7500
+        },
+        {
+          "t": "gimmick",
+          "round": 1,
+          "gimmick": "thorns",
+          "op": "reflect_first_reaction"
+        },
+        {
+          "t": "boss_hit",
+          "round": 1,
+          "source": "attack",
+          "target": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "damage": 14
+        },
+        {
+          "t": "round_end",
+          "round": 1,
+          "bossHp": 368
+        },
+        {
+          "t": "round_start",
+          "round": 2,
+          "bossHp": 368,
+          "mark": "tide"
+        },
+        {
+          "t": "gimmick",
+          "round": 2,
+          "gimmick": "thorns",
+          "op": "reflect_first_reaction"
+        },
+        {
+          "t": "ability",
+          "round": 2,
+          "player": "p1",
+          "ability": "shield-wall",
+          "key": "p1:basic",
+          "zone": "front",
+          "byDefault": false
+        },
+        {
+          "t": "turn",
+          "round": 2,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a"
+        },
+        {
+          "t": "hit",
+          "round": 2,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "damage": 33,
+          "matchupBp": 10000,
+          "bonusBp": 0,
+          "mark": "tide",
+          "bossHp": 335
+        },
+        {
+          "t": "turn",
+          "round": 2,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522"
+        },
+        {
+          "t": "hit",
+          "round": 2,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+          "damage": 50,
+          "matchupBp": 10000,
+          "bonusBp": 0,
+          "mark": "tide",
+          "bossHp": 285
+        },
+        {
+          "t": "turn",
+          "round": 2,
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2"
+        },
+        {
+          "t": "hit",
+          "round": 2,
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2",
+          "damage": 54,
+          "matchupBp": 7500,
+          "bonusBp": 0,
+          "mark": "tide",
+          "bossHp": 231
+        },
+        {
+          "t": "gimmick",
+          "round": 2,
+          "gimmick": "thorns",
+          "op": "reflect_first_reaction"
+        },
+        {
+          "t": "boss_hit",
+          "round": 2,
+          "source": "attack",
+          "target": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "damage": 7,
+          "reducedBp": 5000
+        },
+        {
+          "t": "round_end",
+          "round": 2,
+          "bossHp": 231
+        },
+        {
+          "t": "round_start",
+          "round": 3,
+          "bossHp": 231,
+          "mark": "tide"
+        },
+        {
+          "t": "gimmick",
+          "round": 3,
+          "gimmick": "thorns",
+          "op": "reflect_first_reaction"
+        },
+        {
+          "t": "ability",
+          "round": 3,
+          "player": "p1",
+          "ability": "bark-guard",
+          "key": "p1:c0",
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "zone": "front",
+          "byDefault": true
+        },
+        {
+          "t": "ability",
+          "round": 3,
+          "player": "p1",
+          "ability": "tidal-mark",
+          "key": "p1:c1",
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+          "element": "tide",
+          "byDefault": true
+        },
+        {
+          "t": "mark",
+          "round": 3,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+          "player": "p1",
+          "element": "tide",
+          "replaced": "tide"
+        },
+        {
+          "t": "ability",
+          "round": 3,
+          "player": "p1",
+          "ability": "flare-strike",
+          "key": "p1:c2",
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2",
+          "byDefault": false
+        },
+        {
+          "t": "hit",
+          "round": 3,
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2",
+          "damage": 135,
+          "matchupBp": 7500,
+          "bonusBp": 1300,
+          "mark": "tide",
+          "bossHp": 96,
+          "ability": "flare-strike",
+          "key": "p1:c2"
+        },
+        {
+          "t": "turn",
+          "round": 3,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a"
+        },
+        {
+          "t": "hit",
+          "round": 3,
+          "creature": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "damage": 37,
+          "matchupBp": 10000,
+          "bonusBp": 1300,
+          "mark": "tide",
+          "bossHp": 59
+        },
+        {
+          "t": "turn",
+          "round": 3,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522"
+        },
+        {
+          "t": "hit",
+          "round": 3,
+          "creature": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+          "damage": 56,
+          "matchupBp": 10000,
+          "bonusBp": 1300,
+          "mark": "tide",
+          "bossHp": 3
+        },
+        {
+          "t": "turn",
+          "round": 3,
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2"
+        },
+        {
+          "t": "hit",
+          "round": 3,
+          "creature": "90449b1e-863f-4217-b128-eeebc88e85f2",
+          "damage": 61,
+          "matchupBp": 7500,
+          "bonusBp": 1300,
+          "mark": "tide",
+          "bossHp": 0
+        },
+        {
+          "t": "round_end",
+          "round": 3,
+          "bossHp": 0
+        }
+      ],
+      "names": {
+        "boss": "Drowned Warden",
+        "creatures": {
+          "7845b045-3d6e-41ff-a088-8b40e68ca31a": "Sproutle",
+          "1f1cfd32-6a06-4a76-b571-493d3a538522": "Splashet",
+          "90449b1e-863f-4217-b128-eeebc88e85f2": "Cindle"
+        },
+        "players": {
+          "p1": "Player 1"
+        },
+        "reactions": {
+          "overload": "Overload",
+          "grounding": "Grounding",
+          "wildfire": "Wildfire",
+          "steam": "Steam"
+        },
+        "gimmicks": {
+          "flood-gate": "Flood Gate",
+          "thorns": "Thorns"
+        },
+        "abilities": {
+          "rally": "Rally",
+          "shield-wall": "Shield Wall",
+          "re-mark": "Re-mark",
+          "purge": "Purge",
+          "tidal-mark": "Tidal Mark",
+          "tidal-mark-2": "Riptide Mark",
+          "flare-strike": "Flare Strike",
+          "flare-strike-2": "Inferno Strike",
+          "bark-guard": "Bark Guard",
+          "bark-guard-2": "Ironbark Guard",
+          "static-zap": "Static Zap",
+          "static-zap-2": "Storm Zap",
+          "fog-veil": "Fog Veil",
+          "fog-veil-2": "Dense Fog",
+          "warm-glow": "Warm Glow",
+          "warm-glow-2": "Magma Glow",
+          "thunder-strike": "Thunder Strike",
+          "thunder-strike-2": "Tempest Strike",
+          "moss-bloom": "Mossy Bloom",
+          "moss-bloom-2": "Ancient Bloom",
+          "coral-lance": "Coral Lance",
+          "solar-brand": "Solar Brand",
+          "verdant-roar": "Verdant Roar",
+          "aurora-surge": "Aurora Surge",
+          "lantern-glow": "Lantern Glow",
+          "hearth-ward": "Hearth Ward"
+        },
+        "marks": {
+          "tide": "Soaked",
+          "spark": "Charged",
+          "grove": "Overgrown",
+          "ember": "Scorched"
+        },
+        "elements": {
+          "tide": "Tide",
+          "ember": "Ember",
+          "grove": "Grove",
+          "spark": "Spark"
+        },
+        "adaptations": {
+          "resist-top-reaction": "Reaction Resistance",
+          "resist-top-element": "Element Resistance"
+        }
+      }
+    }
+  ]
+}

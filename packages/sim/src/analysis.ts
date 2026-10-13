@@ -1,4 +1,5 @@
 import { ELEMENTS, content, type Element, type GearRarity, type Rarity } from '@creatures/game';
+import { dungeonAnalysis, type DungeonStats } from './dungeon-analysis';
 import { gearPowerOf } from './gear';
 import { pickTeam } from './data';
 import { ARCHETYPES, type ArchetypeId } from './archetypes';
@@ -23,6 +24,8 @@ export interface AnalysisInput {
   longRun: readonly LongRunInput[];
   /** The same default-server sims (same seeds) played without gear: "today" for the Essence targets. */
   baselineSims?: readonly EconomyResult[];
+  /** The same sims again with gear but no dungeon: what the dungeon adds. */
+  noDungeonSims?: readonly EconomyResult[];
 }
 
 export interface CellStats {
@@ -163,6 +166,7 @@ export interface Analysis {
   abilityShares: AbilityShareRow[];
   gearComparison: GearComparisonRow[];
   worn: WornRow[];
+  dungeon: DungeonStats;
   longRun: LongRunStats[];
   jackpots: {
     source: string;
@@ -518,6 +522,10 @@ export function analyse(input: AnalysisInput): Analysis {
   Object.assign(metrics, gear.metrics);
   const gearComparison = gear.comparison;
 
+  // ---- the daily dungeon ----
+  const dungeon = dungeonAnalysis(defaultSims, input.noDungeonSims ?? [], weeks);
+  Object.assign(metrics, dungeon.metrics);
+
   const pityRaids = pitySims.flatMap((s) => s.raids.map((r) => r.summary));
   const pityRolls = sum(pityRaids.map((r) => r.jackpot.rolls));
   metrics['econ.jackpotRatePerWin'] =
@@ -638,6 +646,7 @@ export function analyse(input: AnalysisInput): Analysis {
     abilityShares,
     gearComparison,
     worn: wornItems(defaultSims),
+    dungeon: dungeon.stats,
     longRun: longRunResult.stats,
     jackpots,
     outliers,

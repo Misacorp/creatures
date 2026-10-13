@@ -29,6 +29,13 @@ export interface WeekCounters {
   gearItems: number;
   /** Items dismantled. */
   gearDismantled: number;
+  /** Daily dungeon: runs made, runs cleared, and what they paid (Bait, Essence, scrap, gear items). */
+  dungeonRuns: number;
+  dungeonClears: number;
+  dungeonBait: number;
+  dungeonEssence: number;
+  dungeonScrap: number;
+  dungeonItems: number;
 }
 
 export function emptyWeek(): WeekCounters {
@@ -46,7 +53,28 @@ export function emptyWeek(): WeekCounters {
     gearCrafts: 0,
     gearItems: 0,
     gearDismantled: 0,
+    dungeonRuns: 0,
+    dungeonClears: 0,
+    dungeonBait: 0,
+    dungeonEssence: 0,
+    dungeonScrap: 0,
+    dungeonItems: 0,
   };
+}
+
+/** A player's daily dungeon progress (the worker's `dungeon_progress`). Days are indices since the sim start. */
+export interface DungeonState {
+  /** The depth the next run fights at. */
+  depth: number;
+  streak: number;
+  lastDay: number | null;
+  firstDay: number | null;
+  runs: number;
+  clears: number;
+}
+
+export function emptyDungeonState(): DungeonState {
+  return { depth: 1, streak: 0, lastDay: null, firstDay: null, runs: 0, clears: 0 };
 }
 
 /** A workshop job that has been started and not yet claimed. */
@@ -126,6 +154,7 @@ export interface SimPlayer {
   raids: number;
   expeditions: PendingExpedition[];
   gear: GearState;
+  dungeon: DungeonState;
   /** This week's leet days, Monday = 0. */
   leetDays: boolean[];
   week: WeekCounters;
@@ -154,6 +183,7 @@ export function createPlayer(
     raids: 0,
     expeditions: [],
     gear: emptyGearState(),
+    dungeon: emptyDungeonState(),
     leetDays: [false, false, false, false, false, false, false],
     week: emptyWeek(),
   };
@@ -175,6 +205,7 @@ export function clonePlayer(p: SimPlayer): SimPlayer {
       jobs: p.gear.jobs.map((j) => ({ ...j })),
       skillXp: { ...p.gear.skillXp },
     },
+    dungeon: { ...p.dungeon },
     leetDays: [...p.leetDays],
     week: { ...p.week },
   };

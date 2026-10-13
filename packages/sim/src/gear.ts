@@ -147,6 +147,19 @@ function grantItem(
   player.gear.bag.push(newItem(player, drop));
 }
 
+/**
+ * What a daily dungeon run drops: its parts, and its gear through the bag rules (a full bag turns an
+ * item into its dismantle yield, as in the worker).
+ */
+export function grantDungeonLoot(
+  player: SimPlayer,
+  parts: PartsBundle,
+  gear: readonly { baseId: string; rarity: GearRarity; rolls: GearRolls }[],
+): void {
+  creditParts(player, parts);
+  for (const drop of gear) grantItem(player, drop);
+}
+
 /** A blueprint already known turns into scrap. */
 function learnBlueprint(player: SimPlayer, baseId: string): void {
   if (player.gear.blueprints.includes(baseId)) {
