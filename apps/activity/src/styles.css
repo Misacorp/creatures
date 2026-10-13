@@ -1,32 +1,18 @@
 /*
   Design tokens and base styles: a dithered night sky, dusk panels in hard pixel frames, ink
   outlines and one gold accent. It is a game screen, so there is deliberately one dark theme.
-  Fonts are self-hosted (the CSP allows font-src 'self' only): Pixelify Sans for names, numbers and
-  buttons, Atkinson Hyperlegible for everything you read. Both are under the SIL Open Font License
+  Fonts are self-hosted (the CSP allows font-src 'self' only): Jersey 10 for names, numbers and
+  buttons (picked by Misa for its clear digits), Atkinson Hyperlegible for everything you read. Both are under the SIL Open Font License
   (see the packages in node_modules/@fontsource).
 */
 @font-face {
-  font-family: 'Pixelify Sans';
+  font-family: 'Jersey 10';
   font-style: normal;
   font-display: swap;
   font-weight: 400;
-  src: url('@fontsource/pixelify-sans/files/pixelify-sans-latin-400-normal.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Pixelify Sans';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 600;
-  src: url('@fontsource/pixelify-sans/files/pixelify-sans-latin-600-normal.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Pixelify Sans';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 700;
-  src: url('@fontsource/pixelify-sans/files/pixelify-sans-latin-700-normal.woff2') format('woff2');
+  /* Jersey 10 draws smaller than its em box; this keeps the sizes set for the old face. */
+  size-adjust: 128%;
+  src: url('@fontsource/jersey-10/files/jersey-10-latin-400-normal.woff2') format('woff2');
 }
 
 @font-face {
@@ -65,7 +51,7 @@
   --line: #4a4170; /* quiet outline between things on a panel */
   --mine: #3a3270; /* a slot that holds your creature */
   --adjacent: #443b82; /* a slot next to the selected creature */
-  --display: 'Pixelify Sans', 'Courier New', ui-monospace, monospace;
+  --display: 'Jersey 10', 'Courier New', ui-monospace, monospace;
   --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --px: 3px; /* one "pixel" of UI chrome */
   --frame:
@@ -95,6 +81,8 @@ body {
   background-size: 6px 6px;
   color: var(--text);
   font-family: var(--body);
+  /* The pixel face has one weight; a faked bold smears its pixels. */
+  font-synthesis-weight: none;
   font-size: 15px;
   line-height: 1.5;
   /* Discord sets these on phones so content stays clear of notches and system bars. */

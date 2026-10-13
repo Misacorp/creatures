@@ -14,7 +14,7 @@
     "@creatures/game": "workspace:*",
     "@discord/embedded-app-sdk": "catalog:",
     "@fontsource/atkinson-hyperlegible": "5.3.0",
-    "@fontsource/pixelify-sans": "5.3.0",
+    "@fontsource/jersey-10": "5.3.0",
     "preact": "catalog:"
   },
   "devDependencies": {
