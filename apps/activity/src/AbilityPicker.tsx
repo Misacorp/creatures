@@ -5,7 +5,7 @@ import { abilityName, abilityPlanText, creatureAbilityRows } from './live';
 import type { AbilityPreview, TeamCreatureView } from './raid-api';
 
 /**
- * "Your finale abilities": the basic ability (one of the four basic abilities in the content pack,
+ * The finale abilities (opened from the "Abilities" chip): the basic ability (one of the four basic abilities in the content pack,
  * picked here) and the abilities of the team creatures that have reached their unlock level. Locked
  * ones are listed too, so players can see what training a creature would give.
  */
@@ -32,8 +32,7 @@ export function AbilityPicker({
   const creatureRows = creatureAbilityRows(abilities, team);
   const basicAutoFire = abilities.find((a) => a.creatureId === null)?.autoFire ?? true;
   return (
-    <section class="raid-section" aria-labelledby="raid-ability-heading">
-      <h3 id="raid-ability-heading">Your finale abilities</h3>
+    <div class="ability-body">
       <h4>
         <GlossaryTag entry="basic-ability">Basic ability</GlossaryTag>
       </h4>
@@ -48,7 +47,7 @@ export function AbilityPicker({
       </p>
       <p class="muted">
         {editable
-          ? "Everyone brings one basic ability to the live Sunday finale. It is weaker than a trained creature's ability. If you do nothing it still fires on its own. You can change your pick until the finale starts."
+          ? 'Everyone brings one basic ability to the finale. If you do nothing it still fires on its own. You can change your pick until the finale starts.'
           : 'The finale has started, so your pick is locked.'}
       </p>
       <p class="ability-auto">
@@ -133,6 +132,6 @@ export function AbilityPicker({
           </ul>
         </>
       )}
-    </section>
+    </div>
   );
 }

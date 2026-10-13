@@ -1,6 +1,6 @@
 import { RULES } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { AbilityPicker } from './AbilityPicker';
+import { AbilityChip } from './AbilityChip';
 import { AfterAction } from './AfterAction';
 import { ApiError, type Creature } from './api';
 import { CoachMark } from './CoachMark';
@@ -36,7 +36,7 @@ import {
 import { festivalGrantText, rankChangeText } from './raid-progress';
 import { phaseName } from './raid-text';
 import { BossCard } from './BossCard';
-import { Roster } from './RaidInfo';
+import { RosterStrip } from './RosterStrip';
 import { RaidTimeline } from './RaidTimeline';
 import type { NowTarget } from './raid-now';
 import { showFullResults } from './raid-timeline';
@@ -342,28 +342,13 @@ export function Raid({
         </details>
       )}
       <BossCard view={view} />
-      <Roster
+      <RosterStrip
         view={view}
         busy={busy}
         onOptOut={(optOut) => {
           void mutate(() => setRaidOptOut(optOut));
         }}
       />
-      {view.you.ability !== null && (
-        <AbilityPicker
-          current={view.you.ability}
-          abilities={view.you.abilities}
-          team={team?.creatures ?? []}
-          editable={serverNow < view.schedule.finale}
-          busy={busy}
-          onPick={(abilityId) => {
-            void mutate(() => setRaidAbility(abilityId));
-          }}
-          onAutoFire={(target, on) => {
-            void mutate(() => setRaidAutofire(target, on));
-          }}
-        />
-      )}
       {party !== null && team !== null && (
         <Placement
           party={party}
@@ -416,6 +401,22 @@ export function Raid({
         />
       )}
 
+      {view.you.ability !== null && (
+        <AbilityChip
+          you={view.you}
+          current={view.you.ability}
+          abilities={view.you.abilities}
+          team={team?.creatures ?? []}
+          editable={serverNow < view.schedule.finale}
+          busy={busy}
+          onPick={(abilityId) => {
+            void mutate(() => setRaidAbility(abilityId));
+          }}
+          onAutoFire={(target, on) => {
+            void mutate(() => setRaidAutofire(target, on));
+          }}
+        />
+      )}
       {party !== null && showFullResults(party.results) && (
         <section class="raid-section" aria-labelledby="raid-results-heading">
           <h3 id="raid-results-heading">Results</h3>
