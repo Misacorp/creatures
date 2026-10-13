@@ -13,6 +13,7 @@ import type {
   DungeonRewards,
   DungeonRoomSummary,
   DungeonRunSummary,
+  DungeonTeamMember,
 } from './dungeon-types';
 import type { ReplayRowEntry } from './raid-api';
 import type { Speed } from './replay';
@@ -77,6 +78,140 @@ export type RoomOutcome = 'cleared' | 'lost' | 'not reached';
 export function roomOutcome(room: Pick<DungeonRoomSummary, 'played' | 'cleared'>): RoomOutcome {
   if (!room.played) return 'not reached';
   return room.cleared ? 'cleared' : 'lost';
+}
+
+// --- The end report: the room strip and the team breakdown ---
+
+/** How a room reads in the strip: cleared, failed (DEFEAT), or never reached (locked). */
+export type RoomState = 'cleared' | 'defeat' | 'locked';
+
+/** The word across a room's panel: CLEARED, DEFEAT, or a muted "Not reached". */
+export const ROOM_BANNER: Readonly<Record<RoomState, string>> = {
+  cleared: 'CLEARED',
+  defeat: 'DEFEAT',
+  locked: 'LOCKED',
+};
+
+export function roomState(room: Pick<DungeonRoomSummary, 'played' | 'cleared'>): RoomState {
+  const outcome = roomOutcome(room);
+  return outcome === 'cleared' ? 'cleared' : outcome === 'lost' ? 'defeat' : 'locked';
+}
+
+/** One panel of the room strip, in the order of the rooms (left to right, like a comic). */
+export interface StripRoom {
+  index: number;
+  kind: 'foe' | 'boss';
+  /** The foe's content id, for its sprite. */
+  foeId: string;
+  foeName: string;
+  state: RoomState;
+  banner: string;
+  /** "Room 1", or "Room boss" for the last. */
+  title: string;
+  modifierName: string;
+  /** The foe's HP left when the team lost to it ("251 / 351 HP"), otherwise null. */
+  foeHp: string | null;
+  /** The panel in one sentence for a screen reader. */
+  spoken: string;
+}
+
+/** The rooms of a run as the strip's panels. Names are plain text (render them as text). */
+export function roomStrip(run: Pick<DungeonRunSummary, 'rooms'>): StripRoom[] {
+  return [...run.rooms]
+    .sort((a, b) => a.index - b.index)
+    .map((room) => {
+      const state = roomState(room);
+      const title = room.kind === 'boss' ? 'Room boss' : `Room ${String(room.index + 1)}`;
+      const foeHp =
+        state === 'defeat' ? `${String(room.foeHpEnd)} / ${String(room.foe.hpMax)} HP left` : null;
+      const result =
+        state === 'cleared' ? 'cleared' : state === 'defeat' ? 'defeat' : 'not reached';
+      return {
+        index: room.index,
+        kind: room.kind,
+        foeId: room.foe.id,
+        foeName: room.foe.name,
+        state,
+        banner: ROOM_BANNER[state],
+        title,
+        modifierName: room.modifier.name,
+        foeHp,
+        spoken: `${title}: ${room.foe.name}, ${room.modifier.name}. ${result}.`,
+      };
+    });
+}
+
+/** A creature's HP under it in the team breakdown: "340 / 391 HP" (0 when it was knocked out). */
+export function hpLine(member: Pick<DungeonTeamMember, 'hpEnd' | 'hpMax'>): string {
+  const left = Math.max(0, Math.min(member.hpEnd, member.hpMax));
+  return `${String(left)} / ${String(member.hpMax)} HP`;
+}
+
+/** One creature of the team breakdown. */
+export interface TeamEntry {
+  id: string;
+  name: string;
+  speciesId: string;
+  element: string;
+  role: string;
+  level: number;
+  hp: string;
+  knockedOut: boolean;
+  spoken: string;
+}
+
+/** The team in its fighting order (left to right) with its HP lines. No role or element chips here. */
+export function teamBreakdown(run: Pick<DungeonRunSummary, 'team'>): TeamEntry[] {
+  return run.team.map((m) => {
+    const hp = hpLine(m);
+    const knockedOut = m.hpEnd <= 0;
+    return {
+      id: m.id,
+      name: m.name,
+      speciesId: m.speciesId,
+      element: m.element,
+      role: m.role,
+      level: m.level,
+      hp,
+      knockedOut,
+      spoken: `${m.name}, level ${String(m.level)}: ${hp}${knockedOut ? ', knocked out' : ''}.`,
+    };
+  });
+}
+
+/** What the banner over the stage says when a room opens. Names and descriptions are plain text. */
+export interface RoomIntroView {
+  /** "ROOM 2" in big letters, or "ROOM BOSS" for the last room. */
+  heading: string;
+  /** "2 of 3" (the room's place in the run). */
+  place: string;
+  boss: boolean;
+  foeId: string;
+  foeName: string;
+  element: string;
+  modifierName: string;
+  modifierDescription: string;
+  /** The whole banner in one status sentence for a screen reader. */
+  spoken: string;
+}
+
+export function roomIntroView(
+  room: Pick<DungeonReplayRoom, 'index' | 'kind' | 'foe' | 'modifier'>,
+  total: number,
+): RoomIntroView {
+  const boss = room.kind === 'boss';
+  const place = `${String(room.index + 1)} of ${String(total)}`;
+  return {
+    heading: boss ? 'ROOM BOSS' : `ROOM ${String(room.index + 1)}`,
+    place,
+    boss,
+    foeId: room.foe.id,
+    foeName: room.foe.name,
+    element: room.foe.element,
+    modifierName: room.modifier.name,
+    modifierDescription: room.modifier.description,
+    spoken: `Room ${place}${boss ? ', room boss' : ''}: ${room.foe.name}. ${room.modifier.name}: ${room.modifier.description}`,
+  };
 }
 
 /** The foe's HP left, as "0 of 351", for a room that was played; null otherwise. */

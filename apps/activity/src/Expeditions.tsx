@@ -17,6 +17,7 @@ import { useNow } from './hooks';
 import { GlossaryTag } from './Glossary';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
+import { SmallCreature } from './SmallCreature';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 
 export interface SendRequest {
@@ -138,12 +139,29 @@ function ActiveSlot({
   const remaining = expedition.endsAt - serverNow;
   const finished = remaining <= 0;
   const keeps = recallCatches(expedition.rolls, expedition.startedAt, expedition.endsAt, serverNow);
-  const element = explorer === undefined ? undefined : getSpecies(explorer.species)?.element;
+  const species = explorer === undefined ? undefined : getSpecies(explorer.species);
+  const element = species?.element;
   return (
     <>
       {explorer !== undefined && (
         <div class="portrait">
-          <Sprite sprite={creatureSpriteOrFallback(explorer.species)} scale={4} />
+          {species === undefined ? (
+            <Sprite sprite={creatureSpriteOrFallback(explorer.species)} scale={4} />
+          ) : (
+            // Display only, so a tap can show the explorer's role and element.
+            <SmallCreature
+              id={explorer.id}
+              info={{
+                name: creatureName(explorer),
+                species: explorer.species,
+                level: explorer.level,
+                element: species.element,
+                role: species.role,
+              }}
+            >
+              <Sprite sprite={creatureSpriteOrFallback(explorer.species)} scale={4} />
+            </SmallCreature>
+          )}
         </div>
       )}
       <p>

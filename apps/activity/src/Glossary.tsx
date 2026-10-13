@@ -1,6 +1,20 @@
-import { content } from '@creatures/game';
+import { content, entryView } from '@creatures/game';
 import { createContext, type ComponentChildren } from 'preact';
 import { useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import {
+  backLabel,
+  creatureTags,
+  goBack,
+  onEscape,
+  openTag,
+  toggleCreature,
+  type ActiveCreature,
+  type CreatureInfo,
+  type PopView,
+} from './creature-popover';
+import { elementName } from './game';
+import { elementIcon } from './sprites/element-icons';
+import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import {
   MORE_LABEL,
   TAG_ATTRIBUTE,
@@ -20,9 +34,17 @@ interface GlossaryApi {
   active: ActiveTag<HTMLElement> | null;
   toggle: (ref: TagRef, anchor: HTMLElement) => void;
   close: () => void;
+  /** The small creature whose popover is open, if any. */
+  creature: ActiveCreature<HTMLElement> | null;
+  toggleCreature: (key: string, info: CreatureInfo, anchor: HTMLElement) => void;
 }
 
 const GlossaryContext = createContext<GlossaryApi | null>(null);
+
+/** The provider's api, or null outside one (tags and small creatures are then plain). */
+export function useGlossary(): GlossaryApi | null {
+  return useContext(GlossaryContext);
+}
 
 const reactionById = (id: string) => content.reactions.find((r) => r.id === id);
 
@@ -48,6 +70,51 @@ function PopoverVisual({ view }: { view: GlossaryView }) {
   );
 }
 
+/** A glossary entry's picture, title, short text, lines and the link to How to play. */
+function GlossaryBody({
+  view,
+  onMore,
+}: {
+  view: GlossaryView;
+  onMore: (section: GlossarySection) => void;
+}) {
+  return (
+    <div class="gp-body">
+      <PopoverVisual view={view} />
+      <p class="gp-title pix">{view.title}</p>
+      <p class="gp-short">{view.short}</p>
+      {view.lines.length > 0 && (
+        <ul class="gp-lines">
+          {view.lines.map((line, i) => (
+            <li key={i}>{line}</li>
+          ))}
+        </ul>
+      )}
+      <button
+        type="button"
+        class="gp-more"
+        onClick={() => {
+          onMore(view.section);
+        }}
+      >
+        {MORE_LABEL}
+      </button>
+    </div>
+  );
+}
+
+/** Closes a popover when the thing it points at has left the page (a list drew again, a screen changed). */
+function useCloseWhenGone(anchor: HTMLElement, onClose: () => void): void {
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (!anchor.isConnected) onClose();
+    }, 400);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [anchor]);
+}
+
 function GlossaryPopover({
   active,
   onClose,
@@ -58,17 +125,7 @@ function GlossaryPopover({
   onMore: (section: GlossarySection) => void;
 }) {
   const view = resolveTag(active.ref);
-
-  // If the tag goes away (a list re-rendered, the screen changed), so does its popover.
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (!active.anchor.isConnected) onClose();
-    }, 400);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [active.anchor]);
-
+  useCloseWhenGone(active.anchor, onClose);
   if (view === undefined) return null;
   return (
     <div class="glossary-layer">
@@ -79,27 +136,94 @@ function GlossaryPopover({
         label={view.title}
         onClose={onClose}
       >
-        <div class="gp-body">
-          <PopoverVisual view={view} />
-          <p class="gp-title pix">{view.title}</p>
-          <p class="gp-short">{view.short}</p>
-          {view.lines.length > 0 && (
-            <ul class="gp-lines">
-              {view.lines.map((line, i) => (
-                <li key={i}>{line}</li>
+        <GlossaryBody view={view} onMore={onMore} />
+      </StagePopover>
+    </div>
+  );
+}
+
+/**
+ * The popover of a small creature: its name, level, role and element as tags. Tapping a tag
+ * switches this same popover to that glossary entry (the content a tag shows anywhere else), with a
+ * back control; Escape goes back first and then closes. The two faces are `creature-popover.ts`.
+ */
+function CreaturePopover({
+  active,
+  onView,
+  onClose,
+  onMore,
+}: {
+  active: ActiveCreature<HTMLElement>;
+  onView: (view: PopView) => void;
+  onClose: () => void;
+  onMore: (section: GlossarySection) => void;
+}) {
+  const { info, view } = active;
+  useCloseWhenGone(active.anchor, onClose);
+  const entry = view.kind === 'tag' ? entryView(view.entry) : undefined;
+  // An entry the content does not know shows the creature instead.
+  const face = entry === undefined ? 'creature' : 'tag';
+  const icon = elementIcon(info.element);
+  return (
+    <div class="glossary-layer">
+      <StagePopover
+        key={`${face}:${entry?.title ?? ''}`}
+        class="gloss-pop creature-pop"
+        anchor={() => active.anchor}
+        label={entry === undefined ? `${info.name}, level ${String(info.level)}` : entry.title}
+        onClose={onClose}
+        onEscape={() => {
+          const next = onEscape(view);
+          if (next.close) onClose();
+          else onView(next.view);
+        }}
+      >
+        {entry === undefined ? (
+          <div class="gp-body cp-body">
+            <div class="gp-visual" aria-hidden="true">
+              <Sprite sprite={creatureSpriteOrFallback(info.species)} scale={4} />
+            </div>
+            <p class="gp-title pix">{info.name}</p>
+            <p class="gp-short">Level {info.level}</p>
+            <p class="tags cp-tags">
+              {creatureTags(info).map((tag) => (
+                <button
+                  key={tag.kind}
+                  type="button"
+                  class={`gtag gtag-chip chip ${tag.kind === 'element' ? `t-${tag.id}` : 'role-chip'}`}
+                  aria-haspopup="dialog"
+                  onClick={() => {
+                    onView(openTag(tag.entry));
+                  }}
+                >
+                  {tag.kind === 'element' && icon !== undefined && (
+                    <Sprite sprite={icon} scale={2} />
+                  )}
+                  <span class="chip-text">
+                    {tag.kind === 'element'
+                      ? elementName(tag.id)
+                      : (entryView(tag.entry)?.title ?? tag.id)}
+                  </span>
+                </button>
               ))}
-            </ul>
-          )}
-          <button
-            type="button"
-            class="gp-more"
-            onClick={() => {
-              onMore(view.section);
-            }}
-          >
-            {MORE_LABEL}
-          </button>
-        </div>
+            </p>
+          </div>
+        ) : (
+          <>
+            <button
+              type="button"
+              class="cp-back"
+              aria-label={backLabel(info)}
+              onClick={() => {
+                onView(goBack());
+              }}
+            >
+              <Sprite sprite={glyphOrUnknown('left_to_right')} scale={2} class="cp-back-arrow" />
+              <span class="pix">{info.name}</span>
+            </button>
+            <GlossaryBody view={entry} onMore={onMore} />
+          </>
+        )}
       </StagePopover>
     </div>
   );
@@ -118,17 +242,26 @@ export function GlossaryProvider({
   children: ComponentChildren;
 }) {
   const [active, setActive] = useState<ActiveTag<HTMLElement> | null>(null);
+  const [creature, setCreature] = useState<ActiveCreature<HTMLElement> | null>(null);
+  // One popover at a time: opening one of the two kinds closes the other.
   const api = useMemo<GlossaryApi>(
     () => ({
       active,
       toggle: (ref, anchor) => {
+        setCreature(null);
         setActive((current) => toggleTag(current, { key: tagKey(ref), ref, anchor }));
       },
       close: () => {
         setActive(null);
+        setCreature(null);
+      },
+      creature,
+      toggleCreature: (key, info, anchor) => {
+        setActive(null);
+        setCreature((current) => toggleCreature(current, { key, info, anchor }));
       },
     }),
-    [active],
+    [active, creature],
   );
   return (
     <GlossaryContext.Provider value={api}>
@@ -139,6 +272,19 @@ export function GlossaryProvider({
           onClose={api.close}
           onMore={(section) => {
             setActive(null);
+            onOpenHowTo(section);
+          }}
+        />
+      )}
+      {creature !== null && (
+        <CreaturePopover
+          active={creature}
+          onView={(view) => {
+            setCreature((current) => (current === null ? null : { ...current, view }));
+          }}
+          onClose={api.close}
+          onMore={(section) => {
+            setCreature(null);
             onOpenHowTo(section);
           }}
         />

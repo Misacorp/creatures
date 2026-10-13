@@ -34,6 +34,21 @@ const gimmickName = (names: Pick<EventNames, 'gimmicks'>, id: string | null, fal
 
 const zoneWord = (zone: Zone): string => zone.toUpperCase();
 
+/**
+ * How zones are worded. `zones` (the raid) says "whole FRONT row"; `row` (the dungeon, where the
+ * team is one row of three and each zone is the one creature at that place) says "the left
+ * creature".
+ */
+export type Wording = 'zones' | 'row';
+
+/** The places of a row of three, by the zone that is one creature there. */
+export const ROW_PLACE_WORDS: Readonly<Record<Zone, string>> = {
+  front: 'left',
+  middle: 'middle',
+  back: 'right',
+};
+const placeWord = (zone: Zone): string => `the ${ROW_PLACE_WORDS[zone]} creature`;
+
 export interface StrikeLabel {
   /** What it is: the gimmick's name, or "Attack". */
   title: string;
@@ -47,6 +62,7 @@ export interface StrikeLabel {
 export function strikeLabel(
   strike: BossStrike,
   names: Pick<EventNames, 'creatures' | 'gimmicks'>,
+  wording: Wording = 'zones',
 ): StrikeLabel {
   const who = (id: string): string => creatureName(names, id);
   let title: string;
@@ -61,7 +77,14 @@ export function strikeLabel(
     }
     case 'hit_zone':
       title = gimmickName(names, strike.gimmick, 'Zone hit');
-      area = strike.zone === null ? 'a whole row' : `whole ${zoneWord(strike.zone)} row`;
+      area =
+        strike.zone === null
+          ? wording === 'row'
+            ? 'a creature'
+            : 'a whole row'
+          : wording === 'row'
+            ? placeWord(strike.zone)
+            : `whole ${zoneWord(strike.zone)} row`;
       break;
     case 'strike_highest_atk': {
       title = gimmickName(names, strike.gimmick, 'Strike');
@@ -119,6 +142,7 @@ export function forecastNextRound(
   row: readonly string[],
   knockedOut: readonly string[],
   names: Pick<EventNames, 'gimmicks'>,
+  wording: Wording = 'zones',
 ): Forecast | null {
   if (round < 1 || round >= rounds) return null;
   const boss = bossOrFoe(bossId);
@@ -132,7 +156,9 @@ export function forecastNextRound(
     const name = gimmickName(names, w.gimmick, w.name);
     switch (w.target.kind) {
       case 'zone':
-        parts.push(`${name} hits ${zoneWord(w.target.zone)}`);
+        parts.push(
+          `${name} hits ${wording === 'row' ? placeWord(w.target.zone) : zoneWord(w.target.zone)}`,
+        );
         if (!zones.includes(w.target.zone)) zones.push(w.target.zone);
         break;
       case 'ends': {

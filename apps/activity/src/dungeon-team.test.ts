@@ -17,6 +17,7 @@ import {
   requestSignature,
   resolveDrop,
   roundOptions,
+  rowNotes,
   slotIndexOf,
   slotStatuses,
   strongestFirst,
@@ -51,8 +52,8 @@ function make(id: string, species: string, level: number, extra: Partial<Creatur
 const names: Record<string, string> = { a: 'Ann', b: 'Bo', c: 'Cy', d: 'Di' };
 const nameOf = (id: string): string => names[id] ?? id;
 
-describe('placing creatures in the zones', () => {
-  it('starts empty and fills the chosen zone', () => {
+describe('placing creatures in the row', () => {
+  it('starts empty and fills the chosen place', () => {
     expect(isComplete(EMPTY_SLOTS)).toBe(false);
     const one = place(EMPTY_SLOTS, 'a', 1);
     expect(one).toEqual([null, 'a', null]);
@@ -61,28 +62,28 @@ describe('placing creatures in the zones', () => {
     expect(slotIndexOf(one, 'b')).toBeNull();
   });
 
-  it('swaps a placed creature with whoever stands in the target zone', () => {
+  it('swaps a placed creature with whoever stands in the target place', () => {
     expect(place(['a', 'b', null], 'a', 1)).toEqual(['b', 'a', null]);
   });
 
-  it('moves a placed creature into an empty zone and leaves its old one empty', () => {
+  it('moves a placed creature into an empty place and leaves its old one empty', () => {
     expect(place(['a', null, null], 'a', 2)).toEqual([null, null, 'a']);
   });
 
-  it('sends the occupant back to the list when a creature from the list takes its zone', () => {
+  it('sends the occupant back to the list when a creature from the list takes its place', () => {
     const next = place(['a', 'b', 'c'], 'd', 1);
     expect(next).toEqual(['a', 'd', 'c']);
     expect(slotIndexOf(next, 'b')).toBeNull();
   });
 
-  it('ignores a zone that does not exist and a drop on its own zone', () => {
+  it('ignores a place that does not exist and a drop on its own place', () => {
     const slots: Slots = ['a', null, null];
     expect(place(slots, 'b', 3)).toBe(slots);
     expect(place(slots, 'b', -1)).toBe(slots);
     expect(place(slots, 'a', 0)).toBe(slots);
   });
 
-  it('takes a creature out of its zone', () => {
+  it('takes a creature out of the row', () => {
     expect(unplace(['a', 'b', 'c'], 'b')).toEqual(['a', null, 'c']);
     const slots: Slots = ['a', null, null];
     expect(unplace(slots, 'z')).toBe(slots);
@@ -110,17 +111,17 @@ describe('the strongest three', () => {
     expect(strongestFirst([...list].reverse()).map((c) => c.id)).toEqual(['x', 'y', 'z']);
   });
 
-  it('stands guards in front and payoffs at the back', () => {
+  it('stands setters left, a guard in the middle and payoffs on the right', () => {
     const list = [
       make('payoff', 'cindle', 12),
       make('setter', 'splashet', 11),
       make('guard', 'sproutle', 10),
       make('weak', 'cindle', 1),
     ];
-    expect(strongestThree(list)).toEqual(['guard', 'setter', 'payoff']);
+    expect(strongestThree(list)).toEqual(['setter', 'guard', 'payoff']);
   });
 
-  it('leaves zones empty when there are fewer than three creatures', () => {
+  it('leaves places empty when there are fewer than three creatures', () => {
     expect(strongestThree([make('only', 'cindle', 3)])).toEqual(['only', null, null]);
     expect(strongestThree([])).toEqual([null, null, null]);
   });
@@ -133,24 +134,24 @@ describe('taps', () => {
     expect(reduceTap(EMPTY_SLOTS, 'a', { kind: 'creature', id: 'a' }).selected).toBeNull();
   });
 
-  it('puts the selected creature in the tapped zone', () => {
+  it('puts the selected creature in the tapped place', () => {
     const result = reduceTap(EMPTY_SLOTS, 'a', { kind: 'slot', index: 2 });
     expect(result.slots).toEqual([null, null, 'a']);
     expect(result.selected).toBeNull();
   });
 
-  it('picks up a placed creature by tapping its zone, and explains a tap on an empty zone', () => {
+  it('picks up a placed creature by tapping its place, and explains a tap on an empty place', () => {
     expect(reduceTap(['a', null, null], null, { kind: 'slot', index: 0 }).selected).toBe('a');
     const none = reduceTap(EMPTY_SLOTS, null, { kind: 'slot', index: 0 });
     expect(none.slots).toBe(EMPTY_SLOTS);
     expect(none.hint).toContain('first');
   });
 
-  it('lets go when the selected creature is tapped in its own zone', () => {
+  it('lets go when the selected creature is tapped in its own place', () => {
     expect(reduceTap(['a', null, null], 'a', { kind: 'slot', index: 0 }).selected).toBeNull();
   });
 
-  it('refuses a zone that does not exist', () => {
+  it('refuses a place that does not exist', () => {
     expect(reduceTap(EMPTY_SLOTS, 'a', { kind: 'slot', index: 5 }).hint).toContain(
       'does not exist',
     );
@@ -158,32 +159,30 @@ describe('taps', () => {
 });
 
 describe('drops', () => {
-  it('moves a creature to a zone and says so', () => {
+  it('moves a creature to a place and says so', () => {
     const { slots, outcome } = resolveDrop(EMPTY_SLOTS, 'a', { kind: 'slot', slot: 0 }, nameOf);
     expect(slots).toEqual(['a', null, null]);
     expect(outcome.status).toBe('valid');
-    expect(outcome.announce).toBe('Ann placed in the front zone.');
+    expect(outcome.announce).toBe('Ann placed on the left.');
     expect(outcome.intent).toBeNull();
   });
 
   it('says who went back to the list, and who swapped', () => {
     const fromList = resolveDrop(['b', null, null], 'a', { kind: 'slot', slot: 0 }, nameOf);
-    expect(fromList.outcome.announce).toBe(
-      'Ann placed in the front zone. Bo went back to the list.',
-    );
+    expect(fromList.outcome.announce).toBe('Ann placed on the left. Bo went back to the list.');
     const swap = resolveDrop(['b', 'a', null], 'a', { kind: 'slot', slot: 0 }, nameOf);
     expect(swap.slots).toEqual(['a', 'b', null]);
     expect(swap.outcome.announce).toBe('Swapped Ann with Bo.');
   });
 
-  it('takes a creature out of its zone when dropped on the list', () => {
+  it('takes a creature out of the row when dropped on the list', () => {
     const { slots, outcome } = resolveDrop(['a', null, null], 'a', { kind: 'tray' }, nameOf);
     expect(slots).toEqual([null, null, null]);
     expect(outcome.status).toBe('valid');
     expect(resolveDrop(EMPTY_SLOTS, 'a', { kind: 'tray' }, nameOf).outcome.status).toBe('none');
   });
 
-  it('cancels off the board and does nothing on its own zone', () => {
+  it('cancels off the board and does nothing on its own place', () => {
     const cancelled = resolveDrop(['a', null, null], 'a', null, nameOf);
     expect(cancelled.slots).toEqual(['a', null, null]);
     expect(cancelled.outcome.announce).toBe('Cancelled.');
@@ -192,13 +191,13 @@ describe('drops', () => {
     ).toBe('none');
   });
 
-  it('refuses a zone that does not exist', () => {
+  it('refuses a place that does not exist', () => {
     expect(resolveDrop(EMPTY_SLOTS, 'a', { kind: 'slot', slot: 9 }, nameOf).outcome.status).toBe(
       'invalid',
     );
   });
 
-  it('gives every zone a status for the creature being dragged', () => {
+  it('gives every place a status for the creature being dragged', () => {
     const statuses = slotStatuses(['a', null, null], 'a', nameOf);
     expect([...statuses.entries()]).toEqual([
       [0, 'none'],
@@ -261,14 +260,30 @@ describe('the run request', () => {
     ).toBeNull();
   });
 
-  it('sends the zones front to back, the basic pick on Auto, and no rounds nobody set', () => {
+  it('sends the row left to right, the basic pick on Auto, and no rounds nobody set', () => {
     const request = buildRunRequest(slots, creatures, DEFAULT_ABILITY_SETTINGS, 'key-00001');
     expect(request).toEqual({
       team: ['a', 'b', 'c'],
-      formation: ['front', 'middle', 'back'],
       abilities: { basic: { abilityId: 'rally', fireAtRound: null }, creatures: [] },
       idempotencyKey: 'key-00001',
     });
+  });
+
+  it('sends the order of the row as the order of the team, and nothing about zones', () => {
+    const forward = buildRunRequest(slots, creatures, DEFAULT_ABILITY_SETTINGS, 'key-00001');
+    const reversed = buildRunRequest(
+      ['c', 'b', 'a'],
+      creatures,
+      DEFAULT_ABILITY_SETTINGS,
+      'key-00001',
+    );
+    expect(forward?.team).toEqual(['a', 'b', 'c']);
+    expect(reversed?.team).toEqual(['c', 'b', 'a']);
+    expect(Object.keys(forward ?? {}).sort()).toEqual(['abilities', 'idempotencyKey', 'team']);
+    // A different order is a different run, so it gets its own idempotency key.
+    expect(requestSignature(reversed ?? ({} as never))).not.toBe(
+      requestSignature(forward ?? ({} as never)),
+    );
   });
 
   it('sends a zone only for Shield Wall and an element only for Re-mark', () => {
@@ -325,5 +340,34 @@ describe('the run request', () => {
     if (one === null || two === null || other === null) throw new Error('team is complete');
     expect(requestSignature(one)).toBe(requestSignature(two));
     expect(requestSignature(one)).not.toBe(requestSignature(other));
+  });
+});
+
+describe('what the order of the row means', () => {
+  const day = (ids: string[]) => ids.map((id, room) => ({ room, id, name: id }));
+
+  it('always says where the foe attacks first and what a Guard covers', () => {
+    const notes = rowNotes(day(['flooded', 'dark', 'thorns']));
+    expect(notes[0]).toContain('left creature first');
+    expect(notes[0]).toContain('Guard covers the creatures beside it');
+    expect(notes.some((n) => n.includes('left to right, right to left or fastest first'))).toBe(
+      true,
+    );
+    // No modifier of that day fixes the order, so nothing more.
+    expect(notes).toHaveLength(2);
+  });
+
+  it('adds a line for a room whose modifier fixes the turn order (Fog), and names the room', () => {
+    const notes = rowNotes(day(['flooded', 'fog', 'dark']));
+    expect(notes).toHaveLength(3);
+    expect(notes[2]).toBe(
+      'Room 2 has fog: everyone acts left to right, so the order of your row is the turn order.',
+    );
+    const boss = rowNotes(day(['flooded', 'dark', 'fog']));
+    expect(boss[2]).toContain('The room boss has fog');
+  });
+
+  it('ignores a modifier it does not know', () => {
+    expect(rowNotes(day(['no-such-modifier']))).toHaveLength(2);
   });
 });

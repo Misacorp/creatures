@@ -1,14 +1,13 @@
-import { GLOSSARY_IDS } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
-import { cssVars } from './css-vars';
 import { nextIndex } from './dnd-core';
 import {
-  DUNGEON_ZONES,
-  DUNGEON_ZONE_NAMES,
+  ROW_PLACES,
+  ROW_PLACE_NAMES,
   placedCount,
   reduceTap,
   resolveDrop,
+  rowNotes,
   slotIndexOf,
   slotStatuses,
   unplace,
@@ -16,15 +15,13 @@ import {
   type Slots,
   type Tap,
 } from './dungeon-team';
+import type { DungeonModifier } from './dungeon-types';
 import { capitalize, creatureName, elementName, getSpecies, speciesName } from './game';
-import { GlossaryTag } from './Glossary';
-import { useElementWidth } from './hooks';
 import { CANCEL_ANNOUNCEMENT, pickUpAnnouncement, type DropOutcome } from './raid-dnd';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { useDragDrop } from './use-drag-drop';
-import { SLOT_FALLBACK_PX, SLOT_LAYOUT, layoutVars, zoneLayout } from './zone-layout';
 
 /** How many creatures the list shows before "Show all". The strongest come first. */
 const TRAY_PREVIEW = 6;
@@ -33,6 +30,8 @@ interface Props {
   /** All the player's creatures, strongest first. */
   creatures: readonly Creature[];
   slots: Slots;
+  /** Today's room modifiers, for the notes on what the order means (Fog fixes the turn order). */
+  modifiers: readonly DungeonModifier[];
   selected: Selection;
   hint: string | null;
   /** True while the run is being sent. */
@@ -42,16 +41,16 @@ interface Props {
 }
 
 /**
- * The team and its zones. The three zones are slots, front first, with one creature each; the list
- * under them holds everyone else. A creature moves by dragging (pointer events, so touch works),
- * by tapping it and then a zone, or with the keyboard: Enter picks up, the arrow keys choose a zone,
- * Enter drops, Escape cancels. The drag code and its ghost are the Placement screen's. The server
- * checks the team again when the run starts.
+ * The team in its row. The fight is one row of three, left to right, and the order the player
+ * stands them in is the choice: three slots side by side, with the list of everyone else under them.
+ * A creature moves by dragging (pointer events, so touch works), by tapping it and then a slot, or
+ * with the keyboard: Enter picks up, the arrow keys choose a slot, Enter drops, Escape cancels. The
+ * drag code and its ghost are the Placement screen's. The server checks the team again when the run
+ * starts.
  */
 export function DungeonTeam(props: Props) {
   const { creatures, slots, selected, disabled } = props;
   const stripRef = useRef<HTMLDivElement>(null);
-  const stripWidth = useElementWidth(stripRef, SLOT_FALLBACK_PX);
   const trayRef = useRef<HTMLUListElement>(null);
   const [announcement, setAnnouncement] = useState('');
   const [showAll, setShowAll] = useState(false);
@@ -119,10 +118,10 @@ export function DungeonTeam(props: Props) {
       if (selected !== null) refocus.current = Number(control.dataset.slot);
       return;
     }
-    // The zones are stacked, so up and left go to the zone before, down and right to the one after.
+    // The slots are side by side: up and left go to the slot before, down and right to the one after.
     const key =
       event.key === 'ArrowUp' ? 'ArrowLeft' : event.key === 'ArrowDown' ? 'ArrowRight' : event.key;
-    const to = nextIndex(Number(control.dataset.slot), key, DUNGEON_ZONES.length);
+    const to = nextIndex(Number(control.dataset.slot), key, ROW_PLACES.length);
     if (to === null) return;
     event.preventDefault();
     stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(to)}"]`)?.focus();
@@ -133,15 +132,14 @@ export function DungeonTeam(props: Props) {
   // A creature that is picked up stays reachable even when the list is folded.
   const picked = selected === null ? undefined : unplaced.find((c) => c.id === selected);
   const listed = picked !== undefined && !shown.includes(picked) ? [...shown, picked] : shown;
-  const layout = zoneLayout(1, stripWidth, SLOT_LAYOUT);
-  const full = placedCount(slots) === DUNGEON_ZONES.length;
+  const full = placedCount(slots) === ROW_PLACES.length;
 
   return (
     <div onKeyDown={onKeyDown}>
-      <h4 id="dungeon-zones-heading">Your team</h4>
+      <h4 id="dungeon-zones-heading">Your team, left to right</h4>
       <p class="muted">
-        Three creatures, one in each zone. Drag a creature to a zone, or tap it and then tap a zone.
-        With a keyboard: Enter picks up, arrow keys choose, Enter drops, Escape cancels.
+        Three creatures in one row. Drag a creature to a slot, or tap it and then tap a slot. With a
+        keyboard: Enter picks up, arrow keys choose, Enter drops, Escape cancels.
       </p>
       <div
         ref={stripRef}
@@ -151,7 +149,7 @@ export function DungeonTeam(props: Props) {
         role="group"
         aria-labelledby="dungeon-zones-heading"
       >
-        {DUNGEON_ZONES.map((zone, index) => {
+        {ROW_PLACES.map((place, index) => {
           const id = slots[index] ?? null;
           const creature = id === null ? undefined : byId.get(id);
           const status = statuses?.get(index) ?? null;
@@ -169,11 +167,9 @@ export function DungeonTeam(props: Props) {
           if (shakeSlot === index) classes.push('shake');
           const species = creature === undefined ? undefined : getSpecies(creature.species);
           return (
-            <div key={zone} class="party-zone" ref={cssVars(layoutVars(layout, SLOT_LAYOUT))}>
+            <div key={place} class="party-zone">
               <p class="zone-label">
-                <GlossaryTag entry={GLOSSARY_IDS.zone(zone)}>
-                  {DUNGEON_ZONE_NAMES[zone]}
-                </GlossaryTag>
+                {index + 1} · {ROW_PLACE_NAMES[place]}
               </p>
               <div class="zone-slots">
                 <button
@@ -184,8 +180,8 @@ export function DungeonTeam(props: Props) {
                   aria-pressed={creature === undefined ? undefined : selected === creature.id}
                   aria-label={
                     creature === undefined
-                      ? `${DUNGEON_ZONE_NAMES[zone]} zone, empty`
-                      : `${DUNGEON_ZONE_NAMES[zone]} zone, ${creatureName(creature)}, ${speciesName(creature.species)} level ${String(creature.level)}`
+                      ? `${ROW_PLACE_NAMES[place]} slot, empty`
+                      : `${ROW_PLACE_NAMES[place]} slot, ${creatureName(creature)}, ${speciesName(creature.species)} level ${String(creature.level)}`
                   }
                   onPointerDown={
                     creature === undefined
@@ -202,7 +198,7 @@ export function DungeonTeam(props: Props) {
                     <span class="slot-empty">Empty</span>
                   ) : (
                     <>
-                      <Sprite sprite={creatureSpriteOrFallback(creature.species)} scale={3} />
+                      <Sprite sprite={creatureSpriteOrFallback(creature.species)} scale={4} />
                       <span class="dungeon-slot-text">
                         <span class="slot-species">{creatureName(creature)}</span>
                         <span class="slot-meta">
@@ -233,9 +229,14 @@ export function DungeonTeam(props: Props) {
             }
           }}
         >
-          Take out of zone
+          Take out of the row
         </button>
       </p>
+      <ul class="row-notes muted" aria-label="What the order means">
+        {rowNotes(props.modifiers).map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
       {props.hint !== null && (
         <p class="muted" role="status">
           {props.hint}
