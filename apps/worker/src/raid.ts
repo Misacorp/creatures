@@ -98,6 +98,8 @@ export interface RaidDeps {
   readinessRng?: Rng;
   /** Live randomness for the quirk of a Festival creature. Crypto in production. */
   quirkRng?: Rng;
+  /** Live randomness for gear drops (a cleared phase, a won finale, a Festival piece). Crypto in production. */
+  gearRng?: Rng;
   /** The analytics event log (see `analytics.ts`). Optional: without it nothing is logged. */
   analytics?: Analytics;
 }

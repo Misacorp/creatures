@@ -1,14 +1,14 @@
 {
-  "serverNow": 1800208800000,
+  "serverNow": 1799791201000,
   "balances": {
-    "bait": 0,
-    "essence": 179
+    "bait": 100,
+    "essence": 159
   },
   "starterChosen": false,
   "starterOptions": ["splashet", "cindle", "sproutle"],
   "creatures": [
     {
-      "id": "28bc8509-a652-456a-9410-1298b0da9bac",
+      "id": "10d24d35-e868-4bd9-bd9f-4afca979cbcb",
       "species": "cindle",
       "line": "cindle",
       "level": 10,
@@ -18,12 +18,28 @@
       "nickname": null,
       "away": false,
       "origin": "test",
-      "caughtAt": 1800007200000,
+      "caughtAt": 1799733600000,
       "quirk": "name-perker",
       "stats": {
         "hp": 159,
         "atk": 67,
         "spd": 46
+      },
+      "statsWithGear": {
+        "hp": 159,
+        "atk": 67,
+        "spd": 46
+      },
+      "gear": {
+        "id": "2e486da1-d4b1-477e-a3b3-c47a33da5703",
+        "baseId": "phoenix-trinket",
+        "rarity": "epic",
+        "level": 0,
+        "enchantId": "ember-fury"
+      },
+      "busy": {
+        "kind": "job",
+        "id": "d10c2fe3-b055-40e4-a5c0-271257df8ddd"
       },
       "ability": {
         "id": "flare-strike",
@@ -40,7 +56,7 @@
       }
     },
     {
-      "id": "78b34c14-f354-4da4-a3a1-969dc25a2f50",
+      "id": "a623e389-3d71-4fd5-8f2a-cbb80f7d0c41",
       "species": "sproutle",
       "line": "sproutle",
       "level": 10,
@@ -50,13 +66,20 @@
       "nickname": null,
       "away": false,
       "origin": "test",
-      "caughtAt": 1800007200001,
+      "caughtAt": 1799733600001,
       "quirk": "sproutle-wide-awake",
       "stats": {
         "hp": 259,
         "atk": 31,
         "spd": 25
       },
+      "statsWithGear": {
+        "hp": 259,
+        "atk": 31,
+        "spd": 25
+      },
+      "gear": null,
+      "busy": null,
       "ability": {
         "id": "bark-guard",
         "unlocked": true,
@@ -72,7 +95,7 @@
       }
     },
     {
-      "id": "ea905f0e-815e-4bc4-bde3-56ef1d9cff0e",
+      "id": "fd833d62-33dd-4a90-8c3b-388a26f47176",
       "species": "zipmouse",
       "line": "zipmouse",
       "level": 7,
@@ -82,13 +105,20 @@
       "nickname": null,
       "away": false,
       "origin": "test",
-      "caughtAt": 1800007200002,
+      "caughtAt": 1799733600002,
       "quirk": "morning-grumbler",
       "stats": {
         "hp": 160,
         "atk": 40,
         "spd": 44
       },
+      "statsWithGear": {
+        "hp": 160,
+        "atk": 40,
+        "spd": 44
+      },
+      "gear": null,
+      "busy": null,
       "ability": {
         "id": "static-zap",
         "unlocked": false,
@@ -114,7 +144,7 @@
   "timezone": "Europe/Helsinki",
   "leetSync": {
     "source": "disabled",
-    "lastAttemptAt": 1800208800000,
+    "lastAttemptAt": 1799791201000,
     "lastSyncedAt": null,
     "lastError": "disabled",
     "lastDays": null

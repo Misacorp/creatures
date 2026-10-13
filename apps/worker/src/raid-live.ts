@@ -104,6 +104,8 @@ export interface LiveDeps {
   rng: Rng;
   /** Live randomness for the quirk of a Festival creature (passed on when the finale settles). */
   quirkRng?: Rng;
+  /** Live randomness for gear drops (passed on when the finale settles). */
+  gearRng?: Rng;
   /** The analytics event log (passed on when the finale settles). Optional. */
   analytics?: Analytics;
 }

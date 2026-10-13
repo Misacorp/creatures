@@ -38,6 +38,7 @@ import {
   type FightSlot,
 } from '@creatures/engine';
 import type { Analytics } from './analytics';
+import { grantFestivalGear, grantRaidFinale, grantRaidPhase, type GrantDeps } from './gear-grants';
 import { credit, type LedgerStorage } from './ledger';
 import { loadAutofire, targetOf } from './raid-autofire';
 import { grantFestivalCreature } from './raid-festival';
@@ -55,6 +56,8 @@ export interface ResolveDeps {
   rng: Rng;
   /** Live randomness for the quirk of a Festival creature. Defaults to crypto. */
   quirkRng?: Rng;
+  /** Live randomness for gear drops (a cleared phase, a won finale, a Festival piece). Defaults to crypto. */
+  gearRng?: Rng;
   /** The analytics event log. Optional: without it nothing is logged. */
   analytics?: Analytics;
 }
@@ -102,14 +105,24 @@ export function bossFor(bossId: string): BossDef {
 
 export const aliasFor = (index: number): string => `m${index + 1}`;
 
+/**
+ * A creature's slot for a fight. The slot carries the final stats (level, fusion and the worn item,
+ * capped) and the final crit bonus, so the stored fight input is self-contained: a replay never looks
+ * at gear again, and changing or dismantling the item later cannot change an old fight.
+ */
 function slotFor(creature: TeamCreature, alias: string): FightSlot {
-  return makeSlot(creature.species, {
+  const slot = makeSlot(creature.species, {
     id: creature.id,
     ownerId: alias,
     level: creature.level,
     fusionCount: creature.fusionCount,
     name: creature.nickname ?? creature.species.name,
   });
+  return {
+    ...slot,
+    stats: creature.stats,
+    ...(creature.crit === undefined ? {} : { crit: creature.crit }),
+  };
 }
 
 /** The basic finale ability a member gets when they did not pick one: round-robin over the four. */
@@ -468,6 +481,20 @@ export function settleParty(
     }
   }
 
+  // --- Gear: scrap for a cleared phase, one gear roll for a won finale (members only) ---
+  if (result.cleared) {
+    const gearDeps: GrantDeps = {
+      storage,
+      now: deps.now,
+      rng: deps.gearRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+      analytics: deps.analytics,
+    };
+    for (const userId of memberIds) {
+      if (phase === 'finale') grantRaidFinale(gearDeps, userId, week.weekId, payout.rank);
+      else grantRaidPhase(gearDeps, userId, week.weekId, phase);
+    }
+  }
+
   // --- Finale loot ---
   const jackpot =
     phase === 'finale' ? rollJackpots(deps, week.weekId, party, memberIds, result, payout) : [];
@@ -477,7 +504,18 @@ export function settleParty(
     const progression = readWeekProgression(sql, week.weekId);
     if (progression?.festival === true && progression.festivalSpecies !== null) {
       const quirkRng = deps.quirkRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+      const festivalSpecies = content.creatures.find((c) => c.id === progression.festivalSpecies);
+      const gearDeps: GrantDeps = {
+        storage,
+        now: deps.now,
+        rng: deps.gearRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+        analytics: deps.analytics,
+      };
       for (const userId of memberIds) {
+        // The Festival piece, in the tint of the Festival creature, next to the creature itself.
+        if (festivalSpecies !== undefined) {
+          grantFestivalGear(gearDeps, userId, week.weekId, festivalSpecies.element);
+        }
         grantFestivalCreature(
           storage,
           quirkRng,

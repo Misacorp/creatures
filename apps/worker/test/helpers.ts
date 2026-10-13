@@ -201,11 +201,29 @@ export function undoAutofireMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 14');
 }
 
+/** Tables created by migration 17 (gear, parts, blueprints, the workshop and the Crafting skill). */
+export const GEAR_TABLES = [
+  'gear_items',
+  'parts',
+  'blueprints',
+  'workshop_jobs',
+  'crafting_skill',
+  'gear_grants',
+  'gear_actions',
+] as const;
+
+/** Puts a database back to before migration 17 (gear and crafting). */
+export function undoGearMigration(sql: SqlStorage): void {
+  for (const table of GEAR_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
+  sql.exec('DELETE FROM schema_version WHERE version = 17');
+}
+
 /** Tables created by migration 16 (the analytics event log). */
 export const ANALYTICS_TABLES = ['analytics_events', 'analytics_seen', 'analytics_once'] as const;
 
 /** Puts a database back to before migration 16 (the analytics event log). */
 export function undoAnalyticsMigration(sql: SqlStorage): void {
+  undoGearMigration(sql);
   for (const table of ANALYTICS_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
   sql.exec('DELETE FROM schema_version WHERE version = 16');
 }

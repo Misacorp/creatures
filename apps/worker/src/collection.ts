@@ -7,6 +7,7 @@
  */
 import {
   applyCatchToCollection,
+  applyGear,
   canTrain,
   RULES,
   content,
@@ -22,11 +23,20 @@ import {
   sanitizeNickname,
   type CreatureSpecies,
   type DurationId,
+  type GearRarity,
   type Rng,
   type Stats,
   type SuppliesId,
 } from '@creatures/game';
 import type { Analytics, CatchProps } from './analytics';
+import { grantExpeditionLoot, type GrantView } from './gear-grants';
+import {
+  equippedByCreature,
+  openJobOf,
+  openJobsByCreature,
+  rowToItem,
+  type GearRow,
+} from './gear-store';
 import {
   credit,
   getBalances,
@@ -116,6 +126,24 @@ export interface CreatureView {
    */
   quirk: string | null;
   stats: Stats;
+  /**
+   * The stats a fight uses: `stats` with the equipped item folded in (capped). Equal to `stats` for a
+   * creature without gear. Gear changes nothing else about the creature.
+   */
+  statsWithGear: Stats;
+  /** The item the creature wears (one slot), or null. The full item is in the gear view. */
+  gear: {
+    id: string;
+    baseId: string;
+    rarity: GearRarity;
+    level: number;
+    enchantId: string | null;
+  } | null;
+  /**
+   * What the creature is doing, or null: on an expedition or on a workshop job. A busy creature
+   * cannot start the other; it still fights in raids. `away` is true for an expedition only.
+   */
+  busy: { kind: 'expedition' | 'job'; id: string } | null;
   /** Bait for the next level (discount applied), or null at the level cap. */
   trainCost: number | null;
   /**
@@ -146,6 +174,11 @@ export interface ExpeditionResult {
   /** True if the player recalled before the expedition ended. */
   recalled: boolean;
   catches: CatchView[];
+  /**
+   * Parts and maybe a blueprint the trip brought back (a recall brings back the share of the scrap
+   * that was caught). Absent in results stored before gear existed.
+   */
+  loot?: GrantView;
 }
 
 export interface ExpeditionView {
@@ -195,6 +228,11 @@ export interface CollectionDeps {
    * consumes the draws of a catch.
    */
   quirkRng: Rng;
+  /**
+   * Live randomness for the loot of an expedition (parts, blueprints). Separate from `rng`, so loot
+   * never consumes the draws of a catch.
+   */
+  gearRng: Rng;
   /** The analytics event log. Optional: without it nothing is logged. */
   analytics?: Analytics;
 }
@@ -294,9 +332,12 @@ export class Collection {
     row: CreatureRow,
     medianLevel: number | null,
     essence: number,
+    worn: GearRow | undefined,
+    jobId: string | undefined,
   ): CreatureView {
     const species = speciesOf(row.species);
     const away = row.away_expedition_id !== null;
+    const stats = effectiveStats(species, row.level, row.fusion_count);
     const trainable = canTrain({ level: row.level, levelCap: species.levelCap, away: false });
     const abilityId = species.ability?.id;
     const nextAbilityId =
@@ -316,7 +357,29 @@ export class Collection {
       origin: row.origin,
       caughtAt: row.caught_at,
       quirk: row.quirk_id !== null && quirkText(row.quirk_id) !== undefined ? row.quirk_id : null,
-      stats: effectiveStats(species, row.level, row.fusion_count),
+      stats,
+      statsWithGear: applyGear(
+        stats,
+        species.crit,
+        species.role,
+        species.element,
+        worn === undefined ? null : rowToItem(worn),
+      ).stats,
+      gear:
+        worn === undefined
+          ? null
+          : {
+              id: worn.id,
+              baseId: worn.base_id,
+              rarity: worn.rarity,
+              level: worn.level,
+              enchantId: worn.enchant_id,
+            },
+      busy: away
+        ? { kind: 'expedition', id: row.away_expedition_id as string }
+        : jobId === undefined
+          ? null
+          : { kind: 'job', id: jobId },
       ability:
         abilityId === undefined
           ? null
@@ -424,6 +487,8 @@ export class Collection {
         RECENT_CLAIMED,
       )
       .toArray();
+    const worn = equippedByCreature(this.sql, userId);
+    const jobs = openJobsByCreature(this.sql, userId);
     return {
       serverNow: this.deps.now(),
       balances,
@@ -432,7 +497,7 @@ export class Collection {
         ? {}
         : { starterOptions: content.creatures.filter((c) => c.starter).map((c) => c.id) }),
       creatures: this.creatureRows(userId).map((row) =>
-        this.creatureView(row, medianLevel, balances.essence),
+        this.creatureView(row, medianLevel, balances.essence, worn.get(row.id), jobs.get(row.id)),
       ),
       expeditions: [...active, ...claimed].map((row) => this.expeditionView(row)),
       slots: { total: EXPEDITION_SLOTS, used: active.length },
@@ -492,6 +557,10 @@ export class Collection {
       const prior = lookupSpend(this.sql, userId, input.idempotencyKey);
       if (prior === null) {
         if (creature.away_expedition_id !== null) throw new CollectionError(409, 'creature_away');
+        // One activity at a time: a creature on a workshop job cannot go on an expedition.
+        if (openJobOf(this.sql, creature.id) !== null) {
+          throw new CollectionError(409, 'creature_on_job');
+        }
         if (this.activeCount(userId) >= EXPEDITION_SLOTS) {
           throw new CollectionError(409, 'slots_full');
         }
@@ -620,7 +689,22 @@ export class Collection {
         explorer.id,
         expedition.id,
       );
-      const result: ExpeditionResult = { recalled: now < expedition.ends_at, catches };
+      const recalled = now < expedition.ends_at;
+      // Parts and maybe a blueprint, from their own live RNG (the catches above used `rng`).
+      const loot = grantExpeditionLoot(
+        {
+          storage: this.deps.storage,
+          now: this.deps.now,
+          rng: this.deps.gearRng,
+          analytics: this.deps.analytics,
+        },
+        userId,
+        expedition.id,
+        expedition.duration,
+        speciesOf(explorer.species).element,
+        { completed: !recalled, caught: count, rolls: expedition.rolls },
+      );
+      const result: ExpeditionResult = { recalled, catches, loot };
       this.sql.exec(
         `UPDATE expeditions SET status = 'claimed', claimed_at = ?, result = ?
          WHERE id = ? AND status = 'active'`,

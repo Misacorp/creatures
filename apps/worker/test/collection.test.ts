@@ -226,7 +226,10 @@ function skipFirstExpedition(sql: SqlStorage, userId: string): void {
   sql.exec('UPDATE player_progress SET expeditions_claimed = 1 WHERE user_id = ?', userId);
 }
 
-const seeded = (): GuildCoreOptions => ({ rng: createSeededRng('m2b-tests') });
+const seeded = (): GuildCoreOptions => ({
+  rng: createSeededRng('m2b-tests'),
+  gearRng: createSeededRng('m2b-gear'),
+});
 
 describe('migration 4', () => {
   it('applies on a Durable Object that is at schema version 3, keeping its data', async () => {
@@ -257,7 +260,7 @@ describe('migration 4', () => {
 
       core.migrate();
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        16,
+        17,
       );
       expect(core.balances(USER_ID).bait).toBe(42);
       const res = await ctx.request(secret, '/api/state');
@@ -351,6 +354,10 @@ describe('GET /api/state', () => {
           origin: 'starter',
           caughtAt: T0,
           stats: { hp: 96, atk: 40, spd: 28 },
+          // No gear yet: the fight stats are the same, nothing is worn and nothing is busy.
+          statsWithGear: { hp: 96, atk: 40, spd: 28 },
+          gear: null,
+          busy: null,
           trainCost: trainCostAt(1),
           evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: false },
           ability: {
@@ -901,7 +908,12 @@ describe('POST /api/expeditions/{id}/claim', () => {
         const exp = expeditionOf(await send(p, p.starterId, 'medium', 'basic'));
         ctx.clock.t = exp.startedAt + 2 * HOUR; // floor(2 * 1/3) = 0
         const res = await claim(p, exp.id);
-        expect(resultOf(res)).toEqual({ recalled: true, catches: [] });
+        // Nothing was caught, so the trip brought back no scrap and nothing else.
+        expect(resultOf(res)).toEqual({
+          recalled: true,
+          catches: [],
+          loot: { gear: [], converted: [], parts: {}, blueprints: [] },
+        });
         expect((res.body['state'] as StateBody).creatures[0]?.away).toBe(false);
       },
       seeded(),
@@ -953,7 +965,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
           expect(count(ctx.sql, 'creatures')).toBe(lines);
           return all;
         },
-        { rng },
+        { rng, gearRng: createSeededRng('concurrent-gear') },
       );
       return { drawn: rng.drawn(), results };
     };

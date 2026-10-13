@@ -22,10 +22,16 @@
  */
 import {
   DURATION_IDS,
+  GEAR_RARITIES,
+  JOB_KINDS,
   RARITIES,
+  RULES,
   SUPPLIES_IDS,
   content,
+  gearContent,
   type DurationId,
+  type GearRarity,
+  type JobKind,
   type Rarity,
   type SuppliesId,
 } from '@creatures/game';
@@ -52,6 +58,19 @@ const CACHE_MAX = 512;
 export type PhaseName = 'phase1' | 'phase2' | 'finale';
 export type CatchResult = 'new' | 'fused' | 'converted';
 export type FestivalResult = 'new' | 'fused' | 'converted';
+
+/** Where a gear grant came from. */
+export const GEAR_SOURCES = [
+  'raid_phase',
+  'raid_finale',
+  'festival',
+  'expedition',
+  'welcome',
+] as const;
+export type GearSource = (typeof GEAR_SOURCES)[number];
+
+/** Most items one `gear_drop` event lists. */
+const MAX_DROP_ITEMS = 4;
 
 export interface CatchProps {
   species: string;
@@ -137,6 +156,72 @@ export type AnalyticsEvent =
     }
   | { kind: 'festival_grant'; species: string; result: FestivalResult }
   | {
+      /** A grant of gear, parts or a blueprint. Content ids and counts only. */
+      kind: 'gear_drop';
+      source: GearSource;
+      gear: readonly { base: string; rarity: GearRarity }[];
+      /** Items that did not fit in a full inventory and became parts instead. */
+      converted: number;
+      scrap: number;
+      shards: number;
+      glimmer: number;
+      blueprint: string | null;
+      blueprintDuplicate: boolean;
+    }
+  | {
+      kind: 'gear_equip';
+      base: string;
+      rarity: GearRarity;
+      level: number;
+      /** The species of the creature that got the item (or lost it, for 'unequip'). */
+      species: string;
+      action: 'equip' | 'unequip';
+      /** Another item was taken off to make room. */
+      swap: boolean;
+    }
+  | {
+      kind: 'gear_upgrade';
+      base: string;
+      rarity: GearRarity;
+      from: number;
+      to: number;
+      essence: number;
+      scrap: number;
+    }
+  | {
+      kind: 'gear_dismantle';
+      base: string;
+      rarity: GearRarity;
+      level: number;
+      scrap: number;
+      shards: number;
+      glimmer: number;
+      unequipped: boolean;
+    }
+  | {
+      kind: 'job_start';
+      job: JobKind;
+      /** The base crafted, or the base of the item worked on. */
+      base: string;
+      rarity: GearRarity;
+      species: string;
+      hours: number;
+      skillLevel: number;
+    }
+  | {
+      kind: 'job_claim';
+      job: JobKind;
+      base: string;
+      /** The rarity that came out (a craft) or the item's rarity. */
+      rarity: GearRarity;
+      /** A craft that came out one rarity above its blueprint. */
+      upgraded: boolean;
+      enchant: string | null;
+      xp: number;
+      skillLevel: number;
+      leveledUp: boolean;
+    }
+  | {
       kind: 'post_result';
       result: 'sent' | 'retry' | 'failed';
       error: PostFailureKind | null;
@@ -151,6 +236,8 @@ const UNKNOWN = 'unknown';
 const SPECIES_IDS: ReadonlySet<string> = new Set(content.creatures.map((c) => c.id));
 const BOSS_IDS: ReadonlySet<string> = new Set(content.bosses.map((b) => b.id));
 const ABILITY_IDS: ReadonlySet<string> = new Set(content.finaleAbilities.map((a) => a.id));
+const GEAR_BASE_IDS: ReadonlySet<string> = new Set(gearContent.bases.map((b) => b.id));
+const ENCHANT_IDS: ReadonlySet<string> = new Set(gearContent.enchants.map((e) => e.id));
 const POST_ERRORS: ReadonlySet<string> = new Set<PostFailureKind>([
   'rate_limited',
   'server_error',
@@ -179,6 +266,9 @@ function catchProps(list: readonly CatchProps[]): unknown[] {
     result: oneOf(['new', 'fused', 'converted'] as const, c.result, 'new'),
   }));
 }
+
+const gearBase = (value: string): string => fromSet(GEAR_BASE_IDS, value);
+const gearRarity = (value: string): GearRarity => oneOf(GEAR_RARITIES, value, 'common');
 
 /** The props object of an event, rebuilt field by field from checked values. */
 export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
@@ -273,6 +363,67 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
       return {
         species: species(event.species),
         result: oneOf(['new', 'fused', 'converted'] as const, event.result, 'new'),
+      };
+    case 'gear_drop':
+      return {
+        source: oneOf(GEAR_SOURCES, event.source, 'raid_phase'),
+        gear: event.gear
+          .slice(0, MAX_DROP_ITEMS)
+          .map((g) => ({ base: gearBase(g.base), rarity: gearRarity(g.rarity) })),
+        converted: int(event.converted, 99),
+        scrap: int(event.scrap),
+        shards: int(event.shards),
+        glimmer: int(event.glimmer),
+        blueprint: event.blueprint === null ? null : gearBase(event.blueprint),
+        blueprintDuplicate: bool(event.blueprintDuplicate),
+      };
+    case 'gear_equip':
+      return {
+        base: gearBase(event.base),
+        rarity: gearRarity(event.rarity),
+        level: int(event.level, RULES.gear.maxLevel),
+        species: species(event.species),
+        action: event.action === 'unequip' ? 'unequip' : 'equip',
+        swap: bool(event.swap),
+      };
+    case 'gear_upgrade':
+      return {
+        base: gearBase(event.base),
+        rarity: gearRarity(event.rarity),
+        from: int(event.from, RULES.gear.maxLevel),
+        to: int(event.to, RULES.gear.maxLevel),
+        essence: int(event.essence),
+        scrap: int(event.scrap),
+      };
+    case 'gear_dismantle':
+      return {
+        base: gearBase(event.base),
+        rarity: gearRarity(event.rarity),
+        level: int(event.level, RULES.gear.maxLevel),
+        scrap: int(event.scrap),
+        shards: int(event.shards),
+        glimmer: int(event.glimmer),
+        unequipped: bool(event.unequipped),
+      };
+    case 'job_start':
+      return {
+        job: oneOf(JOB_KINDS, event.job, 'craft'),
+        base: gearBase(event.base),
+        rarity: gearRarity(event.rarity),
+        species: species(event.species),
+        hours: int(event.hours, 99),
+        skillLevel: int(event.skillLevel, 99),
+      };
+    case 'job_claim':
+      return {
+        job: oneOf(JOB_KINDS, event.job, 'craft'),
+        base: gearBase(event.base),
+        rarity: gearRarity(event.rarity),
+        upgraded: bool(event.upgraded),
+        enchant: event.enchant === null ? null : fromSet(ENCHANT_IDS, event.enchant),
+        xp: int(event.xp, 100_000),
+        skillLevel: int(event.skillLevel, 99),
+        leveledUp: bool(event.leveledUp),
       };
     case 'post_result':
       return {

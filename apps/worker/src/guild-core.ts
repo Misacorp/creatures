@@ -2,6 +2,9 @@ import { createCryptoRng, type Rng } from '@creatures/game';
 import * as v from 'valibot';
 import { Analytics } from './analytics';
 import { Collection } from './collection';
+import { Gear } from './gear';
+import { gearMigration } from './gear-migration';
+import { gearRoutes } from './gear-routes';
 import { creatureQuirkMigration } from './creature-quirk-migration';
 import { collectionRoutes } from './collection-routes';
 import { baitForDay, leetPointsForDay } from './economy';
@@ -276,6 +279,8 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
       at INTEGER NOT NULL
     )`);
   },
+  // Version 17: gear, parts, blueprints, the workshop and the Crafting skill (see gear-migration.ts).
+  gearMigration,
 ];
 
 export interface SessionUser {
@@ -320,6 +325,7 @@ function parseLedgerQuery(url: URL): number | null {
 
 const routes: Routes<RequestContext> = {
   ...collectionRoutes,
+  ...gearRoutes,
   ...raidRoutes,
   '/api/me': {
     GET: async (_request, { user, guildId, core }) => {
@@ -363,6 +369,12 @@ export interface GuildCoreOptions {
    * never consumes a test's scripted catch draws or a raid's fight seeds.
    */
   quirkRng?: Rng;
+  /**
+   * Live randomness for gear and crafting: every drop (raid, expedition, Festival, welcome kit) and the
+   * result of every claimed job. Defaults to crypto.getRandomValues. Separate from the others, so a
+   * drop never consumes a test's scripted catch draws or a raid's fight seeds.
+   */
+  gearRng?: Rng;
   /** Fallback guild id (the Durable Object's name), used only until one is stored. */
   guildId?: () => string | undefined;
   /** Builds the leet source. Returning null disables syncing (fail closed). */
@@ -410,6 +422,7 @@ export class GuildCore {
   private readonly leetSource: LeetSource | null;
   private readonly syncBudgetMs: number;
   readonly collection: Collection;
+  readonly gear: Gear;
   readonly raid: Raid;
   readonly analytics: Analytics;
   private syncInFlight: Promise<LeetSyncResult> | null = null;
@@ -436,13 +449,16 @@ export class GuildCore {
       now,
       ...(options.analyticsSecret === undefined ? {} : { secret: options.analyticsSecret }),
     });
+    const gearRng = options.gearRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
     this.collection = new Collection({
       storage,
       now,
       analytics: this.analytics,
       rng: options.rng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
       quirkRng,
+      gearRng,
     });
+    this.gear = new Gear({ storage, now, rng: gearRng, analytics: this.analytics });
     this.raid = new Raid({
       storage,
       now,
@@ -450,6 +466,7 @@ export class GuildCore {
       practice: options.raidPractice === true,
       analytics: this.analytics,
       quirkRng,
+      gearRng,
       ...(options.readinessRng === undefined ? {} : { readinessRng: options.readinessRng }),
     });
     this.limiter = new TokenBucketLimiter({
@@ -1136,6 +1153,7 @@ export class GuildCore {
     await this.deliverPosts();
     // Old analytics rows go; a long backlog is worked off over the next alarms.
     this.pruneBacklog = this.analytics.prune();
+    this.gear.prune();
     await this.rearmAlarm(this.now() + ALARM_REARM_SKEW_MS);
   }
 }

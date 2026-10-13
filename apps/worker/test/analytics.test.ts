@@ -1,9 +1,13 @@
 import {
+  GEAR_RARITIES,
+  JOB_KINDS,
   RARITIES,
   RULES,
   content,
   createSeededRng,
   expeditionCost,
+  gearContent,
+  rollGear,
   type Rng,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
@@ -22,6 +26,8 @@ import {
 import { enqueuePost, recordOutcome, type PostSender } from '../src/discord-posts';
 import { getSessionKey } from '../src/session';
 import { grantFestivalCreature } from '../src/raid-festival';
+import { creditParts, insertItem } from '../src/gear-store';
+import { GEAR_SOURCES } from '../src/analytics';
 import { LIVE_ROUND_MS, evaluate, loadLive, roundStartsOf } from '../src/raid-live';
 import { eventTimes } from '../src/raid-schedule';
 import {
@@ -325,7 +331,7 @@ describe('migration 16 (the analytics event log)', () => {
           .toArray()
           .map((i) => i.name),
       ).toContain('analytics_events_at');
-      expect(version(sql)).toBe(16);
+      expect(version(sql)).toBe(17);
       return Promise.resolve();
     });
   });
@@ -338,14 +344,14 @@ describe('migration 16 (the analytics event log)', () => {
       expect(version(sql)).toBe(14);
       expect(tables(sql)).not.toContain('analytics_events');
       core.migrate();
-      expect(version(sql)).toBe(16);
+      expect(version(sql)).toBe(17);
       expect(tables(sql)).toContain('analytics_events');
       expect(sql.exec('SELECT announce_channel_id FROM guild_meta').one()).toEqual({
         announce_channel_id: '555555555555555555',
       });
       expect(sql.exec('SELECT user_id FROM players').toArray()).toEqual([{ user_id: USER_ID }]);
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(16);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(17);
     });
   });
 
@@ -355,7 +361,7 @@ describe('migration 16 (the analytics event log)', () => {
       undoAnalyticsMigration(sql);
       expect(version(sql)).toBe(15);
       core.migrate();
-      expect(version(sql)).toBe(16);
+      expect(version(sql)).toBe(17);
       sql.exec(
         "INSERT INTO analytics_events (at, kind, actor_hash, props_json) VALUES (1, 'x', NULL, '{}')",
       );
@@ -1182,6 +1188,13 @@ function vocabulary(): Set<string> {
     'rejected',
     'redirect',
     ...RARITIES,
+    ...GEAR_RARITIES,
+    ...JOB_KINDS,
+    ...GEAR_SOURCES,
+    'equip',
+    'unequip',
+    ...gearContent.bases.map((b) => b.id),
+    ...gearContent.enchants.map((e) => e.id),
     ...content.creatures.map((c) => c.id),
     ...content.bosses.map((b) => b.id),
     ...content.finaleAbilities.map((a) => a.id),
@@ -1231,6 +1244,79 @@ describe('privacy', () => {
         b.secret = await ctx.core.createSession(ctx.guildId, OTHER);
         await call(ctx, a.secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
         await call(ctx, b.secret, 'POST', `/api/expeditions/${exp2.id}/claim`, {});
+        // Gear and the workshop: the welcome kit, equip, upgrade, a craft, an improve, an enchant and
+        // a dismantle. Every one of them is logged with content ids and numbers only.
+        const kit = (await call(ctx, a.secret, 'GET', '/api/gear')).body as {
+          items: { id: string }[];
+        };
+        const kitItem = kit.items[0]?.id as string;
+        await call(ctx, a.secret, 'POST', `/api/gear/${kitItem}/equip`, {
+          creatureId: a.starterId,
+        });
+        ctx.core.credit({
+          userId: USER_ID,
+          currency: 'essence',
+          amount: 100,
+          source: 'test',
+          idempotencyKey: 'privacy-essence',
+        });
+        await call(ctx, a.secret, 'POST', `/api/gear/${kitItem}/upgrade`, {
+          idempotencyKey: newKey(),
+        });
+        const blueprint = rows<{ base_id: string }>(
+          ctx.sql,
+          'SELECT base_id FROM blueprints WHERE user_id = ?',
+          USER_ID,
+        )[0]?.base_id as string;
+        const crafting = await call(ctx, a.secret, 'POST', '/api/workshop/jobs', {
+          kind: 'craft',
+          creatureId: a.starterId,
+          blueprintId: blueprint,
+          idempotencyKey: newKey(),
+        });
+        expect(crafting.status).toBe(200);
+        ctx.clock.t += 5 * HOUR;
+        a.secret = await ctx.core.createSession(ctx.guildId, USER, '555555555555555555');
+        const craftJob = (crafting.body['result'] as { jobId: string }).jobId;
+        const done = await call(ctx, a.secret, 'POST', `/api/workshop/jobs/${craftJob}/claim`, {
+          idempotencyKey: newKey(),
+        });
+        expect(done.status).toBe(200);
+        const rare = insertItem(
+          ctx.sql,
+          USER_ID,
+          {
+            baseId: 'volt-band',
+            rarity: 'rare',
+            rolls: rollGear(createSeededRng('p'), 'volt-band', 'rare'),
+          },
+          'test',
+          ctx.clock.t,
+        );
+        creditParts(ctx.sql, USER_ID, { scrap: 20, glimmer: 2, 'spark-shard': 6 });
+        for (const body of [
+          { kind: 'improve', gearId: rare, secondaryIndex: 0 },
+          { kind: 'enchant', gearId: rare, enchantId: 'spark-luck' },
+        ]) {
+          const started = await call(ctx, a.secret, 'POST', '/api/workshop/jobs', {
+            ...body,
+            creatureId: a.starterId,
+            idempotencyKey: newKey(),
+          });
+          expect(started.status).toBe(200);
+          ctx.clock.t += 7 * HOUR;
+          a.secret = await ctx.core.createSession(ctx.guildId, USER, '555555555555555555');
+          const id = (started.body['result'] as { jobId: string }).jobId;
+          await call(ctx, a.secret, 'POST', `/api/workshop/jobs/${id}/claim`, {
+            idempotencyKey: newKey(),
+          });
+        }
+        await call(ctx, a.secret, 'POST', `/api/gear/${rare}/dismantle`, {
+          idempotencyKey: newKey(),
+        });
+        // Sessions idle out after an hour: sign in again after the jumps.
+        a.secret = await ctx.core.createSession(ctx.guildId, USER, '555555555555555555');
+        b.secret = await ctx.core.createSession(ctx.guildId, OTHER);
         // Raid actions through the API.
         await call(ctx, a.secret, 'GET', '/api/raid');
         await call(ctx, a.secret, 'PUT', '/api/raid/opt-out', { optOut: true });
@@ -1271,6 +1357,12 @@ describe('privacy', () => {
           'autofire_toggle',
           'ability_pick',
           'phase_result',
+          'gear_drop',
+          'gear_equip',
+          'gear_upgrade',
+          'gear_dismantle',
+          'job_start',
+          'job_claim',
         ]) {
           expect(seen.has(kind), kind).toBe(true);
         }
@@ -1309,7 +1401,11 @@ describe('privacy', () => {
           for (const value of values) expect(allowed.has(value), value).toBe(true);
         }
       },
-      { postSender: sender, raidRng: createSeededRng('privacy') },
+      {
+        postSender: sender,
+        raidRng: createSeededRng('privacy'),
+        gearRng: createSeededRng('privacy-gear'),
+      },
     );
   });
 });
