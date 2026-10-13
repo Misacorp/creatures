@@ -15,12 +15,16 @@ export interface TabDef {
   glyph: string;
 }
 
+/**
+ * Left to right is an escalating level of danger and excitement (Misa): your creatures at home, the
+ * Workshop, Expeditions out in the world, the Dungeon, and the Raid boss last.
+ */
 export const TABS: readonly TabDef[] = [
-  { id: 'collection', label: 'Collection', glyph: 'paw' },
-  { id: 'expeditions', label: 'Expeditions', glyph: 'compass' },
-  { id: 'raid', label: 'Raid', glyph: 'blade' },
+  { id: 'collection', label: 'Creatures', glyph: 'paw' },
   { id: 'workshop', label: 'Workshop', glyph: 'anvil' },
+  { id: 'expeditions', label: 'Expeditions', glyph: 'compass' },
   { id: 'dungeon', label: 'Dungeon', glyph: 'door' },
+  { id: 'raid', label: 'Raid', glyph: 'blade' },
 ];
 
 const INK = '#0d0a1a';

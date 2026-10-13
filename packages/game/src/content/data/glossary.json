@@ -384,7 +384,7 @@
     "lines": [
       "Creatures act from highest Speed (SPD) to lowest.",
       "With equal Speed, the lower slot goes first.",
-      "Check each creature's SPD on the Collection tab."
+      "Check each creature's SPD on the Creatures tab."
     ],
     "visual": {
       "kind": "glyph",

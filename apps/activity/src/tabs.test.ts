@@ -3,14 +3,15 @@ import { BUNDLED_GLYPHS } from './glyphs';
 import { TABS, tabAfterKey, tabPalette } from './tabs';
 
 describe('the tabs', () => {
-  it('has the five tabs in order, the Dungeon last', () => {
+  it('has the five tabs in order of rising danger, the Raid last', () => {
     expect(TABS.map((t) => t.id)).toEqual([
       'collection',
-      'expeditions',
-      'raid',
       'workshop',
+      'expeditions',
       'dungeon',
+      'raid',
     ]);
+    expect(TABS[0]?.label).toBe('Creatures');
     expect(new Set(TABS.map((t) => t.id)).size).toBe(TABS.length);
   });
 
@@ -29,11 +30,11 @@ describe('the tabs', () => {
   });
 
   it('moves along the tabs with the arrow keys, wrapping, and Home and End jump', () => {
-    expect(tabAfterKey('collection', 'ArrowRight')).toBe('expeditions');
-    expect(tabAfterKey('dungeon', 'ArrowRight')).toBe('collection');
-    expect(tabAfterKey('collection', 'ArrowLeft')).toBe('dungeon');
-    expect(tabAfterKey('raid', 'Home')).toBe('collection');
-    expect(tabAfterKey('raid', 'End')).toBe('dungeon');
+    expect(tabAfterKey('collection', 'ArrowRight')).toBe('workshop');
+    expect(tabAfterKey('raid', 'ArrowRight')).toBe('collection');
+    expect(tabAfterKey('collection', 'ArrowLeft')).toBe('raid');
+    expect(tabAfterKey('dungeon', 'Home')).toBe('collection');
+    expect(tabAfterKey('dungeon', 'End')).toBe('raid');
     expect(tabAfterKey('raid', 'Enter')).toBeNull();
     expect(tabAfterKey('raid', 'a')).toBeNull();
   });
