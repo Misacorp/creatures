@@ -480,11 +480,11 @@ describe('costs and yields', () => {
   });
 
   it('crafting costs follow the blueprint rarity, with a shard of the base tint only for tinted bases', () => {
-    expect(craftCost('trail-charm')).toEqual({ scrap: 6 });
-    expect(craftCost('fortune-charm')).toEqual({ scrap: 12 }); // neutral rare: no shard
-    expect(craftCost('wave-band')).toEqual({ scrap: 12, 'tide-shard': 1 });
-    expect(craftCost('pearl-trinket')).toEqual({ scrap: 24, 'tide-shard': 2, glimmer: 1 });
-    expect(craftCost('lantern-charm')).toEqual({ scrap: 24, 'tide-shard': 2, glimmer: 2 });
+    expect(craftCost('trail-charm')).toEqual({ scrap: 9 });
+    expect(craftCost('fortune-charm')).toEqual({ scrap: 18 }); // neutral rare: no shard
+    expect(craftCost('wave-band')).toEqual({ scrap: 18, 'tide-shard': 1 });
+    expect(craftCost('pearl-trinket')).toEqual({ scrap: 32, 'tide-shard': 2, glimmer: 1 });
+    expect(craftCost('lantern-charm')).toEqual({ scrap: 32, 'tide-shard': 2, glimmer: 2 });
     expect(() => craftCost('nope')).toThrow(RangeError);
   });
 
@@ -531,34 +531,37 @@ describe('jobs and the crafting skill', () => {
     }
   });
 
-  it('gives XP of 10 per nominal hour, whatever the skill', () => {
-    expect(jobXp('craft', 'common')).toBe(40);
-    expect(jobXp('craft', 'epic')).toBe(120);
-    expect(jobXp('improve', 'rare')).toBe(20);
-    expect(jobXp('enchant', 'epic')).toBe(60);
+  it('gives XP of 24 per nominal hour, whatever the skill', () => {
+    expect(RULES.gear.skill.xpPerHour).toBe(24);
+    expect(jobXp('craft', 'common')).toBe(96);
+    expect(jobXp('craft', 'epic')).toBe(288);
+    expect(jobXp('improve', 'rare')).toBe(48);
+    expect(jobXp('enchant', 'epic')).toBe(144);
     expect(jobHours('enchant', 'epic')).toBe(6);
   });
 
   it('maps XP to levels 1 to 10 on a slow curve', () => {
     expect(skillLevel(0)).toBe(1);
-    expect(skillLevel(79)).toBe(1);
-    expect(skillLevel(80)).toBe(2);
-    expect(skillLevel(599)).toBe(4);
-    expect(skillLevel(600)).toBe(5);
-    expect(skillLevel(3_499)).toBe(9);
-    expect(skillLevel(3_500)).toBe(10);
+    expect(skillLevel(99)).toBe(1);
+    expect(skillLevel(100)).toBe(2);
+    expect(skillLevel(699)).toBe(4);
+    expect(skillLevel(700)).toBe(5);
+    expect(skillLevel(5_499)).toBe(9);
+    expect(skillLevel(5_500)).toBe(10);
     expect(skillLevel(10_000_000)).toBe(10);
     expect(skillLevel(-5)).toBe(1);
     expect(skillLevel(Number.NaN)).toBe(1);
   });
 
   it('a daily crafter reaches level 5 in about a month', () => {
-    // Scrap limits the work: a week of two 8 h crafts and two 2 h improves is 200 XP, 800 in a month.
-    const week = 2 * jobXp('craft', 'rare') + 2 * jobXp('improve', 'rare');
+    // Scrap limits the work (the simulator's daily player: about 7 crafts and a few enchants and
+    // improves in the first month, most of them on the best crafter). A week with one 8 h Rare craft
+    // is 192 XP, 770 in four weeks: level 5.
+    const week = jobXp('craft', 'rare');
     expect(skillLevel(4 * week)).toBeGreaterThanOrEqual(5);
     expect(skillLevel(4 * week)).toBeLessThanOrEqual(6);
-    // A casual player (one rare craft a week) is around level 3 after the same month.
-    expect(skillLevel(4 * jobXp('craft', 'rare'))).toBeLessThanOrEqual(4);
+    // A casual player (one Common craft a week) is around level 3 after the same month.
+    expect(skillLevel(4 * jobXp('craft', 'common'))).toBeLessThanOrEqual(4);
   });
 
   it('craftRarity: the blueprint rarity at level 1, one higher with 1% per level above 1', () => {
@@ -672,7 +675,7 @@ describe('drops', () => {
     });
     expect(best.parts).toEqual({ scrap: 6, 'grove-shard': 1, glimmer: 1 });
     expect(best.blueprint).not.toBeNull();
-    // Every draw at the top hits none, and a short trip never has a blueprint or glimmer.
+    // Every draw at the top hits none.
     const worst = expeditionLoot(fixedRng(HIGH), 'long', 'grove', {
       completed: true,
       caught: 3,
@@ -684,8 +687,15 @@ describe('drops', () => {
       caught: 1,
       rolls: 1,
     });
-    expect(short.parts).toEqual({ scrap: 1, 'spark-shard': 1 });
-    expect(short.blueprint).toBeNull();
+    // A short trip can drop a glimmer and a blueprint too, at low odds (every draw at 0 hits them).
+    expect(short.parts).toEqual({ scrap: 1, 'spark-shard': 1, glimmer: 1 });
+    expect(short.blueprint).not.toBeNull();
+    const shortMiss = expeditionLoot(fixedRng(HIGH), 'short', 'spark', {
+      completed: true,
+      caught: 1,
+      rolls: 1,
+    });
+    expect(shortMiss).toEqual({ parts: { scrap: 1 }, blueprint: null });
   });
 
   it('expedition loot is deterministic for a seed', () => {
