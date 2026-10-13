@@ -27,7 +27,9 @@ Misa watches production by playing. Agents also need data to understand **how pe
 1. **Event log (append-only, per guild Durable Object).** Add a table, `analytics_events (at, kind, actor_hash, props_json)`, written inside the existing transactions at the moments that matter:
    - session start;
    - starter chosen;
-   - expedition send, claim and recall;
+   - expedition send, claim and recall (v2: place, supplies carried and how many were bought, explorer rank, goal outcome, XP and stars);
+   - the end-of-trip choice: offered, chosen and its result (goal id, risk, exact odds, worked / failed / declined);
+   - journal finds, explorer rank-ups, familiarity stars and slot unlocks (ids and numbers only);
    - train, evolve and fuse;
    - roster opt-out;
    - team and placement changes;
@@ -40,7 +42,7 @@ Misa watches production by playing. Agents also need data to understand **how pe
 
    Privacy rules:
    - `actor_hash` is an HMAC of the user id, with a key HKDF-derived from an existing secret. It is stable for retention analysis, but not reversible from reports.
-   - No names and no free text in props.
+   - No names and no free text in props. `props_json` is capped at 1536 characters (it was 1024 before expeditions v2, whose events carry a list of supply ids).
    - Raw events are kept 90 days, then pruned by the guild alarm.
 
 2. **Daily rollups.** Once a day, the guild alarm (multiplexed as usual) aggregates the previous guild-local day into `analytics_daily (day, metric, dims_json, value)`. This keeps reports cheap and lets raw events expire.
