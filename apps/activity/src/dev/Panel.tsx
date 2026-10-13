@@ -1,0 +1,262 @@
+/**
+ * The staging-only debug panel: a small "DEV" button and a drawer with the dev tools of
+ * `docs/design/dev-tools.md`. This module (with `dev.css` and everything else in `src/dev/`) is loaded
+ * lazily by `dev-gate.ts` and is not part of the production build.
+ */
+import type { ComponentChildren, JSX } from 'preact';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import type { DevPanelProps } from '../dev-gate';
+import { creatureName } from '../game';
+import {
+  describeResult,
+  eventLine,
+  fetchDevEvents,
+  fetchDevState,
+  formatGameTime,
+  formatOffset,
+  runTool,
+  type DevStateView,
+} from './dev-api';
+import './dev.css';
+import { resetLocalFlags } from './flags';
+import type { CreatureChoice, ToolSpec } from './forms';
+import { CLOCK_SPECS, GOODS_SPECS, RESET_ACCOUNT_SPEC, orderedSections } from './specs';
+import { ToolForm } from './ToolForm';
+
+/** A string only this module tree contains: the production build test searches the output for it. */
+export const DEV_PANEL_MARKER = 'DEV_PANEL_MARKER_7f3a';
+
+interface Status {
+  ok: boolean;
+  text: string;
+}
+
+function Section({
+  title,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: (open: boolean) => void;
+  children: ComponentChildren;
+}): JSX.Element {
+  return (
+    <details
+      class="dev-section"
+      open={open}
+      onToggle={(event) => {
+        onToggle(event.currentTarget.open);
+      }}
+    >
+      <summary>{title}</summary>
+      <div class="dev-section-body">{children}</div>
+    </details>
+  );
+}
+
+function ClockStatus({ view }: { view: DevStateView | null }): JSX.Element {
+  if (view === null) return <p class="dev-hint">Loading the clock...</p>;
+  return (
+    <dl class="dev-clock">
+      <dt>Game time</dt>
+      <dd>{formatGameTime(view.now, view.timezone)}</dd>
+      <dt>Game day</dt>
+      <dd>{view.gameDay}</dd>
+      <dt>Shifted by</dt>
+      <dd>{formatOffset(view.offsetMs)}</dd>
+      <dt>Raid week</dt>
+      <dd>
+        {view.raid === null
+          ? 'none'
+          : `${view.raid.weekId}, ${view.raid.status}, boss ${view.raid.bossId ?? '-'}`}
+        {view.guests > 0 ? `, ${String(view.guests)} simulated players` : ''}
+      </dd>
+    </dl>
+  );
+}
+
+export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): JSX.Element {
+  const [open, setOpen] = useState(false);
+  const [view, setView] = useState<DevStateView | null>(null);
+  const [status, setStatus] = useState<Status | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [events, setEvents] = useState<string[] | null>(null);
+  const [opened, setOpened] = useState<Record<string, boolean>>({});
+  const inFlight = useRef(false);
+
+  const choices = useMemo<CreatureChoice[]>(
+    () => creatures.map((c) => ({ id: c.id, label: `${creatureName(c)} (Lv ${String(c.level)})` })),
+    [creatures],
+  );
+
+  const reloadView = (): void => {
+    void fetchDevState().then(setView);
+  };
+  const loadEvents = (): void => {
+    void fetchDevEvents().then((list) => {
+      if (list === null) setStatus({ ok: false, text: 'Could not load the events' });
+      else setEvents(list.map(eventLine));
+    });
+  };
+
+  useEffect(() => {
+    if (open) reloadView();
+  }, [open]);
+  // A new tab opens its own section first and folds the rest again.
+  useEffect(() => {
+    setOpened({});
+  }, [tab]);
+
+  const run = (spec: ToolSpec, body: Record<string, unknown>): void => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setBusy(true);
+    void runTool(spec.tool, body).then((outcome) => {
+      inFlight.current = false;
+      setBusy(false);
+      if (!outcome.ok) {
+        setStatus({ ok: false, text: `${spec.label}: ${outcome.error}` });
+        return;
+      }
+      setStatus({ ok: true, text: `${spec.label}: ${describeResult(outcome.result)}` });
+      reloadView();
+      if (spec.tool === 'analytics-rollup' && events !== null) loadEvents();
+      onChanged();
+    });
+  };
+
+  const forms = (specs: readonly ToolSpec[]): JSX.Element => (
+    <>
+      <div class="dev-quick-row">
+        {specs
+          .filter((s) => s.fields.length === 0)
+          .map((s) => (
+            <ToolForm
+              key={`${s.tool}:${s.label}`}
+              spec={s}
+              choices={choices}
+              busy={busy}
+              onRun={run}
+            />
+          ))}
+      </div>
+      {specs
+        .filter((s) => s.fields.length > 0)
+        .map((s) => (
+          <ToolForm
+            key={`${s.tool}:${s.label}`}
+            spec={s}
+            choices={choices}
+            busy={busy}
+            onRun={run}
+          />
+        ))}
+    </>
+  );
+
+  const sectionOpen = (id: string, fallback: boolean): boolean => opened[id] ?? fallback;
+  const toggle = (id: string) => (isOpen: boolean) => {
+    setOpened((prev) => (prev[id] === isOpen ? prev : { ...prev, [id]: isOpen }));
+  };
+
+  return (
+    <div data-dev-panel={DEV_PANEL_MARKER}>
+      <button
+        type="button"
+        class="dev-fab"
+        aria-expanded={open}
+        aria-controls="dev-drawer"
+        onClick={() => {
+          setOpen((o) => !o);
+        }}
+      >
+        DEV
+      </button>
+      {open && (
+        <div class="dev-drawer" id="dev-drawer" role="region" aria-label="Dev tools">
+          <header class="dev-head">
+            <h2>Dev tools (staging)</h2>
+            <button
+              type="button"
+              class="dev-close"
+              onClick={() => {
+                setOpen(false);
+              }}
+            >
+              Close
+            </button>
+          </header>
+          {status !== null && (
+            <p class={status.ok ? 'dev-status dev-ok' : 'dev-status dev-bad'} role="status">
+              {status.ok ? 'OK ' : 'Error '}
+              {status.text}
+            </p>
+          )}
+          <div class="dev-scroll">
+            <Section title="Dev clock" open={sectionOpen('clock', true)} onToggle={toggle('clock')}>
+              <ClockStatus view={view} />
+              {forms(CLOCK_SPECS)}
+            </Section>
+            <Section
+              title="Bait, parts, supplies, blueprints"
+              open={sectionOpen('goods', false)}
+              onToggle={toggle('goods')}
+            >
+              {forms(GOODS_SPECS)}
+            </Section>
+            <Section
+              title="This browser and my account"
+              open={sectionOpen('account', false)}
+              onToggle={toggle('account')}
+            >
+              <div class="dev-quick-row">
+                <button
+                  type="button"
+                  class="dev-btn"
+                  onClick={() => {
+                    const removed = resetLocalFlags();
+                    setStatus({
+                      ok: true,
+                      text: `Reset local flags: ${String(removed)} removed (coach marks, slot-wipe notice)`,
+                    });
+                    onChanged();
+                  }}
+                >
+                  Reset local flags
+                </button>
+              </div>
+              <ToolForm spec={RESET_ACCOUNT_SPEC} choices={choices} busy={busy} onRun={run} />
+            </Section>
+            {orderedSections(tab).map((section) => (
+              <Section
+                key={section.id}
+                title={section.title}
+                open={sectionOpen(section.id, section.tab === tab)}
+                onToggle={toggle(section.id)}
+              >
+                {forms(section.specs)}
+                {section.id === 'analytics' && (
+                  <div class="dev-events">
+                    <button type="button" class="dev-btn" onClick={loadEvents}>
+                      Show last 50 events
+                    </button>
+                    {events !== null && (
+                      <ol class="dev-event-list">
+                        {events.length === 0 && <li>No events yet</li>}
+                        {events.map((line, i) => (
+                          <li key={i}>{line}</li>
+                        ))}
+                      </ol>
+                    )}
+                  </div>
+                )}
+              </Section>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
