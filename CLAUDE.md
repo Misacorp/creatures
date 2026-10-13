@@ -2,7 +2,7 @@
 
 Leet Creatures is a Discord Activity: a creature collector plus a co-op weekly raid auto battler with an idle weekday loop, for small Discord communities (5–15 active players per server). It runs on Cloudflare at `creatures.misacorp.dev`.
 
-Read this file first. Design decisions live in `docs/design/` (start with `decisions.md`), research in `docs/research/`, security practice in `docs/security.md`.
+Read this file first. Design decisions live in `docs/design/` (start with `decisions.md`), research in `docs/research/`, security practice in `docs/security.md`. Lore, names, places and flavour live in the dev-only compendium, `docs/compendium/` (start with its `README.md`): read it before writing any player-facing text or new content, and add to it when content ships.
 
 ## The owner and how we work
 
