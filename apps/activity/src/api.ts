@@ -14,6 +14,7 @@ import type {
   TripResult,
 } from './expedition-types';
 import type { CreatureGearFields } from './gear-types';
+import { isInt, isNullableInt, isRecord, isStr } from './parse-core';
 import { createReauth, type Reauth } from './reauth';
 
 export interface AppConfig {
@@ -90,10 +91,6 @@ export class ApiError extends Error {
 // The session token lives only in this module variable: never localStorage, sessionStorage,
 // cookies or the URL.
 let sessionToken: string | null = null;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 function isSessionUser(value: unknown): value is SessionUser {
   return (
@@ -207,10 +204,6 @@ function isBalances(value: unknown): value is Balances {
     Number.isInteger(value['essence'])
   );
 }
-
-const isInt = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isInteger(value);
-const isNullableInt = (value: unknown): value is number | null => value === null || isInt(value);
 
 function isLeetSyncStatus(value: unknown): value is LeetSyncStatus {
   return (
@@ -332,8 +325,6 @@ export interface GameState {
   /** The guild's IANA timezone; present on GET /api/state only (null in action responses). */
   timezone: string | null;
 }
-
-const isStr = (value: unknown): value is string => typeof value === 'string';
 
 function isStats(value: unknown): value is Creature['stats'] {
   return isRecord(value) && isInt(value['hp']) && isInt(value['atk']) && isInt(value['spd']);

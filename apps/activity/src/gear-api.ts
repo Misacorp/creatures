@@ -5,8 +5,8 @@
  * fresh so the screen can replace what it holds.
  */
 import { apiFetch, parseGameState, type GameState } from './api';
+import { isRecord } from './parse-core';
 import {
-  isRecord,
   parseDismantleResult,
   parseEquipResult,
   parseGearState,

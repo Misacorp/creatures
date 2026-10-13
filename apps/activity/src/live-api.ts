@@ -14,21 +14,26 @@ import type { Element } from '@creatures/game';
 import type { EventNames, FightEvent, Zone } from '@creatures/engine';
 import { apiFetch } from './api';
 import {
-  isArrayOf,
-  isBool,
   isEvent,
   isEventNames,
   isFestivalGrant,
-  isInt,
   isRankChange,
-  isNullableStr,
-  isRecord,
   isReplayRow,
-  isStr,
   type FestivalGrant,
   type RankChange,
   type ReplayRowEntry,
 } from './raid-api';
+import {
+  isArrayOf,
+  isBool,
+  isCount,
+  isInt,
+  isNullableInt,
+  isNullableStr,
+  isPositiveInt,
+  isRecord,
+  isStr,
+} from './parse-core';
 
 export type LiveStatus = 'none' | 'lobby' | 'live' | 'done';
 type LiveAbilityMode = 'default' | 'held' | 'fired';
@@ -157,9 +162,6 @@ export type LiveActionRequest =
 
 const isLiveStatus = (value: unknown): value is LiveStatus =>
   value === 'none' || value === 'lobby' || value === 'live' || value === 'done';
-const isPositiveInt = (value: unknown): value is number => isInt(value) && value > 0;
-const isNonNegativeInt = (value: unknown): value is number => isInt(value) && value >= 0;
-const isNullableInt = (value: unknown): value is number | null => value === null || isInt(value);
 
 function isLiveAbility(value: unknown): value is LiveAbility {
   return (
@@ -173,7 +175,7 @@ function isLiveAbility(value: unknown): value is LiveAbility {
     isBool(value['fired']) &&
     (value['firedAtRound'] === null || isPositiveInt(value['firedAtRound'])) &&
     (value['fireAtRound'] === null || isPositiveInt(value['fireAtRound'])) &&
-    isNonNegativeInt(value['defaultRound'])
+    isCount(value['defaultRound'])
   );
 }
 
@@ -181,7 +183,7 @@ function isLiveLoot(value: unknown): value is LiveLoot {
   return (
     isRecord(value) &&
     isBool(value['cleared']) &&
-    isNonNegativeInt(value['essence']) &&
+    isCount(value['essence']) &&
     (value['rankChange'] === null || isRankChange(value['rankChange'])) &&
     (value['festivalGrant'] === null || isFestivalGrant(value['festivalGrant']))
   );
@@ -195,7 +197,7 @@ function isLiveBoss(value: unknown): value is LiveBossOf<number | null> {
     isStr(value['name']) &&
     isStr(value['element']) &&
     (value['hpMax'] === null || isPositiveInt(value['hpMax'])) &&
-    (value['hpStart'] === null || isNonNegativeInt(value['hpStart']))
+    (value['hpStart'] === null || isCount(value['hpStart']))
   );
 }
 
@@ -209,7 +211,7 @@ function hasSharedShape(data: Record<string, unknown>): boolean {
     isNullableInt(data['startsAt']) &&
     (data['roundMs'] === null || isPositiveInt(data['roundMs'])) &&
     isPositiveInt(data['rounds']) &&
-    isNonNegativeInt(data['round']) &&
+    isCount(data['round']) &&
     isArrayOf(data['roundStarts'], isInt) &&
     isNullableInt(data['nextRoundAt']) &&
     isInt(data['serverNow']) &&
@@ -218,7 +220,7 @@ function hasSharedShape(data: Record<string, unknown>): boolean {
     (data['names'] === null || isEventNames(data['names'])) &&
     isArrayOf(data['abilities'], isLiveAbility) &&
     isArrayOf(data['events'], isEvent) &&
-    (data['bossHp'] === null || isNonNegativeInt(data['bossHp'])) &&
+    (data['bossHp'] === null || isCount(data['bossHp'])) &&
     isArrayOf(data['watching'], isStr) &&
     (data['loot'] === null || isLiveLoot(data['loot']))
   );

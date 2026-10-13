@@ -4,7 +4,7 @@
  * the intent `pin` or `unpin`. Channel ids never reach the client.
  */
 import { apiFetch } from './api';
-import { isBool, isRecord } from './raid-api';
+import { isBool, isRecord } from './parse-core';
 
 /** The answer of `GET /api/raid/channel` and `POST /api/raid/channel`. */
 export interface RaidChannelState {

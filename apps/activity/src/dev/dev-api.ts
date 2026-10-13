@@ -3,13 +3,10 @@
  * carry the session token like every other call and the identity is the session's, never the body's.
  */
 import { ApiError, apiFetch } from '../api';
+import { isRecord } from '../parse-core';
 import type { DevToolId } from './forms';
 
 export type ToolOutcome = { ok: true; result: unknown } | { ok: false; error: string };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 /** The server's machine-readable error code, or a short note for anything else. */
 export function errorCode(err: unknown): string {

@@ -5,6 +5,16 @@
  */
 import type { EventNames, FightEvent, Zone } from '@creatures/engine';
 import { apiFetch } from './api';
+import {
+  isArrayOf,
+  isBool,
+  isCount,
+  isInt,
+  isNullableInt,
+  isNullableStr,
+  isRecord,
+  isStr,
+} from './parse-core';
 
 export type RaidStatus = 'open' | 'phase1' | 'phase2' | 'finale';
 export type RaidEventId = 'weekStart' | 'phase1' | 'phase2' | 'finale';
@@ -205,17 +215,6 @@ export interface ReplayView {
 
 // --- Shape checks ---
 
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-export const isStr = (value: unknown): value is string => typeof value === 'string';
-export const isBool = (value: unknown): value is boolean => typeof value === 'boolean';
-export const isInt = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isInteger(value);
-export const isNullableStr = (value: unknown): value is string | null =>
-  value === null || isStr(value);
-export const isArrayOf = <T>(value: unknown, check: (item: unknown) => item is T): value is T[] =>
-  Array.isArray(value) && value.every(check);
 const isStrRecord = (value: unknown): value is Record<string, string> =>
   isRecord(value) && Object.values(value).every(isStr);
 
@@ -610,8 +609,6 @@ export interface AfterActionStats {
   adaptation: StatsAdaptation | null;
 }
 
-const isCount = (value: unknown): value is number => isInt(value) && value >= 0;
-
 const isStatsPlayer = (value: unknown): value is StatsPlayer =>
   isRecord(value) &&
   isStr(value['displayName']) &&
@@ -648,8 +645,6 @@ const isStatsKnockout = (value: unknown): value is StatsKnockout =>
   isNullableStr(value['owner']) &&
   isBool(value['you']) &&
   isInt(value['round']);
-
-const isNullableInt = (value: unknown): value is number | null => value === null || isInt(value);
 
 const isStatsAdaptation = (value: unknown): value is StatsAdaptation =>
   isRecord(value) &&

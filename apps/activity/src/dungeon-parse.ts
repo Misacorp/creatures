@@ -6,7 +6,8 @@
  */
 import { GEAR_RARITIES } from '@creatures/game';
 import { isPartsBundle } from './gear-parse';
-import { isEvent, isEventNames, isRecord } from './raid-api';
+import { isEvent, isEventNames } from './raid-api';
+import { isArrayOf, isBool, isCount, isInt, isRecord, isStr } from './parse-core';
 import type {
   DungeonReplay,
   DungeonRewards,
@@ -16,14 +17,6 @@ import type {
   DungeonTeamMember,
   DungeonToday,
 } from './dungeon-types';
-
-const isStr = (value: unknown): value is string => typeof value === 'string';
-const isInt = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isInteger(value);
-const isCount = (value: unknown): value is number => isInt(value) && value >= 0;
-const isBool = (value: unknown): value is boolean => typeof value === 'boolean';
-const isArrayOf = <T>(value: unknown, guard: (item: unknown) => item is T): value is T[] =>
-  Array.isArray(value) && value.every(guard);
 
 const ELEMENTS: readonly unknown[] = ['tide', 'ember', 'grove', 'spark'];
 const ROLES: readonly unknown[] = ['setter', 'payoff', 'support', 'guard'];
