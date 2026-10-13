@@ -60,6 +60,9 @@ function shape(value: unknown): unknown {
   return typeof value;
 }
 
+const codes0 = (errors: readonly { body: { error: string } }[]): string[] =>
+  errors.map((e) => e.body.error);
+
 const sameShape = (live: unknown, fixture: unknown): void => {
   expect(shape(live), UPDATE).toEqual(shape(fixture));
 };
@@ -120,19 +123,24 @@ describe('the dungeon fixtures match what the server sends', () => {
     // The replay carries the full events of every played room, the row and the names.
     expect(dungeonReplay.summary.id).toBe(runCleared.run.id);
     expect(dungeonReplay.rooms).toHaveLength(3);
-    expect(dungeonReplay.row.map((r) => r.zone)).toEqual(['front', 'middle', 'back']);
+    expect(dungeonReplay.row.map((r) => r.position)).toEqual([0, 1, 2]);
     expect(dungeonReplay.rooms.every((room) => room.events.length > 0)).toBe(true);
     // No seed anywhere a client can read.
     for (const fixture of [today, todayDone, runCleared, runLandmark, runLost, dungeonReplay]) {
       expect(JSON.stringify(fixture)).not.toMatch(/seed/i);
     }
+    // The team is one row and its order is the formation: no zones anywhere in a run.
+    expect(runCleared.run.team.map((t) => t.id)).toEqual(dungeonReplay.row.map((r) => r.id));
+    for (const fixture of [runCleared, runLandmark, runLost, dungeonReplay, dungeonRequests]) {
+      expect(JSON.stringify(fixture)).not.toContain('formation');
+    }
+    expect(codes0(dungeonErrors)).not.toContain('invalid_formation');
     // Errors the client has to write text for.
-    const codes = new Set(dungeonErrors.map((e) => e.body.error));
+    const codes = new Set(codes0(dungeonErrors));
     for (const code of [
       'already_run',
       'key_conflict',
       'duplicate_creature',
-      'invalid_formation',
       'not_found',
       'invalid_body',
       'invalid_abilities',

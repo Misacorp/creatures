@@ -53,9 +53,8 @@ describe('the dungeon error texts', () => {
     expect(dungeonErrorText(new ApiError(404, 'not_found'))).toContain('creatures');
     expect(dungeonErrorText(new ApiError(409, 'already_run'))).toContain('already used');
     expect(dungeonErrorText(new ApiError(400, 'duplicate_creature'))).toContain('three different');
-    expect(dungeonErrorText(new ApiError(400, 'invalid_formation'))).toContain(
-      'one creature in each zone',
-    );
+    // The formation is gone with the zones: there is no code for it any more.
+    expect(Object.keys(DUNGEON_ERROR_TEXT)).not.toContain('invalid_formation');
   });
 
   it('falls back to the game text for other failures', () => {
@@ -66,7 +65,7 @@ describe('the dungeon error texts', () => {
   it('knows which refusals mean the screen was out of date', () => {
     expect(isStaleDungeonError(new ApiError(409, 'already_run'))).toBe(true);
     expect(isStaleDungeonError(new ApiError(404, 'not_found'))).toBe(true);
-    expect(isStaleDungeonError(new ApiError(400, 'invalid_formation'))).toBe(false);
+    expect(isStaleDungeonError(new ApiError(400, 'invalid_body'))).toBe(false);
     expect(isStaleDungeonError(new Error('x'))).toBe(false);
   });
 });

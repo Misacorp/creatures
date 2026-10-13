@@ -311,7 +311,8 @@ describe('POST /api/dungeon/run', () => {
         });
         expect(run.rooms.map((r) => r.kind)).toEqual(['foe', 'foe', 'boss']);
         expect(run.rooms.every((r) => r.played && r.cleared && r.foeHpEnd === 0)).toBe(true);
-        expect(run.team.map((t) => t.zone)).toEqual(['front', 'middle', 'back']);
+        // The row is the team in the order of the request: left to right.
+        expect(run.team.map((t) => t.id)).toEqual(p.creatureIds);
         // The modifiers shown before the run are the rooms' modifiers.
         const today = await p.today();
         expect(run.rooms.map((r) => r.modifier.id)).toEqual(today.modifiers.map((m) => m.id));
@@ -340,6 +341,35 @@ describe('POST /api/dungeon/run', () => {
           clears: 1,
         });
         expect(storedRuns(ctx, p.id)).toHaveLength(1);
+      },
+      opts(),
+    );
+  });
+
+  it('stands the team in one row, in the order of the request, whatever the order is', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const [a, b, c] = p.creatureIds as [string, string, string];
+        ctx.clock.t = AFTER_RESET;
+        const res = await p.run({ team: [c, a, b] });
+        expect(res.status).toBe(200);
+        expect(res.body.run.team.map((t) => t.id)).toEqual([c, a, b]);
+        const stored = storedRuns(ctx, p.id)[0] as StoredRun;
+        const input = JSON.parse(stored.input_json as string) as DungeonRunInput;
+        // The fight's row is the team, position i = team[i], and nothing else was stored about it.
+        expect(input.team.map((s) => s.id)).toEqual([c, a, b]);
+        expect(Object.keys(input)).not.toContain('formation');
+        const replay = await p.replay(res.body.run.id);
+        expect(replay.body.row.map((r) => [r.position, r.id])).toEqual([
+          [0, c],
+          [1, a],
+          [2, b],
+        ]);
+        // The creature ability keys follow the row, too.
+        const keys = input.abilities.map((x) => x.key);
+        expect(keys[0]).toBe('p1:basic');
       },
       opts(),
     );
@@ -414,11 +444,17 @@ describe('POST /api/dungeon/run', () => {
         await refuse({ team: [a, b] }, 400, 'invalid_body');
         await refuse({ team: [a, b, c, a] }, 400, 'invalid_body');
         await refuse({ team: [] }, 400, 'invalid_body');
-        await refuse({ formation: ['front', 'middle'] }, 400, 'invalid_body');
         // The same creature twice.
         await refuse({ team: [a, a, b] }, 400, 'duplicate_creature');
-        // A formation that is not the three zones, each once.
-        await refuse({ formation: ['front', 'front', 'back'] }, 400, 'invalid_formation');
+        // The old zone formation is gone: any body that still has one is not the strict shape.
+        for (const formation of [['front', 'middle', 'back'], ['front', 'front', 'back'], []]) {
+          const old = await p.call('POST', '/api/dungeon/run', { ...p.body(), formation });
+          expect({ status: old.status, error: old.body['error'] }).toEqual({
+            status: 400,
+            error: 'invalid_body',
+          });
+        }
+        expect(before()).toEqual(start);
         // Not the caller's creature (somebody else's, or one that does not exist): the same answer.
         await refuse({ team: [a, b, other.creatureIds[0] as string] }, 404, 'not_found');
         await refuse({ team: [a, b, '00000000-0000-4000-8000-000000000000'] }, 404, 'not_found');
@@ -1191,8 +1227,9 @@ describe('GET /api/dungeon/run/:id', () => {
         for (let i = 1; i < result.rooms.length; i++) {
           expect(result.rooms[i]?.hpStart).toEqual(result.rooms[i - 1]?.result.hpEnd);
         }
-        expect(replay.body.row.map((r) => r.zone)).toEqual(['front', 'middle', 'back']);
+        expect(replay.body.row.map((r) => r.position)).toEqual([0, 1, 2]);
         expect(replay.body.row.map((r) => r.id)).toEqual(p.creatureIds);
+        expect(JSON.stringify(replay.body)).not.toContain('formation');
         // Names for describeEvent come with it.
         expect(replay.body.rooms[0]?.names.boss).toBe(replay.body.rooms[0]?.foe.name);
         expect(replay.body.rooms[0]?.names.players).toEqual({ p1: p.name });

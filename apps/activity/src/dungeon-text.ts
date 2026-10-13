@@ -18,7 +18,6 @@ export const DUNGEON_ERROR_TEXT: Readonly<Record<DungeonErrorCode, string>> = {
   invalid_body:
     'The server did not understand that run. Close and reopen the Activity if it keeps happening.',
   duplicate_creature: 'Pick three different creatures.',
-  invalid_formation: 'Put one creature in each zone: Front, Middle and Back.',
   invalid_abilities:
     'One of your ability choices is not allowed. Check the basic ability and the rounds you set.',
   invalid_id: 'That run could not be found. Close and reopen the Activity.',

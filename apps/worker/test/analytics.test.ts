@@ -1407,7 +1407,6 @@ describe('privacy', () => {
         );
         const dived = await call(ctx, diverSecret, 'POST', '/api/dungeon/run', {
           team: diver.creatureIds,
-          formation: ['front', 'middle', 'back'],
           abilities: { basic: { abilityId: 'rally', fireAtRound: null }, creatures: [] },
           idempotencyKey: newKey(),
         });

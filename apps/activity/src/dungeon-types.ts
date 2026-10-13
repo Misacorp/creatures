@@ -15,7 +15,11 @@ import type { GearRarity, PartsBundle } from './gear-types';
 
 export type Element = 'tide' | 'ember' | 'grove' | 'spark';
 export type Role = 'setter' | 'payoff' | 'support' | 'guard';
-/** The three places in a row of three: one creature each. */
+/**
+ * The engine's three zones. In the dungeon's one row of three each zone is one creature: `front` is
+ * the left creature, `middle` the one in the middle and `back` the right one. Only Shield Wall's
+ * `zone` uses it on the wire; the screens say Left, Middle and Right.
+ */
 export type Zone = 'front' | 'middle' | 'back';
 
 /** A room modifier of the day. Shown before the run: the same for everyone on the server. */
@@ -91,7 +95,6 @@ export interface DungeonTeamMember {
   element: Element;
   role: Role;
   level: number;
-  zone: Zone;
   /** HP at the start of the run, and when it ended (0: knocked out). HP carries from room to room. */
   hpMax: number;
   hpEnd: number;
@@ -112,7 +115,7 @@ export interface DungeonRunSummary {
   /** Days in a row after this run. */
   streak: number;
   createdAt: number;
-  /** The team, front to back. */
+  /** The team in its row, left to right. */
   team: DungeonTeamMember[];
   /** All the rooms of the run, played or not. */
   rooms: DungeonRoomSummary[];
@@ -156,7 +159,7 @@ export interface DungeonReplayRoom {
 /** `GET /api/dungeon/run/:id`: the caller's own run only (404 for anyone else's). Only the rooms that were played. */
 export interface DungeonReplay {
   summary: DungeonRunSummary;
-  /** The fighting row, front to back. */
+  /** The fighting row, left to right: `position` 0 is the left creature. */
   row: {
     position: number;
     id: string;
@@ -165,7 +168,6 @@ export interface DungeonReplay {
     element: Element;
     role: Role;
     level: number;
-    zone: Zone;
   }[];
   rooms: DungeonReplayRoom[];
 }
@@ -175,10 +177,11 @@ export interface DungeonReplay {
  * the session; the seed, the stats and the rooms are the server's.
  */
 export interface DungeonRunRequest {
-  /** The three creatures (ids of the player's own, all different). */
+  /**
+   * The three creatures (ids of the player's own, all different), in the order they stand in the
+   * one row, left to right: `team[i]` is position i. There is no formation: the order is it.
+   */
   team: [string, string, string];
-  /** Where each stands: `formation[i]` for `team[i]`; the three zones, each once. */
-  formation: [Zone, Zone, Zone];
   abilities: {
     basic: {
       /** One of the basic ability ids (`rally`, `shield-wall`, `re-mark`, `purge`). */
@@ -206,8 +209,6 @@ export const DUNGEON_ERRORS = {
   invalid_body: 400,
   /** 400: the same creature twice. */
   duplicate_creature: 400,
-  /** 400: the formation is not the three zones, each once. */
-  invalid_formation: 400,
   /** 400: an ability choice that cannot be (a zone for Rally, a creature without an ability...). */
   invalid_abilities: 400,
   /** 400: the path id is not an id. */

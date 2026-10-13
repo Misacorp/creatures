@@ -27,10 +27,8 @@ const isArrayOf = <T>(value: unknown, guard: (item: unknown) => item is T): valu
 
 const ELEMENTS: readonly unknown[] = ['tide', 'ember', 'grove', 'spark'];
 const ROLES: readonly unknown[] = ['setter', 'payoff', 'support', 'guard'];
-const ZONES: readonly unknown[] = ['front', 'middle', 'back'];
 const isElement = (value: unknown): boolean => ELEMENTS.includes(value);
 const isRole = (value: unknown): boolean => ROLES.includes(value);
-const isZone = (value: unknown): boolean => ZONES.includes(value);
 const isRarity = (value: unknown): boolean => (GEAR_RARITIES as readonly unknown[]).includes(value);
 
 /** A record of whole numbers by creature id. */
@@ -62,7 +60,6 @@ function isTeamMember(value: unknown): value is DungeonTeamMember {
     isElement(value['element']) &&
     isRole(value['role']) &&
     isInt(value['level']) &&
-    isZone(value['zone']) &&
     isCount(value['hpMax']) &&
     isCount(value['hpEnd'])
   );
@@ -177,8 +174,7 @@ function isReplayRowEntry(value: unknown): boolean {
     isStr(value['species']) &&
     isElement(value['element']) &&
     isRole(value['role']) &&
-    isInt(value['level']) &&
-    isZone(value['zone'])
+    isInt(value['level'])
   );
 }
 
