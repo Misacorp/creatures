@@ -73,6 +73,8 @@ Misa watches production by playing. Agents also need data to understand **how pe
 ## Order of work
 
 1. Event log, rollups and directory, with tests (migration).
+   - [x] **Event log shipped** (migration 16, `apps/worker/src/analytics.ts`, 2026-10-13); see the decision of that date in `decisions.md`.
+   - [ ] Daily rollups, the guild directory: still pending.
 2. Ops endpoint and report renderer, with tests, including privacy tests that no ids or names leak.
 3. The workflow, plus Misa's checklist for `OPS_TOKEN`.
 4. The analysis CLI and the first live report after a week of data.
