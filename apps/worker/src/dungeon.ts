@@ -54,9 +54,10 @@ import {
 } from '@creatures/engine';
 import type { Analytics } from './analytics';
 import { devKey, type DevFlags } from './dev-state';
+import { keyTaken } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-grants';
-import { credit, lookupSpend, type LedgerStorage } from './ledger';
+import type { LedgerStorage } from './ledger';
 import { drawSeed, slotFor } from './raid-resolve';
 import { loadCreatures, type TeamCreature } from './raid-teams';
 import type { RunBody } from './dungeon-schemas';
@@ -473,16 +474,9 @@ export class Dungeon {
       };
     }
     // The same key used by another kind of action is a conflict too, whatever it was.
-    const usedElsewhere =
-      lookupSpend(this.sql, userId, body.idempotencyKey) !== null ||
-      this.sql
-        .exec(
-          'SELECT 1 FROM gear_actions WHERE user_id = ? AND key = ?',
-          userId,
-          body.idempotencyKey,
-        )
-        .toArray().length > 0;
-    if (usedElsewhere) throw new GameError(409, 'key_conflict');
+    if (keyTaken(this.sql, userId, body.idempotencyKey, ['ledger', 'gear_actions'])) {
+      throw new GameError(409, 'key_conflict');
+    }
 
     // --- One run a day, and the retry of a first day ---
     const progress = this.progress(userId);
@@ -620,38 +614,7 @@ export class Dungeon {
     streak: number,
     options: { firstOfDay: boolean },
   ): DungeonRewards {
-    const now = this.deps.now();
     const payout = dungeonPayout(depth, result.roomsCleared);
-    const key = `dungeon:${day}:${String(attempt)}`;
-    const meta = { day, depth, attempt };
-    if (payout.bait > 0) {
-      credit(
-        this.deps.storage,
-        {
-          userId,
-          currency: 'bait',
-          amount: payout.bait,
-          source: 'dungeon',
-          idempotencyKey: `${key}:bait`,
-          meta,
-        },
-        now,
-      );
-    }
-    if (payout.essence > 0) {
-      credit(
-        this.deps.storage,
-        {
-          userId,
-          currency: 'essence',
-          amount: payout.essence,
-          source: 'dungeon',
-          idempotencyKey: `${key}:essence`,
-          meta,
-        },
-        now,
-      );
-    }
     const gearDeps: GrantDeps = {
       storage: this.deps.storage,
       now: this.deps.now,
@@ -659,49 +622,33 @@ export class Dungeon {
       analytics: this.deps.analytics,
     };
     const boss = rooms.at(-1);
-    const grant = grantDungeonRun(gearDeps, userId, day, attempt, (rng) => {
-      const loot = rollDungeonLoot(rng, depth, payout, boss?.foe.element ?? 'tide');
-      return {
-        parts: addParts({ scrap: payout.scrap, glimmer: payout.glimmer }, loot.parts),
-        gear: loot.gear,
-      };
-    });
+    const grant = grantDungeonRun(
+      gearDeps,
+      userId,
+      day,
+      attempt,
+      (rng) => {
+        const loot = rollDungeonLoot(rng, depth, payout, boss?.foe.element ?? 'tide');
+        return {
+          parts: addParts({ scrap: payout.scrap, glimmer: payout.glimmer }, loot.parts),
+          gear: loot.gear,
+        };
+      },
+      { bait: payout.bait, essence: payout.essence, meta: { day, depth, attempt } },
+    );
     let streakPaid: DungeonRewards['streak'] = null;
     const bonus = options.firstOfDay ? streakBonus(streak) : null;
     if (bonus !== null) {
-      const streakKey = `dungeon:${day}:streak`;
-      if (bonus.bait > 0) {
-        credit(
-          this.deps.storage,
-          {
-            userId,
-            currency: 'bait',
-            amount: bonus.bait,
-            source: 'dungeon',
-            idempotencyKey: `${streakKey}:bait`,
-            meta: { day, streak: bonus.day },
-          },
-          now,
-        );
-      }
-      if (bonus.essence > 0) {
-        credit(
-          this.deps.storage,
-          {
-            userId,
-            currency: 'essence',
-            amount: bonus.essence,
-            source: 'dungeon',
-            idempotencyKey: `${streakKey}:essence`,
-            meta: { day, streak: bonus.day },
-          },
-          now,
-        );
-      }
-      const parts = grantDungeonStreak(gearDeps, userId, day, {
-        scrap: bonus.scrap,
-        glimmer: bonus.glimmer,
-      }).parts;
+      const parts = grantDungeonStreak(
+        gearDeps,
+        userId,
+        day,
+        {
+          scrap: bonus.scrap,
+          glimmer: bonus.glimmer,
+        },
+        { bait: bonus.bait, essence: bonus.essence, meta: { day, streak: bonus.day } },
+      ).parts;
       streakPaid = { day: bonus.day, bait: bonus.bait, essence: bonus.essence, parts };
     }
     return {

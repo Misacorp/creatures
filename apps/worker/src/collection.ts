@@ -32,6 +32,7 @@ import {
 } from './expeditions';
 import { equippedByCreature, openJobsByCreature, rowToItem, type GearRow } from './gear-store';
 import { getBalances, lookupSpend, spend, type Currency, type LedgerStorage } from './ledger';
+import { settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import { recordServerFirst, type ServerFirstKind } from './server-firsts';
 import { speciesOf } from './species';
@@ -499,22 +500,13 @@ export class Collection {
         },
         this.deps.now(),
       );
-      switch (spent.status) {
-        case 'insufficient_funds':
-          throw new GameError(409, 'insufficient_funds');
-        case 'key_conflict':
-          throw new GameError(409, 'key_conflict');
-        case 'replayed':
-          if (
-            prior?.purpose !== 'training' ||
-            storedString(spent.result, 'creatureId') !== creature.id
-          ) {
-            throw new GameError(409, 'key_conflict');
-          }
-          return { level: spent.result.level };
-        case 'ok':
-          return { level: spent.result.level };
-      }
+      return {
+        level: settleSpend(
+          spent,
+          (stored) =>
+            prior?.purpose === 'training' && storedString(stored, 'creatureId') === creature.id,
+        ).level,
+      };
     });
   }
 
@@ -574,22 +566,11 @@ export class Collection {
         },
         now,
       );
-      switch (spent.status) {
-        case 'insufficient_funds':
-          throw new GameError(409, 'insufficient_funds');
-        case 'key_conflict':
-          throw new GameError(409, 'key_conflict');
-        case 'replayed':
-          if (
-            prior?.purpose !== 'evolution' ||
-            storedString(spent.result, 'creatureId') !== creature.id
-          ) {
-            throw new GameError(409, 'key_conflict');
-          }
-          return spent.result;
-        case 'ok':
-          return spent.result;
-      }
+      return settleSpend(
+        spent,
+        (stored) =>
+          prior?.purpose === 'evolution' && storedString(stored, 'creatureId') === creature.id,
+      );
     });
   }
 

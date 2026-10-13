@@ -97,7 +97,8 @@ import {
 import { grantRankGift, grantTripLoot, type GrantView } from './gear-grants';
 import { openJobOf } from './gear-store';
 import { devKey, type DevFlags } from './dev-state';
-import { credit, lookupSpend, spend, type LedgerStorage } from './ledger';
+import { credit, spend, type LedgerStorage } from './ledger';
+import { runKeyed, settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import { weekIdFor, weekIndex } from './raid-schedule';
 import { recordServerFirst } from './server-firsts';
@@ -675,43 +676,6 @@ export class Expeditions {
   // --- Sending ---
 
   /**
-   * Runs an action once per (player, key). A repeat of the same action returns the stored result and
-   * does nothing else; the same key on a different action, or one already used by a ledger spend, is a
-   * `key_conflict`.
-   */
-  private keyed<T>(userId: string, key: string, fingerprint: string, run: () => T): T {
-    const prior = this.sql
-      .exec<{
-        kind: string;
-        fingerprint: string;
-        result_json: string;
-      }>(
-        'SELECT kind, fingerprint, result_json FROM gear_actions WHERE user_id = ? AND key = ?',
-        userId,
-        key,
-      )
-      .toArray()[0];
-    if (prior !== undefined) {
-      if (prior.kind !== 'expedition_send' || prior.fingerprint !== fingerprint) {
-        throw new GameError(409, 'key_conflict');
-      }
-      return JSON.parse(prior.result_json) as T;
-    }
-    if (lookupSpend(this.sql, userId, key) !== null) throw new GameError(409, 'key_conflict');
-    const result = run();
-    this.sql.exec(
-      `INSERT INTO gear_actions (user_id, key, kind, fingerprint, result_json, created_at)
-       VALUES (?, ?, 'expedition_send', ?, ?, ?)`,
-      userId,
-      key,
-      fingerprint,
-      JSON.stringify(result) ?? 'null',
-      this.deps.now(),
-    );
-    return result;
-  }
-
-  /**
    * Sends a creature to a destination. Checks, in order: the creature is the caller's and free, there
    * is a free slot, the explorer's rank allows the trip length and the place, the place is open (night in
    * the guild's timezone, a Festival week), the supplies are valid. Supplies are optional: a trip without
@@ -726,8 +690,11 @@ export class Expeditions {
       [...input.supplies].map((s) => `${s.id}:${s.source}`).sort(),
     ]);
     return atomically(this.deps.storage, () => {
-      const sent = this.keyed(userId, input.idempotencyKey, fingerprint, () =>
-        this.startTrip(userId, input, timezone),
+      const sent = runKeyed(
+        this.sql,
+        this.deps.now,
+        { userId, key: input.idempotencyKey, kind: 'expedition_send', fingerprint },
+        () => this.startTrip(userId, input, timezone),
       );
       return this.view(this.expeditionRow(userId, sent.expeditionId), this.deps.now());
     });
@@ -835,15 +802,7 @@ export class Expeditions {
       },
       now,
     );
-    switch (spent.status) {
-      case 'insufficient_funds':
-        throw new GameError(409, 'insufficient_funds');
-      case 'key_conflict':
-      case 'replayed':
-        throw new GameError(409, 'key_conflict');
-      case 'ok':
-        return spent.result;
-    }
+    return settleSpend(spent);
   }
 
   // --- Claiming ---
