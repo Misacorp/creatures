@@ -5,6 +5,7 @@ import { AfterAction } from './AfterAction';
 import { ApiError, type Creature } from './api';
 import { CoachMark } from './CoachMark';
 import { clockOffset, creatureName, errorText } from './game';
+import { useActionRunner } from './use-action-runner';
 import { GlossaryTag } from './Glossary';
 import { useServerNow } from './hooks';
 import { finaleWindow } from './live';
@@ -66,8 +67,6 @@ export function Raid({
 }) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Selection>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [picking, setPicking] = useState<string[] | null>(null);
@@ -80,7 +79,16 @@ export function Raid({
   const [liveOpen, setLiveOpen] = useState(false);
   const [liveInitial, setLiveInitial] = useState<LiveSnapshot | null>(null);
   const [practiceGone, setPracticeGone] = useState(false);
-  const inFlight = useRef(false);
+  // Placement is not a spend, so no keys: one change at a time. After a definite "no" the pick is
+  // dropped and, if the screen was stale, the raid is loaded again.
+  const { busy, error, setBusy, setError, run } = useActionRunner({
+    onFail: () => {
+      setSelected(null);
+    },
+    onStale: async () => {
+      apply(await fetchRaid());
+    },
+  });
   const practiceInFlight = useRef(false);
   /** The finale view opens by itself once, when the fight starts; closing it keeps it closed. */
   const autoOpened = useRef(false);
@@ -144,28 +152,11 @@ export function Raid({
 
   /** Runs one change. After a definite "no" the screen was probably stale, so it reloads. */
   async function mutate(task: () => Promise<RaidView>): Promise<boolean> {
-    if (inFlight.current) return false;
-    inFlight.current = true;
-    setBusy(true);
-    setError(null);
-    try {
+    const done = await run(async () => {
       apply(await task());
       return true;
-    } catch (err) {
-      setError(errorText(err));
-      setSelected(null);
-      if (err instanceof ApiError && (err.status === 404 || err.status === 409)) {
-        try {
-          apply(await fetchRaid());
-        } catch {
-          // Keep the error above.
-        }
-      }
-      return false;
-    } finally {
-      inFlight.current = false;
-      setBusy(false);
-    }
+    });
+    return done === true;
   }
 
   function closeLive(): void {

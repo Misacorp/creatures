@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { createKeyStore } from './actions';
+import { ActionIds } from './actions';
 import type { Creature } from './api';
 import { DungeonPlayback } from './DungeonPlayback';
 import { DungeonResults } from './DungeonResults';
 import { DungeonSetup } from './DungeonSetup';
 import { fetchDungeonReplay, fetchDungeonToday, startDungeonRun } from './dungeon-api';
 import { initialScreen, msUntilReset, RESET_GRACE_MS } from './dungeon-flow';
-import { buildRunRequest, requestSignature, type Slots } from './dungeon-team';
+import { completeTeam, type Slots } from './dungeon-team';
 import { dungeonErrorText, isStaleDungeonError } from './dungeon-text';
 import type { DungeonReplay, DungeonRunSummary, DungeonToday } from './dungeon-types';
 import { clockOffset } from './game';
+import { useActionRunner } from './use-action-runner';
 
 type View =
   | { kind: 'loading' }
@@ -37,12 +38,18 @@ export function Dungeon({
   const [offset, setOffset] = useState(0);
   const [view, setView] = useState<View>({ kind: 'loading' });
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const keys = useRef(createKeyStore()).current;
-  const inFlight = useRef(false);
   const replays = useRef(new Map<string, DungeonReplay>());
   const unmounted = useRef(false);
+  // The dungeon's own words, and its own idea of a stale screen (by code, not by status). After
+  // such a "no" today is loaded again: the run may exist.
+  const runner = useActionRunner({
+    errorText: dungeonErrorText,
+    isStale: isStaleDungeonError,
+    onStale: () => {
+      load('keep');
+    },
+  });
+  const { busy, error, setError } = runner;
 
   useEffect(
     () => () => {
@@ -88,7 +95,7 @@ export function Dungeon({
     const wait = msUntilReset(today, Date.now(), offset) + RESET_GRACE_MS;
     const timer = setTimeout(
       () => {
-        if (!inFlight.current) load(view.kind === 'playback' ? 'keep' : 'initial');
+        if (!runner.inFlight()) load(view.kind === 'playback' ? 'keep' : 'initial');
       },
       Math.min(wait, 2 ** 31 - 1),
     );
@@ -98,36 +105,24 @@ export function Dungeon({
   }, [today?.resetsAt, offset]);
 
   async function watch(run: DungeonRunSummary): Promise<void> {
-    if (inFlight.current) return;
-    inFlight.current = true;
-    setBusy(true);
-    setError(null);
-    try {
-      const cached = replays.current.get(run.id);
-      const replay = cached ?? (await fetchDungeonReplay(run.id));
-      replays.current.set(run.id, replay);
-      if (!unmounted.current) setView({ kind: 'playback', replay });
-    } catch (err) {
-      if (!unmounted.current) setError(dungeonErrorText(err));
-    } finally {
-      inFlight.current = false;
-      if (!unmounted.current) setBusy(false);
-    }
+    // A failed read changes nothing, so the screen is not reloaded for it.
+    await runner.run(
+      async () => {
+        const cached = replays.current.get(run.id);
+        const replay = cached ?? (await fetchDungeonReplay(run.id));
+        replays.current.set(run.id, replay);
+        if (!unmounted.current) setView({ kind: 'playback', replay });
+      },
+      { reload: false },
+    );
   }
 
   async function enter(slots: Slots): Promise<void> {
-    if (inFlight.current || today === null) return;
-    const draft = buildRunRequest(slots, 'draft-key');
-    if (draft === null) return;
+    const team = completeTeam(slots);
+    if (today === null || team === null) return;
     // One key per distinct run: a retry of the same picks reuses it, other picks get their own.
-    const action = `dungeon-run:${requestSignature(draft)}`;
-    const request = { ...draft, idempotencyKey: keys.keyFor(action) };
-    inFlight.current = true;
-    setBusy(true);
-    setError(null);
-    try {
-      const answer = await startDungeonRun(request);
-      keys.settle(action);
+    await runner.runKeyed(ActionIds.dungeonRun(team), async (key) => {
+      const answer = await startDungeonRun({ team, idempotencyKey: key });
       if (unmounted.current) return;
       accept(answer.today, 'keep');
       replays.current.delete(answer.run.id);
@@ -144,16 +139,7 @@ export function Dungeon({
         }
         onRunFinished();
       }
-    } catch (err) {
-      keys.settle(action, err);
-      if (unmounted.current) return;
-      setError(dungeonErrorText(err));
-      // A definite "no" that says the screen is out of date: load today again (the run may exist).
-      if (isStaleDungeonError(err)) load('keep');
-    } finally {
-      inFlight.current = false;
-      if (!unmounted.current) setBusy(false);
-    }
+    });
   }
 
   if (loadError !== null && today === null) {

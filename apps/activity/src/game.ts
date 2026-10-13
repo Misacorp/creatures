@@ -236,10 +236,18 @@ const NICKNAME_REASONS: Record<string, string> = {
 
 /**
  * Plain-text message for a failed action. `currency` names what ran out when the server says
- * `insufficient_funds` (Bait by default; Essence for evolving).
+ * `insufficient_funds` (Bait by default; Essence for evolving). `table` holds the words of one
+ * screen (the dungeon's): a code that is in it wins over the shared text.
  */
-export function errorText(err: unknown, currency = 'Bait'): string {
+export function errorText(
+  err: unknown,
+  currency = 'Bait',
+  table?: Readonly<Record<string, string>>,
+): string {
   if (err instanceof ApiError) {
+    if (table !== undefined && err.code !== null && Object.hasOwn(table, err.code)) {
+      return table[err.code] as string;
+    }
     if (err.code === 'invalid_nickname') {
       return NICKNAME_REASONS[err.reason ?? ''] ?? 'That nickname is not allowed.';
     }

@@ -5,12 +5,7 @@
  */
 import { RULES } from '@creatures/game';
 import { ApiError } from './api';
-import {
-  DUNGEON_ERRORS,
-  type DungeonErrorCode,
-  type DungeonRunSummary,
-  type DungeonToday,
-} from './dungeon-types';
+import type { DungeonErrorCode, DungeonRunSummary, DungeonToday } from './dungeon-types';
 import { errorText } from './game';
 
 /** One short plain message for every error code the dungeon routes send. */
@@ -25,18 +20,16 @@ export const DUNGEON_ERROR_TEXT: Readonly<Record<DungeonErrorCode, string>> = {
   key_conflict: 'That run clashed with an earlier one. Check your picks and try again.',
 };
 
-const isDungeonCode = (code: string): code is DungeonErrorCode =>
-  Object.hasOwn(DUNGEON_ERRORS, code);
-
 /** The message for a failed dungeon request; any other failure gets the game's usual text. */
 export function dungeonErrorText(err: unknown): string {
-  if (err instanceof ApiError && err.code !== null && isDungeonCode(err.code)) {
-    return DUNGEON_ERROR_TEXT[err.code];
-  }
-  return errorText(err);
+  return errorText(err, 'Bait', DUNGEON_ERROR_TEXT);
 }
 
-/** True when the failure says the screen was out of date, so today's state should be loaded again. */
+/**
+ * True when the failure says the dungeon screen was out of date, so today's state should be loaded
+ * again. Narrower than `isStaleError`: it goes by the error code, not the status (a clashing key is
+ * a 409 too, but the screen is not stale then).
+ */
 export function isStaleDungeonError(err: unknown): boolean {
   return err instanceof ApiError && (err.code === 'already_run' || err.code === 'not_found');
 }

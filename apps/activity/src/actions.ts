@@ -1,4 +1,6 @@
 import { ApiError } from './api';
+import type { SendRequest } from './expedition-api';
+import type { StartJobRequest } from './gear-types';
 
 /**
  * Idempotency keys for user actions. An action gets one key (`crypto.randomUUID()`), created the
@@ -6,7 +8,7 @@ import { ApiError } from './api';
  * error, server error, rate limit), the same key is reused on the retry so the server can tell it
  * is a repeat. Once the server has given a definite answer, the key is dropped.
  */
-interface KeyStore {
+export interface KeyStore {
   /** The key for this action, created if there is none yet. */
   keyFor(action: string): string;
   /** Call when an attempt is over: `err` is the failure, or undefined on success. */
@@ -35,3 +37,58 @@ export function createKeyStore(generate: () => string = () => crypto.randomUUID(
     },
   };
 }
+
+/**
+ * True when a definite "no" says the screen was out of date (the thing is gone, or already
+ * changed), so the view should be loaded again.
+ */
+export function isStaleError(err: unknown): boolean {
+  return err instanceof ApiError && (err.status === 404 || err.status === 409);
+}
+
+/** The name an action has in the key store. One name is one intent, and one intent keeps one key. */
+export type ActionId = string;
+
+/** A job start without its key: what decides which action it is. */
+export type JobStart = StartJobRequest extends infer R
+  ? R extends StartJobRequest
+    ? Omit<R, 'idempotencyKey'>
+    : never
+  : never;
+
+/**
+ * Every keyed action's name, built in one place. The prefixes are all different, so two intents can
+ * never share a key. Actions without a key (equip, rename, push on, claim, raid placement) have no
+ * name: nothing is stored for them.
+ */
+export const ActionIds = {
+  starter: (species: string): ActionId => `starter:${species}`,
+  train: (creatureId: string): ActionId => `train:${creatureId}`,
+  evolve: (creatureId: string): ActionId => `evolve:${creatureId}`,
+  /** The same creature, place, length and supplies (in any order) is the same trip. */
+  send: (
+    request: Pick<SendRequest, 'creatureId' | 'destination' | 'duration' | 'supplies'>,
+  ): ActionId => {
+    const picks = request.supplies.map((p) => `${p.source}:${p.id}`).sort();
+    return `send:${request.creatureId}:${request.destination}:${request.duration}:${picks.join(',')}`;
+  },
+  upgrade: (gearId: string): ActionId => `upgrade:${gearId}`,
+  dismantle: (gearId: string): ActionId => `dismantle:${gearId}`,
+  claimJob: (jobId: string): ActionId => `claim-job:${jobId}`,
+  /** The same job on the same creature is the same action. */
+  job: (request: JobStart): ActionId => {
+    switch (request.kind) {
+      case 'craft':
+        return `job:craft:${request.creatureId}:${request.blueprintId}`;
+      case 'improve':
+        return `job:improve:${request.creatureId}:${request.gearId}:${String(request.secondaryIndex)}`;
+      case 'enchant':
+        return `job:enchant:${request.creatureId}:${request.gearId}:${request.enchantId}`;
+      case 'supply':
+        return `job:supply:${request.creatureId}:${request.supplyId}`;
+    }
+  },
+  /** The same three creatures in the same order are the same run; other picks get their own key. */
+  dungeonRun: (team: readonly [string, string, string]): ActionId =>
+    `dungeon-run:${JSON.stringify(team)}`,
+};

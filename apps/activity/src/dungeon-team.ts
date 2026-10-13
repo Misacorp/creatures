@@ -207,14 +207,15 @@ export function slotStatuses(
 
 // --- The request ---
 
-/** The body of `POST /api/dungeon/run`, or null when the team is not complete. The key is the caller's. */
-export function buildRunRequest(slots: Slots, idempotencyKey: string): DungeonRunRequest | null {
+/** The three creatures of a complete team in slot order, or null. This is what decides the run. */
+export function completeTeam(slots: Slots): DungeonRunRequest['team'] | null {
   if (!isComplete(slots)) return null;
   const [a, b, c] = slots as readonly [string, string, string];
-  return { team: [a, b, c], idempotencyKey };
+  return [a, b, c];
 }
 
-/** The part of a request that decides what the server does: a different one needs a different key. */
-export function requestSignature(request: Omit<DungeonRunRequest, 'idempotencyKey'>): string {
-  return JSON.stringify(request.team);
+/** The body of `POST /api/dungeon/run`, or null when the team is not complete. The key is the caller's. */
+export function buildRunRequest(slots: Slots, idempotencyKey: string): DungeonRunRequest | null {
+  const team = completeTeam(slots);
+  return team === null ? null : { team, idempotencyKey };
 }
