@@ -74,3 +74,12 @@ Status: **in progress**. Misa reviewed production after PR #10 and asked for a U
    - R4. Abilities fold into one "Abilities: Auto" chip that expands.
    - R5. The readiness word sits next to the Rank.
    - R6. Phase results become ticks on the timeline, and the full after-action card shows after the finale.
+
+## Glossary copy (Misa, 2026-10-13)
+
+- **Combat numbers stay:** crit chance and crit damage, Guard and Support numbers.
+- **Reactions and Payoff use words, not numbers:** a reaction "deals much more damage", and a Payoff "hits even harder when it sets off a reaction".
+  - Payoff is a flat +10% today, with no stat effect.
+  - Whether its bonus should depend on the creature's stats is **left open** for a later design pass. The mechanic is unchanged for now.
+- **Boss Rank:** "Each Rank makes the boss stronger", with no +40%. The same goes for the HP and Attack lines in How to play.
+- The tests that pinned those numbers to `RULES` now pin that the text has **no** number for them.
