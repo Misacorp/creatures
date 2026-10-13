@@ -276,6 +276,102 @@ label {
   font-size: 0.875rem;
 }
 
+/*
+  Tappable tags (glossary popovers). They are real buttons, reset to look like the thing they are
+  on: words get a dotted underline, pixel chips and tags get a small "?" after their text, and a
+  lone "?" button is for things that are buttons themselves. This block comes before the chip, tag
+  and badge rules on purpose: those classes set the look, and win where both set the same thing.
+*/
+.gtag {
+  all: unset;
+  position: relative;
+  display: inline;
+  cursor: pointer;
+  text-decoration: underline dotted var(--haze);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25em;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* A bigger tap area than the words themselves, without moving anything. */
+.gtag::before {
+  content: '';
+  position: absolute;
+  inset: -0.35rem -0.125rem;
+}
+
+button.gtag:active:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+.gtag:hover,
+.gtag[aria-expanded='true'] {
+  text-decoration-color: var(--gold);
+}
+
+.gtag-chip {
+  text-decoration: none;
+}
+
+.gtag-chip::after {
+  content: '?';
+  margin-left: 0.3em;
+  font-size: 0.7em;
+  opacity: 0.75;
+}
+
+.gtag-chip:hover::after,
+.gtag-chip[aria-expanded='true']::after {
+  opacity: 1;
+}
+
+.gtag-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.5rem;
+  background: var(--ink);
+  color: var(--gold);
+  font-family: var(--display);
+  font-size: 0.75rem;
+  text-decoration: none;
+  vertical-align: middle;
+}
+
+.gtag-help::before {
+  inset: -0.5rem;
+}
+
+/* The mark on the boss and a boss trick's icon are tags without the "?". */
+.mark-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  text-decoration: none;
+}
+
+.mark-tag::after,
+.gimmick-tag::after {
+  content: none;
+}
+
+.mark-tag:hover,
+.gimmick-tag:hover {
+  filter: brightness(1.2);
+}
+
+.gimmick-tag {
+  display: inline-flex;
+  text-decoration: none;
+}
+
+.zone-label .gtag::before {
+  inset: -0.5rem -0.25rem;
+}
+
 .tabs {
   display: flex;
   gap: 0.625rem;
@@ -3485,4 +3581,436 @@ button.ab-auto-toggle:not(.on) small {
       transform: translate(0, 0);
     }
   }
+}
+
+/* --- Tags, the How to play page and the first-visit hint --- */
+
+.role-chip {
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--haze);
+}
+
+.team-tags {
+  margin: 0.25rem 0 0;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.train-help {
+  margin-left: 0.5rem;
+}
+
+/* The page header: the title with its "beta" mark, and the "?" that opens How to play. */
+.app-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.app-head h1 {
+  min-width: 0;
+  margin: 0;
+}
+
+.beta {
+  margin-left: 0.375rem;
+  padding: 0 0.25rem;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px #6b3fa0;
+  color: var(--bone);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-shadow: none;
+  text-transform: uppercase;
+  vertical-align: super;
+}
+
+button.howto-open {
+  flex: none;
+  min-width: 2.5rem;
+  color: var(--gold);
+}
+
+body.howto-open {
+  overflow: hidden;
+}
+
+/* The popover of a tag: the stage popover's pixel frame and arrow, on a fixed layer over the page. */
+.glossary-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.stage-pop.gloss-pop {
+  width: min(17rem, calc(100% - 8px));
+  padding: 0.5rem 0.625rem 0.625rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  pointer-events: auto;
+}
+
+.gp-visual {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.gp-title {
+  margin: 0;
+  color: var(--gold);
+  font-size: 1.0625rem;
+  line-height: 1.2;
+}
+
+.gp-short {
+  margin: 0.125rem 0 0.375rem;
+  font-weight: 700;
+}
+
+.gp-lines {
+  margin: 0 0 0.5rem;
+  padding-left: 1.125rem;
+  list-style: square;
+}
+
+.gp-lines li {
+  margin: 0.125rem 0;
+}
+
+button.gp-more {
+  width: 100%;
+  min-height: 2.25rem;
+  background: var(--dusk);
+  color: var(--gold);
+  font-size: 0.875rem;
+}
+
+/* The page itself. */
+.howto {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background-color: var(--night);
+  background-image: radial-gradient(var(--dusk) 1px, transparent 1px);
+  background-size: 6px 6px;
+  padding-top: var(--discord-safe-area-inset-top, 0px);
+  padding-bottom: var(--discord-safe-area-inset-bottom, 0px);
+}
+
+.howto-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--dusk);
+  box-shadow: var(--frame);
+}
+
+.howto-head h2 {
+  margin: 0;
+  color: var(--gold);
+  font-size: 1.375rem;
+}
+
+.howto-body {
+  display: grid;
+  gap: 1rem;
+  width: min(40rem, 100% - 1.25rem);
+  margin: 1rem auto 2rem;
+}
+
+.howto-section {
+  padding: 0.75rem;
+  background: var(--dusk);
+  box-shadow: var(--frame);
+  scroll-margin-top: 4.5rem;
+}
+
+.howto-section:focus-visible {
+  outline: var(--px) solid var(--gold);
+  outline-offset: var(--px);
+}
+
+.howto-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  color: var(--gold);
+  font-size: 1.125rem;
+}
+
+.howto-num {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: var(--gold);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+  color: var(--ink);
+  font-size: 0.875rem;
+}
+
+.howto-art {
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.75rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.howto-lines {
+  margin: 0;
+  padding-left: 1.25rem;
+  list-style: square;
+}
+
+.howto-lines li {
+  margin: 0.25rem 0;
+}
+
+.howto-end {
+  margin: 0;
+  text-align: center;
+}
+
+/* Pictures: rows of sprites with their labels, all built from the game's own sprites. */
+.art-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.art-row > li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.art-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  margin: 0;
+}
+
+.art-figure figcaption {
+  font-size: 0.75rem;
+}
+
+.art-tags {
+  justify-content: center;
+  margin: 0.5rem 0 0;
+}
+
+.art-arrow.down {
+  transform: rotate(90deg);
+}
+
+.art-arrow.up {
+  transform: rotate(-90deg);
+}
+
+/* The reaction loop: four element nodes in the corners, each arrow naming the mark and the reaction. */
+.loop {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.loop-node.tl,
+.loop-edge.left,
+.loop-node.bl {
+  grid-column: 1;
+}
+
+.loop-edge.top,
+.loop-centre,
+.loop-edge.bottom {
+  grid-column: 2;
+}
+
+.loop-node.tr,
+.loop-edge.right,
+.loop-node.br {
+  grid-column: 3;
+}
+
+.loop-node.tl,
+.loop-edge.top,
+.loop-node.tr {
+  grid-row: 1;
+}
+
+.loop-edge.left,
+.loop-centre,
+.loop-edge.right {
+  grid-row: 2;
+}
+
+.loop-node.bl,
+.loop-edge.bottom,
+.loop-node.br {
+  grid-row: 3;
+}
+
+.loop-edge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  text-align: center;
+}
+
+.loop-name {
+  font-size: 0.75rem;
+  text-decoration-color: var(--el, var(--haze));
+}
+
+.loop-centre {
+  opacity: 0.6;
+}
+
+/* The worked example. */
+.example {
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 2px dotted var(--line);
+}
+
+.example h4 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.example-steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.example-step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.example-mark,
+.example-burst {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  background: var(--ink);
+  box-shadow: inset 0 calc(var(--px) * -1) 0 var(--el, var(--gold));
+  font-size: 0.875rem;
+}
+
+.example-lines {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.week-day {
+  color: var(--gold);
+}
+
+.week-art > li {
+  min-width: 4rem;
+  text-align: center;
+}
+
+.finale-art,
+.expedition-art,
+.ranks-art,
+.rewards-art {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.finale-boss {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.finale-unit-art {
+  position: relative;
+  display: inline-block;
+}
+
+.finale-badge {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.5rem;
+}
+
+.trips {
+  align-items: flex-start;
+}
+
+.trip-catches {
+  display: flex;
+  gap: 2px;
+}
+
+.evolve-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.evolve-cost {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* The first-visit hint on the Raid tab. */
+.coach {
+  display: grid;
+  justify-items: start;
+  gap: 0.375rem;
+  margin: 0 0 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}
+
+.coach p {
+  margin: 0;
+}
+
+.coach-text {
+  color: var(--gold);
+  font-family: var(--display);
 }

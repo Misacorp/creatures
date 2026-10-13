@@ -1,5 +1,6 @@
+import type { GlossarySection } from '@creatures/game';
 import { DiscordSDK } from '@discord/embedded-app-sdk';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   ApiError,
   createSession,
@@ -14,6 +15,8 @@ import {
   type Me,
 } from './api';
 import { Game } from './Game';
+import { GlossaryProvider } from './Glossary';
+import { HowToPlay } from './HowToPlay';
 import { leetStatusLine } from './leet-status';
 import { RecentActivity } from './RecentActivity';
 
@@ -116,6 +119,22 @@ export function App() {
   // The footer's sync status; refreshed by the game while the first sync is still running.
   const [leetSync, setLeetSync] = useState<LeetSyncStatus | null>(null);
   const healthStatus = useAsync(fetchHealth);
+  // The How to play page: closed (null), or open at a section (null section: the top).
+  const [howTo, setHowTo] = useState<{ section: GlossarySection | null; nonce: number } | null>(
+    null,
+  );
+  const mainRef = useRef<HTMLElement>(null);
+  const helpButton = useRef<HTMLButtonElement>(null);
+
+  // While the page is open nothing behind it can be reached with the keyboard or a screen reader.
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    const open = howTo !== null;
+    mainRef.current?.toggleAttribute('inert', open);
+    // Closing the page puts focus back on the "?" button (the page may have been opened by a tag's link).
+    if (wasOpen.current && !open) helpButton.current?.focus();
+    wasOpen.current = open;
+  }, [howTo !== null]);
 
   const healthText =
     healthStatus.state === 'loading'
@@ -127,53 +146,85 @@ export function App() {
           : 'not ok';
 
   return (
-    <main class="card">
-      <h1>Leet Creatures</h1>
+    <GlossaryProvider
+      onOpenHowTo={(section) => {
+        setHowTo((open) => ({ section, nonce: (open?.nonce ?? 0) + 1 }));
+      }}
+    >
+      <main class="card" ref={mainRef}>
+        <header class="app-head">
+          <h1>
+            Leet Creatures
+            <sup class="beta pix">beta</sup>
+          </h1>
+          <button
+            type="button"
+            ref={helpButton}
+            class="howto-open pix"
+            aria-haspopup="dialog"
+            aria-label="How to play"
+            onClick={() => {
+              setHowTo((open) => ({ section: null, nonce: (open?.nonce ?? 0) + 1 }));
+            }}
+          >
+            ?
+          </button>
+        </header>
 
-      {bootStatus.state === 'loading' && <p>Loading...</p>}
-      {bootStatus.state === 'error' && <p class="error">Failed to start: {bootStatus.message}</p>}
-      {bootStatus.state === 'ok' && (
-        <>
-          {bootStatus.value.me === null || bootStatus.value.game === null ? (
-            <p>This is a Discord Activity. Launch it from Discord to play.</p>
-          ) : (
-            <>
-              <Game
-                initial={bootStatus.value.game}
-                onLeetSync={setLeetSync}
-                showPractice={bootStatus.value.config.environment !== 'production'}
-              />
-              {bootStatus.value.config.leetSource === 'mock' && (
-                <p class="note">Leet points are simulated until the leet bot API is live</p>
-              )}
-              <RecentActivity
-                refreshKey={shownLeetSync(bootStatus.value, leetSync)?.lastSyncedAt ?? null}
-              />
-            </>
+        {bootStatus.state === 'loading' && <p>Loading...</p>}
+        {bootStatus.state === 'error' && <p class="error">Failed to start: {bootStatus.message}</p>}
+        {bootStatus.state === 'ok' && (
+          <>
+            {bootStatus.value.me === null || bootStatus.value.game === null ? (
+              <p>This is a Discord Activity. Launch it from Discord to play.</p>
+            ) : (
+              <>
+                <Game
+                  initial={bootStatus.value.game}
+                  onLeetSync={setLeetSync}
+                  showPractice={bootStatus.value.config.environment !== 'production'}
+                />
+                {bootStatus.value.config.leetSource === 'mock' && (
+                  <p class="note">Leet points are simulated until the leet bot API is live</p>
+                )}
+                <RecentActivity
+                  refreshKey={shownLeetSync(bootStatus.value, leetSync)?.lastSyncedAt ?? null}
+                />
+              </>
+            )}
+          </>
+        )}
+
+        <footer>
+          {bootStatus.state === 'ok' && bootStatus.value.me !== null && (
+            <p class="small">Signed in as {bootStatus.value.me.user.displayName}</p>
           )}
-        </>
+          {bootStatus.state === 'ok' && bootStatus.value.me !== null && (
+            <LeetStatus status={shownLeetSync(bootStatus.value, leetSync)} />
+          )}
+          <dl>
+            {bootStatus.state === 'ok' && (
+              <>
+                <Row label="Environment" value={bootStatus.value.config.environment} />
+                <Row label="Server version" value={bootStatus.value.config.version} />
+                {bootStatus.value.me !== null && (
+                  <Row label="Guild ID" value={bootStatus.value.me.guildId} />
+                )}
+              </>
+            )}
+            <Row label="API health" value={healthText} />
+          </dl>
+        </footer>
+      </main>
+      {howTo !== null && (
+        <HowToPlay
+          section={howTo.section}
+          nonce={howTo.nonce}
+          onClose={() => {
+            setHowTo(null);
+          }}
+        />
       )}
-
-      <footer>
-        {bootStatus.state === 'ok' && bootStatus.value.me !== null && (
-          <p class="small">Signed in as {bootStatus.value.me.user.displayName}</p>
-        )}
-        {bootStatus.state === 'ok' && bootStatus.value.me !== null && (
-          <LeetStatus status={shownLeetSync(bootStatus.value, leetSync)} />
-        )}
-        <dl>
-          {bootStatus.state === 'ok' && (
-            <>
-              <Row label="Environment" value={bootStatus.value.config.environment} />
-              <Row label="Server version" value={bootStatus.value.config.version} />
-              {bootStatus.value.me !== null && (
-                <Row label="Guild ID" value={bootStatus.value.me.guildId} />
-              )}
-            </>
-          )}
-          <Row label="API health" value={healthText} />
-        </dl>
-      </footer>
-    </main>
+    </GlossaryProvider>
   );
 }
