@@ -1137,6 +1137,50 @@ describe('migration 19 and the slot wipe', () => {
     });
   });
 
+  it('leaves finished trips alone so they can still be claimed, and keeps the oldest running trip', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const a = await join(ctx, USER, 0);
+        const extra = ['sproutle', 'zipmouse'].map((line, i) => {
+          const id = `00000000-0000-4000-8000-0000000000${String(50 + i)}`;
+          ctx.sql.exec(
+            `INSERT INTO creatures (id, user_id, line, species, level, origin, caught_at)
+             VALUES (?, ?, ?, ?, 1, 'test', ?)`,
+            id,
+            USER_ID,
+            line,
+            line,
+            T0 + i,
+          );
+          return id;
+        });
+        undoExpeditionsMigration(ctx.sql);
+        // The migration reads the real clock: this trip ended hours ago, the other two are still out.
+        const finishedAt = Date.now() - 20 * HOUR;
+        oldTrip(ctx.sql, TRIP_A, USER_ID, a.starterId, finishedAt, 50);
+        oldTrip(ctx.sql, TRIP_B, USER_ID, extra[0] as string, T0 + 1_000, 75);
+        oldTrip(ctx.sql, TRIP_C, USER_ID, extra[1] as string, T0 + 2_000, 25);
+        const baitBefore = ctx.core.balances(USER_ID).bait;
+        ctx.core.migrate();
+        const status = (id: string) =>
+          rows<{ status: string }>(ctx.sql, 'SELECT status FROM expeditions WHERE id = ?', id)[0]
+            ?.status;
+        expect(status(TRIP_A)).toBe('active');
+        expect(status(TRIP_B)).toBe('active');
+        expect(status(TRIP_C)).toBe('cancelled');
+        expect(ctx.core.balances(USER_ID).bait).toBe(baitBefore + 25);
+        // The finished trip still pays out its catches.
+        const result = resultOf(await claim(a, TRIP_A));
+        expect(result.recalled).toBe(false);
+        expect(result.catches).toHaveLength(3);
+        // With it claimed, the one running trip fills the single slot.
+        expect((await state(a)).slots).toMatchObject({ total: 1, used: 1 });
+      },
+      { rng: createSeededRng('finished'), tripRng: createSeededRng('finished-trip') },
+    );
+  });
+
   it('lets a kept trip be claimed afterwards like any other', async () => {
     await runCore(
       nextGuild(),

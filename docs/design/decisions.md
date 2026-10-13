@@ -734,3 +734,7 @@ The merge's 3 failures became: setup share 13.9% to 16.0% (s2 16.4%, s3 16.5%), 
 
 - **Dungeon after a timezone change.** The game day is computed from the guild's current timezone. Moving the timezone west can make today an earlier date than the player's `last_day`. A run is now refused (`already_run`) and `today` shows `canRun: false` whenever `last_day` is later than the computed day, and the streak counts as alive in that case. This closes a second paid run and a second depth gain on the same real day.
 - **Push-on claims.** The roll now uses `push_odds_bp`, stored when the goal was chosen, not the current content (`pushWorks` in `packages/game`). If the goal id has left the content, the claim still resolves from the stored odds: the goal is treated as risky when the stored odds are below 10000, it adds no extra reward when it works (no reward is stored), and it never throws. A claim can no longer fail with a 500 forever after a content change.
+
+## 2026-10-13: The slot wipe spares finished trips (Misa)
+
+Migration 19 now cancels only trips that are still running (the oldest running trip per player keeps going); trips that have already ended stay active so players can claim their catches and loot as usual. The extra slots close as those trips are claimed. Cancelled trips still get their Bait refunded once.

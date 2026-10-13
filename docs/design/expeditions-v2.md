@@ -25,7 +25,7 @@ Expeditions are about **creatures, not the account**: each creature builds its o
 - Start with 1 slot. Slot 2 comes on the first day (3 finished trips).
 - Slots 3, 4 and 5 come after about a month, four months and a year.
 - They unlock from the **sum of all your creatures' explorer ranks**. The sim sets the thresholds.
-- **Migration (Misa):** when v2 ships, any trip in slots 2 and 3 is cancelled with no reward, and everyone starts again with 1 slot.
+- **Migration (Misa):** when v2 ships, trips still running in slots 2 and 3 are cancelled with their Bait refunded, and everyone starts again with 1 slot. Trips that have already finished stay claimable; the extra slots close as they are claimed.
 
 ### Supplies and trip lengths
 

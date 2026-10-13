@@ -134,20 +134,25 @@ export function expeditionsMigration(sql: SqlStorage): void {
   sql.exec('CREATE INDEX workshop_jobs_user ON workshop_jobs(user_id, claimed_at)');
 
   // --- The slot wipe ---
-  // Everybody starts with one slot. Of each player's running trips, the oldest (by start time, then row
-  // order) keeps running; the rest are cancelled. The row order breaks ties, so the result is the same
-  // however often it is replayed.
-  sql.exec(`UPDATE expeditions SET status = 'cancelled', cancel_reason = 'slot_wipe'
-    WHERE status = 'active' AND id IN (
+  // Everybody starts with one slot. Trips that have already finished are left alone, so their catches
+  // can still be claimed (Misa); the extra slots close as they are claimed. Of each player's trips still
+  // running, the oldest (by start time, then row order) keeps running and the rest are cancelled. The
+  // row order breaks ties, so the result is the same for the same clock.
+  const now = Date.now();
+  sql.exec(
+    `UPDATE expeditions SET status = 'cancelled', cancel_reason = 'slot_wipe'
+    WHERE status = 'active' AND ends_at > ? AND id IN (
       SELECT id FROM (
         SELECT id, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY started_at, rowid) AS n
-        FROM expeditions WHERE status = 'active'
+        FROM expeditions WHERE status = 'active' AND ends_at > ?
       ) WHERE n > 1
-    )`);
+    )`,
+    now,
+    now,
+  );
   sql.exec(`UPDATE creatures SET away_expedition_id = NULL
     WHERE away_expedition_id IN (SELECT id FROM expeditions WHERE cancel_reason = 'slot_wipe')`);
   // What a cancelled trip cost is given back (once per trip, by its key).
-  const now = Date.now();
   sql.exec(
     `INSERT OR IGNORE INTO ledger (user_id, currency, amount, source, idempotency_key, meta, created_at)
      SELECT user_id, 'bait', cost, 'refund', 'expedition-wipe:' || id, NULL, ?
