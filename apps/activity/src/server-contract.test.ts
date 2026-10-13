@@ -18,6 +18,19 @@ import workshopClaimImprove from './fixtures/workshop-claim-improve.json';
 import workshopStartCraft from './fixtures/workshop-start-craft.json';
 import workshopStartEnchant from './fixtures/workshop-start-enchant.json';
 import workshopStartImprove from './fixtures/workshop-start-improve.json';
+import dungeonErrors from './fixtures/dungeon-errors.json';
+import dungeonReplay from './fixtures/dungeon-replay.json';
+import dungeonRequestBodies from './fixtures/dungeon-request-bodies.json';
+import dungeonRunCleared from './fixtures/dungeon-run-cleared.json';
+import dungeonRunLandmark from './fixtures/dungeon-run-landmark.json';
+import dungeonRunLost from './fixtures/dungeon-run-lost.json';
+import dungeonRunRetry from './fixtures/dungeon-run-retry.json';
+import dungeonRunRetryAttempt from './fixtures/dungeon-run-retry-attempt.json';
+import dungeonToday from './fixtures/dungeon-today.json';
+import dungeonTodayDone from './fixtures/dungeon-today-done.json';
+import dungeonTodayLandmark from './fixtures/dungeon-today-landmark.json';
+import dungeonTodayNeed from './fixtures/dungeon-today-need-creatures.json';
+import dungeonTodayRetry from './fixtures/dungeon-today-retry.json';
 import errorFixtures from './fixtures/errors.json';
 import practiceStart from './fixtures/practice-start.json';
 import raidAutofire from './fixtures/raid-autofire.json';
@@ -32,7 +45,17 @@ vi.mock('./api', async (importOriginal) => ({
   apiFetch,
 }));
 
-import { ApiError, parseClaimResponse, parseGameState } from './api';
+import { ApiError, parseClaimResponse, parseGameState, type Creature } from './api';
+import { fetchDungeonReplay, fetchDungeonToday, startDungeonRun } from './dungeon-api';
+import { parseDungeonReplay, parseDungeonRun, parseDungeonToday } from './dungeon-parse';
+import {
+  DEFAULT_ABILITY_SETTINGS,
+  buildRunRequest,
+  type AbilitySettings,
+  type Slots,
+} from './dungeon-team';
+import { dungeonErrorText } from './dungeon-text';
+import type { DungeonRunRequest } from './dungeon-types';
 import { claimJob, dismantleGear, equipGear, fetchGear, startJob, upgradeGear } from './gear-api';
 import { parseGearState } from './gear-parse';
 import type { StartJobRequest } from './gear-types';
@@ -403,3 +426,186 @@ describe('the gear errors the server sends', () => {
     expect(errorText(new ApiError(409, 'creature_away'))).toContain('expedition');
   });
 });
+
+describe('the dungeon requests the client sends', () => {
+  beforeEach(() => {
+    apiFetch.mockReset();
+  });
+
+  function sent(): { path: string; method: string; body: unknown } {
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+    const [path, init] = apiFetch.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
+    return { path, method: init.method ?? 'GET', body: JSON.parse(init.body as string) };
+  }
+
+  const bodyOf = (key: keyof typeof dungeonRequestBodies): DungeonRunRequest =>
+    dungeonRequestBodies[key].body as unknown as DungeonRunRequest;
+
+  it('a run sends exactly the strict body the Worker accepts, at POST /api/dungeon/run', async () => {
+    for (const key of [
+      'dungeon-run-cleared',
+      'dungeon-run-retry',
+      'dungeon-run-landmark',
+      'dungeon-run-lost',
+      'dungeon-run-retry-attempt',
+    ] as const) {
+      apiFetch.mockReset();
+      apiFetch.mockResolvedValue(dungeonRunCleared);
+      await startDungeonRun(bodyOf(key));
+      const { path, method, body } = dungeonRequestBodies[key];
+      expect(sent(), key).toEqual({ path, method, body });
+    }
+  });
+
+  it('the screen builds the same bodies from the same picks', () => {
+    const ability = { id: 'static-zap', unlocked: true, unlockLevel: 10 };
+    const fixtureBody = bodyOf('dungeon-run-cleared');
+    const [front, middle, back] = fixtureBody.team;
+    const make = (id: string, species: string, withAbility: boolean): Creature =>
+      ({
+        id,
+        species,
+        level: 12,
+        stats: { hp: 100, atk: 10, spd: 10 },
+        ability: withAbility ? ability : null,
+      }) as unknown as Creature;
+    const creatures = [
+      make(front, 'sproutle', false),
+      make(middle, 'splashet', false),
+      make(back, 'cindle', true),
+    ];
+    const slots: Slots = [front, middle, back];
+    const settings: AbilitySettings = {
+      ...DEFAULT_ABILITY_SETTINGS,
+      basicId: 'shield-wall',
+      basicRound: 2,
+      zone: 'front',
+      creatureRounds: { [back]: 3 },
+    };
+    expect(buildRunRequest(slots, creatures, settings, fixtureBody.idempotencyKey)).toEqual(
+      fixtureBody,
+    );
+
+    // The default picks: Rally on Auto, no creature rounds, the same shape as the lost and landmark runs.
+    const lost = bodyOf('dungeon-run-lost');
+    const lostCreatures = lost.team.map((id) => make(id, 'mistnewt', false));
+    const [a, b, c] = lost.team;
+    expect(
+      buildRunRequest([a, b, c], lostCreatures, DEFAULT_ABILITY_SETTINGS, lost.idempotencyKey),
+    ).toEqual(lost);
+  });
+
+  it('every body has a key of the form the Worker wants, and is retried with the same one', () => {
+    for (const key of Object.keys(dungeonRequestBodies) as (keyof typeof dungeonRequestBodies)[]) {
+      const body = dungeonRequestBodies[key].body;
+      if (body === null) continue;
+      expect((body as { idempotencyKey: string }).idempotencyKey).toMatch(/^[A-Za-z0-9_-]{8,64}$/);
+    }
+    // A retry of a run is the same call with the same body, so the key travels along unchanged.
+    expect(bodyOf('dungeon-run-retry')).toEqual(bodyOf('dungeon-run-cleared'));
+  });
+
+  it("asks for today's state and for a run's replay with plain GETs", async () => {
+    apiFetch.mockResolvedValue(dungeonToday);
+    await fetchDungeonToday();
+    expect(apiFetch).toHaveBeenCalledWith('/api/dungeon/today');
+
+    apiFetch.mockClear();
+    apiFetch.mockResolvedValue(dungeonReplay);
+    const { path } = dungeonRequestBodies['dungeon-replay'];
+    await fetchDungeonReplay(path.split('/')[4] as string);
+    expect(apiFetch).toHaveBeenCalledWith(path);
+  });
+
+  it('encodes a run id so it can never leave the path', async () => {
+    apiFetch.mockResolvedValue(dungeonReplay);
+    await fetchDungeonReplay('../gear');
+    expect(apiFetch).toHaveBeenCalledWith('/api/dungeon/run/..%2Fgear');
+  });
+});
+
+describe('the dungeon responses the server sends', () => {
+  beforeEach(() => {
+    apiFetch.mockReset();
+  });
+
+  it('parses every GET /api/dungeon/today fixture', () => {
+    const states = [
+      dungeonToday,
+      dungeonTodayRetry,
+      dungeonTodayDone,
+      dungeonTodayLandmark,
+      dungeonTodayNeed,
+    ].map(parseDungeonToday);
+    for (const state of states) expect(state.modifiers).toHaveLength(3);
+    expect(states[0]?.canRun).toBe(true);
+    expect(states[1]?.last?.cleared).toBe(false);
+    expect(states[2]?.blocked).toBe('already_run');
+    expect(states[3]?.landmark).toBe(true);
+    expect(states[4]?.blocked).toBe('need_creatures');
+  });
+
+  it('parses the run and the new state of every POST /api/dungeon/run fixture', async () => {
+    for (const fixture of [
+      dungeonRunCleared,
+      dungeonRunLost,
+      dungeonRunLandmark,
+      dungeonRunRetry,
+      dungeonRunRetryAttempt,
+    ]) {
+      apiFetch.mockResolvedValue(fixture);
+      const done = await startDungeonRun(bodyOf0());
+      expect(done.run.rooms).toHaveLength(3);
+      expect(done.today.last?.id).toBe(done.run.id);
+    }
+    expect(parseDungeonRun(dungeonRunLandmark).run.rewards.gear).toHaveLength(1);
+    expect(parseDungeonRun(dungeonRunLost).run.rewards.bait).toBe(0);
+  });
+
+  it('parses the replay of a run: rooms with events, hpStart, hpMax and names', async () => {
+    apiFetch.mockResolvedValue(dungeonReplay);
+    const replay = await fetchDungeonReplay('x');
+    expect(replay.rooms).toHaveLength(3);
+    for (const room of replay.rooms) {
+      expect(room.events.length).toBeGreaterThan(0);
+      expect(Object.keys(room.hpStart)).toHaveLength(3);
+      expect(Object.keys(room.hpMax)).toHaveLength(3);
+      expect(room.names.creatures).toBeDefined();
+    }
+  });
+
+  it('refuses a payload that is not the shape the server sends', () => {
+    expect(() => parseDungeonToday({ ...dungeonToday, depth: 'deep' })).toThrow('dungeon state');
+    expect(() => parseDungeonToday({ ...dungeonToday, blocked: 'because' })).toThrow();
+    expect(() => parseDungeonToday({ ...dungeonToday, modifiers: [{ id: 'x' }] })).toThrow();
+    expect(() => parseDungeonRun({ run: {}, today: dungeonToday })).toThrow('dungeon run');
+    expect(() => parseDungeonRun({ ...dungeonRunCleared, today: null })).toThrow();
+    const bad = {
+      ...dungeonReplay,
+      rooms: [{ ...dungeonReplay.rooms[0], events: [{ t: 'nope' }] }],
+    };
+    expect(() => parseDungeonReplay(bad)).toThrow('dungeon replay');
+    expect(() => parseDungeonReplay({ ...dungeonReplay, row: [{ id: 1 }] })).toThrow();
+    const noHp = { ...dungeonReplay.rooms[0], hpStart: { a: -1 } };
+    expect(() => parseDungeonReplay({ ...dungeonReplay, rooms: [noHp] })).toThrow();
+  });
+});
+
+describe('the dungeon errors the server sends', () => {
+  const GENERIC = /^Something went wrong/;
+
+  it('has a friendly text for every error code of the dungeon routes', () => {
+    expect(dungeonErrors.length).toBeGreaterThan(5);
+    for (const { route, status, body } of dungeonErrors) {
+      const text = dungeonErrorText(new ApiError(status, body.error));
+      expect(text, `${route} ${String(status)} ${body.error}`).not.toMatch(GENERIC);
+      expect(text.length).toBeGreaterThan(10);
+    }
+  });
+});
+
+/** Any run body: the answer fixtures do not depend on what is asked. */
+function bodyOf0(): DungeonRunRequest {
+  return dungeonRequestBodies['dungeon-run-cleared'].body as unknown as DungeonRunRequest;
+}
