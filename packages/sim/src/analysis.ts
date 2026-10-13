@@ -1,4 +1,6 @@
-import { ELEMENTS, content, type Element, type Rarity } from '@creatures/game';
+import { ELEMENTS, content, type Element, type GearRarity, type Rarity } from '@creatures/game';
+import { gearPowerOf } from './gear';
+import { pickTeam } from './data';
 import { ARCHETYPES, type ArchetypeId } from './archetypes';
 import type { EconomyResult, PlayerHistory, WeekRecord } from './economy';
 import { analyseLongRun, type LongRunInput, type LongRunStats } from './ladder';
@@ -19,6 +21,8 @@ export interface AnalysisInput {
   sweep: SweepResult;
   /** Long-run sims (the ladder and Festivals) per server size. */
   longRun: readonly LongRunInput[];
+  /** The same default-server sims (same seeds) played without gear: "today" for the Essence targets. */
+  baselineSims?: readonly EconomyResult[];
 }
 
 export interface CellStats {
@@ -75,6 +79,44 @@ export interface ProgressionRow {
   essence: number;
   jackpots: number;
   pity: number;
+  /** Power the worn gear adds to the top 3, and its share of the top-3 power. */
+  gearPower: number;
+  gearShare: number;
+  /** Upgrade levels on the team's items, crafts claimed so far, Essence spent on upgrades that week. */
+  gearLevels: number;
+  crafted: number;
+  essenceSpentGear: number;
+  /** Highest Crafting level, and scrap held. */
+  skillLevel: number;
+  scrap: number;
+}
+
+/** Daily players' Essence held and weekly changes, with gear and without (today). */
+export interface GearComparisonRow {
+  week: number;
+  essenceWithGear: number;
+  essenceToday: number;
+  top3PowerWithGear: number;
+  top3PowerToday: number;
+}
+
+/** The items on the team at a snapshot week: what the daily players, say, actually wear. */
+export interface WornRow {
+  archetype: ArchetypeId;
+  week: number;
+  players: number;
+  /** Share of the team's items by rarity (0 to 1). */
+  rarity: Record<GearRarity, number>;
+  /** Average upgrade level, enchant share and power added per worn item. */
+  level: number;
+  enchanted: number;
+  power: number;
+  /** Average items in the bag, blueprints known, parts (scrap, shards, glimmer) held. */
+  bag: number;
+  blueprints: number;
+  scrap: number;
+  shards: number;
+  glimmer: number;
 }
 
 /** What abilities add to the finale damage of one group of raid weeks (informational, no target). */
@@ -119,6 +161,8 @@ export interface Analysis {
     max: number;
   }[];
   abilityShares: AbilityShareRow[];
+  gearComparison: GearComparisonRow[];
+  worn: WornRow[];
   longRun: LongRunStats[];
   jackpots: {
     source: string;
@@ -199,6 +243,13 @@ function progression(
         essence: avg((w) => w.essence),
         jackpots: avg((w) => w.jackpots),
         pity: avg((w) => w.pity),
+        gearPower: avg((w) => w.gearPower),
+        gearShare: avg((w) => (w.top3Power === 0 ? 0 : w.gearPower / w.top3Power)),
+        gearLevels: avg((w) => w.gearLevels),
+        crafted: avg((w) => w.crafted),
+        essenceSpentGear: avg((w) => w.essenceSpentGear),
+        skillLevel: avg((w) => w.skillLevel),
+        scrap: avg((w) => w.scrap),
       });
     }
     out[a] = rows;
@@ -206,8 +257,116 @@ function progression(
   return out;
 }
 
+/**
+ * The gear and crafting measures of the default server's daily players (and the newcomer), with the
+ * same sims played without gear as "today" for the Essence measures. Used by the analysis and by the
+ * gear tuning CLI.
+ */
+export function gearMetrics(
+  defaultSims: readonly EconomyResult[],
+  baselineSims: readonly EconomyResult[],
+  weeks: number,
+): { metrics: Record<string, number | null>; comparison: GearComparisonRow[] } {
+  const metrics: Record<string, number | null> = {};
+  const dailies = playersOf(defaultSims, 'daily');
+  const shareAt = (h: PlayerHistory, week: number): number | null => {
+    const w = weekRecord(h, week);
+    return w === undefined || w.top3Power === 0 ? null : w.gearPower / w.top3Power;
+  };
+  metrics['gear.dailyShareWeek8'] = median(
+    dailies.map((h) => shareAt(h, 8)).filter((x): x is number => x !== null),
+  );
+  // A player who never crafted counts as 99 days.
+  const firstCraft = dailies.map((h) => h.firstCraftAfterDays ?? 99);
+  metrics['gear.dailyFirstCraftDaysP90'] = percentile(firstCraft, 90);
+  metrics['gear.dailyBestSkillDay30'] = median(
+    dailies.map((h) => h.bestSkillDay30).filter((x): x is number => x !== null),
+  );
+  const newcomerGear = median(valuesAt(defaultSims, 'newcomer', 8, (w) => w.gearPower));
+  const dailyGear = median(valuesAt(defaultSims, 'daily', 8, (w) => w.gearPower));
+  metrics['gear.newcomerCatchUpWeek8'] =
+    newcomerGear === null || dailyGear === null || dailyGear === 0
+      ? null
+      : newcomerGear / dailyGear;
+  const gearComparison: GearComparisonRow[] = [];
+  if (baselineSims.length > 0) {
+    for (let week = 1; week <= weeks; week++) {
+      const on = valuesAt(defaultSims, 'daily', week, (w) => w.essence);
+      const off = valuesAt(baselineSims, 'daily', week, (w) => w.essence);
+      const powerOn = valuesAt(defaultSims, 'daily', week, (w) => w.top3Power);
+      const powerOff = valuesAt(baselineSims, 'daily', week, (w) => w.top3Power);
+      if (on.length === 0 || off.length === 0) continue;
+      gearComparison.push({
+        week,
+        essenceWithGear: mean(on) ?? 0,
+        essenceToday: mean(off) ?? 0,
+        top3PowerWithGear: mean(powerOn) ?? 0,
+        top3PowerToday: mean(powerOff) ?? 0,
+      });
+    }
+  }
+  const cmp = (week: number): GearComparisonRow | undefined =>
+    gearComparison.find((r) => r.week === week);
+  const c12 = cmp(12);
+  const c8 = cmp(8);
+  // Bounded: the week-12 stockpile is no bigger than today's, and between weeks 8 and 12 it grows
+  // no faster than today's does (Essence per week; negative means it falls).
+  metrics['gear.dailyEssenceWeek12'] = c12?.essenceWithGear ?? null;
+  metrics['gear.dailyEssenceWeek12VsToday'] =
+    c12 === undefined ? null : c12.essenceWithGear - c12.essenceToday;
+  metrics['gear.dailyEssenceGrowthVsToday'] =
+    c12 === undefined || c8 === undefined
+      ? null
+      : (c12.essenceWithGear - c8.essenceWithGear - (c12.essenceToday - c8.essenceToday)) / 4;
+  return { metrics, comparison: gearComparison };
+}
+
+/** The team's worn items at the last snapshot week of the default sims, per archetype. */
+export function wornItems(sims: readonly EconomyResult[]): WornRow[] {
+  const rows: WornRow[] = [];
+  const week = Math.max(0, ...sims.flatMap((s) => s.snapshots.map((x) => x.week)));
+  for (const archetype of ARCHETYPES) {
+    const players = sims
+      .flatMap((s) => s.snapshots.filter((x) => x.week === week).flatMap((x) => x.players))
+      .filter((p) => p.archetype === archetype);
+    if (players.length === 0) continue;
+    const worn = players.flatMap((p) => pickTeam(p.creatures).filter((c) => c.item));
+    const items = worn.flatMap((c) => (c.item === undefined || c.item === null ? [] : [c.item]));
+    const share = (r: GearRarity): number =>
+      items.length === 0 ? 0 : items.filter((i) => i.rarity === r).length / items.length;
+    const avg = (f: (p: (typeof players)[number]) => number): number => mean(players.map(f)) ?? 0;
+    rows.push({
+      archetype,
+      week,
+      players: players.length,
+      rarity: {
+        common: share('common'),
+        rare: share('rare'),
+        epic: share('epic'),
+        festival: share('festival'),
+      },
+      level: mean(items.map((i) => i.level)) ?? 0,
+      enchanted:
+        items.length === 0 ? 0 : items.filter((i) => i.enchantId !== null).length / items.length,
+      power: mean(worn.map(gearPowerOf)) ?? 0,
+      bag: avg((p) => p.gear.bag.length),
+      blueprints: avg((p) => p.gear.blueprints.length),
+      scrap: avg((p) => p.gear.parts.scrap),
+      shards: avg(
+        (p) =>
+          p.gear.parts['tide-shard'] +
+          p.gear.parts['ember-shard'] +
+          p.gear.parts['grove-shard'] +
+          p.gear.parts['spark-shard'],
+      ),
+      glimmer: avg((p) => p.gear.parts.glimmer),
+    });
+  }
+  return rows;
+}
+
 export function analyse(input: AnalysisInput): Analysis {
-  const { sweep, defaultSims, pitySims, weeks, longRun } = input;
+  const { sweep, defaultSims, pitySims, weeks, longRun, baselineSims } = input;
   const records = sweep.records;
   const metrics: Record<string, number | null> = {
     'choice.elementPickRateMin': null,
@@ -354,6 +513,11 @@ export function analyse(input: AnalysisInput): Analysis {
       ? null
       : newcomerEssence / topEssence;
 
+  // ---- gear and crafting ----
+  const gear = gearMetrics(defaultSims, baselineSims ?? [], weeks);
+  Object.assign(metrics, gear.metrics);
+  const gearComparison = gear.comparison;
+
   const pityRaids = pitySims.flatMap((s) => s.raids.map((r) => r.summary));
   const pityRolls = sum(pityRaids.map((r) => r.jackpot.rolls));
   metrics['econ.jackpotRatePerWin'] =
@@ -472,6 +636,8 @@ export function analyse(input: AnalysisInput): Analysis {
     archetypeShares,
     essence,
     abilityShares,
+    gearComparison,
+    worn: wornItems(defaultSims),
     longRun: longRunResult.stats,
     jackpots,
     outliers,

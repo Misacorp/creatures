@@ -1,8 +1,11 @@
 import {
+  applyGear,
   content,
   creaturePower as statsPower,
   effectiveStats,
   type CreatureSpecies,
+  type CritBonus,
+  type GearItem,
   type Stats,
 } from '@creatures/game';
 
@@ -21,6 +24,12 @@ export const CATCHABLE: readonly CreatureSpecies[] = content.creatures.filter(
 
 export const STARTERS: readonly CreatureSpecies[] = content.creatures.filter((c) => c.starter);
 
+/** A gear item a player owns. `uid` is stable for the player; `improves` counts finished improve jobs. */
+export interface SimItem extends GearItem {
+  uid: number;
+  improves: number;
+}
+
 /** One creature a player owns (one per line; fusion adds to `fusionCount`). */
 export interface OwnedCreature {
   /** `<playerId>/<line>`: stable across evolution. */
@@ -30,6 +39,8 @@ export interface OwnedCreature {
   speciesId: string;
   level: number;
   fusionCount: number;
+  /** The gear item it wears (one slot); absent or null: none. */
+  item?: SimItem | null;
 }
 
 const statCache = new Map<string, Stats>();
@@ -46,18 +57,34 @@ export function creatureStats(
   return stats;
 }
 
-/** A creature's power: Attack + floor(HP / 10), the shared rule from `@creatures/game`. */
-export function creaturePower(
-  c: Pick<OwnedCreature, 'speciesId' | 'level' | 'fusionCount'>,
-): number {
+/**
+ * The numbers a fight uses: the effective stats with the worn item folded in (`applyGear`, the same
+ * call the worker makes), and the crit bonus. Without an item these are the plain stats.
+ */
+export function foldedCreature(c: OwnedCreature): { stats: Stats; crit: CritBonus | undefined } {
+  const species = speciesOf(c.speciesId);
+  return applyGear(creatureStats(c), species.crit, species.role, species.element, c.item ?? null);
+}
+
+/** A creature's power without its gear: Attack + floor(HP / 10), the shared rule from `@creatures/game`. */
+export function basePower(c: Pick<OwnedCreature, 'speciesId' | 'level' | 'fusionCount'>): number {
   return statsPower(creatureStats(c));
+}
+
+/** A creature's power as the raid sees it: gear included, like the worker's `power`. */
+export function creaturePower(c: OwnedCreature): number {
+  return c.item === undefined || c.item === null
+    ? statsPower(creatureStats(c))
+    : statsPower(foldedCreature(c).stats);
 }
 
 /** Strongest first; ties by line id so the order is deterministic. */
 export function byPowerDesc(creatures: readonly OwnedCreature[]): OwnedCreature[] {
+  const power = new Map(creatures.map((c) => [c, creaturePower(c)]));
   return [...creatures].sort(
     (a, b) =>
-      creaturePower(b) - creaturePower(a) || (a.line < b.line ? -1 : a.line > b.line ? 1 : 0),
+      (power.get(b) as number) - (power.get(a) as number) ||
+      (a.line < b.line ? -1 : a.line > b.line ? 1 : 0),
   );
 }
 
@@ -68,7 +95,7 @@ export function pickTeam(creatures: readonly OwnedCreature[]): OwnedCreature[] {
   return byPowerDesc(creatures).slice(0, TEAM_SIZE);
 }
 
-/** Team power = sum of `creaturePower` over the top 3 (fusion included). */
+/** Team power = sum of `creaturePower` over the top 3 (fusion and gear included). */
 export function teamPower(creatures: readonly OwnedCreature[]): number {
   return pickTeam(creatures).reduce((total, c) => total + creaturePower(c), 0);
 }
