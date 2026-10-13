@@ -807,3 +807,7 @@ The compendium author listed twelve places where content, glossary and design do
 - Still open: 3 (Festival residents text), 4 (night hours), 6 ("Very risky" wording), 12 (enchant costs).
 
 A new test, `packages/game/test/compendium.test.ts`, fails when shipped content has no compendium entry.
+
+## 2026-10-13: Festival gear stays a Festival-only prize (Misa)
+
+Festival gear is won only by clearing a Festival finale. There are no Festival blueprints, so it is never craftable. `rollBlueprint` keeps skipping Festival bases, and the glossary says "It cannot be crafted."
