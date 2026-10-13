@@ -54,24 +54,13 @@ import {
 } from '@creatures/engine';
 import type { Analytics } from './analytics';
 import { devKey, type DevFlags } from './dev-state';
-import type { ErrorStatus, Outcome } from './collection';
+import { GameError, atomically, type Outcome } from './outcome';
 import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-grants';
 import { credit, lookupSpend, type LedgerStorage } from './ledger';
 import { drawSeed, slotFor } from './raid-resolve';
 import { loadCreatures, type TeamCreature } from './raid-teams';
 import type { RunBody } from './dungeon-schemas';
 import { addDays, gameDay, gameDayEnd } from './time';
-
-/** Thrown inside a transaction to roll it back and answer with an error. */
-class DungeonError extends Error {
-  constructor(
-    readonly status: ErrorStatus,
-    readonly code: string,
-  ) {
-    super(code);
-    this.name = 'DungeonError';
-  }
-}
 
 /** Runs (their events and inputs) are kept this long; the summary and rewards stay. */
 export const RUN_RETENTION_MS = 90 * 86_400_000;
@@ -457,13 +446,7 @@ export class Dungeon {
     const tz = this.deps.timezone();
     const now = this.deps.now();
     const day = gameDay(now, tz, RULES.daily.reset);
-    try {
-      const value = this.deps.storage.transactionSync(() => this.runIn(userId, body, day, tz, now));
-      return { ok: true, value };
-    } catch (err) {
-      if (err instanceof DungeonError) return { ok: false, status: err.status, error: err.code };
-      throw err;
-    }
+    return atomically(this.deps.storage, () => this.runIn(userId, body, day, tz, now));
   }
 
   private runIn(
@@ -483,7 +466,7 @@ export class Dungeon {
       )
       .toArray()[0];
     if (prior !== undefined) {
-      if (prior.fingerprint !== fingerprint) throw new DungeonError(409, 'key_conflict');
+      if (prior.fingerprint !== fingerprint) throw new GameError(409, 'key_conflict');
       return {
         run: JSON.parse(prior.summary_json) as DungeonRunSummary,
         today: this.todayView(userId, day, tz, now),
@@ -499,23 +482,23 @@ export class Dungeon {
           body.idempotencyKey,
         )
         .toArray().length > 0;
-    if (usedElsewhere) throw new DungeonError(409, 'key_conflict');
+    if (usedElsewhere) throw new GameError(409, 'key_conflict');
 
     // --- One run a day, and the retry of a first day ---
     const progress = this.progress(userId);
     const runs = this.runsOn(userId, day);
-    if (!this.allowance(progress, day, runs).canRun) throw new DungeonError(409, 'already_run');
+    if (!this.allowance(progress, day, runs).canRun) throw new GameError(409, 'already_run');
     const attempt = runs.length + 1;
 
     // --- The team: the caller's own creatures, all different, in the order they stand in the row ---
     if (new Set(body.team).size !== body.team.length) {
-      throw new DungeonError(400, 'duplicate_creature');
+      throw new GameError(400, 'duplicate_creature');
     }
     const owned = new Map(loadCreatures(this.sql, userId).map((c) => [c.id, c]));
     const team = body.team.map((id) => owned.get(id));
     // The same answer for "does not exist" and "belongs to someone else".
     if (!team.every((c): c is TeamCreature => c !== undefined)) {
-      throw new DungeonError(404, 'not_found');
+      throw new GameError(404, 'not_found');
     }
     // `team[i]` is position i, left to right: the row is the order of the request.
     const standing = team;

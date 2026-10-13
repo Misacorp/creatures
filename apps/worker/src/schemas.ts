@@ -1,6 +1,10 @@
 import * as v from 'valibot';
+import { SPEND_KEY_RE } from './ledger';
 
 export const SNOWFLAKE_RE = /^\d{17,20}$/;
+
+/** The client-generated key every spend and keyed action carries. */
+export const IdempotencyKeySchema = v.pipe(v.string(), v.regex(SPEND_KEY_RE));
 
 const snowflake = v.pipe(v.string(), v.regex(SNOWFLAKE_RE));
 

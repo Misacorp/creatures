@@ -1,16 +1,14 @@
 import { expeditionContent, gearContent } from '@creatures/game';
 import * as v from 'valibot';
 import { IdSchema } from './collection-schemas';
-import { SPEND_KEY_RE } from './ledger';
-
-const idempotencyKey = v.pipe(v.string(), v.regex(SPEND_KEY_RE));
+import { IdempotencyKeySchema } from './schemas';
 
 /** Equip (a creature id) or unequip (null). The item is in the path, the player is the session's. */
 export const EquipBodySchema = v.strictObject({ creatureId: v.nullable(IdSchema) });
 
-export const UpgradeBodySchema = v.strictObject({ idempotencyKey });
-export const DismantleBodySchema = v.strictObject({ idempotencyKey });
-export const ClaimJobBodySchema = v.strictObject({ idempotencyKey });
+export const UpgradeBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
+export const DismantleBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
+export const ClaimJobBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
 
 const BASE_IDS = gearContent.bases.map((b) => b.id);
 const ENCHANT_IDS = gearContent.enchants.map((e) => e.id);
@@ -22,26 +20,26 @@ export const StartJobBodySchema = v.variant('kind', [
     kind: v.literal('craft'),
     creatureId: IdSchema,
     blueprintId: v.picklist(BASE_IDS),
-    idempotencyKey,
+    idempotencyKey: IdempotencyKeySchema,
   }),
   v.strictObject({
     kind: v.literal('improve'),
     creatureId: IdSchema,
     gearId: IdSchema,
     secondaryIndex: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(1)),
-    idempotencyKey,
+    idempotencyKey: IdempotencyKeySchema,
   }),
   v.strictObject({
     kind: v.literal('enchant'),
     creatureId: IdSchema,
     gearId: IdSchema,
     enchantId: v.picklist(ENCHANT_IDS),
-    idempotencyKey,
+    idempotencyKey: IdempotencyKeySchema,
   }),
   v.strictObject({
     kind: v.literal('supply'),
     creatureId: IdSchema,
     supplyId: v.picklist(SUPPLY_IDS),
-    idempotencyKey,
+    idempotencyKey: IdempotencyKeySchema,
   }),
 ]);

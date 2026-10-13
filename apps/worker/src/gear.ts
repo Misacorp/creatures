@@ -44,7 +44,8 @@ import {
   type Rng,
 } from '@creatures/game';
 import type { Analytics } from './analytics';
-import { speciesOf, type ErrorStatus, type Outcome } from './collection';
+import { speciesOf } from './collection';
+import { GameError, atomically, type Outcome } from './outcome';
 import { addSupply } from './expedition-store';
 import { grantWelcomeKit, recentGrants, type GrantRecord } from './gear-grants';
 import {
@@ -69,17 +70,6 @@ import {
   type JobRow,
 } from './gear-store';
 import { getBalances, lookupSpend, spend, type Currency, type LedgerStorage } from './ledger';
-
-/** Thrown inside a transaction to roll it back and answer with an error. */
-class GearError extends Error {
-  constructor(
-    readonly status: ErrorStatus,
-    readonly code: string,
-  ) {
-    super(code);
-    this.name = 'GearError';
-  }
-}
 
 /** The gear rarity a supply tier is logged as (analytics) and a supply job is sized as. */
 const SUPPLY_RARITY = { basic: 'common', good: 'rare', great: 'epic' } as const;
@@ -255,12 +245,7 @@ export class Gear {
   }
 
   private atomically<T>(fn: () => T): Outcome<T> {
-    try {
-      return { ok: true, value: this.deps.storage.transactionSync(fn) };
-    } catch (err) {
-      if (err instanceof GearError) return { ok: false, status: err.status, error: err.code };
-      throw err;
-    }
+    return atomically(this.deps.storage, fn);
   }
 
   /**
@@ -284,11 +269,11 @@ export class Gear {
       .toArray()[0];
     if (prior !== undefined) {
       if (prior.kind !== kind || prior.fingerprint !== fingerprint) {
-        throw new GearError(409, 'key_conflict');
+        throw new GameError(409, 'key_conflict');
       }
       return JSON.parse(prior.result_json) as T;
     }
-    if (lookupSpend(this.sql, userId, key) !== null) throw new GearError(409, 'key_conflict');
+    if (lookupSpend(this.sql, userId, key) !== null) throw new GameError(409, 'key_conflict');
     const result = run();
     this.sql.exec(
       `INSERT INTO gear_actions (user_id, key, kind, fingerprint, result_json, created_at)
@@ -318,13 +303,13 @@ export class Gear {
       .exec<JobRow>('SELECT * FROM workshop_jobs WHERE id = ? AND user_id = ?', id, userId)
       .toArray()[0];
     // Same answer for "does not exist" and "belongs to someone else".
-    if (row === undefined) throw new GearError(404, 'not_found');
+    if (row === undefined) throw new GameError(404, 'not_found');
     return row;
   }
 
   private ownedItem(userId: string, id: string): GearRow {
     const row = findItem(this.sql, userId, id);
-    if (row === undefined) throw new GearError(404, 'not_found');
+    if (row === undefined) throw new GameError(404, 'not_found');
     return row;
   }
 
@@ -339,7 +324,7 @@ export class Gear {
         userId,
       )
       .toArray()[0];
-    if (row === undefined) throw new GearError(404, 'not_found');
+    if (row === undefined) throw new GameError(404, 'not_found');
     return row;
   }
 
@@ -569,9 +554,9 @@ export class Gear {
         const row = this.ownedItem(userId, gearId);
         const item = rowToItem(row);
         const cost = upgradeCost(item);
-        if (cost === null) throw new GearError(409, 'max_level');
+        if (cost === null) throw new GameError(409, 'max_level');
         if (!hasParts(this.sql, userId, { scrap: cost.scrap })) {
-          throw new GearError(409, 'insufficient_parts');
+          throw new GameError(409, 'insufficient_parts');
         }
         const spent = spend(
           this.deps.storage,
@@ -612,10 +597,10 @@ export class Gear {
         );
         switch (spent.status) {
           case 'insufficient_funds':
-            throw new GearError(409, 'insufficient_funds');
+            throw new GameError(409, 'insufficient_funds');
           case 'key_conflict':
           case 'replayed':
-            throw new GearError(409, 'key_conflict');
+            throw new GameError(409, 'key_conflict');
           case 'ok':
             return spent.result;
         }
@@ -645,7 +630,7 @@ export class Gear {
     return this.atomically(() =>
       this.idempotent(userId, idempotencyKey, 'dismantle', gearId, () => {
         const row = this.ownedItem(userId, gearId);
-        if (openJobIds(this.sql, userId).has(row.id)) throw new GearError(409, 'item_busy');
+        if (openJobIds(this.sql, userId).has(row.id)) throw new GameError(409, 'item_busy');
         const item = rowToItem(row);
         const parts = dismantleYield(item);
         this.sql.exec('DELETE FROM gear_items WHERE id = ?', row.id);
@@ -695,10 +680,10 @@ export class Gear {
     return this.atomically(() =>
       this.idempotent(userId, input.idempotencyKey, 'job_start', fingerprint, () => {
         const creature = this.ownedCreature(userId, input.creatureId);
-        if (creature.away_expedition_id !== null) throw new GearError(409, 'creature_away');
-        if (openJobOf(this.sql, creature.id) !== null) throw new GearError(409, 'creature_on_job');
+        if (creature.away_expedition_id !== null) throw new GameError(409, 'creature_away');
+        if (openJobOf(this.sql, creature.id) !== null) throw new GameError(409, 'creature_on_job');
         if (openJobCount(this.sql, userId) >= RULES.gear.workshopSlots) {
-          throw new GearError(409, 'workshop_full');
+          throw new GameError(409, 'workshop_full');
         }
 
         let rarity: GearRarity;
@@ -712,11 +697,11 @@ export class Gear {
         switch (input.kind) {
           case 'craft': {
             const base = gearBase(input.blueprintId);
-            if (base === undefined) throw new GearError(400, 'invalid_blueprint');
+            if (base === undefined) throw new GameError(400, 'invalid_blueprint');
             if (!knowsBlueprint(this.sql, userId, base.id)) {
-              throw new GearError(409, 'blueprint_unknown');
+              throw new GameError(409, 'blueprint_unknown');
             }
-            if (!hasRoom(this.sql, userId)) throw new GearError(409, 'inventory_full');
+            if (!hasRoom(this.sql, userId)) throw new GameError(409, 'inventory_full');
             baseId = base.id;
             rarity = base.blueprint;
             cost = craftCost(base.id);
@@ -725,11 +710,11 @@ export class Gear {
           }
           case 'improve': {
             const row = this.ownedItem(userId, input.gearId);
-            if (openJobIds(this.sql, userId).has(row.id)) throw new GearError(409, 'item_busy');
+            if (openJobIds(this.sql, userId).has(row.id)) throw new GameError(409, 'item_busy');
             const price = improveCost(row.rarity);
             const secondaries = parseRolls(row.rolls_json).secondary.length;
-            if (price === null || secondaries === 0) throw new GearError(409, 'nothing_to_improve');
-            if (input.secondaryIndex >= secondaries) throw new GearError(400, 'invalid_secondary');
+            if (price === null || secondaries === 0) throw new GameError(409, 'nothing_to_improve');
+            if (input.secondaryIndex >= secondaries) throw new GameError(400, 'invalid_secondary');
             baseId = row.base_id;
             rarity = row.rarity;
             cost = price;
@@ -740,12 +725,12 @@ export class Gear {
           }
           case 'enchant': {
             const row = this.ownedItem(userId, input.gearId);
-            if (openJobIds(this.sql, userId).has(row.id)) throw new GearError(409, 'item_busy');
+            if (openJobIds(this.sql, userId).has(row.id)) throw new GameError(409, 'item_busy');
             const price = enchantCost(input.enchantId);
             if (price === null || enchantDef(input.enchantId) === undefined) {
-              throw new GearError(400, 'invalid_enchant');
+              throw new GameError(400, 'invalid_enchant');
             }
-            if (row.enchant_id === input.enchantId) throw new GearError(409, 'same_enchant');
+            if (row.enchant_id === input.enchantId) throw new GameError(409, 'same_enchant');
             baseId = row.base_id;
             rarity = row.rarity;
             cost = price;
@@ -756,9 +741,9 @@ export class Gear {
           }
           case 'supply': {
             const def = supplyDef(input.supplyId);
-            if (def === undefined) throw new GearError(400, 'invalid_supply');
+            if (def === undefined) throw new GameError(400, 'invalid_supply');
             // The better the supply, the higher the Crafting level its blueprint asks for.
-            if (level < def.blueprint.craftingLevel) throw new GearError(409, 'skill_too_low');
+            if (level < def.blueprint.craftingLevel) throw new GameError(409, 'skill_too_low');
             baseId = def.id;
             rarity = SUPPLY_RARITY[def.tier];
             cost = partsOfSpec(def.blueprint.parts);
@@ -767,7 +752,7 @@ export class Gear {
             break;
           }
         }
-        if (!debitParts(this.sql, userId, cost)) throw new GearError(409, 'insufficient_parts');
+        if (!debitParts(this.sql, userId, cost)) throw new GameError(409, 'insufficient_parts');
 
         const now = this.deps.now();
         const duration = supplyMs ?? jobDuration(input.kind as GearJobKind, rarity, level);
@@ -817,7 +802,7 @@ export class Gear {
           return JSON.parse(job.result_json) as JobResult;
         }
         const now = this.deps.now();
-        if (now < job.ends_at) throw new GearError(409, 'not_ready');
+        if (now < job.ends_at) throw new GameError(409, 'not_ready');
         const input = JSON.parse(job.input_json) as StoredInput;
         const creature = this.ownedCreature(userId, job.creature_id);
         const before = skillLevel(creatureXp(this.sql, userId, creature.id));
@@ -835,7 +820,7 @@ export class Gear {
             if (base === undefined) throw new Error('stored craft has an unknown base');
             if (countItems(this.sql, userId) >= RULES.gear.inventoryCap) {
               // Cannot happen (a craft holds its place), but never lose the item if it does.
-              throw new GearError(409, 'inventory_full');
+              throw new GameError(409, 'inventory_full');
             }
             const rarity = craftRarity(this.deps.rng, base.blueprint, before);
             upgraded = rarity !== base.blueprint;
@@ -856,7 +841,7 @@ export class Gear {
             const row =
               input.gearId === undefined ? undefined : findItem(this.sql, userId, input.gearId);
             if (row === undefined || input.secondaryIndex === undefined) {
-              throw new GearError(409, 'item_gone');
+              throw new GameError(409, 'item_gone');
             }
             const rolls = parseRolls(row.rolls_json);
             const next = rerollSecondary(this.deps.rng, row.base_id, rolls, input.secondaryIndex);
@@ -892,7 +877,7 @@ export class Gear {
             const row =
               input.gearId === undefined ? undefined : findItem(this.sql, userId, input.gearId);
             if (row === undefined || input.enchantId === undefined) {
-              throw new GearError(409, 'item_gone');
+              throw new GameError(409, 'item_gone');
             }
             this.sql.exec(
               'UPDATE gear_items SET enchant_id = ? WHERE id = ?',

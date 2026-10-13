@@ -4,8 +4,9 @@ import { DiscordError } from './discord';
 import {
   errorResponse,
   json,
+  MAX_ACTION_BODY_BYTES,
+  parseBody,
   parseJsonObject,
-  readJsonBody,
   readLimitedText,
   type Routes,
 } from './http';
@@ -22,8 +23,6 @@ import {
   TeamBodySchema,
   UnplaceBodySchema,
 } from './raid-schemas';
-
-const MAX_BODY_BYTES = 2048;
 
 /** What these routes need from the request context (GuildCore's context satisfies it). */
 export interface RaidRouteContext {
@@ -45,19 +44,9 @@ export interface RaidRouteContext {
   };
 }
 
-async function parseBody<S extends v.GenericSchema>(
-  request: Request,
-  schema: S,
-): Promise<v.InferOutput<S> | undefined> {
-  const raw = await readJsonBody(request, MAX_BODY_BYTES);
-  if (raw === undefined) return undefined;
-  const parsed = v.safeParse(schema, raw);
-  return parsed.success ? parsed.output : undefined;
-}
-
 /** A POST that takes no payload: no body, or an empty JSON object. Anything else is invalid. */
 async function hasNoPayload(request: Request): Promise<boolean> {
-  const raw = await readLimitedText(request, MAX_BODY_BYTES);
+  const raw = await readLimitedText(request, MAX_ACTION_BODY_BYTES);
   if (raw === null) return false;
   if (raw.trim() === '') return true;
   const parsed = parseJsonObject(raw);

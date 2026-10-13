@@ -8,7 +8,8 @@
  * The target is `basic` (the basic ability) or the id of one of the player's own team creatures. A
  * preference for a creature that is no longer in the team is never read, so it is ignored.
  */
-import { effectiveTeam, RaidError } from './raid-teams';
+import { GameError } from './outcome';
+import { effectiveTeam } from './raid-teams';
 
 /** The target of a player's basic ability. */
 export const BASIC_TARGET = 'basic';
@@ -52,7 +53,7 @@ export function storeAutofire(
 ): void {
   if (target !== BASIC_TARGET) {
     const team = effectiveTeam(sql, weekId, userId).creatures;
-    if (!team.some((c) => c.id === target)) throw new RaidError(409, 'not_your_creature');
+    if (!team.some((c) => c.id === target)) throw new GameError(409, 'not_your_creature');
   }
   sql.exec(
     `INSERT INTO raid_autofire (week_id, user_id, target, auto_fire) VALUES (?, ?, ?, ?)

@@ -98,7 +98,7 @@ import { grantRankGift, grantTripLoot, type GrantView } from './gear-grants';
 import { openJobOf } from './gear-store';
 import { devKey, type DevFlags } from './dev-state';
 import { credit, lookupSpend, spend, type LedgerStorage } from './ledger';
-import { CollectionError, atomically, type Outcome } from './outcome';
+import { GameError, atomically, type Outcome } from './outcome';
 import { weekIdFor, weekIndex } from './raid-schedule';
 import { recordServerFirst } from './server-firsts';
 import { speciesOf } from './species';
@@ -338,7 +338,7 @@ export class Expeditions {
     const row = this.sql
       .exec<ExpeditionRow>('SELECT * FROM expeditions WHERE id = ? AND user_id = ?', id, userId)
       .toArray()[0];
-    if (row === undefined) throw new CollectionError(404, 'not_found');
+    if (row === undefined) throw new GameError(404, 'not_found');
     return row;
   }
 
@@ -352,7 +352,7 @@ export class Expeditions {
       )
       .toArray()[0];
     // Same answer for "does not exist" and "belongs to someone else".
-    if (row === undefined) throw new CollectionError(404, 'not_found');
+    if (row === undefined) throw new GameError(404, 'not_found');
     return row;
   }
 
@@ -630,20 +630,20 @@ export class Expeditions {
     return atomically(this.deps.storage, () => {
       const row = this.expeditionRow(userId, expeditionId);
       const now = this.deps.now();
-      if (row.status !== 'active') throw new CollectionError(409, 'not_active');
+      if (row.status !== 'active') throw new GameError(409, 'not_active');
       if (row.push_goal !== null) {
         if (row.push_goal === goalId) return this.view(row, now);
-        throw new CollectionError(409, 'already_chosen');
+        throw new GameError(409, 'already_chosen');
       }
-      if (now < row.ends_at) throw new CollectionError(409, 'not_ready');
+      if (now < row.ends_at) throw new GameError(409, 'not_ready');
       const offered = offerOf(this.sql, row.id);
-      if (offered === null || offered.length === 0) throw new CollectionError(409, 'no_offer');
+      if (offered === null || offered.length === 0) throw new GameError(409, 'no_offer');
       const goal = goalDef(goalId);
       if (goal === undefined || !offered.includes(goalId)) {
-        throw new CollectionError(409, 'not_offered');
+        throw new GameError(409, 'not_offered');
       }
       const oddsBp = goalOddsBp(goal, row.duration);
-      if (oddsBp === undefined) throw new CollectionError(409, 'not_offered');
+      if (oddsBp === undefined) throw new GameError(409, 'not_offered');
       const updated = this.sql
         .exec<ExpeditionRow>(
           `UPDATE expeditions SET push_goal = ?, push_started_at = ?, push_ends_at = ?, push_odds_bp = ?
@@ -655,7 +655,7 @@ export class Expeditions {
           row.id,
         )
         .toArray()[0];
-      if (updated === undefined) throw new CollectionError(409, 'already_chosen');
+      if (updated === undefined) throw new GameError(409, 'already_chosen');
       bumpStat(this.sql, userId, 'pushons_taken', 1);
       this.deps.analytics?.record(
         {
@@ -693,11 +693,11 @@ export class Expeditions {
       .toArray()[0];
     if (prior !== undefined) {
       if (prior.kind !== 'expedition_send' || prior.fingerprint !== fingerprint) {
-        throw new CollectionError(409, 'key_conflict');
+        throw new GameError(409, 'key_conflict');
       }
       return JSON.parse(prior.result_json) as T;
     }
-    if (lookupSpend(this.sql, userId, key) !== null) throw new CollectionError(409, 'key_conflict');
+    if (lookupSpend(this.sql, userId, key) !== null) throw new GameError(409, 'key_conflict');
     const result = run();
     this.sql.exec(
       `INSERT INTO gear_actions (user_id, key, kind, fingerprint, result_json, created_at)
@@ -735,20 +735,19 @@ export class Expeditions {
 
   private startTrip(userId: string, input: SendInput, timezone: string): { expeditionId: string } {
     const creature = this.ownedCreature(userId, input.creatureId);
-    if (creature.away_expedition_id !== null) throw new CollectionError(409, 'creature_away');
+    if (creature.away_expedition_id !== null) throw new GameError(409, 'creature_away');
     // One activity at a time: a creature on a workshop job cannot go on an expedition.
-    if (openJobOf(this.sql, creature.id) !== null)
-      throw new CollectionError(409, 'creature_on_job');
+    if (openJobOf(this.sql, creature.id) !== null) throw new GameError(409, 'creature_on_job');
     const dest = destinationDef(input.destination);
-    if (dest === undefined) throw new CollectionError(400, 'invalid_destination');
+    if (dest === undefined) throw new GameError(400, 'invalid_destination');
     const now = this.deps.now();
 
     const slots = this.slotsView(userId);
-    if (slots.used >= slots.total) throw new CollectionError(409, 'slots_full');
+    if (slots.used >= slots.total) throw new GameError(409, 'slots_full');
 
     const explorer = this.explorerView(userId, creature.id);
     if (!lengthOpen(input.duration, explorer.rank)) {
-      throw new CollectionError(409, 'rank_too_low', 'length');
+      throw new GameError(409, 'rank_too_low', 'length');
     }
     const week = weeklySpecialFor(now, timezone);
     const closed = closedReasons(dest, {
@@ -757,11 +756,11 @@ export class Expeditions {
       festivalWeek: this.gateFestival(userId, week.festival),
     });
     const reason = closed[0];
-    if (reason !== undefined) throw new CollectionError(409, 'destination_closed', reason);
+    if (reason !== undefined) throw new GameError(409, 'destination_closed', reason);
 
     const ids = input.supplies.map((s) => s.id);
     const problem = kitProblem(ids);
-    if (problem !== null) throw new CollectionError(400, 'invalid_supplies', problem);
+    if (problem !== null) throw new GameError(400, 'invalid_supplies', problem);
     const kit = kitOf(ids);
     const stock = supplyStock(this.sql, userId);
     let cost = 0;
@@ -771,7 +770,7 @@ export class Expeditions {
         cost += kit.find((s) => s.id === pick.id)?.price ?? 0;
         bought++;
       } else if ((stock[pick.id] ?? 0) < 1) {
-        throw new CollectionError(409, 'supply_missing', pick.id);
+        throw new GameError(409, 'supply_missing', pick.id);
       }
     }
 
@@ -838,10 +837,10 @@ export class Expeditions {
     );
     switch (spent.status) {
       case 'insufficient_funds':
-        throw new CollectionError(409, 'insufficient_funds');
+        throw new GameError(409, 'insufficient_funds');
       case 'key_conflict':
       case 'replayed':
-        throw new CollectionError(409, 'key_conflict');
+        throw new GameError(409, 'key_conflict');
       case 'ok':
         return spent.result;
     }
@@ -867,7 +866,7 @@ export class Expeditions {
         if (stored === null) throw new Error('claimed expedition has no stored result');
         return stored;
       }
-      if (expedition.status === 'cancelled') throw new CollectionError(409, 'cancelled');
+      if (expedition.status === 'cancelled') throw new GameError(409, 'cancelled');
       const now = this.deps.now();
       const explorer = this.ownedCreature(userId, expedition.creature_id);
       const dest = destinationDef(expedition.destination_id);

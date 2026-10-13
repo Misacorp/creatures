@@ -34,7 +34,7 @@ import {
 import type { Analytics } from './analytics';
 import type { LedgerStorage } from './ledger';
 import { basicKey, buildPhaseInput, drawSeed, settleParty } from './raid-resolve';
-import { RaidError } from './raid-teams';
+import { GameError } from './outcome';
 
 /**
  * The longest a round of the live finale can take (the engine's `MAX_ROUND_MS`): 22 seconds, so 12
@@ -518,7 +518,7 @@ export interface AppliedAction {
 
 /**
  * Fire or Hold for one of the caller's abilities (`body.key`). Returns what changed, or null when
- * nothing did (a Hold on an ability that is already held). Throws a `RaidError` (rolling the transaction back) for
+ * nothing did (a Hold on an ability that is already held). Throws a `GameError` (rolling the transaction back) for
  * anything the rules refuse; call it inside a transaction.
  *
  * - Fire takes effect at the start of the next round. Refused with `too_late` in the last round or
@@ -537,25 +537,25 @@ export function applyAction(
   now: number,
 ): AppliedAction | null {
   const member = row.members.find((m) => m.userId === userId);
-  if (member === undefined) throw new RaidError(409, 'not_in_fight');
+  if (member === undefined) throw new GameError(409, 'not_in_fight');
   // A practice fight is a lobby until its start: the Auto fire preference is changed there instead.
-  if (now < row.startedAt) throw new RaidError(409, 'not_started');
+  if (now < row.startedAt) throw new GameError(409, 'not_started');
   // A key that does not exist is treated like someone else's: the caller learns nothing about it.
   const ability = row.abilities.find((a) => a.key === body.key);
   if (ability === undefined || ability.alias !== member.alias) {
-    throw new RaidError(409, 'not_your_ability');
+    throw new GameError(409, 'not_your_ability');
   }
   const def = content.finaleAbilities.find((a) => a.id === ability.abilityId);
-  if (def === undefined) throw new RaidError(409, 'not_your_ability');
+  if (def === undefined) throw new GameError(409, 'not_your_ability');
 
   // Parameters belong to Fire, and only to the abilities that take them.
   const takesZone = def.effects.some((e) => e.op === 'shield_wall' && e.zone === 'choose');
   const takesElement = def.effects.some((e) => e.op === 're_mark' && e.element === 'choose');
   if (body.action !== 'fire' && (body.zone !== undefined || body.element !== undefined)) {
-    throw new RaidError(400, 'invalid_body');
+    throw new GameError(400, 'invalid_body');
   }
   if ((body.zone !== undefined && !takesZone) || (body.element !== undefined && !takesElement)) {
-    throw new RaidError(400, 'invalid_body');
+    throw new GameError(400, 'invalid_body');
   }
 
   const state = evaluate(row, now);
@@ -565,8 +565,8 @@ export function applyAction(
   const defaultRound = defaultAbilityRound(row.input.boss, def, row.rounds);
   if (body.action === 'fire') {
     // The last round and the end are too late for anything, whatever the ability did before.
-    if (over) throw new RaidError(409, 'too_late');
-    if (ability.mode === 'fired' || firedNow) throw new RaidError(409, 'already_fired');
+    if (over) throw new GameError(409, 'too_late');
+    if (ability.mode === 'fired' || firedNow) throw new GameError(409, 'already_fired');
     ability.mode = 'fired';
     ability.fireAtRound = state.clockRound + 1;
     const params: { zone?: Zone; element?: Element } = {};
@@ -574,18 +574,18 @@ export function applyAction(
     if (body.element !== undefined) params.element = body.element;
     ability.params = Object.keys(params).length === 0 ? null : params;
   } else if (body.action === 'unhold') {
-    if (ability.mode === 'fired') throw new RaidError(409, 'already_fired');
-    if (ability.mode !== 'held') throw new RaidError(409, 'not_held');
-    if (firedNow) throw new RaidError(409, 'already_fired');
-    if (over || state.clockRound >= defaultRound) throw new RaidError(409, 'hold_too_late');
+    if (ability.mode === 'fired') throw new GameError(409, 'already_fired');
+    if (ability.mode !== 'held') throw new GameError(409, 'not_held');
+    if (firedNow) throw new GameError(409, 'already_fired');
+    if (over || state.clockRound >= defaultRound) throw new GameError(409, 'hold_too_late');
     ability.mode = 'default';
   } else {
-    if (ability.mode === 'fired') throw new RaidError(409, 'already_fired');
+    if (ability.mode === 'fired') throw new GameError(409, 'already_fired');
     if (ability.mode === 'held') {
-      if (firedNow) throw new RaidError(409, 'already_fired');
+      if (firedNow) throw new GameError(409, 'already_fired');
       return null; // already held: nothing to change
     }
-    if (over || state.clockRound >= defaultRound) throw new RaidError(409, 'hold_too_late');
+    if (over || state.clockRound >= defaultRound) throw new GameError(409, 'hold_too_late');
     ability.mode = 'held';
   }
   sql.exec(

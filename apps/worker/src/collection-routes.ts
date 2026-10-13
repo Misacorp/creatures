@@ -10,9 +10,7 @@ import {
   TrainBodySchema,
 } from './collection-schemas';
 import type { LeetSyncStatus } from './guild-core';
-import { errorResponse, json, readJsonBody, type Routes } from './http';
-
-const MAX_BODY_BYTES = 2048;
+import { errorResponse, json, parseBody, type Routes } from './http';
 
 /** What these routes need from the request context (GuildCore's context satisfies it). */
 export interface CollectionRouteContext {
@@ -28,17 +26,6 @@ export interface CollectionRouteContext {
     /** How healthy the leet sync is, so players can see why Bait may be missing. */
     leetSyncStatus(): LeetSyncStatus;
   };
-}
-
-/** Parses the body with a strict schema; undefined means "answer 400 invalid_body". */
-export async function parseBody<S extends v.GenericSchema>(
-  request: Request,
-  schema: S,
-): Promise<v.InferOutput<S> | undefined> {
-  const raw = await readJsonBody(request, MAX_BODY_BYTES);
-  if (raw === undefined) return undefined;
-  const parsed = v.safeParse(schema, raw);
-  return parsed.success ? parsed.output : undefined;
 }
 
 export function pathId(ctx: { params: Record<string, string> }): string | undefined {

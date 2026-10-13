@@ -32,7 +32,7 @@ import {
 } from './expeditions';
 import { equippedByCreature, openJobsByCreature, rowToItem, type GearRow } from './gear-store';
 import { getBalances, lookupSpend, spend, type Currency, type LedgerStorage } from './ledger';
-import { CollectionError, atomically, type Outcome } from './outcome';
+import { GameError, atomically, type Outcome } from './outcome';
 import { recordServerFirst, type ServerFirstKind } from './server-firsts';
 import { speciesOf } from './species';
 
@@ -226,7 +226,7 @@ export class Collection {
       .exec<CreatureRow>('SELECT * FROM creatures WHERE id = ? AND user_id = ?', creatureId, userId)
       .toArray()[0];
     // Same answer for "does not exist" and "belongs to someone else".
-    if (row === undefined) throw new CollectionError(404, 'not_found');
+    if (row === undefined) throw new GameError(404, 'not_found');
     return row;
   }
 
@@ -406,9 +406,9 @@ export class Collection {
   chooseStarter(userId: string, speciesId: string): Outcome<{ creatureId: string }> {
     return this.atomically(() => {
       const species = speciesOf(speciesId);
-      if (!species.starter) throw new CollectionError(400, 'invalid_species');
+      if (!species.starter) throw new GameError(400, 'invalid_species');
       if (this.starterSpecies(userId) !== null) {
-        throw new CollectionError(409, 'starter_already_chosen');
+        throw new GameError(409, 'starter_already_chosen');
       }
       const creatureId = crypto.randomUUID();
       this.sql.exec(
@@ -464,9 +464,9 @@ export class Collection {
       const prior = lookupSpend(this.sql, userId, idempotencyKey);
       let amount: number;
       if (prior === null) {
-        if (creature.away_expedition_id !== null) throw new CollectionError(409, 'creature_away');
+        if (creature.away_expedition_id !== null) throw new GameError(409, 'creature_away');
         if (!canTrain({ level: creature.level, levelCap: species.levelCap, away: false })) {
-          throw new CollectionError(409, 'level_cap');
+          throw new GameError(409, 'level_cap');
         }
         amount = discountedTrainingCost(
           creature.level,
@@ -501,15 +501,15 @@ export class Collection {
       );
       switch (spent.status) {
         case 'insufficient_funds':
-          throw new CollectionError(409, 'insufficient_funds');
+          throw new GameError(409, 'insufficient_funds');
         case 'key_conflict':
-          throw new CollectionError(409, 'key_conflict');
+          throw new GameError(409, 'key_conflict');
         case 'replayed':
           if (
             prior?.purpose !== 'training' ||
             storedString(spent.result, 'creatureId') !== creature.id
           ) {
-            throw new CollectionError(409, 'key_conflict');
+            throw new GameError(409, 'key_conflict');
           }
           return { level: spent.result.level };
         case 'ok':
@@ -538,8 +538,8 @@ export class Collection {
       let target: string | null = null;
       if (prior === null) {
         const evolvesTo = speciesOf(creature.species).evolvesTo;
-        if (evolvesTo === undefined) throw new CollectionError(409, 'not_evolvable');
-        if (creature.level < evolvesTo.level) throw new CollectionError(409, 'level_too_low');
+        if (evolvesTo === undefined) throw new GameError(409, 'not_evolvable');
+        if (creature.level < evolvesTo.level) throw new GameError(409, 'level_too_low');
         amount = evolvesTo.essence;
         target = evolvesTo.species;
       } else {
@@ -576,15 +576,15 @@ export class Collection {
       );
       switch (spent.status) {
         case 'insufficient_funds':
-          throw new CollectionError(409, 'insufficient_funds');
+          throw new GameError(409, 'insufficient_funds');
         case 'key_conflict':
-          throw new CollectionError(409, 'key_conflict');
+          throw new GameError(409, 'key_conflict');
         case 'replayed':
           if (
             prior?.purpose !== 'evolution' ||
             storedString(spent.result, 'creatureId') !== creature.id
           ) {
-            throw new CollectionError(409, 'key_conflict');
+            throw new GameError(409, 'key_conflict');
           }
           return spent.result;
         case 'ok':
@@ -606,7 +606,7 @@ export class Collection {
       let value: string | null = null;
       if (raw !== null) {
         const clean = sanitizeNickname(raw);
-        if (!clean.ok) throw new CollectionError(400, 'invalid_nickname', clean.reason);
+        if (!clean.ok) throw new GameError(400, 'invalid_nickname', clean.reason);
         value = clean.value;
       }
       this.sql.exec('UPDATE creatures SET nickname = ? WHERE id = ?', value, creature.id);
