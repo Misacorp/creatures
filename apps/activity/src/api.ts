@@ -1,3 +1,4 @@
+import type { SendBody } from './expedition-types';
 import { isGrantLoot } from './gear-parse';
 import type { CreatureGearFields, GrantLoot } from './gear-types';
 import { createReauth, type Reauth } from './reauth';
@@ -518,7 +519,27 @@ export async function startExpedition(input: {
   supplies: SuppliesId;
   idempotencyKey: string;
 }): Promise<GameState> {
-  return stateFrom(await postJson('/api/expeditions', 'POST', input));
+  return stateFrom(await postJson('/api/expeditions', 'POST', expeditionBody(input)));
+}
+
+/**
+ * The body of POST /api/expeditions for the v1 screen (stopgap until the expeditions UI is rebuilt): every
+ * trip goes to the Tidepools, the old "basic" supplies mean none (a free trip) and "good" and "great" buy
+ * the Lure of that tier.
+ */
+export function expeditionBody(input: {
+  creatureId: string;
+  duration: DurationId;
+  supplies: SuppliesId;
+  idempotencyKey: string;
+}): SendBody {
+  return {
+    creatureId: input.creatureId,
+    destination: 'tidepools',
+    duration: input.duration,
+    supplies: input.supplies === 'basic' ? [] : [{ id: `lure-${input.supplies}`, source: 'buy' }],
+    idempotencyKey: input.idempotencyKey,
+  };
 }
 
 /** Checks the answer of an expedition claim: the result (with its loot) and the fresh collection. */

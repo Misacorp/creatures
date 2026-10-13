@@ -1,12 +1,14 @@
 import {
+  EXPEDITION_LENGTHS,
   GEAR_RARITIES,
+  GOAL_RISKS,
   JOB_KINDS,
   RARITIES,
   RULES,
   content,
   createSeededRng,
   dungeonContent,
-  expeditionCost,
+  expeditionContent,
   gearContent,
   rollGear,
   type Rng,
@@ -38,6 +40,7 @@ import {
   undoAnalyticsMigration,
   undoPacingMigration,
   type CoreContext,
+  LATEST_SCHEMA_VERSION,
 } from './helpers';
 import {
   HELSINKI,
@@ -153,16 +156,21 @@ async function joinWithStarter(
 const signIn = (ctx: CoreContext, user: { id: string; displayName: string }) =>
   ctx.core.createSession(ctx.guildId, user);
 
+type Supply = { id: string; source: 'buy' | 'owned' };
+const buy = (id: string): Supply => ({ id, source: 'buy' });
+
 const send = (
   ctx: CoreContext,
   secret: string,
   creatureId: string,
-  duration: 'short' | 'medium' | 'long' = 'short',
-  supplies: 'basic' | 'good' | 'great' = 'basic',
+  duration: 'short' | 'medium' | 'long' | 'day' = 'short',
+  supplies: Supply[] = [],
   idempotencyKey = newKey(),
+  destination = 'tidepools',
 ) =>
   call(ctx, secret, 'POST', '/api/expeditions', {
     creatureId,
+    destination,
     duration,
     supplies,
     idempotencyKey,
@@ -176,7 +184,11 @@ describe('the event writer', () => {
     const dirty = {
       kind: 'expedition_claim',
       duration: 'a nickname',
-      supplies: 'Misa the Mighty',
+      destination: 'Misa the Mighty',
+      supplies: ['Misa the Mighty', 'lure-basic', 'x', 'y'],
+      pushOn: 'free text',
+      xp: -4.5,
+      stars: 99,
       waitedMin: -5.7,
       catches: Array.from({ length: 20 }, () => ({
         species: '<b>Bob</b>',
@@ -186,7 +198,16 @@ describe('the event writer', () => {
       })),
     } as unknown as AnalyticsEvent;
     const props = propsOf(dirty) as { catches: unknown[] } & Record<string, unknown>;
-    expect(props).toMatchObject({ duration: 'short', supplies: 'basic', waitedMin: 0 });
+    expect(props).toMatchObject({
+      duration: 'short',
+      destination: 'unknown',
+      // At most two supplies, each a content id or "unknown".
+      supplies: ['unknown', 'lure-basic'],
+      pushOn: 'declined',
+      xp: 0,
+      stars: 3,
+      waitedMin: 0,
+    });
     // At most 12 catches, each reduced to known values.
     expect(props.catches).toHaveLength(12);
     expect(props.catches[0]).toEqual({
@@ -319,10 +340,14 @@ describe('the event writer', () => {
     }));
     const json = serializeProps({
       kind: 'expedition_claim',
-      duration: 'medium',
-      supplies: 'great',
+      duration: 'day',
+      destination: 'festival-grounds',
+      supplies: ['satchel-great', 'map-scrap-great'],
       waitedMin: 1_000_000,
       catches,
+      pushOn: 'declined',
+      xp: 100_000,
+      stars: 3,
     });
     expect(json.length).toBeLessThanOrEqual(MAX_PROPS_CHARS);
     expect(json).not.toContain('truncated');
@@ -406,7 +431,7 @@ describe('migration 16 (the analytics event log)', () => {
           .toArray()
           .map((i) => i.name),
       ).toContain('analytics_events_at');
-      expect(version(sql)).toBe(18);
+      expect(version(sql)).toBe(LATEST_SCHEMA_VERSION);
       return Promise.resolve();
     });
   });
@@ -419,14 +444,16 @@ describe('migration 16 (the analytics event log)', () => {
       expect(version(sql)).toBe(14);
       expect(tables(sql)).not.toContain('analytics_events');
       core.migrate();
-      expect(version(sql)).toBe(18);
+      expect(version(sql)).toBe(LATEST_SCHEMA_VERSION);
       expect(tables(sql)).toContain('analytics_events');
       expect(sql.exec('SELECT announce_channel_id FROM guild_meta').one()).toEqual({
         announce_channel_id: '555555555555555555',
       });
       expect(sql.exec('SELECT user_id FROM players').toArray()).toEqual([{ user_id: USER_ID }]);
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(18);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(
+        LATEST_SCHEMA_VERSION,
+      );
     });
   });
 
@@ -436,7 +463,7 @@ describe('migration 16 (the analytics event log)', () => {
       undoAnalyticsMigration(sql);
       expect(version(sql)).toBe(15);
       core.migrate();
-      expect(version(sql)).toBe(18);
+      expect(version(sql)).toBe(LATEST_SCHEMA_VERSION);
       sql.exec(
         "INSERT INTO analytics_events (at, kind, actor_hash, props_json) VALUES (1, 'x', NULL, '{}')",
       );
@@ -539,20 +566,25 @@ describe('collection events', () => {
     await runCore(nextGuild(), async (ctx) => {
       const { secret, starterId } = await joinWithStarter(ctx, USER, 100);
       const key = newKey();
-      const first = await send(ctx, secret, starterId, 'medium', 'good', key);
+      const first = await send(ctx, secret, starterId, 'medium', [buy('lure-good')], key);
       expect(first.status).toBe(200);
       expect(events(ctx.sql, 'expedition_send')).toMatchObject([
         {
           props: {
             species: 'splashet',
             duration: 'medium',
-            supplies: 'good',
-            cost: expeditionCost('medium', 'good'),
+            destination: 'tidepools',
+            supplies: ['lure-good'],
+            bought: 1,
+            cost: 30,
+            rank: 1,
           },
         },
       ]);
       // The same key again replays the stored result: no new event.
-      expect((await send(ctx, secret, starterId, 'medium', 'good', key)).status).toBe(200);
+      expect((await send(ctx, secret, starterId, 'medium', [buy('lure-good')], key)).status).toBe(
+        200,
+      );
       // The explorer is away: refused, nothing logged.
       expect((await send(ctx, secret, starterId)).status).toBe(409);
       // A broke player: refused, nothing logged.
@@ -564,7 +596,9 @@ describe('collection events', () => {
       const state = (await call(ctx, broke, 'GET', '/api/state')).body['creatures'] as {
         id: string;
       }[];
-      const refused = await send(ctx, broke, (state[0] as { id: string }).id, 'long', 'great');
+      const refused = await send(ctx, broke, (state[0] as { id: string }).id, 'long', [
+        buy('lure-great'),
+      ]);
       expect(refused.status).toBe(409);
       expect(events(ctx.sql, 'expedition_send')).toHaveLength(1);
     });
@@ -587,9 +621,14 @@ describe('collection events', () => {
           {
             props: {
               duration: 'short',
-              supplies: 'basic',
+              destination: 'tidepools',
+              supplies: [],
               waitedMin: 90,
               catches: [{ species: 'splashet', rarity: 'common', shiny: true, result: 'fused' }],
+              pushOn: 'none',
+              xp: RULES.expeditions.lengths.short.xp,
+              // The scripted catch is a shiny: a star on its own.
+              stars: 1,
             },
           },
         ]);
@@ -659,7 +698,7 @@ describe('collection events', () => {
         const { starterId } = joined;
         let secret = joined.secret;
         ctx.sql.exec('UPDATE player_progress SET expeditions_claimed = 1');
-        const exp = expeditionOf(await send(ctx, secret, starterId, 'long', 'good'));
+        const exp = expeditionOf(await send(ctx, secret, starterId, 'long', [buy('lure-good')]));
         ctx.clock.t = exp.startedAt + 8 * HOUR; // two thirds of 12 hours
         secret = await signIn(ctx, USER);
         const res = await call(ctx, secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
@@ -669,9 +708,13 @@ describe('collection events', () => {
           {
             props: {
               duration: 'long',
-              supplies: 'good',
+              destination: 'tidepools',
+              supplies: ['lure-good'],
               elapsedPct: 66,
-              catches: [{ species: 'splashet' }, { species: 'splashet' }],
+              catches: Array.from(
+                { length: Math.floor((RULES.expeditions.lengths.long.rolls * 2) / 3) },
+                () => ({ species: 'splashet' }),
+              ),
             },
           },
         ]);
@@ -679,7 +722,14 @@ describe('collection events', () => {
         await call(ctx, secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
         expect(events(ctx.sql, 'expedition_recall')).toHaveLength(1);
       },
-      { rng: scriptedRng([...SPLASHET_PLAIN, ...SPLASHET_PLAIN]) },
+      {
+        rng: scriptedRng(
+          Array.from(
+            { length: Math.floor((RULES.expeditions.lengths.long.rolls * 2) / 3) },
+            () => SPLASHET_PLAIN,
+          ).flat(),
+        ),
+      },
     );
   });
 
@@ -997,6 +1047,17 @@ describe('live finale events', () => {
       const runs = storedRuns(ctx.sql);
       expect(runs.map((r) => r.phase)).toEqual(['phase1', 'phase2', 'finale']);
 
+      // The profile counts the reactions every member saw in the three phases.
+      const reactions = runs.reduce((n, r) => n + r.result.reactions.total, 0);
+      expect(reactions).toBeGreaterThan(0);
+      expect(
+        rows<{ value: number }>(
+          ctx.sql,
+          "SELECT value FROM account_stats WHERE user_id = ? AND stat = 'reactions_seen'",
+          a.id,
+        )[0]?.value,
+      ).toBe(reactions);
+
       const results = events(ctx.sql, 'phase_result');
       expect(results.map((e) => e.props['phase'])).toEqual(['phase1', 'phase2', 'finale']);
       const week = rows<{ boss_id: string; rank: number; effective_rank: number }>(
@@ -1231,12 +1292,13 @@ describe('transactions', () => {
 function vocabulary(): Set<string> {
   return new Set<string>([
     'unknown',
-    'short',
-    'medium',
-    'long',
+    ...EXPEDITION_LENGTHS,
+    ...GOAL_RISKS,
     'basic',
-    'good',
-    'great',
+    'any',
+    'none',
+    'worked',
+    'declined',
     'new',
     'fused',
     'converted',
@@ -1269,6 +1331,11 @@ function vocabulary(): Set<string> {
     'equip',
     'unequip',
     ...gearContent.bases.map((b) => b.id),
+    ...expeditionContent.destinations.map((d) => d.id),
+    ...expeditionContent.supplies.map((s) => s.id),
+    ...expeditionContent.goals.map((g) => g.id),
+    ...expeditionContent.journal.entries.map((e) => e.id),
+    ...expeditionContent.journal.sets.map((s) => s.id),
     ...gearContent.enchants.map((e) => e.id),
     ...content.creatures.map((c) => c.id),
     ...content.bosses.map((b) => b.id),
@@ -1316,7 +1383,9 @@ describe('privacy', () => {
         await call(ctx, a.secret, 'POST', `/api/creatures/${a.starterId}/train`, {
           idempotencyKey: newKey(),
         });
-        const exp = expeditionOf(await send(ctx, a.secret, a.starterId, 'long', 'good'));
+        const exp = expeditionOf(
+          await send(ctx, a.secret, a.starterId, 'long', [buy('lure-good')]),
+        );
         const exp2 = expeditionOf(await send(ctx, b.secret, b.starterId));
         ctx.clock.t = exp.startedAt + 8 * HOUR;
         // Sessions idle out after an hour: sign in again after the jump.
@@ -1324,6 +1393,48 @@ describe('privacy', () => {
         b.secret = await ctx.core.createSession(ctx.guildId, OTHER);
         await call(ctx, a.secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
         await call(ctx, b.secret, 'POST', `/api/expeditions/${exp2.id}/claim`, {});
+        // Expeditions v2: a trip with a supply from stock, a risky end-of-trip goal that is taken, the
+        // claim, a journal page and the profile (rank, familiarity and journal events).
+        ctx.sql.exec(
+          `INSERT INTO supplies (user_id, supply_id, amount) VALUES (?, 'lure-great', 1)
+           ON CONFLICT(user_id, supply_id) DO UPDATE SET amount = 1`,
+          USER_ID,
+        );
+        ctx.sql.exec(
+          `INSERT INTO explorer_progress (user_id, creature_id, xp, trips) VALUES (?, ?, ?, 0)
+           ON CONFLICT(user_id, creature_id) DO UPDATE SET xp = excluded.xp`,
+          USER_ID,
+          a.starterId,
+          RULES.expeditions.rank.xpForRank[2] ?? 0,
+        );
+        a.secret = await ctx.core.createSession(ctx.guildId, USER, '555555555555555555');
+        const v2 = expeditionOf(
+          await call(ctx, a.secret, 'POST', '/api/expeditions', {
+            creatureId: a.starterId,
+            destination: 'tidepools',
+            duration: 'long',
+            supplies: [{ id: 'lure-great', source: 'owned' }],
+            idempotencyKey: newKey(),
+          }),
+        );
+        ctx.clock.t = v2.endsAt;
+        a.secret = await ctx.core.createSession(ctx.guildId, USER, '555555555555555555');
+        const offered = (
+          (await call(ctx, a.secret, 'GET', '/api/state')).body as {
+            expeditions: { id: string; offer: { goals: { id: string }[] } | null }[];
+          }
+        ).expeditions.find((e) => e.id === v2.id);
+        const goal = offered?.offer?.goals.at(-1)?.id;
+        expect(goal).toBeDefined();
+        const chosen = await call(ctx, a.secret, 'POST', `/api/expeditions/${v2.id}/push-on`, {
+          goalId: goal,
+        });
+        expect(chosen.status).toBe(200);
+        ctx.clock.t += 6 * HOUR;
+        a.secret = await ctx.core.createSession(ctx.guildId, USER, '555555555555555555');
+        await call(ctx, a.secret, 'POST', `/api/expeditions/${v2.id}/claim`, {});
+        await call(ctx, a.secret, 'GET', '/api/profile');
+        await call(ctx, a.secret, 'GET', '/api/destinations');
         // Gear and the workshop: the welcome kit, equip, upgrade, a craft, an improve, an enchant and
         // a dismantle. Every one of them is logged with content ids and numbers only.
         const kit = (await call(ctx, a.secret, 'GET', '/api/gear')).body as {
@@ -1348,6 +1459,7 @@ describe('privacy', () => {
           'SELECT base_id FROM blueprints WHERE user_id = ?',
           USER_ID,
         )[0]?.base_id as string;
+        creditParts(ctx.sql, USER_ID, { scrap: 30 });
         const crafting = await call(ctx, a.secret, 'POST', '/api/workshop/jobs', {
           kind: 'craft',
           creatureId: a.starterId,
@@ -1449,6 +1561,10 @@ describe('privacy', () => {
           'starter_chosen',
           'expedition_send',
           'expedition_recall',
+          'expedition_claim',
+          'push_on_offer',
+          'push_on_choose',
+          'push_on_result',
           'train',
           'roster_optout',
           'placement',
@@ -1509,6 +1625,7 @@ describe('privacy', () => {
         raidRng: createSeededRng('privacy'),
         gearRng: createSeededRng('privacy-gear'),
         dungeonRng: createSeededRng('privacy-dungeon'),
+        tripRng: createSeededRng('privacy-trip'),
       },
     );
   });

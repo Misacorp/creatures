@@ -13,7 +13,14 @@ import { grantDungeonRun } from '../src/gear-grants';
 import { insertItem } from '../src/gear-store';
 import { drawSeed } from '../src/raid-resolve';
 import { dungeonPlayer, newKey, type DungeonPlayer } from './dungeon-helpers';
-import { T0, runCore, undoGearMigration, type CoreContext } from './helpers';
+import {
+  LATEST_SCHEMA_VERSION,
+  T0,
+  runCore,
+  undoExpeditionsMigration,
+  undoGearMigration,
+  type CoreContext,
+} from './helpers';
 import { count, nextGuild, rows } from './raid-helpers';
 
 const HOUR = 3_600_000;
@@ -125,9 +132,10 @@ describe('migration 18', () => {
       for (const t of ['dungeon_runs', 'dungeon_progress', 'dungeon_days']) {
         expect(names).toContain(t);
       }
-      expect(rows<{ v: number }>(sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v).toBe(
-        18,
-      );
+      // Version 18 is the dungeon's; later migrations come after it.
+      expect(
+        rows<{ version: number }>(sql, 'SELECT version FROM schema_version WHERE version = 18'),
+      ).toHaveLength(1);
       // The depth, the attempt and the streak cannot be nonsense.
       expect(() =>
         sql.exec("INSERT INTO dungeon_progress (user_id, depth) VALUES ('u', 0)"),
@@ -163,9 +171,37 @@ describe('migration 18', () => {
       ).toBe(16);
       ctx.core.migrate();
       ctx.core.migrate();
-      expect(count(ctx.sql, 'schema_version')).toBe(18);
+      expect(count(ctx.sql, 'schema_version')).toBe(LATEST_SCHEMA_VERSION);
       expect(count(ctx.sql, 'creatures')).toBe(3);
       expect(count(ctx.sql, 'dungeon_runs')).toBe(0);
+      expect((await p.today()).depth).toBe(1);
+    });
+  });
+
+  it('migrates 17 through 18 and 19 in order, and staging (at 18) cleanly to 19', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const p = await dungeonPlayer(ctx, 1);
+      undoGearMigration(ctx.sql);
+      const versions = () =>
+        rows<{ version: number }>(
+          ctx.sql,
+          'SELECT version FROM schema_version ORDER BY version',
+        ).map((r) => r.version);
+      expect(Math.max(...versions())).toBe(16);
+      ctx.core.migrate();
+      expect(versions()).toEqual(Array.from({ length: LATEST_SCHEMA_VERSION }, (_, i) => i + 1));
+
+      // Staging already ran the daily dungeon's migration 18; only 19 is left to apply.
+      ctx.sql.exec(
+        `INSERT INTO dungeon_progress (user_id, depth, streak, last_day, first_day)
+         VALUES ('staging-player', 4, 2, '2026-10-12', '2026-10-01')`,
+      );
+      undoExpeditionsMigration(ctx.sql);
+      expect(versions().at(-1)).toBe(18);
+      ctx.core.migrate();
+      expect(versions().at(-1)).toBe(19);
+      expect(count(ctx.sql, 'dungeon_progress', "user_id = 'staging-player'")).toBe(1);
+      expect(count(ctx.sql, 'creatures')).toBe(3);
       expect((await p.today()).depth).toBe(1);
     });
   });
@@ -536,21 +572,11 @@ describe('POST /api/dungeon/run', () => {
       nextGuild(),
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
-        ctx.core.credit({
-          userId: p.id,
-          currency: 'bait',
-          amount: 100,
-          source: 'test',
-          idempotencyKey: 'bait-for-trip',
-        });
-        ctx.sql.exec(
-          'INSERT INTO player_progress (user_id, expeditions_claimed) VALUES (?, 1)',
-          p.id,
-        );
         const sent = await p.call('POST', '/api/expeditions', {
           creatureId: p.creatureIds[0],
+          destination: 'tidepools',
           duration: 'short',
-          supplies: 'basic',
+          supplies: [],
           idempotencyKey: newKey(),
         });
         expect(sent.status).toBe(200);

@@ -21,7 +21,7 @@ import {
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { creditParts, insertItem } from '../src/gear-store';
-import { T0, runCore, undoGearMigration, type CoreContext } from './helpers';
+import { T0, runCore, undoGearMigration, type CoreContext, LATEST_SCHEMA_VERSION } from './helpers';
 import { count, nextGuild, rows, seedPlayer, type SeedOptions } from './raid-helpers';
 
 const HOUR = 3_600_000;
@@ -224,7 +224,7 @@ describe('migration 17', () => {
         expect(names).toContain(t);
       }
       expect(rows<{ v: number }>(sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v).toBe(
-        18,
+        LATEST_SCHEMA_VERSION,
       );
       // Amounts cannot go negative.
       expect(() =>
@@ -295,11 +295,11 @@ describe('migration 17', () => {
       ctx.core.migrate();
       expect(
         rows<{ v: number }>(ctx.sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v,
-      ).toBe(18);
+      ).toBe(LATEST_SCHEMA_VERSION);
       expect(count(ctx.sql, 'creatures')).toBe(3);
       expect(count(ctx.sql, 'gear_items')).toBe(0);
       ctx.core.migrate();
-      expect(count(ctx.sql, 'schema_version')).toBe(18);
+      expect(count(ctx.sql, 'schema_version')).toBe(LATEST_SCHEMA_VERSION);
       expect((await p.gear()).inventory.used).toBe(1); // the welcome kit, on first load
     });
   });
@@ -1209,8 +1209,9 @@ describe('workshop jobs: starting', () => {
         // On an expedition: no job.
         const sent = await p.call('POST', '/api/expeditions', {
           creatureId: c1,
+          destination: 'tidepools',
           duration: 'short',
-          supplies: 'basic',
+          supplies: [],
           idempotencyKey: newKey(),
         });
         expect(sent.status).toBe(200);
@@ -1220,8 +1221,9 @@ describe('workshop jobs: starting', () => {
         expect(await craft(c2)).toMatchObject({ status: 409, body: { error: 'creature_on_job' } });
         const trip = await p.call('POST', '/api/expeditions', {
           creatureId: c2,
+          destination: 'tidepools',
           duration: 'short',
-          supplies: 'basic',
+          supplies: [],
           idempotencyKey: newKey(),
         });
         expect(trip).toMatchObject({ status: 409, body: { error: 'creature_on_job' } });
@@ -1271,8 +1273,9 @@ describe('workshop jobs: starting', () => {
         expect(claimed.status).toBe(200);
         const trip = await p.call('POST', '/api/expeditions', {
           creatureId: c1,
+          destination: 'tidepools',
           duration: 'short',
-          supplies: 'basic',
+          supplies: [],
           idempotencyKey: newKey(),
         });
         expect(trip.status).toBe(200);

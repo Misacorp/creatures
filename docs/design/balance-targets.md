@@ -93,6 +93,25 @@ Measured on the default server's sims (10 players, 12 weeks). Every player with 
 
 The report also lists the clear rate per depth for casual, daily and top players, the depth after N weeks per archetype and the reward flow per player and week (`## Daily dungeon`).
 
+## Expeditions v2
+
+Measured on the default server's sims for the species target and on 60-week sims of a daily player (check-ins at 09:00 and 20:00) for the slot targets. "Bait-free" means no supplies bought. The strategies are always 2 h, always 6 h, always 12 h or 24 h trips, each claimed at the first check-in after it ends.
+
+| Target                                                                                                   | Value                   |
+| -------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Day a daily player's 2nd expedition slot opens (median)                                                  | the first day (≤ 1)     |
+| Day the 3rd slot opens (about a month)                                                                   | 23–37                   |
+| Day the 4th slot opens (about four months)                                                               | 90–150                  |
+| Day the 5th slot opens (about a year; a slot that never opens counts as 999)                             | 330–400                 |
+| Worth per day of the best long strategy (12 or 24 h) over the best short one (2 or 6 h), Bait-free       | ≥ 1.2×                  |
+| Worth per day of always sending 2 h trips over the worst of the other three strategies                   | ≤ 1 (spam is the worst) |
+| Share of a daily player's finished trips that are 12 or 24 h                                             | ≥ 50%                   |
+| Lowest expected worth of a risky push-on goal against coming home, over every length it is offered after | ≥ 0.90                  |
+| Highest expected worth of a risky push-on goal against coming home (a fair gamble)                       | ≤ 1.10                  |
+| Most species a casual player owns ahead of today's expeditions at the end of any week 1–12 (no faster)   | ≤ 0.3 species           |
+
+"Worth" is the number the sim compares trips by (`RULES.expeditions.worth`, in Bait; never shown to players): catch rolls by rarity, parts, glimmer, blueprints, gear, journal pages and explorer XP. The casual species baseline is the v1 curve (2.7, 4.8, 6.5, 7.9, 8.6, 9.1, 9.5, 9.7, 9.8, 10.0, 10.2, 10.4 species at the end of weeks 1–12), kept in `packages/sim/src/analysis.ts`.
+
 ## Informational (no target)
 
 The simulator also reports these, to keep an eye on them. They are not checked in `targets.json`.

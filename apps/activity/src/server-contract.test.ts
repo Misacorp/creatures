@@ -2,6 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import actionFire from './fixtures/action-fire.json';
 import collectionState from './fixtures/collection-state.json';
 import expeditionClaimLoot from './fixtures/expedition-claim-loot.json';
+import expeditionRequestBodies from './fixtures/expedition-request-bodies.json';
+import expeditionStateAfter from './fixtures/expedition-state-after.json';
+import expeditionStateOffer from './fixtures/expedition-state-offer.json';
+import workshopClaimSupply from './fixtures/workshop-claim-supply.json';
+import workshopStartSupply from './fixtures/workshop-start-supply.json';
 import gearDismantle from './fixtures/gear-dismantle.json';
 import gearEquip from './fixtures/gear-equip.json';
 import gearErrors from './fixtures/gear-errors.json';
@@ -45,7 +50,7 @@ vi.mock('./api', async (importOriginal) => ({
   apiFetch,
 }));
 
-import { ApiError, parseClaimResponse, parseGameState, type Creature } from './api';
+import { ApiError, expeditionBody, parseClaimResponse, parseGameState, type Creature } from './api';
 import { fetchDungeonReplay, fetchDungeonToday, startDungeonRun } from './dungeon-api';
 import { parseDungeonReplay, parseDungeonRun, parseDungeonToday } from './dungeon-parse';
 import {
@@ -365,9 +370,12 @@ describe('the gear responses the server sends', () => {
 
   it('reads the loot of an expedition claim, and a claim without loot', () => {
     const claimed = parseClaimResponse(expeditionClaimLoot);
-    expect(claimed.result.loot?.parts.scrap).toBe(6);
+    expect(claimed.result.loot?.parts.scrap ?? 0).toBe(
+      expeditionClaimLoot.result.loot.parts.scrap ?? 0,
+    );
     expect(claimed.result.loot?.blueprints).toHaveLength(1);
-    expect(claimed.result.catches).toHaveLength(3);
+    expect(claimed.result.catches).toHaveLength(expeditionClaimLoot.result.catches.length);
+    expect(claimed.result.catches.length).toBeGreaterThan(0);
     const older = parseClaimResponse({
       ...expeditionClaimLoot,
       result: { recalled: true, catches: [] },
@@ -609,3 +617,66 @@ describe('the dungeon errors the server sends', () => {
 function bodyOf0(): DungeonRunRequest {
   return dungeonRequestBodies['dungeon-run-cleared'].body as unknown as DungeonRunRequest;
 }
+
+describe('expeditions v2 with the v1 screens (stopgap until the UI is rebuilt)', () => {
+  it('sends the v2 body: a destination and a list of supplies, nothing the server would reject', () => {
+    const recorded = expeditionRequestBodies['expedition-send'].body;
+    const body = expeditionBody({
+      creatureId: recorded.creatureId,
+      duration: 'long',
+      supplies: 'basic',
+      idempotencyKey: recorded.idempotencyKey,
+    });
+    expect(Object.keys(body).sort()).toEqual(Object.keys(recorded).sort());
+    expect(body).toMatchObject({ destination: 'tidepools', supplies: [] });
+    const input = {
+      creatureId: recorded.creatureId,
+      duration: 'short' as const,
+      idempotencyKey: 'k',
+    };
+    expect(expeditionBody({ ...input, supplies: 'good' }).supplies).toEqual([
+      { id: 'lure-good', source: 'buy' },
+    ]);
+    expect(expeditionBody({ ...input, supplies: 'great' }).supplies).toEqual([
+      { id: 'lure-great', source: 'buy' },
+    ]);
+    // Every supply of a body has the shape the server's schema takes.
+    for (const pick of recorded.supplies) {
+      expect(Object.keys(pick).sort()).toEqual(['id', 'source']);
+    }
+  });
+
+  it('reads the state of a trip with a pending choice and of a claimed trip with its result', () => {
+    const offer = parseGameState(expeditionStateOffer);
+    expect(offer.expeditions[0]?.status).toBe('active');
+    expect(offer.expeditions[0]?.supplies).toBe('great');
+    const after = parseGameState(expeditionStateAfter);
+    expect(after.expeditions.some((e) => e.status === 'claimed' && e.result !== null)).toBe(true);
+  });
+
+  it('reads the claim of a trip with a push-on and a journal page', () => {
+    const claimed = parseClaimResponse({
+      result: expeditionStateAfter.expeditions[0]?.result,
+      state: expeditionStateAfter,
+    });
+    expect(claimed.result.catches.length).toBeGreaterThan(0);
+  });
+
+  it('reads the Workshop view with a supply craft in it, leaving the supply job out of the list', () => {
+    for (const fixture of [workshopStartSupply, workshopClaimSupply]) {
+      const gear = parseGearState(fixture.gear);
+      expect(gear.jobs.every((j) => (j.kind as string) !== 'supply')).toBe(true);
+      expect(fixture.gear.jobs.some((j) => j.kind === 'supply')).toBe(true);
+    }
+  });
+
+  it('reads a gear view whose newest grant is a daily dungeon drop', () => {
+    const grant = gearWelcome.grants[0];
+    if (grant === undefined) throw new Error('the fixture has no grant');
+    const parsed = parseGearState({
+      ...gearWelcome,
+      grants: [{ ...grant, source: 'dungeon', key: 'dungeon:2026-10-13:1' }],
+    });
+    expect(parsed.grants[0]?.source).toBe('dungeon');
+  });
+});

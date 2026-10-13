@@ -1,6 +1,6 @@
 # Expeditions v2: a feature you get better at
 
-Status: **spec agreed with Misa** 2026-10-13 (reviewed in the shared doc `https://claude.ai/code/artifact/40f1a5e0-df40-4d61-8e04-154751c36f48`). Roadmap item 3. The **Spec** section below is what we build; the original proposal is kept after it for context.
+Status: **content, server and balance simulation built** (2026-10-13; the client UI is a separate task, see `decisions.md` "Expeditions v2 numbers set by simulation"). Spec agreed with Misa 2026-10-13 (reviewed in the shared doc `https://claude.ai/code/artifact/40f1a5e0-df40-4d61-8e04-154751c36f48`). Roadmap item 3. The **Spec** section below is what we build; the original proposal is kept after it for context.
 
 ## Spec (after Misa's review)
 

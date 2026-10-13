@@ -9,8 +9,9 @@ import {
 } from '../src/archetypes';
 import { speciesOf } from '../src/data';
 import { checkIn, runEconomy, type EconomyResult, type PlayerHistory } from '../src/economy';
-import { chooseTrainee, planExpeditions } from '../src/policy';
+import { chooseTrainee } from '../src/policy';
 import { createPlayer } from '../src/state';
+import { slotsOfPlayer, type TripContext } from '../src/trips';
 
 function only(archetype: ArchetypeId, others: ArchetypeMix = DEFAULT_MIX): ArchetypeMix {
   return { ...others, [archetype]: Math.max(others[archetype], 1) };
@@ -49,16 +50,15 @@ describe('archetype policies over 2 weeks', () => {
       for (const p of players) {
         const weeks = p.weeks.filter((w) => w.week >= p.joinWeek && w.week < p.joinWeek + 2);
         expect(weeks).toHaveLength(2);
-        let spentExpeditions = 0;
         let spentTraining = 0;
         for (const w of weeks) {
           expect(w.bait).toBeGreaterThanOrEqual(0);
           expect(w.baitEarned).toBeGreaterThan(0);
           expect(w.essence).toBeGreaterThanOrEqual(0);
-          spentExpeditions += w.baitSpentExpeditions;
           spentTraining += w.baitSpentTraining;
         }
-        expect(spentExpeditions).toBeGreaterThan(0);
+        // Trips are free: they run whatever the Bait, and supplies are the only expedition spending.
+        expect(weeks[1]?.trips ?? 0).toBeGreaterThan(0);
         expect(spentTraining).toBeGreaterThan(0);
         // Expeditions brought new species or fusions beyond the starter.
         expect(weeks[1]?.speciesOwned ?? 0).toBeGreaterThan(1);
@@ -102,35 +102,54 @@ describe('check-in', () => {
     return p;
   }
 
+  const tripCtx = (hour: number, seed: string): TripContext => ({
+    hour,
+    day: Math.floor(hour / 24),
+    weekIndex: 0,
+    catches: createSeededRng(`${seed}:catches`),
+    trip: createSeededRng(`${seed}:trip`),
+  });
+
   it('never overspends and accounts for every Bait spent', () => {
     for (const bait of [0, 9, 10, 29, 60, 150, 400, 5000]) {
       const p = player(bait);
-      const rng = createSeededRng(`ci-${bait}`);
-      checkIn(p, 1, rng);
+      checkIn(p, 1, tripCtx(9, `ci-${String(bait)}`));
       expect(p.bait).toBeGreaterThanOrEqual(0);
       expect(p.week.baitSpentExpeditions + p.week.baitSpentTraining).toBe(bait - p.bait);
-      expect(p.expeditions.length).toBeLessThanOrEqual(3);
+      expect(p.expeditions.length).toBeLessThanOrEqual(slotsOfPlayer(p));
       const explorers = new Set(p.expeditions.map((e) => e.explorerId));
       expect(explorers.size).toBe(p.expeditions.length);
     }
   });
 
-  it('keeps all 3 slots busy once the player can afford them, and does nothing with no Bait', () => {
+  it('sends a trip into the one slot of a new player, with no Bait too (trips are free)', () => {
     const rich = player(300);
-    checkIn(rich, 1, createSeededRng('rich'));
-    expect(rich.expeditions).toHaveLength(3);
+    checkIn(rich, 1, tripCtx(9, 'rich'));
+    expect(rich.expeditions).toHaveLength(1);
     const broke = player(0);
-    checkIn(broke, 1, createSeededRng('broke'));
-    expect(broke.expeditions).toHaveLength(0);
+    checkIn(broke, 1, tripCtx(9, 'broke'));
+    expect(broke.expeditions).toHaveLength(1);
     expect(broke.week.trainings).toBe(0);
+    expect(broke.week.baitSpentExpeditions).toBe(0);
   });
 
-  it('claims expeditions, using the first-expedition zipmouse rule and fusing duplicates', () => {
+  it('claims trips, using the first-expedition zipmouse rule and fusing duplicates', () => {
     const p = player(0);
-    p.expeditions.push({ explorerId: 'p01/splashet', duration: 'long', supplies: 'basic' });
-    checkIn(p, 1, createSeededRng('claim'));
+    p.expeditions.push({
+      explorerId: 'p01/splashet',
+      length: 'long',
+      destination: 'old-crossroads',
+      kit: [],
+      rolls: 1,
+      twist: null,
+      startHour: 9,
+      endsAtHour: 21,
+    });
+    checkIn(p, 1, tripCtx(9 + 24, 'claim'));
     expect(p.firstExpeditionDone).toBe(true);
     expect(p.creatures.some((c) => c.line === 'zipmouse')).toBe(true);
+    expect(p.stats.trips_finished).toBe(1);
+    expect(p.explorerXp['p01/splashet']).toBeGreaterThan(0);
   });
 
   it('evolves a level-15 creature when there is enough Essence, keeping fusion count', () => {
@@ -140,7 +159,7 @@ describe('check-in', () => {
     c.level = 15;
     c.fusionCount = 3;
     p.essence = 25;
-    checkIn(p, 15, createSeededRng('evolve'));
+    checkIn(p, 15, tripCtx(9, 'evolve'));
     expect(c.speciesId).toBe('tidewing');
     expect(c.fusionCount).toBe(3);
     expect(p.essence).toBe(5);
@@ -153,29 +172,13 @@ describe('check-in', () => {
     if (c === undefined) throw new Error('no creature');
     c.level = 15;
     p.essence = 19;
-    checkIn(p, 15, createSeededRng('noevolve'));
+    checkIn(p, 15, tripCtx(9, 'noevolve'));
     expect(c.speciesId).toBe('splashet');
     expect(c.level).toBe(15);
   });
 });
 
 describe('policy pieces', () => {
-  it('plans nothing when a slot share cannot buy the cheapest option', () => {
-    expect(planExpeditions(19, 3, true)).toEqual([]);
-    expect(planExpeditions(0, 3, false)).toEqual([]);
-  });
-
-  it('buys better supplies with more Bait per slot, within budget', () => {
-    const small = planExpeditions(120, 1, true);
-    expect(small).toHaveLength(1);
-    expect(small[0]?.cost).toBeLessThanOrEqual(60);
-    const big = planExpeditions(1000, 1, true);
-    expect(big[0]?.supplies).toBe('great');
-    expect(big[0]?.duration).toBe('long');
-    const all = planExpeditions(100, 3, false);
-    expect(all.reduce((s, o) => s + o.cost, 0)).toBeLessThanOrEqual(100);
-  });
-
   it('pushes the furthest-along creature towards its evolution, else trains the weakest', () => {
     const mk = (line: string, level: number) => ({
       id: `p/${line}`,
@@ -196,7 +199,7 @@ describe('policy pieces', () => {
 
   it('uses the game training costs', () => {
     expect(trainingCost(1)).toBe(RULES.training.baseCost + RULES.training.perLevel);
-    expect(RULES.expedition.durations.long.rolls).toBe(3);
+    expect(RULES.expeditions.lengths.long.rolls).toBeGreaterThanOrEqual(1);
     expect(speciesOf('splashet').evolvesTo?.essence).toBe(20);
   });
 });

@@ -73,8 +73,9 @@ export const CreatureSpeciesSchema = v.strictObject({
   /** Optional crit bonus over the baseline (a high-crit archetype). */
   crit: v.optional(CritBonusSchema),
   /**
-   * Festival-only species: never catchable on expeditions, granted for winning a Festival finale
-   * (`festivalCreatureFor`). Must not be catchable, a starter or part of an evolution line.
+   * Festival-only species: granted for winning a Festival finale (`festivalCreatureFor`) and found
+   * on expeditions only at the Festival Grounds, open in Festival weeks. Must not be catchable
+   * anywhere else, a starter or part of an evolution line.
    */
   festival: v.optional(v.boolean()),
   flavor: v.pipe(v.string(), v.minLength(1), v.maxLength(160)),

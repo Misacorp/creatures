@@ -59,11 +59,11 @@
       "id": "expeditions",
       "title": "Expeditions",
       "lines": [
-        "Send a creature away for 1, 6 or 12 hours. Longer trips find more.",
-        "Better supplies cost more Bait and find rarer creatures.",
-        "You have 3 expedition slots.",
-        "Recall early to keep the catches earned so far.",
-        "A duplicate catch fuses into your creature for more stats."
+        "Send a creature to a place for 2, 6 or 12 hours. Longer trips find much more.",
+        "Trips are free. Supplies cost Bait, or you craft them, and give a real boost.",
+        "Every creature gets better at exploring: ranks, and stars for each place.",
+        "You start with 1 slot. More open as your creatures grow as explorers.",
+        "Recall early to keep what was earned. A duplicate catch fuses into your creature."
       ]
     },
     {
@@ -84,7 +84,7 @@
         "Every boss has a Rank. A higher Rank is a tougher boss.",
         "Win the finale and the server's Rank goes up by 1. Lose and it stays.",
         "Every 5th week is a Festival: an easier boss and extra Essence.",
-        "Win a Festival to get its special creature. Expeditions never find it.",
+        "Win a Festival to get its special creature. It also roams the Festival Grounds.",
         "The pips show where you are in the 5-week season."
       ]
     },

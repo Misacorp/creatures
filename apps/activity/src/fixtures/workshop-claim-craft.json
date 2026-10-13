@@ -422,6 +422,12 @@
           "level": 15,
           "essence": 20,
           "available": false
+        },
+        "explorer": {
+          "rank": 1,
+          "xp": 0,
+          "nextRankXp": 200,
+          "trips": 0
         }
       },
       {
@@ -461,6 +467,12 @@
           "level": 15,
           "essence": 20,
           "available": false
+        },
+        "explorer": {
+          "rank": 1,
+          "xp": 0,
+          "nextRankXp": 200,
+          "trips": 0
         }
       },
       {
@@ -500,15 +512,29 @@
           "level": 15,
           "essence": 20,
           "available": false
+        },
+        "explorer": {
+          "rank": 1,
+          "xp": 0,
+          "nextRankXp": 200,
+          "trips": 0
         }
       }
     ],
     "expeditions": [],
     "slots": {
-      "total": 3,
-      "used": 0
+      "total": 1,
+      "used": 0,
+      "rankSum": 0,
+      "tripsFinished": 0,
+      "next": {
+        "kind": "trips",
+        "at": 3
+      }
     },
     "trainingMedianLevel": 10,
-    "serverFirsts": []
+    "serverFirsts": [],
+    "cancelled": [],
+    "supplies": {}
   }
 }

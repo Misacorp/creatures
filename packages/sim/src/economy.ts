@@ -1,16 +1,15 @@
 import {
-  applyCatchToCollection,
+  ELEMENTS,
   chance,
   content,
   createSeededRng,
-  expeditionRolls,
   festivalCreatureFor,
   festivalGrantOutcome,
   int,
   nextRank,
+  nextRankXp,
   placementRank,
   raidWeekPlan,
-  rollCatches,
   type BossDef,
   type Element,
   type LuckConfig,
@@ -32,26 +31,24 @@ import {
   bestSkillLevel,
   claimJobs,
   gearPowerOf,
-  grantExpeditionLoot,
   grantFinaleLoot,
   grantPhaseScrap,
   grantWelcomeKit,
   manageGear,
-  onJob,
   startJobs,
-  type GearContext,
 } from './gear';
 import { dayModifiers, playDungeonDay, type DungeonLogEntry } from './dungeon';
-import {
-  POLICY,
-  chooseTrainee,
-  collectionComplete,
-  isTrainable,
-  planExpeditions,
-  trainCost,
-} from './policy';
+import { POLICY, chooseTrainee, isTrainable, trainCost } from './policy';
 import { openRaidWeek, playStage, summarizeRaid, type RaidSummary } from './raid';
 import { clonePlayer, createPlayer, emptyWeek, type SimPlayer } from './state';
+import {
+  claimTrips,
+  playerRankSum,
+  rankOfCreature,
+  sendTrips,
+  slotsOfPlayer,
+  type TripContext,
+} from './trips';
 import { median, shuffle } from './util';
 
 const DAYS = 7;
@@ -118,6 +115,11 @@ export interface WeekRecord {
   dungeonEssence: number;
   dungeonScrap: number;
   dungeonItems: number;
+  /** The sum of the explorer ranks above 1 over all creatures, and the expedition slots it gives. */
+  rankSum: number;
+  slots: number;
+  /** Trips finished so far. */
+  trips: number;
 }
 
 export interface PlayerHistory {
@@ -133,6 +135,13 @@ export interface PlayerHistory {
   bestSkillDay30: number | null;
   /** Every dungeon run the player made, in order. */
   dungeon: DungeonLogEntry[];
+  /** Days after joining that slots 2 to 5 opened; null while closed. */
+  slotDays: (number | null)[];
+  /** Trips finished by length, and the other counters of the player's expeditions. */
+  tripsByLength: Record<string, number>;
+  tripStats: Record<string, number>;
+  /** Species caught per place (distinct stars at the end are in the report). */
+  journal: number;
 }
 
 export interface Snapshot {
@@ -169,6 +178,8 @@ interface Streams {
   order: Rng;
   gear: Rng;
   dungeon: Rng;
+  trip: Rng;
+  taste: Rng;
 }
 
 function createPlayers(mix: ArchetypeMix): SimPlayer[] {
@@ -206,9 +217,11 @@ function chooseStarter(joined: readonly SimPlayer[]): (typeof STARTERS)[number] 
   return best;
 }
 
-function join(player: SimPlayer, all: readonly SimPlayer[]): void {
+function join(player: SimPlayer, all: readonly SimPlayer[], taste: Rng): void {
   const starter = chooseStarter(all.filter((p) => p.joined));
   player.joined = true;
+  // A liking for each element between 0.8 and 1.2 (in tenths), so players explore different places.
+  for (const element of ELEMENTS) player.taste[element] = (8 + int(taste, 5)) / 10;
   player.creatures.push({
     id: `${player.id}/${starter.line}`,
     line: starter.line,
@@ -233,49 +246,6 @@ export function serverMedianTopLevel(players: readonly SimPlayer[]): number {
   return median(tops) ?? 1;
 }
 
-function claimExpeditions(player: SimPlayer, rng: Rng, gear?: GearContext): void {
-  const pending = player.expeditions;
-  player.expeditions = [];
-  for (const exp of pending) {
-    const explorer = player.creatures.find((c) => c.id === exp.explorerId);
-    if (explorer === undefined) continue;
-    const { results, dupeStreak } = rollCatches(rng, expeditionRolls(exp.duration), {
-      content,
-      supplies: exp.supplies,
-      explorerElement: speciesOf(explorer.speciesId).element,
-      ownedLines: new Set(player.creatures.map((c) => c.line)),
-      dupeStreak: player.dupeStreak,
-      firstExpedition: !player.firstExpeditionDone,
-    });
-    player.dupeStreak = dupeStreak;
-    player.firstExpeditionDone = true;
-    if (gear !== undefined) {
-      grantExpeditionLoot(player, exp.duration, speciesOf(explorer.speciesId).element, gear.rng);
-    }
-    for (const caught of results) {
-      const existing = player.creatures.find((c) => c.line === caught.species.line);
-      const outcome = applyCatchToCollection(
-        existing === undefined ? undefined : { fusionCount: existing.fusionCount, shiny: false },
-        caught,
-      );
-      if (outcome.kind === 'new') {
-        player.creatures.push({
-          id: `${player.id}/${caught.species.line}`,
-          line: caught.species.line,
-          speciesId: caught.species.id,
-          level: 1,
-          fusionCount: 0,
-        });
-      } else if (outcome.kind === 'fused') {
-        if (existing !== undefined) existing.fusionCount = outcome.newFusionCount;
-      } else {
-        player.bait += outcome.bait;
-        player.week.baitConverted += outcome.bait;
-      }
-    }
-  }
-}
-
 /** Evolves creatures that reached their evolution level while the player has the Essence. */
 function evolveCreatures(player: SimPlayer): void {
   for (const c of byPowerDesc(player.creatures)) {
@@ -293,56 +263,64 @@ function elementGapScore(player: SimPlayer, element: Element): number {
   return CATCHABLE.filter((s) => s.element === element && !owned.has(s.line)).length;
 }
 
-/** One check-in: claim, evolve, plan expeditions, train, send the expeditions (see POLICY). */
-export function checkIn(
-  player: SimPlayer,
-  medianTopLevel: number,
-  catchRng: Rng,
-  gear?: GearContext,
-): void {
-  claimExpeditions(player, catchRng, gear);
+/**
+ * The creatures an explorer is picked from, best first. Until one creature has the rank that opens the
+ * 24 hour trip, the highest rank goes first (concentrate to unlock the places and trips); after that
+ * the creature that is closest to its next rank goes first (spread the XP: slots come from the ranks of
+ * all the creatures, and a creature at the top rank goes last). The element gap and the id break ties.
+ */
+function explorerOrder(player: SimPlayer): (idle: OwnedCreature[]) => OwnedCreature[] {
+  const dayRank = RULES.expeditions.lengths.day.minRank;
+  const unlocked = player.creatures.some((c) => rankOfCreature(player, c.id) >= dayRank);
+  const toNext = (c: OwnedCreature): number => {
+    const rank = rankOfCreature(player, c.id);
+    const next = nextRankXp(rank);
+    return next === null ? Number.POSITIVE_INFINITY : next - (player.explorerXp[c.id] ?? 0);
+  };
+  return (idle) =>
+    [...idle].sort((a, b) => {
+      const primary = unlocked
+        ? toNext(a) - toNext(b)
+        : rankOfCreature(player, b.id) - rankOfCreature(player, a.id);
+      if (primary !== 0 && Number.isFinite(primary)) return primary;
+      const gap =
+        elementGapScore(player, speciesOf(b.speciesId).element) -
+        elementGapScore(player, speciesOf(a.speciesId).element);
+      return gap !== 0 ? gap : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    });
+}
+
+/**
+ * One check-in: claim trips (and take an end-of-trip goal), claim jobs, evolve, train with what the
+ * supplies budget leaves, manage gear, send trips into the free slots and start jobs (see POLICY).
+ */
+export function checkIn(player: SimPlayer, medianTopLevel: number, ctx: TripContext): void {
+  const gear = ctx.gear;
+  claimTrips(player, ctx);
   if (gear !== undefined) claimJobs(player, gear);
   evolveCreatures(player);
 
-  // A creature on a job cannot explore (one busy state).
-  const idle = player.creatures.filter((c) => !onJob(player, c.id));
-  const slots = Math.min(POLICY.expeditionSlots, idle.length);
-  const plan = collectionComplete(player.creatures)
-    ? []
-    : planExpeditions(player.bait, slots, player.creatures.some(isTrainable));
-  let reserved = 0;
-  for (const o of plan) reserved += o.cost;
+  // The Bait that supplies may use: what is held above the reserve (all of it when nothing can be trained).
+  const hasTrainable = player.creatures.some(isTrainable);
+  const budget = hasTrainable ? Math.max(0, player.bait - POLICY.supplyReserve) : player.bait;
+
+  // Trips go first, with supplies bought from the budget; what is not spent on them trains creatures.
+  if (gear !== undefined) manageGear(player);
+  const spent = sendTrips(player, ctx, Math.min(budget, player.bait), explorerOrder(player));
+  player.bait -= spent;
+  player.week.baitSpentExpeditions += spent;
 
   for (;;) {
     const trainee = chooseTrainee(player.creatures);
     if (trainee === null) break;
     const cost = trainCost(trainee, medianTopLevel);
-    if (cost > player.bait - reserved) break;
+    if (cost > player.bait) break;
     player.bait -= cost;
     player.week.baitSpentTraining += cost;
     player.week.trainings += 1;
     trainee.level += 1;
   }
 
-  if (gear !== undefined) manageGear(player);
-
-  const explorers = [...idle].sort((a, b) => {
-    const gap =
-      elementGapScore(player, speciesOf(b.speciesId).element) -
-      elementGapScore(player, speciesOf(a.speciesId).element);
-    return gap !== 0 ? gap : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
-  });
-  plan.forEach((option, i) => {
-    const explorer = explorers[i];
-    if (explorer === undefined) return;
-    player.bait -= option.cost;
-    player.week.baitSpentExpeditions += option.cost;
-    player.expeditions.push({
-      explorerId: explorer.id,
-      duration: option.duration,
-      supplies: option.supplies,
-    });
-  });
   if (gear !== undefined) {
     startJobs(player, gear, new Set(player.expeditions.map((e) => e.explorerId)));
   }
@@ -380,6 +358,9 @@ function record(player: SimPlayer, week: number): WeekRecord {
     dungeonEssence: player.week.dungeonEssence,
     dungeonScrap: player.week.dungeonScrap,
     dungeonItems: player.week.dungeonItems,
+    rankSum: playerRankSum(player),
+    slots: slotsOfPlayer(player),
+    trips: player.stats.trips_finished,
   };
 }
 
@@ -451,6 +432,8 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
     order: createSeededRng(`${seed}:order`),
     gear: createSeededRng(`${seed}:gear`),
     dungeon: createSeededRng(`${seed}:dungeon`),
+    trip: createSeededRng(`${seed}:trip`),
+    taste: createSeededRng(`${seed}:taste`),
   };
   const players = createPlayers(options.mix);
   const history = new Map<string, PlayerHistory>(
@@ -466,6 +449,10 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
         firstCraftAfterDays: null,
         bestSkillDay30: null,
         dungeon: [],
+        slotDays: [null, null, null, null],
+        tripsByLength: {},
+        tripStats: {},
+        journal: 0,
       },
     ]),
   );
@@ -482,7 +469,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
   for (let week = 1; week <= weeks; week++) {
     for (const p of players) {
       if (!p.joined && p.joinWeek <= week) {
-        join(p, players);
+        join(p, players, rng.taste);
         if (gearOn) grantWelcomeKit(p, rng.gear, (week - 1) * DAYS);
       }
       p.week = emptyWeek();
@@ -497,12 +484,18 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
     for (let day = 0; day < DAYS; day++) {
       const globalDay = (week - 1) * DAYS + day;
       // Check-ins happen at 09:00 and 20:00 (casuals only in the morning, on their leet days).
-      const morning: GearContext | undefined = gearOn
-        ? { rng: rng.gear, hour: globalDay * 24 + 9, day: globalDay }
-        : undefined;
-      const eveningCtx: GearContext | undefined = gearOn
-        ? { rng: rng.gear, hour: globalDay * 24 + 20, day: globalDay }
-        : undefined;
+      const tripContext = (hourOfDay: number): TripContext => ({
+        hour: globalDay * 24 + hourOfDay,
+        day: globalDay,
+        weekIndex,
+        catches: rng.catches,
+        trip: rng.trip,
+        ...(gearOn
+          ? { gear: { rng: rng.gear, hour: globalDay * 24 + hourOfDay, day: globalDay } }
+          : {}),
+      });
+      const morning = tripContext(9);
+      const eveningCtx = tripContext(20);
       const leeters = active.filter((p) => p.leetDays[day] === true);
       const bait = baitForDay(leeters.length);
       for (const p of leeters) {
@@ -513,7 +506,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
       for (const p of active) {
         const cfg = ARCHETYPE_CONFIG[p.archetype];
         if (cfg.checkIns === 'twice_daily' || p.leetDays[day] === true) {
-          checkIn(p, median, rng.catches, morning);
+          checkIn(p, median, morning);
         }
       }
 
@@ -579,7 +572,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
       const evening = serverMedianTopLevel(active);
       for (const p of active) {
         if (ARCHETYPE_CONFIG[p.archetype].checkIns === 'twice_daily') {
-          checkIn(p, evening, rng.catches, eveningCtx);
+          checkIn(p, evening, eveningCtx);
         }
         const h = history.get(p.id);
         const joined = p.gear.joinDay;
@@ -613,6 +606,11 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
       h.maxPity = p.maxPity;
       h.raids = p.raids;
       h.firstCraftAfterDays = p.gear.firstCraftAfterDays;
+      const joinedDay = p.gear.joinDay ?? 0;
+      h.slotDays = p.slotDays.map((d) => (d === null ? null : d - joinedDay));
+      h.tripsByLength = { ...p.tripsByLength };
+      h.tripStats = { ...p.stats };
+      h.journal = p.journal.length;
     }
     if (options.snapshotWeeks.includes(week)) {
       snapshots.push({ week, players: active.map(clonePlayer) });

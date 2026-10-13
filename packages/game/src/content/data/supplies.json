@@ -1,0 +1,232 @@
+[
+  {
+    "id": "lure-basic",
+    "kind": "lure",
+    "tier": "basic",
+    "name": "Plain Lure",
+    "flavor": "A bit of dried fruit on a string. Better than nothing.",
+    "price": 12,
+    "offerBp": 2500,
+    "rareUpBp": 600,
+    "epicUpBp": 100,
+    "blueprint": {
+      "craftingLevel": 1,
+      "hours": 2,
+      "parts": {
+        "scrap": 3
+      },
+      "yield": 1
+    }
+  },
+  {
+    "id": "lure-good",
+    "kind": "lure",
+    "tier": "good",
+    "name": "Sweet Lure",
+    "flavor": "Sticky and fragrant. Even shy creatures lean closer.",
+    "price": 30,
+    "offerBp": 5000,
+    "rareUpBp": 1200,
+    "epicUpBp": 400,
+    "blueprint": {
+      "craftingLevel": 3,
+      "hours": 4,
+      "parts": {
+        "scrap": 6,
+        "grove-shard": 1
+      },
+      "yield": 1
+    }
+  },
+  {
+    "id": "lure-great",
+    "kind": "lure",
+    "tier": "great",
+    "name": "Golden Lure",
+    "flavor": "It shines like honey in the sun. Rare creatures cannot resist.",
+    "price": 70,
+    "offerBp": 10000,
+    "rareUpBp": 1800,
+    "epicUpBp": 900,
+    "blueprint": {
+      "craftingLevel": 5,
+      "hours": 6,
+      "parts": {
+        "scrap": 10,
+        "grove-shard": 3
+      },
+      "yield": 1
+    }
+  },
+  {
+    "id": "map-scrap-basic",
+    "kind": "map-scrap",
+    "tier": "basic",
+    "name": "Map Scrap",
+    "flavor": "A torn corner with a few trails marked in pencil.",
+    "price": 15,
+    "offerBp": 2500,
+    "rollsBp": 3000,
+    "blueprint": {
+      "craftingLevel": 1,
+      "hours": 2,
+      "parts": {
+        "scrap": 3
+      },
+      "yield": 1
+    }
+  },
+  {
+    "id": "map-scrap-good",
+    "kind": "map-scrap",
+    "tier": "good",
+    "name": "Inked Map",
+    "flavor": "A neat map with the good spots circled twice.",
+    "price": 40,
+    "offerBp": 5000,
+    "rollsBp": 6000,
+    "blueprint": {
+      "craftingLevel": 3,
+      "hours": 4,
+      "parts": {
+        "scrap": 6,
+        "tide-shard": 1
+      },
+      "yield": 1
+    }
+  },
+  {
+    "id": "map-scrap-great",
+    "kind": "map-scrap",
+    "tier": "great",
+    "name": "Trail Atlas",
+    "flavor": "Every path, pool and cave, drawn by someone who went there.",
+    "price": 90,
+    "offerBp": 10000,
+    "rollsBp": 10000,
+    "blueprint": {
+      "craftingLevel": 5,
+      "hours": 6,
+      "parts": {
+        "scrap": 10,
+        "tide-shard": 3
+      },
+      "yield": 1
+    }
+  },
+  {
+    "id": "lantern-basic",
+    "kind": "lantern",
+    "tier": "basic",
+    "name": "Candle Lantern",
+    "flavor": "A small flame in a tin. It shows the next few steps.",
+    "price": 15,
+    "offerBp": 2500,
+    "deepBp": 1500,
+    "blueprint": {
+      "craftingLevel": 1,
+      "hours": 2,
+      "parts": {
+        "scrap": 3
+      },
+      "yield": 1
+    }
+  },
+  {
+    "id": "lantern-good",
+    "kind": "lantern",
+    "tier": "good",
+    "name": "Glow Lantern",
+    "flavor": "It glows steady and warm, even in the deepest corners.",
+    "price": 40,
+    "offerBp": 5000,
+    "deepBp": 3000,
+    "blueprint": {
+      "craftingLevel": 3,
+      "hours": 4,
+      "parts": {
+        "scrap": 6,
+        "spark-shard": 1
+      },
+      "yield": 1
+    }
+  },
+  {
+    "id": "lantern-great",
+    "kind": "lantern",
+    "tier": "great",
+    "name": "Moon Lantern",
+    "flavor": "Lit by moonlight itself. The hidden places show their doors.",
+    "price": 90,
+    "offerBp": 10000,
+    "deepBp": 5000,
+    "blueprint": {
+      "craftingLevel": 5,
+      "hours": 6,
+      "parts": {
+        "scrap": 10,
+        "spark-shard": 3
+      },
+      "yield": 1
+    }
+  },
+  {
+    "id": "satchel-basic",
+    "kind": "satchel",
+    "tier": "basic",
+    "name": "Small Satchel",
+    "flavor": "Room for a few extra pebbles and berries.",
+    "price": 12,
+    "offerBp": 2500,
+    "partsBp": 2500,
+    "supplyBp": 1000,
+    "blueprint": {
+      "craftingLevel": 1,
+      "hours": 2,
+      "parts": {
+        "scrap": 3
+      },
+      "yield": 1
+    }
+  },
+  {
+    "id": "satchel-good",
+    "kind": "satchel",
+    "tier": "good",
+    "name": "Sturdy Satchel",
+    "flavor": "Plenty of pockets, and every one gets filled.",
+    "price": 30,
+    "offerBp": 5000,
+    "partsBp": 5000,
+    "supplyBp": 2000,
+    "blueprint": {
+      "craftingLevel": 3,
+      "hours": 4,
+      "parts": {
+        "scrap": 6,
+        "ember-shard": 1
+      },
+      "yield": 1
+    }
+  },
+  {
+    "id": "satchel-great",
+    "kind": "satchel",
+    "tier": "great",
+    "name": "Explorer's Pack",
+    "flavor": "Straps, pouches and hooks for everything worth carrying home.",
+    "price": 70,
+    "offerBp": 10000,
+    "partsBp": 10000,
+    "supplyBp": 3500,
+    "blueprint": {
+      "craftingLevel": 5,
+      "hours": 6,
+      "parts": {
+        "scrap": 10,
+        "ember-shard": 3
+      },
+      "yield": 1
+    }
+  }
+]

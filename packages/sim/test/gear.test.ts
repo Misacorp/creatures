@@ -25,17 +25,18 @@ import { checkIn, runEconomy } from '../src/economy';
 import {
   allItems,
   claimJobs,
-  grantExpeditionLoot,
   grantFinaleLoot,
   grantPhaseScrap,
   grantWelcomeKit,
   itemScore,
+  learnBlueprint,
   manageGear,
   startJobs,
   type GearContext,
 } from '../src/gear';
 import { fightFor, openRaidWeek } from '../src/raid';
 import { clonePlayer, createPlayer, type SimPlayer } from '../src/state';
+import type { TripContext } from '../src/trips';
 
 function creature(player: string, line: string, level = 10): OwnedCreature {
   return { id: `${player}/${line}`, line, speciesId: line, level, fusionCount: 0 };
@@ -66,6 +67,16 @@ function item(
     improves: 0,
   };
 }
+
+/** A check-in's context at 09:00 on day 0, with or without the gear context (a sim without gear). */
+const tripCtx = (withGear: boolean): TripContext => ({
+  hour: 9,
+  day: 0,
+  weekIndex: 0,
+  catches: createSeededRng('checkin:catches'),
+  trip: createSeededRng('checkin:trip'),
+  ...(withGear ? { gear: ctx(9) } : {}),
+});
 
 const ctx = (hour = 9, seed = 'gear'): GearContext => ({
   rng: createSeededRng(seed),
@@ -162,16 +173,10 @@ describe('drops', () => {
       .map((b) => b.id);
     const known = p.gear.blueprints.length;
     const before = p.gear.parts.scrap;
-    for (let i = 0; i < 300; i++) {
-      grantExpeditionLoot(p, 'long', 'tide', createSeededRng(`long-${String(i)}`));
-    }
+    for (const id of [...p.gear.blueprints]) learnBlueprint(p, id);
     expect(p.gear.blueprints).toHaveLength(known);
-    // 300 long trips: their scrap, plus 5 for every duplicate blueprint (about 15% of the trips).
-    const trips = 300 * RULES.gear.drops.expedition.scrap.long;
-    const blueprints =
-      (p.gear.parts.scrap - before - trips) / RULES.gear.drops.duplicateBlueprintScrap;
-    expect(Number.isInteger(blueprints)).toBe(true);
-    expect(blueprints).toBeGreaterThan(0);
+    // A blueprint the player already knows turns into scrap (5 each).
+    expect(p.gear.parts.scrap - before).toBe(known * RULES.gear.drops.duplicateBlueprintScrap);
   });
 });
 
@@ -315,8 +320,7 @@ describe('workshop jobs', () => {
     p.bait = 500;
     p.gear.blueprints.push('trail-charm');
     p.gear.parts.scrap = 100;
-    const context = ctx(9);
-    checkIn(p, 10, createSeededRng('checkin'), context);
+    checkIn(p, 10, tripCtx(true));
     const exploring = new Set(p.expeditions.map((e) => e.explorerId));
     for (const job of p.gear.jobs) expect(exploring.has(job.creatureId)).toBe(false);
     // With gear off, the same check-in starts no job.
@@ -324,7 +328,7 @@ describe('workshop jobs', () => {
     q.bait = 500;
     q.gear.blueprints.push('trail-charm');
     q.gear.parts.scrap = 100;
-    checkIn(q, 10, createSeededRng('checkin'));
+    checkIn(q, 10, tripCtx(false));
     expect(q.gear.jobs).toHaveLength(0);
   });
 });

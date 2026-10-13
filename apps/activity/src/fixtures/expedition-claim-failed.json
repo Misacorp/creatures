@@ -1,0 +1,211 @@
+{
+  "result": {
+    "recalled": false,
+    "catches": [],
+    "failed": true,
+    "pushOn": {
+      "goalId": "shortcut",
+      "risk": "risky",
+      "oddsBp": 6100,
+      "outcome": "failed"
+    }
+  },
+  "state": {
+    "serverNow": 1799782272001,
+    "balances": {
+      "bait": 285,
+      "essence": 0
+    },
+    "starterChosen": false,
+    "starterOptions": ["splashet", "cindle", "sproutle"],
+    "creatures": [
+      {
+        "id": "ffafcc53-26f2-46e7-8ef5-b1f3718cb76f",
+        "species": "cindle",
+        "line": "cindle",
+        "level": 8,
+        "levelCap": 15,
+        "fusionCount": 0,
+        "shiny": false,
+        "nickname": null,
+        "away": false,
+        "origin": "test",
+        "caughtAt": 1799733600000,
+        "quirk": "waves-at-everyone",
+        "stats": {
+          "hp": 145,
+          "atk": 61,
+          "spd": 42
+        },
+        "statsWithGear": {
+          "hp": 145,
+          "atk": 61,
+          "spd": 42
+        },
+        "gear": null,
+        "busy": null,
+        "ability": {
+          "id": "flare-strike",
+          "unlocked": false,
+          "unlockLevel": 10,
+          "nextId": "flare-strike-2"
+        },
+        "explorer": {
+          "rank": 3,
+          "xp": 800,
+          "nextRankXp": 2000,
+          "trips": 0
+        },
+        "trainCost": 19,
+        "evolution": {
+          "toSpecies": "pyrelynx",
+          "level": 15,
+          "essence": 20,
+          "available": false
+        }
+      },
+      {
+        "id": "890de23e-6d85-4ca9-a188-bc04d29ffa6e",
+        "species": "splashet",
+        "line": "splashet",
+        "level": 8,
+        "levelCap": 15,
+        "fusionCount": 0,
+        "shiny": false,
+        "nickname": null,
+        "away": false,
+        "origin": "test",
+        "caughtAt": 1799733600001,
+        "quirk": "shadow-racer",
+        "stats": {
+          "hp": 168,
+          "atk": 42,
+          "spd": 46
+        },
+        "statsWithGear": {
+          "hp": 168,
+          "atk": 42,
+          "spd": 46
+        },
+        "gear": null,
+        "busy": null,
+        "ability": {
+          "id": "tidal-mark",
+          "unlocked": false,
+          "unlockLevel": 10,
+          "nextId": "tidal-mark-2"
+        },
+        "explorer": {
+          "rank": 1,
+          "xp": 0,
+          "nextRankXp": 200,
+          "trips": 0
+        },
+        "trainCost": 19,
+        "evolution": {
+          "toSpecies": "tidewing",
+          "level": 15,
+          "essence": 20,
+          "available": false
+        }
+      },
+      {
+        "id": "f376b77f-be7b-4c9c-a4f6-b182c7b27399",
+        "species": "sproutle",
+        "line": "sproutle",
+        "level": 8,
+        "levelCap": 15,
+        "fusionCount": 0,
+        "shiny": false,
+        "nickname": null,
+        "away": false,
+        "origin": "test",
+        "caughtAt": 1799733600002,
+        "quirk": "eating-shy",
+        "stats": {
+          "hp": 237,
+          "atk": 29,
+          "spd": 23
+        },
+        "statsWithGear": {
+          "hp": 237,
+          "atk": 29,
+          "spd": 23
+        },
+        "gear": null,
+        "busy": null,
+        "ability": {
+          "id": "bark-guard",
+          "unlocked": false,
+          "unlockLevel": 10,
+          "nextId": "bark-guard-2"
+        },
+        "explorer": {
+          "rank": 1,
+          "xp": 0,
+          "nextRankXp": 200,
+          "trips": 0
+        },
+        "trainCost": 19,
+        "evolution": {
+          "toSpecies": "thornbuck",
+          "level": 15,
+          "essence": 20,
+          "available": false
+        }
+      }
+    ],
+    "expeditions": [
+      {
+        "id": "7b7ec064-ba1b-4028-91d9-bc1eb66a1c11",
+        "creatureId": "ffafcc53-26f2-46e7-8ef5-b1f3718cb76f",
+        "duration": "long",
+        "supplies": "great",
+        "kit": ["lure-great", "map-scrap-basic"],
+        "destination": "tidepools",
+        "twist": null,
+        "rolls": 2,
+        "cost": 15,
+        "startedAt": 1799733600000,
+        "endsAt": 1799775072000,
+        "readyAt": 1799782272000,
+        "status": "claimed",
+        "claimedAt": 1799782272001,
+        "result": {
+          "recalled": false,
+          "catches": [],
+          "failed": true,
+          "pushOn": {
+            "goalId": "shortcut",
+            "risk": "risky",
+            "oddsBp": 6100,
+            "outcome": "failed"
+          }
+        },
+        "offer": null,
+        "pushOn": {
+          "goalId": "shortcut",
+          "startedAt": 1799775072000,
+          "endsAt": 1799782272000,
+          "oddsBp": 6100
+        }
+      }
+    ],
+    "cancelled": [],
+    "slots": {
+      "total": 1,
+      "used": 0,
+      "rankSum": 2,
+      "tripsFinished": 2,
+      "next": {
+        "kind": "trips",
+        "at": 3
+      }
+    },
+    "supplies": {
+      "lure-great": 2
+    },
+    "trainingMedianLevel": 8,
+    "serverFirsts": []
+  }
+}

@@ -155,6 +155,7 @@ const GRANT_SOURCES: readonly unknown[] = [
   'festival',
   'expedition',
   'welcome',
+  'dungeon',
 ];
 
 function isGrantRecord(value: unknown): value is GrantRecord {
@@ -204,7 +205,7 @@ export function parseGearState(data: unknown): GearState {
     !isArrayOf(data['items'], isGearItem) ||
     !isPartCounts(data['parts']) ||
     !isArrayOf(data['blueprints'], isBlueprint) ||
-    !isArrayOf(data['jobs'], isJob) ||
+    !Array.isArray(data['jobs']) ||
     !isRecord(data['slots']) ||
     !isCount(data['slots']['total']) ||
     !isCount(data['slots']['used']) ||
@@ -213,7 +214,11 @@ export function parseGearState(data: unknown): GearState {
   ) {
     throw new Error('the server returned an unexpected gear view');
   }
-  return data as unknown as GearState;
+  // The Workshop does not show supply crafts yet (expeditions v2): they are left out of the list, so a
+  // supply job can neither break the view nor be mistaken for a gear job. The UI task adds them.
+  const jobs = data['jobs'].filter((job) => !(isRecord(job) && job['kind'] === 'supply'));
+  if (!isArrayOf(jobs, isJob)) throw new Error('the server returned an unexpected gear view');
+  return { ...data, jobs } as unknown as GearState;
 }
 
 export function parseEquipResult(value: unknown): EquipResult {

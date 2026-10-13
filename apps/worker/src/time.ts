@@ -94,6 +94,11 @@ export function zonedDate(epochMs: number, tz: string): string {
   return `${pad(p.year, 4)}-${pad(p.month, 2)}-${pad(p.day, 2)}`;
 }
 
+/** The local hour (0 to 23) of an instant in the given time zone. DST-safe: the zone's own rules decide. */
+export function zonedHour(epochMs: number, tz: string): number {
+  return localParts(epochMs, tz).hour;
+}
+
 /** Offset of the zone from UTC at an instant, in ms (local wall clock minus UTC). Whole seconds. */
 function offsetAt(epochMs: number, tz: string): number {
   const p = localParts(epochMs, tz);

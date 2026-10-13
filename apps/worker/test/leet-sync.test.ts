@@ -24,6 +24,7 @@ import {
   runCore,
   tokenFor,
   undoRaidMigration,
+  LATEST_SCHEMA_VERSION,
 } from './helpers';
 
 const MINUTE = 60_000;
@@ -1052,7 +1053,7 @@ describe('leet sync status', () => {
         ]);
         expect(
           sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
-        ).toBe(18);
+        ).toBe(LATEST_SCHEMA_VERSION);
         expect(syncState(sql)[0]?.cursor).toBe('kept');
         expect(core.leetSyncStatus()).toMatchObject({
           lastAttemptAt: null,
