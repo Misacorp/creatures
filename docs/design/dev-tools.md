@@ -1,6 +1,6 @@
 # Dev tools: a debug panel for every view (staging only)
 
-Status: **server side shipped 2026-10-13**: the gate, the dev clock and every tool in the table below, as `/api/dev/*` routes (see "Dev tools: the gate, the dev clock and where forced state lives" in `decisions.md`). **Still to do:** the client panel (the lazy chunk, the Vite define that strips it from production, the build-time test that greps `dist/`) and the local-flags reset. Limits: the clock only moves forward (plus a reset to zero), simulated raid players are auto-placed rather than placed by hand, and "trigger rollup now" answers 501 until the analytics rollup exists. Plan written 2026-10-13. Misa: "improve dev tooling in the dev app: running simulated raids, sped up expeditions, setting dungeon rank, raid boss difficulty tier, etc. Basically a debug panel into every view that lets me set the game into a desired state for testing. This needs to be strictly in the dev environment."
+Status: **shipped 2026-10-13**: the server side (the gate, the dev clock and every tool in the table below, as `/api/dev/*` routes; see "Dev tools: the gate, the dev clock and where forced state lives" in `decisions.md`) and the client panel (`apps/activity/src/dev/`, see "Dev tools: the client panel" in `decisions.md`). Limits: the clock only moves forward (plus a reset to zero), simulated raid players are auto-placed rather than placed by hand, and the Analytics "roll up now" tool answers 501 until the rollup hook is wired. Plan written 2026-10-13. Misa: "improve dev tooling in the dev app: running simulated raids, sped up expeditions, setting dungeon rank, raid boss difficulty tier, etc. Basically a debug panel into every view that lets me set the game into a desired state for testing. This needs to be strictly in the dev environment."
 
 ## Safety (non-negotiable)
 
@@ -47,3 +47,17 @@ A floating "DEV" button opens a drawer with a section per view and shared contro
 - Each tool's state change works.
 - The dev clock moves expeditions, jobs, the dungeon day and raid phases correctly.
 - The production bundle contains no panel code: a build-time test greps `dist/` for a marker.
+
+## How to test with the dev panel
+
+The panel exists only on staging (`creatures-staging.misacorp.dev`, any non-`main` branch). Production has neither the routes nor the panel code.
+
+1. Open the Activity on staging. A small orange **DEV** button sits at the bottom right. Tap it to open the drawer; **Close** shuts it.
+2. At the top is the **Dev clock**: it shows the game time, the game day, how far the clock is shifted and the raid week. Use +1 h, +6 h, +1 day, Next 13:37 or Next phase to move time forward (expeditions, jobs, the daily reset and raid phases follow). Reset clock puts it back to real time. The clock never goes back; use Reset clock and set the state you need again.
+3. The section for the tab you are on opens first (Creatures, Workshop, Expeditions, Dungeon or Raid); the others are folded. Fill in a form and tap **Apply**; the result or the error code shows at the top of the drawer, and the screen reloads so the change shows at once. A field left empty means "leave as it is".
+4. **Bait, parts, supplies, blueprints** (folded, at the top) sets Bait and Essence and grants goods.
+5. **This browser and my account**: _Reset local flags_ makes the Raid tab's tag hint and the slot-wipe notice show again. _Reset my account_ deletes your data on this server (creatures, gear, trips, raid, dungeon, and so the welcome kit comes back); type `RESET` to enable it.
+6. **Analytics** lists the last 50 events this server wrote (dev actions are logged as `dev_action`) and has Roll up now.
+7. Nothing else is needed: the panel uses your normal session, so it only changes your own player and your own server.
+
+How the panel is kept out of production: `apps/activity/vite.config.ts` sets `__DEV_TOOLS_BUILD__` to true only for the dev server, tests and a build with `TARGET_ENV=staging` (the deploy job already sets that). Otherwise the dynamic `import()` in `src/dev-gate.ts` is dead code and the chunk is not built. `src/dev-build.test.ts` builds both ways and searches the output for the panel's marker string.
