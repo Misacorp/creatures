@@ -267,6 +267,119 @@ export const RULES = {
     /** Creature level at which a species' finale ability unlocks. */
     unlockLevel: 10,
   },
+  /**
+   * Gear and crafting v1 (docs/design/gear.md). Starting values, to be tuned by the simulator. All
+   * amounts are integers: percentages and crit points are basis points. Gear never reaches the engine:
+   * `applyGear` folds it into a creature's stats and crit bonus before the fight, with the caps below
+   * (and the engine's own crit caps still apply on top).
+   */
+  gear: {
+    /** Upgrade levels: +0 to +5. */
+    maxLevel: 5,
+    /** Items one player can own (items in the bag plus crafts still in the workshop). */
+    inventoryCap: 60,
+    /** Jobs one player can run at the same time. */
+    workshopSlots: 2,
+    /** Per rarity: the multiplier (basis points) on the primary roll, and how many secondaries it has. */
+    rarity: {
+      common: { primaryBp: 10_000, secondaries: 0 },
+      rare: { primaryBp: 12_500, secondaries: 1 },
+      epic: { primaryBp: 15_000, secondaries: 2 },
+      // Festival gear has epic power and a look of its own.
+      festival: { primaryBp: 15_000, secondaries: 2 },
+    },
+    /** Roll ranges (inclusive, basis points) per stat: the primary stat of an item and its secondaries. */
+    rolls: {
+      primary: {
+        atk: { min: 300, max: 500 },
+        hp: { min: 400, max: 700 },
+        spd: { min: 200, max: 400 },
+        critChance: { min: 100, max: 200 },
+        critDamage: { min: 500, max: 900 },
+      },
+      secondary: {
+        atk: { min: 100, max: 250 },
+        hp: { min: 150, max: 350 },
+        spd: { min: 100, max: 200 },
+        critChance: { min: 50, max: 100 },
+        critDamage: { min: 200, max: 400 },
+      },
+    },
+    /** What each upgrade level adds to the primary stat (basis points). */
+    upgradeStepBp: { atk: 80, hp: 100, spd: 50, critChance: 25, critDamage: 150 },
+    /**
+     * Total bonus caps per creature (basis points): Attack +20%, HP +25%, speed +10%, crit chance
+     * +5 points and crit damage +25 points. The engine's crit caps (`combat.luck`) still apply.
+     */
+    caps: { atk: 2_000, hp: 2_500, spd: 1_000, critChance: 500, critDamage: 2_500 },
+    /**
+     * Upgrade price from level L to L+1 (index L): Essence and scrap, times the rarity's multiplier
+     * (basis points). Upgrades never fail.
+     */
+    upgrade: {
+      essence: [20, 30, 45, 65, 90],
+      scrap: [2, 3, 5, 8, 12],
+      multiplierBp: { common: 10_000, rare: 15_000, epic: 20_000, festival: 20_000 },
+      /** Share of the scrap spent on upgrades that dismantling returns (basis points). */
+      refundBp: 5_000,
+    },
+    /** What dismantling returns, by rarity (a shard is of the item's tint; neutral items give none). */
+    dismantle: {
+      scrap: { common: 2, rare: 5, epic: 10, festival: 10 },
+      shard: { common: 0, rare: 1, epic: 2, festival: 2 },
+      glimmer: { common: 0, rare: 0, epic: 1, festival: 1 },
+    },
+    /** What crafting from a blueprint costs, by the blueprint's rarity (a shard is of the base's tint). */
+    craft: {
+      common: { scrap: 6, shard: 0, glimmer: 0 },
+      rare: { scrap: 12, shard: 1, glimmer: 0 },
+      epic: { scrap: 24, shard: 2, glimmer: 1 },
+      festival: { scrap: 24, shard: 2, glimmer: 2 },
+    },
+    /** Improve (re-roll one secondary) costs scrap by the item's rarity. */
+    improve: { scrap: { rare: 6, epic: 12, festival: 12 } },
+    /** Enchanting costs glimmer and shards (of the enchant's element). */
+    enchant: { glimmer: 1, shard: 3 },
+    /** Job durations in hours before the crafting skill; the craft time follows the blueprint. */
+    jobHours: { craft: { common: 4, rare: 8, epic: 12, festival: 12 }, improve: 2, enchant: 6 },
+    skill: {
+      /** Total XP to reach each level (index 0 is level 1). XP per job is its nominal hours x `xpPerHour`. */
+      xpForLevel: [0, 80, 200, 380, 600, 900, 1_300, 1_800, 2_500, 3_500],
+      xpPerHour: 10,
+      /** Each level above 1 shortens jobs by this much and adds this chance of a rarity up on a craft (basis points). */
+      timeReductionBpPerLevel: 300,
+      rarityUpBpPerLevel: 100,
+    },
+    drops: {
+      /**
+       * Finale win, one roll per participant. Rare and epic chances start at these values at Boss
+       * Rank 1, grow by `perRankBp` for every rank above 1 and stop at `maxBp`; the rest is common.
+       */
+      finale: {
+        baseBp: { rare: 2_200, epic: 300 },
+        perRankBp: { rare: 250, epic: 150 },
+        maxBp: { rare: 5_000, epic: 2_500 },
+      },
+      /** Scrap for every participant of a cleared phase 1 or 2. */
+      phaseScrap: { phase1: 3, phase2: 4 },
+      expedition: {
+        /** Scrap for a completed trip (a recalled trip pays the share of it that was brought back). */
+        scrap: { short: 1, medium: 3, long: 6 },
+        /** Chance (basis points) of one shard of the explorer's element, on a completed trip. */
+        shardBp: { short: 1_500, medium: 3_000, long: 5_000 },
+        /** Chance of one glimmer. */
+        glimmerBp: { short: 0, medium: 0, long: 500 },
+        /** Chance of a blueprint. */
+        blueprintBp: { short: 0, medium: 0, long: 1_000 },
+      },
+      /** Rarity odds (basis points) of a dropped blueprint; the base is picked evenly among that rarity. */
+      blueprintOddsBp: { common: 6_000, rare: 3_500, epic: 500 },
+      /** A blueprint the player already knows turns into this much scrap. */
+      duplicateBlueprintScrap: 5,
+      /** The welcome kit: one common item, one common blueprint and this much scrap. */
+      welcomeScrap: 8,
+    },
+  },
   nickname: {
     maxCodePoints: 20,
     /** Inputs longer than this (UTF-16 units) are refused before any normalisation work. */

@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
+  GEAR_RARITIES,
+  GEAR_STATS,
   GLOSSARY_IDS,
+  JOB_KINDS,
+  PART_KINDS,
   GLOSSARY_SECTIONS,
   RULES,
   abilityView,
   content,
   glossary,
   glossaryEntry,
+  gearContent,
   glossaryGaps,
   howToPlay,
   loadGlossary,
@@ -397,5 +402,107 @@ describe('the How to play text', () => {
     const missing = raw();
     missing.sections.pop();
     expect(() => loadHowToPlay(missing, content)).toThrow(/schema/);
+  });
+});
+
+describe('the glossary covers gear and crafting', () => {
+  it('has an entry for every gear stat, rarity, part, enchant, job kind and the Crafting skill', () => {
+    for (const stat of GEAR_STATS)
+      expect(glossaryEntry(GLOSSARY_IDS.gearStat(stat)), stat).toBeDefined();
+    for (const rarity of GEAR_RARITIES) {
+      expect(glossaryEntry(GLOSSARY_IDS.gearRarity(rarity)), rarity).toBeDefined();
+    }
+    for (const kind of PART_KINDS)
+      expect(glossaryEntry(GLOSSARY_IDS.part(kind)), kind).toBeDefined();
+    for (const e of gearContent.enchants) {
+      expect(glossaryEntry(GLOSSARY_IDS.enchant(e.id)), e.id).toBeDefined();
+    }
+    for (const kind of JOB_KINDS) expect(glossaryEntry(GLOSSARY_IDS.job(kind)), kind).toBeDefined();
+    for (const id of [GLOSSARY_IDS.skill('crafting'), 'gear', 'workshop', 'blueprint']) {
+      expect(glossaryEntry(id), id).toBeDefined();
+    }
+  });
+
+  it('fails when a new gear stat, part, enchant or job kind has no entry', () => {
+    const without = (id: string): GlossaryEntry[] => glossary.filter((e) => e.id !== id);
+    for (const id of [
+      'gear-stat-crit-chance',
+      'gear-rarity-festival',
+      'part-glimmer',
+      'part-tide-shard',
+      'enchant-spark-luck',
+      'job-enchant',
+      'skill-crafting',
+      'workshop',
+    ]) {
+      expect(glossaryGaps(without(id)), id).toEqual([id]);
+    }
+    expect(requiredGlossaryIds(content)).toContain('gear-stat-crit-damage');
+  });
+
+  it('gives gear the numbers the rules have', () => {
+    const caps = RULES.gear.caps;
+    expect(text('gear-stat-atk')).toContain(`${percent(caps.atk)} Attack`);
+    expect(text('gear-stat-hp')).toContain(`${percent(caps.hp)} HP`);
+    expect(text('gear-stat-spd')).toContain(percent(caps.spd));
+    expect(text('gear-stat-crit-chance')).toContain(`${String(caps.critChance / 100)} points`);
+    expect(text('gear-stat-crit-chance')).toContain(percent(RULES.combat.luck.critChanceBp));
+    expect(text('gear-stat-crit-chance')).toContain(percent(RULES.combat.luck.critMaxChanceBp));
+    expect(text('gear-stat-crit-damage')).toContain(`${String(caps.critDamage / 100)} points`);
+    expect(text('gear-stat-crit-damage')).toContain(percent(RULES.combat.luck.critBp));
+    expect(text('gear-stat-crit-damage')).toContain(percent(RULES.combat.luck.critMaxBp));
+    expect(text('gear-rarity-rare')).toContain(percent(RULES.gear.rarity.rare.primaryBp - 10_000));
+    expect(text('gear-rarity-epic')).toContain(percent(RULES.gear.rarity.epic.primaryBp - 10_000));
+    expect(RULES.gear.rarity.festival).toEqual(RULES.gear.rarity.epic);
+    expect(text('workshop')).toContain(`${String(RULES.gear.workshopSlots)} jobs`);
+    expect(text('blueprint')).toContain(
+      `${String(RULES.gear.drops.duplicateBlueprintScrap)} scrap`,
+    );
+    const hours = RULES.gear.jobHours;
+    expect(text('job-craft')).toContain(
+      `${String(hours.craft.common)} hours for Common, ${String(hours.craft.rare)} for Rare and ${String(hours.craft.epic)}`,
+    );
+    expect(text('job-improve')).toContain(`${String(hours.improve)} hours`);
+    expect(text('job-enchant')).toContain(`${String(hours.enchant)} hours`);
+    expect(text('skill-crafting')).toContain(
+      `${percent(RULES.gear.skill.timeReductionBpPerLevel)} shorter`,
+    );
+    expect(text('skill-crafting')).toContain(
+      `${percent(RULES.gear.skill.rarityUpBpPerLevel)} chance`,
+    );
+  });
+
+  it('describes each enchant with its own amount, who it works for and its cost', () => {
+    const statName = {
+      atk: 'Attack',
+      hp: 'HP',
+      spd: 'speed',
+      critChance: 'crit',
+      critDamage: 'crit',
+    };
+    for (const e of gearContent.enchants) {
+      const entry = glossaryEntry(GLOSSARY_IDS.enchant(e.id));
+      expect(entry?.title).toBe(e.name);
+      const all = text(GLOSSARY_IDS.enchant(e.id));
+      expect(all).toContain(statName[e.stat]);
+      const amount =
+        e.stat === 'critChance' || e.stat === 'critDamage'
+          ? `${String(e.bp / 100)} points`
+          : percent(e.bp);
+      expect(all).toContain(amount);
+      expect(all).toContain(`${String(RULES.gear.enchant.glimmer)} glimmer`);
+      expect(all).toContain(
+        `${String(RULES.gear.enchant.shard)} ${e.shard[0]?.toUpperCase() ?? ''}${e.shard.slice(1)} shards`,
+      );
+      if (e.when === undefined) expect(all).toContain('every creature');
+      else if ('role' in e.when) expect(all.toLowerCase()).toContain(e.when.role);
+      else expect(all.toLowerCase()).toContain(e.when.element);
+    }
+  });
+
+  it('shows an element picture on each shard entry', () => {
+    for (const el of ['tide', 'ember', 'grove', 'spark']) {
+      expect(entry(GLOSSARY_IDS.part(`${el}-shard`)).visual).toEqual({ kind: 'element', id: el });
+    }
   });
 });

@@ -734,5 +734,313 @@
       "id": "sparkle"
     },
     "section": "rewards"
+  },
+  {
+    "id": "gear",
+    "title": "Gear",
+    "short": "One item per creature, worn into every fight.",
+    "lines": [
+      "Gear adds to Attack, HP, speed and crits. What it adds in total is capped.",
+      "Upgrade an item from +0 to +5 with Essence and scrap. Upgrades never fail.",
+      "Dismantle an item to get parts back. This cannot be undone."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "workshop",
+    "title": "Workshop",
+    "short": "Your creatures work on jobs here, even while you are away.",
+    "lines": [
+      "You can run 2 jobs at once, and each job needs a creature.",
+      "A creature on a job cannot go on an expedition, and the other way round.",
+      "It still fights in raids."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "blueprint",
+    "title": "Blueprint",
+    "short": "Teaches you to craft one kind of item. Learned once.",
+    "lines": [
+      "Blueprints come from long expeditions and the welcome kit.",
+      "A blueprint you already know turns into 5 scrap."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "gear-stat-atk",
+    "title": "Attack bonus",
+    "short": "Adds a percentage to a creature's Attack.",
+    "lines": ["Gear adds at most 20% Attack to one creature, however many bonuses it has."],
+    "section": "rewards"
+  },
+  {
+    "id": "gear-stat-hp",
+    "title": "HP bonus",
+    "short": "Adds a percentage to a creature's HP.",
+    "lines": ["Gear adds at most 25% HP to one creature, however many bonuses it has."],
+    "section": "rewards"
+  },
+  {
+    "id": "gear-stat-spd",
+    "title": "Speed bonus",
+    "short": "Adds a percentage to a creature's speed.",
+    "lines": [
+      "Speed decides who acts first against a boss that goes by speed.",
+      "Gear adds at most 10% speed to one creature."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "gear-stat-crit-chance",
+    "title": "Crit chance bonus",
+    "short": "Adds points to the chance of a critical hit.",
+    "lines": [
+      "A creature starts at 5%, and the game caps any creature at 30%.",
+      "Gear adds at most 5 points."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "gear-stat-crit-damage",
+    "title": "Crit damage bonus",
+    "short": "Adds points to the extra damage of a critical hit.",
+    "lines": [
+      "A critical hit adds 50% damage to start with, and the game caps it at 150%.",
+      "Gear adds at most 25 points."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "gear-rarity-common",
+    "title": "Common gear",
+    "short": "A main stat and nothing else.",
+    "lines": ["Common gear is easy to find and cheap to upgrade."],
+    "section": "rewards"
+  },
+  {
+    "id": "gear-rarity-rare",
+    "title": "Rare gear",
+    "short": "A stronger main stat and one extra stat.",
+    "lines": [
+      "Its main stat roll is 25% higher than Common.",
+      "Rare gear costs more to upgrade and can be improved."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "gear-rarity-epic",
+    "title": "Epic gear",
+    "short": "A much stronger main stat and two extra stats.",
+    "lines": [
+      "Its main stat roll is 50% higher than Common.",
+      "Dismantling Epic gear can give glimmer."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "gear-rarity-festival",
+    "title": "Festival gear",
+    "short": "Epic power with a look of its own.",
+    "lines": [
+      "Won by clearing a Festival finale, and crafted only from Festival blueprints.",
+      "It has no extra power over Epic gear."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "part-scrap",
+    "title": "Scrap",
+    "short": "Generic parts. They pay for upgrades, crafting and improving.",
+    "lines": ["Found by dismantling gear, on expeditions and in cleared raid phases."],
+    "section": "rewards"
+  },
+  {
+    "id": "part-tide-shard",
+    "title": "Tide Shard",
+    "short": "A shard of Tide. It pays for Tide crafts and enchants.",
+    "lines": ["Found on expeditions with a Tide explorer, and by dismantling Tide gear."],
+    "visual": {
+      "kind": "element",
+      "id": "tide"
+    },
+    "section": "rewards"
+  },
+  {
+    "id": "part-ember-shard",
+    "title": "Ember Shard",
+    "short": "A shard of Ember. It pays for Ember crafts and enchants.",
+    "lines": ["Found on expeditions with a Ember explorer, and by dismantling Ember gear."],
+    "visual": {
+      "kind": "element",
+      "id": "ember"
+    },
+    "section": "rewards"
+  },
+  {
+    "id": "part-grove-shard",
+    "title": "Grove Shard",
+    "short": "A shard of Grove. It pays for Grove crafts and enchants.",
+    "lines": ["Found on expeditions with a Grove explorer, and by dismantling Grove gear."],
+    "visual": {
+      "kind": "element",
+      "id": "grove"
+    },
+    "section": "rewards"
+  },
+  {
+    "id": "part-spark-shard",
+    "title": "Spark Shard",
+    "short": "A shard of Spark. It pays for Spark crafts and enchants.",
+    "lines": ["Found on expeditions with a Spark explorer, and by dismantling Spark gear."],
+    "visual": {
+      "kind": "element",
+      "id": "spark"
+    },
+    "section": "rewards"
+  },
+  {
+    "id": "part-glimmer",
+    "title": "Glimmer",
+    "short": "A rare part. It pays for Epic crafts and every enchant.",
+    "lines": ["Found by dismantling Epic gear, and rarely on 12 hour expeditions."],
+    "section": "rewards"
+  },
+  {
+    "id": "enchant-payoffs-edge",
+    "title": "Payoff's Edge",
+    "short": "+6% Attack for a Payoff.",
+    "lines": [
+      "Only works for a Payoff.",
+      "Costs 1 glimmer and 3 Ember shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "enchant-guards-bulwark",
+    "title": "Guard's Bulwark",
+    "short": "+8% HP for a Guard.",
+    "lines": [
+      "Only works for a Guard.",
+      "Costs 1 glimmer and 3 Grove shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "enchant-setters-wit",
+    "title": "Setter's Wit",
+    "short": "+5% speed for a Setter.",
+    "lines": [
+      "Only works for a Setter.",
+      "Costs 1 glimmer and 3 Tide shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "enchant-supports-grace",
+    "title": "Support's Grace",
+    "short": "+6% HP for a Support.",
+    "lines": [
+      "Only works for a Support.",
+      "Costs 1 glimmer and 3 Spark shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "enchant-spark-luck",
+    "title": "Spark Luck",
+    "short": "+3 points crit chance for Spark creatures.",
+    "lines": [
+      "Only works for Spark creatures.",
+      "Costs 1 glimmer and 3 Spark shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "enchant-ember-fury",
+    "title": "Ember Fury",
+    "short": "+10 points crit damage for Ember creatures.",
+    "lines": [
+      "Only works for Ember creatures.",
+      "Costs 1 glimmer and 3 Ember shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "enchant-tide-flow",
+    "title": "Tide Flow",
+    "short": "+4% speed for Tide creatures.",
+    "lines": [
+      "Only works for Tide creatures.",
+      "Costs 1 glimmer and 3 Tide shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "enchant-grove-hide",
+    "title": "Grove Hide",
+    "short": "+7% HP for Grove creatures.",
+    "lines": [
+      "Only works for Grove creatures.",
+      "Costs 1 glimmer and 3 Grove shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "enchant-steady-hand",
+    "title": "Steady Hand",
+    "short": "+3% Attack.",
+    "lines": [
+      "Works for every creature.",
+      "Costs 1 glimmer and 3 Tide shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "job-craft",
+    "title": "Craft",
+    "short": "Makes a new item from a blueprint you know.",
+    "lines": [
+      "Takes 4 hours for Common, 8 for Rare and 12 for Epic or Festival.",
+      "The parts are paid when the job starts. The item is rolled when you claim it."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "job-improve",
+    "title": "Improve",
+    "short": "Re-rolls one extra stat of an item, for scrap.",
+    "lines": [
+      "Takes 2 hours. Needs a Rare or better item.",
+      "The new stat can be better or worse. Claim it to see."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "job-enchant",
+    "title": "Enchant",
+    "short": "Adds an enchant to an item.",
+    "lines": ["Takes 6 hours. Costs glimmer and shards.", "A new enchant replaces the old one."],
+    "section": "rewards"
+  },
+  {
+    "id": "skill-crafting",
+    "title": "Crafting skill",
+    "short": "Grows slowly each time a creature finishes a job.",
+    "lines": [
+      "Each level above 1 makes jobs 3% shorter and adds 1% chance of a better craft.",
+      "It levels slowly: about level 5 after a month of steady work.",
+      "It never changes how a creature fights."
+    ],
+    "section": "rewards"
   }
 ]

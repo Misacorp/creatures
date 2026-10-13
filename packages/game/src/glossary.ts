@@ -4,6 +4,8 @@
  * check that makes a piece of content without a glossary entry a test failure.
  */
 import { content } from './content';
+import { gearContent } from './content/gear';
+import { GEAR_RARITIES, GEAR_STATS } from './content/gear-schema';
 import glossaryJson from './content/data/glossary.json';
 import howToPlayJson from './content/data/how-to-play.json';
 import {
@@ -23,6 +25,7 @@ import {
   type ContentPack,
   type FinaleAbilityDef,
 } from './content/schema';
+import { JOB_KINDS, PART_KINDS } from './rules/gear';
 import { READINESS_BANDS } from './rules/progression';
 
 export const glossary: Glossary = loadGlossary(glossaryJson, content);
@@ -36,6 +39,8 @@ export function glossaryEntry(id: string): GlossaryEntry | undefined {
 }
 
 const kebab = (id: string): string => id.replaceAll('_', '-');
+/** `critChance` as `crit-chance`. */
+const kebabCamel = (id: string): string => id.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 
 /**
  * The glossary id of each kind of content. Elements, roles and so on use the content's own ids, so
@@ -56,6 +61,17 @@ export const GLOSSARY_IDS = {
   readiness: (band: string): string => `readiness-${kebab(band)}`,
   /** The kind of effect an ability has, such as `shield_wall`. */
   abilityEffect: (op: string): string => `ability-${kebab(op)}`,
+  /** A gear stat such as `critChance`. */
+  gearStat: (stat: string): string => `gear-stat-${kebabCamel(stat)}`,
+  /** A gear rarity such as `festival`. */
+  gearRarity: (rarity: string): string => `gear-rarity-${rarity}`,
+  /** A part kind such as `tide-shard`. */
+  part: (kind: string): string => `part-${kind}`,
+  enchant: (id: string): string => `enchant-${id}`,
+  /** A workshop job kind such as `craft`. */
+  job: (kind: string): string => `job-${kind}`,
+  /** A skill; there is one, `crafting`. */
+  skill: (skill: string): string => `skill-${skill}`,
 } as const;
 
 /** Entries that are not tied to one piece of content: the game's own words. */
@@ -78,6 +94,9 @@ export const FIXED_GLOSSARY_IDS = [
   'shiny',
   'away',
   'first-on-server',
+  'gear',
+  'workshop',
+  'blueprint',
 ] as const;
 
 /** What a popover shows. An entry is one; an ability is built from its content (`abilityView`). */
@@ -156,6 +175,13 @@ export function requiredGlossaryIds(pack: ContentPack): string[] {
   for (const a of pack.finaleAbilities) for (const e of a.effects) effects.add(e.op);
   for (const op of effects) ids.push(GLOSSARY_IDS.abilityEffect(op));
   for (const a of pack.finaleAbilities) ids.push(...abilityEntryIds(a));
+  // Gear: every stat, rarity, part kind, enchant and job kind the rules know, and the Crafting skill.
+  for (const stat of GEAR_STATS) ids.push(GLOSSARY_IDS.gearStat(stat));
+  for (const rarity of GEAR_RARITIES) ids.push(GLOSSARY_IDS.gearRarity(rarity));
+  for (const kind of PART_KINDS) ids.push(GLOSSARY_IDS.part(kind));
+  for (const enchant of gearContent.enchants) ids.push(GLOSSARY_IDS.enchant(enchant.id));
+  for (const kind of JOB_KINDS) ids.push(GLOSSARY_IDS.job(kind));
+  ids.push(GLOSSARY_IDS.skill('crafting'));
   ids.push(...FIXED_GLOSSARY_IDS);
   return [...new Set(ids)];
 }
