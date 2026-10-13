@@ -16,18 +16,17 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
 
 ## Now
 
-- Production runs PR #8 (`d4b3191`). First ranked week started 2026-10-12; first Festival five weeks later. Misa runs a multiplayer raid test this coming weekend.
-- Plans written on branch `plans` (2026-10-13): `docs/roadmap.md` plus `docs/design/{analytics,how-to-play,daily-dungeon,gear,expeditions-v2}.md`.
+- Production runs PR #9 (How to play, gear and crafting v1, analytics event log; merged 2026-10-13).
+- Branch `dungeon` (combined PR, 2026-10-13): the daily dungeon (single row), expeditions v2 (creature explorer ranks, destinations as banner cards, supplies, push-on choices, Journal, profile, 1-slot restart), the combined balance pass (47 of 47 sim targets on `leet`), the tab order Creatures · Workshop · Expeditions · Dungeon · Raid, the Jersey 10 pixel font, the 13:37 daily reset, and the small-creature popover.
 
 ## Next
 
-Follow `docs/roadmap.md` (reordered 2026-10-13): 1 how to play + clickable tags (with the analytics event log and a beta superscript), 2 gear and crafting, 3 expeditions v2 (Misa commenting), 4 daily dungeon, 5 analytics reports, 6 polish backlog, 7 upkeep, 8 WebSocket push, 9 content, 10 swap requests.
+Follow `docs/roadmap.md`: after the combined PR, 5 analytics reports (rollups, ops endpoint, report workflow, `OPS_TOKEN` checklist for Misa), 6 polish backlog, 7 upkeep, 8 WebSocket push, 9 content, 10 swap requests.
 
 ## Open questions for Misa
 
-- Expeditions v2: Misa is commenting in the shared doc `https://claude.ai/code/artifact/40f1a5e0-df40-4d61-8e04-154751c36f48` (docs connector; read its comments with the docs tools, then update `docs/design/expeditions-v2.md`).
-- Daily dungeon: attempts per day, leaderboards.
-- Gear: one or two slots; jobs and expeditions as one shared busy state or separate; how many crafting skills.
+- Dungeon: leaderboards or bragging posts (not built). Depth 1 is slightly hard on one sim seed (78.6% first-week clear against 80%): make depth 1 gentler?
+- Gear: a second slot later? Crafted items never beat drops today.
 - Analytics: add the `OPS_TOKEN` secret when the report workflow lands (checklist will follow).
 
 ## Notes for future agents
