@@ -1,3 +1,5 @@
+import { isGrantLoot } from './gear-parse';
+import type { CreatureGearFields, GrantLoot } from './gear-types';
 import { createReauth, type Reauth } from './reauth';
 
 export interface AppConfig {
@@ -247,7 +249,7 @@ export async function fetchLedger(limit: number): Promise<LedgerEntry[]> {
 export type DurationId = 'short' | 'medium' | 'long';
 export type SuppliesId = 'basic' | 'good' | 'great';
 
-export interface Creature {
+export interface Creature extends CreatureGearFields {
   id: string;
   species: string;
   line: string;
@@ -287,6 +289,8 @@ export interface CatchResult {
 export interface ClaimResult {
   recalled: boolean;
   catches: CatchResult[];
+  /** Parts, gear and blueprints the trip brought home; absent on a trip claimed before gear existed. */
+  loot?: GrantLoot;
 }
 
 export interface Expedition {
@@ -346,10 +350,34 @@ function isCreatureAbility(value: unknown): value is CreatureAbility {
   );
 }
 
+function isCreatureGear(value: unknown): value is CreatureGearFields['gear'] {
+  return (
+    value === null ||
+    (isRecord(value) &&
+      isStr(value['id']) &&
+      isStr(value['baseId']) &&
+      isStr(value['rarity']) &&
+      isInt(value['level']) &&
+      (value['enchantId'] === null || isStr(value['enchantId'])))
+  );
+}
+
+function isBusy(value: unknown): value is CreatureGearFields['busy'] {
+  return (
+    value === null ||
+    (isRecord(value) &&
+      (value['kind'] === 'expedition' || value['kind'] === 'job') &&
+      isStr(value['id']))
+  );
+}
+
 function isCreature(value: unknown): value is Creature {
   if (!isRecord(value)) return false;
   const evolution = value['evolution'];
   return (
+    isStats(value['statsWithGear']) &&
+    isCreatureGear(value['gear']) &&
+    isBusy(value['busy']) &&
     isStr(value['id']) &&
     isStr(value['species']) &&
     isStr(value['line']) &&
@@ -391,7 +419,8 @@ function isClaimResult(value: unknown): value is ClaimResult {
     isRecord(value) &&
     typeof value['recalled'] === 'boolean' &&
     Array.isArray(value['catches']) &&
-    value['catches'].every(isCatch)
+    value['catches'].every(isCatch) &&
+    (value['loot'] === undefined || isGrantLoot(value['loot']))
   );
 }
 
@@ -492,15 +521,19 @@ export async function startExpedition(input: {
   return stateFrom(await postJson('/api/expeditions', 'POST', input));
 }
 
-export async function claimExpedition(
-  expeditionId: string,
-): Promise<{ result: ClaimResult; state: GameState }> {
-  // Claiming is idempotent on the server (an expedition is claimed once), so it needs no key.
-  const data = await postJson(`/api/expeditions/${expeditionId}/claim`, 'POST', {});
+/** Checks the answer of an expedition claim: the result (with its loot) and the fresh collection. */
+export function parseClaimResponse(data: unknown): { result: ClaimResult; state: GameState } {
   if (!isRecord(data) || !isClaimResult(data['result'])) {
     throw new Error('the server returned an unexpected claim result');
   }
   return { result: data['result'], state: stateFrom(data) };
+}
+
+export async function claimExpedition(
+  expeditionId: string,
+): Promise<{ result: ClaimResult; state: GameState }> {
+  // Claiming is idempotent on the server (an expedition is claimed once), so it needs no key.
+  return parseClaimResponse(await postJson(`/api/expeditions/${expeditionId}/claim`, 'POST', {}));
 }
 
 export async function trainCreature(

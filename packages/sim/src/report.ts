@@ -43,6 +43,97 @@ function targetsTable(evaluation: readonly TargetResult[]): string {
   );
 }
 
+function gearSection(a: Analysis): string {
+  const parts: string[] = [];
+  parts.push(
+    'Gear power is the power the worn items add to the top 3 creatures (`applyGear`, floored like the fight slots), and the share is that power over the top-3 power (gear included). The "today" columns are the same sims and seeds played without gear.',
+  );
+  for (const id of ARCHETYPES) {
+    const rows = a.progression[id];
+    if (rows.length === 0) continue;
+    parts.push(`### ${ARCHETYPE_CONFIG[id].label}`);
+    parts.push(
+      table(
+        [
+          'Week',
+          'Gear power',
+          'Gear share',
+          'Upgrade levels (team)',
+          'Crafts claimed',
+          'Crafting level (best)',
+          'Essence spent on gear',
+          'Essence held',
+          'Scrap held',
+        ],
+        rows.map((r) => [
+          String(r.week),
+          num(r.gearPower),
+          pct(r.gearShare),
+          num(r.gearLevels),
+          num(r.crafted),
+          num(r.skillLevel),
+          num(r.essenceSpentGear, 0),
+          num(r.essence, 0),
+          num(r.scrap),
+        ]),
+      ),
+    );
+  }
+  if (a.gearComparison.length > 0) {
+    parts.push('### Daily players with gear and without (today)');
+    parts.push(
+      table(
+        ['Week', 'Essence held', 'Essence held today', 'Top-3 power', 'Top-3 power today'],
+        a.gearComparison.map((r) => [
+          String(r.week),
+          num(r.essenceWithGear, 0),
+          num(r.essenceToday, 0),
+          num(r.top3PowerWithGear, 0),
+          num(r.top3PowerToday, 0),
+        ]),
+      ),
+    );
+  }
+  if (a.worn.length > 0) {
+    parts.push(`### What the team wears (end of week ${String(a.worn[0]?.week ?? 0)})`);
+    parts.push(
+      table(
+        [
+          'Archetype',
+          'Common',
+          'Rare',
+          'Epic',
+          'Festival',
+          'Average level',
+          'Enchanted',
+          'Power added per item',
+          'Bag',
+          'Blueprints',
+          'Scrap',
+          'Shards',
+          'Glimmer',
+        ],
+        a.worn.map((r) => [
+          ARCHETYPE_CONFIG[r.archetype].label,
+          pct(r.rarity.common, 0),
+          pct(r.rarity.rare, 0),
+          pct(r.rarity.epic, 0),
+          pct(r.rarity.festival, 0),
+          num(r.level),
+          pct(r.enchanted, 0),
+          num(r.power),
+          num(r.bag),
+          num(r.blueprints),
+          num(r.scrap, 0),
+          num(r.shards, 0),
+          num(r.glimmer),
+        ]),
+      ),
+    );
+  }
+  return parts.join('\n\n');
+}
+
 function bossSection(a: Analysis): string {
   const parts: string[] = [];
   for (const boss of content.bosses) {
@@ -252,7 +343,10 @@ const POLICY_TEXT = `
 - **Boss Rank ladder (long-run servers):** a new server is placed once at its first raid week, a finale win in a normal week adds ${RULES.progression.winRankUp} rank, a loss changes nothing, every ${RULES.progression.seasonWeeks}th week of the global calendar is a Festival (boss ${RULES.progression.festivalEaseRanks} ranks lower, +${RULES.progression.festivalEssenceBp / 100}% Essence, a win grants each participant the season's Festival creature through the duplicate rules) and the rank eases ${RULES.progression.seasonResetRanks} after every Festival. Each long-run server starts at a random point of the 5-week calendar.
 - **Rewards:** Essence from \`essenceForStage\` for every cleared stage, weighted by the stage's contribution and scaled by the server's rank and the Festival bonus (\`essenceMultiplierBp\`). Jackpots from \`rollJackpot\` on a finale win. The pity counter advances only on a finale win without a jackpot; a lost finale changes nothing (soft pity from raid ${RULES.raid.jackpot.softPityFromRaid}, hard pity at raid ${RULES.raid.jackpot.hardPityRaid}).
 - **Evolution:** at level 15 (stage 1 level cap) when the player has the Essence from the content; the species switches to its stage 2 form and keeps its fusion count.
-- **Team power** = sum over the top 3 creatures of \`atk + hp / 10\`, using \`effectiveStats\` (fusion included).
+- **Team power** = sum over the top 3 creatures of \`atk + hp / 10\`, using \`effectiveStats\` (fusion and the worn gear included, like the worker's \`power\`).
+- **Gear drops** follow the worker: the welcome kit when a player joins (a Common item, a Common blueprint and scrap), phase scrap for every participant of a cleared Phase 1 or 2, one gear roll per participant of a won finale at the server's rank (and the Festival piece in a Festival week), and the loot of every claimed expedition (scrap, a shard, a glimmer, a blueprint; a blueprint the player knows is scrap). All rolls use the game's pure functions (\`rollFinaleDrop\`, \`rollFestivalDrop\`, \`expeditionLoot\`, \`rollWelcomeKit\`, \`rollGear\`) with a seeded stream of their own.
+- **Gear policy**, at every check-in after the claims: claim finished jobs; equip (the 3 strongest creatures by power without gear get the items, best pair first, an item scored by the Attack and HP it adds weighted by the creature's role: payoffs want Attack, guards HP); dismantle every unworn item that no job holds except the 2 best spares; upgrade the worn item that adds the most per Essence, as long as the Essence left covers the cheapest evolution a creature is within 3 levels of; then start jobs in the free workshop slots on creatures that are not exploring (the one with the most Crafting XP first): an enchant of a worn item if glimmer and shards allow, an improve of a worn item's speed or crit secondary (twice per item at most), else a craft of the best blueprint the parts pay for (higher rarity first, Attack or HP items first). Items fold into the fight slots with \`applyGear\`, caps included. A creature on a job does not explore (one busy state) but still fights.
+- **Time** for jobs: check-ins at 09:00 and 20:00 (casuals at 09:00 on their leet days); a job is claimed at the first check-in after \`jobDuration\` (the crafter's skill included) has passed.
 - **Typical group:** a raid week with 5 to 10 signed-up players, on rosters from the end of week 4 or 8.
 `.trim();
 
@@ -314,6 +408,7 @@ export function buildReportMarkdown(out: RunOutput): string {
     progressionSection(a),
     '',
   );
+  lines.push('## Gear and crafting', '', gearSection(a), '');
   lines.push('## Elements', '');
   lines.push(
     table(
@@ -427,6 +522,8 @@ export function buildReportJson(out: RunOutput): string {
     typicalByBoss: analysis.typicalByBoss,
     archetypeShares: analysis.archetypeShares,
     progression: analysis.progression,
+    gearComparison: analysis.gearComparison,
+    worn: analysis.worn,
     elements: analysis.elements,
     creatures: analysis.creatures,
     essence: analysis.essence,

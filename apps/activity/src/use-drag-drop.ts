@@ -15,6 +15,7 @@ import {
   type DragPhase,
   type Point,
 } from './dnd-core';
+import { startsOnTag } from './glossary-ui';
 import type { DropOutcome, DropTarget } from './raid-dnd';
 
 /** Pixels around each slot that still count as "on" it, so the small gaps are not dead zones. */
@@ -115,6 +116,8 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
 
   function startDrag(creatureId: string, event: PointerEvent): void {
     if (latest.current.disabled || !event.isPrimary) return;
+    // A glossary tag never starts a drag: it opens on a tap, like any button.
+    if (startsOnTag(event.target)) return;
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     teardown.current?.();
 

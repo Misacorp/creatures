@@ -9,3 +9,4 @@ export * from './loot';
 export * from './power';
 export * from './abilities';
 export * from './progression';
+export * from './gear';

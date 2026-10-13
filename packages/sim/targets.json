@@ -214,5 +214,53 @@
     "comparator": "max",
     "value": 0.1,
     "unit": "percent"
+  },
+  {
+    "id": "gear-share-week8",
+    "description": "Gear's share of a daily player's raid-team power at week 8 (median)",
+    "metric": "gear.dailyShareWeek8",
+    "comparator": "range",
+    "value": [0.1, 0.2],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-first-craft",
+    "description": "Days until a daily player's first crafted item arrives (90th percentile; a player who never crafts counts as 99)",
+    "metric": "gear.dailyFirstCraftDaysP90",
+    "comparator": "max",
+    "value": 7,
+    "unit": "number"
+  },
+  {
+    "id": "gear-essence-week12",
+    "description": "Essence held by daily players at week 12 minus the same sims without gear (today's value; must not be above it)",
+    "metric": "gear.dailyEssenceWeek12VsToday",
+    "comparator": "max",
+    "value": 0,
+    "unit": "number"
+  },
+  {
+    "id": "gear-essence-growth",
+    "description": "Weekly growth of daily players' Essence stockpile from week 8 to 12 minus today's growth (no runaway; negative means it falls)",
+    "metric": "gear.dailyEssenceGrowthVsToday",
+    "comparator": "max",
+    "value": 0,
+    "unit": "number"
+  },
+  {
+    "id": "gear-skill-day30",
+    "description": "Best Crafting skill level of a daily player 30 days after joining (median)",
+    "metric": "gear.dailyBestSkillDay30",
+    "comparator": "range",
+    "value": [4, 6],
+    "unit": "level"
+  },
+  {
+    "id": "gear-newcomer-catchup",
+    "description": "Gear power at week 8 of a player who joined in week 4, relative to the median daily player's",
+    "metric": "gear.newcomerCatchUpWeek8",
+    "comparator": "min",
+    "value": 0.6,
+    "unit": "percent"
   }
 ]

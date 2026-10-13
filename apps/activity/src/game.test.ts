@@ -4,6 +4,7 @@ import collectionState from './fixtures/collection-state.json';
 import { ApiError, parseGameState, type Creature } from './api';
 import { abilityDef } from './live';
 import {
+  catchBadgeTags,
   catchBadges,
   clockOffset,
   creatureAbilityText,
@@ -30,6 +31,9 @@ const creature: Creature = {
   away: false,
   quirk: 'hums-quietly',
   stats: { hp: 1, atk: 1, spd: 1 },
+  statsWithGear: { hp: 1, atk: 1, spd: 1 },
+  gear: null,
+  busy: null,
   trainCost: 15,
   ability: { id: 'tidal-mark', unlocked: false, unlockLevel: 10, nextId: 'tidal-mark-2' },
 };
@@ -78,6 +82,27 @@ describe('display helpers', () => {
       'New!',
       'Shiny!',
       'First on server!',
+    ]);
+  });
+
+  it('points each catch badge at the glossary entry that explains it', () => {
+    const base = { species: 'zipmouse', shiny: false, firstOnServer: false };
+    expect(catchBadgeTags({ ...base, outcome: 'new' })).toEqual([{ text: 'New!', entry: null }]);
+    expect(
+      catchBadgeTags({
+        ...base,
+        outcome: 'fused',
+        fusionCount: 2,
+        shiny: true,
+        firstOnServer: true,
+      }),
+    ).toEqual([
+      { text: 'Fused ★2', entry: 'fusion' },
+      { text: 'Shiny!', entry: 'shiny' },
+      { text: 'First on server!', entry: 'first-on-server' },
+    ]);
+    expect(catchBadgeTags({ ...base, outcome: 'converted', bait: 5 })).toEqual([
+      { text: '+5 Bait', entry: 'bait' },
     ]);
   });
 

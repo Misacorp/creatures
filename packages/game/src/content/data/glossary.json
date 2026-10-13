@@ -1,0 +1,1048 @@
+[
+  {
+    "id": "element-tide",
+    "title": "Tide",
+    "short": "Water. Strong against Ember.",
+    "lines": [
+      "Hits Ember bosses for 50% more damage.",
+      "Hits Spark bosses for 25% less damage.",
+      "Tide hits leave Soaked on the boss. Spark cashes it in."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "tide"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "element-ember",
+    "title": "Ember",
+    "short": "Fire. Strong against Grove.",
+    "lines": [
+      "Hits Grove bosses for 50% more damage.",
+      "Hits Tide bosses for 25% less damage.",
+      "Ember hits leave Scorched on the boss. Tide cashes it in."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "ember"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "element-grove",
+    "title": "Grove",
+    "short": "Plants. Strong against Spark.",
+    "lines": [
+      "Hits Spark bosses for 50% more damage.",
+      "Hits Ember bosses for 25% less damage.",
+      "Grove hits leave Overgrown on the boss. Ember cashes it in."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "grove"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "element-spark",
+    "title": "Spark",
+    "short": "Lightning. Strong against Tide.",
+    "lines": [
+      "Hits Tide bosses for 50% more damage.",
+      "Hits Grove bosses for 25% less damage.",
+      "Spark hits leave Charged on the boss. Grove cashes it in."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "spark"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "role-setter",
+    "title": "Setter",
+    "short": "Marks the boss for a combo.",
+    "lines": [
+      "Its hit leaves its element's mark on the boss.",
+      "It can swap a mark of another element.",
+      "Other roles only mark a boss that has no mark.",
+      "Act before the creature that cashes the mark in."
+    ],
+    "visual": {
+      "kind": "species",
+      "id": "splashet"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "role-payoff",
+    "title": "Payoff",
+    "short": "Hits reactions harder.",
+    "lines": [
+      "A Payoff that sets off a reaction deals 10% more.",
+      "Any role can set off a reaction. Payoffs do it best.",
+      "Put it after a Setter that leaves the right mark."
+    ],
+    "visual": {
+      "kind": "species",
+      "id": "cindle"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "role-guard",
+    "title": "Guard",
+    "short": "Tough. Takes hits for its zone.",
+    "lines": [
+      "Has 30% more HP than other roles.",
+      "A boss hit aimed at one creature goes to a Guard in the same zone.",
+      "Hits on a whole zone still reach everyone in it.",
+      "Best at the front, where the boss attacks first."
+    ],
+    "visual": {
+      "kind": "species",
+      "id": "sproutle"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "role-support",
+    "title": "Support",
+    "short": "Powers up its neighbours.",
+    "lines": [
+      "Each round it boosts the creatures right next to it.",
+      "Their next hit deals 15% more damage.",
+      "A knocked-out or silenced Support gives no boost.",
+      "Place it between your strongest hitters."
+    ],
+    "visual": {
+      "kind": "species",
+      "id": "ashmole"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "mark-soaked",
+    "title": "Soaked",
+    "short": "Tide's mark. Spark cashes it in.",
+    "lines": [
+      "Left on the boss by a Tide hit.",
+      "A Spark hit sets off Overload.",
+      "Only a Setter of another element can swap it.",
+      "It stays until it is cashed in or swapped."
+    ],
+    "visual": {
+      "kind": "mark",
+      "id": "tide"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "mark-charged",
+    "title": "Charged",
+    "short": "Spark's mark. Grove cashes it in.",
+    "lines": [
+      "Left on the boss by a Spark hit.",
+      "A Grove hit sets off Grounding.",
+      "Only a Setter of another element can swap it.",
+      "It stays until it is cashed in or swapped."
+    ],
+    "visual": {
+      "kind": "mark",
+      "id": "spark"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "mark-overgrown",
+    "title": "Overgrown",
+    "short": "Grove's mark. Ember cashes it in.",
+    "lines": [
+      "Left on the boss by a Grove hit.",
+      "A Ember hit sets off Wildfire.",
+      "Only a Setter of another element can swap it.",
+      "It stays until it is cashed in or swapped."
+    ],
+    "visual": {
+      "kind": "mark",
+      "id": "grove"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "mark-scorched",
+    "title": "Scorched",
+    "short": "Ember's mark. Tide cashes it in.",
+    "lines": [
+      "Left on the boss by a Ember hit.",
+      "A Tide hit sets off Steam.",
+      "Only a Setter of another element can swap it.",
+      "It stays until it is cashed in or swapped."
+    ],
+    "visual": {
+      "kind": "mark",
+      "id": "ember"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "reaction-overload",
+    "title": "Overload",
+    "short": "Spark on Soaked: 4.5 times damage.",
+    "lines": [
+      "A Spark hit on a Soaked boss sets it off.",
+      "It deals 4.5 times the normal damage.",
+      "It uses up the mark. The next hit leaves a new one.",
+      "Any role can set it off. Payoffs deal 10% more."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "overload"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "reaction-grounding",
+    "title": "Grounding",
+    "short": "Grove on Charged: 4.5 times damage.",
+    "lines": [
+      "A Grove hit on a Charged boss sets it off.",
+      "It deals 4.5 times the normal damage.",
+      "It uses up the mark. The next hit leaves a new one.",
+      "Any role can set it off. Payoffs deal 10% more."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "grounding"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "reaction-wildfire",
+    "title": "Wildfire",
+    "short": "Ember on Overgrown: 4.5 times damage.",
+    "lines": [
+      "A Ember hit on a Overgrown boss sets it off.",
+      "It deals 4.5 times the normal damage.",
+      "It uses up the mark. The next hit leaves a new one.",
+      "Any role can set it off. Payoffs deal 10% more."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "wildfire"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "reaction-steam",
+    "title": "Steam",
+    "short": "Tide on Scorched: 4.5 times damage.",
+    "lines": [
+      "A Tide hit on a Scorched boss sets it off.",
+      "It deals 4.5 times the normal damage.",
+      "It uses up the mark. The next hit leaves a new one.",
+      "Any role can set it off. Payoffs deal 10% more."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "steam"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "gimmick-hit-zone",
+    "title": "Zone attack",
+    "short": "Hits every creature in one zone.",
+    "lines": [
+      "Every living creature in that zone takes a hit.",
+      "A Guard cannot take it for the others.",
+      "A Shield Wall on that zone softens it.",
+      "The stage warns you one round ahead."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "hit_zone"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-silence-ends",
+    "title": "Silence",
+    "short": "The row's ends skip a turn.",
+    "lines": [
+      "The creatures at both ends of the row skip their next turn.",
+      "A silenced Support gives no boost.",
+      "Keep your best hitters away from the ends.",
+      "The stage warns you one round ahead."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "silence_ends"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-reflect-first-reaction",
+    "title": "Reflect",
+    "short": "Turns a reaction back on you.",
+    "lines": [
+      "The first reaction of the round hurts your creature, not the boss.",
+      "The boss only takes the normal hit. The mark is still used up.",
+      "Later reactions in the same round work as usual."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "reflect_first_reaction"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-strike-highest-atk",
+    "title": "Strongest strike",
+    "short": "Targets your top attacker.",
+    "lines": [
+      "Hits the living creature with the highest Attack.",
+      "A Guard in its zone takes the hit instead.",
+      "A Shield Wall on that zone softens it."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "strike_highest_atk"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "zone-front",
+    "title": "Front",
+    "short": "Closest to the boss. Hit first.",
+    "lines": [
+      "The row is split into a front, a middle and a back part.",
+      "The boss's normal attack hits the front first.",
+      "When the front is knocked out, it moves on to the middle.",
+      "Guards belong here."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "zone-middle",
+    "title": "Middle",
+    "short": "The rest of the row.",
+    "lines": [
+      "Front and back get a third of the row each.",
+      "The middle gets whatever is left.",
+      "A row of 1 or 2 creatures is all middle.",
+      "The boss hits it once the front is down."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "zone-back",
+    "title": "Back",
+    "short": "Farthest from the boss. Hit last.",
+    "lines": [
+      "The boss's normal attack reaches it last.",
+      "Zone attacks and tricks can still reach it.",
+      "Automatic placement puts Payoffs here."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "turn-left-to-right",
+    "title": "Left to right",
+    "short": "The row acts from slot 1 on.",
+    "lines": [
+      "Creatures act in slot order, slot 1 first.",
+      "Put Setters before the creature that cashes in.",
+      "To repeat a reaction, alternate a Setter and a cashing creature."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "left_to_right"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "turn-right-to-left",
+    "title": "Right to left",
+    "short": "The row acts from the last slot.",
+    "lines": [
+      "Creatures act in reverse slot order, the last slot first.",
+      "Put Setters before the creature that cashes in.",
+      "To repeat a reaction, alternate a Setter and a cashing creature."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "right_to_left"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "turn-speed",
+    "title": "By Speed",
+    "short": "Fastest creature acts first.",
+    "lines": [
+      "Creatures act from highest Speed (SPD) to lowest.",
+      "With equal Speed, the lower slot goes first.",
+      "Check each creature's SPD on the Collection tab."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "speed"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "auto-fire",
+    "title": "Auto fire",
+    "short": "Fires abilities for you.",
+    "lines": [
+      "On: an ability fires by itself in its round.",
+      "Tap Fire to use one sooner. It lands next round.",
+      "Off: it waits for you, and still fires in the last round."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "ability"
+    },
+    "section": "finale"
+  },
+  {
+    "id": "creature-ability",
+    "title": "Creature ability",
+    "short": "A move for the live finale.",
+    "lines": [
+      "Every species has its own ability.",
+      "It unlocks at level 10 and gets stronger when the creature evolves.",
+      "Up to 3 team creatures fire one each, plus your basic ability.",
+      "Each ability fires once."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "ability"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "basic-ability",
+    "title": "Basic ability",
+    "short": "Everyone brings one.",
+    "lines": [
+      "Pick Rally, Shield Wall, Re-mark or Purge before the finale.",
+      "It is weaker than a creature ability.",
+      "If you do not pick, one is chosen for you."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "ability"
+    },
+    "section": "finale"
+  },
+  {
+    "id": "ability-rally",
+    "title": "Rally",
+    "short": "Rally: everyone hits harder for a while.",
+    "lines": [
+      "Every creature's hits deal bonus damage.",
+      "It lasts for the number of rounds the ability says.",
+      "It adds up with Support boosts and other Rallies."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "ability"
+    },
+    "section": "finale"
+  },
+  {
+    "id": "ability-shield-wall",
+    "title": "Shield Wall",
+    "short": "Shield Wall: one zone takes less damage.",
+    "lines": [
+      "Cuts the damage one zone takes, for the rounds the ability says.",
+      "Two walls on one zone stack.",
+      "Creature abilities shield their own creature's zone.",
+      "The stage warns you one round before a zone attack."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "shield"
+    },
+    "section": "finale"
+  },
+  {
+    "id": "ability-re-mark",
+    "title": "Re-mark",
+    "short": "Re-mark: puts a mark on the boss.",
+    "lines": [
+      "It replaces any mark the boss has.",
+      "Basic Re-mark lets you pick the element.",
+      "Creature abilities use their own element.",
+      "Then the right element can cash it in."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "mark"
+    },
+    "section": "finale"
+  },
+  {
+    "id": "ability-purge",
+    "title": "Purge",
+    "short": "Purge: turns off the boss's counter-move.",
+    "lines": [
+      "It switches the Phase 2 counter-move off for a few rounds.",
+      "It only matters once the boss has a counter-move.",
+      "When it ends, the boss adapts again."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "ability"
+    },
+    "section": "finale"
+  },
+  {
+    "id": "ability-strike",
+    "title": "Strike",
+    "short": "Strike: hits the boss right away.",
+    "lines": [
+      "The creature hits the boss at once for a share of its Attack.",
+      "It can cash in a mark like any other hit.",
+      "It still lands if the creature has been knocked out."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "ability"
+    },
+    "section": "finale"
+  },
+  {
+    "id": "boss-rank",
+    "title": "Boss Rank",
+    "short": "How tough this week's boss is.",
+    "lines": [
+      "Each Rank adds 40% more boss HP. Its Attack grows too.",
+      "Win a normal week's finale and the Rank goes up by 1.",
+      "Lose and the Rank stays the same.",
+      "Higher Ranks pay more Essence."
+    ],
+    "section": "ranks"
+  },
+  {
+    "id": "festival",
+    "title": "Festival",
+    "short": "Every 5th week: easier and richer.",
+    "lines": [
+      "Every 5th raid week is a Festival.",
+      "The boss fights 3 Ranks lower, and Essence pays 50% more.",
+      "Win the finale to win the Festival creature.",
+      "A win keeps the Rank. After a Festival, the Rank eases by 1."
+    ],
+    "section": "ranks"
+  },
+  {
+    "id": "season",
+    "title": "Season",
+    "short": "5 raid weeks, ending in a Festival.",
+    "lines": [
+      "A season is 5 raid weeks.",
+      "Weeks 1 to 4 are normal. Week 5 is the Festival.",
+      "The pips show where you are. The last pip is the Festival.",
+      "Then a new season begins."
+    ],
+    "section": "ranks"
+  },
+  {
+    "id": "readiness",
+    "title": "Readiness",
+    "short": "How ready your team looks.",
+    "lines": [
+      "A rough guess of how the finale could go.",
+      "It comes from a forecast. It is not a promise.",
+      "The words are Long shot, Even, Likely and Strong."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "readiness-long-shot",
+    "title": "Long shot",
+    "short": "Your team looks short for this boss.",
+    "lines": [
+      "Train your creatures and set a better row to improve it.",
+      "A long shot can still win: combos and crits swing fights."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "readiness-even",
+    "title": "Even",
+    "short": "Could go either way.",
+    "lines": [
+      "Your team looks about as ready as this boss is tough.",
+      "Combos and crits can tip it."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "readiness-likely",
+    "title": "Likely",
+    "short": "Your team looks ready.",
+    "lines": [
+      "A win looks likely for this boss.",
+      "It is not a promise: crits and boss tricks can surprise you."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "readiness-strong",
+    "title": "Strong",
+    "short": "Your team looks very ready.",
+    "lines": ["A win looks very likely for this boss.", "It is still a forecast, not a promise."],
+    "section": "raid-week"
+  },
+  {
+    "id": "adaptation",
+    "title": "Counter-move",
+    "short": "The boss adapts after Phase 1.",
+    "lines": [
+      "After Phase 1 the boss adapts to what worked best.",
+      "Reaction Resistance: your most used reaction does 50% less bonus damage.",
+      "Element Resistance: your top damage element does 25% less.",
+      "A Purge ability switches it off for a few rounds."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "essence",
+    "title": "Essence",
+    "short": "Raid reward. Evolves creatures.",
+    "lines": [
+      "Every raid stage you clear pays Essence.",
+      "Most of it is the same for all. The rest depends on how much you helped.",
+      "Higher Ranks and Festival weeks pay more.",
+      "Evolving costs 20 Essence (40 for rare creatures)."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "gem"
+    },
+    "section": "rewards"
+  },
+  {
+    "id": "bait",
+    "title": "Bait",
+    "short": "Currency from leets in Discord.",
+    "lines": [
+      "Your leets in Discord turn into Bait.",
+      "Spend it to train creatures and fund expeditions.",
+      "Extra copies of a fully fused creature turn into Bait."
+    ],
+    "section": "first-week"
+  },
+  {
+    "id": "training-cost",
+    "title": "Training cost",
+    "short": "Bait to train: 3 + 2 x level.",
+    "lines": [
+      "Going up one level costs 3 + 2 x its level, in Bait.",
+      "Level 1 to 2 costs 5 Bait. Level 10 to 11 costs 23.",
+      "Half price if the creature is more than 5 levels below the server's median.",
+      "A creature away on an expedition cannot train."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "level",
+    "title": "Level",
+    "short": "Higher level, stronger creature.",
+    "lines": [
+      "Train a creature with Bait to raise its level.",
+      "Each level adds HP, Attack and Speed.",
+      "A creature that can evolve stops at level 15 until it does. The top is 30.",
+      "At level 10 a creature gets its finale ability."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "crit",
+    "title": "Critical hit",
+    "short": "A lucky hit that does extra.",
+    "lines": [
+      "Every hit has a 5% chance to be critical.",
+      "A critical hit does 50% more damage.",
+      "A few creatures crit more often, or harder.",
+      "The boss can crit too, with the same odds."
+    ],
+    "section": "finale"
+  },
+  {
+    "id": "fusion",
+    "title": "Fusion",
+    "short": "Duplicates make a creature stronger.",
+    "lines": [
+      "A duplicate catch fuses into the creature you already have.",
+      "Each fusion adds stats, up to 20% after 5 fusions.",
+      "The stars show your fusions. After 5, a duplicate gives Bait."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "rarity",
+    "title": "Rarity",
+    "short": "How hard a creature is to find.",
+    "lines": [
+      "Common, Rare or Epic.",
+      "Rarer creatures turn up less often on expeditions.",
+      "Better supplies improve the odds."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "shiny",
+    "title": "Shiny",
+    "short": "A rare sparkly colour.",
+    "lines": [
+      "About 1 in 500 catches is shiny.",
+      "A shiny duplicate makes your creature shiny.",
+      "It is only for show. A shiny has the same stats."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "sparkle"
+    },
+    "section": "expeditions"
+  },
+  {
+    "id": "away",
+    "title": "Away",
+    "short": "On an expedition.",
+    "lines": [
+      "It cannot be trained until it is back.",
+      "Claim or recall the expedition to bring it home."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "first-on-server",
+    "title": "First on server",
+    "short": "Nobody here had it before you.",
+    "lines": [
+      "You were the first on this server to get it.",
+      "Everyone who got it at the same moment shares the title."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "sparkle"
+    },
+    "section": "rewards"
+  },
+  {
+    "id": "gear",
+    "title": "Gear",
+    "short": "One item per creature, worn into every fight.",
+    "lines": [
+      "Gear adds to Attack, HP, speed and crits. What it adds in total is capped.",
+      "Upgrade an item from +0 to +5 with Essence and scrap. Upgrades never fail.",
+      "Dismantle an item to get parts back. This cannot be undone."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "workshop",
+    "title": "Workshop",
+    "short": "Your creatures work on jobs here, even while you are away.",
+    "lines": [
+      "You can run 2 jobs at once, and each job needs a creature.",
+      "A creature on a job cannot go on an expedition, and the other way round.",
+      "It still fights in raids."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "blueprint",
+    "title": "Blueprint",
+    "short": "Teaches you to craft one kind of item. Learned once.",
+    "lines": [
+      "Blueprints come from expeditions (more often on long ones) and the welcome kit.",
+      "A blueprint you already know turns into 5 scrap."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-stat-atk",
+    "title": "Attack bonus",
+    "short": "Adds a percentage to a creature's Attack.",
+    "lines": ["Gear adds at most 20% Attack to one creature, however many bonuses it has."],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-stat-hp",
+    "title": "HP bonus",
+    "short": "Adds a percentage to a creature's HP.",
+    "lines": ["Gear adds at most 25% HP to one creature, however many bonuses it has."],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-stat-spd",
+    "title": "Speed bonus",
+    "short": "Adds a percentage to a creature's speed.",
+    "lines": [
+      "Speed decides who acts first against a boss that goes by speed.",
+      "Gear adds at most 10% speed to one creature."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-stat-crit-chance",
+    "title": "Crit chance bonus",
+    "short": "Adds points to the chance of a critical hit.",
+    "lines": [
+      "A creature starts at 5%, and the game caps any creature at 30%.",
+      "Gear adds at most 5 points."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-stat-crit-damage",
+    "title": "Crit damage bonus",
+    "short": "Adds points to the extra damage of a critical hit.",
+    "lines": [
+      "A critical hit adds 50% damage to start with, and the game caps it at 150%.",
+      "Gear adds at most 25 points."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-rarity-common",
+    "title": "Common gear",
+    "short": "A main stat and nothing else.",
+    "lines": ["Common gear is easy to find and cheap to upgrade."],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-rarity-rare",
+    "title": "Rare gear",
+    "short": "A stronger main stat and one extra stat.",
+    "lines": [
+      "Its main stat roll is 25% higher than Common.",
+      "Rare gear costs more to upgrade and can be improved."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-rarity-epic",
+    "title": "Epic gear",
+    "short": "A much stronger main stat and two extra stats.",
+    "lines": [
+      "Its main stat roll is 50% higher than Common.",
+      "Dismantling Epic gear can give glimmer."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-rarity-festival",
+    "title": "Festival gear",
+    "short": "Epic power with a look of its own.",
+    "lines": [
+      "Won by clearing a Festival finale, and crafted only from Festival blueprints.",
+      "It has no extra power over Epic gear."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "part-scrap",
+    "title": "Scrap",
+    "short": "Generic parts. They pay for upgrades, crafting and improving.",
+    "lines": ["Found by dismantling gear, on expeditions and in cleared raid phases."],
+    "section": "workshop"
+  },
+  {
+    "id": "part-tide-shard",
+    "title": "Tide Shard",
+    "short": "A shard of Tide. It pays for Tide crafts and enchants.",
+    "lines": ["Found on expeditions with a Tide explorer, and by dismantling Tide gear."],
+    "visual": {
+      "kind": "element",
+      "id": "tide"
+    },
+    "section": "workshop"
+  },
+  {
+    "id": "part-ember-shard",
+    "title": "Ember Shard",
+    "short": "A shard of Ember. It pays for Ember crafts and enchants.",
+    "lines": ["Found on expeditions with a Ember explorer, and by dismantling Ember gear."],
+    "visual": {
+      "kind": "element",
+      "id": "ember"
+    },
+    "section": "workshop"
+  },
+  {
+    "id": "part-grove-shard",
+    "title": "Grove Shard",
+    "short": "A shard of Grove. It pays for Grove crafts and enchants.",
+    "lines": ["Found on expeditions with a Grove explorer, and by dismantling Grove gear."],
+    "visual": {
+      "kind": "element",
+      "id": "grove"
+    },
+    "section": "workshop"
+  },
+  {
+    "id": "part-spark-shard",
+    "title": "Spark Shard",
+    "short": "A shard of Spark. It pays for Spark crafts and enchants.",
+    "lines": ["Found on expeditions with a Spark explorer, and by dismantling Spark gear."],
+    "visual": {
+      "kind": "element",
+      "id": "spark"
+    },
+    "section": "workshop"
+  },
+  {
+    "id": "part-glimmer",
+    "title": "Glimmer",
+    "short": "A rare part. It pays for Epic crafts and every enchant.",
+    "lines": [
+      "Found by dismantling Epic gear, and rarely on expeditions (more often on long ones)."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "enchant-payoffs-edge",
+    "title": "Payoff's Edge",
+    "short": "+6% Attack for a Payoff.",
+    "lines": [
+      "Only works for a Payoff.",
+      "Costs 1 glimmer and 3 Ember shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "enchant-guards-bulwark",
+    "title": "Guard's Bulwark",
+    "short": "+8% HP for a Guard.",
+    "lines": [
+      "Only works for a Guard.",
+      "Costs 1 glimmer and 3 Grove shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "enchant-setters-wit",
+    "title": "Setter's Wit",
+    "short": "+5% speed for a Setter.",
+    "lines": [
+      "Only works for a Setter.",
+      "Costs 1 glimmer and 3 Tide shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "enchant-supports-grace",
+    "title": "Support's Grace",
+    "short": "+6% HP for a Support.",
+    "lines": [
+      "Only works for a Support.",
+      "Costs 1 glimmer and 3 Spark shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "enchant-spark-luck",
+    "title": "Spark Luck",
+    "short": "+3 points crit chance for Spark creatures.",
+    "lines": [
+      "Only works for Spark creatures.",
+      "Costs 1 glimmer and 3 Spark shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "enchant-ember-fury",
+    "title": "Ember Fury",
+    "short": "+10 points crit damage for Ember creatures.",
+    "lines": [
+      "Only works for Ember creatures.",
+      "Costs 1 glimmer and 3 Ember shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "enchant-tide-flow",
+    "title": "Tide Flow",
+    "short": "+4% speed for Tide creatures.",
+    "lines": [
+      "Only works for Tide creatures.",
+      "Costs 1 glimmer and 3 Tide shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "enchant-grove-hide",
+    "title": "Grove Hide",
+    "short": "+7% HP for Grove creatures.",
+    "lines": [
+      "Only works for Grove creatures.",
+      "Costs 1 glimmer and 3 Grove shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "enchant-steady-hand",
+    "title": "Steady Hand",
+    "short": "+3% Attack.",
+    "lines": [
+      "Works for every creature.",
+      "Costs 1 glimmer and 3 Tide shards.",
+      "An item has one enchant slot: a new enchant replaces the old one."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "job-craft",
+    "title": "Craft",
+    "short": "Makes a new item from a blueprint you know.",
+    "lines": [
+      "Takes 4 hours for Common, 8 for Rare and 12 for Epic or Festival.",
+      "The parts are paid when the job starts. The item is rolled when you claim it."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "job-improve",
+    "title": "Improve",
+    "short": "Re-rolls one extra stat of an item, for scrap.",
+    "lines": [
+      "Takes 2 hours. Needs a Rare or better item.",
+      "The new stat can be better or worse. Claim it to see."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "job-enchant",
+    "title": "Enchant",
+    "short": "Adds an enchant to an item.",
+    "lines": ["Takes 6 hours. Costs glimmer and shards.", "A new enchant replaces the old one."],
+    "section": "workshop"
+  },
+  {
+    "id": "skill-crafting",
+    "title": "Crafting skill",
+    "short": "Grows slowly each time a creature finishes a job.",
+    "lines": [
+      "Each level above 1 makes jobs 3% shorter and adds 1% chance of a better craft.",
+      "It levels slowly: about level 5 after a month of steady work.",
+      "It never changes how a creature fights."
+    ],
+    "section": "workshop"
+  }
+]

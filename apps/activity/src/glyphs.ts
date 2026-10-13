@@ -248,6 +248,23 @@ const check: SpriteDef = {
   ],
 };
 
+// --- Workshop ---
+
+/** An anvil: the Workshop tab and its jobs. */
+const anvil: SpriteDef = {
+  palette: { k: INK, m: HAZE, w: BONE },
+  rows: [
+    '........',
+    'kkkkkkk.',
+    'kwwmmmmk',
+    '.kkmmkk.',
+    '...kmk..',
+    '...kmk..',
+    '..kmmmk.',
+    '.kkkkkkk',
+  ],
+};
+
 export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   hit_zone: hitZone,
   silence_ends: silenceEnds,
@@ -268,6 +285,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   check,
   warning,
   reticle,
+  anvil,
 };
 
 /** A glyph by id, or undefined. */

@@ -1,0 +1,113 @@
+{
+  "sections": [
+    {
+      "id": "first-week",
+      "title": "Your first week",
+      "lines": [
+        "Pick a starter. Your first expedition always brings back a Zipmouse.",
+        "Leet in Discord to earn Bait. Spend Bait to train and to explore.",
+        "Train a creature to level 10 to unlock its finale ability.",
+        "You join the weekly raid automatically. You can sit a week out.",
+        "On Sunday evening everyone fights the boss together."
+      ]
+    },
+    {
+      "id": "creatures",
+      "title": "Creatures",
+      "lines": [
+        "Each creature has an element: Tide, Ember, Grove or Spark.",
+        "Each has a role: Setter, Payoff, Guard or Support.",
+        "Levels raise HP, Attack and Speed. Train with Bait.",
+        "At level 10 a creature gets a finale ability. Evolving makes it stronger.",
+        "Tap any tag in the game to see what it means."
+      ]
+    },
+    {
+      "id": "combos",
+      "title": "Combos",
+      "lines": [
+        "The boss carries one mark at a time. Your hits leave it.",
+        "Hit a marked boss with the right element to set off a reaction.",
+        "A reaction does 4.5 times damage and uses up the mark.",
+        "Setters swap marks. Put them before the creature that cashes in.",
+        "Payoffs hit reactions 10% harder."
+      ]
+    },
+    {
+      "id": "raid-week",
+      "title": "The raid week",
+      "lines": [
+        "Monday: the new boss is revealed. Set your team and your row.",
+        "Friday and Saturday: Phases 1 and 2 play out by themselves.",
+        "Each phase needs a share of the boss's HP. The finale needs all of it.",
+        "After Phase 1 the boss adapts with a counter-move.",
+        "Sunday 20:00: the live finale. The Raid tab shows the exact times."
+      ]
+    },
+    {
+      "id": "finale",
+      "title": "The live finale",
+      "lines": [
+        "The fight plays out round by round, live.",
+        "Tap one of your creatures to fire its ability. It lands next round.",
+        "Auto fire is on by default: abilities fire by themselves in their round.",
+        "Turn Auto fire off to time it yourself. It still fires in the last round.",
+        "A warning shows what the boss will do next round."
+      ]
+    },
+    {
+      "id": "expeditions",
+      "title": "Expeditions",
+      "lines": [
+        "Send a creature away for 1, 6 or 12 hours. Longer trips find more.",
+        "Better supplies cost more Bait and find rarer creatures.",
+        "You have 3 expedition slots.",
+        "Recall early to keep the catches earned so far.",
+        "A duplicate catch fuses into your creature for more stats."
+      ]
+    },
+    {
+      "id": "ranks",
+      "title": "Ranks and Festivals",
+      "lines": [
+        "Every boss has a Rank. A higher Rank is a tougher boss.",
+        "Win the finale and the server's Rank goes up by 1. Lose and it stays.",
+        "Every 5th week is a Festival: an easier boss and extra Essence.",
+        "Win a Festival to get its special creature. Expeditions never find it.",
+        "The pips show where you are in the 5-week season."
+      ]
+    },
+    {
+      "id": "rewards",
+      "title": "Rewards",
+      "lines": [
+        "Clear a stage and everyone in the party gets Essence.",
+        "Most of it is equal. A share depends on how much you helped.",
+        "Higher Ranks and Festival weeks pay more Essence.",
+        "Spend Essence to evolve your creatures.",
+        "Leets earn Bait. Raids earn Essence."
+      ]
+    },
+    {
+      "id": "workshop",
+      "title": "The Workshop",
+      "lines": [
+        "Gear is one item per creature. It adds a little to its stats in every fight.",
+        "Raid finales, expeditions and Festivals drop gear, parts and blueprints.",
+        "Spend Essence and scrap to upgrade gear. Dismantle gear to get parts back.",
+        "Creatures work jobs in the Workshop: craft, improve or enchant, even while you are away.",
+        "A creature on a job cannot go on an expedition. It still fights in raids."
+      ]
+    }
+  ],
+  "example": {
+    "title": "Example: Overload",
+    "setter": "splashet",
+    "payoff": "stormray",
+    "lines": [
+      "Splashet is a Tide Setter. Its hit leaves the boss Soaked.",
+      "Stormray is a Spark Payoff. Its hit sets off Overload!",
+      "The hit does 4.5 times damage, and the Soaked mark is used up."
+    ]
+  }
+}

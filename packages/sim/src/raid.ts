@@ -29,7 +29,7 @@ import {
   type PlayerTotals,
 } from '@creatures/engine';
 import type { ArchetypeId } from './archetypes';
-import { pickTeam, speciesOf, TEAM_SIZE } from './data';
+import { foldedCreature, pickTeam, speciesOf, TEAM_SIZE } from './data';
 import type { SimPlayer } from './state';
 
 export const STAGES: readonly RaidStage[] = ['phase1', 'phase2', 'finale'];
@@ -129,12 +129,19 @@ function emptyTotals(): PlayerTotals {
 function slotFor(player: SimPlayer, creatureId: string): FightSlot {
   const c = player.creatures.find((x) => x.id === creatureId);
   if (c === undefined) throw new Error(`player ${player.id} lost creature ${creatureId}`);
-  return makeSlot(speciesOf(c.speciesId), {
+  const slot = makeSlot(speciesOf(c.speciesId), {
     id: c.id,
     ownerId: player.id,
     level: c.level,
     fusionCount: c.fusionCount,
   });
+  if (c.item === undefined || c.item === null) return slot;
+  // Gear folds into the stats and the crit bonus, as the worker's `slotFor` does (apps/worker/src/raid-resolve.ts).
+  const folded = foldedCreature(c);
+  const withGear: FightSlot = { ...slot, stats: folded.stats };
+  if (folded.crit === undefined) delete withGear.crit;
+  else withGear.crit = folded.crit;
+  return withGear;
 }
 
 /**

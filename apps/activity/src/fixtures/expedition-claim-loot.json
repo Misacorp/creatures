@@ -1,0 +1,293 @@
+{
+  "result": {
+    "recalled": false,
+    "catches": [
+      {
+        "species": "ashmole",
+        "shiny": false,
+        "firstOnServer": true,
+        "outcome": "new"
+      },
+      {
+        "species": "cindle",
+        "shiny": false,
+        "firstOnServer": true,
+        "outcome": "fused",
+        "fusionCount": 1
+      },
+      {
+        "species": "splashet",
+        "shiny": false,
+        "firstOnServer": true,
+        "outcome": "fused",
+        "fusionCount": 1
+      }
+    ],
+    "loot": {
+      "gear": [],
+      "converted": [],
+      "parts": {
+        "scrap": 6,
+        "ember-shard": 1,
+        "glimmer": 1
+      },
+      "blueprints": [
+        {
+          "baseId": "trail-charm",
+          "rarity": "common",
+          "duplicate": false
+        }
+      ]
+    }
+  },
+  "state": {
+    "serverNow": 1799776800000,
+    "balances": {
+      "bait": 170,
+      "essence": 0
+    },
+    "starterChosen": false,
+    "starterOptions": ["splashet", "cindle", "sproutle"],
+    "creatures": [
+      {
+        "id": "d9a3a151-29f4-4a4d-86ec-e3ddc848bdfd",
+        "species": "cindle",
+        "line": "cindle",
+        "level": 8,
+        "levelCap": 15,
+        "fusionCount": 1,
+        "shiny": false,
+        "nickname": null,
+        "away": false,
+        "origin": "test",
+        "caughtAt": 1799733600000,
+        "quirk": "cindle-purrs-at-prey",
+        "stats": {
+          "hp": 153,
+          "atk": 64,
+          "spd": 44
+        },
+        "statsWithGear": {
+          "hp": 153,
+          "atk": 64,
+          "spd": 44
+        },
+        "gear": null,
+        "busy": null,
+        "ability": {
+          "id": "flare-strike",
+          "unlocked": false,
+          "unlockLevel": 10,
+          "nextId": "flare-strike-2"
+        },
+        "trainCost": 19,
+        "evolution": {
+          "toSpecies": "pyrelynx",
+          "level": 15,
+          "essence": 20,
+          "available": false
+        }
+      },
+      {
+        "id": "80d41e89-fa9f-42c9-9b27-a56279a0e73c",
+        "species": "splashet",
+        "line": "splashet",
+        "level": 8,
+        "levelCap": 15,
+        "fusionCount": 1,
+        "shiny": false,
+        "nickname": null,
+        "away": false,
+        "origin": "test",
+        "caughtAt": 1799733600001,
+        "quirk": "lucky-spot",
+        "stats": {
+          "hp": 178,
+          "atk": 44,
+          "spd": 48
+        },
+        "statsWithGear": {
+          "hp": 178,
+          "atk": 44,
+          "spd": 48
+        },
+        "gear": null,
+        "busy": null,
+        "ability": {
+          "id": "tidal-mark",
+          "unlocked": false,
+          "unlockLevel": 10,
+          "nextId": "tidal-mark-2"
+        },
+        "trainCost": 19,
+        "evolution": {
+          "toSpecies": "tidewing",
+          "level": 15,
+          "essence": 20,
+          "available": false
+        }
+      },
+      {
+        "id": "4e9858f1-c66d-4ffe-9675-069a89b315e6",
+        "species": "sproutle",
+        "line": "sproutle",
+        "level": 8,
+        "levelCap": 15,
+        "fusionCount": 0,
+        "shiny": false,
+        "nickname": null,
+        "away": false,
+        "origin": "test",
+        "caughtAt": 1799733600002,
+        "quirk": "cloud-follower",
+        "stats": {
+          "hp": 237,
+          "atk": 29,
+          "spd": 23
+        },
+        "statsWithGear": {
+          "hp": 237,
+          "atk": 29,
+          "spd": 23
+        },
+        "gear": null,
+        "busy": null,
+        "ability": {
+          "id": "bark-guard",
+          "unlocked": false,
+          "unlockLevel": 10,
+          "nextId": "bark-guard-2"
+        },
+        "trainCost": 19,
+        "evolution": {
+          "toSpecies": "thornbuck",
+          "level": 15,
+          "essence": 20,
+          "available": false
+        }
+      },
+      {
+        "id": "f3e7d1d9-2eef-49f3-9384-a2c5ad014a6c",
+        "species": "ashmole",
+        "line": "ashmole",
+        "level": 1,
+        "levelCap": 15,
+        "fusionCount": 0,
+        "shiny": false,
+        "nickname": null,
+        "away": false,
+        "origin": "expedition",
+        "caughtAt": 1799776800000,
+        "quirk": "moon-watcher",
+        "stats": {
+          "hp": 128,
+          "atk": 24,
+          "spd": 28
+        },
+        "statsWithGear": {
+          "hp": 128,
+          "atk": 24,
+          "spd": 28
+        },
+        "gear": null,
+        "busy": null,
+        "ability": {
+          "id": "warm-glow",
+          "unlocked": false,
+          "unlockLevel": 10,
+          "nextId": "warm-glow-2"
+        },
+        "trainCost": 3,
+        "evolution": {
+          "toSpecies": "magmole",
+          "level": 15,
+          "essence": 20,
+          "available": false
+        }
+      }
+    ],
+    "expeditions": [
+      {
+        "id": "e6733e28-a9b4-4d0e-b8aa-de3d6de8672d",
+        "creatureId": "d9a3a151-29f4-4a4d-86ec-e3ddc848bdfd",
+        "duration": "long",
+        "supplies": "basic",
+        "rolls": 3,
+        "cost": 30,
+        "startedAt": 1799733600000,
+        "endsAt": 1799776800000,
+        "status": "claimed",
+        "claimedAt": 1799776800000,
+        "result": {
+          "recalled": false,
+          "catches": [
+            {
+              "species": "ashmole",
+              "shiny": false,
+              "firstOnServer": true,
+              "outcome": "new"
+            },
+            {
+              "species": "cindle",
+              "shiny": false,
+              "firstOnServer": true,
+              "outcome": "fused",
+              "fusionCount": 1
+            },
+            {
+              "species": "splashet",
+              "shiny": false,
+              "firstOnServer": true,
+              "outcome": "fused",
+              "fusionCount": 1
+            }
+          ],
+          "loot": {
+            "gear": [],
+            "converted": [],
+            "parts": {
+              "scrap": 6,
+              "ember-shard": 1,
+              "glimmer": 1
+            },
+            "blueprints": [
+              {
+                "baseId": "trail-charm",
+                "rarity": "common",
+                "duplicate": false
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "slots": {
+      "total": 3,
+      "used": 0
+    },
+    "trainingMedianLevel": 8,
+    "serverFirsts": [
+      {
+        "kind": "catch",
+        "species": "ashmole",
+        "at": 1799776800000,
+        "mine": true,
+        "holders": ["Player 2"]
+      },
+      {
+        "kind": "catch",
+        "species": "cindle",
+        "at": 1799776800000,
+        "mine": true,
+        "holders": ["Player 2"]
+      },
+      {
+        "kind": "catch",
+        "species": "splashet",
+        "at": 1799776800000,
+        "mine": true,
+        "holders": ["Player 2"]
+      }
+    ]
+  }
+}

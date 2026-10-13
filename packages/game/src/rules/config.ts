@@ -139,7 +139,7 @@ export const RULES = {
       hpExponent: { num: 11, den: 10 },
       /**
        * Boss Rank: every rank above 1 multiplies boss HP by this many basis points more than the
-       * rank below it, compounding (rank r is 1.20^(r-1) at 2000), floored to integer basis points
+       * rank below it, compounding (rank r is 1.40^(r-1) at 4000), floored to integer basis points
        * at every step (`rankFactorBp`). Compounding rather than linear, so a rank always costs the
        * same share of the team's damage and a high-ranked server keeps a real ladder instead of
        * ever smaller steps. Tuned by the simulator (docs/balance/report-2026-10-11-progression.md).
@@ -266,6 +266,119 @@ export const RULES = {
   abilities: {
     /** Creature level at which a species' finale ability unlocks. */
     unlockLevel: 10,
+  },
+  /**
+   * Gear and crafting v1 (docs/design/gear.md). Starting values, to be tuned by the simulator. All
+   * amounts are integers: percentages and crit points are basis points. Gear never reaches the engine:
+   * `applyGear` folds it into a creature's stats and crit bonus before the fight, with the caps below
+   * (and the engine's own crit caps still apply on top).
+   */
+  gear: {
+    /** Upgrade levels: +0 to +5. */
+    maxLevel: 5,
+    /** Items one player can own (items in the bag plus crafts still in the workshop). */
+    inventoryCap: 60,
+    /** Jobs one player can run at the same time. */
+    workshopSlots: 2,
+    /** Per rarity: the multiplier (basis points) on the primary roll, and how many secondaries it has. */
+    rarity: {
+      common: { primaryBp: 10_000, secondaries: 0 },
+      rare: { primaryBp: 12_500, secondaries: 1 },
+      epic: { primaryBp: 15_000, secondaries: 2 },
+      // Festival gear has epic power and a look of its own.
+      festival: { primaryBp: 15_000, secondaries: 2 },
+    },
+    /** Roll ranges (inclusive, basis points) per stat: the primary stat of an item and its secondaries. */
+    rolls: {
+      primary: {
+        atk: { min: 520, max: 880 },
+        hp: { min: 760, max: 1_260 },
+        spd: { min: 300, max: 600 },
+        critChance: { min: 150, max: 300 },
+        critDamage: { min: 700, max: 1_300 },
+      },
+      secondary: {
+        atk: { min: 200, max: 500 },
+        hp: { min: 300, max: 700 },
+        spd: { min: 150, max: 300 },
+        critChance: { min: 75, max: 150 },
+        critDamage: { min: 300, max: 600 },
+      },
+    },
+    /** What each upgrade level adds to the primary stat (basis points). */
+    upgradeStepBp: { atk: 250, hp: 260, spd: 70, critChance: 35, critDamage: 200 },
+    /**
+     * Total bonus caps per creature (basis points): Attack +20%, HP +25%, speed +10%, crit chance
+     * +5 points and crit damage +25 points. The engine's crit caps (`combat.luck`) still apply.
+     */
+    caps: { atk: 2_000, hp: 2_500, spd: 1_000, critChance: 500, critDamage: 2_500 },
+    /**
+     * Upgrade price from level L to L+1 (index L): Essence and scrap, times the rarity's multiplier
+     * (basis points). Upgrades never fail.
+     */
+    upgrade: {
+      essence: [20, 30, 45, 65, 90],
+      scrap: [2, 3, 5, 8, 12],
+      multiplierBp: { common: 10_000, rare: 15_000, epic: 20_000, festival: 20_000 },
+      /** Share of the scrap spent on upgrades that dismantling returns (basis points). */
+      refundBp: 5_000,
+    },
+    /** What dismantling returns, by rarity (a shard is of the item's tint; neutral items give none). */
+    dismantle: {
+      scrap: { common: 2, rare: 5, epic: 10, festival: 10 },
+      shard: { common: 0, rare: 1, epic: 2, festival: 2 },
+      glimmer: { common: 0, rare: 0, epic: 1, festival: 1 },
+    },
+    /** What crafting from a blueprint costs, by the blueprint's rarity (a shard is of the base's tint). */
+    craft: {
+      common: { scrap: 9, shard: 0, glimmer: 0 },
+      rare: { scrap: 18, shard: 1, glimmer: 0 },
+      epic: { scrap: 32, shard: 2, glimmer: 1 },
+      festival: { scrap: 32, shard: 2, glimmer: 2 },
+    },
+    /** Improve (re-roll one secondary) costs scrap by the item's rarity. */
+    improve: { scrap: { rare: 6, epic: 12, festival: 12 } },
+    /** Enchanting costs glimmer and shards (of the enchant's element). */
+    enchant: { glimmer: 1, shard: 3 },
+    /** Job durations in hours before the crafting skill; the craft time follows the blueprint. */
+    jobHours: { craft: { common: 4, rare: 8, epic: 12, festival: 12 }, improve: 2, enchant: 6 },
+    skill: {
+      /** Total XP to reach each level (index 0 is level 1). XP per job is its nominal hours x `xpPerHour`. */
+      xpForLevel: [0, 100, 250, 450, 700, 1_000, 1_600, 2_500, 3_800, 5_500],
+      xpPerHour: 24,
+      /** Each level above 1 shortens jobs by this much and adds this chance of a rarity up on a craft (basis points). */
+      timeReductionBpPerLevel: 300,
+      rarityUpBpPerLevel: 100,
+    },
+    drops: {
+      /**
+       * Finale win, one roll per participant. Rare and epic chances start at these values at Boss
+       * Rank 1, grow by `perRankBp` for every rank above 1 and stop at `maxBp`; the rest is common.
+       */
+      finale: {
+        baseBp: { rare: 2_200, epic: 300 },
+        perRankBp: { rare: 250, epic: 150 },
+        maxBp: { rare: 5_000, epic: 2_500 },
+      },
+      /** Scrap for every participant of a cleared phase 1 or 2. */
+      phaseScrap: { phase1: 3, phase2: 4 },
+      expedition: {
+        /** Scrap for a completed trip (a recalled trip pays the share of it that was brought back). */
+        scrap: { short: 1, medium: 3, long: 6 },
+        /** Chance (basis points) of one shard of the explorer's element, on a completed trip. */
+        shardBp: { short: 1_500, medium: 3_000, long: 5_000 },
+        /** Chance of one glimmer. */
+        glimmerBp: { short: 100, medium: 400, long: 1_000 },
+        /** Chance of a blueprint. */
+        blueprintBp: { short: 200, medium: 800, long: 1_500 },
+      },
+      /** Rarity odds (basis points) of a dropped blueprint; the base is picked evenly among that rarity. */
+      blueprintOddsBp: { common: 6_000, rare: 3_500, epic: 500 },
+      /** A blueprint the player already knows turns into this much scrap. */
+      duplicateBlueprintScrap: 5,
+      /** The welcome kit: one common item, one common blueprint and this much scrap. */
+      welcomeScrap: 10,
+    },
   },
   nickname: {
     maxCodePoints: 20,

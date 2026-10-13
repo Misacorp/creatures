@@ -312,6 +312,7 @@ export function Live({
         <RevealCard
           reveal={fight.loot}
           busy={false}
+          gearWeek={fight.week}
           afterAction={{
             week: fight.week,
             party: fight.party,

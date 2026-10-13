@@ -64,12 +64,18 @@ export function snapshotWeeks(weeks: number): number[] {
 }
 
 /** The economy sims behind the raid sweep: roster snapshots per player count, and the default server's sims. */
-export function runEconomies(settings: RunSettings): {
+export function runEconomies(
+  settings: RunSettings,
+  options: { baseline?: boolean } = {},
+): {
   snapshots: Map<number, EconomyResult['snapshots']>;
   defaultSims: EconomyResult[];
+  /** The default server's sims again, with the same seeds and no gear ("today"). */
+  baselineSims: EconomyResult[];
 } {
   const snapshots = new Map<number, EconomyResult['snapshots']>();
   let defaultSims: EconomyResult[] = [];
+  let baselineSims: EconomyResult[] = [];
   const countsToRun = [...new Set([...settings.counts, DEFAULT_SERVER_SIZE])].sort((a, b) => a - b);
   for (const count of countsToRun) {
     const mix = count === DEFAULT_SERVER_SIZE ? DEFAULT_MIX : scaleMix(count);
@@ -88,16 +94,27 @@ export function runEconomies(settings: RunSettings): {
       count,
       sims.flatMap((s) => s.snapshots),
     );
-    if (count === DEFAULT_SERVER_SIZE) defaultSims = sims;
+    if (count === DEFAULT_SERVER_SIZE) {
+      defaultSims = sims;
+      baselineSims = (options.baseline === false ? [] : sims).map((_, k) =>
+        runEconomy({
+          seed: `${settings.seed}:econ:${count}:${k}`,
+          weeks: settings.weeks,
+          mix,
+          snapshotWeeks: [],
+          gear: false,
+        }),
+      );
+    }
   }
-  return { snapshots, defaultSims };
+  return { snapshots, defaultSims, baselineSims };
 }
 
 export function runSimulation(settings: RunSettings): RunOutput {
   if (!Number.isInteger(settings.weeks) || settings.weeks < 1 || settings.weeks > 104) {
     throw new RangeError('weeks must be an integer from 1 to 104');
   }
-  const { snapshots, defaultSims } = runEconomies(settings);
+  const { snapshots, defaultSims, baselineSims } = runEconomies(settings);
 
   const pitySims: EconomyResult[] = [];
   for (let k = 0; k < settings.pitySims; k++) {
@@ -129,7 +146,14 @@ export function runSimulation(settings: RunSettings): RunOutput {
     counts: settings.counts,
     snapshots,
   });
-  const analysis = analyse({ weeks: settings.weeks, defaultSims, pitySims, sweep, longRun });
+  const analysis = analyse({
+    weeks: settings.weeks,
+    defaultSims,
+    baselineSims,
+    pitySims,
+    sweep,
+    longRun,
+  });
   return {
     settings,
     analysis,

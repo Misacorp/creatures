@@ -4,14 +4,17 @@ import type { ClaimResult, Creature, DurationId, Expedition, GameState, Supplies
 import {
   DURATION_OPTIONS,
   SUPPLIES_OPTIONS,
-  catchBadges,
+  catchBadgeTags,
   creatureName,
   durationLabel,
   formatCountdown,
   getSpecies,
   speciesName,
 } from './game';
+import { expeditionBlocked, isFree, lootIsEmpty } from './gear-view';
+import { LootList } from './GearLoot';
 import { useNow } from './hooks';
+import { GlossaryTag } from './Glossary';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -106,7 +109,10 @@ function SendForm({
         ))}
       </select>
       <p>
-        Total: <strong>{cost} Bait</strong>
+        Total:{' '}
+        <strong>
+          {cost} <GlossaryTag entry="bait">Bait</GlossaryTag>
+        </strong>
         {cost > bait && <span class="error"> Not enough Bait</span>}
       </p>
       <button type="submit" class="primary" disabled={busy || cost > bait}>
@@ -173,7 +179,11 @@ function Reveal({ result, onDismiss }: { result: ClaimResult; onDismiss: () => v
     <section class="reveal" aria-live="polite" aria-labelledby="reveal-heading">
       <h3 id="reveal-heading">{result.recalled ? 'Expedition recalled' : 'Expedition complete'}</h3>
       {result.catches.length === 0 ? (
-        <p>Nothing came back this time.</p>
+        <p>
+          {result.loot === undefined || lootIsEmpty(result.loot)
+            ? 'Nothing came back this time.'
+            : 'No creatures came back this time.'}
+        </p>
       ) : (
         <ul>
           {result.catches.map((entry, index) => (
@@ -183,14 +193,23 @@ function Reveal({ result, onDismiss }: { result: ClaimResult; onDismiss: () => v
               {getSpecies(entry.species) !== undefined && (
                 <ElementChip element={getSpecies(entry.species)?.element ?? ''} />
               )}{' '}
-              {catchBadges(entry).map((badge) => (
-                <span key={badge} class="badge">
-                  {badge}
-                </span>
-              ))}
+              {catchBadgeTags(entry).map((badge) =>
+                badge.entry === null ? (
+                  <span key={badge.text} class="badge">
+                    {badge.text}
+                  </span>
+                ) : (
+                  <GlossaryTag key={badge.text} entry={badge.entry} look="chip" class="badge">
+                    {badge.text}
+                  </GlossaryTag>
+                ),
+              )}
             </li>
           ))}
         </ul>
+      )}
+      {result.loot !== undefined && (
+        <LootList loot={result.loot} label="What the trip brought home" />
       )}
       <button type="button" onClick={onDismiss}>
         Close
@@ -210,7 +229,9 @@ export function Expeditions({
 }: Props) {
   const active = state.expeditions.filter((e) => e.status === 'active');
   const now = useNow(active.length > 0);
-  const available = state.creatures.filter((c) => !c.away);
+  // A creature on a job in the Workshop cannot go either; the reason is shown, not just hidden.
+  const available = state.creatures.filter(isFree);
+  const blocked = expeditionBlocked(state.creatures);
   const emptySlots = Math.max(0, state.slots.total - active.length);
   const panels: (Expedition | null)[] = [
     ...active,
@@ -220,6 +241,13 @@ export function Expeditions({
   return (
     <>
       {reveal !== null && <Reveal result={reveal} onDismiss={onDismissReveal} />}
+      {blocked.length > 0 && (
+        <ul class="blocked-note muted" aria-label="Creatures that cannot go">
+          {blocked.map(({ creature, reason }) => (
+            <li key={creature.id}>{reason}</li>
+          ))}
+        </ul>
+      )}
       <ul class="cards">
         {panels.map((panel, index) => (
           <li key={index} class="card-item slot">

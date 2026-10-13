@@ -1,0 +1,435 @@
+/**
+ * The small picture of each How to play section, built only from sprites, glyphs and tags the game
+ * already has (nothing is drawn from scratch), and from the content and the rules, so a picture
+ * can never disagree with the game. Words that appear in a picture come from the glossary.
+ */
+import {
+  GLOSSARY_IDS,
+  JOB_KINDS,
+  PART_KINDS,
+  RULES,
+  content,
+  entryView,
+  howToPlay,
+  type GlossarySection,
+} from '@creatures/game';
+import { bossArt, markPalette } from './art';
+import { ItemFrame, ItemSprite } from './GearArt';
+import { partIcon } from './gear-sprites';
+import { GlossaryTag } from './Glossary';
+import { capitalize, speciesName } from './game';
+import { glyphOrUnknown } from './glyphs';
+import {
+  evolutionExample,
+  exampleSeason,
+  exampleSpecies,
+  expeditionTrips,
+  reactionLoop,
+  starterSpecies,
+  weekStrip,
+  type LoopStep,
+} from './howto';
+import { ElementChip } from './sprites/ElementChip';
+import { Sprite } from './sprites/Sprite';
+import { creatureSpriteOrFallback } from './sprites/creature-sprites';
+import { elementIcon } from './sprites/element-icons';
+
+/** One item of each kind (a charm, a band and a trinket), for the Workshop picture. */
+const GEAR_EXAMPLES = ['trail-charm', 'patch-band', 'quick-trinket'] as const;
+
+const titleOf = (id: string): string => entryView(id)?.title ?? id;
+
+/** A creature sprite with its name under it. */
+function Figure({ species, scale = 4 }: { species: string; scale?: number }) {
+  return (
+    <figure class="art-figure">
+      <Sprite sprite={creatureSpriteOrFallback(species)} scale={scale} />
+      <figcaption class="pix">{speciesName(species)}</figcaption>
+    </figure>
+  );
+}
+
+function Arrow({ turn }: { turn?: 'down' | 'up' | 'back' }) {
+  const glyph = glyphOrUnknown(turn === 'back' ? 'right_to_left' : 'left_to_right');
+  return (
+    <Sprite
+      sprite={glyph}
+      scale={3}
+      class={turn === 'down' || turn === 'up' ? `art-arrow ${turn}` : 'art-arrow'}
+    />
+  );
+}
+
+/** First week: the three starters to pick from. */
+function StartersArt() {
+  return (
+    <ul class="art-row" aria-label="The starters">
+      {starterSpecies().map((s) => (
+        <li key={s.id}>
+          <Figure species={s.id} scale={5} />
+          <p class="tags art-tags">
+            <ElementChip element={s.element} role={capitalize(s.role)} />
+          </p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Creatures: the four elements, and one example creature for each role. */
+function CreaturesArt() {
+  const roles = ['setter', 'payoff', 'guard', 'support'] as const;
+  return (
+    <>
+      <p class="tags art-tags" aria-label="Elements">
+        {content.elements.map((e) => (
+          <ElementChip key={e.id} element={e.id} />
+        ))}
+      </p>
+      <ul class="art-row" aria-label="Roles">
+        {roles.map((role) => {
+          const species = exampleSpecies(role);
+          return (
+            <li key={role}>
+              {species !== undefined && (
+                <Sprite sprite={creatureSpriteOrFallback(species.id)} scale={4} />
+              )}
+              <GlossaryTag entry={GLOSSARY_IDS.role(role)} look="chip" class="chip role-chip">
+                <span class="chip-text">{capitalize(role)}</span>
+              </GlossaryTag>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
+/** One arrow of the loop: the mark, an arrow, and the reaction it makes. */
+function LoopEdge({
+  step,
+  turn,
+  place,
+}: {
+  step: LoopStep;
+  turn?: 'down' | 'up' | 'back';
+  place: string;
+}) {
+  return (
+    <div class={`loop-edge ${place}`}>
+      <GlossaryTag entry={GLOSSARY_IDS.mark(step.markId)} class={`loop-name el-${step.from}`}>
+        {step.markName}
+      </GlossaryTag>
+      <Arrow {...(turn === undefined ? {} : { turn })} />
+      <GlossaryTag entry={GLOSSARY_IDS.reaction(step.reactionId)} class="loop-name pix">
+        {step.reactionName}
+      </GlossaryTag>
+    </div>
+  );
+}
+
+/** The four reactions as a loop of element icons: each element's mark is cashed in by the next. */
+function ReactionLoop() {
+  const steps = reactionLoop();
+  const [a, b, c, d] = steps;
+  if (
+    steps.length !== 4 ||
+    a === undefined ||
+    b === undefined ||
+    c === undefined ||
+    d === undefined
+  ) {
+    return null;
+  }
+  const node = (element: string, place: string) => (
+    <div class={`loop-node ${place}`}>
+      <ElementChip element={element} />
+    </div>
+  );
+  return (
+    <div class="loop" role="group" aria-label="The reaction loop">
+      {node(a.from, 'tl')}
+      <LoopEdge step={a} place="top" />
+      {node(b.from, 'tr')}
+      <LoopEdge step={d} turn="up" place="left" />
+      <div class="loop-centre">
+        <Sprite sprite={glyphOrUnknown('mark')} scale={4} />
+      </div>
+      <LoopEdge step={b} turn="down" place="right" />
+      {node(d.from, 'bl')}
+      <LoopEdge step={c} turn="back" place="bottom" />
+      {node(c.from, 'br')}
+    </div>
+  );
+}
+
+/** The worked example: a real Setter marks, a real creature of the right element sets it off. */
+function ComboExample() {
+  const { setter, payoff, title, lines } = howToPlay.example;
+  const setterSpecies = content.creatures.find((c) => c.id === setter);
+  const payoffSpecies = content.creatures.find((c) => c.id === payoff);
+  const reaction = content.reactions.find((r) => r.markElement === setterSpecies?.element);
+  if (setterSpecies === undefined || payoffSpecies === undefined || reaction === undefined) {
+    return null;
+  }
+  const palette = markPalette(reaction.markElement);
+  const markIcon = elementIcon(reaction.markElement);
+  const triggerIcon = elementIcon(reaction.triggerElement);
+  return (
+    <section class="example" aria-label={title}>
+      <h4 class="pix">{title}</h4>
+      <div class="example-steps">
+        <div class="example-step">
+          <Figure species={setter} />
+          <Arrow />
+          <span class={`example-mark el-${reaction.markElement}`}>
+            <Sprite
+              sprite={glyphOrUnknown('mark')}
+              scale={3}
+              {...(palette === undefined ? {} : { palette })}
+            />
+            <GlossaryTag entry={GLOSSARY_IDS.mark(reaction.markId)} class="pix">
+              {reaction.markName}
+            </GlossaryTag>
+          </span>
+        </div>
+        <div class="example-step">
+          <Figure species={payoff} />
+          <Arrow />
+          <span class={`example-burst el-${reaction.triggerElement}`}>
+            {markIcon !== undefined && <Sprite sprite={markIcon} scale={2} />}
+            {triggerIcon !== undefined && <Sprite sprite={triggerIcon} scale={2} />}
+            <GlossaryTag entry={GLOSSARY_IDS.reaction(reaction.id)} class="pix">
+              {reaction.name}!
+            </GlossaryTag>
+          </span>
+        </div>
+      </div>
+      <ol class="example-lines">
+        {lines.map((line, i) => (
+          <li key={i}>{line}</li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function CombosArt() {
+  return (
+    <>
+      <ReactionLoop />
+      <ComboExample />
+    </>
+  );
+}
+
+/** The raid week: Monday to Sunday as four steps. */
+function RaidWeekArt() {
+  const bossId = content.bosses[0]?.id ?? '';
+  const art = bossArt(bossId);
+  const glyphs: Record<string, string> = { phase1: 'mark', phase2: 'warning', finale: 'ability' };
+  return (
+    <ol class="art-row week-art" aria-label="The week">
+      {weekStrip().map((step) => (
+        <li key={step.event}>
+          {step.event === 'weekStart' ? (
+            <Sprite sprite={art.sprite} scale={2} />
+          ) : (
+            <Sprite sprite={glyphOrUnknown(glyphs[step.event] ?? 'unknown')} scale={4} />
+          )}
+          <span class="pix week-day">{step.day}</span>
+          <span class="muted">{step.title}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** The live finale: a boss, a row with an ability badge and a warning, and the Auto fire tag. */
+function FinaleArt() {
+  const bossId = content.bosses[1]?.id ?? content.bosses[0]?.id ?? '';
+  const art = bossArt(bossId);
+  const row = (['setter', 'payoff', 'guard'] as const)
+    .map((role) => exampleSpecies(role))
+    .flatMap((s) => (s === undefined ? [] : [s]));
+  return (
+    <div class="finale-art">
+      <div class="finale-boss">
+        <Sprite sprite={art.sprite} scale={3} />
+        <p class="forecast pix">
+          <Sprite sprite={glyphOrUnknown('warning')} scale={2} />
+          <span>{titleOf(GLOSSARY_IDS.gimmick('hit_zone'))}</span>
+        </p>
+      </div>
+      <ul class="art-row" aria-label="Your row">
+        {row.map((s, i) => (
+          <li key={s.id} class="finale-unit">
+            <span class="finale-unit-art">
+              <Sprite sprite={creatureSpriteOrFallback(s.id)} scale={4} />
+              {i === 1 && (
+                <Sprite sprite={glyphOrUnknown('ability')} scale={2} class="finale-badge" />
+              )}
+              {i === 2 && (
+                <Sprite sprite={glyphOrUnknown('reticle')} scale={2} class="finale-badge" />
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p class="tags art-tags">
+        <GlossaryTag entry="auto-fire" look="chip" class="tag">
+          {titleOf('auto-fire')}
+        </GlossaryTag>
+        <GlossaryTag entry="crit" look="chip" class="tag">
+          {titleOf('crit')}
+        </GlossaryTag>
+      </p>
+    </div>
+  );
+}
+
+/** Expeditions: an explorer, and the three trips with their catches. */
+function ExpeditionsArt() {
+  const orb = glyphOrUnknown('orb');
+  return (
+    <div class="expedition-art">
+      <Figure species={RULES.catching.firstExpeditionLine} />
+      <ul class="art-row trips" aria-label="Trips">
+        {expeditionTrips().map((trip) => (
+          <li key={trip.hours}>
+            <span class="pix">{trip.hours} h</span>
+            <span class="trip-catches">
+              {Array.from({ length: trip.catches }, (_, i) => (
+                <Sprite key={i} sprite={orb} scale={2} />
+              ))}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p class="tags art-tags">
+        <GlossaryTag entry="shiny" look="chip" class="badge shiny">
+          {titleOf('shiny')}
+        </GlossaryTag>
+        <GlossaryTag entry="fusion" look="chip" class="tag">
+          {titleOf('fusion')}
+        </GlossaryTag>
+      </p>
+    </div>
+  );
+}
+
+/** Ranks and Festivals: the season pips and the tags. */
+function RanksArt() {
+  const pips = exampleSeason();
+  return (
+    <div class="ranks-art">
+      <ol class="season-pips" aria-label="A season">
+        {pips.map((pip) => (
+          <li
+            key={pip.week}
+            class={`season-pip ${pip.state}${pip.festival ? ' festival' : ''}`}
+            aria-hidden="true"
+          />
+        ))}
+      </ol>
+      <p class="tags art-tags">
+        <GlossaryTag entry="boss-rank" look="chip" class="tag rank">
+          {titleOf('boss-rank')}
+        </GlossaryTag>
+        <GlossaryTag entry="festival" look="chip" class="badge festival">
+          {titleOf('festival')}
+        </GlossaryTag>
+        <GlossaryTag entry="season" look="chip" class="tag">
+          {titleOf('season')}
+        </GlossaryTag>
+      </p>
+    </div>
+  );
+}
+
+/** Rewards: Essence turns a creature into its evolved form. */
+function RewardsArt() {
+  const evolution = evolutionExample();
+  return (
+    <div class="rewards-art">
+      {evolution !== undefined && (
+        <div class="evolve-art">
+          <Figure species={evolution.from} />
+          <span class="evolve-cost">
+            <Sprite sprite={glyphOrUnknown('gem')} scale={3} />
+            <span class="pix">{evolution.essence}</span>
+            <Arrow />
+          </span>
+          <Figure species={evolution.to} />
+        </div>
+      )}
+      <p class="tags art-tags">
+        <GlossaryTag entry="essence" look="chip" class="tag">
+          {titleOf('essence')}
+        </GlossaryTag>
+        <GlossaryTag entry="bait" look="chip" class="tag">
+          {titleOf('bait')}
+        </GlossaryTag>
+      </p>
+    </div>
+  );
+}
+
+/** The Workshop: one item of each kind, the parts, and the anvil with the three jobs. */
+function WorkshopArt() {
+  return (
+    <div class="workshop-art">
+      <ul class="art-row" aria-label="Gear">
+        {GEAR_EXAMPLES.map((baseId) => (
+          <li key={baseId}>
+            <ItemFrame rarity="rare">
+              <ItemSprite baseId={baseId} scale={4} />
+            </ItemFrame>
+          </li>
+        ))}
+      </ul>
+      <ul class="art-row" aria-label="Parts">
+        {PART_KINDS.map((kind) => (
+          <li key={kind}>
+            <Sprite sprite={partIcon(kind)} scale={3} />
+          </li>
+        ))}
+      </ul>
+      <p class="tags art-tags">
+        <Sprite sprite={glyphOrUnknown('anvil')} scale={2} />
+        {JOB_KINDS.map((kind) => (
+          <GlossaryTag key={kind} entry={GLOSSARY_IDS.job(kind)} look="chip" class="tag">
+            {titleOf(GLOSSARY_IDS.job(kind))}
+          </GlossaryTag>
+        ))}
+        <GlossaryTag entry="blueprint" look="chip" class="tag">
+          {titleOf('blueprint')}
+        </GlossaryTag>
+      </p>
+    </div>
+  );
+}
+
+/** The picture of one section. */
+export function SectionArt({ id }: { id: GlossarySection }) {
+  switch (id) {
+    case 'first-week':
+      return <StartersArt />;
+    case 'creatures':
+      return <CreaturesArt />;
+    case 'combos':
+      return <CombosArt />;
+    case 'raid-week':
+      return <RaidWeekArt />;
+    case 'finale':
+      return <FinaleArt />;
+    case 'expeditions':
+      return <ExpeditionsArt />;
+    case 'ranks':
+      return <RanksArt />;
+    case 'rewards':
+      return <RewardsArt />;
+    case 'workshop':
+      return <WorkshopArt />;
+  }
+}

@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { AbilityPicker } from './AbilityPicker';
 import { AfterAction } from './AfterAction';
 import { ApiError, type Creature } from './api';
+import { CoachMark } from './CoachMark';
 import { clockOffset, creatureName, errorText } from './game';
+import { GlossaryTag } from './Glossary';
 import { useNow } from './hooks';
 import { bannerText, finaleWindow } from './live';
 import { startPractice, type LiveSnapshot } from './live-api';
@@ -278,6 +280,7 @@ export function Raid({
 
   return (
     <>
+      <CoachMark />
       {error !== null && (
         <p class="error" role="alert">
           {error}
@@ -287,6 +290,7 @@ export function Raid({
         <RevealCard
           reveal={reveal}
           busy={busy}
+          gearWeek={reveal.week}
           afterAction={{
             week: reveal.week,
             party: reveal.party,
@@ -535,7 +539,8 @@ function ResultCard({
         </span>
       </h4>
       <p>
-        Essence you got: <strong>{result.essence}</strong>
+        <GlossaryTag entry="essence">Essence</GlossaryTag> you got:{' '}
+        <strong>{result.essence}</strong>
       </p>
       {result.festivalGrant !== null && (
         <p class="reveal-festival">{festivalGrantText(result.festivalGrant)}</p>

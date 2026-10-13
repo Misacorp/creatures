@@ -2,8 +2,17 @@
  * Raid teams and rows: who fights and where they stand. Shared by the week lifecycle, the phase
  * resolver and the API views. Everything here is synchronous SQL on the guild's database.
  */
-import { RULES, creaturePower, effectiveStats, type CreatureSpecies } from '@creatures/game';
+import {
+  RULES,
+  applyGear,
+  creaturePower,
+  effectiveStats,
+  type CreatureSpecies,
+  type CritBonus,
+  type Stats,
+} from '@creatures/game';
 import { speciesOf, type ErrorStatus } from './collection';
+import { equippedByCreature, rowToItem, type GearRow } from './gear-store';
 
 /** Thrown inside a transaction to roll it back and answer with an error. */
 export class RaidError extends Error {
@@ -19,7 +28,11 @@ export class RaidError extends Error {
 export const RAID_PHASE_STATUSES = ['open', 'phase1', 'phase2', 'finale'] as const;
 export type RaidStatus = (typeof RAID_PHASE_STATUSES)[number];
 
-/** A creature as a raid sees it: current stats at the moment of reading. */
+/**
+ * A creature as a raid sees it: current stats at the moment of reading, with the item it wears folded
+ * in (`applyGear`, capped). Fight inputs are built from these at the moment a phase resolves or the
+ * live finale starts and then stored, so later gear changes never touch a fight that was built.
+ */
 export interface TeamCreature {
   id: string;
   userId: string;
@@ -28,7 +41,11 @@ export interface TeamCreature {
   fusionCount: number;
   nickname: string | null;
   caughtAt: number;
-  /** `creaturePower` of the effective stats (fusion included). */
+  /** The stats a fight uses: level, fusion and gear. */
+  stats: Stats;
+  /** The crit bonus a fight uses (the species' plus gear's); absent when it has neither. */
+  crit?: CritBonus;
+  /** `creaturePower` of `stats` (fusion and gear included). */
   power: number;
 }
 
@@ -42,8 +59,15 @@ type CreatureDbRow = {
   caught_at: number;
 };
 
-function toTeamCreature(row: CreatureDbRow): TeamCreature {
+function toTeamCreature(row: CreatureDbRow, worn: GearRow | undefined): TeamCreature {
   const species = speciesOf(row.species);
+  const folded = applyGear(
+    effectiveStats(species, row.level, row.fusion_count),
+    species.crit,
+    species.role,
+    species.element,
+    worn === undefined ? null : rowToItem(worn),
+  );
   return {
     id: row.id,
     userId: row.user_id,
@@ -52,19 +76,22 @@ function toTeamCreature(row: CreatureDbRow): TeamCreature {
     fusionCount: row.fusion_count,
     nickname: row.nickname,
     caughtAt: row.caught_at,
-    power: creaturePower(effectiveStats(species, row.level, row.fusion_count)),
+    stats: folded.stats,
+    ...(folded.crit === undefined ? {} : { crit: folded.crit }),
+    power: creaturePower(folded.stats),
   };
 }
 
-/** All creatures of a player, oldest first. */
+/** All creatures of a player, oldest first, with their gear folded in. */
 export function loadCreatures(sql: SqlStorage, userId: string): TeamCreature[] {
+  const worn = equippedByCreature(sql, userId);
   return sql
     .exec<CreatureDbRow>(
       'SELECT id, user_id, species, level, fusion_count, nickname, caught_at FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid',
       userId,
     )
     .toArray()
-    .map(toTeamCreature);
+    .map((row) => toTeamCreature(row, worn.get(row.id)));
 }
 
 /**

@@ -31,7 +31,7 @@ export interface CollectionRouteContext {
 }
 
 /** Parses the body with a strict schema; undefined means "answer 400 invalid_body". */
-async function parseBody<S extends v.GenericSchema>(
+export async function parseBody<S extends v.GenericSchema>(
   request: Request,
   schema: S,
 ): Promise<v.InferOutput<S> | undefined> {
@@ -41,12 +41,12 @@ async function parseBody<S extends v.GenericSchema>(
   return parsed.success ? parsed.output : undefined;
 }
 
-function pathId(ctx: CollectionRouteContext): string | undefined {
+export function pathId(ctx: { params: Record<string, string> }): string | undefined {
   const parsed = v.safeParse(IdSchema, ctx.params['id']);
   return parsed.success ? parsed.output : undefined;
 }
 
-function failure(outcome: Extract<Outcome<unknown>, { ok: false }>): Response {
+export function failure(outcome: Extract<Outcome<unknown>, { ok: false }>): Response {
   if (outcome.reason !== undefined) {
     return json({ error: outcome.error, reason: outcome.reason }, outcome.status);
   }

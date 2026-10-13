@@ -1,0 +1,74 @@
+{
+  "equip": {
+    "path": "/api/gear/2e486da1-d4b1-477e-a3b3-c47a33da5703/equip",
+    "method": "POST",
+    "body": {
+      "creatureId": "10d24d35-e868-4bd9-bd9f-4afca979cbcb"
+    }
+  },
+  "unequip": {
+    "path": "/api/gear/2e486da1-d4b1-477e-a3b3-c47a33da5703/equip",
+    "method": "POST",
+    "body": {
+      "creatureId": null
+    }
+  },
+  "upgrade": {
+    "path": "/api/gear/87ee5c5b-2e94-4a97-b049-f91d9ba18398/upgrade",
+    "method": "POST",
+    "body": {
+      "idempotencyKey": "fixture-00000001-key"
+    }
+  },
+  "dismantle": {
+    "path": "/api/gear/5b9512cc-119d-400c-9876-4b8dbb8c05da/dismantle",
+    "method": "POST",
+    "body": {
+      "idempotencyKey": "fixture-00000013-key"
+    }
+  },
+  "job-craft": {
+    "path": "/api/workshop/jobs",
+    "method": "POST",
+    "body": {
+      "kind": "craft",
+      "creatureId": "fd833d62-33dd-4a90-8c3b-388a26f47176",
+      "blueprintId": "wave-band",
+      "idempotencyKey": "fixture-00000002-key"
+    }
+  },
+  "job-improve": {
+    "path": "/api/workshop/jobs",
+    "method": "POST",
+    "body": {
+      "kind": "improve",
+      "creatureId": "a623e389-3d71-4fd5-8f2a-cbb80f7d0c41",
+      "gearId": "d370f1f6-5940-44bc-9113-ced5efbe8d3e",
+      "secondaryIndex": 0,
+      "idempotencyKey": "fixture-00000003-key"
+    }
+  },
+  "job-enchant": {
+    "path": "/api/workshop/jobs",
+    "method": "POST",
+    "body": {
+      "kind": "enchant",
+      "creatureId": "fd833d62-33dd-4a90-8c3b-388a26f47176",
+      "gearId": "2e486da1-d4b1-477e-a3b3-c47a33da5703",
+      "enchantId": "ember-fury",
+      "idempotencyKey": "fixture-00000011-key"
+    }
+  },
+  "job-claim": {
+    "path": "/api/workshop/jobs/334ec40f-306c-48a7-89f0-9a485332001b/claim",
+    "method": "POST",
+    "body": {
+      "idempotencyKey": "fixture-00000010-key"
+    }
+  },
+  "expedition-claim": {
+    "path": "/api/expeditions/e6733e28-a9b4-4d0e-b8aa-de3d6de8672d/claim",
+    "method": "POST",
+    "body": {}
+  }
+}

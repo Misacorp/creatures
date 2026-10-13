@@ -1,0 +1,104 @@
+{
+  "serverNow": 1799733600000,
+  "balances": {
+    "bait": 100,
+    "essence": 179
+  },
+  "inventory": {
+    "cap": 60,
+    "used": 1,
+    "reserved": 0
+  },
+  "items": [
+    {
+      "id": "87ee5c5b-2e94-4a97-b049-f91d9ba18398",
+      "baseId": "trail-charm",
+      "rarity": "common",
+      "level": 0,
+      "maxLevel": 5,
+      "primary": {
+        "stat": "atk",
+        "bp": 422
+      },
+      "secondaries": [],
+      "enchantId": null,
+      "enchantActive": null,
+      "equippedOn": null,
+      "jobId": null,
+      "upgradeCost": {
+        "essence": 20,
+        "scrap": 2
+      },
+      "dismantle": {
+        "scrap": 2
+      },
+      "source": "welcome",
+      "createdAt": 1799733600000
+    }
+  ],
+  "parts": {
+    "scrap": 8,
+    "tide-shard": 0,
+    "ember-shard": 0,
+    "grove-shard": 0,
+    "spark-shard": 0,
+    "glimmer": 0
+  },
+  "blueprints": [
+    {
+      "baseId": "static-charm",
+      "rarity": "common",
+      "learnedAt": 1799733600000
+    }
+  ],
+  "jobs": [],
+  "slots": {
+    "total": 2,
+    "used": 0
+  },
+  "skills": [
+    {
+      "creatureId": "10d24d35-e868-4bd9-bd9f-4afca979cbcb",
+      "xp": 0,
+      "level": 1,
+      "nextLevelXp": 80
+    },
+    {
+      "creatureId": "a623e389-3d71-4fd5-8f2a-cbb80f7d0c41",
+      "xp": 0,
+      "level": 1,
+      "nextLevelXp": 80
+    },
+    {
+      "creatureId": "fd833d62-33dd-4a90-8c3b-388a26f47176",
+      "xp": 0,
+      "level": 1,
+      "nextLevelXp": 80
+    }
+  ],
+  "grants": [
+    {
+      "gear": [
+        {
+          "id": "87ee5c5b-2e94-4a97-b049-f91d9ba18398",
+          "baseId": "trail-charm",
+          "rarity": "common"
+        }
+      ],
+      "converted": [],
+      "parts": {
+        "scrap": 8
+      },
+      "blueprints": [
+        {
+          "baseId": "static-charm",
+          "rarity": "common",
+          "duplicate": false
+        }
+      ],
+      "key": "welcome",
+      "source": "welcome",
+      "at": 1799733600000
+    }
+  ]
+}

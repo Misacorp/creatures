@@ -15,6 +15,9 @@ import { loadContent } from './load';
 export * from './schema';
 export { loadContent, upgradeProblem, STARTER_COUNT } from './load';
 export * from './lore';
+export * from './glossary-schema';
+export * from './gear-schema';
+export * from './gear';
 
 /** The shipped content pack, validated at module load. */
 export const content = loadContent({

@@ -65,6 +65,21 @@ Festival species are compared with the catchable median in the report but are no
 | Jackpot rate per player per finale win, including pity            | 6–15%                          |
 | Players reaching hard pity (10 raids)                             | ≤ 15% of players over 20 weeks |
 
+## Gear and crafting
+
+Measured on the default server's sims (10 players, 12 weeks), with the same seeds played without gear as "today".
+
+| Target                                                                                                                          | Value       |
+| ------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| Gear's share of a daily player's raid-team power at week 8 (median; the hard ceiling for any player at any time is 25%)         | 10–20%      |
+| Days until a daily player's first crafted item arrives (90th percentile; a player who never crafts counts as 99)                | ≤ 7         |
+| Essence held by daily players at week 12, minus the same sims without gear (never above today's value)                          | ≤ 0         |
+| Weekly growth of daily players' Essence stockpile from week 8 to 12, minus today's growth (no runaway; negative means it falls) | ≤ 0         |
+| Best Crafting level of a daily player 30 days after joining (median)                                                            | 4–6 (aim 5) |
+| Gear power at week 8 of a player who joined in week 4, relative to the median daily player's                                    | ≥ 60%       |
+
+**Gear share** is the power the worn items add to the top 3 creatures (`applyGear`, floored as in the fight slots) over the top-3 power with gear. The raid, long-run, fairness and collection targets above are measured with gear on, so they still hold after gear.
+
 ## Informational (no target)
 
 The simulator also reports these, to keep an eye on them. They are not checked in `targets.json`.

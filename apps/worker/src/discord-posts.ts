@@ -8,6 +8,7 @@
  * given up on. Logs contain error kinds only, never tokens, ids, URLs or message text.
  */
 import * as v from 'valibot';
+import type { Analytics, AnalyticsEvent } from './analytics';
 import { SNOWFLAKE_RE } from './schemas';
 
 const API_BASE = 'https://discord.com/api/v10';
@@ -257,7 +258,9 @@ export function recordOutcome(
   post: ClaimedPost,
   outcome: SendOutcome,
   now: number,
+  analytics?: Analytics,
 ): PostFailureKind | null {
+  analytics?.record(postResultEvent(outcome, post.attempts));
   if (outcome.kind === 'sent') {
     sql.exec("UPDATE discord_posts SET status = 'sent' WHERE id = ?", post.id);
     return null;
@@ -273,4 +276,20 @@ export function recordOutcome(
     0;
   sql.exec('UPDATE discord_posts SET next_attempt_at = ? WHERE id = ?', now + wait, post.id);
   return outcome.error;
+}
+
+/** The analytics event of one delivery attempt: sent, will be retried, or given up on (kind only). */
+function postResultEvent(
+  outcome: SendOutcome,
+  attempts: number,
+): Extract<AnalyticsEvent, { kind: 'post_result' }> {
+  if (outcome.kind === 'sent')
+    return { kind: 'post_result', result: 'sent', error: null, attempts };
+  const final = outcome.kind === 'failed' || attempts >= MAX_POST_ATTEMPTS;
+  return {
+    kind: 'post_result',
+    result: final ? 'failed' : 'retry',
+    error: outcome.error,
+    attempts,
+  };
 }

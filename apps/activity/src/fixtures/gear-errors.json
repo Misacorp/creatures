@@ -1,0 +1,121 @@
+[
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "creature_on_job"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "workshop_full"
+    }
+  },
+  {
+    "route": "POST /api/expeditions",
+    "status": 409,
+    "body": {
+      "error": "creature_on_job"
+    }
+  },
+  {
+    "route": "POST /api/gear/:id/dismantle",
+    "status": 409,
+    "body": {
+      "error": "item_busy"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs/:id/claim",
+    "status": 409,
+    "body": {
+      "error": "not_ready"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "same_enchant"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "insufficient_parts"
+    }
+  },
+  {
+    "route": "POST /api/gear/:id/upgrade",
+    "status": 409,
+    "body": {
+      "error": "insufficient_funds"
+    }
+  },
+  {
+    "route": "POST /api/gear/:id/upgrade",
+    "status": 409,
+    "body": {
+      "error": "insufficient_parts"
+    }
+  },
+  {
+    "route": "POST /api/gear/:id/upgrade",
+    "status": 409,
+    "body": {
+      "error": "max_level"
+    }
+  },
+  {
+    "route": "POST /api/gear/:id/dismantle",
+    "status": 409,
+    "body": {
+      "error": "key_conflict"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "blueprint_unknown"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "nothing_to_improve"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "creature_away"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "inventory_full"
+    }
+  },
+  {
+    "route": "POST /api/gear/:id/equip",
+    "status": 400,
+    "body": {
+      "error": "invalid_body"
+    }
+  },
+  {
+    "route": "POST /api/gear/:id/equip",
+    "status": 404,
+    "body": {
+      "error": "not_found"
+    }
+  }
+]

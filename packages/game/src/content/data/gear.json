@@ -1,0 +1,173 @@
+[
+  {
+    "id": "trail-charm",
+    "name": "Trail Charm",
+    "kind": "charm",
+    "primary": "atk",
+    "tint": null,
+    "blueprint": "common",
+    "flavor": "A knotted cord every explorer ties before the first long walk."
+  },
+  {
+    "id": "patch-band",
+    "name": "Patch Band",
+    "kind": "band",
+    "primary": "hp",
+    "tint": null,
+    "blueprint": "common",
+    "flavor": "Mended so often that it is mostly patches, and tougher for it."
+  },
+  {
+    "id": "quick-trinket",
+    "name": "Quick Trinket",
+    "kind": "trinket",
+    "primary": "spd",
+    "tint": null,
+    "blueprint": "common",
+    "flavor": "A tiny bell that never rings but somehow makes feet lighter."
+  },
+  {
+    "id": "fortune-charm",
+    "name": "Fortune Charm",
+    "kind": "charm",
+    "primary": "critChance",
+    "tint": null,
+    "blueprint": "rare",
+    "flavor": "Found in the pocket of a coat nobody remembers owning."
+  },
+  {
+    "id": "keen-trinket",
+    "name": "Keen Trinket",
+    "kind": "trinket",
+    "primary": "critDamage",
+    "tint": null,
+    "blueprint": "rare",
+    "flavor": "A bright sliver of something sharp, wrapped in thread."
+  },
+  {
+    "id": "tidepool-charm",
+    "name": "Tidepool Charm",
+    "kind": "charm",
+    "primary": "hp",
+    "tint": "tide",
+    "blueprint": "common",
+    "flavor": "A shell that keeps a little pool of seawater in it, always."
+  },
+  {
+    "id": "wave-band",
+    "name": "Wave Band",
+    "kind": "band",
+    "primary": "spd",
+    "tint": "tide",
+    "blueprint": "rare",
+    "flavor": "Woven from kelp that moves as if the tide were still in."
+  },
+  {
+    "id": "pearl-trinket",
+    "name": "Pearl Trinket",
+    "kind": "trinket",
+    "primary": "atk",
+    "tint": "tide",
+    "blueprint": "epic",
+    "flavor": "A pearl that hums quietly whenever a storm is far away."
+  },
+  {
+    "id": "cinder-charm",
+    "name": "Cinder Charm",
+    "kind": "charm",
+    "primary": "atk",
+    "tint": "ember",
+    "blueprint": "common",
+    "flavor": "A coal that stays warm in the coldest pocket."
+  },
+  {
+    "id": "forge-band",
+    "name": "Forge Band",
+    "kind": "band",
+    "primary": "hp",
+    "tint": "ember",
+    "blueprint": "rare",
+    "flavor": "Hammered flat on a forge that was left running overnight."
+  },
+  {
+    "id": "phoenix-trinket",
+    "name": "Phoenix Trinket",
+    "kind": "trinket",
+    "primary": "critDamage",
+    "tint": "ember",
+    "blueprint": "epic",
+    "flavor": "A single feather that is a little too hot to hold for long."
+  },
+  {
+    "id": "mossy-charm",
+    "name": "Mossy Charm",
+    "kind": "charm",
+    "primary": "hp",
+    "tint": "grove",
+    "blueprint": "common",
+    "flavor": "Soft with moss, and a small fern grows from it in spring."
+  },
+  {
+    "id": "bark-band",
+    "name": "Bark Band",
+    "kind": "band",
+    "primary": "atk",
+    "tint": "grove",
+    "blueprint": "rare",
+    "flavor": "A ring of bark that tightens a little when danger is near."
+  },
+  {
+    "id": "heartwood-trinket",
+    "name": "Heartwood Trinket",
+    "kind": "trinket",
+    "primary": "hp",
+    "tint": "grove",
+    "blueprint": "epic",
+    "flavor": "Carved from the oldest tree in the grove, which did not mind."
+  },
+  {
+    "id": "static-charm",
+    "name": "Static Charm",
+    "kind": "charm",
+    "primary": "spd",
+    "tint": "spark",
+    "blueprint": "common",
+    "flavor": "Crackles when you rub it on wool, and sometimes when you don't."
+  },
+  {
+    "id": "volt-band",
+    "name": "Volt Band",
+    "kind": "band",
+    "primary": "critChance",
+    "tint": "spark",
+    "blueprint": "rare",
+    "flavor": "A copper loop that taps out a rhythm against the wrist."
+  },
+  {
+    "id": "storm-trinket",
+    "name": "Storm Trinket",
+    "kind": "trinket",
+    "primary": "atk",
+    "tint": "spark",
+    "blueprint": "epic",
+    "flavor": "A glass bead with a small thundercloud trapped inside."
+  },
+  {
+    "id": "lantern-charm",
+    "name": "Festival Lantern Charm",
+    "kind": "charm",
+    "primary": "hp",
+    "tint": "tide",
+    "blueprint": "festival",
+    "flavor": "A paper lantern charm, lit once a season at the Festival of the tide."
+  },
+  {
+    "id": "hearth-band",
+    "name": "Festival Hearth Band",
+    "kind": "band",
+    "primary": "atk",
+    "tint": "ember",
+    "blueprint": "festival",
+    "flavor": "A warm band given to everyone who stood by the Festival hearth."
+  }
+]
