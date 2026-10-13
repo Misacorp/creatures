@@ -8,7 +8,7 @@ import { content, RULES, type FinaleAbilityDef } from '@creatures/game';
 import { MAX_ROUND_MS, describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
 import type { LiveAbility, LiveActionRequest, LiveFight, LiveSnapshot } from './live-api';
 import type { AbilityPreview, RaidReveal, TeamCreatureView } from './raid-api';
-import { formatCountdown } from './game';
+import { formatCountdown } from './time-format';
 import { festivalGrantText, rankChangeText } from './raid-progress';
 
 // --- When the finale is on ---
@@ -33,17 +33,10 @@ export function finaleWindow(finaleAt: number, rounds: number, serverNow: number
   return 'after';
 }
 
-/** "4:12" for 252 000 ms. Rounds up, never negative. */
-export function formatClock(ms: number): string {
-  const total = Math.max(0, Math.ceil(ms / 1000));
-  const minutes = Math.floor(total / 60);
-  const seconds = total % 60;
-  return `${String(minutes)}:${String(seconds).padStart(2, '0')}`;
-}
-
 /** The text of the Raid tab banner. */
 export function bannerText(window: FinaleWindow, finaleAt: number, serverNow: number): string {
-  if (window === 'lobby') return `Finale starts in ${formatClock(finaleAt - serverNow)}`;
+  if (window === 'lobby')
+    return `Finale starts in ${formatCountdown(finaleAt - serverNow, 'clock')}`;
   if (window === 'live') return 'The finale is on now';
   return '';
 }
@@ -125,12 +118,12 @@ export function progressText(fight: LiveFight, serverNow: number): Progress {
   if (status === 'lobby' || round < 1) {
     return {
       headline: 'Waiting for the finale to start',
-      countdown: `Starts in ${formatClock(startsAt - serverNow)}`,
+      countdown: `Starts in ${formatCountdown(startsAt - serverNow, 'clock')}`,
     };
   }
   // The last round is the final one, or the one the boss has just fallen in.
   const last = round >= rounds || fight.bossHp === 0;
-  const wait = nextRoundAt === null ? '' : formatCountdown(nextRoundAt - serverNow);
+  const wait = nextRoundAt === null ? '' : formatCountdown(nextRoundAt - serverNow, 'hms');
   if (last) {
     return {
       headline: `Last round (${String(round)} of ${String(rounds)})`,

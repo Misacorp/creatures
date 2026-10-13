@@ -122,15 +122,6 @@ export function missingParts(
   return missing;
 }
 
-/** "3 hours" style text for a job length: "4 h" or "3 h 44 min" or "45 min". */
-export function formatDuration(ms: number): string {
-  const totalMinutes = Math.max(0, Math.ceil(ms / 60_000));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours === 0) return `${String(minutes)} min`;
-  return minutes === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(minutes)} min`;
-}
-
 /** Who an enchant works for, in words. */
 export function enchantWhen(when: EnchantCondition | undefined): string {
   if (when === undefined) return 'Works for every creature.';

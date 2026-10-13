@@ -3,7 +3,7 @@ import { ApiError } from './api';
 import { Countdown } from './Countdown';
 import { countdownView, spokenCountdown } from './countdown';
 import { clockOffset, errorText } from './game';
-import { useNow } from './hooks';
+import { useServerNow } from './hooks';
 import {
   abilityStateText,
   abilityTitle,
@@ -78,7 +78,7 @@ export function Live({
   const offset = useRef(0);
   /** One request at a time per ability: a double tap on one ability sends one request. */
   const locks = useRef(createKeyLock());
-  const now = useNow(true);
+  const serverNow = useServerNow(offset.current, true);
   // The countdown over the stage in the last 30 seconds before the start: from the server's start
   // time and the clock offset, so it follows the server's clock and needs no extra requests.
   const startsAtLocal =
@@ -236,7 +236,6 @@ export function Live({
   }
 
   const fight = snapshot;
-  const serverNow = now + offset.current;
   const progress = progressText(fight, serverNow);
   const lobby = fight.status === 'lobby';
   const mine = ownAbilities(fight.abilities, fight.you);

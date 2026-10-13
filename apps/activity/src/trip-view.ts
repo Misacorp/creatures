@@ -18,8 +18,8 @@ import {
   type SupplyDef,
 } from '@creatures/game';
 import type { ExpeditionLength, ExplorerView, Slots, SupplyPick, Trip } from './expedition-types';
-import { formatDuration } from './gear-view';
 import type { PartKind } from './gear-types';
+import { formatDuration, formatHours } from './time-format';
 
 const BP = 10_000;
 
@@ -37,7 +37,7 @@ function lengthHours(length: ExpeditionLength): number {
 
 /** "2 h", "6 h", "12 h", "24 h". */
 export function lengthLabel(length: ExpeditionLength): string {
-  return `${String(lengthHours(length))} h`;
+  return formatHours(lengthHours(length));
 }
 
 interface LengthOption {

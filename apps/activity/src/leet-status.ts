@@ -1,4 +1,5 @@
 import type { LeetSyncStatus } from './api';
+import { formatRelative } from './time-format';
 
 /** Short plain-English reasons for the error kinds the server stores. Unknown kinds get a fallback. */
 const ERROR_PHRASES = new Map<string, string>(
@@ -15,17 +16,6 @@ const ERROR_PHRASES = new Map<string, string>(
 
 export function leetErrorPhrase(kind: string): string {
   return ERROR_PHRASES.get(kind) ?? 'unknown error';
-}
-
-/** "just now", "5 minutes ago", "3 hours ago", "2 days ago". Never negative. */
-export function relativeTime(then: number, now: number): string {
-  const minutes = Math.floor(Math.max(0, now - then) / 60_000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${String(minutes)} minute${minutes === 1 ? '' : 's'} ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${String(hours)} hour${hours === 1 ? '' : 's'} ago`;
-  const days = Math.floor(hours / 24);
-  return `${String(days)} day${days === 1 ? '' : 's'} ago`;
 }
 
 /** How often the Activity re-asks the server while the first sync is still running. */
@@ -69,6 +59,6 @@ export function leetStatusLine(status: LeetSyncStatus, now: number): LeetStatusL
   const suffix = days === null ? '' : ` (${String(days)} day${days === 1 ? '' : 's'})`;
   return {
     tone: 'info',
-    text: `Leet points synced ${relativeTime(status.lastSyncedAt, now)}${suffix}`,
+    text: `Leet points synced ${formatRelative(status.lastSyncedAt, now)}${suffix}`,
   };
 }

@@ -1,5 +1,5 @@
 import type { PickerOption } from './gear-view';
-import { formatDuration } from './gear-view';
+import { formatDuration } from './time-format';
 import { GlossaryTag } from './Glossary';
 import { creatureName } from './game';
 import { Sprite } from './sprites/Sprite';

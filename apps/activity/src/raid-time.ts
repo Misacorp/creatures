@@ -5,6 +5,7 @@
  */
 import type { RaidEventId } from './raid-api';
 import { RAID_EVENT_IDS } from './raid-api';
+import { formatZoned } from './time-format';
 
 const EVENT_TITLES: Record<RaidEventId, string> = {
   weekStart: 'Preparation',
@@ -15,36 +16,6 @@ const EVENT_TITLES: Record<RaidEventId, string> = {
 
 export function eventTitle(event: RaidEventId): string {
   return EVENT_TITLES[event];
-}
-
-/** "Fri 13:37" in the given timezone. An unknown timezone falls back to UTC. */
-export function formatEventTime(at: number, timeZone: string): string {
-  return formatTime(at, timeZone, 'short');
-}
-
-/** "Monday 13:37": the same, with the weekday spelled out. */
-export function formatEventTimeLong(at: number, timeZone: string): string {
-  return formatTime(at, timeZone, 'long');
-}
-
-function formatTime(at: number, timeZone: string, weekday: 'short' | 'long'): string {
-  const make = (zone: string): Intl.DateTimeFormat =>
-    new Intl.DateTimeFormat('en-GB', {
-      timeZone: zone,
-      weekday,
-      hour: '2-digit',
-      minute: '2-digit',
-      hourCycle: 'h23',
-    });
-  let formatter: Intl.DateTimeFormat;
-  try {
-    formatter = make(timeZone);
-  } catch {
-    formatter = make('UTC');
-  }
-  const part = (type: string): string =>
-    formatter.formatToParts(at).find((p) => p.type === type)?.value ?? '';
-  return `${part('weekday')} ${part('hour')}:${part('minute')}`;
 }
 
 interface ScheduleStep {
@@ -81,37 +52,8 @@ export function scheduleSteps(
   return RAID_EVENT_IDS.map((event, index) => ({
     event,
     title: EVENT_TITLES[event],
-    when: formatEventTime(schedule[event], timeZone),
-    until: event === 'weekStart' ? formatEventTime(schedule.phase1, timeZone) : null,
+    when: formatZoned(schedule[event], timeZone, 'short'),
+    until: event === 'weekStart' ? formatZoned(schedule.phase1, timeZone, 'short') : null,
     state: stateOf(index),
   }));
-}
-
-/** "3d 04h 05m", "4h 05m 06s", "5m 06s" or "7s". Never negative. */
-export function formatLongCountdown(ms: number): string {
-  const total = Math.max(0, Math.ceil(ms / 1000));
-  const days = Math.floor(total / 86_400);
-  const hours = Math.floor((total % 86_400) / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const seconds = total % 60;
-  const pad = (n: number): string => String(n).padStart(2, '0');
-  if (days > 0) return `${String(days)}d ${pad(hours)}h ${pad(minutes)}m`;
-  if (hours > 0) return `${String(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
-  if (minutes > 0) return `${String(minutes)}m ${pad(seconds)}s`;
-  return `${String(seconds)}s`;
-}
-
-/**
- * A short wait for the "what to do now" line: "3 d 4 h", "2 h 10 m" or "12 m" (a zero part is left out).
- * Minutes round up, so it never reads "0 m" while something is still ahead, and it is never negative.
- */
-export function formatShortCountdown(ms: number): string {
-  const total = Math.max(0, Math.ceil(ms / 60_000));
-  const days = Math.floor(total / 1440);
-  const hours = Math.floor((total % 1440) / 60);
-  const minutes = total % 60;
-  if (days > 0) return hours === 0 ? `${String(days)} d` : `${String(days)} d ${String(hours)} h`;
-  if (hours > 0)
-    return minutes === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(minutes)} m`;
-  return `${String(minutes)} m`;
 }

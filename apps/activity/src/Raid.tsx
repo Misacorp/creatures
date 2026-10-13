@@ -6,7 +6,7 @@ import { ApiError, type Creature } from './api';
 import { CoachMark } from './CoachMark';
 import { clockOffset, creatureName, errorText } from './game';
 import { GlossaryTag } from './Glossary';
-import { useNow } from './hooks';
+import { useServerNow } from './hooks';
 import { finaleWindow } from './live';
 import { startPractice, type LiveSnapshot } from './live-api';
 import { Live } from './Live';
@@ -84,7 +84,7 @@ export function Raid({
   const practiceInFlight = useRef(false);
   /** The finale view opens by itself once, when the fight starts; closing it keeps it closed. */
   const autoOpened = useRef(false);
-  const now = useNow(loaded !== null);
+  const serverNow = useServerNow(loaded?.offset ?? 0, loaded !== null);
 
   function apply(view: RaidView): void {
     setLoaded({ view, offset: clockOffset(view.serverNow, Date.now()) });
@@ -128,7 +128,7 @@ export function Raid({
   const finaleRounds = loaded?.view.boss.finaleRounds ?? 1;
   const inParty = loaded?.view.you.party != null;
   const finaleState =
-    finaleAt === null ? 'before' : finaleWindow(finaleAt, finaleRounds, now + offset);
+    finaleAt === null ? 'before' : finaleWindow(finaleAt, finaleRounds, serverNow);
   useEffect(() => {
     if (finaleState === 'live' && inParty && !autoOpened.current) {
       autoOpened.current = true;
@@ -229,7 +229,6 @@ export function Raid({
   if (loaded === null) return <p class="muted">Loading the raid...</p>;
 
   const { view } = loaded;
-  const serverNow = now + loaded.offset;
   const party = view.party;
   const team = view.you.team;
   const locked = busy || !view.you.canEdit;

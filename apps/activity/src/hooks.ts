@@ -2,7 +2,7 @@ import type { RefObject } from 'preact';
 import { useEffect, useLayoutEffect, useState } from 'preact/hooks';
 
 /** Local time in ms, refreshed every second while `active`. */
-export function useNow(active: boolean): number {
+function useNow(active: boolean): number {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     if (!active) return undefined;
@@ -15,6 +15,14 @@ export function useNow(active: boolean): number {
     };
   }, [active]);
   return now;
+}
+
+/**
+ * The server's clock in ms (the local clock plus `offset`, which is server minus local), refreshed
+ * every second while `active`. Every countdown on a screen reads this one value.
+ */
+export function useServerNow(offset: number, active: boolean): number {
+  return useNow(active) + offset;
 }
 
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';

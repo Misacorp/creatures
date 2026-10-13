@@ -5,16 +5,12 @@ import { supplyEntry } from './ExpeditionIcons';
 import { CostList } from './GearArt';
 import { GlossaryTag } from './Glossary';
 import type { GearState } from './gear-types';
-import {
-  formatDuration,
-  supplyCraftViews,
-  supplyDurationFor,
-  supplyLevelBlocker,
-} from './gear-view';
+import { supplyCraftViews, supplyDurationFor, supplyLevelBlocker } from './gear-view';
 import { capitalize } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { JobStarter } from './JobStarter';
 import { Sprite } from './sprites/Sprite';
+import { formatDuration } from './time-format';
 import { kindName, supplyEffect } from './trip-view';
 
 /**

@@ -4,12 +4,13 @@ import { Banner } from './Banner';
 import { cssVars } from './css-vars';
 import type { Trip } from './expedition-types';
 import { ExpIcon } from './ExpeditionIcons';
-import { creatureName, formatCountdown, getSpecies } from './game';
+import { creatureName, getSpecies } from './game';
 import { GlossaryTag } from './Glossary';
 import { PushOnChoice } from './PushOnChoice';
 import { riskWord } from './push-on-view';
 import { explorerInfo } from './send-view';
 import { ElementChip } from './sprites/ElementChip';
+import { formatCountdown } from './time-format';
 import {
   destinationName,
   fillPct,
@@ -25,9 +26,9 @@ import {
 function statusText(trip: Trip, status: ReturnType<typeof tripStatus>): string {
   switch (status.phase) {
     case 'out':
-      return `Back in ${formatCountdown(status.remainingMs)}`;
+      return `Back in ${formatCountdown(status.remainingMs, 'hms')}`;
     case 'pushing':
-      return `Pushing on${trip.pushOn === null ? '' : `: ${goalName(trip.pushOn.goalId)}`}. Back in ${formatCountdown(status.remainingMs)}`;
+      return `Pushing on${trip.pushOn === null ? '' : `: ${goalName(trip.pushOn.goalId)}`}. Back in ${formatCountdown(status.remainingMs, 'hms')}`;
     case 'choice':
       return 'Waiting for your choice';
     case 'ready':

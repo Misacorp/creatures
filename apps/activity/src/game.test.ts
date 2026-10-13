@@ -10,7 +10,6 @@ import {
   creatureName,
   errorText,
   evolutionText,
-  formatCountdown,
   fusionStars,
   isFirstOnServer,
   personalityLine,
@@ -36,20 +35,6 @@ const creature: Creature = {
   ability: { id: 'tidal-mark', unlocked: false, unlockLevel: 10, nextId: 'tidal-mark-2' },
   explorer: { rank: 1, xp: 0, nextRankXp: 200, trips: 0 },
 };
-
-describe('formatCountdown', () => {
-  it.each([
-    [0, '0s'],
-    [-5000, '0s'],
-    [999, '1s'],
-    [12_000, '12s'],
-    [65_000, '1m 05s'],
-    [3_723_000, '1h 02m 03s'],
-    [12 * 3_600_000, '12h 00m 00s'],
-  ])('%i ms is %s', (ms, text) => {
-    expect(formatCountdown(ms)).toBe(text);
-  });
-});
 
 describe('display helpers', () => {
   it('counts fusion stars between 0 and 5', () => {

@@ -6,7 +6,6 @@ import {
   isSyncing,
   leetErrorPhrase,
   leetStatusLine,
-  relativeTime,
   shouldRefetchLeet,
 } from './leet-status';
 
@@ -37,22 +36,6 @@ describe('leetErrorPhrase', () => {
     ['constructor', 'unknown error'],
   ])('%s -> %s', (kind, phrase) => {
     expect(leetErrorPhrase(kind)).toBe(phrase);
-  });
-});
-
-describe('relativeTime', () => {
-  it.each([
-    [0, 'just now'],
-    [-5 * MIN, 'just now'],
-    [59_000, 'just now'],
-    [MIN, '1 minute ago'],
-    [5 * MIN, '5 minutes ago'],
-    [60 * MIN, '1 hour ago'],
-    [3 * 60 * MIN, '3 hours ago'],
-    [24 * 60 * MIN, '1 day ago'],
-    [50 * 60 * MIN, '2 days ago'],
-  ])('%i ms ago -> %s', (ago, text) => {
-    expect(relativeTime(NOW - ago, NOW)).toBe(text);
   });
 });
 

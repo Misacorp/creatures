@@ -4,7 +4,7 @@ import { ExplorerProfile } from './ExplorerProfile';
 import { fetchDestinations, fetchProfile, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
 import { expeditionBlocked } from './gear-view';
-import { useNow } from './hooks';
+import { useServerNow } from './hooks';
 import { Journal } from './Journal';
 import { RunningTrip } from './RunningTrip';
 import { SendTrip } from './SendTrip';
@@ -76,8 +76,7 @@ export function Expeditions({
 }: Props) {
   const [screen, setScreen] = useState<Screen>('trips');
   const active = state.expeditions.filter((e) => e.status === 'active');
-  const now = useNow(active.length > 0);
-  const serverNow = now + offset;
+  const serverNow = useServerNow(offset, active.length > 0);
   const destinations = useLoaded(
     fetchDestinations,
     [state.slots.tripsFinished, state.expeditions.length, active.length],

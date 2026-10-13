@@ -18,7 +18,6 @@ import {
   equipChoices,
   expeditionBlocked,
   formatBonus,
-  formatDuration,
   gearName,
   gearShare,
   grantsForWeek,
@@ -59,13 +58,9 @@ describe('names and numbers', () => {
     expect(itemLabel('wave-band', 2)).toBe('Wave Band +2');
   });
 
-  it('writes parts and durations in words', () => {
+  it('writes parts in words', () => {
     expect(partsText({ scrap: 6, 'ember-shard': 1 })).toBe('6 Scrap, 1 Ember Shard');
     expect(partsText({})).toBe('nothing');
-    expect(formatDuration(4 * 3_600_000)).toBe('4 h');
-    expect(formatDuration(3 * 3_600_000 + 44 * 60_000)).toBe('3 h 44 min');
-    expect(formatDuration(45 * 60_000)).toBe('45 min');
-    expect(formatDuration(-5)).toBe('0 min');
   });
 
   it('finds what is short of a price', () => {

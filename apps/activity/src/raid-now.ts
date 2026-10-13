@@ -5,12 +5,8 @@
  */
 import { bannerText, type FinaleWindow } from './live';
 import type { RaidView } from './raid-api';
-import {
-  eventTitle,
-  formatEventTime,
-  formatEventTimeLong,
-  formatShortCountdown,
-} from './raid-time';
+import { eventTitle } from './raid-time';
+import { formatCountdown, formatZoned } from './time-format';
 
 /** What the action leads to: the placement step, the live finale, or taking part again. */
 export type NowTarget = 'placement' | 'live' | 'rejoin';
@@ -87,13 +83,13 @@ export function nowAction(view: NowView, finale: FinaleWindow, serverNow: number
   if (next === null) {
     return {
       kind: 'week-done',
-      label: `Next boss ${formatEventTimeLong(view.schedule.weekStart, view.timezone)}`,
+      label: `Next boss ${formatZoned(view.schedule.weekStart, view.timezone, 'long')}`,
       detail: `Times are in ${view.timezone}.`,
       target: null,
     };
   }
   const title = eventTitle(next.event);
-  const when = formatEventTime(next.at, view.timezone);
+  const when = formatZoned(next.at, view.timezone, 'short');
   if (needsPlacement(view)) {
     return {
       kind: 'set-team',
@@ -108,7 +104,7 @@ export function nowAction(view: NowView, finale: FinaleWindow, serverNow: number
   }
   return {
     kind: next.event === 'finale' ? 'finale-countdown' : 'countdown',
-    label: `${title} in ${formatShortCountdown(remaining)}`,
+    label: `${title} in ${formatCountdown(remaining, 'short')}`,
     detail: `${when} (${view.timezone})`,
     target: null,
   };

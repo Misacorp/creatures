@@ -1,7 +1,7 @@
 import { RULES, expeditionContent, supplyDef, tripMs } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { parseGameState } from './api';
-import { formatDuration } from './gear-view';
+import { formatDuration } from './time-format';
 import type { Trip } from './expedition-types';
 import stateOffer from './fixtures/expedition-state-offer.json';
 import pushOnFixture from './fixtures/expedition-push-on.json';

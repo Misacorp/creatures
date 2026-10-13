@@ -57,18 +57,6 @@ export function clockOffset(serverNow: number, clientNow: number): number {
   return serverNow - clientNow;
 }
 
-/** "1h 02m 03s", "4m 05s" or "12s". Never negative. */
-export function formatCountdown(ms: number): string {
-  const total = Math.max(0, Math.ceil(ms / 1000));
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const seconds = total % 60;
-  const pad = (n: number): string => String(n).padStart(2, '0');
-  if (hours > 0) return `${String(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
-  if (minutes > 0) return `${String(minutes)}m ${pad(seconds)}s`;
-  return `${String(seconds)}s`;
-}
-
 interface CreatureAbilityText {
   /** "Flare Strike: Hits the boss at once..." or "Finale ability: unlocks at level 10". */
   line: string;

@@ -11,7 +11,7 @@ import { RULES, deepOpen, destinationDef, expeditionContent, isNightHour } from 
 import type { Creature } from './api';
 import type { DestinationsView } from './expedition-types';
 import { speciesName } from './game';
-import { formatEventTime } from './raid-time';
+import { formatHourOfDay, formatZoned, zonedClock } from './time-format';
 
 interface LockReason {
   kind: 'rank' | 'night' | 'festival';
@@ -49,25 +49,6 @@ export interface DestinationCard {
   locked: LockReason[];
 }
 
-/** The local hour and minute of a moment in a timezone; null for an unknown timezone. */
-function localClock(at: number, timeZone: string): { hour: number; minute: number } | null {
-  try {
-    const parts = new Intl.DateTimeFormat('en-GB', {
-      timeZone,
-      hour: '2-digit',
-      minute: '2-digit',
-      hourCycle: 'h23',
-    }).formatToParts(at);
-    const num = (type: string): number =>
-      Number(parts.find((p) => p.type === type)?.value ?? Number.NaN);
-    const hour = num('hour');
-    const minute = num('minute');
-    return Number.isNaN(hour) || Number.isNaN(minute) ? null : { hour, minute };
-  } catch {
-    return null;
-  }
-}
-
 /**
  * When the night next begins in the guild's timezone: the first minute from `now` on that is night.
  * Null for an unknown timezone. Works through daylight-saving changes because it reads the real clock
@@ -77,30 +58,26 @@ export function nextNightStart(now: number, timeZone: string): number | null {
   const start = Math.floor(now / 60_000) * 60_000;
   for (let i = 0; i <= 26 * 60; i++) {
     const at = start + i * 60_000;
-    const clock = localClock(at, timeZone);
+    const clock = zonedClock(at, timeZone);
     if (clock === null) return null;
     if (isNightHour(clock.hour)) return at;
   }
   return null;
 }
 
-function clockText(hour: number): string {
-  return `${String(hour).padStart(2, '0')}:00`;
-}
-
 /** "Only open at night, 20:00 to 06:00 server time.": the place's description, whatever the hour. */
 export function nightWindowText(): string {
   const { fromHour, toHour } = RULES.expeditions.night;
-  return `Only open at night, ${clockText(fromHour)} to ${clockText(toHour)} server time.`;
+  return `Only open at night, ${formatHourOfDay(fromHour)} to ${formatHourOfDay(toHour)} server time.`;
 }
 
 /** "Night only (20:00 to 06:00). Opens Fri 20:00." for a place that is closed by day. */
 export function nightText(now: number, timeZone: string | null): string {
   const { fromHour, toHour } = RULES.expeditions.night;
-  const base = `Night only (${clockText(fromHour)} to ${clockText(toHour)} server time)`;
+  const base = `Night only (${formatHourOfDay(fromHour)} to ${formatHourOfDay(toHour)} server time)`;
   if (timeZone === null) return `${base}.`;
   const next = nextNightStart(now, timeZone);
-  return next === null ? `${base}.` : `${base}. Opens ${formatEventTime(next, timeZone)}.`;
+  return next === null ? `${base}.` : `${base}. Opens ${formatZoned(next, timeZone, 'short')}.`;
 }
 
 function lockReasons(

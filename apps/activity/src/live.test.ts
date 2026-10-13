@@ -27,7 +27,6 @@ import {
   errorRetryDelayMs,
   feedLines,
   finaleWindow,
-  formatClock,
   GIVE_UP_MS,
   isKeyEvent,
   isRetryableStatus,
@@ -124,18 +123,7 @@ describe('finaleWindow', () => {
   });
 });
 
-describe('formatClock and bannerText', () => {
-  it.each([
-    [0, '0:00'],
-    [-4000, '0:00'],
-    [1, '0:01'],
-    [59_000, '0:59'],
-    [252_000, '4:12'],
-    [300_000, '5:00'],
-  ])('formats %i ms as %s', (ms, text) => {
-    expect(formatClock(ms)).toBe(text);
-  });
-
+describe('bannerText', () => {
   it('words the banner', () => {
     expect(bannerText('lobby', START, START - 252_000)).toBe('Finale starts in 4:12');
     expect(bannerText('live', START, START + 1)).toBe('The finale is on now');
