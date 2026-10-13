@@ -523,3 +523,44 @@ The server and content half of `design/gear.md` ("v1 build spec") is in; the Wor
 - **Client contract.** `GET /api/gear` is `{ serverNow, balances, inventory, items, parts, blueprints, jobs, slots, skills, grants }`; the actions answer `{ result, gear, state }`. The loot of raids is not added to the Raid view (that would change every raid fixture); the loot reveal reads `grants` (keys above) for the week it shows. Expedition claims have `result.loot`. Fixtures were captured from real server output and the Worker's `gear-fixtures.test.ts` fails when the shape changes. New error codes: `insufficient_parts`, `creature_on_job`, `workshop_full`, `inventory_full`, `item_busy`, `not_ready`, `max_level`, `same_enchant`, `blueprint_unknown`, `nothing_to_improve`, `invalid_secondary`, `invalid_blueprint`, `invalid_enchant`, `item_gone` (plus the usual `key_conflict`, `insufficient_funds`, `creature_away`, `not_found`, `invalid_body`).
 - **Analytics.** `gear_drop`, `gear_equip`, `gear_upgrade`, `gear_dismantle`, `job_start` and `job_claim`, one event per action that changed something, with content ids (bases, enchants), enums and integers only, rebuilt on write like the others. Raid drops are guild level (no actor); the rest carry the actor hash. The privacy scan covers all six.
 - **Not done here.** Sprites and the Workshop UI; the daily dungeon's parts; the sim does not model gear yet (its slots are still without it, and its targets pass unchanged); nothing was balanced by simulation.
+
+## 2026-10-13: Gear numbers set by simulation
+
+The balance simulator now plays gear and crafting (`packages/sim/src/gear.ts`, with the game's own pure functions) and `RULES.gear` was tuned against six new targets (`docs/design/balance-targets.md`, report `docs/balance/report-2026-10-13-gear.md`). All 33 targets pass on the full run with seed `leet`.
+
+- **What the sim plays.** Every player gets the welcome kit when they join (the week-4 newcomer too). Drops follow the worker: phase scrap, one gear roll per finale participant at the server's rank, the Festival piece, and expedition loot. At each check-in a player claims jobs, equips the best items on the 3 strongest creatures (an item is scored by the Attack and HP it adds, weighted by role: payoffs want Attack, guards HP), dismantles all but 2 spare items, upgrades by power per Essence (holding back the cost of an evolution that is 3 levels away), then fills the 2 workshop slots on creatures that are not exploring (enchant, then improve a weak secondary, then craft the best blueprint the parts pay for). Gear folds into the fight slots with `applyGear`, like `slotFor` in the worker. A creature on a job does not explore.
+- **Findings with the v1 numbers.** Gear was 5.2% of a daily player's raid-team power at week 8 (target 10–20%). Nobody ever sent a 12 hour expedition (of about 960 trips in an 8-week, 10-player sim, 832 were 1 hour and 127 were 6 hours, as Bait buys short trips), so no blueprint or glimmer ever dropped beyond the welcome kit and a player crafted the same Common item all month. Essence was fully spent on upgrades (59 held at week 12, against 802 without gear).
+- **Numbers changed.**
+
+| `RULES.gear`                                            | v1                                             | now                                              |
+| ------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------ |
+| Primary roll, Attack / HP (basis points)                | 300–500 / 400–700                              | 520–880 / 760–1260                               |
+| Primary roll, speed / crit chance / crit damage         | 200–400 / 100–200 / 500–900                    | 300–600 / 150–300 / 700–1300                     |
+| Secondary roll, Attack / HP                             | 100–250 / 150–350                              | 200–500 / 300–700                                |
+| Secondary roll, speed / crit chance / crit damage       | 100–200 / 50–100 / 200–400                     | 150–300 / 75–150 / 300–600                       |
+| Upgrade step per level (Attack, HP, speed, chance, dmg) | 80, 100, 50, 25, 150                           | 250, 260, 70, 35, 200                            |
+| Craft scrap, Common / Rare / Epic / Festival            | 6 / 12 / 24 / 24                               | 9 / 18 / 32 / 32                                 |
+| Crafting XP per nominal hour                            | 10                                             | 24                                               |
+| XP for levels 2 to 10                                   | 80, 200, 380, 600, 900, 1300, 1800, 2500, 3500 | 100, 250, 450, 700, 1000, 1600, 2500, 3800, 5500 |
+| Expedition glimmer odds, 1 h / 6 h / 12 h               | 0 / 0 / 5%                                     | 1% / 4% / 10%                                    |
+| Expedition blueprint odds, 1 h / 6 h / 12 h             | 0 / 0 / 10%                                    | 2% / 8% / 15%                                    |
+| Welcome scrap                                           | 8                                              | 10 (pays any Common craft: 9)                    |
+
+Unchanged: the caps (Attack 20%, HP 25%, speed 10%, crit +5 and +25 points), upgrade Essence and scrap prices and the rarity multipliers, dismantle yields, improve and enchant prices, job hours, the 3% and 1% skill effects, finale and phase drops, shard odds, inventory 60 and 2 workshop slots. The rolls are about 1.7 times the v1 ones and the upgrade steps about 3 times (Attack), so the Essence spent on upgrades is what moves power and Essence stays the sink it was meant to be.
+
+- **Boss HP had to change.** Gear is real extra power, so at 10% or more of team power it lifts win rates whatever the gear numbers are: with the old boss HP the typical finale win rate went from 49% to about 69%, Phase 2 clears to 86% and the 15-player finale to 80%. Retuning `RULES.gear` cannot fix that without missing the share target, so the boss HP was recalibrated with `tune.mjs --calibrate` (8 rounds, 2 seeds): Tidal Colossus 6689 to 7344, Cinder Wyrm 2749 to 2916 (head-count exponent 121 to 123), Thornmother 5977 to 6729, Storm Sovereign 5203 to 5423 (exponent 113 to 115). Rank rules are untouched.
+- **Results (seed `leet`, full run).**
+
+| Target                                                   | v1 numbers, no retune | now   |
+| -------------------------------------------------------- | --------------------- | ----- |
+| Gear share of a daily player's team power, week 8        | 5.2%                  | 12.0% |
+| First crafted item, 90th percentile (days)               | 1.4                   | 1.4   |
+| Daily Essence held at week 12 (today without gear: 777)  | 59                    | 158   |
+| Best Crafting level 30 days after joining (median)       | 4                     | 5     |
+| Newcomer gear power at week 8 vs the median daily player | 73%                   | 64%   |
+| Typical finale win rate (with gear)                      | not measured          | 49.2% |
+
+The gear share grows from 2% in week 1 to 7% in week 4, 12% in week 8 and 13% in week 12 for a daily player, then stops at about 13% (a 30-week run): one Attack-primary item at +4 or +5 reaches the Attack cap (20%). The caps only start to bite there, and 25% is never near. A second slot or higher caps are the way to keep gear growing; the glossary text pins the caps at 20% and 25%, so they were left alone. Top earners reach 13% too, and the top earner against casual power ratio went from 1.45 to 1.54 (limit 1.6).
+
+- **Limits of the check.** Several targets pass by a thin margin, as they did before gear: Phase 2 clear 70.0% (needs 70%), setup credit 15.2% (needs 15%), lowest creature contribution 0.61 (needs 0.60). Gear lifts attackers' contribution more than guards' and supports', which costs the weakest creatures a few points; the `leet` seed passes, other seeds already missed some targets before gear (seed `s3` fails Phase 2, the boss spread, the highest creature ratio and hard pity without gear). The quick run (4 sims) fails 3 or 4 targets by noise (it passed 27 of 27 before, also by thin margins).
+- **Text to fix.** `glossary.json` still says blueprints come from long expeditions and glimmer from 12 hour trips; both now drop on any trip. (Content, not changed here.)
