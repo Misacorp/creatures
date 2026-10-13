@@ -428,8 +428,13 @@ export function simulateFight(
     const taken = Math.min(amount, victim.hp);
     victim.hp -= taken;
     (perCreature[victim.id] as CreatureTotals).damageTaken += taken;
+    // Guard credit: all of the damage a Guard takes in place of a neighbour, and `guardOwnCreditBp`
+    // of what it takes when the hit was aimed at the Guard itself.
+    if (victim.role === 'guard') {
+      const share = victim !== target ? 10_000 : RULES.combat.guardOwnCreditBp;
+      credit(victim, null, 'guardCredit', Math.floor((taken * share) / 10_000));
+    }
     if (victim !== target) {
-      credit(victim, null, 'guardCredit', taken);
       events.push({
         t: 'boss_hit',
         round: currentRound,
@@ -569,10 +574,11 @@ export function simulateFight(
       }
     }
 
-    // Setup / payoff split of the reaction bonus: setter gets the floor of half, payoff the rest.
+    // Setup / payoff split of the reaction bonus: the setter gets the floor of `setupShareBp` of it,
+    // the payoff the rest.
     let setup = 0;
     if (reaction !== undefined && !reflected && markBefore !== null) {
-      setup = Math.floor(hit.bonus / 2);
+      setup = Math.floor((hit.bonus * RULES.combat.setupShareBp) / 10_000);
       credit(markBefore.creature, markBefore.player, 'setupCredit', setup);
     }
     credit(c, null, 'damage', hit.damage - setup - supportShare);

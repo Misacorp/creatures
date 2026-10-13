@@ -10,7 +10,7 @@ import { input, run, slot } from './helpers';
  *   A: 100 x 1.00 x 1.15 = 115 and leaves Soaked. 1000 -> 885.
  *   C: 20 x 0.75 = 15 (Ember into Tide). 885 -> 870.
  *   B: 100 x 1.5 x 1.15 = 172.5 -> 172; Overload: x3.125 = 537.5 -> 537, bonus 365.
- *      Setup (A) 182, payoff (B) 183. 870 -> 333. Support credit for C: 537 - 468 = 69
+ *      Setup (A) 219 (60% of the bonus, rounded down), payoff (B) 146. 870 -> 333. Support credit for C: 537 - 468 = 69
  *      (taken from B's credit). Likewise C gets 15 of A's 115.
  *   The boss hits the front creature A for 10.
  * Round 2: the same hits; B's 537 takes the last 203 HP and ends the fight.
@@ -109,10 +109,10 @@ describe('golden fight', () => {
     expect(r.perPlayer).toEqual({
       pa: {
         damage: 2 * (115 - 15),
-        setupCredit: 364,
+        setupCredit: 438,
         supportCredit: 0,
         guardCredit: 0,
-        contribution: 564,
+        contribution: 638,
       },
       pc: {
         damage: 30,
@@ -122,11 +122,11 @@ describe('golden fight', () => {
         contribution: 198,
       },
       pb: {
-        damage: 2 * (537 - 182 - 69),
+        damage: 2 * (537 - 219 - 69),
         setupCredit: 0,
         supportCredit: 0,
         guardCredit: 0,
-        contribution: 572,
+        contribution: 498,
       },
     });
     expect(r.perCreature.A).toMatchObject({

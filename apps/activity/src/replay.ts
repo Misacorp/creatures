@@ -3,6 +3,7 @@
  * the personal recap. Nothing here touches the DOM or the network, and all text it returns is
  * plain text (it can contain player names).
  */
+import { RULES } from '@creatures/game';
 import { beatEnds, describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
 import type { ReplayRowEntry } from './raid-api';
 
@@ -219,7 +220,7 @@ export interface CreatureRecap {
   role: string;
   /** Damage this creature dealt to the boss, reaction bonuses included. */
   damage: number;
-  /** Credit for marks it set that others (or it) cashed in: half of the reaction bonus. */
+  /** Credit for marks it set that others (or it) cashed in: the setup share (60%) of the reaction bonus. */
   setupCredit: number;
   /** Reactions it set up. */
   setups: number;
@@ -285,7 +286,7 @@ export function personalRecap(
         const setter = e.setupCreature === null ? undefined : creatures.get(e.setupCreature);
         if (setter !== undefined && !e.reflected) {
           setter.setups += 1;
-          setter.setupCredit += Math.floor(e.bonus / 2);
+          setter.setupCredit += Math.floor((e.bonus * RULES.combat.setupShareBp) / 10_000);
         }
         markOwner = null;
         break;

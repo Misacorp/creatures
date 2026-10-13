@@ -30,7 +30,7 @@ A boss (or modifier) sets one ordering for a fight: `left_to_right`, `right_to_l
   2. Else, if the boss has no mark, the hit applies its element's mark.
   3. Else (the boss has a different mark): a **Setter** overwrites it with its own mark; others leave it.
 - **Triggers:** Soaked ← Spark (_Overload_), Charged ← Grove (_Grounding_), Overgrown ← Ember (_Wildfire_), Scorched ← Tide (_Steam_).
-- **Credit:** a reaction's bonus damage is split 50/50 between the creature that applied the mark (setup) and the one that triggered it (payoff). Payoff creatures get an extra ×1.1 on reactions, combined with the ×4.5 into one multiplier of ×4.95 (one floor, in basis points). (Both numbers are tuned by the simulator; the first draft was ×2.5 and ×1.25.) The setup creature gets `floor(bonus / 2)`, the payoff creature the rest.
+- **Credit:** a reaction's bonus damage is split 60/40 between the creature that applied the mark (setup) and the one that triggered it (payoff) (`RULES.combat.setupShareBp`; it was 50/50 until the combined balance pass of 2026-10-13). Payoff creatures get an extra ×1.1 on reactions, combined with the ×4.5 into one multiplier of ×4.95 (one floor, in basis points). (Both numbers are tuned by the simulator; the first draft was ×2.5 and ×1.25.) The setup creature gets `floor(bonus x 60%)`, the payoff creature the rest. Credit only: the damage dealt does not change.
 
 ## Creatures in combat
 
@@ -40,7 +40,7 @@ A boss (or modifier) sets one ordering for a fight: `left_to_right`, `right_to_l
   - **Setter:** overwrites marks (see above).
   - **Payoff:** ×1.25 on reactions.
   - **Support:** each round (if it is not silenced), gives its two neighbours +15% damage on their next hit. Buffs from the same supporter don't stack.
-  - **Guard:** has +30% HP and takes single-target hits (the boss's normal attack and "strike" gimmicks) meant for others in its zone, first living guard in position order. It does not intercept zone-wide hits (`hit_zone`) or reflected damage. Its credit is the damage it actually absorbed.
+  - **Guard:** has +30% HP and takes single-target hits (the boss's normal attack and "strike" gimmicks) meant for others in its zone, first living guard in position order. It does not intercept zone-wide hits (`hit_zone`) or reflected damage. Its credit is the damage it actually took: all of what it absorbed for a neighbour, and (`RULES.combat.guardOwnCreditBp`, 100%) what hits aimed at the Guard itself did to it.
 - **HP:** creatures can be knocked out and sit out the rest of the phase. Knocked-out creatures still keep their credit.
 
 ## Bosses
