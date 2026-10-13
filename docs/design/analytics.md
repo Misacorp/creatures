@@ -82,6 +82,7 @@ Misa watches production by playing. Agents also need data to understand **how pe
 3. The workflow, plus Misa's checklist for `OPS_TOKEN`.
    - [x] Workflow (`report.yml`) and the optional `OPS_TOKEN` in `deploy.yml` shipped; the 90-day artifact upload waits for a pinned `actions/upload-artifact` SHA (the job summary carries the report meanwhile). Misa's checklist is still to be sent.
 4. The analysis CLI and the first live report after a week of data.
+   - [x] **`pnpm analyze` and `pnpm sim:live` shipped** (`packages/sim/src/live-*.ts`, `analyze-cli.ts`, `sim-live-cli.ts`, 2026-10-13); see the decision of that date in `decisions.md`. Phase 2 items 4 to 6 are done. Still open: the first real live report (needs a week of rollups) and Gini, median and p90 holdings (rollups carry no per-player balances).
 
 ## Phase 2 plan (Misa, 2026-10-13): where players spend, live-calibrated sim, balance loop
 
