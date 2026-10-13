@@ -102,3 +102,105 @@ The raid and dungeon targets must still pass after gear (retune boss HP if neede
 - One slot or two?
 - Should gear be visible on sprites? The default is no: only the slot icon on the card, which keeps the sprites clean.
 - Trading gear between players? The default is no.
+
+## v1 build spec (lead, 2026-10-13)
+
+Defaults for the open questions until Misa says otherwise: **one slot** per creature; jobs and expeditions share **one busy state** (a busy creature still fights in raids, as creatures on expeditions do today); **one skill, Crafting**; gear is not drawn on sprites; no trading. Numbers below are starting values; the sim tunes them.
+
+**Content (`packages/game`, schema-validated):**
+
+- `gear.json`: base items `{ id, name, kind (charm | band | trinket), primary (atk | hp | spd | critChance | critDamage), tint (element | null), blueprint (rarity) }`. About 12 bases, 3 per element tint plus neutral ones; names and short flavour fit the lore. Festival bases with distinct names.
+- `enchants.json`: about 8 enchants. Stat-only, or conditional on the wearer's element or role (for example "+6% Attack as a Payoff", "+8% HP as a Guard", "+3% crit chance for Spark"). Conditions are resolved when stats are folded, so **the engine needs no change**.
+- `RULES.gear`:
+  - rarities common / rare / epic / festival, with 0 / 1 / 2 / 2 secondaries; festival has epic power;
+  - primary and secondary roll ranges per stat;
+  - an upgrade step per level, +0 to +5;
+  - **total caps per creature:** Attack +20%, HP +25%, speed +10%, crit chance +5 points, crit damage +25 points, and the existing crit caps still apply;
+  - upgrade costs (Essence plus scrap, rising per level and rarity);
+  - dismantle yields;
+  - drop tables;
+  - job durations;
+  - the skill XP curve;
+  - inventory cap 60;
+  - workshop slots 2.
+- **Parts:** `scrap` (generic), one shard per element (`tide-shard`, …) and `glimmer` (rare; for enchanting).
+- **Pure functions:**
+  - `rollGear(rng, baseId, rarity)`;
+  - `applyGear(stats, crit, role, element, item | null)`, which returns the effective stats and crit bonus with caps;
+  - `upgradeCost(item)`, `dismantleYield(item)`;
+  - `jobDuration(kind, rarity, skillLevel)`;
+  - `skillLevel(xp)`;
+  - `craftRarity(rng, blueprintRarity, skillLevel)`.
+
+  All are tested with seeded RNG.
+
+**Sources (server, live crypto randomness, idempotent per (source, key)):**
+
+- **Raid finale win:** one gear roll per participant. Rarity by Boss Rank: rank 1 is about 75% common, 22% rare and 3% epic; better at higher ranks.
+- **Phase 1 and 2 wins:** scrap per participant.
+- **Expedition claim:** scrap by duration (1 h: 1, 6 h: 3, 12 h: 6). It also has a chance of a shard of the explorer's element, and on 12 h trips a small chance of a blueprint.
+- **Festival finale win:** one Festival gear piece per participant.
+- **Welcome kit:** each player's first gear load grants one common item and one common blueprint, so crafting can start on day 1. It is granted once, idempotently.
+
+**Actions:**
+
+- **Equip / unequip:** instant. One item per creature; an item is on at most one creature. Equipping onto an occupied slot swaps.
+- **Upgrade:** instant. A spend (Essence plus scrap) with an idempotency key, in one transaction.
+- **Dismantle:** instant, with an idempotency key. It is refused for an equipped item until it is unequipped, or the dismantle unequips it first (your choice; document it).
+- **Workshop jobs** run on a creature that is not busy, in one of 2 workshop slots, and take hours:
+  - craft: a blueprint plus parts makes a new item;
+  - improve: re-roll one secondary, for parts;
+  - enchant: glimmer plus shards add the item's one enchant.
+
+  The cost is paid when the job starts (a spend with a key); the result is rolled when it is claimed (live randomness, idempotent claim). A creature on a job cannot go on an expedition, and vice versa. Starting durations: craft 4 / 8 / 12 h by rarity, improve 2 h, enchant 6 h.
+
+**Crafting skill:**
+
+- XP per finished job equals its hours × 10. Levels run 1–10 on a slow curve: a daily player's best crafter reaches about level 5 in a month.
+- Each level gives −3% job time, and +1% chance that a craft comes out one rarity higher.
+- The skill never touches combat.
+
+**Server:**
+
+- **Migration 17:**
+  - `gear_items (id, user_id, base_id, rarity, level, rolls_json, enchant_id, equipped_on UNIQUE, source, created_at)`;
+  - `parts (user_id, kind, amount ≥ 0)`;
+  - `blueprints (user_id, base_id, rarity)`;
+  - `workshop_jobs (id, user_id, creature_id, kind, input_json, started_at, ends_at, claimed_at, result_json)`;
+  - `crafting_skill (user_id, creature_id, xp)`;
+  - grant ledgers keyed for idempotency.
+- **Routes** (strict valibot schemas, identity from the session, rate-limited like the rest):
+  - `GET /api/gear`: items, parts, blueprints, jobs, skills, slots;
+  - `POST /api/gear/:id/equip { creatureId | null }`;
+  - `POST /api/gear/:id/upgrade { idempotencyKey }`;
+  - `POST /api/gear/:id/dismantle { idempotencyKey }`;
+  - `POST /api/workshop/jobs { creatureId, kind, blueprintId?, gearId?, enchantId?, secondaryIndex?, idempotencyKey }`;
+  - `POST /api/workshop/jobs/:id/claim { idempotencyKey }`.
+
+  The collection view carries each creature's equipped item summary and its busy state.
+
+- **Fights:**
+  - Gear folds into `slotFor` in `raid-resolve.ts` and into practice fights via `applyGear`.
+  - Stats freeze at the same moment teams freeze for a phase. Stored fight inputs carry the final stats, so old replays stay exact; verify that and add a test.
+  - The sim gets the same fold.
+- **Analytics:** add events `gear_drop`, `gear_equip`, `gear_upgrade`, `gear_dismantle`, `job_start` and `job_claim`, with content ids and numbers only.
+
+**Client:**
+
+- **Collection card:** a 12×12 gear slot showing the item sprite and rarity frame; a busy badge for a creature on a job.
+- **A Workshop tab:**
+  - an inventory grid;
+  - item details with Upgrade, Improve, Enchant and Dismantle (in-page confirmation);
+  - parts counts;
+  - known blueprints;
+  - 2 job slots with timer bars and claim reveals.
+- **Loot reveal:** gear pops in during the finale loot reveal and on expedition claims.
+- **Glossary:** entries for each gear stat, rarity, part, enchant, job kind and the Crafting skill, with coverage tests extended.
+- **Sprites:** pixel item sprites per base kind, tinted by element, in the established style.
+
+**Sim targets:**
+
+- gear at most 25% of a daily player's power at week 8;
+- the first crafted item within the first week for a daily player;
+- Essence held by daily players bounded, with no runaway stockpile;
+- raid and finale targets still pass, retuning boss HP if needed.
