@@ -155,7 +155,7 @@ export function App() {
         <header class="app-head">
           <h1>
             Leet Creatures
-            <sup class="beta pix">beta</sup>
+            <sup class="sigma pix">sigma</sup>
           </h1>
           <button
             type="button"

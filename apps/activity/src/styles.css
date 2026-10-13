@@ -3593,7 +3593,7 @@ button.ab-auto-toggle:not(.on) small {
   margin-left: 0.5rem;
 }
 
-/* The page header: the title with its "beta" mark, and the "?" that opens How to play. */
+/* The page header: the title with its "sigma" mark (a joke: the app is not even in alpha), and the "?" that opens How to play. */
 .app-head {
   display: flex;
   align-items: flex-start;
@@ -3607,7 +3607,7 @@ button.ab-auto-toggle:not(.on) small {
   margin: 0;
 }
 
-.beta {
+.sigma {
   margin-left: 0.375rem;
   padding: 0 0.25rem;
   background: var(--ink);
