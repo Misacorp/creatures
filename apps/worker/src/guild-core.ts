@@ -6,6 +6,8 @@ import { Gear } from './gear';
 import { gearMigration } from './gear-migration';
 import { gearRoutes } from './gear-routes';
 import { creatureQuirkMigration } from './creature-quirk-migration';
+import { expeditionRoutes } from './expedition-routes';
+import { expeditionsMigration } from './expedition-migration';
 import { collectionRoutes } from './collection-routes';
 import { baitForDay, leetPointsForDay } from './economy';
 import { DiscordError, type GuildApi } from './discord';
@@ -281,6 +283,12 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   },
   // Version 17: gear, parts, blueprints, the workshop and the Crafting skill (see gear-migration.ts).
   gearMigration,
+  () => {
+    // Version 18: reserved for the daily dungeon, which is built in parallel. Nothing to do here.
+  },
+  // Version 19: expeditions v2, explorer ranks, familiarity, the journal, account stats, supplies and the
+  // slot wipe (see expedition-migration.ts).
+  expeditionsMigration,
 ];
 
 export interface SessionUser {
@@ -326,6 +334,7 @@ function parseLedgerQuery(url: URL): number | null {
 const routes: Routes<RequestContext> = {
   ...collectionRoutes,
   ...gearRoutes,
+  ...expeditionRoutes,
   ...raidRoutes,
   '/api/me': {
     GET: async (_request, { user, guildId, core }) => {
@@ -369,6 +378,12 @@ export interface GuildCoreOptions {
    * never consumes a test's scripted catch draws or a raid's fight seeds.
    */
   quirkRng?: Rng;
+  /**
+   * Live randomness for the end-of-trip choice, push-on results and the journal of expeditions.
+   * Defaults to crypto.getRandomValues. Separate from `rng` and `gearRng`, so none of them ever
+   * consumes a test's scripted catch or loot draws.
+   */
+  tripRng?: Rng;
   /**
    * Live randomness for gear and crafting: every drop (raid, expedition, Festival, welcome kit) and the
    * result of every claimed job. Defaults to crypto.getRandomValues. Separate from the others, so a
@@ -457,6 +472,7 @@ export class GuildCore {
       rng: options.rng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
       quirkRng,
       gearRng,
+      tripRng: options.tripRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
     });
     this.gear = new Gear({ storage, now, rng: gearRng, analytics: this.analytics });
     this.raid = new Raid({

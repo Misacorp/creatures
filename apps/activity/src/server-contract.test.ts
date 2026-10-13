@@ -342,9 +342,12 @@ describe('the gear responses the server sends', () => {
 
   it('reads the loot of an expedition claim, and a claim without loot', () => {
     const claimed = parseClaimResponse(expeditionClaimLoot);
-    expect(claimed.result.loot?.parts.scrap).toBe(6);
+    expect(claimed.result.loot?.parts.scrap ?? 0).toBe(
+      expeditionClaimLoot.result.loot.parts.scrap ?? 0,
+    );
     expect(claimed.result.loot?.blueprints).toHaveLength(1);
-    expect(claimed.result.catches).toHaveLength(3);
+    expect(claimed.result.catches).toHaveLength(expeditionClaimLoot.result.catches.length);
+    expect(claimed.result.catches.length).toBeGreaterThan(0);
     const older = parseClaimResponse({
       ...expeditionClaimLoot,
       result: { recalled: true, catches: [] },

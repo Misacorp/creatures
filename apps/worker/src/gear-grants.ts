@@ -12,11 +12,9 @@ import {
   RULES,
   dismantleYield,
   gearBase,
-  expeditionLoot,
   rollFestivalDrop,
   rollFinaleDrop,
   rollWelcomeKit,
-  type DurationId,
   type Element,
   type GearRarity,
   type GearRolls,
@@ -24,6 +22,7 @@ import {
   type Rng,
 } from '@creatures/game';
 import type { Analytics, GearSource } from './analytics';
+import { addSupply } from './expedition-store';
 import { creditParts, hasRoom, insertItem, learnBlueprint, partsTotal } from './gear-store';
 import type { LedgerStorage } from './ledger';
 
@@ -44,6 +43,8 @@ export interface GrantView {
   /** All the parts the grant paid, including from converted items and duplicate blueprints. */
   parts: PartsBundle;
   blueprints: { baseId: string; rarity: GearRarity; duplicate: boolean }[];
+  /** Supplies the grant gave, one id per supply (absent in grants stored before expeditions v2). */
+  supplies?: string[];
 }
 
 /** A stored grant, for the list of recent loot. */
@@ -57,6 +58,7 @@ interface Draft {
   gear: { baseId: string; rarity: GearRarity; rolls: GearRolls }[];
   parts: PartsBundle;
   blueprints: string[];
+  supplies?: string[];
 }
 
 const emptyView = (): GrantView => ({ gear: [], converted: [], parts: {}, blueprints: [] });
@@ -122,6 +124,9 @@ function grantOnce(
     }
     creditParts(sql, userId, parts);
     view.parts = parts;
+    const supplies = draft.supplies ?? [];
+    for (const id of supplies) addSupply(sql, userId, id, 1);
+    if (supplies.length > 0) view.supplies = [...supplies];
     sql.exec(
       'INSERT INTO gear_grants (user_id, key, source, result_json, created_at) VALUES (?, ?, ?, ?, ?)',
       userId,
@@ -134,6 +139,7 @@ function grantOnce(
       view.gear.length > 0 ||
       view.converted.length > 0 ||
       view.blueprints.length > 0 ||
+      supplies.length > 0 ||
       partsTotal(parts) > 0
     ) {
       const first = view.blueprints[0];
@@ -151,6 +157,7 @@ function grantOnce(
           glimmer: parts.glimmer ?? 0,
           blueprint: first?.baseId ?? null,
           blueprintDuplicate: first?.duplicate ?? false,
+          ...(supplies.length > 0 ? { supplies: supplies.length } : {}),
         },
         actor,
       );
@@ -202,16 +209,20 @@ export function grantFestivalGear(
 }
 
 /**
- * Parts and maybe a blueprint for a claimed expedition. `trip.completed` is false for a recall: it pays
- * the share of the scrap that was brought back and nothing else. Key `expedition:<id>`.
+ * What a claimed trip drops besides the catches: parts, maybe a blueprint, found supplies and (from a
+ * push-on goal) gear. Key `expedition:<id>`. `draw` rolls it with `deps.rng` and runs only the first time,
+ * so a repeat draws nothing and returns what the first claim gave.
  */
-export function grantExpeditionLoot(
+export function grantTripLoot(
   deps: GrantDeps,
   userId: string,
   expeditionId: string,
-  duration: DurationId,
-  explorerElement: Element,
-  trip: { completed: boolean; caught: number; rolls: number },
+  draw: (rng: Rng) => {
+    parts: PartsBundle;
+    blueprints: string[];
+    supplies: string[];
+    gear: { baseId: string; rarity: GearRarity; rolls: GearRolls }[];
+  },
 ): GrantView {
   return grantOnce(
     deps,
@@ -219,11 +230,12 @@ export function grantExpeditionLoot(
     `expedition:${expeditionId}`,
     'expedition',
     () => {
-      const loot = expeditionLoot(deps.rng, duration, explorerElement, trip);
+      const loot = draw(deps.rng);
       return {
-        gear: [],
+        gear: loot.gear,
         parts: loot.parts,
-        blueprints: loot.blueprint === null ? [] : [loot.blueprint],
+        blueprints: loot.blueprints,
+        supplies: loot.supplies,
       };
     },
     userId,

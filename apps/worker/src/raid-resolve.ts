@@ -38,6 +38,7 @@ import {
   type FightSlot,
 } from '@creatures/engine';
 import type { Analytics } from './analytics';
+import { bumpStat } from './expedition-store';
 import { grantFestivalGear, grantRaidFinale, grantRaidPhase, type GrantDeps } from './gear-grants';
 import { credit, type LedgerStorage } from './ledger';
 import { loadAutofire, targetOf } from './raid-autofire';
@@ -563,6 +564,8 @@ export function settleParty(
     now,
   );
   logPhaseResult(deps.analytics, sql, week.weekId, phase, input, result, summary);
+  // The profile counts the reactions every member has seen in raids.
+  for (const userId of memberIds) bumpStat(sql, userId, 'reactions_seen', result.reactions.total);
   // The ladder moves once the finale has resolved for every party (the last one to settle does it),
   // before the post is queued so the post can say where the server stands.
   if (phase === 'finale') {

@@ -7,27 +7,13 @@
         "shiny": false,
         "firstOnServer": true,
         "outcome": "new"
-      },
-      {
-        "species": "cindle",
-        "shiny": false,
-        "firstOnServer": true,
-        "outcome": "fused",
-        "fusionCount": 1
-      },
-      {
-        "species": "splashet",
-        "shiny": false,
-        "firstOnServer": true,
-        "outcome": "fused",
-        "fusionCount": 1
       }
     ],
     "loot": {
       "gear": [],
       "converted": [],
       "parts": {
-        "scrap": 6,
+        "scrap": 1,
         "ember-shard": 1,
         "glimmer": 1
       },
@@ -37,25 +23,37 @@
           "rarity": "common",
           "duplicate": false
         }
-      ]
+      ],
+      "supplies": ["lure-basic"]
+    },
+    "xp": {
+      "gained": 300,
+      "total": 300,
+      "rank": 2,
+      "rankBefore": 1
+    },
+    "familiarity": {
+      "stars": 0,
+      "starsBefore": 0,
+      "trips": 1
     }
   },
   "state": {
     "serverNow": 1799776800000,
     "balances": {
-      "bait": 170,
+      "bait": 200,
       "essence": 0
     },
     "starterChosen": false,
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "d9a3a151-29f4-4a4d-86ec-e3ddc848bdfd",
+        "id": "0e50642f-8dfc-47e2-951a-8389e1c0f012",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
         "levelCap": 15,
-        "fusionCount": 1,
+        "fusionCount": 0,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -63,14 +61,14 @@
         "caughtAt": 1799733600000,
         "quirk": "cindle-purrs-at-prey",
         "stats": {
-          "hp": 153,
-          "atk": 64,
-          "spd": 44
+          "hp": 145,
+          "atk": 61,
+          "spd": 42
         },
         "statsWithGear": {
-          "hp": 153,
-          "atk": 64,
-          "spd": 44
+          "hp": 145,
+          "atk": 61,
+          "spd": 42
         },
         "gear": null,
         "busy": null,
@@ -79,6 +77,12 @@
           "unlocked": false,
           "unlockLevel": 10,
           "nextId": "flare-strike-2"
+        },
+        "explorer": {
+          "rank": 2,
+          "xp": 300,
+          "nextRankXp": 800,
+          "trips": 1
         },
         "trainCost": 19,
         "evolution": {
@@ -89,12 +93,12 @@
         }
       },
       {
-        "id": "80d41e89-fa9f-42c9-9b27-a56279a0e73c",
+        "id": "666eb7b6-04eb-4134-aecb-40c1fd6463e5",
         "species": "splashet",
         "line": "splashet",
         "level": 8,
         "levelCap": 15,
-        "fusionCount": 1,
+        "fusionCount": 0,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -102,14 +106,14 @@
         "caughtAt": 1799733600001,
         "quirk": "lucky-spot",
         "stats": {
-          "hp": 178,
-          "atk": 44,
-          "spd": 48
+          "hp": 168,
+          "atk": 42,
+          "spd": 46
         },
         "statsWithGear": {
-          "hp": 178,
-          "atk": 44,
-          "spd": 48
+          "hp": 168,
+          "atk": 42,
+          "spd": 46
         },
         "gear": null,
         "busy": null,
@@ -118,6 +122,12 @@
           "unlocked": false,
           "unlockLevel": 10,
           "nextId": "tidal-mark-2"
+        },
+        "explorer": {
+          "rank": 1,
+          "xp": 0,
+          "nextRankXp": 200,
+          "trips": 0
         },
         "trainCost": 19,
         "evolution": {
@@ -128,7 +138,7 @@
         }
       },
       {
-        "id": "4e9858f1-c66d-4ffe-9675-069a89b315e6",
+        "id": "eb5710da-4a3e-4d10-919c-fd2a0c8db32e",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -158,6 +168,12 @@
           "unlockLevel": 10,
           "nextId": "bark-guard-2"
         },
+        "explorer": {
+          "rank": 1,
+          "xp": 0,
+          "nextRankXp": 200,
+          "trips": 0
+        },
         "trainCost": 19,
         "evolution": {
           "toSpecies": "thornbuck",
@@ -167,7 +183,7 @@
         }
       },
       {
-        "id": "f3e7d1d9-2eef-49f3-9384-a2c5ad014a6c",
+        "id": "7fcea80c-98fa-4da9-aa34-26282edeb6b6",
         "species": "ashmole",
         "line": "ashmole",
         "level": 1,
@@ -178,7 +194,7 @@
         "away": false,
         "origin": "expedition",
         "caughtAt": 1799776800000,
-        "quirk": "moon-watcher",
+        "quirk": "collects-pebbles",
         "stats": {
           "hp": 128,
           "atk": 24,
@@ -197,6 +213,12 @@
           "unlockLevel": 10,
           "nextId": "warm-glow-2"
         },
+        "explorer": {
+          "rank": 1,
+          "xp": 0,
+          "nextRankXp": 200,
+          "trips": 0
+        },
         "trainCost": 3,
         "evolution": {
           "toSpecies": "magmole",
@@ -208,14 +230,18 @@
     ],
     "expeditions": [
       {
-        "id": "e6733e28-a9b4-4d0e-b8aa-de3d6de8672d",
-        "creatureId": "d9a3a151-29f4-4a4d-86ec-e3ddc848bdfd",
+        "id": "25880805-9118-42aa-a3fe-37893bc25544",
+        "creatureId": "0e50642f-8dfc-47e2-951a-8389e1c0f012",
         "duration": "long",
         "supplies": "basic",
-        "rolls": 3,
-        "cost": 30,
+        "kit": [],
+        "destination": "ember-caves",
+        "twist": null,
+        "rolls": 1,
+        "cost": 0,
         "startedAt": 1799733600000,
         "endsAt": 1799776800000,
+        "readyAt": 1799776800000,
         "status": "claimed",
         "claimedAt": 1799776800000,
         "result": {
@@ -226,27 +252,13 @@
               "shiny": false,
               "firstOnServer": true,
               "outcome": "new"
-            },
-            {
-              "species": "cindle",
-              "shiny": false,
-              "firstOnServer": true,
-              "outcome": "fused",
-              "fusionCount": 1
-            },
-            {
-              "species": "splashet",
-              "shiny": false,
-              "firstOnServer": true,
-              "outcome": "fused",
-              "fusionCount": 1
             }
           ],
           "loot": {
             "gear": [],
             "converted": [],
             "parts": {
-              "scrap": 6,
+              "scrap": 1,
               "ember-shard": 1,
               "glimmer": 1
             },
@@ -256,34 +268,44 @@
                 "rarity": "common",
                 "duplicate": false
               }
-            ]
+            ],
+            "supplies": ["lure-basic"]
+          },
+          "xp": {
+            "gained": 300,
+            "total": 300,
+            "rank": 2,
+            "rankBefore": 1
+          },
+          "familiarity": {
+            "stars": 0,
+            "starsBefore": 0,
+            "trips": 1
           }
-        }
+        },
+        "offer": null,
+        "pushOn": null
       }
     ],
+    "cancelled": [],
     "slots": {
-      "total": 3,
-      "used": 0
+      "total": 1,
+      "used": 0,
+      "rankSum": 1,
+      "tripsFinished": 1,
+      "next": {
+        "kind": "trips",
+        "at": 3
+      }
+    },
+    "supplies": {
+      "lure-basic": 1
     },
     "trainingMedianLevel": 8,
     "serverFirsts": [
       {
         "kind": "catch",
         "species": "ashmole",
-        "at": 1799776800000,
-        "mine": true,
-        "holders": ["Player 2"]
-      },
-      {
-        "kind": "catch",
-        "species": "cindle",
-        "at": 1799776800000,
-        "mine": true,
-        "holders": ["Player 2"]
-      },
-      {
-        "kind": "catch",
-        "species": "splashet",
         "at": 1799776800000,
         "mine": true,
         "holders": ["Player 2"]

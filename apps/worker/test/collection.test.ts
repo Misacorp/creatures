@@ -2,7 +2,7 @@ import {
   RULES,
   content,
   createSeededRng,
-  expeditionCost,
+  expeditionConvertBait,
   lore,
   pickQuirk,
   quirkText,
@@ -24,6 +24,7 @@ import {
   tokenFor,
   undoRaidMigration,
   type CoreContext,
+  LATEST_SCHEMA_VERSION,
 } from './helpers';
 import { createHandler } from '../src/index';
 
@@ -114,6 +115,11 @@ interface ExpeditionBody {
   creatureId: string;
   duration: string;
   supplies: string;
+  kit: string[];
+  destination: string;
+  readyAt: number;
+  offer: { goals: { id: string; risk: string; extraHours: number; oddsBp: number }[] } | null;
+  pushOn: { goalId: string; startedAt: number; endsAt: number; oddsBp: number } | null;
   rolls: number;
   cost: number;
   startedAt: number;
@@ -139,7 +145,15 @@ interface StateBody {
   starterOptions?: string[];
   creatures: CreatureBody[];
   expeditions: ExpeditionBody[];
-  slots: { total: number; used: number };
+  slots: {
+    total: number;
+    used: number;
+    rankSum: number;
+    tripsFinished: number;
+    next: { kind: 'trips' | 'rank_sum'; at: number } | null;
+  };
+  supplies: Record<string, number>;
+  cancelled: { id: string; reason: string }[];
   trainingMedianLevel: number | null;
   serverFirsts: { kind: string; species: string; at: number; mine: boolean; holders: string[] }[];
 }
@@ -191,19 +205,73 @@ async function joinWithStarter(
   return { ...player, starterId: starter.id };
 }
 
+/** Puts supplies in a player's stock (they are carried for nothing with `source: 'owned'`). */
+function stock(sql: SqlStorage, userId: string, id: string, amount: number): void {
+  sql.exec(
+    `INSERT INTO supplies (user_id, supply_id, amount) VALUES (?, ?, ?)
+     ON CONFLICT(user_id, supply_id) DO UPDATE SET amount = excluded.amount`,
+    userId,
+    id,
+    amount,
+  );
+}
+
+/** A map scrap of the best tier: doubles the rolls of a 1-roll trip. */
+const OWNED_ATLAS = [{ id: 'map-scrap-great', source: 'owned' as const }];
+
+/** A supply bought with Bait at send time. */
+const buy = (id: string) => ({ id, source: 'buy' as const });
+
+/** Sends a creature to the Tidepools (open to every explorer) with the given supplies; free without. */
 function send(
   player: Player,
   creatureId: string,
-  duration: 'short' | 'medium' | 'long' = 'short',
-  supplies: 'basic' | 'good' | 'great' = 'basic',
+  duration: 'short' | 'medium' | 'long' | 'day' = 'short',
+  supplies: { id: string; source: 'buy' | 'owned' }[] = [],
   idempotencyKey = newKey(),
+  destination = 'tidepools',
 ) {
   return player.call('POST', '/api/expeditions', {
     creatureId,
+    destination,
     duration,
     supplies,
     idempotencyKey,
   });
+}
+
+/**
+ * Opens `slots` expedition slots for a player: the second comes from finished trips (the stat is set), the
+ * rest from a rank sum that reaches the rule's threshold (ten ranks on creatures, nine ranks above 1 each).
+ */
+function unlockSlots(sql: SqlStorage, userId: string, creatureId: string, slots: number): void {
+  if (slots >= 2) {
+    sql.exec(
+      `INSERT INTO account_stats (user_id, stat, value) VALUES (?, 'trips_finished', ?)
+       ON CONFLICT(user_id, stat) DO UPDATE SET value = MAX(value, excluded.value)`,
+      userId,
+      RULES.expeditions.slots.secondAfterTrips,
+    );
+  }
+  const needed = slots <= 2 ? 0 : (RULES.expeditions.slots.thresholds[slots - 3] ?? 0);
+  const top = RULES.expeditions.rank.xpForRank.at(-1) ?? 0;
+  const rows = Math.ceil(needed / 9);
+  const creatures = sql
+    .exec<{ id: string }>(
+      'SELECT id FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid',
+      userId,
+    )
+    .toArray();
+  const ids = [creatureId, ...creatures.map((c) => c.id).filter((id) => id !== creatureId)];
+  for (const id of ids.slice(0, rows)) {
+    sql.exec(
+      `INSERT INTO explorer_progress (user_id, creature_id, xp, trips) VALUES (?, ?, ?, 0)
+       ON CONFLICT(user_id, creature_id) DO UPDATE SET xp = excluded.xp`,
+      userId,
+      id,
+      top,
+    );
+  }
 }
 
 const claim = (player: Player, id: string) =>
@@ -229,6 +297,7 @@ function skipFirstExpedition(sql: SqlStorage, userId: string): void {
 const seeded = (): GuildCoreOptions => ({
   rng: createSeededRng('m2b-tests'),
   gearRng: createSeededRng('m2b-gear'),
+  tripRng: createSeededRng('m2b-trip'),
 });
 
 describe('migration 4', () => {
@@ -260,7 +329,7 @@ describe('migration 4', () => {
 
       core.migrate();
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        17,
+        LATEST_SCHEMA_VERSION,
       );
       expect(core.balances(USER_ID).bait).toBe(42);
       const res = await ctx.request(secret, '/api/state');
@@ -303,6 +372,7 @@ describe('GET /api/state', () => {
         expect(Object.keys(before).sort()).toEqual(
           [
             'balances',
+            'cancelled',
             'creatures',
             'expeditions',
             'leetSync',
@@ -311,6 +381,7 @@ describe('GET /api/state', () => {
             'slots',
             'starterChosen',
             'starterOptions',
+            'supplies',
             'timezone',
             'trainingMedianLevel',
           ].sort(),
@@ -330,7 +401,15 @@ describe('GET /api/state', () => {
         expect(before.starterOptions).toEqual(['splashet', 'cindle', 'sproutle']);
         expect(before.creatures).toEqual([]);
         expect(before.expeditions).toEqual([]);
-        expect(before.slots).toEqual({ total: 3, used: 0 });
+        expect(before.slots).toEqual({
+          total: 1,
+          used: 0,
+          rankSum: 0,
+          tripsFinished: 0,
+          next: { kind: 'trips', at: RULES.expeditions.slots.secondAfterTrips },
+        });
+        expect(before.supplies).toEqual({});
+        expect(before.cancelled).toEqual([]);
         expect(before.trainingMedianLevel).toBeNull();
         expect(before.serverFirsts).toEqual([]);
 
@@ -353,6 +432,7 @@ describe('GET /api/state', () => {
           quirk: expect.any(String) as string,
           origin: 'starter',
           caughtAt: T0,
+          explorer: { rank: 1, xp: 0, nextRankXp: RULES.expeditions.rank.xpForRank[1], trips: 0 },
           stats: { hp: 96, atk: 40, spd: 28 },
           // No gear yet: the fight stats are the same, nothing is worn and nothing is busy.
           statsWithGear: { hp: 96, atk: 40, spd: 28 },
@@ -474,7 +554,12 @@ describe('GET /api/state', () => {
           'claimed-4',
           'claimed-3',
         ]);
-        expect(state.slots).toEqual({ total: 3, used: 1 });
+        expect(state.slots).toMatchObject({
+          total: 1,
+          used: 1,
+          rankSum: 0,
+          next: { kind: 'trips', at: RULES.expeditions.slots.secondAfterTrips },
+        });
       },
       seeded(),
     );
@@ -639,37 +724,67 @@ describe('POST /api/starter', () => {
 });
 
 describe('POST /api/expeditions', () => {
-  it('charges once, marks the explorer away and sets the end time', async () => {
+  it('is free without supplies: marks the explorer away and sets the end time', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100);
-        const res = await send(p, p.starterId, 'medium', 'good');
+        const res = await send(p, p.starterId, 'medium');
         expect(res.status).toBe(200);
         const exp = expeditionOf(res);
         expect(exp).toMatchObject({
           creatureId: p.starterId,
           duration: 'medium',
-          supplies: 'good',
-          rolls: 2,
-          cost: 50,
+          supplies: 'basic',
+          kit: [],
+          destination: 'tidepools',
+          rolls: RULES.expeditions.lengths.medium.rolls,
+          cost: 0,
           startedAt: T0,
           endsAt: T0 + 6 * HOUR,
+          readyAt: T0 + 6 * HOUR,
           status: 'active',
           claimedAt: null,
           result: null,
+          offer: null,
+          pushOn: null,
         });
         const state = res.body['state'] as StateBody;
-        expect(state.balances.bait).toBe(50);
+        expect(state.balances.bait).toBe(100);
         expect(state.creatures[0]?.away).toBe(true);
-        expect(state.slots).toEqual({ total: 3, used: 1 });
+        expect(state.slots).toMatchObject({
+          total: 1,
+          used: 1,
+          rankSum: 0,
+          next: { kind: 'trips', at: RULES.expeditions.slots.secondAfterTrips },
+        });
+        expect(count(ctx.sql, 'ledger', "source = 'expedition'")).toBe(0);
+      },
+      seeded(),
+    );
+  });
+
+  it('charges once for a bought supply', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await joinWithStarter(ctx, USER, 100);
+        const price = 30;
+        const res = await send(p, p.starterId, 'medium', [buy('lure-good')]);
+        expect(res.status).toBe(200);
+        expect(expeditionOf(res)).toMatchObject({
+          kit: ['lure-good'],
+          supplies: 'good',
+          cost: price,
+        });
+        expect((res.body['state'] as StateBody).balances.bait).toBe(100 - price);
         const entry = ctx.sql
           .exec<{
             amount: number;
             source: string;
           }>("SELECT amount, source FROM ledger WHERE source = 'expedition'")
           .toArray();
-        expect(entry).toEqual([{ amount: -50, source: 'expedition' }]);
+        expect(entry).toEqual([{ amount: -price, source: 'expedition' }]);
       },
       seeded(),
     );
@@ -681,13 +796,13 @@ describe('POST /api/expeditions', () => {
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100);
         const key = newKey();
-        const first = await send(p, p.starterId, 'short', 'basic', key);
+        const first = await send(p, p.starterId, 'short', [buy('lure-basic')], key);
         ctx.clock.t += 5000;
-        const second = await send(p, p.starterId, 'short', 'basic', key);
+        const second = await send(p, p.starterId, 'short', [buy('lure-basic')], key);
         expect(second.status).toBe(200);
         expect(expeditionOf(second)).toEqual(expeditionOf(first));
         expect(count(ctx.sql, 'expeditions')).toBe(1);
-        expect((second.body['state'] as StateBody).balances.bait).toBe(90);
+        expect((second.body['state'] as StateBody).balances.bait).toBe(88);
       },
       seeded(),
     );
@@ -699,12 +814,12 @@ describe('POST /api/expeditions', () => {
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100);
         const key = newKey();
-        await send(p, p.starterId, 'short', 'basic', key);
-        const other = await send(p, p.starterId, 'short', 'good', key);
+        await send(p, p.starterId, 'short', [buy('lure-basic')], key);
+        const other = await send(p, p.starterId, 'short', [buy('lure-good')], key);
         expect(other.status).toBe(409);
         expect(other.body).toEqual({ error: 'key_conflict' });
         expect(count(ctx.sql, 'expeditions')).toBe(1);
-        expect(ctx.core.balances(USER_ID).bait).toBe(90);
+        expect(ctx.core.balances(USER_ID).bait).toBe(88);
       },
       seeded(),
     );
@@ -716,7 +831,7 @@ describe('POST /api/expeditions', () => {
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 9);
         const ledgerBefore = count(ctx.sql, 'ledger');
-        const res = await send(p, p.starterId, 'short', 'basic');
+        const res = await send(p, p.starterId, 'short', [buy('lure-basic')]);
         expect(res.status).toBe(409);
         expect(res.body).toEqual({ error: 'insufficient_funds' });
         expect(count(ctx.sql, 'expeditions')).toBe(0);
@@ -737,14 +852,14 @@ describe('POST /api/expeditions', () => {
         const res = await send(p, p.starterId);
         expect(res.status).toBe(409);
         expect(res.body).toEqual({ error: 'creature_away' });
-        expect(ctx.core.balances(USER_ID).bait).toBe(90);
+        expect(ctx.core.balances(USER_ID).bait).toBe(100);
         expect(count(ctx.sql, 'expeditions')).toBe(1);
       },
       seeded(),
     );
   });
 
-  it('409s on the 4th slot', async () => {
+  it('409s when every slot is used (one to begin with, more with explorer rank)', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -762,13 +877,18 @@ describe('POST /api/expeditions', () => {
         }
         const ids = (await p.state()).creatures.map((c) => c.id);
         expect(ids).toHaveLength(4);
-        for (const id of ids.slice(0, 3)) expect((await send(p, id)).status).toBe(200);
-        const fourth = ids[3];
-        if (fourth === undefined) throw new Error('missing creature');
-        const res = await send(p, fourth);
+        // One slot to begin with: the second creature has to wait.
+        expect((await send(p, ids[0] as string)).status).toBe(200);
+        const second = await send(p, ids[1] as string);
+        expect(second.status).toBe(409);
+        expect(second.body).toEqual({ error: 'slots_full' });
+        // Explorer rank opens more slots; three are enough for three trips and the 4th is refused.
+        unlockSlots(ctx.sql, USER_ID, ids[0] as string, 3);
+        for (const id of ids.slice(1, 3)) expect((await send(p, id)).status).toBe(200);
+        const res = await send(p, ids[3] as string);
         expect(res.status).toBe(409);
         expect(res.body).toEqual({ error: 'slots_full' });
-        expect(ctx.core.balances(USER_ID).bait).toBe(470);
+        expect(ctx.core.balances(USER_ID).bait).toBe(500);
       },
       seeded(),
     );
@@ -794,7 +914,10 @@ describe('POST /api/expeditions', () => {
 
   it.each([
     ['an unknown duration', { duration: 'forever' }],
-    ['unknown supplies', { supplies: 'epic' }],
+    ['unknown supplies', { supplies: [{ id: 'epic', source: 'buy' }] }],
+    ['the old supplies tier', { supplies: 'basic' }],
+    ['an unknown destination', { destination: 'atlantis' }],
+    ['an unknown supply source', { supplies: [{ id: 'lure-basic', source: 'steal' }] }],
     ['a malformed creature id', { creatureId: '../etc' }],
     ['an unknown key', { userId: OTHER_USER_ID }],
     ['a bad idempotency key', { idempotencyKey: 'x' }],
@@ -805,8 +928,9 @@ describe('POST /api/expeditions', () => {
         const p = await joinWithStarter(ctx, USER, 100);
         const body = {
           creatureId: p.starterId,
+          destination: 'tidepools',
           duration: 'short',
-          supplies: 'basic',
+          supplies: [],
           idempotencyKey: newKey(),
           ...extra,
         };
@@ -821,7 +945,7 @@ describe('POST /api/expeditions', () => {
 });
 
 describe('Festival species', () => {
-  it('are never brought back from an expedition, and are not starters', async () => {
+  it('are not caught at the everyday destinations, and are not starters', async () => {
     const festival = content.creatures.filter((c) => c.festival === true);
     expect(festival.length).toBeGreaterThan(0);
     for (const species of festival) {
@@ -832,17 +956,33 @@ describe('Festival species', () => {
       nextGuild(),
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 1_000_000);
+        // The Old Crossroads need explorer rank 2.
+        ctx.sql.exec(
+          'INSERT INTO explorer_progress (user_id, creature_id, xp, trips) VALUES (?, ?, ?, 0)',
+          USER_ID,
+          p.starterId,
+          RULES.expeditions.rank.xpForRank[1] ?? 0,
+        );
         const seen = new Set<string>();
-        for (let i = 0; i < 80; i++) {
-          const exp = expeditionOf(await send(p, p.starterId, 'long', 'great'));
+        const places = [
+          'tidepools',
+          'ember-caves',
+          'verdant-hollow',
+          'storm-ridge',
+          'old-crossroads',
+        ];
+        for (let i = 0; i < 100; i++) {
+          const exp = expeditionOf(
+            await send(p, p.starterId, 'long', [], newKey(), places[i % places.length]),
+          );
           ctx.clock.t = exp.endsAt;
           const res = await claim(p, exp.id);
           expect(res.status).toBe(200);
           for (const c of resultOf(res).catches) seen.add(c.species);
         }
         // Plenty of the catchable species showed up, and no Festival species did. (A Festival
-        // species only ever comes from a won Festival finale, never from a claim.)
-        expect(seen.size).toBeGreaterThan(5);
+        // species comes from a won Festival finale, or from the Festival Grounds in a Festival week.)
+        expect(seen.size).toBeGreaterThan(6);
         for (const species of festival) expect(seen.has(species.id)).toBe(false);
       },
       seeded(),
@@ -856,13 +996,13 @@ describe('POST /api/expeditions/{id}/claim', () => {
       nextGuild(),
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100);
-        const exp = expeditionOf(await send(p, p.starterId, 'long', 'basic'));
+        const exp = expeditionOf(await send(p, p.starterId, 'long'));
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
         expect(res.status).toBe(200);
         const result = resultOf(res);
         expect(result.recalled).toBe(false);
-        expect(result.catches).toHaveLength(3);
+        expect(result.catches).toHaveLength(RULES.expeditions.lengths.long.rolls);
         const state = res.body['state'] as StateBody;
         expect(state.creatures.find((c) => c.id === p.starterId)?.away).toBe(false);
         expect(state.slots.used).toBe(0);
@@ -884,15 +1024,15 @@ describe('POST /api/expeditions/{id}/claim', () => {
       nextGuild(),
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 200);
-        const exp = expeditionOf(await send(p, p.starterId, 'long', 'good'));
-        const paid = expeditionCost('long', 'good');
-        ctx.clock.t = exp.startedAt + 8 * HOUR; // 8 of 12 hours: floor(3 * 2/3) = 2
+        const exp = expeditionOf(await send(p, p.starterId, 'long', [buy('lure-basic')]));
+        const paid = 12;
+        ctx.clock.t = exp.startedAt + 8 * HOUR; // 8 of 12 hours: floor(rolls * 2/3)
         const expected = recallCatches(exp.rolls, exp.startedAt, exp.endsAt, ctx.clock.t);
-        expect(expected).toBe(2);
+        expect(expected).toBe(Math.floor((RULES.expeditions.lengths.long.rolls * 2) / 3));
         const res = await claim(p, exp.id);
         expect(res.status).toBe(200);
         expect(resultOf(res).recalled).toBe(true);
-        expect(resultOf(res).catches).toHaveLength(2);
+        expect(resultOf(res).catches).toHaveLength(expected);
         expect((res.body['state'] as StateBody).balances.bait).toBe(200 - paid);
         expect((res.body['state'] as StateBody).slots.used).toBe(0);
       },
@@ -905,7 +1045,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
       nextGuild(),
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100);
-        const exp = expeditionOf(await send(p, p.starterId, 'medium', 'basic'));
+        const exp = expeditionOf(await send(p, p.starterId, 'medium'));
         ctx.clock.t = exp.startedAt + 2 * HOUR; // floor(2 * 1/3) = 0
         const res = await claim(p, exp.id);
         // Nothing was caught, so the trip brought back no scrap and nothing else.
@@ -926,7 +1066,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
       nextGuild(),
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100);
-        const exp = expeditionOf(await send(p, p.starterId, 'long', 'basic'));
+        const exp = expeditionOf(await send(p, p.starterId, 'long'));
         ctx.clock.t = exp.endsAt;
         const first = await claim(p, exp.id);
         const drawn = rng.drawn();
@@ -955,7 +1095,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
         nextGuild(),
         async (ctx) => {
           const p = await joinWithStarter(ctx, USER, 100);
-          const exp = expeditionOf(await send(p, p.starterId, 'long', 'basic'));
+          const exp = expeditionOf(await send(p, p.starterId, 'long'));
           ctx.clock.t = exp.endsAt;
           const all = await Promise.all(Array.from({ length: times }, () => claim(p, exp.id)));
           expect(count(ctx.sql, 'expeditions', "status = 'claimed'")).toBe(1);
@@ -965,7 +1105,11 @@ describe('POST /api/expeditions/{id}/claim', () => {
           expect(count(ctx.sql, 'creatures')).toBe(lines);
           return all;
         },
-        { rng, gearRng: createSeededRng('concurrent-gear') },
+        {
+          rng,
+          gearRng: createSeededRng('concurrent-gear'),
+          tripRng: createSeededRng('concurrent-trip'),
+        },
       );
       return { drawn: rng.drawn(), results };
     };
@@ -1030,7 +1174,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
       nextGuild(),
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100);
-        const exp = expeditionOf(await send(p, p.starterId, 'short', 'basic'));
+        const exp = expeditionOf(await send(p, p.starterId, 'short'));
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
         const [first] = resultOf(res).catches;
@@ -1048,9 +1192,9 @@ describe('POST /api/expeditions/{id}/claim', () => {
       nextGuild(),
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100);
-        const early = expeditionOf(await send(p, p.starterId, 'medium', 'basic'));
+        const early = expeditionOf(await send(p, p.starterId, 'medium'));
         expect(resultOf(await claim(p, early.id)).catches).toEqual([]);
-        const next = expeditionOf(await send(p, p.starterId, 'short', 'basic'));
+        const next = expeditionOf(await send(p, p.starterId, 'short'));
         ctx.clock.t = next.endsAt;
         expect(resultOf(await claim(p, next.id)).catches[0]?.species).toBe('zipmouse');
         // Now it is used up.
@@ -1074,7 +1218,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
           USER_ID,
           T0,
         );
-        const exp = expeditionOf(await send(p, p.starterId, 'short', 'basic'));
+        const exp = expeditionOf(await send(p, p.starterId, 'short'));
         ctx.clock.t = exp.endsAt;
         // A scripted common/splashet catch: the guarantee would have given a zipmouse instead.
         const res = await claim(p, exp.id);
@@ -1123,15 +1267,16 @@ describe('POST /api/expeditions/{id}/claim', () => {
         const p = await joinWithStarter(ctx, USER, 100);
         skipFirstExpedition(ctx.sql, USER_ID);
         ctx.sql.exec('UPDATE creatures SET fusion_count = 5');
-        const exp = expeditionOf(await send(p, p.starterId, 'medium', 'basic')); // 2 rolls, 20 Bait
+        stock(ctx.sql, USER_ID, 'map-scrap-great', 1);
+        const exp = expeditionOf(await send(p, p.starterId, 'medium', OWNED_ATLAS)); // 2 rolls
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
-        const bait = RULES.fusion.convertBait.common;
+        const bait = expeditionConvertBait(RULES.fusion.convertBait.common);
         expect(resultOf(res).catches.map((c) => [c.outcome, c.bait])).toEqual([
           ['converted', bait],
           ['converted', bait],
         ]);
-        expect(ctx.core.balances(USER_ID).bait).toBe(100 - 20 + 2 * bait);
+        expect(ctx.core.balances(USER_ID).bait).toBe(100 + 2 * bait);
         const credits = ctx.sql
           .exec<{
             amount: number;
@@ -1145,7 +1290,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
         // A replayed claim pays nothing more.
         const again = await claim(p, exp.id);
         expect(resultOf(again)).toEqual(resultOf(res));
-        expect(ctx.core.balances(USER_ID).bait).toBe(100 - 20 + 2 * bait);
+        expect(ctx.core.balances(USER_ID).bait).toBe(100 + 2 * bait);
         expect(count(ctx.sql, 'ledger', "source = 'fusion'")).toBe(2);
         expect((await p.state()).creatures[0]?.fusionCount).toBe(5);
       },
@@ -1215,7 +1360,8 @@ describe('POST /api/expeditions/{id}/claim', () => {
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100, 'cindle');
         skipFirstExpedition(ctx.sql, USER_ID);
-        const exp = expeditionOf(await send(p, p.starterId, 'medium', 'basic'));
+        stock(ctx.sql, USER_ID, 'map-scrap-great', 1);
+        const exp = expeditionOf(await send(p, p.starterId, 'medium', OWNED_ATLAS));
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
         expect(resultOf(res).catches).toEqual([
@@ -1418,7 +1564,7 @@ describe('POST /api/creatures/{id}/train', () => {
         const res = await train(p, p.starterId);
         expect(res.status).toBe(409);
         expect(res.body).toEqual({ error: 'creature_away' });
-        expect(ctx.core.balances(USER_ID).bait).toBe(90);
+        expect(ctx.core.balances(USER_ID).bait).toBe(100);
       },
       seeded(),
     );

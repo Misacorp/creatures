@@ -166,8 +166,9 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
   }); // both slots are in use
   await fail('POST', '/api/expeditions', {
     creatureId: zipmouse,
+    destination: 'tidepools',
     duration: 'short',
-    supplies: 'basic',
+    supplies: [],
     idempotencyKey: newKey(),
   });
   await fail('POST', `/api/gear/${rare}/dismantle`, { idempotencyKey: newKey() });
@@ -257,8 +258,9 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
   }); // a Common item has no extra stat to re-roll
   await call('POST', '/api/expeditions', {
     creatureId: sproutle,
+    destination: 'tidepools',
     duration: 'short',
-    supplies: 'basic',
+    supplies: [],
     idempotencyKey: newKey(),
   });
   await fail('POST', '/api/workshop/jobs', {
@@ -306,8 +308,9 @@ export async function runExpeditionScenario(ctx: CoreContext): Promise<Captured>
   };
   const sent = await call('POST', '/api/expeditions', {
     creatureId: seeded.creatureIds[0],
+    destination: 'ember-caves',
     duration: 'long',
-    supplies: 'basic',
+    supplies: [],
     idempotencyKey: newKey(),
   });
   const expedition = sent.body['expedition'] as { id: string; endsAt: number };

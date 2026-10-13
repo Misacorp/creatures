@@ -21,19 +21,20 @@
  *   the guild alarm.
  */
 import {
-  DURATION_IDS,
+  EXPEDITION_LENGTHS,
   GEAR_RARITIES,
+  GOAL_RISKS,
   JOB_KINDS,
   RARITIES,
   RULES,
-  SUPPLIES_IDS,
   content,
+  expeditionContent,
   gearContent,
-  type DurationId,
+  type ExpeditionLength,
   type GearRarity,
+  type GoalRisk,
   type JobKind,
   type Rarity,
-  type SuppliesId,
 } from '@creatures/game';
 import type { PostFailureKind } from './discord-posts';
 
@@ -47,7 +48,7 @@ const SEEN_REFRESH_MS = 60_000;
 const PRUNE_BATCH = 500;
 const PRUNE_MAX_BATCHES = 20;
 /** `props_json` is never longer than this; a longer one is replaced by `{"truncated":true}`. */
-export const MAX_PROPS_CHARS = 1024;
+export const MAX_PROPS_CHARS = 1536;
 /** Most catches listed in one claim event. */
 const MAX_CATCHES = 12;
 /** Bound on the in-memory caches (one entry per player who was active). */
@@ -57,6 +58,9 @@ const CACHE_MAX = 512;
 
 export type PhaseName = 'phase1' | 'phase2' | 'finale';
 export type CatchResult = 'new' | 'fused' | 'converted';
+/** What became of a push-on choice: it worked, it failed (a risky one), or the player came home instead. */
+export type PushOnOutcome = 'worked' | 'failed' | 'declined';
+const PUSH_ON_OUTCOMES = ['worked', 'failed', 'declined'] as const;
 export type FestivalResult = 'new' | 'fused' | 'converted';
 
 /** Where a gear grant came from. */
@@ -86,26 +90,77 @@ export type AnalyticsEvent =
   | {
       kind: 'expedition_send';
       species: string;
-      duration: DurationId;
-      supplies: SuppliesId;
+      duration: ExpeditionLength;
+      destination: string;
+      /** The supplies carried (content ids). */
+      supplies: readonly string[];
+      /** How many of them were bought for Bait on this send (the rest came from stock). */
+      bought: number;
+      /** The Bait spent. */
       cost: number;
+      /** The explorer's rank when it left. */
+      rank: number;
     }
   | {
       kind: 'expedition_claim';
-      duration: DurationId;
-      supplies: SuppliesId;
+      duration: ExpeditionLength;
+      destination: string;
+      supplies: readonly string[];
       /** Whole minutes the finished expedition waited before it was claimed. */
       waitedMin: number;
       catches: readonly CatchProps[];
+      /** What became of the push-on choice, if there was one. */
+      pushOn: PushOnOutcome | 'none';
+      /** Explorer XP gained; 0 when the trip failed. */
+      xp: number;
+      /** The explorer's stars at this destination after the trip. */
+      stars: number;
     }
   | {
       kind: 'expedition_recall';
-      duration: DurationId;
-      supplies: SuppliesId;
+      duration: ExpeditionLength;
+      destination: string;
+      supplies: readonly string[];
       /** How much of the expedition had passed, 0 to 100. */
       elapsedPct: number;
       catches: readonly CatchProps[];
     }
+  | {
+      /** A finished trip rolled an end-of-trip choice: the goals offered (none when the roll came up empty). */
+      kind: 'push_on_offer';
+      destination: string;
+      duration: ExpeditionLength;
+      rank: number;
+      goals: readonly string[];
+    }
+  | {
+      kind: 'push_on_choose';
+      goal: string;
+      risk: GoalRisk;
+      destination: string;
+      duration: ExpeditionLength;
+      /** The exact chance (basis points) the player was shown. */
+      oddsBp: number;
+    }
+  | {
+      kind: 'push_on_result';
+      goal: string;
+      risk: GoalRisk;
+      outcome: PushOnOutcome;
+      destination: string;
+      duration: ExpeditionLength;
+      oddsBp: number;
+    }
+  | {
+      kind: 'journal_find';
+      entry: string;
+      place: string;
+      set: string | null;
+      setComplete: boolean;
+    }
+  | { kind: 'explorer_rank'; species: string; rank: number }
+  | { kind: 'familiarity_star'; destination: string; stars: number }
+  | { kind: 'slot_unlock'; slots: number; rankSum: number }
   | { kind: 'train'; species: string; level: number; cost: number }
   | { kind: 'evolve'; from: string; to: string; cost: number }
   | {
@@ -167,6 +222,8 @@ export type AnalyticsEvent =
       glimmer: number;
       blueprint: string | null;
       blueprintDuplicate: boolean;
+      /** Supplies the grant gave (left out when none). */
+      supplies?: number;
     }
   | {
       kind: 'gear_equip';
@@ -238,6 +295,19 @@ const BOSS_IDS: ReadonlySet<string> = new Set(content.bosses.map((b) => b.id));
 const ABILITY_IDS: ReadonlySet<string> = new Set(content.finaleAbilities.map((a) => a.id));
 const GEAR_BASE_IDS: ReadonlySet<string> = new Set(gearContent.bases.map((b) => b.id));
 const ENCHANT_IDS: ReadonlySet<string> = new Set(gearContent.enchants.map((e) => e.id));
+const DESTINATION_IDS: ReadonlySet<string> = new Set(
+  expeditionContent.destinations.map((d) => d.id),
+);
+const SUPPLY_IDS: ReadonlySet<string> = new Set(expeditionContent.supplies.map((s) => s.id));
+const GOAL_IDS: ReadonlySet<string> = new Set(expeditionContent.goals.map((g) => g.id));
+const JOURNAL_IDS: ReadonlySet<string> = new Set(
+  expeditionContent.journal.entries.map((e) => e.id),
+);
+const JOURNAL_SET_IDS: ReadonlySet<string> = new Set(
+  expeditionContent.journal.sets.map((s) => s.id),
+);
+/** A gear base or a supply (a supply craft is a workshop job too). */
+const JOB_BASE_IDS: ReadonlySet<string> = new Set([...GEAR_BASE_IDS, ...SUPPLY_IDS]);
 const POST_ERRORS: ReadonlySet<string> = new Set<PostFailureKind>([
   'rate_limited',
   'server_error',
@@ -268,6 +338,12 @@ function catchProps(list: readonly CatchProps[]): unknown[] {
 }
 
 const gearBase = (value: string): string => fromSet(GEAR_BASE_IDS, value);
+const destination = (value: string): string => fromSet(DESTINATION_IDS, value);
+const length = (value: string): ExpeditionLength => oneOf(EXPEDITION_LENGTHS, value, 'short');
+const supplyIds = (list: readonly string[]): string[] =>
+  list.slice(0, RULES.expeditions.maxSupplies).map((id) => fromSet(SUPPLY_IDS, id));
+const risk = (value: string): GoalRisk => oneOf(GOAL_RISKS, value, 'safe');
+const outcome = (value: string): PushOnOutcome => oneOf(PUSH_ON_OUTCOMES, value, 'declined');
 const gearRarity = (value: string): GearRarity => oneOf(GEAR_RARITIES, value, 'common');
 
 /** The props object of an event, rebuilt field by field from checked values. */
@@ -280,24 +356,71 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
     case 'expedition_send':
       return {
         species: species(event.species),
-        duration: oneOf(DURATION_IDS, event.duration, 'short'),
-        supplies: oneOf(SUPPLIES_IDS, event.supplies, 'basic'),
+        duration: length(event.duration),
+        destination: destination(event.destination),
+        supplies: supplyIds(event.supplies),
+        bought: int(event.bought, RULES.expeditions.maxSupplies),
         cost: int(event.cost),
+        rank: int(event.rank, 99),
       };
     case 'expedition_claim':
       return {
-        duration: oneOf(DURATION_IDS, event.duration, 'short'),
-        supplies: oneOf(SUPPLIES_IDS, event.supplies, 'basic'),
+        duration: length(event.duration),
+        destination: destination(event.destination),
+        supplies: supplyIds(event.supplies),
         waitedMin: int(event.waitedMin),
         catches: catchProps(event.catches),
+        pushOn: event.pushOn === 'none' ? 'none' : outcome(event.pushOn),
+        xp: int(event.xp, 100_000),
+        stars: int(event.stars, 3),
       };
     case 'expedition_recall':
       return {
-        duration: oneOf(DURATION_IDS, event.duration, 'short'),
-        supplies: oneOf(SUPPLIES_IDS, event.supplies, 'basic'),
+        duration: length(event.duration),
+        destination: destination(event.destination),
+        supplies: supplyIds(event.supplies),
         elapsedPct: int(event.elapsedPct, 100),
         catches: catchProps(event.catches),
       };
+    case 'push_on_offer':
+      return {
+        destination: destination(event.destination),
+        duration: length(event.duration),
+        rank: int(event.rank, 99),
+        goals: event.goals
+          .slice(0, RULES.expeditions.pushOn.maxGoals)
+          .map((id) => fromSet(GOAL_IDS, id)),
+      };
+    case 'push_on_choose':
+      return {
+        goal: fromSet(GOAL_IDS, event.goal),
+        risk: risk(event.risk),
+        destination: destination(event.destination),
+        duration: length(event.duration),
+        oddsBp: int(event.oddsBp, 10_000),
+      };
+    case 'push_on_result':
+      return {
+        goal: fromSet(GOAL_IDS, event.goal),
+        risk: risk(event.risk),
+        outcome: outcome(event.outcome),
+        destination: destination(event.destination),
+        duration: length(event.duration),
+        oddsBp: int(event.oddsBp, 10_000),
+      };
+    case 'journal_find':
+      return {
+        entry: fromSet(JOURNAL_IDS, event.entry),
+        place: event.place === 'any' ? 'any' : destination(event.place),
+        set: event.set === null ? null : fromSet(JOURNAL_SET_IDS, event.set),
+        setComplete: bool(event.setComplete),
+      };
+    case 'explorer_rank':
+      return { species: species(event.species), rank: int(event.rank, 99) };
+    case 'familiarity_star':
+      return { destination: destination(event.destination), stars: int(event.stars, 3) };
+    case 'slot_unlock':
+      return { slots: int(event.slots, 99), rankSum: int(event.rankSum, 9_999) };
     case 'train':
       return { species: species(event.species), level: int(event.level), cost: int(event.cost) };
     case 'evolve':
@@ -376,6 +499,9 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         glimmer: int(event.glimmer),
         blueprint: event.blueprint === null ? null : gearBase(event.blueprint),
         blueprintDuplicate: bool(event.blueprintDuplicate),
+        ...(event.supplies === undefined || event.supplies <= 0
+          ? {}
+          : { supplies: int(event.supplies, 99) }),
       };
     case 'gear_equip':
       return {
@@ -408,7 +534,7 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
     case 'job_start':
       return {
         job: oneOf(JOB_KINDS, event.job, 'craft'),
-        base: gearBase(event.base),
+        base: fromSet(JOB_BASE_IDS, event.base),
         rarity: gearRarity(event.rarity),
         species: species(event.species),
         hours: int(event.hours, 99),
@@ -417,7 +543,7 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
     case 'job_claim':
       return {
         job: oneOf(JOB_KINDS, event.job, 'craft'),
-        base: gearBase(event.base),
+        base: fromSet(JOB_BASE_IDS, event.base),
         rarity: gearRarity(event.rarity),
         upgraded: bool(event.upgraded),
         enchant: event.enchant === null ? null : fromSet(ENCHANT_IDS, event.enchant),

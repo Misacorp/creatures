@@ -80,7 +80,7 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
     POST: async (request, { user, core }) => {
       const body = await parseBody(request, StartExpeditionBodySchema);
       if (body === undefined) return invalidBody();
-      const outcome = core.collection.startExpedition(user.id, body);
+      const outcome = core.collection.startExpedition(user.id, body, core.timezone());
       if (!outcome.ok) return failure(outcome);
       return json({ expedition: outcome.value, state: core.collection.state(user.id) });
     },

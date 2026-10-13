@@ -1,0 +1,220 @@
+{
+  "stats": {
+    "trips_finished": 3,
+    "trips_failed": 1,
+    "trip_hours": 12,
+    "species_found": 1,
+    "places_visited": 1,
+    "journal_pages": 1,
+    "journal_sets": 0,
+    "reactions_seen": 0,
+    "pushons_taken": 2,
+    "pushons_won": 1,
+    "supplies_used": 3,
+    "shinies_found": 0
+  },
+  "milestones": [
+    {
+      "id": "first-steps",
+      "stat": "trips_finished",
+      "at": 5,
+      "value": 3,
+      "reached": false,
+      "bonus": {
+        "kind": "parts",
+        "bp": 100
+      }
+    },
+    {
+      "id": "seasoned",
+      "stat": "trips_finished",
+      "at": 50,
+      "value": 3,
+      "reached": false,
+      "bonus": {
+        "kind": "rarity",
+        "bp": 100
+      }
+    },
+    {
+      "id": "veteran",
+      "stat": "trips_finished",
+      "at": 200,
+      "value": 3,
+      "reached": false,
+      "bonus": {
+        "kind": "rarity",
+        "bp": 100
+      }
+    },
+    {
+      "id": "wanderer",
+      "stat": "places_visited",
+      "at": 4,
+      "value": 1,
+      "reached": false,
+      "bonus": {
+        "kind": "offer",
+        "bp": 100
+      }
+    },
+    {
+      "id": "globetrotter",
+      "stat": "places_visited",
+      "at": 7,
+      "value": 1,
+      "reached": false,
+      "bonus": {
+        "kind": "parts",
+        "bp": 100
+      }
+    },
+    {
+      "id": "collector",
+      "stat": "species_found",
+      "at": 6,
+      "value": 1,
+      "reached": false,
+      "bonus": {
+        "kind": "xp",
+        "bp": 200
+      }
+    },
+    {
+      "id": "scholar",
+      "stat": "journal_pages",
+      "at": 10,
+      "value": 1,
+      "reached": false,
+      "bonus": {
+        "kind": "xp",
+        "bp": 200
+      }
+    },
+    {
+      "id": "archivist",
+      "stat": "journal_sets",
+      "at": 4,
+      "value": 0,
+      "reached": false,
+      "bonus": {
+        "kind": "offer",
+        "bp": 100
+      }
+    },
+    {
+      "id": "gambler",
+      "stat": "pushons_won",
+      "at": 10,
+      "value": 1,
+      "reached": false,
+      "bonus": {
+        "kind": "offer",
+        "bp": 100
+      }
+    },
+    {
+      "id": "raid-watcher",
+      "stat": "reactions_seen",
+      "at": 200,
+      "value": 0,
+      "reached": false,
+      "bonus": {
+        "kind": "rarity",
+        "bp": 50
+      }
+    }
+  ],
+  "bonuses": {
+    "rarityBp": 0,
+    "partsBp": 0,
+    "offerBp": 0,
+    "xpBp": 0
+  },
+  "journal": {
+    "found": [
+      {
+        "entryId": "tide-first-pool",
+        "foundAt": 1799830944002
+      }
+    ],
+    "total": 40,
+    "sets": [
+      {
+        "id": "tide-ledger",
+        "found": 1,
+        "total": 3
+      },
+      {
+        "id": "ash-records",
+        "found": 0,
+        "total": 3
+      },
+      {
+        "id": "rootwork-notes",
+        "found": 0,
+        "total": 3
+      },
+      {
+        "id": "static-letters",
+        "found": 0,
+        "total": 3
+      },
+      {
+        "id": "signpost-series",
+        "found": 0,
+        "total": 4
+      },
+      {
+        "id": "moonlit-verses",
+        "found": 0,
+        "total": 3
+      },
+      {
+        "id": "lost-pages",
+        "found": 0,
+        "total": 3
+      }
+    ]
+  },
+  "explorers": [
+    {
+      "creatureId": "ffafcc53-26f2-46e7-8ef5-b1f3718cb76f",
+      "rank": 3,
+      "xp": 1100,
+      "nextRankXp": 2000,
+      "trips": 1
+    },
+    {
+      "creatureId": "890de23e-6d85-4ca9-a188-bc04d29ffa6e",
+      "rank": 1,
+      "xp": 0,
+      "nextRankXp": 200,
+      "trips": 0
+    },
+    {
+      "creatureId": "f376b77f-be7b-4c9c-a4f6-b182c7b27399",
+      "rank": 1,
+      "xp": 0,
+      "nextRankXp": 200,
+      "trips": 0
+    },
+    {
+      "creatureId": "5812bf49-434b-4d9d-b25d-54f3bd67f9cc",
+      "rank": 1,
+      "xp": 0,
+      "nextRankXp": 200,
+      "trips": 0
+    }
+  ],
+  "slots": {
+    "total": 2,
+    "used": 0,
+    "rankSum": 2,
+    "tripsFinished": 3,
+    "next": {
+      "kind": "rank_sum",
+      "at": 26
+    }
+  }
+}

@@ -212,8 +212,65 @@ export const GEAR_TABLES = [
   'gear_actions',
 ] as const;
 
+/**
+ * The schema version of a fresh database. Tests that check it use this constant, so a new migration
+ * changes one number here (and adds an undo step below), not a dozen tests.
+ */
+export const LATEST_SCHEMA_VERSION = 19;
+
+/** Tables created by migration 19 (expeditions v2). */
+export const EXPEDITION_TABLES = [
+  'explorer_progress',
+  'familiarity',
+  'journal',
+  'account_stats',
+  'places_visited',
+  'supplies',
+  'expedition_offers',
+] as const;
+
+/**
+ * Puts a database back to before migration 19 (expeditions v2): its tables go and `expeditions` gets its
+ * old shape back (cancelled trips are dropped, the new columns lost). `workshop_jobs` is rebuilt by the
+ * gear undo below. Version 18 is the daily dungeon's, reserved as an empty step until it is merged.
+ */
+export function undoExpeditionsMigration(sql: SqlStorage): void {
+  for (const table of EXPEDITION_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
+  // A test that rebuilds a much older schema may have dropped the table already.
+  const hasTable = sql
+    .exec("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'expeditions'")
+    .toArray();
+  if (hasTable.length === 0) {
+    sql.exec('DELETE FROM schema_version WHERE version IN (18, 19)');
+    return;
+  }
+  sql.exec(`CREATE TABLE expeditions_v1 (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    creature_id TEXT NOT NULL,
+    duration TEXT NOT NULL,
+    supplies TEXT NOT NULL,
+    rolls INTEGER NOT NULL,
+    cost INTEGER NOT NULL,
+    started_at INTEGER NOT NULL,
+    ends_at INTEGER NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('active', 'claimed')),
+    claimed_at INTEGER,
+    result TEXT
+  )`);
+  sql.exec(`INSERT INTO expeditions_v1
+      (id, user_id, creature_id, duration, supplies, rolls, cost, started_at, ends_at, status, claimed_at, result)
+    SELECT id, user_id, creature_id, duration, supplies, rolls, cost, started_at, ends_at, status, claimed_at, result
+    FROM expeditions WHERE status != 'cancelled' ORDER BY rowid`);
+  sql.exec('DROP TABLE expeditions');
+  sql.exec('ALTER TABLE expeditions_v1 RENAME TO expeditions');
+  sql.exec('CREATE INDEX expeditions_user_status ON expeditions(user_id, status)');
+  sql.exec('DELETE FROM schema_version WHERE version IN (18, 19)');
+}
+
 /** Puts a database back to before migration 17 (gear and crafting). */
 export function undoGearMigration(sql: SqlStorage): void {
+  undoExpeditionsMigration(sql);
   for (const table of GEAR_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
   sql.exec('DELETE FROM schema_version WHERE version = 17');
 }

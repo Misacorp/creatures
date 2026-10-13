@@ -6,76 +6,38 @@
  * The user is always an argument supplied from the verified session, never from a request body.
  */
 import {
-  applyCatchToCollection,
   applyGear,
   canTrain,
   RULES,
   content,
   discountedTrainingCost,
   effectiveStats,
-  expeditionCost,
-  expeditionDurationMs,
-  expeditionRolls,
   pickQuirk,
   quirkText,
-  recallCatches,
-  rollCatches,
   sanitizeNickname,
-  type CreatureSpecies,
-  type DurationId,
   type GearRarity,
   type Rng,
   type Stats,
-  type SuppliesId,
 } from '@creatures/game';
-import type { Analytics, CatchProps } from './analytics';
-import { grantExpeditionLoot, type GrantView } from './gear-grants';
+import type { Analytics } from './analytics';
 import {
-  equippedByCreature,
-  openJobOf,
-  openJobsByCreature,
-  rowToItem,
-  type GearRow,
-} from './gear-store';
-import {
-  credit,
-  getBalances,
-  lookupSpend,
-  spend,
-  type Currency,
-  type LedgerStorage,
-} from './ledger';
+  Expeditions,
+  type CancelledView,
+  type ExpeditionResult,
+  type ExpeditionView,
+  type ExplorerView,
+  type SendInput,
+  type SlotsView,
+} from './expeditions';
+import { equippedByCreature, openJobsByCreature, rowToItem, type GearRow } from './gear-store';
+import { getBalances, lookupSpend, spend, type Currency, type LedgerStorage } from './ledger';
+import { CollectionError, atomically, type Outcome } from './outcome';
 import { recordServerFirst, type ServerFirstKind } from './server-firsts';
+import { speciesOf } from './species';
 
-/** Expedition slots per player. */
-export const EXPEDITION_SLOTS = 3;
-/** Finished expeditions shown in the state besides the active ones. */
-const RECENT_CLAIMED = 5;
-
-const SPECIES = new Map<string, CreatureSpecies>(content.creatures.map((c) => [c.id, c]));
-
-export function speciesOf(id: string): CreatureSpecies {
-  const species = SPECIES.get(id);
-  if (species === undefined) throw new Error('stored creature has an unknown species');
-  return species;
-}
-
-export type ErrorStatus = 400 | 404 | 409;
-
-export type Outcome<T> =
-  { ok: true; value: T } | { ok: false; status: ErrorStatus; error: string; reason?: string };
-
-/** Thrown inside a transaction to roll it back and answer with an error. */
-class CollectionError extends Error {
-  constructor(
-    readonly status: ErrorStatus,
-    readonly code: string,
-    readonly reason?: string,
-  ) {
-    super(code);
-    this.name = 'CollectionError';
-  }
-}
+export { speciesOf } from './species';
+export type { ErrorStatus, Outcome } from './outcome';
+export type { CatchView, ExpeditionResult, ExpeditionView, SendInput } from './expeditions';
 
 type CreatureRow = {
   id: string;
@@ -90,21 +52,6 @@ type CreatureRow = {
   origin: string;
   caught_at: number;
   quirk_id: string | null;
-};
-
-type ExpeditionRow = {
-  id: string;
-  user_id: string;
-  creature_id: string;
-  duration: DurationId;
-  supplies: SuppliesId;
-  rolls: number;
-  cost: number;
-  started_at: number;
-  ends_at: number;
-  status: 'active' | 'claimed';
-  claimed_at: number | null;
-  result: string | null;
 };
 
 export interface CreatureView {
@@ -144,6 +91,8 @@ export interface CreatureView {
    * cannot start the other; it still fights in raids. `away` is true for an expedition only.
    */
   busy: { kind: 'expedition' | 'job'; id: string } | null;
+  /** The creature's explorer rank, XP and finished trips (expeditions are about creatures, not the account). */
+  explorer: ExplorerView;
   /** Bait for the next level (discount applied), or null at the level cap. */
   trainCost: number | null;
   /**
@@ -157,42 +106,6 @@ export interface CreatureView {
    * creature can still evolve into a species that has one.
    */
   ability: { id: string; unlocked: boolean; unlockLevel: number; nextId?: string } | null;
-}
-
-export interface CatchView {
-  species: string;
-  shiny: boolean;
-  outcome: 'new' | 'fused' | 'converted';
-  /** Only for outcome 'fused': the creature's fusion count after this catch. */
-  fusionCount?: number;
-  /** Only for outcome 'converted': the Bait granted. */
-  bait?: number;
-  firstOnServer: boolean;
-}
-
-export interface ExpeditionResult {
-  /** True if the player recalled before the expedition ended. */
-  recalled: boolean;
-  catches: CatchView[];
-  /**
-   * Parts and maybe a blueprint the trip brought back (a recall brings back the share of the scrap
-   * that was caught). Absent in results stored before gear existed.
-   */
-  loot?: GrantView;
-}
-
-export interface ExpeditionView {
-  id: string;
-  creatureId: string;
-  duration: DurationId;
-  supplies: SuppliesId;
-  rolls: number;
-  cost: number;
-  startedAt: number;
-  endsAt: number;
-  status: 'active' | 'claimed';
-  claimedAt: number | null;
-  result: ExpeditionResult | null;
 }
 
 export interface ServerFirstView {
@@ -213,7 +126,12 @@ export interface PlayerState {
   starterOptions?: string[];
   creatures: CreatureView[];
   expeditions: ExpeditionView[];
-  slots: { total: number; used: number };
+  /** Trips cancelled by the slot wipe when expeditions v2 started (newest first, at most 3). */
+  cancelled: CancelledView[];
+  /** Expedition slots: how many there are, how many are used and what opens the next one. */
+  slots: SlotsView;
+  /** Supplies in stock: supply id to amount. */
+  supplies: Record<string, number>;
   /** Median over players of their highest creature level; null while nobody has a creature. */
   trainingMedianLevel: number | null;
   serverFirsts: ServerFirstView[];
@@ -233,6 +151,11 @@ export interface CollectionDeps {
    * never consumes the draws of a catch.
    */
   gearRng: Rng;
+  /**
+   * Live randomness for the end-of-trip choice, push-on results and the journal. Separate from `rng`,
+   * so none of them ever consumes the draws of a catch.
+   */
+  tripRng: Rng;
   /** The analytics event log. Optional: without it nothing is logged. */
   analytics?: Analytics;
 }
@@ -260,26 +183,27 @@ function storedString(result: unknown, key: string): string | undefined {
 }
 
 export class Collection {
-  constructor(private readonly deps: CollectionDeps) {}
+  /** Expeditions: sending, the end-of-trip choice, claiming and their views. */
+  readonly trips: Expeditions;
+
+  constructor(private readonly deps: CollectionDeps) {
+    this.trips = new Expeditions({
+      storage: deps.storage,
+      now: deps.now,
+      rng: deps.rng,
+      tripRng: deps.tripRng,
+      gearRng: deps.gearRng,
+      quirkRng: deps.quirkRng,
+      analytics: deps.analytics,
+    });
+  }
 
   private get sql(): SqlStorage {
     return this.deps.storage.sql;
   }
 
   private atomically<T>(fn: () => T): Outcome<T> {
-    try {
-      return { ok: true, value: this.deps.storage.transactionSync(fn) };
-    } catch (err) {
-      if (err instanceof CollectionError) {
-        return {
-          ok: false,
-          status: err.status,
-          error: err.code,
-          ...(err.reason === undefined ? {} : { reason: err.reason }),
-        };
-      }
-      throw err;
-    }
+    return atomically(this.deps.storage, fn);
   }
 
   // --- Reads ---
@@ -320,20 +244,13 @@ export class Collection {
     return median(tops);
   }
 
-  private activeCount(userId: string): number {
-    return this.sql
-      .exec<{
-        n: number;
-      }>("SELECT COUNT(*) AS n FROM expeditions WHERE user_id = ? AND status = 'active'", userId)
-      .one().n;
-  }
-
   private creatureView(
     row: CreatureRow,
     medianLevel: number | null,
     essence: number,
     worn: GearRow | undefined,
     jobId: string | undefined,
+    explorer: ExplorerView,
   ): CreatureView {
     const species = speciesOf(row.species);
     const away = row.away_expedition_id !== null;
@@ -389,6 +306,7 @@ export class Collection {
               unlockLevel: RULES.abilities.unlockLevel,
               ...(nextAbilityId === undefined ? {} : { nextId: nextAbilityId }),
             },
+      explorer,
       trainCost: trainable
         ? discountedTrainingCost(row.level, medianLevel ?? Number.NEGATIVE_INFINITY)
         : null,
@@ -404,38 +322,6 @@ export class Collection {
             },
           }),
     };
-  }
-
-  private expeditionView(row: ExpeditionRow): ExpeditionView {
-    let result: ExpeditionResult | null = null;
-    if (row.result !== null) {
-      try {
-        result = JSON.parse(row.result) as ExpeditionResult;
-      } catch {
-        result = null;
-      }
-    }
-    return {
-      id: row.id,
-      creatureId: row.creature_id,
-      duration: row.duration,
-      supplies: row.supplies,
-      rolls: row.rolls,
-      cost: row.cost,
-      startedAt: row.started_at,
-      endsAt: row.ends_at,
-      status: row.status,
-      claimedAt: row.claimed_at,
-      result,
-    };
-  }
-
-  private expeditionRow(userId: string, id: string): ExpeditionRow {
-    const row = this.sql
-      .exec<ExpeditionRow>('SELECT * FROM expeditions WHERE id = ? AND user_id = ?', id, userId)
-      .toArray()[0];
-    if (row === undefined) throw new CollectionError(404, 'not_found');
-    return row;
   }
 
   /** The jackpot record is stored but never listed: the jackpot is hidden from players. */
@@ -473,22 +359,14 @@ export class Collection {
     const medianLevel = this.trainingMedianLevel();
     const starterChosen = this.starterSpecies(userId) !== null;
     const balances = getBalances(this.sql, userId);
-    const active = this.sql
-      .exec<ExpeditionRow>(
-        "SELECT * FROM expeditions WHERE user_id = ? AND status = 'active' ORDER BY ends_at, rowid",
-        userId,
-      )
-      .toArray();
-    const claimed = this.sql
-      .exec<ExpeditionRow>(
-        `SELECT * FROM expeditions WHERE user_id = ? AND status = 'claimed'
-         ORDER BY claimed_at DESC, rowid DESC LIMIT ?`,
-        userId,
-        RECENT_CLAIMED,
-      )
-      .toArray();
+    const trips = this.trips.state(userId);
     const worn = equippedByCreature(this.sql, userId);
     const jobs = openJobsByCreature(this.sql, userId);
+    const rows = this.creatureRows(userId);
+    const explorers = this.trips.explorerViews(
+      userId,
+      rows.map((row) => row.id),
+    );
     return {
       serverNow: this.deps.now(),
       balances,
@@ -496,11 +374,20 @@ export class Collection {
       ...(starterChosen
         ? {}
         : { starterOptions: content.creatures.filter((c) => c.starter).map((c) => c.id) }),
-      creatures: this.creatureRows(userId).map((row) =>
-        this.creatureView(row, medianLevel, balances.essence, worn.get(row.id), jobs.get(row.id)),
+      creatures: rows.map((row) =>
+        this.creatureView(
+          row,
+          medianLevel,
+          balances.essence,
+          worn.get(row.id),
+          jobs.get(row.id),
+          explorers.get(row.id) as ExplorerView,
+        ),
       ),
-      expeditions: [...active, ...claimed].map((row) => this.expeditionView(row)),
-      slots: { total: EXPEDITION_SLOTS, used: active.length },
+      expeditions: trips.expeditions,
+      cancelled: trips.cancelled,
+      slots: trips.slots,
+      supplies: trips.supplies,
       trainingMedianLevel: medianLevel,
       serverFirsts: this.serverFirsts(userId),
     };
@@ -543,297 +430,14 @@ export class Collection {
 
   // --- Expeditions ---
 
-  startExpedition(
-    userId: string,
-    input: {
-      creatureId: string;
-      duration: DurationId;
-      supplies: SuppliesId;
-      idempotencyKey: string;
-    },
-  ): Outcome<ExpeditionView> {
-    return this.atomically(() => {
-      const creature = this.ownedCreature(userId, input.creatureId);
-      const prior = lookupSpend(this.sql, userId, input.idempotencyKey);
-      if (prior === null) {
-        if (creature.away_expedition_id !== null) throw new CollectionError(409, 'creature_away');
-        // One activity at a time: a creature on a workshop job cannot go on an expedition.
-        if (openJobOf(this.sql, creature.id) !== null) {
-          throw new CollectionError(409, 'creature_on_job');
-        }
-        if (this.activeCount(userId) >= EXPEDITION_SLOTS) {
-          throw new CollectionError(409, 'slots_full');
-        }
-      }
-      const now = this.deps.now();
-      const cost = expeditionCost(input.duration, input.supplies);
-      const spent = spend(
-        this.deps.storage,
-        {
-          userId,
-          currency: 'bait',
-          amount: cost,
-          purpose: 'expedition',
-          idempotencyKey: input.idempotencyKey,
-          apply: () => {
-            const id = crypto.randomUUID();
-            this.sql.exec(
-              `INSERT INTO expeditions
-                 (id, user_id, creature_id, duration, supplies, rolls, cost, started_at, ends_at, status)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
-              id,
-              userId,
-              creature.id,
-              input.duration,
-              input.supplies,
-              expeditionRolls(input.duration),
-              cost,
-              now,
-              now + expeditionDurationMs(input.duration),
-            );
-            this.sql.exec(
-              'UPDATE creatures SET away_expedition_id = ? WHERE id = ?',
-              id,
-              creature.id,
-            );
-            // Only a first execution gets here: a replayed key returns the stored result unlogged.
-            this.deps.analytics?.record(
-              {
-                kind: 'expedition_send',
-                species: creature.species,
-                duration: input.duration,
-                supplies: input.supplies,
-                cost,
-              },
-              userId,
-            );
-            return { expeditionId: id, creatureId: creature.id };
-          },
-        },
-        now,
-      );
-      switch (spent.status) {
-        case 'insufficient_funds':
-          throw new CollectionError(409, 'insufficient_funds');
-        case 'key_conflict':
-          throw new CollectionError(409, 'key_conflict');
-        case 'replayed': {
-          // Same key, different request: refuse instead of returning an unrelated expedition.
-          const view = this.expeditionView(this.expeditionRow(userId, spent.result.expeditionId));
-          if (
-            view.creatureId !== creature.id ||
-            view.duration !== input.duration ||
-            view.supplies !== input.supplies
-          ) {
-            throw new CollectionError(409, 'key_conflict');
-          }
-          return view;
-        }
-        case 'ok':
-          return this.expeditionView(this.expeditionRow(userId, spent.result.expeditionId));
-      }
-    });
+  /** Sends a creature on an expedition (see `Expeditions.send`). */
+  startExpedition(userId: string, input: SendInput, timezone: string): Outcome<ExpeditionView> {
+    return this.trips.send(userId, input, timezone);
   }
 
-  /**
-   * Finishes (or recalls) an expedition and rolls its catches in one transaction. Claiming again
-   * returns the stored result: no second roll, no second payout.
-   */
+  /** Claims (or recalls) an expedition (see `Expeditions.claim`). */
   claimExpedition(userId: string, expeditionId: string): Outcome<ExpeditionResult> {
-    return this.atomically(() => {
-      const expedition = this.expeditionRow(userId, expeditionId);
-      if (expedition.status === 'claimed') {
-        const stored = this.expeditionView(expedition).result;
-        if (stored === null) throw new Error('claimed expedition has no stored result');
-        return stored;
-      }
-
-      const now = this.deps.now();
-      const explorer = this.ownedCreature(userId, expedition.creature_id);
-      const count = recallCatches(expedition.rolls, expedition.started_at, expedition.ends_at, now);
-      const progress = this.sql
-        .exec<{ expeditions_claimed: number; dupe_streak: number }>(
-          'SELECT expeditions_claimed, dupe_streak FROM player_progress WHERE user_id = ?',
-          userId,
-        )
-        .toArray()[0] ?? { expeditions_claimed: 0, dupe_streak: 0 };
-      const owned = new Set(this.creatureRows(userId).map((c) => c.line));
-
-      // Rolled now, at claim time, from the live RNG: nothing is decided earlier.
-      const rolled = rollCatches(this.deps.rng, count, {
-        content,
-        supplies: expedition.supplies,
-        explorerElement: speciesOf(explorer.species).element,
-        ownedLines: owned,
-        dupeStreak: progress.dupe_streak,
-        firstExpedition: progress.expeditions_claimed === 0,
-      });
-
-      const catches = rolled.results.map((caught, index) =>
-        this.applyCatch(userId, expedition.id, index, caught, now),
-      );
-
-      // A claim that brought nothing back (an early recall) must not use up the first-expedition
-      // guarantee, so it is not counted.
-      this.sql.exec(
-        `INSERT INTO player_progress (user_id, expeditions_claimed, dupe_streak) VALUES (?, ?, ?)
-         ON CONFLICT(user_id) DO UPDATE SET
-           expeditions_claimed = expeditions_claimed + excluded.expeditions_claimed,
-           dupe_streak = excluded.dupe_streak`,
-        userId,
-        count > 0 ? 1 : 0,
-        rolled.dupeStreak,
-      );
-      this.sql.exec(
-        'UPDATE creatures SET away_expedition_id = NULL WHERE id = ? AND away_expedition_id = ?',
-        explorer.id,
-        expedition.id,
-      );
-      const recalled = now < expedition.ends_at;
-      // Parts and maybe a blueprint, from their own live RNG (the catches above used `rng`).
-      const loot = grantExpeditionLoot(
-        {
-          storage: this.deps.storage,
-          now: this.deps.now,
-          rng: this.deps.gearRng,
-          analytics: this.deps.analytics,
-        },
-        userId,
-        expedition.id,
-        expedition.duration,
-        speciesOf(explorer.species).element,
-        { completed: !recalled, caught: count, rolls: expedition.rolls },
-      );
-      const result: ExpeditionResult = { recalled, catches, loot };
-      this.sql.exec(
-        `UPDATE expeditions SET status = 'claimed', claimed_at = ?, result = ?
-         WHERE id = ? AND status = 'active'`,
-        now,
-        JSON.stringify(result),
-        expedition.id,
-      );
-      this.logClaim(userId, expedition, result, now);
-      return result;
-    });
-  }
-
-  /** One `expedition_claim` or `expedition_recall` event per claim that actually paid out. */
-  private logClaim(
-    userId: string,
-    expedition: ExpeditionRow,
-    result: ExpeditionResult,
-    now: number,
-  ): void {
-    const analytics = this.deps.analytics;
-    if (analytics === undefined) return;
-    const catches: CatchProps[] = result.catches.map((c) => ({
-      species: c.species,
-      rarity: speciesOf(c.species).rarity,
-      shiny: c.shiny,
-      result: c.outcome,
-    }));
-    const base = { duration: expedition.duration, supplies: expedition.supplies, catches };
-    if (result.recalled) {
-      const length = Math.max(1, expedition.ends_at - expedition.started_at);
-      const elapsedPct = Math.floor(((now - expedition.started_at) * 100) / length);
-      analytics.record({ kind: 'expedition_recall', ...base, elapsedPct }, userId);
-    } else {
-      const waitedMin = Math.floor((now - expedition.ends_at) / 60_000);
-      analytics.record({ kind: 'expedition_claim', ...base, waitedMin }, userId);
-    }
-  }
-
-  private applyCatch(
-    userId: string,
-    expeditionId: string,
-    index: number,
-    caught: { species: CreatureSpecies; shiny: boolean },
-    now: number,
-  ): CatchView {
-    const { species } = caught;
-    const existing = this.sql
-      .exec<CreatureRow>(
-        'SELECT * FROM creatures WHERE user_id = ? AND line = ?',
-        userId,
-        species.line,
-      )
-      .toArray()[0];
-    const outcome = applyCatchToCollection(
-      existing === undefined
-        ? undefined
-        : { fusionCount: existing.fusion_count, shiny: existing.shiny === 1 },
-      caught,
-    );
-    const firstOnServer = this.recordFirst('catch', species.id, userId, expeditionId, now);
-    const base = { species: species.id, shiny: caught.shiny, firstOnServer };
-
-    switch (outcome.kind) {
-      case 'new':
-        this.sql.exec(
-          `INSERT INTO creatures (id, user_id, line, species, level, shiny, origin, caught_at, quirk_id)
-           VALUES (?, ?, ?, ?, 1, ?, 'expedition', ?, ?)`,
-          crypto.randomUUID(),
-          userId,
-          species.line,
-          species.id,
-          caught.shiny ? 1 : 0,
-          now,
-          // Drawn now from live randomness, after the catch itself is decided; cosmetic only.
-          pickQuirk(species.id, this.deps.quirkRng),
-        );
-        return { ...base, outcome: 'new' };
-      case 'fused':
-        if (existing === undefined) throw new Error('fusion without a creature');
-        this.sql.exec(
-          'UPDATE creatures SET fusion_count = ?, shiny = ? WHERE id = ?',
-          outcome.newFusionCount,
-          existing.shiny === 1 || outcome.becameShiny ? 1 : 0,
-          existing.id,
-        );
-        this.deps.analytics?.record(
-          {
-            kind: 'fuse',
-            species: species.id,
-            rarity: species.rarity,
-            converted: false,
-            fusionCount: outcome.newFusionCount,
-            bait: 0,
-          },
-          userId,
-        );
-        return { ...base, outcome: 'fused', fusionCount: outcome.newFusionCount };
-      case 'converted':
-        if (existing === undefined) throw new Error('conversion without a creature');
-        if (outcome.becameShiny) {
-          this.sql.exec('UPDATE creatures SET shiny = 1 WHERE id = ?', existing.id);
-        }
-        // Nested inside the claim transaction: the credit rolls back with it, and the key makes a
-        // repeat a no-op.
-        credit(
-          this.deps.storage,
-          {
-            userId,
-            currency: 'bait',
-            amount: outcome.bait,
-            source: 'fusion',
-            idempotencyKey: `fusion:${expeditionId}:${String(index)}`,
-            meta: { species: species.id },
-          },
-          now,
-        );
-        this.deps.analytics?.record(
-          {
-            kind: 'fuse',
-            species: species.id,
-            rarity: species.rarity,
-            converted: true,
-            fusionCount: existing.fusion_count,
-            bait: outcome.bait,
-          },
-          userId,
-        );
-        return { ...base, outcome: 'converted', bait: outcome.bait };
-    }
+    return this.trips.claim(userId, expeditionId);
   }
 
   /** See `recordServerFirst`. Returns true if this user holds the record now. */
