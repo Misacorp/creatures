@@ -76,7 +76,7 @@ describe('the raid week and the rest of the pictures', () => {
       ['finale', 'Sun'],
     ]);
     expect(weekStrip().map((s) => s.title)).toEqual([
-      'Boss reveal',
+      'Preparation',
       'Phase 1',
       'Phase 2',
       'Finale',
