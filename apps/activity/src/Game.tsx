@@ -24,18 +24,11 @@ import { clockOffset, creatureName, errorText, speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
+import { Dungeon } from './Dungeon';
 import { Sprite } from './sprites/Sprite';
 import { StarterPicker } from './StarterPicker';
+import { TABS, tabAfterKey, tabPalette, type Tab } from './tabs';
 import { Workshop } from './Workshop';
-
-type Tab = 'collection' | 'expeditions' | 'raid' | 'workshop';
-
-const TABS: readonly { id: Tab; label: string }[] = [
-  { id: 'collection', label: 'Collection' },
-  { id: 'expeditions', label: 'Expeditions' },
-  { id: 'raid', label: 'Raid' },
-  { id: 'workshop', label: 'Workshop' },
-];
 
 interface Loaded {
   game: GameState;
@@ -223,8 +216,19 @@ export function Game({
         <span class="essence-amount">{game.balances.essence}</span>{' '}
         <GlossaryTag entry="essence">Essence</GlossaryTag>
       </p>
-      <div class="tabs" role="tablist" aria-label="Sections">
-        {TABS.map(({ id, label }) => (
+      <div
+        class="tabs"
+        role="tablist"
+        aria-label="Sections"
+        onKeyDown={(event) => {
+          // Arrow keys, Home and End move between the tabs; Enter or Space opens the focused one.
+          const next = tabAfterKey(tab, event.key);
+          if (next === null) return;
+          event.preventDefault();
+          document.getElementById(`tab-${next}`)?.focus();
+        }}
+      >
+        {TABS.map(({ id, label, glyph }) => (
           <button
             key={id}
             type="button"
@@ -232,6 +236,7 @@ export function Game({
             id={`tab-${id}`}
             aria-selected={tab === id}
             aria-controls={`panel-${id}`}
+            tabIndex={tab === id ? 0 : -1}
             class={tab === id ? 'tab active' : 'tab'}
             onClick={() => {
               setTab(id);
@@ -241,10 +246,15 @@ export function Game({
               if (id === 'workshop' || id === 'collection') loadGear();
             }}
           >
-            {id === 'workshop' && (
-              <Sprite sprite={glyphOrUnknown('anvil')} scale={2} class="tab-glyph" />
-            )}
-            {label}
+            <Sprite
+              sprite={glyphOrUnknown(glyph)}
+              scale={2}
+              class="tab-glyph"
+              {...(tabPalette(tab === id) === undefined
+                ? {}
+                : { palette: tabPalette(tab === id) as Readonly<Record<string, string>> })}
+            />
+            <span class="tab-label">{label}</span>
           </button>
         ))}
       </div>
@@ -339,6 +349,16 @@ export function Game({
             creatures={game.creatures}
             showPractice={showPractice}
             onBalanceChange={refreshState}
+          />
+        )}
+        {tab === 'dungeon' && (
+          <Dungeon
+            creatures={game.creatures}
+            onRunFinished={() => {
+              // A run pays Bait, Essence, parts and maybe gear: reload the balances and the bag.
+              refreshState();
+              loadGear();
+            }}
           />
         )}
       </div>

@@ -1,6 +1,6 @@
 # Daily dungeon
 
-Status: **built** (engine, content, server and balance model), 2026-10-13. The Activity UI is next. Numbers and choices as built: `decisions.md`, 2026-10-13, "Daily dungeon v1". Roadmap item 3.
+Status: **built** (engine, content, server, balance model and Activity UI), 2026-10-13. Numbers and choices as built: `decisions.md`, 2026-10-13, "Daily dungeon v1". Roadmap item 3.
 
 ## Idea (Misa)
 
