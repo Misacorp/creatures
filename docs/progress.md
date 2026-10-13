@@ -17,11 +17,20 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
 ## Now
 
 - Production runs PR #10, merged 2026-10-13: the daily dungeon, expeditions v2, the 13:37 reset, the tab order, the Jersey 10 font and the combined balance pass. PR #9 shipped How to play, gear v1 and the event log.
-- PR #11 (branch `ux-pass`) is in review: UX pass 1 and the design compendium.
+- PR #11 (UX pass 1 and the design compendium) is in production, merged 2026-10-13 (`ec44e6e`).
 
 ## Next
 
-Follow `docs/roadmap.md`. Next is item 5, analytics reports, then the polish backlog, upkeep, WebSocket push, content and swap requests. Lore and new content start from `docs/compendium/`.
+Follow `docs/roadmap.md`. Next is item 5, analytics reports and the balance loop (`design/analytics.md` phase 2, `design/balance-loop.md`), with item 5b, dev tools (`design/dev-tools.md`), in parallel where files don't overlap. After that comes item 6, cleanup pass 1 (`design/cleanup-1.md`). Lore and new content start from `docs/compendium/`.
+
+**Overnight plan (2026-10-13, after Misa's go-ahead):**
+
+1. **Analytics server.** Build the rollups (resource flow and per-feature use), the guild directory, the ops endpoint with privacy tests, and the report workflow (it needs `OPS_TOKEN`; send Misa the checklist in `design/analytics.md`).
+2. **Dev tools server.** Build the `DEV_TOOLS` gate, the dev clock and the `/api/dev/*` routes, in a separate worktree. Reconcile the shared files (`guild-core.ts`, `wrangler.jsonc`) at merge.
+3. **Analysis.** Build `pnpm analyze`, `pnpm sim:live`, `pnpm scalars` with its staleness test, `docs/balance/log.md`, `pnpm patch-notes`, and the `patch-notes` skill.
+4. **Dev tools panel.** Build the client panel per view.
+5. **PRs.** Open one PR for analytics and the balance loop, and one for dev tools; or one combined PR if they are ready together. Send Misa the `OPS_TOKEN` checklist.
+6. **Cleanup.** Run the cleanup audit, read-only, so the cleanup PR can start next.
 
 ## Open questions for Misa
 
