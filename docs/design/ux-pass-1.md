@@ -67,7 +67,7 @@ Status: **in progress**. Misa reviewed production after PR #10 and asked for a U
    - Preparation runs from Monday 13:37 to Friday 13:37;
    - then Phase 1 (Friday), Phase 2 (Saturday) and the Finale (Sunday 20:00).
    - Phase 1 must not show as active before Friday.
-2. **Streamlining proposals R1–R6** went to Misa (see `decisions.md` when he answers):
+2. **Streamlining: Misa approved R1–R6** (2026-10-13). For R2 he asked that the boss art stay as big as it is, that the card be flashy, and that the space to the right of the boss be used on wider screens (the stats, gimmick icons and turn order sit beside the art, and stack below it on phones).
    - R1. The week timeline becomes the top of the Raid tab, with one "what to do now" action.
    - R2. A compact boss card: gimmicks and turn order become icons with popovers.
    - R3. "My team" and "The party row" merge into one placement step; the roster becomes an avatar strip.
