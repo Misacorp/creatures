@@ -79,6 +79,7 @@ These are the rules as the engine implements them; keep them exact.
   6. Expeditions.
   7. Ranks and Festivals.
   8. Rewards.
+  9. The Workshop (gear, parts, blueprints and jobs).
 - **Each section** has one small illustration built from existing sprites and glyphs, and a 3–5 line explanation.
 - **First-time hints,** optional: a one-time coach mark on the first visit to the Raid tab ("Tap any tag to learn what it means"). It is dismissed forever per player, stored server-side or as a local convenience.
 

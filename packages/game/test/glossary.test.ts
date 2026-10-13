@@ -340,12 +340,21 @@ describe('the glossary text matches the rules', () => {
 });
 
 describe('the How to play text', () => {
-  it('has the eight sections in the page order, each with 3 to 5 lines', () => {
+  it('has the nine sections in the page order, each with 3 to 5 lines', () => {
     expect(howToPlay.sections.map((s) => s.id)).toEqual([...GLOSSARY_SECTIONS]);
     for (const s of howToPlay.sections) {
       expect(s.lines.length).toBeGreaterThanOrEqual(3);
       expect(s.lines.length).toBeLessThanOrEqual(5);
     }
+  });
+
+  it('sends the gear, parts, enchant, job and skill entries to the Workshop section', () => {
+    const gearIds = glossary.filter((e) =>
+      /^(gear|workshop|blueprint|part-|enchant-|job-|skill-)/.test(e.id),
+    );
+    expect(gearIds.length).toBeGreaterThan(20);
+    for (const e of gearIds) expect(e.section, e.id).toBe('workshop');
+    expect(howToPlay.sections.at(-1)?.id).toBe('workshop');
   });
 
   it('gives every glossary entry a section the page has', () => {

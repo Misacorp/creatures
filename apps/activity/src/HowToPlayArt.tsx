@@ -5,6 +5,8 @@
  */
 import {
   GLOSSARY_IDS,
+  JOB_KINDS,
+  PART_KINDS,
   RULES,
   content,
   entryView,
@@ -12,6 +14,8 @@ import {
   type GlossarySection,
 } from '@creatures/game';
 import { bossArt, markPalette } from './art';
+import { ItemFrame, ItemSprite } from './GearArt';
+import { partIcon } from './gear-sprites';
 import { GlossaryTag } from './Glossary';
 import { capitalize, speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
@@ -29,6 +33,9 @@ import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { elementIcon } from './sprites/element-icons';
+
+/** One item of each kind (a charm, a band and a trinket), for the Workshop picture. */
+const GEAR_EXAMPLES = ['trail-charm', 'patch-band', 'quick-trinket'] as const;
 
 const titleOf = (id: string): string => entryView(id)?.title ?? id;
 
@@ -368,6 +375,41 @@ function RewardsArt() {
   );
 }
 
+/** The Workshop: one item of each kind, the parts, and the anvil with the three jobs. */
+function WorkshopArt() {
+  return (
+    <div class="workshop-art">
+      <ul class="art-row" aria-label="Gear">
+        {GEAR_EXAMPLES.map((baseId) => (
+          <li key={baseId}>
+            <ItemFrame rarity="rare">
+              <ItemSprite baseId={baseId} scale={4} />
+            </ItemFrame>
+          </li>
+        ))}
+      </ul>
+      <ul class="art-row" aria-label="Parts">
+        {PART_KINDS.map((kind) => (
+          <li key={kind}>
+            <Sprite sprite={partIcon(kind)} scale={3} />
+          </li>
+        ))}
+      </ul>
+      <p class="tags art-tags">
+        <Sprite sprite={glyphOrUnknown('anvil')} scale={2} />
+        {JOB_KINDS.map((kind) => (
+          <GlossaryTag key={kind} entry={GLOSSARY_IDS.job(kind)} look="chip" class="tag">
+            {titleOf(GLOSSARY_IDS.job(kind))}
+          </GlossaryTag>
+        ))}
+        <GlossaryTag entry="blueprint" look="chip" class="tag">
+          {titleOf('blueprint')}
+        </GlossaryTag>
+      </p>
+    </div>
+  );
+}
+
 /** The picture of one section. */
 export function SectionArt({ id }: { id: GlossarySection }) {
   switch (id) {
@@ -387,5 +429,7 @@ export function SectionArt({ id }: { id: GlossarySection }) {
       return <RanksArt />;
     case 'rewards':
       return <RewardsArt />;
+    case 'workshop':
+      return <WorkshopArt />;
   }
 }

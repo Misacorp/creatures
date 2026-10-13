@@ -17,6 +17,7 @@ export const GLOSSARY_SECTIONS = [
   'expeditions',
   'ranks',
   'rewards',
+  'workshop',
 ] as const;
 export const GlossarySectionSchema = v.picklist(GLOSSARY_SECTIONS);
 export type GlossarySection = v.InferOutput<typeof GlossarySectionSchema>;

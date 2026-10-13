@@ -744,7 +744,7 @@
       "Upgrade an item from +0 to +5 with Essence and scrap. Upgrades never fail.",
       "Dismantle an item to get parts back. This cannot be undone."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "workshop",
@@ -755,7 +755,7 @@
       "A creature on a job cannot go on an expedition, and the other way round.",
       "It still fights in raids."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "blueprint",
@@ -765,21 +765,21 @@
       "Blueprints come from long expeditions and the welcome kit.",
       "A blueprint you already know turns into 5 scrap."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "gear-stat-atk",
     "title": "Attack bonus",
     "short": "Adds a percentage to a creature's Attack.",
     "lines": ["Gear adds at most 20% Attack to one creature, however many bonuses it has."],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "gear-stat-hp",
     "title": "HP bonus",
     "short": "Adds a percentage to a creature's HP.",
     "lines": ["Gear adds at most 25% HP to one creature, however many bonuses it has."],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "gear-stat-spd",
@@ -789,7 +789,7 @@
       "Speed decides who acts first against a boss that goes by speed.",
       "Gear adds at most 10% speed to one creature."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "gear-stat-crit-chance",
@@ -799,7 +799,7 @@
       "A creature starts at 5%, and the game caps any creature at 30%.",
       "Gear adds at most 5 points."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "gear-stat-crit-damage",
@@ -809,14 +809,14 @@
       "A critical hit adds 50% damage to start with, and the game caps it at 150%.",
       "Gear adds at most 25 points."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "gear-rarity-common",
     "title": "Common gear",
     "short": "A main stat and nothing else.",
     "lines": ["Common gear is easy to find and cheap to upgrade."],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "gear-rarity-rare",
@@ -826,7 +826,7 @@
       "Its main stat roll is 25% higher than Common.",
       "Rare gear costs more to upgrade and can be improved."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "gear-rarity-epic",
@@ -836,7 +836,7 @@
       "Its main stat roll is 50% higher than Common.",
       "Dismantling Epic gear can give glimmer."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "gear-rarity-festival",
@@ -846,14 +846,14 @@
       "Won by clearing a Festival finale, and crafted only from Festival blueprints.",
       "It has no extra power over Epic gear."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "part-scrap",
     "title": "Scrap",
     "short": "Generic parts. They pay for upgrades, crafting and improving.",
     "lines": ["Found by dismantling gear, on expeditions and in cleared raid phases."],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "part-tide-shard",
@@ -864,7 +864,7 @@
       "kind": "element",
       "id": "tide"
     },
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "part-ember-shard",
@@ -875,7 +875,7 @@
       "kind": "element",
       "id": "ember"
     },
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "part-grove-shard",
@@ -886,7 +886,7 @@
       "kind": "element",
       "id": "grove"
     },
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "part-spark-shard",
@@ -897,14 +897,14 @@
       "kind": "element",
       "id": "spark"
     },
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "part-glimmer",
     "title": "Glimmer",
     "short": "A rare part. It pays for Epic crafts and every enchant.",
     "lines": ["Found by dismantling Epic gear, and rarely on 12 hour expeditions."],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "enchant-payoffs-edge",
@@ -915,7 +915,7 @@
       "Costs 1 glimmer and 3 Ember shards.",
       "An item has one enchant slot: a new enchant replaces the old one."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "enchant-guards-bulwark",
@@ -926,7 +926,7 @@
       "Costs 1 glimmer and 3 Grove shards.",
       "An item has one enchant slot: a new enchant replaces the old one."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "enchant-setters-wit",
@@ -937,7 +937,7 @@
       "Costs 1 glimmer and 3 Tide shards.",
       "An item has one enchant slot: a new enchant replaces the old one."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "enchant-supports-grace",
@@ -948,7 +948,7 @@
       "Costs 1 glimmer and 3 Spark shards.",
       "An item has one enchant slot: a new enchant replaces the old one."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "enchant-spark-luck",
@@ -959,7 +959,7 @@
       "Costs 1 glimmer and 3 Spark shards.",
       "An item has one enchant slot: a new enchant replaces the old one."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "enchant-ember-fury",
@@ -970,7 +970,7 @@
       "Costs 1 glimmer and 3 Ember shards.",
       "An item has one enchant slot: a new enchant replaces the old one."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "enchant-tide-flow",
@@ -981,7 +981,7 @@
       "Costs 1 glimmer and 3 Tide shards.",
       "An item has one enchant slot: a new enchant replaces the old one."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "enchant-grove-hide",
@@ -992,7 +992,7 @@
       "Costs 1 glimmer and 3 Grove shards.",
       "An item has one enchant slot: a new enchant replaces the old one."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "enchant-steady-hand",
@@ -1003,7 +1003,7 @@
       "Costs 1 glimmer and 3 Tide shards.",
       "An item has one enchant slot: a new enchant replaces the old one."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "job-craft",
@@ -1013,7 +1013,7 @@
       "Takes 4 hours for Common, 8 for Rare and 12 for Epic or Festival.",
       "The parts are paid when the job starts. The item is rolled when you claim it."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "job-improve",
@@ -1023,14 +1023,14 @@
       "Takes 2 hours. Needs a Rare or better item.",
       "The new stat can be better or worse. Claim it to see."
     ],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "job-enchant",
     "title": "Enchant",
     "short": "Adds an enchant to an item.",
     "lines": ["Takes 6 hours. Costs glimmer and shards.", "A new enchant replaces the old one."],
-    "section": "rewards"
+    "section": "workshop"
   },
   {
     "id": "skill-crafting",
@@ -1041,6 +1041,6 @@
       "It levels slowly: about level 5 after a month of steady work.",
       "It never changes how a creature fights."
     ],
-    "section": "rewards"
+    "section": "workshop"
   }
 ]

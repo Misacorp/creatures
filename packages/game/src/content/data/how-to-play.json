@@ -87,6 +87,17 @@
         "Spend Essence to evolve your creatures.",
         "Leets earn Bait. Raids earn Essence."
       ]
+    },
+    {
+      "id": "workshop",
+      "title": "The Workshop",
+      "lines": [
+        "Gear is one item per creature. It adds a little to its stats in every fight.",
+        "Raid finales, expeditions and Festivals drop gear, parts and blueprints.",
+        "Spend Essence and scrap to upgrade gear. Dismantle gear to get parts back.",
+        "Creatures work jobs in the Workshop: craft, improve or enchant, even while you are away.",
+        "A creature on a job cannot go on an expedition. It still fights in raids."
+      ]
     }
   ],
   "example": {
