@@ -1,6 +1,6 @@
 # How to play and clickable tags
 
-Status: **plan**, 2026-10-13. Roadmap item 2.
+Status: **built** on branch `howto` (2026-10-13), roadmap item 1. The player-facing text lives in `packages/game/src/content/data/glossary.json` and `how-to-play.json`; tests pin its numbers to `RULES`. Where this page and the code disagreed, the code won (corrections below are already applied).
 
 ## Goal
 
@@ -34,9 +34,9 @@ These are the rules as the engine implements them; keep them exact.
 
 - **Roles:**
   - **Setter:** leaves its element's mark on the boss, and replaces a mark of another element.
-  - **Payoff:** gets an extra 10% when it sets off a reaction.
-  - **Guard:** +30% HP; takes hits for its zone.
-  - **Support:** buffs its neighbours.
+  - **Payoff:** gets an extra 10% when it sets off a reaction (4.5× becomes 4.95×). Any role can set off a reaction.
+  - **Guard:** +30% HP; takes single-target boss hits aimed at its zone. Zone-wide hits and reflected reactions still reach everyone.
+  - **Support:** +15% on each neighbour's next hit, given at the start of each round. A silenced or knocked-out Support gives nothing.
 - **Marks and reactions:**
   - If the boss has no mark, the first creature to hit it marks it with its own element.
   - Only a Setter replaces an existing mark, and only with a different element.
@@ -60,11 +60,12 @@ These are the rules as the engine implements them; keep them exact.
   - Everyone has one basic ability.
   - An ability fires on its own at its round unless Auto fire is off. Fire makes it take effect next round. With Auto fire off, an unused ability still fires in the last round.
 - **The week:**
-  - Monday: the boss reveal.
-  - Friday and Saturday: Phases 1 and 2.
-  - Sunday 20:00: the live finale (countdown, then rounds).
-  - The Boss Rank goes up by 1 on a win and stays the same on a loss.
-  - Every 5th week is a Festival.
+  - Monday 13:37: the boss reveal.
+  - Friday and Saturday 13:37: Phases 1 and 2.
+  - Sunday 20:00: the live finale (countdown, then rounds). All times in the guild's timezone.
+  - The Boss Rank goes up by 1 on a normal-week win and stays the same on a loss. Each Rank adds 40% boss HP (compounding).
+  - Every 5th week is a Festival: the boss fights 3 Ranks lower, Essence pays +50%, a Festival win gives +0 Rank, and after any Festival the Rank eases by 1.
+  - Jackpot and pity stay hidden from players (Misa).
 - **Expeditions, training, evolution and fusion:** a short version of `m2-collection.md`, plus expeditions v2 when it ships.
 
 ## "How to play" page

@@ -139,7 +139,7 @@ export const RULES = {
       hpExponent: { num: 11, den: 10 },
       /**
        * Boss Rank: every rank above 1 multiplies boss HP by this many basis points more than the
-       * rank below it, compounding (rank r is 1.20^(r-1) at 2000), floored to integer basis points
+       * rank below it, compounding (rank r is 1.40^(r-1) at 4000), floored to integer basis points
        * at every step (`rankFactorBp`). Compounding rather than linear, so a rank always costs the
        * same share of the team's damage and a high-ranked server keeps a real ladder instead of
        * ever smaller steps. Tuned by the simulator (docs/balance/report-2026-10-11-progression.md).
