@@ -14,6 +14,8 @@
  * - `u:<user>:night` and `u:<user>:festival`: `on` or `off`, force the night and Festival gates of the
  *   user's expeditions (absent: the real clock and calendar decide).
  * - `g:modifiers:<day>`: JSON array of room modifier ids that replaces the day's rolled modifiers.
+ * - `u:<user>:dungeon_reset:<day>:<currency>`: the sum of the day's dungeon credits that a
+ *   `dungeon-reset` has already dealt with, so a second reset does not take them back again.
  */
 
 /** The longest the dev clock may be moved ahead: ten years, so every sum stays a safe integer. */
@@ -26,6 +28,8 @@ export const devKey = {
   night: (userId: string): string => `u:${userId}:night`,
   festival: (userId: string): string => `u:${userId}:festival`,
   modifiers: (day: string): string => `g:modifiers:${day}`,
+  dungeonReset: (userId: string, day: string, currency: string): string =>
+    `u:${userId}:dungeon_reset:${day}:${currency}`,
 } as const;
 
 export class DevState {

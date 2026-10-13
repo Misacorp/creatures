@@ -33,6 +33,7 @@ import type {
 } from './dev-schemas';
 import { addPage, explorersByCreature, foundPages, statsOf } from './expedition-store';
 import { writeExplorer } from './dev-tools-goods';
+import { getBalance, type Currency } from './ledger';
 import { drawSeed } from './raid-resolve';
 import { addDays, gameDay } from './time';
 
@@ -272,10 +273,15 @@ export function dungeonDepth(ctx: ToolCtx, body: Body<typeof DungeonDepthBodySch
 }
 
 /**
- * Forgets the caller's runs of today's game day, so they can run again and be paid again: the day's
- * payouts (their ledger rows and gear grants) are taken back as far as the balances allow (never
- * below zero), the streak and the depth go back to what they were before the run, and the first-day
- * mark goes if this was the only run ever.
+ * Forgets the caller's runs of today's game day, so they can run again: the day's payouts are taken
+ * back as far as the balances allow (never below zero), the streak and the depth go back to what
+ * they were before the run, and the first-day mark goes if this was the only run ever.
+ *
+ * The ledger stays append-only: the credits are not deleted. Instead one negative `dev` entry per
+ * currency is appended for the amount actually removed (the day's credits, less those an earlier
+ * reset of the day already dealt with, capped at the balance). The credits keep their idempotency
+ * keys, so a new run of the same attempt number is not paid Bait or Essence again; the gear
+ * grants of the day are deleted, so those can be granted again.
  */
 export function dungeonReset(ctx: ToolCtx) {
   const day = todayOf(ctx);
@@ -291,22 +297,35 @@ export function dungeonReset(ctx: ToolCtx) {
 
   const prefix = `dungeon:${day}:%`;
   const paid = ctx.sql
-    .exec<{ currency: string; total: number }>(
+    .exec<{ currency: Currency; total: number }>(
       `SELECT currency, SUM(amount) AS total FROM ledger
        WHERE user_id = ? AND idempotency_key LIKE ? AND amount > 0 GROUP BY currency`,
       ctx.userId,
       prefix,
     )
     .toArray();
-  ctx.sql.exec(
-    'DELETE FROM ledger WHERE user_id = ? AND idempotency_key LIKE ? AND amount > 0',
-    ctx.userId,
-    prefix,
-  );
   for (const row of paid) {
+    // Credits an earlier reset of the day already dealt with (taken back, or as much as the balance
+    // allowed) are not taken back again: their rows stay in the ledger.
+    const key = devKey.dungeonReset(ctx.userId, day, row.currency);
+    const handled = Number(ctx.state.get(key) ?? '0');
+    const balance = getBalance(ctx.sql, ctx.userId, row.currency);
+    const remove = Math.min(Math.max(0, row.total - handled), balance);
+    ctx.state.set(key, String(row.total));
+    if (remove <= 0) continue;
     ctx.sql.exec(
-      'UPDATE balances SET amount = MAX(0, amount - ?) WHERE user_id = ? AND currency = ?',
-      row.total,
+      `INSERT INTO ledger (user_id, currency, amount, source, idempotency_key, meta, created_at)
+       VALUES (?, ?, ?, 'dev', ?, ?, ?)`,
+      ctx.userId,
+      row.currency,
+      -remove,
+      `dev:${crypto.randomUUID()}`,
+      JSON.stringify({ tool: 'dungeon-reset', day }),
+      ctx.now,
+    );
+    ctx.sql.exec(
+      'UPDATE balances SET amount = amount - ? WHERE user_id = ? AND currency = ?',
+      remove,
       ctx.userId,
       row.currency,
     );

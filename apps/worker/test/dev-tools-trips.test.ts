@@ -309,6 +309,28 @@ describe('dungeon tools', () => {
         });
         expect((await p.call('GET', '/api/me')).body.balances).toEqual(before);
         expect(count(ctx.sql, 'dungeon_runs')).toBe(0);
+
+        // The ledger stays append-only: the credits are still there, with one negative dev entry per
+        // currency that balances them.
+        const ledger = rows<{ currency: string; amount: number; source: string }>(
+          ctx.sql,
+          'SELECT currency, amount, source FROM ledger WHERE user_id = ? AND idempotency_key LIKE ?',
+          p.id,
+          'dungeon:%',
+        );
+        expect(ledger.length).toBeGreaterThan(0);
+        const reversals = rows<{ currency: string; amount: number }>(
+          ctx.sql,
+          "SELECT currency, amount FROM ledger WHERE user_id = ? AND source = 'dev' AND amount < 0",
+          p.id,
+        );
+        expect(reversals.length).toBeGreaterThan(0);
+        for (const reversal of reversals) {
+          const credited = ledger
+            .filter((r) => r.currency === reversal.currency)
+            .reduce((sum, r) => sum + r.amount, 0);
+          expect(-reversal.amount).toBe(credited);
+        }
         expect(
           rows<{ runs: number; streak: number }>(
             ctx.sql,
@@ -329,6 +351,35 @@ describe('dungeon tools', () => {
         });
         expect((await run(p)).status).toBe(200);
         expect((await today(p)).attemptsToday).toBe(2);
+      },
+      ON,
+    );
+  });
+
+  it('takes back no more than the balance and never twice, and appends no ledger row for nothing', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, { level: 30 });
+        expect((await run(p)).status).toBe(200);
+        // Spend down to a small balance, then reset: only what is there can be removed.
+        await p.tool('set-balances', { bait: 1, essence: 0 });
+        const reversalsBefore = count(ctx.sql, 'ledger');
+        await p.tool('dungeon-reset');
+        const balances = (await p.call('GET', '/api/me')).body.balances;
+        expect(balances.bait).toBe(0);
+        expect(balances.essence).toBe(0);
+        expect(count(ctx.sql, 'ledger')).toBeLessThanOrEqual(reversalsBefore + 2);
+        expect(
+          rows<{ n: number }>(ctx.sql, 'SELECT COUNT(*) AS n FROM ledger WHERE amount = 0')[0]?.n,
+        ).toBe(0);
+
+        // A second run of the same attempt is not paid again (its credits keep their keys), so a
+        // second reset has nothing more to take back.
+        expect((await run(p)).status).toBe(200);
+        await p.tool('set-balances', { bait: 40, essence: 40 });
+        await p.tool('dungeon-reset');
+        expect((await p.call('GET', '/api/me')).body.balances).toEqual({ bait: 40, essence: 40 });
       },
       ON,
     );
