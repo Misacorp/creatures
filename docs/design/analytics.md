@@ -80,3 +80,52 @@ Misa watches production by playing. Agents also need data to understand **how pe
 2. Ops endpoint and report renderer, with tests, including privacy tests that no ids or names leak.
 3. The workflow, plus Misa's checklist for `OPS_TOKEN`.
 4. The analysis CLI and the first live report after a week of data.
+
+## Phase 2 plan (Misa, 2026-10-13): where players spend, live-calibrated sim, balance loop
+
+Misa's goal: "understand where players are spending their resources", then "extrapolate it in a simulation branch". The first weeks or months will be players trying out the new systems. With a small player pool, a stable meta will probably never form, but we can spot **anomalies** and adjust balance. The balance loop is in `design/balance-loop.md`: the findings log, the scalars registry and the patch notes generator.
+
+### Build order (one PR, roadmap item 5)
+
+1. **Rollups** (step 2 above), extended for the systems that shipped after this plan:
+   - **Resource flow per currency and part kind:**
+     - Bait, Essence, scrap, the four shards, glimmer and supplies;
+     - for each, sources and sinks per day;
+     - the sources and sinks are ledger and grant sources such as training, evolve, expedition supplies, gear upgrade, dungeon rewards and rank gifts.
+   - **Per-feature use:**
+     - Workshop: jobs started and claimed by kind; Crafting levels.
+     - Expeditions: destination, length and supply mix; push-on offered, chosen and failed; journal finds; explorer rank distribution; slots.
+     - Dungeon: runs, clears by depth, depth distribution, retries, streaks.
+     - Gear: drops by source and rarity; equip, upgrade and dismantle.
+   - **Raid:**
+     - clear rates by rank;
+     - finale attendance;
+     - hand-fired versus Auto abilities.
+2. **Guild directory and ops endpoint** (steps 3–4), with privacy tests: no ids, hashes, names or free text in any output.
+3. **Report workflow** (step 5): daily, plus a weekly Monday summary. Misa adds `OPS_TOKEN`; the checklist is below.
+4. **`pnpm analyze <report.json>`** (step 7). It produces cohort tables, the resource-flow tables (a source and sink waterfall per currency), Gini and median against p90 holdings, and pick rates. It also produces **anomaly flags**:
+   - a currency piling up or running dry;
+   - a sink nobody uses;
+   - a destination, supply, goal or species nobody picks, or one everybody picks;
+   - a dungeon depth wall;
+   - a finale win rate outside 40–60% at a rank;
+   - any live value outside its sim target band.
+
+   Output goes to `docs/balance/live-YYYY-MM-DD.md`.
+
+5. **Live-calibrated simulation** (`pnpm sim:live <report.json>`, in `packages/sim`):
+   - Fit the sim's archetype mix and behaviour knobs to the observed aggregates: share of casual, daily and top players; feature use rates; destination and supply mix; dungeon participation; spend priorities.
+   - Then project 4, 12 and 26 weeks ahead from the current state.
+   - Report where the projection crosses a target band (for example "Essence stockpile runs away by week 9 at current spend").
+   - Calibration uses aggregates only, never per-player data.
+   - Seeded and reproducible. The calibrated parameters are written next to the report, so the next run can compare them.
+6. **Report contents** add a "Resources" section first: the top sources and sinks per currency, the week-over-week change and the flagged anomalies, all in plain words for Misa.
+
+### `OPS_TOKEN` checklist for Misa (send when the workflow PR is up)
+
+The final wording ships with the PR. The steps are:
+
+1. Create a long random token with a password manager. Do not paste it into chat.
+2. In GitHub, go to repo Settings → Environments, create `reports`, and add the secret `OPS_TOKEN`.
+3. Add the same value as `OPS_TOKEN` to the `production` and `staging` environments, so the deploy job passes it to the Worker.
+4. Reply "done", and the lead agent triggers the first report run.
