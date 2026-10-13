@@ -652,6 +652,9 @@ describe('the expedition requests the client sends', () => {
     return { path, method: init.method ?? 'GET', body: JSON.parse(init.body as string) };
   }
 
+  /** The id in a recorded path such as /api/expeditions/<id>/claim: it changes with every re-capture. */
+  const idOfPath = (path: string): string => path.split('/')[3] ?? '';
+
   const recorded = (key: keyof typeof expeditionRequestBodies) => {
     const { path, method, body } = expeditionRequestBodies[key];
     return { path, method, body };
@@ -709,7 +712,7 @@ describe('the expedition requests the client sends', () => {
 
     apiFetch.mockReset();
     apiFetch.mockResolvedValue(expeditionClaimWorked);
-    await claimExpedition('04d6cb1d-f054-4028-9034-7fd4c2bf80df');
+    await claimExpedition(idOfPath(expeditionRequestBodies['expedition-claim-worked'].path));
     expect(sent()).toEqual(recorded('expedition-claim-worked'));
   });
 
@@ -734,6 +737,8 @@ describe('the expedition requests the client sends', () => {
     expect(failed.result.pushOn).toMatchObject({ risk: 'risky', outcome: 'failed' });
     const worked = parseClaimResponse(expeditionClaimWorked);
     expect(worked.result.slotUnlocked?.total).toBe(2);
+    expect(worked.result.rankGifts?.[0]).toMatchObject({ rank: 4, bait: 15, parts: { scrap: 2 } });
+    expect(worked.result.rankGifts?.[0]?.supplies).toEqual([]);
     expect(worked.result.journal?.[0]?.entryId).toBe('tide-first-pool');
     expect(parseClaimResponse(expeditionClaimRecall).result.recalled).toBe(true);
   });
@@ -920,7 +925,7 @@ describe('supply crafts in the Workshop', () => {
     apiFetch.mockReset();
     apiFetch.mockResolvedValue(workshopClaimSupply);
     const claimed = await claimJob(
-      'fa767c7b-b7fd-4c0e-88ba-38a6ff1b7cd4',
+      expeditionRequestBodies['workshop-claim-supply'].path.split('/')[4] ?? '',
       expeditionRequestBodies['workshop-claim-supply'].body.idempotencyKey,
     );
     expect(claimed.result).toMatchObject({ kind: 'supply', supplyId: 'lure-basic', amount: 1 });

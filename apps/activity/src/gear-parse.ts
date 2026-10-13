@@ -159,6 +159,7 @@ const GRANT_SOURCES: readonly unknown[] = [
   'expedition',
   'welcome',
   'dungeon',
+  'rank_gift',
 ];
 
 function isGrantRecord(value: unknown): value is GrantRecord {

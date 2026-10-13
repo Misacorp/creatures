@@ -28,6 +28,12 @@ describe('describeEntry', () => {
     );
   });
 
+  it('calls the explorer rank credit a rank gift', () => {
+    expect(describeEntry(entry({ amount: 40, source: 'rank_gift' }))).toBe(
+      '+40 Bait · explorer rank gift',
+    );
+  });
+
   it('falls back to the source for the others', () => {
     expect(describeEntry(entry({ amount: -10, source: 'train' }))).toBe('-10 Bait · train');
   });

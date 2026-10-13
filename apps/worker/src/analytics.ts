@@ -73,6 +73,7 @@ export const GEAR_SOURCES = [
   'expedition',
   'welcome',
   'dungeon',
+  'rank_gift',
 ] as const;
 export type GearSource = (typeof GEAR_SOURCES)[number];
 

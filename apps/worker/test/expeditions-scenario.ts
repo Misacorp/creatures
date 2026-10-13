@@ -1,6 +1,6 @@
 /**
  * One scripted play-through of expeditions v2 through the real routes: a paid send, the end-of-trip
- * choice, a failed risky goal, a safe goal that works (with a journal page and a new slot), a recall,
+ * choice, a failed risky goal, a safe goal that works (with a journal page, a new slot and a rank-up gift), a recall,
  * the profile, the destinations and a supply made in the Workshop. `expeditions-fixtures.test.ts` checks
  * that the server still sends the shapes of the files in `apps/activity/src/fixtures`, which were
  * captured from this scenario (`expeditions-capture.test.ts` prints them). Nothing here is hand-written
@@ -57,12 +57,13 @@ export async function runTripsScenario(ctx: CoreContext, draw: { v: number }): P
     source: 'test',
     idempotencyKey: 'trips-fixture-bait',
   });
-  // Rank 3 for the explorer (a risky goal can come up), two finished trips so far (the next opens a slot).
+  // Rank 3 for the explorer (a risky goal can come up), 100 XP short of rank 4 (the trip that works
+  // raises the rank and brings its gift), two finished trips so far (the next opens a slot).
   ctx.sql.exec(
     'INSERT INTO explorer_progress (user_id, creature_id, xp, trips) VALUES (?, ?, ?, 0)',
     seeded.id,
     explorer,
-    RULES.expeditions.rank.xpForRank[2] ?? 0,
+    (RULES.expeditions.rank.xpForRank[3] ?? 0) - 100,
   );
   ctx.sql.exec(
     `INSERT INTO account_stats (user_id, stat, value) VALUES (?, 'trips_finished', ?)`,

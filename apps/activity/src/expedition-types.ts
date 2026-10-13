@@ -9,7 +9,7 @@
  * looked up by id; the server sends ids and numbers only.
  */
 
-import type { GrantLoot } from './gear-types';
+import type { GrantLoot, PartKind } from './gear-types';
 
 export type ExpeditionLength = 'short' | 'medium' | 'long' | 'day';
 export type SupplyKind = 'lure' | 'map-scrap' | 'lantern' | 'satchel';
@@ -152,6 +152,16 @@ export interface TripResult {
   journal?: JournalFind[];
   /** Set when this trip opened another slot. */
   slotUnlocked?: { total: number };
+  /** The one-time gifts of the ranks this trip reached, lowest first. */
+  rankGifts?: RankGift[];
+}
+
+/** The gift of reaching an explorer rank: Bait, parts (scrap, glimmer) and supplies (content ids). */
+export interface RankGift {
+  rank: number;
+  bait: number;
+  parts: Partial<Record<PartKind, number>>;
+  supplies: string[];
 }
 
 /** The answer of POST /api/expeditions/:id/claim. */

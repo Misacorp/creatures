@@ -526,6 +526,23 @@ export const RULES = {
     rank: {
       xpForRank: [0, 200, 800, 2_000, 4_500, 10_000, 22_000, 45_000, 90_000, 160_000],
       speedBpPerRank: 200,
+      /**
+       * A fixed one-time gift for reaching each rank from 2 to 10 (index 0 is rank 2): Bait, parts and
+       * supplies (content ids), growing with rank, with ranks 7 to 10 the biggest. Every rank unlocks
+       * or gives something, so there is always a next thing to look forward to. Granted once per
+       * (creature, rank) on the claim that raises the rank. Kept modest: the sim checks the economy.
+       */
+      gifts: [
+        { bait: 5, scrap: 1, glimmer: 0, supplies: [] },
+        { bait: 10, scrap: 1, glimmer: 0, supplies: [] },
+        { bait: 15, scrap: 2, glimmer: 0, supplies: [] },
+        { bait: 20, scrap: 2, glimmer: 0, supplies: [] },
+        { bait: 30, scrap: 3, glimmer: 1, supplies: [] },
+        { bait: 50, scrap: 5, glimmer: 2, supplies: ['lantern-good', 'lure-good'] },
+        { bait: 75, scrap: 8, glimmer: 3, supplies: ['map-scrap-good', 'satchel-good'] },
+        { bait: 100, scrap: 10, glimmer: 4, supplies: ['lure-great'] },
+        { bait: 150, scrap: 15, glimmer: 6, supplies: ['map-scrap-great', 'satchel-great'] },
+      ],
     },
     /**
      * Familiarity, per creature and destination, three stars: 1 from `tripsForStar1` finished trips

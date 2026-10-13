@@ -33,6 +33,7 @@ import {
   rollOffer,
   rollTripCatches,
   rollTripLoot,
+  rankGiftsBetween,
   rollWorth,
   seasonOf,
   slotsFor,
@@ -601,6 +602,16 @@ function payTrip(
   const xpBp = bonuses.xpBp + (twist?.kind === 'xp' ? twist.bp : 0) + (reward?.xpBp ?? 0);
   player.explorerXp[explorer.id] =
     (player.explorerXp[explorer.id] ?? 0) + tripXp(trip.length, xpBp);
+  // The one-time gift of every rank this trip reached (Bait, and parts and supplies with the gear sim).
+  for (const { gift } of rankGiftsBetween(rank, rankOfCreature(player, explorer.id))) {
+    player.bait += gift.bait;
+    if (ctx.gear !== undefined) {
+      addParts(player, gift.parts, ctx);
+      for (const id of gift.supplies) {
+        if (supplyDef(id) !== undefined) player.supplies[id] = (player.supplies[id] ?? 0) + 1;
+      }
+    }
+  }
   const found = new Set(famBefore.found);
   for (const c of results) if (allSpecies(dest).includes(c.species.id)) found.add(c.species.id);
   player.familiarity[famKey(explorer.id, dest.id)] = {
