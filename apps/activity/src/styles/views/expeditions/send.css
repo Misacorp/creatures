@@ -238,7 +238,7 @@ label.length-option:focus-within {
   align-items: center;
   gap: 0.25rem;
   font-size: 0.75rem;
-  color: var(--muted);
+  color: var(--haze);
 }
 
 .choice-mark.guaranteed {

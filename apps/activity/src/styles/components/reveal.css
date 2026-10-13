@@ -2,8 +2,8 @@
 .reveal-card {
   margin: 0.75rem 0;
   padding: 0.75rem;
-  border: 2px solid var(--accent);
-  background: var(--panel);
+  border: 2px solid var(--gold);
+  background: var(--dusk);
   text-align: center;
 }
 
@@ -57,15 +57,18 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .reveal-festival-box:not(.done) {
+  .reveal-festival-box:not(.done),
+  .reveal-gear-box:not(.done) {
     opacity: 0;
   }
 
-  .reveal-festival-box.done {
+  .reveal-festival-box.done,
+  .reveal-gear-box.done {
     animation: reveal-pop 300ms steps(3) both;
   }
 
-  .reveal-festival-box.done .pop-in {
+  .reveal-festival-box.done .pop-in,
+  .loot .pop-in {
     animation: reveal-pop-in 600ms steps(5) both;
   }
 

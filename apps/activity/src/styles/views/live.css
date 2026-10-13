@@ -17,7 +17,7 @@
 
 .practice summary {
   cursor: pointer;
-  color: var(--muted);
+  color: var(--haze);
 }
 
 .practice-label {
@@ -39,7 +39,7 @@
 .live-feed {
   margin: 0.25rem 0;
   padding: 0.5rem 0.5rem 0.5rem 1.75rem;
-  background: var(--panel);
+  background: var(--dusk);
   font-size: 0.875rem;
 }
 
@@ -50,5 +50,5 @@
 
 .live-earlier summary {
   cursor: pointer;
-  color: var(--muted);
+  color: var(--haze);
 }

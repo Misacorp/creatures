@@ -4,23 +4,8 @@
   margin-bottom: 0.25rem;
 }
 
-.party-slot {
-  align-items: center;
-  min-height: 6rem;
-  text-align: center;
-}
-
-.party-slot .slot-num {
-  align-self: flex-start;
-  font-family: var(--display);
-}
-
 .party-slot canvas.sprite {
   margin: 0.125rem 0;
-}
-
-.party-slot.empty {
-  justify-content: space-between;
 }
 
 /* Anything that can be picked up: no scrolling or text selection starts on it. */
@@ -58,7 +43,7 @@
   background-image: repeating-linear-gradient(
     45deg,
     transparent 0 5px,
-    rgb(255 95 109 / 35%) 5px 8px
+    rgb(var(--bad-rgb) / 35%) 5px 8px
   );
 }
 
@@ -110,7 +95,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 100;
+  z-index: var(--z-drag);
   display: flex;
   flex-direction: column;
   align-items: center;

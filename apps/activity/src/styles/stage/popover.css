@@ -7,7 +7,7 @@
   position: absolute;
   top: var(--pop-y, 0);
   left: var(--pop-x, 0);
-  z-index: 20;
+  z-index: var(--z-stage-pop);
   width: min(12.5rem, calc(100% - 8px));
   padding: 0.375rem 0.5rem 0.5rem;
   background: var(--dusk-2);
@@ -56,9 +56,6 @@
   width: 12px;
   background: var(--dusk-2);
   clip-path: polygon(0 0, 100% 0, 100% 50%, 75% 50%, 75% 100%, 25% 100%, 25% 50%, 0 50%);
-}
-
-.stage-pop::after {
   height: 6px;
   bottom: -6px;
 }

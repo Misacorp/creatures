@@ -38,11 +38,11 @@
 .season-pip {
   width: 0.875rem;
   height: 0.875rem;
-  border: 2px solid var(--muted);
+  border: 2px solid var(--haze);
 }
 
 .season-pip.done {
-  background: var(--muted);
+  background: var(--haze);
 }
 
 .season-pip.now {

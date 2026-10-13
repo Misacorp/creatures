@@ -15,16 +15,13 @@
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 0.25rem 0.75rem;
+  align-items: center;
   color: var(--haze);
   font-size: 0.8125rem;
 }
 
 .stage-round {
   color: var(--gold);
-}
-
-.stage-head {
-  align-items: center;
 }
 
 .stage-head-left {
@@ -179,7 +176,7 @@ button.stage-help::after {
   gap: 0.375rem;
   padding: 0.125rem 0.5rem;
   border: 1px solid var(--gold);
-  background: rgb(255 210 90 / 8%);
+  background: rgb(var(--gold-rgb) / 8%);
   color: var(--gold);
   font-size: 0.6875rem;
   line-height: 1.2;
@@ -222,7 +219,7 @@ button.stage-help::after {
   display: grid;
   place-items: center;
   border: 2px solid var(--bad);
-  background: rgb(255 95 109 / 16%);
+  background: rgb(var(--bad-rgb) / 16%);
   pointer-events: none;
   will-change: transform, opacity;
 }

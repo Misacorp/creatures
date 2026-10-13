@@ -47,10 +47,6 @@
   margin: 0.5rem 0;
 }
 
-.xp > span {
-  width: var(--pct, 0%);
-}
-
 /* A shiny without its own palette: a gold dotted frame and two sparkles. */
 .portrait.sparkle-frame {
   background-image: radial-gradient(var(--gold) 1px, transparent 1px);

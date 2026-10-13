@@ -6,7 +6,7 @@
 }
 
 .placement .keys summary {
-  color: var(--muted);
+  color: var(--haze);
   font-size: 0.875rem;
   cursor: pointer;
 }
@@ -83,7 +83,7 @@ button.avatar-strip {
   width: 1.75rem;
   height: 1.75rem;
   border: 2px solid var(--owner, var(--line));
-  background: var(--panel);
+  background: var(--dusk);
   font-family: var(--display);
   font-size: 1rem;
   line-height: 1;
@@ -96,7 +96,7 @@ button.avatar-strip {
 
 .avatar.more {
   border-style: dashed;
-  color: var(--muted);
+  color: var(--haze);
   font-size: 0.8125rem;
 }
 

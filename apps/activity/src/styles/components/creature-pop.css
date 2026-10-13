@@ -32,7 +32,9 @@ button.small-creature[aria-expanded='true'] canvas.sprite {
   outline: 2px solid var(--gold);
 }
 
-.creature-pop .cp-tags {
+/* The tags under a creature popover, and under an ability popover on your own creature. */
+.creature-pop .cp-tags,
+.pop-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem;
@@ -53,12 +55,4 @@ button.cp-back {
 
 .cp-back-arrow {
   transform: scaleX(-1);
-}
-
-/* The tags under an ability popover on your own creature. */
-.pop-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-  margin: 0.375rem 0 0;
 }

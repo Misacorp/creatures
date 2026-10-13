@@ -75,11 +75,15 @@ button.gtag:active:not(:disabled) {
   text-decoration: none;
 }
 
-.mark-tag::after {
+.mark-tag::after,
+.mod-icon::after,
+.pips-tag::after {
   content: none;
 }
 
-.mark-tag:hover {
+.mark-tag:hover,
+.mod-icon:hover,
+.mod-icon[aria-expanded='true'] {
   filter: brightness(1.2);
 }
 

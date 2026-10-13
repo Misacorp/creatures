@@ -13,7 +13,7 @@ button.ability-chip {
 }
 
 .ability-chip-label {
-  color: var(--muted);
+  color: var(--haze);
 }
 
 .ability-chip-text {

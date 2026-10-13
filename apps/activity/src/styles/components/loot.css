@@ -32,17 +32,3 @@
   margin: 0.5rem 0 0;
   color: var(--gold);
 }
-
-@media (prefers-reduced-motion: no-preference) {
-  .loot .pop-in {
-    animation: reveal-pop-in 600ms steps(5) both;
-  }
-
-  .reveal-gear-box:not(.done) {
-    opacity: 0;
-  }
-
-  .reveal-gear-box.done {
-    animation: reveal-pop 300ms steps(3) both;
-  }
-}

@@ -30,7 +30,7 @@
 
 .others summary {
   cursor: pointer;
-  color: var(--muted);
+  color: var(--haze);
   font-size: 0.875rem;
 }
 

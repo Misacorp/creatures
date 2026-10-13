@@ -59,23 +59,10 @@
   text-decoration: none;
 }
 
-.mod-icon::after {
-  content: none;
-}
-
-.mod-icon:hover,
-.mod-icon[aria-expanded='true'] {
-  filter: brightness(1.2);
-}
-
 .pips-tag {
   display: inline-flex;
   align-items: center;
   text-decoration: none;
-}
-
-.pips-tag::after {
-  content: none;
 }
 
 .dungeon-prerun .pips,
@@ -116,7 +103,7 @@
 }
 
 .dungeon-slot .slot-meta {
-  color: var(--muted);
+  color: var(--haze);
   font-size: 0.6875rem;
 }
 

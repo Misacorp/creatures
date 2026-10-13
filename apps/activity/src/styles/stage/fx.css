@@ -28,24 +28,24 @@
 
 .fx-shield {
   --fx: var(--good);
-  --fx-fill: rgb(111 220 140 / 12%);
+  --fx-fill: rgb(var(--good-rgb) / 12%);
   border-style: dashed;
 }
 
 .fx-hit {
   --fx: var(--bad);
-  --fx-fill: rgb(255 95 109 / 14%);
+  --fx-fill: rgb(var(--bad-rgb) / 14%);
 }
 
 .fx-rally {
   --fx: var(--gold);
-  --fx-fill: rgb(255 210 90 / 12%);
+  --fx-fill: rgb(var(--gold-rgb) / 12%);
 }
 
 /* The telegraph of a zone hit: the whole zone outlined in red before it lands. */
 .fx-windup {
   --fx: var(--bad);
-  --fx-fill: rgb(255 95 109 / 10%);
+  --fx-fill: rgb(var(--bad-rgb) / 10%);
   z-index: 2;
   border-style: dashed;
 }
@@ -54,7 +54,7 @@
 .strike-wave {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgb(255 95 109 / 60%) 50%, transparent);
+  background: linear-gradient(90deg, transparent, rgb(var(--bad-rgb) / 60%) 50%, transparent);
   opacity: 0;
   pointer-events: none;
   will-change: transform, opacity;
@@ -86,11 +86,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-shadow:
-    2px 0 var(--ink),
-    -2px 0 var(--ink),
-    0 2px var(--ink),
-    0 -2px var(--ink);
+  text-shadow: var(--ink-outline-thin);
   will-change: transform, opacity;
 }
 
@@ -149,11 +145,7 @@
   color: var(--bad);
   font-size: 1.25rem;
   line-height: 1;
-  text-shadow:
-    2px 0 var(--ink),
-    -2px 0 var(--ink),
-    0 2px var(--ink),
-    0 -2px var(--ink);
+  text-shadow: var(--ink-outline-thin);
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -228,10 +220,10 @@
 .round-intro {
   position: absolute;
   inset: 0;
-  z-index: 25;
+  z-index: var(--z-stage-intro);
   display: grid;
   place-items: center;
-  background: rgb(13 10 26 / 72%);
+  background: rgb(var(--ink-rgb) / 72%);
   pointer-events: none;
 }
 
@@ -243,10 +235,7 @@
   color: var(--gold);
   line-height: 1;
   text-shadow:
-    var(--px) 0 var(--ink),
-    calc(var(--px) * -1) 0 var(--ink),
-    0 var(--px) var(--ink),
-    0 calc(var(--px) * -1) var(--ink),
+    var(--ink-outline),
     var(--px) var(--px) 0 var(--ink);
 }
 
@@ -268,5 +257,5 @@
 
 /* The boss's segments that just emptied. */
 .hpbar > i.drain {
-  background: #3a2033;
+  background: var(--hp-gone);
 }

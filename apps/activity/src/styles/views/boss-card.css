@@ -12,23 +12,7 @@
 
 /* The boss card is a hero card: the art (kept at its full size) in an element-coloured frame. */
 .boss-card {
-  --elem: var(--haze);
-}
-
-.boss-card.el-tide {
-  --elem: var(--tide);
-}
-
-.boss-card.el-ember {
-  --elem: var(--ember);
-}
-
-.boss-card.el-grove {
-  --elem: var(--grove);
-}
-
-.boss-card.el-spark {
-  --elem: var(--spark);
+  --elem: var(--el, var(--haze));
 }
 
 .boss-meta {

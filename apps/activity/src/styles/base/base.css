@@ -8,7 +8,7 @@ body {
   background-color: var(--night);
   background-image: radial-gradient(var(--dusk) 1px, transparent 1px);
   background-size: 6px 6px;
-  color: var(--text);
+  color: var(--bone);
   font-family: var(--body);
   /* The pixel face has one weight; a faked bold smears its pixels. */
   font-synthesis-weight: none;
@@ -27,7 +27,7 @@ body {
   width: min(48rem, 100% - 1.25rem);
   margin: 0.625rem auto;
   padding: 1rem;
-  background: var(--panel);
+  background: var(--dusk);
   box-shadow: var(--frame);
 }
 
@@ -48,7 +48,7 @@ h1 {
   line-height: 1.1;
   text-shadow:
     var(--px) var(--px) 0 var(--ink),
-    calc(var(--px) * 2) calc(var(--px) * 2) 0 #6b3fa0;
+    calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--plum);
   text-wrap: balance;
 }
 
@@ -85,7 +85,7 @@ p {
   font-family: var(--display);
   font-size: 2rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--gold);
 }
 
 .essence {
@@ -108,16 +108,16 @@ p {
 .note,
 .muted,
 .small {
-  color: var(--muted);
+  color: var(--haze);
   font-size: 0.875rem;
 }
 
 .error {
-  color: var(--danger);
+  color: var(--bad);
 }
 
 .locked {
-  color: var(--muted);
+  color: var(--haze);
   font-size: 0.875rem;
   font-style: italic;
 }

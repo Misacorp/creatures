@@ -17,17 +17,20 @@
   margin: 0.5rem 0 0.25rem;
 }
 
-.job-state {
+.job-state,
+.trip-timer {
   margin: 0.25rem 0 0.5rem;
   font-variant-numeric: tabular-nums;
 }
 
-.job-state.ready {
+.job-state.ready,
+.trip-timer.ready {
   color: var(--gold);
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .job-bar > span {
+  .job-bar > span,
+  .trip-bar > span {
     transition: width 1s linear;
   }
 }

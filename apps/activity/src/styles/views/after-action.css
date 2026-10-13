@@ -2,8 +2,8 @@
 .after-action-card {
   margin: 0.5rem 0;
   padding: 0.5rem 0.75rem;
-  border-left: 3px solid var(--muted);
-  background: var(--panel);
+  border-left: 3px solid var(--haze);
+  background: var(--dusk);
   overflow-wrap: anywhere;
 }
 
@@ -49,7 +49,7 @@
   display: block;
   width: 100%;
   height: 0.625rem;
-  accent-color: var(--accent);
+  accent-color: var(--gold);
 }
 
 .bar.you {

@@ -1,7 +1,7 @@
 /* --- M6 look: shared pixel components (from docs/design/assets/style-sample.html) --- */
 
 .label {
-  color: var(--muted);
+  color: var(--haze);
   font-family: var(--display);
   font-size: 0.8125rem;
   letter-spacing: 0.08em;

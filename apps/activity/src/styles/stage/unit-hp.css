@@ -16,5 +16,5 @@
 }
 
 .unit-hp > i.gone {
-  background: #3a2033;
+  background: var(--hp-gone);
 }

@@ -42,21 +42,6 @@
   background: var(--spark);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .trip-bar > span {
-    transition: width 1s linear;
-  }
-}
-
-.trip-timer {
-  margin: 0.25rem 0 0.5rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.trip-timer.ready {
-  color: var(--gold);
-}
-
 .push-line {
   margin: 0 0 0.5rem;
   font-size: 0.875rem;

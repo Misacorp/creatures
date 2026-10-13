@@ -27,7 +27,7 @@
   left: 0;
   width: 0.875rem;
   height: 0.875rem;
-  border: 2px solid var(--muted);
+  border: 2px solid var(--haze);
   background: var(--night);
 }
 
@@ -50,7 +50,7 @@
 }
 
 .ptrack-node.previous .ptrack-dot {
-  background: var(--muted);
+  background: var(--haze);
 }
 
 .ptrack-node.current .ptrack-dot {
