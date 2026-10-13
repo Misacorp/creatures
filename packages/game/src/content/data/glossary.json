@@ -1044,5 +1044,169 @@
       "It never changes how a creature fights."
     ],
     "section": "workshop"
+  },
+  {
+    "id": "dungeon",
+    "title": "Daily dungeon",
+    "short": "One run a day with a team of three of your own.",
+    "lines": [
+      "Pick three creatures and where they stand, then enter. The whole run is played out at once.",
+      "Three rooms: two foes, then a room boss. Each creature keeps its HP from room to room.",
+      "Clear all three to go one depth deeper. A lost run keeps your depth.",
+      "One run per day, resetting at midnight in the server's time zone. A lost first run can be retried once."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "depth",
+    "title": "Dungeon depth",
+    "short": "How deep you are. Foes get tougher with every depth.",
+    "lines": [
+      "Clearing all rooms adds 1. Losing leaves it as it is.",
+      "Each depth adds 12% foe HP and 6% foe Attack.",
+      "It is yours alone: nobody else's runs change it.",
+      "Every 7th depth is a landmark."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "room-modifiers",
+    "title": "Room modifiers",
+    "short": "Each room has a twist, shown before you enter.",
+    "lines": [
+      "The day's three modifiers are the same for everyone on the server.",
+      "Some boost one element, some change the foe, and some change who acts first.",
+      "They only last for their room. Pick your team around them."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "room-boss",
+    "title": "Room boss",
+    "short": "The foe of the last room. Tougher than the others.",
+    "lines": [
+      "It has more HP and hits harder than the foes before it.",
+      "Each boss has its own trick, and some are the same ones raid bosses use.",
+      "Beating it clears the dungeon for the day."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "landmark",
+    "title": "Landmark",
+    "short": "Every 7th depth. A full clear drops gear for sure.",
+    "lines": [
+      "Landmark depths are 7, 14, 21 and so on.",
+      "Clear all rooms on one to get a gear drop for certain, with better odds of rare and epic gear.",
+      "It also pays extra Essence, scrap and a glimmer."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "streak",
+    "title": "Daily streak",
+    "short": "Days in a row with a dungeon run.",
+    "lines": [
+      "Your streak grows by 1 each day you run the dungeon.",
+      "The 3rd and 7th day of every 7 pay a bonus.",
+      "Miss a day and the count starts again. Your depth stays."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "modifier-flooded",
+    "title": "Flooded",
+    "short": "Tide creatures hit 20% harder.",
+    "lines": [
+      "Works for every Tide creature on your team, in this room only.",
+      "Plan your team around it: it is shown before you enter."
+    ],
+    "section": "rewards",
+    "visual": {
+      "kind": "element",
+      "id": "tide"
+    }
+  },
+  {
+    "id": "modifier-scorched",
+    "title": "Scorched",
+    "short": "Ember creatures hit 20% harder.",
+    "lines": [
+      "Works for every Ember creature on your team, in this room only.",
+      "Plan your team around it: it is shown before you enter."
+    ],
+    "section": "rewards",
+    "visual": {
+      "kind": "element",
+      "id": "ember"
+    }
+  },
+  {
+    "id": "modifier-overgrown",
+    "title": "Overgrown",
+    "short": "Grove creatures hit 20% harder.",
+    "lines": [
+      "Works for every Grove creature on your team, in this room only.",
+      "Plan your team around it: it is shown before you enter."
+    ],
+    "section": "rewards",
+    "visual": {
+      "kind": "element",
+      "id": "grove"
+    }
+  },
+  {
+    "id": "modifier-stormy",
+    "title": "Stormy",
+    "short": "Spark creatures hit 20% harder.",
+    "lines": [
+      "Works for every Spark creature on your team, in this room only.",
+      "Plan your team around it: it is shown before you enter."
+    ],
+    "section": "rewards",
+    "visual": {
+      "kind": "element",
+      "id": "spark"
+    }
+  },
+  {
+    "id": "modifier-dark",
+    "title": "Dark",
+    "short": "Your creatures crit 5 points more often.",
+    "lines": [
+      "Only for the room that has it, and shown before you enter.",
+      "Plan your team and where they stand around it."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "modifier-thorns",
+    "title": "Thorns",
+    "short": "The foe turns the first reaction of each round back on your team.",
+    "lines": [
+      "Only for the room that has it, and shown before you enter.",
+      "Plan your team and where they stand around it."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "modifier-brittle",
+    "title": "Brittle",
+    "short": "The foe has 20% less HP but hits 25% harder.",
+    "lines": [
+      "Only for the room that has it, and shown before you enter.",
+      "Plan your team and where they stand around it."
+    ],
+    "section": "rewards"
+  },
+  {
+    "id": "modifier-fog",
+    "title": "Fog",
+    "short": "Nobody can see: everyone acts in slot order, left to right.",
+    "lines": [
+      "Only for the room that has it, and shown before you enter.",
+      "Plan your team and where they stand around it."
+    ],
+    "section": "rewards"
   }
 ]

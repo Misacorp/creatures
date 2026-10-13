@@ -380,6 +380,61 @@ export const RULES = {
       welcomeScrap: 10,
     },
   },
+  /**
+   * The daily dungeon (docs/design/daily-dungeon.md): a solo run of `rooms` rooms with the player's own
+   * team of three, once per guild-local day. Depth is personal: a full clear adds 1. Starting values,
+   * tuned by the simulator. All amounts are integers (percentages in basis points).
+   */
+  dungeon: {
+    /** Rooms in a run: normal foes first, then a room boss. */
+    rooms: 3,
+    /** Creatures in the team (a row of three: front, middle, back). */
+    teamSize: 3,
+    /**
+     * Depth scaling, compounding like the raid ranks: every depth above 1 multiplies a foe's HP and
+     * Attack by this many basis points more than the depth below (floored at every step). Depths past
+     * `maxScaledDepth` fight at that depth's strength, which keeps every number small and safe.
+     */
+    hpStepBp: 1_200,
+    atkStepBp: 600,
+    maxScaledDepth: 60,
+    /** Every this many depths is a landmark: a better chest. */
+    landmarkEvery: 7,
+    /** Paid for each room cleared, by room index (the last is the room boss). */
+    perRoom: [
+      { bait: 4, essence: 0, scrap: 1 },
+      { bait: 5, essence: 0, scrap: 1 },
+      { bait: 4, essence: 2, scrap: 2 },
+    ],
+    /** Chance (basis points) of one shard of the room boss's element when the boss room is cleared. */
+    bossShardBp: 4_000,
+    /** Extra for clearing every room: Essence, and a chance (basis points) at a gear drop. */
+    fullClear: { essence: 2, gearBp: 1_500 },
+    /**
+     * Gear odds of a dungeon drop (basis points; the rest is common): rare and epic start at `baseBp`
+     * at depth 1, grow by `perDepthBp` for every depth above 1 and stop at `maxBp`. A landmark drop
+     * adds `landmarkBonusBp` to both first.
+     */
+    gearOdds: {
+      baseBp: { rare: 1_800, epic: 200 },
+      perDepthBp: { rare: 40, epic: 20 },
+      maxBp: { rare: 4_500, epic: 1_800 },
+      landmarkBonusBp: { rare: 2_000, epic: 600 },
+    },
+    /** A fully cleared landmark depth pays this on top, and its gear drop is guaranteed. */
+    landmark: { essence: 8, scrap: 6, glimmer: 1 },
+    /**
+     * Daily streaks: days in a row with a run, counted in a cycle of `cycleDays`. A bonus is paid
+     * when the run is the `day`-th of the cycle. A missed day starts the count again (depth is kept).
+     */
+    streak: {
+      cycleDays: 7,
+      bonuses: [
+        { day: 3, bait: 10, essence: 0, scrap: 3, glimmer: 0 },
+        { day: 7, bait: 20, essence: 4, scrap: 6, glimmer: 1 },
+      ],
+    },
+  },
   nickname: {
     maxCodePoints: 20,
     /** Inputs longer than this (UTF-16 units) are refused before any normalisation work. */

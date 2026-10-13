@@ -1,0 +1,63 @@
+[
+  {
+    "id": "flooded",
+    "name": "Flooded",
+    "description": "Tide creatures hit 20% harder.",
+    "effects": [{ "op": "team_stat", "stat": "atk", "bp": 2000, "element": "tide" }]
+  },
+  {
+    "id": "scorched",
+    "name": "Scorched",
+    "description": "Ember creatures hit 20% harder.",
+    "effects": [{ "op": "team_stat", "stat": "atk", "bp": 2000, "element": "ember" }]
+  },
+  {
+    "id": "overgrown",
+    "name": "Overgrown",
+    "description": "Grove creatures hit 20% harder.",
+    "effects": [{ "op": "team_stat", "stat": "atk", "bp": 2000, "element": "grove" }]
+  },
+  {
+    "id": "stormy",
+    "name": "Stormy",
+    "description": "Spark creatures hit 20% harder.",
+    "effects": [{ "op": "team_stat", "stat": "atk", "bp": 2000, "element": "spark" }]
+  },
+  {
+    "id": "dark",
+    "name": "Dark",
+    "description": "Your creatures crit 5 points more often.",
+    "effects": [{ "op": "team_crit", "chanceBp": 500, "damageBp": 0 }]
+  },
+  {
+    "id": "thorns",
+    "name": "Thorns",
+    "description": "The foe turns the first reaction of each round back on your team.",
+    "effects": [
+      {
+        "op": "foe_gimmick",
+        "gimmick": {
+          "id": "thorns",
+          "name": "Thorns",
+          "trigger": { "eachRound": true },
+          "op": "reflect_first_reaction"
+        }
+      }
+    ]
+  },
+  {
+    "id": "brittle",
+    "name": "Brittle",
+    "description": "The foe has 20% less HP but hits 25% harder.",
+    "effects": [
+      { "op": "foe_stat", "stat": "hp", "bp": -2000 },
+      { "op": "foe_stat", "stat": "atk", "bp": 2500 }
+    ]
+  },
+  {
+    "id": "fog",
+    "name": "Fog",
+    "description": "Nobody can see: everyone acts in slot order, left to right.",
+    "effects": [{ "op": "turn_order", "order": "left_to_right" }]
+  }
+]

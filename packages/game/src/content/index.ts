@@ -18,6 +18,8 @@ export * from './lore';
 export * from './glossary-schema';
 export * from './gear-schema';
 export * from './gear';
+export * from './dungeon-schema';
+export * from './dungeon';
 
 /** The shipped content pack, validated at module load. */
 export const content = loadContent({

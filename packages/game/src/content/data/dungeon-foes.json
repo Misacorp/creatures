@@ -1,0 +1,236 @@
+[
+  {
+    "id": "puddle-imp",
+    "name": "Puddle Imp",
+    "kind": "foe",
+    "element": "tide",
+    "baseHp": 260,
+    "baseAtk": 12,
+    "turnOrder": "speed",
+    "gimmicks": [],
+    "rounds": 6,
+    "flavor": "Hides in puddles and splashes ankles. Not scary, just very wet."
+  },
+  {
+    "id": "drift-wisp",
+    "name": "Drift Wisp",
+    "kind": "foe",
+    "element": "tide",
+    "baseHp": 240,
+    "baseAtk": 11,
+    "turnOrder": "left_to_right",
+    "gimmicks": [
+      {
+        "id": "sea-mist",
+        "name": "Sea Mist",
+        "trigger": { "every": 3 },
+        "op": "silence_ends",
+        "turns": 1
+      }
+    ],
+    "rounds": 6,
+    "flavor": "A bit of sea fog that wandered underground and forgot the way home."
+  },
+  {
+    "id": "ember-mite",
+    "name": "Ember Mite",
+    "kind": "foe",
+    "element": "ember",
+    "baseHp": 230,
+    "baseAtk": 12,
+    "turnOrder": "speed",
+    "gimmicks": [
+      {
+        "id": "flare-up",
+        "name": "Flare Up",
+        "trigger": { "every": 3 },
+        "op": "hit_zone",
+        "zone": "back",
+        "power": 9000
+      }
+    ],
+    "rounds": 6,
+    "flavor": "A glowing bug that nests in warm stones and pops like a tiny firework."
+  },
+  {
+    "id": "ash-sprite",
+    "name": "Ash Sprite",
+    "kind": "foe",
+    "element": "ember",
+    "baseHp": 250,
+    "baseAtk": 11,
+    "turnOrder": "right_to_left",
+    "gimmicks": [],
+    "rounds": 6,
+    "flavor": "Drifts out of cold hearths in a puff of grey and sneezes sparks."
+  },
+  {
+    "id": "bramble-hound",
+    "name": "Bramble Hound",
+    "kind": "foe",
+    "element": "grove",
+    "baseHp": 270,
+    "baseAtk": 12,
+    "turnOrder": "left_to_right",
+    "gimmicks": [
+      {
+        "id": "thorn-snap",
+        "name": "Thorn Snap",
+        "trigger": { "every": 3 },
+        "op": "silence_ends",
+        "turns": 1
+      }
+    ],
+    "rounds": 6,
+    "flavor": "A hedge that learned to run. Its bark is mostly twigs."
+  },
+  {
+    "id": "moss-lurker",
+    "name": "Moss Lurker",
+    "kind": "foe",
+    "element": "grove",
+    "baseHp": 240,
+    "baseAtk": 10,
+    "turnOrder": "speed",
+    "gimmicks": [
+      {
+        "id": "root-grab",
+        "name": "Root Grab",
+        "trigger": { "every": 2 },
+        "op": "strike_highest_atk",
+        "power": 7000
+      }
+    ],
+    "rounds": 6,
+    "flavor": "Looks like a mossy rock until it blinks. It likes the loudest visitor best."
+  },
+  {
+    "id": "static-bat",
+    "name": "Static Bat",
+    "kind": "foe",
+    "element": "spark",
+    "baseHp": 220,
+    "baseAtk": 11,
+    "turnOrder": "speed",
+    "gimmicks": [
+      {
+        "id": "zap-dive",
+        "name": "Zap Dive",
+        "trigger": { "every": 3 },
+        "op": "strike_highest_atk",
+        "power": 9000
+      }
+    ],
+    "rounds": 6,
+    "flavor": "Hangs from the ceiling crackling, and dives at whoever hits hardest."
+  },
+  {
+    "id": "flicker-swarm",
+    "name": "Flicker Swarm",
+    "kind": "foe",
+    "element": "spark",
+    "baseHp": 250,
+    "baseAtk": 10,
+    "turnOrder": "left_to_right",
+    "gimmicks": [
+      {
+        "id": "buzz-cloud",
+        "name": "Buzz Cloud",
+        "trigger": { "every": 2 },
+        "op": "hit_zone",
+        "zone": "middle",
+        "power": 6000
+      }
+    ],
+    "rounds": 6,
+    "flavor": "A hundred sparks that agree on nothing except which creature to pester."
+  },
+  {
+    "id": "drowned-warden",
+    "name": "Drowned Warden",
+    "kind": "boss",
+    "element": "tide",
+    "baseHp": 420,
+    "baseAtk": 14,
+    "turnOrder": "left_to_right",
+    "gimmicks": [
+      {
+        "id": "flood-gate",
+        "name": "Flood Gate",
+        "trigger": { "every": 3 },
+        "op": "hit_zone",
+        "zone": "front",
+        "power": 10000
+      }
+    ],
+    "rounds": 8,
+    "flavor": "Guards a sunken door nobody has opened. It opens its own gates for you instead."
+  },
+  {
+    "id": "slag-tyrant",
+    "name": "Slag Tyrant",
+    "kind": "boss",
+    "element": "ember",
+    "baseHp": 380,
+    "baseAtk": 14,
+    "turnOrder": "speed",
+    "gimmicks": [
+      {
+        "id": "molten-shell",
+        "name": "Molten Shell",
+        "trigger": { "eachRound": true },
+        "op": "reflect_first_reaction"
+      }
+    ],
+    "rounds": 8,
+    "flavor": "King of a cooled forge, wearing a crown of slag. It turns your best trick back on you."
+  },
+  {
+    "id": "bramble-matron",
+    "name": "Bramble Matron",
+    "kind": "boss",
+    "element": "grove",
+    "baseHp": 440,
+    "baseAtk": 13,
+    "turnOrder": "right_to_left",
+    "gimmicks": [
+      {
+        "id": "tangle",
+        "name": "Tangle",
+        "trigger": { "every": 2 },
+        "op": "silence_ends",
+        "turns": 1
+      },
+      {
+        "id": "thorn-rain",
+        "name": "Thorn Rain",
+        "trigger": { "every": 4 },
+        "op": "hit_zone",
+        "zone": "back",
+        "power": 9000
+      }
+    ],
+    "rounds": 8,
+    "flavor": "The old hedge that all the little hedges follow. Keep your back line ready."
+  },
+  {
+    "id": "coil-baron",
+    "name": "Coil Baron",
+    "kind": "boss",
+    "element": "spark",
+    "baseHp": 390,
+    "baseAtk": 14,
+    "turnOrder": "left_to_right",
+    "gimmicks": [
+      {
+        "id": "arc-lash",
+        "name": "Arc Lash",
+        "trigger": { "eachRound": true },
+        "op": "strike_highest_atk",
+        "power": 7000
+      }
+    ],
+    "rounds": 8,
+    "flavor": "A bad-tempered tangle of copper and lightning. It always goes for your best fighter."
+  }
+]

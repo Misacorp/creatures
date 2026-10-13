@@ -34,6 +34,12 @@ export interface FightSlot {
   stats?: Stats;
   /** Crit bonus over the baseline (from the species content); absent: none. */
   crit?: CritBonus;
+  /**
+   * HP the creature starts the fight with (a whole number from 0), for creatures that carry damage
+   * from an earlier fight (the daily dungeon). It is capped at the creature's maximum HP (the stats'
+   * HP, plus the Guard bonus); 0 means the creature starts knocked out and never acts. Absent: full HP.
+   */
+  hp?: number;
 }
 
 export interface AbilityChoice {
@@ -221,6 +227,14 @@ export interface FightResult {
   reactions: { byType: Record<string, number>; total: number };
   /** Damage dealt to the boss by the element of the hitting creature (reactions included). */
   damageByElement: Record<Element, number>;
+  /**
+   * Every creature's HP when the fight started, when it ended (0 for a knocked-out creature) and at
+   * most (the stats' HP, plus the Guard bonus), by creature id. `hpEnd` is what a chained fight
+   * carries into the next one as `FightSlot.hp`.
+   */
+  hpStart: Record<string, number>;
+  hpEnd: Record<string, number>;
+  hpMax: Record<string, number>;
   /** For phase 1: the counter the boss gains for phase 2. Null in other phases. */
   adaptationSuggestion: AdaptationSuggestion | null;
 }
