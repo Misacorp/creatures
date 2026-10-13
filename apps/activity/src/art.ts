@@ -3,12 +3,14 @@
  * the shiny palette of a species, and the class that gives an element its colour.
  */
 import {
+  BANNER_SIZE,
   FALLBACK_SILHOUETTE,
+  bannerSprite,
   bossSprite,
   dungeonBossSprite,
   dungeonFoeSprite,
 } from './sprites/creature-sprites';
-import type { SpriteDef } from './sprites/sprite-data';
+import { expandRows, type SpriteDef } from './sprites/sprite-data';
 
 /**
  * Screen pixels per sprite pixel for a boss (24x24) and for a 16x16 sprite standing in the boss's
@@ -130,4 +132,37 @@ const MARK_PALETTES: Readonly<Record<string, Readonly<Record<string, string>>>> 
 /** The palette that turns the mark glyph into the element's colour (the same object every time). */
 export function markPalette(element: string): Readonly<Record<string, string>> | undefined {
   return Object.hasOwn(MARK_PALETTES, element) ? MARK_PALETTES[element] : undefined;
+}
+
+/** A flat dusk strip for a destination whose banner has not been drawn yet. */
+export const FALLBACK_BANNER: SpriteDef = {
+  palette: { a: '#241e42', b: '#2f2857' },
+  rows: Array.from({ length: BANNER_SIZE.height }, (_, y) =>
+    (y < BANNER_SIZE.height / 2 ? 'a' : 'b').repeat(BANNER_SIZE.width),
+  ),
+};
+
+/** The banner to draw for a destination: its own art, or the plain strip. */
+export function bannerArt(destinationId: string): SpriteDef {
+  return bannerSprite(destinationId) ?? FALLBACK_BANNER;
+}
+
+const SILHOUETTE_COLOUR = '#4a4170';
+
+/**
+ * The palette that turns a creature sprite into a flat silhouette: every colour it uses becomes one
+ * dim colour, so a species that has not been found shows its shape and nothing else.
+ */
+export function silhouettePalette(def: SpriteDef): Readonly<Record<string, string>> {
+  const keys = new Set(expandRows(def).join(''));
+  keys.delete('.');
+  return Object.fromEntries([...keys].map((key) => [key, SILHOUETTE_COLOUR]));
+}
+
+/**
+ * The screen pixels per sprite pixel for a banner in a space `width` px wide: a whole number (the art
+ * stays sharp), at least 3 and at most 6, so a banner never overflows a phone and never grows huge.
+ */
+export function bannerScale(width: number): number {
+  return Math.min(6, Math.max(3, Math.floor(width / BANNER_SIZE.width)));
 }
