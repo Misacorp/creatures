@@ -336,7 +336,10 @@ export class Dungeon {
   ): { allowed: number; canRun: boolean } {
     const firstDay = progress.first_day === null || progress.first_day === day;
     const retry = firstDay && runs.length === 1 && runs[0]?.cleared === 0;
-    return { allowed: firstDay ? 2 : 1, canRun: runs.length === 0 || retry };
+    // A timezone moved west can make `day` earlier than a day the player already ran on. That day
+    // is spent, so the earlier-looking one must not give a second run.
+    const behind = progress.last_day !== null && progress.last_day > day;
+    return { allowed: firstDay ? 2 : 1, canRun: !behind && (runs.length === 0 || retry) };
   }
 
   // --- Reads ---
@@ -358,7 +361,10 @@ export class Dungeon {
       .one().n;
     const needCreatures = creatures < RULES.dungeon.teamSize;
     const last = runs.at(-1);
-    const alive = progress.last_day === day || progress.last_day === addDays(day, -1);
+    // A last day later than `day` (timezone moved west) keeps the streak, it does not break it.
+    const alive =
+      progress.last_day !== null &&
+      (progress.last_day >= day || progress.last_day === addDays(day, -1));
     return {
       serverNow: now,
       day,

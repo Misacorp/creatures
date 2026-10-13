@@ -25,6 +25,7 @@ import {
   goalDef,
   goalOddsBp,
   goalWorks,
+  pushWorks,
   goalWorthRatio,
   isNightHour,
   journalChanceBp,
@@ -1039,6 +1040,15 @@ describe('the end-of-trip choice', () => {
     expect(goalWorks(scripted([odds - 1]), risky, 'long')).toBe(true);
     expect(goalWorks(scripted([odds]), risky, 'long')).toBe(false);
     expect(() => goalWorks(scripted([0]), risky, 'short')).toThrow(RangeError);
+  });
+
+  it('rolls a push-on from the stored odds alone', () => {
+    const rng = scripted([]);
+    expect(pushWorks(rng, 'safe', 100)).toBe(true);
+    expect(pushWorks(rng, 'risky', 10_000)).toBe(true);
+    expect(rng.drawn()).toBe(0);
+    expect(pushWorks(scripted([4_999]), 'risky', 5_000)).toBe(true);
+    expect(pushWorks(scripted([5_000]), 'risky', 5_000)).toBe(false);
   });
 });
 

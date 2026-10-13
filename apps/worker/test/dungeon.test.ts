@@ -894,6 +894,38 @@ describe('the day is the guild-local game day, which turns at 13:37', () => {
     );
   });
 
+  it('refuses a second run when the timezone moves west, and keeps the streak', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        setProgress(ctx, p.id, {
+          depth: 3,
+          streak: 4,
+          last_day: '2027-01-14',
+          first_day: '2027-01-01',
+        });
+        // 14:00 in Helsinki (UTC+2) on the 15th: after the reset, so the 15th.
+        ctx.clock.t = Date.parse('2027-01-15T12:00:00Z');
+        expect((await p.run()).body.run.day).toBe('2027-01-15');
+        const before = progressOf(ctx, p.id);
+        expect(before).toMatchObject({ streak: 5, last_day: '2027-01-15' });
+        // The same instant is 04:00 on the 15th in Los Angeles: before the reset, so the 14th.
+        expect(await ctx.core.setTimezone('America/Los_Angeles')).toBe(true);
+        const today = await p.today();
+        expect(today).toMatchObject({
+          day: '2027-01-14',
+          canRun: false,
+          blocked: 'already_run',
+          streak: 5,
+        });
+        expect((await p.run()).body).toEqual({ error: 'already_run' });
+        expect(progressOf(ctx, p.id)).toEqual(before);
+      },
+      opts(),
+    );
+  });
+
   it('puts a run at 13:36 and a run at 13:38 of the same date on different game days', async () => {
     await runCore(
       nextGuild(),

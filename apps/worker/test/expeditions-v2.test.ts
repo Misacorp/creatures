@@ -826,6 +826,64 @@ describe('the end-of-trip choice (push on)', () => {
       { tripRng: constantRng(draw), rng: createSeededRng('risky-ok-rng') },
     );
   });
+
+  it('rolls a push-on with the odds stored when the goal was chosen, not the current content', async () => {
+    const draw = { v: 0 };
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0);
+        const trip = await endedWithOffer(ctx, p, 3);
+        const risky = (trip.offer?.goals ?? []).find((g) => g.risk === 'risky');
+        if (risky === undefined) throw new Error('no risky goal offered');
+        expect(risky.oddsBp).toBeGreaterThan(600);
+        const chosen = tripOf(await pushOn(p, trip.id, risky.id));
+        expect(chosen.pushOn?.oddsBp).toBe(risky.oddsBp);
+        // The content now says something else than what was stored: the stored odds are 600 of 10000.
+        ctx.sql.exec('UPDATE expeditions SET push_odds_bp = 600 WHERE id = ?', trip.id);
+        ctx.clock.t = (chosen.pushOn?.endsAt ?? 0) + 1;
+        draw.v = 700; // works under the content's odds, fails under the stored ones
+        const result = resultOf(await claim(p, trip.id));
+        expect(result.failed).toBe(true);
+        expect(result.pushOn).toMatchObject({ goalId: risky.id, oddsBp: 600, outcome: 'failed' });
+      },
+      { tripRng: constantRng(draw), rng: createSeededRng('stored-odds-rng') },
+    );
+  });
+
+  it('still claims a push-on whose goal has left the content, from the stored odds', async () => {
+    for (const [drawn, outcome] of [
+      [0, 'worked'],
+      [9_999, 'failed'],
+    ] as const) {
+      const draw = { v: drawn };
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await join(ctx, USER, 0);
+          const trip = await endedWithOffer(ctx, p, 3);
+          const risky = (trip.offer?.goals ?? []).find((g) => g.risk === 'risky');
+          if (risky === undefined) throw new Error('no risky goal offered');
+          const chosen = tripOf(await pushOn(p, trip.id, risky.id));
+          ctx.sql.exec("UPDATE expeditions SET push_goal = 'vanished-goal' WHERE id = ?", trip.id);
+          ctx.clock.t = (chosen.pushOn?.endsAt ?? 0) + 1;
+          const claimed = await claim(p, trip.id);
+          expect(claimed.status).toBe(200);
+          const result = resultOf(claimed);
+          expect(result.pushOn).toMatchObject({
+            goalId: 'vanished-goal',
+            risk: 'risky',
+            oddsBp: risky.oddsBp,
+            outcome,
+          });
+          expect(result.failed === true).toBe(outcome === 'failed');
+          // Claiming again returns the stored result.
+          expect(resultOf(await claim(p, trip.id))).toEqual(result);
+        },
+        { tripRng: constantRng(draw), rng: createSeededRng('vanished-rng') },
+      );
+    }
+  });
 });
 
 describe('the journal', () => {

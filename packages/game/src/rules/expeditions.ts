@@ -10,6 +10,7 @@ import {
   SUPPLY_KINDS,
   type DestinationDef,
   type ExpeditionLength,
+  type GoalRisk,
   type JournalEntryDef,
   type PartsSpec,
   type PushOnGoalDef,
@@ -670,12 +671,20 @@ export function goalOddsBp(goal: PushOnGoalDef, length: ExpeditionLength): numbe
   return goal.lengths[length]?.oddsBp;
 }
 
+/**
+ * True if a push-on works out, given the odds stored when the goal was chosen. A safe goal, or odds
+ * of 10000, always works and draws nothing; otherwise it draws once.
+ */
+export function pushWorks(rng: Rng, risk: GoalRisk, oddsBp: number): boolean {
+  if (risk === 'safe' || oddsBp >= BP) return true;
+  return chance(rng, oddsBp, BP);
+}
+
 /** True if the goal works out. A safe goal always does and draws nothing; a risky one draws once. */
 export function goalWorks(rng: Rng, goal: PushOnGoalDef, length: ExpeditionLength): boolean {
   const odds = goalOddsBp(goal, length);
   if (odds === undefined) throw new RangeError(`goal "${goal.id}" is not offered after ${length}`);
-  if (goal.risk === 'safe' || odds >= BP) return true;
-  return chance(rng, odds, BP);
+  return pushWorks(rng, goal.risk, odds);
 }
 
 // --- The journal ---

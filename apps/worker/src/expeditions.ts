@@ -29,7 +29,6 @@ import {
   foundSupplyId,
   goalDef,
   goalOddsBp,
-  goalWorks,
   journalEntry,
   journalChanceBp,
   kitOf,
@@ -44,6 +43,7 @@ import {
   partsOfSpec,
   pickQuirk,
   rankSum,
+  pushWorks,
   recallCatches,
   rollGearDrop,
   rollJournal,
@@ -818,15 +818,19 @@ export class Expeditions {
       if (dest === undefined) throw new Error('stored trip has an unknown destination');
 
       const finished = now >= expedition.ends_at;
-      const goal = expedition.push_goal === null ? undefined : goalDef(expedition.push_goal);
-      let push: { goal: NonNullable<typeof goal>; outcome: PushOnOutcome } | null = null;
-      if (finished && goal !== undefined) {
+      let push: { goal: PushOnGoalDef; outcome: PushOnOutcome } | null = null;
+      if (finished && expedition.push_goal !== null) {
+        // The odds stored when the goal was chosen decide the roll, never the current content; a goal
+        // that has since left the content still resolves, from what was stored.
+        const goal =
+          goalDef(expedition.push_goal) ?? this.vanishedGoal(expedition.push_goal, expedition);
+        const oddsBp = expedition.push_odds_bp ?? goalOddsBp(goal, expedition.duration) ?? 0;
         const pushDone = expedition.push_ends_at !== null && now >= expedition.push_ends_at;
         push = {
           goal,
           outcome: !pushDone
             ? 'declined'
-            : goalWorks(this.deps.tripRng, goal, expedition.duration)
+            : pushWorks(this.deps.tripRng, goal.risk, oddsBp)
               ? 'worked'
               : 'failed',
         };
@@ -850,6 +854,24 @@ export class Expeditions {
       );
       return result;
     });
+  }
+
+  /**
+   * A stand-in for a push-on goal that is no longer in the content. Only the stored odds survive, so
+   * the stand-in is risky when they are below certain and adds no reward when it works.
+   */
+  private vanishedGoal(id: string, expedition: ExpeditionRow): PushOnGoalDef {
+    const oddsBp = expedition.push_odds_bp ?? 0;
+    return {
+      id,
+      name: id,
+      flavor: '',
+      risk: oddsBp >= 10_000 ? 'safe' : 'risky',
+      minRank: 1,
+      extraHours: 1,
+      lengths: {},
+      reward: {},
+    };
   }
 
   private pushView(

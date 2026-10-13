@@ -47,7 +47,7 @@ No real-time backend is needed.
 ## Server (authoritative)
 
 - `POST /api/dungeon/run { team: [id, id, id], abilities: {...}, idempotencyKey }` (`team` is the row, left to right; a body with a `formation` is refused as `invalid_body`):
-  1. Validates the team (the caller's own creatures, not away on an expedition) and that no run exists today.
+  1. Validates the team (the caller's own creatures; one away on an expedition or a job can still enter, because the run is instant) and that no run exists today.
   2. Draws the seed from `crypto.getRandomValues` at that moment.
   3. Generates the dungeon from the seed and the content.
   4. Simulates all rooms with the engine.
