@@ -2,7 +2,10 @@ name: report
 
 # The daily analytics report (docs/design/analytics.md). Fetches the aggregate report from the ops
 # endpoint of production and staging (JSON and Markdown), writes the Markdown to the job summary and
-# keeps the files. The endpoint answers with counts only: no player ids, hashes, names or guild ids.
+# keeps the files. The endpoint answers with counts only, summed across servers: no player ids,
+# hashes, names or guild ids, and no per-server breakdown (the workflow never asks for `byGuild`).
+# The repository is public, so the job log and the job summary are public too: nothing in the
+# output may be private, and the report is built so that it is not.
 #
 # Runs at 06:17 UTC, when the previous game day has been rolled up (rollups run at 13:40 guild-local
 # time, so the newest finished day is two UTC dates back). The range is the 7 days ending then.
@@ -10,10 +13,15 @@ name: report
 #
 # No checkout and no third-party actions: the job only runs `node` (preinstalled on the runner) on a
 # script written in this file, so there is no repository code or action it could be tricked into
-# running. The token is only in the environment of the one step that needs it, and the job is bound
-# to the `reports` GitHub environment, which holds the OPS_TOKEN secret.
+# running. The tokens are only in the environment of the one step that needs them, and the job is
+# bound to the `reports` GitHub environment, which holds two secrets: OPS_TOKEN_PRODUCTION (sent only
+# to production) and OPS_TOKEN_STAGING (sent only to staging). The values differ, so a leaked or
+# misused staging token opens nothing in production. Restrict that environment to the `main` branch
+# (Settings, Environments, reports, Deployment branches), so a branch cannot edit this file to send
+# the tokens somewhere else.
 #
-# If the endpoint answers 404 (OPS_TOKEN not set there yet), the job warns and still succeeds.
+# If one token is empty, that target is skipped with a warning. If the endpoint answers 404 (the
+# Worker's OPS_TOKEN is not set there yet), the job warns and still succeeds.
 on:
   schedule:
     - cron: '17 6 * * *'
@@ -35,13 +43,10 @@ jobs:
     steps:
       - name: Fetch the reports
         env:
-          OPS_TOKEN: ${{ secrets.OPS_TOKEN }}
+          OPS_TOKEN_PRODUCTION: ${{ secrets.OPS_TOKEN_PRODUCTION }}
+          OPS_TOKEN_STAGING: ${{ secrets.OPS_TOKEN_STAGING }}
         run: |
           set -euo pipefail
-          if [ -z "$OPS_TOKEN" ]; then
-            echo "::warning::OPS_TOKEN is not set in the 'reports' environment yet; nothing to fetch."
-            exit 0
-          fi
           mkdir -p report
           FROM="$(date -u -d '8 days ago' +%F)"
           TO="$(date -u -d '2 days ago' +%F)"
@@ -51,22 +56,27 @@ jobs:
           node --input-type=module - <<'EOF'
           import { writeFileSync } from 'node:fs';
 
-          const { OPS_TOKEN, FROM, TO, WEEKLY } = process.env;
+          const { OPS_TOKEN_PRODUCTION, OPS_TOKEN_STAGING, FROM, TO, WEEKLY } = process.env;
+          // Each target gets only its own token.
           const targets = [
-            ['production', 'https://creatures.misacorp.dev'],
-            ['staging', 'https://creatures-staging.misacorp.dev'],
+            ['production', 'https://creatures.misacorp.dev', OPS_TOKEN_PRODUCTION ?? ''],
+            ['staging', 'https://creatures-staging.misacorp.dev', OPS_TOKEN_STAGING ?? ''],
           ];
           let failed = 0;
-          for (const [name, base] of targets) {
+          for (const [name, base, token] of targets) {
+            if (token === '') {
+              console.log(`::warning::${name}: its token is not set in the 'reports' environment yet; skipping.`);
+              continue;
+            }
             for (const format of ['json', 'md']) {
               const url = `${base}/api/ops/report?from=${FROM}&to=${TO}&format=${format}&weekly=${WEEKLY}`;
               try {
                 const res = await fetch(url, {
-                  headers: { Authorization: `Bearer ${OPS_TOKEN}` },
+                  headers: { Authorization: `Bearer ${token}` },
                   signal: AbortSignal.timeout(60_000),
                 });
                 if (res.status === 404) {
-                  console.log(`::warning::${name} (${format}): the report endpoint answered 404. Is OPS_TOKEN set in the ${name} environment and deployed?`);
+                  console.log(`::warning::${name} (${format}): the report endpoint answered 404. Is OPS_TOKEN set on the ${name} Worker and deployed?`);
                   continue;
                 }
                 if (!res.ok) {
@@ -107,7 +117,7 @@ jobs:
           done
 
       # Agents read the report through the job log (the GitHub tools can fetch logs, not summaries).
-      # The JSON holds counts only, so printing it is safe.
+      # The JSON holds counts only, summed across servers, so printing it is safe (the log is public).
       - name: Print the JSON for agents
         run: |
           set -euo pipefail
