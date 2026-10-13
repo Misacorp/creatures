@@ -15,13 +15,6 @@ import type { GearRarity, PartsBundle } from './gear-types';
 
 export type Element = 'tide' | 'ember' | 'grove' | 'spark';
 export type Role = 'setter' | 'payoff' | 'support' | 'guard';
-/**
- * The engine's three zones. In the dungeon's one row of three each zone is one creature: `front` is
- * the left creature, `middle` the one in the middle and `back` the right one. Only Shield Wall's
- * `zone` uses it on the wire; the screens say Left, Middle and Right.
- */
-export type Zone = 'front' | 'middle' | 'back';
-
 /** A room modifier of the day. Shown before the run: the same for everyone on the server. */
 export interface DungeonModifier {
   /** The room (0-based) it applies to; the last room is the room boss. */
@@ -180,37 +173,20 @@ export interface DungeonRunRequest {
   /**
    * The three creatures (ids of the player's own, all different), in the order they stand in the
    * one row, left to right: `team[i]` is position i. There is no formation: the order is it.
+   * There is no ability choice either (an old body with `abilities` is `invalid_body`): unlocked
+   * creature abilities fire at their default round.
    */
   team: [string, string, string];
-  abilities: {
-    basic: {
-      /** One of the basic ability ids (`rally`, `shield-wall`, `re-mark`, `purge`). */
-      abilityId: string;
-      /** A round from 1 to 12, or null: fire at the ability's default round ("Auto fire on"). */
-      fireAtRound: number | null;
-      /** Only for Shield Wall. */
-      zone?: Zone;
-      /** Only for Re-mark. */
-      element?: Element;
-    };
-    /**
-     * Rounds for creature abilities (a creature of level 10 or more has one); an unlisted one fires at
-     * its default round. Only the team's creatures with an unlocked ability, each at most once.
-     */
-    creatures: { creatureId: string; fireAtRound: number | null }[];
-  };
   /** A fresh key for every new run (8 to 64 characters of A-Z a-z 0-9 _ -); a retry reuses it. */
   idempotencyKey: string;
 }
 
 /** The error codes of the dungeon routes (`{ error }`, with these statuses). */
 export const DUNGEON_ERRORS = {
-  /** 400: the body is not the strict shape (wrong creature count, a bad key, unknown keys...). */
+  /** 400: the body is not the strict shape (wrong creature count, a bad key, unknown keys such as the old `abilities` or `formation`...). */
   invalid_body: 400,
   /** 400: the same creature twice. */
   duplicate_creature: 400,
-  /** 400: an ability choice that cannot be (a zone for Rally, a creature without an ability...). */
-  invalid_abilities: 400,
   /** 400: the path id is not an id. */
   invalid_id: 400,
   /** 404: a creature or a run that is not the caller's (the same answer as for one that does not exist). */

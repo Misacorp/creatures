@@ -60,7 +60,7 @@ vi.mock('./api', async (importOriginal) => ({
   apiFetch,
 }));
 
-import { ApiError, parseGameState, type Creature } from './api';
+import { ApiError, parseGameState } from './api';
 import {
   claimExpedition,
   fetchDestinations,
@@ -74,12 +74,7 @@ import {
 import { parseDestinations, parseProfile } from './expedition-parse';
 import { fetchDungeonReplay, fetchDungeonToday, startDungeonRun } from './dungeon-api';
 import { parseDungeonReplay, parseDungeonRun, parseDungeonToday } from './dungeon-parse';
-import {
-  DEFAULT_ABILITY_SETTINGS,
-  buildRunRequest,
-  type AbilitySettings,
-  type Slots,
-} from './dungeon-team';
+import { buildRunRequest, type Slots } from './dungeon-team';
 import { dungeonErrorText } from './dungeon-text';
 import type { DungeonRunRequest } from './dungeon-types';
 import { claimJob, dismantleGear, equipGear, fetchGear, startJob, upgradeGear } from './gear-api';
@@ -488,41 +483,14 @@ describe('the dungeon requests the client sends', () => {
   });
 
   it('the screen builds the same bodies from the same picks', () => {
-    const ability = { id: 'static-zap', unlocked: true, unlockLevel: 10 };
-    const fixtureBody = bodyOf('dungeon-run-cleared');
-    const [front, middle, back] = fixtureBody.team;
-    const make = (id: string, species: string, withAbility: boolean): Creature =>
-      ({
-        id,
-        species,
-        level: 12,
-        stats: { hp: 100, atk: 10, spd: 10 },
-        ability: withAbility ? ability : null,
-      }) as unknown as Creature;
-    const creatures = [
-      make(front, 'sproutle', false),
-      make(middle, 'splashet', false),
-      make(back, 'cindle', true),
-    ];
-    const slots: Slots = [front, middle, back];
-    const settings: AbilitySettings = {
-      ...DEFAULT_ABILITY_SETTINGS,
-      basicId: 'shield-wall',
-      basicRound: 2,
-      zone: 'front',
-      creatureRounds: { [back]: 3 },
-    };
-    expect(buildRunRequest(slots, creatures, settings, fixtureBody.idempotencyKey)).toEqual(
-      fixtureBody,
-    );
-
-    // The default picks: Rally on Auto, no creature rounds, the same shape as the lost and landmark runs.
-    const lost = bodyOf('dungeon-run-lost');
-    const lostCreatures = lost.team.map((id) => make(id, 'mistnewt', false));
-    const [a, b, c] = lost.team;
-    expect(
-      buildRunRequest([a, b, c], lostCreatures, DEFAULT_ABILITY_SETTINGS, lost.idempotencyKey),
-    ).toEqual(lost);
+    for (const key of ['dungeon-run-cleared', 'dungeon-run-lost'] as const) {
+      const fixtureBody = bodyOf(key);
+      const [front, middle, back] = fixtureBody.team;
+      const slots: Slots = [front, middle, back];
+      expect(buildRunRequest(slots, fixtureBody.idempotencyKey)).toEqual(fixtureBody);
+      // Exactly the strict body: the team and the key, and nothing about abilities.
+      expect(Object.keys(fixtureBody).sort()).toEqual(['idempotencyKey', 'team']);
+    }
   });
 
   it('every body has a key of the form the Worker wants, and is retried with the same one', () => {

@@ -1,29 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import type { Creature } from './api';
 import {
-  DEFAULT_ABILITY_SETTINGS,
   EMPTY_SLOTS,
-  MAX_FIRE_ROUND,
-  basicParams,
   buildRunRequest,
-  creatureAbilityChoices,
-  defaultRoundOf,
   isComplete,
-  parseRound,
   place,
   placedCount,
   pruneSlots,
   reduceTap,
   requestSignature,
   resolveDrop,
-  roundOptions,
-  rowNotes,
   slotIndexOf,
   slotStatuses,
   strongestFirst,
   strongestThree,
   unplace,
-  uselessInDungeon,
   type Slots,
 } from './dungeon-team';
 
@@ -208,167 +199,37 @@ describe('drops', () => {
   });
 });
 
-describe('ability settings', () => {
-  it('knows which basic abilities ask for a zone or an element', () => {
-    expect(basicParams('shield-wall')).toEqual({ zone: true, element: false });
-    expect(basicParams('re-mark')).toEqual({ zone: false, element: true });
-    expect(basicParams('rally')).toEqual({ zone: false, element: false });
-    expect(basicParams('nothing-like-it')).toEqual({ zone: false, element: false });
-  });
-
-  it('flags Purge, which has nothing to remove in the dungeon', () => {
-    expect(uselessInDungeon('purge')).toBe(true);
-    expect(uselessInDungeon('rally')).toBe(false);
-    expect(uselessInDungeon('shield-wall')).toBe(false);
-  });
-
-  it('reads the default round of an ability from the content', () => {
-    expect(defaultRoundOf('rally')).toBe(6);
-    expect(defaultRoundOf('shield-wall')).toBe(3);
-    expect(defaultRoundOf('not-an-ability')).toBeNull();
-  });
-
-  it('offers Auto and every round up to the longest room', () => {
-    const options = roundOptions();
-    expect(options[0]).toEqual({ value: null, label: 'Auto' });
-    expect(options).toHaveLength(MAX_FIRE_ROUND + 1);
-    expect(options.at(-1)?.value).toBe(MAX_FIRE_ROUND);
-    expect(MAX_FIRE_ROUND).toBeGreaterThanOrEqual(8);
-  });
-
-  it('reads a select value back into a round, and anything odd into Auto', () => {
-    expect(parseRound('')).toBeNull();
-    expect(parseRound('3')).toBe(3);
-    expect(parseRound('0')).toBeNull();
-    expect(parseRound(String(MAX_FIRE_ROUND + 1))).toBeNull();
-    expect(parseRound('2.5')).toBeNull();
-    expect(parseRound('abc')).toBeNull();
-  });
-});
-
 describe('the run request', () => {
-  const ability = { id: 'static-zap', unlocked: true, unlockLevel: 10 };
-  const creatures = [
-    make('a', 'sproutle', 12),
-    make('b', 'splashet', 12, { ability }),
-    make('c', 'cindle', 12, { ability: { ...ability, unlocked: false } }),
-  ];
   const slots: Slots = ['a', 'b', 'c'];
 
   it('is null until the team is complete', () => {
-    expect(
-      buildRunRequest(['a', 'b', null], creatures, DEFAULT_ABILITY_SETTINGS, 'key-0001'),
-    ).toBeNull();
+    expect(buildRunRequest(['a', 'b', null], 'key-0001')).toBeNull();
+    expect(buildRunRequest(['a', 'a', 'b'], 'key-0001')).toBeNull();
   });
 
-  it('sends the row left to right, the basic pick on Auto, and no rounds nobody set', () => {
-    const request = buildRunRequest(slots, creatures, DEFAULT_ABILITY_SETTINGS, 'key-00001');
-    expect(request).toEqual({
-      team: ['a', 'b', 'c'],
-      abilities: { basic: { abilityId: 'rally', fireAtRound: null }, creatures: [] },
-      idempotencyKey: 'key-00001',
-    });
+  it('is the row left to right and the key, with no abilities and no rounds', () => {
+    const request = buildRunRequest(slots, 'key-00001');
+    expect(request).toEqual({ team: ['a', 'b', 'c'], idempotencyKey: 'key-00001' });
+    expect(Object.keys(request ?? {}).sort()).toEqual(['idempotencyKey', 'team']);
   });
 
   it('sends the order of the row as the order of the team, and nothing about zones', () => {
-    const forward = buildRunRequest(slots, creatures, DEFAULT_ABILITY_SETTINGS, 'key-00001');
-    const reversed = buildRunRequest(
-      ['c', 'b', 'a'],
-      creatures,
-      DEFAULT_ABILITY_SETTINGS,
-      'key-00001',
-    );
+    const forward = buildRunRequest(slots, 'key-00001');
+    const reversed = buildRunRequest(['c', 'b', 'a'], 'key-00001');
     expect(forward?.team).toEqual(['a', 'b', 'c']);
     expect(reversed?.team).toEqual(['c', 'b', 'a']);
-    expect(Object.keys(forward ?? {}).sort()).toEqual(['abilities', 'idempotencyKey', 'team']);
     // A different order is a different run, so it gets its own idempotency key.
     expect(requestSignature(reversed ?? ({} as never))).not.toBe(
       requestSignature(forward ?? ({} as never)),
     );
   });
 
-  it('sends a zone only for Shield Wall and an element only for Re-mark', () => {
-    const shield = buildRunRequest(
-      slots,
-      creatures,
-      { ...DEFAULT_ABILITY_SETTINGS, basicId: 'shield-wall', basicRound: 2, zone: 'middle' },
-      'key-00001',
-    );
-    expect(shield?.abilities.basic).toEqual({
-      abilityId: 'shield-wall',
-      fireAtRound: 2,
-      zone: 'middle',
-    });
-    const mark = buildRunRequest(
-      slots,
-      creatures,
-      { ...DEFAULT_ABILITY_SETTINGS, basicId: 're-mark', element: 'grove' },
-      'key-00001',
-    );
-    expect(mark?.abilities.basic).toEqual({
-      abilityId: 're-mark',
-      fireAtRound: null,
-      element: 'grove',
-    });
-  });
-
-  it('lists a creature ability only when it is unlocked, in the team and given a round', () => {
-    const settings = {
-      ...DEFAULT_ABILITY_SETTINGS,
-      creatureRounds: { a: 2, b: 4, c: 5, gone: 3 },
-    };
-    const request = buildRunRequest(slots, creatures, settings, 'key-00001');
-    expect(request?.abilities.creatures).toEqual([{ creatureId: 'b', fireAtRound: 4 }]);
-  });
-
-  it('shows the unlocked creature abilities of the team, front to back', () => {
-    const choices = creatureAbilityChoices(slots, creatures, DEFAULT_ABILITY_SETTINGS, (c) => c.id);
-    expect(choices).toEqual([{ creatureId: 'b', name: 'b', abilityId: 'static-zap', round: null }]);
-    expect(
-      creatureAbilityChoices([null, null, null], creatures, DEFAULT_ABILITY_SETTINGS, (c) => c.id),
-    ).toEqual([]);
-  });
-
   it('has one signature for the same picks, whatever the key, and another for different picks', () => {
-    const one = buildRunRequest(slots, creatures, DEFAULT_ABILITY_SETTINGS, 'key-00001');
-    const two = buildRunRequest(slots, creatures, DEFAULT_ABILITY_SETTINGS, 'key-00002');
-    const other = buildRunRequest(
-      ['b', 'a', 'c'],
-      creatures,
-      DEFAULT_ABILITY_SETTINGS,
-      'key-00001',
-    );
+    const one = buildRunRequest(slots, 'key-00001');
+    const two = buildRunRequest(slots, 'key-00002');
+    const other = buildRunRequest(['b', 'a', 'c'], 'key-00001');
     if (one === null || two === null || other === null) throw new Error('team is complete');
     expect(requestSignature(one)).toBe(requestSignature(two));
     expect(requestSignature(one)).not.toBe(requestSignature(other));
-  });
-});
-
-describe('what the order of the row means', () => {
-  const day = (ids: string[]) => ids.map((id, room) => ({ room, id, name: id }));
-
-  it('always says where the foe attacks first and what a Guard covers', () => {
-    const notes = rowNotes(day(['flooded', 'dark', 'thorns']));
-    expect(notes[0]).toContain('left creature first');
-    expect(notes[0]).toContain('Guard covers the creatures beside it');
-    expect(notes.some((n) => n.includes('left to right, right to left or fastest first'))).toBe(
-      true,
-    );
-    // No modifier of that day fixes the order, so nothing more.
-    expect(notes).toHaveLength(2);
-  });
-
-  it('adds a line for a room whose modifier fixes the turn order (Fog), and names the room', () => {
-    const notes = rowNotes(day(['flooded', 'fog', 'dark']));
-    expect(notes).toHaveLength(3);
-    expect(notes[2]).toBe(
-      'Room 2 has fog: everyone acts left to right, so the order of your row is the turn order.',
-    );
-    const boss = rowNotes(day(['flooded', 'dark', 'fog']));
-    expect(boss[2]).toContain('The room boss has fog');
-  });
-
-  it('ignores a modifier it does not know', () => {
-    expect(rowNotes(day(['no-such-modifier']))).toHaveLength(2);
   });
 });

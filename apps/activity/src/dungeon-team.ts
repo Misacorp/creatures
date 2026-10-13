@@ -1,23 +1,16 @@
 /**
- * The pre-run choices of the daily dungeon as small pure functions: which creature stands in which
- * place of the row, the tap and drop rules for moving them, the ability settings and the request
- * they make. The server checks everything again (ownership, three different creatures, the
- * abilities); this module only keeps the screen from building a request that cannot be right.
+ * The pre-run choice of the daily dungeon as small pure functions: which creature stands in which
+ * place of the row, the tap and drop rules for moving them, and the request they make. The server
+ * checks everything again (ownership, three different creatures); this module only keeps the screen
+ * from building a request that cannot be right. There are no ability choices: unlocked creature
+ * abilities fire on their own, at their default round.
  *
  * The team stands in ONE row of three, left to right. The player's choice is the order: `team[i]`
  * of the request is `slots[i]`, the creature at position i, and there is nothing else to pick.
  */
-import {
-  RULES,
-  content,
-  dungeonContent,
-  dungeonRowOrder,
-  roomModifier,
-  type TurnOrder,
-} from '@creatures/game';
+import { RULES, content, dungeonRowOrder, type Role } from '@creatures/game';
 import type { Creature } from './api';
-import type { DungeonModifier, DungeonRunRequest, Element, Zone } from './dungeon-types';
-import type { Role } from '@creatures/game';
+import type { DungeonRunRequest } from './dungeon-types';
 import type { DropOutcome, DropTarget } from './raid-dnd';
 
 /** The places of the row, left to right. Used for labels and sentences. */
@@ -36,25 +29,10 @@ export const WHERE: Readonly<Record<RowPlace, string>> = {
   right: 'on the right',
 };
 
-/**
- * The engine's zones are what Shield Wall asks for on the wire. In a row of three each zone is one
- * creature: `front` is the left creature, `middle` the one in the middle and `back` the right one.
- */
-export const DUNGEON_ZONES: readonly Zone[] = ['front', 'middle', 'back'];
-export const DUNGEON_ZONE_NAMES: Readonly<Record<Zone, string>> = {
-  front: 'Left creature',
-  middle: 'Middle creature',
-  back: 'Right creature',
-};
-export const DUNGEON_ELEMENTS: readonly Element[] = ['tide', 'ember', 'grove', 'spark'];
-
 /** The creature in each place of the row, left to right; null for an empty place. */
 export type Slots = readonly [string | null, string | null, string | null];
 
 export const EMPTY_SLOTS: Slots = [null, null, null];
-
-/** The highest round a player can ask an ability to fire in: the longest room (the room boss). */
-export const MAX_FIRE_ROUND: number = Math.max(...dungeonContent.foes.map((f) => f.rounds));
 
 const TEAM_SIZE = RULES.dungeon.teamSize;
 
@@ -153,7 +131,7 @@ export function reduceTap(slots: Slots, selected: Selection, tap: Tap): TapResul
   if (occupant === undefined) return { slots, selected, hint: 'That place does not exist.' };
   if (selected === null) {
     if (occupant === null) {
-      return { slots, selected, hint: 'Tap one of your creatures first, then a place in the row.' };
+      return { slots, selected, hint: 'Tap one of your creatures first, then a slot.' };
     }
     return { slots, selected: occupant, hint: null };
   }
@@ -227,164 +205,16 @@ export function slotStatuses(
   return map;
 }
 
-// --- What the order means ---
-
-/** The turn orders a room can make everybody follow, in words. */
-const ORDER_WORDS: Readonly<Record<TurnOrder, string>> = {
-  left_to_right: 'left to right',
-  right_to_left: 'right to left',
-  speed: 'fastest first',
-};
-
-/**
- * The lines under the row that say what the order of the team means: the foe's attack and the
- * Guard, then a line for every room of the day whose modifier fixes the turn order (the foes of a
- * room are not known until the run, so a modifier is all there is to show beforehand).
- */
-export function rowNotes(
-  modifiers: readonly Pick<DungeonModifier, 'room' | 'id' | 'name'>[],
-): string[] {
-  const notes = [
-    "The foe's plain attack goes for the left creature first. A Guard covers the creatures beside it, so it likes the middle.",
-    'Each foe acts in its own order: left to right, right to left or fastest first. You see which in every room.',
-  ];
-  for (const m of modifiers) {
-    const order = roomModifier(m.id)?.effects.find((e) => e.op === 'turn_order');
-    if (order?.op !== 'turn_order') continue;
-    const total = modifiers.length;
-    const where = m.room === total - 1 ? 'The room boss' : `Room ${String(m.room + 1)}`;
-    notes.push(
-      `${where} has ${m.name}: everyone acts ${ORDER_WORDS[order.order]}, so the order of your row is the turn order.`,
-    );
-  }
-  return notes;
-}
-
-// --- Abilities ---
-
-/** What the player set for the run's abilities. `null` rounds mean "Auto": the ability's default round. */
-export interface AbilitySettings {
-  basicId: string;
-  basicRound: number | null;
-  /** For Shield Wall: the engine's zone, which in the row of three is one creature (see `DUNGEON_ZONE_NAMES`). */
-  zone: Zone;
-  /** For Re-mark. */
-  element: Element;
-  /** Fire round by creature id, for creature abilities; a missing id means Auto. */
-  creatureRounds: Readonly<Record<string, number | null>>;
-}
-
-export const DEFAULT_ABILITY_SETTINGS: AbilitySettings = {
-  basicId: 'rally',
-  basicRound: null,
-  zone: 'front',
-  element: 'tide',
-  creatureRounds: {},
-};
-
-/** The kinds of choice a basic ability asks for. */
-export function basicParams(abilityId: string): { zone: boolean; element: boolean } {
-  const def = content.finaleAbilities.find((a) => a.id === abilityId);
-  const ops = new Set(def?.effects.map((e) => e.op) ?? []);
-  return { zone: ops.has('shield_wall'), element: ops.has('re_mark') };
-}
-
-/**
- * True for a basic ability that does nothing in the dungeon: Purge removes a boss's Phase 2
- * adaptation, and the dungeon's foes have none.
- */
-export function uselessInDungeon(abilityId: string): boolean {
-  const def = content.finaleAbilities.find((a) => a.id === abilityId);
-  return def !== undefined && def.effects.every((e) => e.op === 'purge');
-}
-
-/** The round an ability fires in on Auto, from the content; null when the content does not have it. */
-export function defaultRoundOf(abilityId: string): number | null {
-  return content.finaleAbilities.find((a) => a.id === abilityId)?.defaultRound ?? null;
-}
-
-/** A creature with an unlocked ability that stands in the team: the ones whose round can be set. */
-export interface CreatureAbilityChoice {
-  creatureId: string;
-  name: string;
-  abilityId: string;
-  round: number | null;
-}
-
-/** The unlocked creature abilities of the placed creatures, left to right. */
-export function creatureAbilityChoices(
-  slots: Slots,
-  creatures: readonly Creature[],
-  settings: AbilitySettings,
-  nameOf: (creature: Creature) => string,
-): CreatureAbilityChoice[] {
-  const out: CreatureAbilityChoice[] = [];
-  for (const id of slots) {
-    const creature = creatures.find((c) => c.id === id);
-    if (creature?.ability?.unlocked !== true) continue;
-    out.push({
-      creatureId: creature.id,
-      name: nameOf(creature),
-      abilityId: creature.ability.id,
-      round: settings.creatureRounds[creature.id] ?? null,
-    });
-  }
-  return out;
-}
-
-/** The choices of a fire-round list: Auto, then rounds 1 to the longest room. */
-export function roundOptions(): { value: number | null; label: string }[] {
-  return [
-    { value: null, label: 'Auto' },
-    ...Array.from({ length: MAX_FIRE_ROUND }, (_, i) => ({
-      value: i + 1,
-      label: `Round ${String(i + 1)}`,
-    })),
-  ];
-}
-
-/** Reads a select's value back into a round: "" is Auto; anything outside the list is Auto too. */
-export function parseRound(value: string): number | null {
-  if (value === '') return null;
-  const n = Number(value);
-  return Number.isInteger(n) && n >= 1 && n <= MAX_FIRE_ROUND ? n : null;
-}
-
 // --- The request ---
 
-/**
- * The body of `POST /api/dungeon/run`, or null when the team is not complete. Only rounds the
- * player set are sent for creature abilities (the rest fire on Auto), and a zone or element only
- * for the ability that asks for it. The key is the caller's.
- */
-export function buildRunRequest(
-  slots: Slots,
-  creatures: readonly Creature[],
-  settings: AbilitySettings,
-  idempotencyKey: string,
-): DungeonRunRequest | null {
+/** The body of `POST /api/dungeon/run`, or null when the team is not complete. The key is the caller's. */
+export function buildRunRequest(slots: Slots, idempotencyKey: string): DungeonRunRequest | null {
   if (!isComplete(slots)) return null;
   const [a, b, c] = slots as readonly [string, string, string];
-  const params = basicParams(settings.basicId);
-  const chosen = creatureAbilityChoices(slots, creatures, settings, (x) => x.id).filter(
-    (x) => x.round !== null,
-  );
-  return {
-    team: [a, b, c],
-    abilities: {
-      basic: {
-        abilityId: settings.basicId,
-        fireAtRound: settings.basicRound,
-        ...(params.zone ? { zone: settings.zone } : {}),
-        ...(params.element ? { element: settings.element } : {}),
-      },
-      creatures: chosen.map((x) => ({ creatureId: x.creatureId, fireAtRound: x.round })),
-    },
-    idempotencyKey,
-  };
+  return { team: [a, b, c], idempotencyKey };
 }
 
 /** The part of a request that decides what the server does: a different one needs a different key. */
 export function requestSignature(request: Omit<DungeonRunRequest, 'idempotencyKey'>): string {
-  return JSON.stringify([request.team, request.abilities]);
+  return JSON.stringify(request.team);
 }

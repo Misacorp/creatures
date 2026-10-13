@@ -63,7 +63,7 @@ These are the rules as the engine implements them; keep them exact.
   - Monday 13:37: the boss reveal.
   - Friday and Saturday 13:37: Phases 1 and 2.
   - Sunday 20:00: the live finale (countdown, then rounds). All times in the guild's timezone.
-  - The Boss Rank goes up by 1 on a normal-week win and stays the same on a loss. Each Rank adds 40% boss HP (compounding).
+  - The Boss Rank goes up by 1 on a normal-week win and stays the same on a loss. Each Rank makes the boss stronger (the text gives no number: Misa, 2026-10-13).
   - Every 5th week is a Festival: the boss fights 3 Ranks lower, Essence pays +50%, a Festival win gives +0 Rank, and after any Festival the Rank eases by 1.
   - Jackpot and pity stay hidden from players (Misa).
 - **Expeditions, training, evolution and fusion:** a short version of `m2-collection.md`, plus expeditions v2 when it ships.

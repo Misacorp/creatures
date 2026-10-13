@@ -405,7 +405,8 @@ describe('POST /api/dungeon/run', () => {
         ]);
         // The creature ability keys follow the row, too.
         const keys = input.abilities.map((x) => x.key);
-        expect(keys[0]).toBe('p1:basic');
+        expect(keys).toEqual(['p1:c0', 'p1:c1', 'p1:c2']);
+        expect(input.abilities.map((x) => x.creatureId)).toEqual([c, a, b]);
       },
       opts(),
     );
@@ -496,65 +497,19 @@ describe('POST /api/dungeon/run', () => {
         await refuse({ team: [a, b, '00000000-0000-4000-8000-000000000000'] }, 404, 'not_found');
         // Not an id at all.
         await refuse({ team: [a, b, 'not-a-uuid'] }, 400, 'invalid_body');
-        // Bad abilities: an unknown basic ability, a zone on Rally, a creature ability nobody has.
-        await refuse(
-          { abilities: { basic: { abilityId: 'no-such', fireAtRound: null }, creatures: [] } },
-          400,
-          'invalid_body',
-        );
-        await refuse(
-          {
-            abilities: {
-              basic: { abilityId: 'rally', fireAtRound: null, zone: 'front' },
-              creatures: [],
-            },
-          },
-          400,
-          'invalid_abilities',
-        );
-        await refuse(
-          {
-            abilities: {
-              basic: { abilityId: 'shield-wall', fireAtRound: null, element: 'tide' },
-              creatures: [],
-            },
-          },
-          400,
-          'invalid_abilities',
-        );
-        await refuse(
-          {
-            abilities: {
-              basic: { abilityId: 'rally', fireAtRound: 99 },
-              creatures: [],
-            },
-          },
-          400,
-          'invalid_body',
-        );
-        await refuse(
-          {
-            abilities: {
-              basic: { abilityId: 'rally', fireAtRound: null },
-              creatures: [{ creatureId: other.creatureIds[0] as string, fireAtRound: 2 }],
-            },
-          },
-          400,
-          'invalid_abilities',
-        );
-        await refuse(
-          {
-            abilities: {
-              basic: { abilityId: 'rally', fireAtRound: null },
-              creatures: [
-                { creatureId: a, fireAtRound: 2 },
-                { creatureId: a, fireAtRound: 3 },
-              ],
-            },
-          },
-          400,
-          'invalid_abilities',
-        );
+        // The old ability choices are gone: a body that still carries `abilities` is not the strict shape.
+        for (const abilities of [
+          { basic: { abilityId: 'rally', fireAtRound: null }, creatures: [] },
+          { basic: { abilityId: 'shield-wall', fireAtRound: 2, zone: 'front' }, creatures: [] },
+          { creatures: [{ creatureId: a, fireAtRound: 2 }] },
+          {},
+        ]) {
+          const old = await p.call('POST', '/api/dungeon/run', { ...p.body(), abilities });
+          expect({ status: old.status, error: old.body['error'] }).toEqual({
+            status: 400,
+            error: 'invalid_body',
+          });
+        }
         // A key that is not a key.
         await refuse({ idempotencyKey: 'short' }, 400, 'invalid_body');
 
@@ -1425,55 +1380,38 @@ describe('gear in the dungeon', () => {
 });
 
 describe('abilities', () => {
-  it('puts the basic ability and every unlocked creature ability into the run, with the chosen rounds', async () => {
+  it('puts every unlocked creature ability into the run at its default round, with no basic ability', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         const [a, b, c] = p.creatureIds as [string, string, string];
-        const res = await p.run({
-          abilities: {
-            basic: { abilityId: 'shield-wall', fireAtRound: 1, zone: 'front' },
-            creatures: [{ creatureId: b, fireAtRound: 3 }],
-          },
-        });
+        // A deep run, so that the rooms last long enough for the default rounds to come.
+        setProgress(ctx, p.id, { depth: 30 });
+        const res = await p.run();
         expect(res.status).toBe(200);
         const input = JSON.parse(storedRuns(ctx, p.id)[0]?.input_json ?? '{}') as DungeonRunInput;
-        const basic = input.abilities.find((x) => x.key === 'p1:basic');
-        expect(basic).toMatchObject({
-          abilityId: 'shield-wall',
-          fireAtRound: 1,
-          params: { zone: 'front' },
-        });
-        // All three of the level 30 creatures have an unlocked ability; only b has a chosen round.
-        const creatureChoices = input.abilities.filter((x) => x.creatureId !== undefined);
-        expect(creatureChoices.map((x) => x.creatureId)).toEqual([a, b, c]);
-        expect(creatureChoices.map((x) => x.fireAtRound)).toEqual([undefined, 3, undefined]);
+        // All three of the level 30 creatures have an unlocked ability, and none has a chosen round.
+        expect(input.abilities.map((x) => x.creatureId)).toEqual([a, b, c]);
+        expect(input.abilities.every((x) => x.fireAtRound === undefined)).toBe(true);
+        expect(input.abilities.some((x) => x.key === 'p1:basic')).toBe(false);
         const replay = (await p.replay(res.body.run.id)).body;
-        const fired = replay.rooms[0]?.events.filter((e) => e.t === 'ability') ?? [];
+        const fired = replay.rooms.flatMap((room) => room.events.filter((e) => e.t === 'ability'));
         expect(fired.length).toBeGreaterThan(0);
       },
       opts(),
     );
   });
 
-  it('leaves a creature below the unlock level without an ability, and refuses to set one', async () => {
+  it('leaves a creature below the unlock level without an ability', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, { level: 5 });
-        const res = await p.run({
-          abilities: {
-            basic: { abilityId: 'rally', fireAtRound: null },
-            creatures: [{ creatureId: p.creatureIds[0] as string, fireAtRound: 2 }],
-          },
-        });
-        expect(res.status).toBe(400);
-        expect(res.body.error).toBe('invalid_abilities');
         const ok = await p.run();
         expect(ok.status).toBe(200);
         const input = JSON.parse(storedRuns(ctx, p.id)[0]?.input_json ?? '{}') as DungeonRunInput;
-        expect(input.abilities.map((x) => x.key)).toEqual(['p1:basic']);
+        expect(input.abilities).toEqual([]);
       },
       opts(),
     );

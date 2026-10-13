@@ -242,12 +242,29 @@ describe('the glossary text matches the rules', () => {
   it('describes the roles with the real numbers', () => {
     expect(text('role-guard')).toContain(percent(RULES.combat.guardHpBp));
     expect(text('role-support')).toContain(percent(RULES.combat.supportBuffBp));
-    for (const r of content.reactions) {
-      expect(text('role-payoff')).toContain(percent(r.payoffBonusBp - 10_000));
-    }
   });
 
-  it('describes each mark and reaction with its own elements, names and multiplier', () => {
+  it('says it in words, not numbers, for reactions, Payoff and Boss Rank (Misa, 2026-10-13)', () => {
+    // The text must not pin a number that RULES or the content could change under it.
+    const noNumber = (s: string): void => {
+      expect(s).not.toMatch(/\d/);
+    };
+    expect(text('role-payoff')).toContain('hits even harder when it sets off a reaction');
+    noNumber(text('role-payoff'));
+    for (const r of content.reactions) {
+      const reaction = text(GLOSSARY_IDS.reaction(r.id));
+      expect(reaction).toContain('deals much more damage');
+      noNumber(reaction);
+      expect(reaction).not.toContain(percent(r.payoffBonusBp - 10_000));
+      expect(reaction).not.toContain(`${String(r.multiplierBp / 10_000)} times`);
+    }
+    expect(text('boss-rank')).toContain('Each Rank makes the boss stronger');
+    expect(text('boss-rank')).not.toContain(percent(RULES.raid.scaling.rankStepBp));
+    // The Rank line has no figure; "goes up by 1" is a rank count, which is not a stat.
+    expect(text('boss-rank').replace(/goes up by \d+/, '')).not.toMatch(/\d/);
+  });
+
+  it('describes each mark and reaction with its own elements and names', () => {
     const name = (id: string): string => content.elements.find((e) => e.id === id)?.name ?? '?';
     for (const r of content.reactions) {
       const mark = text(GLOSSARY_IDS.mark(r.markId));
@@ -259,8 +276,6 @@ describe('the glossary text matches the rules', () => {
       expect(reaction).toContain(r.name);
       expect(reaction).toContain(r.markName);
       expect(reaction).toContain(name(r.triggerElement));
-      expect(reaction).toContain(`${String(r.multiplierBp / 10_000)} times`);
-      expect(reaction).toContain(percent(r.payoffBonusBp - 10_000));
     }
   });
 
@@ -273,7 +288,6 @@ describe('the glossary text matches the rules', () => {
     expect(luck.bossCritBp).toBe(luck.critBp);
 
     const p = RULES.progression;
-    expect(text('boss-rank')).toContain(percent(RULES.raid.scaling.rankStepBp));
     expect(text('boss-rank')).toContain(`goes up by ${String(p.winRankUp)}`);
     const festival = text('festival');
     expect(festival).toContain(`Every ${String(p.seasonWeeks)}th`);
@@ -371,9 +385,19 @@ describe('the How to play text', () => {
     const reaction = content.reactions.find((r) => r.markElement === a?.element);
     expect(b?.element).toBe(reaction?.triggerElement);
     expect(howToPlayJson.example.lines.join(' ')).toContain(reaction?.name ?? '?');
-    expect(howToPlayJson.example.lines.join(' ')).toContain(
-      String(reaction === undefined ? 0 : reaction.multiplierBp / 10_000),
-    );
+    // Words, not numbers (Misa, 2026-10-13): the example does not pin the multiplier.
+    expect(howToPlayJson.example.lines.join(' ')).toContain('much more damage');
+    expect(howToPlayJson.example.lines.join(' ')).not.toMatch(/\d/);
+  });
+
+  it('keeps the multipliers, the Payoff bonus and the Rank step out of How to play', () => {
+    const combos = howToPlayJson.sections.find((s) => s.id === 'combos')?.lines.join(' ') ?? '';
+    const ranks = howToPlayJson.sections.find((s) => s.id === 'ranks')?.lines.join(' ') ?? '';
+    expect(combos).toContain('deals much more damage');
+    expect(combos).toContain('Payoffs hit even harder');
+    expect(combos).not.toMatch(/\d/);
+    expect(ranks).toContain('Each Rank makes the boss stronger');
+    expect(ranks).not.toContain(percent(RULES.raid.scaling.rankStepBp));
   });
 
   it('rejects a wrong order, a wrong example and a bad shape', () => {

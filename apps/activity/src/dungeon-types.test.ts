@@ -41,8 +41,10 @@ describe('the dungeon types', () => {
   it('has request bodies of the type, and error codes the types know', () => {
     const body = requests['dungeon-run-cleared'].body as unknown as DungeonRunRequest;
     expect(body.team).toHaveLength(3);
-    expect(Object.keys(body).sort()).toEqual(['abilities', 'idempotencyKey', 'team']);
+    expect(Object.keys(body).sort()).toEqual(['idempotencyKey', 'team']);
     expect(new Set(body.team).size).toBe(3);
+    // The ability choices are gone with their error code.
+    expect(Object.keys(DUNGEON_ERRORS)).not.toContain('invalid_abilities');
     for (const e of errors) {
       expect(Object.keys(DUNGEON_ERRORS), e.body.error).toContain(e.body.error);
       expect(DUNGEON_ERRORS[e.body.error as keyof typeof DUNGEON_ERRORS]).toBe(e.status);

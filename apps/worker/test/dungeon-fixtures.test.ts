@@ -135,6 +135,9 @@ describe('the dungeon fixtures match what the server sends', () => {
       expect(JSON.stringify(fixture)).not.toContain('formation');
     }
     expect(codes0(dungeonErrors)).not.toContain('invalid_formation');
+    expect(codes0(dungeonErrors)).not.toContain('invalid_abilities');
+    // The request has no ability choice any more.
+    expect(JSON.stringify(dungeonRequests)).not.toContain('abilities');
     // Errors the client has to write text for.
     const codes = new Set(codes0(dungeonErrors));
     for (const code of [
@@ -143,7 +146,6 @@ describe('the dungeon fixtures match what the server sends', () => {
       'duplicate_creature',
       'not_found',
       'invalid_body',
-      'invalid_abilities',
       'invalid_id',
     ]) {
       expect(codes.has(code), code).toBe(true);

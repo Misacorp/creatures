@@ -80,7 +80,7 @@
     "title": "Payoff",
     "short": "Hits reactions harder.",
     "lines": [
-      "A Payoff that sets off a reaction deals 10% more.",
+      "A Payoff hits even harder when it sets off a reaction.",
       "Any role can set off a reaction. Payoffs do it best.",
       "Put it after a Setter that leaves the right mark."
     ],
@@ -189,12 +189,12 @@
   {
     "id": "reaction-overload",
     "title": "Overload",
-    "short": "Spark on Soaked: 4.5 times damage.",
+    "short": "Spark on Soaked: deals much more damage.",
     "lines": [
       "A Spark hit on a Soaked boss sets it off.",
-      "It deals 4.5 times the normal damage.",
+      "It deals much more damage than a normal hit.",
       "It uses up the mark. The next hit leaves a new one.",
-      "Any role can set it off. Payoffs deal 10% more."
+      "Any role can set it off. Payoffs hit even harder."
     ],
     "visual": {
       "kind": "reaction",
@@ -205,12 +205,12 @@
   {
     "id": "reaction-grounding",
     "title": "Grounding",
-    "short": "Grove on Charged: 4.5 times damage.",
+    "short": "Grove on Charged: deals much more damage.",
     "lines": [
       "A Grove hit on a Charged boss sets it off.",
-      "It deals 4.5 times the normal damage.",
+      "It deals much more damage than a normal hit.",
       "It uses up the mark. The next hit leaves a new one.",
-      "Any role can set it off. Payoffs deal 10% more."
+      "Any role can set it off. Payoffs hit even harder."
     ],
     "visual": {
       "kind": "reaction",
@@ -221,12 +221,12 @@
   {
     "id": "reaction-wildfire",
     "title": "Wildfire",
-    "short": "Ember on Overgrown: 4.5 times damage.",
+    "short": "Ember on Overgrown: deals much more damage.",
     "lines": [
-      "A Ember hit on a Overgrown boss sets it off.",
-      "It deals 4.5 times the normal damage.",
+      "An Ember hit on an Overgrown boss sets it off.",
+      "It deals much more damage than a normal hit.",
       "It uses up the mark. The next hit leaves a new one.",
-      "Any role can set it off. Payoffs deal 10% more."
+      "Any role can set it off. Payoffs hit even harder."
     ],
     "visual": {
       "kind": "reaction",
@@ -237,12 +237,12 @@
   {
     "id": "reaction-steam",
     "title": "Steam",
-    "short": "Tide on Scorched: 4.5 times damage.",
+    "short": "Tide on Scorched: deals much more damage.",
     "lines": [
       "A Tide hit on a Scorched boss sets it off.",
-      "It deals 4.5 times the normal damage.",
+      "It deals much more damage than a normal hit.",
       "It uses up the mark. The next hit leaves a new one.",
-      "Any role can set it off. Payoffs deal 10% more."
+      "Any role can set it off. Payoffs hit even harder."
     ],
     "visual": {
       "kind": "reaction",
@@ -520,7 +520,7 @@
     "title": "Boss Rank",
     "short": "How tough this week's boss is.",
     "lines": [
-      "Each Rank adds 40% more boss HP. Its Attack grows too.",
+      "Each Rank makes the boss stronger.",
       "Win a normal week's finale and the Rank goes up by 1.",
       "Lose and the Rank stays the same.",
       "Higher Ranks pay more Essence."

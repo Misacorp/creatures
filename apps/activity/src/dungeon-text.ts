@@ -18,8 +18,6 @@ export const DUNGEON_ERROR_TEXT: Readonly<Record<DungeonErrorCode, string>> = {
   invalid_body:
     'The server did not understand that run. Close and reopen the Activity if it keeps happening.',
   duplicate_creature: 'Pick three different creatures.',
-  invalid_abilities:
-    'One of your ability choices is not allowed. Check the basic ability and the rounds you set.',
   invalid_id: 'That run could not be found. Close and reopen the Activity.',
   not_found:
     'One of those creatures, or that run, could not be found. The screen was out of date, so it was refreshed.',
@@ -68,34 +66,7 @@ export function isRetryOffer(
   );
 }
 
-export const RETRY_TEXT =
-  'Your first run was lost. On your first day you get one more try, free. Pick your team again or change it.';
-
-/** "Depth 4" or "Depth 7, a landmark". */
-export function depthLine(today: Pick<DungeonToday, 'depth' | 'landmark'>): string {
-  return today.landmark
-    ? `Depth ${String(today.depth)}, a landmark`
-    : `Depth ${String(today.depth)}`;
-}
-
-/**
- * The next landmark at or after a depth (every 7th), and how many depths away it is, for the marker
- * on the pre-run screen. At a landmark itself the distance is 0.
- */
-export function nextLandmark(
-  depth: number,
-  every: number = RULES.dungeon.landmarkEvery,
-): { depth: number; away: number } {
-  const at = Math.max(1, Math.ceil(Math.max(1, depth) / every)) * every;
-  return { depth: at, away: at - Math.max(1, depth) };
-}
-
-/** The line next to the landmark marker: "Landmark in 3 depths (depth 7)". */
-export function landmarkLine(depth: number): string {
-  const { depth: at, away } = nextLandmark(depth);
-  if (away === 0) return 'This depth is a landmark: a full clear drops gear for certain.';
-  return `Next landmark: depth ${String(at)}, ${String(away)} ${away === 1 ? 'depth' : 'depths'} away.`;
-}
+export const RETRY_TEXT = 'Your first run was lost. You get one more try today, free.';
 
 /** How many days in a row, in words. */
 export function streakLine(streak: number): string {
