@@ -2,7 +2,11 @@ import { GlossaryTag } from './Glossary';
 import { LootList } from './GearLoot';
 import { glyphOrUnknown } from './glyphs';
 import { usePrefersReducedMotion } from './hooks';
-import { RevealStage, useRevealFrame } from './Reveal';
+import { useRevealFrame } from './Reveal';
+import { PartCount } from './GearArt';
+import { RewardPile } from './RewardPile';
+import { rewardPileItems } from './reward-pile';
+import { partName, partsEntries } from './gear-view';
 import {
   noRewards,
   rewardLoot,
@@ -20,6 +24,20 @@ import type { DungeonRunSummary } from './dungeon-types';
 import { SmallCreature } from './SmallCreature';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
+
+/** The pile in words: "Rewards: Scrap, Essence, Bait". */
+function pileLabel(rewards: DungeonRunSummary['rewards']): string {
+  const kinds = rewardPileItems(rewards).map((i) =>
+    i.icon.kind === 'part'
+      ? partName(i.icon.part)
+      : i.icon.kind === 'gear'
+        ? 'Gear'
+        : i.key === 'essence'
+          ? 'Essence'
+          : 'Bait',
+  );
+  return `Rewards: ${kinds.join(', ')}`;
+}
 
 /** A room panel's picture is 64 px (a foe) or 72 px (a room boss), so three fit a 390 px phone. */
 const PANEL_SCALE = { foe: 4, boss: 3 } as const;
@@ -55,9 +73,9 @@ interface Props {
 }
 
 /**
- * The end of a run: cleared or not, what it did to the depth, the three rooms, and the rewards. An
- * orb opens first (the finale's reveal) and the gear then pops in; Bait and Essence are icons with
- * numbers and parts use the Workshop's part icons. "Watch again" plays the run once more from the
+ * The end of a run: cleared or not, what it did to the depth, the rewards first (a small pile with
+ * one icon for each kind earned, and the counts right beside it: the Essence counts up, and the gear
+ * then pops in), then the three rooms and the team. "Watch again" plays the run once more from the
  * server's stored events. All names are drawn as text.
  */
 export function DungeonResults({ run, canRetry, busy, error, onWatch, onRetry }: Props) {
@@ -95,26 +113,33 @@ export function DungeonResults({ run, canRetry, busy, error, onWatch, onRetry }:
         <p class="muted">Nothing this time. Clear a room to earn Bait, Essence and parts.</p>
       ) : (
         <>
-          <RevealStage frame={frame} />
-          <ul class="loot-parts dungeon-rewards" aria-label="Bait and Essence">
-            {rewards.bait > 0 && (
-              <li>
-                <RewardCount glyph="bait" amount={rewards.bait} label="Bait" entry="bait" />
-              </li>
-            )}
-            {rewards.essence > 0 && (
-              <li>
-                <RewardCount
-                  glyph="gem"
-                  amount={done ? rewards.essence : frame.count}
-                  label="Essence"
-                  entry="essence"
-                />
-              </li>
-            )}
-          </ul>
+          <div class="reward-row">
+            <RewardPile source={rewards} label={pileLabel(rewards)} />
+            <ul class="reward-badges" aria-label="Bait, Essence and parts">
+              {rewards.bait > 0 && (
+                <li>
+                  <RewardCount glyph="bait" amount={rewards.bait} label="Bait" entry="bait" />
+                </li>
+              )}
+              {rewards.essence > 0 && (
+                <li>
+                  <RewardCount
+                    glyph="gem"
+                    amount={done ? rewards.essence : frame.count}
+                    label="Essence"
+                    entry="essence"
+                  />
+                </li>
+              )}
+              {partsEntries(rewards.parts).map((p) => (
+                <li key={p.kind}>
+                  <PartCount kind={p.kind} amount={p.amount} />
+                </li>
+              ))}
+            </ul>
+          </div>
           <div class={done ? 'reveal-gear-box done' : 'reveal-gear-box'}>
-            <LootList loot={loot} label="Loot from the dungeon" />
+            <LootList loot={{ ...loot, parts: {} }} label="Loot from the dungeon" />
             {bonus !== null && <LootList loot={bonus} label="Streak bonus" />}
             {streakBonusText(rewards) !== null && (
               <p class="muted">
