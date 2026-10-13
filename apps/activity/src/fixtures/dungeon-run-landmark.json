@@ -1,0 +1,299 @@
+{
+  "run": {
+    "id": "d5f7ee86-e467-4795-9f06-4fb17c7e8f55",
+    "day": "2027-01-12",
+    "attempt": 1,
+    "depth": 7,
+    "newDepth": 8,
+    "cleared": true,
+    "roomsCleared": 3,
+    "landmark": true,
+    "streak": 3,
+    "createdAt": 1799733600000,
+    "team": [
+      {
+        "id": "56651a01-2f99-406e-b65c-0443f246ea17",
+        "name": "Tidewing",
+        "speciesId": "tidewing",
+        "element": "tide",
+        "role": "setter",
+        "level": 30,
+        "zone": "front",
+        "hpMax": 476,
+        "hpEnd": 115
+      },
+      {
+        "id": "fa7e9f44-86db-4aaa-a97a-f2abf98e8956",
+        "name": "Pyrelynx",
+        "speciesId": "pyrelynx",
+        "element": "ember",
+        "role": "payoff",
+        "level": 30,
+        "zone": "middle",
+        "hpMax": 395,
+        "hpEnd": 395
+      },
+      {
+        "id": "1b8ebe03-af07-47c2-b2f7-609c0f68faf5",
+        "name": "Thornbuck",
+        "speciesId": "thornbuck",
+        "element": "grove",
+        "role": "guard",
+        "level": 30,
+        "zone": "back",
+        "hpMax": 856,
+        "hpEnd": 856
+      }
+    ],
+    "rooms": [
+      {
+        "index": 0,
+        "kind": "foe",
+        "foe": {
+          "id": "puddle-imp",
+          "name": "Puddle Imp",
+          "element": "tide",
+          "hpMax": 1311
+        },
+        "modifier": {
+          "id": "dark",
+          "name": "Dark",
+          "description": "Your creatures crit 5 points more often."
+        },
+        "played": true,
+        "cleared": true,
+        "rounds": 4,
+        "foeHpEnd": 0
+      },
+      {
+        "index": 1,
+        "kind": "foe",
+        "foe": {
+          "id": "ash-sprite",
+          "name": "Ash Sprite",
+          "element": "ember",
+          "hpMax": 1008
+        },
+        "modifier": {
+          "id": "brittle",
+          "name": "Brittle",
+          "description": "The foe has 20% less HP but hits 25% harder."
+        },
+        "played": true,
+        "cleared": true,
+        "rounds": 2,
+        "foeHpEnd": 0
+      },
+      {
+        "index": 2,
+        "kind": "boss",
+        "foe": {
+          "id": "drowned-warden",
+          "name": "Drowned Warden",
+          "element": "tide",
+          "hpMax": 2118
+        },
+        "modifier": {
+          "id": "thorns",
+          "name": "Thorns",
+          "description": "The foe turns the first reaction of each round back on your team."
+        },
+        "played": true,
+        "cleared": true,
+        "rounds": 6,
+        "foeHpEnd": 0
+      }
+    ],
+    "rewards": {
+      "bait": 3,
+      "essence": 3,
+      "parts": {
+        "scrap": 3,
+        "tide-shard": 1,
+        "glimmer": 1
+      },
+      "gear": [
+        {
+          "id": "fc25b7dc-6b49-4417-8159-85b83ec7f15d",
+          "baseId": "keen-trinket",
+          "rarity": "rare"
+        }
+      ],
+      "converted": [],
+      "landmark": true,
+      "streak": {
+        "day": 3,
+        "bait": 0,
+        "essence": 0,
+        "parts": {
+          "scrap": 1
+        }
+      }
+    }
+  },
+  "today": {
+    "serverNow": 1799733600000,
+    "day": "2027-01-12",
+    "timezone": "Europe/Helsinki",
+    "resetsAt": 1799791200000,
+    "depth": 8,
+    "landmark": false,
+    "streak": 3,
+    "modifiers": [
+      {
+        "room": 0,
+        "id": "dark",
+        "name": "Dark",
+        "description": "Your creatures crit 5 points more often."
+      },
+      {
+        "room": 1,
+        "id": "brittle",
+        "name": "Brittle",
+        "description": "The foe has 20% less HP but hits 25% harder."
+      },
+      {
+        "room": 2,
+        "id": "thorns",
+        "name": "Thorns",
+        "description": "The foe turns the first reaction of each round back on your team."
+      }
+    ],
+    "attemptsToday": 1,
+    "attemptsAllowed": 1,
+    "canRun": false,
+    "blocked": "already_run",
+    "last": {
+      "id": "d5f7ee86-e467-4795-9f06-4fb17c7e8f55",
+      "day": "2027-01-12",
+      "attempt": 1,
+      "depth": 7,
+      "newDepth": 8,
+      "cleared": true,
+      "roomsCleared": 3,
+      "landmark": true,
+      "streak": 3,
+      "createdAt": 1799733600000,
+      "team": [
+        {
+          "id": "56651a01-2f99-406e-b65c-0443f246ea17",
+          "name": "Tidewing",
+          "speciesId": "tidewing",
+          "element": "tide",
+          "role": "setter",
+          "level": 30,
+          "zone": "front",
+          "hpMax": 476,
+          "hpEnd": 115
+        },
+        {
+          "id": "fa7e9f44-86db-4aaa-a97a-f2abf98e8956",
+          "name": "Pyrelynx",
+          "speciesId": "pyrelynx",
+          "element": "ember",
+          "role": "payoff",
+          "level": 30,
+          "zone": "middle",
+          "hpMax": 395,
+          "hpEnd": 395
+        },
+        {
+          "id": "1b8ebe03-af07-47c2-b2f7-609c0f68faf5",
+          "name": "Thornbuck",
+          "speciesId": "thornbuck",
+          "element": "grove",
+          "role": "guard",
+          "level": 30,
+          "zone": "back",
+          "hpMax": 856,
+          "hpEnd": 856
+        }
+      ],
+      "rooms": [
+        {
+          "index": 0,
+          "kind": "foe",
+          "foe": {
+            "id": "puddle-imp",
+            "name": "Puddle Imp",
+            "element": "tide",
+            "hpMax": 1311
+          },
+          "modifier": {
+            "id": "dark",
+            "name": "Dark",
+            "description": "Your creatures crit 5 points more often."
+          },
+          "played": true,
+          "cleared": true,
+          "rounds": 4,
+          "foeHpEnd": 0
+        },
+        {
+          "index": 1,
+          "kind": "foe",
+          "foe": {
+            "id": "ash-sprite",
+            "name": "Ash Sprite",
+            "element": "ember",
+            "hpMax": 1008
+          },
+          "modifier": {
+            "id": "brittle",
+            "name": "Brittle",
+            "description": "The foe has 20% less HP but hits 25% harder."
+          },
+          "played": true,
+          "cleared": true,
+          "rounds": 2,
+          "foeHpEnd": 0
+        },
+        {
+          "index": 2,
+          "kind": "boss",
+          "foe": {
+            "id": "drowned-warden",
+            "name": "Drowned Warden",
+            "element": "tide",
+            "hpMax": 2118
+          },
+          "modifier": {
+            "id": "thorns",
+            "name": "Thorns",
+            "description": "The foe turns the first reaction of each round back on your team."
+          },
+          "played": true,
+          "cleared": true,
+          "rounds": 6,
+          "foeHpEnd": 0
+        }
+      ],
+      "rewards": {
+        "bait": 3,
+        "essence": 3,
+        "parts": {
+          "scrap": 3,
+          "tide-shard": 1,
+          "glimmer": 1
+        },
+        "gear": [
+          {
+            "id": "fc25b7dc-6b49-4417-8159-85b83ec7f15d",
+            "baseId": "keen-trinket",
+            "rarity": "rare"
+          }
+        ],
+        "converted": [],
+        "landmark": true,
+        "streak": {
+          "day": 3,
+          "bait": 0,
+          "essence": 0,
+          "parts": {
+            "scrap": 1
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "serverNow": 1799733600000,
+  "day": "2027-01-12",
+  "timezone": "Europe/Helsinki",
+  "resetsAt": 1799791200000,
+  "depth": 7,
+  "landmark": true,
+  "streak": 2,
+  "modifiers": [
+    {
+      "room": 0,
+      "id": "dark",
+      "name": "Dark",
+      "description": "Your creatures crit 5 points more often."
+    },
+    {
+      "room": 1,
+      "id": "brittle",
+      "name": "Brittle",
+      "description": "The foe has 20% less HP but hits 25% harder."
+    },
+    {
+      "room": 2,
+      "id": "thorns",
+      "name": "Thorns",
+      "description": "The foe turns the first reaction of each round back on your team."
+    }
+  ],
+  "attemptsToday": 0,
+  "attemptsAllowed": 1,
+  "canRun": true,
+  "blocked": null,
+  "last": null
+}

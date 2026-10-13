@@ -1,0 +1,119 @@
+{
+  "dungeon-run-cleared": {
+    "path": "/api/dungeon/run",
+    "method": "POST",
+    "body": {
+      "team": [
+        "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+        "1f1cfd32-6a06-4a76-b571-493d3a538522",
+        "90449b1e-863f-4217-b128-eeebc88e85f2"
+      ],
+      "formation": ["front", "middle", "back"],
+      "abilities": {
+        "basic": {
+          "abilityId": "shield-wall",
+          "fireAtRound": 2,
+          "zone": "front"
+        },
+        "creatures": [
+          {
+            "creatureId": "90449b1e-863f-4217-b128-eeebc88e85f2",
+            "fireAtRound": 3
+          }
+        ]
+      },
+      "idempotencyKey": "dungeon-00000001-test"
+    }
+  },
+  "dungeon-replay": {
+    "path": "/api/dungeon/run/843c2bb6-80a1-4033-a9d0-9758671c75af",
+    "method": "GET",
+    "body": null
+  },
+  "dungeon-run-retry": {
+    "path": "/api/dungeon/run",
+    "method": "POST",
+    "body": {
+      "team": [
+        "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+        "1f1cfd32-6a06-4a76-b571-493d3a538522",
+        "90449b1e-863f-4217-b128-eeebc88e85f2"
+      ],
+      "formation": ["front", "middle", "back"],
+      "abilities": {
+        "basic": {
+          "abilityId": "shield-wall",
+          "fireAtRound": 2,
+          "zone": "front"
+        },
+        "creatures": [
+          {
+            "creatureId": "90449b1e-863f-4217-b128-eeebc88e85f2",
+            "fireAtRound": 3
+          }
+        ]
+      },
+      "idempotencyKey": "dungeon-00000001-test"
+    }
+  },
+  "dungeon-run-landmark": {
+    "path": "/api/dungeon/run",
+    "method": "POST",
+    "body": {
+      "team": [
+        "56651a01-2f99-406e-b65c-0443f246ea17",
+        "fa7e9f44-86db-4aaa-a97a-f2abf98e8956",
+        "1b8ebe03-af07-47c2-b2f7-609c0f68faf5"
+      ],
+      "formation": ["front", "middle", "back"],
+      "abilities": {
+        "basic": {
+          "abilityId": "rally",
+          "fireAtRound": null
+        },
+        "creatures": []
+      },
+      "idempotencyKey": "dungeon-00000009-test"
+    }
+  },
+  "dungeon-run-lost": {
+    "path": "/api/dungeon/run",
+    "method": "POST",
+    "body": {
+      "team": [
+        "1ba4be37-f3d6-4481-8cf0-898d325925bb",
+        "10e3739d-6467-4b3d-a760-7019539caf07",
+        "f3f75cf1-bb98-4c31-83cb-846858049e19"
+      ],
+      "formation": ["front", "middle", "back"],
+      "abilities": {
+        "basic": {
+          "abilityId": "rally",
+          "fireAtRound": null
+        },
+        "creatures": []
+      },
+      "idempotencyKey": "dungeon-00000010-test"
+    }
+  },
+  "dungeon-run-retry-attempt": {
+    "path": "/api/dungeon/run",
+    "method": "POST",
+    "body": {
+      "team": [
+        "1ba4be37-f3d6-4481-8cf0-898d325925bb",
+        "10e3739d-6467-4b3d-a760-7019539caf07",
+        "f3f75cf1-bb98-4c31-83cb-846858049e19"
+      ],
+      "formation": ["front", "middle", "back"],
+      "abilities": {
+        "basic": {
+          "abilityId": "rally",
+          "fireAtRound": null
+        },
+        "creatures": []
+      },
+      "idempotencyKey": "dungeon-00000011-test"
+    }
+  }
+}
