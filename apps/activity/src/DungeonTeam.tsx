@@ -7,7 +7,6 @@ import {
   placedCount,
   reduceTap,
   resolveDrop,
-  rowNotes,
   slotIndexOf,
   slotStatuses,
   unplace,
@@ -15,8 +14,7 @@ import {
   type Slots,
   type Tap,
 } from './dungeon-team';
-import type { DungeonModifier } from './dungeon-types';
-import { capitalize, creatureName, elementName, getSpecies, speciesName } from './game';
+import { capitalize, creatureName, getSpecies, speciesName } from './game';
 import { CANCEL_ANNOUNCEMENT, pickUpAnnouncement, type DropOutcome } from './raid-dnd';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
@@ -30,8 +28,6 @@ interface Props {
   /** All the player's creatures, strongest first. */
   creatures: readonly Creature[];
   slots: Slots;
-  /** Today's room modifiers, for the notes on what the order means (Fog fixes the turn order). */
-  modifiers: readonly DungeonModifier[];
   selected: Selection;
   hint: string | null;
   /** True while the run is being sent. */
@@ -136,11 +132,7 @@ export function DungeonTeam(props: Props) {
 
   return (
     <div onKeyDown={onKeyDown}>
-      <h4 id="dungeon-zones-heading">Your team, left to right</h4>
-      <p class="muted">
-        Three creatures in one row. Drag a creature to a slot, or tap it and then tap a slot. With a
-        keyboard: Enter picks up, arrow keys choose, Enter drops, Escape cancels.
-      </p>
+      <h4 id="dungeon-zones-heading">Your team</h4>
       <div
         ref={stripRef}
         class={
@@ -165,54 +157,41 @@ export function DungeonTeam(props: Props) {
           }
           if (creature !== undefined && creature.id === dragging) classes.push('dragging-source');
           if (shakeSlot === index) classes.push('shake');
-          const species = creature === undefined ? undefined : getSpecies(creature.species);
           return (
-            <div key={place} class="party-zone">
-              <p class="zone-label">
-                {index + 1} · {ROW_PLACE_NAMES[place]}
-              </p>
-              <div class="zone-slots">
-                <button
-                  type="button"
-                  class={classes.join(' ')}
-                  data-slot={index}
-                  disabled={disabled}
-                  aria-pressed={creature === undefined ? undefined : selected === creature.id}
-                  aria-label={
-                    creature === undefined
-                      ? `${ROW_PLACE_NAMES[place]} slot, empty`
-                      : `${ROW_PLACE_NAMES[place]} slot, ${creatureName(creature)}, ${speciesName(creature.species)} level ${String(creature.level)}`
-                  }
-                  onPointerDown={
-                    creature === undefined
-                      ? undefined
-                      : (event) => {
-                          startDrag(creature.id, event);
-                        }
-                  }
-                  onClick={() => {
-                    tap({ kind: 'slot', index });
-                  }}
-                >
-                  {creature === undefined ? (
-                    <span class="slot-empty">Empty</span>
-                  ) : (
-                    <>
-                      <Sprite sprite={creatureSpriteOrFallback(creature.species)} scale={4} />
-                      <span class="dungeon-slot-text">
-                        <span class="slot-species">{creatureName(creature)}</span>
-                        <span class="slot-meta">
-                          Lv {creature.level}
-                          {species === undefined
-                            ? ''
-                            : ` · ${elementName(species.element)} · ${capitalize(species.role)}`}
-                        </span>
-                      </span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+            <button
+              key={place}
+              type="button"
+              class={classes.join(' ')}
+              data-slot={index}
+              disabled={disabled}
+              aria-pressed={creature === undefined ? undefined : selected === creature.id}
+              aria-label={
+                creature === undefined
+                  ? `${ROW_PLACE_NAMES[place]} slot, empty`
+                  : `${ROW_PLACE_NAMES[place]} slot, ${creatureName(creature)}, ${speciesName(creature.species)} level ${String(creature.level)}`
+              }
+              onPointerDown={
+                creature === undefined
+                  ? undefined
+                  : (event) => {
+                      startDrag(creature.id, event);
+                    }
+              }
+              onClick={() => {
+                tap({ kind: 'slot', index });
+              }}
+            >
+              <span class="slot-num">{index + 1}</span>
+              {creature === undefined ? (
+                <span class="slot-empty">Empty</span>
+              ) : (
+                <>
+                  <Sprite sprite={creatureSpriteOrFallback(creature.species)} scale={3} />
+                  <span class="slot-species">{creatureName(creature)}</span>
+                  <span class="slot-meta">Lv {creature.level}</span>
+                </>
+              )}
+            </button>
           );
         })}
       </div>
@@ -229,14 +208,9 @@ export function DungeonTeam(props: Props) {
             }
           }}
         >
-          Take out of the row
+          Take out
         </button>
       </p>
-      <ul class="row-notes muted" aria-label="What the order means">
-        {rowNotes(props.modifiers).map((line) => (
-          <li key={line}>{line}</li>
-        ))}
-      </ul>
       {props.hint !== null && (
         <p class="muted" role="status">
           {props.hint}

@@ -45,7 +45,7 @@
     "route": "POST /api/dungeon/run",
     "status": 400,
     "body": {
-      "error": "invalid_abilities"
+      "error": "invalid_body"
     }
   },
   {

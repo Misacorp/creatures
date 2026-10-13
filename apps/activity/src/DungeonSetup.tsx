@@ -1,14 +1,11 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { Creature } from './api';
-import { DungeonAbilities } from './DungeonAbilities';
 import { DungeonTeam } from './DungeonTeam';
 import {
-  DEFAULT_ABILITY_SETTINGS,
   isComplete,
   pruneSlots,
   strongestFirst,
   strongestThree,
-  type AbilitySettings,
   type Selection,
   type Slots,
 } from './dungeon-team';
@@ -23,21 +20,19 @@ interface Props {
   busy: boolean;
   error: string | null;
   /** The player pressed Enter with a complete team. */
-  onEnter: (slots: Slots, settings: AbilitySettings) => void;
+  onEnter: (slots: Slots) => void;
   /** Opens the summary of today's earlier run (the first-day retry offer). */
   onSeeLast: () => void;
 }
 
 /**
- * The pre-run screen below today's info: the team in its row, the ability settings and the Enter
- * button, or the reason a run is not possible. The choices are the player's; the server checks them
+ * The pre-run screen below today's info: the team in its row and the Enter button, or the reason a run is not possible. The choices are the player's; the server checks them
  * all again and decides the run.
  */
 export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast }: Props) {
   const [slots, setSlots] = useState<Slots>(() => strongestThree(creatures));
   const [selected, setSelected] = useState<Selection>(null);
   const [hint, setHint] = useState<string | null>(null);
-  const [settings, setSettings] = useState<AbilitySettings>(DEFAULT_ABILITY_SETTINGS);
 
   // The collection can change under the screen (a refresh after another tab): drop creatures that are gone.
   const owned = creatures.map((c) => c.id);
@@ -79,7 +74,6 @@ export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast
         <DungeonTeam
           creatures={strongestFirst(creatures)}
           slots={slots}
-          modifiers={today.modifiers}
           selected={selected}
           hint={hint}
           disabled={busy}
@@ -95,13 +89,6 @@ export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast
           }}
         />
       </section>
-      <DungeonAbilities
-        settings={settings}
-        slots={slots}
-        creatures={creatures}
-        disabled={busy}
-        onChange={setSettings}
-      />
       <section class="raid-section dungeon-enter" aria-label="Enter the dungeon">
         {error !== null && (
           <p class="error" role="alert">
@@ -115,7 +102,7 @@ export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast
             disabled={busy || !complete}
             aria-describedby="dungeon-enter-note"
             onClick={() => {
-              onEnter(slots, settings);
+              onEnter(slots);
             }}
           >
             {busy ? 'Entering...' : 'Enter the dungeon'}

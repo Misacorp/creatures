@@ -4711,84 +4711,34 @@ button.pick-item {
 }
 
 /*
-  The team's row: three slots side by side, left to right (the fight is one row of three). Each slot
-  is a column with its place above it, the sprite on top and the name and level under it.
+  The team's row: three small slots side by side, left to right, in the look of the raid placement
+  rectangles (the same .party-slot): the slot number at the top left, the sprite, the name and the
+  level. There is no text about rows.
 */
 .dungeon-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
+  max-width: 24rem;
   padding: 0.25rem 0 0.5rem;
 }
 
-.dungeon-strip .party-zone {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.dungeon-strip .zone-label {
-  text-align: center;
-}
-
-.dungeon-strip .zone-slots {
-  display: block;
-}
-
 .dungeon-strip .party-slot {
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.25rem;
   width: 100%;
-  min-height: 9rem;
-  padding: 0.375rem 0.25rem;
-  text-align: center;
+  min-height: 6rem;
 }
 
 .dungeon-strip .party-slot.empty {
-  justify-content: center;
+  justify-content: space-between;
 }
 
-.dungeon-slot-text {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.dungeon-slot-text .slot-species {
-  text-align: center;
-}
-
-.dungeon-slot-text .slot-meta {
+.dungeon-slot .slot-meta {
   color: var(--muted);
-  font-size: 0.75rem;
-}
-
-.row-notes {
-  margin: 0.25rem 0 0.5rem;
-  padding-left: 1.125rem;
-  font-size: 0.875rem;
+  font-size: 0.6875rem;
 }
 
 .dungeon-tray {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 6.5rem), 1fr));
-}
-
-.ability-fields {
-  display: grid;
-  gap: 0.5rem;
-  margin: 0.5rem 0;
-}
-
-.ability-field select {
-  margin-bottom: 0;
-}
-
-.creature-abilities .ability-field {
-  margin-top: 0.25rem;
 }
 
 .dungeon-enter .primary {

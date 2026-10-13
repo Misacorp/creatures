@@ -6,7 +6,7 @@
  * at that moment, the rooms generated and every room simulated, and then the run is stored and paid
  * inside ONE `transactionSync`: the run row, the progress, the Bait and Essence, the parts and gear,
  * the streak bonus and the analytics events all commit together or not at all. The client only ever
- * sends intents (which creatures, where they stand, what to fire when) and a key; the result is
+ * sends intents (which creatures, and where they stand) and a key; the result is
  * final when the request returns, so the client can show it at any pace without the server.
  *
  * Idempotency: a retry with the same key returns the stored run (a changed body under the same key is
@@ -24,7 +24,6 @@ import {
   RULES,
   abilitiesFor,
   addParts,
-  basicAbilities,
   createSeededRng,
   dungeonFoe,
   dungeonPayout,
@@ -254,18 +253,7 @@ const FRESH_PROGRESS: ProgressRow = {
 
 /** The text of a request that decides a run, for telling a retry from a different request under one key. */
 function fingerprintOf(body: RunBody): string {
-  return JSON.stringify({
-    team: body.team,
-    abilities: {
-      basic: {
-        abilityId: body.abilities.basic.abilityId,
-        fireAtRound: body.abilities.basic.fireAtRound,
-        zone: body.abilities.basic.zone ?? null,
-        element: body.abilities.basic.element ?? null,
-      },
-      creatures: body.abilities.creatures.map((c) => [c.creatureId, c.fireAtRound]),
-    },
-  });
+  return JSON.stringify({ team: body.team });
 }
 
 export class Dungeon {
@@ -505,7 +493,7 @@ export class Dungeon {
     // `team[i]` is position i, left to right: the row is the order of the request.
     const standing = team;
     const row: FightSlot[] = standing.map((c) => slotFor(c, PLAYER));
-    const abilities = this.abilityChoices(body, standing);
+    const abilities = this.abilityChoices(standing);
 
     // --- The seed is drawn now, and the rooms and the fights follow from it ---
     const seed = drawSeed(this.deps.rng);
@@ -594,62 +582,21 @@ export class Dungeon {
     return { run: summary, today: this.todayView(userId, day, tz, now) };
   }
 
-  /** The engine's ability choices of a run: the basic pick and every unlocked creature ability. */
-  private abilityChoices(body: RunBody, standing: readonly TeamCreature[]): AbilityChoice[] {
-    const basic = body.abilities.basic;
-    const def = basicAbilities().find((a) => a.id === basic.abilityId);
-    if (def === undefined) throw new DungeonError(400, 'invalid_abilities');
-    const ops = new Set(def.effects.map((e) => e.op));
-    // A zone is for Shield Wall and an element for Re-mark: anything else is a mistake.
-    if (
-      (basic.zone !== undefined && !ops.has('shield_wall')) ||
-      (basic.element !== undefined && !ops.has('re_mark'))
-    ) {
-      throw new DungeonError(400, 'invalid_abilities');
-    }
-    const choices: AbilityChoice[] = [
-      {
-        playerId: PLAYER,
-        abilityId: basic.abilityId,
-        key: `${PLAYER}:basic`,
-        ...(basic.fireAtRound === null ? {} : { fireAtRound: basic.fireAtRound }),
-        ...(basic.zone === undefined && basic.element === undefined
-          ? {}
-          : {
-              params: {
-                ...(basic.zone === undefined ? {} : { zone: basic.zone }),
-                ...(basic.element === undefined ? {} : { element: basic.element }),
-              },
-            }),
-      },
-    ];
+  /**
+   * The engine's ability choices of a run: every unlocked creature ability, each firing at its
+   * default round. There is no basic ability and the player sets no rounds.
+   */
+  private abilityChoices(standing: readonly TeamCreature[]): AbilityChoice[] {
     const unlocked = abilitiesFor(
       standing.map((c) => ({ id: c.id, speciesId: c.species.id, level: c.level })),
       (c) => c.level,
     );
-    const rounds = new Map<string, number | null>();
-    for (const entry of body.abilities.creatures) {
-      // Only the team's creatures with an unlocked ability, each once.
-      if (
-        rounds.has(entry.creatureId) ||
-        !unlocked.some((u) => u.creatureId === entry.creatureId)
-      ) {
-        throw new DungeonError(400, 'invalid_abilities');
-      }
-      rounds.set(entry.creatureId, entry.fireAtRound);
-    }
-    for (const source of unlocked) {
-      const index = standing.findIndex((c) => c.id === source.creatureId);
-      const round = rounds.get(source.creatureId) ?? null;
-      choices.push({
-        playerId: PLAYER,
-        abilityId: source.abilityId,
-        key: `${PLAYER}:c${String(index)}`,
-        creatureId: source.creatureId,
-        ...(round === null ? {} : { fireAtRound: round }),
-      });
-    }
-    return choices;
+    return unlocked.map((source) => ({
+      playerId: PLAYER,
+      abilityId: source.abilityId,
+      key: `${PLAYER}:c${String(standing.findIndex((c) => c.id === source.creatureId))}`,
+      creatureId: source.creatureId,
+    }));
   }
 
   /** Pays a run and returns what it paid. Call inside the run's transaction. */

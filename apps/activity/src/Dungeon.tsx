@@ -7,12 +7,7 @@ import { DungeonResults } from './DungeonResults';
 import { DungeonSetup } from './DungeonSetup';
 import { fetchDungeonReplay, fetchDungeonToday, startDungeonRun } from './dungeon-api';
 import { initialScreen, msUntilReset, RESET_GRACE_MS } from './dungeon-flow';
-import {
-  buildRunRequest,
-  requestSignature,
-  type AbilitySettings,
-  type Slots,
-} from './dungeon-team';
+import { buildRunRequest, requestSignature, type Slots } from './dungeon-team';
 import { dungeonErrorText, isStaleDungeonError } from './dungeon-text';
 import type { DungeonReplay, DungeonRunSummary, DungeonToday } from './dungeon-types';
 import { clockOffset } from './game';
@@ -120,9 +115,9 @@ export function Dungeon({
     }
   }
 
-  async function enter(slots: Slots, settings: AbilitySettings): Promise<void> {
+  async function enter(slots: Slots): Promise<void> {
     if (inFlight.current || today === null) return;
-    const draft = buildRunRequest(slots, creatures, settings, 'draft-key');
+    const draft = buildRunRequest(slots, 'draft-key');
     if (draft === null) return;
     // One key per distinct run: a retry of the same picks reuses it, other picks get their own.
     const action = `dungeon-run:${requestSignature(draft)}`;
@@ -199,8 +194,8 @@ export function Dungeon({
           creatures={creatures}
           busy={busy}
           error={error}
-          onEnter={(slots, settings) => {
-            void enter(slots, settings);
+          onEnter={(slots) => {
+            void enter(slots);
           }}
           onSeeLast={() => {
             if (today.last !== null) setView({ kind: 'results', run: today.last });
