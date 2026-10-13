@@ -11,12 +11,9 @@ import {
   DUNGEON_ERROR_TEXT,
   blockedText,
   depthChangeText,
-  depthLine,
   dungeonErrorText,
   isRetryOffer,
   isStaleDungeonError,
-  landmarkLine,
-  nextLandmark,
   resultHeadline,
   roomCardTitle,
   roomLine,
@@ -95,26 +92,7 @@ describe('why a run is blocked, and the retry offer', () => {
   });
 });
 
-describe('depth, landmark and streak', () => {
-  it('writes the depth, with the landmark', () => {
-    expect(depthLine({ depth: 4, landmark: false })).toBe('Depth 4');
-    expect(depthLine({ depth: 7, landmark: true })).toBe('Depth 7, a landmark');
-  });
-
-  it('finds the next landmark: every 7th depth, and now when this is one', () => {
-    expect(nextLandmark(1)).toEqual({ depth: 7, away: 6 });
-    expect(nextLandmark(6)).toEqual({ depth: 7, away: 1 });
-    expect(nextLandmark(7)).toEqual({ depth: 7, away: 0 });
-    expect(nextLandmark(8)).toEqual({ depth: 14, away: 6 });
-    expect(nextLandmark(0)).toEqual({ depth: 7, away: 6 });
-  });
-
-  it('words the landmark line for far, near and now', () => {
-    expect(landmarkLine(1)).toBe('Next landmark: depth 7, 6 depths away.');
-    expect(landmarkLine(6)).toBe('Next landmark: depth 7, 1 depth away.');
-    expect(landmarkLine(14)).toContain('is a landmark');
-  });
-
+describe('the streak', () => {
   it('lights the pips for the streak in a cycle of seven', () => {
     const lit = (n: number): number => streakPips(n).filter((p) => p.on).length;
     expect([0, 1, 3, 7, 8, 14, 15].map(lit)).toEqual([0, 1, 3, 7, 1, 7, 1]);

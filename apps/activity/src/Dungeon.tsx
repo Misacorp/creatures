@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { createKeyStore } from './actions';
 import type { Creature } from './api';
-import { DungeonInfo } from './DungeonInfo';
 import { DungeonPlayback } from './DungeonPlayback';
 import { DungeonResults } from './DungeonResults';
 import { DungeonSetup } from './DungeonSetup';
@@ -19,7 +18,8 @@ type View =
   | { kind: 'results'; run: DungeonRunSummary };
 
 /**
- * The Dungeon tab: today's info, then the pre-run screen, the playback of the run and its results.
+ * The Dungeon tab: the pre-run screen, the playback of the run and its results (which also carry
+ * the streak and the reset time).
  * The run itself is the server's (it draws the seed, plays the rooms and pays the rewards in one
  * go); this screen sends the player's picks with an idempotency key, which is reused if the answer
  * never arrived, and then shows what the server stored. A run's results stay on screen after it has
@@ -182,7 +182,6 @@ export function Dungeon({
 
   return (
     <>
-      {view.kind !== 'playback' && <DungeonInfo today={today} offset={offset} />}
       {loadError !== null && (
         <p class="error" role="alert">
           {loadError}
@@ -214,6 +213,8 @@ export function Dungeon({
       {view.kind === 'results' && (
         <DungeonResults
           run={view.run}
+          today={today}
+          offset={offset}
           canRetry={today.canRun}
           busy={busy}
           error={error}

@@ -20,7 +20,8 @@ import {
 } from './dungeon-playback';
 import { bossArt } from './art';
 import { depthChangeText, resultHeadline } from './dungeon-text';
-import type { DungeonRunSummary } from './dungeon-types';
+import { DungeonNext } from './DungeonNext';
+import type { DungeonRunSummary, DungeonToday } from './dungeon-types';
 import { SmallCreature } from './SmallCreature';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -64,6 +65,10 @@ function RewardCount({
 
 interface Props {
   run: DungeonRunSummary;
+  /** Today's state: the streak and when the day resets. */
+  today: DungeonToday;
+  /** The server's clock minus the local one, for the countdown. */
+  offset: number;
   /** True when a run can still be started today (the first-day retry). */
   canRetry: boolean;
   busy: boolean;
@@ -78,7 +83,16 @@ interface Props {
  * then pops in), then the three rooms and the team. "Watch again" plays the run once more from the
  * server's stored events. All names are drawn as text.
  */
-export function DungeonResults({ run, canRetry, busy, error, onWatch, onRetry }: Props) {
+export function DungeonResults({
+  run,
+  today,
+  offset,
+  canRetry,
+  busy,
+  error,
+  onWatch,
+  onRetry,
+}: Props) {
   const reduced = usePrefersReducedMotion();
   const { rewards } = run;
   const empty = noRewards(rewards);
@@ -152,6 +166,7 @@ export function DungeonResults({ run, canRetry, busy, error, onWatch, onRetry }:
 
       <RoomStrip rooms={roomStrip(run)} />
       <TeamBreakdown team={teamBreakdown(run)} />
+      <DungeonNext today={today} offset={offset} />
 
       {error !== null && (
         <p class="error" role="alert">
