@@ -738,3 +738,34 @@ The merge's 3 failures became: setup share 13.9% to 16.0% (s2 16.4%, s3 16.5%), 
 ## 2026-10-13: The slot wipe spares finished trips (Misa)
 
 Migration 19 now cancels only trips that are still running (the oldest running trip per player keeps going); trips that have already ended stay active so players can claim their catches and loot as usual. The extra slots close as those trips are claimed. Cancelled trips still get their Bait refunded once.
+
+## 2026-10-13: UX pass 1, Expeditions: rank-up gifts, no chances on screen
+
+Misa's review asked for every explorer rank to unlock something, and for the Expeditions screens to stop showing chances. What changed, and the numbers.
+
+**One-time rank-up gift** (`RULES.expeditions.rank.gifts`, index 0 is rank 2). It is granted on the claim that raises the rank, inside the claim transaction, once per (creature, rank): the Bait goes through the ledger and the parts and supplies through the grant ledger, both under the key `rank:<creature>:<rank>`, so a repeat claim, a retry or a replay pays nothing. A trip that jumps two ranks pays both gifts. It is shown in the claim reveal and listed on the rank `ProgressTrack`. Players already above rank 1 get nothing back-dated; gifts start with their next rank-up.
+
+| Rank | Bait | Scrap | Glimmer | Supplies                     |
+| ---- | ---- | ----- | ------- | ---------------------------- |
+| 2    | 5    | 1     | 0       | none                         |
+| 3    | 10   | 1     | 0       | none                         |
+| 4    | 15   | 2     | 0       | none                         |
+| 5    | 20   | 2     | 0       | none                         |
+| 6    | 30   | 3     | 1       | none                         |
+| 7    | 50   | 5     | 2       | Glow Lantern, Sweet Lure     |
+| 8    | 75   | 8     | 3       | Inked Map, Sturdy Satchel    |
+| 9    | 100  | 10    | 4       | Golden Lure                  |
+| 10   | 150  | 15    | 6       | Trail Atlas, Explorer's Pack |
+
+Totals per creature over all nine ranks: 455 Bait, 47 scrap, 16 glimmer, 7 supplies (80 Bait and 7 scrap up to rank 5).
+
+**How the numbers were found (seed `leet`, full run).** Baseline 47/47. The gift is per creature, so it multiplies with the number of creatures that explore. A first draft with Bait 15 to 150, scrap, glimmer and a basic or good supply at every rank failed 5 targets (phase 2 clear 93.1% against at most 85%, typical finale 80.7% against at most 60%, 15-player finale 83.3%, boss spread 20.0%, casual species 0.4 against at most 0.3). Splitting the gift by kind: parts alone 47/47, Bait alone 47/47, supplies alone 43/47 (phase 2 87.5%, typical finale 65.5%, 15-player finale 67.4%, casual species 0.3 with rounding). Supplies feed discovery, and discovery feeds raid readiness, so **supplies only come at ranks 7 to 10**, which a sim player hardly reaches inside its horizon. The shipped table passes 47/47 on `leet`. The sim now pays the gifts too (`packages/sim/src/trips.ts`), so this stays checked.
+
+**Chances are words, not numbers (item 7).**
+
+- Push-on cards say Safe, Risky or Very risky with a mark (check, warning, skull) and keep the failure line ("May fail and bring nothing back."). The word comes from the odds the server rolled: a risky goal that works less than half the time (below 5000 basis points) is Very risky (`VERY_RISKY_BELOW_BP` in `push-on-view.ts`). Reward lines no longer say "50% more XP". A running push-on and the claim reveal also drop the percentages.
+- Glossary entries for explorer rank, familiarity, the deeper area, push-on goals and milestones lost their percentages, and the tests now pin that they have none. Familiarity's three stars are on their own bullets and its short line has no "3 stars".
+- The deeper area says only "Deeper area open: its rarer creatures can turn up." once the explorer has a star there. The mechanics are unchanged.
+- Kept as they are: the supplies' own effect lines (Misa likes them), the weekly special's description, the combat numbers, the profile's milestone bonuses.
+
+**Layout decisions.** Familiarity (stars and trips) moved from the place to the creature's row in "Who goes". The "Expected haul" is `haul-view.ts`: the same icons for every length plus a "Deeper area" icon when a lantern is carried; pips compare with the best any length does with the best supplies; a "+" marks what a chosen supply raises; chances are words ("rarely", "often"). The destination glossary entries (their "?" popup is gone) still exist because the content coverage test requires them; they are no longer reachable on screen and can be deleted with that test if Misa wants.

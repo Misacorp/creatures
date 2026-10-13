@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import { useRef } from 'preact/hooks';
 import { bannerArt, bannerScale, shinyPalette } from './art';
 import { cssVars } from './css-vars';
@@ -24,7 +25,16 @@ export interface Walker {
  * player allows motion; with reduced motion it stands still at the progress position. The picture is
  * decoration: progress is always said in words next to it.
  */
-export function Banner({ destination, walker }: { destination: string; walker?: Walker }) {
+export function Banner({
+  destination,
+  walker,
+  children,
+}: {
+  destination: string;
+  walker?: Walker;
+  /** Drawn over the picture, inside its edges (the catalogue's arrows). */
+  children?: ComponentChildren;
+}) {
   const slot = useRef<HTMLDivElement>(null);
   const width = useElementWidth(slot, 320);
   const scale = bannerScale(width);
@@ -61,6 +71,7 @@ export function Banner({ destination, walker }: { destination: string; walker?: 
             </span>
           </span>
         )}
+        {children}
       </div>
     </div>
   );

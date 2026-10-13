@@ -10,15 +10,18 @@ import type { DestinationCard } from './destination-view';
 import type { DestinationsView, ExpeditionLength, Slots, SupplyPick } from './expedition-types';
 import { creatureName, getSpecies } from './game';
 import { busyReason } from './gear-view';
-import { kitBlocker, kitCost, lengthOptions, xpBar, type XpBar } from './trip-view';
+import { explorerXp, kitBlocker, kitCost, lengthOptions, type ExplorerXp } from './trip-view';
 
 export interface ExplorerOption {
   creature: Creature;
   name: string;
   rank: number;
-  bar: XpBar;
-  /** Stars this creature has at the chosen place (0 to 3). */
+  /** What the XP bar shows: the XP into the rank, its span and the rank caps. */
+  xp: ExplorerXp;
+  /** Stars this creature has at the chosen place (0 to 3): familiarity is a trait of the creature. */
   stars: number;
+  /** Finished trips this creature has made to the chosen place. */
+  trips: number;
   /** Why it cannot go to the chosen place now; null when it can. */
   blocked: string | null;
 }
@@ -33,6 +36,24 @@ export function starsAt(
     view?.familiarity.find((f) => f.creatureId === creatureId && f.destination === destination)
       ?.stars ?? 0
   );
+}
+
+/** The finished trips of a creature to a place, from the destinations view. */
+export function tripsAt(
+  view: Pick<DestinationsView, 'familiarity'> | null,
+  creatureId: string,
+  destination: string,
+): number {
+  return (
+    view?.familiarity.find((f) => f.creatureId === creatureId && f.destination === destination)
+      ?.trips ?? 0
+  );
+}
+
+/** "No trips here yet", "1 trip here", "4 trips here": the trips of a creature to the chosen place. */
+export function tripsHereText(trips: number): string {
+  if (trips <= 0) return 'No trips here yet';
+  return `${String(trips)} ${trips === 1 ? 'trip' : 'trips'} here`;
 }
 
 /**
@@ -52,8 +73,9 @@ export function explorerOptions(
       creature,
       name: creatureName(creature),
       rank,
-      bar: xpBar(creature.explorer),
+      xp: explorerXp(creature.explorer),
       stars: place === undefined ? 0 : starsAt(view, creature.id, place.id),
+      trips: place === undefined ? 0 : tripsAt(view, creature.id, place.id),
       blocked:
         busy ?? (tooLow ? `Needs explorer rank ${String(place.minRank)} for this place` : null),
     };

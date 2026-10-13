@@ -1,7 +1,7 @@
 /**
  * What the expedition screens say about a trip, as plain functions so it is tested without a browser:
- * the trip lengths a creature can take, the supplies and what they cost, a trip's worth as little
- * pictures, how far a running trip has got, what the claim button means, an explorer's XP bar and the
+ * the trip lengths a creature can take, the supplies and what they cost (the haul of a trip is in
+ * `haul-view.ts`), how far a running trip has got, what the claim button means, an explorer's XP bar and the
  * slot progress line. Names, effects and numbers come from the shared content and rules (never copied
  * here), and every amount that is owned or paid comes from the server's state.
  */
@@ -13,10 +13,8 @@ import {
   lengthOpen,
   lengthRules,
   recallCatches,
-  shardOf,
   supplyDef,
   tripMs,
-  type Element,
   type SupplyDef,
 } from '@creatures/game';
 import type { ExpeditionLength, ExplorerView, Slots, SupplyPick, Trip } from './expedition-types';
@@ -59,12 +57,6 @@ export function lengthOptions(rank: number): LengthOption[] {
     takes: formatDuration(tripMs(id, rank)),
     rolls: lengthRules(id).rolls,
   }));
-}
-
-/** The next length this rank does not have yet, with the rank that opens it; null when all are open. */
-export function nextLengthUnlock(rank: number): { length: ExpeditionLength; rank: number } | null {
-  const closed = EXPEDITION_LENGTHS.find((id) => !lengthOpen(id, rank));
-  return closed === undefined ? null : { length: closed, rank: lengthRules(closed).minRank };
 }
 
 /** What a trip of this length takes for an explorer of this rank, in milliseconds. */
@@ -139,6 +131,14 @@ export function supplyOptions(stock: Readonly<Record<string, number>>): SupplyOp
 /** The name of a supply id (the id itself when the content does not know it). */
 export function supplyName(id: string): string {
   return supplyDef(id)?.name ?? id;
+}
+
+/** The definitions of supply ids; ids the content does not know are left out. */
+export function supplyDefs(ids: readonly string[]): SupplyDef[] {
+  return ids.flatMap((id) => {
+    const def = supplyDef(id);
+    return def === undefined ? [] : [def];
+  });
 }
 
 /** The kind of a supply id, or null. */
@@ -217,103 +217,6 @@ export function kitBlocker(
 /** What a worth row draws: a part's icon, a glyph, or the creature paw. */
 export type WorthIcon =
   { kind: 'part'; part: PartKind } | { kind: 'glyph'; id: string } | { kind: 'supply'; id: string };
-
-export interface WorthRow {
-  key: string;
-  icon: WorthIcon;
-  /** The words for assistive technology and the hover text: the real chance or amount. */
-  label: string;
-  /** 0 to 4 pips: how this compares to the best a trip of any length does (4 is the longest trip's). */
-  level: number;
-}
-
-function metricsOf(length: ExpeditionLength, shard: PartKind): Record<string, number> {
-  const rules = lengthRules(length);
-  return {
-    catch: rules.rolls,
-    scrap: rules.loot.scrap,
-    [shard]: rules.loot.shardBp,
-    glimmer: rules.loot.glimmerBp,
-    blueprint: rules.loot.blueprintBp,
-    supply: rules.loot.supplyBp,
-    journal: rules.journalBp,
-    xp: rules.xp,
-  };
-}
-
-/**
- * A trip's worth as pictures: what it can bring (catch rolls, parts, a blueprint, a supply, a journal
- * page, explorer XP), each with a 0 to 4 pip level against the best any length does, so the lengths can
- * be compared at a glance. Nothing is shown as a number first: the exact chance is in the label.
- */
-export function tripWorth(length: ExpeditionLength, element: string | null): WorthRow[] {
-  const shard: PartKind = shardOf((element ?? 'tide') as Element);
-  const here = metricsOf(length, shard);
-  const best: Record<string, number> = {};
-  for (const other of EXPEDITION_LENGTHS) {
-    for (const [key, value] of Object.entries(metricsOf(other, shard))) {
-      best[key] = Math.max(best[key] ?? 0, value);
-    }
-  }
-  const level = (key: string): number => {
-    const value = here[key] ?? 0;
-    const top = best[key] ?? 0;
-    if (value <= 0 || top <= 0) return 0;
-    return Math.max(1, Math.round((4 * value) / top));
-  };
-  const rules = lengthRules(length);
-  const rows: WorthRow[] = [
-    {
-      key: 'catch',
-      icon: { kind: 'glyph', id: 'paw' },
-      label: `${String(rules.rolls)} ${rules.rolls === 1 ? 'catch roll' : 'catch rolls'}`,
-      level: level('catch'),
-    },
-    {
-      key: 'xp',
-      icon: { kind: 'glyph', id: 'rank' },
-      label: `${String(rules.xp)} explorer XP`,
-      level: level('xp'),
-    },
-    {
-      key: 'scrap',
-      icon: { kind: 'part', part: 'scrap' },
-      label: rules.loot.scrap === 0 ? 'No scrap' : `${String(rules.loot.scrap)} scrap`,
-      level: level('scrap'),
-    },
-    {
-      key: shard,
-      icon: { kind: 'part', part: shard },
-      label: `Shards: ${percentText(rules.loot.shardBp)} chance`,
-      level: level(shard),
-    },
-    {
-      key: 'glimmer',
-      icon: { kind: 'part', part: 'glimmer' },
-      label: `Glimmer: ${percentText(rules.loot.glimmerBp)} chance`,
-      level: level('glimmer'),
-    },
-    {
-      key: 'blueprint',
-      icon: { kind: 'glyph', id: 'blueprint' },
-      label: `Blueprint: ${percentText(rules.loot.blueprintBp)} chance`,
-      level: level('blueprint'),
-    },
-    {
-      key: 'supply',
-      icon: { kind: 'glyph', id: 'satchel' },
-      label: `A found supply: ${percentText(rules.loot.supplyBp)} chance`,
-      level: level('supply'),
-    },
-    {
-      key: 'journal',
-      icon: { kind: 'glyph', id: 'journal' },
-      label: `A journal page: ${percentText(rules.journalBp)} chance`,
-      level: level('journal'),
-    },
-  ];
-  return rows;
-}
 
 // --- A running trip ---
 
@@ -408,6 +311,32 @@ export function xpBar(explorer: Pick<ExplorerView, 'rank' | 'xp' | 'nextRankXp'>
   return {
     pct: Math.floor((done * 1000) / span) / 10,
     text: `${String(done)} of ${String(span)} XP to rank ${String(explorer.rank + 1)}`,
+  };
+}
+
+/** What an `XpBar` of an explorer is given: the XP into this rank, the span of the rank and the end caps. */
+export interface ExplorerXp {
+  value: number;
+  max: number;
+  /** "Top rank" at the top; undefined for the bar's own "0 of 200 XP". */
+  text?: string;
+  /** The current rank, where the creature starts, and the next one, its destination (none at the top). */
+  startCap: string;
+  endCap?: string;
+}
+
+/** The `XpBar` values of an explorer: how far from its rank's XP to the next rank's. */
+export function explorerXp(explorer: Pick<ExplorerView, 'rank' | 'xp' | 'nextRankXp'>): ExplorerXp {
+  const startCap = `Rank ${String(explorer.rank)}`;
+  if (explorer.nextRankXp === null) return { value: 1, max: 1, text: 'Top rank', startCap };
+  const start = RULES.expeditions.rank.xpForRank[Math.max(0, explorer.rank - 1)] ?? 0;
+  const span = Math.max(1, explorer.nextRankXp - start);
+  const done = Math.min(span, Math.max(0, explorer.xp - start));
+  return {
+    value: done,
+    max: span,
+    startCap,
+    endCap: `Rank ${String(explorer.rank + 1)}`,
   };
 }
 

@@ -1,13 +1,15 @@
+import { Banner } from './Banner';
 import { turnCatalogue, type DestinationCard } from './destination-view';
 import { glyphOrUnknown } from './glyphs';
-import { PlaceCard } from './PlaceCard';
+import { PlaceInfo } from './PlaceCard';
 import { elementIcon } from './sprites/element-icons';
 import { Sprite } from './sprites/Sprite';
 
 /**
- * The destination catalogue: one banner card at a time with previous and next buttons, and a row of
- * small buttons, one per place, so any place is one tap away. The card shown is the place the trip goes
- * to. Left and Right arrows turn the page when focus is inside it. A closed place has a lock on its button.
+ * The destination catalogue, top to bottom: the strip of places (one small button each, with the element
+ * and a lock when closed, so any place is one tap away), the banner as a hero with the previous and next
+ * arrows over its left and right edges, the place's name on a title plate like a playing card's with
+ * `1 / 7`, and the place's information. Left and Right arrows turn the page when focus is inside it.
  */
 export function Catalogue({
   cards,
@@ -39,36 +41,6 @@ export function Catalogue({
         }
       }}
     >
-      <div class="catalogue-bar">
-        <button
-          type="button"
-          class="page-button"
-          aria-label="Previous place"
-          onClick={() => {
-            turn(-1);
-          }}
-        >
-          <Sprite sprite={glyphOrUnknown('right_to_left')} scale={2} />
-        </button>
-        <p class="catalogue-count pix" aria-live="polite">
-          {card.name}
-          <span class="muted">
-            {' '}
-            {index + 1} / {cards.length}
-          </span>
-        </p>
-        <button
-          type="button"
-          class="page-button"
-          aria-label="Next place"
-          onClick={() => {
-            turn(1);
-          }}
-        >
-          <Sprite sprite={glyphOrUnknown('left_to_right')} scale={2} />
-        </button>
-      </div>
-      <PlaceCard card={card} />
       <ul class="catalogue-dots" aria-label="Choose a place">
         {cards.map((other, i) => {
           const icon = other.element === null ? undefined : elementIcon(other.element);
@@ -96,6 +68,37 @@ export function Catalogue({
           );
         })}
       </ul>
+      <div class={`catalogue-hero${card.locked.length > 0 ? ' locked' : ''}`}>
+        <Banner destination={card.id}>
+          <button
+            type="button"
+            class="hero-arrow left"
+            aria-label="Previous place"
+            onClick={() => {
+              turn(-1);
+            }}
+          >
+            <Sprite sprite={glyphOrUnknown('right_to_left')} scale={3} />
+          </button>
+          <button
+            type="button"
+            class="hero-arrow right"
+            aria-label="Next place"
+            onClick={() => {
+              turn(1);
+            }}
+          >
+            <Sprite sprite={glyphOrUnknown('left_to_right')} scale={3} />
+          </button>
+        </Banner>
+      </div>
+      <h4 class="place-plate" aria-live="polite">
+        <span class="plate-name pix">{card.name}</span>
+        <span class="plate-count">
+          {index + 1} / {cards.length}
+        </span>
+      </h4>
+      <PlaceInfo card={card} />
     </div>
   );
 }
