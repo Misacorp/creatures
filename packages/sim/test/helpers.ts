@@ -9,6 +9,7 @@ export const TINY: RunSettings = {
   economySims: 1,
   pitySims: 1,
   longRunSims: 1,
+  tripLongSims: 1,
   counts: [1, 5],
 };
 

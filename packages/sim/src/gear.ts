@@ -7,8 +7,6 @@ import {
   dismantleYield,
   enchantActive,
   enchantCost,
-  expeditionLoot,
-  expeditionRolls,
   gearBase,
   gearBonus,
   gearContent,
@@ -16,13 +14,17 @@ import {
   jobDuration,
   jobXp,
   rerollSecondary,
+  supplyDef,
+  supplyJobMs,
+  supplyJobXp,
+  expeditionContent,
+  partsOfSpec,
   rollFestivalDrop,
   rollFinaleDrop,
   rollGear,
   rollWelcomeKit,
   skillLevel,
   upgradeCost,
-  type DurationId,
   type Element,
   type GearItem,
   type GearRarity,
@@ -135,7 +137,7 @@ function newItem(
 }
 
 /** A dropped item goes in the bag; with the bag full it turns into its dismantle yield (like the worker). */
-function grantItem(
+export function grantItem(
   player: SimPlayer,
   drop: { baseId: string; rarity: GearRarity; rolls: GearRolls },
 ): void {
@@ -148,7 +150,7 @@ function grantItem(
 }
 
 /** A blueprint already known turns into scrap. */
-function learnBlueprint(player: SimPlayer, baseId: string): void {
+export function learnBlueprint(player: SimPlayer, baseId: string): void {
   if (player.gear.blueprints.includes(baseId)) {
     creditParts(player, { scrap: RULES.gear.drops.duplicateBlueprintScrap });
   } else {
@@ -184,23 +186,6 @@ export function grantFinaleLoot(
     grantItem(p, rollFinaleDrop(rng, rank));
     if (festivalElement !== null) grantItem(p, rollFestivalDrop(rng, festivalElement));
   }
-}
-
-/** Loot of a claimed expedition (a completed trip: the sim never recalls). */
-export function grantExpeditionLoot(
-  player: SimPlayer,
-  duration: DurationId,
-  explorerElement: Element,
-  rng: Rng,
-): void {
-  const rolls = expeditionRolls(duration);
-  const loot = expeditionLoot(rng, duration, explorerElement, {
-    completed: true,
-    caught: rolls,
-    rolls,
-  });
-  creditParts(player, loot.parts);
-  if (loot.blueprint !== null) learnBlueprint(player, loot.blueprint);
 }
 
 // --- Scoring ---
@@ -287,8 +272,20 @@ function claimOne(player: SimPlayer, job: SimJob, ctx: GearContext): void {
     const item = findItem(player, job.itemUid);
     if (item !== undefined) item.enchantId = job.enchantId;
   }
-  player.gear.skillXp[job.creatureId] =
-    (player.gear.skillXp[job.creatureId] ?? 0) + jobXp(job.kind, job.rarity);
+  let xp: number;
+  if (job.kind === 'supply') {
+    const def = job.supplyId === undefined ? undefined : supplyDef(job.supplyId);
+    if (def !== undefined) {
+      player.supplies[def.id] = (player.supplies[def.id] ?? 0) + def.blueprint.yield;
+      player.stats.supplies_crafted += def.blueprint.yield;
+      xp = supplyJobXp(def);
+    } else {
+      xp = 0;
+    }
+  } else {
+    xp = jobXp(job.kind, job.rarity);
+  }
+  player.gear.skillXp[job.creatureId] = (player.gear.skillXp[job.creatureId] ?? 0) + xp;
 }
 
 /** Claims every job that is done by `ctx.hour`. */
@@ -471,6 +468,42 @@ function planImprove(player: SimPlayer): JobPlan | null {
   return null;
 }
 
+/** The gear rarity a supply tier is sized as (its job's XP and length come from the supply itself). */
+const SUPPLY_RARITY = { basic: 'common', good: 'rare', great: 'epic' } as const;
+
+/**
+ * Supplies the workshop makes when no gear job is wanted: the best supply (by its estimated worth per
+ * unit of parts) the creature's Crafting level allows, the parts pay for and fewer than 2 are in stock.
+ */
+function planSupply(player: SimPlayer, level: number): JobPlan | null {
+  let best: { plan: JobPlan; score: number } | null = null;
+  const stock = Object.values(player.supplies).reduce((n, x) => n + x, 0);
+  if (stock >= SUPPLY_STOCK_TARGET) return null;
+  for (const def of expeditionContent.supplies) {
+    if (level < def.blueprint.craftingLevel) continue;
+    const cost = partsOfSpec(def.blueprint.parts);
+    // Scrap the upgrades want is left alone: supplies are made from what is spare.
+    if (!canPay(player, { ...cost, scrap: (cost.scrap ?? 0) + SUPPLY_SCRAP_RESERVE })) continue;
+    // Better tiers first (they cost more but are worth more per trip), then by price.
+    const score = def.price;
+    if (best === null || score > best.score) {
+      best = {
+        score,
+        plan: {
+          job: { kind: 'supply', rarity: SUPPLY_RARITY[def.tier], supplyId: def.id },
+          cost,
+        },
+      };
+    }
+  }
+  return best === null ? null : best.plan;
+}
+
+/** The workshop stops making a supply once the player holds this many of it. */
+const SUPPLY_STOCK_TARGET = 2;
+/** Scrap that stays untouched when a supply is made. */
+const SUPPLY_SCRAP_RESERVE = 8;
+
 const RARITY_ORDER: Record<GearRarity, number> = { common: 0, rare: 1, epic: 2, festival: 3 };
 
 function planCraft(player: SimPlayer): JobPlan | null {
@@ -512,15 +545,23 @@ export function startJobs(
     );
   for (const creature of crafters) {
     if (player.gear.jobs.length >= RULES.gear.workshopSlots) return;
-    const plan = planEnchant(player) ?? planImprove(player) ?? planCraft(player);
+    const level = skillLevel(player.gear.skillXp[creature.id] ?? 0);
+    const plan =
+      planEnchant(player) ?? planImprove(player) ?? planCraft(player) ?? planSupply(player, level);
     if (plan === null) return;
     pay(player, plan.cost);
-    const level = skillLevel(player.gear.skillXp[creature.id] ?? 0);
     const kind: JobKind = plan.job.kind;
+    const supply = plan.job.supplyId === undefined ? undefined : supplyDef(plan.job.supplyId);
+    const ms =
+      kind === 'supply'
+        ? supply === undefined
+          ? 0
+          : supplyJobMs(supply, level)
+        : jobDuration(kind, plan.job.rarity, level);
     player.gear.jobs.push({
       ...plan.job,
       creatureId: creature.id,
-      endsAtHour: ctx.hour + jobDuration(kind, plan.job.rarity, level) / HOUR_MS,
+      endsAtHour: ctx.hour + ms / HOUR_MS,
     });
   }
 }

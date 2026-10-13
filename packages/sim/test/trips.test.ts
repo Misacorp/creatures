@@ -1,0 +1,210 @@
+import { describe, expect, it } from 'vitest';
+import {
+  EXPEDITION_LENGTHS,
+  RULES,
+  createSeededRng,
+  expeditionContent,
+  explorerRank,
+  lengthRules,
+  seasonOf,
+} from '@creatures/game';
+import { DEFAULT_MIX } from '../src/archetypes';
+import { runEconomy } from '../src/economy';
+import { createPlayer, type SimPlayer } from '../src/state';
+import {
+  chooseDestination,
+  chooseKit,
+  chooseLength,
+  claimTrips,
+  playerRankSum,
+  sendTrips,
+  slotsOfPlayer,
+  type TripContext,
+} from '../src/trips';
+
+function place(id: string) {
+  const d = expeditionContent.destinations.find((x) => x.id === id);
+  if (d === undefined) throw new Error(`no destination ${id}`);
+  return d;
+}
+
+const CREATURES = ['splashet', 'cindle', 'sproutle', 'zipmouse', 'stormray'];
+
+function player(archetype: 'daily' | 'casual' = 'daily'): SimPlayer {
+  const p = createPlayer('p01', 'P', archetype, 1);
+  p.joined = true;
+  for (const line of CREATURES) {
+    p.creatures.push({ id: `p01/${line}`, line, speciesId: line, level: 10, fusionCount: 0 });
+  }
+  return p;
+}
+
+function ctx(hour: number, seed = 'trips', weekIndex = 0): TripContext {
+  return {
+    hour,
+    day: Math.floor(hour / 24),
+    weekIndex,
+    catches: createSeededRng(`${seed}:catches`),
+    trip: createSeededRng(`${seed}:trip`),
+  };
+}
+
+/** Gives every creature the XP of a rank. */
+function rankAll(p: SimPlayer, rank: number): void {
+  const xp = RULES.expeditions.rank.xpForRank[rank - 1] as number;
+  for (const c of p.creatures) p.explorerXp[c.id] = xp;
+}
+
+describe('expedition slots', () => {
+  it('starts with one, opens the second after the finished trips the rules name, then by rank sum', () => {
+    const p = player();
+    expect(slotsOfPlayer(p)).toBe(1);
+    p.stats.trips_finished = RULES.expeditions.slots.secondAfterTrips;
+    expect(slotsOfPlayer(p)).toBe(2);
+    rankAll(p, 10);
+    expect(playerRankSum(p)).toBe(CREATURES.length * 9);
+    expect(slotsOfPlayer(p)).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('choosing a trip', () => {
+  it('only picks places that are open to the creature (rank, night, Festival)', () => {
+    const p = player();
+    const creature = p.creatures[0];
+    if (creature === undefined) throw new Error('no creature');
+    // Weeks of the calendar that are not a Festival, at noon: no Festival Grounds, no night, no rank gates.
+    const plain = [0, 1, 2, 3].filter((w) => !seasonOf(w).festival);
+    for (let i = 0; i < 80; i++) {
+      const dest = chooseDestination(p, creature, {
+        hour: 12,
+        weekIndex: plain[i % plain.length] as number,
+        trip: createSeededRng(`dest-${String(i)}`),
+      });
+      expect(dest.access.festival, dest.id).not.toBe(true);
+      expect(dest.access.night, dest.id).not.toBe(true);
+      expect(dest.access.minRank, dest.id).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('can pick the night place at night, and the Festival Grounds in a Festival week, with the rank', () => {
+    const p = player();
+    rankAll(p, 5);
+    const creature = p.creatures[0];
+    if (creature === undefined) throw new Error('no creature');
+    const festivalWeek = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].find((w) => seasonOf(w).festival);
+    if (festivalWeek === undefined) throw new Error('no Festival week');
+    const seen = new Set<string>();
+    for (let i = 0; i < 400; i++) {
+      const night = chooseDestination(p, creature, {
+        hour: 22,
+        weekIndex: festivalWeek,
+        trip: createSeededRng(`night-${String(i)}`),
+      });
+      seen.add(night.id);
+    }
+    expect(seen.has('moonlit-reef')).toBe(true);
+    expect(seen.has('festival-grounds')).toBe(true);
+  });
+
+  it('takes the longest length a casual may, and a 24 hour trip only from the rank that opens it', () => {
+    const casual = player('casual');
+    expect(chooseLength(casual, 1, 9)).toBe('long');
+    const daily = player();
+    for (const length of EXPEDITION_LENGTHS) {
+      if (length === 'day') continue;
+      expect(lengthRules(length).minRank).toBeLessThanOrEqual(1);
+    }
+    expect(chooseLength(daily, 1, 9)).not.toBe('day');
+    expect(chooseLength(casual, lengthRules('day').minRank, 9)).toBe('day');
+  });
+});
+
+describe('supplies', () => {
+  it('never carries more than the limit or two of a kind, and never spends past the budget', () => {
+    const p = player();
+    const dest = place('tidepools');
+    for (const budget of [0, 10, 40, 100, 1000]) {
+      const picked = chooseKit(p, { length: 'long', dest, stars: 0 }, budget);
+      expect(picked.cost).toBeLessThanOrEqual(budget);
+      expect(picked.kit.length).toBeLessThanOrEqual(RULES.expeditions.maxSupplies);
+      const kinds = picked.kit.map(
+        (id) => expeditionContent.supplies.find((s) => s.id === id)?.kind,
+      );
+      expect(new Set(kinds).size).toBe(kinds.length);
+      expect(picked.bought.every((id) => picked.kit.includes(id))).toBe(true);
+    }
+  });
+
+  it('uses supplies in stock for nothing', () => {
+    const p = player();
+    p.supplies['lure-great'] = 1;
+    const dest = place('storm-ridge');
+    const picked = chooseKit(p, { length: 'long', dest, stars: 0 }, 0);
+    expect(picked.kit).toContain('lure-great');
+    expect(picked.cost).toBe(0);
+    expect(picked.bought).toEqual([]);
+  });
+});
+
+describe('sending and claiming trips', () => {
+  it('fills only the free slots, with different explorers, and spends within the budget', () => {
+    const p = player();
+    p.stats.trips_finished = RULES.expeditions.slots.secondAfterTrips;
+    const spent = sendTrips(p, ctx(9), 60, (idle) => idle);
+    expect(p.expeditions).toHaveLength(2);
+    expect(new Set(p.expeditions.map((e) => e.explorerId)).size).toBe(2);
+    expect(spent).toBeLessThanOrEqual(60);
+    // Nothing is free now.
+    expect(sendTrips(p, ctx(9), 60, (idle) => idle)).toBe(0);
+    expect(p.expeditions).toHaveLength(2);
+  });
+
+  it('keeps a trip until it ends, then pays catches, XP and familiarity once', () => {
+    const p = player();
+    sendTrips(p, ctx(9), 0, (idle) => idle);
+    const trip = p.expeditions[0];
+    if (trip === undefined) throw new Error('no trip');
+    const explorer = trip.explorerId;
+    claimTrips(p, ctx(trip.endsAtHour - 1));
+    expect(p.expeditions).toHaveLength(1);
+    expect(p.stats.trips_finished).toBe(0);
+    // Claimed at the end (a pushed-on goal may keep it out a little longer: claim far later).
+    claimTrips(p, ctx(trip.endsAtHour + 100));
+    expect(p.expeditions).toHaveLength(0);
+    expect(p.stats.trips_finished + p.stats.trips_failed).toBe(1);
+    if (p.stats.trips_finished === 1) {
+      expect(p.explorerXp[explorer] ?? 0).toBeGreaterThan(0);
+      expect(Object.keys(p.familiarity).length).toBeGreaterThan(0);
+    }
+    claimTrips(p, ctx(trip.endsAtHour + 200));
+    expect(p.stats.trips_finished + p.stats.trips_failed).toBe(1);
+  });
+});
+
+describe('trips in the economy', () => {
+  const run = (seed: string) => runEconomy({ seed, weeks: 6, mix: DEFAULT_MIX, snapshotWeeks: [] });
+
+  it('is deterministic for a seed', () => {
+    const a = run('trips-det');
+    const b = run('trips-det');
+    const summary = (r: ReturnType<typeof run>) =>
+      r.players.map((p) => [p.id, p.weeks.map((w) => [w.rankSum, w.slots, w.trips])]);
+    expect(summary(a)).toEqual(summary(b));
+  });
+
+  it('opens the second slot on the first day for a daily player and keeps rank sums growing', () => {
+    const result = run('trips-slots');
+    const dailies = result.players.filter((p) => p.archetype === 'daily');
+    expect(dailies.length).toBeGreaterThan(0);
+    for (const p of dailies) {
+      const day = p.slotDays[0];
+      expect(day === null ? 99 : day).toBeLessThanOrEqual(2);
+      const sums = p.weeks.map((w) => w.rankSum);
+      for (let i = 1; i < sums.length; i++) {
+        expect(sums[i] as number).toBeGreaterThanOrEqual(sums[i - 1] as number);
+      }
+      // Ranks never exceed the table.
+      expect(explorerRank(1e9)).toBe(RULES.expeditions.rank.xpForRank.length);
+    }
+  });
+});

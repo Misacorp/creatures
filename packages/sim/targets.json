@@ -262,5 +262,85 @@
     "comparator": "min",
     "value": 0.6,
     "unit": "percent"
+  },
+  {
+    "id": "exp-slot-2",
+    "description": "Day a daily player's 2nd expedition slot opens, after joining (median; the first day)",
+    "metric": "exp.dailySlot2Day",
+    "comparator": "max",
+    "value": 1,
+    "unit": "number"
+  },
+  {
+    "id": "exp-slot-3",
+    "description": "Day a daily player's 3rd expedition slot opens (median; about a month, 30 plus or minus 7)",
+    "metric": "exp.dailySlot3Day",
+    "comparator": "range",
+    "value": [23, 37],
+    "unit": "number"
+  },
+  {
+    "id": "exp-slot-4",
+    "description": "Day a daily player's 4th expedition slot opens (median; about four months)",
+    "metric": "exp.dailySlot4Day",
+    "comparator": "range",
+    "value": [90, 150],
+    "unit": "number"
+  },
+  {
+    "id": "exp-slot-5",
+    "description": "Day a daily player's 5th expedition slot opens (median; about a year; a slot that never opens counts as 999)",
+    "metric": "exp.dailySlot5Day",
+    "comparator": "range",
+    "value": [330, 400],
+    "unit": "number"
+  },
+  {
+    "id": "exp-long-best",
+    "description": "Worth per day of the best long strategy (always 12 or 24 hour trips) over the best short one (2 or 6 hours), Bait-free",
+    "metric": "exp.longVsShortRate",
+    "comparator": "min",
+    "value": 1.2,
+    "unit": "ratio"
+  },
+  {
+    "id": "exp-spam-worst",
+    "description": "Worth per day of always sending 2 hour trips over the worst of the other three strategies (at most 1: spam is the worst)",
+    "metric": "exp.spamVsOthersRate",
+    "comparator": "max",
+    "value": 1,
+    "unit": "ratio"
+  },
+  {
+    "id": "exp-daily-long-share",
+    "description": "Share of daily players' finished trips that are 12 or 24 hours (long trips are what people send)",
+    "metric": "exp.dailyLongShare",
+    "comparator": "min",
+    "value": 0.5,
+    "unit": "percent"
+  },
+  {
+    "id": "exp-risky-fair-min",
+    "description": "Lowest expected worth of a risky push-on goal against coming home, over every length it is offered after",
+    "metric": "exp.riskyRatioMin",
+    "comparator": "min",
+    "value": 0.9,
+    "unit": "ratio"
+  },
+  {
+    "id": "exp-risky-fair-max",
+    "description": "Highest expected worth of a risky push-on goal against coming home (a fair gamble: within 10%)",
+    "metric": "exp.riskyRatioMax",
+    "comparator": "max",
+    "value": 1.1,
+    "unit": "ratio"
+  },
+  {
+    "id": "exp-casual-discovery",
+    "description": "Most species a casual player owns ahead of today's expeditions at the end of any week 1 to 12 (no faster than today)",
+    "metric": "exp.casualSpeciesVsToday",
+    "comparator": "max",
+    "value": 0.3,
+    "unit": "number"
   }
 ]

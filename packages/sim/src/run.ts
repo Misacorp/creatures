@@ -26,11 +26,15 @@ export interface RunSettings {
   pitySims: number;
   /** Long-run sims (30 weeks, with the ladder and Festivals) per server size (5, 10 and 15 players). */
   longRunSims: number;
+  /** 60-week sims of the default server for the days the expedition slots open at. */
+  tripLongSims: number;
   /** Player counts of the raid sweep. */
   counts: number[];
 }
 
 export const PITY_WEEKS = 20;
+/** Weeks the slot-opening sims run: a bit more than a year. */
+export const TRIP_LONG_WEEKS = 60;
 export const SWEEP_COUNTS = [1, 5, 10, 15];
 
 export function defaultSettings(
@@ -46,6 +50,7 @@ export function defaultSettings(
     economySims: quick ? 4 : 24,
     pitySims: quick ? 8 : 40,
     longRunSims: quick ? 6 : 40,
+    tripLongSims: quick ? 2 : 8,
     counts: [...SWEEP_COUNTS],
   };
 }
@@ -140,6 +145,18 @@ export function runSimulation(settings: RunSettings): RunOutput {
     ),
   }));
 
+  const tripLongSims: EconomyResult[] = [];
+  for (let k = 0; k < settings.tripLongSims; k++) {
+    tripLongSims.push(
+      runEconomy({
+        seed: `${settings.seed}:trips-long:${DEFAULT_SERVER_SIZE}:${k}`,
+        weeks: TRIP_LONG_WEEKS,
+        mix: DEFAULT_MIX,
+        snapshotWeeks: [],
+      }),
+    );
+  }
+
   const sweep = runSweep({
     seed: settings.seed,
     runs: settings.runsPerCell,
@@ -150,6 +167,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
     weeks: settings.weeks,
     defaultSims,
     baselineSims,
+    tripLongSims,
     pitySims,
     sweep,
     longRun,
