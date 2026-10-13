@@ -1,0 +1,2066 @@
+{
+  "version": 1,
+  "from": "2026-10-06",
+  "to": "2026-10-12",
+  "days": 7,
+  "rolledDays": 21,
+  "totals": [
+    {
+      "metric": "dau",
+      "dims": {},
+      "value": 168
+    },
+    {
+      "metric": "dungeon.clear_depth",
+      "dims": {
+        "depth": 1
+      },
+      "value": 32
+    },
+    {
+      "metric": "dungeon.clear_depth",
+      "dims": {
+        "depth": 2
+      },
+      "value": 24
+    },
+    {
+      "metric": "dungeon.clear_depth",
+      "dims": {
+        "depth": 3
+      },
+      "value": 20
+    },
+    {
+      "metric": "dungeon.clear_depth",
+      "dims": {
+        "depth": 4
+      },
+      "value": 6
+    },
+    {
+      "metric": "dungeon.clear_depth",
+      "dims": {
+        "depth": 5
+      },
+      "value": 2
+    },
+    {
+      "metric": "dungeon.clear_depth",
+      "dims": {
+        "depth": 6
+      },
+      "value": 0
+    },
+    {
+      "metric": "dungeon.depth",
+      "dims": {
+        "depth": 1
+      },
+      "value": 34
+    },
+    {
+      "metric": "dungeon.depth",
+      "dims": {
+        "depth": 2
+      },
+      "value": 28
+    },
+    {
+      "metric": "dungeon.depth",
+      "dims": {
+        "depth": 3
+      },
+      "value": 24
+    },
+    {
+      "metric": "dungeon.depth",
+      "dims": {
+        "depth": 4
+      },
+      "value": 22
+    },
+    {
+      "metric": "dungeon.depth",
+      "dims": {
+        "depth": 5
+      },
+      "value": 10
+    },
+    {
+      "metric": "dungeon.depth",
+      "dims": {
+        "depth": 6
+      },
+      "value": 3
+    },
+    {
+      "metric": "dungeon.run",
+      "dims": {
+        "attempt": 1,
+        "cleared": 0
+      },
+      "value": 23
+    },
+    {
+      "metric": "dungeon.run",
+      "dims": {
+        "attempt": 1,
+        "cleared": 1
+      },
+      "value": 84
+    },
+    {
+      "metric": "dungeon.run",
+      "dims": {
+        "attempt": 2,
+        "cleared": 0
+      },
+      "value": 14
+    },
+    {
+      "metric": "dungeon.team_role",
+      "dims": {
+        "role": "guard"
+      },
+      "value": 60
+    },
+    {
+      "metric": "dungeon.team_role",
+      "dims": {
+        "role": "payoff"
+      },
+      "value": 80
+    },
+    {
+      "metric": "dungeon.team_role",
+      "dims": {
+        "role": "setter"
+      },
+      "value": 55
+    },
+    {
+      "metric": "dungeon.team_role",
+      "dims": {
+        "role": "support"
+      },
+      "value": 42
+    },
+    {
+      "metric": "dungeon.team_species",
+      "dims": {
+        "species": "cindle"
+      },
+      "value": 70
+    },
+    {
+      "metric": "dungeon.team_species",
+      "dims": {
+        "species": "mossback"
+      },
+      "value": 8
+    },
+    {
+      "metric": "dungeon.team_species",
+      "dims": {
+        "species": "pyrelynx"
+      },
+      "value": 22
+    },
+    {
+      "metric": "dungeon.team_species",
+      "dims": {
+        "species": "splashet"
+      },
+      "value": 55
+    },
+    {
+      "metric": "dungeon.team_species",
+      "dims": {
+        "species": "sproutle"
+      },
+      "value": 52
+    },
+    {
+      "metric": "dungeon.team_species",
+      "dims": {
+        "species": "zipmouse"
+      },
+      "value": 30
+    },
+    {
+      "metric": "expedition.send",
+      "dims": {
+        "destination": "ember-caves",
+        "length": "long"
+      },
+      "value": 20
+    },
+    {
+      "metric": "expedition.send",
+      "dims": {
+        "destination": "ember-caves",
+        "length": "short"
+      },
+      "value": 25
+    },
+    {
+      "metric": "expedition.send",
+      "dims": {
+        "destination": "moonlit-reef",
+        "length": "long"
+      },
+      "value": 4
+    },
+    {
+      "metric": "expedition.send",
+      "dims": {
+        "destination": "old-crossroads",
+        "length": "short"
+      },
+      "value": 12
+    },
+    {
+      "metric": "expedition.send",
+      "dims": {
+        "destination": "storm-ridge",
+        "length": "medium"
+      },
+      "value": 6
+    },
+    {
+      "metric": "expedition.send",
+      "dims": {
+        "destination": "tidepools",
+        "length": "medium"
+      },
+      "value": 30
+    },
+    {
+      "metric": "expedition.send",
+      "dims": {
+        "destination": "tidepools",
+        "length": "short"
+      },
+      "value": 40
+    },
+    {
+      "metric": "expedition.send",
+      "dims": {
+        "destination": "verdant-hollow",
+        "length": "long"
+      },
+      "value": 12
+    },
+    {
+      "metric": "expedition.send",
+      "dims": {
+        "destination": "verdant-hollow",
+        "length": "medium"
+      },
+      "value": 28
+    },
+    {
+      "metric": "expedition.supply_used",
+      "dims": {
+        "supply": "lantern-basic"
+      },
+      "value": 15
+    },
+    {
+      "metric": "expedition.supply_used",
+      "dims": {
+        "supply": "lure-basic"
+      },
+      "value": 60
+    },
+    {
+      "metric": "expedition.supply_used",
+      "dims": {
+        "supply": "lure-good"
+      },
+      "value": 20
+    },
+    {
+      "metric": "expedition.supply_used",
+      "dims": {
+        "supply": "map-scrap-basic"
+      },
+      "value": 18
+    },
+    {
+      "metric": "expedition.supply_used",
+      "dims": {
+        "supply": "satchel-basic"
+      },
+      "value": 9
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "bait",
+        "dir": "sink",
+        "label": "expedition"
+      },
+      "value": 800
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "bait",
+        "dir": "sink",
+        "label": "training"
+      },
+      "value": 3600
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "bait",
+        "dir": "source",
+        "label": "dungeon"
+      },
+      "value": 600
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "bait",
+        "dir": "source",
+        "label": "festival"
+      },
+      "value": 300
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "bait",
+        "dir": "source",
+        "label": "leet"
+      },
+      "value": 4200
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "bait",
+        "dir": "source",
+        "label": "rank_gift"
+      },
+      "value": 200
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "ember-shard",
+        "dir": "sink",
+        "label": "workshop_enchant"
+      },
+      "value": 90
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "ember-shard",
+        "dir": "source",
+        "label": "dungeon"
+      },
+      "value": 40
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "essence",
+        "dir": "sink",
+        "label": "evolution"
+      },
+      "value": 250
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "essence",
+        "dir": "sink",
+        "label": "gear"
+      },
+      "value": 120
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "essence",
+        "dir": "source",
+        "label": "dungeon"
+      },
+      "value": 400
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "essence",
+        "dir": "source",
+        "label": "festival"
+      },
+      "value": 200
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "essence",
+        "dir": "source",
+        "label": "raid"
+      },
+      "value": 900
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "glimmer",
+        "dir": "source",
+        "label": "dungeon"
+      },
+      "value": 30
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "scrap",
+        "dir": "sink",
+        "label": "workshop_craft"
+      },
+      "value": 420
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "scrap",
+        "dir": "source",
+        "label": "dismantle"
+      },
+      "value": 380
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "scrap",
+        "dir": "source",
+        "label": "dungeon"
+      },
+      "value": 150
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "scrap",
+        "dir": "source",
+        "label": "raid_phase"
+      },
+      "value": 120
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "supplies",
+        "dir": "sink",
+        "label": "expedition"
+      },
+      "value": 200
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "supplies",
+        "dir": "source",
+        "label": "buy"
+      },
+      "value": 150
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "supplies",
+        "dir": "source",
+        "label": "craft"
+      },
+      "value": 40
+    },
+    {
+      "metric": "flow",
+      "dims": {
+        "currency": "supplies",
+        "dir": "source",
+        "label": "dungeon"
+      },
+      "value": 25
+    },
+    {
+      "metric": "new_players",
+      "dims": {},
+      "value": 4
+    },
+    {
+      "metric": "pushon.chosen",
+      "dims": {
+        "goal": "field-notes",
+        "risk": "safe"
+      },
+      "value": 12
+    },
+    {
+      "metric": "pushon.chosen",
+      "dims": {
+        "goal": "forage",
+        "risk": "safe"
+      },
+      "value": 20
+    },
+    {
+      "metric": "pushon.chosen",
+      "dims": {
+        "goal": "linger",
+        "risk": "safe"
+      },
+      "value": 17
+    },
+    {
+      "metric": "pushon.chosen",
+      "dims": {
+        "goal": "scout-ahead",
+        "risk": "risky"
+      },
+      "value": 5
+    },
+    {
+      "metric": "pushon.chosen",
+      "dims": {
+        "goal": "shortcut",
+        "risk": "risky"
+      },
+      "value": 3
+    },
+    {
+      "metric": "pushon.goal_offered",
+      "dims": {
+        "goal": "ancient-vault"
+      },
+      "value": 29
+    },
+    {
+      "metric": "pushon.goal_offered",
+      "dims": {
+        "goal": "field-notes"
+      },
+      "value": 35
+    },
+    {
+      "metric": "pushon.goal_offered",
+      "dims": {
+        "goal": "forage"
+      },
+      "value": 40
+    },
+    {
+      "metric": "pushon.goal_offered",
+      "dims": {
+        "goal": "linger"
+      },
+      "value": 38
+    },
+    {
+      "metric": "pushon.goal_offered",
+      "dims": {
+        "goal": "lost-cache"
+      },
+      "value": 31
+    },
+    {
+      "metric": "pushon.goal_offered",
+      "dims": {
+        "goal": "press-deeper"
+      },
+      "value": 33
+    },
+    {
+      "metric": "pushon.goal_offered",
+      "dims": {
+        "goal": "scout-ahead"
+      },
+      "value": 30
+    },
+    {
+      "metric": "pushon.goal_offered",
+      "dims": {
+        "goal": "shortcut"
+      },
+      "value": 25
+    },
+    {
+      "metric": "pushon.offered",
+      "dims": {},
+      "value": 80
+    },
+    {
+      "metric": "raid.ability_pick",
+      "dims": {
+        "ability": "purge"
+      },
+      "value": 5
+    },
+    {
+      "metric": "raid.ability_pick",
+      "dims": {
+        "ability": "rally"
+      },
+      "value": 12
+    },
+    {
+      "metric": "raid.ability_pick",
+      "dims": {
+        "ability": "re-mark"
+      },
+      "value": 6
+    },
+    {
+      "metric": "raid.ability_pick",
+      "dims": {
+        "ability": "shield-wall"
+      },
+      "value": 9
+    },
+    {
+      "metric": "raid.finale_ability",
+      "dims": {
+        "practice": 0,
+        "mode": "default"
+      },
+      "value": 52
+    },
+    {
+      "metric": "raid.finale_ability",
+      "dims": {
+        "practice": 0,
+        "mode": "fired"
+      },
+      "value": 14
+    },
+    {
+      "metric": "raid.finale_ability",
+      "dims": {
+        "practice": 0,
+        "mode": "held"
+      },
+      "value": 4
+    },
+    {
+      "metric": "raid.finale_fights",
+      "dims": {
+        "practice": 0
+      },
+      "value": 5
+    },
+    {
+      "metric": "raid.finale_members",
+      "dims": {
+        "practice": 0
+      },
+      "value": 30
+    },
+    {
+      "metric": "raid.live_watchers",
+      "dims": {},
+      "value": 11
+    },
+    {
+      "metric": "raid.party_size_sum",
+      "dims": {
+        "phase": "finale"
+      },
+      "value": 234
+    },
+    {
+      "metric": "raid.party_size_sum",
+      "dims": {
+        "phase": "phase1"
+      },
+      "value": 162
+    },
+    {
+      "metric": "raid.party_size_sum",
+      "dims": {
+        "phase": "phase2"
+      },
+      "value": 156
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "finale",
+        "rank": 1,
+        "festival": 0,
+        "win": 0
+      },
+      "value": 2
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "finale",
+        "rank": 1,
+        "festival": 0,
+        "win": 1
+      },
+      "value": 6
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "finale",
+        "rank": 2,
+        "festival": 0,
+        "win": 0
+      },
+      "value": 19
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "finale",
+        "rank": 2,
+        "festival": 0,
+        "win": 1
+      },
+      "value": 5
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "finale",
+        "rank": 3,
+        "festival": 0,
+        "win": 0
+      },
+      "value": 2
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "finale",
+        "rank": 3,
+        "festival": 0,
+        "win": 1
+      },
+      "value": 1
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "phase1",
+        "rank": 1,
+        "festival": 0,
+        "win": 1
+      },
+      "value": 9
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "phase1",
+        "rank": 2,
+        "festival": 0,
+        "win": 1
+      },
+      "value": 12
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "phase1",
+        "rank": 3,
+        "festival": 0,
+        "win": 0
+      },
+      "value": 1
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "phase1",
+        "rank": 3,
+        "festival": 0,
+        "win": 1
+      },
+      "value": 5
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "phase2",
+        "rank": 1,
+        "festival": 0,
+        "win": 0
+      },
+      "value": 1
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "phase2",
+        "rank": 1,
+        "festival": 0,
+        "win": 1
+      },
+      "value": 8
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "phase2",
+        "rank": 2,
+        "festival": 0,
+        "win": 0
+      },
+      "value": 3
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "phase2",
+        "rank": 2,
+        "festival": 0,
+        "win": 1
+      },
+      "value": 9
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "phase2",
+        "rank": 3,
+        "festival": 0,
+        "win": 0
+      },
+      "value": 2
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "phase2",
+        "rank": 3,
+        "festival": 0,
+        "win": 1
+      },
+      "value": 3
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "finale",
+        "rank": 2,
+        "festival": 1,
+        "win": 0
+      },
+      "value": 1
+    },
+    {
+      "metric": "raid.phase",
+      "dims": {
+        "phase": "finale",
+        "rank": 2,
+        "festival": 1,
+        "win": 1
+      },
+      "value": 3
+    },
+    {
+      "metric": "raid.team_species",
+      "dims": {
+        "species": "cindle"
+      },
+      "value": 14
+    },
+    {
+      "metric": "raid.team_species",
+      "dims": {
+        "species": "pyrelynx"
+      },
+      "value": 9
+    },
+    {
+      "metric": "raid.team_species",
+      "dims": {
+        "species": "splashet"
+      },
+      "value": 12
+    },
+    {
+      "metric": "raid.team_species",
+      "dims": {
+        "species": "sproutle"
+      },
+      "value": 10
+    },
+    {
+      "metric": "raid.team_species",
+      "dims": {
+        "species": "tidewing"
+      },
+      "value": 6
+    },
+    {
+      "metric": "raid.team_species",
+      "dims": {
+        "species": "voltaro"
+      },
+      "value": 3
+    },
+    {
+      "metric": "raid.team_species",
+      "dims": {
+        "species": "zipmouse"
+      },
+      "value": 4
+    },
+    {
+      "metric": "sessions",
+      "dims": {},
+      "value": 270
+    },
+    {
+      "metric": "starters",
+      "dims": {
+        "species": "cindle"
+      },
+      "value": 1
+    },
+    {
+      "metric": "starters",
+      "dims": {
+        "species": "splashet"
+      },
+      "value": 2
+    },
+    {
+      "metric": "starters",
+      "dims": {
+        "species": "sproutle"
+      },
+      "value": 1
+    },
+    {
+      "metric": "users",
+      "dims": {
+        "feature": "collection"
+      },
+      "value": 101
+    },
+    {
+      "metric": "users",
+      "dims": {
+        "feature": "dungeon"
+      },
+      "value": 118
+    },
+    {
+      "metric": "users",
+      "dims": {
+        "feature": "expeditions"
+      },
+      "value": 134
+    },
+    {
+      "metric": "users",
+      "dims": {
+        "feature": "gear"
+      },
+      "value": 50
+    },
+    {
+      "metric": "users",
+      "dims": {
+        "feature": "raid"
+      },
+      "value": 34
+    },
+    {
+      "metric": "users",
+      "dims": {
+        "feature": "workshop"
+      },
+      "value": 67
+    },
+    {
+      "metric": "workshop.job_start",
+      "dims": {
+        "job": "craft"
+      },
+      "value": 40
+    },
+    {
+      "metric": "workshop.job_start",
+      "dims": {
+        "job": "improve"
+      },
+      "value": 18
+    },
+    {
+      "metric": "workshop.job_start",
+      "dims": {
+        "job": "supply"
+      },
+      "value": 14
+    }
+  ],
+  "guilds": {
+    "known": 3,
+    "reporting": 3
+  },
+  "daily": {
+    "2026-10-12": [
+      {
+        "metric": "dau",
+        "dims": {},
+        "value": 26
+      },
+      {
+        "metric": "sessions",
+        "dims": {},
+        "value": 41
+      }
+    ]
+  },
+  "byGuild": {
+    "a1b2c3": [
+      {
+        "metric": "dau",
+        "dims": {},
+        "value": 90
+      }
+    ],
+    "d4e5f6": [
+      {
+        "metric": "dau",
+        "dims": {},
+        "value": 50
+      }
+    ],
+    "0a9b8c": [
+      {
+        "metric": "dau",
+        "dims": {},
+        "value": 28
+      }
+    ]
+  },
+  "previous": {
+    "from": "2026-09-29",
+    "to": "2026-10-05",
+    "days": 7,
+    "rolledDays": 21,
+    "totals": [
+      {
+        "metric": "dau",
+        "dims": {},
+        "value": 150
+      },
+      {
+        "metric": "dungeon.clear_depth",
+        "dims": {
+          "depth": 1
+        },
+        "value": 26
+      },
+      {
+        "metric": "dungeon.clear_depth",
+        "dims": {
+          "depth": 2
+        },
+        "value": 19
+      },
+      {
+        "metric": "dungeon.clear_depth",
+        "dims": {
+          "depth": 3
+        },
+        "value": 16
+      },
+      {
+        "metric": "dungeon.clear_depth",
+        "dims": {
+          "depth": 4
+        },
+        "value": 5
+      },
+      {
+        "metric": "dungeon.clear_depth",
+        "dims": {
+          "depth": 5
+        },
+        "value": 2
+      },
+      {
+        "metric": "dungeon.clear_depth",
+        "dims": {
+          "depth": 6
+        },
+        "value": 0
+      },
+      {
+        "metric": "dungeon.depth",
+        "dims": {
+          "depth": 1
+        },
+        "value": 27
+      },
+      {
+        "metric": "dungeon.depth",
+        "dims": {
+          "depth": 2
+        },
+        "value": 22
+      },
+      {
+        "metric": "dungeon.depth",
+        "dims": {
+          "depth": 3
+        },
+        "value": 19
+      },
+      {
+        "metric": "dungeon.depth",
+        "dims": {
+          "depth": 4
+        },
+        "value": 18
+      },
+      {
+        "metric": "dungeon.depth",
+        "dims": {
+          "depth": 5
+        },
+        "value": 8
+      },
+      {
+        "metric": "dungeon.depth",
+        "dims": {
+          "depth": 6
+        },
+        "value": 2
+      },
+      {
+        "metric": "dungeon.run",
+        "dims": {
+          "attempt": 1,
+          "cleared": 0
+        },
+        "value": 17
+      },
+      {
+        "metric": "dungeon.run",
+        "dims": {
+          "attempt": 1,
+          "cleared": 1
+        },
+        "value": 68
+      },
+      {
+        "metric": "dungeon.run",
+        "dims": {
+          "attempt": 2,
+          "cleared": 0
+        },
+        "value": 11
+      },
+      {
+        "metric": "dungeon.team_role",
+        "dims": {
+          "role": "guard"
+        },
+        "value": 48
+      },
+      {
+        "metric": "dungeon.team_role",
+        "dims": {
+          "role": "payoff"
+        },
+        "value": 64
+      },
+      {
+        "metric": "dungeon.team_role",
+        "dims": {
+          "role": "setter"
+        },
+        "value": 44
+      },
+      {
+        "metric": "dungeon.team_role",
+        "dims": {
+          "role": "support"
+        },
+        "value": 34
+      },
+      {
+        "metric": "dungeon.team_species",
+        "dims": {
+          "species": "cindle"
+        },
+        "value": 56
+      },
+      {
+        "metric": "dungeon.team_species",
+        "dims": {
+          "species": "mossback"
+        },
+        "value": 6
+      },
+      {
+        "metric": "dungeon.team_species",
+        "dims": {
+          "species": "pyrelynx"
+        },
+        "value": 18
+      },
+      {
+        "metric": "dungeon.team_species",
+        "dims": {
+          "species": "splashet"
+        },
+        "value": 44
+      },
+      {
+        "metric": "dungeon.team_species",
+        "dims": {
+          "species": "sproutle"
+        },
+        "value": 42
+      },
+      {
+        "metric": "dungeon.team_species",
+        "dims": {
+          "species": "zipmouse"
+        },
+        "value": 24
+      },
+      {
+        "metric": "expedition.send",
+        "dims": {
+          "destination": "ember-caves",
+          "length": "long"
+        },
+        "value": 16
+      },
+      {
+        "metric": "expedition.send",
+        "dims": {
+          "destination": "ember-caves",
+          "length": "short"
+        },
+        "value": 20
+      },
+      {
+        "metric": "expedition.send",
+        "dims": {
+          "destination": "moonlit-reef",
+          "length": "long"
+        },
+        "value": 3
+      },
+      {
+        "metric": "expedition.send",
+        "dims": {
+          "destination": "old-crossroads",
+          "length": "short"
+        },
+        "value": 10
+      },
+      {
+        "metric": "expedition.send",
+        "dims": {
+          "destination": "storm-ridge",
+          "length": "medium"
+        },
+        "value": 5
+      },
+      {
+        "metric": "expedition.send",
+        "dims": {
+          "destination": "tidepools",
+          "length": "medium"
+        },
+        "value": 24
+      },
+      {
+        "metric": "expedition.send",
+        "dims": {
+          "destination": "tidepools",
+          "length": "short"
+        },
+        "value": 32
+      },
+      {
+        "metric": "expedition.send",
+        "dims": {
+          "destination": "verdant-hollow",
+          "length": "long"
+        },
+        "value": 10
+      },
+      {
+        "metric": "expedition.send",
+        "dims": {
+          "destination": "verdant-hollow",
+          "length": "medium"
+        },
+        "value": 22
+      },
+      {
+        "metric": "expedition.supply_used",
+        "dims": {
+          "supply": "lantern-basic"
+        },
+        "value": 12
+      },
+      {
+        "metric": "expedition.supply_used",
+        "dims": {
+          "supply": "lure-basic"
+        },
+        "value": 48
+      },
+      {
+        "metric": "expedition.supply_used",
+        "dims": {
+          "supply": "lure-good"
+        },
+        "value": 16
+      },
+      {
+        "metric": "expedition.supply_used",
+        "dims": {
+          "supply": "map-scrap-basic"
+        },
+        "value": 14
+      },
+      {
+        "metric": "expedition.supply_used",
+        "dims": {
+          "supply": "satchel-basic"
+        },
+        "value": 7
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "bait",
+          "dir": "sink",
+          "label": "expedition"
+        },
+        "value": 720
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "bait",
+          "dir": "sink",
+          "label": "training"
+        },
+        "value": 3240
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "bait",
+          "dir": "source",
+          "label": "dungeon"
+        },
+        "value": 540
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "bait",
+          "dir": "source",
+          "label": "festival"
+        },
+        "value": 270
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "bait",
+          "dir": "source",
+          "label": "leet"
+        },
+        "value": 3780
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "bait",
+          "dir": "source",
+          "label": "rank_gift"
+        },
+        "value": 180
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "ember-shard",
+          "dir": "sink",
+          "label": "workshop_enchant"
+        },
+        "value": 81
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "ember-shard",
+          "dir": "source",
+          "label": "dungeon"
+        },
+        "value": 36
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "essence",
+          "dir": "sink",
+          "label": "evolution"
+        },
+        "value": 225
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "essence",
+          "dir": "sink",
+          "label": "gear"
+        },
+        "value": 108
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "essence",
+          "dir": "source",
+          "label": "dungeon"
+        },
+        "value": 360
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "essence",
+          "dir": "source",
+          "label": "festival"
+        },
+        "value": 180
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "essence",
+          "dir": "source",
+          "label": "raid"
+        },
+        "value": 810
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "glimmer",
+          "dir": "source",
+          "label": "dungeon"
+        },
+        "value": 27
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "scrap",
+          "dir": "sink",
+          "label": "workshop_craft"
+        },
+        "value": 378
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "scrap",
+          "dir": "source",
+          "label": "dismantle"
+        },
+        "value": 342
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "scrap",
+          "dir": "source",
+          "label": "dungeon"
+        },
+        "value": 135
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "scrap",
+          "dir": "source",
+          "label": "raid_phase"
+        },
+        "value": 108
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "supplies",
+          "dir": "sink",
+          "label": "expedition"
+        },
+        "value": 180
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "supplies",
+          "dir": "source",
+          "label": "buy"
+        },
+        "value": 135
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "supplies",
+          "dir": "source",
+          "label": "craft"
+        },
+        "value": 36
+      },
+      {
+        "metric": "flow",
+        "dims": {
+          "currency": "supplies",
+          "dir": "source",
+          "label": "dungeon"
+        },
+        "value": 22
+      },
+      {
+        "metric": "new_players",
+        "dims": {},
+        "value": 6
+      },
+      {
+        "metric": "pushon.chosen",
+        "dims": {
+          "goal": "field-notes",
+          "risk": "safe"
+        },
+        "value": 10
+      },
+      {
+        "metric": "pushon.chosen",
+        "dims": {
+          "goal": "forage",
+          "risk": "safe"
+        },
+        "value": 16
+      },
+      {
+        "metric": "pushon.chosen",
+        "dims": {
+          "goal": "linger",
+          "risk": "safe"
+        },
+        "value": 14
+      },
+      {
+        "metric": "pushon.chosen",
+        "dims": {
+          "goal": "scout-ahead",
+          "risk": "risky"
+        },
+        "value": 4
+      },
+      {
+        "metric": "pushon.chosen",
+        "dims": {
+          "goal": "shortcut",
+          "risk": "risky"
+        },
+        "value": 2
+      },
+      {
+        "metric": "pushon.goal_offered",
+        "dims": {
+          "goal": "ancient-vault"
+        },
+        "value": 23
+      },
+      {
+        "metric": "pushon.goal_offered",
+        "dims": {
+          "goal": "field-notes"
+        },
+        "value": 28
+      },
+      {
+        "metric": "pushon.goal_offered",
+        "dims": {
+          "goal": "forage"
+        },
+        "value": 32
+      },
+      {
+        "metric": "pushon.goal_offered",
+        "dims": {
+          "goal": "linger"
+        },
+        "value": 30
+      },
+      {
+        "metric": "pushon.goal_offered",
+        "dims": {
+          "goal": "lost-cache"
+        },
+        "value": 25
+      },
+      {
+        "metric": "pushon.goal_offered",
+        "dims": {
+          "goal": "press-deeper"
+        },
+        "value": 26
+      },
+      {
+        "metric": "pushon.goal_offered",
+        "dims": {
+          "goal": "scout-ahead"
+        },
+        "value": 24
+      },
+      {
+        "metric": "pushon.goal_offered",
+        "dims": {
+          "goal": "shortcut"
+        },
+        "value": 20
+      },
+      {
+        "metric": "pushon.offered",
+        "dims": {},
+        "value": 64
+      },
+      {
+        "metric": "raid.ability_pick",
+        "dims": {
+          "ability": "purge"
+        },
+        "value": 4
+      },
+      {
+        "metric": "raid.ability_pick",
+        "dims": {
+          "ability": "rally"
+        },
+        "value": 10
+      },
+      {
+        "metric": "raid.ability_pick",
+        "dims": {
+          "ability": "re-mark"
+        },
+        "value": 5
+      },
+      {
+        "metric": "raid.ability_pick",
+        "dims": {
+          "ability": "shield-wall"
+        },
+        "value": 7
+      },
+      {
+        "metric": "raid.finale_ability",
+        "dims": {
+          "practice": 0,
+          "mode": "default"
+        },
+        "value": 42
+      },
+      {
+        "metric": "raid.finale_ability",
+        "dims": {
+          "practice": 0,
+          "mode": "fired"
+        },
+        "value": 11
+      },
+      {
+        "metric": "raid.finale_ability",
+        "dims": {
+          "practice": 0,
+          "mode": "held"
+        },
+        "value": 3
+      },
+      {
+        "metric": "raid.finale_fights",
+        "dims": {
+          "practice": 0
+        },
+        "value": 4
+      },
+      {
+        "metric": "raid.finale_members",
+        "dims": {
+          "practice": 0
+        },
+        "value": 24
+      },
+      {
+        "metric": "raid.live_watchers",
+        "dims": {},
+        "value": 9
+      },
+      {
+        "metric": "raid.party_size_sum",
+        "dims": {
+          "phase": "finale"
+        },
+        "value": 180
+      },
+      {
+        "metric": "raid.party_size_sum",
+        "dims": {
+          "phase": "phase1"
+        },
+        "value": 132
+      },
+      {
+        "metric": "raid.party_size_sum",
+        "dims": {
+          "phase": "phase2"
+        },
+        "value": 126
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "finale",
+          "rank": 1,
+          "festival": 0,
+          "win": 0
+        },
+        "value": 1
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "finale",
+          "rank": 1,
+          "festival": 0,
+          "win": 1
+        },
+        "value": 5
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "finale",
+          "rank": 2,
+          "festival": 0,
+          "win": 0
+        },
+        "value": 15
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "finale",
+          "rank": 2,
+          "festival": 0,
+          "win": 1
+        },
+        "value": 4
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "finale",
+          "rank": 3,
+          "festival": 0,
+          "win": 0
+        },
+        "value": 1
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "finale",
+          "rank": 3,
+          "festival": 0,
+          "win": 1
+        },
+        "value": 1
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "phase1",
+          "rank": 1,
+          "festival": 0,
+          "win": 1
+        },
+        "value": 7
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "phase1",
+          "rank": 2,
+          "festival": 0,
+          "win": 1
+        },
+        "value": 10
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "phase1",
+          "rank": 3,
+          "festival": 0,
+          "win": 0
+        },
+        "value": 1
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "phase1",
+          "rank": 3,
+          "festival": 0,
+          "win": 1
+        },
+        "value": 4
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "phase2",
+          "rank": 1,
+          "festival": 0,
+          "win": 0
+        },
+        "value": 1
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "phase2",
+          "rank": 1,
+          "festival": 0,
+          "win": 1
+        },
+        "value": 6
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "phase2",
+          "rank": 2,
+          "festival": 0,
+          "win": 0
+        },
+        "value": 3
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "phase2",
+          "rank": 2,
+          "festival": 0,
+          "win": 1
+        },
+        "value": 7
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "phase2",
+          "rank": 3,
+          "festival": 0,
+          "win": 0
+        },
+        "value": 2
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "phase2",
+          "rank": 3,
+          "festival": 0,
+          "win": 1
+        },
+        "value": 2
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "finale",
+          "rank": 2,
+          "festival": 1,
+          "win": 0
+        },
+        "value": 1
+      },
+      {
+        "metric": "raid.phase",
+        "dims": {
+          "phase": "finale",
+          "rank": 2,
+          "festival": 1,
+          "win": 1
+        },
+        "value": 2
+      },
+      {
+        "metric": "raid.team_species",
+        "dims": {
+          "species": "cindle"
+        },
+        "value": 11
+      },
+      {
+        "metric": "raid.team_species",
+        "dims": {
+          "species": "pyrelynx"
+        },
+        "value": 7
+      },
+      {
+        "metric": "raid.team_species",
+        "dims": {
+          "species": "splashet"
+        },
+        "value": 10
+      },
+      {
+        "metric": "raid.team_species",
+        "dims": {
+          "species": "sproutle"
+        },
+        "value": 8
+      },
+      {
+        "metric": "raid.team_species",
+        "dims": {
+          "species": "tidewing"
+        },
+        "value": 5
+      },
+      {
+        "metric": "raid.team_species",
+        "dims": {
+          "species": "voltaro"
+        },
+        "value": 2
+      },
+      {
+        "metric": "raid.team_species",
+        "dims": {
+          "species": "zipmouse"
+        },
+        "value": 3
+      },
+      {
+        "metric": "sessions",
+        "dims": {},
+        "value": 225
+      },
+      {
+        "metric": "starters",
+        "dims": {
+          "species": "cindle"
+        },
+        "value": 1
+      },
+      {
+        "metric": "starters",
+        "dims": {
+          "species": "splashet"
+        },
+        "value": 2
+      },
+      {
+        "metric": "starters",
+        "dims": {
+          "species": "sproutle"
+        },
+        "value": 1
+      },
+      {
+        "metric": "users",
+        "dims": {
+          "feature": "collection"
+        },
+        "value": 90
+      },
+      {
+        "metric": "users",
+        "dims": {
+          "feature": "dungeon"
+        },
+        "value": 105
+      },
+      {
+        "metric": "users",
+        "dims": {
+          "feature": "expeditions"
+        },
+        "value": 120
+      },
+      {
+        "metric": "users",
+        "dims": {
+          "feature": "gear"
+        },
+        "value": 45
+      },
+      {
+        "metric": "users",
+        "dims": {
+          "feature": "raid"
+        },
+        "value": 30
+      },
+      {
+        "metric": "users",
+        "dims": {
+          "feature": "workshop"
+        },
+        "value": 60
+      },
+      {
+        "metric": "workshop.job_start",
+        "dims": {
+          "job": "craft"
+        },
+        "value": 32
+      },
+      {
+        "metric": "workshop.job_start",
+        "dims": {
+          "job": "improve"
+        },
+        "value": 14
+      },
+      {
+        "metric": "workshop.job_start",
+        "dims": {
+          "job": "supply"
+        },
+        "value": 11
+      }
+    ]
+  }
+}
