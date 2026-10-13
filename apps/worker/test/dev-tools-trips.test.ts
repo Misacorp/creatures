@@ -1,0 +1,336 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call --
+   These tests read parts of many different response bodies (`Json.body` is `any` on purpose): typing
+   each body would only repeat the server's view types. */
+import { RULES, dungeonContent, expeditionContent } from '@creatures/game';
+import { describe, expect, it } from 'vitest';
+import { ON, newKey, player, type Dev, type Json } from './dev-helpers';
+import { runCore } from './helpers';
+import { count, nextGuild, rows } from './raid-helpers';
+
+describe('expedition tools', () => {
+  const sendTrip = (p: Dev, creatureId: string, destination = 'tidepools') =>
+    p.call('POST', '/api/expeditions', {
+      creatureId,
+      destination,
+      duration: 'short',
+      supplies: [],
+      idempotencyKey: newKey(),
+    });
+  const tripOf = (res: Json) => res.body.expedition as { id: string; endsAt: number };
+
+  it('finishes trips now', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx);
+        const trip = tripOf(await sendTrip(p, p.creatureIds[0] as string));
+        expect(await p.tool('finish-trips')).toEqual({ trips: 1, pushOns: 0 });
+        const state = (await p.call('GET', '/api/state')).body;
+        expect(trip.endsAt).toBeGreaterThan(state.serverNow);
+        expect(state.expeditions[0].endsAt).toBe(state.serverNow);
+        const claimed = await p.call('POST', `/api/expeditions/${trip.id}/claim`, {});
+        expect(claimed.body.result.recalled).toBe(false);
+        expect(await p.tool('finish-trips')).toEqual({ trips: 0, pushOns: 0 });
+      },
+      ON,
+    );
+  });
+
+  it('forces the push-on offer and its result, once each', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx);
+        const goal = 'forage';
+        // A finished trip that has not chosen: its offer becomes the goal; a failure is forced.
+        const trip = tripOf(await sendTrip(p, p.creatureIds[0] as string));
+        await p.tool('finish-trips');
+        expect(await p.tool('force-offer', { goal, outcome: 'fail' })).toEqual({
+          appliedToTrips: 1,
+          armed: false,
+          outcome: 'fail',
+        });
+        const offered = (await p.call('GET', '/api/state')).body.expeditions[0];
+        expect(offered.offer.goals.map((g: { id: string }) => g.id)).toEqual([goal]);
+        const chosen = await p.call('POST', `/api/expeditions/${trip.id}/push-on`, {
+          goalId: goal,
+        });
+        expect(chosen.status).toBe(200);
+        await p.tool('finish-trips');
+        const failed = await p.call('POST', `/api/expeditions/${trip.id}/claim`, {});
+        expect(failed.body.result).toMatchObject({ failed: true, pushOn: { outcome: 'failed' } });
+        // The force was used up.
+        expect((await p.call('GET', '/api/dev/state')).body.flags.pushOutcome).toBeNull();
+
+        // With no finished trip the goal is armed for the next offer that is rolled.
+        expect(await p.tool('force-offer', { goal, outcome: 'success' })).toMatchObject({
+          appliedToTrips: 0,
+          armed: true,
+        });
+        expect((await p.call('GET', '/api/dev/state')).body.flags).toMatchObject({
+          pushOffer: goal,
+          pushOutcome: 'success',
+        });
+        const second = tripOf(await sendTrip(p, p.creatureIds[1] as string));
+        await p.tool('finish-trips');
+        const next = (await p.call('GET', '/api/state')).body.expeditions.find(
+          (e: { id: string }) => e.id === second.id,
+        );
+        expect(next.offer.goals.map((g: { id: string }) => g.id)).toEqual([goal]);
+        expect((await p.call('GET', '/api/dev/state')).body.flags.pushOffer).toBeNull();
+        await p.call('POST', `/api/expeditions/${second.id}/push-on`, { goalId: goal });
+        await p.tool('finish-trips');
+        const worked = await p.call('POST', `/api/expeditions/${second.id}/claim`, {});
+        expect(worked.body.result.pushOn.outcome).toBe('worked');
+        // Taking the forced result off again.
+        await p.tool('force-offer', { outcome: 'fail' });
+        await p.tool('force-offer', { outcome: 'random' });
+        expect((await p.call('GET', '/api/dev/state')).body.flags.pushOutcome).toBeNull();
+        expect((await p.dev('force-offer', {})).status).toBe(400);
+        expect((await p.dev('force-offer', { goal: 'nope' })).status).toBe(400);
+      },
+      ON,
+    );
+  });
+
+  it('forces night and a Festival week for the caller only', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx);
+        const other = await player(ctx, 2);
+        for (const creatureId of [p.creatureIds[0], p.creatureIds[1]]) {
+          await p.tool('set-explorer', { creatureId, rank: 4 });
+        }
+        const reef = await sendTrip(p, p.creatureIds[0] as string, 'moonlit-reef');
+        expect(reef).toMatchObject({ status: 409, body: { reason: 'night' } });
+        expect(await p.tool('force-gates', { night: 'on' })).toEqual({
+          night: 'on',
+          festival: 'auto',
+        });
+        expect((await p.call('GET', '/api/destinations')).body.night).toBe(true);
+        const sent = await sendTrip(p, p.creatureIds[0] as string, 'moonlit-reef');
+        expect(sent.status).toBe(200);
+        // Another player's gate is their own.
+        expect((await other.call('GET', '/api/destinations')).body.night).toBe(false);
+
+        // One slot: the Festival trip waits until the first one is done.
+        const busy = await sendTrip(p, p.creatureIds[1] as string, 'festival-grounds');
+        expect(busy).toMatchObject({ status: 409 });
+        await p.tool('finish-trips');
+        await p.call('POST', `/api/expeditions/${tripOf(sent).id}/claim`, {});
+        expect(await sendTrip(p, p.creatureIds[1] as string, 'festival-grounds')).toMatchObject({
+          status: 409,
+          body: { reason: 'festival' },
+        });
+        await p.tool('force-gates', { festival: 'on', night: 'auto' });
+        expect((await p.call('GET', '/api/destinations')).body.festivalWeek).toBe(true);
+        expect((await sendTrip(p, p.creatureIds[1] as string, 'festival-grounds')).status).toBe(
+          200,
+        );
+        // Off forces closed, and auto hands it back to the calendar.
+        await p.tool('force-gates', { festival: 'off' });
+        expect((await p.call('GET', '/api/destinations')).body.festivalWeek).toBe(false);
+        await p.tool('force-gates', { festival: 'auto' });
+        expect((await p.call('GET', '/api/dev/state')).body.flags).toMatchObject({
+          night: 'auto',
+          festival: 'auto',
+        });
+      },
+      ON,
+    );
+  });
+
+  it('sets slots, the rank sum and finished trips', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx);
+        const slots = async () => (await p.call('GET', '/api/state')).body.slots;
+        expect(await slots()).toMatchObject({ total: 1 });
+        expect(await p.tool('set-slots', { tripsFinished: 3 })).toMatchObject({ slots: 2 });
+        expect(await p.tool('set-slots', { slots: 3 })).toEqual({
+          slots: 3,
+          rankSum: RULES.expeditions.slots.thresholds[0],
+          tripsFinished: 3,
+        });
+        expect(await slots()).toMatchObject({ total: 3 });
+        expect(await p.tool('set-slots', { slots: 1 })).toEqual({
+          slots: 1,
+          rankSum: 0,
+          tripsFinished: 0,
+        });
+        // Too few creatures for the rank sum: refused, and nothing changed (no half-way writes, no log).
+        await p.tool('set-slots', { slots: 3 });
+        const logged = count(ctx.sql, 'analytics_events', "kind = 'dev_action'");
+        const refused = await p.dev('set-slots', { slots: 5 });
+        expect(refused).toEqual({ status: 409, body: { error: 'not_enough_creatures' } });
+        expect(await slots()).toMatchObject({ total: 3 });
+        expect(count(ctx.sql, 'analytics_events', "kind = 'dev_action'")).toBe(logged);
+      },
+      ON,
+    );
+  });
+
+  it('unlocks and resets journal pages, and brings the slot-wipe notice back', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx);
+        const total = expeditionContent.journal.entries.length;
+        const page = expeditionContent.journal.entries[0]?.id as string;
+        expect(await p.tool('journal', { action: 'unlock', entryId: page })).toMatchObject({
+          pages: 1,
+        });
+        expect(await p.tool('journal', { action: 'unlock-all' })).toMatchObject({
+          pages: total,
+          total,
+          sets: expeditionContent.journal.sets.length,
+        });
+        const profile = (await p.call('GET', '/api/profile')).body;
+        expect(profile.journal.found).toHaveLength(total);
+        expect(profile.stats).toMatchObject({ journal_pages: total });
+        await p.tool('journal', { action: 'reset' });
+        const empty = (await p.call('GET', '/api/profile')).body;
+        expect(empty.journal.found).toHaveLength(0);
+        expect(empty.stats).toMatchObject({ journal_pages: 0, journal_sets: 0 });
+        expect((await p.dev('journal', { action: 'unlock', entryId: 'nope' })).status).toBe(400);
+
+        await p.tool('slot-wipe-notice');
+        const state = (await p.call('GET', '/api/state')).body;
+        expect(state.cancelled).toMatchObject([{ reason: 'slot_wipe' }]);
+        expect(state.creatures[0].away).toBe(false);
+        expect(state.balances.bait).toBe(0);
+      },
+      ON,
+    );
+  });
+});
+
+describe('dungeon tools', () => {
+  const today = async (p: Dev) => (await p.call('GET', '/api/dungeon/today')).body;
+  const run = (p: Dev) =>
+    p.call('POST', '/api/dungeon/run', { team: p.creatureIds, idempotencyKey: newKey() });
+  const modifierIds = (day: { modifiers: { id: string }[] }) => day.modifiers.map((m) => m.id);
+
+  it('sets the depth, jumps to the next landmark and sets the streak', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx);
+        expect(await p.tool('dungeon-depth', { depth: 5 })).toEqual({ depth: 5, landmark: false });
+        expect((await today(p)).depth).toBe(5);
+        const every = RULES.dungeon.landmarkEvery;
+        expect(await p.tool('dungeon-depth', { nextLandmark: true })).toEqual({
+          depth: every,
+          landmark: true,
+        });
+        expect((await today(p)).landmark).toBe(true);
+        // From a landmark, the next one is a full step on.
+        expect((await p.tool('dungeon-depth', { nextLandmark: true })).depth).toBe(2 * every);
+        await p.tool('dungeon-streak', { streak: 4 });
+        expect((await today(p)).streak).toBe(4);
+        await p.tool('dungeon-streak', { streak: 0 });
+        expect((await today(p)).streak).toBe(0);
+        expect((await p.dev('dungeon-depth', { depth: 0 })).status).toBe(400);
+      },
+      ON,
+    );
+  });
+
+  it("picks the day's modifiers and re-rolls its seed", async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx);
+        const ids = dungeonContent.modifiers.slice(0, RULES.dungeon.rooms).map((m) => m.id);
+        await p.tool('dungeon-modifiers', { ids });
+        expect(modifierIds(await today(p))).toEqual(ids);
+        expect((await p.call('GET', '/api/dev/state')).body.flags.dungeonModifiers).toEqual(ids);
+        // A re-roll hands the day back to its (new) seed, and says what it rolled.
+        const rolled = await p.tool('dungeon-seed');
+        expect(modifierIds(await today(p))).toEqual(rolled.modifiers);
+        await p.tool('dungeon-modifiers', { ids });
+        await p.tool('dungeon-modifiers', { clear: true });
+        expect((await p.call('GET', '/api/dev/state')).body.flags.dungeonModifiers).toBeNull();
+        const nonsense = ['nope', 'nope', 'nope'];
+        expect((await p.dev('dungeon-modifiers', { ids: nonsense })).status).toBe(400);
+        expect((await p.dev('dungeon-modifiers', { ids: ids.slice(0, 2) })).status).toBe(400);
+      },
+      ON,
+    );
+  });
+
+  it('ignores picked modifiers when the dev tools are off, but not when they are on', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const p = await player(ctx);
+      const first = await today(p);
+      const rolled = modifierIds(first);
+      expect(rolled).toHaveLength(RULES.dungeon.rooms);
+      // A leftover flag from a staging database: the order reversed (the rolled ones are all different).
+      ctx.sql.exec('CREATE TABLE dev_state (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+      ctx.sql.exec(
+        'INSERT INTO dev_state VALUES (?, ?)',
+        `g:modifiers:${first.day as string}`,
+        JSON.stringify([...rolled].reverse()),
+      );
+      expect(modifierIds(await today(p))).toEqual(rolled);
+    });
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx);
+        const ids = modifierIds(await today(p));
+        await p.tool('dungeon-modifiers', { ids: [...ids].reverse() });
+        expect(modifierIds(await today(p))).toEqual([...ids].reverse());
+      },
+      ON,
+    );
+  });
+
+  it("resets today's run, its pay and streak included, and opens the first-day retry", async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, { level: 30 });
+        const before = (await p.call('GET', '/api/me')).body.balances;
+        const ran = await run(p);
+        expect(ran.status).toBe(200);
+        const after = (await p.call('GET', '/api/me')).body.balances;
+        expect(after.bait + after.essence).toBeGreaterThan(before.bait + before.essence);
+        expect((await today(p)).canRun).toBe(false);
+
+        expect(await p.tool('dungeon-reset')).toMatchObject({ removed: 1 });
+        expect(await today(p)).toMatchObject({
+          attemptsToday: 0,
+          canRun: true,
+          streak: 0,
+          depth: 1,
+        });
+        expect((await p.call('GET', '/api/me')).body.balances).toEqual(before);
+        expect(count(ctx.sql, 'dungeon_runs')).toBe(0);
+        expect(
+          rows<{ runs: number; streak: number }>(
+            ctx.sql,
+            'SELECT runs, streak FROM dungeon_progress WHERE user_id = ?',
+            p.id,
+          ),
+        ).toEqual([{ runs: 0, streak: 0 }]);
+        expect(await p.tool('dungeon-reset')).toMatchObject({ removed: 0 });
+
+        // Run again, then open the first-day retry: a second run is possible.
+        expect((await run(p)).status).toBe(200);
+        expect((await today(p)).canRun).toBe(false);
+        await p.tool('dungeon-retry');
+        expect(await today(p)).toMatchObject({
+          canRun: true,
+          attemptsAllowed: 2,
+          attemptsToday: 1,
+        });
+        expect((await run(p)).status).toBe(200);
+        expect((await today(p)).attemptsToday).toBe(2);
+      },
+      ON,
+    );
+  });
+});
