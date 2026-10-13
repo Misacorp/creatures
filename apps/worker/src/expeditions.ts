@@ -96,6 +96,7 @@ import {
 } from './expedition-store';
 import { grantRankGift, grantTripLoot, type GrantView } from './gear-grants';
 import { openJobOf } from './gear-store';
+import { devKey, type DevFlags } from './dev-state';
 import { credit, lookupSpend, spend, type LedgerStorage } from './ledger';
 import { CollectionError, atomically, type Outcome } from './outcome';
 import { weekIdFor, weekIndex } from './raid-schedule';
@@ -303,6 +304,11 @@ export interface ExpeditionsDeps {
   /** Live randomness for the quirk of a new creature. */
   quirkRng: Rng;
   analytics?: Analytics | undefined;
+  /**
+   * The dev tools' force flags (staging only, see `dev-state.ts`): a forced push-on offer and result,
+   * forced night and Festival. Absent in production, where none of them exists.
+   */
+  dev?: DevFlags | undefined;
 }
 
 const TIER_ORDER = ['basic', 'good', 'great'] as const;
@@ -553,13 +559,15 @@ export class Expeditions {
       const milestones = milestoneBonuses(statsOf(this.sql, userId));
       for (const row of pending) {
         const rank = this.explorerView(userId, row.creature_id).rank;
-        const goals = rollOffer(this.deps.tripRng, {
-          goals: expeditionContent.goals,
-          length: row.duration,
-          rank,
-          kit: kitOf(this.kitIds(row)),
-          milestoneOfferBp: milestones.offerBp,
-        });
+        const goals =
+          this.devOffer(userId, row.duration) ??
+          rollOffer(this.deps.tripRng, {
+            goals: expeditionContent.goals,
+            length: row.duration,
+            rank,
+            kit: kitOf(this.kitIds(row)),
+            milestoneOfferBp: milestones.offerBp,
+          });
         if (!saveOffer(this.sql, userId, row.id, goals, now)) continue;
         this.deps.analytics?.record(
           {
@@ -573,6 +581,42 @@ export class Expeditions {
         );
       }
     });
+  }
+
+  /**
+   * Dev tools only: the push-on goal the next offer is forced to be, if one is set and the goal can be
+   * offered after a trip of this length (the flag is used up then). Null otherwise, and always null in
+   * production, where there are no flags.
+   */
+  private devOffer(userId: string, length: ExpeditionLength): string[] | null {
+    const dev = this.deps.dev;
+    if (dev === undefined) return null;
+    const goalId = dev.get(devKey.pushOffer(userId));
+    if (goalId === null) return null;
+    const goal = goalDef(goalId);
+    if (goal === undefined || goalOddsBp(goal, length) === undefined) return null;
+    dev.take(devKey.pushOffer(userId));
+    return [goal.id];
+  }
+
+  /** Dev tools only: whether the next push-on result is forced, and to what (the flag is used up). */
+  private devPushOutcome(userId: string): boolean | null {
+    const forced = this.deps.dev?.take(devKey.pushOutcome(userId)) ?? null;
+    return forced === null ? null : forced === 'success';
+  }
+
+  /** The guild-local hour that decides whether it is night: the real one unless the dev tools force it. */
+  private gateHour(userId: string, now: number, timezone: string): number {
+    const forced = this.deps.dev?.get(devKey.night(userId)) ?? null;
+    if (forced === 'on') return 23;
+    if (forced === 'off') return 12;
+    return zonedHour(now, timezone);
+  }
+
+  /** Whether a Festival week opens the Festival places: the real calendar unless the dev tools force it. */
+  private gateFestival(userId: string, real: boolean): boolean {
+    const forced = this.deps.dev?.get(devKey.festival(userId)) ?? null;
+    return forced === null ? real : forced === 'on';
   }
 
   /**
@@ -709,8 +753,8 @@ export class Expeditions {
     const week = weeklySpecialFor(now, timezone);
     const closed = closedReasons(dest, {
       rank: explorer.rank,
-      localHour: zonedHour(now, timezone),
-      festivalWeek: week.festival,
+      localHour: this.gateHour(userId, now, timezone),
+      festivalWeek: this.gateFestival(userId, week.festival),
     });
     const reason = closed[0];
     if (reason !== undefined) throw new CollectionError(409, 'destination_closed', reason);
@@ -838,13 +882,11 @@ export class Expeditions {
           goalDef(expedition.push_goal) ?? this.vanishedGoal(expedition.push_goal, expedition);
         const oddsBp = expedition.push_odds_bp ?? goalOddsBp(goal, expedition.duration) ?? 0;
         const pushDone = expedition.push_ends_at !== null && now >= expedition.push_ends_at;
+        const works = (): boolean =>
+          this.devPushOutcome(userId) ?? pushWorks(this.deps.tripRng, goal.risk, oddsBp);
         push = {
           goal,
-          outcome: !pushDone
-            ? 'declined'
-            : pushWorks(this.deps.tripRng, goal.risk, oddsBp)
-              ? 'worked'
-              : 'failed',
+          outcome: !pushDone ? 'declined' : works() ? 'worked' : 'failed',
         };
       }
 
@@ -1467,7 +1509,8 @@ export class Expeditions {
   destinations(userId: string, timezone: string): DestinationsView {
     const now = this.deps.now();
     const week = weeklySpecialFor(now, timezone);
-    const hour = zonedHour(now, timezone);
+    const hour = this.gateHour(userId, now, timezone);
+    const festival = this.gateFestival(userId, week.festival);
     const twist = expeditionContent.specials.twists.find((t) => t.id === week.twistId);
     return {
       serverNow: now,
@@ -1475,9 +1518,9 @@ export class Expeditions {
         destination: week.destination,
         twist: week.twistId,
         description: twist?.description ?? '',
-        festival: week.festival,
+        festival,
       },
-      festivalWeek: week.festival,
+      festivalWeek: festival,
       night: isNightHour(hour),
       destinations: expeditionContent.destinations.map((d) => ({
         id: d.id,
@@ -1487,7 +1530,7 @@ export class Expeditions {
         closed: closedReasons(d, {
           rank: d.access.minRank,
           localHour: hour,
-          festivalWeek: week.festival,
+          festivalWeek: festival,
         }),
       })),
       familiarity: familiarityRows(this.sql, userId).flatMap((r) => {

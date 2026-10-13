@@ -510,7 +510,24 @@ export class AnalyticsRollup {
 
   /** Rolls one game day up, replacing any rows it already has. Returns how many rows it wrote. */
   rollDay(day: string, tz: string): number {
-    const rows = this.compute(day, tz);
+    return this.store(day, this.compute(day, tz));
+  }
+
+  /**
+   * Rolls up the game day in progress so far (the staging dev tools' "roll up now"). It leaves out the
+   * `rolled` marker, so `runDue` still rolls the day again in full once it has finished.
+   */
+  rollToday(): string {
+    const tz = this.options.timezone();
+    const day = gameDay(this.options.now(), tz, RULES.daily.reset);
+    this.store(
+      day,
+      this.compute(day, tz).filter((row) => row.metric !== 'rolled'),
+    );
+    return day;
+  }
+
+  private store(day: string, rows: { metric: string; dimsJson: string; value: number }[]): number {
     this.options.storage.transactionSync(() => {
       this.sql.exec('DELETE FROM analytics_daily WHERE day = ?', day);
       for (const row of rows) {

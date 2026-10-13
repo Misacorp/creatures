@@ -1,6 +1,6 @@
 # Dev tools: a debug panel for every view (staging only)
 
-Status: **plan**, 2026-10-13. Misa: "improve dev tooling in the dev app: running simulated raids, sped up expeditions, setting dungeon rank, raid boss difficulty tier, etc. Basically a debug panel into every view that lets me set the game into a desired state for testing. This needs to be strictly in the dev environment."
+Status: **server side shipped 2026-10-13**: the gate, the dev clock and every tool in the table below, as `/api/dev/*` routes (see "Dev tools: the gate, the dev clock and where forced state lives" in `decisions.md`). **Still to do:** the client panel (the lazy chunk, the Vite define that strips it from production, the build-time test that greps `dist/`) and the local-flags reset. Limits: the clock only moves forward (plus a reset to zero), simulated raid players are auto-placed rather than placed by hand, and "trigger rollup now" answers 501 until the analytics rollup exists. Plan written 2026-10-13. Misa: "improve dev tooling in the dev app: running simulated raids, sped up expeditions, setting dungeon rank, raid boss difficulty tier, etc. Basically a debug panel into every view that lets me set the game into a desired state for testing. This needs to be strictly in the dev environment."
 
 ## Safety (non-negotiable)
 

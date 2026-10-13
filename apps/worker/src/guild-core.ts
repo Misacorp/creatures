@@ -14,6 +14,8 @@ import { expeditionRoutes } from './expedition-routes';
 import { expeditionsMigration } from './expedition-migration';
 import { collectionRoutes } from './collection-routes';
 import { baitForDay, leetPointsForDay } from './economy';
+import { DevState } from './dev-state';
+import { DevTools, devRoutes, isDevPath } from './dev-tools';
 import { DiscordError, type GuildApi } from './discord';
 import { canManageGuild } from './discord-permissions';
 import {
@@ -27,7 +29,7 @@ import {
   unpinAnnounceChannel,
   type PostSender,
 } from './discord-posts';
-import { dispatch, errorResponse, json, matchTemplate, type Routes } from './http';
+import { dispatch, errorResponse, json, matchTemplate, notFound, type Routes } from './http';
 import {
   LEET_BACKFILL_DAYS,
   LeetSourceError,
@@ -344,6 +346,7 @@ const routes: Routes<RequestContext> = {
   ...dungeonRoutes,
   ...expeditionRoutes,
   ...raidRoutes,
+  ...devRoutes,
   '/api/me': {
     GET: async (_request, { user, guildId, core }) => {
       await core.syncIfStale();
@@ -353,6 +356,8 @@ const routes: Routes<RequestContext> = {
         timezone: core.timezone(),
         balances: core.balances(user.id),
         leetSync: core.leetSyncStatus(),
+        // Staging only: lets the client load the dev panel. Absent (not false) everywhere else.
+        ...(core.dev === null ? {} : { devTools: true }),
       });
     },
   },
@@ -424,6 +429,12 @@ export interface GuildCoreOptions {
    * its own label). Without one, analytics events carry no actor and sessions are not tracked.
    */
   analyticsSecret?: string;
+  /**
+   * Staging only: the dev tools are on (the `DEV_TOOLS` var is "on", see `dev-tools.ts`): the `/api/dev/*`
+   * routes exist and game time is the real clock plus the guild's dev clock offset. Off (the default),
+   * `/api/dev/*` answers 404 and a stored offset is ignored.
+   */
+  devTools?: boolean;
 }
 
 export interface LeetSyncResult {
@@ -450,6 +461,18 @@ export class GuildCore {
   private readonly limiter: TokenBucketLimiter;
   private readonly leetSource: LeetSource | null;
   private readonly syncBudgetMs: number;
+  /**
+   * The game clock: everything in the guild's game logic (calendar, trips, jobs, raids, posts, alarms)
+   * reads time through it. It is exactly the real clock unless the dev tools are on, when it is the real
+   * clock plus the guild's dev clock offset. Sessions, the rate limit and the "may manage" cache keep real time.
+   */
+  private readonly now: () => number;
+  /** Set only when the dev tools are on (staging). */
+  private readonly devState: DevState | null;
+  /** The dev clock offset, read once and kept in memory (only this object writes it). */
+  private offsetCache: number | null = null;
+  /** The dev tools: null unless `DEV_TOOLS` is on. Routes under `/api/dev` use it. */
+  readonly dev: DevTools | null;
   readonly collection: Collection;
   readonly gear: Gear;
   readonly dungeon: Dungeon;
@@ -469,22 +492,28 @@ export class GuildCore {
 
   constructor(
     private readonly storage: CoreStorage,
-    private readonly now: () => number,
+    private readonly realNow: () => number,
     private readonly options: GuildCoreOptions = {},
   ) {
+    this.devState = options.devTools === true ? new DevState(storage.sql) : null;
+    const now = this.devState === null ? realNow : () => realNow() + this.devOffset();
+    this.now = now;
     this.syncBudgetMs = options.syncBudgetMs ?? SYNC_BUDGET_MS;
     this.leetSource = options.createLeetSource?.(() => this.knownPlayers()) ?? null;
     const quirkRng = options.quirkRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+    // Analytics keeps real time: its events and retention are about the real world.
     this.analytics = new Analytics({
       storage,
-      now,
+      now: realNow,
       ...(options.analyticsSecret === undefined ? {} : { secret: options.analyticsSecret }),
     });
-    this.rollup = new AnalyticsRollup({ storage, now, timezone: () => this.timezone() });
+    // Rollups keep real time too, like the events they count.
+    this.rollup = new AnalyticsRollup({ storage, now: realNow, timezone: () => this.timezone() });
     const gearRng = options.gearRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
     this.collection = new Collection({
       storage,
       now,
+      dev: this.devState ?? undefined,
       analytics: this.analytics,
       rng: options.rng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
       quirkRng,
@@ -499,6 +528,7 @@ export class GuildCore {
       gearRng,
       timezone: () => this.timezone(),
       analytics: this.analytics,
+      dev: this.devState ?? undefined,
     });
     this.raid = new Raid({
       storage,
@@ -513,9 +543,61 @@ export class GuildCore {
     this.limiter = new TokenBucketLimiter({
       capacity: RATE_CAPACITY,
       refillPerSecond: RATE_REFILL_PER_SECOND,
-      now,
+      now: realNow,
       maxKeys: RATE_MAX_KEYS,
     });
+    this.dev =
+      this.devState === null
+        ? null
+        : new DevTools({
+            storage,
+            state: this.devState,
+            now,
+            realNow,
+            timezone: () => this.timezone(),
+            analytics: this.analytics,
+            raid: this.raid,
+            rng: options.raidRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+            gearRng,
+            quirkRng,
+            offset: {
+              get: () => this.devOffset(),
+              set: (ms) => {
+                this.setDevOffset(ms);
+              },
+              invalidate: () => {
+                this.offsetCache = null;
+              },
+            },
+            afterClockChange: async () => {
+              // The game catches up to the new time and the alarm is set for it (real time).
+              this.catchUpRaid();
+              this.kickPosts();
+              await this.rearmAlarm(this.now() + ALARM_REARM_SKEW_MS);
+            },
+            // Rolls up the finished game days not rolled yet, then today so far.
+            rollupNow: () =>
+              Promise.resolve({ rolled: this.rollup.runDue(), today: this.rollup.rollToday() }),
+          });
+  }
+
+  /** The dev clock offset in ms: always 0 when the dev tools are off, whatever is stored. */
+  private devOffset(): number {
+    if (this.devState === null) return 0;
+    this.offsetCache ??= this.devState.readOffset();
+    return this.offsetCache;
+  }
+
+  private setDevOffset(ms: number): void {
+    if (this.devState === null) throw new Error('dev tools are off');
+    this.devState.writeOffset(ms);
+    // Read again on the next use: if the tool's transaction rolls back, the stored value wins.
+    this.offsetCache = null;
+  }
+
+  /** Alarms are real time: a time on the game clock is moved back by the dev clock offset. */
+  private realAt(gameMs: number): number {
+    return gameMs - this.devOffset();
   }
 
   private get sql(): SqlStorage {
@@ -552,7 +634,7 @@ export class GuildCore {
   ): Promise<string> {
     const secret = generateSessionSecret();
     const tokenHash = await hashSecret(secret);
-    const t = this.now();
+    const t = this.realNow();
     this.storage.transactionSync(() => {
       this.bindGuild(guildId);
       const launchChannel =
@@ -665,7 +747,7 @@ export class GuildCore {
     secret: string,
   ): Promise<{ user: SessionUser; channelId: string | null } | null> {
     const tokenHash = await hashSecret(secret);
-    const t = this.now();
+    const t = this.realNow();
     const rows = this.sql
       .exec<{
         user_id: string;
@@ -708,6 +790,10 @@ export class GuildCore {
 
   /** Handles an authenticated API request forwarded by the Worker. */
   async handle(request: Request): Promise<Response> {
+    // The dev routes do not exist unless the dev tools are on: checked before anything else, with the
+    // answer of an unknown route.
+    const pathname = new URL(request.url).pathname;
+    if (this.dev === null && isDevPath(pathname)) return notFound();
     const token = parseAuthorization(request.headers.get('Authorization'));
     if (token === null) return errorResponse('invalid_session', 401);
     const session = await this.lookupSession(token.secret);
@@ -724,7 +810,6 @@ export class GuildCore {
     await this.analytics.prepare(user.id);
     this.analytics.touch(user.id);
     await this.ensureAlarm();
-    const pathname = new URL(request.url).pathname;
     const template = matchTemplate(ROUTE_KEYS, pathname);
     return dispatch(routes, request, template?.template ?? pathname, {
       user,
@@ -761,7 +846,7 @@ export class GuildCore {
   cachedCanManage(userId: string): boolean | null {
     const hit = this.manageCache.get(userId);
     if (hit === undefined) return null;
-    if (this.now() >= hit.until) {
+    if (this.realNow() >= hit.until) {
       this.manageCache.delete(userId);
       return null;
     }
@@ -787,7 +872,7 @@ export class GuildCore {
     const run = canManageGuild(api, guildId, userId)
       .then((allowed) => {
         if (this.manageCache.size >= MANAGE_CACHE_MAX) this.manageCache.clear();
-        this.manageCache.set(userId, { allowed, until: this.now() + MANAGE_CACHE_MS });
+        this.manageCache.set(userId, { allowed, until: this.realNow() + MANAGE_CACHE_MS });
         return allowed;
       })
       .finally(() => {
@@ -818,10 +903,15 @@ export class GuildCore {
   }
 
   private knownPlayers(): string[] {
-    return this.sql
-      .exec<{ user_id: string }>('SELECT user_id FROM players')
-      .toArray()
-      .map((r) => r.user_id);
+    return (
+      this.sql
+        // Simulated raid guests from the staging dev tools are not real Discord users.
+        .exec<{ user_id: string }>(
+          "SELECT user_id FROM players WHERE user_id NOT LIKE 'dev-guest-%'",
+        )
+        .toArray()
+        .map((r) => r.user_id)
+    );
   }
 
   // --- Leet sync ---
@@ -1091,7 +1181,12 @@ export class GuildCore {
     }
     if (this.pruneBacklog) candidates.push(this.now() + POST_RETRY_MS);
     // The daily analytics rollup, just after the game day turns over.
-    if (this.storedGuildId() !== null) candidates.push(this.nextRollupAt(from));
+    // Rollups run on real time (see the constructor), so this candidate is found in real time and then
+    // put on the game clock like the others (the offset is 0 unless the staging dev clock moved).
+    if (this.storedGuildId() !== null) {
+      const offset = this.devOffset();
+      candidates.push(this.nextRollupAt(from - offset) + offset);
+    }
     return candidates.length === 0 ? null : Math.min(...candidates);
   }
 
@@ -1106,7 +1201,7 @@ export class GuildCore {
 
   private async rearmAlarm(from: number): Promise<void> {
     const at = this.desiredAlarmAt(from);
-    if (at !== null) await this.storage.setAlarm(at);
+    if (at !== null) await this.storage.setAlarm(this.realAt(at));
   }
 
   /**
@@ -1180,8 +1275,9 @@ export class GuildCore {
     const at = this.desiredAlarmAt(this.now());
     if (at === null) return;
     const existing = await this.storage.getAlarm();
-    if (existing !== null && existing <= at) return;
-    await this.storage.setAlarm(at);
+    const realAt = this.realAt(at);
+    if (existing !== null && existing <= realAt) return;
+    await this.storage.setAlarm(realAt);
   }
 
   /** The 13:40 slot a sync is due for, or null if the latest slot has already been attempted. */

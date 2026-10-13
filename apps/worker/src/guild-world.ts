@@ -21,6 +21,7 @@ export class GuildWorld extends DurableObject<Env> {
     this.core = new GuildCore(ctx.storage, Date.now, {
       guildId: () => ctx.id.name,
       raidPractice: env.RAID_PRACTICE === 'on',
+      devTools: env.DEV_TOOLS === 'on',
       analyticsSecret: env.DISCORD_CLIENT_SECRET,
       guildApi: createGuildApi({
         botToken: env.DISCORD_BOT_TOKEN,
