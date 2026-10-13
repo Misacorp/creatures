@@ -64,6 +64,17 @@ export const RULES = {
     supportBuffBp: 1_500,
     /** Guard: extra HP, applied to the effective HP stat. */
     guardHpBp: 3_000,
+    /**
+     * Setup credit: the share (basis points, rounded down) of a reaction's bonus damage that goes to
+     * the creature that set the mark up; the payoff keeps the rest. Credit only: the damage dealt is
+     * the same whatever this is.
+     */
+    setupShareBp: 6_000,
+    /**
+     * Guard credit for damage a Guard takes when the hit was aimed at it (basis points, rounded
+     * down). Damage it takes in place of a neighbour always counts in full. Credit only.
+     */
+    guardOwnCreditBp: 10_000,
     /** Boss normal attack as a share of boss Attack. */
     bossAttackBp: 10_000,
     /**
@@ -351,7 +362,7 @@ export const RULES = {
     skill: {
       /** Total XP to reach each level (index 0 is level 1). XP per job is its nominal hours x `xpPerHour`. */
       xpForLevel: [0, 100, 250, 450, 700, 1_000, 1_600, 2_500, 3_800, 5_500],
-      xpPerHour: 24,
+      xpPerHour: 12,
       /** Each level above 1 shortens jobs by this much and adds this chance of a rarity up on a craft (basis points). */
       timeReductionBpPerLevel: 300,
       rarityUpBpPerLevel: 100,
@@ -423,9 +434,9 @@ export const RULES = {
       { bait: 1, essence: 1, scrap: 1 },
     ],
     /** Chance (basis points) of one shard of the room boss's element when the boss room is cleared. */
-    bossShardBp: 4_000,
+    bossShardBp: 6_000,
     /** Extra for clearing every room: Essence, and a chance (basis points) at a gear drop. */
-    fullClear: { essence: 0, gearBp: 1_000 },
+    fullClear: { essence: 0, gearBp: 1_500 },
     /**
      * Gear odds of a dungeon drop (basis points; the rest is common): rare and epic start at `baseBp`
      * at depth 1, grow by `perDepthBp` for every depth above 1 and stop at `maxBp`. A landmark drop

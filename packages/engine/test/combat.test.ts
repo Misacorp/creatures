@@ -82,7 +82,8 @@ describe('marks and reactions', () => {
     expect(eventsOf(r, 'reaction')).toHaveLength(0);
   });
 
-  it('splits the reaction bonus 50/50 between setup and payoff, summing exactly', () => {
+  it('splits the reaction bonus between setup and payoff by the setup share (60%), summing exactly', () => {
+    expect(RULES.combat.setupShareBp).toBe(6_000);
     for (const atk of [1, 37, 38, 99, 100, 101, 250]) {
       const r = run([
         slot('s', { owner: 'ps', element: 'tide', role: 'setter', atk: 100 }),
@@ -94,7 +95,7 @@ describe('marks and reactions', () => {
       const full = Math.floor((plain * 31_250) / 10_000);
       const bonus = full - plain;
       expect(reaction.bonus).toBe(bonus);
-      const setup = Math.floor(bonus / 2);
+      const setup = Math.floor((bonus * 6_000) / 10_000);
       expect(r.perPlayer.ps!.setupCredit).toBe(10 * setup);
       expect(r.perPlayer.pp!.damage).toBe(10 * (full - setup));
       // Nothing is lost or invented: credits add up to the damage dealt.
@@ -109,11 +110,11 @@ describe('marks and reactions', () => {
       slot('s', { owner: 'ps', element: 'tide', role: 'setter', atk: 100 }),
       slot('p', { owner: 'pp', element: 'spark', role: 'payoff', atk: 100 }),
     ]);
-    // plain 150, x3.125 = 468, bonus 318 split 159 / 159
+    // plain 150, x3.125 = 468, bonus 318 split 190 (60%, rounded down) / 128
     expect(eventsOf(r, 'hit')[1]).toMatchObject({ creature: 'p', damage: 468 });
     expect(eventsOf(r, 'reaction')[0]!.bonus).toBe(318);
-    expect(r.perPlayer.ps).toMatchObject({ damage: 1000, setupCredit: 1590, contribution: 2590 });
-    expect(r.perPlayer.pp).toMatchObject({ damage: 10 * (468 - 159), setupCredit: 0 });
+    expect(r.perPlayer.ps).toMatchObject({ damage: 1000, setupCredit: 1900, contribution: 2900 });
+    expect(r.perPlayer.pp).toMatchObject({ damage: 10 * (468 - 190), setupCredit: 0 });
   });
 
   it('applies the x1.25 payoff bonus only to Payoff creatures', () => {
@@ -261,6 +262,37 @@ describe('guard and boss targeting', () => {
     expect(strikes[0]).toMatchObject({ target: 'g', from: 'hi' });
     expect(strikes[1]).toMatchObject({ target: 'hi' });
     expect(strikes[1]).not.toHaveProperty('from');
+  });
+
+  it('credits a Guard for the damage a hit aimed at itself does, by the own-damage share', () => {
+    expect(RULES.combat.guardOwnCreditBp).toBe(10_000);
+    // The boss's attack goes to the front zone first: here that is the Guard itself, so nothing is intercepted.
+    const row = [
+      slot('g', { owner: 'pg', role: 'guard', hp: 1000, atk: 10 }),
+      slot('x', { owner: 'px', atk: 10 }),
+    ];
+    const r = run(row, { players: ['pg', 'px'], bossAtk: 100 });
+    const hits = eventsOf(r, 'boss_hit').filter((e) => e.source === 'attack');
+    expect(hits[0]).toMatchObject({ target: 'g', damage: 100 });
+    expect(hits[0]).not.toHaveProperty('from');
+    const taken = r.perCreature.g!.damageTaken;
+    expect(taken).toBeGreaterThan(0);
+    expect(r.perCreature.g!.guardCredit).toBe(taken);
+    expect(r.perPlayer.pg!.guardCredit).toBe(taken);
+    // Only Guards are credited for damage taken: the same damage on a non-Guard earns nothing.
+    expect(r.perCreature.x!.guardCredit).toBe(0);
+    const noGuard = run([slot('y', { owner: 'py', atk: 10, hp: 1000 })], {
+      players: ['py'],
+      bossAtk: 100,
+    });
+    expect(noGuard.perCreature.y!.damageTaken).toBeGreaterThan(0);
+    expect(noGuard.perCreature.y!.guardCredit).toBe(0);
+  });
+
+  it('credits a Guard only for the damage it could take: its remaining HP', () => {
+    const r = run([slot('g', { role: 'guard', hp: 10, atk: 10 })], { bossAtk: 100 });
+    expect(r.perCreature.g!.damageTaken).toBe(13); // 13 HP with the guard bonus
+    expect(r.perCreature.g!.guardCredit).toBe(13);
   });
 
   it('the boss attack goes front zone first and guards first, then moves back when a zone falls', () => {
@@ -492,7 +524,7 @@ describe('adaptation', () => {
     // bonus 318 - 159 = 159; hit = 150 + 159
     expect(eventsOf(r, 'reaction')[0]!.bonus).toBe(159);
     expect(eventsOf(r, 'hit')[1]!.damage).toBe(309);
-    expect(r.perPlayer.ps!.setupCredit).toBe(10 * 79);
+    expect(r.perPlayer.ps!.setupCredit).toBe(10 * 95); // 60% of 159, rounded down
     const other = run(row, { adaptation: { rule: 'resist-top-reaction', target: 'steam' } });
     expect(eventsOf(other, 'reaction')[0]!.bonus).toBe(318);
   });

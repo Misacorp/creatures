@@ -318,7 +318,7 @@ describe('personalRecap', () => {
     const b = recap.creatures.find((c) => c.id === 'b');
     expect(a).toMatchObject({
       damage: 100,
-      setupCredit: 100,
+      setupCredit: 120, // 60% of the 200 bonus (RULES.combat.setupShareBp)
       setups: 1,
       payoffs: 0,
       knockedOutRound: 1,

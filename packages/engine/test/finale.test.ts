@@ -306,14 +306,14 @@ describe('finale abilities', () => {
         element: 'tide',
         replaced: 'spark',
       });
-      // p's Spark hit then triggers Overload: 150 x 3.125 = 468, bonus 318, setup 159 to pa.
+      // p's Spark hit then triggers Overload: 150 x 3.125 = 468, bonus 318, setup 190 (60%) to pa.
       expect(eventsOf(r, 'reaction').find((e) => e.round === 4)).toMatchObject({
         reaction: 'overload',
         setupCreature: null,
         setupPlayer: 'pa',
       });
-      expect(r.perPlayer.pa).toMatchObject({ setupCredit: 159, damage: 0, contribution: 159 });
-      expect(r.perPlayer.pp!.damage).toBe(11 * 150 + (468 - 159));
+      expect(r.perPlayer.pa).toMatchObject({ setupCredit: 190, damage: 0, contribution: 190 });
+      expect(r.perPlayer.pp!.damage).toBe(11 * 150 + (468 - 190));
     });
 
     it("defaults to the element of the player's first creature, and a chosen round works", () => {
@@ -450,7 +450,7 @@ describe('finale abilities', () => {
 
     it('cashes in the mark like any hit: reaction damage, setup credit', () => {
       // pa's Re-mark sets Soaked at round 2, then pp's Spark strike (200 x 1.5 = 300) cashes
-      // Overload: 300 x 3.125 = 937, bonus 637, setup 318 to pa.
+      // Overload: 300 x 3.125 = 937, bonus 637, setup 382 (60%, rounded down) to pa.
       const r = run([slot('p', { owner: 'pp', element: 'spark', role: 'payoff', atk: 100 })], {
         ...finale,
         players: ['pp', 'pa'],
@@ -479,7 +479,7 @@ describe('finale abilities', () => {
         payoff: 'p',
         bonus: 637,
       });
-      expect(r.perPlayer.pa).toMatchObject({ setupCredit: 318 });
+      expect(r.perPlayer.pa).toMatchObject({ setupCredit: 382 });
       expect(r.reactions.total).toBeGreaterThan(0);
     });
 
