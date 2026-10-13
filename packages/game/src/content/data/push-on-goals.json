@@ -1,0 +1,185 @@
+[
+  {
+    "id": "linger",
+    "name": "Linger a while",
+    "flavor": "There is still something rustling nearby. One more look cannot hurt.",
+    "risk": "safe",
+    "minRank": 4,
+    "extraHours": 1,
+    "lengths": {
+      "short": {
+        "oddsBp": 10000
+      },
+      "medium": {
+        "oddsBp": 10000
+      },
+      "long": {
+        "oddsBp": 10000
+      },
+      "day": {
+        "oddsBp": 10000
+      }
+    },
+    "reward": {
+      "catchRolls": 1
+    }
+  },
+  {
+    "id": "forage",
+    "name": "Forage around",
+    "flavor": "Berries, bark and bits of metal: the ground is full of useful things.",
+    "risk": "safe",
+    "minRank": 1,
+    "extraHours": 2,
+    "lengths": {
+      "short": {
+        "oddsBp": 10000
+      },
+      "medium": {
+        "oddsBp": 10000
+      },
+      "long": {
+        "oddsBp": 10000
+      },
+      "day": {
+        "oddsBp": 10000
+      }
+    },
+    "reward": {
+      "parts": {
+        "scrap": 4
+      }
+    }
+  },
+  {
+    "id": "field-notes",
+    "name": "Take field notes",
+    "flavor": "Sit down, look closely and write it all down while it is fresh.",
+    "risk": "safe",
+    "minRank": 1,
+    "extraHours": 1,
+    "lengths": {
+      "short": {
+        "oddsBp": 10000
+      },
+      "medium": {
+        "oddsBp": 10000
+      },
+      "long": {
+        "oddsBp": 10000
+      },
+      "day": {
+        "oddsBp": 10000
+      }
+    },
+    "reward": {
+      "journal": true,
+      "xpBp": 5000
+    }
+  },
+  {
+    "id": "scout-ahead",
+    "name": "Scout ahead",
+    "flavor": "A faint trail leads on. Someone left supplies along it.",
+    "risk": "safe",
+    "minRank": 2,
+    "extraHours": 2,
+    "lengths": {
+      "medium": {
+        "oddsBp": 10000
+      },
+      "long": {
+        "oddsBp": 10000
+      },
+      "day": {
+        "oddsBp": 10000
+      }
+    },
+    "reward": {
+      "supply": true
+    }
+  },
+  {
+    "id": "shortcut",
+    "name": "Take the shortcut",
+    "flavor": "A narrow gap in the rocks. It could be a treasure road, or a trap.",
+    "risk": "risky",
+    "minRank": 3,
+    "extraHours": 2,
+    "lengths": {
+      "medium": {
+        "oddsBp": 4000
+      },
+      "long": {
+        "oddsBp": 6100
+      },
+      "day": {
+        "oddsBp": 7800
+      }
+    },
+    "reward": {
+      "gear": "rare"
+    }
+  },
+  {
+    "id": "lost-cache",
+    "name": "Open the lost cache",
+    "flavor": "A sealed chest with an old symbol on the lid. Nobody knows what is inside.",
+    "risk": "risky",
+    "minRank": 3,
+    "extraHours": 2,
+    "lengths": {
+      "medium": {
+        "oddsBp": 4500
+      },
+      "long": {
+        "oddsBp": 6600
+      },
+      "day": {
+        "oddsBp": 8200
+      }
+    },
+    "reward": {
+      "blueprint": true
+    }
+  },
+  {
+    "id": "press-deeper",
+    "name": "Press deeper",
+    "flavor": "Past the last marker the creatures grow thick. So does the danger.",
+    "risk": "risky",
+    "minRank": 4,
+    "extraHours": 3,
+    "lengths": {
+      "long": {
+        "oddsBp": 6600
+      },
+      "day": {
+        "oddsBp": 8100
+      }
+    },
+    "reward": {
+      "catchRolls": 3,
+      "supply": true
+    }
+  },
+  {
+    "id": "ancient-vault",
+    "name": "Break into the vault",
+    "flavor": "A door older than any road. What is behind it is worth a great deal, or nothing.",
+    "risk": "risky",
+    "minRank": 6,
+    "extraHours": 3,
+    "lengths": {
+      "long": {
+        "oddsBp": 3600
+      },
+      "day": {
+        "oddsBp": 5600
+      }
+    },
+    "reward": {
+      "gear": "epic"
+    }
+  }
+]

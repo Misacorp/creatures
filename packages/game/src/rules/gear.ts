@@ -29,8 +29,10 @@ export type PartKind = (typeof PART_KINDS)[number];
 /** Parts by kind; kinds that are absent count as 0. */
 export type PartsBundle = Partial<Record<PartKind, number>>;
 
-export const JOB_KINDS = ['craft', 'improve', 'enchant'] as const;
+export const JOB_KINDS = ['craft', 'improve', 'enchant', 'supply'] as const;
 export type JobKind = (typeof JOB_KINDS)[number];
+/** The jobs that work on gear (a supply job has its own hours, from the supply's blueprint). */
+export type GearJobKind = Exclude<JobKind, 'supply'>;
 
 /** The shard of an element. */
 export function shardOf(element: Element): PartKind {
@@ -285,7 +287,7 @@ export function enchantCost(enchantId: string): PartsBundle | null {
 const HOUR_MS = 3_600_000;
 
 /** A job's nominal length in hours, before the skill: a craft follows the rarity, improve and enchant are fixed. */
-export function jobHours(kind: JobKind, rarity: GearRarity): number {
+export function jobHours(kind: GearJobKind, rarity: GearRarity): number {
   return kind === 'craft' ? RULES.gear.jobHours.craft[rarity] : RULES.gear.jobHours[kind];
 }
 
@@ -308,14 +310,14 @@ export function nextSkillXp(level: number): number | null {
 export const MAX_SKILL_LEVEL = RULES.gear.skill.xpForLevel.length;
 
 /** How long a job takes in milliseconds: its hours, less `timeReductionBpPerLevel` for each skill level above 1. */
-export function jobDuration(kind: JobKind, rarity: GearRarity, level: number): number {
+export function jobDuration(kind: GearJobKind, rarity: GearRarity, level: number): number {
   const above = Math.max(0, Math.min(MAX_SKILL_LEVEL, Math.trunc(level)) - 1);
   const keepBp = 10_000 - RULES.gear.skill.timeReductionBpPerLevel * above;
   return Math.floor((jobHours(kind, rarity) * HOUR_MS * keepBp) / 10_000);
 }
 
 /** XP a finished job gives: its nominal hours times `xpPerHour`. The skill does not change it. */
-export function jobXp(kind: JobKind, rarity: GearRarity): number {
+export function jobXp(kind: GearJobKind, rarity: GearRarity): number {
   return jobHours(kind, rarity) * RULES.gear.skill.xpPerHour;
 }
 

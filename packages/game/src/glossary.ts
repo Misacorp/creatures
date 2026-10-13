@@ -3,8 +3,9 @@
  * Activity uses: entry ids for every kind of content, the popover of an ability, and the coverage
  * check that makes a piece of content without a glossary entry a test failure.
  */
-import { content } from './content';
+import { content, expeditionContent } from './content';
 import { gearContent } from './content/gear';
+import { GOAL_RISKS, SUPPLY_KINDS } from './content/expedition-schema';
 import { GEAR_RARITIES, GEAR_STATS } from './content/gear-schema';
 import glossaryJson from './content/data/glossary.json';
 import howToPlayJson from './content/data/how-to-play.json';
@@ -72,6 +73,12 @@ export const GLOSSARY_IDS = {
   job: (kind: string): string => `job-${kind}`,
   /** A skill; there is one, `crafting`. */
   skill: (skill: string): string => `skill-${skill}`,
+  /** An expedition destination such as `tidepools`. */
+  destination: (id: string): string => `destination-${id}`,
+  /** A kind of supply such as `map-scrap` (its tiers share the entry). */
+  supply: (kind: string): string => `supply-${kind}`,
+  /** A push-on goal's risk, `safe` or `risky`. */
+  goal: (risk: string): string => `goal-${risk}`,
 } as const;
 
 /** Entries that are not tied to one piece of content: the game's own words. */
@@ -97,6 +104,17 @@ export const FIXED_GLOSSARY_IDS = [
   'gear',
   'workshop',
   'blueprint',
+  'explorer-rank',
+  'familiarity',
+  'deep-area',
+  'push-on',
+  'supplies',
+  'journal',
+  'journal-set',
+  'weekly-special',
+  'expedition-slot',
+  'milestone',
+  'destination',
 ] as const;
 
 /** What a popover shows. An entry is one; an ability is built from its content (`abilityView`). */
@@ -182,6 +200,10 @@ export function requiredGlossaryIds(pack: ContentPack): string[] {
   for (const enchant of gearContent.enchants) ids.push(GLOSSARY_IDS.enchant(enchant.id));
   for (const kind of JOB_KINDS) ids.push(GLOSSARY_IDS.job(kind));
   ids.push(GLOSSARY_IDS.skill('crafting'));
+  // Expeditions: every destination, every kind of supply and each risk of a push-on goal.
+  for (const d of expeditionContent.destinations) ids.push(GLOSSARY_IDS.destination(d.id));
+  for (const kind of SUPPLY_KINDS) ids.push(GLOSSARY_IDS.supply(kind));
+  for (const risk of GOAL_RISKS) ids.push(GLOSSARY_IDS.goal(risk));
   ids.push(...FIXED_GLOSSARY_IDS);
   return [...new Set(ids)];
 }

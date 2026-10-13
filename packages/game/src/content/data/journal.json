@@ -1,0 +1,275 @@
+{
+  "sets": [
+    { "id": "tide-ledger", "name": "The Tide Ledger", "place": "tidepools" },
+    { "id": "ash-records", "name": "The Ash Records", "place": "ember-caves" },
+    { "id": "rootwork-notes", "name": "Rootwork Notes", "place": "verdant-hollow" },
+    { "id": "static-letters", "name": "Static Letters", "place": "storm-ridge" },
+    { "id": "signpost-series", "name": "The Signpost Series", "place": "old-crossroads" },
+    { "id": "moonlit-verses", "name": "Moonlit Verses", "place": "moonlit-reef" },
+    { "id": "lost-pages", "name": "Lost Pages", "place": "any" }
+  ],
+  "entries": [
+    {
+      "id": "tide-first-pool",
+      "place": "tidepools",
+      "title": "The first pool",
+      "text": "A tide-pup left its wet mark on a rock crab. A spark-bred friend stepped close, and the water answered with a crack of light.",
+      "set": "tide-ledger"
+    },
+    {
+      "id": "tide-low-water",
+      "place": "tidepools",
+      "title": "Low water",
+      "text": "When the tide drops, water-folk grow bold and quick. The slowest one in the pool is always last to turn around.",
+      "set": "tide-ledger"
+    },
+    {
+      "id": "tide-warm-stone",
+      "place": "tidepools",
+      "title": "Warm stone",
+      "text": "A hot rock dropped into a cold pool throws up so much fog that nobody can see their own paws. The loudest one wins.",
+      "set": "tide-ledger"
+    },
+    {
+      "id": "tide-small-friend",
+      "place": "tidepools",
+      "title": "A small friend",
+      "text": "The mist-newts stand at the back and hum. Everyone in front of them stands a little taller, and nobody can say why."
+    },
+    {
+      "id": "tide-lucky-hit",
+      "place": "tidepools",
+      "title": "A lucky hit",
+      "text": "Now and then a splash lands exactly right and the rock splits clean. It happens about once in twenty, and it never feels planned."
+    },
+    {
+      "id": "ember-green-mouth",
+      "place": "ember-caves",
+      "title": "Green at the mouth",
+      "text": "Vines had crept over the cave mouth. One spark, and the whole hillside roared. Nothing green was left by morning.",
+      "set": "ash-records"
+    },
+    {
+      "id": "ember-sea-cave",
+      "place": "ember-caves",
+      "title": "Where the sea comes in",
+      "text": "A wave rolled into the hot cave and came back as a white wall of hot fog. Everything that was glowing went dark for a breath.",
+      "set": "ash-records"
+    },
+    {
+      "id": "ember-ash-burrow",
+      "place": "ember-caves",
+      "title": "The ash burrow",
+      "text": "The diggers keep their burrows warm and call everyone in. A team that shares a burrow hits a little harder the next day.",
+      "set": "ash-records"
+    },
+    {
+      "id": "ember-lion-light",
+      "place": "ember-caves",
+      "title": "Sunlight in the deep",
+      "text": "Far down, where no sun reaches, a mane of light walks first and everyone else walks in its glow. It leaves a scorch on whatever it passes."
+    },
+    {
+      "id": "ember-cooling",
+      "place": "ember-caves",
+      "title": "Cooling off",
+      "text": "Even the hottest rock cools if you wait for the right moment. The ones who rush in early get burned, and the ones who wait get paid."
+    },
+    {
+      "id": "verdant-heavy-bark",
+      "place": "verdant-hollow",
+      "title": "Heavy bark",
+      "text": "The bark-wardens stand in the front and take the blows. They carry more weight than they look, and they never say so.",
+      "set": "rootwork-notes"
+    },
+    {
+      "id": "verdant-roots-and-bolt",
+      "place": "verdant-hollow",
+      "title": "Roots and a bolt",
+      "text": "Something crackling with charge once crossed the hollow. Roots burst from the ground, caught it, and pulled it down in a single flash.",
+      "set": "rootwork-notes"
+    },
+    {
+      "id": "verdant-quiet-garden",
+      "place": "verdant-hollow",
+      "title": "A garden on a shell",
+      "text": "A turtle with a garden on its back plants a seed in whatever it meets. Others come along later and harvest it.",
+      "set": "rootwork-notes"
+    },
+    {
+      "id": "verdant-both-ends",
+      "place": "verdant-hollow",
+      "title": "Brambles at both ends",
+      "text": "The old queen of thorns binds the creatures at the ends of the line. The ones in the middle are always the ones who get out."
+    },
+    {
+      "id": "verdant-shield-of-moss",
+      "place": "verdant-hollow",
+      "title": "A wall of moss",
+      "text": "One quiet word and the moss rose up in a wall. For a moment, half the hollow could stand in front of anything."
+    },
+    {
+      "id": "storm-lightning-rod",
+      "place": "storm-ridge",
+      "title": "The lightning rod",
+      "text": "The king of the clouds always picks out the strongest creature on the ridge and strikes it first. The weakest walk home unharmed.",
+      "set": "static-letters"
+    },
+    {
+      "id": "storm-first-in",
+      "place": "storm-ridge",
+      "title": "First in, first out",
+      "text": "The mice zip in ahead of everyone and leave the sky humming behind them. Whatever follows them gets all the credit.",
+      "set": "static-letters"
+    },
+    {
+      "id": "storm-wet-wire",
+      "place": "storm-ridge",
+      "title": "A wet wire",
+      "text": "A drenched beast that meets a spark makes the whole ridge hum, and the sound goes on for a full minute. Nobody wants to be next to it.",
+      "set": "static-letters"
+    },
+    {
+      "id": "storm-ray-ride",
+      "place": "storm-ridge",
+      "title": "The edge of the cloud",
+      "text": "The rays ride the very edge of a storm. They hit hard and fast, and most of the time they hit exactly where they aimed."
+    },
+    {
+      "id": "storm-aurora-watcher",
+      "place": "storm-ridge",
+      "title": "The watcher above",
+      "text": "Far above the thunder, a ribbon of light hangs over the team and keeps everyone's spirits high. The crowd has never seen its face."
+    },
+    {
+      "id": "road-left-to-right",
+      "place": "old-crossroads",
+      "title": "Which end first",
+      "text": "Some beasts take their turn strictly from the left. Others begin at the right end of the road. Learn which one you are facing.",
+      "set": "signpost-series"
+    },
+    {
+      "id": "road-fast-feet",
+      "place": "old-crossroads",
+      "title": "Fast feet",
+      "text": "Some beasts go by pure quickness, and whoever is fastest strikes first. The quick ones get the first word and sometimes the last.",
+      "set": "signpost-series"
+    },
+    {
+      "id": "road-front-middle-back",
+      "place": "old-crossroads",
+      "title": "Front, middle, back",
+      "text": "A hard blow aimed at the front rarely reaches the back. The ones in the rear can stay calm and let the front do the shouting.",
+      "set": "signpost-series"
+    },
+    {
+      "id": "road-who-pays",
+      "place": "old-crossroads",
+      "title": "Who pays the toll",
+      "text": "At every crossing one friend marks the road and another takes the prize. The best teams put the marker first.",
+      "set": "signpost-series"
+    },
+    {
+      "id": "road-wishing-well",
+      "place": "old-crossroads",
+      "title": "The wishing well",
+      "text": "Travellers say the well gives back a little of what you drop in. Three coins buy a better road, and the rest are only for luck."
+    },
+    {
+      "id": "road-fork-in-fur",
+      "place": "old-crossroads",
+      "title": "A fork in the fur",
+      "text": "Two of the same kind rarely walk the same road twice. The second one always comes back a little stronger than the first."
+    },
+    {
+      "id": "reef-silver-tide",
+      "place": "moonlit-reef",
+      "title": "The silver tide",
+      "text": "Only at night does the water pull back far enough to show the coral. By morning it is gone, and nobody remembers the way.",
+      "set": "moonlit-verses"
+    },
+    {
+      "id": "reef-coral-lance",
+      "place": "moonlit-reef",
+      "title": "A lance of coral",
+      "text": "The coral cats strike from shadow and rarely miss. They are proud of it, and a little proud of their crowns.",
+      "set": "moonlit-verses"
+    },
+    {
+      "id": "reef-glowing-wall",
+      "place": "moonlit-reef",
+      "title": "A glowing wall",
+      "text": "At the deepest edge the reef lights up like a wall. Anything that hides behind it takes half the weight of a blow.",
+      "set": "moonlit-verses"
+    },
+    {
+      "id": "reef-night-singer",
+      "place": "moonlit-reef",
+      "title": "The night singer",
+      "text": "Something sings across the water that makes the boss forget its counter-move for a few breaths. Then it stops, and all is quiet."
+    },
+    {
+      "id": "reef-fog-newt",
+      "place": "moonlit-reef",
+      "title": "Fog on the reef",
+      "text": "The newts tuck their friends into the fog and the boss cannot see where to aim. Nobody has ever caught one asleep."
+    },
+    {
+      "id": "fest-paper-lanterns",
+      "place": "festival-grounds",
+      "title": "Paper lanterns",
+      "text": "The lantern fish lights the way and lends a hand. Its glow makes a drenched foe easy to mark again, even in the dark."
+    },
+    {
+      "id": "fest-hearth-ward",
+      "place": "festival-grounds",
+      "title": "The hearth ward",
+      "text": "A tortoise with a bonfire on its shell shields a whole row at once for three rounds. The fire never goes out."
+    },
+    {
+      "id": "fest-bunting",
+      "place": "festival-grounds",
+      "title": "Bunting and ribbons",
+      "text": "The festival boss is always a little easier than the last one. Everybody is in too good a mood to be afraid of it."
+    },
+    {
+      "id": "fest-last-night",
+      "place": "festival-grounds",
+      "title": "The last night",
+      "text": "On the last night the whole meadow goes quiet for a moment, then fireworks open the sky and everyone remembers why they came."
+    },
+    {
+      "id": "any-bait-and-patience",
+      "place": "any",
+      "title": "Bait and patience",
+      "text": "Every explorer learns the same thing in the end: the creatures come to the ones who wait, and the quiet ones wait best.",
+      "set": "lost-pages"
+    },
+    {
+      "id": "any-rare-hour",
+      "place": "any",
+      "title": "The rare hour",
+      "text": "Rarer things show themselves to those who go further and stay longer. A short walk finds the common ones, a long one finds the rest.",
+      "set": "lost-pages"
+    },
+    {
+      "id": "any-old-friend",
+      "place": "any",
+      "title": "An old friend",
+      "text": "A creature that comes back often learns the way. After a few trips it finds the hidden corners without a lantern at all.",
+      "set": "lost-pages"
+    },
+    {
+      "id": "any-boss-adapts",
+      "place": "any",
+      "title": "It remembers",
+      "text": "Bosses learn. After the first night of a hard fight, the big ones come back with a new trick and a long memory."
+    },
+    {
+      "id": "any-the-wheel",
+      "place": "any",
+      "title": "The wheel of elements",
+      "text": "Water puts out fire, fire eats the green, the green drinks lightning, and lightning splits the water. The wheel has never once stopped."
+    }
+  ]
+}

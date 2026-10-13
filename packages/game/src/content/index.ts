@@ -9,6 +9,19 @@ import guests from './data/guests.json';
 import speciesLore from './data/species-lore.json';
 import bossesLore from './data/bosses-lore.json';
 import quirks from './data/quirks.json';
+import destinationsJson from './data/destinations.json';
+import goalsJson from './data/push-on-goals.json';
+import journalJson from './data/journal.json';
+import specialsJson from './data/weekly-specials.json';
+import suppliesJson from './data/supplies.json';
+import {
+  loadExpeditions,
+  type DestinationDef,
+  type ExpeditionPack,
+  type JournalEntryDef,
+  type PushOnGoalDef,
+  type SupplyDef,
+} from './expedition-schema';
 import { loadLore, pickQuirkFrom } from './lore';
 import { loadContent } from './load';
 
@@ -18,6 +31,7 @@ export * from './lore';
 export * from './glossary-schema';
 export * from './gear-schema';
 export * from './gear';
+export * from './expedition-schema';
 
 /** The shipped content pack, validated at module load. */
 export const content = loadContent({
@@ -57,4 +71,48 @@ export function pickQuirk(speciesId: string, rng: Rng): string {
 /** The text of a stored quirk id, or undefined for an id that is not in the data. */
 export function quirkText(id: string): string | undefined {
   return QUIRK_TEXT.get(id);
+}
+
+/**
+ * The expedition content (destinations, supplies, push-on goals, the journal and the weekly special),
+ * validated against `content` at module load.
+ */
+export const expeditionContent: ExpeditionPack = loadExpeditions(
+  {
+    destinations: destinationsJson,
+    supplies: suppliesJson,
+    goals: goalsJson,
+    journal: journalJson,
+    specials: specialsJson,
+  },
+  content,
+);
+
+const DESTINATIONS = new Map<string, DestinationDef>(
+  expeditionContent.destinations.map((d) => [d.id, d]),
+);
+const SUPPLIES = new Map<string, SupplyDef>(expeditionContent.supplies.map((s) => [s.id, s]));
+const GOALS = new Map<string, PushOnGoalDef>(expeditionContent.goals.map((g) => [g.id, g]));
+const ENTRIES = new Map<string, JournalEntryDef>(
+  expeditionContent.journal.entries.map((e) => [e.id, e]),
+);
+
+/** A destination by id, or undefined. */
+export function destinationDef(id: string): DestinationDef | undefined {
+  return DESTINATIONS.get(id);
+}
+
+/** A supply by id (`lure-good`), or undefined. */
+export function supplyDef(id: string): SupplyDef | undefined {
+  return SUPPLIES.get(id);
+}
+
+/** A push-on goal by id, or undefined. */
+export function goalDef(id: string): PushOnGoalDef | undefined {
+  return GOALS.get(id);
+}
+
+/** A journal entry by id, or undefined. */
+export function journalEntry(id: string): JournalEntryDef | undefined {
+  return ENTRIES.get(id);
 }

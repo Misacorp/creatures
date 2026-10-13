@@ -692,7 +692,7 @@
     "lines": [
       "Common, Rare or Epic.",
       "Rarer creatures turn up less often on expeditions.",
-      "Better supplies improve the odds."
+      "Lures, deeper areas and familiar places improve the odds."
     ],
     "section": "expeditions"
   },
@@ -1044,5 +1044,285 @@
       "It never changes how a creature fights."
     ],
     "section": "workshop"
+  },
+  {
+    "id": "explorer-rank",
+    "title": "Explorer rank",
+    "short": "Each creature gets better at exploring.",
+    "lines": [
+      "A creature earns explorer XP from its own trips, and more from longer ones.",
+      "Each rank makes its trips 2% shorter. Ranks open places, the 24 hour trip and better choices.",
+      "Your slots come from all your creatures' ranks added together."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "familiarity",
+    "title": "Familiarity",
+    "short": "A creature's feel for one place, up to 3 stars.",
+    "lines": [
+      "1 star: 4 finished trips there. 2 stars: it has caught every creature that lives there.",
+      "3 stars: it has found a shiny there.",
+      "Stars open the deeper area and give small bonuses at that place."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "sparkle"
+    },
+    "section": "expeditions"
+  },
+  {
+    "id": "deep-area",
+    "title": "Deeper area",
+    "short": "A hidden part of a place, with rarer finds.",
+    "lines": [
+      "It opens with 1 star at the place, or when you carry a lantern.",
+      "Some creatures only live in the deeper area.",
+      "Each catch has a chance to come from it: 30% with 1 star, 50% with 3 stars."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "push-on",
+    "title": "Push on",
+    "short": "A choice that can come up when a trip ends.",
+    "lines": [
+      "A finished trip may offer a goal: stay out a little longer for a reward.",
+      "A safe goal always works. A risky goal can fail, and then the whole trip brings nothing home.",
+      "The odds are shown exactly. Ignore the choice to come home as usual.",
+      "Better supplies and higher ranks make a choice come up more often."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "supplies",
+    "title": "Supplies",
+    "short": "Optional boosts for one trip.",
+    "lines": [
+      "Buy them with Bait, craft them in the Workshop or find them on trips.",
+      "A trip carries up to 2, never two of the same kind.",
+      "Trips without supplies are free.",
+      "The best tier of every kind always brings a choice at the end of the trip."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "journal",
+    "title": "Journal",
+    "short": "Pages of lore, found on trips.",
+    "lines": [
+      "A trip may turn up a page you do not have yet.",
+      "Pages are grouped by place, and some complete a set.",
+      "Read closely: the pages hint at how things work."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "journal-set",
+    "title": "Journal set",
+    "short": "A few pages that belong together.",
+    "lines": [
+      "Find every page of a set to complete it.",
+      "Completed sets count towards your milestones."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "weekly-special",
+    "title": "Weekly special",
+    "short": "One place gets a twist each week.",
+    "lines": [
+      "Trips that start there that week get the twist, such as more parts or an extra catch roll.",
+      "In Festival weeks the special is the Festival Grounds."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "expedition-slot",
+    "title": "Expedition slots",
+    "short": "How many creatures can be away at once.",
+    "lines": [
+      "You start with 1 slot. The 2nd opens after a few trips.",
+      "More open as the ranks of all your creatures add up.",
+      "A creature is away or working in the Workshop, never both."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "milestone",
+    "title": "Milestones",
+    "short": "Tiny permanent bonuses for things you have done.",
+    "lines": [
+      "Trips, places, creatures found, journal pages and raid reactions all count.",
+      "Each milestone gives a very small bonus, like 1% more rare catches."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "destination",
+    "title": "Destination",
+    "short": "A place to send a creature.",
+    "lines": [
+      "Each place has its own element, its own creatures and a deeper area.",
+      "Some places need explorer rank, some only open at night or in Festival weeks."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "supply-lure",
+    "title": "Lure",
+    "short": "Makes rarer creatures likelier.",
+    "lines": [
+      "Moves some of the odds from Common to Rare and Epic for one trip.",
+      "Comes in three tiers: Plain, Sweet and Golden."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "supply-map-scrap",
+    "title": "Map scrap",
+    "short": "Extra catch rolls on one trip.",
+    "lines": [
+      "Adds a share of the trip's catch rolls, and always at least one.",
+      "Comes in three tiers: Map Scrap, Inked Map and Trail Atlas."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "supply-lantern",
+    "title": "Lantern",
+    "short": "Opens the deeper area, even without stars.",
+    "lines": [
+      "Adds to the chance that a catch comes from the deeper area.",
+      "Handy at Moonlit Reef, where the rarest creatures wait."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "supply-satchel",
+    "title": "Satchel",
+    "short": "More parts and more finds from one trip.",
+    "lines": [
+      "Adds to the parts the trip brings home and the chance to find a supply.",
+      "Comes in three tiers, from the Small Satchel to the Explorer's Pack."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "goal-safe",
+    "title": "Safe goal",
+    "short": "Always works.",
+    "lines": [
+      "Stay out longer for an extra reward.",
+      "The extra hours are shown before you choose."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "goal-risky",
+    "title": "Risky goal",
+    "short": "Can fail the whole trip.",
+    "lines": [
+      "It works with the exact chance shown.",
+      "If it fails, the whole trip brings nothing home.",
+      "Coming home instead is always safe."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "job-supply",
+    "title": "Craft supplies",
+    "short": "Makes supplies for expeditions.",
+    "lines": [
+      "Takes 2 to 6 hours by tier. The creature needs Crafting level 1, 3 or 5.",
+      "Costs scrap, and shards for the better tiers. One supply per job."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "destination-tidepools",
+    "title": "Tidepools",
+    "short": "A warm, splashy Tide place. Open to everyone.",
+    "lines": [
+      "Splashet, Mistnewt and Coralynx live here.",
+      "The deeper area makes rarer catches likelier."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "tide"
+    },
+    "section": "expeditions"
+  },
+  {
+    "id": "destination-ember-caves",
+    "title": "Ember Caves",
+    "short": "A glowing Ember place. Open to everyone.",
+    "lines": [
+      "Cindle, Ashmole and Mossback live here.",
+      "Something golden sleeps in the deeper area."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "ember"
+    },
+    "section": "expeditions"
+  },
+  {
+    "id": "destination-verdant-hollow",
+    "title": "Verdant Hollow",
+    "short": "A hushed Grove place. Open to everyone.",
+    "lines": ["Sproutle and Mossback live here.", "Something huge sleeps in the deeper area."],
+    "visual": {
+      "kind": "element",
+      "id": "grove"
+    },
+    "section": "expeditions"
+  },
+  {
+    "id": "destination-storm-ridge",
+    "title": "Storm Ridge",
+    "short": "A windy Spark place. Open to everyone.",
+    "lines": ["Zipmouse and Stormray live here.", "Something bright drifts in the deeper area."],
+    "visual": {
+      "kind": "element",
+      "id": "spark"
+    },
+    "section": "expeditions"
+  },
+  {
+    "id": "destination-old-crossroads",
+    "title": "Old Crossroads",
+    "short": "A mixed place where everything passes through.",
+    "lines": [
+      "Needs explorer rank 2.",
+      "Splashet, Cindle, Sproutle, Zipmouse and Stormray pass through.",
+      "Trips that were out when expeditions changed come home from here."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "destination-moonlit-reef",
+    "title": "Moonlit Reef",
+    "short": "A glowing Tide place, only open at night.",
+    "lines": [
+      "Open from 20:00 to 06:00 of your server time. Needs explorer rank 4.",
+      "Mistnewt and Coralynx live here.",
+      "The rarest creatures wait in the deeper area."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "tide"
+    },
+    "section": "expeditions"
+  },
+  {
+    "id": "destination-festival-grounds",
+    "title": "Festival Grounds",
+    "short": "Only open in Festival weeks.",
+    "lines": [
+      "Ashmole, Solmane, Lanternfin and Hearthshell live here.",
+      "The Festival creatures live nowhere else."
+    ],
+    "section": "expeditions"
   }
 ]
