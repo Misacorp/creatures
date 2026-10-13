@@ -1,0 +1,738 @@
+[
+  {
+    "id": "element-tide",
+    "title": "Tide",
+    "short": "Water. Strong against Ember.",
+    "lines": [
+      "Hits Ember bosses for 50% more damage.",
+      "Hits Spark bosses for 25% less damage.",
+      "Tide hits leave Soaked on the boss. Spark cashes it in."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "tide"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "element-ember",
+    "title": "Ember",
+    "short": "Fire. Strong against Grove.",
+    "lines": [
+      "Hits Grove bosses for 50% more damage.",
+      "Hits Tide bosses for 25% less damage.",
+      "Ember hits leave Scorched on the boss. Tide cashes it in."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "ember"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "element-grove",
+    "title": "Grove",
+    "short": "Plants. Strong against Spark.",
+    "lines": [
+      "Hits Spark bosses for 50% more damage.",
+      "Hits Ember bosses for 25% less damage.",
+      "Grove hits leave Overgrown on the boss. Ember cashes it in."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "grove"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "element-spark",
+    "title": "Spark",
+    "short": "Lightning. Strong against Tide.",
+    "lines": [
+      "Hits Tide bosses for 50% more damage.",
+      "Hits Grove bosses for 25% less damage.",
+      "Spark hits leave Charged on the boss. Grove cashes it in."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "spark"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "role-setter",
+    "title": "Setter",
+    "short": "Marks the boss for a combo.",
+    "lines": [
+      "Its hit leaves its element's mark on the boss.",
+      "It can swap a mark of another element.",
+      "Other roles only mark a boss that has no mark.",
+      "Act before the creature that cashes the mark in."
+    ],
+    "visual": {
+      "kind": "species",
+      "id": "splashet"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "role-payoff",
+    "title": "Payoff",
+    "short": "Hits reactions harder.",
+    "lines": [
+      "A Payoff that sets off a reaction deals 10% more.",
+      "Any role can set off a reaction. Payoffs do it best.",
+      "Put it after a Setter that leaves the right mark."
+    ],
+    "visual": {
+      "kind": "species",
+      "id": "cindle"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "role-guard",
+    "title": "Guard",
+    "short": "Tough. Takes hits for its zone.",
+    "lines": [
+      "Has 30% more HP than other roles.",
+      "A boss hit aimed at one creature goes to a Guard in the same zone.",
+      "Hits on a whole zone still reach everyone in it.",
+      "Best at the front, where the boss attacks first."
+    ],
+    "visual": {
+      "kind": "species",
+      "id": "sproutle"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "role-support",
+    "title": "Support",
+    "short": "Powers up its neighbours.",
+    "lines": [
+      "Each round it boosts the creatures right next to it.",
+      "Their next hit deals 15% more damage.",
+      "A knocked-out or silenced Support gives no boost.",
+      "Place it between your strongest hitters."
+    ],
+    "visual": {
+      "kind": "species",
+      "id": "ashmole"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "mark-soaked",
+    "title": "Soaked",
+    "short": "Tide's mark. Spark cashes it in.",
+    "lines": [
+      "Left on the boss by a Tide hit.",
+      "A Spark hit sets off Overload.",
+      "Only a Setter of another element can swap it.",
+      "It stays until it is cashed in or swapped."
+    ],
+    "visual": {
+      "kind": "mark",
+      "id": "tide"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "mark-charged",
+    "title": "Charged",
+    "short": "Spark's mark. Grove cashes it in.",
+    "lines": [
+      "Left on the boss by a Spark hit.",
+      "A Grove hit sets off Grounding.",
+      "Only a Setter of another element can swap it.",
+      "It stays until it is cashed in or swapped."
+    ],
+    "visual": {
+      "kind": "mark",
+      "id": "spark"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "mark-overgrown",
+    "title": "Overgrown",
+    "short": "Grove's mark. Ember cashes it in.",
+    "lines": [
+      "Left on the boss by a Grove hit.",
+      "A Ember hit sets off Wildfire.",
+      "Only a Setter of another element can swap it.",
+      "It stays until it is cashed in or swapped."
+    ],
+    "visual": {
+      "kind": "mark",
+      "id": "grove"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "mark-scorched",
+    "title": "Scorched",
+    "short": "Ember's mark. Tide cashes it in.",
+    "lines": [
+      "Left on the boss by a Ember hit.",
+      "A Tide hit sets off Steam.",
+      "Only a Setter of another element can swap it.",
+      "It stays until it is cashed in or swapped."
+    ],
+    "visual": {
+      "kind": "mark",
+      "id": "ember"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "reaction-overload",
+    "title": "Overload",
+    "short": "Spark on Soaked: 4.5 times damage.",
+    "lines": [
+      "A Spark hit on a Soaked boss sets it off.",
+      "It deals 4.5 times the normal damage.",
+      "It uses up the mark. The next hit leaves a new one.",
+      "Any role can set it off. Payoffs deal 10% more."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "overload"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "reaction-grounding",
+    "title": "Grounding",
+    "short": "Grove on Charged: 4.5 times damage.",
+    "lines": [
+      "A Grove hit on a Charged boss sets it off.",
+      "It deals 4.5 times the normal damage.",
+      "It uses up the mark. The next hit leaves a new one.",
+      "Any role can set it off. Payoffs deal 10% more."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "grounding"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "reaction-wildfire",
+    "title": "Wildfire",
+    "short": "Ember on Overgrown: 4.5 times damage.",
+    "lines": [
+      "A Ember hit on a Overgrown boss sets it off.",
+      "It deals 4.5 times the normal damage.",
+      "It uses up the mark. The next hit leaves a new one.",
+      "Any role can set it off. Payoffs deal 10% more."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "wildfire"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "reaction-steam",
+    "title": "Steam",
+    "short": "Tide on Scorched: 4.5 times damage.",
+    "lines": [
+      "A Tide hit on a Scorched boss sets it off.",
+      "It deals 4.5 times the normal damage.",
+      "It uses up the mark. The next hit leaves a new one.",
+      "Any role can set it off. Payoffs deal 10% more."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "steam"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "gimmick-hit-zone",
+    "title": "Zone attack",
+    "short": "Hits every creature in one zone.",
+    "lines": [
+      "Every living creature in that zone takes a hit.",
+      "A Guard cannot take it for the others.",
+      "A Shield Wall on that zone softens it.",
+      "The stage warns you one round ahead."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "hit_zone"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-silence-ends",
+    "title": "Silence",
+    "short": "The row's ends skip a turn.",
+    "lines": [
+      "The creatures at both ends of the row skip their next turn.",
+      "A silenced Support gives no boost.",
+      "Keep your best hitters away from the ends.",
+      "The stage warns you one round ahead."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "silence_ends"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-reflect-first-reaction",
+    "title": "Reflect",
+    "short": "Turns a reaction back on you.",
+    "lines": [
+      "The first reaction of the round hurts your creature, not the boss.",
+      "The boss only takes the normal hit. The mark is still used up.",
+      "Later reactions in the same round work as usual."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "reflect_first_reaction"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-strike-highest-atk",
+    "title": "Strongest strike",
+    "short": "Targets your top attacker.",
+    "lines": [
+      "Hits the living creature with the highest Attack.",
+      "A Guard in its zone takes the hit instead.",
+      "A Shield Wall on that zone softens it."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "strike_highest_atk"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "zone-front",
+    "title": "Front",
+    "short": "Closest to the boss. Hit first.",
+    "lines": [
+      "The row is split into a front, a middle and a back part.",
+      "The boss's normal attack hits the front first.",
+      "When the front is knocked out, it moves on to the middle.",
+      "Guards belong here."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "zone-middle",
+    "title": "Middle",
+    "short": "The rest of the row.",
+    "lines": [
+      "Front and back get a third of the row each.",
+      "The middle gets whatever is left.",
+      "A row of 1 or 2 creatures is all middle.",
+      "The boss hits it once the front is down."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "zone-back",
+    "title": "Back",
+    "short": "Farthest from the boss. Hit last.",
+    "lines": [
+      "The boss's normal attack reaches it last.",
+      "Zone attacks and tricks can still reach it.",
+      "Automatic placement puts Payoffs here."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "turn-left-to-right",
+    "title": "Left to right",
+    "short": "The row acts from slot 1 on.",
+    "lines": [
+      "Creatures act in slot order, slot 1 first.",
+      "Put Setters before the creature that cashes in.",
+      "To repeat a reaction, alternate a Setter and a cashing creature."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "left_to_right"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "turn-right-to-left",
+    "title": "Right to left",
+    "short": "The row acts from the last slot.",
+    "lines": [
+      "Creatures act in reverse slot order, the last slot first.",
+      "Put Setters before the creature that cashes in.",
+      "To repeat a reaction, alternate a Setter and a cashing creature."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "right_to_left"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "turn-speed",
+    "title": "By Speed",
+    "short": "Fastest creature acts first.",
+    "lines": [
+      "Creatures act from highest Speed (SPD) to lowest.",
+      "With equal Speed, the lower slot goes first.",
+      "Check each creature's SPD on the Collection tab."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "speed"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "auto-fire",
+    "title": "Auto fire",
+    "short": "Fires abilities for you.",
+    "lines": [
+      "On: an ability fires by itself in its round.",
+      "Tap Fire to use one sooner. It lands next round.",
+      "Off: it waits for you, and still fires in the last round."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "ability"
+    },
+    "section": "finale"
+  },
+  {
+    "id": "creature-ability",
+    "title": "Creature ability",
+    "short": "A move for the live finale.",
+    "lines": [
+      "Every species has its own ability.",
+      "It unlocks at level 10 and gets stronger when the creature evolves.",
+      "Up to 3 team creatures fire one each, plus your basic ability.",
+      "Each ability fires once."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "ability"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "basic-ability",
+    "title": "Basic ability",
+    "short": "Everyone brings one.",
+    "lines": [
+      "Pick Rally, Shield Wall, Re-mark or Purge before the finale.",
+      "It is weaker than a creature ability.",
+      "If you do not pick, one is chosen for you."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "ability"
+    },
+    "section": "finale"
+  },
+  {
+    "id": "ability-rally",
+    "title": "Rally",
+    "short": "Rally: everyone hits harder for a while.",
+    "lines": [
+      "Every creature's hits deal bonus damage.",
+      "It lasts for the number of rounds the ability says.",
+      "It adds up with Support boosts and other Rallies."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "ability"
+    },
+    "section": "finale"
+  },
+  {
+    "id": "ability-shield-wall",
+    "title": "Shield Wall",
+    "short": "Shield Wall: one zone takes less damage.",
+    "lines": [
+      "Cuts the damage one zone takes, for the rounds the ability says.",
+      "Two walls on one zone stack.",
+      "Creature abilities shield their own creature's zone.",
+      "The stage warns you one round before a zone attack."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "shield"
+    },
+    "section": "finale"
+  },
+  {
+    "id": "ability-re-mark",
+    "title": "Re-mark",
+    "short": "Re-mark: puts a mark on the boss.",
+    "lines": [
+      "It replaces any mark the boss has.",
+      "Basic Re-mark lets you pick the element.",
+      "Creature abilities use their own element.",
+      "Then the right element can cash it in."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "mark"
+    },
+    "section": "finale"
+  },
+  {
+    "id": "ability-purge",
+    "title": "Purge",
+    "short": "Purge: turns off the boss's counter-move.",
+    "lines": [
+      "It switches the Phase 2 counter-move off for a few rounds.",
+      "It only matters once the boss has a counter-move.",
+      "When it ends, the boss adapts again."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "ability"
+    },
+    "section": "finale"
+  },
+  {
+    "id": "ability-strike",
+    "title": "Strike",
+    "short": "Strike: hits the boss right away.",
+    "lines": [
+      "The creature hits the boss at once for a share of its Attack.",
+      "It can cash in a mark like any other hit.",
+      "It still lands if the creature has been knocked out."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "ability"
+    },
+    "section": "finale"
+  },
+  {
+    "id": "boss-rank",
+    "title": "Boss Rank",
+    "short": "How tough this week's boss is.",
+    "lines": [
+      "Each Rank adds 40% more boss HP. Its Attack grows too.",
+      "Win a normal week's finale and the Rank goes up by 1.",
+      "Lose and the Rank stays the same.",
+      "Higher Ranks pay more Essence."
+    ],
+    "section": "ranks"
+  },
+  {
+    "id": "festival",
+    "title": "Festival",
+    "short": "Every 5th week: easier and richer.",
+    "lines": [
+      "Every 5th raid week is a Festival.",
+      "The boss fights 3 Ranks lower, and Essence pays 50% more.",
+      "Win the finale to win the Festival creature.",
+      "A win keeps the Rank. After a Festival, the Rank eases by 1."
+    ],
+    "section": "ranks"
+  },
+  {
+    "id": "season",
+    "title": "Season",
+    "short": "5 raid weeks, ending in a Festival.",
+    "lines": [
+      "A season is 5 raid weeks.",
+      "Weeks 1 to 4 are normal. Week 5 is the Festival.",
+      "The pips show where you are. The last pip is the Festival.",
+      "Then a new season begins."
+    ],
+    "section": "ranks"
+  },
+  {
+    "id": "readiness",
+    "title": "Readiness",
+    "short": "How ready your team looks.",
+    "lines": [
+      "A rough guess of how the finale could go.",
+      "It comes from a forecast. It is not a promise.",
+      "The words are Long shot, Even, Likely and Strong."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "readiness-long-shot",
+    "title": "Long shot",
+    "short": "Your team looks short for this boss.",
+    "lines": [
+      "Train your creatures and set a better row to improve it.",
+      "A long shot can still win: combos and crits swing fights."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "readiness-even",
+    "title": "Even",
+    "short": "Could go either way.",
+    "lines": [
+      "Your team looks about as ready as this boss is tough.",
+      "Combos and crits can tip it."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "readiness-likely",
+    "title": "Likely",
+    "short": "Your team looks ready.",
+    "lines": [
+      "A win looks likely for this boss.",
+      "It is not a promise: crits and boss tricks can surprise you."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "readiness-strong",
+    "title": "Strong",
+    "short": "Your team looks very ready.",
+    "lines": ["A win looks very likely for this boss.", "It is still a forecast, not a promise."],
+    "section": "raid-week"
+  },
+  {
+    "id": "adaptation",
+    "title": "Counter-move",
+    "short": "The boss adapts after Phase 1.",
+    "lines": [
+      "After Phase 1 the boss adapts to what worked best.",
+      "Reaction Resistance: your most used reaction does 50% less bonus damage.",
+      "Element Resistance: your top damage element does 25% less.",
+      "A Purge ability switches it off for a few rounds."
+    ],
+    "section": "raid-week"
+  },
+  {
+    "id": "essence",
+    "title": "Essence",
+    "short": "Raid reward. Evolves creatures.",
+    "lines": [
+      "Every raid stage you clear pays Essence.",
+      "Most of it is the same for all. The rest depends on how much you helped.",
+      "Higher Ranks and Festival weeks pay more.",
+      "Evolving costs 20 Essence (40 for rare creatures)."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "gem"
+    },
+    "section": "rewards"
+  },
+  {
+    "id": "bait",
+    "title": "Bait",
+    "short": "Currency from leets in Discord.",
+    "lines": [
+      "Your leets in Discord turn into Bait.",
+      "Spend it to train creatures and fund expeditions.",
+      "Extra copies of a fully fused creature turn into Bait."
+    ],
+    "section": "first-week"
+  },
+  {
+    "id": "training-cost",
+    "title": "Training cost",
+    "short": "Bait to train: 3 + 2 x level.",
+    "lines": [
+      "Going up one level costs 3 + 2 x its level, in Bait.",
+      "Level 1 to 2 costs 5 Bait. Level 10 to 11 costs 23.",
+      "Half price if the creature is more than 5 levels below the server's median.",
+      "A creature away on an expedition cannot train."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "level",
+    "title": "Level",
+    "short": "Higher level, stronger creature.",
+    "lines": [
+      "Train a creature with Bait to raise its level.",
+      "Each level adds HP, Attack and Speed.",
+      "A creature that can evolve stops at level 15 until it does. The top is 30.",
+      "At level 10 a creature gets its finale ability."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "crit",
+    "title": "Critical hit",
+    "short": "A lucky hit that does extra.",
+    "lines": [
+      "Every hit has a 5% chance to be critical.",
+      "A critical hit does 50% more damage.",
+      "A few creatures crit more often, or harder.",
+      "The boss can crit too, with the same odds."
+    ],
+    "section": "finale"
+  },
+  {
+    "id": "fusion",
+    "title": "Fusion",
+    "short": "Duplicates make a creature stronger.",
+    "lines": [
+      "A duplicate catch fuses into the creature you already have.",
+      "Each fusion adds stats, up to 20% after 5 fusions.",
+      "The stars show your fusions. After 5, a duplicate gives Bait."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "rarity",
+    "title": "Rarity",
+    "short": "How hard a creature is to find.",
+    "lines": [
+      "Common, Rare or Epic.",
+      "Rarer creatures turn up less often on expeditions.",
+      "Better supplies improve the odds."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "shiny",
+    "title": "Shiny",
+    "short": "A rare sparkly colour.",
+    "lines": [
+      "About 1 in 500 catches is shiny.",
+      "A shiny duplicate makes your creature shiny.",
+      "It is only for show. A shiny has the same stats."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "sparkle"
+    },
+    "section": "expeditions"
+  },
+  {
+    "id": "away",
+    "title": "Away",
+    "short": "On an expedition.",
+    "lines": [
+      "It cannot be trained until it is back.",
+      "Claim or recall the expedition to bring it home."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "first-on-server",
+    "title": "First on server",
+    "short": "Nobody here had it before you.",
+    "lines": [
+      "You were the first on this server to get it.",
+      "Everyone who got it at the same moment shares the title."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "sparkle"
+    },
+    "section": "rewards"
+  }
+]

@@ -4,7 +4,7 @@ import type { ClaimResult, Creature, DurationId, Expedition, GameState, Supplies
 import {
   DURATION_OPTIONS,
   SUPPLIES_OPTIONS,
-  catchBadges,
+  catchBadgeTags,
   creatureName,
   durationLabel,
   formatCountdown,
@@ -12,6 +12,7 @@ import {
   speciesName,
 } from './game';
 import { useNow } from './hooks';
+import { GlossaryTag } from './Glossary';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -106,7 +107,10 @@ function SendForm({
         ))}
       </select>
       <p>
-        Total: <strong>{cost} Bait</strong>
+        Total:{' '}
+        <strong>
+          {cost} <GlossaryTag entry="bait">Bait</GlossaryTag>
+        </strong>
         {cost > bait && <span class="error"> Not enough Bait</span>}
       </p>
       <button type="submit" class="primary" disabled={busy || cost > bait}>
@@ -183,11 +187,17 @@ function Reveal({ result, onDismiss }: { result: ClaimResult; onDismiss: () => v
               {getSpecies(entry.species) !== undefined && (
                 <ElementChip element={getSpecies(entry.species)?.element ?? ''} />
               )}{' '}
-              {catchBadges(entry).map((badge) => (
-                <span key={badge} class="badge">
-                  {badge}
-                </span>
-              ))}
+              {catchBadgeTags(entry).map((badge) =>
+                badge.entry === null ? (
+                  <span key={badge.text} class="badge">
+                    {badge.text}
+                  </span>
+                ) : (
+                  <GlossaryTag key={badge.text} entry={badge.entry} look="chip" class="badge">
+                    {badge.text}
+                  </GlossaryTag>
+                ),
+              )}
             </li>
           ))}
         </ul>

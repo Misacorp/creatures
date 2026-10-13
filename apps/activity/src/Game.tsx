@@ -16,6 +16,7 @@ import {
 import { createKeyStore } from './actions';
 import { Collection } from './Collection';
 import { Expeditions, type SendRequest } from './Expeditions';
+import { GlossaryTag } from './Glossary';
 import { clockOffset, creatureName, errorText, speciesName } from './game';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
@@ -169,10 +170,12 @@ export function Game({
   return (
     <>
       <p class="bait" aria-label="Bait balance">
-        <span class="bait-amount">{game.balances.bait}</span> Bait
+        <span class="bait-amount">{game.balances.bait}</span>{' '}
+        <GlossaryTag entry="bait">Bait</GlossaryTag>
       </p>
       <p class="essence" aria-label="Essence balance">
-        <span class="essence-amount">{game.balances.essence}</span> Essence
+        <span class="essence-amount">{game.balances.essence}</span>{' '}
+        <GlossaryTag entry="essence">Essence</GlossaryTag>
       </p>
       <div class="tabs" role="tablist" aria-label="Sections">
         {TABS.map(({ id, label }) => (

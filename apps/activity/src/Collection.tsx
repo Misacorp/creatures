@@ -2,6 +2,7 @@ import { trainingCost } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
 import { shinyPalette } from './art';
+import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { abilityDef } from './live';
 import { PixelBar } from './PixelBar';
@@ -108,6 +109,7 @@ function CreatureCard({
       ? null
       : evolutionText(creature.level, creature.evolution, state.balances.essence);
   const abilityText = creatureAbilityText(creature, abilityDef);
+  const abilityInfo = creature.ability === null ? undefined : abilityDef(creature.ability.id);
   const trainLabel =
     cost === null
       ? 'Max level'
@@ -137,21 +139,39 @@ function CreatureCard({
       </div>
       <div class="name-row">
         <h3>{creatureName(creature)}</h3>
-        <span class="lvl-tag pix">Lv {creature.level}</span>
+        <GlossaryTag entry="level" look="chip" class="lvl-tag pix">
+          Lv {creature.level}
+        </GlossaryTag>
       </div>
       {creature.nickname !== null && <p class="muted">{speciesName(creature.species)}</p>}
       <p class="tags">
         {species !== undefined && (
           <>
             <ElementChip element={species.element} role={capitalize(species.role)} />
-            <span class="tag">{capitalize(species.rarity)}</span>
+            <GlossaryTag entry="rarity" look="chip" class="tag">
+              {capitalize(species.rarity)}
+            </GlossaryTag>
           </>
         )}
-        {isFestivalSpecies(creature.species) && <span class="badge festival">Festival</span>}
-        {creature.shiny && <span class="badge shiny">Shiny</span>}
-        {creature.away && <span class="badge away">Away</span>}
+        {isFestivalSpecies(creature.species) && (
+          <GlossaryTag entry="festival" look="chip" class="badge festival">
+            Festival
+          </GlossaryTag>
+        )}
+        {creature.shiny && (
+          <GlossaryTag entry="shiny" look="chip" class="badge shiny">
+            Shiny
+          </GlossaryTag>
+        )}
+        {creature.away && (
+          <GlossaryTag entry="away" look="chip" class="badge away">
+            Away
+          </GlossaryTag>
+        )}
         {isFirstOnServer(creature, state.serverFirsts) && (
-          <span class="badge first">First on server</span>
+          <GlossaryTag entry="first-on-server" look="chip" class="badge first">
+            First on server
+          </GlossaryTag>
         )}
       </p>
       {isFestivalSpecies(creature.species) && (
@@ -167,12 +187,23 @@ function CreatureCard({
       </p>
       {abilityText !== null && (
         <div class="creature-ability">
-          <p class={abilityText.unlocked ? undefined : 'locked'}>{abilityText.line}</p>
+          <p class={abilityText.unlocked ? undefined : 'locked'}>
+            {abilityText.unlocked && abilityInfo !== undefined ? (
+              <>
+                <GlossaryTag ability={abilityInfo.id}>{abilityInfo.name}</GlossaryTag>:{' '}
+                {abilityInfo.description}
+              </>
+            ) : (
+              <GlossaryTag entry="creature-ability">{abilityText.line}</GlossaryTag>
+            )}
+          </p>
           {abilityText.teaser !== null && <p class="muted">{abilityText.teaser}</p>}
         </div>
       )}
-      <p class="stars" aria-label={`Fusion ${String(creature.fusionCount)} of 5`}>
-        <span aria-hidden="true">{fusionStars(creature.fusionCount)}</span>
+      <p class="stars">
+        <GlossaryTag entry="fusion" label={`Fusion ${String(creature.fusionCount)} of 5`}>
+          <span aria-hidden="true">{fusionStars(creature.fusionCount)}</span>
+        </GlossaryTag>
       </p>
       <p>
         <button
@@ -185,6 +216,7 @@ function CreatureCard({
         >
           {trainLabel}
         </button>
+        <GlossaryTag entry="training-cost" look="help" class="train-help" />
         {discounted && <span class="muted"> Catch-up discount</span>}
       </p>
       {evolve !== null &&

@@ -1,8 +1,10 @@
+import { GLOSSARY_IDS, content } from '@creatures/game';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { Fragment, type ComponentChildren, type Ref, type RefObject } from 'preact';
 import type { EventNames, FightEvent, Zone } from '@creatures/engine';
 import { bossArt, elementClass, markPalette } from './art';
 import { cssVars } from './css-vars';
+import { GlossaryTag } from './Glossary';
 import { gimmickGlyph, glyphOrUnknown } from './glyphs';
 import { useElementWidth, usePrefersReducedMotion } from './hooks';
 import { abilityControls, abilityName, abilityTitle } from './live';
@@ -626,6 +628,7 @@ export function Stage({
   const parity = anim === null ? 0 : anim.seq % 2;
   const groups = groupByZone(row);
   const markName = state.mark === null ? null : nameOf(names.marks, state.mark);
+  const markId = content.reactions.find((r) => r.markElement === state.mark)?.markId;
   const markIcon = state.mark === null ? undefined : elementIcon(state.mark);
   const markColours = state.mark === null ? undefined : markPalette(state.mark);
   const markGlyph = glyphOrUnknown('mark');
@@ -677,18 +680,22 @@ export function Stage({
         >
           <Sprite sprite={art.sprite} scale={art.scale} alt={boss.name} />
           {state.mark !== null && (
-            <span
-              class={`stage-mark ${elementClass(state.mark)}${markCue ? ' pop' : ''}`}
-              role="img"
-              aria-label={`Marked: ${markName ?? state.mark}`}
-            >
-              <Sprite
-                sprite={markGlyph}
-                scale={3}
-                {...(markColours === undefined ? {} : { palette: markColours })}
-              />
-              {markIcon !== undefined && <Sprite sprite={markIcon} scale={2} />}
-              <span class="stage-mark-name">{markName}</span>
+            <span class={`stage-mark ${elementClass(state.mark)}${markCue ? ' pop' : ''}`}>
+              {/* The boss is not a button, so the mark can be a tag without taking a tap from anything. */}
+              <GlossaryTag
+                entry={markId === undefined ? '' : GLOSSARY_IDS.mark(markId)}
+                look="chip"
+                class="mark-tag"
+                label={`Marked: ${markName ?? state.mark}. What does this mean?`}
+              >
+                <Sprite
+                  sprite={markGlyph}
+                  scale={3}
+                  {...(markColours === undefined ? {} : { palette: markColours })}
+                />
+                {markIcon !== undefined && <Sprite sprite={markIcon} scale={2} />}
+                <span class="stage-mark-name">{markName}</span>
+              </GlossaryTag>
             </span>
           )}
           <Floats fx={fx} target={null} />
@@ -775,7 +782,9 @@ export function Stage({
               aria-label={`${ZONE_NAMES[zone]} zone`}
               ref={cssVars(layoutVars(layout, STAGE_LAYOUT))}
             >
-              <p class="zone-label pix">{ZONE_NAMES[zone]}</p>
+              <p class="zone-label pix">
+                <GlossaryTag entry={GLOSSARY_IDS.zone(zone)}>{ZONE_NAMES[zone]}</GlossaryTag>
+              </p>
               {warnedZone && (
                 <span class="zone-warn" aria-hidden="true">
                   <Sprite sprite={glyphOrUnknown('warning')} scale={2} />

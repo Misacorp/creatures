@@ -15,7 +15,7 @@ export interface StagePopoverProps {
 
 /**
  * A small popover inside the fight stage (its parent must be the stage, which is `position:
- * relative`). It sits above its anchor with a pointer arrow, flips below when there is no room above,
+ * relative`; the glossary's page-level variant uses a fixed full-window layer as that parent). It sits above its anchor with a pointer arrow, flips below when there is no room above,
  * and is kept inside the stage's bounds. The place is written as CSS custom properties (`--pop-x`,
  * `--pop-y`, `--pop-arrow`) with `style.setProperty`, so no inline style attribute is needed, and it
  * is worked out again after every render and whenever the window or the popover changes size.
@@ -64,18 +64,23 @@ export function StagePopover(props: StagePopoverProps) {
       const target = event.target instanceof Node ? event.target : null;
       if (target === null) return;
       if (pop.contains(target) || latest.current.anchor()?.contains(target) === true) return;
+      // A glossary popover opened from a tag inside this one is not "outside" it.
+      if (target instanceof Element && target.closest('.glossary-layer') !== null) return;
       tappedOutside = true;
       latest.current.onClose();
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('pointerdown', onPointer);
     window.addEventListener('resize', place);
+    // A popover on a page (the glossary's) must follow its anchor when the page or a list scrolls.
+    window.addEventListener('scroll', place, true);
     const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(place) : null;
     observer?.observe(pop);
     return () => {
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('pointerdown', onPointer);
       window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
       observer?.disconnect();
       // Closing with the keyboard or after an action: focus goes back to what opened it (also when
       // it was lost because the button that had it was switched off). A tap elsewhere has already

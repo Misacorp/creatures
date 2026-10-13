@@ -1,4 +1,6 @@
+import { GLOSSARY_IDS } from '@creatures/game';
 import { bossArt } from './art';
+import { GlossaryTag } from './Glossary';
 import { gimmickGlyph, turnOrderGlyph } from './glyphs';
 import type { RaidView } from './raid-api';
 import {
@@ -35,7 +37,9 @@ function SeasonPips({ season }: { season: RaidView['season'] }) {
           </li>
         ))}
       </ol>
-      <p class="muted">{text}</p>
+      <p class="muted">
+        <GlossaryTag entry="season">{text}</GlossaryTag>
+      </p>
     </div>
   );
 }
@@ -63,13 +67,26 @@ export function BossCard({ view }: { view: RaidView }) {
         <div class="boss-meta">
           <h3 id="raid-boss-name">{boss.name}</h3>
           <p class="tags">
-            {rank !== null && <span class="tag rank">{rank}</span>}
-            {view.festival && <span class="badge festival">Festival week</span>}
+            {rank !== null && (
+              <GlossaryTag entry="boss-rank" look="chip" class="tag rank">
+                {rank}
+              </GlossaryTag>
+            )}
+            {view.festival && (
+              <GlossaryTag entry="festival" look="chip" class="badge festival">
+                Festival week
+              </GlossaryTag>
+            )}
             <ElementChip element={boss.element} />
-            <span class="chip" role="img" aria-label={turnOrderText(boss.turnOrder)}>
+            <GlossaryTag
+              entry={GLOSSARY_IDS.turnOrder(boss.turnOrder)}
+              look="chip"
+              class="chip"
+              label={turnOrderText(boss.turnOrder)}
+            >
               <Sprite sprite={turnOrderGlyph(boss.turnOrder)} scale={2} />
               <span class="chip-text">{turnOrderShort(boss.turnOrder)}</span>
-            </span>
+            </GlossaryTag>
           </p>
           {hp !== null && (
             <div class="boss-hp">
@@ -90,7 +107,13 @@ export function BossCard({ view }: { view: RaidView }) {
       <SeasonPips season={view.season} />
       {band !== null && view.party?.readiness != null && (
         <p class="readiness">
-          <span class={`readiness-band ${view.party.readiness}`}>{band}</span>{' '}
+          <GlossaryTag
+            entry={GLOSSARY_IDS.readiness(view.party.readiness)}
+            look="chip"
+            class={`readiness-band ${view.party.readiness}`}
+          >
+            {band}
+          </GlossaryTag>{' '}
           <span class="muted">{READINESS_HINT}</span>
         </p>
       )}
@@ -101,9 +124,26 @@ export function BossCard({ view }: { view: RaidView }) {
           <ul class="gimmicks">
             {gimmicks.map((g) => (
               <li key={g.id} class="gimmick">
-                <Sprite sprite={gimmickGlyph(g.op ?? '')} scale={3} />
+                {g.op === null ? (
+                  <Sprite sprite={gimmickGlyph('')} scale={3} />
+                ) : (
+                  <GlossaryTag
+                    entry={GLOSSARY_IDS.gimmick(g.op)}
+                    look="chip"
+                    class="gimmick-tag"
+                    label={`${g.name}: what does this trick do?`}
+                  >
+                    <Sprite sprite={gimmickGlyph(g.op)} scale={3} />
+                  </GlossaryTag>
+                )}
                 <span class="gimmick-text">
-                  <strong class="pix">{g.name}</strong>
+                  {g.op === null ? (
+                    <strong class="pix">{g.name}</strong>
+                  ) : (
+                    <GlossaryTag entry={GLOSSARY_IDS.gimmick(g.op)}>
+                      <strong class="pix">{g.name}</strong>
+                    </GlossaryTag>
+                  )}
                   {g.short !== '' && <span class="muted"> {g.short}</span>}
                 </span>
               </li>
@@ -125,7 +165,9 @@ export function BossCard({ view }: { view: RaidView }) {
           </ul>
         )}
       </details>
-      <h4>Phase 2 counter-move</h4>
+      <h4>
+        <GlossaryTag entry="adaptation">Phase 2 counter-move</GlossaryTag>
+      </h4>
       {adaptation === null ? (
         <p class="muted">The boss shows its counter-move after Phase 1.</p>
       ) : (

@@ -1,5 +1,6 @@
 import { RULES, basicAbilities } from '@creatures/game';
 import { AutoFireToggle } from './AutoFireToggle';
+import { GlossaryTag } from './Glossary';
 import { abilityName, abilityPlanText, creatureAbilityRows } from './live';
 import type { AbilityPreview, TeamCreatureView } from './raid-api';
 
@@ -33,9 +34,14 @@ export function AbilityPicker({
   return (
     <section class="raid-section" aria-labelledby="raid-ability-heading">
       <h3 id="raid-ability-heading">Your finale abilities</h3>
-      <h4>Basic ability</h4>
+      <h4>
+        <GlossaryTag entry="basic-ability">Basic ability</GlossaryTag>
+      </h4>
       <p>
-        Your basic ability: <strong>{abilityName(current.abilityId)}</strong>{' '}
+        Your basic ability:{' '}
+        <GlossaryTag ability={current.abilityId}>
+          <strong>{abilityName(current.abilityId)}</strong>
+        </GlossaryTag>{' '}
         <span class="muted">
           {current.chosen ? '(chosen by you)' : '(assigned for you: pick one to choose)'}
         </span>
@@ -54,6 +60,7 @@ export function AbilityPicker({
             onAutoFire('basic', on);
           }}
         />
+        <GlossaryTag entry="auto-fire" look="help" />
         <span class="muted">
           {basicAutoFire
             ? 'Fires by itself in its round.'
@@ -86,7 +93,9 @@ export function AbilityPicker({
           );
         })}
       </ul>
-      <h4>Creature abilities</h4>
+      <h4>
+        <GlossaryTag entry="creature-ability">Creature abilities</GlossaryTag>
+      </h4>
       {creatureRows.length === 0 ? (
         <p class="muted">
           You have no team creatures yet. Every creature gets a finale ability at level{' '}
@@ -101,7 +110,10 @@ export function AbilityPicker({
           <ul class="plain-list creature-abilities">
             {creatureRows.map((row) => (
               <li key={row.creatureId} class={row.unlocked ? 'live-ability you' : 'live-ability'}>
-                <strong>{row.title}</strong>. <span>{row.effect}</span>{' '}
+                <GlossaryTag ability={row.abilityId}>
+                  <strong>{row.title}</strong>
+                </GlossaryTag>
+                . <span>{row.effect}</span>{' '}
                 <span class={row.unlocked ? 'muted' : 'locked'}>{row.status}</span>
                 {row.unlocked && (
                   <span class="ability-auto">
@@ -113,6 +125,7 @@ export function AbilityPicker({
                         onAutoFire(row.creatureId, on);
                       }}
                     />
+                    <GlossaryTag entry="auto-fire" look="help" />
                   </span>
                 )}
               </li>
