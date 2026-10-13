@@ -5,7 +5,6 @@ import raidReveal from './fixtures/raid-reveal.json';
 import { isFestivalSpecies } from './game';
 import { parseRaidView } from './raid-api';
 import {
-  READINESS_HINT,
   READINESS_LABELS,
   SEASON_WEEKS,
   bestRankText,
@@ -14,7 +13,6 @@ import {
   festivalTeaser,
   rankChangeText,
   rankLabel,
-  readinessLabel,
   readinessMeter,
   seasonPips,
   seasonText,
@@ -81,10 +79,6 @@ describe('the readiness band', () => {
       strong: 'Strong',
     });
     for (const label of Object.values(READINESS_LABELS)) expect(label).not.toMatch(/\d|%/);
-    expect(READINESS_HINT).toBe('How ready your team looks');
-    expect(READINESS_HINT).not.toMatch(/\d|%/);
-    expect(readinessLabel('likely')).toBe('Likely');
-    expect(readinessLabel(null)).toBeNull();
   });
 
   it('is a four-step meter that fills with the band, and has none without a band', () => {

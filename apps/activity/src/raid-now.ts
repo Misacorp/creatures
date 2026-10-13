@@ -15,7 +15,7 @@ import {
 /** What the action leads to: the placement step, the live finale, or taking part again. */
 export type NowTarget = 'placement' | 'live' | 'rejoin';
 
-export type NowKind =
+type NowKind =
   | 'set-team'
   | 'watch-live'
   | 'countdown'
@@ -26,7 +26,7 @@ export type NowKind =
   | 'sitting-out'
   | 'not-in';
 
-export interface NowAction {
+interface NowAction {
   kind: NowKind;
   /** The line itself, for example "Phase 1 in 2 h 10 m". */
   label: string;

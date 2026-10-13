@@ -7,7 +7,6 @@ import stateOffer from './fixtures/expedition-state-offer.json';
 import pushOnFixture from './fixtures/expedition-push-on.json';
 import {
   canCarry,
-  choiceLabel,
   fillPct,
   kitBlocker,
   kitChoice,
@@ -72,8 +71,6 @@ describe('supplies', () => {
     for (const option of supplyOptions({})) {
       expect(option.choice, option.id).toBe(option.tier === 'great' ? 'guaranteed' : 'likely');
     }
-    expect(choiceLabel('guaranteed')).toBe('Choice guaranteed');
-    expect(choiceLabel('likely')).toBe('Choice likely');
   });
 
   it('describes each supply in a few words, never a digit or a percent sign', () => {

@@ -24,7 +24,7 @@ export interface GearDeps {
 }
 
 /** The key store's name for a job start: the same job on the same creature is the same action. */
-export type JobStart = StartJobRequest extends infer R
+type JobStart = StartJobRequest extends infer R
   ? R extends StartJobRequest
     ? Omit<R, 'idempotencyKey'>
     : never

@@ -54,7 +54,7 @@ function isRoll(value: unknown): value is { stat: GearStat; bp: number } {
   return isRecord(value) && isStat(value['stat']) && isInt(value['bp']);
 }
 
-export function isGearItem(value: unknown): value is GearItem {
+function isGearItem(value: unknown): value is GearItem {
   if (!isRecord(value)) return false;
   const cost = value['upgradeCost'];
   return (
@@ -110,7 +110,7 @@ function isJobInput(value: unknown): value is Job['input'] {
   );
 }
 
-export function isJob(value: unknown): value is Job {
+function isJob(value: unknown): value is Job {
   return (
     isRecord(value) &&
     isStr(value['id']) &&

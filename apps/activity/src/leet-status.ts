@@ -42,7 +42,7 @@ export function shouldRefetchLeet(status: LeetSyncStatus | null, attemptsDone: n
   return status !== null && isSyncing(status) && attemptsDone < SYNC_POLL_MAX_ATTEMPTS;
 }
 
-export interface LeetStatusLine {
+interface LeetStatusLine {
   /** `warning` is shown as an error, `info` as a quiet note. */
   tone: 'info' | 'warning';
   text: string;

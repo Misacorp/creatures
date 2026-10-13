@@ -32,12 +32,12 @@ export function parseRaidChannel(data: unknown): RaidChannelState {
 
 export const RAID_NEWS_HELP = 'The bot needs View Channel and Send Messages in this channel.';
 
-export interface RaidNewsButton {
+interface RaidNewsButton {
   action: RaidChannelAction;
   label: string;
 }
 
-export interface RaidNewsCard {
+interface RaidNewsCard {
   title: string;
   /** What is true now, in one line. */
   status: string;

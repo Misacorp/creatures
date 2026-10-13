@@ -122,7 +122,7 @@ export interface DungeonRunResponse {
 }
 
 /** Names for `describeEvent` (`@creatures/engine`); the player key of a run is `p1`. */
-export interface DungeonEventNames {
+interface DungeonEventNames {
   boss: string;
   creatures: Record<string, string>;
   players?: Record<string, string>;

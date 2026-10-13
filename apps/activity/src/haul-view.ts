@@ -35,7 +35,7 @@ export const CHANCE_WORDS: readonly string[] = [
   'very often',
 ];
 
-export interface HaulRow {
+interface HaulRow {
   key: string;
   icon: WorthIcon;
   /** The short word under the icon: "Catches", "Scrap". */

@@ -36,7 +36,7 @@ const isBool = (value: unknown): value is boolean => typeof value === 'boolean';
 const isArrayOf = <T>(value: unknown, guard: (item: unknown) => item is T): value is T[] =>
   Array.isArray(value) && value.every(guard);
 
-export const isExpeditionLength = (value: unknown): value is ExpeditionLength =>
+const isExpeditionLength = (value: unknown): value is ExpeditionLength =>
   (EXPEDITION_LENGTHS as readonly unknown[]).includes(value);
 const isTier = (value: unknown): value is SupplyTier =>
   value === 'basic' || value === 'good' || value === 'great';

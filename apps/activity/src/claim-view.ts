@@ -13,7 +13,7 @@ import type { PartKind } from './gear-types';
 import { rewardPileItems, type PileSource } from './reward-pile';
 import { goalName, kindName, supplyKindOf, supplyName } from './trip-view';
 
-export type RevealTone = 'home' | 'recalled' | 'failed';
+type RevealTone = 'home' | 'recalled' | 'failed';
 
 /** How the trip went: a failed risky goal, a recall, or a trip that came home. */
 export function revealTone(result: Pick<TripResult, 'recalled' | 'failed'>): RevealTone {
@@ -79,7 +79,7 @@ export function foundSupplies(
   return [...counts].map(([id, amount]) => ({ id, name: supplyName(id), amount }));
 }
 
-export interface XpView {
+interface XpView {
   gained: number;
   total: number;
   rank: number;
@@ -94,7 +94,7 @@ export function xpView(result: Pick<ClaimResult, 'xp'>): XpView | null {
   return { ...xp, rankedUp: xp.rank > xp.rankBefore };
 }
 
-export interface StarsView {
+interface StarsView {
   stars: number;
   starsBefore: number;
   trips: number;
@@ -117,7 +117,7 @@ export function slotLine(result: Pick<ClaimResult, 'slotUnlocked'>): string | nu
     : `A new expedition slot opened! You have ${String(unlocked.total)} now.`;
 }
 
-export interface JournalPage {
+interface JournalPage {
   entryId: string;
   title: string;
   text: string;
@@ -161,7 +161,7 @@ export function pileLabel(source: PileSource): string {
 }
 
 /** One thing a rank-up gift gives: a picture and a few words. */
-export interface GiftLine {
+interface GiftLine {
   key: string;
   icon:
     | { kind: 'glyph'; id: string }

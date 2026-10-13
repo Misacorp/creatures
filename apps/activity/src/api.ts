@@ -7,7 +7,6 @@ import {
 } from './expedition-parse';
 import type {
   CancelledTrip,
-  ExpeditionLength,
   ExplorerView,
   Slots,
   Trip,
@@ -27,7 +26,7 @@ export interface AppConfig {
   devTools: boolean;
 }
 
-export interface Health {
+interface Health {
   ok: boolean;
 }
 
@@ -36,7 +35,7 @@ export interface SessionUser {
   displayName: string;
 }
 
-export interface SessionResult {
+interface SessionResult {
   /** Kept in memory by this module only; callers never need to touch it. */
   accessToken: string;
   user: SessionUser;
@@ -213,7 +212,7 @@ const isInt = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value);
 const isNullableInt = (value: unknown): value is number | null => value === null || isInt(value);
 
-export function isLeetSyncStatus(value: unknown): value is LeetSyncStatus {
+function isLeetSyncStatus(value: unknown): value is LeetSyncStatus {
   return (
     isRecord(value) &&
     (value['source'] === 'http' || value['source'] === 'mock' || value['source'] === 'disabled') &&
@@ -267,9 +266,6 @@ export async function fetchLedger(limit: number): Promise<LedgerEntry[]> {
 
 // --- Game state ---
 
-/** The trip lengths of expeditions v2: 2, 6, 12 and (from explorer rank 5) 24 hours. */
-export type DurationId = ExpeditionLength;
-
 export interface Creature extends CreatureGearFields {
   id: string;
   species: string;
@@ -293,7 +289,7 @@ export interface Creature extends CreatureGearFields {
 }
 
 /** A creature's finale ability. `nextId` is the stronger one of its evolved form. */
-export interface CreatureAbility {
+interface CreatureAbility {
   id: string;
   unlocked: boolean;
   unlockLevel: number;

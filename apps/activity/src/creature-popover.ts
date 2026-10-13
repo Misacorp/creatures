@@ -27,7 +27,7 @@ export type PopView =
 export const CREATURE_VIEW: PopView = { kind: 'creature' };
 
 /** A tag of the creature face: what it says and the glossary entry it switches to. */
-export interface CreatureTag {
+interface CreatureTag {
   kind: 'element' | 'role';
   /** The id of the element or the role, for the colour and the icon. */
   id: string;
@@ -50,11 +50,6 @@ export function openTag(entry: string): PopView {
 /** The back control: always to the creature, whichever entry (or chain of entries) was open. */
 export function goBack(): PopView {
   return CREATURE_VIEW;
-}
-
-/** True when there is a creature face to go back to. */
-export function canGoBack(view: PopView): boolean {
-  return view.kind === 'tag';
 }
 
 /** What Escape does: on an entry it goes back to the creature, on the creature it closes. */

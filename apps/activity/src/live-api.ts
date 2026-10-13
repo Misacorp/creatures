@@ -31,7 +31,7 @@ import {
 } from './raid-api';
 
 export type LiveStatus = 'none' | 'lobby' | 'live' | 'done';
-export type LiveAbilityMode = 'default' | 'held' | 'fired';
+type LiveAbilityMode = 'default' | 'held' | 'fired';
 
 /**
  * One use of an ability. A player has one entry for their basic ability and one for each of their

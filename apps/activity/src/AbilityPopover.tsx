@@ -57,7 +57,7 @@ function Chips({ label, value, disabled, onPick, children }: ChipsProps) {
   );
 }
 
-export interface AbilityPopoverBodyProps {
+interface AbilityPopoverBodyProps {
   fight: Pick<LiveFight, 'status' | 'round' | 'rounds'>;
   ability: LiveAbility;
   /** What the stage shows for this ability (it follows the events that have played). */

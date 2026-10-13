@@ -4,7 +4,6 @@
  * are in `@creatures/game` and the actions in `gear.ts` and `gear-grants.ts`.
  */
 import {
-  GEAR_RARITIES,
   GEAR_STATS,
   PART_KINDS,
   RULES,
@@ -55,8 +54,6 @@ export function rowToItem(row: GearRow): GearItem {
     enchantId: row.enchant_id,
   };
 }
-
-export const RARITY_SET: ReadonlySet<string> = new Set(GEAR_RARITIES);
 
 // --- Items ---
 

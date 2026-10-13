@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { glyph } from './glyphs';
-import { MAX_LABEL, nodeSummary, trackNodes, type TrackStep } from './progress-track';
+import { MAX_LABEL, trackNodes, type TrackStep } from './progress-track';
 
 const steps: TrackStep[] = [1, 2, 3, 4, 5].map((n) => ({
   id: n,
@@ -56,22 +56,7 @@ describe('trackNodes', () => {
   });
 });
 
-describe('nodeSummary', () => {
-  it('says what was unlocked and what will be', () => {
-    const [previous, current, next] = trackNodes(steps, 2);
-    expect(previous && nodeSummary(previous)).toBe('Previous: Rank 2, unlocked Thing 2.');
-    expect(current && nodeSummary(current)).toBe('Current: Rank 3, unlocked Thing 3.');
-    expect(next && nodeSummary(next)).toBe('Next: Rank 4, will unlock Thing 4.');
-  });
-
-  it('copes with a step that unlocks nothing and with Max', () => {
-    const [current] = trackNodes(steps, 0);
-    expect(current && nodeSummary(current)).toBe('Current: Rank 1, nothing to unlock.');
-    expect(nodeSummary({ key: 'max', role: 'max', label: MAX_LABEL, unlocks: [] })).toBe(
-      'Top: nothing further to unlock.',
-    );
-  });
-
+describe('the track fixture', () => {
   it('uses glyph ids that exist (sanity check of the fixture)', () => {
     expect(glyph('clock')).toBeDefined();
   });

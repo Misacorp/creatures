@@ -74,7 +74,7 @@ export function streakLine(streak: number): string {
   return streak === 1 ? '1 day in a row' : `${String(streak)} days in a row`;
 }
 
-export interface StreakPip {
+interface StreakPip {
   day: number;
   on: boolean;
   /** The day pays a small bonus. */
@@ -111,11 +111,6 @@ export function depthChangeText(run: Pick<DungeonRunSummary, 'depth' | 'newDepth
   return run.newDepth > run.depth
     ? `Depth ${String(run.depth)} to ${String(run.newDepth)}`
     : `Still at depth ${String(run.depth)}. Clear all three rooms to go deeper.`;
-}
-
-/** "Room 2 · Flooded": the card between rooms. */
-export function roomCardTitle(index: number, modifierName: string): string {
-  return `Room ${String(index + 1)} · ${modifierName}`;
 }
 
 /** The room's place in the run, for the stage header: "Room 3 of 3, room boss". */

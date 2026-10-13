@@ -14,20 +14,20 @@ export interface SpriteDef {
 }
 
 /** A pixel with its colour, in the sprite's own grid. */
-export interface Cell {
+interface Cell {
   x: number;
   y: number;
   colour: string;
 }
 
-export interface ParsedSprite {
+interface ParsedSprite {
   width: number;
   height: number;
   /** Every non-transparent pixel, row by row. */
   cells: readonly Cell[];
 }
 
-export const TRANSPARENT = '.';
+const TRANSPARENT = '.';
 const COLOUR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 const MAX_SIZE = 64;
 

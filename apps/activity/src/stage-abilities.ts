@@ -12,7 +12,7 @@ import type { AbilityUse } from './stage';
  * auto: fires by itself at its default round (Auto fire on); manual: Auto fire is off, it waits for
  * its owner; pressed: Fire was pressed and it has not fired yet; used: done.
  */
-export type BadgeKind = 'auto' | 'manual' | 'pressed' | 'used';
+type BadgeKind = 'auto' | 'manual' | 'pressed' | 'used';
 
 export interface Badge {
   kind: BadgeKind;
@@ -75,7 +75,7 @@ export function badgeFor(
  * species with no ability) opens a short note saying why, so a tap never does nothing. Other
  * players' creatures and guests are not interactive.
  */
-export type UnitTap = 'ability' | 'note' | 'none';
+type UnitTap = 'ability' | 'note' | 'none';
 
 export function unitTap(mine: boolean, hasAbility: boolean): UnitTap {
   if (!mine) return 'none';
@@ -90,7 +90,7 @@ export interface Box {
   height: number;
 }
 
-export interface PopoverPlacement {
+interface PopoverPlacement {
   /** Where the popover's top-left corner goes, relative to the anchor's top-left corner. */
   x: number;
   y: number;

@@ -5,7 +5,6 @@ import { ApiError, parseGameState, type Creature } from './api';
 import { abilityDef } from './live';
 import {
   catchBadgeTags,
-  catchBadges,
   clockOffset,
   creatureAbilityText,
   creatureName,
@@ -69,11 +68,13 @@ describe('display helpers', () => {
   });
 
   it('describes catches', () => {
+    const badgeTexts = (entry: Parameters<typeof catchBadgeTags>[0]): string[] =>
+      catchBadgeTags(entry).map((b) => b.text);
     const base = { species: 'zipmouse', shiny: false, firstOnServer: false };
-    expect(catchBadges({ ...base, outcome: 'new' })).toEqual(['New!']);
-    expect(catchBadges({ ...base, outcome: 'fused', fusionCount: 3 })).toEqual(['Fused ★3']);
-    expect(catchBadges({ ...base, outcome: 'converted', bait: 5 })).toEqual(['+5 Bait']);
-    expect(catchBadges({ ...base, outcome: 'new', shiny: true, firstOnServer: true })).toEqual([
+    expect(badgeTexts({ ...base, outcome: 'new' })).toEqual(['New!']);
+    expect(badgeTexts({ ...base, outcome: 'fused', fusionCount: 3 })).toEqual(['Fused ★3']);
+    expect(badgeTexts({ ...base, outcome: 'converted', bait: 5 })).toEqual(['+5 Bait']);
+    expect(badgeTexts({ ...base, outcome: 'new', shiny: true, firstOnServer: true })).toEqual([
       'New!',
       'Shiny!',
       'First on server!',

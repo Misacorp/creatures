@@ -43,7 +43,7 @@ export function sendBody(request: SendRequest, idempotencyKey: string): SendBody
 }
 
 /** A trip answer: the trip and the fresh collection. */
-export interface TripAnswer {
+interface TripAnswer {
   expedition: Trip;
   state: GameState;
 }

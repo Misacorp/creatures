@@ -15,7 +15,7 @@ import type { DropOutcome, DropTarget } from './raid-dnd';
 
 /** The places of the row, left to right. Used for labels and sentences. */
 export const ROW_PLACES = ['left', 'middle', 'right'] as const;
-export type RowPlace = (typeof ROW_PLACES)[number];
+type RowPlace = (typeof ROW_PLACES)[number];
 export const ROW_PLACE_NAMES: Readonly<Record<RowPlace, string>> = {
   left: 'Left',
   middle: 'Middle',
@@ -139,7 +139,7 @@ export function reduceTap(slots: Slots, selected: Selection, tap: Tap): TapResul
   return { slots: place(slots, selected, tap.index), selected: null, hint: null };
 }
 
-export interface DropResult {
+interface DropResult {
   slots: Slots;
   outcome: DropOutcome;
 }

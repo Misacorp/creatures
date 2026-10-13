@@ -31,7 +31,7 @@ export function percentText(bp: number): string {
 // --- Trip lengths ---
 
 /** The nominal hours of a trip length, from the rules. */
-export function lengthHours(length: ExpeditionLength): number {
+function lengthHours(length: ExpeditionLength): number {
   return lengthRules(length).ms / 3_600_000;
 }
 
@@ -40,7 +40,7 @@ export function lengthLabel(length: ExpeditionLength): string {
   return `${String(lengthHours(length))} h`;
 }
 
-export interface LengthOption {
+interface LengthOption {
   id: ExpeditionLength;
   label: string;
   /** What the trip takes for this explorer (each rank above 1 shortens it), for example "11 h 31 min". */
@@ -57,11 +57,6 @@ export function lengthOptions(rank: number): LengthOption[] {
     takes: formatDuration(tripMs(id, rank)),
     rolls: lengthRules(id).rolls,
   }));
-}
-
-/** What a trip of this length takes for an explorer of this rank, in milliseconds. */
-export function tripTakesMs(length: ExpeditionLength, rank: number): number {
-  return tripMs(length, rank);
 }
 
 // --- Supplies ---
@@ -93,11 +88,6 @@ export function supplyEffect(def: SupplyDef): string {
 export function kindName(kind: string): string {
   const words = kind.replaceAll('-', ' ');
   return words.charAt(0).toUpperCase() + words.slice(1);
-}
-
-/** The label of a supply's choice mark. */
-export function choiceLabel(choice: SupplyOption['choice']): string {
-  return choice === 'guaranteed' ? 'Choice guaranteed' : 'Choice likely';
 }
 
 function optionOf(def: SupplyDef, stock: Readonly<Record<string, number>>): SupplyOption {
@@ -211,9 +201,9 @@ export type WorthIcon =
 
 // --- A running trip ---
 
-export type TripPhase = 'out' | 'choice' | 'pushing' | 'ready';
+type TripPhase = 'out' | 'choice' | 'pushing' | 'ready';
 
-export interface TripStatus {
+interface TripStatus {
   phase: TripPhase;
   /** How far the current leg is, 0 to 1: the trip itself, then (after a choice) the push-on. */
   fraction: number;
@@ -331,7 +321,7 @@ export function explorerXp(explorer: Pick<ExplorerView, 'rank' | 'xp' | 'nextRan
   };
 }
 
-export interface SlotsLine {
+interface SlotsLine {
   /** "1 of 2 slots in use". */
   use: string;
   /** What opens the next slot, or null when every slot is open. */

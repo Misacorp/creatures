@@ -19,9 +19,9 @@ export const LOBBY_MS = 5 * 60_000;
  * The longest a round of a finale can take (the engine's pacing, 6 to 22 seconds, is what the server
  * schedules by): only used to know when the Raid tab can stop expecting a result.
  */
-export const LONGEST_ROUND_MS = MAX_ROUND_MS;
+const LONGEST_ROUND_MS = MAX_ROUND_MS;
 /** How long after the last round the Raid tab keeps the finale view open for a result to show up. */
-export const FINISH_GRACE_MS = 30_000;
+const FINISH_GRACE_MS = 30_000;
 
 export type FinaleWindow = 'before' | 'lobby' | 'live' | 'after';
 
@@ -50,13 +50,13 @@ export function bannerText(window: FinaleWindow, finaleAt: number, serverNow: nu
 
 // --- Polling ---
 
-export const POLL_MS = 2000;
+const POLL_MS = 2000;
 /** Wait this long after a round boundary before asking, so the server has moved on. */
-export const BOUNDARY_SLACK_MS = 300;
-export const MIN_POLL_MS = 250;
+const BOUNDARY_SLACK_MS = 300;
+const MIN_POLL_MS = 250;
 /** Stop asking this long after the fight should have ended, even if no "done" ever arrives. */
 export const GIVE_UP_MS = 60_000;
-export const MAX_RETRY_MS = 15_000;
+const MAX_RETRY_MS = 15_000;
 
 /**
  * The next moment the fight's state changes, from the server's schedule: the start, then each
@@ -223,7 +223,7 @@ export function otherUsageText(usage: OtherUsage, names: Pick<EventNames, 'creat
   }`;
 }
 
-export interface CreatureAbilityRow {
+interface CreatureAbilityRow {
   /** The creature it belongs to. */
   creatureId: string;
   /** The ability's content id, so its name can open the glossary popover. */
@@ -293,7 +293,7 @@ export function noAbilityText(speciesId: string, level: number): string {
 }
 
 /** What a finale ability asks for when it is fired by hand. */
-export type ParamKind = 'zone' | 'element' | null;
+type ParamKind = 'zone' | 'element' | null;
 
 export function abilityParamKind(id: string): ParamKind {
   const effects = ABILITIES.get(id)?.effects ?? [];
@@ -341,7 +341,7 @@ export function abilityStateText(ability: LiveAbility, rounds: number, mine: boo
   }
 }
 
-export interface AbilityControls {
+interface AbilityControls {
   canFire: boolean;
   /** The Auto fire toggle is on offer (before the ability's default round, while unused). */
   canToggle: boolean;
@@ -349,16 +349,6 @@ export interface AbilityControls {
   autoOn: boolean;
   /** Why the buttons are off, or an empty string. */
   note: string;
-}
-
-/** The two lines of the Auto fire toggle: "Auto fire" and "round 7", or "Auto fire off" and "last round". */
-export function autoFireLabel(ability: Pick<LiveAbility, 'mode' | 'defaultRound'>): {
-  title: string;
-  detail: string;
-} {
-  if (ability.mode === 'held') return { title: 'Auto fire off', detail: 'last round' };
-  const round = defaultRoundOf(ability);
-  return { title: 'Auto fire', detail: round === null ? '' : `round ${String(round)}` };
 }
 
 /**
@@ -418,7 +408,7 @@ export function buildAction(
  * A lock per ability key, so a double tap on one ability sends one request while another ability
  * can still be pressed. `acquire` is true for the first caller until `release`.
  */
-export interface KeyLock {
+interface KeyLock {
   acquire(key: string): boolean;
   release(key: string): void;
   has(key: string): boolean;
@@ -503,7 +493,7 @@ export function earlierLines(events: readonly FightEvent[], names: EventNames): 
 
 // --- The loot reveal ---
 
-export interface RevealSummary {
+interface RevealSummary {
   outcome: string;
   cleared: boolean;
   /** One figure: everything the finale paid the player. */

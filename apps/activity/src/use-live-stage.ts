@@ -12,7 +12,7 @@ export interface Anim {
   seq: number;
 }
 
-export interface StageView {
+interface StageView {
   /** How many events the stage shows. */
   index: number;
   /** The newest beat, for the short animations (hops, flashes, shakes). */

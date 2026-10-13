@@ -21,7 +21,6 @@ import {
   INTRO_REPLAY_MS,
   activeFx,
   addFx,
-  beatHoldMs,
   cueMs,
   isFxCue,
   liveTimeline,
@@ -100,13 +99,6 @@ describe('visible durations', () => {
     expect(isFxCue({ kind: 'flash', i: 1, target: null })).toBe(false);
     expect(isFxCue({ kind: 'mark', i: 1, element: 'tide' })).toBe(false);
     expect(isFxCue({ kind: 'shake', i: 1, zone: 'front' })).toBe(false);
-  });
-
-  it('holds a beat for its longest effect', () => {
-    expect(beatHoldMs([hop])).toBe(0);
-    expect(beatHoldMs([hop, float(1, 'a'), ko])).toBe(2500);
-    expect(beatHoldMs([float(1, 'a', true), burst])).toBe(3000);
-    expect(beatHoldMs([float(1, 'a', true), burst], 2)).toBe(2100);
   });
 
   it('keeps the short animations visible whatever the stagger', () => {

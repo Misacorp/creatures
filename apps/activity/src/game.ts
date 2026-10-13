@@ -69,7 +69,7 @@ export function formatCountdown(ms: number): string {
   return `${String(seconds)}s`;
 }
 
-export interface CreatureAbilityText {
+interface CreatureAbilityText {
   /** "Flare Strike: Hits the boss at once..." or "Finale ability: unlocks at level 10". */
   line: string;
   unlocked: boolean;
@@ -140,12 +140,7 @@ export function fusionStars(count: number): string {
   return '★'.repeat(filled) + '☆'.repeat(RULES.fusion.maxFusions - filled);
 }
 
-/** Short badges for one reveal row, in display order. */
-export function catchBadges(entry: CatchResult): string[] {
-  return catchBadgeTags(entry).map((badge) => badge.text);
-}
-
-/** The badges of a catch with the glossary entry each one explains (null: nothing to explain). */
+/** The badges of a catch, in display order, with the glossary entry each one explains (null: nothing to explain). */
 export function catchBadgeTags(entry: CatchResult): { text: string; entry: string | null }[] {
   const badges: { text: string; entry: string | null }[] = [];
   if (entry.outcome === 'new') badges.push({ text: 'New!', entry: null });

@@ -2,7 +2,7 @@
  * Silent re-authentication for expired sessions. A request that fails with an expired session is
  * retried once after signing in again; concurrent failures share one sign-in.
  */
-export interface ReauthOptions {
+interface ReauthOptions {
   /** Signs in again (and stores the new session). Rejects if that is not possible. */
   reauthenticate: () => Promise<void>;
   /** True if the error means "your session is no longer valid". */

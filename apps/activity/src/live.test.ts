@@ -18,7 +18,6 @@ import {
   abilityParamKind,
   abilityPlanText,
   abilityStateText,
-  autoFireLabel,
   autoFireTarget,
   noAbilityText,
   bannerText,
@@ -383,26 +382,6 @@ describe('abilityControls', () => {
     expect(c.canFire).toBe(false);
     expect(c.canToggle).toBe(false);
     expect(c.note).toContain('too late');
-  });
-});
-
-describe('autoFireLabel', () => {
-  it('says "Auto fire" with the default round while it is on', () => {
-    expect(autoFireLabel(abilityOf({ defaultRound: 7 }))).toEqual({
-      title: 'Auto fire',
-      detail: 'round 7',
-    });
-  });
-
-  it('says "Auto fire off" with "last round" once it is off', () => {
-    expect(autoFireLabel(abilityOf({ mode: 'held' }))).toEqual({
-      title: 'Auto fire off',
-      detail: 'last round',
-    });
-  });
-
-  it('shows no round when the server does not know it', () => {
-    expect(autoFireLabel(abilityOf({ defaultRound: 0 })).detail).toBe('');
   });
 });
 

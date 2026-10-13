@@ -13,7 +13,7 @@ import type { DestinationsView } from './expedition-types';
 import { speciesName } from './game';
 import { formatEventTime } from './raid-time';
 
-export interface LockReason {
+interface LockReason {
   kind: 'rank' | 'night' | 'festival';
   text: string;
 }

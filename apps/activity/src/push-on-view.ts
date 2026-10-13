@@ -13,14 +13,14 @@ import type { PartKind } from './gear-types';
 /** What a reward line draws. */
 export type RewardIcon = { kind: 'glyph'; id: string } | { kind: 'part'; part: PartKind };
 
-export interface RewardLine {
+interface RewardLine {
   key: string;
   icon: RewardIcon;
   text: string;
 }
 
 /** What a goal's risk is called on the card. */
-export type RiskWord = 'Safe' | 'Risky' | 'Very risky';
+type RiskWord = 'Safe' | 'Risky' | 'Very risky';
 
 /** A risky goal that works less often than this (basis points) is "Very risky". */
 export const VERY_RISKY_BELOW_BP = 5_000;
@@ -32,7 +32,7 @@ export function riskWord(risk: OfferedGoal['risk'], oddsBp: number): RiskWord {
 }
 
 /** What failing costs, said once for every risky goal. The odds are never shown. */
-export const FAILURE_LINE = 'May fail and bring nothing back.';
+const FAILURE_LINE = 'May fail and bring nothing back.';
 
 export interface GoalCard {
   id: string;

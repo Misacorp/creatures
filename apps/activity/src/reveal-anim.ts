@@ -5,7 +5,7 @@
  * only decides how they appear.
  */
 
-export type RevealPhase = 'shake' | 'open' | 'count' | 'done';
+type RevealPhase = 'shake' | 'open' | 'count' | 'done';
 
 export interface RevealFrame {
   /** Milliseconds from the start. */
@@ -17,9 +17,9 @@ export interface RevealFrame {
 
 /** The orb shakes for this long, then opens; the count-up follows in this many steps. */
 export const SHAKE_MS = 600;
-export const OPEN_MS = 300;
+const OPEN_MS = 300;
 export const COUNT_STEPS = 10;
-export const COUNT_STEP_MS = 60;
+const COUNT_STEP_MS = 60;
 
 /**
  * The numbers of a count-up from 0 to `target`: `steps + 1` whole numbers that never go down, start at 0

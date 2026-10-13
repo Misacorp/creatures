@@ -22,7 +22,7 @@ export const DRAG_THRESHOLD = 8;
 /** How close to the edge of the strip (in pixels) auto-scroll starts. */
 export const SCROLL_EDGE = 56;
 /** Auto-scroll speed at the very edge, in pixels per frame. */
-export const SCROLL_MAX_SPEED = 16;
+const SCROLL_MAX_SPEED = 16;
 
 export function distance(a: Point, b: Point): number {
   return Math.hypot(a.x - b.x, a.y - b.y);

@@ -7,7 +7,7 @@
 
 export type Tab = 'collection' | 'expeditions' | 'raid' | 'workshop' | 'dungeon';
 
-export interface TabDef {
+interface TabDef {
   id: Tab;
   /** The word under the picture, also the accessible name. */
   label: string;

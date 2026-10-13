@@ -5,7 +5,7 @@
 import { abilityName } from './live';
 import type { RaidView } from './raid-api';
 
-export interface AbilitiesSummary {
+interface AbilitiesSummary {
   /** True once the player picked their own basic ability or turned any Auto fire off. */
   customised: boolean;
   /** How many of the abilities they can use (unlocked) wait for them instead of firing by themselves. */

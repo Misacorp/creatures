@@ -13,7 +13,7 @@ export type PileIcon =
   | { kind: 'part'; part: PartKind }
   | { kind: 'gear'; baseId: string };
 
-export interface PileItem {
+interface PileItem {
   /** Unique within a pile: the kind of reward ("scrap", "essence", "gear"). */
   key: string;
   icon: PileIcon;

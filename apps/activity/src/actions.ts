@@ -6,7 +6,7 @@ import { ApiError } from './api';
  * error, server error, rate limit), the same key is reused on the retry so the server can tell it
  * is a repeat. Once the server has given a definite answer, the key is dropped.
  */
-export interface KeyStore {
+interface KeyStore {
   /** The key for this action, created if there is none yet. */
   keyFor(action: string): string;
   /** Call when an attempt is over: `err` is the failure, or undefined on success. */

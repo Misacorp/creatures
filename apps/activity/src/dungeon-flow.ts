@@ -6,7 +6,7 @@
  */
 import type { DungeonToday } from './dungeon-types';
 
-export type DungeonScreen = 'setup' | 'results';
+type DungeonScreen = 'setup' | 'results';
 
 export function initialScreen(today: Pick<DungeonToday, 'canRun' | 'last'>): DungeonScreen {
   if (today.canRun) return 'setup';

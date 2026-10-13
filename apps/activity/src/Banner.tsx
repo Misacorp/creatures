@@ -9,7 +9,7 @@ import { BANNER_SIZE, creatureSpriteOrFallback } from './sprites/creature-sprite
 import type { CreatureInfo } from './creature-popover';
 
 /** The creature that walks across a banner: how far along (0 to 1) and who it is. */
-export interface Walker {
+interface Walker {
   species: string;
   shiny: boolean;
   /** 0 is the left edge, 1 the right edge. Its position is the trip's progress. */

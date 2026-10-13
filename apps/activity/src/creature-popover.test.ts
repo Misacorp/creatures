@@ -3,7 +3,6 @@ import { entryView } from '@creatures/game';
 import {
   CREATURE_VIEW,
   backLabel,
-  canGoBack,
   creatureButtonLabel,
   creatureTags,
   goBack,
@@ -27,10 +26,8 @@ describe('the creature popover state machine', () => {
   it('opens on the creature, switches to a tag, and goes back', () => {
     let view: PopView = CREATURE_VIEW;
     expect(view.kind).toBe('creature');
-    expect(canGoBack(view)).toBe(false);
     view = openTag('element-ember');
     expect(view).toEqual({ kind: 'tag', entry: 'element-ember' });
-    expect(canGoBack(view)).toBe(true);
     view = goBack();
     expect(view).toEqual(CREATURE_VIEW);
   });

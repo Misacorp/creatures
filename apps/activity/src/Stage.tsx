@@ -318,7 +318,7 @@ function Beam({
 }
 
 /** What the live stage needs to put the player's abilities on their creatures. */
-export interface StageAbilities {
+interface StageAbilities {
   /** Every ability of the fight (the caller's own and the others'). */
   list: readonly LiveAbility[];
   /** The caller's player key in this fight. */
@@ -339,7 +339,7 @@ export interface StageAbilities {
   help?: ComponentChildren;
 }
 
-export interface StageProps {
+interface StageProps {
   boss: { id: string; name: string };
   hpMax: number;
   hpStart: number;

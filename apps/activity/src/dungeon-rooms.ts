@@ -37,7 +37,7 @@ export function modifierIcon(id: string): ModifierIcon {
 }
 
 /** One panel of the pre-run strip. */
-export interface RoomPanel {
+interface RoomPanel {
   room: number;
   /** "Room 1", "Room 2" and "Boss". */
   title: string;
@@ -77,7 +77,7 @@ export const LANDMARK_UNLOCKS: readonly TrackUnlock[] = [
   { icon: 'gem', text: 'Bonus Essence' },
 ];
 
-export interface DepthTrack {
+interface DepthTrack {
   steps: TrackStep[];
   /** The index of the player's own step. */
   current: number;

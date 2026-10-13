@@ -266,7 +266,7 @@ const ANALYTICS_SPECS: readonly ToolSpec[] = [
   { tool: 'analytics-rollup', label: 'Roll up now', fields: [] },
 ];
 
-export interface SectionDef {
+interface SectionDef {
   id: string;
   title: string;
   /** The tab whose view this section is about; null for Analytics. */

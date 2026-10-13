@@ -42,7 +42,7 @@ export const FX_MS = {
 } as const;
 
 /** At 2x the durations are this share of their length, in basis points (about 30% shorter). */
-export const FAST_FX_BP = 7_000;
+const FAST_FX_BP = 7_000;
 
 /** The effects that stay on screen longer than their beat; the rest are short and only last for the beat. */
 export type FxCue = Extract<
@@ -90,13 +90,6 @@ export function cueMs(cue: FxCue, speed: Speed = 1): number {
   }
 }
 
-/** How long the longest-lived effect of a beat stays visible (0 when it has none). */
-export function beatHoldMs(cues: readonly Cue[], speed: Speed = 1): number {
-  let hold = 0;
-  for (const cue of cues) if (isFxCue(cue)) hold = Math.max(hold, cueMs(cue, speed));
-  return hold;
-}
-
 /** The length of the short stage animations of a beat (hop, flash, shake): never too quick to see. */
 export function shortEffectMs(beatStaggerMs: number): number {
   return Math.min(600, Math.max(300, beatStaggerMs));
@@ -116,7 +109,7 @@ export interface IntroView {
 // --- The timeline of a live round ---
 
 /** One thing that happens while a live round plays, `at` ms after the round's playback starts. */
-export interface TimelineStep {
+interface TimelineStep {
   at: number;
   /**
    * `intro`: "Round N" appears; `intro-end`: it goes; `windup`: reticles on the targets of the boss

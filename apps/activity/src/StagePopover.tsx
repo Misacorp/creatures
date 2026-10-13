@@ -2,7 +2,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import { placePopover } from './stage-abilities';
 
-export interface StagePopoverProps {
+interface StagePopoverProps {
   /** The element the popover points at (a creature, the basic ability chip or the "?" button). */
   anchor: () => HTMLElement | null;
   /** The dialog's name for assistive technology. */

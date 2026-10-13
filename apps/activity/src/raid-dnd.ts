@@ -9,7 +9,7 @@ import { reduceTap, slotOfCreature, type Intent, type TapContext } from './raid-
 export type DropTarget = { kind: 'slot'; slot: number } | { kind: 'tray' };
 
 /** `valid` can be dropped here, `invalid` is refused, `none` does nothing (for example itself). */
-export type DropStatus = 'valid' | 'invalid' | 'none';
+type DropStatus = 'valid' | 'invalid' | 'none';
 
 export interface DropOutcome {
   status: DropStatus;

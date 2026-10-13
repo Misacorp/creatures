@@ -11,7 +11,7 @@ export type RaidEventId = 'weekStart' | 'phase1' | 'phase2' | 'finale';
 export type RaidPhaseId = 'phase1' | 'phase2' | 'finale';
 
 export const RAID_EVENT_IDS: readonly RaidEventId[] = ['weekStart', 'phase1', 'phase2', 'finale'];
-export const RAID_PHASE_IDS: readonly RaidPhaseId[] = ['phase1', 'phase2', 'finale'];
+const RAID_PHASE_IDS: readonly RaidPhaseId[] = ['phase1', 'phase2', 'finale'];
 
 export interface RosterEntry {
   displayName: string;

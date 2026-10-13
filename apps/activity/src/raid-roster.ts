@@ -8,7 +8,7 @@ import { ownerColour } from './raid-slots';
 /** At most this many tiles are drawn in the strip; the rest are counted as "+N". */
 export const AVATAR_LIMIT = 8;
 
-export interface Avatar {
+interface Avatar {
   initial: string;
   name: string;
   you: boolean;
@@ -23,7 +23,7 @@ export function initialOf(name: string): string {
   return first === undefined ? '?' : first.toUpperCase();
 }
 
-export function avatarOf(entry: RosterEntry, names: readonly string[]): Avatar {
+function avatarOf(entry: RosterEntry, names: readonly string[]): Avatar {
   return {
     initial: initialOf(entry.displayName),
     name: entry.displayName,

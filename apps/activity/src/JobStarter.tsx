@@ -7,7 +7,7 @@ import { GlossaryTag } from './Glossary';
 import type { GearItem, GearRarity, GearState, JobKind, PartsBundle } from './gear-types';
 import { defaultPick, durationFor, pickerOptions, startBlocker } from './gear-view';
 
-export interface JobStarterProps {
+interface JobStarterProps {
   /** Unique on the page: names the radio group and the heading. */
   id: string;
   kind: JobKind;

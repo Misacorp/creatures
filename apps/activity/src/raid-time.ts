@@ -47,7 +47,7 @@ function formatTime(at: number, timeZone: string, weekday: 'short' | 'long'): st
   return `${part('weekday')} ${part('hour')}:${part('minute')}`;
 }
 
-export interface ScheduleStep {
+interface ScheduleStep {
   event: RaidEventId;
   title: string;
   /** "Fri 13:37" */
@@ -114,16 +114,4 @@ export function formatShortCountdown(ms: number): string {
   if (hours > 0)
     return minutes === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(minutes)} m`;
   return `${String(minutes)} m`;
-}
-
-/** "Phase 1 in 2d 03h 04m", or "Phase 1 is happening now" once the time has passed. */
-export function countdownText(
-  next: { event: RaidEventId; at: number } | null,
-  serverNow: number,
-): string {
-  if (next === null) return 'This raid week is finished. A new boss arrives on Monday.';
-  const remaining = next.at - serverNow;
-  const title = EVENT_TITLES[next.event];
-  if (remaining <= 0) return `${title} is happening now.`;
-  return `${title} in ${formatLongCountdown(remaining)}`;
 }

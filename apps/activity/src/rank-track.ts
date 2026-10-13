@@ -28,7 +28,7 @@ export function giftText(gift: Pick<RankGift, 'bait' | 'parts' | 'supplies'>): s
 }
 
 /** The unlocks of a rank, one entry each: places, goals, trip lengths, then the gift. */
-export function rankUnlockList(
+function rankUnlockList(
   unlocks: RankUnlocks,
   gift: Pick<RankGift, 'bait' | 'parts' | 'supplies'> | null,
 ): TrackUnlock[] {

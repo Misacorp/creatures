@@ -22,12 +22,12 @@ import type { DropOutcome, DropTarget } from './raid-dnd';
 const SLOT_SLOP = 6;
 const SHAKE_MS = 450;
 
-export interface DragState {
+interface DragState {
   creatureId: string;
   over: DropTarget | null;
 }
 
-export interface UseDragDropArgs {
+interface UseDragDropArgs {
   /** No drags can start while true (locked row, or a request in flight). */
   disabled: boolean;
   /** The strip holding the slots (`[data-slot]` buttons), one row for each zone. */
@@ -38,7 +38,7 @@ export interface UseDragDropArgs {
   onDrop: (creatureId: string, target: DropTarget | null) => DropOutcome;
 }
 
-export interface DragDrop {
+interface DragDrop {
   drag: DragState | null;
   /** The slot to shake after a refused drop. */
   shakeSlot: number | null;

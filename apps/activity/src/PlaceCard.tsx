@@ -7,7 +7,7 @@ import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 
 /** What the deeper area says once it is open to the explorer: no chances, only the promise. */
-export const DEEP_OPEN_TEXT = 'Deeper area open: its rarer creatures can turn up.';
+const DEEP_OPEN_TEXT = 'Deeper area open: its rarer creatures can turn up.';
 
 /** One creature that lives at a place: its colours and name once found, a silhouette and "???" before. */
 function ResidentView({ resident }: { resident: Resident }) {

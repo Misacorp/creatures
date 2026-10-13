@@ -86,7 +86,7 @@ export async function fetchDevState(): Promise<DevStateView | null> {
   }
 }
 
-export interface DevEvent {
+interface DevEvent {
   at: number;
   kind: string;
   props: unknown;

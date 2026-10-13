@@ -42,14 +42,14 @@ const zoneWord = (zone: Zone): string => zone.toUpperCase();
 export type Wording = 'zones' | 'row';
 
 /** The places of a row of three, by the zone that is one creature there. */
-export const ROW_PLACE_WORDS: Readonly<Record<Zone, string>> = {
+const ROW_PLACE_WORDS: Readonly<Record<Zone, string>> = {
   front: 'left',
   middle: 'middle',
   back: 'right',
 };
 const placeWord = (zone: Zone): string => `the ${ROW_PLACE_WORDS[zone]} creature`;
 
-export interface StrikeLabel {
+interface StrikeLabel {
   /** What it is: the gimmick's name, or "Attack". */
   title: string;
   /** Whom it hits, in plain words. */

@@ -22,7 +22,7 @@ export function rankLabel(rank: number | null): string | null {
 }
 
 /** One pip of the season row. `now` is the week being shown. */
-export interface SeasonPip {
+interface SeasonPip {
   week: number;
   state: 'done' | 'now' | 'ahead';
   /** The last week of the season. */
@@ -78,14 +78,6 @@ export function readinessMeter(band: ReadinessBand | null): ReadinessMeter | nul
     total: READINESS_BANDS.length,
     word: READINESS_LABELS[band],
   };
-}
-
-/** The one line under the band, so nobody reads it as a promise or a number. */
-export const READINESS_HINT = 'How ready your team looks';
-
-/** The band as plain words, or null when the server has none. */
-export function readinessLabel(band: ReadinessBand | null): string | null {
-  return band === null ? null : READINESS_LABELS[band];
 }
 
 /**

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  countdownText,
   formatEventTime,
   formatEventTimeLong,
   formatLongCountdown,
@@ -102,24 +101,6 @@ describe('formatLongCountdown', () => {
     [3 * 24 * HOUR + 4 * HOUR + 5 * 60_000 + 6_000, '3d 04h 05m'],
   ])('formats %i ms as %s', (ms, expected) => {
     expect(formatLongCountdown(ms)).toBe(expected);
-  });
-});
-
-describe('countdownText', () => {
-  it('counts down to the next event', () => {
-    expect(countdownText({ event: 'phase1', at: FRIDAY }, FRIDAY - 2 * HOUR)).toBe(
-      'Phase 1 in 2h 00m 00s',
-    );
-  });
-
-  it('says so when the time has come', () => {
-    expect(countdownText({ event: 'finale', at: FRIDAY }, FRIDAY + 1)).toBe(
-      'Finale is happening now.',
-    );
-  });
-
-  it('explains the end of the week', () => {
-    expect(countdownText(null, FRIDAY)).toContain('Monday');
   });
 });
 

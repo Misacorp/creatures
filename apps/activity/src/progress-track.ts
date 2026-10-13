@@ -18,10 +18,10 @@ export interface TrackStep {
   unlocks: readonly TrackUnlock[];
 }
 
-export type TrackRole = 'previous' | 'current' | 'next' | 'max';
+type TrackRole = 'previous' | 'current' | 'next' | 'max';
 
 /** A node of the track as it is drawn. */
-export interface TrackNode {
+interface TrackNode {
   key: string;
   role: TrackRole;
   label: string;
@@ -62,13 +62,4 @@ export function trackNodes(steps: readonly TrackStep[], currentIndex: number): T
   if (next !== undefined) nodes.push(node(next, 'next'));
   else nodes.push({ key: 'max', role: 'max', label: MAX_LABEL, unlocks: [] });
   return nodes;
-}
-
-/** "Next: Rank 3, will unlock Shortcut." One line per node, for screen readers. */
-export function nodeSummary(node: TrackNode): string {
-  const word = ROLE_WORDS[node.role];
-  if (node.role === 'max') return `${word}: nothing further to unlock.`;
-  const verb = node.role === 'next' ? 'will unlock' : 'unlocked';
-  if (node.unlocks.length === 0) return `${word}: ${node.label}, nothing to unlock.`;
-  return `${word}: ${node.label}, ${verb} ${node.unlocks.map((u) => u.text).join(', ')}.`;
 }

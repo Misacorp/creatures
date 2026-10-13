@@ -3,7 +3,7 @@ import type { Speed } from './replay';
 import { activeFx, addFx, nextFxEnd, type FxItem } from './stage-fx';
 import type { Cue } from './stage';
 
-export interface FxTrail {
+interface FxTrail {
   /** The effects on screen now. */
   items: readonly FxItem[];
   /** Starts the effects of a beat (those that outlast it stay for their own duration). */

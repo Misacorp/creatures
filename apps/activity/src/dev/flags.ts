@@ -14,8 +14,8 @@ export interface FlagStorage {
 }
 
 /** Keys of every "seen it" flag the app keeps, and the prefixes the app uses for its own keys. */
-export const LOCAL_FLAG_KEYS: readonly string[] = [COACH_KEY, WIPE_NOTICE_KEY];
-export const LOCAL_FLAG_PREFIXES: readonly string[] = ['lc.', 'creatures:'];
+const LOCAL_FLAG_KEYS: readonly string[] = [COACH_KEY, WIPE_NOTICE_KEY];
+const LOCAL_FLAG_PREFIXES: readonly string[] = ['lc.', 'creatures:'];
 
 /** The browser's storage, or null where it is missing or blocked. */
 function browserStorage(): FlagStorage | null {

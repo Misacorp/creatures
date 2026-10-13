@@ -73,7 +73,7 @@ export function sectionDomId(section: GlossarySection): string {
 export const MORE_LABEL = 'More in How to play';
 
 /** One piece of a popover's picture: a sprite, or the arrow between two of them. */
-export type VisualItem =
+type VisualItem =
   | { kind: 'sprite'; sprite: SpriteDef; scale: number; palette?: Readonly<Record<string, string>> }
   | { kind: 'arrow' };
 

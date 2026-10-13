@@ -38,7 +38,7 @@ export function bossArt(bossId: string): { sprite: SpriteDef; scale: number } {
  * gold, Spark to pink and green) applied to every colour of the sprite except the outline, the eye
  * highlight and near-neutral colours. A species without an entry shows a sparkle frame instead.
  */
-export const SHINY_PALETTES: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+const SHINY_PALETTES: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   splashet: { b: '#c63fd6', h: '#f9e8ff', s: '#8a1f8b', p: '#b8f4ca' },
   tidewing: { b: '#c63fd6', h: '#f9e8ff', s: '#8a1f8b', p: '#b8f4ca', f: '#dd7ff0' },
   cindle: {
@@ -119,7 +119,7 @@ export function elementClass(element: string | null): string {
 }
 
 /** The element colours of the stylesheet (`--tide` and so on), for sprites that are recoloured. */
-export const ELEMENT_COLOURS: Readonly<Record<string, string>> = {
+const ELEMENT_COLOURS: Readonly<Record<string, string>> = {
   tide: '#4f8fe6',
   ember: '#ef6a3a',
   grove: '#5cbf5a',
