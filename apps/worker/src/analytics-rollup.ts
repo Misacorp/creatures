@@ -15,7 +15,11 @@
  *   row marks a day as done (also when nothing happened), which is how missed days are found: the
  *   last rolled day is the newest `rolled` row, and a run catches up from the day after it, at most
  *   `MAX_CATCH_UP_DAYS` days back.
- * - Events of kind `dev_action` (the staging dev tools) never count.
+ * - Events of kind `dev_action` and ledger rows with `source = 'dev'` (the staging dev tools'
+ *   set-balances) never count.
+ * - Staging only, accepted: with the dev clock moved, ledger and `raid_live` times are on the game
+ *   clock while events are stamped in real time, so a day's rows can mix the two and day
+ *   attribution can be off.
  */
 import { PART_KINDS, RULES, expeditionContent } from '@creatures/game';
 import { addDays, gameDay, gameDayEnd, zonedTimeToEpoch } from './time';
@@ -54,6 +58,10 @@ export function analyticsRollupMigration(sql: SqlStorage): void {
 const LABEL_RE = /^[a-z0-9_.:-]{1,48}$/;
 /** A hex run this long is a hash, never a content id. */
 const HASH_LIKE_RE = /[0-9a-f]{24,}/;
+/** 15 or more digits and nothing else is a Discord snowflake, never a content id. */
+const SNOWFLAKE_LIKE_RE = /^\d{15,}$/;
+/** A UUID, with or without dashes, is an identifier, never a content id. */
+const UUID_LIKE_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 
 /** A dim value that is safe to store and show: an id-like string or a non-negative integer. */
 function dimValue(value: unknown): DimValue {
@@ -61,7 +69,15 @@ function dimValue(value: unknown): DimValue {
     return Number.isFinite(value) ? Math.max(0, Math.min(1_000_000, Math.trunc(value))) : 0;
   }
   if (typeof value === 'boolean') return value ? 1 : 0;
-  if (typeof value === 'string' && LABEL_RE.test(value) && !HASH_LIKE_RE.test(value)) return value;
+  if (
+    typeof value === 'string' &&
+    LABEL_RE.test(value) &&
+    !HASH_LIKE_RE.test(value) &&
+    !SNOWFLAKE_LIKE_RE.test(value) &&
+    !UUID_LIKE_RE.test(value)
+  ) {
+    return value;
+  }
   return 'other';
 }
 
@@ -467,7 +483,8 @@ export class AnalyticsRollup {
         `SELECT currency, source,
                 SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS src,
                 SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END) AS snk
-         FROM ledger WHERE created_at >= ? AND created_at < ? GROUP BY currency, source`,
+         FROM ledger WHERE created_at >= ? AND created_at < ? AND source <> 'dev'
+         GROUP BY currency, source`,
         start,
         end,
       )

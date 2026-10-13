@@ -92,6 +92,16 @@ describe('analytics_daily: schema and values', () => {
       '{"a":"other","b":"other","c":"other"}',
     );
     expect(canonicalDims({ n: -4, f: 2.9 })).toBe('{"f":2,"n":0}');
+    // Snowflakes (15+ digits) and UUIDs are ids of people or things, never content ids.
+    expect(
+      canonicalDims({
+        a: '700000000000000000',
+        b: '123456789012345',
+        c: '123e4567-e89b-12d3-a456-426614174000',
+        d: '123E4567E89B12D3A456426614174000',
+        e: '12345678901234',
+      }),
+    ).toBe('{"a":"other","b":"other","c":"other","d":"other","e":"12345678901234"}');
   });
 });
 
@@ -271,6 +281,31 @@ describe('rollDay', () => {
       expect(flow('bait', 'sink', 'training')).toBe(30);
       expect(flow('bait', 'sink', 'leet')).toBe(0);
       expect(flow('essence', 'source', 'raid')).toBe(9);
+    });
+  });
+
+  it('leaves dev ledger rows (the staging dev tools) out of the flows', async () => {
+    await runCore(nextGuild(), (ctx) => {
+      const t = startOf(DAY) + HOUR;
+      ctx.core.credit({
+        userId: USER_ID,
+        currency: 'bait',
+        amount: 100,
+        source: 'leet',
+        idempotencyKey: 'leet:1',
+      });
+      ctx.core.credit({
+        userId: USER_ID,
+        currency: 'bait',
+        amount: 5000,
+        source: 'dev',
+        idempotencyKey: 'dev:1',
+      });
+      ctx.sql.exec('UPDATE ledger SET created_at = ?', t);
+      ctx.core.rollup.rollDay(DAY, HELSINKI);
+      const list = daily(ctx, DAY);
+      expect(value(list, 'flow', { currency: 'bait', dir: 'source', label: 'leet' })).toBe(100);
+      expect(list.some((r) => r.metric === 'flow' && r.dims['label'] === 'dev')).toBe(false);
     });
   });
 
