@@ -1,4 +1,6 @@
+import { expeditionContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
+import { glyph } from './glyphs';
 import clearedFixture from './fixtures/dungeon-run-cleared.json';
 import landmarkFixture from './fixtures/dungeon-run-landmark.json';
 import lostFixture from './fixtures/dungeon-run-lost.json';
@@ -52,6 +54,40 @@ describe('the reward pile', () => {
       { kind: 'glyph', id: 'gem' },
       { kind: 'glyph', id: 'bait' },
     ]);
+  });
+
+  it('shows supplies as one icon for each kind of supply, after the parts and before Essence', () => {
+    const items = rewardPileItems({
+      parts: { scrap: 2 },
+      supplies: ['lure-basic', 'lure-great', 'lantern-good'],
+      essence: 1,
+      bait: 1,
+    });
+    expect(items.map((i) => i.key)).toEqual([
+      'scrap',
+      'supply-lure',
+      'supply-lantern',
+      'essence',
+      'bait',
+    ]);
+    expect(items.find((i) => i.key === 'supply-lure')?.icon).toEqual({ kind: 'glyph', id: 'lure' });
+    expect(items.find((i) => i.key === 'supply-lantern')?.icon).toEqual({
+      kind: 'glyph',
+      id: 'lantern',
+    });
+  });
+
+  it('has a glyph for every kind of supply, so every supply can be drawn in the pile', () => {
+    for (const def of expeditionContent.supplies) {
+      const [item] = rewardPileItems({ supplies: [def.id] });
+      expect(item?.icon.kind, def.id).toBe('glyph');
+      expect(glyph(def.kind), def.id).toBeDefined();
+    }
+  });
+
+  it('ignores a supply the content does not know, and shows nothing for an empty list', () => {
+    expect(keys({ supplies: ['no-such-supply'] })).toEqual([]);
+    expect(keys({ supplies: [] })).toEqual([]);
   });
 
   it('reads the real runs: a clear is scrap, Essence and Bait; a lost first room is nothing', () => {

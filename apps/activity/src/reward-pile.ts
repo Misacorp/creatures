@@ -4,7 +4,7 @@
  * a new currency) is one more `if` in `rewardPileItems` and one more icon case in `RewardPile`.
  * Nothing here touches the DOM.
  */
-import { PART_KINDS, type PartKind } from '@creatures/game';
+import { PART_KINDS, supplyDef, type PartKind } from '@creatures/game';
 import type { PartsBundle } from './gear-types';
 
 /** The icon of one pile item: a bundled glyph, a part, or a gear item's art. */
@@ -24,14 +24,17 @@ export interface PileSource {
   /** Gear items earned: one icon for all of them, drawn from the first. */
   gear?: readonly { baseId: string }[];
   parts?: PartsBundle;
+  /** Supply ids earned (expedition supplies): one icon for each KIND of supply, whatever the tier or amount. */
+  supplies?: readonly string[];
   essence?: number;
   bait?: number;
 }
 
 /**
  * The kinds of reward in a source, in a fixed order: gear, then parts in the order of the part kinds
- * (Scrap first), then Essence, then Bait. A kind appears once, however many were earned, and only
- * if at least one was.
+ * (Scrap first), then supplies, then Essence, then Bait. A kind appears once, however many were earned, and only
+ * if at least one was. Supplies come after the parts, one icon for each kind of supply (a Lure, a Map
+ * scrap, a Lantern, a Satchel).
  */
 export function rewardPileItems(source: PileSource): PileItem[] {
   const items: PileItem[] = [];
@@ -47,6 +50,10 @@ export function rewardPileItems(source: PileSource): PileItem[] {
   }
   for (const part of PART_KINDS) {
     if ((source.parts?.[part] ?? 0) > 0) add({ key: part, icon: { kind: 'part', part } });
+  }
+  for (const id of source.supplies ?? []) {
+    const kind = supplyDef(id)?.kind;
+    if (kind !== undefined) add({ key: `supply-${kind}`, icon: { kind: 'glyph', id: kind } });
   }
   if ((source.essence ?? 0) > 0) add({ key: 'essence', icon: { kind: 'glyph', id: 'gem' } });
   if ((source.bait ?? 0) > 0) add({ key: 'bait', icon: { kind: 'glyph', id: 'bait' } });

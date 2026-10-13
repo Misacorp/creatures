@@ -3,6 +3,7 @@
  * gimmicks, turn orders, the mark on the boss, shields, sparkles and the loot reveal's orb and
  * gem. Every glyph has its own shape, so the meaning never depends on colour alone. Pure data.
  */
+import { EXPEDITION_GLYPHS } from './expedition-glyphs';
 import type { SpriteDef } from './sprites/sprite-data';
 
 export const GLYPH_SIZE = { width: 8, height: 8 } as const;
@@ -386,6 +387,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   door,
   bait,
   flag,
+  ...EXPEDITION_GLYPHS,
 };
 
 /** A glyph by id, or undefined. */
