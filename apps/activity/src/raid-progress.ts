@@ -5,7 +5,13 @@
  * forecast number (the readiness band is four words).
  */
 import { speciesName } from './game';
-import type { FestivalGrant, RankChange, RaidView, ReadinessBand } from './raid-api';
+import {
+  READINESS_BANDS,
+  type FestivalGrant,
+  type RankChange,
+  type RaidView,
+  type ReadinessBand,
+} from './raid-api';
 
 /** Weeks in a season: four normal weeks and a Festival (`RULES.progression.seasonWeeks`). */
 export const SEASON_WEEKS = 5;
@@ -53,6 +59,26 @@ export const READINESS_LABELS: Record<ReadinessBand, string> = {
   likely: 'Likely',
   strong: 'Strong',
 };
+
+/** The small meter next to the Rank: how many of its four steps are lit, and the word. */
+export interface ReadinessMeter {
+  band: ReadinessBand;
+  /** Steps lit, 1 (long shot) to 4 (strong). */
+  filled: number;
+  total: number;
+  word: string;
+}
+
+/** The band as a meter (four steps), or null when the server has none. Never a number on screen. */
+export function readinessMeter(band: ReadinessBand | null): ReadinessMeter | null {
+  if (band === null) return null;
+  return {
+    band,
+    filled: READINESS_BANDS.indexOf(band) + 1,
+    total: READINESS_BANDS.length,
+    word: READINESS_LABELS[band],
+  };
+}
 
 /** The one line under the band, so nobody reads it as a promise or a number. */
 export const READINESS_HINT = 'How ready your team looks';

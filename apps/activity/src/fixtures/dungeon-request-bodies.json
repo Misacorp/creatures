@@ -4,28 +4,15 @@
     "method": "POST",
     "body": {
       "team": [
-        "3756675d-3c1a-4470-bdda-ff863b5b8669",
-        "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
-        "297abdd3-de2f-4289-9676-bafd9d0494f0"
+        "baa62d13-a2e3-425c-8832-43aaf1844980",
+        "27ab40f8-6fa4-49b6-993b-8635ac2609ff",
+        "f970bcd8-957f-4039-a9c6-39541617505a"
       ],
-      "abilities": {
-        "basic": {
-          "abilityId": "shield-wall",
-          "fireAtRound": 2,
-          "zone": "front"
-        },
-        "creatures": [
-          {
-            "creatureId": "297abdd3-de2f-4289-9676-bafd9d0494f0",
-            "fireAtRound": 3
-          }
-        ]
-      },
       "idempotencyKey": "dungeon-00000001-test"
     }
   },
   "dungeon-replay": {
-    "path": "/api/dungeon/run/997dcd6e-5ae8-4b1b-8c91-7eda0e8557f3",
+    "path": "/api/dungeon/run/4961ffd2-7953-443f-aaf4-1d247819aca0",
     "method": "GET",
     "body": null
   },
@@ -34,23 +21,10 @@
     "method": "POST",
     "body": {
       "team": [
-        "3756675d-3c1a-4470-bdda-ff863b5b8669",
-        "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
-        "297abdd3-de2f-4289-9676-bafd9d0494f0"
+        "baa62d13-a2e3-425c-8832-43aaf1844980",
+        "27ab40f8-6fa4-49b6-993b-8635ac2609ff",
+        "f970bcd8-957f-4039-a9c6-39541617505a"
       ],
-      "abilities": {
-        "basic": {
-          "abilityId": "shield-wall",
-          "fireAtRound": 2,
-          "zone": "front"
-        },
-        "creatures": [
-          {
-            "creatureId": "297abdd3-de2f-4289-9676-bafd9d0494f0",
-            "fireAtRound": 3
-          }
-        ]
-      },
       "idempotencyKey": "dungeon-00000001-test"
     }
   },
@@ -59,17 +33,10 @@
     "method": "POST",
     "body": {
       "team": [
-        "60f264b1-fc18-46f8-8754-a1c1397eb473",
-        "646028c9-c94a-4b2b-ad4f-4bd9e1f82bcc",
-        "7ea7b508-d1dd-40cf-9d32-855c116ec5a5"
+        "a114373e-e51b-4eef-8bef-d02d481c1e00",
+        "ddf2c0e5-57f5-482f-950f-8f995a6636aa",
+        "fd3cafa9-d67d-49cc-a276-16e34f28dc3d"
       ],
-      "abilities": {
-        "basic": {
-          "abilityId": "rally",
-          "fireAtRound": null
-        },
-        "creatures": []
-      },
       "idempotencyKey": "dungeon-00000009-test"
     }
   },
@@ -78,17 +45,10 @@
     "method": "POST",
     "body": {
       "team": [
-        "86902e35-93c4-48ca-9a93-14296952f3d9",
-        "05e5fa90-3336-4d15-96d0-58b56a15fcbe",
-        "42e01b3e-eafa-4190-b98c-95fa9624b916"
+        "c4f22219-0ff9-4051-b6af-8d710ac14210",
+        "fd9ae43f-c1e1-4da3-9bc1-6759aa4da64b",
+        "3f10e126-f343-4dbb-a34c-2e9511190a88"
       ],
-      "abilities": {
-        "basic": {
-          "abilityId": "rally",
-          "fireAtRound": null
-        },
-        "creatures": []
-      },
       "idempotencyKey": "dungeon-00000010-test"
     }
   },
@@ -97,17 +57,10 @@
     "method": "POST",
     "body": {
       "team": [
-        "86902e35-93c4-48ca-9a93-14296952f3d9",
-        "05e5fa90-3336-4d15-96d0-58b56a15fcbe",
-        "42e01b3e-eafa-4190-b98c-95fa9624b916"
+        "c4f22219-0ff9-4051-b6af-8d710ac14210",
+        "fd9ae43f-c1e1-4da3-9bc1-6759aa4da64b",
+        "3f10e126-f343-4dbb-a34c-2e9511190a88"
       ],
-      "abilities": {
-        "basic": {
-          "abilityId": "rally",
-          "fireAtRound": null
-        },
-        "creatures": []
-      },
       "idempotencyKey": "dungeon-00000011-test"
     }
   }

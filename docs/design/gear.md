@@ -39,7 +39,7 @@ So gear is not only loot: it is the start of a **crafting world** with long-runn
 - **Dismantle** (was "salvage"): any gear item breaks into **parts**. Parts have a kind (generic plus element-tinted) and a quality by rarity. Confirm in-page; it cannot be undone.
 - **Upgrade:** +0 to +5 with Essence and parts, as in the model above. Never fails.
 - **Improve (reforge):** spend parts to re-roll one secondary stat, or lock one and re-roll the rest. Rolls use live server randomness when the job finishes.
-- **Blueprints (crafting patterns):** drops from raids, expeditions, the dungeon and Festivals. A blueprint is learned once per player and lets a creature craft that base item from parts. Rare blueprints make rare bases; Festival blueprints make Festival-look items.
+- **Blueprints (crafting patterns):** found on expeditions (a chance on every trip, higher on longer ones, plus some push-on rewards) and in the welcome kit. Raids, the dungeon and Festivals do not grant blueprints (checked against `apps/worker/src/gear-grants.ts` and `rollBlueprint`, which skips Festival bases). A blueprint is learned once per player and lets a creature craft that base item from parts. Rare blueprints make rare bases. Festival pieces come from a won Festival finale; no source of Festival blueprints exists yet.
 - **Enchanting:** a gear item gets one enchant slot. An enchant uses rare parts (or an enchant scroll drop) and adds one flavoured effect, for example "+5% reaction damage" or "Guard: first hit each fight is halved". Within the same power caps.
 - **Downtime jobs (the idle pillar):**
   - A creature that is not on an expedition can be given a **job**: craft from a blueprint, improve, enchant, or later gather parts. Jobs take hours (for example 2–12 h, longer for rare work) and finish while the player is away.
@@ -111,8 +111,8 @@ Defaults for the open questions until Misa says otherwise: **one slot** per crea
 
 **Content (`packages/game`, schema-validated):**
 
-- `gear.json`: base items `{ id, name, kind (charm | band | trinket), primary (atk | hp | spd | critChance | critDamage), tint (element | null), blueprint (rarity) }`. About 12 bases, 3 per element tint plus neutral ones; names and short flavour fit the lore. Festival bases with distinct names.
-- `enchants.json`: about 8 enchants. Stat-only, or conditional on the wearer's element or role (for example "+6% Attack as a Payoff", "+8% HP as a Guard", "+3% crit chance for Spark"). Conditions are resolved when stats are folded, so **the engine needs no change**.
+- `gear.json`: base items `{ id, name, kind (charm | band | trinket), primary (atk | hp | spd | critChance | critDamage), tint (element | null), blueprint (rarity) }`. 19 bases shipped: 5 neutral, 3 per element tint and 2 Festival pieces; names and short flavour fit the lore. Festival bases with distinct names.
+- `enchants.json`: 9 enchants shipped. Stat-only, or conditional on the wearer's element or role (for example "+6% Attack as a Payoff", "+8% HP as a Guard", "+3% crit chance for Spark"). Conditions are resolved when stats are folded, so **the engine needs no change**.
 - `RULES.gear`:
   - rarities common / rare / epic / festival, with 0 / 1 / 2 / 2 secondaries; festival has epic power;
   - primary and secondary roll ranges per stat;
@@ -140,7 +140,7 @@ Defaults for the open questions until Misa says otherwise: **one slot** per crea
 
 - **Raid finale win:** one gear roll per participant. Rarity by Boss Rank: rank 1 is about 75% common, 22% rare and 3% epic; better at higher ranks.
 - **Phase 1 and 2 wins:** scrap per participant.
-- **Expedition claim:** scrap by duration (1 h: 1, 6 h: 3, 12 h: 6). It also has a chance of a shard of the explorer's element, and on 12 h trips a small chance of a blueprint.
+- **Expedition claim:** scrap by duration (1 h: 1, 6 h: 3, 12 h: 6). It also has a chance of a shard of the explorer's element, and a small chance of a blueprint (higher on longer trips).
 - **Festival finale win:** one Festival gear piece per participant.
 - **Welcome kit:** each player's first gear load grants one common item and one common blueprint, so crafting can start on day 1. It is granted once, idempotently.
 

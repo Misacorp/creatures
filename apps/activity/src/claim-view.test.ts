@@ -3,11 +3,13 @@ import { parseClaimResponse } from './expedition-api';
 import {
   failureLine,
   foundSupplies,
+  giftLines,
   journalPages,
   nothingInLoot,
   pileLabel,
   pileSourceOf,
   pushOnLine,
+  rankGiftViews,
   revealTitle,
   revealTone,
   slotLine,
@@ -35,9 +37,9 @@ describe('how a claimed trip went', () => {
     expect(revealTitle('home')).toBe('Back from the trip');
   });
 
-  it('says a failed risky goal failed, with the odds it had, and brings nothing', () => {
+  it('says a failed risky goal failed, without the odds it had, and brings nothing', () => {
     expect(failureLine(failed)).toContain('Take the shortcut');
-    expect(failureLine(failed)).toContain('61%');
+    expect(failureLine(failed)).not.toMatch(/%|chance/);
     expect(failureLine(failed)).toContain('Nothing came back');
     expect(failed.catches).toEqual([]);
     expect(nothingInLoot(failed)).toBe(true);
@@ -53,12 +55,39 @@ describe('how a claimed trip went', () => {
       pushOnLine({
         pushOn: { goalId: 'shortcut', risk: 'risky', oddsBp: 6100, outcome: 'worked' },
       }),
-    ).toBe('Take the shortcut paid off (a 61% chance).');
+    ).toBe('Take the shortcut paid off.');
     expect(
       pushOnLine({
         pushOn: { goalId: 'forage', risk: 'safe', oddsBp: 10000, outcome: 'declined' },
       }),
     ).toContain('cut short');
+  });
+});
+
+describe('the gift of a new rank', () => {
+  it('lists the gift of the rank a trip reached, from the server result', () => {
+    const [view] = rankGiftViews(worked);
+    expect(worked.rankGifts?.length).toBe(1);
+    expect(view?.rank).toBe(worked.xp?.rank);
+    expect(view?.title).toBe(`Rank ${String(worked.xp?.rank)} gift`);
+    expect(view?.lines.map((l) => l.key)).toEqual(['bait', 'scrap']);
+    expect(view?.lines.map((l) => l.text)).toEqual(['15 Bait', '2 Scrap']);
+  });
+
+  it('has no gift for a trip that did not raise the rank, a recall or a failure', () => {
+    expect(rankGiftViews(recalled)).toEqual([]);
+    expect(rankGiftViews(failed)).toEqual([]);
+    expect(rankGiftViews({})).toEqual([]);
+  });
+
+  it('counts supplies of a kind and leaves out what is not in the gift', () => {
+    const lines = giftLines({
+      bait: 0,
+      parts: { glimmer: 3 },
+      supplies: ['lure-good', 'lure-good', 'satchel-good'],
+    });
+    expect(lines.map((l) => l.text)).toEqual(['3 Glimmer', '2 Sweet Lure', 'Sturdy Satchel']);
+    expect(lines.find((l) => l.key === 'lure-good')?.icon).toEqual({ kind: 'supply', id: 'lure' });
   });
 });
 
@@ -102,7 +131,8 @@ describe('what the explorer earned', () => {
       rankBefore: 1,
       rankedUp: true,
     });
-    expect(xpView(worked)?.rankedUp).toBe(false);
+    expect(xpView(worked)).toMatchObject({ rankBefore: 3, rank: 4, rankedUp: true });
+    expect(xpView({ xp: { gained: 4, total: 10, rank: 1, rankBefore: 1 } })?.rankedUp).toBe(false);
     expect(xpView(recalled)).toBeNull();
   });
 

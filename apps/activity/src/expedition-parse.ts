@@ -15,13 +15,14 @@ import type {
   Milestone,
   OfferedGoal,
   Profile,
+  RankGift,
   Slots,
   SupplyTier,
   Trip,
   TripCatch,
   TripResult,
 } from './expedition-types';
-import { isGrantLoot } from './gear-parse';
+import { isGrantLoot, isPartsBundle } from './gear-parse';
 
 type Rec = Record<string, unknown>;
 
@@ -102,6 +103,17 @@ function isPushOnResult(value: unknown): value is NonNullable<TripResult['pushOn
   );
 }
 
+function isRankGift(value: unknown): value is RankGift {
+  return (
+    isRecord(value) &&
+    isInt(value['rank']) &&
+    value['rank'] >= 2 &&
+    isCount(value['bait']) &&
+    isPartsBundle(value['parts']) &&
+    isArrayOf(value['supplies'], isStr)
+  );
+}
+
 export function isTripResult(value: unknown): value is TripResult {
   if (!isRecord(value)) return false;
   const xp = value['xp'];
@@ -125,6 +137,7 @@ export function isTripResult(value: unknown): value is TripResult {
         isCount(familiarity['starsBefore']) &&
         isCount(familiarity['trips']))) &&
     (value['journal'] === undefined || isArrayOf(value['journal'], isJournalFind)) &&
+    (value['rankGifts'] === undefined || isArrayOf(value['rankGifts'], isRankGift)) &&
     (unlocked === undefined || (isRecord(unlocked) && isCount(unlocked['total'])))
   );
 }

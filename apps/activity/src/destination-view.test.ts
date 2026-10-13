@@ -1,7 +1,13 @@
 import { RULES, expeditionContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { parseGameState } from './api';
-import { destinationCards, nextNightStart, nightText, turnCatalogue } from './destination-view';
+import {
+  destinationCards,
+  nextNightStart,
+  nightText,
+  nightWindowText,
+  turnCatalogue,
+} from './destination-view';
 import { parseDestinations } from './expedition-parse';
 import destinationsFixture from './fixtures/expedition-destinations.json';
 import stateOffer from './fixtures/expedition-state-offer.json';
@@ -48,14 +54,44 @@ describe('the destination catalogue', () => {
     for (const r of tide.filter((x) => !x.known)) expect(r.name).toBe('???');
   });
 
-  it('counts a species found by any of your creatures, but the stars only of the one that goes', () => {
-    const mine = destinationCards(view, cindle, TZ).find((c) => c.id === 'tidepools');
+  it('counts a species found by any of your creatures, but only the explorer opens the deeper area', () => {
     const other = destinationCards(view, splashet, TZ).find((c) => c.id === 'tidepools');
-    expect(mine?.trips).toBe(1);
-    expect(other?.trips).toBe(0);
     expect(other?.residents.find((r) => r.species === 'mistnewt')?.known).toBe(true);
-    const noOne = destinationCards(view, undefined, TZ).find((c) => c.id === 'tidepools');
-    expect(noOne?.stars).toBe(0);
+    const mine = destinationCards(view, cindle, TZ).find((c) => c.id === 'tidepools');
+    expect(mine?.residents.find((r) => r.species === 'mistnewt')?.known).toBe(true);
+    // Familiarity belongs to the creature, so the card carries neither stars nor trips.
+    expect('stars' in (mine ?? {})).toBe(false);
+    expect('trips' in (mine ?? {})).toBe(false);
+  });
+
+  it('opens the deeper area on the card only for an explorer with a star there', () => {
+    const starry = {
+      ...view,
+      familiarity: [
+        {
+          creatureId: cindle.id,
+          destination: 'tidepools',
+          trips: 5,
+          found: [],
+          shiny: false,
+          stars: 1,
+          deepChanceBp: 3000,
+        },
+      ],
+    };
+    const tide = (who: typeof cindle | undefined) =>
+      destinationCards(starry, who, TZ).find((c) => c.id === 'tidepools');
+    expect(tide(cindle)?.deepOpen).toBe(true);
+    expect(tide(splashet)?.deepOpen).toBe(false);
+    expect(tide(undefined)?.deepOpen).toBe(false);
+  });
+
+  it('puts a plain fact in the description only where there is one: the night window of Moonlit Reef', () => {
+    expect(card('moonlit-reef').facts).toEqual([nightWindowText()]);
+    expect(nightWindowText()).toBe(
+      `Only open at night, ${String(RULES.expeditions.night.fromHour).padStart(2, '0')}:00 to ${String(RULES.expeditions.night.toHour).padStart(2, '0')}:00 server time.`,
+    );
+    expect(cards.filter((c) => c.facts.length > 0).map((c) => c.id)).toEqual(['moonlit-reef']);
   });
 
   it('shows the weekly twist on the special place only', () => {

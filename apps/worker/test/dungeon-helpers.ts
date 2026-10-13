@@ -19,10 +19,6 @@ export const newKey = (): string => `dungeon-${String(++keyCounter).padStart(8, 
 export interface RunBodyInput {
   /** The row, left to right. */
   team: string[];
-  abilities: {
-    basic: { abilityId: string; fireAtRound: number | null; zone?: string; element?: string };
-    creatures: { creatureId: string; fireAtRound: number | null }[];
-  };
   idempotencyKey: string;
 }
 
@@ -62,7 +58,6 @@ export async function dungeonPlayer(
   };
   const body = (overrides: Partial<RunBodyInput> = {}): RunBodyInput => ({
     team: seeded.creatureIds.slice(0, 3),
-    abilities: { basic: { abilityId: 'rally', fireAtRound: null }, creatures: [] },
     idempotencyKey: newKey(),
     ...overrides,
   });

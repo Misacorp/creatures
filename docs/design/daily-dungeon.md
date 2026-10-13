@@ -19,18 +19,13 @@ No real-time backend is needed.
   - The row is the engine's row of three, used as it is: the left creature is in the Front zone, the middle one in Middle and the right one in Back, one creature each.
   - The foe's plain attack goes for the left creature first. A Guard covers the creatures **right beside it** (`guardReach: 'adjacent'`), so it likes the middle.
   - A zone attack hits the one creature at that place; "both ends" silence hits the left and right creatures; turn orders run along the row (left to right, right to left) or by speed.
-- **Pre-run choices** replace live input, since there is none:
-  - the basic ability pick;
-  - Auto fire per ability: on, or a chosen fire round;
-  - the order of the row.
-
-  This keeps the "planning puzzle" feel that suits a predictable fight.
+- **The pre-run choice** replaces live input, since there is none: the order of the row. (The basic ability pick and the fire rounds were removed in UX pass 1: unlocked creature abilities fire at their default round.)
 
 - **Dungeon:**
   - A short chain of **3 rooms**, generated from the seed: two encounters, then a room boss.
   - Each room is a small fight against content-defined dungeon foes (new content type, schema-validated), with an element, a turn order, gimmicks and an HP pool.
   - **Creature HP carries over between rooms**, and knocked-out creatures stay out, so order and guards matter.
-  - Each room also rolls a **room modifier** from content, shown before the run: for example "Flooded: Tide +20%", "Dark: crits +5%", "Thorns: guards reflect".
+  - Each room also rolls a **room modifier** from content, shown before the run: for example "Flooded: Tide +20%", "Dark: crits +5%", "Thorns: the foe turns the first reaction of each round back on your team".
 - **Depth ladder (personal):**
   - Each player has a **dungeon depth**, like the raid Boss Rank but personal.
   - Clearing all rooms gives +1 depth. Failing keeps the same depth.
@@ -41,12 +36,12 @@ No real-time backend is needed.
   - Per cleared room: a little Bait or Essence and **gear materials**.
   - A full clear adds a chance at a **gear drop** (see `gear.md`).
   - Landmark depths: a guaranteed gear drop.
-  - Daily streaks: a small bonus for 3 and 7 days in a row; missing a day resets the streak, gently.
+  - Daily streaks: a small bonus on the 3rd and 7th day of each 7-day cycle (the cycle length is `RULES.dungeon.streak.cycleDays`); missing a day starts the count again, and depth is kept.
   - All payouts follow the existing ledger rules (integers, an idempotency key per (player, day)).
 
 ## Server (authoritative)
 
-- `POST /api/dungeon/run { team: [id, id, id], abilities: {...}, idempotencyKey }` (`team` is the row, left to right; a body with a `formation` is refused as `invalid_body`):
+- `POST /api/dungeon/run { team: [id, id, id], idempotencyKey }` (`team` is the row, left to right; a body with `formation` or `abilities` is refused as `invalid_body`):
   1. Validates the team (the caller's own creatures; one away on an expedition or a job can still enter, because the run is instant) and that no run exists today.
   2. Draws the seed from `crypto.getRandomValues` at that moment.
   3. Generates the dungeon from the seed and the content.
@@ -71,7 +66,6 @@ No real-time backend is needed.
 - A **Dungeon** tab or card:
   - today's modifiers;
   - the team picker: one row of three slots, reusing the drag-and-drop code;
-  - ability pre-settings;
   - an **Enter** button.
 - **Playback:**
   - The fight stage plays each room with the same pacing and effects as the live finale: shared `roundPlaybackMs`, telegraphs, lingering numbers.

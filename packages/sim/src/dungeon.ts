@@ -2,7 +2,6 @@ import {
   RULES,
   abilitiesFor,
   addParts,
-  basicAbilities,
   createSeededRng,
   dungeonFoe,
   dungeonRowOrder,
@@ -36,8 +35,8 @@ import type { SimPlayer } from './state';
  *   their leet days, everybody else every day. On the first day they ever ran, a lost run may be
  *   tried once more (the worker's free retry).
  * - The team is the player's 3 strongest creatures by power (gear included), stood in one row by
- *   `dungeonRowOrder` (setters and supports left, a Guard in the middle, payoffs right). The basic ability is Rally and
- *   every unlocked creature ability fires at its default round (Auto fire on).
+ *   `dungeonRowOrder` (setters and supports left, a Guard in the middle, payoffs right). There is no basic ability and
+ *   every unlocked creature ability fires at its default round.
  * - The day's modifiers are shared by everybody (drawn from a seed of the day), the rooms from the
  *   run's seed, and the rewards are paid as the worker pays them.
  */
@@ -78,11 +77,7 @@ export function buildRun(
     const { hp, atk } = scaledFoe(foe, depth);
     return { index: plan.index, foe, modifier, hp, atk };
   });
-  const basic = basicAbilities()[0];
-  if (basic === undefined) throw new Error('content has no basic abilities');
-  const abilities: AbilityChoice[] = [
-    { playerId: DUNGEON_PLAYER, abilityId: basic.id, key: `${DUNGEON_PLAYER}:basic` },
-  ];
+  const abilities: AbilityChoice[] = [];
   const unlocked = abilitiesFor(
     row.map((s) => ({ id: s.id, speciesId: s.speciesId, level: s.level })),
     (c) => c.level,

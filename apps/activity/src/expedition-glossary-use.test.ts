@@ -1,10 +1,10 @@
-import { GLOSSARY_IDS, SUPPLY_KINDS, entryView, expeditionContent } from '@creatures/game';
+import { GLOSSARY_IDS, SUPPLY_KINDS, entryView } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { glyph } from './glyphs';
 import { EXPEDITION_GLYPHS } from './expedition-glyphs';
 
 /**
- * The expedition screens put a glossary tag on destinations, supplies, push-on goals, explorer rank,
+ * The expedition screens put a glossary tag on supplies, push-on goals, explorer rank,
  * familiarity, slots, the journal and milestones. Each tag needs its entry: a tag without one is plain text
  * (see `GlossaryTag`), so this list is the coverage check for what the screens use.
  */
@@ -34,10 +34,7 @@ describe('the glossary entries the expedition screens use', () => {
     for (const id of fixed) expect(entryView(id), id).toBeDefined();
   });
 
-  it('has an entry for every destination, every kind of supply and both kinds of goal', () => {
-    for (const d of expeditionContent.destinations) {
-      expect(entryView(GLOSSARY_IDS.destination(d.id)), d.id).toBeDefined();
-    }
+  it('has an entry for every kind of supply and both kinds of goal', () => {
     for (const kind of SUPPLY_KINDS) {
       expect(entryView(GLOSSARY_IDS.supply(kind)), kind).toBeDefined();
     }

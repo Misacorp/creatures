@@ -12,6 +12,8 @@ import {
   explorerOptions,
   sendBlocker,
   starsAt,
+  tripsAt,
+  tripsHereText,
 } from './send-view';
 
 const view = parseDestinations(destinationsFixture);
@@ -35,7 +37,9 @@ describe('who can go', () => {
     const options = explorerOptions(creatures, place('tidepools'), view);
     expect(options.map((o) => o.creature.id)).toEqual([cindle.id, splashet.id]);
     expect(options[0]).toMatchObject({ rank: cindle.explorer.rank, blocked: null });
-    expect(options[0]?.bar.text).toContain('XP to rank');
+    const xp = options[0]?.xp;
+    expect(xp?.startCap).toBe(`Rank ${String(cindle.explorer.rank)}`);
+    expect(xp?.endCap).toBe(`Rank ${String(cindle.explorer.rank + 1)}`);
   });
 
   it('lists a creature below the place rank, but blocked, after the ones that can go', () => {
@@ -76,6 +80,18 @@ describe('who can go', () => {
     };
     const options = explorerOptions(creatures, { id: 'ember-caves', minRank: 1 }, starry);
     expect(options.find((o) => o.creature.id === cindle.id)?.stars).toBe(2);
+    // The trips of the creature at the place sit with its stars.
+    expect(options.find((o) => o.creature.id === cindle.id)?.trips).toBe(9);
+    expect(options.find((o) => o.creature.id === splashet.id)?.trips).toBe(0);
+    expect(tripsAt(starry, cindle.id, 'ember-caves')).toBe(9);
+    expect(tripsAt(starry, cindle.id, 'tidepools')).toBe(0);
+    expect(tripsAt(null, cindle.id, 'ember-caves')).toBe(0);
+  });
+
+  it('says the trips of a creature at the place in words', () => {
+    expect(tripsHereText(0)).toBe('No trips here yet');
+    expect(tripsHereText(1)).toBe('1 trip here');
+    expect(tripsHereText(4)).toBe('4 trips here');
   });
 
   it('keeps the explorer picked while it exists, else the first that can go', () => {

@@ -732,6 +732,17 @@ describe('expedition loot', () => {
   };
   const lootOf = (res: { body: Record<string, unknown> }) =>
     (res.body['result'] as { loot: Loot }).loot;
+  /** The scrap of the rank-up gifts a claim paid: a trip that raises the rank brings its gift too. */
+  const giftScrapOf = (res: { body: Record<string, unknown> }): number =>
+    (
+      (res.body['result'] as { rankGifts?: { parts: { scrap?: number } }[] }).rankGifts ?? []
+    ).reduce((n, g) => n + (g.parts.scrap ?? 0), 0);
+  /** The `gear_drop` events of one source (the rank gift has its own). */
+  const dropEvents = (ctx: { sql: SqlStorage }, source: string) =>
+    rows<{ props_json: string }>(
+      ctx.sql,
+      "SELECT props_json FROM analytics_events WHERE kind = 'gear_drop' ORDER BY id",
+    ).filter((e) => (JSON.parse(e.props_json) as { source: string }).source === source);
 
   it('pays scrap by duration to the claimer, with the loot in the claim result and the stored state', async () => {
     await runCore(
@@ -752,7 +763,7 @@ describe('expedition loot', () => {
           expect(res.status).toBe(200);
           const loot = lootOf(res);
           expect(loot.parts.scrap ?? 0).toBe(scrap);
-          expect(scrapOf(ctx, p.id)).toBe(before + scrap);
+          expect(scrapOf(ctx, p.id)).toBe(before + scrap + giftScrapOf(res));
           // The same loot is in the state the client reloads.
           const state = (await p.call('GET', '/api/state')).body as {
             expeditions: { id: string; result: { loot: Loot } | null }[];
@@ -798,6 +809,7 @@ describe('expedition loot', () => {
         ctx.clock.t = exp.endsAt;
         const res = await p.call('POST', `/api/expeditions/${exp.id}/claim`, {});
         const loot = lootOf(res);
+        const gift = giftScrapOf(res);
         expect(loot.parts).toEqual({ scrap, 'ember-shard': 1, glimmer: 1 });
         // The draw of 0 also finds a supply: the explorer is rank 1, so a plain one.
         expect((loot as { supplies?: string[] }).supplies).toEqual(['lure-basic']);
@@ -812,7 +824,7 @@ describe('expedition loot', () => {
         ).toEqual([
           { kind: 'ember-shard', amount: 1 },
           { kind: 'glimmer', amount: 1 },
-          { kind: 'scrap', amount: scrap },
+          { kind: 'scrap', amount: scrap + gift },
         ]);
         // A blueprint the player knows already turns into scrap.
         const again = await p.trip(1, 'long', 'tidepools');
@@ -824,10 +836,7 @@ describe('expedition loot', () => {
         ]);
         expect(loot2.parts.scrap).toBe(scrap + RULES.gear.drops.duplicateBlueprintScrap);
         expect(count(ctx.sql, 'blueprints')).toBe(1);
-        const events = rows<{ props_json: string; actor_hash: string | null }>(
-          ctx.sql,
-          "SELECT props_json, actor_hash FROM analytics_events WHERE kind = 'gear_drop' ORDER BY id",
-        );
+        const events = dropEvents(ctx, 'expedition');
         expect(events).toHaveLength(2);
         expect(JSON.parse(events[0]?.props_json ?? '{}')).toEqual({
           source: 'expedition',
@@ -840,7 +849,11 @@ describe('expedition loot', () => {
           blueprintDuplicate: false,
           supplies: 1,
         });
-        expect(events[0]?.actor_hash).toMatch(/^[0-9a-f]{32}$/);
+        const actor = rows<{ actor_hash: string | null }>(
+          ctx.sql,
+          "SELECT actor_hash FROM analytics_events WHERE kind = 'gear_drop' ORDER BY id",
+        )[0]?.actor_hash;
+        expect(actor).toMatch(/^[0-9a-f]{32}$/);
       },
       {
         gearRng: {
@@ -874,7 +887,7 @@ describe('expedition loot', () => {
         expect(gearRng.drawn()).toBe(drawn);
         expect(rows(ctx.sql, 'SELECT kind, amount FROM parts ORDER BY kind')).toEqual(parts);
         expect(count(ctx.sql, 'gear_grants', "source = 'expedition'")).toBe(1);
-        expect(count(ctx.sql, 'analytics_events', "kind = 'gear_drop'")).toBe(1);
+        expect(dropEvents(ctx, 'expedition')).toHaveLength(1);
       },
       { gearRng },
     );

@@ -42,6 +42,7 @@ import {
   expeditionConvertBait,
   partsOfSpec,
   pickQuirk,
+  rankGiftsBetween,
   rankSum,
   pushWorks,
   recallCatches,
@@ -93,7 +94,7 @@ import {
   takeSupply,
   visitPlace,
 } from './expedition-store';
-import { grantTripLoot, type GrantView } from './gear-grants';
+import { grantRankGift, grantTripLoot, type GrantView } from './gear-grants';
 import { openJobOf } from './gear-store';
 import { credit, lookupSpend, spend, type LedgerStorage } from './ledger';
 import { CollectionError, atomically, type Outcome } from './outcome';
@@ -159,6 +160,17 @@ export interface ExpeditionResult {
   journal?: JournalFindView[];
   /** Set when the trip unlocked another expedition slot. */
   slotUnlocked?: { total: number };
+  /** The one-time gifts of the ranks this trip reached (lowest first); absent when the rank did not rise. */
+  rankGifts?: RankGiftView[];
+}
+
+export interface RankGiftView {
+  rank: number;
+  bait: number;
+  /** Scrap and glimmer. */
+  parts: PartsBundle;
+  /** Supplies, one content id each. */
+  supplies: string[];
 }
 
 export interface OfferGoalView {
@@ -1126,6 +1138,32 @@ export class Expeditions {
         { kind: 'explorer_rank', species: explorer.species, rank: rankAfter },
         userId,
       );
+      // One-time gifts for every rank reached, inside the claim's transaction. Each is keyed by
+      // (creature, rank), so a rank can never pay twice.
+      const gifts: RankGiftView[] = [];
+      for (const { rank, gift } of rankGiftsBetween(p.explorerBefore.rank, rankAfter)) {
+        const granted = grantRankGift(
+          {
+            storage: this.deps.storage,
+            now: this.deps.now,
+            rng: this.deps.gearRng,
+            analytics: this.deps.analytics,
+          },
+          userId,
+          explorer.id,
+          rank,
+          gift,
+        );
+        if (granted.fresh) {
+          gifts.push({
+            rank,
+            bait: gift.bait,
+            parts: { ...gift.parts },
+            supplies: [...gift.supplies],
+          });
+        }
+      }
+      if (gifts.length > 0) p.result.rankGifts = gifts;
     }
     // This trip counts as finished and may raise the rank: a slot may open.
     const sumAfter = sumBefore + (rankAfter - p.explorerBefore.rank);

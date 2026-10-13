@@ -738,3 +738,76 @@ The merge's 3 failures became: setup share 13.9% to 16.0% (s2 16.4%, s3 16.5%), 
 ## 2026-10-13: The slot wipe spares finished trips (Misa)
 
 Migration 19 now cancels only trips that are still running (the oldest running trip per player keeps going); trips that have already ended stay active so players can claim their catches and loot as usual. The extra slots close as those trips are claimed. Cancelled trips still get their Bait refunded once.
+
+## 2026-10-13: UX pass 1, Raid tab (R1 to R6, approved by Misa)
+
+The Raid tab is client-only work; the server, the schemas and every rule it enforces are unchanged.
+
+- **Order of the tab:** the week timeline, the boss card, the avatar strip, the one placement step, the "Abilities" chip, then the full results (only after the finale). The separate live banner is gone: in the lobby and while the finale is on, the timeline's action reads "Watch live" and shows the countdown or "The finale is on now" under it. It opens the finale view exactly as the old Join button did.
+- **"What to do now" (`raid-now.ts`, pure):** "Set your team" when a team creature has no slot and edits are open (the button scrolls to the placement step and focuses the first creature); otherwise "Phase 1 in 2 h 10 m" or "Finale in 3 h" with the time in the guild's timezone under it; "Watch live" in the finale's lobby and while it runs; "Next boss Monday 13:37" when the week is over (taken from the week start's weekday and time, so a daylight saving change does not shift it); "Join this week's raid" for a player who sat out. "Team set" means every team creature is in a slot: the server places the rest at phase start anyway, so asking is a convenience, not a rule.
+- **Phase results as marks (R6):** a fought phase shows a tick or a cross on its timeline step (shape, not only colour). A tap shows one line ("Phase 1: cleared. You got 15 Essence.") and a Watch replay button. The full after-action cards (the Results section) appear only once the finale has a result. Phase 1 and 2 after-action cards are therefore not shown during the week any more; replays of those phases stay reachable from the mark.
+- **Boss card (R2, R5):** the art keeps its size (24x24 at scale 4). On wide screens the name, Rank, readiness meter, element, HP and the icons sit beside it; on phones they stack below it. The turn order and each trick are icons with a caption that open a popover: the glossary's panel, but with the boss's own sentence ("Every 3 rounds: hits every creature in the front zone for 80% of its attack") above the glossary's general line. That replaces the "Tricks" list and the "How the boss fights" text. The popover is a small local component in `BossCard.tsx` rather than a new glossary reference type, so the shared glossary code is untouched. The readiness word became a four-step meter next to the Rank (still a word, never a number; its glossary popover is unchanged).
+- **One placement step (R3):** "My team" and "The party row" are one card: a short hint, a tray of the three creatures (still dragged, or tapped then tapped, or moved with the keyboard, and dropping a placed creature on the tray unplaces it), then the row. The role legend and the long paragraphs went; the keyboard instructions sit in a small "Keyboard controls" disclosure. The placement logic (`raid-slots`, `raid-dnd`, the drag hook) and the lock during phases are untouched. I did not extract a shared slot component: the Dungeon team picker is built separately.
+- **Avatar strip (R3):** "Who is in this week" is up to eight initials in each player's party-row colour with "N players this week"; a tap opens the names as text (with party numbers when there are several). Sitting out and joining again stay on the tab: the button is in the opened list, and a player who sat out always sees "Join this week's raid".
+- **Abilities chip (R4):** "Abilities: Auto" when nothing is customised, "Abilities: Shield Wall · 1 manual" otherwise (a picked basic ability, then how many unlocked abilities have Auto fire off). Tapping it opens the same basic-ability pick and Auto fire switches as before, with shorter text.
+
+## 2026-10-13: UX pass 1, Dungeon (less text, no ability picks) and glossary copy
+
+Spec: `design/ux-pass-1.md`, Dungeon items 1 to 5 and "Glossary copy".
+
+- **Pre-run screen.** It leads with the three-room comic strip (room 1, room 2, boss), each panel a "?" until the run (the foes are rolled from the run's seed, so nothing about them is known before). The day's modifier is an icon on its panel with a tap popover (the glossary entry the modifier already had); the icon comes from what the modifier does (`dungeon-rooms.ts`: an element boost shows that element, crits the reticle, a trick its own icon). The explanatory paragraphs, the row notes and the landmark sentence are gone. Streak is a tiny pip row beside the depth; the full streak line and the reset time moved to the end report ("Next run"), which keeps its strip, rewards and team as before.
+- **Landmark depths** use the shared `ProgressTrack`: the previous landmark (when there is one), the depth the player is at, and the next landmark, with what a landmark gives in words (a sure gear drop, bonus Essence). The ladder has no end, so there is always a next step.
+- **Team picker.** Three small slots in the look of the raid placement rectangles (the same `.party-slot`, slot number, sprite, name, level) and no text about rows. No raid file was touched.
+- **Abilities.** The basic-ability pick and the per-ability fire rounds are gone from the dungeon UI, the request, the worker and the simulator. The request is `{ team, idempotencyKey }`, strict: an old body with `abilities` (or `formation`) is `invalid_body`, and the `invalid_abilities` error is removed. Every unlocked creature ability of the team fires at its default round. The idempotency fingerprint is now the team alone (an old key reused with a new body is a `key_conflict`, as before for a changed body). Dungeon fixtures were re-captured from the worker.
+- **Balance.** The full simulator (`pnpm sim`, seed `leet`) passes all 47 targets with no basic ability and **no change to `RULES.dungeon`**: first-week depth 1 clear rate 81.0% (target at least 80%), median depth growth 1.5 per week (1 to 2), dungeon Essence 3.9% of a daily player's income, gear share at week 8 12.8%. The first-week clear rate has little room (1.0 points), so a later change that weakens the dungeon team should re-check it.
+- **Glossary copy (Misa).** Reactions "deal much more damage", a Payoff "hits even harder when it sets off a reaction", and "Each Rank makes the boss stronger", in the glossary and How to play, with no 4.5x, +10% or +40%. Crit, Guard and Support numbers stay. The tests that pinned those numbers to `RULES` now pin that the text has no digit for them. The mechanics are unchanged; whether Payoff should depend on stats is left open for a later design pass.
+
+## 2026-10-13: UX pass 1, Expeditions: rank-up gifts, no chances on screen
+
+Misa's review asked for every explorer rank to unlock something, and for the Expeditions screens to stop showing chances. What changed, and the numbers.
+
+**One-time rank-up gift** (`RULES.expeditions.rank.gifts`, index 0 is rank 2). It is granted on the claim that raises the rank, inside the claim transaction, once per (creature, rank): the Bait goes through the ledger and the parts and supplies through the grant ledger, both under the key `rank:<creature>:<rank>`, so a repeat claim, a retry or a replay pays nothing. A trip that jumps two ranks pays both gifts. It is shown in the claim reveal and listed on the rank `ProgressTrack`. Players already above rank 1 get nothing back-dated; gifts start with their next rank-up.
+
+| Rank | Bait | Scrap | Glimmer | Supplies                     |
+| ---- | ---- | ----- | ------- | ---------------------------- |
+| 2    | 2    | 1     | 0       | none                         |
+| 3    | 3    | 1     | 0       | none                         |
+| 4    | 4    | 2     | 0       | none                         |
+| 5    | 5    | 2     | 0       | none                         |
+| 6    | 6    | 3     | 1       | none                         |
+| 7    | 50   | 5     | 2       | Glow Lantern, Sweet Lure     |
+| 8    | 75   | 8     | 3       | Inked Map, Sturdy Satchel    |
+| 9    | 100  | 10    | 4       | Golden Lure                  |
+| 10   | 150  | 15    | 6       | Trail Atlas, Explorer's Pack |
+
+Totals per creature over all nine ranks: 395 Bait, 47 scrap, 16 glimmer, 7 supplies (14 Bait and 6 scrap up to rank 5).
+
+**Retuned the same day (less Bait at ranks 2 to 6).** With the dungeon's basic ability removed, the first table (Bait 5, 10, 15, 20, 30 at ranks 2 to 6) and the dungeon change each passed 47/47 alone but failed together on `leet`: typical finale 61.1% (target 40 to 60%) and casual species discovery 0.32 (target at most 0.3). Extra Bait at the low ranks fed training and discovery. Only the gift numbers changed (no targets, boss, gear or dungeon numbers): Bait at ranks 2 to 6 is now 2, 3, 4, 5, 6, and the scrap, glimmer, supplies and ranks 7 to 10 are as before. Scrap is not the lever here: raising it at ranks 2 to 6 pushed the finale up again on seed `s2`. The table above is the shipped one. It passes 47/47 on `leet` (typical finale 53.8%, casual species 0.21). On seed `s2` it passes 46/47 and only `econ-hard-pity` (16.4%, at most 15%) fails, which also fails there with almost no gift at all, so it does not come from the gifts; the first table failed three targets on `s2` (phase 2 clear, typical finale, casual species).
+
+**How the numbers were found (seed `leet`, full run).** Baseline 47/47. The gift is per creature, so it multiplies with the number of creatures that explore. A first draft with Bait 15 to 150, scrap, glimmer and a basic or good supply at every rank failed 5 targets (phase 2 clear 93.1% against at most 85%, typical finale 80.7% against at most 60%, 15-player finale 83.3%, boss spread 20.0%, casual species 0.4 against at most 0.3). Splitting the gift by kind: parts alone 47/47, Bait alone 47/47, supplies alone 43/47 (phase 2 87.5%, typical finale 65.5%, 15-player finale 67.4%, casual species 0.3 with rounding). Supplies feed discovery, and discovery feeds raid readiness, so **supplies only come at ranks 7 to 10**, which a sim player hardly reaches inside its horizon. The shipped table passes 47/47 on `leet`. The sim now pays the gifts too (`packages/sim/src/trips.ts`), so this stays checked.
+
+**Chances are words, not numbers (item 7).**
+
+- Push-on cards say Safe, Risky or Very risky with a mark (check, warning, skull) and keep the failure line ("May fail and bring nothing back."). The word comes from the odds the server rolled: a risky goal that works less than half the time (below 5000 basis points) is Very risky (`VERY_RISKY_BELOW_BP` in `push-on-view.ts`). Reward lines no longer say "50% more XP". A running push-on and the claim reveal also drop the percentages.
+- Glossary entries for explorer rank, familiarity, the deeper area, push-on goals and milestones lost their percentages, and the tests now pin that they have none. Familiarity's three stars are on their own bullets and its short line has no "3 stars".
+- The deeper area says only "Deeper area open: its rarer creatures can turn up." once the explorer has a star there. The mechanics are unchanged.
+- Kept as they are: the supplies' own effect lines (Misa likes them), the weekly special's description, the combat numbers, the profile's milestone bonuses.
+
+**Layout decisions.** Familiarity (stars and trips) moved from the place to the creature's row in "Who goes". The "Expected haul" is `haul-view.ts`: the same icons for every length plus a "Deeper area" icon when a lantern is carried; pips compare with the best any length does with the best supplies; a "+" marks what a chosen supply raises; chances are words ("rarely", "often"). The destination glossary entries (their "?" popup is gone) still exist because the content coverage test requires them; they are no longer reachable on screen and can be deleted with that test if Misa wants.
+
+## 2026-10-13: Compendium contradictions resolved
+
+The compendium author listed twelve places where content, glossary and design docs disagree (`docs/compendium/README.md`, "Known contradictions"). Fixed now, with the code as the judge:
+
+- **Ember burrow page** (`journal.json` `ember-ash-burrow`) said "the next day". The mechanic, Warm Glow, is an in-fight boost for a few rounds, so the page now says that, with no numbers.
+- **Daily dungeon design** said "Thorns: guards reflect" and "3 and 7 days in a row". Thorns makes the foe turn the first reaction of each round back on the team (as `room-modifiers.json` has it), and the streak pays on the 3rd and 7th day of each 7-day cycle (`RULES.dungeon.streak`). The doc now says both.
+- **Gear design** said about 12 bases and 8 enchants (shipped: 19 and 9), and listed raids, the dungeon and Festivals as blueprint sources. The code (`gear-grants.ts`, `rollBlueprint`) grants blueprints only from expedition claims, expedition push-on rewards and the welcome kit. The doc now says so. Side effect found: the glossary says Festival gear is "crafted only from Festival blueprints", but nothing grants one yet. Left for Misa to decide.
+- **Storm Ridge odds:** the schema falls back to `RULES.expeditions.defaultOddsBp` when a place has no block, so behaviour was always defined and the sim was tuned with it. Nothing records an intent to omit it, so the place now has an explicit block with the default values. No behaviour change.
+- "Row" against "zone" in raids is not a contradiction: zones are rows.
+- Still open: 3 (Festival residents text), 4 (night hours), 6 ("Very risky" wording), 12 (enchant costs).
+
+A new test, `packages/game/test/compendium.test.ts`, fails when shipped content has no compendium entry.
+
+## 2026-10-13: Festival gear stays a Festival-only prize (Misa)
+
+Festival gear is won only by clearing a Festival finale. There are no Festival blueprints, so it is never craftable. `rollBlueprint` keeps skipping Festival bases, and the glossary says "It cannot be crafted."

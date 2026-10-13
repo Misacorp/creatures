@@ -67,20 +67,14 @@ export async function runDungeonScenario(ctx: CoreContext): Promise<DungeonCaptu
     );
   };
 
-  // --- A new player's day: today, a run with chosen abilities, and today again ---
+  // --- A new player's day: today, a run, and today again ---
   const hero = await dungeonPlayer(ctx, 1, {
     level: 12,
     species: ['cindle', 'sproutle', 'splashet'],
   });
   const [cindle, sproutle, splashet] = hero.creatureIds as [string, string, string];
   out.responses['dungeon-today'] = (await hero.call('GET', '/api/dungeon/today')).body;
-  const body = hero.body({
-    team: [sproutle, splashet, cindle],
-    abilities: {
-      basic: { abilityId: 'shield-wall', fireAtRound: 2, zone: 'front' },
-      creatures: [{ creatureId: cindle, fireAtRound: 3 }],
-    },
-  });
+  const body = hero.body({ team: [sproutle, splashet, cindle] });
   const ran = await record(hero, 'dungeon-run-cleared', 'POST', '/api/dungeon/run', body);
   const runId = ((ran.body['run'] ?? {}) as { id?: string }).id ?? '';
   out.responses['dungeon-today-done'] = (await hero.call('GET', '/api/dungeon/today')).body;
@@ -121,17 +115,11 @@ export async function runDungeonScenario(ctx: CoreContext): Promise<DungeonCaptu
     '/api/dungeon/run',
     other.body({ team: other.creatureIds.slice(0, 2) }),
   ); // two creatures
-  await refuse(
-    other,
-    'POST',
-    '/api/dungeon/run',
-    other.body({
-      abilities: {
-        basic: { abilityId: 'rally', fireAtRound: null, zone: 'front' },
-        creatures: [],
-      },
-    }),
-  ); // a zone for Rally
+  // The old shape with `abilities` (a basic pick and fire rounds): refused, there is no such choice.
+  await refuse(other, 'POST', '/api/dungeon/run', {
+    ...other.body(),
+    abilities: { basic: { abilityId: 'rally', fireAtRound: null }, creatures: [] },
+  });
   await refuse(other, 'GET', `/api/dungeon/run/${runId}`); // somebody else's run
   await refuse(other, 'GET', '/api/dungeon/run/not-a-uuid');
   await refuse(other, 'POST', '/api/dungeon/run', { ...other.body(), seed: 'abc' }); // a seed is not for clients

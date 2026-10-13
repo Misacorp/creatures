@@ -8,13 +8,13 @@ import {
   pileLabel,
   pileSourceOf,
   pushOnLine,
+  rankGiftViews,
   revealTitle,
   revealTone,
   slotLine,
   starsView,
   xpView,
 } from './claim-view';
-import { cssVars } from './css-vars';
 import type { Trip } from './expedition-types';
 import { ExpIcon, Stars } from './ExpeditionIcons';
 import { catchBadgeTags, creatureName, getSpecies, speciesName } from './game';
@@ -25,10 +25,11 @@ import { glyphOrUnknown } from './glyphs';
 import { RewardPile } from './RewardPile';
 import { explorerInfo } from './send-view';
 import { SmallCreature } from './SmallCreature';
+import { XpBar } from './XpBar';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
-import { destinationName, supplyKindOf, xpBar } from './trip-view';
+import { destinationName, explorerXp, supplyKindOf } from './trip-view';
 import { partsEntries } from './gear-view';
 
 /**
@@ -59,6 +60,7 @@ export function TripReveal({
   const stars = starsView(result);
   const slot = slotLine(result);
   const pages = journalPages(result);
+  const gifts = rankGiftViews(result);
   const supplies = foundSupplies(result);
   const loot = result.loot;
   const lootEmpty = nothingInLoot(result);
@@ -72,7 +74,7 @@ export function TripReveal({
   const bar =
     xp === null
       ? null
-      : xpBar(
+      : explorerXp(
           creature?.explorer ?? { rank: xp.rank, xp: xp.total, nextRankXp: nextRankXp(xp.rank) },
         );
   const nothing = result.catches.length === 0 && lootEmpty && tone !== 'failed';
@@ -178,19 +180,29 @@ export function TripReveal({
               Rank {xp.rankBefore} to rank {xp.rank}
             </p>
           )}
-          <div
-            class="xp"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(bar.pct)}
-            aria-label={`Explorer XP: ${bar.text}`}
-          >
-            <span ref={cssVars({ '--pct': `${String(bar.pct)}%` })} />
-          </div>
-          <p class="muted">
-            Rank {xp.rank}: {bar.text}
-          </p>
+          <XpBar
+            value={bar.value}
+            max={bar.max}
+            label={`${name}'s explorer XP`}
+            {...(bar.text === undefined ? {} : { text: bar.text })}
+            startCap={bar.startCap}
+            {...(bar.endCap === undefined ? {} : { endCap: bar.endCap })}
+          />
+          {gifts.map((gift) => (
+            <div key={gift.rank} class="rank-gift" role="note">
+              <p class="label">
+                <Sprite sprite={glyphOrUnknown('sparkle')} scale={2} /> {gift.title}
+              </p>
+              <ul class="gift-lines" aria-label={gift.title}>
+                {gift.lines.map((line) => (
+                  <li key={line.key}>
+                    <ExpIcon icon={line.icon} scale={3} />
+                    <span>{line.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       )}
 

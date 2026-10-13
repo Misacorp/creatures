@@ -1,18 +1,12 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { createKeyStore } from './actions';
 import type { Creature } from './api';
-import { DungeonInfo } from './DungeonInfo';
 import { DungeonPlayback } from './DungeonPlayback';
 import { DungeonResults } from './DungeonResults';
 import { DungeonSetup } from './DungeonSetup';
 import { fetchDungeonReplay, fetchDungeonToday, startDungeonRun } from './dungeon-api';
 import { initialScreen, msUntilReset, RESET_GRACE_MS } from './dungeon-flow';
-import {
-  buildRunRequest,
-  requestSignature,
-  type AbilitySettings,
-  type Slots,
-} from './dungeon-team';
+import { buildRunRequest, requestSignature, type Slots } from './dungeon-team';
 import { dungeonErrorText, isStaleDungeonError } from './dungeon-text';
 import type { DungeonReplay, DungeonRunSummary, DungeonToday } from './dungeon-types';
 import { clockOffset } from './game';
@@ -24,7 +18,8 @@ type View =
   | { kind: 'results'; run: DungeonRunSummary };
 
 /**
- * The Dungeon tab: today's info, then the pre-run screen, the playback of the run and its results.
+ * The Dungeon tab: the pre-run screen, the playback of the run and its results (which also carry
+ * the streak and the reset time).
  * The run itself is the server's (it draws the seed, plays the rooms and pays the rewards in one
  * go); this screen sends the player's picks with an idempotency key, which is reused if the answer
  * never arrived, and then shows what the server stored. A run's results stay on screen after it has
@@ -120,9 +115,9 @@ export function Dungeon({
     }
   }
 
-  async function enter(slots: Slots, settings: AbilitySettings): Promise<void> {
+  async function enter(slots: Slots): Promise<void> {
     if (inFlight.current || today === null) return;
-    const draft = buildRunRequest(slots, creatures, settings, 'draft-key');
+    const draft = buildRunRequest(slots, 'draft-key');
     if (draft === null) return;
     // One key per distinct run: a retry of the same picks reuses it, other picks get their own.
     const action = `dungeon-run:${requestSignature(draft)}`;
@@ -187,7 +182,6 @@ export function Dungeon({
 
   return (
     <>
-      {view.kind !== 'playback' && <DungeonInfo today={today} offset={offset} />}
       {loadError !== null && (
         <p class="error" role="alert">
           {loadError}
@@ -199,8 +193,8 @@ export function Dungeon({
           creatures={creatures}
           busy={busy}
           error={error}
-          onEnter={(slots, settings) => {
-            void enter(slots, settings);
+          onEnter={(slots) => {
+            void enter(slots);
           }}
           onSeeLast={() => {
             if (today.last !== null) setView({ kind: 'results', run: today.last });
@@ -219,6 +213,8 @@ export function Dungeon({
       {view.kind === 'results' && (
         <DungeonResults
           run={view.run}
+          today={today}
+          offset={offset}
           canRetry={today.canRun}
           busy={busy}
           error={error}

@@ -2,6 +2,7 @@ import type { Creature } from './api';
 import { cssVars } from './css-vars';
 import type { Profile } from './expedition-types';
 import { GlossaryTag } from './Glossary';
+import { glyphOrUnknown } from './glyphs';
 import { bonusSummary, explorerRows, milestoneViews, statRows } from './journal-view';
 import { explorerInfo } from './send-view';
 import { SmallCreature } from './SmallCreature';
@@ -51,7 +52,14 @@ export function ExplorerProfile({
         {milestoneViews(profile.milestones).map((m) => (
           <li key={m.id} class={m.reached ? 'milestone reached' : 'milestone'}>
             <p>
-              <strong class="pix">{m.name}</strong> <span class="muted">{m.bonus}</span>
+              <strong class="pix">{m.name}</strong>{' '}
+              {m.bonus === null ? (
+                <span class="milestone-lock" role="img" aria-label="Locked">
+                  <Sprite sprite={glyphOrUnknown('lock')} scale={2} />
+                </span>
+              ) : (
+                <span class="muted">{m.bonus}</span>
+              )}
               {m.reached && <span class="badge good"> Reached</span>}
             </p>
             <div

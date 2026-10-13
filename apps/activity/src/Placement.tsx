@@ -33,7 +33,6 @@ import { useDragDrop } from './use-drag-drop';
 import { SLOT_FALLBACK_PX, SLOT_LAYOUT, layoutVars, zoneLayout } from './zone-layout';
 
 const ZONES = ['front', 'middle', 'back'] as const;
-const ROLES = ['setter', 'payoff', 'guard', 'support'] as const;
 
 type Party = NonNullable<RaidView['party']>;
 type Team = NonNullable<RaidView['you']['team']>;
@@ -169,13 +168,24 @@ export function Placement(props: Props) {
     dragging === null ? undefined : team.creatures.find((c) => c.creatureId === dragging);
 
   return (
-    <div onKeyDown={onKeyDown}>
-      <section class="raid-section" aria-labelledby="raid-team-heading">
-        <h3 id="raid-team-heading">My team</h3>
-        <p class="muted">
-          {team.mode === 'auto' ? 'Automatic: your strongest three.' : 'Chosen by you.'} Drag a
-          creature to a slot, or tap it and then tap a slot. With a keyboard: Enter picks up, arrow
-          keys choose, Enter drops, Escape cancels.
+    <div id="raid-placement" onKeyDown={onKeyDown}>
+      <section class="raid-section placement" aria-labelledby="raid-place-heading">
+        <h3 id="raid-place-heading">Place your team</h3>
+        <p class="muted small place-help">
+          Drag your creatures from the tray into the row, or tap one and then tap a slot.
+        </p>
+        <details class="keys">
+          <summary>Keyboard controls</summary>
+          <p class="muted small">
+            Enter picks up a creature, the arrow keys choose a slot, Enter drops it and Escape
+            cancels.
+          </p>
+        </details>
+        <p class="tray-label">
+          <span class="pix">Your team</span>
+          <span class="muted small">
+            {team.mode === 'auto' ? 'automatic: your strongest three' : 'chosen by you'}
+          </span>
         </p>
         <ul
           ref={trayRef}
@@ -191,6 +201,7 @@ export function Placement(props: Props) {
             const classes = ['team-chip', 'draggable'];
             if (selected === c.creatureId) classes.push('selected');
             if (dragging === c.creatureId) classes.push('dragging-source');
+            if (c.slot !== null) classes.push('placed');
             const species = getSpecies(c.species);
             return (
               <li key={c.creatureId}>
@@ -222,29 +233,6 @@ export function Placement(props: Props) {
             );
           })}
         </ul>
-        {props.canEdit && props.teamControls}
-      </section>
-
-      <section class="raid-section" aria-labelledby="raid-row-heading">
-        <h3 id="raid-row-heading">The party row</h3>
-        <p class="muted">
-          One row for the whole party, shown as the fight shows it: the front zone is closest to the
-          boss, then the middle, then the back. Creatures that are not placed are placed for you
-          when the phase starts. Supports power up the creatures next to them.
-        </p>
-        <p class="legend">
-          <span class="muted">Roles:</span>{' '}
-          {ROLES.map((role) => (
-            <GlossaryTag
-              key={role}
-              entry={GLOSSARY_IDS.role(role)}
-              look="chip"
-              class="chip role-chip"
-            >
-              <span class="chip-text">{capitalize(role)}</span>
-            </GlossaryTag>
-          ))}
-        </p>
         <div
           ref={stripRef}
           class={dragging === null ? 'party-strip' : 'party-strip dragging'}
@@ -284,7 +272,7 @@ export function Placement(props: Props) {
             );
           })}
         </div>
-        <p>
+        <p class="place-actions">
           <button
             type="button"
             disabled={disabled || !canUnplace(ctx.row, selected)}
@@ -294,6 +282,7 @@ export function Placement(props: Props) {
           >
             Unplace
           </button>
+          <span class="muted small">Front is closest to the boss.</span>
         </p>
         {props.hint !== null && (
           <p class="muted" role="status">
@@ -304,6 +293,7 @@ export function Placement(props: Props) {
         {party.guests && (
           <p class="muted">Guest creatures fill the row while fewer than 3 players are in.</p>
         )}
+        {props.canEdit && props.teamControls}
       </section>
 
       <p class="visually-hidden" role="status" aria-live="polite">

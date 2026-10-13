@@ -80,7 +80,7 @@
     "title": "Payoff",
     "short": "Hits reactions harder.",
     "lines": [
-      "A Payoff that sets off a reaction deals 10% more.",
+      "A Payoff hits even harder when it sets off a reaction.",
       "Any role can set off a reaction. Payoffs do it best.",
       "Put it after a Setter that leaves the right mark."
     ],
@@ -189,12 +189,12 @@
   {
     "id": "reaction-overload",
     "title": "Overload",
-    "short": "Spark on Soaked: 4.5 times damage.",
+    "short": "Spark on Soaked: deals much more damage.",
     "lines": [
       "A Spark hit on a Soaked boss sets it off.",
-      "It deals 4.5 times the normal damage.",
+      "It deals much more damage than a normal hit.",
       "It uses up the mark. The next hit leaves a new one.",
-      "Any role can set it off. Payoffs deal 10% more."
+      "Any role can set it off. Payoffs hit even harder."
     ],
     "visual": {
       "kind": "reaction",
@@ -205,12 +205,12 @@
   {
     "id": "reaction-grounding",
     "title": "Grounding",
-    "short": "Grove on Charged: 4.5 times damage.",
+    "short": "Grove on Charged: deals much more damage.",
     "lines": [
       "A Grove hit on a Charged boss sets it off.",
-      "It deals 4.5 times the normal damage.",
+      "It deals much more damage than a normal hit.",
       "It uses up the mark. The next hit leaves a new one.",
-      "Any role can set it off. Payoffs deal 10% more."
+      "Any role can set it off. Payoffs hit even harder."
     ],
     "visual": {
       "kind": "reaction",
@@ -221,12 +221,12 @@
   {
     "id": "reaction-wildfire",
     "title": "Wildfire",
-    "short": "Ember on Overgrown: 4.5 times damage.",
+    "short": "Ember on Overgrown: deals much more damage.",
     "lines": [
-      "A Ember hit on a Overgrown boss sets it off.",
-      "It deals 4.5 times the normal damage.",
+      "An Ember hit on an Overgrown boss sets it off.",
+      "It deals much more damage than a normal hit.",
       "It uses up the mark. The next hit leaves a new one.",
-      "Any role can set it off. Payoffs deal 10% more."
+      "Any role can set it off. Payoffs hit even harder."
     ],
     "visual": {
       "kind": "reaction",
@@ -237,12 +237,12 @@
   {
     "id": "reaction-steam",
     "title": "Steam",
-    "short": "Tide on Scorched: 4.5 times damage.",
+    "short": "Tide on Scorched: deals much more damage.",
     "lines": [
       "A Tide hit on a Scorched boss sets it off.",
-      "It deals 4.5 times the normal damage.",
+      "It deals much more damage than a normal hit.",
       "It uses up the mark. The next hit leaves a new one.",
-      "Any role can set it off. Payoffs deal 10% more."
+      "Any role can set it off. Payoffs hit even harder."
     ],
     "visual": {
       "kind": "reaction",
@@ -520,7 +520,7 @@
     "title": "Boss Rank",
     "short": "How tough this week's boss is.",
     "lines": [
-      "Each Rank adds 40% more boss HP. Its Attack grows too.",
+      "Each Rank makes the boss stronger.",
       "Win a normal week's finale and the Rank goes up by 1.",
       "Lose and the Rank stays the same.",
       "Higher Ranks pay more Essence."
@@ -843,7 +843,7 @@
     "title": "Festival gear",
     "short": "Epic power with a look of its own.",
     "lines": [
-      "Won by clearing a Festival finale, and crafted only from Festival blueprints.",
+      "Won by clearing a Festival finale. It cannot be crafted.",
       "It has no extra power over Epic gear."
     ],
     "section": "workshop"
@@ -1077,7 +1077,10 @@
       "A zone attack hits the one creature at its place. Silence hits the left and the right end.",
       "Foes act left to right, right to left or fastest first. You see which in each room."
     ],
-    "visual": { "kind": "glyph", "id": "left_to_right" },
+    "visual": {
+      "kind": "glyph",
+      "id": "left_to_right"
+    },
     "section": "dungeon"
   },
   {
@@ -1238,7 +1241,7 @@
     "short": "Each creature gets better at exploring.",
     "lines": [
       "A creature earns explorer XP from its own trips, and more from longer ones.",
-      "Each rank makes its trips 2% shorter. Ranks open places, the 24 hour trip and better choices.",
+      "Each rank makes its trips a little shorter. Ranks open places, the 24 hour trip and better choices.",
       "Your slots come from all your creatures' ranks added together."
     ],
     "section": "expeditions"
@@ -1246,9 +1249,10 @@
   {
     "id": "familiarity",
     "title": "Familiarity",
-    "short": "A creature's feel for one place, up to 3 stars.",
+    "short": "A creature's feel for one place.",
     "lines": [
-      "1 star: 4 finished trips there. 2 stars: it has caught every creature that lives there.",
+      "1 star: 4 finished trips there.",
+      "2 stars: it has caught every creature that lives there.",
       "3 stars: it has found a shiny there.",
       "Stars open the deeper area and give small bonuses at that place."
     ],
@@ -1265,7 +1269,7 @@
     "lines": [
       "It opens with 1 star at the place, or when you carry a lantern.",
       "Some creatures only live in the deeper area.",
-      "Each catch has a chance to come from it: 30% with 1 star, 50% with 3 stars."
+      "Once it is open, its rarer creatures can turn up in your catches."
     ],
     "section": "expeditions"
   },
@@ -1276,7 +1280,7 @@
     "lines": [
       "A finished trip may offer a goal: stay out a little longer for a reward.",
       "A safe goal always works. A risky goal can fail, and then the whole trip brings nothing home.",
-      "The odds are shown exactly. Ignore the choice to come home as usual.",
+      "Each goal is marked Safe, Risky or Very risky. Ignore the choice to come home as usual.",
       "Better supplies and higher ranks make a choice come up more often."
     ],
     "section": "expeditions"
@@ -1341,7 +1345,7 @@
     "short": "Tiny permanent bonuses for things you have done.",
     "lines": [
       "Trips, places, creatures found, journal pages and raid reactions all count.",
-      "Each milestone gives a very small bonus, like 1% more rare catches."
+      "Each milestone gives a very small bonus, like slightly better odds of rare catches."
     ],
     "section": "expeditions"
   },
@@ -1358,9 +1362,9 @@
   {
     "id": "supply-lure",
     "title": "Lure",
-    "short": "Makes rarer creatures likelier.",
+    "short": "Draws rarer creatures.",
     "lines": [
-      "Moves some of the odds from Common to Rare and Epic for one trip.",
+      "Tilts one trip's catches towards Rare and Epic.",
       "Comes in three tiers: Plain, Sweet and Golden."
     ],
     "section": "expeditions"
@@ -1368,9 +1372,9 @@
   {
     "id": "supply-map-scrap",
     "title": "Map scrap",
-    "short": "Extra catch rolls on one trip.",
+    "short": "One or more extra catches.",
     "lines": [
-      "Adds a share of the trip's catch rolls, and always at least one.",
+      "Adds extra catch rolls to one trip, and always at least one.",
       "Comes in three tiers: Map Scrap, Inked Map and Trail Atlas."
     ],
     "section": "expeditions"
@@ -1378,9 +1382,9 @@
   {
     "id": "supply-lantern",
     "title": "Lantern",
-    "short": "Opens the deeper area, even without stars.",
+    "short": "Lights the way to the deeper area.",
     "lines": [
-      "Adds to the chance that a catch comes from the deeper area.",
+      "Opens the deeper area, even without stars.",
       "Handy at Moonlit Reef, where the rarest creatures wait."
     ],
     "section": "expeditions"
@@ -1388,9 +1392,9 @@
   {
     "id": "supply-satchel",
     "title": "Satchel",
-    "short": "More parts and more finds from one trip.",
+    "short": "More parts, and more finds.",
     "lines": [
-      "Adds to the parts the trip brings home and the chance to find a supply.",
+      "Adds to the parts the trip brings home and helps it find a supply.",
       "Comes in three tiers, from the Small Satchel to the Explorer's Pack."
     ],
     "section": "expeditions"
@@ -1410,7 +1414,7 @@
     "title": "Risky goal",
     "short": "Can fail the whole trip.",
     "lines": [
-      "It works with the exact chance shown.",
+      "It may fail. The card says how risky it is: Risky or Very risky.",
       "If it fails, the whole trip brings nothing home.",
       "Coming home instead is always safe."
     ],
@@ -1425,91 +1429,5 @@
       "Costs scrap, and shards for the better tiers. One supply per job."
     ],
     "section": "workshop"
-  },
-  {
-    "id": "destination-tidepools",
-    "title": "Tidepools",
-    "short": "A warm, splashy Tide place. Open to everyone.",
-    "lines": [
-      "Splashet, Mistnewt and Coralynx live here.",
-      "The deeper area makes rarer catches likelier."
-    ],
-    "visual": {
-      "kind": "element",
-      "id": "tide"
-    },
-    "section": "expeditions"
-  },
-  {
-    "id": "destination-ember-caves",
-    "title": "Ember Caves",
-    "short": "A glowing Ember place. Open to everyone.",
-    "lines": [
-      "Cindle, Ashmole and Mossback live here.",
-      "Something golden sleeps in the deeper area."
-    ],
-    "visual": {
-      "kind": "element",
-      "id": "ember"
-    },
-    "section": "expeditions"
-  },
-  {
-    "id": "destination-verdant-hollow",
-    "title": "Verdant Hollow",
-    "short": "A hushed Grove place. Open to everyone.",
-    "lines": ["Sproutle and Mossback live here.", "Something huge sleeps in the deeper area."],
-    "visual": {
-      "kind": "element",
-      "id": "grove"
-    },
-    "section": "expeditions"
-  },
-  {
-    "id": "destination-storm-ridge",
-    "title": "Storm Ridge",
-    "short": "A windy Spark place. Open to everyone.",
-    "lines": ["Zipmouse and Stormray live here.", "Something bright drifts in the deeper area."],
-    "visual": {
-      "kind": "element",
-      "id": "spark"
-    },
-    "section": "expeditions"
-  },
-  {
-    "id": "destination-old-crossroads",
-    "title": "Old Crossroads",
-    "short": "A mixed place where everything passes through.",
-    "lines": [
-      "Needs explorer rank 2.",
-      "Splashet, Cindle, Sproutle, Zipmouse and Stormray pass through.",
-      "Trips that were out when expeditions changed come home from here."
-    ],
-    "section": "expeditions"
-  },
-  {
-    "id": "destination-moonlit-reef",
-    "title": "Moonlit Reef",
-    "short": "A glowing Tide place, only open at night.",
-    "lines": [
-      "Open from 20:00 to 06:00 of your server time. Needs explorer rank 4.",
-      "Mistnewt and Coralynx live here.",
-      "The rarest creatures wait in the deeper area."
-    ],
-    "visual": {
-      "kind": "element",
-      "id": "tide"
-    },
-    "section": "expeditions"
-  },
-  {
-    "id": "destination-festival-grounds",
-    "title": "Festival Grounds",
-    "short": "Only open in Festival weeks.",
-    "lines": [
-      "Ashmole, Solmane, Lanternfin and Hearthshell live here.",
-      "The Festival creatures live nowhere else."
-    ],
-    "section": "expeditions"
   }
 ]

@@ -101,6 +101,11 @@ describe('the expedition fixtures match what the server sends', () => {
     expect(claimWorked.result.xp.gained).toBeGreaterThan(0);
     expect(claimWorked.result.journal).toHaveLength(1);
     expect(claimWorked.result.slotUnlocked).toEqual({ total: 2 });
+    // ... and the one-time gift of the rank it reached.
+    expect(claimWorked.result.xp.rank).toBe(claimWorked.result.xp.rankBefore + 1);
+    expect(claimWorked.result.rankGifts).toHaveLength(1);
+    expect(claimWorked.result.rankGifts[0]?.rank).toBe(claimWorked.result.xp.rank);
+    expect(claimWorked.result.rankGifts[0]?.bait).toBeGreaterThan(0);
     expect(stateAfter.slots.total).toBe(2);
     // A recall has catches but no XP, journal or goal.
     expect(claimRecall.result.recalled).toBe(true);

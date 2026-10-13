@@ -62,9 +62,12 @@ describe('the dungeon in the simulator', () => {
     expect(run.team.every((s) => s.ownerId === 'p1')).toBe(true);
     expect(run.rooms.map((r) => r.foe.kind)).toEqual(['foe', 'foe', 'boss']);
     expect(run.rooms.map((r) => r.modifier.id)).toEqual(dayModifiers('s', 1));
-    // Level 12 is above the ability unlock level: the basic ability and one per creature.
+    // Level 12 is above the ability unlock level: one ability per creature, no basic ability, and
+    // none of them has a chosen round (each fires at its default round).
     expect(run.abilities.filter((a) => a.creatureId !== undefined)).toHaveLength(3);
-    expect(run.abilities[0]?.key).toBe('p1:basic');
+    expect(run.abilities).toHaveLength(3);
+    expect(run.abilities.some((a) => a.key === 'p1:basic')).toBe(false);
+    expect(run.abilities.every((a) => a.fireAtRound === undefined)).toBe(true);
     // The rooms come from the seed: the same one gives the same rooms.
     expect(buildRun(p, 3, dayModifiers('s', 1), 'run-seed').rooms.map((r) => r.foe.id)).toEqual(
       run.rooms.map((r) => r.foe.id),

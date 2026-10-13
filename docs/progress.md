@@ -16,18 +16,16 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
 
 ## Now
 
-- Production runs PR #9 (How to play, gear and crafting v1, analytics event log; merged 2026-10-13).
-- Branch `dungeon` (combined PR, 2026-10-13): the daily dungeon (single row), expeditions v2 (creature explorer ranks, destinations as banner cards, supplies, push-on choices, Journal, profile, 1-slot restart), the combined balance pass (47 of 47 sim targets on `leet`), the tab order Creatures · Workshop · Expeditions · Dungeon · Raid, the Jersey 10 pixel font, the 13:37 daily reset, and the small-creature popover.
+- Production runs PR #10, merged 2026-10-13: the daily dungeon, expeditions v2, the 13:37 reset, the tab order, the Jersey 10 font and the combined balance pass. PR #9 shipped How to play, gear v1 and the event log.
+- PR #11 (branch `ux-pass`) is in review: UX pass 1 and the design compendium.
 
 ## Next
 
-Follow `docs/roadmap.md`: after the combined PR, 5 analytics reports (rollups, ops endpoint, report workflow, `OPS_TOKEN` checklist for Misa), 6 polish backlog, 7 upkeep, 8 WebSocket push, 9 content, 10 swap requests.
+Follow `docs/roadmap.md`. Next is item 5, analytics reports, then the polish backlog, upkeep, WebSocket push, content and swap requests. Lore and new content start from `docs/compendium/`.
 
 ## Open questions for Misa
 
-- Dungeon: leaderboards or bragging posts (not built). Depth 1 is slightly hard on one sim seed (78.6% first-week clear against 80%): make depth 1 gentler?
-- Gear: a second slot later? Crafted items never beat drops today.
-- Analytics: add the `OPS_TOKEN` secret when the report workflow lands (checklist will follow).
+See "Open design questions" in `docs/roadmap.md`. Misa will need to add the `OPS_TOKEN` secret when the report workflow lands; the checklist will follow.
 
 ## Notes for future agents
 

@@ -108,7 +108,8 @@ export interface GrantLoot {
  */
 export interface GrantRecord extends GrantLoot {
   key: string;
-  source: 'raid_phase' | 'raid_finale' | 'festival' | 'expedition' | 'welcome' | 'dungeon';
+  source:
+    'raid_phase' | 'raid_finale' | 'festival' | 'expedition' | 'welcome' | 'dungeon' | 'rank_gift';
   at: number;
 }
 

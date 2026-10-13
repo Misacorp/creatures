@@ -540,7 +540,7 @@ button.toggle.on {
 
 .schedule {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.5rem;
   margin: 0.25rem 0;
   padding: 0;
@@ -559,9 +559,14 @@ button.toggle.on {
   opacity: 0.6;
 }
 
-.schedule-step.next {
+.schedule-step.now {
   border-color: var(--gold);
   box-shadow: inset 0 calc(var(--px) * -1) 0 var(--gold);
+}
+
+.schedule-step.next {
+  border-style: dashed;
+  border-color: var(--muted);
 }
 
 .schedule-title {
@@ -1611,6 +1616,27 @@ canvas.sprite {
 
 .boss-portrait {
   padding: 0.375rem;
+}
+
+/* The boss card is a hero card: the art (kept at its full size) in an element-coloured frame. */
+.boss-card {
+  --elem: var(--haze);
+}
+
+.boss-card.el-tide {
+  --elem: var(--tide);
+}
+
+.boss-card.el-ember {
+  --elem: var(--ember);
+}
+
+.boss-card.el-grove {
+  --elem: var(--grove);
+}
+
+.boss-card.el-spark {
+  --elem: var(--spark);
 }
 
 .boss-meta {
@@ -4191,7 +4217,8 @@ button.gp-more {
   box-shadow: inset 0 0 0 2px var(--haze);
 }
 
-.inline-glyph {
+.inline-glyph,
+canvas.sprite.inline-glyph {
   display: inline-block;
   vertical-align: middle;
 }
@@ -4657,17 +4684,6 @@ button.pick-item {
   box-shadow: inset calc(var(--px) * -1) 0 0 var(--gold);
 }
 
-.dungeon-landmark-line {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  margin: 0.25rem 0;
-}
-
-.dungeon-landmark-line canvas.sprite {
-  flex: none;
-}
-
 .dungeon-streak {
   display: flex;
   flex-wrap: wrap;
@@ -4676,114 +4692,108 @@ button.pick-item {
   margin: 0.5rem 0;
 }
 
-.dungeon-modifiers {
-  display: grid;
-  gap: 0.5rem;
-  margin: 0.25rem 0;
-  padding: 0;
-  list-style: none;
-}
-
-.dungeon-modifiers li {
-  display: grid;
-  grid-template-columns: 4.25rem auto;
-  align-items: center;
-  gap: 0.125rem 0.5rem;
-  font-size: 0.875rem;
-}
-
-.dungeon-modifiers .modifier-text {
-  grid-column: 2;
-  color: var(--bone);
-}
-
-.modifier-chip {
-  box-shadow: inset calc(var(--px) * -1) 0 0 var(--gold);
-}
-
 .dungeon-retry {
   border-left: var(--px) solid var(--gold);
 }
 
+/* The pre-run strip: the rooms as "?" panels with the day's modifier icon on each. */
+.room-strip.prerun {
+  margin-bottom: 0.5rem;
+}
+
+.room-panel.unknown {
+  gap: 0.25rem;
+}
+
+.room-panel.unknown .rp-art {
+  min-height: 4.5rem;
+  background: var(--ink);
+}
+
+.rp-unknown {
+  color: var(--haze);
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+/* A modifier's icon is a tag without the "?": a button with a roomy tap target. */
+.mod-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  background: var(--dusk-2);
+  box-shadow:
+    inset 0 0 0 var(--px) var(--ink),
+    inset calc(var(--px) * -1) 0 0 var(--gold);
+  line-height: 0;
+  text-decoration: none;
+}
+
+.mod-icon::after {
+  content: none;
+}
+
+.mod-icon:hover,
+.mod-icon[aria-expanded='true'] {
+  filter: brightness(1.2);
+}
+
+.pips-tag {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.pips-tag::after {
+  content: none;
+}
+
+.dungeon-prerun .pips,
+.dungeon-next .pips {
+  gap: 0.1875rem;
+}
+
+.dungeon-prerun .pips i,
+.dungeon-next .pips i {
+  width: 0.5rem;
+  height: 0.5rem;
+}
+
+.dungeon-next {
+  margin: 0.5rem 0;
+}
+
 /*
-  The team's row: three slots side by side, left to right (the fight is one row of three). Each slot
-  is a column with its place above it, the sprite on top and the name and level under it.
+  The team's row: three small slots side by side, left to right, in the look of the raid placement
+  rectangles (the same .party-slot): the slot number at the top left, the sprite, the name and the
+  level. There is no text about rows.
 */
 .dungeon-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
+  max-width: 24rem;
   padding: 0.25rem 0 0.5rem;
 }
 
-.dungeon-strip .party-zone {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.dungeon-strip .zone-label {
-  text-align: center;
-}
-
-.dungeon-strip .zone-slots {
-  display: block;
-}
-
 .dungeon-strip .party-slot {
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.25rem;
   width: 100%;
-  min-height: 9rem;
-  padding: 0.375rem 0.25rem;
-  text-align: center;
+  min-height: 6rem;
 }
 
 .dungeon-strip .party-slot.empty {
-  justify-content: center;
+  justify-content: space-between;
 }
 
-.dungeon-slot-text {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.dungeon-slot-text .slot-species {
-  text-align: center;
-}
-
-.dungeon-slot-text .slot-meta {
+.dungeon-slot .slot-meta {
   color: var(--muted);
-  font-size: 0.75rem;
-}
-
-.row-notes {
-  margin: 0.25rem 0 0.5rem;
-  padding-left: 1.125rem;
-  font-size: 0.875rem;
+  font-size: 0.6875rem;
 }
 
 .dungeon-tray {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 6.5rem), 1fr));
-}
-
-.ability-fields {
-  display: grid;
-  gap: 0.5rem;
-  margin: 0.5rem 0;
-}
-
-.ability-field select {
-  margin-bottom: 0;
-}
-
-.creature-abilities .ability-field {
-  margin-top: 0.25rem;
 }
 
 .dungeon-enter .primary {
@@ -5377,34 +5387,12 @@ button.cp-back {
   margin: 0.25rem 0 0.5rem;
 }
 
-.catalogue-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.catalogue-count {
-  flex: 1;
-  margin: 0;
-  text-align: center;
-}
-
-.page-button {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 2.75rem;
-  padding: 0;
-}
-
 .catalogue-dots {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.5rem;
-  margin: 0.625rem 0 0;
+  margin: 0 0 0.625rem;
   padding: 0;
   list-style: none;
 }
@@ -5428,22 +5416,68 @@ button.cp-back {
   opacity: 0.7;
 }
 
-.place-card {
-  background: var(--dusk-2);
+/* The banner as a hero: the previous and next arrows sit over its left and right edges (inside the art). */
+.catalogue-hero {
   box-shadow: inset 0 0 0 var(--px) var(--ink);
-  overflow: hidden;
 }
 
-.place-card.locked .banner canvas.sprite {
+.catalogue-hero.locked .banner-art > canvas.sprite {
   filter: grayscale(0.55) brightness(0.8);
+}
+
+.hero-arrow {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  transform: translateY(-50%);
+  background: rgb(13 10 26 / 0.7);
+}
+
+.hero-arrow.left {
+  left: 0.25rem;
+}
+
+.hero-arrow.right {
+  right: 0.25rem;
+}
+
+/* The place's name on a plate under the banner, like the title of a playing card. */
+.place-plate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: calc(var(--px) * -1) 0.5rem 0;
+  padding: 0.375rem 0.75rem;
+  position: relative;
+  background: var(--dusk-2);
+  box-shadow:
+    inset 0 0 0 var(--px) var(--gold),
+    0 0 0 var(--px) var(--ink);
+}
+
+.plate-name {
+  min-width: 0;
+  font-size: 1.25rem;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.plate-count {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .place-body {
   padding: 0.625rem 0.75rem 0.75rem;
-}
-
-.place-name {
-  margin: 0 0 0.25rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
 }
 
 .place-tags {
@@ -5452,6 +5486,22 @@ button.cp-back {
 
 .place-flavor {
   margin: 0.25rem 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* A plain fact about the place, under the italic flavour line. */
+.place-fact {
+  margin: 0.25rem 0;
+  font-size: 0.875rem;
+  font-style: normal;
+}
+
+.place-deep-open {
+  margin: 0 0 0.25rem;
+  color: var(--gold);
+  font-size: 0.875rem;
 }
 
 .twist {
@@ -5489,14 +5539,6 @@ button.cp-back {
 
 .resident.deep.known canvas.sprite {
   filter: drop-shadow(0 0 2px var(--gold));
-}
-
-.place-stars {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 0.5rem;
-  margin: 0.5rem 0 0;
 }
 
 .stars-row {
@@ -5559,17 +5601,33 @@ button.cp-back {
   gap: 0.125rem;
 }
 
-.pick-xp {
-  margin: 0.25rem 0 0;
+.pick-fam {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin-top: 0.25rem;
 }
 
-.pick-stars {
-  margin-top: 0.125rem;
+.explorer-picker .xpbar-row {
+  margin: 0.375rem 0 0.125rem;
 }
 
-.pick-help {
-  margin: 0.5rem 0 0;
+.explorer-picker .xpbar {
+  height: 1.5rem;
+}
+
+.explorer-picker .xpbar-text {
+  font-size: 1rem;
+}
+
+.explorer-picker .xpbar-cap {
   font-size: 0.8125rem;
+  max-width: 3.5rem;
+}
+
+.send > .ptrack {
+  margin-top: 0.75rem;
 }
 
 .lengths {
@@ -5596,10 +5654,11 @@ button.cp-back {
 
 label.length-option {
   position: relative;
-  display: grid;
+  display: flex;
   flex: 1 1 5rem;
-  justify-items: center;
-  gap: 0.125rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
   min-width: 0;
   padding: 0.5rem 0.25rem;
   background: var(--dusk-2);
@@ -5627,18 +5686,19 @@ label.length-option:focus-within {
   font-size: 1.25rem;
 }
 
-.length-takes {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.75rem;
-  white-space: nowrap;
+/* The expected haul, just above Send. */
+.haul {
+  margin: 0.75rem 0 0.25rem;
 }
 
-/* A trip's worth as pictures: icon over pips. */
+.haul-for {
+  margin: 0 0 0.25rem;
+}
+
+/* A trip's worth as pictures: icon over pips over a short word. */
 .worth {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
   gap: 0.5rem 0.25rem;
   margin: 0.25rem 0;
   padding: 0.5rem;
@@ -5655,6 +5715,17 @@ label.length-option:focus-within {
 
 .worth-item.none {
   opacity: 0.4;
+}
+
+.worth-name {
+  font-size: 0.75rem;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.worth-plus {
+  color: var(--gold);
+  font-weight: 700;
 }
 
 .pips {
@@ -5892,6 +5963,14 @@ label.length-option:focus-within {
   color: var(--ink);
 }
 
+/* Very risky: a heavier red frame, so it reads at a glance without a number. */
+.goal-card.very {
+  box-shadow:
+    inset 0 0 0 var(--px) var(--bad),
+    inset 0 0 0 calc(var(--px) * 2) var(--ink),
+    inset 0 0 0 calc(var(--px) * 3) var(--bad);
+}
+
 .goal-card.safe .goal-flag .tag {
   background: var(--good);
   color: var(--ink);
@@ -5902,11 +5981,6 @@ label.length-option:focus-within {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.25rem 0.5rem;
-}
-
-.goal-odds-number {
-  font-size: 1.75rem;
-  line-height: 1;
 }
 
 .goal-extra {
@@ -5949,6 +6023,36 @@ label.length-option:focus-within {
 
 .home-button {
   width: 100%;
+}
+
+/* The one-time gift of a new explorer rank, in the claim reveal. */
+.rank-gift {
+  margin: 0.5rem 0;
+  padding: 0.375rem 0.5rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+.rank-gift .label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0 0 0.25rem;
+}
+
+.gift-lines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gift-lines li {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
 }
 
 /* The claim reveal. */
@@ -6155,6 +6259,12 @@ label.length-option:focus-within {
   box-shadow: inset 0 0 0 var(--px) var(--good);
 }
 
+.milestone-lock {
+  display: inline-block;
+  vertical-align: middle;
+  opacity: 0.7;
+}
+
 .milestone p,
 .explorer-text p {
   margin: 0.125rem 0;
@@ -6216,11 +6326,563 @@ label.length-option:focus-within {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .worth {
-    grid-template-columns: repeat(8, 1fr);
-  }
-
   .stat-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* --- ProgressTrack: previous (dimmed), current and next step, each with its unlocks --- */
+
+.ptrack {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ptrack-node {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  padding-top: 1.25rem;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+/* The dot sits on the line; the line runs on to the next node. */
+.ptrack-dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 2px solid var(--muted);
+  background: var(--night);
+}
+
+.ptrack-node:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 0.375rem;
+  left: 1rem;
+  right: -0.75rem;
+  border-top: 2px solid var(--line);
+}
+
+.ptrack-node.current::after,
+.ptrack-node.next::after {
+  border-top-style: dashed;
+}
+
+.ptrack-node.previous {
+  opacity: 0.6;
+}
+
+.ptrack-node.previous .ptrack-dot {
+  background: var(--muted);
+}
+
+.ptrack-node.current .ptrack-dot {
+  border-color: var(--gold);
+  background: var(--gold);
+}
+
+.ptrack-node.current .ptrack-label {
+  color: var(--gold);
+}
+
+.ptrack-node.next .ptrack-dot,
+.ptrack-node.max .ptrack-dot {
+  border-style: dashed;
+}
+
+.ptrack-node.max {
+  opacity: 0.75;
+}
+
+.ptrack-label {
+  font-size: 1.125rem;
+  line-height: 1.1;
+}
+
+.ptrack-unlocks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ptrack-unlock {
+  display: flex;
+  gap: 0.375rem;
+  align-items: flex-start;
+  line-height: 1.25;
+}
+
+.ptrack-unlock canvas.sprite {
+  flex: none;
+}
+
+/* --- XpBar: a thick bar with its words over the fill and optional rank caps --- */
+
+.xpbar-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.25rem 0;
+}
+
+.xpbar-cap {
+  flex: none;
+  max-width: 5rem;
+  font-size: 1rem;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.xpbar-cap.end {
+  color: var(--muted);
+}
+
+.xpbar {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 1.75rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+}
+
+/* The fill sits inside an inner margin, so it shows at both ends of the bar. */
+.xpbar-fill {
+  position: absolute;
+  top: calc(var(--px) * 2);
+  bottom: calc(var(--px) * 2);
+  left: calc(var(--px) * 2);
+  width: calc((100% - var(--px) * 4) * var(--fill, 0) / 100);
+  background: var(--gold);
+}
+
+.xpbar-fill.filled {
+  min-width: var(--px);
+}
+
+/*
+  The words are drawn twice: bone over the dark trough, and ink over the gold fill (the second copy
+  is clipped to the fill). Each part of a letter has the contrast of its own background.
+*/
+.xpbar-text {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 0.5rem;
+  color: var(--bone);
+  font-size: 1.25rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.xpbar-text.on-fill {
+  color: var(--ink);
+  clip-path: inset(
+    0 calc(100% - var(--px) * 2 - (100% - var(--px) * 4) * var(--fill, 0) / 100) 0 0
+  );
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .xpbar-fill {
+    transition: width 0.4s steps(8);
+  }
+
+  .xpbar-text.on-fill {
+    transition: clip-path 0.4s steps(8);
+  }
+}
+
+/* --- Raid tab, UX pass 1: the week timeline with the one thing to do now --- */
+
+.now-action {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.now-action p {
+  margin: 0;
+}
+
+.now-text {
+  color: var(--gold);
+  font-size: 1.375rem;
+  line-height: 1.2;
+}
+
+button.now-button {
+  justify-self: stretch;
+  min-height: 3rem;
+  font-size: 1.25rem;
+}
+
+.now-detail {
+  color: var(--muted);
+}
+
+.raid-timeline .schedule {
+  gap: 0.375rem;
+}
+
+.raid-timeline .schedule-step {
+  gap: 0.125rem;
+  padding: 0.375rem 0.375rem 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+}
+
+.raid-timeline .schedule-title {
+  font-family: var(--display);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  overflow-wrap: normal;
+}
+
+/* The tick or cross on a fought phase: a small button, and the shape says which it is. */
+button.step-mark {
+  align-self: flex-start;
+  min-width: 2rem;
+  min-height: 2rem;
+  margin-top: 0.25rem;
+  padding: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+button.step-mark.cleared {
+  background: var(--good);
+  color: var(--ink);
+}
+
+button.step-mark.missed {
+  background: var(--bad);
+  color: var(--ink);
+}
+
+.schedule-result {
+  margin: 0.5rem 0 0;
+  padding: 0.375rem 0.5rem;
+  background: var(--panel);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+button.link-button {
+  min-height: 2rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* --- Raid tab, UX pass 1: the boss card --- */
+
+.boss-card .boss {
+  gap: 1rem;
+  align-items: start;
+}
+
+.boss-card .boss-portrait {
+  padding: 0.75rem;
+  background:
+    radial-gradient(
+      circle at 50% 62%,
+      color-mix(in srgb, var(--elem) 55%, transparent) 0,
+      transparent 72%
+    ),
+    var(--dusk-2);
+  box-shadow:
+    inset 0 0 0 var(--px) var(--ink),
+    0 0 0 var(--px) var(--elem),
+    0 0 0 calc(var(--px) * 2) var(--ink);
+}
+
+.boss-name {
+  color: var(--gold);
+  font-size: clamp(1.75rem, 7vw, 2.375rem);
+  line-height: 1;
+  text-shadow:
+    var(--px) var(--px) 0 var(--ink),
+    calc(var(--px) * 2) calc(var(--px) * 2) 0 color-mix(in srgb, var(--elem) 70%, var(--ink));
+  text-wrap: balance;
+}
+
+.boss-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.5rem;
+}
+
+/* The readiness meter sits next to the Rank: four steps, lit up to the band. */
+.readiness-meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem 0.125rem 0.375rem;
+  background: var(--ink);
+  font-family: var(--display);
+  font-size: 0.9375rem;
+  line-height: 1.25;
+}
+
+.rm-pips {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.rm-pips i {
+  display: block;
+  width: 0.375rem;
+  height: 0.875rem;
+  background: var(--line);
+}
+
+.readiness-meter.long_shot .rm-pips i.on {
+  background: var(--bad);
+}
+
+.readiness-meter.even .rm-pips i.on {
+  background: var(--bone);
+}
+
+.readiness-meter.likely .rm-pips i.on {
+  background: var(--gold);
+}
+
+.readiness-meter.strong .rm-pips i.on {
+  background: var(--good);
+}
+
+.boss-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+button.boss-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 4.5rem;
+  padding: 0.375rem 0.5rem;
+  background: var(--ink);
+  font-size: 0.8125rem;
+  line-height: 1.1;
+}
+
+button.boss-icon.open {
+  box-shadow: var(--ring);
+}
+
+.boss-icon-caption {
+  max-width: 6rem;
+  text-align: center;
+  overflow-wrap: normal;
+}
+
+.gp-general {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+}
+
+.counter-move {
+  margin: 0.75rem 0 0;
+}
+
+.boss-foot {
+  margin-top: 0.5rem;
+}
+
+.boss-foot p {
+  margin: 0.25rem 0 0;
+}
+
+/* On a phone the art keeps its size and the details stack below it. */
+@media (max-width: 34rem) {
+  .boss-card .boss {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+
+  .boss-card .boss-meta {
+    width: 100%;
+  }
+
+  .boss-card .boss-name {
+    text-align: center;
+  }
+
+  .boss-card .boss-status,
+  .boss-card .boss-icons {
+    justify-content: center;
+  }
+}
+
+/* --- Raid tab, UX pass 1: one placement step and the avatar strip --- */
+
+.placement .place-help,
+.placement .keys {
+  margin: 0.25rem 0;
+}
+
+.placement .keys summary {
+  color: var(--muted);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.tray-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+}
+
+/* The tray is small: three chips in one row, sprite beside nothing, name and level under it. */
+.placement .team-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.375rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.placement .team-chip {
+  align-items: center;
+  padding: 0.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.placement .team-chip.placed {
+  background: var(--mine);
+}
+
+.placement .team-chip .muted {
+  font-size: 0.75rem;
+}
+
+.placement .team-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.125rem;
+  margin: 0.25rem 0 0;
+}
+
+.place-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+
+.roster-strip {
+  padding: 0.5rem 0.75rem;
+}
+
+button.avatar-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+
+.avatars {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 2px solid var(--owner, var(--line));
+  background: var(--panel);
+  font-family: var(--display);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.avatar.you {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.avatar.more {
+  border-style: dashed;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.roster-count {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+}
+
+.roster-open {
+  margin-top: 0.5rem;
+}
+
+/* --- Raid tab, UX pass 1: the abilities chip --- */
+
+.ability-chip-section {
+  padding: 0.5rem 0.75rem;
+}
+
+button.ability-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+}
+
+.ability-chip-label {
+  color: var(--muted);
+}
+
+.ability-chip-text {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+button.ability-chip.custom .ability-chip-text {
+  color: var(--gold);
+}
+
+.ability-chip-section .ability-body {
+  margin-top: 0.5rem;
+}
+
+/* On a phone the four steps sit two by two, so a name like "Preparation" never has to break. */
+@media (max-width: 30rem) {
+  .raid-timeline .schedule {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

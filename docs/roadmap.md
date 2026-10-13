@@ -4,50 +4,42 @@ Status: **agreed with Misa 2026-10-13**. This is the forward-looking plan after 
 
 ## Where we are
 
-Production runs PR #8 (`d4b3191`). It includes:
+Updated 2026-10-13, end of day.
 
-- the weekly raid with the live Sunday finale;
-- creature abilities;
-- the Boss Rank ladder with Festivals and seasons;
-- crits;
-- the readiness band and after-action stats;
-- the pixel-art look with sprites;
-- the fight stage with content-paced rounds and boss telegraphs;
-- tap-to-fire with Auto fire;
-- the pre-fight countdown;
-- drag-and-drop placement;
-- creature lore and quirks.
+| What                                                                                                                                                   | Where  | State         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ | ------------- |
+| How to play and clickable tags, analytics event log, gear and crafting v1                                                                              | PR #9  | in production |
+| Daily dungeon (single row), expeditions v2, 13:37 daily reset, tab order, Jersey 10 font, small-creature popover, combined balance pass                | PR #10 | in production |
+| UX pass 1 (`design/ux-pass-1.md`): Expeditions, Dungeon and Raid screens, rank-up gifts, no chance percentages, design compendium (`docs/compendium/`) | PR #11 | in review     |
 
-The first ranked week starts Monday 2026-10-12, and the first Festival is due five weeks later. Misa runs a multiplayer raid test the weekend after this plan.
+All 47 balance targets pass on seed `leet`. The first ranked week started 2026-10-12, and the first Festival is due five weeks later.
 
 ## Priorities (in order)
 
-Reordered by Misa on 2026-10-13 (second pass): How to play first, then gear, then expeditions. He hopes to finish many of these within the week.
+| #   | Item                           | State           | Intent and notes                                                                                                                                                                                                               | Design doc                                                                    |
+| --- | ------------------------------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| 1   | How to play and clickable tags | done (#9)       | "All the roles, elements, etc. are not intuitive at all."                                                                                                                                                                      | [`design/how-to-play.md`](design/how-to-play.md)                              |
+| 2   | Gear and crafting              | v1 done (#9)    | Dismantle, upgrade, improve, craft from blueprints, enchant; slow creature downtime jobs and a Crafting skill. **Festival gear stays a Festival-finale-only prize; it is never craftable** (Misa, 2026-10-13).                 | [`design/gear.md`](design/gear.md)                                            |
+| 3   | Expeditions v2                 | done (#10, #11) | Creature explorer ranks, familiarity, banner cards, supplies, push-on choices, Journal, rank-up gifts.                                                                                                                         | [`design/expeditions-v2.md`](design/expeditions-v2.md)                        |
+| 4   | Daily dungeon                  | done (#10, #11) | Solo, server-simulated, played back as if live.                                                                                                                                                                                | [`design/daily-dungeon.md`](design/daily-dungeon.md)                          |
+| 4b  | UX pass 1                      | in review (#11) | Misa's screen-by-screen review before he advertises the new features.                                                                                                                                                          | [`design/ux-pass-1.md`](design/ux-pass-1.md)                                  |
+| 5   | **Analytics reports**          | **next**        | The event log has collected data since #9. Still to build: the daily rollups, the ops endpoint, the report workflow, `pnpm analyze`, and Misa's `OPS_TOKEN` checklist. Covers the dungeon, expeditions v2 and gear events too. | [`design/analytics.md`](design/analytics.md)                                  |
+| 6   | Polish backlog                 | open            | "Let's tackle all of this eventually."                                                                                                                                                                                         | [below](#polish-backlog)                                                      |
+| 7   | Routine upkeep                 | open            | "Let's do this."                                                                                                                                                                                                               | [below](#upkeep)                                                              |
+| 8   | WebSocket push for live fights | open            | "Seems interesting."                                                                                                                                                                                                           | [`design/m5-finale.md`](design/m5-finale.md) (M5.1), [below](#websocket-push) |
+| 9   | More content                   | open            | "Eventually yes." Ground it in `docs/compendium/` (see `threads.md`).                                                                                                                                                          | [below](#more-content)                                                        |
+| 10  | Swap requests                  | open            | "Good idea but not a priority."                                                                                                                                                                                                | [below](#swap-requests)                                                       |
 
-**Status 2026-10-13:** items 1 and 2 shipped in PR #9; items 3 and 4 (expeditions v2, daily dungeon) are on branch `dungeon` for the combined PR. Next up: item 5.
+**Batching:** Misa prefers few, large PRs. Each item above is one PR, and small polish rides along with whatever touches the same screens.
 
-| #   | Item                               | Intent (Misa's words where given)                                                                                                                                                                                                                                                                                                   | Design doc                                                                    |
-| --- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| 1   | **How to play** and clickable tags | "All the roles, elements, etc. are not intuitive at all. Just being able to click on the tags that display stuff like Grove and Setter would help." Ships with the analytics **event log** (no reports yet) and a small **"beta"** superscript on the title.                                                                        | [`design/how-to-play.md`](design/how-to-play.md)                              |
-| 2   | **Gear and crafting**              | "Absolutely." Dismantle gear for parts, upgrade and improve gear, craft new items from blueprints found as drops, enchant items. Creatures get slow **downtime activities** and crafting skills that level up over a long time, building on the idle RPG pillar: "something is happening all the time". Slow gear at first is fine. | [`design/gear.md`](design/gear.md)                                            |
-| 3   | **Expeditions v2**                 | Something players "get better at over time", unlocking more options and more interesting expeditions. Misa is commenting on the proposal in a shared doc (link in `docs/progress.md`); the repo copy is updated from it.                                                                                                            | [`design/expeditions-v2.md`](design/expeditions-v2.md)                        |
-| 4   | **Daily dungeon**                  | A solo daily mode with the player's own team of three. The server generates a seed and simulates the run. The client shows it as if it were happening live, then gives out the results and rewards. No real-time backend.                                                                                                           | [`design/daily-dungeon.md`](design/daily-dungeon.md)                          |
-| 5   | **Analytics reports**              | Agents need tools "to analyse and understand the results and how players are playing the game". The event log ships with item 1 so data builds up; the rollups, ops endpoint, report workflow and `OPS_TOKEN` come here.                                                                                                            | [`design/analytics.md`](design/analytics.md)                                  |
-| 6   | **Polish backlog**                 | "Let's tackle all of this eventually."                                                                                                                                                                                                                                                                                              | [Polish backlog](#polish-backlog) below                                       |
-| 7   | **Routine upkeep**                 | "Let's do this."                                                                                                                                                                                                                                                                                                                    | [Upkeep](#upkeep) below                                                       |
-| 8   | **WebSocket push** for live fights | "Seems interesting." Smoother live updates than polling, after a staging spike in real Discord.                                                                                                                                                                                                                                     | [`design/m5-finale.md`](design/m5-finale.md) (M5.1), [below](#websocket-push) |
-| 9   | **More content**                   | "Eventually yes": bosses, creatures, Festival creatures, seasonal mutators.                                                                                                                                                                                                                                                         | [below](#more-content)                                                        |
-| 10  | **Swap requests**                  | "Good idea but not a priority."                                                                                                                                                                                                                                                                                                     | [below](#swap-requests)                                                       |
+**Production is not precious (Misa, 2026-10-13).** Players know the game is in development and that Misa may wipe progress at any time. Ship features when they are ready. Migrations stay forward-only and tested, and a wipe is Misa's call, never an agent's.
 
-**Batching (Misa prefers few, large PRs):**
+## Open design questions
 
-- **PR A:** how to play, the analytics event log, the beta superscript, and quick polish items that touch the same screens.
-- **PR B:** gear and crafting (first drops: raid finale wins, and parts from today's expeditions).
-- **PR C:** expeditions v2, after Misa's comments.
-- **PR D:** the daily dungeon, reusing gear loot and the playback stage.
-- Analytics reports, upkeep, WebSockets, content and swaps follow, or ride along where they fit.
-
-**Production is not precious (Misa, 2026-10-13).** Players know the game is in development and that Misa may wipe progress at any time. Don't hold back big changes for production's sake, and features can ship as soon as they are ready, including before the weekend raid test. Still keep migrations forward-only and tested; a wipe is Misa's call, never an agent's.
+- **Payoff:** should the bonus depend on the creature's stats instead of a flat +10%? Misa left this open, and the text now says "hits even harder".
+- **Dungeon:** leaderboards or bragging posts? Should depth 1 be gentler? Its first-week clear rate is 81% against an 80% target (Misa: not alarming).
+- **Gear:** a second slot later? Crafted items never beat drops today.
+- **Rank-up gifts:** Bait jumps from 6 at rank 6 to 50 at rank 7. Smooth the curve in a later balance pass.
 
 ## Polish backlog
 
@@ -55,7 +47,7 @@ Small items noticed during M6. Each is a one-line fix or a short task.
 
 1. **Round number in the stage header lags the intro.** The header still shows "Round 3" while the intro shows "Round 4". Update the header when the intro starts.
 2. **Ability badges overlap the sprites slightly.** Nudge them to the corner and shrink them a little at small scales.
-3. **Expeditions screen visual pass:**
+3. ~~**Expeditions screen visual pass:**~~ Done in #10 and #11 (banner cards, walking explorer, reveal).
    - sprites walking on a destination map;
    - timer bars;
    - the catch reveal.

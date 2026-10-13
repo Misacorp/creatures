@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { Creature } from './api';
-import { DungeonAbilities } from './DungeonAbilities';
+import { DungeonPrerun } from './DungeonPrerun';
 import { DungeonTeam } from './DungeonTeam';
 import {
-  DEFAULT_ABILITY_SETTINGS,
   isComplete,
   pruneSlots,
   strongestFirst,
   strongestThree,
-  type AbilitySettings,
   type Selection,
   type Slots,
 } from './dungeon-team';
@@ -23,21 +21,21 @@ interface Props {
   busy: boolean;
   error: string | null;
   /** The player pressed Enter with a complete team. */
-  onEnter: (slots: Slots, settings: AbilitySettings) => void;
+  onEnter: (slots: Slots) => void;
   /** Opens the summary of today's earlier run (the first-day retry offer). */
   onSeeLast: () => void;
 }
 
 /**
- * The pre-run screen below today's info: the team in its row, the ability settings and the Enter
- * button, or the reason a run is not possible. The choices are the player's; the server checks them
- * all again and decides the run.
+ * The pre-run screen. It leads with the three rooms and the day's modifiers (`DungeonPrerun`), then
+ * the team in its three slots and the Enter button, or the reason a run is not possible. The choice
+ * is the order of the team; the server checks it and decides the run. Streak and reset time are in
+ * the end report, not here.
  */
 export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast }: Props) {
   const [slots, setSlots] = useState<Slots>(() => strongestThree(creatures));
   const [selected, setSelected] = useState<Selection>(null);
   const [hint, setHint] = useState<string | null>(null);
-  const [settings, setSettings] = useState<AbilitySettings>(DEFAULT_ABILITY_SETTINGS);
 
   // The collection can change under the screen (a refresh after another tab): drop creatures that are gone.
   const owned = creatures.map((c) => c.id);
@@ -51,16 +49,20 @@ export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast
     (creatures.length < 3 ? blockedText({ blocked: 'need_creatures', canRun: false }) : null);
   if (blocked !== null) {
     return (
-      <section class="raid-section" aria-labelledby="dungeon-blocked-heading">
-        <h3 id="dungeon-blocked-heading">Not today</h3>
-        <p role="status">{blocked}</p>
-      </section>
+      <>
+        <DungeonPrerun today={today} />
+        <section class="raid-section" aria-labelledby="dungeon-blocked-heading">
+          <h3 id="dungeon-blocked-heading">Not today</h3>
+          <p role="status">{blocked}</p>
+        </section>
+      </>
     );
   }
 
   const complete = isComplete(slots);
   return (
     <>
+      <DungeonPrerun today={today} />
       {isRetryOffer(today) && (
         <section class="raid-section dungeon-retry" aria-labelledby="dungeon-retry-heading">
           <h3 id="dungeon-retry-heading">
@@ -74,12 +76,10 @@ export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast
           </p>
         </section>
       )}
-      <section class="raid-section" aria-labelledby="dungeon-team-heading">
-        <h3 id="dungeon-team-heading">Pick your team</h3>
+      <section class="raid-section" aria-label="Your team">
         <DungeonTeam
           creatures={strongestFirst(creatures)}
           slots={slots}
-          modifiers={today.modifiers}
           selected={selected}
           hint={hint}
           disabled={busy}
@@ -95,13 +95,6 @@ export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast
           }}
         />
       </section>
-      <DungeonAbilities
-        settings={settings}
-        slots={slots}
-        creatures={creatures}
-        disabled={busy}
-        onChange={setSettings}
-      />
       <section class="raid-section dungeon-enter" aria-label="Enter the dungeon">
         {error !== null && (
           <p class="error" role="alert">
@@ -113,19 +106,19 @@ export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast
             type="button"
             class="primary"
             disabled={busy || !complete}
-            aria-describedby="dungeon-enter-note"
+            aria-describedby={complete ? undefined : 'dungeon-enter-note'}
             onClick={() => {
-              onEnter(slots, settings);
+              onEnter(slots);
             }}
           >
             {busy ? 'Entering...' : 'Enter the dungeon'}
           </button>
         </p>
-        <p id="dungeon-enter-note" class="muted">
-          {complete
-            ? 'The run is played out at once on the server, then shown to you. You get one run a day.'
-            : 'Put a creature in every slot of the row to enter.'}
-        </p>
+        {!complete && (
+          <p id="dungeon-enter-note" class="muted">
+            Fill all three slots to enter.
+          </p>
+        )}
       </section>
     </>
   );

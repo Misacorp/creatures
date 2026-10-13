@@ -12,6 +12,7 @@ import {
   journalPlaces,
   journalProgressText,
   milestoneName,
+  milestoneBonusText,
   milestoneViews,
   statLabel,
   statRows,
@@ -111,6 +112,21 @@ describe('the profile', () => {
     expect(over[0]).toMatchObject({ progress: 'Trips finished: 5 of 5', pct: 100, reached: true });
   });
 
+  it('shows a milestone bonus value only once it is reached', () => {
+    const base = profile.milestones[0]!;
+    const locked = milestoneViews([{ ...base, reached: false }])[0];
+    expect(locked?.bonus).toBeNull();
+    expect(locked?.name).toBe(milestoneName(base.id));
+    const open = milestoneViews([{ ...base, value: base.at, reached: true }])[0];
+    expect(open?.bonus).toBe(bonusText(base.bonus));
+    expect(open?.bonus).toMatch(/^\+/);
+    expect(milestoneBonusText({ reached: false, bonus: base.bonus })).toBeNull();
+    // No locked milestone leaks a value, whatever the rules say.
+    for (const view of milestoneViews(profile.milestones.map((m) => ({ ...m, reached: false })))) {
+      expect(view.bonus, view.id).toBeNull();
+    }
+  });
+
   it('writes a bonus as words and sums the ones that are on', () => {
     expect(bonusText({ kind: 'parts', bp: 100 })).toBe('+1% parts from trips');
     expect(bonusText({ kind: 'xp', bp: 200 })).toBe('+2% explorer XP');
@@ -127,7 +143,7 @@ describe('the profile', () => {
     expect(rows.map((r) => r.name)).toEqual(
       [...rows].sort((a, b) => b.rank - a.rank).map((r) => r.name),
     );
-    expect(rows[0]).toMatchObject({ name: 'Cindle', rank: 3 });
+    expect(rows[0]).toMatchObject({ name: 'Cindle', rank: 4 });
     // A creature the state does not list is left out.
     expect(explorerRows(profile, [])).toEqual([]);
   });

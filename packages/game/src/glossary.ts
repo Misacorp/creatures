@@ -3,7 +3,7 @@
  * Activity uses: entry ids for every kind of content, the popover of an ability, and the coverage
  * check that makes a piece of content without a glossary entry a test failure.
  */
-import { content, expeditionContent } from './content';
+import { content } from './content';
 import { dungeonContent } from './content/dungeon';
 import { gearContent } from './content/gear';
 import { GOAL_RISKS, SUPPLY_KINDS } from './content/expedition-schema';
@@ -76,8 +76,6 @@ export const GLOSSARY_IDS = {
   skill: (skill: string): string => `skill-${skill}`,
   /** A dungeon room modifier such as `flooded`. */
   modifier: (id: string): string => `modifier-${id}`,
-  /** An expedition destination such as `tidepools`. */
-  destination: (id: string): string => `destination-${id}`,
   /** A kind of supply such as `map-scrap` (its tiers share the entry). */
   supply: (kind: string): string => `supply-${kind}`,
   /** A push-on goal's risk, `safe` or `risky`. */
@@ -216,8 +214,7 @@ export function requiredGlossaryIds(pack: ContentPack): string[] {
   ids.push(GLOSSARY_IDS.skill('crafting'));
   // The daily dungeon: one entry for every room modifier, plus its fixed terms.
   for (const m of dungeonContent.modifiers) ids.push(GLOSSARY_IDS.modifier(m.id));
-  // Expeditions: every destination, every kind of supply and each risk of a push-on goal.
-  for (const d of expeditionContent.destinations) ids.push(GLOSSARY_IDS.destination(d.id));
+  // Expeditions: every kind of supply and each risk of a push-on goal.
   for (const kind of SUPPLY_KINDS) ids.push(GLOSSARY_IDS.supply(kind));
   for (const risk of GOAL_RISKS) ids.push(GLOSSARY_IDS.goal(risk));
   ids.push(...FIXED_GLOSSARY_IDS);

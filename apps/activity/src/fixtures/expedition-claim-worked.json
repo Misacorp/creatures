@@ -25,10 +25,20 @@
     },
     "xp": {
       "gained": 300,
-      "total": 1100,
-      "rank": 3,
+      "total": 2200,
+      "rank": 4,
       "rankBefore": 3
     },
+    "rankGifts": [
+      {
+        "rank": 4,
+        "bait": 15,
+        "parts": {
+          "scrap": 2
+        },
+        "supplies": []
+      }
+    ],
     "slotUnlocked": {
       "total": 2
     },
@@ -48,14 +58,14 @@
   "state": {
     "serverNow": 1799830944002,
     "balances": {
-      "bait": 285,
+      "bait": 300,
       "essence": 0
     },
     "starterChosen": false,
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "ffafcc53-26f2-46e7-8ef5-b1f3718cb76f",
+        "id": "1464897c-b3a6-4ad3-b05a-f4534c47dea4",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -86,9 +96,9 @@
           "nextId": "flare-strike-2"
         },
         "explorer": {
-          "rank": 3,
-          "xp": 1100,
-          "nextRankXp": 2000,
+          "rank": 4,
+          "xp": 2200,
+          "nextRankXp": 4500,
           "trips": 1
         },
         "trainCost": 19,
@@ -100,7 +110,7 @@
         }
       },
       {
-        "id": "890de23e-6d85-4ca9-a188-bc04d29ffa6e",
+        "id": "ddcabaa8-4a31-4b66-98cd-94de571b6fbe",
         "species": "splashet",
         "line": "splashet",
         "level": 8,
@@ -145,7 +155,7 @@
         }
       },
       {
-        "id": "f376b77f-be7b-4c9c-a4f6-b182c7b27399",
+        "id": "3eafad75-f34c-4b7c-a017-0d4f12fcb260",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -190,7 +200,7 @@
         }
       },
       {
-        "id": "5812bf49-434b-4d9d-b25d-54f3bd67f9cc",
+        "id": "acbfb960-51ee-46a8-99fe-b27127109826",
         "species": "mistnewt",
         "line": "mistnewt",
         "level": 1,
@@ -201,7 +211,7 @@
         "away": false,
         "origin": "expedition",
         "caughtAt": 1799830944002,
-        "quirk": "tall-dreamer",
+        "quirk": "names-everything",
         "stats": {
           "hp": 160,
           "atk": 28,
@@ -237,8 +247,8 @@
     ],
     "expeditions": [
       {
-        "id": "04d6cb1d-f054-4028-9034-7fd4c2bf80df",
-        "creatureId": "ffafcc53-26f2-46e7-8ef5-b1f3718cb76f",
+        "id": "82e2aeda-0c9a-43fa-af1c-816e70cd6668",
+        "creatureId": "1464897c-b3a6-4ad3-b05a-f4534c47dea4",
         "duration": "long",
         "supplies": "great",
         "kit": ["lure-great"],
@@ -277,10 +287,20 @@
           },
           "xp": {
             "gained": 300,
-            "total": 1100,
-            "rank": 3,
+            "total": 2200,
+            "rank": 4,
             "rankBefore": 3
           },
+          "rankGifts": [
+            {
+              "rank": 4,
+              "bait": 15,
+              "parts": {
+                "scrap": 2
+              },
+              "supplies": []
+            }
+          ],
           "slotUnlocked": {
             "total": 2
           },
@@ -306,8 +326,8 @@
         }
       },
       {
-        "id": "7b7ec064-ba1b-4028-91d9-bc1eb66a1c11",
-        "creatureId": "ffafcc53-26f2-46e7-8ef5-b1f3718cb76f",
+        "id": "757d0c1a-4566-4bae-bc95-58d47048134f",
+        "creatureId": "1464897c-b3a6-4ad3-b05a-f4534c47dea4",
         "duration": "long",
         "supplies": "great",
         "kit": ["lure-great", "map-scrap-basic"],
@@ -344,7 +364,7 @@
     "slots": {
       "total": 2,
       "used": 0,
-      "rankSum": 2,
+      "rankSum": 3,
       "tripsFinished": 3,
       "next": {
         "kind": "rank_sum",

@@ -1,13 +1,13 @@
 import { RULES } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { AbilityPicker } from './AbilityPicker';
+import { AbilityChip } from './AbilityChip';
 import { AfterAction } from './AfterAction';
 import { ApiError, type Creature } from './api';
 import { CoachMark } from './CoachMark';
 import { clockOffset, creatureName, errorText } from './game';
 import { GlossaryTag } from './Glossary';
 import { useNow } from './hooks';
-import { bannerText, finaleWindow } from './live';
+import { finaleWindow } from './live';
 import { startPractice, type LiveSnapshot } from './live-api';
 import { Live } from './Live';
 import { Replay } from './Replay';
@@ -35,7 +35,11 @@ import {
 } from './raid-slots';
 import { festivalGrantText, rankChangeText } from './raid-progress';
 import { phaseName } from './raid-text';
-import { BossCard, Roster, ScheduleStrip } from './RaidInfo';
+import { BossCard } from './BossCard';
+import { RosterStrip } from './RosterStrip';
+import { RaidTimeline } from './RaidTimeline';
+import type { NowTarget } from './raid-now';
+import { showFullResults } from './raid-timeline';
 import { RaidNews } from './RaidNews';
 import { Placement } from './Placement';
 import { resolveDrop, type DropOutcome, type DropTarget } from './raid-dnd';
@@ -278,6 +282,19 @@ export function Raid({
     return outcome;
   }
 
+  /** The "what to do now" button: go to the placement step, open the finale, or join again. */
+  function act(target: NowTarget): void {
+    if (target === 'live') {
+      autoOpened.current = true;
+      setLiveInitial(null);
+      setLiveOpen(true);
+    } else if (target === 'rejoin') {
+      void mutate(() => setRaidOptOut(false));
+    } else {
+      focusPlacement();
+    }
+  }
+
   return (
     <>
       <CoachMark />
@@ -305,27 +322,16 @@ export function Raid({
           }}
         />
       )}
-      {party !== null && (finaleState === 'lobby' || finaleState === 'live') && (
-        <section class="raid-section live-banner" aria-labelledby="live-banner-heading">
-          <h3 id="live-banner-heading" class="visually-hidden">
-            Live finale
-          </h3>
-          <p class="live-banner-text" role="status" aria-live="off">
-            <strong>{bannerText(finaleState, view.schedule.finale, serverNow)}</strong>
-          </p>
-          <button
-            type="button"
-            class="primary"
-            onClick={() => {
-              autoOpened.current = true;
-              setLiveInitial(null);
-              setLiveOpen(true);
-            }}
-          >
-            Join
-          </button>
-        </section>
-      )}
+      <RaidTimeline
+        view={view}
+        serverNow={serverNow}
+        finale={finaleState}
+        busy={busy}
+        onAct={act}
+        onReplay={(phase) => {
+          if (party !== null) setReplay({ week: view.weekId, party: party.party, phase });
+        }}
+      />
       {showPractice && !practiceGone && (
         <details class="practice">
           <summary>Testing tools</summary>
@@ -336,29 +342,13 @@ export function Raid({
         </details>
       )}
       <BossCard view={view} />
-      <ScheduleStrip view={view} serverNow={serverNow} />
-      <Roster
+      <RosterStrip
         view={view}
         busy={busy}
         onOptOut={(optOut) => {
           void mutate(() => setRaidOptOut(optOut));
         }}
       />
-      {view.you.ability !== null && (
-        <AbilityPicker
-          current={view.you.ability}
-          abilities={view.you.abilities}
-          team={team?.creatures ?? []}
-          editable={serverNow < view.schedule.finale}
-          busy={busy}
-          onPick={(abilityId) => {
-            void mutate(() => setRaidAbility(abilityId));
-          }}
-          onAutoFire={(target, on) => {
-            void mutate(() => setRaidAutofire(target, on));
-          }}
-        />
-      )}
       {party !== null && team !== null && (
         <Placement
           party={party}
@@ -411,32 +401,52 @@ export function Raid({
         />
       )}
 
-      {party !== null && (
+      {view.you.ability !== null && (
+        <AbilityChip
+          you={view.you}
+          current={view.you.ability}
+          abilities={view.you.abilities}
+          team={team?.creatures ?? []}
+          editable={serverNow < view.schedule.finale}
+          busy={busy}
+          onPick={(abilityId) => {
+            void mutate(() => setRaidAbility(abilityId));
+          }}
+          onAutoFire={(target, on) => {
+            void mutate(() => setRaidAutofire(target, on));
+          }}
+        />
+      )}
+      {party !== null && showFullResults(party.results) && (
         <section class="raid-section" aria-labelledby="raid-results-heading">
           <h3 id="raid-results-heading">Results</h3>
-          {party.results.length === 0 ? (
-            <p class="muted">Nothing has been fought yet. Phase 1 resolves on Friday.</p>
-          ) : (
-            <ul class="cards">
-              {party.results.map((result) => (
-                <ResultCard
-                  key={result.phase}
-                  result={result}
-                  week={view.weekId}
-                  party={party.party}
-                  onReplay={() => {
-                    setReplay({ week: view.weekId, party: party.party, phase: result.phase });
-                  }}
-                />
-              ))}
-            </ul>
-          )}
+          <ul class="cards">
+            {party.results.map((result) => (
+              <ResultCard
+                key={result.phase}
+                result={result}
+                week={view.weekId}
+                party={party.party}
+                onReplay={() => {
+                  setReplay({ week: view.weekId, party: party.party, phase: result.phase });
+                }}
+              />
+            ))}
+          </ul>
         </section>
       )}
 
       <RaidNews />
     </>
   );
+}
+
+/** Scrolls the placement step into view and puts focus on its first creature. */
+function focusPlacement(): void {
+  const section = document.getElementById('raid-placement');
+  if (section === null) return;
+  section.scrollIntoView({ block: 'start' });
+  section.querySelector<HTMLElement>('.team-chip:not(:disabled)')?.focus({ preventScroll: true });
 }
 
 function TeamPicker({
