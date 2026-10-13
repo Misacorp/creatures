@@ -701,13 +701,11 @@ describe('idempotency', () => {
         expect(run.rewards.streak?.day).toBe(3);
         const ledger = dungeonLedger(ctx, p.id);
         const keys = ledger.map((l) => l.idempotency_key).sort();
-        expect(keys).toEqual(
-          [
-            'dungeon:2027-01-15:1:bait',
-            'dungeon:2027-01-15:1:essence',
-            'dungeon:2027-01-15:streak:bait',
-          ].sort(),
-        );
+        const bonus = RULES.dungeon.streak.bonuses.find((b) => b.day === 3);
+        const expected = ['dungeon:2027-01-15:1:bait', 'dungeon:2027-01-15:1:essence'];
+        if ((bonus?.bait ?? 0) > 0) expected.push('dungeon:2027-01-15:streak:bait');
+        if ((bonus?.essence ?? 0) > 0) expected.push('dungeon:2027-01-15:streak:essence');
+        expect(keys).toEqual(expected.sort());
         const parts = partsOf(ctx, p.id);
         const items = count(ctx.sql, 'gear_items', `user_id = '${p.id}'`);
         // Asking the grants again (a retry that got past the run row, a replayed event) changes nothing.
@@ -908,24 +906,36 @@ describe('streaks and landmarks', () => {
         setProgress(ctx, p.id, {});
         const streaks: number[] = [];
         const bonusDays: (number | null)[] = [];
+        const runIds: string[] = [];
         for (let day = 1; day <= 8; day++) {
           const res = await p.run();
           expect(res.status).toBe(200);
           streaks.push(res.body.run.streak);
           bonusDays.push(res.body.run.rewards.streak?.day ?? null);
+          runIds.push(res.body.run.id);
           expect((await p.today()).streak).toBe(day);
           ctx.clock.t += DAY;
         }
         expect(streaks).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
         expect(bonusDays).toEqual([null, null, 3, null, null, null, 7, null]);
-        const bonus3 = RULES.dungeon.streak.bonuses[0];
-        const bait3 = dungeonLedger(ctx, p.id).find(
-          (l) => l.idempotency_key === 'dungeon:2027-01-17:streak:bait',
+        // The day-3 bonus is what the rules say, and what it pays in Bait and Essence is in the ledger once.
+        const bonus3 = RULES.dungeon.streak.bonuses.find((b) => b.day === 3);
+        const third = (await p.replay(runIds[2] as string)).body.summary.rewards.streak;
+        expect(third).toMatchObject({
+          day: 3,
+          bait: bonus3?.bait,
+          essence: bonus3?.essence,
+          parts: bonus3 !== undefined && bonus3.scrap > 0 ? { scrap: bonus3.scrap } : {},
+        });
+        const streakRows = dungeonLedger(ctx, p.id).filter((l) =>
+          l.idempotency_key.includes(':streak:'),
         );
-        expect(bait3?.amount).toBe(bonus3?.bait);
-        expect(
-          dungeonLedger(ctx, p.id).filter((l) => l.idempotency_key.includes(':streak:')).length,
-        ).toBeGreaterThanOrEqual(3);
+        const paying = RULES.dungeon.streak.bonuses.reduce(
+          (n, b) => n + (b.bait > 0 ? 1 : 0) + (b.essence > 0 ? 1 : 0),
+          0,
+        );
+        // Day 3 and day 7 of the first cycle were paid; day 3 of the second (day 10) is not reached yet.
+        expect(streakRows).toHaveLength(paying);
 
         // Miss two days: the streak shows 0, and the next run starts it again. The depth is kept.
         const depth = progressOf(ctx, p.id)?.depth ?? 0;

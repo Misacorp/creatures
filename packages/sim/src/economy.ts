@@ -41,6 +41,7 @@ import {
   startJobs,
   type GearContext,
 } from './gear';
+import { dayModifiers, playDungeonDay, type DungeonLogEntry } from './dungeon';
 import {
   POLICY,
   chooseTrainee,
@@ -73,6 +74,11 @@ export interface EconomyOptions {
   luck?: LuckConfig;
   /** Model gear and crafting (default). `false` plays the economy as it was before gear existed. */
   gear?: boolean;
+  /**
+   * Model the daily dungeon (default: when gear is modelled, since its loot is gear and parts).
+   * `false` plays the economy as it was before the dungeon existed.
+   */
+  dungeon?: boolean;
 }
 
 /** One row of a player's history: the state at the end of a week. */
@@ -104,6 +110,14 @@ export interface WeekRecord {
   /** Highest Crafting level on any creature. */
   skillLevel: number;
   scrap: number;
+  /** The depth the next dungeon run fights at, and what the week's runs did and paid. */
+  dungeonDepth: number;
+  dungeonRuns: number;
+  dungeonClears: number;
+  dungeonBait: number;
+  dungeonEssence: number;
+  dungeonScrap: number;
+  dungeonItems: number;
 }
 
 export interface PlayerHistory {
@@ -117,6 +131,8 @@ export interface PlayerHistory {
   firstCraftAfterDays: number | null;
   /** Best Crafting level 30 days after joining; null if the sim ended before. */
   bestSkillDay30: number | null;
+  /** Every dungeon run the player made, in order. */
+  dungeon: DungeonLogEntry[];
 }
 
 export interface Snapshot {
@@ -152,6 +168,7 @@ interface Streams {
   loot: Rng;
   order: Rng;
   gear: Rng;
+  dungeon: Rng;
 }
 
 function createPlayers(mix: ArchetypeMix): SimPlayer[] {
@@ -356,6 +373,13 @@ function record(player: SimPlayer, week: number): WeekRecord {
     essenceSpentGear: player.week.essenceSpentGear,
     skillLevel: bestSkillLevel(player),
     scrap: player.gear.parts.scrap,
+    dungeonDepth: player.dungeon.depth,
+    dungeonRuns: player.week.dungeonRuns,
+    dungeonClears: player.week.dungeonClears,
+    dungeonBait: player.week.dungeonBait,
+    dungeonEssence: player.week.dungeonEssence,
+    dungeonScrap: player.week.dungeonScrap,
+    dungeonItems: player.week.dungeonItems,
   };
 }
 
@@ -426,6 +450,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
     loot: createSeededRng(`${seed}:loot`),
     order: createSeededRng(`${seed}:order`),
     gear: createSeededRng(`${seed}:gear`),
+    dungeon: createSeededRng(`${seed}:dungeon`),
   };
   const players = createPlayers(options.mix);
   const history = new Map<string, PlayerHistory>(
@@ -440,6 +465,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
         raids: 0,
         firstCraftAfterDays: null,
         bestSkillDay30: null,
+        dungeon: [],
       },
     ]),
   );
@@ -450,6 +476,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
     int(createSeededRng(`${seed}:calendar`), RULES.progression.seasonWeeks);
   const luck = options.luck ?? RULES.combat.luck;
   const gearOn = options.gear !== false;
+  const dungeonOn = gearOn && options.dungeon !== false;
   let rank: number | null = null;
 
   for (let week = 1; week <= weeks; week++) {
@@ -487,6 +514,23 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
         const cfg = ARCHETYPE_CONFIG[p.archetype];
         if (cfg.checkIns === 'twice_daily' || p.leetDays[day] === true) {
           checkIn(p, median, rng.catches, morning);
+        }
+      }
+
+      // The daily dungeon: everybody who checked in runs it (casuals on their leet days).
+      if (dungeonOn) {
+        const modifiers = dayModifiers(seed, globalDay);
+        for (const p of active) {
+          const cfg = ARCHETYPE_CONFIG[p.archetype];
+          if (cfg.checkIns !== 'twice_daily' && p.leetDays[day] !== true) continue;
+          const runs = playDungeonDay(
+            p,
+            globalDay,
+            modifiers,
+            `${seed}:dungeon:${p.id}:${String(globalDay)}`,
+            rng.dungeon,
+          );
+          history.get(p.id)?.dungeon.push(...runs);
         }
       }
 

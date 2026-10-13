@@ -852,14 +852,18 @@
     "id": "part-scrap",
     "title": "Scrap",
     "short": "Generic parts. They pay for upgrades, crafting and improving.",
-    "lines": ["Found by dismantling gear, on expeditions and in cleared raid phases."],
+    "lines": [
+      "Found by dismantling gear, on expeditions, in cleared raid phases and in the daily dungeon."
+    ],
     "section": "workshop"
   },
   {
     "id": "part-tide-shard",
     "title": "Tide Shard",
     "short": "A shard of Tide. It pays for Tide crafts and enchants.",
-    "lines": ["Found on expeditions with a Tide explorer, and by dismantling Tide gear."],
+    "lines": [
+      "Found on expeditions with a Tide explorer, from Tide room bosses and by dismantling Tide gear."
+    ],
     "visual": {
       "kind": "element",
       "id": "tide"
@@ -870,7 +874,9 @@
     "id": "part-ember-shard",
     "title": "Ember Shard",
     "short": "A shard of Ember. It pays for Ember crafts and enchants.",
-    "lines": ["Found on expeditions with a Ember explorer, and by dismantling Ember gear."],
+    "lines": [
+      "Found on expeditions with an Ember explorer, from Ember room bosses and by dismantling Ember gear."
+    ],
     "visual": {
       "kind": "element",
       "id": "ember"
@@ -881,7 +887,9 @@
     "id": "part-grove-shard",
     "title": "Grove Shard",
     "short": "A shard of Grove. It pays for Grove crafts and enchants.",
-    "lines": ["Found on expeditions with a Grove explorer, and by dismantling Grove gear."],
+    "lines": [
+      "Found on expeditions with a Grove explorer, from Grove room bosses and by dismantling Grove gear."
+    ],
     "visual": {
       "kind": "element",
       "id": "grove"
@@ -892,7 +900,9 @@
     "id": "part-spark-shard",
     "title": "Spark Shard",
     "short": "A shard of Spark. It pays for Spark crafts and enchants.",
-    "lines": ["Found on expeditions with a Spark explorer, and by dismantling Spark gear."],
+    "lines": [
+      "Found on expeditions with a Spark explorer, from Spark room bosses and by dismantling Spark gear."
+    ],
     "visual": {
       "kind": "element",
       "id": "spark"
@@ -904,7 +914,7 @@
     "title": "Glimmer",
     "short": "A rare part. It pays for Epic crafts and every enchant.",
     "lines": [
-      "Found by dismantling Epic gear, and rarely on expeditions (more often on long ones)."
+      "Found by dismantling Epic gear, at dungeon landmarks, and rarely on expeditions (more often on long ones)."
     ],
     "section": "workshop"
   },
@@ -1063,7 +1073,7 @@
     "short": "How deep you are. Foes get tougher with every depth.",
     "lines": [
       "Clearing all rooms adds 1. Losing leaves it as it is.",
-      "Each depth adds 12% foe HP and 6% foe Attack.",
+      "Each depth adds about 30% foe HP and 20% foe Attack, and a little more the deeper you go.",
       "It is yours alone: nobody else's runs change it.",
       "Every 7th depth is a landmark."
     ],

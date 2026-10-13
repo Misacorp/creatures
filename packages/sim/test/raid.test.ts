@@ -69,7 +69,11 @@ describe('raid week', () => {
     const w = openRaidWeek(boss, players);
     // A boss with a huge pool cannot be beaten.
     w.pool = { max: 1_000_000_000, current: 1_000_000_000 };
-    for (const p of players) p.pity = 3;
+    // Start every player at pity 3 (the history of the roster is not what this test is about).
+    for (const p of players) {
+      p.pity = 3;
+      p.maxPity = 3;
+    }
     const rng = createSeededRng('lost');
     playStage(w, 'phase1', rng, rng);
     playStage(w, 'phase2', rng, rng);

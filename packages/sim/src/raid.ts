@@ -126,7 +126,7 @@ function emptyTotals(): PlayerTotals {
   return { damage: 0, setupCredit: 0, supportCredit: 0, guardCredit: 0, contribution: 0 };
 }
 
-function slotFor(player: SimPlayer, creatureId: string): FightSlot {
+export function slotFor(player: SimPlayer, creatureId: string): FightSlot {
   const c = player.creatures.find((x) => x.id === creatureId);
   if (c === undefined) throw new Error(`player ${player.id} lost creature ${creatureId}`);
   const slot = makeSlot(speciesOf(c.speciesId), {

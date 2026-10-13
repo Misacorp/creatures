@@ -80,6 +80,19 @@ Measured on the default server's sims (10 players, 12 weeks), with the same seed
 
 **Gear share** is the power the worn items add to the top 3 creatures (`applyGear`, floored as in the fight slots) over the top-3 power with gear. The raid, long-run, fairness and collection targets above are measured with gear on, so they still hold after gear.
 
+## Daily dungeon
+
+Measured on the default server's sims (10 players, 12 weeks). Every player with 3 creatures runs the dungeon on each day they check in; the raid, long-run, fairness, collection and gear targets above are measured with the dungeon in the game, so they still hold with it (the dungeon's Bait, Essence, parts and gear feed the same economy).
+
+| Target                                                                                                                        | Value |
+| ----------------------------------------------------------------------------------------------------------------------------- | ----- |
+| Depth 1 cleared (all rooms) in a player's first 7 days, share of those runs, all archetypes                                   | ≥ 80% |
+| Depth a median daily player gains per week, from the end of week 2 to the end of week 8 (the opening week is left out)        | 1–2   |
+| Dungeon Essence as a share of a daily player's whole Essence income (raids, jackpots and dungeon)                             | ≤ 40% |
+| Gear's share of a daily player's raid-team power at week 8 with the dungeon's gear and parts in the game (no dungeon: report) | ≤ 20% |
+
+The report also lists the clear rate per depth for casual, daily and top players, the depth after N weeks per archetype and the reward flow per player and week (`## Daily dungeon`).
+
 ## Informational (no target)
 
 The simulator also reports these, to keep an eye on them. They are not checked in `targets.json`.

@@ -19,33 +19,35 @@ export function isLandmark(depth: number): boolean {
 
 // --- Depth scaling ---
 
-const factorTables = new Map<number, number[]>();
-
 /**
- * The strength factor of a depth in basis points for a per-depth step: 10000 at depth 1, then each
- * depth is the one below times (10000 + step) / 10000, floored at every step so the table is the same
- * in every runtime. The depth is floored and kept in 1..`maxScaledDepth`.
+ * The strength factor of a depth in basis points: 10000 at depth 1 and, for the depths above it
+ * (`n` of them), `stepBp` for each plus `curveBp` for each square, so a gentle start can steepen
+ * (`10000 + stepBp x n + curveBp x n x n`; with a curve of 0 the foes grow in a straight line). The
+ * depth is floored and kept in 1..`maxScaledDepth`.
  */
-export function depthFactorBp(depth: number, stepBp: number): number {
+export function depthFactorBp(depth: number, stepBp: number, curveBp = 0): number {
   const d = Math.max(1, Math.min(RULES.dungeon.maxScaledDepth, Math.floor(depth)));
-  let table = factorTables.get(stepBp);
-  if (table === undefined) {
-    table = [10_000, 10_000];
-    factorTables.set(stepBp, table);
-  }
-  for (let k = table.length; k <= d; k++) {
-    table.push(Math.floor(((table[k - 1] as number) * (10_000 + stepBp)) / 10_000));
-  }
-  return table[d] as number;
+  const n = d - 1;
+  return 10_000 + stepBp * n + curveBp * n * n;
 }
 
-/** A foe's HP and Attack at a depth: its base numbers times the depth factors, floored, at least 1. */
+/**
+ * A foe's HP and Attack at a depth: its content numbers times the dungeon's base strength
+ * (`baseHpBp`, `baseAtkBp`) and the depth factors, floored at every step, at least 1.
+ */
 export function scaledFoe(
   foe: Pick<DungeonFoeDef, 'baseHp' | 'baseAtk'>,
   depth: number,
 ): { hp: number; atk: number } {
-  const hp = Math.floor((foe.baseHp * depthFactorBp(depth, RULES.dungeon.hpStepBp)) / 10_000);
-  const atk = Math.floor((foe.baseAtk * depthFactorBp(depth, RULES.dungeon.atkStepBp)) / 10_000);
+  const base = (value: number, bp: number): number => Math.floor((value * bp) / 10_000);
+  const hp = base(
+    base(foe.baseHp, RULES.dungeon.baseHpBp),
+    depthFactorBp(depth, RULES.dungeon.hpStepBp, RULES.dungeon.hpCurveBp),
+  );
+  const atk = base(
+    base(foe.baseAtk, RULES.dungeon.baseAtkBp),
+    depthFactorBp(depth, RULES.dungeon.atkStepBp, RULES.dungeon.atkCurveBp),
+  );
   return { hp: Math.max(1, hp), atk: Math.max(1, atk) };
 }
 

@@ -391,25 +391,35 @@ export const RULES = {
     /** Creatures in the team (a row of three: front, middle, back). */
     teamSize: 3,
     /**
-     * Depth scaling, compounding like the raid ranks: every depth above 1 multiplies a foe's HP and
-     * Attack by this many basis points more than the depth below (floored at every step). Depths past
-     * `maxScaledDepth` fight at that depth's strength, which keeps every number small and safe.
+     * Depth scaling (see `depthFactorBp`): every depth above 1 adds `Step` basis points of the depth-1
+     * HP and Attack to a foe, plus `Curve` for each square of the depths above 1, so the first depths
+     * are gentle and the later ones steepen. Depths past `maxScaledDepth` fight at that depth's
+     * strength, which keeps every number small and safe.
      */
-    hpStepBp: 1_200,
-    atkStepBp: 600,
+    hpStepBp: 3_000,
+    hpCurveBp: 300,
+    atkStepBp: 2_000,
+    atkCurveBp: 150,
     maxScaledDepth: 60,
+    /**
+     * How strong a foe is at depth 1, as a share of the HP and Attack in its content (basis points;
+     * 10000 is the content's own numbers). One knob for the whole dungeon, so the foes keep the
+     * relative strengths their content gives them.
+     */
+    baseHpBp: 13_000,
+    baseAtkBp: 10_000,
     /** Every this many depths is a landmark: a better chest. */
     landmarkEvery: 7,
     /** Paid for each room cleared, by room index (the last is the room boss). */
     perRoom: [
-      { bait: 4, essence: 0, scrap: 1 },
-      { bait: 5, essence: 0, scrap: 1 },
-      { bait: 4, essence: 2, scrap: 2 },
+      { bait: 1, essence: 0, scrap: 0 },
+      { bait: 1, essence: 0, scrap: 0 },
+      { bait: 1, essence: 1, scrap: 1 },
     ],
     /** Chance (basis points) of one shard of the room boss's element when the boss room is cleared. */
     bossShardBp: 4_000,
     /** Extra for clearing every room: Essence, and a chance (basis points) at a gear drop. */
-    fullClear: { essence: 2, gearBp: 1_500 },
+    fullClear: { essence: 0, gearBp: 1_000 },
     /**
      * Gear odds of a dungeon drop (basis points; the rest is common): rare and epic start at `baseBp`
      * at depth 1, grow by `perDepthBp` for every depth above 1 and stop at `maxBp`. A landmark drop
@@ -422,7 +432,7 @@ export const RULES = {
       landmarkBonusBp: { rare: 2_000, epic: 600 },
     },
     /** A fully cleared landmark depth pays this on top, and its gear drop is guaranteed. */
-    landmark: { essence: 8, scrap: 6, glimmer: 1 },
+    landmark: { essence: 2, scrap: 2, glimmer: 1 },
     /**
      * Daily streaks: days in a row with a run, counted in a cycle of `cycleDays`. A bonus is paid
      * when the run is the `day`-th of the cycle. A missed day starts the count again (depth is kept).
@@ -430,8 +440,8 @@ export const RULES = {
     streak: {
       cycleDays: 7,
       bonuses: [
-        { day: 3, bait: 10, essence: 0, scrap: 3, glimmer: 0 },
-        { day: 7, bait: 20, essence: 4, scrap: 6, glimmer: 1 },
+        { day: 3, bait: 0, essence: 0, scrap: 1, glimmer: 0 },
+        { day: 7, bait: 0, essence: 1, scrap: 1, glimmer: 0 },
       ],
     },
   },

@@ -195,33 +195,58 @@ describe('the dungeon content', () => {
 });
 
 describe('depth scaling', () => {
-  it('starts at the base numbers and compounds with its own steps, integers only', () => {
-    expect(depthFactorBp(1, RULES.dungeon.hpStepBp)).toBe(10_000);
-    expect(depthFactorBp(2, RULES.dungeon.hpStepBp)).toBe(10_000 + RULES.dungeon.hpStepBp);
+  const d = RULES.dungeon;
+
+  it('starts at the base numbers and adds a step and a curve for every depth above 1, integers only', () => {
+    expect(depthFactorBp(1, d.hpStepBp, d.hpCurveBp)).toBe(10_000);
+    expect(depthFactorBp(2, d.hpStepBp, d.hpCurveBp)).toBe(10_000 + d.hpStepBp + d.hpCurveBp);
     let previous = 10_000;
-    for (let depth = 2; depth <= RULES.dungeon.maxScaledDepth; depth++) {
-      const factor = depthFactorBp(depth, RULES.dungeon.hpStepBp);
+    for (let depth = 2; depth <= d.maxScaledDepth; depth++) {
+      const n = depth - 1;
+      const factor = depthFactorBp(depth, d.hpStepBp, d.hpCurveBp);
       expect(Number.isInteger(factor)).toBe(true);
-      expect(factor).toBe(Math.floor((previous * (10_000 + RULES.dungeon.hpStepBp)) / 10_000));
+      expect(factor).toBe(10_000 + d.hpStepBp * n + d.hpCurveBp * n * n);
+      expect(factor).toBeGreaterThan(previous);
       previous = factor;
     }
+    // With no curve the foes grow in a straight line.
+    expect(depthFactorBp(11, 3_000)).toBe(40_000);
     // Depths below 1 and past the cap are clamped.
     expect(depthFactorBp(0, 1_000)).toBe(10_000);
-    expect(depthFactorBp(10_000, 1_000)).toBe(depthFactorBp(RULES.dungeon.maxScaledDepth, 1_000));
+    expect(depthFactorBp(10_000, 1_000, 10)).toBe(depthFactorBp(d.maxScaledDepth, 1_000, 10));
   });
 
-  it('scales a foe by HP and Attack steps, never below 1', () => {
+  it('starts gently: the first depths add less than the later ones do', () => {
+    const f = (depth: number): number => depthFactorBp(depth, d.hpStepBp, d.hpCurveBp);
+    expect(f(3) - f(2)).toBeLessThan(f(12) - f(11));
+    // And the second depth is no more than 1.5 times the first: new players can follow it.
+    expect(f(2)).toBeLessThanOrEqual(15_000);
+  });
+
+  it('scales a foe by the base strength and the depth factors, never below 1', () => {
     const foe = { baseHp: 300, baseAtk: 12 };
-    expect(scaledFoe(foe, 1)).toEqual({ hp: 300, atk: 12 });
-    const d5 = scaledFoe(foe, 5);
-    expect(d5.hp).toBe(Math.floor((300 * depthFactorBp(5, RULES.dungeon.hpStepBp)) / 10_000));
-    expect(d5.atk).toBe(Math.floor((12 * depthFactorBp(5, RULES.dungeon.atkStepBp)) / 10_000));
+    const at = (depth: number) => scaledFoe(foe, depth);
+    const hp = (depth: number): number =>
+      Math.floor(
+        (Math.floor((300 * d.baseHpBp) / 10_000) * depthFactorBp(depth, d.hpStepBp, d.hpCurveBp)) /
+          10_000,
+      );
+    const atk = (depth: number): number =>
+      Math.floor(
+        (Math.floor((12 * d.baseAtkBp) / 10_000) *
+          depthFactorBp(depth, d.atkStepBp, d.atkCurveBp)) /
+          10_000,
+      );
+    for (const depth of [1, 2, 5, 12, 30, 80]) {
+      expect(at(depth)).toEqual({ hp: hp(depth), atk: atk(depth) });
+    }
+    expect(at(1)).toEqual({ hp: Math.floor((300 * d.baseHpBp) / 10_000), atk: 12 });
     expect(scaledFoe({ baseHp: 1, baseAtk: 1 }, 1)).toEqual({ hp: 1, atk: 1 });
-    let hp = 0;
-    for (let d = 1; d <= 30; d++) {
-      const next = scaledFoe(foe, d).hp;
-      expect(next).toBeGreaterThanOrEqual(hp);
-      hp = next;
+    let previous = 0;
+    for (let depth = 1; depth <= 30; depth++) {
+      const next = at(depth).hp;
+      expect(next).toBeGreaterThanOrEqual(previous);
+      previous = next;
     }
   });
 
