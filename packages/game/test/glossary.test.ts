@@ -592,6 +592,10 @@ describe('the glossary covers the daily dungeon', () => {
     const d = RULES.dungeon;
     expect(words).toContain('One run a day');
     expect(words).toContain('retried once');
+    // The reset time in the text is the rule's (13:37), and the glossary entry says the same.
+    const reset = `${String(RULES.daily.reset.hour)}:${String(RULES.daily.reset.minute).padStart(2, '0')}`;
+    expect(words).toContain(`resets at ${reset}`);
+    expect(JSON.stringify(entry('dungeon'))).toContain(`resets at ${reset}`);
     expect(words).toContain('team of three');
     expect(d.teamSize).toBe(3);
     expect(words).toContain('three rooms: two foes, then a room boss');

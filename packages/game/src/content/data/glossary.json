@@ -1063,7 +1063,7 @@
       "Pick three creatures and where they stand, then enter. The whole run is played out at once.",
       "Three rooms: two foes, then a room boss. Each creature keeps its HP from room to room.",
       "Clear all three to go one depth deeper. A lost run keeps your depth.",
-      "One run per day, resetting at midnight in the server's time zone. A lost first run can be retried once."
+      "One run per day. The day resets at 13:37 in the server's time zone. A lost first run can be retried once."
     ],
     "section": "dungeon"
   },

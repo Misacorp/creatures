@@ -1,6 +1,6 @@
 {
   "run": {
-    "id": "843c2bb6-80a1-4033-a9d0-9758671c75af",
+    "id": "7394554c-9a62-499e-894e-a09fe944ee3a",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -9,10 +9,10 @@
     "roomsCleared": 3,
     "landmark": false,
     "streak": 1,
-    "createdAt": 1799733600000,
+    "createdAt": 1799755200000,
     "team": [
       {
-        "id": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+        "id": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -23,7 +23,7 @@
         "hpEnd": 319
       },
       {
-        "id": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+        "id": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
@@ -34,7 +34,7 @@
         "hpEnd": 200
       },
       {
-        "id": "90449b1e-863f-4217-b128-eeebc88e85f2",
+        "id": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
         "name": "Cindle",
         "speciesId": "cindle",
         "element": "ember",
@@ -117,10 +117,10 @@
     }
   },
   "today": {
-    "serverNow": 1799733600000,
+    "serverNow": 1799755200000,
     "day": "2027-01-12",
     "timezone": "Europe/Helsinki",
-    "resetsAt": 1799791200000,
+    "resetsAt": 1799840220000,
     "depth": 2,
     "landmark": false,
     "streak": 1,
@@ -149,7 +149,7 @@
     "canRun": false,
     "blocked": "already_run",
     "last": {
-      "id": "843c2bb6-80a1-4033-a9d0-9758671c75af",
+      "id": "7394554c-9a62-499e-894e-a09fe944ee3a",
       "day": "2027-01-12",
       "attempt": 1,
       "depth": 1,
@@ -158,10 +158,10 @@
       "roomsCleared": 3,
       "landmark": false,
       "streak": 1,
-      "createdAt": 1799733600000,
+      "createdAt": 1799755200000,
       "team": [
         {
-          "id": "7845b045-3d6e-41ff-a088-8b40e68ca31a",
+          "id": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
           "name": "Sproutle",
           "speciesId": "sproutle",
           "element": "grove",
@@ -172,7 +172,7 @@
           "hpEnd": 319
         },
         {
-          "id": "1f1cfd32-6a06-4a76-b571-493d3a538522",
+          "id": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
           "name": "Splashet",
           "speciesId": "splashet",
           "element": "tide",
@@ -183,7 +183,7 @@
           "hpEnd": 200
         },
         {
-          "id": "90449b1e-863f-4217-b128-eeebc88e85f2",
+          "id": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
           "name": "Cindle",
           "speciesId": "cindle",
           "element": "ember",

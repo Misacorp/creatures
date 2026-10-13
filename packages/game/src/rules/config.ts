@@ -10,6 +10,12 @@ const HOUR_MS = 3_600_000;
  * copy of this). Probabilities are integers: basis points (out of 10000) or numerator/denominator.
  */
 export const RULES = {
+  /**
+   * The game's daily reset, in the guild's local time: 13:37, "leet o'clock" (Misa). Everything
+   * daily (the dungeon run, streaks) turns over here, not at midnight. A game day is named by the
+   * calendar date on which it starts, so 12:00 on the 14th still belongs to the 13th's game day.
+   */
+  daily: { reset: { hour: 13, minute: 37 } },
   training: {
     /**
      * Cost to go from level L to L+1 is baseCost + perLevel * L. Tuned by the balance simulator

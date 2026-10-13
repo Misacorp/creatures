@@ -185,3 +185,26 @@ export function previousOccurrence(
   }
   throw new Error('no occurrence found');
 }
+
+/** A local wall-clock time of day. */
+export interface TimeOfDay {
+  hour: number;
+  minute: number;
+}
+
+/**
+ * The game day of an instant: the 'YYYY-MM-DD' date on which the current day started, where a day
+ * starts at `reset` local time in `tz` (13:37 in `RULES.daily.reset`). Before the reset it is still
+ * the previous date's game day. DST-safe through `zonedTimeToEpoch`.
+ */
+export function gameDay(epochMs: number, tz: string, reset: TimeOfDay): string {
+  const today = zonedDate(epochMs, tz);
+  return epochMs >= zonedTimeToEpoch(today, reset.hour, reset.minute, tz)
+    ? today
+    : addDays(today, -1);
+}
+
+/** When a game day ends: the reset on the next calendar date, in epoch ms. */
+export function gameDayEnd(day: string, tz: string, reset: TimeOfDay): number {
+  return zonedTimeToEpoch(addDays(day, 1), reset.hour, reset.minute, tz);
+}

@@ -35,7 +35,7 @@ export interface DungeonToday {
   day: string;
   /** The guild's IANA timezone. */
   timezone: string;
-  /** When the day ends and the next run opens (the next local midnight), epoch ms. */
+  /** When the game day ends and the next run opens (the next 13:37 local reset), epoch ms. */
   resetsAt: number;
   /** The depth the next run fights at (it only goes up, by 1 for every full clear). */
   depth: number;

@@ -14,7 +14,8 @@
  * keys `dungeon:<day>:<attempt>:bait|essence` (streak: `dungeon:<day>:streak:bait|essence`) and gear
  * grants `dungeon:<day>:<attempt>` and `dungeon:<day>:streak`.
  *
- * The day is the guild-local calendar day: the timezone is resolved once per request and passed down.
+ * The day is the guild-local game day, which starts at the daily reset (13:37, `RULES.daily.reset`):
+ * the timezone is resolved once per request and passed down.
  * The seed of a run is never derivable by a client: it comes from the crypto RNG at the moment of the
  * request and is not sent to anyone. What a client can see before a run, the day's room modifiers,
  * comes from a separate seed that only decides modifiers.
@@ -60,7 +61,7 @@ import { credit, lookupSpend, type LedgerStorage } from './ledger';
 import { drawSeed, slotFor } from './raid-resolve';
 import { loadCreatures, type TeamCreature } from './raid-teams';
 import type { RunBody } from './dungeon-schemas';
-import { addDays, zonedDate, zonedTimeToEpoch } from './time';
+import { addDays, gameDay, gameDayEnd } from './time';
 
 /** Thrown inside a transaction to roll it back and answer with an error. */
 class DungeonError extends Error {
@@ -165,7 +166,7 @@ export interface DungeonToday {
   /** The guild-local calendar day ('YYYY-MM-DD'). */
   day: string;
   timezone: string;
-  /** When the day ends (the next local midnight), in epoch ms. */
+  /** When the game day ends (the next 13:37 local reset), in epoch ms. */
   resetsAt: number;
   /** The depth the next run fights at. */
   depth: number;
@@ -351,7 +352,7 @@ export class Dungeon {
   today(userId: string): DungeonToday {
     const tz = this.deps.timezone();
     const now = this.deps.now();
-    const day = zonedDate(now, tz);
+    const day = gameDay(now, tz, RULES.daily.reset);
     return this.deps.storage.transactionSync(() => this.todayView(userId, day, tz, now));
   }
 
@@ -369,7 +370,7 @@ export class Dungeon {
       serverNow: now,
       day,
       timezone: tz,
-      resetsAt: zonedTimeToEpoch(addDays(day, 1), 0, 0, tz),
+      resetsAt: gameDayEnd(day, tz, RULES.daily.reset),
       depth: progress.depth,
       landmark: isLandmark(progress.depth),
       streak: alive ? progress.streak : 0,
@@ -443,7 +444,7 @@ export class Dungeon {
   run(userId: string, body: RunBody): Outcome<DungeonRunResponse> {
     const tz = this.deps.timezone();
     const now = this.deps.now();
-    const day = zonedDate(now, tz);
+    const day = gameDay(now, tz, RULES.daily.reset);
     try {
       const value = this.deps.storage.transactionSync(() => this.runIn(userId, body, day, tz, now));
       return { ok: true, value };

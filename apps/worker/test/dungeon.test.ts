@@ -18,6 +18,11 @@ import { count, nextGuild, rows } from './raid-helpers';
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
+/**
+ * 14:00 in Helsinki on 2027-01-15, 23 minutes after the daily reset (13:37), so the game day is the
+ * 15th. `T0` (10:00 local) is before the reset and so still the game day of the 14th.
+ */
+const AFTER_RESET = Date.parse('2027-01-15T12:00:00Z');
 
 const opts = (seed = 'dungeon-tests') => ({
   dungeonRng: createSeededRng(seed),
@@ -173,9 +178,10 @@ describe('GET /api/dungeon/today', () => {
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1);
         const today = await p.today();
+        // T0 is 10:00 in Helsinki: before the 13:37 reset, so it is still the game day of the 14th.
         expect(today).toMatchObject({
           serverNow: T0,
-          day: '2027-01-15',
+          day: '2027-01-14',
           timezone: 'Europe/Helsinki',
           depth: 1,
           landmark: false,
@@ -194,8 +200,8 @@ describe('GET /api/dungeon/today', () => {
           expect(m.name).toBe(content?.name);
           expect(m.description).toBe(content?.description);
         }
-        // The day ends at the next local midnight: 2027-01-16 00:00 in Helsinki (UTC+2).
-        expect(today.resetsAt).toBe(Date.parse('2027-01-15T22:00:00Z'));
+        // The day ends at the next local reset: 2027-01-15 13:37 in Helsinki (UTC+2).
+        expect(today.resetsAt).toBe(Date.parse('2027-01-15T11:37:00Z'));
         const seeds = rows<{ modifier_seed: string }>(
           ctx.sql,
           'SELECT modifier_seed FROM dungeon_days',
@@ -213,8 +219,9 @@ describe('GET /api/dungeon/today', () => {
       async (ctx) => {
         const a = await dungeonPlayer(ctx, 1);
         const b = await dungeonPlayer(ctx, 2);
+        ctx.clock.t = AFTER_RESET;
         const first = (await a.today()).modifiers;
-        ctx.clock.t += 5 * HOUR;
+        ctx.clock.t += 5 * HOUR; // 19:00 local, the same game day
         expect((await b.today()).modifiers).toEqual(first);
         expect((await a.today()).modifiers).toEqual(first);
         expect(count(ctx.sql, 'dungeon_days')).toBe(1);
@@ -288,6 +295,7 @@ describe('POST /api/dungeon/run', () => {
       nextGuild(),
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
+        ctx.clock.t = AFTER_RESET;
         const res = await p.run();
         expect(res.status).toBe(200);
         const run = res.body.run;
@@ -503,11 +511,12 @@ describe('POST /api/dungeon/run', () => {
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         setProgress(ctx, p.id, {});
+        ctx.clock.t = AFTER_RESET;
         expect((await p.run()).status).toBe(200);
         const second = await p.run();
         expect(second.status).toBe(409);
         expect(second.body).toEqual({ error: 'already_run' });
-        ctx.clock.t += 6 * HOUR; // still the same local day (16:00)
+        ctx.clock.t += 6 * HOUR; // still the same game day (20:00 local)
         expect((await p.run()).body).toEqual({ error: 'already_run' });
         expect(storedRuns(ctx, p.id)).toHaveLength(1);
         // Another player's day is their own.
@@ -694,6 +703,7 @@ describe('idempotency', () => {
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         setProgress(ctx, p.id, { depth: 6, last_day: '2027-01-14', streak: 2 });
+        ctx.clock.t = AFTER_RESET;
         const res = await p.run();
         const run = res.body.run;
         expect(run.cleared).toBe(true);
@@ -739,54 +749,60 @@ describe('idempotency', () => {
   });
 });
 
-describe('the day is the guild-local day', () => {
-  it('ends at local midnight across the spring DST change (a 23 hour day), in Europe/Helsinki', async () => {
+describe('the day is the guild-local game day, which turns at 13:37', () => {
+  it('ends at 13:37 local across the spring DST change (a 23 hour day), in Europe/Helsinki', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         setProgress(ctx, p.id, {});
-        // 2027-03-28: the clocks go forward at 03:00. The 27th ends at 22:00Z (UTC+2).
-        ctx.clock.t = Date.parse('2027-03-27T21:59:00Z'); // 23:59 on the 27th
+        // 2027-03-28: the clocks go forward at 03:00 (01:00Z), from UTC+2 to UTC+3.
+        ctx.clock.t = Date.parse('2027-03-27T12:00:00Z'); // 14:00 on the 27th (UTC+2)
         expect((await p.run()).body.run.day).toBe('2027-03-27');
-        ctx.clock.t = Date.parse('2027-03-27T21:59:59Z');
+        // The 27th ends at 13:37 on the 28th, which is 10:37Z in UTC+3: only 23 hours after 13:37 on the 27th.
+        expect((await p.today()).resetsAt).toBe(Date.parse('2027-03-28T10:37:00Z'));
+        ctx.clock.t = Date.parse('2027-03-28T10:36:59Z'); // 13:36:59 on the 28th
         expect((await p.run()).body).toEqual({ error: 'already_run' });
-        ctx.clock.t = Date.parse('2027-03-27T22:00:00Z'); // 00:00 on the 28th
+        ctx.clock.t = Date.parse('2027-03-28T10:37:00Z'); // 13:37:00 on the 28th
         expect((await p.run()).body.run.day).toBe('2027-03-28');
-        // The 28th is 23 hours long: its midnight is 21:00Z (UTC+3 from 01:00Z).
-        expect((await p.today()).resetsAt).toBe(Date.parse('2027-03-28T21:00:00Z'));
-        ctx.clock.t = Date.parse('2027-03-28T20:59:59Z'); // 23:59:59 on the 28th
+        // The 28th ends at 13:37 on the 29th (10:37Z): 24 hours later, as the clocks do not move that day.
+        expect((await p.today()).resetsAt).toBe(Date.parse('2027-03-29T10:37:00Z'));
+        ctx.clock.t = Date.parse('2027-03-29T10:36:59Z');
         expect((await p.run()).body).toEqual({ error: 'already_run' });
-        ctx.clock.t = Date.parse('2027-03-28T21:00:00Z'); // 00:00 on the 29th
+        ctx.clock.t = Date.parse('2027-03-29T10:37:00Z');
         expect((await p.run()).body.run.day).toBe('2027-03-29');
         expect(storedRuns(ctx, p.id).map((r) => r.day)).toEqual([
           '2027-03-27',
           '2027-03-28',
           '2027-03-29',
         ]);
-        // Three days in a row, one run each.
+        // Three game days in a row, one run each. The first game day was 23 hours long.
         expect(progressOf(ctx, p.id)?.streak).toBe(3);
       },
       opts(),
     );
   });
 
-  it('ends at local midnight across the autumn DST change (a 25 hour day), in Europe/Helsinki', async () => {
+  it('ends at 13:37 local across the autumn DST change (a 25 hour day), in Europe/Helsinki', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         setProgress(ctx, p.id, {});
-        // 2027-10-31: the clocks go back at 04:00 to 03:00. The 30th ends at 21:00Z (UTC+3).
-        ctx.clock.t = Date.parse('2027-10-30T20:59:00Z'); // 23:59 on the 30th
+        // 2027-10-31: the clocks go back at 04:00 to 03:00 (01:00Z). The 30th is on UTC+3 until then.
+        ctx.clock.t = Date.parse('2027-10-30T11:00:00Z'); // 14:00 on the 30th (UTC+3)
         expect((await p.run()).body.run.day).toBe('2027-10-30');
-        ctx.clock.t = Date.parse('2027-10-30T21:00:00Z'); // 00:00 on the 31st
-        expect((await p.run()).body.run.day).toBe('2027-10-31');
-        // The 31st is 25 hours long: it ends at 22:00Z (UTC+2).
-        expect((await p.today()).resetsAt).toBe(Date.parse('2027-10-31T22:00:00Z'));
-        ctx.clock.t = Date.parse('2027-10-31T21:30:00Z'); // 23:30 on the 31st, though 24 hours have passed
+        // The 30th ends at 13:37 on the 31st, which is 11:37Z in UTC+2: 25 hours after 13:37 on the 30th.
+        expect((await p.today()).resetsAt).toBe(Date.parse('2027-10-31T11:37:00Z'));
+        ctx.clock.t = Date.parse('2027-10-31T10:37:00Z'); // 12:37 on the 31st, though 24 hours have passed
         expect((await p.run()).body).toEqual({ error: 'already_run' });
-        ctx.clock.t = Date.parse('2027-10-31T22:00:00Z');
+        ctx.clock.t = Date.parse('2027-10-31T11:36:59Z'); // 13:36:59
+        expect((await p.run()).body).toEqual({ error: 'already_run' });
+        ctx.clock.t = Date.parse('2027-10-31T11:37:00Z'); // 13:37:00
+        expect((await p.run()).body.run.day).toBe('2027-10-31');
+        // The 31st ends at 13:37 on 1 November (UTC+2), 24 hours later.
+        expect((await p.today()).resetsAt).toBe(Date.parse('2027-11-01T11:37:00Z'));
+        ctx.clock.t = Date.parse('2027-11-01T11:37:00Z');
         expect((await p.run()).body.run.day).toBe('2027-11-01');
       },
       opts(),
@@ -800,16 +816,74 @@ describe('the day is the guild-local day', () => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         setProgress(ctx, p.id, {});
         expect(await ctx.core.setTimezone('America/Los_Angeles')).toBe(true);
-        // 2027-01-15 07:30Z is 23:30 on the 14th in Los Angeles (UTC-8).
-        ctx.clock.t = Date.parse('2027-01-15T07:30:00Z');
+        // 2027-01-15 21:30Z is 13:30 on the 15th in Los Angeles (UTC-8): before the reset, so the 14th.
+        ctx.clock.t = Date.parse('2027-01-15T21:30:00Z');
         const today = await p.today();
         expect(today).toMatchObject({ day: '2027-01-14', timezone: 'America/Los_Angeles' });
-        expect(today.resetsAt).toBe(Date.parse('2027-01-15T08:00:00Z'));
+        // 13:37 in Los Angeles is 21:37Z (not 13:37Z, which would be the reset in UTC).
+        expect(today.resetsAt).toBe(Date.parse('2027-01-15T21:37:00Z'));
         expect((await p.run()).body.run.day).toBe('2027-01-14');
-        ctx.clock.t = Date.parse('2027-01-15T07:59:59Z');
+        ctx.clock.t = Date.parse('2027-01-15T21:36:59Z');
         expect((await p.run()).body).toEqual({ error: 'already_run' });
-        ctx.clock.t = Date.parse('2027-01-15T08:00:00Z');
+        ctx.clock.t = Date.parse('2027-01-15T21:37:00Z');
         expect((await p.run()).body.run.day).toBe('2027-01-15');
+      },
+      opts(),
+    );
+  });
+
+  it('puts a run at 13:36 and a run at 13:38 of the same date on different game days', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        setProgress(ctx, p.id, {});
+        // 2027-01-15 in Helsinki (UTC+2): 13:36 is 11:36Z and 13:38 is 11:38Z.
+        ctx.clock.t = Date.parse('2027-01-15T11:36:00Z');
+        const before = await p.run();
+        expect(before.body.run.day).toBe('2027-01-14');
+        ctx.clock.t = Date.parse('2027-01-15T11:38:00Z');
+        const after = await p.run();
+        expect(after.status).toBe(200);
+        expect(after.body.run.day).toBe('2027-01-15');
+        expect(storedRuns(ctx, p.id).map((r) => r.day)).toEqual(['2027-01-14', '2027-01-15']);
+        // Two minutes apart, and the second run is not refused as a second run of the day.
+        expect(after.body.run.createdAt - before.body.run.createdAt).toBe(2 * 60_000);
+      },
+      opts(),
+    );
+  });
+
+  it('counts the streak in game days: 13:38 to 13:36 the next date is one day, not two', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        setProgress(ctx, p.id, {});
+        // A game day runs from 13:37 to 13:37: a run just before the reset is still the old day's
+        // (so it is refused), and one just after it is the next day's.
+        ctx.clock.t = Date.parse('2027-01-15T11:38:00Z');
+        expect((await p.run()).body.run.streak).toBe(1);
+        ctx.clock.t = Date.parse('2027-01-16T11:36:00Z'); // 13:36 on the 16th: still the 15th's game day
+        expect((await p.run()).body).toEqual({ error: 'already_run' });
+        expect((await p.today()).streak).toBe(1);
+        ctx.clock.t = Date.parse('2027-01-16T11:38:00Z'); // 13:38 on the 16th: the next game day
+        expect((await p.run()).body.run.streak).toBe(2);
+        // Midnight passed in between and started nothing: only the 13:37 reset does.
+        ctx.clock.t = Date.parse('2027-01-17T11:36:00Z');
+        expect((await p.run()).body).toEqual({ error: 'already_run' });
+        ctx.clock.t = Date.parse('2027-01-17T11:38:00Z');
+        expect((await p.run()).body.run.streak).toBe(3);
+        // Skip a whole game day (the 18th): the streak is gone by the 19th.
+        ctx.clock.t = Date.parse('2027-01-19T11:38:00Z');
+        expect((await p.today()).streak).toBe(0);
+        expect((await p.run()).body.run.streak).toBe(1);
+        expect(storedRuns(ctx, p.id).map((r) => r.day)).toEqual([
+          '2027-01-15',
+          '2027-01-16',
+          '2027-01-17',
+          '2027-01-19',
+        ]);
       },
       opts(),
     );
@@ -884,6 +958,7 @@ describe('the free retry of the first day', () => {
           'INSERT INTO dungeon_progress (user_id, depth, first_day) VALUES (?, 45, NULL)',
           p.id,
         );
+        ctx.clock.t = AFTER_RESET;
         expect((await p.run()).body.run.cleared).toBe(false);
         ctx.sql.exec('UPDATE dungeon_progress SET depth = 1 WHERE user_id = ?', p.id);
         const retry = await p.run();

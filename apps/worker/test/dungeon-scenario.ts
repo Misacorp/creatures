@@ -9,8 +9,8 @@ import { createSeededRng } from '@creatures/game';
 import { dungeonPlayer, newKey, type DungeonPlayer, type Json } from './dungeon-helpers';
 import type { CoreContext } from './helpers';
 
-/** Tuesday of week 2027-W02, 08:00 in Helsinki. */
-export const DUNGEON_SCENARIO_START = Date.parse('2027-01-12T06:00:00Z');
+/** Tuesday of week 2027-W02, 14:00 in Helsinki: after the 13:37 daily reset, so the game day is the 12th. */
+export const DUNGEON_SCENARIO_START = Date.parse('2027-01-12T12:00:00Z');
 
 export interface DungeonCaptured {
   /** Named responses: bodies of successful calls. */

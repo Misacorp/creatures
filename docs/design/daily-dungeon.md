@@ -14,7 +14,7 @@ No real-time backend is needed.
 
 ## Shape
 
-- **Once per day per player.** The day is the guild-local calendar day (the guild timezone, passed explicitly). Runs reset at local midnight.
+- **Once per day per player.** The day is the guild-local game day, which starts at the daily reset, 13:37 in the guild timezone (`RULES.daily.reset`; the timezone is passed explicitly). Before 13:37 it is still the previous date's game day.
 - **Team:** the player picks 3 of their creatures and orders them into Front, Middle and Back (one each, or any arrangement in a 3-slot row). The team is frozen at the run start.
 - **Pre-run choices** replace live input, since there is none:
   - the basic ability pick;

@@ -1,6 +1,6 @@
 {
   "run": {
-    "id": "d5f7ee86-e467-4795-9f06-4fb17c7e8f55",
+    "id": "c0fce61c-4e97-4efb-8825-aa7bbc5da3d1",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 7,
@@ -9,10 +9,10 @@
     "roomsCleared": 3,
     "landmark": true,
     "streak": 3,
-    "createdAt": 1799733600000,
+    "createdAt": 1799755200000,
     "team": [
       {
-        "id": "56651a01-2f99-406e-b65c-0443f246ea17",
+        "id": "ec43b6ff-f2c4-420c-8597-43d871f448fd",
         "name": "Tidewing",
         "speciesId": "tidewing",
         "element": "tide",
@@ -23,7 +23,7 @@
         "hpEnd": 115
       },
       {
-        "id": "fa7e9f44-86db-4aaa-a97a-f2abf98e8956",
+        "id": "1516ace1-d426-4bbe-b4cf-80981163183f",
         "name": "Pyrelynx",
         "speciesId": "pyrelynx",
         "element": "ember",
@@ -34,7 +34,7 @@
         "hpEnd": 395
       },
       {
-        "id": "1b8ebe03-af07-47c2-b2f7-609c0f68faf5",
+        "id": "d8352ade-940e-4ed1-b5d7-23a78b8d0c36",
         "name": "Thornbuck",
         "speciesId": "thornbuck",
         "element": "grove",
@@ -114,7 +114,7 @@
       },
       "gear": [
         {
-          "id": "fc25b7dc-6b49-4417-8159-85b83ec7f15d",
+          "id": "8805c898-d994-40fb-b2a0-d49326ce067b",
           "baseId": "keen-trinket",
           "rarity": "rare"
         }
@@ -132,10 +132,10 @@
     }
   },
   "today": {
-    "serverNow": 1799733600000,
+    "serverNow": 1799755200000,
     "day": "2027-01-12",
     "timezone": "Europe/Helsinki",
-    "resetsAt": 1799791200000,
+    "resetsAt": 1799840220000,
     "depth": 8,
     "landmark": false,
     "streak": 3,
@@ -164,7 +164,7 @@
     "canRun": false,
     "blocked": "already_run",
     "last": {
-      "id": "d5f7ee86-e467-4795-9f06-4fb17c7e8f55",
+      "id": "c0fce61c-4e97-4efb-8825-aa7bbc5da3d1",
       "day": "2027-01-12",
       "attempt": 1,
       "depth": 7,
@@ -173,10 +173,10 @@
       "roomsCleared": 3,
       "landmark": true,
       "streak": 3,
-      "createdAt": 1799733600000,
+      "createdAt": 1799755200000,
       "team": [
         {
-          "id": "56651a01-2f99-406e-b65c-0443f246ea17",
+          "id": "ec43b6ff-f2c4-420c-8597-43d871f448fd",
           "name": "Tidewing",
           "speciesId": "tidewing",
           "element": "tide",
@@ -187,7 +187,7 @@
           "hpEnd": 115
         },
         {
-          "id": "fa7e9f44-86db-4aaa-a97a-f2abf98e8956",
+          "id": "1516ace1-d426-4bbe-b4cf-80981163183f",
           "name": "Pyrelynx",
           "speciesId": "pyrelynx",
           "element": "ember",
@@ -198,7 +198,7 @@
           "hpEnd": 395
         },
         {
-          "id": "1b8ebe03-af07-47c2-b2f7-609c0f68faf5",
+          "id": "d8352ade-940e-4ed1-b5d7-23a78b8d0c36",
           "name": "Thornbuck",
           "speciesId": "thornbuck",
           "element": "grove",
@@ -278,7 +278,7 @@
         },
         "gear": [
           {
-            "id": "fc25b7dc-6b49-4417-8159-85b83ec7f15d",
+            "id": "8805c898-d994-40fb-b2a0-d49326ce067b",
             "baseId": "keen-trinket",
             "rarity": "rare"
           }

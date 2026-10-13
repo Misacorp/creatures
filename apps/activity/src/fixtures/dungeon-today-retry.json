@@ -1,8 +1,8 @@
 {
-  "serverNow": 1799733600000,
+  "serverNow": 1799755200000,
   "day": "2027-01-12",
   "timezone": "Europe/Helsinki",
-  "resetsAt": 1799791200000,
+  "resetsAt": 1799840220000,
   "depth": 45,
   "landmark": false,
   "streak": 1,
@@ -31,7 +31,7 @@
   "canRun": true,
   "blocked": null,
   "last": {
-    "id": "d9bcd6ff-d79d-40cc-a725-41889fcbb4a8",
+    "id": "dc03b796-1fc0-424e-839e-59ac8edf90d0",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 45,
@@ -40,10 +40,10 @@
     "roomsCleared": 0,
     "landmark": false,
     "streak": 1,
-    "createdAt": 1799733600000,
+    "createdAt": 1799755200000,
     "team": [
       {
-        "id": "1ba4be37-f3d6-4481-8cf0-898d325925bb",
+        "id": "d7c76b8e-347b-480c-94ae-8e84b62adf9e",
         "name": "Mistnewt",
         "speciesId": "mistnewt",
         "element": "tide",
@@ -54,7 +54,7 @@
         "hpEnd": 0
       },
       {
-        "id": "10e3739d-6467-4b3d-a760-7019539caf07",
+        "id": "2b1dc54f-565d-40e1-b4e8-23775e4705ab",
         "name": "Ashmole",
         "speciesId": "ashmole",
         "element": "ember",
@@ -65,7 +65,7 @@
         "hpEnd": 0
       },
       {
-        "id": "f3f75cf1-bb98-4c31-83cb-846858049e19",
+        "id": "e7beca1d-67c8-4d90-bb46-08485be9db33",
         "name": "Stormray",
         "speciesId": "stormray",
         "element": "spark",
