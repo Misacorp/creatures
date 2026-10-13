@@ -21,20 +21,15 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
 
 ## Next
 
-Follow `docs/roadmap.md`. Next is item 5, analytics reports and the balance loop (`design/analytics.md` phase 2, `design/balance-loop.md`), with item 5b, dev tools (`design/dev-tools.md`), in parallel where files don't overlap. After that comes item 6, cleanup pass 1 (`design/cleanup-1.md`). Lore and new content start from `docs/compendium/`.
+Follow `docs/roadmap.md`.
 
-**Overnight plan (2026-10-13, after Misa's go-ahead):**
-
-1. **Analytics server.** Build the rollups (resource flow and per-feature use), the guild directory, the ops endpoint with privacy tests, and the report workflow (it needs `OPS_TOKEN`; send Misa the checklist in `design/analytics.md`).
-2. **Dev tools server.** Build the `DEV_TOOLS` gate, the dev clock and the `/api/dev/*` routes, in a separate worktree. Reconcile the shared files (`guild-core.ts`, `wrangler.jsonc`) at merge.
-3. **Analysis.** Build `pnpm analyze`, `pnpm sim:live`, `pnpm scalars` with its staleness test, `docs/balance/log.md`, `pnpm patch-notes`, and the `patch-notes` skill.
-4. **Dev tools panel.** Build the client panel per view.
-5. **PRs.** Open one PR for analytics and the balance loop, and one for dev tools; or one combined PR if they are ready together. Send Misa the `OPS_TOKEN` checklist.
-6. **Cleanup.** Run the cleanup audit, read-only, so the cleanup PR can start next.
+- **Items 5 and 5b are built** (branch `analytics`, PR #12, 2026-10-14 overnight): rollups, guild directory, ops endpoint, report workflow, `pnpm analyze`, `pnpm sim:live`, `pnpm scalars`, `pnpm patch-notes`, the `patch-notes` and `balance-review` skills, and the staging-only dev tools (server gate, dev clock, `/api/dev/*`, client panel). Waiting for Misa to review, merge and add `OPS_TOKEN`.
+- **Item 6, cleanup pass 1:** the audit is done (`design/cleanup-1-audit.md`, 18 slices, smallest risk first). The slices start on a branch from `analytics` (`cleanup-1`). Four game-feel questions for Misa are listed at the end of the audit.
+- The first real balance report needs about a week of rolled-up data after `OPS_TOKEN` is set. Then run the `balance-review` skill.
 
 ## Open questions for Misa
 
-See "Open design questions" in `docs/roadmap.md`. Misa will need to add the `OPS_TOKEN` secret when the report workflow lands; the checklist will follow.
+See "Open design questions" in `docs/roadmap.md`. Misa needs to add the `OPS_TOKEN` secret (checklist in PR #12 and `design/analytics.md`).
 
 ## Notes for future agents
 
