@@ -1,6 +1,6 @@
 {
   "run": {
-    "id": "c0fce61c-4e97-4efb-8825-aa7bbc5da3d1",
+    "id": "885cd28d-4b1b-444b-b13d-2d1a83b0e4ae",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 7,
@@ -12,35 +12,32 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "ec43b6ff-f2c4-420c-8597-43d871f448fd",
+        "id": "60f264b1-fc18-46f8-8754-a1c1397eb473",
         "name": "Tidewing",
         "speciesId": "tidewing",
         "element": "tide",
         "role": "setter",
         "level": 30,
-        "zone": "front",
         "hpMax": 476,
-        "hpEnd": 115
+        "hpEnd": 153
       },
       {
-        "id": "1516ace1-d426-4bbe-b4cf-80981163183f",
+        "id": "646028c9-c94a-4b2b-ad4f-4bd9e1f82bcc",
         "name": "Pyrelynx",
         "speciesId": "pyrelynx",
         "element": "ember",
         "role": "payoff",
         "level": 30,
-        "zone": "middle",
         "hpMax": 395,
         "hpEnd": 395
       },
       {
-        "id": "d8352ade-940e-4ed1-b5d7-23a78b8d0c36",
+        "id": "7ea7b508-d1dd-40cf-9d32-855c116ec5a5",
         "name": "Thornbuck",
         "speciesId": "thornbuck",
         "element": "grove",
         "role": "guard",
         "level": 30,
-        "zone": "back",
         "hpMax": 856,
         "hpEnd": 856
       }
@@ -53,7 +50,7 @@
           "id": "puddle-imp",
           "name": "Puddle Imp",
           "element": "tide",
-          "hpMax": 1311
+          "hpMax": 1261
         },
         "modifier": {
           "id": "dark",
@@ -72,7 +69,7 @@
           "id": "ash-sprite",
           "name": "Ash Sprite",
           "element": "ember",
-          "hpMax": 1008
+          "hpMax": 968
         },
         "modifier": {
           "id": "brittle",
@@ -91,7 +88,7 @@
           "id": "drowned-warden",
           "name": "Drowned Warden",
           "element": "tide",
-          "hpMax": 2118
+          "hpMax": 2037
         },
         "modifier": {
           "id": "thorns",
@@ -100,7 +97,7 @@
         },
         "played": true,
         "cleared": true,
-        "rounds": 6,
+        "rounds": 5,
         "foeHpEnd": 0
       }
     ],
@@ -114,7 +111,7 @@
       },
       "gear": [
         {
-          "id": "8805c898-d994-40fb-b2a0-d49326ce067b",
+          "id": "060fc894-3ef7-4c3e-9f4a-e320259c4447",
           "baseId": "keen-trinket",
           "rarity": "rare"
         }
@@ -164,7 +161,7 @@
     "canRun": false,
     "blocked": "already_run",
     "last": {
-      "id": "c0fce61c-4e97-4efb-8825-aa7bbc5da3d1",
+      "id": "885cd28d-4b1b-444b-b13d-2d1a83b0e4ae",
       "day": "2027-01-12",
       "attempt": 1,
       "depth": 7,
@@ -176,35 +173,32 @@
       "createdAt": 1799755200000,
       "team": [
         {
-          "id": "ec43b6ff-f2c4-420c-8597-43d871f448fd",
+          "id": "60f264b1-fc18-46f8-8754-a1c1397eb473",
           "name": "Tidewing",
           "speciesId": "tidewing",
           "element": "tide",
           "role": "setter",
           "level": 30,
-          "zone": "front",
           "hpMax": 476,
-          "hpEnd": 115
+          "hpEnd": 153
         },
         {
-          "id": "1516ace1-d426-4bbe-b4cf-80981163183f",
+          "id": "646028c9-c94a-4b2b-ad4f-4bd9e1f82bcc",
           "name": "Pyrelynx",
           "speciesId": "pyrelynx",
           "element": "ember",
           "role": "payoff",
           "level": 30,
-          "zone": "middle",
           "hpMax": 395,
           "hpEnd": 395
         },
         {
-          "id": "d8352ade-940e-4ed1-b5d7-23a78b8d0c36",
+          "id": "7ea7b508-d1dd-40cf-9d32-855c116ec5a5",
           "name": "Thornbuck",
           "speciesId": "thornbuck",
           "element": "grove",
           "role": "guard",
           "level": 30,
-          "zone": "back",
           "hpMax": 856,
           "hpEnd": 856
         }
@@ -217,7 +211,7 @@
             "id": "puddle-imp",
             "name": "Puddle Imp",
             "element": "tide",
-            "hpMax": 1311
+            "hpMax": 1261
           },
           "modifier": {
             "id": "dark",
@@ -236,7 +230,7 @@
             "id": "ash-sprite",
             "name": "Ash Sprite",
             "element": "ember",
-            "hpMax": 1008
+            "hpMax": 968
           },
           "modifier": {
             "id": "brittle",
@@ -255,7 +249,7 @@
             "id": "drowned-warden",
             "name": "Drowned Warden",
             "element": "tide",
-            "hpMax": 2118
+            "hpMax": 2037
           },
           "modifier": {
             "id": "thorns",
@@ -264,7 +258,7 @@
           },
           "played": true,
           "cleared": true,
-          "rounds": 6,
+          "rounds": 5,
           "foeHpEnd": 0
         }
       ],
@@ -278,7 +272,7 @@
         },
         "gear": [
           {
-            "id": "8805c898-d994-40fb-b2a0-d49326ce067b",
+            "id": "060fc894-3ef7-4c3e-9f4a-e320259c4447",
             "baseId": "keen-trinket",
             "rarity": "rare"
           }

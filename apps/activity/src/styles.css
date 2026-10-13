@@ -4705,19 +4705,40 @@ button.pick-item {
   border-left: var(--px) solid var(--gold);
 }
 
-/* The three zones as rows: one wide slot each, the sprite at the left. */
-.dungeon-strip .party-slot {
-  flex-direction: row;
-  align-items: center;
+/*
+  The team's row: three slots side by side, left to right (the fight is one row of three). Each slot
+  is a column with its place above it, the sprite on top and the name and level under it.
+*/
+.dungeon-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
-  width: 100%;
-  min-height: 4rem;
-  padding: 0.25rem 0.5rem;
-  text-align: left;
+  padding: 0.25rem 0 0.5rem;
+}
+
+.dungeon-strip .party-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dungeon-strip .zone-label {
+  text-align: center;
 }
 
 .dungeon-strip .zone-slots {
   display: block;
+}
+
+.dungeon-strip .party-slot {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.25rem;
+  width: 100%;
+  min-height: 9rem;
+  padding: 0.375rem 0.25rem;
+  text-align: center;
 }
 
 .dungeon-strip .party-slot.empty {
@@ -4727,16 +4748,24 @@ button.pick-item {
 .dungeon-slot-text {
   display: flex;
   flex-direction: column;
+  align-items: center;
   min-width: 0;
+  max-width: 100%;
 }
 
 .dungeon-slot-text .slot-species {
-  text-align: left;
+  text-align: center;
 }
 
 .dungeon-slot-text .slot-meta {
   color: var(--muted);
   font-size: 0.75rem;
+}
+
+.row-notes {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.125rem;
+  font-size: 0.875rem;
 }
 
 .dungeon-tray {
@@ -4761,34 +4790,13 @@ button.pick-item {
   width: 100%;
 }
 
-/* Playback: the card between rooms, and the stage under it. */
+/*
+  Playback. The stage keeps its size for the whole run; the room banner is drawn over it, and the
+  lines above and below it hold their height, so nothing jumps between rooms or rounds.
+*/
 .dungeon-room-line {
+  min-height: 1.5rem;
   margin: 0.5rem 0 0.25rem;
-}
-
-.room-card {
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 0.25rem;
-  min-height: 12rem;
-  padding: 1.5rem 0.75rem;
-  background: var(--night);
-  box-shadow: inset 0 0 0 var(--px) var(--ink);
-  text-align: center;
-}
-
-.room-card p {
-  margin: 0;
-}
-
-.room-card-title {
-  color: var(--gold);
-  font-size: 1.5rem;
-}
-
-.room-card-foe {
-  font-size: 1.125rem;
 }
 
 .dungeon-room-result {
@@ -4796,44 +4804,243 @@ button.pick-item {
   margin: 0.5rem 0 0;
 }
 
-/* The results: a row for each room and a line for each creature. */
-.dungeon-rooms,
-.dungeon-team-end {
-  display: grid;
+/*
+  The room banner over the stage when a room opens: a grander cousin of the round intro (same veil,
+  above it). It lets taps through and sits inside the stage's own box.
+*/
+.room-banner {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 0.375rem;
-  margin: 0.25rem 0;
+  padding: 0.5rem;
+  background: rgb(13 10 26 / 95%);
+  box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--gold);
+  pointer-events: none;
+  text-align: center;
+}
+
+.room-banner.boss {
+  box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--bad);
+}
+
+.room-banner p {
+  margin: 0;
+}
+
+.rb-heading {
+  color: var(--gold);
+  font-size: 3rem;
+  line-height: 1;
+  text-shadow:
+    var(--px) 0 var(--ink),
+    calc(var(--px) * -1) 0 var(--ink),
+    0 var(--px) var(--ink),
+    0 calc(var(--px) * -1) var(--ink);
+}
+
+.room-banner.boss .rb-heading {
+  color: var(--bad);
+}
+
+.rb-place {
+  color: var(--haze);
+  font-size: 1.125rem;
+}
+
+.rb-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 0.5rem;
+  color: var(--bone);
+  font-size: 1.375rem;
+  line-height: 1.1;
+}
+
+.rb-element {
+  color: var(--el, var(--haze));
+  font-size: 1rem;
+}
+
+.rb-twist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  max-width: 20rem;
+  font-size: 0.875rem;
+}
+
+.rb-twist strong {
+  color: var(--gold);
+  font-size: 1.0625rem;
+  font-weight: 400;
+}
+
+/* The results: the rooms as a strip of panels, then the team in one row. */
+.room-strip,
+.team-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.375rem;
+  margin: 0.25rem 0 0.75rem;
   padding: 0;
   list-style: none;
-  text-align: left;
 }
 
-.dungeon-room {
+.room-panel {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  gap: 0.25rem 0.5rem;
-  padding: 0.375rem 0.5rem;
-  background: var(--panel-2);
+  gap: 0.125rem;
+  min-width: 0;
+  padding: 0.375rem 0.25rem;
+  background: var(--night);
   box-shadow: inset 0 0 0 var(--px) var(--ink);
+  text-align: center;
 }
 
-.dungeon-room.idle {
-  opacity: 0.7;
+/* A step between the panels, so the strip reads left to right like a comic. */
+.room-panel:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -0.375rem;
+  z-index: 1;
+  width: 0;
+  height: 0;
+  border-top: 0.3125rem solid transparent;
+  border-bottom: 0.3125rem solid transparent;
+  border-left: 0.375rem solid var(--haze);
+  transform: translateY(-50%);
 }
 
-.dungeon-team-end li {
+.rp-title {
+  color: var(--haze);
+  font-size: 0.75rem;
+}
+
+.rp-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 4.5rem;
+  line-height: 0;
+}
+
+.rp-name {
+  font-size: 0.8125rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.rp-mod,
+.rp-hp {
+  font-size: 0.6875rem;
+  line-height: 1.15;
+}
+
+/* The word across the picture, tilted like a stamp. It is a label, not an animation. */
+.rp-banner {
+  position: absolute;
+  top: 50%;
+  left: -2px;
+  right: -2px;
+  padding: 0.125rem 0;
+  background: var(--ink);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  transform: translateY(-50%) rotate(-8deg);
+}
+
+.room-panel.cleared canvas.sprite {
+  filter: grayscale(1) brightness(0.65);
+}
+
+.room-panel.cleared .rp-banner {
+  box-shadow: inset 0 0 0 var(--px) var(--good);
+  color: var(--good);
+}
+
+.room-panel.defeat {
+  box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--bad);
+}
+
+.room-panel.defeat .rp-banner {
+  box-shadow: inset 0 0 0 var(--px) var(--bad);
+  color: var(--bad);
+}
+
+/* A room never reached: dim, and locked. */
+.room-panel.locked {
+  opacity: 0.55;
+}
+
+.room-panel.locked canvas.sprite {
+  filter: grayscale(1) brightness(0.35);
+}
+
+.room-panel.locked .rp-banner {
+  color: var(--haze);
+  font-size: 0.6875rem;
+}
+
+.team-member {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  gap: 0.25rem 0.5rem;
+  gap: 0.125rem;
+  min-width: 0;
+  text-align: center;
 }
 
-.dungeon-rewards {
-  justify-content: center;
+.tm-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  width: 100%;
+  min-height: 0;
+  padding: 0.125rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
 }
 
-.dungeon-result-buttons {
-  justify-content: center;
+.tm-art {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+
+.tm-name {
+  max-width: 100%;
+  font-size: 0.75rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.tm-hp {
+  color: var(--bone);
+  font-size: 0.8125rem;
+}
+
+.team-member.ko canvas.sprite {
+  filter: grayscale(1) brightness(0.55);
+}
+
+.team-member.ko .tm-hp {
+  color: var(--bad);
 }
 
 /* A creature's HP under its name on the stage (five stepped segments; the foe has its own bar). */
@@ -4855,4 +5062,200 @@ button.pick-item {
 
 .unit-hp > i.gone {
   background: #3a2033;
+}
+
+/*
+  The small-creature popover: a creature sprite you can tap to see its role and element. The button
+  is plain (the sprite and its marks are the look); the popover itself is the glossary's frame.
+*/
+button.small-creature {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: none;
+}
+
+button.small-creature:hover:not(:disabled) {
+  filter: none;
+}
+
+button.small-creature:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
+button.small-creature:focus-visible {
+  outline: var(--px) solid var(--bone);
+  outline-offset: 1px;
+}
+
+button.small-creature[aria-expanded='true'] canvas.sprite {
+  outline: 2px solid var(--gold);
+}
+
+.creature-pop .cp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.375rem 0 0;
+}
+
+button.cp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  margin: 0 0 0.25rem;
+  padding: 0 0.5rem 0 0.25rem;
+  background: var(--dusk);
+  color: var(--gold);
+  font-size: 0.875rem;
+}
+
+.cp-back-arrow {
+  transform: scaleX(-1);
+}
+
+/* The tags under an ability popover on your own creature. */
+.pop-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.375rem 0 0;
+}
+
+/*
+  The dungeon's stage: the three creatures side by side in one row, larger than in a zone row. Each
+  zone is the one creature at that place, so its frames and effects sit on that creature.
+*/
+.stage-rows.single-row {
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+}
+
+.single-row .stage-zone {
+  display: block;
+  flex: none;
+  padding: 0.25rem 0;
+}
+
+.single-row .zone-units {
+  flex-wrap: nowrap;
+}
+
+.single-row .unit-name {
+  font-size: 0.75rem;
+}
+
+.single-row .unit-hp {
+  max-width: calc(var(--unit-w, 88px) - 12px);
+  height: 0.5rem;
+}
+
+/* The room banner fades in, holds and fades out over its own time; the number pops in. Smooth, opacity and scale only. */
+@media (prefers-reduced-motion: no-preference) {
+  .room-banner {
+    animation: room-banner var(--fx-ms, 2200ms) linear both;
+  }
+
+  .rb-heading {
+    animation: rb-pop 450ms ease-out both;
+  }
+}
+
+@keyframes room-banner {
+  0% {
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  88% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes rb-pop {
+  from {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* The rewards row: a small pile of icons (one per kind earned) with the count badges hugging it. */
+.reward-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem 0.75rem;
+  margin: 0.25rem 0;
+}
+
+.reward-pile {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 2.75rem;
+  padding: 0 0.25rem;
+}
+
+.pile-icon {
+  display: block;
+  flex: none;
+  margin-left: -0.625rem;
+  line-height: 0;
+}
+
+.pile-icon:first-child {
+  margin-left: 0;
+}
+
+.pile-icon:nth-child(even) {
+  margin-top: 0.5rem;
+}
+
+.reward-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pile-icon {
+    animation: reveal-pop-in 300ms steps(3) both;
+  }
+
+  .pile-icon:nth-child(2) {
+    animation-delay: 120ms;
+  }
+
+  .pile-icon:nth-child(3) {
+    animation-delay: 240ms;
+  }
+
+  .pile-icon:nth-child(n + 4) {
+    animation-delay: 360ms;
+  }
 }

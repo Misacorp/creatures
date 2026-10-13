@@ -57,7 +57,7 @@
   {
     "id": "fog",
     "name": "Fog",
-    "description": "Nobody can see: everyone acts in slot order, left to right.",
+    "description": "Nobody can see: everyone acts in row order, left to right.",
     "effects": [{ "op": "turn_order", "order": "left_to_right" }]
   }
 ]

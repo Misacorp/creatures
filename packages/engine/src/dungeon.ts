@@ -5,6 +5,14 @@
  * modifier is a set of plain number changes to the room's fight input (stats, foe numbers, the crit
  * luck, a gimmick, the turn order). Pure: no I/O, and all randomness comes from the run's seed
  * through seeded streams, one per room, so a stored run replays exactly.
+ *
+ * The team stands in ONE ROW of three, left to right (`team[i]` is position i). The engine's row
+ * rules are used as they are: a row of three splits into one slot per zone, so the left creature is
+ * in the Front zone, the middle one in Middle and the right one in Back. The foe goes for the left
+ * creature first (the plain attack goes to the front-most creature standing), a zone gimmick hits
+ * the creature at that position, "both ends" are the left and right creatures, and turn orders run
+ * along the row. A Guard covers its neighbours (`guardReach: 'adjacent'`), since a zone of one
+ * creature has nobody else in it.
  */
 import {
   content,
@@ -34,7 +42,7 @@ export interface DungeonRoomSpec {
 
 /** Everything a run needs besides its seed. Plain JSON, so it can be stored and replayed. */
 export interface DungeonRunInput {
-  /** The row, front to back. Stats already include the worn gear. */
+  /** The row, left to right (position 0 is the left creature). Stats already include the worn gear. */
   team: FightSlot[];
   /** The engine's player key of the team's owner (every slot has it as `ownerId`). */
   player: string;
@@ -165,6 +173,7 @@ export function buildRoomInput(
     players: [run.player],
     finaleAbilities: run.abilities,
     luck,
+    guardReach: 'adjacent',
     ...(turnOrderOverride === undefined ? {} : { turnOrderOverride }),
   };
 }

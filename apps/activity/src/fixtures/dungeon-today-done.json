@@ -31,7 +31,7 @@
   "canRun": false,
   "blocked": "already_run",
   "last": {
-    "id": "7394554c-9a62-499e-894e-a09fe944ee3a",
+    "id": "997dcd6e-5ae8-4b1b-8c91-7eda0e8557f3",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -43,35 +43,32 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+        "id": "3756675d-3c1a-4470-bdda-ff863b5b8669",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
         "role": "guard",
         "level": 12,
-        "zone": "front",
         "hpMax": 365,
         "hpEnd": 319
       },
       {
-        "id": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
+        "id": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
         "role": "setter",
         "level": 12,
-        "zone": "middle",
         "hpMax": 200,
         "hpEnd": 200
       },
       {
-        "id": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
+        "id": "297abdd3-de2f-4289-9676-bafd9d0494f0",
         "name": "Cindle",
         "speciesId": "cindle",
         "element": "ember",
         "role": "payoff",
         "level": 12,
-        "zone": "back",
         "hpMax": 173,
         "hpEnd": 173
       }
@@ -84,7 +81,7 @@
           "id": "bramble-hound",
           "name": "Bramble Hound",
           "element": "grove",
-          "hpMax": 351
+          "hpMax": 337
         },
         "modifier": {
           "id": "dark",
@@ -103,7 +100,7 @@
           "id": "drift-wisp",
           "name": "Drift Wisp",
           "element": "tide",
-          "hpMax": 249
+          "hpMax": 240
         },
         "modifier": {
           "id": "brittle",
@@ -122,7 +119,7 @@
           "id": "drowned-warden",
           "name": "Drowned Warden",
           "element": "tide",
-          "hpMax": 546
+          "hpMax": 525
         },
         "modifier": {
           "id": "thorns",

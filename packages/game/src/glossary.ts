@@ -108,6 +108,7 @@ export const FIXED_GLOSSARY_IDS = [
   'workshop',
   'blueprint',
   'dungeon',
+  'dungeon-row',
   'depth',
   'room-modifiers',
   'room-boss',

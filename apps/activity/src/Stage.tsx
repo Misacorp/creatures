@@ -22,18 +22,23 @@ import {
   type AbilityUse,
 } from './stage';
 import { badgeFor, unitTap, usedBadge, type Badge } from './stage-abilities';
+import { SmallCreature } from './SmallCreature';
+import { ElementChip } from './sprites/ElementChip';
+import { capitalize } from './game';
 import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
-import { forecastNextRound, strikeLabel } from './telegraph';
+import { forecastNextRound, strikeLabel, type Wording } from './telegraph';
 import { StagePopover } from './StagePopover';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { elementIcon } from './sprites/element-icons';
 import { useLiveStage, type Anim } from './use-live-stage';
-import { STAGE_FALLBACK_PX, STAGE_LAYOUT, layoutVars, zoneLayout } from './zone-layout';
+import { ROW_LAYOUT, STAGE_FALLBACK_PX, STAGE_LAYOUT, layoutVars, zoneLayout } from './zone-layout';
 
 export type { Anim } from './use-live-stage';
 
 const ZONE_NAMES: Record<Zone, string> = { front: 'Front', middle: 'Middle', back: 'Back' };
+/** In a single row each zone is one creature, named by where it stands. */
+const PLACE_NAMES: Record<Zone, string> = { front: 'Left', middle: 'Middle', back: 'Right' };
 
 /** Each name or id is drawn as text only; nothing here builds markup from it. */
 const nameOf = (table: Readonly<Record<string, string>> | undefined, id: string): string =>
@@ -363,6 +368,17 @@ export interface StageProps {
    */
   creatureHp?: { start: Readonly<Record<string, number>>; max: Readonly<Record<string, number>> };
   /**
+   * `zones` (the raid): the zones are rows under the boss, front first. `row` (the dungeon): the
+   * creatures stand side by side in one row, left to right, with no zone labels; each zone is the
+   * one creature at that place, so its effects (shake, shield, wind-up frame) sit on that creature.
+   */
+  layout?: 'zones' | 'row';
+  /**
+   * Something drawn over the whole stage, above the round intro (the dungeon's room banner). It sits
+   * inside the stage's own box, so the stage keeps its size while it shows.
+   */
+  overlay?: ComponentChildren;
+  /**
    * The live finale's abilities: the player's own creatures with an ability get a badge and open a
    * popover when tapped. Without it (replays) the stage is not interactive and only shows which
    * abilities have been used so far.
@@ -494,11 +510,7 @@ function StageUnit(props: UnitProps) {
   );
 
   return (
-    <li
-      class={props.classes.join(' ')}
-      aria-label={interactive ? undefined : spoken}
-      ref={props.boxRef}
-    >
+    <li class={props.classes.join(' ')} ref={props.boxRef}>
       {interactive ? (
         <button
           type="button"
@@ -512,12 +524,41 @@ function StageUnit(props: UnitProps) {
           {face}
         </button>
       ) : (
-        <span class="unit-face">{face}</span>
+        // Display only: a tap shows the creature's role and element (`SmallCreature`).
+        <SmallCreature
+          id={c.id}
+          info={{
+            name: c.name,
+            species: c.species,
+            level: c.level,
+            element: c.element,
+            role: c.role,
+          }}
+          class="unit-face"
+          label={`${spoken}. Level ${String(c.level)}. Shows its role and element.`}
+        >
+          {face}
+        </SmallCreature>
       )}
       <Floats fx={props.fx} target={c.id} />
       <Bursts fx={props.fx} target={c.id} names={props.names} />
       <KoTags fx={props.fx} creature={c.id} />
     </li>
+  );
+}
+
+/**
+ * The role and element of a creature as tags, at the bottom of the ability popovers, so what a
+ * small-creature popover would tell is one tap away on your own creatures too. Each tag opens its
+ * glossary entry in the usual popover. Nothing for a creature that is not in the row (a basic
+ * ability has none).
+ */
+function CreatureTags({ creature }: { creature: ReplayRowEntry | undefined }) {
+  if (creature === undefined) return null;
+  return (
+    <p class="tags pop-tags">
+      <ElementChip element={creature.element} role={capitalize(creature.role)} />
+    </p>
   );
 }
 
@@ -545,8 +586,12 @@ export function Stage({
   fx = [],
   intro = null,
   creatureHp,
+  layout = 'zones',
+  overlay,
   abilities,
 }: StageProps) {
+  const single = layout === 'row';
+  const wording: Wording = single ? 'row' : 'zones';
   const rowsRef = useRef<HTMLDivElement>(null);
   const width = useElementWidth(rowsRef, STAGE_FALLBACK_PX);
   /** The layer the strikes' beams are drawn in, the boss and each creature's box (for the beams to find). */
@@ -595,7 +640,15 @@ export function Stage({
   const strikeItems = fx.filter((i) => i.cue.kind === 'strike');
   const strikeItem = strikeItems.at(-1);
   // One round ahead: what the boss will do next round, from its content and the round number.
-  const forecast = forecastNextRound(boss.id, state.round, rounds, rowIds, state.knockedOut, names);
+  const forecast = forecastNextRound(
+    boss.id,
+    state.round,
+    rounds,
+    rowIds,
+    state.knockedOut,
+    names,
+    wording,
+  );
 
   // The abilities that have been played so far, by key and by creature.
   const uses = abilityUsesAt(events, index);
@@ -760,7 +813,7 @@ export function Stage({
               ref={fxRef(strikeItem)}
             >
               <Sprite sprite={strikeGlyph(strikeItem.cue.strike.action)} scale={2} />
-              <span>{strikeLabel(strikeItem.cue.strike, names).text}</span>
+              <span>{strikeLabel(strikeItem.cue.strike, names, wording).text}</span>
             </p>
           )}
         </div>
@@ -789,12 +842,22 @@ export function Stage({
         </ul>
       </div>
 
-      <div class="stage-rows" ref={rowsRef} role="group" aria-label="Zones, front to back">
+      <div
+        class={single ? 'stage-rows single-row' : 'stage-rows'}
+        ref={rowsRef}
+        role="group"
+        aria-label={single ? 'Your team, left to right' : 'Zones, front to back'}
+      >
         {groups.map(({ zone, items }) => {
           const fresh = fx.filter((i) => i.cue.kind === 'zone' && i.cue.zone === zone);
           const freshShield = fresh.find((f) => f.cue.kind === 'zone' && f.cue.effect === 'shield');
           const walled = state.shielded.includes(zone);
-          const layout = zoneLayout(items.length, width, STAGE_LAYOUT);
+          const zoneName = single ? PLACE_NAMES[zone] : ZONE_NAMES[zone];
+          // One row: all the creatures share one size, picked for the whole row; otherwise per zone.
+          const layoutOf = single
+            ? zoneLayout(row.length, width, ROW_LAYOUT)
+            : zoneLayout(items.length, width, STAGE_LAYOUT);
+          const config = single ? ROW_LAYOUT : STAGE_LAYOUT;
           const zoneWindup = fx.filter(
             (i) =>
               i.cue.kind === 'windup' &&
@@ -807,12 +870,14 @@ export function Stage({
               key={zone}
               class={`stage-zone zone-${zone}${shaking.has(zone) ? ' shake' : ''}${warnedZone ? ' warned' : ''}`}
               role="group"
-              aria-label={`${ZONE_NAMES[zone]} zone`}
-              ref={cssVars(layoutVars(layout, STAGE_LAYOUT))}
+              aria-label={single ? zoneName : `${zoneName} zone`}
+              ref={cssVars(layoutVars(layoutOf, config))}
             >
-              <p class="zone-label pix">
-                <GlossaryTag entry={GLOSSARY_IDS.zone(zone)}>{ZONE_NAMES[zone]}</GlossaryTag>
-              </p>
+              {!single && (
+                <p class="zone-label pix">
+                  <GlossaryTag entry={GLOSSARY_IDS.zone(zone)}>{zoneName}</GlossaryTag>
+                </p>
+              )}
               {warnedZone && (
                 <span class="zone-warn" aria-hidden="true">
                   <Sprite sprite={glyphOrUnknown('warning')} scale={2} />
@@ -853,7 +918,7 @@ export function Stage({
                     <StageUnit
                       key={c.id}
                       creature={c}
-                      scale={layout.tier.scale}
+                      scale={layoutOf.tier.scale}
                       mine={mine}
                       ko={ko}
                       classes={classes}
@@ -965,6 +1030,7 @@ export function Stage({
           onClose={close}
         >
           {abilities.renderPopover(openAbility, ownInfo(openAbility).badge, close)}
+          <CreatureTags creature={row.find((c) => c.id === openAbility.creature)} />
         </StagePopover>
       )}
       {abilities?.renderNote !== undefined && openNote !== undefined && (
@@ -975,6 +1041,7 @@ export function Stage({
           onClose={close}
         >
           {abilities.renderNote(openNote, close)}
+          <CreatureTags creature={openNote} />
         </StagePopover>
       )}
       {abilities?.help !== undefined && openKey === 'help' && (
@@ -1008,6 +1075,7 @@ export function Stage({
         })}
       </div>
       {intro !== null && <RoundIntro intro={intro} />}
+      {overlay}
     </section>
   );
 }

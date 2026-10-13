@@ -24,7 +24,7 @@
     "route": "POST /api/dungeon/run",
     "status": 400,
     "body": {
-      "error": "invalid_formation"
+      "error": "invalid_body"
     }
   },
   {

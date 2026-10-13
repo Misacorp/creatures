@@ -16,12 +16,9 @@ let keyCounter = 0;
 /** A valid client idempotency key, unique per call. */
 export const newKey = (): string => `dungeon-${String(++keyCounter).padStart(8, '0')}-test`;
 
-/** The zones in the order of the row. */
-export const ZONE_ORDER = ['front', 'middle', 'back'] as const;
-
 export interface RunBodyInput {
+  /** The row, left to right. */
   team: string[];
-  formation: string[];
   abilities: {
     basic: { abilityId: string; fireAtRound: number | null; zone?: string; element?: string };
     creatures: { creatureId: string; fireAtRound: number | null }[];
@@ -65,7 +62,6 @@ export async function dungeonPlayer(
   };
   const body = (overrides: Partial<RunBodyInput> = {}): RunBodyInput => ({
     team: seeded.creatureIds.slice(0, 3),
-    formation: [...ZONE_ORDER],
     abilities: { basic: { abilityId: 'rally', fireAtRound: null }, creatures: [] },
     idempotencyKey: newKey(),
     ...overrides,

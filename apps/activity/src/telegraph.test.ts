@@ -139,3 +139,37 @@ describe('the forecast one round ahead', () => {
     }
   });
 });
+
+describe('the wording of a single row (the dungeon)', () => {
+  it('names the creature at a place instead of a whole row', () => {
+    const label = (zone: 'front' | 'middle' | 'back') =>
+      strikeLabel(strike({ action: 'hit_zone', gimmick: 'undertow', zone }), names, 'row').text;
+    expect(label('front')).toBe('Undertow · the left creature');
+    expect(label('middle')).toBe('Undertow · the middle creature');
+    expect(label('back')).toBe('Undertow · the right creature');
+    // The raid keeps its words, and so does an unnamed zone hit on a row.
+    expect(
+      strikeLabel(strike({ action: 'hit_zone', gimmick: 'undertow', zone: 'back' }), names).text,
+    ).toBe('Undertow · whole BACK row');
+    expect(strikeLabel(strike({ action: 'hit_zone' }), names, 'row').area).toBe('a creature');
+  });
+
+  it('leaves every other kind of action as it was', () => {
+    const silence = strike({
+      action: 'silence_ends',
+      gimmick: 'bramble-bind',
+      targets: ['b', 'd'],
+    });
+    expect(strikeLabel(silence, names, 'row').text).toBe(strikeLabel(silence, names).text);
+  });
+
+  it('warns about the creature at the place in the forecast, and still marks the zone', () => {
+    // Undertow fires on rounds 3, 6, 9 and 12.
+    const forecast = forecastNextRound('tidal-colossus', 2, 12, ['a', 'b', 'c'], [], names, 'row');
+    expect(forecast).toEqual({
+      text: 'Next round: Undertow hits the left creature',
+      zones: ['front'],
+      ends: [],
+    });
+  });
+});

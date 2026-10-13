@@ -282,6 +282,112 @@ describe('guard and boss targeting', () => {
     expect(eventsOf(guardFront, 'boss_hit')[0]).toMatchObject({ target: 'y' });
   });
 
+  describe('guardReach: adjacent (a row of three, one creature per zone)', () => {
+    const rod = {
+      id: 'rod',
+      name: 'Rod',
+      trigger: { eachRound: true },
+      op: 'strike_highest_atk',
+      power: 10_000,
+    } as const;
+    const adjacent = { guardReach: 'adjacent' } as const;
+
+    it('a zone Guard covers nobody on a row of three, as before', () => {
+      const row = [slot('l', { atk: 500 }), slot('g', { role: 'guard' }), slot('r')];
+      const r = run(row, { bossAtk: 100, boss: { ...input([]).boss, gimmicks: [rod] } });
+      const strike = eventsOf(r, 'boss_hit').find((e) => e.source === 'gimmick')!;
+      expect(strike).toMatchObject({ target: 'l' });
+      expect(strike).not.toHaveProperty('from');
+    });
+
+    it('a Guard beside the target takes the hit and the credit', () => {
+      const row = [slot('l', { atk: 500 }), slot('g', { role: 'guard' }), slot('r')];
+      const r = run(row, {
+        ...adjacent,
+        bossAtk: 100,
+        boss: { ...input([]).boss, gimmicks: [rod] },
+      });
+      const strike = eventsOf(r, 'boss_hit').find((e) => e.source === 'gimmick')!;
+      expect(strike).toMatchObject({ target: 'g', from: 'l', damage: 100 });
+      expect(r.perCreature.l!.damageTaken).toBe(0);
+      expect(r.perCreature.g!.guardCredit).toBeGreaterThan(0);
+    });
+
+    it('covers both neighbours, and the left Guard first when both sides have one', () => {
+      const both = [
+        slot('gl', { role: 'guard' }),
+        slot('hi', { atk: 500 }),
+        slot('gr', { role: 'guard' }),
+      ];
+      const r = run(both, {
+        ...adjacent,
+        bossAtk: 100,
+        boss: { ...input([]).boss, gimmicks: [rod] },
+      });
+      expect(eventsOf(r, 'boss_hit').find((e) => e.source === 'gimmick')).toMatchObject({
+        target: 'gl',
+        from: 'hi',
+      });
+      const right = [slot('x'), slot('hi', { atk: 500 }), slot('gr', { role: 'guard' })];
+      const r2 = run(right, {
+        ...adjacent,
+        bossAtk: 100,
+        boss: { ...input([]).boss, gimmicks: [rod] },
+      });
+      expect(eventsOf(r2, 'boss_hit').find((e) => e.source === 'gimmick')).toMatchObject({
+        target: 'gr',
+        from: 'hi',
+      });
+    });
+
+    it('does not cover a creature two places away, a fallen Guard, or another Guard', () => {
+      // The Guard is on the right end: it covers the middle, not the left creature.
+      const far = [slot('l', { atk: 500 }), slot('m'), slot('g', { role: 'guard' })];
+      const r = run(far, {
+        ...adjacent,
+        bossAtk: 100,
+        boss: { ...input([]).boss, gimmicks: [rod] },
+      });
+      expect(eventsOf(r, 'boss_hit').find((e) => e.source === 'gimmick')).toMatchObject({
+        target: 'l',
+      });
+      // A Guard that is knocked out stops covering: it falls to the first hit, the next goes through.
+      const weak = [slot('l', { atk: 500 }), slot('g', { role: 'guard', hp: 10 }), slot('r')];
+      const r2 = run(weak, {
+        ...adjacent,
+        bossAtk: 100,
+        boss: { ...input([]).boss, gimmicks: [rod] },
+      });
+      const strikes = eventsOf(r2, 'boss_hit').filter((e) => e.source === 'gimmick');
+      expect(strikes[0]).toMatchObject({ target: 'g', from: 'l' });
+      expect(strikes[1]).toMatchObject({ target: 'l' });
+      expect(strikes[1]).not.toHaveProperty('from');
+      // A Guard that is the target is never redirected to the Guard beside it.
+      const two = [
+        slot('g1', { role: 'guard', atk: 500 }),
+        slot('g2', { role: 'guard' }),
+        slot('r'),
+      ];
+      const r3 = run(two, {
+        ...adjacent,
+        bossAtk: 100,
+        boss: { ...input([]).boss, gimmicks: [rod] },
+      });
+      expect(eventsOf(r3, 'boss_hit').find((e) => e.source === 'gimmick')).toMatchObject({
+        target: 'g1',
+      });
+    });
+
+    it('the plain boss attack goes to the left creature, and a Guard in the middle takes it', () => {
+      const row = [slot('l'), slot('g', { role: 'guard' }), slot('r')];
+      const r = run(row, { ...adjacent, bossAtk: 50 });
+      expect(eventsOf(r, 'boss_hit').find((e) => e.source === 'attack')).toMatchObject({
+        target: 'g',
+        from: 'l',
+      });
+    });
+  });
+
   it('knocks creatures out: they stop acting but keep their credit', () => {
     const r = run([slot('a', { hp: 10, atk: 100 }), slot('b'), slot('c')], { bossAtk: 50 });
     expect(eventsOf(r, 'knockout')).toEqual([{ t: 'knockout', round: 1, creature: 'a' }]);

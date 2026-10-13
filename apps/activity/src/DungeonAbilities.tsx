@@ -119,7 +119,7 @@ export function DungeonAbilities({ settings, slots, creatures, disabled, onChang
       <div class="ability-fields">
         {params.zone && (
           <div class="ability-field">
-            <label for="dungeon-basic-zone">Zone to shield</label>
+            <label for="dungeon-basic-zone">Creature to shield</label>
             <select
               id="dungeon-basic-zone"
               value={settings.zone}

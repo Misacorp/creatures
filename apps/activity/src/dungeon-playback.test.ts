@@ -7,23 +7,29 @@ import clearedFixture from './fixtures/dungeon-run-cleared.json';
 import { parseDungeonReplay } from './dungeon-parse';
 import {
   ROOM_CARD_MS,
+  ROOM_BANNER,
   ROOM_END_MS,
   atSpeed,
   creatureHpLabel,
   foeHpLine,
+  hpLine,
   mineIds,
   nextRoom,
   noRewards,
   rewardLoot,
   roomBoss,
   roomOutcome,
+  roomIntroView,
   roomResultLine,
+  roomState,
+  roomStrip,
   runSentence,
   stageRow,
+  teamBreakdown,
   streakBonusText,
   streakLoot,
 } from './dungeon-playback';
-import type { DungeonRunResponse } from './dungeon-types';
+import type { DungeonRunResponse, DungeonRunSummary } from './dungeon-types';
 import { buildBeats, creatureHpAt, stageStateAt } from './stage';
 import { forecastNextRound } from './telegraph';
 
@@ -205,5 +211,135 @@ describe('the results', () => {
       streak: { day: 7, bait: 2, essence: 1, parts: { scrap: 1 } },
     };
     expect(streakBonusText(money)).toBe('Day 7 streak bonus: 2 Bait, 1 Essence, 1 Scrap');
+  });
+});
+
+describe('the room strip of the end report', () => {
+  it('has one panel per room, in order, with the foe, the modifier and the state', () => {
+    const strip = roomStrip(cleared);
+    expect(strip.map((r) => r.index)).toEqual([0, 1, 2]);
+    expect(strip.map((r) => r.title)).toEqual(['Room 1', 'Room 2', 'Room boss']);
+    expect(strip.map((r) => r.kind)).toEqual(['foe', 'foe', 'boss']);
+    expect(strip.map((r) => r.foeId)).toEqual(cleared.rooms.map((r) => r.foe.id));
+    expect(strip.every((r) => r.state === 'cleared' && r.banner === 'CLEARED')).toBe(true);
+    expect(strip.every((r) => r.foeHp === null)).toBe(true);
+  });
+
+  it('puts the panels in room order whatever order the server lists them in', () => {
+    const shuffled = { rooms: [...cleared.rooms].reverse() };
+    expect(roomStrip(shuffled).map((r) => r.index)).toEqual([0, 1, 2]);
+  });
+
+  it('says DEFEAT for the room that was lost, with the foe HP left, and LOCKED for those after it', () => {
+    const strip = roomStrip(lost);
+    expect(strip.map((r) => r.state)).toEqual(['defeat', 'locked', 'locked']);
+    expect(strip.map((r) => r.banner)).toEqual(['DEFEAT', 'LOCKED', 'LOCKED']);
+    const first = lost.rooms[0];
+    expect(strip[0]?.foeHp).toBe(
+      `${String(first?.foeHpEnd)} / ${String(first?.foe.hpMax)} HP left`,
+    );
+    expect(strip[1]?.foeHp).toBeNull();
+  });
+
+  it('names a room cleared before the lost one as cleared', () => {
+    const second = {
+      rooms: [
+        { ...cleared.rooms[0], played: true, cleared: true },
+        { ...cleared.rooms[1], played: true, cleared: false, foeHpEnd: 40 },
+        { ...cleared.rooms[2], played: false, cleared: false },
+      ],
+    } as unknown as Pick<DungeonRunSummary, 'rooms'>;
+    expect(roomStrip(second).map((r) => r.state)).toEqual(['cleared', 'defeat', 'locked']);
+  });
+
+  it('keeps the states and the banner words apart, and speaks every panel', () => {
+    expect(roomState({ played: true, cleared: true })).toBe('cleared');
+    expect(roomState({ played: true, cleared: false })).toBe('defeat');
+    expect(roomState({ played: false, cleared: false })).toBe('locked');
+    expect(new Set(Object.values(ROOM_BANNER)).size).toBe(3);
+    const spoken = roomStrip(lost).map((r) => r.spoken);
+    expect(spoken[0]).toMatch(/defeat\.$/);
+    expect(spoken[2]).toMatch(/not reached\.$/);
+    expect(roomStrip(cleared)[0]?.spoken).toContain(cleared.rooms[0]?.foe.name);
+  });
+});
+
+describe('the team breakdown of the end report', () => {
+  it('lists the creatures in their fighting order with "HP left / HP max HP"', () => {
+    const team = teamBreakdown(cleared);
+    expect(team.map((t) => t.id)).toEqual(cleared.team.map((m) => m.id));
+    for (const [i, entry] of team.entries()) {
+      const member = cleared.team[i];
+      expect(entry.hp).toBe(`${String(member?.hpEnd)} / ${String(member?.hpMax)} HP`);
+    }
+  });
+
+  it('writes the line the way the design says, and 0 for a knocked-out creature', () => {
+    expect(hpLine({ hpEnd: 340, hpMax: 391 })).toBe('340 / 391 HP');
+    expect(hpLine({ hpEnd: 0, hpMax: 391 })).toBe('0 / 391 HP');
+    // Never negative, never more than the maximum.
+    expect(hpLine({ hpEnd: -5, hpMax: 391 })).toBe('0 / 391 HP');
+    expect(hpLine({ hpEnd: 900, hpMax: 391 })).toBe('391 / 391 HP');
+  });
+
+  it('marks a knocked-out creature, and says so out loud', () => {
+    const member = lost.team[0];
+    if (member === undefined) throw new Error('fixture has a team');
+    const down = teamBreakdown({ team: [{ ...member, hpEnd: 0 }] })[0];
+    expect(down?.knockedOut).toBe(true);
+    expect(down?.hp.startsWith('0 / ')).toBe(true);
+    expect(down?.spoken).toContain('knocked out');
+    const up = teamBreakdown({ team: [{ ...member, hpEnd: 5 }] })[0];
+    expect(up?.knockedOut).toBe(false);
+    expect(up?.spoken).not.toContain('knocked out');
+  });
+
+  it('carries what the small-creature popover needs, and no more than the creature', () => {
+    const entry = teamBreakdown(cleared)[0];
+    expect(entry).toMatchObject({
+      name: cleared.team[0]?.name,
+      speciesId: cleared.team[0]?.speciesId,
+      element: cleared.team[0]?.element,
+      role: cleared.team[0]?.role,
+      level: cleared.team[0]?.level,
+    });
+  });
+});
+
+describe('the banner over the stage when a room opens', () => {
+  const room = (index: number, kind: 'foe' | 'boss') => ({
+    index,
+    kind,
+    foe: { id: 'puddle-imp', name: 'Puddle Imp', element: 'tide' as const, hpMax: 300 },
+    modifier: { id: 'flooded', name: 'Flooded', description: 'Tide creatures hit 20% harder.' },
+  });
+
+  it('shows the room number, the foe and the modifier', () => {
+    const view = roomIntroView(room(1, 'foe'), 3);
+    expect(view).toMatchObject({
+      heading: 'ROOM 2',
+      place: '2 of 3',
+      boss: false,
+      foeId: 'puddle-imp',
+      foeName: 'Puddle Imp',
+      element: 'tide',
+      modifierName: 'Flooded',
+      modifierDescription: 'Tide creatures hit 20% harder.',
+    });
+  });
+
+  it('calls the last room the room boss, and says it all in one sentence', () => {
+    const view = roomIntroView(room(2, 'boss'), 3);
+    expect(view.heading).toBe('ROOM BOSS');
+    expect(view.boss).toBe(true);
+    expect(view.spoken).toBe(
+      'Room 3 of 3, room boss: Puddle Imp. Flooded: Tide creatures hit 20% harder.',
+    );
+  });
+
+  it('is made from every stored room of a replay', () => {
+    const views = replay.rooms.map((r) => roomIntroView(r, replay.rooms.length));
+    expect(views.map((v) => v.foeName)).toEqual(replay.rooms.map((r) => r.foe.name));
+    expect(views.at(-1)?.boss).toBe(true);
   });
 });

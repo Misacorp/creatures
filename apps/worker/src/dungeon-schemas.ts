@@ -19,9 +19,9 @@ const BASIC_IDS = basicAbilities().map((a) => a.id);
  * The body of `POST /api/dungeon/run`. Strict: unknown keys are rejected, so a client can never send
  * a user id, a seed, stats or anything else the server decides.
  *
- * - `team`: the three creatures (ids the caller owns, all different: the server checks that).
- * - `formation`: where each stands, `formation[i]` for `team[i]`; the three zones, each once (the
- *   server checks that). A row of three has one creature per zone.
+ * - `team`: the three creatures, in the order they stand in the one row, left to right: `team[i]` is
+ *   position i (ids the caller owns, all different: the server checks that). There is no formation:
+ *   the order is the formation.
  * - `abilities`: the pre-run choices that replace live input. `basic` is the basic ability and when
  *   to fire it (`zone` for Shield Wall, `element` for Re-mark, nothing for the others). `creatures`
  *   lists the creature abilities whose round the player sets; every unlocked creature ability is in
@@ -29,7 +29,6 @@ const BASIC_IDS = basicAbilities().map((a) => a.id);
  */
 export const RunBodySchema = v.strictObject({
   team: v.pipe(v.array(IdSchema), v.length(RULES.dungeon.teamSize)),
-  formation: v.pipe(v.array(ZoneSchema), v.length(RULES.dungeon.teamSize)),
   abilities: v.strictObject({
     basic: v.strictObject({
       abilityId: v.picklist(BASIC_IDS),

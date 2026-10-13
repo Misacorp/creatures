@@ -1,6 +1,6 @@
 {
   "summary": {
-    "id": "7394554c-9a62-499e-894e-a09fe944ee3a",
+    "id": "997dcd6e-5ae8-4b1b-8c91-7eda0e8557f3",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -12,35 +12,32 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+        "id": "3756675d-3c1a-4470-bdda-ff863b5b8669",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
         "role": "guard",
         "level": 12,
-        "zone": "front",
         "hpMax": 365,
         "hpEnd": 319
       },
       {
-        "id": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
+        "id": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
         "role": "setter",
         "level": 12,
-        "zone": "middle",
         "hpMax": 200,
         "hpEnd": 200
       },
       {
-        "id": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
+        "id": "297abdd3-de2f-4289-9676-bafd9d0494f0",
         "name": "Cindle",
         "speciesId": "cindle",
         "element": "ember",
         "role": "payoff",
         "level": 12,
-        "zone": "back",
         "hpMax": 173,
         "hpEnd": 173
       }
@@ -53,7 +50,7 @@
           "id": "bramble-hound",
           "name": "Bramble Hound",
           "element": "grove",
-          "hpMax": 351
+          "hpMax": 337
         },
         "modifier": {
           "id": "dark",
@@ -72,7 +69,7 @@
           "id": "drift-wisp",
           "name": "Drift Wisp",
           "element": "tide",
-          "hpMax": 249
+          "hpMax": 240
         },
         "modifier": {
           "id": "brittle",
@@ -91,7 +88,7 @@
           "id": "drowned-warden",
           "name": "Drowned Warden",
           "element": "tide",
-          "hpMax": 546
+          "hpMax": 525
         },
         "modifier": {
           "id": "thorns",
@@ -119,33 +116,30 @@
   "row": [
     {
       "position": 0,
-      "id": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+      "id": "3756675d-3c1a-4470-bdda-ff863b5b8669",
       "name": "Sproutle",
       "species": "sproutle",
       "element": "grove",
       "role": "guard",
-      "level": 12,
-      "zone": "front"
+      "level": 12
     },
     {
       "position": 1,
-      "id": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
+      "id": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
       "name": "Splashet",
       "species": "splashet",
       "element": "tide",
       "role": "setter",
-      "level": 12,
-      "zone": "middle"
+      "level": 12
     },
     {
       "position": 2,
-      "id": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
+      "id": "297abdd3-de2f-4289-9676-bafd9d0494f0",
       "name": "Cindle",
       "species": "cindle",
       "element": "ember",
       "role": "payoff",
-      "level": 12,
-      "zone": "back"
+      "level": 12
     }
   ],
   "rooms": [
@@ -156,7 +150,7 @@
         "id": "bramble-hound",
         "name": "Bramble Hound",
         "element": "grove",
-        "hpMax": 351
+        "hpMax": 337
       },
       "modifier": {
         "id": "dark",
@@ -166,41 +160,41 @@
       "cleared": true,
       "rounds": 2,
       "hpStart": {
-        "31a9f101-10d1-4306-b3af-2fbb7f46e9f7": 365,
-        "8ab212ca-203b-4a63-9b4d-f7cd6f651f86": 200,
-        "b972ab6c-7fd1-4032-bacc-959341d2a49c": 173
+        "3756675d-3c1a-4470-bdda-ff863b5b8669": 365,
+        "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c": 200,
+        "297abdd3-de2f-4289-9676-bafd9d0494f0": 173
       },
       "hpMax": {
-        "31a9f101-10d1-4306-b3af-2fbb7f46e9f7": 365,
-        "8ab212ca-203b-4a63-9b4d-f7cd6f651f86": 200,
-        "b972ab6c-7fd1-4032-bacc-959341d2a49c": 173
+        "3756675d-3c1a-4470-bdda-ff863b5b8669": 365,
+        "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c": 200,
+        "297abdd3-de2f-4289-9676-bafd9d0494f0": 173
       },
       "events": [
         {
           "t": "round_start",
           "round": 1,
-          "bossHp": 351,
+          "bossHp": 337,
           "mark": null
         },
         {
           "t": "turn",
           "round": 1,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7"
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669"
         },
         {
           "t": "hit",
           "round": 1,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669",
           "damage": 33,
           "matchupBp": 10000,
           "bonusBp": 0,
           "mark": null,
-          "bossHp": 318
+          "bossHp": 304
         },
         {
           "t": "mark",
           "round": 1,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669",
           "player": "p1",
           "element": "grove",
           "replaced": null
@@ -208,22 +202,22 @@
         {
           "t": "turn",
           "round": 1,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86"
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c"
         },
         {
           "t": "hit",
           "round": 1,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
           "damage": 50,
           "matchupBp": 10000,
           "bonusBp": 0,
           "mark": "grove",
-          "bossHp": 268
+          "bossHp": 254
         },
         {
           "t": "mark",
           "round": 1,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
           "player": "p1",
           "element": "tide",
           "replaced": "grove"
@@ -231,34 +225,34 @@
         {
           "t": "turn",
           "round": 1,
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c"
+          "creature": "297abdd3-de2f-4289-9676-bafd9d0494f0"
         },
         {
           "t": "hit",
           "round": 1,
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
+          "creature": "297abdd3-de2f-4289-9676-bafd9d0494f0",
           "damage": 109,
           "matchupBp": 15000,
           "bonusBp": 0,
           "mark": "tide",
-          "bossHp": 159
+          "bossHp": 145
         },
         {
           "t": "boss_hit",
           "round": 1,
           "source": "attack",
-          "target": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+          "target": "3756675d-3c1a-4470-bdda-ff863b5b8669",
           "damage": 12
         },
         {
           "t": "round_end",
           "round": 1,
-          "bossHp": 159
+          "bossHp": 145
         },
         {
           "t": "round_start",
           "round": 2,
-          "bossHp": 159,
+          "bossHp": 145,
           "mark": "tide"
         },
         {
@@ -273,42 +267,42 @@
         {
           "t": "turn",
           "round": 2,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7"
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669"
         },
         {
           "t": "hit",
           "round": 2,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669",
           "damage": 33,
           "matchupBp": 10000,
           "bonusBp": 0,
           "mark": "tide",
-          "bossHp": 126
+          "bossHp": 112
         },
         {
           "t": "turn",
           "round": 2,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86"
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c"
         },
         {
           "t": "hit",
           "round": 2,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
           "damage": 50,
           "matchupBp": 10000,
           "bonusBp": 0,
           "mark": "tide",
-          "bossHp": 76
+          "bossHp": 62
         },
         {
           "t": "turn",
           "round": 2,
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c"
+          "creature": "297abdd3-de2f-4289-9676-bafd9d0494f0"
         },
         {
           "t": "hit",
           "round": 2,
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
+          "creature": "297abdd3-de2f-4289-9676-bafd9d0494f0",
           "damage": 109,
           "matchupBp": 15000,
           "bonusBp": 0,
@@ -324,9 +318,9 @@
       "names": {
         "boss": "Bramble Hound",
         "creatures": {
-          "31a9f101-10d1-4306-b3af-2fbb7f46e9f7": "Sproutle",
-          "8ab212ca-203b-4a63-9b4d-f7cd6f651f86": "Splashet",
-          "b972ab6c-7fd1-4032-bacc-959341d2a49c": "Cindle"
+          "3756675d-3c1a-4470-bdda-ff863b5b8669": "Sproutle",
+          "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c": "Splashet",
+          "297abdd3-de2f-4289-9676-bafd9d0494f0": "Cindle"
         },
         "players": {
           "p1": "Player 1"
@@ -393,7 +387,7 @@
         "id": "drift-wisp",
         "name": "Drift Wisp",
         "element": "tide",
-        "hpMax": 249
+        "hpMax": 240
       },
       "modifier": {
         "id": "brittle",
@@ -403,41 +397,41 @@
       "cleared": true,
       "rounds": 2,
       "hpStart": {
-        "31a9f101-10d1-4306-b3af-2fbb7f46e9f7": 353,
-        "8ab212ca-203b-4a63-9b4d-f7cd6f651f86": 200,
-        "b972ab6c-7fd1-4032-bacc-959341d2a49c": 173
+        "3756675d-3c1a-4470-bdda-ff863b5b8669": 353,
+        "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c": 200,
+        "297abdd3-de2f-4289-9676-bafd9d0494f0": 173
       },
       "hpMax": {
-        "31a9f101-10d1-4306-b3af-2fbb7f46e9f7": 365,
-        "8ab212ca-203b-4a63-9b4d-f7cd6f651f86": 200,
-        "b972ab6c-7fd1-4032-bacc-959341d2a49c": 173
+        "3756675d-3c1a-4470-bdda-ff863b5b8669": 365,
+        "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c": 200,
+        "297abdd3-de2f-4289-9676-bafd9d0494f0": 173
       },
       "events": [
         {
           "t": "round_start",
           "round": 1,
-          "bossHp": 249,
+          "bossHp": 240,
           "mark": null
         },
         {
           "t": "turn",
           "round": 1,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7"
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669"
         },
         {
           "t": "hit",
           "round": 1,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669",
           "damage": 33,
           "matchupBp": 10000,
           "bonusBp": 0,
           "mark": null,
-          "bossHp": 216
+          "bossHp": 207
         },
         {
           "t": "mark",
           "round": 1,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669",
           "player": "p1",
           "element": "grove",
           "replaced": null
@@ -445,22 +439,22 @@
         {
           "t": "turn",
           "round": 1,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86"
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c"
         },
         {
           "t": "hit",
           "round": 1,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
           "damage": 50,
           "matchupBp": 10000,
           "bonusBp": 0,
           "mark": "grove",
-          "bossHp": 166
+          "bossHp": 157
         },
         {
           "t": "mark",
           "round": 1,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
           "player": "p1",
           "element": "tide",
           "replaced": "grove"
@@ -468,34 +462,34 @@
         {
           "t": "turn",
           "round": 1,
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c"
+          "creature": "297abdd3-de2f-4289-9676-bafd9d0494f0"
         },
         {
           "t": "hit",
           "round": 1,
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
+          "creature": "297abdd3-de2f-4289-9676-bafd9d0494f0",
           "damage": 54,
           "matchupBp": 7500,
           "bonusBp": 0,
           "mark": "tide",
-          "bossHp": 112
+          "bossHp": 103
         },
         {
           "t": "boss_hit",
           "round": 1,
           "source": "attack",
-          "target": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+          "target": "3756675d-3c1a-4470-bdda-ff863b5b8669",
           "damage": 13
         },
         {
           "t": "round_end",
           "round": 1,
-          "bossHp": 112
+          "bossHp": 103
         },
         {
           "t": "round_start",
           "round": 2,
-          "bossHp": 112,
+          "bossHp": 103,
           "mark": "tide"
         },
         {
@@ -510,53 +504,35 @@
         {
           "t": "turn",
           "round": 2,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7"
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669"
         },
         {
           "t": "hit",
           "round": 2,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669",
           "damage": 33,
           "matchupBp": 10000,
           "bonusBp": 0,
           "mark": "tide",
-          "bossHp": 79
+          "bossHp": 70
         },
         {
           "t": "turn",
           "round": 2,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86"
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c"
         },
         {
           "t": "hit",
           "round": 2,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
           "damage": 75,
           "matchupBp": 10000,
           "bonusBp": 5000,
           "mark": "tide",
-          "bossHp": 4,
+          "bossHp": 0,
           "luckBp": 5000,
           "crit": true,
           "critBp": 5000
-        },
-        {
-          "t": "turn",
-          "round": 2,
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c"
-        },
-        {
-          "t": "hit",
-          "round": 2,
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
-          "damage": 95,
-          "matchupBp": 7500,
-          "bonusBp": 7500,
-          "mark": "tide",
-          "bossHp": 0,
-          "luckBp": 7500,
-          "crit": true,
-          "critBp": 7500
         },
         {
           "t": "round_end",
@@ -567,9 +543,9 @@
       "names": {
         "boss": "Drift Wisp",
         "creatures": {
-          "31a9f101-10d1-4306-b3af-2fbb7f46e9f7": "Sproutle",
-          "8ab212ca-203b-4a63-9b4d-f7cd6f651f86": "Splashet",
-          "b972ab6c-7fd1-4032-bacc-959341d2a49c": "Cindle"
+          "3756675d-3c1a-4470-bdda-ff863b5b8669": "Sproutle",
+          "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c": "Splashet",
+          "297abdd3-de2f-4289-9676-bafd9d0494f0": "Cindle"
         },
         "players": {
           "p1": "Player 1"
@@ -636,7 +612,7 @@
         "id": "drowned-warden",
         "name": "Drowned Warden",
         "element": "tide",
-        "hpMax": 546
+        "hpMax": 525
       },
       "modifier": {
         "id": "thorns",
@@ -646,20 +622,20 @@
       "cleared": true,
       "rounds": 3,
       "hpStart": {
-        "31a9f101-10d1-4306-b3af-2fbb7f46e9f7": 340,
-        "8ab212ca-203b-4a63-9b4d-f7cd6f651f86": 200,
-        "b972ab6c-7fd1-4032-bacc-959341d2a49c": 173
+        "3756675d-3c1a-4470-bdda-ff863b5b8669": 340,
+        "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c": 200,
+        "297abdd3-de2f-4289-9676-bafd9d0494f0": 173
       },
       "hpMax": {
-        "31a9f101-10d1-4306-b3af-2fbb7f46e9f7": 365,
-        "8ab212ca-203b-4a63-9b4d-f7cd6f651f86": 200,
-        "b972ab6c-7fd1-4032-bacc-959341d2a49c": 173
+        "3756675d-3c1a-4470-bdda-ff863b5b8669": 365,
+        "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c": 200,
+        "297abdd3-de2f-4289-9676-bafd9d0494f0": 173
       },
       "events": [
         {
           "t": "round_start",
           "round": 1,
-          "bossHp": 546,
+          "bossHp": 525,
           "mark": null
         },
         {
@@ -671,22 +647,22 @@
         {
           "t": "turn",
           "round": 1,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7"
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669"
         },
         {
           "t": "hit",
           "round": 1,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669",
           "damage": 33,
           "matchupBp": 10000,
           "bonusBp": 0,
           "mark": null,
-          "bossHp": 513
+          "bossHp": 492
         },
         {
           "t": "mark",
           "round": 1,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669",
           "player": "p1",
           "element": "grove",
           "replaced": null
@@ -694,22 +670,22 @@
         {
           "t": "turn",
           "round": 1,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86"
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c"
         },
         {
           "t": "hit",
           "round": 1,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
           "damage": 50,
           "matchupBp": 10000,
           "bonusBp": 0,
           "mark": "grove",
-          "bossHp": 463
+          "bossHp": 442
         },
         {
           "t": "mark",
           "round": 1,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
           "player": "p1",
           "element": "tide",
           "replaced": "grove"
@@ -717,17 +693,17 @@
         {
           "t": "turn",
           "round": 1,
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c"
+          "creature": "297abdd3-de2f-4289-9676-bafd9d0494f0"
         },
         {
           "t": "hit",
           "round": 1,
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
+          "creature": "297abdd3-de2f-4289-9676-bafd9d0494f0",
           "damage": 95,
           "matchupBp": 7500,
           "bonusBp": 7500,
           "mark": "tide",
-          "bossHp": 368,
+          "bossHp": 347,
           "luckBp": 7500,
           "crit": true,
           "critBp": 7500
@@ -742,18 +718,18 @@
           "t": "boss_hit",
           "round": 1,
           "source": "attack",
-          "target": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+          "target": "3756675d-3c1a-4470-bdda-ff863b5b8669",
           "damage": 14
         },
         {
           "t": "round_end",
           "round": 1,
-          "bossHp": 368
+          "bossHp": 347
         },
         {
           "t": "round_start",
           "round": 2,
-          "bossHp": 368,
+          "bossHp": 347,
           "mark": "tide"
         },
         {
@@ -774,47 +750,47 @@
         {
           "t": "turn",
           "round": 2,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7"
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669"
         },
         {
           "t": "hit",
           "round": 2,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669",
           "damage": 33,
           "matchupBp": 10000,
           "bonusBp": 0,
           "mark": "tide",
-          "bossHp": 335
+          "bossHp": 314
         },
         {
           "t": "turn",
           "round": 2,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86"
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c"
         },
         {
           "t": "hit",
           "round": 2,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
           "damage": 50,
           "matchupBp": 10000,
           "bonusBp": 0,
           "mark": "tide",
-          "bossHp": 285
+          "bossHp": 264
         },
         {
           "t": "turn",
           "round": 2,
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c"
+          "creature": "297abdd3-de2f-4289-9676-bafd9d0494f0"
         },
         {
           "t": "hit",
           "round": 2,
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
+          "creature": "297abdd3-de2f-4289-9676-bafd9d0494f0",
           "damage": 54,
           "matchupBp": 7500,
           "bonusBp": 0,
           "mark": "tide",
-          "bossHp": 231
+          "bossHp": 210
         },
         {
           "t": "gimmick",
@@ -826,19 +802,19 @@
           "t": "boss_hit",
           "round": 2,
           "source": "attack",
-          "target": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+          "target": "3756675d-3c1a-4470-bdda-ff863b5b8669",
           "damage": 7,
           "reducedBp": 5000
         },
         {
           "t": "round_end",
           "round": 2,
-          "bossHp": 231
+          "bossHp": 210
         },
         {
           "t": "round_start",
           "round": 3,
-          "bossHp": 231,
+          "bossHp": 210,
           "mark": "tide"
         },
         {
@@ -853,7 +829,7 @@
           "player": "p1",
           "ability": "bark-guard",
           "key": "p1:c0",
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669",
           "zone": "front",
           "byDefault": true
         },
@@ -863,14 +839,14 @@
           "player": "p1",
           "ability": "tidal-mark",
           "key": "p1:c1",
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
           "element": "tide",
           "byDefault": true
         },
         {
           "t": "mark",
           "round": 3,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
           "player": "p1",
           "element": "tide",
           "replaced": "tide"
@@ -881,62 +857,47 @@
           "player": "p1",
           "ability": "flare-strike",
           "key": "p1:c2",
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
+          "creature": "297abdd3-de2f-4289-9676-bafd9d0494f0",
           "byDefault": false
         },
         {
           "t": "hit",
           "round": 3,
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
+          "creature": "297abdd3-de2f-4289-9676-bafd9d0494f0",
           "damage": 135,
           "matchupBp": 7500,
           "bonusBp": 1300,
           "mark": "tide",
-          "bossHp": 96,
+          "bossHp": 75,
           "ability": "flare-strike",
           "key": "p1:c2"
         },
         {
           "t": "turn",
           "round": 3,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7"
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669"
         },
         {
           "t": "hit",
           "round": 3,
-          "creature": "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
+          "creature": "3756675d-3c1a-4470-bdda-ff863b5b8669",
           "damage": 37,
           "matchupBp": 10000,
           "bonusBp": 1300,
           "mark": "tide",
-          "bossHp": 59
+          "bossHp": 38
         },
         {
           "t": "turn",
           "round": 3,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86"
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c"
         },
         {
           "t": "hit",
           "round": 3,
-          "creature": "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
+          "creature": "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
           "damage": 56,
           "matchupBp": 10000,
-          "bonusBp": 1300,
-          "mark": "tide",
-          "bossHp": 3
-        },
-        {
-          "t": "turn",
-          "round": 3,
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c"
-        },
-        {
-          "t": "hit",
-          "round": 3,
-          "creature": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
-          "damage": 61,
-          "matchupBp": 7500,
           "bonusBp": 1300,
           "mark": "tide",
           "bossHp": 0
@@ -950,9 +911,9 @@
       "names": {
         "boss": "Drowned Warden",
         "creatures": {
-          "31a9f101-10d1-4306-b3af-2fbb7f46e9f7": "Sproutle",
-          "8ab212ca-203b-4a63-9b4d-f7cd6f651f86": "Splashet",
-          "b972ab6c-7fd1-4032-bacc-959341d2a49c": "Cindle"
+          "3756675d-3c1a-4470-bdda-ff863b5b8669": "Sproutle",
+          "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c": "Splashet",
+          "297abdd3-de2f-4289-9676-bafd9d0494f0": "Cindle"
         },
         "players": {
           "p1": "Player 1"

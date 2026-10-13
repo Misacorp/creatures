@@ -4,11 +4,10 @@
     "method": "POST",
     "body": {
       "team": [
-        "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
-        "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
-        "b972ab6c-7fd1-4032-bacc-959341d2a49c"
+        "3756675d-3c1a-4470-bdda-ff863b5b8669",
+        "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
+        "297abdd3-de2f-4289-9676-bafd9d0494f0"
       ],
-      "formation": ["front", "middle", "back"],
       "abilities": {
         "basic": {
           "abilityId": "shield-wall",
@@ -17,7 +16,7 @@
         },
         "creatures": [
           {
-            "creatureId": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
+            "creatureId": "297abdd3-de2f-4289-9676-bafd9d0494f0",
             "fireAtRound": 3
           }
         ]
@@ -26,7 +25,7 @@
     }
   },
   "dungeon-replay": {
-    "path": "/api/dungeon/run/7394554c-9a62-499e-894e-a09fe944ee3a",
+    "path": "/api/dungeon/run/997dcd6e-5ae8-4b1b-8c91-7eda0e8557f3",
     "method": "GET",
     "body": null
   },
@@ -35,11 +34,10 @@
     "method": "POST",
     "body": {
       "team": [
-        "31a9f101-10d1-4306-b3af-2fbb7f46e9f7",
-        "8ab212ca-203b-4a63-9b4d-f7cd6f651f86",
-        "b972ab6c-7fd1-4032-bacc-959341d2a49c"
+        "3756675d-3c1a-4470-bdda-ff863b5b8669",
+        "1f5cdaa6-7fb9-4931-9be0-2b4f28a79c7c",
+        "297abdd3-de2f-4289-9676-bafd9d0494f0"
       ],
-      "formation": ["front", "middle", "back"],
       "abilities": {
         "basic": {
           "abilityId": "shield-wall",
@@ -48,7 +46,7 @@
         },
         "creatures": [
           {
-            "creatureId": "b972ab6c-7fd1-4032-bacc-959341d2a49c",
+            "creatureId": "297abdd3-de2f-4289-9676-bafd9d0494f0",
             "fireAtRound": 3
           }
         ]
@@ -61,11 +59,10 @@
     "method": "POST",
     "body": {
       "team": [
-        "ec43b6ff-f2c4-420c-8597-43d871f448fd",
-        "1516ace1-d426-4bbe-b4cf-80981163183f",
-        "d8352ade-940e-4ed1-b5d7-23a78b8d0c36"
+        "60f264b1-fc18-46f8-8754-a1c1397eb473",
+        "646028c9-c94a-4b2b-ad4f-4bd9e1f82bcc",
+        "7ea7b508-d1dd-40cf-9d32-855c116ec5a5"
       ],
-      "formation": ["front", "middle", "back"],
       "abilities": {
         "basic": {
           "abilityId": "rally",
@@ -81,11 +78,10 @@
     "method": "POST",
     "body": {
       "team": [
-        "d7c76b8e-347b-480c-94ae-8e84b62adf9e",
-        "2b1dc54f-565d-40e1-b4e8-23775e4705ab",
-        "e7beca1d-67c8-4d90-bb46-08485be9db33"
+        "86902e35-93c4-48ca-9a93-14296952f3d9",
+        "05e5fa90-3336-4d15-96d0-58b56a15fcbe",
+        "42e01b3e-eafa-4190-b98c-95fa9624b916"
       ],
-      "formation": ["front", "middle", "back"],
       "abilities": {
         "basic": {
           "abilityId": "rally",
@@ -101,11 +97,10 @@
     "method": "POST",
     "body": {
       "team": [
-        "d7c76b8e-347b-480c-94ae-8e84b62adf9e",
-        "2b1dc54f-565d-40e1-b4e8-23775e4705ab",
-        "e7beca1d-67c8-4d90-bb46-08485be9db33"
+        "86902e35-93c4-48ca-9a93-14296952f3d9",
+        "05e5fa90-3336-4d15-96d0-58b56a15fcbe",
+        "42e01b3e-eafa-4190-b98c-95fa9624b916"
       ],
-      "formation": ["front", "middle", "back"],
       "abilities": {
         "basic": {
           "abilityId": "rally",

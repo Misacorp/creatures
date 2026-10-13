@@ -394,7 +394,7 @@ export const RULES = {
   dungeon: {
     /** Rooms in a run: normal foes first, then a room boss. */
     rooms: 3,
-    /** Creatures in the team (a row of three: front, middle, back). */
+    /** Creatures in the team: one row of three, left to right. */
     teamSize: 3,
     /**
      * Depth scaling (see `depthFactorBp`): every depth above 1 adds `Step` basis points of the depth-1
@@ -412,7 +412,7 @@ export const RULES = {
      * 10000 is the content's own numbers). One knob for the whole dungeon, so the foes keep the
      * relative strengths their content gives them.
      */
-    baseHpBp: 13_000,
+    baseHpBp: 12_500,
     baseAtkBp: 10_000,
     /** Every this many depths is a landmark: a better chest. */
     landmarkEvery: 7,

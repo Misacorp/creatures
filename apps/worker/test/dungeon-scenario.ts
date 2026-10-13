@@ -76,7 +76,6 @@ export async function runDungeonScenario(ctx: CoreContext): Promise<DungeonCaptu
   out.responses['dungeon-today'] = (await hero.call('GET', '/api/dungeon/today')).body;
   const body = hero.body({
     team: [sproutle, splashet, cindle],
-    formation: ['front', 'middle', 'back'],
     abilities: {
       basic: { abilityId: 'shield-wall', fireAtRound: 2, zone: 'front' },
       creatures: [{ creatureId: cindle, fireAtRound: 3 }],
@@ -105,12 +104,11 @@ export async function runDungeonScenario(ctx: CoreContext): Promise<DungeonCaptu
       ],
     }),
   );
-  await refuse(
-    other,
-    'POST',
-    '/api/dungeon/run',
-    other.body({ formation: ['front', 'front', 'back'] }),
-  );
+  // The old shape, with a formation of zones: refused, since the order of `team` is the row.
+  await refuse(other, 'POST', '/api/dungeon/run', {
+    ...other.body(),
+    formation: ['front', 'middle', 'back'],
+  });
   await refuse(
     other,
     'POST',

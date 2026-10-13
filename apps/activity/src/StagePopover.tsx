@@ -9,6 +9,8 @@ export interface StagePopoverProps {
   label: string;
   /** Closes the popover (Escape, or a tap outside it). */
   onClose: () => void;
+  /** What Escape does instead of closing (a popover with two faces goes back first). */
+  onEscape?: () => void;
   class?: string;
   children: ComponentChildren;
 }
@@ -58,7 +60,9 @@ export function StagePopover(props: StagePopoverProps) {
 
     let tappedOutside = false;
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') latest.current.onClose();
+      if (event.key !== 'Escape') return;
+      const { onEscape, onClose } = latest.current;
+      (onEscape ?? onClose)();
     };
     const onPointer = (event: PointerEvent): void => {
       const target = event.target instanceof Node ? event.target : null;

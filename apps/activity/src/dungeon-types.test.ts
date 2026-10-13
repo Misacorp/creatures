@@ -24,7 +24,11 @@ describe('the dungeon types', () => {
     expect(t.modifiers.map((m) => m.room)).toEqual([0, 1, 2]);
     expect(t.blocked).toBeNull();
     const cleared = runCleared as unknown as DungeonRunResponse;
-    expect(cleared.run.team.map((m) => m.zone)).toEqual(['front', 'middle', 'back']);
+    // The team is one row, in fighting order, with no zones.
+    expect(cleared.run.team.map((m) => m.id)).toEqual(
+      (replay as unknown as DungeonReplay).row.map((m) => m.id),
+    );
+    expect(Object.keys(cleared.run.team[0] ?? {})).not.toContain('zone');
     expect(cleared.run.rooms.at(-1)?.kind).toBe('boss');
     expect(cleared.today.last?.id).toBe(cleared.run.id);
     const lost = runLost as unknown as DungeonRunResponse;
@@ -37,7 +41,8 @@ describe('the dungeon types', () => {
   it('has request bodies of the type, and error codes the types know', () => {
     const body = requests['dungeon-run-cleared'].body as unknown as DungeonRunRequest;
     expect(body.team).toHaveLength(3);
-    expect(new Set(body.formation).size).toBe(3);
+    expect(Object.keys(body).sort()).toEqual(['abilities', 'idempotencyKey', 'team']);
+    expect(new Set(body.team).size).toBe(3);
     for (const e of errors) {
       expect(Object.keys(DUNGEON_ERRORS), e.body.error).toContain(e.body.error);
       expect(DUNGEON_ERRORS[e.body.error as keyof typeof DUNGEON_ERRORS]).toBe(e.status);

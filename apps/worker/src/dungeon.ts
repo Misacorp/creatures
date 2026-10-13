@@ -40,7 +40,6 @@ import {
   type PartsBundle,
   type Rng,
   type Role,
-  type Zone,
 } from '@creatures/game';
 import {
   buildNames,
@@ -78,9 +77,6 @@ class DungeonError extends Error {
 export const RUN_RETENTION_MS = 90 * 86_400_000;
 /** The engine's key for the one player of a solo run. Never shown to anyone. */
 const PLAYER = 'p1';
-/** Zones from front to back: the order of the row. */
-const ROW_ZONES: readonly Zone[] = ['front', 'middle', 'back'];
-
 export interface DungeonDeps {
   storage: LedgerStorage;
   now: () => number;
@@ -137,7 +133,6 @@ export interface DungeonTeamMember {
   element: Element;
   role: Role;
   level: number;
-  zone: Zone;
   hpMax: number;
   /** HP when the run ended; 0 for a creature that was knocked out. */
   hpEnd: number;
@@ -206,7 +201,7 @@ export interface DungeonReplayRoom {
 
 export interface DungeonReplayView {
   summary: DungeonRunSummary;
-  /** The fighting row, front to back. */
+  /** The fighting row, left to right (`position` 0 is the left creature). */
   row: {
     position: number;
     id: string;
@@ -215,7 +210,6 @@ export interface DungeonReplayView {
     element: Element;
     role: Role;
     level: number;
-    zone: Zone;
   }[];
   rooms: DungeonReplayRoom[];
 }
@@ -262,7 +256,6 @@ const FRESH_PROGRESS: ProgressRow = {
 function fingerprintOf(body: RunBody): string {
   return JSON.stringify({
     team: body.team,
-    formation: body.formation,
     abilities: {
       basic: {
         abilityId: body.abilities.basic.abilityId,
@@ -396,7 +389,6 @@ export class Dungeon {
     const name = this.sql
       .exec<{ display_name: string }>('SELECT display_name FROM players WHERE user_id = ?', userId)
       .toArray()[0]?.display_name;
-    const zoneOf = new Map(summary.team.map((t) => [t.id, t.zone]));
     const rooms: DungeonReplayRoom[] = result.rooms.map((r) => {
       const spec = input.rooms[r.index] as DungeonRoomSpec;
       const fight = buildRoomInput(input, spec, r.index === 0 ? null : r.hpStart);
@@ -432,7 +424,6 @@ export class Dungeon {
         element: s.element,
         role: s.role,
         level: s.level,
-        zone: zoneOf.get(s.id) ?? (ROW_ZONES[position] as Zone),
       })),
       rooms,
     };
@@ -495,12 +486,9 @@ export class Dungeon {
     if (!this.allowance(progress, day, runs).canRun) throw new DungeonError(409, 'already_run');
     const attempt = runs.length + 1;
 
-    // --- The team: the caller's own creatures, all different, standing in the three zones ---
+    // --- The team: the caller's own creatures, all different, in the order they stand in the row ---
     if (new Set(body.team).size !== body.team.length) {
       throw new DungeonError(400, 'duplicate_creature');
-    }
-    if (new Set(body.formation).size !== ROW_ZONES.length) {
-      throw new DungeonError(400, 'invalid_formation');
     }
     const owned = new Map(loadCreatures(this.sql, userId).map((c) => [c.id, c]));
     const team = body.team.map((id) => owned.get(id));
@@ -508,10 +496,8 @@ export class Dungeon {
     if (!team.every((c): c is TeamCreature => c !== undefined)) {
       throw new DungeonError(404, 'not_found');
     }
-    const zoneOf = new Map<string, Zone>(team.map((c, i) => [c.id, body.formation[i] as Zone]));
-    const standing = ROW_ZONES.map(
-      (zone) => team.find((c) => zoneOf.get(c.id) === zone) as TeamCreature,
-    );
+    // `team[i]` is position i, left to right: the row is the order of the request.
+    const standing = team;
     const row: FightSlot[] = standing.map((c) => slotFor(c, PLAYER));
     const abilities = this.abilityChoices(body, standing);
 
@@ -574,7 +560,6 @@ export class Dungeon {
       streak: newStreak,
       createdAt: now,
       standing,
-      zoneOf,
       input,
       result,
       rewards,
@@ -776,7 +761,6 @@ export class Dungeon {
     streak: number;
     createdAt: number;
     standing: readonly TeamCreature[];
-    zoneOf: ReadonlyMap<string, Zone>;
     input: DungeonRunInput;
     result: DungeonRunResult;
     rewards: DungeonRewards;
@@ -803,7 +787,6 @@ export class Dungeon {
         element: c.species.element,
         role: c.species.role,
         level: c.level,
-        zone: args.zoneOf.get(c.id) as Zone,
         hpMax: hpMax[c.id] ?? 0,
         hpEnd: last?.result.hpEnd[c.id] ?? hpMax[c.id] ?? 0,
       })),

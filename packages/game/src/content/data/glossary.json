@@ -96,7 +96,7 @@
     "short": "Tough. Takes hits for its zone.",
     "lines": [
       "Has 30% more HP than other roles.",
-      "A boss hit aimed at one creature goes to a Guard in the same zone.",
+      "A boss hit aimed at one creature goes to a Guard in the same zone (in the dungeon: right beside it).",
       "Hits on a whole zone still reach everyone in it.",
       "Best at the front, where the boss attacks first."
     ],
@@ -1060,11 +1060,24 @@
     "title": "Daily dungeon",
     "short": "One run a day with a team of three of your own.",
     "lines": [
-      "Pick three creatures and where they stand, then enter. The whole run is played out at once.",
+      "Pick three creatures and the order they stand in, in one row. Then enter: the whole run is played out at once.",
       "Three rooms: two foes, then a room boss. Each creature keeps its HP from room to room.",
       "Clear all three to go one depth deeper. A lost run keeps your depth.",
       "One run per day. The day resets at 13:37 in the server's time zone. A lost first run can be retried once."
     ],
+    "section": "dungeon"
+  },
+  {
+    "id": "dungeon-row",
+    "title": "Your row",
+    "short": "Three creatures in one row, left to right.",
+    "lines": [
+      "You choose the order. The foe's plain attack goes to the left creature first, then the next one standing.",
+      "A Guard takes the hits aimed at the creatures right beside it, so it likes the middle.",
+      "A zone attack hits the one creature at its place. Silence hits the left and the right end.",
+      "Foes act left to right, right to left or fastest first. You see which in each room."
+    ],
+    "visual": { "kind": "glyph", "id": "left_to_right" },
     "section": "dungeon"
   },
   {
@@ -1185,7 +1198,7 @@
     "short": "Your creatures crit 5 points more often.",
     "lines": [
       "Only for the room that has it, and shown before you enter.",
-      "Plan your team and where they stand around it."
+      "Plan your team and the order it stands in around it."
     ],
     "section": "dungeon"
   },
@@ -1195,7 +1208,7 @@
     "short": "The foe turns the first reaction of each round back on your team.",
     "lines": [
       "Only for the room that has it, and shown before you enter.",
-      "Plan your team and where they stand around it."
+      "Plan your team and the order it stands in around it."
     ],
     "section": "dungeon"
   },
@@ -1205,17 +1218,17 @@
     "short": "The foe has 20% less HP but hits 25% harder.",
     "lines": [
       "Only for the room that has it, and shown before you enter.",
-      "Plan your team and where they stand around it."
+      "Plan your team and the order it stands in around it."
     ],
     "section": "dungeon"
   },
   {
     "id": "modifier-fog",
     "title": "Fog",
-    "short": "Nobody can see: everyone acts in slot order, left to right.",
+    "short": "Nobody can see: everyone acts in row order, left to right.",
     "lines": [
       "Only for the room that has it, and shown before you enter.",
-      "Plan your team and where they stand around it."
+      "Plan your team and the order it stands in around it."
     ],
     "section": "dungeon"
   },

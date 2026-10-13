@@ -1,6 +1,6 @@
 {
   "run": {
-    "id": "f9f9bab6-39e5-4d9e-9b63-ae8e2da5a1a0",
+    "id": "ee2b6a2d-1dc6-4327-8b0c-edff324d3fab",
     "day": "2027-01-12",
     "attempt": 2,
     "depth": 45,
@@ -12,35 +12,32 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "d7c76b8e-347b-480c-94ae-8e84b62adf9e",
+        "id": "86902e35-93c4-48ca-9a93-14296952f3d9",
         "name": "Mistnewt",
         "speciesId": "mistnewt",
         "element": "tide",
         "role": "guard",
         "level": 1,
-        "zone": "front",
         "hpMax": 208,
         "hpEnd": 0
       },
       {
-        "id": "2b1dc54f-565d-40e1-b4e8-23775e4705ab",
+        "id": "05e5fa90-3336-4d15-96d0-58b56a15fcbe",
         "name": "Ashmole",
         "speciesId": "ashmole",
         "element": "ember",
         "role": "support",
         "level": 1,
-        "zone": "middle",
         "hpMax": 128,
         "hpEnd": 0
       },
       {
-        "id": "e7beca1d-67c8-4d90-bb46-08485be9db33",
+        "id": "42e01b3e-eafa-4190-b98c-95fa9624b916",
         "name": "Stormray",
         "speciesId": "stormray",
         "element": "spark",
         "role": "payoff",
         "level": 1,
-        "zone": "back",
         "hpMax": 120,
         "hpEnd": 0
       }
@@ -53,7 +50,7 @@
           "id": "ember-mite",
           "name": "Ember Mite",
           "element": "ember",
-          "hpMax": 21611
+          "hpMax": 20744
         },
         "modifier": {
           "id": "dark",
@@ -63,7 +60,7 @@
         "played": true,
         "cleared": false,
         "rounds": 3,
-        "foeHpEnd": 21351
+        "foeHpEnd": 20484
       },
       {
         "index": 1,
@@ -72,7 +69,7 @@
           "id": "bramble-hound",
           "name": "Bramble Hound",
           "element": "grove",
-          "hpMax": 25370
+          "hpMax": 24358
         },
         "modifier": {
           "id": "brittle",
@@ -82,7 +79,7 @@
         "played": false,
         "cleared": false,
         "rounds": 0,
-        "foeHpEnd": 25370
+        "foeHpEnd": 24358
       },
       {
         "index": 2,
@@ -91,7 +88,7 @@
           "id": "coil-baron",
           "name": "Coil Baron",
           "element": "spark",
-          "hpMax": 36645
+          "hpMax": 35200
         },
         "modifier": {
           "id": "thorns",
@@ -101,7 +98,7 @@
         "played": false,
         "cleared": false,
         "rounds": 0,
-        "foeHpEnd": 36645
+        "foeHpEnd": 35200
       }
     ],
     "rewards": {
@@ -147,7 +144,7 @@
     "canRun": false,
     "blocked": "already_run",
     "last": {
-      "id": "f9f9bab6-39e5-4d9e-9b63-ae8e2da5a1a0",
+      "id": "ee2b6a2d-1dc6-4327-8b0c-edff324d3fab",
       "day": "2027-01-12",
       "attempt": 2,
       "depth": 45,
@@ -159,35 +156,32 @@
       "createdAt": 1799755200000,
       "team": [
         {
-          "id": "d7c76b8e-347b-480c-94ae-8e84b62adf9e",
+          "id": "86902e35-93c4-48ca-9a93-14296952f3d9",
           "name": "Mistnewt",
           "speciesId": "mistnewt",
           "element": "tide",
           "role": "guard",
           "level": 1,
-          "zone": "front",
           "hpMax": 208,
           "hpEnd": 0
         },
         {
-          "id": "2b1dc54f-565d-40e1-b4e8-23775e4705ab",
+          "id": "05e5fa90-3336-4d15-96d0-58b56a15fcbe",
           "name": "Ashmole",
           "speciesId": "ashmole",
           "element": "ember",
           "role": "support",
           "level": 1,
-          "zone": "middle",
           "hpMax": 128,
           "hpEnd": 0
         },
         {
-          "id": "e7beca1d-67c8-4d90-bb46-08485be9db33",
+          "id": "42e01b3e-eafa-4190-b98c-95fa9624b916",
           "name": "Stormray",
           "speciesId": "stormray",
           "element": "spark",
           "role": "payoff",
           "level": 1,
-          "zone": "back",
           "hpMax": 120,
           "hpEnd": 0
         }
@@ -200,7 +194,7 @@
             "id": "ember-mite",
             "name": "Ember Mite",
             "element": "ember",
-            "hpMax": 21611
+            "hpMax": 20744
           },
           "modifier": {
             "id": "dark",
@@ -210,7 +204,7 @@
           "played": true,
           "cleared": false,
           "rounds": 3,
-          "foeHpEnd": 21351
+          "foeHpEnd": 20484
         },
         {
           "index": 1,
@@ -219,7 +213,7 @@
             "id": "bramble-hound",
             "name": "Bramble Hound",
             "element": "grove",
-            "hpMax": 25370
+            "hpMax": 24358
           },
           "modifier": {
             "id": "brittle",
@@ -229,7 +223,7 @@
           "played": false,
           "cleared": false,
           "rounds": 0,
-          "foeHpEnd": 25370
+          "foeHpEnd": 24358
         },
         {
           "index": 2,
@@ -238,7 +232,7 @@
             "id": "coil-baron",
             "name": "Coil Baron",
             "element": "spark",
-            "hpMax": 36645
+            "hpMax": 35200
           },
           "modifier": {
             "id": "thorns",
@@ -248,7 +242,7 @@
           "played": false,
           "cleared": false,
           "rounds": 0,
-          "foeHpEnd": 36645
+          "foeHpEnd": 35200
         }
       ],
       "rewards": {

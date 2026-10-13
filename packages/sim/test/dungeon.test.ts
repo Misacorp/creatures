@@ -58,7 +58,7 @@ describe('the dungeon in the simulator', () => {
   it('builds the run like the worker: a row of three, the rooms, the abilities and the gear folded in', () => {
     const p = player(12);
     const run = buildRun(p, 3, dayModifiers('s', 1), 'run-seed');
-    expect(run.team.map((s) => s.role)).toEqual(['guard', 'setter', 'payoff']); // autoPlace: guard front, payoff back
+    expect(run.team.map((s) => s.role)).toEqual(['setter', 'guard', 'payoff']); // one row: setter left, Guard in the middle, payoff right
     expect(run.team.every((s) => s.ownerId === 'p1')).toBe(true);
     expect(run.rooms.map((r) => r.foe.kind)).toEqual(['foe', 'foe', 'boss']);
     expect(run.rooms.map((r) => r.modifier.id)).toEqual(dayModifiers('s', 1));

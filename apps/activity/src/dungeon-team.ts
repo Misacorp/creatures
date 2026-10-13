@@ -1,27 +1,54 @@
 /**
  * The pre-run choices of the daily dungeon as small pure functions: which creature stands in which
- * zone, the tap and drop rules for moving them, the ability settings and the request they make.
- * The server checks everything again (ownership, three different creatures, the abilities); this
- * module only keeps the screen from building a request that cannot be right.
+ * place of the row, the tap and drop rules for moving them, the ability settings and the request
+ * they make. The server checks everything again (ownership, three different creatures, the
+ * abilities); this module only keeps the screen from building a request that cannot be right.
  *
- * A team of three has one creature per zone, so the formation is three slots: the front one first,
- * then the middle, then the back. `team[i]` of the request is `slots[i]` and `formation[i]` is the
- * i-th zone.
+ * The team stands in ONE row of three, left to right. The player's choice is the order: `team[i]`
+ * of the request is `slots[i]`, the creature at position i, and there is nothing else to pick.
  */
-import { RULES, content, dungeonContent } from '@creatures/game';
+import {
+  RULES,
+  content,
+  dungeonContent,
+  dungeonRowOrder,
+  roomModifier,
+  type TurnOrder,
+} from '@creatures/game';
 import type { Creature } from './api';
-import type { DungeonRunRequest, Element, Zone } from './dungeon-types';
+import type { DungeonModifier, DungeonRunRequest, Element, Zone } from './dungeon-types';
+import type { Role } from '@creatures/game';
 import type { DropOutcome, DropTarget } from './raid-dnd';
 
+/** The places of the row, left to right. Used for labels and sentences. */
+export const ROW_PLACES = ['left', 'middle', 'right'] as const;
+export type RowPlace = (typeof ROW_PLACES)[number];
+export const ROW_PLACE_NAMES: Readonly<Record<RowPlace, string>> = {
+  left: 'Left',
+  middle: 'Middle',
+  right: 'Right',
+};
+
+/** Where a place of the row is, for a sentence: "placed on the left", "placed in the middle". */
+export const WHERE: Readonly<Record<RowPlace, string>> = {
+  left: 'on the left',
+  middle: 'in the middle',
+  right: 'on the right',
+};
+
+/**
+ * The engine's zones are what Shield Wall asks for on the wire. In a row of three each zone is one
+ * creature: `front` is the left creature, `middle` the one in the middle and `back` the right one.
+ */
 export const DUNGEON_ZONES: readonly Zone[] = ['front', 'middle', 'back'];
 export const DUNGEON_ZONE_NAMES: Readonly<Record<Zone, string>> = {
-  front: 'Front',
-  middle: 'Middle',
-  back: 'Back',
+  front: 'Left creature',
+  middle: 'Middle creature',
+  back: 'Right creature',
 };
 export const DUNGEON_ELEMENTS: readonly Element[] = ['tide', 'ember', 'grove', 'spark'];
 
-/** The creature in each zone, front first; null for an empty zone. */
+/** The creature in each place of the row, left to right; null for an empty place. */
 export type Slots = readonly [string | null, string | null, string | null];
 
 export const EMPTY_SLOTS: Slots = [null, null, null];
@@ -68,7 +95,7 @@ export function place(slots: Slots, id: string, index: number): Slots {
   return next;
 }
 
-/** Takes a creature out of its zone; the tray keeps it. */
+/** Takes a creature out of the row; the tray keeps it. */
 export function unplace(slots: Slots, id: string): Slots {
   const from = slotIndexOf(slots, id);
   return from === null ? slots : withSlot(slots, from, null);
@@ -101,22 +128,19 @@ export function strongestFirst(creatures: readonly Creature[]): Creature[] {
 }
 
 /**
- * The player's strongest three for the zones, standing the way the game's default row does:
- * guards in front, payoffs at the back, the rest between.
+ * The player's strongest three, in the order the game's rule for the row gives
+ * (`dungeonRowOrder`, the same as the simulator's players): setters and supports on the left, a
+ * Guard in the middle where it covers both neighbours, payoffs on the right.
  */
 export function strongestThree(creatures: readonly Creature[]): Slots {
-  const ordered = strongestFirst(creatures)
+  const top = strongestFirst(creatures)
     .slice(0, TEAM_SIZE)
-    .map((c, strength) => ({ c, strength, rank: ZONE_RANK[roleOf(c) ?? ''] ?? 1 }))
-    .sort((a, b) => a.rank - b.rank || a.strength - b.strength)
-    .map((x) => x.c);
+    .map((c) => ({ c, role: roleOf(c) ?? 'support' }));
+  const ordered = dungeonRowOrder(top).map((x) => x.c);
   return [ordered[0]?.id ?? null, ordered[1]?.id ?? null, ordered[2]?.id ?? null];
 }
 
-/** Where a role likes to stand: 0 front, 1 middle, 2 back. */
-const ZONE_RANK: Readonly<Record<string, number>> = { guard: 0, setter: 1, support: 1, payoff: 2 };
-
-function roleOf(creature: Creature): string | undefined {
+function roleOf(creature: Creature): Role | undefined {
   return content.creatures.find((s) => s.id === creature.species)?.role;
 }
 
@@ -126,10 +150,10 @@ export function reduceTap(slots: Slots, selected: Selection, tap: Tap): TapResul
     return { slots, selected: selected === tap.id ? null : tap.id, hint: null };
   }
   const occupant = slots[tap.index];
-  if (occupant === undefined) return { slots, selected, hint: 'That zone does not exist.' };
+  if (occupant === undefined) return { slots, selected, hint: 'That place does not exist.' };
   if (selected === null) {
     if (occupant === null) {
-      return { slots, selected, hint: 'Tap one of your creatures first, then a zone.' };
+      return { slots, selected, hint: 'Tap one of your creatures first, then a place in the row.' };
     }
     return { slots, selected: occupant, hint: null };
   }
@@ -150,8 +174,9 @@ const outcome = (status: DropOutcome['status'], hint: string | null, announce: s
 });
 
 /**
- * What happens when `id` (called `name`) is dropped on `target`: on a zone it moves there (swapping
- * with whoever stands in it), on the tray it leaves its zone, and off both it is cancelled.
+ * What happens when `id` (called `name`) is dropped on `target`: on a place of the row it moves
+ * there (swapping with whoever stands in it), on the tray it leaves the row, and off both it is
+ * cancelled.
  * `nameOf` gives the name of any creature, for the sentence a screen reader reads out.
  */
 export function resolveDrop(
@@ -164,42 +189,75 @@ export function resolveDrop(
   if (target === null) return { slots, outcome: outcome('none', null, 'Cancelled.') };
   if (target.kind === 'tray') {
     if (slotIndexOf(slots, id) === null) {
-      return { slots, outcome: outcome('none', null, `${name} is not in a zone.`) };
+      return { slots, outcome: outcome('none', null, `${name} is not in the row.`) };
     }
     return {
       slots: unplace(slots, id),
-      outcome: outcome('valid', null, `${name} taken out of its zone.`),
+      outcome: outcome('valid', null, `${name} taken out of the row.`),
     };
   }
-  const zone = DUNGEON_ZONES[target.slot];
-  if (zone === undefined) {
-    const hint = 'That zone does not exist.';
+  const spot = ROW_PLACES[target.slot];
+  if (spot === undefined) {
+    const hint = 'That place does not exist.';
     return { slots, outcome: outcome('invalid', hint, hint) };
   }
   if (slotIndexOf(slots, id) === target.slot) {
-    return { slots, outcome: outcome('none', null, `${name} stays in the ${zone} zone.`) };
+    return { slots, outcome: outcome('none', null, `${name} stays ${WHERE[spot]}.`) };
   }
   const occupantId = slots[target.slot] ?? null;
   const text =
     occupantId === null
-      ? `${name} placed in the ${zone} zone.`
+      ? `${name} placed ${WHERE[spot]}.`
       : slotIndexOf(slots, id) === null
-        ? `${name} placed in the ${zone} zone. ${nameOf(occupantId)} went back to the list.`
+        ? `${name} placed ${WHERE[spot]}. ${nameOf(occupantId)} went back to the list.`
         : `Swapped ${name} with ${nameOf(occupantId)}.`;
   return { slots: place(slots, id, target.slot), outcome: outcome('valid', null, text) };
 }
 
-/** The drop status of every zone for a creature being dragged, by slot number. */
+/** The drop status of every place of the row for a creature being dragged, by slot number. */
 export function slotStatuses(
   slots: Slots,
   id: string,
   nameOf: (id: string) => string,
 ): Map<number, DropOutcome['status']> {
   const map = new Map<number, DropOutcome['status']>();
-  DUNGEON_ZONES.forEach((_, index) => {
+  ROW_PLACES.forEach((_, index) => {
     map.set(index, resolveDrop(slots, id, { kind: 'slot', slot: index }, nameOf).outcome.status);
   });
   return map;
+}
+
+// --- What the order means ---
+
+/** The turn orders a room can make everybody follow, in words. */
+const ORDER_WORDS: Readonly<Record<TurnOrder, string>> = {
+  left_to_right: 'left to right',
+  right_to_left: 'right to left',
+  speed: 'fastest first',
+};
+
+/**
+ * The lines under the row that say what the order of the team means: the foe's attack and the
+ * Guard, then a line for every room of the day whose modifier fixes the turn order (the foes of a
+ * room are not known until the run, so a modifier is all there is to show beforehand).
+ */
+export function rowNotes(
+  modifiers: readonly Pick<DungeonModifier, 'room' | 'id' | 'name'>[],
+): string[] {
+  const notes = [
+    "The foe's plain attack goes for the left creature first. A Guard covers the creatures beside it, so it likes the middle.",
+    'Each foe acts in its own order: left to right, right to left or fastest first. You see which in every room.',
+  ];
+  for (const m of modifiers) {
+    const order = roomModifier(m.id)?.effects.find((e) => e.op === 'turn_order');
+    if (order?.op !== 'turn_order') continue;
+    const total = modifiers.length;
+    const where = m.room === total - 1 ? 'The room boss' : `Room ${String(m.room + 1)}`;
+    notes.push(
+      `${where} has ${m.name}: everyone acts ${ORDER_WORDS[order.order]}, so the order of your row is the turn order.`,
+    );
+  }
+  return notes;
 }
 
 // --- Abilities ---
@@ -208,7 +266,7 @@ export function slotStatuses(
 export interface AbilitySettings {
   basicId: string;
   basicRound: number | null;
-  /** For Shield Wall. */
+  /** For Shield Wall: the engine's zone, which in the row of three is one creature (see `DUNGEON_ZONE_NAMES`). */
   zone: Zone;
   /** For Re-mark. */
   element: Element;
@@ -253,7 +311,7 @@ export interface CreatureAbilityChoice {
   round: number | null;
 }
 
-/** The unlocked creature abilities of the placed creatures, front to back. */
+/** The unlocked creature abilities of the placed creatures, left to right. */
 export function creatureAbilityChoices(
   slots: Slots,
   creatures: readonly Creature[],
@@ -313,7 +371,6 @@ export function buildRunRequest(
   );
   return {
     team: [a, b, c],
-    formation: ['front', 'middle', 'back'],
     abilities: {
       basic: {
         abilityId: settings.basicId,
@@ -329,5 +386,5 @@ export function buildRunRequest(
 
 /** The part of a request that decides what the server does: a different one needs a different key. */
 export function requestSignature(request: Omit<DungeonRunRequest, 'idempotencyKey'>): string {
-  return JSON.stringify([request.team, request.formation, request.abilities]);
+  return JSON.stringify([request.team, request.abilities]);
 }

@@ -29,7 +29,7 @@ interface Props {
 }
 
 /**
- * The pre-run screen below today's info: the team and its zones, the ability settings and the Enter
+ * The pre-run screen below today's info: the team in its row, the ability settings and the Enter
  * button, or the reason a run is not possible. The choices are the player's; the server checks them
  * all again and decides the run.
  */
@@ -79,6 +79,7 @@ export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast
         <DungeonTeam
           creatures={strongestFirst(creatures)}
           slots={slots}
+          modifiers={today.modifiers}
           selected={selected}
           hint={hint}
           disabled={busy}
@@ -123,7 +124,7 @@ export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast
         <p id="dungeon-enter-note" class="muted">
           {complete
             ? 'The run is played out at once on the server, then shown to you. You get one run a day.'
-            : 'Put a creature in every zone to enter.'}
+            : 'Put a creature in every slot of the row to enter.'}
         </p>
       </section>
     </>

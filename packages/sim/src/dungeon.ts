@@ -5,6 +5,7 @@ import {
   basicAbilities,
   createSeededRng,
   dungeonFoe,
+  dungeonRowOrder,
   dungeonPayout,
   rollDayModifiers,
   rollDungeonLoot,
@@ -15,14 +16,13 @@ import {
   type Rng,
 } from '@creatures/game';
 import {
-  autoPlace,
   simulateDungeon,
   type AbilityChoice,
   type DungeonRoomSpec,
   type DungeonRunInput,
   type FightSlot,
 } from '@creatures/engine';
-import { pickTeam, TEAM_SIZE } from './data';
+import { pickTeam } from './data';
 import { grantDungeonLoot } from './gear';
 import { slotFor } from './raid';
 import type { SimPlayer } from './state';
@@ -35,8 +35,8 @@ import type { SimPlayer } from './state';
  * - A player with at least 3 creatures runs the dungeon once on every day they check in: casuals on
  *   their leet days, everybody else every day. On the first day they ever ran, a lost run may be
  *   tried once more (the worker's free retry).
- * - The team is the player's 3 strongest creatures by power (gear included), stood in the row by
- *   the game's default rule (`autoPlace`: guards front, payoffs back). The basic ability is Rally and
+ * - The team is the player's 3 strongest creatures by power (gear included), stood in one row by
+ *   `dungeonRowOrder` (setters and supports left, a Guard in the middle, payoffs right). The basic ability is Rally and
  *   every unlocked creature ability fires at its default round (Auto fire on).
  * - The day's modifiers are shared by everybody (drawn from a seed of the day), the rooms from the
  *   run's seed, and the rewards are paid as the worker pays them.
@@ -66,11 +66,9 @@ export function buildRun(
   seed: string,
 ): DungeonRunInput {
   const team = pickTeam(player.creatures);
-  const slots = new Map<string, FightSlot[]>([
-    [DUNGEON_PLAYER, team.map((c) => slotFor(player, c.id))],
-  ]);
-  const row = autoPlace(new Array<FightSlot | null>(TEAM_SIZE).fill(null), slots).filter(
-    (s): s is FightSlot => s !== null,
+  // One row, left to right: the game's rule for a good order (`dungeonRowOrder`), strongest first.
+  const row = dungeonRowOrder(
+    team.map((c): FightSlot => ({ ...slotFor(player, c.id), ownerId: DUNGEON_PLAYER })),
   );
   const plans = rollRooms(createSeededRng(`${seed}:rooms`), modifiers);
   const rooms: DungeonRoomSpec[] = plans.map((plan) => {
