@@ -2,7 +2,7 @@
  * The panel's calls to `/api/dev/*` (staging only). They go through the app's own `apiFetch`, so they
  * carry the session token like every other call and the identity is the session's, never the body's.
  */
-import { ApiError, apiFetch } from '../api';
+import { ApiError, apiFetch, jsonRequest } from '../api';
 import { isRecord } from '../parse-core';
 import type { DevToolId } from './forms';
 
@@ -20,11 +20,7 @@ export async function runTool(
   body: Record<string, unknown>,
 ): Promise<ToolOutcome> {
   try {
-    const data = await apiFetch(`/api/dev/${tool}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    const data = await apiFetch(`/api/dev/${tool}`, jsonRequest('POST', body));
     if (!isRecord(data) || data['ok'] !== true) return { ok: false, error: 'unexpected_answer' };
     return { ok: true, result: data['result'] };
   } catch (err) {

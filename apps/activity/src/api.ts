@@ -98,6 +98,18 @@ function isSessionUser(value: unknown): value is SessionUser {
   );
 }
 
+/**
+ * The init of a request that carries a JSON body (a POST unless the route wants another method).
+ * Every client request with a body is built here, so the headers and the encoding are the same everywhere.
+ */
+export function jsonRequest(method: string, body: unknown): RequestInit {
+  return {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  };
+}
+
 // Relative URLs on purpose: inside Discord they go through its proxy to the same origin.
 async function request(path: string, init: RequestInit = {}): Promise<unknown> {
   const headers = new Headers(init.headers);
@@ -177,11 +189,7 @@ export async function fetchHealth(): Promise<Health> {
 
 /** Exchanges the Discord OAuth code for a session. Stores the session token in memory. */
 export async function createSession(code: string, instanceId: string): Promise<SessionResult> {
-  const data = await request('/api/auth/session', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code, instanceId }),
-  });
+  const data = await request('/api/auth/session', jsonRequest('POST', { code, instanceId }));
   if (
     !isRecord(data) ||
     typeof data['sessionToken'] !== 'string' ||
@@ -447,14 +455,6 @@ export function parseGameState(data: unknown): GameState {
   };
 }
 
-function postJson(path: string, method: string, body: unknown): Promise<unknown> {
-  return apiFetch(path, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-}
-
 export function stateFrom(data: unknown): GameState {
   return parseGameState(isRecord(data) ? data['state'] : undefined);
 }
@@ -464,7 +464,9 @@ export async function fetchState(): Promise<GameState> {
 }
 
 export async function chooseStarter(species: string, idempotencyKey: string): Promise<GameState> {
-  return stateFrom(await postJson('/api/starter', 'POST', { species, idempotencyKey }));
+  return stateFrom(
+    await apiFetch('/api/starter', jsonRequest('POST', { species, idempotencyKey })),
+  );
 }
 
 export async function trainCreature(
@@ -472,7 +474,7 @@ export async function trainCreature(
   idempotencyKey: string,
 ): Promise<GameState> {
   return stateFrom(
-    await postJson(`/api/creatures/${creatureId}/train`, 'POST', { idempotencyKey }),
+    await apiFetch(`/api/creatures/${creatureId}/train`, jsonRequest('POST', { idempotencyKey })),
   );
 }
 
@@ -480,7 +482,9 @@ export async function renameCreature(
   creatureId: string,
   nickname: string | null,
 ): Promise<GameState> {
-  return stateFrom(await postJson(`/api/creatures/${creatureId}`, 'PATCH', { nickname }));
+  return stateFrom(
+    await apiFetch(`/api/creatures/${creatureId}`, jsonRequest('PATCH', { nickname })),
+  );
 }
 
 export interface EvolveResult {
@@ -495,7 +499,10 @@ export async function evolveCreature(
   creatureId: string,
   idempotencyKey: string,
 ): Promise<EvolveResult> {
-  const data = await postJson(`/api/creatures/${creatureId}/evolve`, 'POST', { idempotencyKey });
+  const data = await apiFetch(
+    `/api/creatures/${creatureId}/evolve`,
+    jsonRequest('POST', { idempotencyKey }),
+  );
   if (!isRecord(data) || !isStr(data['species']) || typeof data['firstOnServer'] !== 'boolean') {
     throw new Error('the server returned an unexpected evolve result');
   }

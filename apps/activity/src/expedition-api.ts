@@ -4,7 +4,7 @@
  * are safe to repeat (the server stores the result), so they carry no key. Every trip answer brings the
  * fresh collection, so the screen replaces what it holds and never changes a number itself.
  */
-import { apiFetch, parseGameState, stateFrom, type GameState } from './api';
+import { apiFetch, jsonRequest, parseGameState, stateFrom, type GameState } from './api';
 import { isTripResult, parseDestinations, parseProfile, parseTripAnswer } from './expedition-parse';
 import type {
   DestinationsView,
@@ -14,14 +14,6 @@ import type {
   Trip,
   TripResult,
 } from './expedition-types';
-
-function postJson(path: string, body: unknown): Promise<unknown> {
-  return apiFetch(path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-}
 
 /** What the player chose for one trip (the idempotency key is added by the caller's key store). */
 export interface SendRequest {
@@ -54,7 +46,7 @@ export async function sendExpedition(
   idempotencyKey: string,
 ): Promise<TripAnswer> {
   const answer = parseTripAnswer(
-    await postJson('/api/expeditions', sendBody(request, idempotencyKey)),
+    await apiFetch('/api/expeditions', jsonRequest('POST', sendBody(request, idempotencyKey))),
   );
   return { expedition: answer.expedition, state: parseGameState(answer.state) };
 }
@@ -62,9 +54,10 @@ export async function sendExpedition(
 /** Chooses one of the goals a finished trip offered; its extra hours count from the end of the trip. */
 export async function pushOn(expeditionId: string, goalId: string): Promise<TripAnswer> {
   const answer = parseTripAnswer(
-    await postJson(`/api/expeditions/${encodeURIComponent(expeditionId)}/push-on`, {
-      goalId,
-    }),
+    await apiFetch(
+      `/api/expeditions/${encodeURIComponent(expeditionId)}/push-on`,
+      jsonRequest('POST', { goalId }),
+    ),
   );
   return { expedition: answer.expedition, state: parseGameState(answer.state) };
 }
@@ -85,7 +78,10 @@ export async function claimExpedition(
   expeditionId: string,
 ): Promise<{ result: TripResult; state: GameState }> {
   return parseClaimResponse(
-    await postJson(`/api/expeditions/${encodeURIComponent(expeditionId)}/claim`, {}),
+    await apiFetch(
+      `/api/expeditions/${encodeURIComponent(expeditionId)}/claim`,
+      jsonRequest('POST', {}),
+    ),
   );
 }
 

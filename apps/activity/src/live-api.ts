@@ -12,7 +12,7 @@
  */
 import type { Element } from '@creatures/game';
 import type { EventNames, FightEvent, Zone } from '@creatures/engine';
-import { apiFetch } from './api';
+import { apiFetch, jsonRequest } from './api';
 import {
   isEvent,
   isEventNames,
@@ -259,22 +259,10 @@ export async function fetchLive(): Promise<LiveSnapshot> {
 
 /** Fire or toggle Auto fire on one ability. Fire may carry the zone (Shield Wall) or the element (Re-mark). */
 export async function sendLiveAction(request: LiveActionRequest): Promise<LiveSnapshot> {
-  return parseLiveSnapshot(
-    await apiFetch('/api/raid/live/action', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    }),
-  );
+  return parseLiveSnapshot(await apiFetch('/api/raid/live/action', jsonRequest('POST', request)));
 }
 
 /** Staging only: starts a practice fight. Anywhere else the server answers 404. */
 export async function startPractice(): Promise<LiveSnapshot> {
-  return parseLiveSnapshot(
-    await apiFetch('/api/raid/practice', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    }),
-  );
+  return parseLiveSnapshot(await apiFetch('/api/raid/practice', jsonRequest('POST', {})));
 }

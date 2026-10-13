@@ -4,7 +4,7 @@
  * outcome, and the client only sends intents (team, placement, opt-out).
  */
 import type { EventNames, FightEvent, Zone } from '@creatures/engine';
-import { apiFetch } from './api';
+import { apiFetch, jsonRequest } from './api';
 import {
   isArrayOf,
   isBool,
@@ -691,33 +691,29 @@ export function parseStats(data: unknown): AfterActionStats {
 
 // --- Requests ---
 
-function send(path: string, method: string, body: unknown): Promise<unknown> {
-  return apiFetch(path, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-}
-
 export async function fetchRaid(): Promise<RaidView> {
   return parseRaidView(await apiFetch('/api/raid'));
 }
 
 /** `creatureIds`: exactly three of the player's creatures, or null for the automatic team. */
 export async function setRaidTeam(creatureIds: readonly string[] | null): Promise<RaidView> {
-  return parseRaidView(await send('/api/raid/team', 'PUT', { creatureIds }));
+  return parseRaidView(await apiFetch('/api/raid/team', jsonRequest('PUT', { creatureIds })));
 }
 
 export async function placeCreature(creatureId: string, slot: number): Promise<RaidView> {
-  return parseRaidView(await send('/api/raid/placement', 'PUT', { creatureId, slot }));
+  return parseRaidView(
+    await apiFetch('/api/raid/placement', jsonRequest('PUT', { creatureId, slot })),
+  );
 }
 
 export async function unplaceCreature(creatureId: string): Promise<RaidView> {
-  return parseRaidView(await send('/api/raid/placement', 'DELETE', { creatureId }));
+  return parseRaidView(
+    await apiFetch('/api/raid/placement', jsonRequest('DELETE', { creatureId })),
+  );
 }
 
 export async function setRaidOptOut(optOut: boolean): Promise<RaidView> {
-  return parseRaidView(await send('/api/raid/opt-out', 'PUT', { optOut }));
+  return parseRaidView(await apiFetch('/api/raid/opt-out', jsonRequest('PUT', { optOut })));
 }
 
 export async function fetchReplay(
@@ -742,7 +738,7 @@ export async function fetchStats(
 
 /** Picks the finale ability (any time before the finale starts). */
 export async function setRaidAbility(abilityId: string): Promise<RaidView> {
-  return parseRaidView(await send('/api/raid/ability', 'PUT', { abilityId }));
+  return parseRaidView(await apiFetch('/api/raid/ability', jsonRequest('PUT', { abilityId })));
 }
 
 /**
@@ -750,10 +746,10 @@ export async function setRaidAbility(abilityId: string): Promise<RaidView> {
  * of the caller's own team creatures. Allowed until the finale starts. Answers with the new view.
  */
 export async function setRaidAutofire(target: string, on: boolean): Promise<RaidView> {
-  return parseRaidView(await send('/api/raid/autofire', 'PUT', { target, on }));
+  return parseRaidView(await apiFetch('/api/raid/autofire', jsonRequest('PUT', { target, on })));
 }
 
 /** Marks a finale reveal as seen. Idempotent on the server. */
 export async function markRevealSeen(week: string): Promise<RaidView> {
-  return parseRaidView(await send('/api/raid/reveal-seen', 'POST', { week }));
+  return parseRaidView(await apiFetch('/api/raid/reveal-seen', jsonRequest('POST', { week })));
 }

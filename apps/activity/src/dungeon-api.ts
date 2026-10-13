@@ -4,7 +4,7 @@
  * can never start a second one. The run is final when the answer arrives; the replay route returns
  * the same events at any later time (for the caller's own runs only).
  */
-import { apiFetch } from './api';
+import { apiFetch, jsonRequest } from './api';
 import { parseDungeonReplay, parseDungeonRun, parseDungeonToday } from './dungeon-parse';
 import type {
   DungeonReplay,
@@ -23,13 +23,7 @@ export async function fetchDungeonToday(): Promise<DungeonToday> {
  * and the gear view afterwards, since balances and parts changed.
  */
 export async function startDungeonRun(request: DungeonRunRequest): Promise<DungeonRunResponse> {
-  return parseDungeonRun(
-    await apiFetch('/api/dungeon/run', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    }),
-  );
+  return parseDungeonRun(await apiFetch('/api/dungeon/run', jsonRequest('POST', request)));
 }
 
 /** The events of one of the caller's own runs, for "Watch again". */

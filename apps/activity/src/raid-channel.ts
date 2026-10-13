@@ -3,7 +3,7 @@
  * (who may change it, which channel is "here"); the client shows the state it is told and sends
  * the intent `pin` or `unpin`. Channel ids never reach the client.
  */
-import { apiFetch } from './api';
+import { apiFetch, jsonRequest } from './api';
 import { isBool, isRecord } from './parse-core';
 
 /** The answer of `GET /api/raid/channel` and `POST /api/raid/channel`. */
@@ -80,11 +80,5 @@ export async function fetchRaidChannel(): Promise<RaidChannelState> {
 }
 
 export async function setRaidChannel(action: RaidChannelAction): Promise<RaidChannelState> {
-  return parseRaidChannel(
-    await apiFetch('/api/raid/channel', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action }),
-    }),
-  );
+  return parseRaidChannel(await apiFetch('/api/raid/channel', jsonRequest('POST', { action })));
 }
