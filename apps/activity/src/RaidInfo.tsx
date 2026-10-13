@@ -187,10 +187,12 @@ export function ScheduleStrip({ view, serverNow }: { view: RaidView; serverNow: 
           <li
             key={step.event}
             class={`schedule-step ${step.state}`}
-            aria-current={step.state === 'next' ? 'step' : undefined}
+            aria-current={step.state === 'now' ? 'step' : undefined}
           >
             <span class="schedule-title">{step.title}</span>
-            <span class="schedule-when">{step.when}</span>
+            <span class="schedule-when">
+              {step.until === null ? step.when : `${step.when} to ${step.until}`}
+            </span>
           </li>
         ))}
       </ol>
