@@ -6,6 +6,7 @@ import {
   PARTS_KEYS,
   PART_KINDS,
   RULES,
+  MAX_SUPPLY_BLURB,
   SUPPLY_KINDS,
   SUPPLY_TIERS,
   closedReasons,
@@ -180,6 +181,14 @@ describe('the shipped expedition content', () => {
     // Every place has a deeper area with something in it.
     for (const d of pack.destinations) {
       expect(d.deep.species.length > 0 || d.deep.rarityUpBp > 0, d.id).toBe(true);
+    }
+  });
+
+  it('describes every supply in a short blurb with no digit and no percent sign', () => {
+    for (const s of pack.supplies) {
+      expect(s.blurb.length, s.id).toBeGreaterThan(5);
+      expect(s.blurb.length, s.id).toBeLessThanOrEqual(MAX_SUPPLY_BLURB);
+      expect(s.blurb, s.id).not.toMatch(/[\d%]/);
     }
   });
 
@@ -383,6 +392,26 @@ describe('the expedition content loader', () => {
         /must be called/,
       ],
       ['a missing supply', (p) => p.supplies.pop(), /no supply/],
+      [
+        'a supply blurb with a number',
+        (p) => ((p.supplies[0] as { blurb: string }).blurb = 'Draws 25 rarer creatures'),
+        /digits/,
+      ],
+      [
+        'a supply blurb with a percent sign',
+        (p) => ((p.supplies[0] as { blurb: string }).blurb = 'Draws rarer creatures, plus %'),
+        /digits/,
+      ],
+      [
+        'a supply blurb that is too long',
+        (p) => ((p.supplies[0] as { blurb: string }).blurb = 'a'.repeat(MAX_SUPPLY_BLURB + 1)),
+        /schema/,
+      ],
+      [
+        'a supply without a blurb',
+        (p) => delete (p.supplies[0] as { blurb?: string }).blurb,
+        /schema/,
+      ],
       [
         'a safe goal that can fail',
         (p) =>
