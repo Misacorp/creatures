@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { countdownText, formatEventTime, formatLongCountdown, scheduleSteps } from './raid-time';
+import {
+  countdownText,
+  formatEventTime,
+  formatEventTimeLong,
+  formatLongCountdown,
+  formatShortCountdown,
+  scheduleSteps,
+} from './raid-time';
 
 // Friday 2026-10-09 13:37 in Helsinki (UTC+3 in October) is 10:37 UTC.
 const FRIDAY = Date.UTC(2026, 9, 9, 10, 37);
@@ -113,5 +120,31 @@ describe('countdownText', () => {
 
   it('explains the end of the week', () => {
     expect(countdownText(null, FRIDAY)).toContain('Monday');
+  });
+});
+
+describe('formatEventTimeLong', () => {
+  it('spells the weekday out', () => {
+    expect(formatEventTimeLong(schedule.weekStart, 'Europe/Helsinki')).toBe('Monday 13:37');
+    expect(formatEventTimeLong(schedule.finale, 'Europe/Helsinki')).toBe('Sunday 20:00');
+  });
+});
+
+describe('formatShortCountdown', () => {
+  it('shows days and hours, hours and minutes, or minutes', () => {
+    expect(formatShortCountdown(3 * 24 * HOUR + 4 * HOUR + 59 * 60_000)).toBe('3 d 4 h');
+    expect(formatShortCountdown(2 * HOUR + 10 * 60_000)).toBe('2 h 10 m');
+    expect(formatShortCountdown(12 * 60_000)).toBe('12 m');
+  });
+
+  it('leaves out a part that is zero', () => {
+    expect(formatShortCountdown(2 * 24 * HOUR)).toBe('2 d');
+    expect(formatShortCountdown(5 * HOUR)).toBe('5 h');
+  });
+
+  it('rounds minutes up and is never negative', () => {
+    expect(formatShortCountdown(1)).toBe('1 m');
+    expect(formatShortCountdown(61_000)).toBe('2 m');
+    expect(formatShortCountdown(-5000)).toBe('0 m');
   });
 });

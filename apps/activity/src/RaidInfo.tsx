@@ -13,7 +13,6 @@ import {
   seasonPips,
   seasonText,
 } from './raid-progress';
-import { countdownText, scheduleSteps } from './raid-time';
 import { HpBar } from './Stage';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
@@ -173,31 +172,6 @@ export function BossCard({ view }: { view: RaidView }) {
       ) : (
         <p>{adaptation.description}</p>
       )}
-    </section>
-  );
-}
-
-export function ScheduleStrip({ view, serverNow }: { view: RaidView; serverNow: number }) {
-  const steps = scheduleSteps(view.schedule, view.next, view.timezone);
-  return (
-    <section class="raid-section" aria-labelledby="raid-schedule-heading">
-      <h3 id="raid-schedule-heading">This week</h3>
-      <ol class="schedule">
-        {steps.map((step) => (
-          <li
-            key={step.event}
-            class={`schedule-step ${step.state}`}
-            aria-current={step.state === 'now' ? 'step' : undefined}
-          >
-            <span class="schedule-title">{step.title}</span>
-            <span class="schedule-when">
-              {step.until === null ? step.when : `${step.when} to ${step.until}`}
-            </span>
-          </li>
-        ))}
-      </ol>
-      <p aria-live="off">{countdownText(view.next, serverNow)}</p>
-      <p class="muted">Times are in {view.timezone}.</p>
     </section>
   );
 }

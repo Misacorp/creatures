@@ -169,7 +169,7 @@ export function Placement(props: Props) {
     dragging === null ? undefined : team.creatures.find((c) => c.creatureId === dragging);
 
   return (
-    <div onKeyDown={onKeyDown}>
+    <div id="raid-placement" onKeyDown={onKeyDown}>
       <section class="raid-section" aria-labelledby="raid-team-heading">
         <h3 id="raid-team-heading">My team</h3>
         <p class="muted">

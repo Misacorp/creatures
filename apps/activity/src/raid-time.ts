@@ -19,10 +19,19 @@ export function eventTitle(event: RaidEventId): string {
 
 /** "Fri 13:37" in the given timezone. An unknown timezone falls back to UTC. */
 export function formatEventTime(at: number, timeZone: string): string {
+  return formatTime(at, timeZone, 'short');
+}
+
+/** "Monday 13:37": the same, with the weekday spelled out. */
+export function formatEventTimeLong(at: number, timeZone: string): string {
+  return formatTime(at, timeZone, 'long');
+}
+
+function formatTime(at: number, timeZone: string, weekday: 'short' | 'long'): string {
   const make = (zone: string): Intl.DateTimeFormat =>
     new Intl.DateTimeFormat('en-GB', {
       timeZone: zone,
-      weekday: 'short',
+      weekday,
       hour: '2-digit',
       minute: '2-digit',
       hourCycle: 'h23',
@@ -90,6 +99,21 @@ export function formatLongCountdown(ms: number): string {
   if (hours > 0) return `${String(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
   if (minutes > 0) return `${String(minutes)}m ${pad(seconds)}s`;
   return `${String(seconds)}s`;
+}
+
+/**
+ * A short wait for the "what to do now" line: "3 d 4 h", "2 h 10 m" or "12 m" (a zero part is left out).
+ * Minutes round up, so it never reads "0 m" while something is still ahead, and it is never negative.
+ */
+export function formatShortCountdown(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 60_000));
+  const days = Math.floor(total / 1440);
+  const hours = Math.floor((total % 1440) / 60);
+  const minutes = total % 60;
+  if (days > 0) return hours === 0 ? `${String(days)} d` : `${String(days)} d ${String(hours)} h`;
+  if (hours > 0)
+    return minutes === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(minutes)} m`;
+  return `${String(minutes)} m`;
 }
 
 /** "Phase 1 in 2d 03h 04m", or "Phase 1 is happening now" once the time has passed. */
