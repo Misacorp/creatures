@@ -77,9 +77,10 @@ These are the rules as the engine implements them; keep them exact.
   4. The raid week.
   5. The live finale (tap-to-fire, Auto fire, telegraphs).
   6. Expeditions.
-  7. Ranks and Festivals.
-  8. Rewards.
-  9. The Workshop (gear, parts, blueprints and jobs).
+  7. The daily dungeon (one run a day, three rooms, depth, landmarks and the streak).
+  8. Ranks and Festivals.
+  9. Rewards.
+  10. The Workshop (gear, parts, blueprints and jobs).
 - **Each section** has one small illustration built from existing sprites and glyphs, and a 3–5 line explanation.
 - **First-time hints,** optional: a one-time coach mark on the first visit to the Raid tab ("Tap any tag to learn what it means"). It is dismissed forever per player, stored server-side or as a local convenience.
 

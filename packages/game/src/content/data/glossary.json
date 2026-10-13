@@ -1065,7 +1065,7 @@
       "Clear all three to go one depth deeper. A lost run keeps your depth.",
       "One run per day, resetting at midnight in the server's time zone. A lost first run can be retried once."
     ],
-    "section": "rewards"
+    "section": "dungeon"
   },
   {
     "id": "depth",
@@ -1077,7 +1077,7 @@
       "It is yours alone: nobody else's runs change it.",
       "Every 7th depth is a landmark."
     ],
-    "section": "rewards"
+    "section": "dungeon"
   },
   {
     "id": "room-modifiers",
@@ -1088,7 +1088,7 @@
       "Some boost one element, some change the foe, and some change who acts first.",
       "They only last for their room. Pick your team around them."
     ],
-    "section": "rewards"
+    "section": "dungeon"
   },
   {
     "id": "room-boss",
@@ -1099,7 +1099,7 @@
       "Each boss has its own trick, and some are the same ones raid bosses use.",
       "Beating it clears the dungeon for the day."
     ],
-    "section": "rewards"
+    "section": "dungeon"
   },
   {
     "id": "landmark",
@@ -1110,7 +1110,7 @@
       "Clear all rooms on one to get a gear drop for certain, with better odds of rare and epic gear.",
       "It also pays extra Essence, scrap and a glimmer."
     ],
-    "section": "rewards"
+    "section": "dungeon"
   },
   {
     "id": "streak",
@@ -1121,7 +1121,7 @@
       "The 3rd and 7th day of every 7 pay a bonus.",
       "Miss a day and the count starts again. Your depth stays."
     ],
-    "section": "rewards"
+    "section": "dungeon"
   },
   {
     "id": "modifier-flooded",
@@ -1131,7 +1131,7 @@
       "Works for every Tide creature on your team, in this room only.",
       "Plan your team around it: it is shown before you enter."
     ],
-    "section": "rewards",
+    "section": "dungeon",
     "visual": {
       "kind": "element",
       "id": "tide"
@@ -1145,7 +1145,7 @@
       "Works for every Ember creature on your team, in this room only.",
       "Plan your team around it: it is shown before you enter."
     ],
-    "section": "rewards",
+    "section": "dungeon",
     "visual": {
       "kind": "element",
       "id": "ember"
@@ -1159,7 +1159,7 @@
       "Works for every Grove creature on your team, in this room only.",
       "Plan your team around it: it is shown before you enter."
     ],
-    "section": "rewards",
+    "section": "dungeon",
     "visual": {
       "kind": "element",
       "id": "grove"
@@ -1173,7 +1173,7 @@
       "Works for every Spark creature on your team, in this room only.",
       "Plan your team around it: it is shown before you enter."
     ],
-    "section": "rewards",
+    "section": "dungeon",
     "visual": {
       "kind": "element",
       "id": "spark"
@@ -1187,7 +1187,7 @@
       "Only for the room that has it, and shown before you enter.",
       "Plan your team and where they stand around it."
     ],
-    "section": "rewards"
+    "section": "dungeon"
   },
   {
     "id": "modifier-thorns",
@@ -1197,7 +1197,7 @@
       "Only for the room that has it, and shown before you enter.",
       "Plan your team and where they stand around it."
     ],
-    "section": "rewards"
+    "section": "dungeon"
   },
   {
     "id": "modifier-brittle",
@@ -1207,7 +1207,7 @@
       "Only for the room that has it, and shown before you enter.",
       "Plan your team and where they stand around it."
     ],
-    "section": "rewards"
+    "section": "dungeon"
   },
   {
     "id": "modifier-fog",
@@ -1217,6 +1217,6 @@
       "Only for the room that has it, and shown before you enter.",
       "Plan your team and where they stand around it."
     ],
-    "section": "rewards"
+    "section": "dungeon"
   }
 ]
