@@ -160,6 +160,7 @@ function grantOnce(
           blueprint: first?.baseId ?? null,
           blueprintDuplicate: first?.duplicate ?? false,
           ...(supplies.length > 0 ? { supplies: supplies.length } : {}),
+          parts,
         },
         actor,
       );

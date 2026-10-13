@@ -1,6 +1,7 @@
-import { createCryptoRng, type Rng } from '@creatures/game';
+import { RULES, createCryptoRng, type Rng } from '@creatures/game';
 import * as v from 'valibot';
 import { Analytics } from './analytics';
+import { AnalyticsRollup, analyticsRollupMigration, type DailyRow } from './analytics-rollup';
 import { Collection } from './collection';
 import { Dungeon } from './dungeon';
 import { dungeonMigration } from './dungeon-migration';
@@ -91,6 +92,8 @@ const SYNC_MAX_PAGES = 20;
 const SYNC_PAGE_LIMIT = 31;
 /** Alarms re-arm from slightly in the future so a marginally early wake-up cannot fire twice. */
 const ALARM_REARM_SKEW_MS = 60 * 1000;
+/** The analytics rollup of a finished game day runs this long after the daily reset (13:37 + 3 min = 13:40). */
+const ROLLUP_DELAY_MS = 3 * 60 * 1000;
 /** A raid event that keeps failing is retried this long after the last attempt. */
 const RAID_RETRY_MS = 60 * 1000;
 /** Posts that are due but not yet delivered are looked at again this long later by the alarm. */
@@ -291,6 +294,8 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   // Version 19: expeditions v2, explorer ranks, familiarity, the journal, account stats, supplies and the
   // slot wipe (see expedition-migration.ts).
   expeditionsMigration,
+  // Version 20: the daily analytics rollups (see analytics-rollup.ts).
+  analyticsRollupMigration,
 ];
 
 export interface SessionUser {
@@ -450,6 +455,7 @@ export class GuildCore {
   readonly dungeon: Dungeon;
   readonly raid: Raid;
   readonly analytics: Analytics;
+  readonly rollup: AnalyticsRollup;
   private syncInFlight: Promise<LeetSyncResult> | null = null;
   private postsInFlight: Promise<void> | null = null;
   /** The last analytics prune left old rows behind: the alarm comes back soon to continue. */
@@ -474,6 +480,7 @@ export class GuildCore {
       now,
       ...(options.analyticsSecret === undefined ? {} : { secret: options.analyticsSecret }),
     });
+    this.rollup = new AnalyticsRollup({ storage, now, timezone: () => this.timezone() });
     const gearRng = options.gearRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
     this.collection = new Collection({
       storage,
@@ -689,6 +696,14 @@ export class GuildCore {
       channelId:
         row.channel_id !== null && SNOWFLAKE_RE.test(row.channel_id) ? row.channel_id : null,
     };
+  }
+
+  /**
+   * The analytics rollup rows of the game days `from` to `to` (inclusive), for the ops report. Counts
+   * only: no player, hash or text is in them. Called over RPC by the Worker, never from a route.
+   */
+  analyticsDaily(from: string, to: string): DailyRow[] {
+    return this.rollup.rows(from, to);
   }
 
   /** Handles an authenticated API request forwarded by the Worker. */
@@ -1075,7 +1090,18 @@ export class GuildCore {
         candidates.push(postAt > this.now() ? postAt : this.now() + POST_RETRY_MS);
     }
     if (this.pruneBacklog) candidates.push(this.now() + POST_RETRY_MS);
+    // The daily analytics rollup, just after the game day turns over.
+    if (this.storedGuildId() !== null) candidates.push(this.nextRollupAt(from));
     return candidates.length === 0 ? null : Math.min(...candidates);
+  }
+
+  /**
+   * The next instant, after `from`, a finished game day can be rolled up: the daily reset plus
+   * `ROLLUP_DELAY_MS`, which is the leet sync's 13:40 slot, so the two share one alarm.
+   */
+  private nextRollupAt(from: number): number {
+    const { hour, minute } = RULES.daily.reset;
+    return nextOccurrence(from - ROLLUP_DELAY_MS, hour, minute, this.timezone()) + ROLLUP_DELAY_MS;
   }
 
   private async rearmAlarm(from: number): Promise<void> {
@@ -1187,6 +1213,7 @@ export class GuildCore {
     await this.deliverPosts();
     // Old analytics rows go; a long backlog is worked off over the next alarms.
     this.pruneBacklog = this.analytics.prune();
+    this.rollup.runDue();
     this.gear.prune();
     this.dungeon.prune();
     await this.rearmAlarm(this.now() + ALARM_REARM_SKEW_MS);

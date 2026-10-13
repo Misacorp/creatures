@@ -926,6 +926,7 @@ describe('dismantle', () => {
             shards: 2,
             glimmer: 1,
             unequipped: false,
+            parts: { scrap: 10, 'spark-shard': 2, glimmer: 1 },
           },
         ]);
         // A second, fresh request for the gone item is a plain not-found.
@@ -1105,6 +1106,7 @@ describe('workshop jobs: starting', () => {
             )[0]?.species,
             hours: 8,
             skillLevel: 1,
+            parts: { scrap: 18, 'tide-shard': 1 },
           },
         ]);
       },
@@ -1974,5 +1976,61 @@ describe('analytics and privacy', () => {
       leveledUp: false,
     });
     expect(gearContent.bases.length).toBeGreaterThan(0);
+  });
+
+  it('writes the per-kind parts of a grant, a dismantle and a job only for real kinds and amounts', async () => {
+    const { propsOf } = await import('../src/analytics');
+    const messy = { scrap: 3.7, 'tide-shard': -2, glimmer: 0, 'free-text': 9, 'spark-shard': 1 };
+    const drop = propsOf({
+      kind: 'gear_drop',
+      source: 'dungeon',
+      gear: [],
+      converted: 0,
+      scrap: 3,
+      shards: 1,
+      glimmer: 0,
+      blueprint: null,
+      blueprintDuplicate: false,
+      parts: messy,
+    });
+    expect(drop['parts']).toEqual({ scrap: 3, 'spark-shard': 1 });
+    // An empty bundle writes no key at all.
+    const none = propsOf({
+      kind: 'gear_dismantle',
+      base: 'x',
+      rarity: 'common',
+      level: 0,
+      scrap: 0,
+      shards: 0,
+      glimmer: 0,
+      unequipped: false,
+      parts: {},
+    });
+    expect('parts' in none).toBe(false);
+    const job = propsOf({
+      kind: 'job_start',
+      job: 'craft',
+      base: 'x',
+      rarity: 'common',
+      species: 'splashet',
+      hours: 1,
+      skillLevel: 1,
+      parts: messy,
+    });
+    expect(job['parts']).toEqual({ scrap: 3, 'spark-shard': 1 });
+    expect(
+      propsOf({
+        kind: 'job_claim',
+        job: 'supply',
+        base: 'x',
+        rarity: 'common',
+        upgraded: false,
+        enchant: null,
+        xp: 1,
+        skillLevel: 1,
+        leveledUp: false,
+        yield: 4.9,
+      })['yield'],
+    ).toBe(4);
   });
 });

@@ -10,9 +10,19 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   },
-  "durable_objects": { "bindings": [{ "name": "GUILD_WORLD", "class_name": "GuildWorld" }] },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GuildWorld"] }],
+  "durable_objects": {
+    "bindings": [
+      { "name": "GUILD_WORLD", "class_name": "GuildWorld" },
+      { "name": "GUILD_DIRECTORY", "class_name": "GuildDirectory" }
+    ]
+  },
+  // Environments inherit migrations (wrangler treats the key as inheritable), so v2 applies to all three.
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["GuildWorld"] },
+    { "tag": "v2", "new_sqlite_classes": ["GuildDirectory"] }
+  ],
   // Secrets are set by CI (Cloudflare Worker secrets) or in .dev.vars locally; never committed.
+  // OPS_TOKEN (the ops report's bearer token) is optional on purpose: without it the report route 404s.
   "secrets": { "required": ["DISCORD_CLIENT_SECRET", "DISCORD_BOT_TOKEN"] },
   // VERSION is overridden at deploy time: wrangler deploy --var VERSION:<git sha>
   // LEET_SOURCE: "http" reads the leet bot API at LEET_API_URL with the LEET_API_KEY secret (staging
@@ -30,7 +40,12 @@
   "env": {
     "staging": {
       "name": "creatures-staging",
-      "durable_objects": { "bindings": [{ "name": "GUILD_WORLD", "class_name": "GuildWorld" }] },
+      "durable_objects": {
+        "bindings": [
+          { "name": "GUILD_WORLD", "class_name": "GuildWorld" },
+          { "name": "GUILD_DIRECTORY", "class_name": "GuildDirectory" }
+        ]
+      },
       "secrets": { "required": ["DISCORD_CLIENT_SECRET", "DISCORD_BOT_TOKEN"] },
       "routes": [{ "pattern": "creatures-staging.misacorp.dev", "custom_domain": true }],
       "vars": {
@@ -44,7 +59,12 @@
     },
     "production": {
       "name": "creatures",
-      "durable_objects": { "bindings": [{ "name": "GUILD_WORLD", "class_name": "GuildWorld" }] },
+      "durable_objects": {
+        "bindings": [
+          { "name": "GUILD_WORLD", "class_name": "GuildWorld" },
+          { "name": "GUILD_DIRECTORY", "class_name": "GuildDirectory" }
+        ]
+      },
       "secrets": { "required": ["DISCORD_CLIENT_SECRET", "DISCORD_BOT_TOKEN"] },
       "routes": [{ "pattern": "creatures.misacorp.dev", "custom_domain": true }],
       "vars": {
