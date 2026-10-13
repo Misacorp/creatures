@@ -10,3 +10,5 @@ export * from './power';
 export * from './abilities';
 export * from './progression';
 export * from './gear';
+export * from './dungeon';
+export * from './expeditions';

@@ -1,32 +1,18 @@
 /*
   Design tokens and base styles: a dithered night sky, dusk panels in hard pixel frames, ink
   outlines and one gold accent. It is a game screen, so there is deliberately one dark theme.
-  Fonts are self-hosted (the CSP allows font-src 'self' only): Pixelify Sans for names, numbers and
-  buttons, Atkinson Hyperlegible for everything you read. Both are under the SIL Open Font License
+  Fonts are self-hosted (the CSP allows font-src 'self' only): Jersey 10 for names, numbers and
+  buttons (picked by Misa for its clear digits), Atkinson Hyperlegible for everything you read. Both are under the SIL Open Font License
   (see the packages in node_modules/@fontsource).
 */
 @font-face {
-  font-family: 'Pixelify Sans';
+  font-family: 'Jersey 10';
   font-style: normal;
   font-display: swap;
   font-weight: 400;
-  src: url('@fontsource/pixelify-sans/files/pixelify-sans-latin-400-normal.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Pixelify Sans';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 600;
-  src: url('@fontsource/pixelify-sans/files/pixelify-sans-latin-600-normal.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Pixelify Sans';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 700;
-  src: url('@fontsource/pixelify-sans/files/pixelify-sans-latin-700-normal.woff2') format('woff2');
+  /* Jersey 10 draws smaller than its em box; this keeps the sizes set for the old face. */
+  size-adjust: 128%;
+  src: url('@fontsource/jersey-10/files/jersey-10-latin-400-normal.woff2') format('woff2');
 }
 
 @font-face {
@@ -65,7 +51,7 @@
   --line: #4a4170; /* quiet outline between things on a panel */
   --mine: #3a3270; /* a slot that holds your creature */
   --adjacent: #443b82; /* a slot next to the selected creature */
-  --display: 'Pixelify Sans', 'Courier New', ui-monospace, monospace;
+  --display: 'Jersey 10', 'Courier New', ui-monospace, monospace;
   --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --px: 3px; /* one "pixel" of UI chrome */
   --frame:
@@ -95,6 +81,8 @@ body {
   background-size: 6px 6px;
   color: var(--text);
   font-family: var(--body);
+  /* The pixel face has one weight; a faked bold smears its pixels. */
+  font-synthesis-weight: none;
   font-size: 15px;
   line-height: 1.5;
   /* Discord sets these on phones so content stays clear of notches and system bars. */
@@ -3605,7 +3593,7 @@ button.ab-auto-toggle:not(.on) small {
   margin-left: 0.5rem;
 }
 
-/* The page header: the title with its "beta" mark, and the "?" that opens How to play. */
+/* The page header: the title with its "sigma" mark (a joke: the app is not even in alpha), and the "?" that opens How to play. */
 .app-head {
   display: flex;
   align-items: flex-start;
@@ -3619,7 +3607,7 @@ button.ab-auto-toggle:not(.on) small {
   margin: 0;
 }
 
-.beta {
+.sigma {
   margin-left: 0.375rem;
   padding: 0 0.25rem;
   background: var(--ink);
@@ -3949,6 +3937,7 @@ button.gp-more {
 
 .finale-art,
 .expedition-art,
+.dungeon-art,
 .ranks-art,
 .rewards-art {
   display: grid;
@@ -3975,6 +3964,31 @@ button.gp-more {
 
 .trips {
   align-items: flex-start;
+}
+
+/* The dungeon picture: three rooms in a row with arrows between, and the streak under them. */
+.dungeon-art-rooms {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 0.375rem;
+}
+
+.dungeon-art-rooms > li {
+  min-width: 0;
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+.dungeon-art-rooms > li.dungeon-art-arrow {
+  margin-top: 1.125rem;
+}
+
+.art-streak {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0;
 }
 
 .trip-catches {
@@ -4041,11 +4055,29 @@ button.gp-more {
   --rar: var(--rarity-festival);
 }
 
-/* Four tabs on a phone: tighter gaps and type, the anvil only where there is room. */
+/*
+  Five tabs side by side, from a 360 px phone up: each is a small picture over its word (the picture
+  is there at every width), so all five fit on one line with no horizontal scroll.
+*/
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.125rem;
+  font-size: 0.75rem;
+  line-height: 1.1;
+}
+
 .tab-glyph {
-  display: none;
-  margin-right: 0.375rem;
-  vertical-align: middle;
+  display: block;
+  flex: none;
+}
+
+.tab-label {
+  max-width: 100%;
+  white-space: nowrap;
 }
 
 @media (max-width: 30rem) {
@@ -4054,14 +4086,25 @@ button.gp-more {
   }
 
   .tab {
-    padding-inline: 0.125rem;
-    font-size: 0.8125rem;
+    font-size: 0.6875rem;
   }
 }
 
 @media (min-width: 30.0625rem) {
-  .tab-glyph {
-    display: inline-block;
+  .tab {
+    font-size: 0.8125rem;
+  }
+}
+
+/* The narrowest phones (360 px): Expeditions is the longest word, so the type and gaps shrink once more. */
+@media (max-width: 23.5rem) {
+  .tabs {
+    gap: 0.25rem;
+  }
+
+  .tab {
+    padding-inline: 0;
+    font-size: 0.625rem;
   }
 }
 
@@ -4597,5 +4640,1587 @@ button.pick-item {
 
   .reveal-gear-box.done {
     animation: reveal-pop 300ms steps(3) both;
+  }
+}
+
+/* --- The daily dungeon --- */
+
+.dungeon-depth {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+
+.dungeon-landmark-chip {
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--gold);
+}
+
+.dungeon-landmark-line {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0.25rem 0;
+}
+
+.dungeon-landmark-line canvas.sprite {
+  flex: none;
+}
+
+.dungeon-streak {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.625rem;
+  margin: 0.5rem 0;
+}
+
+.dungeon-modifiers {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dungeon-modifiers li {
+  display: grid;
+  grid-template-columns: 4.25rem auto;
+  align-items: center;
+  gap: 0.125rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.dungeon-modifiers .modifier-text {
+  grid-column: 2;
+  color: var(--bone);
+}
+
+.modifier-chip {
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--gold);
+}
+
+.dungeon-retry {
+  border-left: var(--px) solid var(--gold);
+}
+
+/*
+  The team's row: three slots side by side, left to right (the fight is one row of three). Each slot
+  is a column with its place above it, the sprite on top and the name and level under it.
+*/
+.dungeon-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding: 0.25rem 0 0.5rem;
+}
+
+.dungeon-strip .party-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dungeon-strip .zone-label {
+  text-align: center;
+}
+
+.dungeon-strip .zone-slots {
+  display: block;
+}
+
+.dungeon-strip .party-slot {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.25rem;
+  width: 100%;
+  min-height: 9rem;
+  padding: 0.375rem 0.25rem;
+  text-align: center;
+}
+
+.dungeon-strip .party-slot.empty {
+  justify-content: center;
+}
+
+.dungeon-slot-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.dungeon-slot-text .slot-species {
+  text-align: center;
+}
+
+.dungeon-slot-text .slot-meta {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.row-notes {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.125rem;
+  font-size: 0.875rem;
+}
+
+.dungeon-tray {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 6.5rem), 1fr));
+}
+
+.ability-fields {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.ability-field select {
+  margin-bottom: 0;
+}
+
+.creature-abilities .ability-field {
+  margin-top: 0.25rem;
+}
+
+.dungeon-enter .primary {
+  width: 100%;
+}
+
+/*
+  Playback. The stage keeps its size for the whole run; the room banner is drawn over it, and the
+  lines above and below it hold their height, so nothing jumps between rooms or rounds.
+*/
+.dungeon-room-line {
+  min-height: 1.5rem;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.dungeon-room-result {
+  min-height: 1.5rem;
+  margin: 0.5rem 0 0;
+}
+
+/*
+  The room banner over the stage when a room opens: a grander cousin of the round intro (same veil,
+  above it). It lets taps through and sits inside the stage's own box.
+*/
+.room-banner {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.5rem;
+  background: rgb(13 10 26 / 95%);
+  box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--gold);
+  pointer-events: none;
+  text-align: center;
+}
+
+.room-banner.boss {
+  box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--bad);
+}
+
+.room-banner p {
+  margin: 0;
+}
+
+.rb-heading {
+  color: var(--gold);
+  font-size: 3rem;
+  line-height: 1;
+  text-shadow:
+    var(--px) 0 var(--ink),
+    calc(var(--px) * -1) 0 var(--ink),
+    0 var(--px) var(--ink),
+    0 calc(var(--px) * -1) var(--ink);
+}
+
+.room-banner.boss .rb-heading {
+  color: var(--bad);
+}
+
+.rb-place {
+  color: var(--haze);
+  font-size: 1.125rem;
+}
+
+.rb-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 0.5rem;
+  color: var(--bone);
+  font-size: 1.375rem;
+  line-height: 1.1;
+}
+
+.rb-element {
+  color: var(--el, var(--haze));
+  font-size: 1rem;
+}
+
+.rb-twist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  max-width: 20rem;
+  font-size: 0.875rem;
+}
+
+.rb-twist strong {
+  color: var(--gold);
+  font-size: 1.0625rem;
+  font-weight: 400;
+}
+
+/* The results: the rooms as a strip of panels, then the team in one row. */
+.room-strip,
+.team-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.375rem;
+  margin: 0.25rem 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.room-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  min-width: 0;
+  padding: 0.375rem 0.25rem;
+  background: var(--night);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+  text-align: center;
+}
+
+/* A step between the panels, so the strip reads left to right like a comic. */
+.room-panel:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -0.375rem;
+  z-index: 1;
+  width: 0;
+  height: 0;
+  border-top: 0.3125rem solid transparent;
+  border-bottom: 0.3125rem solid transparent;
+  border-left: 0.375rem solid var(--haze);
+  transform: translateY(-50%);
+}
+
+.rp-title {
+  color: var(--haze);
+  font-size: 0.75rem;
+}
+
+.rp-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 4.5rem;
+  line-height: 0;
+}
+
+.rp-name {
+  font-size: 0.8125rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.rp-mod,
+.rp-hp {
+  font-size: 0.6875rem;
+  line-height: 1.15;
+}
+
+/* The word across the picture, tilted like a stamp. It is a label, not an animation. */
+.rp-banner {
+  position: absolute;
+  top: 50%;
+  left: -2px;
+  right: -2px;
+  padding: 0.125rem 0;
+  background: var(--ink);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  transform: translateY(-50%) rotate(-8deg);
+}
+
+.room-panel.cleared canvas.sprite {
+  filter: grayscale(1) brightness(0.65);
+}
+
+.room-panel.cleared .rp-banner {
+  box-shadow: inset 0 0 0 var(--px) var(--good);
+  color: var(--good);
+}
+
+.room-panel.defeat {
+  box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--bad);
+}
+
+.room-panel.defeat .rp-banner {
+  box-shadow: inset 0 0 0 var(--px) var(--bad);
+  color: var(--bad);
+}
+
+/* A room never reached: dim, and locked. */
+.room-panel.locked {
+  opacity: 0.55;
+}
+
+.room-panel.locked canvas.sprite {
+  filter: grayscale(1) brightness(0.35);
+}
+
+.room-panel.locked .rp-banner {
+  color: var(--haze);
+  font-size: 0.6875rem;
+}
+
+.team-member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  min-width: 0;
+  text-align: center;
+}
+
+.tm-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  width: 100%;
+  min-height: 0;
+  padding: 0.125rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+}
+
+.tm-art {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+
+.tm-name {
+  max-width: 100%;
+  font-size: 0.75rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.tm-hp {
+  color: var(--bone);
+  font-size: 0.8125rem;
+}
+
+.team-member.ko canvas.sprite {
+  filter: grayscale(1) brightness(0.55);
+}
+
+.team-member.ko .tm-hp {
+  color: var(--bad);
+}
+
+/* A creature's HP under its name on the stage (five stepped segments; the foe has its own bar). */
+.unit-hp {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  width: 100%;
+  max-width: 2.75rem;
+  height: 0.375rem;
+  margin-top: 0.125rem;
+  padding: 1px;
+  background: var(--ink);
+}
+
+.unit-hp > i {
+  background: var(--good);
+}
+
+.unit-hp > i.gone {
+  background: #3a2033;
+}
+
+/*
+  The small-creature popover: a creature sprite you can tap to see its role and element. The button
+  is plain (the sprite and its marks are the look); the popover itself is the glossary's frame.
+*/
+button.small-creature {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: none;
+}
+
+button.small-creature:hover:not(:disabled) {
+  filter: none;
+}
+
+button.small-creature:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
+button.small-creature:focus-visible {
+  outline: var(--px) solid var(--bone);
+  outline-offset: 1px;
+}
+
+button.small-creature[aria-expanded='true'] canvas.sprite {
+  outline: 2px solid var(--gold);
+}
+
+.creature-pop .cp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.375rem 0 0;
+}
+
+button.cp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  margin: 0 0 0.25rem;
+  padding: 0 0.5rem 0 0.25rem;
+  background: var(--dusk);
+  color: var(--gold);
+  font-size: 0.875rem;
+}
+
+.cp-back-arrow {
+  transform: scaleX(-1);
+}
+
+/* The tags under an ability popover on your own creature. */
+.pop-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.375rem 0 0;
+}
+
+/*
+  The dungeon's stage: the three creatures side by side in one row, larger than in a zone row. Each
+  zone is the one creature at that place, so its frames and effects sit on that creature.
+*/
+.stage-rows.single-row {
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+}
+
+.single-row .stage-zone {
+  display: block;
+  flex: none;
+  padding: 0.25rem 0;
+}
+
+.single-row .zone-units {
+  flex-wrap: nowrap;
+}
+
+.single-row .unit-name {
+  font-size: 0.75rem;
+}
+
+.single-row .unit-hp {
+  max-width: calc(var(--unit-w, 88px) - 12px);
+  height: 0.5rem;
+}
+
+/* The room banner fades in, holds and fades out over its own time; the number pops in. Smooth, opacity and scale only. */
+@media (prefers-reduced-motion: no-preference) {
+  .room-banner {
+    animation: room-banner var(--fx-ms, 2200ms) linear both;
+  }
+
+  .rb-heading {
+    animation: rb-pop 450ms ease-out both;
+  }
+}
+
+@keyframes room-banner {
+  0% {
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  88% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes rb-pop {
+  from {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* The rewards row: a small pile of icons (one per kind earned) with the count badges hugging it. */
+.reward-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem 0.75rem;
+  margin: 0.25rem 0;
+}
+
+.reward-pile {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 2.75rem;
+  padding: 0 0.25rem;
+}
+
+.pile-icon {
+  display: block;
+  flex: none;
+  margin-left: -0.625rem;
+  line-height: 0;
+}
+
+.pile-icon:first-child {
+  margin-left: 0;
+}
+
+.pile-icon:nth-child(even) {
+  margin-top: 0.5rem;
+}
+
+.reward-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pile-icon {
+    animation: reveal-pop-in 300ms steps(3) both;
+  }
+
+  .pile-icon:nth-child(2) {
+    animation-delay: 120ms;
+  }
+
+  .pile-icon:nth-child(3) {
+    animation-delay: 240ms;
+  }
+
+  .pile-icon:nth-child(n + 4) {
+    animation-delay: 360ms;
+  }
+}
+
+/* --- Expeditions v2: banners, the catalogue, the send flow, running trips, the reveal, the journal --- */
+
+.good-note {
+  color: var(--good);
+}
+
+/* A destination's banner: a wide pixel strip at a whole-number scale, centred, with a walker on it. */
+.banner {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  background: var(--ink);
+}
+
+.banner-art {
+  position: relative;
+  flex: none;
+  width: var(--banner-w, 100%);
+  max-width: 100%;
+}
+
+.banner-art > canvas.sprite {
+  max-width: none;
+}
+
+/*
+  The explorer walks left to right: its place is the trip's progress (--p is 0 to 1). It moves a little
+  every second; the bob is two steps, and both stop with reduced motion (it stands at its place).
+*/
+.walker {
+  position: absolute;
+  bottom: 0.125rem;
+  left: calc((100% - var(--walker-w, 3rem)) * var(--p, 0));
+  line-height: 0;
+}
+
+.walker-bob {
+  display: block;
+}
+
+.walker button.small-creature {
+  line-height: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .walker {
+    transition: left 1s linear;
+  }
+
+  .walker-bob {
+    animation: walk-bob 0.5s steps(2) infinite;
+  }
+
+  @keyframes walk-bob {
+    50% {
+      transform: translateY(calc(var(--px) * -1));
+    }
+  }
+}
+
+/* The sub-navigation of the tab (Trips, Journal, Profile) and the slot strip. */
+.exp-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.exp-nav button {
+  flex: 1;
+  min-width: 0;
+}
+
+.slots-strip {
+  margin: 0.25rem 0;
+  padding: 0.5rem 0.625rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.slots-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.625rem;
+  margin: 0 0 0.25rem;
+}
+
+.slot-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.slot-pip {
+  display: inline-grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--haze);
+}
+
+.slot-pip.used {
+  background: var(--gold);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.slots-next {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+}
+
+/* The catalogue of places. */
+.catalogue {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.catalogue-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.catalogue-count {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+}
+
+.page-button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.75rem;
+  padding: 0;
+}
+
+.catalogue-dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0.625rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dot-button {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+}
+
+.dot-button.on {
+  background: var(--gold);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 #c8952b;
+}
+
+.dot-button.locked:not(.on) {
+  opacity: 0.7;
+}
+
+.place-card {
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+  overflow: hidden;
+}
+
+.place-card.locked .banner canvas.sprite {
+  filter: grayscale(0.55) brightness(0.8);
+}
+
+.place-body {
+  padding: 0.625rem 0.75rem 0.75rem;
+}
+
+.place-name {
+  margin: 0 0 0.25rem;
+}
+
+.place-tags {
+  margin: 0 0 0.25rem;
+}
+
+.place-flavor {
+  margin: 0.25rem 0;
+}
+
+.twist {
+  margin: 0.5rem 0;
+  padding: 0.375rem 0.5rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 2px var(--gold);
+  font-size: 0.875rem;
+}
+
+.place-lives .label {
+  margin: 0.5rem 0 0.125rem;
+}
+
+.residents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.625rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resident {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+}
+
+.resident.unknown .resident-name {
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+.resident.deep.known canvas.sprite {
+  filter: drop-shadow(0 0 2px var(--gold));
+}
+
+.place-stars {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin: 0.5rem 0 0;
+}
+
+.stars-row {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.stars-row .star {
+  display: inline-block;
+  line-height: 0;
+}
+
+.locks {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0 0;
+  padding: 0.375rem 0.5rem;
+  list-style: none;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 2px var(--bad);
+  font-size: 0.875rem;
+}
+
+.locks li {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.locks li span {
+  min-width: 0;
+}
+
+/* The send flow. */
+.send {
+  margin: 0.75rem 0;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 0.25rem;
+  font-size: 1.0625rem;
+}
+
+.step-n {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 0.9375rem;
+}
+
+.explorer-picker .pick-text {
+  flex: 1;
+  gap: 0.125rem;
+}
+
+.pick-xp {
+  margin: 0.25rem 0 0;
+}
+
+.pick-stars {
+  margin-top: 0.125rem;
+}
+
+.pick-help {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+}
+
+.lengths {
+  min-width: 0;
+  margin: 0.25rem 0;
+  padding: 0;
+  border: 0;
+}
+
+.explorer-picker legend,
+.lengths legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.length-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+label.length-option {
+  position: relative;
+  display: grid;
+  flex: 1 1 5rem;
+  justify-items: center;
+  gap: 0.125rem;
+  min-width: 0;
+  padding: 0.5rem 0.25rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+  color: var(--bone);
+  cursor: pointer;
+}
+
+label.length-option.on {
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}
+
+label.length-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+label.length-option:focus-within {
+  outline: var(--px) solid var(--bone);
+  outline-offset: calc(var(--px) * 2);
+}
+
+.length-label {
+  font-size: 1.25rem;
+}
+
+.length-takes {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* A trip's worth as pictures: icon over pips. */
+.worth {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem 0.25rem;
+  margin: 0.25rem 0;
+  padding: 0.5rem;
+  list-style: none;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.worth-item {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+}
+
+.worth-item.none {
+  opacity: 0.4;
+}
+
+.pips {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.pips i {
+  width: 0.375rem;
+  height: 0.375rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--haze);
+}
+
+.pips i.on {
+  background: var(--gold);
+  box-shadow: none;
+}
+
+/* Supplies. */
+.supply-kind {
+  margin: 0.5rem 0;
+}
+
+.supply-kind-name {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.supply-rows {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.supply-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem 0.5rem;
+  padding: 0.375rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.supply-row.on {
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}
+
+.supply-text {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.supply-name {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.supply-effect {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.supply-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.supply-buttons button {
+  min-height: 2.25rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.875rem;
+}
+
+.choice-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.choice-mark.guaranteed {
+  color: var(--gold);
+}
+
+.send-summary {
+  display: grid;
+  gap: 0.375rem;
+  margin: 1rem 0 0;
+  padding: 0.625rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.cost-line,
+.choice-line {
+  margin: 0;
+}
+
+.badge.free {
+  background: var(--good);
+  color: var(--ink);
+}
+
+.send-button {
+  width: 100%;
+  white-space: normal;
+}
+
+/* A trip that is out. */
+.trip-cards {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  margin: 0.5rem 0;
+}
+
+.trip-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.trip-body {
+  padding: 0.625rem 0.75rem 0.75rem;
+}
+
+.trip-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.0625rem;
+}
+
+.kit-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0.375rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+.kit-line li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.trip-bar {
+  margin: 0.625rem 0 0.25rem;
+}
+
+.trip-bar.pushing > span {
+  background: var(--spark);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .trip-bar > span {
+    transition: width 1s linear;
+  }
+}
+
+.trip-timer {
+  margin: 0.25rem 0 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.trip-timer.ready {
+  color: var(--gold);
+}
+
+.push-line {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* The end-of-trip choice. */
+.push-on {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}
+
+.push-on-title {
+  margin: 0 0 0.5rem;
+}
+
+.goal-cards {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.goal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.625rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--good);
+}
+
+.goal-card > button {
+  margin-top: auto;
+}
+
+.goal-card.risky {
+  box-shadow: inset 0 0 0 var(--px) var(--bad);
+}
+
+.goal-flag,
+.goal-name,
+.goal-flavor,
+.goal-odds {
+  margin: 0;
+}
+
+.goal-flag {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.goal-card.risky .goal-flag .tag {
+  background: var(--bad);
+  color: var(--ink);
+}
+
+.goal-card.safe .goal-flag .tag {
+  background: var(--good);
+  color: var(--ink);
+}
+
+.goal-odds {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+}
+
+.goal-odds-number {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.goal-extra {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  font-size: 0.8125rem;
+}
+
+.goal-rewards {
+  display: grid;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.goal-rewards li {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.goal-failure {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0.25rem 0.375rem;
+  background: var(--dusk);
+  box-shadow: inset 2px 0 0 var(--bad);
+  font-size: 0.875rem;
+}
+
+.goal-failure canvas.sprite {
+  flex: none;
+}
+
+.home-button {
+  width: 100%;
+}
+
+/* The claim reveal. */
+.trip-reveal {
+  text-align: left;
+}
+
+.trip-reveal.failed {
+  border-color: var(--bad);
+}
+
+.trip-reveal.recalled {
+  border-color: var(--haze);
+}
+
+.trip-reveal h3 {
+  margin: 0 0 0.5rem;
+  text-align: center;
+}
+
+.reveal-who {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+}
+
+.trip-failed {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  padding: 0.625rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--bad);
+}
+
+.trip-failed p {
+  margin: 0;
+}
+
+.trip-failed canvas.sprite {
+  flex: none;
+}
+
+.push-result {
+  margin: 0.25rem 0;
+}
+
+.reveal-catches {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reveal-catches li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+}
+
+.trip-loot,
+.trip-xp,
+.trip-pages {
+  margin: 0.75rem 0 0;
+  padding-top: 0.5rem;
+  border-top: 2px solid var(--ink);
+}
+
+.trip-loot .label,
+.trip-pages .label {
+  margin: 0 0 0.25rem;
+}
+
+.supply-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.trip-xp p {
+  margin: 0.25rem 0;
+}
+
+.rank-up {
+  color: var(--gold);
+  font-family: var(--display);
+  font-size: 1.125rem;
+}
+
+.trip-stars,
+.slot-unlocked {
+  margin: 0.5rem 0 0;
+}
+
+.slot-unlocked {
+  padding: 0.375rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+  font-family: var(--display);
+  font-size: 1.0625rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .trip-reveal .rank-up,
+  .trip-reveal .slot-unlocked {
+    animation: reveal-pop 400ms steps(4) both;
+  }
+}
+
+.journal-found,
+.journal-pages,
+.journal-sets {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0.25rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.journal-page {
+  padding: 0.5rem 0.625rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.journal-page.found {
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+}
+
+.journal-page p {
+  margin: 0;
+}
+
+.journal-page.blank {
+  opacity: 0.7;
+}
+
+.journal-text {
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
+.journal-place {
+  margin: 0.5rem 0;
+  padding: 0.375rem 0.5rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.journal-place > summary {
+  cursor: pointer;
+  min-height: 2.25rem;
+}
+
+/* The profile. */
+.profile h4 {
+  margin: 1rem 0 0.25rem;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.375rem;
+  margin: 0;
+}
+
+.stat {
+  padding: 0.375rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.stat dt {
+  font-size: 0.75rem;
+}
+
+.stat dd {
+  font-size: 1.25rem;
+  text-align: left;
+}
+
+.milestones,
+.explorer-rows {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0.25rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.milestone,
+.explorer-row {
+  padding: 0.375rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.milestone.reached {
+  box-shadow: inset 0 0 0 var(--px) var(--good);
+}
+
+.milestone p,
+.explorer-text p {
+  margin: 0.125rem 0;
+}
+
+.explorer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.explorer-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The one-time notice about the slot reset. */
+.wipe-notice {
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}
+
+.wipe-notice h3 {
+  margin: 0 0 0.25rem;
+}
+
+.wipe-notice p,
+.wipe-notice ul {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.wipe-notice ul {
+  padding-left: 1.25rem;
+}
+
+/* Supply crafting in the Workshop. */
+.supply-crafts {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.supply-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+@media (min-width: 40rem) {
+  .goal-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .worth {
+    grid-template-columns: repeat(8, 1fr);
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }

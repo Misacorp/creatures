@@ -82,7 +82,8 @@ describe('marks and reactions', () => {
     expect(eventsOf(r, 'reaction')).toHaveLength(0);
   });
 
-  it('splits the reaction bonus 50/50 between setup and payoff, summing exactly', () => {
+  it('splits the reaction bonus between setup and payoff by the setup share (60%), summing exactly', () => {
+    expect(RULES.combat.setupShareBp).toBe(6_000);
     for (const atk of [1, 37, 38, 99, 100, 101, 250]) {
       const r = run([
         slot('s', { owner: 'ps', element: 'tide', role: 'setter', atk: 100 }),
@@ -94,7 +95,7 @@ describe('marks and reactions', () => {
       const full = Math.floor((plain * 31_250) / 10_000);
       const bonus = full - plain;
       expect(reaction.bonus).toBe(bonus);
-      const setup = Math.floor(bonus / 2);
+      const setup = Math.floor((bonus * 6_000) / 10_000);
       expect(r.perPlayer.ps!.setupCredit).toBe(10 * setup);
       expect(r.perPlayer.pp!.damage).toBe(10 * (full - setup));
       // Nothing is lost or invented: credits add up to the damage dealt.
@@ -109,11 +110,11 @@ describe('marks and reactions', () => {
       slot('s', { owner: 'ps', element: 'tide', role: 'setter', atk: 100 }),
       slot('p', { owner: 'pp', element: 'spark', role: 'payoff', atk: 100 }),
     ]);
-    // plain 150, x3.125 = 468, bonus 318 split 159 / 159
+    // plain 150, x3.125 = 468, bonus 318 split 190 (60%, rounded down) / 128
     expect(eventsOf(r, 'hit')[1]).toMatchObject({ creature: 'p', damage: 468 });
     expect(eventsOf(r, 'reaction')[0]!.bonus).toBe(318);
-    expect(r.perPlayer.ps).toMatchObject({ damage: 1000, setupCredit: 1590, contribution: 2590 });
-    expect(r.perPlayer.pp).toMatchObject({ damage: 10 * (468 - 159), setupCredit: 0 });
+    expect(r.perPlayer.ps).toMatchObject({ damage: 1000, setupCredit: 1900, contribution: 2900 });
+    expect(r.perPlayer.pp).toMatchObject({ damage: 10 * (468 - 190), setupCredit: 0 });
   });
 
   it('applies the x1.25 payoff bonus only to Payoff creatures', () => {
@@ -263,6 +264,37 @@ describe('guard and boss targeting', () => {
     expect(strikes[1]).not.toHaveProperty('from');
   });
 
+  it('credits a Guard for the damage a hit aimed at itself does, by the own-damage share', () => {
+    expect(RULES.combat.guardOwnCreditBp).toBe(10_000);
+    // The boss's attack goes to the front zone first: here that is the Guard itself, so nothing is intercepted.
+    const row = [
+      slot('g', { owner: 'pg', role: 'guard', hp: 1000, atk: 10 }),
+      slot('x', { owner: 'px', atk: 10 }),
+    ];
+    const r = run(row, { players: ['pg', 'px'], bossAtk: 100 });
+    const hits = eventsOf(r, 'boss_hit').filter((e) => e.source === 'attack');
+    expect(hits[0]).toMatchObject({ target: 'g', damage: 100 });
+    expect(hits[0]).not.toHaveProperty('from');
+    const taken = r.perCreature.g!.damageTaken;
+    expect(taken).toBeGreaterThan(0);
+    expect(r.perCreature.g!.guardCredit).toBe(taken);
+    expect(r.perPlayer.pg!.guardCredit).toBe(taken);
+    // Only Guards are credited for damage taken: the same damage on a non-Guard earns nothing.
+    expect(r.perCreature.x!.guardCredit).toBe(0);
+    const noGuard = run([slot('y', { owner: 'py', atk: 10, hp: 1000 })], {
+      players: ['py'],
+      bossAtk: 100,
+    });
+    expect(noGuard.perCreature.y!.damageTaken).toBeGreaterThan(0);
+    expect(noGuard.perCreature.y!.guardCredit).toBe(0);
+  });
+
+  it('credits a Guard only for the damage it could take: its remaining HP', () => {
+    const r = run([slot('g', { role: 'guard', hp: 10, atk: 10 })], { bossAtk: 100 });
+    expect(r.perCreature.g!.damageTaken).toBe(13); // 13 HP with the guard bonus
+    expect(r.perCreature.g!.guardCredit).toBe(13);
+  });
+
   it('the boss attack goes front zone first and guards first, then moves back when a zone falls', () => {
     const row = [
       slot('f0', { hp: 1 }),
@@ -280,6 +312,112 @@ describe('guard and boss targeting', () => {
       { bossAtk: 5 },
     );
     expect(eventsOf(guardFront, 'boss_hit')[0]).toMatchObject({ target: 'y' });
+  });
+
+  describe('guardReach: adjacent (a row of three, one creature per zone)', () => {
+    const rod = {
+      id: 'rod',
+      name: 'Rod',
+      trigger: { eachRound: true },
+      op: 'strike_highest_atk',
+      power: 10_000,
+    } as const;
+    const adjacent = { guardReach: 'adjacent' } as const;
+
+    it('a zone Guard covers nobody on a row of three, as before', () => {
+      const row = [slot('l', { atk: 500 }), slot('g', { role: 'guard' }), slot('r')];
+      const r = run(row, { bossAtk: 100, boss: { ...input([]).boss, gimmicks: [rod] } });
+      const strike = eventsOf(r, 'boss_hit').find((e) => e.source === 'gimmick')!;
+      expect(strike).toMatchObject({ target: 'l' });
+      expect(strike).not.toHaveProperty('from');
+    });
+
+    it('a Guard beside the target takes the hit and the credit', () => {
+      const row = [slot('l', { atk: 500 }), slot('g', { role: 'guard' }), slot('r')];
+      const r = run(row, {
+        ...adjacent,
+        bossAtk: 100,
+        boss: { ...input([]).boss, gimmicks: [rod] },
+      });
+      const strike = eventsOf(r, 'boss_hit').find((e) => e.source === 'gimmick')!;
+      expect(strike).toMatchObject({ target: 'g', from: 'l', damage: 100 });
+      expect(r.perCreature.l!.damageTaken).toBe(0);
+      expect(r.perCreature.g!.guardCredit).toBeGreaterThan(0);
+    });
+
+    it('covers both neighbours, and the left Guard first when both sides have one', () => {
+      const both = [
+        slot('gl', { role: 'guard' }),
+        slot('hi', { atk: 500 }),
+        slot('gr', { role: 'guard' }),
+      ];
+      const r = run(both, {
+        ...adjacent,
+        bossAtk: 100,
+        boss: { ...input([]).boss, gimmicks: [rod] },
+      });
+      expect(eventsOf(r, 'boss_hit').find((e) => e.source === 'gimmick')).toMatchObject({
+        target: 'gl',
+        from: 'hi',
+      });
+      const right = [slot('x'), slot('hi', { atk: 500 }), slot('gr', { role: 'guard' })];
+      const r2 = run(right, {
+        ...adjacent,
+        bossAtk: 100,
+        boss: { ...input([]).boss, gimmicks: [rod] },
+      });
+      expect(eventsOf(r2, 'boss_hit').find((e) => e.source === 'gimmick')).toMatchObject({
+        target: 'gr',
+        from: 'hi',
+      });
+    });
+
+    it('does not cover a creature two places away, a fallen Guard, or another Guard', () => {
+      // The Guard is on the right end: it covers the middle, not the left creature.
+      const far = [slot('l', { atk: 500 }), slot('m'), slot('g', { role: 'guard' })];
+      const r = run(far, {
+        ...adjacent,
+        bossAtk: 100,
+        boss: { ...input([]).boss, gimmicks: [rod] },
+      });
+      expect(eventsOf(r, 'boss_hit').find((e) => e.source === 'gimmick')).toMatchObject({
+        target: 'l',
+      });
+      // A Guard that is knocked out stops covering: it falls to the first hit, the next goes through.
+      const weak = [slot('l', { atk: 500 }), slot('g', { role: 'guard', hp: 10 }), slot('r')];
+      const r2 = run(weak, {
+        ...adjacent,
+        bossAtk: 100,
+        boss: { ...input([]).boss, gimmicks: [rod] },
+      });
+      const strikes = eventsOf(r2, 'boss_hit').filter((e) => e.source === 'gimmick');
+      expect(strikes[0]).toMatchObject({ target: 'g', from: 'l' });
+      expect(strikes[1]).toMatchObject({ target: 'l' });
+      expect(strikes[1]).not.toHaveProperty('from');
+      // A Guard that is the target is never redirected to the Guard beside it.
+      const two = [
+        slot('g1', { role: 'guard', atk: 500 }),
+        slot('g2', { role: 'guard' }),
+        slot('r'),
+      ];
+      const r3 = run(two, {
+        ...adjacent,
+        bossAtk: 100,
+        boss: { ...input([]).boss, gimmicks: [rod] },
+      });
+      expect(eventsOf(r3, 'boss_hit').find((e) => e.source === 'gimmick')).toMatchObject({
+        target: 'g1',
+      });
+    });
+
+    it('the plain boss attack goes to the left creature, and a Guard in the middle takes it', () => {
+      const row = [slot('l'), slot('g', { role: 'guard' }), slot('r')];
+      const r = run(row, { ...adjacent, bossAtk: 50 });
+      expect(eventsOf(r, 'boss_hit').find((e) => e.source === 'attack')).toMatchObject({
+        target: 'g',
+        from: 'l',
+      });
+    });
   });
 
   it('knocks creatures out: they stop acting but keep their credit', () => {
@@ -386,7 +524,7 @@ describe('adaptation', () => {
     // bonus 318 - 159 = 159; hit = 150 + 159
     expect(eventsOf(r, 'reaction')[0]!.bonus).toBe(159);
     expect(eventsOf(r, 'hit')[1]!.damage).toBe(309);
-    expect(r.perPlayer.ps!.setupCredit).toBe(10 * 79);
+    expect(r.perPlayer.ps!.setupCredit).toBe(10 * 95); // 60% of 159, rounded down
     const other = run(row, { adaptation: { rule: 'resist-top-reaction', target: 'steam' } });
     expect(eventsOf(other, 'reaction')[0]!.bonus).toBe(318);
   });

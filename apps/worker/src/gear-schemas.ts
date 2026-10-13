@@ -1,4 +1,4 @@
-import { gearContent } from '@creatures/game';
+import { expeditionContent, gearContent } from '@creatures/game';
 import * as v from 'valibot';
 import { IdSchema } from './collection-schemas';
 import { SPEND_KEY_RE } from './ledger';
@@ -14,6 +14,7 @@ export const ClaimJobBodySchema = v.strictObject({ idempotencyKey });
 
 const BASE_IDS = gearContent.bases.map((b) => b.id);
 const ENCHANT_IDS = gearContent.enchants.map((e) => e.id);
+const SUPPLY_IDS = expeditionContent.supplies.map((s) => s.id);
 
 /** Each kind of job takes exactly its own fields: anything else is rejected. */
 export const StartJobBodySchema = v.variant('kind', [
@@ -35,6 +36,12 @@ export const StartJobBodySchema = v.variant('kind', [
     creatureId: IdSchema,
     gearId: IdSchema,
     enchantId: v.picklist(ENCHANT_IDS),
+    idempotencyKey,
+  }),
+  v.strictObject({
+    kind: v.literal('supply'),
+    creatureId: IdSchema,
+    supplyId: v.picklist(SUPPLY_IDS),
     idempotencyKey,
   }),
 ]);

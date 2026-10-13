@@ -134,7 +134,8 @@ export function JobSlots({
           <li key={`empty-${String(i)}`} class="card-item job-slot empty-slot">
             <h4 class="label">Slot {open.length + i + 1}</h4>
             <p class="muted">
-              Empty. Craft something from a blueprint below, or improve or enchant an item.
+              Empty. Craft something from a blueprint or a supply below, or improve or enchant an
+              item.
             </p>
           </li>
         ))}

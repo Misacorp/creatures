@@ -26,11 +26,15 @@ export interface RunSettings {
   pitySims: number;
   /** Long-run sims (30 weeks, with the ladder and Festivals) per server size (5, 10 and 15 players). */
   longRunSims: number;
+  /** 60-week sims of the default server for the days the expedition slots open at. */
+  tripLongSims: number;
   /** Player counts of the raid sweep. */
   counts: number[];
 }
 
 export const PITY_WEEKS = 20;
+/** Weeks the slot-opening sims run: a bit more than a year. */
+export const TRIP_LONG_WEEKS = 60;
 export const SWEEP_COUNTS = [1, 5, 10, 15];
 
 export function defaultSettings(
@@ -46,6 +50,7 @@ export function defaultSettings(
     economySims: quick ? 4 : 24,
     pitySims: quick ? 8 : 40,
     longRunSims: quick ? 6 : 40,
+    tripLongSims: quick ? 2 : 8,
     counts: [...SWEEP_COUNTS],
   };
 }
@@ -72,10 +77,13 @@ export function runEconomies(
   defaultSims: EconomyResult[];
   /** The default server's sims again, with the same seeds and no gear ("today"). */
   baselineSims: EconomyResult[];
+  /** The default server's sims again, with the same seeds, gear and no dungeon. */
+  noDungeonSims: EconomyResult[];
 } {
   const snapshots = new Map<number, EconomyResult['snapshots']>();
   let defaultSims: EconomyResult[] = [];
   let baselineSims: EconomyResult[] = [];
+  let noDungeonSims: EconomyResult[] = [];
   const countsToRun = [...new Set([...settings.counts, DEFAULT_SERVER_SIZE])].sort((a, b) => a - b);
   for (const count of countsToRun) {
     const mix = count === DEFAULT_SERVER_SIZE ? DEFAULT_MIX : scaleMix(count);
@@ -105,16 +113,25 @@ export function runEconomies(
           gear: false,
         }),
       );
+      noDungeonSims = (options.baseline === false ? [] : sims).map((_, k) =>
+        runEconomy({
+          seed: `${settings.seed}:econ:${count}:${k}`,
+          weeks: settings.weeks,
+          mix,
+          snapshotWeeks: [],
+          dungeon: false,
+        }),
+      );
     }
   }
-  return { snapshots, defaultSims, baselineSims };
+  return { snapshots, defaultSims, baselineSims, noDungeonSims };
 }
 
 export function runSimulation(settings: RunSettings): RunOutput {
   if (!Number.isInteger(settings.weeks) || settings.weeks < 1 || settings.weeks > 104) {
     throw new RangeError('weeks must be an integer from 1 to 104');
   }
-  const { snapshots, defaultSims, baselineSims } = runEconomies(settings);
+  const { snapshots, defaultSims, baselineSims, noDungeonSims } = runEconomies(settings);
 
   const pitySims: EconomyResult[] = [];
   for (let k = 0; k < settings.pitySims; k++) {
@@ -140,6 +157,18 @@ export function runSimulation(settings: RunSettings): RunOutput {
     ),
   }));
 
+  const tripLongSims: EconomyResult[] = [];
+  for (let k = 0; k < settings.tripLongSims; k++) {
+    tripLongSims.push(
+      runEconomy({
+        seed: `${settings.seed}:trips-long:${DEFAULT_SERVER_SIZE}:${k}`,
+        weeks: TRIP_LONG_WEEKS,
+        mix: DEFAULT_MIX,
+        snapshotWeeks: [],
+      }),
+    );
+  }
+
   const sweep = runSweep({
     seed: settings.seed,
     runs: settings.runsPerCell,
@@ -150,6 +179,8 @@ export function runSimulation(settings: RunSettings): RunOutput {
     weeks: settings.weeks,
     defaultSims,
     baselineSims,
+    noDungeonSims,
+    tripLongSims,
     pitySims,
     sweep,
     longRun,

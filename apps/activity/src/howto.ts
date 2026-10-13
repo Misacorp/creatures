@@ -1,9 +1,17 @@
 /**
  * What the How to play page draws, worked out from the content and the rules so the pictures can
  * never disagree with the game: the reaction loop, example creatures, the raid week and the
- * expedition trips. Pure functions; `HowToPlayArt.tsx` draws them.
+ * expedition trips and the rooms of the dungeon. Pure functions; `HowToPlayArt.tsx` draws them.
  */
-import { RULES, content, type ContentPack, type CreatureSpecies, type Role } from '@creatures/game';
+import {
+  RULES,
+  content,
+  dungeonContent,
+  type ContentPack,
+  type CreatureSpecies,
+  type DungeonFoeDef,
+  type Role,
+} from '@creatures/game';
 import { eventTitle } from './raid-time';
 import type { RaidEventId } from './raid-api';
 
@@ -86,14 +94,21 @@ export function weekStrip(
 
 export interface Trip {
   hours: number;
-  catches: number;
+  /** 1 to 3: how much more a longer trip brings (rewards grow faster than the hours). */
+  size: number;
 }
 
-/** The expedition trips: hours away and catch rolls, from the rules. */
+/**
+ * The expedition trips anyone can send: their hours, from the rules, and how much each brings compared
+ * with the others (the picture shows it as a growing pile). The 24 hour trip needs explorer rank and is
+ * left to the text.
+ */
 export function expeditionTrips(
-  durations: typeof RULES.expedition.durations = RULES.expedition.durations,
+  lengths: Readonly<Record<string, { ms: number; minRank: number }>> = RULES.expeditions.lengths,
 ): Trip[] {
-  return Object.values(durations).map((d) => ({ hours: d.ms / 3_600_000, catches: d.rolls }));
+  return Object.values(lengths)
+    .filter((l) => l.minRank <= 1)
+    .map((l, i) => ({ hours: l.ms / 3_600_000, size: i + 1 }));
 }
 
 /** A creature that evolves, for the Rewards picture: both forms and the Essence it costs. */
@@ -116,5 +131,40 @@ export function exampleSeason(): {
     week: i + 1,
     festival: i + 1 === weeks,
     state: i + 1 < 2 ? 'done' : i + 1 === 2 ? 'now' : 'ahead',
+  }));
+}
+
+/** One room of the dungeon picture: the foe that stands in it. */
+export interface DungeonRoom {
+  id: string;
+  name: string;
+  element: string;
+  boss: boolean;
+}
+
+/**
+ * The rooms of a dungeon run for the How to play picture, from the rules and the content: the
+ * normal rooms hold foes of different elements (the first of each element in the content), and the
+ * last holds the first room boss.
+ */
+export function dungeonRooms(
+  rooms: number = RULES.dungeon.rooms,
+  foes: readonly DungeonFoeDef[] = dungeonContent.foes,
+): DungeonRoom[] {
+  const seen = new Set<string>();
+  const picked: DungeonFoeDef[] = [];
+  for (const foe of foes) {
+    if (picked.length >= rooms - 1) break;
+    if (foe.kind !== 'foe' || seen.has(foe.element)) continue;
+    seen.add(foe.element);
+    picked.push(foe);
+  }
+  const boss = foes.find((f) => f.kind === 'boss');
+  if (boss !== undefined) picked.push(boss);
+  return picked.map((f) => ({
+    id: f.id,
+    name: f.name,
+    element: f.element,
+    boss: f.kind === 'boss',
   }));
 }

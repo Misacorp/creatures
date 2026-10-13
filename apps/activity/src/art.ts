@@ -2,19 +2,34 @@
  * Small lookups that sit between the sprite data and the screens: the boss sprite with a fallback,
  * the shiny palette of a species, and the class that gives an element its colour.
  */
-import { FALLBACK_SILHOUETTE, bossSprite } from './sprites/creature-sprites';
-import type { SpriteDef } from './sprites/sprite-data';
+import {
+  BANNER_SIZE,
+  FALLBACK_SILHOUETTE,
+  bannerSprite,
+  bossSprite,
+  dungeonBossSprite,
+  dungeonFoeSprite,
+} from './sprites/creature-sprites';
+import { expandRows, type SpriteDef } from './sprites/sprite-data';
 
-/** Screen pixels per sprite pixel for a boss (24x24) and for the plain fallback (16x16). */
+/**
+ * Screen pixels per sprite pixel for a boss (24x24) and for a 16x16 sprite standing in the boss's
+ * place (a dungeon foe, or the plain fallback), so every boss takes the same space on the stage.
+ */
 export const BOSS_SCALE = 4;
 export const FALLBACK_BOSS_SCALE = 6;
 
-/** The boss sprite and the scale to draw it at; a bigger silhouette while a boss has no art yet. */
+/**
+ * The sprite to draw for whatever the stage shows as its boss, and the scale to draw it at: a raid
+ * boss, a daily-dungeon room boss (both 24x24), or a dungeon foe (16x16, drawn bigger); a bigger
+ * silhouette while an id has no art yet.
+ */
 export function bossArt(bossId: string): { sprite: SpriteDef; scale: number } {
-  const sprite = bossSprite(bossId);
-  return sprite === undefined
-    ? { sprite: FALLBACK_SILHOUETTE, scale: FALLBACK_BOSS_SCALE }
-    : { sprite, scale: BOSS_SCALE };
+  const boss = bossSprite(bossId) ?? dungeonBossSprite(bossId);
+  if (boss !== undefined) return { sprite: boss, scale: BOSS_SCALE };
+  const foe = dungeonFoeSprite(bossId);
+  if (foe !== undefined) return { sprite: foe, scale: FALLBACK_BOSS_SCALE };
+  return { sprite: FALLBACK_SILHOUETTE, scale: FALLBACK_BOSS_SCALE };
 }
 
 /**
@@ -117,4 +132,37 @@ const MARK_PALETTES: Readonly<Record<string, Readonly<Record<string, string>>>> 
 /** The palette that turns the mark glyph into the element's colour (the same object every time). */
 export function markPalette(element: string): Readonly<Record<string, string>> | undefined {
   return Object.hasOwn(MARK_PALETTES, element) ? MARK_PALETTES[element] : undefined;
+}
+
+/** A flat dusk strip for a destination whose banner has not been drawn yet. */
+export const FALLBACK_BANNER: SpriteDef = {
+  palette: { a: '#241e42', b: '#2f2857' },
+  rows: Array.from({ length: BANNER_SIZE.height }, (_, y) =>
+    (y < BANNER_SIZE.height / 2 ? 'a' : 'b').repeat(BANNER_SIZE.width),
+  ),
+};
+
+/** The banner to draw for a destination: its own art, or the plain strip. */
+export function bannerArt(destinationId: string): SpriteDef {
+  return bannerSprite(destinationId) ?? FALLBACK_BANNER;
+}
+
+const SILHOUETTE_COLOUR = '#4a4170';
+
+/**
+ * The palette that turns a creature sprite into a flat silhouette: every colour it uses becomes one
+ * dim colour, so a species that has not been found shows its shape and nothing else.
+ */
+export function silhouettePalette(def: SpriteDef): Readonly<Record<string, string>> {
+  const keys = new Set(expandRows(def).join(''));
+  keys.delete('.');
+  return Object.fromEntries([...keys].map((key) => [key, SILHOUETTE_COLOUR]));
+}
+
+/**
+ * The screen pixels per sprite pixel for a banner in a space `width` px wide: a whole number (the art
+ * stays sharp), at least 3 and at most 6, so a banner never overflows a phone and never grows huge.
+ */
+export function bannerScale(width: number): number {
+  return Math.min(6, Math.max(3, Math.floor(width / BANNER_SIZE.width)));
 }

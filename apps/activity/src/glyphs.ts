@@ -3,6 +3,7 @@
  * gimmicks, turn orders, the mark on the boss, shields, sparkles and the loot reveal's orb and
  * gem. Every glyph has its own shape, so the meaning never depends on colour alone. Pure data.
  */
+import { EXPEDITION_GLYPHS } from './expedition-glyphs';
 import type { SpriteDef } from './sprites/sprite-data';
 
 export const GLYPH_SIZE = { width: 8, height: 8 } as const;
@@ -265,6 +266,100 @@ const anvil: SpriteDef = {
   ],
 };
 
+// --- Tabs (one colour, key `w`, so a tab can tint it for its selected state) ---
+
+/** A paw print: the Collection tab. */
+const paw: SpriteDef = {
+  palette: { w: BONE },
+  rows: [
+    '.ww..ww.',
+    '.ww..ww.',
+    'w..ww..w',
+    'ww.ww.ww',
+    '..wwww..',
+    '.wwwwww.',
+    '.wwwwww.',
+    '..w..w..',
+  ],
+};
+
+/** A compass: the Expeditions tab. */
+const compass: SpriteDef = {
+  palette: { w: BONE },
+  rows: [
+    '..wwww..',
+    '.w....w.',
+    'w...ww.w',
+    'w..www.w',
+    'w.www..w',
+    'w.ww...w',
+    '.w....w.',
+    '..wwww..',
+  ],
+};
+
+/** A sword pointing up and right: the Raid tab. */
+const blade: SpriteDef = {
+  palette: { w: BONE },
+  rows: [
+    '......ww',
+    '.....www',
+    '....www.',
+    'w..www..',
+    '.wwww...',
+    '..ww....',
+    '.w.ww...',
+    'w....w..',
+  ],
+};
+
+/** A door: the Dungeon tab. */
+const door: SpriteDef = {
+  palette: { w: BONE },
+  rows: [
+    '..wwww..',
+    '.w....w.',
+    'w......w',
+    'w......w',
+    'w....w.w',
+    'w......w',
+    'w......w',
+    'wwwwwwww',
+  ],
+};
+
+// --- The dungeon ---
+
+/** A round lure: Bait, in the rewards. */
+const bait: SpriteDef = {
+  palette: { g: '#c8952b', y: GOLD, w: BONE },
+  rows: [
+    '..gggg..',
+    '.gyyyyg.',
+    'gyywwyyg',
+    'gywyyyyg',
+    'gywyyyyg',
+    'gyyyyyyg',
+    '.gyyyyg.',
+    '..gggg..',
+  ],
+};
+
+/** A flag on a pole: the landmark depths. */
+const flag: SpriteDef = {
+  palette: { g: GOLD, k: HAZE },
+  rows: [
+    '.kggggg.',
+    '.kgggggg',
+    '.kggggg.',
+    '.k......',
+    '.k......',
+    '.k......',
+    '.k......',
+    'kkk.....',
+  ],
+};
+
 export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   hit_zone: hitZone,
   silence_ends: silenceEnds,
@@ -286,6 +381,13 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   warning,
   reticle,
   anvil,
+  paw,
+  compass,
+  blade,
+  door,
+  bait,
+  flag,
+  ...EXPEDITION_GLYPHS,
 };
 
 /** A glyph by id, or undefined. */

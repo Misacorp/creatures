@@ -21,7 +21,7 @@ import {
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { creditParts, insertItem } from '../src/gear-store';
-import { T0, runCore, undoGearMigration, type CoreContext } from './helpers';
+import { T0, runCore, undoGearMigration, type CoreContext, LATEST_SCHEMA_VERSION } from './helpers';
 import { count, nextGuild, rows, seedPlayer, type SeedOptions } from './raid-helpers';
 
 const HOUR = 3_600_000;
@@ -224,7 +224,7 @@ describe('migration 17', () => {
         expect(names).toContain(t);
       }
       expect(rows<{ v: number }>(sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v).toBe(
-        17,
+        LATEST_SCHEMA_VERSION,
       );
       // Amounts cannot go negative.
       expect(() =>
@@ -295,11 +295,11 @@ describe('migration 17', () => {
       ctx.core.migrate();
       expect(
         rows<{ v: number }>(ctx.sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v,
-      ).toBe(17);
+      ).toBe(LATEST_SCHEMA_VERSION);
       expect(count(ctx.sql, 'creatures')).toBe(3);
       expect(count(ctx.sql, 'gear_items')).toBe(0);
       ctx.core.migrate();
-      expect(count(ctx.sql, 'schema_version')).toBe(17);
+      expect(count(ctx.sql, 'schema_version')).toBe(LATEST_SCHEMA_VERSION);
       expect((await p.gear()).inventory.used).toBe(1); // the welcome kit, on first load
     });
   });
@@ -1209,8 +1209,9 @@ describe('workshop jobs: starting', () => {
         // On an expedition: no job.
         const sent = await p.call('POST', '/api/expeditions', {
           creatureId: c1,
+          destination: 'tidepools',
           duration: 'short',
-          supplies: 'basic',
+          supplies: [],
           idempotencyKey: newKey(),
         });
         expect(sent.status).toBe(200);
@@ -1220,8 +1221,9 @@ describe('workshop jobs: starting', () => {
         expect(await craft(c2)).toMatchObject({ status: 409, body: { error: 'creature_on_job' } });
         const trip = await p.call('POST', '/api/expeditions', {
           creatureId: c2,
+          destination: 'tidepools',
           duration: 'short',
-          supplies: 'basic',
+          supplies: [],
           idempotencyKey: newKey(),
         });
         expect(trip).toMatchObject({ status: 409, body: { error: 'creature_on_job' } });
@@ -1271,8 +1273,9 @@ describe('workshop jobs: starting', () => {
         expect(claimed.status).toBe(200);
         const trip = await p.call('POST', '/api/expeditions', {
           creatureId: c1,
+          destination: 'tidepools',
           duration: 'short',
-          supplies: 'basic',
+          supplies: [],
           idempotencyKey: newKey(),
         });
         expect(trip.status).toBe(200);
@@ -1430,6 +1433,12 @@ describe('workshop jobs: claiming', () => {
         skipWelcome(ctx, p.id);
         learn(ctx, p.id, 'wave-band');
         parts(ctx, p.id, { scrap: 30, 'tide-shard': 3 });
+        // 10 XP already: the 96 XP of the 8 hour craft (12 per nominal hour) takes it over level 2 (100).
+        ctx.sql.exec(
+          'INSERT INTO crafting_skill (user_id, creature_id, xp) VALUES (?, ?, 10)',
+          p.id,
+          p.creatureIds[0],
+        );
         const jobId = await startCraft(p);
         // Starting a job draws nothing: the result is not decided yet.
         expect(rng.drawn()).toBe(0);
@@ -1457,8 +1466,8 @@ describe('workshop jobs: claiming', () => {
           baseId: 'wave-band',
           rarity,
           upgraded: false,
-          xp: 192,
-          skillXp: 192,
+          xp: 96,
+          skillXp: 106,
           skillLevel: 2,
           leveledUp: true,
         });
@@ -1476,7 +1485,7 @@ describe('workshop jobs: claiming', () => {
         const gear = res.body['gear'] as GearBody;
         expect(gear.inventory).toEqual({ cap: 60, used: 1, reserved: 0 });
         expect(gear.slots.used).toBe(0);
-        expect(gear.skills[0]).toMatchObject({ xp: 192, level: 2 });
+        expect(gear.skills[0]).toMatchObject({ xp: 106, level: 2 });
         expect(gear.jobs[0]).toMatchObject({ status: 'claimed', claimedAt: T0 + 8 * HOUR });
         expect(events(ctx, 'job_claim')).toEqual([
           {
@@ -1485,7 +1494,7 @@ describe('workshop jobs: claiming', () => {
             rarity,
             upgraded: false,
             enchant: null,
-            xp: 192,
+            xp: 96,
             skillLevel: 2,
             leveledUp: true,
           },
@@ -1529,7 +1538,7 @@ describe('workshop jobs: claiming', () => {
         expect(rng.drawn()).toBe(drawn);
         expect(count(ctx.sql, 'gear_items')).toBe(1);
         expect(rows<{ xp: number }>(ctx.sql, 'SELECT xp FROM crafting_skill')).toEqual([
-          { xp: 192 },
+          { xp: 96 },
         ]);
         expect(events(ctx, 'job_claim')).toHaveLength(1);
         // Same key on a different job is a conflict.
@@ -1613,14 +1622,14 @@ describe('workshop jobs: claiming', () => {
         const res = await p.call('POST', `/api/workshop/jobs/${job.id}/claim`, {
           idempotencyKey: newKey(),
         });
-        // 4 nominal hours is 96 XP whatever the skill.
+        // 4 nominal hours is 48 XP whatever the skill.
         expect(res.body['result']).toMatchObject({
-          xp: 96,
-          skillXp: 196,
+          xp: 48,
+          skillXp: 148,
           skillLevel: 2,
           leveledUp: false,
         });
-        expect(skillLevel(196)).toBe(2);
+        expect(skillLevel(148)).toBe(2);
       },
       opts(),
     );
@@ -1741,7 +1750,7 @@ describe('workshop jobs: claiming', () => {
           secondaryIndex: 1,
           from: before.secondary[1],
           to: after.secondary[1],
-          xp: 48, // 2 nominal hours at 24 XP per hour
+          xp: 24, // 2 nominal hours at 12 XP per hour
         });
         // Unlocked again.
         expect((res.body['gear'] as GearBody).items[0]?.jobId).toBeNull();
@@ -1819,7 +1828,7 @@ describe('workshop jobs: claiming', () => {
           kind: 'enchant',
           gearId: id,
           enchantId: 'spark-luck',
-          xp: 144, // 6 nominal hours at 24 XP per hour
+          xp: 72, // 6 nominal hours at 12 XP per hour
         });
         expect(rows(ctx.sql, 'SELECT enchant_id FROM gear_items')).toEqual([
           { enchant_id: 'spark-luck' },

@@ -14,7 +14,6 @@ import {
   formatCountdown,
   fusionStars,
   isFirstOnServer,
-  oddsText,
   personalityLine,
   speciesAbout,
 } from './game';
@@ -36,6 +35,7 @@ const creature: Creature = {
   busy: null,
   trainCost: 15,
   ability: { id: 'tidal-mark', unlocked: false, unlockLevel: 10, nextId: 'tidal-mark-2' },
+  explorer: { rank: 1, xp: 0, nextRankXp: 200, trips: 0 },
 };
 
 describe('formatCountdown', () => {
@@ -57,11 +57,6 @@ describe('display helpers', () => {
     expect(fusionStars(0)).toBe('☆☆☆☆☆');
     expect(fusionStars(3)).toBe('★★★☆☆');
     expect(fusionStars(9)).toBe('★★★★★');
-  });
-
-  it('shows the odds from the shared rules', () => {
-    expect(oddsText('basic')).toBe('Common 72% / Rare 25% / Epic 3%');
-    expect(oddsText('great')).toBe('Common 50% / Rare 38% / Epic 12%');
   });
 
   it('prefers the nickname', () => {
@@ -227,7 +222,9 @@ describe('parseGameState', () => {
     starterChosen: true,
     creatures: [creature],
     expeditions: [],
-    slots: { total: 3, used: 0 },
+    cancelled: [],
+    slots: { total: 3, used: 0, rankSum: 0, tripsFinished: 0, next: null },
+    supplies: {},
     trainingMedianLevel: null,
     serverFirsts: [],
   };
@@ -272,6 +269,12 @@ describe('parseGameState', () => {
   it.each([
     ['null', null],
     ['a missing field', { ...valid, slots: undefined }],
+    ['slots without the next unlock', { ...valid, slots: { total: 1, used: 0 } }],
+    [
+      'a creature without an explorer',
+      { ...valid, creatures: [{ ...creature, explorer: undefined }] },
+    ],
+    ['missing supplies', { ...valid, supplies: undefined }],
     ['a bad creature', { ...valid, creatures: [{ ...creature, level: 'x' }] }],
     ['fractional balances', { ...valid, balances: { bait: 1.5, essence: 0 } }],
     ['bad starter options', { ...valid, starterOptions: [1] }],
@@ -303,7 +306,9 @@ describe('quirks and species lore in the client', () => {
       starterChosen: true,
       creatures: [{ ...creature, quirk: null }],
       expeditions: [],
-      slots: { total: 3, used: 0 },
+      cancelled: [],
+      slots: { total: 3, used: 0, rankSum: 0, tripsFinished: 0, next: null },
+      supplies: {},
       trainingMedianLevel: null,
       serverFirsts: [],
     });

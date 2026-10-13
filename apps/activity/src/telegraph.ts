@@ -9,9 +9,22 @@
  *   from the boss's content and the round number alone. A strike on the strongest creature depends
  *   on the creatures' Attack, which the stage does not know, so it is worded generically.
  */
-import { content } from '@creatures/game';
+import { content, dungeonContent, type BossDef } from '@creatures/game';
 import { bossWarnings, type EventNames, type Zone } from '@creatures/engine';
 import type { BossStrike } from './stage';
+
+/**
+ * The boss with this id, or a dungeon foe as the boss it fights as: `bossWarnings` reads only the
+ * gimmicks and the number of rounds, and a foe has both (its room's rounds).
+ */
+function bossOrFoe(bossId: string): BossDef | undefined {
+  const boss = content.bosses.find((b) => b.id === bossId);
+  if (boss !== undefined) return boss;
+  const foe = dungeonContent.foes.find((f) => f.id === bossId);
+  return foe === undefined
+    ? undefined
+    : ({ gimmicks: foe.gimmicks, finaleRounds: foe.rounds } as BossDef);
+}
 
 const creatureName = (names: Pick<EventNames, 'creatures'>, id: string): string =>
   names.creatures[id] ?? id;
@@ -20,6 +33,21 @@ const gimmickName = (names: Pick<EventNames, 'gimmicks'>, id: string | null, fal
   id === null ? fallback : (names.gimmicks?.[id] ?? fallback);
 
 const zoneWord = (zone: Zone): string => zone.toUpperCase();
+
+/**
+ * How zones are worded. `zones` (the raid) says "whole FRONT row"; `row` (the dungeon, where the
+ * team is one row of three and each zone is the one creature at that place) says "the left
+ * creature".
+ */
+export type Wording = 'zones' | 'row';
+
+/** The places of a row of three, by the zone that is one creature there. */
+export const ROW_PLACE_WORDS: Readonly<Record<Zone, string>> = {
+  front: 'left',
+  middle: 'middle',
+  back: 'right',
+};
+const placeWord = (zone: Zone): string => `the ${ROW_PLACE_WORDS[zone]} creature`;
 
 export interface StrikeLabel {
   /** What it is: the gimmick's name, or "Attack". */
@@ -34,6 +62,7 @@ export interface StrikeLabel {
 export function strikeLabel(
   strike: BossStrike,
   names: Pick<EventNames, 'creatures' | 'gimmicks'>,
+  wording: Wording = 'zones',
 ): StrikeLabel {
   const who = (id: string): string => creatureName(names, id);
   let title: string;
@@ -48,7 +77,14 @@ export function strikeLabel(
     }
     case 'hit_zone':
       title = gimmickName(names, strike.gimmick, 'Zone hit');
-      area = strike.zone === null ? 'a whole row' : `whole ${zoneWord(strike.zone)} row`;
+      area =
+        strike.zone === null
+          ? wording === 'row'
+            ? 'a creature'
+            : 'a whole row'
+          : wording === 'row'
+            ? placeWord(strike.zone)
+            : `whole ${zoneWord(strike.zone)} row`;
       break;
     case 'strike_highest_atk': {
       title = gimmickName(names, strike.gimmick, 'Strike');
@@ -106,9 +142,10 @@ export function forecastNextRound(
   row: readonly string[],
   knockedOut: readonly string[],
   names: Pick<EventNames, 'gimmicks'>,
+  wording: Wording = 'zones',
 ): Forecast | null {
   if (round < 1 || round >= rounds) return null;
-  const boss = content.bosses.find((b) => b.id === bossId);
+  const boss = bossOrFoe(bossId);
   if (boss === undefined) return null;
   const warnings = bossWarnings(boss, round + 1);
   if (warnings.length === 0) return null;
@@ -119,7 +156,9 @@ export function forecastNextRound(
     const name = gimmickName(names, w.gimmick, w.name);
     switch (w.target.kind) {
       case 'zone':
-        parts.push(`${name} hits ${zoneWord(w.target.zone)}`);
+        parts.push(
+          `${name} hits ${wording === 'row' ? placeWord(w.target.zone) : zoneWord(w.target.zone)}`,
+        );
         if (!zones.includes(w.target.zone)) zones.push(w.target.zone);
         break;
       case 'ends': {

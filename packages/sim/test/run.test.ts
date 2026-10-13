@@ -24,6 +24,7 @@ describe('simulation run', () => {
       '## Bosses',
       '## Archetype progression',
       '## Long-running servers',
+      '## Daily dungeon',
       '## Elements',
       '## Creatures',
       '## Outliers',
@@ -38,7 +39,7 @@ describe('simulation run', () => {
       targets: unknown[];
     };
     expect(json.settings.seed).toBe('test');
-    expect(json.targets).toHaveLength(33);
+    expect(json.targets).toHaveLength(47);
   });
 
   it('marks metrics it did not measure as not measured', () => {

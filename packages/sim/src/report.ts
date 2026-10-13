@@ -1,7 +1,9 @@
 import { RULES, content } from '@creatures/game';
 import { ARCHETYPES, ARCHETYPE_CONFIG, DEFAULT_MIX, DEFAULT_SERVER_SIZE } from './archetypes';
 import type { Analysis } from './analysis';
+import { WIN_RATE_MAX_DEPTH } from './dungeon-analysis';
 import { POLICY } from './policy';
+import { TRIP_POLICY } from './trips';
 import { LONG_RUN_WEEKS, LOSS_STREAK_LIMIT } from './ladder';
 import { PITY_WEEKS, bossName, describeMix, type RunOutput } from './run';
 import { describeRequirement, formatValue, type TargetResult } from './targets';
@@ -131,6 +133,71 @@ function gearSection(a: Analysis): string {
       ),
     );
   }
+  return parts.join('\n\n');
+}
+
+function dungeonSection(a: Analysis): string {
+  const d = a.dungeon;
+  const parts: string[] = [];
+  parts.push(
+    `Every player with 3 creatures runs the dungeon once on each day they check in (casuals on their leet days), with their 3 strongest creatures. Depth ${String(1)} to ${String(WIN_RATE_MAX_DEPTH)} are listed; a run is cleared when all ${String(RULES.dungeon.rooms)} rooms are.`,
+  );
+  parts.push('### Clear rate by depth');
+  const shown = Array.from({ length: WIN_RATE_MAX_DEPTH }, (_, k) => k + 1);
+  parts.push(
+    table(
+      ['Depth', 'Casual', 'Daily', 'Top earner'],
+      shown.map((depth) => [
+        String(depth),
+        ...(['casual', 'daily', 'top'] as const).map((id) => {
+          const row = d.winRates[id].find((r) => r.depth === depth);
+          return row === undefined || row.runs === 0
+            ? '-'
+            : `${pct(row.clears / row.runs, 0)} (${String(row.runs)})`;
+        }),
+      ]),
+    ),
+  );
+  parts.push(
+    'Runs in brackets. Players stop at the depth where they win about a fifth of their runs.',
+  );
+  parts.push('### Depth after N weeks (median, quartiles)');
+  const weeksShown = [1, 2, 4, 6, 8, 10, 12];
+  parts.push(
+    table(
+      ['Week', ...ARCHETYPES.map((id) => ARCHETYPE_CONFIG[id].label)],
+      weeksShown.map((week) => [
+        String(week),
+        ...ARCHETYPES.map((id) => {
+          const row = d.depthAfter[id].find((r) => r.week === week);
+          return row === undefined
+            ? '-'
+            : `${num(row.median, 0)} (${num(row.p25, 0)} to ${num(row.p75, 0)})`;
+        }),
+      ]),
+    ),
+  );
+  parts.push('### Reward flow per player and week');
+  parts.push(
+    table(
+      ['Archetype', 'Runs', 'Cleared', 'Bait', 'Essence', 'Scrap', 'Gear items'],
+      ARCHETYPES.map((id) => {
+        const f = d.flow[id];
+        return [
+          ARCHETYPE_CONFIG[id].label,
+          num(f.runs, 2),
+          num(f.clears, 2),
+          num(f.bait),
+          num(f.essence, 2),
+          num(f.scrap),
+          num(f.items, 2),
+        ];
+      }),
+    ),
+  );
+  parts.push(
+    `Dungeon Essence is ${pct(d.dailyEssenceShare)} of a daily player's Essence income. Gear's share of a daily player's raid-team power at week 8 is ${pct(d.gearShareWeek8.with)} with the dungeon and ${pct(d.gearShareWeek8.without)} without it (the same sims and seeds).`,
+  );
   return parts.join('\n\n');
 }
 
@@ -335,9 +402,9 @@ function outliersSection(a: Analysis): string {
 const POLICY_TEXT = `
 - **Leet credit:** each day, every player who leets earns \`baitForDay(n)\` (n = players who leeted that day). Casuals leet on 2 random days a week, dailies on 6, top earners on all 7, and the newcomer like a daily from week 4.
 - **Starter:** the starter whose element the server owns least (ties in content order). The first expedition brings a Zipmouse (game rule).
-- **Check-ins:** casuals check in once on each leet day; everyone else twice a day (morning and evening, 12 hours apart, so a Long expedition always finishes in time).
-- **At a check-in:** claim expeditions (game \`rollCatches\`, fusion and conversion rules), evolve creatures that are at level 15 when there is enough Essence, plan expeditions, train, then send the planned expeditions.
-- **Expeditions:** up to 3, one per creature. The budget is ${POLICY.expeditionShareBp / 100}% of the Bait held (all of it when nothing can be trained). Each free slot gets an equal share of the remaining budget and buys the option with the highest value that fits. Value = rolls x expected rarity score of a roll (common ${POLICY.rarityScore.common}, rare ${POLICY.rarityScore.rare}, epic ${POLICY.rarityScore.epic}). Explorers are creatures whose element has the most unowned catchable species. A player whose collection is complete (every catchable species owned with 5 fusions) stops sending expeditions.
+- **Check-ins:** casuals check in once on each leet day (every few days); everyone else twice a day (09:00 and 20:00).
+- **At a check-in:** claim trips (and take an end-of-trip goal), claim jobs, evolve creatures that are at level 15 when there is enough Essence, train, manage gear, send trips into the free slots, start workshop jobs.
+- **Trips (expeditions v2):** slots come from the sum of the explorer ranks above 1 (\`slotsFor\`); a trip is free, only supplies cost Bait. Each free slot sends the idle creature of the highest explorer rank, to the open place (rank, night and Festival gates) where the most unowned species can be found (rarer ones count more, the weekly special place a little extra), for the length that pays the most per hour until the next check-in claims it (casuals: the longest they may). Supplies: those in stock that help, then supplies whose estimated worth is at least ${TRIP_POLICY.buyWorthBp / 100}% of the price, within a budget of the Bait held above ${POLICY.supplyReserve} (all of it when nothing can be trained); at most 2, never two of a kind. When a trip has ended it rolls its end-of-trip offer; a goal is taken when its extra hours (counted from the end of the trip) are over already (no waiting) and its worth ratio is at least ${TRIP_POLICY.minGoalRatioBp / 100}%. The workshop makes supplies from spare parts when no gear job is wanted.
 - **Training:** the rest of the Bait goes to one creature at a time, at the game's training cost with the catch-up discount: of the 3 strongest trainable creatures (not at their level cap), the furthest-along one that still has to reach its evolution level (players push one creature to its evolution before starting the next); if none of the three is working towards an evolution, the weakest of them. The median top level is computed across the simulated players.
 - **Raids:** everyone active signs up (casuals with 70% probability) and brings their 3 highest-power creatures. Sign-up order is shuffled each week; \`autoPlace\` builds the row in that order; \`fillWithGuests\` fills it to ${RULES.combat.guestRowSize} slots with fewer than 3 players. Phase 1 runs on Friday, Phase 2 on Saturday (with the adaptation Phase 1 suggested) and the finale on Sunday; the boss HP pool carries across them. In the finale each player brings their basic ability (round-robin over the four) plus the creature ability of each team creature at level ${RULES.abilities.unlockLevel} or above; every ability fires at its default round. Bosses rotate in content order by the global week index. Crits are on (5% for +50%, players and boss). The raid sweep fights each boss at the rank the old per-level rule would have chosen for the roster (\`placementRank\`), which is what the boss HP and the head-count exponents are calibrated at; the long-run servers (below) use the ladder.
 - **Boss Rank ladder (long-run servers):** a new server is placed once at its first raid week, a finale win in a normal week adds ${RULES.progression.winRankUp} rank, a loss changes nothing, every ${RULES.progression.seasonWeeks}th week of the global calendar is a Festival (boss ${RULES.progression.festivalEaseRanks} ranks lower, +${RULES.progression.festivalEssenceBp / 100}% Essence, a win grants each participant the season's Festival creature through the duplicate rules) and the rank eases ${RULES.progression.seasonResetRanks} after every Festival. Each long-run server starts at a random point of the 5-week calendar.
@@ -346,6 +413,7 @@ const POLICY_TEXT = `
 - **Team power** = sum over the top 3 creatures of \`atk + hp / 10\`, using \`effectiveStats\` (fusion and the worn gear included, like the worker's \`power\`).
 - **Gear drops** follow the worker: the welcome kit when a player joins (a Common item, a Common blueprint and scrap), phase scrap for every participant of a cleared Phase 1 or 2, one gear roll per participant of a won finale at the server's rank (and the Festival piece in a Festival week), and the loot of every claimed expedition (scrap, a shard, a glimmer, a blueprint; a blueprint the player knows is scrap). All rolls use the game's pure functions (\`rollFinaleDrop\`, \`rollFestivalDrop\`, \`expeditionLoot\`, \`rollWelcomeKit\`, \`rollGear\`) with a seeded stream of their own.
 - **Gear policy**, at every check-in after the claims: claim finished jobs; equip (the 3 strongest creatures by power without gear get the items, best pair first, an item scored by the Attack and HP it adds weighted by the creature's role: payoffs want Attack, guards HP); dismantle every unworn item that no job holds except the 2 best spares; upgrade the worn item that adds the most per Essence, as long as the Essence left covers the cheapest evolution a creature is within 3 levels of; then start jobs in the free workshop slots on creatures that are not exploring (the one with the most Crafting XP first): an enchant of a worn item if glimmer and shards allow, an improve of a worn item's speed or crit secondary (twice per item at most), else a craft of the best blueprint the parts pay for (higher rarity first, Attack or HP items first). Items fold into the fight slots with \`applyGear\`, caps included. A creature on a job does not explore (one busy state) but still fights.
+- **Daily dungeon** (\`docs/design/daily-dungeon.md\`): every player with at least 3 creatures runs it once on each day they check in (casuals on their leet days); on the first day they ever ran, a lost run may be tried once more. The team is the 3 strongest creatures by power (gear included), stood in one row by the game's rule for it (\`dungeonRowOrder\`: setters and supports left, a Guard in the middle, payoffs right); the basic ability is Rally and every unlocked creature ability fires at its default round. The day's three room modifiers are shared by the whole server and come from a seed of the day, the foes from the run's seed, and a full clear moves the depth up by 1. Rewards follow the worker: Bait, Essence and scrap for each cleared room, a shard from the boss room, a gear chance on a full clear (certain at a landmark depth), and the streak bonus on the first run of a day, through \`dungeonPayout\`, \`rollDungeonLoot\` and \`streakBonus\`.
 - **Time** for jobs: check-ins at 09:00 and 20:00 (casuals at 09:00 on their leet days); a job is claimed at the first check-in after \`jobDuration\` (the crafter's skill included) has passed.
 - **Typical group:** a raid week with 5 to 10 signed-up players, on rosters from the end of week 4 or 8.
 `.trim();
@@ -409,6 +477,7 @@ export function buildReportMarkdown(out: RunOutput): string {
     '',
   );
   lines.push('## Gear and crafting', '', gearSection(a), '');
+  lines.push('## Daily dungeon', '', dungeonSection(a), '');
   lines.push('## Elements', '');
   lines.push(
     table(
@@ -524,6 +593,7 @@ export function buildReportJson(out: RunOutput): string {
     progression: analysis.progression,
     gearComparison: analysis.gearComparison,
     worn: analysis.worn,
+    dungeon: analysis.dungeon,
     elements: analysis.elements,
     creatures: analysis.creatures,
     essence: analysis.essence,

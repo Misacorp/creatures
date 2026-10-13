@@ -189,6 +189,17 @@ describe('tuning overrides', () => {
     expect(boss?.baseHp).toBe(hp);
   });
 
+  it('changes a number inside one creature and restores it', () => {
+    const sproutle = content.creatures.find((c) => c.id === 'sproutle');
+    const atk = sproutle?.baseStats.atk ?? 0;
+    const restore = applyOverrides(`creature.sproutle.baseStats.atk=${atk + 3}`);
+    expect(sproutle?.baseStats.atk).toBe(atk + 3);
+    restore();
+    expect(sproutle?.baseStats.atk).toBe(atk);
+    expect(() => applyOverrides('creature.nobody.baseStats.atk=1')).toThrow(/no such setting/);
+    expect(() => applyOverrides('creature.sproutle.baseStats.nope=1')).toThrow(/not a number/);
+  });
+
   it('rejects unknown settings, non-numbers and bad syntax', () => {
     expect(() => applyOverrides('progression.nope=1')).toThrow(/not a number/);
     expect(() => applyOverrides('nothing.here=1')).toThrow(/no such setting/);

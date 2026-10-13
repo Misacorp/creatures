@@ -59,11 +59,22 @@
       "id": "expeditions",
       "title": "Expeditions",
       "lines": [
-        "Send a creature away for 1, 6 or 12 hours. Longer trips find more.",
-        "Better supplies cost more Bait and find rarer creatures.",
-        "You have 3 expedition slots.",
-        "Recall early to keep the catches earned so far.",
-        "A duplicate catch fuses into your creature for more stats."
+        "Send a creature to a place for 2, 6 or 12 hours. Longer trips find much more, and a 24 hour trip opens later.",
+        "Trips are free. Supplies cost Bait, or you craft them, and give a real boost.",
+        "Every creature gets better at exploring: ranks, stars for each place and Journal pages.",
+        "A finished trip may offer a push-on choice. Safe goals always work. Risky ones can fail.",
+        "You start with 1 slot, and more open as your creatures grow. Recall early to keep what was caught."
+      ]
+    },
+    {
+      "id": "dungeon",
+      "title": "Daily dungeon",
+      "lines": [
+        "One run a day, with a team of three of your own in one row. The day resets at 13:37 server time.",
+        "A run is three rooms: two foes, then a room boss. HP carries over from room to room.",
+        "Clear all three to go one depth deeper. A lost run keeps your depth. A first-ever loss can be retried once.",
+        "Every 7th depth is a landmark. Clearing it drops gear for sure.",
+        "Runs on days in a row build a streak. The 3rd and 7th day of every 7 pay a bonus."
       ]
     },
     {
@@ -73,7 +84,7 @@
         "Every boss has a Rank. A higher Rank is a tougher boss.",
         "Win the finale and the server's Rank goes up by 1. Lose and it stays.",
         "Every 5th week is a Festival: an easier boss and extra Essence.",
-        "Win a Festival to get its special creature. Expeditions never find it.",
+        "Win a Festival to get its special creature. It also roams the Festival Grounds.",
         "The pips show where you are in the 5-week season."
       ]
     },

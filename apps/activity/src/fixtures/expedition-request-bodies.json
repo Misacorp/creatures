@@ -1,0 +1,93 @@
+{
+  "expedition-send": {
+    "path": "/api/expeditions",
+    "method": "POST",
+    "body": {
+      "creatureId": "ffafcc53-26f2-46e7-8ef5-b1f3718cb76f",
+      "destination": "tidepools",
+      "duration": "long",
+      "supplies": [
+        {
+          "id": "lure-great",
+          "source": "owned"
+        },
+        {
+          "id": "map-scrap-basic",
+          "source": "buy"
+        }
+      ],
+      "idempotencyKey": "trips-fixture-00000001-key"
+    }
+  },
+  "expedition-push-on": {
+    "path": "/api/expeditions/7b7ec064-ba1b-4028-91d9-bc1eb66a1c11/push-on",
+    "method": "POST",
+    "body": {
+      "goalId": "shortcut"
+    }
+  },
+  "expedition-claim-failed": {
+    "path": "/api/expeditions/7b7ec064-ba1b-4028-91d9-bc1eb66a1c11/claim",
+    "method": "POST",
+    "body": {}
+  },
+  "expedition-claim": {
+    "path": "/api/expeditions/7b7ec064-ba1b-4028-91d9-bc1eb66a1c11/claim",
+    "method": "POST",
+    "body": {}
+  },
+  "expedition-send-2": {
+    "path": "/api/expeditions",
+    "method": "POST",
+    "body": {
+      "creatureId": "ffafcc53-26f2-46e7-8ef5-b1f3718cb76f",
+      "destination": "tidepools",
+      "duration": "long",
+      "supplies": [
+        {
+          "id": "lure-great",
+          "source": "owned"
+        }
+      ],
+      "idempotencyKey": "trips-fixture-00000010-key"
+    }
+  },
+  "expedition-claim-worked": {
+    "path": "/api/expeditions/04d6cb1d-f054-4028-9034-7fd4c2bf80df/claim",
+    "method": "POST",
+    "body": {}
+  },
+  "expedition-send-3": {
+    "path": "/api/expeditions",
+    "method": "POST",
+    "body": {
+      "creatureId": "890de23e-6d85-4ca9-a188-bc04d29ffa6e",
+      "destination": "tidepools",
+      "duration": "long",
+      "supplies": [],
+      "idempotencyKey": "trips-fixture-00000011-key"
+    }
+  },
+  "expedition-claim-recall": {
+    "path": "/api/expeditions/3a802cc2-c054-4259-a558-a351f4735dc8/claim",
+    "method": "POST",
+    "body": {}
+  },
+  "workshop-start-supply": {
+    "path": "/api/workshop/jobs",
+    "method": "POST",
+    "body": {
+      "kind": "supply",
+      "creatureId": "ffafcc53-26f2-46e7-8ef5-b1f3718cb76f",
+      "supplyId": "lure-basic",
+      "idempotencyKey": "trips-fixture-00000012-key"
+    }
+  },
+  "workshop-claim-supply": {
+    "path": "/api/workshop/jobs/fa767c7b-b7fd-4c0e-88ba-38a6ff1b7cd4/claim",
+    "method": "POST",
+    "body": {
+      "idempotencyKey": "trips-fixture-00000013-key"
+    }
+  }
+}

@@ -94,6 +94,11 @@ export function zonedDate(epochMs: number, tz: string): string {
   return `${pad(p.year, 4)}-${pad(p.month, 2)}-${pad(p.day, 2)}`;
 }
 
+/** The local hour (0 to 23) of an instant in the given time zone. DST-safe: the zone's own rules decide. */
+export function zonedHour(epochMs: number, tz: string): number {
+  return localParts(epochMs, tz).hour;
+}
+
 /** Offset of the zone from UTC at an instant, in ms (local wall clock minus UTC). Whole seconds. */
 function offsetAt(epochMs: number, tz: string): number {
   const p = localParts(epochMs, tz);
@@ -184,4 +189,27 @@ export function previousOccurrence(
     if (candidate <= nowMs) return candidate;
   }
   throw new Error('no occurrence found');
+}
+
+/** A local wall-clock time of day. */
+export interface TimeOfDay {
+  hour: number;
+  minute: number;
+}
+
+/**
+ * The game day of an instant: the 'YYYY-MM-DD' date on which the current day started, where a day
+ * starts at `reset` local time in `tz` (13:37 in `RULES.daily.reset`). Before the reset it is still
+ * the previous date's game day. DST-safe through `zonedTimeToEpoch`.
+ */
+export function gameDay(epochMs: number, tz: string, reset: TimeOfDay): string {
+  const today = zonedDate(epochMs, tz);
+  return epochMs >= zonedTimeToEpoch(today, reset.hour, reset.minute, tz)
+    ? today
+    : addDays(today, -1);
+}
+
+/** When a game day ends: the reset on the next calendar date, in epoch ms. */
+export function gameDayEnd(day: string, tz: string, reset: TimeOfDay): number {
+  return zonedTimeToEpoch(addDays(day, 1), reset.hour, reset.minute, tz);
 }

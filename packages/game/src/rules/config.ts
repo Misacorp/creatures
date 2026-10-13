@@ -10,6 +10,12 @@ const HOUR_MS = 3_600_000;
  * copy of this). Probabilities are integers: basis points (out of 10000) or numerator/denominator.
  */
 export const RULES = {
+  /**
+   * The game's daily reset, in the guild's local time: 13:37, "leet o'clock" (Misa). Everything
+   * daily (the dungeon run, streaks) turns over here, not at midnight. A game day is named by the
+   * calendar date on which it starts, so 12:00 on the 14th still belongs to the 13th's game day.
+   */
+  daily: { reset: { hour: 13, minute: 37 } },
   training: {
     /**
      * Cost to go from level L to L+1 is baseCost + perLevel * L. Tuned by the balance simulator
@@ -58,6 +64,17 @@ export const RULES = {
     supportBuffBp: 1_500,
     /** Guard: extra HP, applied to the effective HP stat. */
     guardHpBp: 3_000,
+    /**
+     * Setup credit: the share (basis points, rounded down) of a reaction's bonus damage that goes to
+     * the creature that set the mark up; the payoff keeps the rest. Credit only: the damage dealt is
+     * the same whatever this is.
+     */
+    setupShareBp: 6_000,
+    /**
+     * Guard credit for damage a Guard takes when the hit was aimed at it (basis points, rounded
+     * down). Damage it takes in place of a neighbour always counts in full. Credit only.
+     */
+    guardOwnCreditBp: 10_000,
     /** Boss normal attack as a share of boss Attack. */
     bossAttackBp: 10_000,
     /**
@@ -345,7 +362,7 @@ export const RULES = {
     skill: {
       /** Total XP to reach each level (index 0 is level 1). XP per job is its nominal hours x `xpPerHour`. */
       xpForLevel: [0, 100, 250, 450, 700, 1_000, 1_600, 2_500, 3_800, 5_500],
-      xpPerHour: 24,
+      xpPerHour: 12,
       /** Each level above 1 shortens jobs by this much and adds this chance of a rarity up on a craft (basis points). */
       timeReductionBpPerLevel: 300,
       rarityUpBpPerLevel: 100,
@@ -378,6 +395,204 @@ export const RULES = {
       duplicateBlueprintScrap: 5,
       /** The welcome kit: one common item, one common blueprint and this much scrap. */
       welcomeScrap: 10,
+    },
+  },
+  /**
+   * The daily dungeon (docs/design/daily-dungeon.md): a solo run of `rooms` rooms with the player's own
+   * team of three, once per guild-local day. Depth is personal: a full clear adds 1. Starting values,
+   * tuned by the simulator. All amounts are integers (percentages in basis points).
+   */
+  dungeon: {
+    /** Rooms in a run: normal foes first, then a room boss. */
+    rooms: 3,
+    /** Creatures in the team: one row of three, left to right. */
+    teamSize: 3,
+    /**
+     * Depth scaling (see `depthFactorBp`): every depth above 1 adds `Step` basis points of the depth-1
+     * HP and Attack to a foe, plus `Curve` for each square of the depths above 1, so the first depths
+     * are gentle and the later ones steepen. Depths past `maxScaledDepth` fight at that depth's
+     * strength, which keeps every number small and safe.
+     */
+    hpStepBp: 3_000,
+    hpCurveBp: 300,
+    atkStepBp: 2_000,
+    atkCurveBp: 150,
+    maxScaledDepth: 60,
+    /**
+     * How strong a foe is at depth 1, as a share of the HP and Attack in its content (basis points;
+     * 10000 is the content's own numbers). One knob for the whole dungeon, so the foes keep the
+     * relative strengths their content gives them.
+     */
+    baseHpBp: 12_500,
+    baseAtkBp: 10_000,
+    /** Every this many depths is a landmark: a better chest. */
+    landmarkEvery: 7,
+    /** Paid for each room cleared, by room index (the last is the room boss). */
+    perRoom: [
+      { bait: 1, essence: 0, scrap: 0 },
+      { bait: 1, essence: 0, scrap: 0 },
+      { bait: 1, essence: 1, scrap: 1 },
+    ],
+    /** Chance (basis points) of one shard of the room boss's element when the boss room is cleared. */
+    bossShardBp: 6_000,
+    /** Extra for clearing every room: Essence, and a chance (basis points) at a gear drop. */
+    fullClear: { essence: 0, gearBp: 1_500 },
+    /**
+     * Gear odds of a dungeon drop (basis points; the rest is common): rare and epic start at `baseBp`
+     * at depth 1, grow by `perDepthBp` for every depth above 1 and stop at `maxBp`. A landmark drop
+     * adds `landmarkBonusBp` to both first.
+     */
+    gearOdds: {
+      baseBp: { rare: 1_800, epic: 200 },
+      perDepthBp: { rare: 40, epic: 20 },
+      maxBp: { rare: 4_500, epic: 1_800 },
+      landmarkBonusBp: { rare: 2_000, epic: 600 },
+    },
+    /** A fully cleared landmark depth pays this on top, and its gear drop is guaranteed. */
+    landmark: { essence: 2, scrap: 2, glimmer: 1 },
+    /**
+     * Daily streaks: days in a row with a run, counted in a cycle of `cycleDays`. A bonus is paid
+     * when the run is the `day`-th of the cycle. A missed day starts the count again (depth is kept).
+     */
+    streak: {
+      cycleDays: 7,
+      bonuses: [
+        { day: 3, bait: 0, essence: 0, scrap: 1, glimmer: 0 },
+        { day: 7, bait: 0, essence: 1, scrap: 1, glimmer: 0 },
+      ],
+    },
+  },
+  /**
+   * Expeditions v2 (docs/design/expeditions-v2.md): trip lengths, explorer ranks, familiarity, slots,
+   * push-on choices, account milestones and the values the simulator compares. Starting values, set by
+   * the balance simulator (docs/balance/report-2026-10-13-expeditions.md). The content (places,
+   * supplies, goals, journal) is data; only numbers live here. `RULES.expedition` (singular) is the
+   * v1 table that trips started before v2 and the old client still read.
+   */
+  expeditions: {
+    /**
+     * Per trip length: the time, the catch rolls and what a finished trip brings. Rewards grow faster
+     * than the hours (the 12 hour trip pays more than three 4 hour ones would): a short trip is the
+     * worst way to progress. `loot` are chances in basis points (a value above 10000 is a sure one plus
+     * a chance of another); `scrap` is a flat amount; a recalled trip pays only its share of the scrap.
+     */
+    lengths: {
+      short: {
+        ms: 2 * HOUR_MS,
+        rolls: 1,
+        rarityUpBp: 0,
+        xp: 4,
+        minRank: 1,
+        loot: { scrap: 0, shardBp: 600, glimmerBp: 50, blueprintBp: 100, supplyBp: 500 },
+        journalBp: 300,
+      },
+      medium: {
+        ms: 6 * HOUR_MS,
+        rolls: 1,
+        rarityUpBp: 150,
+        xp: 110,
+        minRank: 1,
+        loot: { scrap: 0, shardBp: 1_000, glimmerBp: 150, blueprintBp: 300, supplyBp: 1_500 },
+        journalBp: 600,
+      },
+      long: {
+        ms: 12 * HOUR_MS,
+        rolls: 1,
+        rarityUpBp: 300,
+        xp: 300,
+        minRank: 1,
+        loot: { scrap: 1, shardBp: 1_500, glimmerBp: 300, blueprintBp: 500, supplyBp: 3_000 },
+        journalBp: 1_000,
+      },
+      day: {
+        ms: 24 * HOUR_MS,
+        rolls: 2,
+        rarityUpBp: 600,
+        xp: 700,
+        minRank: 5,
+        loot: { scrap: 3, shardBp: 4_000, glimmerBp: 800, blueprintBp: 1_000, supplyBp: 4_500 },
+        journalBp: 1_600,
+      },
+    },
+    /** Most supplies one trip can carry. */
+    maxSupplies: 2,
+    /** The rarity odds of a roll when a destination does not say (the v1 "basic" odds). */
+    defaultOddsBp: { common: 8_300, rare: 1_500, epic: 200 },
+    /**
+     * Explorer rank, per creature: total XP needed for each rank (index 0 is rank 1). Each rank above
+     * 1 shortens that creature's trips by `speedBpPerRank`, and ranks unlock places (their `minRank` in
+     * the content), the 24 hour trip (`lengths.day.minRank`) and better push-on goals (`minRank`).
+     */
+    rank: {
+      xpForRank: [0, 200, 800, 2_000, 4_500, 10_000, 22_000, 45_000, 90_000, 160_000],
+      speedBpPerRank: 200,
+    },
+    /**
+     * Familiarity, per creature and destination, three stars: 1 from `tripsForStar1` finished trips
+     * there, 2 for having caught every species there, 3 for a shiny found there. Bonuses are indexed by
+     * stars. Stars open the deeper area: `deepChanceBp` is the chance that a roll is drawn from it.
+     */
+    familiarity: {
+      tripsForStar1: 4,
+      deepChanceBp: [0, 3_000, 4_000, 5_000],
+      /** A deeper-area roll is one of the place's deep species at this chance (basis points). */
+      deepFindBp: 3_500,
+      rarityUpBp: [0, 200, 400, 800],
+      partsBp: [0, 0, 1_000, 2_000],
+    },
+    /** Role flavour: a Guard brings back more parts, a Setter finds more of its own element. */
+    roles: { guardPartsBp: 3_000, setterAffinityWeight: 3 },
+    /**
+     * Expedition slots: everyone starts with one. Slot 2 comes after `secondAfterTrips` finished trips;
+     * slots 3, 4 and 5 come when the sum of the ranks above 1 of all their creatures reaches these
+     * numbers (about a month, four months and a year of a daily player's trips).
+     */
+    slots: { secondAfterTrips: 3, thresholds: [26, 72, 103] },
+    /**
+     * A duplicate caught on an expedition after the creature's 5 fusions turns into Bait at this share
+     * (basis points) of the usual `fusion.convertBait`: trips are free now, so what they convert must
+     * not pay for itself (a v1 trip cost about as much Bait as it converted).
+     */
+    convertBp: 6_000,
+    /**
+     * The end-of-trip choice. A trip offers one with probability `baseOfferBp` plus `perRankBp` for
+     * each explorer rank above 1, joined with its supplies' own chances (the best tier is a sure
+     * thing). Two goals are offered (a safe one and a risky one) once a risky goal is open to the
+     * explorer; before that one safe goal.
+     */
+    pushOn: { baseOfferBp: 1_500, perRankBp: 150, maxGoals: 2 },
+    /** The tier of a supply found on a trip, by the explorer's rank. */
+    foundTier: { good: 4, great: 7 },
+    /** Night is from `fromHour` to `toHour` of the guild's local time. */
+    night: { fromHour: 20, toHour: 6 },
+    /** Account milestones: very small, permanent bonuses (basis points) for things recorded in the stats. */
+    milestones: [
+      { id: 'first-steps', stat: 'trips_finished', at: 5, bonus: { kind: 'parts', bp: 100 } },
+      { id: 'seasoned', stat: 'trips_finished', at: 50, bonus: { kind: 'rarity', bp: 100 } },
+      { id: 'veteran', stat: 'trips_finished', at: 200, bonus: { kind: 'rarity', bp: 100 } },
+      { id: 'wanderer', stat: 'places_visited', at: 4, bonus: { kind: 'offer', bp: 100 } },
+      { id: 'globetrotter', stat: 'places_visited', at: 7, bonus: { kind: 'parts', bp: 100 } },
+      { id: 'collector', stat: 'species_found', at: 6, bonus: { kind: 'xp', bp: 200 } },
+      { id: 'scholar', stat: 'journal_pages', at: 10, bonus: { kind: 'xp', bp: 200 } },
+      { id: 'archivist', stat: 'journal_sets', at: 4, bonus: { kind: 'offer', bp: 100 } },
+      { id: 'gambler', stat: 'pushons_won', at: 10, bonus: { kind: 'offer', bp: 100 } },
+      { id: 'raid-watcher', stat: 'reactions_seen', at: 200, bonus: { kind: 'rarity', bp: 50 } },
+    ],
+    /**
+     * What things are worth, in Bait, for the simulator's fairness checks (never shown to players): the
+     * risky push-on goal of a trip must be a fair gamble against coming home.
+     */
+    worth: {
+      /** One catch roll, by the rarity it comes out as (about 10 at the default odds). */
+      roll: { common: 5, rare: 20, epic: 50 },
+      scrap: 2,
+      shard: 6,
+      glimmer: 25,
+      blueprint: 40,
+      gear: { common: 15, rare: 50, epic: 140 },
+      journal: 6,
+      /** Bait per 10 explorer XP. */
+      xpPer10: 2,
     },
   },
   nickname: {

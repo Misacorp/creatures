@@ -1,6 +1,6 @@
 # Daily dungeon
 
-Status: **plan**, 2026-10-13. Roadmap item 3.
+Status: **built** (engine, content, server, balance model and Activity UI), 2026-10-13. Numbers and choices as built: `decisions.md`, 2026-10-13, "Daily dungeon v1" and, for the single row, "Daily dungeon: one row, a constant stage and a fuller end report". Roadmap item 3.
 
 ## Idea (Misa)
 
@@ -14,12 +14,15 @@ No real-time backend is needed.
 
 ## Shape
 
-- **Once per day per player.** The day is the guild-local calendar day (the guild timezone, passed explicitly). Runs reset at local midnight.
-- **Team:** the player picks 3 of their creatures and orders them into Front, Middle and Back (one each, or any arrangement in a 3-slot row). The team is frozen at the run start.
+- **Once per day per player.** The day is the guild-local game day, which starts at the daily reset, 13:37 in the guild timezone (`RULES.daily.reset`; the timezone is passed explicitly). Before 13:37 it is still the previous date's game day.
+- **Team:** the player picks 3 of their creatures and puts them **in one row, left to right**. The order is the only formation choice (`team[i]` is position i). The team is frozen at the run start.
+  - The row is the engine's row of three, used as it is: the left creature is in the Front zone, the middle one in Middle and the right one in Back, one creature each.
+  - The foe's plain attack goes for the left creature first. A Guard covers the creatures **right beside it** (`guardReach: 'adjacent'`), so it likes the middle.
+  - A zone attack hits the one creature at that place; "both ends" silence hits the left and right creatures; turn orders run along the row (left to right, right to left) or by speed.
 - **Pre-run choices** replace live input, since there is none:
   - the basic ability pick;
   - Auto fire per ability: on, or a chosen fire round;
-  - the formation.
+  - the order of the row.
 
   This keeps the "planning puzzle" feel that suits a predictable fight.
 
@@ -43,8 +46,8 @@ No real-time backend is needed.
 
 ## Server (authoritative)
 
-- `POST /api/dungeon/run { team: [id, id, id], formation, abilities: {...}, idempotencyKey }`:
-  1. Validates the team (the caller's own creatures, not away on an expedition) and that no run exists today.
+- `POST /api/dungeon/run { team: [id, id, id], abilities: {...}, idempotencyKey }` (`team` is the row, left to right; a body with a `formation` is refused as `invalid_body`):
+  1. Validates the team (the caller's own creatures; one away on an expedition or a job can still enter, because the run is instant) and that no run exists today.
   2. Draws the seed from `crypto.getRandomValues` at that moment.
   3. Generates the dungeon from the seed and the content.
   4. Simulates all rooms with the engine.
@@ -67,13 +70,13 @@ No real-time backend is needed.
 
 - A **Dungeon** tab or card:
   - today's modifiers;
-  - team and formation pickers, reusing the drag-and-drop rows;
+  - the team picker: one row of three slots, reusing the drag-and-drop code;
   - ability pre-settings;
   - an **Enter** button.
 - **Playback:**
   - The fight stage plays each room with the same pacing and effects as the live finale: shared `roundPlaybackMs`, telegraphs, lingering numbers.
-  - Between rooms: a room transition card ("Room 2 · Flooded").
-  - At the end: the loot reveal.
+  - The stage keeps one size for the whole run. A room opens with a banner drawn **over** the stage (the room number, the foe and its twist), then the fight plays under it; the playback controls never move.
+  - At the end: the **rewards first** (the loot reveal), then a strip of the three rooms (each with its foe's sprite and a CLEARED, DEFEAT or LOCKED banner, left to right like a comic), then the team in its row with the HP each ended with.
 - Skip and 2× controls. Leaving mid-playback is fine; the result is already stored, and coming back shows the summary with "Watch again".
 - A Discord post is optional, later: a weekly "deepest diver" note in the raid channel.
 

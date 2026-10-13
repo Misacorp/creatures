@@ -531,12 +531,12 @@ describe('jobs and the crafting skill', () => {
     }
   });
 
-  it('gives XP of 24 per nominal hour, whatever the skill', () => {
-    expect(RULES.gear.skill.xpPerHour).toBe(24);
-    expect(jobXp('craft', 'common')).toBe(96);
-    expect(jobXp('craft', 'epic')).toBe(288);
-    expect(jobXp('improve', 'rare')).toBe(48);
-    expect(jobXp('enchant', 'epic')).toBe(144);
+  it('gives XP of 12 per nominal hour, whatever the skill', () => {
+    expect(RULES.gear.skill.xpPerHour).toBe(12);
+    expect(jobXp('craft', 'common')).toBe(48);
+    expect(jobXp('craft', 'epic')).toBe(144);
+    expect(jobXp('improve', 'rare')).toBe(24);
+    expect(jobXp('enchant', 'epic')).toBe(72);
     expect(jobHours('enchant', 'epic')).toBe(6);
   });
 
@@ -554,10 +554,11 @@ describe('jobs and the crafting skill', () => {
   });
 
   it('a daily crafter reaches level 5 in about a month', () => {
-    // Scrap limits the work (the simulator's daily player: about 7 crafts and a few enchants and
-    // improves in the first month, most of them on the best crafter). A week with one 8 h Rare craft
-    // is 192 XP, 770 in four weeks: level 5.
-    const week = jobXp('craft', 'rare');
+    // The simulator's daily player keeps both workshop slots busy and puts most of the work on the
+    // best crafter. A week of one 8 h Rare craft, one 6 h enchant and one 2 h improve is 16 nominal
+    // hours: 192 XP, 768 in four weeks, which is level 5 (the target is 4 to 6 at day 30).
+    const week = jobXp('craft', 'rare') + jobXp('enchant', 'rare') + jobXp('improve', 'rare');
+    expect(week).toBe(192);
     expect(skillLevel(4 * week)).toBeGreaterThanOrEqual(5);
     expect(skillLevel(4 * week)).toBeLessThanOrEqual(6);
     // A casual player (one Common craft a week) is around level 3 after the same month.

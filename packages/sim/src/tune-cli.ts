@@ -172,6 +172,14 @@ export function main(argv: readonly string[], io: Io = defaultIo): number {
           .join(', ');
         io.out(`  ${b.boss.padEnd(16)} typical ${pct(b.finaleWinRate)}  ${cells}`);
       }
+      io.out(
+        `  creatures (contribution vs rarity median): ${out.analysis.creatures
+          .map(
+            (c) =>
+              `${c.name}${c.festival ? '*' : ''} ${c.ratio === null ? 'n/a' : c.ratio.toFixed(2)}`,
+          )
+          .join(', ')}`,
+      );
       const fails = out.evaluation.filter((t) => t.status === 'fail');
       io.out(`full run: ${out.evaluation.length - fails.length} passed, ${fails.length} failed`);
       for (const t of out.evaluation) {

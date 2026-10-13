@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_GUILD_TIMEZONE,
   addDays,
+  gameDay,
+  gameDayEnd,
   isValidTimeZone,
   nextOccurrence,
   previousOccurrence,
@@ -225,5 +227,38 @@ describe('previousOccurrence', () => {
     // After the spring switch the local 13:40 is 10:40Z; the day before it was 11:40Z.
     expect(prev('2026-03-29T12:00:00Z', 13, 40)).toBe('2026-03-29T10:40:00.000Z');
     expect(prev('2026-03-29T10:39:00Z', 13, 40)).toBe('2026-03-28T11:40:00.000Z');
+  });
+});
+
+describe('gameDay and gameDayEnd (the 13:37 daily reset)', () => {
+  const reset = { hour: 13, minute: 37 };
+  const t = (date: string, hour: number, minute: number) =>
+    zonedTimeToEpoch(date, hour, minute, HELSINKI);
+
+  it('belongs to the previous date before 13:37 and to today from 13:37 on', () => {
+    expect(gameDay(t('2026-10-14', 0, 0), HELSINKI, reset)).toBe('2026-10-13');
+    expect(gameDay(t('2026-10-14', 13, 36), HELSINKI, reset)).toBe('2026-10-13');
+    expect(gameDay(t('2026-10-14', 13, 37), HELSINKI, reset)).toBe('2026-10-14');
+    expect(gameDay(t('2026-10-14', 23, 59), HELSINKI, reset)).toBe('2026-10-14');
+    expect(gameDay(t('2026-10-14', 13, 37) - 1, HELSINKI, reset)).toBe('2026-10-13');
+  });
+
+  it('ends at 13:37 on the next date, across both DST changes', () => {
+    expect(iso(gameDayEnd('2026-10-13', HELSINKI, reset))).toBe(at('2026-10-14', 13, 37));
+    // Clocks go back on 2026-10-25 and forward on 2026-03-29 in Helsinki: still 13:37 local.
+    expect(iso(gameDayEnd('2026-10-24', HELSINKI, reset))).toBe(at('2026-10-25', 13, 37));
+    expect(iso(gameDayEnd('2026-03-28', HELSINKI, reset))).toBe(at('2026-03-29', 13, 37));
+    expect(gameDayEnd('2026-10-24', HELSINKI, reset) - t('2026-10-24', 13, 37)).toBe(
+      25 * 3_600_000,
+    );
+    expect(gameDayEnd('2026-03-28', HELSINKI, reset) - t('2026-03-28', 13, 37)).toBe(
+      23 * 3_600_000,
+    );
+  });
+
+  it('follows the given time zone', () => {
+    const ms = Date.UTC(2026, 9, 14, 11, 0); // 14:00 in Helsinki, 07:00 in New York
+    expect(gameDay(ms, HELSINKI, reset)).toBe('2026-10-14');
+    expect(gameDay(ms, 'America/New_York', reset)).toBe('2026-10-13');
   });
 });

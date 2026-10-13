@@ -1,0 +1,145 @@
+{
+  "serverNow": 1799755200000,
+  "day": "2027-01-12",
+  "timezone": "Europe/Helsinki",
+  "resetsAt": 1799840220000,
+  "depth": 45,
+  "landmark": false,
+  "streak": 1,
+  "modifiers": [
+    {
+      "room": 0,
+      "id": "dark",
+      "name": "Dark",
+      "description": "Your creatures crit 5 points more often."
+    },
+    {
+      "room": 1,
+      "id": "brittle",
+      "name": "Brittle",
+      "description": "The foe has 20% less HP but hits 25% harder."
+    },
+    {
+      "room": 2,
+      "id": "thorns",
+      "name": "Thorns",
+      "description": "The foe turns the first reaction of each round back on your team."
+    }
+  ],
+  "attemptsToday": 1,
+  "attemptsAllowed": 2,
+  "canRun": true,
+  "blocked": null,
+  "last": {
+    "id": "582a1258-7d01-4f0e-8355-e8cbd552e86e",
+    "day": "2027-01-12",
+    "attempt": 1,
+    "depth": 45,
+    "newDepth": 45,
+    "cleared": false,
+    "roomsCleared": 0,
+    "landmark": false,
+    "streak": 1,
+    "createdAt": 1799755200000,
+    "team": [
+      {
+        "id": "86902e35-93c4-48ca-9a93-14296952f3d9",
+        "name": "Mistnewt",
+        "speciesId": "mistnewt",
+        "element": "tide",
+        "role": "guard",
+        "level": 1,
+        "hpMax": 208,
+        "hpEnd": 0
+      },
+      {
+        "id": "05e5fa90-3336-4d15-96d0-58b56a15fcbe",
+        "name": "Ashmole",
+        "speciesId": "ashmole",
+        "element": "ember",
+        "role": "support",
+        "level": 1,
+        "hpMax": 128,
+        "hpEnd": 0
+      },
+      {
+        "id": "42e01b3e-eafa-4190-b98c-95fa9624b916",
+        "name": "Stormray",
+        "speciesId": "stormray",
+        "element": "spark",
+        "role": "payoff",
+        "level": 1,
+        "hpMax": 120,
+        "hpEnd": 0
+      }
+    ],
+    "rooms": [
+      {
+        "index": 0,
+        "kind": "foe",
+        "foe": {
+          "id": "ash-sprite",
+          "name": "Ash Sprite",
+          "element": "ember",
+          "hpMax": 22551
+        },
+        "modifier": {
+          "id": "dark",
+          "name": "Dark",
+          "description": "Your creatures crit 5 points more often."
+        },
+        "played": true,
+        "cleared": false,
+        "rounds": 3,
+        "foeHpEnd": 22291
+      },
+      {
+        "index": 1,
+        "kind": "foe",
+        "foe": {
+          "id": "ember-mite",
+          "name": "Ember Mite",
+          "element": "ember",
+          "hpMax": 20744
+        },
+        "modifier": {
+          "id": "brittle",
+          "name": "Brittle",
+          "description": "The foe has 20% less HP but hits 25% harder."
+        },
+        "played": false,
+        "cleared": false,
+        "rounds": 0,
+        "foeHpEnd": 20744
+      },
+      {
+        "index": 2,
+        "kind": "boss",
+        "foe": {
+          "id": "slag-tyrant",
+          "name": "Slag Tyrant",
+          "element": "ember",
+          "hpMax": 34333
+        },
+        "modifier": {
+          "id": "thorns",
+          "name": "Thorns",
+          "description": "The foe turns the first reaction of each round back on your team."
+        },
+        "played": false,
+        "cleared": false,
+        "rounds": 0,
+        "foeHpEnd": 34333
+      }
+    ],
+    "rewards": {
+      "bait": 0,
+      "essence": 0,
+      "parts": {},
+      "gear": [],
+      "converted": [],
+      "landmark": false,
+      "streak": null
+    }
+  }
+}

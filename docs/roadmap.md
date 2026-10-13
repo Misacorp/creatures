@@ -24,6 +24,8 @@ The first ranked week starts Monday 2026-10-12, and the first Festival is due fi
 
 Reordered by Misa on 2026-10-13 (second pass): How to play first, then gear, then expeditions. He hopes to finish many of these within the week.
 
+**Status 2026-10-13:** items 1 and 2 shipped in PR #9; items 3 and 4 (expeditions v2, daily dungeon) are on branch `dungeon` for the combined PR. Next up: item 5.
+
 | #   | Item                               | Intent (Misa's words where given)                                                                                                                                                                                                                                                                                                   | Design doc                                                                    |
 | --- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | 1   | **How to play** and clickable tags | "All the roles, elements, etc. are not intuitive at all. Just being able to click on the tags that display stuff like Grove and Setter would help." Ships with the analytics **event log** (no reports yet) and a small **"beta"** superscript on the title.                                                                        | [`design/how-to-play.md`](design/how-to-play.md)                              |

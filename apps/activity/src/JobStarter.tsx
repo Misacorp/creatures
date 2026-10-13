@@ -1,4 +1,4 @@
-import { GLOSSARY_IDS } from '@creatures/game';
+import { GLOSSARY_IDS, type GearJobKind } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { CreaturePicker } from './CreaturePicker';
@@ -25,6 +25,10 @@ export interface JobStarterProps {
   /** True while any action runs. */
   busy: boolean;
   startLabel: string;
+  /** A supply craft's length at a Crafting level (a supply has its own hours); required for `supply`. */
+  durationAtLevel?: (level: number) => number;
+  /** The Crafting level a creature needs for this job (a supply's blueprint); lower ones cannot be picked. */
+  minLevel?: number;
   /** Extra controls above the creature list (which extra stat, which enchant). */
   children?: preact.ComponentChildren;
   onStart: (creatureId: string) => void;
@@ -38,8 +42,12 @@ export interface JobStarterProps {
  */
 export function JobStarter(props: JobStarterProps) {
   const { gear, creatures, kind, rarity, cost } = props;
-  const options = pickerOptions(creatures, gear.skills, (level) =>
-    durationFor(kind, rarity, level),
+  const durationAt =
+    props.durationAtLevel ?? ((level: number) => durationFor(kind as GearJobKind, rarity, level));
+  const options = pickerOptions(creatures, gear.skills, durationAt).map((o) =>
+    props.minLevel !== undefined && o.busy === null && o.level < props.minLevel
+      ? { ...o, busy: `Needs Crafting level ${String(props.minLevel)}` }
+      : o,
   );
   const [picked, setPicked] = useState<string | null>(null);
   // The pick follows the list: a creature that became busy is no longer picked.

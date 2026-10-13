@@ -706,11 +706,16 @@ describe('expedition loot', () => {
       const res = await ctx.request(secret, path, method, body);
       return { status: res.status, body: await res.json<Record<string, unknown>>() };
     };
-    const trip = async (index: number, duration: 'short' | 'medium' | 'long') => {
+    const trip = async (
+      index: number,
+      duration: 'short' | 'medium' | 'long',
+      destination = 'tidepools',
+    ) => {
       const sent = await call('POST', '/api/expeditions', {
         creatureId: seeded.creatureIds[index],
+        destination,
         duration,
-        supplies: 'basic',
+        supplies: [],
         idempotencyKey: `trip-${String(++tripCounter).padStart(8, '0')}-${duration}`,
       });
       expect(sent.status).toBe(200);
@@ -732,19 +737,21 @@ describe('expedition loot', () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
-        const p = await explorer(ctx, 1);
-        for (const [index, duration, scrap] of [
-          [0, 'short', 1],
-          [1, 'medium', 3],
-          [2, 'long', 6],
+        // No Guard among them: a Guard brings back more parts.
+        const p = await explorer(ctx, 1, ['cindle', 'splashet', 'zipmouse']);
+        for (const [index, duration] of [
+          [0, 'short'],
+          [1, 'medium'],
+          [2, 'long'],
         ] as const) {
+          const scrap = RULES.expeditions.lengths[duration].loot.scrap;
           const exp = await p.trip(index, duration);
           ctx.clock.t = exp.endsAt;
           const before = scrapOf(ctx, p.id);
           const res = await p.call('POST', `/api/expeditions/${exp.id}/claim`, {});
           expect(res.status).toBe(200);
           const loot = lootOf(res);
-          expect(loot.parts.scrap).toBe(scrap);
+          expect(loot.parts.scrap ?? 0).toBe(scrap);
           expect(scrapOf(ctx, p.id)).toBe(before + scrap);
           // The same loot is in the state the client reloads.
           const state = (await p.call('GET', '/api/state')).body as {
@@ -762,13 +769,17 @@ describe('expedition loot', () => {
       nextGuild(),
       async (ctx) => {
         const p = await explorer(ctx, 1);
-        const exp = await p.trip(0, 'long'); // 3 rolls, 6 scrap
-        ctx.clock.t = exp.startedAt + 8 * 3_600_000; // floor(3 * 8 / 12) = 2 rolls
+        const long = RULES.expeditions.lengths.long;
+        const exp = await p.trip(0, 'long');
+        ctx.clock.t = exp.startedAt + 8 * 3_600_000; // floor(rolls * 8 / 12) rolls
+        const caught = Math.floor((long.rolls * 8) / 12);
         const res = await p.call('POST', `/api/expeditions/${exp.id}/claim`, {});
         const result = res.body['result'] as { recalled: boolean; catches: unknown[]; loot: Loot };
         expect(result.recalled).toBe(true);
-        expect(result.catches).toHaveLength(2);
-        expect(result.loot.parts).toEqual({ scrap: 4 }); // floor(6 x 2 / 3)
+        expect(result.catches).toHaveLength(caught);
+        // The share of the scrap that was caught, and nothing else.
+        const share = Math.floor((long.loot.scrap * caught) / long.rolls);
+        expect(result.loot.parts).toEqual(share > 0 ? { scrap: share } : {});
         expect(result.loot.blueprints).toEqual([]);
       },
       { gearRng: createSeededRng('exp-recall') },
@@ -776,17 +787,20 @@ describe('expedition loot', () => {
   });
 
   it('can bring back a shard of the explorer’s element, a glimmer and a blueprint on a 12 hour trip', async () => {
-    // Draws in order: shard chance, glimmer chance, blueprint chance, then the blueprint's rarity and base.
-    const script = Array.from({ length: 10 }, () => 0);
+    // Draws in order: shard chance, glimmer chance, blueprint chance, the blueprint's rarity and base, then the supply chance and kind.
+    const script = Array.from({ length: 20 }, () => 0);
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await explorer(ctx, 1, ['cindle', 'splashet', 'sproutle']);
-        const exp = await p.trip(0, 'long'); // a Cindle: an Ember explorer
+        const scrap = RULES.expeditions.lengths.long.loot.scrap;
+        const exp = await p.trip(0, 'long', 'ember-caves'); // the shard is of the place's element
         ctx.clock.t = exp.endsAt;
         const res = await p.call('POST', `/api/expeditions/${exp.id}/claim`, {});
         const loot = lootOf(res);
-        expect(loot.parts).toEqual({ scrap: 6, 'ember-shard': 1, glimmer: 1 });
+        expect(loot.parts).toEqual({ scrap, 'ember-shard': 1, glimmer: 1 });
+        // The draw of 0 also finds a supply: the explorer is rank 1, so a plain one.
+        expect((loot as { supplies?: string[] }).supplies).toEqual(['lure-basic']);
         expect(loot.blueprints).toEqual([
           { baseId: 'trail-charm', rarity: 'common', duplicate: false },
         ]);
@@ -798,17 +812,17 @@ describe('expedition loot', () => {
         ).toEqual([
           { kind: 'ember-shard', amount: 1 },
           { kind: 'glimmer', amount: 1 },
-          { kind: 'scrap', amount: 6 },
+          { kind: 'scrap', amount: scrap },
         ]);
         // A blueprint the player knows already turns into scrap.
-        const again = await p.trip(1, 'long');
+        const again = await p.trip(1, 'long', 'tidepools');
         ctx.clock.t = again.endsAt;
         const res2 = await p.call('POST', `/api/expeditions/${again.id}/claim`, {});
         const loot2 = lootOf(res2);
         expect(loot2.blueprints).toEqual([
           { baseId: 'trail-charm', rarity: 'common', duplicate: true },
         ]);
-        expect(loot2.parts.scrap).toBe(6 + RULES.gear.drops.duplicateBlueprintScrap);
+        expect(loot2.parts.scrap).toBe(scrap + RULES.gear.drops.duplicateBlueprintScrap);
         expect(count(ctx.sql, 'blueprints')).toBe(1);
         const events = rows<{ props_json: string; actor_hash: string | null }>(
           ctx.sql,
@@ -819,11 +833,12 @@ describe('expedition loot', () => {
           source: 'expedition',
           gear: [],
           converted: 0,
-          scrap: 6,
+          scrap,
           shards: 1,
           glimmer: 1,
           blueprint: 'trail-charm',
           blueprintDuplicate: false,
+          supplies: 1,
         });
         expect(events[0]?.actor_hash).toMatch(/^[0-9a-f]{32}$/);
       },

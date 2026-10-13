@@ -2,10 +2,15 @@ import { createCryptoRng, type Rng } from '@creatures/game';
 import * as v from 'valibot';
 import { Analytics } from './analytics';
 import { Collection } from './collection';
+import { Dungeon } from './dungeon';
+import { dungeonMigration } from './dungeon-migration';
+import { dungeonRoutes } from './dungeon-routes';
 import { Gear } from './gear';
 import { gearMigration } from './gear-migration';
 import { gearRoutes } from './gear-routes';
 import { creatureQuirkMigration } from './creature-quirk-migration';
+import { expeditionRoutes } from './expedition-routes';
+import { expeditionsMigration } from './expedition-migration';
 import { collectionRoutes } from './collection-routes';
 import { baitForDay, leetPointsForDay } from './economy';
 import { DiscordError, type GuildApi } from './discord';
@@ -281,6 +286,11 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   },
   // Version 17: gear, parts, blueprints, the workshop and the Crafting skill (see gear-migration.ts).
   gearMigration,
+  // Version 18: the daily dungeon's runs, personal progress and day seeds (see dungeon-migration.ts).
+  dungeonMigration,
+  // Version 19: expeditions v2, explorer ranks, familiarity, the journal, account stats, supplies and the
+  // slot wipe (see expedition-migration.ts).
+  expeditionsMigration,
 ];
 
 export interface SessionUser {
@@ -326,6 +336,8 @@ function parseLedgerQuery(url: URL): number | null {
 const routes: Routes<RequestContext> = {
   ...collectionRoutes,
   ...gearRoutes,
+  ...dungeonRoutes,
+  ...expeditionRoutes,
   ...raidRoutes,
   '/api/me': {
     GET: async (_request, { user, guildId, core }) => {
@@ -370,11 +382,23 @@ export interface GuildCoreOptions {
    */
   quirkRng?: Rng;
   /**
+   * Live randomness for the end-of-trip choice, push-on results and the journal of expeditions.
+   * Defaults to crypto.getRandomValues. Separate from `rng` and `gearRng`, so none of them ever
+   * consumes a test's scripted catch or loot draws.
+   */
+  tripRng?: Rng;
+  /**
    * Live randomness for gear and crafting: every drop (raid, expedition, Festival, welcome kit) and the
    * result of every claimed job. Defaults to crypto.getRandomValues. Separate from the others, so a
    * drop never consumes a test's scripted catch draws or a raid's fight seeds.
    */
   gearRng?: Rng;
+  /**
+   * Live randomness for the daily dungeon: each run's seed and each day's modifier seed. Defaults to
+   * crypto.getRandomValues. Separate from the others, so a dungeon run never consumes a test's scripted
+   * draws and a test can script the seed of a run.
+   */
+  dungeonRng?: Rng;
   /** Fallback guild id (the Durable Object's name), used only until one is stored. */
   guildId?: () => string | undefined;
   /** Builds the leet source. Returning null disables syncing (fail closed). */
@@ -423,6 +447,7 @@ export class GuildCore {
   private readonly syncBudgetMs: number;
   readonly collection: Collection;
   readonly gear: Gear;
+  readonly dungeon: Dungeon;
   readonly raid: Raid;
   readonly analytics: Analytics;
   private syncInFlight: Promise<LeetSyncResult> | null = null;
@@ -457,8 +482,17 @@ export class GuildCore {
       rng: options.rng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
       quirkRng,
       gearRng,
+      tripRng: options.tripRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
     });
     this.gear = new Gear({ storage, now, rng: gearRng, analytics: this.analytics });
+    this.dungeon = new Dungeon({
+      storage,
+      now,
+      rng: options.dungeonRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+      gearRng,
+      timezone: () => this.timezone(),
+      analytics: this.analytics,
+    });
     this.raid = new Raid({
       storage,
       now,
@@ -1154,6 +1188,7 @@ export class GuildCore {
     // Old analytics rows go; a long backlog is worked off over the next alarms.
     this.pruneBacklog = this.analytics.prune();
     this.gear.prune();
+    this.dungeon.prune();
     await this.rearmAlarm(this.now() + ALARM_REARM_SKEW_MS);
   }
 }

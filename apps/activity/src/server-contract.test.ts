@@ -1,7 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import actionFire from './fixtures/action-fire.json';
 import collectionState from './fixtures/collection-state.json';
+import expeditionClaimFailed from './fixtures/expedition-claim-failed.json';
 import expeditionClaimLoot from './fixtures/expedition-claim-loot.json';
+import expeditionClaimRecall from './fixtures/expedition-claim-recall.json';
+import expeditionClaimWorked from './fixtures/expedition-claim-worked.json';
+import expeditionDestinations from './fixtures/expedition-destinations.json';
+import expeditionErrors from './fixtures/expedition-errors.json';
+import expeditionProfile from './fixtures/expedition-profile.json';
+import expeditionPushOn from './fixtures/expedition-push-on.json';
+import expeditionRequestBodies from './fixtures/expedition-request-bodies.json';
+import expeditionSend from './fixtures/expedition-send.json';
+import expeditionSend2 from './fixtures/expedition-send-2.json';
+import expeditionSend3 from './fixtures/expedition-send-3.json';
+import expeditionStateAfter from './fixtures/expedition-state-after.json';
+import expeditionStateOffer from './fixtures/expedition-state-offer.json';
+import workshopClaimSupply from './fixtures/workshop-claim-supply.json';
+import workshopStartSupply from './fixtures/workshop-start-supply.json';
 import gearDismantle from './fixtures/gear-dismantle.json';
 import gearEquip from './fixtures/gear-equip.json';
 import gearErrors from './fixtures/gear-errors.json';
@@ -18,6 +33,19 @@ import workshopClaimImprove from './fixtures/workshop-claim-improve.json';
 import workshopStartCraft from './fixtures/workshop-start-craft.json';
 import workshopStartEnchant from './fixtures/workshop-start-enchant.json';
 import workshopStartImprove from './fixtures/workshop-start-improve.json';
+import dungeonErrors from './fixtures/dungeon-errors.json';
+import dungeonReplay from './fixtures/dungeon-replay.json';
+import dungeonRequestBodies from './fixtures/dungeon-request-bodies.json';
+import dungeonRunCleared from './fixtures/dungeon-run-cleared.json';
+import dungeonRunLandmark from './fixtures/dungeon-run-landmark.json';
+import dungeonRunLost from './fixtures/dungeon-run-lost.json';
+import dungeonRunRetry from './fixtures/dungeon-run-retry.json';
+import dungeonRunRetryAttempt from './fixtures/dungeon-run-retry-attempt.json';
+import dungeonToday from './fixtures/dungeon-today.json';
+import dungeonTodayDone from './fixtures/dungeon-today-done.json';
+import dungeonTodayLandmark from './fixtures/dungeon-today-landmark.json';
+import dungeonTodayNeed from './fixtures/dungeon-today-need-creatures.json';
+import dungeonTodayRetry from './fixtures/dungeon-today-retry.json';
 import errorFixtures from './fixtures/errors.json';
 import practiceStart from './fixtures/practice-start.json';
 import raidAutofire from './fixtures/raid-autofire.json';
@@ -32,7 +60,28 @@ vi.mock('./api', async (importOriginal) => ({
   apiFetch,
 }));
 
-import { ApiError, parseClaimResponse, parseGameState } from './api';
+import { ApiError, parseGameState, type Creature } from './api';
+import {
+  claimExpedition,
+  fetchDestinations,
+  fetchProfile,
+  parseClaimResponse,
+  pushOn,
+  sendBody,
+  sendExpedition,
+  type SendRequest,
+} from './expedition-api';
+import { parseDestinations, parseProfile } from './expedition-parse';
+import { fetchDungeonReplay, fetchDungeonToday, startDungeonRun } from './dungeon-api';
+import { parseDungeonReplay, parseDungeonRun, parseDungeonToday } from './dungeon-parse';
+import {
+  DEFAULT_ABILITY_SETTINGS,
+  buildRunRequest,
+  type AbilitySettings,
+  type Slots,
+} from './dungeon-team';
+import { dungeonErrorText } from './dungeon-text';
+import type { DungeonRunRequest } from './dungeon-types';
 import { claimJob, dismantleGear, equipGear, fetchGear, startJob, upgradeGear } from './gear-api';
 import { parseGearState } from './gear-parse';
 import type { StartJobRequest } from './gear-types';
@@ -342,9 +391,12 @@ describe('the gear responses the server sends', () => {
 
   it('reads the loot of an expedition claim, and a claim without loot', () => {
     const claimed = parseClaimResponse(expeditionClaimLoot);
-    expect(claimed.result.loot?.parts.scrap).toBe(6);
+    expect(claimed.result.loot?.parts.scrap ?? 0).toBe(
+      expeditionClaimLoot.result.loot.parts.scrap ?? 0,
+    );
     expect(claimed.result.loot?.blueprints).toHaveLength(1);
-    expect(claimed.result.catches).toHaveLength(3);
+    expect(claimed.result.catches).toHaveLength(expeditionClaimLoot.result.catches.length);
+    expect(claimed.result.catches.length).toBeGreaterThan(0);
     const older = parseClaimResponse({
       ...expeditionClaimLoot,
       result: { recalled: true, catches: [] },
@@ -401,5 +453,499 @@ describe('the gear errors the server sends', () => {
   it('says where a busy creature is, for an expedition and for a job', () => {
     expect(errorText(new ApiError(409, 'creature_on_job'))).toContain('job');
     expect(errorText(new ApiError(409, 'creature_away'))).toContain('expedition');
+  });
+});
+
+describe('the dungeon requests the client sends', () => {
+  beforeEach(() => {
+    apiFetch.mockReset();
+  });
+
+  function sent(): { path: string; method: string; body: unknown } {
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+    const [path, init] = apiFetch.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
+    return { path, method: init.method ?? 'GET', body: JSON.parse(init.body as string) };
+  }
+
+  const bodyOf = (key: keyof typeof dungeonRequestBodies): DungeonRunRequest =>
+    dungeonRequestBodies[key].body as unknown as DungeonRunRequest;
+
+  it('a run sends exactly the strict body the Worker accepts, at POST /api/dungeon/run', async () => {
+    for (const key of [
+      'dungeon-run-cleared',
+      'dungeon-run-retry',
+      'dungeon-run-landmark',
+      'dungeon-run-lost',
+      'dungeon-run-retry-attempt',
+    ] as const) {
+      apiFetch.mockReset();
+      apiFetch.mockResolvedValue(dungeonRunCleared);
+      await startDungeonRun(bodyOf(key));
+      const { path, method, body } = dungeonRequestBodies[key];
+      expect(sent(), key).toEqual({ path, method, body });
+    }
+  });
+
+  it('the screen builds the same bodies from the same picks', () => {
+    const ability = { id: 'static-zap', unlocked: true, unlockLevel: 10 };
+    const fixtureBody = bodyOf('dungeon-run-cleared');
+    const [front, middle, back] = fixtureBody.team;
+    const make = (id: string, species: string, withAbility: boolean): Creature =>
+      ({
+        id,
+        species,
+        level: 12,
+        stats: { hp: 100, atk: 10, spd: 10 },
+        ability: withAbility ? ability : null,
+      }) as unknown as Creature;
+    const creatures = [
+      make(front, 'sproutle', false),
+      make(middle, 'splashet', false),
+      make(back, 'cindle', true),
+    ];
+    const slots: Slots = [front, middle, back];
+    const settings: AbilitySettings = {
+      ...DEFAULT_ABILITY_SETTINGS,
+      basicId: 'shield-wall',
+      basicRound: 2,
+      zone: 'front',
+      creatureRounds: { [back]: 3 },
+    };
+    expect(buildRunRequest(slots, creatures, settings, fixtureBody.idempotencyKey)).toEqual(
+      fixtureBody,
+    );
+
+    // The default picks: Rally on Auto, no creature rounds, the same shape as the lost and landmark runs.
+    const lost = bodyOf('dungeon-run-lost');
+    const lostCreatures = lost.team.map((id) => make(id, 'mistnewt', false));
+    const [a, b, c] = lost.team;
+    expect(
+      buildRunRequest([a, b, c], lostCreatures, DEFAULT_ABILITY_SETTINGS, lost.idempotencyKey),
+    ).toEqual(lost);
+  });
+
+  it('every body has a key of the form the Worker wants, and is retried with the same one', () => {
+    for (const key of Object.keys(dungeonRequestBodies) as (keyof typeof dungeonRequestBodies)[]) {
+      const body = dungeonRequestBodies[key].body;
+      if (body === null) continue;
+      expect((body as { idempotencyKey: string }).idempotencyKey).toMatch(/^[A-Za-z0-9_-]{8,64}$/);
+    }
+    // A retry of a run is the same call with the same body, so the key travels along unchanged.
+    expect(bodyOf('dungeon-run-retry')).toEqual(bodyOf('dungeon-run-cleared'));
+  });
+
+  it("asks for today's state and for a run's replay with plain GETs", async () => {
+    apiFetch.mockResolvedValue(dungeonToday);
+    await fetchDungeonToday();
+    expect(apiFetch).toHaveBeenCalledWith('/api/dungeon/today');
+
+    apiFetch.mockClear();
+    apiFetch.mockResolvedValue(dungeonReplay);
+    const { path } = dungeonRequestBodies['dungeon-replay'];
+    await fetchDungeonReplay(path.split('/')[4] as string);
+    expect(apiFetch).toHaveBeenCalledWith(path);
+  });
+
+  it('encodes a run id so it can never leave the path', async () => {
+    apiFetch.mockResolvedValue(dungeonReplay);
+    await fetchDungeonReplay('../gear');
+    expect(apiFetch).toHaveBeenCalledWith('/api/dungeon/run/..%2Fgear');
+  });
+});
+
+describe('the dungeon responses the server sends', () => {
+  beforeEach(() => {
+    apiFetch.mockReset();
+  });
+
+  it('parses every GET /api/dungeon/today fixture', () => {
+    const states = [
+      dungeonToday,
+      dungeonTodayRetry,
+      dungeonTodayDone,
+      dungeonTodayLandmark,
+      dungeonTodayNeed,
+    ].map(parseDungeonToday);
+    for (const state of states) expect(state.modifiers).toHaveLength(3);
+    expect(states[0]?.canRun).toBe(true);
+    expect(states[1]?.last?.cleared).toBe(false);
+    expect(states[2]?.blocked).toBe('already_run');
+    expect(states[3]?.landmark).toBe(true);
+    expect(states[4]?.blocked).toBe('need_creatures');
+  });
+
+  it('parses the run and the new state of every POST /api/dungeon/run fixture', async () => {
+    for (const fixture of [
+      dungeonRunCleared,
+      dungeonRunLost,
+      dungeonRunLandmark,
+      dungeonRunRetry,
+      dungeonRunRetryAttempt,
+    ]) {
+      apiFetch.mockResolvedValue(fixture);
+      const done = await startDungeonRun(bodyOf0());
+      expect(done.run.rooms).toHaveLength(3);
+      expect(done.today.last?.id).toBe(done.run.id);
+    }
+    expect(parseDungeonRun(dungeonRunLandmark).run.rewards.gear).toHaveLength(1);
+    expect(parseDungeonRun(dungeonRunLost).run.rewards.bait).toBe(0);
+  });
+
+  it('parses the replay of a run: rooms with events, hpStart, hpMax and names', async () => {
+    apiFetch.mockResolvedValue(dungeonReplay);
+    const replay = await fetchDungeonReplay('x');
+    expect(replay.rooms).toHaveLength(3);
+    for (const room of replay.rooms) {
+      expect(room.events.length).toBeGreaterThan(0);
+      expect(Object.keys(room.hpStart)).toHaveLength(3);
+      expect(Object.keys(room.hpMax)).toHaveLength(3);
+      expect(room.names.creatures).toBeDefined();
+    }
+  });
+
+  it('refuses a payload that is not the shape the server sends', () => {
+    expect(() => parseDungeonToday({ ...dungeonToday, depth: 'deep' })).toThrow('dungeon state');
+    expect(() => parseDungeonToday({ ...dungeonToday, blocked: 'because' })).toThrow();
+    expect(() => parseDungeonToday({ ...dungeonToday, modifiers: [{ id: 'x' }] })).toThrow();
+    expect(() => parseDungeonRun({ run: {}, today: dungeonToday })).toThrow('dungeon run');
+    expect(() => parseDungeonRun({ ...dungeonRunCleared, today: null })).toThrow();
+    const bad = {
+      ...dungeonReplay,
+      rooms: [{ ...dungeonReplay.rooms[0], events: [{ t: 'nope' }] }],
+    };
+    expect(() => parseDungeonReplay(bad)).toThrow('dungeon replay');
+    expect(() => parseDungeonReplay({ ...dungeonReplay, row: [{ id: 1 }] })).toThrow();
+    const noHp = { ...dungeonReplay.rooms[0], hpStart: { a: -1 } };
+    expect(() => parseDungeonReplay({ ...dungeonReplay, rooms: [noHp] })).toThrow();
+  });
+});
+
+describe('the dungeon errors the server sends', () => {
+  const GENERIC = /^Something went wrong/;
+
+  it('has a friendly text for every error code of the dungeon routes', () => {
+    expect(dungeonErrors.length).toBeGreaterThan(5);
+    for (const { route, status, body } of dungeonErrors) {
+      const text = dungeonErrorText(new ApiError(status, body.error));
+      expect(text, `${route} ${String(status)} ${body.error}`).not.toMatch(GENERIC);
+      expect(text.length).toBeGreaterThan(10);
+    }
+  });
+});
+
+/** Any run body: the answer fixtures do not depend on what is asked. */
+function bodyOf0(): DungeonRunRequest {
+  return dungeonRequestBodies['dungeon-run-cleared'].body as unknown as DungeonRunRequest;
+}
+
+describe('the expedition requests the client sends', () => {
+  beforeEach(() => {
+    apiFetch.mockReset();
+  });
+
+  /** The path, method and parsed JSON body of the only request made. */
+  function sent(): { path: string; method: string; body: unknown } {
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+    const [path, init] = apiFetch.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
+    return { path, method: init.method ?? 'GET', body: JSON.parse(init.body as string) };
+  }
+
+  const recorded = (key: keyof typeof expeditionRequestBodies) => {
+    const { path, method, body } = expeditionRequestBodies[key];
+    return { path, method, body };
+  };
+
+  /** The request the screen would make for a recorded body (the key is added by the key store). */
+  const requestOf = (body: {
+    creatureId: string;
+    destination: string;
+    duration: string;
+    supplies: { id: string; source: string }[];
+  }): SendRequest => body as SendRequest;
+
+  it('sends exactly the keys and values the Worker accepted, for every recorded trip', async () => {
+    const cases = [
+      ['expedition-send', expeditionSend],
+      ['expedition-send-2', expeditionSend2],
+      ['expedition-send-3', expeditionSend3],
+    ] as const;
+    for (const [key, answer] of cases) {
+      apiFetch.mockReset();
+      apiFetch.mockResolvedValue(answer);
+      const { idempotencyKey, ...rest } = expeditionRequestBodies[key].body;
+      const done = await sendExpedition(requestOf(rest), idempotencyKey);
+      expect(sent(), key).toEqual(recorded(key));
+      expect(done.expedition.status).toBe('active');
+      expect(done.state.expeditions.some((e) => e.id === done.expedition.id)).toBe(true);
+    }
+  });
+
+  it('sends nothing the Worker would reject: no extra keys, whatever the screen holds', () => {
+    const extra = {
+      creatureId: 'c',
+      destination: 'tidepools',
+      duration: 'day' as const,
+      supplies: [{ id: 'lure-good', source: 'buy' as const, price: 30 }],
+      mood: 'happy',
+    };
+    const body = sendBody(extra, 'k');
+    expect(Object.keys(body).sort()).toEqual(
+      Object.keys(expeditionRequestBodies['expedition-send'].body).sort(),
+    );
+    expect(body.supplies).toEqual([{ id: 'lure-good', source: 'buy' }]);
+    expect(body.duration).toBe('day');
+  });
+
+  it('pushes on with only the goal, and claims with an empty body', async () => {
+    apiFetch.mockResolvedValue(expeditionPushOn);
+    const done = await pushOn(
+      expeditionPushOn.expedition.id,
+      expeditionRequestBodies['expedition-push-on'].body.goalId,
+    );
+    expect(sent()).toEqual(recorded('expedition-push-on'));
+    expect(done.expedition.pushOn?.goalId).toBe('shortcut');
+
+    apiFetch.mockReset();
+    apiFetch.mockResolvedValue(expeditionClaimWorked);
+    await claimExpedition('04d6cb1d-f054-4028-9034-7fd4c2bf80df');
+    expect(sent()).toEqual(recorded('expedition-claim-worked'));
+  });
+
+  it('reads every claim: worked, failed, recalled and one with loot, supplies and XP', async () => {
+    for (const fixture of [
+      expeditionClaimWorked,
+      expeditionClaimFailed,
+      expeditionClaimRecall,
+      expeditionClaimLoot,
+    ]) {
+      apiFetch.mockReset();
+      apiFetch.mockResolvedValue(fixture);
+      const done = await claimExpedition('x');
+      expect(done.state.expeditions.length).toBeGreaterThan(0);
+    }
+    const loot = parseClaimResponse(expeditionClaimLoot);
+    expect(loot.result.loot?.supplies).toEqual(['lure-basic']);
+    expect(loot.result.xp).toMatchObject({ gained: 300, rank: 2, rankBefore: 1 });
+    expect(loot.result.familiarity?.trips).toBe(1);
+    const failed = parseClaimResponse(expeditionClaimFailed);
+    expect(failed.result.failed).toBe(true);
+    expect(failed.result.pushOn).toMatchObject({ risk: 'risky', outcome: 'failed' });
+    const worked = parseClaimResponse(expeditionClaimWorked);
+    expect(worked.result.slotUnlocked?.total).toBe(2);
+    expect(worked.result.journal?.[0]?.entryId).toBe('tide-first-pool');
+    expect(parseClaimResponse(expeditionClaimRecall).result.recalled).toBe(true);
+  });
+
+  it('reads the destinations and the profile', async () => {
+    apiFetch.mockResolvedValue(expeditionDestinations);
+    const view = await fetchDestinations();
+    expect(view.destinations.map((d) => d.id)).toEqual([
+      'tidepools',
+      'ember-caves',
+      'verdant-hollow',
+      'storm-ridge',
+      'old-crossroads',
+      'moonlit-reef',
+      'festival-grounds',
+    ]);
+    expect(view.special.destination).toBe('moonlit-reef');
+    expect(view.familiarity[0]?.found).toEqual(['mistnewt']);
+
+    apiFetch.mockReset();
+    apiFetch.mockResolvedValue(expeditionProfile);
+    const profile = await fetchProfile();
+    expect(profile.journal.total).toBe(40);
+    expect(profile.explorers).toHaveLength(4);
+    expect(profile.milestones).toHaveLength(10);
+    expect(profile.slots.next).toEqual({ kind: 'rank_sum', at: 26 });
+  });
+
+  it('refuses destinations and a profile that are not the shape the server sends', () => {
+    expect(() => parseDestinations({ ...expeditionDestinations, night: 'yes' })).toThrow();
+    expect(() =>
+      parseDestinations({
+        ...expeditionDestinations,
+        destinations: [
+          { id: 'x', minRank: 1, nightOnly: false, festivalOnly: false, closed: ['x'] },
+        ],
+      }),
+    ).toThrow();
+    expect(() => parseProfile({ ...expeditionProfile, stats: { trips: -1 } })).toThrow();
+    expect(() => parseProfile({ ...expeditionProfile, slots: {} })).toThrow();
+  });
+});
+
+describe('the expedition state the server sends', () => {
+  it('reads a trip with a pending choice: its goals with exact odds, and the new fields', () => {
+    const offer = parseGameState(expeditionStateOffer);
+    const trip = offer.expeditions[0];
+    expect(trip?.status).toBe('active');
+    expect(trip?.supplies).toBe('great');
+    expect(trip?.kit).toEqual(['lure-great', 'map-scrap-basic']);
+    expect(trip?.destination).toBe('tidepools');
+    expect(trip?.readyAt).toBe(trip?.endsAt);
+    expect(trip?.offer?.goals.map((g) => [g.id, g.risk, g.oddsBp])).toEqual([
+      ['forage', 'safe', 10000],
+      ['shortcut', 'risky', 6100],
+    ]);
+    expect(offer.slots).toMatchObject({ total: 1, used: 1, next: { kind: 'trips', at: 3 } });
+    expect(offer.supplies).toEqual({ 'lure-great': 2 });
+    expect(offer.timezone).toBe('Europe/Helsinki');
+    expect(offer.creatures.every((c) => c.explorer.rank >= 1)).toBe(true);
+  });
+
+  it('reads claimed trips with their results and a running push-on', () => {
+    const after = parseGameState(expeditionStateAfter);
+    expect(after.expeditions.some((e) => e.status === 'claimed' && e.result !== null)).toBe(true);
+    expect(after.expeditions.every((e) => e.pushOn !== null)).toBe(true);
+    const push = parseGameState(expeditionPushOn.state);
+    expect(push.expeditions[0]?.pushOn).toMatchObject({ goalId: 'shortcut', oddsBp: 6100 });
+    expect(push.expeditions[0]?.readyAt).toBeGreaterThan(push.expeditions[0]?.endsAt ?? 0);
+  });
+
+  it('keeps the whole state readable for a 24 hour trip and for every other length', () => {
+    for (const duration of ['short', 'medium', 'long', 'day']) {
+      const state = structuredClone(expeditionStateOffer);
+      (state.expeditions[0] as { duration: string }).duration = duration;
+      expect(parseGameState(state).expeditions[0]?.duration).toBe(duration);
+    }
+    const bad = structuredClone(expeditionStateOffer);
+    (bad.expeditions[0] as { duration: string }).duration = 'week';
+    expect(() => parseGameState(bad)).toThrow('game state');
+  });
+
+  it('refuses a state without an explorer, with a broken slot or with a bad offer', () => {
+    const noExplorer = structuredClone(expeditionStateOffer);
+    delete (noExplorer.creatures[0] as { explorer?: unknown }).explorer;
+    expect(() => parseGameState(noExplorer)).toThrow('game state');
+    expect(() => parseGameState({ ...expeditionStateOffer, slots: { total: 1, used: 1 } })).toThrow(
+      'game state',
+    );
+    const badOffer = structuredClone(expeditionStateOffer);
+    (badOffer.expeditions[0] as { offer: unknown }).offer = { goals: [{ id: 'x' }] };
+    expect(() => parseGameState(badOffer)).toThrow('game state');
+    expect(() =>
+      parseGameState({ ...expeditionStateOffer, supplies: { 'lure-basic': -1 } }),
+    ).toThrow();
+  });
+
+  it('reads the trips that were called home when the slots were reset', () => {
+    const state = structuredClone(expeditionStateAfter);
+    (state as { cancelled: unknown[] }).cancelled = [
+      {
+        id: 't1',
+        creatureId: state.creatures[0]?.id,
+        destination: 'old-crossroads',
+        duration: 'long',
+        startedAt: 1,
+        reason: 'slot_wipe',
+      },
+    ];
+    expect(parseGameState(state).cancelled).toHaveLength(1);
+    (state as { cancelled: unknown[] }).cancelled = [{ id: 't1' }];
+    expect(() => parseGameState(state)).toThrow('game state');
+  });
+});
+
+describe('the expedition errors the server sends', () => {
+  const GENERIC = /^Something went wrong/;
+
+  it('has a friendly text for every error of the expedition routes, with its reason', () => {
+    expect(expeditionErrors.length).toBeGreaterThan(8);
+    for (const { route, status, body } of expeditionErrors) {
+      const reason = 'reason' in body ? body.reason : null;
+      const text = errorText(new ApiError(status, body.error, reason));
+      expect(text, `${route} ${String(status)} ${body.error}`).not.toMatch(GENERIC);
+      expect(text.length).toBeGreaterThan(10);
+    }
+  });
+
+  it('says why a place refused, by its reason', () => {
+    expect(errorText(new ApiError(409, 'destination_closed', 'night'))).toContain('night');
+    expect(errorText(new ApiError(409, 'destination_closed', 'festival'))).toContain('Festival');
+    expect(errorText(new ApiError(409, 'destination_closed', 'rank'))).toContain('rank');
+    expect(errorText(new ApiError(409, 'rank_too_low', 'length'))).toContain('long');
+  });
+
+  it('has a text for every code the server can send beyond the fixtures', () => {
+    for (const code of [
+      'no_offer',
+      'not_active',
+      'cancelled',
+      'invalid_destination',
+      'invalid_supply',
+      'skill_too_low',
+      'creature_on_job',
+    ]) {
+      expect(errorText(new ApiError(409, code)), code).not.toMatch(GENERIC);
+    }
+  });
+});
+
+describe('supply crafts in the Workshop', () => {
+  beforeEach(() => {
+    apiFetch.mockReset();
+  });
+
+  it('keeps the supply job in the Workshop view, with its supply and its result', () => {
+    for (const fixture of [workshopStartSupply, workshopClaimSupply]) {
+      const gear = parseGearState(fixture.gear);
+      const job = gear.jobs.find((j) => j.kind === 'supply');
+      expect(job?.input.supplyId).toBe('lure-basic');
+      expect(gear.jobs).toHaveLength(fixture.gear.jobs.length);
+    }
+    const claimed = parseGearState(workshopClaimSupply.gear).jobs[0];
+    expect(claimed?.result).toMatchObject({ kind: 'supply', supplyId: 'lure-basic', amount: 1 });
+  });
+
+  it('starts a supply craft with exactly the recorded body and claims it with a key', async () => {
+    apiFetch.mockResolvedValue(workshopStartSupply);
+    const recordedStart = expeditionRequestBodies['workshop-start-supply'];
+    const { idempotencyKey, ...rest } = recordedStart.body;
+    const request: StartJobRequest = {
+      ...(rest as { kind: 'supply'; creatureId: string; supplyId: string }),
+      idempotencyKey,
+    };
+    await startJob(request);
+    const [path, init] = apiFetch.mock.calls[0] as [string, RequestInit];
+    const startBody: unknown = JSON.parse(init.body as string);
+    expect({ path, method: init.method, body: startBody }).toEqual({
+      path: recordedStart.path,
+      method: recordedStart.method,
+      body: recordedStart.body,
+    });
+
+    apiFetch.mockReset();
+    apiFetch.mockResolvedValue(workshopClaimSupply);
+    const claimed = await claimJob(
+      'fa767c7b-b7fd-4c0e-88ba-38a6ff1b7cd4',
+      expeditionRequestBodies['workshop-claim-supply'].body.idempotencyKey,
+    );
+    expect(claimed.result).toMatchObject({ kind: 'supply', supplyId: 'lure-basic', amount: 1 });
+    expect(claimed.state.supplies).toEqual({ 'lure-basic': 1, 'lure-great': 1 });
+  });
+
+  it('refuses a supply result without a supply', () => {
+    const broken = structuredClone(workshopClaimSupply.gear) as unknown as {
+      jobs: { result: unknown }[];
+    };
+    const job = broken.jobs[0];
+    if (job === undefined) throw new Error('the fixture has no job');
+    job.result = { kind: 'supply', xp: 1, skillXp: 1, skillLevel: 1, leveledUp: false };
+    expect(() => parseGearState(broken)).toThrow('gear view');
+  });
+});
+
+describe('gear views of other sources', () => {
+  it('reads a gear view whose newest grant is a daily dungeon drop', () => {
+    const grant = gearWelcome.grants[0];
+    if (grant === undefined) throw new Error('the fixture has no grant');
+    const parsed = parseGearState({
+      ...gearWelcome,
+      grants: [{ ...grant, source: 'dungeon', key: 'dungeon:2026-10-13:1' }],
+    });
+    expect(parsed.grants[0]?.source).toBe('dungeon');
   });
 });

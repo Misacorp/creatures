@@ -9,6 +9,10 @@ import {
   GLOSSARY_IDS,
   PART_KINDS,
   craftCost,
+  expeditionContent,
+  partsOfSpec,
+  supplyDef,
+  supplyJobMs,
   enchantDef,
   entryView,
   gearBase,
@@ -17,9 +21,11 @@ import {
   jobDuration,
   jobHours,
   type EnchantCondition,
+  type GearJobKind,
 } from '@creatures/game';
 import type { Creature } from './api';
 import { capitalize, creatureName, elementName } from './game';
+import { supplyName } from './trip-view';
 import type {
   GearItem,
   JobResult,
@@ -347,6 +353,7 @@ const JOB_VERB: Readonly<Record<JobKind, string>> = {
   craft: 'Craft',
   improve: 'Improve',
   enchant: 'Enchant',
+  supply: 'Craft',
 };
 
 export function jobVerb(kind: JobKind): string {
@@ -355,6 +362,7 @@ export function jobVerb(kind: JobKind): string {
 
 /** "Craft Wave Band", "Improve Volt Band", "Enchant Phoenix Trinket: Ember Fury". */
 export function jobTitle(job: Pick<Job, 'kind' | 'input'>, items: readonly GearItem[]): string {
+  if (job.kind === 'supply') return `Craft ${supplyName(job.input.supplyId ?? 'supply')}`;
   if (job.kind === 'craft') {
     return `Craft ${gearName(job.input.baseId ?? 'item')}`;
   }
@@ -395,13 +403,16 @@ export function startBlocker(
   return null;
 }
 
-/** What a job of this kind and item rarity takes with a crafter of `level`. */
-export function durationFor(kind: JobKind, rarity: GearRarity, level: number): number {
+/**
+ * What a gear job of this kind and item rarity takes with a crafter of `level`. A supply craft has its
+ * own length (see `supplyCraftViews`), so it is not asked here.
+ */
+export function durationFor(kind: GearJobKind, rarity: GearRarity, level: number): number {
   return jobDuration(kind, rarity, level);
 }
 
-/** The nominal hours of a job, before the skill. */
-export function nominalHours(kind: JobKind, rarity: GearRarity): number {
+/** The nominal hours of a gear job, before the skill. */
+export function nominalHours(kind: GearJobKind, rarity: GearRarity): number {
   return jobHours(kind, rarity);
 }
 
@@ -422,7 +433,70 @@ export function improveMessage(result: Extract<JobResult, { kind: 'improve' }>):
 /** The rarity to frame a claimed job's item with: the craft's own, else the item's, else Common. */
 export function jobResultRarity(result: JobResult, items: readonly GearItem[]): GearRarity {
   if (result.kind === 'craft') return result.rarity;
+  if (result.kind === 'supply') return supplyRarity(result.supplyId);
   return items.find((i) => i.id === result.gearId)?.rarity ?? 'common';
+}
+
+/** The frame a supply is shown in: Common for the basic tier, Rare for good, Epic for great. */
+export function supplyRarity(supplyId: string): GearRarity {
+  const tier = supplyDef(supplyId)?.tier;
+  return tier === 'great' ? 'epic' : tier === 'good' ? 'rare' : 'common';
+}
+
+// --- Supply crafts ---
+
+export interface SupplyCraftView {
+  id: string;
+  name: string;
+  kind: string;
+  tier: string;
+  /** The parts one craft costs. */
+  cost: PartsBundle;
+  /** How many supplies one job makes. */
+  yieldCount: number;
+  /** The Crafting level a creature needs. */
+  level: number;
+  /** Hours before the skill shortens them. */
+  hours: number;
+  /** How many are in stock. */
+  owned: number;
+}
+
+/** Every supply that can be crafted, in the order of the content, with its cost and the level it needs. */
+export function supplyCraftViews(stock: Readonly<Record<string, number>>): SupplyCraftView[] {
+  return expeditionContent.supplies.map((def) => ({
+    id: def.id,
+    name: def.name,
+    kind: def.kind,
+    tier: def.tier,
+    cost: partsOfSpec(def.blueprint.parts),
+    yieldCount: def.blueprint.yield,
+    level: def.blueprint.craftingLevel,
+    hours: def.blueprint.hours,
+    owned: stock[def.id] ?? 0,
+  }));
+}
+
+/** What crafting this supply takes with a creature of this Crafting level, in milliseconds. */
+export function supplyDurationFor(supplyId: string, level: number): number {
+  const def = supplyDef(supplyId);
+  return def === undefined ? 0 : supplyJobMs(def, level);
+}
+
+/**
+ * Why no creature can craft a supply yet: the best Crafting level among the free creatures is below what
+ * it needs. Null when at least one creature has the level (or there is no creature at all: another
+ * reason covers that).
+ */
+export function supplyLevelBlocker(
+  level: number,
+  skills: GearState['skills'],
+  creatures: readonly Creature[],
+): string | null {
+  const levels = creatures.map((c) => skillLevelOf(skills, c.id));
+  const best = levels.length === 0 ? 1 : Math.max(...levels);
+  if (best >= level) return null;
+  return `Needs Crafting level ${String(level)} (your best crafter is level ${String(best)}).`;
 }
 
 // --- Blueprints ---
@@ -477,6 +551,7 @@ export function lootIsEmpty(loot: GrantLoot): boolean {
     loot.gear.length === 0 &&
     loot.converted.length === 0 &&
     loot.blueprints.length === 0 &&
+    (loot.supplies ?? []).length === 0 &&
     partsEntries(loot.parts).length === 0
   );
 }
@@ -498,5 +573,6 @@ export function lootLines(loot: GrantLoot): string[] {
     );
   }
   for (const p of partsEntries(loot.parts)) lines.push(`${String(p.amount)} ${partName(p.kind)}`);
+  for (const id of loot.supplies ?? []) lines.push(`Found a supply: ${supplyName(id)}`);
   return lines;
 }

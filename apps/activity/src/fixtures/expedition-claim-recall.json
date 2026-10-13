@@ -1,0 +1,360 @@
+{
+  "result": {
+    "recalled": true,
+    "catches": [],
+    "loot": {
+      "gear": [],
+      "converted": [],
+      "parts": {},
+      "blueprints": []
+    }
+  },
+  "state": {
+    "serverNow": 1799852544002,
+    "balances": {
+      "bait": 285,
+      "essence": 0
+    },
+    "starterChosen": false,
+    "starterOptions": ["splashet", "cindle", "sproutle"],
+    "creatures": [
+      {
+        "id": "ffafcc53-26f2-46e7-8ef5-b1f3718cb76f",
+        "species": "cindle",
+        "line": "cindle",
+        "level": 8,
+        "levelCap": 15,
+        "fusionCount": 0,
+        "shiny": false,
+        "nickname": null,
+        "away": false,
+        "origin": "test",
+        "caughtAt": 1799733600000,
+        "quirk": "waves-at-everyone",
+        "stats": {
+          "hp": 145,
+          "atk": 61,
+          "spd": 42
+        },
+        "statsWithGear": {
+          "hp": 145,
+          "atk": 61,
+          "spd": 42
+        },
+        "gear": null,
+        "busy": null,
+        "ability": {
+          "id": "flare-strike",
+          "unlocked": false,
+          "unlockLevel": 10,
+          "nextId": "flare-strike-2"
+        },
+        "explorer": {
+          "rank": 3,
+          "xp": 1100,
+          "nextRankXp": 2000,
+          "trips": 1
+        },
+        "trainCost": 19,
+        "evolution": {
+          "toSpecies": "pyrelynx",
+          "level": 15,
+          "essence": 20,
+          "available": false
+        }
+      },
+      {
+        "id": "890de23e-6d85-4ca9-a188-bc04d29ffa6e",
+        "species": "splashet",
+        "line": "splashet",
+        "level": 8,
+        "levelCap": 15,
+        "fusionCount": 0,
+        "shiny": false,
+        "nickname": null,
+        "away": false,
+        "origin": "test",
+        "caughtAt": 1799733600001,
+        "quirk": "shadow-racer",
+        "stats": {
+          "hp": 168,
+          "atk": 42,
+          "spd": 46
+        },
+        "statsWithGear": {
+          "hp": 168,
+          "atk": 42,
+          "spd": 46
+        },
+        "gear": null,
+        "busy": null,
+        "ability": {
+          "id": "tidal-mark",
+          "unlocked": false,
+          "unlockLevel": 10,
+          "nextId": "tidal-mark-2"
+        },
+        "explorer": {
+          "rank": 1,
+          "xp": 0,
+          "nextRankXp": 200,
+          "trips": 0
+        },
+        "trainCost": 19,
+        "evolution": {
+          "toSpecies": "tidewing",
+          "level": 15,
+          "essence": 20,
+          "available": false
+        }
+      },
+      {
+        "id": "f376b77f-be7b-4c9c-a4f6-b182c7b27399",
+        "species": "sproutle",
+        "line": "sproutle",
+        "level": 8,
+        "levelCap": 15,
+        "fusionCount": 0,
+        "shiny": false,
+        "nickname": null,
+        "away": false,
+        "origin": "test",
+        "caughtAt": 1799733600002,
+        "quirk": "eating-shy",
+        "stats": {
+          "hp": 237,
+          "atk": 29,
+          "spd": 23
+        },
+        "statsWithGear": {
+          "hp": 237,
+          "atk": 29,
+          "spd": 23
+        },
+        "gear": null,
+        "busy": null,
+        "ability": {
+          "id": "bark-guard",
+          "unlocked": false,
+          "unlockLevel": 10,
+          "nextId": "bark-guard-2"
+        },
+        "explorer": {
+          "rank": 1,
+          "xp": 0,
+          "nextRankXp": 200,
+          "trips": 0
+        },
+        "trainCost": 19,
+        "evolution": {
+          "toSpecies": "thornbuck",
+          "level": 15,
+          "essence": 20,
+          "available": false
+        }
+      },
+      {
+        "id": "5812bf49-434b-4d9d-b25d-54f3bd67f9cc",
+        "species": "mistnewt",
+        "line": "mistnewt",
+        "level": 1,
+        "levelCap": 15,
+        "fusionCount": 0,
+        "shiny": false,
+        "nickname": null,
+        "away": false,
+        "origin": "expedition",
+        "caughtAt": 1799830944002,
+        "quirk": "tall-dreamer",
+        "stats": {
+          "hp": 160,
+          "atk": 28,
+          "spd": 16
+        },
+        "statsWithGear": {
+          "hp": 160,
+          "atk": 28,
+          "spd": 16
+        },
+        "gear": null,
+        "busy": null,
+        "ability": {
+          "id": "fog-veil",
+          "unlocked": false,
+          "unlockLevel": 10,
+          "nextId": "fog-veil-2"
+        },
+        "explorer": {
+          "rank": 1,
+          "xp": 0,
+          "nextRankXp": 200,
+          "trips": 0
+        },
+        "trainCost": 3,
+        "evolution": {
+          "toSpecies": "fogwyrm",
+          "level": 15,
+          "essence": 20,
+          "available": false
+        }
+      }
+    ],
+    "expeditions": [
+      {
+        "id": "3a802cc2-c054-4259-a558-a351f4735dc8",
+        "creatureId": "890de23e-6d85-4ca9-a188-bc04d29ffa6e",
+        "duration": "long",
+        "supplies": "basic",
+        "kit": [],
+        "destination": "tidepools",
+        "twist": null,
+        "rolls": 1,
+        "cost": 0,
+        "startedAt": 1799830944002,
+        "endsAt": 1799874144002,
+        "readyAt": 1799874144002,
+        "status": "claimed",
+        "claimedAt": 1799852544002,
+        "result": {
+          "recalled": true,
+          "catches": [],
+          "loot": {
+            "gear": [],
+            "converted": [],
+            "parts": {},
+            "blueprints": []
+          }
+        },
+        "offer": null,
+        "pushOn": null
+      },
+      {
+        "id": "04d6cb1d-f054-4028-9034-7fd4c2bf80df",
+        "creatureId": "ffafcc53-26f2-46e7-8ef5-b1f3718cb76f",
+        "duration": "long",
+        "supplies": "great",
+        "kit": ["lure-great"],
+        "destination": "tidepools",
+        "twist": null,
+        "rolls": 1,
+        "cost": 0,
+        "startedAt": 1799782272001,
+        "endsAt": 1799823744001,
+        "readyAt": 1799830944001,
+        "status": "claimed",
+        "claimedAt": 1799830944002,
+        "result": {
+          "recalled": false,
+          "catches": [
+            {
+              "species": "mistnewt",
+              "shiny": false,
+              "firstOnServer": true,
+              "outcome": "new"
+            }
+          ],
+          "loot": {
+            "gear": [],
+            "converted": [],
+            "parts": {
+              "scrap": 5
+            },
+            "blueprints": []
+          },
+          "pushOn": {
+            "goalId": "forage",
+            "risk": "safe",
+            "oddsBp": 10000,
+            "outcome": "worked"
+          },
+          "xp": {
+            "gained": 300,
+            "total": 1100,
+            "rank": 3,
+            "rankBefore": 3
+          },
+          "slotUnlocked": {
+            "total": 2
+          },
+          "familiarity": {
+            "stars": 0,
+            "starsBefore": 0,
+            "trips": 1
+          },
+          "journal": [
+            {
+              "entryId": "tide-first-pool",
+              "set": "tide-ledger",
+              "setComplete": false
+            }
+          ]
+        },
+        "offer": null,
+        "pushOn": {
+          "goalId": "forage",
+          "startedAt": 1799823744001,
+          "endsAt": 1799830944001,
+          "oddsBp": 10000
+        }
+      },
+      {
+        "id": "7b7ec064-ba1b-4028-91d9-bc1eb66a1c11",
+        "creatureId": "ffafcc53-26f2-46e7-8ef5-b1f3718cb76f",
+        "duration": "long",
+        "supplies": "great",
+        "kit": ["lure-great", "map-scrap-basic"],
+        "destination": "tidepools",
+        "twist": null,
+        "rolls": 2,
+        "cost": 15,
+        "startedAt": 1799733600000,
+        "endsAt": 1799775072000,
+        "readyAt": 1799782272000,
+        "status": "claimed",
+        "claimedAt": 1799782272001,
+        "result": {
+          "recalled": false,
+          "catches": [],
+          "failed": true,
+          "pushOn": {
+            "goalId": "shortcut",
+            "risk": "risky",
+            "oddsBp": 6100,
+            "outcome": "failed"
+          }
+        },
+        "offer": null,
+        "pushOn": {
+          "goalId": "shortcut",
+          "startedAt": 1799775072000,
+          "endsAt": 1799782272000,
+          "oddsBp": 6100
+        }
+      }
+    ],
+    "cancelled": [],
+    "slots": {
+      "total": 2,
+      "used": 0,
+      "rankSum": 2,
+      "tripsFinished": 3,
+      "next": {
+        "kind": "rank_sum",
+        "at": 26
+      }
+    },
+    "supplies": {
+      "lure-great": 1
+    },
+    "trainingMedianLevel": 8,
+    "serverFirsts": [
+      {
+        "kind": "catch",
+        "species": "mistnewt",
+        "at": 1799830944002,
+        "mine": true,
+        "holders": ["Player 3"]
+      }
+    ]
+  }
+}

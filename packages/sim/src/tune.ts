@@ -3,7 +3,7 @@ import { RULES, content } from '@creatures/game';
 /**
  * Tuning overrides for the simulator: change a number in `RULES` or a boss's base HP for the length
  * of a run, to try a setting without editing the files. `raid.scaling.rankStepBp=3000` and
- * `boss.thornmother.baseHp=4300` are examples. Only existing integer numbers can be overridden.
+ * `boss.thornmother.baseHp=4300` and `creature.sproutle.baseStats.atk=24` are examples. Only existing integer numbers can be overridden.
  * The shipped values are not touched on disk; the caller restores them with the returned function.
  */
 export function applyOverrides(spec: string): () => void {
@@ -17,6 +17,13 @@ export function applyOverrides(spec: string): () => void {
     let target: unknown;
     if (path[0] === 'boss' && path.length === 2) {
       target = content.bosses.find((b) => b.id === path[1]);
+    } else if (path[0] === 'creature' && path.length >= 2) {
+      // `creature.sproutle.baseStats.atk=24`: a number inside one creature's content.
+      target = path.slice(2).reduce<unknown>(
+        (obj, k) =>
+          typeof obj === 'object' && obj !== null ? (obj as Record<string, unknown>)[k] : undefined,
+        content.creatures.find((c) => c.id === path[1]),
+      );
     } else {
       target = path.reduce<unknown>(
         (obj, k) =>

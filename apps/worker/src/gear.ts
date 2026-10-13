@@ -28,9 +28,14 @@ import {
   rerollSecondary,
   rollGear,
   skillLevel,
+  supplyDef,
+  supplyJobMs,
+  supplyJobXp,
+  partsOfSpec,
   upgradeCost,
   PART_KINDS,
   type GearItem,
+  type GearJobKind,
   type GearRarity,
   type GearStat,
   type JobKind,
@@ -40,6 +45,7 @@ import {
 } from '@creatures/game';
 import type { Analytics } from './analytics';
 import { speciesOf, type ErrorStatus, type Outcome } from './collection';
+import { addSupply } from './expedition-store';
 import { grantWelcomeKit, recentGrants, type GrantRecord } from './gear-grants';
 import {
   addCreatureXp,
@@ -73,6 +79,13 @@ class GearError extends Error {
     super(code);
     this.name = 'GearError';
   }
+}
+
+/** The gear rarity a supply tier is logged as (analytics) and a supply job is sized as. */
+const SUPPLY_RARITY = { basic: 'common', good: 'rare', great: 'epic' } as const;
+
+function failSupply(): never {
+  throw new Error('stored supply job has an unknown supply');
 }
 
 /** Finished jobs shown besides the open ones. */
@@ -149,7 +162,13 @@ export type JobResult =
       from: { stat: GearStat; bp: number };
       to: { stat: GearStat; bp: number };
     } & JobCommon)
-  | ({ kind: 'enchant'; gearId: string; baseId: string; enchantId: string } & JobCommon);
+  | ({ kind: 'enchant'; gearId: string; baseId: string; enchantId: string } & JobCommon)
+  | ({
+      kind: 'supply';
+      /** The supply crafted and how many came out. */
+      supplyId: string;
+      amount: number;
+    } & JobCommon);
 
 export interface JobView {
   id: string;
@@ -161,6 +180,7 @@ export interface JobView {
     gearId?: string;
     enchantId?: string;
     secondaryIndex?: number;
+    supplyId?: string;
   };
   /** The parts it cost when it started. */
   cost: PartsBundle;
@@ -208,7 +228,8 @@ export type StartJobInput =
       gearId: string;
       enchantId: string;
       idempotencyKey: string;
-    };
+    }
+  | { kind: 'supply'; creatureId: string; supplyId: string; idempotencyKey: string };
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 
@@ -219,6 +240,7 @@ interface StoredInput {
   gearId?: string;
   enchantId?: string;
   secondaryIndex?: number;
+  supplyId?: string;
   cost: PartsBundle;
 }
 
@@ -370,6 +392,7 @@ export class Gear {
         ...(input.gearId === undefined ? {} : { gearId: input.gearId }),
         ...(input.enchantId === undefined ? {} : { enchantId: input.enchantId }),
         ...(input.secondaryIndex === undefined ? {} : { secondaryIndex: input.secondaryIndex }),
+        ...(input.supplyId === undefined ? {} : { supplyId: input.supplyId }),
       },
       cost: input.cost,
       startedAt: row.started_at,
@@ -664,7 +687,9 @@ export class Gear {
         ? [input.kind, input.creatureId, input.blueprintId]
         : input.kind === 'improve'
           ? [input.kind, input.creatureId, input.gearId, input.secondaryIndex]
-          : [input.kind, input.creatureId, input.gearId, input.enchantId],
+          : input.kind === 'supply'
+            ? [input.kind, input.creatureId, input.supplyId]
+            : [input.kind, input.creatureId, input.gearId, input.enchantId],
     );
     return this.atomically(() =>
       this.idempotent(userId, input.idempotencyKey, 'job_start', fingerprint, () => {
@@ -679,7 +704,10 @@ export class Gear {
         let cost: PartsBundle;
         let baseId: string;
         let gearId: string | null = null;
+        // A supply craft has its own length (its hours, less the creature's skill).
+        let supplyMs: number | null = null;
         const stored: Omit<StoredInput, 'cost' | 'rarity'> = {};
+        const level = skillLevel(creatureXp(this.sql, userId, creature.id));
         switch (input.kind) {
           case 'craft': {
             const base = gearBase(input.blueprintId);
@@ -725,12 +753,23 @@ export class Gear {
             stored.enchantId = input.enchantId;
             break;
           }
+          case 'supply': {
+            const def = supplyDef(input.supplyId);
+            if (def === undefined) throw new GearError(400, 'invalid_supply');
+            // The better the supply, the higher the Crafting level its blueprint asks for.
+            if (level < def.blueprint.craftingLevel) throw new GearError(409, 'skill_too_low');
+            baseId = def.id;
+            rarity = SUPPLY_RARITY[def.tier];
+            cost = partsOfSpec(def.blueprint.parts);
+            supplyMs = supplyJobMs(def, level);
+            stored.supplyId = def.id;
+            break;
+          }
         }
         if (!debitParts(this.sql, userId, cost)) throw new GearError(409, 'insufficient_parts');
 
-        const level = skillLevel(creatureXp(this.sql, userId, creature.id));
         const now = this.deps.now();
-        const duration = jobDuration(input.kind, rarity, level);
+        const duration = supplyMs ?? jobDuration(input.kind as GearJobKind, rarity, level);
         const id = crypto.randomUUID();
         const row: StoredInput = { ...stored, rarity, cost };
         this.sql.exec(
@@ -838,6 +877,15 @@ export class Gear {
             analyticsRarity = row.rarity;
             break;
           }
+          case 'supply': {
+            const def = input.supplyId === undefined ? undefined : supplyDef(input.supplyId);
+            if (def === undefined) throw new Error('stored supply job has an unknown supply');
+            addSupply(this.sql, userId, def.id, def.blueprint.yield);
+            result = { kind: 'supply', supplyId: def.id, amount: def.blueprint.yield };
+            analyticsBase = def.id;
+            analyticsRarity = SUPPLY_RARITY[def.tier];
+            break;
+          }
           case 'enchant': {
             const row =
               input.gearId === undefined ? undefined : findItem(this.sql, userId, input.gearId);
@@ -863,7 +911,10 @@ export class Gear {
         }
 
         // XP follows the job's nominal length (the skill shortens the time, not the experience).
-        const xp = jobXp(job.kind, input.rarity);
+        const xp =
+          job.kind === 'supply'
+            ? supplyJobXp(supplyDef(input.supplyId ?? '') ?? failSupply())
+            : jobXp(job.kind, input.rarity);
         const skillXp = addCreatureXp(this.sql, userId, creature.id, xp);
         const after = skillLevel(skillXp);
         const full = {

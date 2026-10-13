@@ -82,10 +82,11 @@ function isJobResult(value: unknown): value is JobResult {
     isCount(value['xp']) &&
     isCount(value['skillXp']) &&
     isCount(value['skillLevel']) &&
-    typeof value['leveledUp'] === 'boolean' &&
-    isStr(value['gearId']) &&
-    isStr(value['baseId']);
+    typeof value['leveledUp'] === 'boolean';
   if (!common) return false;
+  // A supply job makes no item, so it has no gear to name.
+  if (value['kind'] === 'supply') return isStr(value['supplyId']) && isCount(value['amount']);
+  if (!isStr(value['gearId']) || !isStr(value['baseId'])) return false;
   switch (value['kind']) {
     case 'craft':
       return isRarity(value['rarity']) && typeof value['upgraded'] === 'boolean';
@@ -104,6 +105,7 @@ function isJobInput(value: unknown): value is Job['input'] {
     (value['baseId'] === undefined || isStr(value['baseId'])) &&
     (value['gearId'] === undefined || isStr(value['gearId'])) &&
     (value['enchantId'] === undefined || isStr(value['enchantId'])) &&
+    (value['supplyId'] === undefined || isStr(value['supplyId'])) &&
     (value['secondaryIndex'] === undefined || isCount(value['secondaryIndex']))
   );
 }
@@ -145,7 +147,8 @@ export function isGrantLoot(value: unknown): value is GrantLoot {
     isArrayOf(value['gear'], isGearLoot) &&
     isArrayOf(value['converted'], isConvertedLoot) &&
     isPartsBundle(value['parts']) &&
-    isArrayOf(value['blueprints'], isBlueprintLoot)
+    isArrayOf(value['blueprints'], isBlueprintLoot) &&
+    (value['supplies'] === undefined || isArrayOf(value['supplies'], isStr))
   );
 }
 
@@ -155,6 +158,7 @@ const GRANT_SOURCES: readonly unknown[] = [
   'festival',
   'expedition',
   'welcome',
+  'dungeon',
 ];
 
 function isGrantRecord(value: unknown): value is GrantRecord {

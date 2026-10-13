@@ -217,6 +217,9 @@ export function simulateFight(
       s.role === 'guard'
         ? Math.floor((stats.hp * (10_000 + RULES.combat.guardHpBp)) / 10_000)
         : stats.hp;
+    if (s.hp !== undefined && !isCount(s.hp, 0))
+      fail(`creature "${s.id}" needs an integer hp >= 0`);
+    const startHp = s.hp === undefined ? maxHp : Math.min(maxHp, s.hp);
     return {
       idx,
       id: s.id,
@@ -226,9 +229,9 @@ export function simulateFight(
       role: s.role,
       atk: stats.atk,
       spd: stats.spd,
-      hp: maxHp,
+      hp: startHp,
       maxHp,
-      alive: true,
+      alive: startHp > 0,
       silenced: 0,
       buffs: [],
       critChanceBp: crit.chanceBp,
@@ -236,6 +239,7 @@ export function simulateFight(
     };
   });
 
+  const hpStartById = Object.fromEntries(creatures.map((c) => [c.id, c.hp]));
   const perPlayer: Record<string, PlayerTotals> = {};
   for (const p of input.players) perPlayer[p] = zeroTotals();
   const perCreature: Record<string, CreatureTotals> = {};
@@ -366,6 +370,22 @@ export function simulateFight(
       .map((i) => creatures[i] as Creature)
       .filter((c) => c.alive);
 
+  /**
+   * The Guard that takes a hit aimed at `target`: by default one standing in the target's zone;
+   * with `guardReach: 'adjacent'`, one standing right beside it (the left neighbour first).
+   */
+  const guardReach = input.guardReach ?? 'zone';
+  function guardFor(target: Creature): Creature | undefined {
+    if (guardReach === 'adjacent') {
+      for (const i of neighbours(target.idx, n)) {
+        const c = creatures[i] as Creature;
+        if (c.alive && c.role === 'guard') return c;
+      }
+      return undefined;
+    }
+    return livingIn(zoneOfIndex(target.idx, n)).find((c) => c.role === 'guard');
+  }
+
   function hurt(
     target: Creature,
     rawAmount: number,
@@ -402,14 +422,19 @@ export function simulateFight(
     if (reducedBp > 0) amount = Math.floor((amount * remainingBp) / 10_000);
     let victim = target;
     if (interceptable && target.role !== 'guard') {
-      const guard = livingIn(zone).find((c) => c.role === 'guard');
+      const guard = guardFor(target);
       if (guard !== undefined) victim = guard;
     }
     const taken = Math.min(amount, victim.hp);
     victim.hp -= taken;
     (perCreature[victim.id] as CreatureTotals).damageTaken += taken;
+    // Guard credit: all of the damage a Guard takes in place of a neighbour, and `guardOwnCreditBp`
+    // of what it takes when the hit was aimed at the Guard itself.
+    if (victim.role === 'guard') {
+      const share = victim !== target ? 10_000 : RULES.combat.guardOwnCreditBp;
+      credit(victim, null, 'guardCredit', Math.floor((taken * share) / 10_000));
+    }
     if (victim !== target) {
-      credit(victim, null, 'guardCredit', taken);
       events.push({
         t: 'boss_hit',
         round: currentRound,
@@ -549,10 +574,11 @@ export function simulateFight(
       }
     }
 
-    // Setup / payoff split of the reaction bonus: setter gets the floor of half, payoff the rest.
+    // Setup / payoff split of the reaction bonus: the setter gets the floor of `setupShareBp` of it,
+    // the payoff the rest.
     let setup = 0;
     if (reaction !== undefined && !reflected && markBefore !== null) {
-      setup = Math.floor(hit.bonus / 2);
+      setup = Math.floor((hit.bonus * RULES.combat.setupShareBp) / 10_000);
       credit(markBefore.creature, markBefore.player, 'setupCredit', setup);
     }
     credit(c, null, 'damage', hit.damage - setup - supportShare);
@@ -780,7 +806,7 @@ export function simulateFight(
   }
 
   let played = 0;
-  for (let round = 1; round <= rounds && bossHp > 0; round++) {
+  for (let round = 1; round <= rounds && bossHp > 0 && creatures.some((c) => c.alive); round++) {
     played = round;
     currentRound = round;
     // A Surge or Slump starts with this chance (one die every round, so the dice never depend on
@@ -939,6 +965,9 @@ export function simulateFight(
     perCreature,
     reactions: { byType: reactionsByType, total: reactionTotal },
     damageByElement,
+    hpStart: hpStartById,
+    hpEnd: Object.fromEntries(creatures.map((c) => [c.id, c.hp])),
+    hpMax: Object.fromEntries(creatures.map((c) => [c.id, c.maxHp])),
     adaptationSuggestion,
   };
 }

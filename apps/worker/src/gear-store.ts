@@ -240,7 +240,7 @@ export type JobRow = {
   id: string;
   user_id: string;
   creature_id: string;
-  kind: 'craft' | 'improve' | 'enchant';
+  kind: 'craft' | 'improve' | 'enchant' | 'supply';
   gear_id: string | null;
   input_json: string;
   started_at: number;

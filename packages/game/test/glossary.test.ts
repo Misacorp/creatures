@@ -6,6 +6,7 @@ import {
   JOB_KINDS,
   PART_KINDS,
   GLOSSARY_SECTIONS,
+  dungeonContent,
   RULES,
   abilityView,
   content,
@@ -340,7 +341,7 @@ describe('the glossary text matches the rules', () => {
 });
 
 describe('the How to play text', () => {
-  it('has the nine sections in the page order, each with 3 to 5 lines', () => {
+  it('has the ten sections in the page order, each with 3 to 5 lines', () => {
     expect(howToPlay.sections.map((s) => s.id)).toEqual([...GLOSSARY_SECTIONS]);
     for (const s of howToPlay.sections) {
       expect(s.lines.length).toBeGreaterThanOrEqual(3);
@@ -513,5 +514,106 @@ describe('the glossary covers gear and crafting', () => {
     for (const el of ['tide', 'ember', 'grove', 'spark']) {
       expect(entry(GLOSSARY_IDS.part(`${el}-shard`)).visual).toEqual({ kind: 'element', id: el });
     }
+  });
+});
+
+describe('the glossary covers the daily dungeon', () => {
+  const fixed = [
+    'dungeon',
+    'dungeon-row',
+    'depth',
+    'room-modifiers',
+    'room-boss',
+    'landmark',
+    'streak',
+  ];
+
+  it('has an entry for every room modifier and every dungeon term', () => {
+    for (const m of dungeonContent.modifiers) {
+      expect(glossaryEntry(GLOSSARY_IDS.modifier(m.id)), m.id).toBeDefined();
+    }
+    for (const id of fixed) expect(glossaryEntry(id), id).toBeDefined();
+    expect(glossaryGaps(glossary, content)).toEqual([]);
+  });
+
+  it('fails when a modifier or a dungeon term has no entry', () => {
+    const without = (id: string): GlossaryEntry[] => glossary.filter((e) => e.id !== id);
+    for (const id of [
+      'modifier-flooded',
+      'modifier-fog',
+      'dungeon',
+      'depth',
+      'landmark',
+      'streak',
+    ]) {
+      expect(glossaryGaps(without(id)), id).toEqual([id]);
+    }
+    expect(requiredGlossaryIds(content)).toContain('modifier-brittle');
+  });
+
+  it('describes each modifier with its own name and text, and the element ones with a picture', () => {
+    for (const m of dungeonContent.modifiers) {
+      const e = entry(GLOSSARY_IDS.modifier(m.id));
+      expect(e.title).toBe(m.name);
+      expect(e.short).toBe(m.description);
+      const first = m.effects[0];
+      if (m.effects.length === 1 && first?.op === 'team_stat' && first.element !== undefined) {
+        expect(e.visual).toEqual({ kind: 'element', id: first.element });
+        expect(m.description).toContain(percent(first.bp));
+      }
+    }
+  });
+
+  it('gives depth, landmarks and streaks the numbers the rules have', () => {
+    const d = RULES.dungeon;
+    expect(text('depth')).toContain(`${percent(d.hpStepBp)} foe HP`);
+    expect(text('depth')).toContain(`${percent(d.atkStepBp)} foe Attack`);
+    expect(text('depth')).toContain(`${String(d.landmarkEvery)}th depth`);
+    expect(text('landmark')).toContain(
+      `${String(d.landmarkEvery)}, ${String(2 * d.landmarkEvery)}, ${String(3 * d.landmarkEvery)}`,
+    );
+    expect(text('landmark')).toContain('for certain');
+    expect(d.streak.bonuses.map((b) => b.day)).toEqual([3, 7]);
+    expect(d.streak.cycleDays).toBe(7);
+    expect(text('streak')).toContain('3rd and 7th day of every 7');
+    expect(d.rooms).toBe(3);
+    expect(text('dungeon')).toContain('Three rooms');
+    expect(d.teamSize).toBe(3);
+  });
+
+  it('sends the dungeon entries to the Daily dungeon section of the page', () => {
+    const ids = new Set(howToPlay.sections.map((s) => s.id));
+    const entries = glossary.filter((g) => g.id.startsWith('modifier-') || fixed.includes(g.id));
+    expect(entries.length).toBe(fixed.length + dungeonContent.modifiers.length);
+    for (const e of entries) {
+      expect(ids.has(e.section), e.id).toBe(true);
+      expect(e.section, e.id).toBe('dungeon');
+    }
+  });
+
+  it('has a Daily dungeon section that says what the rules say', () => {
+    const section = howToPlay.sections.find((s) => s.id === 'dungeon');
+    expect(section?.title).toBe('Daily dungeon');
+    expect(section?.lines.length).toBeGreaterThanOrEqual(3);
+    expect(section?.lines.length).toBeLessThanOrEqual(5);
+    const words = (section?.lines ?? []).join(' ');
+    const d = RULES.dungeon;
+    expect(words).toContain('One run a day');
+    expect(words).toContain('retried once');
+    // The reset time in the text is the rule's (13:37), and the glossary entry says the same.
+    const reset = `${String(RULES.daily.reset.hour)}:${String(RULES.daily.reset.minute).padStart(2, '0')}`;
+    expect(words).toContain(`resets at ${reset}`);
+    expect(JSON.stringify(entry('dungeon'))).toContain(`resets at ${reset}`);
+    expect(words).toContain('team of three');
+    expect(d.teamSize).toBe(3);
+    expect(words).toContain('three rooms: two foes, then a room boss');
+    expect(d.rooms).toBe(3);
+    expect(words).toContain('HP carries over');
+    expect(words).toContain('one depth deeper');
+    expect(words).toContain(`${String(d.landmarkEvery)}th depth is a landmark`);
+    expect(words).toContain('gear for sure');
+    expect(d.streak.bonuses.map((b) => b.day)).toEqual([3, 7]);
+    expect(d.streak.cycleDays).toBe(7);
+    expect(words).toContain('3rd and 7th day of every 7');
   });
 });

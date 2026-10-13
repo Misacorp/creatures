@@ -1,4 +1,19 @@
-import { ELEMENTS, content, type Element, type GearRarity, type Rarity } from '@creatures/game';
+import {
+  EXPEDITION_LENGTHS,
+  ELEMENTS,
+  RULES,
+  content,
+  expeditionContent,
+  expectedTripWorth,
+  goalWorthRatio,
+  lengthRules,
+  tripMs,
+  type Element,
+  type ExpeditionLength,
+  type GearRarity,
+  type Rarity,
+} from '@creatures/game';
+import { dungeonAnalysis, type DungeonStats } from './dungeon-analysis';
 import { gearPowerOf } from './gear';
 import { pickTeam } from './data';
 import { ARCHETYPES, type ArchetypeId } from './archetypes';
@@ -23,6 +38,10 @@ export interface AnalysisInput {
   longRun: readonly LongRunInput[];
   /** The same default-server sims (same seeds) played without gear: "today" for the Essence targets. */
   baselineSims?: readonly EconomyResult[];
+  /** The same sims again with gear but no dungeon: what the dungeon adds. */
+  noDungeonSims?: readonly EconomyResult[];
+  /** Long sims (60 weeks) of the default server, for the days slots 3 to 5 open at. */
+  tripLongSims?: readonly EconomyResult[];
 }
 
 export interface CellStats {
@@ -163,6 +182,7 @@ export interface Analysis {
   abilityShares: AbilityShareRow[];
   gearComparison: GearComparisonRow[];
   worn: WornRow[];
+  dungeon: DungeonStats;
   longRun: LongRunStats[];
   jackpots: {
     source: string;
@@ -319,6 +339,97 @@ export function gearMetrics(
       ? null
       : (c12.essenceWithGear - c8.essenceWithGear - (c12.essenceToday - c8.essenceToday)) / 4;
   return { metrics, comparison: gearComparison };
+}
+
+/**
+ * The casual players' species owned by the end of each week 1 to 12 with the expeditions of v1 (three
+ * slots, Bait for every trip), averaged over the 24 default-server sims of seed `leet` (3 casuals each).
+ * Expeditions v2 must not find species faster than this for casual players.
+ */
+export const TODAY_CASUAL_SPECIES: readonly number[] = [
+  2.74, 4.83, 6.5, 7.86, 8.58, 9.08, 9.5, 9.67, 9.79, 9.97, 10.22, 10.4,
+];
+
+/** Check-in hours of a player who checks in twice a day (09:00 and 20:00). */
+const CHECK_INS = [9, 20] as const;
+
+/**
+ * What a player who always sends the same trip length gets per day from one slot, in Bait of worth
+ * (`expectedTripWorth`): they send at a check-in and claim at the first check-in after the trip ends
+ * (twice-daily check-ins, explorer rank `rank`), over a week of such cycles. The 24 hour trip needs rank 5.
+ */
+export function pureStrategyRate(length: ExpeditionLength, rank: number): number {
+  const ms = tripMs(length, rank);
+  const week = 7 * 24;
+  let hour = 9;
+  let worth = 0;
+  while (true) {
+    const ready = hour + ms / 3_600_000;
+    let next = Infinity;
+    for (let d = Math.floor(ready / 24); d <= Math.floor(ready / 24) + 2; d++) {
+      for (const h of CHECK_INS) {
+        if (d * 24 + h >= ready) next = Math.min(next, d * 24 + h);
+      }
+    }
+    if (next > 9 + week) break;
+    worth += expectedTripWorth(length);
+    hour = next;
+  }
+  return worth / 7;
+}
+
+/**
+ * The expedition measures: how the slots open for daily players over a long run, how the pure trip
+ * strategies compare, how fair the risky goals are, how long the daily players' trips are and how fast
+ * casual players find species compared with today.
+ */
+export function tripMetrics(
+  defaultSims: readonly EconomyResult[],
+  longSims: readonly EconomyResult[],
+): Record<string, number | null> {
+  const metrics: Record<string, number | null> = {};
+  // Slots, from the long sims of the daily players (days after joining; a slot that never opened counts as 999).
+  const dailies = longSims.flatMap((s) => s.players.filter((p) => p.archetype === 'daily'));
+  for (let k = 0; k < 4; k++) {
+    metrics[`exp.dailySlot${String(k + 2)}Day`] =
+      dailies.length === 0 ? null : median(dailies.map((p) => p.slotDays[k] ?? 999));
+  }
+  // The pure strategies, per day of one slot, by length (rank 5 or more so the 24 hour trip is open).
+  const rates = Object.fromEntries(
+    EXPEDITION_LENGTHS.map((l) => [l, pureStrategyRate(l, lengthRules(l).minRank)]),
+  ) as Record<ExpeditionLength, number>;
+  for (const l of EXPEDITION_LENGTHS) metrics[`exp.rate.${l}`] = rates[l];
+  metrics['exp.longVsShortRate'] =
+    Math.max(rates.long, rates.day) / Math.max(rates.short, rates.medium);
+  metrics['exp.spamVsOthersRate'] = rates.short / Math.min(rates.medium, rates.long, rates.day);
+  // The risky goals: the worth of taking one against coming home, at every length it is offered after.
+  const ratios: number[] = [];
+  for (const g of expeditionContent.goals) {
+    if (g.risk !== 'risky') continue;
+    for (const l of EXPEDITION_LENGTHS) {
+      if (g.lengths[l] !== undefined) ratios.push(goalWorthRatio(g, l));
+    }
+  }
+  metrics['exp.riskyRatioMin'] = ratios.length === 0 ? null : Math.min(...ratios);
+  metrics['exp.riskyRatioMax'] = ratios.length === 0 ? null : Math.max(...ratios);
+  // How long the daily players' trips are: the share that were 12 or 24 hours.
+  const daily = playersOf(defaultSims, 'daily');
+  const total = sum(daily.map((p) => sum(Object.values(p.tripsByLength))));
+  const longTrips = sum(
+    daily.map((p) => (p.tripsByLength['long'] ?? 0) + (p.tripsByLength['day'] ?? 0)),
+  );
+  metrics['exp.dailyLongShare'] = total === 0 ? null : longTrips / total;
+  // Species discovery of casual players against today's.
+  let worst: number | null = null;
+  for (let week = 1; week <= TODAY_CASUAL_SPECIES.length; week++) {
+    const now = mean(valuesAt(defaultSims, 'casual', week, (w) => w.speciesOwned));
+    if (now === null) continue;
+    const diff = now - (TODAY_CASUAL_SPECIES[week - 1] ?? 0);
+    worst = worst === null ? diff : Math.max(worst, diff);
+  }
+  metrics['exp.casualSpeciesVsToday'] = worst;
+  void RULES;
+  return metrics;
 }
 
 /** The team's worn items at the last snapshot week of the default sims, per archetype. */
@@ -516,7 +627,13 @@ export function analyse(input: AnalysisInput): Analysis {
   // ---- gear and crafting ----
   const gear = gearMetrics(defaultSims, baselineSims ?? [], weeks);
   Object.assign(metrics, gear.metrics);
+  // ---- expeditions ----
+  Object.assign(metrics, tripMetrics(defaultSims, input.tripLongSims ?? []));
   const gearComparison = gear.comparison;
+
+  // ---- the daily dungeon ----
+  const dungeon = dungeonAnalysis(defaultSims, input.noDungeonSims ?? [], weeks);
+  Object.assign(metrics, dungeon.metrics);
 
   const pityRaids = pitySims.flatMap((s) => s.raids.map((r) => r.summary));
   const pityRolls = sum(pityRaids.map((r) => r.jackpot.rolls));
@@ -638,6 +755,7 @@ export function analyse(input: AnalysisInput): Analysis {
     abilityShares,
     gearComparison,
     worn: wornItems(defaultSims),
+    dungeon: dungeon.stats,
     longRun: longRunResult.stats,
     jackpots,
     outliers,

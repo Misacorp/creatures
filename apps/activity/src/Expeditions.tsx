@@ -1,28 +1,47 @@
-import { expeditionCost, recallCatches } from '@creatures/game';
-import { useState } from 'preact/hooks';
-import type { ClaimResult, Creature, DurationId, Expedition, GameState, SuppliesId } from './api';
-import {
-  DURATION_OPTIONS,
-  SUPPLIES_OPTIONS,
-  catchBadgeTags,
-  creatureName,
-  durationLabel,
-  formatCountdown,
-  getSpecies,
-  speciesName,
-} from './game';
-import { expeditionBlocked, isFree, lootIsEmpty } from './gear-view';
-import { LootList } from './GearLoot';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import type { ClaimResult, GameState } from './api';
+import { ExplorerProfile } from './ExplorerProfile';
+import { fetchDestinations, fetchProfile, type SendRequest } from './expedition-api';
+import type { Trip } from './expedition-types';
+import { expeditionBlocked } from './gear-view';
 import { useNow } from './hooks';
-import { GlossaryTag } from './Glossary';
-import { ElementChip } from './sprites/ElementChip';
-import { Sprite } from './sprites/Sprite';
-import { creatureSpriteOrFallback } from './sprites/creature-sprites';
+import { Journal } from './Journal';
+import { RunningTrip } from './RunningTrip';
+import { SendTrip } from './SendTrip';
+import { SlotsStrip } from './SlotsStrip';
+import { TripReveal } from './TripReveal';
+import { needsOfferRefresh } from './trip-view';
+import { useLoaded } from './use-loaded';
 
-export interface SendRequest {
-  creatureId: string;
-  duration: DurationId;
-  supplies: SuppliesId;
+/** The three screens of the Expeditions tab (the Journal and the profile need no tab of their own). */
+type Screen = 'trips' | 'journal' | 'profile';
+
+const SCREENS: readonly { id: Screen; label: string }[] = [
+  { id: 'trips', label: 'Trips' },
+  { id: 'journal', label: 'Journal' },
+  { id: 'profile', label: 'Profile' },
+];
+
+/** The Journal or the profile: loads the profile when it opens and says so when that fails. */
+function Book({ screen, state }: { screen: 'journal' | 'profile'; state: GameState }) {
+  const loaded = useLoaded(fetchProfile, [state.slots.tripsFinished]);
+  if (loaded.value === null) {
+    return loaded.failed ? (
+      <p class="error" role="alert">
+        Could not load it.{' '}
+        <button type="button" onClick={loaded.reload}>
+          Try again
+        </button>
+      </p>
+    ) : (
+      <p class="muted">Opening the book...</p>
+    );
+  }
+  return screen === 'journal' ? (
+    <Journal profile={loaded.value} />
+  ) : (
+    <ExplorerProfile profile={loaded.value} creatures={state.creatures} />
+  );
 }
 
 interface Props {
@@ -30,248 +49,129 @@ interface Props {
   /** Server clock minus local clock, in ms. */
   offset: number;
   busy: boolean;
-  reveal: ClaimResult | null;
-  onSend: (request: SendRequest) => void;
-  onClaim: (expedition: Expedition) => void;
+  /** The guild's timezone (for the night window of the Moonlit Reef); null when it is not known. */
+  timezone: string | null;
+  /** What the last claim brought home, with the trip and the fresh state. */
+  reveal: { result: ClaimResult; trip: Trip | undefined } | null;
+  /** Sends a trip; resolves true when it started. */
+  onSend: (request: SendRequest) => Promise<boolean>;
+  onPushOn: (trip: Trip, goalId: string) => void;
+  onClaim: (trip: Trip) => void;
+  /** Loads the state again (a trip that ended gets its choice rolled by the server then); true when it started. */
+  onRefresh: () => boolean;
   onDismissReveal: () => void;
-}
-
-function SendForm({
-  slot,
-  available,
-  bait,
-  busy,
-  onSend,
-}: {
-  slot: number;
-  available: Creature[];
-  bait: number;
-  busy: boolean;
-  onSend: Props['onSend'];
-}) {
-  const [creatureId, setCreatureId] = useState('');
-  const [duration, setDuration] = useState<DurationId>('short');
-  const [supplies, setSupplies] = useState<SuppliesId>('basic');
-  const explorer = available.find((c) => c.id === creatureId) ?? available[0];
-  const cost = expeditionCost(duration, supplies);
-  const prefix = `slot-${String(slot)}`;
-
-  if (explorer === undefined) {
-    return <p class="muted">No creature is free to send.</p>;
-  }
-  return (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        onSend({ creatureId: explorer.id, duration, supplies });
-      }}
-    >
-      <label for={`${prefix}-creature`}>Explorer</label>
-      <select
-        id={`${prefix}-creature`}
-        value={explorer.id}
-        onChange={(event) => {
-          setCreatureId(event.currentTarget.value);
-        }}
-      >
-        {available.map((c) => (
-          <option key={c.id} value={c.id}>
-            {creatureName(c)} (level {c.level})
-          </option>
-        ))}
-      </select>
-      <label for={`${prefix}-duration`}>Duration</label>
-      <select
-        id={`${prefix}-duration`}
-        value={duration}
-        onChange={(event) => {
-          setDuration(event.currentTarget.value as DurationId);
-        }}
-      >
-        {DURATION_OPTIONS.map((d) => (
-          <option key={d.id} value={d.id}>
-            {d.label}
-          </option>
-        ))}
-      </select>
-      <label for={`${prefix}-supplies`}>Supplies</label>
-      <select
-        id={`${prefix}-supplies`}
-        value={supplies}
-        onChange={(event) => {
-          setSupplies(event.currentTarget.value as SuppliesId);
-        }}
-      >
-        {SUPPLIES_OPTIONS.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.label}
-          </option>
-        ))}
-      </select>
-      <p>
-        Total:{' '}
-        <strong>
-          {cost} <GlossaryTag entry="bait">Bait</GlossaryTag>
-        </strong>
-        {cost > bait && <span class="error"> Not enough Bait</span>}
-      </p>
-      <button type="submit" class="primary" disabled={busy || cost > bait}>
-        Send
-      </button>
-    </form>
-  );
-}
-
-function ActiveSlot({
-  expedition,
-  explorer,
-  serverNow,
-  busy,
-  onClaim,
-}: {
-  expedition: Expedition;
-  explorer: Creature | undefined;
-  serverNow: number;
-  busy: boolean;
-  onClaim: Props['onClaim'];
-}) {
-  const remaining = expedition.endsAt - serverNow;
-  const finished = remaining <= 0;
-  const keeps = recallCatches(expedition.rolls, expedition.startedAt, expedition.endsAt, serverNow);
-  const element = explorer === undefined ? undefined : getSpecies(explorer.species)?.element;
-  return (
-    <>
-      {explorer !== undefined && (
-        <div class="portrait">
-          <Sprite sprite={creatureSpriteOrFallback(explorer.species)} scale={4} />
-        </div>
-      )}
-      <p>
-        <strong>{explorer === undefined ? 'Explorer' : creatureName(explorer)}</strong> is away
-      </p>
-      {element !== undefined && (
-        <p>
-          <ElementChip element={element} />
-        </p>
-      )}
-      <p class="muted">
-        {durationLabel(expedition.duration)}, {expedition.supplies} supplies
-      </p>
-      <p aria-live="off">{finished ? 'Finished' : `Back in ${formatCountdown(remaining)}`}</p>
-      <button
-        type="button"
-        class={finished ? 'primary' : ''}
-        disabled={busy}
-        onClick={() => {
-          onClaim(expedition);
-        }}
-      >
-        {finished
-          ? 'Claim'
-          : `Recall (keeps ${String(keeps)} ${keeps === 1 ? 'catch' : 'catches'})`}
-      </button>
-    </>
-  );
-}
-
-function Reveal({ result, onDismiss }: { result: ClaimResult; onDismiss: () => void }) {
-  return (
-    <section class="reveal" aria-live="polite" aria-labelledby="reveal-heading">
-      <h3 id="reveal-heading">{result.recalled ? 'Expedition recalled' : 'Expedition complete'}</h3>
-      {result.catches.length === 0 ? (
-        <p>
-          {result.loot === undefined || lootIsEmpty(result.loot)
-            ? 'Nothing came back this time.'
-            : 'No creatures came back this time.'}
-        </p>
-      ) : (
-        <ul>
-          {result.catches.map((entry, index) => (
-            <li key={index}>
-              <Sprite sprite={creatureSpriteOrFallback(entry.species)} scale={3} bob />
-              <strong>{speciesName(entry.species)}</strong>{' '}
-              {getSpecies(entry.species) !== undefined && (
-                <ElementChip element={getSpecies(entry.species)?.element ?? ''} />
-              )}{' '}
-              {catchBadgeTags(entry).map((badge) =>
-                badge.entry === null ? (
-                  <span key={badge.text} class="badge">
-                    {badge.text}
-                  </span>
-                ) : (
-                  <GlossaryTag key={badge.text} entry={badge.entry} look="chip" class="badge">
-                    {badge.text}
-                  </GlossaryTag>
-                ),
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      {result.loot !== undefined && (
-        <LootList loot={result.loot} label="What the trip brought home" />
-      )}
-      <button type="button" onClick={onDismiss}>
-        Close
-      </button>
-    </section>
-  );
 }
 
 export function Expeditions({
   state,
   offset,
   busy,
+  timezone,
   reveal,
   onSend,
+  onPushOn,
   onClaim,
+  onRefresh,
   onDismissReveal,
 }: Props) {
+  const [screen, setScreen] = useState<Screen>('trips');
   const active = state.expeditions.filter((e) => e.status === 'active');
   const now = useNow(active.length > 0);
-  // A creature on a job in the Workshop cannot go either; the reason is shown, not just hidden.
-  const available = state.creatures.filter(isFree);
+  const serverNow = now + offset;
+  const destinations = useLoaded(
+    fetchDestinations,
+    [state.slots.tripsFinished, state.expeditions.length, active.length],
+    5 * 60_000,
+  );
+
+  // When a trip ends, the server rolls its end-of-trip choice the next time it sends the state: ask once.
+  const asked = useRef(new Set<string>());
+  useEffect(() => {
+    for (const trip of active) {
+      if (needsOfferRefresh(trip, serverNow) && !asked.current.has(trip.id) && onRefresh()) {
+        asked.current.add(trip.id);
+      }
+    }
+  });
+
   const blocked = expeditionBlocked(state.creatures);
-  const emptySlots = Math.max(0, state.slots.total - active.length);
-  const panels: (Expedition | null)[] = [
-    ...active,
-    ...Array.from({ length: emptySlots }, () => null),
-  ];
+  const full = state.slots.used >= state.slots.total;
+  const revealCreature =
+    reveal?.trip === undefined
+      ? undefined
+      : state.creatures.find((c) => c.id === reveal.trip?.creatureId);
 
   return (
     <>
-      {reveal !== null && <Reveal result={reveal} onDismiss={onDismissReveal} />}
-      {blocked.length > 0 && (
-        <ul class="blocked-note muted" aria-label="Creatures that cannot go">
-          {blocked.map(({ creature, reason }) => (
-            <li key={creature.id}>{reason}</li>
-          ))}
-        </ul>
+      {reveal !== null && (
+        <TripReveal
+          result={reveal.result}
+          trip={reveal.trip}
+          creature={revealCreature}
+          onDismiss={onDismissReveal}
+        />
       )}
-      <ul class="cards">
-        {panels.map((panel, index) => (
-          <li key={index} class="card-item slot">
-            <h3>Slot {index + 1}</h3>
-            {panel === null ? (
-              <SendForm
-                slot={index + 1}
-                available={available}
-                bait={state.balances.bait}
-                busy={busy}
-                onSend={onSend}
-              />
-            ) : (
-              <ActiveSlot
-                expedition={panel}
-                explorer={state.creatures.find((c) => c.id === panel.creatureId)}
-                serverNow={now + offset}
-                busy={busy}
-                onClaim={onClaim}
-              />
-            )}
-          </li>
+      <SlotsStrip slots={state.slots} />
+      <nav class="exp-nav" aria-label="Expeditions sections">
+        {SCREENS.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            class={screen === id ? 'toggle on' : 'toggle'}
+            aria-pressed={screen === id}
+            onClick={() => {
+              setScreen(id);
+            }}
+          >
+            {label}
+          </button>
         ))}
-      </ul>
+      </nav>
+      {screen !== 'trips' && <Book screen={screen} state={state} />}
+      {screen === 'trips' && (
+        <>
+          {blocked.length > 0 && (
+            <ul class="blocked-note muted" aria-label="Creatures that cannot go">
+              {blocked.map(({ creature, reason }) => (
+                <li key={creature.id}>{reason}</li>
+              ))}
+            </ul>
+          )}
+          {active.length > 0 && (
+            <ul class="cards trip-cards" aria-label="Trips that are out">
+              {active.map((trip) => (
+                <RunningTrip
+                  key={trip.id}
+                  trip={trip}
+                  creature={state.creatures.find((c) => c.id === trip.creatureId)}
+                  serverNow={serverNow}
+                  busy={busy}
+                  onClaim={onClaim}
+                  onPushOn={onPushOn}
+                />
+              ))}
+            </ul>
+          )}
+          {full ? (
+            <p class="muted all-out">
+              Every expedition slot is out. Claim a trip to send someone else.
+            </p>
+          ) : (
+            <SendTrip
+              creatures={state.creatures}
+              slots={state.slots}
+              stock={state.supplies}
+              bait={state.balances.bait}
+              busy={busy}
+              view={destinations.value}
+              viewFailed={destinations.failed}
+              timezone={timezone}
+              onRetry={destinations.reload}
+              onSend={onSend}
+            />
+          )}
+        </>
+      )}
     </>
   );
 }

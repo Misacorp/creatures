@@ -18,11 +18,13 @@ describe('capture the gear fixtures', () => {
       gearRng: createSeededRng('fixture-gear'),
     });
     console.log('FIXTURE-MAIN ' + JSON.stringify(main));
-    const script = [0, 0, 0, 0, 0];
+    // Shard, glimmer, blueprint (and its rarity and base), then a found supply (and its kind).
+    const script = [0, 0, 0, 0, 0, 0, 0];
     let i = 0;
     const rest = createSeededRng('fixture-exp');
     const exp = await runCore(nextGuild(), (ctx) => runExpeditionScenario(ctx), {
       rng: createSeededRng('fixture-catch'),
+      tripRng: createSeededRng('fixture-trip'),
       gearRng: { nextU32: () => script[i++] ?? rest.nextU32() },
     });
     console.log('FIXTURE-EXP ' + JSON.stringify(exp));

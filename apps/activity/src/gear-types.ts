@@ -14,7 +14,7 @@ export type PartKind =
   'scrap' | 'tide-shard' | 'ember-shard' | 'grove-shard' | 'spark-shard' | 'glimmer';
 /** Parts by kind; a kind that is absent is 0. */
 export type PartsBundle = Partial<Record<PartKind, number>>;
-export type JobKind = 'craft' | 'improve' | 'enchant';
+export type JobKind = 'craft' | 'improve' | 'enchant' | 'supply';
 
 export interface GearItem {
   id: string;
@@ -63,13 +63,22 @@ export type JobResult =
       from: { stat: GearStat; bp: number };
       to: { stat: GearStat; bp: number };
     } & JobCommon)
-  | ({ kind: 'enchant'; gearId: string; baseId: string; enchantId: string } & JobCommon);
+  | ({ kind: 'enchant'; gearId: string; baseId: string; enchantId: string } & JobCommon)
+  /** A crafted supply for expeditions: `amount` of `supplyId` went into the stock. */
+  | ({ kind: 'supply'; supplyId: string; amount: number } & JobCommon);
 
 export interface Job {
   id: string;
   creatureId: string;
   kind: JobKind;
-  input: { baseId?: string; gearId?: string; enchantId?: string; secondaryIndex?: number };
+  input: {
+    baseId?: string;
+    gearId?: string;
+    enchantId?: string;
+    secondaryIndex?: number;
+    /** A supply job: the supply being crafted. */
+    supplyId?: string;
+  };
   /** The parts it cost when it started. */
   cost: PartsBundle;
   startedAt: number;
@@ -88,6 +97,8 @@ export interface GrantLoot {
   converted: { baseId: string; rarity: GearRarity }[];
   parts: PartsBundle;
   blueprints: { baseId: string; rarity: GearRarity; duplicate: boolean }[];
+  /** Supply ids an expedition found (absent on every other grant and on trips from before supplies). */
+  supplies?: string[];
 }
 
 /**
@@ -97,7 +108,7 @@ export interface GrantLoot {
  */
 export interface GrantRecord extends GrantLoot {
   key: string;
-  source: 'raid_phase' | 'raid_finale' | 'festival' | 'expedition' | 'welcome';
+  source: 'raid_phase' | 'raid_finale' | 'festival' | 'expedition' | 'welcome' | 'dungeon';
   at: number;
 }
 
@@ -158,7 +169,8 @@ export type StartJobRequest =
       gearId: string;
       enchantId: string;
       idempotencyKey: string;
-    };
+    }
+  | { kind: 'supply'; creatureId: string; supplyId: string; idempotencyKey: string };
 
 /** The gear fields the collection view adds to every creature (`GET /api/state`). */
 export interface CreatureGearFields {

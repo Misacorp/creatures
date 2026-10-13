@@ -39,6 +39,25 @@ export const STAGE_LAYOUT: LayoutConfig = {
   padPx: 8,
 };
 
+/**
+ * The dungeon's single row: the three creatures side by side, bigger than in the zone rows because
+ * nothing else shares the line (no label column). The tier is picked for the whole row, so all three
+ * share one size and it only changes if the window does, never between rooms or rounds.
+ */
+export const ROW_LAYOUT: LayoutConfig = {
+  tiers: [
+    { scale: 6, unitPx: 104 },
+    { scale: 5, unitPx: 88 },
+    { scale: 4, unitPx: 72 },
+    { scale: 3, unitPx: 56 },
+    { scale: 2, unitPx: 40 },
+  ],
+  gapPx: 4,
+  labelPx: 0,
+  labelGapPx: 0,
+  padPx: 8,
+};
+
 /** The Placement strip: slot buttons with the sprite, species, level and owner. */
 export const SLOT_LAYOUT: LayoutConfig = {
   tiers: [

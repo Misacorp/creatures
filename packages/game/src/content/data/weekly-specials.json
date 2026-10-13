@@ -1,0 +1,49 @@
+{
+  "twists": [
+    {
+      "id": "rich-pickings",
+      "name": "Rich pickings",
+      "description": "Trips here bring back 50% more parts.",
+      "effect": { "kind": "parts", "bp": 5000 }
+    },
+    {
+      "id": "rare-sighting",
+      "name": "Rare sighting",
+      "description": "The rare creature of this place is out in the open: it turns up 3 times as often.",
+      "effect": { "kind": "featured", "rarity": "rare", "weight": 3 }
+    },
+    {
+      "id": "good-hunting",
+      "name": "Good hunting",
+      "description": "One extra catch roll on every trip here.",
+      "effect": { "kind": "rolls", "extra": 1 }
+    },
+    {
+      "id": "eager-students",
+      "name": "Eager students",
+      "description": "Explorers learn 50% more from trips here.",
+      "effect": { "kind": "xp", "bp": 5000 }
+    },
+    {
+      "id": "open-books",
+      "name": "Open books",
+      "description": "Journal pages are twice as likely to turn up here.",
+      "effect": { "kind": "journal", "bp": 10000 }
+    },
+    {
+      "id": "festival-bounty",
+      "name": "Festival bounty",
+      "description": "Two extra catch rolls on every trip, for the festival.",
+      "effect": { "kind": "rolls", "extra": 2 }
+    }
+  ],
+  "rotation": [
+    "tidepools",
+    "ember-caves",
+    "verdant-hollow",
+    "storm-ridge",
+    "old-crossroads",
+    "moonlit-reef"
+  ],
+  "festival": { "destination": "festival-grounds", "twist": "festival-bounty" }
+}

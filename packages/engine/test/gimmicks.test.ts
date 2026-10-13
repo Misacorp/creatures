@@ -29,8 +29,10 @@ describe('hit_zone (Undertow)', () => {
     );
     expect(eventsOf(r, 'gimmick').map((e) => e.round)).toEqual([3, 6, 9]);
     expect(eventsOf(r, 'gimmick')[0]).toMatchObject({ gimmick: 'undertow', op: 'hit_zone' });
-    // The guard did not absorb the zone hit meant for f0.
-    expect(r.perCreature.f1!.guardCredit).toBe(0);
+    // The guard did not absorb the zone hit meant for f0 (f0 took its own 80 each time, above). All
+    // the guard's credit is for the zone hits aimed at itself, none for f0's.
+    expect(r.perCreature.f0!.damageTaken).toBeGreaterThanOrEqual(3 * 80);
+    expect(r.perCreature.f1!.guardCredit).toBe(r.perCreature.f1!.damageTaken);
   });
 
   it('skips knocked-out creatures and empty zones', () => {
@@ -125,7 +127,7 @@ describe('reflect_first_reaction (Backdraft)', () => {
     expect(r.perCreature.p1!.damageTaken).toBeGreaterThanOrEqual(318 * 10);
     // No bonus was dealt, so there is no setup credit for the reflected reaction.
     expect(r.perPlayer.a!.setupCredit).toBe(0);
-    expect(r.perPlayer.c!.setupCredit).toBe(10 * 159);
+    expect(r.perPlayer.c!.setupCredit).toBe(10 * 190); // 60% of the 318 bonus
     expect(r.perPlayer.b!.damage).toBe(10 * 150);
     // Reflected reactions still count as reactions; the mark was consumed (s2 re-applied it).
     expect(r.reactions.total).toBe(20);

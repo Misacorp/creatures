@@ -1,0 +1,328 @@
+[
+  {
+    "id": "tidepools",
+    "name": "Tidepools",
+    "element": "tide",
+    "access": {
+      "minRank": 1
+    },
+    "odds": {
+      "common": 7600,
+      "rare": 2400,
+      "epic": 0
+    },
+    "species": ["splashet", "mistnewt", "coralynx"],
+    "deep": {
+      "species": [],
+      "rarityUpBp": 1500
+    },
+    "banner": {
+      "scene": "A sunlit rock shelf at low tide: shallow pools full of starfish and anemones, small waves lapping the edge, a wide pale sky above.",
+      "palette": [
+        {
+          "name": "Pool teal",
+          "hex": "#2a9d9a"
+        },
+        {
+          "name": "Wet slate",
+          "hex": "#3d4f66"
+        },
+        {
+          "name": "Foam white",
+          "hex": "#e8f4f2"
+        },
+        {
+          "name": "Coral pink",
+          "hex": "#e8836f"
+        }
+      ],
+      "mood": "Bright, calm and curious",
+      "details": [
+        "Three or four separate pools at different depths, each catching a different bit of sky",
+        "Tiny crab and starfish silhouettes that can sit in the foreground",
+        "Wet footprints leading in from the left edge, where the creature starts walking"
+      ],
+      "never": ["Deep dark water", "Any creature drawn in the scene"]
+    },
+    "flavor": "Warm shallows where every pool hides something small and splashy."
+  },
+  {
+    "id": "ember-caves",
+    "name": "Ember Caves",
+    "element": "ember",
+    "access": {
+      "minRank": 1
+    },
+    "odds": {
+      "common": 9400,
+      "rare": 400,
+      "epic": 200
+    },
+    "species": ["cindle", "ashmole", "mossback"],
+    "deep": {
+      "species": ["solmane"],
+      "rarityUpBp": 800
+    },
+    "banner": {
+      "scene": "The mouth of a volcanic cave glowing orange from inside: cracked black rock, rivers of slow lava, drifting sparks, a few green ferns growing at the cool edge.",
+      "palette": [
+        {
+          "name": "Cinder black",
+          "hex": "#2b2024"
+        },
+        {
+          "name": "Lava orange",
+          "hex": "#e8742c"
+        },
+        {
+          "name": "Ember gold",
+          "hex": "#f2b84b"
+        },
+        {
+          "name": "Fern green",
+          "hex": "#5a8a4a"
+        }
+      ],
+      "mood": "Warm, a little dangerous, welcoming at the edges",
+      "details": [
+        "Glowing cracks that run across the whole strip like a path",
+        "A few floating sparks that can drift upward in the loop",
+        "A small cool pocket of green on the right edge so the cave feels lived in"
+      ],
+      "never": ["Smoke that hides the scene", "Any creature drawn in the scene"]
+    },
+    "flavor": "A warm tunnel of glowing rock where something is always humming."
+  },
+  {
+    "id": "verdant-hollow",
+    "name": "Verdant Hollow",
+    "element": "grove",
+    "access": {
+      "minRank": 1
+    },
+    "odds": {
+      "common": 9400,
+      "rare": 400,
+      "epic": 200
+    },
+    "species": ["sproutle", "mossback"],
+    "deep": {
+      "species": ["gaiadrake"],
+      "rarityUpBp": 800
+    },
+    "banner": {
+      "scene": "A sunken forest bowl with tall mossy trunks, shafts of light through leaves, a little stream and mushrooms in the foreground.",
+      "palette": [
+        {
+          "name": "Moss green",
+          "hex": "#4f8a3c"
+        },
+        {
+          "name": "Deep bark",
+          "hex": "#4a3b2c"
+        },
+        {
+          "name": "Light shaft",
+          "hex": "#f4e9a8"
+        },
+        {
+          "name": "Toadstool red",
+          "hex": "#c8483f"
+        }
+      ],
+      "mood": "Hushed, soft and ancient",
+      "details": [
+        "Several layers of trees so the strip has depth from front to back",
+        "One or two light shafts falling at an angle",
+        "A trail of flat stones crossing the stream from left to right"
+      ],
+      "never": ["Dead trees", "Any creature drawn in the scene"]
+    },
+    "flavor": "A green bowl in the hills where the trees seem to lean in and listen."
+  },
+  {
+    "id": "storm-ridge",
+    "name": "Storm Ridge",
+    "element": "spark",
+    "access": {
+      "minRank": 1
+    },
+    "species": ["zipmouse", "stormray"],
+    "deep": {
+      "species": ["aurorix"],
+      "rarityUpBp": 800
+    },
+    "banner": {
+      "scene": "A bare mountain ridge under a purple thundercloud: rocky steps, lightning striking a far peak, wind-bent grass and a few standing stones.",
+      "palette": [
+        {
+          "name": "Storm purple",
+          "hex": "#4b3f72"
+        },
+        {
+          "name": "Slate grey",
+          "hex": "#5d6b7a"
+        },
+        {
+          "name": "Bolt yellow",
+          "hex": "#f6e05e"
+        },
+        {
+          "name": "Wind grass",
+          "hex": "#8aa05a"
+        }
+      ],
+      "mood": "Windy, electric and exciting",
+      "details": [
+        "A single bright bolt in the distance that can flash in the loop",
+        "Standing stones along the ridge line like waypoints",
+        "Grass blowing in one direction, against the walking creature"
+      ],
+      "never": ["Rain that hides the ridge", "Any creature drawn in the scene"]
+    },
+    "flavor": "A windy ridge where the air tingles and the thunder is close enough to touch."
+  },
+  {
+    "id": "old-crossroads",
+    "name": "Old Crossroads",
+    "element": null,
+    "access": {
+      "minRank": 2
+    },
+    "odds": {
+      "common": 8700,
+      "rare": 1100,
+      "epic": 200
+    },
+    "species": ["splashet", "cindle", "sproutle", "zipmouse", "stormray"],
+    "deep": {
+      "species": ["gaiadrake"],
+      "rarityUpBp": 600
+    },
+    "banner": {
+      "scene": "A worn dirt crossing where four paths meet, with a crooked wooden signpost, a stone well, a lantern post and travellers' campfire ashes.",
+      "palette": [
+        {
+          "name": "Road dust",
+          "hex": "#b89968"
+        },
+        {
+          "name": "Sign wood",
+          "hex": "#6e4b2d"
+        },
+        {
+          "name": "Evening sky",
+          "hex": "#e9b48a"
+        },
+        {
+          "name": "Weed green",
+          "hex": "#7c9a52"
+        }
+      ],
+      "mood": "Dusty, friendly and full of possibilities",
+      "details": [
+        "A signpost with four arrows, each pointing along a different path",
+        "Four paths in four slightly different colours that fade into the distance",
+        "Footprints and cart tracks, so it looks well used"
+      ],
+      "never": ["People drawn in the scene", "Any creature drawn in the scene"]
+    },
+    "flavor": "Four old roads meet here, and a little of everything wanders through."
+  },
+  {
+    "id": "moonlit-reef",
+    "name": "Moonlit Reef",
+    "element": "tide",
+    "access": {
+      "minRank": 4,
+      "night": true
+    },
+    "odds": {
+      "common": 5500,
+      "rare": 3800,
+      "epic": 700
+    },
+    "species": ["mistnewt", "coralynx"],
+    "deep": {
+      "species": ["aurorix"],
+      "rarityUpBp": 1200
+    },
+    "banner": {
+      "scene": "A shallow reef at night under a huge pale moon: glowing coral, drifting jellyfish lights, silver ripples and a thin line of aurora far above.",
+      "palette": [
+        {
+          "name": "Night blue",
+          "hex": "#1c2a4a"
+        },
+        {
+          "name": "Moon silver",
+          "hex": "#d8e2f0"
+        },
+        {
+          "name": "Reef glow",
+          "hex": "#5fd0c5"
+        },
+        {
+          "name": "Coral violet",
+          "hex": "#9a6bc2"
+        }
+      ],
+      "mood": "Dreamy, quiet and a little magical",
+      "details": [
+        "The moon reflected in the water as a long broken stripe",
+        "Glowing coral shapes that light the foreground from below",
+        "A faint aurora ribbon at the top edge"
+      ],
+      "never": ["Daylight", "Any creature drawn in the scene"]
+    },
+    "flavor": "Only the night tide uncovers this reef, and it glows when nobody looks."
+  },
+  {
+    "id": "festival-grounds",
+    "name": "Festival Grounds",
+    "element": null,
+    "access": {
+      "minRank": 1,
+      "festival": true
+    },
+    "odds": {
+      "common": 8800,
+      "rare": 0,
+      "epic": 1200
+    },
+    "species": ["ashmole", "solmane", "lanternfin", "hearthshell"],
+    "deep": {
+      "species": [],
+      "rarityUpBp": 1000
+    },
+    "banner": {
+      "scene": "A meadow set up for a festival: strings of paper lanterns between poles, bunting, a small bonfire, long picnic tables and fireworks starting in the sky.",
+      "palette": [
+        {
+          "name": "Lantern red",
+          "hex": "#d9453b"
+        },
+        {
+          "name": "Bunting yellow",
+          "hex": "#f2c14e"
+        },
+        {
+          "name": "Twilight blue",
+          "hex": "#3a4c8a"
+        },
+        {
+          "name": "Bonfire orange",
+          "hex": "#f08a3c"
+        }
+      ],
+      "mood": "Joyful, warm and a bit noisy",
+      "details": [
+        "Lines of lanterns that curve across the whole strip",
+        "A bonfire at the right edge as the finish line",
+        "One or two small fireworks that can burst in the loop"
+      ],
+      "never": ["Crowds of people", "Any creature drawn in the scene"]
+    },
+    "flavor": "The lanterns are lit and the music has started: the whole meadow is a party."
+  }
+]

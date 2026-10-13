@@ -2,11 +2,9 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   ApiError,
   chooseStarter,
-  claimExpedition,
   evolveCreature,
   fetchState,
   renameCreature,
-  startExpedition,
   trainCreature,
   type ClaimResult,
   type EvolveResult,
@@ -15,7 +13,9 @@ import {
 } from './api';
 import { createKeyStore } from './actions';
 import { Collection } from './Collection';
-import { Expeditions, type SendRequest } from './Expeditions';
+import { claimExpedition, pushOn, sendExpedition, type SendRequest } from './expedition-api';
+import type { Trip } from './expedition-types';
+import { Expeditions } from './Expeditions';
 import { fetchGear } from './gear-api';
 import { createGearActions } from './gear-actions';
 import type { GearState, JobResult } from './gear-types';
@@ -24,18 +24,12 @@ import { clockOffset, creatureName, errorText, speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
+import { Dungeon } from './Dungeon';
 import { Sprite } from './sprites/Sprite';
 import { StarterPicker } from './StarterPicker';
+import { TABS, tabAfterKey, tabPalette, type Tab } from './tabs';
+import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
-
-type Tab = 'collection' | 'expeditions' | 'raid' | 'workshop';
-
-const TABS: readonly { id: Tab; label: string }[] = [
-  { id: 'collection', label: 'Collection' },
-  { id: 'expeditions', label: 'Expeditions' },
-  { id: 'raid', label: 'Raid' },
-  { id: 'workshop', label: 'Workshop' },
-];
 
 interface Loaded {
   game: GameState;
@@ -62,7 +56,9 @@ export function Game({
   const [tab, setTab] = useState<Tab>('collection');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [reveal, setReveal] = useState<ClaimResult | null>(null);
+  const [reveal, setReveal] = useState<{ result: ClaimResult; trip: Trip | undefined } | null>(
+    null,
+  );
   // Gear, parts, blueprints and jobs; null until the first load (or when it failed).
   const [gear, setGear] = useState<GearState | null>(null);
   const [gearFailed, setGearFailed] = useState(false);
@@ -76,6 +72,9 @@ export function Game({
   // Counts gear views that came from an action, so a slower load that started before one is dropped.
   const gearVersion = useRef(0);
   const { game, offset } = current;
+  // The guild's timezone comes with GET /api/state only; the answers of actions leave it out, so it is kept.
+  const timezone = useRef<string | null>(null);
+  if (game.timezone !== null) timezone.current = game.timezone;
 
   // While the first leet sync is still running, ask again every few seconds (a few times at most)
   // so the balance, the history and the footer update as soon as the credits land.
@@ -149,9 +148,12 @@ export function Game({
     if (next !== undefined) setCurrent(loaded(next));
   }
 
-  /** Reloads the state in the background (balances move when raids pay Essence). */
-  function refreshState(): void {
-    if (inFlight.current) return;
+  /**
+   * Reloads the state in the background (balances move when raids pay Essence). Returns false when it
+   * did not start because an action is running.
+   */
+  function refreshState(): boolean {
+    if (inFlight.current) return false;
     const startedAt = actionCount.current;
     fetchState().then(
       (next) => {
@@ -159,6 +161,7 @@ export function Game({
       },
       () => undefined,
     );
+    return true;
   }
 
   /** Loads the gear view (inventory, parts, jobs). The first call also gives the welcome kit, once. */
@@ -223,8 +226,19 @@ export function Game({
         <span class="essence-amount">{game.balances.essence}</span>{' '}
         <GlossaryTag entry="essence">Essence</GlossaryTag>
       </p>
-      <div class="tabs" role="tablist" aria-label="Sections">
-        {TABS.map(({ id, label }) => (
+      <div
+        class="tabs"
+        role="tablist"
+        aria-label="Sections"
+        onKeyDown={(event) => {
+          // Arrow keys, Home and End move between the tabs; Enter or Space opens the focused one.
+          const next = tabAfterKey(tab, event.key);
+          if (next === null) return;
+          event.preventDefault();
+          document.getElementById(`tab-${next}`)?.focus();
+        }}
+      >
+        {TABS.map(({ id, label, glyph }) => (
           <button
             key={id}
             type="button"
@@ -232,6 +246,7 @@ export function Game({
             id={`tab-${id}`}
             aria-selected={tab === id}
             aria-controls={`panel-${id}`}
+            tabIndex={tab === id ? 0 : -1}
             class={tab === id ? 'tab active' : 'tab'}
             onClick={() => {
               setTab(id);
@@ -241,13 +256,19 @@ export function Game({
               if (id === 'workshop' || id === 'collection') loadGear();
             }}
           >
-            {id === 'workshop' && (
-              <Sprite sprite={glyphOrUnknown('anvil')} scale={2} class="tab-glyph" />
-            )}
-            {label}
+            <Sprite
+              sprite={glyphOrUnknown(glyph)}
+              scale={2}
+              class="tab-glyph"
+              {...(tabPalette(tab === id) === undefined
+                ? {}
+                : { palette: tabPalette(tab === id) as Readonly<Record<string, string>> })}
+            />
+            <span class="tab-label">{label}</span>
           </button>
         ))}
       </div>
+      <WipeNotice cancelled={game.cancelled} creatures={game.creatures} />
       {error !== null && (
         <p class="error" role="alert">
           {error}
@@ -296,23 +317,35 @@ export function Game({
             offset={offset}
             busy={busy}
             reveal={reveal}
-            onSend={(request: SendRequest) => {
-              const action = `send:${request.creatureId}:${request.duration}:${request.supplies}`;
-              void runState(action, () =>
-                startExpedition({ ...request, idempotencyKey: keys.keyFor(action) }),
-              );
+            timezone={timezone.current}
+            onSend={async (request: SendRequest) => {
+              const picks = request.supplies.map((p) => `${p.source}:${p.id}`).sort();
+              const action = `send:${request.creatureId}:${request.destination}:${request.duration}:${picks.join(',')}`;
+              const answer = await run(action, () => sendExpedition(request, keys.keyFor(action)));
+              if (answer === undefined) return false;
+              setCurrent(loaded(answer.state));
+              return true;
             }}
-            onClaim={(expedition) => {
-              void run(`claim:${expedition.id}`, () => claimExpedition(expedition.id)).then(
-                (done) => {
-                  if (done === undefined) return;
-                  setCurrent(loaded(done.state));
-                  setReveal(done.result);
-                  // The trip's parts and blueprints are in the Workshop now.
-                  loadGear();
+            onPushOn={(trip, goalId) => {
+              void run(`push-on:${trip.id}:${goalId}`, () => pushOn(trip.id, goalId)).then(
+                (answer) => {
+                  if (answer !== undefined) setCurrent(loaded(answer.state));
                 },
               );
             }}
+            onClaim={(trip) => {
+              void run(`claim:${trip.id}`, () => claimExpedition(trip.id)).then((done) => {
+                if (done === undefined) return;
+                setCurrent(loaded(done.state));
+                setReveal({
+                  result: done.result,
+                  trip: done.state.expeditions.find((e) => e.id === trip.id),
+                });
+                // The trip's parts, blueprints and gear are in the Workshop now.
+                loadGear();
+              });
+            }}
+            onRefresh={refreshState}
             onDismissReveal={() => {
               setReveal(null);
             }}
@@ -339,6 +372,16 @@ export function Game({
             creatures={game.creatures}
             showPractice={showPractice}
             onBalanceChange={refreshState}
+          />
+        )}
+        {tab === 'dungeon' && (
+          <Dungeon
+            creatures={game.creatures}
+            onRunFinished={() => {
+              // A run pays Bait, Essence, parts and maybe gear: reload the balances and the bag.
+              refreshState();
+              loadGear();
+            }}
           />
         )}
       </div>
