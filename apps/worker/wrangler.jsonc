@@ -19,13 +19,17 @@
   // and production); "mock" simulates leets (local dev). Any other value disables the sync.
   // RAID_PRACTICE: "on" turns on the practice finale (POST /api/raid/practice, staging only); any
   // other value, production included, makes that route answer 404.
+  // DEV_TOOLS: "on" turns on the dev tools (/api/dev/*, the dev clock; staging only, see
+  // docs/design/dev-tools.md); any other value, production included, makes every /api/dev route answer
+  // 404 and ignores a stored dev clock offset. A test pins production and the top level to "off".
   "vars": {
     "ENVIRONMENT": "local",
     "DISCORD_CLIENT_ID": "000000000000000000",
     "VERSION": "dev",
     "LEET_SOURCE": "mock",
     "LEET_API_URL": "",
-    "RAID_PRACTICE": "off"
+    "RAID_PRACTICE": "off",
+    "DEV_TOOLS": "off"
   },
   "env": {
     "staging": {
@@ -39,7 +43,8 @@
         "VERSION": "dev",
         "LEET_SOURCE": "http",
         "LEET_API_URL": "https://o0q1uz3be0.execute-api.eu-north-1.amazonaws.com",
-        "RAID_PRACTICE": "on"
+        "RAID_PRACTICE": "on",
+        "DEV_TOOLS": "on"
       }
     },
     "production": {
@@ -53,7 +58,8 @@
         "VERSION": "dev",
         "LEET_SOURCE": "http",
         "LEET_API_URL": "https://rwozj697u0.execute-api.eu-north-1.amazonaws.com",
-        "RAID_PRACTICE": "off"
+        "RAID_PRACTICE": "off",
+        "DEV_TOOLS": "off"
       }
     }
   }

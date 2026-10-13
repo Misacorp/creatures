@@ -53,6 +53,7 @@ import {
   type FightSlot,
 } from '@creatures/engine';
 import type { Analytics } from './analytics';
+import { devKey, type DevFlags } from './dev-state';
 import type { ErrorStatus, Outcome } from './collection';
 import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-grants';
 import { credit, lookupSpend, type LedgerStorage } from './ledger';
@@ -86,6 +87,8 @@ export interface DungeonDeps {
   /** The guild's timezone (an IANA name). Read once per request and passed down. */
   timezone: () => string;
   analytics?: Analytics | undefined;
+  /** The dev tools' force flags (staging only): the day's modifiers can be picked. Absent in production. */
+  dev?: DevFlags | undefined;
 }
 
 // --- Views ---
@@ -289,6 +292,8 @@ export class Dungeon {
    * sees the same ones all day. The seed is drawn from live randomness and is never sent out.
    */
   private modifierIds(day: string): string[] {
+    const forced = this.forcedModifiers(day);
+    if (forced !== null) return forced;
     const stored = this.sql
       .exec<{ modifier_seed: string }>('SELECT modifier_seed FROM dungeon_days WHERE day = ?', day)
       .toArray()[0];
@@ -303,6 +308,28 @@ export class Dungeon {
       );
     }
     return rollDayModifiers(createSeededRng(`${seed}:modifiers`));
+  }
+
+  /**
+   * Dev tools only: the modifiers picked for a day, or null. A damaged or outdated pick (an id that is not
+   * in the content, or the wrong count) is ignored, so a stored flag can never break a run.
+   */
+  private forcedModifiers(day: string): string[] | null {
+    const raw = this.deps.dev?.get(devKey.modifiers(day)) ?? null;
+    if (raw === null) return null;
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (
+        Array.isArray(parsed) &&
+        parsed.length === RULES.dungeon.rooms &&
+        parsed.every((id): id is string => typeof id === 'string' && roomModifier(id) !== undefined)
+      ) {
+        return parsed;
+      }
+    } catch {
+      // Fall through: a damaged value means the rolled modifiers.
+    }
+    return null;
   }
 
   private modifierViews(ids: readonly string[]): DungeonModifierView[] {

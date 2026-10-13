@@ -38,6 +38,7 @@ import {
   type Rarity,
   type Role,
 } from '@creatures/game';
+import { DEV_ACTION_TOOLS, type DevActionTool } from './dev-schemas';
 import type { PostFailureKind } from './discord-posts';
 
 /** Raw events and the rows that support them are kept this long. */
@@ -318,6 +319,14 @@ export type AnalyticsEvent =
       result: 'sent' | 'retry' | 'failed';
       error: PostFailureKind | null;
       attempts: number;
+    }
+  | {
+      /**
+       * A staging dev tool was used (`docs/design/dev-tools.md`). Reports must exclude this kind: staging
+       * data is never mixed into production numbers, and these events are not player behaviour.
+       */
+      kind: 'dev_action';
+      tool: DevActionTool;
     };
 
 export type AnalyticsKind = AnalyticsEvent['kind'];
@@ -613,6 +622,8 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         landmark: bool(event.landmark),
         streakBonusDay: int(event.streakBonusDay, 99),
       };
+    case 'dev_action':
+      return { tool: oneOf(DEV_ACTION_TOOLS, event.tool, 'clock') };
     case 'post_result':
       return {
         result: oneOf(['sent', 'retry', 'failed'] as const, event.result, 'failed'),

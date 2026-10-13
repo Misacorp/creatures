@@ -20,6 +20,7 @@ import {
   type Stats,
 } from '@creatures/game';
 import type { Analytics } from './analytics';
+import type { DevFlags } from './dev-state';
 import {
   Expeditions,
   type CancelledView,
@@ -158,6 +159,8 @@ export interface CollectionDeps {
   tripRng: Rng;
   /** The analytics event log. Optional: without it nothing is logged. */
   analytics?: Analytics;
+  /** The dev tools' force flags (staging only); passed on to expeditions. */
+  dev?: DevFlags | undefined;
 }
 
 function median(values: number[]): number | null {
@@ -195,6 +198,7 @@ export class Collection {
       gearRng: deps.gearRng,
       quirkRng: deps.quirkRng,
       analytics: deps.analytics,
+      dev: deps.dev,
     });
   }
 

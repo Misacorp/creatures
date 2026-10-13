@@ -138,6 +138,11 @@ export class Raid {
     return this.readinessCache.get(week, party);
   }
 
+  /** Dev tools only: forgets the cached readiness bands after a tool changed the roster or the week directly. */
+  invalidateReadiness(): void {
+    this.readinessCache.invalidate();
+  }
+
   private get sql(): SqlStorage {
     return this.deps.storage.sql;
   }
@@ -993,23 +998,39 @@ export class Raid {
    * a 30 second lobby (the countdown) and pays nothing and stores no result.
    * Refused from 30 minutes before the finale until it has resolved, and once per party per 10
    * minutes. 404 unless the `RAID_PRACTICE` var is "on".
+   *
+   * `options` is for the dev tools only (`DEV_TOOLS` is "on", see `dev-tools.ts`): `lobbyMs` is a shorter
+   * countdown, and `unrestricted` lifts the finale block and the cooldown and allows it without
+   * `RAID_PRACTICE`. Nothing else passes them.
    */
-  startPractice(userId: string, tz: string): Outcome<LiveSnapshot> {
-    if (this.deps.practice !== true) return { ok: false, status: 404, error: 'not_found' };
+  startPractice(
+    userId: string,
+    tz: string,
+    options: { lobbyMs?: number; unrestricted?: boolean } = {},
+  ): Outcome<LiveSnapshot> {
+    const unrestricted = options.unrestricted === true;
+    if (this.deps.practice !== true && !unrestricted) {
+      return { ok: false, status: 404, error: 'not_found' };
+    }
     this.runDue(tz);
     const started = this.atomically(() => {
       const { week, party } = this.memberContext(userId, tz);
       const now = this.deps.now();
       const finaleAt = eventTimes(week.weekId, tz).finale;
-      if (now >= finaleAt - PRACTICE_BLOCK_MS && !finaleResolved(this.sql, week.weekId, party)) {
+      if (
+        !unrestricted &&
+        now >= finaleAt - PRACTICE_BLOCK_MS &&
+        !finaleResolved(this.sql, week.weekId, party)
+      ) {
         throw new RaidError(409, 'practice_blocked');
       }
       const last = loadLive(this.sql, week.weekId, party, true);
-      if (last !== null && now < practiceOverAt(last)) {
+      if (!unrestricted && last !== null && now < practiceOverAt(last)) {
         throw new RaidError(409, 'practice_cooldown');
       }
       // The fight starts after a 30 second lobby with the countdown; the party sees a lobby until then.
-      if (!startPracticeParty(this.deps, week, party, now + PRACTICE_LOBBY_MS)) {
+      const lobbyMs = options.lobbyMs ?? PRACTICE_LOBBY_MS;
+      if (!startPracticeParty(this.deps, week, party, now + lobbyMs)) {
         throw new RaidError(409, 'not_in_roster');
       }
       return null;
