@@ -94,14 +94,21 @@ export function weekStrip(
 
 export interface Trip {
   hours: number;
-  catches: number;
+  /** 1 to 3: how much more a longer trip brings (rewards grow faster than the hours). */
+  size: number;
 }
 
-/** The expedition trips: hours away and catch rolls, from the rules. */
+/**
+ * The expedition trips anyone can send: their hours, from the rules, and how much each brings compared
+ * with the others (the picture shows it as a growing pile). The 24 hour trip needs explorer rank and is
+ * left to the text.
+ */
 export function expeditionTrips(
-  durations: typeof RULES.expedition.durations = RULES.expedition.durations,
+  lengths: Readonly<Record<string, { ms: number; minRank: number }>> = RULES.expeditions.lengths,
 ): Trip[] {
-  return Object.values(durations).map((d) => ({ hours: d.ms / 3_600_000, catches: d.rolls }));
+  return Object.values(lengths)
+    .filter((l) => l.minRank <= 1)
+    .map((l, i) => ({ hours: l.ms / 3_600_000, size: i + 1 }));
 }
 
 /** A creature that evolves, for the Rewards picture: both forms and the Essence it costs. */

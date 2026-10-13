@@ -291,7 +291,7 @@ function FinaleArt() {
   );
 }
 
-/** Expeditions: an explorer, and the three trips with their catches. */
+/** Expeditions: an explorer, and the three trips with a pile that grows with the hours. */
 function ExpeditionsArt() {
   const orb = glyphOrUnknown('orb');
   return (
@@ -302,7 +302,7 @@ function ExpeditionsArt() {
           <li key={trip.hours}>
             <span class="pix">{trip.hours} h</span>
             <span class="trip-catches">
-              {Array.from({ length: trip.catches }, (_, i) => (
+              {Array.from({ length: trip.size }, (_, i) => (
                 <Sprite key={i} sprite={orb} scale={2} />
               ))}
             </span>

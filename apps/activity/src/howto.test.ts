@@ -88,12 +88,28 @@ describe('the raid week and the rest of the pictures', () => {
     expect(weekStrip(moved).at(-1)?.day).toBe('Sat');
   });
 
-  it('shows the expedition trips with their hours and catches', () => {
+  it('shows the expedition trips anyone can send, with their hours from the rules', () => {
     expect(expeditionTrips()).toEqual([
-      { hours: 1, catches: 1 },
-      { hours: 6, catches: 2 },
-      { hours: 12, catches: 3 },
+      { hours: 2, size: 1 },
+      { hours: 6, size: 2 },
+      { hours: 12, size: 3 },
     ]);
+  });
+
+  it('leaves out the 24 hour trip, which needs explorer rank, and follows the rules', () => {
+    expect(expeditionTrips().some((t) => t.hours === 24)).toBe(false);
+    const changed = {
+      ...RULES.expeditions.lengths,
+      medium: { ...RULES.expeditions.lengths.medium, ms: 5 * 3_600_000 },
+    };
+    expect(expeditionTrips(changed).map((t) => t.hours)).toEqual([2, 5, 12]);
+  });
+
+  it('says the same trip lengths in the Expeditions text as the picture shows', () => {
+    const section = howToPlay.sections.find((s) => s.id === 'expeditions');
+    const text = section?.lines.join(' ') ?? '';
+    const hours = expeditionTrips().map((t) => String(t.hours));
+    expect(text).toContain(`${hours.slice(0, -1).join(', ')} or ${hours.at(-1) ?? '?'} hours`);
   });
 
   it('shows a season of five weeks ending in the Festival', () => {
