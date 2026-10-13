@@ -15,7 +15,9 @@
     "format:check": "prettier --check .",
     "test": "pnpm -r --if-present test",
     "sim": "node packages/sim/scripts/run.mjs",
-    "sim:quick": "node packages/sim/scripts/run.mjs --quick"
+    "sim:quick": "node packages/sim/scripts/run.mjs --quick",
+    "scalars": "node packages/sim/scripts/scalars.mjs",
+    "patch-notes": "node packages/sim/scripts/patch-notes.mjs"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
