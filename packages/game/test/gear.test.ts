@@ -714,7 +714,7 @@ describe('drops', () => {
 });
 
 describe('numbers that keep the design honest', () => {
-  it('a maxed epic item stays within the 15 to 25% power share', () => {
+  it('the best possible item adds 10 to 25% to a mid creature’s power (gear starts slow, under the ceiling)', () => {
     // Power = atk + hp / 10 (creaturePower). Take a mid stage-1 creature and the best item for each stat.
     const stats: Stats = { hp: 160, atk: 40, spd: 30 };
     const power = (s: Stats) => s.atk + Math.floor(s.hp / 10);
