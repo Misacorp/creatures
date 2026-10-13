@@ -76,9 +76,11 @@ Misa watches production by playing. Agents also need data to understand **how pe
 
 1. Event log, rollups and directory, with tests (migration).
    - [x] **Event log shipped** (migration 16, `apps/worker/src/analytics.ts`, 2026-10-13); see the decision of that date in `decisions.md`.
-   - [ ] Daily rollups, the guild directory: still pending.
+   - [x] **Daily rollups and the guild directory shipped** (migration 20, `analytics-rollup.ts`, `guild-directory.ts`, 2026-10-13); see the decision of that date in `decisions.md`.
 2. Ops endpoint and report renderer, with tests, including privacy tests that no ids or names leak.
+   - [x] **Shipped** (`ops-report.ts`, `ops-aggregate.ts`, `ops-render.ts`, 2026-10-13).
 3. The workflow, plus Misa's checklist for `OPS_TOKEN`.
+   - [x] Workflow (`report.yml`) and the optional `OPS_TOKEN` in `deploy.yml` shipped; the 90-day artifact upload waits for a pinned `actions/upload-artifact` SHA (the job summary carries the report meanwhile). Misa's checklist is still to be sent.
 4. The analysis CLI and the first live report after a week of data.
 
 ## Phase 2 plan (Misa, 2026-10-13): where players spend, live-calibrated sim, balance loop
