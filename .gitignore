@@ -22,6 +22,10 @@ coverage/
 # Simulator output (reports are generated; commit only curated ones under docs/)
 sim-out/
 
+# Patch notes drafts from `pnpm patch-notes --out docs/patch-notes` (only the finished notes are committed)
+docs/patch-notes/draft.json
+docs/patch-notes/draft.md
+
 # Editor / OS
 .DS_Store
 .idea/
