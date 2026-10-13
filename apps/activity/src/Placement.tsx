@@ -1,7 +1,9 @@
+import { GLOSSARY_IDS } from '@creatures/game';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { nextIndex, verticalNeighbour } from './dnd-core';
-import { speciesName } from './game';
+import { capitalize, getSpecies, speciesName } from './game';
+import { GlossaryTag } from './Glossary';
 import { cssVars } from './css-vars';
 import { useElementWidth } from './hooks';
 import {
@@ -24,12 +26,14 @@ import {
   type Tap,
   type TapContext,
 } from './raid-slots';
+import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { useDragDrop } from './use-drag-drop';
 import { SLOT_FALLBACK_PX, SLOT_LAYOUT, layoutVars, zoneLayout } from './zone-layout';
 
 const ZONES = ['front', 'middle', 'back'] as const;
+const ROLES = ['setter', 'payoff', 'guard', 'support'] as const;
 
 type Party = NonNullable<RaidView['party']>;
 type Team = NonNullable<RaidView['you']['team']>;
@@ -187,6 +191,7 @@ export function Placement(props: Props) {
             const classes = ['team-chip', 'draggable'];
             if (selected === c.creatureId) classes.push('selected');
             if (dragging === c.creatureId) classes.push('dragging-source');
+            const species = getSpecies(c.species);
             return (
               <li key={c.creatureId}>
                 <button
@@ -207,6 +212,12 @@ export function Placement(props: Props) {
                     Lv {c.level} · {c.slot === null ? 'not placed' : `slot ${String(c.slot + 1)}`}
                   </span>
                 </button>
+                {/* Tags sit under the button, never inside it: a tag must not start a drag. */}
+                {species !== undefined && (
+                  <p class="tags team-tags">
+                    <ElementChip element={species.element} role={capitalize(species.role)} />
+                  </p>
+                )}
               </li>
             );
           })}
@@ -221,6 +232,19 @@ export function Placement(props: Props) {
           boss, then the middle, then the back. Creatures that are not placed are placed for you
           when the phase starts. Supports power up the creatures next to them.
         </p>
+        <p class="legend">
+          <span class="muted">Roles:</span>{' '}
+          {ROLES.map((role) => (
+            <GlossaryTag
+              key={role}
+              entry={GLOSSARY_IDS.role(role)}
+              look="chip"
+              class="chip role-chip"
+            >
+              <span class="chip-text">{capitalize(role)}</span>
+            </GlossaryTag>
+          ))}
+        </p>
         <div
           ref={stripRef}
           class={dragging === null ? 'party-strip' : 'party-strip dragging'}
@@ -233,7 +257,9 @@ export function Placement(props: Props) {
             const layout = zoneLayout(slots.length, stripWidth, SLOT_LAYOUT);
             return (
               <div key={zone} class="party-zone" ref={cssVars(layoutVars(layout, SLOT_LAYOUT))}>
-                <p class="zone-label">{ZONE_LABELS[zone]}</p>
+                <p class="zone-label">
+                  <GlossaryTag entry={GLOSSARY_IDS.zone(zone)}>{ZONE_LABELS[zone]}</GlossaryTag>
+                </p>
                 <div class="zone-slots">
                   {slots.map((s) => (
                     <SlotButton

@@ -226,6 +226,8 @@ export function otherUsageText(usage: OtherUsage, names: Pick<EventNames, 'creat
 export interface CreatureAbilityRow {
   /** The creature it belongs to. */
   creatureId: string;
+  /** The ability's content id, so its name can open the glossary popover. */
+  abilityId: string;
   /** "Cindle's Flare Strike". */
   title: string;
   /** One line about what it does. */
@@ -260,6 +262,7 @@ export function creatureAbilityRows(
     }
     rows.push({
       creatureId: entry.creatureId,
+      abilityId: entry.abilityId,
       title: creature === undefined ? name : `${creature.name}'s ${name}`,
       effect: abilityEffectLine(entry.abilityId),
       unlocked: entry.unlocked,

@@ -1,5 +1,6 @@
 import { content } from '@creatures/game';
 import { elementName } from './game';
+import { GlossaryTag } from './Glossary';
 import { AutoFireToggle } from './AutoFireToggle';
 import { abilityControls, abilityName, abilityParamKind } from './live';
 import type { LiveAbility, LiveFight } from './live-api';
@@ -82,8 +83,16 @@ export function AbilityPopoverBody(props: AbilityPopoverBodyProps) {
   const kind = abilityParamKind(ability.abilityId);
   return (
     <div class="ab-pop-body">
-      <p class="ab-title pix">{abilityName(ability.abilityId)}</p>
-      <p class="ab-state">{popoverStateLine(badge)}</p>
+      <p class="ab-title pix">
+        <GlossaryTag ability={ability.abilityId}>{abilityName(ability.abilityId)}</GlossaryTag>
+      </p>
+      <p class="ab-state">
+        {badge.kind === 'auto' || badge.kind === 'manual' ? (
+          <GlossaryTag entry="auto-fire">{popoverStateLine(badge)}</GlossaryTag>
+        ) : (
+          popoverStateLine(badge)
+        )}
+      </p>
       {controls.canFire && kind === 'zone' && (
         <Chips label="Zone" value={props.zone} disabled={busy} onPick={props.onZone}>
           {ZONE_CHIPS}

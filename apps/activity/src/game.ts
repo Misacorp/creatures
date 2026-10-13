@@ -181,12 +181,21 @@ export function durationLabel(id: DurationId): string {
 
 /** Short badges for one reveal row, in display order. */
 export function catchBadges(entry: CatchResult): string[] {
-  const badges: string[] = [];
-  if (entry.outcome === 'new') badges.push('New!');
-  if (entry.outcome === 'fused') badges.push(`Fused ★${String(entry.fusionCount ?? 0)}`);
-  if (entry.outcome === 'converted') badges.push(`+${String(entry.bait ?? 0)} Bait`);
-  if (entry.shiny) badges.push('Shiny!');
-  if (entry.firstOnServer) badges.push('First on server!');
+  return catchBadgeTags(entry).map((badge) => badge.text);
+}
+
+/** The badges of a catch with the glossary entry each one explains (null: nothing to explain). */
+export function catchBadgeTags(entry: CatchResult): { text: string; entry: string | null }[] {
+  const badges: { text: string; entry: string | null }[] = [];
+  if (entry.outcome === 'new') badges.push({ text: 'New!', entry: null });
+  if (entry.outcome === 'fused') {
+    badges.push({ text: `Fused ★${String(entry.fusionCount ?? 0)}`, entry: 'fusion' });
+  }
+  if (entry.outcome === 'converted') {
+    badges.push({ text: `+${String(entry.bait ?? 0)} Bait`, entry: 'bait' });
+  }
+  if (entry.shiny) badges.push({ text: 'Shiny!', entry: 'shiny' });
+  if (entry.firstOnServer) badges.push({ text: 'First on server!', entry: 'first-on-server' });
   return badges;
 }
 

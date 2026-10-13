@@ -600,6 +600,7 @@ describe('ability texts', () => {
     expect(rows).toHaveLength(2); // the basic ability is the picker's
     expect(rows[0]).toMatchObject({
       creatureId: 'a',
+      abilityId: 'flare-strike',
       title: "Cindle's Flare Strike",
       unlocked: true,
       status: 'Ready for the finale',
