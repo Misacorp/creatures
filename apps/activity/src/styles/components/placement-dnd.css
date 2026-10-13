@@ -1,0 +1,128 @@
+/* --- Placement: the team tray and the party row, with drag and drop --- */
+
+.team-chip canvas.sprite {
+  margin-bottom: 0.25rem;
+}
+
+.party-slot {
+  align-items: center;
+  min-height: 6rem;
+  text-align: center;
+}
+
+.party-slot .slot-num {
+  align-self: flex-start;
+  font-family: var(--display);
+}
+
+.party-slot canvas.sprite {
+  margin: 0.125rem 0;
+}
+
+.party-slot.empty {
+  justify-content: space-between;
+}
+
+/* Anything that can be picked up: no scrolling or text selection starts on it. */
+.draggable {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
+}
+
+.draggable:disabled {
+  cursor: not-allowed;
+}
+
+.party-strip.dragging .party-slot,
+.party-strip.dragging .draggable {
+  cursor: grabbing;
+}
+
+.dragging-source {
+  opacity: 0.4;
+}
+
+/* While dragging: every slot says whether the creature may go there. Valid is green with a solid
+   edge; refused is red and hatched, so the meaning never depends on colour alone. */
+.party-strip.dragging .party-slot.drop-valid {
+  outline: var(--px) dashed var(--good);
+  outline-offset: calc(var(--px) * -2);
+}
+
+.party-strip.dragging .party-slot.drop-invalid {
+  outline: var(--px) dashed var(--bad);
+  outline-offset: calc(var(--px) * -2);
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 5px,
+    rgb(255 95 109 / 35%) 5px 8px
+  );
+}
+
+.party-strip.dragging .party-slot.drop-over {
+  outline-style: solid;
+  background-color: var(--dusk-2);
+}
+
+.team-list.tray-target {
+  outline: var(--px) dashed var(--good);
+  outline-offset: calc(var(--px) * 2);
+}
+
+.team-list.drop-over {
+  outline-style: solid;
+}
+
+/* A refused drop: a red edge that stays, and a short shake for those who allow motion. */
+.party-slot.shake {
+  outline: var(--px) solid var(--bad);
+  outline-offset: calc(var(--px) * -2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .party-slot.shake {
+    animation: shake 400ms steps(1) both;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20%,
+  60% {
+    transform: translateX(-4px);
+  }
+
+  40%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+/* The ghost follows the pointer; its position comes from --drag-x and --drag-y (set in script). */
+.drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: var(--frame);
+  opacity: 0.92;
+  pointer-events: none;
+  transform: translate(calc(var(--drag-x, -999px) - 50%), calc(var(--drag-y, -999px) - 60%));
+}
+
+.drag-ghost-name {
+  font-family: var(--display);
+  font-size: 0.8125rem;
+}

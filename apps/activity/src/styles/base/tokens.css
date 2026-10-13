@@ -1,0 +1,35 @@
+:root {
+  color-scheme: dark;
+  --night: #17132b; /* page ground */
+  --dusk: #241e42; /* panel */
+  --dusk-2: #2f2857; /* raised panel and inset */
+  --ink: #0d0a1a; /* pixel outline */
+  --bone: #f4eedc; /* text */
+  --haze: #a69fc8; /* muted text */
+  --gold: #ffd25a; /* accent: Bait, crits, highlights */
+  --tide: #4f8fe6;
+  --ember: #ef6a3a;
+  --grove: #5cbf5a;
+  --spark: #f2d43d;
+  --good: #6fdc8c;
+  --bad: #ff5f6d;
+  --line: #4a4170; /* quiet outline between things on a panel */
+  --mine: #3a3270; /* a slot that holds your creature */
+  --adjacent: #443b82; /* a slot next to the selected creature */
+  --display: 'Jersey 10', 'Courier New', ui-monospace, monospace;
+  --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --px: 3px; /* one "pixel" of UI chrome */
+  --frame:
+    0 calc(var(--px) * -1) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
+    calc(var(--px) * -1) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink),
+    inset 0 var(--px) 0 0 #3d3570, inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+  --ring: 0 0 0 var(--px) var(--ink), 0 0 0 calc(var(--px) * 2) var(--gold);
+  /* Older names, kept so every screen picks the tokens up. */
+  --bg: var(--night);
+  --panel: var(--dusk);
+  --panel-2: var(--dusk-2);
+  --text: var(--bone);
+  --muted: var(--haze);
+  --accent: var(--gold);
+  --danger: var(--bad);
+}

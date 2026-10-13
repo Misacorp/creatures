@@ -1,0 +1,187 @@
+/*
+  The popover inside the stage (one at a time, placed by script through --pop-x, --pop-y and
+  --pop-arrow, set with style.setProperty): above its anchor with a pointer arrow, below when there
+  is no room above, and kept inside the stage. About 200px wide.
+*/
+.stage-pop {
+  position: absolute;
+  top: var(--pop-y, 0);
+  left: var(--pop-x, 0);
+  z-index: 20;
+  width: min(12.5rem, calc(100% - 8px));
+  padding: 0.375rem 0.5rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: var(--frame);
+  color: var(--bone);
+  font-family: var(--body);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-align: left;
+}
+
+/*
+  The pointer arrow: a stepped pixel triangle, an ink outline (::before) with the panel colour on top
+  (::after). It points down when the popover is above its anchor and up when it is below.
+*/
+.stage-pop::before,
+.stage-pop::after {
+  content: '';
+  position: absolute;
+  bottom: -9px;
+  height: 9px;
+}
+
+.stage-pop::before {
+  left: calc(var(--pop-arrow, 20px) - 9px);
+  width: 18px;
+  background: var(--ink);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 33.34%,
+    83.33% 33.34%,
+    83.33% 66.67%,
+    66.67% 66.67%,
+    66.67% 100%,
+    33.33% 100%,
+    33.33% 66.67%,
+    16.67% 66.67%,
+    16.67% 33.34%,
+    0 33.34%
+  );
+}
+
+.stage-pop::after {
+  left: calc(var(--pop-arrow, 20px) - 6px);
+  width: 12px;
+  background: var(--dusk-2);
+  clip-path: polygon(0 0, 100% 0, 100% 50%, 75% 50%, 75% 100%, 25% 100%, 25% 50%, 0 50%);
+}
+
+.stage-pop::after {
+  height: 6px;
+  bottom: -6px;
+}
+
+.stage-pop[data-placement='below']::before,
+.stage-pop[data-placement='below']::after {
+  top: auto;
+  transform: scaleY(-1);
+}
+
+.stage-pop[data-placement='below']::before {
+  top: -9px;
+  bottom: auto;
+}
+
+.stage-pop[data-placement='below']::after {
+  top: -6px;
+  bottom: auto;
+}
+
+.stage-pop:focus-visible {
+  outline: var(--px) solid var(--bone);
+}
+
+.stage-pop button:focus-visible {
+  outline-offset: 1px;
+}
+
+.stage-pop p {
+  margin: 0.125rem 0;
+}
+
+.ab-title {
+  color: var(--gold);
+  font-size: 0.9375rem;
+  line-height: 1.2;
+}
+
+.ab-state {
+  color: var(--haze);
+}
+
+.ab-note,
+.ab-help {
+  color: var(--haze);
+}
+
+.ab-error {
+  color: var(--bad);
+}
+
+.ab-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+}
+
+/* Fire and Auto fire sit side by side; Auto fire shows "on" or "off" in smaller type under its name. */
+.ab-buttons button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0.125rem 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.1;
+}
+
+.ab-buttons button:only-child {
+  grid-column: 1 / -1;
+}
+
+.ab-buttons small {
+  font-family: var(--display);
+  font-size: 0.6875rem;
+}
+
+/* The Auto fire toggle is not gold like Fire: on is a green bar and the word "on", off is plain. */
+button.ab-auto-toggle.on {
+  background: var(--dusk-2);
+  color: var(--bone);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 var(--good);
+}
+
+button.ab-auto-toggle.on small {
+  color: var(--good);
+}
+
+button.ab-auto-toggle:not(.on) small {
+  color: var(--haze);
+}
+
+.ab-pick {
+  margin-top: 0.25rem;
+}
+
+.ab-pick-label {
+  color: var(--haze);
+  font-size: 0.6875rem;
+}
+
+.ab-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.1875rem;
+  margin-top: 0.125rem;
+}
+
+.pick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+  min-height: 1.75rem;
+  padding: 0 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.pick-chip.on {
+  background: var(--gold);
+  color: var(--ink);
+}

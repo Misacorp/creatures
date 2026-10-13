@@ -1,0 +1,66 @@
+/* Buttons and form controls: large enough to tap on a phone. Pixel frame, no rounded corners. */
+button,
+select,
+input[type='text'] {
+  min-height: 2.5rem;
+  padding: 0.4rem 0.75rem;
+  border: 0;
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
+button {
+  font-family: var(--display);
+  font-variant-ligatures: none;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+  transition: transform 60ms steps(1);
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(var(--px));
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
+button.primary {
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 #c8952b;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+summary:focus-visible {
+  outline: var(--px) solid var(--bone);
+  outline-offset: calc(var(--px) * 2);
+}
+
+select,
+input[type='text'] {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+label {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}

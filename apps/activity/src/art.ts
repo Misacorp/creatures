@@ -113,7 +113,7 @@ export function shinyPalette(speciesId: string): Readonly<Record<string, string>
   return Object.hasOwn(SHINY_PALETTES, speciesId) ? SHINY_PALETTES[speciesId] : undefined;
 }
 
-/** `el-tide` and so on: sets `--el` to the element's colour (see styles.css). Unknown: no class. */
+/** `el-tide` and so on: sets `--el` to the element's colour (see styles/components/creature-card.css). Unknown: no class. */
 export function elementClass(element: string | null): string {
   return element !== null && /^[a-z-]+$/.test(element) ? `el-${element}` : '';
 }

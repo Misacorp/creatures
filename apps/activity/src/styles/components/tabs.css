@@ -1,0 +1,18 @@
+.tabs {
+  display: flex;
+  gap: 0.625rem;
+  margin: 0.25rem 0 1rem;
+}
+
+.tab {
+  flex: 1;
+  min-width: 0;
+}
+
+.tab.active {
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 #c8952b;
+}

@@ -1,0 +1,73 @@
+/* Progress, HP and season pips. */
+.xp {
+  position: relative;
+  height: 0.625rem;
+  background: var(--ink);
+}
+
+.xp > span {
+  position: absolute;
+  inset: 2px auto 2px 2px;
+  background: var(--gold);
+}
+
+.hpbar {
+  display: grid;
+  grid-template-columns: repeat(20, 1fr);
+  gap: 2px;
+  height: 1.375rem;
+  padding: var(--px);
+  background: var(--ink);
+}
+
+.hpbar > i {
+  background: var(--bad);
+}
+
+.hpbar > i.gone {
+  background: #3a2033;
+}
+
+.pips {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.pips > i.fest {
+  background: transparent;
+  box-shadow: 0 0 0 2px var(--gold);
+}
+
+/* The existing HP progress element gets the same ink and red. */
+.hp-bar {
+  appearance: none;
+  height: 1.125rem;
+  border: 0;
+  background: var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
+.hp-bar::-webkit-progress-bar {
+  background: var(--ink);
+}
+
+.hp-bar::-webkit-progress-value {
+  background: var(--bad);
+}
+
+.hp-bar::-moz-progress-bar {
+  background: var(--bad);
+}
+
+@keyframes bob {
+  50% {
+    transform: translateY(calc(var(--px) * -1));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bob {
+    animation: bob 1.2s steps(2) infinite;
+  }
+}

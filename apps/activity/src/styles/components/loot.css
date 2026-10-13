@@ -1,0 +1,48 @@
+/* Loot lists: expedition claims and the finale. */
+.loot {
+  margin: 0.5rem 0;
+}
+
+.loot-items {
+  justify-content: center;
+}
+
+.loot-item {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.loot-name {
+  font-family: var(--display);
+}
+
+.loot-parts {
+  justify-content: center;
+}
+
+.loot-notes {
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.reveal-gear-box h4 {
+  margin: 0.5rem 0 0;
+  color: var(--gold);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .loot .pop-in {
+    animation: reveal-pop-in 600ms steps(5) both;
+  }
+
+  .reveal-gear-box:not(.done) {
+    opacity: 0;
+  }
+
+  .reveal-gear-box.done {
+    animation: reveal-pop 300ms steps(3) both;
+  }
+}

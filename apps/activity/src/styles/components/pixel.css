@@ -1,0 +1,32 @@
+/* --- M6 look: shared pixel components (from docs/design/assets/style-sample.html) --- */
+
+.label {
+  color: var(--muted);
+  font-family: var(--display);
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.portrait {
+  display: grid;
+  place-items: center;
+  padding: 0.625rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+/* Sprites are drawn on a canvas at a whole-number scale and must never be smoothed. */
+canvas.sprite {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.lvl {
+  color: var(--gold);
+  font-family: var(--display);
+  font-variant-numeric: tabular-nums;
+}

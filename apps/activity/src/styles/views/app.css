@@ -1,0 +1,51 @@
+/* --- Tags, the How to play page and the first-visit hint --- */
+
+.role-chip {
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--haze);
+}
+
+.team-tags {
+  margin: 0.25rem 0 0;
+}
+
+.train-help {
+  margin-left: 0.5rem;
+}
+
+/* The page header: the title with its "sigma" mark (a joke: the app is not even in alpha), and the "?" that opens How to play. */
+.app-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.app-head h1 {
+  min-width: 0;
+  margin: 0;
+}
+
+.sigma {
+  margin-left: 0.375rem;
+  padding: 0 0.25rem;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px #6b3fa0;
+  color: var(--bone);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-shadow: none;
+  text-transform: uppercase;
+  vertical-align: super;
+}
+
+button.howto-open {
+  flex: none;
+  min-width: 2.5rem;
+  color: var(--gold);
+}
+
+body.howto-open {
+  overflow: hidden;
+}

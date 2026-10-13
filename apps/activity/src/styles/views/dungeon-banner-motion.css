@@ -1,0 +1,40 @@
+/* The room banner fades in, holds and fades out over its own time; the number pops in. Smooth, opacity and scale only. */
+@media (prefers-reduced-motion: no-preference) {
+  .room-banner {
+    animation: room-banner var(--fx-ms, 2200ms) linear both;
+  }
+
+  .rb-heading {
+    animation: rb-pop 450ms ease-out both;
+  }
+}
+
+@keyframes room-banner {
+  0% {
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  88% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes rb-pop {
+  from {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

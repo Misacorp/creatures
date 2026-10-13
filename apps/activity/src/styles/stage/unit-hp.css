@@ -1,0 +1,20 @@
+/* A creature's HP under its name on the stage (five stepped segments; the foe has its own bar). */
+.unit-hp {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  width: 100%;
+  max-width: 2.75rem;
+  height: 0.375rem;
+  margin-top: 0.125rem;
+  padding: 1px;
+  background: var(--ink);
+}
+
+.unit-hp > i {
+  background: var(--good);
+}
+
+.unit-hp > i.gone {
+  background: #3a2033;
+}

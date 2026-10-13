@@ -1,0 +1,55 @@
+/* Jobs and blueprints. */
+.job-slot h4 {
+  margin: 0 0 0.25rem;
+}
+
+.job-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.job-title {
+  margin: 0;
+}
+
+.job-bar {
+  margin: 0.5rem 0 0.25rem;
+}
+
+.job-state {
+  margin: 0.25rem 0 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.job-state.ready {
+  color: var(--gold);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .job-bar > span {
+    transition: width 1s linear;
+  }
+}
+
+.blueprints {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bp-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bp-name {
+  margin: 0;
+}
+
+.bp-text .tags {
+  margin: 0.125rem 0;
+}

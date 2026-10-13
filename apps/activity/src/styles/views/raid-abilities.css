@@ -1,0 +1,40 @@
+/* --- Raid tab, UX pass 1: the abilities chip --- */
+
+.ability-chip-section {
+  padding: 0.5rem 0.75rem;
+}
+
+button.ability-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+}
+
+.ability-chip-label {
+  color: var(--muted);
+}
+
+.ability-chip-text {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+button.ability-chip.custom .ability-chip-text {
+  color: var(--gold);
+}
+
+.ability-chip-section .ability-body {
+  margin-top: 0.5rem;
+}
+
+/* On a phone the four steps sit two by two, so a name like "Preparation" never has to break. */
+@media (max-width: 30rem) {
+  .raid-timeline .schedule {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

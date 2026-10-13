@@ -568,7 +568,7 @@ function CreatureTags({ creature }: { creature: ReplayRowEntry | undefined }) {
  * centred in slot order and wrapping onto more lines if needed. It shows the state after `index`
  * events and animates the beat `anim`: hops, white flashes, floating numbers, reaction bursts,
  * the mark, knockouts, zone frames and ability cards. Everything is drawn from the event log; the
- * animation classes are only decoration, and `prefers-reduced-motion` (in styles.css) turns them
+ * animation classes are only decoration, and `prefers-reduced-motion` (in styles/stage/motion.css) turns them
  * into outlines and instant changes.
  */
 export function Stage({

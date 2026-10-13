@@ -1,0 +1,55 @@
+/* Boss card. */
+.boss {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.boss-portrait {
+  padding: 0.375rem;
+}
+
+/* The boss card is a hero card: the art (kept at its full size) in an element-coloured frame. */
+.boss-card {
+  --elem: var(--haze);
+}
+
+.boss-card.el-tide {
+  --elem: var(--tide);
+}
+
+.boss-card.el-ember {
+  --elem: var(--ember);
+}
+
+.boss-card.el-grove {
+  --elem: var(--grove);
+}
+
+.boss-card.el-spark {
+  --elem: var(--spark);
+}
+
+.boss-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.boss-meta h3,
+.boss-meta .tags {
+  margin: 0;
+}
+
+/* After-action card: a small sprite next to each top creature. */
+.bar-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bar-sprite {
+  flex: none;
+}

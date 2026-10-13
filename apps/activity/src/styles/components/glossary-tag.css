@@ -1,0 +1,88 @@
+/*
+  Tappable tags (glossary popovers). They are real buttons, reset to look like the thing they are
+  on: words get a dotted underline, pixel chips and tags get a small "?" after their text, and a
+  lone "?" button is for things that are buttons themselves. This block comes before the chip, tag
+  and badge rules on purpose: those classes set the look, and win where both set the same thing.
+*/
+.gtag {
+  all: unset;
+  position: relative;
+  display: inline;
+  cursor: pointer;
+  text-decoration: underline dotted var(--haze);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25em;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* A bigger tap area than the words themselves, without moving anything. */
+.gtag::before {
+  content: '';
+  position: absolute;
+  inset: -0.35rem -0.125rem;
+}
+
+button.gtag:active:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+.gtag:hover,
+.gtag[aria-expanded='true'] {
+  text-decoration-color: var(--gold);
+}
+
+.gtag-chip {
+  text-decoration: none;
+}
+
+.gtag-chip::after {
+  content: '?';
+  margin-left: 0.3em;
+  font-size: 0.7em;
+  opacity: 0.75;
+}
+
+.gtag-chip:hover::after,
+.gtag-chip[aria-expanded='true']::after {
+  opacity: 1;
+}
+
+.gtag-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.5rem;
+  background: var(--ink);
+  color: var(--gold);
+  font-family: var(--display);
+  font-size: 0.75rem;
+  text-decoration: none;
+  vertical-align: middle;
+}
+
+.gtag-help::before {
+  inset: -0.5rem;
+}
+
+/* The mark on the boss and a boss trick's icon are tags without the "?". */
+.mark-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  text-decoration: none;
+}
+
+.mark-tag::after {
+  content: none;
+}
+
+.mark-tag:hover {
+  filter: brightness(1.2);
+}
+
+.zone-label .gtag::before {
+  inset: -0.5rem -0.25rem;
+}

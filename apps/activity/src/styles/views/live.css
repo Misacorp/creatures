@@ -1,0 +1,54 @@
+/* Live finale. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.practice {
+  margin-bottom: 0.75rem;
+}
+
+.practice summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.practice-label {
+  margin: 0.25rem 0;
+}
+
+.live-round {
+  font-size: 1.125rem;
+}
+
+.live-countdown {
+  color: var(--gold);
+}
+
+.live-ability.you {
+  color: var(--gold);
+}
+
+.live-feed {
+  margin: 0.25rem 0;
+  padding: 0.5rem 0.5rem 0.5rem 1.75rem;
+  background: var(--panel);
+  font-size: 0.875rem;
+}
+
+.live-feed li.key {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.live-earlier summary {
+  cursor: pointer;
+  color: var(--muted);
+}
