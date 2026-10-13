@@ -1,8 +1,10 @@
 # Balance loop: findings log, scalars registry and patch notes
 
-Status: **plan**, 2026-10-13. Part of roadmap item 5 (with `analytics.md` phase 2). From Misa: keep a log of findings, of hypotheses for fixing problems, of the actions taken as fixes, and of how those played out (the measured effect). Tie in a patch notes generator once balance patches roll out. Keep a list of the scalars that drive the game's modifiers, as the knobs for fine-tuning balance.
+Status: **partly shipped**, 2026-10-13. Shipped: section 1 (`pnpm scalars`, `docs/balance/scalars.md`, `docs/balance/content-ids.md`, the staleness test), the log template of section 2 (`docs/balance/log.md`) and section 3 (`pnpm patch-notes`, the `patch-notes` skill, `docs/patch-notes/`). Not built yet: the `pnpm analyze` anomaly flags that open log entries, and the weekly report's list of open entries; the in-game "What's new" card and the Discord post stay optional. Part of roadmap item 5 (with `analytics.md` phase 2). From Misa: keep a log of findings, of hypotheses for fixing problems, of the actions taken as fixes, and of how those played out (the measured effect). Tie in a patch notes generator once balance patches roll out. Keep a list of the scalars that drive the game's modifiers, as the knobs for fine-tuning balance.
 
 ## 1. Scalars registry (`docs/balance/scalars.md`, generated)
+
+Shipped. Run `pnpm scalars` after changing any knob, and commit the result; `pnpm scalars --check` and the sim package's test fail when the file is stale. The sim target map is `packages/sim/scalar-targets.json`.
 
 - A script, `pnpm scalars`, walks `RULES` (and the numeric content fields that act as knobs: boss HP and exponents, foe stats, supply effects, push-on odds, drop tables). It writes a table with one row per scalar:
   - its path, for example `RULES.gear.skill.xpPerHour`;
@@ -31,6 +33,8 @@ An append-only journal, newest last. Every entry has a stable id (`B-001`, …) 
 - The weekly report lists the open entries whose outcome window has passed.
 
 ## 3. Patch notes generator
+
+Shipped, except the optional in-game card and Discord post. The generator and its helpers are in `packages/sim/src/patch-notes*.ts`. Without a `balance-*` tag it starts at `origin/main`, or the root commit, and says which. Drafts (`--out docs/patch-notes`) are gitignored.
 
 - **`pnpm patch-notes <from>..<to>`** (two git refs, default: the last `balance-*` tag to `HEAD`):
   - diffs the scalars registry and the player-visible content;
