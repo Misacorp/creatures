@@ -78,24 +78,15 @@ export interface SupplyOption {
   price: number;
   /** How many are in stock. */
   owned: number;
-  /** What it does, with the real numbers. */
+  /** What it does, in a few words and no numbers. */
   effect: string;
   /** Whether it makes the end-of-trip choice certain ("guaranteed") or just more likely. */
   choice: 'guaranteed' | 'likely';
 }
 
-/** What one supply does for a trip, with the numbers of its content. */
+/** What one supply does for a trip, in a few words from its content (no numbers). */
 export function supplyEffect(def: SupplyDef): string {
-  switch (def.kind) {
-    case 'lure':
-      return `Rare +${percentText(def.rareUpBp)}, Epic +${percentText(def.epicUpBp)} of the odds`;
-    case 'map-scrap':
-      return `${percentText(def.rollsBp)} more catch rolls, at least one`;
-    case 'lantern':
-      return `${percentText(def.deepBp)} more catches from the deeper area`;
-    case 'satchel':
-      return `${percentText(def.partsBp)} more parts, ${percentText(def.supplyBp)} to find a supply`;
-  }
+  return def.blurb;
 }
 
 /** "Lure", "Map scrap", "Lantern", "Satchel": the name of a kind of supply. */

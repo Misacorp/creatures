@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { RULES, destinationDef, expeditionContent, glossaryEntry } from '../src/index';
+import { GLOSSARY_IDS, RULES, SUPPLY_KINDS, expeditionContent, glossaryEntry } from '../src/index';
 
 /** The glossary texts that quote numbers must say what the rules and the content say; chances are words. */
 describe('the glossary texts of the expeditions', () => {
   const text = (id: string): string => (glossaryEntry(id)?.lines ?? []).join(' ');
-  const clock = (hour: number): string => `${String(hour).padStart(2, '0')}:00`;
 
   it('quotes the trips of the first familiarity star as they are, each star on its own bullet', () => {
     const fam = RULES.expeditions.familiarity;
@@ -61,19 +60,18 @@ describe('the glossary texts of the expeditions', () => {
     expect(text('job-supply')).toContain(`level ${levels.join(', ')} or ${String(last)}`);
   });
 
-  it('quotes the places gates as they are', () => {
-    const reef = destinationDef('moonlit-reef');
-    if (reef === undefined) throw new Error('no Moonlit Reef');
-    expect(text('destination-moonlit-reef')).toContain(
-      `explorer rank ${String(reef.access.minRank)}`,
-    );
-    expect(text('destination-moonlit-reef')).toContain(
-      `${clock(RULES.expeditions.night.fromHour)} to ${clock(RULES.expeditions.night.toHour)}`,
-    );
-    const crossroads = destinationDef('old-crossroads');
-    if (crossroads === undefined) throw new Error('no Old Crossroads');
-    expect(text('destination-old-crossroads')).toContain(
-      `explorer rank ${String(crossroads.access.minRank)}`,
-    );
+  it('has no entry for a single destination: the places text lives in the dev compendium', () => {
+    for (const d of expeditionContent.destinations) {
+      expect(glossaryEntry(`destination-${d.id}`), d.id).toBeUndefined();
+    }
+  });
+
+  it('describes the kinds of supply in words, with no digit and no percent sign', () => {
+    for (const kind of SUPPLY_KINDS) {
+      const entry = glossaryEntry(GLOSSARY_IDS.supply(kind));
+      expect(entry, kind).toBeDefined();
+      const text = [entry?.title ?? '', entry?.short ?? '', ...(entry?.lines ?? [])].join(' ');
+      expect(text, kind).not.toMatch(/[\d%]/);
+    }
   });
 });

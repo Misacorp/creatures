@@ -57,16 +57,14 @@ describe('trip lengths', () => {
 });
 
 describe('supplies', () => {
-  it('lists every supply of the content with its price, stock and the effect with real numbers', () => {
+  it('lists every supply of the content with its price, stock and the effect in words', () => {
     const options = supplyOptions({ 'lure-good': 2 });
     expect(options).toHaveLength(expeditionContent.supplies.length);
     const def = supplyDef('lure-good');
     if (def?.kind !== 'lure') throw new Error('no lure-good');
     const lure = options.find((o) => o.id === 'lure-good');
     expect(lure).toMatchObject({ name: def.name, owned: 2, price: def.price });
-    expect(lure?.effect).toBe(
-      `Rare +${percentText(def.rareUpBp)}, Epic +${percentText(def.epicUpBp)} of the odds`,
-    );
+    expect(lure?.effect).toBe(def.blurb);
     expect(options.find((o) => o.id === 'lure-basic')?.owned).toBe(0);
   });
 
@@ -78,9 +76,11 @@ describe('supplies', () => {
     expect(choiceLabel('likely')).toBe('Choice likely');
   });
 
-  it('describes each kind of supply with the numbers of its content', () => {
+  it('describes each supply in a few words, never a digit or a percent sign', () => {
     for (const def of expeditionContent.supplies) {
-      expect(supplyEffect(def).length, def.id).toBeGreaterThan(10);
+      expect(supplyEffect(def), def.id).toBe(def.blurb);
+      expect(supplyEffect(def).length, def.id).toBeGreaterThan(5);
+      expect(supplyEffect(def), def.id).not.toMatch(/[\d%]/);
     }
     expect(percentText(2500)).toBe('25%');
     expect(percentText(150)).toBe('1.5%');

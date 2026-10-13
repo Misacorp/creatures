@@ -1362,9 +1362,9 @@
   {
     "id": "supply-lure",
     "title": "Lure",
-    "short": "Makes rarer creatures likelier.",
+    "short": "Draws rarer creatures.",
     "lines": [
-      "Moves some of the odds from Common to Rare and Epic for one trip.",
+      "Tilts one trip's catches towards Rare and Epic.",
       "Comes in three tiers: Plain, Sweet and Golden."
     ],
     "section": "expeditions"
@@ -1372,9 +1372,9 @@
   {
     "id": "supply-map-scrap",
     "title": "Map scrap",
-    "short": "Extra catch rolls on one trip.",
+    "short": "One or more extra catches.",
     "lines": [
-      "Adds a share of the trip's catch rolls, and always at least one.",
+      "Adds extra catch rolls to one trip, and always at least one.",
       "Comes in three tiers: Map Scrap, Inked Map and Trail Atlas."
     ],
     "section": "expeditions"
@@ -1382,9 +1382,9 @@
   {
     "id": "supply-lantern",
     "title": "Lantern",
-    "short": "Opens the deeper area, even without stars.",
+    "short": "Lights the way to the deeper area.",
     "lines": [
-      "Adds to the chance that a catch comes from the deeper area.",
+      "Opens the deeper area, even without stars.",
       "Handy at Moonlit Reef, where the rarest creatures wait."
     ],
     "section": "expeditions"
@@ -1392,9 +1392,9 @@
   {
     "id": "supply-satchel",
     "title": "Satchel",
-    "short": "More parts and more finds from one trip.",
+    "short": "More parts, and more finds.",
     "lines": [
-      "Adds to the parts the trip brings home and the chance to find a supply.",
+      "Adds to the parts the trip brings home and helps it find a supply.",
       "Comes in three tiers, from the Small Satchel to the Explorer's Pack."
     ],
     "section": "expeditions"
@@ -1429,91 +1429,5 @@
       "Costs scrap, and shards for the better tiers. One supply per job."
     ],
     "section": "workshop"
-  },
-  {
-    "id": "destination-tidepools",
-    "title": "Tidepools",
-    "short": "A warm, splashy Tide place. Open to everyone.",
-    "lines": [
-      "Splashet, Mistnewt and Coralynx live here.",
-      "The deeper area makes rarer catches likelier."
-    ],
-    "visual": {
-      "kind": "element",
-      "id": "tide"
-    },
-    "section": "expeditions"
-  },
-  {
-    "id": "destination-ember-caves",
-    "title": "Ember Caves",
-    "short": "A glowing Ember place. Open to everyone.",
-    "lines": [
-      "Cindle, Ashmole and Mossback live here.",
-      "Something golden sleeps in the deeper area."
-    ],
-    "visual": {
-      "kind": "element",
-      "id": "ember"
-    },
-    "section": "expeditions"
-  },
-  {
-    "id": "destination-verdant-hollow",
-    "title": "Verdant Hollow",
-    "short": "A hushed Grove place. Open to everyone.",
-    "lines": ["Sproutle and Mossback live here.", "Something huge sleeps in the deeper area."],
-    "visual": {
-      "kind": "element",
-      "id": "grove"
-    },
-    "section": "expeditions"
-  },
-  {
-    "id": "destination-storm-ridge",
-    "title": "Storm Ridge",
-    "short": "A windy Spark place. Open to everyone.",
-    "lines": ["Zipmouse and Stormray live here.", "Something bright drifts in the deeper area."],
-    "visual": {
-      "kind": "element",
-      "id": "spark"
-    },
-    "section": "expeditions"
-  },
-  {
-    "id": "destination-old-crossroads",
-    "title": "Old Crossroads",
-    "short": "A mixed place where everything passes through.",
-    "lines": [
-      "Needs explorer rank 2.",
-      "Splashet, Cindle, Sproutle, Zipmouse and Stormray pass through.",
-      "Trips that were out when expeditions changed come home from here."
-    ],
-    "section": "expeditions"
-  },
-  {
-    "id": "destination-moonlit-reef",
-    "title": "Moonlit Reef",
-    "short": "A glowing Tide place, only open at night.",
-    "lines": [
-      "Open from 20:00 to 06:00 of your server time. Needs explorer rank 4.",
-      "Mistnewt and Coralynx live here.",
-      "The rarest creatures wait in the deeper area."
-    ],
-    "visual": {
-      "kind": "element",
-      "id": "tide"
-    },
-    "section": "expeditions"
-  },
-  {
-    "id": "destination-festival-grounds",
-    "title": "Festival Grounds",
-    "short": "Only open in Festival weeks.",
-    "lines": [
-      "Ashmole, Solmane, Lanternfin and Hearthshell live here.",
-      "The Festival creatures live nowhere else."
-    ],
-    "section": "expeditions"
   }
 ]

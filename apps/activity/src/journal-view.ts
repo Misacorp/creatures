@@ -160,7 +160,13 @@ export interface MilestoneView {
   /** 0 to 100. */
   pct: number;
   reached: boolean;
-  bonus: string;
+  /** "+1% parts from trips" once the milestone is reached; null while it is locked. */
+  bonus: string | null;
+}
+
+/** What a milestone's bonus shows: its value once reached, nothing while it is locked. */
+export function milestoneBonusText(m: Pick<Milestone, 'reached' | 'bonus'>): string | null {
+  return m.reached ? bonusText(m.bonus) : null;
 }
 
 export function milestoneViews(milestones: readonly Milestone[]): MilestoneView[] {
@@ -170,7 +176,7 @@ export function milestoneViews(milestones: readonly Milestone[]): MilestoneView[
     progress: `${statLabel(m.stat)}: ${String(Math.min(m.value, m.at))} of ${String(m.at)}`,
     pct: m.at <= 0 ? 100 : Math.floor((Math.min(m.value, m.at) * 1000) / m.at) / 10,
     reached: m.reached,
-    bonus: bonusText(m.bonus),
+    bonus: milestoneBonusText(m),
   }));
 }
 

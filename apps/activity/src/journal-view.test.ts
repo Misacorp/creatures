@@ -12,6 +12,7 @@ import {
   journalPlaces,
   journalProgressText,
   milestoneName,
+  milestoneBonusText,
   milestoneViews,
   statLabel,
   statRows,
@@ -109,6 +110,21 @@ describe('the profile', () => {
     expect(first?.reached).toBe(false);
     const over = milestoneViews([{ ...profile.milestones[0]!, value: 99, reached: true }]);
     expect(over[0]).toMatchObject({ progress: 'Trips finished: 5 of 5', pct: 100, reached: true });
+  });
+
+  it('shows a milestone bonus value only once it is reached', () => {
+    const base = profile.milestones[0]!;
+    const locked = milestoneViews([{ ...base, reached: false }])[0];
+    expect(locked?.bonus).toBeNull();
+    expect(locked?.name).toBe(milestoneName(base.id));
+    const open = milestoneViews([{ ...base, value: base.at, reached: true }])[0];
+    expect(open?.bonus).toBe(bonusText(base.bonus));
+    expect(open?.bonus).toMatch(/^\+/);
+    expect(milestoneBonusText({ reached: false, bonus: base.bonus })).toBeNull();
+    // No locked milestone leaks a value, whatever the rules say.
+    for (const view of milestoneViews(profile.milestones.map((m) => ({ ...m, reached: false })))) {
+      expect(view.bonus, view.id).toBeNull();
+    }
   });
 
   it('writes a bonus as words and sums the ones that are on', () => {

@@ -123,11 +123,23 @@ const SupplyBlueprintSchema = v.strictObject({
 });
 export type SupplyBlueprint = v.InferOutput<typeof SupplyBlueprintSchema>;
 
+export const MAX_SUPPLY_BLURB = 40;
+/** A supply's effect in words: short, plain text, and never a digit or a percent sign. */
+const SupplyBlurb = v.pipe(
+  Text(MAX_SUPPLY_BLURB),
+  v.regex(/^[^\d%]*$/u, 'must not contain digits or a percent sign'),
+);
+
 const supplyFields = {
   id: IdSchema,
   tier: SupplyTierSchema,
   name: Text(32),
   flavor: Text(120),
+  /**
+   * What it does, in a few plain words for the Expeditions and Workshop screens. No numbers and no
+   * percentages (discovery is part of the fun).
+   */
+  blurb: SupplyBlurb,
   /** Bait price where it can be bought. */
   price: Int(1, 10_000),
   /** The chance (basis points) that it makes an end-of-trip choice come up; the best tier guarantees one. */
