@@ -370,6 +370,22 @@ export function simulateFight(
       .map((i) => creatures[i] as Creature)
       .filter((c) => c.alive);
 
+  /**
+   * The Guard that takes a hit aimed at `target`: by default one standing in the target's zone;
+   * with `guardReach: 'adjacent'`, one standing right beside it (the left neighbour first).
+   */
+  const guardReach = input.guardReach ?? 'zone';
+  function guardFor(target: Creature): Creature | undefined {
+    if (guardReach === 'adjacent') {
+      for (const i of neighbours(target.idx, n)) {
+        const c = creatures[i] as Creature;
+        if (c.alive && c.role === 'guard') return c;
+      }
+      return undefined;
+    }
+    return livingIn(zoneOfIndex(target.idx, n)).find((c) => c.role === 'guard');
+  }
+
   function hurt(
     target: Creature,
     rawAmount: number,
@@ -406,7 +422,7 @@ export function simulateFight(
     if (reducedBp > 0) amount = Math.floor((amount * remainingBp) / 10_000);
     let victim = target;
     if (interceptable && target.role !== 'guard') {
-      const guard = livingIn(zone).find((c) => c.role === 'guard');
+      const guard = guardFor(target);
       if (guard !== undefined) victim = guard;
     }
     const taken = Math.min(amount, victim.hp);

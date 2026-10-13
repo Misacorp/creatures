@@ -10,6 +10,7 @@ import {
 } from '@creatures/game';
 import {
   buildRoomInput,
+  gimmickDue,
   makeSlot,
   roomSeed,
   simulateDungeon,
@@ -309,5 +310,161 @@ describe('room modifiers are plain folds of the room input', () => {
     const result = simulateFight(built, createSeededRng('mossy'));
     expect(result.hpStart['guard']).toBe(10);
     expect(result.hpMax['guard']).toBeGreaterThan(10);
+  });
+});
+
+describe('the team stands in one row, left to right', () => {
+  const gimmick = (g: Record<string, unknown>) =>
+    ({
+      id: 'g',
+      name: 'G',
+      trigger: { eachRound: true },
+      ...g,
+    }) as DungeonFoeDef['gimmicks'][number];
+  const row = (): FightSlot[] => [
+    slot('left', { atk: 10, role: 'setter' }),
+    slot('mid', { atk: 10, role: 'support' }),
+    slot('right', { atk: 10, role: 'payoff' }),
+  ];
+  const play = (f: DungeonFoeDef, team: FightSlot[] = row(), seed = 'row') =>
+    simulateDungeon(run([room(0, f, 100_000, 100)], team), seed).rooms[0]?.result.events ?? [];
+  const hits = (events: ReturnType<typeof play>, source: string) =>
+    events.flatMap((e) => (e.t === 'boss_hit' && e.source === source ? [e.target] : []));
+
+  it('fights with a Guard that covers its neighbours, and nothing else special', () => {
+    const built = buildRoomInput(run([room(0, foe(), 100, 1)]), room(0, foe(), 100, 1), null);
+    expect(built.guardReach).toBe('adjacent');
+    // The row is the team, in order: position i is team[i].
+    expect(built.row.map((s) => s.id)).toEqual(['guard', 'setter', 'payoff']);
+  });
+
+  it('a zone gimmick hits the creature at that position', () => {
+    const at = (zone: 'front' | 'middle' | 'back') =>
+      hits(play(foe({ gimmicks: [gimmick({ op: 'hit_zone', zone, power: 10_000 })] })), 'gimmick');
+    expect(new Set(at('front'))).toEqual(new Set(['left']));
+    expect(new Set(at('middle'))).toEqual(new Set(['mid']));
+    expect(new Set(at('back'))).toEqual(new Set(['right']));
+  });
+
+  it('a zone gimmick follows the order the player chose', () => {
+    const order = [
+      slot('b', { atk: 10, role: 'setter' }),
+      slot('c', { atk: 10, role: 'setter' }),
+      slot('a', { atk: 10, role: 'setter' }),
+    ];
+    const f = foe({ gimmicks: [gimmick({ op: 'hit_zone', zone: 'back', power: 10_000 })] });
+    expect(new Set(hits(play(f, order), 'gimmick'))).toEqual(new Set(['a']));
+    expect(new Set(hits(play(f, [...order].reverse()), 'gimmick'))).toEqual(new Set(['b']));
+  });
+
+  it('"both ends" silences the left and the right creature, and never the middle one', () => {
+    const events = play(foe({ gimmicks: [gimmick({ op: 'silence_ends', turns: 1 })] }));
+    const silenced = new Set(events.flatMap((e) => (e.t === 'silence' ? [e.creature] : [])));
+    expect(silenced).toEqual(new Set(['left', 'right']));
+  });
+
+  it('the plain attack goes to the left creature first, then on to the next one standing', () => {
+    const frail = [
+      slot('left', { hp: 1, role: 'setter' }),
+      slot('mid', { role: 'setter' }),
+      slot('right', { role: 'setter' }),
+    ];
+    const attacks = hits(play(foe(), frail), 'attack');
+    expect(attacks.slice(0, 3)).toEqual(['left', 'mid', 'mid']);
+  });
+
+  it('a Guard in the middle takes the plain attack aimed at the left creature', () => {
+    const guarded = [
+      slot('left', { role: 'setter' }),
+      slot('guard', { role: 'guard' }),
+      slot('right', { role: 'setter' }),
+    ];
+    const events = play(foe(), guarded);
+    const first = events.find((e) => e.t === 'boss_hit' && e.source === 'attack');
+    expect(first).toMatchObject({ target: 'guard', from: 'left' });
+  });
+
+  it('turn orders run along the row, or by speed, and a room modifier can change them', () => {
+    const speeds = [slot('l', { spd: 1 }), slot('m', { spd: 50 }), slot('r', { spd: 20 })];
+    const order = (turnOrder: DungeonFoeDef['turnOrder'], m?: RoomModifierDef) =>
+      simulateDungeon(
+        run([room(0, foe({ turnOrder, rounds: 1 }), 100_000, 1, m)], speeds),
+        'turns',
+      ).rooms[0]?.result.events.flatMap((e) => (e.t === 'turn' ? [e.creature] : [])) ?? [];
+    expect(order('left_to_right')).toEqual(['l', 'm', 'r']);
+    expect(order('right_to_left')).toEqual(['r', 'm', 'l']);
+    expect(order('speed')).toEqual(['m', 'r', 'l']);
+    expect(order('speed', roomModifier('fog'))).toEqual(['l', 'm', 'r']);
+  });
+});
+
+describe('every shipped foe, room boss and room modifier makes sense on one row of three', () => {
+  const tough = (): FightSlot[] =>
+    ['left', 'mid', 'right'].map((id, i) => ({
+      ...slot(id, { hp: 1_000_000, atk: 1 + i, role: 'setter' }),
+      speciesId: 'splashet',
+    }));
+  const play = (f: DungeonFoeDef, extra: RoomModifierDef = NONE) =>
+    simulateDungeon(
+      { ...run([room(0, f, 10_000_000, 50, extra)], tough()), abilities: [] },
+      `content-${f.id}`,
+    ).rooms[0]?.result.events ?? [];
+  const POSITION = { front: 'left', middle: 'mid', back: 'right' } as const;
+
+  for (const f of dungeonContent.foes) {
+    it(`${f.name}: each gimmick reaches the creatures it names, on the row of three`, () => {
+      const events = play({ ...f, rounds: 12 });
+      for (const g of f.gimmicks) {
+        const rounds = Array.from({ length: 12 }, (_, i) => i + 1).filter((r) => gimmickDue(g, r));
+        const fired = events.filter((e) => e.t === 'gimmick' && e.gimmick === g.id);
+        // (A reflect gimmick also reports when it is spent, so it is counted at least once a round.)
+        if (g.op === 'reflect_first_reaction')
+          expect(fired.length).toBeGreaterThanOrEqual(rounds.length);
+        else expect(fired, g.id).toHaveLength(rounds.length);
+        if (g.op === 'hit_zone') {
+          // A zone is one creature here: the one at that place, and only that one.
+          const hit = events.filter(
+            (e) => e.t === 'boss_hit' && e.source === 'gimmick' && e.target === POSITION[g.zone],
+          );
+          expect(hit.length, g.id).toBeGreaterThanOrEqual(rounds.length);
+        }
+        if (g.op === 'silence_ends') {
+          const silenced = new Set(events.flatMap((e) => (e.t === 'silence' ? [e.creature] : [])));
+          expect(silenced, g.id).toEqual(new Set(['left', 'right']));
+        }
+      }
+    });
+  }
+
+  it('turn orders of the foes run along the row or by speed, and the creatures all act each round', () => {
+    for (const f of dungeonContent.foes) {
+      const turns = play({ ...f, gimmicks: [], rounds: 1 }).flatMap((e) =>
+        e.t === 'turn' ? [e.creature] : [],
+      );
+      expect(turns, f.id).toHaveLength(3);
+      if (f.turnOrder === 'left_to_right') expect(turns).toEqual(['left', 'mid', 'right']);
+      if (f.turnOrder === 'right_to_left') expect(turns).toEqual(['right', 'mid', 'left']);
+    }
+  });
+
+  it('no room modifier targets a zone or a row: they are team-wide or foe-wide folds', () => {
+    for (const m of dungeonContent.modifiers) {
+      for (const e of m.effects) {
+        if (e.op === 'foe_gimmick') {
+          expect(['hit_zone'], m.id).not.toContain(e.gimmick.op);
+        }
+        // A role or element filter is about who a creature is, never where it stands.
+        expect(
+          Object.keys(e).filter((k) => /zone|row|slot|position/i.test(k)),
+          m.id,
+        ).toEqual([]);
+      }
+      // And each one builds and plays on the row.
+      const result = simulateDungeon(
+        { ...run([room(0, dungeonContent.foes[0] as DungeonFoeDef, 300, 12, m)], tough()) },
+        `mod-${m.id}`,
+      );
+      expect(result.rooms).toHaveLength(1);
+    }
   });
 });

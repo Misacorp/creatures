@@ -7,6 +7,7 @@ import {
   dungeonFoe,
   dungeonGearOddsBp,
   dungeonPayout,
+  dungeonRowOrder,
   depthFactorBp,
   isLandmark,
   loadDungeon,
@@ -18,6 +19,7 @@ import {
   scaledFoe,
   streakBonus,
   streakCycleDay,
+  type Role,
 } from '../src/index';
 import foesJson from '../src/content/data/dungeon-foes.json';
 import modifiersJson from '../src/content/data/room-modifiers.json';
@@ -438,5 +440,32 @@ describe('rewards', () => {
     expect(drops / runs).toBeLessThan(RULES.dungeon.fullClear.gearBp / 10_000 + 0.06);
     expect(shards / runs).toBeGreaterThan(RULES.dungeon.bossShardBp / 10_000 - 0.08);
     expect(shards / runs).toBeLessThan(RULES.dungeon.bossShardBp / 10_000 + 0.08);
+  });
+});
+
+describe('the order of a team in the row', () => {
+  const mk = (id: string, role: Role) => ({ id, role });
+
+  it('puts setters and supports left, a Guard in the middle and payoffs right', () => {
+    const order = dungeonRowOrder([mk('p', 'payoff'), mk('g', 'guard'), mk('s', 'setter')]);
+    expect(order.map((c) => c.id)).toEqual(['s', 'g', 'p']);
+    const withSupport = dungeonRowOrder([mk('g', 'guard'), mk('u', 'support'), mk('p', 'payoff')]);
+    expect(withSupport.map((c) => c.id)).toEqual(['u', 'g', 'p']);
+  });
+
+  it('keeps the order given among creatures that stand in the same place', () => {
+    const order = dungeonRowOrder([mk('a', 'setter'), mk('b', 'support'), mk('c', 'setter')]);
+    expect(order.map((c) => c.id)).toEqual(['a', 'b', 'c']);
+    const guards = dungeonRowOrder([mk('x', 'payoff'), mk('y', 'payoff'), mk('z', 'payoff')]);
+    expect(guards.map((c) => c.id)).toEqual(['x', 'y', 'z']);
+  });
+
+  it('does not change what it is given, and returns every creature once', () => {
+    const input = [mk('p', 'payoff'), mk('g', 'guard'), mk('s', 'setter')];
+    const before = JSON.stringify(input);
+    const order = dungeonRowOrder(input);
+    expect(JSON.stringify(input)).toBe(before);
+    expect(new Set(order.map((c) => c.id))).toEqual(new Set(['p', 'g', 's']));
+    expect(dungeonRowOrder([])).toEqual([]);
   });
 });

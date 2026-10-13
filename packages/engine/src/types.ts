@@ -85,6 +85,13 @@ export interface FightInput {
   finaleAbilities: readonly AbilityChoice[];
   turnOrderOverride?: TurnOrder;
   /**
+   * Whom a Guard covers when the boss aims a hit at a creature that is not a Guard: `zone` (the
+   * default, and what every raid fight uses) is the creatures in the Guard's own zone; `adjacent`
+   * is the creatures directly left and right of it, for rows of three where each zone is one slot.
+   * An aimed hit goes to a Guard standing beside the target (the left one first) while it is up.
+   */
+  guardReach?: 'zone' | 'adjacent';
+  /**
    * Luck settings for this fight, stored with the input so a replay is exact. Absent: no luck.
    * Whoever builds a live input copies `RULES.combat.luck` in.
    */

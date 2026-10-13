@@ -5,7 +5,7 @@
  */
 import { dungeonContent, dungeonFoe, roomModifier } from '../content/dungeon';
 import type { DungeonFoeDef, DungeonFoeKind } from '../content/dungeon-schema';
-import type { Element } from '../content/schema';
+import type { Element, Role } from '../content/schema';
 import { chance, int, pickWeighted, type Rng } from '../rng';
 import { RULES } from './config';
 import { droppableBases, rollGear, shardOf, type GearRolls, type PartsBundle } from './gear';
@@ -15,6 +15,26 @@ import type { GearRarity } from '../content/gear-schema';
 export function isLandmark(depth: number): boolean {
   const every = RULES.dungeon.landmarkEvery;
   return Number.isInteger(depth) && depth >= 1 && depth % every === 0;
+}
+
+// --- The row ---
+
+/** Where a role likes to stand in the dungeon's row of three: 0 left, 1 middle, 2 right. */
+const ROW_RANK: Readonly<Record<Role, number>> = { setter: 0, support: 0, guard: 1, payoff: 2 };
+
+/**
+ * A good order for a team of creatures in the dungeon's row, left to right: setters and supports on
+ * the left (they act first when the foe goes left to right, and a mark must be set before it is
+ * paid off), a Guard in the middle (it covers both neighbours, and a plain attack from the left
+ * lands on it), payoffs on the right (the end the foe reaches last). Ties keep the order given, so
+ * pass the creatures strongest first. The simulator's players and the client's "Use my strongest
+ * three" both stand teams this way; the player is free to choose any order.
+ */
+export function dungeonRowOrder<T extends { role: Role }>(creatures: readonly T[]): T[] {
+  return creatures
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => ROW_RANK[a.c.role] - ROW_RANK[b.c.role] || a.i - b.i)
+    .map((x) => x.c);
 }
 
 // --- Depth scaling ---

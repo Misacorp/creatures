@@ -70,7 +70,7 @@
       "id": "dungeon",
       "title": "Daily dungeon",
       "lines": [
-        "One run a day, with a team of three of your own. The day resets at 13:37 server time.",
+        "One run a day, with a team of three of your own in one row. The day resets at 13:37 server time.",
         "A run is three rooms: two foes, then a room boss. HP carries over from room to room.",
         "Clear all three to go one depth deeper. A lost run keeps your depth. A first-ever loss can be retried once.",
         "Every 7th depth is a landmark. Clearing it drops gear for sure.",

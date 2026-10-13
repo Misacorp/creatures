@@ -518,7 +518,15 @@ describe('the glossary covers gear and crafting', () => {
 });
 
 describe('the glossary covers the daily dungeon', () => {
-  const fixed = ['dungeon', 'depth', 'room-modifiers', 'room-boss', 'landmark', 'streak'];
+  const fixed = [
+    'dungeon',
+    'dungeon-row',
+    'depth',
+    'room-modifiers',
+    'room-boss',
+    'landmark',
+    'streak',
+  ];
 
   it('has an entry for every room modifier and every dungeon term', () => {
     for (const m of dungeonContent.modifiers) {
