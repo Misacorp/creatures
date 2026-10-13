@@ -483,3 +483,11 @@ Misa set the forward plan, recorded in `docs/roadmap.md` with design docs for ea
 - **WebSocket push:** interesting.
 - **More content:** eventually.
 - **Swap requests:** not a priority.
+
+## 2026-10-13: Roadmap reorder, crafting direction, production may change freely (Misa)
+
+- **Order:** how to play, then gear and crafting, then expeditions v2, then the daily dungeon, then analytics reports. The analytics **event log** ships with how to play so data builds up early; the reports and the `OPS_TOKEN` secret come later.
+- **Gear becomes crafting:** dismantle into parts, upgrade, improve, craft from blueprint drops, enchant. Creatures get long **downtime jobs** and crafting skills that level very slowly, for the idle RPG pillar. Slow gear at first is fine. Sketch in `design/gear.md`.
+- **Production:** players know the game is in development and progress may be wiped. Ship features when ready, including before the weekend raid test. Agents still never wipe data on their own; that is Misa's call.
+- **Beta badge:** a small "beta" superscript on the Leet Creatures title.
+- **Expeditions v2 review** happens in a shared, commentable doc; the repo copy is updated from it when Misa is done.

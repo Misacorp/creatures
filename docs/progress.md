@@ -21,13 +21,13 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
 
 ## Next
 
-Follow `docs/roadmap.md` (priority order and PR batching): 1 analytics, 2 how to play + clickable tags, 3 daily dungeon, 4 gear, 5 expeditions v2 (proposal awaiting Misa's ideas), 6 polish backlog, 7 upkeep, 8 WebSocket push, 9 content, 10 swap requests.
+Follow `docs/roadmap.md` (reordered 2026-10-13): 1 how to play + clickable tags (with the analytics event log and a beta superscript), 2 gear and crafting, 3 expeditions v2 (Misa commenting), 4 daily dungeon, 5 analytics reports, 6 polish backlog, 7 upkeep, 8 WebSocket push, 9 content, 10 swap requests.
 
 ## Open questions for Misa
 
-- Expeditions v2: which proposal parts he wants, plus his own ideas.
+- Expeditions v2: Misa is commenting in the shared doc `https://claude.ai/code/artifact/40f1a5e0-df40-4d61-8e04-154751c36f48` (docs connector; read its comments with the docs tools, then update `docs/design/expeditions-v2.md`).
 - Daily dungeon: attempts per day, leaderboards.
-- Gear: one or two slots.
+- Gear: one or two slots; jobs and expeditions as one shared busy state or separate; how many crafting skills.
 - Analytics: add the `OPS_TOKEN` secret when the report workflow lands (checklist will follow).
 
 ## Notes for future agents
