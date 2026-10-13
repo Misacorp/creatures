@@ -903,7 +903,9 @@
     "id": "part-glimmer",
     "title": "Glimmer",
     "short": "A rare part. It pays for Epic crafts and every enchant.",
-    "lines": ["Found by dismantling Epic gear, and rarely on expeditions (more often on long ones)."],
+    "lines": [
+      "Found by dismantling Epic gear, and rarely on expeditions (more often on long ones)."
+    ],
     "section": "workshop"
   },
   {
