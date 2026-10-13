@@ -6,11 +6,12 @@
  */
 import { journalEntry, expeditionContent } from '@creatures/game';
 import type { ClaimResult } from './api';
-import type { JournalFind, TripResult } from './expedition-types';
+import type { JournalFind, RankGift, TripResult } from './expedition-types';
 import { lootIsEmpty } from './gear-view';
-import { partName } from './gear-view';
+import { partName, partsEntries } from './gear-view';
+import type { PartKind } from './gear-types';
 import { rewardPileItems, type PileSource } from './reward-pile';
-import { goalName, kindName, percentText, supplyName } from './trip-view';
+import { goalName, kindName, supplyKindOf, supplyName } from './trip-view';
 
 export type RevealTone = 'home' | 'recalled' | 'failed';
 
@@ -31,10 +32,10 @@ export function revealTitle(tone: RevealTone): string {
   }
 }
 
-/** The line about a failed risky goal: which one, and the odds it had. Null when nothing failed. */
+/** The line about a failed risky goal: which one. The odds are not shown. Null when nothing failed. */
 export function failureLine(result: Pick<TripResult, 'failed' | 'pushOn'>): string | null {
   if (result.failed !== true || result.pushOn === undefined) return null;
-  return `${goalName(result.pushOn.goalId)} did not work out (it had a ${percentText(result.pushOn.oddsBp)} chance). Nothing came back, and the explorer learned nothing this time.`;
+  return `${goalName(result.pushOn.goalId)} did not work out. Nothing came back, and the explorer learned nothing this time.`;
 }
 
 /** The line about the push-on goal of a trip that did not fail; null when none was chosen. */
@@ -44,9 +45,7 @@ export function pushOnLine(result: Pick<TripResult, 'failed' | 'pushOn'>): strin
   const name = goalName(goal.goalId);
   switch (goal.outcome) {
     case 'worked':
-      return goal.risk === 'risky'
-        ? `${name} paid off (a ${percentText(goal.oddsBp)} chance).`
-        : `${name} added its reward.`;
+      return goal.risk === 'risky' ? `${name} paid off.` : `${name} added its reward.`;
     case 'declined':
       return `${name} was cut short: the explorer came home before it ended.`;
     case 'failed':
@@ -159,4 +158,59 @@ export function pileLabel(source: PileSource): string {
     }
   });
   return `Loot: ${kinds.join(', ')}`;
+}
+
+/** One thing a rank-up gift gives: a picture and a few words. */
+export interface GiftLine {
+  key: string;
+  icon:
+    | { kind: 'glyph'; id: string }
+    | { kind: 'part'; part: PartKind }
+    | { kind: 'supply'; id: string };
+  text: string;
+}
+
+export interface RankGiftView {
+  rank: number;
+  /** "Rank 4 gift". */
+  title: string;
+  lines: GiftLine[];
+}
+
+/** The things of one rank's gift, one line each: Bait, parts, supplies (several of a kind are counted). */
+export function giftLines(gift: Pick<RankGift, 'bait' | 'parts' | 'supplies'>): GiftLine[] {
+  const lines: GiftLine[] = [];
+  if (gift.bait > 0) {
+    lines.push({
+      key: 'bait',
+      icon: { kind: 'glyph', id: 'bait' },
+      text: `${String(gift.bait)} Bait`,
+    });
+  }
+  for (const part of partsEntries(gift.parts)) {
+    lines.push({
+      key: part.kind,
+      icon: { kind: 'part', part: part.kind },
+      text: `${String(part.amount)} ${partName(part.kind)}`,
+    });
+  }
+  const counts = new Map<string, number>();
+  for (const id of gift.supplies) counts.set(id, (counts.get(id) ?? 0) + 1);
+  for (const [id, amount] of counts) {
+    lines.push({
+      key: id,
+      icon: { kind: 'supply', id: supplyKindOf(id) ?? 'unknown' },
+      text: amount === 1 ? supplyName(id) : `${String(amount)} ${supplyName(id)}`,
+    });
+  }
+  return lines;
+}
+
+/** The gifts of the ranks a trip reached, lowest first. Empty when the rank did not rise. */
+export function rankGiftViews(result: Pick<ClaimResult, 'rankGifts'>): RankGiftView[] {
+  return (result.rankGifts ?? []).map((gift) => ({
+    rank: gift.rank,
+    title: `Rank ${String(gift.rank)} gift`,
+    lines: giftLines(gift),
+  }));
 }

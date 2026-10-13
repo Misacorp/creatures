@@ -1,14 +1,14 @@
 /**
- * The end-of-trip choice as plain data: each offered goal with its exact odds, its extra hours, what it
- * can bring home (as little pictures with a word each) and, for a risky goal, what failing costs. The
- * goal's name, story and reward come from the shared content; the odds and hours come from the server's
- * offer, so the card shows exactly what the server will roll.
+ * The end-of-trip choice as plain data: each offered goal with its risk in words (Safe, Risky, Very
+ * risky; never a percentage, discovery is part of the fun), its extra hours, what it can bring home (as
+ * little pictures with a word each) and, for a risky goal, what failing costs. The goal's name, story and
+ * reward come from the shared content; the risk comes from the odds in the server's offer, so the word
+ * always matches what the server will roll.
  */
 import { goalDef, partsOfSpec, type GoalReward } from '@creatures/game';
 import type { OfferedGoal } from './expedition-types';
 import { partName, partsEntries, rarityName } from './gear-view';
 import type { PartKind } from './gear-types';
-import { percentText } from './trip-view';
 
 /** What a reward line draws. */
 export type RewardIcon = { kind: 'glyph'; id: string } | { kind: 'part'; part: PartKind };
@@ -19,19 +19,33 @@ export interface RewardLine {
   text: string;
 }
 
+/** What a goal's risk is called on the card. */
+export type RiskWord = 'Safe' | 'Risky' | 'Very risky';
+
+/** A risky goal that works less often than this (basis points) is "Very risky". */
+export const VERY_RISKY_BELOW_BP = 5_000;
+
+/** The risk of a goal in words, from its kind and the exact odds the server will roll. */
+export function riskWord(risk: OfferedGoal['risk'], oddsBp: number): RiskWord {
+  if (risk === 'safe') return 'Safe';
+  return oddsBp < VERY_RISKY_BELOW_BP ? 'Very risky' : 'Risky';
+}
+
+/** What failing costs, said once for every risky goal. The odds are never shown. */
+export const FAILURE_LINE = 'May fail and bring nothing back.';
+
 export interface GoalCard {
   id: string;
   name: string;
   flavor: string;
   risk: OfferedGoal['risk'];
-  /** The chance it works out, as the server will roll it: "61%". A safe goal always works ("100%"). */
-  odds: string;
-  oddsBp: number;
+  /** The risk in words: Safe, Risky or Very risky. */
+  riskWord: RiskWord;
   /** "+2 h": hours added to the trip, counted from its end. */
   extra: string;
   /** What it brings home when it works. */
   rewards: RewardLine[];
-  /** For a risky goal: what failing means, in one sentence; null for a safe one. */
+  /** For a risky goal: what failing means, in one short line; null for a safe one. */
   failure: string | null;
 }
 
@@ -72,7 +86,7 @@ export function rewardLines(reward: GoalReward): RewardLine[] {
     out.push({
       key: 'xp',
       icon: { kind: 'glyph', id: 'rank' },
-      text: `${percentText(reward.xpBp)} more explorer XP`,
+      text: 'Bonus explorer XP',
     });
   }
   return out;
@@ -90,13 +104,10 @@ export function goalCards(goals: readonly OfferedGoal[]): GoalCard[] {
         name: def.name,
         flavor: def.flavor,
         risk: offered.risk,
-        odds: percentText(offered.oddsBp),
-        oddsBp: offered.oddsBp,
+        riskWord: riskWord(offered.risk, offered.oddsBp),
         extra: `+${String(offered.extraHours)} h`,
         rewards: rewardLines(def.reward),
-        failure: risky
-          ? `${percentText(10_000 - offered.oddsBp)} chance the whole trip fails and brings nothing back.`
-          : null,
+        failure: risky ? FAILURE_LINE : null,
       },
     ];
   });

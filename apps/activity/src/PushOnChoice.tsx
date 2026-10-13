@@ -6,7 +6,7 @@ import { glyphOrUnknown } from './glyphs';
 import { goalCards, type GoalCard } from './push-on-view';
 import { Sprite } from './sprites/Sprite';
 
-/** One goal as a card: its name, the exact odds, the extra hours, what it can bring and what failing costs. */
+/** One goal as a card: its name, its risk in words and a mark, the extra hours, what it can bring and what failing costs. */
 function GoalCardView({
   card,
   busy,
@@ -17,19 +17,19 @@ function GoalCardView({
   onPick: (goalId: string) => void;
 }) {
   const risky = card.risk === 'risky';
+  const very = card.riskWord === 'Very risky';
   return (
-    <li class={`goal-card ${risky ? 'risky' : 'safe'}`}>
+    <li class={`goal-card ${risky ? 'risky' : 'safe'}${very ? ' very' : ''}`}>
       <p class="goal-flag">
-        <Sprite sprite={glyphOrUnknown(risky ? 'warning' : 'check')} scale={2} />
+        <Sprite sprite={glyphOrUnknown(very ? 'skull' : risky ? 'warning' : 'check')} scale={2} />
         <GlossaryTag entry={GLOSSARY_IDS.goal(card.risk)} look="chip" class="tag">
-          {risky ? 'Risky' : 'Safe'}
+          {card.riskWord}
         </GlossaryTag>
       </p>
       <h5 class="pix goal-name">{card.name}</h5>
       <p class="muted goal-flavor">{card.flavor}</p>
       <p class="goal-odds">
-        <strong class="pix goal-odds-number">{card.odds}</strong>{' '}
-        <span>{risky ? 'chance it works' : 'it always works'}</span>
+        {!risky && <span>Always works</span>}
         <span class="goal-extra">
           <Sprite sprite={glyphOrUnknown('clock')} scale={2} /> {card.extra} longer
         </span>
@@ -52,7 +52,7 @@ function GoalCardView({
         type="button"
         class={risky ? 'danger' : 'primary'}
         disabled={busy}
-        aria-label={`Push on: ${card.name}, ${card.odds}${risky ? ' chance, risky' : ', safe'}`}
+        aria-label={`Push on: ${card.name}, ${card.riskWord.toLowerCase()}`}
         onClick={() => {
           onPick(card.id);
         }}
@@ -64,9 +64,10 @@ function GoalCardView({
 }
 
 /**
- * The end-of-trip choice: the trip is over and a goal is on offer. Each goal is a card with the exact
- * odds, the extra hours and what it can bring home, and a "Push on" button; the risky ones are flagged
- * with a warning mark, a red frame and what failing costs. "Come home" claims the trip as usual.
+ * The end-of-trip choice: the trip is over and a goal is on offer. Each goal is a card with its risk in
+ * words (Safe, Risky, Very risky), the extra hours and what it can bring home, and a "Push on" button;
+ * the risky ones are flagged with a mark (a warning, a skull for the very risky), a red frame and what
+ * failing costs. No odds are shown. "Come home" claims the trip as usual.
  */
 export function PushOnChoice({
   goals,
