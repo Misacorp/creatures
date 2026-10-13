@@ -216,7 +216,13 @@ export const GEAR_TABLES = [
  * The schema version of a fresh database. Tests that check it use this constant, so a new migration
  * changes one number here (and adds an undo step below), not a dozen tests.
  */
-export const LATEST_SCHEMA_VERSION = 19;
+export const LATEST_SCHEMA_VERSION = 20;
+
+/** Puts a database back to before migration 20 (the daily analytics rollups). */
+export function undoRollupMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS analytics_daily');
+  sql.exec('DELETE FROM schema_version WHERE version = 20');
+}
 
 /** Tables created by migration 18 (the daily dungeon). */
 export const DUNGEON_TABLES = ['dungeon_runs', 'dungeon_progress', 'dungeon_days'] as const;
@@ -245,6 +251,7 @@ export const EXPEDITION_TABLES = [
  * `undoDungeonMigration`.
  */
 export function undoExpeditionsMigration(sql: SqlStorage): void {
+  undoRollupMigration(sql);
   for (const table of EXPEDITION_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
   // A test that rebuilds a much older schema may have dropped the table already.
   const hasTable = sql

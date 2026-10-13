@@ -3,6 +3,7 @@ import {
   GEAR_RARITIES,
   GOAL_RISKS,
   JOB_KINDS,
+  PART_KINDS,
   RARITIES,
   RULES,
   content,
@@ -1614,7 +1615,12 @@ describe('privacy', () => {
           expect(row.props_json.length).toBeLessThanOrEqual(MAX_PROPS_CHARS);
           const props: unknown = JSON.parse(row.props_json);
           const { keys, values } = walk(props);
-          for (const key of keys) expect(key).toMatch(/^[a-z][A-Za-z]*$/);
+          for (const key of keys) {
+            // Prop names are camelCase; the only other keys are the part kinds of a `parts` prop.
+            expect(
+              /^[a-z][A-Za-z]*$/.test(key) || (PART_KINDS as readonly string[]).includes(key),
+            ).toBe(true);
+          }
           for (const value of values) expect(allowed.has(value), value).toBe(true);
         }
       },

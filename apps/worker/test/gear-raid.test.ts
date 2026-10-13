@@ -848,6 +848,7 @@ describe('expedition loot', () => {
           blueprint: 'trail-charm',
           blueprintDuplicate: false,
           supplies: 1,
+          parts: { scrap, 'ember-shard': 1, glimmer: 1 },
         });
         const actor = rows<{ actor_hash: string | null }>(
           ctx.sql,
