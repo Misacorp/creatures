@@ -28,9 +28,9 @@
       "lines": [
         "The boss carries one mark at a time. Your hits leave it.",
         "Hit a marked boss with the right element to set off a reaction.",
-        "A reaction does 4.5 times damage and uses up the mark.",
+        "A reaction deals much more damage and uses up the mark.",
         "Setters swap marks. Put them before the creature that cashes in.",
-        "Payoffs hit reactions 10% harder."
+        "Payoffs hit even harder when they set off a reaction."
       ]
     },
     {
@@ -81,7 +81,7 @@
       "id": "ranks",
       "title": "Ranks and Festivals",
       "lines": [
-        "Every boss has a Rank. A higher Rank is a tougher boss.",
+        "Every boss has a Rank. Each Rank makes the boss stronger.",
         "Win the finale and the server's Rank goes up by 1. Lose and it stays.",
         "Every 5th week is a Festival: an easier boss and extra Essence.",
         "Win a Festival to get its special creature. It also roams the Festival Grounds.",
@@ -118,7 +118,7 @@
     "lines": [
       "Splashet is a Tide Setter. Its hit leaves the boss Soaked.",
       "Stormray is a Spark Payoff. Its hit sets off Overload!",
-      "The hit does 4.5 times damage, and the Soaked mark is used up."
+      "The hit deals much more damage, and the Soaked mark is used up."
     ]
   }
 }
