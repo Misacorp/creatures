@@ -6,14 +6,16 @@ Status: **shipped 2026-10-13**: the server side (the gate, the dev clock and eve
 
 - **Server gate:**
   - A new Worker var, `DEV_TOOLS`, is `"on"` only in the staging environment in `wrangler.jsonc`, and `"off"` at the top level and in production. This is the same pattern as `RAID_PRACTICE`.
-  - Every dev route is under `/api/dev/*` and returns 404 unless `DEV_TOOLS === "on"`.
+  - Every dev route is under `/api/dev/*` and returns a plain 404 unless `DEV_TOOLS === "on"`. (Unknown `/api/*` routes answer 401, because the session check comes first, so this 404 is not hidden.)
   - A test checks that the production config has it off, and that every dev route refuses when it is off.
   - These changes need PR callouts for `wrangler.jsonc`.
 - **Client gate:**
   - The panel's code is in a separate lazily loaded chunk, imported only when the server's session or config response says dev tools are on.
   - The production build also strips it, through a Vite define.
   - Production users never download it.
-- **Scope:** dev routes act only on the caller's own guild. Most act only on the caller's own player data. Guild-level ones (raid week state, boss) act on the staging guild the caller is in. Identity comes from the session, as always.
+- **Scope:** dev routes act only on the caller's own guild. Most act only on the caller's own player data. These act on the **whole staging guild**, so they affect every player in it: the clock, raid-phase, raid-resolve, raid-simulate, raid-boss, raid-festival, dungeon-modifiers and dungeon-seed. `GET /api/dev/events` shows the guild's recent events (kind, time and props), without actors. Identity comes from the session, as always.
+- **Not idempotent:** dev POSTs carry no idempotency key, so a retry grants twice. Accepted for a staging test tool.
+- **The ledger stays append-only:** set-balances and `dungeon-reset` append `dev` entries (a negative one for what a reset takes back, never below a zero balance) and never delete ledger rows. Because the credits keep their idempotency keys, a run of the same day and attempt after a reset is not paid Bait or Essence again (gear grants of the day are deleted, so those can be granted again). Rollups ignore `source = 'dev'` ledger rows.
 - **Logging:** every dev action is logged as an analytics event kind, `dev_action`, flagged so reports exclude it. Staging data is never mixed into production reports.
 
 ## The dev clock

@@ -4,7 +4,7 @@
  *
  * - **Gate.** Everything lives under `/api/dev/*` and exists only when the `DEV_TOOLS` var is "on", which
  *   `wrangler.jsonc` sets for the staging environment only. With it off the Worker and the Durable Object
- *   both answer 404 (the answer of an unknown route) before anything else, and `GuildCore` never builds
+ *   both answer a plain 404 before anything else (not hidden: unknown routes answer 401 first), and `GuildCore` never builds
  *   a `DevTools`, so none of this code can run. A test pins production and the top level to "off".
  * - **Scope.** A tool acts on the caller's own guild (the Durable Object it runs in) and, for per-player
  *   tools, on the caller's own player data. Identity comes from the verified session, as for every route;

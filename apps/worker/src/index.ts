@@ -89,7 +89,7 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
     // Bearer OPS_TOKEN only; session tokens are not looked at here.
     if (pathname === OPS_REPORT_PATH) return handleOpsReport(request, env, { limiter: opsLimiter });
     // The dev routes do not exist unless the dev tools are on (staging): checked before anything else, with
-    // the answer of an unknown route. The Durable Object checks again.
+    // a plain 404. The Durable Object checks again.
     if (isDevPath(pathname) && env.DEV_TOOLS !== 'on') return notFound();
     const match = matchRoute(publicRoutes, pathname, request.method);
     if (match.kind === 'ok') return dispatch(publicRoutes, request, pathname, env);
