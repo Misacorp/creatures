@@ -15,6 +15,7 @@ import {
   rankChangeText,
   rankLabel,
   readinessLabel,
+  readinessMeter,
   seasonPips,
   seasonText,
 } from './raid-progress';
@@ -84,6 +85,19 @@ describe('the readiness band', () => {
     expect(READINESS_HINT).not.toMatch(/\d|%/);
     expect(readinessLabel('likely')).toBe('Likely');
     expect(readinessLabel(null)).toBeNull();
+  });
+
+  it('is a four-step meter that fills with the band, and has none without a band', () => {
+    expect(readinessMeter('long_shot')).toEqual({
+      band: 'long_shot',
+      filled: 1,
+      total: 4,
+      word: 'Long shot',
+    });
+    expect(readinessMeter('even')?.filled).toBe(2);
+    expect(readinessMeter('likely')?.filled).toBe(3);
+    expect(readinessMeter('strong')).toMatchObject({ filled: 4, total: 4, word: 'Strong' });
+    expect(readinessMeter(null)).toBeNull();
   });
 });
 

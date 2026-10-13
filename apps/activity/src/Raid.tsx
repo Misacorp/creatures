@@ -35,7 +35,8 @@ import {
 } from './raid-slots';
 import { festivalGrantText, rankChangeText } from './raid-progress';
 import { phaseName } from './raid-text';
-import { BossCard, Roster } from './RaidInfo';
+import { BossCard } from './BossCard';
+import { Roster } from './RaidInfo';
 import { RaidTimeline } from './RaidTimeline';
 import type { NowTarget } from './raid-now';
 import { showFullResults } from './raid-timeline';

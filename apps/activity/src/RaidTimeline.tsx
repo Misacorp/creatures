@@ -36,7 +36,7 @@ export function RaidTimeline({
   return (
     <section class="raid-section raid-timeline" aria-labelledby="raid-schedule-heading">
       <h3 id="raid-schedule-heading">This week</h3>
-      <div class={`now-action ${action.kind}`}>
+      <div class={`now-action now-${action.kind}`}>
         {action.target === null ? (
           <p class="now-text" role="status" aria-live="off">
             <strong class="pix">{action.label}</strong>
