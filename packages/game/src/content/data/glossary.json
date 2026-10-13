@@ -762,7 +762,7 @@
     "title": "Blueprint",
     "short": "Teaches you to craft one kind of item. Learned once.",
     "lines": [
-      "Blueprints come from long expeditions and the welcome kit.",
+      "Blueprints come from expeditions (more often on long ones) and the welcome kit.",
       "A blueprint you already know turns into 5 scrap."
     ],
     "section": "workshop"
@@ -903,7 +903,7 @@
     "id": "part-glimmer",
     "title": "Glimmer",
     "short": "A rare part. It pays for Epic crafts and every enchant.",
-    "lines": ["Found by dismantling Epic gear, and rarely on 12 hour expeditions."],
+    "lines": ["Found by dismantling Epic gear, and rarely on expeditions (more often on long ones)."],
     "section": "workshop"
   },
   {

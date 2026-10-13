@@ -10,7 +10,7 @@ So gear is not only loot: it is the start of a **crafting world** with long-runn
 
 ## Why
 
-- **Essence sink.** Essence piles up for daily players (about 600 held by week 12 in the sim), and evolution is the only sink today.
+- **Essence sink.** Essence piled up for daily players (about 800 held by week 12 in the sim before gear), and evolution (20 Essence each) was the only sink. With gear, daily players hold about 160 at week 12 (see `docs/balance/report-2026-10-13-gear.md`).
 - **Loot with identity.** Raid finales, the daily dungeon, expeditions and Festivals need rewards that feel different from currency.
 - **Build depth.** Crit chance and crit damage now exist as stats, with caps, and gear is the natural way to shape them per creature.
 
@@ -89,13 +89,15 @@ All rolls use live crypto randomness at the moment of the drop. Grants are idemp
 
 ## Balance and sim
 
-The sim models gear acquisition and upgrades per archetype. New targets:
+The sim models gear acquisition, upgrades and crafting per archetype (`packages/sim/src/gear.ts`, with the game's own pure functions). Targets, as built (`docs/design/balance-targets.md`):
 
-- gear share of power at week 8: at most 25%;
-- Essence held by daily players stays bounded, with no runaway stockpile;
-- newcomer catch-up: a week-2 player's power is at least X% of the median.
+- gear share of a daily player's raid-team power at week 8: 10–20% (the hard ceiling is 25%);
+- the first crafted item of a daily player within 7 days;
+- Essence held by daily players at week 12 not above today's, and its weekly growth no faster than today's;
+- the best crafter of a daily player at about Crafting level 5 (4–6) after 30 days;
+- newcomer catch-up: a week-4 joiner has at least 60% of the median daily player's gear power at week 8.
 
-The raid and dungeon targets must still pass after gear (retune boss HP if needed).
+The raid, long-run, fairness and collection targets are measured with gear on and still pass; this needed a boss HP retune (see `decisions.md`, 2026-10-13, gear numbers by simulation).
 
 ## Open questions for Misa
 
@@ -156,7 +158,7 @@ Defaults for the open questions until Misa says otherwise: **one slot** per crea
 
 **Crafting skill:**
 
-- XP per finished job equals its hours × 10. Levels run 1–10 on a slow curve: a daily player's best crafter reaches about level 5 in a month.
+- XP per finished job equals its hours × 24 (tuned by the sim; v1 had 10). Levels run 1–10 on a slow curve (100, 250, 450, 700, 1000, 1600, 2500, 3800 and 5500 XP for levels 2 to 10): a daily player's best crafter reaches about level 5 in a month.
 - Each level gives −3% job time, and +1% chance that a craft comes out one rarity higher.
 - The skill never touches combat.
 

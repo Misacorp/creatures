@@ -3,7 +3,7 @@
     "id": "tidal-colossus",
     "name": "Tidal Colossus",
     "element": "tide",
-    "baseHp": 6689,
+    "baseHp": 7344,
     "baseAtk": 30,
     "turnOrder": "left_to_right",
     "gimmicks": [
@@ -30,7 +30,7 @@
     "id": "cinder-wyrm",
     "name": "Cinder Wyrm",
     "element": "ember",
-    "baseHp": 2749,
+    "baseHp": 2916,
     "baseAtk": 30,
     "turnOrder": "speed",
     "gimmicks": [
@@ -47,7 +47,7 @@
     "lootTable": "cinder-wyrm",
     "finaleRounds": 12,
     "hpExponent": {
-      "num": 121,
+      "num": 123,
       "den": 100
     }
   },
@@ -55,7 +55,7 @@
     "id": "thornmother",
     "name": "Thornmother",
     "element": "grove",
-    "baseHp": 5977,
+    "baseHp": 6729,
     "baseAtk": 30,
     "turnOrder": "right_to_left",
     "gimmicks": [
@@ -81,7 +81,7 @@
     "id": "storm-sovereign",
     "name": "Storm Sovereign",
     "element": "spark",
-    "baseHp": 5203,
+    "baseHp": 5423,
     "baseAtk": 30,
     "turnOrder": "left_to_right",
     "gimmicks": [
@@ -99,7 +99,7 @@
     "lootTable": "storm-sovereign",
     "finaleRounds": 12,
     "hpExponent": {
-      "num": 113,
+      "num": 115,
       "den": 100
     }
   }

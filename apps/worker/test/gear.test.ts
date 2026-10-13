@@ -1067,19 +1067,22 @@ describe('workshop jobs: starting', () => {
         const jobId = (res.body['result'] as { jobId: string }).jobId;
         const gear = res.body['gear'] as GearBody;
         const job = gear.jobs.find((j) => j.id === jobId) as JobBody;
-        // wave-band: a Rare blueprint: 12 scrap and a Tide shard, 8 hours.
+        // wave-band: a Rare blueprint: 18 scrap and a Tide shard, 8 hours.
         expect(job).toMatchObject({
           creatureId: c1,
           kind: 'craft',
           input: { baseId: 'wave-band' },
-          cost: { scrap: 12, 'tide-shard': 1 },
+          cost: { scrap: RULES.gear.craft.rare.scrap, 'tide-shard': 1 },
           startedAt: T0,
           endsAt: T0 + 8 * HOUR,
           status: 'running',
           claimedAt: null,
           result: null,
         });
-        expect(partsOf(ctx, p.id)).toMatchObject({ scrap: 18, 'tide-shard': 2 });
+        expect(partsOf(ctx, p.id)).toMatchObject({
+          scrap: 30 - RULES.gear.craft.rare.scrap,
+          'tide-shard': 2,
+        });
         expect(gear.slots).toEqual({ total: 2, used: 1 });
         expect(gear.inventory).toEqual({ cap: 60, used: 0, reserved: 1 });
         // The collection says the creature is busy with a job, not away.
@@ -1167,7 +1170,7 @@ describe('workshop jobs: starting', () => {
         expect((await craft(c1)).status).toBe(200);
         // 59 items and a craft that will become the 60th: full.
         expect(await craft(c2)).toMatchObject({ status: 409, body: { error: 'inventory_full' } });
-        expect(partsOf(ctx, p.id).scrap).toBe(100 - 6);
+        expect(partsOf(ctx, p.id).scrap).toBe(100 - RULES.gear.craft.common.scrap);
 
         // A full workshop: free the inventory and fill both slots.
         ctx.sql.exec("DELETE FROM gear_items WHERE source = 'test'");
@@ -1317,7 +1320,7 @@ describe('workshop jobs: starting', () => {
           expect(r.body['result']).toEqual(first.body['result']);
         }
         expect(count(ctx.sql, 'workshop_jobs')).toBe(1);
-        expect(partsOf(ctx, p.id).scrap).toBe(100 - 6);
+        expect(partsOf(ctx, p.id).scrap).toBe(100 - RULES.gear.craft.common.scrap);
         expect(events(ctx, 'job_start')).toHaveLength(1);
         const other = await p.call('POST', '/api/workshop/jobs', { ...body, creatureId: c2 });
         expect(other).toMatchObject({ status: 409, body: { error: 'key_conflict' } });
@@ -1454,8 +1457,8 @@ describe('workshop jobs: claiming', () => {
           baseId: 'wave-band',
           rarity,
           upgraded: false,
-          xp: 80,
-          skillXp: 80,
+          xp: 192,
+          skillXp: 192,
           skillLevel: 2,
           leveledUp: true,
         });
@@ -1473,7 +1476,7 @@ describe('workshop jobs: claiming', () => {
         const gear = res.body['gear'] as GearBody;
         expect(gear.inventory).toEqual({ cap: 60, used: 1, reserved: 0 });
         expect(gear.slots.used).toBe(0);
-        expect(gear.skills[0]).toMatchObject({ xp: 80, level: 2 });
+        expect(gear.skills[0]).toMatchObject({ xp: 192, level: 2 });
         expect(gear.jobs[0]).toMatchObject({ status: 'claimed', claimedAt: T0 + 8 * HOUR });
         expect(events(ctx, 'job_claim')).toEqual([
           {
@@ -1482,7 +1485,7 @@ describe('workshop jobs: claiming', () => {
             rarity,
             upgraded: false,
             enchant: null,
-            xp: 80,
+            xp: 192,
             skillLevel: 2,
             leveledUp: true,
           },
@@ -1526,7 +1529,7 @@ describe('workshop jobs: claiming', () => {
         expect(rng.drawn()).toBe(drawn);
         expect(count(ctx.sql, 'gear_items')).toBe(1);
         expect(rows<{ xp: number }>(ctx.sql, 'SELECT xp FROM crafting_skill')).toEqual([
-          { xp: 80 },
+          { xp: 192 },
         ]);
         expect(events(ctx, 'job_claim')).toHaveLength(1);
         // Same key on a different job is a conflict.
@@ -1591,9 +1594,9 @@ describe('workshop jobs: claiming', () => {
         learn(ctx, p.id, 'trail-charm');
         parts(ctx, p.id, { scrap: 100 });
         const [c1] = p.creatureIds as [string];
-        // A level 2 creature (80 XP).
+        // A level 2 creature (100 XP).
         ctx.sql.exec(
-          'INSERT INTO crafting_skill (user_id, creature_id, xp) VALUES (?, ?, 80)',
+          'INSERT INTO crafting_skill (user_id, creature_id, xp) VALUES (?, ?, 100)',
           p.id,
           c1,
         );
@@ -1610,14 +1613,14 @@ describe('workshop jobs: claiming', () => {
         const res = await p.call('POST', `/api/workshop/jobs/${job.id}/claim`, {
           idempotencyKey: newKey(),
         });
-        // 4 nominal hours is 40 XP whatever the skill.
+        // 4 nominal hours is 96 XP whatever the skill.
         expect(res.body['result']).toMatchObject({
-          xp: 40,
-          skillXp: 120,
+          xp: 96,
+          skillXp: 196,
           skillLevel: 2,
           leveledUp: false,
         });
-        expect(skillLevel(120)).toBe(2);
+        expect(skillLevel(196)).toBe(2);
       },
       opts(),
     );
@@ -1642,7 +1645,7 @@ describe('workshop jobs: claiming', () => {
         parts(ctx, p.id, { scrap: 100 });
         const [c1] = p.creatureIds as [string];
         ctx.sql.exec(
-          'INSERT INTO crafting_skill (user_id, creature_id, xp) VALUES (?, ?, 5000)',
+          'INSERT INTO crafting_skill (user_id, creature_id, xp) VALUES (?, ?, 6000)',
           p.id,
           c1,
         );
@@ -1738,7 +1741,7 @@ describe('workshop jobs: claiming', () => {
           secondaryIndex: 1,
           from: before.secondary[1],
           to: after.secondary[1],
-          xp: 20,
+          xp: 48, // 2 nominal hours at 24 XP per hour
         });
         // Unlocked again.
         expect((res.body['gear'] as GearBody).items[0]?.jobId).toBeNull();
@@ -1816,7 +1819,7 @@ describe('workshop jobs: claiming', () => {
           kind: 'enchant',
           gearId: id,
           enchantId: 'spark-luck',
-          xp: 60,
+          xp: 144, // 6 nominal hours at 24 XP per hour
         });
         expect(rows(ctx.sql, 'SELECT enchant_id FROM gear_items')).toEqual([
           { enchant_id: 'spark-luck' },

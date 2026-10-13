@@ -291,22 +291,22 @@ export const RULES = {
     /** Roll ranges (inclusive, basis points) per stat: the primary stat of an item and its secondaries. */
     rolls: {
       primary: {
-        atk: { min: 300, max: 500 },
-        hp: { min: 400, max: 700 },
-        spd: { min: 200, max: 400 },
-        critChance: { min: 100, max: 200 },
-        critDamage: { min: 500, max: 900 },
+        atk: { min: 520, max: 880 },
+        hp: { min: 760, max: 1_260 },
+        spd: { min: 300, max: 600 },
+        critChance: { min: 150, max: 300 },
+        critDamage: { min: 700, max: 1_300 },
       },
       secondary: {
-        atk: { min: 100, max: 250 },
-        hp: { min: 150, max: 350 },
-        spd: { min: 100, max: 200 },
-        critChance: { min: 50, max: 100 },
-        critDamage: { min: 200, max: 400 },
+        atk: { min: 200, max: 500 },
+        hp: { min: 300, max: 700 },
+        spd: { min: 150, max: 300 },
+        critChance: { min: 75, max: 150 },
+        critDamage: { min: 300, max: 600 },
       },
     },
     /** What each upgrade level adds to the primary stat (basis points). */
-    upgradeStepBp: { atk: 80, hp: 100, spd: 50, critChance: 25, critDamage: 150 },
+    upgradeStepBp: { atk: 250, hp: 260, spd: 70, critChance: 35, critDamage: 200 },
     /**
      * Total bonus caps per creature (basis points): Attack +20%, HP +25%, speed +10%, crit chance
      * +5 points and crit damage +25 points. The engine's crit caps (`combat.luck`) still apply.
@@ -331,10 +331,10 @@ export const RULES = {
     },
     /** What crafting from a blueprint costs, by the blueprint's rarity (a shard is of the base's tint). */
     craft: {
-      common: { scrap: 6, shard: 0, glimmer: 0 },
-      rare: { scrap: 12, shard: 1, glimmer: 0 },
-      epic: { scrap: 24, shard: 2, glimmer: 1 },
-      festival: { scrap: 24, shard: 2, glimmer: 2 },
+      common: { scrap: 9, shard: 0, glimmer: 0 },
+      rare: { scrap: 18, shard: 1, glimmer: 0 },
+      epic: { scrap: 32, shard: 2, glimmer: 1 },
+      festival: { scrap: 32, shard: 2, glimmer: 2 },
     },
     /** Improve (re-roll one secondary) costs scrap by the item's rarity. */
     improve: { scrap: { rare: 6, epic: 12, festival: 12 } },
@@ -344,8 +344,8 @@ export const RULES = {
     jobHours: { craft: { common: 4, rare: 8, epic: 12, festival: 12 }, improve: 2, enchant: 6 },
     skill: {
       /** Total XP to reach each level (index 0 is level 1). XP per job is its nominal hours x `xpPerHour`. */
-      xpForLevel: [0, 80, 200, 380, 600, 900, 1_300, 1_800, 2_500, 3_500],
-      xpPerHour: 10,
+      xpForLevel: [0, 100, 250, 450, 700, 1_000, 1_600, 2_500, 3_800, 5_500],
+      xpPerHour: 24,
       /** Each level above 1 shortens jobs by this much and adds this chance of a rarity up on a craft (basis points). */
       timeReductionBpPerLevel: 300,
       rarityUpBpPerLevel: 100,
@@ -368,16 +368,16 @@ export const RULES = {
         /** Chance (basis points) of one shard of the explorer's element, on a completed trip. */
         shardBp: { short: 1_500, medium: 3_000, long: 5_000 },
         /** Chance of one glimmer. */
-        glimmerBp: { short: 0, medium: 0, long: 500 },
+        glimmerBp: { short: 100, medium: 400, long: 1_000 },
         /** Chance of a blueprint. */
-        blueprintBp: { short: 0, medium: 0, long: 1_000 },
+        blueprintBp: { short: 200, medium: 800, long: 1_500 },
       },
       /** Rarity odds (basis points) of a dropped blueprint; the base is picked evenly among that rarity. */
       blueprintOddsBp: { common: 6_000, rare: 3_500, epic: 500 },
       /** A blueprint the player already knows turns into this much scrap. */
       duplicateBlueprintScrap: 5,
       /** The welcome kit: one common item, one common blueprint and this much scrap. */
-      welcomeScrap: 8,
+      welcomeScrap: 10,
     },
   },
   nickname: {

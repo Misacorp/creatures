@@ -41,7 +41,7 @@ function calibrate(rounds: number, seed: string, seedCount: number, io: Io): voi
   const seeds = Array.from({ length: seedCount }, (_, i) => (i === 0 ? seed : `${seed}-${i}`));
   const prepared = seeds.map((sd) => {
     const settings = defaultSettings('full', { seed: sd });
-    return { sd, settings, snapshots: runEconomies(settings).snapshots };
+    return { sd, settings, snapshots: runEconomies(settings, { baseline: false }).snapshots };
   });
   const sizes = [5, 10, 15];
   for (let round = 1; round <= rounds; round++) {
