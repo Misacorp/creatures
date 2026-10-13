@@ -4014,3 +4014,588 @@ button.gp-more {
   color: var(--gold);
   font-family: var(--display);
 }
+
+/* --- Gear and the Workshop --- */
+
+:root {
+  --gear: #7fe0d0; /* the gear's own share of a stat */
+  --rarity-common: var(--haze);
+  --rarity-rare: #b48cff;
+  --rarity-epic: var(--gold);
+  --rarity-festival: #ff8ad8;
+}
+
+.rarity-common {
+  --rar: var(--rarity-common);
+}
+
+.rarity-rare {
+  --rar: var(--rarity-rare);
+}
+
+.rarity-epic {
+  --rar: var(--rarity-epic);
+}
+
+.rarity-festival {
+  --rar: var(--rarity-festival);
+}
+
+/* Four tabs on a phone: tighter gaps and type, the anvil only where there is room. */
+.tab-glyph {
+  display: none;
+  margin-right: 0.375rem;
+  vertical-align: middle;
+}
+
+@media (max-width: 30rem) {
+  .tabs {
+    gap: 0.375rem;
+  }
+
+  .tab {
+    padding-inline: 0.125rem;
+    font-size: 0.8125rem;
+  }
+}
+
+@media (min-width: 30.0625rem) {
+  .tab-glyph {
+    display: inline-block;
+  }
+}
+
+/* The frame of an item: every rarity has its own edge, and the pips say the rarity without colour. */
+.item-frame {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  margin: 6px;
+  padding: 3px;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--rar, var(--haze));
+}
+
+.item-frame.rarity-rare {
+  box-shadow:
+    0 0 0 2px var(--rar),
+    0 0 0 4px var(--ink),
+    0 0 0 6px var(--rar);
+}
+
+.item-frame.rarity-epic {
+  box-shadow:
+    0 0 0 3px var(--rar),
+    0 0 0 5px var(--ink);
+}
+
+.item-frame.rarity-festival {
+  outline: 2px dashed var(--rar);
+  outline-offset: 2px;
+}
+
+.item-frame canvas.sprite {
+  position: relative;
+}
+
+.rarity-mark {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 1px 2px;
+  background: var(--ink);
+  color: var(--rar, var(--haze));
+  font-family: var(--display);
+  font-size: 0.5rem;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.item-frame.empty {
+  width: 42px;
+  height: 42px;
+  box-shadow: none;
+  outline: 2px dashed var(--haze);
+  outline-offset: 0;
+}
+
+.slot-plus {
+  color: var(--haze);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.item-frame.big {
+  margin: 8px;
+}
+
+.rarity-tag {
+  color: var(--rar);
+}
+
+.gear-bonus {
+  color: var(--gear);
+  font-family: var(--display);
+  font-weight: 400;
+}
+
+.gear-share {
+  color: var(--gear);
+}
+
+.badge.busy {
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 2px var(--haze);
+}
+
+.inline-glyph {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.workshop {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ws-section {
+  margin-bottom: 0.5rem;
+}
+
+.ws-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.empty {
+  padding: 0.5rem 0.75rem;
+  border: 2px dashed var(--line);
+}
+
+/* Parts as icons with numbers. */
+.parts-row,
+.cost-list,
+.loot-parts,
+.loot-notes,
+.loot-items,
+.stat-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 0.625rem;
+  margin: 0.25rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.parts-row li.none {
+  opacity: 0.55;
+}
+
+.part-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.375rem 0.125rem 0.25rem;
+  background: var(--ink);
+  color: var(--bone);
+  font-size: 0.875rem;
+}
+
+.part-count canvas.sprite {
+  flex: none;
+}
+
+.part-amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.cost-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.cost-list li.short {
+  color: var(--bad);
+}
+
+.cost-list li.short .part-count {
+  box-shadow: inset 0 calc(var(--px) * -1) 0 0 var(--bad);
+}
+
+.cost-name {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+/* The bag. */
+.inv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr));
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+button.inv-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 4.75rem;
+  padding: 0.25rem;
+  background: var(--dusk);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
+button.inv-cell.selected {
+  background: var(--mine);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    0 0 0 calc(var(--px) * 2) var(--gold);
+}
+
+.item-level {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  z-index: 1;
+  padding: 0 0.25rem;
+  background: var(--ink);
+  color: var(--gold);
+  font-size: 0.75rem;
+}
+
+.item-flag {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  padding: 0 0.25rem;
+  background: var(--ink);
+  color: var(--haze);
+  font-size: 0.625rem;
+}
+
+.item-flag.worn {
+  color: var(--gear);
+}
+
+/* One item. */
+.item-detail {
+  margin-top: 0.5rem;
+}
+
+.item-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.item-title {
+  min-width: 0;
+}
+
+.item-title h3 {
+  margin: 0;
+}
+
+.item-title .tags {
+  margin: 0.25rem 0;
+}
+
+.item-title .flavor {
+  margin: 0;
+}
+
+.stat-list {
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.item-actions .actions,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.75rem;
+}
+
+.reason {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 0.5rem;
+  border-left: 3px solid var(--gold);
+  color: var(--bone);
+  font-size: 0.875rem;
+}
+
+button.danger {
+  background: var(--bad);
+  color: var(--ink);
+}
+
+.confirm,
+.job-starter,
+.equip-panel {
+  margin: 0.5rem 0;
+  padding: 0.625rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.confirm {
+  box-shadow: inset 0 0 0 var(--px) var(--bad);
+}
+
+.job-starter h4,
+.confirm h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0 0 0.25rem;
+}
+
+/* A list of creatures (or stats) to choose from: native radios in tappable rows. */
+fieldset.picker {
+  min-width: 0;
+  margin: 0.5rem 0;
+  padding: 0;
+  border: 0;
+}
+
+.picker legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+label.pick {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+  color: var(--bone);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+label.pick.on {
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}
+
+label.pick.busy {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+label.pick input[type='radio'] {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--gold);
+}
+
+.pick-text {
+  display: grid;
+  min-width: 0;
+}
+
+.pick-name {
+  font-size: 0.9375rem;
+}
+
+.pick-meta {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+/* Jobs and blueprints. */
+.job-slot h4 {
+  margin: 0 0 0.25rem;
+}
+
+.job-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.job-title {
+  margin: 0;
+}
+
+.job-bar {
+  margin: 0.5rem 0 0.25rem;
+}
+
+.job-state {
+  margin: 0.25rem 0 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.job-state.ready {
+  color: var(--gold);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .job-bar > span {
+    transition: width 1s linear;
+  }
+}
+
+.blueprints {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bp-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bp-name {
+  margin: 0;
+}
+
+.bp-text .tags {
+  margin: 0.125rem 0;
+}
+
+/* The gear slot on a creature card. */
+.card-gear {
+  margin: 0.5rem 0;
+}
+
+.gear-line {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+button.gear-slot {
+  flex: none;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+button.gear-slot:active:not(:disabled) {
+  box-shadow: none;
+}
+
+.gear-text {
+  margin: 0;
+  min-width: 0;
+}
+
+.gear-main {
+  font-size: 0.8125rem;
+}
+
+.gear-picker {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.pick-items {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0.375rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+button.pick-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+}
+
+.pick-item-text {
+  display: grid;
+  min-width: 0;
+  font-size: 0.875rem;
+}
+
+.blocked-note {
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+/* Loot lists: expedition claims and the finale. */
+.loot {
+  margin: 0.5rem 0;
+}
+
+.loot-items {
+  justify-content: center;
+}
+
+.loot-item {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.loot-name {
+  font-family: var(--display);
+}
+
+.loot-parts {
+  justify-content: center;
+}
+
+.loot-notes {
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.reveal-gear-box h4 {
+  margin: 0.5rem 0 0;
+  color: var(--gold);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .loot .pop-in {
+    animation: reveal-pop-in 600ms steps(5) both;
+  }
+
+  .reveal-gear-box:not(.done) {
+    opacity: 0;
+  }
+
+  .reveal-gear-box.done {
+    animation: reveal-pop 300ms steps(3) both;
+  }
+}

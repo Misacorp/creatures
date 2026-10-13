@@ -11,6 +11,8 @@ import {
   getSpecies,
   speciesName,
 } from './game';
+import { expeditionBlocked, isFree, lootIsEmpty } from './gear-view';
+import { LootList } from './GearLoot';
 import { useNow } from './hooks';
 import { GlossaryTag } from './Glossary';
 import { ElementChip } from './sprites/ElementChip';
@@ -177,7 +179,11 @@ function Reveal({ result, onDismiss }: { result: ClaimResult; onDismiss: () => v
     <section class="reveal" aria-live="polite" aria-labelledby="reveal-heading">
       <h3 id="reveal-heading">{result.recalled ? 'Expedition recalled' : 'Expedition complete'}</h3>
       {result.catches.length === 0 ? (
-        <p>Nothing came back this time.</p>
+        <p>
+          {result.loot === undefined || lootIsEmpty(result.loot)
+            ? 'Nothing came back this time.'
+            : 'No creatures came back this time.'}
+        </p>
       ) : (
         <ul>
           {result.catches.map((entry, index) => (
@@ -202,6 +208,9 @@ function Reveal({ result, onDismiss }: { result: ClaimResult; onDismiss: () => v
           ))}
         </ul>
       )}
+      {result.loot !== undefined && (
+        <LootList loot={result.loot} label="What the trip brought home" />
+      )}
       <button type="button" onClick={onDismiss}>
         Close
       </button>
@@ -220,7 +229,9 @@ export function Expeditions({
 }: Props) {
   const active = state.expeditions.filter((e) => e.status === 'active');
   const now = useNow(active.length > 0);
-  const available = state.creatures.filter((c) => !c.away);
+  // A creature on a job in the Workshop cannot go either; the reason is shown, not just hidden.
+  const available = state.creatures.filter(isFree);
+  const blocked = expeditionBlocked(state.creatures);
   const emptySlots = Math.max(0, state.slots.total - active.length);
   const panels: (Expedition | null)[] = [
     ...active,
@@ -230,6 +241,13 @@ export function Expeditions({
   return (
     <>
       {reveal !== null && <Reveal result={reveal} onDismiss={onDismissReveal} />}
+      {blocked.length > 0 && (
+        <ul class="blocked-note muted" aria-label="Creatures that cannot go">
+          {blocked.map(({ creature, reason }) => (
+            <li key={creature.id}>{reason}</li>
+          ))}
+        </ul>
+      )}
       <ul class="cards">
         {panels.map((panel, index) => (
           <li key={index} class="card-item slot">

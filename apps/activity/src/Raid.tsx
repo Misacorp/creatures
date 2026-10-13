@@ -290,6 +290,7 @@ export function Raid({
         <RevealCard
           reveal={reveal}
           busy={busy}
+          gearWeek={reveal.week}
           afterAction={{
             week: reveal.week,
             party: reveal.party,

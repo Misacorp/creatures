@@ -16,18 +16,25 @@ import {
 import { createKeyStore } from './actions';
 import { Collection } from './Collection';
 import { Expeditions, type SendRequest } from './Expeditions';
+import { fetchGear } from './gear-api';
+import { createGearActions } from './gear-actions';
+import type { GearState, JobResult } from './gear-types';
 import { GlossaryTag } from './Glossary';
 import { clockOffset, creatureName, errorText, speciesName } from './game';
+import { glyphOrUnknown } from './glyphs';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
+import { Sprite } from './sprites/Sprite';
 import { StarterPicker } from './StarterPicker';
+import { Workshop } from './Workshop';
 
-type Tab = 'collection' | 'expeditions' | 'raid';
+type Tab = 'collection' | 'expeditions' | 'raid' | 'workshop';
 
 const TABS: readonly { id: Tab; label: string }[] = [
   { id: 'collection', label: 'Collection' },
   { id: 'expeditions', label: 'Expeditions' },
   { id: 'raid', label: 'Raid' },
+  { id: 'workshop', label: 'Workshop' },
 ];
 
 interface Loaded {
@@ -56,12 +63,18 @@ export function Game({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reveal, setReveal] = useState<ClaimResult | null>(null);
+  // Gear, parts, blueprints and jobs; null until the first load (or when it failed).
+  const [gear, setGear] = useState<GearState | null>(null);
+  const [gearFailed, setGearFailed] = useState(false);
+  const [jobReveal, setJobReveal] = useState<JobResult | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const keys = useRef(createKeyStore()).current;
   // A second tap in the same tick must not start a second request, even before `busy` renders.
   const inFlight = useRef(false);
   // Counts player actions, so a background refresh that started before one is never applied.
   const actionCount = useRef(0);
+  // Counts gear views that came from an action, so a slower load that started before one is dropped.
+  const gearVersion = useRef(0);
   const { game, offset } = current;
 
   // While the first leet sync is still running, ask again every few seconds (a few times at most)
@@ -122,6 +135,7 @@ export function Game({
         } catch {
           // Keep the error above; the next action reloads anyway.
         }
+        loadGear();
       }
       return undefined;
     } finally {
@@ -146,6 +160,38 @@ export function Game({
       () => undefined,
     );
   }
+
+  /** Loads the gear view (inventory, parts, jobs). The first call also gives the welcome kit, once. */
+  function loadGear(): void {
+    const startedAt = gearVersion.current;
+    fetchGear().then(
+      (next) => {
+        // An action answered while this was on its way: its view is newer.
+        if (gearVersion.current !== startedAt) return;
+        setGear(next);
+        setGearFailed(false);
+      },
+      () => {
+        setGearFailed(true);
+      },
+    );
+  }
+
+  // The gear view loads once the game is on screen, so the collection can offer its items at once.
+  useEffect(() => {
+    if (game.starterChosen) loadGear();
+  }, [game.starterChosen]);
+
+  const gearActions = createGearActions({
+    run,
+    keyFor: (action) => keys.keyFor(action),
+    apply: (views) => {
+      gearVersion.current += 1;
+      setCurrent(loaded(views.state));
+      setGear(views.gear);
+      setGearFailed(false);
+    },
+  });
 
   if (!game.starterChosen) {
     return (
@@ -192,8 +238,12 @@ export function Game({
               setError(null);
               setNotice(null);
               refreshState();
+              if (id === 'workshop' || id === 'collection') loadGear();
             }}
           >
+            {id === 'workshop' && (
+              <Sprite sprite={glyphOrUnknown('anvil')} scale={2} class="tab-glyph" />
+            )}
             {label}
           </button>
         ))}
@@ -212,7 +262,11 @@ export function Game({
         {tab === 'collection' && (
           <Collection
             state={game}
+            gear={gear}
             busy={busy}
+            onEquip={async (gearId, creatureId) =>
+              (await gearActions.equip(gearId, creatureId)) !== undefined
+            }
             onTrain={(creature) => {
               const action = `train:${creature.id}`;
               void runState(action, () => trainCreature(creature.id, keys.keyFor(action)));
@@ -254,11 +308,29 @@ export function Game({
                   if (done === undefined) return;
                   setCurrent(loaded(done.state));
                   setReveal(done.result);
+                  // The trip's parts and blueprints are in the Workshop now.
+                  loadGear();
                 },
               );
             }}
             onDismissReveal={() => {
               setReveal(null);
+            }}
+          />
+        )}
+        {tab === 'workshop' && (
+          <Workshop
+            state={game}
+            gear={gear}
+            failed={gearFailed}
+            offset={offset}
+            busy={busy}
+            reveal={jobReveal}
+            actions={gearActions}
+            onRetry={loadGear}
+            onClaimed={setJobReveal}
+            onDismissReveal={() => {
+              setJobReveal(null);
             }}
           />
         )}

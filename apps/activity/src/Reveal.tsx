@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { AfterAction } from './AfterAction';
 import { glyphOrUnknown } from './glyphs';
@@ -7,9 +8,10 @@ import type { RaidReveal } from './raid-api';
 import { finalFrame, revealFrames, type RevealFrame } from './reveal-anim';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
+import { FinaleGearLoot } from './FinaleGearLoot';
 
 /** The frame to show now: it walks through the reveal's timeline, or sits at the end when motion is off. */
-function useRevealFrame(essence: number, reducedMotion: boolean): RevealFrame {
+export function useRevealFrame(essence: number, reducedMotion: boolean): RevealFrame {
   const [frame, setFrame] = useState<RevealFrame>(() =>
     reducedMotion ? finalFrame(essence) : (revealFrames(essence)[0] as RevealFrame),
   );
@@ -28,6 +30,30 @@ function useRevealFrame(essence: number, reducedMotion: boolean): RevealFrame {
     };
   }, [essence, reducedMotion]);
   return frame;
+}
+
+/**
+ * The orb that shakes and opens (the finale's loot reveal and a claimed job both use it). The frame
+ * comes from `useRevealFrame`; it is decoration, so it is hidden from screen readers.
+ */
+export function RevealStage({
+  frame,
+  opened,
+}: {
+  frame: RevealFrame;
+  /** What the opened orb shows instead of the gem (a claimed job shows its item). */
+  opened?: ComponentChildren;
+}) {
+  const shaking = frame.phase === 'shake';
+  return (
+    <div class={`reveal-stage phase-${frame.phase}`} aria-hidden="true">
+      {!shaking && opened !== undefined ? (
+        <span class="reveal-prop">{opened}</span>
+      ) : (
+        <Sprite sprite={glyphOrUnknown(shaking ? 'orb' : 'gem')} scale={8} class="reveal-prop" />
+      )}
+    </div>
+  );
 }
 
 /** "First on server" as a banner with a sparkle on each side. */
@@ -53,6 +79,7 @@ export function RevealCard({
   reveal,
   busy,
   afterAction,
+  gearWeek,
   onDismiss,
 }: {
   reveal: Pick<RaidReveal, 'cleared' | 'essence'> &
@@ -60,13 +87,14 @@ export function RevealCard({
   busy: boolean;
   /** Where the finale's after-action card is asked for (the caller's party in that finale). */
   afterAction?: { week: string; party: number; onReplay?: () => void };
+  /** The raid week whose gear grant (the finale's roll and the Festival piece) is shown as a pop-in. */
+  gearWeek?: string;
   onDismiss: () => void;
 }) {
   const summary = revealSummary(reveal);
   const reduced = usePrefersReducedMotion();
   const frame = useRevealFrame(reveal.essence, reduced);
   const done = frame.phase === 'done';
-  const prop = frame.phase === 'shake' ? 'orb' : 'gem';
   const festivalSpecies = reveal.festivalGrant?.species ?? null;
   return (
     <section class="reveal-card" role="status" aria-labelledby="reveal-heading">
@@ -77,9 +105,7 @@ export function RevealCard({
         </span>
       </h3>
       <p>{summary.outcome}</p>
-      <div class={`reveal-stage phase-${frame.phase}`} aria-hidden="true">
-        <Sprite sprite={glyphOrUnknown(prop)} scale={8} class="reveal-prop" />
-      </div>
+      <RevealStage frame={frame} />
       <p class="reveal-essence">
         <span class="visually-hidden">{summary.essence}</span>
         <span aria-hidden="true">
@@ -97,6 +123,7 @@ export function RevealCard({
         </div>
       )}
       {summary.rank !== null && <p class="reveal-rank">{summary.rank}</p>}
+      {gearWeek !== undefined && <FinaleGearLoot week={gearWeek} done={done} />}
       {afterAction !== undefined && (
         <AfterAction
           week={afterAction.week}
