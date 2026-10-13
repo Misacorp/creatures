@@ -1,20 +1,53 @@
 import { describe, expect, it } from 'vitest';
 import { RULES, destinationDef, expeditionContent, glossaryEntry } from '../src/index';
 
-/** The glossary texts quote numbers; they must say what the rules and the content say. */
-describe('the glossary texts that name numbers', () => {
+/** The glossary texts that quote numbers must say what the rules and the content say; chances are words. */
+describe('the glossary texts of the expeditions', () => {
   const text = (id: string): string => (glossaryEntry(id)?.lines ?? []).join(' ');
-  const pct = (bp: number): string => `${String(bp / 100)}%`;
   const clock = (hour: number): string => `${String(hour).padStart(2, '0')}:00`;
 
-  it('quotes familiarity, the deeper area and explorer rank as they are', () => {
+  it('quotes the trips of the first familiarity star as they are, each star on its own bullet', () => {
     const fam = RULES.expeditions.familiarity;
-    expect(text('familiarity')).toContain(`${String(fam.tripsForStar1)} finished trips`);
-    expect(text('deep-area')).toContain(`${pct(fam.deepChanceBp[1] as number)} with 1 star`);
-    expect(text('deep-area')).toContain(`${pct(fam.deepChanceBp[3] as number)} with 3 stars`);
-    expect(text('explorer-rank')).toContain(
-      `${pct(RULES.expeditions.rank.speedBpPerRank)} shorter`,
+    const lines = glossaryEntry('familiarity')?.lines ?? [];
+    expect(lines.find((l) => l.startsWith('1 star'))).toContain(
+      `${String(fam.tripsForStar1)} finished trips`,
     );
+    for (const stars of ['1 star', '2 stars', '3 stars']) {
+      expect(
+        lines.filter((l) => l.includes(stars)),
+        stars,
+      ).toHaveLength(1);
+    }
+    // No bullet holds two star counts.
+    for (const line of lines) {
+      const counts = ['1 star', '2 stars', '3 stars'].filter((c) => line.includes(c));
+      expect(counts.length, line).toBeLessThanOrEqual(1);
+    }
+    expect(glossaryEntry('familiarity')?.short).not.toMatch(/\d/);
+  });
+
+  it('keeps chances out of the expedition mechanics: words, never a percentage', () => {
+    // Discovery is part of the fun (UX pass 1): how much faster a rank makes trips, the deeper area's
+    // odds and the push-on odds are not shown as numbers.
+    for (const id of [
+      'explorer-rank',
+      'familiarity',
+      'deep-area',
+      'push-on',
+      'supplies',
+      'goal-safe',
+      'goal-risky',
+      'milestone',
+    ]) {
+      const entry = glossaryEntry(id);
+      expect(entry, id).toBeDefined();
+      const text = [entry?.short ?? '', ...(entry?.lines ?? [])].join(' ');
+      expect(text, id).not.toMatch(/%|percent|chance of \d/i);
+    }
+    const deep = (glossaryEntry('deep-area')?.lines ?? []).join(' ');
+    expect(deep).toContain('rarer creatures can turn up');
+    const risky = (glossaryEntry('goal-risky')?.lines ?? []).join(' ');
+    expect(risky).toContain('Very risky');
   });
 
   it('quotes the supply crafting hours and levels as they are', () => {

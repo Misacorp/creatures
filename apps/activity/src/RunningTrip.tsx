@@ -7,6 +7,7 @@ import { ExpIcon } from './ExpeditionIcons';
 import { creatureName, formatCountdown, getSpecies } from './game';
 import { GlossaryTag } from './Glossary';
 import { PushOnChoice } from './PushOnChoice';
+import { riskWord } from './push-on-view';
 import { explorerInfo } from './send-view';
 import { ElementChip } from './sprites/ElementChip';
 import {
@@ -14,7 +15,6 @@ import {
   fillPct,
   goalName,
   lengthLabel,
-  percentText,
   recallKeeps,
   supplyKindOf,
   supplyName,
@@ -39,7 +39,7 @@ function statusText(trip: Trip, status: ReturnType<typeof tripStatus>): string {
  * A trip that is out: the destination's banner with the explorer walking across it from left to right
  * (its place is the progress; with reduced motion it stands still there), the timer below, and what to do
  * next: recall, wait, choose a push-on goal or claim. A running push-on shows its own progress with its
- * goal and exact odds. `serverNow` is server time.
+ * goal and its risk in words. `serverNow` is server time.
  */
 export function RunningTrip({
   trip,
@@ -64,6 +64,10 @@ export function RunningTrip({
   const pushing = status.phase === 'pushing' && trip.pushOn !== null;
   const risky =
     pushing && trip.pushOn !== null ? goalDef(trip.pushOn.goalId)?.risk === 'risky' : false;
+  const risk =
+    pushing && trip.pushOn !== null
+      ? riskWord(risky ? 'risky' : 'safe', trip.pushOn.oddsBp)
+      : 'Safe';
   const twist =
     trip.twist === null ? null : expeditionContent.specials.twists.find((t) => t.id === trip.twist);
   const name = creature === undefined ? 'Explorer' : creatureName(creature);
@@ -131,11 +135,9 @@ export function RunningTrip({
               look="chip"
               class="tag"
             >
-              {risky ? 'Risky' : 'Safe'}
+              {risk}
             </GlossaryTag>{' '}
-            {risky
-              ? `${percentText(trip.pushOn.oddsBp)} chance it works. If it fails, the whole trip brings nothing.`
-              : 'It always works.'}
+            {risky ? 'If it fails, the whole trip brings nothing back.' : 'It always works.'}
           </p>
         )}
         {status.phase === 'choice' && trip.offer !== null ? (

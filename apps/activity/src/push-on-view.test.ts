@@ -2,7 +2,7 @@ import { expeditionContent, goalDef } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { parseGameState } from './api';
 import stateOffer from './fixtures/expedition-state-offer.json';
-import { goalCards, rewardLines } from './push-on-view';
+import { VERY_RISKY_BELOW_BP, goalCards, rewardLines, riskWord } from './push-on-view';
 
 const offer = parseGameState(stateOffer).expeditions[0]?.offer;
 if (offer === null || offer === undefined) throw new Error('the fixture has no offer');
@@ -10,23 +10,40 @@ if (offer === null || offer === undefined) throw new Error('the fixture has no o
 describe('the push-on cards', () => {
   const cards = goalCards(offer.goals);
 
-  it('has one card per offered goal, in the server order, with the exact odds and hours', () => {
+  it('has one card per offered goal, in the server order, with the risk in words and the hours', () => {
     expect(cards.map((c) => c.id)).toEqual(['forage', 'shortcut']);
-    const safe = cards[0];
-    const risky = cards[1];
-    expect(safe).toMatchObject({
+    expect(cards[0]).toMatchObject({
       risk: 'safe',
-      odds: '100%',
-      oddsBp: 10000,
+      riskWord: 'Safe',
       extra: '+2 h',
       failure: null,
     });
-    expect(risky).toMatchObject({ risk: 'risky', odds: '61%', oddsBp: 6100, extra: '+2 h' });
+    expect(cards[1]).toMatchObject({ risk: 'risky', riskWord: 'Risky', extra: '+2 h' });
   });
 
   it('flags the risky one with what failing costs, and the safe one with nothing', () => {
-    expect(cards[1]?.failure).toBe('39% chance the whole trip fails and brings nothing back.');
+    expect(cards[1]?.failure).toBe('May fail and bring nothing back.');
     expect(cards[0]?.failure).toBeNull();
+  });
+
+  it('shows no percentage on any card: not the odds, not the failure, not a reward', () => {
+    const all = goalCards([
+      ...offer.goals,
+      { id: 'ancient-vault', risk: 'risky', extraHours: 4, oddsBp: 3600 },
+      { id: 'field-notes', risk: 'safe', extraHours: 1, oddsBp: 10000 },
+    ]);
+    expect(all.length).toBe(4);
+    for (const card of all) {
+      expect(JSON.stringify(card), card.id).not.toMatch(/%|percent|chance/i);
+    }
+  });
+
+  it('calls a risky goal very risky when it fails more often than it works', () => {
+    expect(riskWord('safe', 10000)).toBe('Safe');
+    expect(riskWord('risky', VERY_RISKY_BELOW_BP)).toBe('Risky');
+    expect(riskWord('risky', VERY_RISKY_BELOW_BP - 1)).toBe('Very risky');
+    expect(riskWord('risky', 6100)).toBe('Risky');
+    expect(riskWord('risky', 3600)).toBe('Very risky');
   });
 
   it('names what each goal can bring, from the content', () => {
@@ -40,10 +57,11 @@ describe('the push-on cards', () => {
     }
   });
 
-  it('shows the odds the server sent, not the content table: a later retune cannot disagree', () => {
+  it('takes the risk word from the odds the server sent, not the content table', () => {
     const retuned = goalCards([{ id: 'shortcut', risk: 'risky', extraHours: 3, oddsBp: 4550 }]);
-    expect(retuned[0]).toMatchObject({ odds: '45.5%', extra: '+3 h' });
-    expect(retuned[0]?.failure).toContain('54.5%');
+    expect(retuned[0]).toMatchObject({ riskWord: 'Very risky', extra: '+3 h' });
+    const easier = goalCards([{ id: 'shortcut', risk: 'risky', extraHours: 3, oddsBp: 8000 }]);
+    expect(easier[0]?.riskWord).toBe('Risky');
   });
 
   it('leaves out a goal the content does not know', () => {
@@ -76,7 +94,7 @@ describe('what a goal can bring', () => {
     expect(rewardLines({ blueprint: true })[0]?.text).toBe('A blueprint');
     expect(rewardLines({ journal: true, xpBp: 5000 }).map((l) => l.text)).toEqual([
       'A journal page',
-      '50% more explorer XP',
+      'Bonus explorer XP',
     ]);
     expect(rewardLines({ supply: true })[0]?.text).toBe('A supply');
     expect(rewardLines({ parts: { 'ember-shard': 2, scrap: 1 } }).map((l) => l.text)).toEqual([

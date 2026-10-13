@@ -15,7 +15,6 @@ import {
   lengthLabel,
   lengthOptions,
   needsOfferRefresh,
-  nextLengthUnlock,
   percentText,
   pickFor,
   recallKeeps,
@@ -24,7 +23,8 @@ import {
   supplyEffect,
   supplyOptions,
   tripStatus,
-  tripWorth,
+  explorerXp,
+  supplyDefs,
   xpBar,
 } from './trip-view';
 
@@ -48,12 +48,11 @@ describe('trip lengths', () => {
     expect(tripMs('long', 3)).toBeLessThan(tripMs('long', 1));
   });
 
-  it('names the next length to unlock, and nothing when all are open', () => {
-    expect(nextLengthUnlock(1)).toEqual({
-      length: 'day',
-      rank: RULES.expeditions.lengths.day.minRank,
-    });
-    expect(nextLengthUnlock(RULES.expeditions.lengths.day.minRank)).toBeNull();
+  it('gives each length one label, the hours, and keeps the time for this explorer apart', () => {
+    for (const option of lengthOptions(RULES.expeditions.lengths.day.minRank)) {
+      expect(option.label).toBe(lengthLabel(option.id));
+      expect(option.takes.length).toBeGreaterThan(0);
+    }
   });
 });
 
@@ -151,29 +150,13 @@ describe('supplies', () => {
   });
 });
 
-describe('what a trip is good for', () => {
-  it('lists the same things for every length, with pips that grow with the length', () => {
-    const keys = tripWorth('short', 'tide').map((r) => r.key);
-    expect(tripWorth('day', 'tide').map((r) => r.key)).toEqual(keys);
-    for (const row of tripWorth('day', 'tide')) {
-      expect(row.level, row.key).toBeLessThanOrEqual(4);
-    }
-    const sum = (length: 'short' | 'medium' | 'long' | 'day'): number =>
-      tripWorth(length, 'tide').reduce((n, r) => n + r.level, 0);
-    expect(sum('short')).toBeLessThan(sum('medium'));
-    expect(sum('medium')).toBeLessThan(sum('long'));
-    expect(sum('long')).toBeLessThan(sum('day'));
-  });
-
-  it('draws the shard of the place, and the exact chance is in the label', () => {
-    const ember = tripWorth('long', 'ember').find(
-      (r) => r.icon.kind === 'part' && r.icon.part === 'ember-shard',
-    );
-    expect(ember?.label).toBe(
-      `Shards: ${percentText(RULES.expeditions.lengths.long.loot.shardBp)} chance`,
-    );
-    expect(tripWorth('long', null).some((r) => r.key === 'tide-shard')).toBe(true);
-    expect(tripWorth('short', 'grove').find((r) => r.key === 'scrap')?.label).toBe('No scrap');
+describe('the supplies of a kit', () => {
+  it('looks up the definitions of known ids and leaves out unknown ones', () => {
+    expect(supplyDefs(['lure-good', 'no-such-supply', 'lantern-basic']).map((d) => d.id)).toEqual([
+      'lure-good',
+      'lantern-basic',
+    ]);
+    expect(supplyDefs([])).toEqual([]);
   });
 });
 
@@ -258,6 +241,27 @@ describe('the explorer XP bar', () => {
     const bar = xpBar({ rank: 3, xp: start + (next - start) / 2, nextRankXp: next });
     expect(bar.pct).toBe(50);
     expect(bar.text).toBe(`${String((next - start) / 2)} of ${String(next - start)} XP to rank 4`);
+  });
+
+  it('gives the XP bar the XP into the rank, its span and the rank caps', () => {
+    const start = table[2] ?? 0;
+    const next = table[3] ?? 0;
+    expect(explorerXp({ rank: 3, xp: start + 50, nextRankXp: next })).toEqual({
+      value: 50,
+      max: next - start,
+      startCap: 'Rank 3',
+      endCap: 'Rank 4',
+    });
+    // Never outside the rank, whatever the XP says.
+    expect(explorerXp({ rank: 3, xp: 0, nextRankXp: next }).value).toBe(0);
+    expect(explorerXp({ rank: 3, xp: 1e9, nextRankXp: next }).value).toBe(next - start);
+    // The top rank has no next rank to travel to.
+    expect(explorerXp({ rank: 10, xp: 999_999, nextRankXp: null })).toEqual({
+      value: 1,
+      max: 1,
+      text: 'Top rank',
+      startCap: 'Rank 10',
+    });
   });
 
   it('is empty at the start of a rank, full at the top and never beyond', () => {

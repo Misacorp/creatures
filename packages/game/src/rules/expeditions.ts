@@ -6,6 +6,7 @@
  * seeded one. Integers only; probabilities are basis points.
  */
 import {
+  EXPEDITION_LENGTHS,
   JOURNAL_ANY_PLACE,
   SUPPLY_KINDS,
   type DestinationDef,
@@ -114,6 +115,62 @@ export function nextSlot(
   if (tripsFinished < secondAfterTrips) return { kind: 'trips', at: secondAfterTrips };
   const at = thresholds.find((t) => sum < t);
   return at === undefined ? null : { kind: 'rank_sum', at };
+}
+
+/** The one-time gift of reaching an explorer rank: Bait, parts and supplies (content ids). */
+export interface RankGift {
+  bait: number;
+  /** Scrap and glimmer; zero amounts left out. */
+  parts: PartsBundle;
+  supplies: readonly string[];
+}
+
+/** The gift for reaching `rank` (2 to the top rank); null for rank 1 and for anything out of range. */
+export function rankGift(rank: number): RankGift | null {
+  const gift = RULES.expeditions.rank.gifts[Math.trunc(rank) - 2];
+  if (gift === undefined) return null;
+  const parts: PartsBundle = {};
+  if (gift.scrap > 0) parts.scrap = gift.scrap;
+  if (gift.glimmer > 0) parts.glimmer = gift.glimmer;
+  return { bait: gift.bait, parts, supplies: [...gift.supplies] };
+}
+
+/**
+ * The gifts of every rank passed when an explorer goes from `before` to `after` (a long trip can raise
+ * the rank more than once), lowest first. Empty when the rank did not rise.
+ */
+export function rankGiftsBetween(
+  before: number,
+  after: number,
+): { rank: number; gift: RankGift }[] {
+  const out: { rank: number; gift: RankGift }[] = [];
+  for (let rank = Math.trunc(before) + 1; rank <= Math.trunc(after); rank++) {
+    const gift = rankGift(rank);
+    if (gift !== null) out.push({ rank, gift });
+  }
+  return out;
+}
+
+/** What reaching a rank opens, from the content: places, push-on goals and a trip length. */
+export interface RankUnlocks {
+  destinations: DestinationDef[];
+  goals: PushOnGoalDef[];
+  lengths: ExpeditionLength[];
+}
+
+/**
+ * Everything that opens at exactly `rank`: the places whose `minRank` it is, the push-on goals whose
+ * `minRank` it is, and the trip lengths (`lengths.day.minRank`). Rank 1 is not an unlock: what is open
+ * from the start is not listed.
+ */
+export function rankUnlocks(rank: number): RankUnlocks {
+  const at = Math.trunc(rank);
+  return {
+    destinations:
+      at <= 1 ? [] : expeditionContent.destinations.filter((d) => d.access.minRank === at),
+    goals: at <= 1 ? [] : expeditionContent.goals.filter((g) => g.minRank === at),
+    lengths: at <= 1 ? [] : EXPEDITION_LENGTHS.filter((l) => lengthRules(l).minRank === at),
+  };
 }
 
 /** Bait a duplicate of a creature at its fusion limit turns into, when caught on an expedition. */

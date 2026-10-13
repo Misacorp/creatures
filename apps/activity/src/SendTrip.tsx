@@ -8,6 +8,7 @@ import { ChoiceMark } from './ExpeditionIcons';
 import { ExplorerPicker } from './ExplorerPicker';
 import { getSpecies } from './game';
 import { GlossaryTag } from './Glossary';
+import { HaulStrip } from './HaulStrip';
 import { LengthPicker } from './LengthPicker';
 import { clampLength, defaultExplorer, explorerOptions, sendBlocker } from './send-view';
 import { SupplyPicker } from './SupplyPicker';
@@ -15,8 +16,8 @@ import { kitChoice, kitCost, lengthLabel, supplyName } from './trip-view';
 
 /**
  * The send flow: pick a place from the catalogue, who goes, how long and (optionally) supplies, then
- * send. Everything is shown at once, in that order, so the cost and the reason a Send is disabled are
- * always visible. A trip without supplies is free and says so. The server does the spending; this only
+ * see the expected haul and send. Everything is shown at once, in that order, so the cost and the
+ * reason a Send is disabled are always visible. A trip without supplies is free and says so. The server does the spending; this only
  * collects the choice.
  */
 export function SendTrip({
@@ -112,13 +113,7 @@ export function SendTrip({
       <h4 class="step">
         <span class="step-n">3</span> How long
       </h4>
-      <LengthPicker
-        name="send-length"
-        rank={rank}
-        value={duration}
-        element={shardElement}
-        onChange={setLength}
-      />
+      <LengthPicker name="send-length" rank={rank} value={duration} onChange={setLength} />
 
       <h4 class="step">
         <span class="step-n">4</span> Supplies
@@ -146,6 +141,7 @@ export function SendTrip({
             <ChoiceMark choice={choice} />
           </p>
         )}
+        <HaulStrip length={duration} element={shardElement} kit={picks.map((p) => p.id)} />
         {blocker !== null && (
           <p class="reason" role="status">
             {blocker}

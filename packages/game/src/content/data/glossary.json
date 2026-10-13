@@ -1077,7 +1077,10 @@
       "A zone attack hits the one creature at its place. Silence hits the left and the right end.",
       "Foes act left to right, right to left or fastest first. You see which in each room."
     ],
-    "visual": { "kind": "glyph", "id": "left_to_right" },
+    "visual": {
+      "kind": "glyph",
+      "id": "left_to_right"
+    },
     "section": "dungeon"
   },
   {
@@ -1238,7 +1241,7 @@
     "short": "Each creature gets better at exploring.",
     "lines": [
       "A creature earns explorer XP from its own trips, and more from longer ones.",
-      "Each rank makes its trips 2% shorter. Ranks open places, the 24 hour trip and better choices.",
+      "Each rank makes its trips a little shorter. Ranks open places, the 24 hour trip and better choices.",
       "Your slots come from all your creatures' ranks added together."
     ],
     "section": "expeditions"
@@ -1246,9 +1249,10 @@
   {
     "id": "familiarity",
     "title": "Familiarity",
-    "short": "A creature's feel for one place, up to 3 stars.",
+    "short": "A creature's feel for one place.",
     "lines": [
-      "1 star: 4 finished trips there. 2 stars: it has caught every creature that lives there.",
+      "1 star: 4 finished trips there.",
+      "2 stars: it has caught every creature that lives there.",
       "3 stars: it has found a shiny there.",
       "Stars open the deeper area and give small bonuses at that place."
     ],
@@ -1265,7 +1269,7 @@
     "lines": [
       "It opens with 1 star at the place, or when you carry a lantern.",
       "Some creatures only live in the deeper area.",
-      "Each catch has a chance to come from it: 30% with 1 star, 50% with 3 stars."
+      "Once it is open, its rarer creatures can turn up in your catches."
     ],
     "section": "expeditions"
   },
@@ -1276,7 +1280,7 @@
     "lines": [
       "A finished trip may offer a goal: stay out a little longer for a reward.",
       "A safe goal always works. A risky goal can fail, and then the whole trip brings nothing home.",
-      "The odds are shown exactly. Ignore the choice to come home as usual.",
+      "Each goal is marked Safe, Risky or Very risky. Ignore the choice to come home as usual.",
       "Better supplies and higher ranks make a choice come up more often."
     ],
     "section": "expeditions"
@@ -1341,7 +1345,7 @@
     "short": "Tiny permanent bonuses for things you have done.",
     "lines": [
       "Trips, places, creatures found, journal pages and raid reactions all count.",
-      "Each milestone gives a very small bonus, like 1% more rare catches."
+      "Each milestone gives a very small bonus, like slightly better odds of rare catches."
     ],
     "section": "expeditions"
   },
@@ -1410,7 +1414,7 @@
     "title": "Risky goal",
     "short": "Can fail the whole trip.",
     "lines": [
-      "It works with the exact chance shown.",
+      "It may fail. The card says how risky it is: Risky or Very risky.",
       "If it fails, the whole trip brings nothing home.",
       "Coming home instead is always safe."
     ],

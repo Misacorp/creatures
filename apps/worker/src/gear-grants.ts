@@ -20,12 +20,13 @@ import {
   type GearRarity,
   type GearRolls,
   type PartsBundle,
+  type RankGift,
   type Rng,
 } from '@creatures/game';
 import type { Analytics, GearSource } from './analytics';
 import { addSupply } from './expedition-store';
 import { creditParts, hasRoom, insertItem, learnBlueprint, partsTotal } from './gear-store';
-import type { LedgerStorage } from './ledger';
+import { credit, type LedgerStorage } from './ledger';
 
 export interface GrantDeps {
   storage: LedgerStorage;
@@ -241,6 +242,52 @@ export function grantTripLoot(
     },
     userId,
   ).view;
+}
+
+/**
+ * The one-time gift of reaching an explorer rank: parts and supplies through the grant ledger, Bait
+ * through the Bait ledger. Idempotent per (creature, rank): key `rank:<creature>:<rank>` in both, so a
+ * repeat gives nothing and returns what the first call gave. Call it inside the claim's transaction.
+ * `fresh` is false for a repeat.
+ */
+export function grantRankGift(
+  deps: GrantDeps,
+  userId: string,
+  creatureId: string,
+  rank: number,
+  gift: RankGift,
+): { view: GrantView; fresh: boolean } {
+  const key = `rank:${creatureId}:${String(rank)}`;
+  return deps.storage.transactionSync(() => {
+    const granted = grantOnce(
+      deps,
+      userId,
+      key,
+      'rank_gift',
+      () => ({
+        gear: [],
+        parts: addParts({}, gift.parts),
+        blueprints: [],
+        supplies: [...gift.supplies],
+      }),
+      userId,
+    );
+    if (granted.fresh && gift.bait > 0) {
+      credit(
+        deps.storage,
+        {
+          userId,
+          currency: 'bait',
+          amount: gift.bait,
+          source: 'rank_gift',
+          idempotencyKey: key,
+          meta: { creature: creatureId, rank },
+        },
+        deps.now(),
+      );
+    }
+    return granted;
+  });
 }
 
 /**

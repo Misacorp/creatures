@@ -41,7 +41,10 @@ import {
   nextRankXp,
   nextSlot,
   offerChanceBp,
+  rankGift,
+  rankGiftsBetween,
   rankSum,
+  rankUnlocks,
   rollJournal,
   rollOdds,
   rollOffer,
@@ -489,6 +492,75 @@ describe('explorer rank, trip length and slots', () => {
       expect(b.xp / (b.ms / HOUR)).toBeGreaterThan(a.xp / (a.ms / HOUR));
       expect(b.loot.scrap).toBeGreaterThanOrEqual(a.loot.scrap);
       expect(b.loot.blueprintBp).toBeGreaterThan(a.loot.blueprintBp);
+    }
+  });
+
+  it('gives a fixed gift at every rank from 2 to the top, growing with rank, and none at rank 1', () => {
+    const top = RULES.expeditions.rank.xpForRank.length;
+    expect(rankGift(1)).toBeNull();
+    expect(rankGift(top + 1)).toBeNull();
+    expect(RULES.expeditions.rank.gifts).toHaveLength(top - 1);
+    const worth = (rank: number): number => {
+      const g = rankGift(rank);
+      if (g === null) throw new Error(`no gift at rank ${String(rank)}`);
+      return (
+        g.bait +
+        3 * (g.parts.scrap ?? 0) +
+        10 * (g.parts.glimmer ?? 0) +
+        g.supplies.reduce((sum, id) => sum + (supplyDef(id)?.price ?? 0), 0)
+      );
+    };
+    for (let rank = 3; rank <= top; rank++) {
+      expect(worth(rank), `rank ${String(rank)}`).toBeGreaterThan(worth(rank - 1));
+    }
+    // Ranks 7 to 10 are the big ones.
+    expect(worth(7)).toBeGreaterThan(2 * worth(4));
+    for (let rank = 2; rank <= top; rank++) {
+      const g = rankGift(rank);
+      expect(g?.bait, `bait at rank ${String(rank)}`).toBeGreaterThan(0);
+      expect(Number.isInteger(g?.bait)).toBe(true);
+      expect(g?.parts.scrap, `scrap at rank ${String(rank)}`).toBeGreaterThan(0);
+      for (const id of g?.supplies ?? []) expect(supplyDef(id), id).toBeDefined();
+    }
+    // Supplies make the sim's discovery and raid targets drift, so only the high ranks (which the
+    // sim's horizon hardly reaches) carry them.
+    for (let rank = 2; rank <= 6; rank++) {
+      expect(rankGift(rank)?.supplies, `supplies at rank ${String(rank)}`).toEqual([]);
+    }
+    for (let rank = 7; rank <= top; rank++) {
+      expect(rankGift(rank)?.supplies.length, `supplies at rank ${String(rank)}`).toBeGreaterThan(
+        0,
+      );
+    }
+  });
+
+  it('lists the gifts of every rank passed, lowest first', () => {
+    expect(rankGiftsBetween(2, 2)).toEqual([]);
+    expect(rankGiftsBetween(3, 2)).toEqual([]);
+    expect(rankGiftsBetween(1, 2).map((g) => g.rank)).toEqual([2]);
+    expect(rankGiftsBetween(2, 5).map((g) => g.rank)).toEqual([3, 4, 5]);
+    expect(rankGiftsBetween(1, 99).map((g) => g.rank)).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  });
+
+  it('lists what each rank unlocks from the content: places, goals and the 24 h trip', () => {
+    const names = (rank: number) => {
+      const u = rankUnlocks(rank);
+      return {
+        places: u.destinations.map((d) => d.id),
+        goals: u.goals.map((g) => g.id),
+        lengths: u.lengths,
+      };
+    };
+    expect(names(1)).toEqual({ places: [], goals: [], lengths: [] });
+    expect(names(2).places).toEqual(['old-crossroads']);
+    expect(names(2).goals).toEqual(['scout-ahead']);
+    expect(names(3).goals.sort()).toEqual(['lost-cache', 'shortcut']);
+    expect(names(4).places).toEqual(['moonlit-reef']);
+    expect(names(4).goals.sort()).toEqual(['linger', 'press-deeper']);
+    expect(names(lengthRules('day').minRank).lengths).toEqual(['day']);
+    expect(names(6).goals).toEqual(['ancient-vault']);
+    for (const rank of [7, 8, 9, 10]) {
+      expect(names(rank), `rank ${String(rank)}`).toEqual({ places: [], goals: [], lengths: [] });
     }
   });
 

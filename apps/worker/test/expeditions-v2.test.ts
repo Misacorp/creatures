@@ -5,12 +5,14 @@ import {
   expeditionConvertBait,
   explorerRank,
   lengthRules,
+  rankGift,
   seasonOf,
   tripXp,
   weeklySpecial,
   type Rng,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
+import { grantRankGift } from '../src/gear-grants';
 import { creditParts } from '../src/gear-store';
 import { weekIdFor, weekIndex } from '../src/raid-schedule';
 import { zonedHour } from '../src/time';
@@ -108,6 +110,12 @@ interface ResultBody {
   familiarity?: { stars: number; starsBefore: number; trips: number };
   journal?: { entryId: string; set: string | null; setComplete: boolean }[];
   slotUnlocked?: { total: number };
+  rankGifts?: {
+    rank: number;
+    bait: number;
+    parts: Record<string, number>;
+    supplies: string[];
+  }[];
 }
 
 interface StateBody {
@@ -505,6 +513,101 @@ describe('ranks, XP and slots', () => {
       },
       { rng: createSeededRng('xp'), tripRng: createSeededRng('xp-trip') },
     );
+  });
+
+  it('pays the one-time gift of a rank when the rank rises: Bait, parts and supplies, once', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0);
+        setRank(ctx.sql, USER_ID, p.starterId, 1);
+        ctx.sql.exec(
+          'UPDATE explorer_progress SET xp = ?',
+          (RULES.expeditions.rank.xpForRank[1] ?? 0) - 1,
+        );
+        const gift = rankGift(2);
+        if (gift === null) throw new Error('no gift at rank 2');
+        const trip = tripOf(await send(p, p.starterId, 'long'));
+        ctx.clock.t = trip.endsAt;
+        const baitBefore = ctx.core.balances(USER_ID).bait;
+        const suppliesBefore = (await state(p)).supplies;
+        const scrapBefore = rows<{ n: number }>(
+          ctx.sql,
+          "SELECT COALESCE(SUM(amount), 0) AS n FROM parts WHERE user_id = ? AND kind = 'scrap'",
+          USER_ID,
+        )[0]?.n;
+        const result = resultOf(await claim(p, trip.id));
+        expect(result.xp?.rank).toBe(2);
+        expect(result.rankGifts).toEqual([
+          { rank: 2, bait: gift.bait, parts: gift.parts, supplies: [...gift.supplies] },
+        ]);
+        // The Bait is in the ledger once, under the (creature, rank) key.
+        const ledger = rows<{ amount: number; idempotency_key: string }>(
+          ctx.sql,
+          "SELECT amount, idempotency_key FROM ledger WHERE user_id = ? AND source = 'rank_gift'",
+          USER_ID,
+        );
+        expect(ledger).toEqual([{ amount: gift.bait, idempotency_key: `rank:${p.starterId}:2` }]);
+        const after = await state(p);
+        for (const id of gift.supplies) {
+          expect(after.supplies[id] ?? 0, id).toBe((suppliesBefore[id] ?? 0) + 1);
+        }
+        expect(after.balances.bait).toBeGreaterThanOrEqual(baitBefore + gift.bait);
+        const scrapAfter = rows<{ n: number }>(
+          ctx.sql,
+          "SELECT COALESCE(SUM(amount), 0) AS n FROM parts WHERE user_id = ? AND kind = 'scrap'",
+          USER_ID,
+        )[0]?.n;
+        expect(scrapAfter).toBe(
+          (scrapBefore ?? 0) + (gift.parts.scrap ?? 0) + (result.loot.parts['scrap'] ?? 0),
+        );
+        // A repeat claim returns the stored result and pays nothing again.
+        const bait = ctx.core.balances(USER_ID).bait;
+        expect(resultOf(await claim(p, trip.id))).toEqual(result);
+        expect(ctx.core.balances(USER_ID).bait).toBe(bait);
+        expect(count(ctx.sql, 'ledger', "source = 'rank_gift'")).toBe(1);
+        expect(count(ctx.sql, 'gear_grants', "source = 'rank_gift'")).toBe(1);
+      },
+      { rng: createSeededRng('gift'), tripRng: createSeededRng('gift-trip') },
+    );
+  });
+
+  it('pays no gift for a trip that does not raise the rank, nor for a recall', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0);
+        const first = tripOf(await send(p, p.starterId, 'short'));
+        ctx.clock.t = first.endsAt;
+        const done = resultOf(await claim(p, first.id));
+        expect(done.xp?.rank).toBe(done.xp?.rankBefore);
+        expect(done.rankGifts).toBeUndefined();
+        const second = tripOf(await send(p, p.starterId, 'long'));
+        ctx.clock.t = second.startedAt + HOUR;
+        expect(resultOf(await claim(p, second.id)).rankGifts).toBeUndefined();
+        expect(count(ctx.sql, 'ledger', "source = 'rank_gift'")).toBe(0);
+        expect(count(ctx.sql, 'gear_grants', "source = 'rank_gift'")).toBe(0);
+      },
+      { rng: createSeededRng('nogift'), tripRng: createSeededRng('nogift-trip') },
+    );
+  });
+
+  it('keys a rank gift by creature and rank, so asking again pays nothing', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const p = await join(ctx, USER, 0);
+      const deps = { storage: ctx.storage, now: () => ctx.clock.t, rng: createSeededRng('unused') };
+      const gift = rankGift(7);
+      if (gift === null) throw new Error('no gift at rank 7');
+      const one = grantRankGift(deps, USER_ID, p.starterId, 7, gift);
+      const again = grantRankGift(deps, USER_ID, p.starterId, 7, gift);
+      expect(one.fresh).toBe(true);
+      expect(again.fresh).toBe(false);
+      expect(again.view).toEqual(one.view);
+      expect(ctx.core.balances(USER_ID).bait).toBe(gift.bait);
+      // Another rank, or another creature, is a different gift.
+      expect(grantRankGift(deps, USER_ID, p.starterId, 8, rankGift(8) ?? gift).fresh).toBe(true);
+      expect(grantRankGift(deps, USER_ID, 'another-creature', 7, gift).fresh).toBe(true);
+    });
   });
 
   it('shortens trips for a higher rank', async () => {

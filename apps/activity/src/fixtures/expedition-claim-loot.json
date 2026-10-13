@@ -32,6 +32,16 @@
       "rank": 2,
       "rankBefore": 1
     },
+    "rankGifts": [
+      {
+        "rank": 2,
+        "bait": 5,
+        "parts": {
+          "scrap": 1
+        },
+        "supplies": []
+      }
+    ],
     "familiarity": {
       "stars": 0,
       "starsBefore": 0,
@@ -41,14 +51,14 @@
   "state": {
     "serverNow": 1799776800000,
     "balances": {
-      "bait": 200,
+      "bait": 205,
       "essence": 0
     },
     "starterChosen": false,
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "0e50642f-8dfc-47e2-951a-8389e1c0f012",
+        "id": "f4fccd97-fbdc-4952-9ff8-7ef2a2d8a34e",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -93,7 +103,7 @@
         }
       },
       {
-        "id": "666eb7b6-04eb-4134-aecb-40c1fd6463e5",
+        "id": "90bd306e-c0db-4d9b-8ce9-f63eff02abc7",
         "species": "splashet",
         "line": "splashet",
         "level": 8,
@@ -138,7 +148,7 @@
         }
       },
       {
-        "id": "eb5710da-4a3e-4d10-919c-fd2a0c8db32e",
+        "id": "5cbad59c-70bc-4136-8031-1d6ce57eb229",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -183,7 +193,7 @@
         }
       },
       {
-        "id": "7fcea80c-98fa-4da9-aa34-26282edeb6b6",
+        "id": "3896afb6-19ab-4bd3-a627-f1bc7138d298",
         "species": "ashmole",
         "line": "ashmole",
         "level": 1,
@@ -194,7 +204,7 @@
         "away": false,
         "origin": "expedition",
         "caughtAt": 1799776800000,
-        "quirk": "collects-pebbles",
+        "quirk": "polite-bower",
         "stats": {
           "hp": 128,
           "atk": 24,
@@ -230,8 +240,8 @@
     ],
     "expeditions": [
       {
-        "id": "25880805-9118-42aa-a3fe-37893bc25544",
-        "creatureId": "0e50642f-8dfc-47e2-951a-8389e1c0f012",
+        "id": "a96c95e0-3b2d-4152-893d-4ebd5f4ab1ce",
+        "creatureId": "f4fccd97-fbdc-4952-9ff8-7ef2a2d8a34e",
         "duration": "long",
         "supplies": "basic",
         "kit": [],
@@ -277,6 +287,16 @@
             "rank": 2,
             "rankBefore": 1
           },
+          "rankGifts": [
+            {
+              "rank": 2,
+              "bait": 5,
+              "parts": {
+                "scrap": 1
+              },
+              "supplies": []
+            }
+          ],
           "familiarity": {
             "stars": 0,
             "starsBefore": 0,

@@ -1,11 +1,13 @@
 /**
  * The destination catalogue as plain data: for each place a banner card with its element, who lives
- * there (known ones by name, the rest as silhouettes), the stars of the creature that would go, the
- * weekly twist, and why it is closed. Names, species and flavour come from the shared content; what is
- * open, the stars and the twist come from the server (`GET /api/destinations`); the night window
- * is worked out in the guild's own timezone, passed in explicitly.
+ * there (known ones by name, the rest as silhouettes), whether the deeper area is open to the creature
+ * that would go, the weekly twist, and why it is closed. Familiarity (stars and trips) is a trait of the
+ * creature, not of the place, so it is not on the card: see `send-view.ts`. Names, species and flavour
+ * come from the shared content; what is open and the twist come from the server
+ * (`GET /api/destinations`); the night window is worked out in the guild's own timezone, passed in
+ * explicitly.
  */
-import { RULES, destinationDef, expeditionContent, isNightHour } from '@creatures/game';
+import { RULES, deepOpen, destinationDef, expeditionContent, isNightHour } from '@creatures/game';
 import type { Creature } from './api';
 import type { DestinationsView } from './expedition-types';
 import { speciesName } from './game';
@@ -33,10 +35,14 @@ export interface DestinationCard {
   /** The place's element id, or null for a mixed place. */
   element: string | null;
   minRank: number;
+  /**
+   * Plain facts about the place that are not flavour (shown in plain text under the italic flavour
+   * line). Only Moonlit Reef has one: its night window.
+   */
+  facts: string[];
   residents: Resident[];
-  /** The stars (0 to 3) of the explorer that would go, and how many finished trips it has made here. */
-  stars: number;
-  trips: number;
+  /** The deeper area is open to the explorer that would go (it has a star here). */
+  deepOpen: boolean;
   /** The weekly twist if this is the special place this week. */
   twist: { name: string; description: string; festival: boolean } | null;
   /** Why it is closed to the chosen explorer; empty when it is open. */
@@ -82,6 +88,12 @@ function clockText(hour: number): string {
   return `${String(hour).padStart(2, '0')}:00`;
 }
 
+/** "Only open at night, 20:00 to 06:00 server time.": the place's description, whatever the hour. */
+export function nightWindowText(): string {
+  const { fromHour, toHour } = RULES.expeditions.night;
+  return `Only open at night, ${clockText(fromHour)} to ${clockText(toHour)} server time.`;
+}
+
 /** "Night only (20:00 to 06:00). Opens Fri 20:00." for a place that is closed by day. */
 export function nightText(now: number, timeZone: string | null): string {
   const { fromHour, toHour } = RULES.expeditions.night;
@@ -119,7 +131,8 @@ function lockReasons(
 
 /**
  * One card per place the server lists, in its order. `explorer` is the creature that would go (its stars
- * and its rank gate apply); without one the stars are 0 and the rank gate shows for rank 2 and above.
+ * decide whether the deeper area is open, and its rank gate applies); without one the deeper area is
+ * closed and the rank gate shows for rank 2 and above.
  */
 export function destinationCards(
   view: DestinationsView,
@@ -156,12 +169,12 @@ export function destinationCards(
         flavor: def.flavor,
         element: def.element,
         minRank: place.minRank,
+        facts: def.access.night === true ? [nightWindowText()] : [],
         residents: [
           ...def.species.map((s) => resident(s, false)),
           ...def.deep.species.map((s) => resident(s, true)),
         ],
-        stars: mine?.stars ?? 0,
-        trips: mine?.trips ?? 0,
+        deepOpen: deepOpen(def, mine?.stars ?? 0, []),
         twist,
         locked: lockReasons(view, place, explorer, timeZone),
       },

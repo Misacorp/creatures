@@ -127,7 +127,7 @@ describe('the profile', () => {
     expect(rows.map((r) => r.name)).toEqual(
       [...rows].sort((a, b) => b.rank - a.rank).map((r) => r.name),
     );
-    expect(rows[0]).toMatchObject({ name: 'Cindle', rank: 3 });
+    expect(rows[0]).toMatchObject({ name: 'Cindle', rank: 4 });
     // A creature the state does not list is left out.
     expect(explorerRows(profile, [])).toEqual([]);
   });
