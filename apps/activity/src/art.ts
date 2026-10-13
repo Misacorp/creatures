@@ -2,19 +2,32 @@
  * Small lookups that sit between the sprite data and the screens: the boss sprite with a fallback,
  * the shiny palette of a species, and the class that gives an element its colour.
  */
-import { FALLBACK_SILHOUETTE, bossSprite } from './sprites/creature-sprites';
+import {
+  FALLBACK_SILHOUETTE,
+  bossSprite,
+  dungeonBossSprite,
+  dungeonFoeSprite,
+} from './sprites/creature-sprites';
 import type { SpriteDef } from './sprites/sprite-data';
 
-/** Screen pixels per sprite pixel for a boss (24x24) and for the plain fallback (16x16). */
+/**
+ * Screen pixels per sprite pixel for a boss (24x24) and for a 16x16 sprite standing in the boss's
+ * place (a dungeon foe, or the plain fallback), so every boss takes the same space on the stage.
+ */
 export const BOSS_SCALE = 4;
 export const FALLBACK_BOSS_SCALE = 6;
 
-/** The boss sprite and the scale to draw it at; a bigger silhouette while a boss has no art yet. */
+/**
+ * The sprite to draw for whatever the stage shows as its boss, and the scale to draw it at: a raid
+ * boss, a daily-dungeon room boss (both 24x24), or a dungeon foe (16x16, drawn bigger); a bigger
+ * silhouette while an id has no art yet.
+ */
 export function bossArt(bossId: string): { sprite: SpriteDef; scale: number } {
-  const sprite = bossSprite(bossId);
-  return sprite === undefined
-    ? { sprite: FALLBACK_SILHOUETTE, scale: FALLBACK_BOSS_SCALE }
-    : { sprite, scale: BOSS_SCALE };
+  const boss = bossSprite(bossId) ?? dungeonBossSprite(bossId);
+  if (boss !== undefined) return { sprite: boss, scale: BOSS_SCALE };
+  const foe = dungeonFoeSprite(bossId);
+  if (foe !== undefined) return { sprite: foe, scale: FALLBACK_BOSS_SCALE };
+  return { sprite: FALLBACK_SILHOUETTE, scale: FALLBACK_BOSS_SCALE };
 }
 
 /**
