@@ -575,6 +575,15 @@ describe('the glossary covers the daily dungeon', () => {
     expect(requiredGlossaryIds(content)).toContain('modifier-brittle');
   });
 
+  it('shows only the modifier text in its popup: no filler lines under it', () => {
+    for (const m of dungeonContent.modifiers) {
+      expect(entry(GLOSSARY_IDS.modifier(m.id)).lines, m.id).toEqual([]);
+    }
+    const all = glossary.map((e) => JSON.stringify(e)).join('\n');
+    expect(all).not.toContain('Only for the room that has it');
+    expect(all).not.toContain('Plan your team');
+  });
+
   it('describes each modifier with its own name and text, and the element ones with a picture', () => {
     for (const m of dungeonContent.modifiers) {
       const e = entry(GLOSSARY_IDS.modifier(m.id));
@@ -601,8 +610,10 @@ describe('the glossary covers the daily dungeon', () => {
 
   it('gives depth, landmarks and streaks the numbers the rules have', () => {
     const d = RULES.dungeon;
-    expect(text('depth')).toContain(`${percent(d.hpStepBp)} foe HP`);
-    expect(text('depth')).toContain(`${percent(d.atkStepBp)} foe Attack`);
+    // The depth entry says what depth is, not how the foes scale (no numbers for that).
+    expect(text('depth')).not.toContain('foe HP');
+    expect(text('depth')).not.toContain('foe Attack');
+    expect(text('depth')).not.toContain('nobody else');
     expect(text('depth')).toContain(`${String(d.landmarkEvery)}th depth`);
     expect(text('landmark')).toContain(
       `${String(d.landmarkEvery)}, ${String(2 * d.landmarkEvery)}, ${String(3 * d.landmarkEvery)}`,
