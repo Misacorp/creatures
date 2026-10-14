@@ -112,6 +112,31 @@
   margin-bottom: 0.25rem;
 }
 
+/* A picture with its title block beside it (a creature: name, level and tags); the lines go below. */
+.pop-head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.375rem;
+}
+
+.pop-head .pop-visual {
+  flex: none;
+  margin-bottom: 0;
+}
+
+.pop-head-text {
+  min-width: 0;
+}
+
+.pop-head .pop-short {
+  margin-bottom: 0;
+}
+
+.popover-wide .pop-head .pop-tags {
+  margin-top: 0.25rem;
+}
+
 .pop-title {
   margin: 0;
   color: var(--gold);

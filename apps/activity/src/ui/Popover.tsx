@@ -161,7 +161,12 @@ interface PopoverCardProps {
   lines?: readonly string[];
   /** A muted line under the rest (the general rule behind a boss's own trick). */
   note?: string | null;
-  /** More under the text (a creature's tags). */
+  /**
+   * More beside the picture, under the title and the short text (a creature's tags). When given, the
+   * picture and the title block sit side by side, and the lines go below the pair.
+   */
+  beside?: ComponentChildren;
+  /** More under the text (a creature's worn item). */
   children?: ComponentChildren;
   /** The link at the bottom (the glossary's "More in How to play"). */
   more?: { label: string; onMore: () => void };
@@ -170,15 +175,36 @@ interface PopoverCardProps {
 /** The content of a popover that explains something: a picture, a title, a short text, lines and a link. */
 export function PopoverCard(props: PopoverCardProps) {
   const { lines = [] } = props;
-  return (
-    <div class="pop-body">
-      {props.visual != null && (
-        <div class="pop-visual" aria-hidden="true">
-          {props.visual}
-        </div>
-      )}
+  const heading = (
+    <>
       <p class="pop-title pix">{props.title}</p>
       {props.short !== undefined && props.short !== '' && <p class="pop-short">{props.short}</p>}
+    </>
+  );
+  return (
+    <div class="pop-body">
+      {props.beside !== undefined ? (
+        <div class="pop-head">
+          {props.visual != null && (
+            <div class="pop-visual" aria-hidden="true">
+              {props.visual}
+            </div>
+          )}
+          <div class="pop-head-text">
+            {heading}
+            {props.beside}
+          </div>
+        </div>
+      ) : (
+        <>
+          {props.visual != null && (
+            <div class="pop-visual" aria-hidden="true">
+              {props.visual}
+            </div>
+          )}
+          {heading}
+        </>
+      )}
       {lines.length > 0 && (
         <ul class="pop-lines">
           {lines.map((line, i) => (

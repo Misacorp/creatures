@@ -127,7 +127,8 @@ function TagPopover({
 }
 
 /**
- * The popover of a small creature: its name, level, role and element as tags. Tapping a tag
+ * The popover of a small creature: its picture with its name, level, role and element tags beside it,
+ * then its facts and worn item below. Tapping a tag
  * switches this same popover to that glossary entry (the content a tag shows anywhere else), with
  * a back control; Escape goes back first and then closes. The faces are the creature itself
  * (`null`) and one glossary entry (its id).
@@ -170,18 +171,20 @@ function CreaturePopover({
           title={info.name}
           short={`Level ${String(info.level)}`}
           lines={creatureFacts(info, speciesName(info.species))}
+          beside={
+            <p class="tags pop-tags">
+              <ElementChip
+                as="button"
+                element={info.element}
+                role={info.role}
+                onOpen={(id) => {
+                  nav.open(id);
+                }}
+              />
+            </p>
+          }
         >
           {worn !== null && <WornItemLine worn={worn} />}
-          <p class="tags pop-tags">
-            <ElementChip
-              as="button"
-              element={info.element}
-              role={info.role}
-              onOpen={(id) => {
-                nav.open(id);
-              }}
-            />
-          </p>
         </PopoverCard>
       ) : (
         <>
