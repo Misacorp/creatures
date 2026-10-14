@@ -13,3 +13,4 @@ export * from './gear';
 export * from './dungeon';
 export * from './expeditions';
 export * from './lounger';
+export * from './room';
