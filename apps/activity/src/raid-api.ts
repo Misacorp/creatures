@@ -1,7 +1,7 @@
 /**
  * Raid API: response types, shape checks and requests. The shapes mirror the server's read models
  * (`apps/worker/src/raid-view.ts`). Everything here is display data; the server decides every
- * outcome, and the client only sends intents (team, placement, opt-out).
+ * outcome, and the client only sends intents (team, placement).
  */
 import type { EventNames, FightEvent, Zone } from '@creatures/engine';
 import { apiFetch, jsonRequest } from './api';
@@ -710,10 +710,6 @@ export async function unplaceCreature(creatureId: string): Promise<RaidView> {
   return parseRaidView(
     await apiFetch('/api/raid/placement', jsonRequest('DELETE', { creatureId })),
   );
-}
-
-export async function setRaidOptOut(optOut: boolean): Promise<RaidView> {
-  return parseRaidView(await apiFetch('/api/raid/opt-out', jsonRequest('PUT', { optOut })));
 }
 
 export async function fetchReplay(

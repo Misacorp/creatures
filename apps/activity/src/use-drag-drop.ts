@@ -8,6 +8,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { RefObject } from 'preact';
 import {
   SCROLL_EDGE,
+  autoScrollSpeed,
   hitTest,
   move,
   pageScrollSpeed,
@@ -30,7 +31,7 @@ interface DragState {
 interface UseDragDropArgs {
   /** No drags can start while true (locked row, or a request in flight). */
   disabled: boolean;
-  /** The strip holding the slots (`[data-slot]` buttons), one row for each zone. */
+  /** The strip holding the slots (`[data-slot]` buttons): the raid board scrolls sideways. */
   stripRef: RefObject<HTMLElement>;
   /** The team tray: dropping a placed creature here unplaces it. */
   trayRef: RefObject<HTMLElement>;
@@ -201,16 +202,26 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
       if (state.phase === 'dragging') e.preventDefault();
     };
 
-    // The zones are rows, so a tall party can be longer than the screen: near the top or bottom
-    // edge of the window the page scrolls, and the slots are measured again.
+    // Near the top or bottom edge of the window the page scrolls, and near the left or right edge of
+    // a board that scrolls sideways (the raid's) the board does; the slots are measured again.
     function tick(): void {
       frame = requestAnimationFrame(tick);
       if (state.phase !== 'dragging') return;
-      const speed = pageScrollSpeed(pointer.current.y, window.innerHeight, SCROLL_EDGE);
-      if (speed === 0) return;
       // Whole pixels, at least one, or slow edge speeds would round to nothing.
-      window.scrollBy(0, Math.sign(speed) * Math.max(1, Math.round(Math.abs(speed))));
-      refreshOver();
+      const whole = (speed: number): number =>
+        Math.sign(speed) * Math.max(1, Math.round(Math.abs(speed)));
+      const speed = pageScrollSpeed(pointer.current.y, window.innerHeight, SCROLL_EDGE);
+      if (speed !== 0) window.scrollBy(0, whole(speed));
+      let sideways = 0;
+      const strip = latest.current.stripRef.current;
+      if (strip !== null && strip.scrollWidth > strip.clientWidth) {
+        const box = strip.getBoundingClientRect();
+        if (pointer.current.y >= box.top && pointer.current.y <= box.bottom) {
+          sideways = autoScrollSpeed(pointer.current.x, box.left, box.right, SCROLL_EDGE);
+          if (sideways !== 0) strip.scrollLeft += whole(sideways);
+        }
+      }
+      if (speed !== 0 || sideways !== 0) refreshOver();
     }
 
     function stop(): void {

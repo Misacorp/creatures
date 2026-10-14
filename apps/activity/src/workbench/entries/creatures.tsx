@@ -4,10 +4,9 @@ import { AbilityChip } from '../../AbilityChip';
 import { BossCard } from '../../BossCard';
 import { AppHead } from '../../AppHead';
 import { LivingRoom, sceneOf } from '../../LivingRoom';
-import { RosterStrip } from '../../RosterStrip';
 import { SmallCreature } from '../../SmallCreature';
 import { WornItemLine } from '../../WornItemLine';
-import type { ReadinessBand, RaidView, RosterEntry } from '../../raid-api';
+import type { ReadinessBand, RaidView } from '../../raid-api';
 import { READINESS_BANDS } from '../../raid-api';
 import { turnChips } from '../../replay';
 import { Sprite } from '../../sprites/Sprite';
@@ -98,53 +97,6 @@ const bossCard: Entry = {
     { name: 'Cinder Wyrm', props: { boss: 'cinder-wyrm' } },
   ],
   render: (p) => <BossCard view={bossView(p)} />,
-};
-
-function rosterOf(count: number, you: boolean): RosterEntry[] {
-  return Array.from({ length: count }, (_, i) => ({
-    displayName: you && i === 0 ? 'You' : `Player ${String(i + 1)}`,
-    you: you && i === 0,
-    party: 1,
-  }));
-}
-
-function RosterDemo({ p }: { p: Props }) {
-  const [optOut, setOptOut] = useState(false);
-  const view: RaidView = {
-    ...SAMPLE_RAID,
-    roster: rosterOf(num(p, 'players'), bool(p, 'inRoster')),
-    you: {
-      ...SAMPLE_RAID.you,
-      inRoster: bool(p, 'inRoster'),
-      optOut,
-      canOptOut: bool(p, 'canOptOut'),
-    },
-  };
-  return <RosterStrip view={view} busy={false} onOptOut={setOptOut} />;
-}
-
-const rosterStrip: Entry = {
-  name: 'RosterStrip',
-  file: 'apps/activity/src/RosterStrip.tsx',
-  group: 'Creatures & game pieces',
-  description:
-    'Who is in this week\'s raid, as a strip of small avatar tiles with the count; tap it to open the names and the "Sit this week out" button.',
-  controls: {
-    players: { kind: 'number', min: 0, max: 15 },
-    inRoster: { kind: 'toggle' },
-    canOptOut: { kind: 'toggle' },
-  },
-  defaults: { players: 5, inRoster: true, canOptOut: true },
-  presets: [
-    { name: 'Five players', props: {} },
-    { name: 'Full server (15)', props: { players: 15 } },
-    { name: 'Just you', props: { players: 1 } },
-    { name: 'Empty, you not in', props: { players: 0, inRoster: false } },
-    { name: 'Locked (cannot opt out)', props: { canOptOut: false } },
-  ],
-  render: (p) => (
-    <RosterDemo key={`${String(num(p, 'players'))}-${String(bool(p, 'inRoster'))}`} p={p} />
-  ),
 };
 
 function AbilityDemo({ p }: { p: Props }) {
@@ -370,7 +322,6 @@ const livingRoom: Entry = {
 export const creatureEntries: readonly Entry[] = [
   livingRoom,
   bossCard,
-  rosterStrip,
   abilityChip,
   smallCreature,
   turnStrip,

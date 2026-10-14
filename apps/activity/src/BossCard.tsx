@@ -15,6 +15,7 @@ import {
   seasonPips,
   seasonText,
 } from './raid-progress';
+import { rosterCountText } from './raid-roster';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { PopoverCard, popupProps } from './ui/Popover';
@@ -159,6 +160,7 @@ export function BossCard({ view }: { view: RaidView }) {
               </Tag>
             )}
           </div>
+          <p class="muted boss-players">{rosterCountText(view.roster.length)}</p>
           {hp !== null && (
             <div class="boss-hp">
               <BossHp caption="Boss HP this week" current={hp.current} max={hp.max} />

@@ -1,7 +1,4 @@
 import { useMemo, useRef, useState } from 'preact/hooks';
-import { cssVars } from '../../css-vars';
-import { useElementWidth } from '../../hooks';
-import { SLOT_FALLBACK_PX, SLOT_LAYOUT, layoutVars, zoneLayout } from '../../zone-layout';
 import { dropOutcome, type DropStatus, type DropTarget, type Selection } from '../../slot-outcome';
 import { useDragDrop } from '../../use-drag-drop';
 import { CreatureTray } from '../../ui/CreatureTray';
@@ -12,8 +9,6 @@ import { LiveRegion } from '../../ui/LiveRegion';
 import { SPECIES_IDS, speciesLabel } from '../data';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
-
-const ZONE_NAMES = ['Front', 'Middle', 'Back'] as const;
 
 interface DemoCreature {
   id: string;
@@ -58,7 +53,6 @@ function PlacementDemo({ p }: { p: Props }) {
   );
   const [selected, setSelected] = useState<Selection>(null);
   const stripRef = useRef<HTMLDivElement>(null);
-  const stripWidth = useElementWidth(stripRef, SLOT_FALLBACK_PX);
   const trayRef = useRef<HTMLUListElement>(null);
   const disabled = bool(p, 'disabled');
   const nameOf = (id: string): string => creatures.find((c) => c.id === id)?.name ?? 'Creature';
@@ -123,25 +117,11 @@ function PlacementDemo({ p }: { p: Props }) {
               level: c.level,
               ownId: c.id,
               mine: true,
-              ...(bool(p, 'owners') ? { owner: { colour: index % 8, line: 'You' } } : {}),
             },
     };
   };
   const all = Array.from({ length: slotCount }, (_, i) => model(i));
-  const zoned = bool(p, 'zones');
-  const groups: SlotGroup[] = zoned
-    ? ZONE_NAMES.map((label, z) => {
-        const size = Math.ceil(slotCount / 3);
-        const slots = all.slice(z * size, (z + 1) * size);
-        const layout = zoneLayout(slots.length, stripWidth, SLOT_LAYOUT);
-        return {
-          key: label,
-          scale: layout.tier.scale,
-          slots,
-          zone: { label, vars: cssVars(layoutVars(layout, SLOT_LAYOUT)) },
-        };
-      }).filter((g) => g.slots.length > 0)
-    : [{ key: 'row', scale: 3, slots: all }];
+  const groups: SlotGroup[] = [{ key: 'row', scale: 3, slots: all }];
   const statuses = dragging === null ? null : new Map(all.map((s) => [s.index, 'valid' as const]));
   const draggedCreature = dragging === null ? undefined : creatures.find((c) => c.id === dragging);
   const placed = new Set(row.filter((id): id is string => id !== null));
@@ -171,7 +151,7 @@ function PlacementDemo({ p }: { p: Props }) {
       <SlotRow
         groups={groups}
         stripRef={stripRef}
-        {...(zoned ? {} : { class: 'dungeon-strip' })}
+        class="dungeon-strip"
         label={{ 'aria-label': 'Demo row' }}
         emptyLabel={str(p, 'emptyLabel')}
         disabled={disabled}
@@ -187,11 +167,9 @@ function PlacementDemo({ p }: { p: Props }) {
 }
 
 const DEMO_CONTROLS = {
-  slots: { kind: 'number', min: 1, max: 12 },
+  slots: { kind: 'number', min: 1, max: 6 },
   creatures: { kind: 'number', min: 0, max: 6 },
   placed: { kind: 'number', min: 0, max: 6 },
-  zones: { kind: 'toggle' },
-  owners: { kind: 'toggle' },
   disabled: { kind: 'toggle' },
   emptyLabel: { kind: 'text', maxLength: 12 },
 } as const;
@@ -200,18 +178,12 @@ const DEMO_DEFAULTS = {
   slots: 3,
   creatures: 4,
   placed: 1,
-  zones: false,
-  owners: false,
   disabled: false,
   emptyLabel: 'empty',
 } as const;
 
 const DEMO_PRESETS = [
   { name: 'Dungeon team (3 slots)', props: {} },
-  {
-    name: 'Raid party (12, three zones)',
-    props: { slots: 12, zones: true, owners: true, creatures: 6, placed: 3 },
-  },
   { name: 'Empty row', props: { placed: 0 } },
   { name: 'Locked', props: { disabled: true } },
   { name: 'No creatures', props: { creatures: 0, placed: 0 } },
@@ -234,7 +206,7 @@ function demoEntry(
     presets: DEMO_PRESETS,
     render: (p) => (
       <PlacementDemo
-        key={`${String(num(p, 'slots'))}-${String(num(p, 'creatures'))}-${String(num(p, 'placed'))}-${String(bool(p, 'zones'))}`}
+        key={`${String(num(p, 'slots'))}-${String(num(p, 'creatures'))}-${String(num(p, 'placed'))}`}
         p={p}
       />
     ),
@@ -244,13 +216,13 @@ function demoEntry(
 const slotRow = demoEntry(
   'SlotRow',
   'apps/activity/src/ui/SlotRow.tsx',
-  "The row of slots where a team stands: the raid's party in three zones, the dungeon's team in one row of three. Working demo with the tray: tap, drag or use the keyboard.",
+  "The row of slots where a team stands: the dungeon's team in one row of three (the raid's party is the RaidBoard). Working demo with the tray: tap, drag or use the keyboard.",
 );
 
 const creatureTray = demoEntry(
   'CreatureTray',
   'apps/activity/src/ui/CreatureTray.tsx',
-  'The chips of the creatures you can pick up, above the slot row on the raid and dungeon team screens; dropping a creature back on it takes it out of the row.',
+  'The chips of the creatures you can pick up, above the slot row or board on the raid and dungeon team screens; dropping a creature back on it takes it out of the row.',
 );
 
 const dragGhost = demoEntry(
@@ -264,12 +236,13 @@ const slotButton: Entry = {
   file: 'apps/activity/src/ui/SlotRow.tsx',
   group: 'Slots',
   description:
-    'One slot of the row: its number, the creature standing in it (picture, name, level, owner) or the empty label, and what dropping a creature here would do.',
+    'One slot of the row: its number, the creature standing in it (picture, name, level; in the raid the owner initial and the element ring) or the empty label, and what dropping a creature here would do.',
   controls: {
     species: { kind: 'select', options: ['none', ...SPECIES_IDS] },
     level: { kind: 'number', min: 1, max: 30 },
     owner: { kind: 'toggle' },
     ownerColour: { kind: 'number', min: 0, max: 7 },
+    element: { kind: 'select', options: ['none', 'tide', 'ember', 'grove', 'spark'] },
     selected: { kind: 'toggle' },
     target: { kind: 'select', options: ['none', 'valid', 'invalid'] },
     compact: { kind: 'toggle' },
@@ -281,6 +254,7 @@ const slotButton: Entry = {
     level: 5,
     owner: false,
     ownerColour: 0,
+    element: 'none',
     selected: false,
     target: 'none',
     compact: false,
@@ -291,7 +265,10 @@ const slotButton: Entry = {
     { name: 'Occupied', props: {} },
     { name: 'Empty', props: { species: 'none' } },
     { name: 'Selected', props: { selected: true } },
-    { name: 'Raid (owner shown)', props: { owner: true, ownerColour: 2 } },
+    {
+      name: 'Raid tile (owner and element)',
+      props: { owner: true, ownerColour: 2, element: 'tide', compact: true },
+    },
     { name: 'Drop is valid', props: { species: 'none', target: 'valid' } },
     { name: 'Drop is refused', props: { species: 'none', target: 'invalid' } },
   ],
@@ -314,8 +291,9 @@ const slotButton: Entry = {
                   ownId: own,
                   mine: true,
                   ...(bool(p, 'owner')
-                    ? { owner: { colour: num(p, 'ownerColour'), line: 'You' } }
+                    ? { owner: { colour: num(p, 'ownerColour'), initial: 'Y' } }
                     : {}),
+                  ...(str(p, 'element') === 'none' ? {} : { element: str(p, 'element') }),
                 },
         }}
         scale={bool(p, 'compact') ? 2 : 3}

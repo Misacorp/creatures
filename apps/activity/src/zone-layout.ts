@@ -1,5 +1,5 @@
 /**
- * How the zones of the row are laid out, on the fight stage and in the Placement strip. Each zone is
+ * How the zones of the row are laid out, on the fight stage. Each zone is
  * a horizontal row with its label at the left, its creatures centred and wrapping onto more lines
  * when they do not fit, so nothing ever scrolls sideways. When a zone is long the sprites shrink
  * (a smaller tier) instead. Pure: the components measure their width and ask which tier to use. The
@@ -58,24 +58,11 @@ export const ROW_LAYOUT: LayoutConfig = {
   padPx: 8,
 };
 
-/** The Placement strip: slot buttons with the sprite, species, level and owner. */
-export const SLOT_LAYOUT: LayoutConfig = {
-  tiers: [
-    { scale: 3, unitPx: 72 },
-    { scale: 2, unitPx: 56 },
-  ],
-  gapPx: 4,
-  labelPx: 44,
-  labelGapPx: 4,
-  padPx: 0,
-};
-
 /** The narrowest phone the Activity supports (Discord's viewport is at least this wide). */
 export const MIN_VIEWPORT_PX = 360;
 
 /** The width the zone rows have at that phone width; used until the real width has been measured. */
 export const STAGE_FALLBACK_PX = 262;
-export const SLOT_FALLBACK_PX = 284;
 
 interface ZoneLayout {
   tier: Tier;

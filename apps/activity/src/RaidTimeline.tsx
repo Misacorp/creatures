@@ -14,14 +14,12 @@ export function RaidTimeline({
   view,
   serverNow,
   finale,
-  busy,
   onAct,
   onReplay,
 }: {
   view: RaidView;
   serverNow: number;
   finale: FinaleWindow;
-  busy: boolean;
   /** The player tapped the "what to do now" button. */
   onAct: (target: NowTarget) => void;
   onReplay: (phase: RaidPhaseId) => void;
@@ -45,7 +43,6 @@ export function RaidTimeline({
           <button
             type="button"
             class="primary now-button"
-            disabled={busy && action.target === 'rejoin'}
             onClick={() => {
               onAct(action.target ?? 'placement');
             }}

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { cursorStart, resolveDrop, slotLabel, slotStatuses } from './raid-dnd';
+import { cursorStart, resolveDrop, slotStatuses } from './raid-dnd';
 import { CANCEL_ANNOUNCEMENT } from './slot-outcome';
 import type { RowSlotView } from './raid-api';
 import type { TapContext } from './raid-slots';
 
-// Slot 0: mine (a), 1: empty, 2: Jun's, 3: mine (b), 4: empty. Creature c is in my team, unplaced.
+// A row of 5 (front 1, middle 3, back 1). Slot 0: mine (a), 1: empty, 2: Jun's, 3: mine (b), 4: empty. Creature c is in my team, unplaced.
 const mine = (id: string, name: string): NonNullable<RowSlotView['creature']> => ({
   ownerName: 'Me',
   species: 'splashet',
@@ -15,7 +15,7 @@ const mine = (id: string, name: string): NonNullable<RowSlotView['creature']> =>
 });
 const row: RowSlotView[] = [
   { slot: 0, zone: 'front', creature: mine('a', 'Alpha') },
-  { slot: 1, zone: 'front', creature: null },
+  { slot: 1, zone: 'middle', creature: null },
   {
     slot: 2,
     zone: 'middle',
@@ -33,7 +33,7 @@ describe('resolveDrop onto slots', () => {
       status: 'valid',
       intent: { type: 'place', creatureId: 'a', slot: 4 },
       hint: null,
-      announce: 'Placed Alpha in slot 5.',
+      announce: 'Placed Alpha in Back, lane 1.',
     });
   });
 
@@ -134,12 +134,5 @@ describe('keyboard helpers', () => {
     const full = row.map((s) => (s.creature === null ? { ...s, creature: mine('x', 'X') } : s));
     expect(cursorStart(full, 'c')).toBe(0);
     expect(cursorStart([], null)).toBe(0);
-  });
-
-  it('writes the spoken slot label', () => {
-    const label = (id: string): string => id.toUpperCase();
-    expect(slotLabel(row[1] as RowSlotView, label)).toBe('Slot 2, Front, empty');
-    expect(slotLabel(row[3] as RowSlotView, label)).toBe('Slot 4, Middle, SPLASHET level 3, you');
-    expect(slotLabel(row[2] as RowSlotView, label)).toBe('Slot 3, Middle, CINDLE level 4, Jun');
   });
 });

@@ -19,7 +19,6 @@ import {
   placeCreature,
   setRaidAbility,
   setRaidAutofire,
-  setRaidOptOut,
   setRaidTeam,
   unplaceCreature,
   type PhaseResultView,
@@ -31,7 +30,6 @@ import type { Selection } from './slot-outcome';
 import { festivalGrantText, rankChangeText } from './raid-progress';
 import { phaseName } from './raid-text';
 import { BossCard } from './BossCard';
-import { RosterStrip } from './RosterStrip';
 import { RaidTimeline } from './RaidTimeline';
 import type { NowTarget } from './raid-now';
 import { showFullResults } from './raid-timeline';
@@ -267,14 +265,12 @@ export function Raid({
     return outcome;
   }
 
-  /** The "what to do now" button: go to the placement step, open the finale, or join again. */
+  /** The "what to do now" button: go to the placement step or open the finale. */
   function act(target: NowTarget): void {
     if (target === 'live') {
       autoOpened.current = true;
       setLiveInitial(null);
       setLiveOpen(true);
-    } else if (target === 'rejoin') {
-      void mutate(() => setRaidOptOut(false));
     } else {
       focusPlacement();
     }
@@ -311,7 +307,6 @@ export function Raid({
         view={view}
         serverNow={serverNow}
         finale={finaleState}
-        busy={busy}
         onAct={act}
         onReplay={(phase) => {
           if (party !== null) setReplay({ week: view.weekId, party: party.party, phase });
@@ -327,13 +322,6 @@ export function Raid({
         </details>
       )}
       <BossCard view={view} />
-      <RosterStrip
-        view={view}
-        busy={busy}
-        onOptOut={(optOut) => {
-          void mutate(() => setRaidOptOut(optOut));
-        }}
-      />
       {party !== null && team !== null && (
         <Placement
           party={party}
