@@ -1,5 +1,5 @@
 import { zoneSizes } from '@creatures/engine';
-import { RULES } from '@creatures/game';
+import { RULES, content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { RowSlotView } from './raid-api';
 import {
@@ -310,6 +310,30 @@ describe('the placement cues', () => {
     const refused = cues(3, { carried: 'mine-2', tray });
     expect(refused.focus).toBeNull();
     expect(refused.cues.slots.size).toBe(0);
+  });
+
+  it('shows the creature of an open popover, and says what it does in one line', () => {
+    const r = boardCues({
+      row,
+      length: 6,
+      tray: [],
+      carried: null,
+      pointer: 3,
+      inspected: 0,
+      turnOrder: 'left_to_right',
+    });
+    expect(r.focus).toBe(0);
+    expect(r.effect).toBe(
+      `Sets up Steam (x${String(content.reactions.find((x) => x.id === 'steam')!.multiplierBp / 10_000)}) for Splashet.`,
+    );
+  });
+
+  it('says what a Guard covers in the raid: the others of its row', () => {
+    const r = cues(3);
+    expect(r.effect).toContain('its row');
+    expect([...r.cues.slots].filter(([, c]) => c.cover === true).map(([slot]) => slot)).toEqual([
+      2,
+    ]);
   });
 
   it('shows nothing when nothing is under the pointer', () => {

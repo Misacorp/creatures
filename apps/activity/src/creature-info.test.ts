@@ -67,6 +67,15 @@ describe('creatureFacts', () => {
     ]);
   });
 
+  it('ends with the one line about what the creature does for its neighbours', () => {
+    const line = "Boosts its neighbours' next hit by 15%.";
+    expect(creatureFacts({ ...info, ownerName: 'Bo', effect: line }, 'Cindle')).toEqual([
+      'Owner: Bo',
+      line,
+    ]);
+    expect(creatureFacts({ ...info, effect: line }, 'Cindle')).toEqual([line]);
+  });
+
   it('leaves out the species line when the name is the species name, and shiny when false', () => {
     expect(creatureFacts({ ...info, ownerName: 'Bo', shiny: false }, 'Cindle')).toEqual([
       'Owner: Bo',

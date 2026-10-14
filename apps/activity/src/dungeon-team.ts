@@ -150,11 +150,13 @@ function elementOf(species: string): Element | undefined {
 export const NO_REACTION_HINT = 'In this order nobody can set off a reaction.';
 
 /**
- * The line under the slot row about reactions, for a full team in its order (slot 1 first): which
+ * The sentence about reactions for a full team in its order (slot 1 first). It is no longer drawn
+ * under the slot row (the tiles show it, see `ui/slot-cue.ts`); it is the screen reader's
+ * announcement of what the order sets off. It says which
  * creature marks the foe and which one sets the reaction off, for example "Cindle marks Scorched →
  * Splashet sets off Steam." (one sentence for each different pair, in the order they first happen),
  * or `NO_REACTION_HINT` when the order never sets one off. It reads the same `rowReactions` the
- * row's best order is picked with, so the line and "Use my strongest three" always agree. Null when
+ * row's best order is picked with, so the text and "Use my strongest three" always agree. Null when
  * the team is not complete or a species is unknown. The names are the player's own (render as text).
  */
 export function orderHint(team: readonly { name: string; species: string }[]): string | null {

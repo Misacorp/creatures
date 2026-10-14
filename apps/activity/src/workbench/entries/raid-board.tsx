@@ -41,6 +41,9 @@ const NAMES = [
 /** The slots (from 1) the cue presets pin: one that sets off a reaction, one that sets off nothing. */
 const PIN_REACTION = 3;
 const PIN_NONE = 4;
+/** A Support (it buffs the tiles beside it) and a Guard (it covers its row). */
+const PIN_BUFF = 7;
+const PIN_COVER = 5;
 
 const ZONES = ['front', 'middle', 'back'] as const;
 
@@ -165,7 +168,19 @@ function BoardDemo({ p }: { p: Props }) {
       setSelected(here.creatureId);
     } else if (here !== null) {
       const info = boardCreatureInfo(here);
-      if (info !== null) popovers?.openCreature(`demo-slot:${String(slot)}`, info, button);
+      if (info !== null) {
+        const line = boardCues({
+          ...cueArgs,
+          carried: null,
+          pointer: null,
+          inspected: slot,
+        }).effect;
+        popovers?.openCreature(
+          `demo-slot:${String(slot)}`,
+          line === null ? info : { ...info, effect: line },
+          button,
+        );
+      }
     }
   }
 
@@ -174,13 +189,13 @@ function BoardDemo({ p }: { p: Props }) {
   const carried = dragging ?? selected;
   const over = dragDrop.drag?.over?.kind === 'slot' ? dragDrop.drag.over.slot : hovered;
   const pin = num(p, 'pin') > 0 ? num(p, 'pin') - 1 : null;
-  const { cues, noneRow } = boardCues({
-    row: slots,
-    length,
-    tray: [],
+  const inspectedSlot = popovers?.anchor?.closest<HTMLElement>('[data-slot]')?.dataset.slot;
+  const cueArgs = { row: slots, length, tray: [], turnOrder: str(p, 'turnOrder') };
+  const { cues, noneRow, effect } = boardCues({
+    ...cueArgs,
     carried,
     pointer: over ?? (carried === null ? pin : null),
-    turnOrder: str(p, 'turnOrder'),
+    inspected: inspectedSlot === undefined ? null : Number(inspectedSlot),
   });
 
   const models: BoardRowModel[] = rows.map((r) => ({
@@ -209,7 +224,7 @@ function BoardDemo({ p }: { p: Props }) {
         statuses={statuses}
         cues={cues.slots}
         onHoverSlot={setHovered}
-        rail={{ none: cues.none }}
+        rail={{ none: cues.none, effect }}
         noneRow={noneRow}
         onTap={tapSlot}
       />
@@ -249,6 +264,14 @@ const raidBoard: Entry = {
     { name: 'Locked', props: { disabled: true } },
     { name: 'Reaction cue (slot pinned)', props: { players: 4, yourLane: 2, pin: PIN_REACTION } },
     { name: 'No reaction mark (slot pinned)', props: { players: 4, yourLane: 2, pin: PIN_NONE } },
+    {
+      name: 'Influence: a Support (slot pinned)',
+      props: { players: 4, yourLane: 2, pin: PIN_BUFF },
+    },
+    {
+      name: 'Influence: a Guard (slot pinned)',
+      props: { players: 4, yourLane: 2, pin: PIN_COVER },
+    },
   ],
   render: (p) => (
     <BoardDemo

@@ -21,6 +21,8 @@ export interface CreatureInfo {
   /** The owner's Crafting level and this creature's Explorer rank, when known. */
   craftingLevel?: number;
   explorerRank?: number;
+  /** One short line about what it does for the creatures around it (a board's `effectLine`), when it does something. */
+  effect?: string;
   /** The item it wears, for a creature in the living room (set with `ownerName`); null or missing for none. */
   gear?: WornItem | null;
 }
@@ -54,6 +56,7 @@ export function creatureFacts(info: CreatureInfo, speciesLabel: string): string[
   if (info.shiny === true) lines.push('Shiny');
   if (info.craftingLevel !== undefined) lines.push(`Crafting level ${String(info.craftingLevel)}`);
   if (info.explorerRank !== undefined) lines.push(`Explorer rank ${String(info.explorerRank)}`);
+  if (info.effect !== undefined) lines.push(info.effect);
   return lines;
 }
 

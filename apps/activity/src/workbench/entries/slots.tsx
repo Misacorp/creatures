@@ -7,7 +7,7 @@ import { CreatureTray } from '../../ui/CreatureTray';
 import { DragGhost } from '../../ui/DragGhost';
 import { CueRail } from '../../ui/CueRail';
 import { SlotButton, SlotRow, type SlotGroup, type SlotModel } from '../../ui/SlotRow';
-import { affectSlotOf, cuesFor, sceneOf, type SlotCue } from '../../ui/slot-cue';
+import { affectSlotOf, cuesFor, effectLine, sceneOf, type SlotCue } from '../../ui/slot-cue';
 import { useSlotAnnouncer, useSlotKeyboard } from '../../ui/use-slot-keyboard';
 import { LiveRegion } from '../../ui/LiveRegion';
 import { SPECIES_IDS, speciesLabel } from '../data';
@@ -20,6 +20,10 @@ const LINEUPS: Readonly<Record<string, readonly string[]>> = {
   reacting: ['cindle', 'splashet', 'sproutle', 'ashmole'],
   // Tide, Grove, Ember in this order: nobody can set anything off.
   silent: ['splashet', 'sproutle', 'cindle', 'ashmole'],
+  // Ashmole (Support) between two hitters.
+  support: ['cindle', 'ashmole', 'splashet', 'sproutle'],
+  // Sproutle (Guard) in the middle.
+  guard: ['cindle', 'sproutle', 'splashet', 'ashmole'],
 };
 
 const REACTION_IDS: readonly string[] = content.reactions.map((r) => r.id);
@@ -152,15 +156,25 @@ function PlacementDemo({ p }: { p: Props }) {
     carried,
     pointer: over ?? (carried === null ? pinned : null),
   });
+  const affectRow = scene.keys.map((id) => {
+    const c = id === null ? undefined : creatures.find((x) => x.id === id);
+    return c === undefined ? null : affectSlotOf(getSpecies(c.species));
+  });
   const cues = cuesFor({
-    row: scene.keys.map((id) => {
-      const c = id === null ? undefined : creatures.find((x) => x.id === id);
-      return c === undefined ? null : affectSlotOf(getSpecies(c.species));
-    }),
+    row: affectRow,
     mode: { row: 'dungeon' },
     focus: scene.focus,
     scope: 'row',
   });
+  const effect =
+    scene.focus === null
+      ? null
+      : effectLine({
+          row: affectRow,
+          mode: { row: 'dungeon' },
+          focus: scene.focus,
+          nameOf: (slot) => nameOf(scene.keys[slot] ?? ''),
+        });
 
   return (
     <div onKeyDown={onKeyDown}>
@@ -198,7 +212,7 @@ function PlacementDemo({ p }: { p: Props }) {
         onHoverSlot={setHovered}
         onTap={tapSlot}
       />
-      <CueRail none={cues.none} />
+      <CueRail none={cues.none} effect={effect} />
       <DragGhost ghostRef={dragDrop.ghostRef} creature={draggedCreature} />
       <LiveRegion>{announcement}</LiveRegion>
     </div>
@@ -235,6 +249,14 @@ const DEMO_PRESETS = [
     props: { lineup: 'reacting', placed: 3, pin: 1 },
   },
   { name: 'No reaction mark', props: { lineup: 'silent', placed: 3, pin: 1 } },
+  {
+    name: 'Influence: a Support buffs its neighbours',
+    props: { lineup: 'support', placed: 3, pin: 2 },
+  },
+  {
+    name: 'Influence: a Guard covers its neighbours',
+    props: { lineup: 'guard', placed: 3, pin: 2 },
+  },
 ];
 
 function demoEntry(
@@ -294,6 +316,7 @@ const slotButton: Entry = {
     selected: { kind: 'toggle' },
     target: { kind: 'select', options: ['none', 'valid', 'invalid'] },
     reaction: { kind: 'select', options: ['none', ...REACTION_IDS] },
+    influence: { kind: 'select', options: ['none', 'buff', 'cover'] },
     reactionRole: { kind: 'select', options: ['payoff', 'marker'] },
     compact: { kind: 'toggle' },
     disabled: { kind: 'toggle' },
@@ -308,6 +331,7 @@ const slotButton: Entry = {
     selected: false,
     target: 'none',
     reaction: 'none',
+    influence: 'none',
     reactionRole: 'payoff',
     compact: false,
     disabled: false,
@@ -316,6 +340,8 @@ const slotButton: Entry = {
   presets: [
     { name: 'Occupied', props: {} },
     { name: 'Reaction: sets it off', props: { reaction: 'steam', reactionRole: 'payoff' } },
+    { name: 'Influence: buffed by a Support', props: { influence: 'buff' } },
+    { name: 'Influence: covered by a Guard', props: { influence: 'cover' } },
     {
       name: 'Reaction: marks (raid tile)',
       props: {
@@ -341,16 +367,23 @@ const slotButton: Entry = {
     const status = str(p, 'target');
     const def = content.reactions.find((r) => r.id === str(p, 'reaction'));
     const marker = str(p, 'reactionRole') === 'marker';
+    const influence = str(p, 'influence');
     const cue: SlotCue | undefined =
-      def === undefined
+      def === undefined && influence === 'none'
         ? undefined
         : {
-            reaction: {
-              id: def.id,
-              name: def.name,
-              role: marker ? 'marker' : 'payoff',
-              element: marker ? def.markElement : def.triggerElement,
-            },
+            ...(influence === 'buff' ? { buff: true as const } : {}),
+            ...(influence === 'cover' ? { cover: true as const } : {}),
+            ...(def === undefined
+              ? {}
+              : {
+                  reaction: {
+                    id: def.id,
+                    name: def.name,
+                    role: marker ? ('marker' as const) : ('payoff' as const),
+                    element: marker ? def.markElement : def.triggerElement,
+                  },
+                }),
           };
     return (
       <SlotButton
@@ -395,15 +428,19 @@ const cueRail: Entry = {
   file: 'apps/activity/src/ui/CueRail.tsx',
   group: 'Slots',
   description:
-    'The strip under the dungeon team and the raid board. It shows a small "no reaction" mark when the order of the creatures cannot set off a reaction, and keeps its height when empty.',
+    'The strip under the dungeon team and the raid board. It shows a small "no reaction" mark when the order of the creatures cannot set off a reaction, one line about what the creature in focus does, and keeps its height when empty.',
   covers: ['NoReactionMark'],
-  controls: { none: { kind: 'toggle' } },
-  defaults: { none: true },
+  controls: { none: { kind: 'toggle' }, effect: { kind: 'text', maxLength: 120 } },
+  defaults: { none: true, effect: '' },
   presets: [
     { name: 'No reaction', props: {} },
     { name: 'Nothing to say', props: { none: false } },
+    {
+      name: 'What a creature does',
+      props: { none: false, effect: "Boosts its neighbours' next hit by 15%." },
+    },
   ],
-  render: (p) => <CueRail none={bool(p, 'none')} />,
+  render: (p) => <CueRail none={bool(p, 'none')} effect={str(p, 'effect') || null} />,
 };
 
 export const slotEntries: readonly Entry[] = [

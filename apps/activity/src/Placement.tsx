@@ -112,13 +112,19 @@ export function Placement(props: Props) {
   const bySlot = new Map(ctx.row.map((slot) => [slot.slot, slot]));
 
   // The cues: the creature in focus (carried, or under the pointer) and the row as it would stand.
-  const { cues, noneRow } = boardCues({
+  // A creature whose popover is open counts as in focus too.
+  const inspectedSlot = popovers?.anchor?.closest<HTMLElement>('[data-slot]')?.dataset.slot;
+  const cueArgs = {
     row: ctx.row,
     length: party.rowLength,
     tray: team.creatures,
+    turnOrder: props.turnOrder,
+  };
+  const { cues, noneRow, effect } = boardCues({
+    ...cueArgs,
     carried: dragging ?? selected,
     pointer: drag?.over?.kind === 'slot' ? drag.over.slot : hovered,
-    turnOrder: props.turnOrder,
+    inspected: inspectedSlot === undefined ? null : Number(inspectedSlot),
   });
 
   const boardModels: BoardRowModel[] = rows.map((row) => ({
@@ -137,7 +143,17 @@ export function Placement(props: Props) {
     if (selected === null && occupant != null && !occupant.mine && popovers !== null) {
       const info = boardCreatureInfo(occupant);
       if (info !== null && !consumeClick()) {
-        popovers.openCreature(`raid-slot:${String(slot)}`, info, button);
+        const line = boardCues({
+          ...cueArgs,
+          carried: null,
+          pointer: null,
+          inspected: slot,
+        }).effect;
+        popovers.openCreature(
+          `raid-slot:${String(slot)}`,
+          line === null ? info : { ...info, effect: line },
+          button,
+        );
         return;
       }
     }
@@ -195,7 +211,7 @@ export function Placement(props: Props) {
           statuses={statuses}
           cues={cues.slots}
           onHoverSlot={setHovered}
-          rail={{ none: cues.none }}
+          rail={{ none: cues.none, effect }}
           noneRow={noneRow}
           onTap={tapSlot}
         />

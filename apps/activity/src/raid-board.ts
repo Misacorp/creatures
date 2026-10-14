@@ -13,7 +13,7 @@ import type { RowSlotView } from './raid-api';
 import { initialOf } from './raid-roster';
 import { ownerColour } from './raid-slots';
 import type { SlotModel } from './ui/SlotRow';
-import { affectSlotOf, cuesFor, sceneOf, type RowCues } from './ui/slot-cue';
+import { affectSlotOf, cuesFor, effectLine, sceneOf, type RowCues } from './ui/slot-cue';
 
 /** The names of the three rows, front (closest to the boss) first. */
 export const ROW_NAMES: Readonly<Record<Zone, string>> = {
@@ -219,8 +219,10 @@ export function boardAffectRow(
 /**
  * The cues of the board: which creature is in focus, and what lights up. `carried` is the creature
  * being dragged or picked up (one of yours, on the board or in the tray), `pointer` the slot dragged
- * over or under the mouse or keyboard focus. A carried creature is shown where it would stand, if it
- * may go there (an empty slot or one of yours). `noneRow` is the row that gets the "no reaction" mark.
+ * over or under the mouse or keyboard focus, `inspected` the slot whose popover is open. A carried
+ * creature is shown where it would stand, if it may go there (an empty slot or one of yours).
+ * `noneRow` is the row that gets the "no reaction" mark, `effect` the one line about what the
+ * creature in focus does for the row.
  */
 export function boardCues(args: {
   row: readonly RowSlotView[];
@@ -228,8 +230,9 @@ export function boardCues(args: {
   tray: readonly { creatureId: string; species: string; level: number }[];
   carried: string | null;
   pointer: number | null;
+  inspected?: number | null;
   turnOrder: string;
-}): { cues: RowCues; focus: number | null; noneRow: Zone | null } {
+}): { cues: RowCues; focus: number | null; noneRow: Zone | null; effect: string | null } {
   const { row, length } = args;
   const bySlot = new Map(row.map((s) => [s.slot, s]));
   const known = new Map<string, { species: string; level: number }>();
@@ -242,18 +245,29 @@ export function boardCues(args: {
     keys: boardKeys(row, length),
     carried: args.carried,
     pointer: args.pointer,
+    inspected: args.inspected ?? null,
     canDrop: (slot) => {
       const there = bySlot.get(slot)?.creature ?? null;
       return there === null || there.mine;
     },
   });
-  const cues = cuesFor({
-    row: boardAffectRow(scene.keys, known),
-    mode: { row: 'raid', turnOrder: parseTurnOrder(args.turnOrder) },
-    focus: scene.focus,
-    scope: 'focus',
-  });
+  const affectRow = boardAffectRow(scene.keys, known);
+  const mode = { row: 'raid', turnOrder: parseTurnOrder(args.turnOrder) } as const;
+  const cues = cuesFor({ row: affectRow, mode, focus: scene.focus, scope: 'focus' });
   const noneRow =
     cues.none && scene.focus !== null ? (placeOf(scene.focus, length)?.zone ?? null) : null;
-  return { cues, focus: scene.focus, noneRow };
+  const effect =
+    scene.focus === null
+      ? null
+      : effectLine({
+          row: affectRow,
+          mode,
+          focus: scene.focus,
+          nameOf: (slot) => {
+            const key = scene.keys[slot];
+            const who = key === null || key === undefined ? undefined : known.get(key);
+            return who === undefined ? 'a creature' : speciesName(who.species);
+          },
+        });
+  return { cues, focus: scene.focus, noneRow, effect };
 }

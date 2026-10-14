@@ -21,7 +21,7 @@ import { CueRail } from './ui/CueRail';
 import { DragGhost } from './ui/DragGhost';
 import { LiveRegion } from './ui/LiveRegion';
 import { SlotRow, type SlotGroup } from './ui/SlotRow';
-import { affectSlotOf, cuesFor, sceneOf } from './ui/slot-cue';
+import { affectSlotOf, cuesFor, effectLine, sceneOf } from './ui/slot-cue';
 import { ToggleButton } from './ui/ToggleButton';
 import { useSlotAnnouncer, useSlotKeyboard } from './ui/use-slot-keyboard';
 import { useDragDrop } from './use-drag-drop';
@@ -132,15 +132,25 @@ export function DungeonTeam(props: Props) {
     carried: dragging ?? selected,
     pointer: drag?.over?.kind === 'slot' ? drag.over.slot : hovered,
   });
+  const affectRow = scene.keys.map((id) => {
+    const c = id === null ? undefined : byId.get(id);
+    return c === undefined ? null : affectSlotOf(getSpecies(c.species));
+  });
   const cues = cuesFor({
-    row: scene.keys.map((id) => {
-      const c = id === null ? undefined : byId.get(id);
-      return c === undefined ? null : affectSlotOf(getSpecies(c.species));
-    }),
+    row: affectRow,
     mode: { row: 'dungeon' },
     focus: scene.focus,
     scope: 'row',
   });
+  const effect =
+    scene.focus === null
+      ? null
+      : effectLine({
+          row: affectRow,
+          mode: { row: 'dungeon' },
+          focus: scene.focus,
+          nameOf: (slot) => nameOf(scene.keys[slot] ?? ''),
+        });
 
   const group: SlotGroup = {
     key: 'row',
@@ -189,7 +199,7 @@ export function DungeonTeam(props: Props) {
           tap({ kind: 'slot', slot });
         }}
       />
-      <CueRail none={cues.none} />
+      <CueRail none={cues.none} effect={effect} />
       <p class="button-row">
         <button type="button" disabled={disabled} onClick={props.onStrongest}>
           Use my strongest three
