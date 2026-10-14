@@ -24,7 +24,7 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
 Follow `docs/roadmap.md`.
 
 - **Items 5 and 5b are built** (branch `analytics`, PR #12, 2026-10-14 overnight): rollups, guild directory, ops endpoint, report workflow, `pnpm analyze`, `pnpm sim:live`, `pnpm scalars`, `pnpm patch-notes`, the `patch-notes` and `balance-review` skills, and the staging-only dev tools (server gate, dev clock, `/api/dev/*`, client panel). Waiting for Misa to review, merge and add `OPS_TOKEN`.
-- **Item 6, cleanup pass 1:** slices 1, 2 and 4–18 are built (branch `cleanup-1`, PR #13, stacked on #12). Left: slice 3 (unused glossary entries and v1 expedition rules) and the four game-feel questions at the end of `design/cleanup-1-audit.md`, then step 3 upkeep (Vitest 5 and Dependabot PR #2, outdated dependencies, zizmor and actionlint). Screenshot and interaction harnesses used for the slices live only in the session scratchpad; recreate from the PR #13 description if needed.
+- **Item 6, cleanup pass 1:** slices 1, 2 and 4–18 are built (branch `cleanup-1`, PR #14, stacked on #12). Left: slice 3 (unused glossary entries and v1 expedition rules) and the four game-feel questions at the end of `design/cleanup-1-audit.md`, then step 3 upkeep (Vitest 5 and Dependabot PR #2, outdated dependencies, zizmor and actionlint). Screenshot and interaction harnesses used for the slices live only in the session scratchpad; recreate from the PR #14 description if needed.
 - The first real balance report needs about a week of rolled-up data after `OPS_TOKEN` is set. Then run the `balance-review` skill.
 
 ## Open questions for Misa
