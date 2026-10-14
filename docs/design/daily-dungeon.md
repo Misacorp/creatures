@@ -27,7 +27,7 @@ No real-time backend is needed.
   - A short chain of **3 rooms**, generated from the seed: two encounters, then a room boss.
   - Each room is a small fight against content-defined dungeon foes (new content type, schema-validated), with an element, gimmicks and an HP pool (no turn order: see above).
   - **Creature HP carries over between rooms**, and knocked-out creatures stay out, so order and guards matter.
-  - Each room also rolls a **room modifier** from content, shown before the run: for example "Flooded: Tide +20%", "Echoing: Payoff creatures +20%", "Dark: crits +5%", "Thorns: the foe turns the first reaction of each round back on your team". There are 8, three are rolled per day, all different.
+  - Each room also rolls a **room modifier** from content, shown before the run: for example "Flooded: Tide +20%", "Echoing: Guards and supports +50%", "Dark: crits +5%", "Thorns: the foe turns the first reaction of each round back on your team". There are 8, three are rolled per day, all different.
   - **Any change to the normal rules must be shown before the run** (a modifier's one plain line), or, if a mystery modifier ever exists, announced in the room banner when it happens. None changes who acts when. (Fog, which set the order, was retired on 2026-10-14 and replaced by Echoing; old runs that rolled it still show its name and text.)
 - **Depth ladder (personal):**
   - Each player has a **dungeon depth**, like the raid Boss Rank but personal.
@@ -72,10 +72,10 @@ No real-time backend is needed.
   - an **Enter** button.
 - **Playback:**
   - The fight stage plays each room with the same pacing and effects as the live finale: shared `roundPlaybackMs`, telegraphs, lingering numbers.
-  - **The order is visible:** the pre-run screen says "Your creatures act left to right, then the foe." under the team (a tag that opens the "Your row" glossary entry); the playback numbers the creatures 1, 2, 3 under the stage's row (the same numbers as the setup slots) and has a turn strip under the stage (the shared `TurnStrip`, also used by the raid replay): the creature acting is outlined, those that acted are dimmed, a knocked-out creature is struck through, and "then the foe" lights up when the foe acts. The "Next round" forecast names the gimmick a modifier gives the foe (Thorns) as well as the foe's own.
+  - **The order is visible:** the pre-run screen says "Your creatures act left to right, then the foe." under the team (a tag that opens the "Your row" glossary entry); the playback writes the acting order under each creature of the stage's row ("1st", "2nd", "3rd") and outlines the creature acting now. The stage's head reads "Room 1 / 3 · Round 2 / 2", the foe's name is under its sprite and its HP is written on the bar ("62 / 337"). Pause, 2x and Skip are hidden (`DungeonPlayback`'s `showControls`). The "Next round" forecast names the gimmick a modifier gives the foe (Thorns) as well as the foe's own.
   - The stage keeps one size for the whole run. A room opens with a banner drawn **over** the stage (the room number, the foe and its twist), then the fight plays under it; the playback controls never move.
   - At the end: the **rewards first** (the loot reveal), then a strip of the three rooms (each with its foe's sprite and a CLEARED, DEFEAT or LOCKED banner, left to right like a comic), then the team in its row with the HP each ended with.
-- Skip and 2× controls. Leaving mid-playback is fine; the result is already stored, and coming back shows the summary with "Watch again".
+- Skip and 2× controls (hidden for now, see above). Leaving mid-playback is fine; the result is already stored, and coming back shows the summary with "Watch again".
 - A Discord post is optional, later: a weekly "deepest diver" note in the raid channel.
 
 ## Balance and sim
