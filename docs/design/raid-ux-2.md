@@ -153,6 +153,24 @@ Proposal (needs a sim pass; numbers are starting points):
 3. **Enrage in the raid finale only, and in dungeon boss rooms** (to teach it). Reversible.
 4. **An enrage loss is a normal loss.**
 
+## Raid Roster (Misa, 2026-10-14)
+
+Status: **built, 2026-10-14**. It follows a production bug (a player with four creatures on the board) and replaces the "your team" step of the placement section. Details and reasons are in `decisions.md` (2026-10-14: "Raid Roster", "four creatures on the board", "picker effects").
+
+**The model.** A player's raid creatures for the week are the ones they **placed on the board**, at most three. Whatever is missing up to three is filled in with their strongest unplaced creatures when a phase resolves (the same `autoTeam` order as before, then the existing `autoPlace`). A player who places nothing gets the full automatic team, as before. There is no "choose team" and no "automatic team" button any more.
+
+**The section.**
+
+- Title **Raid Roster**, one help sentence under it ("Pick your creatures and place them on the board alongside everyone else."), then one count line: "1 / 3 placed · the rest join automatically when Phase 1 locks". The phase comes from the view's next event; once the board is locked it says so.
+- Gone: the "Keyboard controls" disclosure, the old help line, the "Your team" tray ("chosen by you"), the Choose team, Use automatic team and Unplace buttons, the lane pips above the board, and tap-to-select then tap-a-slot.
+- **Empty slot (tap, or Enter):** opens the creature picker, a bottom sheet with a listbox of everything the player owns. Each option has the sprite, name, level, an element tag and a role tag. Creatures already on the board say "On the board · moves here" and stay pickable. At 3 / 3 the new ones are disabled with "3 / 3 on the board, remove one first". Up, Down, Home and End move through the list, Enter or Space picks, Escape or Close closes, Tab stays inside the sheet, and focus returns to the slot.
+- **Effect preview in the picker:** behind one constant, `SHOW_PICKER_EFFECTS` in `roster-picker.ts` (on). Each option gets one quiet line, cut with an ellipsis, saying what it would do **in that slot**: "Steam with Splashet", "Buffs 2 neighbours", "Covers its row", or nothing. It comes from the engine's `affects` helper, so it is exactly what the fight does. Misa's words: "If it crowds the picker I think it's a bad idea, but I do like it and would like to see a version where it's tried." The workbench page `RosterPicker` has presets with it on and off to compare.
+- **Tap a creature on the board:** yours opens the standard creature popover with a **Remove from board** button; someone else's opens the popover with its effect and owner. Once the board is locked everything is read-only: no picker, no drag, no remove button.
+- **Moving creatures:** by drag, or by picking it again in the picker ("moves here"); the picker is also the keyboard and screen reader way. A finger needs a short press and hold (250 ms) to pick a creature up, so a normal swipe still scrolls the board sideways (or the page). Dragging near the left or right edge of the board scrolls it; this was checked at 360 and 390 px with touch emulation.
+- The reaction and influence cues still show on drag, hover and in the popover.
+
+**Server.** `PUT /api/raid/placement` refuses a new fourth creature with 409 `board_full`; a creature already on the board moves. `PUT /api/raid/team` is a validated no-op (the old body still validates, nothing is stored, the answer is the fresh view) and the `raid_teams` table is kept for a later migration. The view still carries `you.team` (the creatures the player brings, with `slot` null for the filled-in ones) and `you.team.mode`, which is always `auto`, for older clients.
+
 ## Open questions for Misa
 
 - None open. The raid-structure questions are decided above.
