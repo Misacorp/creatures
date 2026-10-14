@@ -143,9 +143,14 @@ button.board-pip:active:not(:disabled) {
   margin-top: 0.875rem;
 }
 
+/* One line, cut with an ellipsis rather than broken mid-word; the popover and the aria label have the full name. */
 .board-row .party-slot .slot-species {
+  display: block;
   font-size: 0.625rem;
   line-height: 1.15;
+  overflow-wrap: normal;
+  white-space: nowrap;
+  word-break: normal;
 }
 
 /* The owner's initial: in the corner, in the owner's colour. */
