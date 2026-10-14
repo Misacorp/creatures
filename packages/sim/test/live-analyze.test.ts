@@ -456,10 +456,15 @@ describe('the balance log', () => {
     expect(md).not.toContain('B-002');
   });
 
-  it('reads the real log (only the template today, so nothing is open)', () => {
+  it('reads the real log: every open entry has an id, a title and an opened date', () => {
     const text = readLog(repoRoot());
     expect(text).not.toBeNull();
-    expect(openLogEntries(text ?? '')).toEqual([]);
+    for (const entry of openLogEntries(text ?? '')) {
+      expect(entry.id).toMatch(/^B-\d{3}$/);
+      expect(entry.id).not.toBe('B-000');
+      expect(entry.title.length).toBeGreaterThan(0);
+      expect(entry.opened).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
   });
 });
 
