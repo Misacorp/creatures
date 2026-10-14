@@ -1,30 +1,26 @@
 import { GLOSSARY_IDS } from '@creatures/game';
 import type { ComponentChildren } from 'preact';
 import { useRef } from 'preact/hooks';
-import { speciesName } from './game';
 import { GlossaryTag } from './Glossary';
-import { cssVars } from './css-vars';
-import { useElementWidth } from './hooks';
-import {
-  ZONE_LABELS,
-  cursorStart,
-  resolveDrop,
-  slotLabel,
-  slotStatuses,
-  type RaidDropOutcome,
-} from './raid-dnd';
+import { usePopoverHost } from './PopoverHost';
+import { cursorStart, resolveDrop, slotStatuses, type RaidDropOutcome } from './raid-dnd';
 import type { RaidView } from './raid-api';
-import { adjacentSlots, canUnplace, ownerColour, type TapContext } from './raid-slots';
+import {
+  ROW_NAMES,
+  boardCreatureInfo,
+  boardKeyTarget,
+  boardRows,
+  boardSlot,
+  placeText,
+} from './raid-board';
+import { adjacentSlots, canUnplace, type TapContext } from './raid-slots';
 import { CANCEL_ANNOUNCEMENT, type DropTarget, type Selection, type Tap } from './slot-outcome';
 import { CreatureTray } from './ui/CreatureTray';
 import { DragGhost } from './ui/DragGhost';
 import { LiveRegion } from './ui/LiveRegion';
-import { SlotRow, type SlotGroup } from './ui/SlotRow';
+import { RaidBoard, type BoardRowModel } from './ui/RaidBoard';
 import { useSlotAnnouncer, useSlotKeyboard } from './ui/use-slot-keyboard';
 import { useDragDrop } from './use-drag-drop';
-import { SLOT_FALLBACK_PX, SLOT_LAYOUT, layoutVars, zoneLayout } from './zone-layout';
-
-const ZONES = ['front', 'middle', 'back'] as const;
 
 type Party = NonNullable<RaidView['party']>;
 type Team = NonNullable<RaidView['you']['team']>;
@@ -49,15 +45,18 @@ interface Props {
   onCancel: () => void;
 }
 
-/** The team tray and the party row, with tap, keyboard and drag-and-drop placement. */
+/** The team tray and the party board, with tap, keyboard and drag-and-drop placement. */
 export function Placement(props: Props) {
   const { party, team, ctx, disabled, selected, rosterNames } = props;
   const stripRef = useRef<HTMLDivElement>(null);
-  const stripWidth = useElementWidth(stripRef, SLOT_FALLBACK_PX);
+  const popovers = usePopoverHost();
   const trayRef = useRef<HTMLUListElement>(null);
 
   const nameOf = (creatureId: string): string =>
     team.creatures.find((c) => c.creatureId === creatureId)?.name ?? 'Creature';
+
+  // The board: Front, Middle and Back as rows of slot numbers (the engine's zone sizes).
+  const rows = boardRows(party.rowLength);
 
   // Say it out loud when a creature is picked up (by tap or key).
   const [announcement, announce] = useSlotAnnouncer(selected, nameOf);
@@ -84,6 +83,7 @@ export function Placement(props: Props) {
     selected,
     busy: props.busy,
     vertical: true,
+    keyTarget: (current, key) => boardKeyTarget(rows, current, key),
     cursorStart: () => cursorStart(ctx.row, selected),
     onCancel: cancel,
   });
@@ -106,40 +106,28 @@ export function Placement(props: Props) {
   const draggedCreature =
     dragging === null ? undefined : team.creatures.find((c) => c.creatureId === dragging);
 
-  const groups: SlotGroup[] = [];
-  for (const zone of ZONES) {
-    const slots = ctx.row.filter((s) => s.zone === zone);
-    if (slots.length === 0) continue;
-    const layout = zoneLayout(slots.length, stripWidth, SLOT_LAYOUT);
-    groups.push({
-      key: zone,
-      scale: layout.tier.scale,
-      zone: {
-        label: <GlossaryTag entry={GLOSSARY_IDS.zone(zone)}>{ZONE_LABELS[zone]}</GlossaryTag>,
-        vars: cssVars(layoutVars(layout, SLOT_LAYOUT)),
-      },
-      slots: slots.map((s) => {
-        const c = s.creature;
-        return {
-          index: s.slot,
-          ariaLabel: slotLabel(s, speciesName),
-          occupant:
-            c === null
-              ? null
-              : {
-                  species: c.species,
-                  name: speciesName(c.species),
-                  level: c.level,
-                  ownId: c.mine && c.creatureId !== undefined ? c.creatureId : null,
-                  mine: c.mine,
-                  owner: {
-                    colour: ownerColour(c.ownerName, rosterNames),
-                    line: c.mine ? 'You' : c.ownerName,
-                  },
-                },
-        };
-      }),
-    });
+  const bySlot = new Map(ctx.row.map((slot) => [slot.slot, slot]));
+  const boardModels: BoardRowModel[] = rows.map((row) => ({
+    zone: row.zone,
+    name: ROW_NAMES[row.zone],
+    label: <GlossaryTag entry={GLOSSARY_IDS.zone(row.zone)}>{ROW_NAMES[row.zone]}</GlossaryTag>,
+    slots: row.slots.flatMap((n) => {
+      const slot = bySlot.get(n);
+      return slot === undefined ? [] : [boardSlot(slot, party.rowLength, rosterNames)];
+    }),
+  }));
+
+  /** A tap on a tile. Another player's creature opens its popover (with the owner's name). */
+  function tapSlot(slot: number, button: HTMLElement): void {
+    const occupant = bySlot.get(slot)?.creature;
+    if (selected === null && occupant != null && !occupant.mine && popovers !== null) {
+      const info = boardCreatureInfo(occupant);
+      if (info !== null && !consumeClick()) {
+        popovers.openCreature(`raid-slot:${String(slot)}`, info, button);
+        return;
+      }
+    }
+    tap({ kind: 'slot', slot });
   }
 
   return (
@@ -169,7 +157,7 @@ export function Placement(props: Props) {
             name: c.name,
             detail: (
               <>
-                Lv {c.level} · {c.slot === null ? 'not placed' : `slot ${String(c.slot + 1)}`}
+                Lv {c.level} · {c.slot === null ? 'not placed' : placeText(c.slot, party.rowLength)}
               </>
             ),
             placed: c.slot !== null,
@@ -183,19 +171,16 @@ export function Placement(props: Props) {
             tap({ kind: 'creature', id });
           }}
         />
-        <SlotRow
-          groups={groups}
+        <RaidBoard
+          rows={boardModels}
           stripRef={stripRef}
-          label={{ 'aria-label': 'Party row, front to back, each zone left to right' }}
           emptyLabel="empty"
           disabled={disabled}
           selected={selected}
           drag={dragDrop}
           statuses={statuses}
           adjacent={adjacent}
-          onTap={(slot) => {
-            tap({ kind: 'slot', slot });
-          }}
+          onTap={tapSlot}
         />
         <p class="place-actions">
           <button

@@ -5,6 +5,7 @@ import { headingEntries } from './entries/headings';
 import { iconEntries } from './entries/icons';
 import { lootEntries } from './entries/loot';
 import { popoverEntries } from './entries/popovers';
+import { raidBoardEntries } from './entries/raid-board';
 import { slotEntries } from './entries/slots';
 import { tagEntries } from './entries/tags';
 import { GROUPS, type Entry, type Group } from './types';
@@ -19,6 +20,7 @@ export const ENTRIES: readonly Entry[] = [
   ...tagEntries,
   ...popoverEntries,
   ...slotEntries,
+  ...raidBoardEntries,
   ...lootEntries,
   ...headingEntries,
   ...iconEntries,

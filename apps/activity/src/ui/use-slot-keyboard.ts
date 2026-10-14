@@ -9,8 +9,14 @@ interface Args {
   selected: Selection;
   /** True while a move is being sent: the buttons are disabled, and focus returns when it ends. */
   busy: boolean;
-  /** Up and down move between the lines of a strip that wraps (raid zones); off for a single row. */
+  /** Up and down move between the lines of a strip that wraps; off for a single row. */
   vertical: boolean;
+  /**
+   * Where a key moves from a slot, when the strip has its own map (the raid board: left and right in
+   * a row, up and down in a lane). Null: the key does nothing. Without it the keys follow the order
+   * and the position of the buttons (`slotKeyTarget`).
+   */
+  keyTarget?: (current: number, key: string) => number | null;
   /**
    * Where the cursor starts when an arrow key is pressed on a tray chip while a creature is picked
    * up. Without it the arrow keys only work once a slot has focus.
@@ -56,12 +62,15 @@ export function useSlotKeyboard(args: Args): (event: KeyboardEvent) => void {
     if (!onSlot && (args.cursorStart === undefined || selected === null)) return;
     const buttons = [...(stripRef.current?.querySelectorAll<HTMLElement>('[data-slot]') ?? [])];
     const current = onSlot ? Number(control.dataset.slot) : (args.cursorStart?.() ?? 0);
-    const to = slotKeyTarget(
-      buttons.map((b) => ({ slot: Number(b.dataset.slot), rect: b.getBoundingClientRect() })),
-      current,
-      event.key,
-      args.vertical,
-    );
+    const to =
+      args.keyTarget !== undefined
+        ? args.keyTarget(current, event.key)
+        : slotKeyTarget(
+            buttons.map((b) => ({ slot: Number(b.dataset.slot), rect: b.getBoundingClientRect() })),
+            current,
+            event.key,
+            args.vertical,
+          );
     if (to === null) return;
     // Only a key that moves focus is swallowed, so the page still scrolls when there is nowhere to go.
     event.preventDefault();

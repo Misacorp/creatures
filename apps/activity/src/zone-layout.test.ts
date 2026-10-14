@@ -4,8 +4,6 @@ import { describe, expect, it } from 'vitest';
 import {
   MIN_VIEWPORT_PX,
   ROW_LAYOUT,
-  SLOT_FALLBACK_PX,
-  SLOT_LAYOUT,
   STAGE_FALLBACK_PX,
   STAGE_LAYOUT,
   layoutVars,
@@ -20,10 +18,7 @@ const MAX_ROW = RULES.raid.maxPartySize * RULES.raid.teamSize;
 const ROW_LENGTHS = Array.from({ length: MAX_ROW }, (_, i) => i + 1);
 
 /** The widest the room is when the zones must still fit: a 360 px phone. */
-const CASES: [string, LayoutConfig, number][] = [
-  ['stage', STAGE_LAYOUT, STAGE_FALLBACK_PX],
-  ['slots', SLOT_LAYOUT, SLOT_FALLBACK_PX],
-];
+const CASES: [string, LayoutConfig, number][] = [['stage', STAGE_LAYOUT, STAGE_FALLBACK_PX]];
 
 describe('zone layout', () => {
   it('has a biggest row of 45 creatures, 15 to a zone', () => {
@@ -35,7 +30,6 @@ describe('zone layout', () => {
     // main.card: 100% - 1.25rem, 1rem padding; .raid-section: 0.75rem padding; the stage: 3px
     // margin and 0.5rem padding.
     const card = MIN_VIEWPORT_PX - 20 - 32;
-    expect(SLOT_FALLBACK_PX).toBeLessThanOrEqual(card - 24);
     expect(STAGE_FALLBACK_PX).toBeLessThanOrEqual(card - 24 - 6 - 16);
   });
 

@@ -4,6 +4,7 @@
  * so a drag, a tap and a key press can never disagree. The server still validates every move.
  */
 import type { RowSlotView } from './raid-api';
+import { placeText } from './raid-board';
 import { reduceTap, slotOfCreature, type Intent, type TapContext } from './raid-slots';
 import {
   CANCEL_ANNOUNCEMENT,
@@ -17,16 +18,6 @@ import {
 
 /** What a raid drop comes to: what to send (a placement), or nothing. */
 export type RaidDropOutcome = DropOutcome<Intent>;
-
-export const ZONE_LABELS = { front: 'Front', middle: 'Middle', back: 'Back' } as const;
-
-/** The spoken label of a slot, for buttons and announcements. */
-export function slotLabel(s: RowSlotView, speciesLabel: (id: string) => string): string {
-  const where = `Slot ${String(s.slot + 1)}, ${ZONE_LABELS[s.zone]}`;
-  if (s.creature === null) return `${where}, empty`;
-  const owner = s.creature.mine ? 'you' : s.creature.ownerName;
-  return `${where}, ${speciesLabel(s.creature.species)} level ${String(s.creature.level)}, ${owner}`;
-}
 
 const outcome = dropOutcome<Intent>;
 
@@ -60,7 +51,7 @@ export function resolveDrop(
     const occupant = ctx.row.find((s) => s.slot === target.slot)?.creature;
     const text =
       occupant === null || occupant === undefined
-        ? `Placed ${name} in slot ${String(target.slot + 1)}.`
+        ? `Placed ${name} in ${placeText(target.slot, ctx.row.length)}.`
         : `Swapped ${name} with ${occupant.name}.`;
     return outcome('valid', tap.intent, null, text);
   }
