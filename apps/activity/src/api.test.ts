@@ -41,6 +41,7 @@ describe('the living room answers', () => {
       quirk: null,
       craftingLevel: 3,
       explorerRank: 2,
+      gear: null,
     },
   };
 
@@ -51,6 +52,52 @@ describe('the living room answers', () => {
     expect(parsed).toHaveLength(2);
     expect(parsed[1]?.creature).toBeNull();
     expect(parseRoom({ residents: [] })).toEqual([]);
+  });
+
+  it('parses a worn item with its main stat', () => {
+    const gear = {
+      id: 'g1',
+      baseId: 'bark-band',
+      rarity: 'rare',
+      level: 3,
+      enchantId: 'steady-hand',
+      primary: { stat: 'atk', bp: 850 },
+    };
+    const parsed = parseRoom({
+      residents: [{ ...resident, creature: { ...resident.creature, gear } }],
+    });
+    expect(parsed[0]?.creature?.gear).toEqual(gear);
+    const plain = parseRoom({
+      residents: [
+        { ...resident, creature: { ...resident.creature, gear: { ...gear, enchantId: null } } },
+      ],
+    });
+    expect(plain[0]?.creature?.gear?.enchantId).toBeNull();
+  });
+
+  it('refuses a missing or malformed worn item', () => {
+    const gear = {
+      id: 'g1',
+      baseId: 'bark-band',
+      rarity: 'rare',
+      level: 3,
+      enchantId: null,
+      primary: { stat: 'atk', bp: 850 },
+    };
+    const withGear = (g: unknown) => ({
+      residents: [{ ...resident, creature: { ...resident.creature, gear: g } }],
+    });
+    const noGear: Partial<typeof resident.creature> = { ...resident.creature };
+    delete noGear.gear;
+    expect(() => parseRoom({ residents: [{ ...resident, creature: noGear }] })).toThrow();
+    expect(() => parseRoom(withGear(undefined))).toThrow();
+    expect(() => parseRoom(withGear({ ...gear, rarity: 'mythic' }))).toThrow();
+    expect(() => parseRoom(withGear({ ...gear, level: 1.5 }))).toThrow();
+    expect(() => parseRoom(withGear({ ...gear, enchantId: 4 }))).toThrow();
+    expect(() => parseRoom(withGear({ ...gear, id: 7 }))).toThrow();
+    expect(() => parseRoom(withGear({ ...gear, primary: undefined }))).toThrow();
+    expect(() => parseRoom(withGear({ ...gear, primary: { stat: 'luck', bp: 1 } }))).toThrow();
+    expect(() => parseRoom(withGear({ ...gear, primary: { stat: 'atk', bp: 0.5 } }))).toThrow();
   });
 
   it('refuses a shape that is wrong', () => {

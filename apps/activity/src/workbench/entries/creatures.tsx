@@ -1,11 +1,12 @@
 import { useState } from 'preact/hooks';
-import { content } from '@creatures/game';
+import { content, gearBase, gearContent } from '@creatures/game';
 import { AbilityChip } from '../../AbilityChip';
 import { BossCard } from '../../BossCard';
 import { AppHead } from '../../AppHead';
 import { LivingRoom, sceneOf } from '../../LivingRoom';
 import { RosterStrip } from '../../RosterStrip';
 import { SmallCreature } from '../../SmallCreature';
+import { WornItemLine } from '../../WornItemLine';
 import type { ReadinessBand, RaidView, RosterEntry } from '../../raid-api';
 import { READINESS_BANDS } from '../../raid-api';
 import { Sprite } from '../../sprites/Sprite';
@@ -13,7 +14,9 @@ import type { RoomPhase } from '../../sprites/room-art';
 import { creatureSpriteOrFallback } from '../../sprites/creature-sprites';
 import {
   BOSS_IDS,
+  GEAR_BASE_IDS,
   NONE,
+  RARITIES,
   ROOM_SELF_ID,
   SAMPLE_RAID,
   SPECIES_IDS,
@@ -225,6 +228,52 @@ const smallCreature: Entry = {
   ),
 };
 
+const wornItemLine: Entry = {
+  name: 'WornItemLine',
+  file: 'apps/activity/src/WornItemLine.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    "The item a creature wears: its picture in the rarity frame, its name, level, main stat bonus and enchant. It is the worn-item line of a creature card on the Creatures screen (there the picture is the button that opens the gear picker) and the line in a living room creature's popover.",
+  controls: {
+    item: { kind: 'select', options: GEAR_BASE_IDS },
+    rarity: { kind: 'select', options: RARITIES },
+    level: { kind: 'number', min: 0, max: 5 },
+    bonus: { kind: 'number', min: 0, max: 2000 },
+    enchanted: { kind: 'toggle' },
+    hasBonus: { kind: 'toggle' },
+  },
+  defaults: {
+    item: GEAR_BASE_IDS[0] ?? 'bark-band',
+    rarity: 'rare',
+    level: 0,
+    bonus: 850,
+    enchanted: false,
+    hasBonus: true,
+  },
+  presets: [
+    { name: 'Plain', props: {} },
+    { name: 'Upgraded and enchanted', props: { level: 5, enchanted: true, rarity: 'epic' } },
+    { name: 'Festival', props: { rarity: 'festival' } },
+    { name: 'Bonus not known yet', props: { hasBonus: false } },
+  ],
+  render: (p) => {
+    const baseId = str(p, 'item');
+    const stat = gearBase(baseId)?.primary ?? 'atk';
+    const rarity = RARITIES.find((r) => r === str(p, 'rarity')) ?? 'common';
+    return (
+      <WornItemLine
+        worn={{
+          baseId,
+          rarity,
+          level: num(p, 'level'),
+          enchantId: bool(p, 'enchanted') ? (gearContent.enchants[0]?.id ?? null) : null,
+          ...(bool(p, 'hasBonus') ? { primary: { stat, bp: num(p, 'bonus') } } : {}),
+        }}
+      />
+    );
+  },
+};
+
 const NO_REF = { current: null };
 const ROOM_PHASES: readonly RoomPhase[] = ['day', 'twilight', 'night'];
 
@@ -280,4 +329,5 @@ export const creatureEntries: readonly Entry[] = [
   rosterStrip,
   abilityChip,
   smallCreature,
+  wornItemLine,
 ];

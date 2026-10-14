@@ -1,6 +1,7 @@
-import { RULES, createSeededRng, type Rng } from '@creatures/game';
+import { RULES, createSeededRng, rollGear, type Rng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { createHandler } from '../src/index';
+import { insertItem } from '../src/gear-store';
 import {
   GUILD_ID,
   ORIGIN,
@@ -124,6 +125,14 @@ interface RoomBody {
       quirk: string | null;
       craftingLevel: number;
       explorerRank: number;
+      gear: {
+        id: string;
+        baseId: string;
+        rarity: string;
+        level: number;
+        enchantId: string | null;
+        primary: { stat: string; bp: number };
+      } | null;
     } | null;
   }[];
 }
@@ -442,6 +451,7 @@ describe('POST /api/room', () => {
         expect(Object.keys(rb.creature ?? {}).sort()).toEqual([
           'craftingLevel',
           'explorerRank',
+          'gear',
           'id',
           'level',
           'nickname',
@@ -456,12 +466,84 @@ describe('POST /api/room', () => {
           shiny: false,
           craftingLevel: 1,
           explorerRank: 1,
+          gear: null,
         });
         expect(typeof ra.creature?.species).toBe('string');
         expect(typeof ra.creature?.level).toBe('number');
         expect(typeof ra.creature?.quirk).toBe('string');
       },
       { loungerRng: scriptedRng([0, 0]) },
+    );
+  });
+
+  it('shows the worn item in the shape of the state view, and null when nothing is worn', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const a = await member(ctx, 1, { creatures: 2 });
+        const b = await member(ctx, 2, { creatures: 2 });
+        const c = await member(ctx, 3, { creatures: 2 });
+        const wear = (
+          userId: string,
+          creatureId: string | null,
+          baseId: string,
+          level: number,
+          enchantId: string | null,
+        ): string => {
+          const id = insertItem(
+            ctx.sql,
+            userId,
+            { baseId, rarity: 'rare', rolls: rollGear(createSeededRng(baseId), baseId, 'rare') },
+            'test',
+            T0,
+          );
+          ctx.sql.exec(
+            'UPDATE gear_items SET equipped_on = ?, level = ?, enchant_id = ? WHERE id = ?',
+            creatureId,
+            level,
+            enchantId,
+            id,
+          );
+          return id;
+        };
+        const worn = wear(b.id, b.creatureIds[0] as string, 'bark-band', 3, 'steady-hand');
+        // An unworn item of Bob's, and an item on his other creature, must not show up.
+        wear(b.id, null, 'pearl-trinket', 0, null);
+        wear(b.id, b.creatureIds[1] as string, 'trail-charm', 0, null);
+        const res = await room(a, [a.id, b.id, c.id]);
+        const [ra, rb, rc] = res.body.residents as [
+          RoomBody['residents'][number],
+          RoomBody['residents'][number],
+          RoomBody['residents'][number],
+        ];
+        expect(ra.creature?.gear).toBeNull();
+        expect(rc.creature?.gear).toBeNull();
+        const owned = (await b.call('GET', '/api/gear')).body as {
+          items: { id: string; primary: { stat: string; bp: number } }[];
+        };
+        const primary = owned.items.find((i) => i.id === worn)?.primary;
+        expect(primary?.bp).toBeGreaterThan(0);
+        expect(rb.creature?.gear).toEqual({
+          id: worn,
+          baseId: 'bark-band',
+          rarity: 'rare',
+          level: 3,
+          enchantId: 'steady-hand',
+          primary,
+        });
+        // The owner's own state view shows the same item (without the primary stat).
+        const state = (await b.call('GET', '/api/state')).body as {
+          creatures: { id: string; gear: unknown }[];
+        };
+        expect(state.creatures.find((x) => x.id === b.creatureIds[0])?.gear).toEqual({
+          id: worn,
+          baseId: 'bark-band',
+          rarity: 'rare',
+          level: 3,
+          enchantId: 'steady-hand',
+        });
+      },
+      { loungerRng: scriptedRng([0, 0, 0]) },
     );
   });
 

@@ -6,6 +6,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { fetchRoom, type GameState } from './api';
+import type { GearItem } from './gear-types';
 import type { ParticipantSource } from './participants';
 import { ownResident, roomResidents, type Resident } from './room-data';
 import { createRoomLoader, type RoomLoader } from './room-loader';
@@ -20,6 +21,8 @@ interface RoomInputs {
   state: Pick<GameState, 'creatures' | 'loungerId'>;
   /** Crafting level by creature id, once the gear view has loaded. */
   craftingLevels: ReadonlyMap<string, number>;
+  /** The gear view's items, once loaded: they give your worn item its main stat. */
+  gearItems?: readonly GearItem[];
 }
 
 export interface RoomHandle {
@@ -35,6 +38,7 @@ export function useRoom({
   selfName,
   state,
   craftingLevels,
+  gearItems,
 }: RoomInputs): RoomHandle {
   const [present, setPresent] = useState<readonly string[]>(() => participants.ids());
   const [known, setKnown] = useState<ReadonlyMap<string, Resident>>(() => new Map());
@@ -68,9 +72,10 @@ export function useRoom({
           selfId,
           selfName,
           craftingLevels,
+          gearItems,
         ),
       ),
-    [present, known, state.creatures, state.loungerId, selfId, selfName, craftingLevels],
+    [present, known, state.creatures, state.loungerId, selfId, selfName, craftingLevels, gearItems],
   );
 
   return {

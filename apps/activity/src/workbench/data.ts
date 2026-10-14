@@ -8,6 +8,7 @@ import type { CreatureInfo } from '../creature-info';
 import type { Resident } from '../room-data';
 import raidFestival from '../fixtures/raid-festival.json';
 import type { GearRarity, PartKind } from '../gear-types';
+import type { WornItem } from '../gear-view';
 import { BUNDLED_GLYPHS } from '../glyphs';
 import type { IconRef } from '../icon-ref';
 import { parseRaidView, type RaidView } from '../raid-api';
@@ -148,9 +149,24 @@ const ROOM_NAMES = [
   'Wren',
 ];
 
+/** The worn item of fixture resident `i`: most wear something, some enchanted, every third nothing. */
+function sampleWorn(i: number): WornItem | null {
+  if (i % 3 === 1) return null;
+  const base = gearContent.bases[(i * 3) % gearContent.bases.length];
+  if (base === undefined) return null;
+  const enchant = gearContent.enchants[i % gearContent.enchants.length];
+  return {
+    baseId: base.id,
+    rarity: RARITIES[i % RARITIES.length] ?? 'common',
+    level: i % 6,
+    enchantId: i % 2 === 0 && enchant !== undefined ? enchant.id : null,
+    primary: { stat: base.primary, bp: 300 + i * 85 },
+  };
+}
+
 /**
  * Fixture residents of the living room: "You" first, then others, each with a different species, now
- * and then shiny or nicknamed. With `oneBusy`, the second resident has all creatures out working (no creature).
+ * and then shiny or nicknamed, most wearing an item (tap one for the popover's worn-item line). With `oneBusy`, the second resident has all creatures out working (no creature).
  */
 export function sampleResidents(count: number, oneBusy: boolean): Resident[] {
   return Array.from({ length: count }, (_, i) => {
@@ -170,6 +186,7 @@ export function sampleResidents(count: number, oneBusy: boolean): Resident[] {
               quirk: null,
               craftingLevel: 1 + (i % 4),
               explorerRank: 1 + (i % 3),
+              gear: sampleWorn(i),
             },
     };
   });

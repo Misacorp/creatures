@@ -65,3 +65,8 @@ button.pick-item {
   padding: 0;
   list-style: none;
 }
+
+/* The read-only worn-item line in a living room creature's popover. */
+.worn-item-line {
+  margin: 0.25rem 0 0.625rem;
+}

@@ -217,6 +217,7 @@ export function Game({
     selfName: user.displayName,
     state: game,
     craftingLevels,
+    ...(gear === null ? {} : { gearItems: gear.items }),
   });
   // The room's light follows the guild's local time by the server's clock; one timer swaps it.
   const offsetRef = useRef(offset);

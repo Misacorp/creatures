@@ -48,6 +48,7 @@ export function residentInfo(owner: string, creature: ResidentCreature): Creatur
     shiny: creature.shiny,
     explorerRank: creature.explorerRank,
     ...(creature.craftingLevel === null ? {} : { craftingLevel: creature.craftingLevel }),
+    gear: creature.gear,
   };
 }
 

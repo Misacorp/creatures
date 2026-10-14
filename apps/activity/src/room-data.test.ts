@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Creature, RoomResident } from './api';
+import type { GearItem } from './gear-types';
 import {
   ROOM_CHUNK,
   ROOM_STALE_MS,
@@ -121,8 +122,30 @@ describe('ownResident', () => {
         quirk: 'hums-quietly',
         craftingLevel: 4,
         explorerRank: 3,
+        gear: null,
       },
     });
+  });
+
+  it('shows the worn item, with its main stat once the gear view has loaded', () => {
+    const worn = {
+      id: 'g1',
+      baseId: 'bark-band',
+      rarity: 'rare' as const,
+      level: 2,
+      enchantId: null,
+    };
+    const wearing = { ...state, creatures: [creature({ id: 'c2', gear: worn })] };
+    const before = ownResident(wearing, 'u1', 'Misa', new Map());
+    expect(before.creature?.gear).toEqual({
+      baseId: 'bark-band',
+      rarity: 'rare',
+      level: 2,
+      enchantId: null,
+    });
+    const items = [{ id: 'g1', primary: { stat: 'atk', bp: 850 } }] as unknown as GearItem[];
+    const after = ownResident(wearing, 'u1', 'Misa', new Map(), items);
+    expect(after.creature?.gear?.primary).toEqual({ stat: 'atk', bp: 850 });
   });
 
   it('leaves the Crafting level out until it is known', () => {

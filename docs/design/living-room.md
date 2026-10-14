@@ -76,6 +76,7 @@ The room has a day, a twilight (dawn and dusk) and a night scene, chosen from th
 - `CreatureInfo` gained `ownerName`, `shiny`, `craftingLevel` and `explorerRank` (the first name was taken by replay entries). Your own creature's Crafting level shows once the gear view has loaded.
 - The currency popover has its own small shell, because the glossary tags inside it open popovers of their own.
 - `POST /api/room` rejects duplicate ids (400) rather than merging them.
+- The popover also shows the **item the creature wears** (picture in its rarity frame, name, level, main stat bonus and enchant), the same line as on a creature card (`WornItemLine.tsx`). The room's `creature.gear` is the state view's `Creature.gear` plus `primary: { stat, bp }`, because a guild-mate's gear list is not available to the client. Nothing shows when nothing is worn; no ids of unworn items leave the server.
 
 ## Not in this version
 

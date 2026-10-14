@@ -23,7 +23,7 @@ import type {
 } from './gear-types';
 import { isArrayOf, isCount, isInt, isNullableStr, isRecord, isStr } from './parse-core';
 
-const isRarity = (value: unknown): value is GearRarity =>
+export const isRarity = (value: unknown): value is GearRarity =>
   (GEAR_RARITIES as readonly unknown[]).includes(value);
 const isStat = (value: unknown): value is GearStat =>
   (GEAR_STATS as readonly unknown[]).includes(value);
@@ -39,7 +39,7 @@ export function isPartsBundle(value: unknown): value is PartsBundle {
   );
 }
 
-function isRoll(value: unknown): value is { stat: GearStat; bp: number } {
+export function isRoll(value: unknown): value is { stat: GearStat; bp: number } {
   return isRecord(value) && isStat(value['stat']) && isInt(value['bp']);
 }
 

@@ -2,11 +2,12 @@ import { content, entryView } from '@creatures/game';
 import type { GlossarySection, GlossaryView } from '@creatures/game';
 import { createContext, type ComponentChildren, type RefObject } from 'preact';
 import { useContext, useMemo, useRef, useState } from 'preact/hooks';
-import { backLabel, creatureFacts, type CreatureInfo } from './creature-info';
+import { backLabel, creatureFacts, shownWornItem, type CreatureInfo } from './creature-info';
 import { shinyPalette } from './art';
 import { speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { MORE_LABEL, resolveTag, tagKey, visualPlan, type TagRef } from './glossary-ui';
+import { WornItemLine } from './WornItemLine';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -141,6 +142,7 @@ function CreaturePopover({
   onMore: (section: GlossarySection) => void;
 }) {
   const { info } = open;
+  const worn = shownWornItem(info);
   const nav = usePopoverNav<string | null>(null, open);
   const entry = nav.view === null ? undefined : entryView(nav.view);
   // An entry the content does not know shows the creature instead.
@@ -169,6 +171,7 @@ function CreaturePopover({
           short={`Level ${String(info.level)}`}
           lines={creatureFacts(info, speciesName(info.species))}
         >
+          {worn !== null && <WornItemLine worn={worn} />}
           <p class="tags pop-tags">
             <ElementChip
               as="button"

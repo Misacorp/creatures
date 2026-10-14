@@ -35,6 +35,7 @@ import {
   startBlocker,
   statText,
   upgradeStatus,
+  wornItemOf,
 } from './gear-view';
 import type { GrantLoot } from './gear-types';
 
@@ -388,5 +389,43 @@ describe('grants and loot', () => {
   it('knows an empty grant', () => {
     expect(lootIsEmpty({ gear: [], converted: [], parts: {}, blueprints: [] })).toBe(true);
     expect(lootIsEmpty(expeditionLoot.result.loot as GrantLoot)).toBe(false);
+  });
+});
+
+describe('wornItemOf', () => {
+  it('takes the main stat from the gear view item with the same id, as the creature card does', () => {
+    const item = gear.items[0];
+    if (item === undefined) throw new Error('fixture has no items');
+    const worn = {
+      id: item.id,
+      baseId: item.baseId,
+      rarity: item.rarity,
+      level: item.level,
+      enchantId: null,
+    };
+    expect(wornItemOf(worn, gear.items)).toEqual({
+      baseId: item.baseId,
+      rarity: item.rarity,
+      level: item.level,
+      enchantId: null,
+      primary: item.primary,
+    });
+  });
+
+  it('has no main stat while the gear view has not loaded, or for an item it does not list', () => {
+    const worn = {
+      id: 'nope',
+      baseId: 'bark-band',
+      rarity: 'rare' as const,
+      level: 2,
+      enchantId: 'x',
+    };
+    expect(wornItemOf(worn, undefined)).toEqual({
+      baseId: 'bark-band',
+      rarity: 'rare',
+      level: 2,
+      enchantId: 'x',
+    });
+    expect(wornItemOf(worn, gear.items)).not.toHaveProperty('primary');
   });
 });

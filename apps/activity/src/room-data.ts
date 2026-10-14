@@ -5,6 +5,8 @@
  * the result to the screen.
  */
 import type { Creature, GameState, RoomCreature, RoomResident } from './api';
+import type { GearItem } from './gear-types';
+import { wornItemOf, type WornItem } from './gear-view';
 
 /** The server takes at most this many ids in one room request. */
 export const ROOM_CHUNK = 25;
@@ -17,8 +19,10 @@ export const ROOM_STALE_MS = 60_000;
  * A creature on a couch. Like the server's `RoomCreature`, but the Crafting level can be missing for
  * your own creature until the gear view has loaded.
  */
-export type ResidentCreature = Omit<RoomCreature, 'craftingLevel'> & {
+export type ResidentCreature = Omit<RoomCreature, 'craftingLevel' | 'gear'> & {
   craftingLevel: number | null;
+  /** The worn item; for your own creature without its main stat until the gear view has loaded. */
+  gear: WornItem | null;
 };
 
 export interface Resident {
@@ -81,13 +85,15 @@ export function isStale(lastFullFetchAt: number | null, now: number): boolean {
 /**
  * The player's own resident, from the game state: the lounger from `state.creatures` and
  * `state.loungerId`. Null creature when there is no lounger (everything busy) or the id is not in the list.
- * `craftingLevels` maps creature ids to Crafting levels once the gear view has loaded.
+ * `craftingLevels` maps creature ids to Crafting levels once the gear view has loaded; `gearItems` are
+ * the gear view's items (empty until loaded), which give the worn item its main stat.
  */
 export function ownResident(
   state: Pick<GameState, 'creatures' | 'loungerId'>,
   userId: string,
   name: string,
   craftingLevels: ReadonlyMap<string, number>,
+  gearItems: readonly GearItem[] = [],
 ): Resident {
   const lounger: Creature | undefined =
     state.loungerId === null ? undefined : state.creatures.find((c) => c.id === state.loungerId);
@@ -106,6 +112,7 @@ export function ownResident(
             quirk: lounger.quirk,
             craftingLevel: craftingLevels.get(lounger.id) ?? null,
             explorerRank: lounger.explorer.rank,
+            gear: lounger.gear === null ? null : wornItemOf(lounger.gear, gearItems),
           },
   };
 }

@@ -15,14 +15,29 @@ import {
   quirkText,
   skillLevel,
   createCryptoRng,
+  type GearStat,
   type Rng,
 } from '@creatures/game';
-import { openJobsByCreature } from './gear-store';
+import {
+  openJobsByCreature,
+  primaryOf,
+  rowToItem,
+  wornGearView,
+  wornOnCreatures,
+  type WornGear,
+} from './gear-store';
 import type { LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
 
 /** The most ids one room request may carry. */
 export const ROOM_MAX_USERS = 25;
+
+/**
+ * The worn item as the room shows it: the state view's `Creature.gear` plus the main stat it gives now
+ * (the same rule as the owner's gear view), so a guild-mate's popover can say "+8.5% ATK" without the
+ * owner's gear list.
+ */
+export type RoomGear = WornGear & { primary: { stat: GearStat; bp: number } };
 
 /** One creature of a resident, as the room and its popover show it. */
 export interface RoomCreature {
@@ -35,6 +50,8 @@ export interface RoomCreature {
   quirk: string | null;
   craftingLevel: number;
   explorerRank: number;
+  /** The item it wears, or null. */
+  gear: RoomGear | null;
 }
 
 export interface Resident {
@@ -164,7 +181,7 @@ export class Lounge {
     });
   }
 
-  /** The room view of each creature id, in three bounded queries. */
+  /** The room view of each creature id, in four bounded queries. */
   private details(ids: readonly string[]): Map<string, RoomCreature> {
     if (ids.length === 0) return new Map();
     const marks = placeholders(ids.length);
@@ -192,21 +209,29 @@ export class Lounge {
         .toArray()
         .map((r) => [r.creature_id, r.xp] as const),
     );
+    const worn = wornOnCreatures(this.sql, ids);
     return new Map(
-      rows.map((row) => [
-        row.id,
-        {
-          id: row.id,
-          species: row.species,
-          shiny: row.shiny === 1,
-          level: row.level,
-          nickname: row.nickname,
-          quirk:
-            row.quirk_id !== null && quirkText(row.quirk_id) !== undefined ? row.quirk_id : null,
-          craftingLevel: skillLevel(crafting.get(row.id) ?? 0),
-          explorerRank: explorerRank(explorer.get(row.id) ?? 0),
-        },
-      ]),
+      rows.map((row) => {
+        const wearing = worn.get(row.id);
+        return [
+          row.id,
+          {
+            id: row.id,
+            species: row.species,
+            shiny: row.shiny === 1,
+            level: row.level,
+            nickname: row.nickname,
+            quirk:
+              row.quirk_id !== null && quirkText(row.quirk_id) !== undefined ? row.quirk_id : null,
+            craftingLevel: skillLevel(crafting.get(row.id) ?? 0),
+            explorerRank: explorerRank(explorer.get(row.id) ?? 0),
+            gear:
+              wearing === undefined
+                ? null
+                : { ...wornGearView(wearing), primary: primaryOf(rowToItem(wearing)) },
+          },
+        ] as const;
+      }),
     );
   }
 }

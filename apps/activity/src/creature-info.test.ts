@@ -4,6 +4,7 @@ import {
   backLabel,
   creatureButtonLabel,
   creatureFacts,
+  shownWornItem,
   creatureInfoOf,
   ownedCreatureLabel,
   type CreatureInfo,
@@ -70,6 +71,24 @@ describe('creatureFacts', () => {
     expect(creatureFacts({ ...info, ownerName: 'Bo', shiny: false }, 'Cindle')).toEqual([
       'Owner: Bo',
     ]);
+  });
+});
+
+describe('shownWornItem', () => {
+  const worn = { baseId: 'bark-band', rarity: 'rare' as const, level: 3, enchantId: null };
+
+  it('shows the item of a room creature (it has an owner)', () => {
+    expect(shownWornItem({ ...info, ownerName: 'Misa', gear: worn })).toEqual(worn);
+  });
+
+  it('shows nothing when the creature wears nothing', () => {
+    expect(shownWornItem({ ...info, ownerName: 'Misa', gear: null })).toBeNull();
+    expect(shownWornItem({ ...info, ownerName: 'Misa' })).toBeNull();
+  });
+
+  it('shows nothing in popovers that are not about a room creature', () => {
+    expect(shownWornItem({ ...info, gear: worn })).toBeNull();
+    expect(shownWornItem(info)).toBeNull();
   });
 });
 
