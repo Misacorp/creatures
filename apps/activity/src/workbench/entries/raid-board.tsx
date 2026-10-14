@@ -5,6 +5,7 @@ import type { RowSlotView } from '../../raid-api';
 import {
   ROW_NAMES,
   boardCreatureInfo,
+  boardCues,
   boardKeyTarget,
   boardRows,
   boardSlot,
@@ -15,7 +16,7 @@ import { LiveRegion } from '../../ui/LiveRegion';
 import { RaidBoard, type BoardRowModel } from '../../ui/RaidBoard';
 import { useSlotAnnouncer, useSlotKeyboard } from '../../ui/use-slot-keyboard';
 import { SPECIES_IDS, speciesLabel } from '../data';
-import { bool, num } from '../props';
+import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 
 /** Names for the demo's players, in the order they join; the first is you. */
@@ -36,6 +37,13 @@ const NAMES = [
   'Lou',
   'Max',
 ] as const;
+
+/** The slots (from 1) the cue presets pin: one that sets off a reaction, one that sets off nothing. */
+const PIN_REACTION = 3;
+const PIN_NONE = 4;
+/** A Support (it buffs the tiles beside it) and a Guard (it covers its row). */
+const PIN_BUFF = 7;
+const PIN_COVER = 5;
 
 const ZONES = ['front', 'middle', 'back'] as const;
 
@@ -76,6 +84,7 @@ function BoardDemo({ p }: { p: Props }) {
   const length = players * 3;
   const [row, setRow] = useState(() => startRow(players, num(p, 'yourLane') - 1, num(p, 'empty')));
   const [selected, setSelected] = useState<Selection>(null);
+  const [hovered, setHovered] = useState<number | null>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const trayRef = useRef<HTMLUListElement>(null);
   const popovers = usePopoverHost();
@@ -159,9 +168,35 @@ function BoardDemo({ p }: { p: Props }) {
       setSelected(here.creatureId);
     } else if (here !== null) {
       const info = boardCreatureInfo(here);
-      if (info !== null) popovers?.openCreature(`demo-slot:${String(slot)}`, info, button);
+      if (info !== null) {
+        const line = boardCues({
+          ...cueArgs,
+          carried: null,
+          pointer: null,
+          inspected: slot,
+        }).effect;
+        popovers?.openCreature(
+          `demo-slot:${String(slot)}`,
+          line === null ? info : { ...info, effect: line },
+          button,
+        );
+      }
     }
   }
+
+  // The cues, as the game's Placement draws them: the creature in focus is carried, under the
+  // pointer, or pinned by the page's "Pinned slot" control (a slot number from 1; 0 for none).
+  const carried = dragging ?? selected;
+  const over = dragDrop.drag?.over?.kind === 'slot' ? dragDrop.drag.over.slot : hovered;
+  const pin = num(p, 'pin') > 0 ? num(p, 'pin') - 1 : null;
+  const inspectedSlot = popovers?.anchor?.closest<HTMLElement>('[data-slot]')?.dataset.slot;
+  const cueArgs = { row: slots, length, tray: [], turnOrder: str(p, 'turnOrder') };
+  const { cues, noneRow, effect } = boardCues({
+    ...cueArgs,
+    carried,
+    pointer: over ?? (carried === null ? pin : null),
+    inspected: inspectedSlot === undefined ? null : Number(inspectedSlot),
+  });
 
   const models: BoardRowModel[] = rows.map((r) => ({
     zone: r.zone,
@@ -187,6 +222,10 @@ function BoardDemo({ p }: { p: Props }) {
         selected={selected}
         drag={dragDrop}
         statuses={statuses}
+        cues={cues.slots}
+        onHoverSlot={setHovered}
+        rail={{ none: cues.none, effect }}
+        noneRow={noneRow}
         onTap={tapSlot}
       />
       <LiveRegion>{announcement}</LiveRegion>
@@ -204,9 +243,18 @@ const raidBoard: Entry = {
     players: { kind: 'number', min: 1, max: 15 },
     yourLane: { kind: 'number', min: 1, max: 15 },
     empty: { kind: 'number', min: 0, max: 14 },
+    turnOrder: { kind: 'select', options: ['left_to_right', 'right_to_left', 'speed'] },
+    pin: { kind: 'number', min: 0, max: 45 },
     disabled: { kind: 'toggle' },
   },
-  defaults: { players: 11, yourLane: 7, empty: 0, disabled: false },
+  defaults: {
+    players: 11,
+    yourLane: 7,
+    empty: 0,
+    turnOrder: 'left_to_right',
+    pin: 0,
+    disabled: false,
+  },
   presets: [
     { name: 'Eleven players (33 slots)', props: {} },
     { name: 'Just you (3 slots)', props: { players: 1, yourLane: 1 } },
@@ -214,10 +262,20 @@ const raidBoard: Entry = {
     { name: 'Full server (45 slots)', props: { players: 15, yourLane: 12 } },
     { name: 'Late lanes empty', props: { empty: 4 } },
     { name: 'Locked', props: { disabled: true } },
+    { name: 'Reaction cue (slot pinned)', props: { players: 4, yourLane: 2, pin: PIN_REACTION } },
+    { name: 'No reaction mark (slot pinned)', props: { players: 4, yourLane: 2, pin: PIN_NONE } },
+    {
+      name: 'Influence: a Support (slot pinned)',
+      props: { players: 4, yourLane: 2, pin: PIN_BUFF },
+    },
+    {
+      name: 'Influence: a Guard (slot pinned)',
+      props: { players: 4, yourLane: 2, pin: PIN_COVER },
+    },
   ],
   render: (p) => (
     <BoardDemo
-      key={`${String(num(p, 'players'))}-${String(num(p, 'yourLane'))}-${String(num(p, 'empty'))}`}
+      key={`${String(num(p, 'players'))}-${String(num(p, 'yourLane'))}-${String(num(p, 'empty'))}-${String(num(p, 'pin'))}-${str(p, 'turnOrder')}`}
       p={p}
     />
   ),

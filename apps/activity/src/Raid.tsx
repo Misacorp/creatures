@@ -336,6 +336,7 @@ export function Raid({
           selected={selected}
           hint={hint}
           rosterNames={rosterNames}
+          turnOrder={view.boss.turnOrder}
           teamControls={
             <TeamPicker
               creatures={creatures}

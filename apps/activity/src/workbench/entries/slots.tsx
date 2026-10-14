@@ -1,14 +1,32 @@
+import { content } from '@creatures/game';
 import { useMemo, useRef, useState } from 'preact/hooks';
+import { getSpecies } from '../../game';
 import { dropOutcome, type DropStatus, type DropTarget, type Selection } from '../../slot-outcome';
 import { useDragDrop } from '../../use-drag-drop';
 import { CreatureTray } from '../../ui/CreatureTray';
 import { DragGhost } from '../../ui/DragGhost';
+import { CueRail } from '../../ui/CueRail';
 import { SlotButton, SlotRow, type SlotGroup, type SlotModel } from '../../ui/SlotRow';
+import { affectSlotOf, cuesFor, effectLine, sceneOf, type SlotCue } from '../../ui/slot-cue';
 import { useSlotAnnouncer, useSlotKeyboard } from '../../ui/use-slot-keyboard';
 import { LiveRegion } from '../../ui/LiveRegion';
 import { SPECIES_IDS, speciesLabel } from '../data';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
+
+/** Fixed lineups for the cue presets: the first three stand in the row, the rest wait in the tray. */
+const LINEUPS: Readonly<Record<string, readonly string[]>> = {
+  // Cindle marks Scorched and Splashet sets off Steam.
+  reacting: ['cindle', 'splashet', 'sproutle', 'ashmole'],
+  // Tide, Grove, Ember in this order: nobody can set anything off.
+  silent: ['splashet', 'sproutle', 'cindle', 'ashmole'],
+  // Ashmole (Support) between two hitters.
+  support: ['cindle', 'ashmole', 'splashet', 'sproutle'],
+  // Sproutle (Guard) in the middle.
+  guard: ['cindle', 'sproutle', 'splashet', 'ashmole'],
+};
+
+const REACTION_IDS: readonly string[] = content.reactions.map((r) => r.id);
 
 interface DemoCreature {
   id: string;
@@ -38,13 +56,14 @@ function moved(row: readonly (string | null)[], id: string, target: DropTarget |
  */
 function PlacementDemo({ p }: { p: Props }) {
   const slotCount = num(p, 'slots');
+  const lineup = LINEUPS[str(p, 'lineup')];
   const creatures = useMemo<DemoCreature[]>(
     () =>
-      Array.from({ length: num(p, 'creatures') }, (_, i) => {
-        const species = SPECIES_IDS[(i * 3) % SPECIES_IDS.length] ?? 'splashet';
+      Array.from({ length: lineup?.length ?? num(p, 'creatures') }, (_, i) => {
+        const species = lineup?.[i] ?? SPECIES_IDS[(i * 3) % SPECIES_IDS.length] ?? 'splashet';
         return { id: `demo-${String(i)}`, species, name: speciesLabel(species), level: 3 + i * 2 };
       }),
-    [num(p, 'creatures')],
+    [num(p, 'creatures'), str(p, 'lineup')],
   );
   const [row, setRow] = useState<(string | null)[]>(() =>
     Array.from({ length: slotCount }, (_, i) =>
@@ -54,6 +73,7 @@ function PlacementDemo({ p }: { p: Props }) {
   const [selected, setSelected] = useState<Selection>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const trayRef = useRef<HTMLUListElement>(null);
+  const [hovered, setHovered] = useState<number | null>(null);
   const disabled = bool(p, 'disabled');
   const nameOf = (id: string): string => creatures.find((c) => c.id === id)?.name ?? 'Creature';
   const [announcement, announce] = useSlotAnnouncer(selected, nameOf);
@@ -126,6 +146,36 @@ function PlacementDemo({ p }: { p: Props }) {
   const draggedCreature = dragging === null ? undefined : creatures.find((c) => c.id === dragging);
   const placed = new Set(row.filter((id): id is string => id !== null));
 
+  // The cues, as the dungeon team draws them: the creature in focus (carried, or under the pointer,
+  // or pinned by the page's "Pinned slot" control) and the row as it would stand.
+  const carried = dragging ?? selected;
+  const over = drag?.over?.kind === 'slot' ? drag.over.slot : hovered;
+  const pinned = num(p, 'pin') > 0 ? num(p, 'pin') - 1 : null;
+  const scene = sceneOf({
+    keys: row,
+    carried,
+    pointer: over ?? (carried === null ? pinned : null),
+  });
+  const affectRow = scene.keys.map((id) => {
+    const c = id === null ? undefined : creatures.find((x) => x.id === id);
+    return c === undefined ? null : affectSlotOf(getSpecies(c.species));
+  });
+  const cues = cuesFor({
+    row: affectRow,
+    mode: { row: 'dungeon' },
+    focus: scene.focus,
+    scope: 'row',
+  });
+  const effect =
+    scene.focus === null
+      ? null
+      : effectLine({
+          row: affectRow,
+          mode: { row: 'dungeon' },
+          focus: scene.focus,
+          nameOf: (slot) => nameOf(scene.keys[slot] ?? ''),
+        });
+
   return (
     <div onKeyDown={onKeyDown}>
       <p class="muted small">
@@ -158,8 +208,11 @@ function PlacementDemo({ p }: { p: Props }) {
         selected={selected}
         drag={dragDrop}
         statuses={statuses}
+        cues={cues.slots}
+        onHoverSlot={setHovered}
         onTap={tapSlot}
       />
+      <CueRail none={cues.none} effect={effect} />
       <DragGhost ghostRef={dragDrop.ghostRef} creature={draggedCreature} />
       <LiveRegion>{announcement}</LiveRegion>
     </div>
@@ -170,6 +223,8 @@ const DEMO_CONTROLS = {
   slots: { kind: 'number', min: 1, max: 6 },
   creatures: { kind: 'number', min: 0, max: 6 },
   placed: { kind: 'number', min: 0, max: 6 },
+  lineup: { kind: 'select', options: ['mixed', ...Object.keys(LINEUPS)] },
+  pin: { kind: 'number', min: 0, max: 6 },
   disabled: { kind: 'toggle' },
   emptyLabel: { kind: 'text', maxLength: 12 },
 } as const;
@@ -178,6 +233,8 @@ const DEMO_DEFAULTS = {
   slots: 3,
   creatures: 4,
   placed: 1,
+  lineup: 'mixed',
+  pin: 0,
   disabled: false,
   emptyLabel: 'empty',
 } as const;
@@ -187,6 +244,19 @@ const DEMO_PRESETS = [
   { name: 'Empty row', props: { placed: 0 } },
   { name: 'Locked', props: { disabled: true } },
   { name: 'No creatures', props: { creatures: 0, placed: 0 } },
+  {
+    name: 'Reaction cue (hover or tap Cindle)',
+    props: { lineup: 'reacting', placed: 3, pin: 1 },
+  },
+  { name: 'No reaction mark', props: { lineup: 'silent', placed: 3, pin: 1 } },
+  {
+    name: 'Influence: a Support buffs its neighbours',
+    props: { lineup: 'support', placed: 3, pin: 2 },
+  },
+  {
+    name: 'Influence: a Guard covers its neighbours',
+    props: { lineup: 'guard', placed: 3, pin: 2 },
+  },
 ];
 
 function demoEntry(
@@ -206,7 +276,7 @@ function demoEntry(
     presets: DEMO_PRESETS,
     render: (p) => (
       <PlacementDemo
-        key={`${String(num(p, 'slots'))}-${String(num(p, 'creatures'))}-${String(num(p, 'placed'))}`}
+        key={`${String(num(p, 'slots'))}-${String(num(p, 'creatures'))}-${String(num(p, 'placed'))}-${str(p, 'lineup')}-${String(num(p, 'pin'))}`}
         p={p}
       />
     ),
@@ -245,6 +315,9 @@ const slotButton: Entry = {
     element: { kind: 'select', options: ['none', 'tide', 'ember', 'grove', 'spark'] },
     selected: { kind: 'toggle' },
     target: { kind: 'select', options: ['none', 'valid', 'invalid'] },
+    reaction: { kind: 'select', options: ['none', ...REACTION_IDS] },
+    influence: { kind: 'select', options: ['none', 'buff', 'cover'] },
+    reactionRole: { kind: 'select', options: ['payoff', 'marker'] },
     compact: { kind: 'toggle' },
     disabled: { kind: 'toggle' },
     emptyLabel: { kind: 'text', maxLength: 12 },
@@ -257,12 +330,28 @@ const slotButton: Entry = {
     element: 'none',
     selected: false,
     target: 'none',
+    reaction: 'none',
+    influence: 'none',
+    reactionRole: 'payoff',
     compact: false,
     disabled: false,
     emptyLabel: 'empty',
   },
   presets: [
     { name: 'Occupied', props: {} },
+    { name: 'Reaction: sets it off', props: { reaction: 'steam', reactionRole: 'payoff' } },
+    { name: 'Influence: buffed by a Support', props: { influence: 'buff' } },
+    { name: 'Influence: covered by a Guard', props: { influence: 'cover' } },
+    {
+      name: 'Reaction: marks (raid tile)',
+      props: {
+        reaction: 'steam',
+        reactionRole: 'marker',
+        owner: true,
+        element: 'ember',
+        compact: true,
+      },
+    },
     { name: 'Empty', props: { species: 'none' } },
     { name: 'Selected', props: { selected: true } },
     {
@@ -276,6 +365,26 @@ const slotButton: Entry = {
     const species = str(p, 'species');
     const own = species === 'none' ? null : 'demo';
     const status = str(p, 'target');
+    const def = content.reactions.find((r) => r.id === str(p, 'reaction'));
+    const marker = str(p, 'reactionRole') === 'marker';
+    const influence = str(p, 'influence');
+    const cue: SlotCue | undefined =
+      def === undefined && influence === 'none'
+        ? undefined
+        : {
+            ...(influence === 'buff' ? { buff: true as const } : {}),
+            ...(influence === 'cover' ? { cover: true as const } : {}),
+            ...(def === undefined
+              ? {}
+              : {
+                  reaction: {
+                    id: def.id,
+                    name: def.name,
+                    role: marker ? ('marker' as const) : ('payoff' as const),
+                    element: marker ? def.markElement : def.triggerElement,
+                  },
+                }),
+          };
     return (
       <SlotButton
         slot={{
@@ -300,12 +409,13 @@ const slotButton: Entry = {
         emptyLabel={str(p, 'emptyLabel')}
         disabled={bool(p, 'disabled')}
         selected={bool(p, 'selected') ? own : null}
-        adjacent={false}
         hasSelection={status !== 'none'}
         status={status === 'valid' || status === 'invalid' ? status : null}
         over={false}
         shaking={false}
         dragging={null}
+        cue={cue}
+        onHover={undefined}
         onPointerDown={() => undefined}
         onTap={() => undefined}
       />
@@ -313,4 +423,30 @@ const slotButton: Entry = {
   },
 };
 
-export const slotEntries: readonly Entry[] = [slotRow, slotButton, creatureTray, dragGhost];
+const cueRail: Entry = {
+  name: 'CueRail',
+  file: 'apps/activity/src/ui/CueRail.tsx',
+  group: 'Slots',
+  description:
+    'The strip under the dungeon team and the raid board. It shows a small "no reaction" mark when the order of the creatures cannot set off a reaction, one line about what the creature in focus does, and keeps its height when empty.',
+  covers: ['NoReactionMark'],
+  controls: { none: { kind: 'toggle' }, effect: { kind: 'text', maxLength: 120 } },
+  defaults: { none: true, effect: '' },
+  presets: [
+    { name: 'No reaction', props: {} },
+    { name: 'Nothing to say', props: { none: false } },
+    {
+      name: 'What a creature does',
+      props: { none: false, effect: "Boosts its neighbours' next hit by 15%." },
+    },
+  ],
+  render: (p) => <CueRail none={bool(p, 'none')} effect={str(p, 'effect') || null} />,
+};
+
+export const slotEntries: readonly Entry[] = [
+  slotRow,
+  slotButton,
+  creatureTray,
+  dragGhost,
+  cueRail,
+];

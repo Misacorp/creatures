@@ -4,6 +4,7 @@ import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import type { DropStatus, Selection } from '../slot-outcome';
 import type { DragDrop } from '../use-drag-drop';
+import { cueClasses, type SlotCue } from './slot-cue';
 import { slotState } from './slot-state';
 
 /** One slot of the row, ready to draw. */
@@ -50,8 +51,10 @@ export interface SlotRowProps {
   drag: DragDrop;
   /** Drop status of each slot while a creature is dragged, else null. */
   statuses: ReadonlyMap<number, DropStatus> | null;
-  /** Slots to highlight next to the carried creature's. */
-  adjacent?: ReadonlySet<number>;
+  /** What to draw on each slot: the reaction pair and the influence shade (`slot-cue.ts`). */
+  cues?: ReadonlyMap<number, SlotCue>;
+  /** The mouse is over a slot, or a slot has the keyboard focus (null: neither). */
+  onHoverSlot?: (slot: number | null) => void;
   onTap: SlotTap;
 }
 
@@ -92,12 +95,15 @@ export interface SlotButtonProps {
   emptyLabel: string;
   disabled: boolean;
   selected: Selection;
-  adjacent: boolean;
   hasSelection: boolean;
   status: DropStatus | null;
   over: boolean;
   shaking: boolean;
   dragging: string | null;
+  /** What to draw on the tile besides its creature: the reaction ring and badge, the influence shade. */
+  cue: SlotCue | undefined;
+  /** Reports the mouse or the keyboard focus entering (the slot) or leaving (null) the tile. */
+  onHover: ((slot: number | null) => void) | undefined;
   onPointerDown: (creatureId: string, event: PointerEvent) => void;
   onTap: SlotTap;
 }
@@ -123,13 +129,15 @@ export function SlotButton(props: SlotButtonProps) {
   }
   if (own !== null) classes.push('draggable');
   if (isSelected) classes.push('selected');
-  if (props.adjacent) classes.push('adjacent');
   if (c === null && props.hasSelection) classes.push('target');
   if (status === 'valid') classes.push('drop-valid');
   if (status === 'invalid') classes.push('drop-invalid');
   if (props.over && status !== null && status !== 'none') classes.push('drop-over');
   if (own !== null && own === props.dragging) classes.push('dragging-source');
   if (props.shaking) classes.push('shake');
+  classes.push(...cueClasses(props.cue));
+  const badge = props.cue?.reaction;
+  const hover = props.onHover;
   return (
     <button
       type="button"
@@ -148,6 +156,36 @@ export function SlotButton(props: SlotButtonProps) {
       onClick={(event) => {
         props.onTap(slot.index, event.currentTarget);
       }}
+      onPointerEnter={
+        hover === undefined
+          ? undefined
+          : (event) => {
+              // A finger does not hover: only the mouse (and a pen) shows cues this way.
+              if (event.pointerType !== 'touch') hover(slot.index);
+            }
+      }
+      onPointerLeave={
+        hover === undefined
+          ? undefined
+          : (event) => {
+              if (event.pointerType !== 'touch') hover(null);
+            }
+      }
+      onFocus={
+        hover === undefined
+          ? undefined
+          : (event) => {
+              // Keyboard focus counts like a selection; a click that focuses the button does not.
+              if (event.currentTarget.matches(':focus-visible')) hover(slot.index);
+            }
+      }
+      onBlur={
+        hover === undefined
+          ? undefined
+          : () => {
+              hover(null);
+            }
+      }
     >
       {slot.hideNumber !== true && <span class="slot-num">{slot.index + 1}</span>}
       {c === null ? (
@@ -163,6 +201,11 @@ export function SlotButton(props: SlotButtonProps) {
             </span>
           )}
         </>
+      )}
+      {badge !== undefined && (
+        <span class="slot-cue-badge" aria-hidden="true">
+          {badge.name}
+        </span>
       )}
     </button>
   );

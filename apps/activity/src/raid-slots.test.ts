@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RowSlotView } from './raid-api';
 import {
-  adjacentSlots,
   canUnplace,
   ownerColour,
   OWNER_COLOURS,
@@ -155,15 +154,10 @@ describe('unplace', () => {
   });
 });
 
-describe('adjacency and colours', () => {
-  it('finds my creature slot and its neighbours', () => {
+describe('slots and colours', () => {
+  it('finds my creature slot', () => {
     expect(slotOfCreature(row, 'b')).toBe(3);
     expect(slotOfCreature(row, 'c')).toBeNull();
-    // Row of 5 is Front [0], Middle [1-3], Back [4]: slot 3 is beside 2 but not the Back slot 4.
-    expect(adjacentSlots(row, 'b', 5)).toEqual([2]);
-    expect(adjacentSlots(row, 'a', 5)).toEqual([]);
-    expect(adjacentSlots(row, 'c', 5)).toEqual([]);
-    expect(adjacentSlots(row, null, 5)).toEqual([]);
   });
 
   it('gives each owner a stable colour inside the palette', () => {

@@ -1,6 +1,6 @@
 import { GLOSSARY_IDS } from '@creatures/game';
 import type { ComponentChildren } from 'preact';
-import { useRef } from 'preact/hooks';
+import { useRef, useState } from 'preact/hooks';
 import { GlossaryTag } from './Glossary';
 import { usePopoverHost } from './PopoverHost';
 import { cursorStart, resolveDrop, slotStatuses, type RaidDropOutcome } from './raid-dnd';
@@ -8,12 +8,13 @@ import type { RaidView } from './raid-api';
 import {
   ROW_NAMES,
   boardCreatureInfo,
+  boardCues,
   boardKeyTarget,
   boardRows,
   boardSlot,
   placeText,
 } from './raid-board';
-import { adjacentSlots, canUnplace, type TapContext } from './raid-slots';
+import { canUnplace, type TapContext } from './raid-slots';
 import { CANCEL_ANNOUNCEMENT, type DropTarget, type Selection, type Tap } from './slot-outcome';
 import { CreatureTray } from './ui/CreatureTray';
 import { DragGhost } from './ui/DragGhost';
@@ -35,6 +36,8 @@ interface Props {
   selected: Selection;
   hint: string | null;
   rosterNames: readonly string[];
+  /** How the boss's turn order reads (`left_to_right`, `right_to_left` or `speed`): the order reactions are set off in. */
+  turnOrder: string;
   /** Controls to show under the team tray (choose team, automatic team). */
   teamControls: ComponentChildren;
   busy: boolean;
@@ -50,6 +53,8 @@ export function Placement(props: Props) {
   const { party, team, ctx, disabled, selected, rosterNames } = props;
   const stripRef = useRef<HTMLDivElement>(null);
   const popovers = usePopoverHost();
+  /** The slot under the mouse or the keyboard focus. */
+  const [hovered, setHovered] = useState<number | null>(null);
   const trayRef = useRef<HTMLUListElement>(null);
 
   const nameOf = (creatureId: string): string =>
@@ -89,8 +94,6 @@ export function Placement(props: Props) {
   });
 
   const dragging = drag?.creatureId ?? null;
-  const active = dragging ?? selected;
-  const adjacent = new Set(adjacentSlots(ctx.row, active, party.rowLength));
   const statuses = dragging === null ? null : slotStatuses(ctx, dragging, nameOf(dragging));
   const draggedPlaced =
     dragging !== null && ctx.row.some((s) => s.creature?.creatureId === dragging);
@@ -107,6 +110,23 @@ export function Placement(props: Props) {
     dragging === null ? undefined : team.creatures.find((c) => c.creatureId === dragging);
 
   const bySlot = new Map(ctx.row.map((slot) => [slot.slot, slot]));
+
+  // The cues: the creature in focus (carried, or under the pointer) and the row as it would stand.
+  // A creature whose popover is open counts as in focus too.
+  const inspectedSlot = popovers?.anchor?.closest<HTMLElement>('[data-slot]')?.dataset.slot;
+  const cueArgs = {
+    row: ctx.row,
+    length: party.rowLength,
+    tray: team.creatures,
+    turnOrder: props.turnOrder,
+  };
+  const { cues, noneRow, effect } = boardCues({
+    ...cueArgs,
+    carried: dragging ?? selected,
+    pointer: drag?.over?.kind === 'slot' ? drag.over.slot : hovered,
+    inspected: inspectedSlot === undefined ? null : Number(inspectedSlot),
+  });
+
   const boardModels: BoardRowModel[] = rows.map((row) => ({
     zone: row.zone,
     name: ROW_NAMES[row.zone],
@@ -123,7 +143,17 @@ export function Placement(props: Props) {
     if (selected === null && occupant != null && !occupant.mine && popovers !== null) {
       const info = boardCreatureInfo(occupant);
       if (info !== null && !consumeClick()) {
-        popovers.openCreature(`raid-slot:${String(slot)}`, info, button);
+        const line = boardCues({
+          ...cueArgs,
+          carried: null,
+          pointer: null,
+          inspected: slot,
+        }).effect;
+        popovers.openCreature(
+          `raid-slot:${String(slot)}`,
+          line === null ? info : { ...info, effect: line },
+          button,
+        );
         return;
       }
     }
@@ -179,7 +209,10 @@ export function Placement(props: Props) {
           selected={selected}
           drag={dragDrop}
           statuses={statuses}
-          adjacent={adjacent}
+          cues={cues.slots}
+          onHoverSlot={setHovered}
+          rail={{ none: cues.none, effect }}
+          noneRow={noneRow}
           onTap={tapSlot}
         />
         <p class="place-actions">

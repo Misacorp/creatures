@@ -1,16 +1,20 @@
 import { zoneSizes } from '@creatures/engine';
-import { RULES } from '@creatures/game';
+import { RULES, content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { RowSlotView } from './raid-api';
 import {
+  boardAffectRow,
   boardCreatureInfo,
+  boardCues,
   boardKeyTarget,
+  boardKeys,
   boardRows,
   boardSlot,
   laneCount,
   laneStates,
   keepSpanInView,
   ownLaneSpan,
+  parseTurnOrder,
   pipLabel,
   placeOf,
   placeText,
@@ -241,5 +245,124 @@ describe('the tile of a creature', () => {
 
   it('has no popover for a species the game does not know', () => {
     expect(boardCreatureInfo({ ...theirs, species: 'nope' })).toBeNull();
+  });
+});
+
+describe('the placement cues', () => {
+  const creature = (
+    species: string,
+    owner: string,
+    id?: string,
+  ): NonNullable<RowSlotView['creature']> => ({
+    ownerName: owner,
+    species,
+    name: species,
+    level: 4,
+    mine: id !== undefined,
+    ...(id === undefined ? {} : { creatureId: id }),
+  });
+  // Six slots, two per row: Front 0-1, Middle 2-3, Back 4-5. Cindle (Ember) and Splashet (Tide) react (Steam).
+  const slots = (...who: (NonNullable<RowSlotView['creature']> | null)[]): RowSlotView[] =>
+    who.map((c, slot) => ({ slot, zone: 'front', creature: c }));
+  const row = slots(
+    creature('cindle', 'Misa', 'mine-1'),
+    null,
+    creature('splashet', 'Jun'),
+    creature('sproutle', 'Jun'),
+    null,
+    creature('zipmouse', 'Ann'),
+  );
+  const cues = (
+    pointer: number | null,
+    extra: {
+      carried?: string;
+      tray?: { creatureId: string; species: string; level: number }[];
+    } = {},
+  ) =>
+    boardCues({
+      row,
+      length: 6,
+      tray: extra.tray ?? [],
+      carried: extra.carried ?? null,
+      pointer,
+      turnOrder: 'left_to_right',
+    });
+
+  it('names your creatures by id and the others by slot', () => {
+    expect(boardKeys(row, 6)).toEqual(['mine-1', null, 'other:2', 'other:3', null, 'other:5']);
+  });
+
+  it('reads a turn order, and anything odd as left to right', () => {
+    expect(parseTurnOrder('speed')).toBe('speed');
+    expect(parseTurnOrder('right_to_left')).toBe('right_to_left');
+    expect(parseTurnOrder('sideways')).toBe('left_to_right');
+  });
+
+  it('gives each creature its role, element and a speed from its species and level', () => {
+    const known = new Map([['a', { species: 'cindle', level: 4 }]]);
+    const [first, second] = boardAffectRow(['a', 'b'], known);
+    expect(first).toMatchObject({ role: 'payoff', element: 'ember' });
+    expect(first?.speed).toBeGreaterThan(0);
+    expect(second).toBeNull();
+  });
+
+  it('does not throw for a level the species cannot have', () => {
+    const known = new Map([['a', { species: 'cindle', level: 999 }]]);
+    expect(boardAffectRow(['a'], known)[0]?.speed).toBeGreaterThan(0);
+  });
+
+  it('lights up the pair of the creature under the pointer, even with other players in between', () => {
+    const r = cues(0);
+    expect(r.focus).toBe(0);
+    expect(r.cues.slots.get(0)?.reaction?.role).toBe('marker');
+    expect(r.cues.slots.get(2)?.reaction?.name).toBe('Steam');
+    expect(r.noneRow).toBeNull();
+  });
+
+  it('marks the row of a creature that sets off nothing', () => {
+    const r = cues(3);
+    expect(r.cues.none).toBe(true);
+    expect(r.noneRow).toBe('middle');
+  });
+
+  it("previews a creature from the tray in the slot it is over, but not on another player's tile", () => {
+    const tray = [{ creatureId: 'mine-2', species: 'splashet', level: 4 }];
+    const over = cues(1, { carried: 'mine-2', tray });
+    expect(over.focus).toBe(1);
+    expect(over.cues.slots.get(0)?.reaction?.name).toBe('Steam');
+    // Another player's tile takes no drop: nothing is previewed, and the tray creature has no place yet.
+    const refused = cues(3, { carried: 'mine-2', tray });
+    expect(refused.focus).toBeNull();
+    expect(refused.cues.slots.size).toBe(0);
+  });
+
+  it('shows the creature of an open popover, and says what it does in one line', () => {
+    const r = boardCues({
+      row,
+      length: 6,
+      tray: [],
+      carried: null,
+      pointer: 3,
+      inspected: 0,
+      turnOrder: 'left_to_right',
+    });
+    expect(r.focus).toBe(0);
+    expect(r.effect).toBe(
+      `Sets up Steam (x${String(content.reactions.find((x) => x.id === 'steam')!.multiplierBp / 10_000)}) for Splashet.`,
+    );
+  });
+
+  it('says what a Guard covers in the raid: the others of its row', () => {
+    const r = cues(3);
+    expect(r.effect).toContain('its row');
+    expect([...r.cues.slots].filter(([, c]) => c.cover === true).map(([slot]) => slot)).toEqual([
+      2,
+    ]);
+  });
+
+  it('shows nothing when nothing is under the pointer', () => {
+    const r = cues(null);
+    expect(r.cues.slots.size).toBe(0);
+    expect(r.cues.none).toBe(false);
   });
 });

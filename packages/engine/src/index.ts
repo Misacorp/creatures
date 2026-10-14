@@ -1,5 +1,6 @@
 export * from './types';
 export * from './zones';
+export * from './affects';
 export * from './matchup';
 export * from './scaling';
 export * from './forecast';
