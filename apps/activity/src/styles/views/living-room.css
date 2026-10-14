@@ -78,6 +78,15 @@ button.room-note {
   display: block;
 }
 
+/*
+  An open popover already points at its creature, so the lounge skips the gold box other lists put
+  round the open one (`creature-pop.css`). Keyboard focus stays visible: the button keeps its
+  `:focus-visible` outline, and a pointer tap never shows it.
+*/
+.room button.small-creature[aria-expanded='true'] canvas.sprite {
+  outline: none;
+}
+
 /* A spoken line: a small pale bubble over the creature's head. Text only, and only for show. */
 .room-bubble {
   position: absolute;

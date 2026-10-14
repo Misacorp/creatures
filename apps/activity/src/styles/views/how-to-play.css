@@ -182,12 +182,41 @@
   grid-row: 3;
 }
 
+/*
+  Each edge reads from the mark to the reaction along its arrow, the mark by the element it comes
+  from. The markup is always mark, arrow, reaction; the direction lays it out: top runs left to
+  right, right runs down, bottom runs right to left and left runs up (so its mark is at the bottom,
+  by Ember).
+*/
 .loop-edge {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.125rem;
   text-align: center;
+}
+
+/* The two long edges sit between two element chips: smaller text and a tight gap keep them clear. */
+.loop-edge.top,
+.loop-edge.bottom {
+  gap: 0.125rem;
+}
+
+.loop-edge.top .loop-name,
+.loop-edge.bottom .loop-name {
+  font-size: 0.6875rem;
+}
+
+.loop-edge.top {
+  flex-direction: row;
+}
+
+.loop-edge.bottom {
+  flex-direction: row-reverse;
+}
+
+.loop-edge.left {
+  flex-direction: column-reverse;
 }
 
 .loop-name {
