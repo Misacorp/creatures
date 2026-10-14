@@ -60,3 +60,18 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
 - **Expected:**
 - **Outcome:**
 - **Follow-ups:**
+
+### B-005: Three sim targets just outside their limits after row-edge adjacency (open)
+
+- **Opened:** 2026-10-14, from the full `pnpm sim` run for raid row-edge adjacency (raid neighbours stop at row edges, Raid UX pass 2).
+- **Finding:**
+  - `raid-finale-typical` on seed leet moved from 59.66% to 60.25% (limit 40–60%); leet2 and leet3 stay at about 52%.
+  - Two targets already failed before the change, on main at 622f6c3:
+    - `exp-casual-discovery` on leet and leet2 (0.32–0.34, limit 0.3);
+    - `raid-boss-spread` on leet3 (17.7% → 18.1%, limit 15%).
+- **Hypothesis:** row-edge adjacency removes a few cross-zone Support buffs, so a raid row loses a little damage. The other two are seed noise at the edge, not a trend.
+- **Options:** nudge raid boss HP by about 1%. Or wait for the attack-pattern and raid-structure retune (phase floors, enrage), which re-tunes every `raid-*` target anyway.
+- **Action:** none; the raid retune is the next build. Check the expedition discovery target in the next `balance-review`.
+- **Expected:** all targets pass on all three seeds after the raid retune.
+- **Outcome:**
+- **Follow-ups:**
