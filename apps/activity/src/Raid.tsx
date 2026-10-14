@@ -19,7 +19,6 @@ import {
   placeCreature,
   setRaidAbility,
   setRaidAutofire,
-  setRaidOptOut,
   setRaidTeam,
   unplaceCreature,
   type PhaseResultView,
@@ -266,14 +265,12 @@ export function Raid({
     return outcome;
   }
 
-  /** The "what to do now" button: go to the placement step, open the finale, or join again. */
+  /** The "what to do now" button: go to the placement step or open the finale. */
   function act(target: NowTarget): void {
     if (target === 'live') {
       autoOpened.current = true;
       setLiveInitial(null);
       setLiveOpen(true);
-    } else if (target === 'rejoin') {
-      void mutate(() => setRaidOptOut(false));
     } else {
       focusPlacement();
     }
@@ -310,7 +307,6 @@ export function Raid({
         view={view}
         serverNow={serverNow}
         finale={finaleState}
-        busy={busy}
         onAct={act}
         onReplay={(phase) => {
           if (party !== null) setReplay({ week: view.weekId, party: party.party, phase });

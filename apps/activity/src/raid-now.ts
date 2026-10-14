@@ -8,8 +8,8 @@ import type { RaidView } from './raid-api';
 import { eventTitle } from './raid-time';
 import { formatCountdown, formatZoned } from './time-format';
 
-/** What the action leads to: the placement step, the live finale, or taking part again. */
-export type NowTarget = 'placement' | 'live' | 'rejoin';
+/** What the action leads to: the placement step or the live finale. */
+export type NowTarget = 'placement' | 'live';
 
 type NowKind =
   | 'set-team'
@@ -18,7 +18,6 @@ type NowKind =
   | 'finale-countdown'
   | 'resolving'
   | 'week-done'
-  | 'rejoin'
   | 'sitting-out'
   | 'not-in';
 
@@ -49,20 +48,14 @@ export function needsPlacement(view: Pick<NowView, 'party' | 'you'>): boolean {
 
 export function nowAction(view: NowView, finale: FinaleWindow, serverNow: number): NowAction {
   const { you, next, party } = view;
+  // A week sat out earlier (the sit-out button is gone, the server still keeps the choice).
   if (you.optOut) {
-    return you.canOptOut
-      ? {
-          kind: 'rejoin',
-          label: "Join this week's raid",
-          detail: 'You are sitting this week out.',
-          target: 'rejoin',
-        }
-      : {
-          kind: 'sitting-out',
-          label: 'You are sitting this week out',
-          detail: null,
-          target: null,
-        };
+    return {
+      kind: 'sitting-out',
+      label: 'You are sitting this week out',
+      detail: null,
+      target: null,
+    };
   }
   if (party === null && next !== null && !you.inRoster) {
     return {
