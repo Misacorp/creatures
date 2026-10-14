@@ -26,17 +26,7 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
 
 ## Next (in order)
 
-1. **Raid UX pass 2:** `design/raid-ux-2.md`.
-   - a 3-row × N-lane raid board that doesn't wrap;
-   - row-edge adjacency;
-   - remove "Who's in this week";
-   - dungeon patterns on the raid stage and replay;
-   - a placement reaction hint;
-   - remove sit-out (Misa: yes);
-   - visual placement cues instead of hint text;
-   - influence highlights on hover or popover;
-   - room or phase top left, round top right (the dungeon too);
-   - hide the tag coach mark.
+1. **Raid UX pass 2:** built on branch `ccr-8ffccd88-e59k13`, waiting for Misa's merge (`design/raid-ux-2.md`).
 2. **Attack patterns plus raid structure,** as one raid retune: `design/attack-patterns.md`, section 6 for the slices, and the "Raid structure" section of `design/raid-ux-2.md`. The structure part is phase floors (the boss goes immune and the phase ends, no overkill, finale at 15%) and enrage (raid finale, plus dungeon boss rooms to teach it; an enrage loss is a normal loss). Misa decided all four questions on 2026-10-14.
    - The seven moves for raid bosses and dungeon foes.
    - Guard cover.
