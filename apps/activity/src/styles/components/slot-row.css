@@ -269,6 +269,16 @@
   background-color: var(--dusk-2);
 }
 
+/*
+  An empty tile has a dashed edge of its own, gold when a creature is in hand (.target, for a tap).
+  During a drag the outline above is the one signal, so that edge goes quiet: otherwise every empty
+  tile shows two dashed frames, one gold and one green. The tile keeps its size (the border stays,
+  transparent). Tiles with a creature keep their element ring, which is who they are, not a drop state.
+*/
+.party-strip.dragging .party-slot.empty {
+  border-color: transparent;
+}
+
 .team-list.tray-target {
   outline: var(--px) dashed var(--good);
   outline-offset: calc(var(--px) * 2);
