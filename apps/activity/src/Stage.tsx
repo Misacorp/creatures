@@ -8,8 +8,10 @@ import { GlossaryTag } from './Glossary';
 import { gimmickGlyph, glyphOrUnknown } from './glyphs';
 import { useElementWidth, usePrefersReducedMotion } from './hooks';
 import { abilityControls, abilityName, abilityTitle } from './live';
+import { scrollToLanes } from './lane-scroll';
 import type { LiveAbility, LiveFight } from './live-api';
 import type { ReplayRowEntry } from './raid-api';
+import { boardRows, laneStates, ownLaneSpan, placeOf } from './raid-board';
 import { stateAt } from './replay';
 import {
   abilityUsesAt,
@@ -37,7 +39,7 @@ import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { elementIcon } from './sprites/element-icons';
 import { useLiveStage, type Anim } from './use-live-stage';
-import { ROW_LAYOUT, STAGE_FALLBACK_PX, STAGE_LAYOUT, layoutVars, zoneLayout } from './zone-layout';
+import { GRID_SCALE, ROW_LAYOUT, STAGE_FALLBACK_PX, layoutVars, zoneLayout } from './zone-layout';
 
 export type { Anim } from './use-live-stage';
 
@@ -170,6 +172,9 @@ function KoTags({ fx, creature }: { fx: readonly FxItem[]; creature: string }) {
     </>
   );
 }
+
+/** After the player scrolls the raid grid by hand, it is left alone for this long. */
+const HAND_SCROLL_HOLD_MS = 4000;
 
 /** At most this many ability cards show at once; the rest are counted ("+3 more"). */
 const MAX_ABILITY_CARDS = 4;
@@ -538,9 +543,12 @@ function CreatureTags({ creature }: { creature: ReplayRowEntry | undefined }) {
 }
 
 /**
- * The fight stage: the boss on top with its HP bar, then the zones as rows under it, the front zone
- * first (closest to the boss) and the back zone last. Each row is a zone label and its creatures,
- * centred in slot order and wrapping onto more lines if needed. It shows the state after `index`
+ * The fight stage: the boss on top with its HP bar, then the creatures under it. In the raid they are
+ * a grid like the placement board: Front, Middle and Back are three lines that never wrap, a lane is
+ * a column, the row names stay at the left and the lines scroll sideways together. Before the fight
+ * the grid shows the viewer's own creatures; as it plays it follows the creature that acts (the
+ * smooth scroll is instant under `prefers-reduced-motion`, and waits a few seconds after the player
+ * scrolls it by hand). The dungeon's `single` row is three creatures side by side. It shows the state after `index`
  * events and animates the beat `anim`: hops, white flashes, floating numbers, reaction bursts,
  * the mark, knockouts, zone frames and ability cards. Everything is drawn from the event log; the
  * animation classes are only decoration, and `prefers-reduced-motion` (in styles/stage/motion.css) turns them
@@ -688,7 +696,43 @@ export function Stage({
   };
 
   const parity = anim === null ? 0 : anim.seq % 2;
-  const groups = groupByZone(row);
+  // The raid's rows are the board's rows (the engine's zones, slot k of each row in lane k).
+  const rows = boardRows(row.length);
+  const groups = single
+    ? groupByZone(row)
+    : rows.map(({ zone, slots }) => ({ zone, items: slots.flatMap((i) => row[i] ?? []) }));
+  const lanes = rows.reduce((most, r) => Math.max(most, r.slots.length), 0);
+
+  // Keep the creature that acts in view (the raid's grid scrolls sideways); before the fight starts
+  // show the viewer's own creatures. A hand-scroll holds the auto-scroll back for a few seconds.
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const reduced = usePrefersReducedMotion();
+  const handScrolledAt = useRef(0);
+  const started = state.round > 0;
+  useLayoutEffect(() => {
+    if (single) return;
+    if (!started) {
+      const own = ownLaneSpan(
+        laneStates(rows, (slot) => {
+          const c = row[slot];
+          return c === undefined ? null : mineIds.has(c.id) ? 'mine' : 'other';
+        }),
+      );
+      if (own !== null)
+        scrollToLanes(scrollerRef.current, own.first, own.last, { smooth: false, follow: false });
+      return;
+    }
+    if (state.actor === null || Date.now() - handScrolledAt.current < HAND_SCROLL_HOLD_MS) return;
+    const place = placeOf(
+      row.findIndex((c) => c.id === state.actor),
+      row.length,
+    );
+    if (place !== null)
+      scrollToLanes(scrollerRef.current, place.lane - 1, place.lane - 1, {
+        smooth: !reduced,
+        follow: true,
+      });
+  }, [single, started, state.actor, row.length]);
   const markName = state.mark === null ? null : nameOf(names.marks, state.mark);
   const markId = content.reactions.find((r) => r.markElement === state.mark)?.markId;
   const markIcon = state.mark === null ? undefined : elementIcon(state.mark);
@@ -696,6 +740,143 @@ export function Stage({
   const markGlyph = glyphOrUnknown('mark');
   const shieldGlyph = glyphOrUnknown('shield');
   const abilityGlyph = glyphOrUnknown('ability');
+  const zoneNodes = groups.map(({ zone, items }) => {
+    const fresh = fx.filter((i) => i.cue.kind === 'zone' && i.cue.zone === zone);
+    const freshShield = fresh.find((f) => f.cue.kind === 'zone' && f.cue.effect === 'shield');
+    const walled = state.shielded.includes(zone);
+    const zoneName = single ? PLACE_NAMES[zone] : ZONE_NAMES[zone];
+    // The single row: all the creatures share one size, picked for the whole row. The raid's grid
+    // has one fixed tile (see styles/stage/stage-grid.css), so nothing is measured for it.
+    const layoutOf = single ? zoneLayout(row.length, width, ROW_LAYOUT) : null;
+    const scale = layoutOf === null ? GRID_SCALE : layoutOf.tier.scale;
+    const zoneWindup = fx.filter(
+      (i) =>
+        i.cue.kind === 'windup' && i.cue.strike.action === 'hit_zone' && i.cue.strike.zone === zone,
+    );
+    const warnedZone = forecast?.zones.includes(zone) === true;
+    return (
+      <div
+        key={zone}
+        class={`stage-zone zone-${zone}${shaking.has(zone) ? ' shake' : ''}${warnedZone ? ' warned' : ''}`}
+        role="group"
+        aria-label={single ? zoneName : `${zoneName} zone`}
+        {...(layoutOf === null ? {} : { ref: cssVars(layoutVars(layoutOf, ROW_LAYOUT)) })}
+      >
+        {single && warnedZone && (
+          <span class="zone-warn" aria-hidden="true">
+            <Sprite sprite={glyphOrUnknown('warning')} scale={2} />
+          </span>
+        )}
+        <ul class="zone-units">
+          {items.map((c) => {
+            const mine = mineIds.has(c.id);
+            const ko = state.knockedOut.includes(c.id);
+            const classes = ['stage-unit'];
+            if (mine) classes.push('mine');
+            if (ko) classes.push('ko');
+            if (hopping.has(c.id)) classes.push('actor');
+            if (state.actor === c.id) classes.push('acting');
+            if (hit.has(c.id)) classes.push('hit');
+            if (dropped.has(c.id)) classes.push('drop');
+            if (silenced.has(c.id)) classes.push('silenced');
+
+            // The player's own creature with an ability is a button with a badge; every
+            // other creature only shows a "used" mark once its ability has fired.
+            const mineAbility = own.find((a) => a.creature === c.id);
+            const used = useByCreature.get(c.id) ?? null;
+            let badge: Badge | null = null;
+            let abilityId: string | null = null;
+            if (mineAbility !== undefined) {
+              abilityId = mineAbility.abilityId;
+              badge = ownInfo(mineAbility).badge;
+            } else if (used !== null) {
+              abilityId = used.ability;
+              badge = usedBadge(used.round);
+            }
+            // Your own creatures are always buttons: the ability popover, or a note on why
+            // there is no ability (the note needs the screen to supply its text).
+            const tap = unitTap(mine && abilities !== undefined, mineAbility !== undefined);
+            let key: string | null = null;
+            if (tap === 'ability' && mineAbility !== undefined) key = `a:${mineAbility.key}`;
+            else if (tap === 'note' && abilities?.renderNote !== undefined) key = `c:${c.id}`;
+            return (
+              <StageUnit
+                key={c.id}
+                creature={c}
+                scale={scale}
+                mine={mine}
+                ko={ko}
+                classes={classes}
+                silenced={silenced.has(c.id)}
+                fx={fx}
+                names={names}
+                badge={badge}
+                abilityId={abilityId}
+                interactive={key !== null}
+                opens={
+                  tap === 'note' ? 'Opens a note about its ability.' : 'Opens the ability options.'
+                }
+                open={key !== null && openKey === key}
+                anchorRef={anchorRef(key ?? `none:${c.id}`)}
+                boxRef={boxRef(c.id)}
+                warned={forecast?.ends.includes(c.id) === true}
+                hp={
+                  creatureHp === undefined
+                    ? null
+                    : {
+                        current: creatureHpNow[c.id] ?? 0,
+                        max: creatureHp.max[c.id] ?? 0,
+                      }
+                }
+                slot={slots.get(c.id) ?? null}
+                onToggle={() => {
+                  if (key !== null) toggle(key);
+                }}
+              />
+            );
+          })}
+        </ul>
+        {walled && (
+          <span
+            class={`zone-fx fx-shield${freshShield === undefined ? '' : ' fresh'}`}
+            aria-hidden="true"
+            {...(freshShield === undefined ? {} : { ref: fxRef(freshShield) })}
+          >
+            <Sprite sprite={shieldGlyph} scale={2} />
+          </span>
+        )}
+        {fresh.map((item) => {
+          const f = item.cue;
+          if (f.kind !== 'zone' || (f.effect === 'shield' && walled)) return null;
+          const icon =
+            f.effect === 'shield'
+              ? shieldGlyph
+              : f.effect === 'rally'
+                ? abilityGlyph
+                : gimmickGlyph('hit_zone');
+          return (
+            <span
+              key={`${String(f.i)}-${f.effect}`}
+              class={`zone-fx fx-${f.effect} fresh`}
+              aria-hidden="true"
+              ref={fxRef(item)}
+            >
+              {f.effect === 'hit' && <span class="strike-wave" />}
+              <Sprite sprite={icon} scale={2} />
+            </span>
+          );
+        })}
+        {zoneWindup.map((item) => (
+          <span
+            key={`windup-${String(item.cue.i)}`}
+            class="zone-fx fx-windup"
+            aria-hidden="true"
+            ref={fxRef(item)}
+          />
+        ))}
+      </div>
+    );
+  });
   return (
     <section
       class={`stage p${String(parity)}${single ? ' single' : ''}`}
@@ -829,153 +1010,51 @@ export function Stage({
         role="group"
         aria-label={single ? 'Your team, left to right' : 'Zones, front to back'}
       >
-        {groups.map(({ zone, items }) => {
-          const fresh = fx.filter((i) => i.cue.kind === 'zone' && i.cue.zone === zone);
-          const freshShield = fresh.find((f) => f.cue.kind === 'zone' && f.cue.effect === 'shield');
-          const walled = state.shielded.includes(zone);
-          const zoneName = single ? PLACE_NAMES[zone] : ZONE_NAMES[zone];
-          // One row: all the creatures share one size, picked for the whole row; otherwise per zone.
-          const layoutOf = single
-            ? zoneLayout(row.length, width, ROW_LAYOUT)
-            : zoneLayout(items.length, width, STAGE_LAYOUT);
-          const config = single ? ROW_LAYOUT : STAGE_LAYOUT;
-          const zoneWindup = fx.filter(
-            (i) =>
-              i.cue.kind === 'windup' &&
-              i.cue.strike.action === 'hit_zone' &&
-              i.cue.strike.zone === zone,
-          );
-          const warnedZone = forecast?.zones.includes(zone) === true;
-          return (
-            <div
-              key={zone}
-              class={`stage-zone zone-${zone}${shaking.has(zone) ? ' shake' : ''}${warnedZone ? ' warned' : ''}`}
-              role="group"
-              aria-label={single ? zoneName : `${zoneName} zone`}
-              ref={cssVars(layoutVars(layoutOf, config))}
-            >
-              {!single && (
-                <p class="zone-label pix">
-                  <GlossaryTag entry={GLOSSARY_IDS.zone(zone)}>{zoneName}</GlossaryTag>
-                </p>
-              )}
-              {warnedZone && (
-                <span class="zone-warn" aria-hidden="true">
-                  <Sprite sprite={glyphOrUnknown('warning')} scale={2} />
-                </span>
-              )}
-              <ul class="zone-units">
-                {items.map((c) => {
-                  const mine = mineIds.has(c.id);
-                  const ko = state.knockedOut.includes(c.id);
-                  const classes = ['stage-unit'];
-                  if (mine) classes.push('mine');
-                  if (ko) classes.push('ko');
-                  if (hopping.has(c.id)) classes.push('actor');
-                  if (state.actor === c.id) classes.push('acting');
-                  if (hit.has(c.id)) classes.push('hit');
-                  if (dropped.has(c.id)) classes.push('drop');
-                  if (silenced.has(c.id)) classes.push('silenced');
-
-                  // The player's own creature with an ability is a button with a badge; every
-                  // other creature only shows a "used" mark once its ability has fired.
-                  const mineAbility = own.find((a) => a.creature === c.id);
-                  const used = useByCreature.get(c.id) ?? null;
-                  let badge: Badge | null = null;
-                  let abilityId: string | null = null;
-                  if (mineAbility !== undefined) {
-                    abilityId = mineAbility.abilityId;
-                    badge = ownInfo(mineAbility).badge;
-                  } else if (used !== null) {
-                    abilityId = used.ability;
-                    badge = usedBadge(used.round);
-                  }
-                  // Your own creatures are always buttons: the ability popover, or a note on why
-                  // there is no ability (the note needs the screen to supply its text).
-                  const tap = unitTap(mine && abilities !== undefined, mineAbility !== undefined);
-                  let key: string | null = null;
-                  if (tap === 'ability' && mineAbility !== undefined) key = `a:${mineAbility.key}`;
-                  else if (tap === 'note' && abilities?.renderNote !== undefined) key = `c:${c.id}`;
-                  return (
-                    <StageUnit
-                      key={c.id}
-                      creature={c}
-                      scale={layoutOf.tier.scale}
-                      mine={mine}
-                      ko={ko}
-                      classes={classes}
-                      silenced={silenced.has(c.id)}
-                      fx={fx}
-                      names={names}
-                      badge={badge}
-                      abilityId={abilityId}
-                      interactive={key !== null}
-                      opens={
-                        tap === 'note'
-                          ? 'Opens a note about its ability.'
-                          : 'Opens the ability options.'
-                      }
-                      open={key !== null && openKey === key}
-                      anchorRef={anchorRef(key ?? `none:${c.id}`)}
-                      boxRef={boxRef(c.id)}
-                      warned={forecast?.ends.includes(c.id) === true}
-                      hp={
-                        creatureHp === undefined
-                          ? null
-                          : {
-                              current: creatureHpNow[c.id] ?? 0,
-                              max: creatureHp.max[c.id] ?? 0,
-                            }
-                      }
-                      slot={slots.get(c.id) ?? null}
-                      onToggle={() => {
-                        if (key !== null) toggle(key);
-                      }}
-                    />
-                  );
-                })}
-              </ul>
-              {walled && (
-                <span
-                  class={`zone-fx fx-shield${freshShield === undefined ? '' : ' fresh'}`}
-                  aria-hidden="true"
-                  {...(freshShield === undefined ? {} : { ref: fxRef(freshShield) })}
-                >
-                  <Sprite sprite={shieldGlyph} scale={2} />
-                </span>
-              )}
-              {fresh.map((item) => {
-                const f = item.cue;
-                if (f.kind !== 'zone' || (f.effect === 'shield' && walled)) return null;
-                const icon =
-                  f.effect === 'shield'
-                    ? shieldGlyph
-                    : f.effect === 'rally'
-                      ? abilityGlyph
-                      : gimmickGlyph('hit_zone');
+        {single ? (
+          zoneNodes
+        ) : (
+          <div class="board-grid stage-grid">
+            <div class="board-labels">
+              <p class="board-lane-head" aria-hidden="true">
+                Lane
+              </p>
+              {groups.map(({ zone }) => {
+                const warned = forecast?.zones.includes(zone) === true;
                 return (
-                  <span
-                    key={`${String(f.i)}-${f.effect}`}
-                    class={`zone-fx fx-${f.effect} fresh`}
-                    aria-hidden="true"
-                    ref={fxRef(item)}
-                  >
-                    {f.effect === 'hit' && <span class="strike-wave" />}
-                    <Sprite sprite={icon} scale={2} />
-                  </span>
+                  <p key={zone} class={`zone-label board-label pix${warned ? ' warned' : ''}`}>
+                    <GlossaryTag entry={GLOSSARY_IDS.zone(zone)}>{ZONE_NAMES[zone]}</GlossaryTag>
+                    {warned && (
+                      <span class="zone-warn" aria-hidden="true">
+                        <Sprite sprite={glyphOrUnknown('warning')} scale={2} />
+                      </span>
+                    )}
+                  </p>
                 );
               })}
-              {zoneWindup.map((item) => (
-                <span
-                  key={`windup-${String(item.cue.i)}`}
-                  class="zone-fx fx-windup"
-                  aria-hidden="true"
-                  ref={fxRef(item)}
-                />
-              ))}
             </div>
-          );
-        })}
+            <div
+              ref={scrollerRef}
+              class="party-strip board-scroller"
+              role="group"
+              aria-label="Party grid: rows front to back, lanes left to right"
+              onPointerDown={() => {
+                handScrolledAt.current = Date.now();
+              }}
+              onWheel={() => {
+                handScrolledAt.current = Date.now();
+              }}
+            >
+              <div class="board-lanes" aria-hidden="true">
+                {Array.from({ length: lanes }, (_, lane) => (
+                  <span key={lane} class="board-lane" data-lane={lane}>
+                    {lane + 1}
+                  </span>
+                ))}
+              </div>
+              {zoneNodes}
+            </div>
+          </div>
+        )}
       </div>
 
       {abilities !== undefined && basics.length > 0 && (

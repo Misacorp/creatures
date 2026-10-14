@@ -1,9 +1,9 @@
 /**
- * How the zones of the row are laid out, on the fight stage. Each zone is
- * a horizontal row with its label at the left, its creatures centred and wrapping onto more lines
- * when they do not fit, so nothing ever scrolls sideways. When a zone is long the sprites shrink
- * (a smaller tier) instead. Pure: the components measure their width and ask which tier to use. The
- * numbers here are written to the stylesheet as CSS custom properties, so they cannot drift apart.
+ * How the dungeon's single row of creatures is laid out on the fight stage: three units side by side,
+ * all one size, picked for the width of the stage. (The raid's three zone rows are a scrolling grid
+ * with one fixed tile size instead; see `GRID_SCALE` and styles/stage/stage-grid.css.) Pure: the
+ * component measures its width and asks which tier to use. The numbers here are written to the
+ * stylesheet as CSS custom properties, so they cannot drift apart.
  */
 
 /** One size of creature: the sprite scale and the width of one unit (sprite, name and padding). */
@@ -27,17 +27,8 @@ export interface LayoutConfig {
   padPx: number;
 }
 
-/** The fight stage: 16x16 sprites at scale 3 or 2, with the name under each. */
-export const STAGE_LAYOUT: LayoutConfig = {
-  tiers: [
-    { scale: 3, unitPx: 52 },
-    { scale: 2, unitPx: 38 },
-  ],
-  gapPx: 2,
-  labelPx: 44,
-  labelGapPx: 4,
-  padPx: 8,
-};
+/** The sprite scale of a creature on the raid stage's grid: small, like the placement board's tiles. */
+export const GRID_SCALE = 2;
 
 /**
  * The dungeon's single row: the three creatures side by side, bigger than in the zone rows because

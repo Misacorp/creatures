@@ -1,18 +1,8 @@
 /*
-  The raid board (ui/RaidBoard.tsx): Front, Middle and Back as three lines that never wrap, with a
-  lane (the same position in every line) as a column. The three lines scroll sideways together, in
-  one scroller, so a lane stays a vertical line. The row names sit in a column at the left that does
-  not scroll; every row has the same fixed height, so a name lines up with its row. The tiles are the
-  shared .party-slot, made small so about four lanes fit on a 360 px phone.
+  The raid board (ui/RaidBoard.tsx): its grid (the rows, the lanes, the label column, the scroller)
+  is in lane-grid.css, shared with the fight stage. This file has what is the board's own: the lane
+  pips and the tile, the shared .party-slot made small so about four lanes fit on a 360 px phone.
 */
-.raid-board {
-  --tile-w: 3.25rem;
-  --tile-h: 6rem;
-  --lane-h: 1.25rem;
-  --board-gap: 0.5rem;
-  --board-pad: 6px; /* room for the gold ring of a selected tile, which the scroller would clip */
-  --label-w: 2.75rem;
-}
 
 /* --- The lane pips: one per lane, a tap scrolls to it --- */
 
@@ -59,66 +49,6 @@ button.board-pip:active:not(:disabled) {
   box-shadow:
     0 0 0 2px var(--ink),
     0 0 0 4px var(--gold);
-}
-
-/* --- The grid: the row names, then the scroller --- */
-
-.board-grid {
-  display: grid;
-  grid-template-columns: var(--label-w) minmax(0, 1fr);
-  gap: 4px;
-}
-
-.board-labels {
-  display: flex;
-  flex-direction: column;
-  gap: var(--board-gap);
-  padding-top: var(--board-pad);
-}
-
-.board-lane-head {
-  display: flex;
-  align-items: center;
-  height: var(--lane-h);
-  margin: 0;
-  color: var(--haze);
-  font-size: 0.625rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.board-label {
-  display: flex;
-  align-items: center;
-  height: var(--tile-h);
-}
-
-.raid-board .board-scroller {
-  position: relative;
-  gap: var(--board-gap);
-  min-width: 0;
-  padding: var(--board-pad);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-}
-
-.board-lanes,
-.board-row {
-  display: flex;
-  flex: none;
-  gap: 4px;
-  width: max-content;
-}
-
-.board-lane {
-  width: var(--tile-w);
-  height: var(--lane-h);
-  color: var(--haze);
-  font-family: var(--display);
-  font-size: 0.875rem;
-  line-height: var(--lane-h);
-  text-align: center;
 }
 
 /* --- A tile --- */
