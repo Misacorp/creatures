@@ -1,28 +1,16 @@
-/* --- Raid tab, UX pass 1: one placement step --- */
+/* --- Raid tab: the Raid Roster (Placement.tsx) --- */
 
-.placement .place-help,
-.placement .keys {
+/* The line under the heading and the one about how many are placed. */
+.placement .roster-help,
+.placement .roster-count {
   margin: 0.25rem 0;
 }
 
-.placement .keys summary {
-  color: var(--haze);
+.placement .roster-count {
+  color: var(--bone);
   font-size: 0.875rem;
-  cursor: pointer;
 }
 
-.tray-label {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem;
-  margin: 0.75rem 0 0;
-}
-
-.place-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0.25rem 0;
+.placement .roster-note {
+  margin: 0.5rem 0 0;
 }

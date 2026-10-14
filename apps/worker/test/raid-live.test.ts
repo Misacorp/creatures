@@ -1030,7 +1030,7 @@ describe('starting the finale', () => {
     });
   });
 
-  it('freezes the row: the team cannot change once the fight has started', async () => {
+  it('freezes the row: the board cannot change once the fight has started', async () => {
     await runRaid((ctx) => {
       const players = toFinale(ctx);
       const [a] = inOrder(ctx, players) as [Seeded, Seeded];
@@ -1039,7 +1039,9 @@ describe('starting the finale', () => {
       const view = ctx.core.raid.view(a.id, HELSINKI);
       expect(view.status).toBe('finale');
       expect(view.you.canEdit).toBe(false);
-      expect(err(ctx.core.raid.setTeam(a.id, HELSINKI, null))).toBe('409 locked');
+      expect(err(ctx.core.raid.place(a.id, HELSINKI, a.creatureIds[0] as string, 0))).toBe(
+        '409 locked',
+      );
     });
   });
 });
@@ -2457,29 +2459,27 @@ describe('Auto fire preferences', () => {
       const leaving = before[0] as string;
       expect(setAuto(ctx, a, leaving, false).ok).toBe(true);
       expect(setAuto(ctx, a, before[1] as string, false).ok).toBe(true);
-      // Swap the first creature for the fourth: the preference stays in the table but is never read.
+      // Place the other two and the fourth: the first creature is no longer brought, and its
+      // preference stays in the table but is never read.
       const fourth = a.creatureIds.find((id) => !before.includes(id)) as string;
-      expect(
-        ctx.core.raid.setTeam(a.id, HELSINKI, [fourth, before[1] as string, before[2] as string])
-          .ok,
-      ).toBe(true);
+      for (const [slot, id] of [before[1], before[2], fourth].entries()) {
+        expect(ctx.core.raid.place(a.id, HELSINKI, id as string, slot).ok).toBe(true);
+      }
       expect(count(ctx.sql, 'raid_autofire')).toBe(2);
+      const now = teamIds(ctx, a);
+      expect([...now].sort()).toEqual([before[1], before[2], fourth].sort());
       const view = ctx.core.raid.view(a.id, HELSINKI);
-      expect(view.you.abilities.map((x) => x.creatureId)).toEqual([
-        null,
-        fourth,
-        before[1],
-        before[2],
+      expect(view.you.abilities.map((x) => x.creatureId)).toEqual([null, ...now]);
+      expect(view.you.abilities.map((x) => x.autoFire)).toEqual([
+        true,
+        ...now.map((id) => id !== before[1]),
       ]);
-      expect(view.you.abilities.map((x) => x.autoFire)).toEqual([true, true, false, true]);
 
       begin(ctx);
       const s = snap(ctx, a);
       expect(ownAbilities(s).map((x) => [x.creature, x.mode])).toEqual([
         [null, 'default'],
-        [fourth, 'default'],
-        [before[1], 'held'],
-        [before[2], 'default'],
+        ...now.map((id) => [id, id === before[1] ? 'held' : 'default']),
       ]);
       expect(ownAbilities(s).some((x) => x.creature === leaving)).toBe(false);
     });

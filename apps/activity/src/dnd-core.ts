@@ -19,10 +19,21 @@ export interface Rect {
 
 /** Pixels the pointer must travel before a press turns into a drag (so taps stay taps). */
 export const DRAG_THRESHOLD = 8;
+/** How long a finger must rest on a creature before it is picked up, where that is asked for (the raid board). */
+export const TOUCH_HOLD_MS = 250;
 /** How close to the edge of the strip (in pixels) auto-scroll starts. */
 export const SCROLL_EDGE = 56;
 /** Auto-scroll speed at the very edge, in pixels per frame. */
 const SCROLL_MAX_SPEED = 16;
+
+/**
+ * What a finger that has not been held long enough yet does when it moves: a small wobble keeps
+ * waiting for the hold, and a real move (as far as `threshold`) is a swipe, so it scrolls the board
+ * or the page instead of picking the creature up.
+ */
+export function holdMove(start: Point, at: Point, threshold = DRAG_THRESHOLD): 'wait' | 'swipe' {
+  return distance(start, at) < threshold ? 'wait' : 'swipe';
+}
 
 export function distance(a: Point, b: Point): number {
   return Math.hypot(a.x - b.x, a.y - b.y);

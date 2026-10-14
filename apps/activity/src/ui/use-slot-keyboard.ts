@@ -17,11 +17,6 @@ interface Args {
    * and the position of the buttons (`slotKeyTarget`).
    */
   keyTarget?: (current: number, key: string) => number | null;
-  /**
-   * Where the cursor starts when an arrow key is pressed on a tray chip while a creature is picked
-   * up. Without it the arrow keys only work once a slot has focus.
-   */
-  cursorStart?: () => number;
   /** Escape with a creature picked up. */
   onCancel: () => void;
 }
@@ -57,11 +52,10 @@ export function useSlotKeyboard(args: Args): (event: KeyboardEvent) => void {
       if (selected !== null && onSlot) refocus.current = Number(control.dataset.slot);
       return;
     }
-    // Arrow keys walk along the slots: always when a slot has focus, and (where there is a cursor
-    // start) while carrying a creature from the tray.
-    if (!onSlot && (args.cursorStart === undefined || selected === null)) return;
+    // Arrow keys walk along the slots, once a slot has focus.
+    if (!onSlot) return;
     const buttons = [...(stripRef.current?.querySelectorAll<HTMLElement>('[data-slot]') ?? [])];
-    const current = onSlot ? Number(control.dataset.slot) : (args.cursorStart?.() ?? 0);
+    const current = Number(control.dataset.slot);
     const to =
       args.keyTarget !== undefined
         ? args.keyTarget(current, event.key)

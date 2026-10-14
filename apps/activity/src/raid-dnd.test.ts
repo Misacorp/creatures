@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { cursorStart, resolveDrop, slotStatuses } from './raid-dnd';
+import { resolveDrop, slotStatuses } from './raid-dnd';
 import { CANCEL_ANNOUNCEMENT } from './slot-outcome';
 import type { RowSlotView } from './raid-api';
 import type { TapContext } from './raid-slots';
 
-// A row of 5 (front 1, middle 3, back 1). Slot 0: mine (a), 1: empty, 2: Jun's, 3: mine (b), 4: empty. Creature c is in my team, unplaced.
+// A row of 5 (front 1, middle 3, back 1). Slot 0: mine (a), 1: empty, 2: Jun's, 3: mine (b), 4: empty.
+// Creature c is one of mine that is not on the board.
 const mine = (id: string, name: string): NonNullable<RowSlotView['creature']> => ({
   ownerName: 'Me',
   species: 'splashet',
@@ -24,7 +25,7 @@ const row: RowSlotView[] = [
   { slot: 3, zone: 'middle', creature: mine('b', 'Beta') },
   { slot: 4, zone: 'back', creature: null },
 ];
-const ctx: TapContext = { locked: false, row, teamIds: ['a', 'b', 'c'] };
+const ctx: TapContext = { locked: false, row };
 const slot = (n: number) => ({ kind: 'slot', slot: n }) as const;
 
 describe('resolveDrop onto slots', () => {
@@ -33,14 +34,8 @@ describe('resolveDrop onto slots', () => {
       status: 'valid',
       intent: { type: 'place', creatureId: 'a', slot: 4 },
       hint: null,
-      announce: 'Placed Alpha in Back, lane 1.',
+      announce: 'Moved Alpha to Back, lane 1.',
     });
-  });
-
-  it('places an unplaced team creature', () => {
-    const result = resolveDrop(ctx, 'c', 'Cee', slot(1));
-    expect(result.intent).toEqual({ type: 'place', creatureId: 'c', slot: 1 });
-    expect(result.status).toBe('valid');
   });
 
   it('swaps with one of my own creatures', () => {
@@ -73,7 +68,7 @@ describe('resolveDrop onto slots', () => {
 });
 
 describe('resolveDrop elsewhere', () => {
-  it('cancels when dropped off the row', () => {
+  it('cancels when dropped off the board', () => {
     expect(resolveDrop(ctx, 'a', 'Alpha', null)).toEqual({
       status: 'none',
       intent: null,
@@ -82,26 +77,22 @@ describe('resolveDrop elsewhere', () => {
     });
   });
 
-  it('unplaces a placed creature dropped on the team tray', () => {
+  it('never takes a creature off the board: that is the Remove button', () => {
     const result = resolveDrop(ctx, 'a', 'Alpha', { kind: 'tray' });
-    expect(result.status).toBe('valid');
-    expect(result.intent).toEqual({ type: 'unplace', creatureId: 'a' });
-  });
-
-  it('does nothing for an unplaced creature dropped on the tray', () => {
-    const result = resolveDrop(ctx, 'c', 'Cee', { kind: 'tray' });
-    expect(result.status).toBe('none');
     expect(result.intent).toBeNull();
+    expect(result.status).toBe('none');
   });
 
-  it('refuses creatures that are not in the team', () => {
-    expect(resolveDrop(ctx, 'zzz', 'Zed', slot(1)).status).toBe('invalid');
-    expect(resolveDrop(ctx, 'zzz', 'Zed', { kind: 'tray' }).intent).toBeNull();
+  it('refuses a creature that is not on the board: it goes through the picker', () => {
+    const result = resolveDrop(ctx, 'c', 'Cee', slot(1));
+    expect(result.status).toBe('invalid');
+    expect(result.intent).toBeNull();
+    expect(result.hint).toContain('Pick a creature');
   });
 
   it('refuses everything while the row is locked', () => {
     const locked = { ...ctx, locked: true };
-    for (const target of [slot(1), slot(3), { kind: 'tray' } as const]) {
+    for (const target of [slot(1), slot(3)]) {
       const result = resolveDrop(locked, 'a', 'Alpha', target);
       expect(result.status).toBe('invalid');
       expect(result.intent).toBeNull();
@@ -120,19 +111,5 @@ describe('slotStatuses', () => {
       [3, 'valid'],
       [4, 'valid'],
     ]);
-  });
-});
-
-describe('keyboard helpers', () => {
-  it('starts the cursor on the creature own slot, else the first free slot', () => {
-    expect(cursorStart(row, 'b')).toBe(3);
-    expect(cursorStart(row, 'c')).toBe(1);
-    expect(cursorStart(row, null)).toBe(1);
-  });
-
-  it('starts at the first slot when the row is full, and at zero when empty', () => {
-    const full = row.map((s) => (s.creature === null ? { ...s, creature: mine('x', 'X') } : s));
-    expect(cursorStart(full, 'c')).toBe(0);
-    expect(cursorStart([], null)).toBe(0);
   });
 });

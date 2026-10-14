@@ -1,8 +1,7 @@
 import type { Zone } from '@creatures/engine';
 import type { ComponentChildren } from 'preact';
 import { useLayoutEffect, useRef } from 'preact/hooks';
-import { usePrefersReducedMotion } from '../hooks';
-import { laneStates, ownLaneSpan, pipLabel, scrollToSpan } from '../raid-board';
+import { laneStates, ownLaneSpan, scrollToSpan } from '../raid-board';
 import { SlotButton, type SlotModel, type SlotRowProps } from './SlotRow';
 import { CueRail, type CueRailProps } from './CueRail';
 import { slotState } from './slot-state';
@@ -39,7 +38,7 @@ interface RaidBoardProps extends Pick<
 const TILE_SCALE = 2;
 
 /** Scrolls the board sideways to show lanes `first` to `last` (from 0). */
-function showLanes(scroller: HTMLElement | null, first: number, last: number, smooth: boolean) {
+function showLanes(scroller: HTMLElement | null, first: number, last: number) {
   if (scroller === null) return;
   const lanes = scroller.querySelectorAll<HTMLElement>('[data-lane]');
   const a = lanes[first];
@@ -50,20 +49,18 @@ function showLanes(scroller: HTMLElement | null, first: number, last: number, sm
   const right = b.getBoundingClientRect().right - box.left + scroller.scrollLeft;
   scroller.scrollTo({
     left: scrollToSpan(left, right, scroller.clientWidth, scroller.scrollWidth),
-    behavior: smooth ? 'smooth' : 'auto',
+    behavior: 'auto',
   });
 }
 
 /**
  * The raid's party as a grid: Front, Middle and Back are three lines that never wrap, and a lane is the
  * same position in every line, so column k is slot k of each row. All three rows sit in one sideways
- * scroller, so a lane stays a vertical line. Above it, a strip of pips shows every lane (yours lit,
- * empty ones hollow); tapping one scrolls to that lane. On open the board scrolls to your creatures.
- * The tiles are the shared `SlotButton`, so tap, drag and the keyboard work as on the dungeon team.
+ * scroller, so a lane stays a vertical line. On open the board scrolls to your creatures. The tiles
+ * are the shared `SlotButton`, so tap, drag and the keyboard work as on the dungeon team.
  */
 export function RaidBoard(props: RaidBoardProps) {
   const { rows, stripRef } = props;
-  const reduced = usePrefersReducedMotion();
   const occupants = new Map(
     rows.flatMap((r) => r.slots.map((s) => [s.index, s.occupant] as const)),
   );
@@ -80,7 +77,7 @@ export function RaidBoard(props: RaidBoardProps) {
   const first = useRef(own);
   useLayoutEffect(() => {
     if (first.current !== null)
-      showLanes(stripRef.current, first.current.first, first.current.last, false);
+      showLanes(stripRef.current, first.current.first, first.current.last);
   }, []);
 
   const dragging = props.drag.drag?.creatureId ?? null;
@@ -88,21 +85,6 @@ export function RaidBoard(props: RaidBoardProps) {
     dragging === null ? 'party-strip board-scroller' : 'party-strip board-scroller dragging';
   return (
     <div class="raid-board">
-      <div class="board-pips" role="group" aria-label="Lanes: tap one to jump to it">
-        {states.map((state, lane) => (
-          <button
-            key={lane}
-            type="button"
-            class={`board-pip ${state}`}
-            aria-label={pipLabel(lane + 1, state)}
-            onClick={() => {
-              showLanes(stripRef.current, lane, lane, !reduced);
-            }}
-          >
-            <i />
-          </button>
-        ))}
-      </div>
       <div class="board-grid">
         <div class="board-labels">
           <p class="board-lane-head" aria-hidden="true">

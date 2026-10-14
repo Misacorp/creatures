@@ -2,8 +2,7 @@
  * The raid board as a grid: three rows (Front, Middle, Back), and a lane is the same position in every
  * row, so column k holds slot k of each row. Pure: the zone sizes come from the engine
  * (`packages/engine/src/zones.ts`), never worked out again here; this file turns them into rows,
- * lanes, plain words for a place ("Middle, lane 1"), the keyboard map, the overview pips and the
- * scroll positions. `ui/RaidBoard.tsx` draws it, `Placement.tsx` wires it to the game.
+ * lanes, plain words for a place ("Middle, lane 1"), the keyboard map and the scroll positions. `ui/RaidBoard.tsx` draws it, `Placement.tsx` wires it to the game.
  */
 import { ZONES, zoneIndices, type AffectSlot, type TurnOrder, type Zone } from '@creatures/engine';
 import { effectiveStats } from '@creatures/game';
@@ -90,7 +89,7 @@ export function boardKeyTarget(
   }
 }
 
-/** What stands in a lane, for the overview pips: your creature, only others', or nothing. */
+/** What stands in a lane: your creature, only others', or nothing. */
 export type LaneState = 'mine' | 'taken' | 'empty';
 
 /** The state of every lane, from the first: yours wins over others', others' over empty. */
@@ -106,12 +105,6 @@ export function laneStates(
     if (owners.includes('mine')) return 'mine';
     return owners.includes('other') ? 'taken' : 'empty';
   });
-}
-
-/** The spoken label of a pip: "Lane 3, yours". */
-export function pipLabel(lane: number, state: LaneState): string {
-  const what = state === 'mine' ? 'yours' : state === 'taken' ? 'taken' : 'empty';
-  return `Lane ${String(lane)}, ${what}`;
 }
 
 /**
@@ -155,11 +148,16 @@ export function boardSlot(
   s: RowSlotView,
   length: number,
   rosterNames: readonly string[],
+  /** The board can still change: your own creatures can be dragged and an empty slot takes a pick. */
+  editable = true,
 ): SlotModel {
   const c = s.creature;
   const where = placeText(s.slot, length);
   const base = { index: s.slot, hideNumber: true } as const;
-  if (c === null) return { ...base, ariaLabel: `${where}, empty`, occupant: null };
+  if (c === null) {
+    const label = editable ? `${where}, empty. Choose a creature.` : `${where}, empty`;
+    return { ...base, ariaLabel: label, occupant: null };
+  }
   const owner = c.mine ? 'you' : c.ownerName;
   return {
     ...base,
@@ -168,7 +166,7 @@ export function boardSlot(
       species: c.species,
       name: speciesName(c.species),
       level: c.level,
-      ownId: c.mine && c.creatureId !== undefined ? c.creatureId : null,
+      ownId: editable && c.mine && c.creatureId !== undefined ? c.creatureId : null,
       mine: c.mine,
       element: getSpecies(c.species)?.element ?? 'unknown',
       owner: { colour: ownerColour(c.ownerName, rosterNames), initial: initialOf(c.ownerName) },

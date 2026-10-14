@@ -21,7 +21,7 @@ import {
   seasonOf,
 } from '@creatures/game';
 import { weekIndex } from './raid-schedule';
-import { effectiveTeam } from './raid-teams';
+import { raidTeam } from './raid-teams';
 
 export interface Ladder {
   /** The server's rank; null until a week with a roster has placed it. */
@@ -139,9 +139,7 @@ export function ensureWeekRank(sql: SqlStorage, weekId: string): number | null {
       )
       .toArray();
     if (members.length === 0) return null;
-    const levels = members.flatMap((m) =>
-      effectiveTeam(sql, weekId, m.user_id).creatures.map((c) => c.level),
-    );
+    const levels = members.flatMap((m) => raidTeam(sql, weekId, m.user_id).map((c) => c.level));
     rank = placementRank(levels);
     sql.exec('UPDATE raid_ladder SET rank = ? WHERE id = 1 AND rank IS NULL', rank);
   }
@@ -185,7 +183,7 @@ export function convertLegacyWeek(sql: SqlStorage, weekId: string): boolean {
   let rank = readLadder(sql).rank;
   if (rank === null) {
     rank = placementRank(
-      members.flatMap((m) => effectiveTeam(sql, weekId, m.user_id).creatures.map((c) => c.level)),
+      members.flatMap((m) => raidTeam(sql, weekId, m.user_id).map((c) => c.level)),
     );
     sql.exec('UPDATE raid_ladder SET rank = ? WHERE id = 1 AND rank IS NULL', rank);
   }

@@ -61,7 +61,12 @@ export function snakeDraft(
   return groups;
 }
 
-/** A player's team power for balancing: the power of their automatic team. */
+/**
+ * A player's team power for balancing: the power of their automatic team (their strongest three).
+ * Parties are made when the week opens (and for a late joiner before phase 1), when nobody has
+ * placed anything, so the automatic team is also what the player brings then. It does not depend on
+ * placements, so the split never moves with what someone happens to place.
+ */
 export function playerPower(sql: SqlStorage, userId: string): number {
   return teamPower(autoTeam(loadCreatures(sql, userId)));
 }

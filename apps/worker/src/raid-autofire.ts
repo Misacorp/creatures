@@ -9,7 +9,7 @@
  * preference for a creature that is no longer in the team is never read, so it is ignored.
  */
 import { GameError } from './outcome';
-import { effectiveTeam } from './raid-teams';
+import { raidTeam } from './raid-teams';
 
 /** The target of a player's basic ability. */
 export const BASIC_TARGET = 'basic';
@@ -52,7 +52,7 @@ export function storeAutofire(
   on: boolean,
 ): void {
   if (target !== BASIC_TARGET) {
-    const team = effectiveTeam(sql, weekId, userId).creatures;
+    const team = raidTeam(sql, weekId, userId);
     if (!team.some((c) => c.id === target)) throw new GameError(409, 'not_your_creature');
   }
   sql.exec(

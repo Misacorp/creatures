@@ -1,16 +1,14 @@
 /**
- * Drag-and-drop and keyboard placement rules for the party row. Pure functions: given what the
- * player dragged and where they let go, say what to do. They reuse the tap rules in `raid-slots.ts`,
- * so a drag, a tap and a key press can never disagree. The server still validates every move.
+ * Drag-and-drop rules for the party row. Pure: given what the player dragged (one of their own
+ * creatures on the board) and where they let go, say what to do. The server still validates every
+ * move. A creature that is not on the board yet is placed through the picker (`roster-picker.ts`),
+ * never by a drag.
  */
-import type { RowSlotView } from './raid-api';
 import { placeText } from './raid-board';
-import { reduceTap, slotOfCreature, type Intent, type TapContext } from './raid-slots';
+import { slotOfCreature, type Intent, type TapContext } from './raid-slots';
 import {
   CANCEL_ANNOUNCEMENT,
   dropOutcome,
-  notInRowAnnouncement,
-  takenOutAnnouncement,
   type DropOutcome,
   type DropStatus,
   type DropTarget,
@@ -23,8 +21,9 @@ const outcome = dropOutcome<Intent>;
 
 /**
  * What happens when `creatureId` (one of the player's own, called `name`) is dropped on `target`.
- * A null target is a drop off the row: it cancels. Dropping on an empty slot moves, on one of the
- * player's own creatures swaps, on someone else's refuses, and on the team tray unplaces.
+ * A null target is a drop off the board: it cancels. Dropping on an empty slot moves it, on one of
+ * the player's own creatures swaps, on someone else's refuses. Nothing here takes a creature off
+ * the board: that is the "Remove from board" button of its popover.
  */
 export function resolveDrop(
   ctx: TapContext,
@@ -33,30 +32,30 @@ export function resolveDrop(
   target: DropTarget | null,
 ): RaidDropOutcome {
   if (ctx.locked) return outcome('invalid', null, 'The row is locked.', 'The row is locked.');
-  if (target === null) return outcome('none', null, null, CANCEL_ANNOUNCEMENT);
-  if (!ctx.teamIds.includes(creatureId)) {
-    const hint = 'That creature is not in your team.';
+  if (target === null || target.kind === 'tray') {
+    return outcome('none', null, null, CANCEL_ANNOUNCEMENT);
+  }
+  const from = slotOfCreature(ctx.row, creatureId);
+  if (from === null) {
+    const hint = 'Pick a creature for an empty slot instead.';
     return outcome('invalid', null, hint, hint);
   }
-
-  if (target.kind === 'tray') {
-    if (slotOfCreature(ctx.row, creatureId) === null) {
-      return outcome('none', null, null, notInRowAnnouncement(name));
-    }
-    return outcome('valid', { type: 'unplace', creatureId }, null, takenOutAnnouncement(name));
+  const there = ctx.row.find((s) => s.slot === target.slot);
+  if (there === undefined) {
+    return outcome('invalid', null, 'That slot does not exist.', 'That slot does not exist.');
   }
-
-  const tap = reduceTap(ctx, creatureId, { kind: 'slot', slot: target.slot });
-  if (tap.intent !== null) {
-    const occupant = ctx.row.find((s) => s.slot === target.slot)?.creature;
-    const text =
-      occupant === null || occupant === undefined
-        ? `Placed ${name} in ${placeText(target.slot, ctx.row.length)}.`
-        : `Swapped ${name} with ${occupant.name}.`;
-    return outcome('valid', tap.intent, null, text);
+  if (target.slot === from) return outcome('none', null, null, `${name} stays where it is.`);
+  const occupant = there.creature;
+  if (occupant !== null && !occupant.mine) {
+    const hint = `That slot belongs to ${occupant.ownerName}.`;
+    return outcome('invalid', null, hint, hint);
   }
-  if (tap.hint !== null) return outcome('invalid', null, tap.hint, tap.hint);
-  return outcome('none', null, null, `${name} stays where it is.`);
+  const intent: Intent = { type: 'place', creatureId, slot: target.slot };
+  const text =
+    occupant === null
+      ? `Moved ${name} to ${placeText(target.slot, ctx.row.length)}.`
+      : `Swapped ${name} with ${occupant.name}.`;
+  return outcome('valid', intent, null, text);
 }
 
 /** The drop status of every slot for a creature being dragged, keyed by slot number. */
@@ -70,14 +69,4 @@ export function slotStatuses(
     map.set(s.slot, resolveDrop(ctx, creatureId, name, { kind: 'slot', slot: s.slot }).status);
   }
   return map;
-}
-
-/** Where the keyboard cursor starts for a selected creature: its own slot, else the first free one. */
-export function cursorStart(row: readonly RowSlotView[], selected: string | null): number {
-  const sorted = [...row].sort((a, b) => a.slot - b.slot);
-  if (selected !== null) {
-    const own = slotOfCreature(row, selected);
-    if (own !== null) return own;
-  }
-  return (sorted.find((s) => s.creature === null) ?? sorted[0])?.slot ?? 0;
 }
