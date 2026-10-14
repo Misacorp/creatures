@@ -16,17 +16,40 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
 
 ## Now
 
-- Production runs PR #10, merged 2026-10-13: the daily dungeon, expeditions v2, the 13:37 reset, the tab order, the Jersey 10 font and the combined balance pass. PR #9 shipped How to play, gear v1 and the event log.
-- PR #11 (UX pass 1 and the design compendium) is in production, merged 2026-10-13 (`ec44e6e`).
-- **Dungeon order of play (2026-10-14, branch `worktree-agent-a151f66c8c91b38c5`):** every dungeon fight now goes left to right, then the foe (`RULES.dungeon.turnOrder`); dungeon foes lost their turn order, and Fog was replaced by Echoing (Guards and supports +50%). The order is shown before the run and in the playback (slot numbers and a turn strip). Waiting for review with the rest of the stack.
+- **Production (2026-10-14):** main `ba73472`. It includes:
+  - PR #12: analytics reports, the balance loop, dev tools;
+  - PR #14: cleanup pass 1;
+  - PR #15: the component workbench at `creatures-staging.misacorp.dev/workbench.html`;
+  - PR #17: the living room, Misa's own branch;
+  - PR #18: the dungeon always acts left to right, the reworked dungeon fight, pre-run and post-run screens, "1 / 3" counts, the role assessment, and the attack-pattern design.
+- **Reports:** `OPS_TOKEN` is set. The report workflow runs daily at 06:17 UTC; agents read the JSON from its job log. The first rollups landed 2026-10-14. After about a week of data, run the `balance-review` skill.
 
-## Next
+## Next (in order)
 
-Follow `docs/roadmap.md`.
-
-- **Items 5 and 5b are built** (branch `analytics`, PR #12, 2026-10-14 overnight): rollups, guild directory, ops endpoint, report workflow, `pnpm analyze`, `pnpm sim:live`, `pnpm scalars`, `pnpm patch-notes`, the `patch-notes` and `balance-review` skills, and the staging-only dev tools (server gate, dev clock, `/api/dev/*`, client panel). Waiting for Misa to review, merge and add `OPS_TOKEN`.
-- **Item 6, cleanup pass 1:** slices 1, 2 and 4–18 are built (branch `cleanup-1`, PR #14, stacked on #12). Left: slice 3 (unused glossary entries and v1 expedition rules) and the four game-feel questions at the end of `design/cleanup-1-audit.md`, then step 3 upkeep (Vitest 5 and Dependabot PR #2, outdated dependencies, zizmor and actionlint). Screenshot and interaction harnesses used for the slices live only in the session scratchpad; recreate from the PR #14 description if needed.
-- The first real balance report needs about a week of rolled-up data after `OPS_TOKEN` is set. Then run the `balance-review` skill.
+1. **Raid UX pass 2:** `design/raid-ux-2.md`.
+   - a 3-row × N-lane raid board that doesn't wrap;
+   - row-edge adjacency;
+   - remove "Who's in this week";
+   - dungeon patterns on the raid stage and replay;
+   - a placement reaction hint;
+   - remove sit-out (Misa: yes);
+   - visual placement cues instead of hint text;
+   - influence highlights on hover or popover;
+   - room or phase top left, round top right (the dungeon too);
+   - hide the tag coach mark.
+2. **Attack patterns plus raid structure,** as one raid retune: `design/attack-patterns.md`, section 6 for the slices, and the "Raid structure" section of `design/raid-ux-2.md`. The structure part is phase floors (the boss goes immune, so there is always a finale) and a finale enrage; it has four questions open for Misa.
+   - The seven moves for raid bosses and dungeon foes.
+   - Guard cover.
+   - Element supports: Stoke, Overcharge, Mend.
+   - Fixed, announced landmark bosses.
+   - A single-hit cap.
+   - A review of the Cinder Wyrm reflect.
+   - Misa decided: hit hard, randomness is fine, Support is not a ward, landmarks fixed.
+3. **Support reach shapes:** design and sim first, `attack-patterns.md` section 7.
+4. **Cleanup leftovers:**
+   - slice 3 (unused glossary entries, v1 expedition rules), after Misa answers the audit questions;
+   - upkeep: Vitest 5 and Dependabot PR #2, outdated dependencies, zizmor and actionlint.
+5. **Content:** Grove and Tide support species, new elements and later expedition areas. See the roadmap, item 9.
 
 ## Open questions for Misa
 
