@@ -181,10 +181,9 @@ describe('the readiness band in the raid view', () => {
         expect(bandOf(ctx, b)).toBe(first);
         expect(rng.drawn()).toBe(drawn);
 
-        // A team change marks the band as stale, but it is not recomputed within 30 seconds.
+        // A placement marks the band as stale, but it is not recomputed within 30 seconds.
         const team = ctx.core.raid.view(a.id, HELSINKI).you.team?.creatures ?? [];
-        const ids = a.creatureIds.slice().reverse();
-        expect(ctx.core.raid.setTeam(a.id, HELSINKI, ids).ok).toBe(true);
+        expect(ctx.core.raid.place(a.id, HELSINKI, a.creatureIds[0] as string, 0).ok).toBe(true);
         expect(team.length).toBe(3);
         ctx.clock.t = t0 + READINESS_MIN_INTERVAL_MS - SECOND;
         bandOf(ctx, a);

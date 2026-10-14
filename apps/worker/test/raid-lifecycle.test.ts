@@ -337,7 +337,7 @@ describe('parties', () => {
       expect(view.status).toBe('phase1');
       expect(view.you.inRoster).toBe(false);
       expect(view.roster.map((r) => r.displayName)).toEqual(['Player 1']);
-      expect(ctx.core.raid.setTeam(late.id, HELSINKI, null)).toEqual({
+      expect(ctx.core.raid.place(late.id, HELSINKI, late.creatureIds[0] as string, 0)).toEqual({
         ok: false,
         status: 409,
         error: 'not_in_roster',

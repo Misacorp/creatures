@@ -1,5 +1,5 @@
 /**
- * The weekly raid: week lifecycle, scheduled events and player actions (team, placement, opt-out).
+ * The weekly raid: week lifecycle, scheduled events and player actions (placement, abilities, the retired opt-out).
  * Phases are resolved by `raid-resolve.ts`; read models are in `raid-view.ts`.
  *
  * Everything is synchronous and runs inside `transactionSync`, so a check and the writes that
@@ -77,8 +77,6 @@ import {
 } from './raid-schedule';
 import {
   capPlacements,
-  chosenTeamIds,
-  effectiveTeam,
   loadCreatures,
   rowLength,
   type PlacementRow,
@@ -428,76 +426,18 @@ export class Raid {
   }
 
   /**
-   * Chooses the three creatures the player brings, or `null` for the automatic team. Placements of
-   * creatures that are no longer in the team are removed.
-   */
-  setTeam(userId: string, tz: string, creatureIds: readonly string[] | null): Outcome<null> {
-    this.runDue(tz);
-    return this.atomically(() => {
-      const { week } = this.memberContext(userId, tz);
-      this.requireEditable(week);
-      this.readinessCache.invalidate();
-      const before = JSON.stringify(chosenTeamIds(this.sql, week.weekId, userId));
-      if (creatureIds !== null) {
-        const owned = new Set(loadCreatures(this.sql, userId).map((c) => c.id));
-        if (new Set(creatureIds).size !== creatureIds.length) {
-          throw new GameError(400, 'duplicate_creatures');
-        }
-        if (!creatureIds.every((id) => owned.has(id)))
-          throw new GameError(409, 'not_your_creature');
-      }
-      this.sql.exec(
-        `INSERT INTO raid_teams (week_id, user_id, creature_ids) VALUES (?, ?, ?)
-         ON CONFLICT(week_id, user_id) DO UPDATE SET creature_ids = excluded.creature_ids`,
-        week.weekId,
-        userId,
-        creatureIds === null ? null : JSON.stringify(creatureIds),
-      );
-      const effective = effectiveTeam(this.sql, week.weekId, userId).creatures;
-      const team = new Set(effective.map((c) => c.id));
-      // Only a change is logged: choosing the same team again is a repeat.
-      if (JSON.stringify(creatureIds) !== before) {
-        this.deps.analytics?.record(
-          {
-            kind: 'team_set',
-            auto: creatureIds === null,
-            species: effective.map((c) => c.species.id),
-          },
-          userId,
-        );
-      }
-      for (const row of this.sql
-        .exec<{
-          creature_id: string;
-        }>(
-          'SELECT creature_id FROM raid_placements WHERE week_id = ? AND user_id = ?',
-          week.weekId,
-          userId,
-        )
-        .toArray()) {
-        if (!team.has(row.creature_id)) {
-          this.sql.exec(
-            'DELETE FROM raid_placements WHERE week_id = ? AND creature_id = ?',
-            week.weekId,
-            row.creature_id,
-          );
-        }
-      }
-      return null;
-    });
-  }
-
-  /**
-   * Puts one of the player's team creatures into a slot of the party row. An empty slot just takes
-   * it; a slot held by another of the player's own creatures swaps places; a slot held by someone
-   * else's creature is refused.
+   * Puts one of the player's creatures into a slot of the party row. A player brings the creatures
+   * they place, at most three: one that is not on the board yet needs a free place (`board_full`
+   * otherwise); one that is already there moves. An empty slot just takes it; a slot held by another
+   * of the player's own creatures swaps places; a slot held by someone else's creature is refused.
+   * The rest of the three are filled in with the player's strongest when a phase locks.
    */
   place(userId: string, tz: string, creatureId: string, slot: number): Outcome<null> {
     this.runDue(tz);
     return this.atomically(() => {
       const { week, party } = this.memberContext(userId, tz);
       this.requireEditable(week);
-      this.requireOwnTeamCreature(week.weekId, userId, creatureId);
+      this.requireOwnedCreature(userId, creatureId);
       this.readinessCache.invalidate();
       const length = rowLength(partyMembers(this.sql, week.weekId, party).length);
       if (!Number.isInteger(slot) || slot < 0 || slot >= length) {
@@ -566,8 +506,7 @@ export class Raid {
         userId,
       )
       .toArray();
-    const team = new Set(effectiveTeam(this.sql, weekId, userId).creatures.map((c) => c.id));
-    const kept = capPlacements(all, team);
+    const kept = capPlacements(all);
     const keptIds = new Set(kept.map((p) => p.creature_id));
     for (const row of all) {
       if (!keptIds.has(row.creature_id)) {
@@ -639,13 +578,9 @@ export class Raid {
     );
   }
 
-  private requireOwnTeamCreature(weekId: string, userId: string, creatureId: string): void {
+  private requireOwnedCreature(userId: string, creatureId: string): void {
     const owned = loadCreatures(this.sql, userId).some((c) => c.id === creatureId);
     if (!owned) throw new GameError(409, 'not_your_creature');
-    const inTeam = effectiveTeam(this.sql, weekId, userId).creatures.some(
-      (c) => c.id === creatureId,
-    );
-    if (!inTeam) throw new GameError(409, 'not_in_team');
   }
 
   /**
@@ -759,11 +694,6 @@ export class Raid {
       }
       return null;
     });
-  }
-
-  /** The chosen team ids of a player (for views). */
-  chosenTeam(weekId: string, userId: string): string[] | null {
-    return chosenTeamIds(this.sql, weekId, userId);
   }
 
   // --- The live finale ---

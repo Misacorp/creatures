@@ -71,12 +71,14 @@ describe('a table with four placements of one player (legacy data)', () => {
       const view = ctx.core.raid.view(p.id, HELSINKI);
       const mine = view.party?.row.filter((s) => s.creature?.mine) ?? [];
       expect(mine).toHaveLength(3);
-      // The strongest three stay; the sproutle (not in the team) is the one that goes.
+      // The three placed first stay (the table is not read for a team any more); the latest goes.
       expect(mine.map((s) => s.creature?.species).sort()).toEqual([
-        'gaiadrake',
         'splashet',
+        'sproutle',
         'stormray',
       ]);
+      // And the creatures the player brings are those three, not four.
+      expect(view.you.team?.creatures).toHaveLength(3);
     });
   });
 

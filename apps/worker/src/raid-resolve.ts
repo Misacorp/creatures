@@ -47,7 +47,7 @@ import { fightRank, payoutWeek, readWeekProgression, updateLadder } from './raid
 import { partyMembers } from './raid-roster';
 import { queuePhasePost } from './raid-posts';
 import type { RaidPhase } from './raid-schedule';
-import { effectiveTeam, partyPlacements, rowLength, type TeamCreature } from './raid-teams';
+import { partyPlacements, raidTeam, rowLength, type TeamCreature } from './raid-teams';
 import { recordServerFirst } from './server-firsts';
 
 export interface ResolveDeps {
@@ -262,7 +262,7 @@ export function buildPhaseInput(
 
   // --- Build the row from the creatures' current stats ---
   const aliases = memberIds.map((_, i) => aliasFor(i));
-  const teams = memberIds.map((userId) => effectiveTeam(sql, week.weekId, userId).creatures);
+  const teams = memberIds.map((userId) => raidTeam(sql, week.weekId, userId));
   const slotById = new Map<string, FightSlot>();
   teams.forEach((team, i) => {
     for (const creature of team) slotById.set(creature.id, slotFor(creature, aliases[i] as string));
@@ -270,12 +270,7 @@ export function buildPhaseInput(
   const length = rowLength(memberIds.length);
   const sparse: (FightSlot | null)[] = new Array<FightSlot | null>(length).fill(null);
   // At most three placements per player, whatever the table holds (a stale row once made a fourth).
-  const placements = partyPlacements(
-    sql,
-    week.weekId,
-    party,
-    new Set(teams.flatMap((team) => team.map((c) => c.id))),
-  );
+  const placements = partyPlacements(sql, week.weekId, party);
   for (const placement of placements) {
     const slot = slotById.get(placement.creature_id);
     const owner = memberIds.indexOf(placement.user_id);

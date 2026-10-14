@@ -30,8 +30,8 @@ import { latestReveal, totalEssenceOf, type RevealView } from './raid-reveal';
 import { partyMembers, partyOf } from './raid-roster';
 import { RAID_PHASES, isWeekId, weekIndex, type RaidEvent, type RaidPhase } from './raid-schedule';
 import {
-  effectiveTeam,
   partyPlacements,
+  raidTeam,
   rowLength,
   type RaidStatus,
   type TeamCreature,
@@ -60,7 +60,7 @@ export interface AbilityPreview {
 }
 
 /**
- * What the caller brings with their current effective team: the basic ability, then one entry for
+ * What the caller brings with their current team (placed creatures, then the strongest others): the basic ability, then one entry for
  * each team creature whose species has an ability (locked ones too, so the client can show when
  * they unlock). Empty when the caller is not in a party.
  */
@@ -172,7 +172,7 @@ export interface RaidView {
     inRoster: boolean;
     optOut: boolean;
     party: number | null;
-    /** The caller may change their team and placement. */
+    /** The caller may change their placement. */
     canEdit: boolean;
     /** The caller may still sit the week out or rejoin. */
     canOptOut: boolean;
@@ -189,8 +189,13 @@ export interface RaidView {
      * (`POST /api/raid/reveal-seen`). Only the caller's own.
      */
     reveal: RevealView | null;
+    /**
+     * The creatures the caller brings: the ones placed on the board, then their strongest others to
+     * make three (`slot` is null for those; they are placed automatically when a phase locks).
+     */
     team: {
-      mode: 'auto' | 'chosen';
+      /** Always `auto`: the chosen-team feature is gone, the field stays for older clients. */
+      mode: 'auto';
       creatures: {
         creatureId: string;
         species: string;
@@ -263,12 +268,9 @@ export function buildRaidView(
   const parties = [...sizes].map(([party, size]) => ({ party, size }));
 
   const myParty = partyOf(sql, week.weekId, userId);
-  const team = myParty === null ? null : effectiveTeam(sql, week.weekId, userId);
+  const team = myParty === null ? null : raidTeam(sql, week.weekId, userId);
   // At most three placements per player, whatever the table holds (a stale row once made a fourth).
-  const placements =
-    myParty === null
-      ? []
-      : partyPlacements(sql, week.weekId, myParty, new Set(team?.creatures.map((c) => c.id) ?? []));
+  const placements = myParty === null ? [] : partyPlacements(sql, week.weekId, myParty);
   const slotOf = new Map(placements.map((p) => [p.creature_id, p.slot]));
 
   const partyIds = myParty === null ? [] : partyMembers(sql, week.weekId, myParty);
@@ -413,19 +415,17 @@ export function buildRaidView(
       canEdit: myParty !== null && week.status !== 'finale',
       canOptOut: false,
       ability: myAbility,
-      abilities: abilityPreview(
-        myAbility,
-        myIndex < 0 ? null : aliasFor(myIndex),
-        team === null ? null : team.creatures,
-        (target) => autofire.isOn(userId, target),
+      abilities: abilityPreview(myAbility, myIndex < 0 ? null : aliasFor(myIndex), team, (target) =>
+        autofire.isOn(userId, target),
       ),
       reveal: latestReveal(sql, userId),
       team:
         team === null
           ? null
           : {
-              mode: team.mode,
-              creatures: team.creatures.map((c) => ({
+              // The chosen-team feature is gone; old clients still read `mode`, so it stays.
+              mode: 'auto',
+              creatures: team.map((c) => ({
                 creatureId: c.id,
                 species: c.species.id,
                 name: c.nickname ?? c.species.name,
