@@ -6,7 +6,7 @@
 import type { PhaseResultView, RaidEventId, RaidPhaseId } from './raid-api';
 import { phaseName } from './raid-text';
 
-export interface StepMark {
+interface StepMark {
   phase: RaidPhaseId;
   cleared: boolean;
   /** The glyph on the step. Shape, not colour, tells the two apart. */

@@ -1,3 +1,5 @@
+import * as v from 'valibot';
+
 export const API_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
   'Cache-Control': 'no-store',
@@ -128,6 +130,20 @@ export async function readJsonBody(request: Request, maxBytes: number): Promise<
   const text = await readLimitedText(request, maxBytes);
   if (text === null) return undefined;
   return parseJsonObject(text);
+}
+
+/** The most bytes a game action body may have. */
+export const MAX_ACTION_BODY_BYTES = 2048;
+
+/** Parses the body with a strict schema; undefined means "answer 400 invalid_body". */
+export async function parseBody<S extends v.GenericSchema>(
+  request: Request,
+  schema: S,
+): Promise<v.InferOutput<S> | undefined> {
+  const raw = await readJsonBody(request, MAX_ACTION_BODY_BYTES);
+  if (raw === undefined) return undefined;
+  const parsed = v.safeParse(schema, raw);
+  return parsed.success ? parsed.output : undefined;
 }
 
 export interface TemplateMatch {

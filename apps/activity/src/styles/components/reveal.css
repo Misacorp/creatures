@@ -1,0 +1,118 @@
+/* The loot reveal. The text is always in the page; the animation only delays showing the result. */
+.reveal-card {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border: 2px solid var(--gold);
+  background: var(--dusk);
+  text-align: center;
+}
+
+.reveal-essence {
+  color: var(--gold);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.reveal-essence canvas.sprite {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.reveal-count {
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.reveal-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 8rem;
+  margin: 0.5rem 0;
+}
+
+.reveal-prop {
+  position: relative;
+  z-index: 1;
+}
+
+.reveal-festival-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+}
+
+.banner-first {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+  padding: 0.125rem 0.75rem;
+  background: var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--gold);
+  color: var(--gold);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-later:not(.done) {
+    opacity: 0;
+  }
+
+  .reveal-later.done {
+    animation: reveal-pop 300ms steps(3) both;
+  }
+
+  .reveal-later.done .pop-in,
+  .loot .pop-in {
+    animation: reveal-pop-in 600ms steps(5) both;
+  }
+
+  .reveal-stage.phase-shake .reveal-prop {
+    animation: reveal-shake 240ms steps(1) infinite;
+  }
+
+  .reveal-stage:not(.phase-shake) .reveal-prop {
+    animation: reveal-pop-in 300ms steps(3) both;
+  }
+
+  @keyframes reveal-shake {
+    25% {
+      transform: translateX(-6px);
+    }
+
+    75% {
+      transform: translateX(6px);
+    }
+  }
+
+  @keyframes reveal-pop {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes reveal-pop-in {
+    0% {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+
+    60% {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
+}

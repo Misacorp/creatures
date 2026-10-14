@@ -74,7 +74,7 @@ function creatureValue(value: string, choices: readonly CreatureChoice[]): strin
   return choices.some((c) => c.id === value) ? value : (choices[0]?.id ?? '');
 }
 
-export interface ToolFormProps {
+interface ToolFormProps {
   spec: ToolSpec;
   choices: readonly CreatureChoice[];
   busy: boolean;

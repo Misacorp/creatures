@@ -11,11 +11,21 @@
 import { RULES, content, dungeonRowOrder, type Role } from '@creatures/game';
 import type { Creature } from './api';
 import type { DungeonRunRequest } from './dungeon-types';
-import type { DropOutcome, DropTarget } from './raid-dnd';
+import {
+  CANCEL_ANNOUNCEMENT,
+  dropOutcome,
+  notInRowAnnouncement,
+  takenOutAnnouncement,
+  type DropOutcome,
+  type DropStatus,
+  type DropTarget,
+  type Selection,
+  type Tap,
+} from './slot-outcome';
 
 /** The places of the row, left to right. Used for labels and sentences. */
 export const ROW_PLACES = ['left', 'middle', 'right'] as const;
-export type RowPlace = (typeof ROW_PLACES)[number];
+type RowPlace = (typeof ROW_PLACES)[number];
 export const ROW_PLACE_NAMES: Readonly<Record<RowPlace, string>> = {
   left: 'Left',
   middle: 'Middle',
@@ -37,10 +47,6 @@ export const EMPTY_SLOTS: Slots = [null, null, null];
 const TEAM_SIZE = RULES.dungeon.teamSize;
 
 // --- Placing creatures ---
-
-export type Selection = string | null;
-
-export type Tap = { kind: 'creature'; id: string } | { kind: 'slot'; index: number };
 
 export interface TapResult {
   slots: Slots;
@@ -127,7 +133,7 @@ export function reduceTap(slots: Slots, selected: Selection, tap: Tap): TapResul
   if (tap.kind === 'creature') {
     return { slots, selected: selected === tap.id ? null : tap.id, hint: null };
   }
-  const occupant = slots[tap.index];
+  const occupant = slots[tap.slot];
   if (occupant === undefined) return { slots, selected, hint: 'That place does not exist.' };
   if (selected === null) {
     if (occupant === null) {
@@ -136,20 +142,16 @@ export function reduceTap(slots: Slots, selected: Selection, tap: Tap): TapResul
     return { slots, selected: occupant, hint: null };
   }
   if (selected === occupant) return { slots, selected: null, hint: null };
-  return { slots: place(slots, selected, tap.index), selected: null, hint: null };
+  return { slots: place(slots, selected, tap.slot), selected: null, hint: null };
 }
 
-export interface DropResult {
+interface DropResult {
   slots: Slots;
   outcome: DropOutcome;
 }
 
-const outcome = (status: DropOutcome['status'], hint: string | null, announce: string) => ({
-  status,
-  intent: null,
-  hint,
-  announce,
-});
+const outcome = (status: DropStatus, hint: string | null, announce: string): DropOutcome =>
+  dropOutcome<never>(status, null, hint, announce);
 
 /**
  * What happens when `id` (called `name`) is dropped on `target`: on a place of the row it moves
@@ -164,14 +166,14 @@ export function resolveDrop(
   nameOf: (id: string) => string,
 ): DropResult {
   const name = nameOf(id);
-  if (target === null) return { slots, outcome: outcome('none', null, 'Cancelled.') };
+  if (target === null) return { slots, outcome: outcome('none', null, CANCEL_ANNOUNCEMENT) };
   if (target.kind === 'tray') {
     if (slotIndexOf(slots, id) === null) {
-      return { slots, outcome: outcome('none', null, `${name} is not in the row.`) };
+      return { slots, outcome: outcome('none', null, notInRowAnnouncement(name)) };
     }
     return {
       slots: unplace(slots, id),
-      outcome: outcome('valid', null, `${name} taken out of the row.`),
+      outcome: outcome('valid', null, takenOutAnnouncement(name)),
     };
   }
   const spot = ROW_PLACES[target.slot];
@@ -197,8 +199,8 @@ export function slotStatuses(
   slots: Slots,
   id: string,
   nameOf: (id: string) => string,
-): Map<number, DropOutcome['status']> {
-  const map = new Map<number, DropOutcome['status']>();
+): Map<number, DropStatus> {
+  const map = new Map<number, DropStatus>();
   ROW_PLACES.forEach((_, index) => {
     map.set(index, resolveDrop(slots, id, { kind: 'slot', slot: index }, nameOf).outcome.status);
   });
@@ -207,14 +209,15 @@ export function slotStatuses(
 
 // --- The request ---
 
-/** The body of `POST /api/dungeon/run`, or null when the team is not complete. The key is the caller's. */
-export function buildRunRequest(slots: Slots, idempotencyKey: string): DungeonRunRequest | null {
+/** The three creatures of a complete team in slot order, or null. This is what decides the run. */
+export function completeTeam(slots: Slots): DungeonRunRequest['team'] | null {
   if (!isComplete(slots)) return null;
   const [a, b, c] = slots as readonly [string, string, string];
-  return { team: [a, b, c], idempotencyKey };
+  return [a, b, c];
 }
 
-/** The part of a request that decides what the server does: a different one needs a different key. */
-export function requestSignature(request: Omit<DungeonRunRequest, 'idempotencyKey'>): string {
-  return JSON.stringify(request.team);
+/** The body of `POST /api/dungeon/run`, or null when the team is not complete. The key is the caller's. */
+export function buildRunRequest(slots: Slots, idempotencyKey: string): DungeonRunRequest | null {
+  const team = completeTeam(slots);
+  return team === null ? null : { team, idempotencyKey };
 }

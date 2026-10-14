@@ -1,5 +1,5 @@
 import type { Collection } from './collection';
-import { failure, parseBody, pathId } from './collection-routes';
+import { failure, pathId } from './collection-routes';
 import type { Gear } from './gear';
 import {
   ClaimJobBodySchema,
@@ -8,7 +8,7 @@ import {
   StartJobBodySchema,
   UpgradeBodySchema,
 } from './gear-schemas';
-import { errorResponse, json, type Routes } from './http';
+import { errorResponse, json, parseBody, type Routes } from './http';
 
 /** What these routes need from the request context (GuildCore's context satisfies it). */
 export interface GearRouteContext {

@@ -50,13 +50,13 @@ const ctx: TapContext = { locked: false, row, teamIds: ['a', 'b', 'c'] };
 
 describe('reduceTap: choosing a creature', () => {
   it('selects, switches and deselects', () => {
-    expect(reduceTap(ctx, null, { kind: 'creature', creatureId: 'a' }).selected).toBe('a');
-    expect(reduceTap(ctx, 'a', { kind: 'creature', creatureId: 'b' }).selected).toBe('b');
-    expect(reduceTap(ctx, 'a', { kind: 'creature', creatureId: 'a' }).selected).toBeNull();
+    expect(reduceTap(ctx, null, { kind: 'creature', id: 'a' }).selected).toBe('a');
+    expect(reduceTap(ctx, 'a', { kind: 'creature', id: 'b' }).selected).toBe('b');
+    expect(reduceTap(ctx, 'a', { kind: 'creature', id: 'a' }).selected).toBeNull();
   });
 
   it('ignores creatures that are not in the team', () => {
-    const result = reduceTap(ctx, 'a', { kind: 'creature', creatureId: 'zzz' });
+    const result = reduceTap(ctx, 'a', { kind: 'creature', id: 'zzz' });
     expect(result.selected).toBe('a');
     expect(result.intent).toBeNull();
     expect(result.hint).not.toBeNull();
@@ -127,7 +127,7 @@ describe('reduceTap: locked', () => {
     const locked = { ...ctx, locked: true };
     for (const tap of [
       { kind: 'slot', slot: 4 },
-      { kind: 'creature', creatureId: 'a' },
+      { kind: 'creature', id: 'a' },
     ] as const) {
       const result = reduceTap(locked, 'a', tap);
       expect(result.intent).toBeNull();

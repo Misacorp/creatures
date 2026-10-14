@@ -1,0 +1,33 @@
+/*
+  The small-creature button: a creature sprite you can tap to see its role and element. The button
+  is plain (the sprite and its marks are the look); the popover itself is the page popover.
+*/
+button.small-creature {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: none;
+}
+
+button.small-creature:hover:not(:disabled) {
+  filter: none;
+}
+
+button.small-creature:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
+button.small-creature:focus-visible {
+  outline: var(--px) solid var(--bone);
+  outline-offset: 1px;
+}
+
+button.small-creature[aria-expanded='true'] canvas.sprite {
+  outline: 2px solid var(--gold);
+}

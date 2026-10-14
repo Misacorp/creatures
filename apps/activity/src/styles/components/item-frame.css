@@ -1,0 +1,88 @@
+/* The frame of an item: every rarity has its own edge, and the pips say the rarity without colour. */
+.item-frame {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  margin: 6px;
+  padding: 3px;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--rar, var(--haze));
+}
+
+.item-frame.rarity-rare {
+  box-shadow:
+    0 0 0 2px var(--rar),
+    0 0 0 4px var(--ink),
+    0 0 0 6px var(--rar);
+}
+
+.item-frame.rarity-epic {
+  box-shadow:
+    0 0 0 3px var(--rar),
+    0 0 0 5px var(--ink);
+}
+
+.item-frame.rarity-festival {
+  outline: 2px dashed var(--rar);
+  outline-offset: 2px;
+}
+
+.item-frame canvas.sprite {
+  position: relative;
+}
+
+.rarity-mark {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 1px 2px;
+  background: var(--ink);
+  color: var(--rar, var(--haze));
+  font-family: var(--display);
+  font-size: 0.5rem;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.item-frame.empty {
+  width: 42px;
+  height: 42px;
+  box-shadow: none;
+  outline: 2px dashed var(--haze);
+  outline-offset: 0;
+}
+
+.slot-plus {
+  color: var(--haze);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.item-frame.big {
+  margin: 8px;
+}
+
+.rarity-tag {
+  color: var(--rar);
+}
+
+.gear-bonus {
+  color: var(--gear);
+  font-family: var(--display);
+  font-weight: 400;
+}
+
+.gear-share {
+  color: var(--gear);
+}
+
+.badge.busy {
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 2px var(--haze);
+}
+
+.inline-glyph,
+canvas.sprite.inline-glyph {
+  display: inline-block;
+  vertical-align: middle;
+}

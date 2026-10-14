@@ -1,0 +1,649 @@
+@media (prefers-reduced-motion: no-preference) {
+  /* Two copies of every keyframe, used on alternate beats, so a new beat restarts its animation. */
+  .stage.p0 {
+    --a-hop: stage-hop-0;
+    --a-flash: stage-flash-0;
+    --a-shake: stage-shake-0;
+    --a-drop: stage-drop-0;
+    --a-pop: stage-pop-0;
+  }
+
+  .stage.p1 {
+    --a-hop: stage-hop-1;
+    --a-flash: stage-flash-1;
+    --a-shake: stage-shake-1;
+    --a-drop: stage-drop-1;
+    --a-pop: stage-pop-1;
+  }
+
+  .stage-unit.actor .unit-art {
+    outline: none;
+    animation: var(--a-hop) var(--beat) steps(2) both;
+  }
+
+  .stage-unit.hit .unit-art,
+  .stage-boss-art.hit canvas.sprite {
+    box-shadow: none;
+  }
+
+  .stage-unit.hit .unit-art > canvas.sprite,
+  .stage-boss-art.hit canvas.sprite {
+    animation: var(--a-flash) var(--beat) steps(2) both;
+  }
+
+  .stage-unit.drop .unit-art {
+    animation: var(--a-drop) var(--beat) steps(3) both;
+  }
+
+  .stage-zone.shake {
+    outline: none;
+    animation: var(--a-shake) var(--beat) steps(1) both;
+  }
+
+  .stage-mark.pop {
+    animation: var(--a-pop) var(--beat) ease-out both;
+  }
+
+  /*
+    The effects that outlast their beat run for their own time (--fx-ms), set on each element. Their
+    floats, fades, bursts and pops use smooth easing and change only transform and opacity (both
+    kept on the compositor), never steps(): stepped timing is for the sprite hops and shakes above.
+  */
+  .zone-fx.fresh {
+    animation: zone-fade var(--fx-ms) ease-out both;
+  }
+
+  .fx-windup {
+    animation: windup-pulse var(--fx-ms) ease-in-out both;
+  }
+
+  .strike-wave {
+    animation: strike-wave 700ms ease-out both;
+  }
+
+  .stage-callout {
+    animation: callout-hold var(--fx-ms) ease-out both;
+  }
+
+  .strike-label {
+    animation: label-hold var(--fx-ms) ease-out both;
+  }
+
+  .crit-pop {
+    animation: crit-pop var(--fx-ms) ease-out both;
+  }
+
+  .ko-tag {
+    animation: ko-hold var(--fx-ms) ease-out both;
+  }
+
+  .stage-ability {
+    animation: card-hold var(--fx-ms) ease-out both;
+  }
+
+  .float {
+    animation: float-rise var(--fx-ms) linear both;
+  }
+
+  .float-body {
+    animation: float-fade var(--fx-ms) ease-out both;
+  }
+
+  .burst-ring {
+    animation: burst-grow var(--fx-ms) ease-out both;
+  }
+
+  .burst-ring.second {
+    animation-delay: calc(var(--fx-ms) / 8);
+  }
+
+  .burst-label {
+    animation: burst-label var(--fx-ms) ease-out both;
+  }
+
+  .round-intro {
+    animation: intro-veil var(--fx-ms) ease-in-out both;
+  }
+
+  .ri-text {
+    animation: intro-slam var(--fx-ms) ease-out both;
+  }
+
+  /* The boss leans in while it winds up its attack. */
+  .stage-boss-art.windup canvas.sprite {
+    animation: boss-lean var(--lean-ms, 600ms) ease-in-out both;
+    will-change: transform;
+  }
+
+  .reticle.windup {
+    animation: reticle-in var(--fx-ms) ease-out both;
+  }
+
+  .reticle.struck {
+    animation: reticle-out var(--fx-ms) ease-in both;
+  }
+
+  .slash {
+    animation: slash 450ms ease-out both;
+  }
+
+  .block-mark {
+    animation: block-pop var(--fx-ms) ease-out both;
+  }
+
+  .strike-beam.placed {
+    animation: beam-fire 650ms ease-out both;
+  }
+
+  .warn-mark,
+  .zone-warn {
+    animation: warn-pulse 1.4s ease-in-out infinite;
+    will-change: opacity;
+  }
+
+  .hpbar > i.drain {
+    animation: stage-drain var(--beat, 600ms) steps(3) both;
+  }
+
+  /* A gentle pulse for an ability that is ready to be used. */
+  .ab-badge.pulse {
+    animation: ab-pulse 1.4s steps(2) infinite;
+  }
+
+  @keyframes ab-pulse {
+    50% {
+      transform: translateY(-2px);
+    }
+  }
+
+  @keyframes stage-hop-0 {
+    25%,
+    75% {
+      transform: translateY(-0.5rem);
+    }
+  }
+
+  @keyframes stage-hop-1 {
+    25%,
+    75% {
+      transform: translateY(-0.5rem);
+    }
+  }
+
+  @keyframes stage-flash-0 {
+    0%,
+    50% {
+      filter: brightness(0) invert(1);
+    }
+
+    100% {
+      filter: none;
+    }
+  }
+
+  @keyframes stage-flash-1 {
+    0%,
+    50% {
+      filter: brightness(0) invert(1);
+    }
+
+    100% {
+      filter: none;
+    }
+  }
+
+  @keyframes stage-shake-0 {
+    25% {
+      transform: translateX(-4px);
+    }
+
+    50% {
+      transform: translateX(4px);
+    }
+
+    75% {
+      transform: translateX(-2px);
+    }
+  }
+
+  @keyframes stage-shake-1 {
+    25% {
+      transform: translateX(-4px);
+    }
+
+    50% {
+      transform: translateX(4px);
+    }
+
+    75% {
+      transform: translateX(-2px);
+    }
+  }
+
+  @keyframes stage-drop-0 {
+    from {
+      filter: none;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes stage-drop-1 {
+    from {
+      filter: none;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes stage-pop-0 {
+    0% {
+      transform: translateX(-50%) scale(1.8);
+    }
+
+    50% {
+      transform: translateX(-50%) scale(0.9);
+    }
+
+    100% {
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  @keyframes stage-pop-1 {
+    0% {
+      transform: translateX(-50%) scale(1.8);
+    }
+
+    50% {
+      transform: translateX(-50%) scale(0.9);
+    }
+
+    100% {
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  @keyframes zone-fade {
+    0% {
+      opacity: 0;
+    }
+
+    12% {
+      opacity: 1;
+    }
+
+    70% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes windup-pulse {
+    0% {
+      opacity: 0;
+    }
+
+    25% {
+      opacity: 1;
+    }
+
+    60% {
+      opacity: 0.6;
+    }
+
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes strike-wave {
+    0% {
+      opacity: 0;
+      transform: translateX(-60%);
+    }
+
+    25% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateX(60%);
+    }
+  }
+
+  @keyframes reticle-in {
+    0% {
+      opacity: 0;
+      transform: scale(1.6);
+    }
+
+    40% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    70% {
+      transform: scale(1.06);
+    }
+
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes reticle-out {
+    0% {
+      opacity: 1;
+    }
+
+    55% {
+      opacity: 0.9;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes slash {
+    0% {
+      opacity: 1;
+      transform: rotate(-35deg) scaleX(0);
+    }
+
+    35% {
+      opacity: 1;
+      transform: rotate(-35deg) scaleX(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: rotate(-35deg) scaleX(1);
+    }
+  }
+
+  @keyframes block-pop {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) scale(0.4);
+    }
+
+    10% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1.3);
+    }
+
+    20%,
+    75% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  @keyframes beam-fire {
+    0% {
+      opacity: 0;
+      transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad)) scaleX(0.02);
+    }
+
+    30% {
+      opacity: 1;
+      transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad)) scaleX(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad)) scaleX(1);
+    }
+  }
+
+  @keyframes boss-lean {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+
+    70%,
+    100% {
+      transform: translateY(8px) scale(1.12);
+    }
+  }
+
+  @keyframes warn-pulse {
+    50% {
+      opacity: 0.45;
+    }
+  }
+
+  /* An ability card pops in, holds and fades out. */
+  @keyframes card-hold {
+    0% {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+
+    8% {
+      opacity: 1;
+      transform: scale(1.12);
+    }
+
+    16% {
+      transform: scale(1);
+    }
+
+    85% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes callout-hold {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) scale(1.6);
+    }
+
+    10% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    80% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  @keyframes label-hold {
+    0% {
+      opacity: 0;
+      transform: scale(1.35);
+    }
+
+    8% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    82% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes ko-hold {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) scale(2);
+    }
+
+    12% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    80% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  /*
+    A number rises at a steady pace from where it spawns for its whole time, so a newer number on the
+    same creature starts at the base, below the older ones that have already risen. It drifts a little
+    sideways as it goes.
+  */
+  @keyframes float-rise {
+    0% {
+      transform: translate(calc(-50% + var(--drift, 0) * 2px + var(--lx, 0px)), var(--ly, 0px));
+    }
+
+    100% {
+      transform: translate(
+        calc(-50% + var(--drift, 0) * 8px + var(--lx, 0px)),
+        calc(var(--ly, 0px) - var(--rise, 3.5rem))
+      );
+    }
+  }
+
+  /* It pops in, stays readable for most of its time and fades out at the end. */
+  @keyframes float-fade {
+    0% {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+
+    5% {
+      opacity: 1;
+      transform: scale(1.25);
+    }
+
+    12% {
+      transform: scale(1);
+    }
+
+    75% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+      transform: scale(1);
+    }
+  }
+
+  /* "CRITICAL!" slams in big, settles, and holds. */
+  @keyframes crit-pop {
+    0% {
+      transform: scale(2.2);
+    }
+
+    12% {
+      transform: scale(0.9);
+    }
+
+    24% {
+      transform: scale(1.15);
+    }
+
+    36%,
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes burst-grow {
+    0% {
+      opacity: 1;
+      transform: scale(0.2);
+    }
+
+    30% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: scale(1.5);
+    }
+  }
+
+  @keyframes burst-label {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.6);
+    }
+
+    8%,
+    82% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  @keyframes intro-veil {
+    0% {
+      opacity: 0;
+    }
+
+    10%,
+    85% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes intro-slam {
+    0% {
+      transform: scale(2);
+    }
+
+    16%,
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes stage-drain {
+    0% {
+      background: var(--bone);
+    }
+
+    50% {
+      background: var(--bad);
+    }
+  }
+}

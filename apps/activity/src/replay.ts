@@ -214,7 +214,7 @@ export function keyMoments(events: readonly FightEvent[], names: EventNames): Ke
 
 // --- Personal recap ---
 
-export interface CreatureRecap {
+interface CreatureRecap {
   id: string;
   name: string;
   role: string;
@@ -231,7 +231,7 @@ export interface CreatureRecap {
   knockedOutRound: number | null;
 }
 
-export interface Recap {
+interface Recap {
   creatures: CreatureRecap[];
   damage: number;
   setupCredit: number;

@@ -21,6 +21,9 @@ import type { Speed } from './replay';
 import { LogToggle, Stage } from './Stage';
 import { Sprite } from './sprites/Sprite';
 import { elementIcon } from './sprites/element-icons';
+import { LiveRegion } from './ui/LiveRegion';
+import { PixelHeading } from './ui/PixelHeading';
+import { PlaybackControls } from './ui/PlaybackControls';
 import { usePlayback } from './use-playback';
 
 interface Props {
@@ -69,31 +72,17 @@ export function DungeonPlayback({ replay, onDone }: Props) {
 
   return (
     <section class="raid-section dungeon-playback" aria-label="Dungeon playback">
-      <div class="controls button-row" role="group" aria-label="Playback controls">
-        <button
-          type="button"
-          aria-pressed={paused}
-          class={paused ? 'toggle on' : 'toggle'}
-          onClick={() => {
-            setPaused(!paused);
-          }}
-        >
-          {paused ? 'Play' : 'Pause'}
-        </button>
-        <button
-          type="button"
-          aria-pressed={speed === 2}
-          class={speed === 2 ? 'toggle on' : 'toggle'}
-          onClick={() => {
-            setSpeed(speed === 2 ? 1 : 2);
-          }}
-        >
-          2×
-        </button>
-        <button type="button" onClick={onDone}>
-          Skip
-        </button>
-      </div>
+      <PlaybackControls
+        label="Playback controls"
+        playing={!paused}
+        speed={speed}
+        onPlayPause={() => {
+          setPaused(!paused);
+        }}
+        onSpeed={setSpeed}
+        onSkip={onDone}
+        skipLabel="Skip"
+      />
       <p class="muted dungeon-room-line">
         {roomLine(current.index, replay.rooms.length, current.kind)}
       </p>
@@ -125,7 +114,9 @@ function RoomBanner({ room, total, ms }: { room: DungeonReplayRoom; total: numbe
       aria-hidden="true"
       ref={cssVars({ '--fx-ms': `${String(ms)}ms` })}
     >
-      <p class="rb-heading pix">{view.heading}</p>
+      <PixelHeading tone={view.boss ? 'bad' : 'gold'} outline="ink" size="l" class="rb-heading">
+        {view.heading}
+      </PixelHeading>
       <p class="rb-place pix">{view.place}</p>
       <Sprite sprite={art.sprite} scale={art.scale} class="rb-foe" />
       <p class={`rb-name pix ${elementClass(view.element)}`}>
@@ -228,9 +219,7 @@ function RoomFight({
           banner ? <RoomBanner room={room} total={total} ms={atSpeed(ROOM_CARD_MS, speed)} /> : null
         }
       />
-      <p class="visually-hidden" role="status">
-        {banner ? view.spoken : ''}
-      </p>
+      <LiveRegion>{banner ? view.spoken : ''}</LiveRegion>
       <p class="muted dungeon-room-result" role="status">
         {finished ? roomResultLine(room) : ''}
       </p>

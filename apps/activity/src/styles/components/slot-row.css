@@ -1,0 +1,343 @@
+/*
+  The slot row and the creature tray: where creatures are placed, by tap, key or drag. One set of
+  rules for the raid's party row (three zones) and the dungeon's team (one row of three); see
+  ui/SlotRow.tsx, ui/CreatureTray.tsx and ui/DragGhost.tsx. The raid and dungeon differences are
+  the few rules marked below. Order matters inside this file: later rules of the same weight win.
+*/
+
+/* --- The strip and its zones --- */
+
+/*
+  The party row: one row for each zone, front first (closest to the boss), then middle, then back,
+  exactly as the fight stage shows them. A zone is its label at the left and its slots centred and
+  wrapping, so nothing scrolls sideways. The sizes come from zone-layout.ts as custom properties
+  (--unit-w, --unit-gap, --zone-label-w, --zone-label-gap).
+*/
+.party-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.25rem 0 0.5rem;
+}
+
+.party-zone {
+  display: grid;
+  grid-template-columns: var(--zone-label-w, 44px) minmax(0, 1fr);
+  gap: var(--zone-label-gap, 4px);
+  align-items: center;
+}
+
+/* The name of a zone, at the left of its row (the fight stage uses the same label). */
+.zone-label {
+  margin: 0;
+  color: var(--haze);
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.zone-slots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--unit-gap, 4px);
+}
+
+/*
+  The dungeon's row: three slots side by side in a grid, in the look of the raid's slots: the slot
+  number at the top left, the sprite, the name and the level. There is no text about rows.
+*/
+.dungeon-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  max-width: 24rem;
+  padding: 0.25rem 0 0.5rem;
+}
+
+.dungeon-strip .party-slot {
+  width: 100%;
+}
+
+/* --- A slot --- */
+
+.party-slot {
+  position: relative;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  width: var(--unit-w, 5.5rem);
+  min-width: 0;
+  min-height: 6rem;
+  padding: 0.2rem;
+  border: 2px solid var(--owner, var(--line));
+  background: var(--dusk);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* Long zones use smaller sprites and smaller text. */
+.party-slot.compact {
+  padding: 0.125rem;
+  font-size: 0.625rem;
+}
+
+.party-slot.empty {
+  justify-content: space-between;
+  border-style: dashed;
+  color: var(--haze);
+}
+
+.party-slot.target {
+  border-color: var(--gold);
+}
+
+.party-slot.adjacent {
+  background: var(--adjacent);
+}
+
+.party-slot.mine {
+  background: var(--mine);
+}
+
+.party-slot.selected,
+.team-chip.selected {
+  border-color: var(--gold);
+  box-shadow: var(--ring);
+}
+
+.party-slot .slot-num {
+  align-self: flex-start;
+  color: var(--haze);
+  font-family: var(--display);
+  font-size: 0.6875rem;
+}
+
+.party-slot canvas.sprite {
+  margin: 0.125rem 0;
+}
+
+/* Names wrap to two lines at most; anything longer ends in an ellipsis. */
+.slot-species,
+.slot-owner {
+  display: -webkit-box;
+  max-width: 100%;
+  font-weight: 600;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  text-align: center;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.slot-meta,
+.slot-empty {
+  color: var(--haze);
+}
+
+/* The owner colours of the raid's slots, and of the avatars in the roster strip. */
+.owner-0 {
+  --owner: #5865f2;
+}
+
+.owner-1 {
+  --owner: #3ba55d;
+}
+
+.owner-2 {
+  --owner: #eb459e;
+}
+
+.owner-3 {
+  --owner: #f0b232;
+}
+
+.owner-4 {
+  --owner: #00b0f4;
+}
+
+.owner-5 {
+  --owner: #ed4245;
+}
+
+.owner-6 {
+  --owner: #9b59b6;
+}
+
+.owner-7 {
+  --owner: #e67e22;
+}
+
+/* --- The creature tray --- */
+
+.team-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 5.5rem), 1fr));
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The dungeon's tray has more creatures: as many chips per line as fit. */
+.dungeon-tray {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 6.5rem), 1fr));
+}
+
+.team-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+}
+
+.team-chip canvas.sprite {
+  margin-bottom: 0.25rem;
+}
+
+/* The tag chips under a team chip. */
+.team-tags {
+  margin: 0.25rem 0 0;
+}
+
+/* The raid's tray is small: three chips in one row, sprite, name and level under it. */
+.placement .team-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.375rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.placement .team-chip {
+  align-items: center;
+  padding: 0.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.placement .team-chip.placed {
+  background: var(--mine);
+}
+
+.placement .team-chip .muted {
+  font-size: 0.75rem;
+}
+
+.placement .team-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.125rem;
+}
+
+/* --- Drag and drop --- */
+
+/* Anything that can be picked up: no scrolling or text selection starts on it. */
+.draggable {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
+}
+
+.draggable:disabled {
+  cursor: not-allowed;
+}
+
+.party-strip.dragging .party-slot,
+.party-strip.dragging .draggable {
+  cursor: grabbing;
+}
+
+.dragging-source {
+  opacity: 0.4;
+}
+
+/* While dragging: every slot says whether the creature may go there. Valid is green with a solid
+   edge; refused is red and hatched, so the meaning never depends on colour alone. */
+.party-strip.dragging .party-slot.drop-valid {
+  outline: var(--px) dashed var(--good);
+  outline-offset: calc(var(--px) * -2);
+}
+
+.party-strip.dragging .party-slot.drop-invalid {
+  outline: var(--px) dashed var(--bad);
+  outline-offset: calc(var(--px) * -2);
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 5px,
+    rgb(var(--bad-rgb) / 35%) 5px 8px
+  );
+}
+
+.party-strip.dragging .party-slot.drop-over {
+  outline-style: solid;
+  background-color: var(--dusk-2);
+}
+
+.team-list.tray-target {
+  outline: var(--px) dashed var(--good);
+  outline-offset: calc(var(--px) * 2);
+}
+
+.team-list.drop-over {
+  outline-style: solid;
+}
+
+/* A refused drop: a red edge that stays, and a short shake for those who allow motion. */
+.party-slot.shake {
+  outline: var(--px) solid var(--bad);
+  outline-offset: calc(var(--px) * -2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .party-slot.shake {
+    animation: shake 400ms steps(1) both;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20%,
+  60% {
+    transform: translateX(-4px);
+  }
+
+  40%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+/* The ghost follows the pointer; its position comes from --drag-x and --drag-y (set in script). */
+.drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-drag);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: var(--frame);
+  opacity: 0.92;
+  pointer-events: none;
+  transform: translate(calc(var(--drag-x, -999px) - 50%), calc(var(--drag-y, -999px) - 60%));
+}
+
+.drag-ghost-name {
+  font-family: var(--display);
+  font-size: 0.8125rem;
+}

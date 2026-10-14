@@ -15,7 +15,6 @@ import {
   isRetryOffer,
   isStaleDungeonError,
   resultHeadline,
-  roomCardTitle,
   roomLine,
   streakLine,
   streakPips,
@@ -126,8 +125,7 @@ describe('the results words', () => {
     expect(depthChangeText(lost)).toContain('Still at depth');
   });
 
-  it('titles the room card the way the design says', () => {
-    expect(roomCardTitle(1, 'Flooded')).toBe('Room 2 · Flooded');
+  it('words the room line the way the design says', () => {
     expect(roomLine(0, 3, 'foe')).toBe('Room 1 of 3');
     expect(roomLine(2, 3, 'boss')).toBe('Room 3 of 3, room boss');
   });

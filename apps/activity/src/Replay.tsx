@@ -13,6 +13,7 @@ import {
 } from './replay';
 import { INTRO_REPLAY_MS } from './stage-fx';
 import { LogToggle, Stage } from './Stage';
+import { PlaybackControls } from './ui/PlaybackControls';
 import { usePlayback } from './use-playback';
 
 export function Replay({
@@ -103,38 +104,23 @@ function Player({ data }: { data: ReplayView }) {
         )}
       </p>
 
-      <div class="controls button-row" role="group" aria-label="Replay controls">
-        <button
-          type="button"
-          class="primary"
-          onClick={() => {
-            if (finished) move(0);
-            setPlaying(!playing);
-          }}
-        >
-          {playing ? 'Pause' : finished ? 'Replay' : 'Play'}
-        </button>
-        <button
-          type="button"
-          aria-pressed={speed === 2}
-          class={speed === 2 ? 'toggle on' : 'toggle'}
-          onClick={() => {
-            setSpeed(speed === 2 ? 1 : 2);
-          }}
-        >
-          2×
-        </button>
-        <button
-          type="button"
-          disabled={finished}
-          onClick={() => {
-            setPlaying(false);
-            move(total);
-          }}
-        >
-          Skip to end
-        </button>
-      </div>
+      <PlaybackControls
+        label="Replay controls"
+        playing={playing}
+        finished={finished}
+        speed={speed}
+        onPlayPause={() => {
+          if (finished) move(0);
+          setPlaying(!playing);
+        }}
+        onSpeed={setSpeed}
+        onSkip={() => {
+          setPlaying(false);
+          move(total);
+        }}
+        skipLabel="Skip to end"
+        skipDisabled={finished}
+      />
 
       <Stage
         boss={data.boss}

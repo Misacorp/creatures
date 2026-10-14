@@ -1,9 +1,10 @@
-import { cssVars } from './css-vars';
+import { Tag } from './ui/Tag';
 import type { Profile } from './expedition-types';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { journalPlaces, journalProgressText, type JournalPlace } from './journal-view';
 import { Sprite } from './sprites/Sprite';
+import { Bar } from './ui/Bar';
 
 function PlaceGroup({ place, open }: { place: JournalPlace; open: boolean }) {
   return (
@@ -18,9 +19,7 @@ function PlaceGroup({ place, open }: { place: JournalPlace; open: boolean }) {
         <ul class="journal-sets" aria-label="Sets">
           {place.sets.map((set) => (
             <li key={set.id} class={set.complete ? 'journal-set complete' : 'journal-set'}>
-              <GlossaryTag entry="journal-set" look="chip" class="tag">
-                {set.name}
-              </GlossaryTag>{' '}
+              <Tag entry="journal-set">{set.name}</Tag>{' '}
               <span class="muted">
                 {set.found} of {set.total}
                 {set.complete && ' (complete)'}
@@ -60,7 +59,6 @@ export function Journal({ profile }: { profile: Pick<Profile, 'journal'> }) {
   const places = journalPlaces(profile);
   const found = profile.journal.found.length;
   const total = Math.max(1, profile.journal.total);
-  const pct = Math.floor((found * 1000) / total) / 10;
   return (
     <section class="journal" aria-labelledby="journal-title">
       <h3 id="journal-title">
@@ -68,16 +66,7 @@ export function Journal({ profile }: { profile: Pick<Profile, 'journal'> }) {
         <GlossaryTag entry="journal" look="help" />
       </h3>
       <p class="muted">{journalProgressText(profile)}. Trips turn up new pages.</p>
-      <div
-        class="xp"
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(pct)}
-        aria-label={journalProgressText(profile)}
-      >
-        <span ref={cssVars({ '--pct': `${String(pct)}%` })} />
-      </div>
+      <Bar value={found} max={total} label={journalProgressText(profile)} />
       {places.map((place) => (
         <PlaceGroup key={place.place} place={place} open={place.found > 0} />
       ))}

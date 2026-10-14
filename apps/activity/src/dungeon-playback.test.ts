@@ -10,8 +10,6 @@ import {
   ROOM_BANNER,
   ROOM_END_MS,
   atSpeed,
-  creatureHpLabel,
-  foeHpLine,
   hpLine,
   mineIds,
   nextRoom,
@@ -99,11 +97,6 @@ describe('creature HP on the stage', () => {
     expect(creatureHpAt(events, -4, { a: 30 })).toEqual({ a: 30 });
     expect(creatureHpAt(events, 1, { a: 80 })).toEqual({ a: 30 });
   });
-
-  it('says what the bar means in words', () => {
-    expect(creatureHpLabel('Ann', 12, 40)).toBe('Ann HP: 12 of 40');
-    expect(creatureHpLabel('Ann', 0, 40)).toBe('Ann HP: knocked out');
-  });
 });
 
 describe('the pacing is the live finale pacing', () => {
@@ -159,15 +152,6 @@ describe('the results', () => {
   it('tells how each room ended', () => {
     expect(cleared.rooms.map(roomOutcome)).toEqual(['cleared', 'cleared', 'cleared']);
     expect(lost.rooms.map(roomOutcome)).toEqual(['lost', 'not reached', 'not reached']);
-  });
-
-  it('says how much HP the foe had left in a room that was played', () => {
-    const first = lost.rooms[0];
-    if (first === undefined) throw new Error('rooms');
-    expect(foeHpLine(first)).toBe(
-      `${String(first.foeHpEnd)} of ${String(first.foe.hpMax)} HP left`,
-    );
-    expect(foeHpLine(lost.rooms[1] ?? first)).toBeNull();
   });
 
   it('says how a room ended under the stage', () => {

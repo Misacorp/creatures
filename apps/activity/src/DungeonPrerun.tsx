@@ -1,18 +1,12 @@
+import { Tag, LandmarkChip } from './ui/Tag';
 import { GLOSSARY_IDS } from '@creatures/game';
 import { GlossaryTag } from './Glossary';
-import { glyphOrUnknown } from './glyphs';
 import { ProgressTrack } from './ProgressTrack';
-import { depthTrack, roomPanels, type ModifierIcon } from './dungeon-rooms';
+import { depthTrack, roomPanels } from './dungeon-rooms';
 import { streakPips } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
-import { Sprite } from './sprites/Sprite';
-import { elementIcon } from './sprites/element-icons';
-
-/** The picture of a modifier: an element's icon or a glyph. */
-function ModifierPicture({ icon }: { icon: ModifierIcon }) {
-  const sprite = icon.kind === 'element' ? elementIcon(icon.element) : glyphOrUnknown(icon.id);
-  return <Sprite sprite={sprite ?? glyphOrUnknown('unknown')} scale={3} />;
-}
+import { GameIcon } from './ui/GameIcon';
+import { PipRow } from './ui/PipRow';
 
 /**
  * A tiny row of pips for the streak (a cycle of days, lit up to today's count). On the pre-run screen
@@ -24,11 +18,12 @@ export function StreakPips({ streak, plain = false }: { streak: number; plain?: 
   const lit = pips.filter((p) => p.on).length;
   const label = `Streak: ${String(lit)} of ${String(pips.length)} days of the cycle`;
   const row = (
-    <span class="pips" aria-hidden="true">
-      {pips.map((p) => (
-        <i key={p.day} class={`${p.on ? 'on' : ''}${p.bonus ? ' fest' : ''}`.trim()} />
-      ))}
-    </span>
+    <PipRow
+      count={pips.length}
+      lit={(i) => pips[i]?.on === true}
+      mark={(i) => (pips[i]?.bonus === true ? 'fest' : undefined)}
+      size="md"
+    />
   );
   if (plain) {
     return (
@@ -38,7 +33,7 @@ export function StreakPips({ streak, plain = false }: { streak: number; plain?: 
     );
   }
   return (
-    <GlossaryTag entry="streak" look="chip" class="pips-tag" label={label}>
+    <GlossaryTag entry="streak" look="chip" bare class="pips-tag" label={label}>
       {row}
     </GlossaryTag>
   );
@@ -59,15 +54,10 @@ export function DungeonPrerun({ today }: { today: DungeonToday }) {
         <GlossaryTag entry="dungeon">Daily dungeon</GlossaryTag>
       </h3>
       <p class="dungeon-depth">
-        <GlossaryTag entry="depth" look="chip" class="chip dungeon-depth-chip">
-          <span class="chip-text">Depth {today.depth}</span>
-        </GlossaryTag>
-        {today.landmark && (
-          <GlossaryTag entry="landmark" look="chip" class="chip dungeon-landmark-chip">
-            <Sprite sprite={glyphOrUnknown('flag')} scale={2} />
-            <span class="chip-text">Landmark</span>
-          </GlossaryTag>
-        )}
+        <Tag kind="chip" entry="depth" class="dungeon-depth-chip">
+          Depth {today.depth}
+        </Tag>
+        {today.landmark && <LandmarkChip />}
         <StreakPips streak={today.streak} />
       </p>
       <ol class="room-strip prerun" aria-label="Today's rooms, first to last">
@@ -84,10 +74,11 @@ export function DungeonPrerun({ today }: { today: DungeonToday }) {
                 <GlossaryTag
                   entry={GLOSSARY_IDS.modifier(panel.modifier.id)}
                   look="chip"
+                  bare
                   class="mod-icon"
                   label={`${panel.modifier.name}: ${panel.modifier.description}`}
                 >
-                  <ModifierPicture icon={panel.modifier.icon} />
+                  <GameIcon icon={panel.modifier.icon} scale={3} />
                 </GlossaryTag>
                 <span class="rp-mod" aria-hidden="true">
                   {panel.modifier.name}

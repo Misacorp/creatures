@@ -1,0 +1,47 @@
+:root {
+  color-scheme: dark;
+  --night: #17132b; /* page ground */
+  --dusk: #241e42; /* panel */
+  --dusk-2: #2f2857; /* raised panel and inset */
+  --ink: #0d0a1a; /* pixel outline */
+  --bone: #f4eedc; /* text */
+  --haze: #a69fc8; /* muted text */
+  --gold: #ffd25a; /* accent: Bait, crits, highlights */
+  --tide: #4f8fe6;
+  --ember: #ef6a3a;
+  --grove: #5cbf5a;
+  --spark: #f2d43d;
+  --good: #6fdc8c;
+  --bad: #ff5f6d;
+  --line: #4a4170; /* quiet outline between things on a panel */
+  --mine: #3a3270; /* a slot that holds your creature */
+  --adjacent: #443b82; /* a slot next to the selected creature */
+  --display: 'Jersey 10', 'Courier New', ui-monospace, monospace;
+  --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --px: 3px; /* one "pixel" of UI chrome */
+  --frame:
+    0 calc(var(--px) * -1) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
+    calc(var(--px) * -1) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink),
+    inset 0 var(--px) 0 0 #3d3570, inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+  --ring: 0 0 0 var(--px) var(--ink), 0 0 0 calc(var(--px) * 2) var(--gold);
+  --gold-shade: #c8952b; /* the dark edge under a gold button */
+  --plum: #6b3fa0; /* the shadow under the title */
+  --hp-gone: #3a2033; /* a spent HP segment */
+  /* The same colours as bare channels, for the ones that need an alpha: rgb(var(--bad-rgb) / 30%). */
+  --ink-rgb: 13 10 26;
+  --good-rgb: 111 220 140;
+  --bad-rgb: 255 95 109;
+  --gold-rgb: 255 210 90;
+  /* An ink outline round pixel text: four steps (thin: two pixels, whatever --px is). */
+  --ink-outline:
+    var(--px) 0 var(--ink), calc(var(--px) * -1) 0 var(--ink), 0 var(--px) var(--ink),
+    0 calc(var(--px) * -1) var(--ink);
+  --ink-outline-thin: 2px 0 var(--ink), -2px 0 var(--ink), 0 2px var(--ink), 0 -2px var(--ink);
+  /* The layers that sit above their neighbours (small local stacking stays where it is used). */
+  --z-stage-pop: 20; /* a popover inside the stage */
+  --z-stage-intro: 25; /* the round intro over the stage */
+  --z-stage-overlay: 30; /* the countdown and the room banner over the stage */
+  --z-howto: 40; /* the How to play page */
+  --z-popover-layer: 60; /* the page popover layer over everything but a drag */
+  --z-drag: 100; /* the creature you are dragging */
+}

@@ -1,17 +1,17 @@
 import { GlossaryTag } from './Glossary';
-import { useNow } from './hooks';
+import { useServerNow } from './hooks';
 import { StreakPips } from './DungeonPrerun';
 import { streakLine } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
-import { formatEventTime, formatLongCountdown } from './raid-time';
+import { formatCountdown, formatZoned } from './time-format';
 
 /**
  * The end of the report answers "when can I go again?": the streak with its pips, and the time the
  * day resets (in the guild's timezone) with a countdown. Everything is read from the server's state.
  */
 export function DungeonNext({ today, offset }: { today: DungeonToday; offset: number }) {
-  const now = useNow(true);
-  const remaining = today.resetsAt - (now + offset);
+  const serverNow = useServerNow(offset, true);
+  const remaining = today.resetsAt - serverNow;
   return (
     <section class="dungeon-next" aria-labelledby="dungeon-next-heading">
       <h4 id="dungeon-next-heading">Next run</h4>
@@ -21,8 +21,8 @@ export function DungeonNext({ today, offset }: { today: DungeonToday; offset: nu
         <span class="muted">{streakLine(today.streak)}</span>
       </div>
       <p class="muted">
-        Resets at {formatEventTime(today.resetsAt, today.timezone)} ({today.timezone}), in{' '}
-        {formatLongCountdown(remaining)}.
+        Resets at {formatZoned(today.resetsAt, today.timezone, 'short')} ({today.timezone}), in{' '}
+        {formatCountdown(remaining, 'days')}.
       </p>
     </section>
   );

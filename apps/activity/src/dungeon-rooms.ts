@@ -7,16 +7,14 @@
 import { RULES, isLandmark, roomModifier } from '@creatures/game';
 import type { TrackStep, TrackUnlock } from './progress-track';
 import type { DungeonModifier } from './dungeon-types';
-
-/** The picture of a modifier: an element's icon, or a glyph id (see `glyphs.ts`). */
-export type ModifierIcon = { kind: 'element'; element: string } | { kind: 'glyph'; id: string };
+import type { IconRef } from './icon-ref';
 
 /**
  * An icon for a room modifier, from what it does: a boost to one element shows that element, extra
  * crits the reticle, a trick the foe plays its own icon, a change to the foe's stats a warning mark
  * and a fixed turn order its arrow. Anything unknown gets the plain diamond.
  */
-export function modifierIcon(id: string): ModifierIcon {
+export function modifierIcon(id: string): IconRef {
   const effects = roomModifier(id)?.effects ?? [];
   for (const effect of effects) {
     switch (effect.op) {
@@ -37,11 +35,11 @@ export function modifierIcon(id: string): ModifierIcon {
 }
 
 /** One panel of the pre-run strip. */
-export interface RoomPanel {
+interface RoomPanel {
   room: number;
   /** "Room 1", "Room 2" and "Boss". */
   title: string;
-  modifier: { id: string; name: string; description: string; icon: ModifierIcon } | null;
+  modifier: { id: string; name: string; description: string; icon: IconRef } | null;
   /** What a screen reader says for the panel: the room and its modifier, never the foe. */
   spoken: string;
 }
@@ -77,7 +75,7 @@ export const LANDMARK_UNLOCKS: readonly TrackUnlock[] = [
   { icon: 'gem', text: 'Bonus Essence' },
 ];
 
-export interface DepthTrack {
+interface DepthTrack {
   steps: TrackStep[];
   /** The index of the player's own step. */
   current: number;

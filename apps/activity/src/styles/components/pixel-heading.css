@@ -1,0 +1,37 @@
+/* Big pixel lettering: a boss name, the room banner, the round intro. */
+.pixel-heading {
+  line-height: 1;
+}
+
+.ph-gold {
+  color: var(--gold);
+}
+
+.ph-bad {
+  color: var(--bad);
+}
+
+.ph-ink {
+  text-shadow: var(--ink-outline);
+}
+
+.ph-ink-drop {
+  text-shadow:
+    var(--ink-outline),
+    var(--px) var(--px) 0 var(--ink);
+}
+
+.ph-element-drop {
+  text-shadow:
+    var(--px) var(--px) 0 var(--ink),
+    calc(var(--px) * 2) calc(var(--px) * 2) 0 color-mix(in srgb, var(--elem) 70%, var(--ink));
+}
+
+.ph-size-l {
+  font-size: 3rem;
+}
+
+.ph-size-m {
+  font-size: clamp(1.75rem, 7vw, 2.375rem);
+  text-wrap: balance;
+}

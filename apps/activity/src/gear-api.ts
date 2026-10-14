@@ -4,9 +4,9 @@
  * never spend twice. Every action answers `{ result, gear, state }` and both views are returned
  * fresh so the screen can replace what it holds.
  */
-import { apiFetch, parseGameState, type GameState } from './api';
+import { apiFetch, jsonRequest, parseGameState, type GameState } from './api';
+import { isRecord } from './parse-core';
 import {
-  isRecord,
   parseDismantleResult,
   parseEquipResult,
   parseGearState,
@@ -31,14 +31,6 @@ export interface GearAction<R> {
   state: GameState;
 }
 
-function post(path: string, body: unknown): Promise<unknown> {
-  return apiFetch(path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-}
-
 function action<R>(data: unknown, parseResult: (value: unknown) => R): GearAction<R> {
   if (!isRecord(data)) throw new Error('the server returned an unexpected gear response');
   return {
@@ -59,7 +51,10 @@ export async function equipGear(
   creatureId: string | null,
 ): Promise<GearAction<EquipResult>> {
   return action(
-    await post(`/api/gear/${encodeURIComponent(gearId)}/equip`, { creatureId }),
+    await apiFetch(
+      `/api/gear/${encodeURIComponent(gearId)}/equip`,
+      jsonRequest('POST', { creatureId }),
+    ),
     parseEquipResult,
   );
 }
@@ -69,7 +64,10 @@ export async function upgradeGear(
   idempotencyKey: string,
 ): Promise<GearAction<UpgradeResult>> {
   return action(
-    await post(`/api/gear/${encodeURIComponent(gearId)}/upgrade`, { idempotencyKey }),
+    await apiFetch(
+      `/api/gear/${encodeURIComponent(gearId)}/upgrade`,
+      jsonRequest('POST', { idempotencyKey }),
+    ),
     parseUpgradeResult,
   );
 }
@@ -79,13 +77,19 @@ export async function dismantleGear(
   idempotencyKey: string,
 ): Promise<GearAction<DismantleResult>> {
   return action(
-    await post(`/api/gear/${encodeURIComponent(gearId)}/dismantle`, { idempotencyKey }),
+    await apiFetch(
+      `/api/gear/${encodeURIComponent(gearId)}/dismantle`,
+      jsonRequest('POST', { idempotencyKey }),
+    ),
     parseDismantleResult,
   );
 }
 
 export async function startJob(request: StartJobRequest): Promise<GearAction<StartJobResult>> {
-  return action(await post('/api/workshop/jobs', request), parseStartJobResult);
+  return action(
+    await apiFetch('/api/workshop/jobs', jsonRequest('POST', request)),
+    parseStartJobResult,
+  );
 }
 
 export async function claimJob(
@@ -93,7 +97,10 @@ export async function claimJob(
   idempotencyKey: string,
 ): Promise<GearAction<JobResult>> {
   return action(
-    await post(`/api/workshop/jobs/${encodeURIComponent(jobId)}/claim`, { idempotencyKey }),
+    await apiFetch(
+      `/api/workshop/jobs/${encodeURIComponent(jobId)}/claim`,
+      jsonRequest('POST', { idempotencyKey }),
+    ),
     parseJobResult,
   );
 }

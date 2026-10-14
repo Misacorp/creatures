@@ -57,19 +57,7 @@ export function clockOffset(serverNow: number, clientNow: number): number {
   return serverNow - clientNow;
 }
 
-/** "1h 02m 03s", "4m 05s" or "12s". Never negative. */
-export function formatCountdown(ms: number): string {
-  const total = Math.max(0, Math.ceil(ms / 1000));
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const seconds = total % 60;
-  const pad = (n: number): string => String(n).padStart(2, '0');
-  if (hours > 0) return `${String(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
-  if (minutes > 0) return `${String(minutes)}m ${pad(seconds)}s`;
-  return `${String(seconds)}s`;
-}
-
-export interface CreatureAbilityText {
+interface CreatureAbilityText {
   /** "Flare Strike: Hits the boss at once..." or "Finale ability: unlocks at level 10". */
   line: string;
   unlocked: boolean;
@@ -140,12 +128,7 @@ export function fusionStars(count: number): string {
   return '★'.repeat(filled) + '☆'.repeat(RULES.fusion.maxFusions - filled);
 }
 
-/** Short badges for one reveal row, in display order. */
-export function catchBadges(entry: CatchResult): string[] {
-  return catchBadgeTags(entry).map((badge) => badge.text);
-}
-
-/** The badges of a catch with the glossary entry each one explains (null: nothing to explain). */
+/** The badges of a catch, in display order, with the glossary entry each one explains (null: nothing to explain). */
 export function catchBadgeTags(entry: CatchResult): { text: string; entry: string | null }[] {
   const badges: { text: string; entry: string | null }[] = [];
   if (entry.outcome === 'new') badges.push({ text: 'New!', entry: null });
@@ -253,10 +236,18 @@ const NICKNAME_REASONS: Record<string, string> = {
 
 /**
  * Plain-text message for a failed action. `currency` names what ran out when the server says
- * `insufficient_funds` (Bait by default; Essence for evolving).
+ * `insufficient_funds` (Bait by default; Essence for evolving). `table` holds the words of one
+ * screen (the dungeon's): a code that is in it wins over the shared text.
  */
-export function errorText(err: unknown, currency = 'Bait'): string {
+export function errorText(
+  err: unknown,
+  currency = 'Bait',
+  table?: Readonly<Record<string, string>>,
+): string {
   if (err instanceof ApiError) {
+    if (table !== undefined && err.code !== null && Object.hasOwn(table, err.code)) {
+      return table[err.code] as string;
+    }
     if (err.code === 'invalid_nickname') {
       return NICKNAME_REASONS[err.reason ?? ''] ?? 'That nickname is not allowed.';
     }

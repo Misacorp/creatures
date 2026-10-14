@@ -18,7 +18,6 @@ import {
   abilityParamKind,
   abilityPlanText,
   abilityStateText,
-  autoFireLabel,
   autoFireTarget,
   noAbilityText,
   bannerText,
@@ -28,7 +27,6 @@ import {
   errorRetryDelayMs,
   feedLines,
   finaleWindow,
-  formatClock,
   GIVE_UP_MS,
   isKeyEvent,
   isRetryableStatus,
@@ -125,18 +123,7 @@ describe('finaleWindow', () => {
   });
 });
 
-describe('formatClock and bannerText', () => {
-  it.each([
-    [0, '0:00'],
-    [-4000, '0:00'],
-    [1, '0:01'],
-    [59_000, '0:59'],
-    [252_000, '4:12'],
-    [300_000, '5:00'],
-  ])('formats %i ms as %s', (ms, text) => {
-    expect(formatClock(ms)).toBe(text);
-  });
-
+describe('bannerText', () => {
   it('words the banner', () => {
     expect(bannerText('lobby', START, START - 252_000)).toBe('Finale starts in 4:12');
     expect(bannerText('live', START, START + 1)).toBe('The finale is on now');
@@ -383,26 +370,6 @@ describe('abilityControls', () => {
     expect(c.canFire).toBe(false);
     expect(c.canToggle).toBe(false);
     expect(c.note).toContain('too late');
-  });
-});
-
-describe('autoFireLabel', () => {
-  it('says "Auto fire" with the default round while it is on', () => {
-    expect(autoFireLabel(abilityOf({ defaultRound: 7 }))).toEqual({
-      title: 'Auto fire',
-      detail: 'round 7',
-    });
-  });
-
-  it('says "Auto fire off" with "last round" once it is off', () => {
-    expect(autoFireLabel(abilityOf({ mode: 'held' }))).toEqual({
-      title: 'Auto fire off',
-      detail: 'last round',
-    });
-  });
-
-  it('shows no round when the server does not know it', () => {
-    expect(autoFireLabel(abilityOf({ defaultRound: 0 })).detail).toBe('');
   });
 });
 

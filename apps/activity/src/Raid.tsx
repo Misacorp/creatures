@@ -5,8 +5,9 @@ import { AfterAction } from './AfterAction';
 import { ApiError, type Creature } from './api';
 import { CoachMark } from './CoachMark';
 import { clockOffset, creatureName, errorText } from './game';
+import { useActionRunner } from './use-action-runner';
 import { GlossaryTag } from './Glossary';
-import { useNow } from './hooks';
+import { useServerNow } from './hooks';
 import { finaleWindow } from './live';
 import { startPractice, type LiveSnapshot } from './live-api';
 import { Live } from './Live';
@@ -25,14 +26,8 @@ import {
   type RaidPhaseId,
   type RaidView,
 } from './raid-api';
-import {
-  reduceTap,
-  togglePick,
-  unplaceIntent,
-  type Intent,
-  type Selection,
-  type TapResult,
-} from './raid-slots';
+import { reduceTap, togglePick, unplaceIntent, type Intent, type TapResult } from './raid-slots';
+import type { Selection } from './slot-outcome';
 import { festivalGrantText, rankChangeText } from './raid-progress';
 import { phaseName } from './raid-text';
 import { BossCard } from './BossCard';
@@ -42,7 +37,8 @@ import type { NowTarget } from './raid-now';
 import { showFullResults } from './raid-timeline';
 import { RaidNews } from './RaidNews';
 import { Placement } from './Placement';
-import { resolveDrop, type DropOutcome, type DropTarget } from './raid-dnd';
+import { resolveDrop, type RaidDropOutcome } from './raid-dnd';
+import type { DropTarget } from './slot-outcome';
 
 interface Loaded {
   view: RaidView;
@@ -66,8 +62,6 @@ export function Raid({
 }) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Selection>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [picking, setPicking] = useState<string[] | null>(null);
@@ -80,11 +74,20 @@ export function Raid({
   const [liveOpen, setLiveOpen] = useState(false);
   const [liveInitial, setLiveInitial] = useState<LiveSnapshot | null>(null);
   const [practiceGone, setPracticeGone] = useState(false);
-  const inFlight = useRef(false);
+  // Placement is not a spend, so no keys: one change at a time. After a definite "no" the pick is
+  // dropped and, if the screen was stale, the raid is loaded again.
+  const { busy, error, setBusy, setError, run } = useActionRunner({
+    onFail: () => {
+      setSelected(null);
+    },
+    onStale: async () => {
+      apply(await fetchRaid());
+    },
+  });
   const practiceInFlight = useRef(false);
   /** The finale view opens by itself once, when the fight starts; closing it keeps it closed. */
   const autoOpened = useRef(false);
-  const now = useNow(loaded !== null);
+  const serverNow = useServerNow(loaded?.offset ?? 0, loaded !== null);
 
   function apply(view: RaidView): void {
     setLoaded({ view, offset: clockOffset(view.serverNow, Date.now()) });
@@ -128,7 +131,7 @@ export function Raid({
   const finaleRounds = loaded?.view.boss.finaleRounds ?? 1;
   const inParty = loaded?.view.you.party != null;
   const finaleState =
-    finaleAt === null ? 'before' : finaleWindow(finaleAt, finaleRounds, now + offset);
+    finaleAt === null ? 'before' : finaleWindow(finaleAt, finaleRounds, serverNow);
   useEffect(() => {
     if (finaleState === 'live' && inParty && !autoOpened.current) {
       autoOpened.current = true;
@@ -144,28 +147,11 @@ export function Raid({
 
   /** Runs one change. After a definite "no" the screen was probably stale, so it reloads. */
   async function mutate(task: () => Promise<RaidView>): Promise<boolean> {
-    if (inFlight.current) return false;
-    inFlight.current = true;
-    setBusy(true);
-    setError(null);
-    try {
+    const done = await run(async () => {
       apply(await task());
       return true;
-    } catch (err) {
-      setError(errorText(err));
-      setSelected(null);
-      if (err instanceof ApiError && (err.status === 404 || err.status === 409)) {
-        try {
-          apply(await fetchRaid());
-        } catch {
-          // Keep the error above.
-        }
-      }
-      return false;
-    } finally {
-      inFlight.current = false;
-      setBusy(false);
-    }
+    });
+    return done === true;
   }
 
   function closeLive(): void {
@@ -229,7 +215,6 @@ export function Raid({
   if (loaded === null) return <p class="muted">Loading the raid...</p>;
 
   const { view } = loaded;
-  const serverNow = now + loaded.offset;
   const party = view.party;
   const team = view.you.team;
   const locked = busy || !view.you.canEdit;
@@ -273,7 +258,7 @@ export function Raid({
   };
 
   /** A creature was dropped: decide, then send what the server must do. The server still decides. */
-  function handleDrop(creatureId: string, target: DropTarget | null): DropOutcome {
+  function handleDrop(creatureId: string, target: DropTarget | null): RaidDropOutcome {
     const name = team?.creatures.find((c) => c.creatureId === creatureId)?.name ?? 'Creature';
     const outcome = resolveDrop(ctx, creatureId, name, target);
     setSelected(null);

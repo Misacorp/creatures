@@ -54,24 +54,14 @@ import {
 } from '@creatures/engine';
 import type { Analytics } from './analytics';
 import { devKey, type DevFlags } from './dev-state';
-import type { ErrorStatus, Outcome } from './collection';
+import { keyTaken } from './keyed-action';
+import { GameError, atomically, type Outcome } from './outcome';
 import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-grants';
-import { credit, lookupSpend, type LedgerStorage } from './ledger';
+import type { LedgerStorage } from './ledger';
 import { drawSeed, slotFor } from './raid-resolve';
 import { loadCreatures, type TeamCreature } from './raid-teams';
 import type { RunBody } from './dungeon-schemas';
 import { addDays, gameDay, gameDayEnd } from './time';
-
-/** Thrown inside a transaction to roll it back and answer with an error. */
-class DungeonError extends Error {
-  constructor(
-    readonly status: ErrorStatus,
-    readonly code: string,
-  ) {
-    super(code);
-    this.name = 'DungeonError';
-  }
-}
 
 /** Runs (their events and inputs) are kept this long; the summary and rewards stay. */
 export const RUN_RETENTION_MS = 90 * 86_400_000;
@@ -457,13 +447,7 @@ export class Dungeon {
     const tz = this.deps.timezone();
     const now = this.deps.now();
     const day = gameDay(now, tz, RULES.daily.reset);
-    try {
-      const value = this.deps.storage.transactionSync(() => this.runIn(userId, body, day, tz, now));
-      return { ok: true, value };
-    } catch (err) {
-      if (err instanceof DungeonError) return { ok: false, status: err.status, error: err.code };
-      throw err;
-    }
+    return atomically(this.deps.storage, () => this.runIn(userId, body, day, tz, now));
   }
 
   private runIn(
@@ -483,39 +467,32 @@ export class Dungeon {
       )
       .toArray()[0];
     if (prior !== undefined) {
-      if (prior.fingerprint !== fingerprint) throw new DungeonError(409, 'key_conflict');
+      if (prior.fingerprint !== fingerprint) throw new GameError(409, 'key_conflict');
       return {
         run: JSON.parse(prior.summary_json) as DungeonRunSummary,
         today: this.todayView(userId, day, tz, now),
       };
     }
     // The same key used by another kind of action is a conflict too, whatever it was.
-    const usedElsewhere =
-      lookupSpend(this.sql, userId, body.idempotencyKey) !== null ||
-      this.sql
-        .exec(
-          'SELECT 1 FROM gear_actions WHERE user_id = ? AND key = ?',
-          userId,
-          body.idempotencyKey,
-        )
-        .toArray().length > 0;
-    if (usedElsewhere) throw new DungeonError(409, 'key_conflict');
+    if (keyTaken(this.sql, userId, body.idempotencyKey, ['ledger', 'gear_actions'])) {
+      throw new GameError(409, 'key_conflict');
+    }
 
     // --- One run a day, and the retry of a first day ---
     const progress = this.progress(userId);
     const runs = this.runsOn(userId, day);
-    if (!this.allowance(progress, day, runs).canRun) throw new DungeonError(409, 'already_run');
+    if (!this.allowance(progress, day, runs).canRun) throw new GameError(409, 'already_run');
     const attempt = runs.length + 1;
 
     // --- The team: the caller's own creatures, all different, in the order they stand in the row ---
     if (new Set(body.team).size !== body.team.length) {
-      throw new DungeonError(400, 'duplicate_creature');
+      throw new GameError(400, 'duplicate_creature');
     }
     const owned = new Map(loadCreatures(this.sql, userId).map((c) => [c.id, c]));
     const team = body.team.map((id) => owned.get(id));
     // The same answer for "does not exist" and "belongs to someone else".
     if (!team.every((c): c is TeamCreature => c !== undefined)) {
-      throw new DungeonError(404, 'not_found');
+      throw new GameError(404, 'not_found');
     }
     // `team[i]` is position i, left to right: the row is the order of the request.
     const standing = team;
@@ -637,38 +614,7 @@ export class Dungeon {
     streak: number,
     options: { firstOfDay: boolean },
   ): DungeonRewards {
-    const now = this.deps.now();
     const payout = dungeonPayout(depth, result.roomsCleared);
-    const key = `dungeon:${day}:${String(attempt)}`;
-    const meta = { day, depth, attempt };
-    if (payout.bait > 0) {
-      credit(
-        this.deps.storage,
-        {
-          userId,
-          currency: 'bait',
-          amount: payout.bait,
-          source: 'dungeon',
-          idempotencyKey: `${key}:bait`,
-          meta,
-        },
-        now,
-      );
-    }
-    if (payout.essence > 0) {
-      credit(
-        this.deps.storage,
-        {
-          userId,
-          currency: 'essence',
-          amount: payout.essence,
-          source: 'dungeon',
-          idempotencyKey: `${key}:essence`,
-          meta,
-        },
-        now,
-      );
-    }
     const gearDeps: GrantDeps = {
       storage: this.deps.storage,
       now: this.deps.now,
@@ -676,49 +622,33 @@ export class Dungeon {
       analytics: this.deps.analytics,
     };
     const boss = rooms.at(-1);
-    const grant = grantDungeonRun(gearDeps, userId, day, attempt, (rng) => {
-      const loot = rollDungeonLoot(rng, depth, payout, boss?.foe.element ?? 'tide');
-      return {
-        parts: addParts({ scrap: payout.scrap, glimmer: payout.glimmer }, loot.parts),
-        gear: loot.gear,
-      };
-    });
+    const grant = grantDungeonRun(
+      gearDeps,
+      userId,
+      day,
+      attempt,
+      (rng) => {
+        const loot = rollDungeonLoot(rng, depth, payout, boss?.foe.element ?? 'tide');
+        return {
+          parts: addParts({ scrap: payout.scrap, glimmer: payout.glimmer }, loot.parts),
+          gear: loot.gear,
+        };
+      },
+      { bait: payout.bait, essence: payout.essence, meta: { day, depth, attempt } },
+    );
     let streakPaid: DungeonRewards['streak'] = null;
     const bonus = options.firstOfDay ? streakBonus(streak) : null;
     if (bonus !== null) {
-      const streakKey = `dungeon:${day}:streak`;
-      if (bonus.bait > 0) {
-        credit(
-          this.deps.storage,
-          {
-            userId,
-            currency: 'bait',
-            amount: bonus.bait,
-            source: 'dungeon',
-            idempotencyKey: `${streakKey}:bait`,
-            meta: { day, streak: bonus.day },
-          },
-          now,
-        );
-      }
-      if (bonus.essence > 0) {
-        credit(
-          this.deps.storage,
-          {
-            userId,
-            currency: 'essence',
-            amount: bonus.essence,
-            source: 'dungeon',
-            idempotencyKey: `${streakKey}:essence`,
-            meta: { day, streak: bonus.day },
-          },
-          now,
-        );
-      }
-      const parts = grantDungeonStreak(gearDeps, userId, day, {
-        scrap: bonus.scrap,
-        glimmer: bonus.glimmer,
-      }).parts;
+      const parts = grantDungeonStreak(
+        gearDeps,
+        userId,
+        day,
+        {
+          scrap: bonus.scrap,
+          glimmer: bonus.glimmer,
+        },
+        { bait: bonus.bait, essence: bonus.essence, meta: { day, streak: bonus.day } },
+      ).parts;
       streakPaid = { day: bonus.day, bait: bonus.bait, essence: bonus.essence, parts };
     }
     return {

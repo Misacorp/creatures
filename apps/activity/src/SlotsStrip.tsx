@@ -1,9 +1,9 @@
-import { cssVars } from './css-vars';
 import type { Slots } from './expedition-types';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
-import { fillPct, slotsLine } from './trip-view';
+import { slotsLine } from './trip-view';
+import { Bar } from './ui/Bar';
 
 /**
  * The open expedition slots as little squares (filled while a trip is out), and what opens the next one
@@ -12,7 +12,6 @@ import { fillPct, slotsLine } from './trip-view';
  */
 export function SlotsStrip({ slots }: { slots: Slots }) {
   const line = slotsLine(slots);
-  const pct = line.fraction === null ? 0 : fillPct(line.fraction);
   return (
     <section class="slots-strip" aria-label="Expedition slots">
       <p class="slots-head">
@@ -33,16 +32,7 @@ export function SlotsStrip({ slots }: { slots: Slots }) {
       </p>
       {line.next !== null && (
         <>
-          <div
-            class="xp"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(pct)}
-            aria-label={line.next}
-          >
-            <span ref={cssVars({ '--pct': `${String(pct)}%` })} />
-          </div>
+          <Bar value={line.progress?.value ?? 0} max={line.progress?.max ?? 1} label={line.next} />
           <p class="muted slots-next">{line.next}</p>
         </>
       )}

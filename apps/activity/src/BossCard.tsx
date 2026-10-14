@@ -1,8 +1,9 @@
+import { Tag } from './ui/Tag';
 import { GLOSSARY_IDS } from '@creatures/game';
-import { useRef, useState } from 'preact/hooks';
-import { bossArt } from './art';
+import { bossArt, elementSlug } from './art';
 import { bossIcons, type BossIconInfo } from './boss-icons';
-import { GlossaryTag, useGlossary } from './Glossary';
+import { GlossaryTag } from './Glossary';
+import { usePopoverTrigger } from './PopoverHost';
 import { gimmickGlyph, turnOrderGlyph } from './glyphs';
 import type { RaidView } from './raid-api';
 import {
@@ -16,8 +17,9 @@ import {
 } from './raid-progress';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
-import { StagePopover } from './StagePopover';
-import { HpBar } from './Stage';
+import { PopoverCard, popupProps } from './ui/Popover';
+import { PixelHeading } from './ui/PixelHeading';
+import { BossHp } from './ui/SegmentBar';
 
 /** The five weeks of the season as pips: the Festival is the last one. */
 function SeasonPips({ season }: { season: RaidView['season'] }) {
@@ -46,13 +48,12 @@ function SeasonPips({ season }: { season: RaidView['season'] }) {
 
 /**
  * One icon of the boss card (the turn order or a trick): a small button that opens a popover with
- * what this boss does. It looks and behaves like the glossary's popovers (same panel, same
- * dismissal) but carries the boss-specific sentence the glossary entry cannot know.
+ * what this boss does. It is one of the app's popovers (`PopoverHost`: the same panel, the same
+ * dismissal, one open at a time) but carries the boss-specific sentence the glossary entry cannot
+ * know.
  */
 function BossIcon({ icon }: { icon: BossIconInfo }) {
-  const glossary = useGlossary();
-  const ref = useRef<HTMLButtonElement>(null);
-  const [open, setOpen] = useState(false);
+  const { host, ref, open } = usePopoverTrigger<HTMLButtonElement>();
   const sprite = icon.kind === 'turn' ? turnOrderGlyph(icon.glyph) : gimmickGlyph(icon.glyph);
   return (
     <li class="boss-icon-item">
@@ -60,39 +61,26 @@ function BossIcon({ icon }: { icon: BossIconInfo }) {
         ref={ref}
         type="button"
         class={open ? 'boss-icon open' : 'boss-icon'}
-        aria-haspopup="dialog"
-        aria-expanded={open}
+        {...popupProps(open)}
         aria-label={icon.label}
         onClick={() => {
-          // One popover at a time: this closes an open glossary tag.
-          glossary?.close();
-          setOpen((current) => !current);
+          if (ref.current === null) return;
+          host?.openCustom(icon.key, ref.current, {
+            label: icon.title,
+            body: (
+              <PopoverCard
+                visual={<Sprite sprite={sprite} scale={4} />}
+                title={icon.title}
+                short={icon.detail}
+                note={icon.general}
+              />
+            ),
+          });
         }}
       >
         <Sprite sprite={sprite} scale={3} />
         <span class="boss-icon-caption">{icon.caption}</span>
       </button>
-      {open && (
-        <div class="glossary-layer">
-          <StagePopover
-            class="gloss-pop"
-            anchor={() => ref.current}
-            label={icon.title}
-            onClose={() => {
-              setOpen(false);
-            }}
-          >
-            <div class="gp-body">
-              <div class="gp-visual" aria-hidden="true">
-                <Sprite sprite={sprite} scale={4} />
-              </div>
-              <p class="gp-title pix">{icon.title}</p>
-              {icon.detail !== '' && <p class="gp-short">{icon.detail}</p>}
-              {icon.general !== null && <p class="gp-general muted">{icon.general}</p>}
-            </div>
-          </StagePopover>
-        </div>
-      )}
     </li>
   );
 }
@@ -137,7 +125,7 @@ export function BossCard({ view }: { view: RaidView }) {
   const readiness = view.party?.readiness ?? null;
   const best = bestRankText(view.bestRank);
   const art = bossArt(boss.id);
-  const element = /^[a-z-]+$/.test(boss.element) ? boss.element : 'unknown';
+  const element = elementSlug(boss.element);
   return (
     <section
       class={`raid-section boss-card el-${element}${view.festival ? ' festival' : ''}`}
@@ -148,33 +136,32 @@ export function BossCard({ view }: { view: RaidView }) {
           <Sprite sprite={art.sprite} scale={art.scale} alt={boss.name} bob />
         </div>
         <div class="boss-meta">
-          <h3 id="raid-boss-name" class="boss-name">
+          <PixelHeading
+            as="h3"
+            outline="element-drop"
+            size="m"
+            id="raid-boss-name"
+            class="boss-name"
+          >
             {boss.name}
-          </h3>
+          </PixelHeading>
           <div class="boss-status">
             {rank !== null && (
-              <GlossaryTag entry="boss-rank" look="chip" class="tag rank">
+              <Tag tone="rank" entry="boss-rank">
                 {rank}
-              </GlossaryTag>
+              </Tag>
             )}
             {readiness !== null && <ReadinessMeter band={readiness} />}
             <ElementChip element={boss.element} />
             {view.festival && (
-              <GlossaryTag entry="festival" look="chip" class="badge festival">
+              <Tag kind="badge" tone="festival" entry="festival">
                 Festival week
-              </GlossaryTag>
+              </Tag>
             )}
           </div>
           {hp !== null && (
             <div class="boss-hp">
-              <HpBar
-                current={hp.current}
-                max={hp.max}
-                label={`Boss HP this week: ${String(hp.current)} of ${String(hp.max)}`}
-              />
-              <p class="muted small">
-                Boss HP this week: {hp.current} / {hp.max}
-              </p>
+              <BossHp caption="Boss HP this week" current={hp.current} max={hp.max} />
             </div>
           )}
           <ul class="boss-icons" aria-label="How the boss fights">

@@ -73,7 +73,7 @@ export function starterSpecies(
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
 
-export interface WeekStep {
+interface WeekStep {
   event: RaidEventId;
   title: string;
   /** "Mon", "Fri", "Sat" or "Sun". */
@@ -135,7 +135,7 @@ export function exampleSeason(): {
 }
 
 /** One room of the dungeon picture: the foe that stands in it. */
-export interface DungeonRoom {
+interface DungeonRoom {
   id: string;
   name: string;
   element: string;

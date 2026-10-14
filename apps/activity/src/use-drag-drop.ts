@@ -1,7 +1,7 @@
 /**
  * Pointer-events drag and drop for the party row. It works the same with a mouse, a finger or a pen
  * (no HTML5 drag API, which does not work on phones). A press becomes a drag after a small
- * movement, so a plain tap still taps. The decisions live in `dnd-core.ts` and `raid-dnd.ts`; this
+ * movement, so a plain tap still taps. The decisions live in `dnd-core.ts`, `raid-dnd.ts` and `dungeon-team.ts`; this
  * file only connects them to the browser: listeners, the ghost position, hit-testing and scrolling.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
@@ -16,18 +16,18 @@ import {
   type Point,
 } from './dnd-core';
 import { startsOnTag } from './glossary-ui';
-import type { DropOutcome, DropTarget } from './raid-dnd';
+import type { DropOutcome, DropTarget } from './slot-outcome';
 
 /** Pixels around each slot that still count as "on" it, so the small gaps are not dead zones. */
 const SLOT_SLOP = 6;
 const SHAKE_MS = 450;
 
-export interface DragState {
+interface DragState {
   creatureId: string;
   over: DropTarget | null;
 }
 
-export interface UseDragDropArgs {
+interface UseDragDropArgs {
   /** No drags can start while true (locked row, or a request in flight). */
   disabled: boolean;
   /** The strip holding the slots (`[data-slot]` buttons), one row for each zone. */
@@ -35,7 +35,7 @@ export interface UseDragDropArgs {
   /** The team tray: dropping a placed creature here unplaces it. */
   trayRef: RefObject<HTMLElement>;
   /** Called when a drag ends: `target` is null for a drop off the row or a cancel. */
-  onDrop: (creatureId: string, target: DropTarget | null) => DropOutcome;
+  onDrop: (creatureId: string, target: DropTarget | null) => DropOutcome<unknown>;
 }
 
 export interface DragDrop {

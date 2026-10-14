@@ -10,7 +10,7 @@ import type { Milestone, Profile } from './expedition-types';
 import { creatureName } from './game';
 import { destinationName, percentText } from './trip-view';
 
-export interface JournalPageView {
+interface JournalPageView {
   id: string;
   /** The title and text; null for a page that has not been found yet. */
   title: string | null;
@@ -20,7 +20,7 @@ export interface JournalPageView {
   setId: string | null;
 }
 
-export interface JournalSetView {
+interface JournalSetView {
   id: string;
   name: string;
   found: number;
@@ -111,7 +111,7 @@ export function statLabel(stat: string): string {
 }
 
 /** The stat ids the profile lists, in the order of the rules. */
-export const PROFILE_STATS: readonly string[] = ACCOUNT_STATS;
+const PROFILE_STATS: readonly string[] = ACCOUNT_STATS;
 
 /** The account stats as rows, in a fixed order; a stat the server does not send is 0. */
 export function statRows(
@@ -152,13 +152,14 @@ export function milestoneName(id: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-export interface MilestoneView {
+interface MilestoneView {
   id: string;
   name: string;
   /** "Trips finished: 3 of 5". */
   progress: string;
-  /** 0 to 100. */
-  pct: number;
+  /** How far, for a bar: `value` of `max`. */
+  value: number;
+  max: number;
   reached: boolean;
   /** "+1% parts from trips" once the milestone is reached; null while it is locked. */
   bonus: string | null;
@@ -174,7 +175,9 @@ export function milestoneViews(milestones: readonly Milestone[]): MilestoneView[
     id: m.id,
     name: milestoneName(m.id),
     progress: `${statLabel(m.stat)}: ${String(Math.min(m.value, m.at))} of ${String(m.at)}`,
-    pct: m.at <= 0 ? 100 : Math.floor((Math.min(m.value, m.at) * 1000) / m.at) / 10,
+    // `value` of `max`, for a bar; a milestone that needs nothing is full.
+    value: m.at <= 0 ? 1 : Math.min(m.value, m.at),
+    max: m.at <= 0 ? 1 : m.at,
     reached: m.reached,
     bonus: milestoneBonusText(m),
   }));

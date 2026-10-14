@@ -23,20 +23,9 @@ import type {
   TripResult,
 } from './expedition-types';
 import { isGrantLoot, isPartsBundle } from './gear-parse';
+import { isArrayOf, isBool, isCount, isInt, isRecord, isStr } from './parse-core';
 
-type Rec = Record<string, unknown>;
-
-const isRecord = (value: unknown): value is Rec =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-const isStr = (value: unknown): value is string => typeof value === 'string';
-const isInt = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isInteger(value);
-const isCount = (value: unknown): value is number => isInt(value) && value >= 0;
-const isBool = (value: unknown): value is boolean => typeof value === 'boolean';
-const isArrayOf = <T>(value: unknown, guard: (item: unknown) => item is T): value is T[] =>
-  Array.isArray(value) && value.every(guard);
-
-export const isExpeditionLength = (value: unknown): value is ExpeditionLength =>
+const isExpeditionLength = (value: unknown): value is ExpeditionLength =>
   (EXPEDITION_LENGTHS as readonly unknown[]).includes(value);
 const isTier = (value: unknown): value is SupplyTier =>
   value === 'basic' || value === 'good' || value === 'great';

@@ -11,19 +11,8 @@ import {
   type CritBonus,
   type Stats,
 } from '@creatures/game';
-import { speciesOf, type ErrorStatus } from './collection';
+import { speciesOf } from './collection';
 import { equippedByCreature, rowToItem, type GearRow } from './gear-store';
-
-/** Thrown inside a transaction to roll it back and answer with an error. */
-export class RaidError extends Error {
-  constructor(
-    readonly status: ErrorStatus,
-    readonly code: string,
-  ) {
-    super(code);
-    this.name = 'RaidError';
-  }
-}
 
 export const RAID_PHASE_STATUSES = ['open', 'phase1', 'phase2', 'finale'] as const;
 export type RaidStatus = (typeof RAID_PHASE_STATUSES)[number];

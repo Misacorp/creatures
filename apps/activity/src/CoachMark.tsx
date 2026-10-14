@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { COACH_TEXT, coachDismissed, dismissCoach } from './coach';
-import { GlossaryTag } from './Glossary';
+import { RoleChip } from './sprites/ElementChip';
+import { Tag } from './ui/Tag';
 
 /**
  * The one-time hint on the Raid tab. Shown until the player dismisses it (a flag in
@@ -14,13 +15,10 @@ export function CoachMark() {
     <aside class="coach" aria-label="Tip">
       <p class="coach-text">{COACH_TEXT}</p>
       <p class="coach-try">
-        Try it:{' '}
-        <GlossaryTag entry="role-setter" look="chip" class="chip role-chip">
-          <span class="chip-text">Setter</span>
-        </GlossaryTag>{' '}
-        <GlossaryTag entry="boss-rank" look="chip" class="tag rank">
+        Try it: <RoleChip role="setter" />{' '}
+        <Tag tone="rank" entry="boss-rank">
           Rank
-        </GlossaryTag>
+        </Tag>
       </p>
       <button
         type="button"

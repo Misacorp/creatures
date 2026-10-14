@@ -1,14 +1,12 @@
 import { RULES, expeditionContent, supplyDef, tripMs } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { parseGameState } from './api';
-import { formatDuration } from './gear-view';
+import { formatDuration } from './time-format';
 import type { Trip } from './expedition-types';
 import stateOffer from './fixtures/expedition-state-offer.json';
 import pushOnFixture from './fixtures/expedition-push-on.json';
 import {
   canCarry,
-  choiceLabel,
-  fillPct,
   kitBlocker,
   kitChoice,
   kitCost,
@@ -25,7 +23,6 @@ import {
   tripStatus,
   explorerXp,
   supplyDefs,
-  xpBar,
 } from './trip-view';
 
 const HOUR = 3_600_000;
@@ -72,8 +69,6 @@ describe('supplies', () => {
     for (const option of supplyOptions({})) {
       expect(option.choice, option.id).toBe(option.tier === 'great' ? 'guaranteed' : 'likely');
     }
-    expect(choiceLabel('guaranteed')).toBe('Choice guaranteed');
-    expect(choiceLabel('likely')).toBe('Choice likely');
   });
 
   it('describes each supply in a few words, never a digit or a percent sign', () => {
@@ -222,26 +217,10 @@ describe('a running trip', () => {
     expect(recallKeeps(many, many.startedAt + (many.endsAt - many.startedAt) / 2)).toBe(2);
     expect(recallKeeps(many, many.endsAt + 5 * HOUR)).toBe(4);
   });
-
-  it('fills a bar in tenths of a percent between 0 and 100', () => {
-    expect(fillPct(0)).toBe(0);
-    expect(fillPct(0.5)).toBe(50);
-    expect(fillPct(0.3333)).toBe(33.3);
-    expect(fillPct(2)).toBe(100);
-    expect(fillPct(-1)).toBe(0);
-  });
 });
 
 describe('the explorer XP bar', () => {
   const table = RULES.expeditions.rank.xpForRank;
-
-  it('fills from the XP of the rank to the XP of the next one', () => {
-    const start = table[2] ?? 0;
-    const next = table[3] ?? 0;
-    const bar = xpBar({ rank: 3, xp: start + (next - start) / 2, nextRankXp: next });
-    expect(bar.pct).toBe(50);
-    expect(bar.text).toBe(`${String((next - start) / 2)} of ${String(next - start)} XP to rank 4`);
-  });
 
   it('gives the XP bar the XP into the rank, its span and the rank caps', () => {
     const start = table[2] ?? 0;
@@ -264,13 +243,9 @@ describe('the explorer XP bar', () => {
     });
   });
 
-  it('is empty at the start of a rank, full at the top and never beyond', () => {
-    expect(xpBar({ rank: 1, xp: 0, nextRankXp: table[1] ?? 0 }).pct).toBe(0);
-    expect(xpBar({ rank: 10, xp: 999_999, nextRankXp: null })).toEqual({
-      pct: 100,
-      text: 'Top rank',
-    });
-    expect(xpBar({ rank: 2, xp: 0, nextRankXp: table[2] ?? 0 }).pct).toBe(0);
+  it('is empty at the start of a rank', () => {
+    expect(explorerXp({ rank: 1, xp: 0, nextRankXp: table[1] ?? 0 }).value).toBe(0);
+    expect(explorerXp({ rank: 2, xp: 0, nextRankXp: table[2] ?? 0 }).value).toBe(0);
   });
 });
 
@@ -280,7 +255,7 @@ describe('the slot progress line', () => {
     const trips = slotsLine({ ...base, next: { kind: 'trips', at: 3 } });
     expect(trips.use).toBe('1 of 1 slot in use');
     expect(trips.next).toBe('Next slot: finish 3 trips (1 so far)');
-    expect(trips.fraction).toBeCloseTo(1 / 3, 5);
+    expect(trips.progress).toEqual({ value: 1, max: 3 });
     const sum = slotsLine({
       ...base,
       total: 2,
@@ -289,14 +264,14 @@ describe('the slot progress line', () => {
     });
     expect(sum.use).toBe('1 of 2 slots in use');
     expect(sum.next).toContain('add up to 26 (now 2)');
-    expect(sum.fraction).toBeCloseTo(2 / 26, 5);
+    expect(sum.progress).toEqual({ value: 2, max: 26 });
   });
 
   it('has no next line when every slot is open', () => {
     expect(slotsLine({ total: 5, used: 0, rankSum: 200, tripsFinished: 99, next: null })).toEqual({
       use: '0 of 5 slots in use',
       next: null,
-      fraction: null,
+      progress: null,
     });
   });
 });

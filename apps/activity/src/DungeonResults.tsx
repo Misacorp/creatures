@@ -1,12 +1,11 @@
+import { LandmarkChip } from './ui/Tag';
 import { GlossaryTag } from './Glossary';
 import { LootList } from './GearLoot';
 import { glyphOrUnknown } from './glyphs';
-import { usePrefersReducedMotion } from './hooks';
-import { useRevealFrame } from './Reveal';
-import { PartCount } from './GearArt';
-import { RewardPile } from './RewardPile';
-import { rewardPileItems } from './reward-pile';
-import { partName, partsEntries } from './gear-view';
+import { partCountItems } from './GearArt';
+import type { CountItem } from './ui/CountBadge';
+import { OutcomeBadge, RevealLater, RevealShell, useRevealSequence } from './ui/RevealShell';
+import { RewardSummary } from './ui/RewardSummary';
 import {
   noRewards,
   rewardLoot,
@@ -22,46 +21,13 @@ import { bossArt } from './art';
 import { depthChangeText, resultHeadline } from './dungeon-text';
 import { DungeonNext } from './DungeonNext';
 import type { DungeonRunSummary, DungeonToday } from './dungeon-types';
+import { creatureInfoOf } from './creature-info';
 import { SmallCreature } from './SmallCreature';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 
-/** The pile in words: "Rewards: Scrap, Essence, Bait". */
-function pileLabel(rewards: DungeonRunSummary['rewards']): string {
-  const kinds = rewardPileItems(rewards).map((i) =>
-    i.icon.kind === 'part'
-      ? partName(i.icon.part)
-      : i.icon.kind === 'gear'
-        ? 'Gear'
-        : i.key === 'essence'
-          ? 'Essence'
-          : 'Bait',
-  );
-  return `Rewards: ${kinds.join(', ')}`;
-}
-
 /** A room panel's picture is 64 px (a foe) or 72 px (a room boss), so three fit a 390 px phone. */
 const PANEL_SCALE = { foe: 4, boss: 3 } as const;
-
-/** An icon with a number and a word, for Bait and Essence (parts use the Workshop's own icons). */
-function RewardCount({
-  glyph,
-  amount,
-  label,
-  entry,
-}: {
-  glyph: string;
-  amount: number;
-  label: string;
-  entry: string;
-}) {
-  return (
-    <GlossaryTag entry={entry} look="chip" class="part-count" label={`${label}: ${String(amount)}`}>
-      <Sprite sprite={glyphOrUnknown(glyph)} scale={2} />
-      <span class="part-amount pix">{amount}</span>
-    </GlossaryTag>
-  );
-}
 
 interface Props {
   run: DungeonRunSummary;
@@ -93,31 +59,62 @@ export function DungeonResults({
   onWatch,
   onRetry,
 }: Props) {
-  const reduced = usePrefersReducedMotion();
   const { rewards } = run;
   const empty = noRewards(rewards);
-  const frame = useRevealFrame(rewards.essence, reduced);
-  const done = frame.phase === 'done';
+  const { frame, done } = useRevealSequence(rewards.essence);
   const loot = rewardLoot(rewards);
   const bonus = streakLoot(rewards);
+  const counts: CountItem[] = [
+    ...(rewards.bait > 0
+      ? [
+          {
+            key: 'bait',
+            icon: { kind: 'glyph', id: 'bait' } as const,
+            amount: rewards.bait,
+            label: 'Bait',
+            entry: 'bait',
+          },
+        ]
+      : []),
+    ...(rewards.essence > 0
+      ? [
+          {
+            key: 'essence',
+            icon: { kind: 'glyph', id: 'gem' } as const,
+            amount: done ? rewards.essence : frame.count,
+            label: 'Essence',
+            entry: 'essence',
+          },
+        ]
+      : []),
+    ...partCountItems(rewards.parts),
+  ];
   return (
-    <section class="reveal-card dungeon-result" aria-labelledby="dungeon-result-heading">
-      <h3 id="dungeon-result-heading">
-        {resultHeadline(run)}{' '}
-        <span class={run.cleared ? 'badge good' : 'badge bad'}>
-          {run.cleared ? 'Cleared' : 'Not cleared'}
-        </span>
-      </h3>
+    <RevealShell
+      id="dungeon-result-heading"
+      title={resultHeadline(run)}
+      badge={<OutcomeBadge cleared={run.cleared} />}
+      class="dungeon-result"
+      footer={
+        <p class="button-row dungeon-result-buttons">
+          <button type="button" disabled={busy} onClick={onWatch}>
+            Watch again
+          </button>
+          {canRetry && (
+            <button type="button" class="primary" disabled={busy} onClick={onRetry}>
+              Try again
+            </button>
+          )}
+        </p>
+      }
+    >
       <p role="status">
         <span class="visually-hidden">{runSentence(run)} </span>
         {depthChangeText(run)}
         {run.landmark && (
           <>
             {' '}
-            <GlossaryTag entry="landmark" look="chip" class="chip dungeon-landmark-chip">
-              <Sprite sprite={glyphOrUnknown('flag')} scale={2} />
-              <span class="chip-text">Landmark</span>
-            </GlossaryTag>
+            <LandmarkChip />
           </>
         )}
       </p>
@@ -126,42 +123,22 @@ export function DungeonResults({
       {empty ? (
         <p class="muted">Nothing this time. Clear a room to earn Bait, Essence and parts.</p>
       ) : (
-        <>
-          <div class="reward-row">
-            <RewardPile source={rewards} label={pileLabel(rewards)} />
-            <ul class="reward-badges" aria-label="Bait, Essence and parts">
-              {rewards.bait > 0 && (
-                <li>
-                  <RewardCount glyph="bait" amount={rewards.bait} label="Bait" entry="bait" />
-                </li>
-              )}
-              {rewards.essence > 0 && (
-                <li>
-                  <RewardCount
-                    glyph="gem"
-                    amount={done ? rewards.essence : frame.count}
-                    label="Essence"
-                    entry="essence"
-                  />
-                </li>
-              )}
-              {partsEntries(rewards.parts).map((p) => (
-                <li key={p.kind}>
-                  <PartCount kind={p.kind} amount={p.amount} />
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div class={done ? 'reveal-gear-box done' : 'reveal-gear-box'}>
-            <LootList loot={{ ...loot, parts: {} }} label="Loot from the dungeon" />
+        <RewardSummary
+          source={rewards}
+          prefix="Rewards"
+          countsLabel="Bait, Essence and parts"
+          counts={counts}
+        >
+          <RevealLater done={done}>
+            <LootList loot={loot} counted label="Loot from the dungeon" />
             {bonus !== null && <LootList loot={bonus} label="Streak bonus" />}
             {streakBonusText(rewards) !== null && (
               <p class="muted">
                 <GlossaryTag entry="streak">{streakBonusText(rewards)}</GlossaryTag>
               </p>
             )}
-          </div>
-        </>
+          </RevealLater>
+        </RewardSummary>
       )}
 
       <RoomStrip rooms={roomStrip(run)} />
@@ -173,17 +150,7 @@ export function DungeonResults({
           {error}
         </p>
       )}
-      <p class="button-row dungeon-result-buttons">
-        <button type="button" disabled={busy} onClick={onWatch}>
-          Watch again
-        </button>
-        {canRetry && (
-          <button type="button" class="primary" disabled={busy} onClick={onRetry}>
-            Try again
-          </button>
-        )}
-      </p>
-    </section>
+    </RevealShell>
   );
 }
 
@@ -243,13 +210,7 @@ function TeamBreakdown({ team }: { team: readonly TeamEntry[] }) {
           <li key={m.id} class={m.knockedOut ? 'team-member ko' : 'team-member'}>
             <SmallCreature
               id={m.id}
-              info={{
-                name: m.name,
-                species: m.speciesId,
-                level: m.level,
-                element: m.element,
-                role: m.role,
-              }}
+              info={creatureInfoOf({ ...m, species: m.speciesId })}
               class="tm-face"
               label={`${m.spoken} Shows its role and element.`}
             >

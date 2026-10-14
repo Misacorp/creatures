@@ -12,7 +12,6 @@
 import type { GrantLoot, PartKind } from './gear-types';
 
 export type ExpeditionLength = 'short' | 'medium' | 'long' | 'day';
-export type SupplyKind = 'lure' | 'map-scrap' | 'lantern' | 'satchel';
 export type SupplyTier = 'basic' | 'good' | 'great';
 export type GoalRisk = 'safe' | 'risky';
 
@@ -29,11 +28,6 @@ export interface SendBody {
   duration: ExpeditionLength;
   supplies: SupplyPick[];
   idempotencyKey: string;
-}
-
-/** The body of POST /api/expeditions/:id/push-on. */
-export interface PushOnBody {
-  goalId: string;
 }
 
 /** A goal offered when a trip ends, with its exact odds (10000 for a safe goal). */
@@ -102,16 +96,7 @@ export interface ExplorerView {
   trips: number;
 }
 
-/** The trips part of GET /api/state (the creature cards also carry `explorer`). */
-export interface TripsState {
-  expeditions: Trip[];
-  cancelled: CancelledTrip[];
-  slots: Slots;
-  /** Supplies in stock: supply id to amount. */
-  supplies: Record<string, number>;
-}
-
-export type CatchOutcome = 'new' | 'fused' | 'converted';
+type CatchOutcome = 'new' | 'fused' | 'converted';
 
 export interface TripCatch {
   species: string;
@@ -162,18 +147,6 @@ export interface RankGift {
   bait: number;
   parts: Partial<Record<PartKind, number>>;
   supplies: string[];
-}
-
-/** The answer of POST /api/expeditions/:id/claim. */
-export interface ClaimResponse {
-  result: TripResult;
-  state: unknown;
-}
-
-/** The answer of POST /api/expeditions and of POST /api/expeditions/:id/push-on. */
-export interface TripResponse {
-  expedition: Trip;
-  state: unknown;
 }
 
 export interface Milestone {
@@ -228,25 +201,3 @@ export interface DestinationsView {
     deepChanceBp: number;
   }[];
 }
-
-/** The error codes the expedition routes answer with (`{ error, reason? }`). */
-export type TripErrorCode =
-  | 'creature_away'
-  | 'creature_on_job'
-  | 'slots_full'
-  | 'destination_closed'
-  | 'rank_too_low'
-  | 'supply_missing'
-  | 'invalid_supplies'
-  | 'invalid_destination'
-  | 'insufficient_funds'
-  | 'key_conflict'
-  | 'not_ready'
-  | 'not_active'
-  | 'no_offer'
-  | 'not_offered'
-  | 'already_chosen'
-  | 'cancelled'
-  | 'not_found'
-  | 'invalid_body'
-  | 'invalid_id';

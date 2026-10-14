@@ -18,7 +18,6 @@ import {
   equipChoices,
   expeditionBlocked,
   formatBonus,
-  formatDuration,
   gearName,
   gearShare,
   grantsForWeek,
@@ -28,7 +27,6 @@ import {
   jobResultRarity,
   jobTitle,
   lootIsEmpty,
-  lootLines,
   missingParts,
   openJobs,
   partsText,
@@ -60,13 +58,9 @@ describe('names and numbers', () => {
     expect(itemLabel('wave-band', 2)).toBe('Wave Band +2');
   });
 
-  it('writes parts and durations in words', () => {
+  it('writes parts in words', () => {
     expect(partsText({ scrap: 6, 'ember-shard': 1 })).toBe('6 Scrap, 1 Ember Shard');
     expect(partsText({})).toBe('nothing');
-    expect(formatDuration(4 * 3_600_000)).toBe('4 h');
-    expect(formatDuration(3 * 3_600_000 + 44 * 60_000)).toBe('3 h 44 min');
-    expect(formatDuration(45 * 60_000)).toBe('45 min');
-    expect(formatDuration(-5)).toBe('0 min');
   });
 
   it('finds what is short of a price', () => {
@@ -394,25 +388,5 @@ describe('grants and loot', () => {
   it('knows an empty grant', () => {
     expect(lootIsEmpty({ gear: [], converted: [], parts: {}, blueprints: [] })).toBe(true);
     expect(lootIsEmpty(expeditionLoot.result.loot as GrantLoot)).toBe(false);
-  });
-
-  it('lists everything a grant gave as lines', () => {
-    const lines = lootLines({
-      gear: [{ id: 'g', baseId: 'wave-band', rarity: 'rare' }],
-      converted: [{ baseId: 'trail-charm', rarity: 'common' }],
-      parts: { scrap: 6, glimmer: 1 },
-      blueprints: [
-        { baseId: 'trail-charm', rarity: 'common', duplicate: false },
-        { baseId: 'wave-band', rarity: 'rare', duplicate: true },
-      ],
-    });
-    expect(lines).toEqual([
-      'Wave Band (Rare)',
-      'Trail Charm (Common) did not fit in the bag and became parts',
-      'New blueprint: Trail Charm (Common)',
-      'Blueprint: Wave Band, already known, so it became scrap',
-      '6 Scrap',
-      '1 Glimmer',
-    ]);
   });
 });

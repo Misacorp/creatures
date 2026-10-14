@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import { GlossaryTag } from './Glossary';
 import { ItemFrame, ItemSprite, PartCount, RarityTag } from './GearArt';
 import { gearName, lootIsEmpty, partsEntries } from './gear-view';
@@ -8,7 +9,17 @@ import type { GrantLoot } from './gear-types';
  * not fit in the bag and became parts, blueprints, and parts as icons with numbers. The items pop
  * in when motion is allowed (`pop-in`, the same animation as the Festival creature). Text only.
  */
-export function LootList({ loot, label }: { loot: GrantLoot; label: string }) {
+export function LootList({
+  loot: given,
+  label,
+  counted = false,
+}: {
+  loot: GrantLoot;
+  label: string;
+  /** True when the parts and supplies are shown as count badges beside it, so they are left out here. */
+  counted?: boolean;
+}) {
+  const loot = counted ? { ...given, parts: {}, supplies: [] } : given;
   if (lootIsEmpty(loot)) return null;
   const parts = partsEntries(loot.parts);
   return (
@@ -40,9 +51,9 @@ export function LootList({ loot, label }: { loot: GrantLoot; label: string }) {
         <ul class="loot-notes">
           {loot.blueprints.map((b, i) => (
             <li key={i}>
-              <GlossaryTag entry="blueprint" look="chip" class="badge">
+              <Tag kind="badge" entry="blueprint">
                 {b.duplicate ? 'Known blueprint' : 'New blueprint'}
-              </GlossaryTag>{' '}
+              </Tag>{' '}
               {gearName(b.baseId)}
               {b.duplicate && <span class="muted"> (it became scrap)</span>}
             </li>

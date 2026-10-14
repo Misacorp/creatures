@@ -7,7 +7,6 @@ import {
 } from './expedition-parse';
 import type {
   CancelledTrip,
-  ExpeditionLength,
   ExplorerView,
   Slots,
   Trip,
@@ -15,6 +14,7 @@ import type {
   TripResult,
 } from './expedition-types';
 import type { CreatureGearFields } from './gear-types';
+import { isInt, isNullableInt, isRecord, isStr } from './parse-core';
 import { createReauth, type Reauth } from './reauth';
 
 export interface AppConfig {
@@ -27,7 +27,7 @@ export interface AppConfig {
   devTools: boolean;
 }
 
-export interface Health {
+interface Health {
   ok: boolean;
 }
 
@@ -36,7 +36,7 @@ export interface SessionUser {
   displayName: string;
 }
 
-export interface SessionResult {
+interface SessionResult {
   /** Kept in memory by this module only; callers never need to touch it. */
   accessToken: string;
   user: SessionUser;
@@ -92,14 +92,22 @@ export class ApiError extends Error {
 // cookies or the URL.
 let sessionToken: string | null = null;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
 function isSessionUser(value: unknown): value is SessionUser {
   return (
     isRecord(value) && typeof value['id'] === 'string' && typeof value['displayName'] === 'string'
   );
+}
+
+/**
+ * The init of a request that carries a JSON body (a POST unless the route wants another method).
+ * Every client request with a body is built here, so the headers and the encoding are the same everywhere.
+ */
+export function jsonRequest(method: string, body: unknown): RequestInit {
+  return {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  };
 }
 
 // Relative URLs on purpose: inside Discord they go through its proxy to the same origin.
@@ -181,11 +189,7 @@ export async function fetchHealth(): Promise<Health> {
 
 /** Exchanges the Discord OAuth code for a session. Stores the session token in memory. */
 export async function createSession(code: string, instanceId: string): Promise<SessionResult> {
-  const data = await request('/api/auth/session', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code, instanceId }),
-  });
+  const data = await request('/api/auth/session', jsonRequest('POST', { code, instanceId }));
   if (
     !isRecord(data) ||
     typeof data['sessionToken'] !== 'string' ||
@@ -209,11 +213,7 @@ function isBalances(value: unknown): value is Balances {
   );
 }
 
-const isInt = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isInteger(value);
-const isNullableInt = (value: unknown): value is number | null => value === null || isInt(value);
-
-export function isLeetSyncStatus(value: unknown): value is LeetSyncStatus {
+function isLeetSyncStatus(value: unknown): value is LeetSyncStatus {
   return (
     isRecord(value) &&
     (value['source'] === 'http' || value['source'] === 'mock' || value['source'] === 'disabled') &&
@@ -267,9 +267,6 @@ export async function fetchLedger(limit: number): Promise<LedgerEntry[]> {
 
 // --- Game state ---
 
-/** The trip lengths of expeditions v2: 2, 6, 12 and (from explorer rank 5) 24 hours. */
-export type DurationId = ExpeditionLength;
-
 export interface Creature extends CreatureGearFields {
   id: string;
   species: string;
@@ -293,7 +290,7 @@ export interface Creature extends CreatureGearFields {
 }
 
 /** A creature's finale ability. `nextId` is the stronger one of its evolved form. */
-export interface CreatureAbility {
+interface CreatureAbility {
   id: string;
   unlocked: boolean;
   unlockLevel: number;
@@ -336,8 +333,6 @@ export interface GameState {
   /** The guild's IANA timezone; present on GET /api/state only (null in action responses). */
   timezone: string | null;
 }
-
-const isStr = (value: unknown): value is string => typeof value === 'string';
 
 function isStats(value: unknown): value is Creature['stats'] {
   return isRecord(value) && isInt(value['hp']) && isInt(value['atk']) && isInt(value['spd']);
@@ -460,14 +455,6 @@ export function parseGameState(data: unknown): GameState {
   };
 }
 
-function postJson(path: string, method: string, body: unknown): Promise<unknown> {
-  return apiFetch(path, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-}
-
 export function stateFrom(data: unknown): GameState {
   return parseGameState(isRecord(data) ? data['state'] : undefined);
 }
@@ -477,7 +464,9 @@ export async function fetchState(): Promise<GameState> {
 }
 
 export async function chooseStarter(species: string, idempotencyKey: string): Promise<GameState> {
-  return stateFrom(await postJson('/api/starter', 'POST', { species, idempotencyKey }));
+  return stateFrom(
+    await apiFetch('/api/starter', jsonRequest('POST', { species, idempotencyKey })),
+  );
 }
 
 export async function trainCreature(
@@ -485,7 +474,7 @@ export async function trainCreature(
   idempotencyKey: string,
 ): Promise<GameState> {
   return stateFrom(
-    await postJson(`/api/creatures/${creatureId}/train`, 'POST', { idempotencyKey }),
+    await apiFetch(`/api/creatures/${creatureId}/train`, jsonRequest('POST', { idempotencyKey })),
   );
 }
 
@@ -493,7 +482,9 @@ export async function renameCreature(
   creatureId: string,
   nickname: string | null,
 ): Promise<GameState> {
-  return stateFrom(await postJson(`/api/creatures/${creatureId}`, 'PATCH', { nickname }));
+  return stateFrom(
+    await apiFetch(`/api/creatures/${creatureId}`, jsonRequest('PATCH', { nickname })),
+  );
 }
 
 export interface EvolveResult {
@@ -508,7 +499,10 @@ export async function evolveCreature(
   creatureId: string,
   idempotencyKey: string,
 ): Promise<EvolveResult> {
-  const data = await postJson(`/api/creatures/${creatureId}/evolve`, 'POST', { idempotencyKey });
+  const data = await apiFetch(
+    `/api/creatures/${creatureId}/evolve`,
+    jsonRequest('POST', { idempotencyKey }),
+  );
   if (!isRecord(data) || !isStr(data['species']) || typeof data['firstOnServer'] !== 'boolean') {
     throw new Error('the server returned an unexpected evolve result');
   }

@@ -1,0 +1,80 @@
+/*
+  Design tokens and base styles: a dithered night sky, dusk panels in hard pixel frames, ink
+  outlines and one gold accent. It is a game screen, so there is deliberately one dark theme.
+  Fonts are self-hosted (the CSP allows font-src 'self' only): Jersey 10 for names, numbers and
+  buttons (picked by Misa for its clear digits), Atkinson Hyperlegible for everything you read. Both are under the SIL Open Font License
+  (see the packages in node_modules/@fontsource).
+
+  The stylesheet is split by view and component. THE ORDER OF THE IMPORTS BELOW IS THE CASCADE ORDER:
+  later rules win over earlier ones of the same specificity, so do not reorder or move a rule
+  across files without checking that nothing else sets the same property on the same element.
+*/
+
+@import './base/fonts.css';
+@import './base/tokens.css';
+@import './base/base.css';
+@import './base/controls.css';
+@import './components/glossary-tag.css';
+@import './components/tabs.css';
+@import './components/cards.css';
+@import './views/raid.css';
+@import './views/replay.css';
+@import './views/finale-abilities.css';
+@import './views/live.css';
+@import './views/festival.css';
+@import './components/reveal.css';
+@import './views/after-action.css';
+@import './components/pixel.css';
+@import './components/pixel-heading.css';
+@import './components/element-chip.css';
+@import './components/bars.css';
+@import './components/slot-row.css';
+@import './components/creature-card.css';
+@import './views/boss-card.css';
+@import './stage/stage.css';
+@import './stage/units.css';
+@import './components/popover.css';
+@import './stage/ability-popover.css';
+@import './stage/abilities.css';
+@import './stage/fx.css';
+@import './stage/motion.css';
+@import './stage/ability-auto.css';
+@import './stage/countdown.css';
+@import './views/app.css';
+@import './views/how-to-play.css';
+@import './components/coach.css';
+@import './components/gear-tokens.css';
+@import './components/item-frame.css';
+@import './components/count-badge.css';
+@import './views/workshop.css';
+@import './views/inventory.css';
+@import './views/item-detail.css';
+@import './components/picker.css';
+@import './views/jobs.css';
+@import './views/gear-slot.css';
+@import './components/loot.css';
+@import './views/dungeon.css';
+@import './views/dungeon-banner.css';
+@import './views/dungeon-results.css';
+@import './stage/unit-hp.css';
+@import './components/creature-pop.css';
+@import './stage/single-row.css';
+@import './views/dungeon-banner-motion.css';
+@import './components/reward-pile.css';
+@import './components/callout.css';
+@import './views/expeditions/banner.css';
+@import './views/expeditions/nav.css';
+@import './components/title-plate.css';
+@import './views/expeditions/catalogue.css';
+@import './views/expeditions/send.css';
+@import './views/expeditions/trips.css';
+@import './views/expeditions/claim.css';
+@import './views/expeditions/profile.css';
+@import './views/expeditions/wipe-notice.css';
+@import './views/expeditions/supply-crafting.css';
+@import './components/progress-track.css';
+@import './components/xp-bar.css';
+@import './views/raid-timeline.css';
+@import './views/raid-boss-card.css';
+@import './views/raid-placement.css';
+@import './views/raid-abilities.css';

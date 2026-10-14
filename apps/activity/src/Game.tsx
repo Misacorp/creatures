@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  ApiError,
   chooseStarter,
   evolveCreature,
   fetchState,
@@ -11,7 +10,7 @@ import {
   type GameState,
   type LeetSyncStatus,
 } from './api';
-import { createKeyStore } from './actions';
+import { ActionIds } from './actions';
 import { Collection } from './Collection';
 import { claimExpedition, pushOn, sendExpedition, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
@@ -20,7 +19,7 @@ import { fetchGear } from './gear-api';
 import { createGearActions } from './gear-actions';
 import type { GearState, JobResult } from './gear-types';
 import { GlossaryTag } from './Glossary';
-import { clockOffset, creatureName, errorText, speciesName } from './game';
+import { clockOffset, creatureName, speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
@@ -29,6 +28,7 @@ import { DevPanelHost } from './DevPanelHost';
 import { Sprite } from './sprites/Sprite';
 import { StarterPicker } from './StarterPicker';
 import { TABS, tabAfterKey, tabPalette, type Tab } from './tabs';
+import { useActionRunner } from './use-action-runner';
 import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
 
@@ -58,8 +58,6 @@ export function Game({
 }) {
   const [current, setCurrent] = useState<Loaded>(() => loaded(initial));
   const [tab, setTab] = useState<Tab>('collection');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [reveal, setReveal] = useState<{ result: ClaimResult; trip: Trip | undefined } | null>(
     null,
   );
@@ -67,14 +65,26 @@ export function Game({
   const [gear, setGear] = useState<GearState | null>(null);
   const [gearFailed, setGearFailed] = useState(false);
   const [jobReveal, setJobReveal] = useState<JobResult | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   // Bumped by the debug panel after a tool changed something: the view on screen loads afresh.
   const [devNonce, setDevNonce] = useState(0);
-  const keys = useRef(createKeyStore()).current;
-  // A second tap in the same tick must not start a second request, even before `busy` renders.
-  const inFlight = useRef(false);
   // Counts player actions, so a background refresh that started before one is never applied.
   const actionCount = useRef(0);
+  // One action at a time (a second tap in the same tick is turned away before `busy` renders).
+  // Idempotency keys are reused when the outcome is unknown (network error) so a retry cannot spend
+  // twice. After a definite "no" the state is reloaded, since the screen was probably out of date.
+  const { busy, error, notice, setError, setNotice, inFlight, run, runKeyed } = useActionRunner({
+    onStart: () => {
+      actionCount.current += 1;
+    },
+    onStale: async () => {
+      try {
+        setCurrent(loaded(await fetchState()));
+      } catch {
+        // Keep the error; the next action reloads anyway.
+      }
+      loadGear();
+    },
+  });
   // Counts gear views that came from an action, so a slower load that started before one is dropped.
   const gearVersion = useRef(0);
   const { game, offset } = current;
@@ -94,7 +104,7 @@ export function Game({
         fetchState().then(
           (next) => {
             if (cancelled) return;
-            if (!inFlight.current && actionCount.current === startedAt) setCurrent(loaded(next));
+            if (!inFlight() && actionCount.current === startedAt) setCurrent(loaded(next));
             if (next.leetSync !== null) onLeetSync(next.leetSync);
             schedule(next.leetSync, attempts + 1);
           },
@@ -111,46 +121,8 @@ export function Game({
     };
   }, []);
 
-  /**
-   * Runs one user action. Idempotency keys are reused when the outcome is unknown (network error)
-   * so a retry cannot spend twice. After a definite "no" the state is reloaded, since the screen
-   * was probably out of date.
-   */
-  async function run<T>(
-    action: string,
-    task: () => Promise<T>,
-    currency?: string,
-  ): Promise<T | undefined> {
-    if (inFlight.current) return undefined;
-    inFlight.current = true;
-    actionCount.current += 1;
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    try {
-      const value = await task();
-      keys.settle(action);
-      return value;
-    } catch (err) {
-      keys.settle(action, err);
-      setError(errorText(err, currency));
-      if (err instanceof ApiError && (err.status === 404 || err.status === 409)) {
-        try {
-          setCurrent(loaded(await fetchState()));
-        } catch {
-          // Keep the error above; the next action reloads anyway.
-        }
-        loadGear();
-      }
-      return undefined;
-    } finally {
-      inFlight.current = false;
-      setBusy(false);
-    }
-  }
-
-  async function runState(action: string, task: () => Promise<GameState>): Promise<void> {
-    const next = await run(action, task);
+  /** Shows the collection of an action's answer, if it had one. */
+  function showState(next: GameState | undefined): void {
     if (next !== undefined) setCurrent(loaded(next));
   }
 
@@ -159,11 +131,11 @@ export function Game({
    * did not start because an action is running.
    */
   function refreshState(): boolean {
-    if (inFlight.current) return false;
+    if (inFlight()) return false;
     const startedAt = actionCount.current;
     fetchState().then(
       (next) => {
-        if (!inFlight.current && actionCount.current === startedAt) setCurrent(loaded(next));
+        if (!inFlight() && actionCount.current === startedAt) setCurrent(loaded(next));
       },
       () => undefined,
     );
@@ -193,7 +165,7 @@ export function Game({
 
   const gearActions = createGearActions({
     run,
-    keyFor: (action) => keys.keyFor(action),
+    runKeyed,
     apply: (views) => {
       gearVersion.current += 1;
       setCurrent(loaded(views.state));
@@ -230,8 +202,9 @@ export function Game({
         options={game.starterOptions}
         busy={busy}
         onChoose={(species) => {
-          const action = `starter:${species}`;
-          void runState(action, () => chooseStarter(species, keys.keyFor(action)));
+          void runKeyed(ActionIds.starter(species), (key) => chooseStarter(species, key)).then(
+            showState,
+          );
         }}
       />
     </>
@@ -308,15 +281,15 @@ export function Game({
               (await gearActions.equip(gearId, creatureId)) !== undefined
             }
             onTrain={(creature) => {
-              const action = `train:${creature.id}`;
-              void runState(action, () => trainCreature(creature.id, keys.keyFor(action)));
+              void runKeyed(ActionIds.train(creature.id), (key) =>
+                trainCreature(creature.id, key),
+              ).then(showState);
             }}
             onEvolve={(creature) => {
-              const action = `evolve:${creature.id}`;
-              void run(
-                action,
-                () => evolveCreature(creature.id, keys.keyFor(action)),
-                'Essence',
+              void runKeyed(
+                ActionIds.evolve(creature.id),
+                (key) => evolveCreature(creature.id, key),
+                { currency: 'Essence' },
               ).then((done: EvolveResult | undefined) => {
                 if (done === undefined) return;
                 setCurrent(loaded(done.state));
@@ -326,7 +299,7 @@ export function Game({
               });
             }}
             onRename={(creature, nickname) => {
-              void runState(`rename:${creature.id}`, () => renameCreature(creature.id, nickname));
+              void run(() => renameCreature(creature.id, nickname)).then(showState);
             }}
           />
         )}
@@ -338,22 +311,20 @@ export function Game({
             reveal={reveal}
             timezone={timezone.current}
             onSend={async (request: SendRequest) => {
-              const picks = request.supplies.map((p) => `${p.source}:${p.id}`).sort();
-              const action = `send:${request.creatureId}:${request.destination}:${request.duration}:${picks.join(',')}`;
-              const answer = await run(action, () => sendExpedition(request, keys.keyFor(action)));
+              const answer = await runKeyed(ActionIds.send(request), (key) =>
+                sendExpedition(request, key),
+              );
               if (answer === undefined) return false;
               setCurrent(loaded(answer.state));
               return true;
             }}
             onPushOn={(trip, goalId) => {
-              void run(`push-on:${trip.id}:${goalId}`, () => pushOn(trip.id, goalId)).then(
-                (answer) => {
-                  if (answer !== undefined) setCurrent(loaded(answer.state));
-                },
-              );
+              void run(() => pushOn(trip.id, goalId)).then((answer) => {
+                if (answer !== undefined) setCurrent(loaded(answer.state));
+              });
             }}
             onClaim={(trip) => {
-              void run(`claim:${trip.id}`, () => claimExpedition(trip.id)).then((done) => {
+              void run(() => claimExpedition(trip.id)).then((done) => {
                 if (done === undefined) return;
                 setCurrent(loaded(done.state));
                 setReveal({

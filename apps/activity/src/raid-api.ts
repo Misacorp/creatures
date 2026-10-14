@@ -4,14 +4,24 @@
  * outcome, and the client only sends intents (team, placement, opt-out).
  */
 import type { EventNames, FightEvent, Zone } from '@creatures/engine';
-import { apiFetch } from './api';
+import { apiFetch, jsonRequest } from './api';
+import {
+  isArrayOf,
+  isBool,
+  isCount,
+  isInt,
+  isNullableInt,
+  isNullableStr,
+  isRecord,
+  isStr,
+} from './parse-core';
 
 export type RaidStatus = 'open' | 'phase1' | 'phase2' | 'finale';
 export type RaidEventId = 'weekStart' | 'phase1' | 'phase2' | 'finale';
 export type RaidPhaseId = 'phase1' | 'phase2' | 'finale';
 
 export const RAID_EVENT_IDS: readonly RaidEventId[] = ['weekStart', 'phase1', 'phase2', 'finale'];
-export const RAID_PHASE_IDS: readonly RaidPhaseId[] = ['phase1', 'phase2', 'finale'];
+const RAID_PHASE_IDS: readonly RaidPhaseId[] = ['phase1', 'phase2', 'finale'];
 
 export interface RosterEntry {
   displayName: string;
@@ -205,17 +215,6 @@ export interface ReplayView {
 
 // --- Shape checks ---
 
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-export const isStr = (value: unknown): value is string => typeof value === 'string';
-export const isBool = (value: unknown): value is boolean => typeof value === 'boolean';
-export const isInt = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isInteger(value);
-export const isNullableStr = (value: unknown): value is string | null =>
-  value === null || isStr(value);
-export const isArrayOf = <T>(value: unknown, check: (item: unknown) => item is T): value is T[] =>
-  Array.isArray(value) && value.every(check);
 const isStrRecord = (value: unknown): value is Record<string, string> =>
   isRecord(value) && Object.values(value).every(isStr);
 
@@ -610,8 +609,6 @@ export interface AfterActionStats {
   adaptation: StatsAdaptation | null;
 }
 
-const isCount = (value: unknown): value is number => isInt(value) && value >= 0;
-
 const isStatsPlayer = (value: unknown): value is StatsPlayer =>
   isRecord(value) &&
   isStr(value['displayName']) &&
@@ -648,8 +645,6 @@ const isStatsKnockout = (value: unknown): value is StatsKnockout =>
   isNullableStr(value['owner']) &&
   isBool(value['you']) &&
   isInt(value['round']);
-
-const isNullableInt = (value: unknown): value is number | null => value === null || isInt(value);
 
 const isStatsAdaptation = (value: unknown): value is StatsAdaptation =>
   isRecord(value) &&
@@ -696,33 +691,29 @@ export function parseStats(data: unknown): AfterActionStats {
 
 // --- Requests ---
 
-function send(path: string, method: string, body: unknown): Promise<unknown> {
-  return apiFetch(path, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-}
-
 export async function fetchRaid(): Promise<RaidView> {
   return parseRaidView(await apiFetch('/api/raid'));
 }
 
 /** `creatureIds`: exactly three of the player's creatures, or null for the automatic team. */
 export async function setRaidTeam(creatureIds: readonly string[] | null): Promise<RaidView> {
-  return parseRaidView(await send('/api/raid/team', 'PUT', { creatureIds }));
+  return parseRaidView(await apiFetch('/api/raid/team', jsonRequest('PUT', { creatureIds })));
 }
 
 export async function placeCreature(creatureId: string, slot: number): Promise<RaidView> {
-  return parseRaidView(await send('/api/raid/placement', 'PUT', { creatureId, slot }));
+  return parseRaidView(
+    await apiFetch('/api/raid/placement', jsonRequest('PUT', { creatureId, slot })),
+  );
 }
 
 export async function unplaceCreature(creatureId: string): Promise<RaidView> {
-  return parseRaidView(await send('/api/raid/placement', 'DELETE', { creatureId }));
+  return parseRaidView(
+    await apiFetch('/api/raid/placement', jsonRequest('DELETE', { creatureId })),
+  );
 }
 
 export async function setRaidOptOut(optOut: boolean): Promise<RaidView> {
-  return parseRaidView(await send('/api/raid/opt-out', 'PUT', { optOut }));
+  return parseRaidView(await apiFetch('/api/raid/opt-out', jsonRequest('PUT', { optOut })));
 }
 
 export async function fetchReplay(
@@ -747,7 +738,7 @@ export async function fetchStats(
 
 /** Picks the finale ability (any time before the finale starts). */
 export async function setRaidAbility(abilityId: string): Promise<RaidView> {
-  return parseRaidView(await send('/api/raid/ability', 'PUT', { abilityId }));
+  return parseRaidView(await apiFetch('/api/raid/ability', jsonRequest('PUT', { abilityId })));
 }
 
 /**
@@ -755,10 +746,10 @@ export async function setRaidAbility(abilityId: string): Promise<RaidView> {
  * of the caller's own team creatures. Allowed until the finale starts. Answers with the new view.
  */
 export async function setRaidAutofire(target: string, on: boolean): Promise<RaidView> {
-  return parseRaidView(await send('/api/raid/autofire', 'PUT', { target, on }));
+  return parseRaidView(await apiFetch('/api/raid/autofire', jsonRequest('PUT', { target, on })));
 }
 
 /** Marks a finale reveal as seen. Idempotent on the server. */
 export async function markRevealSeen(week: string): Promise<RaidView> {
-  return parseRaidView(await send('/api/raid/reveal-seen', 'POST', { week }));
+  return parseRaidView(await apiFetch('/api/raid/reveal-seen', jsonRequest('POST', { week })));
 }

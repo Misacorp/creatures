@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { parseSprite, swapPalette, type SpriteDef } from './sprite-data';
 
-export interface SpriteProps {
+interface SpriteProps {
   sprite: SpriteDef;
   /** Whole screen pixels per sprite pixel. */
   scale?: number;

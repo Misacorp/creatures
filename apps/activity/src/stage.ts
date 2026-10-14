@@ -28,8 +28,8 @@ import {
 } from '@creatures/engine';
 import { stateAt, type StepState } from './replay';
 
-export type FloatTone = 'hit' | 'hurt' | 'blocked' | 'buff';
-export type ZoneEffect = 'shield' | 'rally' | 'hit';
+type FloatTone = 'hit' | 'hurt' | 'blocked' | 'buff';
+type ZoneEffect = 'shield' | 'rally' | 'hit';
 
 /**
  * One thing to show. `i` is the index of the event it came from, so cues are unique and their
@@ -68,7 +68,7 @@ export type Cue =
   | { kind: 'banner'; i: number; text: string };
 
 /** What the boss does. `reflect_armed` is the trap being set at the start of a round: it has no wind-up. */
-export type StrikeAction =
+type StrikeAction =
   | 'attack'
   | 'hit_zone'
   | 'strike_highest_atk'
@@ -475,17 +475,6 @@ export function buildBeats(
   return beats;
 }
 
-/** The start time of every beat, in ms from the first beat's start. */
-export function beatOffsets(beats: readonly Beat[]): number[] {
-  const out: number[] = [];
-  let at = 0;
-  for (const b of beats) {
-    out.push(at);
-    at += b.ms;
-  }
-  return out;
-}
-
 /**
  * Where a live stage starts playing when it is `shown` events in and the log has grown. If whole
  * rounds went by unseen (the tab was in the background), they are skipped: the stage jumps to the
@@ -500,7 +489,7 @@ export function playStart(events: readonly FightEvent[], shown: number): number 
 
 // --- State ---
 
-export interface StageState extends StepState {
+interface StageState extends StepState {
   /** Zones with a Shield Wall up in the current round. */
   shielded: readonly Zone[];
 }

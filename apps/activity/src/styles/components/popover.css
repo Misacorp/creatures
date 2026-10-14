@@ -1,0 +1,178 @@
+/*
+  The popover (ui/Popover.tsx), placed by script through --pop-x, --pop-y and --pop-arrow, set with
+  style.setProperty: above its anchor with a pointer arrow, below when there is no room above, and
+  kept inside its container. Compact by default (inside the fight stage, about 200px wide); `-wide`
+  is the page popover of tags, creatures and boss icons, in a fixed layer over the whole window.
+*/
+.popover {
+  position: absolute;
+  top: var(--pop-y, 0);
+  left: var(--pop-x, 0);
+  z-index: var(--z-stage-pop);
+  width: min(12.5rem, calc(100% - 8px));
+  padding: 0.375rem 0.5rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: var(--frame);
+  color: var(--bone);
+  font-family: var(--body);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-align: left;
+}
+
+/*
+  The pointer arrow: a stepped pixel triangle, an ink outline (::before) with the panel colour on top
+  (::after). It points down when the popover is above its anchor and up when it is below.
+*/
+.popover::before,
+.popover::after {
+  content: '';
+  position: absolute;
+  bottom: -9px;
+  height: 9px;
+}
+
+.popover::before {
+  left: calc(var(--pop-arrow, 20px) - 9px);
+  width: 18px;
+  background: var(--ink);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 33.34%,
+    83.33% 33.34%,
+    83.33% 66.67%,
+    66.67% 66.67%,
+    66.67% 100%,
+    33.33% 100%,
+    33.33% 66.67%,
+    16.67% 66.67%,
+    16.67% 33.34%,
+    0 33.34%
+  );
+}
+
+.popover::after {
+  left: calc(var(--pop-arrow, 20px) - 6px);
+  width: 12px;
+  background: var(--dusk-2);
+  clip-path: polygon(0 0, 100% 0, 100% 50%, 75% 50%, 75% 100%, 25% 100%, 25% 50%, 0 50%);
+  height: 6px;
+  bottom: -6px;
+}
+
+.popover[data-placement='below']::before,
+.popover[data-placement='below']::after {
+  top: auto;
+  transform: scaleY(-1);
+}
+
+.popover[data-placement='below']::before {
+  top: -9px;
+  bottom: auto;
+}
+
+.popover[data-placement='below']::after {
+  top: -6px;
+  bottom: auto;
+}
+
+.popover:focus-visible {
+  outline: var(--px) solid var(--bone);
+}
+
+.popover button:focus-visible {
+  outline-offset: 1px;
+}
+
+.popover p {
+  margin: 0.125rem 0;
+}
+
+/* The page popover: the same pixel frame and arrow, on a fixed layer over the page. */
+.popover-layer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-popover-layer);
+  pointer-events: none;
+}
+
+.popover.popover-wide {
+  width: min(17rem, calc(100% - 8px));
+  padding: 0.5rem 0.625rem 0.625rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  pointer-events: auto;
+}
+
+.pop-visual {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.pop-title {
+  margin: 0;
+  color: var(--gold);
+  font-size: 1.0625rem;
+  line-height: 1.2;
+}
+
+.pop-short {
+  margin: 0.125rem 0 0.375rem;
+  font-weight: 700;
+}
+
+.pop-lines {
+  margin: 0 0 0.5rem;
+  padding-left: 1.125rem;
+  list-style: square;
+}
+
+.pop-lines li {
+  margin: 0.125rem 0;
+}
+
+button.pop-more {
+  width: 100%;
+  min-height: 2.25rem;
+  background: var(--dusk);
+  color: var(--gold);
+  font-size: 0.875rem;
+}
+
+.pop-general {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+}
+
+/*
+  The tags under a creature popover, and under an ability popover on your own creature. The wide
+  popover has more room above them; the compact one keeps the margin of `.popover p`.
+*/
+.pop-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.popover-wide .pop-tags {
+  margin: 0.375rem 0 0;
+}
+
+button.pop-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  margin: 0 0 0.25rem;
+  padding: 0 0.5rem 0 0.25rem;
+  background: var(--dusk);
+  color: var(--gold);
+  font-size: 0.875rem;
+}
+
+.pop-back-arrow {
+  transform: scaleX(-1);
+}

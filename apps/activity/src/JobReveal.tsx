@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import { GLOSSARY_IDS, entryView } from '@creatures/game';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
@@ -6,8 +7,7 @@ import type { GearItem, JobResult } from './gear-types';
 import { gearName, improveMessage, jobVerb, rarityName } from './gear-view';
 import { Sprite } from './sprites/Sprite';
 import { supplyKindOf, supplyName } from './trip-view';
-import { usePrefersReducedMotion } from './hooks';
-import { RevealStage, useRevealFrame } from './Reveal';
+import { RevealLater, RevealShell, RevealStage, useRevealSequence } from './ui/RevealShell';
 
 /** The words of a claimed job, from its result alone. */
 function Outcome({ result, items }: { result: JobResult; items: readonly GearItem[] }) {
@@ -63,9 +63,9 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
             {item === undefined ? '' : ` +${String(item.level)}`} has a new enchant
           </p>
           <p>
-            <GlossaryTag entry={GLOSSARY_IDS.enchant(result.enchantId)} look="chip" class="tag">
+            <Tag entry={GLOSSARY_IDS.enchant(result.enchantId)}>
               {entryView(GLOSSARY_IDS.enchant(result.enchantId))?.title ?? result.enchantId}
-            </GlossaryTag>{' '}
+            </Tag>{' '}
             {entryView(GLOSSARY_IDS.enchant(result.enchantId))?.short}
           </p>
         </>
@@ -91,12 +91,15 @@ export function JobReveal({
   rarity: GearItem['rarity'];
   onDismiss: () => void;
 }) {
-  const reduced = usePrefersReducedMotion();
-  const frame = useRevealFrame(0, reduced);
-  const done = frame.phase === 'done';
+  const { frame, done } = useRevealSequence(0);
   return (
-    <section class="reveal-card job-reveal" role="status" aria-labelledby="job-reveal-heading">
-      <h3 id="job-reveal-heading">{jobVerb(result.kind)} finished</h3>
+    <RevealShell
+      id="job-reveal-heading"
+      title={`${jobVerb(result.kind)} finished`}
+      class="job-reveal"
+      status
+      onDismiss={onDismiss}
+    >
       <RevealStage
         frame={frame}
         opened={
@@ -112,7 +115,7 @@ export function JobReveal({
           </ItemFrame>
         }
       />
-      <div class={done ? 'reveal-gear-box done' : 'reveal-gear-box'}>
+      <RevealLater done={done}>
         <Outcome result={result} items={items} />
         <p class="muted">
           +{result.xp} <GlossaryTag entry="skill-crafting">Crafting</GlossaryTag> XP
@@ -123,12 +126,7 @@ export function JobReveal({
             </>
           )}
         </p>
-      </div>
-      <p>
-        <button type="button" class="primary" onClick={onDismiss}>
-          Got it
-        </button>
-      </p>
-    </section>
+      </RevealLater>
+    </RevealShell>
   );
 }

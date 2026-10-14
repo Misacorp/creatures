@@ -86,8 +86,7 @@ export interface ToolSpec {
   hint?: string;
 }
 
-export type BuildResult =
-  { ok: true; body: Record<string, unknown> } | { ok: false; error: string };
+type BuildResult = { ok: true; body: Record<string, unknown> } | { ok: false; error: string };
 
 /** The options a creature picker offers. */
 export interface CreatureChoice {

@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import { supplyDef } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import type { Creature } from './api';
@@ -5,16 +6,12 @@ import { supplyEntry } from './ExpeditionIcons';
 import { CostList } from './GearArt';
 import { GlossaryTag } from './Glossary';
 import type { GearState } from './gear-types';
-import {
-  formatDuration,
-  supplyCraftViews,
-  supplyDurationFor,
-  supplyLevelBlocker,
-} from './gear-view';
+import { supplyCraftViews, supplyDurationFor, supplyLevelBlocker } from './gear-view';
 import { capitalize } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { JobStarter } from './JobStarter';
 import { Sprite } from './sprites/Sprite';
+import { formatDuration } from './time-format';
 import { kindName, supplyEffect } from './trip-view';
 
 /**
@@ -62,10 +59,8 @@ export function SupplyCrafting({
                 <div class="bp-text">
                   <p class="pix bp-name">{view.name}</p>
                   <p class="tags">
-                    <GlossaryTag entry={supplyEntry(view.kind)} look="chip" class="tag">
-                      {kindName(view.kind)}
-                    </GlossaryTag>
-                    <span class="tag">{capitalize(view.tier)}</span>
+                    <Tag entry={supplyEntry(view.kind)}>{kindName(view.kind)}</Tag>
+                    <Tag>{capitalize(view.tier)}</Tag>
                   </p>
                   {def !== undefined && <p class="muted">{supplyEffect(def)}</p>}
                   <p class="muted">

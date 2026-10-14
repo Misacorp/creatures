@@ -14,7 +14,7 @@ import {
   type Rng,
 } from '@creatures/game';
 import type { Analytics } from './analytics';
-import type { Outcome } from './collection';
+import { GameError, atomically, type Outcome } from './outcome';
 import type { LedgerStorage } from './ledger';
 import {
   LATE_START_LIMIT_MS,
@@ -76,7 +76,6 @@ import {
   type ScheduledEvent,
 } from './raid-schedule';
 import {
-  RaidError,
   chosenTeamIds,
   effectiveTeam,
   loadCreatures,
@@ -148,14 +147,7 @@ export class Raid {
   }
 
   private atomically<T>(fn: () => T): Outcome<T> {
-    try {
-      return { ok: true, value: this.deps.storage.transactionSync(fn) };
-    } catch (err) {
-      if (err instanceof RaidError) {
-        return { ok: false, status: err.status, error: err.code };
-      }
-      throw err;
-    }
+    return atomically(this.deps.storage, fn);
   }
 
   // --- Weeks ---
@@ -424,13 +416,13 @@ export class Raid {
     const week = this.ensureWeek(weekIdFor(this.deps.now(), tz));
     this.syncRoster(week.weekId);
     const party = partyOf(this.sql, week.weekId, userId);
-    if (party === null) throw new RaidError(409, 'not_in_roster');
+    if (party === null) throw new GameError(409, 'not_in_roster');
     return { week, party };
   }
 
   /** Team and placement edits are allowed until the finale resolves. */
   private requireEditable(week: WeekRow): void {
-    if (week.status === 'finale') throw new RaidError(409, 'locked');
+    if (week.status === 'finale') throw new GameError(409, 'locked');
   }
 
   /**
@@ -447,10 +439,10 @@ export class Raid {
       if (creatureIds !== null) {
         const owned = new Set(loadCreatures(this.sql, userId).map((c) => c.id));
         if (new Set(creatureIds).size !== creatureIds.length) {
-          throw new RaidError(400, 'duplicate_creatures');
+          throw new GameError(400, 'duplicate_creatures');
         }
         if (!creatureIds.every((id) => owned.has(id)))
-          throw new RaidError(409, 'not_your_creature');
+          throw new GameError(409, 'not_your_creature');
       }
       this.sql.exec(
         `INSERT INTO raid_teams (week_id, user_id, creature_ids) VALUES (?, ?, ?)
@@ -507,7 +499,7 @@ export class Raid {
       this.readinessCache.invalidate();
       const length = rowLength(partyMembers(this.sql, week.weekId, party).length);
       if (!Number.isInteger(slot) || slot < 0 || slot >= length) {
-        throw new RaidError(400, 'invalid_slot');
+        throw new GameError(400, 'invalid_slot');
       }
       const mine = this.sql
         .exec<{
@@ -528,7 +520,7 @@ export class Raid {
         )
         .toArray()[0];
       if (occupant !== undefined && occupant.user_id !== userId) {
-        throw new RaidError(409, 'slot_taken');
+        throw new GameError(409, 'slot_taken');
       }
       // Delete first, insert after: the unique constraints never see two creatures in one slot.
       this.sql.exec(
@@ -568,7 +560,7 @@ export class Raid {
       const { week } = this.memberContext(userId, tz);
       this.requireEditable(week);
       const owned = loadCreatures(this.sql, userId).some((c) => c.id === creatureId);
-      if (!owned) throw new RaidError(409, 'not_your_creature');
+      if (!owned) throw new GameError(409, 'not_your_creature');
       this.readinessCache.invalidate();
       const removed = this.sql
         .exec<{ slot: number }>(
@@ -621,11 +613,11 @@ export class Raid {
 
   private requireOwnTeamCreature(weekId: string, userId: string, creatureId: string): void {
     const owned = loadCreatures(this.sql, userId).some((c) => c.id === creatureId);
-    if (!owned) throw new RaidError(409, 'not_your_creature');
+    if (!owned) throw new GameError(409, 'not_your_creature');
     const inTeam = effectiveTeam(this.sql, weekId, userId).creatures.some(
       (c) => c.id === creatureId,
     );
-    if (!inTeam) throw new RaidError(409, 'not_in_team');
+    if (!inTeam) throw new GameError(409, 'not_in_team');
   }
 
   /**
@@ -637,7 +629,7 @@ export class Raid {
     this.runDue(tz);
     return this.atomically(() => {
       const week = this.ensureWeek(weekIdFor(this.deps.now(), tz));
-      if (week.status !== 'open') throw new RaidError(409, 'locked');
+      if (week.status !== 'open') throw new GameError(409, 'locked');
       this.readinessCache.invalidate();
       const was = this.isOptedOut(week.weekId, userId);
       if (optOut) {
@@ -670,10 +662,10 @@ export class Raid {
     return this.atomically(() => {
       const { week } = this.memberContext(userId, tz);
       if (week.status === 'finale' || this.deps.now() >= eventTimes(week.weekId, tz).finale) {
-        throw new RaidError(409, 'locked');
+        throw new GameError(409, 'locked');
       }
       if (!basicAbilities().some((a) => a.id === abilityId)) {
-        throw new RaidError(400, 'invalid_body');
+        throw new GameError(400, 'invalid_body');
       }
       this.readinessCache.invalidate();
       const previous = this.sql
@@ -713,7 +705,7 @@ export class Raid {
       const { week, party } = this.memberContext(userId, tz);
       const now = this.deps.now();
       if (week.status === 'finale' || now >= eventTimes(week.weekId, tz).finale) {
-        throw new RaidError(409, 'locked');
+        throw new GameError(409, 'locked');
       }
       const wasOn = loadAutofire(this.sql, week.weekId).isOn(userId, target);
       storeAutofire(this.sql, week.weekId, userId, target, on);
@@ -754,7 +746,7 @@ export class Raid {
   markRevealSeen(userId: string, weekId: string): Outcome<null> {
     return this.atomically(() => {
       if (!markRevealSeen(this.sql, userId, weekId, this.deps.now())) {
-        throw new RaidError(404, 'not_found');
+        throw new GameError(404, 'not_found');
       }
       return null;
     });
@@ -966,7 +958,7 @@ export class Raid {
     if (!practice) this.trySettle(week.weekId, party, now);
     const outcome = this.atomically(() => {
       const row = loadLive(this.sql, week.weekId, party, practice);
-      if (row === null) throw new RaidError(409, 'not_in_fight');
+      if (row === null) throw new GameError(409, 'not_in_fight');
       const done = applyAction(this.sql, row, userId, body, now);
       if (done !== null) {
         this.deps.analytics?.record(
@@ -1022,16 +1014,16 @@ export class Raid {
         now >= finaleAt - PRACTICE_BLOCK_MS &&
         !finaleResolved(this.sql, week.weekId, party)
       ) {
-        throw new RaidError(409, 'practice_blocked');
+        throw new GameError(409, 'practice_blocked');
       }
       const last = loadLive(this.sql, week.weekId, party, true);
       if (!unrestricted && last !== null && now < practiceOverAt(last)) {
-        throw new RaidError(409, 'practice_cooldown');
+        throw new GameError(409, 'practice_cooldown');
       }
       // The fight starts after a 30 second lobby with the countdown; the party sees a lobby until then.
       const lobbyMs = options.lobbyMs ?? PRACTICE_LOBBY_MS;
       if (!startPracticeParty(this.deps, week, party, now + lobbyMs)) {
-        throw new RaidError(409, 'not_in_roster');
+        throw new GameError(409, 'not_in_roster');
       }
       return null;
     });

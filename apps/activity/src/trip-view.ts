@@ -18,8 +18,7 @@ import {
   type SupplyDef,
 } from '@creatures/game';
 import type { ExpeditionLength, ExplorerView, Slots, SupplyPick, Trip } from './expedition-types';
-import { formatDuration } from './gear-view';
-import type { PartKind } from './gear-types';
+import { formatDuration, formatHours } from './time-format';
 
 const BP = 10_000;
 
@@ -31,16 +30,16 @@ export function percentText(bp: number): string {
 // --- Trip lengths ---
 
 /** The nominal hours of a trip length, from the rules. */
-export function lengthHours(length: ExpeditionLength): number {
+function lengthHours(length: ExpeditionLength): number {
   return lengthRules(length).ms / 3_600_000;
 }
 
 /** "2 h", "6 h", "12 h", "24 h". */
 export function lengthLabel(length: ExpeditionLength): string {
-  return `${String(lengthHours(length))} h`;
+  return formatHours(lengthHours(length));
 }
 
-export interface LengthOption {
+interface LengthOption {
   id: ExpeditionLength;
   label: string;
   /** What the trip takes for this explorer (each rank above 1 shortens it), for example "11 h 31 min". */
@@ -57,11 +56,6 @@ export function lengthOptions(rank: number): LengthOption[] {
     takes: formatDuration(tripMs(id, rank)),
     rolls: lengthRules(id).rolls,
   }));
-}
-
-/** What a trip of this length takes for an explorer of this rank, in milliseconds. */
-export function tripTakesMs(length: ExpeditionLength, rank: number): number {
-  return tripMs(length, rank);
 }
 
 // --- Supplies ---
@@ -93,11 +87,6 @@ export function supplyEffect(def: SupplyDef): string {
 export function kindName(kind: string): string {
   const words = kind.replaceAll('-', ' ');
   return words.charAt(0).toUpperCase() + words.slice(1);
-}
-
-/** The label of a supply's choice mark. */
-export function choiceLabel(choice: SupplyOption['choice']): string {
-  return choice === 'guaranteed' ? 'Choice guaranteed' : 'Choice likely';
 }
 
 function optionOf(def: SupplyDef, stock: Readonly<Record<string, number>>): SupplyOption {
@@ -205,15 +194,11 @@ export function kitBlocker(
 
 // --- What a trip is good for, in pictures ---
 
-/** What a worth row draws: a part's icon, a glyph, or the creature paw. */
-export type WorthIcon =
-  { kind: 'part'; part: PartKind } | { kind: 'glyph'; id: string } | { kind: 'supply'; id: string };
-
 // --- A running trip ---
 
-export type TripPhase = 'out' | 'choice' | 'pushing' | 'ready';
+type TripPhase = 'out' | 'choice' | 'pushing' | 'ready';
 
-export interface TripStatus {
+interface TripStatus {
   phase: TripPhase;
   /** How far the current leg is, 0 to 1: the trip itself, then (after a choice) the push-on. */
   fraction: number;
@@ -279,31 +264,7 @@ export function recallKeeps(trip: Trip, now: number): number {
   return recallCatches(trip.rolls, trip.startedAt, trip.endsAt, now);
 }
 
-/** A bar's fill in tenths of a percent (0 to 100), so a long wait still moves smoothly. */
-export function fillPct(fraction: number): number {
-  return Math.floor(Math.min(1, Math.max(0, fraction)) * 1000) / 10;
-}
-
 // --- Explorer XP and slots ---
-
-export interface XpBar {
-  /** 0 to 100. */
-  pct: number;
-  /** "300 of 1200 XP to rank 4", or "Top rank" at the top. */
-  text: string;
-}
-
-/** The XP bar of an explorer: how far from its rank's XP to the next rank's. */
-export function xpBar(explorer: Pick<ExplorerView, 'rank' | 'xp' | 'nextRankXp'>): XpBar {
-  if (explorer.nextRankXp === null) return { pct: 100, text: 'Top rank' };
-  const start = RULES.expeditions.rank.xpForRank[Math.max(0, explorer.rank - 1)] ?? 0;
-  const span = Math.max(1, explorer.nextRankXp - start);
-  const done = Math.min(span, Math.max(0, explorer.xp - start));
-  return {
-    pct: Math.floor((done * 1000) / span) / 10,
-    text: `${String(done)} of ${String(span)} XP to rank ${String(explorer.rank + 1)}`,
-  };
-}
 
 /** What an `XpBar` of an explorer is given: the XP into this rank, the span of the rank and the end caps. */
 export interface ExplorerXp {
@@ -331,30 +292,30 @@ export function explorerXp(explorer: Pick<ExplorerView, 'rank' | 'xp' | 'nextRan
   };
 }
 
-export interface SlotsLine {
+interface SlotsLine {
   /** "1 of 2 slots in use". */
   use: string;
   /** What opens the next slot, or null when every slot is open. */
   next: string | null;
-  /** 0 to 1 progress to the next slot, or null. */
-  fraction: number | null;
+  /** Progress to the next slot (for a bar), or null. */
+  progress: { value: number; max: number } | null;
 }
 
 /** The open slots and the progress to the next one (`slots.next` of the state). */
 export function slotsLine(slots: Slots): SlotsLine {
   const use = `${String(slots.used)} of ${String(slots.total)} ${slots.total === 1 ? 'slot' : 'slots'} in use`;
-  if (slots.next === null) return { use, next: null, fraction: null };
+  if (slots.next === null) return { use, next: null, progress: null };
   if (slots.next.kind === 'trips') {
     return {
       use,
       next: `Next slot: finish ${String(slots.next.at)} trips (${String(slots.tripsFinished)} so far)`,
-      fraction: Math.min(1, slots.tripsFinished / Math.max(1, slots.next.at)),
+      progress: { value: slots.tripsFinished, max: Math.max(1, slots.next.at) },
     };
   }
   return {
     use,
     next: `Next slot: your explorers' ranks above 1 add up to ${String(slots.next.at)} (now ${String(slots.rankSum)})`,
-    fraction: Math.min(1, slots.rankSum / Math.max(1, slots.next.at)),
+    progress: { value: slots.rankSum, max: Math.max(1, slots.next.at) },
   };
 }
 

@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import { nextRankXp } from '@creatures/game';
 import type { ClaimResult, Creature } from './api';
 import {
@@ -5,7 +6,6 @@ import {
   foundSupplies,
   journalPages,
   nothingInLoot,
-  pileLabel,
   pileSourceOf,
   pushOnLine,
   rankGiftViews,
@@ -16,13 +16,13 @@ import {
   xpView,
 } from './claim-view';
 import type { Trip } from './expedition-types';
-import { ExpIcon, Stars } from './ExpeditionIcons';
+import { Stars } from './ExpeditionIcons';
+import { GameIcon } from './ui/GameIcon';
 import { catchBadgeTags, creatureName, getSpecies, speciesName } from './game';
-import { PartCount } from './GearArt';
+import { partCountItems } from './GearArt';
 import { LootList } from './GearLoot';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
-import { RewardPile } from './RewardPile';
 import { explorerInfo } from './send-view';
 import { SmallCreature } from './SmallCreature';
 import { XpBar } from './XpBar';
@@ -30,7 +30,9 @@ import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { destinationName, explorerXp, supplyKindOf } from './trip-view';
-import { partsEntries } from './gear-view';
+import { Callout } from './ui/Callout';
+import { RevealShell } from './ui/RevealShell';
+import { RewardSummary } from './ui/RewardSummary';
 
 /**
  * What a claimed trip brought home. A trip that failed (a risky push-on that did not work out) is a
@@ -79,12 +81,13 @@ export function TripReveal({
         );
   const nothing = result.catches.length === 0 && lootEmpty && tone !== 'failed';
   return (
-    <section
-      class={`reveal-card trip-reveal ${tone}`}
-      role="status"
-      aria-labelledby="trip-reveal-heading"
+    <RevealShell
+      id="trip-reveal-heading"
+      title={revealTitle(tone)}
+      class={`trip-reveal ${tone}`}
+      status
+      onDismiss={onDismiss}
     >
-      <h3 id="trip-reveal-heading">{revealTitle(tone)}</h3>
       {creature !== undefined && (
         <p class="reveal-who">
           {info === null ? (
@@ -120,17 +123,15 @@ export function TripReveal({
                 <Sprite sprite={creatureSpriteOrFallback(entry.species)} scale={3} bob />
                 <strong>{speciesName(entry.species)}</strong>{' '}
                 {species !== undefined && <ElementChip element={species.element} />}{' '}
-                {catchBadgeTags(entry).map((badge) =>
-                  badge.entry === null ? (
-                    <span key={badge.text} class="badge">
-                      {badge.text}
-                    </span>
-                  ) : (
-                    <GlossaryTag key={badge.text} entry={badge.entry} look="chip" class="badge">
-                      {badge.text}
-                    </GlossaryTag>
-                  ),
-                )}
+                {catchBadgeTags(entry).map((badge) => (
+                  <Tag
+                    key={badge.text}
+                    kind="badge"
+                    {...(badge.entry === null ? {} : { entry: badge.entry })}
+                  >
+                    {badge.text}
+                  </Tag>
+                ))}
               </li>
             );
           })}
@@ -140,29 +141,22 @@ export function TripReveal({
       {!lootEmpty && loot !== undefined && (
         <div class="trip-loot">
           <p class="label">What it brought home</p>
-          <div class="reward-row">
-            <RewardPile source={source} label={pileLabel(source)} />
-            <ul class="reward-badges" aria-label="Parts and supplies">
-              {partsEntries(loot.parts).map((p) => (
-                <li key={p.kind}>
-                  <PartCount kind={p.kind} amount={p.amount} />
-                </li>
-              ))}
-              {supplies.map((s) => (
-                <li key={s.id}>
-                  <span class="part-count supply-count">
-                    <ExpIcon
-                      icon={{ kind: 'supply', id: supplyKindOf(s.id) ?? 'unknown' }}
-                      scale={2}
-                    />
-                    <span class="part-amount pix">{s.amount}</span>
-                    <span class="cost-name">{s.name}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <LootList loot={{ ...loot, parts: {}, supplies: [] }} label="Gear and blueprints" />
+          <RewardSummary
+            source={source}
+            prefix="Loot"
+            countsLabel="Parts and supplies"
+            counts={[
+              ...partCountItems(loot.parts),
+              ...supplies.map((s) => ({
+                key: s.id,
+                icon: { kind: 'supply', id: supplyKindOf(s.id) ?? 'unknown' } as const,
+                amount: s.amount,
+                name: s.name,
+              })),
+            ]}
+          >
+            <LootList loot={loot} counted label="Gear and blueprints" />
+          </RewardSummary>
         </div>
       )}
 
@@ -189,19 +183,19 @@ export function TripReveal({
             {...(bar.endCap === undefined ? {} : { endCap: bar.endCap })}
           />
           {gifts.map((gift) => (
-            <div key={gift.rank} class="rank-gift" role="note">
+            <Callout key={gift.rank} class="rank-gift">
               <p class="label">
                 <Sprite sprite={glyphOrUnknown('sparkle')} scale={2} /> {gift.title}
               </p>
               <ul class="gift-lines" aria-label={gift.title}>
                 {gift.lines.map((line) => (
                   <li key={line.key}>
-                    <ExpIcon icon={line.icon} scale={3} />
+                    <GameIcon icon={line.icon} scale={3} />
                     <span>{line.text}</span>
                   </li>
                 ))}
               </ul>
-            </div>
+            </Callout>
           ))}
         </div>
       )}
@@ -223,12 +217,12 @@ export function TripReveal({
       )}
 
       {slot !== null && (
-        <p class="slot-unlocked" role="note">
+        <Callout as="p" class="slot-unlocked">
           <Sprite sprite={glyphOrUnknown('sparkle')} scale={3} />{' '}
           <GlossaryTag entry="expedition-slot" look="text">
             {slot}
           </GlossaryTag>
-        </p>
+        </Callout>
       )}
 
       {pages.length > 0 && (
@@ -259,12 +253,6 @@ export function TripReveal({
           </ul>
         </div>
       )}
-
-      <p>
-        <button type="button" class="primary" onClick={onDismiss}>
-          Got it
-        </button>
-      </p>
-    </section>
+    </RevealShell>
   );
 }

@@ -8,7 +8,7 @@ import { content, RULES, type FinaleAbilityDef } from '@creatures/game';
 import { MAX_ROUND_MS, describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
 import type { LiveAbility, LiveActionRequest, LiveFight, LiveSnapshot } from './live-api';
 import type { AbilityPreview, RaidReveal, TeamCreatureView } from './raid-api';
-import { formatCountdown } from './game';
+import { formatCountdown } from './time-format';
 import { festivalGrantText, rankChangeText } from './raid-progress';
 
 // --- When the finale is on ---
@@ -19,9 +19,9 @@ export const LOBBY_MS = 5 * 60_000;
  * The longest a round of a finale can take (the engine's pacing, 6 to 22 seconds, is what the server
  * schedules by): only used to know when the Raid tab can stop expecting a result.
  */
-export const LONGEST_ROUND_MS = MAX_ROUND_MS;
+const LONGEST_ROUND_MS = MAX_ROUND_MS;
 /** How long after the last round the Raid tab keeps the finale view open for a result to show up. */
-export const FINISH_GRACE_MS = 30_000;
+const FINISH_GRACE_MS = 30_000;
 
 export type FinaleWindow = 'before' | 'lobby' | 'live' | 'after';
 
@@ -33,30 +33,23 @@ export function finaleWindow(finaleAt: number, rounds: number, serverNow: number
   return 'after';
 }
 
-/** "4:12" for 252 000 ms. Rounds up, never negative. */
-export function formatClock(ms: number): string {
-  const total = Math.max(0, Math.ceil(ms / 1000));
-  const minutes = Math.floor(total / 60);
-  const seconds = total % 60;
-  return `${String(minutes)}:${String(seconds).padStart(2, '0')}`;
-}
-
 /** The text of the Raid tab banner. */
 export function bannerText(window: FinaleWindow, finaleAt: number, serverNow: number): string {
-  if (window === 'lobby') return `Finale starts in ${formatClock(finaleAt - serverNow)}`;
+  if (window === 'lobby')
+    return `Finale starts in ${formatCountdown(finaleAt - serverNow, 'clock')}`;
   if (window === 'live') return 'The finale is on now';
   return '';
 }
 
 // --- Polling ---
 
-export const POLL_MS = 2000;
+const POLL_MS = 2000;
 /** Wait this long after a round boundary before asking, so the server has moved on. */
-export const BOUNDARY_SLACK_MS = 300;
-export const MIN_POLL_MS = 250;
+const BOUNDARY_SLACK_MS = 300;
+const MIN_POLL_MS = 250;
 /** Stop asking this long after the fight should have ended, even if no "done" ever arrives. */
 export const GIVE_UP_MS = 60_000;
-export const MAX_RETRY_MS = 15_000;
+const MAX_RETRY_MS = 15_000;
 
 /**
  * The next moment the fight's state changes, from the server's schedule: the start, then each
@@ -125,12 +118,12 @@ export function progressText(fight: LiveFight, serverNow: number): Progress {
   if (status === 'lobby' || round < 1) {
     return {
       headline: 'Waiting for the finale to start',
-      countdown: `Starts in ${formatClock(startsAt - serverNow)}`,
+      countdown: `Starts in ${formatCountdown(startsAt - serverNow, 'clock')}`,
     };
   }
   // The last round is the final one, or the one the boss has just fallen in.
   const last = round >= rounds || fight.bossHp === 0;
-  const wait = nextRoundAt === null ? '' : formatCountdown(nextRoundAt - serverNow);
+  const wait = nextRoundAt === null ? '' : formatCountdown(nextRoundAt - serverNow, 'hms');
   if (last) {
     return {
       headline: `Last round (${String(round)} of ${String(rounds)})`,
@@ -223,7 +216,7 @@ export function otherUsageText(usage: OtherUsage, names: Pick<EventNames, 'creat
   }`;
 }
 
-export interface CreatureAbilityRow {
+interface CreatureAbilityRow {
   /** The creature it belongs to. */
   creatureId: string;
   /** The ability's content id, so its name can open the glossary popover. */
@@ -293,7 +286,7 @@ export function noAbilityText(speciesId: string, level: number): string {
 }
 
 /** What a finale ability asks for when it is fired by hand. */
-export type ParamKind = 'zone' | 'element' | null;
+type ParamKind = 'zone' | 'element' | null;
 
 export function abilityParamKind(id: string): ParamKind {
   const effects = ABILITIES.get(id)?.effects ?? [];
@@ -341,7 +334,7 @@ export function abilityStateText(ability: LiveAbility, rounds: number, mine: boo
   }
 }
 
-export interface AbilityControls {
+interface AbilityControls {
   canFire: boolean;
   /** The Auto fire toggle is on offer (before the ability's default round, while unused). */
   canToggle: boolean;
@@ -349,16 +342,6 @@ export interface AbilityControls {
   autoOn: boolean;
   /** Why the buttons are off, or an empty string. */
   note: string;
-}
-
-/** The two lines of the Auto fire toggle: "Auto fire" and "round 7", or "Auto fire off" and "last round". */
-export function autoFireLabel(ability: Pick<LiveAbility, 'mode' | 'defaultRound'>): {
-  title: string;
-  detail: string;
-} {
-  if (ability.mode === 'held') return { title: 'Auto fire off', detail: 'last round' };
-  const round = defaultRoundOf(ability);
-  return { title: 'Auto fire', detail: round === null ? '' : `round ${String(round)}` };
 }
 
 /**
@@ -418,7 +401,7 @@ export function buildAction(
  * A lock per ability key, so a double tap on one ability sends one request while another ability
  * can still be pressed. `acquire` is true for the first caller until `release`.
  */
-export interface KeyLock {
+interface KeyLock {
   acquire(key: string): boolean;
   release(key: string): void;
   has(key: string): boolean;
@@ -503,7 +486,7 @@ export function earlierLines(events: readonly FightEvent[], names: EventNames): 
 
 // --- The loot reveal ---
 
-export interface RevealSummary {
+interface RevealSummary {
   outcome: string;
   cleared: boolean;
   /** One figure: everything the finale paid the player. */

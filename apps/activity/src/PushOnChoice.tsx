@@ -1,6 +1,7 @@
+import { Tag } from './ui/Tag';
 import { GLOSSARY_IDS } from '@creatures/game';
 import type { OfferedGoal } from './expedition-types';
-import { ExpIcon } from './ExpeditionIcons';
+import { GameIcon } from './ui/GameIcon';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { goalCards, type GoalCard } from './push-on-view';
@@ -22,9 +23,7 @@ function GoalCardView({
     <li class={`goal-card ${risky ? 'risky' : 'safe'}${very ? ' very' : ''}`}>
       <p class="goal-flag">
         <Sprite sprite={glyphOrUnknown(very ? 'skull' : risky ? 'warning' : 'check')} scale={2} />
-        <GlossaryTag entry={GLOSSARY_IDS.goal(card.risk)} look="chip" class="tag">
-          {card.riskWord}
-        </GlossaryTag>
+        <Tag entry={GLOSSARY_IDS.goal(card.risk)}>{card.riskWord}</Tag>
       </p>
       <h5 class="pix goal-name">{card.name}</h5>
       <p class="muted goal-flavor">{card.flavor}</p>
@@ -38,7 +37,7 @@ function GoalCardView({
       <ul class="goal-rewards">
         {card.rewards.map((reward) => (
           <li key={reward.key}>
-            <ExpIcon icon={reward.icon} scale={3} />
+            <GameIcon icon={reward.icon} scale={3} />
             <span>{reward.text}</span>
           </li>
         ))}

@@ -12,22 +12,23 @@ import type { LiveAbility, LiveFight } from './live-api';
 import type { ReplayRowEntry } from './raid-api';
 import { stateAt } from './replay';
 import {
-  HP_SEGMENTS,
   abilityUsesAt,
   cuesForEvents,
   creatureHpAt,
   groupByZone,
-  hpSegments,
   stageStateAt,
   type AbilityUse,
 } from './stage';
 import { badgeFor, unitTap, usedBadge, type Badge } from './stage-abilities';
+import { creatureInfoOf } from './creature-info';
 import { SmallCreature } from './SmallCreature';
 import { ElementChip } from './sprites/ElementChip';
-import { capitalize } from './game';
 import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
 import { forecastNextRound, strikeLabel, type Wording } from './telegraph';
-import { StagePopover } from './StagePopover';
+import { PixelHeading } from './ui/PixelHeading';
+import { Popover, popupProps } from './ui/Popover';
+import { SegmentBar } from './ui/SegmentBar';
+import { ToggleButton } from './ui/ToggleButton';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { elementIcon } from './sprites/element-icons';
@@ -44,46 +45,20 @@ const PLACE_NAMES: Record<Zone, string> = { front: 'Left', middle: 'Middle', bac
 const nameOf = (table: Readonly<Record<string, string>> | undefined, id: string): string =>
   table?.[id] ?? id;
 
-/** The boss's segmented HP bar. Segments that just emptied blink once (when motion is allowed). */
-export function HpBar({
-  current,
-  max,
-  previous,
-  label,
-}: {
-  current: number;
-  max: number;
-  /** The HP before the beat that is playing, so the segments that just emptied can blink. */
-  previous?: number;
-  label: string;
-}) {
-  const lit = hpSegments(current, max);
-  const was = previous === undefined ? lit : hpSegments(previous, max);
-  return (
-    <div class="hpbar" role="img" aria-label={label}>
-      {Array.from({ length: HP_SEGMENTS }, (_, k) => (
-        <i key={k} class={k < lit ? undefined : k < was ? 'gone drain' : 'gone'} />
-      ))}
-    </div>
-  );
-}
-
 /** A "Log" button that opens the plain-text feed. Closed by default: the stage shows the fight. */
 export function LogToggle({ id, children }: { id: string; children: ComponentChildren }) {
   const [open, setOpen] = useState(false);
   return (
     <section class="stage-log" aria-label="Fight log">
-      <button
-        type="button"
-        class={open ? 'toggle on' : 'toggle'}
-        aria-expanded={open}
-        aria-controls={id}
-        onClick={() => {
+      <ToggleButton
+        pressed={open}
+        controls={id}
+        onToggle={() => {
           setOpen(!open);
         }}
       >
         {open ? 'Hide log' : 'Log'}
-      </button>
+      </ToggleButton>
       <div id={id} hidden={!open}>
         {open && children}
       </div>
@@ -203,13 +178,13 @@ function RoundIntro({ intro }: { intro: IntroView }) {
       aria-hidden="true"
       ref={cssVars({ '--fx-ms': `${String(intro.ms)}ms` })}
     >
-      <span key={intro.key} class="ri-text pix">
+      <PixelHeading key={intro.key} as="span" outline="ink-drop" class="ri-text">
         <span class="ri-label">
           <span>Round</span>
           <span>{intro.round}</span>
         </span>
         <span class="ri-of">of {intro.rounds}</span>
-      </span>
+      </PixelHeading>
     </div>
   );
 }
@@ -318,7 +293,7 @@ function Beam({
 }
 
 /** What the live stage needs to put the player's abilities on their creatures. */
-export interface StageAbilities {
+interface StageAbilities {
   /** Every ability of the fight (the caller's own and the others'). */
   list: readonly LiveAbility[];
   /** The caller's player key in this fight. */
@@ -339,7 +314,7 @@ export interface StageAbilities {
   help?: ComponentChildren;
 }
 
-export interface StageProps {
+interface StageProps {
   boss: { id: string; name: string };
   hpMax: number;
   hpStart: number;
@@ -442,20 +417,6 @@ interface UnitProps {
   onToggle: () => void;
 }
 
-const UNIT_HP_SEGMENTS = 5;
-
-/** A creature's small HP bar: five stepped segments, so a hit takes a visible chunk. */
-function UnitHp({ current, max }: { current: number; max: number }) {
-  const lit = hpSegments(current, max, UNIT_HP_SEGMENTS);
-  return (
-    <span class="unit-hp" aria-hidden="true">
-      {Array.from({ length: UNIT_HP_SEGMENTS }, (_, k) => (
-        <i key={k} class={k < lit ? undefined : 'gone'} />
-      ))}
-    </span>
-  );
-}
-
 /**
  * One creature on the stage: its sprite with the corner marks (the "you" tag above it, the ability
  * badge top right, the skull of a knocked-out creature bottom left, its element bottom right) and
@@ -505,7 +466,9 @@ function StageUnit(props: UnitProps) {
       <span class="unit-name pix" aria-hidden="true">
         {c.name}
       </span>
-      {props.hp !== null && <UnitHp current={props.hp.current} max={props.hp.max} />}
+      {props.hp !== null && (
+        <SegmentBar size="unit" current={props.hp.current} max={props.hp.max} />
+      )}
     </>
   );
 
@@ -516,8 +479,7 @@ function StageUnit(props: UnitProps) {
           type="button"
           ref={props.anchorRef}
           class="unit-face"
-          aria-haspopup="dialog"
-          aria-expanded={open}
+          {...popupProps(open)}
           aria-label={`${spoken}. ${props.opens}`}
           onClick={props.onToggle}
         >
@@ -527,13 +489,7 @@ function StageUnit(props: UnitProps) {
         // Display only: a tap shows the creature's role and element (`SmallCreature`).
         <SmallCreature
           id={c.id}
-          info={{
-            name: c.name,
-            species: c.species,
-            level: c.level,
-            element: c.element,
-            role: c.role,
-          }}
+          info={creatureInfoOf(c)}
           class="unit-face"
           label={`${spoken}. Level ${String(c.level)}. Shows its role and element.`}
         >
@@ -557,7 +513,7 @@ function CreatureTags({ creature }: { creature: ReplayRowEntry | undefined }) {
   if (creature === undefined) return null;
   return (
     <p class="tags pop-tags">
-      <ElementChip element={creature.element} role={capitalize(creature.role)} />
+      <ElementChip element={creature.element} role={creature.role} />
     </p>
   );
 }
@@ -568,7 +524,7 @@ function CreatureTags({ creature }: { creature: ReplayRowEntry | undefined }) {
  * centred in slot order and wrapping onto more lines if needed. It shows the state after `index`
  * events and animates the beat `anim`: hops, white flashes, floating numbers, reaction bursts,
  * the mark, knockouts, zone frames and ability cards. Everything is drawn from the event log; the
- * animation classes are only decoration, and `prefers-reduced-motion` (in styles.css) turns them
+ * animation classes are only decoration, and `prefers-reduced-motion` (in styles/stage/motion.css) turns them
  * into outlines and instant changes.
  */
 export function Stage({
@@ -738,8 +694,7 @@ export function Stage({
               type="button"
               ref={anchorRef('help')}
               class="stage-help pix"
-              aria-haspopup="dialog"
-              aria-expanded={openKey === 'help'}
+              {...popupProps(openKey === 'help')}
               aria-label="How abilities work"
               onClick={() => {
                 toggle('help');
@@ -766,6 +721,7 @@ export function Stage({
               <GlossaryTag
                 entry={markId === undefined ? '' : GLOSSARY_IDS.mark(markId)}
                 look="chip"
+                bare
                 class="mark-tag"
                 label={`Marked: ${markName ?? state.mark}. What does this mean?`}
               >
@@ -792,7 +748,8 @@ export function Stage({
             </span>
           )}
         </div>
-        <HpBar
+        <SegmentBar
+          size="boss"
           current={state.bossHp}
           max={hpMax}
           previous={previousHp}
@@ -1006,8 +963,7 @@ export function Stage({
                 type="button"
                 ref={anchorRef(key)}
                 class="basic-chip"
-                aria-haspopup="dialog"
-                aria-expanded={openKey === key}
+                {...popupProps(openKey === key)}
                 aria-label={`${abilityName(ability.abilityId)} (basic ability), ${badge.label.toLowerCase()}. Opens the ability options.`}
                 onClick={() => {
                   toggle(key);
@@ -1023,7 +979,7 @@ export function Stage({
       )}
 
       {abilities !== undefined && openAbility !== undefined && (
-        <StagePopover
+        <Popover
           key={openKey}
           anchor={() => anchors.current.get(`a:${openAbility.key}`) ?? null}
           label={`${abilityName(openAbility.abilityId)} ability`}
@@ -1031,10 +987,10 @@ export function Stage({
         >
           {abilities.renderPopover(openAbility, ownInfo(openAbility).badge, close)}
           <CreatureTags creature={row.find((c) => c.id === openAbility.creature)} />
-        </StagePopover>
+        </Popover>
       )}
       {abilities?.renderNote !== undefined && openNote !== undefined && (
-        <StagePopover
+        <Popover
           key={openKey}
           anchor={() => anchors.current.get(`c:${openNote.id}`) ?? null}
           label={`${openNote.name}`}
@@ -1042,18 +998,17 @@ export function Stage({
         >
           {abilities.renderNote(openNote, close)}
           <CreatureTags creature={openNote} />
-        </StagePopover>
+        </Popover>
       )}
       {abilities?.help !== undefined && openKey === 'help' && (
-        <StagePopover
+        <Popover
           key="help"
-          class="help-pop"
           anchor={() => anchors.current.get('help') ?? null}
           label="How abilities work"
           onClose={close}
         >
           {abilities.help}
-        </StagePopover>
+        </Popover>
       )}
       <div class="stage-strikes" ref={layerRef} aria-hidden="true">
         {strikeItems.map((item) => {

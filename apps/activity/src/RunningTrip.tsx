@@ -1,18 +1,19 @@
+import { Tag } from './ui/Tag';
 import { GLOSSARY_IDS, expeditionContent, goalDef } from '@creatures/game';
 import type { Creature } from './api';
 import { Banner } from './Banner';
-import { cssVars } from './css-vars';
 import type { Trip } from './expedition-types';
-import { ExpIcon } from './ExpeditionIcons';
-import { creatureName, formatCountdown, getSpecies } from './game';
-import { GlossaryTag } from './Glossary';
+import { percent } from './progress-math';
+import { GameIcon } from './ui/GameIcon';
+import { TimerBar } from './ui/TimerBar';
+import { creatureName, getSpecies } from './game';
 import { PushOnChoice } from './PushOnChoice';
 import { riskWord } from './push-on-view';
 import { explorerInfo } from './send-view';
 import { ElementChip } from './sprites/ElementChip';
+import { formatCountdown } from './time-format';
 import {
   destinationName,
-  fillPct,
   goalName,
   lengthLabel,
   recallKeeps,
@@ -25,9 +26,9 @@ import {
 function statusText(trip: Trip, status: ReturnType<typeof tripStatus>): string {
   switch (status.phase) {
     case 'out':
-      return `Back in ${formatCountdown(status.remainingMs)}`;
+      return `Back in ${formatCountdown(status.remainingMs, 'hms')}`;
     case 'pushing':
-      return `Pushing on${trip.pushOn === null ? '' : `: ${goalName(trip.pushOn.goalId)}`}. Back in ${formatCountdown(status.remainingMs)}`;
+      return `Pushing on${trip.pushOn === null ? '' : `: ${goalName(trip.pushOn.goalId)}`}. Back in ${formatCountdown(status.remainingMs, 'hms')}`;
     case 'choice':
       return 'Waiting for your choice';
     case 'ready':
@@ -60,8 +61,10 @@ export function RunningTrip({
   const species = creature === undefined ? undefined : getSpecies(creature.species);
   const info = creature === undefined ? null : explorerInfo(creature);
   const keeps = recallKeeps(trip, serverNow);
-  const pct = fillPct(status.fraction);
+  const pct = percent(status.fraction, 1);
   const pushing = status.phase === 'pushing' && trip.pushOn !== null;
+  // The leg the bar times: the push-on while it runs, the trip itself otherwise.
+  const leg = pushing && trip.pushOn !== null ? trip.pushOn : trip;
   const risky =
     pushing && trip.pushOn !== null ? goalDef(trip.pushOn.goalId)?.risk === 'risky' : false;
   const risk =
@@ -94,49 +97,38 @@ export function RunningTrip({
         <p class="tags">
           {species !== undefined && <ElementChip element={species.element} />}
           {creature !== undefined && (
-            <GlossaryTag entry="explorer-rank" look="chip" class="tag">
-              {`Rank ${String(creature.explorer.rank)}`}
-            </GlossaryTag>
+            <Tag entry="explorer-rank">{`Rank ${String(creature.explorer.rank)}`}</Tag>
           )}
-          <span class="tag">{lengthLabel(trip.duration)} trip</span>
+          <Tag>{lengthLabel(trip.duration)} trip</Tag>
           {twist !== null && twist !== undefined && (
-            <GlossaryTag entry="weekly-special" look="chip" class="badge shiny">
+            <Tag kind="badge" tone="shiny" entry="weekly-special">
               {twist.name}
-            </GlossaryTag>
+            </Tag>
           )}
         </p>
         {trip.kit.length > 0 && (
           <ul class="kit-line" aria-label="Supplies carried">
             {trip.kit.map((id) => (
               <li key={id}>
-                <ExpIcon icon={{ kind: 'supply', id: supplyKindOf(id) ?? 'unknown' }} scale={2} />
+                <GameIcon icon={{ kind: 'supply', id: supplyKindOf(id) ?? 'unknown' }} scale={2} />
                 <span>{supplyName(id)}</span>
               </li>
             ))}
           </ul>
         )}
-        <div
-          class={`xp trip-bar${pushing ? ' pushing' : ''}`}
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(pct)}
-          aria-label={`${name}'s ${pushing ? 'push-on' : 'trip'}: ${String(Math.floor(pct))}% done`}
-        >
-          <span ref={cssVars({ '--pct': `${String(pct)}%` })} />
-        </div>
-        <p class={`trip-timer${status.phase === 'ready' ? ' ready' : ''}`} aria-live="off">
-          {statusText(trip, status)}
-        </p>
+        <TimerBar
+          class="trip-bar"
+          startedAt={leg.startedAt}
+          endsAt={leg.endsAt}
+          now={serverNow}
+          ready={status.phase === 'ready'}
+          tone={pushing ? 'spark' : undefined}
+          label={`${name}'s ${pushing ? 'push-on' : 'trip'}: ${String(Math.floor(pct))}% done`}
+          state={statusText(trip, status)}
+        />
         {pushing && trip.pushOn !== null && (
           <p class={`push-line${risky ? ' risky' : ''}`}>
-            <GlossaryTag
-              entry={GLOSSARY_IDS.goal(risky ? 'risky' : 'safe')}
-              look="chip"
-              class="tag"
-            >
-              {risk}
-            </GlossaryTag>{' '}
+            <Tag entry={GLOSSARY_IDS.goal(risky ? 'risky' : 'safe')}>{risk}</Tag>{' '}
             {risky ? 'If it fails, the whole trip brings nothing back.' : 'It always works.'}
           </p>
         )}

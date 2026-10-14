@@ -1,0 +1,292 @@
+/* --- Fight stage (live finale and replay) --- */
+
+.stage {
+  --beat: 600ms;
+  position: relative;
+  margin: 0.5rem var(--px);
+  padding: 0.5rem;
+  overflow: hidden;
+  background: linear-gradient(var(--night), var(--dusk));
+  box-shadow: var(--frame);
+}
+
+.stage-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  align-items: center;
+  color: var(--haze);
+  font-size: 0.8125rem;
+}
+
+.stage-round {
+  color: var(--gold);
+}
+
+.stage-head-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* The "?" button: how abilities work. Small, but with a full-size tap area around it. */
+button.stage-help {
+  position: relative;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  padding: 0 0.375rem;
+  font-size: 0.8125rem;
+  line-height: 1.5rem;
+}
+
+button.stage-help::after {
+  content: '';
+  position: absolute;
+  inset: -0.5rem;
+}
+
+.stage-boss {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.stage-boss .hpbar {
+  width: 100%;
+  max-width: 20rem;
+}
+
+.stage-boss-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0.25rem 0.25rem 1rem;
+}
+
+/* The mark on the boss: a ring glyph, the element's icon and the mark's name. */
+.stage-mark {
+  position: absolute;
+  bottom: -0.125rem;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.5rem 0 0.25rem;
+  background: var(--ink);
+  box-shadow: inset 0 calc(var(--px) * -1) 0 var(--el, var(--gold));
+  font-family: var(--display);
+  font-size: 0.75rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* What the boss just did, and a luck banner. */
+.stage-callout {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0 0.5rem;
+  background: var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--bad);
+  font-size: 0.875rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.stage-callout.banner {
+  box-shadow: 0 0 0 var(--px) var(--gold);
+  color: var(--gold);
+}
+
+/*
+  Ability cards: the creature's name and its ability, for about a second and a half after it fires.
+  The slot keeps one line of height, so nothing jumps; the cards sit on top of it and may spill over
+  the first zone for a moment (they let taps through).
+*/
+.stage-abilities-slot {
+  position: relative;
+  height: 2rem;
+}
+
+.stage-abilities {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0.125rem 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+.stage-ability {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  background: var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--gold);
+  color: var(--gold);
+  font-size: 0.8125rem;
+}
+
+.stage-ability.more {
+  color: var(--bone);
+  box-shadow: 0 0 0 var(--px) var(--haze);
+}
+
+/*
+  The boss's line under its HP bar: the label of the attack that just landed ("Undertow · whole FRONT
+  row"), over the forecast of the next round ("Next round: Undertow hits FRONT"). The slot keeps its
+  height, so nothing jumps; the label sits on top of the forecast while it shows.
+*/
+.stage-line {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+  min-height: 2.25rem;
+}
+
+/* While a label shows, the forecast under it steps aside (it is back when the label is gone). */
+.stage-line.has-strike .forecast {
+  visibility: hidden;
+}
+
+.stage-line > * {
+  grid-area: 1 / 1;
+  margin: 0;
+}
+
+.forecast {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--gold);
+  background: rgb(var(--gold-rgb) / 8%);
+  color: var(--gold);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+
+.forecast > canvas {
+  flex: none;
+}
+
+.strike-label {
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  max-width: 100%;
+  padding: 0.25rem 0.5rem;
+  background: var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--bad);
+  color: var(--bone);
+  font-size: 0.8125rem;
+  line-height: 1.2;
+}
+
+.strike-label > canvas {
+  flex: none;
+}
+
+.strike-label > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Crosshairs over a creature the boss is about to hit, and the frame it keeps for a moment after. */
+.reticle {
+  position: absolute;
+  inset: -3px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--bad);
+  background: rgb(var(--bad-rgb) / 16%);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.reticle.struck {
+  background: transparent;
+}
+
+.reticle > canvas {
+  opacity: 0.9;
+}
+
+.slash {
+  position: absolute;
+  top: 50%;
+  left: -10%;
+  z-index: 5;
+  width: 120%;
+  height: 3px;
+  background: var(--bone);
+  box-shadow: 0 0 0 1px var(--bad);
+  opacity: 0;
+  pointer-events: none;
+  transform: rotate(-35deg);
+  will-change: transform, opacity;
+}
+
+/* A Shield Wall stopped the hit, or a guard stepped in for this creature. */
+.block-mark {
+  position: absolute;
+  top: -0.5rem;
+  left: 50%;
+  z-index: 6;
+  padding: 1px;
+  background: var(--ink);
+  line-height: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  will-change: transform, opacity;
+}
+
+/* The boss will silence this creature next round. */
+.warn-mark {
+  position: absolute;
+  top: 50%;
+  left: -0.5rem;
+  z-index: 3;
+  padding: 1px;
+  background: var(--ink);
+  line-height: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+/* A zone the boss will hit next round: an amber dashed frame and a warning glyph, standing still. */
+.stage-zone.warned {
+  outline: 2px dashed var(--gold);
+  outline-offset: -2px;
+}
+
+.zone-warn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 3;
+  padding: 1px;
+  background: var(--ink);
+  line-height: 0;
+  pointer-events: none;
+}

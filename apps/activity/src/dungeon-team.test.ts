@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { ActionIds } from './actions';
 import type { Creature } from './api';
 import {
   EMPTY_SLOTS,
   buildRunRequest,
+  completeTeam,
   isComplete,
   place,
   placedCount,
   pruneSlots,
   reduceTap,
-  requestSignature,
   resolveDrop,
   slotIndexOf,
   slotStatuses,
@@ -127,26 +128,24 @@ describe('taps', () => {
   });
 
   it('puts the selected creature in the tapped place', () => {
-    const result = reduceTap(EMPTY_SLOTS, 'a', { kind: 'slot', index: 2 });
+    const result = reduceTap(EMPTY_SLOTS, 'a', { kind: 'slot', slot: 2 });
     expect(result.slots).toEqual([null, null, 'a']);
     expect(result.selected).toBeNull();
   });
 
   it('picks up a placed creature by tapping its place, and explains a tap on an empty place', () => {
-    expect(reduceTap(['a', null, null], null, { kind: 'slot', index: 0 }).selected).toBe('a');
-    const none = reduceTap(EMPTY_SLOTS, null, { kind: 'slot', index: 0 });
+    expect(reduceTap(['a', null, null], null, { kind: 'slot', slot: 0 }).selected).toBe('a');
+    const none = reduceTap(EMPTY_SLOTS, null, { kind: 'slot', slot: 0 });
     expect(none.slots).toBe(EMPTY_SLOTS);
     expect(none.hint).toContain('first');
   });
 
   it('lets go when the selected creature is tapped in its own place', () => {
-    expect(reduceTap(['a', null, null], 'a', { kind: 'slot', index: 0 }).selected).toBeNull();
+    expect(reduceTap(['a', null, null], 'a', { kind: 'slot', slot: 0 }).selected).toBeNull();
   });
 
   it('refuses a place that does not exist', () => {
-    expect(reduceTap(EMPTY_SLOTS, 'a', { kind: 'slot', index: 5 }).hint).toContain(
-      'does not exist',
-    );
+    expect(reduceTap(EMPTY_SLOTS, 'a', { kind: 'slot', slot: 5 }).hint).toContain('does not exist');
   });
 });
 
@@ -218,18 +217,24 @@ describe('the run request', () => {
     const reversed = buildRunRequest(['c', 'b', 'a'], 'key-00001');
     expect(forward?.team).toEqual(['a', 'b', 'c']);
     expect(reversed?.team).toEqual(['c', 'b', 'a']);
-    // A different order is a different run, so it gets its own idempotency key.
-    expect(requestSignature(reversed ?? ({} as never))).not.toBe(
-      requestSignature(forward ?? ({} as never)),
+    // A different order is a different run, so it gets its own action name, and so its own key.
+    expect(ActionIds.dungeonRun(reversed?.team ?? ['x', 'x', 'x'])).not.toBe(
+      ActionIds.dungeonRun(forward?.team ?? ['x', 'x', 'x']),
     );
   });
 
-  it('has one signature for the same picks, whatever the key, and another for different picks', () => {
-    const one = buildRunRequest(slots, 'key-00001');
-    const two = buildRunRequest(slots, 'key-00002');
-    const other = buildRunRequest(['b', 'a', 'c'], 'key-00001');
-    if (one === null || two === null || other === null) throw new Error('team is complete');
-    expect(requestSignature(one)).toBe(requestSignature(two));
-    expect(requestSignature(one)).not.toBe(requestSignature(other));
+  it('names the same picks as one action, and different picks as another', () => {
+    const team = completeTeam(slots);
+    const again = completeTeam(['a', 'b', 'c']);
+    const other = completeTeam(['b', 'a', 'c']);
+    if (team === null || again === null || other === null) throw new Error('team is complete');
+    expect(ActionIds.dungeonRun(team)).toBe(ActionIds.dungeonRun(again));
+    expect(ActionIds.dungeonRun(team)).not.toBe(ActionIds.dungeonRun(other));
+  });
+
+  it('has no complete team until all three places are filled with different creatures', () => {
+    expect(completeTeam(['a', 'b', null])).toBeNull();
+    expect(completeTeam(['a', 'a', 'b'])).toBeNull();
+    expect(completeTeam(slots)).toEqual(['a', 'b', 'c']);
   });
 });

@@ -1,0 +1,80 @@
+/* --- Raid tab, UX pass 1: one placement step and the avatar strip --- */
+
+.placement .place-help,
+.placement .keys {
+  margin: 0.25rem 0;
+}
+
+.placement .keys summary {
+  color: var(--haze);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.tray-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+}
+
+.place-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+
+.roster-strip {
+  padding: 0.5rem 0.75rem;
+}
+
+button.avatar-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+
+.avatars {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 2px solid var(--owner, var(--line));
+  background: var(--dusk);
+  font-family: var(--display);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.avatar.you {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.avatar.more {
+  border-style: dashed;
+  color: var(--haze);
+  font-size: 0.8125rem;
+}
+
+.roster-count {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+}
+
+.roster-open {
+  margin-top: 0.5rem;
+}

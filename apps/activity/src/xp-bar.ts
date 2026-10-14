@@ -1,6 +1,6 @@
 /** Pure helpers of `XpBar`: the fill and the words drawn over it. Integer XP only. */
 
-export interface XpBarView {
+interface XpBarView {
   /** Fill, 0 to 100 (one decimal). */
   pct: number;
   /** The value inside the bar, clamped to 0..max. */

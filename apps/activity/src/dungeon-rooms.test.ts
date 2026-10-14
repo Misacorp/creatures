@@ -2,14 +2,9 @@ import { dungeonContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import todayFixture from './fixtures/dungeon-today.json';
 import { glyph } from './glyphs';
-import {
-  LANDMARK_UNLOCKS,
-  depthTrack,
-  modifierIcon,
-  roomPanels,
-  type ModifierIcon,
-} from './dungeon-rooms';
+import { LANDMARK_UNLOCKS, depthTrack, modifierIcon, roomPanels } from './dungeon-rooms';
 import type { DungeonToday } from './dungeon-types';
+import type { IconRef } from './icon-ref';
 import { trackNodes } from './progress-track';
 import { elementIcon } from './sprites/element-icons';
 
@@ -44,8 +39,12 @@ describe('the room panels of the pre-run screen', () => {
 });
 
 describe('the icons of the room modifiers', () => {
-  const sprite = (icon: ModifierIcon): unknown =>
-    icon.kind === 'element' ? elementIcon(icon.element) : glyph(icon.id);
+  const sprite = (icon: IconRef): unknown =>
+    icon.kind === 'element'
+      ? elementIcon(icon.element)
+      : icon.kind === 'glyph'
+        ? glyph(icon.id)
+        : undefined;
 
   it('gives every modifier of the content an icon that really exists', () => {
     expect(dungeonContent.modifiers.length).toBeGreaterThan(0);

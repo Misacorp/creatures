@@ -1,0 +1,97 @@
+/* --- ProgressTrack: previous (dimmed), current and next step, each with its unlocks --- */
+
+.ptrack {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ptrack-node {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  padding-top: 1.25rem;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+/* The dot sits on the line; the line runs on to the next node. */
+.ptrack-dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 2px solid var(--haze);
+  background: var(--night);
+}
+
+.ptrack-node:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 0.375rem;
+  left: 1rem;
+  right: -0.75rem;
+  border-top: 2px solid var(--line);
+}
+
+.ptrack-node.current::after,
+.ptrack-node.next::after {
+  border-top-style: dashed;
+}
+
+.ptrack-node.previous {
+  opacity: 0.6;
+}
+
+.ptrack-node.previous .ptrack-dot {
+  background: var(--haze);
+}
+
+.ptrack-node.current .ptrack-dot {
+  border-color: var(--gold);
+  background: var(--gold);
+}
+
+.ptrack-node.current .ptrack-label {
+  color: var(--gold);
+}
+
+.ptrack-node.next .ptrack-dot,
+.ptrack-node.max .ptrack-dot {
+  border-style: dashed;
+}
+
+.ptrack-node.max {
+  opacity: 0.75;
+}
+
+.ptrack-label {
+  font-size: 1.125rem;
+  line-height: 1.1;
+}
+
+.ptrack-unlocks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ptrack-unlock {
+  display: flex;
+  gap: 0.375rem;
+  align-items: flex-start;
+  line-height: 1.25;
+}
+
+.ptrack-unlock canvas.sprite {
+  flex: none;
+}

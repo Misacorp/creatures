@@ -4,12 +4,13 @@ import { ExplorerProfile } from './ExplorerProfile';
 import { fetchDestinations, fetchProfile, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
 import { expeditionBlocked } from './gear-view';
-import { useNow } from './hooks';
+import { useServerNow } from './hooks';
 import { Journal } from './Journal';
 import { RunningTrip } from './RunningTrip';
 import { SendTrip } from './SendTrip';
 import { SlotsStrip } from './SlotsStrip';
 import { TripReveal } from './TripReveal';
+import { ToggleButton } from './ui/ToggleButton';
 import { needsOfferRefresh } from './trip-view';
 import { useLoaded } from './use-loaded';
 
@@ -76,8 +77,7 @@ export function Expeditions({
 }: Props) {
   const [screen, setScreen] = useState<Screen>('trips');
   const active = state.expeditions.filter((e) => e.status === 'active');
-  const now = useNow(active.length > 0);
-  const serverNow = now + offset;
+  const serverNow = useServerNow(offset, active.length > 0);
   const destinations = useLoaded(
     fetchDestinations,
     [state.slots.tripsFinished, state.expeditions.length, active.length],
@@ -114,17 +114,15 @@ export function Expeditions({
       <SlotsStrip slots={state.slots} />
       <nav class="exp-nav" aria-label="Expeditions sections">
         {SCREENS.map(({ id, label }) => (
-          <button
+          <ToggleButton
             key={id}
-            type="button"
-            class={screen === id ? 'toggle on' : 'toggle'}
-            aria-pressed={screen === id}
-            onClick={() => {
+            pressed={screen === id}
+            onToggle={() => {
               setScreen(id);
             }}
           >
             {label}
-          </button>
+          </ToggleButton>
         ))}
       </nav>
       {screen !== 'trips' && <Book screen={screen} state={state} />}

@@ -1,7 +1,7 @@
 /**
- * The pure parts of the tappable tags: which popover a tag opens, when a tap opens or closes it,
- * what picture it shows and where "More in How to play" leads. No DOM access besides a duck-typed
- * `closest` check, so all of it is unit-tested; `Glossary.tsx` connects it to the browser.
+ * The pure parts of the tappable tags: which popover a tag opens, what picture it shows and where
+ * "More in How to play" leads. No DOM access besides a duck-typed `closest` check, so all of it is
+ * unit-tested; `Glossary.tsx` is the tag button and `PopoverHost.tsx` draws the popover.
  */
 import {
   abilityView,
@@ -29,26 +29,6 @@ export function tagKey(ref: TagRef): string {
   return 'ability' in ref ? `a:${ref.ability}` : `e:${ref.entry}`;
 }
 
-/** The popover that is open: what it explains and the element it points at. */
-export interface ActiveTag<A> {
-  key: string;
-  ref: TagRef;
-  anchor: A;
-}
-
-/**
- * What a tap on a tag does: open its popover, or close it when that very tag's popover is already
- * open. Tapping another tag switches to it. (A tap outside closes through `StagePopover`.)
- */
-export function toggleTag<A>(
-  current: ActiveTag<A> | null,
-  next: ActiveTag<A>,
-): ActiveTag<A> | null {
-  return current !== null && current.key === next.key && current.anchor === next.anchor
-    ? null
-    : next;
-}
-
 /** The attribute every tag carries, so other code can tell a tag from a draggable thing. */
 export const TAG_ATTRIBUTE = 'data-glossary-tag';
 
@@ -73,7 +53,7 @@ export function sectionDomId(section: GlossarySection): string {
 export const MORE_LABEL = 'More in How to play';
 
 /** One piece of a popover's picture: a sprite, or the arrow between two of them. */
-export type VisualItem =
+type VisualItem =
   | { kind: 'sprite'; sprite: SpriteDef; scale: number; palette?: Readonly<Record<string, string>> }
   | { kind: 'arrow' };
 

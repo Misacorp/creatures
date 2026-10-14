@@ -24,7 +24,7 @@ import { CLOCK_SPECS, GOODS_SPECS, RESET_ACCOUNT_SPEC, orderedSections } from '.
 import { ToolForm } from './ToolForm';
 
 /** A string only this module tree contains: the production build test searches the output for it. */
-export const DEV_PANEL_MARKER = 'DEV_PANEL_MARKER_7f3a';
+const DEV_PANEL_MARKER = 'DEV_PANEL_MARKER_7f3a';
 
 interface Status {
   ok: boolean;

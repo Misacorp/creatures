@@ -4,19 +4,14 @@
  * a new currency) is one more `if` in `rewardPileItems` and one more icon case in `RewardPile`.
  * Nothing here touches the DOM.
  */
-import { PART_KINDS, supplyDef, type PartKind } from '@creatures/game';
+import { PART_KINDS, supplyDef } from '@creatures/game';
 import type { PartsBundle } from './gear-types';
+import type { IconRef } from './icon-ref';
 
-/** The icon of one pile item: a bundled glyph, a part, or a gear item's art. */
-export type PileIcon =
-  | { kind: 'glyph'; id: string }
-  | { kind: 'part'; part: PartKind }
-  | { kind: 'gear'; baseId: string };
-
-export interface PileItem {
+interface PileItem {
   /** Unique within a pile: the kind of reward ("scrap", "essence", "gear"). */
   key: string;
-  icon: PileIcon;
+  icon: IconRef;
 }
 
 /** What the pile is built from. Every field is optional; zero and absent mean "none of it". */

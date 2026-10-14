@@ -3,7 +3,7 @@ import { ApiError } from './api';
 import { Countdown } from './Countdown';
 import { countdownView, spokenCountdown } from './countdown';
 import { clockOffset, errorText } from './game';
-import { useNow } from './hooks';
+import { useServerNow } from './hooks';
 import {
   abilityStateText,
   abilityTitle,
@@ -34,11 +34,13 @@ import {
   type LiveSnapshot,
 } from './live-api';
 import type { ReplayRowEntry } from './raid-api';
-import { AbilityPopoverBody } from './AbilityPopover';
+import { AbilityPopoverBody, AbilityPopoverSection } from './AbilityPopover';
 import { setRaidAutofire } from './raid-api';
 import { RevealCard } from './Reveal';
+import { LiveRegion } from './ui/LiveRegion';
+import { BossHp } from './ui/SegmentBar';
 import type { Badge } from './stage-abilities';
-import { HpBar, LiveStage, LogToggle } from './Stage';
+import { LiveStage, LogToggle } from './Stage';
 import { useRemaining } from './use-countdown';
 
 /**
@@ -78,7 +80,7 @@ export function Live({
   const offset = useRef(0);
   /** One request at a time per ability: a double tap on one ability sends one request. */
   const locks = useRef(createKeyLock());
-  const now = useNow(true);
+  const serverNow = useServerNow(offset.current, true);
   // The countdown over the stage in the last 30 seconds before the start: from the server's start
   // time and the clock offset, so it follows the server's clock and needs no extra requests.
   const startsAtLocal =
@@ -236,7 +238,6 @@ export function Live({
   }
 
   const fight = snapshot;
-  const serverNow = now + offset.current;
   const progress = progressText(fight, serverNow);
   const lobby = fight.status === 'lobby';
   const mine = ownAbilities(fight.abilities, fight.you);
@@ -284,10 +285,9 @@ export function Live({
 
   /** A tap on one of your creatures that has no ability in this fight says why. */
   const noteBody = (creature: ReplayRowEntry) => (
-    <div class="ab-pop-body">
-      <p class="ab-title pix">{creature.name}</p>
+    <AbilityPopoverSection title={creature.name}>
       <p class="ab-state">{noAbilityText(creature.species, creature.level)}</p>
-    </div>
+    </AbilityPopoverSection>
   );
 
   // The stage needs the boss pool and the names; the lobby may not have them (no preview).
@@ -333,20 +333,15 @@ export function Live({
         {progress.countdown !== '' && <span class="live-countdown"> {progress.countdown}</span>}
       </p>
       {/* Changes once per round, so a screen reader hears the round and not every tick. */}
-      <p class="visually-hidden" role="status" aria-live="polite">
-        {countdown === null ? progress.headline : spokenCountdown(countdown)}
-      </p>
+      <LiveRegion>{countdown === null ? progress.headline : spokenCountdown(countdown)}</LiveRegion>
 
       {lobby && !showStage && fight.boss.hpMax !== null && (
         <>
-          <HpBar
+          <BossHp
+            caption={`${fight.boss.name} HP`}
             current={fight.boss.hpStart ?? fight.boss.hpMax}
             max={fight.boss.hpMax}
-            label={`${fight.boss.name} HP: ${String(fight.boss.hpStart ?? fight.boss.hpMax)} of ${String(fight.boss.hpMax)}`}
           />
-          <p class="muted small">
-            {fight.boss.name} HP: {fight.boss.hpStart ?? fight.boss.hpMax} / {fight.boss.hpMax}
-          </p>
         </>
       )}
 
@@ -504,8 +499,7 @@ function FeedItems({ lines }: { lines: readonly FeedLine[] }) {
 /** The "?" popover of the stage: how abilities work, in a few short lines. */
 function AbilityHelp({ lobby }: { lobby: boolean }) {
   return (
-    <div class="ab-pop-body">
-      <p class="ab-title pix">Abilities</p>
+    <AbilityPopoverSection title="Abilities">
       <p class="ab-help">
         {lobby
           ? 'Tap one of your creatures, or the chip in the corner, to turn auto fire on or off before the fight.'
@@ -516,6 +510,6 @@ function AbilityHelp({ lobby }: { lobby: boolean }) {
           ? 'Each ability fires once. With auto fire on, it fires by itself in its round. With auto fire off it waits for you once the fight starts, and still fires in the last round if you do not.'
           : 'Each ability fires once. Fire takes effect at the start of the next round. With auto fire on, it fires by itself in its round; with auto fire off it waits for you, and still fires in the last round if you do not.'}
       </p>
-    </div>
+    </AbilityPopoverSection>
   );
 }

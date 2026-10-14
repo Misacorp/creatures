@@ -1,0 +1,59 @@
+/* --- Expeditions v2: banners, the catalogue, the send flow, running trips, the reveal, the journal --- */
+
+.good-note {
+  color: var(--good);
+}
+
+/* A destination's banner: a wide pixel strip at a whole-number scale, centred, with a walker on it. */
+.banner {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  background: var(--ink);
+}
+
+.banner-art {
+  position: relative;
+  flex: none;
+  width: var(--banner-w, 100%);
+  max-width: 100%;
+}
+
+.banner-art > canvas.sprite {
+  max-width: none;
+}
+
+/*
+  The explorer walks left to right: its place is the trip's progress (--p is 0 to 1). It moves a little
+  every second; the bob is two steps, and both stop with reduced motion (it stands at its place).
+*/
+.walker {
+  position: absolute;
+  bottom: 0.125rem;
+  left: calc((100% - var(--walker-w, 3rem)) * var(--p, 0));
+  line-height: 0;
+}
+
+.walker-bob {
+  display: block;
+}
+
+.walker button.small-creature {
+  line-height: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .walker {
+    transition: left 1s linear;
+  }
+
+  .walker-bob {
+    animation: walk-bob 0.5s steps(2) infinite;
+  }
+
+  @keyframes walk-bob {
+    50% {
+      transform: translateY(calc(var(--px) * -1));
+    }
+  }
+}

@@ -9,11 +9,11 @@ import type { ClaimResult } from './api';
 import type { JournalFind, RankGift, TripResult } from './expedition-types';
 import { lootIsEmpty } from './gear-view';
 import { partName, partsEntries } from './gear-view';
-import type { PartKind } from './gear-types';
+import type { IconRef } from './icon-ref';
 import { rewardPileItems, type PileSource } from './reward-pile';
 import { goalName, kindName, supplyKindOf, supplyName } from './trip-view';
 
-export type RevealTone = 'home' | 'recalled' | 'failed';
+type RevealTone = 'home' | 'recalled' | 'failed';
 
 /** How the trip went: a failed risky goal, a recall, or a trip that came home. */
 export function revealTone(result: Pick<TripResult, 'recalled' | 'failed'>): RevealTone {
@@ -79,7 +79,7 @@ export function foundSupplies(
   return [...counts].map(([id, amount]) => ({ id, name: supplyName(id), amount }));
 }
 
-export interface XpView {
+interface XpView {
   gained: number;
   total: number;
   rank: number;
@@ -94,7 +94,7 @@ export function xpView(result: Pick<ClaimResult, 'xp'>): XpView | null {
   return { ...xp, rankedUp: xp.rank > xp.rankBefore };
 }
 
-export interface StarsView {
+interface StarsView {
   stars: number;
   starsBefore: number;
   trips: number;
@@ -117,7 +117,7 @@ export function slotLine(result: Pick<ClaimResult, 'slotUnlocked'>): string | nu
     : `A new expedition slot opened! You have ${String(unlocked.total)} now.`;
 }
 
-export interface JournalPage {
+interface JournalPage {
   entryId: string;
   title: string;
   text: string;
@@ -145,8 +145,8 @@ export function journalPages(result: Pick<ClaimResult, 'journal'>): JournalPage[
   });
 }
 
-/** The pile in words, for assistive technology: "Loot: Scrap, Ember Shard, Lure". */
-export function pileLabel(source: PileSource): string {
+/** The pile in words, for assistive technology: "Loot: Scrap, Ember Shard, Lure" (or "Rewards: ..."). */
+export function pileLabel(source: PileSource, prefix: 'Loot' | 'Rewards'): string {
   const kinds = rewardPileItems(source).map((item) => {
     switch (item.icon.kind) {
       case 'part':
@@ -157,16 +157,13 @@ export function pileLabel(source: PileSource): string {
         return item.key.startsWith('supply-') ? kindName(item.icon.id) : kindName(item.key);
     }
   });
-  return `Loot: ${kinds.join(', ')}`;
+  return `${prefix}: ${kinds.join(', ')}`;
 }
 
 /** One thing a rank-up gift gives: a picture and a few words. */
-export interface GiftLine {
+interface GiftLine {
   key: string;
-  icon:
-    | { kind: 'glyph'; id: string }
-    | { kind: 'part'; part: PartKind }
-    | { kind: 'supply'; id: string };
+  icon: IconRef;
   text: string;
 }
 

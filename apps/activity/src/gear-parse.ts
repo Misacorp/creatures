@@ -21,18 +21,7 @@ import type {
   StartJobResult,
   UpgradeResult,
 } from './gear-types';
-
-type Rec = Record<string, unknown>;
-
-export const isRecord = (value: unknown): value is Rec =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-const isStr = (value: unknown): value is string => typeof value === 'string';
-const isInt = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isInteger(value);
-const isCount = (value: unknown): value is number => isInt(value) && value >= 0;
-const isNullableStr = (value: unknown): value is string | null => value === null || isStr(value);
-const isArrayOf = <T>(value: unknown, guard: (item: unknown) => item is T): value is T[] =>
-  Array.isArray(value) && value.every(guard);
+import { isArrayOf, isCount, isInt, isNullableStr, isRecord, isStr } from './parse-core';
 
 const isRarity = (value: unknown): value is GearRarity =>
   (GEAR_RARITIES as readonly unknown[]).includes(value);
@@ -54,7 +43,7 @@ function isRoll(value: unknown): value is { stat: GearStat; bp: number } {
   return isRecord(value) && isStat(value['stat']) && isInt(value['bp']);
 }
 
-export function isGearItem(value: unknown): value is GearItem {
+function isGearItem(value: unknown): value is GearItem {
   if (!isRecord(value)) return false;
   const cost = value['upgradeCost'];
   return (
@@ -110,7 +99,7 @@ function isJobInput(value: unknown): value is Job['input'] {
   );
 }
 
-export function isJob(value: unknown): value is Job {
+function isJob(value: unknown): value is Job {
   return (
     isRecord(value) &&
     isStr(value['id']) &&

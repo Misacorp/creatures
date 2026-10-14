@@ -7,7 +7,7 @@
  */
 
 /** One size of creature: the sprite scale and the width of one unit (sprite, name and padding). */
-export interface Tier {
+interface Tier {
   /** Whole screen pixels per sprite pixel. */
   scale: number;
   /** Width of one unit, in CSS pixels. */
@@ -77,7 +77,7 @@ export const MIN_VIEWPORT_PX = 360;
 export const STAGE_FALLBACK_PX = 262;
 export const SLOT_FALLBACK_PX = 284;
 
-export interface ZoneLayout {
+interface ZoneLayout {
   tier: Tier;
   /** How many units fit on one line. */
   perLine: number;

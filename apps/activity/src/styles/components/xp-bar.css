@@ -1,0 +1,76 @@
+/* --- XpBar: a thick bar with its words over the fill and optional rank caps --- */
+
+.xpbar-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.25rem 0;
+}
+
+.xpbar-cap {
+  flex: none;
+  max-width: 5rem;
+  font-size: 1rem;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.xpbar-cap.end {
+  color: var(--haze);
+}
+
+.xpbar {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 1.75rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+}
+
+/* The fill sits inside an inner margin, so it shows at both ends of the bar. */
+.xpbar-fill {
+  position: absolute;
+  top: calc(var(--px) * 2);
+  bottom: calc(var(--px) * 2);
+  left: calc(var(--px) * 2);
+  width: calc((100% - var(--px) * 4) * var(--fill, 0) / 100);
+  background: var(--gold);
+}
+
+.xpbar-fill.filled {
+  min-width: var(--px);
+}
+
+/*
+  The words are drawn twice: bone over the dark trough, and ink over the gold fill (the second copy
+  is clipped to the fill). Each part of a letter has the contrast of its own background.
+*/
+.xpbar-text {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 0.5rem;
+  color: var(--bone);
+  font-size: 1.25rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.xpbar-text.on-fill {
+  color: var(--ink);
+  clip-path: inset(
+    0 calc(100% - var(--px) * 2 - (100% - var(--px) * 4) * var(--fill, 0) / 100) 0 0
+  );
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .xpbar-fill {
+    transition: width 0.4s steps(8);
+  }
+
+  .xpbar-text.on-fill {
+    transition: clip-path 0.4s steps(8);
+  }
+}

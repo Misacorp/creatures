@@ -25,6 +25,7 @@ import {
 } from '@creatures/game';
 import type { Creature } from './api';
 import { capitalize, creatureName, elementName } from './game';
+import { percent } from './progress-math';
 import { supplyName } from './trip-view';
 import type {
   GearItem,
@@ -51,11 +52,6 @@ export function rarityName(rarity: GearRarity): string {
 
 export function gearName(baseId: string): string {
   return gearBase(baseId)?.name ?? baseId;
-}
-
-/** The element of an item's tint; null for a neutral item (or an unknown base). */
-export function gearTint(baseId: string): string | null {
-  return gearBase(baseId)?.tint ?? null;
 }
 
 /** "Wave Band +2". */
@@ -127,15 +123,6 @@ export function missingParts(
   return missing;
 }
 
-/** "3 hours" style text for a job length: "4 h" or "3 h 44 min" or "45 min". */
-export function formatDuration(ms: number): string {
-  const totalMinutes = Math.max(0, Math.ceil(ms / 60_000));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours === 0) return `${String(minutes)} min`;
-  return minutes === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(minutes)} min`;
-}
-
 /** Who an enchant works for, in words. */
 export function enchantWhen(when: EnchantCondition | undefined): string {
   if (when === undefined) return 'Works for every creature.';
@@ -183,7 +170,7 @@ export function enchantStatus(item: Pick<GearItem, 'enchantId' | 'enchantActive'
 
 // --- Upgrade ---
 
-export interface UpgradeStatus {
+interface UpgradeStatus {
   enabled: boolean;
   /** Why not, in words; null when the upgrade can be paid. */
   reason: string | null;
@@ -220,11 +207,11 @@ export function busyReason(creature: Pick<Creature, 'busy' | 'away'>): string | 
   return null;
 }
 
-export function isFree(creature: Pick<Creature, 'busy' | 'away'>): boolean {
+function isFree(creature: Pick<Creature, 'busy' | 'away'>): boolean {
   return busyReason(creature) === null;
 }
 
-export function skillLevelOf(skills: GearState['skills'], creatureId: string): number {
+function skillLevelOf(skills: GearState['skills'], creatureId: string): number {
   return skills.find((s) => s.creatureId === creatureId)?.level ?? 1;
 }
 
@@ -302,7 +289,7 @@ export function bagText(inventory: GearState['inventory']): string {
   return inventory.reserved > 0 ? `${base} (${String(inventory.reserved)} held for a craft)` : base;
 }
 
-export interface EquipChoice {
+interface EquipChoice {
   item: GearItem;
   /** The name of another creature that wears it now (it would move); null otherwise. */
   wornBy: string | null;
@@ -322,7 +309,7 @@ export function equipChoices(
 
 // --- Jobs ---
 
-export interface JobProgress {
+interface JobProgress {
   /** 0 to 100 in steps of a tenth, so a bar moves smoothly even on a long job. */
   pct: number;
   remainingMs: number;
@@ -337,10 +324,7 @@ export function jobProgress(
   const total = job.endsAt - job.startedAt;
   const remainingMs = Math.max(0, job.endsAt - serverNow);
   const ready = job.status === 'ready' || remainingMs === 0;
-  const pct =
-    ready || total <= 0
-      ? 100
-      : Math.min(100, Math.max(0, Math.floor(((serverNow - job.startedAt) * 1000) / total) / 10));
+  const pct = ready || total <= 0 ? 100 : percent(serverNow - job.startedAt, total);
   return { pct, remainingMs, ready };
 }
 
@@ -438,14 +422,14 @@ export function jobResultRarity(result: JobResult, items: readonly GearItem[]): 
 }
 
 /** The frame a supply is shown in: Common for the basic tier, Rare for good, Epic for great. */
-export function supplyRarity(supplyId: string): GearRarity {
+function supplyRarity(supplyId: string): GearRarity {
   const tier = supplyDef(supplyId)?.tier;
   return tier === 'great' ? 'epic' : tier === 'good' ? 'rare' : 'common';
 }
 
 // --- Supply crafts ---
 
-export interface SupplyCraftView {
+interface SupplyCraftView {
   id: string;
   name: string;
   kind: string;
@@ -501,7 +485,7 @@ export function supplyLevelBlocker(
 
 // --- Blueprints ---
 
-export interface BlueprintView {
+interface BlueprintView {
   baseId: string;
   name: string;
   rarity: GearRarity;
@@ -554,25 +538,4 @@ export function lootIsEmpty(loot: GrantLoot): boolean {
     (loot.supplies ?? []).length === 0 &&
     partsEntries(loot.parts).length === 0
   );
-}
-
-/** One line per thing a grant gave, for the loot lists; text only. */
-export function lootLines(loot: GrantLoot): string[] {
-  const lines: string[] = [];
-  for (const g of loot.gear) lines.push(`${gearName(g.baseId)} (${rarityName(g.rarity)})`);
-  for (const c of loot.converted) {
-    lines.push(
-      `${gearName(c.baseId)} (${rarityName(c.rarity)}) did not fit in the bag and became parts`,
-    );
-  }
-  for (const b of loot.blueprints) {
-    lines.push(
-      b.duplicate
-        ? `Blueprint: ${gearName(b.baseId)}, already known, so it became scrap`
-        : `New blueprint: ${gearName(b.baseId)} (${rarityName(b.rarity)})`,
-    );
-  }
-  for (const p of partsEntries(loot.parts)) lines.push(`${String(p.amount)} ${partName(p.kind)}`);
-  for (const id of loot.supplies ?? []) lines.push(`Found a supply: ${supplyName(id)}`);
-  return lines;
 }

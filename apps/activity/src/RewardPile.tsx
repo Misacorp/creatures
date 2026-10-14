@@ -1,20 +1,5 @@
-import { ItemSprite } from './GearArt';
-import { partIcon } from './gear-sprites';
-import { glyphOrUnknown } from './glyphs';
-import { rewardPileItems, type PileIcon, type PileSource } from './reward-pile';
-import { Sprite } from './sprites/Sprite';
-
-/** One icon of the pile, at one fixed size (32 px), whatever it is. */
-function PileIconView({ icon }: { icon: PileIcon }) {
-  switch (icon.kind) {
-    case 'glyph':
-      return <Sprite sprite={glyphOrUnknown(icon.id)} scale={4} />;
-    case 'part':
-      return <Sprite sprite={partIcon(icon.part)} scale={4} />;
-    case 'gear':
-      return <ItemSprite baseId={icon.baseId} scale={2} />;
-  }
-}
+import { rewardPileItems, type PileSource } from './reward-pile';
+import { GameIcon } from './ui/GameIcon';
 
 /**
  * A small pile of reward icons, one for each kind earned (`rewardPileItems`), overlapping a little
@@ -29,7 +14,8 @@ export function RewardPile({ source, label }: { source: PileSource; label: strin
     <span class="reward-pile" role="img" aria-label={label}>
       {items.map((item) => (
         <span key={item.key} class="pile-icon" aria-hidden="true">
-          <PileIconView icon={item.icon} />
+          {/* One fixed size (32 px): gear art is drawn at half the scale of the 8 px icons. */}
+          <GameIcon icon={item.icon} scale={item.icon.kind === 'gear' ? 2 : 4} />
         </span>
       ))}
     </span>

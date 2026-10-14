@@ -8,9 +8,7 @@ import {
   sectionDomId,
   startsOnTag,
   tagKey,
-  toggleTag,
   visualPlan,
-  type ActiveTag,
 } from './glossary-ui';
 import { glyph } from './glyphs';
 import { BUNDLED_CREATURE_SPRITES } from './sprites/creature-sprites';
@@ -49,38 +47,6 @@ describe('what a tag opens', () => {
   it('names the page section a popover links to', () => {
     expect(sectionDomId('combos')).toBe('howto-combos');
     expect(MORE_LABEL).toBe('More in How to play');
-  });
-});
-
-describe('tapping a tag', () => {
-  const anchorA = { id: 'a' };
-  const anchorB = { id: 'b' };
-  const tag = (entry: string, anchor: { id: string }): ActiveTag<{ id: string }> => ({
-    key: tagKey({ entry }),
-    ref: { entry },
-    anchor,
-  });
-
-  it('opens the popover of a tag when nothing is open', () => {
-    const next = tag('bait', anchorA);
-    expect(toggleTag(null, next)).toBe(next);
-  });
-
-  it('closes it when the same tag is tapped again', () => {
-    const open = tag('bait', anchorA);
-    expect(toggleTag(open, tag('bait', anchorA))).toBeNull();
-  });
-
-  it('switches to another tag', () => {
-    const open = tag('bait', anchorA);
-    const other = tag('essence', anchorB);
-    expect(toggleTag(open, other)).toBe(other);
-  });
-
-  it('switches when another tag with the same meaning is tapped (another place on the page)', () => {
-    const open = tag('bait', anchorA);
-    const other = tag('bait', anchorB);
-    expect(toggleTag(open, other)).toBe(other);
   });
 });
 

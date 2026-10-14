@@ -95,7 +95,7 @@ export function tintPalette(tint: string | null): Readonly<Record<string, string
 }
 
 /** A plain grey silhouette for an item whose base is not in the content (so a screen never breaks). */
-export const FALLBACK_ITEM: SpriteDef = trinket;
+const FALLBACK_ITEM: SpriteDef = trinket;
 
 /** The sprite of an item base and the palette that tints it. */
 export function itemArt(baseId: string): {

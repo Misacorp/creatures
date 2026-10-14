@@ -316,10 +316,58 @@ export function grantWelcomeKit(
   );
 }
 
+/** The Bait and Essence a payout adds to the ledger next to its grant (0 or absent: none). */
+export interface PayoutCredits {
+  bait?: number;
+  essence?: number;
+  meta?: Record<string, unknown>;
+}
+
 /**
- * What a dungeon run drops: the scrap, glimmer and shard of its rooms and the gear its dice gave.
- * `draw` runs only for a first-time key, inside the transaction, and uses the live gear RNG. Key
- * `dungeon:<day>:<attempt>`, so a player's run of a day is paid once however often it is retried.
+ * Pays a server event once per (player, key): the Bait and Essence credits, then the grant (see
+ * `grantOnce`). Key rule: the grant keeps `key`, each credit gets a `:<currency>` suffix
+ * (`<key>:bait`, `<key>:essence`), so one event's ledger rows and grant row never share a key. The
+ * credits are idempotent on their own keys, so a repeat pays nothing twice. Call it inside the
+ * transaction of the action it belongs to.
+ */
+export function payOnce(
+  deps: GrantDeps,
+  userId: string,
+  key: string,
+  options: {
+    source: GearSource;
+    draw: () => Draft;
+    credits?: PayoutCredits;
+  },
+): GrantView {
+  const { source, draw, credits = {} } = options;
+  return deps.storage.transactionSync(() => {
+    for (const currency of ['bait', 'essence'] as const) {
+      const amount = credits[currency] ?? 0;
+      if (amount > 0) {
+        credit(
+          deps.storage,
+          {
+            userId,
+            currency,
+            amount,
+            source,
+            idempotencyKey: `${key}:${currency}`,
+            ...(credits.meta === undefined ? {} : { meta: credits.meta }),
+          },
+          deps.now(),
+        );
+      }
+    }
+    return grantOnce(deps, userId, key, source, draw, userId).view;
+  });
+}
+
+/**
+ * What a dungeon run drops: the scrap, glimmer and shard of its rooms and the gear its dice gave, and
+ * the run's Bait and Essence. `draw` runs only for a first-time key, inside the transaction, and uses
+ * the live gear RNG. Key `dungeon:<day>:<attempt>` (credits `...:bait`, `...:essence`), so a player's
+ * run of a day is paid once however often it is retried.
  */
 export function grantDungeonRun(
   deps: GrantDeps,
@@ -327,35 +375,34 @@ export function grantDungeonRun(
   day: string,
   attempt: number,
   draw: (rng: Rng) => { parts: PartsBundle; gear: Draft['gear'] },
+  credits?: PayoutCredits,
 ): GrantView {
-  return grantOnce(
-    deps,
-    userId,
-    `dungeon:${day}:${String(attempt)}`,
-    'dungeon',
-    () => {
+  return payOnce(deps, userId, `dungeon:${day}:${String(attempt)}`, {
+    source: 'dungeon',
+    draw: () => {
       const drawn = draw(deps.rng);
       return { gear: drawn.gear, parts: addParts({}, drawn.parts), blueprints: [] };
     },
-    userId,
-  ).view;
+    ...(credits === undefined ? {} : { credits }),
+  });
 }
 
-/** The parts of a streak bonus, paid once per day. Key `dungeon:<day>:streak`. */
+/**
+ * The streak bonus of a day, paid once per day: parts through the grant, Bait and Essence through the
+ * credits. Key `dungeon:<day>:streak` (credits `...:bait`, `...:essence`).
+ */
 export function grantDungeonStreak(
   deps: GrantDeps,
   userId: string,
   day: string,
   parts: PartsBundle,
+  credits?: PayoutCredits,
 ): GrantView {
-  return grantOnce(
-    deps,
-    userId,
-    `dungeon:${day}:streak`,
-    'dungeon',
-    () => ({ gear: [], parts: addParts({}, parts), blueprints: [] }),
-    userId,
-  ).view;
+  return payOnce(deps, userId, `dungeon:${day}:streak`, {
+    source: 'dungeon',
+    draw: () => ({ gear: [], parts: addParts({}, parts), blueprints: [] }),
+    ...(credits === undefined ? {} : { credits }),
+  });
 }
 
 /** The player's newest grants, newest first. */

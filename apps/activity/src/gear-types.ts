@@ -131,14 +131,6 @@ export interface GearState {
   grants: GrantRecord[];
 }
 
-/** Every gear and workshop action answers `{ result, gear, state }`: the action's own result and both views, fresh. */
-export interface GearActionResponse<R> {
-  result: R;
-  gear: GearState;
-  /** The collection (`GET /api/state` without `timezone` and `leetSync`): creature cards carry `gear`, `statsWithGear` and `busy`. */
-  state: unknown;
-}
-
 export type EquipResult = { item: GearItem; unequipped: GearItem | null };
 export type UpgradeResult = { gearId: string; level: number };
 export type DismantleResult = {
@@ -152,9 +144,6 @@ export type DismantleResult = {
 };
 export type StartJobResult = { jobId: string };
 
-/** Bodies of the requests (every spend and job action carries a client-generated idempotency key). */
-export type EquipRequest = { creatureId: string | null };
-export type KeyedRequest = { idempotencyKey: string };
 export type StartJobRequest =
   | { kind: 'craft'; creatureId: string; blueprintId: string; idempotencyKey: string }
   | {

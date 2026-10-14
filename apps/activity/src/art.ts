@@ -38,7 +38,7 @@ export function bossArt(bossId: string): { sprite: SpriteDef; scale: number } {
  * gold, Spark to pink and green) applied to every colour of the sprite except the outline, the eye
  * highlight and near-neutral colours. A species without an entry shows a sparkle frame instead.
  */
-export const SHINY_PALETTES: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+const SHINY_PALETTES: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   splashet: { b: '#c63fd6', h: '#f9e8ff', s: '#8a1f8b', p: '#b8f4ca' },
   tidewing: { b: '#c63fd6', h: '#f9e8ff', s: '#8a1f8b', p: '#b8f4ca', f: '#dd7ff0' },
   cindle: {
@@ -113,13 +113,20 @@ export function shinyPalette(speciesId: string): Readonly<Record<string, string>
   return Object.hasOwn(SHINY_PALETTES, speciesId) ? SHINY_PALETTES[speciesId] : undefined;
 }
 
-/** `el-tide` and so on: sets `--el` to the element's colour (see styles.css). Unknown: no class. */
+const ELEMENT_SLUG = /^[a-z-]+$/;
+
+/** An element id that is safe to put in a class name or a glossary id; anything else is "unknown". */
+export function elementSlug(element: string): string {
+  return ELEMENT_SLUG.test(element) ? element : 'unknown';
+}
+
+/** `el-tide` and so on: sets `--el` to the element's colour (see styles/components/creature-card.css). Unknown: no class. */
 export function elementClass(element: string | null): string {
-  return element !== null && /^[a-z-]+$/.test(element) ? `el-${element}` : '';
+  return element !== null && ELEMENT_SLUG.test(element) ? `el-${element}` : '';
 }
 
 /** The element colours of the stylesheet (`--tide` and so on), for sprites that are recoloured. */
-export const ELEMENT_COLOURS: Readonly<Record<string, string>> = {
+const ELEMENT_COLOURS: Readonly<Record<string, string>> = {
   tide: '#4f8fe6',
   ember: '#ef6a3a',
   grove: '#5cbf5a',

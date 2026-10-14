@@ -16,7 +16,6 @@ import { describe, expect, it } from 'vitest';
 import { beatEnds } from './replay';
 import {
   HP_SEGMENTS,
-  beatOffsets,
   buildBeats,
   cuesForEvents,
   driftFor,
@@ -476,15 +475,6 @@ describe('buildBeats', () => {
     const attack = beats.find((b) => b.cues.some((c) => c.kind === 'shake'));
     expect(attack && kinds(attack.cues)).toEqual(['flash', 'float', 'shake', 'ko', 'strike']);
     expect(attack?.windupMs).toBe(WINDUP_MS);
-  });
-
-  it('schedules beats back to back', () => {
-    const beats = buildBeats(events, 0, ROW);
-    const offsets = beatOffsets(beats);
-    expect(offsets[0]).toBe(0);
-    for (let k = 1; k < beats.length; k++) {
-      expect(offsets[k]).toBe((offsets[k - 1] ?? 0) + (beats[k - 1]?.ms ?? 0));
-    }
   });
 });
 

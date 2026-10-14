@@ -1,19 +1,22 @@
 /**
  * What the buttons of gear and the Workshop do. Each action asks the server (which decides), then
- * hands back both fresh views. Spends carry an idempotency key from the key store: the key stays the
+ * hands back both fresh views. Spends carry an idempotency key from the runner: the key stays the
  * same while the outcome is unknown (a retry then cannot spend twice) and is dropped after a definite
  * answer (see `actions.ts`). The screen never changes a balance itself.
  */
+import { ActionIds, type JobStart } from './actions';
+import type { ActionRunner } from './action-runner';
 import type { GameState } from './api';
 import * as api from './gear-api';
 import type { GearAction } from './gear-api';
-import type { GearState, JobResult, StartJobRequest } from './gear-types';
+import type { GearState, JobResult } from './gear-types';
 
-/** What `Game` gives the actions: how to run a guarded action, and which key an action has. */
+/** What `Game` gives the actions: how to run a guarded action, and where the answer goes. */
 export interface GearDeps {
   /** Runs one guarded action: one at a time, errors shown, state reloaded after a definite "no". */
-  run: <T>(action: string, task: () => Promise<T>, currency?: string) => Promise<T | undefined>;
-  keyFor: (action: string) => string;
+  run: ActionRunner['run'];
+  /** The same for an action with an idempotency key. */
+  runKeyed: ActionRunner['runKeyed'];
   /** Replaces the collection and the gear view with the fresh ones of a response. */
   apply: (views: { gear: GearState; state: GameState }) => void;
   /** The server calls, replaceable in tests. */
@@ -23,35 +26,12 @@ export interface GearDeps {
   >;
 }
 
-/** The key store's name for a job start: the same job on the same creature is the same action. */
-export type JobStart = StartJobRequest extends infer R
-  ? R extends StartJobRequest
-    ? Omit<R, 'idempotencyKey'>
-    : never
-  : never;
-
-export function startActionId(request: JobStart): string {
-  switch (request.kind) {
-    case 'craft':
-      return `job:craft:${request.creatureId}:${request.blueprintId}`;
-    case 'improve':
-      return `job:improve:${request.creatureId}:${request.gearId}:${String(request.secondaryIndex)}`;
-    case 'enchant':
-      return `job:enchant:${request.creatureId}:${request.gearId}:${request.enchantId}`;
-    case 'supply':
-      return `job:supply:${request.creatureId}:${request.supplyId}`;
-  }
-}
-
 export function createGearActions(deps: GearDeps) {
   const server = deps.server ?? api;
 
-  async function guarded<R>(
-    action: string,
-    task: () => Promise<GearAction<R>>,
-    currency?: string,
-  ): Promise<R | undefined> {
-    const done = await deps.run(action, task, currency);
+  /** Applies the answer of a guarded call, and hands back its result. */
+  async function applied<R>(pending: Promise<GearAction<R> | undefined>): Promise<R | undefined> {
+    const done = await pending;
     if (done === undefined) return undefined;
     deps.apply(done);
     return done.result;
@@ -60,28 +40,26 @@ export function createGearActions(deps: GearDeps) {
   return {
     /** Wear an item (or take it off with `null`). */
     equip: (gearId: string, creatureId: string | null) =>
-      guarded(`equip:${gearId}:${creatureId ?? 'none'}`, () =>
-        server.equipGear(gearId, creatureId),
-      ),
+      applied(deps.run(() => server.equipGear(gearId, creatureId))),
     /** Costs Essence and scrap, so a refusal for money says Essence. */
-    upgrade: (gearId: string) => {
-      const action = `upgrade:${gearId}`;
-      return guarded(action, () => server.upgradeGear(gearId, deps.keyFor(action)), 'Essence');
-    },
-    dismantle: (gearId: string) => {
-      const action = `dismantle:${gearId}`;
-      return guarded(action, () => server.dismantleGear(gearId, deps.keyFor(action)));
-    },
-    startJob: (request: JobStart) => {
-      const action = startActionId(request);
-      return guarded(action, () =>
-        server.startJob({ ...request, idempotencyKey: deps.keyFor(action) }),
-      );
-    },
-    claimJob: (jobId: string): Promise<JobResult | undefined> => {
-      const action = `claim-job:${jobId}`;
-      return guarded(action, () => server.claimJob(jobId, deps.keyFor(action)));
-    },
+    upgrade: (gearId: string) =>
+      applied(
+        deps.runKeyed(ActionIds.upgrade(gearId), (key) => server.upgradeGear(gearId, key), {
+          currency: 'Essence',
+        }),
+      ),
+    dismantle: (gearId: string) =>
+      applied(
+        deps.runKeyed(ActionIds.dismantle(gearId), (key) => server.dismantleGear(gearId, key)),
+      ),
+    startJob: (request: JobStart) =>
+      applied(
+        deps.runKeyed(ActionIds.job(request), (key) =>
+          server.startJob({ ...request, idempotencyKey: key }),
+        ),
+      ),
+    claimJob: (jobId: string): Promise<JobResult | undefined> =>
+      applied(deps.runKeyed(ActionIds.claimJob(jobId), (key) => server.claimJob(jobId, key))),
   };
 }
 

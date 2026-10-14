@@ -1,9 +1,7 @@
 import { RULES } from '@creatures/game';
 import * as v from 'valibot';
 import { IdSchema } from './collection-schemas';
-import { SPEND_KEY_RE } from './ledger';
-
-const idempotencyKey = v.pipe(v.string(), v.regex(SPEND_KEY_RE));
+import { IdempotencyKeySchema } from './schemas';
 
 /**
  * The body of `POST /api/dungeon/run`. Strict: unknown keys are rejected, so a client can never send
@@ -18,6 +16,6 @@ const idempotencyKey = v.pipe(v.string(), v.regex(SPEND_KEY_RE));
  */
 export const RunBodySchema = v.strictObject({
   team: v.pipe(v.array(IdSchema), v.length(RULES.dungeon.teamSize)),
-  idempotencyKey,
+  idempotencyKey: IdempotencyKeySchema,
 });
 export type RunBody = v.InferOutput<typeof RunBodySchema>;

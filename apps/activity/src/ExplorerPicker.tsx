@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import { Stars } from './ExpeditionIcons';
 import { GlossaryTag } from './Glossary';
 import { tripsHereText, type ExplorerOption } from './send-view';
@@ -75,9 +76,7 @@ export function ExplorerPicker({
                   {...(option.xp.endCap === undefined ? {} : { endCap: option.xp.endCap })}
                 />
                 <span class="pick-fam">
-                  <GlossaryTag entry="familiarity" look="chip" class="tag">
-                    Familiarity
-                  </GlossaryTag>
+                  <Tag entry="familiarity">Familiarity</Tag>
                   <Stars
                     stars={option.stars}
                     label={`${String(option.stars)} of 3 stars at this place`}

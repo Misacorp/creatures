@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import { trainingCost } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
@@ -8,7 +9,7 @@ import type { GearState } from './gear-types';
 import { gearShare } from './gear-view';
 import { glyphOrUnknown } from './glyphs';
 import { abilityDef } from './live';
-import { PixelBar } from './PixelBar';
+import { Bar } from './ui/Bar';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -182,42 +183,40 @@ function CreatureCard({
       <p class="tags">
         {species !== undefined && (
           <>
-            <ElementChip element={species.element} role={capitalize(species.role)} />
-            <GlossaryTag entry="rarity" look="chip" class="tag">
-              {capitalize(species.rarity)}
-            </GlossaryTag>
+            <ElementChip element={species.element} role={species.role} />
+            <Tag entry="rarity">{capitalize(species.rarity)}</Tag>
           </>
         )}
         {isFestivalSpecies(creature.species) && (
-          <GlossaryTag entry="festival" look="chip" class="badge festival">
+          <Tag kind="badge" tone="festival" entry="festival">
             Festival
-          </GlossaryTag>
+          </Tag>
         )}
         {creature.shiny && (
-          <GlossaryTag entry="shiny" look="chip" class="badge shiny">
+          <Tag kind="badge" tone="shiny" entry="shiny">
             Shiny
-          </GlossaryTag>
+          </Tag>
         )}
         {creature.away && (
-          <GlossaryTag entry="away" look="chip" class="badge away">
+          <Tag kind="badge" tone="away" entry="away">
             Away
-          </GlossaryTag>
+          </Tag>
         )}
         {creature.busy?.kind === 'job' && (
-          <GlossaryTag entry="workshop" look="chip" class="badge busy">
+          <Tag kind="badge" tone="busy" entry="workshop">
             On a job
-          </GlossaryTag>
+          </Tag>
         )}
         {isFirstOnServer(creature, state.serverFirsts) && (
-          <GlossaryTag entry="first-on-server" look="chip" class="badge first">
+          <Tag kind="badge" tone="first" entry="first-on-server">
             First on server
-          </GlossaryTag>
+          </Tag>
         )}
       </p>
       {isFestivalSpecies(creature.species) && (
         <p class="muted">Won in a Festival week. It is not found on expeditions.</p>
       )}
-      <PixelBar
+      <Bar
         value={creature.level}
         max={creature.levelCap}
         label={`Training progress: level ${String(creature.level)} of ${String(creature.levelCap)}`}

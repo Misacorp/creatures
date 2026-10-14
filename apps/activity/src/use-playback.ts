@@ -14,7 +14,7 @@ export interface Position {
   seq: number;
 }
 
-export interface PlaybackArgs {
+interface PlaybackArgs {
   events: readonly FightEvent[];
   /** The row's creature ids, left to right. */
   rowIds: readonly string[];

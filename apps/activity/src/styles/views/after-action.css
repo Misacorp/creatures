@@ -1,0 +1,61 @@
+/* After-action card: stats only, with progress bars (no inline styles). */
+.after-action-card {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--haze);
+  background: var(--dusk);
+  overflow-wrap: anywhere;
+}
+
+.after-action-card.close {
+  border-left-color: var(--gold);
+}
+
+.after-action-headline {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+}
+
+.after-action-card.close .after-action-headline {
+  color: var(--gold);
+}
+
+.after-action-card h5 {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.9375rem;
+}
+
+.bar-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  font-size: 0.875rem;
+}
+
+.bar-row.you .bar-name {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.bar {
+  display: block;
+  width: 100%;
+  height: 0.625rem;
+  accent-color: var(--gold);
+}
+
+.bar.you {
+  accent-color: var(--gold);
+}
+
+.after-action details {
+  margin: 0.25rem 0;
+}

@@ -3,6 +3,7 @@ import { fetchGear } from './gear-api';
 import { grantsForWeek, lootIsEmpty } from './gear-view';
 import type { GrantRecord } from './gear-types';
 import { LootList } from './GearLoot';
+import { RevealLater } from './ui/RevealShell';
 
 /**
  * The gear a finale gave this player for one raid week: the roll for clearing it and, in a Festival
@@ -34,13 +35,13 @@ export function FinaleGearLoot({ week, done }: { week: string; done: boolean }) 
   ].flatMap((g) => (g.grant === null || lootIsEmpty(g.grant) ? [] : [{ ...g, grant: g.grant }]));
   if (grants.length === 0) return null;
   return (
-    <div class={done ? 'reveal-gear-box done' : 'reveal-gear-box'}>
+    <RevealLater done={done}>
       {grants.map(({ grant, label }) => (
         <section key={grant.key}>
           <h4 class="pix">{label}</h4>
           <LootList loot={grant} label={label} />
         </section>
       ))}
-    </div>
+    </RevealLater>
   );
 }

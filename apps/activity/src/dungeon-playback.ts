@@ -4,7 +4,6 @@
  * touches the DOM, the network or the clock, and the text it returns is plain text (names can carry
  * what players typed).
  */
-import type { EventNames } from '@creatures/engine';
 import { partsEntries, partsText } from './gear-view';
 import type { GrantLoot } from './gear-types';
 import type {
@@ -49,11 +48,6 @@ export function mineIds(row: readonly { id: string }[]): Set<string> {
   return new Set(row.map((r) => r.id));
 }
 
-/** The names the stage and the log use for a room (the foe plays the boss). */
-export function roomNames(room: Pick<DungeonReplayRoom, 'names'>): EventNames {
-  return room.names;
-}
-
 /** The stage's boss for a room: the foe's content id and name. */
 export function roomBoss(room: Pick<DungeonReplayRoom, 'foe'>): { id: string; name: string } {
   return { id: room.foe.id, name: room.foe.name };
@@ -73,7 +67,7 @@ export function roomResultLine(room: Pick<DungeonReplayRoom, 'cleared' | 'foe'>)
 }
 
 /** How a room ended, for the results card. */
-export type RoomOutcome = 'cleared' | 'lost' | 'not reached';
+type RoomOutcome = 'cleared' | 'lost' | 'not reached';
 
 export function roomOutcome(room: Pick<DungeonRoomSummary, 'played' | 'cleared'>): RoomOutcome {
   if (!room.played) return 'not reached';
@@ -83,7 +77,7 @@ export function roomOutcome(room: Pick<DungeonRoomSummary, 'played' | 'cleared'>
 // --- The end report: the room strip and the team breakdown ---
 
 /** How a room reads in the strip: cleared, failed (DEFEAT), or never reached (locked). */
-export type RoomState = 'cleared' | 'defeat' | 'locked';
+type RoomState = 'cleared' | 'defeat' | 'locked';
 
 /** The word across a room's panel: CLEARED, DEFEAT, or a muted "Not reached". */
 export const ROOM_BANNER: Readonly<Record<RoomState, string>> = {
@@ -180,7 +174,7 @@ export function teamBreakdown(run: Pick<DungeonRunSummary, 'team'>): TeamEntry[]
 }
 
 /** What the banner over the stage says when a room opens. Names and descriptions are plain text. */
-export interface RoomIntroView {
+interface RoomIntroView {
   /** "ROOM 2" in big letters, or "ROOM BOSS" for the last room. */
   heading: string;
   /** "2 of 3" (the room's place in the run). */
@@ -212,18 +206,6 @@ export function roomIntroView(
     modifierDescription: room.modifier.description,
     spoken: `Room ${place}${boss ? ', room boss' : ''}: ${room.foe.name}. ${room.modifier.name}: ${room.modifier.description}`,
   };
-}
-
-/** The foe's HP left, as "0 of 351", for a room that was played; null otherwise. */
-export function foeHpLine(room: DungeonRoomSummary): string | null {
-  return room.played ? `${String(room.foeHpEnd)} of ${String(room.foe.hpMax)} HP left` : null;
-}
-
-/** What a creature's HP bar says out loud. */
-export function creatureHpLabel(name: string, current: number, max: number): string {
-  return current <= 0
-    ? `${name} HP: knocked out`
-    : `${name} HP: ${String(current)} of ${String(max)}`;
 }
 
 /** The rewards as the loot list shows them: gear, bag overflow and parts (the dungeon has no blueprints). */

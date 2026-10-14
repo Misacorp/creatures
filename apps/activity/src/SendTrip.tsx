@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import { useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { Catalogue } from './Catalogue';
@@ -124,7 +125,9 @@ export function SendTrip({
         <p class="cost-line" aria-live="polite">
           {cost === 0 ? (
             <>
-              <span class="badge free">Free</span>{' '}
+              <Tag kind="badge" tone="free">
+                Free
+              </Tag>{' '}
               {picks.length === 0
                 ? 'This trip costs nothing.'
                 : `Only supplies you already have: ${names.join(' and ')}.`}

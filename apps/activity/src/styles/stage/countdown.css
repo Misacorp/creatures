@@ -1,0 +1,202 @@
+/*
+  The countdown over the stage in the last 30 seconds before a fight: a dark veil with one big number
+  in the pixel face, which lets taps through so Auto fire can still be set on the creatures below.
+  The colour and size follow the second: gold and calm from 30 to 11, gold shifting to orange from 10
+  to 6, red and growing from 5 to 1. Motion (the pulse and the stepped shake) is only added below, for
+  people who have not asked for less of it; without it the number is still and only changes colour.
+*/
+.stage-wrap {
+  position: relative;
+}
+
+.countdown {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-stage-overlay);
+  display: grid;
+  place-items: start center;
+  padding-top: 2.75rem;
+  background: rgb(var(--ink-rgb) / 45%);
+  pointer-events: none;
+}
+
+.cd-text {
+  color: var(--cd-color, var(--gold));
+  font-size: var(--cd-size, 5rem);
+  line-height: 1;
+  text-shadow:
+    var(--ink-outline),
+    var(--px) var(--px) 0 var(--ink);
+}
+
+.cd-calm {
+  --cd-color: var(--gold);
+  --cd-size: 5rem;
+}
+
+.cd-n10 {
+  --cd-color: #ffcc3a;
+  --cd-size: 5.5rem;
+}
+
+.cd-n9 {
+  --cd-color: #ffb92f;
+  --cd-size: 5.5rem;
+}
+
+.cd-n8 {
+  --cd-color: #ffa52b;
+  --cd-size: 5.5rem;
+}
+
+.cd-n7 {
+  --cd-color: #ff9030;
+  --cd-size: 5.5rem;
+}
+
+.cd-n6 {
+  --cd-color: #ff7b35;
+  --cd-size: 5.5rem;
+}
+
+.cd-final {
+  --cd-color: var(--bad);
+}
+
+.cd-n5 {
+  --cd-size: 6.5rem;
+}
+
+.cd-n4 {
+  --cd-size: 7.5rem;
+}
+
+.cd-n3 {
+  --cd-size: 8.5rem;
+}
+
+.cd-n2 {
+  --cd-size: 9.5rem;
+}
+
+.cd-n1 {
+  --cd-size: 10.5rem;
+}
+
+.cd-fight {
+  --cd-color: var(--gold);
+  --cd-size: 3.75rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Calm: one slow beat a second. Fast: two quicker ones. Final: a shake of the whole stage. Smooth
+     easing on transform only, like the other text animations. */
+  .cd-text {
+    will-change: transform;
+  }
+
+  .cd-calm .cd-text {
+    animation: cd-beat 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .cd-fast .cd-text {
+    animation: cd-beat 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 2 both;
+  }
+
+  .cd-final .cd-text {
+    animation: cd-slam 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .cd-fight .cd-text {
+    animation: cd-slam 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .stage-wrap.cd-shake-a {
+    animation: cd-shake-a 0.5s ease-out both;
+  }
+
+  .stage-wrap.cd-shake-b {
+    animation: cd-shake-b 0.5s ease-out both;
+  }
+
+  @keyframes cd-beat {
+    0% {
+      transform: scale(1.18);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes cd-slam {
+    0% {
+      transform: scale(1.5);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* Two copies, used on alternate seconds, so every second restarts the shake. */
+  @keyframes cd-shake-a {
+    0% {
+      transform: translate(-4px, 2px);
+    }
+
+    17% {
+      transform: translate(4px, -2px);
+    }
+
+    34% {
+      transform: translate(-3px, -3px);
+    }
+
+    51% {
+      transform: translate(3px, 2px);
+    }
+
+    68% {
+      transform: translate(-2px, 1px);
+    }
+
+    85% {
+      transform: translate(1px, -1px);
+    }
+
+    100% {
+      transform: translate(0, 0);
+    }
+  }
+
+  @keyframes cd-shake-b {
+    0% {
+      transform: translate(4px, -2px);
+    }
+
+    17% {
+      transform: translate(-4px, 2px);
+    }
+
+    34% {
+      transform: translate(3px, 3px);
+    }
+
+    51% {
+      transform: translate(-3px, -2px);
+    }
+
+    68% {
+      transform: translate(2px, -1px);
+    }
+
+    85% {
+      transform: translate(-1px, 1px);
+    }
+
+    100% {
+      transform: translate(0, 0);
+    }
+  }
+}

@@ -12,7 +12,7 @@ export const COUNTDOWN_MS = 30_000;
 export const FIGHT_FLASH_MS = 1_200;
 
 /** calm: 30 to 11, fast: 10 to 6 (gold shifting to orange), final: 5 to 1 (red, shaking, growing). */
-export type CountdownTier = 'calm' | 'fast' | 'final';
+type CountdownTier = 'calm' | 'fast' | 'final';
 
 export type CountdownView =
   { phase: 'count'; n: number; tier: CountdownTier } | { phase: 'fight' } | null;

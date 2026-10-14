@@ -1,24 +1,25 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ApiError } from './api';
 import { createKeyStore } from './actions';
-import { createGearActions, startActionId, type GearDeps } from './gear-actions';
+import { createActionRunner } from './action-runner';
+import { errorText } from './game';
+import { createGearActions } from './gear-actions';
 import type { GearAction } from './gear-api';
 
-/** A fake of `Game`'s guarded runner: it settles the key store like the real one does. */
+/** The real runner (as `Game` uses it) with a key store that hands out numbered keys. */
 function setup(ids: string[] = ['key-1', 'key-2', 'key-3']) {
   const queue = [...ids];
   const keys = createKeyStore(() => queue.shift() ?? 'out-of-keys');
   const applied: unknown[] = [];
-  const run: GearDeps['run'] = async (action, task) => {
-    try {
-      const value = await task();
-      keys.settle(action);
-      return value;
-    } catch (err) {
-      keys.settle(action, err);
-      return undefined;
-    }
-  };
+  const runner = createActionRunner(() => ({
+    keys,
+    errorText,
+    isStale: () => false,
+    setBusy: () => undefined,
+    setError: () => undefined,
+    setNotice: () => undefined,
+    isMounted: () => true,
+  }));
   const answer = (result: unknown) =>
     ({
       result,
@@ -33,8 +34,8 @@ function setup(ids: string[] = ['key-1', 'key-2', 'key-3']) {
     claimJob: vi.fn(),
   };
   const actions = createGearActions({
-    run,
-    keyFor: (action) => keys.keyFor(action),
+    run: runner.run,
+    runKeyed: runner.runKeyed,
     apply: (views) => applied.push(views),
     server,
   });
@@ -108,30 +109,30 @@ describe('gear actions', () => {
     ]);
   });
 
-  it('names a job start by its kind, creature and target', () => {
-    expect(startActionId({ kind: 'craft', creatureId: 'c', blueprintId: 'b' })).toBe(
-      'job:craft:c:b',
-    );
-    expect(
-      startActionId({ kind: 'improve', creatureId: 'c', gearId: 'g', secondaryIndex: 1 }),
-    ).toBe('job:improve:c:g:1');
-    expect(startActionId({ kind: 'enchant', creatureId: 'c', gearId: 'g', enchantId: 'e' })).toBe(
-      'job:enchant:c:g:e',
-    );
-  });
-
   it('says Essence when an upgrade is refused for money', async () => {
     const seen: (string | undefined)[] = [];
     const actions = createGearActions({
-      run: (_action, _task, currency) => {
-        seen.push(currency);
+      run: () => Promise.resolve(undefined),
+      runKeyed: (_action, _task, options) => {
+        seen.push(options?.currency);
         return Promise.resolve(undefined);
       },
-      keyFor: () => 'k',
       apply: () => undefined,
     });
     await actions.upgrade('g');
     await actions.dismantle('g');
     expect(seen).toEqual(['Essence', undefined]);
+  });
+
+  it('turns a second action away while one runs, and applies nothing for it', async () => {
+    const { actions, server, applied, answer } = setup();
+    let finish: (value: GearAction<never>) => void = () => undefined;
+    server.upgradeGear.mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
+    const first = actions.upgrade('g');
+    expect(await actions.dismantle('g')).toBeUndefined();
+    expect(server.dismantleGear).not.toHaveBeenCalled();
+    finish(answer({ gearId: 'g', level: 2 }));
+    await first;
+    expect(applied).toHaveLength(1);
   });
 });

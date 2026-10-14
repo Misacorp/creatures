@@ -1,0 +1,29 @@
+/*
+  The dungeon's stage: the three creatures side by side in one row, larger than in a zone row. Each
+  zone is the one creature at that place, so its frames and effects sit on that creature.
+*/
+.stage-rows.single-row {
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+}
+
+.single-row .stage-zone {
+  display: block;
+  flex: none;
+  padding: 0.25rem 0;
+}
+
+.single-row .zone-units {
+  flex-wrap: nowrap;
+}
+
+.single-row .unit-name {
+  font-size: 0.75rem;
+}
+
+.single-row .unit-hp {
+  max-width: calc(var(--unit-w, 88px) - 12px);
+  height: 0.5rem;
+}
