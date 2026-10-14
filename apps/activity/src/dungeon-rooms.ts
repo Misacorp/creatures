@@ -79,35 +79,31 @@ export function roomPanels(
 
 /** What a landmark gives. Words, not numbers (the amounts are the server's). */
 export const LANDMARK_UNLOCKS: readonly TrackUnlock[] = [
-  { icon: 'anvil', text: 'Sure gear drop' },
+  { icon: 'anvil', text: 'Gear drop' },
   { icon: 'gem', text: 'Bonus Essence' },
 ];
 
 interface DepthTrack {
+  /** The depth the player is at, then the next landmark. */
   steps: TrackStep[];
-  /** The index of the player's own step. */
+  /** The index of the player's own step (always 0: the track starts at the depth now). */
   current: number;
+  /** The depths between the two, drawn as small pips (3, 4, 5 and 6 between 2 and 7). */
+  between: number;
 }
 
 /**
- * The landmark depths as a `ProgressTrack`: the previous landmark (when there is one), the depth the
- * player is at, and the next landmark. The player's own step carries the landmark rewards only when
- * the depth is a landmark itself. The ladder has no end, so there is always a next step.
+ * The way from the depth the player is at to the next landmark, as a `ProgressTrack`: two labelled
+ * steps and, between them, the number of depths to draw as small pips. The player's own step carries
+ * the landmark rewards only when the depth is a landmark itself. The ladder has no end, so there is
+ * always a next landmark.
  */
 export function depthTrack(depth: number, every: number = RULES.dungeon.landmarkEvery): DepthTrack {
   const d = Math.max(1, Math.floor(depth));
-  const steps: TrackStep[] = [];
-  const before = Math.floor((d - 1) / every) * every;
-  if (before >= every) {
-    steps.push({ id: before, label: `Depth ${String(before)}`, unlocks: LANDMARK_UNLOCKS });
-  }
-  const current = steps.length;
-  steps.push({
-    id: d,
-    label: `Depth ${String(d)}`,
-    unlocks: isLandmark(d) ? LANDMARK_UNLOCKS : [],
-  });
   const after = (Math.floor(d / every) + 1) * every;
-  steps.push({ id: after, label: `Depth ${String(after)}`, unlocks: LANDMARK_UNLOCKS });
-  return { steps, current };
+  const steps: TrackStep[] = [
+    { id: d, label: `Depth ${String(d)}`, unlocks: isLandmark(d) ? LANDMARK_UNLOCKS : [] },
+    { id: after, label: `Depth ${String(after)}`, unlocks: LANDMARK_UNLOCKS },
+  ];
+  return { steps, current: 0, between: after - d - 1 };
 }

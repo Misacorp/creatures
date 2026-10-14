@@ -70,7 +70,7 @@ export function streakLine(streak: number): string {
   return streak === 1 ? '1 day in a row' : `${String(streak)} days in a row`;
 }
 
-interface StreakPip {
+export interface StreakPip {
   day: number;
   on: boolean;
   /** The day pays a small bonus. */

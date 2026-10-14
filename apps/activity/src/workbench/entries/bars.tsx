@@ -3,6 +3,8 @@ import type { TrackStep } from '../../progress-track';
 import { XpBar } from '../../XpBar';
 import { Bar } from '../../ui/Bar';
 import { PipRow } from '../../ui/PipRow';
+import { StreakTrack } from '../../ui/StreakTrack';
+import { streakPips } from '../../dungeon-text';
 import { BossHp, SegmentBar } from '../../ui/SegmentBar';
 import { TimerBar } from '../../ui/TimerBar';
 import { GLYPH_IDS } from '../data';
@@ -252,18 +254,51 @@ const progressTrack: Entry = {
   controls: {
     steps: { kind: 'number', min: 1, max: 8 },
     current: { kind: 'number', min: 0, max: 7 },
+    edge: { kind: 'toggle' },
+    between: { kind: 'number', min: 0, max: 8 },
+    glossaryLabels: { kind: 'toggle' },
   },
-  defaults: { steps: 6, current: 2 },
+  defaults: { steps: 6, current: 2, edge: false, between: 4, glossaryLabels: false },
   presets: [
     { name: 'First step', props: { current: 0 } },
     { name: 'Middle', props: { current: 2 } },
     { name: 'Last step (Max)', props: { current: 5 } },
+    {
+      name: 'Dungeon depth (edge to edge, pips between)',
+      props: { steps: 2, current: 0, edge: true, between: 4, glossaryLabels: true },
+    },
   ],
   render: (p) => (
     <ProgressTrack
       steps={trackSteps(num(p, 'steps'))}
       current={Math.min(num(p, 'current'), num(p, 'steps') - 1)}
       label="Explorer ranks"
+      edge={bool(p, 'edge')}
+      between={num(p, 'between')}
+      {...(bool(p, 'glossaryLabels') ? { labelEntry: 'depth' } : {})}
+    />
+  ),
+};
+
+const streakTrack: Entry = {
+  name: 'StreakTrack',
+  file: 'apps/activity/src/ui/StreakTrack.tsx',
+  group: 'Bars',
+  description:
+    'The daily dungeon streak after a run: a row of seven days lit up to today, with a small gift under each reward day (the 3rd and 7th).',
+  controls: { streak: { kind: 'number', min: 0, max: 30 } },
+  defaults: { streak: 3 },
+  presets: [
+    { name: 'No streak', props: { streak: 0 } },
+    { name: 'Day 1', props: { streak: 1 } },
+    { name: 'Day 3 (a reward)', props: { streak: 3 } },
+    { name: 'Day 7 (the cycle is full)', props: { streak: 7 } },
+    { name: 'Day 8 (starts again)', props: { streak: 8 } },
+  ],
+  render: (p) => (
+    <StreakTrack
+      pips={streakPips(num(p, 'streak'))}
+      label={`Streak: day ${String(num(p, 'streak'))}`}
     />
   ),
 };
@@ -276,4 +311,5 @@ export const barEntries: readonly Entry[] = [
   xpBar,
   pipRow,
   progressTrack,
+  streakTrack,
 ];

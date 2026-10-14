@@ -1,65 +1,23 @@
-import { Tag, LandmarkChip } from './ui/Tag';
 import { GLOSSARY_IDS } from '@creatures/game';
 import { GlossaryTag } from './Glossary';
-import { ProgressTrack } from './ProgressTrack';
-import { depthTrack, roomPanels } from './dungeon-rooms';
-import { streakPips } from './dungeon-text';
+import { DepthProgress } from './DepthProgress';
+import { roomPanels } from './dungeon-rooms';
 import type { DungeonToday } from './dungeon-types';
 import { GameIcon } from './ui/GameIcon';
-import { PipRow } from './ui/PipRow';
-
-/**
- * A tiny row of pips for the streak (a cycle of days, lit up to today's count). On the pre-run screen
- * it is a tag that opens the Streak entry; the end report writes the streak out in full next to a
- * plain row (`plain`).
- */
-export function StreakPips({ streak, plain = false }: { streak: number; plain?: boolean }) {
-  const pips = streakPips(streak);
-  const lit = pips.filter((p) => p.on).length;
-  const label = `Streak: ${String(lit)} of ${String(pips.length)} days of the cycle`;
-  const row = (
-    <PipRow
-      count={pips.length}
-      lit={(i) => pips[i]?.on === true}
-      mark={(i) => (pips[i]?.bonus === true ? 'fest' : undefined)}
-      size="md"
-    />
-  );
-  if (plain) {
-    return (
-      <span role="img" aria-label={label}>
-        {row}
-      </span>
-    );
-  }
-  return (
-    <GlossaryTag entry="streak" look="chip" bare class="pips-tag" label={label}>
-      {row}
-    </GlossaryTag>
-  );
-}
 
 /**
  * The top of the pre-run screen: the three rooms as a comic strip (room 1, room 2 and the boss), each
  * a "?" until the run, with the day's modifier on it as an icon (tap it for what it does), then the
- * landmark depths as a progress track. The foes are the server's secret until the run; nothing here
+ * depth progress to the next landmark. The foes are the server's secret until the run; nothing here
  * says more than the server already shows to everyone.
  */
 export function DungeonPrerun({ today }: { today: DungeonToday }) {
   const panels = roomPanels(today.modifiers);
-  const track = depthTrack(today.depth);
   return (
     <section class="raid-section dungeon-prerun" aria-labelledby="dungeon-heading">
       <h3 id="dungeon-heading">
         <GlossaryTag entry="dungeon">Daily dungeon</GlossaryTag>
       </h3>
-      <p class="dungeon-depth">
-        <Tag kind="chip" entry="depth" class="dungeon-depth-chip">
-          Depth {today.depth}
-        </Tag>
-        {today.landmark && <LandmarkChip />}
-        <StreakPips streak={today.streak} />
-      </p>
       <ol class="room-strip prerun" aria-label="Today's rooms, first to last">
         {panels.map((panel) => (
           <li key={panel.room} class="room-panel unknown">
@@ -88,7 +46,7 @@ export function DungeonPrerun({ today }: { today: DungeonToday }) {
           </li>
         ))}
       </ol>
-      <ProgressTrack steps={track.steps} current={track.current} label="Landmark depths" />
+      <DepthProgress depth={today.depth} />
     </section>
   );
 }
