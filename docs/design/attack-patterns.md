@@ -459,11 +459,22 @@ New or changed events (`types.ts`): `charge { round, gimmick, marks: string[], r
 3. **Support: not a ward.** One role with an effect that follows its element, on top of the +15% buff (section 1, designs and numbers in 4.7). The ward is rejected: it made the Support a second Guard.
 4. **Landmarks: yes.** A fixed, announced landmark boss every 7th depth (Warden, Tyrant, Matron, Baron, then round again), named on the pre-run card with its charged signature move.
 
-### Open questions
+### Decided (Misa, 2026-10-14, second round)
 
-1. **Grove has no Support species, and Tide's only one is Festival-only.** Healing is the strongest Support effect in the dungeon (Grove 6%: 63% at depth 14 against 55% for the plain buff), but no Grove Support exists, and Lanternfin (Tide) can only be had in a Festival week. _Recommended: add a common Grove Support line first_ (it carries Mend), then a common Tide Support; until then Lanternfin carries Tide's Mend in Festival weeks and Ember and Spark Supports are the ones players can field. It is content work (stats, sprites, compendium, quirks), not engine work.
-2. **How wild may Spark get?** You asked for Supports that "play more wildly with marks". Four wilder Spark tricks were tried (4.7): one turns every reaction in the raid into two (+16 points, dominant) and backfires in the dungeon (-6); one adds 4.7 in the raid but loses points on the end slot; two lose points or do nothing. The safe version, **Overcharge** (reactions its neighbours cash in deal 15% more bonus damage), only adds. _Recommended: ship Overcharge now_, and treat a wild mark effect as a later, rare Spark Support (or a boss or Festival twist) with its own tuning, because reactions are most of the damage and any trick that changes who cashes a mark moves the whole raid.
-3. **In the raid a Support only reaches two creatures, so its element effect adds little there** (0.4 to 2.4 points on top of the buff's 5; the buff alone already beats a third attacker by 3). In the dungeon it matters much more. _Recommended: accept that_: Supports are mostly a dungeon and small-team piece, and the raid value comes from the shared buff. If you want Supports to shine in the raid, the lever is reach (a Support buffs two slots each side), which changes placement rules, not a number.
+5. **Grove and Tide Support gap: accepted for now.** New species are welcome, and some can be harder to find (for example in later expedition areas); new elements are planned later. Filling the gap is its own work item (roadmap item 9, "More content"), not part of the attack-pattern build. Until then Grove's Mend has no carrier, and Tide's is Festival-only (Lanternfin).
+6. **Spark: ship Overcharge.** Wilder mark effects come later as a rare Spark Support, or as a boss or Festival twist, with their own tuning.
+7. **Support reach: make it part of the positional game.** Misa: neighbours is simple; supports could reach "up to 5 creatures to its left", "up to 5 to its right", "the entire row" or "2 to either side", with the reach scaling with creature level or another mechanic. This is open design (below), done after the patterns ship, because it changes placement rules and the raid numbers.
+
+### Open design: Support reach (next step after the patterns)
+
+- **Shape per species,** as content data on the Support's line: `left N`, `right N`, `both N`, `row`. The dungeon's row of 3 caps any reach at the whole team, so reach mostly matters in the raid's long rows.
+- **Size from progression:** reach grows with level or fusion (for example +1 at fusion 2 and 4), capped per shape. The trade-off is strength against spread: a wider reach dilutes the effect per creature (for example the buff or heal is divided over the creatures reached, with a floor).
+- **Telegraph:** the setup shows the reach as highlighted slots when a Support is picked up or tapped, and the creature popover names it ("Boosts up to 3 creatures to its right").
+- **To test in the simulator before building:**
+  - whether a shape becomes the only right answer;
+  - raid finale win and support credit per creature, by shape and size;
+  - placement search cost for `autoPlace`, which then has to place Supports by shape.
+- **Interaction:** with Guard cover (does a Support behind a Guard reach past it?) and with Pincer and Lance (end slots and lanes).
 
 ## Appendix: the prototype in one paragraph
 
