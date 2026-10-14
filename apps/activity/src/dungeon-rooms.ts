@@ -4,15 +4,24 @@
  * foes of a room are not known until the run (the server rolls them from the run's seed), so a panel
  * before the run shows a "?" and only what is public: the room's place and its modifier.
  */
-import { RULES, isLandmark, roomModifier } from '@creatures/game';
+import { RULES, isLandmark, roomModifier, type Role } from '@creatures/game';
 import type { TrackStep, TrackUnlock } from './progress-track';
 import type { DungeonModifier } from './dungeon-types';
 import type { IconRef } from './icon-ref';
 
+/** The picture of a role on a modifier that boosts it: the glyph the role's job looks like. */
+const ROLE_GLYPH: Readonly<Record<Role, string>> = {
+  setter: 'mark',
+  payoff: 'sparkle',
+  guard: 'shield',
+  support: 'ability',
+};
+
 /**
- * An icon for a room modifier, from what it does: a boost to one element shows that element, extra
- * crits the reticle, a trick the foe plays its own icon, a change to the foe's stats a warning mark
- * and a fixed turn order its arrow. Anything unknown gets the plain diamond.
+ * An icon for a room modifier, from what it does: a boost to one element shows that element, a boost
+ * to one role that role's glyph, extra crits the reticle, a trick the foe plays its own icon and a
+ * change to the foe's stats a warning mark. Anything unknown (an old run's removed modifier) gets
+ * the plain diamond.
  */
 export function modifierIcon(id: string): IconRef {
   const effects = roomModifier(id)?.effects ?? [];
@@ -20,13 +29,12 @@ export function modifierIcon(id: string): IconRef {
     switch (effect.op) {
       case 'team_stat':
         if (effect.element !== undefined) return { kind: 'element', element: effect.element };
+        if (effect.role !== undefined) return { kind: 'glyph', id: ROLE_GLYPH[effect.role] };
         break;
       case 'team_crit':
         return { kind: 'glyph', id: 'reticle' };
       case 'foe_gimmick':
         return { kind: 'glyph', id: effect.gimmick.op };
-      case 'turn_order':
-        return { kind: 'glyph', id: effect.order };
       case 'foe_stat':
         return { kind: 'glyph', id: 'warning' };
     }

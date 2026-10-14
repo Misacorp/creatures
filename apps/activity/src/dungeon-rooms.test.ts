@@ -59,13 +59,30 @@ describe('the icons of the room modifiers', () => {
     expect(modifierIcon('flooded')).toEqual({ kind: 'element', element: 'tide' });
     expect(modifierIcon('scorched')).toEqual({ kind: 'element', element: 'ember' });
     expect(modifierIcon('dark')).toEqual({ kind: 'glyph', id: 'reticle' });
-    expect(modifierIcon('fog')).toEqual({ kind: 'glyph', id: 'left_to_right' });
+    // A boost to one role shows that role's glyph.
+    expect(modifierIcon('echoing')).toEqual({ kind: 'glyph', id: 'sparkle' });
     expect(modifierIcon('thorns')).toEqual({ kind: 'glyph', id: 'reflect_first_reaction' });
     expect(modifierIcon('brittle')).toEqual({ kind: 'glyph', id: 'warning' });
   });
 
   it('falls back to the plain diamond for a modifier it does not know', () => {
     expect(modifierIcon('no-such-modifier')).toEqual({ kind: 'glyph', id: 'unknown' });
+  });
+
+  it('draws the retired Fog of an old run as the plain diamond, without failing', () => {
+    expect(dungeonContent.modifiers.some((m) => m.id === 'fog')).toBe(false);
+    expect(modifierIcon('fog')).toEqual({ kind: 'glyph', id: 'unknown' });
+    // Its stored name and text still make a panel (the server sent them with the run).
+    const panels = roomPanels([
+      {
+        room: 0,
+        id: 'fog',
+        name: 'Fog',
+        description: 'Nobody can see: everyone acts in row order.',
+      },
+    ]);
+    expect(panels[0]?.modifier?.name).toBe('Fog');
+    expect(panels[0]?.spoken).toContain('Fog');
   });
 });
 

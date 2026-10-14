@@ -59,6 +59,9 @@ export function isRetryOffer(
   );
 }
 
+/** The dungeon's one turn rule, said before the run (setup) and linked to "Your row" in the glossary. */
+export const ORDER_LINE = 'Your creatures act left to right, then the foe.';
+
 export const RETRY_TEXT = 'Your first run was lost. You get one more try today, free.';
 
 /** How many days in a row, in words. */

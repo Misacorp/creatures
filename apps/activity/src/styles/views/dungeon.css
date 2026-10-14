@@ -72,3 +72,7 @@
 .dungeon-enter .primary {
   width: 100%;
 }
+
+.dungeon-order-line {
+  margin: 0.25rem 0 0.5rem;
+}

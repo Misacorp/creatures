@@ -18,3 +18,11 @@
 .unit-hp > i.gone {
   background: var(--hp-gone);
 }
+
+/* The slot number under a creature in the dungeon's single row: the same 1, 2, 3 as the setup slots. */
+.unit-slot {
+  margin-top: 0.125rem;
+  color: var(--gold);
+  font-size: 0.75rem;
+  line-height: 1;
+}

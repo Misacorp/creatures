@@ -1,0 +1,78 @@
+/*
+  The strip of who acts in what order (raid replay, dungeon playback): a chip per creature, the one
+  acting now outlined in gold, those that acted dimmed and a knocked-out creature struck through.
+  In the dungeon a chip starts with the creature's slot number and the strip ends with the foe.
+*/
+.turn-strip {
+  display: flex;
+  gap: 0.375rem;
+  margin: 0.25rem 0;
+  /* Room for the gold ring of the current chip, which the scroll box would clip. */
+  padding: 0.25rem;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.turn-chip {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--line);
+  font-size: 0.8125rem;
+}
+
+.turn-slot {
+  color: var(--gold);
+  font-size: 0.875rem;
+}
+
+/* Fitted to the row: the chips share the width and long names end in an ellipsis. */
+.turn-strip.fit {
+  gap: 0.25rem;
+  overflow: visible;
+}
+
+.turn-strip.fit .turn-chip {
+  flex: 1 1 0;
+  min-width: 0;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.turn-strip.fit .turn-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.turn-strip.fit .turn-chip.turn-foe {
+  flex: none;
+}
+
+/* The foe's chip: it always comes last, so it is set apart by colour and a dashed outline. */
+.turn-chip.turn-foe {
+  border-style: dashed;
+  border-color: var(--bad);
+  color: var(--haze);
+}
+
+.turn-chip.current {
+  border-color: var(--gold);
+  box-shadow: var(--ring);
+}
+
+.turn-chip.done {
+  opacity: 0.6;
+}
+
+.turn-chip.ko {
+  opacity: 0.4;
+}
+
+.turn-chip.ko .turn-name {
+  text-decoration: line-through;
+}

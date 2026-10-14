@@ -6,8 +6,10 @@ import { RosterStrip } from '../../RosterStrip';
 import { SmallCreature } from '../../SmallCreature';
 import type { ReadinessBand, RaidView, RosterEntry } from '../../raid-api';
 import { READINESS_BANDS } from '../../raid-api';
+import { turnChips } from '../../replay';
 import { Sprite } from '../../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../../sprites/creature-sprites';
+import { TurnStrip } from '../../ui/TurnStrip';
 import { BOSS_IDS, NONE, SAMPLE_RAID, SPECIES_IDS, creatureInfoFor, speciesLabel } from '../data';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
@@ -213,9 +215,68 @@ const smallCreature: Entry = {
   ),
 };
 
+const TURN_NAMES = ['Sproutle', 'Splashet', 'Cindle'] as const;
+const PLACES = [NONE, '1', '2', '3'] as const;
+
+/** The strip for a row of three at one moment: who acts now, who is out, with or without slot numbers and the foe. */
+function turnStripDemo(p: Props) {
+  const ids = TURN_NAMES.map((_, i) => `wb-turn-${String(i + 1)}`);
+  const place = (key: string): string | undefined => {
+    const n = PLACES.indexOf(str(p, key) as (typeof PLACES)[number]);
+    return n > 0 ? ids[n - 1] : undefined;
+  };
+  const acting = place('acting');
+  const out = place('out');
+  const foeActing = str(p, 'acting') === 'foe';
+  const actedBefore = acting === undefined ? [] : ids.slice(0, ids.indexOf(acting));
+  const numbered = bool(p, 'slots');
+  const chips = turnChips(
+    ids,
+    { actor: acting ?? null, acted: foeActing ? ids : actedBefore, knockedOut: [] },
+    (id) => TURN_NAMES[ids.indexOf(id)] ?? id,
+    {
+      ...(numbered ? { slots: new Map(ids.map((id, i) => [id, i + 1])) } : {}),
+      knockedOut: (id) => id === out,
+    },
+  );
+  return (
+    <TurnStrip
+      chips={chips}
+      label="Turn order"
+      fit={bool(p, 'fit')}
+      {...(bool(p, 'foe') ? { foe: { text: 'then the foe', current: foeActing } } : {})}
+    />
+  );
+}
+
+const turnStrip: Entry = {
+  name: 'TurnStrip',
+  file: 'apps/activity/src/ui/TurnStrip.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    'The strip of who acts in what order: a chip for each creature (the one acting now outlined, the ones that acted dimmed, a knocked-out one struck through), optionally numbered like the setup slots and ending with "then the foe". It is under the raid replay and the dungeon playback.',
+  controls: {
+    acting: { kind: 'select', options: [...PLACES, 'foe'] },
+    out: { kind: 'select', options: PLACES },
+    slots: { kind: 'toggle' },
+    foe: { kind: 'toggle' },
+    fit: { kind: 'toggle' },
+  },
+  defaults: { acting: '2', out: NONE, slots: true, foe: true, fit: true },
+  presets: [
+    { name: 'Dungeon, second acting', props: {} },
+    { name: 'Dungeon, the foe acting', props: { acting: 'foe' } },
+    { name: 'Dungeon, middle knocked out', props: { acting: '3', out: '2' } },
+    { name: 'Before the first turn', props: { acting: NONE } },
+    { name: 'Raid replay (names only, scrolls)', props: { slots: false, foe: false, fit: false } },
+  ],
+  render: (p) => turnStripDemo(p),
+};
+
 export const creatureEntries: readonly Entry[] = [
   bossCard,
   rosterStrip,
   abilityChip,
   smallCreature,
+  turnStrip,
 ];

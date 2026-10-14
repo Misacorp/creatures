@@ -3,11 +3,14 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { bossArt, elementClass } from './art';
 import { cssVars } from './css-vars';
 import { elementName } from './game';
+import { GlossaryTag } from './Glossary';
 import {
   ROOM_CARD_MS,
   ROOM_END_MS,
   atSpeed,
+  dungeonTurnStrip,
   mineIds,
+  modifierGimmicks,
   nextRoom,
   roomBoss,
   roomIntroView,
@@ -24,6 +27,7 @@ import { elementIcon } from './sprites/element-icons';
 import { LiveRegion } from './ui/LiveRegion';
 import { PixelHeading } from './ui/PixelHeading';
 import { PlaybackControls } from './ui/PlaybackControls';
+import { TurnStrip } from './ui/TurnStrip';
 import { usePlayback } from './use-playback';
 
 interface Props {
@@ -84,7 +88,8 @@ export function DungeonPlayback({ replay, onDone }: Props) {
         skipLabel="Skip"
       />
       <p class="muted dungeon-room-line">
-        {roomLine(current.index, replay.rooms.length, current.kind)}
+        <span>{roomLine(current.index, replay.rooms.length, current.kind)}</span>
+        <GlossaryTag entry="dungeon-row" look="help" label="Why this order? Your row" />
       </p>
       <RoomFight
         key={room}
@@ -198,6 +203,7 @@ function RoomFight({
   }, [pb.index]);
 
   const view = roomIntroView(room, total);
+  const strip = dungeonTurnStrip(row, room, pb.index);
   return (
     <>
       <Stage
@@ -215,10 +221,12 @@ function RoomFight({
         intro={pb.intro}
         creatureHp={{ start: room.hpStart, max: room.hpMax }}
         layout="row"
+        addedGimmicks={modifierGimmicks(room)}
         overlay={
           banner ? <RoomBanner room={room} total={total} ms={atSpeed(ROOM_CARD_MS, speed)} /> : null
         }
       />
+      <TurnStrip chips={strip.chips} foe={strip.foe} label={strip.label} fit />
       <LiveRegion>{banner ? view.spoken : ''}</LiveRegion>
       <p class="muted dungeon-room-result" role="status">
         {finished ? roomResultLine(room) : ''}

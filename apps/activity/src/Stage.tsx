@@ -1,4 +1,4 @@
-import { GLOSSARY_IDS, content } from '@creatures/game';
+import { GLOSSARY_IDS, content, type Gimmick } from '@creatures/game';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { Fragment, type ComponentChildren, type Ref, type RefObject } from 'preact';
 import type { EventNames, FightEvent, Zone } from '@creatures/engine';
@@ -348,6 +348,8 @@ interface StageProps {
    * one creature at that place, so its effects (shake, shield, wind-up frame) sit on that creature.
    */
   layout?: 'zones' | 'row';
+  /** Gimmicks the foe has only in this room (the dungeon's modifier), so the forecast names them too. */
+  addedGimmicks?: readonly Gimmick[];
   /**
    * Something drawn over the whole stage, above the round intro (the dungeon's room banner). It sits
    * inside the stage's own box, so the stage keeps its size while it shows.
@@ -414,6 +416,8 @@ interface UnitProps {
   warned: boolean;
   /** The creature's HP now and at most (the dungeon); null when the stage shows no creature HP. */
   hp: { current: number; max: number } | null;
+  /** The creature's place in the row from 1 (the dungeon's single row, the same numbers as setup); null in the raid. */
+  slot: number | null;
   onToggle: () => void;
 }
 
@@ -429,7 +433,7 @@ function StageUnit(props: UnitProps) {
   const icon = elementIcon(c.element);
 
   const spoken =
-    `${c.name}${mine ? ', yours' : ''}${ko ? ', knocked out' : ''}` +
+    `${props.slot === null ? '' : `Slot ${String(props.slot)}, `}${c.name}${mine ? ', yours' : ''}${ko ? ', knocked out' : ''}` +
     (props.hp === null || ko ? '' : `, HP ${String(props.hp.current)} of ${String(props.hp.max)}`) +
     (badge === null
       ? ''
@@ -468,6 +472,11 @@ function StageUnit(props: UnitProps) {
       </span>
       {props.hp !== null && (
         <SegmentBar size="unit" current={props.hp.current} max={props.hp.max} />
+      )}
+      {props.slot !== null && (
+        <span class="unit-slot pix" aria-hidden="true">
+          {props.slot}
+        </span>
       )}
     </>
   );
@@ -543,6 +552,7 @@ export function Stage({
   intro = null,
   creatureHp,
   layout = 'zones',
+  addedGimmicks,
   overlay,
   abilities,
 }: StageProps) {
@@ -604,6 +614,7 @@ export function Stage({
     state.knockedOut,
     names,
     wording,
+    addedGimmicks,
   );
 
   // The abilities that have been played so far, by key and by creature.
@@ -902,6 +913,7 @@ export function Stage({
                               max: creatureHp.max[c.id] ?? 0,
                             }
                       }
+                      slot={single ? row.indexOf(c) + 1 : null}
                       onToggle={() => {
                         if (key !== null) toggle(key);
                       }}

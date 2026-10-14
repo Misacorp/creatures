@@ -9,6 +9,7 @@ import todayRetry from './fixtures/dungeon-today-retry.json';
 import { ApiError } from './api';
 import {
   DUNGEON_ERROR_TEXT,
+  ORDER_LINE,
   blockedText,
   depthChangeText,
   dungeonErrorText,
@@ -22,6 +23,13 @@ import {
 import { DUNGEON_ERRORS, type DungeonRunResponse, type DungeonToday } from './dungeon-types';
 
 const GENERIC = /^Something went wrong/;
+
+describe('the line about the order', () => {
+  it('says it is your row, left to right, then the foe, in one short line', () => {
+    expect(ORDER_LINE).toBe('Your creatures act left to right, then the foe.');
+    expect(ORDER_LINE.length).toBeLessThan(60);
+  });
+});
 
 describe('the dungeon error texts', () => {
   it('has a plain message for every error code the types list', () => {
