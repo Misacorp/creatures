@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import { nextRankXp } from '@creatures/game';
 import type { ClaimResult, Creature } from './api';
 import {
@@ -121,17 +122,15 @@ export function TripReveal({
                 <Sprite sprite={creatureSpriteOrFallback(entry.species)} scale={3} bob />
                 <strong>{speciesName(entry.species)}</strong>{' '}
                 {species !== undefined && <ElementChip element={species.element} />}{' '}
-                {catchBadgeTags(entry).map((badge) =>
-                  badge.entry === null ? (
-                    <span key={badge.text} class="badge">
-                      {badge.text}
-                    </span>
-                  ) : (
-                    <GlossaryTag key={badge.text} entry={badge.entry} look="chip" class="badge">
-                      {badge.text}
-                    </GlossaryTag>
-                  ),
-                )}
+                {catchBadgeTags(entry).map((badge) => (
+                  <Tag
+                    key={badge.text}
+                    kind="badge"
+                    {...(badge.entry === null ? {} : { entry: badge.entry })}
+                  >
+                    {badge.text}
+                  </Tag>
+                ))}
               </li>
             );
           })}

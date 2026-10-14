@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import type { Creature } from './api';
 import type { Profile } from './expedition-types';
 import { GlossaryTag } from './Glossary';
@@ -61,7 +62,12 @@ export function ExplorerProfile({
               ) : (
                 <span class="muted">{m.bonus}</span>
               )}
-              {m.reached && <span class="badge good"> Reached</span>}
+              {m.reached && (
+                <Tag kind="badge" tone="good">
+                  {' '}
+                  Reached
+                </Tag>
+              )}
             </p>
             <Bar value={m.value} max={m.max} label={`${m.name}: ${m.progress}`} />
             <p class="muted">{m.progress}</p>

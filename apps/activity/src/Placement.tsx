@@ -2,7 +2,7 @@ import { GLOSSARY_IDS } from '@creatures/game';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { nextIndex, verticalNeighbour } from './dnd-core';
-import { capitalize, getSpecies, speciesName } from './game';
+import { getSpecies, speciesName } from './game';
 import { GlossaryTag } from './Glossary';
 import { cssVars } from './css-vars';
 import { useElementWidth } from './hooks';
@@ -227,7 +227,7 @@ export function Placement(props: Props) {
                 {/* Tags sit under the button, never inside it: a tag must not start a drag. */}
                 {species !== undefined && (
                   <p class="tags team-tags">
-                    <ElementChip element={species.element} role={capitalize(species.role)} />
+                    <ElementChip element={species.element} role={species.role} />
                   </p>
                 )}
               </li>

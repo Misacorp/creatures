@@ -3,7 +3,6 @@ import { createContext, type ComponentChildren } from 'preact';
 import { useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   backLabel,
-  creatureTags,
   goBack,
   onEscape,
   openTag,
@@ -12,8 +11,7 @@ import {
   type CreatureInfo,
   type PopView,
 } from './creature-popover';
-import { elementName } from './game';
-import { elementIcon } from './sprites/element-icons';
+import { ElementChip } from './sprites/ElementChip';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import {
   MORE_LABEL,
@@ -163,7 +161,6 @@ function CreaturePopover({
   const entry = view.kind === 'tag' ? entryView(view.entry) : undefined;
   // An entry the content does not know shows the creature instead.
   const face = entry === undefined ? 'creature' : 'tag';
-  const icon = elementIcon(info.element);
   return (
     <div class="glossary-layer">
       <StagePopover
@@ -186,26 +183,14 @@ function CreaturePopover({
             <p class="gp-title pix">{info.name}</p>
             <p class="gp-short">Level {info.level}</p>
             <p class="tags cp-tags">
-              {creatureTags(info).map((tag) => (
-                <button
-                  key={tag.kind}
-                  type="button"
-                  class={`gtag gtag-chip chip ${tag.kind === 'element' ? `t-${tag.id}` : 'role-chip'}`}
-                  aria-haspopup="dialog"
-                  onClick={() => {
-                    onView(openTag(tag.entry));
-                  }}
-                >
-                  {tag.kind === 'element' && icon !== undefined && (
-                    <Sprite sprite={icon} scale={2} />
-                  )}
-                  <span class="chip-text">
-                    {tag.kind === 'element'
-                      ? elementName(tag.id)
-                      : (entryView(tag.entry)?.title ?? tag.id)}
-                  </span>
-                </button>
-              ))}
+              <ElementChip
+                as="button"
+                element={info.element}
+                role={info.role}
+                onOpen={(entry) => {
+                  onView(openTag(entry));
+                }}
+              />
             </p>
           </div>
         ) : (
@@ -304,6 +289,8 @@ type TagProps = (
   look?: 'text' | 'chip' | 'help';
   /** What assistive technology says instead of the visible text. */
   label?: string;
+  /** With `look="chip"`: a tag without the "?" (a mark, a modifier icon, a streak). */
+  bare?: boolean;
   class?: string;
   children?: ComponentChildren;
 };
@@ -327,7 +314,12 @@ export function GlossaryTag(props: TagProps) {
     return look === 'help' ? null : <span class={plainClass}>{props.children}</span>;
   }
   const open = api.active !== null && api.active.anchor === ref.current;
-  const classes = ['gtag', look === 'text' ? '' : `gtag-${look}`, plainClass ?? '']
+  const classes = [
+    'gtag',
+    look === 'text' ? '' : `gtag-${look}`,
+    look === 'chip' && props.bare === true ? 'gtag-bare' : '',
+    plainClass ?? '',
+  ]
     .filter(Boolean)
     .join(' ');
   const label = props.label ?? (look === 'help' ? `What is ${view.title}?` : undefined);

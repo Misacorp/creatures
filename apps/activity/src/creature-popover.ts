@@ -5,7 +5,6 @@
  * a back control, and Escape goes back before it closes. `Glossary.tsx` draws it with `StagePopover`
  * and the glossary's body; no DOM access here, so all of it is unit-tested.
  */
-import { GLOSSARY_IDS } from '@creatures/game';
 
 /** What the popover needs to know about a creature. Names can carry player text: draw them as text. */
 export interface CreatureInfo {
@@ -30,22 +29,6 @@ export type PopView =
 
 /** The face a popover opens on. */
 export const CREATURE_VIEW: PopView = { kind: 'creature' };
-
-/** A tag of the creature face: what it says and the glossary entry it switches to. */
-interface CreatureTag {
-  kind: 'element' | 'role';
-  /** The id of the element or the role, for the colour and the icon. */
-  id: string;
-  entry: string;
-}
-
-/** The creature's two tags, element first. */
-export function creatureTags(info: Pick<CreatureInfo, 'element' | 'role'>): CreatureTag[] {
-  return [
-    { kind: 'element', id: info.element, entry: GLOSSARY_IDS.element(info.element) },
-    { kind: 'role', id: info.role, entry: GLOSSARY_IDS.role(info.role) },
-  ];
-}
 
 /** A tap on one of the tags: the same popover shows that entry (there is one face at a time). */
 export function openTag(entry: string): PopView {

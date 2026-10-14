@@ -14,7 +14,7 @@ import {
   type Slots,
   type Tap,
 } from './dungeon-team';
-import { capitalize, creatureName, getSpecies, speciesName } from './game';
+import { creatureName, getSpecies, speciesName } from './game';
 import { CANCEL_ANNOUNCEMENT, pickUpAnnouncement, type DropOutcome } from './raid-dnd';
 import { ElementChip } from './sprites/ElementChip';
 import { LiveRegion } from './ui/LiveRegion';
@@ -258,7 +258,7 @@ export function DungeonTeam(props: Props) {
               {/* Tags sit under the button, never inside it: a tag must not start a drag. */}
               {species !== undefined && (
                 <p class="tags team-tags">
-                  <ElementChip element={species.element} role={capitalize(species.role)} />
+                  <ElementChip element={species.element} role={species.role} />
                 </p>
               )}
             </li>

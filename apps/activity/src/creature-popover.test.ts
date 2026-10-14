@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { entryView } from '@creatures/game';
+import { GLOSSARY_IDS, entryView } from '@creatures/game';
 import {
   CREATURE_VIEW,
   backLabel,
   creatureButtonLabel,
   creatureInfoOf,
-  creatureTags,
   goBack,
   onEscape,
   openTag,
@@ -82,13 +81,9 @@ describe('opening and closing from a tap', () => {
 });
 
 describe('the tags and the labels', () => {
-  it('has the element and the role, each with a glossary entry that exists', () => {
-    const tags = creatureTags(info);
-    expect(tags.map((t) => [t.kind, t.id])).toEqual([
-      ['element', 'ember'],
-      ['role', 'payoff'],
-    ]);
-    for (const tag of tags) expect(entryView(tag.entry), tag.entry).toBeDefined();
+  it('has a glossary entry for the element and the role of a creature', () => {
+    expect(entryView(GLOSSARY_IDS.element(info.element))).toBeDefined();
+    expect(entryView(GLOSSARY_IDS.role(info.role))).toBeDefined();
   });
 
   it('has a spoken label and a back label that name the creature', () => {

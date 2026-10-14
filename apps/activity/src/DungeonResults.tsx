@@ -1,3 +1,4 @@
+import { Tag, LandmarkChip } from './ui/Tag';
 import { GlossaryTag } from './Glossary';
 import { LootList } from './GearLoot';
 import { glyphOrUnknown } from './glyphs';
@@ -105,9 +106,9 @@ export function DungeonResults({
     <section class="reveal-card dungeon-result" aria-labelledby="dungeon-result-heading">
       <h3 id="dungeon-result-heading">
         {resultHeadline(run)}{' '}
-        <span class={run.cleared ? 'badge good' : 'badge bad'}>
+        <Tag kind="badge" tone={run.cleared ? 'good' : 'bad'}>
           {run.cleared ? 'Cleared' : 'Not cleared'}
-        </span>
+        </Tag>
       </h3>
       <p role="status">
         <span class="visually-hidden">{runSentence(run)} </span>
@@ -115,10 +116,7 @@ export function DungeonResults({
         {run.landmark && (
           <>
             {' '}
-            <GlossaryTag entry="landmark" look="chip" class="chip dungeon-landmark-chip">
-              <Sprite sprite={glyphOrUnknown('flag')} scale={2} />
-              <span class="chip-text">Landmark</span>
-            </GlossaryTag>
+            <LandmarkChip />
           </>
         )}
       </p>

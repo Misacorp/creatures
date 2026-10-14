@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import { silhouettePalette } from './art';
 import type { DestinationCard, Resident } from './destination-view';
 import { GlossaryTag } from './Glossary';
@@ -50,17 +51,11 @@ export function PlaceInfo({ card }: { card: DestinationCard }) {
     <div class="place-body">
       <p class="tags place-tags">
         {card.element === null ? (
-          <GlossaryTag entry="destination" look="chip" class="tag">
-            Mixed place
-          </GlossaryTag>
+          <Tag entry="destination">Mixed place</Tag>
         ) : (
           <ElementChip element={card.element} />
         )}
-        {card.minRank > 1 && (
-          <GlossaryTag entry="explorer-rank" look="chip" class="tag">
-            {`Rank ${String(card.minRank)}`}
-          </GlossaryTag>
-        )}
+        {card.minRank > 1 && <Tag entry="explorer-rank">{`Rank ${String(card.minRank)}`}</Tag>}
       </p>
       <p class="place-flavor">{card.flavor}</p>
       {card.facts.map((fact) => (
@@ -70,9 +65,9 @@ export function PlaceInfo({ card }: { card: DestinationCard }) {
       ))}
       {card.twist !== null && (
         <p class="twist">
-          <GlossaryTag entry="weekly-special" look="chip" class="badge shiny">
+          <Tag kind="badge" tone="shiny" entry="weekly-special">
             This week
-          </GlossaryTag>{' '}
+          </Tag>{' '}
           <strong>{card.twist.name}:</strong> {card.twist.description}
         </p>
       )}

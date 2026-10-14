@@ -67,24 +67,21 @@ button.gtag:active:not(:disabled) {
   inset: -0.5rem;
 }
 
-/* The mark on the boss and a boss trick's icon are tags without the "?". */
+/* The mark on the boss, a modifier's icon and the streak are tags without the "?" (`bare`). */
+.gtag-bare::after {
+  content: none;
+}
+
+.gtag-bare:hover,
+.gtag-bare[aria-expanded='true'] {
+  filter: brightness(1.2);
+}
+
 .mark-tag {
   display: flex;
   align-items: center;
   gap: 0.25rem;
   text-decoration: none;
-}
-
-.mark-tag::after,
-.mod-icon::after,
-.pips-tag::after {
-  content: none;
-}
-
-.mark-tag:hover,
-.mod-icon:hover,
-.mod-icon[aria-expanded='true'] {
-  filter: brightness(1.2);
 }
 
 .zone-label .gtag::before {

@@ -1,11 +1,10 @@
+import { Tag, LandmarkChip } from './ui/Tag';
 import { GLOSSARY_IDS } from '@creatures/game';
 import { GlossaryTag } from './Glossary';
-import { glyphOrUnknown } from './glyphs';
 import { ProgressTrack } from './ProgressTrack';
 import { depthTrack, roomPanels } from './dungeon-rooms';
 import { streakPips } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
-import { Sprite } from './sprites/Sprite';
 import { GameIcon } from './ui/GameIcon';
 import { PipRow } from './ui/PipRow';
 
@@ -34,7 +33,7 @@ export function StreakPips({ streak, plain = false }: { streak: number; plain?: 
     );
   }
   return (
-    <GlossaryTag entry="streak" look="chip" class="pips-tag" label={label}>
+    <GlossaryTag entry="streak" look="chip" bare class="pips-tag" label={label}>
       {row}
     </GlossaryTag>
   );
@@ -55,15 +54,10 @@ export function DungeonPrerun({ today }: { today: DungeonToday }) {
         <GlossaryTag entry="dungeon">Daily dungeon</GlossaryTag>
       </h3>
       <p class="dungeon-depth">
-        <GlossaryTag entry="depth" look="chip" class="chip dungeon-depth-chip">
-          <span class="chip-text">Depth {today.depth}</span>
-        </GlossaryTag>
-        {today.landmark && (
-          <GlossaryTag entry="landmark" look="chip" class="chip dungeon-landmark-chip">
-            <Sprite sprite={glyphOrUnknown('flag')} scale={2} />
-            <span class="chip-text">Landmark</span>
-          </GlossaryTag>
-        )}
+        <Tag kind="chip" entry="depth" class="dungeon-depth-chip">
+          Depth {today.depth}
+        </Tag>
+        {today.landmark && <LandmarkChip />}
         <StreakPips streak={today.streak} />
       </p>
       <ol class="room-strip prerun" aria-label="Today's rooms, first to last">
@@ -80,6 +74,7 @@ export function DungeonPrerun({ today }: { today: DungeonToday }) {
                 <GlossaryTag
                   entry={GLOSSARY_IDS.modifier(panel.modifier.id)}
                   look="chip"
+                  bare
                   class="mod-icon"
                   label={`${panel.modifier.name}: ${panel.modifier.description}`}
                 >

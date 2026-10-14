@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import { GLOSSARY_IDS, expeditionContent, goalDef } from '@creatures/game';
 import type { Creature } from './api';
 import { Banner } from './Banner';
@@ -6,7 +7,6 @@ import { percent } from './progress-math';
 import { GameIcon } from './ui/GameIcon';
 import { TimerBar } from './ui/TimerBar';
 import { creatureName, getSpecies } from './game';
-import { GlossaryTag } from './Glossary';
 import { PushOnChoice } from './PushOnChoice';
 import { riskWord } from './push-on-view';
 import { explorerInfo } from './send-view';
@@ -97,15 +97,13 @@ export function RunningTrip({
         <p class="tags">
           {species !== undefined && <ElementChip element={species.element} />}
           {creature !== undefined && (
-            <GlossaryTag entry="explorer-rank" look="chip" class="tag">
-              {`Rank ${String(creature.explorer.rank)}`}
-            </GlossaryTag>
+            <Tag entry="explorer-rank">{`Rank ${String(creature.explorer.rank)}`}</Tag>
           )}
-          <span class="tag">{lengthLabel(trip.duration)} trip</span>
+          <Tag>{lengthLabel(trip.duration)} trip</Tag>
           {twist !== null && twist !== undefined && (
-            <GlossaryTag entry="weekly-special" look="chip" class="badge shiny">
+            <Tag kind="badge" tone="shiny" entry="weekly-special">
               {twist.name}
-            </GlossaryTag>
+            </Tag>
           )}
         </p>
         {trip.kit.length > 0 && (
@@ -130,13 +128,7 @@ export function RunningTrip({
         />
         {pushing && trip.pushOn !== null && (
           <p class={`push-line${risky ? ' risky' : ''}`}>
-            <GlossaryTag
-              entry={GLOSSARY_IDS.goal(risky ? 'risky' : 'safe')}
-              look="chip"
-              class="tag"
-            >
-              {risk}
-            </GlossaryTag>{' '}
+            <Tag entry={GLOSSARY_IDS.goal(risky ? 'risky' : 'safe')}>{risk}</Tag>{' '}
             {risky ? 'If it fails, the whole trip brings nothing back.' : 'It always works.'}
           </p>
         )}

@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import type { Profile } from './expedition-types';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
@@ -18,9 +19,7 @@ function PlaceGroup({ place, open }: { place: JournalPlace; open: boolean }) {
         <ul class="journal-sets" aria-label="Sets">
           {place.sets.map((set) => (
             <li key={set.id} class={set.complete ? 'journal-set complete' : 'journal-set'}>
-              <GlossaryTag entry="journal-set" look="chip" class="tag">
-                {set.name}
-              </GlossaryTag>{' '}
+              <Tag entry="journal-set">{set.name}</Tag>{' '}
               <span class="muted">
                 {set.found} of {set.total}
                 {set.complete && ' (complete)'}

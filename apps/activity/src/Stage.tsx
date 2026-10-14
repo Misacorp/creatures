@@ -23,7 +23,6 @@ import { badgeFor, unitTap, usedBadge, type Badge } from './stage-abilities';
 import { creatureInfoOf } from './creature-popover';
 import { SmallCreature } from './SmallCreature';
 import { ElementChip } from './sprites/ElementChip';
-import { capitalize } from './game';
 import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
 import { forecastNextRound, strikeLabel, type Wording } from './telegraph';
 import { StagePopover } from './StagePopover';
@@ -514,7 +513,7 @@ function CreatureTags({ creature }: { creature: ReplayRowEntry | undefined }) {
   if (creature === undefined) return null;
   return (
     <p class="tags pop-tags">
-      <ElementChip element={creature.element} role={capitalize(creature.role)} />
+      <ElementChip element={creature.element} role={creature.role} />
     </p>
   );
 }
@@ -723,6 +722,7 @@ export function Stage({
               <GlossaryTag
                 entry={markId === undefined ? '' : GLOSSARY_IDS.mark(markId)}
                 look="chip"
+                bare
                 class="mark-tag"
                 label={`Marked: ${markName ?? state.mark}. What does this mean?`}
               >

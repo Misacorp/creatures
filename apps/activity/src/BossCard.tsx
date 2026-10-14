@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import { GLOSSARY_IDS } from '@creatures/game';
 import { useRef, useState } from 'preact/hooks';
 import { bossArt, elementSlug } from './art';
@@ -153,16 +154,16 @@ export function BossCard({ view }: { view: RaidView }) {
           </h3>
           <div class="boss-status">
             {rank !== null && (
-              <GlossaryTag entry="boss-rank" look="chip" class="tag rank">
+              <Tag tone="rank" entry="boss-rank">
                 {rank}
-              </GlossaryTag>
+              </Tag>
             )}
             {readiness !== null && <ReadinessMeter band={readiness} />}
             <ElementChip element={boss.element} />
             {view.festival && (
-              <GlossaryTag entry="festival" look="chip" class="badge festival">
+              <Tag kind="badge" tone="festival" entry="festival">
                 Festival week
-              </GlossaryTag>
+              </Tag>
             )}
           </div>
           {hp !== null && (

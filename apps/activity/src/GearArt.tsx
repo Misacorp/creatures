@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import { GLOSSARY_IDS, PART_KINDS, type PartKind } from '@creatures/game';
 import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from './Glossary';
@@ -61,13 +62,9 @@ export function ItemFrame({
 /** The rarity as a tappable tag ("Rare"), with its explanation. */
 export function RarityTag({ rarity }: { rarity: GearRarity }) {
   return (
-    <GlossaryTag
-      entry={GLOSSARY_IDS.gearRarity(rarity)}
-      look="chip"
-      class={`tag rarity-tag rarity-${rarity}`}
-    >
+    <Tag entry={GLOSSARY_IDS.gearRarity(rarity)} class={`rarity-tag rarity-${rarity}`}>
       {rarityName(rarity)}
-    </GlossaryTag>
+    </Tag>
   );
 }
 

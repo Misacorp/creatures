@@ -1,3 +1,5 @@
+import { Tag, LandmarkChip } from './ui/Tag';
+import { RoleChip } from './sprites/ElementChip';
 /**
  * The small picture of each How to play section, built only from sprites, glyphs and tags the game
  * already has (nothing is drawn from scratch), and from the content and the rules, so a picture
@@ -18,7 +20,7 @@ import { bossArt, markPalette } from './art';
 import { ItemFrame, ItemSprite } from './GearArt';
 import { partIcon } from './gear-sprites';
 import { GlossaryTag } from './Glossary';
-import { capitalize, speciesName } from './game';
+import { speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { streakPips } from './dungeon-text';
 import {
@@ -72,7 +74,7 @@ function StartersArt() {
         <li key={s.id}>
           <Figure species={s.id} scale={5} />
           <p class="tags art-tags">
-            <ElementChip element={s.element} role={capitalize(s.role)} />
+            <ElementChip element={s.element} role={s.role} />
           </p>
         </li>
       ))}
@@ -98,9 +100,7 @@ function CreaturesArt() {
               {species !== undefined && (
                 <Sprite sprite={creatureSpriteOrFallback(species.id)} scale={4} />
               )}
-              <GlossaryTag entry={GLOSSARY_IDS.role(role)} look="chip" class="chip role-chip">
-                <span class="chip-text">{capitalize(role)}</span>
-              </GlossaryTag>
+              <RoleChip role={role} />
             </li>
           );
         })}
@@ -281,12 +281,8 @@ function FinaleArt() {
         ))}
       </ul>
       <p class="tags art-tags">
-        <GlossaryTag entry="auto-fire" look="chip" class="tag">
-          {titleOf('auto-fire')}
-        </GlossaryTag>
-        <GlossaryTag entry="crit" look="chip" class="tag">
-          {titleOf('crit')}
-        </GlossaryTag>
+        <Tag entry="auto-fire">{titleOf('auto-fire')}</Tag>
+        <Tag entry="crit">{titleOf('crit')}</Tag>
       </p>
     </div>
   );
@@ -311,12 +307,10 @@ function ExpeditionsArt() {
         ))}
       </ul>
       <p class="tags art-tags">
-        <GlossaryTag entry="shiny" look="chip" class="badge shiny">
+        <Tag kind="badge" tone="shiny" entry="shiny">
           {titleOf('shiny')}
-        </GlossaryTag>
-        <GlossaryTag entry="fusion" look="chip" class="tag">
-          {titleOf('fusion')}
-        </GlossaryTag>
+        </Tag>
+        <Tag entry="fusion">{titleOf('fusion')}</Tag>
       </p>
     </div>
   );
@@ -348,13 +342,10 @@ function DungeonArt() {
         ))}
       </ol>
       <p class="tags art-tags">
-        <GlossaryTag entry="depth" look="chip" class="chip">
-          <span class="chip-text">Depth +1</span>
-        </GlossaryTag>
-        <GlossaryTag entry="landmark" look="chip" class="chip dungeon-landmark-chip">
-          <Sprite sprite={glyphOrUnknown('flag')} scale={2} />
-          <span class="chip-text">Landmark</span>
-        </GlossaryTag>
+        <Tag kind="chip" entry="depth">
+          Depth +1
+        </Tag>
+        <LandmarkChip />
       </p>
       <p class="art-streak">
         <GlossaryTag entry="streak">{titleOf('streak')}</GlossaryTag>
@@ -384,15 +375,13 @@ function RanksArt() {
         ))}
       </ol>
       <p class="tags art-tags">
-        <GlossaryTag entry="boss-rank" look="chip" class="tag rank">
+        <Tag tone="rank" entry="boss-rank">
           {titleOf('boss-rank')}
-        </GlossaryTag>
-        <GlossaryTag entry="festival" look="chip" class="badge festival">
+        </Tag>
+        <Tag kind="badge" tone="festival" entry="festival">
           {titleOf('festival')}
-        </GlossaryTag>
-        <GlossaryTag entry="season" look="chip" class="tag">
-          {titleOf('season')}
-        </GlossaryTag>
+        </Tag>
+        <Tag entry="season">{titleOf('season')}</Tag>
       </p>
     </div>
   );
@@ -415,12 +404,8 @@ function RewardsArt() {
         </div>
       )}
       <p class="tags art-tags">
-        <GlossaryTag entry="essence" look="chip" class="tag">
-          {titleOf('essence')}
-        </GlossaryTag>
-        <GlossaryTag entry="bait" look="chip" class="tag">
-          {titleOf('bait')}
-        </GlossaryTag>
+        <Tag entry="essence">{titleOf('essence')}</Tag>
+        <Tag entry="bait">{titleOf('bait')}</Tag>
       </p>
     </div>
   );
@@ -449,13 +434,11 @@ function WorkshopArt() {
       <p class="tags art-tags">
         <Sprite sprite={glyphOrUnknown('anvil')} scale={2} />
         {JOB_KINDS.map((kind) => (
-          <GlossaryTag key={kind} entry={GLOSSARY_IDS.job(kind)} look="chip" class="tag">
+          <Tag key={kind} entry={GLOSSARY_IDS.job(kind)}>
             {titleOf(GLOSSARY_IDS.job(kind))}
-          </GlossaryTag>
+          </Tag>
         ))}
-        <GlossaryTag entry="blueprint" look="chip" class="tag">
-          {titleOf('blueprint')}
-        </GlossaryTag>
+        <Tag entry="blueprint">{titleOf('blueprint')}</Tag>
       </p>
     </div>
   );

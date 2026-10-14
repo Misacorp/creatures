@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import { GLOSSARY_IDS, entryView } from '@creatures/game';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
@@ -63,9 +64,9 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
             {item === undefined ? '' : ` +${String(item.level)}`} has a new enchant
           </p>
           <p>
-            <GlossaryTag entry={GLOSSARY_IDS.enchant(result.enchantId)} look="chip" class="tag">
+            <Tag entry={GLOSSARY_IDS.enchant(result.enchantId)}>
               {entryView(GLOSSARY_IDS.enchant(result.enchantId))?.title ?? result.enchantId}
-            </GlossaryTag>{' '}
+            </Tag>{' '}
             {entryView(GLOSSARY_IDS.enchant(result.enchantId))?.short}
           </p>
         </>

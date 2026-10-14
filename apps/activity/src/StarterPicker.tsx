@@ -1,4 +1,4 @@
-import { capitalize, getSpecies } from './game';
+import { getSpecies } from './game';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -30,7 +30,7 @@ export function StarterPicker({ options, busy, onChoose }: Props) {
               </div>
               <h3>{species.name}</h3>
               <p class="tags">
-                <ElementChip element={species.element} role={capitalize(species.role)} />
+                <ElementChip element={species.element} role={species.role} />
               </p>
               <p class="flavor">{species.flavor}</p>
               <button

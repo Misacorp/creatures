@@ -1,6 +1,6 @@
+import { Tag } from './ui/Tag';
 import type { PickerOption } from './gear-view';
 import { formatDuration } from './time-format';
-import { GlossaryTag } from './Glossary';
 import { creatureName } from './game';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -25,10 +25,7 @@ export function CreaturePicker({
   return (
     <fieldset class="picker">
       <legend>
-        Who does the work?{' '}
-        <GlossaryTag entry="skill-crafting" look="chip" class="tag">
-          Crafting skill
-        </GlossaryTag>
+        Who does the work? <Tag entry="skill-crafting">Crafting skill</Tag>
       </legend>
       {options.map(({ creature, level, busy, durationMs }) => {
         const selected = value === creature.id;

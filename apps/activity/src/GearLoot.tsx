@@ -1,3 +1,4 @@
+import { Tag } from './ui/Tag';
 import { GlossaryTag } from './Glossary';
 import { ItemFrame, ItemSprite, PartCount, RarityTag } from './GearArt';
 import { gearName, lootIsEmpty, partsEntries } from './gear-view';
@@ -40,9 +41,9 @@ export function LootList({ loot, label }: { loot: GrantLoot; label: string }) {
         <ul class="loot-notes">
           {loot.blueprints.map((b, i) => (
             <li key={i}>
-              <GlossaryTag entry="blueprint" look="chip" class="badge">
+              <Tag kind="badge" entry="blueprint">
                 {b.duplicate ? 'Known blueprint' : 'New blueprint'}
-              </GlossaryTag>{' '}
+              </Tag>{' '}
               {gearName(b.baseId)}
               {b.duplicate && <span class="muted"> (it became scrap)</span>}
             </li>
