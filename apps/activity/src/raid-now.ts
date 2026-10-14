@@ -18,7 +18,6 @@ type NowKind =
   | 'finale-countdown'
   | 'resolving'
   | 'week-done'
-  | 'sitting-out'
   | 'not-in';
 
 interface NowAction {
@@ -32,7 +31,7 @@ interface NowAction {
 }
 
 type NowView = Pick<RaidView, 'next' | 'schedule' | 'timezone' | 'party'> & {
-  you: Pick<RaidView['you'], 'inRoster' | 'optOut' | 'canEdit' | 'canOptOut' | 'team'>;
+  you: Pick<RaidView['you'], 'inRoster' | 'canEdit' | 'team'>;
 };
 
 /** True when the player is in a party, may still edit, and has a team creature without a slot. */
@@ -48,15 +47,6 @@ export function needsPlacement(view: Pick<NowView, 'party' | 'you'>): boolean {
 
 export function nowAction(view: NowView, finale: FinaleWindow, serverNow: number): NowAction {
   const { you, next, party } = view;
-  // A week sat out earlier (the sit-out button is gone, the server still keeps the choice).
-  if (you.optOut) {
-    return {
-      kind: 'sitting-out',
-      label: 'You are sitting this week out',
-      detail: null,
-      target: null,
-    };
-  }
   if (party === null && next !== null && !you.inRoster) {
     return {
       kind: 'not-in',

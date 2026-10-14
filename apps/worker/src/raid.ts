@@ -60,7 +60,6 @@ import {
   eligiblePlayerIds,
   createParties,
   joinSmallestParty,
-  leaveParty,
   partyMembers,
   partyOf,
 } from './raid-roster';
@@ -191,7 +190,7 @@ export class Raid {
         season.festival,
         season.festivalSpecies,
       );
-      createParties(this.sql, weekId, eligiblePlayerIds(this.sql, weekId, now), now);
+      createParties(this.sql, weekId, eligiblePlayerIds(this.sql, now), now);
       // The week's rank is fixed now: the server's rank (placed from this roster if it has none
       // yet). With nobody in on a server that has no rank, it is placed when the first player joins.
       ensureWeekRank(this.sql, weekId);
@@ -221,7 +220,7 @@ export class Raid {
         .toArray();
       if (started.length > 0) return;
       const now = this.deps.now();
-      for (const userId of eligiblePlayerIds(this.sql, weekId, now)) {
+      for (const userId of eligiblePlayerIds(this.sql, now)) {
         if (partyOf(this.sql, weekId, userId) === null) {
           joinSmallestParty(this.sql, weekId, userId, now);
           this.readinessCache.invalidate();
@@ -621,35 +620,16 @@ export class Raid {
   }
 
   /**
-   * Sits the week out or rejoins, until phase 1 locks. Opting out removes the player from their
-   * party and their placements; opting back in joins the smallest party. Players who are not
-   * eligible (no creature) can still set the flag. Idempotent.
+   * The old sit-out route, kept for one release so no client breaks mid-week. It still checks that the
+   * week is open (409 `locked` otherwise) but changes nothing: opt-outs are no longer honoured, so
+   * the answer is always "not opted out". The `raid_opt_outs` table is not read or written.
    */
-  setOptOut(userId: string, tz: string, optOut: boolean): Outcome<{ optOut: boolean }> {
+  setOptOut(tz: string): Outcome<{ optOut: boolean }> {
     this.runDue(tz);
     return this.atomically(() => {
       const week = this.ensureWeek(weekIdFor(this.deps.now(), tz));
       if (week.status !== 'open') throw new GameError(409, 'locked');
-      this.readinessCache.invalidate();
-      const was = this.isOptedOut(week.weekId, userId);
-      if (optOut) {
-        this.sql.exec(
-          'INSERT OR IGNORE INTO raid_opt_outs (week_id, user_id) VALUES (?, ?)',
-          week.weekId,
-          userId,
-        );
-        leaveParty(this.sql, week.weekId, userId);
-      } else {
-        this.sql.exec(
-          'DELETE FROM raid_opt_outs WHERE week_id = ? AND user_id = ?',
-          week.weekId,
-          userId,
-        );
-        this.syncRoster(week.weekId);
-      }
-      // Only a change is logged: sitting out twice is a repeat.
-      if (was !== optOut) this.deps.analytics?.record({ kind: 'roster_optout', optOut }, userId);
-      return { optOut };
+      return { optOut: false };
     });
   }
 
@@ -750,14 +730,6 @@ export class Raid {
       }
       return null;
     });
-  }
-
-  isOptedOut(weekId: string, userId: string): boolean {
-    return (
-      this.sql
-        .exec('SELECT 1 FROM raid_opt_outs WHERE week_id = ? AND user_id = ?', weekId, userId)
-        .toArray().length > 0
-    );
   }
 
   /** The chosen team ids of a player (for views). */

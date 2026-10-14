@@ -1,6 +1,7 @@
 /**
  * The raid roster: who is in this week's raid and which party they are in. There is no sign-up.
- * Everyone who has a creature and was active recently is in, unless they opted out. Rosters of more
+ * Everyone who has a creature and was active recently is in (the old sit-out table is no longer
+ * read). Rosters of more
  * than `maxPartySize` players are split into balanced parties by a snake draft on team power.
  */
 import { RULES } from '@creatures/game';
@@ -10,11 +11,12 @@ const DAY_MS = 86_400_000;
 
 /**
  * Players who may be on the roster of `weekId` now, sorted by user id so the order never depends
- * on storage: they have a creature, were active in the last
- * `activeWindowDays` and have not opted out. Active means `players.last_seen_at` or a leet credit
+ * on storage: they have a creature and were active in the last
+ * `activeWindowDays`. Opt-outs are no longer honoured (the `raid_opt_outs` table is kept for now but
+ * never read). Active means `players.last_seen_at` or a leet credit
  * in the ledger in that window.
  */
-export function eligiblePlayerIds(sql: SqlStorage, weekId: string, now: number): string[] {
+export function eligiblePlayerIds(sql: SqlStorage, now: number): string[] {
   const since = now - RULES.raid.activeWindowDays * DAY_MS;
   return sql
     .exec<{ user_id: string }>(
@@ -24,11 +26,9 @@ export function eligiblePlayerIds(sql: SqlStorage, weekId: string, now: number):
               OR EXISTS (SELECT 1 FROM ledger l
                          WHERE l.user_id = p.user_id AND l.source = 'leet' AND l.amount > 0
                            AND l.created_at >= ?))
-         AND NOT EXISTS (SELECT 1 FROM raid_opt_outs o WHERE o.week_id = ? AND o.user_id = p.user_id)
        ORDER BY p.user_id`,
       since,
       since,
-      weekId,
     )
     .toArray()
     .map((r) => r.user_id);

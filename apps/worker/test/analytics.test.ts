@@ -813,28 +813,13 @@ function twoPlayers(ctx: CoreContext): Seeded[] {
 }
 
 describe('raid roster, team and ability events', () => {
-  it('logs an opt-out and a rejoin once each, and nothing for repeats or locked weeks', async () => {
+  it('logs nothing for the retired sit-out route', async () => {
     await runRaid(async (ctx) => {
       const [p] = twoPlayers(ctx) as [Seeded, Seeded];
       await ctx.core.analytics.prepare(p.id);
-      const set = (out: boolean) => ctx.core.raid.setOptOut(p.id, HELSINKI, out);
-      expect(set(true).ok).toBe(true);
-      expect(set(true).ok).toBe(true); // repeat
-      expect(set(false).ok).toBe(true);
-      expect(set(false).ok).toBe(true); // repeat
-      expect(events(ctx.sql, 'roster_optout').map((e) => e.props)).toEqual([
-        { optOut: true },
-        { optOut: false },
-      ]);
-      expect(events(ctx.sql, 'roster_optout')[0]?.actor_hash).toBe(
-        ctx.core.analytics.hashFor(p.id),
-      );
-
-      // Phase 1 locks the roster: refused, nothing logged.
-      ctx.clock.t = W02.afterPhase1;
-      ctx.core.raid.runDue(HELSINKI);
-      expect(ctx.core.raid.setOptOut(p.id, HELSINKI, true)).toMatchObject({ ok: false });
-      expect(events(ctx.sql, 'roster_optout')).toHaveLength(2);
+      expect(ctx.core.raid.setOptOut(HELSINKI).ok).toBe(true);
+      expect(ctx.core.raid.setOptOut(HELSINKI).ok).toBe(true);
+      expect(events(ctx.sql, 'roster_optout')).toHaveLength(0);
     });
   });
 
@@ -1543,8 +1528,6 @@ describe('privacy', () => {
         b.secret = await ctx.core.createSession(ctx.guildId, OTHER);
         // Raid actions through the API.
         await call(ctx, a.secret, 'GET', '/api/raid');
-        await call(ctx, a.secret, 'PUT', '/api/raid/opt-out', { optOut: true });
-        await call(ctx, a.secret, 'PUT', '/api/raid/opt-out', { optOut: false });
         await call(ctx, a.secret, 'PUT', '/api/raid/team', { creatureIds: null });
         await call(ctx, a.secret, 'PUT', '/api/raid/placement', {
           creatureId: a.starterId,
@@ -1580,7 +1563,6 @@ describe('privacy', () => {
           'push_on_choose',
           'push_on_result',
           'train',
-          'roster_optout',
           'placement',
           'autofire_toggle',
           'ability_pick',

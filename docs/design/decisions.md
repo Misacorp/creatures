@@ -1000,3 +1000,14 @@ No retune was made; the numbers are handed to the lead. `exp-casual-discovery` a
 **Boss Rank and season row after a finale.** Under the finale result, `FinaleProgress` draws the Rank as the dungeon's edge-to-edge `ProgressTrack` (the Rank for next week, lit, and the next one with "A tougher boss" and "More Essence", in words) and the season as a `PipRow` with the Festival as the gold-ringed last pip. The Rank shows once the ladder has moved (`rankChange`, null until every party has finished). The season week is known when the finale was a Festival's, or when the raid page is on the same week; otherwise the pips are left out rather than guessed.
 
 **Coach mark (decided 5).** `SHOW_COACH_MARK` in `coach.ts` is off. The Raid tab checks it; nothing else draws the component, and a test pins both. The workbench page still draws it.
+
+## 2026-10-14: Raid board tiles, sit-out removal
+
+**Decisions.**
+
+- **Tile look.** The element colour is the tile's border (the "element ring"). The owner is a one-letter badge in the corner, in the owner's colour (the existing roster-based `owner-0` to `owner-7` palette, with a text colour chosen per owner for contrast). Raid tiles show no slot number; places are written as "Middle, lane 1" everywhere (team cards, screen reader labels, announcements). Names are one line with an ellipsis, never broken mid-word; the full name is in the popover and the aria label.
+- **Other players' creatures.** Tapping one (with nothing picked up) opens the creature popover, which carries the owner's full name, instead of only showing "That slot belongs to X".
+- **Dragging.** Dragging near the left or right edge of the board scrolls it sideways, so off-screen lanes can be reached; near the top or bottom the page scrolls as before.
+- **Sit-out.** Opt-outs are no longer honoured: the roster ignores `raid_opt_outs`, and the client has no button or status line. The route `PUT /api/raid/opt-out` stays for one release as a validating no-op (always answers not opted out) so no client breaks mid-week; the table and route go in a later migration.
+
+**Why.** Misa's review of the raid page on a phone: a grid where lanes line up, compact tiles, and no weekly button that can hurt the party by accident. Dropping the server check at once means nobody who sat a week out with the old button stays stuck out after the button is gone.

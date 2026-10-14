@@ -496,17 +496,15 @@ describe('raid mutation routes', () => {
     });
   });
 
-  it('PUT /api/raid/opt-out sits out and rejoins before the lock, then answers 409 locked', async () => {
+  it('PUT /api/raid/opt-out is retired: it validates, changes nothing and answers 409 locked after the lock', async () => {
     await runRaid(async (ctx) => {
       const a = seedPlayer(ctx, 1);
       seedPlayer(ctx, 2);
       const sa = await login(ctx, a);
       const out = await api(ctx, sa, 'PUT', '/api/raid/opt-out', { optOut: true });
       expect(out.status).toBe(200);
-      expect(out.body.you).toMatchObject({ optOut: true, inRoster: false });
-      expect(out.body.roster).toHaveLength(1);
-      const back = await api(ctx, sa, 'PUT', '/api/raid/opt-out', { optOut: false });
-      expect(back.body.you).toMatchObject({ optOut: false, inRoster: true });
+      expect(out.body.you).toMatchObject({ optOut: false, inRoster: true, canOptOut: false });
+      expect(out.body.roster).toHaveLength(2);
       expect((await api(ctx, sa, 'PUT', '/api/raid/opt-out', { optOut: 'yes' })).status).toBe(400);
       expect((await api(ctx, sa, 'PUT', '/api/raid/opt-out', {})).status).toBe(400);
       expect((await api(ctx, sa, 'GET', '/api/raid/opt-out')).status).toBe(405);
