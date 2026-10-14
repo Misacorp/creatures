@@ -99,9 +99,8 @@ export function ExplorerProfile({
                 sprite
               )}
               <div class="explorer-text">
-                <p class="pix">
-                  {row.name} <span class="muted">rank {row.rank}</span>
-                </p>
+                {/* The bar's caps already show the rank. */}
+                <p class="pix">{row.name}</p>
                 <XpBar
                   value={xp.value}
                   max={xp.max}
