@@ -31,7 +31,6 @@ import type { Selection } from './slot-outcome';
 import { festivalGrantText, rankChangeText } from './raid-progress';
 import { phaseName } from './raid-text';
 import { BossCard } from './BossCard';
-import { RosterStrip } from './RosterStrip';
 import { RaidTimeline } from './RaidTimeline';
 import type { NowTarget } from './raid-now';
 import { showFullResults } from './raid-timeline';
@@ -327,13 +326,6 @@ export function Raid({
         </details>
       )}
       <BossCard view={view} />
-      <RosterStrip
-        view={view}
-        busy={busy}
-        onOptOut={(optOut) => {
-          void mutate(() => setRaidOptOut(optOut));
-        }}
-      />
       {party !== null && team !== null && (
         <Placement
           party={party}
