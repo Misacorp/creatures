@@ -1,8 +1,8 @@
 /**
  * The raid roster: who is in this week's raid and which party they are in. There is no sign-up.
  * Everyone who has a creature and was active recently is in (the old sit-out table is no longer
- * read). Rosters of more
- * than `maxPartySize` players are split into balanced parties by a snake draft on team power.
+ * read). Rosters of more than `maxPartySize` players are split into balanced parties by a snake
+ * draft on team power.
  */
 import { RULES } from '@creatures/game';
 import { autoTeam, loadCreatures, rowLength, teamPower } from './raid-teams';
@@ -10,11 +10,10 @@ import { autoTeam, loadCreatures, rowLength, teamPower } from './raid-teams';
 const DAY_MS = 86_400_000;
 
 /**
- * Players who may be on the roster of `weekId` now, sorted by user id so the order never depends
- * on storage: they have a creature and were active in the last
- * `activeWindowDays`. Opt-outs are no longer honoured (the `raid_opt_outs` table is kept for now but
- * never read). Active means `players.last_seen_at` or a leet credit
- * in the ledger in that window.
+ * Players who may be on the roster now, sorted by user id so the order never depends on storage:
+ * they have a creature and were active in the last `activeWindowDays`. Opt-outs are no longer honoured (the `raid_opt_outs` table is kept for now
+ * but never read). Active means `players.last_seen_at` or a leet credit in the ledger in that
+ * window.
  */
 export function eligiblePlayerIds(sql: SqlStorage, now: number): string[] {
   const since = now - RULES.raid.activeWindowDays * DAY_MS;
