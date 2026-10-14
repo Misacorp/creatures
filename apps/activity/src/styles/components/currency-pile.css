@@ -1,5 +1,5 @@
 /*
-  The currency pile: a small coin-pile button in the title row (left of "?") and the two lines of its
+  The currency pile: a small Bait-and-Essence button in the title row (left of "?") and the two lines of its
   popover (Bait and Essence, each with its picture, amount and glossary tag).
 */
 button.currency-pile {
@@ -10,13 +10,17 @@ button.currency-pile {
   padding: 0.25rem;
 }
 
-button.currency-pile canvas.coin-small,
-.room[data-scale='2'] button.currency-pile canvas.coin-big {
+/* The 13x10 icon at 2x fits the wall band up to scale 3; the 3x one only fits the scale-4 band. */
+button.currency-pile canvas.coin-big {
   display: none;
 }
 
-.room[data-scale='2'] button.currency-pile canvas.coin-small {
+.room[data-scale='4'] button.currency-pile canvas.coin-big {
   display: block;
+}
+
+.room[data-scale='4'] button.currency-pile canvas.coin-small {
+  display: none;
 }
 
 .currency-lines {

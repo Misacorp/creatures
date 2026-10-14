@@ -124,7 +124,7 @@ button.room-note {
   top: 0;
   right: 0;
   left: 0;
-  z-index: 3;
+  z-index: 4; /* above the "N here" pill (3), so the currency popover opens over it */
   display: flex;
   align-items: center;
   height: var(--band);
@@ -177,6 +177,12 @@ button.room-note {
 }
 
 /* A bigger tap area than the button looks: the wall band is thin. */
+/* On the thin scale-2 band the buttons take nearly all of it, so the 20 px currency icon fits. */
+.room[data-scale='2'] .room-head button.currency-pile,
+.room[data-scale='2'] .room-head button.howto-open {
+  height: calc(var(--band) - 2px);
+}
+
 .room-head button.currency-pile::after,
 .room-head button.howto-open::after {
   position: absolute;
