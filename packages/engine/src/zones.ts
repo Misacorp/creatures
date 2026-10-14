@@ -26,10 +26,23 @@ export function zoneIndices(zone: Zone, length: number): number[] {
   return out;
 }
 
-/** The slots directly left and right of `index` that exist. */
+/**
+ * The slots directly left and right of `index` that exist, in one unbroken line. Only the dungeon
+ * (a row of three with no zones) uses this; the raid uses `zoneNeighbours`.
+ */
 export function neighbours(index: number, length: number): number[] {
   const out: number[] = [];
   if (index - 1 >= 0) out.push(index - 1);
   if (index + 1 < length) out.push(index + 1);
   return out;
+}
+
+/**
+ * The raid's "beside": the slots directly left and right of `index` that exist and are in the
+ * same zone. Adjacency stops at zone edges, so the last Front slot is not beside the first Middle
+ * slot, which is how the board draws it (one row per zone).
+ */
+export function zoneNeighbours(index: number, length: number): number[] {
+  const zone = zoneOfIndex(index, length);
+  return neighbours(index, length).filter((i) => zoneOfIndex(i, length) === zone);
 }

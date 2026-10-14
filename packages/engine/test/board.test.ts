@@ -7,6 +7,7 @@ import {
   makeSlot,
   matchupBp,
   neighbours,
+  zoneNeighbours,
   resolveGuests,
   scaleBoss,
   turnOrder,
@@ -57,6 +58,38 @@ describe('zones', () => {
     expect(neighbours(2, 5)).toEqual([1, 3]);
     expect(neighbours(4, 5)).toEqual([3]);
     expect(neighbours(0, 1)).toEqual([]);
+  });
+
+  it('stops raid neighbours at zone edges', () => {
+    // Row of 9: Front [0-2], Middle [3-5], Back [6-8].
+    for (const edge of [2, 3, 5, 6]) {
+      const zone = zoneOfIndex(edge, 9);
+      for (const i of zoneNeighbours(edge, 9)) expect(zoneOfIndex(i, 9)).toBe(zone);
+    }
+    expect(zoneNeighbours(2, 9)).toEqual([1]);
+    expect(zoneNeighbours(3, 9)).toEqual([4]);
+    expect(zoneNeighbours(5, 9)).toEqual([4]);
+    expect(zoneNeighbours(6, 9)).toEqual([7]);
+    expect(zoneNeighbours(0, 9)).toEqual([1]);
+    expect(zoneNeighbours(8, 9)).toEqual([7]);
+  });
+
+  it('gives an inner raid slot both neighbours', () => {
+    expect(zoneNeighbours(1, 9)).toEqual([0, 2]);
+    expect(zoneNeighbours(4, 9)).toEqual([3, 5]);
+    expect(zoneNeighbours(7, 9)).toEqual([6, 8]);
+    // Row of 15 (5 players): Middle is [5-9].
+    expect(zoneNeighbours(7, 15)).toEqual([6, 8]);
+  });
+
+  it('leaves single-slot zones and tiny rows without neighbours', () => {
+    // Row of 3 is one slot per zone: nobody is beside anybody in the raid sense.
+    expect(zoneNeighbours(0, 3)).toEqual([]);
+    expect(zoneNeighbours(1, 3)).toEqual([]);
+    expect(zoneNeighbours(2, 3)).toEqual([]);
+    // Rows of 1 or 2 are all Middle.
+    expect(zoneNeighbours(0, 2)).toEqual([1]);
+    expect(zoneNeighbours(0, 1)).toEqual([]);
   });
 });
 

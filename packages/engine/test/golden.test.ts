@@ -26,6 +26,9 @@ describe('golden fight', () => {
       bossAtk: 10,
       bossHpPool: { max: 1000, current: 1000 },
       turnOrderOverride: 'left_to_right',
+      // The plain line (the dungeon's adjacency): the raid's zone-edge rule would leave C with no
+      // neighbours in a row of three, and this test is about the arithmetic, not the reach.
+      guardReach: 'adjacent',
     });
 
   const roundEvents = (round: number, bossHpAtStart: number, hits: number[]): FightEvent[] => {

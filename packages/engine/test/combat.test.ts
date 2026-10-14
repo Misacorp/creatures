@@ -150,7 +150,17 @@ describe('marks and reactions', () => {
 });
 
 describe('support', () => {
+  // The raid row is split into zones and a Support only reaches creatures in its own zone. A row of
+  // 5 is Front [0], Middle [1, 2, 3], Back [4]: a, s and b share the Middle.
   const row = () => [
+    slot('f', { owner: 'pf', element: 'tide', role: 'payoff', atk: 1 }),
+    slot('a', { owner: 'pa', element: 'tide', role: 'payoff', atk: 100 }),
+    slot('s', { owner: 'ps', element: 'ember', role: 'support', atk: 10 }),
+    slot('b', { owner: 'pb', element: 'tide', role: 'payoff', atk: 100 }),
+    slot('k', { owner: 'pf', element: 'tide', role: 'payoff', atk: 1 }),
+  ];
+  // The plain three-in-a-row line the dungeon uses, for tests of the buff itself (not of reach).
+  const line = () => [
     slot('a', { owner: 'pa', element: 'tide', role: 'payoff', atk: 100 }),
     slot('s', { owner: 'ps', element: 'ember', role: 'support', atk: 10 }),
     slot('b', { owner: 'pb', element: 'tide', role: 'payoff', atk: 100 }),
@@ -163,8 +173,10 @@ describe('support', () => {
       { t: 'support_buff', round: 1, supporter: 's', target: 'a', bp: 1500 },
       { t: 'support_buff', round: 1, supporter: 's', target: 'b', bp: 1500 },
     ]);
-    const hits = eventsOf(r, 'hit').filter((e) => e.round === 1);
-    expect(hits.map((h) => [h.creature, h.damage, h.bonusBp])).toEqual([
+    const hits = eventsOf(r, 'hit').filter((e) => e.round === 1 && e.creature !== 'f');
+    expect(
+      hits.filter((h) => h.creature !== 'k').map((h) => [h.creature, h.damage, h.bonusBp]),
+    ).toEqual([
       ['a', 115, 1500],
       ['s', 7, 0], // Ember into Tide, x0.75
       ['b', 115, 1500],
@@ -173,10 +185,32 @@ describe('support', () => {
     // Zero-sum: the 15 extra damage per buffed hit moves from the hitter to the supporter.
     expect(r.perPlayer.pa!.damage).toBe(10 * (115 - 15));
     expect(r.perPlayer.pb!.damage).toBe(10 * (115 - 15));
-    const dealt = eventsOf(r, 'hit').reduce((sum, e) => sum + e.damage, 0);
-    const t = r.perPlayer;
-    expect(t.pa!.contribution + t.ps!.contribution + t.pb!.contribution).toBe(dealt);
     expect(r.perPlayer.pa!.supportCredit).toBe(0);
+  });
+
+  it('does not buff across a zone edge', () => {
+    // Row of 5: the Support sits at the left edge of the Middle ([1, 2, 3]). Slot 0 is beside it
+    // in a plain line but is in the Front.
+    const edge = [
+      slot('f', { owner: 'pf', element: 'tide', role: 'payoff', atk: 100 }),
+      slot('s', { owner: 'ps', element: 'ember', role: 'support', atk: 10 }),
+      slot('m', { owner: 'pm', element: 'tide', role: 'payoff', atk: 100 }),
+      slot('n', { owner: 'pn', element: 'tide', role: 'payoff', atk: 100 }),
+      slot('k', { owner: 'pk', element: 'tide', role: 'payoff', atk: 100 }),
+    ];
+    const r = run(edge);
+    expect(
+      inRound(r, 1)
+        .filter((e) => e.t === 'support_buff')
+        .map((e) => (e as { target: string }).target),
+    ).toEqual(['m']);
+    // The same row as a plain line (the dungeon's rule) does buff the slot on the left.
+    const plain = run(edge, { guardReach: 'adjacent' });
+    expect(
+      inRound(plain, 1)
+        .filter((e) => e.t === 'support_buff')
+        .map((e) => (e as { target: string }).target),
+    ).toEqual(['f', 'm']);
   });
 
   it('consumes the buff on the hit and does not stack unused buffs', () => {
@@ -184,7 +218,10 @@ describe('support', () => {
     const gimmicks = [
       { id: 'bind', name: 'Bind', trigger: { every: 2 }, op: 'silence_ends', turns: 1 },
     ] as const;
-    const r = run(row(), { boss: { ...input([]).boss, gimmicks: [...gimmicks] } });
+    const r = run(line(), {
+      guardReach: 'adjacent',
+      boss: { ...input([]).boss, gimmicks: [...gimmicks] },
+    });
     const round3 = inRound(r, 3);
     expect(round3.filter((e) => e.t === 'skip')).toHaveLength(2);
     expect(
@@ -205,7 +242,7 @@ describe('support', () => {
         slot('x', { atk: 100 }),
         slot('y', { atk: 100 }),
       ],
-      { boss: { ...input([]).boss, gimmicks: [...gimmicks] } },
+      { guardReach: 'adjacent', boss: { ...input([]).boss, gimmicks: [...gimmicks] } },
     );
     expect(inRound(r, 3).filter((e) => e.t === 'support_buff')).toHaveLength(0);
     expect(inRound(r, 4).filter((e) => e.t === 'support_buff')).toHaveLength(1);

@@ -33,7 +33,7 @@ import type {
   FightResult,
   PlayerTotals,
 } from './types';
-import { ZONES, neighbours, zoneIndices, zoneOfIndex } from './zones';
+import { ZONES, neighbours, zoneIndices, zoneNeighbours, zoneOfIndex } from './zones';
 
 export interface FightOptions {
   /** Mutators registered in code. A mutator runs only if `input.mutators` also lists its id. */
@@ -375,9 +375,15 @@ export function simulateFight(
    * with `guardReach: 'adjacent'`, one standing right beside it (the left neighbour first).
    */
   const guardReach = input.guardReach ?? 'zone';
+  /**
+   * Who is "beside" a slot. The raid's adjacency stops at zone edges; the dungeon (`adjacent`
+   * reach: a row of three, one slot per zone) has no usable zones, so it keeps the plain line.
+   */
+  const besides = (idx: number): number[] =>
+    guardReach === 'adjacent' ? neighbours(idx, n) : zoneNeighbours(idx, n);
   function guardFor(target: Creature): Creature | undefined {
     if (guardReach === 'adjacent') {
-      for (const i of neighbours(target.idx, n)) {
+      for (const i of besides(target.idx)) {
         const c = creatures[i] as Creature;
         if (c.alive && c.role === 'guard') return c;
       }
@@ -884,7 +890,7 @@ export function simulateFight(
     // Support: living, non-silenced supports buff their neighbours' next hit.
     for (const s of creatures) {
       if (s.role !== 'support' || !s.alive || s.silenced > 0) continue;
-      for (const i of neighbours(s.idx, n)) {
+      for (const i of besides(s.idx)) {
         const t = creatures[i] as Creature;
         if (!t.alive) continue;
         t.buffs = t.buffs.filter((b) => b.from !== s.idx);
