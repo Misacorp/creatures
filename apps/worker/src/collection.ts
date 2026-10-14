@@ -15,7 +15,6 @@ import {
   pickQuirk,
   quirkText,
   sanitizeNickname,
-  type GearRarity,
   type Rng,
   type Stats,
 } from '@creatures/game';
@@ -30,9 +29,17 @@ import {
   type SendInput,
   type SlotsView,
 } from './expeditions';
-import { equippedByCreature, openJobsByCreature, rowToItem, type GearRow } from './gear-store';
+import {
+  equippedByCreature,
+  openJobsByCreature,
+  rowToItem,
+  wornGearView,
+  type GearRow,
+  type WornGear,
+} from './gear-store';
 import { getBalances, lookupSpend, spend, type Currency, type LedgerStorage } from './ledger';
 import { settleSpend } from './keyed-action';
+import { Lounge } from './lounger';
 import { GameError, atomically, type Outcome } from './outcome';
 import { recordServerFirst, type ServerFirstKind } from './server-firsts';
 import { speciesOf } from './species';
@@ -81,13 +88,7 @@ export interface CreatureView {
    */
   statsWithGear: Stats;
   /** The item the creature wears (one slot), or null. The full item is in the gear view. */
-  gear: {
-    id: string;
-    baseId: string;
-    rarity: GearRarity;
-    level: number;
-    enchantId: string | null;
-  } | null;
+  gear: WornGear | null;
   /**
    * What the creature is doing, or null: on an expedition or on a workshop job. A busy creature
    * cannot start the other; it still fights in raids. `away` is true for an expedition only.
@@ -137,6 +138,11 @@ export interface PlayerState {
   /** Median over players of their highest creature level; null while nobody has a creature. */
   trainingMedianLevel: number | null;
   serverFirsts: ServerFirstView[];
+  /**
+   * The creature that lounges in the living room: an idle creature of the player (re-picked at random
+   * when the stored one is busy or gone), or null when every creature is busy or there is none.
+   */
+  loungerId: string | null;
 }
 
 export interface CollectionDeps {
@@ -158,6 +164,11 @@ export interface CollectionDeps {
    * so none of them ever consumes the draws of a catch.
    */
   tripRng: Rng;
+  /**
+   * Live randomness for picking the lounger. Optional: defaults to crypto; tests inject a seeded one.
+   * Separate from `rng`, so a pick never consumes the draws of a catch.
+   */
+  loungerRng?: Rng;
   /** The analytics event log. Optional: without it nothing is logged. */
   analytics?: Analytics;
   /** The dev tools' force flags (staging only); passed on to expeditions. */
@@ -189,8 +200,14 @@ function storedString(result: unknown, key: string): string | undefined {
 export class Collection {
   /** Expeditions: sending, the end-of-trip choice, claiming and their views. */
   readonly trips: Expeditions;
+  /** The living room: the lounger of a player and the room data of a set of players. */
+  readonly lounge: Lounge;
 
   constructor(private readonly deps: CollectionDeps) {
+    this.lounge = new Lounge({
+      storage: deps.storage,
+      ...(deps.loungerRng === undefined ? {} : { rng: deps.loungerRng }),
+    });
     this.trips = new Expeditions({
       storage: deps.storage,
       now: deps.now,
@@ -287,16 +304,7 @@ export class Collection {
         species.element,
         worn === undefined ? null : rowToItem(worn),
       ).stats,
-      gear:
-        worn === undefined
-          ? null
-          : {
-              id: worn.id,
-              baseId: worn.base_id,
-              rarity: worn.rarity,
-              level: worn.level,
-              enchantId: worn.enchant_id,
-            },
+      gear: worn === undefined ? null : wornGearView(worn),
       busy: away
         ? { kind: 'expedition', id: row.away_expedition_id as string }
         : jobId === undefined
@@ -395,6 +403,7 @@ export class Collection {
       supplies: trips.supplies,
       trainingMedianLevel: medianLevel,
       serverFirsts: this.serverFirsts(userId),
+      loungerId: this.lounge.resolve(userId),
     };
   }
 

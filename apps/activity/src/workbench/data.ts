@@ -5,8 +5,10 @@
  */
 import { PART_KINDS, content, expeditionContent, gearContent } from '@creatures/game';
 import type { CreatureInfo } from '../creature-info';
+import type { Resident } from '../room-data';
 import raidFestival from '../fixtures/raid-festival.json';
 import type { GearRarity, PartKind } from '../gear-types';
+import type { WornItem } from '../gear-view';
 import { BUNDLED_GLYPHS } from '../glyphs';
 import type { IconRef } from '../icon-ref';
 import { parseRaidView, type RaidView } from '../raid-api';
@@ -116,3 +118,76 @@ export const SPRITE_NAMES: readonly string[] = Object.keys(SPRITES);
 
 /** The sample raid week (a Festival week of the test fixtures), parsed like a server answer. */
 export const SAMPLE_RAID: RaidView = parseRaidView(raidFestival);
+
+/** The user id of "you" in the living room fixtures. */
+export const ROOM_SELF_ID = '100000000000000001';
+
+const ROOM_NAMES = [
+  'You',
+  'Aino',
+  'Bo',
+  'Cass',
+  'Dev',
+  'Eero',
+  'Fay',
+  'Gus',
+  'Hana',
+  'Ilkka',
+  'Jun',
+  'Kira',
+  'Lumi',
+  'Milo',
+  'Noor',
+  'Onni',
+  'Pia',
+  'Quin',
+  'Rae',
+  'Sami',
+  'Tuuli',
+  'Ugo',
+  'Vera',
+  'Wren',
+];
+
+/** The worn item of fixture resident `i`: most wear something, some enchanted, every third nothing. */
+function sampleWorn(i: number): WornItem | null {
+  if (i % 3 === 1) return null;
+  const base = gearContent.bases[(i * 3) % gearContent.bases.length];
+  if (base === undefined) return null;
+  const enchant = gearContent.enchants[i % gearContent.enchants.length];
+  return {
+    baseId: base.id,
+    rarity: RARITIES[i % RARITIES.length] ?? 'common',
+    level: i % 6,
+    enchantId: i % 2 === 0 && enchant !== undefined ? enchant.id : null,
+    primary: { stat: base.primary, bp: 300 + i * 85 },
+  };
+}
+
+/**
+ * Fixture residents of the living room: "You" first, then others, each with a different species, now
+ * and then shiny or nicknamed, most wearing an item (tap one for the popover's worn-item line). With `oneBusy`, the second resident has all creatures out working (no creature).
+ */
+export function sampleResidents(count: number, oneBusy: boolean): Resident[] {
+  return Array.from({ length: count }, (_, i) => {
+    const species = SPECIES_IDS[(i * 5) % SPECIES_IDS.length] ?? 'cindle';
+    return {
+      userId: String(100000000000000001n + BigInt(i)),
+      name: ROOM_NAMES[i % ROOM_NAMES.length] ?? `Player ${String(i + 1)}`,
+      creature:
+        oneBusy && i === 1
+          ? null
+          : {
+              id: `room-creature-${String(i)}`,
+              species,
+              shiny: i % 7 === 3,
+              level: 3 + ((i * 7) % 25),
+              nickname: i % 4 === 2 ? `${speciesLabel(species)} Jr` : null,
+              quirk: null,
+              craftingLevel: 1 + (i % 4),
+              explorerRank: 1 + (i % 3),
+              gear: sampleWorn(i),
+            },
+    };
+  });
+}

@@ -470,6 +470,7 @@
     "trainingMedianLevel": 10,
     "serverFirsts": [],
     "cancelled": [],
-    "supplies": {}
+    "supplies": {},
+    "loungerId": "10d24d35-e868-4bd9-bd9f-4afca979cbcb"
   }
 }

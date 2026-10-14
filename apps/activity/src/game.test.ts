@@ -213,6 +213,7 @@ describe('parseGameState', () => {
     supplies: {},
     trainingMedianLevel: null,
     serverFirsts: [],
+    loungerId: null,
   };
 
   it('accepts the server shape and defaults starterOptions', () => {
@@ -297,6 +298,7 @@ describe('quirks and species lore in the client', () => {
       supplies: {},
       trainingMedianLevel: null,
       serverFirsts: [],
+      loungerId: null,
     });
     expect(state.creatures[0]?.quirk).toBeNull();
   });

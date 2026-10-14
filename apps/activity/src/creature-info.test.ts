@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { GLOSSARY_IDS, entryView } from '@creatures/game';
-import { backLabel, creatureButtonLabel, creatureInfoOf, type CreatureInfo } from './creature-info';
+import {
+  backLabel,
+  creatureButtonLabel,
+  creatureFacts,
+  shownWornItem,
+  creatureInfoOf,
+  ownedCreatureLabel,
+  type CreatureInfo,
+} from './creature-info';
 
 const info: CreatureInfo = {
   name: 'Cindle',
@@ -33,5 +41,62 @@ describe('creatureInfoOf', () => {
       'role',
       'species',
     ]);
+  });
+});
+
+describe('creatureFacts', () => {
+  it('says nothing extra for a creature without the new fields', () => {
+    expect(creatureFacts(info, 'Cindle')).toEqual([]);
+  });
+
+  it('lists the owner, the species of a nicknamed creature, shiny, Crafting level and Explorer rank', () => {
+    const room: CreatureInfo = {
+      ...info,
+      name: 'Sparky',
+      ownerName: 'Misa',
+      shiny: true,
+      craftingLevel: 3,
+      explorerRank: 2,
+    };
+    expect(creatureFacts(room, 'Cindle')).toEqual([
+      'Owner: Misa',
+      'Species: Cindle',
+      'Shiny',
+      'Crafting level 3',
+      'Explorer rank 2',
+    ]);
+  });
+
+  it('leaves out the species line when the name is the species name, and shiny when false', () => {
+    expect(creatureFacts({ ...info, ownerName: 'Bo', shiny: false }, 'Cindle')).toEqual([
+      'Owner: Bo',
+    ]);
+  });
+});
+
+describe('shownWornItem', () => {
+  const worn = { baseId: 'bark-band', rarity: 'rare' as const, level: 3, enchantId: null };
+
+  it('shows the item of a room creature (it has an owner)', () => {
+    expect(shownWornItem({ ...info, ownerName: 'Misa', gear: worn })).toEqual(worn);
+  });
+
+  it('shows nothing when the creature wears nothing', () => {
+    expect(shownWornItem({ ...info, ownerName: 'Misa', gear: null })).toBeNull();
+    expect(shownWornItem({ ...info, ownerName: 'Misa' })).toBeNull();
+  });
+
+  it('shows nothing in popovers that are not about a room creature', () => {
+    expect(shownWornItem({ ...info, gear: worn })).toBeNull();
+    expect(shownWornItem(info)).toBeNull();
+  });
+});
+
+describe('ownedCreatureLabel', () => {
+  it('reads "<owner>\'s <name>, level <n>"', () => {
+    expect(ownedCreatureLabel({ name: 'Splashet', level: 12, ownerName: 'Misa' })).toBe(
+      "Misa's Splashet, level 12",
+    );
+    expect(ownedCreatureLabel({ name: 'Splashet', level: 12 })).toBe('Splashet, level 12');
   });
 });

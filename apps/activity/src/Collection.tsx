@@ -37,6 +37,8 @@ interface Props {
   onTrain: (creature: Creature) => void;
   onEvolve: (creature: Creature) => void;
   onRename: (creature: Creature, nickname: string | null) => void;
+  /** Makes this creature the one that lounges in the living room. */
+  onLounge: (creature: Creature) => void;
 }
 
 function RenameForm({
@@ -135,6 +137,7 @@ function CreatureCard({
   onTrain,
   onEvolve,
   onRename,
+  onLounge,
 }: { creature: Creature; state: GameState } & Omit<Props, 'state'>) {
   const species = getSpecies(creature.species);
   const cost = creature.trainCost;
@@ -205,6 +208,11 @@ function CreatureCard({
         {creature.busy?.kind === 'job' && (
           <Tag kind="badge" tone="busy" entry="workshop">
             On a job
+          </Tag>
+        )}
+        {creature.id === state.loungerId && (
+          <Tag kind="badge" tone="good">
+            Lounging
           </Tag>
         )}
         {isFirstOnServer(creature, state.serverFirsts) && (
@@ -284,13 +292,36 @@ function CreatureCard({
         ) : (
           <p class="locked">{evolve.label}</p>
         ))}
+      {creature.busy === null && creature.id !== state.loungerId && (
+        <p>
+          <button
+            type="button"
+            class="lounge-button"
+            disabled={busy}
+            onClick={() => {
+              onLounge(creature);
+            }}
+          >
+            Lounge
+          </button>
+        </p>
+      )}
       <About creature={creature} />
       <RenameForm creature={creature} busy={busy} onRename={onRename} />
     </li>
   );
 }
 
-export function Collection({ state, gear, busy, onEquip, onTrain, onEvolve, onRename }: Props) {
+export function Collection({
+  state,
+  gear,
+  busy,
+  onEquip,
+  onTrain,
+  onEvolve,
+  onRename,
+  onLounge,
+}: Props) {
   if (state.creatures.length === 0) return <p class="muted">No creatures yet.</p>;
   return (
     <ul class="cards">
@@ -305,6 +336,7 @@ export function Collection({ state, gear, busy, onEquip, onTrain, onEvolve, onRe
           onTrain={onTrain}
           onEvolve={onEvolve}
           onRename={onRename}
+          onLounge={onLounge}
         />
       ))}
     </ul>

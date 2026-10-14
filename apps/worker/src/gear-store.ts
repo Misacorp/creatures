@@ -5,11 +5,13 @@
  */
 import {
   GEAR_STATS,
+  gearBase,
   PART_KINDS,
   RULES,
   type GearItem,
   type GearRarity,
   type GearRolls,
+  type GearStat,
   type PartKind,
   type PartsBundle,
 } from '@creatures/game';
@@ -51,6 +53,38 @@ export function rowToItem(row: GearRow): GearItem {
     rarity: row.rarity,
     level: row.level,
     rolls: parseRolls(row.rolls_json),
+    enchantId: row.enchant_id,
+  };
+}
+
+/** The primary stat of an item and its value now (the roll plus the upgrade steps). */
+export function primaryOf(item: GearItem): { stat: GearStat; bp: number } {
+  const base = gearBase(item.baseId);
+  if (base === undefined) throw new Error('stored gear has an unknown base');
+  return {
+    stat: base.primary,
+    bp: item.rolls.primary + RULES.gear.upgradeStepBp[base.primary] * item.level,
+  };
+}
+
+/**
+ * The item a creature wears, as the state view and the living room show it. The full item (rolls and
+ * bonus) is only in the owner's gear view; this is what any guild-mate may see.
+ */
+export interface WornGear {
+  id: string;
+  baseId: string;
+  rarity: GearRarity;
+  level: number;
+  enchantId: string | null;
+}
+
+export function wornGearView(row: GearRow): WornGear {
+  return {
+    id: row.id,
+    baseId: row.base_id,
+    rarity: row.rarity,
+    level: row.level,
     enchantId: row.enchant_id,
   };
 }
@@ -119,6 +153,24 @@ export function equippedByCreature(sql: SqlStorage, userId: string): Map<string,
   const map = new Map<string, GearRow>();
   for (const row of sql
     .exec<GearRow>('SELECT * FROM gear_items WHERE user_id = ? AND equipped_on IS NOT NULL', userId)
+    .toArray()) {
+    if (row.equipped_on !== null) map.set(row.equipped_on, row);
+  }
+  return map;
+}
+
+/** The worn items of some creatures (any owner) by creature id, in one query. */
+export function wornOnCreatures(
+  sql: SqlStorage,
+  creatureIds: readonly string[],
+): Map<string, GearRow> {
+  const map = new Map<string, GearRow>();
+  if (creatureIds.length === 0) return map;
+  for (const row of sql
+    .exec<GearRow>(
+      `SELECT * FROM gear_items WHERE equipped_on IN (${creatureIds.map(() => '?').join(', ')})`,
+      ...creatureIds,
+    )
     .toArray()) {
     if (row.equipped_on !== null) map.set(row.equipped_on, row);
   }

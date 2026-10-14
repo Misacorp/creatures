@@ -2,15 +2,9 @@ import { useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { ItemFrame, ItemSprite } from './GearArt';
 import type { GearState } from './gear-types';
-import {
-  enchantName,
-  equipChoices,
-  formatBonus,
-  gearName,
-  itemLabel,
-  statLabel,
-} from './gear-view';
+import { equipChoices, formatBonus, gearName, itemLabel, statLabel, wornItemOf } from './gear-view';
 import { GlossaryTag } from './Glossary';
+import { WornItemFrame, WornItemText } from './WornItemLine';
 
 /**
  * A creature card's gear slot: the worn item as a 12x12 sprite in its rarity frame (or an empty
@@ -39,7 +33,7 @@ export function CardGear({
       ? 'Gear slot: empty. Choose an item to equip.'
       : `Gear slot: ${itemLabel(worn.baseId, worn.level)}. Change it.`;
   const choices = gear === null ? [] : equipChoices(gear.items, creature, creatures);
-  const wornItem = worn === null ? undefined : gear?.items.find((i) => i.id === worn.id);
+  const wornView = worn === null ? null : wornItemOf(worn, gear?.items);
 
   async function equip(gearId: string, creatureId: string | null): Promise<void> {
     if (await onEquip(gearId, creatureId)) setOpen(false);
@@ -57,38 +51,23 @@ export function CardGear({
             setOpen(!open);
           }}
         >
-          {worn === null ? (
+          {wornView === null ? (
             <span class="item-frame empty" aria-hidden="true">
               <span class="slot-plus pix">+</span>
             </span>
           ) : (
-            <ItemFrame rarity={worn.rarity}>
-              <ItemSprite baseId={worn.baseId} scale={3} />
-            </ItemFrame>
+            <WornItemFrame worn={wornView} />
           )}
         </button>
-        <p class="gear-text">
-          {worn === null ? (
+        {wornView === null ? (
+          <p class="gear-text">
             <span class="muted">
               <GlossaryTag entry="gear">No gear</GlossaryTag>
             </span>
-          ) : (
-            <>
-              <span class="pix">{gearName(worn.baseId)}</span>{' '}
-              <span class="lvl">+{worn.level}</span>
-              {wornItem !== undefined && (
-                <span class="muted gear-main">
-                  {' '}
-                  {formatBonus(wornItem.primary.stat, wornItem.primary.bp)}{' '}
-                  {statLabel(wornItem.primary.stat)}
-                </span>
-              )}
-              {worn.enchantId !== null && (
-                <span class="muted gear-main"> · {enchantName(worn.enchantId)}</span>
-              )}
-            </>
-          )}
-        </p>
+          </p>
+        ) : (
+          <WornItemText worn={wornView} />
+        )}
       </div>
       {open && (
         <div

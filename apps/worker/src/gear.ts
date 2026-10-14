@@ -17,9 +17,9 @@ import {
   craftCost,
   craftRarity,
   dismantleYield,
+  gearBase,
   enchantCost,
   enchantDef,
-  gearBase,
   improveCost,
   itemEnchantActive,
   jobDuration,
@@ -34,7 +34,6 @@ import {
   partsOfSpec,
   upgradeCost,
   PART_KINDS,
-  type GearItem,
   type GearJobKind,
   type GearRarity,
   type GearStat,
@@ -66,6 +65,7 @@ import {
   openJobOf,
   ownedItems,
   parseRolls,
+  primaryOf,
   rowToItem,
   type GearRow,
   type JobRow,
@@ -289,16 +289,6 @@ export class Gear {
     return row;
   }
 
-  /** The primary stat and its value now. */
-  private primaryOf(item: GearItem): { stat: GearStat; bp: number } {
-    const base = gearBase(item.baseId);
-    if (base === undefined) throw new Error('stored gear has an unknown base');
-    return {
-      stat: base.primary,
-      bp: item.rolls.primary + RULES.gear.upgradeStepBp[base.primary] * item.level,
-    };
-  }
-
   private itemView(row: GearRow, jobId: string | null): GearItemView {
     const item = rowToItem(row);
     const wearerSpecies =
@@ -309,7 +299,7 @@ export class Gear {
       rarity: row.rarity,
       level: row.level,
       maxLevel: RULES.gear.maxLevel,
-      primary: this.primaryOf(item),
+      primary: primaryOf(item),
       secondaries: item.rolls.secondary.map((s) => ({ ...s })),
       enchantId: row.enchant_id,
       enchantActive:

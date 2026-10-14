@@ -1,0 +1,124 @@
+/**
+ * Keeps the living room's other residents up to date with as few requests as the design allows (see
+ * `docs/design/living-room.md`, "Server load"): everyone present once when the game opens, only the
+ * newcomers after a join (debounced), nothing for a leave, and a full refetch on a tab switch only
+ * when the data is over a minute old. No timers run while nothing happens, and failures are ignored
+ * quietly (the old data stays). Framework-free; `use-room.ts` wires it to Preact.
+ */
+import type { RoomResident } from './api';
+import {
+  ROOM_CHUNK,
+  ROOM_DEBOUNCE_MS,
+  chunk,
+  dropAbsent,
+  idsToFetch,
+  isStale,
+  mergeResidents,
+  othersOf,
+  type Resident,
+} from './room-data';
+
+export interface RoomLoaderDeps {
+  selfId: string;
+  /** Asks the server about up to `ROOM_CHUNK` ids. */
+  fetch: (ids: readonly string[]) => Promise<RoomResident[]>;
+  /** Called with the new map of known others after every change. */
+  onChange: (known: ReadonlyMap<string, Resident>) => void;
+  now?: () => number;
+  /** Replaceable for tests. */
+  setTimer?: (callback: () => void, ms: number) => unknown;
+  clearTimer?: (handle: unknown) => void;
+}
+
+export interface RoomLoader {
+  /** The first look at the room: asks about everyone present except the player. */
+  start(present: readonly string[]): void;
+  /** Participants changed: leavers drop at once, newcomers are asked about after a short wait. */
+  update(present: readonly string[]): void;
+  /** Refetches everyone present, but only when the last full fetch is over a minute old. */
+  refreshIfStale(): void;
+  /** Stops everything; answers that arrive later are dropped. */
+  dispose(): void;
+}
+
+export function createRoomLoader(deps: RoomLoaderDeps): RoomLoader {
+  const now = deps.now ?? Date.now;
+  const setTimer = deps.setTimer ?? ((cb, ms) => setTimeout(cb, ms));
+  const clearTimer = deps.clearTimer ?? ((h) => clearTimeout(h as ReturnType<typeof setTimeout>));
+  let present: readonly string[] = [];
+  let known = new Map<string, Resident>();
+  let lastFullAt: number | null = null;
+  let fullInFlight = false;
+  let timer: unknown = null;
+  let disposed = false;
+  /** Ids a request is on its way for, so two triggers never ask twice. */
+  const pending = new Set<string>();
+
+  const publish = (next: Map<string, Resident>): void => {
+    known = next;
+    deps.onChange(known);
+  };
+
+  /** Asks about `ids` in chunks; each answer is merged when it arrives. Resolves true if all worked. */
+  async function ask(ids: readonly string[]): Promise<boolean> {
+    for (const id of ids) pending.add(id);
+    const results = await Promise.all(
+      chunk(ids, ROOM_CHUNK).map(async (piece) => {
+        try {
+          const answer = await deps.fetch(piece);
+          if (!disposed) publish(mergeResidents(known, answer, present));
+          return true;
+        } catch {
+          return false;
+        } finally {
+          for (const id of piece) pending.delete(id);
+        }
+      }),
+    );
+    return results.every(Boolean);
+  }
+
+  async function fetchAll(): Promise<void> {
+    const ids = othersOf(present, deps.selfId);
+    const before = lastFullAt;
+    lastFullAt = now();
+    if (ids.length === 0) return;
+    fullInFlight = true;
+    const ok = await ask(ids);
+    fullInFlight = false;
+    // A failed fetch does not count: the next tab switch tries again.
+    if (!ok) lastFullAt = before;
+  }
+
+  function fetchNewcomers(): void {
+    const ids = idsToFetch(present, known, deps.selfId, pending);
+    if (ids.length > 0) void ask(ids);
+  }
+
+  return {
+    start(ids) {
+      present = ids;
+      void fetchAll();
+    },
+    update(ids) {
+      present = ids;
+      const kept = dropAbsent(known, present);
+      if (kept.size !== known.size) publish(kept);
+      if (idsToFetch(present, known, deps.selfId, pending).length === 0) return;
+      if (timer !== null) clearTimer(timer);
+      timer = setTimer(() => {
+        timer = null;
+        if (!disposed) fetchNewcomers();
+      }, ROOM_DEBOUNCE_MS);
+    },
+    refreshIfStale() {
+      if (disposed || fullInFlight || !isStale(lastFullAt, now())) return;
+      void fetchAll();
+    },
+    dispose() {
+      disposed = true;
+      if (timer !== null) clearTimer(timer);
+      timer = null;
+    },
+  };
+}

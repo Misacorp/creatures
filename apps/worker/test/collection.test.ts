@@ -156,6 +156,7 @@ interface StateBody {
   cancelled: { id: string; reason: string }[];
   trainingMedianLevel: number | null;
   serverFirsts: { kind: string; species: string; at: number; mine: boolean; holders: string[] }[];
+  loungerId: string | null;
 }
 
 async function join(
@@ -376,6 +377,7 @@ describe('GET /api/state', () => {
             'creatures',
             'expeditions',
             'leetSync',
+            'loungerId',
             'serverFirsts',
             'serverNow',
             'slots',
@@ -412,6 +414,7 @@ describe('GET /api/state', () => {
         expect(before.cancelled).toEqual([]);
         expect(before.trainingMedianLevel).toBeNull();
         expect(before.serverFirsts).toEqual([]);
+        expect(before.loungerId).toBeNull();
 
         await player.call('POST', '/api/starter', { species: 'cindle', idempotencyKey: newKey() });
         const after = await player.state();
@@ -419,6 +422,8 @@ describe('GET /api/state', () => {
         expect('starterOptions' in after).toBe(false);
         expect(after.trainingMedianLevel).toBe(1);
         const [cindle] = after.creatures;
+        // The only creature is the one that lounges.
+        expect(after.loungerId).toBe(cindle?.id);
         expect(cindle).toEqual({
           id: expect.any(String) as string,
           species: 'cindle',

@@ -298,6 +298,11 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   expeditionsMigration,
   // Version 20: the daily analytics rollups (see analytics-rollup.ts).
   analyticsRollupMigration,
+  (sql) => {
+    // Version 21: the living room's lounger (see lounger.ts and docs/design/living-room.md). The
+    // creature that lounges for each player; NULL until first needed (picked lazily, no backfill).
+    sql.exec('ALTER TABLE players ADD COLUMN lounger_id TEXT');
+  },
 ];
 
 export interface SessionUser {
@@ -409,6 +414,11 @@ export interface GuildCoreOptions {
    * draws and a test can script the seed of a run.
    */
   dungeonRng?: Rng;
+  /**
+   * Live randomness for picking the living room's lounger. Defaults to crypto.getRandomValues.
+   * Separate from the others, so a pick never consumes a test's scripted draws.
+   */
+  loungerRng?: Rng;
   /** Fallback guild id (the Durable Object's name), used only until one is stored. */
   guildId?: () => string | undefined;
   /** Builds the leet source. Returning null disables syncing (fail closed). */
@@ -519,6 +529,7 @@ export class GuildCore {
       quirkRng,
       gearRng,
       tripRng: options.tripRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+      ...(options.loungerRng === undefined ? {} : { loungerRng: options.loungerRng }),
     });
     this.gear = new Gear({ storage, now, rng: gearRng, analytics: this.analytics });
     this.dungeon = new Dungeon({
