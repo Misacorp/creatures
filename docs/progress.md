@@ -37,7 +37,7 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
    - influence highlights on hover or popover;
    - room or phase top left, round top right (the dungeon too);
    - hide the tag coach mark.
-2. **Attack patterns plus raid structure,** as one raid retune: `design/attack-patterns.md`, section 6 for the slices, and the "Raid structure" section of `design/raid-ux-2.md`. The structure part is phase floors (the boss goes immune, so there is always a finale) and a finale enrage; it has four questions open for Misa.
+2. **Attack patterns plus raid structure,** as one raid retune: `design/attack-patterns.md`, section 6 for the slices, and the "Raid structure" section of `design/raid-ux-2.md`. The structure part is phase floors (the boss goes immune and the phase ends, no overkill, finale at 15%) and enrage (raid finale, plus dungeon boss rooms to teach it; an enrage loss is a normal loss). Misa decided all four questions on 2026-10-14.
    - The seven moves for raid bosses and dungeon foes.
    - Guard cover.
    - Element supports: Stoke, Overcharge, Mend.

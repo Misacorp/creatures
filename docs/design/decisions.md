@@ -963,3 +963,9 @@ The raid Placement and the dungeon team now draw their slots, tray, drag ghost a
 **Tradeoff.** Presence is per activity instance: players who opened the game from different channels do not see each other. Misa accepted this. A guild-wide room would need a server heartbeat.
 
 **Also.** Spot assignment is client-side and deterministic (FNV-1a of instance id and user id), so everyone in an instance sees the same room. Speech bubbles and the idle pan are local cosmetics using browser crypto randomness; they are not game state, so the server-RNG rule does not apply to them.
+
+## 2026-10-14: Raid phases end at a floor, and bosses enrage when time runs out
+
+**Decision (Misa, 2026-10-14).** Every week has a finale. Each raid phase has an HP floor; when the boss reaches it, it turns immune and the phase ends. Damage past the floor counts for nothing (no overkill), because counting it would be unintuitive; instead the replay and the phase card say clearly why the boss is gone and what happens next, in a per-boss line with a shared fallback. The finale carries 15% of the boss's HP (the Phase 2 floor), which Misa finds "lots to do and it's still exciting". When the finale's rounds run out, the boss enrages: multi-target hits at high damage that wipe a typical row in 2–3 rounds, with a slim chance of a win. Dungeon boss rooms enrage too instead of simply timing out, so players learn the mechanic daily; Misa may walk this back if it plays badly. An enrage loss is a normal loss.
+
+**How.** New scalars `RULES.raid.phases[].floorBp`, `RULES.raid.enrage` and `RULES.dungeon.enrage` (the last can be switched off). Built with the attack patterns as one raid retune, because both change raid lethality and the win band, and enrage uses the multi-target moves. Details: `raid-ux-2.md`, "Raid structure".
