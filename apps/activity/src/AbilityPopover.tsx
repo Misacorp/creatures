@@ -1,4 +1,5 @@
 import { content } from '@creatures/game';
+import type { ComponentChildren } from 'preact';
 import { elementName } from './game';
 import { GlossaryTag } from './Glossary';
 import { AutoFireToggle } from './AutoFireToggle';
@@ -57,6 +58,19 @@ function Chips({ label, value, disabled, onPick, children }: ChipsProps) {
   );
 }
 
+/** The inside of a stage popover: a gold title, then its lines (the ability, a note, the help). */
+export function AbilityPopoverSection(props: {
+  title: ComponentChildren;
+  children: ComponentChildren;
+}) {
+  return (
+    <div class="ab-pop-body">
+      <p class="ab-title pix">{props.title}</p>
+      {props.children}
+    </div>
+  );
+}
+
 interface AbilityPopoverBodyProps {
   fight: Pick<LiveFight, 'status' | 'round' | 'rounds'>;
   ability: LiveAbility;
@@ -82,10 +96,11 @@ export function AbilityPopoverBody(props: AbilityPopoverBodyProps) {
   const controls = abilityControls(fight, ability);
   const kind = abilityParamKind(ability.abilityId);
   return (
-    <div class="ab-pop-body">
-      <p class="ab-title pix">
+    <AbilityPopoverSection
+      title={
         <GlossaryTag ability={ability.abilityId}>{abilityName(ability.abilityId)}</GlossaryTag>
-      </p>
+      }
+    >
       <p class="ab-state">
         {badge.kind === 'auto' || badge.kind === 'manual' ? (
           <GlossaryTag entry="auto-fire">{popoverStateLine(badge)}</GlossaryTag>
@@ -142,6 +157,6 @@ export function AbilityPopoverBody(props: AbilityPopoverBodyProps) {
           {props.error}
         </p>
       )}
-    </div>
+    </AbilityPopoverSection>
   );
 }

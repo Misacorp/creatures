@@ -15,7 +15,7 @@ import {
   type Me,
 } from './api';
 import { Game } from './Game';
-import { GlossaryProvider } from './Glossary';
+import { PopoverHost } from './PopoverHost';
 import { HowToPlay } from './HowToPlay';
 import { leetStatusLine } from './leet-status';
 import { RecentActivity } from './RecentActivity';
@@ -146,7 +146,7 @@ export function App() {
           : 'not ok';
 
   return (
-    <GlossaryProvider
+    <PopoverHost
       onOpenHowTo={(section) => {
         setHowTo((open) => ({ section, nonce: (open?.nonce ?? 0) + 1 }));
       }}
@@ -226,6 +226,6 @@ export function App() {
           }}
         />
       )}
-    </GlossaryProvider>
+    </PopoverHost>
   );
 }

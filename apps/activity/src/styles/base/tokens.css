@@ -42,6 +42,6 @@
   --z-stage-intro: 25; /* the round intro over the stage */
   --z-stage-overlay: 30; /* the countdown and the room banner over the stage */
   --z-howto: 40; /* the How to play page */
-  --z-glossary: 60; /* the glossary popover layer over the page */
+  --z-popover-layer: 60; /* the page popover layer over everything but a drag */
   --z-drag: 100; /* the creature you are dragging */
 }

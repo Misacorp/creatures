@@ -6,7 +6,7 @@ import { useElementWidth } from './hooks';
 import { SmallCreature } from './SmallCreature';
 import { Sprite } from './sprites/Sprite';
 import { BANNER_SIZE, creatureSpriteOrFallback } from './sprites/creature-sprites';
-import type { CreatureInfo } from './creature-popover';
+import type { CreatureInfo } from './creature-info';
 
 /** The creature that walks across a banner: how far along (0 to 1) and who it is. */
 interface Walker {

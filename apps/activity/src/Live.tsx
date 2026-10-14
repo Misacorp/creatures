@@ -34,7 +34,7 @@ import {
   type LiveSnapshot,
 } from './live-api';
 import type { ReplayRowEntry } from './raid-api';
-import { AbilityPopoverBody } from './AbilityPopover';
+import { AbilityPopoverBody, AbilityPopoverSection } from './AbilityPopover';
 import { setRaidAutofire } from './raid-api';
 import { RevealCard } from './Reveal';
 import { LiveRegion } from './ui/LiveRegion';
@@ -285,10 +285,9 @@ export function Live({
 
   /** A tap on one of your creatures that has no ability in this fight says why. */
   const noteBody = (creature: ReplayRowEntry) => (
-    <div class="ab-pop-body">
-      <p class="ab-title pix">{creature.name}</p>
+    <AbilityPopoverSection title={creature.name}>
       <p class="ab-state">{noAbilityText(creature.species, creature.level)}</p>
-    </div>
+    </AbilityPopoverSection>
   );
 
   // The stage needs the boss pool and the names; the lobby may not have them (no preview).
@@ -500,8 +499,7 @@ function FeedItems({ lines }: { lines: readonly FeedLine[] }) {
 /** The "?" popover of the stage: how abilities work, in a few short lines. */
 function AbilityHelp({ lobby }: { lobby: boolean }) {
   return (
-    <div class="ab-pop-body">
-      <p class="ab-title pix">Abilities</p>
+    <AbilityPopoverSection title="Abilities">
       <p class="ab-help">
         {lobby
           ? 'Tap one of your creatures, or the chip in the corner, to turn auto fire on or off before the fight.'
@@ -512,6 +510,6 @@ function AbilityHelp({ lobby }: { lobby: boolean }) {
           ? 'Each ability fires once. With auto fire on, it fires by itself in its round. With auto fire off it waits for you once the fight starts, and still fires in the last round if you do not.'
           : 'Each ability fires once. Fire takes effect at the start of the next round. With auto fire on, it fires by itself in its round; with auto fire off it waits for you, and still fires in the last round if you do not.'}
       </p>
-    </div>
+    </AbilityPopoverSection>
   );
 }

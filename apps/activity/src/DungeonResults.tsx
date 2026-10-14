@@ -21,7 +21,7 @@ import { bossArt } from './art';
 import { depthChangeText, resultHeadline } from './dungeon-text';
 import { DungeonNext } from './DungeonNext';
 import type { DungeonRunSummary, DungeonToday } from './dungeon-types';
-import { creatureInfoOf } from './creature-popover';
+import { creatureInfoOf } from './creature-info';
 import { SmallCreature } from './SmallCreature';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';

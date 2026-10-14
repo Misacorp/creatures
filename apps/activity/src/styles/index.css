@@ -34,14 +34,14 @@
 @import './views/boss-card.css';
 @import './stage/stage.css';
 @import './stage/units.css';
-@import './stage/popover.css';
+@import './components/popover.css';
+@import './stage/ability-popover.css';
 @import './stage/abilities.css';
 @import './stage/fx.css';
 @import './stage/motion.css';
 @import './stage/ability-auto.css';
 @import './stage/countdown.css';
 @import './views/app.css';
-@import './components/glossary-popover.css';
 @import './views/how-to-play.css';
 @import './components/coach.css';
 @import './components/gear-tokens.css';

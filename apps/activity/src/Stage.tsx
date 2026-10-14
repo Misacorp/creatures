@@ -20,13 +20,13 @@ import {
   type AbilityUse,
 } from './stage';
 import { badgeFor, unitTap, usedBadge, type Badge } from './stage-abilities';
-import { creatureInfoOf } from './creature-popover';
+import { creatureInfoOf } from './creature-info';
 import { SmallCreature } from './SmallCreature';
 import { ElementChip } from './sprites/ElementChip';
 import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
 import { forecastNextRound, strikeLabel, type Wording } from './telegraph';
-import { StagePopover } from './StagePopover';
 import { PixelHeading } from './ui/PixelHeading';
+import { Popover, popupProps } from './ui/Popover';
 import { SegmentBar } from './ui/SegmentBar';
 import { ToggleButton } from './ui/ToggleButton';
 import { Sprite } from './sprites/Sprite';
@@ -479,8 +479,7 @@ function StageUnit(props: UnitProps) {
           type="button"
           ref={props.anchorRef}
           class="unit-face"
-          aria-haspopup="dialog"
-          aria-expanded={open}
+          {...popupProps(open)}
           aria-label={`${spoken}. ${props.opens}`}
           onClick={props.onToggle}
         >
@@ -695,8 +694,7 @@ export function Stage({
               type="button"
               ref={anchorRef('help')}
               class="stage-help pix"
-              aria-haspopup="dialog"
-              aria-expanded={openKey === 'help'}
+              {...popupProps(openKey === 'help')}
               aria-label="How abilities work"
               onClick={() => {
                 toggle('help');
@@ -965,8 +963,7 @@ export function Stage({
                 type="button"
                 ref={anchorRef(key)}
                 class="basic-chip"
-                aria-haspopup="dialog"
-                aria-expanded={openKey === key}
+                {...popupProps(openKey === key)}
                 aria-label={`${abilityName(ability.abilityId)} (basic ability), ${badge.label.toLowerCase()}. Opens the ability options.`}
                 onClick={() => {
                   toggle(key);
@@ -982,7 +979,7 @@ export function Stage({
       )}
 
       {abilities !== undefined && openAbility !== undefined && (
-        <StagePopover
+        <Popover
           key={openKey}
           anchor={() => anchors.current.get(`a:${openAbility.key}`) ?? null}
           label={`${abilityName(openAbility.abilityId)} ability`}
@@ -990,10 +987,10 @@ export function Stage({
         >
           {abilities.renderPopover(openAbility, ownInfo(openAbility).badge, close)}
           <CreatureTags creature={row.find((c) => c.id === openAbility.creature)} />
-        </StagePopover>
+        </Popover>
       )}
       {abilities?.renderNote !== undefined && openNote !== undefined && (
-        <StagePopover
+        <Popover
           key={openKey}
           anchor={() => anchors.current.get(`c:${openNote.id}`) ?? null}
           label={`${openNote.name}`}
@@ -1001,18 +998,17 @@ export function Stage({
         >
           {abilities.renderNote(openNote, close)}
           <CreatureTags creature={openNote} />
-        </StagePopover>
+        </Popover>
       )}
       {abilities?.help !== undefined && openKey === 'help' && (
-        <StagePopover
+        <Popover
           key="help"
-          class="help-pop"
           anchor={() => anchors.current.get('help') ?? null}
           label="How abilities work"
           onClose={close}
         >
           {abilities.help}
-        </StagePopover>
+        </Popover>
       )}
       <div class="stage-strikes" ref={layerRef} aria-hidden="true">
         {strikeItems.map((item) => {

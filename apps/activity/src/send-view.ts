@@ -5,7 +5,7 @@
  */
 import { EXPEDITION_LENGTHS, lengthOpen } from '@creatures/game';
 import type { Creature } from './api';
-import type { CreatureInfo } from './creature-popover';
+import type { CreatureInfo } from './creature-info';
 import type { DestinationCard } from './destination-view';
 import type { DestinationsView, ExpeditionLength, Slots, SupplyPick } from './expedition-types';
 import { creatureName, getSpecies } from './game';
