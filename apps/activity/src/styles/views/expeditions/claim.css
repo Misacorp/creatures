@@ -104,12 +104,6 @@
   margin: 0 0 0.25rem;
 }
 
-.supply-count {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
 .trip-xp p {
   margin: 0.25rem 0;
 }

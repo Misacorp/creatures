@@ -9,7 +9,17 @@ import type { GrantLoot } from './gear-types';
  * not fit in the bag and became parts, blueprints, and parts as icons with numbers. The items pop
  * in when motion is allowed (`pop-in`, the same animation as the Festival creature). Text only.
  */
-export function LootList({ loot, label }: { loot: GrantLoot; label: string }) {
+export function LootList({
+  loot: given,
+  label,
+  counted = false,
+}: {
+  loot: GrantLoot;
+  label: string;
+  /** True when the parts and supplies are shown as count badges beside it, so they are left out here. */
+  counted?: boolean;
+}) {
+  const loot = counted ? { ...given, parts: {}, supplies: [] } : given;
   if (lootIsEmpty(loot)) return null;
   const parts = partsEntries(loot.parts);
   return (

@@ -1,8 +1,9 @@
+import { CountBadge, type CountBadgeProps, type CountItem } from './ui/CountBadge';
 import { Tag } from './ui/Tag';
 import { GLOSSARY_IDS, PART_KINDS, type PartKind } from '@creatures/game';
 import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from './Glossary';
-import { itemArt, partIcon } from './gear-sprites';
+import { itemArt } from './gear-sprites';
 import { partName, partsEntries, rarityName } from './gear-view';
 import type { GearRarity, PartsBundle } from './gear-types';
 import { Sprite } from './sprites/Sprite';
@@ -68,6 +69,21 @@ export function RarityTag({ rarity }: { rarity: GearRarity }) {
   );
 }
 
+/** The count badge of one kind of part, with the part's name spoken. */
+function partBadge(kind: PartKind, amount: number): CountBadgeProps {
+  return {
+    icon: { kind: 'part', part: kind },
+    amount,
+    label: partName(kind),
+    entry: GLOSSARY_IDS.part(kind),
+  };
+}
+
+/** The count badges of a bundle of parts, in the order of the part kinds, without the empty ones. */
+export function partCountItems(parts: PartsBundle): CountItem[] {
+  return partsEntries(parts).map(({ kind, amount }) => ({ key: kind, ...partBadge(kind, amount) }));
+}
+
 /** A part icon with its number. The name is spoken; the icon never carries the meaning alone. */
 export function PartCount({
   kind,
@@ -79,26 +95,8 @@ export function PartCount({
   /** False inside a button, where a tag cannot sit. */
   tag?: boolean;
 }) {
-  const body = (
-    <>
-      <Sprite sprite={partIcon(kind)} scale={2} />
-      <span class="part-amount pix">{amount}</span>
-    </>
-  );
-  return tag ? (
-    <GlossaryTag
-      entry={GLOSSARY_IDS.part(kind)}
-      look="chip"
-      class="part-count"
-      label={`${partName(kind)}: ${String(amount)}`}
-    >
-      {body}
-    </GlossaryTag>
-  ) : (
-    <span class="part-count" role="img" aria-label={`${partName(kind)}: ${String(amount)}`}>
-      {body}
-    </span>
-  );
+  const { entry, ...badge } = partBadge(kind, amount);
+  return <CountBadge {...badge} {...(tag && entry !== undefined ? { entry } : {})} />;
 }
 
 /** All the parts a player holds, as icons with numbers (zero counts included, so the row never jumps). */

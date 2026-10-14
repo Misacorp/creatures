@@ -57,17 +57,15 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .reveal-festival-box:not(.done),
-  .reveal-gear-box:not(.done) {
+  .reveal-later:not(.done) {
     opacity: 0;
   }
 
-  .reveal-festival-box.done,
-  .reveal-gear-box.done {
+  .reveal-later.done {
     animation: reveal-pop 300ms steps(3) both;
   }
 
-  .reveal-festival-box.done .pop-in,
+  .reveal-later.done .pop-in,
   .loot .pop-in {
     animation: reveal-pop-in 600ms steps(5) both;
   }

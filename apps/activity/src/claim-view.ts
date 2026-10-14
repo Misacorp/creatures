@@ -145,8 +145,8 @@ export function journalPages(result: Pick<ClaimResult, 'journal'>): JournalPage[
   });
 }
 
-/** The pile in words, for assistive technology: "Loot: Scrap, Ember Shard, Lure". */
-export function pileLabel(source: PileSource): string {
+/** The pile in words, for assistive technology: "Loot: Scrap, Ember Shard, Lure" (or "Rewards: ..."). */
+export function pileLabel(source: PileSource, prefix: 'Loot' | 'Rewards'): string {
   const kinds = rewardPileItems(source).map((item) => {
     switch (item.icon.kind) {
       case 'part':
@@ -157,7 +157,7 @@ export function pileLabel(source: PileSource): string {
         return item.key.startsWith('supply-') ? kindName(item.icon.id) : kindName(item.key);
     }
   });
-  return `Loot: ${kinds.join(', ')}`;
+  return `${prefix}: ${kinds.join(', ')}`;
 }
 
 /** One thing a rank-up gift gives: a picture and a few words. */

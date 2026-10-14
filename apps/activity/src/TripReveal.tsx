@@ -6,7 +6,6 @@ import {
   foundSupplies,
   journalPages,
   nothingInLoot,
-  pileLabel,
   pileSourceOf,
   pushOnLine,
   rankGiftViews,
@@ -20,11 +19,10 @@ import type { Trip } from './expedition-types';
 import { Stars } from './ExpeditionIcons';
 import { GameIcon } from './ui/GameIcon';
 import { catchBadgeTags, creatureName, getSpecies, speciesName } from './game';
-import { PartCount } from './GearArt';
+import { partCountItems } from './GearArt';
 import { LootList } from './GearLoot';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
-import { RewardPile } from './RewardPile';
 import { explorerInfo } from './send-view';
 import { SmallCreature } from './SmallCreature';
 import { XpBar } from './XpBar';
@@ -32,7 +30,8 @@ import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { destinationName, explorerXp, supplyKindOf } from './trip-view';
-import { partsEntries } from './gear-view';
+import { RevealShell } from './ui/RevealShell';
+import { RewardSummary } from './ui/RewardSummary';
 
 /**
  * What a claimed trip brought home. A trip that failed (a risky push-on that did not work out) is a
@@ -81,12 +80,13 @@ export function TripReveal({
         );
   const nothing = result.catches.length === 0 && lootEmpty && tone !== 'failed';
   return (
-    <section
-      class={`reveal-card trip-reveal ${tone}`}
-      role="status"
-      aria-labelledby="trip-reveal-heading"
+    <RevealShell
+      id="trip-reveal-heading"
+      title={revealTitle(tone)}
+      class={`trip-reveal ${tone}`}
+      status
+      onDismiss={onDismiss}
     >
-      <h3 id="trip-reveal-heading">{revealTitle(tone)}</h3>
       {creature !== undefined && (
         <p class="reveal-who">
           {info === null ? (
@@ -140,29 +140,22 @@ export function TripReveal({
       {!lootEmpty && loot !== undefined && (
         <div class="trip-loot">
           <p class="label">What it brought home</p>
-          <div class="reward-row">
-            <RewardPile source={source} label={pileLabel(source)} />
-            <ul class="reward-badges" aria-label="Parts and supplies">
-              {partsEntries(loot.parts).map((p) => (
-                <li key={p.kind}>
-                  <PartCount kind={p.kind} amount={p.amount} />
-                </li>
-              ))}
-              {supplies.map((s) => (
-                <li key={s.id}>
-                  <span class="part-count supply-count">
-                    <GameIcon
-                      icon={{ kind: 'supply', id: supplyKindOf(s.id) ?? 'unknown' }}
-                      scale={2}
-                    />
-                    <span class="part-amount pix">{s.amount}</span>
-                    <span class="cost-name">{s.name}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <LootList loot={{ ...loot, parts: {}, supplies: [] }} label="Gear and blueprints" />
+          <RewardSummary
+            source={source}
+            prefix="Loot"
+            countsLabel="Parts and supplies"
+            counts={[
+              ...partCountItems(loot.parts),
+              ...supplies.map((s) => ({
+                key: s.id,
+                icon: { kind: 'supply', id: supplyKindOf(s.id) ?? 'unknown' } as const,
+                amount: s.amount,
+                name: s.name,
+              })),
+            ]}
+          >
+            <LootList loot={loot} counted label="Gear and blueprints" />
+          </RewardSummary>
         </div>
       )}
 
@@ -259,12 +252,6 @@ export function TripReveal({
           </ul>
         </div>
       )}
-
-      <p>
-        <button type="button" class="primary" onClick={onDismiss}>
-          Got it
-        </button>
-      </p>
-    </section>
+    </RevealShell>
   );
 }

@@ -101,7 +101,10 @@ describe('what the trip brought home', () => {
       'glimmer',
       'supply-lure',
     ]);
-    expect(pileLabel(source)).toBe('Loot: Scrap, Ember Shard, Glimmer, Lure');
+    expect(pileLabel(source, 'Loot')).toBe('Loot: Scrap, Ember Shard, Glimmer, Lure');
+    expect(pileLabel({ bait: 3, essence: 1, parts: { scrap: 1 } }, 'Rewards')).toBe(
+      'Rewards: Scrap, Essence, Bait',
+    );
   });
 
   it('is empty for a recall and for a trip without loot', () => {

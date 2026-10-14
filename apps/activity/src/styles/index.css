@@ -45,6 +45,7 @@
 @import './components/coach.css';
 @import './components/gear-tokens.css';
 @import './components/item-frame.css';
+@import './components/count-badge.css';
 @import './views/workshop.css';
 @import './views/inventory.css';
 @import './views/item-detail.css';
