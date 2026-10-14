@@ -103,6 +103,8 @@ Note the overlap on purpose: the Scorched and Overgrown marks share names with t
 
 **Sentence habits.** A short statement turned by a second clause: "It is calm and slow to anger, and very hard to move once it has dug in." Lists of three. Lore often ends on a quiet truth: "nobody remembers the way."
 
+**Counts.** Counts against a total use a spaced slash: 1 / 3. The unit follows the count: "Room 1 / 3", "200 / 2500 XP". Never "1 of 3". A test guards this (`count-wording.test.ts` in `apps/activity` and `packages/game`).
+
 ## How to add an entry
 
 Add an entry in the same PR as the content. Keep it short. Use the template for your kind. Mark anything new with `(compendium detail, not shipped)`, and mark any reading of the content with `(inferred)`.

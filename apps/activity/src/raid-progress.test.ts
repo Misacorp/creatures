@@ -60,8 +60,8 @@ describe('the season row', () => {
       'done',
       'now',
     ]);
-    expect(seasonText({ index: 1, week: 2 })).toBe('Week 2 of 5 this season');
-    expect(seasonText({ index: 1, week: 5 })).toBe('Week 5 of 5: the Festival ends the season');
+    expect(seasonText({ index: 1, week: 2 })).toBe('Week 2 / 5 this season');
+    expect(seasonText({ index: 1, week: 5 })).toBe('Week 5 / 5: the Festival ends the season');
   });
 
   it('has no pips for a week without a season', () => {
@@ -150,7 +150,7 @@ describe('what a finale did', () => {
         fusionCount: 1,
         firstOnServer: false,
       }),
-    ).toContain('fusion 1 of 5');
+    ).toContain('fusion 1 / 5');
     expect(
       festivalGrantText({
         species: 'lanternfin',

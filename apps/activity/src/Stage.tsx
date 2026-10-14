@@ -437,7 +437,7 @@ function StageUnit(props: UnitProps) {
 
   const spoken =
     `${props.slot === null ? '' : `Acts ${ordinal(props.slot)}, `}${c.name}${mine ? ', yours' : ''}${ko ? ', knocked out' : ''}` +
-    (props.hp === null || ko ? '' : `, HP ${String(props.hp.current)} of ${String(props.hp.max)}`) +
+    (props.hp === null || ko ? '' : `, HP ${String(props.hp.current)} / ${String(props.hp.max)}`) +
     (badge === null
       ? ''
       : `, ${props.abilityId === null ? 'ability' : abilityName(props.abilityId)} ${badge.label.toLowerCase()}`);
@@ -772,7 +772,7 @@ export function Stage({
           current={state.bossHp}
           max={hpMax}
           previous={previousHp}
-          label={`${boss.name} HP: ${String(state.bossHp)} of ${String(hpMax)}`}
+          label={`${boss.name} HP: ${String(state.bossHp)} / ${String(hpMax)}`}
           {...(single ? { text: `${String(state.bossHp)} / ${String(hpMax)}` } : {})}
         />
         <div class={`stage-line${strikeItem === undefined ? '' : ' has-strike'}`}>

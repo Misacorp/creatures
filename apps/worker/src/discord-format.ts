@@ -185,7 +185,7 @@ export interface PhasePost {
 /** The sentence about the server's rank after a finale. */
 function rankLine(rank: RankPost): string {
   const lead =
-    rank.parties > 1 ? `${String(rank.partiesWon)} of ${String(rank.parties)} parties won. ` : '';
+    rank.parties > 1 ? `${String(rank.partiesWon)} / ${String(rank.parties)} parties won. ` : '';
   if (rank.after > rank.before) return `${lead}The server climbs to Rank ${String(rank.after)}.`;
   if (rank.after < rank.before) {
     return `${lead}${rank.festival ? 'The Festival is over. ' : ''}The server eases to Rank ${String(rank.after)}.`;

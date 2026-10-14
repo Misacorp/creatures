@@ -44,12 +44,12 @@ describe('headline and outcome', () => {
 
   it('describes how the stage ended, with the rounds played', () => {
     expect(outcomeLine(closeWin)).toBe(
-      `Phase 1 cleared after ${String(closeWin.rounds)} of 10 rounds.`,
+      `Phase 1 cleared after ${String(closeWin.rounds)} / 10 rounds.`,
     );
     expect(outcomeLine(closeLoss)).toBe(
-      `Phase 1 not cleared after ${String(closeLoss.rounds)} of 10 rounds.`,
+      `Phase 1 not cleared after ${String(closeLoss.rounds)} / 10 rounds.`,
     );
-    expect(outcomeLine(finale)).toBe('Finale not cleared after 12 of 12 rounds.');
+    expect(outcomeLine(finale)).toBe('Finale not cleared after 12 / 12 rounds.');
   });
 
   it('says when every creature was knocked out, and by which round', () => {

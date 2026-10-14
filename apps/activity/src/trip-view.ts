@@ -270,7 +270,7 @@ export function recallKeeps(trip: Trip, now: number): number {
 export interface ExplorerXp {
   value: number;
   max: number;
-  /** "Top rank" at the top; undefined for the bar's own "0 of 200 XP". */
+  /** "Top rank" at the top; undefined for the bar's own "0 / 200 XP". */
   text?: string;
   /** The current rank, where the creature starts, and the next one, its destination (none at the top). */
   startCap: string;
@@ -293,7 +293,7 @@ export function explorerXp(explorer: Pick<ExplorerView, 'rank' | 'xp' | 'nextRan
 }
 
 interface SlotsLine {
-  /** "1 of 2 slots in use". */
+  /** "1 / 2 slots in use". */
   use: string;
   /** What opens the next slot, or null when every slot is open. */
   next: string | null;
@@ -303,7 +303,7 @@ interface SlotsLine {
 
 /** The open slots and the progress to the next one (`slots.next` of the state). */
 export function slotsLine(slots: Slots): SlotsLine {
-  const use = `${String(slots.used)} of ${String(slots.total)} ${slots.total === 1 ? 'slot' : 'slots'} in use`;
+  const use = `${String(slots.used)} / ${String(slots.total)} ${slots.total === 1 ? 'slot' : 'slots'} in use`;
   if (slots.next === null) return { use, next: null, progress: null };
   if (slots.next.kind === 'trips') {
     return {

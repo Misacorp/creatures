@@ -2,7 +2,7 @@ import { cssVars } from './css-vars';
 import { xpBarView } from './xp-bar';
 
 /**
- * A thick XP bar with its words ("0 of 200 XP") drawn over the fill. The words carry an ink
+ * A thick XP bar with its words ("0 / 200 XP") drawn over the fill. The words carry an ink
  * outline, so they read on the gold fill and on the dark trough alike, and the fill sits inside an
  * inner margin so it shows at both ends. Optional end caps sit outside the bar: `startCap` (the
  * current rank, where the creature starts) and `endCap` (the next rank, the destination). The fill

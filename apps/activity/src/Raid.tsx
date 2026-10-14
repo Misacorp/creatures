@@ -471,7 +471,7 @@ function TeamPicker({
   return (
     <fieldset class="picker">
       <legend>
-        Pick exactly {size} creatures ({picking.length} of {size})
+        Pick exactly {size} creatures ({picking.length} / {size})
       </legend>
       {creatures.map((c) => {
         const checked = picking.includes(c.id);

@@ -101,7 +101,7 @@ function Player({ data }: { data: ReplayView }) {
         {step.round > 0 && (
           <>
             {' '}
-            Round {step.round} of {data.rounds}.
+            Round {step.round} / {data.rounds}.
           </>
         )}
       </p>

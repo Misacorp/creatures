@@ -166,9 +166,9 @@ describe('the results', () => {
   });
 
   it('writes one sentence for the whole run', () => {
-    expect(runSentence(cleared)).toBe('Cleared at depth 1: 3 of 3 rooms cleared.');
+    expect(runSentence(cleared)).toBe('Cleared at depth 1: 3 / 3 rooms cleared.');
     expect(runSentence(lost)).toContain('Not cleared at depth');
-    expect(runSentence(lost)).toContain('0 of 3 rooms cleared');
+    expect(runSentence(lost)).toContain('0 / 3 rooms cleared');
   });
 
   it('sees a run that paid nothing, and one that paid in full', () => {
@@ -304,7 +304,7 @@ describe('the banner over the stage when a room opens', () => {
     const view = roomIntroView(room(1, 'foe'), 3);
     expect(view).toMatchObject({
       heading: 'ROOM 2',
-      place: '2 of 3',
+      place: '2 / 3',
       boss: false,
       foeId: 'puddle-imp',
       foeName: 'Puddle Imp',
@@ -319,7 +319,7 @@ describe('the banner over the stage when a room opens', () => {
     expect(view.heading).toBe('ROOM BOSS');
     expect(view.boss).toBe(true);
     expect(view.spoken).toBe(
-      'Room 3 of 3, room boss: Puddle Imp. Flooded: Tide creatures hit 20% harder.',
+      'Room 3 / 3, room boss: Puddle Imp. Flooded: Tide creatures hit 20% harder.',
     );
   });
 
