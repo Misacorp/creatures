@@ -4,10 +4,6 @@
   box-shadow: inset calc(var(--px) * -1) 0 0 var(--haze);
 }
 
-.team-tags {
-  margin: 0.25rem 0 0;
-}
-
 .train-help {
   margin-left: 0.5rem;
 }

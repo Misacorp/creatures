@@ -5,21 +5,18 @@
  */
 import type { RowSlotView } from './raid-api';
 import { reduceTap, slotOfCreature, type Intent, type TapContext } from './raid-slots';
+import {
+  CANCEL_ANNOUNCEMENT,
+  dropOutcome,
+  notInRowAnnouncement,
+  takenOutAnnouncement,
+  type DropOutcome,
+  type DropStatus,
+  type DropTarget,
+} from './slot-outcome';
 
-export type DropTarget = { kind: 'slot'; slot: number } | { kind: 'tray' };
-
-/** `valid` can be dropped here, `invalid` is refused, `none` does nothing (for example itself). */
-type DropStatus = 'valid' | 'invalid' | 'none';
-
-export interface DropOutcome {
-  status: DropStatus;
-  /** What to send to the server, if anything. */
-  intent: Intent | null;
-  /** A short plain explanation shown under the row. */
-  hint: string | null;
-  /** The sentence for the screen reader live region. */
-  announce: string;
-}
+/** What a raid drop comes to: what to send (a placement), or nothing. */
+export type RaidDropOutcome = DropOutcome<Intent>;
 
 export const ZONE_LABELS = { front: 'Front', middle: 'Middle', back: 'Back' } as const;
 
@@ -31,12 +28,7 @@ export function slotLabel(s: RowSlotView, speciesLabel: (id: string) => string):
   return `${where}, ${speciesLabel(s.creature.species)} level ${String(s.creature.level)}, ${owner}`;
 }
 
-const outcome = (
-  status: DropStatus,
-  intent: Intent | null,
-  hint: string | null,
-  announce: string,
-): DropOutcome => ({ status, intent, hint, announce });
+const outcome = dropOutcome<Intent>;
 
 /**
  * What happens when `creatureId` (one of the player's own, called `name`) is dropped on `target`.
@@ -48,9 +40,9 @@ export function resolveDrop(
   creatureId: string,
   name: string,
   target: DropTarget | null,
-): DropOutcome {
+): RaidDropOutcome {
   if (ctx.locked) return outcome('invalid', null, 'The row is locked.', 'The row is locked.');
-  if (target === null) return outcome('none', null, null, 'Cancelled.');
+  if (target === null) return outcome('none', null, null, CANCEL_ANNOUNCEMENT);
   if (!ctx.teamIds.includes(creatureId)) {
     const hint = 'That creature is not in your team.';
     return outcome('invalid', null, hint, hint);
@@ -58,9 +50,9 @@ export function resolveDrop(
 
   if (target.kind === 'tray') {
     if (slotOfCreature(ctx.row, creatureId) === null) {
-      return outcome('none', null, null, `${name} is not in the row.`);
+      return outcome('none', null, null, notInRowAnnouncement(name));
     }
-    return outcome('valid', { type: 'unplace', creatureId }, null, `${name} taken out of the row.`);
+    return outcome('valid', { type: 'unplace', creatureId }, null, takenOutAnnouncement(name));
   }
 
   const tap = reduceTap(ctx, creatureId, { kind: 'slot', slot: target.slot });
@@ -98,9 +90,3 @@ export function cursorStart(row: readonly RowSlotView[], selected: string | null
   }
   return (sorted.find((s) => s.creature === null) ?? sorted[0])?.slot ?? 0;
 }
-
-export function pickUpAnnouncement(name: string): string {
-  return `${name} picked up. Use the arrow keys to choose a slot, Enter to drop it, Escape to cancel.`;
-}
-
-export const CANCEL_ANNOUNCEMENT = 'Cancelled.';

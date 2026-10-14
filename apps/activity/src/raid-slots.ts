@@ -6,11 +6,7 @@
  */
 import { neighbours } from '@creatures/engine';
 import type { RowSlotView } from './raid-api';
-
-/** The selected creature id, or null. */
-export type Selection = string | null;
-
-export type Tap = { kind: 'creature'; creatureId: string } | { kind: 'slot'; slot: number };
+import type { Selection, Tap } from './slot-outcome';
 
 export type Intent =
   { type: 'place'; creatureId: string; slot: number } | { type: 'unplace'; creatureId: string };
@@ -45,9 +41,8 @@ export function reduceTap(ctx: TapContext, selected: Selection, tap: Tap): TapRe
   if (ctx.locked) return none(null, 'The row is locked.');
 
   if (tap.kind === 'creature') {
-    if (!ctx.teamIds.includes(tap.creatureId))
-      return none(selected, 'That creature is not in your team.');
-    return none(selected === tap.creatureId ? null : tap.creatureId);
+    if (!ctx.teamIds.includes(tap.id)) return none(selected, 'That creature is not in your team.');
+    return none(selected === tap.id ? null : tap.id);
   }
 
   const target = ctx.row.find((s) => s.slot === tap.slot);

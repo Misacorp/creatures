@@ -18,7 +18,6 @@
 @import './components/tabs.css';
 @import './components/cards.css';
 @import './views/raid.css';
-@import './components/party-slots.css';
 @import './views/replay.css';
 @import './views/finale-abilities.css';
 @import './views/live.css';
@@ -29,7 +28,7 @@
 @import './components/pixel-heading.css';
 @import './components/element-chip.css';
 @import './components/bars.css';
-@import './components/placement-dnd.css';
+@import './components/slot-row.css';
 @import './components/creature-card.css';
 @import './views/boss-card.css';
 @import './stage/stage.css';

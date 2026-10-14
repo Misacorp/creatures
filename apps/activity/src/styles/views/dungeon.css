@@ -69,37 +69,6 @@
   margin: 0.5rem 0;
 }
 
-/*
-  The team's row: three small slots side by side, left to right, in the look of the raid placement
-  rectangles (the same .party-slot): the slot number at the top left, the sprite, the name and the
-  level. There is no text about rows.
-*/
-.dungeon-strip {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5rem;
-  max-width: 24rem;
-  padding: 0.25rem 0 0.5rem;
-}
-
-.dungeon-strip .party-slot {
-  width: 100%;
-  min-height: 6rem;
-}
-
-.dungeon-strip .party-slot.empty {
-  justify-content: space-between;
-}
-
-.dungeon-slot .slot-meta {
-  color: var(--haze);
-  font-size: 0.6875rem;
-}
-
-.dungeon-tray {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 6.5rem), 1fr));
-}
-
 .dungeon-enter .primary {
   width: 100%;
 }

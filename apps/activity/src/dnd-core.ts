@@ -179,3 +179,41 @@ export function verticalNeighbour<T>(
   }
   return best.id;
 }
+
+export interface SlotBox {
+  slot: number;
+  rect: Rect;
+}
+
+/**
+ * The slot the keyboard cursor moves to from slot `current` on a key press, or null when the key
+ * does nothing (or there is nowhere to go). Left and right step through the slots in slot order,
+ * stopping at the ends; Home and End jump. Up and down move to the line above or below when the
+ * slots wrap onto several lines (`vertical`, the raid's zones); in a single row (`vertical` off) they
+ * mean "before" and "after", like left and right.
+ */
+export function slotKeyTarget(
+  slots: readonly SlotBox[],
+  current: number,
+  key: string,
+  vertical: boolean,
+): number | null {
+  const sorted = [...slots].sort((a, b) => a.slot - b.slot);
+  if (vertical && (key === 'ArrowUp' || key === 'ArrowDown')) {
+    return verticalNeighbour(
+      sorted.map((s) => ({ id: s.slot, rect: s.rect })),
+      current,
+      key === 'ArrowUp' ? 'up' : 'down',
+    );
+  }
+  const step = key === 'ArrowUp' ? 'ArrowLeft' : key === 'ArrowDown' ? 'ArrowRight' : key;
+  const to = nextIndex(
+    Math.max(
+      0,
+      sorted.findIndex((s) => s.slot === current),
+    ),
+    step,
+    sorted.length,
+  );
+  return to === null ? null : (sorted[to]?.slot ?? null);
+}

@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  CANCEL_ANNOUNCEMENT,
-  cursorStart,
-  pickUpAnnouncement,
-  resolveDrop,
-  slotLabel,
-  slotStatuses,
-} from './raid-dnd';
+import { cursorStart, resolveDrop, slotLabel, slotStatuses } from './raid-dnd';
+import { CANCEL_ANNOUNCEMENT } from './slot-outcome';
 import type { RowSlotView } from './raid-api';
 import type { TapContext } from './raid-slots';
 
@@ -147,10 +141,5 @@ describe('keyboard helpers', () => {
     expect(slotLabel(row[1] as RowSlotView, label)).toBe('Slot 2, Front, empty');
     expect(slotLabel(row[3] as RowSlotView, label)).toBe('Slot 4, Middle, SPLASHET level 3, you');
     expect(slotLabel(row[2] as RowSlotView, label)).toBe('Slot 3, Middle, CINDLE level 4, Jun');
-  });
-
-  it('explains the keys when a creature is picked up', () => {
-    expect(pickUpAnnouncement('Alpha')).toContain('Alpha picked up');
-    expect(pickUpAnnouncement('Alpha')).toContain('Escape');
   });
 });

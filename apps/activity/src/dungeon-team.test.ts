@@ -128,26 +128,24 @@ describe('taps', () => {
   });
 
   it('puts the selected creature in the tapped place', () => {
-    const result = reduceTap(EMPTY_SLOTS, 'a', { kind: 'slot', index: 2 });
+    const result = reduceTap(EMPTY_SLOTS, 'a', { kind: 'slot', slot: 2 });
     expect(result.slots).toEqual([null, null, 'a']);
     expect(result.selected).toBeNull();
   });
 
   it('picks up a placed creature by tapping its place, and explains a tap on an empty place', () => {
-    expect(reduceTap(['a', null, null], null, { kind: 'slot', index: 0 }).selected).toBe('a');
-    const none = reduceTap(EMPTY_SLOTS, null, { kind: 'slot', index: 0 });
+    expect(reduceTap(['a', null, null], null, { kind: 'slot', slot: 0 }).selected).toBe('a');
+    const none = reduceTap(EMPTY_SLOTS, null, { kind: 'slot', slot: 0 });
     expect(none.slots).toBe(EMPTY_SLOTS);
     expect(none.hint).toContain('first');
   });
 
   it('lets go when the selected creature is tapped in its own place', () => {
-    expect(reduceTap(['a', null, null], 'a', { kind: 'slot', index: 0 }).selected).toBeNull();
+    expect(reduceTap(['a', null, null], 'a', { kind: 'slot', slot: 0 }).selected).toBeNull();
   });
 
   it('refuses a place that does not exist', () => {
-    expect(reduceTap(EMPTY_SLOTS, 'a', { kind: 'slot', index: 5 }).hint).toContain(
-      'does not exist',
-    );
+    expect(reduceTap(EMPTY_SLOTS, 'a', { kind: 'slot', slot: 5 }).hint).toContain('does not exist');
   });
 });
 

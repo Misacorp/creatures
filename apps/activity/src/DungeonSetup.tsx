@@ -2,17 +2,11 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { DungeonPrerun } from './DungeonPrerun';
 import { DungeonTeam } from './DungeonTeam';
-import {
-  isComplete,
-  pruneSlots,
-  strongestFirst,
-  strongestThree,
-  type Selection,
-  type Slots,
-} from './dungeon-team';
+import { isComplete, pruneSlots, strongestFirst, strongestThree, type Slots } from './dungeon-team';
 import { blockedText, isRetryOffer, RETRY_TEXT } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
 import { GlossaryTag } from './Glossary';
+import type { Selection } from './slot-outcome';
 
 interface Props {
   today: DungeonToday;

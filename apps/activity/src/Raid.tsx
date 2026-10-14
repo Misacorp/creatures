@@ -26,14 +26,8 @@ import {
   type RaidPhaseId,
   type RaidView,
 } from './raid-api';
-import {
-  reduceTap,
-  togglePick,
-  unplaceIntent,
-  type Intent,
-  type Selection,
-  type TapResult,
-} from './raid-slots';
+import { reduceTap, togglePick, unplaceIntent, type Intent, type TapResult } from './raid-slots';
+import type { Selection } from './slot-outcome';
 import { festivalGrantText, rankChangeText } from './raid-progress';
 import { phaseName } from './raid-text';
 import { BossCard } from './BossCard';
@@ -43,7 +37,8 @@ import type { NowTarget } from './raid-now';
 import { showFullResults } from './raid-timeline';
 import { RaidNews } from './RaidNews';
 import { Placement } from './Placement';
-import { resolveDrop, type DropOutcome, type DropTarget } from './raid-dnd';
+import { resolveDrop, type RaidDropOutcome } from './raid-dnd';
+import type { DropTarget } from './slot-outcome';
 
 interface Loaded {
   view: RaidView;
@@ -263,7 +258,7 @@ export function Raid({
   };
 
   /** A creature was dropped: decide, then send what the server must do. The server still decides. */
-  function handleDrop(creatureId: string, target: DropTarget | null): DropOutcome {
+  function handleDrop(creatureId: string, target: DropTarget | null): RaidDropOutcome {
     const name = team?.creatures.find((c) => c.creatureId === creatureId)?.name ?? 'Creature';
     const outcome = resolveDrop(ctx, creatureId, name, target);
     setSelected(null);
