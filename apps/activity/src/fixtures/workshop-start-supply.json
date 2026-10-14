@@ -464,6 +464,7 @@
         "mine": true,
         "holders": ["Player 3"]
       }
-    ]
+    ],
+    "loungerId": "ddcabaa8-4a31-4b66-98cd-94de571b6fbe"
   }
 }

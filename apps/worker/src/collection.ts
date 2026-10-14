@@ -33,6 +33,7 @@ import {
 import { equippedByCreature, openJobsByCreature, rowToItem, type GearRow } from './gear-store';
 import { getBalances, lookupSpend, spend, type Currency, type LedgerStorage } from './ledger';
 import { settleSpend } from './keyed-action';
+import { Lounge } from './lounger';
 import { GameError, atomically, type Outcome } from './outcome';
 import { recordServerFirst, type ServerFirstKind } from './server-firsts';
 import { speciesOf } from './species';
@@ -137,6 +138,11 @@ export interface PlayerState {
   /** Median over players of their highest creature level; null while nobody has a creature. */
   trainingMedianLevel: number | null;
   serverFirsts: ServerFirstView[];
+  /**
+   * The creature that lounges in the living room: an idle creature of the player (re-picked at random
+   * when the stored one is busy or gone), or null when every creature is busy or there is none.
+   */
+  loungerId: string | null;
 }
 
 export interface CollectionDeps {
@@ -158,6 +164,11 @@ export interface CollectionDeps {
    * so none of them ever consumes the draws of a catch.
    */
   tripRng: Rng;
+  /**
+   * Live randomness for picking the lounger. Optional: defaults to crypto; tests inject a seeded one.
+   * Separate from `rng`, so a pick never consumes the draws of a catch.
+   */
+  loungerRng?: Rng;
   /** The analytics event log. Optional: without it nothing is logged. */
   analytics?: Analytics;
   /** The dev tools' force flags (staging only); passed on to expeditions. */
@@ -189,8 +200,14 @@ function storedString(result: unknown, key: string): string | undefined {
 export class Collection {
   /** Expeditions: sending, the end-of-trip choice, claiming and their views. */
   readonly trips: Expeditions;
+  /** The living room: the lounger of a player and the room data of a set of players. */
+  readonly lounge: Lounge;
 
   constructor(private readonly deps: CollectionDeps) {
+    this.lounge = new Lounge({
+      storage: deps.storage,
+      ...(deps.loungerRng === undefined ? {} : { rng: deps.loungerRng }),
+    });
     this.trips = new Expeditions({
       storage: deps.storage,
       now: deps.now,
@@ -395,6 +412,7 @@ export class Collection {
       supplies: trips.supplies,
       trainingMedianLevel: medianLevel,
       serverFirsts: this.serverFirsts(userId),
+      loungerId: this.lounge.resolve(userId),
     };
   }
 

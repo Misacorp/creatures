@@ -4,7 +4,9 @@ import {
   ClaimBodySchema,
   EvolveBodySchema,
   IdSchema,
+  LoungerBodySchema,
   NicknameBodySchema,
+  RoomBodySchema,
   StartExpeditionBodySchema,
   StarterBodySchema,
   TrainBodySchema,
@@ -52,6 +54,23 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
         timezone: core.timezone(),
         leetSync: core.leetSyncStatus(),
       });
+    },
+  },
+  '/api/lounger': {
+    PUT: async (request, { user, core }) => {
+      const body = await parseBody(request, LoungerBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = core.collection.lounge.choose(user.id, body.creatureId);
+      if (!outcome.ok) return failure(outcome);
+      return json({ loungerId: outcome.value.loungerId });
+    },
+  },
+  '/api/room': {
+    // A POST because it carries a body; it only reads (and may re-pick a lounger).
+    POST: async (request, { core }) => {
+      const body = await parseBody(request, RoomBodySchema);
+      if (body === undefined) return invalidBody();
+      return json({ residents: core.collection.lounge.room(body.userIds) });
     },
   },
   '/api/starter': {
