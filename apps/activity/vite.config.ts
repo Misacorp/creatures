@@ -10,6 +10,10 @@ export default defineConfig(({ command, mode }) => {
   // (Not `mode`: `vite build` is `production` mode for staging too.)
   const targetEnv = loadEnv(mode, '.', 'TARGET_ENV')['TARGET_ENV'];
   const devToolsBuild = command === 'serve' || targetEnv === 'staging';
+  // The component workbench (`workbench.html`, `src/workbench/`) is a second page behind the same
+  // gate: it is a build input only when the dev tools are in, so a production build never emits it.
+  const input: Record<string, string> = { index: 'index.html' };
+  if (devToolsBuild) input['workbench'] = 'workbench.html';
   return {
     plugins: [preact()],
     define: { __DEV_TOOLS_BUILD__: JSON.stringify(devToolsBuild) },
@@ -18,6 +22,7 @@ export default defineConfig(({ command, mode }) => {
       emptyOutDir: true,
       // CSP forbids inline resources (and the font/img policies are strict): never inline assets.
       assetsInlineLimit: 0,
+      rollupOptions: { input },
     },
     server: {
       // `pnpm dev` in apps/worker serves the API on 8787.

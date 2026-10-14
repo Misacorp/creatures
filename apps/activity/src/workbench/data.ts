@@ -1,0 +1,118 @@
+/**
+ * Fixture data for the workbench pages: lists to pick from (species, elements, parts, icons...)
+ * taken from the shipped content, and a sample raid week for the pages that need a whole view.
+ * Nothing here calls the API.
+ */
+import { PART_KINDS, content, expeditionContent, gearContent } from '@creatures/game';
+import type { CreatureInfo } from '../creature-info';
+import raidFestival from '../fixtures/raid-festival.json';
+import type { GearRarity, PartKind } from '../gear-types';
+import { BUNDLED_GLYPHS } from '../glyphs';
+import type { IconRef } from '../icon-ref';
+import { parseRaidView, type RaidView } from '../raid-api';
+import {
+  BUNDLED_BANNER_SPRITES,
+  BUNDLED_BOSS_SPRITES,
+  BUNDLED_CREATURE_SPRITES,
+} from '../sprites/creature-sprites';
+import type { SpriteDef } from '../sprites/sprite-data';
+
+export const SPECIES_IDS: readonly string[] = content.creatures.map((c) => c.id);
+export const ELEMENT_IDS: readonly string[] = content.elements.map((e) => e.id);
+export const ROLE_IDS: readonly string[] = ['setter', 'payoff', 'support', 'guard'];
+export const BOSS_IDS: readonly string[] = content.bosses.map((b) => b.id);
+export const DESTINATION_IDS: readonly string[] = expeditionContent.destinations.map((d) => d.id);
+export const SUPPLY_IDS: readonly string[] = expeditionContent.supplies.map((s) => s.id);
+export const GEAR_BASE_IDS: readonly string[] = gearContent.bases.map((b) => b.id);
+export const PARTS: readonly PartKind[] = PART_KINDS;
+export const RARITIES: readonly GearRarity[] = ['common', 'rare', 'epic', 'festival'];
+export const GLYPH_IDS: readonly string[] = Object.keys(BUNDLED_GLYPHS);
+
+/** "None" in a select; the one word every optional select uses. */
+export const NONE = 'none';
+
+/** A few glossary entries a tag can open (the ids of the shipped glossary). */
+export const GLOSSARY_SAMPLE: readonly string[] = [
+  NONE,
+  'festival',
+  'boss-rank',
+  'shiny',
+  'blueprint',
+  'essence',
+  'bait',
+  'landmark',
+  'streak',
+  'push-on',
+  'gear',
+  'crit',
+];
+
+/** The icons a count badge or a game icon can show, by the name the page offers. */
+export const ICONS: Readonly<Record<string, IconRef>> = {
+  'glyph: bait': { kind: 'glyph', id: 'bait' },
+  'glyph: gem': { kind: 'glyph', id: 'gem' },
+  'glyph: orb': { kind: 'glyph', id: 'orb' },
+  'glyph: flag': { kind: 'glyph', id: 'flag' },
+  'glyph: star': { kind: 'glyph', id: 'star' },
+  'glyph: clock': { kind: 'glyph', id: 'clock' },
+  'glyph: skull': { kind: 'glyph', id: 'skull' },
+  'glyph: blueprint': { kind: 'glyph', id: 'blueprint' },
+  'glyph: unknown (the fallback)': { kind: 'glyph', id: 'unknown' },
+  'supply: lure': { kind: 'supply', id: 'lure' },
+  'supply: map-scrap': { kind: 'supply', id: 'map-scrap' },
+  'supply: lantern': { kind: 'supply', id: 'lantern' },
+  'supply: satchel': { kind: 'supply', id: 'satchel' },
+  'part: scrap': { kind: 'part', part: 'scrap' },
+  'part: tide-shard': { kind: 'part', part: 'tide-shard' },
+  'part: ember-shard': { kind: 'part', part: 'ember-shard' },
+  'part: grove-shard': { kind: 'part', part: 'grove-shard' },
+  'part: spark-shard': { kind: 'part', part: 'spark-shard' },
+  'part: glimmer': { kind: 'part', part: 'glimmer' },
+  'gear: trail-charm': { kind: 'gear', baseId: 'trail-charm' },
+  'gear: wave-band': { kind: 'gear', baseId: 'wave-band' },
+  'gear: storm-trinket': { kind: 'gear', baseId: 'storm-trinket' },
+  'element: tide': { kind: 'element', element: 'tide' },
+  'element: ember': { kind: 'element', element: 'ember' },
+  'element: grove': { kind: 'element', element: 'grove' },
+  'element: spark': { kind: 'element', element: 'spark' },
+};
+export const ICON_NAMES: readonly string[] = Object.keys(ICONS);
+const FALLBACK_ICON: IconRef = { kind: 'glyph', id: 'unknown' };
+
+export function iconOf(name: string): IconRef {
+  return ICONS[name] ?? FALLBACK_ICON;
+}
+
+/** What the creature popover needs for a species (its element and role come from the content). */
+export function creatureInfoFor(species: string, name: string, level: number): CreatureInfo {
+  const def = content.creatures.find((c) => c.id === species);
+  return {
+    name,
+    species,
+    level,
+    element: def?.element ?? 'tide',
+    role: def?.role ?? 'setter',
+  };
+}
+
+/** The display name of a species (its id when it is not in the content). */
+export function speciesLabel(species: string): string {
+  return content.creatures.find((c) => c.id === species)?.name ?? species;
+}
+
+/** Every sprite the Sprite page can draw, by the name the page offers. */
+export const SPRITES: Readonly<Record<string, SpriteDef>> = {
+  ...Object.fromEntries(
+    Object.entries(BUNDLED_CREATURE_SPRITES).map(([id, sprite]) => [`creature: ${id}`, sprite]),
+  ),
+  ...Object.fromEntries(
+    Object.entries(BUNDLED_BOSS_SPRITES).map(([id, sprite]) => [`boss: ${id}`, sprite]),
+  ),
+  ...Object.fromEntries(
+    Object.entries(BUNDLED_BANNER_SPRITES).map(([id, sprite]) => [`banner: ${id}`, sprite]),
+  ),
+};
+export const SPRITE_NAMES: readonly string[] = Object.keys(SPRITES);
+
+/** The sample raid week (a Festival week of the test fixtures), parsed like a server answer. */
+export const SAMPLE_RAID: RaidView = parseRaidView(raidFestival);

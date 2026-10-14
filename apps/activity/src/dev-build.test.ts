@@ -9,6 +9,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const MARKERS = ['DEV_PANEL_MARKER_7f3a', 'dev-drawer', '/api/dev/'];
 
+/**
+ * The component workbench (`workbench.html`, `src/workbench/`) is staging-only the same way: a second
+ * build input that exists only when the dev tools are in. Strings only it has: its marker, and a
+ * class of its stylesheet.
+ */
+const WORKBENCH_MARKERS = ['WORKBENCH_MARKER_5c1e', 'wb-frame-stage'];
+
 type Output = Rollup.RollupOutput | Rollup.RollupOutput[] | Rollup.RollupWatcher;
 
 async function buildFiles(targetEnv: string): Promise<{ name: string; text: string }[]> {
@@ -38,11 +45,21 @@ describe('the debug panel and the production build', () => {
     for (const marker of MARKERS) {
       expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
     }
+    // The game page is still there, and the workbench is not: no page, no code, no styles.
+    expect(files.some((f) => f.name === 'index.html')).toBe(true);
+    expect(files.some((f) => f.name.includes('workbench'))).toBe(false);
+    for (const marker of WORKBENCH_MARKERS) {
+      expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
+    }
   }, 60_000);
 
   it('is not in a build that does not say it is for staging', async () => {
     const files = await buildFiles('');
     for (const marker of MARKERS) {
+      expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
+    }
+    expect(files.some((f) => f.name.includes('workbench'))).toBe(false);
+    for (const marker of WORKBENCH_MARKERS) {
       expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
     }
   }, 60_000);
@@ -54,5 +71,21 @@ describe('the debug panel and the production build', () => {
     const entry = files.find((f) => f.name.endsWith('.js') && /index/.test(f.name));
     expect(entry?.text.includes('DEV_PANEL_MARKER_7f3a')).toBe(false);
     expect(files.some((f) => f.name.endsWith('.css') && f.text.includes('dev-drawer'))).toBe(true);
+  }, 60_000);
+
+  it('has the workbench page in a staging build, apart from the game page', async () => {
+    const files = await buildFiles('staging');
+    expect(files.some((f) => f.name === 'workbench.html')).toBe(true);
+    expect(files.some((f) => f.name === 'index.html')).toBe(true);
+    const bundles = files.filter((f) => f.text.includes('WORKBENCH_MARKER_5c1e'));
+    expect(bundles.map((f) => f.name.endsWith('.js'))).toEqual([true]);
+    // The game's own page never loads the workbench bundle.
+    const gamePage = files.find((f) => f.name === 'index.html');
+    expect(gamePage?.text.includes(bundles[0]?.name ?? 'x')).toBe(false);
+    expect(files.some((f) => f.name.endsWith('.css') && f.text.includes('wb-frame-stage'))).toBe(
+      true,
+    );
+    // It makes no API calls: nothing in the workbench bundle names the API.
+    expect(bundles[0]?.text.includes('/api/')).toBe(false);
   }, 60_000);
 });
