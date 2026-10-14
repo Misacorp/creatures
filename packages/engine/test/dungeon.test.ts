@@ -361,6 +361,13 @@ describe('the team stands in one row, left to right', () => {
     expect(built.row.map((s) => s.id)).toEqual(['guard', 'setter', 'payoff']);
   });
 
+  it('a Support in the middle still buffs both neighbours (the row of three has no zone edges)', () => {
+    const buffs = play(foe())
+      .filter((e) => e.t === 'support_buff' && e.round === 1)
+      .map((e) => (e as { target: string }).target);
+    expect(buffs).toEqual(['left', 'right']);
+  });
+
   it('a zone gimmick hits the creature at that position', () => {
     const at = (zone: 'front' | 'middle' | 'back') =>
       hits(play(foe({ gimmicks: [gimmick({ op: 'hit_zone', zone, power: 10_000 })] })), 'gimmick');

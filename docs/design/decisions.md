@@ -963,3 +963,20 @@ The raid Placement and the dungeon team now draw their slots, tray, drag ghost a
 **Tradeoff.** Presence is per activity instance: players who opened the game from different channels do not see each other. Misa accepted this. A guild-wide room would need a server heartbeat.
 
 **Also.** Spot assignment is client-side and deterministic (FNV-1a of instance id and user id), so everyone in an instance sees the same room. Speech bubbles and the idle pan are local cosmetics using browser crypto randomness; they are not game state, so the server-RNG rule does not apply to them.
+
+## 2026-10-14: Raid neighbours stop at row edges
+
+**Decision.** In the raid, "beside" means directly left or right **in the same zone** (Front, Middle or Back, the rows of the board). The last slot of Front is no longer beside the first slot of Middle. The engine has a new `zoneNeighbours(index, length)`; the plain `neighbours()` is kept for the dungeon only. The Support buff uses the zone-aware version in the raid. The client's "who works with this creature" highlight (`adjacentSlots`) uses the same engine helper, so the board cannot drift from the fight.
+
+**Why.** The raid board is now a grid of three rows (Front, Middle, Back) by one lane per player. A grid can only show adjacency honestly if it means "next to me in my row": a tile at the end of one row cannot be drawn beside the first tile of the next. The attack patterns that come next (cover, Slam splash) also depend on "beside" being the same thing the player sees.
+
+**What it touches.** Only the Support buff in the raid. The raid's Guard intercept already worked by zone (`guardReach: 'zone'`), so it is unchanged. The dungeon is a row of three with one slot per zone, so zone-aware adjacency would leave everyone with no neighbours; dungeon fights set `guardReach: 'adjacent'`, which keeps the plain line for both the Support buff and the Guard. A dungeon test (a middle Support still buffs both sides) and the unchanged dungeon fight tests prove it; the dungeon sim section is identical on seed leet2 and differs on leet and leet3 only by run counts shifted by the raid results upstream of it (the dungeon fights themselves are untouched).
+
+**Sim result** (full `pnpm sim`, before and after, seeds leet, leet2, leet3). The raid targets barely move:
+
+- Typical-group finale win: leet 59.7% to 60.3% (limit 40% to 60%, now **fails** by 0.25 points), leet2 51.9% to 52.2%, leet3 52.7% to 52.6%.
+- Phase 2 win: leet 82.6% to 82.9%, leet2 78.9% to 79.2%, leet3 81.6% to 81.7%.
+- Boss spread: leet 12.5% to 9.8%, leet2 12.2% to 13.2%, leet3 17.7% to 18.1% (already failing before this change on leet3, limit 15%).
+- Finale win with 15 players, leet3: 43.1% to 42.6%.
+
+No retune was made; the numbers are handed to the lead. `exp-casual-discovery` also failed before this change on leet (0.34 to 0.32) and leet2 (0.32 to 0.32), so it is unrelated. `pnpm scalars` output is unchanged.

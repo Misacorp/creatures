@@ -4,7 +4,7 @@
  * where it goes. The functions return what to do; the screen sends the intent to the server, which
  * decides (it may still refuse, for example when another player took the slot a moment ago).
  */
-import { neighbours } from '@creatures/engine';
+import { zoneNeighbours } from '@creatures/engine';
 import type { RowSlotView } from './raid-api';
 import type { Selection, Tap } from './slot-outcome';
 
@@ -91,7 +91,7 @@ export function adjacentSlots(
 ): number[] {
   if (selected === null) return [];
   const slot = slotOfCreature(row, selected);
-  return slot === null ? [] : neighbours(slot, length);
+  return slot === null ? [] : zoneNeighbours(slot, length);
 }
 
 /** Palette size of the owner colours in the stylesheet (`owner-0` ... `owner-7`). */

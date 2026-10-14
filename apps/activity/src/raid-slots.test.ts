@@ -159,8 +159,9 @@ describe('adjacency and colours', () => {
   it('finds my creature slot and its neighbours', () => {
     expect(slotOfCreature(row, 'b')).toBe(3);
     expect(slotOfCreature(row, 'c')).toBeNull();
-    expect(adjacentSlots(row, 'b', 5)).toEqual([2, 4]);
-    expect(adjacentSlots(row, 'a', 5)).toEqual([1]);
+    // Row of 5 is Front [0], Middle [1-3], Back [4]: slot 3 is beside 2 but not the Back slot 4.
+    expect(adjacentSlots(row, 'b', 5)).toEqual([2]);
+    expect(adjacentSlots(row, 'a', 5)).toEqual([]);
     expect(adjacentSlots(row, 'c', 5)).toEqual([]);
     expect(adjacentSlots(row, null, 5)).toEqual([]);
   });
