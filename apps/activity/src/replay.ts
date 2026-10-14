@@ -135,8 +135,6 @@ export interface TurnChip {
   id: string;
   /** The creature's name (plain text). */
   label: string;
-  /** Its place in the row, from 1 (the dungeon's slot numbers); absent in the raid. */
-  slot?: number;
   /** It is acting now. */
   current: boolean;
   /** It has acted this round (and is not the one acting now). */
@@ -148,22 +146,19 @@ export interface TurnChip {
 /**
  * The chips of a turn strip for creatures in `order`, from the step the replay is at: the creature
  * acting now is `current`, those that already acted are `done`, the knocked-out ones are `ko`.
- * `slots` numbers the creatures (the dungeon); `knockedOut` replaces the step's knockouts (the
- * dungeon's creatures can start a room knocked out).
+ * `knockedOut` replaces the step's knockouts.
  */
 export function turnChips(
   order: readonly string[],
   step: Pick<StepState, 'actor' | 'acted' | 'knockedOut'>,
   labelOf: (id: string) => string,
-  options: { slots?: ReadonlyMap<string, number>; knockedOut?: (id: string) => boolean } = {},
+  options: { knockedOut?: (id: string) => boolean } = {},
 ): TurnChip[] {
   return order.map((id) => {
-    const slot = options.slots?.get(id);
     const current = step.actor === id;
     return {
       id,
       label: labelOf(id),
-      ...(slot === undefined ? {} : { slot }),
       current,
       done: !current && step.acted.includes(id),
       ko: options.knockedOut?.(id) ?? step.knockedOut.includes(id),

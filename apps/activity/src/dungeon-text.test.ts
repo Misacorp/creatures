@@ -134,7 +134,7 @@ describe('the results words', () => {
   });
 
   it('words the room line the way the design says', () => {
-    expect(roomLine(0, 3, 'foe')).toBe('Room 1 of 3');
-    expect(roomLine(2, 3, 'boss')).toBe('Room 3 of 3, room boss');
+    expect(roomLine(0, 3)).toBe('Room 1 / 3');
+    expect(roomLine(2, 3)).toBe('Room 3 / 3');
   });
 });

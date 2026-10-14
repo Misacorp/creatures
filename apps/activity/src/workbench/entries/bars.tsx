@@ -89,21 +89,23 @@ const segmentBar: Entry = {
   file: 'apps/activity/src/ui/SegmentBar.tsx',
   group: 'Bars',
   description:
-    'A stepped HP bar: twenty red segments for a boss, five green ones under a creature in the fight; the segments that were just lost blink.',
+    'A stepped HP bar: twenty red segments for a boss (optionally with its numbers written over the bar, as in the dungeon), five green ones under a creature in the fight; the segments that were just lost blink.',
   controls: {
     size: { kind: 'select', options: ['boss', 'unit'] },
     current: { kind: 'number', min: 0, max: 1000 },
     max: { kind: 'number', min: 1, max: 1000 },
     previous: { kind: 'number', min: -1, max: 1000 },
     label: { kind: 'text' },
+    text: { kind: 'text' },
   },
-  defaults: { size: 'boss', current: 600, max: 1000, previous: -1, label: 'Boss HP' },
+  defaults: { size: 'boss', current: 600, max: 1000, previous: -1, label: 'Boss HP', text: '' },
   presets: [
     { name: 'Full', props: { current: 1000 } },
     { name: 'Half', props: { current: 500 } },
     { name: 'Last sliver', props: { current: 1 } },
     { name: 'Just hit', props: { current: 500, previous: 800 } },
     { name: 'Creature (unit)', props: { size: 'unit', current: 60, max: 100 } },
+    { name: 'With the numbers on the bar', props: { current: 620, text: '620 / 1000' } },
   ],
   render: (p) => {
     const previous = num(p, 'previous');
@@ -114,6 +116,7 @@ const segmentBar: Entry = {
         max={num(p, 'max')}
         {...(previous < 0 ? {} : { previous })}
         label={str(p, 'label')}
+        {...(str(p, 'text') === '' ? {} : { text: str(p, 'text') })}
       />
     );
   },

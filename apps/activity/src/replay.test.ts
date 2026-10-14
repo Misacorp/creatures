@@ -234,18 +234,11 @@ describe('turn strip chips', () => {
     ]);
   });
 
-  it('numbers the chips when asked, and can take knockouts from elsewhere', () => {
+  it('can take knockouts from elsewhere than the step', () => {
     const chips = turnChips(['a', 'b'], { actor: null, acted: [], knockedOut: [] }, label, {
-      slots: new Map([
-        ['a', 1],
-        ['b', 2],
-      ]),
       knockedOut: (id) => id === 'a',
     });
-    expect(chips.map((c) => [c.slot, c.ko])).toEqual([
-      [1, true],
-      [2, false],
-    ]);
+    expect(chips.map((c) => c.ko)).toEqual([true, false]);
   });
 
   it('never marks the acting creature as done, even if it is listed as acted', () => {

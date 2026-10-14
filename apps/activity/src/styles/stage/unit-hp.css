@@ -19,7 +19,7 @@
   background: var(--hp-gone);
 }
 
-/* The slot number under a creature in the dungeon's single row: the same 1, 2, 3 as the setup slots. */
+/* The acting order under a creature in the dungeon's single row: 1st, 2nd, 3rd (left to right). */
 .unit-slot {
   margin-top: 0.125rem;
   color: var(--gold);

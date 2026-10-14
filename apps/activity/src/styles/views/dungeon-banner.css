@@ -2,14 +2,6 @@
   Playback. The stage keeps its size for the whole run; the room banner is drawn over it, and the
   lines above and below it hold their height, so nothing jumps between rooms or rounds.
 */
-.dungeon-room-line {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 1.5rem;
-  margin: 0.5rem 0 0.25rem;
-}
-
 .dungeon-room-result {
   min-height: 1.5rem;
   margin: 0.5rem 0 0;

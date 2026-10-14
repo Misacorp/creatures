@@ -215,10 +215,10 @@ const smallCreature: Entry = {
   ),
 };
 
-const TURN_NAMES = ['Sproutle', 'Splashet', 'Cindle'] as const;
-const PLACES = [NONE, '1', '2', '3'] as const;
+const TURN_NAMES = ['Alpha', 'Beta', 'Gamma', 'Delta'] as const;
+const PLACES = [NONE, '1', '2', '3', '4'] as const;
 
-/** The strip for a row of three at one moment: who acts now, who is out, with or without slot numbers and the foe. */
+/** The strip for four creatures at one moment: who acts now, and who is knocked out. */
 function turnStripDemo(p: Props) {
   const ids = TURN_NAMES.map((_, i) => `wb-turn-${String(i + 1)}`);
   const place = (key: string): string | undefined => {
@@ -227,26 +227,14 @@ function turnStripDemo(p: Props) {
   };
   const acting = place('acting');
   const out = place('out');
-  const foeActing = str(p, 'acting') === 'foe';
   const actedBefore = acting === undefined ? [] : ids.slice(0, ids.indexOf(acting));
-  const numbered = bool(p, 'slots');
   const chips = turnChips(
     ids,
-    { actor: acting ?? null, acted: foeActing ? ids : actedBefore, knockedOut: [] },
+    { actor: acting ?? null, acted: actedBefore, knockedOut: [] },
     (id) => TURN_NAMES[ids.indexOf(id)] ?? id,
-    {
-      ...(numbered ? { slots: new Map(ids.map((id, i) => [id, i + 1])) } : {}),
-      knockedOut: (id) => id === out,
-    },
+    { knockedOut: (id) => id === out },
   );
-  return (
-    <TurnStrip
-      chips={chips}
-      label="Turn order"
-      fit={bool(p, 'fit')}
-      {...(bool(p, 'foe') ? { foe: { text: 'then the foe', current: foeActing } } : {})}
-    />
-  );
+  return <TurnStrip chips={chips} label="Turn order" />;
 }
 
 const turnStrip: Entry = {
@@ -254,21 +242,17 @@ const turnStrip: Entry = {
   file: 'apps/activity/src/ui/TurnStrip.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The strip of who acts in what order: a chip for each creature (the one acting now outlined, the ones that acted dimmed, a knocked-out one struck through), optionally numbered like the setup slots and ending with "then the foe". It is under the raid replay and the dungeon playback.',
+    'The strip of who acts in what order under the raid replay: a chip for each creature, the one acting now outlined, the ones that acted dimmed and a knocked-out one struck through.',
   controls: {
-    acting: { kind: 'select', options: [...PLACES, 'foe'] },
+    acting: { kind: 'select', options: PLACES },
     out: { kind: 'select', options: PLACES },
-    slots: { kind: 'toggle' },
-    foe: { kind: 'toggle' },
-    fit: { kind: 'toggle' },
   },
-  defaults: { acting: '2', out: NONE, slots: true, foe: true, fit: true },
+  defaults: { acting: '2', out: NONE },
   presets: [
-    { name: 'Dungeon, second acting', props: {} },
-    { name: 'Dungeon, the foe acting', props: { acting: 'foe' } },
-    { name: 'Dungeon, middle knocked out', props: { acting: '3', out: '2' } },
+    { name: 'Second acting', props: {} },
+    { name: 'Last acting', props: { acting: '4' } },
+    { name: 'One knocked out', props: { acting: '3', out: '2' } },
     { name: 'Before the first turn', props: { acting: NONE } },
-    { name: 'Raid replay (names only, scrolls)', props: { slots: false, foe: false, fit: false } },
   ],
   render: (p) => turnStripDemo(p),
 };

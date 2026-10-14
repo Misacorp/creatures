@@ -110,6 +110,6 @@ export function depthChangeText(run: Pick<DungeonRunSummary, 'depth' | 'newDepth
 }
 
 /** The room's place in the run, for the stage header: "Room 3 of 3, room boss". */
-export function roomLine(index: number, total: number, kind: 'foe' | 'boss'): string {
-  return `Room ${String(index + 1)} of ${String(total)}${kind === 'boss' ? ', room boss' : ''}`;
+export function roomLine(index: number, total: number): string {
+  return `Room ${String(index + 1)} / ${String(total)}`;
 }

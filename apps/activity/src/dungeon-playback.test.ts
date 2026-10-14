@@ -9,9 +9,7 @@ import {
   ROOM_CARD_MS,
   ROOM_BANNER,
   ROOM_END_MS,
-  FOE_CHIP_TEXT,
   atSpeed,
-  dungeonTurnStrip,
   hpLine,
   mineIds,
   modifierGimmicks,
@@ -32,7 +30,7 @@ import {
 } from './dungeon-playback';
 import type { DungeonRunResponse, DungeonRunSummary } from './dungeon-types';
 import { turnOrderOfRound } from './replay';
-import { buildBeats, creatureHpAt, stageStateAt } from './stage';
+import { buildBeats, creatureHpAt, ordinal, stageStateAt } from './stage';
 import { forecastNextRound } from './telegraph';
 
 const replay = parseDungeonReplay(replayFixture);
@@ -332,25 +330,13 @@ describe('the banner over the stage when a room opens', () => {
   });
 });
 
-describe('the turn strip under the playback stage', () => {
+describe('the acting order written under the creatures', () => {
   const row = stageRow(replay);
-  const roomAt = (i: number) => {
-    const room = replay.rooms[i];
-    if (room === undefined) throw new Error('fixture room');
-    return room;
-  };
 
-  it('is your row left to right with slot numbers, then the foe, from the first beat to the last', () => {
-    for (const room of replay.rooms) {
-      for (const index of [0, 3, room.events.length]) {
-        const strip = dungeonTurnStrip(row, room, index);
-        expect(strip.chips.map((c) => c.id)).toEqual(row.map((r) => r.id));
-        expect(strip.chips.map((c) => c.slot)).toEqual([1, 2, 3]);
-        expect(strip.chips.map((c) => c.label)).toEqual(row.map((r) => r.name));
-        expect(strip.foe.text).toBe(FOE_CHIP_TEXT);
-        expect(strip.label).toContain('left to right');
-      }
-    }
+  it('is the row left to right, 1st to 3rd, whatever order the server listed it in', () => {
+    const shuffled = stageRow({ row: [...replay.row].reverse() });
+    expect(shuffled.map((r) => r.id)).toEqual(row.map((r) => r.id));
+    expect(row.map((_, i) => ordinal(i + 1))).toEqual(['1st', '2nd', '3rd']);
   });
 
   it('agrees with the order the engine actually played, round after round', () => {
@@ -366,49 +352,33 @@ describe('the turn strip under the playback stage', () => {
     }
   });
 
-  it('highlights the acting creature, dims those that acted, and lights the foe when it acts', () => {
-    const room = roomAt(0);
+  it('is ordinals: 1st, 2nd, 3rd, then 4th, 11th, 12th, 13th, 21st, 22nd, 23rd and 101st', () => {
+    expect([1, 2, 3, 4, 10, 11, 12, 13, 21, 22, 23, 101, 111].map(ordinal)).toEqual([
+      '1st',
+      '2nd',
+      '3rd',
+      '4th',
+      '10th',
+      '11th',
+      '12th',
+      '13th',
+      '21st',
+      '22nd',
+      '23rd',
+      '101st',
+      '111th',
+    ]);
+  });
+
+  it('shows who is acting from the stage state', () => {
+    const room = replay.rooms[0];
+    if (room === undefined) throw new Error('fixture room');
     const first = room.events.findIndex((e) => e.t === 'turn');
-    // Just after the first creature's turn event: it is acting, nobody else has.
-    const acting = dungeonTurnStrip(row, room, first + 1);
-    expect(acting.chips.map((c) => c.current)).toEqual([true, false, false]);
-    expect(acting.chips.map((c) => c.done)).toEqual([false, false, false]);
-    expect(acting.foe.current).toBe(false);
-    // The second creature is acting, the first is done.
+    const actor = (index: number) => stageStateAt(room.events, index, room.foe.hpMax).actor;
+    expect(actor(0)).toBeNull();
+    expect(actor(first + 1)).toBe(row[0]?.id);
     const second = room.events.findIndex((e, i) => i > first && e.t === 'turn');
-    const next = dungeonTurnStrip(row, room, second + 1);
-    expect(next.chips.map((c) => c.current)).toEqual([false, true, false]);
-    expect(next.chips.map((c) => c.done)).toEqual([true, false, false]);
-    // When the foe attacks, nobody is acting and the foe's chip is current.
-    const foeAt = room.events.findIndex((e) => e.t === 'boss_hit' || e.t === 'gimmick');
-    const foe = dungeonTurnStrip(row, room, foeAt + 1);
-    expect(foe.foe.current).toBe(true);
-    expect(foe.chips.some((c) => c.current)).toBe(false);
-    // Before anything has happened nothing is lit.
-    const start = dungeonTurnStrip(row, room, 0);
-    expect(start.chips.some((c) => c.current || c.done)).toBe(false);
-    expect(start.foe.current).toBe(false);
-  });
-
-  it('marks a creature that carried 0 HP into the room, and one that falls in it, as knocked out', () => {
-    const room = roomAt(0);
-    const [a, b, c] = row;
-    if (a === undefined || b === undefined || c === undefined) throw new Error('row');
-    const carried = { ...room, hpStart: { ...room.hpStart, [b.id]: 0 } };
-    expect(dungeonTurnStrip(row, carried, 0).chips.map((x) => x.ko)).toEqual([false, true, false]);
-    const events = [
-      ...room.events.slice(0, 2),
-      { t: 'boss_hit', round: 1, source: 'attack', target: c.id, damage: 9_999 },
-    ] as typeof room.events;
-    const falls = { ...room, events };
-    expect(dungeonTurnStrip(row, falls, 2).chips.map((x) => x.ko)).toEqual([false, false, false]);
-    expect(dungeonTurnStrip(row, falls, 3).chips.map((x) => x.ko)).toEqual([false, false, true]);
-  });
-
-  it('is only ever text: a creature name with markup stays as it is', () => {
-    const room = roomAt(0);
-    const evil = row.map((r, i) => (i === 0 ? { ...r, name: '<b onmouseover=x>' } : r));
-    expect(dungeonTurnStrip(evil, room, 0).chips[0]?.label).toBe('<b onmouseover=x>');
+    expect(actor(second + 1)).toBe(row[1]?.id);
   });
 });
 
@@ -451,14 +421,13 @@ describe('a run that was stored with the removed Fog modifier', () => {
     ),
   };
 
-  it('shows its banner text, and adds no gimmick, no icon trouble and no strip change', () => {
+  it('shows its banner text and adds no gimmick', () => {
     const room = fogged.rooms[0];
     if (room === undefined) throw new Error('room');
     const view = roomIntroView(room, fogged.rooms.length);
     expect(view.modifierName).toBe('Fog');
     expect(view.spoken).toContain('Fog: Nobody can see');
     expect(modifierGimmicks(room)).toEqual([]);
-    const strip = dungeonTurnStrip(stageRow(fogged), room, room.events.length);
-    expect(strip.chips.map((c) => c.slot)).toEqual([1, 2, 3]);
+    expect(stageRow(fogged).map((r) => r.position)).toEqual([0, 1, 2]);
   });
 });

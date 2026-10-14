@@ -27,3 +27,45 @@
   max-width: calc(var(--unit-w, 88px) - 12px);
   height: 0.5rem;
 }
+
+/* The foe's name sits under its sprite, as a creature's name does, and its HP is written on the bar. */
+.stage-foe-name {
+  margin: 0;
+  max-width: 100%;
+  font-size: 0.875rem;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* A smaller gap between the foe and the team (the stage's other rooms for banners and cards stay). */
+.stage.single .stage-boss {
+  gap: 0.25rem;
+  padding: 0.25rem 0 0;
+}
+
+.stage.single .stage-boss-art {
+  padding-bottom: 0.75rem;
+}
+
+.stage.single .stage-line {
+  min-height: 1.5rem;
+}
+
+.stage.single .stage-abilities-slot {
+  height: 0.75rem;
+}
+
+.stage.single .stage-rows {
+  padding-top: 0.25rem;
+}
+
+/* The acting order under each creature ("1st", "2nd", "3rd"); the one acting now is lit. */
+.stage.single .stage-unit.acting .unit-art {
+  outline: 2px solid var(--gold);
+}
+
+.stage.single .stage-unit.acting .unit-slot {
+  padding: 0 0.25rem;
+  background: var(--gold);
+  color: var(--ink);
+}

@@ -16,6 +16,7 @@ import {
   cuesForEvents,
   creatureHpAt,
   groupByZone,
+  ordinal,
   stageStateAt,
   type AbilityUse,
 } from './stage';
@@ -348,6 +349,8 @@ interface StageProps {
    * one creature at that place, so its effects (shake, shield, wind-up frame) sit on that creature.
    */
   layout?: 'zones' | 'row';
+  /** The room's place in the dungeon ("Room 1 / 3"), written before the round in the stage's head. */
+  roomLabel?: string;
   /** Gimmicks the foe has only in this room (the dungeon's modifier), so the forecast names them too. */
   addedGimmicks?: readonly Gimmick[];
   /**
@@ -416,7 +419,7 @@ interface UnitProps {
   warned: boolean;
   /** The creature's HP now and at most (the dungeon); null when the stage shows no creature HP. */
   hp: { current: number; max: number } | null;
-  /** The creature's place in the row from 1 (the dungeon's single row, the same numbers as setup); null in the raid. */
+  /** The creature's place in the row from 1 (the dungeon's single row: it acts 1st, 2nd, 3rd); null in the raid. */
   slot: number | null;
   onToggle: () => void;
 }
@@ -433,7 +436,7 @@ function StageUnit(props: UnitProps) {
   const icon = elementIcon(c.element);
 
   const spoken =
-    `${props.slot === null ? '' : `Slot ${String(props.slot)}, `}${c.name}${mine ? ', yours' : ''}${ko ? ', knocked out' : ''}` +
+    `${props.slot === null ? '' : `Acts ${ordinal(props.slot)}, `}${c.name}${mine ? ', yours' : ''}${ko ? ', knocked out' : ''}` +
     (props.hp === null || ko ? '' : `, HP ${String(props.hp.current)} of ${String(props.hp.max)}`) +
     (badge === null
       ? ''
@@ -475,7 +478,7 @@ function StageUnit(props: UnitProps) {
       )}
       {props.slot !== null && (
         <span class="unit-slot pix" aria-hidden="true">
-          {props.slot}
+          {ordinal(props.slot)}
         </span>
       )}
     </>
@@ -552,6 +555,7 @@ export function Stage({
   intro = null,
   creatureHp,
   layout = 'zones',
+  roomLabel,
   addedGimmicks,
   overlay,
   abilities,
@@ -684,7 +688,7 @@ export function Stage({
   const abilityGlyph = glyphOrUnknown('ability');
   return (
     <section
-      class={`stage p${String(parity)}`}
+      class={`stage p${String(parity)}${single ? ' single' : ''}`}
       aria-label="Fight stage"
       ref={cssVars({
         '--beat': `${String(anim === null ? 600 : shortEffectMs(anim.ms))}ms`,
@@ -694,6 +698,7 @@ export function Stage({
       <div class="stage-head">
         <span class="stage-head-left">
           <span class="pix stage-round">
+            {roomLabel === undefined ? '' : `${roomLabel} · `}
             {state.round > 0
               ? `Round ${String(state.round)} / ${String(rounds)}`
               : lobby === true
@@ -715,9 +720,11 @@ export function Stage({
             </button>
           )}
         </span>
-        <span class="pix stage-hp-text">
-          {boss.name} HP {state.bossHp} / {hpMax}
-        </span>
+        {!single && (
+          <span class="pix stage-hp-text">
+            {boss.name} HP {state.bossHp} / {hpMax}
+          </span>
+        )}
       </div>
 
       <div class="stage-boss">
@@ -759,12 +766,14 @@ export function Stage({
             </span>
           )}
         </div>
+        {single && <p class="stage-foe-name pix">{boss.name}</p>}
         <SegmentBar
           size="boss"
           current={state.bossHp}
           max={hpMax}
           previous={previousHp}
           label={`${boss.name} HP: ${String(state.bossHp)} of ${String(hpMax)}`}
+          {...(single ? { text: `${String(state.bossHp)} / ${String(hpMax)}` } : {})}
         />
         <div class={`stage-line${strikeItem === undefined ? '' : ' has-strike'}`}>
           {forecast !== null && (
@@ -859,6 +868,7 @@ export function Stage({
                   if (mine) classes.push('mine');
                   if (ko) classes.push('ko');
                   if (hopping.has(c.id)) classes.push('actor');
+                  if (single && state.actor === c.id) classes.push('acting');
                   if (hit.has(c.id)) classes.push('hit');
                   if (dropped.has(c.id)) classes.push('drop');
                   if (silenced.has(c.id)) classes.push('silenced');

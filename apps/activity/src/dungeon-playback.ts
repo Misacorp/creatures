@@ -16,8 +16,7 @@ import type {
   DungeonTeamMember,
 } from './dungeon-types';
 import type { ReplayRowEntry } from './raid-api';
-import { stateAt, turnChips, type Speed, type TurnChip } from './replay';
-import { creatureHpAt } from './stage';
+import type { Speed } from './replay';
 
 /** The card "Room 2 · Flooded" stays this long at normal speed, before the room's fight starts. */
 export const ROOM_CARD_MS = 2_200;
@@ -43,47 +42,6 @@ export function stageRow(replay: Pick<DungeonReplay, 'row'>): ReplayRowEntry[] {
       level: r.level,
       owner: 'p1',
     }));
-}
-
-/** What the foe's chip says: it always acts after the whole team. */
-export const FOE_CHIP_TEXT = 'then the foe';
-
-/** The turn strip under the stage at one moment of a room. */
-interface DungeonTurnStrip {
-  /** Your creatures, left to right, numbered 1 to 3 like the setup slots. */
-  chips: TurnChip[];
-  /** The foe's chip, after the team; `current` while it acts. */
-  foe: { text: string; current: boolean };
-  /** What a screen reader calls the strip. */
-  label: string;
-}
-
-/**
- * The turn strip of a dungeon room after the first `index` events. The order is the rule of the
- * dungeon and never changes: the row left to right (`row` is in slot order, as `stageRow` returns
- * it), then the foe. The strip marks who is acting, who has acted this round and who is knocked
- * out (a creature that carried 0 HP into the room, or was brought to 0 in it).
- */
-export function dungeonTurnStrip(
-  row: readonly Pick<ReplayRowEntry, 'id' | 'name'>[],
-  room: Pick<DungeonReplayRoom, 'events' | 'hpStart' | 'foe'>,
-  index: number,
-): DungeonTurnStrip {
-  const step = stateAt(room.events, index, room.foe.hpMax);
-  const hp = creatureHpAt(room.events, index, room.hpStart);
-  const slots = new Map(row.map((r, i) => [r.id, i + 1]));
-  const names = new Map(row.map((r) => [r.id, r.name]));
-  const chips = turnChips(
-    row.map((r) => r.id),
-    step,
-    (id) => names.get(id) ?? id,
-    { slots, knockedOut: (id) => (hp[id] ?? 0) <= 0 },
-  );
-  return {
-    chips,
-    foe: { text: FOE_CHIP_TEXT, current: step.bossActing },
-    label: 'Turn order: your creatures left to right, then the foe',
-  };
 }
 
 /** The creature ids of the row, which are all the player's. */

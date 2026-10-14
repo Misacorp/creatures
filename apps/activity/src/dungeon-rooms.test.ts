@@ -59,8 +59,8 @@ describe('the icons of the room modifiers', () => {
     expect(modifierIcon('flooded')).toEqual({ kind: 'element', element: 'tide' });
     expect(modifierIcon('scorched')).toEqual({ kind: 'element', element: 'ember' });
     expect(modifierIcon('dark')).toEqual({ kind: 'glyph', id: 'reticle' });
-    // A boost to one role shows that role's glyph.
-    expect(modifierIcon('echoing')).toEqual({ kind: 'glyph', id: 'sparkle' });
+    // A boost to roles shows the glyph of the first role it names (Guard: the shield).
+    expect(modifierIcon('echoing')).toEqual({ kind: 'glyph', id: 'shield' });
     expect(modifierIcon('thorns')).toEqual({ kind: 'glyph', id: 'reflect_first_reaction' });
     expect(modifierIcon('brittle')).toEqual({ kind: 'glyph', id: 'warning' });
   });
