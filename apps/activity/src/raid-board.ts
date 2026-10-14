@@ -5,13 +5,15 @@
  * lanes, plain words for a place ("Middle, lane 1"), the keyboard map, the overview pips and the
  * scroll positions. `ui/RaidBoard.tsx` draws it, `Placement.tsx` wires it to the game.
  */
-import { ZONES, zoneIndices, type Zone } from '@creatures/engine';
+import { ZONES, zoneIndices, type AffectSlot, type TurnOrder, type Zone } from '@creatures/engine';
+import { effectiveStats } from '@creatures/game';
 import type { CreatureInfo } from './creature-info';
 import { getSpecies, speciesName } from './game';
 import type { RowSlotView } from './raid-api';
 import { initialOf } from './raid-roster';
 import { ownerColour } from './raid-slots';
 import type { SlotModel } from './ui/SlotRow';
+import { affectSlotOf, cuesFor, sceneOf, type RowCues } from './ui/slot-cue';
 
 /** The names of the three rows, front (closest to the boss) first. */
 export const ROW_NAMES: Readonly<Record<Zone, string>> = {
@@ -172,4 +174,86 @@ export function boardSlot(
       owner: { colour: ownerColour(c.ownerName, rosterNames), initial: initialOf(c.ownerName) },
     },
   };
+}
+
+/**
+ * The creature in each slot of the board as a key (null: empty), for the placement cues: your own
+ * are named by their id, the others' by their slot (their ids are not in the view).
+ */
+export function boardKeys(row: readonly RowSlotView[], length: number): (string | null)[] {
+  const keys: (string | null)[] = Array.from({ length }, () => null);
+  for (const s of row) {
+    if (s.creature === null || s.slot < 0 || s.slot >= length) continue;
+    keys[s.slot] = s.creature.creatureId ?? `other:${String(s.slot)}`;
+  }
+  return keys;
+}
+
+/** What a boss's `turnOrder` text says, as the engine's value (anything else counts as left to right). */
+export function parseTurnOrder(text: string): TurnOrder {
+  return text === 'right_to_left' || text === 'speed' ? text : 'left_to_right';
+}
+
+/**
+ * The board as the engine's `affects` wants it: role, element and speed for each key (a creature of
+ * the board, or one of yours that is still in the tray). The speed is worked out from the species and
+ * level alone: the view carries no gear or fusions, so for a boss that acts by speed the order, and
+ * with it the reactions shown, is a close guess.
+ */
+export function boardAffectRow(
+  keys: readonly (string | null)[],
+  known: ReadonlyMap<string, { species: string; level: number }>,
+): (AffectSlot | null)[] {
+  return keys.map((key) => {
+    const who = key === null ? undefined : known.get(key);
+    const species = who === undefined ? undefined : getSpecies(who.species);
+    return who === undefined || species === undefined
+      ? null
+      : affectSlotOf(
+          species,
+          effectiveStats(species, Math.max(1, Math.min(who.level, species.levelCap)), 0).spd,
+        );
+  });
+}
+
+/**
+ * The cues of the board: which creature is in focus, and what lights up. `carried` is the creature
+ * being dragged or picked up (one of yours, on the board or in the tray), `pointer` the slot dragged
+ * over or under the mouse or keyboard focus. A carried creature is shown where it would stand, if it
+ * may go there (an empty slot or one of yours). `noneRow` is the row that gets the "no reaction" mark.
+ */
+export function boardCues(args: {
+  row: readonly RowSlotView[];
+  length: number;
+  tray: readonly { creatureId: string; species: string; level: number }[];
+  carried: string | null;
+  pointer: number | null;
+  turnOrder: string;
+}): { cues: RowCues; focus: number | null; noneRow: Zone | null } {
+  const { row, length } = args;
+  const bySlot = new Map(row.map((s) => [s.slot, s]));
+  const known = new Map<string, { species: string; level: number }>();
+  for (const s of row) {
+    if (s.creature !== null)
+      known.set(s.creature.creatureId ?? `other:${String(s.slot)}`, s.creature);
+  }
+  for (const c of args.tray) known.set(c.creatureId, c);
+  const scene = sceneOf({
+    keys: boardKeys(row, length),
+    carried: args.carried,
+    pointer: args.pointer,
+    canDrop: (slot) => {
+      const there = bySlot.get(slot)?.creature ?? null;
+      return there === null || there.mine;
+    },
+  });
+  const cues = cuesFor({
+    row: boardAffectRow(scene.keys, known),
+    mode: { row: 'raid', turnOrder: parseTurnOrder(args.turnOrder) },
+    focus: scene.focus,
+    scope: 'focus',
+  });
+  const noneRow =
+    cues.none && scene.focus !== null ? (placeOf(scene.focus, length)?.zone ?? null) : null;
+  return { cues, focus: scene.focus, noneRow };
 }

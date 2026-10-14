@@ -76,10 +76,6 @@
   border-color: var(--gold);
 }
 
-.party-slot.adjacent {
-  background: var(--adjacent);
-}
-
 .party-slot.mine {
   background: var(--mine);
 }

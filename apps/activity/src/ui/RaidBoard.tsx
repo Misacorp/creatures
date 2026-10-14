@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef } from 'preact/hooks';
 import { usePrefersReducedMotion } from '../hooks';
 import { laneStates, ownLaneSpan, pipLabel, scrollToSpan } from '../raid-board';
 import { SlotButton, type SlotModel, type SlotRowProps } from './SlotRow';
+import { CueRail, type CueRailProps } from './CueRail';
 import { slotState } from './slot-state';
 
 /** One row of the board: its zone, its name (for assistive technology), its label and its slots. */
@@ -16,10 +17,22 @@ export interface BoardRowModel {
 
 interface RaidBoardProps extends Pick<
   SlotRowProps,
-  'stripRef' | 'emptyLabel' | 'disabled' | 'selected' | 'drag' | 'statuses' | 'adjacent' | 'onTap'
+  | 'stripRef'
+  | 'emptyLabel'
+  | 'disabled'
+  | 'selected'
+  | 'drag'
+  | 'statuses'
+  | 'cues'
+  | 'onHoverSlot'
+  | 'onTap'
 > {
   /** Front, Middle and Back (those that have slots), each with its slots left to right. */
   rows: readonly BoardRowModel[];
+  /** What the rail under the board says (the "no reaction" mark, the effect line). Absent: no rail. */
+  rail?: CueRailProps;
+  /** The row that gets the "no reaction" mark on its name, when the creature in focus sets off nothing. */
+  noneRow?: Zone | null;
 }
 
 /** The sprite scale of a tile: small, so about four lanes fit on a 360 px phone. */
@@ -96,8 +109,18 @@ export function RaidBoard(props: RaidBoardProps) {
             Lane
           </p>
           {rows.map((row) => (
-            <p key={row.zone} class="zone-label board-label">
+            <p
+              key={row.zone}
+              class={
+                props.noneRow === row.zone
+                  ? 'zone-label board-label no-reaction'
+                  : 'zone-label board-label'
+              }
+            >
               {row.label}
+              {props.noneRow === row.zone && (
+                <i class="cue-none-glyph" role="img" aria-label="No reaction" />
+              )}
             </p>
           ))}
         </div>
@@ -128,6 +151,7 @@ export function RaidBoard(props: RaidBoardProps) {
           ))}
         </div>
       </div>
+      {props.rail !== undefined && <CueRail {...props.rail} />}
     </div>
   );
 }

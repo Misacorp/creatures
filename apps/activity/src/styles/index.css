@@ -32,6 +32,7 @@
 @import './components/bars.css';
 @import './components/slot-row.css';
 @import './components/raid-board.css';
+@import './components/slot-cue.css';
 @import './components/creature-card.css';
 @import './views/boss-card.css';
 @import './stage/stage.css';

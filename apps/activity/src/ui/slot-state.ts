@@ -4,7 +4,7 @@ import type { SlotButtonProps, SlotModel, SlotRowProps } from './SlotRow';
 export function slotState(
   props: Pick<
     SlotRowProps,
-    'emptyLabel' | 'disabled' | 'selected' | 'drag' | 'statuses' | 'adjacent' | 'onTap'
+    'emptyLabel' | 'disabled' | 'selected' | 'drag' | 'statuses' | 'cues' | 'onHoverSlot' | 'onTap'
   >,
   slot: SlotModel,
 ): Omit<SlotButtonProps, 'slot' | 'scale'> {
@@ -14,12 +14,13 @@ export function slotState(
     emptyLabel: props.emptyLabel,
     disabled: props.disabled,
     selected,
-    adjacent: props.adjacent?.has(slot.index) === true,
     hasSelection: (dragging ?? selected) !== null,
     status: statuses?.get(slot.index) ?? null,
     over: drag.drag?.over?.kind === 'slot' && drag.drag.over.slot === slot.index,
     shaking: drag.shakeSlot === slot.index,
     dragging,
+    cue: props.cues?.get(slot.index),
+    onHover: props.onHoverSlot,
     onPointerDown: drag.startDrag,
     onTap: props.onTap,
   };

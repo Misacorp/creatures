@@ -13,13 +13,15 @@ import {
   type Slots,
 } from './dungeon-team';
 import { ORDER_LINE } from './dungeon-text';
-import { creatureName, speciesName } from './game';
+import { creatureName, getSpecies, speciesName } from './game';
 import { GlossaryTag } from './Glossary';
 import { CANCEL_ANNOUNCEMENT, type DropOutcome, type Selection, type Tap } from './slot-outcome';
 import { CreatureTray } from './ui/CreatureTray';
+import { CueRail } from './ui/CueRail';
 import { DragGhost } from './ui/DragGhost';
 import { LiveRegion } from './ui/LiveRegion';
 import { SlotRow, type SlotGroup } from './ui/SlotRow';
+import { affectSlotOf, cuesFor, sceneOf } from './ui/slot-cue';
 import { ToggleButton } from './ui/ToggleButton';
 import { useSlotAnnouncer, useSlotKeyboard } from './ui/use-slot-keyboard';
 import { useDragDrop } from './use-drag-drop';
@@ -55,6 +57,8 @@ export function DungeonTeam(props: Props) {
   const stripRef = useRef<HTMLDivElement>(null);
   const trayRef = useRef<HTMLUListElement>(null);
   const [showAll, setShowAll] = useState(false);
+  /** The slot under the mouse or the keyboard focus. */
+  const [hovered, setHovered] = useState<number | null>(null);
 
   const byId = new Map(creatures.map((c) => [c.id, c]));
   const nameOf = (id: string): string => {
@@ -122,6 +126,22 @@ export function DungeonTeam(props: Props) {
       ? orderHint(placed.map((c) => ({ name: creatureName(c), species: c.species })))
       : null;
 
+  // The cues: the creature in focus (carried, or under the pointer) and the row as it would stand.
+  const scene = sceneOf({
+    keys: slots,
+    carried: dragging ?? selected,
+    pointer: drag?.over?.kind === 'slot' ? drag.over.slot : hovered,
+  });
+  const cues = cuesFor({
+    row: scene.keys.map((id) => {
+      const c = id === null ? undefined : byId.get(id);
+      return c === undefined ? null : affectSlotOf(getSpecies(c.species));
+    }),
+    mode: { row: 'dungeon' },
+    focus: scene.focus,
+    scope: 'row',
+  });
+
   const group: SlotGroup = {
     key: 'row',
     scale: SLOT_SCALE,
@@ -163,15 +183,13 @@ export function DungeonTeam(props: Props) {
         selected={selected}
         drag={dragDrop}
         statuses={statuses}
+        cues={cues.slots}
+        onHoverSlot={setHovered}
         onTap={(slot) => {
           tap({ kind: 'slot', slot });
         }}
       />
-      {reactionHint !== null && (
-        <p class="muted dungeon-reaction-hint" aria-live="polite">
-          {reactionHint}
-        </p>
-      )}
+      <CueRail none={cues.none} />
       <p class="button-row">
         <button type="button" disabled={disabled} onClick={props.onStrongest}>
           Use my strongest three
@@ -231,6 +249,8 @@ export function DungeonTeam(props: Props) {
       )}
 
       <LiveRegion>{announcement}</LiveRegion>
+      {/* What the order sets off, for a screen reader: the cues are only visual. */}
+      <LiveRegion>{reactionHint}</LiveRegion>
       <DragGhost
         ghostRef={dragDrop.ghostRef}
         creature={
