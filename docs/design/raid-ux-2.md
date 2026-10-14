@@ -85,11 +85,67 @@ Each slice is one commit, with tests and a workbench entry where a shared compon
 4. **Stage and replay head:** "Phase N / 3 · Round x / y", the boss name under its sprite, HP on the bar, ordinals instead of the replay's turn strip, replay controls hidden.
 5. **Placement hint:** the reactions your three creatures set off with their actual neighbours, from the same `rowReactions` logic as the dungeon, generalised to a row with other players' creatures in it.
 6. **Glossary cleanup** for raid entries (description only), and the post-finale Boss Rank and season row in the dungeon's visual language.
-7. **Sit-out removal** (client), after Misa's OK.
+7. **Sit-out removal** (client). Misa said yes.
+8. **Visual placement cues** (decided 4): the reaction pair highlight and badge on drag, tap and hover, in the dungeon setup first (removing the text line), then on the raid board.
+9. **Influence highlight** (decided 6): a shared `affects(creature, row)` helper and a tile shade on hover or popover, for the dungeon and the raid.
+10. **Hide the tag coach mark** (decided 5), and change the stage head to room or phase top left and round top right, in the dungeon and the raid (decided 3).
 
-After that comes the attack-pattern build (`attack-patterns.md`, section 6). Its slices already assume rows, lanes and row-edge neighbours.
+After that comes the attack-pattern build (`attack-patterns.md`, section 6), **together with the raid structure change** (phase floors and enrage, above), as one raid retune. Its slices already assume rows, lanes and row-edge neighbours.
+
+## Decided (Misa, 2026-10-14)
+
+1. **Remove sit-out.** Do it in slice 7, client first, and drop the server table in a later migration.
+2. **Owner on a tile: initial plus colour,** with the full name in the creature popover.
+3. **Stage head, in the dungeon too:** the room or phase goes top left ("Room 1 / 3", "Phase 1 / 3") and the round top right ("Round 2 / 2"). This replaces the joined "Room 1 / 3 · Round 2 / 2" shipped in PR #18. It goes in slice 4, and the dungeon change rides along.
+4. **Reaction hints become visual cues at the placement, not a line of text.** Misa doesn't like the hint text under the big area. Show the cue on the slots themselves:
+   - **When:** while a creature is dragged over a slot, when it is tapped or selected, and on hover (desktop).
+   - **What:** the creatures that would react light up as a pair, joined by a small badge naming the reaction ("Steam") between or above them.
+   - **No reaction:** if the order can't react, the row gets a subtle "no reaction" mark.
+   - **Where:** the dungeon team setup (replacing the text line under the slot row, shipped in PR #18), and later the raid board.
+   - **Logic:** the same `rowReactions` logic; the text stays only as the aria live announcement.
+5. **Hide the "Tap any tag to learn what it means" coach mark** (`CoachMark`). Keep the code and its workbench entry, but don't render it anywhere for now. Use one flag in code.
+6. **Show what a creature affects on the board:**
+   - **Trigger:** hovering a creature, or opening its popover.
+   - **Highlight:** the tiles it affects get a soft shade. That covers a Support's buff targets, a Guard's covered neighbours and interceptable allies, and a creature's reaction partners. The popover explains the effect in words.
+   - **Scope:** the dungeon row and the raid board, using the same mechanism (one shared "affects" helper per role, from the engine's own rules, so the UI can't drift from the fight).
+   - **Ties:** this pairs with Support reach shapes later (`attack-patterns.md`, section 7), where reach becomes visible this way too.
+
+## Raid structure: always a finale, and an enrage (new, Misa 2026-10-14)
+
+Misa's intent:
+
+- **Always a finale.** Today a strong server can empty the boss's pool in Phase 1 or 2, and the week ends without a finale. The boss should go **immune at a floor** in each phase, so every phase has something to rally around and the boss (hopefully) falls during the live finale. For the finale's share he suggests about 10–20% of HP, to be tuned.
+- **Enrage.** Today a finale that runs out of rounds with both sides standing just ends. Instead, the boss **enrages**: massive damage and frequent multi-target attacks, which wipe the row in 2–3 rounds. There is still a slight, exciting chance that the creatures finish it first.
+
+Facts:
+
+- `RULES.raid.phases` clears Phase 1 at 18% of the pool lost and Phase 2 at 52%; the finale needs the whole pool.
+- The pool is carried through the week (`raid-resolve.ts`), and damage past a phase's threshold still comes off the pool. That is why an early kill is possible.
+
+Proposal (needs a sim pass; numbers are starting points):
+
+- **Phase floors:**
+  - Each phase gets a floor the pool can't go below.
+  - Damage past the floor is still counted as "overkill", which feeds contribution credit and the after-action card ("The boss shrugged off 1,240 damage"), so strong play still shows.
+  - The phase ends early once the boss reaches its floor and turns immune. The replay shows a clear "Immune!" beat.
+  - Starting numbers: Phase 1 floor at 70% HP left, Phase 2 floor at about 15% (Misa's 10–20%), finale to 0. The thresholds (`clearAtLossBp`) become the floors, so "cleared" means "drove it to its floor".
+  - New scalars: `RULES.raid.phases[].floorBp`.
+- **Enrage:**
+  - When the finale's rounds run out, it goes to **enrage rounds** (`RULES.raid.enrage`: `rounds` 3, `atkBp` per round, `multiTargetEveryRound: true`).
+  - The boss uses its multi-target moves from the attack-pattern catalogue (Sweep, Barrage, Pincer) every round at a large multiplier, tuned so a typical row is wiped in 2–3 rounds.
+  - The fight ends on a wipe or a kill. Shown as a red "Enraged" banner on the stage and in the forecast.
+- **Balance impact:**
+  - Floors move damage from phases 1 and 2 into the finale, so the finale needs more of the week's work. The finale win rate and its band (`raid-*` targets) must be re-tuned.
+  - Enrage adds a few late wins. This **is** the full raid retune.
+- **Do it once, together with the attack patterns** (`attack-patterns.md`): both change raid lethality and the win band, and enrage uses the pattern moves.
+
+**Questions for Misa** (recommended answers):
+
+1. **Overkill:** should damage past a phase floor still count for loot and credit? _Recommended: yes_, so a strong phase is rewarded without skipping the finale.
+2. **Finale share:** is about 15% of the boss's HP left for the finale right, or should the finale carry more (25–35%) so it isn't a formality on strong servers? _Recommended: start at 15% as Misa suggested, measure the live finale win rate and close calls, and tune `floorBp`._
+3. **Enrage in phases 1 and 2 too,** or the finale only? _Recommended: finale only._ Phases end at their round limit or their floor, so they need no enrage.
+4. **Rank on an enrage loss:** does an enrage loss count like any finale loss? _Recommended: yes, the same as today's loss._
 
 ## Open questions for Misa
 
-1. **Sit out:** remove it? Recommended: yes, as above.
-2. **Owner on a tile:** is an initial plus a colour enough, with the full name in the popover? Recommended: yes.
+- The four raid-structure questions above.

@@ -32,8 +32,12 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
    - remove "Who's in this week";
    - dungeon patterns on the raid stage and replay;
    - a placement reaction hint;
-   - remove sit-out after Misa's OK.
-2. **Attack patterns:** `design/attack-patterns.md`, section 6 for the slices.
+   - remove sit-out (Misa: yes);
+   - visual placement cues instead of hint text;
+   - influence highlights on hover or popover;
+   - room or phase top left, round top right (the dungeon too);
+   - hide the tag coach mark.
+2. **Attack patterns plus raid structure,** as one raid retune: `design/attack-patterns.md`, section 6 for the slices, and the "Raid structure" section of `design/raid-ux-2.md`. The structure part is phase floors (the boss goes immune, so there is always a finale) and a finale enrage; it has four questions open for Misa.
    - The seven moves for raid bosses and dungeon foes.
    - Guard cover.
    - Element supports: Stoke, Overcharge, Mend.
