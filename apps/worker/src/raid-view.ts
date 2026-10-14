@@ -405,10 +405,11 @@ export function buildRaidView(
     parties,
     you: {
       inRoster: myParty !== null,
-      optOut: raid.isOptedOut(week.weekId, userId),
+      // Sitting a week out is gone: the field stays for older clients and is always false.
+      optOut: false,
       party: myParty,
       canEdit: myParty !== null && week.status !== 'finale',
-      canOptOut: week.status === 'open',
+      canOptOut: false,
       ability: myAbility,
       abilities: abilityPreview(
         myAbility,

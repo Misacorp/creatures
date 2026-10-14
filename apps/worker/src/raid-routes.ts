@@ -150,7 +150,7 @@ export const raidRoutes: Routes<RaidRouteContext> = {
       const body = await parseBody(request, OptOutBodySchema);
       if (body === undefined) return invalidBody();
       const tz = core.timezone();
-      const outcome = core.raid.setOptOut(user.id, tz, body.optOut);
+      const outcome = core.raid.setOptOut(tz);
       if (!outcome.ok) return failure(outcome);
       return json(core.raid.view(user.id, tz));
     },

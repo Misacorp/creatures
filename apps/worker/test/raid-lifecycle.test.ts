@@ -1,7 +1,13 @@
 import { content } from '@creatures/game';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LeetSource } from '../src/leet';
-import { eligiblePlayerIds, partyCountFor, playerPower, snakeDraft } from '../src/raid-roster';
+import {
+  eligiblePlayerIds,
+  leaveParty,
+  partyCountFor,
+  playerPower,
+  snakeDraft,
+} from '../src/raid-roster';
 import { eventTimes, weekIdFor, weekIndex } from '../src/raid-schedule';
 import { T0, USER_ID } from './helpers';
 import { DAY, HELSINKI, HOUR, MINUTE, W02, count, rows, runRaid, seedPlayer } from './raid-helpers';
@@ -165,7 +171,7 @@ describe('roster', () => {
       });
       ctx.clock.t = now;
 
-      const eligible = eligiblePlayerIds(ctx.sql, W02.id, now);
+      const eligible = eligiblePlayerIds(ctx.sql, now);
       expect(new Set(eligible)).toEqual(new Set([seenRecently.id, leeted.id, justOnTime.id]));
       expect(eligible).toEqual([...eligible].sort());
       for (const p of [seenLongAgo, leetedLongAgo, noCreature, justLate]) {
@@ -183,7 +189,7 @@ describe('roster', () => {
     });
   });
 
-  it('lets a player sit the week out and rejoin before phase 1, and drops their placements', async () => {
+  it('no longer honours opt-outs: a stored row and the old route change nothing', async () => {
     await runRaid((ctx) => {
       const a = seedPlayer(ctx, 1);
       const b = seedPlayer(ctx, 2);
@@ -194,26 +200,19 @@ describe('roster', () => {
           .sort();
       expect(names()).toEqual(['Player 1', 'Player 2']);
 
-      expect(ctx.core.raid.place(b.id, HELSINKI, b.creatureIds[0] as string, 2).ok).toBe(true);
-      expect(count(ctx.sql, 'raid_placements')).toBe(1);
-
-      expect(ctx.core.raid.setOptOut(b.id, HELSINKI, true)).toEqual({
+      // The old route answers "not opted out" and leaves the player where they are.
+      expect(ctx.core.raid.setOptOut(HELSINKI)).toEqual({
         ok: true,
-        value: { optOut: true },
+        value: { optOut: false },
       });
-      expect(names()).toEqual(['Player 1']);
-      expect(count(ctx.sql, 'raid_placements')).toBe(0);
-      expect(ctx.core.raid.view(b.id, HELSINKI).you).toMatchObject({
-        inRoster: false,
-        optOut: true,
-      });
-      // The late-joiner sync must not pull an opted-out player back in.
-      ctx.core.raid.syncRoster(W02.id);
-      expect(names()).toEqual(['Player 1']);
-      // Opting out twice is fine.
-      expect(ctx.core.raid.setOptOut(b.id, HELSINKI, true).ok).toBe(true);
+      expect(count(ctx.sql, 'raid_opt_outs')).toBe(0);
+      expect(names()).toEqual(['Player 1', 'Player 2']);
 
-      expect(ctx.core.raid.setOptOut(b.id, HELSINKI, false).ok).toBe(true);
+      // A row left by the old button (before this change) is ignored by the roster.
+      ctx.sql.exec('INSERT INTO raid_opt_outs (week_id, user_id) VALUES (?, ?)', W02.id, b.id);
+      expect(eligiblePlayerIds(ctx.sql, ctx.clock.t)).toContain(b.id);
+      leaveParty(ctx.sql, W02.id, b.id);
+      ctx.core.raid.syncRoster(W02.id);
       expect(names()).toEqual(['Player 1', 'Player 2']);
       expect(ctx.core.raid.view(b.id, HELSINKI).you).toMatchObject({
         inRoster: true,
@@ -222,12 +221,12 @@ describe('roster', () => {
     });
   });
 
-  it('refuses opt-out changes once phase 1 has resolved', async () => {
+  it('still refuses the retired opt-out route once phase 1 has resolved', async () => {
     await runRaid((ctx) => {
       const a = seedPlayer(ctx, 1);
       ctx.core.raid.view(a.id, HELSINKI);
       ctx.clock.t = W02.afterPhase1 + HOUR;
-      expect(ctx.core.raid.setOptOut(a.id, HELSINKI, true)).toEqual({
+      expect(ctx.core.raid.setOptOut(HELSINKI)).toEqual({
         ok: false,
         status: 409,
         error: 'locked',
@@ -293,12 +292,14 @@ describe('parties', () => {
     await runRaid((ctx) => {
       for (let i = 1; i <= 16; i++) seedPlayer(ctx, i);
       ctx.core.raid.currentWeek(HELSINKI);
-      // Make the parties uneven: party 2 loses a member by opting out.
+      // Make the parties uneven: party 2 loses a member.
       const inParty2 = rows<{ user_id: string }>(
         ctx.sql,
         'SELECT user_id FROM raid_party_members WHERE party = 2 LIMIT 1',
       )[0]?.user_id as string;
-      expect(ctx.core.raid.setOptOut(inParty2, HELSINKI, true).ok).toBe(true);
+      // They drop out (they are no longer active), so the late-joiner sync does not take them back.
+      leaveParty(ctx.sql, W02.id, inParty2);
+      ctx.sql.exec('UPDATE players SET last_seen_at = 0 WHERE user_id = ?', inParty2);
       expect(partySizes(ctx.sql)).toEqual([8, 7]);
 
       const late = seedPlayer(ctx, 40);
