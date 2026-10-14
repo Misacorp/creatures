@@ -1,14 +1,29 @@
 import { useState } from 'preact/hooks';
-import { content } from '@creatures/game';
+import { content, gearBase, gearContent } from '@creatures/game';
 import { AbilityChip } from '../../AbilityChip';
 import { BossCard } from '../../BossCard';
+import { AppHead } from '../../AppHead';
+import { LivingRoom, sceneOf } from '../../LivingRoom';
 import { RosterStrip } from '../../RosterStrip';
 import { SmallCreature } from '../../SmallCreature';
+import { WornItemLine } from '../../WornItemLine';
 import type { ReadinessBand, RaidView, RosterEntry } from '../../raid-api';
 import { READINESS_BANDS } from '../../raid-api';
 import { Sprite } from '../../sprites/Sprite';
+import type { RoomPhase } from '../../sprites/room-art';
 import { creatureSpriteOrFallback } from '../../sprites/creature-sprites';
-import { BOSS_IDS, NONE, SAMPLE_RAID, SPECIES_IDS, creatureInfoFor, speciesLabel } from '../data';
+import {
+  BOSS_IDS,
+  GEAR_BASE_IDS,
+  NONE,
+  RARITIES,
+  ROOM_SELF_ID,
+  SAMPLE_RAID,
+  SPECIES_IDS,
+  creatureInfoFor,
+  sampleResidents,
+  speciesLabel,
+} from '../data';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 
@@ -213,9 +228,106 @@ const smallCreature: Entry = {
   ),
 };
 
+const wornItemLine: Entry = {
+  name: 'WornItemLine',
+  file: 'apps/activity/src/WornItemLine.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    "The item a creature wears: its picture in the rarity frame, its name, level, main stat bonus and enchant. It is the worn-item line of a creature card on the Creatures screen (there the picture is the button that opens the gear picker) and the line in a living room creature's popover.",
+  controls: {
+    item: { kind: 'select', options: GEAR_BASE_IDS },
+    rarity: { kind: 'select', options: RARITIES },
+    level: { kind: 'number', min: 0, max: 5 },
+    bonus: { kind: 'number', min: 0, max: 2000 },
+    enchanted: { kind: 'toggle' },
+    hasBonus: { kind: 'toggle' },
+  },
+  defaults: {
+    item: GEAR_BASE_IDS[0] ?? 'bark-band',
+    rarity: 'rare',
+    level: 0,
+    bonus: 850,
+    enchanted: false,
+    hasBonus: true,
+  },
+  presets: [
+    { name: 'Plain', props: {} },
+    { name: 'Upgraded and enchanted', props: { level: 5, enchanted: true, rarity: 'epic' } },
+    { name: 'Festival', props: { rarity: 'festival' } },
+    { name: 'Bonus not known yet', props: { hasBonus: false } },
+  ],
+  render: (p) => {
+    const baseId = str(p, 'item');
+    const stat = gearBase(baseId)?.primary ?? 'atk';
+    const rarity = RARITIES.find((r) => r === str(p, 'rarity')) ?? 'common';
+    return (
+      <WornItemLine
+        worn={{
+          baseId,
+          rarity,
+          level: num(p, 'level'),
+          enchantId: bool(p, 'enchanted') ? (gearContent.enchants[0]?.id ?? null) : null,
+          ...(bool(p, 'hasBonus') ? { primary: { stat, bp: num(p, 'bonus') } } : {}),
+        }}
+      />
+    );
+  },
+};
+
+const NO_REF = { current: null };
+const ROOM_PHASES: readonly RoomPhase[] = ['day', 'twilight', 'night'];
+
+const livingRoom: Entry = {
+  name: 'LivingRoom',
+  file: 'apps/activity/src/LivingRoom.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    'The pixel living room at the top of the app: every player who has the Activity open sits in a spot with their lounging creature (tap one for its popover), and the title row is laid over the wall. Use the width switcher: wide shows the whole room centred, a phone width scrolls it sideways (mouse drag, or swipe) and pans it slowly when left alone.',
+  controls: {
+    players: { kind: 'number', min: 1, max: 24 },
+    oneBusy: { kind: 'toggle' },
+    titleRow: { kind: 'toggle' },
+    phase: { kind: 'select', options: ROOM_PHASES },
+  },
+  defaults: { players: 4, oneBusy: false, titleRow: true, phase: 'night' },
+  presets: [
+    { name: 'Alone', props: { players: 1 } },
+    { name: '4 players', props: {} },
+    { name: 'Full room (16)', props: { players: 16 } },
+    { name: 'Overflow (20, 16 shown)', props: { players: 20 } },
+    { name: 'One all-busy note', props: { oneBusy: true } },
+    { name: 'Day', props: { phase: 'day' } },
+    { name: 'Twilight', props: { phase: 'twilight' } },
+    { name: 'No title row', props: { titleRow: false } },
+  ],
+  render: (p) => {
+    const residents = sampleResidents(num(p, 'players'), bool(p, 'oneBusy'));
+    const phase = ROOM_PHASES.find((x) => x === str(p, 'phase')) ?? 'night';
+    const scene = sceneOf(phase);
+    // With the title row it is drawn as the app draws it: a band as wide as the window.
+    return bool(p, 'titleRow') ? (
+      <AppHead
+        helpRef={NO_REF}
+        onHelp={() => undefined}
+        balances={{ bait: 52, essence: 52 }}
+        room={{ residents, selfId: ROOM_SELF_ID, instanceId: 'workbench', scene }}
+      />
+    ) : (
+      <LivingRoom
+        residents={residents}
+        selfId={ROOM_SELF_ID}
+        instanceId="workbench"
+        scene={scene}
+      />
+    );
+  },
+};
+
 export const creatureEntries: readonly Entry[] = [
+  livingRoom,
   bossCard,
   rosterStrip,
   abilityChip,
   smallCreature,
+  wornItemLine,
 ];

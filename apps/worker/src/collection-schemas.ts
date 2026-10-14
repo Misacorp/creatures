@@ -1,6 +1,7 @@
 import { EXPEDITION_LENGTHS, RULES, content, expeditionContent } from '@creatures/game';
 import * as v from 'valibot';
-import { IdempotencyKeySchema } from './schemas';
+import { ROOM_MAX_USERS } from './lounger';
+import { IdempotencyKeySchema, SNOWFLAKE_RE } from './schemas';
 
 /** Server-generated ids are random UUIDs; anything else is malformed. */
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -52,4 +53,20 @@ export const EvolveBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeyS
 /** Length and character rules are applied by `sanitizeNickname`, which reports a reason. */
 export const NicknameBodySchema = v.strictObject({
   nickname: v.nullable(v.string()),
+});
+
+/** Choosing the lounger: the player is the session's. */
+export const LoungerBodySchema = v.strictObject({ creatureId: IdSchema });
+
+/**
+ * Who to look up for the living room: 1 to `ROOM_MAX_USERS` distinct Discord snowflakes. Duplicates are
+ * rejected, not merged: the client sends each id once.
+ */
+export const RoomBodySchema = v.strictObject({
+  userIds: v.pipe(
+    v.array(v.pipe(v.string(), v.regex(SNOWFLAKE_RE))),
+    v.minLength(1),
+    v.maxLength(ROOM_MAX_USERS),
+    v.check((ids) => new Set(ids).size === ids.length),
+  ),
 });

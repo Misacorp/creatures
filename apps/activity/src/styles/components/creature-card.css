@@ -47,6 +47,13 @@
   margin: 0.5rem 0;
 }
 
+/* "Lounge": a small button, so the card does not grow much. */
+button.lounge-button {
+  min-height: 2rem;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.875rem;
+}
+
 /* A shiny without its own palette: a gold dotted frame and two sparkles. */
 .portrait.sparkle-frame {
   background-image: radial-gradient(var(--gold) 1px, transparent 1px);

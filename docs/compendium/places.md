@@ -634,3 +634,14 @@ None. The journal belongs to expeditions. A dungeon journal could be a new set (
 ### Former player text (glossary)
 
 None. The dungeon's glossary entries (`dungeon`, `dungeon-row`, `depth`, `room-modifiers`, `room-boss`, `landmark`, `streak` and the modifiers) are not destination entries. They are not moved, and they stay in `glossary.json`.
+
+## The living room
+
+Status: shipped 2026-10-14. Design: `docs/design/living-room.md` `(design)`.
+
+- **What it is.** The cozy room at the top of the Activity where creatures rest between jobs. Each player present has one lounger there `(design)`. It is not a destination: nothing is caught, earned or spent in it.
+- **Furniture, left to right.** A curtained window with a sill and a floor cushion; a red couch under a landscape picture; a table with two chairs and a stool; a stone fireplace on a patterned rug with a pouf and a potted plant; a bookshelf with a lamp, a wall clock and a beanbag `(content: apps/activity/src/sprites/data/room-sprites.ts)`.
+- **Time of day.** The room follows the server's clock: daylight through the window by day, an orange and pink sky at dawn and dusk, the moon and lamplight at night. Night is the same hours as the Moonlit Reef's `(design)`. The fire is always lit `(content: room-sprites.ts)`.
+- **Who lounges.** A creature does one thing at a time ("creature permanence", Misa's term): one away on an expedition or busy at the workshop cannot lounge. Raiders can, since the raid is a weekly event, not a job `(design)`. When all of a player's creatures are busy, their spot shows a note on a cushion: "all out working" `(content: room-view.ts)`.
+- **Bubble lines.** Short, warm, lowercase, a few characters each: emotes (♪, zzz, !, ..., ?, ♥, hehe) and two-word comforts ("cozy", "warm here", "nice rug", "so snug", "snooze", "tea time", "good fire") `(content: apps/activity/src/room-bubbles.ts)`. New lines should stay as short and as gentle; no jokes at a player's expense, no game advice.
+- **Name.** "The living room" for now. A world name (a hearth, a den) is an open seed: if one is chosen, record it here and in `threads.md` `(compendium detail, not shipped)`.

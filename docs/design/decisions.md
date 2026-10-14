@@ -913,3 +913,21 @@ The raid Placement and the dungeon team now draw their slots, tray, drag ghost a
 **Why not Storybook or Ladle.** Both bring large dependency trees (many transitive packages, a second build tool) and each package is supply-chain surface under our rules; neither would be gated by the existing staging switch without extra work. The home-grown version has zero new dependencies, uses the same Vite build, the real components and the real stylesheet (so a component looks the same as in the game), reuses the staging gate, and is small enough for agents to read and change. A registry test makes it impossible to add a `src/ui` component without a page.
 
 **Tradeoffs.** Fewer features than Storybook: no addon ecosystem, no automatic prop tables (each entry lists its controls by hand), no visual regression tooling, no docs pages. Props are limited to numbers, choices, toggles and text; component inputs that are whole game objects are built from fixture data in the entry. Screens that need a full game state are not covered. Feedback is a plain link to a GitHub issue (no token, no API call), so Misa must be signed in to GitHub to send it.
+
+## 2026-10-14: The living room's lounger and `/api/room`
+
+**Decision.** Each player has one **lounger**, the creature that sits in the living room, stored on the player (`players.lounger_id`, a nullable column from migration 21, no backfill). It is picked lazily: whenever `GET /api/state` or `POST /api/room` reads it and finds it missing, gone (fused away) or busy, the server picks a new idle creature of the player at random (`crypto.getRandomValues` through `pickLounger` in `@creatures/game`) and stores it, or stores NULL when every creature is busy. A player with no creatures gets null and nothing is written. The choice is not remembered for later: whoever is on the couch is the lounger. `PUT /api/lounger` lets the player choose (404 `creature_not_found` unless theirs, 409 `creature_busy` on an expedition or a workshop job).
+
+**Creature permanence.** A creature does one thing at a time, so one on an expedition or an open workshop job cannot lounge. The raid is the one exception: raiders can lounge, so a raid team never changes who is idle. The rule reuses the "busy" meaning of the state view (`away_expedition_id` or an open `workshop_jobs` row).
+
+**`POST /api/room` trusts the ids the client sends.** The body is up to 25 distinct snowflakes (duplicates are a 400, not merged); they only say who to look up, never who is asking (that comes from the session). The answer covers players of this guild who chose a starter; everything else is left out silently, so the endpoint does not reveal which ids exist. It shows one creature of a guild-mate (species, level, nickname, quirk, Crafting level, Explorer rank) plus the sanitised display name: the same data class the raid roster already shows, scoped to the guild's own Durable Object and capped at 25 ids a request. It goes through the normal session auth and per-player rate limit. It reads in bounded queries (one for players, one per looked-up player to resolve the lounger, three for the creature details) and may write, so it runs in one transaction.
+
+## 2026-10-14: Living room presence comes from the Discord SDK, not the server
+
+**Decision.** Who is "here" is the activity instance's participant list from the Embedded App SDK (`getInstanceConnectedParticipants` plus `ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE`). The server keeps no presence: no heartbeat, no WebSocket, no polling. A client asks `POST /api/room` once at start, then only for newcomers (debounced 2 s); leaves cost nothing; a tab switch refetches only when the data is over 60 s old.
+
+**Why.** Misa wants idle games to cost nothing. Discord already pushes joins and leaves to every client.
+
+**Tradeoff.** Presence is per activity instance: players who opened the game from different channels do not see each other. Misa accepted this. A guild-wide room would need a server heartbeat.
+
+**Also.** Spot assignment is client-side and deterministic (FNV-1a of instance id and user id), so everyone in an instance sees the same room. Speech bubbles and the idle pan are local cosmetics using browser crypto randomness; they are not game state, so the server-RNG rule does not apply to them.

@@ -612,6 +612,13 @@ export const RULES = {
       xpPer10: 2,
     },
   },
+  /**
+   * The living room's light follows the guild's local time: night is `RULES.expeditions.night`, and
+   * twilight is the `twilightHours` just outside it (the dawn after the night, the dusk before it).
+   */
+  room: {
+    twilightHours: 2,
+  },
   nickname: {
     maxCodePoints: 20,
     /** Inputs longer than this (UTF-16 units) are refused before any normalisation work. */

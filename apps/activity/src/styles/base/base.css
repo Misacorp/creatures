@@ -76,30 +76,6 @@ p {
   margin: 0.25rem 0;
 }
 
-.bait {
-  margin: 0.25rem 0 0.75rem;
-  font-size: 1.125rem;
-}
-
-.bait-amount {
-  font-family: var(--display);
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--gold);
-}
-
-.essence {
-  margin: 0 0 0.75rem;
-  font-size: 1.125rem;
-}
-
-.essence-amount {
-  font-family: var(--display);
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--gold);
-}
-
 .notice {
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--good);

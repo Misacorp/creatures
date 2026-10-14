@@ -2,9 +2,12 @@ import { content, entryView } from '@creatures/game';
 import type { GlossarySection, GlossaryView } from '@creatures/game';
 import { createContext, type ComponentChildren, type RefObject } from 'preact';
 import { useContext, useMemo, useRef, useState } from 'preact/hooks';
-import { backLabel, type CreatureInfo } from './creature-info';
+import { backLabel, creatureFacts, shownWornItem, type CreatureInfo } from './creature-info';
+import { shinyPalette } from './art';
+import { speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { MORE_LABEL, resolveTag, tagKey, visualPlan, type TagRef } from './glossary-ui';
+import { WornItemLine } from './WornItemLine';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -124,7 +127,8 @@ function TagPopover({
 }
 
 /**
- * The popover of a small creature: its name, level, role and element as tags. Tapping a tag
+ * The popover of a small creature: its picture with its name, level, role and element tags beside it,
+ * then its facts and worn item below. Tapping a tag
  * switches this same popover to that glossary entry (the content a tag shows anywhere else), with
  * a back control; Escape goes back first and then closes. The faces are the creature itself
  * (`null`) and one glossary entry (its id).
@@ -139,6 +143,7 @@ function CreaturePopover({
   onMore: (section: GlossarySection) => void;
 }) {
   const { info } = open;
+  const worn = shownWornItem(info);
   const nav = usePopoverNav<string | null>(null, open);
   const entry = nav.view === null ? undefined : entryView(nav.view);
   // An entry the content does not know shows the creature instead.
@@ -154,20 +159,32 @@ function CreaturePopover({
     >
       {entry === undefined ? (
         <PopoverCard
-          visual={<Sprite sprite={creatureSpriteOrFallback(info.species)} scale={4} />}
+          visual={
+            <Sprite
+              sprite={creatureSpriteOrFallback(info.species)}
+              scale={4}
+              {...(info.shiny === true && shinyPalette(info.species) !== undefined
+                ? { palette: shinyPalette(info.species) as Readonly<Record<string, string>> }
+                : {})}
+            />
+          }
           title={info.name}
           short={`Level ${String(info.level)}`}
+          lines={creatureFacts(info, speciesName(info.species))}
+          beside={
+            <p class="tags pop-tags">
+              <ElementChip
+                as="button"
+                element={info.element}
+                role={info.role}
+                onOpen={(id) => {
+                  nav.open(id);
+                }}
+              />
+            </p>
+          }
         >
-          <p class="tags pop-tags">
-            <ElementChip
-              as="button"
-              element={info.element}
-              role={info.role}
-              onOpen={(id) => {
-                nav.open(id);
-              }}
-            />
-          </p>
+          {worn !== null && <WornItemLine worn={worn} />}
         </PopoverCard>
       ) : (
         <>

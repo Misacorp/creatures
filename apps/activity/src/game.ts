@@ -189,6 +189,9 @@ const ERROR_TEXT: Record<string, string> = {
   // Gear and the Workshop.
   insufficient_parts: 'You do not have the parts for that.',
   creature_on_job: 'That creature is on a job in the Workshop. Claim it first.',
+  // The living room.
+  creature_not_found: 'That creature no longer exists. The page was refreshed.',
+  creature_busy: 'That creature is out working, so it cannot lounge. The page was refreshed.',
   workshop_full: 'All Workshop slots are in use. Claim a finished job or wait for one to end.',
   inventory_full: 'Your bag is full. Dismantle an item to make room.',
   item_busy: 'That item is in a Workshop job. Claim the job first.',

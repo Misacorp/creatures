@@ -54,6 +54,33 @@ export function gearName(baseId: string): string {
   return gearBase(baseId)?.name ?? baseId;
 }
 
+/**
+ * The worn item as a creature card and the living room's popover draw it. `primary` is the main stat
+ * now; missing while the owner's gear view has not loaded (the line then shows no bonus).
+ */
+export interface WornItem {
+  baseId: string;
+  rarity: GearRarity;
+  level: number;
+  enchantId: string | null;
+  primary?: { stat: GearStat; bp: number };
+}
+
+/** The item a creature wears (`Creature.gear`), with its main stat taken from the gear view's items. */
+export function wornItemOf(
+  worn: NonNullable<Creature['gear']>,
+  items: readonly GearItem[] | undefined,
+): WornItem {
+  const primary = items?.find((i) => i.id === worn.id)?.primary;
+  return {
+    baseId: worn.baseId,
+    rarity: worn.rarity,
+    level: worn.level,
+    enchantId: worn.enchantId,
+    ...(primary === undefined ? {} : { primary }),
+  };
+}
+
 /** "Wave Band +2". */
 export function itemLabel(baseId: string, level: number): string {
   return `${gearName(baseId)} +${String(level)}`;

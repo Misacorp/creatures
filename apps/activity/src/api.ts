@@ -13,7 +13,8 @@ import type {
   TripCatch,
   TripResult,
 } from './expedition-types';
-import type { CreatureGearFields } from './gear-types';
+import { isRarity, isRoll } from './gear-parse';
+import type { CreatureGearFields, GearStat } from './gear-types';
 import { isInt, isNullableInt, isRecord, isStr } from './parse-core';
 import { createReauth, type Reauth } from './reauth';
 
@@ -332,6 +333,8 @@ export interface GameState {
   leetSync: LeetSyncStatus | null;
   /** The guild's IANA timezone; present on GET /api/state only (null in action responses). */
   timezone: string | null;
+  /** The creature that lounges in the living room; null when every creature is busy. */
+  loungerId: string | null;
 }
 
 function isStats(value: unknown): value is Creature['stats'] {
@@ -431,6 +434,7 @@ export function parseGameState(data: unknown): GameState {
     !data['serverFirsts'].every(isServerFirst) ||
     !(data['leetSync'] === undefined || isLeetSyncStatus(data['leetSync'])) ||
     !(data['timezone'] === undefined || isStr(data['timezone'])) ||
+    !(data['loungerId'] === null || isStr(data['loungerId'])) ||
     !(
       data['starterOptions'] === undefined ||
       (Array.isArray(data['starterOptions']) && data['starterOptions'].every(isStr))
@@ -452,6 +456,7 @@ export function parseGameState(data: unknown): GameState {
     serverFirsts: data['serverFirsts'],
     leetSync: data['leetSync'] ?? null,
     timezone: data['timezone'] ?? null,
+    loungerId: data['loungerId'],
   };
 }
 
@@ -507,4 +512,92 @@ export async function evolveCreature(
     throw new Error('the server returned an unexpected evolve result');
   }
   return { species: data['species'], firstOnServer: data['firstOnServer'], state: stateFrom(data) };
+}
+
+/** Makes this creature the one that lounges in the living room. Answers the new lounger's id. */
+export async function setLounger(creatureId: string): Promise<string> {
+  const data = await apiFetch('/api/lounger', jsonRequest('PUT', { creatureId }));
+  if (!isRecord(data) || !isStr(data['loungerId'])) {
+    throw new Error('the server returned an unexpected lounger answer');
+  }
+  return data['loungerId'];
+}
+
+/** One creature of a resident of the living room, as the room and its popover show it. */
+export interface RoomCreature {
+  id: string;
+  species: string;
+  shiny: boolean;
+  level: number;
+  nickname: string | null;
+  quirk: string | null;
+  craftingLevel: number;
+  explorerRank: number;
+  /** The item it wears (like `Creature.gear`), with the main stat it gives now; null when none. */
+  gear: RoomGear | null;
+}
+
+/** A worn item in the living room: the state view's item fields plus its main stat and value. */
+export type RoomGear = NonNullable<CreatureGearFields['gear']> & {
+  primary: { stat: GearStat; bp: number };
+};
+
+/** A player in the living room: the name, and the lounger (null when all their creatures are busy). */
+export interface RoomResident {
+  userId: string;
+  name: string;
+  creature: RoomCreature | null;
+}
+
+function isRoomGear(value: unknown): value is RoomGear {
+  return (
+    isRecord(value) &&
+    isStr(value['id']) &&
+    isStr(value['baseId']) &&
+    isRarity(value['rarity']) &&
+    isInt(value['level']) &&
+    (value['enchantId'] === null || isStr(value['enchantId'])) &&
+    isRoll(value['primary'])
+  );
+}
+
+function isRoomCreature(value: unknown): value is RoomCreature {
+  return (
+    isRecord(value) &&
+    isStr(value['id']) &&
+    isStr(value['species']) &&
+    typeof value['shiny'] === 'boolean' &&
+    isInt(value['level']) &&
+    (value['nickname'] === null || isStr(value['nickname'])) &&
+    (value['quirk'] === null || isStr(value['quirk'])) &&
+    isInt(value['craftingLevel']) &&
+    isInt(value['explorerRank']) &&
+    (value['gear'] === null || isRoomGear(value['gear']))
+  );
+}
+
+function isRoomResident(value: unknown): value is RoomResident {
+  return (
+    isRecord(value) &&
+    isStr(value['userId']) &&
+    isStr(value['name']) &&
+    (value['creature'] === null || isRoomCreature(value['creature']))
+  );
+}
+
+/** Checks the answer of POST /api/room. */
+export function parseRoom(data: unknown): RoomResident[] {
+  if (
+    !isRecord(data) ||
+    !Array.isArray(data['residents']) ||
+    !data['residents'].every(isRoomResident)
+  ) {
+    throw new Error('/api/room returned an unexpected shape');
+  }
+  return data['residents'];
+}
+
+/** The loungers of these players (1 to 25 ids); players that are not in this guild are left out. */
+export async function fetchRoom(userIds: readonly string[]): Promise<RoomResident[]> {
+  return parseRoom(await apiFetch('/api/room', jsonRequest('POST', { userIds })));
 }
