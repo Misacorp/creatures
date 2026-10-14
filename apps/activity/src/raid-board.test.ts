@@ -9,6 +9,7 @@ import {
   boardSlot,
   laneCount,
   laneStates,
+  keepSpanInView,
   ownLaneSpan,
   pipLabel,
   placeOf,
@@ -159,6 +160,29 @@ describe('scrollToSpan', () => {
 
   it('does not scroll when everything fits', () => {
     expect(scrollToSpan(100, 160, 300, 280)).toBe(0);
+  });
+});
+
+describe('keepSpanInView', () => {
+  it('leaves the scroll alone when the span is on screen with room to spare', () => {
+    // Window 300 to 540; a tile at 380 to 432 with a 50 px margin is well inside.
+    expect(keepSpanInView(380, 432, 300, 240, 900, 50)).toBe(300);
+  });
+
+  it('moves when the span is too near an edge, or off screen', () => {
+    expect(keepSpanInView(310, 362, 300, 240, 900, 50)).toBe(310 + 26 - 120);
+    expect(keepSpanInView(520, 572, 300, 240, 900, 50)).toBe(520 + 26 - 120);
+    expect(keepSpanInView(40, 92, 300, 240, 900, 50)).toBe(0);
+    expect(keepSpanInView(800, 852, 0, 240, 900, 50)).toBe(660);
+  });
+
+  it('never scrolls past either end', () => {
+    expect(keepSpanInView(0, 52, 400, 240, 900, 50)).toBe(0);
+    expect(keepSpanInView(848, 900, 0, 240, 900, 50)).toBe(660);
+  });
+
+  it('clamps a scroll position that is past the end before judging', () => {
+    expect(keepSpanInView(700, 752, 5000, 240, 900, 10)).toBe(660);
   });
 });
 

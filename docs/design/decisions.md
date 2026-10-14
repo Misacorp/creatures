@@ -1011,3 +1011,13 @@ No retune was made; the numbers are handed to the lead. `exp-casual-discovery` a
 - **Sit-out.** Opt-outs are no longer honoured: the roster ignores `raid_opt_outs`, and the client has no button or status line. The route `PUT /api/raid/opt-out` stays for one release as a validating no-op (always answers not opted out) so no client breaks mid-week; the table and route go in a later migration.
 
 **Why.** Misa's review of the raid page on a phone: a grid where lanes line up, compact tiles, and no weekly button that can hurt the party by accident. Dropping the server check at once means nobody who sat a week out with the old button stays stuck out after the button is gone.
+
+## 2026-10-14: The raid stage is a lane grid, like the placement board
+
+**Decision.** The raid fight stage (replay and live finale) draws its party the way the placement board does: Front, Middle and Back are three lines that never wrap, a lane is a column, the row names are a fixed column at the left, and the three lines scroll sideways together in one scroller. Tiles are small (sprite scale 2, 3.25 rem wide, one-line name with an ellipsis) so about four lanes fit on a 360 px phone. Before the fight starts the stage scrolls to the viewer's own creatures; as it plays it follows the creature that acts, and only moves when that creature is not on screen with a tile to spare. The scroll is instant under `prefers-reduced-motion`, and it waits four seconds after the player scrolls by hand. A lane-number row sits above the grid; the lane pips are not used on the stage, because the stage is already tall and the numbers give the same orientation. The dungeon's single row is unchanged (checked pixel for pixel at 360 and 390 px).
+
+**How.** The rows and lanes come from `boardRows`, `placeOf` and `laneStates` in `raid-board.ts` (which use the engine's `ZONES` and `zoneIndices`), plus one new pure helper, `keepSpanInView`. The grid CSS the board and the stage share moved to `components/lane-grid.css`; the stage's own rules are in `stage/stage-grid.css`. The measured tier picking (`STAGE_LAYOUT`) is gone, since nothing wraps any more.
+
+**Known limits.** A reaction burst or a strike beam aimed at a creature outside the window is clipped by the scroller (the beam is drawn to where the creature is). Floating numbers rise less than before, so the scroller does not cut them off. Adjacent lanes owned by the viewer touch.
+
+**Why.** Misa's phone review: with 11 players a zone has 11 creatures, and wrapped boxes hid which creature stands beside which. The same grid on the board and the stage means a lane looks the same in both places.

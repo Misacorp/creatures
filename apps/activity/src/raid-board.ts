@@ -173,3 +173,22 @@ export function boardSlot(
     },
   };
 }
+
+/**
+ * Where to scroll the board sideways so the span from `left` to `right` (in scroll-content pixels)
+ * is on screen with `margin` to spare at both ends. A span that is already there leaves the scroll
+ * where it is (so the fight stage does not shuffle for every creature); otherwise it is placed as
+ * `scrollToSpan` does. The result is never past either end.
+ */
+export function keepSpanInView(
+  left: number,
+  right: number,
+  scrollLeft: number,
+  viewport: number,
+  scrollWidth: number,
+  margin: number,
+): number {
+  const current = Math.max(0, Math.min(Math.max(0, scrollWidth - viewport), scrollLeft));
+  if (left - margin >= current && right + margin <= current + viewport) return Math.round(current);
+  return scrollToSpan(left, right, viewport, scrollWidth);
+}
