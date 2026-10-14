@@ -10,6 +10,7 @@ import {
   SCROLL_EDGE,
   autoScrollSpeed,
   hitTest,
+  holdMove,
   move,
   pageScrollSpeed,
   press,
@@ -33,8 +34,13 @@ interface UseDragDropArgs {
   disabled: boolean;
   /** The strip holding the slots (`[data-slot]` buttons): the raid board scrolls sideways. */
   stripRef: RefObject<HTMLElement>;
-  /** The team tray: dropping a placed creature here unplaces it. */
-  trayRef: RefObject<HTMLElement>;
+  /** The team tray (the dungeon's): dropping a placed creature here takes it out. Absent: no tray. */
+  trayRef?: RefObject<HTMLElement>;
+  /**
+   * Touch only: pick a creature up after the finger has rested on it this long (ms), and treat a
+   * move before that as a scroll. Absent: a touch drags at once, as a mouse does (the dungeon).
+   */
+  touchHoldMs?: number;
   /** Called when a drag ends: `target` is null for a drop off the row or a cancel. */
   onDrop: (creatureId: string, target: DropTarget | null) => DropOutcome<unknown>;
 }
@@ -105,7 +111,7 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
         if (slot !== null) return { kind: 'slot', slot };
       }
     }
-    const tray = latest.current.trayRef.current;
+    const tray = latest.current.trayRef?.current ?? null;
     if (tray !== null) {
       const t = tray.getBoundingClientRect();
       if (p.x >= t.left && p.x <= t.right && p.y >= t.top && p.y <= t.bottom) {
@@ -130,6 +136,10 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
     });
     pointer.current = { x: event.clientX, y: event.clientY };
     let frame = 0;
+    // A finger on the raid board picks a creature up only after a short hold, so a swipe still scrolls.
+    const holdMs = latest.current.touchHoldMs;
+    const holdToDrag = holdMs !== undefined && event.pointerType === 'touch';
+    let holdTimer: ReturnType<typeof setTimeout> | null = null;
 
     const refreshOver = (): void => {
       const current = state;
@@ -157,29 +167,44 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
       }
     };
 
+    /** The press becomes a drag: the creature is lifted, the pointer is captured and the ghost follows. */
+    const lift = (next: DragPhase<string, DropTarget>): void => {
+      suppressClick.current = true;
+      try {
+        source.setPointerCapture(pointerId);
+      } catch {
+        // The pointer may already be gone; the window listeners still work.
+      }
+      window.getSelection()?.removeAllRanges();
+      const over = locate(pointer.current);
+      state = next.phase === 'dragging' ? { ...next, over } : next;
+      setDrag({ creatureId, over });
+      frame = requestAnimationFrame(tick);
+    };
+
     const onMove = (e: PointerEvent): void => {
       if (e.pointerId !== pointerId) return;
       pointer.current = { x: e.clientX, y: e.clientY };
+      if (holdToDrag && state.phase === 'pending') {
+        // Moved before the hold was over: a swipe. Let go, and the browser scrolls.
+        if (holdMove(state.start, pointer.current) === 'swipe') stop();
+        return;
+      }
       const before = state.phase;
       const next = move(state, pointer.current, null);
       state = next;
       if (next.phase !== 'dragging') return;
       if (before === 'pending') {
-        suppressClick.current = true;
-        try {
-          source.setPointerCapture(pointerId);
-        } catch {
-          // The pointer may already be gone; the window listeners still work.
-        }
-        window.getSelection()?.removeAllRanges();
-        const over = locate(pointer.current);
-        state = { ...next, over };
-        setDrag({ creatureId, over });
-        frame = requestAnimationFrame(tick);
+        lift(next);
         return;
       }
       placeGhost();
       refreshOver();
+    };
+
+    // While a creature is carried by a finger the page must not scroll under it.
+    const onTouchMove = (e: TouchEvent): void => {
+      if (state.phase === 'dragging' && e.cancelable) e.preventDefault();
     };
 
     const onUp = (e: PointerEvent): void => {
@@ -225,6 +250,8 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
     }
 
     function stop(): void {
+      if (holdTimer !== null) clearTimeout(holdTimer);
+      window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
@@ -250,6 +277,13 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
     window.addEventListener('pointercancel', onCancel);
     window.addEventListener('keydown', onKey);
     window.addEventListener('contextmenu', onContext);
+    if (holdToDrag) {
+      window.addEventListener('touchmove', onTouchMove, { passive: false });
+      holdTimer = setTimeout(() => {
+        if (state.phase === 'pending')
+          lift({ ...state, phase: 'dragging', at: pointer.current, over: null });
+      }, holdMs);
+    }
     teardown.current = stop;
   }
 

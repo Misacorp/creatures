@@ -17,17 +17,31 @@ import { toggleActive, usePopoverNav } from './ui/popover-nav';
 /** What the open popover is about: a glossary entry or ability, a small creature, or anything else. */
 type OpenPopover = { key: string; anchor: HTMLElement } & (
   | { kind: 'tag'; ref: TagRef }
-  | { kind: 'creature'; info: CreatureInfo }
+  | { kind: 'creature'; info: CreatureInfo; action?: CreatureAction }
   | { kind: 'custom'; label: string; body: ComponentChildren }
 );
+
+/** A button under a creature's popover (the raid board's "Remove from board"). It closes the popover first. */
+export interface CreatureAction {
+  label: string;
+  onAct: () => void;
+}
 
 export interface PopoverHostApi {
   /** The element whose popover is open, if any: a trigger says `aria-expanded` when it is this one. */
   anchor: HTMLElement | null;
   /** A tap on a tag: opens its glossary popover, or closes it when that tag's is open. */
   openTag: (ref: TagRef, anchor: HTMLElement) => void;
-  /** A tap on a small creature: opens its popover (on the creature face), or closes it. */
-  openCreature: (key: string, info: CreatureInfo, anchor: HTMLElement) => void;
+  /**
+   * A tap on a small creature: opens its popover (on the creature face), or closes it. `action` adds
+   * a button under the facts.
+   */
+  openCreature: (
+    key: string,
+    info: CreatureInfo,
+    anchor: HTMLElement,
+    action?: CreatureAction,
+  ) => void;
   /** A tap on anything else that explains itself: opens a popover with this content, or closes it. */
   openCustom: (
     key: string,
@@ -185,6 +199,18 @@ function CreaturePopover({
           }
         >
           {worn !== null && <WornItemLine worn={worn} />}
+          {open.action !== undefined && (
+            <button
+              type="button"
+              class="pop-action"
+              onClick={() => {
+                onClose();
+                open.action?.onAct();
+              }}
+            >
+              {open.action.label}
+            </button>
+          )}
         </PopoverCard>
       ) : (
         <>
@@ -219,8 +245,16 @@ export function PopoverHost({
       openTag: (ref, anchor) => {
         setOpen((current) => toggleActive(current, { kind: 'tag', key: tagKey(ref), anchor, ref }));
       },
-      openCreature: (key, info, anchor) => {
-        setOpen((current) => toggleActive(current, { kind: 'creature', key, anchor, info }));
+      openCreature: (key, info, anchor, action) => {
+        setOpen((current) =>
+          toggleActive(current, {
+            kind: 'creature',
+            key,
+            anchor,
+            info,
+            ...(action === undefined ? {} : { action }),
+          }),
+        );
       },
       openCustom: (key, anchor, popover) => {
         setOpen((current) => toggleActive(current, { kind: 'custom', key, anchor, ...popover }));

@@ -1,11 +1,10 @@
-import { RULES } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { AbilityChip } from './AbilityChip';
 import { AfterAction } from './AfterAction';
 import { ApiError, type Creature } from './api';
 import { SHOW_COACH_MARK } from './coach';
 import { CoachMark } from './CoachMark';
-import { clockOffset, creatureName, errorText } from './game';
+import { clockOffset, errorText } from './game';
 import { useActionRunner } from './use-action-runner';
 import { GlossaryTag } from './Glossary';
 import { useServerNow } from './hooks';
@@ -20,14 +19,12 @@ import {
   placeCreature,
   setRaidAbility,
   setRaidAutofire,
-  setRaidTeam,
   unplaceCreature,
   type PhaseResultView,
   type RaidPhaseId,
   type RaidView,
 } from './raid-api';
-import { reduceTap, togglePick, unplaceIntent, type Intent, type TapResult } from './raid-slots';
-import type { Selection } from './slot-outcome';
+import type { Intent } from './raid-slots';
 import { festivalGrantText, rankChangeText } from './raid-progress';
 import { phaseName } from './raid-text';
 import { BossCard } from './BossCard';
@@ -36,8 +33,6 @@ import type { NowTarget } from './raid-now';
 import { showFullResults } from './raid-timeline';
 import { RaidNews } from './RaidNews';
 import { Placement } from './Placement';
-import { resolveDrop, type RaidDropOutcome } from './raid-dnd';
-import type { DropTarget } from './slot-outcome';
 
 interface Loaded {
   view: RaidView;
@@ -61,9 +56,6 @@ export function Raid({
 }) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Selection>(null);
-  const [hint, setHint] = useState<string | null>(null);
-  const [picking, setPicking] = useState<string[] | null>(null);
   /** The replay on screen: the week and party come from the result or reveal it was opened from. */
   const [replay, setReplay] = useState<{
     week: string;
@@ -73,12 +65,9 @@ export function Raid({
   const [liveOpen, setLiveOpen] = useState(false);
   const [liveInitial, setLiveInitial] = useState<LiveSnapshot | null>(null);
   const [practiceGone, setPracticeGone] = useState(false);
-  // Placement is not a spend, so no keys: one change at a time. After a definite "no" the pick is
-  // dropped and, if the screen was stale, the raid is loaded again.
+  // Placement is not a spend, so no keys: one change at a time. After a definite "no", if the screen
+  // was stale, the raid is loaded again.
   const { busy, error, setBusy, setError, run } = useActionRunner({
-    onFail: () => {
-      setSelected(null);
-    },
     onStale: async () => {
       apply(await fetchRaid());
     },
@@ -198,12 +187,6 @@ export function Raid({
     );
   }
 
-  function applyTap(result: TapResult): void {
-    setSelected(result.selected);
-    setHint(result.hint);
-    if (result.intent !== null) runIntent(result.intent);
-  }
-
   if (loadError !== null) {
     return (
       <p class="error" role="alert">
@@ -215,8 +198,6 @@ export function Raid({
 
   const { view } = loaded;
   const party = view.party;
-  const team = view.you.team;
-  const locked = busy || !view.you.canEdit;
   const rosterNames = view.roster.map((r) => r.displayName);
   const { reveal } = view.you;
 
@@ -249,22 +230,6 @@ export function Raid({
         }}
       />
     );
-  }
-
-  const ctx = {
-    locked: !view.you.canEdit,
-    row: party?.row ?? [],
-    teamIds: team?.creatures.map((c) => c.creatureId) ?? [],
-  };
-
-  /** A creature was dropped: decide, then send what the server must do. The server still decides. */
-  function handleDrop(creatureId: string, target: DropTarget | null): RaidDropOutcome {
-    const name = team?.creatures.find((c) => c.creatureId === creatureId)?.name ?? 'Creature';
-    const outcome = resolveDrop(ctx, creatureId, name, target);
-    setSelected(null);
-    setHint(outcome.hint);
-    if (outcome.intent !== null) runIntent(outcome.intent);
-    return outcome;
   }
 
   /** The "what to do now" button: go to the placement step or open the finale. */
@@ -325,56 +290,16 @@ export function Raid({
         </details>
       )}
       <BossCard view={view} />
-      {party !== null && team !== null && (
+      {party !== null && (
         <Placement
           party={party}
-          team={team}
-          ctx={ctx}
-          disabled={locked}
-          busy={busy}
+          creatures={creatures}
           canEdit={view.you.canEdit}
-          selected={selected}
-          hint={hint}
+          busy={busy}
           rosterNames={rosterNames}
           turnOrder={view.boss.turnOrder}
-          teamControls={
-            <TeamPicker
-              creatures={creatures}
-              picking={picking}
-              busy={busy}
-              mode={team.mode}
-              onStart={() => {
-                setPicking(team.creatures.map((c) => c.creatureId));
-              }}
-              onCancel={() => {
-                setPicking(null);
-              }}
-              onToggle={(id) => {
-                setPicking((current) => togglePick(current ?? [], id, RULES.raid.teamSize));
-              }}
-              onSave={(ids) => {
-                void mutate(() => setRaidTeam(ids)).then((ok) => {
-                  if (ok) setPicking(null);
-                });
-              }}
-              onAuto={() => {
-                void mutate(() => setRaidTeam(null)).then((ok) => {
-                  if (ok) setPicking(null);
-                });
-              }}
-            />
-          }
-          onTap={(tap) => {
-            applyTap(reduceTap(ctx, selected, tap));
-          }}
-          onUnplace={() => {
-            applyTap(unplaceIntent(ctx.row, selected));
-          }}
-          onDrop={handleDrop}
-          onCancel={() => {
-            setSelected(null);
-            setHint(null);
-          }}
+          next={view.next}
+          onIntent={runIntent}
         />
       )}
 
@@ -383,7 +308,7 @@ export function Raid({
           you={view.you}
           current={view.you.ability}
           abilities={view.you.abilities}
-          team={team?.creatures ?? []}
+          team={view.you.team?.creatures ?? []}
           editable={serverNow < view.schedule.finale}
           busy={busy}
           onPick={(abilityId) => {
@@ -418,92 +343,13 @@ export function Raid({
   );
 }
 
-/** Scrolls the placement step into view and puts focus on its first creature. */
+/** Scrolls the Raid Roster into view and puts focus on its first free slot (else its first slot). */
 function focusPlacement(): void {
   const section = document.getElementById('raid-placement');
   if (section === null) return;
   section.scrollIntoView({ block: 'start' });
-  section.querySelector<HTMLElement>('.team-chip:not(:disabled)')?.focus({ preventScroll: true });
-}
-
-function TeamPicker({
-  creatures,
-  picking,
-  busy,
-  mode,
-  onStart,
-  onCancel,
-  onToggle,
-  onSave,
-  onAuto,
-}: {
-  creatures: Creature[];
-  picking: string[] | null;
-  busy: boolean;
-  mode: 'auto' | 'chosen';
-  onStart: () => void;
-  onCancel: () => void;
-  onToggle: (id: string) => void;
-  onSave: (ids: string[]) => void;
-  onAuto: () => void;
-}) {
-  const size = RULES.raid.teamSize;
-  if (picking === null) {
-    return (
-      <p class="button-row">
-        <button type="button" disabled={busy} onClick={onStart}>
-          Choose team
-        </button>
-        <button type="button" disabled={busy || mode === 'auto'} onClick={onAuto}>
-          Use automatic team
-        </button>
-      </p>
-    );
-  }
-  return (
-    <fieldset class="picker">
-      <legend>
-        Pick exactly {size} creatures ({picking.length} / {size})
-      </legend>
-      {creatures.map((c) => {
-        const checked = picking.includes(c.id);
-        return (
-          <label key={c.id} class="pick">
-            <input
-              type="checkbox"
-              checked={checked}
-              disabled={busy || (!checked && picking.length >= size)}
-              onChange={() => {
-                onToggle(c.id);
-              }}
-            />
-            <span>
-              {creatureName(c)}{' '}
-              <span class="muted">
-                Lv {c.level}
-                {c.away ? ', away' : ''}
-              </span>
-            </span>
-          </label>
-        );
-      })}
-      <p class="button-row">
-        <button
-          type="button"
-          class="primary"
-          disabled={busy || picking.length !== size}
-          onClick={() => {
-            onSave(picking);
-          }}
-        >
-          Save team
-        </button>
-        <button type="button" disabled={busy} onClick={onCancel}>
-          Cancel
-        </button>
-      </p>
-    </fieldset>
-  );
+  const slots = [...section.querySelectorAll<HTMLElement>('[data-slot]:not(:disabled)')];
+  (slots.find((s) => s.classList.contains('empty')) ?? slots[0])?.focus({ preventScroll: true });
 }
 
 function ResultCard({

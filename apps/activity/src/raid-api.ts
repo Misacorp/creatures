@@ -162,6 +162,11 @@ export interface RaidView {
     party: number | null;
     canEdit: boolean;
     canOptOut: boolean;
+    /**
+     * The creatures the player brings: those placed on the board, then their strongest others up to
+     * three (`slot` null: placed automatically when a phase locks). `mode` is a leftover of the
+     * retired chosen team: the server always says `auto`, and a parser still accepts `chosen`.
+     */
     team: { mode: 'auto' | 'chosen'; creatures: TeamCreatureView[] } | null;
     /** The finale ability: `chosen` is false when it was assigned automatically. Null outside a party. */
     ability: { abilityId: string; chosen: boolean } | null;
@@ -693,11 +698,6 @@ export function parseStats(data: unknown): AfterActionStats {
 
 export async function fetchRaid(): Promise<RaidView> {
   return parseRaidView(await apiFetch('/api/raid'));
-}
-
-/** `creatureIds`: exactly three of the player's creatures, or null for the automatic team. */
-export async function setRaidTeam(creatureIds: readonly string[] | null): Promise<RaidView> {
-  return parseRaidView(await apiFetch('/api/raid/team', jsonRequest('PUT', { creatureIds })));
 }
 
 export async function placeCreature(creatureId: string, slot: number): Promise<RaidView> {

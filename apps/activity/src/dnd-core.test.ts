@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   DRAG_THRESHOLD,
   IDLE,
+  TOUCH_HOLD_MS,
   autoScrollSpeed,
   contains,
   hitTest,
+  holdMove,
   move,
   nextIndex,
   pageScrollSpeed,
@@ -206,5 +208,22 @@ describe('pageScrollSpeed', () => {
     expect(Math.abs(pageScrollSpeed(5, 700))).toBeGreaterThan(Math.abs(pageScrollSpeed(40, 700)));
     expect(pageScrollSpeed(-100, 700)).toBe(-16);
     expect(pageScrollSpeed(900, 700)).toBe(16);
+  });
+});
+
+describe('holdMove: a finger that has not been held long enough yet', () => {
+  it('keeps waiting through a small wobble', () => {
+    expect(holdMove({ x: 100, y: 100 }, { x: 103, y: 104 })).toBe('wait');
+    expect(holdMove({ x: 100, y: 100 }, { x: 100, y: 100 })).toBe('wait');
+  });
+
+  it('calls a real move a swipe, which scrolls instead of picking the creature up', () => {
+    expect(holdMove({ x: 100, y: 100 }, { x: 100 + DRAG_THRESHOLD, y: 100 })).toBe('swipe');
+    expect(holdMove({ x: 100, y: 100 }, { x: 60, y: 110 })).toBe('swipe');
+  });
+
+  it('asks for a short hold: long enough for a swipe to show itself, short enough to feel quick', () => {
+    expect(TOUCH_HOLD_MS).toBeGreaterThanOrEqual(150);
+    expect(TOUCH_HOLD_MS).toBeLessThanOrEqual(400);
   });
 });

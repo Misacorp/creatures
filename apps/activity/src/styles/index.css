@@ -83,6 +83,7 @@
 @import './views/raid-timeline.css';
 @import './views/raid-boss-card.css';
 @import './views/raid-placement.css';
+@import './components/roster-picker.css';
 @import './views/raid-abilities.css';
 @import './views/living-room.css';
 @import './components/currency-pile.css';

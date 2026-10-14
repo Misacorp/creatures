@@ -15,7 +15,6 @@ import {
   keepSpanInView,
   ownLaneSpan,
   parseTurnOrder,
-  pipLabel,
   placeOf,
   placeText,
   scrollToSpan,
@@ -118,12 +117,12 @@ describe('boardKeyTarget', () => {
   });
 });
 
-describe('lane pips', () => {
+describe('lanes', () => {
   const rows = boardRows(9);
   // Lane 0 holds my creature in Middle, lane 1 only someone else's, lane 2 is empty.
   const owners: Record<number, 'mine' | 'other'> = { 3: 'mine', 1: 'other', 0: 'other' };
 
-  it('lights yours, fills others and leaves empty lanes hollow', () => {
+  it('marks a lane yours, taken by others or empty', () => {
     const states = laneStates(rows, (slot) => owners[slot] ?? null);
     expect(states).toEqual(['mine', 'taken', 'empty']);
   });
@@ -139,12 +138,6 @@ describe('lane pips', () => {
   it('finds your first and last lane, or none', () => {
     expect(ownLaneSpan(['empty', 'mine', 'taken', 'mine', 'empty'])).toEqual({ first: 1, last: 3 });
     expect(ownLaneSpan(['empty', 'taken'])).toBeNull();
-  });
-
-  it('says what a pip is, in words', () => {
-    expect(pipLabel(3, 'mine')).toBe('Lane 3, yours');
-    expect(pipLabel(1, 'taken')).toBe('Lane 1, taken');
-    expect(pipLabel(2, 'empty')).toBe('Lane 2, empty');
   });
 });
 
@@ -231,10 +224,16 @@ describe('the tile of a creature', () => {
     expect(model.occupant?.owner?.initial).toBe('<');
   });
 
-  it('describes an empty tile by its place', () => {
+  it('describes an empty tile by its place, and says it takes a pick while the board can change', () => {
     const model = boardSlot(row(null), 33, names);
     expect(model.occupant).toBeNull();
-    expect(model.ariaLabel).toBe('Middle, lane 1, empty');
+    expect(model.ariaLabel).toBe('Middle, lane 1, empty. Choose a creature.');
+    expect(boardSlot(row(null), 33, names, false).ariaLabel).toBe('Middle, lane 1, empty');
+  });
+
+  it('lets nobody drag once the board is locked', () => {
+    const own = { ...theirs, ownerName: 'Misa', mine: true, creatureId: 'c1' };
+    expect(boardSlot(row(own), 33, names, false).occupant?.ownId).toBeNull();
   });
 
   it("puts the owner's full name in the popover info", () => {

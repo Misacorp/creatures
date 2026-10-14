@@ -1,20 +1,17 @@
 import { zoneIndices } from '@creatures/engine';
-import { useMemo, useRef, useState } from 'preact/hooks';
-import { usePopoverHost } from '../../PopoverHost';
-import type { RowSlotView } from '../../raid-api';
+import { useMemo, useState } from 'preact/hooks';
+import { Placement } from '../../Placement';
+import type { RaidView, RowSlotView } from '../../raid-api';
+import type { Intent } from '../../raid-slots';
 import {
-  ROW_NAMES,
-  boardCreatureInfo,
-  boardCues,
-  boardKeyTarget,
-  boardRows,
-  boardSlot,
-} from '../../raid-board';
-import { dropOutcome, type DropTarget, type Selection } from '../../slot-outcome';
-import { useDragDrop } from '../../use-drag-drop';
-import { LiveRegion } from '../../ui/LiveRegion';
-import { RaidBoard, type BoardRowModel } from '../../ui/RaidBoard';
-import { useSlotAnnouncer, useSlotKeyboard } from '../../ui/use-slot-keyboard';
+  BOARD_FULL_REASON,
+  MAX_ON_BOARD,
+  pickerOptions,
+  pickerTitle,
+  placedCount,
+  type PickerCreature,
+} from '../../roster-picker';
+import { RosterPicker } from '../../ui/RosterPicker';
 import { SPECIES_IDS, speciesLabel } from '../data';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
@@ -38,198 +35,172 @@ const NAMES = [
   'Max',
 ] as const;
 
-/** The slots (from 1) the cue presets pin: one that sets off a reaction, one that sets off nothing. */
-const PIN_REACTION = 3;
-const PIN_NONE = 4;
-/** A Support (it buffs the tiles beside it) and a Guard (it covers its row). */
-const PIN_BUFF = 7;
-const PIN_COVER = 5;
-
 const ZONES = ['front', 'middle', 'back'] as const;
 
-interface DemoCreature {
-  id: string;
+/** A creature of someone else on the demo's board. */
+interface Other {
   owner: number;
   species: string;
   level: number;
 }
 
-/** A party of `players` players, each with one creature in every row. Yours stands in `yourLane`. */
-function startRow(players: number, yourLane: number, empty: number): (DemoCreature | null)[] {
-  const length = players * 3;
-  const mine = Math.min(yourLane, players - 1);
-  const row: (DemoCreature | null)[] = Array.from({ length }, () => null);
-  let next = 1;
-  for (let lane = 0; lane < players; lane++) {
-    // Lanes at the end are left empty (nobody placed there yet), but yours is always filled.
-    if (lane !== mine && lane >= players - empty) continue;
-    const owner = lane === mine ? 0 : next++;
+/** What the demo's board holds: other players' creatures by slot, and your own creature ids by slot. */
+interface Board {
+  others: (Other | null)[];
+  mine: (string | null)[];
+}
+
+/** Slots in a party's row: nine with fewer than three players (guests fill the rest), else three each. */
+const rowLength = (players: number): number => (players < 3 ? 9 : players * 3);
+
+/** Everything you own in the demo: distinct species from the shipped content, levels spread out. */
+function ownedCreatures(count: number): PickerCreature[] {
+  return Array.from({ length: count }, (_, i) => {
+    const species = SPECIES_IDS[(i * 5 + 2) % SPECIES_IDS.length] ?? 'splashet';
+    return { id: `mine-${String(i)}`, species, nickname: null, level: 4 + ((i * 7) % 17) };
+  });
+}
+
+/**
+ * A party of `players` players: everyone else stands in one lane of three (one creature in every
+ * row) and `placed` of your creatures stand in your lane, one per row from the front.
+ */
+function startBoard(players: number, yourLane: number, placed: number, empty: number): Board {
+  const length = rowLength(players);
+  const lanes = length / 3;
+  const others: (Other | null)[] = Array.from({ length }, () => null);
+  const mine: (string | null)[] = Array.from({ length }, () => null);
+  const own = Math.min(yourLane, lanes - 1);
+  let owner = 1;
+  for (let lane = 0; lane < lanes && owner < players; lane++) {
+    if (lane === own) continue;
+    // Lanes at the end are left empty (nobody placed there yet).
+    if (lane >= lanes - empty) continue;
     ZONES.forEach((zone, z) => {
       const slot = zoneIndices(zone, length)[lane];
       if (slot === undefined) return;
-      row[slot] = {
-        id: `demo-${String(owner)}-${String(z)}`,
+      others[slot] = {
         owner,
         species: SPECIES_IDS[(owner * 3 + z * 5) % SPECIES_IDS.length] ?? 'splashet',
         level: 3 + ((owner * 7 + z * 4) % 18),
       };
     });
+    owner++;
   }
-  return row;
+  ZONES.slice(0, placed).forEach((zone, z) => {
+    const slot = zoneIndices(zone, length)[own];
+    if (slot !== undefined) mine[slot] = `mine-${String(z)}`;
+  });
+  return { others, mine };
 }
 
-/** The board wired like the game's Placement: tap, drag, the keyboard and the popover of others' creatures. */
-function BoardDemo({ p }: { p: Props }) {
-  const players = num(p, 'players');
-  const length = players * 3;
-  const [row, setRow] = useState(() => startRow(players, num(p, 'yourLane') - 1, num(p, 'empty')));
-  const [selected, setSelected] = useState<Selection>(null);
-  const [hovered, setHovered] = useState<number | null>(null);
-  const stripRef = useRef<HTMLDivElement>(null);
-  const trayRef = useRef<HTMLUListElement>(null);
-  const popovers = usePopoverHost();
-  const disabled = bool(p, 'disabled');
-  const rosterNames = useMemo(() => [...NAMES.slice(0, players)], [players]);
-
-  const slots: RowSlotView[] = row.map((c, slot) => ({
-    slot,
-    zone: ZONES.find((z) => zoneIndices(z, length).includes(slot)) ?? 'middle',
-    creature:
-      c === null
-        ? null
-        : {
-            ownerName: NAMES[c.owner] ?? 'Someone',
-            species: c.species,
-            name: speciesLabel(c.species),
-            level: c.level,
-            mine: c.owner === 0,
-            ...(c.owner === 0 ? { creatureId: c.id } : {}),
-          },
-  }));
-  const rows = boardRows(length);
-  const nameOf = (id: string): string => row.find((c) => c?.id === id)?.species ?? 'Creature';
-  const [announcement, announce] = useSlotAnnouncer(selected, nameOf);
-
-  /** Moves or swaps one of your creatures onto a slot (the server's rule: empty or yours). */
-  function place(id: string, slot: number): boolean {
-    const target = row[slot] ?? null;
-    if (target !== null && target.owner !== 0) return false;
-    const next = [...row];
-    const from = next.findIndex((c) => c?.id === id);
-    if (from < 0) return false;
-    next[from] = target;
-    next[slot] = row[from] ?? null;
-    setRow(next);
-    return true;
+/**
+ * The server's rules for a placement, as far as the demo needs them: an own creature that is not on
+ * the board needs a free place among three, an empty slot takes it, an own creature swaps, someone
+ * else's slot refuses. Returns the new board, or the reason it was refused.
+ */
+function applyIntent(board: Board, intent: Intent): Board | string {
+  const mine = [...board.mine];
+  const from = mine.indexOf(intent.creatureId);
+  if (intent.type === 'unplace') {
+    if (from >= 0) mine[from] = null;
+    return { ...board, mine };
   }
+  if (board.others[intent.slot] !== null) return 'That slot belongs to someone else.';
+  if (from < 0 && mine.filter((id) => id !== null).length >= MAX_ON_BOARD) return BOARD_FULL_REASON;
+  const there = mine[intent.slot] ?? null;
+  if (from >= 0) mine[from] = there;
+  mine[intent.slot] = intent.creatureId;
+  return { ...board, mine };
+}
 
-  const dragDrop = useDragDrop({
-    disabled,
-    stripRef,
-    trayRef,
-    onDrop: (id, target: DropTarget | null) => {
-      setSelected(null);
-      if (target === null || target.kind === 'tray') return dropOutcome('none', null, null, '');
-      const ok = place(id, target.slot);
-      announce(ok ? 'Placed.' : 'That slot belongs to someone else.');
-      return dropOutcome(ok ? 'valid' : 'invalid', null, null, '');
-    },
-  });
-  const dragging = dragDrop.drag?.creatureId ?? null;
-  const statuses =
-    dragging === null
-      ? null
-      : new Map(
-          slots.map((s) => [
-            s.slot,
-            s.creature === null || s.creature.mine ? ('valid' as const) : ('invalid' as const),
-          ]),
-        );
-
-  const onKeyDown = useSlotKeyboard({
-    stripRef,
-    selected,
-    busy: false,
-    vertical: true,
-    keyTarget: (current, key) => boardKeyTarget(rows, current, key),
-    onCancel: () => {
-      setSelected(null);
-      announce('Cancelled.');
-    },
-  });
-
-  function tapSlot(slot: number, button: HTMLElement): void {
-    if (dragDrop.consumeClick()) return;
-    const here = slots[slot]?.creature ?? null;
-    if (selected !== null) {
-      place(selected, slot);
-      setSelected(null);
-    } else if (here !== null && here.mine && here.creatureId !== undefined) {
-      setSelected(here.creatureId);
-    } else if (here !== null) {
-      const info = boardCreatureInfo(here);
-      if (info !== null) {
-        const line = boardCues({
-          ...cueArgs,
-          carried: null,
-          pointer: null,
-          inspected: slot,
-        }).effect;
-        popovers?.openCreature(
-          `demo-slot:${String(slot)}`,
-          line === null ? info : { ...info, effect: line },
-          button,
-        );
-      }
+/** The party view the Placement draws, from the demo's board. */
+function partyView(board: Board, owned: readonly PickerCreature[]): NonNullable<RaidView['party']> {
+  const length = board.mine.length;
+  const row: RowSlotView[] = board.mine.map((id, slot) => {
+    const zone = ZONES.find((z) => zoneIndices(z, length).includes(slot)) ?? 'middle';
+    const other = board.others[slot] ?? null;
+    const own = owned.find((c) => c.id === id);
+    if (own !== undefined) {
+      return {
+        slot,
+        zone,
+        creature: {
+          ownerName: NAMES[0],
+          species: own.species,
+          name: speciesLabel(own.species),
+          level: own.level,
+          mine: true,
+          creatureId: own.id,
+        },
+      };
     }
+    return {
+      slot,
+      zone,
+      creature:
+        other === null
+          ? null
+          : {
+              ownerName: NAMES[other.owner] ?? 'Someone',
+              species: other.species,
+              name: speciesLabel(other.species),
+              level: other.level,
+              mine: false,
+            },
+    };
+  });
+  return {
+    party: 1,
+    rowLength: length,
+    row,
+    guests: length === 9,
+    bossHp: null,
+    adaptation: null,
+    results: [],
+    readiness: null,
+  };
+}
+
+/** The whole Raid Roster, wired to a stand-in for the server (the same rules, no network). */
+function RosterDemo({ p }: { p: Props }) {
+  const players = num(p, 'players');
+  const owned = useMemo(() => ownedCreatures(num(p, 'owned')), [num(p, 'owned')]);
+  const [board, setBoard] = useState(() =>
+    startBoard(players, num(p, 'yourLane') - 1, num(p, 'placed'), num(p, 'empty')),
+  );
+  const [refused, setRefused] = useState<string | null>(null);
+  const locked = bool(p, 'locked');
+
+  function onIntent(intent: Intent): void {
+    const next = applyIntent(board, intent);
+    if (typeof next === 'string') {
+      setRefused(next);
+      return;
+    }
+    setRefused(null);
+    setBoard(next);
   }
 
-  // The cues, as the game's Placement draws them: the creature in focus is carried, under the
-  // pointer, or pinned by the page's "Pinned slot" control (a slot number from 1; 0 for none).
-  const carried = dragging ?? selected;
-  const over = dragDrop.drag?.over?.kind === 'slot' ? dragDrop.drag.over.slot : hovered;
-  const pin = num(p, 'pin') > 0 ? num(p, 'pin') - 1 : null;
-  const inspectedSlot = popovers?.anchor?.closest<HTMLElement>('[data-slot]')?.dataset.slot;
-  const cueArgs = { row: slots, length, tray: [], turnOrder: str(p, 'turnOrder') };
-  const { cues, noneRow, effect } = boardCues({
-    ...cueArgs,
-    carried,
-    pointer: over ?? (carried === null ? pin : null),
-    inspected: inspectedSlot === undefined ? null : Number(inspectedSlot),
-  });
-
-  const models: BoardRowModel[] = rows.map((r) => ({
-    zone: r.zone,
-    name: ROW_NAMES[r.zone],
-    label: ROW_NAMES[r.zone],
-    slots: r.slots.flatMap((n) => {
-      const s = slots[n];
-      return s === undefined ? [] : [boardSlot(s, length, rosterNames)];
-    }),
-  }));
-
+  const party = partyView(board, owned);
   return (
-    <div onKeyDown={onKeyDown}>
-      <p class="muted small">
-        Tap or drag one of your creatures (the tinted tiles), or use Enter and the arrow keys. Tap
-        someone else&apos;s creature to see whose it is.
-      </p>
-      <RaidBoard
-        rows={models}
-        stripRef={stripRef}
-        emptyLabel="empty"
-        disabled={disabled}
-        selected={selected}
-        drag={dragDrop}
-        statuses={statuses}
-        cues={cues.slots}
-        onHoverSlot={setHovered}
-        rail={{ none: cues.none, effect }}
-        noneRow={noneRow}
-        onTap={tapSlot}
+    <>
+      <Placement
+        party={party}
+        creatures={owned}
+        canEdit={!locked}
+        busy={false}
+        rosterNames={NAMES.slice(0, players)}
+        turnOrder={str(p, 'turnOrder')}
+        next={{ event: 'phase1', at: 0 }}
+        onIntent={onIntent}
       />
-      <LiveRegion>{announcement}</LiveRegion>
-    </div>
+      {refused !== null && (
+        <p class="muted" role="status">
+          The server would say no: {refused}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -238,47 +209,121 @@ const raidBoard: Entry = {
   file: 'apps/activity/src/ui/RaidBoard.tsx',
   group: 'Slots',
   description:
-    "The raid's party as a grid on the Raid tab: Front, Middle and Back are three lines, each lane is a column, and the lines scroll sideways together. A strip of pips above jumps to a lane.",
+    "The raid's Raid Roster on the Raid tab: the party as a grid (Front, Middle and Back are three lines, each lane a column, scrolling sideways together) under a count of how many of your creatures are placed. Tap an empty slot for the creature picker, tap a creature for its popover (yours has Remove from board), drag your own to move them.",
   controls: {
     players: { kind: 'number', min: 1, max: 15 },
     yourLane: { kind: 'number', min: 1, max: 15 },
+    placed: { kind: 'number', min: 0, max: 3 },
     empty: { kind: 'number', min: 0, max: 14 },
+    owned: { kind: 'number', min: 1, max: 12 },
     turnOrder: { kind: 'select', options: ['left_to_right', 'right_to_left', 'speed'] },
-    pin: { kind: 'number', min: 0, max: 45 },
-    disabled: { kind: 'toggle' },
+    locked: { kind: 'toggle' },
   },
   defaults: {
     players: 11,
     yourLane: 7,
-    empty: 0,
+    placed: 1,
+    empty: 3,
+    owned: 7,
     turnOrder: 'left_to_right',
-    pin: 0,
-    disabled: false,
+    locked: false,
   },
   presets: [
-    { name: 'Eleven players (33 slots)', props: {} },
-    { name: 'Just you (3 slots)', props: { players: 1, yourLane: 1 } },
-    { name: 'Four players', props: { players: 4, yourLane: 2 } },
-    { name: 'Full server (45 slots)', props: { players: 15, yourLane: 12 } },
-    { name: 'Late lanes empty', props: { empty: 4 } },
-    { name: 'Locked', props: { disabled: true } },
-    { name: 'Reaction cue (slot pinned)', props: { players: 4, yourLane: 2, pin: PIN_REACTION } },
-    { name: 'No reaction mark (slot pinned)', props: { players: 4, yourLane: 2, pin: PIN_NONE } },
+    { name: 'Eleven players, one of yours placed', props: {} },
+    { name: 'Nothing placed yet', props: { placed: 0 } },
+    { name: '3 / 3 placed (the picker disables new ones)', props: { placed: 3 } },
     {
-      name: 'Influence: a Support (slot pinned)',
-      props: { players: 4, yourLane: 2, pin: PIN_BUFF },
+      name: 'Just you (9 slots, guests fill the rest)',
+      props: { players: 1, yourLane: 1, empty: 0 },
     },
-    {
-      name: 'Influence: a Guard (slot pinned)',
-      props: { players: 4, yourLane: 2, pin: PIN_COVER },
-    },
+    { name: 'Four players', props: { players: 4, yourLane: 2, empty: 1 } },
+    { name: 'Full server (45 slots)', props: { players: 15, yourLane: 12, empty: 4 } },
+    { name: 'Locked (read-only, no remove button)', props: { locked: true, placed: 2 } },
   ],
   render: (p) => (
-    <BoardDemo
-      key={`${String(num(p, 'players'))}-${String(num(p, 'yourLane'))}-${String(num(p, 'empty'))}-${String(num(p, 'pin'))}-${str(p, 'turnOrder')}`}
+    <RosterDemo
+      key={`${String(num(p, 'players'))}-${String(num(p, 'yourLane'))}-${String(num(p, 'placed'))}-${String(num(p, 'empty'))}-${String(num(p, 'owned'))}-${str(p, 'turnOrder')}-${String(bool(p, 'locked'))}`}
       p={p}
     />
   ),
 };
 
-export const raidBoardEntries: readonly Entry[] = [raidBoard];
+/** The picker over a row where a Support and a Guard of yours are among the options. */
+function PickerDemo({ p }: { p: Props }) {
+  const [open, setOpen] = useState(bool(p, 'open'));
+  const owned = useMemo(() => ownedCreatures(num(p, 'owned')), [num(p, 'owned')]);
+  const board = useMemo(() => startBoard(5, 2, num(p, 'placed'), 1), [num(p, 'placed')]);
+  const party = partyView(board, owned);
+  // The first empty slot of the Middle row is the one being filled.
+  const slot = party.row.find((s) => s.zone === 'middle' && s.creature === null)?.slot ?? 0;
+  const options = pickerOptions({
+    creatures: owned,
+    row: party.row,
+    length: party.rowLength,
+    slot,
+    turnOrder: str(p, 'turnOrder'),
+    showEffects: bool(p, 'effects'),
+  });
+  return (
+    <>
+      <p class="muted small">
+        The picker is a sheet over the page. Close it with Escape or the Close button, and open it
+        again here.
+      </p>
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        Open the picker
+      </button>
+      {open && (
+        <RosterPicker
+          title={pickerTitle('Middle')}
+          status={`${String(placedCount(party.row))} / ${String(MAX_ON_BOARD)} on the board`}
+          options={options}
+          showEffects={bool(p, 'effects')}
+          anchor={() => null}
+          onPick={() => {
+            setOpen(false);
+          }}
+          onClose={() => {
+            setOpen(false);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+const rosterPicker: Entry = {
+  name: 'RosterPicker',
+  file: 'apps/activity/src/ui/RosterPicker.tsx',
+  group: 'Slots',
+  description:
+    'The creature picker of the Raid Roster: a bottom sheet listing everything you own with its level, element, role and, optionally, one quiet line about what it would do in the slot. Creatures already on the board say they move here; at 3 / 3 the new ones are disabled with the reason.',
+  controls: {
+    effects: { kind: 'toggle' },
+    placed: { kind: 'number', min: 0, max: 3 },
+    owned: { kind: 'number', min: 1, max: 12 },
+    turnOrder: { kind: 'select', options: ['left_to_right', 'right_to_left', 'speed'] },
+    open: { kind: 'toggle' },
+  },
+  defaults: { effects: true, placed: 1, owned: 7, turnOrder: 'left_to_right', open: true },
+  presets: [
+    { name: 'Effects on (the line under each creature)', props: { effects: true } },
+    { name: 'Effects off (names and tags only)', props: { effects: false } },
+    { name: '3 / 3 on the board (new ones disabled)', props: { placed: 3 } },
+    { name: 'Nothing on the board yet', props: { placed: 0 } },
+    { name: 'Few creatures (two)', props: { owned: 2 } },
+  ],
+  render: (p) => (
+    <PickerDemo
+      key={`${String(bool(p, 'effects'))}-${String(num(p, 'placed'))}-${String(num(p, 'owned'))}-${str(p, 'turnOrder')}-${String(bool(p, 'open'))}`}
+      p={p}
+    />
+  ),
+};
+
+export const raidBoardEntries: readonly Entry[] = [raidBoard, rosterPicker];

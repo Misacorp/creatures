@@ -159,6 +159,14 @@
   margin: 0.125rem 0;
 }
 
+/* An action under a creature's facts (the raid board's "Remove from board"). */
+button.pop-action {
+  width: 100%;
+  min-height: 2.25rem;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
 button.pop-more {
   width: 100%;
   min-height: 2.25rem;

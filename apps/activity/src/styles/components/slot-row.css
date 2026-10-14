@@ -193,36 +193,6 @@
   margin: 0.25rem 0 0;
 }
 
-/* The raid's tray is small: three chips in one row, sprite, name and level under it. */
-.placement .team-list {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.375rem;
-  margin: 0.25rem 0 0.75rem;
-}
-
-.placement .team-chip {
-  align-items: center;
-  padding: 0.25rem;
-  font-size: 0.8125rem;
-  line-height: 1.2;
-  text-align: center;
-}
-
-.placement .team-chip.placed {
-  background: var(--mine);
-}
-
-.placement .team-chip .muted {
-  font-size: 0.75rem;
-}
-
-.placement .team-tags {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.125rem;
-}
-
 /* --- Drag and drop --- */
 
 /* Anything that can be picked up: no scrolling or text selection starts on it. */

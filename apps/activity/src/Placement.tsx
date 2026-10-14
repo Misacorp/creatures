@@ -1,9 +1,11 @@
 import { GLOSSARY_IDS } from '@creatures/game';
-import type { ComponentChildren } from 'preact';
-import { useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { TOUCH_HOLD_MS } from './dnd-core';
+import { creatureInfoOf } from './creature-info';
+import { creatureName } from './game';
 import { GlossaryTag } from './Glossary';
 import { usePopoverHost } from './PopoverHost';
-import { cursorStart, resolveDrop, slotStatuses, type RaidDropOutcome } from './raid-dnd';
+import { resolveDrop, slotStatuses } from './raid-dnd';
 import type { RaidView } from './raid-api';
 import {
   ROW_NAMES,
@@ -14,115 +16,125 @@ import {
   boardSlot,
   placeText,
 } from './raid-board';
-import { canUnplace, type TapContext } from './raid-slots';
-import { CANCEL_ANNOUNCEMENT, type DropTarget, type Selection, type Tap } from './slot-outcome';
-import { CreatureTray } from './ui/CreatureTray';
+import type { Intent } from './raid-slots';
+import {
+  SHOW_PICKER_EFFECTS,
+  MAX_ON_BOARD,
+  pickerOptions,
+  pickerTitle,
+  placedCount,
+  placedLine,
+  type PickerCreature,
+} from './roster-picker';
 import { DragGhost } from './ui/DragGhost';
 import { LiveRegion } from './ui/LiveRegion';
 import { RaidBoard, type BoardRowModel } from './ui/RaidBoard';
-import { useSlotAnnouncer, useSlotKeyboard } from './ui/use-slot-keyboard';
+import { RosterPicker } from './ui/RosterPicker';
+import { useSlotKeyboard } from './ui/use-slot-keyboard';
 import { useDragDrop } from './use-drag-drop';
 
 type Party = NonNullable<RaidView['party']>;
-type Team = NonNullable<RaidView['you']['team']>;
 
 interface Props {
   party: Party;
-  team: Team;
-  ctx: TapContext;
-  /** True while a request is in flight or the row is locked. */
-  disabled: boolean;
+  /** Everything the player owns: the picker offers these. */
+  creatures: readonly PickerCreature[];
+  /** False once the board is locked: it is then read-only (no picker, no drag, no remove button). */
   canEdit: boolean;
-  selected: Selection;
-  hint: string | null;
+  /** A request is in flight: the tiles are switched off until it is answered. */
+  busy: boolean;
   rosterNames: readonly string[];
   /** How the boss's turn order reads (`left_to_right`, `right_to_left` or `speed`): the order reactions are set off in. */
   turnOrder: string;
-  /** Controls to show under the team tray (choose team, automatic team). */
-  teamControls: ComponentChildren;
-  busy: boolean;
-  onTap: (tap: Tap) => void;
-  onUnplace: () => void;
-  /** A drop (by drag or tap): the screen sends the intent and returns what happened. */
-  onDrop: (creatureId: string, target: DropTarget | null) => RaidDropOutcome;
-  onCancel: () => void;
+  /** The week's next event: when the creatures still missing from the board join by themselves. */
+  next: RaidView['next'];
+  /** What a move comes to: the screen sends it to the server, which decides. */
+  onIntent: (intent: Intent) => void;
 }
 
-/** The team tray and the party board, with tap, keyboard and drag-and-drop placement. */
+/**
+ * The Raid Roster: the party board, where the player places up to three creatures beside everyone
+ * else's. Tapping an empty slot (or pressing Enter on it) opens the creature picker; tapping a
+ * creature opens its popover (yours has "Remove from board"); your own creatures are dragged to move
+ * them (a finger needs a short press and hold, so a swipe still scrolls the board). When the board
+ * locks, the player's strongest creatures fill the places still empty, by the server.
+ */
 export function Placement(props: Props) {
-  const { party, team, ctx, disabled, selected, rosterNames } = props;
+  const { party, canEdit, busy, rosterNames } = props;
   const stripRef = useRef<HTMLDivElement>(null);
   const popovers = usePopoverHost();
   /** The slot under the mouse or the keyboard focus. */
   const [hovered, setHovered] = useState<number | null>(null);
-  const trayRef = useRef<HTMLUListElement>(null);
+  /** The empty slot the picker is open for. */
+  const [picking, setPicking] = useState<number | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
+  const [announcement, announce] = useState('');
+  /** The slot to focus again once the request that follows a pick or a remove is answered. */
+  const refocus = useRef<number | null>(null);
+
+  const rows = boardRows(party.rowLength);
+  const bySlot = new Map(party.row.map((slot) => [slot.slot, slot]));
+  const ctx = { locked: !canEdit, row: party.row };
+  const placed = placedCount(party.row);
 
   const nameOf = (creatureId: string): string =>
-    team.creatures.find((c) => c.creatureId === creatureId)?.name ?? 'Creature';
+    party.row.find((s) => s.creature?.creatureId === creatureId)?.creature?.name ?? 'Creature';
 
-  // The board: Front, Middle and Back as rows of slot numbers (the engine's zone sizes).
-  const rows = boardRows(party.rowLength);
+  // The picker closes by itself when the board locks under it.
+  useEffect(() => {
+    if (!canEdit) setPicking(null);
+  }, [canEdit]);
 
-  // Say it out loud when a creature is picked up (by tap or key).
-  const [announcement, announce] = useSlotAnnouncer(selected, nameOf);
+  // After a pick or a remove the tiles are off while the request runs; focus goes back to the slot.
+  useEffect(() => {
+    if (busy || refocus.current === null) return;
+    const slot = refocus.current;
+    refocus.current = null;
+    stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(slot)}"]`)?.focus();
+  }, [busy]);
 
   const dragDrop = useDragDrop({
-    disabled,
+    disabled: busy || !canEdit,
     stripRef,
-    trayRef,
+    touchHoldMs: TOUCH_HOLD_MS,
     onDrop: (creatureId, target) => {
-      const outcome = props.onDrop(creatureId, target);
+      const outcome = resolveDrop(ctx, creatureId, nameOf(creatureId), target);
+      setHint(outcome.hint);
       announce(outcome.announce);
+      if (outcome.intent !== null) props.onIntent(outcome.intent);
       return outcome;
     },
   });
   const { drag, consumeClick } = dragDrop;
 
-  function cancel(): void {
-    props.onCancel();
-    announce(CANCEL_ANNOUNCEMENT);
-  }
-
   const onKeyDown = useSlotKeyboard({
     stripRef,
-    selected,
-    busy: props.busy,
+    selected: null,
+    busy,
     vertical: true,
     keyTarget: (current, key) => boardKeyTarget(rows, current, key),
-    cursorStart: () => cursorStart(ctx.row, selected),
-    onCancel: cancel,
+    onCancel: () => undefined,
   });
 
   const dragging = drag?.creatureId ?? null;
   const statuses = dragging === null ? null : slotStatuses(ctx, dragging, nameOf(dragging));
-  const draggedPlaced =
-    dragging !== null && ctx.row.some((s) => s.creature?.creatureId === dragging);
-
-  function tap(t: Tap): void {
-    if (consumeClick()) return;
-    if (t.kind === 'slot' && selected !== null) {
-      announce(resolveDrop(ctx, selected, nameOf(selected), t).announce);
-    }
-    props.onTap(t);
-  }
-
-  const draggedCreature =
-    dragging === null ? undefined : team.creatures.find((c) => c.creatureId === dragging);
-
-  const bySlot = new Map(ctx.row.map((slot) => [slot.slot, slot]));
+  const dragged =
+    dragging === null
+      ? undefined
+      : party.row.find((s) => s.creature?.creatureId === dragging)?.creature;
 
   // The cues: the creature in focus (carried, or under the pointer) and the row as it would stand.
   // A creature whose popover is open counts as in focus too.
   const inspectedSlot = popovers?.anchor?.closest<HTMLElement>('[data-slot]')?.dataset.slot;
   const cueArgs = {
-    row: ctx.row,
+    row: party.row,
     length: party.rowLength,
-    tray: team.creatures,
+    tray: [],
     turnOrder: props.turnOrder,
   };
   const { cues, noneRow, effect } = boardCues({
     ...cueArgs,
-    carried: dragging ?? selected,
+    carried: dragging,
     pointer: drag?.over?.kind === 'slot' ? drag.over.slot : hovered,
     inspected: inspectedSlot === undefined ? null : Number(inspectedSlot),
   });
@@ -133,80 +145,86 @@ export function Placement(props: Props) {
     label: <GlossaryTag entry={GLOSSARY_IDS.zone(row.zone)}>{ROW_NAMES[row.zone]}</GlossaryTag>,
     slots: row.slots.flatMap((n) => {
       const slot = bySlot.get(n);
-      return slot === undefined ? [] : [boardSlot(slot, party.rowLength, rosterNames)];
+      return slot === undefined ? [] : [boardSlot(slot, party.rowLength, rosterNames, canEdit)];
     }),
   }));
 
-  /** A tap on a tile. Another player's creature opens its popover (with the owner's name). */
+  /**
+   * A tap on a tile. An empty one opens the picker; a creature opens its popover: yours with a
+   * "Remove from board" button (while the board can still change), someone else's with the owner.
+   */
   function tapSlot(slot: number, button: HTMLElement): void {
-    const occupant = bySlot.get(slot)?.creature;
-    if (selected === null && occupant != null && !occupant.mine && popovers !== null) {
-      const info = boardCreatureInfo(occupant);
-      if (info !== null && !consumeClick()) {
-        const line = boardCues({
-          ...cueArgs,
-          carried: null,
-          pointer: null,
-          inspected: slot,
-        }).effect;
-        popovers.openCreature(
-          `raid-slot:${String(slot)}`,
-          line === null ? info : { ...info, effect: line },
-          button,
-        );
+    if (consumeClick()) return;
+    const occupant = bySlot.get(slot)?.creature ?? null;
+    if (occupant === null) {
+      if (!canEdit) {
+        setHint('The board is locked.');
         return;
       }
+      setHint(null);
+      setPicking(slot);
+      return;
     }
-    tap({ kind: 'slot', slot });
+    const info = boardCreatureInfo(occupant);
+    if (info === null || popovers === null) return;
+    const line = boardCues({ ...cueArgs, carried: null, pointer: null, inspected: slot }).effect;
+    const shown = line === null ? info : { ...info, effect: line };
+    const key = `raid-slot:${String(slot)}`;
+    const id = occupant.creatureId;
+    if (occupant.mine && id !== undefined) {
+      // Your own: no owner line, and a way off the board while that is still allowed.
+      const own = {
+        ...creatureInfoOf(shown),
+        ...(shown.effect === undefined ? {} : { effect: shown.effect }),
+      };
+      popovers.openCreature(
+        key,
+        own,
+        button,
+        canEdit
+          ? {
+              label: 'Remove from board',
+              onAct: () => {
+                refocus.current = slot;
+                setHint(null);
+                announce(`${occupant.name} removed from the board.`);
+                props.onIntent({ type: 'unplace', creatureId: id });
+              },
+            }
+          : undefined,
+      );
+      return;
+    }
+    popovers.openCreature(key, shown, button);
+  }
+
+  function pick(creatureId: string): void {
+    if (picking === null) return;
+    const slot = picking;
+    const chosen = props.creatures.find((c) => c.id === creatureId);
+    refocus.current = slot;
+    setPicking(null);
+    setHint(null);
+    announce(
+      `${chosen === undefined ? 'Creature' : creatureName(chosen)} placed in ${placeText(slot, party.rowLength)}.`,
+    );
+    props.onIntent({ type: 'place', creatureId, slot });
   }
 
   return (
     <div id="raid-placement" onKeyDown={onKeyDown}>
       <section class="raid-section placement" aria-labelledby="raid-place-heading">
-        <h3 id="raid-place-heading">Place your team</h3>
-        <p class="muted small place-help">
-          Drag your creatures from the tray into the row, or tap one and then tap a slot.
+        <h3 id="raid-place-heading">Raid Roster</h3>
+        <p class="muted small roster-help">
+          Pick your creatures and place them on the board alongside everyone else.
         </p>
-        <details class="keys">
-          <summary>Keyboard controls</summary>
-          <p class="muted small">
-            Enter picks up a creature, the arrow keys choose a slot, Enter drops it and Escape
-            cancels.
-          </p>
-        </details>
-        <p class="tray-label">
-          <span class="pix">Your team</span>
-          <span class="muted small">
-            {team.mode === 'auto' ? 'automatic: your strongest three' : 'chosen by you'}
-          </span>
-        </p>
-        <CreatureTray
-          items={team.creatures.map((c) => ({
-            id: c.creatureId,
-            species: c.species,
-            name: c.name,
-            detail: (
-              <>
-                Lv {c.level} · {c.slot === null ? 'not placed' : placeText(c.slot, party.rowLength)}
-              </>
-            ),
-            placed: c.slot !== null,
-          }))}
-          trayRef={trayRef}
-          disabled={disabled}
-          selected={selected}
-          drag={dragDrop}
-          accepts={draggedPlaced}
-          onTap={(id) => {
-            tap({ kind: 'creature', id });
-          }}
-        />
+        <p class="roster-count">{placedLine(placed, props.next, canEdit)}</p>
         <RaidBoard
           rows={boardModels}
           stripRef={stripRef}
-          emptyLabel="empty"
-          disabled={disabled}
-          selected={selected}
+          emptyLabel={canEdit ? 'Add' : 'empty'}
+          disabled={busy}
+          selected={null}
           drag={dragDrop}
           statuses={statuses}
           cues={cues.slots}
@@ -215,32 +233,42 @@ export function Placement(props: Props) {
           noneRow={noneRow}
           onTap={tapSlot}
         />
-        <p class="place-actions">
-          <button
-            type="button"
-            disabled={disabled || !canUnplace(ctx.row, selected)}
-            onClick={() => {
-              props.onUnplace();
-            }}
-          >
-            Unplace
-          </button>
-          <span class="muted small">Front is closest to the boss.</span>
-        </p>
-        {props.hint !== null && (
+        {hint !== null && (
           <p class="muted" role="status">
-            {props.hint}
+            {hint}
           </p>
         )}
-        {!props.canEdit && <p class="locked">The row is locked for this week.</p>}
         {party.guests && (
-          <p class="muted">Guest creatures fill the row while fewer than 3 players are in.</p>
+          <p class="muted roster-note">
+            Guest creatures fill the row while fewer than 3 players are in.
+          </p>
         )}
-        {props.canEdit && props.teamControls}
       </section>
 
       <LiveRegion>{announcement}</LiveRegion>
-      <DragGhost ghostRef={dragDrop.ghostRef} creature={draggedCreature} />
+      <DragGhost ghostRef={dragDrop.ghostRef} creature={dragged ?? undefined} />
+      {picking !== null && (
+        <RosterPicker
+          title={pickerTitle(placeText(picking, party.rowLength))}
+          status={`${String(placed)} / ${String(MAX_ON_BOARD)} on the board`}
+          options={pickerOptions({
+            creatures: props.creatures,
+            row: party.row,
+            length: party.rowLength,
+            slot: picking,
+            turnOrder: props.turnOrder,
+            showEffects: SHOW_PICKER_EFFECTS,
+          })}
+          showEffects={SHOW_PICKER_EFFECTS}
+          anchor={() =>
+            stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(picking)}"]`) ?? null
+          }
+          onPick={pick}
+          onClose={() => {
+            setPicking(null);
+          }}
+        />
+      )}
     </div>
   );
 }

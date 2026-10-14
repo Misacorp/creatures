@@ -10,7 +10,7 @@ vi.mock('./api', async (importOriginal) => ({
 import { buildRunRequest } from './dungeon-team';
 import { placeCreature, unplaceCreature } from './raid-api';
 import { resolveDrop } from './raid-dnd';
-import { reduceTap, unplaceIntent, type Intent, type TapContext } from './raid-slots';
+import type { Intent, TapContext } from './raid-slots';
 
 /**
  * What a placement sends to the server, byte for byte. The slot row refactor must not change a
@@ -47,10 +47,10 @@ describe('the placement requests', () => {
     });
   });
 
-  // The intents the three ways to place (tap, drop, the Unplace button) hand to those two calls.
+  // The intents a drag hands to those two calls. A pick from the picker and the "Remove from board"
+  // button build the same two intents (see roster-picker.test.ts).
   const ctx: TapContext = {
     locked: false,
-    teamIds: ['a', 'b'],
     row: [
       {
         slot: 0,
@@ -74,18 +74,11 @@ describe('the placement requests', () => {
         ? ['PUT', JSON.stringify({ creatureId: intent.creatureId, slot: intent.slot })]
         : ['DELETE', JSON.stringify({ creatureId: intent.creatureId })];
 
-  it('a tap, a drop and the Unplace button build the same intents', () => {
-    const tapped = reduceTap(ctx, 'a', { kind: 'slot', slot: 1 }).intent;
+  it('a drop builds the placement the server reads', () => {
     const dropped = resolveDrop(ctx, 'a', 'A', { kind: 'slot', slot: 1 }).intent;
-    expect(tapped).toEqual({ type: 'place', creatureId: 'a', slot: 1 });
-    expect(dropped).toEqual(tapped);
-    expect(wire(tapped)).toEqual(['PUT', '{"creatureId":"a","slot":1}']);
-
-    const button = unplaceIntent(ctx.row, 'a').intent;
-    const onTray = resolveDrop(ctx, 'a', 'A', { kind: 'tray' }).intent;
-    expect(button).toEqual({ type: 'unplace', creatureId: 'a' });
-    expect(onTray).toEqual(button);
-    expect(wire(button)).toEqual(['DELETE', '{"creatureId":"a"}']);
+    expect(dropped).toEqual({ type: 'place', creatureId: 'a', slot: 1 });
+    expect(wire(dropped)).toEqual(['PUT', '{"creatureId":"a","slot":1}']);
+    expect(wire({ type: 'unplace', creatureId: 'a' })).toEqual(['DELETE', '{"creatureId":"a"}']);
   });
 });
 
