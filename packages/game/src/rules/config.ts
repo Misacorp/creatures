@@ -408,6 +408,13 @@ export const RULES = {
     /** Creatures in the team: one row of three, left to right. */
     teamSize: 3,
     /**
+     * Who acts first in every dungeon fight: your row from the left, then the foe (Misa,
+     * 2026-10-14: dungeons are the simple fight, and the order is yours to plan). It is a rule,
+     * not content: dungeon foes and room modifiers cannot change it. The raid's bosses keep their
+     * own turn orders.
+     */
+    turnOrder: 'left_to_right',
+    /**
      * Depth scaling (see `depthFactorBp`): every depth above 1 adds `Step` basis points of the depth-1
      * HP and Attack to a foe, plus `Curve` for each square of the depths above 1, so the first depths
      * are gentle and the later ones steepen. Depths past `maxScaledDepth` fight at that depth's

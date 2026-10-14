@@ -564,7 +564,7 @@ describe('the glossary covers the daily dungeon', () => {
     const without = (id: string): GlossaryEntry[] => glossary.filter((e) => e.id !== id);
     for (const id of [
       'modifier-flooded',
-      'modifier-fog',
+      'modifier-echoing',
       'dungeon',
       'depth',
       'landmark',
@@ -586,6 +586,17 @@ describe('the glossary covers the daily dungeon', () => {
         expect(m.description).toContain(percent(first.bp));
       }
     }
+  });
+
+  it('says the dungeon order is yours, left to right, then the foe, and never a foe or modifier choice', () => {
+    expect(RULES.dungeon.turnOrder).toBe('left_to_right');
+    const row = text('dungeon-row');
+    expect(row).toContain('Your creatures act left to right, then the foe acts');
+    expect(row).not.toContain('right to left');
+    expect(row).not.toContain('fastest');
+    expect(row).not.toContain('You see which');
+    // The modifiers' own entry no longer promises a twist on who acts first.
+    expect(text('room-modifiers')).not.toContain('who acts first');
   });
 
   it('gives depth, landmarks and streaks the numbers the rules have', () => {

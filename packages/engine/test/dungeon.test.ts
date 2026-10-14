@@ -42,7 +42,6 @@ function foe(over: Partial<DungeonFoeDef> = {}): DungeonFoeDef {
     element: 'tide',
     baseHp: 300,
     baseAtk: 20,
-    turnOrder: 'left_to_right',
     gimmicks: [],
     rounds: 6,
     flavor: 'A foe for tests.',
@@ -273,7 +272,17 @@ describe('room modifiers are plain folds of the room input', () => {
     expect(atk(flooded, 'guard')).toBe(atk(plain, 'guard'));
   });
 
-  it('changes the foe, the crit luck, the gimmicks and the turn order', () => {
+  it('raises the Attack of one role only', () => {
+    const plain = buildRoomInput(base, room(0, foe(), 1_000, 20), null);
+    const echoing = buildWith('echoing');
+    const atk = (i: typeof plain, id: string) => i.row.find((s) => s.id === id)?.stats?.atk ?? 0;
+    // The Cindle is the Payoff: +20%. The Splashet (Setter) and the Sproutle (Guard) are untouched.
+    expect(atk(echoing, 'payoff')).toBe(Math.floor((atk(plain, 'payoff') * 12_000) / 10_000));
+    expect(atk(echoing, 'setter')).toBe(atk(plain, 'setter'));
+    expect(atk(echoing, 'guard')).toBe(atk(plain, 'guard'));
+  });
+
+  it('changes the foe, the crit luck and the gimmicks, and never the turn order', () => {
     const brittle = buildWith('brittle');
     expect(brittle.bossHpPool.max).toBe(800);
     expect(brittle.bossAtk).toBe(25);
@@ -282,9 +291,12 @@ describe('room modifiers are plain folds of the room input', () => {
     expect(dark.luck?.critBp).toBe(RULES.combat.luck.critBp);
     const thorns = buildWith('thorns');
     expect(thorns.boss.gimmicks.map((g) => g.op)).toEqual(['reflect_first_reaction']);
-    const fog = buildWith('fog');
-    expect(fog.turnOrderOverride).toBe('left_to_right');
-    expect(buildRoomInput(base, room(0, foe(), 1_000, 20), null).turnOrderOverride).toBeUndefined();
+    // No modifier overrides the order: every room's fight goes by the dungeon's rule.
+    for (const m of dungeonContent.modifiers) {
+      const input = buildWith(m.id);
+      expect(input.turnOrderOverride, m.id).toBeUndefined();
+      expect(input.boss.turnOrder, m.id).toBe(RULES.dungeon.turnOrder);
+    }
   });
 
   it('never changes the stored run input, and every shipped modifier builds and plays', () => {
@@ -384,17 +396,35 @@ describe('the team stands in one row, left to right', () => {
     expect(first).toMatchObject({ target: 'guard', from: 'left' });
   });
 
-  it('turn orders run along the row, or by speed, and a room modifier can change them', () => {
+  it('the rule is left to right, then the foe', () => {
+    expect(RULES.dungeon.turnOrder).toBe('left_to_right');
+  });
+
+  it('every dungeon fight goes left to right whatever the foe or the speeds, and the foe acts after the team', () => {
+    // Speeds that would give m, r, l if the order were by speed.
     const speeds = [slot('l', { spd: 1 }), slot('m', { spd: 50 }), slot('r', { spd: 20 })];
-    const order = (turnOrder: DungeonFoeDef['turnOrder'], m?: RoomModifierDef) =>
-      simulateDungeon(
-        run([room(0, foe({ turnOrder, rounds: 1 }), 100_000, 1, m)], speeds),
-        'turns',
-      ).rooms[0]?.result.events.flatMap((e) => (e.t === 'turn' ? [e.creature] : [])) ?? [];
-    expect(order('left_to_right')).toEqual(['l', 'm', 'r']);
-    expect(order('right_to_left')).toEqual(['r', 'm', 'l']);
-    expect(order('speed')).toEqual(['m', 'r', 'l']);
-    expect(order('speed', roomModifier('fog'))).toEqual(['l', 'm', 'r']);
+    const play = (f: DungeonFoeDef, m?: RoomModifierDef) =>
+      simulateDungeon(run([room(0, { ...f, rounds: 1 }, 100_000, 1, m)], speeds), 'turns').rooms[0]
+        ?.result.events ?? [];
+    const turns = (events: ReturnType<typeof play>) =>
+      events.flatMap((e) => (e.t === 'turn' ? [e.creature] : []));
+    expect(turns(play(foe()))).toEqual(['l', 'm', 'r']);
+    // A stored run from before the rule (or content that tries) can carry a turn order on the foe:
+    // it is ignored, because the order is the dungeon's rule, not the foe's.
+    for (const stale of ['speed', 'right_to_left', 'left_to_right']) {
+      const old = { ...foe(), turnOrder: stale } as DungeonFoeDef;
+      expect(turns(play(old)), stale).toEqual(['l', 'm', 'r']);
+    }
+    // The same for every shipped foe and every shipped modifier.
+    for (const f of dungeonContent.foes) expect(turns(play(f)), f.id).toEqual(['l', 'm', 'r']);
+    for (const m of dungeonContent.modifiers) {
+      expect(turns(play(foe(), m)), m.id).toEqual(['l', 'm', 'r']);
+    }
+    // The foe's own attack comes after the whole team in the log of a round.
+    const events = play(foe({ gimmicks: [] }));
+    const lastTurn = events.map((e) => e.t).lastIndexOf('turn');
+    const foeHit = events.findIndex((e) => e.t === 'boss_hit');
+    expect(foeHit).toBeGreaterThan(lastTurn);
   });
 });
 
@@ -436,14 +466,12 @@ describe('every shipped foe, room boss and room modifier makes sense on one row 
     });
   }
 
-  it('turn orders of the foes run along the row or by speed, and the creatures all act each round', () => {
+  it('the creatures of every foe room act left to right, all three, each round', () => {
     for (const f of dungeonContent.foes) {
       const turns = play({ ...f, gimmicks: [], rounds: 1 }).flatMap((e) =>
         e.t === 'turn' ? [e.creature] : [],
       );
-      expect(turns, f.id).toHaveLength(3);
-      if (f.turnOrder === 'left_to_right') expect(turns).toEqual(['left', 'mid', 'right']);
-      if (f.turnOrder === 'right_to_left') expect(turns).toEqual(['right', 'mid', 'left']);
+      expect(turns, f.id).toEqual(['left', 'mid', 'right']);
     }
   });
 

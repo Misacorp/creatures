@@ -1072,10 +1072,10 @@
     "title": "Your row",
     "short": "Three creatures in one row, left to right.",
     "lines": [
-      "You choose the order. The foe's plain attack goes to the left creature first, then the next one standing.",
+      "You choose the order. Your creatures act left to right, then the foe acts. Every room, every time.",
+      "The foe's plain attack goes to the left creature first, then the next one standing.",
       "A Guard takes the hits aimed at the creatures right beside it, so it likes the middle.",
-      "A zone attack hits the one creature at its place. Silence hits the left and the right end.",
-      "Foes act left to right, right to left or fastest first. You see which in each room."
+      "A zone attack hits the one creature at its place. Silence hits the left and the right end."
     ],
     "visual": {
       "kind": "glyph",
@@ -1101,7 +1101,7 @@
     "short": "Each room has a twist, shown before you enter.",
     "lines": [
       "The day's three modifiers are the same for everyone on the server.",
-      "Some boost one element, some change the foe, and some change who acts first.",
+      "Some boost one element or one role, some change the foe, and some change your crits.",
       "They only last for their room. Pick your team around them."
     ],
     "section": "dungeon"
@@ -1226,12 +1226,12 @@
     "section": "dungeon"
   },
   {
-    "id": "modifier-fog",
-    "title": "Fog",
-    "short": "Nobody can see: everyone acts in row order, left to right.",
+    "id": "modifier-echoing",
+    "title": "Echoing",
+    "short": "Payoff creatures hit 20% harder.",
     "lines": [
-      "Only for the room that has it, and shown before you enter.",
-      "Plan your team and the order it stands in around it."
+      "Works for every Payoff on your team, in this room only.",
+      "Plan your team around it: it is shown before you enter."
     ],
     "section": "dungeon"
   },

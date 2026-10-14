@@ -35,7 +35,7 @@ import type { SimPlayer } from './state';
  *   their leet days, everybody else every day. On the first day they ever ran, a lost run may be
  *   tried once more (the worker's free retry).
  * - The team is the player's 3 strongest creatures by power (gear included), stood in one row by
- *   `dungeonRowOrder` (setters and supports left, a Guard in the middle, payoffs right). There is no basic ability and
+ *   `dungeonRowOrder` (the order that sets off the most reactions left to right; ties go setters and supports left, a Guard in the middle, payoffs right). There is no basic ability and
  *   every unlocked creature ability fires at its default round.
  * - The day's modifiers are shared by everybody (drawn from a seed of the day), the rooms from the
  *   run's seed, and the rewards are paid as the worker pays them.
@@ -65,7 +65,7 @@ export function buildRun(
   seed: string,
 ): DungeonRunInput {
   const team = pickTeam(player.creatures);
-  // One row, left to right: the game's rule for a good order (`dungeonRowOrder`), strongest first.
+  // One row, left to right: the game's rule for a good order (`dungeonRowOrder`: the most reactions, then roles), strongest first.
   const row = dungeonRowOrder(
     team.map((c): FightSlot => ({ ...slotFor(player, c.id), ownerId: DUNGEON_PLAYER })),
   );

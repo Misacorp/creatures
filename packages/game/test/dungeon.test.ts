@@ -16,9 +16,12 @@ import {
   rollDayModifiers,
   rollDungeonLoot,
   rollRooms,
+  rowReactions,
+  rowScore,
   scaledFoe,
   streakBonus,
   streakCycleDay,
+  type Element,
   type Role,
 } from '../src/index';
 import foesJson from '../src/content/data/dungeon-foes.json';
@@ -57,6 +60,21 @@ describe('the dungeon content', () => {
       expect(boss.rounds).toBeGreaterThan(6);
     }
     for (const f of dungeonContent.foes) expect(f.flavor.length).toBeGreaterThan(10);
+  });
+
+  it('has no turn order on any foe and no modifier that changes it: every room goes left to right', () => {
+    expect(RULES.dungeon.turnOrder).toBe('left_to_right');
+    for (const f of dungeonContent.foes) expect(Object.keys(f), f.id).not.toContain('turnOrder');
+    for (const m of dungeonContent.modifiers) {
+      for (const e of m.effects) expect(e.op, m.id).not.toBe('turn_order');
+    }
+  });
+
+  it('retired Fog (it only set the turn order) and has Echoing in the pool instead', () => {
+    expect(roomModifier('fog')).toBeUndefined();
+    expect(roomModifier('echoing')?.effects).toEqual([
+      { op: 'team_stat', stat: 'atk', bp: 2_000, role: 'payoff' },
+    ]);
   });
 
   it('looks foes and modifiers up by id', () => {
@@ -128,6 +146,26 @@ describe('the dungeon content', () => {
           loadDungeon(
             foes(),
             mods().map((m, i) => (i === 0 ? { ...m, effects: [{ op: 'heal', bp: 1 }] } : m)),
+            rooms,
+          ),
+      ],
+      [
+        "a turn order on a foe (the order is the dungeon's rule, not content)",
+        () =>
+          loadDungeon(
+            foes().map((f, i) => (i === 0 ? { ...f, turnOrder: 'speed' } : f)),
+            mods(),
+            rooms,
+          ),
+      ],
+      [
+        'a modifier that changes the turn order',
+        () =>
+          loadDungeon(
+            foes(),
+            mods().map((m, i) =>
+              i === 0 ? { ...m, effects: [{ op: 'turn_order', order: 'left_to_right' }] } : m,
+            ),
             rooms,
           ),
       ],
@@ -444,7 +482,8 @@ describe('rewards', () => {
 });
 
 describe('the order of a team in the row', () => {
-  const mk = (id: string, role: Role) => ({ id, role });
+  // One element for everyone: nobody can cash anybody in, so only the roles decide the order.
+  const mk = (id: string, role: Role, element: Element = 'tide') => ({ id, role, element });
 
   it('puts setters and supports left, a Guard in the middle and payoffs right', () => {
     const order = dungeonRowOrder([mk('p', 'payoff'), mk('g', 'guard'), mk('s', 'setter')]);
@@ -467,5 +506,82 @@ describe('the order of a team in the row', () => {
     expect(JSON.stringify(input)).toBe(before);
     expect(new Set(order.map((c) => c.id))).toEqual(new Set(['p', 'g', 's']));
     expect(dungeonRowOrder([])).toEqual([]);
+  });
+});
+
+describe('the order of a team decides whether reactions happen', () => {
+  const species = (id: string) => {
+    const found = content.creatures.find((c) => c.id === id);
+    if (found === undefined) throw new Error(`no species ${id}`);
+    return { id, role: found.role, element: found.element };
+  };
+  const splashet = species('splashet'); // Tide setter
+  const sproutle = species('sproutle'); // Grove guard
+  const cindle = species('cindle'); // Ember payoff
+
+  it('scores a row by the reactions the left-to-right marks set off', () => {
+    // Soaked is cashed in by Spark, and nobody here has Spark: Tide marks and it stays.
+    expect(rowScore([splashet, sproutle, cindle])).toBe(0);
+    expect(rowReactions([splashet, sproutle, cindle])).toEqual([]);
+    // Cindle marks Scorched and Splashet (Tide) sets off Steam, in every round.
+    const reacting = rowReactions([cindle, sproutle, splashet]);
+    expect(reacting).toHaveLength(6);
+    expect(reacting[0]).toEqual({ round: 1, marker: 0, payoff: 2, reaction: 'steam' });
+    expect(new Set(reacting.map((r) => r.round)).size).toBe(6);
+  });
+
+  it('follows the engine: a mark stays until a Setter replaces it or its element cashes it in', () => {
+    const guard = (element: Element) => ({ role: 'guard' as Role, element });
+    const setter = (element: Element) => ({ role: 'setter' as Role, element });
+    // A guard's mark is not replaced by another guard, so Ember stays and Tide never gets to mark.
+    expect(rowScore([guard('ember'), guard('grove')])).toBe(0);
+    // A Setter replaces it: Grove (set by the Setter) is cashed in by Ember, round after round.
+    const replaced = rowReactions([guard('ember'), setter('grove')]);
+    expect(replaced[0]).toEqual({ round: 2, marker: 1, payoff: 0, reaction: 'wildfire' });
+    // The same element never replaces its own mark.
+    expect(rowScore([setter('tide'), setter('tide')])).toBe(0);
+  });
+
+  it('picks, for the starters, the order that reacts every round, not the old role order', () => {
+    // Role order alone (setter, guard, payoff) would be Splashet, Sproutle, Cindle: never a reaction.
+    for (const given of [
+      [splashet, sproutle, cindle],
+      [cindle, splashet, sproutle],
+      [sproutle, cindle, splashet],
+    ]) {
+      const best = dungeonRowOrder(given);
+      expect(best.map((c) => c.id)).toEqual(['cindle', 'sproutle', 'splashet']);
+      expect(rowScore(best)).toBe(6);
+    }
+  });
+
+  it('never picks an order that scores less than another order of the same team', () => {
+    const pool = content.creatures.slice(0, 14).map((c) => ({
+      id: c.id,
+      role: c.role,
+      element: c.element,
+    }));
+    const perms = <T>(items: readonly T[]): T[][] =>
+      items.length <= 1
+        ? [[...items]]
+        : items.flatMap((x, i) =>
+            perms([...items.slice(0, i), ...items.slice(i + 1)]).map((rest) => [x, ...rest]),
+          );
+    for (let a = 0; a < pool.length; a++) {
+      for (let b = a + 1; b < pool.length; b++) {
+        for (let c = b + 1; c < pool.length; c++) {
+          const team = [pool[a], pool[b], pool[c]] as typeof pool;
+          const best = rowScore(dungeonRowOrder(team));
+          for (const order of perms(team)) expect(rowScore(order)).toBeLessThanOrEqual(best);
+        }
+      }
+    }
+  });
+
+  it('falls back to the role order when every order scores the same, and keeps ties as given', () => {
+    // No order reacts (all Tide): setter, guard, payoff by role.
+    const tide = (id: string, role: Role) => ({ id, role, element: 'tide' as Element });
+    const none = dungeonRowOrder([tide('p', 'payoff'), tide('g', 'guard'), tide('s', 'setter')]);
+    expect(none.map((c) => c.id)).toEqual(['s', 'g', 'p']);
   });
 });

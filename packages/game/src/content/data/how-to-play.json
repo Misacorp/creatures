@@ -71,7 +71,7 @@
       "title": "Daily dungeon",
       "lines": [
         "One run a day, with a team of three of your own in one row. The day resets at 13:37 server time.",
-        "A run is three rooms: two foes, then a room boss. HP carries over from room to room.",
+        "A run is three rooms: two foes, then a room boss. HP carries over. Your row acts left to right, then the foe.",
         "Clear all three to go one depth deeper. A lost run keeps your depth. A first-ever loss can be retried once.",
         "Every 7th depth is a landmark. Clearing it drops gear for sure.",
         "Runs on days in a row build a streak. The 3rd and 7th day of every 7 pay a bonus."

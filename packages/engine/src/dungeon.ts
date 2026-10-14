@@ -3,18 +3,21 @@
  * `simulateFight` and adds nothing to it: each room is an ordinary fight against a foe built as a
  * boss, the team's HP is carried from room to room (`FightSlot.hp`, `FightResult.hpEnd`), and a room
  * modifier is a set of plain number changes to the room's fight input (stats, foe numbers, the crit
- * luck, a gimmick, the turn order). Pure: no I/O, and all randomness comes from the run's seed
- * through seeded streams, one per room, so a stored run replays exactly.
+ * luck, a gimmick). Pure: no I/O, and all randomness comes from the run's seed through seeded
+ * streams, one per room, so a stored run replays exactly.
+ *
+ * Every room goes left to right, then the foe (`RULES.dungeon.turnOrder`): the fight's boss gets that
+ * order here, whatever a foe's content says, and no modifier can change it.
  *
  * The team stands in ONE ROW of three, left to right (`team[i]` is position i). The engine's row
  * rules are used as they are: a row of three splits into one slot per zone, so the left creature is
  * in the Front zone, the middle one in Middle and the right one in Back. The foe goes for the left
  * creature first (the plain attack goes to the front-most creature standing), a zone gimmick hits
- * the creature at that position, "both ends" are the left and right creatures, and turn orders run
- * along the row. A Guard covers its neighbours (`guardReach: 'adjacent'`), since a zone of one
- * creature has nobody else in it.
+ * the creature at that position and "both ends" are the left and right creatures. A Guard covers its
+ * neighbours (`guardReach: 'adjacent'`), since a zone of one creature has nobody else in it.
  */
 import {
+  RULES,
   content,
   createSeededRng,
   effectiveStats,
@@ -25,7 +28,6 @@ import {
   type RoomEffect,
   type RoomModifierDef,
   type Stats,
-  type TurnOrder,
 } from '@creatures/game';
 import { simulateFight, type FightOptions } from './fight';
 import type { AbilityChoice, FightInput, FightResult, FightSlot } from './types';
@@ -120,7 +122,6 @@ export function buildRoomInput(
   let foeHp = room.hp;
   let foeAtk = room.atk;
   let luck = run.luck;
-  let turnOrderOverride: TurnOrder | undefined;
   const gimmicks = [...room.foe.gimmicks];
   for (const e of effects) {
     switch (e.op) {
@@ -138,9 +139,6 @@ export function buildRoomInput(
       case 'foe_gimmick':
         if (!gimmicks.some((g) => g.id === e.gimmick.id)) gimmicks.push(e.gimmick);
         break;
-      case 'turn_order':
-        turnOrderOverride = e.order;
-        break;
       case 'team_stat':
         break; // applied to the row above
     }
@@ -156,7 +154,7 @@ export function buildRoomInput(
     element: room.foe.element,
     baseHp: room.foe.baseHp,
     baseAtk: room.foe.baseAtk,
-    turnOrder: room.foe.turnOrder,
+    turnOrder: RULES.dungeon.turnOrder,
     gimmicks,
     adaptation: adaptation.id,
     lootTable: 'dungeon',
@@ -174,7 +172,6 @@ export function buildRoomInput(
     finaleAbilities: run.abilities,
     luck,
     guardReach: 'adjacent',
-    ...(turnOrderOverride === undefined ? {} : { turnOrderOverride }),
   };
 }
 
