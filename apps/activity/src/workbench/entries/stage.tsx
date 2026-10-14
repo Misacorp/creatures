@@ -11,6 +11,7 @@ import { finaleProgress } from '../../raid-progress';
 import { phaseLine } from '../../raid-text';
 import { StageHead } from '../../ui/StageHead';
 import { bool, num, str } from '../props';
+import { bigRaidFight } from '../raid-fight';
 import type { IntroView } from '../../stage-fx';
 import type { Entry, Props } from '../types';
 
@@ -72,24 +73,37 @@ const stageHead: Entry = {
   ),
 };
 
+/** An event index well into round 2 of the 11-player fight, with a creature in the middle acting. */
+const BIG_MID_FIGHT = 150;
+
 const stage: Entry = {
   name: 'Stage',
   file: 'apps/activity/src/Stage.tsx',
   group: 'Creatures & game pieces',
   description:
-    "The fight stage of the raid replay, the live finale and the dungeon, held still at one moment of a fixture fight: the head, the foe's name and HP bar, the creatures with the order they act in and the one acting now outlined.",
+    'The fight stage of the raid replay, the live finale and the dungeon, held still at one moment of a fixture fight: the head, the foe\'s name and HP bar, the creatures with the order they act in and the one acting now outlined. The raid\'s party is a grid like the placement board (rows front to back, lanes as columns, scrolling sideways); it opens on your own creatures and follows the one acting. "Raid, big party" plays a seeded fight of the party size set below.',
   controls: {
-    fight: { kind: 'select', options: ['Raid', 'Dungeon room'] },
-    events: { kind: 'number', min: 0, max: 200 },
+    fight: { kind: 'select', options: ['Raid', 'Raid, big party', 'Dungeon room'] },
+    events: { kind: 'number', min: 0, max: 600 },
     room: { kind: 'number', min: 1, max: 3 },
+    players: { kind: 'number', min: 1, max: 15 },
+    yourLane: { kind: 'number', min: 1, max: 15 },
     roundIntro: { kind: 'toggle' },
   },
-  defaults: { fight: 'Raid', events: 75, room: 1, roundIntro: false },
+  defaults: { fight: 'Raid', events: 75, room: 1, players: 11, yourLane: 5, roundIntro: false },
   presets: [
     { name: 'Raid, third round, fourth creature acting', props: {} },
     { name: 'Raid, before the first round', props: { events: 0 } },
     { name: 'Raid, "Round 3 / 12" opening', props: { events: 59, roundIntro: true } },
     { name: 'Raid, the boss has struck', props: { events: 127 } },
+    {
+      name: 'Raid, 11 players (33 slots), mid-fight',
+      props: { fight: 'Raid, big party', players: 11, yourLane: 5, events: BIG_MID_FIGHT },
+    },
+    {
+      name: 'Raid, 11 players, before the first round (your lane in view)',
+      props: { fight: 'Raid, big party', players: 11, yourLane: 9, events: 0 },
+    },
     {
       name: 'Dungeon room 1, the second creature acting',
       props: { fight: 'Dungeon room', events: 8 },
@@ -116,6 +130,25 @@ const stage: Entry = {
           creatureHp={{ start: room.hpStart, max: room.hpMax }}
           layout="row"
           place={roomLine(room.index, REPLAY.rooms.length)}
+        />
+      );
+    }
+    if (str(p, 'fight') === 'Raid, big party') {
+      const big = bigRaidFight(num(p, 'players'), num(p, 'yourLane') - 1);
+      return (
+        <Stage
+          boss={big.boss}
+          hpMax={big.hpMax}
+          hpStart={big.hpMax}
+          rounds={big.rounds}
+          row={big.row}
+          mineIds={big.mineIds}
+          names={big.names}
+          events={big.events}
+          index={num(p, 'events')}
+          anim={null}
+          intro={introOf(p, big.rounds)}
+          place={phaseLine('finale')}
         />
       );
     }
