@@ -345,6 +345,21 @@ const bait: SpriteDef = {
   ],
 };
 
+/** A wrapped gift with a bow: a day that pays a reward (the streak's 3rd and 7th). */
+const gift: SpriteDef = {
+  palette: { r: BAD, g: GOLD },
+  rows: [
+    '.gg..gg.',
+    'g..gg..g',
+    '.gggggg.',
+    'rrrggrrr',
+    'rrrggrrr',
+    'rrrggrrr',
+    'rrrggrrr',
+    'rrrggrrr',
+  ],
+};
+
 /** A flag on a pole: the landmark depths. */
 const flag: SpriteDef = {
   palette: { g: GOLD, k: HAZE },
@@ -387,6 +402,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   door,
   bait,
   flag,
+  gift,
   ...EXPEDITION_GLYPHS,
 };
 

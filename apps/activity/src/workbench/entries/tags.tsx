@@ -1,6 +1,5 @@
 import type { ComponentProps } from 'preact';
 import { ChoiceMark, Stars } from '../../ExpeditionIcons';
-import { StreakPips } from '../../DungeonPrerun';
 import { GlossaryTag } from '../../Glossary';
 import { RarityTag } from '../../GearArt';
 import { ElementChip, RoleChip } from '../../sprites/ElementChip';
@@ -274,23 +273,6 @@ const choiceMark: Entry = {
   ),
 };
 
-const streakPips: Entry = {
-  name: 'StreakPips',
-  file: 'apps/activity/src/DungeonPrerun.tsx',
-  group: 'Tags & chips',
-  description:
-    'The daily dungeon streak as a tiny row of pips (a tag that opens the Streak entry); the end report uses a plain, non-tappable version.',
-  controls: { streak: { kind: 'number', min: 0, max: 30 }, plain: { kind: 'toggle' } },
-  defaults: { streak: 3, plain: false },
-  presets: [
-    { name: 'No streak', props: { streak: 0 } },
-    { name: 'Day 3', props: { streak: 3 } },
-    { name: 'Bonus day', props: { streak: 7 } },
-    { name: 'Plain (end report)', props: { streak: 3, plain: true } },
-  ],
-  render: (p) => <StreakPips streak={num(p, 'streak')} plain={bool(p, 'plain')} />,
-};
-
 export const tagEntries: readonly Entry[] = [
   tag,
   landmarkChip,
@@ -302,5 +284,4 @@ export const tagEntries: readonly Entry[] = [
   outcomeBadge,
   stars,
   choiceMark,
-  streakPips,
 ];

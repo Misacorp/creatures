@@ -3,6 +3,7 @@ import type { Creature } from './api';
 import {
   ROW_PLACES,
   ROW_PLACE_NAMES,
+  orderHint,
   placedCount,
   reduceTap,
   resolveDrop,
@@ -11,7 +12,9 @@ import {
   unplace,
   type Slots,
 } from './dungeon-team';
+import { ORDER_LINE } from './dungeon-text';
 import { creatureName, speciesName } from './game';
+import { GlossaryTag } from './Glossary';
 import { CANCEL_ANNOUNCEMENT, type DropOutcome, type Selection, type Tap } from './slot-outcome';
 import { CreatureTray } from './ui/CreatureTray';
 import { DragGhost } from './ui/DragGhost';
@@ -109,6 +112,16 @@ export function DungeonTeam(props: Props) {
   const listed = picked !== undefined && !shown.includes(picked) ? [...shown, picked] : shown;
   const full = placedCount(slots) === ROW_PLACES.length;
 
+  // Only a full team has an order to judge. The names are the player's own: text only.
+  const placed = slots.flatMap((id) => {
+    const c = byId.get(id ?? '');
+    return c === undefined ? [] : [c];
+  });
+  const reactionHint =
+    placed.length === slots.length
+      ? orderHint(placed.map((c) => ({ name: creatureName(c), species: c.species })))
+      : null;
+
   const group: SlotGroup = {
     key: 'row',
     scale: SLOT_SCALE,
@@ -137,6 +150,9 @@ export function DungeonTeam(props: Props) {
   return (
     <div onKeyDown={onKeyDown}>
       <h4 id="dungeon-zones-heading">Your team</h4>
+      <p class="muted dungeon-order-line">
+        <GlossaryTag entry="dungeon-row">{ORDER_LINE}</GlossaryTag>
+      </p>
       <SlotRow
         groups={[group]}
         stripRef={stripRef}
@@ -151,6 +167,11 @@ export function DungeonTeam(props: Props) {
           tap({ kind: 'slot', slot });
         }}
       />
+      {reactionHint !== null && (
+        <p class="muted dungeon-reaction-hint" aria-live="polite">
+          {reactionHint}
+        </p>
+      )}
       <p class="button-row">
         <button type="button" disabled={disabled} onClick={props.onStrongest}>
           Use my strongest three

@@ -1072,10 +1072,10 @@
     "title": "Your row",
     "short": "Three creatures in one row, left to right.",
     "lines": [
-      "You choose the order. The foe's plain attack goes to the left creature first, then the next one standing.",
+      "You choose the order. Your creatures act left to right, then the foe acts. Every room, every time.",
+      "The foe's plain attack goes to the left creature first, then the next one standing.",
       "A Guard takes the hits aimed at the creatures right beside it, so it likes the middle.",
-      "A zone attack hits the one creature at its place. Silence hits the left and the right end.",
-      "Foes act left to right, right to left or fastest first. You see which in each room."
+      "A zone attack hits the one creature at its place. Silence hits the left and the right end."
     ],
     "visual": {
       "kind": "glyph",
@@ -1089,8 +1089,6 @@
     "short": "How deep you are. Foes get tougher with every depth.",
     "lines": [
       "Clearing all rooms adds 1. Losing leaves it as it is.",
-      "Each depth adds about 30% foe HP and 20% foe Attack, and a little more the deeper you go.",
-      "It is yours alone: nobody else's runs change it.",
       "Every 7th depth is a landmark."
     ],
     "section": "dungeon"
@@ -1101,7 +1099,7 @@
     "short": "Each room has a twist, shown before you enter.",
     "lines": [
       "The day's three modifiers are the same for everyone on the server.",
-      "Some boost one element, some change the foe, and some change who acts first.",
+      "Some boost one element or one role, some change the foe, and some change your crits.",
       "They only last for their room. Pick your team around them."
     ],
     "section": "dungeon"
@@ -1143,10 +1141,7 @@
     "id": "modifier-flooded",
     "title": "Flooded",
     "short": "Tide creatures hit 20% harder.",
-    "lines": [
-      "Works for every Tide creature on your team, in this room only.",
-      "Plan your team around it: it is shown before you enter."
-    ],
+    "lines": [],
     "section": "dungeon",
     "visual": {
       "kind": "element",
@@ -1157,10 +1152,7 @@
     "id": "modifier-scorched",
     "title": "Scorched",
     "short": "Ember creatures hit 20% harder.",
-    "lines": [
-      "Works for every Ember creature on your team, in this room only.",
-      "Plan your team around it: it is shown before you enter."
-    ],
+    "lines": [],
     "section": "dungeon",
     "visual": {
       "kind": "element",
@@ -1171,10 +1163,7 @@
     "id": "modifier-overgrown",
     "title": "Overgrown",
     "short": "Grove creatures hit 20% harder.",
-    "lines": [
-      "Works for every Grove creature on your team, in this room only.",
-      "Plan your team around it: it is shown before you enter."
-    ],
+    "lines": [],
     "section": "dungeon",
     "visual": {
       "kind": "element",
@@ -1185,10 +1174,7 @@
     "id": "modifier-stormy",
     "title": "Stormy",
     "short": "Spark creatures hit 20% harder.",
-    "lines": [
-      "Works for every Spark creature on your team, in this room only.",
-      "Plan your team around it: it is shown before you enter."
-    ],
+    "lines": [],
     "section": "dungeon",
     "visual": {
       "kind": "element",
@@ -1199,40 +1185,28 @@
     "id": "modifier-dark",
     "title": "Dark",
     "short": "Your creatures crit 5 points more often.",
-    "lines": [
-      "Only for the room that has it, and shown before you enter.",
-      "Plan your team and the order it stands in around it."
-    ],
+    "lines": [],
     "section": "dungeon"
   },
   {
     "id": "modifier-thorns",
     "title": "Thorns",
     "short": "The foe turns the first reaction of each round back on your team.",
-    "lines": [
-      "Only for the room that has it, and shown before you enter.",
-      "Plan your team and the order it stands in around it."
-    ],
+    "lines": [],
     "section": "dungeon"
   },
   {
     "id": "modifier-brittle",
     "title": "Brittle",
     "short": "The foe has 20% less HP but hits 25% harder.",
-    "lines": [
-      "Only for the room that has it, and shown before you enter.",
-      "Plan your team and the order it stands in around it."
-    ],
+    "lines": [],
     "section": "dungeon"
   },
   {
-    "id": "modifier-fog",
-    "title": "Fog",
-    "short": "Nobody can see: everyone acts in row order, left to right.",
-    "lines": [
-      "Only for the room that has it, and shown before you enter.",
-      "Plan your team and the order it stands in around it."
-    ],
+    "id": "modifier-echoing",
+    "title": "Echoing",
+    "short": "Guards and supports hit 50% harder.",
+    "lines": [],
     "section": "dungeon"
   },
   {

@@ -6,7 +6,6 @@
     "element": "tide",
     "baseHp": 260,
     "baseAtk": 12,
-    "turnOrder": "speed",
     "gimmicks": [],
     "rounds": 6,
     "flavor": "Hides in puddles and splashes ankles. Not scary, just very wet."
@@ -18,7 +17,6 @@
     "element": "tide",
     "baseHp": 240,
     "baseAtk": 11,
-    "turnOrder": "left_to_right",
     "gimmicks": [
       {
         "id": "sea-mist",
@@ -38,7 +36,6 @@
     "element": "ember",
     "baseHp": 230,
     "baseAtk": 12,
-    "turnOrder": "speed",
     "gimmicks": [
       {
         "id": "flare-up",
@@ -59,7 +56,6 @@
     "element": "ember",
     "baseHp": 250,
     "baseAtk": 11,
-    "turnOrder": "right_to_left",
     "gimmicks": [],
     "rounds": 6,
     "flavor": "Drifts out of cold hearths in a puff of grey and sneezes sparks."
@@ -71,7 +67,6 @@
     "element": "grove",
     "baseHp": 270,
     "baseAtk": 12,
-    "turnOrder": "left_to_right",
     "gimmicks": [
       {
         "id": "thorn-snap",
@@ -91,7 +86,6 @@
     "element": "grove",
     "baseHp": 240,
     "baseAtk": 10,
-    "turnOrder": "speed",
     "gimmicks": [
       {
         "id": "root-grab",
@@ -111,7 +105,6 @@
     "element": "spark",
     "baseHp": 220,
     "baseAtk": 11,
-    "turnOrder": "speed",
     "gimmicks": [
       {
         "id": "zap-dive",
@@ -131,7 +124,6 @@
     "element": "spark",
     "baseHp": 250,
     "baseAtk": 10,
-    "turnOrder": "left_to_right",
     "gimmicks": [
       {
         "id": "buzz-cloud",
@@ -152,7 +144,6 @@
     "element": "tide",
     "baseHp": 420,
     "baseAtk": 14,
-    "turnOrder": "left_to_right",
     "gimmicks": [
       {
         "id": "flood-gate",
@@ -173,7 +164,6 @@
     "element": "ember",
     "baseHp": 380,
     "baseAtk": 14,
-    "turnOrder": "speed",
     "gimmicks": [
       {
         "id": "molten-shell",
@@ -192,7 +182,6 @@
     "element": "grove",
     "baseHp": 440,
     "baseAtk": 13,
-    "turnOrder": "right_to_left",
     "gimmicks": [
       {
         "id": "tangle",
@@ -220,7 +209,6 @@
     "element": "spark",
     "baseHp": 390,
     "baseAtk": 14,
-    "turnOrder": "left_to_right",
     "gimmicks": [
       {
         "id": "arc-lash",

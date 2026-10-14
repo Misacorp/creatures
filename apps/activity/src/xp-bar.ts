@@ -6,7 +6,7 @@ interface XpBarView {
   /** The value inside the bar, clamped to 0..max. */
   now: number;
   max: number;
-  /** "0 of 200 XP", or the caller's text. */
+  /** "0 / 200 XP", or the caller's text. */
   text: string;
   /** True when there is something to draw (so a tiny fill still shows). */
   filled: boolean;
@@ -23,7 +23,7 @@ export function xpBarView(value: number, max: number, text?: string): XpBarView 
     pct,
     now,
     max: span,
-    text: text ?? `${String(now)} of ${String(span)} XP`,
+    text: text ?? `${String(now)} / ${String(span)} XP`,
     filled: now > 0,
   };
 }

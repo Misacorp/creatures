@@ -18,3 +18,11 @@
 .unit-hp > i.gone {
   background: var(--hp-gone);
 }
+
+/* The acting order under a creature in the dungeon's single row: 1st, 2nd, 3rd (left to right). */
+.unit-slot {
+  margin-top: 0.125rem;
+  color: var(--gold);
+  font-size: 0.75rem;
+  line-height: 1;
+}

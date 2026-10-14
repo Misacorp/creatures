@@ -8,12 +8,14 @@ import {
   mineInRow,
   personalRecap,
   stateAt,
+  turnChips,
   turnOrderOfRound,
   type Speed,
 } from './replay';
 import { INTRO_REPLAY_MS } from './stage-fx';
 import { LogToggle, Stage } from './Stage';
 import { PlaybackControls } from './ui/PlaybackControls';
+import { TurnStrip } from './ui/TurnStrip';
 import { usePlayback } from './use-playback';
 
 export function Replay({
@@ -99,7 +101,7 @@ function Player({ data }: { data: ReplayView }) {
         {step.round > 0 && (
           <>
             {' '}
-            Round {step.round} of {data.rounds}.
+            Round {step.round} / {data.rounds}.
           </>
         )}
       </p>
@@ -138,24 +140,10 @@ function Player({ data }: { data: ReplayView }) {
       />
 
       <h4>Turn order {step.bossActing && <span class="muted">(the boss is acting)</span>}</h4>
-      <ol class="turn-strip" aria-label="Turn order this round">
-        {order.map((id) => {
-          const c = rowById.get(id);
-          const classes = ['turn-chip'];
-          if (step.actor === id) classes.push('current');
-          else if (step.acted.includes(id)) classes.push('done');
-          if (step.knockedOut.includes(id)) classes.push('ko');
-          return (
-            <li
-              key={id}
-              class={classes.join(' ')}
-              aria-current={step.actor === id ? 'step' : undefined}
-            >
-              {c?.name ?? id}
-            </li>
-          );
-        })}
-      </ol>
+      <TurnStrip
+        label="Turn order this round"
+        chips={turnChips(order, step, (id) => rowById.get(id)?.name ?? id)}
+      />
 
       <LogToggle id="replay-log">
         <ol class="replay-log" ref={logRef} tabIndex={0} aria-label="Fight log">

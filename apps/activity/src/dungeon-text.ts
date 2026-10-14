@@ -59,6 +59,9 @@ export function isRetryOffer(
   );
 }
 
+/** The dungeon's one turn rule, said before the run (setup) and linked to "Your row" in the glossary. */
+export const ORDER_LINE = 'Your creatures act left to right, then the foe.';
+
 export const RETRY_TEXT = 'Your first run was lost. You get one more try today, free.';
 
 /** How many days in a row, in words. */
@@ -67,7 +70,7 @@ export function streakLine(streak: number): string {
   return streak === 1 ? '1 day in a row' : `${String(streak)} days in a row`;
 }
 
-interface StreakPip {
+export interface StreakPip {
   day: number;
   on: boolean;
   /** The day pays a small bonus. */
@@ -96,7 +99,7 @@ export function resultHeadline(
   const total = run.rooms.length;
   return run.roomsCleared === 0
     ? 'Your team was beaten in the first room.'
-    : `Your team fell in room ${String(run.roomsCleared + 1)} of ${String(total)}.`;
+    : `Your team fell in room ${String(run.roomsCleared + 1)} / ${String(total)}.`;
 }
 
 /** What the run did to the depth. */
@@ -106,7 +109,7 @@ export function depthChangeText(run: Pick<DungeonRunSummary, 'depth' | 'newDepth
     : `Still at depth ${String(run.depth)}. Clear all three rooms to go deeper.`;
 }
 
-/** The room's place in the run, for the stage header: "Room 3 of 3, room boss". */
-export function roomLine(index: number, total: number, kind: 'foe' | 'boss'): string {
-  return `Room ${String(index + 1)} of ${String(total)}${kind === 'boss' ? ', room boss' : ''}`;
+/** The room's place in the run, for the stage header: "Room 3 / 3, room boss". */
+export function roomLine(index: number, total: number): string {
+  return `Room ${String(index + 1)} / ${String(total)}`;
 }

@@ -9,9 +9,11 @@ import { SmallCreature } from '../../SmallCreature';
 import { WornItemLine } from '../../WornItemLine';
 import type { ReadinessBand, RaidView, RosterEntry } from '../../raid-api';
 import { READINESS_BANDS } from '../../raid-api';
+import { turnChips } from '../../replay';
 import { Sprite } from '../../sprites/Sprite';
 import type { RoomPhase } from '../../sprites/room-art';
 import { creatureSpriteOrFallback } from '../../sprites/creature-sprites';
+import { TurnStrip } from '../../ui/TurnStrip';
 import {
   BOSS_IDS,
   GEAR_BASE_IDS,
@@ -228,6 +230,48 @@ const smallCreature: Entry = {
   ),
 };
 
+const TURN_NAMES = ['Alpha', 'Beta', 'Gamma', 'Delta'] as const;
+const PLACES = [NONE, '1', '2', '3', '4'] as const;
+
+/** The strip for four creatures at one moment: who acts now, and who is knocked out. */
+function turnStripDemo(p: Props) {
+  const ids = TURN_NAMES.map((_, i) => `wb-turn-${String(i + 1)}`);
+  const place = (key: string): string | undefined => {
+    const n = PLACES.indexOf(str(p, key) as (typeof PLACES)[number]);
+    return n > 0 ? ids[n - 1] : undefined;
+  };
+  const acting = place('acting');
+  const out = place('out');
+  const actedBefore = acting === undefined ? [] : ids.slice(0, ids.indexOf(acting));
+  const chips = turnChips(
+    ids,
+    { actor: acting ?? null, acted: actedBefore, knockedOut: [] },
+    (id) => TURN_NAMES[ids.indexOf(id)] ?? id,
+    { knockedOut: (id) => id === out },
+  );
+  return <TurnStrip chips={chips} label="Turn order" />;
+}
+
+const turnStrip: Entry = {
+  name: 'TurnStrip',
+  file: 'apps/activity/src/ui/TurnStrip.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    'The strip of who acts in what order under the raid replay: a chip for each creature, the one acting now outlined, the ones that acted dimmed and a knocked-out one struck through.',
+  controls: {
+    acting: { kind: 'select', options: PLACES },
+    out: { kind: 'select', options: PLACES },
+  },
+  defaults: { acting: '2', out: NONE },
+  presets: [
+    { name: 'Second acting', props: {} },
+    { name: 'Last acting', props: { acting: '4' } },
+    { name: 'One knocked out', props: { acting: '3', out: '2' } },
+    { name: 'Before the first turn', props: { acting: NONE } },
+  ],
+  render: (p) => turnStripDemo(p),
+};
+
 const wornItemLine: Entry = {
   name: 'WornItemLine',
   file: 'apps/activity/src/WornItemLine.tsx',
@@ -329,5 +373,6 @@ export const creatureEntries: readonly Entry[] = [
   rosterStrip,
   abilityChip,
   smallCreature,
+  turnStrip,
   wornItemLine,
 ];

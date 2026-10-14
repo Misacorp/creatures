@@ -9,21 +9,26 @@
  *   from the boss's content and the round number alone. A strike on the strongest creature depends
  *   on the creatures' Attack, which the stage does not know, so it is worded generically.
  */
-import { content, dungeonContent, type BossDef } from '@creatures/game';
+import { content, dungeonContent, type BossDef, type Gimmick } from '@creatures/game';
 import { bossWarnings, type EventNames, type Zone } from '@creatures/engine';
 import type { BossStrike } from './stage';
 
 /**
  * The boss with this id, or a dungeon foe as the boss it fights as: `bossWarnings` reads only the
- * gimmicks and the number of rounds, and a foe has both (its room's rounds).
+ * gimmicks and the number of rounds, and a foe has both (its room's rounds). `added` are the
+ * gimmicks the room's modifier gives the foe (Thorns' reflect), which the foe's own content does not
+ * list; a gimmick the foe already has is not added twice.
  */
-function bossOrFoe(bossId: string): BossDef | undefined {
+function bossOrFoe(bossId: string, added: readonly Gimmick[] = []): BossDef | undefined {
   const boss = content.bosses.find((b) => b.id === bossId);
   if (boss !== undefined) return boss;
   const foe = dungeonContent.foes.find((f) => f.id === bossId);
-  return foe === undefined
-    ? undefined
-    : ({ gimmicks: foe.gimmicks, finaleRounds: foe.rounds } as BossDef);
+  if (foe === undefined) return undefined;
+  const gimmicks = [
+    ...foe.gimmicks,
+    ...added.filter((g) => !foe.gimmicks.some((o) => o.id === g.id)),
+  ];
+  return { gimmicks, finaleRounds: foe.rounds } as BossDef;
 }
 
 const creatureName = (names: Pick<EventNames, 'creatures'>, id: string): string =>
@@ -133,7 +138,7 @@ export interface Forecast {
  * The forecast for the round after `round` (the round the stage is showing), or null when the boss
  * does nothing special then, the fight is over, or the boss is unknown. `row` is the row's creature
  * ids left to right and `knockedOut` those that are down now: a silence only shows on creatures that
- * are still up.
+ * are still up. `addedGimmicks` are what a dungeon room's modifier gives its foe (see `bossOrFoe`).
  */
 export function forecastNextRound(
   bossId: string,
@@ -143,9 +148,10 @@ export function forecastNextRound(
   knockedOut: readonly string[],
   names: Pick<EventNames, 'gimmicks'>,
   wording: Wording = 'zones',
+  addedGimmicks: readonly Gimmick[] = [],
 ): Forecast | null {
   if (round < 1 || round >= rounds) return null;
-  const boss = bossOrFoe(bossId);
+  const boss = bossOrFoe(bossId, addedGimmicks);
   if (boss === undefined) return null;
   const warnings = bossWarnings(boss, round + 1);
   if (warnings.length === 0) return null;

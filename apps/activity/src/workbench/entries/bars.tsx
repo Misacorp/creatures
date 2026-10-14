@@ -3,6 +3,8 @@ import type { TrackStep } from '../../progress-track';
 import { XpBar } from '../../XpBar';
 import { Bar } from '../../ui/Bar';
 import { PipRow } from '../../ui/PipRow';
+import { StreakTrack } from '../../ui/StreakTrack';
+import { streakPips } from '../../dungeon-text';
 import { BossHp, SegmentBar } from '../../ui/SegmentBar';
 import { TimerBar } from '../../ui/TimerBar';
 import { GLYPH_IDS } from '../data';
@@ -89,21 +91,23 @@ const segmentBar: Entry = {
   file: 'apps/activity/src/ui/SegmentBar.tsx',
   group: 'Bars',
   description:
-    'A stepped HP bar: twenty red segments for a boss, five green ones under a creature in the fight; the segments that were just lost blink.',
+    'A stepped HP bar: twenty red segments for a boss (optionally with its numbers written over the bar, as in the dungeon), five green ones under a creature in the fight; the segments that were just lost blink.',
   controls: {
     size: { kind: 'select', options: ['boss', 'unit'] },
     current: { kind: 'number', min: 0, max: 1000 },
     max: { kind: 'number', min: 1, max: 1000 },
     previous: { kind: 'number', min: -1, max: 1000 },
     label: { kind: 'text' },
+    text: { kind: 'text' },
   },
-  defaults: { size: 'boss', current: 600, max: 1000, previous: -1, label: 'Boss HP' },
+  defaults: { size: 'boss', current: 600, max: 1000, previous: -1, label: 'Boss HP', text: '' },
   presets: [
     { name: 'Full', props: { current: 1000 } },
     { name: 'Half', props: { current: 500 } },
     { name: 'Last sliver', props: { current: 1 } },
     { name: 'Just hit', props: { current: 500, previous: 800 } },
     { name: 'Creature (unit)', props: { size: 'unit', current: 60, max: 100 } },
+    { name: 'With the numbers on the bar', props: { current: 620, text: '620 / 1000' } },
   ],
   render: (p) => {
     const previous = num(p, 'previous');
@@ -114,6 +118,7 @@ const segmentBar: Entry = {
         max={num(p, 'max')}
         {...(previous < 0 ? {} : { previous })}
         label={str(p, 'label')}
+        {...(str(p, 'text') === '' ? {} : { text: str(p, 'text') })}
       />
     );
   },
@@ -156,7 +161,7 @@ const xpBar: Entry = {
   file: 'apps/activity/src/XpBar.tsx',
   group: 'Bars',
   description:
-    'A thick XP bar with its words ("120 of 200 XP") drawn over the fill; it shows a creature\'s or explorer\'s progress to the next rank, with optional rank caps at both ends.',
+    'A thick XP bar with its words ("120 / 200 XP") drawn over the fill; it shows a creature\'s or explorer\'s progress to the next rank, with optional rank caps at both ends.',
   controls: {
     value: { kind: 'number', min: 0, max: 1000 },
     max: { kind: 'number', min: 0, max: 1000 },
@@ -212,7 +217,7 @@ const pipRow: Entry = {
         size={str(p, 'size') === 'sm' ? 'sm' : 'md'}
         mark={(i) => (festival > 0 && i === festival - 1 ? 'fest' : undefined)}
         {...(bool(p, 'spoken')
-          ? { label: `${String(num(p, 'lit'))} of ${String(num(p, 'count'))}` }
+          ? { label: `${String(num(p, 'lit'))} / ${String(num(p, 'count'))}` }
           : {})}
       />
     );
@@ -249,18 +254,51 @@ const progressTrack: Entry = {
   controls: {
     steps: { kind: 'number', min: 1, max: 8 },
     current: { kind: 'number', min: 0, max: 7 },
+    edge: { kind: 'toggle' },
+    between: { kind: 'number', min: 0, max: 8 },
+    glossaryLabels: { kind: 'toggle' },
   },
-  defaults: { steps: 6, current: 2 },
+  defaults: { steps: 6, current: 2, edge: false, between: 4, glossaryLabels: false },
   presets: [
     { name: 'First step', props: { current: 0 } },
     { name: 'Middle', props: { current: 2 } },
     { name: 'Last step (Max)', props: { current: 5 } },
+    {
+      name: 'Dungeon depth (edge to edge, pips between)',
+      props: { steps: 2, current: 0, edge: true, between: 4, glossaryLabels: true },
+    },
   ],
   render: (p) => (
     <ProgressTrack
       steps={trackSteps(num(p, 'steps'))}
       current={Math.min(num(p, 'current'), num(p, 'steps') - 1)}
       label="Explorer ranks"
+      edge={bool(p, 'edge')}
+      between={num(p, 'between')}
+      {...(bool(p, 'glossaryLabels') ? { labelEntry: 'depth' } : {})}
+    />
+  ),
+};
+
+const streakTrack: Entry = {
+  name: 'StreakTrack',
+  file: 'apps/activity/src/ui/StreakTrack.tsx',
+  group: 'Bars',
+  description:
+    'The daily dungeon streak after a run: a row of seven days lit up to today, with a small gift under each reward day (the 3rd and 7th).',
+  controls: { streak: { kind: 'number', min: 0, max: 30 } },
+  defaults: { streak: 3 },
+  presets: [
+    { name: 'No streak', props: { streak: 0 } },
+    { name: 'Day 1', props: { streak: 1 } },
+    { name: 'Day 3 (a reward)', props: { streak: 3 } },
+    { name: 'Day 7 (the cycle is full)', props: { streak: 7 } },
+    { name: 'Day 8 (starts again)', props: { streak: 8 } },
+  ],
+  render: (p) => (
+    <StreakTrack
+      pips={streakPips(num(p, 'streak'))}
+      label={`Streak: day ${String(num(p, 'streak'))}`}
     />
   ),
 };
@@ -273,4 +311,5 @@ export const barEntries: readonly Entry[] = [
   xpBar,
   pipRow,
   progressTrack,
+  streakTrack,
 ];

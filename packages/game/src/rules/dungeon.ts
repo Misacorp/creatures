@@ -5,7 +5,8 @@
  */
 import { dungeonContent, dungeonFoe, roomModifier } from '../content/dungeon';
 import type { DungeonFoeDef, DungeonFoeKind } from '../content/dungeon-schema';
-import type { Element, Role } from '../content/schema';
+import { content } from '../content';
+import type { Element, ReactionDef, Role } from '../content/schema';
 import { chance, int, pickWeighted, type Rng } from '../rng';
 import { RULES } from './config';
 import { droppableBases, rollGear, shardOf, type GearRolls, type PartsBundle } from './gear';
@@ -22,19 +23,115 @@ export function isLandmark(depth: number): boolean {
 /** Where a role likes to stand in the dungeon's row of three: 0 left, 1 middle, 2 right. */
 const ROW_RANK: Readonly<Record<Role, number>> = { setter: 0, support: 0, guard: 1, payoff: 2 };
 
+/** One creature as the row's order sees it: what it hits with in a reaction (its element) and what it does with a mark (its role). */
+export interface RowCreature {
+  role: Role;
+  element: Element;
+}
+
+/** One reaction of a row: set off in `round` by the creature at `payoff` on the mark of the one at `marker` (slots from 0). */
+export interface RowReaction {
+  round: number;
+  marker: number;
+  payoff: number;
+  /** The reaction's content id (`overload`, `steam`...). */
+  reaction: string;
+}
+
 /**
- * A good order for a team of creatures in the dungeon's row, left to right: setters and supports on
- * the left (they act first when the foe goes left to right, and a mark must be set before it is
- * paid off), a Guard in the middle (it covers both neighbours, and a plain attack from the left
- * lands on it), payoffs on the right (the end the foe reaches last). Ties keep the order given, so
- * pass the creatures strongest first. The simulator's players and the client's "Use my strongest
- * three" both stand teams this way; the player is free to choose any order.
+ * How many rounds the order of a row is judged over: a normal room's length. The marks carry over
+ * from round to round, so a row that cashes in every round shows it within the first two or three.
  */
-export function dungeonRowOrder<T extends { role: Role }>(creatures: readonly T[]): T[] {
-  return creatures
-    .map((c, i) => ({ c, i }))
-    .sort((a, b) => ROW_RANK[a.c.role] - ROW_RANK[b.c.role] || a.i - b.i)
-    .map((x) => x.c);
+const ORDER_ROUNDS = 6;
+
+/**
+ * The reactions a row sets off against any foe, with everyone left standing, as the engine plays the
+ * marks. The dungeon always goes left to right, so slot 0 hits first, and the mark a hit leaves
+ * stays on the foe until someone takes it off:
+ *
+ * - the first hit on a foe with no mark leaves the hitter's own element as the mark;
+ * - a hit by the element a mark is cashed in by (the reaction table, from content) sets off that
+ *   reaction and uses the mark up;
+ * - otherwise only a Setter replaces the mark, and only with a different element;
+ * - a mark that nobody can cash in stays, so a row can go round after round with no reaction at all.
+ *
+ * Pure and deterministic: no dice, no foe, no stats. The creature that set the mark up is the
+ * `marker` of the reaction that follows.
+ */
+export function rowReactions(
+  row: readonly RowCreature[],
+  reactions: readonly ReactionDef[] = content.reactions,
+  rounds: number = ORDER_ROUNDS,
+): RowReaction[] {
+  const byMark = new Map(reactions.map((r) => [r.markElement, r]));
+  const out: RowReaction[] = [];
+  let mark: { element: Element; by: number } | null = null;
+  for (let round = 1; round <= rounds; round++) {
+    for (const [slot, c] of row.entries()) {
+      const reaction = mark === null ? undefined : byMark.get(mark.element);
+      if (mark !== null && reaction !== undefined && reaction.triggerElement === c.element) {
+        out.push({ round, marker: mark.by, payoff: slot, reaction: reaction.id });
+        mark = null;
+      } else if (mark === null || (c.role === 'setter' && mark.element !== c.element)) {
+        mark = { element: c.element, by: slot };
+      }
+    }
+  }
+  return out;
+}
+
+/** What a row is worth for its order: how many reactions it sets off (`rowReactions`). */
+export function rowScore(
+  row: readonly RowCreature[],
+  reactions: readonly ReactionDef[] = content.reactions,
+): number {
+  return rowReactions(row, reactions).length;
+}
+
+/** Every arrangement of `count` things, each as the list of indexes in the order they stand. */
+function arrangements(count: number): number[][] {
+  if (count === 0) return [[]];
+  const out: number[][] = [];
+  for (const rest of arrangements(count - 1)) {
+    for (let at = 0; at <= rest.length; at++) {
+      out.push([...rest.slice(0, at), count - 1, ...rest.slice(at)]);
+    }
+  }
+  return out;
+}
+
+/**
+ * The best order for a team of creatures in the dungeon's row, left to right. Every dungeon fight goes
+ * left to right and a mark stays on the foe until it is replaced or cashed in, so the order decides
+ * whether reactions happen at all (Splashet, Sproutle, Cindle never react: Tide marks and nobody has
+ * Spark; Cindle, Sproutle, Splashet reacts every round). The order is picked in two steps:
+ *
+ * 1. Of all the orders, the ones that set off the most reactions (`rowScore`).
+ * 2. Among those, the one that stands creatures by role: setters and supports on the left (a mark
+ *    must be set before it is paid off), a Guard in the middle (it covers both neighbours, and a
+ *    plain attack from the left lands on it), payoffs on the right. Still tied, the order given
+ *    wins, so pass the creatures strongest first.
+ *
+ * Meant for a team of three (it tries every order). The simulator's players and the client's "Use my
+ * strongest three" both stand teams this way; the player is free to choose any order.
+ */
+export function dungeonRowOrder<T extends RowCreature>(
+  creatures: readonly T[],
+  reactions: readonly ReactionDef[] = content.reactions,
+): T[] {
+  const lexicographic = (a: readonly number[], b: readonly number[]): number => {
+    for (const [i, x] of a.entries()) if (x !== b[i]) return x - (b[i] as number);
+    return 0;
+  };
+  const orders = arrangements(creatures.length).map((order) => {
+    const row = order.map((i) => creatures[i] as T);
+    return { row, order, score: rowScore(row, reactions), ranks: row.map((c) => ROW_RANK[c.role]) };
+  });
+  orders.sort(
+    (x, y) =>
+      y.score - x.score || lexicographic(x.ranks, y.ranks) || lexicographic(x.order, y.order),
+  );
+  return orders[0]?.row ?? [];
 }
 
 // --- Depth scaling ---

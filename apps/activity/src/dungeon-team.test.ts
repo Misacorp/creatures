@@ -1,11 +1,14 @@
+import { content, rowScore } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { ActionIds } from './actions';
 import type { Creature } from './api';
 import {
   EMPTY_SLOTS,
+  NO_REACTION_HINT,
   buildRunRequest,
   completeTeam,
   isComplete,
+  orderHint,
   place,
   placedCount,
   pruneSlots,
@@ -104,14 +107,30 @@ describe('the strongest three', () => {
     expect(strongestFirst([...list].reverse()).map((c) => c.id)).toEqual(['x', 'y', 'z']);
   });
 
-  it('stands setters left, a guard in the middle and payoffs on the right', () => {
+  it('stands setters left, a guard in the middle and payoffs on the right when that order reacts', () => {
+    // Zipmouse (Spark) marks Charged and Sproutle (Grove) sets off Grounding.
     const list = [
       make('payoff', 'cindle', 12),
-      make('setter', 'splashet', 11),
+      make('setter', 'zipmouse', 11),
       make('guard', 'sproutle', 10),
       make('weak', 'cindle', 1),
     ];
     expect(strongestThree(list)).toEqual(['setter', 'guard', 'payoff']);
+  });
+
+  it('puts the starters in the order that sets off a reaction every round', () => {
+    // In role order (Splashet, Sproutle, Cindle) Tide marks and nobody has Spark: never a reaction.
+    const list = [
+      make('setter', 'splashet', 8),
+      make('guard', 'sproutle', 8),
+      make('payoff', 'cindle', 8),
+    ];
+    const slots = strongestThree(list);
+    expect(slots).toEqual(['payoff', 'guard', 'setter']);
+    expect(orderHint(hintTeam(slots, list))).toBe(
+      'Cindle marks Scorched → Splashet sets off Steam.',
+    );
+    expect(orderHint(hintTeam(['setter', 'guard', 'payoff'], list))).toBe(NO_REACTION_HINT);
   });
 
   it('leaves places empty when there are fewer than three creatures', () => {
@@ -236,5 +255,81 @@ describe('the run request', () => {
     expect(completeTeam(['a', 'b', null])).toBeNull();
     expect(completeTeam(['a', 'a', 'b'])).toBeNull();
     expect(completeTeam(slots)).toEqual(['a', 'b', 'c']);
+  });
+});
+
+/** The members of a full team in slot order, as the hint reads them (names are the species names here). */
+function hintTeam(
+  slots: readonly (string | null)[],
+  list: readonly Creature[],
+): { name: string; species: string }[] {
+  return slots.map((id) => {
+    const c = list.find((x) => x.id === id);
+    if (c === undefined) throw new Error('slot is empty');
+    return { name: speciesLabel(c.species), species: c.species };
+  });
+}
+
+function speciesLabel(species: string): string {
+  return species.charAt(0).toUpperCase() + species.slice(1);
+}
+
+describe('the hint about reactions under the slot row', () => {
+  const species = content.creatures.slice(0, 12);
+  const team = (ids: readonly string[]) =>
+    ids.map((id) => ({ name: speciesLabel(id), species: id }));
+
+  it('says nobody can set off a reaction when the order never does', () => {
+    expect(orderHint(team(['splashet', 'sproutle', 'cindle']))).toBe(
+      'In this order nobody can set off a reaction.',
+    );
+  });
+
+  it('names who marks and who sets it off, in the game words', () => {
+    expect(orderHint(team(['cindle', 'sproutle', 'splashet']))).toBe(
+      'Cindle marks Scorched → Splashet sets off Steam.',
+    );
+    expect(orderHint(team(['zipmouse', 'sproutle', 'cindle']))).toBe(
+      'Zipmouse marks Charged → Sproutle sets off Grounding.',
+    );
+  });
+
+  it('is only there for a full team of known species', () => {
+    expect(orderHint(team(['cindle', 'splashet']))).toBeNull();
+    expect(orderHint([])).toBeNull();
+    expect(orderHint(team(['cindle', 'splashet', 'not-a-species']))).toBeNull();
+  });
+
+  it('uses the names it is given as plain text', () => {
+    const evil = [
+      { name: '<b>x</b>', species: 'cindle' },
+      { name: 'Sprout', species: 'sproutle' },
+      { name: 'Splash', species: 'splashet' },
+    ];
+    expect(orderHint(evil)).toBe('<b>x</b> marks Scorched → Splash sets off Steam.');
+  });
+
+  it('agrees with the order scorer: a reaction is named exactly when the row scores', () => {
+    let seen = 0;
+    for (const a of species) {
+      for (const b of species) {
+        for (const c of species) {
+          if (a.id === b.id || a.id === c.id || b.id === c.id) continue;
+          const hint = orderHint(team([a.id, b.id, c.id]));
+          const score = rowScore([a, b, c]);
+          expect(hint === NO_REACTION_HINT, `${a.id} ${b.id} ${c.id}`).toBe(score === 0);
+          if (score > 0) seen += 1;
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(50);
+  });
+
+  it('never names a reaction the row cannot set off, and keeps to a sentence for each pair', () => {
+    const reactions = new Set(content.reactions.map((r) => r.name));
+    const hint = orderHint(team(['solmane', 'cindle', 'mistnewt'])) ?? '';
+    for (const sentence of hint.split('. ').filter(Boolean)) {
+      expect([...reactions].some((r) => sentence.includes(`sets off ${r}`))).toBe(true);
+    }
   });
 });

@@ -59,13 +59,30 @@ describe('the icons of the room modifiers', () => {
     expect(modifierIcon('flooded')).toEqual({ kind: 'element', element: 'tide' });
     expect(modifierIcon('scorched')).toEqual({ kind: 'element', element: 'ember' });
     expect(modifierIcon('dark')).toEqual({ kind: 'glyph', id: 'reticle' });
-    expect(modifierIcon('fog')).toEqual({ kind: 'glyph', id: 'left_to_right' });
+    // A boost to roles shows the glyph of the first role it names (Guard: the shield).
+    expect(modifierIcon('echoing')).toEqual({ kind: 'glyph', id: 'shield' });
     expect(modifierIcon('thorns')).toEqual({ kind: 'glyph', id: 'reflect_first_reaction' });
     expect(modifierIcon('brittle')).toEqual({ kind: 'glyph', id: 'warning' });
   });
 
   it('falls back to the plain diamond for a modifier it does not know', () => {
     expect(modifierIcon('no-such-modifier')).toEqual({ kind: 'glyph', id: 'unknown' });
+  });
+
+  it('draws the retired Fog of an old run as the plain diamond, without failing', () => {
+    expect(dungeonContent.modifiers.some((m) => m.id === 'fog')).toBe(false);
+    expect(modifierIcon('fog')).toEqual({ kind: 'glyph', id: 'unknown' });
+    // Its stored name and text still make a panel (the server sent them with the run).
+    const panels = roomPanels([
+      {
+        room: 0,
+        id: 'fog',
+        name: 'Fog',
+        description: 'Nobody can see: everyone acts in row order.',
+      },
+    ]);
+    expect(panels[0]?.modifier?.name).toBe('Fog');
+    expect(panels[0]?.spoken).toContain('Fog');
   });
 });
 
@@ -86,20 +103,37 @@ describe('the landmark depth track', () => {
     expect(track.steps[track.current]?.unlocks).toEqual(LANDMARK_UNLOCKS);
   });
 
-  it('shows the landmark behind, the depth now and the landmark ahead in between', () => {
-    expect(labels(9)).toEqual(['previous:Depth 7', 'current:Depth 9', 'next:Depth 14']);
-    expect(labels(14)).toEqual(['previous:Depth 7', 'current:Depth 14', 'next:Depth 21']);
-    expect(labels(15)).toEqual(['previous:Depth 14', 'current:Depth 15', 'next:Depth 21']);
+  it('goes from the depth now to the next landmark, with nothing behind it', () => {
+    expect(labels(9)).toEqual(['current:Depth 9', 'next:Depth 14']);
+    expect(labels(14)).toEqual(['current:Depth 14', 'next:Depth 21']);
+    expect(labels(15)).toEqual(['current:Depth 15', 'next:Depth 21']);
     const track = depthTrack(9);
     expect(track.steps[track.current]?.unlocks).toEqual([]);
+  });
+
+  it('counts the depths in between for the unlabelled pips (3 to 6 between 2 and 7)', () => {
+    expect(depthTrack(2).between).toBe(4);
+    expect(depthTrack(1).between).toBe(5);
+    expect(depthTrack(6).between).toBe(0);
+    // At a landmark the next one is a whole stretch away.
+    expect(depthTrack(7).between).toBe(6);
+    expect(depthTrack(9).between).toBe(4);
+    for (const depth of [1, 2, 6, 7, 8, 13, 14, 50]) {
+      const track = depthTrack(depth);
+      const [now, next] = track.steps;
+      expect(Number(next?.id) - Number(now?.id) - 1, String(depth)).toBe(track.between);
+    }
   });
 
   it('never shows a step past the next landmark, and has no end', () => {
     for (const depth of [1, 7, 8, 13, 14, 50, 700]) {
       const nodes = trackNodes(depthTrack(depth).steps, depthTrack(depth).current);
-      expect(nodes.length).toBeLessThanOrEqual(3);
-      expect(nodes.at(-1)?.role).toBe('next');
+      expect(nodes.map((n) => n.role)).toEqual(['current', 'next']);
     }
+  });
+
+  it('calls the landmark reward a gear drop, not a sure one', () => {
+    expect(LANDMARK_UNLOCKS.map((u) => u.text)).toEqual(['Gear drop', 'Bonus Essence']);
   });
 
   it('treats a depth below 1 as depth 1', () => {

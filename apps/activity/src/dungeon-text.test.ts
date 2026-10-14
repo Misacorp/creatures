@@ -9,6 +9,7 @@ import todayRetry from './fixtures/dungeon-today-retry.json';
 import { ApiError } from './api';
 import {
   DUNGEON_ERROR_TEXT,
+  ORDER_LINE,
   blockedText,
   depthChangeText,
   dungeonErrorText,
@@ -22,6 +23,13 @@ import {
 import { DUNGEON_ERRORS, type DungeonRunResponse, type DungeonToday } from './dungeon-types';
 
 const GENERIC = /^Something went wrong/;
+
+describe('the line about the order', () => {
+  it('says it is your row, left to right, then the foe, in one short line', () => {
+    expect(ORDER_LINE).toBe('Your creatures act left to right, then the foe.');
+    expect(ORDER_LINE.length).toBeLessThan(60);
+  });
+});
 
 describe('the dungeon error texts', () => {
   it('has a plain message for every error code the types list', () => {
@@ -117,7 +125,7 @@ describe('the results words', () => {
   it('has a headline for a clear, a loss in the first room and a loss later', () => {
     expect(resultHeadline(cleared)).toBe('Dungeon cleared!');
     expect(resultHeadline(lost)).toBe('Your team was beaten in the first room.');
-    expect(resultHeadline({ ...lost, roomsCleared: 1 })).toBe('Your team fell in room 2 of 3.');
+    expect(resultHeadline({ ...lost, roomsCleared: 1 })).toBe('Your team fell in room 2 / 3.');
   });
 
   it('says what the run did to the depth', () => {
@@ -126,7 +134,7 @@ describe('the results words', () => {
   });
 
   it('words the room line the way the design says', () => {
-    expect(roomLine(0, 3, 'foe')).toBe('Room 1 of 3');
-    expect(roomLine(2, 3, 'boss')).toBe('Room 3 of 3, room boss');
+    expect(roomLine(0, 3)).toBe('Room 1 / 3');
+    expect(roomLine(2, 3)).toBe('Room 3 / 3');
   });
 });

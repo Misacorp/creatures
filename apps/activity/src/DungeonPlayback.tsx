@@ -8,6 +8,7 @@ import {
   ROOM_END_MS,
   atSpeed,
   mineIds,
+  modifierGimmicks,
   nextRoom,
   roomBoss,
   roomIntroView,
@@ -30,17 +31,23 @@ interface Props {
   replay: DungeonReplay;
   /** The playback is over (it ran to the end, or the player skipped it). */
   onDone: () => void;
+  /**
+   * Show Pause, 2x and Skip above the stage. Off by default (Misa, 2026-10-14: the dungeon plays by
+   * itself); the controls and their state still work, for when they come back.
+   */
+  showControls?: boolean;
 }
 
 /**
  * Plays a stored run room by room on the fight stage, at the live finale's pace. The stage is the
  * same size for the whole run: a room opens with a banner drawn OVER the stage ("Room 2" with the
  * foe and the room's twist), then the room's fight plays under it (the engine's beats, the
- * telegraphs, the lingering numbers), a short rest on the result, then the next room. Pause, 2x and
- * Skip are always in the same place. The run is already decided and stored; this only shows it, so
- * leaving at any time loses nothing.
+ * telegraphs, the lingering numbers), a short rest on the result, then the next room. The room's
+ * place ("Room 1 / 3") is written before the round in the stage's head. Pause, 2x and Skip are
+ * hidden unless `showControls` is set. The run is already decided and stored; this only shows it,
+ * so leaving at any time loses nothing.
  */
-export function DungeonPlayback({ replay, onDone }: Props) {
+export function DungeonPlayback({ replay, onDone, showControls = false }: Props) {
   const [room, setRoom] = useState(0);
   const [speed, setSpeed] = useState<Speed>(1);
   const [paused, setPaused] = useState(false);
@@ -72,20 +79,19 @@ export function DungeonPlayback({ replay, onDone }: Props) {
 
   return (
     <section class="raid-section dungeon-playback" aria-label="Dungeon playback">
-      <PlaybackControls
-        label="Playback controls"
-        playing={!paused}
-        speed={speed}
-        onPlayPause={() => {
-          setPaused(!paused);
-        }}
-        onSpeed={setSpeed}
-        onSkip={onDone}
-        skipLabel="Skip"
-      />
-      <p class="muted dungeon-room-line">
-        {roomLine(current.index, replay.rooms.length, current.kind)}
-      </p>
+      {showControls && (
+        <PlaybackControls
+          label="Playback controls"
+          playing={!paused}
+          speed={speed}
+          onPlayPause={() => {
+            setPaused(!paused);
+          }}
+          onSpeed={setSpeed}
+          onSkip={onDone}
+          skipLabel="Skip"
+        />
+      )}
       <RoomFight
         key={room}
         room={current}
@@ -215,6 +221,8 @@ function RoomFight({
         intro={pb.intro}
         creatureHp={{ start: room.hpStart, max: room.hpMax }}
         layout="row"
+        roomLabel={roomLine(room.index, total)}
+        addedGimmicks={modifierGimmicks(room)}
         overlay={
           banner ? <RoomBanner room={room} total={total} ms={atSpeed(ROOM_CARD_MS, speed)} /> : null
         }

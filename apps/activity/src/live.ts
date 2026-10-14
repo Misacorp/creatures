@@ -105,7 +105,7 @@ export function pickNewer(current: LiveSnapshot | null, next: LiveSnapshot): Liv
 // --- Round progress ---
 
 export interface Progress {
-  /** "Round 5 of 12". */
+  /** "Round 5 / 12". */
   headline: string;
   /** "Next round in 7s". Empty when there is nothing to count down to. */
   countdown: string;
@@ -126,12 +126,12 @@ export function progressText(fight: LiveFight, serverNow: number): Progress {
   const wait = nextRoundAt === null ? '' : formatCountdown(nextRoundAt - serverNow, 'hms');
   if (last) {
     return {
-      headline: `Last round (${String(round)} of ${String(rounds)})`,
+      headline: `Last round (${String(round)} / ${String(rounds)})`,
       countdown: wait === '' ? '' : `Ends in ${wait}`,
     };
   }
   return {
-    headline: `Round ${String(round)} of ${String(rounds)}`,
+    headline: `Round ${String(round)} / ${String(rounds)}`,
     countdown: wait === '' ? '' : `Next round in ${wait}`,
   };
 }
@@ -203,12 +203,12 @@ export function otherUsage(abilities: readonly LiveAbility[], you: string | null
 export function othersSummary(others: readonly OtherUsage[]): string {
   const used = others.reduce((sum, o) => sum + o.used, 0);
   const total = others.reduce((sum, o) => sum + o.total, 0);
-  return `Others' abilities (${String(used)}/${String(total)} used)`;
+  return `Others' abilities (${String(used)} / ${String(total)} used)`;
 }
 
-/** "2 of 4 used. Latest: Cindle's Flare Strike (round 5)". */
+/** "2 / 4 used. Latest: Cindle's Flare Strike (round 5)". */
 export function otherUsageText(usage: OtherUsage, names: Pick<EventNames, 'creatures'>): string {
-  const head = `${String(usage.used)} of ${String(usage.total)} used`;
+  const head = `${String(usage.used)} / ${String(usage.total)} used`;
   if (usage.latest === null) return head;
   const round = usage.latest.firedAtRound;
   return `${head}. Latest: ${abilityTitle(usage.latest, names)}${

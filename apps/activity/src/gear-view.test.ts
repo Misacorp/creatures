@@ -196,8 +196,8 @@ describe('items', () => {
   });
 
   it('writes the bag as used of cap with held places', () => {
-    expect(bagText({ cap: 60, used: 5, reserved: 0 })).toBe('5 of 60');
-    expect(bagText(gear.inventory)).toBe('5 of 60 (1 held for a craft)');
+    expect(bagText({ cap: 60, used: 5, reserved: 0 })).toBe('5 / 60');
+    expect(bagText(gear.inventory)).toBe('5 / 60 (1 held for a craft)');
   });
 });
 

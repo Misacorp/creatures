@@ -1,20 +1,14 @@
 /**
  * Daily dungeon content (`data/dungeon-foes.json`, `data/room-modifiers.json`): schemas and load-time
- * checks. A foe is a small boss: it reuses the boss pieces (element, turn order, gimmicks, crit bonus)
- * and adds a round count and a kind (a normal foe, or a room boss that closes a run). A room
- * modifier is a handful of plain number changes applied to the room's fight input before it runs
- * (team stats, foe stats, crit, a gimmick, the turn order), so the engine needs no special cases for
+ * checks. A foe is a small boss: it reuses the boss pieces (element, gimmicks, crit bonus) and adds a
+ * round count and a kind (a normal foe, or a room boss that closes a run). It has no turn order: every
+ * dungeon fight goes left to right, then the foe (`RULES.dungeon.turnOrder`), so content cannot
+ * change it. A room modifier is a handful of plain number changes applied to the room's fight input
+ * before it runs (team stats, foe stats, crit, a gimmick), so the engine needs no special cases for
  * either. Everything numeric about depth and rewards lives in `RULES.dungeon`.
  */
 import * as v from 'valibot';
-import {
-  CritBonusSchema,
-  ElementSchema,
-  GimmickSchema,
-  IdSchema,
-  RoleSchema,
-  TurnOrderSchema,
-} from './schema';
+import { CritBonusSchema, ElementSchema, GimmickSchema, IdSchema, RoleSchema } from './schema';
 
 const Name = v.pipe(v.string(), v.minLength(1), v.maxLength(32));
 const Flavor = v.pipe(v.string(), v.minLength(1), v.maxLength(120));
@@ -38,7 +32,6 @@ export const DungeonFoeSchema = v.strictObject({
   /** HP and Attack at depth 1. Depth scales both (`scaledFoe`). */
   baseHp: PositiveInt,
   baseAtk: PositiveInt,
-  turnOrder: TurnOrderSchema,
   gimmicks: v.pipe(v.array(GimmickSchema), v.maxLength(3)),
   /** Rounds in the room's fight (the fight also ends when the foe falls or the team is knocked out). */
   rounds: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(MAX_ROOM_ROUNDS)),
@@ -74,15 +67,17 @@ export const RoomEffectSchema = v.variant('op', [
   }),
   /** The foe gains a gimmick for this room. */
   v.strictObject({ op: v.literal('foe_gimmick'), gimmick: GimmickSchema }),
-  /** The foe's turn order is replaced for this room (the creatures' order). */
-  v.strictObject({ op: v.literal('turn_order'), order: TurnOrderSchema }),
 ]);
 export type RoomEffect = v.InferOutput<typeof RoomEffectSchema>;
 
 export const RoomModifierSchema = v.strictObject({
   id: IdSchema,
   name: Name,
-  /** One plain line, shown before the run ("Tide creatures hit 20% harder."). */
+  /**
+   * One plain line, shown before the run ("Tide creatures hit 20% harder."). A modifier may never
+   * change who acts when: the order is `RULES.dungeon.turnOrder` for every room, so there is no
+   * effect for it.
+   */
   description: Description,
   effects: v.pipe(v.array(RoomEffectSchema), v.minLength(1), v.maxLength(3)),
 });

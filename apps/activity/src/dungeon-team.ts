@@ -8,7 +8,14 @@
  * The team stands in ONE row of three, left to right. The player's choice is the order: `team[i]`
  * of the request is `slots[i]`, the creature at position i, and there is nothing else to pick.
  */
-import { RULES, content, dungeonRowOrder, type Role } from '@creatures/game';
+import {
+  RULES,
+  content,
+  dungeonRowOrder,
+  rowReactions,
+  type Element,
+  type Role,
+} from '@creatures/game';
 import type { Creature } from './api';
 import type { DungeonRunRequest } from './dungeon-types';
 import {
@@ -113,19 +120,65 @@ export function strongestFirst(creatures: readonly Creature[]): Creature[] {
 
 /**
  * The player's strongest three, in the order the game's rule for the row gives
- * (`dungeonRowOrder`, the same as the simulator's players): setters and supports on the left, a
- * Guard in the middle where it covers both neighbours, payoffs on the right.
+ * (`dungeonRowOrder`, the same as the simulator's players). Every dungeon fight goes left to right
+ * (`RULES.dungeon.turnOrder`) and a mark stays on the foe until it is replaced or cashed in, so the
+ * order is the one that sets off the most reactions; among those, setters and supports stand on the
+ * left and act first, a Guard in the middle covers both neighbours, and payoffs on the right cash
+ * the marks in last.
  */
 export function strongestThree(creatures: readonly Creature[]): Slots {
   const top = strongestFirst(creatures)
     .slice(0, TEAM_SIZE)
-    .map((c) => ({ c, role: roleOf(c) ?? 'support' }));
+    .map((c) => ({
+      c,
+      role: roleOf(c.species) ?? 'support',
+      element: elementOf(c.species) ?? 'tide',
+    }));
   const ordered = dungeonRowOrder(top).map((x) => x.c);
   return [ordered[0]?.id ?? null, ordered[1]?.id ?? null, ordered[2]?.id ?? null];
 }
 
-function roleOf(creature: Creature): Role | undefined {
-  return content.creatures.find((s) => s.id === creature.species)?.role;
+function roleOf(species: string): Role | undefined {
+  return content.creatures.find((s) => s.id === species)?.role;
+}
+
+function elementOf(species: string): Element | undefined {
+  return content.creatures.find((s) => s.id === species)?.element;
+}
+
+/** What the setup says when the row cannot set off any reaction. */
+export const NO_REACTION_HINT = 'In this order nobody can set off a reaction.';
+
+/**
+ * The line under the slot row about reactions, for a full team in its order (slot 1 first): which
+ * creature marks the foe and which one sets the reaction off, for example "Cindle marks Scorched →
+ * Splashet sets off Steam." (one sentence for each different pair, in the order they first happen),
+ * or `NO_REACTION_HINT` when the order never sets one off. It reads the same `rowReactions` the
+ * row's best order is picked with, so the line and "Use my strongest three" always agree. Null when
+ * the team is not complete or a species is unknown. The names are the player's own (render as text).
+ */
+export function orderHint(team: readonly { name: string; species: string }[]): string | null {
+  if (team.length !== TEAM_SIZE) return null;
+  const row: { role: Role; element: Element }[] = [];
+  for (const member of team) {
+    const role = roleOf(member.species);
+    const element = elementOf(member.species);
+    if (role === undefined || element === undefined) return null;
+    row.push({ role, element });
+  }
+  const sentences: string[] = [];
+  const seen = new Set<string>();
+  for (const r of rowReactions(row)) {
+    const key = `${String(r.marker)}:${String(r.payoff)}:${r.reaction}`;
+    const def = content.reactions.find((d) => d.id === r.reaction);
+    const marker = team[r.marker];
+    const payoff = team[r.payoff];
+    if (seen.has(key) || def === undefined || marker === undefined || payoff === undefined)
+      continue;
+    seen.add(key);
+    sentences.push(`${marker.name} marks ${def.markName} → ${payoff.name} sets off ${def.name}.`);
+  }
+  return sentences.length === 0 ? NO_REACTION_HINT : sentences.join(' ');
 }
 
 /** What a tap does. A selected creature goes to the tapped slot; tapping a placed creature picks it up. */

@@ -50,7 +50,7 @@ describe('the journal', () => {
   it('counts the pages found in each place and in all', () => {
     expect(places.find((p) => p.place === 'tidepools')).toMatchObject({ found: 1 });
     expect(places.reduce((n, p) => n + p.found, 0)).toBe(profile.journal.found.length);
-    expect(journalProgressText(profile)).toBe('1 of 40 pages found');
+    expect(journalProgressText(profile)).toBe('1 / 40 pages found');
   });
 
   it('lists the sets of each place with their progress, from the server', () => {
@@ -105,12 +105,12 @@ describe('the profile', () => {
     const views = milestoneViews(profile.milestones);
     expect(views).toHaveLength(RULES.expeditions.milestones.length);
     const first = views[0];
-    expect(first?.progress).toBe('Trips finished: 3 of 5');
+    expect(first?.progress).toBe('Trips finished: 3 / 5');
     expect(first).toMatchObject({ value: 3, max: 5 });
     expect(first?.reached).toBe(false);
     const over = milestoneViews([{ ...profile.milestones[0]!, value: 99, reached: true }]);
     expect(over[0]).toMatchObject({
-      progress: 'Trips finished: 5 of 5',
+      progress: 'Trips finished: 5 / 5',
       value: 5,
       max: 5,
       reached: true,

@@ -45,12 +45,12 @@ export function seasonPips(season: RaidView['season']): SeasonPip[] {
   });
 }
 
-/** "Week 2 of 5 this season", the text behind the pips. Null when there is no season. */
+/** "Week 2 / 5 this season", the text behind the pips. Null when there is no season. */
 export function seasonText(season: RaidView['season']): string | null {
   if (season === null) return null;
   return season.week === SEASON_WEEKS
-    ? `Week ${String(season.week)} of ${String(SEASON_WEEKS)}: the Festival ends the season`
-    : `Week ${String(season.week)} of ${String(SEASON_WEEKS)} this season`;
+    ? `Week ${String(season.week)} / ${String(SEASON_WEEKS)}: the Festival ends the season`
+    : `Week ${String(season.week)} / ${String(SEASON_WEEKS)} this season`;
 }
 
 export const READINESS_LABELS: Record<ReadinessBand, string> = {
@@ -126,7 +126,7 @@ export function festivalGrantText(grant: FestivalGrant): string {
     case 'new':
       return `You won ${name}! A new level 1 creature for your collection.`;
     case 'fused':
-      return `You won ${name} again: it fused with yours (fusion ${String(grant.fusionCount ?? 0)} of 5).`;
+      return `You won ${name} again: it fused with yours (fusion ${String(grant.fusionCount ?? 0)} / 5).`;
     case 'converted':
       return `You already had a fully fused ${name}: +${String(grant.bait ?? 0)} Bait instead.`;
   }

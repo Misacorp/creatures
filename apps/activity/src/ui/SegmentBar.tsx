@@ -14,10 +14,16 @@ interface SegmentBarProps {
   previous?: number;
   /** Names a boss bar for screen readers. Not used by a unit bar. */
   label?: string;
+  /**
+   * Words drawn over a boss bar ("62 / 337"), the way `XpBar` writes over its fill: bone letters with
+   * an ink outline, so they read on the red segments and on the dark gaps. Decoration: the label
+   * already says the numbers.
+   */
+  text?: string;
 }
 
 /** A stepped HP bar. Any HP keeps a segment lit and only full HP lights them all (`hpSegments`). */
-export function SegmentBar({ current, max, size, previous, label }: SegmentBarProps) {
+export function SegmentBar({ current, max, size, previous, label, text }: SegmentBarProps) {
   const total = size === 'boss' ? HP_SEGMENTS : UNIT_SEGMENTS;
   const lit = hpSegments(current, max, total);
   const was = previous === undefined ? lit : hpSegments(previous, max, total);
@@ -34,6 +40,11 @@ export function SegmentBar({ current, max, size, previous, label }: SegmentBarPr
   return (
     <div class="hpbar" role="img" aria-label={label}>
       {segments}
+      {text !== undefined && (
+        <span class="xpbar-text hpbar-text pix" aria-hidden="true">
+          {text}
+        </span>
+      )}
     </div>
   );
 }
@@ -55,7 +66,7 @@ export function BossHp({ caption, current, max, previous }: BossHpProps) {
         current={current}
         max={max}
         {...(previous === undefined ? {} : { previous })}
-        label={`${caption}: ${String(current)} of ${String(max)}`}
+        label={`${caption}: ${String(current)} / ${String(max)}`}
       />
       <p class="muted small">
         {`${caption}: `}

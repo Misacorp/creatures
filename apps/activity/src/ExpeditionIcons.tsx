@@ -8,7 +8,7 @@ import { Sprite } from './sprites/Sprite';
  * stars are pictures; the count is said once in words for assistive technology.
  */
 export function Stars({ stars, label }: { stars: number; label?: string }) {
-  const spoken = label ?? `${String(stars)} of 3 stars`;
+  const spoken = label ?? `${String(stars)} / 3 stars`;
   return (
     <span class="stars-row" role="img" aria-label={spoken}>
       {[0, 1, 2].map((i) => (

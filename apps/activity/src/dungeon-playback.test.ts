@@ -12,6 +12,7 @@ import {
   atSpeed,
   hpLine,
   mineIds,
+  modifierGimmicks,
   nextRoom,
   noRewards,
   rewardLoot,
@@ -28,7 +29,8 @@ import {
   streakLoot,
 } from './dungeon-playback';
 import type { DungeonRunResponse, DungeonRunSummary } from './dungeon-types';
-import { buildBeats, creatureHpAt, stageStateAt } from './stage';
+import { turnOrderOfRound } from './replay';
+import { buildBeats, creatureHpAt, ordinal, stageStateAt } from './stage';
 import { forecastNextRound } from './telegraph';
 
 const replay = parseDungeonReplay(replayFixture);
@@ -164,9 +166,9 @@ describe('the results', () => {
   });
 
   it('writes one sentence for the whole run', () => {
-    expect(runSentence(cleared)).toBe('Cleared at depth 1: 3 of 3 rooms cleared.');
+    expect(runSentence(cleared)).toBe('Cleared at depth 1: 3 / 3 rooms cleared.');
     expect(runSentence(lost)).toContain('Not cleared at depth');
-    expect(runSentence(lost)).toContain('0 of 3 rooms cleared');
+    expect(runSentence(lost)).toContain('0 / 3 rooms cleared');
   });
 
   it('sees a run that paid nothing, and one that paid in full', () => {
@@ -302,7 +304,7 @@ describe('the banner over the stage when a room opens', () => {
     const view = roomIntroView(room(1, 'foe'), 3);
     expect(view).toMatchObject({
       heading: 'ROOM 2',
-      place: '2 of 3',
+      place: '2 / 3',
       boss: false,
       foeId: 'puddle-imp',
       foeName: 'Puddle Imp',
@@ -317,7 +319,7 @@ describe('the banner over the stage when a room opens', () => {
     expect(view.heading).toBe('ROOM BOSS');
     expect(view.boss).toBe(true);
     expect(view.spoken).toBe(
-      'Room 3 of 3, room boss: Puddle Imp. Flooded: Tide creatures hit 20% harder.',
+      'Room 3 / 3, room boss: Puddle Imp. Flooded: Tide creatures hit 20% harder.',
     );
   });
 
@@ -325,5 +327,107 @@ describe('the banner over the stage when a room opens', () => {
     const views = replay.rooms.map((r) => roomIntroView(r, replay.rooms.length));
     expect(views.map((v) => v.foeName)).toEqual(replay.rooms.map((r) => r.foe.name));
     expect(views.at(-1)?.boss).toBe(true);
+  });
+});
+
+describe('the acting order written under the creatures', () => {
+  const row = stageRow(replay);
+
+  it('is the row left to right, 1st to 3rd, whatever order the server listed it in', () => {
+    const shuffled = stageRow({ row: [...replay.row].reverse() });
+    expect(shuffled.map((r) => r.id)).toEqual(row.map((r) => r.id));
+    expect(row.map((_, i) => ordinal(i + 1))).toEqual(['1st', '2nd', '3rd']);
+  });
+
+  it('agrees with the order the engine actually played, round after round', () => {
+    for (const room of replay.rooms) {
+      const ids = row.map((r) => r.id);
+      for (let round = 1; round <= room.rounds; round++) {
+        // Everyone who acted in a round acted in row order (a knocked-out creature just has no turn).
+        const acted = turnOrderOfRound(room.events, round);
+        expect(acted, `${room.foe.name} round ${String(round)}`).toEqual(
+          ids.filter((id) => acted.includes(id)),
+        );
+      }
+    }
+  });
+
+  it('is ordinals: 1st, 2nd, 3rd, then 4th, 11th, 12th, 13th, 21st, 22nd, 23rd and 101st', () => {
+    expect([1, 2, 3, 4, 10, 11, 12, 13, 21, 22, 23, 101, 111].map(ordinal)).toEqual([
+      '1st',
+      '2nd',
+      '3rd',
+      '4th',
+      '10th',
+      '11th',
+      '12th',
+      '13th',
+      '21st',
+      '22nd',
+      '23rd',
+      '101st',
+      '111th',
+    ]);
+  });
+
+  it('shows who is acting from the stage state', () => {
+    const room = replay.rooms[0];
+    if (room === undefined) throw new Error('fixture room');
+    const first = room.events.findIndex((e) => e.t === 'turn');
+    const actor = (index: number) => stageStateAt(room.events, index, room.foe.hpMax).actor;
+    expect(actor(0)).toBeNull();
+    expect(actor(first + 1)).toBe(row[0]?.id);
+    const second = room.events.findIndex((e, i) => i > first && e.t === 'turn');
+    expect(actor(second + 1)).toBe(row[1]?.id);
+  });
+});
+
+describe('the forecast knows what the room modifier adds to the foe', () => {
+  it('reads the gimmick Thorns adds from the content, and none for other modifiers', () => {
+    const thorns = replay.rooms.find((r) => r.modifier.id === 'thorns');
+    const plain = replay.rooms.find((r) => r.modifier.id !== 'thorns');
+    if (thorns === undefined || plain === undefined) throw new Error('fixture modifiers');
+    expect(modifierGimmicks(thorns).map((g) => g.op)).toEqual(['reflect_first_reaction']);
+    expect(modifierGimmicks(plain)).toEqual([]);
+  });
+
+  it('shows Thorns in the Next round line of a Thorns room, which the foe alone does not give', () => {
+    const room = replay.rooms.find((r) => r.modifier.id === 'thorns');
+    if (room === undefined) throw new Error('fixture has a Thorns room');
+    const ids = replay.row.map((r) => r.id);
+    const without = forecastNextRound(room.foe.id, 1, 8, ids, [], room.names);
+    const added = modifierGimmicks(room);
+    const withThorns = forecastNextRound(room.foe.id, 1, 8, ids, [], room.names, 'row', added);
+    expect(withThorns?.text).toContain('reflects the first reaction');
+    expect(without?.text ?? '').not.toContain('reflects the first reaction');
+  });
+});
+
+describe('a run that was stored with the removed Fog modifier', () => {
+  // Old runs keep the modifier's name and text in the stored room, so they still read and draw.
+  const fogged = {
+    ...replay,
+    rooms: replay.rooms.map((r, i) =>
+      i === 0
+        ? {
+            ...r,
+            modifier: {
+              id: 'fog',
+              name: 'Fog',
+              description: 'Nobody can see: everyone acts in row order, left to right.',
+            },
+          }
+        : r,
+    ),
+  };
+
+  it('shows its banner text and adds no gimmick', () => {
+    const room = fogged.rooms[0];
+    if (room === undefined) throw new Error('room');
+    const view = roomIntroView(room, fogged.rooms.length);
+    expect(view.modifierName).toBe('Fog');
+    expect(view.spoken).toContain('Fog: Nobody can see');
+    expect(modifierGimmicks(room)).toEqual([]);
+    expect(stageRow(fogged).map((r) => r.position)).toEqual([0, 1, 2]);
   });
 });

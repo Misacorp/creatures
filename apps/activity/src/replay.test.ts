@@ -10,6 +10,7 @@ import {
   personalRecap,
   recapNotes,
   stateAt,
+  turnChips,
   turnOrderOfRound,
 } from './replay';
 
@@ -214,6 +215,35 @@ describe('turn order', () => {
       { t: 'skip', round: 1, creature: 'b', reason: 'silenced' },
     ];
     expect(turnOrderOfRound(silenced, 1)).toEqual(['a', 'b']);
+  });
+});
+
+describe('turn strip chips', () => {
+  const label = (id: string): string => ({ a: 'Alpha', b: 'Beta', x: 'Xi' })[id] ?? id;
+
+  it('marks the acting creature, the ones that acted, and the knocked-out ones', () => {
+    const chips = turnChips(
+      ['a', 'b', 'x'],
+      { actor: 'b', acted: ['a'], knockedOut: ['x'] },
+      label,
+    );
+    expect(chips).toEqual([
+      { id: 'a', label: 'Alpha', current: false, done: true, ko: false },
+      { id: 'b', label: 'Beta', current: true, done: false, ko: false },
+      { id: 'x', label: 'Xi', current: false, done: false, ko: true },
+    ]);
+  });
+
+  it('can take knockouts from elsewhere than the step', () => {
+    const chips = turnChips(['a', 'b'], { actor: null, acted: [], knockedOut: [] }, label, {
+      knockedOut: (id) => id === 'a',
+    });
+    expect(chips.map((c) => c.ko)).toEqual([true, false]);
+  });
+
+  it('never marks the acting creature as done, even if it is listed as acted', () => {
+    const [chip] = turnChips(['a'], { actor: 'a', acted: ['a'], knockedOut: [] }, label);
+    expect(chip).toMatchObject({ current: true, done: false });
   });
 });
 

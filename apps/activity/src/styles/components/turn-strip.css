@@ -1,0 +1,37 @@
+/*
+  The strip of who acts in what order (raid replay): a chip per creature, the one acting now outlined
+  in gold, those that acted dimmed and a knocked-out creature struck through.
+*/
+.turn-strip {
+  display: flex;
+  gap: 0.375rem;
+  margin: 0.25rem 0;
+  /* Room for the gold ring of the current chip, which the scroll box would clip. */
+  padding: 0.25rem;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.turn-chip {
+  flex: none;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--line);
+  font-size: 0.8125rem;
+}
+
+.turn-chip.current {
+  border-color: var(--gold);
+  box-shadow: var(--ring);
+}
+
+.turn-chip.done {
+  opacity: 0.6;
+}
+
+.turn-chip.ko {
+  opacity: 0.4;
+}
+
+.turn-chip.ko .turn-name {
+  text-decoration: line-through;
+}

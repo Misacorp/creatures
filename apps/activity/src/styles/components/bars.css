@@ -35,6 +35,7 @@
 }
 
 .hpbar {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(20, 1fr);
   gap: 2px;
@@ -45,6 +46,17 @@
 
 .hpbar > i {
   background: var(--bad);
+}
+
+/* Words over the segments (the `xpbar-text` base), outlined in ink so they read on red and on dark. */
+.hpbar-text {
+  font-size: 1rem;
+  text-shadow:
+    var(--px) 0 var(--ink),
+    calc(var(--px) * -1) 0 var(--ink),
+    0 var(--px) var(--ink),
+    0 calc(var(--px) * -1) var(--ink);
+  pointer-events: none;
 }
 
 .hpbar > i.gone {

@@ -55,9 +55,12 @@
     ]
   },
   {
-    "id": "fog",
-    "name": "Fog",
-    "description": "Nobody can see: everyone acts in row order, left to right.",
-    "effects": [{ "op": "turn_order", "order": "left_to_right" }]
+    "id": "echoing",
+    "name": "Echoing",
+    "description": "Guards and supports hit 50% harder.",
+    "effects": [
+      { "op": "team_stat", "stat": "atk", "bp": 5000, "role": "guard" },
+      { "op": "team_stat", "stat": "atk", "bp": 5000, "role": "support" }
+    ]
   }
 ]

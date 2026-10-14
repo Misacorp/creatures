@@ -126,6 +126,14 @@ export function zoneOfCreature(rowIds: readonly string[], id: string): Zone | nu
   return index < 0 ? null : zoneOfIndex(index, rowIds.length);
 }
 
+/** "1st", "2nd", "3rd", "4th", "11th", "21st": a place in an order (the dungeon's acting order under each creature). */
+export function ordinal(n: number): string {
+  const rest = n % 100;
+  if (rest >= 11 && rest <= 13) return `${String(n)}th`;
+  const suffix = { 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] ?? 'th';
+  return `${String(n)}${suffix}`;
+}
+
 /** The row cut into its zones, front first. Zones without a creature are left out. */
 export function groupByZone<T extends { id: string }>(
   row: readonly T[],

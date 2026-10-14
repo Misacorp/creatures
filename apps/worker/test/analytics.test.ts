@@ -254,6 +254,21 @@ describe('the event writer', () => {
     ).toMatchObject({ boss: 'unknown', rank: 0, topShareBp: 10_000 });
   });
 
+  it('writes a retired modifier id (Fog) as unknown, since only shipped content ids are kept', () => {
+    const run = propsOf({
+      kind: 'dungeon_run',
+      depth: 1,
+      attempt: 1,
+      roomsCleared: 0,
+      cleared: false,
+      landmark: false,
+      modifiers: ['fog', 'echoing', 'dark'],
+      team: [],
+      gear: 0,
+    });
+    expect((run as { modifiers: unknown }).modifiers).toEqual(['unknown', 'echoing', 'dark']);
+  });
+
   it('rebuilds the dungeon events from content ids and numbers only', () => {
     const run = propsOf({
       kind: 'dungeon_run',
@@ -262,7 +277,7 @@ describe('the event writer', () => {
       roomsCleared: -3,
       cleared: false,
       landmark: true,
-      modifiers: ['flooded', 'Misa was here', 'fog', 'dark', 'dark', 'dark', 'dark'],
+      modifiers: ['flooded', 'Misa was here', 'echoing', 'dark', 'dark', 'dark', 'dark'],
       team: [
         { species: 'cindle', role: 'payoff' },
         { species: 'a nickname', role: 'king' as never },
@@ -277,7 +292,7 @@ describe('the event writer', () => {
       roomsCleared: 0,
       cleared: false,
       landmark: true,
-      modifiers: ['flooded', 'unknown', 'fog', 'dark', 'dark', 'dark'],
+      modifiers: ['flooded', 'unknown', 'echoing', 'dark', 'dark', 'dark'],
       team: [
         { species: 'cindle', role: 'payoff' },
         { species: 'unknown', role: 'setter' },

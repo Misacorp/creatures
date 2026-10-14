@@ -1,23 +1,58 @@
 /* --- The daily dungeon --- */
 
-.dungeon-depth {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0.25rem 0;
-}
-
 .dungeon-landmark-chip {
   box-shadow: inset calc(var(--px) * -1) 0 0 var(--gold);
 }
 
+/* The streak after a run: its label and line, then the row of days. */
 .dungeon-streak {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.375rem 0.625rem;
   margin: 0.5rem 0;
+}
+
+.dungeon-streak-head {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.625rem;
+}
+
+.streak-track {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0.375rem 0 0;
+}
+
+.streak-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.streak-day > i {
+  width: 1.25rem;
+  height: 1.25rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--haze);
+}
+
+/* A reward day: a gold ring until it is lit, the gift under it either way. */
+.streak-day.bonus > i {
+  background: transparent;
+  box-shadow: 0 0 0 2px var(--gold);
+}
+
+.streak-day.on > i {
+  background: var(--gold);
+  box-shadow: none;
+}
+
+.streak-gift {
+  display: block;
+  min-height: 1rem;
+  line-height: 0;
 }
 
 .dungeon-retry {
@@ -71,4 +106,8 @@
 
 .dungeon-enter .primary {
   width: 100%;
+}
+
+.dungeon-order-line {
+  margin: 0.25rem 0 0.5rem;
 }

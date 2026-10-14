@@ -310,9 +310,9 @@ export function sortItems(items: readonly GearItem[]): GearItem[] {
   );
 }
 
-/** "12 of 60", with the places held by crafts that are still in the Workshop. */
+/** "12 / 60", with the places held by crafts that are still in the Workshop. */
 export function bagText(inventory: GearState['inventory']): string {
-  const base = `${String(inventory.used)} of ${String(inventory.cap)}`;
+  const base = `${String(inventory.used)} / ${String(inventory.cap)}`;
   return inventory.reserved > 0 ? `${base} (${String(inventory.reserved)} held for a craft)` : base;
 }
 

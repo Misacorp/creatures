@@ -19,6 +19,7 @@
 @import './components/cards.css';
 @import './views/raid.css';
 @import './views/replay.css';
+@import './components/turn-strip.css';
 @import './views/finale-abilities.css';
 @import './views/live.css';
 @import './views/festival.css';

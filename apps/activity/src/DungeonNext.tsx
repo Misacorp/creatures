@@ -1,13 +1,26 @@
+import { DepthProgress } from './DepthProgress';
 import { GlossaryTag } from './Glossary';
 import { useServerNow } from './hooks';
-import { StreakPips } from './DungeonPrerun';
-import { streakLine } from './dungeon-text';
+import { streakLine, streakPips } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
+import { StreakTrack } from './ui/StreakTrack';
 import { formatCountdown, formatZoned } from './time-format';
 
+/** What a screen reader says for the streak row. */
+function streakLabel(streak: number): string {
+  const pips = streakPips(streak);
+  const lit = pips.filter((p) => p.on).length;
+  const rewards = pips
+    .filter((p) => p.bonus)
+    .map((p) => String(p.day))
+    .join(' and ');
+  return `Streak: ${String(lit)} / ${String(pips.length)} days of the cycle. Days ${rewards} pay a reward.`;
+}
+
 /**
- * The end of the report answers "when can I go again?": the streak with its pips, and the time the
- * day resets (in the guild's timezone) with a countdown. Everything is read from the server's state.
+ * The end of the report answers "what is next?": the depth now (after this run) and the way to the
+ * next landmark, the streak with its reward days, and the time the day resets (in the guild's
+ * timezone) with a countdown. Everything is read from the server's state.
  */
 export function DungeonNext({ today, offset }: { today: DungeonToday; offset: number }) {
   const serverNow = useServerNow(offset, true);
@@ -15,10 +28,13 @@ export function DungeonNext({ today, offset }: { today: DungeonToday; offset: nu
   return (
     <section class="dungeon-next" aria-labelledby="dungeon-next-heading">
       <h4 id="dungeon-next-heading">Next run</h4>
+      <DepthProgress depth={today.depth} />
       <div class="dungeon-streak">
-        <GlossaryTag entry="streak">Streak</GlossaryTag>
-        <StreakPips streak={today.streak} plain />
-        <span class="muted">{streakLine(today.streak)}</span>
+        <div class="dungeon-streak-head">
+          <GlossaryTag entry="streak">Streak</GlossaryTag>
+          <span class="muted">{streakLine(today.streak)}</span>
+        </div>
+        <StreakTrack pips={streakPips(today.streak)} label={streakLabel(today.streak)} />
       </div>
       <p class="muted">
         Resets at {formatZoned(today.resetsAt, today.timezone, 'short')} ({today.timezone}), in{' '}
