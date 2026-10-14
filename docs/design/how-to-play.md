@@ -20,7 +20,7 @@ Teach the game where players already look. Every tag, chip and status word can b
   - zone labels (Front, Middle, Back) and the boss turn-order glyph;
   - gimmick glyphs, Essence, Bait, shiny, the level and the training cost.
 - **How:**
-  - Tapping, or Enter/Space, opens a small popover. It reuses the in-stage popover shell (`StagePopover`) with a page-level variant.
+  - Tapping, or Enter/Space, opens a small popover. It uses the shared popover shell (`ui/Popover.tsx`, page layer), hosted by `PopoverHost`.
   - The popover has a title, two or three short lines, a tiny visual where useful, and a "More in How to play" link to the right section.
   - Escape or tapping outside closes it.
   - Tags look tappable: a dotted underline or a small "?" corner. They must never conflict with drag and drop (a tap without movement only).
