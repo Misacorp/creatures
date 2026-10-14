@@ -228,7 +228,7 @@ describe('progressText', () => {
   it("counts the round and the time to the next one, from the server's schedule", () => {
     const fight = fightOf({ round: 3 });
     expect(progressText(fight, START + 25_000)).toEqual({
-      headline: 'Round 3 of 12',
+      headline: 'Round 3 / 12',
       countdown: 'Next round in 5s',
     });
     // A shorter round counts down to its own end.
@@ -248,7 +248,7 @@ describe('progressText', () => {
   it('says when it is the last round and when it is over', () => {
     const last = fightOf({ round: 12, nextRoundAt: START + 120_000 });
     expect(progressText(last, START + 115_000)).toEqual({
-      headline: 'Last round (12 of 12)',
+      headline: 'Last round (12 / 12)',
       countdown: 'Ends in 5s',
     });
     expect(progressText(fightOf({ status: 'done', round: 12 }), START + 200_000)).toEqual({
@@ -260,7 +260,7 @@ describe('progressText', () => {
   it('calls the round the boss has fallen in the last one, and says nothing without a next time', () => {
     const fell = fightOf({ round: 5, bossHp: 0, nextRoundAt: START + 60_000 });
     expect(progressText(fell, START + 55_000)).toEqual({
-      headline: 'Last round (5 of 12)',
+      headline: 'Last round (5 / 12)',
       countdown: 'Ends in 5s',
     });
     expect(progressText(fightOf({ round: 12, nextRoundAt: null }), START + 55_000).countdown).toBe(
@@ -523,11 +523,11 @@ describe('ability texts', () => {
       ['m3', 0, 1],
     ]);
     expect(otherUsageText(usage[0] as OtherUsage, names)).toBe(
-      "2 of 3 used. Latest: Rex's Flare Strike (round 5)",
+      "2 / 3 used. Latest: Rex's Flare Strike (round 5)",
     );
-    expect(otherUsageText(usage[1] as OtherUsage, names)).toBe('0 of 1 used');
-    expect(othersSummary(usage)).toBe("Others' abilities (2/4 used)");
-    expect(othersSummary([])).toBe("Others' abilities (0/0 used)");
+    expect(otherUsageText(usage[1] as OtherUsage, names)).toBe('0 / 1 used');
+    expect(othersSummary(usage)).toBe("Others' abilities (2 / 4 used)");
+    expect(othersSummary([])).toBe("Others' abilities (0 / 0 used)");
   });
 
   it('lists creature abilities for the Raid tab, locked ones with the level they need', () => {
@@ -760,7 +760,7 @@ describe('revealSummary', () => {
     expect(
       grant({ species: 'lanternfin', outcome: 'fused', fusionCount: 2, firstOnServer: false })
         ?.text,
-    ).toBe('You won Lanternfin again: it fused with yours (fusion 2 of 5).');
+    ).toBe('You won Lanternfin again: it fused with yours (fusion 2 / 5).');
     expect(
       grant({ species: 'lanternfin', outcome: 'converted', bait: 80, firstOnServer: false })?.text,
     ).toBe('You already had a fully fused Lanternfin: +80 Bait instead.');

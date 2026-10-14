@@ -219,7 +219,7 @@ function CreatureCard({
       <Bar
         value={creature.level}
         max={creature.levelCap}
-        label={`Training progress: level ${String(creature.level)} of ${String(creature.levelCap)}`}
+        label={`Training progress: level ${String(creature.level)} / ${String(creature.levelCap)}`}
       />
       <p class="stats">
         <StatPart label="HP" stat="hp" creature={creature} /> ·{' '}
@@ -249,7 +249,7 @@ function CreatureCard({
         </div>
       )}
       <p class="stars">
-        <GlossaryTag entry="fusion" label={`Fusion ${String(creature.fusionCount)} of 5`}>
+        <GlossaryTag entry="fusion" label={`Fusion ${String(creature.fusionCount)} / 5`}>
           <span aria-hidden="true">{fusionStars(creature.fusionCount)}</span>
         </GlossaryTag>
       </p>

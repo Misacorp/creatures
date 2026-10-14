@@ -84,9 +84,9 @@ export function journalPlaces(profile: Pick<Profile, 'journal'>): JournalPlace[]
   });
 }
 
-/** "7 of 40 pages found". */
+/** "7 / 40 pages found". */
 export function journalProgressText(profile: Pick<Profile, 'journal'>): string {
-  return `${String(profile.journal.found.length)} of ${String(profile.journal.total)} pages found`;
+  return `${String(profile.journal.found.length)} / ${String(profile.journal.total)} pages found`;
 }
 
 // --- The profile ---
@@ -155,7 +155,7 @@ export function milestoneName(id: string): string {
 interface MilestoneView {
   id: string;
   name: string;
-  /** "Trips finished: 3 of 5". */
+  /** "Trips finished: 3 / 5". */
   progress: string;
   /** How far, for a bar: `value` of `max`. */
   value: number;
@@ -174,7 +174,7 @@ export function milestoneViews(milestones: readonly Milestone[]): MilestoneView[
   return milestones.map((m) => ({
     id: m.id,
     name: milestoneName(m.id),
-    progress: `${statLabel(m.stat)}: ${String(Math.min(m.value, m.at))} of ${String(m.at)}`,
+    progress: `${statLabel(m.stat)}: ${String(Math.min(m.value, m.at))} / ${String(m.at)}`,
     // `value` of `max`, for a bar; a milestone that needs nothing is full.
     value: m.at <= 0 ? 1 : Math.min(m.value, m.at),
     max: m.at <= 0 ? 1 : m.at,

@@ -28,7 +28,7 @@ export function outcomeLine(
   stats: Pick<AfterActionStats, 'phase' | 'outcome' | 'rounds' | 'maxRounds' | 'knockouts'>,
 ): string {
   const name = phaseName(stats.phase);
-  const rounds = `${num(stats.rounds)} of ${num(stats.maxRounds)} rounds`;
+  const rounds = `${num(stats.rounds)} / ${num(stats.maxRounds)} rounds`;
   switch (stats.outcome) {
     case 'cleared':
       return `${name} cleared after ${rounds}.`;

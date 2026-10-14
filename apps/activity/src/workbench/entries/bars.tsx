@@ -161,7 +161,7 @@ const xpBar: Entry = {
   file: 'apps/activity/src/XpBar.tsx',
   group: 'Bars',
   description:
-    'A thick XP bar with its words ("120 of 200 XP") drawn over the fill; it shows a creature\'s or explorer\'s progress to the next rank, with optional rank caps at both ends.',
+    'A thick XP bar with its words ("120 / 200 XP") drawn over the fill; it shows a creature\'s or explorer\'s progress to the next rank, with optional rank caps at both ends.',
   controls: {
     value: { kind: 'number', min: 0, max: 1000 },
     max: { kind: 'number', min: 0, max: 1000 },
@@ -217,7 +217,7 @@ const pipRow: Entry = {
         size={str(p, 'size') === 'sm' ? 'sm' : 'md'}
         mark={(i) => (festival > 0 && i === festival - 1 ? 'fest' : undefined)}
         {...(bool(p, 'spoken')
-          ? { label: `${String(num(p, 'lit'))} of ${String(num(p, 'count'))}` }
+          ? { label: `${String(num(p, 'lit'))} / ${String(num(p, 'count'))}` }
           : {})}
       />
     );

@@ -125,7 +125,7 @@ describe('the results words', () => {
   it('has a headline for a clear, a loss in the first room and a loss later', () => {
     expect(resultHeadline(cleared)).toBe('Dungeon cleared!');
     expect(resultHeadline(lost)).toBe('Your team was beaten in the first room.');
-    expect(resultHeadline({ ...lost, roomsCleared: 1 })).toBe('Your team fell in room 2 of 3.');
+    expect(resultHeadline({ ...lost, roomsCleared: 1 })).toBe('Your team fell in room 2 / 3.');
   });
 
   it('says what the run did to the depth', () => {

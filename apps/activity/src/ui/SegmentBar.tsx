@@ -66,7 +66,7 @@ export function BossHp({ caption, current, max, previous }: BossHpProps) {
         current={current}
         max={max}
         {...(previous === undefined ? {} : { previous })}
-        label={`${caption}: ${String(current)} of ${String(max)}`}
+        label={`${caption}: ${String(current)} / ${String(max)}`}
       />
       <p class="muted small">
         {`${caption}: `}

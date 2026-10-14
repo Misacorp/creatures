@@ -79,7 +79,7 @@ export function ExplorerPicker({
                   <Tag entry="familiarity">Familiarity</Tag>
                   <Stars
                     stars={option.stars}
-                    label={`${String(option.stars)} of 3 stars at this place`}
+                    label={`${String(option.stars)} / 3 stars at this place`}
                   />
                   <span class="muted">{tripsHereText(option.trips)}</span>
                 </span>

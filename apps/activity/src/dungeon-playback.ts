@@ -187,7 +187,7 @@ export function teamBreakdown(run: Pick<DungeonRunSummary, 'team'>): TeamEntry[]
 interface RoomIntroView {
   /** "ROOM 2" in big letters, or "ROOM BOSS" for the last room. */
   heading: string;
-  /** "2 of 3" (the room's place in the run). */
+  /** "2 / 3" (the room's place in the run). */
   place: string;
   boss: boolean;
   foeId: string;
@@ -204,7 +204,7 @@ export function roomIntroView(
   total: number,
 ): RoomIntroView {
   const boss = room.kind === 'boss';
-  const place = `${String(room.index + 1)} of ${String(total)}`;
+  const place = `${String(room.index + 1)} / ${String(total)}`;
   return {
     heading: boss ? 'ROOM BOSS' : `ROOM ${String(room.index + 1)}`,
     place,
@@ -260,7 +260,7 @@ export function streakBonusText(rewards: DungeonRewards): string | null {
 
 /** The whole run in one sentence for a screen reader, and for the summary line on the card. */
 export function runSentence(run: DungeonRunSummary): string {
-  const rooms = `${String(run.roomsCleared)} of ${String(run.rooms.length)} rooms cleared`;
+  const rooms = `${String(run.roomsCleared)} / ${String(run.rooms.length)} rooms cleared`;
   return run.cleared
     ? `Cleared at depth ${String(run.depth)}: ${rooms}.`
     : `Not cleared at depth ${String(run.depth)}: ${rooms}.`;

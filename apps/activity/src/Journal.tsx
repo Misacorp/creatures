@@ -12,7 +12,7 @@ function PlaceGroup({ place, open }: { place: JournalPlace; open: boolean }) {
       <summary>
         <span class="pix">{place.name}</span>{' '}
         <span class="muted">
-          {place.found} of {place.total}
+          {place.found} / {place.total}
         </span>
       </summary>
       {place.sets.length > 0 && (
@@ -21,7 +21,7 @@ function PlaceGroup({ place, open }: { place: JournalPlace; open: boolean }) {
             <li key={set.id} class={set.complete ? 'journal-set complete' : 'journal-set'}>
               <Tag entry="journal-set">{set.name}</Tag>{' '}
               <span class="muted">
-                {set.found} of {set.total}
+                {set.found} / {set.total}
                 {set.complete && ' (complete)'}
               </span>
             </li>

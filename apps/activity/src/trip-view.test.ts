@@ -253,7 +253,7 @@ describe('the slot progress line', () => {
   it('counts finished trips for the second slot and rank sums after that', () => {
     const base = { total: 1, used: 1, rankSum: 2, tripsFinished: 1 };
     const trips = slotsLine({ ...base, next: { kind: 'trips', at: 3 } });
-    expect(trips.use).toBe('1 of 1 slot in use');
+    expect(trips.use).toBe('1 / 1 slot in use');
     expect(trips.next).toBe('Next slot: finish 3 trips (1 so far)');
     expect(trips.progress).toEqual({ value: 1, max: 3 });
     const sum = slotsLine({
@@ -262,14 +262,14 @@ describe('the slot progress line', () => {
       tripsFinished: 3,
       next: { kind: 'rank_sum', at: 26 },
     });
-    expect(sum.use).toBe('1 of 2 slots in use');
+    expect(sum.use).toBe('1 / 2 slots in use');
     expect(sum.next).toContain('add up to 26 (now 2)');
     expect(sum.progress).toEqual({ value: 2, max: 26 });
   });
 
   it('has no next line when every slot is open', () => {
     expect(slotsLine({ total: 5, used: 0, rankSum: 200, tripsFinished: 99, next: null })).toEqual({
-      use: '0 of 5 slots in use',
+      use: '0 / 5 slots in use',
       next: null,
       progress: null,
     });

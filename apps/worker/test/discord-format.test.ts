@@ -366,7 +366,7 @@ describe('formatPhasePost', () => {
     );
     // With several parties the post says how many won.
     expect(rank(5, { parties: 3, partiesWon: 2 })).toContain(
-      '2 of 3 parties won. The server climbs to Rank 5.',
+      '2 / 3 parties won. The server climbs to Rank 5.',
     );
     // Until every party has finished there is nothing to say.
     expect(formatPhasePost({ ...FINALE, finale: { firsts: [], rank: null } })).not.toContain(
