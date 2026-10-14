@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   COACH_KEY,
   COACH_TEXT,
+  SHOW_COACH_MARK,
   coachDismissed,
   dismissCoach,
   resetCoachSession,
@@ -71,5 +72,22 @@ describe('the coach mark', () => {
       dismissCoach(full);
     }).not.toThrow();
     expect(coachDismissed(full)).toBe(true);
+  });
+});
+
+const sources = import.meta.glob<string>(
+  ['./**/*.tsx', '!./**/*.test.tsx', '!./workbench/**', '!./CoachMark.tsx'],
+  { query: '?raw', import: 'default', eager: true },
+);
+
+describe('the coach mark is switched off for now (Misa, 2026-10-14)', () => {
+  it('has one flag, and it is off', () => {
+    expect(SHOW_COACH_MARK).toBe(false);
+  });
+
+  it('is drawn nowhere except behind that flag (the workbench page aside)', () => {
+    const drawn = Object.entries(sources).filter(([, source]) => source.includes('<CoachMark'));
+    expect(drawn.map(([path]) => path)).toEqual(['./Raid.tsx']);
+    expect(drawn[0]?.[1]).toContain('{SHOW_COACH_MARK && <CoachMark />}');
   });
 });

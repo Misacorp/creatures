@@ -7,6 +7,7 @@ import { lootEntries } from './entries/loot';
 import { popoverEntries } from './entries/popovers';
 import { raidBoardEntries } from './entries/raid-board';
 import { slotEntries } from './entries/slots';
+import { stageEntries } from './entries/stage';
 import { tagEntries } from './entries/tags';
 import { GROUPS, type Entry, type Group } from './types';
 
@@ -26,6 +27,7 @@ export const ENTRIES: readonly Entry[] = [
   ...iconEntries,
   ...controlEntries,
   ...creatureEntries,
+  ...stageEntries,
 ];
 
 export function findEntry(name: string | null): Entry | null {

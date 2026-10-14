@@ -26,7 +26,7 @@ import {
   type PlaybackOptions,
   type Zone,
 } from '@creatures/engine';
-import { stateAt, type StepState } from './replay';
+import { stateAt, turnOrderOfRound, type StepState } from './replay';
 
 type FloatTone = 'hit' | 'hurt' | 'blocked' | 'buff';
 type ZoneEffect = 'shield' | 'rally' | 'hit';
@@ -132,6 +132,22 @@ export function ordinal(n: number): string {
   if (rest >= 11 && rest <= 13) return `${String(n)}th`;
   const suffix = { 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] ?? 'th';
   return `${String(n)}${suffix}`;
+}
+
+/**
+ * Each creature's place in the acting order of a round, from 1, for the ordinals under the creatures.
+ * `fixed` (the dungeon) acts in row order, left to right. Otherwise (the raid, whose turn orders vary
+ * by boss) it follows the engine's own turn and skip events for `round`, so a creature with no turn
+ * that round (knocked out earlier, or a round the log has not reached) has no place.
+ */
+export function actingSlots(
+  events: readonly FightEvent[],
+  round: number,
+  rowIds: readonly string[],
+  fixed: boolean,
+): Map<string, number> {
+  const order = fixed ? rowIds : turnOrderOfRound(events, Math.max(1, round));
+  return new Map(order.map((id, i) => [id, i + 1]));
 }
 
 /** The row cut into its zones, front first. Zones without a creature are left out. */

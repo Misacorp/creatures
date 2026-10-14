@@ -1,7 +1,9 @@
 import { AfterAction } from './AfterAction';
 import { glyphOrUnknown } from './glyphs';
+import { FinaleProgress } from './FinaleProgress';
 import { revealSummary } from './live';
-import type { RaidReveal } from './raid-api';
+import type { RaidReveal, RaidView } from './raid-api';
+import { finaleProgress } from './raid-progress';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { FinaleGearLoot } from './FinaleGearLoot';
@@ -37,20 +39,30 @@ export function RevealCard({
   busy,
   afterAction,
   gearWeek,
+  season = null,
   onDismiss,
 }: {
   reveal: Pick<RaidReveal, 'cleared' | 'essence'> &
-    Partial<Pick<RaidReveal, 'rankChange' | 'festivalGrant'>>;
+    Partial<Pick<RaidReveal, 'week' | 'rankChange' | 'festivalGrant'>>;
   busy: boolean;
   /** Where the finale's after-action card is asked for (the caller's party in that finale). */
   afterAction?: { week: string; party: number; onReplay?: () => void };
   /** The raid week whose gear grant (the finale's roll and the Festival piece) is shown as a pop-in. */
   gearWeek?: string;
+  /**
+   * The raid page's week and its place in the season, for the season pips (they show only when it is
+   * the week of this finale, or the finale was a Festival's).
+   */
+  season?: { weekId: string; season: RaidView['season'] } | null;
   onDismiss: () => void;
 }) {
   const summary = revealSummary(reveal);
   const { frame, done } = useRevealSequence(reveal.essence);
   const festivalSpecies = reveal.festivalGrant?.species ?? null;
+  const progress = finaleProgress(
+    { week: reveal.week ?? gearWeek ?? '', rankChange: reveal.rankChange },
+    season,
+  );
   return (
     <RevealShell
       id="reveal-heading"
@@ -79,6 +91,7 @@ export function RevealCard({
         </RevealLater>
       )}
       {summary.rank !== null && <p class="reveal-rank">{summary.rank}</p>}
+      {progress !== null && <FinaleProgress progress={progress} />}
       {gearWeek !== undefined && <FinaleGearLoot week={gearWeek} done={done} />}
       {afterAction !== undefined && (
         <AfterAction

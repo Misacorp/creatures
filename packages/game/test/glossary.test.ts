@@ -139,7 +139,8 @@ describe('the glossary covers the content', () => {
       // The popover explains the thing tapped: its own name and its real effect line.
       expect(view?.title).toBe(a.name);
       expect(view?.short).toBe(a.description);
-      expect(view?.lines.length).toBeGreaterThanOrEqual(2);
+      // Only the description: no "how it works" lines under it.
+      expect(view?.lines, a.id).toEqual([]);
     }
     expect(abilityView('no-such-ability')).toBeUndefined();
   });
@@ -330,27 +331,39 @@ describe('the glossary text matches the rules', () => {
     expect(text('essence')).toContain('20 Essence (40 for rare');
   });
 
-  it('describes the adaptation rules with the content numbers', () => {
-    const resists = content.adaptations.map((a) => percent(a.resistBp));
-    for (const r of resists) expect(text('adaptation')).toContain(r);
+  it('names the counter-move for what it does, without numbers that could drift', () => {
+    expect(text('adaptation')).toContain('resists');
+    expect(text('adaptation')).not.toMatch(/\d+%/);
   });
 
-  it('names every effect kind an ability has, in the popover', () => {
+  it('shows only the description in every raid popup: no "how it works" lines (Misa, 2026-10-14)', () => {
+    // Raid and finale entries are a title and one line. (Crit is shared with the dungeon and keeps
+    // its odds; marks, reactions, roles and ranks are not raid-only.)
+    const raidOnly = glossary.filter(
+      (e) => (e.section === 'raid-week' || e.section === 'finale') && e.id !== 'crit',
+    );
+    expect(raidOnly.length).toBeGreaterThan(20);
+    for (const e of raidOnly) expect(e.lines, e.id).toEqual([]);
+  });
+
+  it('names an ability by its own name and effect line, and nothing under it', () => {
     const rally = abilityView('rally');
-    expect(rally?.lines.join(' ')).toContain('Rally');
+    expect(rally?.title).toBe('Rally');
+    expect(rally?.lines).toEqual([]);
     const mossBloom = abilityView('moss-bloom');
-    const lines = mossBloom?.lines.join(' ') ?? '';
-    expect(lines).toContain('Strike');
-    expect(lines).toContain('Re-mark');
-    expect(lines).toContain('Shield Wall');
+    expect(mossBloom?.lines).toEqual([]);
+    // Every kind of effect it has still needs its glossary entry (the coverage check).
+    for (const id of ['ability-strike', 'ability-re-mark', 'ability-shield-wall']) {
+      expect(glossaryEntry(id), id).toBeDefined();
+    }
     expect(mossBloom?.section).toBe('creatures');
     expect(abilityView('purge')?.section).toBe('finale');
   });
 
   it('keeps the turn-order entries to the kinds the engine has', () => {
     expect(text('turn-speed')).toContain('Speed');
-    expect(text('turn-left-to-right')).toContain('slot 1 first');
-    expect(text('turn-right-to-left')).toContain('last slot first');
+    expect(text('turn-left-to-right')).toContain('slot 1');
+    expect(text('turn-right-to-left')).toContain('last slot');
   });
 });
 

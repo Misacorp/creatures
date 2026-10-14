@@ -5,6 +5,7 @@
  * forecast number (the readiness band is four words).
  */
 import { speciesName } from './game';
+import type { TrackStep, TrackUnlock } from './progress-track';
 import {
   READINESS_BANDS,
   type FestivalGrant,
@@ -45,12 +46,16 @@ export function seasonPips(season: RaidView['season']): SeasonPip[] {
   });
 }
 
+/** "Week 2 / 5 this season" for a week of the season (1 to 5); the 5th is the Festival. */
+export function seasonWeekText(week: number): string {
+  return week === SEASON_WEEKS
+    ? `Week ${String(week)} / ${String(SEASON_WEEKS)}: the Festival ends the season`
+    : `Week ${String(week)} / ${String(SEASON_WEEKS)} this season`;
+}
+
 /** "Week 2 / 5 this season", the text behind the pips. Null when there is no season. */
 export function seasonText(season: RaidView['season']): string | null {
-  if (season === null) return null;
-  return season.week === SEASON_WEEKS
-    ? `Week ${String(season.week)} / ${String(SEASON_WEEKS)}: the Festival ends the season`
-    : `Week ${String(season.week)} / ${String(SEASON_WEEKS)} this season`;
+  return season === null ? null : seasonWeekText(season.week);
 }
 
 export const READINESS_LABELS: Record<ReadinessBand, string> = {
@@ -130,4 +135,61 @@ export function festivalGrantText(grant: FestivalGrant): string {
     case 'converted':
       return `You already had a fully fused ${name}: +${String(grant.bait ?? 0)} Bait instead.`;
   }
+}
+
+// --- The Boss Rank and season row after a finale ---
+
+/** What the next Rank brings, as words (never a number): the track lists them under the next step. */
+const NEXT_RANK_UNLOCKS: readonly TrackUnlock[] = [
+  { icon: 'skull', text: 'A tougher boss' },
+  { icon: 'gem', text: 'More Essence' },
+];
+
+/**
+ * The server's Boss Rank as a track in the dungeon depth's language: the Rank for next week (lit)
+ * and the one after it, across the width. The ladder has no top, so there is always a next.
+ */
+export function bossRankTrack(rank: number): { steps: TrackStep[]; current: number } {
+  const now = Math.max(1, Math.floor(rank));
+  return {
+    steps: [
+      { id: now, label: rankLabel(now) ?? '', unlocks: [] },
+      { id: now + 1, label: rankLabel(now + 1) ?? '', unlocks: NEXT_RANK_UNLOCKS },
+    ],
+    current: 0,
+  };
+}
+
+/** What the row after a finale shows: the Rank track and the season's pips. Either may be missing. */
+export interface FinaleProgress {
+  rank: { steps: TrackStep[]; current: number } | null;
+  season: { week: number; weeks: number; text: string; label: string } | null;
+}
+
+/**
+ * The Rank and season row of a finale result. The rank comes from the ladder's move (null until
+ * every party of the server has finished, and for practice fights). The season week is the week the
+ * finale was played in: a Festival's own result knows it is the 5th; otherwise it is read from the
+ * raid page's season when that is the same week, and left out when it cannot be told. Null when
+ * there is nothing to show.
+ */
+export function finaleProgress(
+  reveal: { week: string; rankChange?: RankChange | null | undefined },
+  at: { weekId: string; season: RaidView['season'] } | null,
+): FinaleProgress | null {
+  const change = reveal.rankChange ?? null;
+  let week: number | null = null;
+  if (change?.festival === true) week = SEASON_WEEKS;
+  else if (at !== null && at.season !== null && at.weekId === reveal.week) week = at.season.week;
+  const rank = change === null ? null : bossRankTrack(change.after);
+  const season =
+    week === null
+      ? null
+      : {
+          week,
+          weeks: SEASON_WEEKS,
+          text: seasonWeekText(week),
+          label: `Season: ${seasonWeekText(week)}`,
+        };
+  return rank === null && season === null ? null : { rank, season };
 }

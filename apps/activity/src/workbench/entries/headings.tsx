@@ -203,7 +203,7 @@ const coachMark: Entry = {
   file: 'apps/activity/src/CoachMark.tsx',
   group: 'Headings & banners',
   description:
-    'The one-time "Tap any tag to learn what it means" hint at the top of the Raid tab, with two real tags to try; "Got it" hides it for good.',
+    'The one-time "Tap any tag to learn what it means" hint, with two real tags to try; "Got it" hides it for good. No screen shows it for now (the SHOW_COACH_MARK flag in coach.ts is off); this page still draws it.',
   controls: {},
   defaults: {},
   presets: [],

@@ -254,12 +254,7 @@
     "id": "gimmick-hit-zone",
     "title": "Zone attack",
     "short": "Hits every creature in one zone.",
-    "lines": [
-      "Every living creature in that zone takes a hit.",
-      "A Guard cannot take it for the others.",
-      "A Shield Wall on that zone softens it.",
-      "The stage warns you one round ahead."
-    ],
+    "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "hit_zone"
@@ -270,12 +265,7 @@
     "id": "gimmick-silence-ends",
     "title": "Silence",
     "short": "The row's ends skip a turn.",
-    "lines": [
-      "The creatures at both ends of the row skip their next turn.",
-      "A silenced Support gives no boost.",
-      "Keep your best hitters away from the ends.",
-      "The stage warns you one round ahead."
-    ],
+    "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "silence_ends"
@@ -286,11 +276,7 @@
     "id": "gimmick-reflect-first-reaction",
     "title": "Reflect",
     "short": "Turns a reaction back on you.",
-    "lines": [
-      "The first reaction of the round hurts your creature, not the boss.",
-      "The boss only takes the normal hit. The mark is still used up.",
-      "Later reactions in the same round work as usual."
-    ],
+    "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "reflect_first_reaction"
@@ -301,11 +287,7 @@
     "id": "gimmick-strike-highest-atk",
     "title": "Strongest strike",
     "short": "Targets your top attacker.",
-    "lines": [
-      "Hits the living creature with the highest Attack.",
-      "A Guard in its zone takes the hit instead.",
-      "A Shield Wall on that zone softens it."
-    ],
+    "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "strike_highest_atk"
@@ -316,46 +298,28 @@
     "id": "zone-front",
     "title": "Front",
     "short": "Closest to the boss. Hit first.",
-    "lines": [
-      "The row is split into a front, a middle and a back part.",
-      "The boss's normal attack hits the front first.",
-      "When the front is knocked out, it moves on to the middle.",
-      "Guards belong here."
-    ],
+    "lines": [],
     "section": "raid-week"
   },
   {
     "id": "zone-middle",
     "title": "Middle",
     "short": "The rest of the row.",
-    "lines": [
-      "Front and back get a third of the row each.",
-      "The middle gets whatever is left.",
-      "A row of 1 or 2 creatures is all middle.",
-      "The boss hits it once the front is down."
-    ],
+    "lines": [],
     "section": "raid-week"
   },
   {
     "id": "zone-back",
     "title": "Back",
     "short": "Farthest from the boss. Hit last.",
-    "lines": [
-      "The boss's normal attack reaches it last.",
-      "Zone attacks and tricks can still reach it.",
-      "Automatic placement puts Payoffs here."
-    ],
+    "lines": [],
     "section": "raid-week"
   },
   {
     "id": "turn-left-to-right",
     "title": "Left to right",
     "short": "The row acts from slot 1 on.",
-    "lines": [
-      "Creatures act in slot order, slot 1 first.",
-      "Put Setters before the creature that cashes in.",
-      "To repeat a reaction, alternate a Setter and a cashing creature."
-    ],
+    "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "left_to_right"
@@ -366,11 +330,7 @@
     "id": "turn-right-to-left",
     "title": "Right to left",
     "short": "The row acts from the last slot.",
-    "lines": [
-      "Creatures act in reverse slot order, the last slot first.",
-      "Put Setters before the creature that cashes in.",
-      "To repeat a reaction, alternate a Setter and a cashing creature."
-    ],
+    "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "right_to_left"
@@ -381,11 +341,7 @@
     "id": "turn-speed",
     "title": "By Speed",
     "short": "Fastest creature acts first.",
-    "lines": [
-      "Creatures act from highest Speed (SPD) to lowest.",
-      "With equal Speed, the lower slot goes first.",
-      "Check each creature's SPD on the Creatures tab."
-    ],
+    "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "speed"
@@ -396,11 +352,7 @@
     "id": "auto-fire",
     "title": "Auto fire",
     "short": "Fires abilities for you.",
-    "lines": [
-      "On: an ability fires by itself in its round.",
-      "Tap Fire to use one sooner. It lands next round.",
-      "Off: it waits for you, and still fires in the last round."
-    ],
+    "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "ability"
@@ -427,11 +379,7 @@
     "id": "basic-ability",
     "title": "Basic ability",
     "short": "Everyone brings one.",
-    "lines": [
-      "Pick Rally, Shield Wall, Re-mark or Purge before the finale.",
-      "It is weaker than a creature ability.",
-      "If you do not pick, one is chosen for you."
-    ],
+    "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "ability"
@@ -442,11 +390,7 @@
     "id": "ability-rally",
     "title": "Rally",
     "short": "Rally: everyone hits harder for a while.",
-    "lines": [
-      "Every creature's hits deal bonus damage.",
-      "It lasts for the number of rounds the ability says.",
-      "It adds up with Support boosts and other Rallies."
-    ],
+    "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "ability"
@@ -457,12 +401,7 @@
     "id": "ability-shield-wall",
     "title": "Shield Wall",
     "short": "Shield Wall: one zone takes less damage.",
-    "lines": [
-      "Cuts the damage one zone takes, for the rounds the ability says.",
-      "Two walls on one zone stack.",
-      "Creature abilities shield their own creature's zone.",
-      "The stage warns you one round before a zone attack."
-    ],
+    "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "shield"
@@ -473,12 +412,7 @@
     "id": "ability-re-mark",
     "title": "Re-mark",
     "short": "Re-mark: puts a mark on the boss.",
-    "lines": [
-      "It replaces any mark the boss has.",
-      "Basic Re-mark lets you pick the element.",
-      "Creature abilities use their own element.",
-      "Then the right element can cash it in."
-    ],
+    "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "mark"
@@ -489,11 +423,7 @@
     "id": "ability-purge",
     "title": "Purge",
     "short": "Purge: turns off the boss's counter-move.",
-    "lines": [
-      "It switches the Phase 2 counter-move off for a few rounds.",
-      "It only matters once the boss has a counter-move.",
-      "When it ends, the boss adapts again."
-    ],
+    "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "ability"
@@ -504,11 +434,7 @@
     "id": "ability-strike",
     "title": "Strike",
     "short": "Strike: hits the boss right away.",
-    "lines": [
-      "The creature hits the boss at once for a share of its Attack.",
-      "It can cash in a mark like any other hit.",
-      "It still lands if the creature has been knocked out."
-    ],
+    "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "ability"
@@ -555,60 +481,42 @@
     "id": "readiness",
     "title": "Readiness",
     "short": "How ready your team looks.",
-    "lines": [
-      "A rough guess of how the finale could go.",
-      "It comes from a forecast. It is not a promise.",
-      "The words are Long shot, Even, Likely and Strong."
-    ],
+    "lines": [],
     "section": "raid-week"
   },
   {
     "id": "readiness-long-shot",
     "title": "Long shot",
     "short": "Your team looks short for this boss.",
-    "lines": [
-      "Train your creatures and set a better row to improve it.",
-      "A long shot can still win: combos and crits swing fights."
-    ],
+    "lines": [],
     "section": "raid-week"
   },
   {
     "id": "readiness-even",
     "title": "Even",
     "short": "Could go either way.",
-    "lines": [
-      "Your team looks about as ready as this boss is tough.",
-      "Combos and crits can tip it."
-    ],
+    "lines": [],
     "section": "raid-week"
   },
   {
     "id": "readiness-likely",
     "title": "Likely",
     "short": "Your team looks ready.",
-    "lines": [
-      "A win looks likely for this boss.",
-      "It is not a promise: crits and boss tricks can surprise you."
-    ],
+    "lines": [],
     "section": "raid-week"
   },
   {
     "id": "readiness-strong",
     "title": "Strong",
     "short": "Your team looks very ready.",
-    "lines": ["A win looks very likely for this boss.", "It is still a forecast, not a promise."],
+    "lines": [],
     "section": "raid-week"
   },
   {
     "id": "adaptation",
     "title": "Counter-move",
-    "short": "The boss adapts after Phase 1.",
-    "lines": [
-      "After Phase 1 the boss adapts to what worked best.",
-      "Reaction Resistance: your most used reaction does 50% less bonus damage.",
-      "Element Resistance: your top damage element does 25% less.",
-      "A Purge ability switches it off for a few rounds."
-    ],
+    "short": "After Phase 1 the boss resists what worked best.",
+    "lines": [],
     "section": "raid-week"
   },
   {

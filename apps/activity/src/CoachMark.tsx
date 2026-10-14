@@ -4,7 +4,9 @@ import { RoleChip } from './sprites/ElementChip';
 import { Tag } from './ui/Tag';
 
 /**
- * The one-time hint on the Raid tab. Shown until the player dismisses it (a flag in
+ * The one-time hint on the Raid tab. Not shown anywhere for now: `SHOW_COACH_MARK` (`coach.ts`) is
+ * off, and the Raid tab checks it before drawing this. The component itself ignores the flag, so
+ * its workbench page still draws it. When it is on, it is shown until the player dismisses it (a flag in
  * `localStorage`; if storage is unavailable it still works and stays hidden for the session).
  * The two sample tags are real, so the hint can be tried on the spot.
  */

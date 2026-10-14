@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { AbilityChip } from './AbilityChip';
 import { AfterAction } from './AfterAction';
 import { ApiError, type Creature } from './api';
+import { SHOW_COACH_MARK } from './coach';
 import { CoachMark } from './CoachMark';
 import { clockOffset, creatureName, errorText } from './game';
 import { useActionRunner } from './use-action-runner';
@@ -223,6 +224,7 @@ export function Raid({
     return (
       <Live
         initial={liveInitial}
+        season={{ weekId: view.weekId, season: view.season }}
         onClose={closeLive}
         onBalanceChange={onBalanceChange}
         onRevealSeen={(week) => {
@@ -278,7 +280,7 @@ export function Raid({
 
   return (
     <>
-      <CoachMark />
+      {SHOW_COACH_MARK && <CoachMark />}
       {error !== null && (
         <p class="error" role="alert">
           {error}
@@ -289,6 +291,7 @@ export function Raid({
           reveal={reveal}
           busy={busy}
           gearWeek={reveal.week}
+          season={{ weekId: view.weekId, season: view.season }}
           afterAction={{
             week: reveal.week,
             party: reveal.party,
