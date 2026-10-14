@@ -963,3 +963,17 @@ The raid Placement and the dungeon team now draw their slots, tray, drag ghost a
 **Tradeoff.** Presence is per activity instance: players who opened the game from different channels do not see each other. Misa accepted this. A guild-wide room would need a server heartbeat.
 
 **Also.** Spot assignment is client-side and deterministic (FNV-1a of instance id and user id), so everyone in an instance sees the same room. Speech bubbles and the idle pan are local cosmetics using browser crypto randomness; they are not game state, so the server-RNG rule does not apply to them.
+
+## 2026-10-14: Raid UX pass 2, slices 4, 6 and 10 (stage head, glossary, finale row, coach mark)
+
+**Stage head (decided 3).** `ui/StageHead` is the one head of the fight stage, for the dungeon and the raid: the room or phase at the top left ("Room 1 / 3", "Phase 1 / 3") and the round at the top right ("Round 2 / 12"). It replaces the joined "Room 1 / 3 · Round 2 / 2" of PR #18. The finale is the third phase but goes by its own name, "Finale" (`phaseLine` in `raid-text.ts`), as it does on every other screen. The raid stage names the boss under its sprite and writes its HP on the bar (the shared `SegmentBar` `text`), so the head no longer carries "Boss HP x / y".
+
+**Ordinals follow the engine's order in the raid.** Under each creature the stage writes its place in the round on show (`actingSlots` in `stage.ts`). The dungeon always acts left to right, so it is the row order. The raid's orders vary by boss, so it reads the `turn` and `skip` events of that round: the numbers are exactly what the engine did, with no copy of the order rules in the client. A creature with no turn that round (knocked out earlier) has no ordinal. The boss card's turn-order icon stays.
+
+**Raid replay plays by itself.** Pause, 2x and Skip are hidden unless `showControls` is set, as in the dungeon, and the replay starts playing at once (it used to wait for Play). `TurnStrip` is no longer used by any screen; it is kept with its workbench page.
+
+**Glossary popups (slice 6).** Every `raid-week` and `finale` entry has no lines (title, description, the "More" link), and a finale ability's popup is only its own description from the content. Not touched: `crit` (also used by the dungeon, keeps its odds), the marks, reactions, roles and elements (core to every mode) and the Boss Rank, Festival and Season entries (their lines are the rules). The Counter-move's one line now says what it does ("After Phase 1 the boss resists what worked best.") since its numbers left with its lines. A glossary test pins it.
+
+**Boss Rank and season row after a finale.** Under the finale result, `FinaleProgress` draws the Rank as the dungeon's edge-to-edge `ProgressTrack` (the Rank for next week, lit, and the next one with "A tougher boss" and "More Essence", in words) and the season as a `PipRow` with the Festival as the gold-ringed last pip. The Rank shows once the ladder has moved (`rankChange`, null until every party has finished). The season week is known when the finale was a Festival's, or when the raid page is on the same week; otherwise the pips are left out rather than guessed.
+
+**Coach mark (decided 5).** `SHOW_COACH_MARK` in `coach.ts` is off. The Raid tab checks it; nothing else draws the component, and a test pins both. The workbench page still draws it.

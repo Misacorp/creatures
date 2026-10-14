@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { AbilityChip } from './AbilityChip';
 import { AfterAction } from './AfterAction';
 import { ApiError, type Creature } from './api';
+import { SHOW_COACH_MARK } from './coach';
 import { CoachMark } from './CoachMark';
 import { clockOffset, creatureName, errorText } from './game';
 import { useActionRunner } from './use-action-runner';
@@ -283,7 +284,7 @@ export function Raid({
 
   return (
     <>
-      <CoachMark />
+      {SHOW_COACH_MARK && <CoachMark />}
       {error !== null && (
         <p class="error" role="alert">
           {error}

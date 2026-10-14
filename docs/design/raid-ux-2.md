@@ -1,6 +1,6 @@
 # Raid UX pass 2: a readable board, familiar patterns, a leaner page
 
-Status: **plan, 2026-10-14.** Nothing here is built. It comes from Misa's review of the raid page on a phone. It is the next build after PR #18 (the left-to-right dungeon), and it goes **before or together with** the attack-pattern build (`attack-patterns.md`), because the patterns need a board where rows, lanes and neighbours are easy to see.
+Status: **plan, 2026-10-14.** Slices 4, 6 and 10 (and decided 3 and 5) are built, see `decisions.md` (2026-10-14, "Raid UX pass 2, slices 4, 6 and 10"); the rest is not. It comes from Misa's review of the raid page on a phone. It is the next build after PR #18 (the left-to-right dungeon), and it goes **before or together with** the attack-pattern build (`attack-patterns.md`), because the patterns need a board where rows, lanes and neighbours are easy to see.
 
 ## Misa's asks (verbatim intent)
 
