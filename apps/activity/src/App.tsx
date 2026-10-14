@@ -1,5 +1,6 @@
 import type { GlossarySection } from '@creatures/game';
 import { DiscordSDK } from '@discord/embedded-app-sdk';
+import { setExternalLinkOpener } from './external-link';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   ApiError,
@@ -40,6 +41,10 @@ async function boot(): Promise<Boot> {
   }
   const sdk = new DiscordSDK(config.discordClientId);
   await sdk.ready();
+  // Links that leave the Activity (the dev panel's workbench link) go through Discord.
+  setExternalLinkOpener(async (url) => {
+    await sdk.commands.openExternalLink({ url });
+  });
   const signIn = async (): Promise<void> => {
     const { code } = await sdk.commands.authorize({
       client_id: config.discordClientId,

@@ -195,3 +195,13 @@
   font-size: 0.7rem;
   overflow-wrap: anywhere;
 }
+
+/* The link to the component workbench. */
+.dev-url {
+  margin: 0.25rem 0;
+  overflow-wrap: anywhere;
+  user-select: all;
+  color: var(--gold);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+}
