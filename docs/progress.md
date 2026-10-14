@@ -18,6 +18,7 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
 
 - Production runs PR #10, merged 2026-10-13: the daily dungeon, expeditions v2, the 13:37 reset, the tab order, the Jersey 10 font and the combined balance pass. PR #9 shipped How to play, gear v1 and the event log.
 - PR #11 (UX pass 1 and the design compendium) is in production, merged 2026-10-13 (`ec44e6e`).
+- **Dungeon order of play (2026-10-14, branch `worktree-agent-a151f66c8c91b38c5`):** every dungeon fight now goes left to right, then the foe (`RULES.dungeon.turnOrder`); dungeon foes lost their turn order, and Fog was replaced by Echoing (Payoff +20%). The order is shown before the run and in the playback (slot numbers and a turn strip). Waiting for review with the rest of the stack.
 
 ## Next
 

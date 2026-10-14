@@ -18,14 +18,17 @@ No real-time backend is needed.
 - **Team:** the player picks 3 of their creatures and puts them **in one row, left to right**. The order is the only formation choice (`team[i]` is position i). The team is frozen at the run start.
   - The row is the engine's row of three, used as it is: the left creature is in the Front zone, the middle one in Middle and the right one in Back, one creature each.
   - The foe's plain attack goes for the left creature first. A Guard covers the creatures **right beside it** (`guardReach: 'adjacent'`), so it likes the middle.
-  - A zone attack hits the one creature at that place; "both ends" silence hits the left and right creatures; turn orders run along the row (left to right, right to left) or by speed.
+  - A zone attack hits the one creature at that place; "both ends" silence hits the left and right creatures.
+  - **Order of play (Misa, 2026-10-14): always left to right, then the foe.** It is `RULES.dungeon.turnOrder`, a rule of the dungeon and not content: a dungeon foe has no turn order and no room modifier can change it. The raid keeps its bosses' turn orders (left to right, right to left, by speed): a raid is one fight people prepare for, a dungeon is three changing rooms, so the dungeon stays the simple one and its modifiers are what make it interesting. Players plan their loadout and the row's order, and the dungeon rewards it (a Setter on the left marks before the creatures after it cash the mark in).
+  - **The order decides whether reactions happen at all.** Marks carry on from round to round and stay on the foe until a Setter replaces one or a creature of the cashing element sets it off. Splashet, Sproutle, Cindle (a Tide Setter first) never react, because Tide marks and nobody has Spark; Cindle, Sproutle, Splashet (Cindle marks Scorched, Splashet sets off Steam) reacts every round, and the same three can swing tens of clear points by order alone. So `dungeonRowOrder` (the suggested order and the default team, also the simulator's players) picks, of the six orders, the ones that set off the most reactions under left to right (`rowReactions`: pure, from the reaction table in content), and uses the role order (setters and supports left, a Guard in the middle, payoffs right) only to break ties. The setup shows one line under the slot row for the order the player has: "Cindle marks Scorched → Splashet sets off Steam." or "In this order nobody can set off a reaction.", from the same function.
 - **The pre-run choice** replaces live input, since there is none: the order of the row. (The basic ability pick and the fire rounds were removed in UX pass 1: unlocked creature abilities fire at their default round.)
 
 - **Dungeon:**
   - A short chain of **3 rooms**, generated from the seed: two encounters, then a room boss.
-  - Each room is a small fight against content-defined dungeon foes (new content type, schema-validated), with an element, a turn order, gimmicks and an HP pool.
+  - Each room is a small fight against content-defined dungeon foes (new content type, schema-validated), with an element, gimmicks and an HP pool (no turn order: see above).
   - **Creature HP carries over between rooms**, and knocked-out creatures stay out, so order and guards matter.
-  - Each room also rolls a **room modifier** from content, shown before the run: for example "Flooded: Tide +20%", "Dark: crits +5%", "Thorns: the foe turns the first reaction of each round back on your team".
+  - Each room also rolls a **room modifier** from content, shown before the run: for example "Flooded: Tide +20%", "Echoing: Payoff creatures +20%", "Dark: crits +5%", "Thorns: the foe turns the first reaction of each round back on your team". There are 8, three are rolled per day, all different.
+  - **Any change to the normal rules must be shown before the run** (a modifier's one plain line), or, if a mystery modifier ever exists, announced in the room banner when it happens. None changes who acts when. (Fog, which set the order, was retired on 2026-10-14 and replaced by Echoing; old runs that rolled it still show its name and text.)
 - **Depth ladder (personal):**
   - Each player has a **dungeon depth**, like the raid Boss Rank but personal.
   - Clearing all rooms gives +1 depth. Failing keeps the same depth.
@@ -69,6 +72,7 @@ No real-time backend is needed.
   - an **Enter** button.
 - **Playback:**
   - The fight stage plays each room with the same pacing and effects as the live finale: shared `roundPlaybackMs`, telegraphs, lingering numbers.
+  - **The order is visible:** the pre-run screen says "Your creatures act left to right, then the foe." under the team (a tag that opens the "Your row" glossary entry); the playback numbers the creatures 1, 2, 3 under the stage's row (the same numbers as the setup slots) and has a turn strip under the stage (the shared `TurnStrip`, also used by the raid replay): the creature acting is outlined, those that acted are dimmed, a knocked-out creature is struck through, and "then the foe" lights up when the foe acts. The "Next round" forecast names the gimmick a modifier gives the foe (Thorns) as well as the foe's own.
   - The stage keeps one size for the whole run. A room opens with a banner drawn **over** the stage (the room number, the foe and its twist), then the fight plays under it; the playback controls never move.
   - At the end: the **rewards first** (the loot reveal), then a strip of the three rooms (each with its foe's sprite and a CLEARED, DEFEAT or LOCKED banner, left to right like a comic), then the team in its row with the HP each ended with.
 - Skip and 2× controls. Leaving mid-playback is fine; the result is already stored, and coming back shows the summary with "Watch again".
