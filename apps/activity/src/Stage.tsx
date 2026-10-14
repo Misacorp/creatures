@@ -23,6 +23,7 @@ import {
 } from './stage';
 import { badgeFor, unitTap, usedBadge, type Badge } from './stage-abilities';
 import { creatureInfoOf } from './creature-info';
+import { compactCount } from './number-format';
 import { SmallCreature } from './SmallCreature';
 import { ElementChip } from './sprites/ElementChip';
 import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
@@ -185,8 +186,8 @@ function RoundIntro({ intro }: { intro: IntroView }) {
         <span class="ri-label">
           <span>Round</span>
           <span>{intro.round}</span>
+          <span class="ri-of">/ {intro.rounds}</span>
         </span>
-        <span class="ri-of">of {intro.rounds}</span>
       </PixelHeading>
     </div>
   );
@@ -776,7 +777,7 @@ export function Stage({
           max={hpMax}
           previous={previousHp}
           label={`${boss.name} HP: ${String(state.bossHp)} / ${String(hpMax)}`}
-          text={`${String(state.bossHp)} / ${String(hpMax)}`}
+          text={`${compactCount(state.bossHp)} / ${compactCount(hpMax)}`}
         />
         <div class={`stage-line${strikeItem === undefined ? '' : ' has-strike'}`}>
           {forecast !== null && (

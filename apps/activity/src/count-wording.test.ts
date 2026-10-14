@@ -21,6 +21,13 @@ const RULE =
 /** A digit run or a template or JSX placeholder, then "of", then the same. */
 const COUNT_OF = /(?:\b\d+|\{\})\s+of\s+(?:\d+\b|\{\})/;
 
+/**
+ * An element whose whole text is "of 12" or "of {total}": the count was split over sibling elements
+ * ("Round", the number, then "of 12"), which `COUNT_OF` cannot see because the number is not in the
+ * same element.
+ */
+const SPLIT_OF = /^of\s+(?:\d+|\{\})$/;
+
 /** Justified prose exceptions: the file (relative to `src/`) and the exact text found. */
 const ALLOWED: { file: string; text: string; reason: string }[] = [];
 
@@ -36,7 +43,7 @@ function findOfCounts(file: string, source: string): string[] {
   const hits: string[] = [];
   const check = (text: string): void => {
     const flat = text.replace(/\s+/g, ' ');
-    if (COUNT_OF.test(flat)) hits.push(flat.trim());
+    if (COUNT_OF.test(flat) || SPLIT_OF.test(flat.trim())) hits.push(flat.trim());
   };
   const visit = (node: ts.Node): void => {
     if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
@@ -82,6 +89,8 @@ describe('count wording: a spaced slash, never "of"', () => {
       'const a = <p>Round {n} of {m}.</p>;',
       'const a = <p>Pick 3 ({n} of 3)</p>;',
       'const a = <p>{"7 of 40"}</p>;',
+      'const a = <p><span>Round</span><span>{n}</span><span class="of">of {m}</span></p>;',
+      'const a = <span>of 12</span>;',
     ];
     for (const code of flagged) expect(findOfCounts('x.tsx', code), code).not.toEqual([]);
     const fine = [
@@ -90,6 +99,8 @@ describe('count wording: a spaced slash, never "of"', () => {
       'const a = "one of the four bosses";',
       'const a = `Room ${n} / ${m}`;',
       'const a = <p>{n} / {m} XP</p>;',
+      'const a = <span>of course</span>;',
+      'const a = <p><span>Round</span><span>{n}</span><span>/ {m}</span></p>;',
       '// "Round 1 of 3" in a comment',
     ];
     for (const code of fine) expect(findOfCounts('x.tsx', code), code).toEqual([]);

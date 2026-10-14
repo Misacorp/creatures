@@ -11,7 +11,8 @@ import { finaleProgress } from '../../raid-progress';
 import { phaseLine } from '../../raid-text';
 import { StageHead } from '../../ui/StageHead';
 import { bool, num, str } from '../props';
-import type { Entry } from '../types';
+import type { IntroView } from '../../stage-fx';
+import type { Entry, Props } from '../types';
 
 const REPLAY = parseDungeonReplay(dungeonReplay);
 
@@ -22,6 +23,11 @@ function sampleFight() {
     throw new Error('the workbench raid fixture has no fight');
   }
   return snapshot;
+}
+
+/** The "Round N / M" overlay of a round that is opening, when the page asks for it. */
+function introOf(p: Props, rounds: number): IntroView | null {
+  return bool(p, 'roundIntro') ? { round: Math.min(rounds, 3), rounds, ms: 6000, key: 1 } : null;
 }
 
 const stageHead: Entry = {
@@ -76,11 +82,13 @@ const stage: Entry = {
     fight: { kind: 'select', options: ['Raid', 'Dungeon room'] },
     events: { kind: 'number', min: 0, max: 200 },
     room: { kind: 'number', min: 1, max: 3 },
+    roundIntro: { kind: 'toggle' },
   },
-  defaults: { fight: 'Raid', events: 75, room: 1 },
+  defaults: { fight: 'Raid', events: 75, room: 1, roundIntro: false },
   presets: [
     { name: 'Raid, third round, fourth creature acting', props: {} },
     { name: 'Raid, before the first round', props: { events: 0 } },
+    { name: 'Raid, "Round 3 / 12" opening', props: { events: 59, roundIntro: true } },
     { name: 'Raid, the boss has struck', props: { events: 127 } },
     {
       name: 'Dungeon room 1, the second creature acting',
@@ -104,6 +112,7 @@ const stage: Entry = {
           events={room.events}
           index={num(p, 'events')}
           anim={null}
+          intro={introOf(p, room.rounds)}
           creatureHp={{ start: room.hpStart, max: room.hpMax }}
           layout="row"
           place={roomLine(room.index, REPLAY.rooms.length)}
@@ -123,6 +132,7 @@ const stage: Entry = {
         events={fight.events}
         index={num(p, 'events')}
         anim={null}
+        intro={introOf(p, fight.rounds)}
         place={phaseLine('phase1')}
       />
     );
