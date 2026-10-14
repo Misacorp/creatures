@@ -11,4 +11,10 @@ process.env['DISCORD_BOT_TOKEN'] ??= 'test-only-bot-token';
 
 export default defineConfig({
   plugins: [cloudflareTest({ wrangler: { configPath: './wrangler.jsonc' } })],
+  test: {
+    // Some tests drive many requests through a Durable Object (for example 50 expedition trips).
+    // They take well under 2 s alone, but on a busy CI runner (all packages test in parallel) they
+    // can pass the 5 s default, so allow more time, as the engine and game packages do.
+    testTimeout: 30_000,
+  },
 });
