@@ -17,7 +17,7 @@ import {
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { StagePopover } from './StagePopover';
-import { HpBar } from './Stage';
+import { BossHp } from './ui/SegmentBar';
 
 /** The five weeks of the season as pips: the Festival is the last one. */
 function SeasonPips({ season }: { season: RaidView['season'] }) {
@@ -167,14 +167,7 @@ export function BossCard({ view }: { view: RaidView }) {
           </div>
           {hp !== null && (
             <div class="boss-hp">
-              <HpBar
-                current={hp.current}
-                max={hp.max}
-                label={`Boss HP this week: ${String(hp.current)} of ${String(hp.max)}`}
-              />
-              <p class="muted small">
-                Boss HP this week: {hp.current} / {hp.max}
-              </p>
+              <BossHp caption="Boss HP this week" current={hp.current} max={hp.max} />
             </div>
           )}
           <ul class="boss-icons" aria-label="How the boss fights">

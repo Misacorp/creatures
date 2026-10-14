@@ -8,7 +8,7 @@ import type { GearState } from './gear-types';
 import { gearShare } from './gear-view';
 import { glyphOrUnknown } from './glyphs';
 import { abilityDef } from './live';
-import { PixelBar } from './PixelBar';
+import { Bar } from './ui/Bar';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -217,7 +217,7 @@ function CreatureCard({
       {isFestivalSpecies(creature.species) && (
         <p class="muted">Won in a Festival week. It is not found on expeditions.</p>
       )}
-      <PixelBar
+      <Bar
         value={creature.level}
         max={creature.levelCap}
         label={`Training progress: level ${String(creature.level)} of ${String(creature.levelCap)}`}

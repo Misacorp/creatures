@@ -1,6 +1,6 @@
 import type { ExpeditionLength } from './expedition-types';
-import { Pips } from './ExpeditionIcons';
 import { GameIcon } from './ui/GameIcon';
+import { PipRow } from './ui/PipRow';
 import { expectedHaul, haulTitle } from './haul-view';
 
 /**
@@ -35,7 +35,8 @@ export function HaulStrip({
             title={row.detail}
           >
             <GameIcon icon={row.icon} scale={4} />
-            <Pips level={row.level} />
+            {/* Four pips: how much of the best a trip brings (the words are the label). */}
+            <PipRow count={4} lit={row.level} />
             <span class="worth-name">
               {row.label}
               {row.boosted && (

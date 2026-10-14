@@ -106,10 +106,15 @@ describe('the profile', () => {
     expect(views).toHaveLength(RULES.expeditions.milestones.length);
     const first = views[0];
     expect(first?.progress).toBe('Trips finished: 3 of 5');
-    expect(first?.pct).toBe(60);
+    expect(first).toMatchObject({ value: 3, max: 5 });
     expect(first?.reached).toBe(false);
     const over = milestoneViews([{ ...profile.milestones[0]!, value: 99, reached: true }]);
-    expect(over[0]).toMatchObject({ progress: 'Trips finished: 5 of 5', pct: 100, reached: true });
+    expect(over[0]).toMatchObject({
+      progress: 'Trips finished: 5 of 5',
+      value: 5,
+      max: 5,
+      reached: true,
+    });
   });
 
   it('shows a milestone bonus value only once it is reached', () => {

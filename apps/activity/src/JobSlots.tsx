@@ -1,6 +1,5 @@
 import { GLOSSARY_IDS } from '@creatures/game';
 import type { Creature } from './api';
-import { cssVars } from './css-vars';
 import { creatureName } from './game';
 import { GlossaryTag } from './Glossary';
 import type { GearState, Job } from './gear-types';
@@ -10,22 +9,7 @@ import { useServerNow } from './hooks';
 import { formatCountdown } from './time-format';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
-
-/** A job's timer bar: it fills smoothly (a one second linear step each second, none with reduced motion). */
-function JobBar({ pct, label }: { pct: number; label: string }) {
-  return (
-    <div
-      class="xp job-bar"
-      role="progressbar"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(pct)}
-      aria-label={label}
-    >
-      <span ref={cssVars({ '--pct': `${String(pct)}%` })} />
-    </div>
-  );
-}
+import { TimerBar } from './ui/TimerBar';
 
 function RunningSlot({
   job,
@@ -66,16 +50,23 @@ function RunningSlot({
           </p>
         </div>
       </div>
-      <JobBar pct={progress.pct} label={`${title}: ${String(Math.floor(progress.pct))}% done`} />
-      <p class={progress.ready ? 'job-state ready' : 'job-state'} aria-live="off">
-        {progress.ready ? (
-          <>
-            <strong>Ready</strong> to claim
-          </>
-        ) : (
-          `${formatCountdown(progress.remainingMs, 'hms')} left`
-        )}
-      </p>
+      <TimerBar
+        class="job-bar"
+        startedAt={job.startedAt}
+        endsAt={job.endsAt}
+        now={serverNow}
+        ready={progress.ready}
+        label={`${title}: ${String(Math.floor(progress.pct))}% done`}
+        state={
+          progress.ready ? (
+            <>
+              <strong>Ready</strong> to claim
+            </>
+          ) : (
+            `${formatCountdown(progress.remainingMs, 'hms')} left`
+          )
+        }
+      />
       <button
         type="button"
         class="primary"

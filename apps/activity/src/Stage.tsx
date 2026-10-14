@@ -12,12 +12,10 @@ import type { LiveAbility, LiveFight } from './live-api';
 import type { ReplayRowEntry } from './raid-api';
 import { stateAt } from './replay';
 import {
-  HP_SEGMENTS,
   abilityUsesAt,
   cuesForEvents,
   creatureHpAt,
   groupByZone,
-  hpSegments,
   stageStateAt,
   type AbilityUse,
 } from './stage';
@@ -29,6 +27,7 @@ import { capitalize } from './game';
 import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
 import { forecastNextRound, strikeLabel, type Wording } from './telegraph';
 import { StagePopover } from './StagePopover';
+import { SegmentBar } from './ui/SegmentBar';
 import { ToggleButton } from './ui/ToggleButton';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -45,30 +44,6 @@ const PLACE_NAMES: Record<Zone, string> = { front: 'Left', middle: 'Middle', bac
 /** Each name or id is drawn as text only; nothing here builds markup from it. */
 const nameOf = (table: Readonly<Record<string, string>> | undefined, id: string): string =>
   table?.[id] ?? id;
-
-/** The boss's segmented HP bar. Segments that just emptied blink once (when motion is allowed). */
-export function HpBar({
-  current,
-  max,
-  previous,
-  label,
-}: {
-  current: number;
-  max: number;
-  /** The HP before the beat that is playing, so the segments that just emptied can blink. */
-  previous?: number;
-  label: string;
-}) {
-  const lit = hpSegments(current, max);
-  const was = previous === undefined ? lit : hpSegments(previous, max);
-  return (
-    <div class="hpbar" role="img" aria-label={label}>
-      {Array.from({ length: HP_SEGMENTS }, (_, k) => (
-        <i key={k} class={k < lit ? undefined : k < was ? 'gone drain' : 'gone'} />
-      ))}
-    </div>
-  );
-}
 
 /** A "Log" button that opens the plain-text feed. Closed by default: the stage shows the fight. */
 export function LogToggle({ id, children }: { id: string; children: ComponentChildren }) {
@@ -442,20 +417,6 @@ interface UnitProps {
   onToggle: () => void;
 }
 
-const UNIT_HP_SEGMENTS = 5;
-
-/** A creature's small HP bar: five stepped segments, so a hit takes a visible chunk. */
-function UnitHp({ current, max }: { current: number; max: number }) {
-  const lit = hpSegments(current, max, UNIT_HP_SEGMENTS);
-  return (
-    <span class="unit-hp" aria-hidden="true">
-      {Array.from({ length: UNIT_HP_SEGMENTS }, (_, k) => (
-        <i key={k} class={k < lit ? undefined : 'gone'} />
-      ))}
-    </span>
-  );
-}
-
 /**
  * One creature on the stage: its sprite with the corner marks (the "you" tag above it, the ability
  * badge top right, the skull of a knocked-out creature bottom left, its element bottom right) and
@@ -505,7 +466,9 @@ function StageUnit(props: UnitProps) {
       <span class="unit-name pix" aria-hidden="true">
         {c.name}
       </span>
-      {props.hp !== null && <UnitHp current={props.hp.current} max={props.hp.max} />}
+      {props.hp !== null && (
+        <SegmentBar size="unit" current={props.hp.current} max={props.hp.max} />
+      )}
     </>
   );
 
@@ -786,7 +749,8 @@ export function Stage({
             </span>
           )}
         </div>
-        <HpBar
+        <SegmentBar
+          size="boss"
           current={state.bossHp}
           max={hpMax}
           previous={previousHp}

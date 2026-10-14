@@ -7,6 +7,7 @@ import { streakPips } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
 import { Sprite } from './sprites/Sprite';
 import { GameIcon } from './ui/GameIcon';
+import { PipRow } from './ui/PipRow';
 
 /**
  * A tiny row of pips for the streak (a cycle of days, lit up to today's count). On the pre-run screen
@@ -18,11 +19,12 @@ export function StreakPips({ streak, plain = false }: { streak: number; plain?: 
   const lit = pips.filter((p) => p.on).length;
   const label = `Streak: ${String(lit)} of ${String(pips.length)} days of the cycle`;
   const row = (
-    <span class="pips" aria-hidden="true">
-      {pips.map((p) => (
-        <i key={p.day} class={`${p.on ? 'on' : ''}${p.bonus ? ' fest' : ''}`.trim()} />
-      ))}
-    </span>
+    <PipRow
+      count={pips.length}
+      lit={(i) => pips[i]?.on === true}
+      mark={(i) => (pips[i]?.bonus === true ? 'fest' : undefined)}
+      size="md"
+    />
   );
   if (plain) {
     return (

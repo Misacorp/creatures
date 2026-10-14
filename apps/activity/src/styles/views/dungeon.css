@@ -65,17 +65,6 @@
   text-decoration: none;
 }
 
-.dungeon-prerun .pips,
-.dungeon-next .pips {
-  gap: 0.1875rem;
-}
-
-.dungeon-prerun .pips i,
-.dungeon-next .pips i {
-  width: 0.5rem;
-  height: 0.5rem;
-}
-
 .dungeon-next {
   margin: 0.5rem 0;
 }

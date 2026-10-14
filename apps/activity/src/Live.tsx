@@ -38,8 +38,9 @@ import { AbilityPopoverBody } from './AbilityPopover';
 import { setRaidAutofire } from './raid-api';
 import { RevealCard } from './Reveal';
 import { LiveRegion } from './ui/LiveRegion';
+import { BossHp } from './ui/SegmentBar';
 import type { Badge } from './stage-abilities';
-import { HpBar, LiveStage, LogToggle } from './Stage';
+import { LiveStage, LogToggle } from './Stage';
 import { useRemaining } from './use-countdown';
 
 /**
@@ -337,14 +338,11 @@ export function Live({
 
       {lobby && !showStage && fight.boss.hpMax !== null && (
         <>
-          <HpBar
+          <BossHp
+            caption={`${fight.boss.name} HP`}
             current={fight.boss.hpStart ?? fight.boss.hpMax}
             max={fight.boss.hpMax}
-            label={`${fight.boss.name} HP: ${String(fight.boss.hpStart ?? fight.boss.hpMax)} of ${String(fight.boss.hpMax)}`}
           />
-          <p class="muted small">
-            {fight.boss.name} HP: {fight.boss.hpStart ?? fight.boss.hpMax} / {fight.boss.hpMax}
-          </p>
         </>
       )}
 

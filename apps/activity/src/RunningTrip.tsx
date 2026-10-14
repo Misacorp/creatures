@@ -1,9 +1,10 @@
 import { GLOSSARY_IDS, expeditionContent, goalDef } from '@creatures/game';
 import type { Creature } from './api';
 import { Banner } from './Banner';
-import { cssVars } from './css-vars';
 import type { Trip } from './expedition-types';
+import { percent } from './progress-math';
 import { GameIcon } from './ui/GameIcon';
+import { TimerBar } from './ui/TimerBar';
 import { creatureName, getSpecies } from './game';
 import { GlossaryTag } from './Glossary';
 import { PushOnChoice } from './PushOnChoice';
@@ -13,7 +14,6 @@ import { ElementChip } from './sprites/ElementChip';
 import { formatCountdown } from './time-format';
 import {
   destinationName,
-  fillPct,
   goalName,
   lengthLabel,
   recallKeeps,
@@ -61,8 +61,10 @@ export function RunningTrip({
   const species = creature === undefined ? undefined : getSpecies(creature.species);
   const info = creature === undefined ? null : explorerInfo(creature);
   const keeps = recallKeeps(trip, serverNow);
-  const pct = fillPct(status.fraction);
+  const pct = percent(status.fraction, 1);
   const pushing = status.phase === 'pushing' && trip.pushOn !== null;
+  // The leg the bar times: the push-on while it runs, the trip itself otherwise.
+  const leg = pushing && trip.pushOn !== null ? trip.pushOn : trip;
   const risky =
     pushing && trip.pushOn !== null ? goalDef(trip.pushOn.goalId)?.risk === 'risky' : false;
   const risk =
@@ -116,19 +118,16 @@ export function RunningTrip({
             ))}
           </ul>
         )}
-        <div
-          class={`xp trip-bar${pushing ? ' pushing' : ''}`}
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(pct)}
-          aria-label={`${name}'s ${pushing ? 'push-on' : 'trip'}: ${String(Math.floor(pct))}% done`}
-        >
-          <span ref={cssVars({ '--pct': `${String(pct)}%` })} />
-        </div>
-        <p class={`trip-timer${status.phase === 'ready' ? ' ready' : ''}`} aria-live="off">
-          {statusText(trip, status)}
-        </p>
+        <TimerBar
+          class="trip-bar"
+          startedAt={leg.startedAt}
+          endsAt={leg.endsAt}
+          now={serverNow}
+          ready={status.phase === 'ready'}
+          tone={pushing ? 'spark' : undefined}
+          label={`${name}'s ${pushing ? 'push-on' : 'trip'}: ${String(Math.floor(pct))}% done`}
+          state={statusText(trip, status)}
+        />
         {pushing && trip.pushOn !== null && (
           <p class={`push-line${risky ? ' risky' : ''}`}>
             <GlossaryTag

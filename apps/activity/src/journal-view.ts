@@ -157,8 +157,9 @@ interface MilestoneView {
   name: string;
   /** "Trips finished: 3 of 5". */
   progress: string;
-  /** 0 to 100. */
-  pct: number;
+  /** How far, for a bar: `value` of `max`. */
+  value: number;
+  max: number;
   reached: boolean;
   /** "+1% parts from trips" once the milestone is reached; null while it is locked. */
   bonus: string | null;
@@ -174,7 +175,9 @@ export function milestoneViews(milestones: readonly Milestone[]): MilestoneView[
     id: m.id,
     name: milestoneName(m.id),
     progress: `${statLabel(m.stat)}: ${String(Math.min(m.value, m.at))} of ${String(m.at)}`,
-    pct: m.at <= 0 ? 100 : Math.floor((Math.min(m.value, m.at) * 1000) / m.at) / 10,
+    // `value` of `max`, for a bar; a milestone that needs nothing is full.
+    value: m.at <= 0 ? 1 : Math.min(m.value, m.at),
+    max: m.at <= 0 ? 1 : m.at,
     reached: m.reached,
     bonus: milestoneBonusText(m),
   }));

@@ -36,6 +36,7 @@ import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { elementIcon } from './sprites/element-icons';
+import { PipRow } from './ui/PipRow';
 
 /** One item of each kind (a charm, a band and a trinket), for the Workshop picture. */
 const GEAR_EXAMPLES = ['trail-charm', 'patch-band', 'quick-trinket'] as const;
@@ -357,11 +358,12 @@ function DungeonArt() {
       </p>
       <p class="art-streak">
         <GlossaryTag entry="streak">{titleOf('streak')}</GlossaryTag>
-        <span class="pips" role="img" aria-label="A streak: the 3rd and 7th day of 7 pay a bonus">
-          {pips.map((p) => (
-            <i key={p.day} class={p.bonus ? 'fest' : ''} />
-          ))}
-        </span>
+        <PipRow
+          count={pips.length}
+          lit={0}
+          mark={(i) => (pips[i]?.bonus === true ? 'fest' : undefined)}
+          label="A streak: the 3rd and 7th day of 7 pay a bonus"
+        />
       </p>
     </div>
   );

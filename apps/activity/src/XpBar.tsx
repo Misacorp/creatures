@@ -22,9 +22,9 @@ export function XpBar({
   value: number;
   max: number;
   label: string;
-  text?: string;
-  startCap?: string;
-  endCap?: string;
+  text?: string | undefined;
+  startCap?: string | undefined;
+  endCap?: string | undefined;
 }) {
   const view = xpBarView(value, max, text);
   return (

@@ -264,31 +264,7 @@ export function recallKeeps(trip: Trip, now: number): number {
   return recallCatches(trip.rolls, trip.startedAt, trip.endsAt, now);
 }
 
-/** A bar's fill in tenths of a percent (0 to 100), so a long wait still moves smoothly. */
-export function fillPct(fraction: number): number {
-  return Math.floor(Math.min(1, Math.max(0, fraction)) * 1000) / 10;
-}
-
 // --- Explorer XP and slots ---
-
-export interface XpBar {
-  /** 0 to 100. */
-  pct: number;
-  /** "300 of 1200 XP to rank 4", or "Top rank" at the top. */
-  text: string;
-}
-
-/** The XP bar of an explorer: how far from its rank's XP to the next rank's. */
-export function xpBar(explorer: Pick<ExplorerView, 'rank' | 'xp' | 'nextRankXp'>): XpBar {
-  if (explorer.nextRankXp === null) return { pct: 100, text: 'Top rank' };
-  const start = RULES.expeditions.rank.xpForRank[Math.max(0, explorer.rank - 1)] ?? 0;
-  const span = Math.max(1, explorer.nextRankXp - start);
-  const done = Math.min(span, Math.max(0, explorer.xp - start));
-  return {
-    pct: Math.floor((done * 1000) / span) / 10,
-    text: `${String(done)} of ${String(span)} XP to rank ${String(explorer.rank + 1)}`,
-  };
-}
 
 /** What an `XpBar` of an explorer is given: the XP into this rank, the span of the rank and the end caps. */
 export interface ExplorerXp {
@@ -321,25 +297,25 @@ interface SlotsLine {
   use: string;
   /** What opens the next slot, or null when every slot is open. */
   next: string | null;
-  /** 0 to 1 progress to the next slot, or null. */
-  fraction: number | null;
+  /** Progress to the next slot (for a bar), or null. */
+  progress: { value: number; max: number } | null;
 }
 
 /** The open slots and the progress to the next one (`slots.next` of the state). */
 export function slotsLine(slots: Slots): SlotsLine {
   const use = `${String(slots.used)} of ${String(slots.total)} ${slots.total === 1 ? 'slot' : 'slots'} in use`;
-  if (slots.next === null) return { use, next: null, fraction: null };
+  if (slots.next === null) return { use, next: null, progress: null };
   if (slots.next.kind === 'trips') {
     return {
       use,
       next: `Next slot: finish ${String(slots.next.at)} trips (${String(slots.tripsFinished)} so far)`,
-      fraction: Math.min(1, slots.tripsFinished / Math.max(1, slots.next.at)),
+      progress: { value: slots.tripsFinished, max: Math.max(1, slots.next.at) },
     };
   }
   return {
     use,
     next: `Next slot: your explorers' ranks above 1 add up to ${String(slots.next.at)} (now ${String(slots.rankSum)})`,
-    fraction: Math.min(1, slots.rankSum / Math.max(1, slots.next.at)),
+    progress: { value: slots.rankSum, max: Math.max(1, slots.next.at) },
   };
 }
 

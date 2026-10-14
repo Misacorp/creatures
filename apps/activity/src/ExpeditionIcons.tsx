@@ -20,17 +20,6 @@ export function Stars({ stars, label }: { stars: number; label?: string }) {
   );
 }
 
-/** Four pips that show how much of the best a trip brings (the exact words are the label). */
-export function Pips({ level, max = 4 }: { level: number; max?: number }) {
-  return (
-    <span class="pips" aria-hidden="true">
-      {Array.from({ length: max }, (_, i) => (
-        <i key={i} class={i < level ? 'on' : undefined} />
-      ))}
-    </span>
-  );
-}
-
 /** The mark of a supply that makes the end-of-trip choice likely or certain. */
 export function ChoiceMark({ choice }: { choice: 'guaranteed' | 'likely' }) {
   return (

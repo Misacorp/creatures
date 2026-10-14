@@ -25,6 +25,7 @@ import {
 } from '@creatures/game';
 import type { Creature } from './api';
 import { capitalize, creatureName, elementName } from './game';
+import { percent } from './progress-math';
 import { supplyName } from './trip-view';
 import type {
   GearItem,
@@ -323,10 +324,7 @@ export function jobProgress(
   const total = job.endsAt - job.startedAt;
   const remainingMs = Math.max(0, job.endsAt - serverNow);
   const ready = job.status === 'ready' || remainingMs === 0;
-  const pct =
-    ready || total <= 0
-      ? 100
-      : Math.min(100, Math.max(0, Math.floor(((serverNow - job.startedAt) * 1000) / total) / 10));
+  const pct = ready || total <= 0 ? 100 : percent(serverNow - job.startedAt, total);
   return { pct, remainingMs, ready };
 }
 

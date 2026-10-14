@@ -1,5 +1,4 @@
 import type { Creature } from './api';
-import { cssVars } from './css-vars';
 import type { Profile } from './expedition-types';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
@@ -8,7 +7,9 @@ import { explorerInfo } from './send-view';
 import { SmallCreature } from './SmallCreature';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
-import { xpBar } from './trip-view';
+import { explorerXp } from './trip-view';
+import { Bar } from './ui/Bar';
+import { XpBar } from './XpBar';
 
 /**
  * A small profile: what the account has done on expeditions (stats), the milestones with the tiny
@@ -62,16 +63,7 @@ export function ExplorerProfile({
               )}
               {m.reached && <span class="badge good"> Reached</span>}
             </p>
-            <div
-              class="xp"
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(m.pct)}
-              aria-label={`${m.name}: ${m.progress}`}
-            >
-              <span ref={cssVars({ '--pct': `${String(m.pct)}%` })} />
-            </div>
+            <Bar value={m.value} max={m.max} label={`${m.name}: ${m.progress}`} />
             <p class="muted">{m.progress}</p>
           </li>
         ))}
@@ -86,7 +78,7 @@ export function ExplorerProfile({
         {explorers.map((row) => {
           const creature = creatures.find((c) => c.id === row.creatureId);
           const info = creature === undefined ? null : explorerInfo(creature);
-          const bar = xpBar(row);
+          const xp = explorerXp(row);
           const sprite =
             creature === undefined ? null : (
               <Sprite sprite={creatureSpriteOrFallback(creature.species)} scale={3} />
@@ -104,18 +96,16 @@ export function ExplorerProfile({
                 <p class="pix">
                   {row.name} <span class="muted">rank {row.rank}</span>
                 </p>
-                <div
-                  class="xp"
-                  role="progressbar"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={Math.round(bar.pct)}
-                  aria-label={`${row.name}'s explorer XP: ${bar.text}`}
-                >
-                  <span ref={cssVars({ '--pct': `${String(bar.pct)}%` })} />
-                </div>
+                <XpBar
+                  value={xp.value}
+                  max={xp.max}
+                  label={`${row.name}'s explorer XP`}
+                  text={xp.text}
+                  startCap={xp.startCap}
+                  endCap={xp.endCap}
+                />
                 <p class="muted">
-                  {bar.text} · {row.trips} {row.trips === 1 ? 'trip' : 'trips'}
+                  {row.trips} {row.trips === 1 ? 'trip' : 'trips'}
                 </p>
               </div>
             </li>
