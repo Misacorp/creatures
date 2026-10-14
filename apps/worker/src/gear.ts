@@ -660,6 +660,7 @@ export class Gear {
             shards: sumShards(parts),
             glimmer: parts.glimmer ?? 0,
             unequipped: row.equipped_on !== null,
+            parts,
           },
           userId,
         );
@@ -793,6 +794,7 @@ export class Gear {
             species: creature.species,
             hours: Math.round(duration / 3_600_000),
             skillLevel: level,
+            parts: cost,
           },
           userId,
         );
@@ -941,6 +943,7 @@ export class Gear {
             xp,
             skillLevel: after,
             leveledUp: after > before,
+            ...(job.kind === 'supply' && result.kind === 'supply' ? { yield: result.amount } : {}),
           },
           userId,
         );

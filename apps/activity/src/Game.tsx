@@ -25,6 +25,7 @@ import { glyphOrUnknown } from './glyphs';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
+import { DevPanelHost } from './DevPanelHost';
 import { Sprite } from './sprites/Sprite';
 import { StarterPicker } from './StarterPicker';
 import { TABS, tabAfterKey, tabPalette, type Tab } from './tabs';
@@ -45,8 +46,11 @@ export function Game({
   initial,
   onLeetSync,
   showPractice,
+  devTools,
 }: {
   initial: GameState;
+  /** True on staging, where the server has the dev tools on: the debug panel loads (see `dev-gate.ts`). */
+  devTools: boolean;
   /** True on staging and local runs, where the server can start a practice finale. */
   showPractice: boolean;
   /** Called with the sync status of every state this component loads, so the footer stays current. */
@@ -64,6 +68,8 @@ export function Game({
   const [gearFailed, setGearFailed] = useState(false);
   const [jobReveal, setJobReveal] = useState<JobResult | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Bumped by the debug panel after a tool changed something: the view on screen loads afresh.
+  const [devNonce, setDevNonce] = useState(0);
   const keys = useRef(createKeyStore()).current;
   // A second tap in the same tick must not start a second request, even before `busy` renders.
   const inFlight = useRef(false);
@@ -196,27 +202,40 @@ export function Game({
     },
   });
 
-  if (!game.starterChosen) {
-    return (
-      <>
-        {error !== null && (
-          <p class="error" role="alert">
-            {error}
-          </p>
-        )}
-        <StarterPicker
-          options={game.starterOptions}
-          busy={busy}
-          onChoose={(species) => {
-            const action = `starter:${species}`;
-            void runState(action, () => chooseStarter(species, keys.keyFor(action)));
-          }}
-        />
-      </>
+  /** The debug panel changed server state: reload the state and the bag, and rebuild the view. */
+  function devRefresh(): void {
+    actionCount.current += 1;
+    fetchState().then(
+      (next) => {
+        setCurrent(loaded(next));
+      },
+      () => undefined,
     );
+    loadGear();
+    setDevNonce((n) => n + 1);
   }
 
-  return (
+  const devPanel = (
+    <DevPanelHost enabled={devTools} tab={tab} creatures={game.creatures} onChanged={devRefresh} />
+  );
+
+  const content = !game.starterChosen ? (
+    <>
+      {error !== null && (
+        <p class="error" role="alert">
+          {error}
+        </p>
+      )}
+      <StarterPicker
+        options={game.starterOptions}
+        busy={busy}
+        onChoose={(species) => {
+          const action = `starter:${species}`;
+          void runState(action, () => chooseStarter(species, keys.keyFor(action)));
+        }}
+      />
+    </>
+  ) : (
     <>
       <p class="bait" aria-label="Bait balance">
         <span class="bait-amount">{game.balances.bait}</span>{' '}
@@ -268,7 +287,7 @@ export function Game({
           </button>
         ))}
       </div>
-      <WipeNotice cancelled={game.cancelled} creatures={game.creatures} />
+      <WipeNotice key={devNonce} cancelled={game.cancelled} creatures={game.creatures} />
       {error !== null && (
         <p class="error" role="alert">
           {error}
@@ -279,7 +298,7 @@ export function Game({
           {notice}
         </p>
       )}
-      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+      <div key={devNonce} role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'collection' && (
           <Collection
             state={game}
@@ -385,6 +404,13 @@ export function Game({
           />
         )}
       </div>
+    </>
+  );
+
+  return (
+    <>
+      {content}
+      {devPanel}
     </>
   );
 }

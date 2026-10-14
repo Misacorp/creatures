@@ -1368,6 +1368,17 @@ describe('supplies from the Workshop', () => {
           p.starterId,
         )[0]?.xp,
       ).toBeGreaterThan(RULES.gear.skill.xpForLevel[0] ?? 0);
+      // The log says what the job cost and what it gave, so the daily rollup can count the flows.
+      const logged = (kind: string): Record<string, unknown> =>
+        JSON.parse(
+          rows<{ props_json: string }>(
+            ctx.sql,
+            'SELECT props_json FROM analytics_events WHERE kind = ? ORDER BY id',
+            kind,
+          )[0]?.props_json ?? '{}',
+        ) as Record<string, unknown>;
+      expect(logged('job_start')['parts']).toEqual(def.blueprint.parts);
+      expect(logged('job_claim')['yield']).toBe(def.blueprint.yield);
     });
   });
 

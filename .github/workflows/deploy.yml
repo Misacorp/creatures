@@ -53,6 +53,8 @@ jobs:
           DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           LEET_API_KEY: ${{ secrets.LEET_API_KEY }}
+          # Optional: the ops report endpoint answers 404 until this is set.
+          OPS_TOKEN: ${{ secrets.OPS_TOKEN }}
           GIT_SHA: ${{ github.sha }}
         run: |
           missing=""
@@ -65,6 +67,7 @@ jobs:
           fi
           secrets_file="$(mktemp -p "$RUNNER_TEMP" secrets.XXXXXX.json)"
           trap 'rm -f "$secrets_file"' EXIT
-          jq -n --arg cs "$DISCORD_CLIENT_SECRET" --arg bt "$DISCORD_BOT_TOKEN" --arg lk "$LEET_API_KEY" \
-            '{DISCORD_CLIENT_SECRET: $cs, DISCORD_BOT_TOKEN: $bt, LEET_API_KEY: $lk}' > "$secrets_file"
+          # OPS_TOKEN is optional: an empty value is left out, so no empty secret is uploaded.
+          jq -n --arg cs "$DISCORD_CLIENT_SECRET" --arg bt "$DISCORD_BOT_TOKEN" --arg lk "$LEET_API_KEY" --arg ot "$OPS_TOKEN" \
+            '{DISCORD_CLIENT_SECRET: $cs, DISCORD_BOT_TOKEN: $bt, LEET_API_KEY: $lk} + (if $ot == "" then {} else {OPS_TOKEN: $ot} end)' > "$secrets_file"
           pnpm exec wrangler deploy --env "$TARGET_ENV" --var "VERSION:${GIT_SHA}" --secrets-file "$secrets_file"

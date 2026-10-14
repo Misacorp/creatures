@@ -1,0 +1,142 @@
+name: report
+
+# The daily analytics report (docs/design/analytics.md). Fetches the aggregate report from the ops
+# endpoint of production and staging (JSON and Markdown), writes the Markdown to the job summary and
+# keeps the files. The endpoint answers with counts only, summed across servers: no player ids,
+# hashes, names or guild ids, and no per-server breakdown (the workflow never asks for `byGuild`).
+# The repository is public, so the job log and the job summary are public too: nothing in the
+# output may be private, and the report is built so that it is not.
+#
+# Runs at 06:17 UTC, when the previous game day has been rolled up (rollups run at 13:40 guild-local
+# time, so the newest finished day is two UTC dates back). The range is the 7 days ending then.
+# On Mondays it also asks for week-over-week changes (weekly=1).
+#
+# No checkout and no third-party actions: the job only runs `node` (preinstalled on the runner) on a
+# script written in this file, so there is no repository code or action it could be tricked into
+# running. The tokens are only in the environment of the one step that needs them, and the job is
+# bound to the `reports` GitHub environment, which holds two secrets: OPS_TOKEN_PRODUCTION (sent only
+# to production) and OPS_TOKEN_STAGING (sent only to staging). The values differ, so a leaked or
+# misused staging token opens nothing in production. Restrict that environment to the `main` branch
+# (Settings, Environments, reports, Deployment branches), so a branch cannot edit this file to send
+# the tokens somewhere else.
+#
+# If one token is empty, that target is skipped with a warning. If the endpoint answers 404 (the
+# Worker's OPS_TOKEN is not set there yet), the job warns and still succeeds.
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
+    environment: reports
+    steps:
+      - name: Fetch the reports
+        env:
+          OPS_TOKEN_PRODUCTION: ${{ secrets.OPS_TOKEN_PRODUCTION }}
+          OPS_TOKEN_STAGING: ${{ secrets.OPS_TOKEN_STAGING }}
+        run: |
+          set -euo pipefail
+          mkdir -p report
+          FROM="$(date -u -d '8 days ago' +%F)"
+          TO="$(date -u -d '2 days ago' +%F)"
+          WEEKLY=0
+          if [ "$(date -u +%u)" = "1" ]; then WEEKLY=1; fi
+          export FROM TO WEEKLY
+          node --input-type=module - <<'EOF'
+          import { writeFileSync } from 'node:fs';
+
+          const { OPS_TOKEN_PRODUCTION, OPS_TOKEN_STAGING, FROM, TO, WEEKLY } = process.env;
+          // Each target gets only its own token.
+          const targets = [
+            ['production', 'https://creatures.misacorp.dev', OPS_TOKEN_PRODUCTION ?? ''],
+            ['staging', 'https://creatures-staging.misacorp.dev', OPS_TOKEN_STAGING ?? ''],
+          ];
+          let failed = 0;
+          for (const [name, base, token] of targets) {
+            if (token === '') {
+              console.log(`::warning::${name}: its token is not set in the 'reports' environment yet; skipping.`);
+              continue;
+            }
+            for (const format of ['json', 'md']) {
+              const url = `${base}/api/ops/report?from=${FROM}&to=${TO}&format=${format}&weekly=${WEEKLY}`;
+              try {
+                const res = await fetch(url, {
+                  headers: { Authorization: `Bearer ${token}` },
+                  signal: AbortSignal.timeout(60_000),
+                });
+                if (res.status === 404) {
+                  console.log(`::warning::${name} (${format}): the report endpoint answered 404. Is OPS_TOKEN set on the ${name} Worker and deployed?`);
+                  continue;
+                }
+                if (!res.ok) {
+                  console.log(`::error::${name} (${format}): HTTP ${res.status}`);
+                  failed += 1;
+                  continue;
+                }
+                writeFileSync(`report/${name}.${format}`, await res.text());
+              } catch (err) {
+                console.log(`::error::${name} (${format}): ${err instanceof Error ? err.name : 'error'}`);
+                failed += 1;
+              }
+            }
+          }
+          if (failed > 0) process.exit(1);
+          EOF
+
+      - name: Write the job summary
+        run: |
+          set -euo pipefail
+          for target in production staging; do
+            if [ -f "report/$target.md" ]; then
+              { echo "# $target"; echo; cat "report/$target.md"; echo; } >> "$GITHUB_STEP_SUMMARY"
+            fi
+            # The JSON goes in a collapsed block (the summary is capped at 1 MiB per step).
+            if [ -f "report/$target.json" ] && [ "$(wc -c < "report/$target.json")" -lt 300000 ]; then
+              {
+                echo "<details><summary>$target report (JSON)</summary>"
+                echo
+                echo '```json'
+                cat "report/$target.json"
+                echo
+                echo '```'
+                echo "</details>"
+                echo
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
+      # Agents read the report through the job log (the GitHub tools can fetch logs, not summaries).
+      # The JSON holds counts only, summed across servers, so printing it is safe (the log is public).
+      - name: Print the JSON for agents
+        run: |
+          set -euo pipefail
+          for target in production staging; do
+            if [ -f "report/$target.json" ]; then
+              echo "=== report/$target.json ==="
+              cat "report/$target.json"
+              echo
+              echo "=== end report/$target.json ==="
+            fi
+          done
+
+      # Keeping the files as a 90-day artifact needs actions/upload-artifact pinned to a full commit
+      # SHA, and no workflow in this repository uses it yet, so there is no SHA to copy. Add:
+      #
+      # - uses: actions/upload-artifact@<full commit SHA> # <version>
+      #   if: ${{ !cancelled() }}
+      #   with:
+      #     name: analytics-report
+      #     path: report/
+      #     retention-days: 90
+      #     if-no-files-found: ignore

@@ -1,9 +1,20 @@
 import { handleAuthSession } from './auth';
 import { createDiscordApi, type DiscordApi } from './discord';
-import { dispatch, errorResponse, json, matchRoute, methodNotAllowed, type Routes } from './http';
+import { OPS_REPORT_PATH, handleOpsReport } from './ops-report';
+import { isDevPath } from './dev-tools';
+import {
+  dispatch,
+  errorResponse,
+  json,
+  matchRoute,
+  methodNotAllowed,
+  notFound,
+  type Routes,
+} from './http';
 import { TokenBucketLimiter } from './ratelimit';
 import { formatSessionToken, getSessionKey, parseAuthorization, verifyTokenMac } from './session';
 
+export { GuildDirectory } from './guild-directory';
 export { GuildWorld } from './guild-world';
 
 export interface HandlerDeps {
@@ -33,6 +44,14 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
     maxKeys: 5000,
   });
 
+  // The ops report: a burst of 5, then one request every 10 seconds, per caller.
+  const opsLimiter = new TokenBucketLimiter({
+    capacity: 5,
+    refillPerSecond: 0.1,
+    now: deps.now,
+    maxKeys: 1000,
+  });
+
   const publicRoutes: Routes<Env> = {
     '/api/health': {
       GET: () => json({ ok: true }),
@@ -44,6 +63,8 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
           environment: env.ENVIRONMENT,
           version: env.VERSION,
           leetSource: env.LEET_SOURCE,
+          // Staging only: lets the client load the dev panel. Absent (not false) everywhere else.
+          ...(env.DEV_TOOLS === 'on' ? { devTools: true } : {}),
         }),
     },
     '/api/auth/session': {
@@ -65,6 +86,11 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
 
   /** Every route that is not public goes to the guild's Durable Object, which verifies the session. */
   async function handleApi(request: Request, env: Env, pathname: string): Promise<Response> {
+    // Bearer OPS_TOKEN only; session tokens are not looked at here.
+    if (pathname === OPS_REPORT_PATH) return handleOpsReport(request, env, { limiter: opsLimiter });
+    // The dev routes do not exist unless the dev tools are on (staging): checked before anything else, with
+    // a plain 404. The Durable Object checks again.
+    if (isDevPath(pathname) && env.DEV_TOOLS !== 'on') return notFound();
     const match = matchRoute(publicRoutes, pathname, request.method);
     if (match.kind === 'ok') return dispatch(publicRoutes, request, pathname, env);
     if (match.kind === 'method_not_allowed') return methodNotAllowed(match.allow);

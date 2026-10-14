@@ -25,6 +25,7 @@ import {
   GEAR_RARITIES,
   GOAL_RISKS,
   JOB_KINDS,
+  PART_KINDS,
   RARITIES,
   RULES,
   content,
@@ -35,9 +36,12 @@ import {
   type GearRarity,
   type GoalRisk,
   type JobKind,
+  type PartKind,
+  type PartsBundle,
   type Rarity,
   type Role,
 } from '@creatures/game';
+import { DEV_ACTION_TOOLS, type DevActionTool } from './dev-schemas';
 import type { PostFailureKind } from './discord-posts';
 
 /** Raw events and the rows that support them are kept this long. */
@@ -228,6 +232,8 @@ export type AnalyticsEvent =
       blueprintDuplicate: boolean;
       /** Supplies the grant gave (left out when none). */
       supplies?: number;
+      /** All the parts the grant paid, by kind (the per-kind breakdown of `scrap`, `shards` and `glimmer`). */
+      parts?: PartsBundle;
     }
   | {
       kind: 'gear_equip';
@@ -258,6 +264,8 @@ export type AnalyticsEvent =
       shards: number;
       glimmer: number;
       unequipped: boolean;
+      /** The parts it gave, by kind. */
+      parts?: PartsBundle;
     }
   | {
       kind: 'job_start';
@@ -268,6 +276,8 @@ export type AnalyticsEvent =
       species: string;
       hours: number;
       skillLevel: number;
+      /** The parts the job cost, by kind. */
+      parts?: PartsBundle;
     }
   | {
       kind: 'job_claim';
@@ -281,6 +291,8 @@ export type AnalyticsEvent =
       xp: number;
       skillLevel: number;
       leveledUp: boolean;
+      /** Supplies a supply job gave (left out for other jobs). */
+      yield?: number;
     }
   | {
       /** A daily dungeon run: how deep, how far it got, what the rooms rolled and who went. */
@@ -318,6 +330,14 @@ export type AnalyticsEvent =
       result: 'sent' | 'retry' | 'failed';
       error: PostFailureKind | null;
       attempts: number;
+    }
+  | {
+      /**
+       * A staging dev tool was used (`docs/design/dev-tools.md`). Reports must exclude this kind: staging
+       * data is never mixed into production numbers, and these events are not player behaviour.
+       */
+      kind: 'dev_action';
+      tool: DevActionTool;
     };
 
 export type AnalyticsKind = AnalyticsEvent['kind'];
@@ -373,6 +393,22 @@ function catchProps(list: readonly CatchProps[]): unknown[] {
     result: oneOf(['new', 'fused', 'converted'] as const, c.result, 'new'),
   }));
 }
+
+/** A parts bundle as `{ kind: amount }` for the kinds that are present, or null when it is empty. */
+function partsProps(bundle: PartsBundle | undefined): Partial<Record<PartKind, number>> | null {
+  if (bundle === undefined) return null;
+  const out: Partial<Record<PartKind, number>> = {};
+  for (const kind of PART_KINDS) {
+    const amount = int(bundle[kind] ?? 0);
+    if (amount > 0) out[kind] = amount;
+  }
+  return Object.keys(out).length === 0 ? null : out;
+}
+
+const withParts = (bundle: PartsBundle | undefined): { parts?: Record<string, number> } => {
+  const parts = partsProps(bundle);
+  return parts === null ? {} : { parts };
+};
 
 const gearBase = (value: string): string => fromSet(GEAR_BASE_IDS, value);
 const destination = (value: string): string => fromSet(DESTINATION_IDS, value);
@@ -539,6 +575,7 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         ...(event.supplies === undefined || event.supplies <= 0
           ? {}
           : { supplies: int(event.supplies, 99) }),
+        ...withParts(event.parts),
       };
     case 'gear_equip':
       return {
@@ -567,6 +604,7 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         shards: int(event.shards),
         glimmer: int(event.glimmer),
         unequipped: bool(event.unequipped),
+        ...withParts(event.parts),
       };
     case 'job_start':
       return {
@@ -576,6 +614,7 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         species: species(event.species),
         hours: int(event.hours, 99),
         skillLevel: int(event.skillLevel, 99),
+        ...withParts(event.parts),
       };
     case 'job_claim':
       return {
@@ -587,6 +626,7 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         xp: int(event.xp, 100_000),
         skillLevel: int(event.skillLevel, 99),
         leveledUp: bool(event.leveledUp),
+        ...(event.yield === undefined || event.yield <= 0 ? {} : { yield: int(event.yield, 99) }),
       };
     case 'dungeon_run':
       return {
@@ -613,6 +653,8 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         landmark: bool(event.landmark),
         streakBonusDay: int(event.streakBonusDay, 99),
       };
+    case 'dev_action':
+      return { tool: oneOf(DEV_ACTION_TOOLS, event.tool, 'clock') };
     case 'post_result':
       return {
         result: oneOf(['sent', 'retry', 'failed'] as const, event.result, 'failed'),

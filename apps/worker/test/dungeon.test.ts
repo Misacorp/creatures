@@ -199,7 +199,7 @@ describe('migration 18', () => {
       undoExpeditionsMigration(ctx.sql);
       expect(versions().at(-1)).toBe(18);
       ctx.core.migrate();
-      expect(versions().at(-1)).toBe(19);
+      expect(versions().at(-1)).toBe(LATEST_SCHEMA_VERSION);
       expect(count(ctx.sql, 'dungeon_progress', "user_id = 'staging-player'")).toBe(1);
       expect(count(ctx.sql, 'creatures')).toBe(3);
       expect((await p.today()).depth).toBe(1);
