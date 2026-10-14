@@ -50,6 +50,7 @@ import { raidAutofireMigration } from './raid-autofire-migration';
 import { raidLivePacingMigration } from './raid-live-pacing-migration';
 import { raidLiveMigration } from './raid-live-migration';
 import { raidMigration } from './raid-migration';
+import { raidPlacementCapMigration } from './raid-placement-cap-migration';
 import { raidProgressionMigration } from './raid-progression-migration';
 import { raidRoutes } from './raid-routes';
 import { TokenBucketLimiter } from './ratelimit';
@@ -303,6 +304,9 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
     // creature that lounges for each player; NULL until first needed (picked lazily, no backfill).
     sql.exec('ALTER TABLE players ADD COLUMN lounger_id TEXT');
   },
+  // Version 22: repairs raid boards with more than three creatures of one player (see
+  // raid-placement-cap-migration.ts).
+  raidPlacementCapMigration,
 ];
 
 export interface SessionUser {

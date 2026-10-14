@@ -10,6 +10,7 @@ import {
   basicAbilities,
   content,
   createCryptoRng,
+  RULES,
   type ReadinessBand,
   type Rng,
 } from '@creatures/game';
@@ -75,10 +76,12 @@ import {
   type ScheduledEvent,
 } from './raid-schedule';
 import {
+  capPlacements,
   chosenTeamIds,
   effectiveTeam,
   loadCreatures,
   rowLength,
+  type PlacementRow,
   type RaidStatus,
 } from './raid-teams';
 
@@ -500,16 +503,15 @@ export class Raid {
       if (!Number.isInteger(slot) || slot < 0 || slot >= length) {
         throw new GameError(400, 'invalid_slot');
       }
-      const mine = this.sql
-        .exec<{
-          slot: number;
-        }>(
-          'SELECT slot FROM raid_placements WHERE week_id = ? AND creature_id = ?',
-          week.weekId,
-          creatureId,
-        )
-        .toArray()[0];
+      // A player never has more than three creatures on the board. Stale rows beyond that (from
+      // before this rule) are dropped first, by the one rule in `capPlacements`.
+      const onBoard = this.enforcePlacementCap(week.weekId, userId);
+      const mine = onBoard.find((p) => p.creature_id === creatureId);
       if (mine?.slot === slot) return null;
+      // A creature that is not on the board yet needs a free place among the three.
+      if (mine === undefined && onBoard.length >= RULES.raid.teamSize) {
+        throw new GameError(409, 'board_full');
+      }
       const occupant = this.sql
         .exec<{ user_id: string; creature_id: string }>(
           'SELECT user_id, creature_id FROM raid_placements WHERE week_id = ? AND party = ? AND slot = ?',
@@ -550,6 +552,33 @@ export class Raid {
       );
       return null;
     });
+  }
+
+  /**
+   * Deletes the player's placements beyond three (see `capPlacements`) and returns the ones left,
+   * earliest placed first. Run inside a transaction. Normally it deletes nothing.
+   */
+  private enforcePlacementCap(weekId: string, userId: string): PlacementRow[] {
+    const all = this.sql
+      .exec<PlacementRow>(
+        'SELECT rowid, slot, user_id, creature_id FROM raid_placements WHERE week_id = ? AND user_id = ? ORDER BY rowid',
+        weekId,
+        userId,
+      )
+      .toArray();
+    const team = new Set(effectiveTeam(this.sql, weekId, userId).creatures.map((c) => c.id));
+    const kept = capPlacements(all, team);
+    const keptIds = new Set(kept.map((p) => p.creature_id));
+    for (const row of all) {
+      if (!keptIds.has(row.creature_id)) {
+        this.sql.exec(
+          'DELETE FROM raid_placements WHERE week_id = ? AND creature_id = ?',
+          weekId,
+          row.creature_id,
+        );
+      }
+    }
+    return kept;
   }
 
   /** Takes a creature out of the row (it is auto-placed at resolve time). Idempotent. */

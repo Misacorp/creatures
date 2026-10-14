@@ -29,7 +29,13 @@ import {
 import { latestReveal, totalEssenceOf, type RevealView } from './raid-reveal';
 import { partyMembers, partyOf } from './raid-roster';
 import { RAID_PHASES, isWeekId, weekIndex, type RaidEvent, type RaidPhase } from './raid-schedule';
-import { effectiveTeam, rowLength, type RaidStatus, type TeamCreature } from './raid-teams';
+import {
+  effectiveTeam,
+  partyPlacements,
+  rowLength,
+  type RaidStatus,
+  type TeamCreature,
+} from './raid-teams';
 
 export interface RosterEntry {
   displayName: string;
@@ -258,16 +264,11 @@ export function buildRaidView(
 
   const myParty = partyOf(sql, week.weekId, userId);
   const team = myParty === null ? null : effectiveTeam(sql, week.weekId, userId);
+  // At most three placements per player, whatever the table holds (a stale row once made a fourth).
   const placements =
     myParty === null
       ? []
-      : sql
-          .exec<{ slot: number; user_id: string; creature_id: string }>(
-            'SELECT slot, user_id, creature_id FROM raid_placements WHERE week_id = ? AND party = ?',
-            week.weekId,
-            myParty,
-          )
-          .toArray();
+      : partyPlacements(sql, week.weekId, myParty, new Set(team?.creatures.map((c) => c.id) ?? []));
   const slotOf = new Map(placements.map((p) => [p.creature_id, p.slot]));
 
   const partyIds = myParty === null ? [] : partyMembers(sql, week.weekId, myParty);
@@ -282,8 +283,9 @@ export function buildRaidView(
     for (const p of placements) {
       const c = sql
         .exec<{ species: string; level: number; nickname: string | null }>(
-          'SELECT species, level, nickname FROM creatures WHERE id = ?',
+          'SELECT species, level, nickname FROM creatures WHERE id = ? AND user_id = ?',
           p.creature_id,
+          p.user_id,
         )
         .toArray()[0];
       if (c !== undefined) {

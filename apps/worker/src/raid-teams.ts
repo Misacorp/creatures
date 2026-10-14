@@ -99,6 +99,64 @@ export function autoTeam(creatures: readonly TeamCreature[]): TeamCreature[] {
     .slice(0, RULES.raid.teamSize);
 }
 
+/** One placed creature as stored: `rowid` is the order they were placed in (a move places again). */
+export type PlacementRow = {
+  rowid: number;
+  slot: number;
+  user_id: string;
+  creature_id: string;
+};
+
+/**
+ * At most `teamSize` placements per player, chosen deterministically: creatures in `preferred`
+ * first, then the earliest placed (`rowid`), then the lowest slot. Pure. No player has more than
+ * three creatures on the board (a stale row used to make a fourth); this is the one rule that
+ * decides which survive, used by the data repair and by every read and write of placements.
+ */
+export function capPlacements<T extends PlacementRow>(
+  rows: readonly T[],
+  preferred: ReadonlySet<string> = new Set(),
+): T[] {
+  const byUser = new Map<string, T[]>();
+  for (const row of rows) {
+    const list = byUser.get(row.user_id);
+    if (list === undefined) byUser.set(row.user_id, [row]);
+    else list.push(row);
+  }
+  const kept = new Set<T>();
+  for (const list of byUser.values()) {
+    list
+      .sort(
+        (a, b) =>
+          Number(preferred.has(b.creature_id)) - Number(preferred.has(a.creature_id)) ||
+          a.rowid - b.rowid ||
+          a.slot - b.slot,
+      )
+      .slice(0, RULES.raid.teamSize)
+      .forEach((row) => kept.add(row));
+  }
+  return rows.filter((row) => kept.has(row));
+}
+
+/** The placements of one party this week, at most three per player (see `capPlacements`). */
+export function partyPlacements(
+  sql: SqlStorage,
+  weekId: string,
+  party: number,
+  preferred: ReadonlySet<string> = new Set(),
+): PlacementRow[] {
+  return capPlacements(
+    sql
+      .exec<PlacementRow>(
+        'SELECT rowid, slot, user_id, creature_id FROM raid_placements WHERE week_id = ? AND party = ? ORDER BY rowid',
+        weekId,
+        party,
+      )
+      .toArray(),
+    preferred,
+  );
+}
+
 /** Sum of the power of a team. */
 export function teamPower(team: readonly TeamCreature[]): number {
   return team.reduce((total, c) => total + c.power, 0);

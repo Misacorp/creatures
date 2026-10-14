@@ -47,7 +47,7 @@ import { fightRank, payoutWeek, readWeekProgression, updateLadder } from './raid
 import { partyMembers } from './raid-roster';
 import { queuePhasePost } from './raid-posts';
 import type { RaidPhase } from './raid-schedule';
-import { effectiveTeam, rowLength, type TeamCreature } from './raid-teams';
+import { effectiveTeam, partyPlacements, rowLength, type TeamCreature } from './raid-teams';
 import { recordServerFirst } from './server-firsts';
 
 export interface ResolveDeps {
@@ -269,13 +269,13 @@ export function buildPhaseInput(
   });
   const length = rowLength(memberIds.length);
   const sparse: (FightSlot | null)[] = new Array<FightSlot | null>(length).fill(null);
-  const placements = sql
-    .exec<{ slot: number; user_id: string; creature_id: string }>(
-      'SELECT slot, user_id, creature_id FROM raid_placements WHERE week_id = ? AND party = ?',
-      week.weekId,
-      party,
-    )
-    .toArray();
+  // At most three placements per player, whatever the table holds (a stale row once made a fourth).
+  const placements = partyPlacements(
+    sql,
+    week.weekId,
+    party,
+    new Set(teams.flatMap((team) => team.map((c) => c.id))),
+  );
   for (const placement of placements) {
     const slot = slotById.get(placement.creature_id);
     const owner = memberIds.indexOf(placement.user_id);

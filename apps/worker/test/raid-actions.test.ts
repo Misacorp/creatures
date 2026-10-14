@@ -224,6 +224,36 @@ describe('placement', () => {
     });
   });
 
+  it('never puts a fourth creature of one player on the board (production bug, level change)', async () => {
+    await runRaid((ctx) => {
+      // Power order at level 10: gaiadrake > stormray > splashet > sproutle, so the team is the top three.
+      const p = seedPlayer(ctx, 1, {
+        creatures: 4,
+        level: 10,
+        species: ['sproutle', 'splashet', 'stormray', 'gaiadrake'],
+      });
+      seedPlayer(ctx, 2);
+      seedPlayer(ctx, 3);
+      const [sproutle, splashet, stormray, gaiadrake] = p.creatureIds as [
+        string,
+        string,
+        string,
+        string,
+      ];
+      for (const [i, id] of [splashet, stormray, gaiadrake].entries()) {
+        expect(ctx.core.raid.place(p.id, HELSINKI, id, i).ok).toBe(true);
+      }
+      // The placed splashet drops out of the strongest three (any level or gear change does this) ...
+      ctx.sql.exec('UPDATE creatures SET level = 1 WHERE id = ?', splashet);
+      // ... and the sproutle is now in the strongest three, so the old "must be in the team" rule let it in.
+      const fourth = ctx.core.raid.place(p.id, HELSINKI, sproutle, 5);
+      expect(fourth).toEqual({ ok: false, status: 409, error: 'board_full' });
+      const view = ctx.core.raid.view(p.id, HELSINKI);
+      expect(view.party?.row.filter((s) => s.creature?.mine)).toHaveLength(3);
+      expect(count(ctx.sql, 'raid_placements', `user_id = '${p.id}'`)).toBe(3);
+    });
+  });
+
   it('unplaces idempotently', async () => {
     await runRaid((ctx) => {
       const p = seedPlayer(ctx, 1);
