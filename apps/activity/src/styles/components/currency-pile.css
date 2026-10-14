@@ -1,0 +1,42 @@
+/*
+  The currency pile: a small coin-pile button in the title row (left of "?") and the two lines of its
+  popover (Bait and Essence, each with its picture, amount and glossary tag).
+*/
+button.currency-pile {
+  display: grid;
+  flex: none;
+  place-items: center;
+  min-width: 2.5rem;
+  padding: 0.25rem;
+}
+
+button.currency-pile canvas.coin-small,
+.room[data-scale='2'] button.currency-pile canvas.coin-big {
+  display: none;
+}
+
+.room[data-scale='2'] button.currency-pile canvas.coin-small {
+  display: block;
+}
+
+.currency-lines {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.currency-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.currency-amount {
+  min-width: 2ch;
+  color: var(--gold);
+  font-size: 1.375rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}

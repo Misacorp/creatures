@@ -2,13 +2,25 @@ import { useState } from 'preact/hooks';
 import { content } from '@creatures/game';
 import { AbilityChip } from '../../AbilityChip';
 import { BossCard } from '../../BossCard';
+import { AppHead } from '../../AppHead';
+import { LivingRoom, sceneOf } from '../../LivingRoom';
 import { RosterStrip } from '../../RosterStrip';
 import { SmallCreature } from '../../SmallCreature';
 import type { ReadinessBand, RaidView, RosterEntry } from '../../raid-api';
 import { READINESS_BANDS } from '../../raid-api';
 import { Sprite } from '../../sprites/Sprite';
+import type { RoomPhase } from '../../sprites/room-art';
 import { creatureSpriteOrFallback } from '../../sprites/creature-sprites';
-import { BOSS_IDS, NONE, SAMPLE_RAID, SPECIES_IDS, creatureInfoFor, speciesLabel } from '../data';
+import {
+  BOSS_IDS,
+  NONE,
+  ROOM_SELF_ID,
+  SAMPLE_RAID,
+  SPECIES_IDS,
+  creatureInfoFor,
+  sampleResidents,
+  speciesLabel,
+} from '../data';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 
@@ -213,7 +225,57 @@ const smallCreature: Entry = {
   ),
 };
 
+const NO_REF = { current: null };
+const ROOM_PHASES: readonly RoomPhase[] = ['day', 'twilight', 'night'];
+
+const livingRoom: Entry = {
+  name: 'LivingRoom',
+  file: 'apps/activity/src/LivingRoom.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    'The pixel living room at the top of the app: every player who has the Activity open sits in a spot with their lounging creature (tap one for its popover), and the title row is laid over the wall. Use the width switcher: wide shows the whole room centred, a phone width scrolls it sideways (mouse drag, or swipe) and pans it slowly when left alone.',
+  controls: {
+    players: { kind: 'number', min: 1, max: 24 },
+    oneBusy: { kind: 'toggle' },
+    titleRow: { kind: 'toggle' },
+    phase: { kind: 'select', options: ROOM_PHASES },
+  },
+  defaults: { players: 4, oneBusy: false, titleRow: true, phase: 'night' },
+  presets: [
+    { name: 'Alone', props: { players: 1 } },
+    { name: '4 players', props: {} },
+    { name: 'Full room (16)', props: { players: 16 } },
+    { name: 'Overflow (20, 16 shown)', props: { players: 20 } },
+    { name: 'One all-busy note', props: { oneBusy: true } },
+    { name: 'Day', props: { phase: 'day' } },
+    { name: 'Twilight', props: { phase: 'twilight' } },
+    { name: 'No title row', props: { titleRow: false } },
+  ],
+  render: (p) => {
+    const residents = sampleResidents(num(p, 'players'), bool(p, 'oneBusy'));
+    const phase = ROOM_PHASES.find((x) => x === str(p, 'phase')) ?? 'night';
+    const scene = sceneOf(phase);
+    // With the title row it is drawn as the app draws it: a band as wide as the window.
+    return bool(p, 'titleRow') ? (
+      <AppHead
+        helpRef={NO_REF}
+        onHelp={() => undefined}
+        balances={{ bait: 52, essence: 52 }}
+        room={{ residents, selfId: ROOM_SELF_ID, instanceId: 'workbench', scene }}
+      />
+    ) : (
+      <LivingRoom
+        residents={residents}
+        selfId={ROOM_SELF_ID}
+        instanceId="workbench"
+        scene={scene}
+      />
+    );
+  },
+};
+
 export const creatureEntries: readonly Entry[] = [
+  livingRoom,
   bossCard,
   rosterStrip,
   abilityChip,

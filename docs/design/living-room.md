@@ -1,6 +1,6 @@
 # Living room
 
-Status: **planned 2026-10-14**, revised the same day (lounging choice, creature permanence, wide screens). Misa: "a cozy place where the creatures chill during downtime, so everyone can see who else has the game open."
+Status: **built 2026-10-14** (planned and revised the same day: lounging choice, creature permanence, wide screens, time of day). Misa: "a cozy place where the creatures chill during downtime, so everyone can see who else has the game open."
 
 ## What players see
 
@@ -65,6 +65,17 @@ Limit: this is per **activity instance**. People who opened the game from differ
 - The creature popover's `CreatureInfo` gains optional `owner`, `craftingLevel` and `explorerRank`.
 - Workbench entries for `LivingRoom` (presets: alone, 4 players, full room, overflow) and `CurrencyPile`.
 - Compendium: the room's name and the bubble lines go in `docs/compendium/places.md`.
+
+## Time of day
+
+The room has a day, a twilight (dawn and dusk) and a night scene, chosen from the guild-local hour by `roomPhase` in `packages/game` (night is `isNightHour`, the Moonlit Reef's window; twilight is `RULES.room.twilightHours` on each side). The window has its own rows per scene; everything else is a palette swap. The client swaps scenes with one timeout at the next boundary (`room-phase.ts`, `use-room-phase.ts`); no request is made.
+
+## As built
+
+- The room band is full-bleed: it spans the window width, while the title row stays aligned with the card column (`use-bleed.ts`, `AppHead.tsx`). Scale 3 with scrolling below 576 px, scale 2 to 4 above.
+- `CreatureInfo` gained `ownerName`, `shiny`, `craftingLevel` and `explorerRank` (the first name was taken by replay entries). Your own creature's Crafting level shows once the gear view has loaded.
+- The currency popover has its own small shell, because the glossary tags inside it open popovers of their own.
+- `POST /api/room` rejects duplicate ids (400) rather than merging them.
 
 ## Not in this version
 

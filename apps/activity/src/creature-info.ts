@@ -14,6 +14,12 @@ export interface CreatureInfo {
   /** An element id (`tide`...) and a role id (`guard`...). */
   element: string;
   role: string;
+  /** Whose creature it is (a player's display name, as text); left out for your own team. */
+  ownerName?: string;
+  shiny?: boolean;
+  /** The owner's Crafting level and this creature's Explorer rank, when known. */
+  craftingLevel?: number;
+  explorerRank?: number;
 }
 
 /** The popover info of anything that is a creature on screen (a stage unit, a team member, an explorer). */
@@ -29,4 +35,29 @@ export function creatureButtonLabel(info: Pick<CreatureInfo, 'name' | 'level'>):
 /** The label of the back control: where it goes. */
 export function backLabel(info: Pick<CreatureInfo, 'name'>): string {
   return `Back to ${info.name}`;
+}
+
+/**
+ * The plain lines under the popover's title for what the creature info carries beyond its name and
+ * level: the owner (and then the species of a nicknamed creature), shiny, Crafting level and Explorer rank.
+ * `speciesLabel` is the species' display name. Nothing is invented: a missing field gives no line.
+ */
+export function creatureFacts(info: CreatureInfo, speciesLabel: string): string[] {
+  const lines: string[] = [];
+  if (info.ownerName !== undefined) {
+    lines.push(`Owner: ${info.ownerName}`);
+    if (info.name !== speciesLabel) lines.push(`Species: ${speciesLabel}`);
+  }
+  if (info.shiny === true) lines.push('Shiny');
+  if (info.craftingLevel !== undefined) lines.push(`Crafting level ${String(info.craftingLevel)}`);
+  if (info.explorerRank !== undefined) lines.push(`Explorer rank ${String(info.explorerRank)}`);
+  return lines;
+}
+
+/** The spoken label of a creature that belongs to someone else: "Misa's Splashet, level 12". */
+export function ownedCreatureLabel(
+  info: Pick<CreatureInfo, 'name' | 'level' | 'ownerName'>,
+): string {
+  const who = info.ownerName === undefined ? '' : `${info.ownerName}'s `;
+  return `${who}${info.name}, level ${String(info.level)}`;
 }

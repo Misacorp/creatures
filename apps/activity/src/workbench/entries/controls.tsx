@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'preact/hooks';
+import { CurrencyPile } from '../../CurrencyPile';
 import { LiveRegion } from '../../ui/LiveRegion';
 import { PlaybackControls } from '../../ui/PlaybackControls';
 import { ToggleButton } from '../../ui/ToggleButton';
 import type { Speed } from '../../replay';
-import { bool, str } from '../props';
+import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 
 function ToggleDemo({ p }: { p: Props }) {
@@ -118,4 +119,32 @@ const liveRegion: Entry = {
   ),
 };
 
-export const controlEntries: readonly Entry[] = [toggleButton, playbackControls, liveRegion];
+const currencyPile: Entry = {
+  name: 'CurrencyPile',
+  file: 'apps/activity/src/CurrencyPile.tsx',
+  group: 'Controls',
+  description:
+    'The small coin-pile button in the title row, left of "?": tap it for a compact popover with the Bait and Essence balances and their glossary tags. Its spoken label carries both amounts.',
+  controls: {
+    bait: { kind: 'number', min: 0, max: 999999 },
+    essence: { kind: 'number', min: 0, max: 999999 },
+  },
+  defaults: { bait: 52, essence: 52 },
+  presets: [
+    { name: 'Typical', props: {} },
+    { name: 'Nothing yet', props: { bait: 0, essence: 0 } },
+    { name: 'Rich', props: { bait: 123456, essence: 9876 } },
+  ],
+  render: (p) => (
+    <div class="wb-pop-stage">
+      <CurrencyPile balances={{ bait: num(p, 'bait'), essence: num(p, 'essence') }} />
+    </div>
+  ),
+};
+
+export const controlEntries: readonly Entry[] = [
+  toggleButton,
+  playbackControls,
+  liveRegion,
+  currencyPile,
+];

@@ -1,16 +1,20 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import type { RefObject } from 'preact';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   chooseStarter,
   evolveCreature,
   fetchState,
   renameCreature,
+  setLounger,
   trainCreature,
   type ClaimResult,
   type EvolveResult,
   type GameState,
   type LeetSyncStatus,
+  type SessionUser,
 } from './api';
 import { ActionIds } from './actions';
+import { AppHead } from './AppHead';
 import { Collection } from './Collection';
 import { claimExpedition, pushOn, sendExpedition, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
@@ -18,9 +22,9 @@ import { Expeditions } from './Expeditions';
 import { fetchGear } from './gear-api';
 import { createGearActions } from './gear-actions';
 import type { GearState, JobResult } from './gear-types';
-import { GlossaryTag } from './Glossary';
 import { clockOffset, creatureName, speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
+import type { ParticipantSource } from './participants';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
@@ -29,6 +33,9 @@ import { Sprite } from './sprites/Sprite';
 import { StarterPicker } from './StarterPicker';
 import { TABS, tabAfterKey, tabPalette, type Tab } from './tabs';
 import { useActionRunner } from './use-action-runner';
+import { useRoom } from './use-room';
+import { useRoomPhase } from './use-room-phase';
+import { sceneOf } from './LivingRoom';
 import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
 
@@ -44,11 +51,22 @@ function loaded(game: GameState): Loaded {
 
 export function Game({
   initial,
+  user,
+  participants,
+  helpRef,
+  onHelp,
   onLeetSync,
   showPractice,
   devTools,
 }: {
   initial: GameState;
+  /** The signed-in player (their id and display name put their own creature in the living room). */
+  user: SessionUser;
+  /** Who has the Activity open: the living room shows them. */
+  participants: ParticipantSource;
+  /** The "?" button of the title row and what it does (the app owns the How to play page). */
+  helpRef: RefObject<HTMLButtonElement>;
+  onHelp: () => void;
   /** True on staging, where the server has the dev tools on: the debug panel loads (see `dev-gate.ts`). */
   devTools: boolean;
   /** True on staging and local runs, where the server can start a practice finale. */
@@ -187,6 +205,41 @@ export function Game({
     setDevNonce((n) => n + 1);
   }
 
+  // The living room: the player's own creature comes from the state, the others from the server.
+  const craftingLevels = useMemo(
+    () => new Map((gear?.skills ?? []).map((skill) => [skill.creatureId, skill.level])),
+    [gear],
+  );
+  const room = useRoom({
+    enabled: game.starterChosen,
+    participants,
+    selfId: user.id,
+    selfName: user.displayName,
+    state: game,
+    craftingLevels,
+  });
+  // The room's light follows the guild's local time by the server's clock; one timer swaps it.
+  const offsetRef = useRef(offset);
+  offsetRef.current = offset;
+  const phase = useRoomPhase(offsetRef, timezone.current);
+  const head = (
+    <AppHead
+      helpRef={helpRef}
+      onHelp={onHelp}
+      {...(game.starterChosen
+        ? {
+            balances: game.balances,
+            room: {
+              residents: room.residents,
+              selfId: user.id,
+              instanceId: participants.instanceId,
+              scene: sceneOf(phase),
+            },
+          }
+        : {})}
+    />
+  );
+
   const devPanel = (
     <DevPanelHost enabled={devTools} tab={tab} creatures={game.creatures} onChanged={devRefresh} />
   );
@@ -210,14 +263,6 @@ export function Game({
     </>
   ) : (
     <>
-      <p class="bait" aria-label="Bait balance">
-        <span class="bait-amount">{game.balances.bait}</span>{' '}
-        <GlossaryTag entry="bait">Bait</GlossaryTag>
-      </p>
-      <p class="essence" aria-label="Essence balance">
-        <span class="essence-amount">{game.balances.essence}</span>{' '}
-        <GlossaryTag entry="essence">Essence</GlossaryTag>
-      </p>
       <div
         class="tabs"
         role="tablist"
@@ -245,6 +290,7 @@ export function Game({
               setError(null);
               setNotice(null);
               refreshState();
+              room.refreshIfStale();
               if (id === 'workshop' || id === 'collection') loadGear();
             }}
           >
@@ -300,6 +346,13 @@ export function Game({
             }}
             onRename={(creature, nickname) => {
               void run(() => renameCreature(creature.id, nickname)).then(showState);
+            }}
+            onLounge={(creature) => {
+              // Not a spend, and a repeat is harmless (the server just says the same thing).
+              void run(() => setLounger(creature.id)).then((loungerId) => {
+                if (loungerId === undefined) return;
+                setCurrent((now) => ({ ...now, game: { ...now.game, loungerId } }));
+              });
             }}
           />
         )}
@@ -380,6 +433,7 @@ export function Game({
 
   return (
     <>
+      {head}
       {content}
       {devPanel}
     </>

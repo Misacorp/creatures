@@ -921,3 +921,13 @@ The raid Placement and the dungeon team now draw their slots, tray, drag ghost a
 **Creature permanence.** A creature does one thing at a time, so one on an expedition or an open workshop job cannot lounge. The raid is the one exception: raiders can lounge, so a raid team never changes who is idle. The rule reuses the "busy" meaning of the state view (`away_expedition_id` or an open `workshop_jobs` row).
 
 **`POST /api/room` trusts the ids the client sends.** The body is up to 25 distinct snowflakes (duplicates are a 400, not merged); they only say who to look up, never who is asking (that comes from the session). The answer covers players of this guild who chose a starter; everything else is left out silently, so the endpoint does not reveal which ids exist. It shows one creature of a guild-mate (species, level, nickname, quirk, Crafting level, Explorer rank) plus the sanitised display name: the same data class the raid roster already shows, scoped to the guild's own Durable Object and capped at 25 ids a request. It goes through the normal session auth and per-player rate limit. It reads in bounded queries (one for players, one per looked-up player to resolve the lounger, three for the creature details) and may write, so it runs in one transaction.
+
+## 2026-10-14: Living room presence comes from the Discord SDK, not the server
+
+**Decision.** Who is "here" is the activity instance's participant list from the Embedded App SDK (`getInstanceConnectedParticipants` plus `ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE`). The server keeps no presence: no heartbeat, no WebSocket, no polling. A client asks `POST /api/room` once at start, then only for newcomers (debounced 2 s); leaves cost nothing; a tab switch refetches only when the data is over 60 s old.
+
+**Why.** Misa wants idle games to cost nothing. Discord already pushes joins and leaves to every client.
+
+**Tradeoff.** Presence is per activity instance: players who opened the game from different channels do not see each other. Misa accepted this. A guild-wide room would need a server heartbeat.
+
+**Also.** Spot assignment is client-side and deterministic (FNV-1a of instance id and user id), so everyone in an instance sees the same room. Speech bubbles and the idle pan are local cosmetics using browser crypto randomness; they are not game state, so the server-RNG rule does not apply to them.

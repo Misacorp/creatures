@@ -345,6 +345,21 @@ const bait: SpriteDef = {
   ],
 };
 
+/** A small pile of coins: the currencies button (Bait and Essence). */
+const coins: SpriteDef = {
+  palette: { k: INK, y: GOLD, w: BONE, g: '#c8952b' },
+  rows: [
+    '........',
+    '...kkk..',
+    '..kywyk.',
+    '..kgggk.',
+    '.kkkkkkk',
+    'kywyywyk',
+    'kggggggk',
+    '.kkkkkk.',
+  ],
+};
+
 /** A flag on a pole: the landmark depths. */
 const flag: SpriteDef = {
   palette: { g: GOLD, k: HAZE },
@@ -386,6 +401,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   blade,
   door,
   bait,
+  coins,
   flag,
   ...EXPEDITION_GLYPHS,
 };

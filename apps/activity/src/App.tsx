@@ -15,7 +15,9 @@ import {
   type LeetSyncStatus,
   type Me,
 } from './api';
+import { AppHead } from './AppHead';
 import { Game } from './Game';
+import { aloneParticipants, discordParticipants, type ParticipantSource } from './participants';
 import { PopoverHost } from './PopoverHost';
 import { HowToPlay } from './HowToPlay';
 import { leetStatusLine } from './leet-status';
@@ -29,6 +31,8 @@ interface Boot {
   /** Null when running outside Discord (no sign-in possible). */
   me: Me | null;
   game: GameState | null;
+  /** Who has the Activity open (for the living room); just the player when the SDK fails. */
+  participants: ParticipantSource;
 }
 
 // Discord adds frame_id (among others) to the URL when it launches an Activity.
@@ -37,7 +41,8 @@ const insideDiscord = new URLSearchParams(window.location.search).has('frame_id'
 async function boot(): Promise<Boot> {
   const config = await fetchConfig();
   if (!insideDiscord) {
-    return { config, me: null, game: null };
+    // Nobody to show: with no sign-in there is no game and no room.
+    return { config, me: null, game: null, participants: aloneParticipants('', 'none') };
   }
   const sdk = new DiscordSDK(config.discordClientId);
   await sdk.ready();
@@ -65,7 +70,9 @@ async function boot(): Promise<Boot> {
   // Both requests run the (throttled) leet sync first, so the Bait balance is fresh.
   const me = await fetchMe();
   const game = await fetchState();
-  return { config, me, game };
+  // After authenticate(), which unlocks the participants calls; a failure leaves just the player.
+  const participants = await discordParticipants(sdk, me.user.id);
+  return { config, me, game, participants };
 }
 
 function errorMessage(err: unknown): string {
@@ -141,6 +148,13 @@ export function App() {
     wasOpen.current = open;
   }, [howTo !== null]);
 
+  const openHowTo = (): void => {
+    setHowTo((open) => ({ section: null, nonce: (open?.nonce ?? 0) + 1 }));
+  };
+  const loadedBoot = bootStatus.state === 'ok' ? bootStatus.value : null;
+  // With a game on screen, the game draws the head (over the living room).
+  const gameLoaded = loadedBoot !== null && loadedBoot.me !== null && loadedBoot.game !== null;
+
   const healthText =
     healthStatus.state === 'loading'
       ? 'checking...'
@@ -157,24 +171,7 @@ export function App() {
       }}
     >
       <main class="card" ref={mainRef}>
-        <header class="app-head">
-          <h1>
-            Leet Creatures
-            <sup class="sigma pix">sigma</sup>
-          </h1>
-          <button
-            type="button"
-            ref={helpButton}
-            class="howto-open pix"
-            aria-haspopup="dialog"
-            aria-label="How to play"
-            onClick={() => {
-              setHowTo((open) => ({ section: null, nonce: (open?.nonce ?? 0) + 1 }));
-            }}
-          >
-            ?
-          </button>
-        </header>
+        {!gameLoaded && <AppHead helpRef={helpButton} onHelp={openHowTo} />}
 
         {bootStatus.state === 'loading' && <p>Loading...</p>}
         {bootStatus.state === 'error' && <p class="error">Failed to start: {bootStatus.message}</p>}
@@ -186,6 +183,10 @@ export function App() {
               <>
                 <Game
                   initial={bootStatus.value.game}
+                  user={bootStatus.value.me.user}
+                  participants={bootStatus.value.participants}
+                  helpRef={helpButton}
+                  onHelp={openHowTo}
                   onLeetSync={setLeetSync}
                   showPractice={bootStatus.value.config.environment !== 'production'}
                   devTools={bootStatus.value.config.devTools || bootStatus.value.me.devTools}

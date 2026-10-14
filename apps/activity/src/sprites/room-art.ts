@@ -128,14 +128,6 @@ export function roomScene(phase: RoomPhase): RoomScene {
   };
 }
 
-/**
- * The night room, from before the room had three lights. Kept so code written against the single
- * room still works; new code should call `roomScene(phase)`.
- */
-export const ROOM_PROPS: readonly RoomProp[] = roomScene('night').props;
-export const EDGE_TILE: SpriteDef = roomScene('night').edgeTile;
-export const NOTE_ON_CUSHION: SpriteDef = roomScene('night').note;
-
 /** The 16 places a creature can sit, spread across the five bays. */
 export const ROOM_SPOTS: readonly RoomSpot[] = [
   // Bay 1: window

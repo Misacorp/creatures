@@ -2,7 +2,9 @@ import { content, entryView } from '@creatures/game';
 import type { GlossarySection, GlossaryView } from '@creatures/game';
 import { createContext, type ComponentChildren, type RefObject } from 'preact';
 import { useContext, useMemo, useRef, useState } from 'preact/hooks';
-import { backLabel, type CreatureInfo } from './creature-info';
+import { backLabel, creatureFacts, type CreatureInfo } from './creature-info';
+import { shinyPalette } from './art';
+import { speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { MORE_LABEL, resolveTag, tagKey, visualPlan, type TagRef } from './glossary-ui';
 import { ElementChip } from './sprites/ElementChip';
@@ -154,9 +156,18 @@ function CreaturePopover({
     >
       {entry === undefined ? (
         <PopoverCard
-          visual={<Sprite sprite={creatureSpriteOrFallback(info.species)} scale={4} />}
+          visual={
+            <Sprite
+              sprite={creatureSpriteOrFallback(info.species)}
+              scale={4}
+              {...(info.shiny === true && shinyPalette(info.species) !== undefined
+                ? { palette: shinyPalette(info.species) as Readonly<Record<string, string>> }
+                : {})}
+            />
+          }
           title={info.name}
           short={`Level ${String(info.level)}`}
+          lines={creatureFacts(info, speciesName(info.species))}
         >
           <p class="tags pop-tags">
             <ElementChip

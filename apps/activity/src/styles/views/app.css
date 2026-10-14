@@ -36,6 +36,14 @@
   vertical-align: super;
 }
 
+/* The currency pile and the "?" sit together on the right of the title row. */
+.app-head-tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.625rem;
+}
+
 button.howto-open {
   flex: none;
   min-width: 2.5rem;
