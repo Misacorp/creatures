@@ -30,6 +30,7 @@ import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { destinationName, explorerXp, supplyKindOf } from './trip-view';
+import { Callout } from './ui/Callout';
 import { RevealShell } from './ui/RevealShell';
 import { RewardSummary } from './ui/RewardSummary';
 
@@ -182,7 +183,7 @@ export function TripReveal({
             {...(bar.endCap === undefined ? {} : { endCap: bar.endCap })}
           />
           {gifts.map((gift) => (
-            <div key={gift.rank} class="rank-gift" role="note">
+            <Callout key={gift.rank} class="rank-gift">
               <p class="label">
                 <Sprite sprite={glyphOrUnknown('sparkle')} scale={2} /> {gift.title}
               </p>
@@ -194,7 +195,7 @@ export function TripReveal({
                   </li>
                 ))}
               </ul>
-            </div>
+            </Callout>
           ))}
         </div>
       )}
@@ -216,12 +217,12 @@ export function TripReveal({
       )}
 
       {slot !== null && (
-        <p class="slot-unlocked" role="note">
+        <Callout as="p" class="slot-unlocked">
           <Sprite sprite={glyphOrUnknown('sparkle')} scale={3} />{' '}
           <GlossaryTag entry="expedition-slot" look="text">
             {slot}
           </GlossaryTag>
-        </p>
+        </Callout>
       )}
 
       {pages.length > 0 && (

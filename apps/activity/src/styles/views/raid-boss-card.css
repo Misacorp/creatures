@@ -20,16 +20,6 @@
     0 0 0 calc(var(--px) * 2) var(--ink);
 }
 
-.boss-name {
-  color: var(--gold);
-  font-size: clamp(1.75rem, 7vw, 2.375rem);
-  line-height: 1;
-  text-shadow:
-    var(--px) var(--px) 0 var(--ink),
-    calc(var(--px) * 2) calc(var(--px) * 2) 0 color-mix(in srgb, var(--elem) 70%, var(--ink));
-  text-wrap: balance;
-}
-
 .boss-status {
   display: flex;
   flex-wrap: wrap;

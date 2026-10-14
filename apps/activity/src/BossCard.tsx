@@ -18,6 +18,7 @@ import {
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { StagePopover } from './StagePopover';
+import { PixelHeading } from './ui/PixelHeading';
 import { BossHp } from './ui/SegmentBar';
 
 /** The five weeks of the season as pips: the Festival is the last one. */
@@ -149,9 +150,15 @@ export function BossCard({ view }: { view: RaidView }) {
           <Sprite sprite={art.sprite} scale={art.scale} alt={boss.name} bob />
         </div>
         <div class="boss-meta">
-          <h3 id="raid-boss-name" class="boss-name">
+          <PixelHeading
+            as="h3"
+            outline="element-drop"
+            size="m"
+            id="raid-boss-name"
+            class="boss-name"
+          >
             {boss.name}
-          </h3>
+          </PixelHeading>
           <div class="boss-status">
             {rank !== null && (
               <Tag tone="rank" entry="boss-rank">

@@ -40,17 +40,6 @@
   margin: 0;
 }
 
-.rb-heading {
-  color: var(--gold);
-  font-size: 3rem;
-  line-height: 1;
-  text-shadow: var(--ink-outline);
-}
-
-.room-banner.boss .rb-heading {
-  color: var(--bad);
-}
-
 .rb-place {
   color: var(--haze);
   font-size: 1.125rem;

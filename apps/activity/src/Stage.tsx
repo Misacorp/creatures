@@ -26,6 +26,7 @@ import { ElementChip } from './sprites/ElementChip';
 import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
 import { forecastNextRound, strikeLabel, type Wording } from './telegraph';
 import { StagePopover } from './StagePopover';
+import { PixelHeading } from './ui/PixelHeading';
 import { SegmentBar } from './ui/SegmentBar';
 import { ToggleButton } from './ui/ToggleButton';
 import { Sprite } from './sprites/Sprite';
@@ -177,13 +178,13 @@ function RoundIntro({ intro }: { intro: IntroView }) {
       aria-hidden="true"
       ref={cssVars({ '--fx-ms': `${String(intro.ms)}ms` })}
     >
-      <span key={intro.key} class="ri-text pix">
+      <PixelHeading key={intro.key} as="span" outline="ink-drop" class="ri-text">
         <span class="ri-label">
           <span>Round</span>
           <span>{intro.round}</span>
         </span>
         <span class="ri-of">of {intro.rounds}</span>
-      </span>
+      </PixelHeading>
     </div>
   );
 }

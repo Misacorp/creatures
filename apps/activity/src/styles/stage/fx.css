@@ -232,11 +232,6 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  color: var(--gold);
-  line-height: 1;
-  text-shadow:
-    var(--ink-outline),
-    var(--px) var(--px) 0 var(--ink);
 }
 
 .ri-label {

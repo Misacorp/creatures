@@ -4,6 +4,7 @@ import { glyphOrUnknown } from './glyphs';
 import { PlaceInfo } from './PlaceCard';
 import { elementIcon } from './sprites/element-icons';
 import { Sprite } from './sprites/Sprite';
+import { TitlePlate } from './ui/TitlePlate';
 
 /**
  * The destination catalogue, top to bottom: the strip of places (one small button each, with the element
@@ -92,12 +93,15 @@ export function Catalogue({
           </button>
         </Banner>
       </div>
-      <h4 class="place-plate" aria-live="polite">
-        <span class="plate-name pix">{card.name}</span>
-        <span class="plate-count">
-          {index + 1} / {cards.length}
-        </span>
-      </h4>
+      <TitlePlate
+        title={card.name}
+        count={
+          <>
+            {index + 1} / {cards.length}
+          </>
+        }
+        live
+      />
       <PlaceInfo card={card} />
     </div>
   );

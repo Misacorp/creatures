@@ -26,6 +26,7 @@
 @import './components/reveal.css';
 @import './views/after-action.css';
 @import './components/pixel.css';
+@import './components/pixel-heading.css';
 @import './components/element-chip.css';
 @import './components/bars.css';
 @import './components/placement-dnd.css';
@@ -61,8 +62,10 @@
 @import './stage/single-row.css';
 @import './views/dungeon-banner-motion.css';
 @import './components/reward-pile.css';
+@import './components/callout.css';
 @import './views/expeditions/banner.css';
 @import './views/expeditions/nav.css';
+@import './components/title-plate.css';
 @import './views/expeditions/catalogue.css';
 @import './views/expeditions/send.css';
 @import './views/expeditions/trips.css';
