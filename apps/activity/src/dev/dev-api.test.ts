@@ -3,6 +3,7 @@ import { ApiError } from '../api';
 import {
   describeResult,
   errorCode,
+  errorSentence,
   eventLine,
   formatOffset,
   parseDevEvents,
@@ -29,6 +30,23 @@ describe('errorCode', () => {
     expect(errorCode(new ApiError(400, 'invalid_body'))).toBe('invalid_body');
     expect(errorCode(new ApiError(404, null))).toBe('http_404');
     expect(errorCode(new Error('offline'))).toBe('network_error');
+  });
+});
+
+describe('errorSentence', () => {
+  it('says what a locked roster means and what to do, in plain words', () => {
+    const text = errorSentence('roster_locked');
+    expect(text).toContain('The roster is locked: Phase 1 has been fought this week.');
+    expect(text).toContain('Week done');
+    expect(text).toContain('Preparation');
+    expect(text).not.toContain('roster_locked');
+  });
+
+  it('shows any other code as it is, even one named like an object property', () => {
+    expect(errorSentence('invalid_body')).toBe('invalid_body');
+    expect(errorSentence('http_404')).toBe('http_404');
+    expect(errorSentence('toString')).toBe('toString');
+    expect(errorSentence('__proto__')).toBe('__proto__');
   });
 });
 
