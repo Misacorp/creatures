@@ -257,7 +257,7 @@ const turnStrip: Entry = {
   file: 'apps/activity/src/ui/TurnStrip.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The strip of who acts in what order under the raid replay: a chip for each creature, the one acting now outlined, the ones that acted dimmed and a knocked-out one struck through.',
+    'The strip of who acts in what order: a chip for each creature, the one acting now outlined, the ones that acted dimmed and a knocked-out one struck through. No screen shows it now (the stage writes the order under the creatures instead); it is kept for later.',
   controls: {
     acting: { kind: 'select', options: PLACES },
     out: { kind: 'select', options: PLACES },

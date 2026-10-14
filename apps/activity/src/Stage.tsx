@@ -13,6 +13,7 @@ import type { ReplayRowEntry } from './raid-api';
 import { stateAt } from './replay';
 import {
   abilityUsesAt,
+  actingSlots,
   cuesForEvents,
   creatureHpAt,
   groupByZone,
@@ -29,6 +30,7 @@ import { forecastNextRound, strikeLabel, type Wording } from './telegraph';
 import { PixelHeading } from './ui/PixelHeading';
 import { Popover, popupProps } from './ui/Popover';
 import { SegmentBar } from './ui/SegmentBar';
+import { StageHead } from './ui/StageHead';
 import { ToggleButton } from './ui/ToggleButton';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -349,8 +351,11 @@ interface StageProps {
    * one creature at that place, so its effects (shake, shield, wind-up frame) sit on that creature.
    */
   layout?: 'zones' | 'row';
-  /** The room's place in the dungeon ("Room 1 / 3"), written before the round in the stage's head. */
-  roomLabel?: string;
+  /**
+   * Where in the run the fight is, top left of the stage's head: "Room 1 / 3" in the dungeon,
+   * "Phase 1 / 3" or "Finale" in the raid. The round is at the top right.
+   */
+  place?: string;
   /** Gimmicks the foe has only in this room (the dungeon's modifier), so the forecast names them too. */
   addedGimmicks?: readonly Gimmick[];
   /**
@@ -419,7 +424,10 @@ interface UnitProps {
   warned: boolean;
   /** The creature's HP now and at most (the dungeon); null when the stage shows no creature HP. */
   hp: { current: number; max: number } | null;
-  /** The creature's place in the row from 1 (the dungeon's single row: it acts 1st, 2nd, 3rd); null in the raid. */
+  /**
+   * The creature's place in this round's acting order from 1 ("1st", "2nd", ...), written under it;
+   * null when it has no turn this round (knocked out, or the round has not been played yet).
+   */
   slot: number | null;
   onToggle: () => void;
 }
@@ -476,11 +484,9 @@ function StageUnit(props: UnitProps) {
       {props.hp !== null && (
         <SegmentBar size="unit" current={props.hp.current} max={props.hp.max} />
       )}
-      {props.slot !== null && (
-        <span class="unit-slot pix" aria-hidden="true">
-          {ordinal(props.slot)}
-        </span>
-      )}
+      <span class="unit-slot pix" aria-hidden="true">
+        {props.slot === null ? '' : ordinal(props.slot)}
+      </span>
     </>
   );
 
@@ -555,7 +561,7 @@ export function Stage({
   intro = null,
   creatureHp,
   layout = 'zones',
-  roomLabel,
+  place,
   addedGimmicks,
   overlay,
   abilities,
@@ -581,6 +587,9 @@ export function Stage({
   };
   const rowIds = row.map((c) => c.id);
   const state = stageStateAt(events, index, hpStart);
+  // The acting order written under the creatures. The dungeon always acts left to right; the raid's
+  // order varies by boss, so it follows the engine's own turn and skip events for the round on show.
+  const slots = actingSlots(events, state.round, rowIds, single);
   const cues =
     anim === null
       ? []
@@ -695,37 +704,31 @@ export function Stage({
         '--lean-ms': `${String(windupItem?.ms ?? 600)}ms`,
       })}
     >
-      <div class="stage-head">
-        <span class="stage-head-left">
-          <span class="pix stage-round">
-            {roomLabel === undefined ? '' : `${roomLabel} · `}
-            {state.round > 0
-              ? `Round ${String(state.round)} / ${String(rounds)}`
-              : lobby === true
-                ? 'Get ready'
-                : 'Round 1'}
-          </span>
-          {abilities?.help !== undefined && (
-            <button
-              type="button"
-              ref={anchorRef('help')}
-              class="stage-help pix"
-              {...popupProps(openKey === 'help')}
-              aria-label="How abilities work"
-              onClick={() => {
-                toggle('help');
-              }}
-            >
-              ?
-            </button>
-          )}
-        </span>
-        {!single && (
-          <span class="pix stage-hp-text">
-            {boss.name} HP {state.bossHp} / {hpMax}
-          </span>
+      <StageHead
+        {...(place === undefined ? {} : { place })}
+        round={
+          state.round > 0
+            ? `Round ${String(state.round)} / ${String(rounds)}`
+            : lobby === true
+              ? 'Get ready'
+              : 'Round 1'
+        }
+      >
+        {abilities?.help !== undefined && (
+          <button
+            type="button"
+            ref={anchorRef('help')}
+            class="stage-help pix"
+            {...popupProps(openKey === 'help')}
+            aria-label="How abilities work"
+            onClick={() => {
+              toggle('help');
+            }}
+          >
+            ?
+          </button>
         )}
-      </div>
+      </StageHead>
 
       <div class="stage-boss">
         <div
@@ -766,14 +769,14 @@ export function Stage({
             </span>
           )}
         </div>
-        {single && <p class="stage-foe-name pix">{boss.name}</p>}
+        <p class="stage-foe-name pix">{boss.name}</p>
         <SegmentBar
           size="boss"
           current={state.bossHp}
           max={hpMax}
           previous={previousHp}
           label={`${boss.name} HP: ${String(state.bossHp)} / ${String(hpMax)}`}
-          {...(single ? { text: `${String(state.bossHp)} / ${String(hpMax)}` } : {})}
+          text={`${String(state.bossHp)} / ${String(hpMax)}`}
         />
         <div class={`stage-line${strikeItem === undefined ? '' : ' has-strike'}`}>
           {forecast !== null && (
@@ -868,7 +871,7 @@ export function Stage({
                   if (mine) classes.push('mine');
                   if (ko) classes.push('ko');
                   if (hopping.has(c.id)) classes.push('actor');
-                  if (single && state.actor === c.id) classes.push('acting');
+                  if (state.actor === c.id) classes.push('acting');
                   if (hit.has(c.id)) classes.push('hit');
                   if (dropped.has(c.id)) classes.push('drop');
                   if (silenced.has(c.id)) classes.push('silenced');
@@ -923,7 +926,7 @@ export function Stage({
                               max: creatureHp.max[c.id] ?? 0,
                             }
                       }
-                      slot={single ? row.indexOf(c) + 1 : null}
+                      slot={slots.get(c.id) ?? null}
                       onToggle={() => {
                         if (key !== null) toggle(key);
                       }}

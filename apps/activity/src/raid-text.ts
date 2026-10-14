@@ -1,5 +1,5 @@
 /** Plain-words text for the raid tab. Boss details come from the shared content pack. */
-import { content, type BossDef } from '@creatures/game';
+import { RULES, content, type BossDef } from '@creatures/game';
 import type { RaidPhaseId } from './raid-api';
 
 export function turnOrderText(turnOrder: string): string {
@@ -36,6 +36,16 @@ const PHASE_NAMES: Record<RaidPhaseId, string> = {
 
 export function phaseName(phase: RaidPhaseId): string {
   return PHASE_NAMES[phase];
+}
+
+/**
+ * The phase's place in the week, for the top left of the fight stage: "Phase 1 / 3", "Phase 2 / 3".
+ * The finale is a phase too (the third) but goes by its own name, "Finale", as it does everywhere else.
+ */
+export function phaseLine(phase: RaidPhaseId): string {
+  if (phase === 'finale') return phaseName(phase);
+  const place = RULES.raid.phases.findIndex((p) => p.id === phase) + 1;
+  return `Phase ${String(place)} / ${String(RULES.raid.phases.length)}`;
 }
 
 type Gimmick = BossDef['gimmicks'][number];

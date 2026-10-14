@@ -9,9 +9,10 @@ interface TurnStripProps {
 
 /**
  * The strip of who acts in what order: one chip per creature, the one acting now outlined in gold,
- * those that already acted dimmed and a knocked-out creature struck through. It is under the raid
- * replay. (The dungeon's order is written under each creature on the stage instead.) Names are drawn
- * as text only.
+ * those that already acted dimmed and a knocked-out creature struck through. No screen uses it now:
+ * the raid replay used to show it, and now (like the dungeon) writes the acting order under each
+ * creature on the stage instead. It is kept, with its workbench page, in case a screen wants it
+ * back. Names are drawn as text only.
  */
 export function TurnStrip({ chips, label }: TurnStripProps) {
   return (

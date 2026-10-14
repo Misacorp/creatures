@@ -36,6 +36,7 @@ import {
 import type { ReplayRowEntry } from './raid-api';
 import { AbilityPopoverBody, AbilityPopoverSection } from './AbilityPopover';
 import { setRaidAutofire } from './raid-api';
+import { phaseLine } from './raid-text';
 import { RevealCard } from './Reveal';
 import { LiveRegion } from './ui/LiveRegion';
 import { BossHp } from './ui/SegmentBar';
@@ -354,6 +355,7 @@ export function Live({
             rounds={fight.rounds}
             row={fight.row}
             lobby={lobby}
+            place={phaseLine('finale')}
             mineIds={mineIds}
             names={stageNames}
             events={fight.events}
