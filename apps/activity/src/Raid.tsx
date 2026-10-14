@@ -225,6 +225,7 @@ export function Raid({
     return (
       <Live
         initial={liveInitial}
+        season={{ weekId: view.weekId, season: view.season }}
         onClose={closeLive}
         onBalanceChange={onBalanceChange}
         onRevealSeen={(week) => {
@@ -293,6 +294,7 @@ export function Raid({
           reveal={reveal}
           busy={busy}
           gearWeek={reveal.week}
+          season={{ weekId: view.weekId, season: view.season }}
           afterAction={{
             week: reveal.week,
             party: reveal.party,

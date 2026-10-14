@@ -1,4 +1,5 @@
 import { DungeonPlayback } from '../../DungeonPlayback';
+import { FinaleProgress } from '../../FinaleProgress';
 import { Stage } from '../../Stage';
 import dungeonReplay from '../../fixtures/dungeon-replay.json';
 import liveMid from '../../fixtures/live-mid.json';
@@ -6,6 +7,7 @@ import { parseDungeonReplay } from '../../dungeon-parse';
 import { mineIds, roomBoss, stageRow } from '../../dungeon-playback';
 import { roomLine } from '../../dungeon-text';
 import { parseLiveSnapshot } from '../../live-api';
+import { finaleProgress } from '../../raid-progress';
 import { phaseLine } from '../../raid-text';
 import { StageHead } from '../../ui/StageHead';
 import { bool, num, str } from '../props';
@@ -149,4 +151,49 @@ const dungeonPlayback: Entry = {
   ),
 };
 
-export const stageEntries: readonly Entry[] = [stageHead, stage, dungeonPlayback];
+const finaleProgressEntry: Entry = {
+  name: 'FinaleProgress',
+  file: 'apps/activity/src/FinaleProgress.tsx',
+  group: 'Bars',
+  description:
+    "What a finale did to the Boss Rank and where the season stands, under the finale result: the Rank as the dungeon's edge-to-edge track (this Rank, the next one) and the five season pips, the last one the Festival.",
+  controls: {
+    rank: { kind: 'number', min: 0, max: 40 },
+    seasonWeek: { kind: 'number', min: 0, max: 5 },
+  },
+  defaults: { rank: 4, seasonWeek: 2 },
+  presets: [
+    { name: 'Rank 4, week 2', props: {} },
+    { name: 'First week of a season', props: { rank: 1, seasonWeek: 1 } },
+    { name: 'Festival (the last pip)', props: { rank: 7, seasonWeek: 5 } },
+    { name: 'Rank not known yet', props: { rank: 0 } },
+    { name: 'Season not known', props: { seasonWeek: 0 } },
+    { name: 'A high rank', props: { rank: 32, seasonWeek: 4 } },
+  ],
+  render: (p) => {
+    const rank = num(p, 'rank');
+    const week = num(p, 'seasonWeek');
+    const progress = finaleProgress(
+      {
+        week: 'wb-week',
+        rankChange:
+          rank === 0
+            ? null
+            : { before: Math.max(1, rank - 1), after: rank, festival: week === 5, serverWon: true },
+      },
+      week === 0 ? null : { weekId: 'wb-week', season: { index: 1, week } },
+    );
+    return progress === null ? (
+      <p class="muted">Nothing to show yet.</p>
+    ) : (
+      <FinaleProgress progress={progress} />
+    );
+  },
+};
+
+export const stageEntries: readonly Entry[] = [
+  stageHead,
+  stage,
+  dungeonPlayback,
+  finaleProgressEntry,
+];

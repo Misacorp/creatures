@@ -144,8 +144,9 @@ export function abilityEntryIds(def: Pick<FinaleAbilityDef, 'kind' | 'effects'>)
 
 /**
  * The popover of a finale ability: its own name and effect line from the content (so the numbers
- * are always the real ones), then one line for each kind of effect it has and one for what kind of
- * ability it is. Undefined if the ability is not in the content or an entry is missing.
+ * are always the real ones) and nothing under it (Misa, 2026-10-14: popups show only the
+ * description). The picture is the first effect's. The effect and kind entries still have to exist
+ * (the coverage check). Undefined if the ability is not in the content or an entry is missing.
  */
 export function abilityView(
   abilityId: string,
@@ -165,7 +166,7 @@ export function abilityView(
     id: `ability:${def.id}`,
     title: def.name,
     short: def.description,
-    lines: parts.map((p) => p.short),
+    lines: [],
     ...(first?.visual === undefined ? {} : { visual: first.visual }),
     section: def.kind === 'creature' ? 'creatures' : 'finale',
   };

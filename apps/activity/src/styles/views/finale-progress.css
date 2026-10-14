@@ -1,0 +1,18 @@
+/* The Boss Rank track and the season pips under a finale result (the dungeon's depth and streak look). */
+.finale-progress {
+  margin: 0.5rem 0;
+}
+
+.finale-season {
+  margin: 0.5rem 0;
+  text-align: center;
+}
+
+.finale-season-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.25rem 0.625rem;
+  margin-bottom: 0.375rem;
+}

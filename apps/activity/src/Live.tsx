@@ -33,7 +33,7 @@ import {
   type LiveRunning,
   type LiveSnapshot,
 } from './live-api';
-import type { ReplayRowEntry } from './raid-api';
+import type { RaidView, ReplayRowEntry } from './raid-api';
 import { AbilityPopoverBody, AbilityPopoverSection } from './AbilityPopover';
 import { setRaidAutofire } from './raid-api';
 import { phaseLine } from './raid-text';
@@ -56,6 +56,7 @@ export function Live({
   onBalanceChange,
   onRevealSeen,
   onReplay,
+  season = null,
 }: {
   /** A snapshot the caller already has (a practice fight that was just started). */
   initial: LiveSnapshot | null;
@@ -66,6 +67,8 @@ export function Live({
   onRevealSeen: (week: string) => void;
   /** Opens the replay of a finished finale (it closes this view first). */
   onReplay: (week: string, party: number) => void;
+  /** The raid page's week and its place in the season, for the season pips of the finale result. */
+  season?: { weekId: string; season: RaidView['season'] } | null;
 }) {
   const [snapshot, setSnapshot] = useState<LiveSnapshot | null>(initial);
   const [pollError, setPollError] = useState<string | null>(null);
@@ -314,6 +317,7 @@ export function Live({
           reveal={fight.loot}
           busy={false}
           gearWeek={fight.week}
+          season={season}
           afterAction={{
             week: fight.week,
             party: fight.party,
