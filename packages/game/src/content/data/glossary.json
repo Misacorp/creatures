@@ -1228,9 +1228,9 @@
   {
     "id": "modifier-echoing",
     "title": "Echoing",
-    "short": "Payoff creatures hit 20% harder.",
+    "short": "Guards and supports hit 50% harder.",
     "lines": [
-      "Works for every Payoff on your team, in this room only.",
+      "Works for every Guard and Support on your team, in this room only.",
       "Plan your team around it: it is shown before you enter."
     ],
     "section": "dungeon"

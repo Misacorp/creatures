@@ -272,14 +272,25 @@ describe('room modifiers are plain folds of the room input', () => {
     expect(atk(flooded, 'guard')).toBe(atk(plain, 'guard'));
   });
 
-  it('raises the Attack of one role only', () => {
+  it('raises the Attack of the named roles only', () => {
     const plain = buildRoomInput(base, room(0, foe(), 1_000, 20), null);
     const echoing = buildWith('echoing');
     const atk = (i: typeof plain, id: string) => i.row.find((s) => s.id === id)?.stats?.atk ?? 0;
-    // The Cindle is the Payoff: +20%. The Splashet (Setter) and the Sproutle (Guard) are untouched.
-    expect(atk(echoing, 'payoff')).toBe(Math.floor((atk(plain, 'payoff') * 12_000) / 10_000));
+    // The Sproutle is the Guard: +50%. The Splashet (Setter) and the Cindle (Payoff) are untouched.
+    expect(atk(echoing, 'guard')).toBe(Math.floor((atk(plain, 'guard') * 15_000) / 10_000));
     expect(atk(echoing, 'setter')).toBe(atk(plain, 'setter'));
-    expect(atk(echoing, 'guard')).toBe(atk(plain, 'guard'));
+    expect(atk(echoing, 'payoff')).toBe(atk(plain, 'payoff'));
+    // A Support gets the same +50% (a row with one in it).
+    const withSupport = {
+      ...base,
+      team: [
+        ...base.team.slice(0, 2),
+        makeSlot(species('ashmole'), { id: 'support', ownerId: 'p1', level: 6, fusionCount: 0 }),
+      ],
+    };
+    const a = buildRoomInput(withSupport, room(0, foe(), 1_000, 20), null);
+    const b = buildRoomInput(withSupport, room(0, foe(), 1_000, 20, roomModifier('echoing')), null);
+    expect(atk(b, 'support')).toBe(Math.floor((atk(a, 'support') * 15_000) / 10_000));
   });
 
   it('changes the foe, the crit luck and the gimmicks, and never the turn order', () => {

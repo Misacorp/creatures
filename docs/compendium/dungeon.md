@@ -125,13 +125,13 @@ The modifiers are **phenomena**: things the dungeon does to its rooms, the way w
 | **Dark**      | Your creatures crit more often.                                   | No light at all. Creatures act on instinct and land more critical hits in the dark.                                                                |
 | **Thorns**    | The foe turns the first reaction of each round back on your team. | Briars grow across the room. The first reaction of each round tangles back into the team. Shipped text is `(content: room-modifiers.json thorns)`. |
 | **Brittle**   | The foe has less HP but hits harder.                              | Cracked stone. The foe is fragile and it knows it, so it hits harder.                                                                              |
-| **Echoing**   | Payoff creatures hit harder.                                      | Sound carries in the stone and doubles back. The creature that finishes things rings loudest.                                                      |
+| **Echoing**   | Guards and supports hit harder.                                   | Sound carries in the stone and doubles back. The quiet ones, the ones who hold the line and lift the others, ring loudest.                         |
 
 Notes:
 
 - **The four element modifiers share their names with the four raid marks** `(content)`: Scorched and Overgrown are both a mark and a modifier. The overlap is on purpose. Use it when you name new modifiers.
 - **Thorns** is the one modifier that behaves like a boss trick, applied to the whole room `(content: room-modifiers.json, foe_gimmick)`. It is the same idea as Cinder Wyrm's Backdraft `(inferred)`.
-- **Echoing** is the one modifier that boosts a role, not an element (Payoff), so it rewards a team with a Payoff in it `(content: room-modifiers.json echoing)`. It took the place of **Fog** (2026-10-14).
+- **Echoing** is the one modifier that boosts roles, not an element (Guard and Support), so it rewards a team with them in it, and it leans away from Payoffs on purpose `(content: room-modifiers.json echoing)`. It took the place of **Fog** (2026-10-14).
 - **Dark** is the only modifier that changes how the room is played, not just how hard it hits `(inferred)`.
 - **Fog is retired.** It made everyone act in row order, which is now the rule in every room, so it had nothing left to do. Old runs that rolled it still show its name and text in their replays, and it is not rolled any more `(content)`. The compendium keeps the idea: a room so murky that the order is all anyone can trust.
 - **No modifier changes who acts first.** The order is the dungeon's rule, said before the run ("Your creatures act left to right, then the foe."). Anything that ever changes a rule of the fight must be shown before the run, or announced when it happens if it is a mystery modifier `(decision: Misa, 2026-10-14)`.

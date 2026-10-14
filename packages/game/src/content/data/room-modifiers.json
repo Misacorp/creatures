@@ -57,7 +57,10 @@
   {
     "id": "echoing",
     "name": "Echoing",
-    "description": "Payoff creatures hit 20% harder.",
-    "effects": [{ "op": "team_stat", "stat": "atk", "bp": 2000, "role": "payoff" }]
+    "description": "Guards and supports hit 50% harder.",
+    "effects": [
+      { "op": "team_stat", "stat": "atk", "bp": 5000, "role": "guard" },
+      { "op": "team_stat", "stat": "atk", "bp": 5000, "role": "support" }
+    ]
   }
 ]

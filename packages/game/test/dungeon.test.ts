@@ -73,7 +73,8 @@ describe('the dungeon content', () => {
   it('retired Fog (it only set the turn order) and has Echoing in the pool instead', () => {
     expect(roomModifier('fog')).toBeUndefined();
     expect(roomModifier('echoing')?.effects).toEqual([
-      { op: 'team_stat', stat: 'atk', bp: 2_000, role: 'payoff' },
+      { op: 'team_stat', stat: 'atk', bp: 5_000, role: 'guard' },
+      { op: 'team_stat', stat: 'atk', bp: 5_000, role: 'support' },
     ]);
   });
 
