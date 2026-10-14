@@ -18,10 +18,12 @@ import {
   type DevStateView,
 } from './dev-api';
 import './dev.css';
+import { openExternalLink } from '../external-link';
 import { resetLocalFlags } from './flags';
 import type { CreatureChoice, ToolSpec } from './forms';
 import { CLOCK_SPECS, GOODS_SPECS, RESET_ACCOUNT_SPEC, orderedSections } from './specs';
 import { ToolForm } from './ToolForm';
+import { WORKBENCH_URL } from './workbench-link';
 
 /** A string only this module tree contains: the production build test searches the output for it. */
 const DEV_PANEL_MARKER = 'DEV_PANEL_MARKER_7f3a';
@@ -53,6 +55,55 @@ function Section({
       <summary>{title}</summary>
       <div class="dev-section-body">{children}</div>
     </details>
+  );
+}
+
+/** The link to the component workbench: opened through Discord when inside it, else shown to copy. */
+function WorkbenchLink({ onStatus }: { onStatus: (status: Status) => void }): JSX.Element {
+  return (
+    <div class="dev-workbench">
+      <p class="dev-hint">
+        Every reusable piece of the game on one page, with controls and a feedback button. It opens
+        in your browser, no sign-in.
+      </p>
+      <p class="dev-url">{WORKBENCH_URL}</p>
+      <div class="dev-quick-row">
+        <button
+          type="button"
+          class="dev-btn"
+          onClick={() => {
+            void openExternalLink(WORKBENCH_URL).then((ok) => {
+              onStatus(
+                ok
+                  ? { ok: true, text: 'Component workbench: link opened' }
+                  : { ok: false, text: 'Component workbench: could not open it, copy the address' },
+              );
+            });
+          }}
+        >
+          Open
+        </button>
+        <button
+          type="button"
+          class="dev-btn"
+          onClick={() => {
+            navigator.clipboard.writeText(WORKBENCH_URL).then(
+              () => {
+                onStatus({ ok: true, text: 'Component workbench: address copied' });
+              },
+              () => {
+                onStatus({
+                  ok: false,
+                  text: 'Component workbench: could not copy, select the address',
+                });
+              },
+            );
+          }}
+        >
+          Copy link
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -228,6 +279,13 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
                 </button>
               </div>
               <ToolForm spec={RESET_ACCOUNT_SPEC} choices={choices} busy={busy} onRun={run} />
+            </Section>
+            <Section
+              title="Component workbench"
+              open={sectionOpen('workbench', false)}
+              onToggle={toggle('workbench')}
+            >
+              <WorkbenchLink onStatus={setStatus} />
             </Section>
             {orderedSections(tab).map((section) => (
               <Section
