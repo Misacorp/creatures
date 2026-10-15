@@ -52,8 +52,8 @@ interface Props {
 
 /**
  * The dungeon team on the Raid Roster's board, in its single-row mode: three places, left to right,
- * centred, and the order is the choice. Below the board: the order line (quiet), the count with its
- * check, then `children`. There is no title or section of its own: it sits at the end of the daily
+ * centred, and the order is the choice. Below the board: the count with its check (right under the
+ * tiles), the order line (quiet), then `children`. There is no title or section of its own: it sits at the end of the daily
  * dungeon card. Tapping an empty place (or pressing Enter on it) opens the creature
  * picker; tapping a creature opens its popover with "Remove from team"; creatures are moved by
  * dragging them (a finger needs a short press and hold, so a swipe still scrolls the page), and
@@ -244,6 +244,7 @@ export function DungeonTeam(props: Props) {
         rail={{ none: cues.none, effect }}
         onTap={tapSlot}
       />
+      <PlacedCount placed={placed} />
       {hint !== null && (
         <p class="muted" role="status">
           {hint}
@@ -252,7 +253,6 @@ export function DungeonTeam(props: Props) {
       <p class="muted dungeon-order-line">
         <GlossaryTag entry="dungeon-row">{ORDER_LINE}</GlossaryTag>
       </p>
-      <PlacedCount placed={placed} />
       {props.children}
 
       <LiveRegion>{announcement}</LiveRegion>

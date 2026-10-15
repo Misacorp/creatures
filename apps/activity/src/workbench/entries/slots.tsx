@@ -128,7 +128,7 @@ function demoEntry(name: string, description: string): Entry {
 
 const dungeonTeam = demoEntry(
   'DungeonTeam',
-  "The team at the end of the daily dungeon card: the Raid Roster's board in one centred row of three places, left to right, then the order line, the count (a green check at 3 / 3 placed) and, here, a stand-in Enter button. Tap an empty slot for the creature picker (it ends with the Recommended tag and an In this slot line in the dungeon's order), tap a creature for its popover with Remove from team, drag one onto another to swap them.",
+  "The team at the end of the daily dungeon card: the Raid Roster's board in one centred row of three places, left to right, then the count right under the tiles (a green check at 3 / 3 placed), the order line and, here, a stand-in Enter button. Tap an empty slot for the creature picker (it ends with the Recommended tag and an In this slot line in the dungeon's order), tap a creature for its popover with Remove from team, drag one onto another to swap them.",
 );
 
 /** The whole pre-run card (title, streak, rooms, depth, team, Enter) on a stand-in for the server. */
@@ -168,7 +168,7 @@ const dungeonSetup: Entry = {
   file: 'apps/activity/src/DungeonSetup.tsx',
   group: 'Slots',
   description:
-    'The whole pre-run dungeon card: the big Daily Dungeon title with its question mark and the streak (under the title on a phone), the three rooms, the depth track, then the team board centred, the order line, the count and the Enter button, all in one card. The team starts as the last team.',
+    'The whole pre-run dungeon card: the big Daily Dungeon title with its question mark and the streak (under the title on a phone), the three rooms, the depth track, then the team board centred, the count right under the tiles, the order line and the Enter button, all in one card. The team starts as the last team.',
   controls: {
     owned: { kind: 'number', min: 3, max: 8 },
     placed: { kind: 'number', min: 1, max: 3 },
