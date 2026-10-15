@@ -3,6 +3,7 @@ import {
   RULES,
   applyCatchToCollection,
   canTrain,
+  compareStrength,
   content,
   creaturePower,
   createSeededRng,
@@ -14,6 +15,7 @@ import {
   rollCatch,
   rollCatches,
   sanitizeNickname,
+  strongest,
   trainingCost,
   type CatchContext,
   type DurationId,
@@ -551,6 +553,29 @@ describe('creaturePower', () => {
     expect(plain).toBe(28 + 11);
     expect(creaturePower(effectiveStats(splashet, 15, 0))).toBeGreaterThan(plain);
     expect(creaturePower(effectiveStats(splashet, 1, 5))).toBeGreaterThan(plain);
+  });
+});
+
+describe('strongest', () => {
+  const c = (id: string, power: number, caughtAt: number) => ({ id, power, caughtAt });
+
+  it('ranks by power, then the older creature, then the smaller id', () => {
+    const list = [c('d', 10, 5), c('c', 10, 5), c('b', 10, 1), c('a', 30, 9), c('e', 5, 0)];
+    expect(strongest(list, 5).map((x) => x.id)).toEqual(['a', 'b', 'c', 'd', 'e']);
+  });
+
+  it('keeps only the asked number, does not depend on the input order and leaves the input alone', () => {
+    const list = [c('x', 1, 1), c('y', 3, 2), c('z', 2, 3), c('w', 4, 4)];
+    const reversed = [...list].reverse();
+    expect(strongest(list, 3).map((x) => x.id)).toEqual(['w', 'y', 'z']);
+    expect(strongest(reversed, 3).map((x) => x.id)).toEqual(['w', 'y', 'z']);
+    expect(list.map((x) => x.id)).toEqual(['x', 'y', 'z', 'w']);
+    expect(strongest(list, 0)).toEqual([]);
+  });
+
+  it('compareStrength is zero only for the same creature', () => {
+    expect(compareStrength(c('a', 1, 1), c('a', 1, 1))).toBe(0);
+    expect(compareStrength(c('a', 1, 1), c('b', 1, 1))).toBeLessThan(0);
   });
 });
 
