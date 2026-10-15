@@ -241,7 +241,9 @@ describe('the glossary text matches the rules', () => {
   });
 
   it('describes the roles with the real numbers', () => {
-    expect(text('role-guard')).toContain(percent(RULES.combat.guardHpBp));
+    expect(text('role-guard')).toContain(
+      `takes ${percent(RULES.combat.guard.armorBp)} less damage`,
+    );
     expect(text('role-support')).toContain(percent(RULES.combat.supportBuffBp));
   });
 
