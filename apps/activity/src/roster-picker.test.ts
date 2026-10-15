@@ -6,6 +6,7 @@ import {
   MAX_ON_BOARD,
   ON_BOARD_NOTE,
   SHOW_PICKER_EFFECTS,
+  allPlaced,
   effectPreview,
   pickerOptions,
   pickerTitle,
@@ -58,11 +59,19 @@ describe('the count and the line under the heading', () => {
       '1 / 3 placed · the rest join automatically when Phase 1 locks',
     );
     expect(placedLine(0, { event: 'phase2' }, true)).toContain('Phase 2 locks');
-    expect(placedLine(3, { event: 'finale' }, true)).toBe(
-      '3 / 3 placed · the rest join automatically when Finale locks',
+    expect(placedLine(2, { event: 'finale' }, true)).toBe(
+      '2 / 3 placed · the rest join automatically when Finale locks',
     );
     expect(placedLine(2, null, true)).toContain('when the board locks');
     expect(placedLine(2, { event: 'weekStart' }, true)).toContain('when the board locks');
+  });
+
+  it('drops the "rest join" part once all three are placed, and says so with a check', () => {
+    expect(allPlaced(3)).toBe(true);
+    expect(allPlaced(2)).toBe(false);
+    expect(placedLine(3, { event: 'phase1' }, true)).toBe('3 / 3 placed');
+    expect(placedLine(3, null, true)).not.toContain('join');
+    expect(placedLine(3, { event: 'phase1' }, false)).toBe('3 / 3 placed · the board is locked');
   });
 
   it('says the board is locked once it is, and counts with a slash and spaces', () => {

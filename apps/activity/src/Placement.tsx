@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { TOUCH_HOLD_MS } from './dnd-core';
 import { creatureInfoOf } from './creature-info';
 import { creatureName } from './game';
+import { glyphOrUnknown } from './glyphs';
 import { GlossaryTag } from './Glossary';
 import { usePopoverHost } from './PopoverHost';
 import { resolveDrop, slotStatuses } from './raid-dnd';
@@ -20,12 +21,14 @@ import type { Intent } from './raid-slots';
 import {
   SHOW_PICKER_EFFECTS,
   MAX_ON_BOARD,
+  allPlaced,
   pickerOptions,
   pickerTitle,
   placedCount,
   placedLine,
   type PickerCreature,
 } from './roster-picker';
+import { Sprite } from './sprites/Sprite';
 import { DragGhost } from './ui/DragGhost';
 import { LiveRegion } from './ui/LiveRegion';
 import { RaidBoard, type BoardRowModel } from './ui/RaidBoard';
@@ -34,6 +37,9 @@ import { useSlotKeyboard } from './ui/use-slot-keyboard';
 import { useDragDrop } from './use-drag-drop';
 
 type Party = NonNullable<RaidView['party']>;
+
+/** The check mark's colour: the same green as the `--good` token (canvas sprites take colours, not CSS variables). */
+const CHECK_PALETTE = { h: '#6fdc8c' } as const;
 
 interface Props {
   party: Party;
@@ -225,7 +231,15 @@ export function Placement(props: Props) {
         <p class="muted small roster-help">
           Pick your creatures and place them on the board alongside everyone else.
         </p>
-        <p class="roster-count">{placedLine(placed, props.next, canEdit)}</p>
+        <p class="roster-count">
+          {allPlaced(placed) && (
+            <span class="count-check">
+              <Sprite sprite={glyphOrUnknown('check')} palette={CHECK_PALETTE} scale={2} />
+              <span class="visually-hidden">Done: </span>
+            </span>
+          )}
+          {placedLine(placed, props.next, canEdit)}
+        </p>
         <RaidBoard
           rows={boardModels}
           stripRef={stripRef}

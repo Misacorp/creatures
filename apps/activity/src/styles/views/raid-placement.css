@@ -11,6 +11,13 @@
   font-size: 0.875rem;
 }
 
+/* The green check beside "3 / 3 placed": a shape, so it does not rely on colour alone. */
+.placement .count-check {
+  display: inline-flex;
+  margin-right: 0.375rem;
+  vertical-align: middle;
+}
+
 .placement .roster-note {
   margin: 0.5rem 0 0;
 }

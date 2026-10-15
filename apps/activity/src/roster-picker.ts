@@ -59,10 +59,15 @@ export function placedCount(row: readonly RowSlotView[]): number {
   return row.filter((s) => s.creature?.mine === true).length;
 }
 
+/** True when the player has all of their creatures on the board (the line shows a check mark). */
+export function allPlaced(placed: number): boolean {
+  return placed >= MAX_ON_BOARD;
+}
+
 /**
  * The line under the Raid Roster's heading: "1 / 3 placed · the rest join automatically when
  * Phase 1 locks". `next` is the view's next event (its lock); without one, or when edits are closed,
- * it says so instead.
+ * it says so instead. With all three placed there is nothing left to join, so it is just "3 / 3 placed".
  */
 export function placedLine(
   placed: number,
@@ -71,6 +76,7 @@ export function placedLine(
 ): string {
   const count = `${String(placed)} / ${String(MAX_ON_BOARD)} placed`;
   if (!canEdit) return `${count} · the board is locked`;
+  if (allPlaced(placed)) return count;
   const when = next === null || next.event === 'weekStart' ? 'the board' : phaseName(next.event);
   return `${count} · the rest join automatically when ${when} locks`;
 }

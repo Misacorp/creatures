@@ -231,7 +231,7 @@ const raidBoard: Entry = {
   presets: [
     { name: 'Eleven players, one of yours placed', props: {} },
     { name: 'Nothing placed yet', props: { placed: 0 } },
-    { name: '3 / 3 placed (the picker disables new ones)', props: { placed: 3 } },
+    { name: '3 / 3 placed (green check, picker disables new ones)', props: { placed: 3 } },
     {
       name: 'Just you (9 slots, guests fill the rest)',
       props: { players: 1, yourLane: 1, empty: 0 },
