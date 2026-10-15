@@ -1138,6 +1138,6 @@ Misa's feedback after trying the dungeon, five changes (Activity only, no server
 
 **Why.** With two sessions working at once, every push redeployed staging, so the branches took turns and it was unclear what Misa was testing. Misa wants control over what is on staging.
 
-**Agents.** An agent starts the staging run only when Misa asks in that session. The agent side also locks `main`: deny rules for the merge and direct-write GitHub tools and `gh pr merge`, and a PreToolUse hook (`.claude/hooks/guard-main.mjs`) that refuses any `git push` reaching `main`. The GitHub connection acts as Misa's account, so the `main` ruleset (PR required, no bypass) stops direct pushes from everyone, and only these local locks keep agents from merging.
+**Agents.** An agent starts the staging run only when Misa asks in that session. The `main` ruleset (PR required, no bypass) stops direct pushes from everyone, agents included, so no agent-side push guard is kept (a hook was written and dropped as redundant). Merges are different: the GitHub connection acts as Misa's account, so GitHub cannot tell an agent's merge from Misa's, and `.claude/settings.json` denies the merge and auto-merge tools and `gh pr merge`.
 
 **Considered.** A pinned staging branch in a repo variable (still automatic, but easy to forget to switch) and a second staging slot with its own Discord app (true parallel testing, but much more setup). Either can be added later.

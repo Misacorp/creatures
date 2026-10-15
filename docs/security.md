@@ -27,7 +27,7 @@ Sources: code.claude.com/docs/en/security · code.claude.com/docs/en/permissions
 - ✅ No `${{ github.event.* }}` interpolated into `run:` scripts; values pass through `env:`.
 - ✅ `persist-credentials: false` on every checkout.
 - ✅ Deploy secrets live in GitHub **environments**: `production` (deployable from `main` only) and `staging`. Pushing a branch deploys nothing, Dependabot's included.
-- ✅ Agent-side lock on `main`: `.claude/settings.json` denies the GitHub tools that merge pull requests or write files directly, and `gh pr merge`; the PreToolUse hook `.claude/hooks/guard-main.mjs` (tested by `pnpm test`) refuses any `git push` that would reach `main`. The GitHub connection acts as Misa's account, so GitHub cannot tell an agent's merge from Misa's: the ruleset stops direct pushes from everyone, and these local locks stop agents merging.
+- ✅ No agent merges: the GitHub connection acts as Misa's account, so GitHub cannot tell an agent's merge from Misa's. `.claude/settings.json` denies the merge and auto-merge tools and `gh pr merge`. Direct pushes to `main` are stopped for everyone by the ruleset (no bypass), so no agent-side push guard is kept.
 - ✅ CI lints workflows with **actionlint** and audits them with **zizmor** (offline mode).
 - 👤 Repo settings: default `GITHUB_TOKEN` read-only; require actions pinned to full SHA; require approval for workflows from outside collaborators; ruleset on `main` (PR required, `ci` check required, no force push or deletion).
 
