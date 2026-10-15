@@ -33,6 +33,11 @@ export const DungeonFoeSchema = v.strictObject({
   baseHp: PositiveInt,
   baseAtk: PositiveInt,
   gimmicks: v.pipe(v.array(GimmickSchema), v.maxLength(3)),
+  /**
+   * A room boss's landmark signature: a `charge` gimmick it gains only at landmark depths (every
+   * `RULES.dungeon.landmarkEvery`-th), announced a round ahead. Room bosses only.
+   */
+  signature: v.optional(GimmickSchema),
   /** Rounds in the room's fight (the fight also ends when the foe falls or the team is knocked out). */
   rounds: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(MAX_ROOM_ROUNDS)),
   crit: v.optional(CritBonusSchema),

@@ -997,6 +997,8 @@ export function simulateFight(
     bossHpStart,
     bossHpEnd: bossHp,
     cleared,
+    retreated: false,
+    enraged: false,
     events,
     perPlayer,
     perCreature,

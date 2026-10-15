@@ -128,5 +128,18 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
       return `${creature(event.creature)} is silenced for ${event.turns} turn${event.turns === 1 ? '' : 's'}.`;
     case 'round_end':
       return `End of round ${event.round}: ${names.boss} has ${event.bossHp} HP.`;
+    case 'heal':
+      return `${creature(event.supporter)} mends ${creature(event.target)} (+${event.amount} HP).`;
+    case 'cleanse':
+      return `${creature(event.supporter)} clears ${creature(event.target)}'s silence.`;
+    case 'charge':
+      return `${names.boss} winds up ${lookup(names.gimmicks, event.gimmick)}: it lands next round.`;
+    case 'retreat':
+      return `${names.boss} is out of reach and retreats.`;
+    case 'enrage':
+      return event.first ? `Out of time: ${names.boss} is enraged!` : `${names.boss} is still enraged.`;
+    default:
+      // A stored fight from a newer engine can carry events this one does not know: skip them.
+      return '';
   }
 }

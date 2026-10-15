@@ -1,4 +1,16 @@
-import type { Rarity } from '../content/schema';
+import type { Element, Rarity } from '../content/schema';
+
+/** A Support's element effect (`RULES.combat.supportFx`); every field optional. */
+export interface SupportFx {
+  /** Replaces the shared next-hit buff (`supportBuffBp`) for the neighbours. */
+  buffBp?: number;
+  /** Extra share of a reaction's bonus damage when a neighbour cashes the reaction in. */
+  reactionBp?: number;
+  /** Heals each neighbour this share of its max HP at round start (capped at what is missing). */
+  healBp?: number;
+  /** Also clears each neighbour's silence at round start. */
+  cleanse?: boolean;
+}
 
 export type DurationId = 'short' | 'medium' | 'long';
 export type SuppliesId = 'basic' | 'good' | 'great';
@@ -78,6 +90,32 @@ export const RULES = {
     /** Boss normal attack as a share of boss Attack. */
     bossAttackBp: 10_000,
     /**
+     * Guard cover (docs/design/attack-patterns.md section 1): a creature right beside a living Guard
+     * takes this much less (basis points) from area hits. The prevented damage is credited to the
+     * Guard. Live fights copy it into `FightInput.rules`; absent there means no cover.
+     */
+    coverBp: 4_000,
+    /**
+     * The single-hit cap: no boss hit (aimed or area; not a reflect) takes more than this share of
+     * the victim's maximum HP. The safety rail for harder hits. Copied into `FightInput.rules`.
+     */
+    maxHitBp: 5_000,
+    /**
+     * Support effects by element, on top of the shared `supportBuffBp` (docs/design/attack-patterns.md
+     * section 1): `buffBp` replaces the neighbours' next-hit buff (Ember Stoke); `reactionBp` adds that
+     * share of a reaction's bonus when a neighbour cashes it in (Spark Overcharge); `healBp` heals each
+     * neighbour that share of its max HP at round start, capped at what is missing, never reviving;
+     * `cleanse` also clears its silence (Tide Mend). A living, non-silenced Support only. Ceilings
+     * (the steep ends of the study, checked by a test): `buffBp` 3500, `reactionBp` 2000, `healBp` 800.
+     * Copied into `FightInput.rules`; absent there means no element effects.
+     */
+    supportFx: {
+      ember: { buffBp: 2_500 },
+      spark: { reactionBp: 1_500 },
+      tide: { healBp: 400, cleanse: true },
+      grove: { healBp: 600 },
+    } satisfies Record<Element, SupportFx>,
+    /**
      * Luck: small, visible randomness in the player-side damage. Crits (5%, +50%, for players and
      * the boss) are on; Fortune streaks (surge and slump) and the damage spread stay in the code
      * and default off [Misa / lead: crits in, streaks out for now]. The engine never reads
@@ -132,13 +170,26 @@ export const RULES = {
   raid: {
     /**
      * Phase structure. A phase is cleared when the boss pool is down `clearAtLossBp` of its maximum
-     * (cumulative over the week). The finale's round count comes from the boss (`finaleRounds`).
+     * (cumulative over the week). That is also the phase's floor: the pool cannot go below
+     * `max x (10000 - clearAtLossBp)` in that phase; when it gets there the boss is immune, retreats
+     * and the phase ends, and damage past the floor counts for nothing (no overkill; Misa,
+     * 2026-10-14). Phase 1 leaves 70% of the HP, Phase 2 leaves 15% for the finale. The finale's
+     * round count comes from the boss (`finaleRounds`).
      */
     phases: [
-      { id: 'phase1', rounds: 10, clearAtLossBp: 1_800 },
-      { id: 'phase2', rounds: 10, clearAtLossBp: 5_200 },
+      { id: 'phase1', rounds: 10, clearAtLossBp: 3_000 },
+      { id: 'phase2', rounds: 10, clearAtLossBp: 8_500 },
       { id: 'finale', rounds: 12, clearAtLossBp: 10_000 },
     ],
+    /**
+     * Finale enrage (docs/design/raid-ux-2.md): when the finale's rounds run out with both sides
+     * standing, up to `rounds` more rounds are played in which the boss makes its plain attack and
+     * hits every living creature for `powerBp` of its Attack (area hits, under the single-hit cap);
+     * its gimmicks rest (a charge never lands in an enrage round). The fight ends on a wipe or a
+     * kill; standing at the end is a loss. An enrage loss is a normal
+     * loss. Phases 1 and 2 have no enrage.
+     */
+    enrage: { rounds: 3, powerBp: 30_000 },
     scaling: {
       /**
        * Boss HP grows with N^(num/den), N = signed-up players. The engine computes
@@ -432,8 +483,18 @@ export const RULES = {
      */
     baseHpBp: 12_500,
     baseAtkBp: 10_000,
-    /** Every this many depths is a landmark: a better chest. */
+    /**
+     * Every this many depths is a landmark: a better chest, and a fixed room boss (in content order,
+     * round again) that also gains its charged `signature` move.
+     */
     landmarkEvery: 7,
+    /**
+     * Boss-room enrage, to teach the mechanic before the Sunday finale: when the boss room's rounds
+     * run out with both sides standing, up to `rounds` more rounds in which the boss also hits every
+     * creature for `powerBp` of its Attack. Normal rooms keep the old rule (out of rounds ends the
+     * run). `enabled: false` switches it off (Misa may walk it back).
+     */
+    enrage: { enabled: true, rounds: 2, powerBp: 20_000 },
     /** Paid for each room cleared, by room index (the last is the room boss). */
     perRoom: [
       { bait: 1, essence: 0, scrap: 0 },
