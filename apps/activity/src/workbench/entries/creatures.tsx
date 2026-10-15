@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import { content, gearBase, gearContent } from '@creatures/game';
 import { AbilityChip } from '../../AbilityChip';
 import { BossCard } from '../../BossCard';
+import { RaidTimeline } from '../../RaidTimeline';
 import { AppHead } from '../../AppHead';
 import { LivingRoom, sceneOf } from '../../LivingRoom';
 import { SmallCreature } from '../../SmallCreature';
@@ -45,7 +46,6 @@ function bossView(p: Props): RaidView {
     rank: rank === 0 ? null : rank,
     effectiveRank: rank === 0 ? null : Math.max(1, bool(p, 'festival') ? rank - 3 : rank),
     bestRank: num(p, 'bestRank') === 0 ? null : num(p, 'bestRank'),
-    season: { index: 595, week: num(p, 'seasonWeek') },
     party:
       SAMPLE_RAID.party === null
         ? null
@@ -62,13 +62,12 @@ const bossCard: Entry = {
   file: 'apps/activity/src/BossCard.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The boss of the week on the Raid tab: its art, name, Boss Rank, how ready your team looks, element, HP and icons for its turn order and tricks (tap an icon for details).',
+    "The boss of the week on the Raid tab: its art, name, Boss Rank, how ready your team looks, element, this week's HP as a bar with the numbers on it, icons for its turn order and tricks (tap an icon for details) and the Phase 2 counter-move.",
   controls: {
     boss: { kind: 'select', options: BOSS_IDS },
     rank: { kind: 'number', min: 0, max: 30 },
     bestRank: { kind: 'number', min: 0, max: 30 },
     festival: { kind: 'toggle' },
-    seasonWeek: { kind: 'number', min: 1, max: 5 },
     readiness: { kind: 'select', options: [NONE, ...READINESS_BANDS] },
     showHp: { kind: 'toggle' },
     hpNow: { kind: 'number', min: 0, max: 100000 },
@@ -79,7 +78,6 @@ const bossCard: Entry = {
     rank: 6,
     bestRank: 5,
     festival: false,
-    seasonWeek: 3,
     readiness: 'even',
     showHp: true,
     hpNow: 7000,
@@ -87,16 +85,62 @@ const bossCard: Entry = {
   },
   presets: [
     { name: 'Normal week', props: {} },
-    { name: 'Festival week', props: { festival: true, seasonWeek: 5 } },
+    { name: 'Festival week', props: { festival: true } },
     {
       name: 'First week (no rank)',
-      props: { rank: 0, bestRank: 0, seasonWeek: 1, readiness: NONE, showHp: false },
+      props: { rank: 0, bestRank: 0, readiness: NONE, showHp: false },
     },
     { name: 'Strong team, boss nearly dead', props: { readiness: 'strong', hpNow: 400 } },
     { name: 'Long shot', props: { readiness: 'long_shot', hpNow: 10000 } },
+    {
+      name: 'Big numbers (written short on the bar)',
+      props: { hpNow: 42023, hpMax: 50233 },
+    },
     { name: 'Cinder Wyrm', props: { boss: 'cinder-wyrm' } },
   ],
   render: (p) => <BossCard view={bossView(p)} />,
+};
+
+/** The sample week with the season week and the next event the page asks for. */
+function timelineView(p: Props): RaidView {
+  const week = num(p, 'seasonWeek');
+  const next = str(p, 'next');
+  const event = (['phase1', 'phase2', 'finale'] as const).find((e) => e === next);
+  return {
+    ...SAMPLE_RAID,
+    season: week === 0 ? null : { index: 595, week },
+    next: event === undefined ? null : { event, at: SAMPLE_RAID.schedule[event] },
+  };
+}
+
+const raidTimeline: Entry = {
+  name: 'RaidTimeline',
+  file: 'apps/activity/src/RaidTimeline.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    'The first section of the Raid tab: the week as four steps with the one thing to do now, ticks on the phases already fought, and the five season pips with "Week 3 / 5 this season" under them (tap it for what a season is).',
+  controls: {
+    seasonWeek: { kind: 'number', min: 0, max: 5 },
+    next: { kind: 'select', options: ['phase1', 'phase2', 'finale', NONE] },
+  },
+  defaults: { seasonWeek: 3, next: 'phase1' },
+  presets: [
+    { name: 'Week 3 of the season', props: {} },
+    { name: 'First week of the season', props: { seasonWeek: 1 } },
+    { name: 'Festival week (the last pip)', props: { seasonWeek: 5 } },
+    { name: 'No season (an old week: no pips)', props: { seasonWeek: 0 } },
+    { name: 'Phase 2 comes next', props: { next: 'phase2' } },
+    { name: 'The week is over (nothing next)', props: { next: NONE } },
+  ],
+  render: (p) => (
+    <RaidTimeline
+      view={timelineView(p)}
+      serverNow={SAMPLE_RAID.serverNow}
+      finale="before"
+      onAct={() => undefined}
+      onReplay={() => undefined}
+    />
+  ),
 };
 
 function AbilityDemo({ p }: { p: Props }) {
@@ -322,6 +366,7 @@ const livingRoom: Entry = {
 export const creatureEntries: readonly Entry[] = [
   livingRoom,
   bossCard,
+  raidTimeline,
   abilityChip,
   smallCreature,
   turnStrip,

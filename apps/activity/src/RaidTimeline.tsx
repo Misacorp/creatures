@@ -4,10 +4,12 @@ import type { PhaseResultView, RaidPhaseId, RaidView } from './raid-api';
 import { nowAction, type NowTarget } from './raid-now';
 import { scheduleSteps } from './raid-time';
 import { stepMarks, toggleMark } from './raid-timeline';
+import { SeasonPips } from './SeasonPips';
 
 /**
  * The top of the Raid tab: the week as four steps (Preparation, Phase 1, Phase 2, Finale), the one
- * thing to do now, and ticks on the phases that have been fought. A tap on a tick opens that
+ * thing to do now, ticks on the phases that have been fought, and where the week sits in the
+ * season (the pips). A tap on a tick opens that
  * phase's short result; the full after-action card waits until the finale is over.
  */
 export function RaidTimeline({
@@ -82,6 +84,7 @@ export function RaidTimeline({
           );
         })}
       </ol>
+      <SeasonPips season={view.season} />
       {openedMark !== undefined && opened !== undefined && (
         <p class="schedule-result" role="status">
           <span>{openedMark.summary}</span>{' '}

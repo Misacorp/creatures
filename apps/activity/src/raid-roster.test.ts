@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { initialOf, rosterCountText } from './raid-roster';
+import { initialOf } from './raid-roster';
 
 describe('initialOf', () => {
   it('is the first character, upper-cased', () => {
@@ -15,13 +15,5 @@ describe('initialOf', () => {
     expect(initialOf('<b>x</b>')).toBe('<');
     expect(initialOf('')).toBe('?');
     expect(initialOf('   ')).toBe('?');
-  });
-});
-
-describe('rosterCountText', () => {
-  it('says how many are in', () => {
-    expect(rosterCountText(0)).toBe('Nobody in yet');
-    expect(rosterCountText(1)).toBe('1 player this week');
-    expect(rosterCountText(5)).toBe('5 players this week');
   });
 });

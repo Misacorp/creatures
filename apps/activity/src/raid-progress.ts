@@ -5,6 +5,7 @@
  * forecast number (the readiness band is four words).
  */
 import { speciesName } from './game';
+import { compactCount } from './number-format';
 import type { TrackStep, TrackUnlock } from './progress-track';
 import {
   READINESS_BANDS,
@@ -20,6 +21,17 @@ export const SEASON_WEEKS = 5;
 /** "Rank 6", or null when the week has no rank (an old week, or nobody in yet). */
 export function rankLabel(rank: number | null): string | null {
   return rank === null ? null : `Rank ${String(rank)}`;
+}
+
+/**
+ * The words of the boss card's HP bar: `text` is written on the bar (short, "42K / 50.2K"), `label`
+ * is what a screen reader hears (the exact numbers).
+ */
+export function bossHpWords(current: number, max: number): { text: string; label: string } {
+  return {
+    text: `${compactCount(current)} / ${compactCount(max)}`,
+    label: `Boss HP this week: ${String(current)} / ${String(max)}`,
+  };
 }
 
 /** One pip of the season row. `now` is the week being shown. */

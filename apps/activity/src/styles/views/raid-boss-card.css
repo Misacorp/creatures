@@ -27,10 +27,13 @@
   gap: 0.375rem 0.5rem;
 }
 
-/* "11 players this week", one plain line under the Rank and element. */
-.boss-players {
-  margin: 0.375rem 0 0;
-  font-size: 0.875rem;
+/* This week's HP: a small label over the shared segment bar, which carries the numbers. */
+.boss-hp {
+  margin: 0.5rem 0;
+}
+
+.boss-hp-label {
+  margin: 0 0 0.125rem;
 }
 
 /* The readiness meter sits next to the Rank: four steps, lit up to the band. */
@@ -109,11 +112,7 @@ button.boss-icon.open {
 }
 
 .boss-foot {
-  margin-top: 0.5rem;
-}
-
-.boss-foot p {
-  margin: 0.25rem 0 0;
+  margin: 0.5rem 0 0;
 }
 
 /* On a phone the art keeps its size and the details stack below it. */
@@ -127,8 +126,7 @@ button.boss-icon.open {
     width: 100%;
   }
 
-  .boss-card .boss-name,
-  .boss-card .boss-players {
+  .boss-card .boss-name {
     text-align: center;
   }
 

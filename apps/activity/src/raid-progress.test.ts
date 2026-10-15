@@ -8,6 +8,7 @@ import {
   READINESS_LABELS,
   SEASON_WEEKS,
   bestRankText,
+  bossHpWords,
   bossRankTrack,
   festivalBanner,
   festivalGrantText,
@@ -31,6 +32,23 @@ describe('the rank', () => {
   it('shows the best rank cleared once there is one', () => {
     expect(bestRankText(5)).toBe('Best rank cleared: Rank 5');
     expect(bestRankText(null)).toBeNull();
+  });
+});
+
+describe('the boss HP bar words', () => {
+  it('writes short numbers on the bar and the exact ones in the spoken label', () => {
+    expect(bossHpWords(42023, 50233)).toEqual({
+      text: '42K / 50.2K',
+      label: 'Boss HP this week: 42023 / 50233',
+    });
+  });
+
+  it('keeps small numbers whole and never rounds a hurt boss up to full', () => {
+    expect(bossHpWords(337, 9999)).toEqual({
+      text: '337 / 9999',
+      label: 'Boss HP this week: 337 / 9999',
+    });
+    expect(bossHpWords(49_997_944, 50_000_000).text).toBe('49.9M / 50M');
   });
 });
 
