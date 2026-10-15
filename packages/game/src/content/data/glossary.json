@@ -96,7 +96,7 @@
     "short": "Tough. Takes hits for its zone.",
     "lines": [
       "Armor: takes 25% less damage from every hit.",
-      "A hit on one creature in its zone goes to the Guard instead, reflected hits too (in the dungeon: right beside it). Two Guards: a roll decides.",
+      "Takes hits on one creature in its zone instead, reflects too (dungeon: right beside it). Two Guards roll.",
       "Creatures right beside it take 40% less from hits on many creatures.",
       "A Lance stops at a Guard."
     ],
