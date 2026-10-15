@@ -44,6 +44,8 @@ import {
 import {
   buildNames,
   buildRoomInput,
+  dungeonBossEnrage,
+  liveFightRules,
   simulateDungeon,
   type AbilityChoice,
   type DungeonRoomSpec,
@@ -551,12 +553,18 @@ export class Dungeon {
       const { hp, atk } = scaledFoe(foe, depth);
       return { index: plan.index, foe, modifier, hp, atk };
     });
+    const enrage = dungeonBossEnrage();
     const input: DungeonRunInput = {
       team: row,
       player: PLAYER,
       rooms,
       abilities,
       luck: { ...RULES.combat.luck },
+      // The combat rules, the boss room's enrage and the depth (a landmark gives the room boss its
+      // signature), stored with the input so a replay is exact.
+      rules: liveFightRules(),
+      depth,
+      ...(enrage === undefined ? {} : { enrage }),
     };
     const result = simulateDungeon(input, seed);
 

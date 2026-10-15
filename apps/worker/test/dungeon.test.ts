@@ -7,7 +7,13 @@ import {
   type PartKind,
   type Rng,
 } from '@creatures/game';
-import { simulateDungeon, type DungeonRunInput, type DungeonRunResult } from '@creatures/engine';
+import {
+  dungeonBossEnrage,
+  liveFightRules,
+  simulateDungeon,
+  type DungeonRunInput,
+  type DungeonRunResult,
+} from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { grantDungeonRun } from '../src/gear-grants';
 import { insertItem } from '../src/gear-store';
@@ -490,6 +496,10 @@ describe('POST /api/dungeon/run', () => {
         // The fight's row is the team, position i = team[i], and nothing else was stored about it.
         expect(input.team.map((s) => s.id)).toEqual([c, a, b]);
         expect(Object.keys(input)).not.toContain('formation');
+        // The combat rules, the boss room's enrage and the depth are stored for an exact replay.
+        expect(input.rules).toEqual(liveFightRules());
+        expect(input.enrage).toEqual(dungeonBossEnrage());
+        expect(input.depth).toBe(stored.depth);
         const replay = await p.replay(res.body.run.id);
         expect(replay.body.row.map((r) => [r.position, r.id])).toEqual([
           [0, c],
