@@ -3,8 +3,13 @@
 /* The line under the heading and the one about how many are placed. */
 .placement .roster-help,
 .placement .roster-count,
-.placement .roster-total {
+.placement .roster-when {
   margin: 0.25rem 0;
+}
+
+/* "· 24 / 33 team slots filled": the board total rides on the count line, quieter than the count. */
+.placement .roster-total {
+  color: var(--haze);
 }
 
 .placement .roster-count {

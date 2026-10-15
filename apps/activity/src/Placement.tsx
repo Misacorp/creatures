@@ -27,6 +27,7 @@ import {
   pickerTitle,
   placedCount,
   placedLine,
+  rosterNote,
   type PickerCreature,
 } from './roster-picker';
 import { Sprite } from './sprites/Sprite';
@@ -83,6 +84,7 @@ export function Placement(props: Props) {
   const bySlot = new Map(party.row.map((slot) => [slot.slot, slot]));
   const ctx = { locked: !canEdit, row: party.row };
   const placed = placedCount(party.row);
+  const note = rosterNote(placed, props.next, canEdit);
 
   const nameOf = (creatureId: string): string =>
     party.row.find((s) => s.creature?.creatureId === creatureId)?.creature?.name ?? 'Creature';
@@ -239,9 +241,16 @@ export function Placement(props: Props) {
               <span class="visually-hidden">Done: </span>
             </span>
           )}
-          {placedLine(placed, props.next, canEdit)}
+          {placedLine(placed)}
+          <span class="roster-total">
+            <span class="roster-sep" aria-hidden="true">
+              {' · '}
+            </span>
+            <span class="visually-hidden">, </span>
+            {boardTotalLine(party.row, party.rowLength)}
+          </span>
         </p>
-        <p class="muted small roster-total">{boardTotalLine(party.row, party.rowLength)}</p>
+        {note !== null && <p class="muted small roster-when">{note}</p>}
         <RaidBoard
           rows={boardModels}
           stripRef={stripRef}

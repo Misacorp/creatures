@@ -137,9 +137,6 @@ export function BossCard({ view }: { view: RaidView }) {
           </div>
           {hp !== null && (
             <div class="boss-hp">
-              <p class="boss-hp-label muted small" aria-hidden="true">
-                HP this week
-              </p>
               <SegmentBar
                 size="boss"
                 current={hp.current}

@@ -13,6 +13,7 @@ import {
   pickerTitle,
   placedCount,
   placedLine,
+  rosterNote,
   type PickerCreature,
 } from './roster-picker';
 
@@ -55,35 +56,34 @@ describe('the count and the line under the heading', () => {
     expect(placedCount(rowOf({ 0: mine('a', 'splashet'), 1: theirs('cindle') }))).toBe(1);
   });
 
-  it('says how many are placed and when the rest join, from the next event', () => {
-    expect(placedLine(1, { event: 'phase1' }, true)).toBe(
-      '1 / 3 placed · the rest join automatically when Phase 1 locks',
+  it('says how many are placed, and when the rest join in a note', () => {
+    expect(placedLine(1)).toBe('1 / 3 placed');
+    expect(rosterNote(1, { event: 'phase1' }, true)).toBe(
+      'The rest join automatically when Phase 1 locks.',
     );
-    expect(placedLine(0, { event: 'phase2' }, true)).toContain('Phase 2 locks');
-    expect(placedLine(2, { event: 'finale' }, true)).toBe(
-      '2 / 3 placed · the rest join automatically when Finale locks',
-    );
-    expect(placedLine(2, null, true)).toContain('when the board locks');
-    expect(placedLine(2, { event: 'weekStart' }, true)).toContain('when the board locks');
+    expect(rosterNote(0, { event: 'phase2' }, true)).toContain('Phase 2 locks');
+    expect(rosterNote(2, { event: 'finale' }, true)).toContain('when Finale locks');
+    expect(rosterNote(2, null, true)).toContain('when the board locks');
+    expect(rosterNote(2, { event: 'weekStart' }, true)).toContain('when the board locks');
   });
 
-  it('drops the "rest join" part once all three are placed, and says so with a check', () => {
+  it('drops the note once all three are placed, and says so with a check', () => {
     expect(allPlaced(3)).toBe(true);
     expect(allPlaced(2)).toBe(false);
-    expect(placedLine(3, { event: 'phase1' }, true)).toBe('3 / 3 placed');
-    expect(placedLine(3, null, true)).not.toContain('join');
-    expect(placedLine(3, { event: 'phase1' }, false)).toBe('3 / 3 placed · the board is locked');
+    expect(placedLine(3)).toBe('3 / 3 placed');
+    expect(rosterNote(3, { event: 'phase1' }, true)).toBeNull();
+    expect(rosterNote(3, { event: 'phase1' }, false)).toBe('The board is locked.');
   });
 
   it('says the board is locked once it is, and counts with a slash and spaces', () => {
-    expect(placedLine(2, null, false)).toBe('2 / 3 placed · the board is locked');
-    expect(placedLine(0, { event: 'phase1' }, true)).not.toContain(' of ');
+    expect(rosterNote(2, null, false)).toBe('The board is locked.');
+    expect(placedLine(0)).not.toContain(' of ');
   });
 
   it("counts everyone's creatures on the board out of all the slots", () => {
     const row = rowOf({ 0: mine('a', 'splashet'), 1: theirs('cindle'), 4: theirs('sproutle') });
-    expect(boardTotalLine(row, 9)).toBe('3 / 9 on the board');
-    expect(boardTotalLine(rowOf({}), 9)).toBe('0 / 9 on the board');
+    expect(boardTotalLine(row, 9)).toBe('3 / 9 team slots filled');
+    expect(boardTotalLine(rowOf({}), 9)).toBe('0 / 9 team slots filled');
     expect(boardTotalLine(row, 9)).not.toContain(' of ');
   });
 

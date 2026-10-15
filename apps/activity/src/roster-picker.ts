@@ -60,12 +60,12 @@ export function placedCount(row: readonly RowSlotView[]): number {
 }
 
 /**
- * "7 / 18 on the board": every creature on the party board (anyone's, guests included) out of all
- * its slots. `length` is the party's row length, which is the total number of slots.
+ * "7 / 18 team slots filled": every creature on the party board (anyone's, guests included) out of
+ * all its slots. `length` is the party's row length, which is the total number of slots.
  */
 export function boardTotalLine(row: readonly RowSlotView[], length: number): string {
   const filled = row.filter((s) => s.creature !== null).length;
-  return `${String(filled)} / ${String(length)} on the board`;
+  return `${String(filled)} / ${String(length)} team slots filled`;
 }
 
 /** True when the player has all of their creatures on the board (the line shows a check mark). */
@@ -73,21 +73,25 @@ export function allPlaced(placed: number): boolean {
   return placed >= MAX_ON_BOARD;
 }
 
+/** The count at the start of the Raid Roster's count line: "1 / 3 placed". */
+export function placedLine(placed: number): string {
+  return `${String(placed)} / ${String(MAX_ON_BOARD)} placed`;
+}
+
 /**
- * The line under the Raid Roster's heading: "1 / 3 placed · the rest join automatically when
- * Phase 1 locks". `next` is the view's next event (its lock); without one, or when edits are closed,
- * it says so instead. With all three placed there is nothing left to join, so it is just "3 / 3 placed".
+ * The quiet line under the count, or null when there is nothing to add: "The rest join
+ * automatically when Phase 1 locks." while fewer than three are placed (`next` is the view's next
+ * event, its lock), "The board is locked." once edits are closed, nothing when all three are placed.
  */
-export function placedLine(
+export function rosterNote(
   placed: number,
   next: { event: RaidEventId } | null,
   canEdit: boolean,
-): string {
-  const count = `${String(placed)} / ${String(MAX_ON_BOARD)} placed`;
-  if (!canEdit) return `${count} · the board is locked`;
-  if (allPlaced(placed)) return count;
+): string | null {
+  if (!canEdit) return 'The board is locked.';
+  if (allPlaced(placed)) return null;
   const when = next === null || next.event === 'weekStart' ? 'the board' : phaseName(next.event);
-  return `${count} · the rest join automatically when ${when} locks`;
+  return `The rest join automatically when ${when} locks.`;
 }
 
 /** The slot's place as the picker's title says it: "Middle, lane 3". */
