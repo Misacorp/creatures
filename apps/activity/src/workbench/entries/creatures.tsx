@@ -2,12 +2,12 @@ import { useState } from 'preact/hooks';
 import { content, gearBase, gearContent } from '@creatures/game';
 import { AbilityChip } from '../../AbilityChip';
 import { BossCard } from '../../BossCard';
+import { RaidTimeline } from '../../RaidTimeline';
 import { AppHead } from '../../AppHead';
 import { LivingRoom, sceneOf } from '../../LivingRoom';
-import { RosterStrip } from '../../RosterStrip';
 import { SmallCreature } from '../../SmallCreature';
 import { WornItemLine } from '../../WornItemLine';
-import type { ReadinessBand, RaidView, RosterEntry } from '../../raid-api';
+import type { ReadinessBand, RaidView } from '../../raid-api';
 import { READINESS_BANDS } from '../../raid-api';
 import { turnChips } from '../../replay';
 import { Sprite } from '../../sprites/Sprite';
@@ -46,7 +46,6 @@ function bossView(p: Props): RaidView {
     rank: rank === 0 ? null : rank,
     effectiveRank: rank === 0 ? null : Math.max(1, bool(p, 'festival') ? rank - 3 : rank),
     bestRank: num(p, 'bestRank') === 0 ? null : num(p, 'bestRank'),
-    season: { index: 595, week: num(p, 'seasonWeek') },
     party:
       SAMPLE_RAID.party === null
         ? null
@@ -63,13 +62,12 @@ const bossCard: Entry = {
   file: 'apps/activity/src/BossCard.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The boss of the week on the Raid tab: its art, name, Boss Rank, how ready your team looks, element, HP and icons for its turn order and tricks (tap an icon for details).',
+    "The boss of the week on the Raid tab: its art, name, Boss Rank, how ready your team looks, element, this week's HP as a bar with the numbers on it, icons for its turn order and tricks (tap an icon for details) and the Phase 2 counter-move.",
   controls: {
     boss: { kind: 'select', options: BOSS_IDS },
     rank: { kind: 'number', min: 0, max: 30 },
     bestRank: { kind: 'number', min: 0, max: 30 },
     festival: { kind: 'toggle' },
-    seasonWeek: { kind: 'number', min: 1, max: 5 },
     readiness: { kind: 'select', options: [NONE, ...READINESS_BANDS] },
     showHp: { kind: 'toggle' },
     hpNow: { kind: 'number', min: 0, max: 100000 },
@@ -80,7 +78,6 @@ const bossCard: Entry = {
     rank: 6,
     bestRank: 5,
     festival: false,
-    seasonWeek: 3,
     readiness: 'even',
     showHp: true,
     hpNow: 7000,
@@ -88,62 +85,61 @@ const bossCard: Entry = {
   },
   presets: [
     { name: 'Normal week', props: {} },
-    { name: 'Festival week', props: { festival: true, seasonWeek: 5 } },
+    { name: 'Festival week', props: { festival: true } },
     {
       name: 'First week (no rank)',
-      props: { rank: 0, bestRank: 0, seasonWeek: 1, readiness: NONE, showHp: false },
+      props: { rank: 0, bestRank: 0, readiness: NONE, showHp: false },
     },
     { name: 'Strong team, boss nearly dead', props: { readiness: 'strong', hpNow: 400 } },
     { name: 'Long shot', props: { readiness: 'long_shot', hpNow: 10000 } },
+    {
+      name: 'Big numbers (written short on the bar)',
+      props: { hpNow: 42023, hpMax: 50233 },
+    },
     { name: 'Cinder Wyrm', props: { boss: 'cinder-wyrm' } },
   ],
   render: (p) => <BossCard view={bossView(p)} />,
 };
 
-function rosterOf(count: number, you: boolean): RosterEntry[] {
-  return Array.from({ length: count }, (_, i) => ({
-    displayName: you && i === 0 ? 'You' : `Player ${String(i + 1)}`,
-    you: you && i === 0,
-    party: 1,
-  }));
-}
-
-function RosterDemo({ p }: { p: Props }) {
-  const [optOut, setOptOut] = useState(false);
-  const view: RaidView = {
+/** The sample week with the season week and the next event the page asks for. */
+function timelineView(p: Props): RaidView {
+  const week = num(p, 'seasonWeek');
+  const next = str(p, 'next');
+  const event = (['phase1', 'phase2', 'finale'] as const).find((e) => e === next);
+  return {
     ...SAMPLE_RAID,
-    roster: rosterOf(num(p, 'players'), bool(p, 'inRoster')),
-    you: {
-      ...SAMPLE_RAID.you,
-      inRoster: bool(p, 'inRoster'),
-      optOut,
-      canOptOut: bool(p, 'canOptOut'),
-    },
+    season: week === 0 ? null : { index: 595, week },
+    next: event === undefined ? null : { event, at: SAMPLE_RAID.schedule[event] },
   };
-  return <RosterStrip view={view} busy={false} onOptOut={setOptOut} />;
 }
 
-const rosterStrip: Entry = {
-  name: 'RosterStrip',
-  file: 'apps/activity/src/RosterStrip.tsx',
+const raidTimeline: Entry = {
+  name: 'RaidTimeline',
+  file: 'apps/activity/src/RaidTimeline.tsx',
   group: 'Creatures & game pieces',
   description:
-    'Who is in this week\'s raid, as a strip of small avatar tiles with the count; tap it to open the names and the "Sit this week out" button.',
+    'The first section of the Raid tab: the week as four steps with the one thing to do now, ticks on the phases already fought, and the five season pips with "Week 3 / 5 this season" under them (tap it for what a season is).',
   controls: {
-    players: { kind: 'number', min: 0, max: 15 },
-    inRoster: { kind: 'toggle' },
-    canOptOut: { kind: 'toggle' },
+    seasonWeek: { kind: 'number', min: 0, max: 5 },
+    next: { kind: 'select', options: ['phase1', 'phase2', 'finale', NONE] },
   },
-  defaults: { players: 5, inRoster: true, canOptOut: true },
+  defaults: { seasonWeek: 3, next: 'phase1' },
   presets: [
-    { name: 'Five players', props: {} },
-    { name: 'Full server (15)', props: { players: 15 } },
-    { name: 'Just you', props: { players: 1 } },
-    { name: 'Empty, you not in', props: { players: 0, inRoster: false } },
-    { name: 'Locked (cannot opt out)', props: { canOptOut: false } },
+    { name: 'Week 3 of the season', props: {} },
+    { name: 'First week of the season', props: { seasonWeek: 1 } },
+    { name: 'Festival week (the last pip)', props: { seasonWeek: 5 } },
+    { name: 'No season (an old week: no pips)', props: { seasonWeek: 0 } },
+    { name: 'Phase 2 comes next', props: { next: 'phase2' } },
+    { name: 'The week is over (nothing next)', props: { next: NONE } },
   ],
   render: (p) => (
-    <RosterDemo key={`${String(num(p, 'players'))}-${String(bool(p, 'inRoster'))}`} p={p} />
+    <RaidTimeline
+      view={timelineView(p)}
+      serverNow={SAMPLE_RAID.serverNow}
+      finale="before"
+      onAct={() => undefined}
+      onReplay={() => undefined}
+    />
   ),
 };
 
@@ -257,7 +253,7 @@ const turnStrip: Entry = {
   file: 'apps/activity/src/ui/TurnStrip.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The strip of who acts in what order under the raid replay: a chip for each creature, the one acting now outlined, the ones that acted dimmed and a knocked-out one struck through.',
+    'The strip of who acts in what order: a chip for each creature, the one acting now outlined, the ones that acted dimmed and a knocked-out one struck through. No screen shows it now (the stage writes the order under the creatures instead); it is kept for later.',
   controls: {
     acting: { kind: 'select', options: PLACES },
     out: { kind: 'select', options: PLACES },
@@ -370,7 +366,7 @@ const livingRoom: Entry = {
 export const creatureEntries: readonly Entry[] = [
   livingRoom,
   bossCard,
-  rosterStrip,
+  raidTimeline,
   abilityChip,
   smallCreature,
   turnStrip,

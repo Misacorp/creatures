@@ -6,6 +6,13 @@
  * dismissed) and nothing breaks.
  */
 
+/**
+ * Whether the Raid tab shows the hint at all. Off for now (Misa, 2026-10-14): the hint, its text and
+ * its dismissal stay in code (and on the workbench's CoachMark page), but no screen renders it.
+ * Turn it back on here, the one place that decides.
+ */
+export const SHOW_COACH_MARK: boolean = false;
+
 export const COACH_KEY = 'lc.coach.tags.v1';
 export const COACH_TEXT = 'Tap any tag to learn what it means';
 

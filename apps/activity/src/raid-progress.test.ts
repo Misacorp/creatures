@@ -8,14 +8,18 @@ import {
   READINESS_LABELS,
   SEASON_WEEKS,
   bestRankText,
+  bossHpWords,
+  bossRankTrack,
   festivalBanner,
   festivalGrantText,
   festivalTeaser,
+  finaleProgress,
   rankChangeText,
   rankLabel,
   readinessMeter,
   seasonPips,
   seasonText,
+  seasonWeekText,
 } from './raid-progress';
 
 describe('the rank', () => {
@@ -28,6 +32,23 @@ describe('the rank', () => {
   it('shows the best rank cleared once there is one', () => {
     expect(bestRankText(5)).toBe('Best rank cleared: Rank 5');
     expect(bestRankText(null)).toBeNull();
+  });
+});
+
+describe('the boss HP bar words', () => {
+  it('writes short numbers on the bar and the exact ones in the spoken label', () => {
+    expect(bossHpWords(42023, 50233)).toEqual({
+      text: '42K / 50.2K',
+      label: 'Boss HP this week: 42023 / 50233',
+    });
+  });
+
+  it('keeps small numbers whole and never rounds a hurt boss up to full', () => {
+    expect(bossHpWords(337, 9999)).toEqual({
+      text: '337 / 9999',
+      label: 'Boss HP this week: 337 / 9999',
+    });
+    expect(bossHpWords(49_997_944, 50_000_000).text).toBe('49.9M / 50M');
   });
 });
 
@@ -159,5 +180,68 @@ describe('what a finale did', () => {
         firstOnServer: true,
       }),
     ).toBe('You already had a fully fused Lanternfin: +90 Bait instead.');
+  });
+});
+
+describe('the Boss Rank and season row after a finale', () => {
+  const win = { before: 3, after: 4, festival: false, serverWon: true };
+  const at = { weekId: '2027-W02', season: { index: 595, week: 2 } };
+
+  it('draws the rank track like the depth: this Rank lit, the next one ahead with words, not numbers', () => {
+    const track = bossRankTrack(4);
+    expect(track.steps.map((s) => s.label)).toEqual(['Rank 4', 'Rank 5']);
+    expect(track.current).toBe(0);
+    expect(track.steps[0]?.unlocks).toEqual([]);
+    const next = track.steps[1]?.unlocks.map((u) => u.text).join(' ') ?? '';
+    expect(next).toContain('tougher boss');
+    expect(next).not.toMatch(/\d/);
+    // The ladder never ends, and a bad rank stays on the ladder.
+    expect(bossRankTrack(0).steps[0]?.label).toBe('Rank 1');
+  });
+
+  it('shows the rank after the ladder moved (or stayed or eased) and the season week of that week', () => {
+    const progress = finaleProgress({ week: '2027-W02', rankChange: win }, at);
+    expect(progress?.rank?.steps[0]?.label).toBe('Rank 4');
+    expect(progress?.season).toEqual({
+      week: 2,
+      weeks: 5,
+      text: 'Week 2 / 5 this season',
+      label: 'Season: Week 2 / 5 this season',
+    });
+    const eased = finaleProgress(
+      { week: '2027-W05', rankChange: { before: 4, after: 3, festival: true, serverWon: true } },
+      null,
+    );
+    expect(eased?.rank?.steps[0]?.label).toBe('Rank 3');
+  });
+
+  it('knows a Festival result is the last week of the season without asking the page', () => {
+    const festival = finaleProgress(
+      { week: '2027-W05', rankChange: { ...win, festival: true } },
+      at,
+    );
+    expect(festival?.season?.week).toBe(5);
+    expect(festival?.season?.text).toBe(seasonWeekText(5));
+  });
+
+  it('leaves the rank out until the ladder has moved, and the season out when the week is unknown', () => {
+    const waiting = finaleProgress({ week: '2027-W02', rankChange: null }, at);
+    expect(waiting?.rank).toBeNull();
+    expect(waiting?.season?.week).toBe(2);
+    // The page is on another week (a result seen later): the season cannot be told, so no pips.
+    const later = finaleProgress({ week: '2027-W01', rankChange: win }, at);
+    expect(later?.rank).not.toBeNull();
+    expect(later?.season).toBeNull();
+    expect(finaleProgress({ week: '2027-W01' }, null)).toBeNull();
+    expect(
+      finaleProgress({ week: '2027-W02', rankChange: undefined }, { ...at, season: null }),
+    ).toBeNull();
+  });
+
+  it('writes the season week with a slash, and keeps seasonText on the same words', () => {
+    expect(seasonWeekText(2)).toBe('Week 2 / 5 this season');
+    expect(seasonWeekText(5)).toBe('Week 5 / 5: the Festival ends the season');
+    expect(seasonText({ index: 1, week: 4 })).toBe(seasonWeekText(4));
+    expect(seasonText(null)).toBeNull();
   });
 });

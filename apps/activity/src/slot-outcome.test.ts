@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { reduceTap as dungeonTap, resolveDrop as dungeonDrop, type Slots } from './dungeon-team';
 import type { RowSlotView } from './raid-api';
 import { resolveDrop as raidDrop } from './raid-dnd';
-import { reduceTap as raidTap, type TapContext } from './raid-slots';
+import type { TapContext } from './raid-slots';
 import {
   CANCEL_ANNOUNCEMENT,
   dropOutcome,
@@ -47,7 +47,7 @@ describe('the raid and the dungeon rules say the same things', () => {
     { slot: 1, zone: 'front', creature: mine('b', 'Bo') },
     { slot: 2, zone: 'front', creature: null },
   ];
-  const ctx: TapContext = { locked: false, row, teamIds: ['a', 'b', 'c'] };
+  const ctx: TapContext = { locked: false, row };
   const slots: Slots = ['a', 'b', null];
   const names: Record<string, string> = { a: 'Ann', b: 'Bo', c: 'Cy' };
   const nameOf = (id: string): string => names[id] ?? id;
@@ -57,12 +57,10 @@ describe('the raid and the dungeon rules say the same things', () => {
     expect(dungeonDrop(slots, 'a', null, nameOf).outcome.announce).toBe(CANCEL_ANNOUNCEMENT);
   });
 
-  it('takes a placed creature out on the tray, and ignores one that is not placed', () => {
-    expect(raidDrop(ctx, 'a', 'Ann', { kind: 'tray' }).announce).toBe(takenOutAnnouncement('Ann'));
+  it('takes a placed creature out on the dungeon tray with the shared sentences', () => {
     expect(dungeonDrop(slots, 'a', { kind: 'tray' }, nameOf).outcome.announce).toBe(
       takenOutAnnouncement('Ann'),
     );
-    expect(raidDrop(ctx, 'c', 'Cy', { kind: 'tray' }).announce).toBe(notInRowAnnouncement('Cy'));
     expect(dungeonDrop(slots, 'c', { kind: 'tray' }, nameOf).outcome.announce).toBe(
       notInRowAnnouncement('Cy'),
     );
@@ -88,9 +86,7 @@ describe('the raid and the dungeon rules say the same things', () => {
   it('reads one Tap shape: a creature by id, a slot by number', () => {
     const creature: Tap = { kind: 'creature', id: 'a' };
     const slot: Tap = { kind: 'slot', slot: 2 };
-    expect(raidTap(ctx, null, creature).selected).toBe('a');
     expect(dungeonTap(slots, null, creature).selected).toBe('a');
-    expect(raidTap(ctx, 'a', slot).intent).toEqual({ type: 'place', creatureId: 'a', slot: 2 });
     expect(dungeonTap(slots, 'a', slot).slots).toEqual([null, 'b', 'a']);
   });
 });

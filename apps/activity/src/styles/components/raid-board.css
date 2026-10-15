@@ -1,0 +1,62 @@
+/*
+  The raid board (ui/RaidBoard.tsx): its grid (the rows, the lanes, the label column, the scroller)
+  is in lane-grid.css, shared with the fight stage. This file has what is the board's own: the tile,
+  the shared .party-slot made small so about four lanes fit on a 360 px phone.
+*/
+
+/*
+  Your own creatures on the board are dragged after a short press and hold (use-drag-drop.ts), so a
+  swipe that starts on one still scrolls the board sideways, or the page. (The shared .draggable
+  turns touch scrolling off, which is right for a drag that starts at once.)
+*/
+.raid-board .party-slot.draggable {
+  touch-action: pan-x pan-y;
+}
+
+/* --- A tile --- */
+
+.board-row .party-slot {
+  width: var(--tile-w);
+  height: var(--tile-h);
+  min-height: 0;
+  padding: 0.125rem;
+  overflow: hidden;
+}
+
+.board-row .party-slot:focus-visible {
+  outline-offset: 2px;
+}
+
+.board-row .party-slot.empty {
+  justify-content: center;
+}
+
+.board-row .party-slot canvas.sprite {
+  margin-top: 0.875rem;
+}
+
+/* One line, cut with an ellipsis rather than broken mid-word; the popover and the aria label have the full name. */
+.board-row .party-slot .slot-species {
+  display: block;
+  font-size: 0.625rem;
+  line-height: 1.15;
+  overflow-wrap: normal;
+  white-space: nowrap;
+  word-break: normal;
+}
+
+/* The owner's initial: in the corner, in the owner's colour. */
+.party-slot .slot-owner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  min-width: 1rem;
+  height: 1rem;
+  background: var(--owner, var(--line));
+  color: var(--owner-ink, var(--bone));
+  font-family: var(--display);
+  font-size: 0.875rem;
+  line-height: 1;
+}

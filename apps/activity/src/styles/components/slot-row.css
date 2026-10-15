@@ -1,18 +1,13 @@
 /*
   The slot row and the creature tray: where creatures are placed, by tap, key or drag. One set of
-  rules for the raid's party row (three zones) and the dungeon's team (one row of three); see
-  ui/SlotRow.tsx, ui/CreatureTray.tsx and ui/DragGhost.tsx. The raid and dungeon differences are
-  the few rules marked below. Order matters inside this file: later rules of the same weight win.
+  rules for the raid's board (a grid of three rows, see raid-board.css) and the dungeon's team (one
+  row of three); see ui/SlotRow.tsx, ui/RaidBoard.tsx, ui/CreatureTray.tsx and ui/DragGhost.tsx.
+  The raid and dungeon differences are the few rules marked below. Order matters inside this file:
+  later rules of the same weight win.
 */
 
-/* --- The strip and its zones --- */
+/* --- The strip --- */
 
-/*
-  The party row: one row for each zone, front first (closest to the boss), then middle, then back,
-  exactly as the fight stage shows them. A zone is its label at the left and its slots centred and
-  wrapping, so nothing scrolls sideways. The sizes come from zone-layout.ts as custom properties
-  (--unit-w, --unit-gap, --zone-label-w, --zone-label-gap).
-*/
 .party-strip {
   display: flex;
   flex-direction: column;
@@ -20,14 +15,7 @@
   padding: 0.25rem 0 0.5rem;
 }
 
-.party-zone {
-  display: grid;
-  grid-template-columns: var(--zone-label-w, 44px) minmax(0, 1fr);
-  gap: var(--zone-label-gap, 4px);
-  align-items: center;
-}
-
-/* The name of a zone, at the left of its row (the fight stage uses the same label). */
+/* The name of a row, at the left of it (the fight stage uses the same label). */
 .zone-label {
   margin: 0;
   color: var(--haze);
@@ -35,13 +23,6 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   overflow-wrap: anywhere;
-}
-
-.zone-slots {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--unit-gap, 4px);
 }
 
 /*
@@ -68,18 +49,18 @@
   flex: none;
   flex-direction: column;
   align-items: center;
-  width: var(--unit-w, 5.5rem);
+  width: 5.5rem;
   min-width: 0;
   min-height: 6rem;
   padding: 0.2rem;
-  border: 2px solid var(--owner, var(--line));
+  border: 2px solid var(--el, var(--line));
   background: var(--dusk);
   font-size: 0.6875rem;
   line-height: 1.2;
   text-align: center;
 }
 
-/* Long zones use smaller sprites and smaller text. */
+/* Small sprites and smaller text (the raid board's tiles). */
 .party-slot.compact {
   padding: 0.125rem;
   font-size: 0.625rem;
@@ -93,10 +74,6 @@
 
 .party-slot.target {
   border-color: var(--gold);
-}
-
-.party-slot.adjacent {
-  background: var(--adjacent);
 }
 
 .party-slot.mine {
@@ -121,8 +98,7 @@
 }
 
 /* Names wrap to two lines at most; anything longer ends in an ellipsis. */
-.slot-species,
-.slot-owner {
+.slot-species {
   display: -webkit-box;
   max-width: 100%;
   font-weight: 600;
@@ -140,37 +116,48 @@
   color: var(--haze);
 }
 
-/* The owner colours of the raid's slots, and of the avatars in the roster strip. */
+/*
+  The owner colours of the raid's tiles: --owner is the colour behind the owner's initial and
+  --owner-ink the text on it, picked so the pair reads at 3:1 or better.
+*/
 .owner-0 {
   --owner: #5865f2;
+  --owner-ink: var(--bone);
 }
 
 .owner-1 {
   --owner: #3ba55d;
+  --owner-ink: var(--ink);
 }
 
 .owner-2 {
   --owner: #eb459e;
+  --owner-ink: var(--ink);
 }
 
 .owner-3 {
   --owner: #f0b232;
+  --owner-ink: var(--ink);
 }
 
 .owner-4 {
   --owner: #00b0f4;
+  --owner-ink: var(--ink);
 }
 
 .owner-5 {
   --owner: #ed4245;
+  --owner-ink: var(--ink);
 }
 
 .owner-6 {
   --owner: #9b59b6;
+  --owner-ink: var(--bone);
 }
 
 .owner-7 {
   --owner: #e67e22;
+  --owner-ink: var(--ink);
 }
 
 /* --- The creature tray --- */
@@ -204,36 +191,6 @@
 /* The tag chips under a team chip. */
 .team-tags {
   margin: 0.25rem 0 0;
-}
-
-/* The raid's tray is small: three chips in one row, sprite, name and level under it. */
-.placement .team-list {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.375rem;
-  margin: 0.25rem 0 0.75rem;
-}
-
-.placement .team-chip {
-  align-items: center;
-  padding: 0.25rem;
-  font-size: 0.8125rem;
-  line-height: 1.2;
-  text-align: center;
-}
-
-.placement .team-chip.placed {
-  background: var(--mine);
-}
-
-.placement .team-chip .muted {
-  font-size: 0.75rem;
-}
-
-.placement .team-tags {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.125rem;
 }
 
 /* --- Drag and drop --- */
@@ -280,6 +237,16 @@
 .party-strip.dragging .party-slot.drop-over {
   outline-style: solid;
   background-color: var(--dusk-2);
+}
+
+/*
+  An empty tile has a dashed edge of its own, gold when a creature is in hand (.target, for a tap).
+  During a drag the outline above is the one signal, so that edge goes quiet: otherwise every empty
+  tile shows two dashed frames, one gold and one green. The tile keeps its size (the border stays,
+  transparent). Tiles with a creature keep their element ring, which is who they are, not a drop state.
+*/
+.party-strip.dragging .party-slot.empty {
+  border-color: transparent;
 }
 
 .team-list.tray-target {

@@ -9,6 +9,7 @@ import type { DevPanelProps } from '../dev-gate';
 import { creatureName } from '../game';
 import {
   describeResult,
+  errorSentence,
   eventLine,
   fetchDevEvents,
   fetchDevState,
@@ -168,7 +169,7 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
       inFlight.current = false;
       setBusy(false);
       if (!outcome.ok) {
-        setStatus({ ok: false, text: `${spec.label}: ${outcome.error}` });
+        setStatus({ ok: false, text: `${spec.label}: ${errorSentence(outcome.error)}` });
         return;
       }
       setStatus({ ok: true, text: `${spec.label}: ${describeResult(outcome.result)}` });

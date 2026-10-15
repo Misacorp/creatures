@@ -1,0 +1,69 @@
+/*
+  The raid fight stage's party, as the raid board draws it: Front, Middle and Back are three lines
+  that never wrap, a lane is a column, and all three lines scroll sideways together in one scroller
+  (see components/lane-grid.css for the shared grid). The row names are a column at the left that
+  does not scroll. The dungeon's single row (single-row.css) does not use this. The scroller follows
+  the creature that acts (Stage.tsx); every row is --tile-h tall, so a name lines up with its row.
+*/
+.stage-grid {
+  --tile-w: 3.25rem;
+  --tile-h: 4.875rem;
+}
+
+/* A creature is one lane wide, however many there are. */
+.stage-grid .stage-zone {
+  display: block;
+  width: max-content;
+  height: var(--tile-h);
+  padding: 0;
+}
+
+.stage-grid .zone-units {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 4px;
+}
+
+.stage-grid .stage-unit {
+  width: var(--tile-w);
+}
+
+/* One line, cut with an ellipsis rather than broken mid-word (the creature's popover has its name). */
+.stage-grid .unit-name {
+  display: block;
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+.stage-grid .unit-hp {
+  max-width: calc(var(--tile-w) - 0.5rem);
+}
+
+/* The name of a row, with the warning of a zone the boss will hit next round (the row has the frame). */
+.stage-grid .board-label {
+  position: relative;
+}
+
+.stage-grid .board-label.warned {
+  outline: 2px dashed var(--gold);
+  outline-offset: -2px;
+}
+
+/*
+  Numbers that rise from a creature have the lane header and the scroller's padding to rise through
+  (the scroller cuts off what leaves it), so they rise less than on the boss.
+*/
+.stage-grid .float {
+  --rise: 1.25rem;
+  --ly: calc(var(--lane, 0) * -0.9rem);
+}
+
+/* The glyph of a zone's frame stays at the left edge of the window, wherever the row is scrolled to. */
+.stage-grid .zone-fx {
+  justify-content: flex-start;
+}
+
+.stage-grid .zone-fx > canvas {
+  position: sticky;
+  left: 0.5rem;
+}

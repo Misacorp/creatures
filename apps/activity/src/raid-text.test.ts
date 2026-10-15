@@ -1,6 +1,13 @@
 import { content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { gimmickLines, gimmickShort, gimmickText, phaseName, turnOrderText } from './raid-text';
+import {
+  gimmickLines,
+  gimmickShort,
+  gimmickText,
+  phaseLine,
+  phaseName,
+  turnOrderText,
+} from './raid-text';
 
 describe('turnOrderText', () => {
   it('explains each order', () => {
@@ -62,5 +69,13 @@ describe('phaseName', () => {
   it('names the phases', () => {
     expect(phaseName('phase1')).toBe('Phase 1');
     expect(phaseName('finale')).toBe('Finale');
+  });
+});
+
+describe('phaseLine', () => {
+  it('writes the phase as a count for the stage head, and keeps the finale by name', () => {
+    expect(phaseLine('phase1')).toBe('Phase 1 / 3');
+    expect(phaseLine('phase2')).toBe('Phase 2 / 3');
+    expect(phaseLine('finale')).toBe('Finale');
   });
 });

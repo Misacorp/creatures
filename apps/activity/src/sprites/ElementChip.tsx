@@ -22,9 +22,10 @@ interface ElementChipProps {
   /**
    * `tag` (default): chips that open their own glossary popover, so this must not be placed inside
    * another button. `button`: plain buttons that call `onOpen` with the glossary entry instead (the
-   * creature popover shows the entry itself, in the same popover).
+   * creature popover shows the entry itself, in the same popover). `plain`: the same chips as
+   * text only, with no tap, for inside a button or a list option (the roster picker).
    */
-  as?: 'tag' | 'button';
+  as?: 'tag' | 'button' | 'plain';
   onOpen?: (entry: string) => void;
 }
 
@@ -57,6 +58,20 @@ export function ElementChip({ element, role, as = 'tag', onOpen }: ElementChipPr
           >
             <span class="chip-text">{capitalize(role)}</span>
           </button>
+        )}
+      </>
+    );
+  }
+  if (as === 'plain') {
+    return (
+      <>
+        <Tag kind="chip" tone={`t-${safe}`} icon={icon}>
+          {elementName(element)}
+        </Tag>
+        {role !== undefined && role !== '' && (
+          <Tag kind="chip" tone="role-chip">
+            {capitalize(role)}
+          </Tag>
         )}
       </>
     );

@@ -8,7 +8,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { RefObject } from 'preact';
 import {
   SCROLL_EDGE,
+  autoScrollSpeed,
   hitTest,
+  holdMove,
   move,
   pageScrollSpeed,
   press,
@@ -30,10 +32,15 @@ interface DragState {
 interface UseDragDropArgs {
   /** No drags can start while true (locked row, or a request in flight). */
   disabled: boolean;
-  /** The strip holding the slots (`[data-slot]` buttons), one row for each zone. */
+  /** The strip holding the slots (`[data-slot]` buttons): the raid board scrolls sideways. */
   stripRef: RefObject<HTMLElement>;
-  /** The team tray: dropping a placed creature here unplaces it. */
-  trayRef: RefObject<HTMLElement>;
+  /** The team tray (the dungeon's): dropping a placed creature here takes it out. Absent: no tray. */
+  trayRef?: RefObject<HTMLElement>;
+  /**
+   * Touch only: pick a creature up after the finger has rested on it this long (ms), and treat a
+   * move before that as a scroll. Absent: a touch drags at once, as a mouse does (the dungeon).
+   */
+  touchHoldMs?: number;
   /** Called when a drag ends: `target` is null for a drop off the row or a cancel. */
   onDrop: (creatureId: string, target: DropTarget | null) => DropOutcome<unknown>;
 }
@@ -104,7 +111,7 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
         if (slot !== null) return { kind: 'slot', slot };
       }
     }
-    const tray = latest.current.trayRef.current;
+    const tray = latest.current.trayRef?.current ?? null;
     if (tray !== null) {
       const t = tray.getBoundingClientRect();
       if (p.x >= t.left && p.x <= t.right && p.y >= t.top && p.y <= t.bottom) {
@@ -129,6 +136,10 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
     });
     pointer.current = { x: event.clientX, y: event.clientY };
     let frame = 0;
+    // A finger on the raid board picks a creature up only after a short hold, so a swipe still scrolls.
+    const holdMs = latest.current.touchHoldMs;
+    const holdToDrag = holdMs !== undefined && event.pointerType === 'touch';
+    let holdTimer: ReturnType<typeof setTimeout> | null = null;
 
     const refreshOver = (): void => {
       const current = state;
@@ -156,29 +167,44 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
       }
     };
 
+    /** The press becomes a drag: the creature is lifted, the pointer is captured and the ghost follows. */
+    const lift = (next: DragPhase<string, DropTarget>): void => {
+      suppressClick.current = true;
+      try {
+        source.setPointerCapture(pointerId);
+      } catch {
+        // The pointer may already be gone; the window listeners still work.
+      }
+      window.getSelection()?.removeAllRanges();
+      const over = locate(pointer.current);
+      state = next.phase === 'dragging' ? { ...next, over } : next;
+      setDrag({ creatureId, over });
+      frame = requestAnimationFrame(tick);
+    };
+
     const onMove = (e: PointerEvent): void => {
       if (e.pointerId !== pointerId) return;
       pointer.current = { x: e.clientX, y: e.clientY };
+      if (holdToDrag && state.phase === 'pending') {
+        // Moved before the hold was over: a swipe. Let go, and the browser scrolls.
+        if (holdMove(state.start, pointer.current) === 'swipe') stop();
+        return;
+      }
       const before = state.phase;
       const next = move(state, pointer.current, null);
       state = next;
       if (next.phase !== 'dragging') return;
       if (before === 'pending') {
-        suppressClick.current = true;
-        try {
-          source.setPointerCapture(pointerId);
-        } catch {
-          // The pointer may already be gone; the window listeners still work.
-        }
-        window.getSelection()?.removeAllRanges();
-        const over = locate(pointer.current);
-        state = { ...next, over };
-        setDrag({ creatureId, over });
-        frame = requestAnimationFrame(tick);
+        lift(next);
         return;
       }
       placeGhost();
       refreshOver();
+    };
+
+    // While a creature is carried by a finger the page must not scroll under it.
+    const onTouchMove = (e: TouchEvent): void => {
+      if (state.phase === 'dragging' && e.cancelable) e.preventDefault();
     };
 
     const onUp = (e: PointerEvent): void => {
@@ -201,19 +227,31 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
       if (state.phase === 'dragging') e.preventDefault();
     };
 
-    // The zones are rows, so a tall party can be longer than the screen: near the top or bottom
-    // edge of the window the page scrolls, and the slots are measured again.
+    // Near the top or bottom edge of the window the page scrolls, and near the left or right edge of
+    // a board that scrolls sideways (the raid's) the board does; the slots are measured again.
     function tick(): void {
       frame = requestAnimationFrame(tick);
       if (state.phase !== 'dragging') return;
-      const speed = pageScrollSpeed(pointer.current.y, window.innerHeight, SCROLL_EDGE);
-      if (speed === 0) return;
       // Whole pixels, at least one, or slow edge speeds would round to nothing.
-      window.scrollBy(0, Math.sign(speed) * Math.max(1, Math.round(Math.abs(speed))));
-      refreshOver();
+      const whole = (speed: number): number =>
+        Math.sign(speed) * Math.max(1, Math.round(Math.abs(speed)));
+      const speed = pageScrollSpeed(pointer.current.y, window.innerHeight, SCROLL_EDGE);
+      if (speed !== 0) window.scrollBy(0, whole(speed));
+      let sideways = 0;
+      const strip = latest.current.stripRef.current;
+      if (strip !== null && strip.scrollWidth > strip.clientWidth) {
+        const box = strip.getBoundingClientRect();
+        if (pointer.current.y >= box.top && pointer.current.y <= box.bottom) {
+          sideways = autoScrollSpeed(pointer.current.x, box.left, box.right, SCROLL_EDGE);
+          if (sideways !== 0) strip.scrollLeft += whole(sideways);
+        }
+      }
+      if (speed !== 0 || sideways !== 0) refreshOver();
     }
 
     function stop(): void {
+      if (holdTimer !== null) clearTimeout(holdTimer);
+      window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
@@ -239,6 +277,13 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
     window.addEventListener('pointercancel', onCancel);
     window.addEventListener('keydown', onKey);
     window.addEventListener('contextmenu', onContext);
+    if (holdToDrag) {
+      window.addEventListener('touchmove', onTouchMove, { passive: false });
+      holdTimer = setTimeout(() => {
+        if (state.phase === 'pending')
+          lift({ ...state, phase: 'dragging', at: pointer.current, over: null });
+      }, holdMs);
+    }
     teardown.current = stop;
   }
 

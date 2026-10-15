@@ -1,6 +1,6 @@
 # Raid UX pass 2: a readable board, familiar patterns, a leaner page
 
-Status: **plan, 2026-10-14.** Nothing here is built. It comes from Misa's review of the raid page on a phone. It is the next build after PR #18 (the left-to-right dungeon), and it goes **before or together with** the attack-pattern build (`attack-patterns.md`), because the patterns need a board where rows, lanes and neighbours are easy to see.
+Status: **built, 2026-10-14** (all ten slices and the decided items; the raid fight stage got the same lane grid as the board). The raid structure section below is still a plan, built with the attack patterns. Details of each slice are in `decisions.md` (2026-10-14 entries). It comes from Misa's review of the raid page on a phone. It is the next build after PR #18 (the left-to-right dungeon), and it goes **before or together with** the attack-pattern build (`attack-patterns.md`), because the patterns need a board where rows, lanes and neighbours are easy to see.
 
 ## Misa's asks (verbatim intent)
 
@@ -125,27 +125,52 @@ Facts:
 Proposal (needs a sim pass; numbers are starting points):
 
 - **Phase floors:**
-  - Each phase gets a floor the pool can't go below.
-  - Damage past the floor is still counted as "overkill", which feeds contribution credit and the after-action card ("The boss shrugged off 1,240 damage"), so strong play still shows.
-  - The phase ends early once the boss reaches its floor and turns immune. The replay shows a clear "Immune!" beat.
-  - Starting numbers: Phase 1 floor at 70% HP left, Phase 2 floor at about 15% (Misa's 10–20%), finale to 0. The thresholds (`clearAtLossBp`) become the floors, so "cleared" means "drove it to its floor".
-  - New scalars: `RULES.raid.phases[].floorBp`.
-- **Enrage:**
+  - Each phase gets a floor the pool can't go below. Once the boss reaches it, it turns **immune and the phase ends**. There is **no overkill**: damage past the floor is not counted for loot, credit or the after-action card (Misa: counting it would be unintuitive).
+  - **Say it clearly.** The replay shows the moment: the boss goes immune, the reason in one line, and what happens next, so players never wonder why it stopped taking damage. Each boss can dress it up in its own way, as content data (a line per boss, with a shared fallback). Examples: "Tidal Colossus sinks beneath the waves. It will rise again in Phase 2." "Cinder Wyrm takes flight, out of reach. Face it in the finale on Sunday." The phase result card says the same ("Phase 1 cleared: the boss retreated").
+  - Starting numbers: Phase 1 floor at 70% HP left, Phase 2 floor at **15%** (Misa: "lots to do and it's still exciting"), finale to 0. The thresholds (`clearAtLossBp`) become the floors, so "cleared" means "drove it to its floor".
+  - New scalars: `RULES.raid.phases[].floorBp`. Tune from the live finale win rate and close calls.
+- **Enrage (raid finale):**
   - When the finale's rounds run out, it goes to **enrage rounds** (`RULES.raid.enrage`: `rounds` 3, `atkBp` per round, `multiTargetEveryRound: true`).
   - The boss uses its multi-target moves from the attack-pattern catalogue (Sweep, Barrage, Pincer) every round at a large multiplier, tuned so a typical row is wiped in 2–3 rounds.
-  - The fight ends on a wipe or a kill. Shown as a red "Enraged" banner on the stage and in the forecast.
+  - The fight ends on a wipe or a kill. Shown as a red "Enraged" banner on the stage and in the forecast, with one line on why ("Out of time: the Wyrm is enraged!").
+  - **An enrage loss is a normal loss** for Boss Rank and rewards.
+  - Phases 1 and 2 have no enrage: they end at their round limit or their floor.
+- **Enrage (dungeon boss room), to teach the mechanic:**
+  - Today a room whose rounds run out with the foe standing ends the run. In the **boss room only**, the boss enrages instead (`RULES.dungeon.enrage`: about 2 rounds, a big Attack multiplier, hits every creature). Normal rooms keep today's rule.
+  - Same banner and wording as the raid, so players meet enrage first in the daily dungeon and recognise it on Sunday.
+  - The dungeon rule (always left to right) stays simple: enrage is announced when it happens, as the left-to-right decision requires of a change to the normal rules.
+  - Balance: a few more boss rooms get cleared at the frontier. Check the `dungeon-*` sim targets.
+  - Misa may walk this back if it plays badly. Keep it behind its own scalar so it can be switched off.
 - **Balance impact:**
   - Floors move damage from phases 1 and 2 into the finale, so the finale needs more of the week's work. The finale win rate and its band (`raid-*` targets) must be re-tuned.
   - Enrage adds a few late wins. This **is** the full raid retune.
 - **Do it once, together with the attack patterns** (`attack-patterns.md`): both change raid lethality and the win band, and enrage uses the pattern moves.
 
-**Questions for Misa** (recommended answers):
+**Decided (Misa, 2026-10-14):**
 
-1. **Overkill:** should damage past a phase floor still count for loot and credit? _Recommended: yes_, so a strong phase is rewarded without skipping the finale.
-2. **Finale share:** is about 15% of the boss's HP left for the finale right, or should the finale carry more (25–35%) so it isn't a formality on strong servers? _Recommended: start at 15% as Misa suggested, measure the live finale win rate and close calls, and tune `floorBp`._
-3. **Enrage in phases 1 and 2 too,** or the finale only? _Recommended: finale only._ Phases end at their round limit or their floor, so they need no enrage.
-4. **Rank on an enrage loss:** does an enrage loss count like any finale loss? _Recommended: yes, the same as today's loss._
+1. **No overkill.** Reaching a floor ends the phase. Damage past it counts for nothing. The game explains why the boss is gone and what comes next.
+2. **Finale share: 15%** of the boss's HP (Phase 2 floor).
+3. **Enrage in the raid finale only, and in dungeon boss rooms** (to teach it). Reversible.
+4. **An enrage loss is a normal loss.**
+
+## Raid Roster (Misa, 2026-10-14)
+
+Status: **built, 2026-10-14**. It follows a production bug (a player with four creatures on the board) and replaces the "your team" step of the placement section. Details and reasons are in `decisions.md` (2026-10-14: "Raid Roster", "four creatures on the board", "picker effects").
+
+**The model.** A player's raid creatures for the week are the ones they **placed on the board**, at most three. Whatever is missing up to three is filled in with their strongest unplaced creatures when a phase resolves (the same `autoTeam` order as before, then the existing `autoPlace`). A player who places nothing gets the full automatic team, as before. There is no "choose team" and no "automatic team" button any more.
+
+**The section.**
+
+- Title **Raid Roster**, one help sentence under it ("Pick your creatures and place them on the board alongside everyone else."), then one count line: "1 / 3 placed · the rest join automatically when Phase 1 locks". The phase comes from the view's next event; once the board is locked it says so.
+- Gone: the "Keyboard controls" disclosure, the old help line, the "Your team" tray ("chosen by you"), the Choose team, Use automatic team and Unplace buttons, the lane pips above the board, and tap-to-select then tap-a-slot.
+- **Empty slot (tap, or Enter):** opens the creature picker, a bottom sheet with a listbox of everything the player owns. Each option has the sprite, name, level, an element tag and a role tag. Creatures already on the board say "On the board · moves here" and stay pickable. At 3 / 3 the new ones are disabled with "3 / 3 on the board, remove one first". Up, Down, Home and End move through the list, Enter or Space picks, Escape or Close closes, Tab stays inside the sheet, and focus returns to the slot.
+- **Effect preview in the picker:** behind one constant, `SHOW_PICKER_EFFECTS` in `roster-picker.ts` (on). Each option gets one quiet line, cut with an ellipsis, saying what it would do **in that slot**: "Steam with Splashet", "Buffs 2 neighbours", "Covers its row", or nothing. It comes from the engine's `affects` helper, so it is exactly what the fight does. Misa's words: "If it crowds the picker I think it's a bad idea, but I do like it and would like to see a version where it's tried." The workbench page `RosterPicker` has presets with it on and off to compare.
+- **Tap a creature on the board:** yours opens the standard creature popover with a **Remove from board** button; someone else's opens the popover with its effect and owner. Once the board is locked everything is read-only: no picker, no drag, no remove button.
+- **Moving creatures:** by drag, or by picking it again in the picker ("moves here"); the picker is also the keyboard and screen reader way. A finger needs a short press and hold (250 ms) to pick a creature up, so a normal swipe still scrolls the board sideways (or the page). Dragging near the left or right edge of the board scrolls it; this was checked at 360 and 390 px with touch emulation.
+- The reaction and influence cues still show on drag, hover and in the popover.
+
+**Server.** `PUT /api/raid/placement` refuses a new fourth creature with 409 `board_full`; a creature already on the board moves. `PUT /api/raid/team` is a validated no-op (the old body still validates, nothing is stored, the answer is the fresh view) and the `raid_teams` table is kept for a later migration. The view still carries `you.team` (the creatures the player brings, with `slot` null for the filled-in ones) and `you.team.mode`, which is always `auto`, for older clients.
 
 ## Open questions for Misa
 
-- The four raid-structure questions above.
+- None open. The raid-structure questions are decided above.

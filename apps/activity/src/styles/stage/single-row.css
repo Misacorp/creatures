@@ -28,7 +28,7 @@
   height: 0.5rem;
 }
 
-/* The foe's name sits under its sprite, as a creature's name does, and its HP is written on the bar. */
+/* The foe's name sits under its sprite, as a creature's name does (the raid's boss too), and its HP is written on the bar. */
 .stage-foe-name {
   margin: 0;
   max-width: 100%;
@@ -59,12 +59,12 @@
   padding-top: 0.25rem;
 }
 
-/* The acting order under each creature ("1st", "2nd", "3rd"); the one acting now is lit. */
-.stage.single .stage-unit.acting .unit-art {
+/* The creature acting now: a gold frame, and its ordinal ("1st", "2nd", "3rd") lit under it. */
+.stage-unit.acting .unit-art {
   outline: 2px solid var(--gold);
 }
 
-.stage.single .stage-unit.acting .unit-slot {
+.stage-unit.acting .unit-slot {
   padding: 0 0.25rem;
   background: var(--gold);
   color: var(--ink);

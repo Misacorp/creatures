@@ -117,14 +117,15 @@ export const raidRoutes: Routes<RaidRouteContext> = {
       return channelAnswer(core, channelId, true);
     },
   },
+  // Retired: a player's raid creatures are the ones they place on the board (plus the strongest to
+  // make three), so there is no team to choose. The route stays so an old client mid-week does not
+  // break: it validates the body, changes nothing and answers with the fresh view. The
+  // `raid_teams` table is kept for a later migration and is no longer read or written.
   '/api/raid/team': {
     PUT: async (request, { user, core }) => {
       const body = await parseBody(request, TeamBodySchema);
       if (body === undefined) return invalidBody();
-      const tz = core.timezone();
-      const outcome = core.raid.setTeam(user.id, tz, body.creatureIds);
-      if (!outcome.ok) return failure(outcome);
-      return json(core.raid.view(user.id, tz));
+      return json(core.raid.view(user.id, core.timezone()));
     },
   },
   '/api/raid/placement': {
@@ -150,7 +151,7 @@ export const raidRoutes: Routes<RaidRouteContext> = {
       const body = await parseBody(request, OptOutBodySchema);
       if (body === undefined) return invalidBody();
       const tz = core.timezone();
-      const outcome = core.raid.setOptOut(user.id, tz, body.optOut);
+      const outcome = core.raid.setOptOut(tz);
       if (!outcome.ok) return failure(outcome);
       return json(core.raid.view(user.id, tz));
     },

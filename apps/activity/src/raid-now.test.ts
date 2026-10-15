@@ -110,20 +110,6 @@ describe('nowAction', () => {
     expect(action).toMatchObject({ kind: 'resolving', label: 'Phase 1 is happening now' });
   });
 
-  it('offers to join again for a player who sits the week out', () => {
-    const action = nowAction(view({ party: null, you: { optOut: true } }), 'before', FRIDAY - HOUR);
-    expect(action).toMatchObject({ kind: 'rejoin', target: 'rejoin' });
-  });
-
-  it('only states that the week is sat out when the player cannot change it', () => {
-    const action = nowAction(
-      view({ party: null, you: { optOut: true, canOptOut: false } }),
-      'before',
-      FRIDAY - HOUR,
-    );
-    expect(action).toMatchObject({ kind: 'sitting-out', target: null });
-  });
-
   it('tells a player outside the roster how to join, with nothing to tap', () => {
     const action = nowAction(
       view({ party: null, you: { inRoster: false, team: null } }),

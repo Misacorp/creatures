@@ -99,49 +99,99 @@ export function autoTeam(creatures: readonly TeamCreature[]): TeamCreature[] {
     .slice(0, RULES.raid.teamSize);
 }
 
+/** One placed creature as stored: `rowid` is the order they were placed in (a move places again). */
+export type PlacementRow = {
+  rowid: number;
+  slot: number;
+  user_id: string;
+  creature_id: string;
+};
+
+/**
+ * At most `teamSize` placements per player, chosen deterministically: creatures in `preferred`
+ * first, then the earliest placed (`rowid`), then the lowest slot. Pure. No player has more than
+ * three creatures on the board (a stale row used to make a fourth); this is the one rule that
+ * decides which survive, used by the data repair and by every read and write of placements.
+ */
+export function capPlacements<T extends PlacementRow>(
+  rows: readonly T[],
+  preferred: ReadonlySet<string> = new Set(),
+): T[] {
+  const byUser = new Map<string, T[]>();
+  for (const row of rows) {
+    const list = byUser.get(row.user_id);
+    if (list === undefined) byUser.set(row.user_id, [row]);
+    else list.push(row);
+  }
+  const kept = new Set<T>();
+  for (const list of byUser.values()) {
+    list
+      .sort(
+        (a, b) =>
+          Number(preferred.has(b.creature_id)) - Number(preferred.has(a.creature_id)) ||
+          a.rowid - b.rowid ||
+          a.slot - b.slot,
+      )
+      .slice(0, RULES.raid.teamSize)
+      .forEach((row) => kept.add(row));
+  }
+  return rows.filter((row) => kept.has(row));
+}
+
+/**
+ * The placements of one party this week, at most three per player (see `capPlacements`). Only
+ * creatures their placing player still owns count.
+ */
+export function partyPlacements(sql: SqlStorage, weekId: string, party: number): PlacementRow[] {
+  return capPlacements(
+    sql
+      .exec<PlacementRow>(
+        `SELECT p.rowid AS rowid, p.slot AS slot, p.user_id AS user_id, p.creature_id AS creature_id
+         FROM raid_placements p JOIN creatures c ON c.id = p.creature_id AND c.user_id = p.user_id
+         WHERE p.week_id = ? AND p.party = ? ORDER BY p.rowid`,
+        weekId,
+        party,
+      )
+      .toArray(),
+  );
+}
+
 /** Sum of the power of a team. */
 export function teamPower(team: readonly TeamCreature[]): number {
   return team.reduce((total, c) => total + c.power, 0);
 }
 
-/** The chosen creature ids of a player this week, or null for the automatic team. */
-export function chosenTeamIds(sql: SqlStorage, weekId: string, userId: string): string[] | null {
-  const row = sql
-    .exec<{
-      creature_ids: string | null;
-    }>('SELECT creature_ids FROM raid_teams WHERE week_id = ? AND user_id = ?', weekId, userId)
-    .toArray()[0];
-  if (row?.creature_ids == null) return null;
-  try {
-    const parsed: unknown = JSON.parse(row.creature_ids);
-    if (Array.isArray(parsed) && parsed.every((x): x is string => typeof x === 'string')) {
-      return parsed;
-    }
-  } catch {
-    // Fall through: a damaged value means the automatic team.
-  }
-  return null;
-}
-
 /**
- * The creatures a player brings to this week's raid: the chosen ones if they all still belong to
- * the player, otherwise the automatic team.
+ * The creatures a player brings to this week's raid: the ones they placed on the board (at most
+ * three, see `capPlacements`; a placement of a creature they no longer own does not count), then
+ * their strongest unplaced creatures to make up three (`autoTeam` order). A player who placed
+ * nothing gets the automatic team. Sorted strongest first, so the order never depends on where or
+ * when a creature was placed.
+ *
+ * The fill is not stored: it is worked out again whenever a fight is built, so the three are
+ * always the player's strongest at that moment. Placed creatures always fight, wherever they are.
  */
-export function effectiveTeam(
-  sql: SqlStorage,
-  weekId: string,
-  userId: string,
-): { mode: 'auto' | 'chosen'; creatures: TeamCreature[] } {
+export function raidTeam(sql: SqlStorage, weekId: string, userId: string): TeamCreature[] {
   const owned = loadCreatures(sql, userId);
-  const ids = chosenTeamIds(sql, weekId, userId);
-  if (ids !== null) {
-    const byId = new Map(owned.map((c) => [c.id, c]));
-    const chosen = ids.map((id) => byId.get(id));
-    if (chosen.every((c): c is TeamCreature => c !== undefined)) {
-      return { mode: 'chosen', creatures: chosen };
-    }
-  }
-  return { mode: 'auto', creatures: autoTeam(owned) };
+  const byId = new Map(owned.map((c) => [c.id, c]));
+  const placedRows = capPlacements(
+    sql
+      .exec<PlacementRow>(
+        `SELECT p.rowid AS rowid, p.slot AS slot, p.user_id AS user_id, p.creature_id AS creature_id
+         FROM raid_placements p JOIN creatures c ON c.id = p.creature_id AND c.user_id = p.user_id
+         WHERE p.week_id = ? AND p.user_id = ? ORDER BY p.rowid`,
+        weekId,
+        userId,
+      )
+      .toArray(),
+  );
+  const placed = placedRows.map((r) => byId.get(r.creature_id) as TeamCreature);
+  const placedIds = new Set(placed.map((c) => c.id));
+  const fill = autoTeam(owned.filter((c) => !placedIds.has(c.id))).slice(
+    0,
+    RULES.raid.teamSize - placed.length,
+  );
+  return autoTeam([...placed, ...fill]);
 }
 
 /**

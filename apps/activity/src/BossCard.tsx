@@ -9,42 +9,16 @@ import type { RaidView } from './raid-api';
 import {
   bestRankText,
   festivalBanner,
+  bossHpWords,
   festivalTeaser,
   rankLabel,
   readinessMeter,
-  seasonPips,
-  seasonText,
 } from './raid-progress';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { PopoverCard, popupProps } from './ui/Popover';
 import { PixelHeading } from './ui/PixelHeading';
-import { BossHp } from './ui/SegmentBar';
-
-/** The five weeks of the season as pips: the Festival is the last one. */
-function SeasonPips({ season }: { season: RaidView['season'] }) {
-  const pips = seasonPips(season);
-  const text = seasonText(season);
-  if (pips.length === 0 || text === null) return null;
-  return (
-    <div class="season">
-      <ol class="season-pips" aria-label={text}>
-        {pips.map((pip) => (
-          <li
-            key={pip.week}
-            class={`season-pip ${pip.state}${pip.festival ? ' festival' : ''}`}
-            aria-current={pip.state === 'now' ? 'step' : undefined}
-          >
-            <span class="visually-hidden">{pip.label}</span>
-          </li>
-        ))}
-      </ol>
-      <p class="muted">
-        <GlossaryTag entry="season">{text}</GlossaryTag>
-      </p>
-    </div>
-  );
-}
+import { SegmentBar } from './ui/SegmentBar';
 
 /**
  * One icon of the boss card (the turn order or a trick): a small button that opens a popover with
@@ -112,7 +86,9 @@ function ReadinessMeter({
 
 /**
  * The boss card: the art at its full size, and beside it (below it on a phone) the name, Rank and
- * readiness, element, HP, and icons for the turn order and tricks. Details live in the popovers.
+ * readiness, element, this week's HP (a bar with the numbers on it), and icons for the turn order
+ * and tricks. Details live in the popovers. What is not about the boss lives elsewhere: the season
+ * in the "This week" section, the player count in the Raid Roster.
  */
 export function BossCard({ view }: { view: RaidView }) {
   const { boss } = view;
@@ -161,7 +137,12 @@ export function BossCard({ view }: { view: RaidView }) {
           </div>
           {hp !== null && (
             <div class="boss-hp">
-              <BossHp caption="Boss HP this week" current={hp.current} max={hp.max} />
+              <SegmentBar
+                size="boss"
+                current={hp.current}
+                max={hp.max}
+                {...bossHpWords(hp.current, hp.max)}
+              />
             </div>
           )}
           <ul class="boss-icons" aria-label="How the boss fights">
@@ -184,10 +165,7 @@ export function BossCard({ view }: { view: RaidView }) {
           <span>{adaptation.description}</span>
         )}
       </p>
-      <div class="boss-foot">
-        <SeasonPips season={view.season} />
-        {best !== null && <p class="muted">{best}</p>}
-      </div>
+      {best !== null && <p class="muted boss-foot">{best}</p>}
     </section>
   );
 }

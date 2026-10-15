@@ -14,6 +14,20 @@ export function errorCode(err: unknown): string {
   return 'network_error';
 }
 
+/**
+ * Plain sentences for the error codes a tool is expected to give, so the panel does not show a bare
+ * code. Any other code is shown as it is.
+ */
+const ERROR_SENTENCES: Readonly<Record<string, string>> = {
+  roster_locked:
+    'The roster is locked: Phase 1 has been fought this week. Jump the week to Week done, then to Preparation to start next week, then fill it.',
+};
+
+/** What the panel shows for an error code: a plain sentence when there is one, else the code. */
+export function errorSentence(code: string): string {
+  return Object.hasOwn(ERROR_SENTENCES, code) ? (ERROR_SENTENCES[code] ?? code) : code;
+}
+
 /** Runs one tool and answers its result, or the error code. Never throws. */
 export async function runTool(
   tool: DevToolId,

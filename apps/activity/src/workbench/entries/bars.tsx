@@ -91,12 +91,12 @@ const segmentBar: Entry = {
   file: 'apps/activity/src/ui/SegmentBar.tsx',
   group: 'Bars',
   description:
-    'A stepped HP bar: twenty red segments for a boss (optionally with its numbers written over the bar, as in the dungeon), five green ones under a creature in the fight; the segments that were just lost blink.',
+    'A stepped HP bar: twenty red segments for a boss (optionally with its numbers written over the bar, as on the boss card of the Raid tab and in the fight), five green ones under a creature in the fight; the segments that were just lost blink.',
   controls: {
     size: { kind: 'select', options: ['boss', 'unit'] },
-    current: { kind: 'number', min: 0, max: 1000 },
-    max: { kind: 'number', min: 1, max: 1000 },
-    previous: { kind: 'number', min: -1, max: 1000 },
+    current: { kind: 'number', min: 0, max: 100000 },
+    max: { kind: 'number', min: 1, max: 100000 },
+    previous: { kind: 'number', min: -1, max: 100000 },
     label: { kind: 'text' },
     text: { kind: 'text' },
   },
@@ -108,6 +108,15 @@ const segmentBar: Entry = {
     { name: 'Just hit', props: { current: 500, previous: 800 } },
     { name: 'Creature (unit)', props: { size: 'unit', current: 60, max: 100 } },
     { name: 'With the numbers on the bar', props: { current: 620, text: '620 / 1000' } },
+    {
+      name: 'Big numbers, written short (the raid boss card)',
+      props: {
+        current: 42023,
+        max: 50233,
+        label: 'Boss HP this week: 42023 / 50233',
+        text: '42K / 50.2K',
+      },
+    },
   ],
   render: (p) => {
     const previous = num(p, 'previous');
@@ -129,7 +138,7 @@ const bossHp: Entry = {
   file: 'apps/activity/src/ui/SegmentBar.tsx',
   group: 'Bars',
   description:
-    "The boss's HP bar with the numbers written out under it; it sits on the boss card of the Raid tab and over the finale stage.",
+    "The boss's HP bar with the numbers written out under it; it shows over the finale lobby (the boss card on the Raid tab uses the plain bar with the numbers on it instead).",
   controls: {
     caption: { kind: 'text' },
     current: { kind: 'number', min: 0, max: 100000 },

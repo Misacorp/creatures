@@ -813,54 +813,13 @@ function twoPlayers(ctx: CoreContext): Seeded[] {
 }
 
 describe('raid roster, team and ability events', () => {
-  it('logs an opt-out and a rejoin once each, and nothing for repeats or locked weeks', async () => {
+  it('logs nothing for the retired sit-out route', async () => {
     await runRaid(async (ctx) => {
       const [p] = twoPlayers(ctx) as [Seeded, Seeded];
       await ctx.core.analytics.prepare(p.id);
-      const set = (out: boolean) => ctx.core.raid.setOptOut(p.id, HELSINKI, out);
-      expect(set(true).ok).toBe(true);
-      expect(set(true).ok).toBe(true); // repeat
-      expect(set(false).ok).toBe(true);
-      expect(set(false).ok).toBe(true); // repeat
-      expect(events(ctx.sql, 'roster_optout').map((e) => e.props)).toEqual([
-        { optOut: true },
-        { optOut: false },
-      ]);
-      expect(events(ctx.sql, 'roster_optout')[0]?.actor_hash).toBe(
-        ctx.core.analytics.hashFor(p.id),
-      );
-
-      // Phase 1 locks the roster: refused, nothing logged.
-      ctx.clock.t = W02.afterPhase1;
-      ctx.core.raid.runDue(HELSINKI);
-      expect(ctx.core.raid.setOptOut(p.id, HELSINKI, true)).toMatchObject({ ok: false });
-      expect(events(ctx.sql, 'roster_optout')).toHaveLength(2);
-    });
-  });
-
-  it('logs team changes by species and ignores the same team again and refused teams', async () => {
-    await runRaid(async (ctx) => {
-      const [p, q] = twoPlayers(ctx) as [Seeded, Seeded];
-      await ctx.core.analytics.prepare(p.id);
-      const [c0, c1, c2] = p.creatureIds as [string, string, string];
-      const set = (ids: string[] | null) => ctx.core.raid.setTeam(p.id, HELSINKI, ids);
-      expect(set([c2, c1, c0]).ok).toBe(true);
-      expect(set([c2, c1, c0]).ok).toBe(true); // same team again
-      expect(set([c0, c1, c1])).toMatchObject({ ok: false }); // duplicate
-      expect(set([c0, c1, q.creatureIds[0] as string])).toMatchObject({ ok: false }); // not theirs
-      expect(set(null).ok).toBe(true);
-      expect(set(null).ok).toBe(true); // already automatic
-      const logged = events(ctx.sql, 'team_set');
-      expect(logged).toHaveLength(2);
-      const speciesOf = (id: string) =>
-        rows<{ species: string }>(ctx.sql, 'SELECT species FROM creatures WHERE id = ?', id)[0]
-          ?.species;
-      expect(logged[0]?.props).toEqual({
-        auto: false,
-        species: [speciesOf(c2), speciesOf(c1), speciesOf(c0)],
-      });
-      expect(logged[1]?.props).toMatchObject({ auto: true });
-      expect((logged[1]?.props['species'] as string[]).length).toBe(3);
+      expect(ctx.core.raid.setOptOut(HELSINKI).ok).toBe(true);
+      expect(ctx.core.raid.setOptOut(HELSINKI).ok).toBe(true);
+      expect(events(ctx.sql, 'roster_optout')).toHaveLength(0);
     });
   });
 
@@ -939,7 +898,7 @@ describe('raid roster, team and ability events', () => {
     await runRaid(async (ctx) => {
       twoPlayers(ctx);
       await ctx.core.analytics.prepare('999999999999999999');
-      expect(ctx.core.raid.setTeam('999999999999999999', HELSINKI, null)).toMatchObject({
+      expect(ctx.core.raid.place('999999999999999999', HELSINKI, 'whatever', 0)).toMatchObject({
         ok: false,
       });
       expect(ctx.core.raid.setAbility('999999999999999999', HELSINKI, 'whatever')).toMatchObject({
@@ -1543,8 +1502,6 @@ describe('privacy', () => {
         b.secret = await ctx.core.createSession(ctx.guildId, OTHER);
         // Raid actions through the API.
         await call(ctx, a.secret, 'GET', '/api/raid');
-        await call(ctx, a.secret, 'PUT', '/api/raid/opt-out', { optOut: true });
-        await call(ctx, a.secret, 'PUT', '/api/raid/opt-out', { optOut: false });
         await call(ctx, a.secret, 'PUT', '/api/raid/team', { creatureIds: null });
         await call(ctx, a.secret, 'PUT', '/api/raid/placement', {
           creatureId: a.starterId,
@@ -1580,7 +1537,6 @@ describe('privacy', () => {
           'push_on_choose',
           'push_on_result',
           'train',
-          'roster_optout',
           'placement',
           'autofire_toggle',
           'ability_pick',

@@ -2,20 +2,11 @@ import { describeEvent } from '@creatures/engine';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { errorText } from './game';
 import { fetchReplay, type RaidPhaseId, type ReplayView } from './raid-api';
-import { phaseName } from './raid-text';
-import {
-  keyMoments,
-  mineInRow,
-  personalRecap,
-  stateAt,
-  turnChips,
-  turnOrderOfRound,
-  type Speed,
-} from './replay';
+import { phaseLine, phaseName } from './raid-text';
+import { keyMoments, mineInRow, personalRecap, type Speed } from './replay';
 import { INTRO_REPLAY_MS } from './stage-fx';
 import { LogToggle, Stage } from './Stage';
 import { PlaybackControls } from './ui/PlaybackControls';
-import { TurnStrip } from './ui/TurnStrip';
 import { usePlayback } from './use-playback';
 
 export function Replay({
@@ -23,11 +14,18 @@ export function Replay({
   party,
   phase,
   onClose,
+  showControls = false,
 }: {
   weekId: string;
   party: number;
   phase: RaidPhaseId;
   onClose: () => void;
+  /**
+   * Show Play or Pause, 2x and Skip above the stage. Off by default (Misa, 2026-10-14: the replay
+   * plays by itself, like the dungeon); the controls and their state still work, for when they come
+   * back.
+   */
+  showControls?: boolean;
 }) {
   const [data, setData] = useState<ReplayView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,12 +59,12 @@ export function Replay({
         </p>
       )}
       {data === null && error === null && <p class="muted">Loading the replay...</p>}
-      {data !== null && <Player data={data} />}
+      {data !== null && <Player data={data} showControls={showControls} />}
     </section>
   );
 }
 
-function Player({ data }: { data: ReplayView }) {
+function Player({ data, showControls }: { data: ReplayView; showControls: boolean }) {
   const rowIds = data.row.map((r) => r.id);
   const [speed, setSpeed] = useState<Speed>(1);
   // The same pacing as the live finale (the engine's), with a 1 second intro; 2x halves all of it.
@@ -77,6 +75,8 @@ function Player({ data }: { data: ReplayView }) {
     rounds: data.rounds,
     introMs: INTRO_REPLAY_MS,
     speed,
+    // With no controls the replay has to start by itself.
+    autoplay: true,
   });
   const logRef = useRef<HTMLOListElement>(null);
   const { beat } = pos;
@@ -87,10 +87,7 @@ function Player({ data }: { data: ReplayView }) {
     if (el !== null) el.scrollTop = el.scrollHeight;
   }, [beat]);
 
-  const step = stateAt(data.events, index, data.bossHpStart);
-  const rowById = new Map(data.row.map((r) => [r.id, r]));
   const mineIds = new Set(mineInRow(data.row, data.you));
-  const order = turnOrderOfRound(data.events, Math.max(1, step.round));
   const moments = keyMoments(data.events, data.names);
   const recap = personalRecap(data.events, data.row, [...mineIds]);
 
@@ -98,31 +95,27 @@ function Player({ data }: { data: ReplayView }) {
     <>
       <p>
         {data.boss.name}: {data.cleared ? 'cleared' : 'not cleared'} after {data.rounds} rounds.
-        {step.round > 0 && (
-          <>
-            {' '}
-            Round {step.round} / {data.rounds}.
-          </>
-        )}
       </p>
 
-      <PlaybackControls
-        label="Replay controls"
-        playing={playing}
-        finished={finished}
-        speed={speed}
-        onPlayPause={() => {
-          if (finished) move(0);
-          setPlaying(!playing);
-        }}
-        onSpeed={setSpeed}
-        onSkip={() => {
-          setPlaying(false);
-          move(total);
-        }}
-        skipLabel="Skip to end"
-        skipDisabled={finished}
-      />
+      {showControls && (
+        <PlaybackControls
+          label="Replay controls"
+          playing={playing}
+          finished={finished}
+          speed={speed}
+          onPlayPause={() => {
+            if (finished) move(0);
+            setPlaying(!playing);
+          }}
+          onSpeed={setSpeed}
+          onSkip={() => {
+            setPlaying(false);
+            move(total);
+          }}
+          skipLabel="Skip to end"
+          skipDisabled={finished}
+        />
+      )}
 
       <Stage
         boss={data.boss}
@@ -137,12 +130,7 @@ function Player({ data }: { data: ReplayView }) {
         anim={anim}
         fx={fx}
         intro={intro}
-      />
-
-      <h4>Turn order {step.bossActing && <span class="muted">(the boss is acting)</span>}</h4>
-      <TurnStrip
-        label="Turn order this round"
-        chips={turnChips(order, step, (id) => rowById.get(id)?.name ?? id)}
+        place={phaseLine(data.phase)}
       />
 
       <LogToggle id="replay-log">

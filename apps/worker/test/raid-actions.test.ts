@@ -36,7 +36,7 @@ async function api<T = RaidView>(
 }
 
 describe('team', () => {
-  it('picks the top three creatures by power automatically', async () => {
+  it('brings the top three creatures by power when nothing is placed', async () => {
     await runRaid((ctx) => {
       // Four creatures: power order is gaiadrake > stormray > splashet > sproutle at level 10.
       const p = seedPlayer(ctx, 1, {
@@ -45,10 +45,12 @@ describe('team', () => {
         species: ['sproutle', 'splashet', 'stormray', 'gaiadrake'],
       });
       const view = ctx.core.raid.view(p.id, HELSINKI);
+      // `mode` stays in the view for older clients and is always `auto`.
       expect(view.you.team?.mode).toBe('auto');
       expect(view.you.team?.creatures.map((c) => c.species).sort()).toEqual(
         ['gaiadrake', 'splashet', 'stormray'].sort(),
       );
+      expect(view.you.team?.creatures.every((c) => c.slot === null)).toBe(true);
     });
   });
 
@@ -59,64 +61,67 @@ describe('team', () => {
     });
   });
 
-  it('accepts three distinct creatures the player owns, and null returns to automatic', async () => {
+  it('is the placed creatures first, then the strongest of the rest up to three', async () => {
     await runRaid((ctx) => {
-      const p = seedPlayer(ctx, 1, { creatures: 4, level: 10 });
-      const ids = p.creatureIds;
-      const chosen = [ids[3], ids[2], ids[0]] as string[];
-      expect(ctx.core.raid.setTeam(p.id, HELSINKI, chosen).ok).toBe(true);
-      const team = ctx.core.raid.view(p.id, HELSINKI).you.team;
-      expect(team?.mode).toBe('chosen');
-      expect(team?.creatures.map((c) => c.creatureId)).toEqual(chosen);
-      expect(ctx.core.raid.setTeam(p.id, HELSINKI, null).ok).toBe(true);
-      expect(ctx.core.raid.view(p.id, HELSINKI).you.team?.mode).toBe('auto');
-    });
-  });
-
-  it('refuses creatures that are not the player’s, duplicates and players outside the roster', async () => {
-    await runRaid((ctx) => {
-      const a = seedPlayer(ctx, 1, { creatures: 3 });
-      const b = seedPlayer(ctx, 2, { creatures: 3 });
-      const [a0, a1, a2] = a.creatureIds as [string, string, string];
-      expect(ctx.core.raid.setTeam(a.id, HELSINKI, [a0, a1, b.creatureIds[0] as string])).toEqual({
-        ok: false,
-        status: 409,
-        error: 'not_your_creature',
+      const p = seedPlayer(ctx, 1, {
+        creatures: 4,
+        level: 10,
+        species: ['sproutle', 'splashet', 'stormray', 'gaiadrake'],
       });
-      expect(
-        ctx.core.raid.setTeam(a.id, HELSINKI, [a0, a1, '00000000-0000-4000-8000-000000000000']),
-      ).toEqual({ ok: false, status: 409, error: 'not_your_creature' });
-      expect(ctx.core.raid.setTeam(a.id, HELSINKI, [a0, a1, a1])).toEqual({
-        ok: false,
-        status: 400,
-        error: 'duplicate_creatures',
-      });
-      expect(ctx.core.raid.view(a.id, HELSINKI).you.team?.mode).toBe('auto');
-      expect(ctx.core.raid.setTeam(a.id, HELSINKI, [a0, a1, a2]).ok).toBe(true);
-      // Someone without a creature is not on the roster.
-      const nobody = seedPlayer(ctx, 3, { creatures: 0 });
-      expect(ctx.core.raid.setTeam(nobody.id, HELSINKI, null)).toEqual({
-        ok: false,
-        status: 409,
-        error: 'not_in_roster',
-      });
+      const [sproutle, splashet, stormray, gaiadrake] = p.creatureIds as [
+        string,
+        string,
+        string,
+        string,
+      ];
+      const team = () =>
+        ctx.core.raid
+          .view(p.id, HELSINKI)
+          .you.team?.creatures.map((c) => [c.creatureId, c.slot])
+          .sort();
+      // The weakest, placed, is in; the two strongest of the others fill up the three.
+      expect(ctx.core.raid.place(p.id, HELSINKI, sproutle, 3).ok).toBe(true);
+      expect(team()).toEqual(
+        [
+          [sproutle, 3],
+          [stormray, null],
+          [gaiadrake, null],
+        ].sort(),
+      );
+      // Placing a second one: the single strongest of the rest fills the last place.
+      expect(ctx.core.raid.place(p.id, HELSINKI, splashet, 4).ok).toBe(true);
+      expect(team()).toEqual(
+        [
+          [sproutle, 3],
+          [splashet, 4],
+          [gaiadrake, null],
+        ].sort(),
+      );
+      // Removing one from the board puts the strongest back in its place.
+      expect(ctx.core.raid.unplace(p.id, HELSINKI, sproutle).ok).toBe(true);
+      expect(team()).toEqual(
+        [
+          [splashet, 4],
+          [stormray, null],
+          [gaiadrake, null],
+        ].sort(),
+      );
     });
   });
 
   it('is open before phase 1, between the phases, and locked after the finale', async () => {
     await runRaid((ctx) => {
       const p = seedPlayer(ctx, 1, { creatures: 4 });
-      const ids = p.creatureIds;
-      const set = (list: string[] | null) => ctx.core.raid.setTeam(p.id, HELSINKI, list);
-      expect(set([ids[0], ids[1], ids[2]] as string[]).ok).toBe(true);
+      const [c0, c1] = p.creatureIds as [string, string];
+      expect(ctx.core.raid.place(p.id, HELSINKI, c0, 0).ok).toBe(true);
       ctx.clock.t = Date.parse('2027-01-15T12:30:00Z'); // after phase 1
-      expect(set([ids[1], ids[2], ids[3]] as string[]).ok).toBe(true);
+      expect(ctx.core.raid.place(p.id, HELSINKI, c1, 1).ok).toBe(true);
       expect(ctx.core.raid.view(p.id, HELSINKI).status).toBe('phase1');
       ctx.clock.t = Date.parse('2027-01-16T12:30:00Z'); // after phase 2
-      expect(set(null).ok).toBe(true);
+      expect(ctx.core.raid.unplace(p.id, HELSINKI, c1).ok).toBe(true);
       expect(ctx.core.raid.view(p.id, HELSINKI).status).toBe('phase2');
       ctx.clock.t = SUNDAY;
-      expect(set([ids[0], ids[1], ids[2]] as string[])).toEqual({
+      expect(ctx.core.raid.place(p.id, HELSINKI, c1, 2)).toEqual({
         ok: false,
         status: 409,
         error: 'locked',
@@ -202,25 +207,73 @@ describe('placement', () => {
     });
   });
 
-  it('only places creatures that are in the team, and drops placements when the team changes', async () => {
+  it('places any creature the player owns, up to three on the board', async () => {
     await runRaid((ctx) => {
-      const p = seedPlayer(ctx, 1, { creatures: 4, level: 10 });
+      const p = seedPlayer(ctx, 1, {
+        creatures: 4,
+        level: 10,
+        species: ['sproutle', 'splashet', 'stormray', 'gaiadrake'],
+      });
       seedPlayer(ctx, 2);
       seedPlayer(ctx, 3);
-      const ids = p.creatureIds;
-      const team =
-        ctx.core.raid.view(p.id, HELSINKI).you.team?.creatures.map((c) => c.creatureId) ?? [];
-      const bench = ids.find((id) => !team.includes(id)) as string;
-      expect(ctx.core.raid.place(p.id, HELSINKI, bench, 0)).toEqual({
+      const [sproutle, splashet, stormray, gaiadrake] = p.creatureIds as [
+        string,
+        string,
+        string,
+        string,
+      ];
+      // The weakest creature is not in the automatic team, and may still be placed.
+      expect(ctx.core.raid.place(p.id, HELSINKI, sproutle, 0).ok).toBe(true);
+      expect(ctx.core.raid.place(p.id, HELSINKI, splashet, 1).ok).toBe(true);
+      expect(ctx.core.raid.place(p.id, HELSINKI, stormray, 2).ok).toBe(true);
+      // A fourth new creature is refused, a creature already on the board moves.
+      expect(ctx.core.raid.place(p.id, HELSINKI, gaiadrake, 3)).toEqual({
         ok: false,
         status: 409,
-        error: 'not_in_team',
+        error: 'board_full',
       });
-      expect(ctx.core.raid.place(p.id, HELSINKI, team[0] as string, 0).ok).toBe(true);
-      // Swap the placed creature out of the team: its slot is cleared.
-      const next = [bench, ...team.slice(1)];
-      expect(ctx.core.raid.setTeam(p.id, HELSINKI, next).ok).toBe(true);
-      expect(count(ctx.sql, 'raid_placements')).toBe(0);
+      expect(ctx.core.raid.place(p.id, HELSINKI, stormray, 3).ok).toBe(true);
+      expect(count(ctx.sql, 'raid_placements')).toBe(3);
+      // Even onto the slot of an own creature: a new one needs a free place.
+      expect(ctx.core.raid.place(p.id, HELSINKI, gaiadrake, 0)).toEqual({
+        ok: false,
+        status: 409,
+        error: 'board_full',
+      });
+      // Removing one makes room.
+      expect(ctx.core.raid.unplace(p.id, HELSINKI, sproutle).ok).toBe(true);
+      expect(ctx.core.raid.place(p.id, HELSINKI, gaiadrake, 0).ok).toBe(true);
+      expect(count(ctx.sql, 'raid_placements')).toBe(3);
+    });
+  });
+
+  it('never puts a fourth creature of one player on the board (production bug, level change)', async () => {
+    await runRaid((ctx) => {
+      // Power order at level 10: gaiadrake > stormray > splashet > sproutle, so the team is the top three.
+      const p = seedPlayer(ctx, 1, {
+        creatures: 4,
+        level: 10,
+        species: ['sproutle', 'splashet', 'stormray', 'gaiadrake'],
+      });
+      seedPlayer(ctx, 2);
+      seedPlayer(ctx, 3);
+      const [sproutle, splashet, stormray, gaiadrake] = p.creatureIds as [
+        string,
+        string,
+        string,
+        string,
+      ];
+      for (const [i, id] of [splashet, stormray, gaiadrake].entries()) {
+        expect(ctx.core.raid.place(p.id, HELSINKI, id, i).ok).toBe(true);
+      }
+      // The placed splashet drops out of the strongest three (any level or gear change does this) ...
+      ctx.sql.exec('UPDATE creatures SET level = 1 WHERE id = ?', splashet);
+      // ... and the sproutle is now in the strongest three, so the old "must be in the team" rule let it in.
+      const fourth = ctx.core.raid.place(p.id, HELSINKI, sproutle, 5);
+      expect(fourth).toEqual({ ok: false, status: 409, error: 'board_full' });
+      const view = ctx.core.raid.view(p.id, HELSINKI);
+      expect(view.party?.row.filter((s) => s.creature?.mine)).toHaveLength(3);
+      expect(count(ctx.sql, 'raid_placements', `user_id = '${p.id}'`)).toBe(3);
     });
   });
 
@@ -426,18 +479,24 @@ describe('GET /api/raid', () => {
 });
 
 describe('raid mutation routes', () => {
-  it('PUT /api/raid/team validates strictly and answers with the fresh view', async () => {
+  it('PUT /api/raid/team is retired: it validates, changes nothing and answers with the view', async () => {
     await runRaid(async (ctx) => {
       const me = seedPlayer(ctx, 1, { creatures: 4 });
       const secret = await login(ctx, me);
       const ids = me.creatureIds;
+      const before = (await api(ctx, secret, 'GET', '/api/raid')).body.you.team;
       const ok = await api(ctx, secret, 'PUT', '/api/raid/team', {
         creatureIds: [ids[0], ids[1], ids[3]],
       });
       expect(ok.status).toBe(200);
-      expect(ok.body.you.team?.mode).toBe('chosen');
-      const reset = await api(ctx, secret, 'PUT', '/api/raid/team', { creatureIds: null });
-      expect(reset.body.you.team?.mode).toBe('auto');
+      // No team was chosen: the team is the same as before, and nothing was stored.
+      expect(ok.body.you.team).toEqual(before);
+      expect(ok.body.you.team?.mode).toBe('auto');
+      expect((await api(ctx, secret, 'PUT', '/api/raid/team', { creatureIds: null })).status).toBe(
+        200,
+      );
+      expect(count(ctx.sql, 'raid_teams')).toBe(0);
+      expect(count(ctx.sql, 'raid_placements')).toBe(0);
       for (const bad of [
         {},
         { creatureIds: [ids[0], ids[1]] },
@@ -448,14 +507,6 @@ describe('raid mutation routes', () => {
       ]) {
         expect((await api(ctx, secret, 'PUT', '/api/raid/team', bad)).status).toBe(400);
       }
-      const dup = await api(ctx, secret, 'PUT', '/api/raid/team', {
-        creatureIds: [ids[0], ids[0], ids[1]],
-      });
-      expect(dup).toMatchObject({ status: 400, body: { error: 'duplicate_creatures' } });
-      const foreign = await api(ctx, secret, 'PUT', '/api/raid/team', {
-        creatureIds: [ids[0], ids[1], crypto.randomUUID()],
-      });
-      expect(foreign).toMatchObject({ status: 409, body: { error: 'not_your_creature' } });
     });
   });
 
@@ -496,17 +547,15 @@ describe('raid mutation routes', () => {
     });
   });
 
-  it('PUT /api/raid/opt-out sits out and rejoins before the lock, then answers 409 locked', async () => {
+  it('PUT /api/raid/opt-out is retired: it validates, changes nothing and answers 409 locked after the lock', async () => {
     await runRaid(async (ctx) => {
       const a = seedPlayer(ctx, 1);
       seedPlayer(ctx, 2);
       const sa = await login(ctx, a);
       const out = await api(ctx, sa, 'PUT', '/api/raid/opt-out', { optOut: true });
       expect(out.status).toBe(200);
-      expect(out.body.you).toMatchObject({ optOut: true, inRoster: false });
-      expect(out.body.roster).toHaveLength(1);
-      const back = await api(ctx, sa, 'PUT', '/api/raid/opt-out', { optOut: false });
-      expect(back.body.you).toMatchObject({ optOut: false, inRoster: true });
+      expect(out.body.you).toMatchObject({ optOut: false, inRoster: true, canOptOut: false });
+      expect(out.body.roster).toHaveLength(2);
       expect((await api(ctx, sa, 'PUT', '/api/raid/opt-out', { optOut: 'yes' })).status).toBe(400);
       expect((await api(ctx, sa, 'PUT', '/api/raid/opt-out', {})).status).toBe(400);
       expect((await api(ctx, sa, 'GET', '/api/raid/opt-out')).status).toBe(405);

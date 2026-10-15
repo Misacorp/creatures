@@ -20,8 +20,14 @@
   font-size: 0.8125rem;
 }
 
-.stage-round {
+/* The room or phase, top left. The round, top right, is in the bone of body text. */
+.stage-place {
   color: var(--gold);
+}
+
+.stage-round {
+  margin-left: auto;
+  color: var(--bone);
 }
 
 .stage-head-left {

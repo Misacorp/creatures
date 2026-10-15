@@ -24,6 +24,7 @@ import {
   playStart,
   reactionElements,
   abilityUsesAt,
+  actingSlots,
   shieldedZones,
   stageStateAt,
   strikesOf,
@@ -53,6 +54,53 @@ const hit = (round: number, creature: string, damage: number, extra = {}): Fight
   ...extra,
 });
 const kinds = (cues: readonly Cue[]): string[] => cues.map((c) => c.kind);
+
+describe('acting order under the creatures', () => {
+  const turn = (round: number, creature: string): FightEvent => ({ t: 'turn', round, creature });
+  const events: FightEvent[] = [
+    roundStart(1),
+    turn(1, 'c'),
+    turn(1, 'a'),
+    turn(1, 'b'),
+    roundStart(2),
+    turn(2, 'b'),
+    { t: 'skip', round: 2, creature: 'c', reason: 'silenced' },
+    turn(2, 'a'),
+  ];
+
+  it('follows the engine order of the round in the raid (not the row)', () => {
+    expect([...actingSlots(events, 1, ['a', 'b', 'c'], false)]).toEqual([
+      ['c', 1],
+      ['a', 2],
+      ['b', 3],
+    ]);
+    // A silenced creature still has its place: it is skipped on its turn.
+    expect([...actingSlots(events, 2, ['a', 'b', 'c'], false)]).toEqual([
+      ['b', 1],
+      ['c', 2],
+      ['a', 3],
+    ]);
+  });
+
+  it('gives no place to a creature without a turn that round', () => {
+    const slots = actingSlots([roundStart(1), turn(1, 'a')], 1, ['a', 'b'], false);
+    expect(slots.get('a')).toBe(1);
+    expect(slots.has('b')).toBe(false);
+  });
+
+  it('uses round 1 before the first round starts, and nothing when there are no turns yet', () => {
+    expect(actingSlots(events, 0, ['a', 'b', 'c'], false).get('c')).toBe(1);
+    expect(actingSlots([], 0, ['a', 'b', 'c'], false).size).toBe(0);
+  });
+
+  it('is the row order, left to right, in the dungeon', () => {
+    expect([...actingSlots([], 0, ['x', 'y', 'z'], true)]).toEqual([
+      ['x', 1],
+      ['y', 2],
+      ['z', 3],
+    ]);
+  });
+});
 
 describe('zones of the row', () => {
   it('puts a creature in the zone of its place in the row', () => {

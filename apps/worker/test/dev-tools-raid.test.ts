@@ -111,6 +111,16 @@ describe('raid tools', () => {
           status: 409,
           body: { error: 'roster_locked' },
         });
+        // The way out the dev panel names. "Resolve now" does not move the clock, so it is still
+        // inside this week's Preparation and jumping to Preparation changes nothing: the roster
+        // stays locked. Week done first, then Preparation, is next week's, and its roster is open.
+        await p.tool('raid-phase', { to: 'preparation' });
+        expect((await p.dev('raid-roster', { count: 4 })).status).toBe(409);
+        await p.tool('raid-phase', { to: 'done' });
+        await p.tool('raid-phase', { to: 'preparation' });
+        const next = await p.tool('raid-roster', { count: 4 });
+        expect(next).toMatchObject({ guests: 4 });
+        expect((next as { weekId: string }).weekId).not.toBe(W02.id);
       },
       { core: ON },
     );

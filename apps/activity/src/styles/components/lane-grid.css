@@ -1,0 +1,78 @@
+/*
+  The lane grid, shared by the raid board (ui/RaidBoard.tsx, raid-board.css) and the raid fight stage
+  (Stage.tsx, stage/stage-grid.css): Front, Middle and Back as three lines that never wrap, with a
+  lane (the same position in every line) as a column. The three lines scroll sideways together, in
+  one scroller, so a lane stays a vertical line. The row names sit in a column at the left that does
+  not scroll; every row has the same fixed height (--tile-h), so a name lines up with its row. The
+  scope is `.raid-board` or `.stage-grid`; each sets its own --tile-w and --tile-h after this file.
+*/
+.raid-board,
+.stage-grid {
+  --tile-w: 3.25rem;
+  --tile-h: 6rem;
+  --lane-h: 1.25rem;
+  --board-gap: 0.5rem;
+  --board-pad: 6px; /* room for the gold ring of a selected tile, which the scroller would clip */
+  --label-w: 2.75rem;
+}
+
+.board-grid {
+  display: grid;
+  grid-template-columns: var(--label-w) minmax(0, 1fr);
+  gap: 4px;
+}
+
+.board-labels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--board-gap);
+  padding-top: var(--board-pad);
+}
+
+.board-lane-head {
+  display: flex;
+  align-items: center;
+  height: var(--lane-h);
+  margin: 0;
+  color: var(--haze);
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.board-label {
+  display: flex;
+  align-items: center;
+  height: var(--tile-h);
+}
+
+.raid-board .board-scroller,
+.stage-grid .board-scroller {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--board-gap);
+  min-width: 0;
+  padding: var(--board-pad);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.board-lanes,
+.board-row {
+  display: flex;
+  flex: none;
+  gap: 4px;
+  width: max-content;
+}
+
+.board-lane {
+  width: var(--tile-w);
+  height: var(--lane-h);
+  color: var(--haze);
+  font-family: var(--display);
+  font-size: 0.875rem;
+  line-height: var(--lane-h);
+  text-align: center;
+}

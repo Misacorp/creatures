@@ -23,6 +23,7 @@
 @import './views/finale-abilities.css';
 @import './views/live.css';
 @import './views/festival.css';
+@import './views/finale-progress.css';
 @import './components/reveal.css';
 @import './views/after-action.css';
 @import './components/pixel.css';
@@ -30,10 +31,14 @@
 @import './components/element-chip.css';
 @import './components/bars.css';
 @import './components/slot-row.css';
+@import './components/lane-grid.css';
+@import './components/raid-board.css';
+@import './components/slot-cue.css';
 @import './components/creature-card.css';
 @import './views/boss-card.css';
 @import './stage/stage.css';
 @import './stage/units.css';
+@import './stage/stage-grid.css';
 @import './components/popover.css';
 @import './stage/ability-popover.css';
 @import './stage/abilities.css';
@@ -78,6 +83,7 @@
 @import './views/raid-timeline.css';
 @import './views/raid-boss-card.css';
 @import './views/raid-placement.css';
+@import './components/roster-picker.css';
 @import './views/raid-abilities.css';
 @import './views/living-room.css';
 @import './components/currency-pile.css';

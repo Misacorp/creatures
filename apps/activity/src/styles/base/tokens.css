@@ -15,7 +15,6 @@
   --bad: #ff5f6d;
   --line: #4a4170; /* quiet outline between things on a panel */
   --mine: #3a3270; /* a slot that holds your creature */
-  --adjacent: #443b82; /* a slot next to the selected creature */
   --display: 'Jersey 10', 'Courier New', ui-monospace, monospace;
   --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --px: 3px; /* one "pixel" of UI chrome */

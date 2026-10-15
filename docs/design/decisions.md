@@ -963,3 +963,109 @@ The raid Placement and the dungeon team now draw their slots, tray, drag ghost a
 **Tradeoff.** Presence is per activity instance: players who opened the game from different channels do not see each other. Misa accepted this. A guild-wide room would need a server heartbeat.
 
 **Also.** Spot assignment is client-side and deterministic (FNV-1a of instance id and user id), so everyone in an instance sees the same room. Speech bubbles and the idle pan are local cosmetics using browser crypto randomness; they are not game state, so the server-RNG rule does not apply to them.
+
+## 2026-10-14: Raid phases end at a floor, and bosses enrage when time runs out
+
+**Decision (Misa, 2026-10-14).** Every week has a finale. Each raid phase has an HP floor; when the boss reaches it, it turns immune and the phase ends. Damage past the floor counts for nothing (no overkill), because counting it would be unintuitive; instead the replay and the phase card say clearly why the boss is gone and what happens next, in a per-boss line with a shared fallback. The finale carries 15% of the boss's HP (the Phase 2 floor), which Misa finds "lots to do and it's still exciting". When the finale's rounds run out, the boss enrages: multi-target hits at high damage that wipe a typical row in 2–3 rounds, with a slim chance of a win. Dungeon boss rooms enrage too instead of simply timing out, so players learn the mechanic daily; Misa may walk this back if it plays badly. An enrage loss is a normal loss.
+
+**How.** New scalars `RULES.raid.phases[].floorBp`, `RULES.raid.enrage` and `RULES.dungeon.enrage` (the last can be switched off). Built with the attack patterns as one raid retune, because both change raid lethality and the win band, and enrage uses the multi-target moves. Details: `raid-ux-2.md`, "Raid structure".
+
+## 2026-10-14: Raid neighbours stop at row edges
+
+**Decision.** In the raid, "beside" means directly left or right **in the same zone** (Front, Middle or Back, the rows of the board). The last slot of Front is no longer beside the first slot of Middle. The engine has a new `zoneNeighbours(index, length)`; the plain `neighbours()` is kept for the dungeon only. The Support buff uses the zone-aware version in the raid. The client's "who works with this creature" highlight (`adjacentSlots`) uses the same engine helper, so the board cannot drift from the fight.
+
+**Why.** The raid board is now a grid of three rows (Front, Middle, Back) by one lane per player. A grid can only show adjacency honestly if it means "next to me in my row": a tile at the end of one row cannot be drawn beside the first tile of the next. The attack patterns that come next (cover, Slam splash) also depend on "beside" being the same thing the player sees.
+
+**What it touches.** Only the Support buff in the raid. The raid's Guard intercept already worked by zone (`guardReach: 'zone'`), so it is unchanged. The dungeon is a row of three with one slot per zone, so zone-aware adjacency would leave everyone with no neighbours; dungeon fights set `guardReach: 'adjacent'`, which keeps the plain line for both the Support buff and the Guard. A dungeon test (a middle Support still buffs both sides) and the unchanged dungeon fight tests prove it; the dungeon sim section is identical on seed leet2 and differs on leet and leet3 only by run counts shifted by the raid results upstream of it (the dungeon fights themselves are untouched).
+
+**Sim result** (full `pnpm sim`, before and after, seeds leet, leet2, leet3). The raid targets barely move:
+
+- Typical-group finale win: leet 59.7% to 60.3% (limit 40% to 60%, now **fails** by 0.25 points), leet2 51.9% to 52.2%, leet3 52.7% to 52.6%.
+- Phase 2 win: leet 82.6% to 82.9%, leet2 78.9% to 79.2%, leet3 81.6% to 81.7%.
+- Boss spread: leet 12.5% to 9.8%, leet2 12.2% to 13.2%, leet3 17.7% to 18.1% (already failing before this change on leet3, limit 15%).
+- Finale win with 15 players, leet3: 43.1% to 42.6%.
+
+No retune was made; the numbers are handed to the lead. `exp-casual-discovery` also failed before this change on leet (0.34 to 0.32) and leet2 (0.32 to 0.32), so it is unrelated. `pnpm scalars` output is unchanged.
+
+## 2026-10-14: Raid UX pass 2, slices 4, 6 and 10 (stage head, glossary, finale row, coach mark)
+
+**Stage head (decided 3).** `ui/StageHead` is the one head of the fight stage, for the dungeon and the raid: the room or phase at the top left ("Room 1 / 3", "Phase 1 / 3") and the round at the top right ("Round 2 / 12"). It replaces the joined "Room 1 / 3 · Round 2 / 2" of PR #18. The finale is the third phase but goes by its own name, "Finale" (`phaseLine` in `raid-text.ts`), as it does on every other screen. The raid stage names the boss under its sprite and writes its HP on the bar (the shared `SegmentBar` `text`), so the head no longer carries "Boss HP x / y".
+
+**Ordinals follow the engine's order in the raid.** Under each creature the stage writes its place in the round on show (`actingSlots` in `stage.ts`). The dungeon always acts left to right, so it is the row order. The raid's orders vary by boss, so it reads the `turn` and `skip` events of that round: the numbers are exactly what the engine did, with no copy of the order rules in the client. A creature with no turn that round (knocked out earlier) has no ordinal. The boss card's turn-order icon stays.
+
+**Raid replay plays by itself.** Pause, 2x and Skip are hidden unless `showControls` is set, as in the dungeon, and the replay starts playing at once (it used to wait for Play). `TurnStrip` is no longer used by any screen; it is kept with its workbench page.
+
+**Glossary popups (slice 6).** Every `raid-week` and `finale` entry has no lines (title, description, the "More" link), and a finale ability's popup is only its own description from the content. Not touched: `crit` (also used by the dungeon, keeps its odds), the marks, reactions, roles and elements (core to every mode) and the Boss Rank, Festival and Season entries (their lines are the rules). The Counter-move's one line now says what it does ("After Phase 1 the boss resists what worked best.") since its numbers left with its lines. A glossary test pins it.
+
+**Boss Rank and season row after a finale.** Under the finale result, `FinaleProgress` draws the Rank as the dungeon's edge-to-edge `ProgressTrack` (the Rank for next week, lit, and the next one with "A tougher boss" and "More Essence", in words) and the season as a `PipRow` with the Festival as the gold-ringed last pip. The Rank shows once the ladder has moved (`rankChange`, null until every party has finished). The season week is known when the finale was a Festival's, or when the raid page is on the same week; otherwise the pips are left out rather than guessed.
+
+**Coach mark (decided 5).** `SHOW_COACH_MARK` in `coach.ts` is off. The Raid tab checks it; nothing else draws the component, and a test pins both. The workbench page still draws it.
+
+## 2026-10-14: Raid board tiles, sit-out removal
+
+**Decisions.**
+
+- **Tile look.** The element colour is the tile's border (the "element ring"). The owner is a one-letter badge in the corner, in the owner's colour (the existing roster-based `owner-0` to `owner-7` palette, with a text colour chosen per owner for contrast). Raid tiles show no slot number; places are written as "Middle, lane 1" everywhere (team cards, screen reader labels, announcements). Names are one line with an ellipsis, never broken mid-word; the full name is in the popover and the aria label.
+- **Other players' creatures.** Tapping one (with nothing picked up) opens the creature popover, which carries the owner's full name, instead of only showing "That slot belongs to X".
+- **Dragging.** Dragging near the left or right edge of the board scrolls it sideways, so off-screen lanes can be reached; near the top or bottom the page scrolls as before.
+- **Sit-out.** Opt-outs are no longer honoured: the roster ignores `raid_opt_outs`, and the client has no button or status line. The route `PUT /api/raid/opt-out` stays for one release as a validating no-op (always answers not opted out) so no client breaks mid-week; the table and route go in a later migration.
+
+**Why.** Misa's review of the raid page on a phone: a grid where lanes line up, compact tiles, and no weekly button that can hurt the party by accident. Dropping the server check at once means nobody who sat a week out with the old button stays stuck out after the button is gone.
+
+## 2026-10-14: The raid stage is a lane grid, like the placement board
+
+**Decision.** The raid fight stage (replay and live finale) draws its party the way the placement board does: Front, Middle and Back are three lines that never wrap, a lane is a column, the row names are a fixed column at the left, and the three lines scroll sideways together in one scroller. Tiles are small (sprite scale 2, 3.25 rem wide, one-line name with an ellipsis) so about four lanes fit on a 360 px phone. Before the fight starts the stage scrolls to the viewer's own creatures; as it plays it follows the creature that acts, and only moves when that creature is not on screen with a tile to spare. The scroll is instant under `prefers-reduced-motion`, and it waits four seconds after the player scrolls by hand. A lane-number row sits above the grid; the lane pips are not used on the stage, because the stage is already tall and the numbers give the same orientation. The dungeon's single row is unchanged (checked pixel for pixel at 360 and 390 px).
+
+**How.** The rows and lanes come from `boardRows`, `placeOf` and `laneStates` in `raid-board.ts` (which use the engine's `ZONES` and `zoneIndices`), plus one new pure helper, `keepSpanInView`. The grid CSS the board and the stage share moved to `components/lane-grid.css`; the stage's own rules are in `stage/stage-grid.css`. The measured tier picking (`STAGE_LAYOUT`) is gone, since nothing wraps any more.
+
+**Known limits.** A reaction burst or a strike beam aimed at a creature outside the window is clipped by the scroller (the beam is drawn to where the creature is). Floating numbers rise less than before, so the scroller does not cut them off. Adjacent lanes owned by the viewer touch.
+
+**Why.** Misa's phone review: with 11 players a zone has 11 creatures, and wrapped boxes hid which creature stands beside which. The same grid on the board and the stage means a lane looks the same in both places.
+
+## 2026-10-14: Raid UX pass 2, slices 8 and 9 (placement cues, influence, the shared `affects` helper)
+
+**The shared helper.** `affects(row, index, mode)` in `packages/engine/src/affects.ts` says which slots the creature at `index` affects: `buff` (a Support's neighbours), `cover` (the slots a Guard takes hits for) and `reaction` (partners that set off, or are set off by, a reaction with it). It is built from the engine's own rules: `neighbours` for the dungeon, `zoneNeighbours` for the raid, the Guard's reach as `guardFor` plays it (the dungeon: right beside it; the raid: every other slot of its zone, never another Guard), and `rowReactions` played in the row's acting order (left to right in the dungeon, the boss's turn order in the raid, so `slotReactions` returns slot numbers for a row with other players' creatures and empty slots). Tests compare it with seeded fights (the `support_buff`, `boss_hit` `from` and `reaction` events), so the screen cannot drift from the fight. Speed-order bosses need each creature's speed; the client only knows species and level, so for those bosses the raid cue is a close guess (gear and fusions are not in the view).
+
+**Cues instead of a text line (decided 4).** The reaction hint line under the dungeon slot row (PR #18) is gone. A reaction pair is drawn on the tiles (a ring in the element colours of the mark and of the hit, a badge with the reaction's name from the content) while a creature is dragged over a slot, picked up (tap or key), hovered or focused. A carried creature is previewed where it would stand. "No reaction" is a small mark under the row (and on the row name in the raid). The old sentence is kept as the screen reader's live announcement. In the dungeon the cue shows every reaction of the order; on the raid board it shows those of the creature in focus only (a whole raid row would light up everything).
+
+**Influence (decided 6).** The tiles a Support buffs (dots) and a Guard covers (bars) are shaded for the creature in focus, and a one-line effect with the real numbers (`RULES.combat.supportBuffBp`, `guardHpBp`, the reaction's multiplier) shows in the creature popover and in the strip under the row. It replaces the raid board's old neighbour highlight (`adjacentSlots`).
+
+**Precedence.** (1) Whose cues show, one creature at a time: the carried creature (dragged or picked up), then the creature whose popover is open, then the one under the mouse or the keyboard focus. (2) Where they draw: a reaction cue is a ring and a badge, influence is a shade of the fill, so a tile can carry both and neither hides the other; a drag's valid or refused outline and the gold ring of a selected tile stay as they are.
+
+## 2026-10-14: Raid Roster: you bring the creatures you place
+
+**Decision (Misa, 2026-10-14).** The raid placement section is redesigned. A player's raid creatures for the week are **the creatures they placed on the board, at most three** (`RULES.raid.teamSize`). The chosen-team feature is gone: no "Choose team", no "Use automatic team", no tray. At every lock (a phase resolving, and the finale's start) each player's empty places up to three are filled with their strongest unplaced owned creatures (`autoTeam` order: power, then the older creature, then the smaller id) and placed with the existing `autoPlace`. A player who placed nothing gets the full automatic team, as before. Misa explicitly wants the auto-fill with the strongest.
+
+**How.**
+
+- `raidTeam(sql, week, user)` in `raid-teams.ts` replaces `effectiveTeam`: the player's placements (only creatures they still own, at most three by `capPlacements`), then the strongest others, sorted strongest first. The fill is **not stored**; it is worked out again whenever a fight is built (`buildPhaseInput`, so also the live finale and practice fights), so the three are always the strongest at that moment and a level-up between phases is picked up. Placed creatures always fight, wherever they stand.
+- Placing: the creature must be owned and the week not locked (the finale has not resolved, as before). A creature already on the board moves; a new one needs a free place among the three, otherwise **409 `board_full`**. This includes dropping a new creature onto the slot of one of your own: it is refused too, for a simple rule (remove one first). The rules for occupied slots and swaps stay.
+- `PUT /api/raid/team` stays as a validated no-op (old clients mid-week), as `PUT /api/raid/opt-out` did. The `raid_teams` table is kept, no longer read or written, for a later migration. The `team_set` analytics kind stays in the schema (old rows, the rollup) but is no longer logged. The view keeps `you.team.mode`, always `auto`, for older clients.
+- **Party balancing** (the snake draft) keeps using the **automatic** team's power (`playerPower`). Parties are made at week start (and for a late joiner before phase 1), when nobody has placed anything, so the automatic team is also what the player brings then; it does not move with what someone happens to place, and the split stays stable and explainable.
+- The client has no tray. The count line says "1 / 3 placed · the rest join automatically when Phase 1 locks", from the view's next event.
+
+**Why.** Misa wants players to place their creatures on the shared board themselves, while the balance still relies on everyone's creatures being placed, including those of less active players. "Place what you like, we fill the rest with your strongest" gives both.
+
+## 2026-10-14: A player could have four creatures on the board (bug and repair)
+
+**What happened.** In production one player had four creatures on the raid board; the most is three. **Cause:** `place` only checked that the creature was in the player's _current effective team_ (the three strongest, or the chosen three). The team changes whenever levels, gear or catches change, but a placement made earlier stayed in `raid_placements` (only `setTeam` cleaned up). So after a creature dropped out of the strongest three while still placed, a creature that had just come in could be placed too: three placed rows plus one stale row made four. The view showed every row of the party without filtering, so all four appeared; the fight builder ignored rows of creatures outside the team, so it never fought with four. Nothing counted placements.
+
+**Fix.** `place` now needs a free place among three for a creature that is not on the board (`board_full`). Placements are capped per player by one deterministic rule, `capPlacements`: first the creatures in the player's team as it stood, then the earliest placed (`rowid`; a move places again), then the lowest slot. The view and the fight builder cap with it, and read only creatures their placing player still owns (defence in depth), and every placement write first deletes a player's stale rows beyond three. Migration 22 (`raid-placement-cap-migration.ts`, no schema change) repairs existing weeks with the same rule, using the player's team as it stood (the chosen team if it still belongs to them, else the automatic one). With the team feature gone (previous entry) there is no team preference left, so the read and write guards cap by earliest placed, then lowest slot; only the migration still prefers the old team, because it runs once on data from before.
+
+**Tests.** A regression test reproduces the level-change sequence and failed before the fix (the fourth was accepted); more cover the cap rule, the capped view and fight, the write-time repair and the migration (including running it twice).
+
+## 2026-10-14: The creature picker's effect preview is behind `SHOW_PICKER_EFFECTS`
+
+**Decision.** Each option of the Raid Roster's creature picker shows one quiet line (an ellipsis cuts it) about what the creature would do in the slot being filled, built from the engine's `affects` helper: the first reaction it takes part in ("Steam with Splashet", plus "+N" for more), then "Buffs 2 neighbours" (a Support) and "Covers its row" (a Guard); nothing when it does nothing. The flag is the constant `SHOW_PICKER_EFFECTS` in `apps/activity/src/roster-picker.ts` (on). Misa: "If it crowds the picker I think it's a bad idea, but I do like it and would like to see a version where it's tried."
+
+**How to compare.** The workbench page `RosterPicker` has presets with the effects on and off. Removing the feature is one line (the constant to `false`); the picker keeps working and the lines are not built.
+
+**Limits.** The line uses the same approximations as the board cues: speed is worked out from species and level only (no gear or fusions), so for a boss that acts by speed the reaction shown can differ slightly from the fight. The picker only fills an empty slot, so the line judges the creature standing there with its old slot (if it was on the board) free.
+
+**Touch drag.** A finger picks a creature up after resting on it for 250 ms (`TOUCH_HOLD_MS`); a move before that is a swipe and scrolls the board. The shared drag hook takes it as an option (`touchHoldMs`), so the dungeon team keeps its immediate drag.
+
+## 2026-10-15: Raid page feedback (phone test): boss card holds only the boss
+
+**Decision.** From Misa's phone test of the Raid page: (1) an open creature popover closes the moment a drag lifts on the Raid Roster (mouse, and a finger after the hold), the carried creature's own popover included. (2) The picker's effect line leads with a bold "In this slot:" (only when there is an effect, still behind `SHOW_PICKER_EFFECTS`); it now wraps to a second line instead of being cut with an ellipsis, since the lead takes room at 360 px. (3) The boss card keeps only boss information: the player count line is gone (the Roster's board total covers it), this week's HP is the shared `SegmentBar` with compact numbers written on it (`compactCount`; the exact numbers stay in the aria label), and the season pips with "Week N / 5 this season" moved into the "This week" phase timeline at the top of the page. "Best rank cleared" stays on the boss card (it is about the boss's rank ladder; Misa did not ask to move it). (4) At 3 / 3 placed the Roster line shows a green check (the pixel tick, with spoken "Done:") and drops "the rest join automatically"; with fewer it keeps it. (5) A second line under the count reads "7 / 18 on the board": every creature on the party board out of the party's row length.
+
+**Note.** The picker's own status line ("2 / 3 on the board") counts only the player's creatures; the Roster's board total counts everyone's. Both use the same words as Misa asked, so they may need a clearer wording if players mix them up.

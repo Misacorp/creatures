@@ -202,7 +202,7 @@ describe('the row', () => {
     });
   });
 
-  it('fights with the chosen team, and away creatures still fight', async () => {
+  it('fights with the placed creatures plus the strongest, and away creatures still fight', async () => {
     await runRaid((ctx) => {
       openWeek(ctx, 3, 6);
       const mage = seedPlayer(ctx, 20, {
@@ -228,9 +228,10 @@ describe('the row', () => {
       expect(ids).toContain(strongB);
       expect(ids).not.toContain(weak);
 
-      // Between phases the player picks their own three, including the weak one.
+      // Between phases the player places only the weak one: it fights, and the two strongest of the
+      // others are filled in beside it.
       ctx.sql.exec('UPDATE players SET last_seen_at = ?', ctx.clock.t);
-      expect(ctx.core.raid.setTeam(mage.id, HELSINKI, [weak, strongA, strongB]).ok).toBe(true);
+      expect(ctx.core.raid.place(mage.id, HELSINKI, weak, 0).ok).toBe(true);
       ctx.clock.t = SATURDAY;
       ctx.core.raid.runDue(HELSINKI);
       const second = storedRuns(ctx.sql)[1];
