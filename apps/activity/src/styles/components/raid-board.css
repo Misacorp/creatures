@@ -74,11 +74,14 @@
 
 .raid-board.single .party-strip {
   align-items: center;
-  padding: 1.25rem 1rem 0.5rem;
+  padding: 1.25rem 1rem 0.25rem;
 }
 
+/* One reserved line, not two: the dungeon's effect line is short, and a tall empty rail reads as a gap. */
 .raid-board.single .cue-rail {
   align-self: stretch;
   justify-content: center;
+  min-height: 1.25rem;
+  margin: 0;
   text-align: center;
 }
