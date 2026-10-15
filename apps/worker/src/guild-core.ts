@@ -47,6 +47,7 @@ import {
 } from './ledger';
 import { Raid } from './raid';
 import { raidAutofireMigration } from './raid-autofire-migration';
+import { raidDifficultyMigration } from './raid-difficulty-migration';
 import { raidLivePacingMigration } from './raid-live-pacing-migration';
 import { raidLiveMigration } from './raid-live-migration';
 import { raidMigration } from './raid-migration';
@@ -314,6 +315,8 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
     sql.exec('ALTER TABLE players ADD COLUMN lounge_spot TEXT');
     sql.exec('ALTER TABLE players ADD COLUMN lounge_spot_at INTEGER');
   },
+  // Version 24: the raid difficulty version of each week (see raid-difficulty-migration.ts).
+  raidDifficultyMigration,
 ];
 
 export interface SessionUser {

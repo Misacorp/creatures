@@ -216,10 +216,20 @@ export const GEAR_TABLES = [
  * The schema version of a fresh database. Tests that check it use this constant, so a new migration
  * changes one number here (and adds an undo step below), not a dozen tests.
  */
-export const LATEST_SCHEMA_VERSION = 23;
+export const LATEST_SCHEMA_VERSION = 24;
+
+/** Puts a database back to before migration 24 (the raid difficulty version of a week). */
+export function undoDifficultyMigration(sql: SqlStorage): void {
+  const has = sql
+    .exec("SELECT 1 FROM pragma_table_info('raid_weeks') WHERE name = 'difficulty_version'")
+    .toArray();
+  if (has.length > 0) sql.exec('ALTER TABLE raid_weeks DROP COLUMN difficulty_version');
+  sql.exec('DELETE FROM schema_version WHERE version = 24');
+}
 
 /** Puts a database back to before migration 23 (the living room's chosen spot). */
 export function undoLoungeSpotMigration(sql: SqlStorage): void {
+  undoDifficultyMigration(sql);
   // Tests that rebuild an older schema may have dropped the table or a column already.
   const columns = sql
     .exec<{ name: string }>("SELECT name FROM pragma_table_info('players')")
