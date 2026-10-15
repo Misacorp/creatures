@@ -10,6 +10,7 @@ import {
   ROOM_BANNER,
   ROOM_END_MS,
   atSpeed,
+  fightScroll,
   hpLine,
   mineIds,
   modifierGimmicks,
@@ -429,5 +430,15 @@ describe('a run that was stored with the removed Fog modifier', () => {
     expect(view.spoken).toContain('Fog: Nobody can see');
     expect(modifierGimmicks(room)).toEqual([]);
     expect(stageRow(fogged).map((r) => r.position)).toEqual([0, 1, 2]);
+  });
+});
+
+describe('the scroll to the fight when a run starts', () => {
+  it('is smooth, with the fight at the top of the viewport', () => {
+    expect(fightScroll(false)).toEqual({ behavior: 'smooth', block: 'start' });
+  });
+
+  it('is instant under prefers-reduced-motion', () => {
+    expect(fightScroll(true)).toEqual({ behavior: 'auto', block: 'start' });
   });
 });

@@ -7,6 +7,7 @@ import {
   ROOM_CARD_MS,
   ROOM_END_MS,
   atSpeed,
+  fightScroll,
   mineIds,
   modifierGimmicks,
   nextRoom,
@@ -16,6 +17,7 @@ import {
   stageRow,
 } from './dungeon-playback';
 import { roomLine } from './dungeon-text';
+import { usePrefersReducedMotion } from './hooks';
 import type { DungeonReplay, DungeonReplayRoom } from './dungeon-types';
 import { INTRO_REPLAY_MS } from './stage-fx';
 import type { Speed } from './replay';
@@ -53,6 +55,13 @@ export function DungeonPlayback({ replay, onDone, showControls = false }: Props)
   const [paused, setPaused] = useState(false);
   const current = replay.rooms[room];
   const row = useMemo(() => stageRow(replay), [replay]);
+  const fightRef = useRef<HTMLElement>(null);
+  const reduced = usePrefersReducedMotion();
+
+  // The pre-run screen is taller than the screen: when the fight starts, bring it into view.
+  useEffect(() => {
+    fightRef.current?.scrollIntoView(fightScroll(reduced));
+  }, []);
 
   if (current === undefined) {
     // A run with no room played cannot be shown: go straight to the results.
@@ -78,7 +87,7 @@ export function DungeonPlayback({ replay, onDone, showControls = false }: Props)
   };
 
   return (
-    <section class="raid-section dungeon-playback" aria-label="Dungeon playback">
+    <section ref={fightRef} class="raid-section dungeon-playback" aria-label="Dungeon playback">
       {showControls && (
         <PlaybackControls
           label="Playback controls"

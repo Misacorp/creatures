@@ -265,3 +265,11 @@ export function runSentence(run: DungeonRunSummary): string {
     ? `Cleared at depth ${String(run.depth)}: ${rooms}.`
     : `Not cleared at depth ${String(run.depth)}: ${rooms}.`;
 }
+
+/**
+ * How the page scrolls to the fight when a run starts: smoothly, or at once for a player who asks
+ * for less motion. The fight's top edge goes to the top of the viewport.
+ */
+export function fightScroll(reducedMotion: boolean): ScrollIntoViewOptions {
+  return { behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' };
+}
