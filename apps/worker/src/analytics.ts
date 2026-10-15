@@ -95,6 +95,8 @@ export interface CatchProps {
 export type AnalyticsEvent =
   | { kind: 'session_start'; returning: boolean }
   | { kind: 'starter_chosen'; species: string }
+  /** The daily Bait allowance was paid (once per player per game day). */
+  | { kind: 'daily_allowance'; amount: number }
   | {
       kind: 'expedition_send';
       species: string;
@@ -426,6 +428,8 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
       return { returning: bool(event.returning) };
     case 'starter_chosen':
       return { species: species(event.species) };
+    case 'daily_allowance':
+      return { amount: int(event.amount, 100_000) };
     case 'expedition_send':
       return {
         species: species(event.species),

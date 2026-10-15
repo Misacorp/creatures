@@ -221,6 +221,8 @@ describe('the event writer', () => {
     expect(propsOf({ kind: 'starter_chosen', species: 'definitely not a species' })).toEqual({
       species: 'unknown',
     });
+    expect(propsOf({ kind: 'daily_allowance', amount: 25 })).toEqual({ amount: 25 });
+    expect(propsOf({ kind: 'daily_allowance', amount: Number.NaN })).toEqual({ amount: 0 });
     expect(propsOf({ kind: 'ability_pick', ability: 'x'.repeat(500) })).toEqual({
       ability: 'unknown',
     });

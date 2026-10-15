@@ -25,7 +25,12 @@ export function leetPointsForDay(participantCount: number): number {
   return Math.min(points ?? ECONOMY.maxLeetPoints, ECONOMY.maxLeetPoints);
 }
 
-/** Bait each participant earns for a day on which `participantCount` players leeted. */
+/**
+ * Bait each participant earned for a leet day under the OLD income model (7 Bait per leet point).
+ * The game no longer uses it: a leet now credits `leetBonusForDay` and the daily allowance is paid
+ * separately (`allowance.ts`). It stays exported because the balance simulator imports it as the
+ * "current" income model to compare against. Leet points themselves are still recorded.
+ */
 export function baitForDay(participantCount: number): number {
   return leetPointsForDay(participantCount) * ECONOMY.baitPerLeetPoint;
 }

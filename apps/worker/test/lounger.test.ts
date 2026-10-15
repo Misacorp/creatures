@@ -979,9 +979,10 @@ describe('migration 23', () => {
       ]);
       undoLoungeSpotMigration(ctx.sql);
       expect(columns()).toHaveLength(0);
+      // Undoing migration 23 also undoes 24 (the allowance table), which sits above it.
       expect(
         ctx.sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
-      ).toBe(LATEST_SCHEMA_VERSION - 1);
+      ).toBe(LATEST_SCHEMA_VERSION - 2);
       ctx.core.migrate();
       expect(columns()).toHaveLength(2);
       expect(
