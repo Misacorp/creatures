@@ -17,6 +17,7 @@ import { isRarity, isRoll } from './gear-parse';
 import type { CreatureGearFields, GearStat } from './gear-types';
 import { isInt, isNullableInt, isRecord, isStr } from './parse-core';
 import { createReauth, type Reauth } from './reauth';
+import { ROOM_SPOTS } from './sprites/room-art';
 
 export interface AppConfig {
   discordClientId: string;
@@ -337,6 +338,28 @@ export interface GameState {
   timezone: string | null;
   /** The creature that lounges in the living room; null when every creature is busy. */
   loungerId: string | null;
+  /** The spot of the living room the player chose for their lounger; null: the room decides. */
+  loungeSpot: LoungeSpot | null;
+}
+
+/** A spot of the living room a player chose (`id` is a `ROOM_SPOTS` id) and the server time it was chosen. */
+export interface LoungeSpot {
+  id: string;
+  at: number;
+}
+
+/**
+ * Checks a chosen spot: null or `{ id, at }`. A well-formed spot whose id the room art does not have
+ * (the spot was removed from the art) counts as no choice, so one stale spot never breaks a response.
+ * A missing field (an older answer) also means no choice; any other shape is refused.
+ */
+export function parseLoungeSpot(value: unknown): LoungeSpot | null {
+  if (value === undefined || value === null) return null;
+  if (!isRecord(value) || !isStr(value['id']) || !isInt(value['at'])) {
+    throw new Error('the server returned an unexpected lounge spot');
+  }
+  const id = value['id'];
+  return ROOM_SPOTS.some((spot) => spot.id === id) ? { id, at: value['at'] } : null;
 }
 
 function isStats(value: unknown): value is Creature['stats'] {
@@ -460,6 +483,7 @@ export function parseGameState(data: unknown): GameState {
     leetSync: data['leetSync'] ?? null,
     timezone: data['timezone'] ?? null,
     loungerId: data['loungerId'],
+    loungeSpot: parseLoungeSpot(data['loungeSpot']),
   };
 }
 
@@ -526,6 +550,15 @@ export async function setLounger(creatureId: string): Promise<string> {
   return data['loungerId'];
 }
 
+/** Chooses where the lounger sits in the living room (`null` clears the choice). Answers the stored choice. */
+export async function setLoungeSpot(spotId: string | null): Promise<LoungeSpot | null> {
+  const data = await apiFetch('/api/lounge-spot', jsonRequest('PUT', { spotId }));
+  if (!isRecord(data) || data['spot'] === undefined) {
+    throw new Error('the server returned an unexpected lounge spot answer');
+  }
+  return parseLoungeSpot(data['spot']);
+}
+
 /** One creature of a resident of the living room, as the room and its popover show it. */
 export interface RoomCreature {
   id: string;
@@ -545,11 +578,13 @@ export type RoomGear = NonNullable<CreatureGearFields['gear']> & {
   primary: { stat: GearStat; bp: number };
 };
 
-/** A player in the living room: the name, and the lounger (null when all their creatures are busy). */
+/** A player in the living room: the name, the lounger (null when all their creatures are busy) and the spot they chose. */
 export interface RoomResident {
   userId: string;
   name: string;
   creature: RoomCreature | null;
+  /** The spot the player chose, if any; the room seats these first. */
+  spot: LoungeSpot | null;
 }
 
 function isRoomGear(value: unknown): value is RoomGear {
@@ -579,7 +614,7 @@ function isRoomCreature(value: unknown): value is RoomCreature {
   );
 }
 
-function isRoomResident(value: unknown): value is RoomResident {
+function isRoomResident(value: unknown): value is Omit<RoomResident, 'spot'> & { spot?: unknown } {
   return (
     isRecord(value) &&
     isStr(value['userId']) &&
@@ -597,7 +632,12 @@ export function parseRoom(data: unknown): RoomResident[] {
   ) {
     throw new Error('/api/room returned an unexpected shape');
   }
-  return data['residents'];
+  return data['residents'].map((resident) => ({
+    userId: resident.userId,
+    name: resident.name,
+    creature: resident.creature,
+    spot: parseLoungeSpot(resident.spot),
+  }));
 }
 
 /** The loungers of these players (1 to 25 ids); players that are not in this guild are left out. */

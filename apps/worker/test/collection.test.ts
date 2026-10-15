@@ -157,6 +157,7 @@ interface StateBody {
   trainingMedianLevel: number | null;
   serverFirsts: { kind: string; species: string; at: number; mine: boolean; holders: string[] }[];
   loungerId: string | null;
+  loungeSpot: { id: string; at: number } | null;
 }
 
 async function join(
@@ -377,6 +378,7 @@ describe('GET /api/state', () => {
             'creatures',
             'expeditions',
             'leetSync',
+            'loungeSpot',
             'loungerId',
             'serverFirsts',
             'serverNow',
@@ -415,6 +417,7 @@ describe('GET /api/state', () => {
         expect(before.trainingMedianLevel).toBeNull();
         expect(before.serverFirsts).toEqual([]);
         expect(before.loungerId).toBeNull();
+        expect(before.loungeSpot).toBeNull();
 
         await player.call('POST', '/api/starter', { species: 'cindle', idempotencyKey: newKey() });
         const after = await player.state();

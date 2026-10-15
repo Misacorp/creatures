@@ -307,6 +307,13 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   // Version 22: repairs raid boards with more than three creatures of one player (see
   // raid-placement-cap-migration.ts).
   raidPlacementCapMigration,
+  (sql) => {
+    // Version 23: the spot a player has chosen in the living room (see lounger.ts and
+    // docs/design/living-room.md). An id from the shared spot list and the server time of the claim;
+    // both NULL until the player drags their creature somewhere (no backfill).
+    sql.exec('ALTER TABLE players ADD COLUMN lounge_spot TEXT');
+    sql.exec('ALTER TABLE players ADD COLUMN lounge_spot_at INTEGER');
+  },
 ];
 
 export interface SessionUser {

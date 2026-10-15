@@ -4,7 +4,7 @@
  * game state without any request. `room-loader.ts` runs them against the API and `use-room.ts` hands
  * the result to the screen.
  */
-import type { Creature, GameState, RoomCreature, RoomResident } from './api';
+import type { Creature, GameState, LoungeSpot, RoomCreature, RoomResident } from './api';
 import type { GearItem } from './gear-types';
 import { wornItemOf, type WornItem } from './gear-view';
 
@@ -14,6 +14,8 @@ export const ROOM_CHUNK = 25;
 export const ROOM_DEBOUNCE_MS = 2000;
 /** A tab switch refetches the whole room only when the last full fetch is older than this. */
 export const ROOM_STALE_MS = 60_000;
+/** While someone else is here and the page is visible, everyone is refetched this often. */
+export const ROOM_POLL_MS = 45_000;
 
 /**
  * A creature on a couch. Like the server's `RoomCreature`, but the Crafting level can be missing for
@@ -30,6 +32,8 @@ export interface Resident {
   name: string;
   /** Null when every creature of the player is busy. */
   creature: ResidentCreature | null;
+  /** The spot this player chose, or null (the room decides). Seated first, oldest first. */
+  spot: LoungeSpot | null;
 }
 
 /** Splits a list into pieces of at most `size` (the room request's id limit). */
@@ -78,18 +82,62 @@ export function mergeResidents(
 }
 
 /** True when there was no full fetch yet, or the last one is more than `ROOM_STALE_MS` old. */
-export function isStale(lastFullFetchAt: number | null, now: number): boolean {
-  return lastFullFetchAt === null || now - lastFullFetchAt > ROOM_STALE_MS;
+export function isStale(
+  lastFullFetchAt: number | null,
+  now: number,
+  limit: number = ROOM_STALE_MS,
+): boolean {
+  return lastFullFetchAt === null || now - lastFullFetchAt > limit;
+}
+
+/**
+ * Whether the slow refresh should be running: only while somebody other than the player is present and
+ * the page is visible. Alone or hidden, nothing is asked and no timer waits.
+ */
+export function shouldPoll(present: readonly string[], selfId: string, hidden: boolean): boolean {
+  return !hidden && othersOf(present, selfId).length > 0;
+}
+
+/**
+ * How long to wait before the next poll: `ROOM_POLL_MS` after the last full fetch was tried and
+ * ended (so a failing request is not retried in a hurry), never negative and never more than one interval.
+ */
+export function nextPollDelay(lastAttemptAt: number | null, now: number): number {
+  if (lastAttemptAt === null) return ROOM_POLL_MS;
+  return Math.min(ROOM_POLL_MS, Math.max(0, lastAttemptAt + ROOM_POLL_MS - now));
+}
+
+/**
+ * What to do when the page becomes visible again: refetch at once when the data is over one poll
+ * interval old (it paused while hidden), else just wait for the next poll.
+ */
+export function onVisibleAction(lastFullFetchAt: number | null, now: number): 'refresh' | 'wait' {
+  return isStale(lastFullFetchAt, now, ROOM_POLL_MS) ? 'refresh' : 'wait';
+}
+
+/**
+ * The player's chosen spot once a move has been answered: `settled` (the server's answer, or the old
+ * spot after a failure) replaces the optimistic claim, but only when that claim is still the current
+ * one; a newer move made meanwhile is left alone.
+ */
+export function settleClaim(
+  current: LoungeSpot | null,
+  optimistic: LoungeSpot,
+  settled: LoungeSpot | null,
+): LoungeSpot | null {
+  return current !== null && current.id === optimistic.id && current.at === optimistic.at
+    ? settled
+    : current;
 }
 
 /**
  * The player's own resident, from the game state: the lounger from `state.creatures` and
- * `state.loungerId`. Null creature when there is no lounger (everything busy) or the id is not in the list.
+ * `state.loungerId`, and the chosen spot from `state.loungeSpot`. Null creature when there is no lounger (everything busy) or the id is not in the list.
  * `craftingLevels` maps creature ids to Crafting levels once the gear view has loaded; `gearItems` are
  * the gear view's items (empty until loaded), which give the worn item its main stat.
  */
 export function ownResident(
-  state: Pick<GameState, 'creatures' | 'loungerId'>,
+  state: Pick<GameState, 'creatures' | 'loungerId' | 'loungeSpot'>,
   userId: string,
   name: string,
   craftingLevels: ReadonlyMap<string, number>,
@@ -100,6 +148,7 @@ export function ownResident(
   return {
     userId,
     name,
+    spot: state.loungeSpot,
     creature:
       lounger === undefined
         ? null

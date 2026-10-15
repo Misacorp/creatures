@@ -1,4 +1,10 @@
-import { EXPEDITION_LENGTHS, RULES, content, expeditionContent } from '@creatures/game';
+import {
+  EXPEDITION_LENGTHS,
+  ROOM_SPOT_IDS,
+  RULES,
+  content,
+  expeditionContent,
+} from '@creatures/game';
 import * as v from 'valibot';
 import { ROOM_MAX_USERS } from './lounger';
 import { IdempotencyKeySchema, SNOWFLAKE_RE } from './schemas';
@@ -57,6 +63,11 @@ export const NicknameBodySchema = v.strictObject({
 
 /** Choosing the lounger: the player is the session's. */
 export const LoungerBodySchema = v.strictObject({ creatureId: IdSchema });
+
+/** Choosing a spot in the living room (or null to clear it): the player is the session's. */
+export const LoungeSpotBodySchema = v.strictObject({
+  spotId: v.nullable(v.picklist(ROOM_SPOT_IDS)),
+});
 
 /**
  * Who to look up for the living room: 1 to `ROOM_MAX_USERS` distinct Discord snowflakes. Duplicates are

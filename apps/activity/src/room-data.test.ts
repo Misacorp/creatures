@@ -3,19 +3,29 @@ import type { Creature, RoomResident } from './api';
 import type { GearItem } from './gear-types';
 import {
   ROOM_CHUNK,
+  ROOM_POLL_MS,
   ROOM_STALE_MS,
   chunk,
   dropAbsent,
   idsToFetch,
   isStale,
   mergeResidents,
+  nextPollDelay,
+  onVisibleAction,
   othersOf,
   ownResident,
   roomResidents,
+  settleClaim,
+  shouldPoll,
   type Resident,
 } from './room-data';
 
-const resident = (userId: string, name = userId): Resident => ({ userId, name, creature: null });
+const resident = (userId: string, name = userId): Resident => ({
+  userId,
+  name,
+  creature: null,
+  spot: null,
+});
 
 describe('chunk', () => {
   it('splits into pieces of at most the size', () => {
@@ -57,9 +67,9 @@ describe('keeping the known residents', () => {
   it('merges an answer in, ignoring people who left meanwhile', () => {
     const known = new Map([['2', resident('2', 'old')]]);
     const answer: RoomResident[] = [
-      { userId: '2', name: 'new', creature: null },
-      { userId: '3', name: 'Cy', creature: null },
-      { userId: '9', name: 'Gone', creature: null },
+      { userId: '2', name: 'new', creature: null, spot: null },
+      { userId: '3', name: 'Cy', creature: null, spot: null },
+      { userId: '9', name: 'Gone', creature: null, spot: null },
     ];
     const merged = mergeResidents(known, answer, ['1', '2', '3']);
     expect(merged.get('2')?.name).toBe('new');
@@ -107,6 +117,7 @@ describe('ownResident', () => {
   const state = {
     creatures: [creature({ id: 'c1' }), creature({ id: 'c2', nickname: null, shiny: false })],
     loungerId: 'c2',
+    loungeSpot: null,
   };
 
   it('builds the lounger from the state, with the Crafting level when known', () => {
@@ -114,6 +125,7 @@ describe('ownResident', () => {
     expect(own).toEqual({
       userId: 'u1',
       name: 'Misa',
+      spot: null,
       creature: {
         id: 'c2',
         species: 'splashet',
@@ -178,5 +190,76 @@ describe('roomResidents', () => {
 
   it('always has the player, even when present is empty', () => {
     expect(roomResidents([], new Map(), resident('1')).map((r) => r.userId)).toEqual(['1']);
+  });
+});
+
+describe('own spot', () => {
+  const state = { creatures: [], loungerId: null };
+
+  it('carries the chosen spot into the own resident', () => {
+    const spot = { id: 'couch-left', at: 5 };
+    expect(ownResident({ ...state, loungeSpot: spot }, 'u1', 'Misa', new Map()).spot).toEqual(spot);
+    expect(ownResident({ ...state, loungeSpot: null }, 'u1', 'Misa', new Map()).spot).toBeNull();
+  });
+});
+
+describe('settleClaim', () => {
+  const mine = { id: 'couch-left', at: 10 };
+  const old = { id: 'fire-pouf', at: 1 };
+
+  it('puts the server answer in place of the optimistic claim', () => {
+    expect(settleClaim(mine, mine, { id: 'couch-left', at: 11 })).toEqual({
+      id: 'couch-left',
+      at: 11,
+    });
+  });
+
+  it('puts the old spot back after a failure', () => {
+    expect(settleClaim(mine, mine, old)).toEqual(old);
+    expect(settleClaim(mine, mine, null)).toBeNull();
+  });
+
+  it('leaves a newer move alone', () => {
+    const newer = { id: 'table-stool', at: 20 };
+    expect(settleClaim(newer, mine, old)).toEqual(newer);
+    expect(settleClaim(null, mine, old)).toBeNull();
+  });
+});
+
+describe('the slow poll rules', () => {
+  it('polls every 45 s', () => {
+    expect(ROOM_POLL_MS).toBe(45_000);
+  });
+
+  it('polls only with somebody else here and the page visible', () => {
+    expect(shouldPoll(['1'], '1', false)).toBe(false);
+    expect(shouldPoll([], '1', false)).toBe(false);
+    expect(shouldPoll(['1', '1'], '1', false)).toBe(false);
+    expect(shouldPoll(['1', '2'], '1', false)).toBe(true);
+    expect(shouldPoll(['1', '2'], '1', true)).toBe(false);
+  });
+
+  it('waits one interval after the last attempt, never negative', () => {
+    expect(nextPollDelay(null, 1000)).toBe(ROOM_POLL_MS);
+    expect(nextPollDelay(1000, 1000)).toBe(ROOM_POLL_MS);
+    expect(nextPollDelay(1000, 21_000)).toBe(25_000);
+    expect(nextPollDelay(1000, 1000 + ROOM_POLL_MS)).toBe(0);
+    expect(nextPollDelay(1000, 1_000_000)).toBe(0);
+  });
+
+  it('never waits longer than one interval (a clock that stepped back)', () => {
+    expect(nextPollDelay(10_000, 1000)).toBe(ROOM_POLL_MS);
+  });
+
+  it('refreshes on becoming visible only when the data is over 45 s old', () => {
+    expect(onVisibleAction(null, 100)).toBe('refresh');
+    expect(onVisibleAction(1000, 1000 + ROOM_POLL_MS)).toBe('wait');
+    expect(onVisibleAction(1000, 1000 + ROOM_POLL_MS + 1)).toBe('refresh');
+  });
+
+  it('keeps the tab-switch limit at a minute', () => {
+    expect(isStale(1000, 1000 + ROOM_STALE_MS)).toBe(false);
+    expect(isStale(1000, 1000 + ROOM_STALE_MS + 1)).toBe(true);
+    expect(isStale(1000, 1000 + ROOM_POLL_MS + 1, ROOM_POLL_MS)).toBe(true);
   });
 });

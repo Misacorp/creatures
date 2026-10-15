@@ -149,6 +149,29 @@ const ROOM_NAMES = [
   'Wren',
 ];
 
+/** How the fixture residents claim spots: nobody, or three on the couch middle and two on the pouf. */
+export type RoomClaims = 'none' | 'collide';
+
+/**
+ * Sets claims on the fixture residents (by position in the list; absent ones are skipped). With
+ * `collide` the older claim wins each spot: of the three on `couch-middle` the second resident
+ * (at 1000) keeps it and "You" (at 3000) falls back, and of the two on `fire-pouf` the fifth wins.
+ */
+export function withClaims(residents: readonly Resident[], claims: RoomClaims): Resident[] {
+  if (claims === 'none') return [...residents];
+  const table: readonly (readonly [number, string, number])[] = [
+    [1, 'couch-middle', 1000],
+    [2, 'couch-middle', 2000],
+    [0, 'couch-middle', 3000],
+    [3, 'fire-pouf', 1500],
+    [4, 'fire-pouf', 1200],
+  ];
+  return residents.map((resident, i) => {
+    const claim = table.find(([index]) => index === i);
+    return claim === undefined ? resident : { ...resident, spot: { id: claim[1], at: claim[2] } };
+  });
+}
+
 /** The worn item of fixture resident `i`: most wear something, some enchanted, every third nothing. */
 function sampleWorn(i: number): WornItem | null {
   if (i % 3 === 1) return null;
@@ -174,6 +197,7 @@ export function sampleResidents(count: number, oneBusy: boolean): Resident[] {
     return {
       userId: String(100000000000000001n + BigInt(i)),
       name: ROOM_NAMES[i % ROOM_NAMES.length] ?? `Player ${String(i + 1)}`,
+      spot: null,
       creature:
         oneBusy && i === 1
           ? null

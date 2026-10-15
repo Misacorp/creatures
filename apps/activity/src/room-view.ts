@@ -7,7 +7,7 @@
 import type { CreatureInfo } from './creature-info';
 import { ownedCreatureLabel } from './creature-info';
 import { creatureName, getSpecies } from './game';
-import { assignSpots } from './room-layout';
+import { assignSpots, type SpotClaim } from './room-layout';
 import type { Resident, ResidentCreature } from './room-data';
 import {
   EDGE_TILE_WIDTH,
@@ -57,20 +57,59 @@ export function allBusyLabel(name: string): string {
   return `${name}'s creatures are all out working`;
 }
 
+/** Short plain names of the room's spots, for the spoken labels of the keyboard way to move. */
+export const SPOT_NAMES: Readonly<Record<string, string>> = {
+  'window-sill': 'window sill',
+  'window-floor': 'floor by the window',
+  'window-cushion': 'floor cushion',
+  'couch-left': 'couch, left seat',
+  'couch-middle': 'couch, middle seat',
+  'couch-right': 'couch, right seat',
+  'table-chair-left': 'left chair at the table',
+  'table-chair-right': 'right chair at the table',
+  'table-stool': 'stool',
+  'fire-mantel': 'fireplace mantel',
+  'fire-rug-left': 'rug, left side',
+  'fire-rug-right': 'rug, right side',
+  'fire-pouf': 'pouf',
+  'shelf-top': 'top of the bookshelf',
+  'shelf-floor': 'floor by the bookshelf',
+  'shelf-beanbag': 'beanbag',
+};
+
+/** What a spot is called out loud: its name, or the id itself for a spot that has no name yet. */
+export function spotName(spotId: string): string {
+  return SPOT_NAMES[spotId] ?? spotId;
+}
+
+/** The spoken label of the button that moves your creature to an empty spot. */
+export function moveHereLabel(spotId: string): string {
+  return `Move here: ${spotName(spotId)}`;
+}
+
+/** Spot id to the user sitting there. */
+export function occupiedSpots(seated: readonly Seated[]): Map<string, string> {
+  return new Map(seated.map((s) => [s.spot.id, s.resident.userId]));
+}
+
 /**
- * Seats everyone: the spot each resident gets from `assignSpots` (so everyone with the same instance
- * and the same people sees the same room). Residents without a spot (more people than spots) are
- * left out. Sorted by the spot's `z`, which is the draw order.
+ * Seats everyone: the spot each resident gets from `assignSpots` (so everyone with the same instance,
+ * the same people and the same claims sees the same room). A resident's claim is the spot they chose
+ * (`resident.spot`); claims are seated first, oldest first, and a claim on a taken spot falls back.
+ * Residents without a spot (more people than spots) are left out. Sorted by the spot's `z`, which is
+ * the draw order.
  */
 export function seatResidents(
   instanceId: string,
   residents: readonly Resident[],
   spots: readonly RoomSpot[],
 ): Seated[] {
+  const claims = new Map<string, SpotClaim | null>(residents.map((r) => [r.userId, r.spot]));
   const assigned = assignSpots(
     instanceId,
     residents.map((r) => r.userId),
     spots,
+    claims,
   );
   const seated: Seated[] = [];
   for (const resident of residents) {
