@@ -44,7 +44,7 @@ export function useLiveStage(
   events: readonly FightEvent[],
   rowIds: readonly string[],
   bossId: string,
-  rounds: number,
+  rounds: number | null,
   reducedMotion: boolean,
   hold = false,
 ): StageView {

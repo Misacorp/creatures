@@ -29,6 +29,7 @@ import { compactPair } from './number-format';
 import { SmallCreature } from './SmallCreature';
 import { ElementChip } from './sprites/ElementChip';
 import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
+import { roundLabel } from './stage-rounds';
 import { forecastNextRound, strikeLabel, type Wording } from './telegraph';
 import { PixelHeading } from './ui/PixelHeading';
 import { Popover, popupProps } from './ui/Popover';
@@ -191,7 +192,7 @@ function RoundIntro({ intro }: { intro: IntroView }) {
         <span class="ri-label">
           <span>Round</span>
           <span>{intro.round}</span>
-          <span class="ri-of">/ {intro.rounds}</span>
+          {intro.rounds !== null && <span class="ri-of">/ {intro.rounds}</span>}
         </span>
       </PixelHeading>
     </div>
@@ -327,8 +328,12 @@ interface StageProps {
   boss: { id: string; name: string };
   hpMax: number;
   hpStart: number;
-  /** Rounds in the fight, for "Round 3 / 12". */
-  rounds: number;
+  /**
+   * The most rounds the fight can last, for "Round 3 / 12" (and for the forecast): the content's
+   * limit (`roomMaxRounds`, `raidMaxRounds`), never how long this stored fight really lasted, which
+   * would spoil it. Null when the fight has no known limit: the head then says just "Round 3".
+   */
+  rounds: number | null;
   /** The row, left to right. */
   row: readonly ReplayRowEntry[];
   /** The lobby's preview: no round yet, so the head says to get ready instead of "Round 1". */
@@ -890,10 +895,10 @@ export function Stage({
         {...(place === undefined ? {} : { place })}
         round={
           state.round > 0
-            ? `Round ${String(state.round)} / ${String(rounds)}`
+            ? roundLabel(state.round, rounds)
             : lobby === true
               ? 'Get ready'
-              : 'Round 1'
+              : roundLabel(1, rounds)
         }
       >
         {abilities?.help !== undefined && (

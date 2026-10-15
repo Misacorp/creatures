@@ -20,6 +20,7 @@ import { roomLine } from './dungeon-text';
 import { usePrefersReducedMotion } from './hooks';
 import type { DungeonReplay, DungeonReplayRoom } from './dungeon-types';
 import { INTRO_REPLAY_MS } from './stage-fx';
+import { roomMaxRounds } from './stage-rounds';
 import type { Speed } from './replay';
 import { LogToggle, Stage } from './Stage';
 import { Sprite } from './sprites/Sprite';
@@ -177,6 +178,8 @@ function RoomFight({
   onFinished: () => void;
 }) {
   const rowIds = row.map((r) => r.id);
+  // The room's limit from the content, not how long this stored fight lasted (that would spoil it).
+  const maxRounds = roomMaxRounds(room.foe.id);
   const none = useMemo(() => mineIds([]), []);
   // The banner shows for a moment with the room standing behind it, then the fight starts. While
   // paused it waits.
@@ -185,7 +188,7 @@ function RoomFight({
     events: room.events,
     rowIds,
     bossId: room.foe.id,
-    rounds: room.rounds,
+    rounds: maxRounds,
     introMs: INTRO_REPLAY_MS,
     speed,
     autoplay: false,
@@ -233,7 +236,7 @@ function RoomFight({
         boss={roomBoss(room)}
         hpMax={room.foe.hpMax}
         hpStart={room.foe.hpMax}
-        rounds={room.rounds}
+        rounds={maxRounds}
         row={row}
         mineIds={none}
         names={room.names}

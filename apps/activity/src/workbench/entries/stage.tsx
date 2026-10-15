@@ -9,6 +9,7 @@ import { roomLine } from '../../dungeon-text';
 import { parseLiveSnapshot } from '../../live-api';
 import { finaleProgress } from '../../raid-progress';
 import { phaseLine } from '../../raid-text';
+import { raidMaxRounds, roomMaxRounds } from '../../stage-rounds';
 import { StageHead } from '../../ui/StageHead';
 import { bool, num, str } from '../props';
 import { bigRaidFight } from '../raid-fight';
@@ -27,8 +28,10 @@ function sampleFight() {
 }
 
 /** The "Round N / M" overlay of a round that is opening, when the page asks for it. */
-function introOf(p: Props, rounds: number): IntroView | null {
-  return bool(p, 'roundIntro') ? { round: Math.min(rounds, 3), rounds, ms: 6000, key: 1 } : null;
+function introOf(p: Props, rounds: number | null): IntroView | null {
+  return bool(p, 'roundIntro')
+    ? { round: Math.min(rounds ?? 3, 3), rounds, ms: 6000, key: 1 }
+    : null;
 }
 
 const stageHead: Entry = {
@@ -119,14 +122,14 @@ const stage: Entry = {
           boss={roomBoss(room)}
           hpMax={room.foe.hpMax}
           hpStart={room.foe.hpMax}
-          rounds={room.rounds}
+          rounds={roomMaxRounds(room.foe.id)}
           row={stageRow(REPLAY)}
           mineIds={mineIds([])}
           names={room.names}
           events={room.events}
           index={num(p, 'events')}
           anim={null}
-          intro={introOf(p, room.rounds)}
+          intro={introOf(p, roomMaxRounds(room.foe.id))}
           creatureHp={{ start: room.hpStart, max: room.hpMax }}
           layout="row"
           place={roomLine(room.index, REPLAY.rooms.length)}
@@ -140,14 +143,14 @@ const stage: Entry = {
           boss={big.boss}
           hpMax={big.hpMax}
           hpStart={big.hpMax}
-          rounds={big.rounds}
+          rounds={raidMaxRounds('finale', big.boss.id)}
           row={big.row}
           mineIds={big.mineIds}
           names={big.names}
           events={big.events}
           index={num(p, 'events')}
           anim={null}
-          intro={introOf(p, big.rounds)}
+          intro={introOf(p, raidMaxRounds('finale', big.boss.id))}
           place={phaseLine('finale')}
         />
       );
@@ -158,14 +161,14 @@ const stage: Entry = {
         boss={fight.boss}
         hpMax={fight.boss.hpMax}
         hpStart={fight.boss.hpStart}
-        rounds={fight.rounds}
+        rounds={raidMaxRounds('phase1', fight.boss.id)}
         row={fight.row}
         mineIds={new Set(fight.row.filter((r) => r.owner === fight.you).map((r) => r.id))}
         names={fight.names}
         events={fight.events}
         index={num(p, 'events')}
         anim={null}
-        intro={introOf(p, fight.rounds)}
+        intro={introOf(p, raidMaxRounds('phase1', fight.boss.id))}
         place={phaseLine('phase1')}
       />
     );

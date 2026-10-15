@@ -143,14 +143,14 @@ export interface Forecast {
 export function forecastNextRound(
   bossId: string,
   round: number,
-  rounds: number,
+  rounds: number | null,
   row: readonly string[],
   knockedOut: readonly string[],
   names: Pick<EventNames, 'gimmicks'>,
   wording: Wording = 'zones',
   addedGimmicks: readonly Gimmick[] = [],
 ): Forecast | null {
-  if (round < 1 || round >= rounds) return null;
+  if (round < 1 || (rounds !== null && round >= rounds)) return null;
   const boss = bossOrFoe(bossId, addedGimmicks);
   if (boss === undefined) return null;
   const warnings = bossWarnings(boss, round + 1);

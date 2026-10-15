@@ -19,8 +19,8 @@ interface PlaybackArgs {
   /** The row's creature ids, left to right. */
   rowIds: readonly string[];
   bossId: string;
-  /** Rounds in the fight, for the "Round N" overlay. */
-  rounds: number;
+  /** The fight's round LIMIT (not its real length), for the "Round N / M" overlay; null: none. */
+  rounds: number | null;
   /** How long "Round N" shows at normal speed (a replay shows it for 1 second). */
   introMs: number;
   speed: Speed;
