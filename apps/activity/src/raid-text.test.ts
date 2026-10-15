@@ -1,4 +1,4 @@
-import { content } from '@creatures/game';
+import { content, dungeonContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import {
   gimmickLines,
@@ -37,6 +37,19 @@ describe('gimmicks in plain words', () => {
       expect(gimmickText(undertow)).toBe(
         'Every 3 rounds: hits every creature in the front zone for 80% of its attack.',
       );
+    }
+  });
+
+  it('names a place instead of a zone when the team is one row (the dungeon)', () => {
+    const flare = dungeonContent.foes
+      .flatMap((f) => f.gimmicks)
+      .find((g) => g.op === 'hit_zone' && g.zone === 'back');
+    expect(flare).toBeDefined();
+    if (flare !== undefined) {
+      expect(gimmickText(flare, 'row')).toMatch(
+        /^Every 3 rounds: hits the right creature for \d+% of its attack\.$/,
+      );
+      expect(gimmickText(flare)).toContain('back zone');
     }
   });
 

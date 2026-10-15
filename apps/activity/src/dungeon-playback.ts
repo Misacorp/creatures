@@ -18,8 +18,13 @@ import type {
 import type { ReplayRowEntry } from './raid-api';
 import type { Speed } from './replay';
 
-/** The card "Room 2 · Flooded" stays this long at normal speed, before the room's fight starts. */
-export const ROOM_CARD_MS = 2_200;
+/**
+ * The card "Room 2 · Flooded" stays this long at normal speed, before the room's fight starts. It was
+ * 2.2 seconds; Misa asked for about 3 seconds more (2026-10-15) so the foe and the room's rule can be
+ * read, with a draining outline showing how long is left (`RoomBanner`). The wait is the same with
+ * reduced motion.
+ */
+export const ROOM_CARD_MS = 5_200;
 /** After a room's last beat the final state rests this long (the foe down, or the team down). */
 export const ROOM_END_MS = 1_600;
 
@@ -58,9 +63,13 @@ export function modifierGimmicks(room: Pick<DungeonReplayRoom, 'modifier'>): Gim
   return effects.flatMap((e) => (e.op === 'foe_gimmick' ? [e.gimmick] : []));
 }
 
-/** The stage's boss for a room: the foe's content id and name. */
-export function roomBoss(room: Pick<DungeonReplayRoom, 'foe'>): { id: string; name: string } {
-  return { id: room.foe.id, name: room.foe.name };
+/** The stage's boss for a room: the foe's content id, name and element. */
+export function roomBoss(room: Pick<DungeonReplayRoom, 'foe'>): {
+  id: string;
+  name: string;
+  element: string;
+} {
+  return { id: room.foe.id, name: room.foe.name, element: room.foe.element };
 }
 
 /**
@@ -264,4 +273,12 @@ export function runSentence(run: DungeonRunSummary): string {
   return run.cleared
     ? `Cleared at depth ${String(run.depth)}: ${rooms}.`
     : `Not cleared at depth ${String(run.depth)}: ${rooms}.`;
+}
+
+/**
+ * How the page scrolls to the fight when a run starts: smoothly, or at once for a player who asks
+ * for less motion. The fight's top edge goes to the top of the viewport.
+ */
+export function fightScroll(reducedMotion: boolean): ScrollIntoViewOptions {
+  return { behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' };
 }

@@ -1,6 +1,7 @@
 /**
  * The pre-run choice of the daily dungeon as small pure functions: which creature stands in which
- * place of the row, the tap and drop rules for moving them, and the request they make. The server
+ * place of the row, the drop rules for moving them, and the request they make. New creatures are
+ * placed through the picker (`roster-picker.ts`), a placed one is moved by dragging it. The server
  * checks everything again (ownership, three different creatures); this module only keeps the screen
  * from building a request that cannot be right. There are no ability choices: unlocked creature
  * abilities fire on their own, at their default round.
@@ -13,21 +14,18 @@ import {
   content,
   dungeonRowOrder,
   rowReactions,
+  strongest,
   type Element,
   type Role,
 } from '@creatures/game';
-import type { Creature } from './api';
 import type { DungeonRunRequest } from './dungeon-types';
+import type { PickerCreature } from './roster-picker';
 import {
   CANCEL_ANNOUNCEMENT,
   dropOutcome,
-  notInRowAnnouncement,
-  takenOutAnnouncement,
   type DropOutcome,
   type DropStatus,
   type DropTarget,
-  type Selection,
-  type Tap,
 } from './slot-outcome';
 
 /** The places of the row, left to right. Used for labels and sentences. */
@@ -55,14 +53,7 @@ const TEAM_SIZE = RULES.dungeon.teamSize;
 
 // --- Placing creatures ---
 
-export interface TapResult {
-  slots: Slots;
-  selected: Selection;
-  /** A short plain explanation when the tap did nothing. */
-  hint: string | null;
-}
-
-/** The slot a creature stands in, or null when it is in the tray. */
+/** The slot a creature stands in, or null when it is not in the team. */
 export function slotIndexOf(slots: Slots, id: string): number | null {
   const index = slots.indexOf(id);
   return index < 0 ? null : index;
@@ -74,7 +65,7 @@ function withSlot(slots: Slots, index: number, id: string | null): Slots {
 
 /**
  * Puts `id` into slot `index`. A creature that is already placed swaps with whoever is there (or
- * leaves its old slot empty); one from the tray sends the occupant back to the tray.
+ * leaves its old slot empty); a new one takes the slot over (the picker only offers empty slots).
  */
 export function place(slots: Slots, id: string, index: number): Slots {
   if (index < 0 || index >= TEAM_SIZE) return slots;
@@ -86,7 +77,7 @@ export function place(slots: Slots, id: string, index: number): Slots {
   return next;
 }
 
-/** Takes a creature out of the row; the tray keeps it. */
+/** Takes a creature out of the row. */
 export function unplace(slots: Slots, id: string): Slots {
   const from = slotIndexOf(slots, id);
   return from === null ? slots : withSlot(slots, from, null);
@@ -109,33 +100,48 @@ export function pruneSlots(slots: Slots, owned: readonly string[]): Slots {
 }
 
 /**
- * The creatures strongest first: the highest levels, then the most HP, then the id, so the order
- * never depends on how the server listed them.
- */
-export function strongestFirst(creatures: readonly Creature[]): Creature[] {
-  return [...creatures].sort(
-    (a, b) => b.level - a.level || b.stats.hp - a.stats.hp || a.id.localeCompare(b.id),
-  );
-}
-
-/**
  * The player's strongest three, in the order the game's rule for the row gives
- * (`dungeonRowOrder`, the same as the simulator's players). Every dungeon fight goes left to right
+ * (`dungeonRowOrder`, the same as the simulator's players). "Strongest" is the server's measure
+ * (`strongest` of `@creatures/game`: power with gear, then the older creature, then the smaller id),
+ * the same three the picker tags Recommended. Every dungeon fight goes left to right
  * (`RULES.dungeon.turnOrder`) and a mark stays on the foe until it is replaced or cashed in, so the
  * order is the one that sets off the most reactions; among those, setters and supports stand on the
  * left and act first, a Guard in the middle covers both neighbours, and payoffs on the right cash
- * the marks in last.
+ * the marks in last. This is the team the screen starts with; the player changes it from there.
  */
-export function strongestThree(creatures: readonly Creature[]): Slots {
-  const top = strongestFirst(creatures)
-    .slice(0, TEAM_SIZE)
-    .map((c) => ({
-      c,
-      role: roleOf(c.species) ?? 'support',
-      element: elementOf(c.species) ?? 'tide',
-    }));
+export function strongestThree(creatures: readonly PickerCreature[]): Slots {
+  const top = strongest(creatures, TEAM_SIZE).map((c) => ({
+    c,
+    role: roleOf(c.species) ?? 'support',
+    element: elementOf(c.species) ?? 'tide',
+  }));
   const ordered = dungeonRowOrder(top).map((x) => x.c);
   return [ordered[0]?.id ?? null, ordered[1]?.id ?? null, ordered[2]?.id ?? null];
+}
+
+/**
+ * The team the setup opens with. With a last team (the ordered ids of the player's most recent run,
+ * `DungeonToday.lastTeam`) each creature keeps the slot it stood in, provided the player still has
+ * it and it is among the `creatures` the picker offers; a slot whose creature is gone or not offered
+ * stays empty (the others do not move up). A creature that appears twice keeps its first slot only.
+ * Without a last team (the first run) the screen starts from `strongestThree`, and so it does when
+ * none of the last team can be placed any more, so the player never opens on an empty row.
+ */
+export function startingTeam(
+  lastTeam: readonly string[] | null,
+  creatures: readonly PickerCreature[],
+): Slots {
+  if (lastTeam === null) return strongestThree(creatures);
+  const offered = new Set(creatures.map((c) => c.id));
+  const used = new Set<string>();
+  const at = (index: number): string | null => {
+    const id = lastTeam[index];
+    if (id === undefined || !offered.has(id) || used.has(id)) return null;
+    used.add(id);
+    return id;
+  };
+  const slots: Slots = [at(0), at(1), at(2)];
+  return placedCount(slots) === 0 ? strongestThree(creatures) : slots;
 }
 
 function roleOf(species: string): Role | undefined {
@@ -156,7 +162,7 @@ export const NO_REACTION_HINT = 'In this order nobody can set off a reaction.';
  * creature marks the foe and which one sets the reaction off, for example "Cindle marks Scorched →
  * Splashet sets off Steam." (one sentence for each different pair, in the order they first happen),
  * or `NO_REACTION_HINT` when the order never sets one off. It reads the same `rowReactions` the
- * row's best order is picked with, so the text and "Use my strongest three" always agree. Null when
+ * row's best order is picked with, so the text and the team the screen starts with always agree. Null when
  * the team is not complete or a species is unknown. The names are the player's own (render as text).
  */
 export function orderHint(team: readonly { name: string; species: string }[]): string | null {
@@ -183,23 +189,6 @@ export function orderHint(team: readonly { name: string; species: string }[]): s
   return sentences.length === 0 ? NO_REACTION_HINT : sentences.join(' ');
 }
 
-/** What a tap does. A selected creature goes to the tapped slot; tapping a placed creature picks it up. */
-export function reduceTap(slots: Slots, selected: Selection, tap: Tap): TapResult {
-  if (tap.kind === 'creature') {
-    return { slots, selected: selected === tap.id ? null : tap.id, hint: null };
-  }
-  const occupant = slots[tap.slot];
-  if (occupant === undefined) return { slots, selected, hint: 'That place does not exist.' };
-  if (selected === null) {
-    if (occupant === null) {
-      return { slots, selected, hint: 'Tap one of your creatures first, then a slot.' };
-    }
-    return { slots, selected: occupant, hint: null };
-  }
-  if (selected === occupant) return { slots, selected: null, hint: null };
-  return { slots: place(slots, selected, tap.slot), selected: null, hint: null };
-}
-
 interface DropResult {
   slots: Slots;
   outcome: DropOutcome;
@@ -209,9 +198,8 @@ const outcome = (status: DropStatus, hint: string | null, announce: string): Dro
   dropOutcome<never>(status, null, hint, announce);
 
 /**
- * What happens when `id` (called `name`) is dropped on `target`: on a place of the row it moves
- * there (swapping with whoever stands in it), on the tray it leaves the row, and off both it is
- * cancelled.
+ * What happens when the creature `id` of the team is dropped on `target`: on a place of the row it
+ * moves there (swapping with whoever stands in it), and off the row (a null target) it is cancelled.
  * `nameOf` gives the name of any creature, for the sentence a screen reader reads out.
  */
 export function resolveDrop(
@@ -222,30 +210,25 @@ export function resolveDrop(
 ): DropResult {
   const name = nameOf(id);
   if (target === null) return { slots, outcome: outcome('none', null, CANCEL_ANNOUNCEMENT) };
-  if (target.kind === 'tray') {
-    if (slotIndexOf(slots, id) === null) {
-      return { slots, outcome: outcome('none', null, notInRowAnnouncement(name)) };
-    }
-    return {
-      slots: unplace(slots, id),
-      outcome: outcome('valid', null, takenOutAnnouncement(name)),
-    };
-  }
   const spot = ROW_PLACES[target.slot];
   if (spot === undefined) {
     const hint = 'That place does not exist.';
     return { slots, outcome: outcome('invalid', hint, hint) };
   }
-  if (slotIndexOf(slots, id) === target.slot) {
+  const from = slotIndexOf(slots, id);
+  if (from === null) {
+    // A creature that is not in the team is placed with the picker, never by a drag.
+    const hint = 'Pick a creature for an empty slot instead.';
+    return { slots, outcome: outcome('invalid', hint, hint) };
+  }
+  if (from === target.slot) {
     return { slots, outcome: outcome('none', null, `${name} stays ${WHERE[spot]}.`) };
   }
   const occupantId = slots[target.slot] ?? null;
   const text =
     occupantId === null
-      ? `${name} placed ${WHERE[spot]}.`
-      : slotIndexOf(slots, id) === null
-        ? `${name} placed ${WHERE[spot]}. ${nameOf(occupantId)} went back to the list.`
-        : `Swapped ${name} with ${nameOf(occupantId)}.`;
+      ? `Moved ${name} to the ${spot} slot.`
+      : `Swapped ${name} with ${nameOf(occupantId)}.`;
   return { slots: place(slots, id, target.slot), outcome: outcome('valid', null, text) };
 }
 

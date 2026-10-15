@@ -1,15 +1,17 @@
+import { roomModifier } from '@creatures/game';
 import { DungeonPlayback } from '../../DungeonPlayback';
 import { FinaleProgress } from '../../FinaleProgress';
 import { Stage } from '../../Stage';
 import dungeonReplay from '../../fixtures/dungeon-replay.json';
 import liveMid from '../../fixtures/live-mid.json';
 import { parseDungeonReplay } from '../../dungeon-parse';
-import { mineIds, roomBoss, stageRow } from '../../dungeon-playback';
+import { mineIds, modifierGimmicks, roomBoss, stageRow } from '../../dungeon-playback';
 import { roomLine } from '../../dungeon-text';
 import { parseLiveSnapshot } from '../../live-api';
 import { finaleProgress } from '../../raid-progress';
 import { phaseLine } from '../../raid-text';
-import { StageHead } from '../../ui/StageHead';
+import { raidMaxRounds, roomMaxRounds } from '../../stage-rounds';
+import { StageHead, type StageModifier } from '../../ui/StageHead';
 import { bool, num, str } from '../props';
 import { bigRaidFight } from '../raid-fight';
 import type { IntroView } from '../../stage-fx';
@@ -27,24 +29,45 @@ function sampleFight() {
 }
 
 /** The "Round N / M" overlay of a round that is opening, when the page asks for it. */
-function introOf(p: Props, rounds: number): IntroView | null {
-  return bool(p, 'roundIntro') ? { round: Math.min(rounds, 3), rounds, ms: 6000, key: 1 } : null;
+function introOf(p: Props, rounds: number | null): IntroView | null {
+  return bool(p, 'roundIntro')
+    ? { round: Math.min(rounds ?? 3, 3), rounds, ms: 6000, key: 1 }
+    : null;
 }
+
+/** A modifier of the content as the head shows it, with the words the server would send. */
+function modifier(id: string): StageModifier {
+  const def = roomModifier(id);
+  return { id, name: def?.name ?? id, description: def?.description ?? '' };
+}
+
+/** The sample modifiers of the head's page: real content ids. */
+const MODIFIER_SETS: Readonly<Record<string, readonly StageModifier[]>> = {
+  none: [],
+  one: [modifier('flooded')],
+  two: [modifier('flooded'), modifier('scorched')],
+  three: [modifier('flooded'), modifier('scorched'), modifier('thorns')],
+};
 
 const stageHead: Entry = {
   name: 'StageHead',
   file: 'apps/activity/src/ui/StageHead.tsx',
   group: 'Headings & banners',
   description:
-    'The head of the fight stage in the dungeon and the raid: the room or phase at the top left ("Room 1 / 3", "Phase 1 / 3") and the round at the top right ("Round 2 / 12"), with the live finale\'s "?" button after the place.',
+    'The head of the fight stage in the dungeon and the raid: the room or phase at the top left ("Room 1 / 3", "Phase 1 / 3"), then the room\'s modifiers as small tags that open their glossary entry (Flooded, Scorched...; several wrap on a narrow screen), and the round at the top right ("Round 2 / 6", the fight\'s limit and never how long the fight lasted), with the live finale\'s "?" button after the place.',
   controls: {
     place: { kind: 'text', maxLength: 40 },
     round: { kind: 'text', maxLength: 40 },
+    modifiers: { kind: 'select', options: ['none', 'one', 'two', 'three'] },
     helpButton: { kind: 'toggle' },
   },
-  defaults: { place: 'Room 1 / 3', round: 'Round 2 / 2', helpButton: false },
+  defaults: { place: 'Room 1 / 3', round: 'Round 2 / 6', modifiers: 'none', helpButton: false },
   presets: [
     { name: 'Dungeon room', props: {} },
+    { name: 'Dungeon room with its modifier', props: { modifiers: 'one' } },
+    { name: 'Two modifiers', props: { modifiers: 'two' } },
+    { name: 'Three modifiers (wraps on a phone)', props: { modifiers: 'three' } },
+    { name: 'No limit known (just the round)', props: { round: 'Round 2' } },
     { name: 'Raid phase', props: { place: phaseLine('phase1'), round: 'Round 4 / 10' } },
     {
       name: 'Live finale (with the "?")',
@@ -62,6 +85,7 @@ const stageHead: Entry = {
       <StageHead
         {...(str(p, 'place') === '' ? {} : { place: str(p, 'place') })}
         round={str(p, 'round')}
+        modifiers={MODIFIER_SETS[str(p, 'modifiers')] ?? []}
       >
         {bool(p, 'helpButton') && (
           <button type="button" class="stage-help pix" aria-label="How abilities work">
@@ -81,7 +105,7 @@ const stage: Entry = {
   file: 'apps/activity/src/Stage.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The fight stage of the raid replay, the live finale and the dungeon, held still at one moment of a fixture fight: the head, the foe\'s name and HP bar, the creatures with the order they act in and the one acting now outlined. The raid\'s party is a grid like the placement board (rows front to back, lanes as columns, scrolling sideways); it opens on your own creatures and follows the one acting. "Raid, big party" plays a seeded fight of the party size set below.',
+    "The fight stage of the raid replay, the live finale and the dungeon, held still at one moment of a fixture fight: the head (with the room's modifier tags in the dungeon), the foe's name with its element chip after it, its picture (tap it for the foe popover: element, HP, its attack and tricks) and HP bar, the creatures with the order they act in and the one acting now outlined. The raid's party is a grid like the placement board (rows front to back, lanes as columns, scrolling sideways); it opens on your own creatures and follows the one acting. \"Raid, big party\" plays a seeded fight of the party size set below.",
   controls: {
     fight: { kind: 'select', options: ['Raid', 'Raid, big party', 'Dungeon room'] },
     events: { kind: 'number', min: 0, max: 600 },
@@ -119,17 +143,19 @@ const stage: Entry = {
           boss={roomBoss(room)}
           hpMax={room.foe.hpMax}
           hpStart={room.foe.hpMax}
-          rounds={room.rounds}
+          rounds={roomMaxRounds(room.foe.id)}
           row={stageRow(REPLAY)}
           mineIds={mineIds([])}
           names={room.names}
           events={room.events}
           index={num(p, 'events')}
           anim={null}
-          intro={introOf(p, room.rounds)}
+          intro={introOf(p, roomMaxRounds(room.foe.id))}
           creatureHp={{ start: room.hpStart, max: room.hpMax }}
           layout="row"
           place={roomLine(room.index, REPLAY.rooms.length)}
+          modifiers={[room.modifier]}
+          addedGimmicks={modifierGimmicks(room)}
         />
       );
     }
@@ -140,14 +166,14 @@ const stage: Entry = {
           boss={big.boss}
           hpMax={big.hpMax}
           hpStart={big.hpMax}
-          rounds={big.rounds}
+          rounds={raidMaxRounds('finale', big.boss.id)}
           row={big.row}
           mineIds={big.mineIds}
           names={big.names}
           events={big.events}
           index={num(p, 'events')}
           anim={null}
-          intro={introOf(p, big.rounds)}
+          intro={introOf(p, raidMaxRounds('finale', big.boss.id))}
           place={phaseLine('finale')}
         />
       );
@@ -158,14 +184,14 @@ const stage: Entry = {
         boss={fight.boss}
         hpMax={fight.boss.hpMax}
         hpStart={fight.boss.hpStart}
-        rounds={fight.rounds}
+        rounds={raidMaxRounds('phase1', fight.boss.id)}
         row={fight.row}
         mineIds={new Set(fight.row.filter((r) => r.owner === fight.you).map((r) => r.id))}
         names={fight.names}
         events={fight.events}
         index={num(p, 'events')}
         anim={null}
-        intro={introOf(p, fight.rounds)}
+        intro={introOf(p, raidMaxRounds('phase1', fight.boss.id))}
         place={phaseLine('phase1')}
       />
     );
@@ -177,7 +203,7 @@ const dungeonPlayback: Entry = {
   file: 'apps/activity/src/DungeonPlayback.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The dungeon fight as it plays after a run, room by room on the stage with the room banner first; Pause, 2x and Skip are hidden unless switched on here. It plays a fixture run, so reload the page to see it again.',
+    'The dungeon fight as it plays after a run, room by room on the stage with the room banner first (about five seconds, with a yellow outline round the stage that drains toward the bottom until the fight starts); Pause, 2x and Skip are hidden unless switched on here. It plays a fixture run, so reload the page to see it again.',
   controls: { showControls: { kind: 'toggle' } },
   defaults: { showControls: false },
   presets: [

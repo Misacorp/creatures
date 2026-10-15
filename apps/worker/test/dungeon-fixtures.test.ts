@@ -102,6 +102,10 @@ describe('the dungeon fixtures match what the server sends', () => {
     expect(runCleared.run).toMatchObject({ cleared: true, roomsCleared: 3, attempt: 1 });
     expect(runCleared.run.rooms.every((x) => x.played && x.cleared)).toBe(true);
     expect(runCleared.today.last?.id).toBe(runCleared.run.id);
+    // The last team: none before a first run, the run's ids in its row order after it.
+    expect(today.lastTeam).toBeNull();
+    expect(todayDone.lastTeam).toEqual(runCleared.run.team.map((t) => t.id));
+    expect(runCleared.today.lastTeam).toEqual(runCleared.run.team.map((t) => t.id));
     // The retry of a key is the same run.
     expect(runRetry.run).toEqual(runCleared.run);
     // The landmark: a certain gear drop, the streak bonus of day 3, a landmark depth.

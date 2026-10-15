@@ -1,3 +1,35 @@
+/*
+  The outline drains toward the bottom: the clip's top edge moves down the stage, so the top side
+  goes first, then both sides shrink downward, and the bottom side is the last to go. It moves in
+  steps, like the rest of the game's pixels. The time is the banner's own (`--fx-ms`, set from code),
+  so the outline is empty exactly when the fight starts. A player who asks for less motion gets a few
+  big steps instead of many small ones, over the same time.
+*/
+.rb-timer {
+  animation: rb-drain var(--fx-ms, 5200ms) steps(48, end) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rb-timer {
+    animation-timing-function: steps(6, end);
+  }
+}
+
+/* Paused: the outline waits, whole, and starts again with the wait. */
+.room-banner.paused .rb-timer {
+  animation-play-state: paused;
+}
+
+@keyframes rb-drain {
+  from {
+    clip-path: inset(0 0 0 0);
+  }
+
+  to {
+    clip-path: inset(100% 0 0 0);
+  }
+}
+
 /* The room banner fades in, holds and fades out over its own time; the number pops in. Smooth, opacity and scale only. */
 @media (prefers-reduced-motion: no-preference) {
   .room-banner {

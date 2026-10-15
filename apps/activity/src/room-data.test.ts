@@ -100,6 +100,7 @@ function creature(over: Partial<Creature>): Creature {
     shiny: true,
     nickname: 'Bubbles',
     away: false,
+    caughtAt: 1_000,
     quirk: 'hums-quietly',
     stats: { hp: 1, atk: 1, spd: 1 },
     statsWithGear: { hp: 1, atk: 1, spd: 1 },

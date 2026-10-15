@@ -138,7 +138,8 @@ function isToday(value: unknown): value is DungeonToday {
     isCount(value['attemptsAllowed']) &&
     isBool(value['canRun']) &&
     (blocked === null || blocked === 'already_run' || blocked === 'need_creatures') &&
-    (value['last'] === null || isRunSummary(value['last']))
+    (value['last'] === null || isRunSummary(value['last'])) &&
+    (value['lastTeam'] === null || isArrayOf(value['lastTeam'], isStr))
   );
 }
 

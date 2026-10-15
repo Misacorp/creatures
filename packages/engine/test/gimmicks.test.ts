@@ -35,7 +35,7 @@ describe('hit_zone (Undertow)', () => {
     expect(r.perCreature.f1!.guardCredit).toBe(r.perCreature.f1!.damageTaken);
   });
 
-  it('skips knocked-out creatures and empty zones', () => {
+  it('skips knocked-out creatures, and a zone with nobody standing falls to the nearest one', () => {
     const r = run([...six().slice(0, 4), slot('b4', { hp: 500 }), slot('b5', { hp: 500 })], {
       bossAtk: 1000,
       boss: withGimmicks([
@@ -51,10 +51,12 @@ describe('hit_zone (Undertow)', () => {
     });
     const round1 = inRound(r, 1).filter((e) => e.t === 'boss_hit' && e.source === 'gimmick');
     expect(round1).toHaveLength(2);
-    // Everyone in the back zone is knocked out by round 1, so round 2 has no zone hits.
-    expect(inRound(r, 2).filter((e) => e.t === 'boss_hit' && e.source === 'gimmick')).toHaveLength(
-      0,
+    // Everyone in the back zone is knocked out by round 1, so the round 2 strike goes to the
+    // Middle zone (m2, m3) instead of missing; nobody who is down is hit.
+    const round2 = inRound(r, 2).flatMap((e) =>
+      e.t === 'boss_hit' && e.source === 'gimmick' ? [e.target] : [],
     );
+    expect(round2).toEqual(['m2', 'm3']);
   });
 });
 

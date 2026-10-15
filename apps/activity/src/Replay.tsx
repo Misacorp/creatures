@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { errorText } from './game';
 import { fetchReplay, type RaidPhaseId, type ReplayView } from './raid-api';
 import { phaseLine, phaseName } from './raid-text';
+import { raidMaxRounds } from './stage-rounds';
 import { keyMoments, mineInRow, personalRecap, type Speed } from './replay';
 import { INTRO_REPLAY_MS } from './stage-fx';
 import { LogToggle, Stage } from './Stage';
@@ -66,13 +67,15 @@ export function Replay({
 
 function Player({ data, showControls }: { data: ReplayView; showControls: boolean }) {
   const rowIds = data.row.map((r) => r.id);
+  // The phase's limit from the rules and content, not how long this stored fight lasted (that would spoil it).
+  const maxRounds = raidMaxRounds(data.phase, data.boss.id);
   const [speed, setSpeed] = useState<Speed>(1);
   // The same pacing as the live finale (the engine's), with a 1 second intro; 2x halves all of it.
   const { pos, total, index, finished, playing, setPlaying, move, anim, fx, intro } = usePlayback({
     events: data.events,
     rowIds,
     bossId: data.boss.id,
-    rounds: data.rounds,
+    rounds: maxRounds,
     introMs: INTRO_REPLAY_MS,
     speed,
     // With no controls the replay has to start by itself.
@@ -121,7 +124,7 @@ function Player({ data, showControls }: { data: ReplayView; showControls: boolea
         boss={data.boss}
         hpMax={data.bossHpMax}
         hpStart={data.bossHpStart}
-        rounds={data.rounds}
+        rounds={maxRounds}
         row={data.row}
         mineIds={mineIds}
         names={data.names}

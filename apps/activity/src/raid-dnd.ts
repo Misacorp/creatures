@@ -32,7 +32,7 @@ export function resolveDrop(
   target: DropTarget | null,
 ): RaidDropOutcome {
   if (ctx.locked) return outcome('invalid', null, 'The row is locked.', 'The row is locked.');
-  if (target === null || target.kind === 'tray') {
+  if (target === null) {
     return outcome('none', null, null, CANCEL_ANNOUNCEMENT);
   }
   const from = slotOfCreature(ctx.row, creatureId);

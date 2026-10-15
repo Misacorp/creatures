@@ -279,6 +279,8 @@ export interface Creature extends CreatureGearFields {
   shiny: boolean;
   nickname: string | null;
   away: boolean;
+  /** When it was caught (epoch ms): the older of two equally strong creatures ranks first. */
+  caughtAt: number;
   /** Id of the creature's cosmetic personality quirk (text is in the shared lore data); null if unknown. */
   quirk: string | null;
   stats: { hp: number; atk: number; spd: number };
@@ -408,6 +410,7 @@ function isCreature(value: unknown): value is Creature {
     isInt(value['level']) &&
     isInt(value['levelCap']) &&
     isInt(value['fusionCount']) &&
+    isInt(value['caughtAt']) &&
     typeof value['shiny'] === 'boolean' &&
     (value['nickname'] === null || isStr(value['nickname'])) &&
     typeof value['away'] === 'boolean' &&

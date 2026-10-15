@@ -10,6 +10,7 @@ import {
   ROOM_BANNER,
   ROOM_END_MS,
   atSpeed,
+  fightScroll,
   hpLine,
   mineIds,
   modifierGimmicks,
@@ -52,7 +53,11 @@ describe('a stored room, as the stage draws it', () => {
   it('names the foe as the boss of the fight', () => {
     const room = replay.rooms[2];
     if (room === undefined) throw new Error('fixture has three rooms');
-    expect(roomBoss(room)).toEqual({ id: 'drowned-warden', name: 'Drowned Warden' });
+    expect(roomBoss(room)).toEqual({
+      id: 'drowned-warden',
+      name: 'Drowned Warden',
+      element: room.foe.element,
+    });
     expect(mineIds([]).size).toBe(0);
     expect(mineIds(stageRow(replay)).size).toBe(3);
   });
@@ -147,6 +152,10 @@ describe('the timings', () => {
     expect(atSpeed(ROOM_CARD_MS, 2)).toBe(ROOM_CARD_MS / 2);
     expect(atSpeed(ROOM_END_MS, 2)).toBe(ROOM_END_MS / 2);
     expect(atSpeed(1501, 2)).toBe(751);
+  });
+
+  it('keeps the room card up 3 seconds longer than the 2.2 seconds it had (Misa, 2026-10-15)', () => {
+    expect(ROOM_CARD_MS).toBe(2_200 + 3_000);
   });
 });
 
@@ -429,5 +438,15 @@ describe('a run that was stored with the removed Fog modifier', () => {
     expect(view.spoken).toContain('Fog: Nobody can see');
     expect(modifierGimmicks(room)).toEqual([]);
     expect(stageRow(fogged).map((r) => r.position)).toEqual([0, 1, 2]);
+  });
+});
+
+describe('the scroll to the fight when a run starts', () => {
+  it('is smooth, with the fight at the top of the viewport', () => {
+    expect(fightScroll(false)).toEqual({ behavior: 'smooth', block: 'start' });
+  });
+
+  it('is instant under prefers-reduced-motion', () => {
+    expect(fightScroll(true)).toEqual({ behavior: 'auto', block: 'start' });
   });
 });

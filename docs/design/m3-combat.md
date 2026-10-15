@@ -62,6 +62,7 @@ Gimmicks are data, built from effect operations. Examples for the four MVP bosse
 | Storm Sovereign | Spark   | left to right | _Lightning Rod_: every round, strikes the creature with the highest Attack                                                 |
 
 - **Normal boss attack** (each round, after any gimmick): hits one creature, picked by a rule (front zone first, guards first).
+- **Targets are always living creatures.** A knocked-out creature is never picked by a boss or foe ability, so it cannot soak up a hit. Row ends are the leftmost and rightmost creature still standing; a zone attack whose zone has nobody standing lands on the nearest zone that has (front side first on a tie); the strongest is the strongest living creature; the plain attack goes to the front-most living creature; Guard cover and Support buffs only come from and go to living creatures.
 - Bosses rotate weekly in content order.
 
 ## Raid structure (one boss, one week)

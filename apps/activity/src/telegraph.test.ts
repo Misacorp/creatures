@@ -94,6 +94,18 @@ describe('the forecast one round ahead', () => {
     expect(forecastNextRound('tidal-colossus', 11, 12, row, [], names)?.zones).toEqual(['front']);
   });
 
+  it('names the zone the hit really lands on when the aimed zone is down', () => {
+    // Front is a and b; with both down, Undertow falls to the nearest zone with someone standing.
+    expect(forecastNextRound('tidal-colossus', 2, 12, row, ['a', 'b'], names)).toEqual({
+      text: 'Next round: Undertow hits MIDDLE',
+      zones: ['middle'],
+      ends: [],
+    });
+    expect(
+      forecastNextRound('tidal-colossus', 2, 12, row, ['a', 'b', 'c', 'd'], names)?.zones,
+    ).toEqual(['back']);
+  });
+
   it('words a strike on the strongest generically, since Attack is not known on the stage', () => {
     expect(forecastNextRound('storm-sovereign', 4, 12, row, [], names)).toEqual({
       text: 'Next round: Lightning Rod strikes your strongest',
@@ -108,7 +120,11 @@ describe('the forecast one round ahead', () => {
       zones: [],
       ends: ['a', 'f'],
     });
-    expect(forecastNextRound('thornmother', 1, 12, row, ['a'], names)?.ends).toEqual(['f']);
+    // A fallen end creature passes the silence to the next one standing, as the engine does.
+    expect(forecastNextRound('thornmother', 1, 12, row, ['a'], names)?.ends).toEqual(['b', 'f']);
+    expect(
+      forecastNextRound('thornmother', 1, 12, row, ['a', 'b', 'c', 'd', 'e'], names)?.ends,
+    ).toEqual(['f']);
     expect(forecastNextRound('thornmother', 1, 12, ['solo'], [], names)?.ends).toEqual(['solo']);
     expect(forecastNextRound('thornmother', 2, 12, row, [], names)).toBeNull();
   });

@@ -16,7 +16,7 @@ interface StreakTrackProps {
  */
 export function StreakTrack({ pips, label }: StreakTrackProps) {
   return (
-    <div class="streak-track" role="img" aria-label={label}>
+    <span class="streak-track" role="img" aria-label={label}>
       {pips.map((pip) => (
         <span key={pip.day} class={`streak-day${pip.on ? ' on' : ''}${pip.bonus ? ' bonus' : ''}`}>
           <i />
@@ -25,6 +25,6 @@ export function StreakTrack({ pips, label }: StreakTrackProps) {
           </span>
         </span>
       ))}
-    </div>
+    </span>
   );
 }

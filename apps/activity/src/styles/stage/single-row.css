@@ -28,13 +28,31 @@
   height: 0.5rem;
 }
 
-/* The foe's name sits under its sprite, as a creature's name does (the raid's boss too), and its HP is written on the bar. */
+/*
+  The foe's name sits under its sprite, as a creature's name does (the raid's boss too), with its
+  element chip right after it on the same row, and its HP is written on the bar.
+*/
+.stage-foe-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 0.5rem;
+  max-width: 100%;
+}
+
 .stage-foe-name {
   margin: 0;
   max-width: 100%;
   font-size: 0.875rem;
   text-align: center;
   overflow-wrap: anywhere;
+}
+
+/* The picture of the foe is a button that opens its popover; the sprite is the whole look. */
+.foe-face {
+  display: grid;
+  place-items: center;
 }
 
 /* A smaller gap between the foe and the team (the stage's other rooms for banners and cards stay). */

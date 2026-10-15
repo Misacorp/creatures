@@ -1,17 +1,12 @@
 /**
  * The vocabulary the raid Placement (`raid-dnd.ts`, `raid-slots.ts`) and the dungeon team
- * (`dungeon-team.ts`) share: what a tap is, where a drop lands, what came of it, and the sentences
- * read out to a screen reader. The rules themselves stay in their own modules; this only keeps the two
- * screens from describing the same things twice.
+ * (`dungeon-team.ts`) share: where a drop lands, what came of it, and the sentence read out to a
+ * screen reader when a drag is cancelled. The rules themselves stay in their own modules; this only
+ * keeps the two screens from describing the same things twice.
  */
 
-/** The selected creature id (the one picked up by a tap or a key), or null. */
-export type Selection = string | null;
-
-/** A tap on one of the player's creatures (tray or slot) by id, or on a slot by its number. */
-export type Tap = { kind: 'creature'; id: string } | { kind: 'slot'; slot: number };
-
-export type DropTarget = { kind: 'slot'; slot: number } | { kind: 'tray' };
+/** Where a dragged creature is let go: on a slot (anywhere else is a cancel, which is a null target). */
+export type DropTarget = { kind: 'slot'; slot: number };
 
 /** `valid` can be dropped here, `invalid` is refused, `none` does nothing (for example itself). */
 export type DropStatus = 'valid' | 'invalid' | 'none';
@@ -36,18 +31,4 @@ export function dropOutcome<I = never>(
   return { status, intent, hint, announce };
 }
 
-export function pickUpAnnouncement(name: string): string {
-  return `${name} picked up. Use the arrow keys to choose a slot, Enter to drop it, Escape to cancel.`;
-}
-
 export const CANCEL_ANNOUNCEMENT = 'Cancelled.';
-
-/** A drop on the tray of a creature that is in the row. */
-export function takenOutAnnouncement(name: string): string {
-  return `${name} taken out of the row.`;
-}
-
-/** A drop on the tray of a creature that is not in the row. */
-export function notInRowAnnouncement(name: string): string {
-  return `${name} is not in the row.`;
-}

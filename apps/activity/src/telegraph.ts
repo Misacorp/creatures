@@ -10,7 +10,13 @@
  *   on the creatures' Attack, which the stage does not know, so it is worded generically.
  */
 import { content, dungeonContent, type BossDef, type Gimmick } from '@creatures/game';
-import { bossWarnings, type EventNames, type Zone } from '@creatures/engine';
+import {
+  bossWarnings,
+  nearestLivingZone,
+  zoneIndices,
+  type EventNames,
+  type Zone,
+} from '@creatures/engine';
 import type { BossStrike } from './stage';
 
 /**
@@ -143,14 +149,14 @@ export interface Forecast {
 export function forecastNextRound(
   bossId: string,
   round: number,
-  rounds: number,
+  rounds: number | null,
   row: readonly string[],
   knockedOut: readonly string[],
   names: Pick<EventNames, 'gimmicks'>,
   wording: Wording = 'zones',
   addedGimmicks: readonly Gimmick[] = [],
 ): Forecast | null {
-  if (round < 1 || round >= rounds) return null;
+  if (round < 1 || (rounds !== null && round >= rounds)) return null;
   const boss = bossOrFoe(bossId, addedGimmicks);
   if (boss === undefined) return null;
   const warnings = bossWarnings(boss, round + 1);
@@ -158,19 +164,26 @@ export function forecastNextRound(
   const parts: string[] = [];
   const zones: Zone[] = [];
   const ends: string[] = [];
+  // The engine aims at the living: a zone hit falls to the nearest zone with someone standing, and
+  // "both ends" are the leftmost and rightmost creatures still up (see `fireGimmick` in the engine).
+  const up = (id: string | undefined): id is string => id !== undefined && !knockedOut.includes(id);
+  const living = row.filter(up);
   for (const w of warnings) {
     const name = gimmickName(names, w.gimmick, w.name);
     switch (w.target.kind) {
-      case 'zone':
-        parts.push(
-          `${name} hits ${wording === 'row' ? placeWord(w.target.zone) : zoneWord(w.target.zone)}`,
+      case 'zone': {
+        const zone = nearestLivingZone(w.target.zone, (z) =>
+          zoneIndices(z, row.length).some((i) => up(row[i])),
         );
-        if (!zones.includes(w.target.zone)) zones.push(w.target.zone);
+        if (zone === undefined) break;
+        parts.push(`${name} hits ${wording === 'row' ? placeWord(zone) : zoneWord(zone)}`);
+        if (!zones.includes(zone)) zones.push(zone);
         break;
+      }
       case 'ends': {
         parts.push(`${name} silences both ends`);
-        for (const id of [row[0], row[row.length - 1]]) {
-          if (id !== undefined && !knockedOut.includes(id) && !ends.includes(id)) ends.push(id);
+        for (const id of [living[0], living[living.length - 1]]) {
+          if (id !== undefined && !ends.includes(id)) ends.push(id);
         }
         break;
       }

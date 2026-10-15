@@ -33,6 +33,7 @@ import type { NowTarget } from './raid-now';
 import { showFullResults } from './raid-timeline';
 import { RaidNews } from './RaidNews';
 import { Placement } from './Placement';
+import { toPickerCreature } from './roster-picker';
 
 interface Loaded {
   view: RaidView;
@@ -293,7 +294,7 @@ export function Raid({
       {party !== null && (
         <Placement
           party={party}
-          creatures={creatures}
+          creatures={creatures.map(toPickerCreature)}
           canEdit={view.you.canEdit}
           busy={busy}
           rosterNames={rosterNames}

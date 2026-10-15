@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { DungeonPrerun } from './DungeonPrerun';
 import { DungeonTeam } from './DungeonTeam';
-import { isComplete, pruneSlots, strongestFirst, strongestThree, type Slots } from './dungeon-team';
+import { isComplete, placedCount, pruneSlots, startingTeam, type Slots } from './dungeon-team';
 import { blockedText, isRetryOffer, RETRY_TEXT } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
 import { GlossaryTag } from './Glossary';
-import type { Selection } from './slot-outcome';
+import { toPickerCreature } from './roster-picker';
 
 interface Props {
   today: DungeonToday;
@@ -21,21 +21,24 @@ interface Props {
 }
 
 /**
- * The pre-run screen. It leads with the three rooms and the day's modifiers (`DungeonPrerun`), then
- * the team in its three slots and the Enter button, or the reason a run is not possible. The choice
- * is the order of the team; the server checks it and decides the run. Streak and reset time are in
- * the end report, not here.
+ * The pre-run screen: one card (`DungeonPrerun`) with the title and streak, the three rooms and the
+ * day's modifiers, the depth track, then the team on the Raid Roster's board and the Enter button
+ * (or, instead of the card's team, the reason a run is not possible). The
+ * team starts as the player's last team, each creature in the slot it stood in (`startingTeam`; a
+ * creature that is gone leaves its slot empty), or on the first run as their strongest three in the
+ * order that sets off the most reactions. Changes are kept only on this screen; the next last team
+ * is whatever the server stores when a run starts (the whole ordered team). The choice is who
+ * stands where; the server checks it and decides the run. Streak and reset time are in the end
+ * report, not here.
  */
 export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast }: Props) {
-  const [slots, setSlots] = useState<Slots>(() => strongestThree(creatures));
-  const [selected, setSelected] = useState<Selection>(null);
-  const [hint, setHint] = useState<string | null>(null);
+  const pickable = useMemo(() => creatures.map(toPickerCreature), [creatures]);
+  const [slots, setSlots] = useState<Slots>(() => startingTeam(today.lastTeam, pickable));
 
   // The collection can change under the screen (a refresh after another tab): drop creatures that are gone.
   const owned = creatures.map((c) => c.id);
   useEffect(() => {
     setSlots((current) => pruneSlots(current, owned));
-    setSelected((current) => (current !== null && owned.includes(current) ? current : null));
   }, [owned.join(',')]);
 
   const blocked =
@@ -56,7 +59,6 @@ export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast
   const complete = isComplete(slots);
   return (
     <>
-      <DungeonPrerun today={today} />
       {isRetryOffer(today) && (
         <section class="raid-section dungeon-retry" aria-labelledby="dungeon-retry-heading">
           <h3 id="dungeon-retry-heading">
@@ -70,50 +72,36 @@ export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast
           </p>
         </section>
       )}
-      <section class="raid-section" aria-label="Your team">
-        <DungeonTeam
-          creatures={strongestFirst(creatures)}
-          slots={slots}
-          selected={selected}
-          hint={hint}
-          disabled={busy}
-          onChange={(next) => {
-            setSlots(next.slots);
-            setSelected(next.selected);
-            setHint(next.hint);
-          }}
-          onStrongest={() => {
-            setSlots(strongestThree(creatures));
-            setSelected(null);
-            setHint(null);
-          }}
-        />
-      </section>
-      <section class="raid-section dungeon-enter" aria-label="Enter the dungeon">
-        {error !== null && (
-          <p class="error" role="alert">
-            {error}
-          </p>
-        )}
-        <p>
-          <button
-            type="button"
-            class="primary"
-            disabled={busy || !complete}
-            aria-describedby={complete ? undefined : 'dungeon-enter-note'}
-            onClick={() => {
-              onEnter(slots);
-            }}
-          >
-            {busy ? 'Entering...' : 'Enter the dungeon'}
-          </button>
-        </p>
-        {!complete && (
-          <p id="dungeon-enter-note" class="muted">
-            Fill all three slots to enter.
-          </p>
-        )}
-      </section>
+      <DungeonPrerun today={today}>
+        <DungeonTeam creatures={pickable} slots={slots} disabled={busy} onChange={setSlots}>
+          <div class="dungeon-enter">
+            {error !== null && (
+              <p class="error" role="alert">
+                {error}
+              </p>
+            )}
+            <p>
+              <button
+                type="button"
+                class="primary"
+                disabled={busy || !complete}
+                aria-describedby={complete ? undefined : 'dungeon-enter-note'}
+                onClick={() => {
+                  onEnter(slots);
+                }}
+              >
+                {busy ? 'Entering...' : 'Enter the dungeon'}
+              </button>
+            </p>
+            {!complete && (
+              <p id="dungeon-enter-note" class="muted">
+                Place 3 creatures to enter ({String(placedCount(slots))} / 3 placed). Tap an empty
+                slot to choose one.
+              </p>
+            )}
+          </div>
+        </DungeonTeam>
+      </DungeonPrerun>
     </>
   );
 }

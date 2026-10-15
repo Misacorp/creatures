@@ -30,5 +30,6 @@
   "attemptsAllowed": 1,
   "canRun": true,
   "blocked": null,
-  "last": null
+  "last": null,
+  "lastTeam": null
 }

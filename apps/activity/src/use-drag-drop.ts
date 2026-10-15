@@ -3,7 +3,7 @@
  * (no HTML5 drag API, which does not work on phones). A press becomes a drag after a small
  * movement, so a plain tap still taps. The decisions live in `dnd-core.ts`, `raid-dnd.ts` and `dungeon-team.ts`; this
  * file only connects them to the browser: listeners, the ghost position, hit-testing and scrolling.
- * The raid board and the dungeon team drop on slots and a tray; the living room passes its own `locate`
+ * The raid board and the dungeon team drop on slots; the living room passes its own `locate`
  * and target type (a spot id) and reuses the rest: thresholds, touch hold, ghost, edge scrolling.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
@@ -36,16 +36,14 @@ interface UseDragDropArgs<T = DropTarget> {
   disabled: boolean;
   /** The strip holding the slots (`[data-slot]` buttons): the raid board scrolls sideways. */
   stripRef: RefObject<HTMLElement>;
-  /** The team tray (the dungeon's): dropping a placed creature here takes it out. Absent: no tray. */
-  trayRef?: RefObject<HTMLElement>;
   /**
    * Touch only: pick a creature up after the finger has rested on it this long (ms), and treat a
    * move before that as a scroll. Absent: a touch drags at once, as a mouse does (the dungeon).
    */
   touchHoldMs?: number;
   /**
-   * What is under this point (client px)? Replaces the hit test of the strip's `[data-slot]` buttons
-   * and the tray; then `T` is the caller's own target type and `sameTarget` should compare it.
+   * What is under this point (client px)? Replaces the hit test of the strip's `[data-slot]`
+   * buttons; then `T` is the caller's own target type and `sameTarget` should compare it.
    */
   locate?: (p: Point) => T | null;
   /** Whether two targets are the same one (null is a target too); strict equality when `locate` is given. */
@@ -68,7 +66,7 @@ export interface DragDrop<T = DropTarget> {
 
 function sameDropTarget(a: DropTarget | null, b: DropTarget | null): boolean {
   if (a === null || b === null) return a === b;
-  return a.kind === b.kind && (a.kind !== 'slot' || (b.kind === 'slot' && a.slot === b.slot));
+  return a.slot === b.slot;
 }
 
 /** The slot of a slot target (the raid's and the dungeon's), for the shake; null for any other target. */
@@ -138,13 +136,6 @@ export function useDragDrop<T = DropTarget>(args: UseDragDropArgs<T>): DragDrop<
         }));
         const slot = hitTest(targets, p, SLOT_SLOP);
         if (slot !== null) return { kind: 'slot', slot };
-      }
-    }
-    const tray = latest.current.trayRef?.current ?? null;
-    if (tray !== null) {
-      const t = tray.getBoundingClientRect();
-      if (p.x >= t.left && p.x <= t.right && p.y >= t.top && p.y <= t.bottom) {
-        return { kind: 'tray' };
       }
     }
     return null;

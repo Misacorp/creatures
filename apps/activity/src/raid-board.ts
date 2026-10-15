@@ -11,7 +11,7 @@ import { getSpecies, speciesName } from './game';
 import type { RowSlotView } from './raid-api';
 import { initialOf } from './raid-roster';
 import { ownerColour } from './raid-slots';
-import type { SlotModel } from './ui/SlotRow';
+import type { SlotModel } from './ui/SlotButton';
 import { affectSlotOf, cuesFor, effectLine, sceneOf, type RowCues } from './ui/slot-cue';
 
 /** The names of the three rows, front (closest to the boss) first. */

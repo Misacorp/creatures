@@ -1,7 +1,7 @@
 import { content, rowScore } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { ActionIds } from './actions';
-import type { Creature } from './api';
+import type { PickerCreature } from './roster-picker';
 import {
   EMPTY_SLOTS,
   NO_REACTION_HINT,
@@ -12,37 +12,23 @@ import {
   place,
   placedCount,
   pruneSlots,
-  reduceTap,
   resolveDrop,
   slotIndexOf,
   slotStatuses,
-  strongestFirst,
+  startingTeam,
   strongestThree,
   unplace,
   type Slots,
 } from './dungeon-team';
 
-function make(id: string, species: string, level: number, extra: Partial<Creature> = {}): Creature {
-  return {
-    id,
-    species,
-    line: species,
-    level,
-    levelCap: 15,
-    fusionCount: 0,
-    shiny: false,
-    nickname: null,
-    away: false,
-    quirk: null,
-    stats: { hp: 100 + level, atk: 10, spd: 10 },
-    statsWithGear: { hp: 100 + level, atk: 10, spd: 10 },
-    gear: null,
-    busy: null,
-    trainCost: null,
-    ability: null,
-    explorer: { rank: 1, xp: 0, nextRankXp: 200, trips: 0 },
-    ...extra,
-  };
+/** A creature as the picker knows it. Power follows the level unless a test sets it. */
+function make(
+  id: string,
+  species: string,
+  level: number,
+  extra: Partial<PickerCreature> = {},
+): PickerCreature {
+  return { id, species, nickname: null, level, power: level * 10, caughtAt: 1_000, ...extra };
 }
 
 const names: Record<string, string> = { a: 'Ann', b: 'Bo', c: 'Cy', d: 'Di' };
@@ -66,7 +52,7 @@ describe('placing creatures in the row', () => {
     expect(place(['a', null, null], 'a', 2)).toEqual([null, null, 'a']);
   });
 
-  it('sends the occupant back to the list when a creature from the list takes its place', () => {
+  it('lets a new creature take over a place (the picker only offers empty ones)', () => {
     const next = place(['a', 'b', 'c'], 'd', 1);
     expect(next).toEqual(['a', 'd', 'c']);
     expect(slotIndexOf(next, 'b')).toBeNull();
@@ -97,14 +83,30 @@ describe('placing creatures in the row', () => {
 });
 
 describe('the strongest three', () => {
-  it('ranks by level, then HP, then id, whatever the order the server listed them in', () => {
+  it('ranks by power as the server does, not by level, whatever the order they were listed in', () => {
     const list = [
-      make('z', 'cindle', 5),
-      make('y', 'cindle', 9),
-      make('x', 'cindle', 9, { stats: { hp: 500, atk: 1, spd: 1 } }),
+      make('weak', 'cindle', 20, { power: 10 }),
+      make('mid', 'splashet', 3, { power: 30 }),
+      make('top', 'sproutle', 5, { power: 50 }),
+      make('low', 'ashmole', 9, { power: 20 }),
     ];
-    expect(strongestFirst(list).map((c) => c.id)).toEqual(['x', 'y', 'z']);
-    expect(strongestFirst([...list].reverse()).map((c) => c.id)).toEqual(['x', 'y', 'z']);
+    const ids = (slots: Slots): string[] => slots.filter((x): x is string => x !== null).sort();
+    expect(ids(strongestThree(list))).toEqual(['low', 'mid', 'top']);
+    expect(ids(strongestThree([...list].reverse()))).toEqual(['low', 'mid', 'top']);
+  });
+
+  it('breaks a tie with the older creature, then the smaller id', () => {
+    const list = [
+      make('c', 'cindle', 5, { power: 40, caughtAt: 3 }),
+      make('b', 'splashet', 5, { power: 40, caughtAt: 1 }),
+      make('a', 'sproutle', 5, { power: 40, caughtAt: 2 }),
+      make('z', 'ashmole', 5, { power: 40, caughtAt: 2 }),
+    ];
+    expect(
+      strongestThree(list)
+        .filter((x) => x !== null)
+        .sort(),
+    ).toEqual(['a', 'b', 'z']);
   });
 
   it('stands setters left, a guard in the middle and payoffs on the right when that order reacts', () => {
@@ -139,57 +141,85 @@ describe('the strongest three', () => {
   });
 });
 
-describe('taps', () => {
-  it('selects a creature, and a second tap on it lets go', () => {
-    const picked = reduceTap(EMPTY_SLOTS, null, { kind: 'creature', id: 'a' });
-    expect(picked.selected).toBe('a');
-    expect(reduceTap(EMPTY_SLOTS, 'a', { kind: 'creature', id: 'a' }).selected).toBeNull();
+describe('the team the setup opens with', () => {
+  const list = [
+    make('a', 'cindle', 9, { power: 90 }),
+    make('b', 'splashet', 8, { power: 80 }),
+    make('c', 'sproutle', 7, { power: 70 }),
+    make('d', 'ashmole', 1, { power: 10 }),
+  ];
+
+  it('falls back to the strongest three on the first run', () => {
+    expect(startingTeam(null, list)).toEqual(strongestThree(list));
   });
 
-  it('puts the selected creature in the tapped place', () => {
-    const result = reduceTap(EMPTY_SLOTS, 'a', { kind: 'slot', slot: 2 });
-    expect(result.slots).toEqual([null, null, 'a']);
-    expect(result.selected).toBeNull();
+  it('puts the last team back in the same slot order, not the strongest order', () => {
+    // The weakest creature opens the row: the strongest three would not pick it at all.
+    expect(startingTeam(['d', 'c', 'a'], list)).toEqual(['d', 'c', 'a']);
+    expect(startingTeam(['c', 'a', 'b'], list)).toEqual(['c', 'a', 'b']);
   });
 
-  it('picks up a placed creature by tapping its place, and explains a tap on an empty place', () => {
-    expect(reduceTap(['a', null, null], null, { kind: 'slot', slot: 0 }).selected).toBe('a');
-    const none = reduceTap(EMPTY_SLOTS, null, { kind: 'slot', slot: 0 });
-    expect(none.slots).toBe(EMPTY_SLOTS);
-    expect(none.hint).toContain('first');
+  it('leaves the slot of a creature that is gone empty and moves nobody up', () => {
+    expect(startingTeam(['a', 'gone', 'c'], list)).toEqual(['a', null, 'c']);
+    expect(startingTeam(['gone', 'b', 'c'], list)).toEqual([null, 'b', 'c']);
+    expect(startingTeam(['a', 'b', 'gone'], list)).toEqual(['a', 'b', null]);
   });
 
-  it('lets go when the selected creature is tapped in its own place', () => {
-    expect(reduceTap(['a', null, null], 'a', { kind: 'slot', slot: 0 }).selected).toBeNull();
+  it('leaves the slot of a creature the picker does not offer empty', () => {
+    expect(
+      startingTeam(
+        ['a', 'b', 'c'],
+        list.filter((x) => x.id !== 'b'),
+      ),
+    ).toEqual(['a', null, 'c']);
   });
 
-  it('refuses a place that does not exist', () => {
-    expect(reduceTap(EMPTY_SLOTS, 'a', { kind: 'slot', slot: 5 }).hint).toContain('does not exist');
+  it('keeps a creature in its first slot only, and ignores extra ids', () => {
+    expect(startingTeam(['a', 'a', 'b'], list)).toEqual(['a', null, 'b']);
+    expect(startingTeam(['a', 'b', 'c', 'd'], list)).toEqual(['a', 'b', 'c']);
+    expect(startingTeam(['a'], list)).toEqual(['a', null, null]);
+  });
+
+  it('falls back to the strongest three when none of the last team can be placed', () => {
+    expect(startingTeam(['x', 'y', 'z'], list)).toEqual(strongestThree(list));
+    expect(startingTeam([], list)).toEqual(strongestThree(list));
+  });
+
+  it('never hands out a team the request builder would refuse for a reason other than empty slots', () => {
+    const slots = startingTeam(['c', 'gone', 'a'], list);
+    expect(isComplete(slots)).toBe(false);
+    expect(completeTeam(slots)).toBeNull();
+    expect(startingTeam(['c', 'b', 'a'], list)).toEqual(['c', 'b', 'a']);
+    expect(completeTeam(startingTeam(['c', 'b', 'a'], list))).toEqual(['c', 'b', 'a']);
   });
 });
 
 describe('drops', () => {
-  it('moves a creature to a place and says so', () => {
-    const { slots, outcome } = resolveDrop(EMPTY_SLOTS, 'a', { kind: 'slot', slot: 0 }, nameOf);
-    expect(slots).toEqual(['a', null, null]);
+  it('moves a team creature to an empty place and says so', () => {
+    const { slots, outcome } = resolveDrop(
+      ['a', null, null],
+      'a',
+      { kind: 'slot', slot: 2 },
+      nameOf,
+    );
+    expect(slots).toEqual([null, null, 'a']);
     expect(outcome.status).toBe('valid');
-    expect(outcome.announce).toBe('Ann placed on the left.');
+    expect(outcome.announce).toBe('Moved Ann to the right slot.');
     expect(outcome.intent).toBeNull();
   });
 
-  it('says who went back to the list, and who swapped', () => {
-    const fromList = resolveDrop(['b', null, null], 'a', { kind: 'slot', slot: 0 }, nameOf);
-    expect(fromList.outcome.announce).toBe('Ann placed on the left. Bo went back to the list.');
+  it('swaps two creatures of the team when one is dropped on the other', () => {
     const swap = resolveDrop(['b', 'a', null], 'a', { kind: 'slot', slot: 0 }, nameOf);
     expect(swap.slots).toEqual(['a', 'b', null]);
+    expect(swap.outcome.status).toBe('valid');
     expect(swap.outcome.announce).toBe('Swapped Ann with Bo.');
   });
 
-  it('takes a creature out of the row when dropped on the list', () => {
-    const { slots, outcome } = resolveDrop(['a', null, null], 'a', { kind: 'tray' }, nameOf);
-    expect(slots).toEqual([null, null, null]);
-    expect(outcome.status).toBe('valid');
-    expect(resolveDrop(EMPTY_SLOTS, 'a', { kind: 'tray' }, nameOf).outcome.status).toBe('none');
+  it('never places a creature that is not in the team by a drag: the picker does that', () => {
+    const refused = resolveDrop(['b', null, null], 'a', { kind: 'slot', slot: 1 }, nameOf);
+    expect(refused.slots).toEqual(['b', null, null]);
+    expect(refused.outcome.status).toBe('invalid');
+    expect(refused.outcome.hint).toContain('Pick a creature');
   });
 
   it('cancels off the board and does nothing on its own place', () => {
@@ -202,9 +232,9 @@ describe('drops', () => {
   });
 
   it('refuses a place that does not exist', () => {
-    expect(resolveDrop(EMPTY_SLOTS, 'a', { kind: 'slot', slot: 9 }, nameOf).outcome.status).toBe(
-      'invalid',
-    );
+    expect(
+      resolveDrop(['a', null, null], 'a', { kind: 'slot', slot: 9 }, nameOf).outcome.status,
+    ).toBe('invalid');
   });
 
   it('gives every place a status for the creature being dragged', () => {
@@ -261,7 +291,7 @@ describe('the run request', () => {
 /** The members of a full team in slot order, as the hint reads them (names are the species names here). */
 function hintTeam(
   slots: readonly (string | null)[],
-  list: readonly Creature[],
+  list: readonly PickerCreature[],
 ): { name: string; species: string }[] {
   return slots.map((id) => {
     const c = list.find((x) => x.id === id);

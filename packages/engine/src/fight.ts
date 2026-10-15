@@ -33,7 +33,14 @@ import type {
   FightResult,
   PlayerTotals,
 } from './types';
-import { ZONES, neighbours, zoneIndices, zoneNeighbours, zoneOfIndex } from './zones';
+import {
+  ZONES,
+  nearestLivingZone,
+  neighbours,
+  zoneIndices,
+  zoneNeighbours,
+  zoneOfIndex,
+} from './zones';
 
 export interface FightOptions {
   /** Mutators registered in code. A mutator runs only if `input.mutators` also lists its id. */
@@ -654,7 +661,9 @@ export function simulateFight(
             ? zoneOfIndex(source.idx, n)
             : (choice.params?.zone ?? zoneHit?.zone ?? 'front');
       } else if (e.op === 're_mark') {
-        const own = creatures.find((c) => c.ownerId === choice.playerId);
+        // The player's own creature for the default element: a living one first.
+        const mine = creatures.filter((c) => c.ownerId === choice.playerId);
+        const own = mine.find((c) => c.alive) ?? mine[0];
         element =
           e.element === 'own' && source !== null
             ? source.element
@@ -729,22 +738,44 @@ export function simulateFight(
     return best;
   }
 
+  /**
+   * TARGETING RULE (every rule below picks among LIVING creatures only; a knocked-out creature is
+   * never a target, so it can never soak up a boss ability):
+   * - zone strike (`hit_zone`): hits every living creature of the aimed zone; if that zone has
+   *   nobody standing, the strike falls to the nearest zone that has (one step away first, the
+   *   front-side zone before the back-side one on a tie), so a wiped-out zone does not make the
+   *   attack miss. Nothing happens only when the whole row is down.
+   * - row ends (`silence_ends`): the leftmost and the rightmost LIVING creature (one creature
+   *   standing is silenced once; nobody standing, nothing).
+   * - strongest (`strike_highest_atk`): the living creature with the highest Attack, ties to the
+   *   lower slot.
+   * - the plain attack: the front-most living creature (or the Guard of its zone), see `bossAttack`.
+   * - random target: one of the living creatures.
+   * - Guard intercept and Support buffs only count a living Guard or Support, and a buff only goes
+   *   to a living neighbour; a Support beside a knocked-out creature simply buffs nobody there.
+   */
+  function zoneWithLiving(aimed: Zone): Zone | undefined {
+    return nearestLivingZone(aimed, (z) => livingIn(z).length > 0);
+  }
+
   function fireGimmick(g: Gimmick): void {
     events.push({ t: 'gimmick', round: currentRound, gimmick: g.id, op: g.op });
     switch (g.op) {
       case 'hit_zone': {
+        const zone = zoneWithLiving(g.zone);
+        if (zone === undefined) break;
         const amount = Math.floor((input.bossAtk * g.power) / 10_000);
-        for (const c of livingIn(g.zone)) hurt(c, amount, 'gimmick', false, bossGimmickDice[c.idx]);
+        for (const c of livingIn(zone)) hurt(c, amount, 'gimmick', false, bossGimmickDice[c.idx]);
         break;
       }
       case 'silence_ends': {
-        const ends = n === 1 ? [0] : [0, n - 1];
-        for (const i of ends) {
-          const c = creatures[i] as Creature;
-          if (c.alive) {
-            c.silenced = Math.max(c.silenced, g.turns);
-            events.push({ t: 'silence', round: currentRound, creature: c.id, turns: g.turns });
-          }
+        const standing = creatures.filter((c) => c.alive);
+        const first = standing[0];
+        const last = standing[standing.length - 1];
+        if (first === undefined || last === undefined) break;
+        for (const c of first === last ? [first] : [first, last]) {
+          c.silenced = Math.max(c.silenced, g.turns);
+          events.push({ t: 'silence', round: currentRound, creature: c.id, turns: g.turns });
         }
         break;
       }

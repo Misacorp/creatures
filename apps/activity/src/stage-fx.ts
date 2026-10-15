@@ -100,7 +100,8 @@ export function shortEffectMs(beatStaggerMs: number): number {
 /** What the "Round N" overlay says. `key` makes a new round's overlay a new element. */
 export interface IntroView {
   round: number;
-  rounds: number;
+  /** The fight's round limit ("/ 6" after the round), or null when it has none: never the fight's real length. */
+  rounds: number | null;
   /** How long it stays, for its animation. */
   ms: number;
   key: number;

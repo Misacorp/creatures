@@ -32,8 +32,29 @@
 
 .stage-head-left {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem 0.5rem;
+}
+
+/*
+  A room modifier in the head, after the place: a small ink tag with its icon and name and a gold edge
+  under it (like the modifier icon on the pre-run card). A button, so the tap area reaches past its
+  small box; several wrap onto the next line on a narrow screen.
+*/
+.stage-mod {
+  position: relative;
+  padding: 0 0.375rem 0 0.25rem;
+  box-shadow: inset 0 calc(var(--px) * -1) 0 var(--gold);
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  text-decoration: none;
+}
+
+.stage-mod::before {
+  content: '';
+  position: absolute;
+  inset: -0.375rem -0.125rem;
 }
 
 /* The "?" button: how abilities work. Small, but with a full-size tap area around it. */

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { EFFECT_PREFIX, ON_BOARD_NOTE, type PickerOption } from '../roster-picker';
+import { EFFECT_PREFIX, RECOMMENDED_TAG, type PickerOption } from '../roster-picker';
 import { ElementChip } from '../sprites/ElementChip';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
@@ -10,6 +10,8 @@ interface RosterPickerProps {
   /** One line under the title ("2 / 3 placed"). */
   status: string;
   options: readonly PickerOption[];
+  /** What an option says for a creature that is placed already ("On the board · moves here"). */
+  placedNote: string;
   /** Show each option's line about what it would do in the slot (the effect preview). */
   showEffects: boolean;
   /** The slot that opened it: focus goes back there when it closes. */
@@ -25,9 +27,10 @@ function firstEnabled(options: readonly PickerOption[]): number {
 }
 
 /**
- * The creature picker of the Raid Roster: a bottom sheet with a listbox of the player's creatures.
- * Each option shows the sprite, name, level, element and role, what it would do in the slot (when
- * `showEffects`: a line led by a bold "In this slot:"), and either "On the board · moves here" or why it cannot be picked. Options that
+ * The creature picker of the Raid Roster and the dungeon team: a bottom sheet with a listbox of the
+ * player's creatures. Each option shows the sprite, name, level, a small "Recommended" tag on the
+ * three strongest, element and role, what it would do in the slot (when `showEffects`: a line led by
+ * a bold "In this slot:"), and either `placedNote` ("On the board · moves here") or why it cannot be picked. Options that
  * cannot be picked stay in the list, so the reason can be read. Up, Down, Home and End move through
  * the list, Enter or Space picks, Escape (or the Close button, or a tap outside) closes, Tab stays in
  * the sheet, and focus goes back to the slot when it closes.
@@ -149,6 +152,7 @@ export function RosterPicker(props: RosterPickerProps) {
                 <span class="ro-line">
                   <span class="ro-name pix">{o.name}</span>
                   <span class="ro-level">Lv {o.level}</span>
+                  {o.recommended && <span class="ro-recommended">{RECOMMENDED_TAG}</span>}
                 </span>
                 <span class="tags ro-tags">
                   <ElementChip as="plain" element={o.element} role={o.role} />
@@ -158,7 +162,7 @@ export function RosterPicker(props: RosterPickerProps) {
                     <strong>{EFFECT_PREFIX}</strong> {o.effect}
                   </span>
                 )}
-                {o.onBoard && <span class="ro-note">{ON_BOARD_NOTE}</span>}
+                {o.onBoard && <span class="ro-note">{props.placedNote}</span>}
                 {o.disabled !== null && <span class="ro-note ro-reason">{o.disabled}</span>}
               </span>
             </li>

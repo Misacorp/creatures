@@ -7,6 +7,7 @@ import {
   ROOM_CARD_MS,
   ROOM_END_MS,
   atSpeed,
+  fightScroll,
   mineIds,
   modifierGimmicks,
   nextRoom,
@@ -16,8 +17,10 @@ import {
   stageRow,
 } from './dungeon-playback';
 import { roomLine } from './dungeon-text';
+import { usePrefersReducedMotion } from './hooks';
 import type { DungeonReplay, DungeonReplayRoom } from './dungeon-types';
 import { INTRO_REPLAY_MS } from './stage-fx';
+import { roomMaxRounds } from './stage-rounds';
 import type { Speed } from './replay';
 import { LogToggle, Stage } from './Stage';
 import { Sprite } from './sprites/Sprite';
@@ -53,6 +56,13 @@ export function DungeonPlayback({ replay, onDone, showControls = false }: Props)
   const [paused, setPaused] = useState(false);
   const current = replay.rooms[room];
   const row = useMemo(() => stageRow(replay), [replay]);
+  const fightRef = useRef<HTMLElement>(null);
+  const reduced = usePrefersReducedMotion();
+
+  // The pre-run screen is taller than the screen: when the fight starts, bring it into view.
+  useEffect(() => {
+    fightRef.current?.scrollIntoView(fightScroll(reduced));
+  }, []);
 
   if (current === undefined) {
     // A run with no room played cannot be shown: go straight to the results.
@@ -78,7 +88,7 @@ export function DungeonPlayback({ replay, onDone, showControls = false }: Props)
   };
 
   return (
-    <section class="raid-section dungeon-playback" aria-label="Dungeon playback">
+    <section ref={fightRef} class="raid-section dungeon-playback" aria-label="Dungeon playback">
       {showControls && (
         <PlaybackControls
           label="Playback controls"
@@ -108,18 +118,32 @@ export function DungeonPlayback({ replay, onDone, showControls = false }: Props)
 /**
  * The banner over the stage when a room opens: the room number in big pixel letters, the foe's
  * sprite and name, its element, and the room's twist. It is drawn inside the stage's own box, so the
- * stage does not change size, and it lets taps through. A screen reader gets one status sentence.
+ * stage does not change size, and it lets taps through (the intro cannot be skipped). A screen reader
+ * gets one status sentence. `ms` is how long it stays: a yellow outline round the stage drains over
+ * exactly that time.
  */
-function RoomBanner({ room, total, ms }: { room: DungeonReplayRoom; total: number; ms: number }) {
+function RoomBanner({
+  room,
+  total,
+  ms,
+  paused,
+}: {
+  room: DungeonReplayRoom;
+  total: number;
+  ms: number;
+  paused: boolean;
+}) {
   const view = roomIntroView(room, total);
   const art = bossArt(view.foeId);
   const icon = elementIcon(view.element);
   return (
     <div
-      class={`room-banner${view.boss ? ' boss' : ''}`}
+      class={`room-banner${view.boss ? ' boss' : ''}${paused ? ' paused' : ''}`}
       aria-hidden="true"
       ref={cssVars({ '--fx-ms': `${String(ms)}ms` })}
     >
+      {/* The countdown: a yellow outline round the whole stage that is whole at the start and drains toward the bottom (see dungeon-banner-motion.css). */}
+      <span class="rb-timer" />
       <PixelHeading tone={view.boss ? 'bad' : 'gold'} outline="ink" size="l" class="rb-heading">
         {view.heading}
       </PixelHeading>
@@ -154,6 +178,8 @@ function RoomFight({
   onFinished: () => void;
 }) {
   const rowIds = row.map((r) => r.id);
+  // The room's limit from the content, not how long this stored fight lasted (that would spoil it).
+  const maxRounds = roomMaxRounds(room.foe.id);
   const none = useMemo(() => mineIds([]), []);
   // The banner shows for a moment with the room standing behind it, then the fight starts. While
   // paused it waits.
@@ -162,7 +188,7 @@ function RoomFight({
     events: room.events,
     rowIds,
     bossId: room.foe.id,
-    rounds: room.rounds,
+    rounds: maxRounds,
     introMs: INTRO_REPLAY_MS,
     speed,
     autoplay: false,
@@ -210,7 +236,7 @@ function RoomFight({
         boss={roomBoss(room)}
         hpMax={room.foe.hpMax}
         hpStart={room.foe.hpMax}
-        rounds={room.rounds}
+        rounds={maxRounds}
         row={row}
         mineIds={none}
         names={room.names}
@@ -222,9 +248,19 @@ function RoomFight({
         creatureHp={{ start: room.hpStart, max: room.hpMax }}
         layout="row"
         place={roomLine(room.index, total)}
+        modifiers={[room.modifier]}
         addedGimmicks={modifierGimmicks(room)}
         overlay={
-          banner ? <RoomBanner room={room} total={total} ms={atSpeed(ROOM_CARD_MS, speed)} /> : null
+          banner ? (
+            <RoomBanner
+              // A new banner when playback resumes, so the outline starts again together with the wait.
+              key={paused ? 'paused' : 'playing'}
+              room={room}
+              total={total}
+              ms={atSpeed(ROOM_CARD_MS, speed)}
+              paused={paused}
+            />
+          ) : null
         }
       />
       <LiveRegion>{banner ? view.spoken : ''}</LiveRegion>

@@ -48,6 +48,8 @@ const creature = (id: string, species: string, level: number): PickerCreature =>
   species,
   nickname: null,
   level,
+  power: level * 10,
+  caughtAt: 1_000,
 });
 
 describe('the count and the line under the heading', () => {
@@ -204,14 +206,19 @@ describe('the effect preview', () => {
   it('effectPreview is null for an empty slot and joins several parts with a dot', () => {
     const known = new Map([['x', { species: 'sproutle', level: 5 }]]);
     expect(
-      effectPreview({ keys: Array(9).fill(null), known, slot: 1, turnOrder: 'speed' }),
+      effectPreview({
+        keys: Array(9).fill(null),
+        known,
+        slot: 1,
+        mode: { row: 'raid', turnOrder: 'speed' },
+      }),
     ).toBeNull();
     expect(
       effectPreview({
         keys: ['x', ...Array<null>(8).fill(null)],
         known,
         slot: 0,
-        turnOrder: 'left_to_right',
+        mode: { row: 'raid', turnOrder: 'left_to_right' },
       }),
     ).toBe('Covers its row');
   });

@@ -4,7 +4,7 @@ import { XpBar } from '../../XpBar';
 import { Bar } from '../../ui/Bar';
 import { PipRow } from '../../ui/PipRow';
 import { StreakTrack } from '../../ui/StreakTrack';
-import { streakPips } from '../../dungeon-text';
+import { streakLabel, streakPips } from '../../dungeon-text';
 import { BossHp, SegmentBar } from '../../ui/SegmentBar';
 import { TimerBar } from '../../ui/TimerBar';
 import { GLYPH_IDS } from '../data';
@@ -294,7 +294,7 @@ const streakTrack: Entry = {
   file: 'apps/activity/src/ui/StreakTrack.tsx',
   group: 'Bars',
   description:
-    'The daily dungeon streak after a run: a row of seven days lit up to today, with a small gift under each reward day (the 3rd and 7th).',
+    'The daily dungeon streak, at the right of the dungeon card header (under the title on a phone): a row of seven days lit up to today, with a small gift under each reward day (the 3rd and 7th). It is made of spans only, so it can sit inside a button.',
   controls: { streak: { kind: 'number', min: 0, max: 30 } },
   defaults: { streak: 3 },
   presets: [
@@ -305,10 +305,7 @@ const streakTrack: Entry = {
     { name: 'Day 8 (starts again)', props: { streak: 8 } },
   ],
   render: (p) => (
-    <StreakTrack
-      pips={streakPips(num(p, 'streak'))}
-      label={`Streak: day ${String(num(p, 'streak'))}`}
-    />
+    <StreakTrack pips={streakPips(num(p, 'streak'))} label={streakLabel(num(p, 'streak'))} />
   ),
 };
 

@@ -4,6 +4,7 @@ import { Fragment, type ComponentChildren, type Ref, type RefObject } from 'prea
 import type { EventNames, FightEvent, Zone } from '@creatures/engine';
 import { bossArt, elementClass, markPalette } from './art';
 import { cssVars } from './css-vars';
+import { foeButtonLabel, foeInfoOf, foeElement, type FoeInfo } from './foe-info';
 import { GlossaryTag } from './Glossary';
 import { gimmickGlyph, glyphOrUnknown } from './glyphs';
 import { useElementWidth, usePrefersReducedMotion } from './hooks';
@@ -26,14 +27,16 @@ import {
 import { badgeFor, unitTap, usedBadge, type Badge } from './stage-abilities';
 import { creatureInfoOf } from './creature-info';
 import { compactPair } from './number-format';
+import { usePopoverTrigger } from './PopoverHost';
 import { SmallCreature } from './SmallCreature';
 import { ElementChip } from './sprites/ElementChip';
 import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
+import { roundLabel } from './stage-rounds';
 import { forecastNextRound, strikeLabel, type Wording } from './telegraph';
 import { PixelHeading } from './ui/PixelHeading';
 import { Popover, popupProps } from './ui/Popover';
 import { SegmentBar } from './ui/SegmentBar';
-import { StageHead } from './ui/StageHead';
+import { StageHead, type StageModifier } from './ui/StageHead';
 import { ToggleButton } from './ui/ToggleButton';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -191,7 +194,7 @@ function RoundIntro({ intro }: { intro: IntroView }) {
         <span class="ri-label">
           <span>Round</span>
           <span>{intro.round}</span>
-          <span class="ri-of">/ {intro.rounds}</span>
+          {intro.rounds !== null && <span class="ri-of">/ {intro.rounds}</span>}
         </span>
       </PixelHeading>
     </div>
@@ -324,11 +327,20 @@ interface StageAbilities {
 }
 
 interface StageProps {
-  boss: { id: string; name: string };
+  /**
+   * The foe or boss: its content id, its name and, when the server sent it, its element (the content's
+   * own is used otherwise). The element shows as a chip after the name; tapping the picture opens its
+   * popover.
+   */
+  boss: { id: string; name: string; element?: string };
   hpMax: number;
   hpStart: number;
-  /** Rounds in the fight, for "Round 3 / 12". */
-  rounds: number;
+  /**
+   * The most rounds the fight can last, for "Round 3 / 12" (and for the forecast): the content's
+   * limit (`roomMaxRounds`, `raidMaxRounds`), never how long this stored fight really lasted, which
+   * would spoil it. Null when the fight has no known limit: the head then says just "Round 3".
+   */
+  rounds: number | null;
   /** The row, left to right. */
   row: readonly ReplayRowEntry[];
   /** The lobby's preview: no round yet, so the head says to get ready instead of "Round 1". */
@@ -362,6 +374,8 @@ interface StageProps {
    * "Phase 1 / 3" or "Finale" in the raid. The round is at the top right.
    */
   place?: string;
+  /** The room's modifiers, as small tags after the place in the head (the dungeon). */
+  modifiers?: readonly StageModifier[];
   /** Gimmicks the foe has only in this room (the dungeon's modifier), so the forecast names them too. */
   addedGimmicks?: readonly Gimmick[];
   /**
@@ -402,6 +416,36 @@ function AbilityBadge({ badge }: { badge: Badge }) {
         </>
       )}
     </span>
+  );
+}
+
+/**
+ * The foe's or boss's picture as a button that opens its popover (name, element, HP and what it does)
+ * in the app's popover layer. The mark and the effects sit beside it, not inside it. Without the
+ * popover host it is the plain picture, named for assistive technology.
+ */
+function FoeFace({ info, children }: { info: FoeInfo; children: ComponentChildren }) {
+  const { host, ref, open } = usePopoverTrigger<HTMLButtonElement>();
+  if (host === null) {
+    return (
+      <span class="foe-face" role="img" aria-label={info.name}>
+        {children}
+      </span>
+    );
+  }
+  return (
+    <button
+      ref={ref}
+      type="button"
+      class="small-creature foe-face"
+      {...popupProps(open)}
+      aria-label={foeButtonLabel(info.name)}
+      onClick={() => {
+        if (ref.current !== null) host.openFoe(`foe:${info.id}`, info, ref.current);
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -571,6 +615,7 @@ export function Stage({
   creatureHp,
   layout = 'zones',
   place,
+  modifiers,
   addedGimmicks,
   overlay,
   abilities,
@@ -607,6 +652,15 @@ export function Stage({
     creatureHp === undefined ? {} : creatureHpAt(events, index, creatureHp.start);
   const previousHp = anim === null ? state.bossHp : stateAt(events, anim.from, hpStart).bossHp;
   const art = bossArt(boss.id);
+  // What the foe's popover tells, from the content: its element, HP, line and what it does.
+  const foe = foeInfoOf({
+    id: boss.id,
+    name: boss.name,
+    element: boss.element ?? foeElement(boss.id) ?? undefined,
+    hp: hpMax,
+    ...(addedGimmicks === undefined ? {} : { added: addedGimmicks }),
+    wording,
+  });
 
   const hopping = new Set<string>();
   const hit = new Set<string | null>();
@@ -888,12 +942,13 @@ export function Stage({
     >
       <StageHead
         {...(place === undefined ? {} : { place })}
+        {...(modifiers === undefined ? {} : { modifiers })}
         round={
           state.round > 0
-            ? `Round ${String(state.round)} / ${String(rounds)}`
+            ? roundLabel(state.round, rounds)
             : lobby === true
               ? 'Get ready'
-              : 'Round 1'
+              : roundLabel(1, rounds)
         }
       >
         {abilities?.help !== undefined && (
@@ -917,7 +972,9 @@ export function Stage({
           ref={bossRef}
           class={`stage-boss-art${hit.has(null) ? ' hit' : ''}${windupItem === undefined ? '' : ' windup'}`}
         >
-          <Sprite sprite={art.sprite} scale={art.scale} alt={boss.name} />
+          <FoeFace info={foe}>
+            <Sprite sprite={art.sprite} scale={art.scale} />
+          </FoeFace>
           {state.mark !== null && (
             <span class={`stage-mark ${elementClass(state.mark)}${markCue ? ' pop' : ''}`}>
               {/* The boss is not a button, so the mark can be a tag without taking a tap from anything. */}
@@ -951,7 +1008,10 @@ export function Stage({
             </span>
           )}
         </div>
-        <p class="stage-foe-name pix">{boss.name}</p>
+        <div class="stage-foe-line">
+          <p class="stage-foe-name pix">{boss.name}</p>
+          {foe.element !== 'unknown' && <ElementChip element={foe.element} />}
+        </div>
         <SegmentBar
           size="boss"
           current={state.bossHp}

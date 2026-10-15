@@ -7,6 +7,7 @@ import {
   applyGear,
   creaturePower,
   effectiveStats,
+  strongest,
   type CreatureSpecies,
   type CritBonus,
   type Stats,
@@ -91,12 +92,7 @@ export function loadCreatures(sql: SqlStorage, userId: string): TeamCreature[] {
  * `docs/design/m4-raids.md`, "Away creatures"). Expeditions and raids do not block each other.
  */
 export function autoTeam(creatures: readonly TeamCreature[]): TeamCreature[] {
-  return [...creatures]
-    .sort(
-      (a, b) =>
-        b.power - a.power || a.caughtAt - b.caughtAt || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
-    )
-    .slice(0, RULES.raid.teamSize);
+  return strongest(creatures, RULES.raid.teamSize);
 }
 
 /** One placed creature as stored: `rowid` is the order they were placed in (a move places again). */

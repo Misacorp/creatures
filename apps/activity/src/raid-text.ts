@@ -1,4 +1,5 @@
 /** Plain-words text for the raid tab. Boss details come from the shared content pack. */
+import type { Zone } from '@creatures/engine';
 import { RULES, content, type BossDef } from '@creatures/game';
 import type { RaidPhaseId } from './raid-api';
 
@@ -58,11 +59,24 @@ function when(g: Gimmick): string {
   return 'eachRound' in g.trigger ? 'Every round' : `Every ${String(g.trigger.every)} rounds`;
 }
 
-/** One gimmick in plain words, for example "Every 3 rounds: hits the front zone for 80% of its attack." */
-export function gimmickText(g: Gimmick): string {
+/** The creature at each place of the dungeon's row, by the zone that is that one creature. */
+const ROW_PLACE: Readonly<Record<Zone, string>> = {
+  front: 'left',
+  middle: 'middle',
+  back: 'right',
+};
+
+/**
+ * One gimmick in plain words, for example "Every 3 rounds: hits every creature in the front zone for
+ * 80% of its attack." `row` (the dungeon, where the team is one row of three and each zone is the one
+ * creature at that place) says "hits the left creature" instead of naming a zone.
+ */
+export function gimmickText(g: Gimmick, wording: 'zones' | 'row' = 'zones'): string {
   switch (g.op) {
     case 'hit_zone':
-      return `${when(g)}: hits every creature in the ${g.zone} zone for ${percent(g.power)} of its attack.`;
+      return wording === 'row'
+        ? `${when(g)}: hits the ${ROW_PLACE[g.zone]} creature for ${percent(g.power)} of its attack.`
+        : `${when(g)}: hits every creature in the ${g.zone} zone for ${percent(g.power)} of its attack.`;
     case 'silence_ends':
       return `${when(g)}: silences the creatures at both ends of the row for ${String(g.turns)} turn${g.turns === 1 ? '' : 's'}.`;
     case 'reflect_first_reaction':
