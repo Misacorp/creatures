@@ -1,4 +1,10 @@
-import { RULES, createSeededRng, jackpotEssenceFor, scaleEssence } from '@creatures/game';
+import {
+  RULES,
+  bossAtRank,
+  createSeededRng,
+  jackpotEssenceFor,
+  scaleEssence,
+} from '@creatures/game';
 import { scaleBoss, simulateFight } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { effectiveStats } from '@creatures/game';
@@ -422,6 +428,90 @@ describe('replays', () => {
         const again = simulateFight(run.input, createSeededRng(run.seed));
         expect(again).toEqual(run.result);
       }
+    });
+  });
+});
+
+describe("the boss at the week's rank", () => {
+  const idsOf = (gimmicks: readonly { id: string }[]) => gimmicks.map((g) => g.id);
+
+  it('fights with the moves of the rank, shows them in the view, and a stored fight keeps them', async () => {
+    for (const rank of [1, 4, 7]) {
+      await runRaid((ctx) => {
+        const [me] = openWeek(ctx, 5, 10);
+        if (me === undefined) throw new Error('no player');
+        ctx.sql.exec('UPDATE raid_weeks SET rank = ?, effective_rank = ?', rank, rank);
+        // The boss card at that rank (read before anything is fought): its moves, with `fromRank`.
+        const view = ctx.core.raid.view(me.id, HELSINKI);
+        const def = content.bosses.find((b) => b.id === view.boss.id);
+        if (def === undefined) throw new Error('boss');
+        const wanted = bossAtRank(def, rank).gimmicks;
+        expect(view.boss.gimmicks).toEqual(
+          wanted.map((g) => ({
+            id: g.id,
+            name: g.name,
+            ...(g.fromRank === undefined ? {} : { fromRank: g.fromRank }),
+          })),
+        );
+        expect(view.boss.gimmicks.length).toBe(
+          def.gimmicks.length - (rank >= 7 ? 0 : rank >= 4 ? 1 : 2),
+        );
+        // The fights are played with the same moves, and carry no extra boss attacks at one per round.
+        ctx.clock.t = SUNDAY;
+        ctx.core.raid.runDue(HELSINKI);
+        const runs = storedRuns(ctx.sql);
+        expect(runs).toHaveLength(3);
+        for (const run of runs) {
+          expect(idsOf(run.input.boss.gimmicks)).toEqual(idsOf(wanted));
+          expect(run.input.bossAttacks).toBeUndefined();
+          expect(simulateFight(run.input, createSeededRng(run.seed))).toEqual(run.result);
+        }
+        // Later the rank moves: the stored fights still replay with the boss they were fought with.
+        ctx.sql.exec('UPDATE raid_weeks SET rank = 10, effective_rank = 10');
+        for (const run of storedRuns(ctx.sql)) {
+          expect(idsOf(run.input.boss.gimmicks)).toEqual(idsOf(wanted));
+          expect(simulateFight(run.input, createSeededRng(run.seed))).toEqual(run.result);
+        }
+      });
+    }
+  });
+
+  it("stores the rank's number of plain attacks on the input only when it is above one, and replays", async () => {
+    const scaling = RULES.raid.scaling as { bossAttacksByRank: readonly number[] };
+    const shipped = scaling.bossAttacksByRank;
+    // One attack at rank 1 to 3, two from rank 4, three from rank 7.
+    scaling.bossAttacksByRank = [1, 1, 1, 2, 2, 2, 3];
+    try {
+      for (const [rank, attacks] of [
+        [1, undefined],
+        [4, 2],
+        [9, 3],
+      ] as const) {
+        await runRaid((ctx) => {
+          openWeek(ctx, 4, 10);
+          ctx.sql.exec('UPDATE raid_weeks SET rank = ?, effective_rank = ?', rank, rank);
+          ctx.clock.t = SUNDAY;
+          ctx.core.raid.runDue(HELSINKI);
+          const runs = storedRuns(ctx.sql);
+          expect(runs).toHaveLength(3);
+          for (const run of runs) {
+            expect(run.input.bossAttacks).toBe(attacks);
+            expect(simulateFight(run.input, createSeededRng(run.seed))).toEqual(run.result);
+          }
+        });
+      }
+    } finally {
+      scaling.bossAttacksByRank = shipped;
+    }
+  });
+
+  it('tells a week from before the ladder (no stored rank) the rank-1 moves', async () => {
+    await runRaid((ctx) => {
+      const [me] = openWeek(ctx, 3, 5);
+      if (me === undefined) throw new Error('no player');
+      ctx.sql.exec('UPDATE raid_weeks SET rank = NULL, effective_rank = NULL');
+      const view = ctx.core.raid.view(me.id, HELSINKI);
+      expect(view.boss.gimmicks.every((g) => g.fromRank === undefined)).toBe(true);
     });
   });
 });

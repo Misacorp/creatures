@@ -16,7 +16,13 @@ import { RULES, content, seasonOf, type ReadinessBand } from '@creatures/game';
 import { speciesOf } from './collection';
 import { BASIC_TARGET, loadAutofire } from './raid-autofire';
 import { readFestivalGrant, type FestivalGrantView } from './raid-festival';
-import { rankChangeOf, readLadder, readWeekProgression, type RankChangeView } from './raid-ladder';
+import {
+  fightRank,
+  rankChangeOf,
+  readLadder,
+  readWeekProgression,
+  type RankChangeView,
+} from './raid-ladder';
 import type { Raid } from './raid';
 import {
   abilityFor,
@@ -150,7 +156,8 @@ export interface RaidView {
     name: string;
     element: string;
     turnOrder: string;
-    gimmicks: { id: string; name: string }[];
+    /** The moves in play at the week's rank. `fromRank`: the rank a rank-gated move starts at. */
+    gimmicks: { id: string; name: string; fromRank?: number }[];
     finaleRounds: number;
     /**
      * The boss's own lines for the moment it retreats at a phase floor; null when it has none (the
@@ -257,7 +264,7 @@ export function buildRaidView(
   const week = raid.currentWeek(tz);
   raid.syncRoster(week.weekId);
   const names = displayNames(sql);
-  const boss = bossFor(week.bossId);
+  const boss = bossFor(week.bossId, fightRank(sql, week.weekId));
   const schedule = raid.schedule(week.weekId, tz);
   const pending = RAID_PHASES.find(
     (p) => PHASE_ORDER.indexOf(p) > PHASE_ORDER.indexOf(week.status),
@@ -398,7 +405,11 @@ export function buildRaidView(
       name: boss.name,
       element: boss.element,
       turnOrder: boss.turnOrder,
-      gimmicks: boss.gimmicks.map((g) => ({ id: g.id, name: g.name })),
+      gimmicks: boss.gimmicks.map((g) => ({
+        id: g.id,
+        name: g.name,
+        ...(g.fromRank === undefined ? {} : { fromRank: g.fromRank }),
+      })),
       finaleRounds: boss.finaleRounds,
       retreat: boss.retreat === undefined ? null : { ...boss.retreat },
     },

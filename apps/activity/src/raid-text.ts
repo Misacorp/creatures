@@ -1,6 +1,6 @@
 /** Plain-words text for the raid tab. Boss details come from the shared content pack. */
 import type { Zone } from '@creatures/engine';
-import { RULES, content, type BossDef } from '@creatures/game';
+import { RULES, content, type BossDef, type SweepRow } from '@creatures/game';
 import { CHAIN_GLYPH } from './glyphs';
 import type { RaidPhaseId } from './raid-api';
 
@@ -129,12 +129,21 @@ const ROW_PLACE: Readonly<Record<Zone, string>> = {
 type Wording = 'zones' | 'row';
 type Pattern = Extract<Gimmick, { op: 'charge' }>['then'];
 
-const ROW_WORD: Readonly<Record<'front' | 'middle' | 'back' | 'all', string>> = {
+const ROW_WORD: Readonly<Record<'front' | 'middle' | 'back', string>> = {
   front: 'front',
   middle: 'middle',
   back: 'back',
-  all: 'every',
 };
+
+/** What a sweep's `payoffs` row is called: the row with the most Payoffs standing in it. */
+const PAYOFF_ROW = 'the row with the most Payoffs';
+
+/** One step of a sweep's walk in words: "the middle row", "every row", "the row with the most Payoffs". */
+function sweepStep(r: SweepRow): string {
+  if (r === 'all') return 'every row';
+  if (r === 'payoffs') return PAYOFF_ROW;
+  return `the ${ROW_WORD[r]} row`;
+}
 
 /** "once", "twice", "3 times": how often a chain jumps on. */
 function times(n: number): string {
@@ -155,16 +164,19 @@ function laneSeries(power: number, falloffBp: number): string {
 }
 
 /** The sweep's rows in order: "the middle row, then the back row, then the front row". */
-function sweepWalk(rows: readonly ('front' | 'middle' | 'back' | 'all')[]): string {
-  return rows.map((r) => (r === 'all' ? 'every row' : `the ${ROW_WORD[r]} row`)).join(', then ');
+function sweepWalk(rows: readonly SweepRow[]): string {
+  return rows.map(sweepStep).join(', then ');
 }
 
 /** What an attack pattern does, as a clause that goes after "Every 3 rounds: ". No full stop. */
 function patternClause(p: Pattern, wording: Wording): string {
   switch (p.op) {
     case 'sweep': {
-      const [only] = p.rows;
-      if (p.rows.length === 1 && only !== undefined && only !== 'all') {
+      const only = p.rows.length === 1 ? p.rows[0] : undefined;
+      if (only === 'payoffs') {
+        return `hits every creature in ${PAYOFF_ROW} for ${percent(p.power)} of its attack`;
+      }
+      if (only !== undefined && only !== 'all') {
         return wording === 'row'
           ? `hits the ${ROW_PLACE[only]} creature for ${percent(p.power)} of its attack`
           : `hits every creature in the ${only} row for ${percent(p.power)} of its attack`;
@@ -184,11 +196,13 @@ function patternClause(p: Pattern, wording: Wording): string {
       const who =
         p.aim === 'strongest'
           ? 'your highest-attack creature'
-          : p.aim === 'random'
-            ? 'a random creature'
-            : wording === 'row' || p.aim === 'left'
-              ? 'the left creature'
-              : 'the front-most creature';
+          : p.aim === 'payoff'
+            ? 'your highest-attack Payoff'
+            : p.aim === 'random'
+              ? 'a random creature'
+              : wording === 'row' || p.aim === 'left'
+                ? 'the left creature'
+                : 'the front-most creature';
       return `hits ${who} for ${percent(p.power)} of its attack. The creatures right beside it take ${percent(p.splashBp)} of the hit`;
     }
     case 'lance':
@@ -260,11 +274,14 @@ export function gimmickShort(g: Gimmick, wording: Wording = 'zones'): string {
         ? `Strikes your top attacker and jumps on, ${every}`
         : `Strikes your top attacker, ${every}`;
     case 'sweep': {
-      const [only] = g.rows;
+      const only = g.rows.length === 1 ? g.rows[0] : undefined;
+      if (only === 'payoffs') {
+        return `Sweeps ${PAYOFF_ROW}, ${every}`;
+      }
       if (g.rows.every((r) => r === 'all')) {
         return row ? `Hits every creature, ${every}` : `Sweeps every row, ${every}`;
       }
-      if (g.rows.length === 1 && only !== undefined && only !== 'all') {
+      if (only !== undefined && only !== 'all') {
         return row
           ? `Hits the ${ROW_PLACE[only]} creature, ${every}`
           : `Sweeps the ${only} row, ${every}`;
@@ -276,7 +293,9 @@ export function gimmickShort(g: Gimmick, wording: Wording = 'zones'): string {
         ? `Hits one random creature, ${every}`
         : `Drops shells on ${shellCount(g.shells.min, g.shells.max)}, ${every}`;
     case 'slam':
-      return `Slams one creature and the ones beside it, ${every}`;
+      return g.aim === 'payoff'
+        ? `Slams your best Payoff and the ones beside it, ${every}`
+        : `Slams one creature and the ones beside it, ${every}`;
     case 'lance':
       return row ? `Hits one creature, ${every}` : `Cuts one lane through every row, ${every}`;
     case 'pincer':

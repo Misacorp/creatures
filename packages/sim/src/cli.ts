@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
+import { INCOME_MODELS, parseIncomeModel, type IncomeModelId } from './income';
 import { buildReportJson, buildReportMarkdown, statusCounts } from './report';
 import { defaultSettings, runSimulation, type RunSettings } from './run';
 import { formatValue, describeRequirement } from './targets';
@@ -23,7 +24,7 @@ const defaultIo: Io = {
   },
 };
 
-const USAGE = `Usage: pnpm sim [--seed <string>] [--quick] [--weeks N] [--out <dir>] [--fail-on-violations]`;
+const USAGE = `Usage: pnpm sim [--seed <string>] [--quick] [--weeks N] [--out <dir>] [--income ${INCOME_MODELS.join('|')}] [--fail-on-violations]`;
 
 export interface CliOptions {
   settings: RunSettings;
@@ -40,6 +41,7 @@ export function parseCli(argv: readonly string[]): CliOptions {
       quick: { type: 'boolean' },
       weeks: { type: 'string' },
       out: { type: 'string' },
+      income: { type: 'string' },
       'fail-on-violations': { type: 'boolean' },
       help: { type: 'boolean' },
     },
@@ -58,7 +60,9 @@ export function parseCli(argv: readonly string[]): CliOptions {
     weeks = Number(rawWeeks);
     if (weeks < 1 || weeks > 104) throw new Error('--weeks must be from 1 to 104');
   }
-  const overrides: { seed?: string; weeks?: number } = {};
+  const overrides: { seed?: string; weeks?: number; income?: IncomeModelId } = {};
+  const income = values['income'];
+  if (typeof income === 'string') overrides.income = parseIncomeModel(income);
   if (typeof seed === 'string') overrides.seed = seed;
   if (weeks !== undefined) overrides.weeks = weeks;
   const out = values['out'];

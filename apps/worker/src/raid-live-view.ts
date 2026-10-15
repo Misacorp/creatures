@@ -12,7 +12,7 @@ import {
   type FightInput,
 } from '@creatures/engine';
 import { readFestivalGrant, type FestivalGrantView } from './raid-festival';
-import { rankChangeOf, type RankChangeView } from './raid-ladder';
+import { fightRank, rankChangeOf, type RankChangeView } from './raid-ladder';
 import { bossFor, guardRulesOf, type StoredSummary } from './raid-resolve';
 import { totalEssenceOf } from './raid-reveal';
 import {
@@ -133,7 +133,7 @@ export function emptySnapshot(
   status: 'none' | 'lobby',
   startsAt: number | null,
 ): LiveSnapshot {
-  const boss = bossFor(ctx.bossId);
+  const boss = bossFor(ctx.bossId, fightRank(ctx.sql, ctx.weekId));
   const pool =
     ctx.party === null
       ? undefined

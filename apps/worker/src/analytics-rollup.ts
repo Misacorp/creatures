@@ -174,6 +174,9 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
     case 'starter_chosen':
       tally.add('starters', { species: str(p, 'species') });
       break;
+    case 'daily_allowance':
+      tally.add('economy.allowance', {});
+      break;
     case 'train':
       tally.add('collection.train', {});
       break;

@@ -1,4 +1,4 @@
-import { dungeonContent } from '@creatures/game';
+import { bossAtRank, content, dungeonContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { BossStrike } from './stage';
 import { MAX_FORECAST_CLAUSES, forecastNextRound, strikeLabel } from './telegraph';
@@ -154,6 +154,65 @@ describe('the forecast of the attack patterns in the raid', () => {
       'Next round: Thunderclap slams your strongest, and splashes its neighbours',
       'Lightning Rod strikes your strongest, then jumps twice',
     ]);
+  });
+
+  it('says a slam on the Payoff and a sweep of the Payoff row, in their rounds', () => {
+    // Round 4 looks at round 5: Magma Spit (rank 4) is the Wyrm's slam on the strongest Payoff.
+    const played = { 'magma-spit': 'Magma Spit' };
+    expect(forecastNextRound('cinder-wyrm', 4, 12, row, [], { gimmicks: played })?.lines).toEqual([
+      'Next round: Magma Spit slams your strongest Payoff, and splashes its neighbours',
+      'Backdraft reflects the first reaction',
+    ]);
+    // Static Field (the Sovereign's rank-4 sweep) comes with Lightning Rod in round 5.
+    expect(
+      forecastNextRound('storm-sovereign', 4, 12, row, [], {
+        gimmicks: { 'static-field': 'Static Field' },
+      })?.lines,
+    ).toEqual([
+      'Next round: Static Field sweeps the row with the most Payoffs',
+      'Lightning Rod strikes your strongest, then jumps twice',
+    ]);
+    // Spring Tide (rank 7) gathers in round 8 and lands in round 9 on the marked row.
+    const spring = { gimmicks: { 'spring-tide': 'Spring Tide' } };
+    expect(forecastNextRound('tidal-colossus', 7, 12, row, [], spring)?.lines).toContain(
+      'Next round: Spring Tide is gathering',
+    );
+    expect(forecastNextRound('tidal-colossus', 8, 12, row, [], spring)?.lines).toContain(
+      'Spring Tide lands on the marked row',
+    );
+    // Nobody left to hit: no sweep and no slam is announced.
+    const down = forecastNextRound('storm-sovereign', 4, 12, row, row, {
+      gimmicks: { 'static-field': 'Static Field' },
+    });
+    expect(down?.lines.join(' ')).not.toMatch(/Static Field/);
+    const wyrm = forecastNextRound('cinder-wyrm', 4, 12, row, row, { gimmicks: played });
+    expect(wyrm?.lines.join(' ')).not.toMatch(/Magma Spit/);
+  });
+
+  it('forecasts only the moves the fight was played with: a rank-gated move it did not have is left out', () => {
+    // The server names the moves of the stored boss; a week at rank 1 has none of the gated ones.
+    const boss = content.bosses.find((b) => b.id === 'cinder-wyrm');
+    if (boss === undefined) throw new Error('missing boss');
+    const played = Object.fromEntries(bossAtRank(boss, 1).gimmicks.map((g) => [g.id, g.name]));
+    const lines = (names: Record<string, string> | undefined, round: number) =>
+      forecastNextRound(
+        'cinder-wyrm',
+        round,
+        12,
+        row,
+        [],
+        names === undefined ? {} : { gimmicks: names },
+      )?.lines ?? [];
+    // Round 4 looks at round 5 (Magma Spit), round 6 at round 7 (Eruption lands, gathering in 6).
+    expect(lines(played, 4)).toEqual(['Next round: Backdraft reflects the first reaction']);
+    expect(lines(played, 6).join(' ')).not.toMatch(/Eruption/);
+    // Told about the gated moves, the same rounds warn of them.
+    const rank4 = Object.fromEntries(bossAtRank(boss, 4).gimmicks.map((g) => [g.id, g.name]));
+    const rank7 = Object.fromEntries(bossAtRank(boss, 7).gimmicks.map((g) => [g.id, g.name]));
+    expect(lines(rank4, 4).join(' ')).toMatch(/magma-spit|Magma Spit/);
+    expect(lines(rank7, 6).join(' ')).toMatch(/Eruption/);
+    // A fight with no names to go by shows every move the content has.
+    expect(lines(undefined, 4).join(' ')).toMatch(/Magma Spit/);
   });
 
   it('says a pincer closes on the ends of every row, and marks the ends that are standing', () => {

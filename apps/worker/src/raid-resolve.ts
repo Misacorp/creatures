@@ -13,6 +13,8 @@ import {
   RULES,
   abilitiesFor,
   basicAbilities,
+  bossAtRank,
+  bossAttacksAtRank,
   content,
   contributionWeights,
   createCryptoRng,
@@ -131,10 +133,17 @@ export function drawSeed(rng: Rng): string {
   return hex;
 }
 
-export function bossFor(bossId: string): BossDef {
+/**
+ * The week's boss as it fights at Boss Rank `rank` (the week's effective rank): only the moves whose
+ * `fromRank` has been reached (`bossAtRank`). Every fight input and every view of the boss is built
+ * from this, so a rank-gated move is in the fight, the forecast and the boss card together. A stored
+ * fight keeps the boss it was fought with (`FightInput.boss`), so later content changes and rank
+ * changes never reach it.
+ */
+export function bossFor(bossId: string, rank: number): BossDef {
   const boss = content.bosses.find((b) => b.id === bossId);
   if (boss === undefined) throw new Error('week uses an unknown boss');
-  return boss;
+  return bossAtRank(boss, rank);
 }
 
 export const aliasFor = (index: number): string => `m${index + 1}`;
@@ -291,7 +300,8 @@ export function buildPhaseInput(
 ): BuiltPhase | null {
   const memberIds = partyMembers(sql, week.weekId, party);
   if (memberIds.length === 0) return null;
-  const boss = bossFor(week.bossId);
+  const rank = fightRank(sql, week.weekId);
+  const boss = bossFor(week.bossId, rank);
 
   // --- Build the row from the creatures' current stats ---
   const aliases = memberIds.map((_, i) => aliasFor(i));
@@ -344,7 +354,7 @@ export function buildPhaseInput(
   if (hpMax === null || hpCurrent === null || bossAtk === null) {
     // Scaled once, from the head count and the week's stored rank (a Festival's eased rank). A week
     // from before the ladder has no stored rank and fights at rank 1, as it always did.
-    const scaled = scaleBoss(boss, memberIds.length, fightRank(sql, week.weekId));
+    const scaled = scaleBoss(boss, memberIds.length, rank);
     hpMax = scaled.maxHp;
     hpCurrent = scaled.maxHp;
     bossAtk = scaled.atk;
@@ -368,6 +378,8 @@ export function buildPhaseInput(
   const input: FightInput = {
     boss,
     bossAtk,
+    // How often the boss makes its plain attack at this rank; absent (one) keeps old inputs as they were.
+    ...(bossAttacksAtRank(rank) > 1 ? { bossAttacks: bossAttacksAtRank(rank) } : {}),
     phase,
     bossHpPool: { max: hpMax, current: hpCurrent },
     adaptation,

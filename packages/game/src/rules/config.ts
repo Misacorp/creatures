@@ -249,6 +249,13 @@ export const RULES = {
        */
       atkRankShareBp: 5_000,
       /**
+       * How many times the boss makes its plain attack each round, by Boss Rank: entry 0 is rank 1,
+       * and the last entry holds for every higher rank (`bossAttacksAtRank`). Each entry is 1 to 3.
+       * One attack at every rank for now; the per-rank difficulty curve sets it
+       * (docs/design/combat-rules.md 2.5).
+       */
+      bossAttacksByRank: [1],
+      /**
        * Highest rank the ladder reaches. At 20% a step the top factor is about 197x, far beyond what
        * any roster can beat, so nobody gets there; the cap only keeps every number small and safe.
        */

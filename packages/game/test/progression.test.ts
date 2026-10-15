@@ -10,6 +10,7 @@ import {
   jackpotEssenceFor,
   nextRank,
   placementRank,
+  bossAttacksAtRank,
   rankAtkFactorBp,
   rankFactorBp,
   raidWeekPlan,
@@ -68,6 +69,21 @@ describe('rankFactorBp', () => {
       );
       expect(rankAtkFactorBp(r)).toBeLessThan(rankFactorBp(r));
     }
+  });
+});
+
+describe('bossAttacksAtRank', () => {
+  it('reads the table by rank, the last entry holding above its end, always from 1 to 3', () => {
+    const table = RULES.raid.scaling.bossAttacksByRank;
+    expect(table.length).toBeGreaterThanOrEqual(1);
+    for (const n of table) expect([1, 2, 3]).toContain(n);
+    for (let r = 1; r <= RULES.raid.scaling.maxRank + 5; r++) {
+      expect(bossAttacksAtRank(r)).toBe(table[Math.min(r, table.length) - 1]);
+    }
+    // Odd ranks are read as 1 or the top rank.
+    expect(bossAttacksAtRank(0)).toBe(table[0]);
+    expect(bossAttacksAtRank(Number.NaN)).toBe(table[0]);
+    expect(bossAttacksAtRank(2.9)).toBe(bossAttacksAtRank(2));
   });
 });
 

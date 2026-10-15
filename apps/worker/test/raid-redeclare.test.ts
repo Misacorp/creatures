@@ -390,9 +390,10 @@ describe('migration 24', () => {
       ctx.sql.exec('UPDATE raid_weeks SET rank = ?, effective_rank = ?', STALE_RANK, STALE_RANK);
       ctx.sql.exec('UPDATE raid_ladder SET rank = ?', STALE_RANK);
       undoDifficultyMigration(ctx.sql);
+      // The undo also takes back migration 25 (the daily allowance table), which sits above it.
       expect(
         ctx.sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
-      ).toBe(LATEST_SCHEMA_VERSION - 1);
+      ).toBe(LATEST_SCHEMA_VERSION - 2);
       expect(() => ctx.sql.exec('SELECT difficulty_version FROM raid_weeks').toArray()).toThrow();
 
       ctx.core.migrate();
