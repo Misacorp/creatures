@@ -7,6 +7,7 @@ import {
   ON_BOARD_NOTE,
   SHOW_PICKER_EFFECTS,
   allPlaced,
+  boardTotalLine,
   effectPreview,
   pickerOptions,
   pickerTitle,
@@ -77,6 +78,13 @@ describe('the count and the line under the heading', () => {
   it('says the board is locked once it is, and counts with a slash and spaces', () => {
     expect(placedLine(2, null, false)).toBe('2 / 3 placed · the board is locked');
     expect(placedLine(0, { event: 'phase1' }, true)).not.toContain(' of ');
+  });
+
+  it("counts everyone's creatures on the board out of all the slots", () => {
+    const row = rowOf({ 0: mine('a', 'splashet'), 1: theirs('cindle'), 4: theirs('sproutle') });
+    expect(boardTotalLine(row, 9)).toBe('3 / 9 on the board');
+    expect(boardTotalLine(rowOf({}), 9)).toBe('0 / 9 on the board');
+    expect(boardTotalLine(row, 9)).not.toContain(' of ');
   });
 
   it('titles the picker with the place', () => {

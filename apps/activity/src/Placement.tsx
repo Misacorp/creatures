@@ -22,6 +22,7 @@ import {
   SHOW_PICKER_EFFECTS,
   MAX_ON_BOARD,
   allPlaced,
+  boardTotalLine,
   pickerOptions,
   pickerTitle,
   placedCount,
@@ -240,6 +241,7 @@ export function Placement(props: Props) {
           )}
           {placedLine(placed, props.next, canEdit)}
         </p>
+        <p class="muted small roster-total">{boardTotalLine(party.row, party.rowLength)}</p>
         <RaidBoard
           rows={boardModels}
           stripRef={stripRef}

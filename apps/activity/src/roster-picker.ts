@@ -59,6 +59,15 @@ export function placedCount(row: readonly RowSlotView[]): number {
   return row.filter((s) => s.creature?.mine === true).length;
 }
 
+/**
+ * "7 / 18 on the board": every creature on the party board (anyone's, guests included) out of all
+ * its slots. `length` is the party's row length, which is the total number of slots.
+ */
+export function boardTotalLine(row: readonly RowSlotView[], length: number): string {
+  const filled = row.filter((s) => s.creature !== null).length;
+  return `${String(filled)} / ${String(length)} on the board`;
+}
+
 /** True when the player has all of their creatures on the board (the line shows a check mark). */
 export function allPlaced(placed: number): boolean {
   return placed >= MAX_ON_BOARD;

@@ -2,7 +2,8 @@
 
 /* The line under the heading and the one about how many are placed. */
 .placement .roster-help,
-.placement .roster-count {
+.placement .roster-count,
+.placement .roster-total {
   margin: 0.25rem 0;
 }
 
