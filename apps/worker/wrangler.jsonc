@@ -24,7 +24,8 @@
   // Secrets are set by CI (Cloudflare Worker secrets) or in .dev.vars locally; never committed.
   // OPS_TOKEN (the ops report's bearer token) is optional on purpose: without it the report route 404s.
   "secrets": { "required": ["DISCORD_CLIENT_SECRET", "DISCORD_BOT_TOKEN"] },
-  // VERSION is overridden at deploy time: wrangler deploy --var VERSION:<git sha>
+  // VERSION and BRANCH are overridden at deploy time: wrangler deploy --var VERSION:<git sha>
+  // --var BRANCH:<branch name>. BRANCH shows in the game's footer, so Misa can see what is on staging.
   // LEET_SOURCE: "http" reads the leet bot API at LEET_API_URL with the LEET_API_KEY secret (staging
   // and production); "mock" simulates leets (local dev). Any other value disables the sync.
   // RAID_PRACTICE: "on" turns on the practice finale (POST /api/raid/practice, staging only); any
@@ -36,6 +37,7 @@
     "ENVIRONMENT": "local",
     "DISCORD_CLIENT_ID": "000000000000000000",
     "VERSION": "dev",
+    "BRANCH": "dev",
     "LEET_SOURCE": "mock",
     "LEET_API_URL": "",
     "RAID_PRACTICE": "off",
@@ -56,6 +58,7 @@
         "ENVIRONMENT": "staging",
         "DISCORD_CLIENT_ID": "1558536384380145734",
         "VERSION": "dev",
+        "BRANCH": "dev",
         "LEET_SOURCE": "http",
         "LEET_API_URL": "https://o0q1uz3be0.execute-api.eu-north-1.amazonaws.com",
         "RAID_PRACTICE": "on",
@@ -76,6 +79,7 @@
         "ENVIRONMENT": "production",
         "DISCORD_CLIENT_ID": "1558533284072267896",
         "VERSION": "dev",
+        "BRANCH": "dev",
         "LEET_SOURCE": "http",
         "LEET_API_URL": "https://rwozj697u0.execute-api.eu-north-1.amazonaws.com",
         "RAID_PRACTICE": "off",
