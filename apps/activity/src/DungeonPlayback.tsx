@@ -117,18 +117,32 @@ export function DungeonPlayback({ replay, onDone, showControls = false }: Props)
 /**
  * The banner over the stage when a room opens: the room number in big pixel letters, the foe's
  * sprite and name, its element, and the room's twist. It is drawn inside the stage's own box, so the
- * stage does not change size, and it lets taps through. A screen reader gets one status sentence.
+ * stage does not change size, and it lets taps through (the intro cannot be skipped). A screen reader
+ * gets one status sentence. `ms` is how long it stays: a yellow outline round the stage drains over
+ * exactly that time.
  */
-function RoomBanner({ room, total, ms }: { room: DungeonReplayRoom; total: number; ms: number }) {
+function RoomBanner({
+  room,
+  total,
+  ms,
+  paused,
+}: {
+  room: DungeonReplayRoom;
+  total: number;
+  ms: number;
+  paused: boolean;
+}) {
   const view = roomIntroView(room, total);
   const art = bossArt(view.foeId);
   const icon = elementIcon(view.element);
   return (
     <div
-      class={`room-banner${view.boss ? ' boss' : ''}`}
+      class={`room-banner${view.boss ? ' boss' : ''}${paused ? ' paused' : ''}`}
       aria-hidden="true"
       ref={cssVars({ '--fx-ms': `${String(ms)}ms` })}
     >
+      {/* The countdown: a yellow outline round the whole stage that is whole at the start and drains toward the bottom (see dungeon-banner-motion.css). */}
+      <span class="rb-timer" />
       <PixelHeading tone={view.boss ? 'bad' : 'gold'} outline="ink" size="l" class="rb-heading">
         {view.heading}
       </PixelHeading>
@@ -233,7 +247,16 @@ function RoomFight({
         place={roomLine(room.index, total)}
         addedGimmicks={modifierGimmicks(room)}
         overlay={
-          banner ? <RoomBanner room={room} total={total} ms={atSpeed(ROOM_CARD_MS, speed)} /> : null
+          banner ? (
+            <RoomBanner
+              // A new banner when playback resumes, so the outline starts again together with the wait.
+              key={paused ? 'paused' : 'playing'}
+              room={room}
+              total={total}
+              ms={atSpeed(ROOM_CARD_MS, speed)}
+              paused={paused}
+            />
+          ) : null
         }
       />
       <LiveRegion>{banner ? view.spoken : ''}</LiveRegion>

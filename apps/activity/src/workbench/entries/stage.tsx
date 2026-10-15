@@ -177,7 +177,7 @@ const dungeonPlayback: Entry = {
   file: 'apps/activity/src/DungeonPlayback.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The dungeon fight as it plays after a run, room by room on the stage with the room banner first; Pause, 2x and Skip are hidden unless switched on here. It plays a fixture run, so reload the page to see it again.',
+    'The dungeon fight as it plays after a run, room by room on the stage with the room banner first (about five seconds, with a yellow outline round the stage that drains toward the bottom until the fight starts); Pause, 2x and Skip are hidden unless switched on here. It plays a fixture run, so reload the page to see it again.',
   controls: { showControls: { kind: 'toggle' } },
   defaults: { showControls: false },
   presets: [

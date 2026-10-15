@@ -18,8 +18,13 @@ import type {
 import type { ReplayRowEntry } from './raid-api';
 import type { Speed } from './replay';
 
-/** The card "Room 2 · Flooded" stays this long at normal speed, before the room's fight starts. */
-export const ROOM_CARD_MS = 2_200;
+/**
+ * The card "Room 2 · Flooded" stays this long at normal speed, before the room's fight starts. It was
+ * 2.2 seconds; Misa asked for about 3 seconds more (2026-10-15) so the foe and the room's rule can be
+ * read, with a draining outline showing how long is left (`RoomBanner`). The wait is the same with
+ * reduced motion.
+ */
+export const ROOM_CARD_MS = 5_200;
 /** After a room's last beat the final state rests this long (the foe down, or the team down). */
 export const ROOM_END_MS = 1_600;
 

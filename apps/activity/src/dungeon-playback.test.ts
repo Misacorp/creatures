@@ -149,6 +149,10 @@ describe('the timings', () => {
     expect(atSpeed(ROOM_END_MS, 2)).toBe(ROOM_END_MS / 2);
     expect(atSpeed(1501, 2)).toBe(751);
   });
+
+  it('keeps the room card up 3 seconds longer than the 2.2 seconds it had (Misa, 2026-10-15)', () => {
+    expect(ROOM_CARD_MS).toBe(2_200 + 3_000);
+  });
 });
 
 describe('the results', () => {
