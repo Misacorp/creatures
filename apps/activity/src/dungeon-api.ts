@@ -5,11 +5,18 @@
  * the same events at any later time (for the caller's own runs only).
  */
 import { apiFetch, jsonRequest } from './api';
-import { parseDungeonReplay, parseDungeonRun, parseDungeonToday } from './dungeon-parse';
+import {
+  parseDungeonReplay,
+  parseDungeonRun,
+  parseDungeonTeamSaved,
+  parseDungeonToday,
+} from './dungeon-parse';
 import type {
   DungeonReplay,
   DungeonRunRequest,
   DungeonRunResponse,
+  DungeonTeamRequest,
+  DungeonTeamResponse,
   DungeonToday,
 } from './dungeon-types';
 
@@ -29,4 +36,15 @@ export async function startDungeonRun(request: DungeonRunRequest): Promise<Dunge
 /** The events of one of the caller's own runs, for "Watch again". */
 export async function fetchDungeonReplay(runId: string): Promise<DungeonReplay> {
   return parseDungeonReplay(await apiFetch(`/api/dungeon/run/${encodeURIComponent(runId)}`));
+}
+
+/**
+ * Saves the row of the setup screen as the player's draft (so it is there again on another visit or
+ * device). Not a spend: no key, and saving the same row twice is harmless. The server keeps the
+ * latest one it was sent.
+ */
+export async function saveDungeonTeam(request: DungeonTeamRequest): Promise<DungeonTeamResponse> {
+  // keepalive: a save sent as the page is hidden or closed still goes out.
+  const init: RequestInit = { ...jsonRequest('PUT', request), keepalive: true };
+  return parseDungeonTeamSaved(await apiFetch('/api/dungeon/team', init));
 }

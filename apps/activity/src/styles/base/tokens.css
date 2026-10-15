@@ -23,6 +23,7 @@
     calc(var(--px) * -1) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink),
     inset 0 var(--px) 0 0 #3d3570, inset 0 calc(var(--px) * -1) 0 0 #1a1533;
   --ring: 0 0 0 var(--px) var(--ink), 0 0 0 calc(var(--px) * 2) var(--gold);
+  --attention: #ff7a45; /* the pip that says something waits for you: warm, and readable on gold */
   --gold-shade: #c8952b; /* the dark edge under a gold button */
   --plum: #6b3fa0; /* the shadow under the title */
   --hp-gone: #3a2033; /* a spent HP segment */

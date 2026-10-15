@@ -15,6 +15,7 @@ import type {
   DungeonRunResponse,
   DungeonRunSummary,
   DungeonTeamMember,
+  DungeonTeamResponse,
   DungeonToday,
 } from './dungeon-types';
 
@@ -118,7 +119,11 @@ function isRunSummary(value: unknown): value is DungeonRunSummary {
   );
 }
 
-function isToday(value: unknown): value is DungeonToday {
+const isDraftTeam = (value: unknown): value is (string | null)[] =>
+  isArrayOf(value, (item): item is string | null => item === null || isStr(item));
+
+/** Today as the server sends it: `draftTeam` is optional (absent: none). */
+function isToday(value: unknown): boolean {
   if (!isRecord(value)) return false;
   const blocked = value['blocked'];
   return (
@@ -139,8 +144,18 @@ function isToday(value: unknown): value is DungeonToday {
     isBool(value['canRun']) &&
     (blocked === null || blocked === 'already_run' || blocked === 'need_creatures') &&
     (value['last'] === null || isRunSummary(value['last'])) &&
-    (value['lastTeam'] === null || isArrayOf(value['lastTeam'], isStr))
+    (value['lastTeam'] === null || isArrayOf(value['lastTeam'], isStr)) &&
+    (value['draftTeam'] === undefined ||
+      value['draftTeam'] === null ||
+      isDraftTeam(value['draftTeam']))
   );
+}
+
+/** A checked today, with an absent `draftTeam` made null. */
+function readToday(value: unknown): DungeonToday | null {
+  if (!isToday(value)) return null;
+  const today = value as DungeonToday;
+  return { ...today, draftTeam: today.draftTeam ?? null };
 }
 
 function isReplayRoom(value: unknown): boolean {
@@ -173,15 +188,25 @@ function isReplayRowEntry(value: unknown): boolean {
 }
 
 export function parseDungeonToday(data: unknown): DungeonToday {
-  if (!isToday(data)) throw new Error('the server returned an unexpected dungeon state');
-  return data;
+  const today = readToday(data);
+  if (today === null) throw new Error('the server returned an unexpected dungeon state');
+  return today;
 }
 
 export function parseDungeonRun(data: unknown): DungeonRunResponse {
-  if (!isRecord(data) || !isRunSummary(data['run']) || !isToday(data['today'])) {
+  const today = isRecord(data) ? readToday(data['today']) : null;
+  if (!isRecord(data) || !isRunSummary(data['run']) || today === null) {
     throw new Error('the server returned an unexpected dungeon run');
   }
-  return { run: data['run'], today: data['today'] };
+  return { run: data['run'], today };
+}
+
+/** The answer of `PUT /api/dungeon/team`. */
+export function parseDungeonTeamSaved(data: unknown): DungeonTeamResponse {
+  if (!isRecord(data) || !isDraftTeam(data['draftTeam'])) {
+    throw new Error('the server returned an unexpected dungeon team');
+  }
+  return { draftTeam: data['draftTeam'] };
 }
 
 export function parseDungeonReplay(data: unknown): DungeonReplay {

@@ -189,6 +189,30 @@ describe('the chosen lounge spot', () => {
     expect(() => parseGameState({ ...base, loungeSpot: { id: 'fire-pouf' } })).toThrow();
   });
 
+  it('reads the attention block of the state: absent is unknown, a wrong shape throws', () => {
+    const attention = { dungeon: true, raid: false, recheckAt: 1_700_000_000_000 };
+    expect(parseGameState({ ...base, attention }).attention).toEqual(attention);
+    expect(
+      parseGameState({ ...base, attention: { dungeon: false, raid: true, recheckAt: null } })
+        .attention,
+    ).toEqual({ dungeon: false, raid: true, recheckAt: null });
+    expect(
+      parseGameState({ ...base, attention: { dungeon: false, raid: true } }).attention,
+    ).toEqual({ dungeon: false, raid: true, recheckAt: null });
+    expect(parseGameState(base).attention).toBeNull();
+    expect(parseGameState({ ...base, attention: null }).attention).toBeNull();
+    expect(() => parseGameState({ ...base, attention: 'yes' })).toThrow();
+    expect(() =>
+      parseGameState({ ...base, attention: { dungeon: 1, raid: false, recheckAt: null } }),
+    ).toThrow();
+    expect(() =>
+      parseGameState({ ...base, attention: { dungeon: true, raid: false, recheckAt: 1.5 } }),
+    ).toThrow();
+    expect(() =>
+      parseGameState({ ...base, attention: { dungeon: true, raid: false, recheckAt: '5' } }),
+    ).toThrow();
+  });
+
   it('is read from each resident of the room', () => {
     const resident = { userId: '1', name: 'Misa', creature: null };
     const parsed = parseRoom({

@@ -6,6 +6,7 @@ import {
   EMPTY_SLOTS,
   NO_REACTION_HINT,
   buildRunRequest,
+  cleanDraft,
   completeTeam,
   isComplete,
   orderHint,
@@ -13,6 +14,8 @@ import {
   placedCount,
   pruneSlots,
   resolveDrop,
+  sameSlots,
+  setupTeam,
   slotIndexOf,
   slotStatuses,
   startingTeam,
@@ -191,6 +194,98 @@ describe('the team the setup opens with', () => {
     expect(completeTeam(slots)).toBeNull();
     expect(startingTeam(['c', 'b', 'a'], list)).toEqual(['c', 'b', 'a']);
     expect(completeTeam(startingTeam(['c', 'b', 'a'], list))).toEqual(['c', 'b', 'a']);
+  });
+});
+
+describe('the row of a draft', () => {
+  const list = [
+    make('a', 'cindle', 9, { power: 90 }),
+    make('b', 'splashet', 8, { power: 80 }),
+    make('c', 'sproutle', 7, { power: 70 }),
+    make('d', 'ashmole', 1, { power: 10 }),
+  ];
+
+  it('keeps every place as saved, empty places included', () => {
+    expect(cleanDraft(['d', null, 'a'], list)).toEqual(['d', null, 'a']);
+    expect(cleanDraft(['a', 'b', 'c'], list)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('empties a place whose creature is not offered, and moves nobody up', () => {
+    expect(cleanDraft(['gone', 'b', 'c'], list)).toEqual([null, 'b', 'c']);
+    expect(
+      cleanDraft(
+        ['a', 'b', 'c'],
+        list.filter((x) => x.id !== 'b'),
+      ),
+    ).toEqual(['a', null, 'c']);
+  });
+
+  it('keeps a creature in its first place only, and reads a short or long row', () => {
+    expect(cleanDraft(['a', 'a', 'b'], list)).toEqual(['a', null, 'b']);
+    expect(cleanDraft(['a'], list)).toEqual(['a', null, null]);
+    expect(cleanDraft(['a', 'b', 'c', 'd'], list)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('keeps an all-empty row empty: the player cleared it on purpose', () => {
+    expect(cleanDraft([null, null, null], list)).toEqual([null, null, null]);
+    expect(cleanDraft(['x', 'y', 'z'], list)).toEqual([null, null, null]);
+  });
+
+  it('compares two rows place by place', () => {
+    expect(sameSlots(['a', null, 'c'], ['a', null, 'c'])).toBe(true);
+    expect(sameSlots(['a', null, 'c'], ['a', 'c', null])).toBe(false);
+  });
+});
+
+describe('the row the setup opens with, from all its sources', () => {
+  const list = [
+    make('a', 'cindle', 9, { power: 90 }),
+    make('b', 'splashet', 8, { power: 80 }),
+    make('c', 'sproutle', 7, { power: 70 }),
+    make('d', 'ashmole', 1, { power: 10 }),
+  ];
+  const none = { memory: null, saved: null, lastTeam: null, creatures: list };
+
+  it('prefers the row of this session over the saved draft and the last team', () => {
+    expect(
+      setupTeam({
+        ...none,
+        memory: ['c', null, 'a'],
+        saved: ['b', 'b', 'd'],
+        lastTeam: ['a', 'b', 'c'],
+      }),
+    ).toEqual(['c', null, 'a']);
+  });
+
+  it('uses the saved draft over the last team', () => {
+    expect(setupTeam({ ...none, saved: ['d', 'c', null], lastTeam: ['a', 'b', 'c'] })).toEqual([
+      'd',
+      'c',
+      null,
+    ]);
+  });
+
+  it('keeps a cleared draft cleared, in memory or saved', () => {
+    expect(setupTeam({ ...none, memory: [null, null, null], lastTeam: ['a', 'b', 'c'] })).toEqual([
+      null,
+      null,
+      null,
+    ]);
+    expect(setupTeam({ ...none, saved: [null, null, null], lastTeam: ['a', 'b', 'c'] })).toEqual([
+      null,
+      null,
+      null,
+    ]);
+  });
+
+  it('drops creatures that are no longer owned or are doubled, in either draft', () => {
+    expect(setupTeam({ ...none, memory: ['gone', 'a', 'a'] })).toEqual([null, 'a', null]);
+    expect(setupTeam({ ...none, saved: ['b', 'gone', 'b'] })).toEqual(['b', null, null]);
+  });
+
+  it('falls back to the last team, then to the strongest three, without any draft', () => {
+    expect(setupTeam({ ...none, lastTeam: ['d', 'c', 'a'] })).toEqual(['d', 'c', 'a']);
+    expect(setupTeam(none)).toEqual(strongestThree(list));
   });
 });
 

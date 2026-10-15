@@ -98,6 +98,7 @@ export function JobReveal({
       title={`${jobVerb(result.kind)} finished`}
       class="job-reveal"
       status
+      arrive
       onDismiss={onDismiss}
     >
       <RevealStage

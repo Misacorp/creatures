@@ -157,6 +157,8 @@ function SetupDemo({ p }: { p: Props }) {
       creatures={creatures}
       busy={bool(p, 'busy')}
       error={null}
+      draft={null}
+      onDraftChange={() => undefined}
       onEnter={() => undefined}
       onSeeLast={() => undefined}
     />

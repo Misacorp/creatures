@@ -144,6 +144,52 @@ export function startingTeam(
   return placedCount(slots) === 0 ? strongestThree(creatures) : slots;
 }
 
+/**
+ * A saved or remembered row made fit for the creatures the picker offers: a place whose creature is
+ * not offered (gone, or busy elsewhere) is empty, and a creature that appears twice keeps its first
+ * place. Nobody moves up. Unlike `startingTeam` an all-empty row stays empty: the player cleared it.
+ */
+export function cleanDraft(
+  draft: readonly (string | null)[],
+  creatures: readonly PickerCreature[],
+): Slots {
+  const offered = new Set(creatures.map((c) => c.id));
+  const used = new Set<string>();
+  const at = (index: number): string | null => {
+    const id = draft[index];
+    if (id === undefined || id === null || !offered.has(id) || used.has(id)) return null;
+    used.add(id);
+    return id;
+  };
+  return [at(0), at(1), at(2)];
+}
+
+/** The two rows have the same creature (or none) in every place. */
+export function sameSlots(a: Slots, b: Slots): boolean {
+  return a.every((id, index) => id === b[index]);
+}
+
+/**
+ * The row the setup screen opens with, the first that exists of: the row of this session (kept
+ * while the player switched tabs), the draft the server saved, and the team of the last run
+ * (`startingTeam`). The first two are used as they are, after `cleanDraft`: an all-empty one stays
+ * empty. Only the third falls back to the strongest three.
+ */
+export function setupTeam(sources: {
+  /** The row kept in memory since this screen was last left (null: none). */
+  memory: Slots | null;
+  /** `DungeonToday.draftTeam`. */
+  saved: readonly (string | null)[] | null;
+  /** `DungeonToday.lastTeam`. */
+  lastTeam: readonly string[] | null;
+  creatures: readonly PickerCreature[];
+}): Slots {
+  const { memory, saved, lastTeam, creatures } = sources;
+  if (memory !== null) return cleanDraft(memory, creatures);
+  if (saved !== null) return cleanDraft(saved, creatures);
+  return startingTeam(lastTeam, creatures);
+}
+
 function roleOf(species: string): Role | undefined {
   return content.creatures.find((s) => s.id === species)?.role;
 }

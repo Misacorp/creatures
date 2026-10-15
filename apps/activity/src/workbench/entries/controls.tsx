@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'preact/hooks';
 import { CurrencyPile } from '../../CurrencyPile';
+import { TabBar } from '../../TabBar';
+import { ALERT_TEXT, NO_ALERTS, type TabAlerts } from '../../tab-alerts';
+import { TABS, type Tab } from '../../tabs';
 import { LiveRegion } from '../../ui/LiveRegion';
 import { PlaybackControls } from '../../ui/PlaybackControls';
 import { ToggleButton } from '../../ui/ToggleButton';
@@ -142,9 +145,70 @@ const currencyPile: Entry = {
   ),
 };
 
+const TAB_IDS = TABS.map((t) => t.id);
+
+function tabOf(value: string): Tab {
+  return TAB_IDS.find((id) => id === value) ?? 'collection';
+}
+
+function TabBarDemo({ p }: { p: Props }) {
+  const [current, setCurrent] = useState<Tab>(tabOf(str(p, 'current')));
+  const wanted = str(p, 'current');
+  useEffect(() => {
+    setCurrent(tabOf(wanted));
+  }, [wanted]);
+  const alerts: TabAlerts = {
+    ...NO_ALERTS,
+    workshop: bool(p, 'workshop') ? ALERT_TEXT.jobReady : null,
+    expeditions: bool(p, 'expeditions') ? ALERT_TEXT.tripHome : null,
+    dungeon: bool(p, 'dungeon') ? ALERT_TEXT.dungeonOpen : null,
+    raid: bool(p, 'raid') ? ALERT_TEXT.raidPlace : null,
+  };
+  return <TabBar current={current} alerts={alerts} onSelect={setCurrent} />;
+}
+
+const tabBar: Entry = {
+  name: 'TabBar',
+  file: 'apps/activity/src/TabBar.tsx',
+  group: 'Controls',
+  description:
+    'The five main tabs of the game (Creatures, Workshop, Expeditions, Dungeon, Raid); a tab with something waiting for the player has a small orange square pip at its top right corner. Tap a tab or use the arrow keys.',
+  controls: {
+    current: { kind: 'select', options: TAB_IDS },
+    workshop: { kind: 'toggle' },
+    expeditions: { kind: 'toggle' },
+    dungeon: { kind: 'toggle' },
+    raid: { kind: 'toggle' },
+  },
+  defaults: {
+    current: 'collection',
+    workshop: false,
+    expeditions: false,
+    dungeon: false,
+    raid: false,
+  },
+  presets: [
+    { name: 'No pips', props: {} },
+    {
+      name: 'All pips',
+      props: { workshop: true, expeditions: true, dungeon: true, raid: true },
+    },
+    {
+      name: 'Expeditions open, two pips',
+      props: { current: 'expeditions', expeditions: true, dungeon: true },
+    },
+    {
+      name: 'Pip on the gold tab',
+      props: { current: 'raid', raid: true, workshop: true },
+    },
+  ],
+  render: (p) => <TabBarDemo p={p} />,
+};
+
 export const controlEntries: readonly Entry[] = [
   toggleButton,
   playbackControls,
   liveRegion,
   currencyPile,
+  tabBar,
 ];

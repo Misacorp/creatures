@@ -8,6 +8,7 @@ import {
   setLounger,
   setLoungeSpot,
   trainCreature,
+  type Attention,
   type ClaimResult,
   type EvolveResult,
   type GameState,
@@ -25,16 +26,17 @@ import { fetchGear } from './gear-api';
 import { createGearActions } from './gear-actions';
 import type { GearState, JobResult } from './gear-types';
 import { clockOffset, creatureName, errorText, speciesName } from './game';
-import { glyphOrUnknown } from './glyphs';
 import type { ParticipantSource } from './participants';
 import { settleClaim } from './room-data';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
+import type { Slots } from './dungeon-team';
 import { DevPanelHost } from './DevPanelHost';
-import { Sprite } from './sprites/Sprite';
 import { StarterPicker } from './StarterPicker';
-import { TABS, tabAfterKey, tabPalette, type Tab } from './tabs';
+import { TabBar } from './TabBar';
+import { RECHECK_RETRY_MS, changeDelay, nextChangeAt, recheckDelay, tabAlerts } from './tab-alerts';
+import type { Tab } from './tabs';
 import { useActionRunner } from './use-action-runner';
 import { useRoom } from './use-room';
 import { useRoomPhase } from './use-room-phase';
@@ -112,6 +114,16 @@ export function Game({
   // The guild's timezone comes with GET /api/state only; the answers of actions leave it out, so it is kept.
   const timezone = useRef<string | null>(null);
   if (game.timezone !== null) timezone.current = game.timezone;
+  // What needs the player (the tab pips) also comes with GET /api/state only, so the last known is
+  // kept. The Dungeon and Raid screens write their own news into it at once (the last write wins).
+  const [attention, setAttention] = useState<Attention | null>(initial.attention);
+  useEffect(() => {
+    if (game.attention !== null) setAttention(game.attention);
+  }, [game.attention]);
+  // The setup row of the Dungeon tab, kept while the player is on other tabs (lost on a reload).
+  const dungeonDraft = useRef<Slots | null>(null);
+  // Bumped when a trip or job runs out, so the pips are worked out again at that moment.
+  const [pipTick, setPipTick] = useState(0);
 
   // While the first leet sync is still running, ask again every few seconds (a few times at most)
   // so the balance, the history and the footer update as soon as the credits land.
@@ -183,6 +195,44 @@ export function Game({
   useEffect(() => {
     if (game.starterChosen) loadGear();
   }, [game.starterChosen]);
+
+  // The pips of the Expeditions and Workshop tabs follow the server's clock: one timer, set for the
+  // next trip or job to run out (a long wait is capped), and set again after it fires.
+  const serverNow = Date.now() + offset;
+  const jobs = gear === null ? null : gear.jobs;
+  const alerts = tabAlerts({ expeditions: game.expeditions, jobs, attention, serverNow });
+  const changeAt = nextChangeAt({ expeditions: game.expeditions, jobs, serverNow });
+  useEffect(() => {
+    if (changeAt === null) return undefined;
+    const timer = setTimeout(
+      () => {
+        setPipTick((n) => n + 1);
+      },
+      changeDelay(changeAt, Date.now() + offset),
+    );
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [changeAt, offset, pipTick]);
+
+  // When the server said something could change by itself (the daily reset, the next raid event),
+  // ask once a moment after; if an action was running, once more a few seconds later.
+  const recheckAt = attention?.recheckAt ?? null;
+  useEffect(() => {
+    const wait = recheckDelay(recheckAt, Date.now() + offset);
+    if (wait === null) return undefined;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    const timer = setTimeout(() => {
+      if (refreshState()) return;
+      retry = setTimeout(() => {
+        refreshState();
+      }, RECHECK_RETRY_MS);
+    }, wait);
+    return () => {
+      clearTimeout(timer);
+      if (retry !== undefined) clearTimeout(retry);
+    };
+  }, [recheckAt, offset]);
 
   const gearActions = createGearActions({
     run,
@@ -290,49 +340,18 @@ export function Game({
     </>
   ) : (
     <>
-      <div
-        class="tabs"
-        role="tablist"
-        aria-label="Sections"
-        onKeyDown={(event) => {
-          // Arrow keys, Home and End move between the tabs; Enter or Space opens the focused one.
-          const next = tabAfterKey(tab, event.key);
-          if (next === null) return;
-          event.preventDefault();
-          document.getElementById(`tab-${next}`)?.focus();
+      <TabBar
+        current={tab}
+        alerts={alerts}
+        onSelect={(id) => {
+          setTab(id);
+          setError(null);
+          setNotice(null);
+          refreshState();
+          room.refreshIfStale();
+          if (id === 'workshop' || id === 'collection') loadGear();
         }}
-      >
-        {TABS.map(({ id, label, glyph }) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            id={`tab-${id}`}
-            aria-selected={tab === id}
-            aria-controls={`panel-${id}`}
-            tabIndex={tab === id ? 0 : -1}
-            class={tab === id ? 'tab active' : 'tab'}
-            onClick={() => {
-              setTab(id);
-              setError(null);
-              setNotice(null);
-              refreshState();
-              room.refreshIfStale();
-              if (id === 'workshop' || id === 'collection') loadGear();
-            }}
-          >
-            <Sprite
-              sprite={glyphOrUnknown(glyph)}
-              scale={2}
-              class="tab-glyph"
-              {...(tabPalette(tab === id) === undefined
-                ? {}
-                : { palette: tabPalette(tab === id) as Readonly<Record<string, string>> })}
-            />
-            <span class="tab-label">{label}</span>
-          </button>
-        ))}
-      </div>
+      />
       <WipeNotice key={devNonce} cancelled={game.cancelled} creatures={game.creatures} />
       {error !== null && (
         <p class="error" role="alert">
@@ -442,11 +461,35 @@ export function Game({
             creatures={game.creatures}
             showPractice={showPractice}
             onBalanceChange={refreshState}
+            onNeedsPlacementChange={(needed) => {
+              setAttention((now) => ({
+                dungeon: false,
+                recheckAt: null,
+                ...now,
+                raid: needed,
+              }));
+            }}
           />
         )}
         {tab === 'dungeon' && (
           <Dungeon
             creatures={game.creatures}
+            draft={dungeonDraft.current}
+            onDraftChange={(slots) => {
+              dungeonDraft.current = slots;
+            }}
+            onRunStarted={() => {
+              // The server deleted the saved draft: the next setup starts from this run's team.
+              dungeonDraft.current = null;
+            }}
+            onCanRunChange={(canRun) => {
+              setAttention((now) => ({
+                raid: false,
+                recheckAt: null,
+                ...now,
+                dungeon: canRun,
+              }));
+            }}
             onRunFinished={() => {
               // A run pays Bait, Essence, parts and maybe gear: reload the balances and the bag.
               refreshState();

@@ -54,6 +54,12 @@ export interface DungeonToday {
    * first run. The setup opens with them in the same places. Only ever the caller's own.
    */
   lastTeam: string[] | null;
+  /**
+   * The row the player left unfinished on the setup screen (saved by `PUT /api/dungeon/team`),
+   * left to right, null for an empty place; null when there is none. Parsed as null when the server
+   * does not send it. A run deletes it.
+   */
+  draftTeam: (string | null)[] | null;
 }
 
 export interface DungeonRewards {
@@ -184,6 +190,16 @@ export interface DungeonRunRequest {
   team: [string, string, string];
   /** A fresh key for every new run (8 to 64 characters of A-Z a-z 0-9 _ -); a retry reuses it. */
   idempotencyKey: string;
+}
+
+/** `PUT /api/dungeon/team`: the body (three places, left to right, null for an empty one; the creatures all different). */
+export interface DungeonTeamRequest {
+  team: readonly [string | null, string | null, string | null];
+}
+
+/** What `PUT /api/dungeon/team` answers: the draft as it was stored. */
+export interface DungeonTeamResponse {
+  draftTeam: (string | null)[];
 }
 
 /** The error codes of the dungeon routes (`{ error }`, with these statuses). */
