@@ -110,9 +110,11 @@ export const RULES = {
     coverBp: 4_000,
     /**
      * The single-hit cap: no boss hit (aimed or area; not a reflect) takes more than this share of
-     * the victim's maximum HP. The safety rail for harder hits. Copied into `FightInput.rules`.
+     * the victim's maximum HP. 0 means no cap, and it is off (Misa, 2026-10-15: big hits stay big);
+     * the number stays in the fight rules for a mutator or a rollback. Copied into
+     * `FightInput.rules`.
      */
-    maxHitBp: 5_000,
+    maxHitBp: 0,
     /**
      * Support effects by element, on top of the shared `supportBuffBp` (docs/design/attack-patterns.md
      * section 1): `buffBp` replaces the neighbours' next-hit buff (Ember Stoke); `reactionBp` adds that
@@ -197,16 +199,17 @@ export const RULES = {
     /**
      * Finale enrage (docs/design/raid-ux-2.md): when the finale's rounds run out with both sides
      * standing, up to `rounds` more rounds are played in which the boss makes its plain attack and
-     * hits every living creature for `powerBp` of its Attack (area hits, under the single-hit cap);
+     * hits every living creature for `powerBp` of its Attack (area hits, which Guard cover and Shield Wall soften);
      * its gimmicks rest (a charge never lands in an enrage round). The fight ends on a wipe or a
      * kill; standing at the end is a loss. An enrage loss is a normal
-     * loss. Phases 1 and 2 have no enrage. Tuned by the simulator (docs/balance/log.md B-007): 500%
-     * of the boss's Attack on every creature, which the single-hit cap (50% of a creature's max HP)
-     * turns into a wipe in two to three rounds. Beyond about 400% the power hardly matters, because
-     * the cap is what limits the hit; the round count is the lever that decides how often a
-     * last-moment kill is still possible (the creatures act before the enrage hit each round).
+     * loss. Phases 1 and 2 have no enrage. Tuned by the simulator (docs/balance/log.md B-008, with the
+     * single-hit cap off): 400% of the boss's Attack on every creature wipes a row that reaches
+     * enrage in two to three rounds (mean 2.75 to 2.8; 55% to 70% of the lost overtimes end in a
+     * wipe, the rest with the row standing after the last round), and about one finale in fourteen
+     * is won in the enrage rounds (the creatures act before the enrage hit each round, so the first
+     * is a free one). A harder enrage would wipe faster and cost those wins.
      */
-    enrage: { rounds: 3, powerBp: 50_000 },
+    enrage: { rounds: 3, powerBp: 40_000 },
     scaling: {
       /**
        * Boss HP grows with N^(num/den), N = signed-up players. The engine computes
@@ -513,11 +516,12 @@ export const RULES = {
      * run out with both sides standing, up to `rounds` more rounds in which the boss also hits every
      * creature for `powerBp` of its Attack. Normal rooms keep the old rule (out of rounds ends the
      * run). `enabled: false` switches it off (Misa may walk it back). Tuned by the simulator
-     * (B-007): 100% of the foe's Attack on every creature, which the single-hit cap makes a wipe in
-     * about two rounds; the power hardly matters above that, and the extra rounds clear about half a
-     * point more runs at the frontier.
+     * (B-008, single-hit cap off): the power hardly matters (5% to 100% of the foe's Attack: a lost
+     * boss room lasts 1.5 to 1.8 enrage rounds, because the boss's own attack finishes a team that is
+     * already hurt), so it is a modest 30%; the extra rounds clear about 1.2 points more runs at the
+     * frontier.
      */
-    enrage: { enabled: true, rounds: 2, powerBp: 10_000 },
+    enrage: { enabled: true, rounds: 2, powerBp: 3_000 },
     /** Paid for each room cleared, by room index (the last is the room boss). */
     perRoom: [
       { bait: 1, essence: 0, scrap: 0 },

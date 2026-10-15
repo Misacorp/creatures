@@ -32,6 +32,7 @@ import {
   type PlayerTotals,
 } from '@creatures/engine';
 import type { ArchetypeId } from './archetypes';
+import { arrangeRow, type Setup } from './formations';
 import { neutralSupport, studyRules, type RoleStudy } from './role-study';
 import {
   byPowerDesc,
@@ -66,6 +67,8 @@ export interface StageSummary {
   /** Creatures in the row and how many of them were knocked out during the stage. */
   creatures: number;
   knockedOut: number;
+  /** The ids of the creatures knocked out during the stage. */
+  knockedOutIds: string[];
   /** Barrage volleys of the stage, and those that hit a creature the gimmick's previous volley hit. */
   volleys: number;
   /** Volleys that broke the no-repeat rule, and those that repeated a victim because too few others stood. */
@@ -302,8 +305,11 @@ export function openRaidWeek(
     neutralSupports?: boolean;
     /** Study: per-element override of the Support effects (`RoleStudy.supportFx`). */
     supportFx?: RoleStudy['supportFx'];
-    /** Study: `spread` puts the Guards at evenly spaced places (`spreadGuards`); `auto` is `autoPlace`'s row. */
-    formation?: 'auto' | 'spread';
+    /**
+     * Study: `spread` puts the Guards at evenly spaced places (`spreadGuards`); `auto` is `autoPlace`'s row;
+     * `greedy` and `protected` are the setup study's arrangements (`formations.ts`).
+     */
+    formation?: 'auto' | 'spread' | Setup;
     /** Study: every player brings a Guard and a Support when they own one (`pickRoleTeam`). */
     bringRoles?: boolean;
   } = {},
@@ -334,7 +340,12 @@ export function openRaidWeek(
   let sparse = autoPlace(new Array<FightSlot | null>(length).fill(null), unplaced);
   if (players.length < 3) sparse = fillWithGuests(sparse, resolveGuests(), avgLevel);
   const compact = sparse.filter((s): s is FightSlot => s !== null);
-  const row = options.formation === 'spread' ? spreadGuards(compact) : compact;
+  const row =
+    options.formation === 'spread'
+      ? spreadGuards(compact)
+      : options.formation === 'greedy' || options.formation === 'protected'
+        ? arrangeRow(compact, options.formation, boss.turnOrder)
+        : compact;
 
   const rank = options.rank ?? placementRank(levels);
   const shipped = scaleBoss(boss, players.length, rank);
@@ -456,6 +467,9 @@ export function playStage(week: RaidWeek, stage: RaidStage, fightRng: Rng, lootR
     enraged: result.enraged,
     creatures: fight.row.length,
     knockedOut: Object.values(result.perCreature).filter((c) => c.knockedOutRound !== null).length,
+    knockedOutIds: Object.entries(result.perCreature)
+      .filter(([, c]) => c.knockedOutRound !== null)
+      .map(([id]) => id),
     volleys: volleys.volleys,
     repeatVolleys: volleys.repeats,
     forcedRepeatVolleys: volleys.forced,

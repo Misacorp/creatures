@@ -11,6 +11,12 @@ import { runEconomy, type EconomyResult } from './economy';
 import { LONG_RUN_GROUPS, LONG_RUN_WEEKS } from './ladder';
 import { TARGETS, evaluateTargets, type TargetResult } from './targets';
 import { ROLE_STUDY_RUNS_FACTOR, runRoleStudy } from './roles';
+import {
+  runRankCheck,
+  runSetupStudy,
+  type RankCheckResult,
+  type SetupStudyResult,
+} from './setup-study';
 import { runSweep, type ExampleFight } from './sweep';
 
 /** Everything that decides a run's result (no clock, no git state). */
@@ -61,6 +67,9 @@ export interface RunOutput {
   analysis: Analysis;
   evaluation: TargetResult[];
   example: ExampleFight | null;
+  /** The setup study (greedy and protected rows) and the high-rank check (docs/balance/log.md B-008). */
+  setups: SetupStudyResult;
+  ranks: RankCheckResult;
 }
 
 /** Weeks (1-based) at which rosters are snapshotted: 4 and 8, or the last week if the run is shorter. */
@@ -182,6 +191,14 @@ export function runSimulation(settings: RunSettings): RunOutput {
     counts: settings.counts,
     snapshots,
   });
+  const studyOptions = {
+    seed: settings.seed,
+    runs: settings.runsPerCell,
+    counts: settings.counts,
+    snapshots,
+  };
+  const setups = runSetupStudy(studyOptions);
+  const ranks = runRankCheck(studyOptions);
   const analysis = analyse({
     roles,
     weeks: settings.weeks,
@@ -198,6 +215,8 @@ export function runSimulation(settings: RunSettings): RunOutput {
     analysis,
     evaluation: evaluateTargets(TARGETS, analysis.metrics),
     example: sweep.example,
+    setups,
+    ranks,
   };
 }
 

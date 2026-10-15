@@ -327,6 +327,19 @@ describe('RULES ceilings (docs/design/attack-patterns.md 4.7)', () => {
   });
 });
 
+describe('single-hit cap switched off (shipped rules)', () => {
+  it('0 means no cap: the live rules leave a big hit as big as it is', () => {
+    const live = liveFightRules();
+    expect(RULES.combat.maxHitBp).toBe(0);
+    expect(live.maxHitBp).toBe(0);
+    const row = rowOf(3, { 0: { hp: 1000 }, 1: { hp: 1000 }, 2: { hp: 1000 } });
+    // 1000% of Attack 100 is 1000 on every creature: all of its HP, not half.
+    const r = fightWith(row, [sweep(100_000, ['all'])], { rules: live });
+    expect(gimmickHits(r).map((h) => h[2])).toEqual([1000, 1000, 1000]);
+    expect(eventsOf(r, 'boss_hit').some((e) => e.capped === true)).toBe(false);
+  });
+});
+
 describe('single-hit cap (rules.maxHitBp)', () => {
   const cap = rulesOf({ maxHitBp: 5_000 });
 

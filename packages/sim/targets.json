@@ -65,10 +65,10 @@
   },
   {
     "id": "raid-ko-share",
-    "description": "Creatures knocked out in a typical group's finale (share of the creatures in the row; hits are harder, knock-outs happen)",
+    "description": "Creatures knocked out in a typical group's finale (share of the creatures in the row; big hits stay big, knock-outs and swings are wanted: the band only catches broken numbers)",
     "metric": "raid.typical.koShare",
     "comparator": "range",
-    "value": [0.1, 0.22],
+    "value": [0.1, 0.3],
     "unit": "percent"
   },
   {

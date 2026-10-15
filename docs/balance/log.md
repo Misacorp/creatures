@@ -131,3 +131,95 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
   Every other target stays inside its limit on every seed and moves little. Two to watch: `gear-skill-day30` is 5 / 5.5 / 6 before and 6 / 6 / 6 after (limit 4 to 6; more cleared Phase 1s pay more scrap, so crafting is quicker), and `raid-guard-value` on leet2 (2.38, one standard error is about 0.8). Typical groups, after (leet / leet2 / leet3): enrage reached in 14.3% / 15.3% / 17.2% of finales (before 54% / 57% / 61%), a win inside enrage in 51% / 54% / 57% of those (before 34% / 27% / 27%; 7% to 10% of all finales), enrage losses last 2.9 / 2.7 / 2.8 enrage rounds.
 
 - **Follow-ups:** Misa's questions in the report (the floors on an established server, the free first enrage round, the Wyrm's reflect); watch live `raid.phase1_clear`, finale win rate and rank-ups against the sim after deploy; `gear-skill-day30` at its limit; the equilibrium view (a typical server in weeks 11 and later, normal weeks: Phase 1 cleared 34%, Phase 2 0%, finale won 31%, the finale starts with 52% of the boss's HP, 72% of the creatures knocked out, enrage reached in 77% of finales) is set by the ladder, not by this retune; see the report.
+
+### B-008: The raid retune, second pass: no single-hit cap, Guard armor, enrage and the setups (open)
+
+- **Opened:** 2026-10-15, after Misa's answers on B-007 (decisions.md, "Misa's answers on the retune"): the single-hit cap is off ("big hits stay big"), a Guard has armor instead of +30% HP, knock-outs and swings are wanted. Before is e7afddb (cap 5000, raid enrage 50000, dungeon enrage 10000, the B-007 bosses); after is f9b927c plus this change (the engine fixes merged in between: Shield Wall protects the creature that takes the hit, a chain never hits one creature twice, the killing blow counts only the HP left).
+- **Finding:**
+  - The bosses needed almost nothing for the cap to go: with the cap off and nothing else changed the typical finale was won 94% of the time (95% before), inside its band. What changed is the enrage: it hits every creature for a share of the boss's Attack, and with the cap off that share decides how fast a row dies.
+  - A Guard is worth far more than the 2.0 floor: 10 to 13 win points at every armor from 20% to 35% (it was about 11 at e7afddb too; B-007's 2.4 to 3.6 was the old +30% HP Guard). Armor is a weak lever: about +0.5 point per 5 points of armor.
+  - Wins collapse with Boss Rank whatever the cap does (table below): a roster that has stopped growing wins nothing at rank 7, cap or no cap. The cap was not what held the high ranks up.
+- **Hypothesis:** keep the bosses (B-007 fitted them to a typical finale won about 92%), set the enrage by what a row that reaches overtime does, and widen the knock-out band so it catches broken numbers without pulling the swings to the middle.
+- **Options:**
+  - Guard armor 20% / 25% / 30% / 35%: `raid-guard-value` (win points lost with the Guard role off; leet / leet2 / leet3): 11.79 / 9.99 / 10.57 at 20%; **12.13 / 10.24 / 11.11 at 25%**; 12.55 / 10.87 / 11.56 at 30%; 12.89 / 11.20 / 12.01 at 35%. All far above 2.0, so the armor stays at 25% (the glossary line is unchanged).
+  - Raid enrage power (typical groups, three seeds, 200 weeks per boss and size; overtime wins are a share of all finales; "wiped" is the share of lost overtimes that ended with the whole row down, the rest ended after the third round with creatures still standing). Measured on the merged engine, bosses as now:
+
+    | Power | Overtime won (leet / leet2 / leet3) | Enrage rounds in a lost overtime | Wiped           | Finale win         |
+    | ----- | ----------------------------------- | -------------------------------- | --------------- | ------------------ |
+    | 300%  | 6.9 / 9.9 / 8.0                     | 2.92 / 2.97 / 2.88               | 37% / 37% / 29% | 92.7 / 91.0 / 93.4 |
+    | 400%  | 6.5 / 8.4 / 6.9                     | 2.75 / 2.79 / 2.80               | 55% / 71% / 61% | 92.3 / 89.5 / 92.3 |
+    | 500%  | 5.6 / 7.6 / 6.0                     | 2.57 / 2.57 / 2.61               | 85% / 95% / 96% | 91.4 / 88.8 / 91.4 |
+    | 600%  | 4.9 / 6.8 / 5.4                     | 2.40 / 2.34 / 2.27               | 100%            | 90.7 / 87.9 / 90.8 |
+
+    The two wishes pull apart: a harder enrage wipes faster and costs the overtime wins, because only 14% to 19% of finales reach overtime and the share won inside it falls from about 55% to 35%. Tougher bosses would raise the reach, but about 4% more boss HP already takes Phase 1 on leet2 to 79.6% (needs 80%), before one finale in twelve is reached (measured before the engine merge).
+
+  - Dungeon enrage power (week 8 rosters, depths 8 to 20, boss rooms): from 5% to 100% of the foe's Attack makes no difference to the wipe (a lost boss room lasts 1.5 to 1.8 enrage rounds at any power, because the boss's own attack finishes a team that is already hurt), and enrage adds about 1.1 clears per 100 runs at depths 13 to 20 (42.5% to 43.6%). A third enrage round would add about 0.3 more; not changed.
+  - Boss HP: tune CLI `--calibrate 5 --target 0.95 --slope 2 --seeds 2`, once per seed (leet, leet2, leet3), the three fits averaged and base HP +1%. The fits were noisy (base HP and exponent trade off) and moved the pools by under 4% at 10 players.
+- **Action:**
+  - `RULES.combat.maxHitBp` 5000 to 0 (no cap; the engine treats 0 as off and the live rules copy it; a new engine test pins both).
+  - `RULES.combat.guard.armorBp` stays 2500.
+  - `RULES.raid.enrage.powerBp` 50000 to 40000 (rounds stay 3): the middle of the table. A lost overtime lasts 2.75 to 2.8 rounds as in B-007, 55% to 70% of them end in a wipe, and about one finale in 14 is won in overtime (6.3% / 8.2% / 7.7% in the final runs), not one in twelve: see the question in the report.
+  - `RULES.dungeon.enrage.powerBp` 10000 to 3000 (a modest hit; the number does not decide the room).
+  - Boss `baseHp` and `hpExponent`: Tidal Colossus 6485, 1.04 to 5915, 1.08; Cinder Wyrm 2540, 1.26 to 2490, 1.29; Thornmother 4734, 1.13 to 4737, 1.13; Storm Sovereign 4095, 1.18 to 3974, 1.19. Pattern powers unchanged.
+  - Targets: `raid-ko-share` 10% to 22% widened to 10% to 30%.
+  - New in `pnpm sim` (and `report.json` as `setups` and `ranks`): the "Setups" and "High Boss Ranks" sections (`packages/sim/src/setup-study.ts`, `formations.ts`). The economy sim gained `behaviour.signUpPercent` and an `onRaidOpen` hook, and a raid stage records `knockedOutIds` (used for the progression and newcomer data).
+- **Expected:** every target passes on all three seeds; knock-outs 15% to 25% of the finale's row.
+- **Outcome:** 2026-10-15, full `pnpm sim`, seeds leet / leet2 / leet3: **51 of 51 pass** on each. Before is e7afddb:
+
+  | Target                     | Requirement          | leet before | leet after | leet2 before | leet2 after | leet3 before | leet3 after |
+  | -------------------------- | -------------------- | ----------- | ---------- | ------------ | ----------- | ------------ | ----------- |
+  | `raid-phase1-typical`      | >= 80%               | 89.5%       | 85.2%      | 86.9%        | 84.4%       | 87.8%        | 85.6%       |
+  | `raid-phase2-typical`      | 0% to 25%            | 0.6%        | 0.6%       | 0.3%         | 0.9%        | 0.7%         | 0.3%        |
+  | `raid-finale-typical`      | 85% to 97%           | 95.3%       | 90.9%      | 92.0%        | 89.9%       | 93.5%        | 91.9%       |
+  | `raid-finale-start-share`  | 25% to 45%           | 36.4%       | 37.1%      | 37.2%        | 37.5%       | 36.6%        | 37.3%       |
+  | `raid-finale-15`           | 85% to 99%           | 95.0%       | 92.9%      | 96.3%        | 89.0%       | 96.3%        | 90.4%       |
+  | `raid-boss-spread`         | <= 15%               | 5.4%        | 2.3%       | 4.7%         | 4.1%        | 2.5%         | 2.5%        |
+  | `raid-ko-share`            | 10% to 30% (was 22%) | 12.0%       | 17.8%      | 15.9%        | 20.6%       | 13.6%        | 18.1%       |
+  | `raid-guard-value`         | >= 2.0 points        | 11.70       | 12.13      | 11.25        | 10.24       | 10.37        | 11.11       |
+  | `raid-pattern-fairness`    | 0%                   | 0.0%        | 0.0%       | 0.0%         | 0.0%        | 0.0%         | 0.0%        |
+  | `longrun-win-typical`      | 40% to 60%           | 56.0%       | 55.7%      | 56.9%        | 56.2%       | 56.3%        | 56.2%       |
+  | `dungeon-first-week-clear` | >= 80%               | 84.8%       | 85.6%      | 89.9%        | 89.5%       | 88.9%        | 90.3%       |
+  | `dungeon-depth-growth`     | 1 to 2               | 1.50        | 1.67       | 1.67         | 1.67        | 1.58         | 1.67        |
+  | `gear-skill-day30`         | 4 to 6               | 5           | 6          | 6            | 6           | 6            | 6           |
+  | `exp-casual-discovery`     | <= 0.45              | 0.22        | 0.14       | 0.22         | 0.16        | 0.17         | 0.22        |
+
+  Typical groups, after (leet / leet2 / leet3): enrage reached in 15.3% / 18.3% / 15.8% of finales, won inside it 40.9% / 44.7% / 48.7%, a lost overtime lasts 2.77 / 2.82 / 2.80 enrage rounds. Typical finale win by boss (Tidal / Wyrm / Thornmother / Storm): leet 91.0 / 90.9 / 89.8 / 92.1, leet2 90.1 / 87.2 / 90.9 / 91.3, leet3 90.9 / 93.1 / 90.6 / 92.9. `gear-skill-day30` sits at the top of its band (6) on every seed.
+
+  **Setup study** (`pnpm sim`, "Setups"; same rosters, sign-ups and dice for every row; typical groups, about 1180 finales per row; three seeds shown as leet / leet2 / leet3). The two setups are the best arrangement a seeded hill-climb finds for their own score: Greedy for reactions a round, with Guards and Supports at the row's edges; Protected for payoffs beside a Guard (in their own zone), Supports between payoffs, reactions second. "+N" is a boss N Boss Ranks above the rank the sweep fights at.
+
+  | Boss         | Row       | Finale win         | Reactions a round | Payoffs beside a Guard | Knocked out        | Lost with over half the row down | Swing: win rate by cell (points) | Swing: knock-out share (points) |
+  | ------------ | --------- | ------------------ | ----------------- | ---------------------- | ------------------ | -------------------------------- | -------------------------------- | ------------------------------- |
+  | +0 (shipped) | Default   | 90.9 / 89.9 / 91.9 | 3.3               | 0%                     | 17.8 / 20.6 / 18.2 | 100%                             | 4.3 / 6.8 / 4.4                  | 27 / 29 / 27                    |
+  | +0           | Greedy    | 98.6 / 97.3 / 98.6 | 6.9               | 13% to 14%             | 4.8 / 6.5 / 5.7    | 100%                             | 3.8 / 6.9 / 3.9                  | 14 / 18 / 16                    |
+  | +0           | Protected | 99.4 / 97.2 / 98.5 | 6.9               | 35% to 38%             | 4.3 / 6.7 / 5.7    | 100%                             | 1.5 / 7.4 / 5.7                  | 12 / 19 / 16                    |
+  | +1           | Default   | 14.4 / 13.5 / 12.3 | 3.1               | 0%                     | 89 / 90 / 91       | 100%                             | 12 / 12 / 10                     | 28 / 27 / 26                    |
+  | +1           | Greedy    | 72.2 / 68.0 / 66.5 | 6.6               | 13% to 14%             | 33.3 / 36.7 / 37.5 | 100%                             | 33 / 32 / 35                     | 42 / 43 / 43                    |
+  | +1           | Protected | 73.8 / 69.7 / 68.1 | 6.7               | 35% to 38%             | 30.1 / 34.4 / 34.6 | 100%                             | 33 / 32 / 35                     | 42 / 43 / 44                    |
+  | +2           | Default   | 0.4 / 0.2 / 0.2    | 3.0               | 0%                     | 100                | 100%                             | 2 / 1 / 1                        | 4 / 3 / 3                       |
+  | +2           | Greedy    | 8.6 / 8.7 / 5.9    | 5.9 to 6.0        | 13% to 14%             | 92.7 / 93.2 / 94.8 | 100%                             | 10 / 12 / 9                      | 23 / 23 / 19                    |
+  | +2           | Protected | 10.8 / 10.3 / 7.3  | 6.0 to 6.2        | 35% to 38%             | 90.8 / 91.4 / 93.5 | 100%                             | 12 / 12 / 9                      | 26 / 26 / 21                    |
+
+  What it says, honestly: (1) both arranged rows are worth far more than the default row: about double the reactions (6.9 against 3.3 a round), the boss at 25% of its HP when Sunday starts instead of 37%, and a boss one rank up that the default row beats 13% of the time is beaten about 70% of the time. A hand-built row is worth more than a Boss Rank, and the whole calibration is made on the default row. (2) Greedy does not hit harder than Protected: they make the same reactions (6.6 against 6.7 a round at +1), because a typical group has so few Guards and Supports that standing them beside payoffs costs almost no reaction. (3) Protected survives a little more and is never behind: no difference at the shipped bosses (both win 97% to 99%), +1.6 win points and about 3 fewer creatures knocked out of 100 at +1, +1.8 win points at +2. Neither is simply best, but only by a small margin; the trade Misa described (greedy hits harder but dies more) is not really there. (4) Swing: the two are alike. A lost finale is always a wipe (every loss has over half the row down), so the swing is between wins and wipes; the default row at +1 swings the least only because it nearly always loses.
+
+  **High Boss Ranks** (`pnpm sim`, "High Boss Ranks"; typical groups on the leet seed's rosters of weeks 4 and 8, every boss, rank forced; static rosters, so it shows where wins collapse, not what a rank-9 server looks like; leet2 and leet3 are within a few points). The last column is the same study with the cap on and enrage 500% (e7afddb numbers on today's engine):
+
+  | Boss Rank | Roster week | Phase 1 cleared | Finale win | Boss HP left at the finale | Knocked out | Overtime reached | Finale win, cap on |
+  | --------- | ----------- | --------------- | ---------- | -------------------------- | ----------- | ---------------- | ------------------ |
+  | 1         | 4           | 100%            | 100%       | 15%                        | 0.8%        | 0%               | 100%               |
+  | 3         | 4           | 100%            | 99.7%      | 25%                        | 2.8%        | 0.3%             | 99.7%              |
+  | 5         | 4           | 10.8%           | 8.4%       | 53%                        | 93.3%       | 94.5%            | 12.4%              |
+  | 7         | 4           | 0%              | 0%         | 78%                        | 100%        | 84.2%            | 0%                 |
+  | 9         | 4           | 0%              | 0%         | 91%                        | 100%        | 50.0%            | 0%                 |
+  | 11        | 4           | 0%              | 0%         | 96%                        | 100%        | 7.7%             | 0%                 |
+  | 1         | 8           | 100%            | 100%       | 15%                        | 0.6%        | 0%               | 100%               |
+  | 3         | 8           | 100%            | 100%       | 15%                        | 1.2%        | 0%               | 100%               |
+  | 5         | 8           | 87.1%           | 93.6%      | 37%                        | 13.5%       | 11.7%            | 96.3%              |
+  | 7         | 8           | 0%              | 0%         | 67%                        | 100%        | 99.3%            | 0.2%               |
+  | 9         | 8           | 0%              | 0%         | 86%                        | 100%        | 67.0%            | 0%                 |
+  | 11        | 8           | 0%              | 0%         | 94%                        | 100%        | 22.3%            | 0%                 |
+
+  Wins fall off a cliff between rank 5 and rank 7 for both roster weeks, with the cap on or off: the rank curve (boss HP x1.4 and Attack x1.2 a rank) does it, not the cap. Without the cap the row dies sooner at the high ranks (overtime is reached in 67% instead of 91% of rank-9 finales on week 8 rosters): the boss kills the row before its normal rounds run out. The rank curves are unchanged.
+
+  **Progression of one active server** (8 players, everyone signs up every week, weeks 1 to 12, 200 servers averaged; the full table with a newcomer line is in the scratch file named in the report, `progression.json`): week 1 finale 5% won (a new server's first raid is a wipe: it is placed at rank 2 on creatures of level 5), weeks 2 to 7 94% to 100% won with 4% to 13% of the row knocked out (Phase 2 cleared in 16% to 54% of weeks), then the Boss Rank outgrows the creatures: week 8 68% won, week 10 72%, week 12 52%, with 35% to 52% of the row knocked out and overtime reached in 35% to 53% of finales. A newcomer with three level-1 starters has a creature knocked out in the finale 10% to 17% of the time in weeks 3 to 6, 39% to 54% in weeks 7 to 9 and 61% to 72% from week 10.
+
+- **Follow-ups:** Misa's questions in the report (the enrage trade, the first raid week, the setups); watch live finale win rate, knock-outs and rank-ups against the sim; if the cap-off bites on the live server, the next lever is separate curves for boss HP and boss Attack by rank, and raid tiers for newcomers (decisions.md).

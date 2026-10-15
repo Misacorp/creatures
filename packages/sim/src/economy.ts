@@ -81,6 +81,23 @@ export interface EconomyOptions {
    * shipped behaviour, and a run without them draws exactly the same random numbers as before.
    */
   behaviour?: Behaviour;
+  /**
+   * Called when a raid week opens (Friday, before Phase 1) with the signed-up players as they stand,
+   * the boss and the ranks. For studies that play a what-if beside the real week; it must not change
+   * the players (clone them first) and the sim draws no random numbers for it.
+   */
+  onRaidOpen?: (info: RaidOpenInfo) => void;
+}
+
+/** What `EconomyOptions.onRaidOpen` is told. */
+export interface RaidOpenInfo {
+  week: number;
+  boss: BossDef;
+  /** The server's rank, the rank the boss fights at (eased in a Festival week) and the Festival flag. */
+  rank: number;
+  effectiveRank: number;
+  festival: boolean;
+  signed: readonly SimPlayer[];
 }
 
 /** Optional behaviour overrides (see `EconomyOptions.behaviour`). */
@@ -91,6 +108,8 @@ export interface Behaviour {
   tripPercent?: number;
   /** Chance (percent, 0 to 100) that a check-in runs the dungeon. Default 100. */
   dungeonPercent?: number;
+  /** Chance (percent, 0 to 100) that any player signs up for the raid, replacing the archetypes' own. */
+  signUpPercent?: number;
 }
 
 /** One row of a player's history: the state at the end of a week. */
@@ -396,10 +415,17 @@ export function bossForWeek(week: number): BossDef {
 }
 
 /** Sign-up for a raid: casuals with their sign-up chance, everyone else always (in random order). */
-export function chooseSignUps(active: readonly SimPlayer[], signup: Rng, order: Rng): SimPlayer[] {
+export function chooseSignUps(
+  active: readonly SimPlayer[],
+  signup: Rng,
+  order: Rng,
+  /** Study: every player signs up with this chance (percent) instead of the archetype's own. */
+  percent?: number,
+): SimPlayer[] {
   const yes = active.filter(
     (p) =>
-      chance(signup, ARCHETYPE_CONFIG[p.archetype].signUpPercent, 100) && p.creatures.length > 0,
+      chance(signup, percent ?? ARCHETYPE_CONFIG[p.archetype].signUpPercent, 100) &&
+      p.creatures.length > 0,
   );
   return shuffle(order, yes);
 }
@@ -559,13 +585,21 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
       }
 
       if (day === RAID_DAY.phase1) {
-        const signed = chooseSignUps(active, rng.signup, rng.order);
+        const signed = chooseSignUps(active, rng.signup, rng.order, behaviour.signUpPercent);
         for (const p of signed) p.week.signedUp = true;
         if (signed.length > 0) {
           if (rank === null) {
             rank = placementRank(signed.flatMap((p) => pickTeam(p.creatures).map((c) => c.level)));
           }
           plan = raidWeekPlan(weekIndex, rank);
+          options.onRaidOpen?.({
+            week,
+            boss,
+            rank: plan.rank,
+            effectiveRank: plan.effectiveRank,
+            festival: plan.festival,
+            signed,
+          });
           raid = openRaidWeek(boss, signed, {
             rank: plan.effectiveRank,
             reward: { rank: plan.rank, festival: plan.festival },
