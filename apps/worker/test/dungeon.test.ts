@@ -325,6 +325,98 @@ describe('GET /api/dungeon/today', () => {
   });
 });
 
+describe('the last team in GET /api/dungeon/today', () => {
+  it('is null before a player has run, and for a player who never appeared', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        expect((await p.today()).lastTeam).toBeNull();
+      },
+      opts(),
+    );
+  });
+
+  it('is the ordered ids of the newest run, on any day, and the run response carries it too', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const [a, b, c] = p.creatureIds as [string, string, string];
+        ctx.clock.t = AFTER_RESET;
+        const first = await p.run({ team: [c, a, b] });
+        expect(first.body.today.lastTeam).toEqual([c, a, b]);
+        expect((await p.today()).lastTeam).toEqual([c, a, b]);
+        // The next game day: nothing ran today, but the last team is still known, in the same order.
+        ctx.clock.t = AFTER_RESET + DAY;
+        const tomorrow = await p.today();
+        expect(tomorrow.last).toBeNull();
+        expect(tomorrow.lastTeam).toEqual([c, a, b]);
+        // A newer run replaces it.
+        expect((await p.run({ team: [b, c, a] })).status).toBe(200);
+        expect((await p.today()).lastTeam).toEqual([b, c, a]);
+      },
+      opts(),
+    );
+  });
+
+  it('is only the requesting player’s own team', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const other = await dungeonPlayer(ctx, 2, STRONG);
+        const [a, b, c] = p.creatureIds as [string, string, string];
+        ctx.clock.t = AFTER_RESET;
+        expect((await p.run({ team: [b, c, a] })).status).toBe(200);
+        expect((await other.today()).lastTeam).toBeNull();
+        expect((await p.today()).lastTeam).toEqual([b, c, a]);
+        expect(JSON.stringify(await other.today())).not.toContain(a);
+      },
+      opts(),
+    );
+  });
+
+  it('stays after the run is past its retention, and a refused run does not change it', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const [a, b, c] = p.creatureIds as [string, string, string];
+        ctx.clock.t = AFTER_RESET;
+        expect((await p.run({ team: [c, b, a] })).status).toBe(200);
+        // A second run the same day is refused and leaves the memory alone.
+        expect((await p.run({ team: [a, b, c] })).status).toBe(409);
+        expect((await p.today()).lastTeam).toEqual([c, b, a]);
+        ctx.clock.t += 91 * DAY;
+        ctx.core.dungeon.prune();
+        expect(storedRuns(ctx, p.id)[0]?.input_json).toBeNull();
+        expect((await p.today()).lastTeam).toEqual([c, b, a]);
+      },
+      opts(),
+    );
+  });
+
+  it('is null, not an error, when a stored summary is damaged', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        ctx.clock.t = AFTER_RESET;
+        expect((await p.run()).status).toBe(200);
+        ctx.sql.exec(
+          'UPDATE dungeon_runs SET summary_json = ? WHERE user_id = ?',
+          JSON.stringify({ team: [{ id: 'x' }] }),
+          p.id,
+        );
+        const today = await p.today();
+        expect(today.lastTeam).toBeNull();
+      },
+      opts(),
+    );
+  });
+});
+
 describe('POST /api/dungeon/run', () => {
   it('plays a run, stores it and pays it in one go', async () => {
     await runCore(

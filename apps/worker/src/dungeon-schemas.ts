@@ -19,3 +19,15 @@ export const RunBodySchema = v.strictObject({
   idempotencyKey: IdempotencyKeySchema,
 });
 export type RunBody = v.InferOutput<typeof RunBodySchema>;
+
+/**
+ * The part of a stored run summary that gives the team's order: the creature ids, left to right,
+ * exactly `teamSize` of them. Other keys of the summary are ignored on purpose (it is our own
+ * stored data, read for this one field); the ids go through the same `IdSchema` a request uses.
+ */
+export const LastTeamSchema = v.pipe(
+  v.object({
+    team: v.pipe(v.array(v.object({ id: IdSchema })), v.length(RULES.dungeon.teamSize)),
+  }),
+  v.transform((summary) => summary.team.map((member) => member.id)),
+);

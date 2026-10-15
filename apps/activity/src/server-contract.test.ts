@@ -541,6 +541,9 @@ describe('the dungeon responses the server sends', () => {
     expect(states[2]?.blocked).toBe('already_run');
     expect(states[3]?.landmark).toBe(true);
     expect(states[4]?.blocked).toBe('need_creatures');
+    // The last team: null before a first run, the run's ids in its row order after one.
+    expect(states[0]?.lastTeam).toBeNull();
+    expect(states[2]?.lastTeam).toEqual(dungeonRunCleared.run.team.map((t) => t.id));
   });
 
   it('parses the run and the new state of every POST /api/dungeon/run fixture', async () => {
@@ -576,6 +579,8 @@ describe('the dungeon responses the server sends', () => {
     expect(() => parseDungeonToday({ ...dungeonToday, depth: 'deep' })).toThrow('dungeon state');
     expect(() => parseDungeonToday({ ...dungeonToday, blocked: 'because' })).toThrow();
     expect(() => parseDungeonToday({ ...dungeonToday, modifiers: [{ id: 'x' }] })).toThrow();
+    expect(() => parseDungeonToday({ ...dungeonToday, lastTeam: [1, 2, 3] })).toThrow();
+    expect(() => parseDungeonToday({ ...dungeonToday, lastTeam: undefined })).toThrow();
     expect(() => parseDungeonRun({ run: {}, today: dungeonToday })).toThrow('dungeon run');
     expect(() => parseDungeonRun({ ...dungeonRunCleared, today: null })).toThrow();
     const bad = {

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { DungeonPrerun } from './DungeonPrerun';
 import { DungeonTeam } from './DungeonTeam';
-import { isComplete, placedCount, pruneSlots, strongestThree, type Slots } from './dungeon-team';
+import { isComplete, placedCount, pruneSlots, startingTeam, type Slots } from './dungeon-team';
 import { blockedText, isRetryOffer, RETRY_TEXT } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
 import { GlossaryTag } from './Glossary';
@@ -23,14 +23,16 @@ interface Props {
 /**
  * The pre-run screen. It leads with the three rooms and the day's modifiers (`DungeonPrerun`), then
  * the team on the Raid Roster's board and the Enter button, or the reason a run is not possible. The
- * team starts as the player's strongest three, in the order that sets off the most reactions, and is
- * kept only on this screen (nothing is stored: the server gets the whole ordered team when the run
- * starts and needs all three). The choice is who stands where; the server checks it and decides the
- * run. Streak and reset time are in the end report, not here.
+ * team starts as the player's last team, each creature in the slot it stood in (`startingTeam`; a
+ * creature that is gone leaves its slot empty), or on the first run as their strongest three in the
+ * order that sets off the most reactions. Changes are kept only on this screen; the next last team
+ * is whatever the server stores when a run starts (the whole ordered team). The choice is who
+ * stands where; the server checks it and decides the run. Streak and reset time are in the end
+ * report, not here.
  */
 export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast }: Props) {
   const pickable = useMemo(() => creatures.map(toPickerCreature), [creatures]);
-  const [slots, setSlots] = useState<Slots>(() => strongestThree(pickable));
+  const [slots, setSlots] = useState<Slots>(() => startingTeam(today.lastTeam, pickable));
 
   // The collection can change under the screen (a refresh after another tab): drop creatures that are gone.
   const owned = creatures.map((c) => c.id);

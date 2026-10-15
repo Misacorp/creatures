@@ -30,5 +30,6 @@
   "attemptsAllowed": 2,
   "canRun": false,
   "blocked": "need_creatures",
-  "last": null
+  "last": null,
+  "lastTeam": null
 }

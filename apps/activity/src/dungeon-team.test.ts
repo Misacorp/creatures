@@ -15,6 +15,7 @@ import {
   resolveDrop,
   slotIndexOf,
   slotStatuses,
+  startingTeam,
   strongestThree,
   unplace,
   type Slots,
@@ -137,6 +138,59 @@ describe('the strongest three', () => {
   it('leaves places empty when there are fewer than three creatures', () => {
     expect(strongestThree([make('only', 'cindle', 3)])).toEqual(['only', null, null]);
     expect(strongestThree([])).toEqual([null, null, null]);
+  });
+});
+
+describe('the team the setup opens with', () => {
+  const list = [
+    make('a', 'cindle', 9, { power: 90 }),
+    make('b', 'splashet', 8, { power: 80 }),
+    make('c', 'sproutle', 7, { power: 70 }),
+    make('d', 'ashmole', 1, { power: 10 }),
+  ];
+
+  it('falls back to the strongest three on the first run', () => {
+    expect(startingTeam(null, list)).toEqual(strongestThree(list));
+  });
+
+  it('puts the last team back in the same slot order, not the strongest order', () => {
+    // The weakest creature opens the row: the strongest three would not pick it at all.
+    expect(startingTeam(['d', 'c', 'a'], list)).toEqual(['d', 'c', 'a']);
+    expect(startingTeam(['c', 'a', 'b'], list)).toEqual(['c', 'a', 'b']);
+  });
+
+  it('leaves the slot of a creature that is gone empty and moves nobody up', () => {
+    expect(startingTeam(['a', 'gone', 'c'], list)).toEqual(['a', null, 'c']);
+    expect(startingTeam(['gone', 'b', 'c'], list)).toEqual([null, 'b', 'c']);
+    expect(startingTeam(['a', 'b', 'gone'], list)).toEqual(['a', 'b', null]);
+  });
+
+  it('leaves the slot of a creature the picker does not offer empty', () => {
+    expect(
+      startingTeam(
+        ['a', 'b', 'c'],
+        list.filter((x) => x.id !== 'b'),
+      ),
+    ).toEqual(['a', null, 'c']);
+  });
+
+  it('keeps a creature in its first slot only, and ignores extra ids', () => {
+    expect(startingTeam(['a', 'a', 'b'], list)).toEqual(['a', null, 'b']);
+    expect(startingTeam(['a', 'b', 'c', 'd'], list)).toEqual(['a', 'b', 'c']);
+    expect(startingTeam(['a'], list)).toEqual(['a', null, null]);
+  });
+
+  it('falls back to the strongest three when none of the last team can be placed', () => {
+    expect(startingTeam(['x', 'y', 'z'], list)).toEqual(strongestThree(list));
+    expect(startingTeam([], list)).toEqual(strongestThree(list));
+  });
+
+  it('never hands out a team the request builder would refuse for a reason other than empty slots', () => {
+    const slots = startingTeam(['c', 'gone', 'a'], list);
+    expect(isComplete(slots)).toBe(false);
+    expect(completeTeam(slots)).toBeNull();
+    expect(startingTeam(['c', 'b', 'a'], list)).toEqual(['c', 'b', 'a']);
+    expect(completeTeam(startingTeam(['c', 'b', 'a'], list))).toEqual(['c', 'b', 'a']);
   });
 });
 

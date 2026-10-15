@@ -52,6 +52,7 @@ import {
   type FightEvent,
   type FightSlot,
 } from '@creatures/engine';
+import * as v from 'valibot';
 import type { Analytics } from './analytics';
 import { devKey, type DevFlags } from './dev-state';
 import { keyTaken } from './keyed-action';
@@ -60,7 +61,7 @@ import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-gran
 import type { LedgerStorage } from './ledger';
 import { drawSeed, slotFor } from './raid-resolve';
 import { loadCreatures, type TeamCreature } from './raid-teams';
-import type { RunBody } from './dungeon-schemas';
+import { LastTeamSchema, type RunBody } from './dungeon-schemas';
 import { addDays, gameDay, gameDayEnd } from './time';
 
 /** Runs (their events and inputs) are kept this long; the summary and rewards stay. */
@@ -169,6 +170,11 @@ export interface DungeonToday {
   blocked: 'already_run' | 'need_creatures' | null;
   /** The newest run of today, or null. */
   last: DungeonRunSummary | null;
+  /**
+   * The creature ids of the player's most recent run on any day, in the order they stood in the
+   * row (left to right), or null before their first run. Only the caller's own run is ever read.
+   */
+  lastTeam: string[] | null;
 }
 
 export interface DungeonRunResponse {
@@ -265,6 +271,27 @@ export class Dungeon {
         )
         .toArray()[0] ?? { ...FRESH_PROGRESS }
     );
+  }
+
+  /**
+   * The ordered creature ids of the player's newest run, read from the summary every run keeps for
+   * good (the input is emptied after the retention period, the summary is not). No separate table:
+   * the run record is the memory. A damaged summary gives null, never an error.
+   */
+  private lastTeam(userId: string): string[] | null {
+    const row = this.sql
+      .exec<{ summary_json: string }>(
+        'SELECT summary_json FROM dungeon_runs WHERE user_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1',
+        userId,
+      )
+      .toArray()[0];
+    if (row === undefined) return null;
+    try {
+      const parsed = v.safeParse(LastTeamSchema, JSON.parse(row.summary_json));
+      return parsed.success ? parsed.output : null;
+    } catch {
+      return null;
+    }
   }
 
   private runsOn(userId: string, day: string): RunRow[] {
@@ -384,6 +411,7 @@ export class Dungeon {
       canRun: canRun && !needCreatures,
       blocked: !canRun ? 'already_run' : needCreatures ? 'need_creatures' : null,
       last: last === undefined ? null : (JSON.parse(last.summary_json) as DungeonRunSummary),
+      lastTeam: this.lastTeam(userId),
     };
   }
 

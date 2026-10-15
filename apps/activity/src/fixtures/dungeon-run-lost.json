@@ -254,6 +254,11 @@
         "landmark": false,
         "streak": null
       }
-    }
+    },
+    "lastTeam": [
+      "c4f22219-0ff9-4051-b6af-8d710ac14210",
+      "fd9ae43f-c1e1-4da3-9bc1-6759aa4da64b",
+      "3f10e126-f343-4dbb-a34c-2e9511190a88"
+    ]
   }
 }

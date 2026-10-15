@@ -119,6 +119,31 @@ export function strongestThree(creatures: readonly PickerCreature[]): Slots {
   return [ordered[0]?.id ?? null, ordered[1]?.id ?? null, ordered[2]?.id ?? null];
 }
 
+/**
+ * The team the setup opens with. With a last team (the ordered ids of the player's most recent run,
+ * `DungeonToday.lastTeam`) each creature keeps the slot it stood in, provided the player still has
+ * it and it is among the `creatures` the picker offers; a slot whose creature is gone or not offered
+ * stays empty (the others do not move up). A creature that appears twice keeps its first slot only.
+ * Without a last team (the first run) the screen starts from `strongestThree`, and so it does when
+ * none of the last team can be placed any more, so the player never opens on an empty row.
+ */
+export function startingTeam(
+  lastTeam: readonly string[] | null,
+  creatures: readonly PickerCreature[],
+): Slots {
+  if (lastTeam === null) return strongestThree(creatures);
+  const offered = new Set(creatures.map((c) => c.id));
+  const used = new Set<string>();
+  const at = (index: number): string | null => {
+    const id = lastTeam[index];
+    if (id === undefined || !offered.has(id) || used.has(id)) return null;
+    used.add(id);
+    return id;
+  };
+  const slots: Slots = [at(0), at(1), at(2)];
+  return placedCount(slots) === 0 ? strongestThree(creatures) : slots;
+}
+
 function roleOf(species: string): Role | undefined {
   return content.creatures.find((s) => s.id === species)?.role;
 }

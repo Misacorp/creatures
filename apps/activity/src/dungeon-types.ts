@@ -49,6 +49,11 @@ export interface DungeonToday {
   blocked: 'already_run' | 'need_creatures' | null;
   /** The newest run of today, or null before the first. */
   last: DungeonRunSummary | null;
+  /**
+   * The creature ids of the player's most recent run on any day, left to right, or null before the
+   * first run. The setup opens with them in the same places. Only ever the caller's own.
+   */
+  lastTeam: string[] | null;
 }
 
 export interface DungeonRewards {
