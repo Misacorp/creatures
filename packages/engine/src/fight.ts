@@ -33,7 +33,14 @@ import type {
   FightResult,
   PlayerTotals,
 } from './types';
-import { ZONES, neighbours, zoneIndices, zoneNeighbours, zoneOfIndex } from './zones';
+import {
+  ZONES,
+  nearestLivingZone,
+  neighbours,
+  zoneIndices,
+  zoneNeighbours,
+  zoneOfIndex,
+} from './zones';
 
 export interface FightOptions {
   /** Mutators registered in code. A mutator runs only if `input.mutators` also lists its id. */
@@ -748,17 +755,7 @@ export function simulateFight(
    *   to a living neighbour; a Support beside a knocked-out creature simply buffs nobody there.
    */
   function zoneWithLiving(aimed: Zone): Zone | undefined {
-    const from = ZONES.indexOf(aimed);
-    let best: Zone | undefined;
-    let bestDistance = Number.POSITIVE_INFINITY;
-    for (const [i, z] of ZONES.entries()) {
-      const distance = Math.abs(i - from);
-      if (distance < bestDistance && livingIn(z).length > 0) {
-        best = z;
-        bestDistance = distance;
-      }
-    }
-    return best;
+    return nearestLivingZone(aimed, (z) => livingIn(z).length > 0);
   }
 
   function fireGimmick(g: Gimmick): void {

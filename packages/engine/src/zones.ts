@@ -46,3 +46,26 @@ export function zoneNeighbours(index: number, length: number): number[] {
   const zone = zoneOfIndex(index, length);
   return neighbours(index, length).filter((i) => zoneOfIndex(i, length) === zone);
 }
+
+/**
+ * Where a zone attack lands: the aimed zone if anyone is standing in it, otherwise the nearest zone
+ * with someone standing (one step first; on a tie Front comes before Back), or undefined when the
+ * whole row is down. The fight and the client's forecast both use it, so the warning names the zone
+ * that is really hit.
+ */
+export function nearestLivingZone(
+  aimed: Zone,
+  hasLiving: (zone: Zone) => boolean,
+): Zone | undefined {
+  const from = ZONES.indexOf(aimed);
+  let best: Zone | undefined;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const [i, z] of ZONES.entries()) {
+    const distance = Math.abs(i - from);
+    if (distance < bestDistance && hasLiving(z)) {
+      best = z;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
