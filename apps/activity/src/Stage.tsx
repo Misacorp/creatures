@@ -25,7 +25,7 @@ import {
 } from './stage';
 import { badgeFor, unitTap, usedBadge, type Badge } from './stage-abilities';
 import { creatureInfoOf } from './creature-info';
-import { compactCount } from './number-format';
+import { compactPair } from './number-format';
 import { SmallCreature } from './SmallCreature';
 import { ElementChip } from './sprites/ElementChip';
 import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
@@ -958,7 +958,7 @@ export function Stage({
           max={hpMax}
           previous={previousHp}
           label={`${boss.name} HP: ${String(state.bossHp)} / ${String(hpMax)}`}
-          text={`${compactCount(state.bossHp)} / ${compactCount(hpMax)}`}
+          text={compactPair(state.bossHp, hpMax)}
         />
         <div class={`stage-line${strikeItem === undefined ? '' : ' has-strike'}`}>
           {forecast !== null && (

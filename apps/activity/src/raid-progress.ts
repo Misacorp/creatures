@@ -5,7 +5,7 @@
  * forecast number (the readiness band is four words).
  */
 import { speciesName } from './game';
-import { compactCount } from './number-format';
+import { compactPair } from './number-format';
 import type { TrackStep, TrackUnlock } from './progress-track';
 import {
   READINESS_BANDS,
@@ -29,7 +29,7 @@ export function rankLabel(rank: number | null): string | null {
  */
 export function bossHpWords(current: number, max: number): { text: string; label: string } {
   return {
-    text: `${compactCount(current)} / ${compactCount(max)}`,
+    text: compactPair(current, max),
     label: `Boss HP this week: ${String(current)} / ${String(max)}`,
   };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compactCount } from './number-format';
+import { compactCount, compactPair } from './number-format';
 
 describe('compactCount', () => {
   it('leaves small numbers as they are (the dungeon)', () => {
@@ -30,5 +30,19 @@ describe('compactCount', () => {
     expect(compactCount(-5)).toBe('0');
     expect(compactCount(Number.NaN)).toBe('0');
     expect(compactCount(12.9)).toBe('12');
+  });
+});
+
+describe('compactPair', () => {
+  it('writes both halves in the unit the maximum needs', () => {
+    expect(compactPair(7_000, 10_000)).toBe('7K / 10K');
+    expect(compactPair(42_023, 50_233)).toBe('42K / 50.2K');
+    expect(compactPair(400_000, 50_000_000)).toBe('0.4M / 50M');
+    expect(compactPair(49_997_944, 50_000_000)).toBe('49.9M / 50M');
+  });
+
+  it('stays plain below 10,000 (the dungeon)', () => {
+    expect(compactPair(254, 337)).toBe('254 / 337');
+    expect(compactPair(0, 9_999)).toBe('0 / 9999');
   });
 });

@@ -148,7 +148,7 @@ describe('the options of the picker', () => {
       ['a', null],
       ['d', BOARD_FULL_REASON],
     ]);
-    expect(BOARD_FULL_REASON).toBe('3 / 3 on the board, remove one first');
+    expect(BOARD_FULL_REASON).toBe('3 / 3 placed, remove one first');
   });
 
   it('uses the nickname as the name, as text', () => {

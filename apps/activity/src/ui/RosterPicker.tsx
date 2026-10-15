@@ -7,7 +7,7 @@ import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 interface RosterPickerProps {
   /** The dialog's name, which also heads it ("Choose a creature for Middle, lane 3"). */
   title: string;
-  /** One line under the title ("2 / 3 on the board"). */
+  /** One line under the title ("2 / 3 placed"). */
   status: string;
   options: readonly PickerOption[];
   /** Show each option's line about what it would do in the slot (the effect preview). */

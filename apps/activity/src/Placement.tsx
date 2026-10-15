@@ -273,7 +273,7 @@ export function Placement(props: Props) {
       {picking !== null && (
         <RosterPicker
           title={pickerTitle(placeText(picking, party.rowLength))}
-          status={`${String(placed)} / ${String(MAX_ON_BOARD)} on the board`}
+          status={`${String(placed)} / ${String(MAX_ON_BOARD)} placed`}
           options={pickerOptions({
             creatures: props.creatures,
             row: party.row,

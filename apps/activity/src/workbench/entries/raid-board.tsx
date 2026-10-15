@@ -314,7 +314,7 @@ const rosterPicker: Entry = {
   presets: [
     { name: 'Effects on ("In this slot:" line under each creature)', props: { effects: true } },
     { name: 'Effects off (names and tags only)', props: { effects: false } },
-    { name: '3 / 3 on the board (new ones disabled)', props: { placed: 3 } },
+    { name: '3 / 3 placed (new ones disabled)', props: { placed: 3 } },
     { name: 'Nothing on the board yet', props: { placed: 0 } },
     { name: 'Few creatures (two)', props: { owned: 2 } },
   ],

@@ -28,7 +28,7 @@ export const MAX_ON_BOARD: number = RULES.raid.teamSize;
 export const ON_BOARD_NOTE = 'On the board · moves here';
 
 /** Why a new creature cannot be picked when the board holds the most already. */
-export const BOARD_FULL_REASON = `${String(MAX_ON_BOARD)} / ${String(MAX_ON_BOARD)} on the board, remove one first`;
+export const BOARD_FULL_REASON = `${String(MAX_ON_BOARD)} / ${String(MAX_ON_BOARD)} placed, remove one first`;
 
 /** The creature fields the picker needs (a `Creature` of the collection has them). */
 export interface PickerCreature {
