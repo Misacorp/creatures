@@ -16,6 +16,30 @@
         "op": "hit_zone",
         "zone": "front",
         "power": 8000
+      },
+      {
+        "id": "riptide",
+        "name": "Riptide",
+        "trigger": {
+          "every": 4
+        },
+        "op": "lance",
+        "lane": "random",
+        "power": 20000,
+        "falloffBp": 8000
+      },
+      {
+        "id": "great-wave",
+        "name": "Great Wave",
+        "trigger": {
+          "every": 5
+        },
+        "op": "charge",
+        "then": {
+          "op": "sweep",
+          "rows": ["middle", "back", "front"],
+          "power": 32000
+        }
       }
     ],
     "adaptation": "resist-top-reaction",
@@ -24,6 +48,10 @@
     "hpExponent": {
       "num": 107,
       "den": 100
+    },
+    "retreat": {
+      "phase1": "Tidal Colossus sinks beneath the waves. It will rise again in Phase 2.",
+      "phase2": "Tidal Colossus sinks back into the deep. Face it in the finale on Sunday."
     }
   },
   {
@@ -41,6 +69,27 @@
           "eachRound": true
         },
         "op": "reflect_first_reaction"
+      },
+      {
+        "id": "cinder-fall",
+        "name": "Cinder Fall",
+        "trigger": {
+          "every": 2
+        },
+        "op": "barrage",
+        "shells": { "min": 2, "max": 6, "shareBp": 1200 },
+        "power": 13000
+      },
+      {
+        "id": "coil-crush",
+        "name": "Coil Crush",
+        "trigger": {
+          "every": 4
+        },
+        "op": "slam",
+        "aim": "front",
+        "power": 31000,
+        "splashBp": 4500
       }
     ],
     "adaptation": "resist-top-element",
@@ -49,6 +98,10 @@
     "hpExponent": {
       "num": 123,
       "den": 100
+    },
+    "retreat": {
+      "phase1": "Cinder Wyrm coils down into the cooling stone. It will return in Phase 2.",
+      "phase2": "Cinder Wyrm slips back into the forge's deep heat. Face it in the finale on Sunday."
     }
   },
   {
@@ -67,6 +120,29 @@
         },
         "op": "silence_ends",
         "turns": 1
+      },
+      {
+        "id": "briar-pincer",
+        "name": "Briar Pincer",
+        "trigger": {
+          "every": 3
+        },
+        "op": "pincer",
+        "scope": "rows",
+        "power": 22000
+      },
+      {
+        "id": "seed-burst",
+        "name": "Seed Burst",
+        "trigger": {
+          "every": 5
+        },
+        "op": "charge",
+        "then": {
+          "op": "barrage",
+          "shells": { "min": 3, "max": 6, "shareBp": 1500 },
+          "power": 36000
+        }
       }
     ],
     "adaptation": "resist-top-reaction",
@@ -75,6 +151,10 @@
     "hpExponent": {
       "num": 104,
       "den": 100
+    },
+    "retreat": {
+      "phase1": "Thornmother draws her vines back into the Hollow. She will return in Phase 2.",
+      "phase2": "Thornmother sinks her roots back into the Hollow. Face her in the finale on Sunday."
     }
   },
   {
@@ -92,7 +172,20 @@
           "eachRound": true
         },
         "op": "strike_highest_atk",
-        "power": 12000
+        "power": 17000,
+        "jumps": 2,
+        "decayBp": 5500
+      },
+      {
+        "id": "thunderclap",
+        "name": "Thunderclap",
+        "trigger": {
+          "every": 4
+        },
+        "op": "slam",
+        "aim": "strongest",
+        "power": 34000,
+        "splashBp": 4500
       }
     ],
     "adaptation": "resist-top-element",
@@ -101,6 +194,10 @@
     "hpExponent": {
       "num": 115,
       "den": 100
+    },
+    "retreat": {
+      "phase1": "Storm Sovereign drifts up into the clouds. It will return in Phase 2.",
+      "phase2": "Storm Sovereign rolls off over the ridge. Face it in the finale on Sunday."
     }
   }
 ]

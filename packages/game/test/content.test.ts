@@ -6,7 +6,10 @@ import {
   content,
   loadContent,
   upgradeProblem,
+  dungeonContent,
+  PATTERN_OPS,
   type ContentPack,
+  type Gimmick,
 } from '../src/index';
 import creaturesJson from '../src/content/data/creatures.json';
 import elementsJson from '../src/content/data/elements.json';
@@ -326,12 +329,56 @@ describe('raid content', () => {
     expect(
       content.bosses.map((b) => [b.id, b.element, b.turnOrder, b.gimmicks.map((g) => g.op)]),
     ).toEqual([
-      ['tidal-colossus', 'tide', 'left_to_right', ['hit_zone']],
-      ['cinder-wyrm', 'ember', 'speed', ['reflect_first_reaction']],
-      ['thornmother', 'grove', 'right_to_left', ['silence_ends']],
-      ['storm-sovereign', 'spark', 'left_to_right', ['strike_highest_atk']],
+      ['tidal-colossus', 'tide', 'left_to_right', ['hit_zone', 'lance', 'charge']],
+      ['cinder-wyrm', 'ember', 'speed', ['reflect_first_reaction', 'barrage', 'slam']],
+      ['thornmother', 'grove', 'right_to_left', ['silence_ends', 'pincer', 'charge']],
+      ['storm-sovereign', 'spark', 'left_to_right', ['strike_highest_atk', 'slam']],
     ]);
     for (const b of content.bosses) expect(b.finaleRounds).toBe(12);
+  });
+
+  // docs/design/attack-patterns.md 3.1: a round stays readable and round 1 is calm.
+  const damaging = (g: Gimmick) => g.op !== 'reflect_first_reaction' && g.op !== 'silence_ends';
+  const firesIn = (g: Gimmick, round: number) =>
+    'every' in g.trigger ? round % g.trigger.every === 0 : true;
+  const fighters = [
+    ...content.bosses.map((b) => ({ id: b.id, rounds: b.finaleRounds, gimmicks: b.gimmicks })),
+    ...dungeonContent.foes.map((f) => ({
+      id: f.id,
+      rounds: f.rounds,
+      gimmicks: f.signature === undefined ? f.gimmicks : [...f.gimmicks, f.signature],
+    })),
+  ];
+
+  it('never has more than two damaging moves in one round', () => {
+    for (const f of fighters) {
+      for (let r = 1; r <= f.rounds; r++) {
+        const n = f.gimmicks.filter((g) => damaging(g) && firesIn(g, r)).length;
+        expect(n, `${f.id} round ${r}`).toBeLessThanOrEqual(2);
+      }
+    }
+  });
+
+  it('never lands an attack pattern in round 1, and a charge lands after its announcement', () => {
+    for (const f of fighters) {
+      for (const g of f.gimmicks) {
+        if (!(PATTERN_OPS as readonly string[]).includes(g.op)) continue;
+        expect('every' in g.trigger, `${f.id} ${g.id}`).toBe(true);
+        if ('every' in g.trigger)
+          expect(g.trigger.every, `${f.id} ${g.id}`).toBeGreaterThanOrEqual(2);
+      }
+    }
+  });
+
+  it('gives landmark signatures to room bosses only, as a charge', () => {
+    for (const f of dungeonContent.foes) {
+      if (f.signature === undefined) continue;
+      expect(f.kind, f.id).toBe('boss');
+      expect(f.signature.op, f.id).toBe('charge');
+    }
+    expect(dungeonContent.foes.filter((f) => f.kind === 'boss').every((f) => f.signature)).toBe(
+      true,
+    );
   });
 
   it('has the four basic abilities and two adaptation rules', () => {

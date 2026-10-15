@@ -40,10 +40,10 @@
       {
         "id": "flare-up",
         "name": "Flare Up",
-        "trigger": { "every": 3 },
-        "op": "hit_zone",
-        "zone": "back",
-        "power": 9000
+        "trigger": { "every": 2 },
+        "op": "barrage",
+        "shells": { "min": 1, "max": 1, "shareBp": 1 },
+        "power": 10000
       }
     ],
     "rounds": 6,
@@ -91,8 +91,10 @@
         "id": "root-grab",
         "name": "Root Grab",
         "trigger": { "every": 2 },
-        "op": "strike_highest_atk",
-        "power": 7000
+        "op": "slam",
+        "aim": "strongest",
+        "power": 7500,
+        "splashBp": 4000
       }
     ],
     "rounds": 6,
@@ -111,7 +113,9 @@
         "name": "Zap Dive",
         "trigger": { "every": 3 },
         "op": "strike_highest_atk",
-        "power": 9000
+        "power": 8500,
+        "jumps": 1,
+        "decayBp": 6000
       }
     ],
     "rounds": 6,
@@ -129,9 +133,9 @@
         "id": "buzz-cloud",
         "name": "Buzz Cloud",
         "trigger": { "every": 2 },
-        "op": "hit_zone",
-        "zone": "middle",
-        "power": 6000
+        "op": "barrage",
+        "shells": { "min": 1, "max": 1, "shareBp": 1 },
+        "power": 7000
       }
     ],
     "rounds": 6,
@@ -149,11 +153,22 @@
         "id": "flood-gate",
         "name": "Flood Gate",
         "trigger": { "every": 3 },
-        "op": "hit_zone",
-        "zone": "front",
-        "power": 10000
+        "op": "sweep",
+        "rows": ["all"],
+        "power": 5000
       }
     ],
+    "signature": {
+      "id": "sluice-surge",
+      "name": "Sluice Surge",
+      "trigger": { "every": 4 },
+      "op": "charge",
+      "then": {
+        "op": "sweep",
+        "rows": ["all"],
+        "power": 9500
+      }
+    },
     "rounds": 8,
     "flavor": "Guards a sunken door nobody has opened. It opens its own gates for you instead."
   },
@@ -170,8 +185,29 @@
         "name": "Molten Shell",
         "trigger": { "eachRound": true },
         "op": "reflect_first_reaction"
+      },
+      {
+        "id": "anvil-fall",
+        "name": "Anvil Fall",
+        "trigger": { "every": 3 },
+        "op": "slam",
+        "aim": "left",
+        "power": 14500,
+        "splashBp": 4500
       }
     ],
+    "signature": {
+      "id": "slag-spill",
+      "name": "Slag Spill",
+      "trigger": { "every": 4 },
+      "op": "charge",
+      "then": {
+        "op": "slam",
+        "aim": "strongest",
+        "power": 24000,
+        "splashBp": 5000
+      }
+    },
     "rounds": 8,
     "flavor": "King of a cooled forge, wearing a crown of slag. It turns your best trick back on you."
   },
@@ -193,12 +229,23 @@
       {
         "id": "thorn-rain",
         "name": "Thorn Rain",
-        "trigger": { "every": 4 },
-        "op": "hit_zone",
-        "zone": "back",
-        "power": 9000
+        "trigger": { "every": 3 },
+        "op": "barrage",
+        "shells": { "min": 2, "max": 2, "shareBp": 1 },
+        "power": 7500
       }
     ],
+    "signature": {
+      "id": "briar-cage",
+      "name": "Briar Cage",
+      "trigger": { "every": 4 },
+      "op": "charge",
+      "then": {
+        "op": "pincer",
+        "scope": "row",
+        "power": 13000
+      }
+    },
     "rounds": 8,
     "flavor": "The old hedge that all the little hedges follow. Keep your right flank ready."
   },
@@ -215,9 +262,23 @@
         "name": "Arc Lash",
         "trigger": { "eachRound": true },
         "op": "strike_highest_atk",
-        "power": 7000
+        "power": 6000,
+        "jumps": 1,
+        "decayBp": 6000
       }
     ],
+    "signature": {
+      "id": "overload",
+      "name": "Overload",
+      "trigger": { "every": 4 },
+      "op": "charge",
+      "then": {
+        "op": "slam",
+        "aim": "strongest",
+        "power": 22000,
+        "splashBp": 5000
+      }
+    },
     "rounds": 8,
     "flavor": "A bad-tempered tangle of copper and lightning. It always goes for your best fighter."
   }
