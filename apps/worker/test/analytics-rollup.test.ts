@@ -112,6 +112,7 @@ describe('rollDay', () => {
       log(ctx, t, { kind: 'session_start', returning: false }, ALICE);
       log(ctx, t + 5, { kind: 'session_start', returning: true }, BOB);
       log(ctx, t + 10, { kind: 'session_start', returning: true }, BOB);
+      log(ctx, t + 15, { kind: 'daily_allowance', amount: 25 }, ALICE);
       log(ctx, t + 20, SEND, ALICE);
       log(ctx, t + 21, SEND, ALICE);
       log(
@@ -219,6 +220,7 @@ describe('rollDay', () => {
       expect(value(list, 'users', { feature: 'expeditions' })).toBe(1);
       expect(value(list, 'users', { feature: 'workshop' })).toBe(1);
       expect(value(list, 'rolled')).toBe(1);
+      expect(value(list, 'economy.allowance')).toBe(1);
 
       expect(value(list, 'expedition.send', { destination: 'unknown', length: 'short' })).toBe(2);
       expect(value(list, 'explorer.send_rank', { rank: 2 })).toBe(2);

@@ -618,9 +618,10 @@
   {
     "id": "bait",
     "title": "Bait",
-    "short": "Currency from leets in Discord.",
+    "short": "Currency from a daily allowance and from leets.",
     "lines": [
-      "Your leets in Discord turn into Bait.",
+      "Open the game each day for an allowance of 25 Bait. The day starts at 13:37; a missed day is not paid later.",
+      "Leeting in Discord adds a bonus of 15 to 32 Bait, more when more players leet that day.",
       "Spend it to train creatures and fund expeditions.",
       "Extra copies of a fully fused creature turn into Bait."
     ],

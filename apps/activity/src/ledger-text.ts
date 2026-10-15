@@ -20,6 +20,7 @@ export function describeEntry(entry: LedgerEntry): string {
       ? `${head} · solo leet on ${meta['date']}`
       : `${head} · leet on ${meta['date']} with ${String(meta['participants'])} players`;
   }
+  if (entry.source === 'allowance') return `${head} · daily allowance`;
   if (entry.source === 'gear') return `${head} · gear upgrade`;
   if (entry.source === 'rank_gift') return `${head} · explorer rank gift`;
   return `${head} · ${entry.source}`;

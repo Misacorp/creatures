@@ -52,12 +52,12 @@ A server is a mix: default 1 min-maxer, 3 engaged, 3 regular, 2 drop-in; `--serv
 
 ## Income models
 
-Income is a pluggable rule (`income.ts`, `--income`, `EconomyOptions.income`), so the sims can compare today's with the planned rework. Both read their numbers from the shipped rules.
+Income is a pluggable rule (`income.ts`, `--income`, `EconomyOptions.income`), so the sims can compare the shipped income with the old one. Both read their numbers from the shipped rules.
 
-- **`current`** (the default of the old `pnpm sim`): a leet pays `baitForDay(n)` Bait to each of the n players who leeted that day (`apps/worker/src/economy.ts`). No income without a leet.
-- **`allowance`** (the default of `pnpm sim:journey`): every player who opens the game that day gets `dailyAllowance()` and every leeter gets `leetBonusForDay(n)` on top (`packages/game/src/rules/income.ts`, `RULES.income`). Login days and leet days are separate in the profiles, so a player who opens the game daily but leets twice a week earns the allowance daily and the bonus twice.
+- **`allowance`** (the shipped income, and the default of both `pnpm sim` and `pnpm sim:journey`): every player who opens the game that day gets `dailyAllowance()` (25 Bait) and every leeter gets `leetBonusForDay(n)` on top (15 for 1 or 2 leeters, up to 32 at 10 or more; `packages/game/src/rules/income.ts`, `RULES.income`). Login days and leet days are separate in the profiles, so a player who opens the game daily but leets twice a week earns the allowance daily and the bonus twice.
+- **`current`** (the income before the allowance, kept selectable for comparisons): a leet pays `baitForDay(n)` Bait to each of the n players who leeted that day (`apps/worker/src/economy.ts`, 35 to 70 Bait). No income without a leet. The "today is unchanged" test is pinned to this model.
 
-The lead flips the default of the old sim when the allowance ships; the journey runs pair the two models on the same seeds (same servers, same dice streams until the Bait differs).
+The journey runs pair the two models on the same seeds (same servers, same dice streams until the Bait differs).
 
 ## The daily loop
 
