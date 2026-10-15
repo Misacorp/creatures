@@ -8,6 +8,7 @@ import {
   scaleMix,
 } from './archetypes';
 import { runEconomy, type EconomyResult } from './economy';
+import type { IncomeModelId } from './income';
 import { LONG_RUN_GROUPS, LONG_RUN_WEEKS } from './ladder';
 import { TARGETS, evaluateTargets, type TargetResult } from './targets';
 import { ROLE_STUDY_RUNS_FACTOR, runRoleStudy } from './roles';
@@ -37,6 +38,8 @@ export interface RunSettings {
   tripLongSims: number;
   /** Player counts of the raid sweep. */
   counts: number[];
+  /** How Bait comes in (`income.ts`). Absent: the allowance, the shipped income. */
+  income?: IncomeModelId;
 }
 
 export const PITY_WEEKS = 20;
@@ -46,7 +49,7 @@ export const SWEEP_COUNTS = [1, 5, 10, 15];
 
 export function defaultSettings(
   mode: 'full' | 'quick',
-  overrides: { seed?: string; weeks?: number } = {},
+  overrides: { seed?: string; weeks?: number; income?: IncomeModelId } = {},
 ): RunSettings {
   const quick = mode === 'quick';
   return {
@@ -59,6 +62,7 @@ export function defaultSettings(
     longRunSims: quick ? 6 : 40,
     tripLongSims: quick ? 2 : 8,
     counts: [...SWEEP_COUNTS],
+    ...(overrides.income === undefined ? {} : { income: overrides.income }),
   };
 }
 
@@ -90,6 +94,7 @@ export function runEconomies(
   /** The default server's sims again, with the same seeds, gear and no dungeon. */
   noDungeonSims: EconomyResult[];
 } {
+  const income = settings.income ?? 'allowance';
   const snapshots = new Map<number, EconomyResult['snapshots']>();
   let defaultSims: EconomyResult[] = [];
   let baselineSims: EconomyResult[] = [];
@@ -101,6 +106,7 @@ export function runEconomies(
     for (let k = 0; k < settings.economySims; k++) {
       sims.push(
         runEconomy({
+          income,
           seed: `${settings.seed}:econ:${count}:${k}`,
           weeks: settings.weeks,
           mix,
@@ -116,6 +122,7 @@ export function runEconomies(
       defaultSims = sims;
       baselineSims = (options.baseline === false ? [] : sims).map((_, k) =>
         runEconomy({
+          income,
           seed: `${settings.seed}:econ:${count}:${k}`,
           weeks: settings.weeks,
           mix,
@@ -125,6 +132,7 @@ export function runEconomies(
       );
       noDungeonSims = (options.baseline === false ? [] : sims).map((_, k) =>
         runEconomy({
+          income,
           seed: `${settings.seed}:econ:${count}:${k}`,
           weeks: settings.weeks,
           mix,
@@ -141,12 +149,14 @@ export function runSimulation(settings: RunSettings): RunOutput {
   if (!Number.isInteger(settings.weeks) || settings.weeks < 1 || settings.weeks > 104) {
     throw new RangeError('weeks must be an integer from 1 to 104');
   }
+  const income = settings.income ?? 'allowance';
   const { snapshots, defaultSims, baselineSims, noDungeonSims } = runEconomies(settings);
 
   const pitySims: EconomyResult[] = [];
   for (let k = 0; k < settings.pitySims; k++) {
     pitySims.push(
       runEconomy({
+        income,
         seed: `${settings.seed}:pity:${k}`,
         weeks: PITY_WEEKS,
         mix: DEFAULT_MIX,
@@ -159,6 +169,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
     id: g.id,
     sims: Array.from({ length: settings.longRunSims }, (_, k) =>
       runEconomy({
+        income,
         seed: `${settings.seed}:long:${g.count}:${k}`,
         weeks: LONG_RUN_WEEKS,
         mix: g.count === DEFAULT_SERVER_SIZE ? DEFAULT_MIX : scaleMix(g.count),
@@ -171,6 +182,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
   for (let k = 0; k < settings.tripLongSims; k++) {
     tripLongSims.push(
       runEconomy({
+        income,
         seed: `${settings.seed}:trips-long:${DEFAULT_SERVER_SIZE}:${k}`,
         weeks: TRIP_LONG_WEEKS,
         mix: DEFAULT_MIX,

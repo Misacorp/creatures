@@ -65,7 +65,7 @@ export interface EconomyOptions {
   mix?: ArchetypeMix;
   /** Players by profile (`profiles.ts`), in order: the journey simulator's way to set up a server. */
   roster?: readonly RosterEntry[];
-  /** How Bait comes in (`income.ts`). Default `current`: Bait only from a leet, as the Worker pays it today. */
+  /** How Bait comes in (`income.ts`). Default `allowance`, the shipped income; `current` is the old leet-only pay. */
   income?: IncomeModelId;
   /** Called while the economy plays, for the journey log (`journey.ts`); it must not change the players. */
   observer?: EconomyObserver;
@@ -615,7 +615,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
   const dungeonPercent = behaviour.dungeonPercent ?? 100;
   const takesPart = (percent: number): boolean =>
     percent >= 100 || chance(rng.participation, percent, 100);
-  const incomeModel = options.income ?? 'current';
+  const incomeModel = options.income ?? 'allowance';
   const players = createPlayers(options);
   const history = new Map<string, PlayerHistory>(
     players.map((p) => [

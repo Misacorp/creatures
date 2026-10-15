@@ -6,7 +6,9 @@ import { TINY } from './helpers';
 /**
  * A fingerprint of today's simulator results, used to prove that the journey work (profiles, income
  * models) leaves the existing `pnpm sim` numbers as they were. The digests in
- * `fixtures/legacy-digest.json` were taken from the code before profiles existed (commit 3f31620).
+ * `fixtures/legacy-digest.json` were taken from the code before profiles existed (commit 3f31620), when
+ * the only income was the leet pay: every run here asks for the `current` income model, which is no
+ * longer the default.
  * Fields that only exist since (a player's `profile`) are left out of the fingerprint.
  */
 
@@ -45,6 +47,7 @@ export function legacyDigest(): Record<string, DigestEntry> {
       seed: 'golden-a',
       weeks: 8,
       mix: DEFAULT_MIX,
+      income: 'current' as const,
       snapshotWeeks: [4, 8],
     },
     {
@@ -52,6 +55,7 @@ export function legacyDigest(): Record<string, DigestEntry> {
       seed: 'golden-b',
       weeks: 6,
       mix: scaleMix(5),
+      income: 'current' as const,
       snapshotWeeks: [],
       gear: false,
     },
@@ -60,6 +64,7 @@ export function legacyDigest(): Record<string, DigestEntry> {
       seed: 'golden-c',
       weeks: 5,
       mix: DEFAULT_MIX,
+      income: 'current' as const,
       snapshotWeeks: [3],
       behaviour: {
         tripPercent: 60,
@@ -73,6 +78,7 @@ export function legacyDigest(): Record<string, DigestEntry> {
       seed: 'golden-d',
       weeks: 6,
       mix: scaleMix(15),
+      income: 'current' as const,
       snapshotWeeks: [],
       dungeon: false,
     },
@@ -86,7 +92,7 @@ export function legacyDigest(): Record<string, DigestEntry> {
       firstPlayerBaitEarned: result.players[0]?.weeks.reduce((n, w) => n + w.baitEarned, 0) ?? 0,
     });
   }
-  const run = runSimulation(TINY);
+  const run = runSimulation({ ...TINY, income: 'current' });
   out['run-tiny'] = entryOf(
     { evaluation: run.evaluation, metrics: run.analysis.metrics },
     { targets: run.evaluation.length },

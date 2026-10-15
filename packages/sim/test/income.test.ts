@@ -79,9 +79,9 @@ describe('income in the economy', () => {
     expect(weeklyBait(profile, 'allowance')).toEqual([3, 3, 3].map((d) => d * dailyAllowance()));
   });
 
-  it('the default income is the current one', () => {
+  it('the default income is the allowance, the shipped one', () => {
     const profile = solo({ loginDays: 7, leetDays: 2 });
-    const run = (income?: 'current'): number[] =>
+    const run = (income?: 'current' | 'allowance'): number[] =>
       (
         runEconomy({
           seed: 'income',
@@ -91,6 +91,7 @@ describe('income in the economy', () => {
           ...(income === undefined ? {} : { income }),
         }).players[0]?.weeks ?? []
       ).map((w) => w.baitEarned);
-    expect(run()).toEqual(run('current'));
+    expect(run()).toEqual(run('allowance'));
+    expect(run()).not.toEqual(run('current'));
   });
 });
