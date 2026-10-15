@@ -1701,11 +1701,13 @@ describe('the API contract with the client', () => {
     'bossHpStart',
     'cleared',
     'damage',
+    'enraged',
     'essence',
     'festivalGrant',
     'phase',
     'rankChange',
     'reactions',
+    'retreated',
     'rounds',
     'top',
   ];

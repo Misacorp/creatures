@@ -76,7 +76,7 @@ export function buildRun(
         : slot;
     }),
   );
-  const plans = rollRooms(createSeededRng(`${seed}:rooms`), modifiers);
+  const plans = rollRooms(createSeededRng(`${seed}:rooms`), modifiers, depth);
   const rooms: DungeonRoomSpec[] = plans.map((plan) => {
     const foe = dungeonFoe(plan.foeId);
     const modifier = roomModifier(plan.modifierId);

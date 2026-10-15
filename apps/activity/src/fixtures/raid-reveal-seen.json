@@ -13,7 +13,8 @@
         "name": "Lightning Rod"
       }
     ],
-    "finaleRounds": 12
+    "finaleRounds": 12,
+    "retreat": null
   },
   "rank": 3,
   "effectiveRank": 3,
@@ -203,6 +204,8 @@
         "phase": "phase1",
         "at": 1800100800000,
         "cleared": true,
+        "retreated": false,
+        "enraged": false,
         "rounds": 10,
         "bossHpMax": 22316,
         "bossHpStart": 22316,
@@ -231,6 +234,8 @@
         "phase": "phase2",
         "at": 1800100800000,
         "cleared": true,
+        "retreated": false,
+        "enraged": false,
         "rounds": 10,
         "bossHpMax": 22316,
         "bossHpStart": 12032,
@@ -259,6 +264,8 @@
         "phase": "finale",
         "at": 1800208800000,
         "cleared": true,
+        "retreated": false,
+        "enraged": false,
         "rounds": 1,
         "bossHpMax": 50000000,
         "bossHpStart": 1,

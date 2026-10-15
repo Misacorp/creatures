@@ -9,7 +9,9 @@ import {
   dungeonPayout,
   dungeonRowOrder,
   depthFactorBp,
+  int,
   isLandmark,
+  landmarkBossId,
   loadDungeon,
   roomModifier,
   roomPlanValid,
@@ -325,7 +327,7 @@ describe('the day and its rooms', () => {
   it('fills the rooms with different normal foes and then a room boss, with the day modifiers', () => {
     const modifiers = rollDayModifiers(createSeededRng('mods'));
     for (let i = 0; i < 30; i++) {
-      const plan = rollRooms(createSeededRng(`run-${String(i)}`), modifiers);
+      const plan = rollRooms(createSeededRng(`run-${String(i)}`), modifiers, 1);
       expect(plan).toHaveLength(rooms);
       expect(plan.map((p) => p.index)).toEqual([0, 1, 2]);
       expect(plan.map((p) => p.kind)).toEqual(['foe', 'foe', 'boss']);
@@ -333,13 +335,13 @@ describe('the day and its rooms', () => {
       expect(plan.map((p) => p.modifierId)).toEqual(modifiers);
       for (const room of plan) expect(roomPlanValid(room)).toBe(true);
     }
-    expect(rollRooms(createSeededRng('same'), modifiers)).toEqual(
-      rollRooms(createSeededRng('same'), modifiers),
+    expect(rollRooms(createSeededRng('same'), modifiers, 3)).toEqual(
+      rollRooms(createSeededRng('same'), modifiers, 3),
     );
     const foeSets = new Set<string>();
     for (let i = 0; i < 30; i++) {
       foeSets.add(
-        rollRooms(createSeededRng(`vary-${String(i)}`), modifiers)
+        rollRooms(createSeededRng(`vary-${String(i)}`), modifiers, 1)
           .map((p) => p.foeId)
           .join(','),
       );
@@ -347,8 +349,63 @@ describe('the day and its rooms', () => {
     expect(foeSets.size).toBeGreaterThan(5);
   });
 
+  it('keeps the draw of every non-landmark day exactly as it was', () => {
+    // The rooms as `rollRooms` drew them before landmarks: shuffle the normal foes, then one boss die.
+    const legacy = (seed: string, modifiers: readonly string[]): string[] => {
+      const rng = createSeededRng(seed);
+      const normal = dungeonContent.foes.filter((f) => f.kind === 'foe');
+      for (let i = normal.length - 1; i > 0; i--) {
+        const j = int(rng, i + 1);
+        [normal[i], normal[j]] = [normal[j]!, normal[i]!];
+      }
+      const bosses = dungeonContent.foes.filter((f) => f.kind === 'boss');
+      const boss = bosses[int(rng, bosses.length)]!;
+      return [normal[0]!.id, normal[1]!.id, boss.id].slice(0, modifiers.length);
+    };
+    const modifiers = rollDayModifiers(createSeededRng('mods'));
+    for (let i = 0; i < 40; i++) {
+      const seed = `legacy-${String(i)}`;
+      for (const depth of [1, 2, 6, 8, 13, 15]) {
+        expect(isLandmark(depth)).toBe(false);
+        expect(rollRooms(createSeededRng(seed), modifiers, depth).map((p) => p.foeId)).toEqual(
+          legacy(seed, modifiers),
+        );
+      }
+    }
+  });
+
+  it('fixes the room boss of a landmark depth, in content order and round again', () => {
+    const bosses = dungeonContent.foes.filter((f) => f.kind === 'boss').map((f) => f.id);
+    const every = RULES.dungeon.landmarkEvery;
+    const modifiers = rollDayModifiers(createSeededRng('mods'));
+    expect(landmarkBossId(every)).toBe(bosses[0]);
+    expect(landmarkBossId(2 * every)).toBe(bosses[1]);
+    expect(landmarkBossId((bosses.length + 1) * every)).toBe(bosses[0]);
+    expect(landmarkBossId(every + 1)).toBeNull();
+    expect(landmarkBossId(0)).toBeNull();
+    for (let k = 1; k <= bosses.length * 2 + 1; k++) {
+      const expected = bosses[(k - 1) % bosses.length];
+      expect(landmarkBossId(k * every)).toBe(expected);
+      // Whatever the seed, the landmark's boss room is that boss; the other rooms are still drawn.
+      for (let i = 0; i < 10; i++) {
+        const plan = rollRooms(
+          createSeededRng(`lm-${String(k)}-${String(i)}`),
+          modifiers,
+          k * every,
+        );
+        expect(plan[rooms - 1]?.foeId).toBe(expected);
+        expect(plan.map((p) => p.kind)).toEqual(['foe', 'foe', 'boss']);
+        expect(plan.map((p) => p.foeId).slice(0, 2)).toEqual(
+          rollRooms(createSeededRng(`lm-${String(k)}-${String(i)}`), modifiers, 1)
+            .map((p) => p.foeId)
+            .slice(0, 2),
+        );
+      }
+    }
+  });
+
   it('needs a modifier for every room, and notices a plan with an unknown id', () => {
-    expect(() => rollRooms(createSeededRng('x'), ['flooded'])).toThrow(RangeError);
+    expect(() => rollRooms(createSeededRng('x'), ['flooded'], 1)).toThrow(RangeError);
     expect(roomPlanValid({ index: 0, kind: 'foe', foeId: 'nobody', modifierId: 'flooded' })).toBe(
       false,
     );

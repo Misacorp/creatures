@@ -236,6 +236,8 @@ export function queuePhasePost(sql: SqlStorage, src: PhasePostSource): void {
       bossName: input.boss.name,
       party: count(sql, 'raid_parties', src.weekId) > 1 ? src.party : null,
       cleared: summary.cleared,
+      retreated: summary.retreated === true,
+      enraged: summary.enraged === true,
       hpLeftPercent:
         summary.bossHpMax <= 0
           ? 0

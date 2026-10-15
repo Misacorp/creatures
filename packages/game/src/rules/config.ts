@@ -256,10 +256,11 @@ export const RULES = {
      *   this much. A phase's target is the HP it had to take off the pool (its clear threshold,
      *   `clearAtLossBp` of the maximum); the finale's target is the whole pool, so a finale is close
      *   when the boss kept at most this share of its maximum HP.
-     * - `spareBp`: a cleared stage is close when it had at most this much to spare. A phase's spare
-     *   is the HP taken off beyond its threshold; a finale's spare is the rounds left over (the boss
-     *   fell with at most this share of the finale's rounds still to play), because a win always
-     *   empties the pool.
+     * - `spareBp`: a cleared stage is close when it had at most this much to spare, counted in
+     *   rounds left over: the boss retreated at its floor (a phase) or fell (the finale) with at most
+     *   this share of the stage's rounds still to play. A phase can no longer have HP to spare (the
+     *   pool cannot go below its floor) and a finale win always empties the pool, so rounds are the
+     *   only spare there is; a finale won in enrage rounds has none left and is close.
      */
     closeCall: { missBp: 1_000, spareBp: 1_000 },
     /** Most players in one party; a bigger roster is split into balanced parties. */

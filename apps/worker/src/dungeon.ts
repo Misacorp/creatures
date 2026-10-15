@@ -28,6 +28,7 @@ import {
   dungeonFoe,
   dungeonPayout,
   isLandmark,
+  landmarkBossId,
   rollDungeonLoot,
   rollDayModifiers,
   rollRooms,
@@ -159,6 +160,11 @@ export interface DungeonToday {
   /** The depth the next run fights at. */
   depth: number;
   landmark: boolean;
+  /**
+   * Set when the next run is a landmark (`landmark` is true): the depth and the content id of the
+   * room boss it will fight, which is fixed at landmark depths. Null on any other depth.
+   */
+  landmarkBoss: { depth: number; foeId: string } | null;
   /** Days in a row, as of now: 0 when yesterday was missed and nothing has run today. */
   streak: number;
   /** The modifiers of the day, one per room. Safe to show: they come from their own seed. */
@@ -349,6 +355,11 @@ export class Dungeon {
     return null;
   }
 
+  private landmarkBoss(depth: number): DungeonToday['landmarkBoss'] {
+    const foeId = landmarkBossId(depth);
+    return foeId === null ? null : { depth, foeId };
+  }
+
   private modifierViews(ids: readonly string[]): DungeonModifierView[] {
     return ids.map((id, room) => {
       const m = roomModifier(id);
@@ -404,6 +415,7 @@ export class Dungeon {
       resetsAt: gameDayEnd(day, tz, RULES.daily.reset),
       depth: progress.depth,
       landmark: isLandmark(progress.depth),
+      landmarkBoss: this.landmarkBoss(progress.depth),
       streak: alive ? progress.streak : 0,
       modifiers: this.modifierViews(this.modifierIds(day)),
       attemptsToday: runs.length,
@@ -530,7 +542,7 @@ export class Dungeon {
     // --- The seed is drawn now, and the rooms and the fights follow from it ---
     const seed = drawSeed(this.deps.rng);
     const depth = progress.depth;
-    const plans = rollRooms(createSeededRng(`${seed}:rooms`), this.modifierIds(day));
+    const plans = rollRooms(createSeededRng(`${seed}:rooms`), this.modifierIds(day), depth);
     const rooms: DungeonRoomSpec[] = plans.map((plan) => {
       const foe = dungeonFoe(plan.foeId);
       const modifier = roomModifier(plan.modifierId);

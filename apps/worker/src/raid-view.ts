@@ -24,6 +24,7 @@ import {
   basicKey,
   bossFor,
   creatureKey,
+  outcomeFlags,
   type StoredSummary,
 } from './raid-resolve';
 import { latestReveal, totalEssenceOf, type RevealView } from './raid-reveal';
@@ -117,6 +118,10 @@ export interface PhaseResultView {
   phase: RaidPhase;
   at: number;
   cleared: boolean;
+  /** The boss reached the phase floor and retreated (a cleared Phase 1 or 2). False for older results. */
+  retreated: boolean;
+  /** The finale went into enrage rounds. False for older results. */
+  enraged: boolean;
   rounds: number;
   bossHpMax: number;
   bossHpStart: number;
@@ -146,6 +151,11 @@ export interface RaidView {
     turnOrder: string;
     gimmicks: { id: string; name: string }[];
     finaleRounds: number;
+    /**
+     * The boss's own lines for the moment it retreats at a phase floor; null when it has none (the
+     * client then uses its shared line). Plain text.
+     */
+    retreat: { phase1: string; phase2: string } | null;
   };
   /**
    * The server's Boss Rank this week (what rewards follow); null for a week that was already open
@@ -389,6 +399,7 @@ export function buildRaidView(
       turnOrder: boss.turnOrder,
       gimmicks: boss.gimmicks.map((g) => ({ id: g.id, name: g.name })),
       finaleRounds: boss.finaleRounds,
+      retreat: boss.retreat === undefined ? null : { ...boss.retreat },
     },
     rank: progression?.rank ?? null,
     effectiveRank: progression?.effectiveRank ?? null,
@@ -451,6 +462,8 @@ function resultView(
     phase,
     at,
     cleared: summary.cleared,
+    retreated: summary.retreated === true,
+    enraged: summary.enraged === true,
     rounds: summary.rounds,
     bossHpMax: summary.bossHpMax,
     bossHpStart: summary.bossHpStart,
@@ -478,9 +491,13 @@ export interface ReplayView {
   phase: RaidPhase;
   seed: string;
   at: number;
-  boss: { id: string; name: string };
+  boss: { id: string; name: string; retreat: { phase1: string; phase2: string } | null };
   rounds: number;
   cleared: boolean;
+  /** The boss reached the phase floor and retreated. False for a fight stored before phase floors. */
+  retreated: boolean;
+  /** Enrage rounds were played. False for a fight stored before enrage. */
+  enraged: boolean;
   bossHpMax: number;
   bossHpStart: number;
   bossHpEnd: number;
@@ -537,9 +554,14 @@ export function buildReplayView(
     phase,
     seed: row.seed,
     at: row.created_at,
-    boss: { id: input.boss.id, name: input.boss.name },
+    boss: {
+      id: input.boss.id,
+      name: input.boss.name,
+      retreat: input.boss.retreat === undefined ? null : { ...input.boss.retreat },
+    },
     rounds: result.rounds,
     cleared: result.cleared,
+    ...outcomeFlags(result),
     bossHpMax: summary.bossHpMax,
     bossHpStart: result.bossHpStart,
     bossHpEnd: result.bossHpEnd,

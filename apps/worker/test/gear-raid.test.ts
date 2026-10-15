@@ -191,7 +191,8 @@ describe('drops from the weekly raid', () => {
   it('pays the phase scrap but no gear when the finale is lost', async () => {
     await runRaid((ctx) => {
       openWeek(ctx, 3, 15);
-      forcePool(ctx.sql, 20_000);
+      // Small enough that three players clear both phases (Phase 2 now leaves 15%, not 48%).
+      forcePool(ctx.sql, 12_000);
       ctx.clock.t = W02.afterPhase2;
       ctx.core.raid.runDue(HELSINKI);
       // The boss cannot fall in the finale.
@@ -219,7 +220,7 @@ describe('drops from the weekly raid', () => {
             ctx.clock.t,
           );
         }
-        forcePool(ctx.sql, 20_000);
+        forcePool(ctx.sql, 12_000);
         ctx.clock.t = SUNDAY;
         ctx.core.raid.runDue(HELSINKI);
         expect(count(ctx.sql, 'gear_items', `user_id = '${first.id}'`)).toBe(

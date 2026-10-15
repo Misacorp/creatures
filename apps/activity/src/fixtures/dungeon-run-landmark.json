@@ -135,6 +135,7 @@
     "resetsAt": 1799840220000,
     "depth": 8,
     "landmark": false,
+    "landmarkBoss": null,
     "streak": 3,
     "modifiers": [
       {

@@ -18,6 +18,7 @@ import { totalEssenceOf } from './raid-reveal';
 import {
   PACING_CONTENT,
   firedRound,
+  scheduleRounds,
   type AbilityMode,
   type LiveRow,
   type LiveState,
@@ -74,6 +75,10 @@ export interface LiveSnapshot {
    * Rounds are as long as their content now: use `roundStarts` and `nextRoundAt`.
    */
   roundMs: number | null;
+  /**
+   * The finale's regular rounds. In an enrage (`enrage` events) `round` goes past it, by up to the
+   * enrage's rounds; the fight then ends on a wipe or after the last enrage round.
+   */
   rounds: number;
   /** The round that is playing (0 before the start). */
   round: number;
@@ -298,7 +303,7 @@ export function liveSnapshot(
   const { result } = state;
   const round = done
     ? Math.min(state.clockRound, result.rounds)
-    : Math.min(state.clockRound, row.rounds);
+    : Math.min(state.clockRound, scheduleRounds(row));
   const events = result.events.filter((e) => e.round <= state.clockRound);
   let bossHp: number = row.input.bossHpPool.current;
   for (const e of events) if (e.t === 'round_end') bossHp = e.bossHp;

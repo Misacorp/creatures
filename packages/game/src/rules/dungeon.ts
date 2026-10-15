@@ -199,10 +199,24 @@ export function rollDayModifiers(rng: Rng): string[] {
 }
 
 /**
+ * The room boss of a landmark depth, or null when `depth` is not a landmark. The k-th landmark
+ * (k = depth / `landmarkEvery`, from 1) takes the room bosses in content order and goes round again:
+ * `(k - 1) mod count`, so with every 7th depth a landmark, depth 7 is the first boss, 14 the second.
+ */
+export function landmarkBossId(depth: number): string | null {
+  if (!isLandmark(depth)) return null;
+  const bosses = dungeonContent.foes.filter((f) => f.kind === 'boss');
+  const k = depth / RULES.dungeon.landmarkEvery;
+  return bosses[(k - 1) % bosses.length]?.id ?? null;
+}
+
+/**
  * The rooms of a run: normal foes (all different) for every room but the last, then a room boss,
  * each with the day's modifier for that room. Draws from the run's seeded stream in a fixed order.
+ * At a landmark `depth` the boss room's foe is fixed (`landmarkBossId`) instead of drawn; the draw is
+ * still made and dropped, so the stream is consumed exactly as on any other day.
  */
-export function rollRooms(rng: Rng, modifierIds: readonly string[]): RoomPlan[] {
+export function rollRooms(rng: Rng, modifierIds: readonly string[], depth: number): RoomPlan[] {
   const rooms = RULES.dungeon.rooms;
   if (modifierIds.length < rooms) throw new RangeError('not enough modifiers for the rooms');
   const normal = shuffled(
@@ -210,7 +224,9 @@ export function rollRooms(rng: Rng, modifierIds: readonly string[]): RoomPlan[] 
     dungeonContent.foes.filter((f) => f.kind === 'foe'),
   );
   const bosses = dungeonContent.foes.filter((f) => f.kind === 'boss');
-  const boss = bosses[int(rng, bosses.length)];
+  const drawn = bosses[int(rng, bosses.length)];
+  const fixedId = landmarkBossId(depth);
+  const boss = fixedId === null ? drawn : bosses.find((b) => b.id === fixedId);
   if (boss === undefined) throw new Error('no room boss in the content');
   const plans: RoomPlan[] = [];
   for (let index = 0; index < rooms; index++) {
