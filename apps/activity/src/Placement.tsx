@@ -117,6 +117,13 @@ export function Placement(props: Props) {
   });
 
   const dragging = drag?.creatureId ?? null;
+
+  // A drag starting (after the hold, for a finger) closes any open popover at once, the one of the
+  // creature being carried included, so it cannot sit over the board while a creature is moved.
+  useEffect(() => {
+    if (dragging !== null) popovers?.close();
+  }, [dragging === null]);
+
   const statuses = dragging === null ? null : slotStatuses(ctx, dragging, nameOf(dragging));
   const dragged =
     dragging === null
