@@ -38,11 +38,6 @@ export interface DungeonToday {
   depth: number;
   /** The depth is a landmark (every 7th): a full clear drops gear for certain. */
   landmark: boolean;
-  /**
-   * Set when the next run is a landmark: its depth and the content id of the fixed room boss it
-   * fights. Null on any other depth. (Type only for now: the setup card renders it.)
-   */
-  landmarkBoss: { depth: number; foeId: string } | null;
   /** Days in a row with a run, as of now: 0 if yesterday was missed and nothing has run today. */
   streak: number;
   modifiers: DungeonModifier[];

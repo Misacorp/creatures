@@ -20,7 +20,7 @@ describe('the new fight events are accepted, and unknown ones still refused', ()
   });
 });
 
-const stats = parseStats(statsCloseWin);
+const stats = { ...parseStats(statsCloseWin), retreated: false, enraged: false };
 
 describe('the result wording of a stage', () => {
   it('says a cleared phase retreated, and an enraged finale says so', () => {

@@ -36,7 +36,8 @@ export function outcomeLine(
     : `${num(stats.rounds)} / ${num(stats.maxRounds)} rounds`;
   switch (stats.outcome) {
     case 'cleared':
-      if (stats.retreated === true) return `${name} cleared after ${rounds}: the boss retreated.`;
+      if (stats.retreated === true && stats.phase !== 'finale')
+        return `${name} cleared after ${rounds}: the boss retreated.`;
       return enraged
         ? `${name} cleared after ${rounds}, even with the boss enraged.`
         : `${name} cleared after ${rounds}.`;
