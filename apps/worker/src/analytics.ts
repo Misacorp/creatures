@@ -219,6 +219,21 @@ export type AnalyticsEvent =
       parties: number;
       partiesWon: number;
     }
+  | {
+      /**
+       * An open raid week's numbers were declared again because the difficulty rules changed (see
+       * `raid-redeclare.ts`). Guild-level; the ranks are null for a week that had none yet.
+       */
+      kind: 'raid_week_redeclared';
+      boss: string;
+      versionBefore: number;
+      versionAfter: number;
+      rankBefore: number | null;
+      rankAfter: number | null;
+      effectiveRankBefore: number | null;
+      effectiveRankAfter: number | null;
+      placedAgain: boolean;
+    }
   | { kind: 'festival_grant'; species: string; result: FestivalResult }
   | {
       /** A grant of gear, parts or a blueprint. Content ids and counts only. */
@@ -558,6 +573,19 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         festival: bool(event.festival),
         parties: int(event.parties, 999),
         partiesWon: int(event.partiesWon, 999),
+      };
+    case 'raid_week_redeclared':
+      return {
+        boss: fromSet(BOSS_IDS, event.boss),
+        versionBefore: int(event.versionBefore, 9_999),
+        versionAfter: int(event.versionAfter, 9_999),
+        rankBefore: event.rankBefore === null ? null : int(event.rankBefore, 999),
+        rankAfter: event.rankAfter === null ? null : int(event.rankAfter, 999),
+        effectiveRankBefore:
+          event.effectiveRankBefore === null ? null : int(event.effectiveRankBefore, 999),
+        effectiveRankAfter:
+          event.effectiveRankAfter === null ? null : int(event.effectiveRankAfter, 999),
+        placedAgain: bool(event.placedAgain),
       };
     case 'festival_grant':
       return {

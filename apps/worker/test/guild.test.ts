@@ -382,6 +382,7 @@ describe('migration 12 (Boss Rank ladder, seasons, Festival)', () => {
         'ladder_at',
         'ladder_won',
         'rank_after',
+        'difficulty_version',
       ]);
       // The week that was open keeps everything and has no rank or season: it behaves as before.
       expect(

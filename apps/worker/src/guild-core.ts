@@ -48,6 +48,7 @@ import {
 } from './ledger';
 import { Raid } from './raid';
 import { raidAutofireMigration } from './raid-autofire-migration';
+import { raidDifficultyMigration } from './raid-difficulty-migration';
 import { raidLivePacingMigration } from './raid-live-pacing-migration';
 import { raidLiveMigration } from './raid-live-migration';
 import { raidMigration } from './raid-migration';
@@ -315,8 +316,10 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
     sql.exec('ALTER TABLE players ADD COLUMN lounge_spot TEXT');
     sql.exec('ALTER TABLE players ADD COLUMN lounge_spot_at INTEGER');
   },
+  // Version 24: the raid difficulty version of each week (see raid-difficulty-migration.ts).
+  raidDifficultyMigration,
   (sql) => {
-    // Version 24: the daily Bait allowance (see allowance.ts). One row per player and game day that
+    // Version 25: the daily Bait allowance (see allowance.ts). One row per player and game day that
     // was paid (the Bait itself is a ledger credit keyed `allowance:<day>`); `announced` is set when
     // /api/me has told the player, so the client shows the allowance once. Older rows are pruned.
     sql.exec(`CREATE TABLE daily_allowance (
