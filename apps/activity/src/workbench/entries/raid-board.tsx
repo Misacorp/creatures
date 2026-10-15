@@ -1,6 +1,9 @@
 import { zoneIndices } from '@creatures/engine';
-import { useMemo, useState } from 'preact/hooks';
+import { useMemo, useRef, useState } from 'preact/hooks';
 import { Placement } from '../../Placement';
+import { dropOutcome } from '../../slot-outcome';
+import { useDragDrop } from '../../use-drag-drop';
+import { RaidBoard } from '../../ui/RaidBoard';
 import type { RaidView, RowSlotView } from '../../raid-api';
 import type { Intent } from '../../raid-slots';
 import {
@@ -214,13 +217,55 @@ function RosterDemo({ p }: { p: Props }) {
   );
 }
 
+/** The board's single-row mode on its own: three tiles, at the raid's size or the large one (read-only). */
+function SingleRowDemo({ p }: { p: Props }) {
+  const stripRef = useRef<HTMLDivElement>(null);
+  const drag = useDragDrop({
+    disabled: true,
+    stripRef,
+    onDrop: () => dropOutcome('none', null, null, ''),
+  });
+  const count = num(p, 'slots');
+  const slots = Array.from({ length: count }, (_, index) => {
+    const species = SPECIES_IDS[(index * 4 + 1) % SPECIES_IDS.length] ?? 'splashet';
+    return {
+      index,
+      ariaLabel: `Slot ${String(index + 1)}, ${speciesLabel(species)}`,
+      occupant: {
+        species,
+        name: speciesLabel(species),
+        level: 5 + index * 3,
+        ownId: null,
+        mine: true,
+      },
+    };
+  });
+  return (
+    <div class="raid-section">
+      <RaidBoard
+        single={{ label: 'A row of tiles, left to right' }}
+        {...(str(p, 'board') === 'Single row, large' ? { size: 'large' as const } : {})}
+        rows={[{ zone: 'front', name: 'Row', label: null, slots }]}
+        stripRef={stripRef}
+        emptyLabel="Add"
+        disabled={false}
+        drag={drag}
+        statuses={null}
+        onTap={() => undefined}
+      />
+    </div>
+  );
+}
+
 const raidBoard: Entry = {
   name: 'RaidBoard',
   file: 'apps/activity/src/ui/RaidBoard.tsx',
   group: 'Slots',
   description:
-    "The raid's Raid Roster on the Raid tab: the party as a grid (Front, Middle and Back are three lines, each lane a column, scrolling sideways together) under a count line: how many of your creatures are placed (with a green check at 3 / 3), and how many of all the team slots are filled, on the same line. Tap an empty slot for the creature picker, tap a creature for its popover (yours has Remove from board), drag your own to move them. The same board also has a single-row mode with any number of slots, centred with roomy padding and the same tiles: the dungeon team uses it (see DungeonSetup).",
+    "The raid's Raid Roster on the Raid tab: the party as a grid (Front, Middle and Back are three lines, each lane a column, scrolling sideways together) under a count line: how many of your creatures are placed (with a green check at 3 / 3), and how many of all the team slots are filled, on the same line. Tap an empty slot for the creature picker, tap a creature for its popover (yours has Remove from board), drag your own to move them. The same board also has a single-row mode with any number of slots, centred with roomy padding and the same tiles, at the raid's size or, with size large, about halfway back to the bigger tiles the dungeon used to have: the dungeon team uses the large one (see DungeonSetup). The Board control switches between the three.",
   controls: {
+    board: { kind: 'select', options: ['Raid Roster', 'Single row', 'Single row, large'] },
+    slots: { kind: 'number', min: 1, max: 5 },
     players: { kind: 'number', min: 1, max: 15 },
     yourLane: { kind: 'number', min: 1, max: 15 },
     placed: { kind: 'number', min: 0, max: 3 },
@@ -230,6 +275,8 @@ const raidBoard: Entry = {
     locked: { kind: 'toggle' },
   },
   defaults: {
+    board: 'Raid Roster',
+    slots: 3,
     players: 11,
     yourLane: 7,
     placed: 1,
@@ -249,13 +296,21 @@ const raidBoard: Entry = {
     { name: 'Four players', props: { players: 4, yourLane: 2, empty: 1 } },
     { name: 'Full server (45 slots)', props: { players: 15, yourLane: 12, empty: 4 } },
     { name: 'Locked (read-only, no remove button)', props: { locked: true, placed: 2 } },
+    { name: 'Single row, the raid size (the default size)', props: { board: 'Single row' } },
+    {
+      name: 'Single row, large (the dungeon team: about halfway to the old big tiles)',
+      props: { board: 'Single row, large' },
+    },
   ],
-  render: (p) => (
-    <RosterDemo
-      key={`${String(num(p, 'players'))}-${String(num(p, 'yourLane'))}-${String(num(p, 'placed'))}-${String(num(p, 'empty'))}-${String(num(p, 'owned'))}-${str(p, 'turnOrder')}-${String(bool(p, 'locked'))}`}
-      p={p}
-    />
-  ),
+  render: (p) =>
+    str(p, 'board') !== 'Raid Roster' ? (
+      <SingleRowDemo key={`${str(p, 'board')}-${String(num(p, 'slots'))}`} p={p} />
+    ) : (
+      <RosterDemo
+        key={`${String(num(p, 'players'))}-${String(num(p, 'yourLane'))}-${String(num(p, 'placed'))}-${String(num(p, 'empty'))}-${String(num(p, 'owned'))}-${str(p, 'turnOrder')}-${String(bool(p, 'locked'))}`}
+        p={p}
+      />
+    ),
 };
 
 /** The picker over a row where a Support and a Guard of yours are among the options. */

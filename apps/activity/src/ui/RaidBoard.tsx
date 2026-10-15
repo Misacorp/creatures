@@ -24,18 +24,30 @@ interface RaidBoardProps extends SlotStripProps {
   rows: readonly BoardRowModel[];
   /**
    * One plain row of tiles, as many as `rows[0]` has slots (the dungeon team's three places): no row
-   * labels, no lane header and no sideways scroller, centred. The tiles are the raid's own size.
-   * `label` names the group for assistive technology.
+   * labels, no lane header and no sideways scroller, centred. `label` names the group for assistive
+   * technology.
    */
   single?: { label: string };
+  /**
+   * The size of the tiles of a `single` row. Absent (the default): the raid's own size. `large`: about
+   * halfway back to the bigger tiles the dungeon used before it shared the raid's (the dungeon's
+   * team, where only three have to fit). The same component and the same tile either way.
+   */
+  size?: 'large';
   /** What the rail under the board says (the "no reaction" mark, the effect line). Absent: no rail. */
   rail?: CueRailProps;
   /** The row that gets the "no reaction" mark on its name, when the creature in focus sets off nothing. */
   noneRow?: Zone | null;
 }
 
-/** The sprite scale of a tile: small, so about four lanes fit on a 360 px phone. The same in every mode. */
+/** The sprite scale of a tile: small, so about four lanes fit on a 360 px phone. The raid's, and the default. */
 const TILE_SCALE = 2;
+
+/**
+ * The sprite scale of a `large` tile. Sprites only scale by whole pixels, so there is no halfway
+ * between 2 and the 3 the larger tiles used; the tile's box (raid-board.css) is what lands halfway.
+ */
+const LARGE_TILE_SCALE = 3;
 
 /** Scrolls the board sideways to show lanes `first` to `last` (from 0). */
 function showLanes(scroller: HTMLElement | null, first: number, last: number) {
@@ -59,7 +71,7 @@ function showLanes(scroller: HTMLElement | null, first: number, last: number) {
  * scroller, so a lane stays a vertical line. On open the board scrolls to your creatures. The tiles
  * are the shared `SlotButton`. The dungeon team uses the same board in its `single` mode: one centred
  * row (any number of slots, three there) of the same tiles with nothing around it, so the two screens
- * look and behave alike.
+ * look and behave alike; `size="large"` makes those tiles bigger (the dungeon team asks for it).
  */
 export function RaidBoard(props: RaidBoardProps) {
   const { rows, stripRef } = props;
@@ -84,8 +96,9 @@ export function RaidBoard(props: RaidBoardProps) {
 
   const dragging = props.drag.drag?.creatureId ?? null;
   if (props.single !== undefined) {
+    const large = props.size === 'large';
     return (
-      <div class="raid-board single">
+      <div class={large ? 'raid-board single large' : 'raid-board single'}>
         <div
           ref={stripRef}
           class={dragging === null ? 'party-strip' : 'party-strip dragging'}
@@ -97,7 +110,7 @@ export function RaidBoard(props: RaidBoardProps) {
               <SlotButton
                 key={slot.index}
                 slot={slot}
-                scale={TILE_SCALE}
+                scale={large ? LARGE_TILE_SCALE : TILE_SCALE}
                 {...slotState(props, slot)}
               />
             ))}

@@ -232,6 +232,7 @@ export function DungeonTeam(props: Props) {
     <div class="placement dungeon-team" onKeyDown={onKeyDown}>
       <RaidBoard
         single={{ label: 'Your team, left to right' }}
+        size="large"
         rows={rows}
         stripRef={stripRef}
         emptyLabel="Add"
