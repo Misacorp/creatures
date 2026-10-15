@@ -137,7 +137,9 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
     case 'retreat':
       return `${names.boss} is out of reach and retreats.`;
     case 'enrage':
-      return event.first ? `Out of time: ${names.boss} is enraged!` : `${names.boss} is still enraged.`;
+      return event.first
+        ? `Out of time: ${names.boss} is enraged!`
+        : `${names.boss} is still enraged.`;
     default:
       // A stored fight from a newer engine can carry events this one does not know: skip them.
       return '';

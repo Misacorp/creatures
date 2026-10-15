@@ -25,10 +25,12 @@ import {
   type ActiveAdaptation,
   type FightEvent,
   type FightInput,
+  type FightRules,
   type FightSlot,
   type PlayerTotals,
 } from '@creatures/engine';
 import type { ArchetypeId } from './archetypes';
+import { neutralSupport, studyRules, type RoleStudy } from './role-study';
 import { foldedCreature, pickTeam, speciesOf, TEAM_SIZE } from './data';
 import type { SimPlayer } from './state';
 
@@ -90,6 +92,10 @@ export interface RaidWeek {
   /** Study switches (docs/design/luck.md): see `openRaidWeek`. */
   dropShield: boolean;
   neutralGuards: boolean;
+  /** Study: Supports lose the Support role (`RoleStudy`). */
+  neutralSupports: boolean;
+  /** The combat rules of every fight of the week: the live rules, less any study override. */
+  rules: FightRules;
 }
 
 /**
@@ -176,6 +182,10 @@ export function openRaidWeek(
     dropShield?: boolean;
     /** Study: guards lose the guard role (no extra HP, no intercepting) and fight as plain payoffs. */
     neutralGuards?: boolean;
+    /** Study: Supports lose the Support role and fight as plain payoffs (no buff, no effect). */
+    neutralSupports?: boolean;
+    /** Study: per-element override of the Support effects (`RoleStudy.supportFx`). */
+    supportFx?: RoleStudy['supportFx'];
   } = {},
 ): RaidWeek {
   if (players.length === 0) throw new RangeError('a raid needs at least one player');
@@ -249,6 +259,8 @@ export function openRaidWeek(
     abilityImpact: null,
     dropShield: options.dropShield === true,
     neutralGuards: options.neutralGuards === true,
+    neutralSupports: options.neutralSupports === true,
+    rules: studyRules(options.supportFx === undefined ? {} : { supportFx: options.supportFx }),
   };
 }
 
@@ -265,7 +277,9 @@ export function fightFor(
   const row = week.row.map((s) => {
     const owner = s.ownerId === null ? undefined : byId.get(s.ownerId);
     const slot = owner === undefined ? s : slotFor(owner, s.id);
-    return week.neutralGuards && slot.role === 'guard' ? neutralGuard(slot) : slot;
+    if (week.neutralGuards && slot.role === 'guard') return neutralGuard(slot);
+    if (week.neutralSupports && slot.role === 'support') return neutralSupport(slot);
+    return slot;
   });
   const creatureAbilities = stage === 'finale' ? creatureAbilityChoices(week, row) : [];
   const fight: FightInput = {
@@ -286,6 +300,7 @@ export function fightFor(
             })
         : [],
     ...(week.luck === undefined || !week.luckStages.includes(stage) ? {} : { luck: week.luck }),
+    rules: week.rules,
   };
   return { fight, creatureAbilities };
 }

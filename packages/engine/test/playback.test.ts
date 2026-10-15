@@ -274,7 +274,10 @@ describe('bossWarnings', () => {
   });
 
   it('knows the other bosses: the strongest every round, both ends every 2nd, the reflect trap', () => {
-    expect(bossWarnings(boss('storm-sovereign'), 1)[0]?.target).toEqual({ kind: 'strongest' });
+    expect(bossWarnings(boss('storm-sovereign'), 1)[0]?.target).toEqual({
+      kind: 'strongest',
+      jumps: 0,
+    });
     expect(bossWarnings(boss('storm-sovereign'), 12)[0]?.op).toBe('strike_highest_atk');
     const thorn = boss('thornmother');
     expect([1, 2, 3, 4].map((r) => bossWarnings(thorn, r).length)).toEqual([0, 1, 0, 1]);

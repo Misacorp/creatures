@@ -5,6 +5,7 @@ import {
   effectiveStats,
   int,
   NO_LUCK,
+  PATTERN_OPS,
   type AdaptationDef,
   type BossDef,
   type ContentPack,
@@ -21,9 +22,19 @@ import {
   type TurnOrder,
   type Zone,
 } from '@creatures/game';
-import { gimmickDue } from './gimmick-schedule';
+import { firingIndex, gimmickDue, sweepRow } from './gimmick-schedule';
 import { matchupBp } from './matchup';
 import { sanitizeBp, type CreatureView, type Mutator, type MutatorHooks } from './mutators';
+import {
+  DEFAULT_DECAY_BP,
+  DICE_RANGE,
+  PATTERN_DICE,
+  diceWindow,
+  planChain,
+  planPattern,
+  type PatternContext,
+  type PatternPlan,
+} from './patterns';
 import type {
   AbilityChoice,
   AdaptationSuggestion,
@@ -31,6 +42,7 @@ import type {
   FightEvent,
   FightInput,
   FightResult,
+  FightRules,
   PlayerTotals,
 } from './types';
 import {
@@ -96,11 +108,20 @@ function isCount(n: number, min: number): boolean {
   return Number.isSafeInteger(n) && n >= min;
 }
 
-/** The first zone attack of the boss from round 2 on (within `rounds`), or null if it has none. */
+/**
+ * The first zone attack of the boss from round 2 on (within `rounds`), or null if it has none: a
+ * `hit_zone`, or a sweep of one named row (the row its walk reaches in that round; a sweep of
+ * `all` rows names no row and does not count).
+ * (Part 2: a charged sweep will count too, in the round it lands.)
+ */
 function firstZoneHit(boss: BossDef, rounds: number): { round: number; zone: Zone } | null {
   for (let r = 2; r <= rounds; r++) {
     for (const g of boss.gimmicks) {
       if (g.op === 'hit_zone' && gimmickDue(g, r)) return { round: r, zone: g.zone };
+      if (g.op === 'sweep' && gimmickDue(g, r)) {
+        const row = sweepRow(g.rows, firingIndex(g, r));
+        if (row !== 'all') return { round: r, zone: row };
+      }
     }
   }
   return null;
@@ -198,6 +219,9 @@ export function simulateFight(
   const bossCrit = bossCritStats(luck, boss.crit);
   const bossCritOn = bossCrit.chanceBp > 0;
   const randomTargetBp = luck.bossRandomTargetBp ?? 0;
+  // ---- combat rules (absent: the rules before attack patterns) ----
+  const rules = input.rules;
+  if (rules !== undefined) checkRules(rules);
   const spreadOn = luck.spreadBp > 0;
   const swingOn = luck.surgeChanceBp > 0 || luck.slumpChanceBp > 0;
   /** This round's dice, drawn at the start of every round whatever happens, so a creature's roll depends on the seed, the round and its slot only. */
@@ -212,6 +236,13 @@ export function simulateFight(
   let bossGimmickDice: number[] = [];
   /** This round's dice for a random boss target: whether it applies, and which living creature. */
   let targetDice = { use: 10_000, pick: 0 };
+  /**
+   * This round's pattern dice: 40 uniform integers in [0, 1_000_000), drawn after every other die,
+   * and only when the boss has a pattern op (`PATTERN_OPS`), so a boss without one draws what it
+   * always did. Each gimmick reads its own window of them (`diceWindow`).
+   */
+  const patternsOn = boss.gimmicks.some((g) => (PATTERN_OPS as readonly string[]).includes(g.op));
+  let patternDice: number[] = [];
   /** The running Surge (+) or Slump (-) in basis points of team damage, and its last round. */
   let swingNow = 0;
   let swingUntil = 0;
@@ -399,14 +430,37 @@ export function simulateFight(
     return livingIn(zoneOfIndex(target.idx, n)).find((c) => c.role === 'guard');
   }
 
+  /**
+   * A living Guard right beside `victim` (as the Support's `besides` counts it), as it stands now:
+   * the Guard whose cover softens an area hit (left neighbour first).
+   */
+  function coverGuardFor(victim: Creature): Creature | undefined {
+    for (const i of besides(victim.idx)) {
+      const c = creatures[i] as Creature;
+      if (c.alive && c.role === 'guard') return c;
+    }
+    return undefined;
+  }
+
+  /**
+   * One boss hit on `target`, in one of three modes (docs/design/attack-patterns.md section 1):
+   * - `aimed`: a Guard of the target's row (the dungeon: beside it) takes it instead;
+   * - `area`: nobody steps in, but (with `rules`) a creature beside a living Guard takes `coverBp`
+   *   less, credited to the Guard;
+   * - `direct` (a reflect): nothing intercepts, covers or caps it.
+   * Shield Walls on the target's row apply to all three. With `rules`, an aimed or area hit never
+   * takes more than `maxHitBp` of the victim's max HP. Returns who took the hit.
+   */
   function hurt(
     target: Creature,
     rawAmount: number,
     source: 'attack' | 'gimmick' | 'reflect',
-    interceptable: boolean,
+    mode: 'aimed' | 'area' | 'direct',
     /** The boss crit die of this hit (absent: the hit cannot crit). */
     die?: number,
-  ): void {
+    /** A slam's splash. */
+    splash = false,
+  ): Creature {
     const crit = die !== undefined && bossCritOn && die < bossCrit.chanceBp;
     let amount = Math.max(
       0,
@@ -428,15 +482,43 @@ export function simulateFight(
         target: target.id,
         damage: 0,
         shielded: true,
+        ...(splash ? { splash: true as const } : {}),
       });
-      return;
+      return target;
     }
     const reducedBp = 10_000 - remainingBp;
     if (reducedBp > 0) amount = Math.floor((amount * remainingBp) / 10_000);
     let victim = target;
-    if (interceptable && target.role !== 'guard') {
+    if (mode === 'aimed' && target.role !== 'guard') {
       const guard = guardFor(target);
       if (guard !== undefined) victim = guard;
+    }
+    // Cover and the single-hit cap only exist with `rules`. The cover is worked out first, then the
+    // cap on what is left; the damage the Guard is credited for is what the cover really saved
+    // (less than its share when the cap would have cut the hit anyway).
+    let covered: { guard: string; prevented: number } | undefined;
+    let capped = false;
+    if (rules !== undefined && mode !== 'direct') {
+      const capAt =
+        rules.maxHitBp > 0
+          ? Math.max(1, Math.floor((victim.maxHp * rules.maxHitBp) / 10_000))
+          : Number.POSITIVE_INFINITY;
+      let after = amount;
+      const guard =
+        mode === 'area' && rules.coverBp > 0 && victim.role !== 'guard'
+          ? coverGuardFor(victim)
+          : undefined;
+      if (guard !== undefined) after = amount - Math.floor((amount * rules.coverBp) / 10_000);
+      capped = after > capAt;
+      const final = Math.min(after, capAt);
+      if (guard !== undefined) {
+        const prevented = Math.min(amount, capAt) - final;
+        if (prevented > 0) {
+          covered = { guard: guard.id, prevented };
+          credit(guard, null, 'guardCredit', prevented);
+        }
+      }
+      amount = final;
     }
     const taken = Math.min(amount, victim.hp);
     victim.hp -= taken;
@@ -447,34 +529,26 @@ export function simulateFight(
       const share = victim !== target ? 10_000 : RULES.combat.guardOwnCreditBp;
       credit(victim, null, 'guardCredit', Math.floor((taken * share) / 10_000));
     }
-    if (victim !== target) {
-      events.push({
-        t: 'boss_hit',
-        round: currentRound,
-        source,
-        target: victim.id,
-        damage: amount,
-        from: target.id,
-        ...(reducedBp > 0 ? { reducedBp } : {}),
-        ...(crit && amount > 0 ? { crit: true as const, critBp: bossCrit.damageBp } : {}),
-      });
-    } else {
-      events.push({
-        t: 'boss_hit',
-        round: currentRound,
-        source,
-        target: victim.id,
-        damage: amount,
-        ...(reducedBp > 0 ? { reducedBp } : {}),
-        ...(crit && amount > 0 ? { crit: true as const, critBp: bossCrit.damageBp } : {}),
-      });
-    }
+    events.push({
+      t: 'boss_hit',
+      round: currentRound,
+      source,
+      target: victim.id,
+      damage: amount,
+      ...(victim !== target ? { from: target.id } : {}),
+      ...(reducedBp > 0 ? { reducedBp } : {}),
+      ...(crit && amount > 0 ? { crit: true as const, critBp: bossCrit.damageBp } : {}),
+      ...(splash ? { splash: true as const } : {}),
+      ...(covered === undefined ? {} : { covered }),
+      ...(capped ? { capped: true as const } : {}),
+    });
     if (victim.hp === 0 && victim.alive) {
       victim.alive = false;
       (perCreature[victim.id] as CreatureTotals).knockedOutRound = currentRound;
       events.push({ t: 'knockout', round: currentRound, creature: victim.id });
       runHook('onKnockout', () => ({ ...baseContext(), creature: view(victim) }));
     }
+    return victim;
   }
 
   // ---- a creature hits the boss ----
@@ -551,7 +625,24 @@ export function simulateFight(
         ? rule.resistBp
         : 0;
 
-    const calc = (modBp: number): { damage: number; bonus: number; reflect: number } => {
+    // Element effects of Supports beside the hitter (`rules.supportFx[...].reactionBp`, Spark's
+    // Overcharge): a living, non-silenced Support adds its share of the reaction's bonus. Not on a
+    // reflected reaction (that bonus comes back at the hitter).
+    const overcharge: { s: Creature; bp: number }[] = [];
+    if (rules !== undefined && reaction !== undefined && !reflected) {
+      for (const i of besides(c.idx)) {
+        const s = creatures[i] as Creature;
+        const bp = rules.supportFx[s.element]?.reactionBp ?? 0;
+        if (s.role === 'support' && s.alive && s.silenced === 0 && bp > 0)
+          overcharge.push({ s, bp });
+      }
+    }
+    const overchargeBp = overcharge.reduce((sum, o) => sum + o.bp, 0);
+
+    const calc = (
+      modBp: number,
+      fxBp = overchargeBp,
+    ): { damage: number; bonus: number; reflect: number } => {
       const factor = Math.max(0, 10_000 + Math.max(-10_000, modBp));
       let plain = Math.floor((atk * matchup * factor) / 100_000_000);
       if (elementResist > 0) plain = Math.floor((plain * (10_000 - elementResist)) / 10_000);
@@ -560,7 +651,10 @@ export function simulateFight(
       if (c.role === 'payoff') mult = Math.floor((mult * reaction.payoffBonusBp) / 10_000);
       let bonus = Math.max(0, Math.floor((plain * mult) / 10_000) - plain);
       if (reactionResist > 0) bonus -= Math.floor((bonus * reactionResist) / 10_000);
-      bonus = Math.max(0, Math.floor((bonus * Math.max(0, 10_000 + reactionHookBp)) / 10_000));
+      bonus = Math.max(
+        0,
+        Math.floor((bonus * Math.max(0, 10_000 + reactionHookBp + fxBp)) / 10_000),
+      );
       if (reflected) return { damage: plain, bonus: 0, reflect: bonus };
       return { damage: plain + bonus, bonus, reflect: 0 };
     };
@@ -573,10 +667,24 @@ export function simulateFight(
 
     // Support credit (zero-sum): the extra damage the buffs made possible moves from the hitter's
     // credit to the supporters, shared between them.
+    // The element effect's own gain is credited first (what the hit lost without it), so the two
+    // gains never overlap: together they are at most the hit's damage.
     let supportShare = 0;
+    if (overcharge.length > 0) {
+      const gain = Math.max(0, hit.damage - calc(totalBp, 0).damage);
+      supportShare += gain;
+      const k = overcharge.length;
+      const each = Math.floor(gain / k);
+      let rest = gain - each * k;
+      for (const o of overcharge) {
+        const extra = rest > 0 ? 1 : 0;
+        rest -= extra;
+        credit(o.s, null, 'supportCredit', each + extra);
+      }
+    }
     if (supportBp > 0) {
-      const gain = Math.max(0, hit.damage - calc(totalBp - supportBp).damage);
-      supportShare = gain;
+      const gain = Math.max(0, calc(totalBp, 0).damage - calc(totalBp - supportBp, 0).damage);
+      supportShare += gain;
       const k = buffs.length;
       const each = Math.floor(gain / k);
       let rest = gain - each * k;
@@ -624,7 +732,7 @@ export function simulateFight(
         reflected,
       });
       mark = null;
-      if (reflected) hurt(c, hit.reflect, 'reflect', false);
+      if (reflected) hurt(c, hit.reflect, 'reflect', 'direct');
     } else if (markBefore === null) {
       mark = { element: c.element, creature: c, player: c.ownerId };
       events.push({
@@ -730,25 +838,19 @@ export function simulateFight(
   }
 
   // ---- boss gimmicks and attack ----
-  function livingTargetByAtk(): Creature | undefined {
-    let best: Creature | undefined;
-    for (const c of creatures) {
-      if (c.alive && (best === undefined || c.atk > best.atk)) best = c;
-    }
-    return best;
-  }
-
   /**
    * TARGETING RULE (every rule below picks among LIVING creatures only; a knocked-out creature is
-   * never a target, so it can never soak up a boss ability):
+   * never a target, so it can never soak up a boss ability). The attack patterns' selection lives in
+   * `patterns.ts`; it returns a plan and `resolvePlan` plays it through `hurt()`.
    * - zone strike (`hit_zone`): hits every living creature of the aimed zone; if that zone has
    *   nobody standing, the strike falls to the nearest zone that has (one step away first, the
    *   front-side zone before the back-side one on a tie), so a wiped-out zone does not make the
-   *   attack miss. Nothing happens only when the whole row is down.
+   *   attack miss. Nothing happens only when the whole row is down. A sweep of a named row does the
+   *   same.
    * - row ends (`silence_ends`): the leftmost and the rightmost LIVING creature (one creature
    *   standing is silenced once; nobody standing, nothing).
    * - strongest (`strike_highest_atk`): the living creature with the highest Attack, ties to the
-   *   lower slot.
+   *   lower slot; with `jumps`, the next strongest after it.
    * - the plain attack: the front-most living creature (or the Guard of its zone), see `bossAttack`.
    * - random target: one of the living creatures.
    * - Guard intercept and Support buffs only count a living Guard or Support, and a buff only goes
@@ -758,17 +860,58 @@ export function simulateFight(
     return nearestLivingZone(aimed, (z) => livingIn(z).length > 0);
   }
 
-  function fireGimmick(g: Gimmick): void {
-    events.push({ t: 'gimmick', round: currentRound, gimmick: g.id, op: g.op });
+  /** The creatures hit by each barrage gimmick's last volley (by gimmick id), for the no-repeat rule. */
+  const lastVolley = new Map<string, number[]>();
+
+  function patternContext(g: Gimmick, gimmickIndex: number): PatternContext {
+    return {
+      creatures,
+      n,
+      firing: firingIndex(g, currentRound),
+      dice: diceWindow(patternDice, gimmickIndex),
+      ...(lastVolley.has(g.id) ? { previousVolley: lastVolley.get(g.id) as number[] } : {}),
+    };
+  }
+
+  /** Plays a plan's hits in order; a slam's splash goes to the living creatures beside the impact. */
+  function resolvePlan(plan: PatternPlan): void {
+    for (const h of plan.hits) {
+      const target = creatures[h.target] as Creature;
+      // A creature that fell earlier in the same action is not hit again.
+      if (!target.alive) continue;
+      const raw = Math.floor((input.bossAtk * h.powerBp) / 10_000);
+      const impact = hurt(target, raw, 'gimmick', h.kind, bossGimmickDice[target.idx]);
+      if (plan.splashBp !== undefined && h.kind === 'aimed') {
+        const splashRaw = Math.floor((raw * plan.splashBp) / 10_000);
+        for (const i of besides(impact.idx)) {
+          const next = creatures[i] as Creature;
+          if (next.alive) hurt(next, splashRaw, 'gimmick', 'area', bossGimmickDice[next.idx], true);
+        }
+      }
+    }
+  }
+
+  function fireGimmick(g: Gimmick, gimmickIndex: number): void {
+    // Part 2: a charge is announced a round ahead and lands later; it does nothing here yet.
+    if (g.op === 'charge') return;
+    const base = { t: 'gimmick' as const, round: currentRound, gimmick: g.id, op: g.op };
+    const named = (plan: PatternPlan): FightEvent => ({
+      ...base,
+      targets: plan.targets.map((i) => (creatures[i] as Creature).id),
+      ...(plan.rows === undefined ? {} : { rows: plan.rows }),
+      ...(plan.lane === undefined ? {} : { lane: plan.lane }),
+    });
     switch (g.op) {
       case 'hit_zone': {
+        events.push(base);
         const zone = zoneWithLiving(g.zone);
         if (zone === undefined) break;
         const amount = Math.floor((input.bossAtk * g.power) / 10_000);
-        for (const c of livingIn(zone)) hurt(c, amount, 'gimmick', false, bossGimmickDice[c.idx]);
+        for (const c of livingIn(zone)) hurt(c, amount, 'gimmick', 'area', bossGimmickDice[c.idx]);
         break;
       }
       case 'silence_ends': {
+        events.push(base);
         const standing = creatures.filter((c) => c.alive);
         const first = standing[0];
         const last = standing[standing.length - 1];
@@ -780,20 +923,30 @@ export function simulateFight(
         break;
       }
       case 'strike_highest_atk': {
-        const target = livingTargetByAtk();
-        if (target !== undefined) {
-          hurt(
-            target,
-            Math.floor((input.bossAtk * g.power) / 10_000),
-            'gimmick',
-            true,
-            bossGimmickDice[target.idx],
-          );
-        }
+        const jumps = g.jumps ?? 0;
+        const plan = planChain(patternContext(g, gimmickIndex), {
+          power: g.power,
+          jumps,
+          decayBp: g.decayBp ?? DEFAULT_DECAY_BP,
+        });
+        events.push(jumps > 0 ? named(plan) : base);
+        resolvePlan(plan);
         break;
       }
       case 'reflect_first_reaction':
+        events.push(base);
         break; // armed at round start
+      case 'sweep':
+      case 'barrage':
+      case 'slam':
+      case 'lance':
+      case 'pincer': {
+        const plan = planPattern(g, patternContext(g, gimmickIndex));
+        events.push(named(plan));
+        if (g.op === 'barrage') lastVolley.set(g.id, plan.targets);
+        resolvePlan(plan);
+        break;
+      }
     }
   }
 
@@ -806,7 +959,7 @@ export function simulateFight(
           target,
           Math.floor((input.bossAtk * RULES.combat.bossAttackBp) / 10_000),
           'attack',
-          true,
+          'aimed',
           bossAttackDice[target.idx],
         );
         return;
@@ -821,7 +974,7 @@ export function simulateFight(
         target,
         Math.floor((input.bossAtk * RULES.combat.bossAttackBp) / 10_000),
         'attack',
-        true,
+        'aimed',
         bossAttackDice[target.idx],
       );
       return;
@@ -910,6 +1063,9 @@ export function simulateFight(
     if (randomTargetBp > 0) {
       targetDice = { use: int(rng, 10_000), pick: int(rng, 1_000_000) };
     }
+    if (patternsOn) {
+      patternDice = Array.from({ length: PATTERN_DICE }, () => int(rng, DICE_RANGE));
+    }
 
     for (const g of boss.gimmicks) {
       if (g.op === 'reflect_first_reaction' && gimmickDue(g, round)) {
@@ -918,21 +1074,46 @@ export function simulateFight(
       }
     }
 
-    // Support: living, non-silenced supports buff their neighbours' next hit.
+    // Support: living, non-silenced supports buff their neighbours' next hit. With `rules`, the
+    // Support's element adds an effect (`supportFx`): a stronger buff, healing (never above the
+    // missing HP, never a revive), clearing silence.
     for (const s of creatures) {
       if (s.role !== 'support' || !s.alive || s.silenced > 0) continue;
+      const fx = rules?.supportFx[s.element];
+      const buffBp = fx?.buffBp ?? RULES.combat.supportBuffBp;
       for (const i of besides(s.idx)) {
         const t = creatures[i] as Creature;
         if (!t.alive) continue;
         t.buffs = t.buffs.filter((b) => b.from !== s.idx);
-        t.buffs.push({ from: s.idx, bp: RULES.combat.supportBuffBp });
+        t.buffs.push({ from: s.idx, bp: buffBp });
         events.push({
           t: 'support_buff',
           round,
           supporter: s.id,
           target: t.id,
-          bp: RULES.combat.supportBuffBp,
+          bp: buffBp,
         });
+        if (fx?.healBp !== undefined && fx.healBp > 0) {
+          const amount = Math.min(
+            Math.floor((t.maxHp * fx.healBp) / 10_000),
+            Math.max(0, t.maxHp - t.hp),
+          );
+          if (amount > 0) {
+            t.hp += amount;
+            credit(s, null, 'supportCredit', amount);
+            events.push({
+              t: 'heal',
+              round,
+              supporter: s.id,
+              target: t.id,
+              amount,
+            });
+          }
+        }
+        if (fx?.cleanse === true && t.silenced > 0) {
+          t.silenced = 0;
+          events.push({ t: 'cleanse', round, supporter: s.id, target: t.id });
+        }
       }
     }
 
@@ -955,7 +1136,7 @@ export function simulateFight(
     }
 
     if (bossHp > 0) {
-      for (const g of boss.gimmicks) if (gimmickDue(g, round)) fireGimmick(g);
+      for (const [gi, g] of boss.gimmicks.entries()) if (gimmickDue(g, round)) fireGimmick(g, gi);
       bossAttack();
     }
 
@@ -1009,6 +1190,16 @@ export function simulateFight(
     hpMax: Object.fromEntries(creatures.map((c) => [c.id, c.maxHp])),
     adaptationSuggestion,
   };
+}
+
+function checkRules(r: FightRules): void {
+  for (const [name, value, max] of [
+    ['coverBp', r.coverBp, 10_000],
+    ['maxHitBp', r.maxHitBp, 1_000_000],
+  ] as const) {
+    if (!isCount(value, 0) || value > max)
+      fail(`rules.${name} must be an integer from 0 to ${max}`);
+  }
 }
 
 function checkLuck(l: LuckConfig): void {

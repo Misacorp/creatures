@@ -22,6 +22,7 @@ import {
   type FightSlot,
 } from '@creatures/engine';
 import { pickTeam } from './data';
+import { neutralSupport, studyRules, type RoleStudy } from './role-study';
 import { grantDungeonLoot } from './gear';
 import { slotFor } from './raid';
 import type { SimPlayer } from './state';
@@ -63,11 +64,17 @@ export function buildRun(
   depth: number,
   modifiers: readonly string[],
   seed: string,
+  study: RoleStudy = {},
 ): DungeonRunInput {
   const team = pickTeam(player.creatures);
   // One row, left to right: the game's rule for a good order (`dungeonRowOrder`: the most reactions, then roles), strongest first.
   const row = dungeonRowOrder(
-    team.map((c): FightSlot => ({ ...slotFor(player, c.id), ownerId: DUNGEON_PLAYER })),
+    team.map((c): FightSlot => {
+      const slot = { ...slotFor(player, c.id), ownerId: DUNGEON_PLAYER };
+      return study.neutralSupports === true && slot.role === 'support'
+        ? neutralSupport(slot)
+        : slot;
+    }),
   );
   const plans = rollRooms(createSeededRng(`${seed}:rooms`), modifiers);
   const rooms: DungeonRoomSpec[] = plans.map((plan) => {
@@ -90,7 +97,14 @@ export function buildRun(
       creatureId: a.creatureId,
     });
   }
-  return { team: row, player: DUNGEON_PLAYER, rooms, abilities, luck: { ...RULES.combat.luck } };
+  return {
+    team: row,
+    player: DUNGEON_PLAYER,
+    rooms,
+    abilities,
+    luck: { ...RULES.combat.luck },
+    rules: studyRules(study),
+  };
 }
 
 /**
@@ -103,6 +117,7 @@ export function playDungeonDay(
   modifiers: readonly string[],
   seed: string,
   loot: Rng,
+  study: RoleStudy = {},
 ): DungeonLogEntry[] {
   if (player.creatures.length < RULES.dungeon.teamSize) return [];
   const d = player.dungeon;
@@ -111,7 +126,7 @@ export function playDungeonDay(
   for (let attempt = 1; attempt <= (first ? 2 : 1); attempt++) {
     const depth = d.depth;
     const runSeed = `${seed}:${String(attempt)}`;
-    const run = buildRun(player, depth, modifiers, runSeed);
+    const run = buildRun(player, depth, modifiers, runSeed, study);
     const result = simulateDungeon(run, runSeed);
 
     // Progress, the streak (days in a row), and the depth.

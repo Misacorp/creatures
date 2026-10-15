@@ -30,7 +30,7 @@ import {
   type Stats,
 } from '@creatures/game';
 import { simulateFight, type FightOptions } from './fight';
-import type { AbilityChoice, FightInput, FightResult, FightSlot } from './types';
+import type { AbilityChoice, FightInput, FightResult, FightRules, FightSlot } from './types';
 
 /** One room of a run, with its foe and modifier stored in full so a replay never reads content again. */
 export interface DungeonRoomSpec {
@@ -53,6 +53,12 @@ export interface DungeonRunInput {
   abilities: AbilityChoice[];
   /** The luck rules the run was fought with (`RULES.combat.luck` when it was built). */
   luck: LuckConfig;
+  /**
+   * The combat rules the run was fought with (`liveFightRules()` when it was built), copied into
+   * every room's fight. Absent: the rules before attack patterns (no cover, no element effects, no
+   * hit cap), so a stored older run replays as it was fought.
+   */
+  rules?: FightRules;
 }
 
 export interface DungeonRoomResult {
@@ -172,6 +178,7 @@ export function buildRoomInput(
     finaleAbilities: run.abilities,
     luck,
     guardReach: 'adjacent',
+    ...(run.rules === undefined ? {} : { rules: run.rules }),
   };
 }
 
