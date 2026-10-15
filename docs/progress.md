@@ -16,18 +16,22 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
 
 ## Now
 
-- **Production (2026-10-14):** main `ba73472`. It includes:
+- **Production (2026-10-15):** main `3b61330`. Since 2026-10-14 it also includes:
   - PR #12: analytics reports, the balance loop, dev tools;
   - PR #14: cleanup pass 1;
   - PR #15: the component workbench at `creatures-staging.misacorp.dev/workbench.html`;
   - PR #17: the living room, Misa's own branch;
-  - PR #18: the dungeon always acts left to right, the reworked dungeon fight, pre-run and post-run screens, "1 / 3" counts, the role assessment, and the attack-pattern design.
+  - PR #18: the dungeon always acts left to right, the reworked dungeon fight, pre-run and post-run screens, "1 / 3" counts, the role assessment, and the attack-pattern design;
+  - PR #20: the test timeout fix that unblocked the production deploy;
+  - PR #21: Raid UX pass 2 and the Raid Roster (at most 3 creatures a player);
+  - PR #22: the dungeon pre-run card with the roster board, the last team remembered, the fight screen that does not spoil the result, bosses that ignore fallen creatures;
+  - PR #23: drag and drop in the living room (another session).
+- **In progress:** the raid retune (attack patterns, phase floors, enrage) on branch `ccr-8ffccd88-e59k13`.
 - **Reports:** `OPS_TOKEN` is set. The report workflow runs daily at 06:17 UTC; agents read the JSON from its job log. The first rollups landed 2026-10-14. After about a week of data, run the `balance-review` skill.
 
 ## Next (in order)
 
-1. **Raid UX pass 2:** built on branch `ccr-8ffccd88-e59k13`, waiting for Misa's merge (`design/raid-ux-2.md`).
-2. **Attack patterns plus raid structure,** as one raid retune: `design/attack-patterns.md`, section 6 for the slices, and the "Raid structure" section of `design/raid-ux-2.md`. The structure part is phase floors (the boss goes immune and the phase ends, no overkill, finale at 15%) and enrage (raid finale, plus dungeon boss rooms to teach it; an enrage loss is a normal loss). Misa decided all four questions on 2026-10-14.
+1. **Attack patterns plus raid structure** (being built), as one raid retune: `design/attack-patterns.md`, section 6 for the slices, and the "Raid structure" section of `design/raid-ux-2.md`. The structure part is phase floors (the boss goes immune and the phase ends, no overkill, finale at 15%) and enrage (raid finale, plus dungeon boss rooms to teach it; an enrage loss is a normal loss). Misa decided all four questions on 2026-10-14.
    - The seven moves for raid bosses and dungeon foes.
    - Guard cover.
    - Element supports: Stoke, Overcharge, Mend.
@@ -35,11 +39,11 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
    - A single-hit cap.
    - A review of the Cinder Wyrm reflect.
    - Misa decided: hit hard, randomness is fine, Support is not a ward, landmarks fixed.
-3. **Support reach shapes:** design and sim first, `attack-patterns.md` section 7.
-4. **Cleanup leftovers:**
+2. **Support reach shapes:** design and sim first, `attack-patterns.md` section 7.
+3. **Cleanup leftovers:**
    - slice 3 (unused glossary entries, v1 expedition rules), after Misa answers the audit questions;
    - upkeep: Vitest 5 and Dependabot PR #2, outdated dependencies, zizmor and actionlint.
-5. **Content:** Grove and Tide support species, new elements and later expedition areas. See the roadmap, item 9.
+4. **Content:** Grove and Tide support species, new elements and later expedition areas. See the roadmap, item 9.
 
 ## Open questions for Misa
 
