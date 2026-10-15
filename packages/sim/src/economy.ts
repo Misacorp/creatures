@@ -583,10 +583,12 @@ function grantFestivalCreature(players: readonly SimPlayer[], weekIndex: number)
 }
 
 /**
- * Simulates one server for `weeks` weeks. Each week, Monday to Sunday: leet credit (the game's
- * `baitForDay` for that day's leeter count), check-ins, then Phase 1 on Friday after the morning
- * check-in, Phase 2 on Saturday and the finale on Sunday. Everything random comes from streams
- * derived from `seed`, so a seed always gives the same result.
+ * Simulates one server for `weeks` weeks. Each week, Monday to Sunday: income (the income model's pay
+ * for that day's logins and leeters; `current`: the game's `baitForDay` for the leeters), then the day
+ * by the hour: check-ins of the players who opened the game (each player's `checkInHours`), the
+ * dungeon at a player's first check-in, and at 12:00 sign-up and Phase 1 on Friday, Phase 2 on
+ * Saturday and the finale on Sunday. Today's archetypes check in at 09:00 and 20:00. Everything random
+ * comes from streams derived from `seed`, so a seed always gives the same result.
  *
  * Boss Rank ladder: the first raid week places the server (`placementRank` of the creatures its
  * players bring), then a finale win adds a rank, a Festival week (every 5th week of the global

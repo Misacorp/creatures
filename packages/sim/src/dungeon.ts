@@ -41,7 +41,9 @@ import type { SimPlayer } from './state';
  *   tried once more (the worker's free retry).
  * - The team is the player's 3 strongest creatures by power (gear included), stood in one row by
  *   `dungeonRowOrder` (the order that sets off the most reactions left to right; ties go setters and supports left, a Guard in the middle, payoffs right). There is no basic ability and
- *   every unlocked creature ability fires at its default round.
+ *   every unlocked creature ability fires at its default round. (That is the profile skill `good`, today's
+ *   behaviour; the journey profiles can also pick the best three by row score, strongest first, or at random:
+ *   `chooseDungeonTeam`.)
  * - The day's modifiers are shared by everybody (drawn from a seed of the day), the rooms from the
  *   run's seed, and the rewards are paid as the worker pays them.
  */

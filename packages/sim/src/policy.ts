@@ -2,8 +2,10 @@ import { RULES, discountedTrainingCost, int, type Rng } from '@creatures/game';
 import { CATCHABLE, byPowerDesc, creaturePower, speciesOf, type OwnedCreature } from './data';
 
 /**
- * The spending policy every simulated player follows (archetypes differ only in how often they
- * leet and check in, never in how they spend).
+ * The spending policy of a simulated player. Today's archetypes all follow it as it is written here
+ * (they differ only in how often they leet and check in); a player profile (`profiles.ts`) turns its
+ * parts into dials: the share of the spare Bait that supplies may use, whom to train (`TrainingPlan`),
+ * whether to push evolutions, and how often to send trips and work the gear.
  *
  * At each check-in, in this order:
  * 1. Claim finished expeditions and take an end-of-trip goal that costs no waiting (see `trips.ts`).
