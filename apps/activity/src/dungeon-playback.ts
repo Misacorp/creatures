@@ -63,9 +63,13 @@ export function modifierGimmicks(room: Pick<DungeonReplayRoom, 'modifier'>): Gim
   return effects.flatMap((e) => (e.op === 'foe_gimmick' ? [e.gimmick] : []));
 }
 
-/** The stage's boss for a room: the foe's content id and name. */
-export function roomBoss(room: Pick<DungeonReplayRoom, 'foe'>): { id: string; name: string } {
-  return { id: room.foe.id, name: room.foe.name };
+/** The stage's boss for a room: the foe's content id, name and element. */
+export function roomBoss(room: Pick<DungeonReplayRoom, 'foe'>): {
+  id: string;
+  name: string;
+  element: string;
+} {
+  return { id: room.foe.id, name: room.foe.name, element: room.foe.element };
 }
 
 /**

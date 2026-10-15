@@ -248,6 +248,7 @@ function RoomFight({
         creatureHp={{ start: room.hpStart, max: room.hpMax }}
         layout="row"
         place={roomLine(room.index, total)}
+        modifiers={[room.modifier]}
         addedGimmicks={modifierGimmicks(room)}
         overlay={
           banner ? (

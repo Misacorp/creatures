@@ -3,9 +3,11 @@ import type { GlossarySection, GlossaryView } from '@creatures/game';
 import { createContext, type ComponentChildren, type RefObject } from 'preact';
 import { useContext, useMemo, useRef, useState } from 'preact/hooks';
 import { backLabel, creatureFacts, shownWornItem, type CreatureInfo } from './creature-info';
-import { shinyPalette } from './art';
+import { bossArt, shinyPalette } from './art';
+import type { FoeInfo } from './foe-info';
 import { speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
+import { compactCount } from './number-format';
 import { MORE_LABEL, resolveTag, tagKey, visualPlan, type TagRef } from './glossary-ui';
 import { WornItemLine } from './WornItemLine';
 import { ElementChip } from './sprites/ElementChip';
@@ -18,6 +20,7 @@ import { toggleActive, usePopoverNav } from './ui/popover-nav';
 type OpenPopover = { key: string; anchor: HTMLElement } & (
   | { kind: 'tag'; ref: TagRef }
   | { kind: 'creature'; info: CreatureInfo; action?: CreatureAction }
+  | { kind: 'foe'; info: FoeInfo }
   | { kind: 'custom'; label: string; body: ComponentChildren }
 );
 
@@ -42,6 +45,12 @@ export interface PopoverHostApi {
     anchor: HTMLElement,
     action?: CreatureAction,
   ) => void;
+  /**
+   * A tap on the foe or boss on the fight stage: opens its popover (name, element, HP and what it
+   * does, from the content), or closes it. Like a creature's, the element chip switches the same
+   * popover to its glossary entry.
+   */
+  openFoe: (key: string, info: FoeInfo, anchor: HTMLElement) => void;
   /** A tap on anything else that explains itself: opens a popover with this content, or closes it. */
   openCustom: (
     key: string,
@@ -225,6 +234,65 @@ function CreaturePopover({
 }
 
 /**
+ * The popover of the foe or boss on the fight stage, built like a creature's: its picture with its
+ * name, HP and element chip beside it, then a line about it and what it does. The element chip
+ * switches this same popover to that glossary entry, with a back control.
+ */
+function FoePopover({
+  open,
+  onClose,
+  onMore,
+}: {
+  open: OpenPopover & { kind: 'foe' };
+  onClose: () => void;
+  onMore: (section: GlossarySection) => void;
+}) {
+  const { info } = open;
+  const nav = usePopoverNav<string | null>(null, open);
+  const entry = nav.view === null ? undefined : entryView(nav.view);
+  const face = entry === undefined ? 'foe' : 'tag';
+  const art = bossArt(info.id);
+  return (
+    <Popover
+      key={`${face}:${entry?.title ?? ''}`}
+      layer="page"
+      anchor={() => open.anchor}
+      label={entry === undefined ? info.name : entry.title}
+      onClose={onClose}
+      nav={nav}
+    >
+      {entry === undefined ? (
+        <PopoverCard
+          visual={<Sprite sprite={art.sprite} scale={4} />}
+          title={info.name}
+          short={`HP ${compactCount(info.hp)}`}
+          lines={info.moves}
+          note={info.about}
+          beside={
+            <p class="tags pop-tags">
+              <ElementChip
+                as="button"
+                element={info.element}
+                onOpen={(id) => {
+                  nav.open(id);
+                }}
+              />
+            </p>
+          }
+        />
+      ) : (
+        <>
+          <PopoverBack label={backLabel(info)} onBack={nav.back}>
+            {info.name}
+          </PopoverBack>
+          <GlossaryCard view={entry} onMore={onMore} />
+        </>
+      )}
+    </Popover>
+  );
+}
+
+/**
  * Holds the one open popover of the app (a glossary tag's, a small creature's, a boss icon's) and
  * draws it above everything (a fixed layer, so it works on any page and over the How to play
  * overlay). Opening one closes the other. `onOpenHowTo` is what the popover's "More in How to play"
@@ -256,6 +324,9 @@ export function PopoverHost({
           }),
         );
       },
+      openFoe: (key, info, anchor) => {
+        setOpen((current) => toggleActive(current, { kind: 'foe', key, anchor, info }));
+      },
       openCustom: (key, anchor, popover) => {
         setOpen((current) => toggleActive(current, { kind: 'custom', key, anchor, ...popover }));
       },
@@ -276,6 +347,7 @@ export function PopoverHost({
       {open?.kind === 'creature' && (
         <CreaturePopover open={open} onClose={api.close} onMore={onMore} />
       )}
+      {open?.kind === 'foe' && <FoePopover open={open} onClose={api.close} onMore={onMore} />}
       {open?.kind === 'custom' && (
         <Popover
           key={open.key}

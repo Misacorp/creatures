@@ -53,7 +53,11 @@ describe('a stored room, as the stage draws it', () => {
   it('names the foe as the boss of the fight', () => {
     const room = replay.rooms[2];
     if (room === undefined) throw new Error('fixture has three rooms');
-    expect(roomBoss(room)).toEqual({ id: 'drowned-warden', name: 'Drowned Warden' });
+    expect(roomBoss(room)).toEqual({
+      id: 'drowned-warden',
+      name: 'Drowned Warden',
+      element: room.foe.element,
+    });
     expect(mineIds([]).size).toBe(0);
     expect(mineIds(stageRow(replay)).size).toBe(3);
   });
