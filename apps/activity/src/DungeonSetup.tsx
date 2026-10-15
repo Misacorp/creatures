@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { DungeonPrerun } from './DungeonPrerun';
 import { DungeonTeam } from './DungeonTeam';
-import { isComplete, pruneSlots, strongestFirst, strongestThree, type Slots } from './dungeon-team';
+import { isComplete, placedCount, pruneSlots, strongestThree, type Slots } from './dungeon-team';
 import { blockedText, isRetryOffer, RETRY_TEXT } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
 import { GlossaryTag } from './Glossary';
-import type { Selection } from './slot-outcome';
+import { toPickerCreature } from './roster-picker';
 
 interface Props {
   today: DungeonToday;
@@ -22,20 +22,20 @@ interface Props {
 
 /**
  * The pre-run screen. It leads with the three rooms and the day's modifiers (`DungeonPrerun`), then
- * the team in its three slots and the Enter button, or the reason a run is not possible. The choice
- * is the order of the team; the server checks it and decides the run. Streak and reset time are in
- * the end report, not here.
+ * the team on the Raid Roster's board and the Enter button, or the reason a run is not possible. The
+ * team starts as the player's strongest three, in the order that sets off the most reactions, and is
+ * kept only on this screen (nothing is stored: the server gets the whole ordered team when the run
+ * starts and needs all three). The choice is who stands where; the server checks it and decides the
+ * run. Streak and reset time are in the end report, not here.
  */
 export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast }: Props) {
-  const [slots, setSlots] = useState<Slots>(() => strongestThree(creatures));
-  const [selected, setSelected] = useState<Selection>(null);
-  const [hint, setHint] = useState<string | null>(null);
+  const pickable = useMemo(() => creatures.map(toPickerCreature), [creatures]);
+  const [slots, setSlots] = useState<Slots>(() => strongestThree(pickable));
 
   // The collection can change under the screen (a refresh after another tab): drop creatures that are gone.
   const owned = creatures.map((c) => c.id);
   useEffect(() => {
     setSlots((current) => pruneSlots(current, owned));
-    setSelected((current) => (current !== null && owned.includes(current) ? current : null));
   }, [owned.join(',')]);
 
   const blocked =
@@ -70,24 +70,8 @@ export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast
           </p>
         </section>
       )}
-      <section class="raid-section" aria-label="Your team">
-        <DungeonTeam
-          creatures={strongestFirst(creatures)}
-          slots={slots}
-          selected={selected}
-          hint={hint}
-          disabled={busy}
-          onChange={(next) => {
-            setSlots(next.slots);
-            setSelected(next.selected);
-            setHint(next.hint);
-          }}
-          onStrongest={() => {
-            setSlots(strongestThree(creatures));
-            setSelected(null);
-            setHint(null);
-          }}
-        />
+      <section class="raid-section" aria-labelledby="dungeon-zones-heading">
+        <DungeonTeam creatures={pickable} slots={slots} disabled={busy} onChange={setSlots} />
       </section>
       <section class="raid-section dungeon-enter" aria-label="Enter the dungeon">
         {error !== null && (
@@ -110,7 +94,8 @@ export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast
         </p>
         {!complete && (
           <p id="dungeon-enter-note" class="muted">
-            Fill all three slots to enter.
+            Place 3 creatures to enter ({String(placedCount(slots))} / 3 placed). Tap an empty slot
+            to choose one.
           </p>
         )}
       </section>

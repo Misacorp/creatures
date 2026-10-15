@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { TOUCH_HOLD_MS } from './dnd-core';
 import { creatureInfoOf } from './creature-info';
 import { creatureName } from './game';
-import { glyphOrUnknown } from './glyphs';
 import { GlossaryTag } from './Glossary';
 import { usePopoverHost } from './PopoverHost';
 import { resolveDrop, slotStatuses } from './raid-dnd';
@@ -21,28 +20,23 @@ import type { Intent } from './raid-slots';
 import {
   SHOW_PICKER_EFFECTS,
   MAX_ON_BOARD,
-  allPlaced,
   boardTotalLine,
   pickerOptions,
   pickerTitle,
   placedCount,
-  placedLine,
   rosterNote,
   ON_BOARD_NOTE,
   type PickerCreature,
 } from './roster-picker';
-import { Sprite } from './sprites/Sprite';
 import { DragGhost } from './ui/DragGhost';
 import { LiveRegion } from './ui/LiveRegion';
+import { PlacedCount } from './ui/PlacedCount';
 import { RaidBoard, type BoardRowModel } from './ui/RaidBoard';
 import { RosterPicker } from './ui/RosterPicker';
 import { useSlotKeyboard } from './ui/use-slot-keyboard';
 import { useDragDrop } from './use-drag-drop';
 
 type Party = NonNullable<RaidView['party']>;
-
-/** The check mark's colour: the same green as the `--good` token (canvas sprites take colours, not CSS variables). */
-const CHECK_PALETTE = { h: '#6fdc8c' } as const;
 
 interface Props {
   party: Party;
@@ -119,11 +113,7 @@ export function Placement(props: Props) {
 
   const onKeyDown = useSlotKeyboard({
     stripRef,
-    selected: null,
-    busy,
-    vertical: true,
     keyTarget: (current, key) => boardKeyTarget(rows, current, key),
-    onCancel: () => undefined,
   });
 
   const dragging = drag?.creatureId ?? null;
@@ -152,7 +142,7 @@ export function Placement(props: Props) {
   const { cues, noneRow, effect } = boardCues({
     ...cueArgs,
     carried: dragging,
-    pointer: drag?.over?.kind === 'slot' ? drag.over.slot : hovered,
+    pointer: drag?.over?.slot ?? hovered,
     inspected: inspectedSlot === undefined ? null : Number(inspectedSlot),
   });
 
@@ -235,14 +225,7 @@ export function Placement(props: Props) {
         <p class="muted small roster-help">
           Pick your creatures and place them on the board alongside everyone else.
         </p>
-        <p class="roster-count">
-          {allPlaced(placed) && (
-            <span class="count-check">
-              <Sprite sprite={glyphOrUnknown('check')} palette={CHECK_PALETTE} scale={2} />
-              <span class="visually-hidden">Done: </span>
-            </span>
-          )}
-          {placedLine(placed)}
+        <PlacedCount placed={placed}>
           <span class="roster-total">
             <span class="roster-sep" aria-hidden="true">
               {' · '}
@@ -250,14 +233,13 @@ export function Placement(props: Props) {
             <span class="visually-hidden">, </span>
             {boardTotalLine(party.row, party.rowLength)}
           </span>
-        </p>
+        </PlacedCount>
         {note !== null && <p class="muted small roster-when">{note}</p>}
         <RaidBoard
           rows={boardModels}
           stripRef={stripRef}
           emptyLabel={canEdit ? 'Add' : 'empty'}
           disabled={busy}
-          selected={null}
           drag={dragDrop}
           statuses={statuses}
           cues={cues.slots}

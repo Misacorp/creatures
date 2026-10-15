@@ -1,8 +1,8 @@
 import type { Zone } from '@creatures/engine';
-import type { ComponentChildren } from 'preact';
+import type { ComponentChildren, RefObject } from 'preact';
 import { useLayoutEffect, useRef } from 'preact/hooks';
 import { laneStates, ownLaneSpan, scrollToSpan } from '../raid-board';
-import { SlotButton, type SlotModel, type SlotRowProps } from './SlotRow';
+import { SlotButton, type SlotModel, type SlotStripProps } from './SlotButton';
 import { CueRail, type CueRailProps } from './CueRail';
 import { slotState } from './slot-state';
 
@@ -14,20 +14,19 @@ export interface BoardRowModel {
   slots: readonly SlotModel[];
 }
 
-interface RaidBoardProps extends Pick<
-  SlotRowProps,
-  | 'stripRef'
-  | 'emptyLabel'
-  | 'disabled'
-  | 'selected'
-  | 'drag'
-  | 'statuses'
-  | 'cues'
-  | 'onHoverSlot'
-  | 'onTap'
-> {
-  /** Front, Middle and Back (those that have slots), each with its slots left to right. */
+interface RaidBoardProps extends SlotStripProps {
+  /** The strip holding the tiles: the drag, the keyboard and the focus look the slots up in it. */
+  stripRef: RefObject<HTMLDivElement>;
+  /**
+   * Front, Middle and Back (those that have slots), each with its slots left to right. With
+   * `single` exactly one row.
+   */
   rows: readonly BoardRowModel[];
+  /**
+   * One plain row of tiles (the dungeon team's three places): no row labels, no lane header and no
+   * sideways scroller, larger tiles. `label` names the group for assistive technology.
+   */
+  single?: { label: string };
   /** What the rail under the board says (the "no reaction" mark, the effect line). Absent: no rail. */
   rail?: CueRailProps;
   /** The row that gets the "no reaction" mark on its name, when the creature in focus sets off nothing. */
@@ -36,6 +35,9 @@ interface RaidBoardProps extends Pick<
 
 /** The sprite scale of a tile: small, so about four lanes fit on a 360 px phone. */
 const TILE_SCALE = 2;
+
+/** The sprite scale of a tile in a single row: only three have to fit. */
+const SINGLE_TILE_SCALE = 3;
 
 /** Scrolls the board sideways to show lanes `first` to `last` (from 0). */
 function showLanes(scroller: HTMLElement | null, first: number, last: number) {
@@ -57,7 +59,8 @@ function showLanes(scroller: HTMLElement | null, first: number, last: number) {
  * The raid's party as a grid: Front, Middle and Back are three lines that never wrap, and a lane is the
  * same position in every line, so column k is slot k of each row. All three rows sit in one sideways
  * scroller, so a lane stays a vertical line. On open the board scrolls to your creatures. The tiles
- * are the shared `SlotButton`, so tap, drag and the keyboard work as on the dungeon team.
+ * are the shared `SlotButton`. The dungeon team uses the same board in its `single` mode: one row of
+ * three larger tiles with nothing around it, so the two screens look and behave alike.
  */
 export function RaidBoard(props: RaidBoardProps) {
   const { rows, stripRef } = props;
@@ -74,13 +77,37 @@ export function RaidBoard(props: RaidBoardProps) {
   const own = ownLaneSpan(states);
 
   // Start at your own creatures (once, when the board opens).
-  const first = useRef(own);
+  const first = useRef(props.single === undefined ? own : null);
   useLayoutEffect(() => {
     if (first.current !== null)
       showLanes(stripRef.current, first.current.first, first.current.last);
   }, []);
 
   const dragging = props.drag.drag?.creatureId ?? null;
+  if (props.single !== undefined) {
+    return (
+      <div class="raid-board single">
+        <div
+          ref={stripRef}
+          class={dragging === null ? 'party-strip' : 'party-strip dragging'}
+          role="group"
+          aria-label={props.single.label}
+        >
+          <div class="board-row">
+            {(rows[0]?.slots ?? []).map((slot) => (
+              <SlotButton
+                key={slot.index}
+                slot={slot}
+                scale={SINGLE_TILE_SCALE}
+                {...slotState(props, slot)}
+              />
+            ))}
+          </div>
+        </div>
+        {props.rail !== undefined && <CueRail {...props.rail} />}
+      </div>
+    );
+  }
   const classes =
     dragging === null ? 'party-strip board-scroller' : 'party-strip board-scroller dragging';
   return (

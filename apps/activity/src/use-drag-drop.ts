@@ -34,8 +34,6 @@ interface UseDragDropArgs {
   disabled: boolean;
   /** The strip holding the slots (`[data-slot]` buttons): the raid board scrolls sideways. */
   stripRef: RefObject<HTMLElement>;
-  /** The team tray (the dungeon's): dropping a placed creature here takes it out. Absent: no tray. */
-  trayRef?: RefObject<HTMLElement>;
   /**
    * Touch only: pick a creature up after the finger has rested on it this long (ms), and treat a
    * move before that as a scroll. Absent: a touch drags at once, as a mouse does (the dungeon).
@@ -59,7 +57,7 @@ export interface DragDrop {
 
 function sameTarget(a: DropTarget | null, b: DropTarget | null): boolean {
   if (a === null || b === null) return a === b;
-  return a.kind === b.kind && (a.kind !== 'slot' || (b.kind === 'slot' && a.slot === b.slot));
+  return a.slot === b.slot;
 }
 
 export function useDragDrop(args: UseDragDropArgs): DragDrop {
@@ -111,13 +109,6 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
         if (slot !== null) return { kind: 'slot', slot };
       }
     }
-    const tray = latest.current.trayRef?.current ?? null;
-    if (tray !== null) {
-      const t = tray.getBoundingClientRect();
-      if (p.x >= t.left && p.x <= t.right && p.y >= t.top && p.y <= t.bottom) {
-        return { kind: 'tray' };
-      }
-    }
     return null;
   }
 
@@ -157,13 +148,11 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
       if (!wasDragging) return;
       const outcome = latest.current.onDrop(creatureId, target === 'cancel' ? null : target);
       if (outcome.status === 'invalid' && target !== null && target !== 'cancel') {
-        if (target.kind === 'slot') {
-          setShakeSlot(target.slot);
-          if (shakeTimer.current !== null) clearTimeout(shakeTimer.current);
-          shakeTimer.current = setTimeout(() => {
-            setShakeSlot(null);
-          }, SHAKE_MS);
-        }
+        setShakeSlot(target.slot);
+        if (shakeTimer.current !== null) clearTimeout(shakeTimer.current);
+        shakeTimer.current = setTimeout(() => {
+          setShakeSlot(null);
+        }, SHAKE_MS);
       }
     };
 

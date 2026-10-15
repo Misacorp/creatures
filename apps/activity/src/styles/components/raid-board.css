@@ -60,3 +60,39 @@
   font-size: 0.875rem;
   line-height: 1;
 }
+
+/*
+  The single-row mode (the dungeon team's three places): no label column, no lane header and no
+  scroller, so the row takes the page's width and the tiles are larger than the raid's. The tiles
+  keep the same look and the same cues.
+*/
+.raid-board.single {
+  --tile-h: 7.5rem;
+  --board-pad: 6px;
+}
+
+.raid-board.single .party-strip {
+  padding: var(--board-pad);
+}
+
+.raid-board.single .board-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 24rem;
+}
+
+.raid-board.single .board-row .party-slot {
+  width: 100%;
+  font-size: 0.75rem;
+}
+
+/* The slot number sits at the top left, so the sprite needs no room of its own above it. */
+.raid-board.single .board-row .party-slot canvas.sprite {
+  margin-top: 0.125rem;
+}
+
+.raid-board.single .board-row .party-slot .slot-species {
+  font-size: 0.75rem;
+}

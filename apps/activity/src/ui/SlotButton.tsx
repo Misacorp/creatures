@@ -1,11 +1,9 @@
-import type { RefObject } from 'preact';
 import { elementClass } from '../art';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
-import type { DropStatus, Selection } from '../slot-outcome';
+import type { DropStatus } from '../slot-outcome';
 import type { DragDrop } from '../use-drag-drop';
 import { cueClasses, type SlotCue } from './slot-cue';
-import { slotState } from './slot-state';
 
 /** One slot of the row, ready to draw. */
 export interface SlotModel {
@@ -30,24 +28,11 @@ export interface SlotModel {
   };
 }
 
-/** Slots drawn together: the dungeon's one plain group of three. */
-export interface SlotGroup {
-  key: string;
-  /** Sprite scale for the group. */
-  scale: number;
-  slots: readonly SlotModel[];
-}
-
-export interface SlotRowProps {
-  groups: readonly SlotGroup[];
-  stripRef: RefObject<HTMLDivElement>;
-  /** Extra class on the strip (the dungeon draws its row of three in a grid). */
-  class?: string;
-  label: { 'aria-label': string } | { 'aria-labelledby': string };
+/** The state of a strip of slots, shared by every tile in it (`RaidBoard` draws the tiles). */
+export interface SlotStripProps {
   /** What an empty slot says. */
   emptyLabel: string;
   disabled: boolean;
-  selected: Selection;
   drag: DragDrop;
   /** Drop status of each slot while a creature is dragged, else null. */
   statuses: ReadonlyMap<number, DropStatus> | null;
@@ -61,41 +46,12 @@ export interface SlotRowProps {
 /** A tap on a slot: its number, and the button, for anything that opens next to it. */
 type SlotTap = (slot: number, button: HTMLElement) => void;
 
-/**
- * The dungeon's team: one row of three. Every slot is a button that takes a tap or a press (the drag
- * starts from it), says in its classes what a drop would do here, and keeps its `data-slot` for the
- * keyboard and the hit test. The raid's party is drawn by `RaidBoard`, with the same buttons.
- */
-export function SlotRow(props: SlotRowProps) {
-  const { drag } = props;
-  const dragging = drag.drag?.creatureId ?? null;
-  const classes = ['party-strip'];
-  if (props.class !== undefined) classes.push(props.class);
-  if (dragging !== null) classes.push('dragging');
-  return (
-    <div ref={props.stripRef} class={classes.join(' ')} role="group" {...props.label}>
-      {props.groups.map((group) =>
-        group.slots.map((slot) => (
-          <SlotButton
-            key={slot.index}
-            slot={slot}
-            scale={group.scale}
-            {...slotState(props, slot)}
-          />
-        )),
-      )}
-    </div>
-  );
-}
-
 export interface SlotButtonProps {
   slot: SlotModel;
   /** Sprite scale: the layout shrinks the sprites when a zone is long. */
   scale: number;
   emptyLabel: string;
   disabled: boolean;
-  selected: Selection;
-  hasSelection: boolean;
   status: DropStatus | null;
   over: boolean;
   shaking: boolean;
@@ -109,15 +65,15 @@ export interface SlotButtonProps {
 }
 
 /**
- * The one slot markup: number at the top (the dungeon), then the sprite, name and level, or the empty
- * label. In the raid the owner's initial sits in the corner in the owner's colour, and the element
- * colours the ring round the tile.
+ * The one slot markup, for the raid board and the dungeon team: the slot number at the top (the
+ * dungeon's row; the raid names places by row and lane instead), then the sprite, name and level, or
+ * the empty label. In the raid the owner's initial sits in the corner in the owner's colour, and the
+ * element colours the ring round the tile.
  */
 export function SlotButton(props: SlotButtonProps) {
   const { slot, scale, status } = props;
   const c = slot.occupant;
   const own = c?.ownId ?? null;
-  const isSelected = own !== null && own === props.selected;
   const classes = ['party-slot'];
   if (scale < 3) classes.push('compact');
   if (c === null) classes.push('empty');
@@ -128,8 +84,6 @@ export function SlotButton(props: SlotButtonProps) {
     if (c.mine) classes.push('mine');
   }
   if (own !== null) classes.push('draggable');
-  if (isSelected) classes.push('selected');
-  if (c === null && props.hasSelection) classes.push('target');
   if (status === 'valid') classes.push('drop-valid');
   if (status === 'invalid') classes.push('drop-invalid');
   if (props.over && status !== null && status !== 'none') classes.push('drop-over');
@@ -144,7 +98,6 @@ export function SlotButton(props: SlotButtonProps) {
       class={classes.join(' ')}
       data-slot={slot.index}
       aria-label={slot.ariaLabel}
-      aria-pressed={own !== null ? isSelected : undefined}
       disabled={props.disabled}
       onPointerDown={
         own === null

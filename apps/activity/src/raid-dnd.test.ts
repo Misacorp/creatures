@@ -77,10 +77,8 @@ describe('resolveDrop elsewhere', () => {
     });
   });
 
-  it('never takes a creature off the board: that is the Remove button', () => {
-    const result = resolveDrop(ctx, 'a', 'Alpha', { kind: 'tray' });
-    expect(result.intent).toBeNull();
-    expect(result.status).toBe('none');
+  it('never takes a creature off the board by a drop: that is the Remove button', () => {
+    expect(resolveDrop(ctx, 'a', 'Alpha', null).intent).toBeNull();
   });
 
   it('refuses a creature that is not on the board: it goes through the picker', () => {

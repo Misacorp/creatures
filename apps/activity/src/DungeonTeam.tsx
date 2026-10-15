@@ -1,11 +1,11 @@
-import { useRef, useState } from 'preact/hooks';
-import type { Creature } from './api';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { TOUCH_HOLD_MS } from './dnd-core';
 import {
   ROW_PLACES,
   ROW_PLACE_NAMES,
   orderHint,
+  place,
   placedCount,
-  reduceTap,
   resolveDrop,
   slotIndexOf,
   slotStatuses,
@@ -13,248 +13,239 @@ import {
   type Slots,
 } from './dungeon-team';
 import { ORDER_LINE } from './dungeon-text';
+import { boardKeyTarget, type BoardRow } from './raid-board';
 import { creatureName, getSpecies, speciesName } from './game';
 import { GlossaryTag } from './Glossary';
-import { CANCEL_ANNOUNCEMENT, type DropOutcome, type Selection, type Tap } from './slot-outcome';
-import { CreatureTray } from './ui/CreatureTray';
-import { CueRail } from './ui/CueRail';
+import { usePopoverHost } from './PopoverHost';
+import {
+  IN_TEAM_NOTE,
+  SHOW_PICKER_EFFECTS,
+  dungeonPickerOptions,
+  pickerTitle,
+  placedLine,
+  type PickerCreature,
+} from './roster-picker';
 import { DragGhost } from './ui/DragGhost';
 import { LiveRegion } from './ui/LiveRegion';
-import { SlotRow, type SlotGroup } from './ui/SlotRow';
+import { PlacedCount } from './ui/PlacedCount';
+import { RaidBoard, type BoardRowModel } from './ui/RaidBoard';
+import { RosterPicker } from './ui/RosterPicker';
+import type { SlotModel } from './ui/SlotButton';
 import { affectSlotOf, cuesFor, effectLine, sceneOf } from './ui/slot-cue';
-import { ToggleButton } from './ui/ToggleButton';
-import { useSlotAnnouncer, useSlotKeyboard } from './ui/use-slot-keyboard';
+import { useSlotKeyboard } from './ui/use-slot-keyboard';
 import { useDragDrop } from './use-drag-drop';
 
-/** How many creatures the list shows before "Show all". The strongest come first. */
-const TRAY_PREVIEW = 6;
-
-/** The sprites in the three slots: one size, there is room in a row of three. */
-const SLOT_SCALE = 3;
+/** The one row of the board: the dungeon's three places, left to right. */
+const ROW: BoardRow = { zone: 'front', slots: ROW_PLACES.map((_, index) => index) };
 
 interface Props {
-  /** All the player's creatures, strongest first. */
-  creatures: readonly Creature[];
+  /** Everything the player owns: the picker offers these. */
+  creatures: readonly PickerCreature[];
   slots: Slots;
-  selected: Selection;
-  hint: string | null;
-  /** True while the run is being sent. */
+  /** True while the run is being sent: the tiles are switched off. */
   disabled: boolean;
-  onChange: (next: { slots: Slots; selected: Selection; hint: string | null }) => void;
-  onStrongest: () => void;
+  onChange: (slots: Slots) => void;
 }
 
 /**
- * The team in its row. The fight is one row of three, left to right, and the order the player
- * stands them in is the choice: three slots side by side, with the list of everyone else under them.
- * A creature moves by dragging (pointer events, so touch works), by tapping it and then a slot, or
- * with the keyboard: Enter picks up, the arrow keys choose a slot, Enter drops, Escape cancels. The
- * slot row, the tray, the drag code and the keyboard are the ones the raid Placement uses. The
- * server checks the team again when the run starts.
+ * The dungeon team on the Raid Roster's board, in its single-row mode: three places, left to right,
+ * and the order is the choice. Tapping an empty place (or pressing Enter on it) opens the creature
+ * picker; tapping a creature opens its popover with "Remove from team"; creatures are moved by
+ * dragging them (a finger needs a short press and hold, so a swipe still scrolls the page), and
+ * dropping one on another swaps the two. Keyboard users move creatures with the picker. The server
+ * checks the team again when the run starts.
  */
 export function DungeonTeam(props: Props) {
-  const { creatures, slots, selected, disabled } = props;
+  const { creatures, slots, disabled } = props;
   const stripRef = useRef<HTMLDivElement>(null);
-  const trayRef = useRef<HTMLUListElement>(null);
-  const [showAll, setShowAll] = useState(false);
+  const popovers = usePopoverHost();
   /** The slot under the mouse or the keyboard focus. */
   const [hovered, setHovered] = useState<number | null>(null);
+  /** The empty slot the picker is open for. */
+  const [picking, setPicking] = useState<number | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
+  const [announcement, announce] = useState('');
 
   const byId = new Map(creatures.map((c) => [c.id, c]));
   const nameOf = (id: string): string => {
     const c = byId.get(id);
     return c === undefined ? 'Creature' : creatureName(c);
   };
+  const placed = placedCount(slots);
 
-  const [announcement, announce] = useSlotAnnouncer(selected, nameOf);
+  // The picker closes by itself when the run is sent under it.
+  useEffect(() => {
+    if (disabled) setPicking(null);
+  }, [disabled]);
 
   const dragDrop = useDragDrop({
     disabled,
     stripRef,
-    trayRef,
-    onDrop: (creatureId, target): DropOutcome => {
+    touchHoldMs: TOUCH_HOLD_MS,
+    onDrop: (creatureId, target) => {
       const { slots: next, outcome } = resolveDrop(slots, creatureId, target, nameOf);
       announce(outcome.announce);
-      props.onChange({ slots: next, selected: null, hint: outcome.hint });
+      setHint(outcome.hint);
+      if (next !== slots) props.onChange(next);
       return outcome;
     },
   });
   const { drag, consumeClick } = dragDrop;
 
-  function cancel(): void {
-    props.onChange({ slots, selected: null, hint: null });
-    announce(CANCEL_ANNOUNCEMENT);
-  }
-
   const onKeyDown = useSlotKeyboard({
     stripRef,
-    selected,
-    busy: disabled,
-    vertical: false,
-    onCancel: cancel,
+    keyTarget: (current, key) => boardKeyTarget([ROW], current, key),
   });
 
   const dragging = drag?.creatureId ?? null;
+
+  // A drag starting (after the hold, for a finger) closes any open popover at once, the one of the
+  // creature being carried included, so it cannot sit over the board while a creature is moved.
+  useEffect(() => {
+    if (dragging !== null) popovers?.close();
+  }, [dragging === null]);
+
   const statuses = dragging === null ? null : slotStatuses(slots, dragging, nameOf);
-  const draggedPlaced = dragging !== null && slotIndexOf(slots, dragging) !== null;
-  const draggedCreature = dragging === null ? undefined : byId.get(dragging);
+  const dragged = dragging === null ? undefined : byId.get(dragging);
 
-  function tap(t: Tap): void {
-    if (consumeClick()) return;
-    const result = reduceTap(slots, selected, t);
-    if (t.kind === 'slot' && selected !== null && result.slots !== slots) {
-      const { outcome } = resolveDrop(slots, selected, t, nameOf);
-      announce(outcome.announce);
-    }
-    props.onChange(result);
-  }
+  // The row as the cues read it: each creature's role and element, from the content.
+  const affectRowOf = (keys: readonly (string | null)[]) =>
+    keys.map((id) => {
+      const c = id === null ? undefined : byId.get(id);
+      return c === undefined ? null : affectSlotOf(getSpecies(c.species));
+    });
+  const mode = { row: 'dungeon' } as const;
 
-  const unplaced = creatures.filter((c) => slotIndexOf(slots, c.id) === null);
-  const shown = showAll ? unplaced : unplaced.slice(0, TRAY_PREVIEW);
-  // A creature that is picked up stays reachable even when the list is folded.
-  const picked = selected === null ? undefined : unplaced.find((c) => c.id === selected);
-  const listed = picked !== undefined && !shown.includes(picked) ? [...shown, picked] : shown;
-  const full = placedCount(slots) === ROW_PLACES.length;
+  // The cues: the creature in focus (carried, whose popover is open, or under the pointer) and the
+  // row as it would stand.
+  const inspectedSlot = popovers?.anchor?.closest<HTMLElement>('[data-slot]')?.dataset.slot;
+  const scene = sceneOf({
+    keys: slots,
+    carried: dragging,
+    pointer: drag?.over?.slot ?? hovered,
+    inspected: inspectedSlot === undefined ? null : Number(inspectedSlot),
+  });
+  const affectRow = affectRowOf(scene.keys);
+  const cues = cuesFor({ row: affectRow, mode, focus: scene.focus, scope: 'row' });
+  const effectOf = (keys: readonly (string | null)[], focus: number): string | null =>
+    effectLine({
+      row: affectRowOf(keys),
+      mode,
+      focus,
+      nameOf: (slot) => nameOf(keys[slot] ?? ''),
+    });
+  const effect = scene.focus === null ? null : effectOf(scene.keys, scene.focus);
 
   // Only a full team has an order to judge. The names are the player's own: text only.
-  const placed = slots.flatMap((id) => {
+  const team = slots.flatMap((id) => {
     const c = byId.get(id ?? '');
     return c === undefined ? [] : [c];
   });
   const reactionHint =
-    placed.length === slots.length
-      ? orderHint(placed.map((c) => ({ name: creatureName(c), species: c.species })))
+    team.length === slots.length
+      ? orderHint(team.map((c) => ({ name: creatureName(c), species: c.species })))
       : null;
 
-  // The cues: the creature in focus (carried, or under the pointer) and the row as it would stand.
-  const scene = sceneOf({
-    keys: slots,
-    carried: dragging ?? selected,
-    pointer: drag?.over?.kind === 'slot' ? drag.over.slot : hovered,
-  });
-  const affectRow = scene.keys.map((id) => {
-    const c = id === null ? undefined : byId.get(id);
-    return c === undefined ? null : affectSlotOf(getSpecies(c.species));
-  });
-  const cues = cuesFor({
-    row: affectRow,
-    mode: { row: 'dungeon' },
-    focus: scene.focus,
-    scope: 'row',
-  });
-  const effect =
-    scene.focus === null
-      ? null
-      : effectLine({
-          row: affectRow,
-          mode: { row: 'dungeon' },
-          focus: scene.focus,
-          nameOf: (slot) => nameOf(scene.keys[slot] ?? ''),
-        });
-
-  const group: SlotGroup = {
-    key: 'row',
-    scale: SLOT_SCALE,
-    slots: ROW_PLACES.map((place, index) => {
-      const creature = byId.get(slots[index] ?? '');
+  const model = (index: number): SlotModel => {
+    const spot = ROW_PLACE_NAMES[ROW_PLACES[index] ?? 'left'];
+    const creature = byId.get(slots[index] ?? '');
+    if (creature === undefined) {
       return {
         index,
-        ariaLabel:
-          creature === undefined
-            ? `${ROW_PLACE_NAMES[place]} slot, empty`
-            : `${ROW_PLACE_NAMES[place]} slot, ${creatureName(creature)}, ${speciesName(creature.species)} level ${String(creature.level)}`,
-        occupant:
-          creature === undefined
-            ? null
-            : {
-                species: creature.species,
-                name: creatureName(creature),
-                level: creature.level,
-                ownId: creature.id,
-                mine: true,
-              },
+        ariaLabel: disabled ? `${spot} slot, empty` : `${spot} slot, empty. Choose a creature.`,
+        occupant: null,
       };
-    }),
+    }
+    return {
+      index,
+      ariaLabel: `${spot} slot, ${creatureName(creature)}, ${speciesName(creature.species)} level ${String(creature.level)}`,
+      occupant: {
+        species: creature.species,
+        name: creatureName(creature),
+        level: creature.level,
+        ownId: creature.id,
+        mine: true,
+        element: getSpecies(creature.species)?.element ?? 'unknown',
+      },
+    };
   };
+  const rows: BoardRowModel[] = [
+    { zone: ROW.zone, name: 'Team', label: null, slots: ROW.slots.map(model) },
+  ];
+
+  /**
+   * A tap on a tile. An empty one opens the picker; a creature opens its popover with a "Remove from
+   * team" button.
+   */
+  function tapSlot(slot: number, button: HTMLElement): void {
+    if (consumeClick()) return;
+    const id = slots[slot] ?? null;
+    const creature = id === null ? undefined : byId.get(id);
+    if (id === null || creature === undefined) {
+      setHint(null);
+      setPicking(slot);
+      return;
+    }
+    const species = getSpecies(creature.species);
+    if (species === undefined || popovers === null) return;
+    const line = effectOf(slots, slot);
+    popovers.openCreature(
+      `dungeon-slot:${String(slot)}`,
+      {
+        name: creatureName(creature),
+        species: creature.species,
+        level: creature.level,
+        element: species.element,
+        role: species.role,
+        ...(line === null ? {} : { effect: line }),
+      },
+      button,
+      {
+        label: 'Remove from team',
+        onAct: () => {
+          setHint(null);
+          announce(`${nameOf(id)} removed from the team.`);
+          props.onChange(unplace(slots, id));
+        },
+      },
+    );
+  }
+
+  function pick(creatureId: string): void {
+    if (picking === null) return;
+    const slot = picking;
+    // The picker only opens for an empty place, so a new creature always has room; a creature of the
+    // team moves here and leaves its old place empty.
+    if (slotIndexOf(slots, creatureId) === null && placed >= ROW_PLACES.length) return;
+    setPicking(null);
+    setHint(null);
+    announce(`${nameOf(creatureId)} placed in the ${ROW_PLACES[slot] ?? ''} slot.`);
+    props.onChange(place(slots, creatureId, slot));
+  }
 
   return (
-    <div onKeyDown={onKeyDown}>
+    <div class="placement" onKeyDown={onKeyDown}>
       <h4 id="dungeon-zones-heading">Your team</h4>
       <p class="muted dungeon-order-line">
         <GlossaryTag entry="dungeon-row">{ORDER_LINE}</GlossaryTag>
       </p>
-      <SlotRow
-        groups={[group]}
+      <PlacedCount placed={placed} />
+      <RaidBoard
+        single={{ label: 'Your team, left to right' }}
+        rows={rows}
         stripRef={stripRef}
-        class="dungeon-strip"
-        label={{ 'aria-labelledby': 'dungeon-zones-heading' }}
-        emptyLabel="Empty"
+        emptyLabel="Add"
         disabled={disabled}
-        selected={selected}
         drag={dragDrop}
         statuses={statuses}
         cues={cues.slots}
         onHoverSlot={setHovered}
-        onTap={(slot) => {
-          tap({ kind: 'slot', slot });
-        }}
+        rail={{ none: cues.none, effect }}
+        onTap={tapSlot}
       />
-      <CueRail none={cues.none} effect={effect} />
-      <p class="button-row">
-        <button type="button" disabled={disabled} onClick={props.onStrongest}>
-          Use my strongest three
-        </button>
-        <button
-          type="button"
-          disabled={disabled || selected === null || slotIndexOf(slots, selected) === null}
-          onClick={() => {
-            if (selected !== null) {
-              props.onChange({ slots: unplace(slots, selected), selected: null, hint: null });
-            }
-          }}
-        >
-          Take out
-        </button>
-      </p>
-      {props.hint !== null && (
+      {hint !== null && (
         <p class="muted" role="status">
-          {props.hint}
-        </p>
-      )}
-
-      <h4 id="dungeon-list-heading">Your creatures</h4>
-      <CreatureTray
-        items={listed.map((c) => ({
-          id: c.id,
-          species: c.species,
-          name: creatureName(c),
-          detail: <>Lv {c.level}</>,
-        }))}
-        trayRef={trayRef}
-        class="dungeon-tray"
-        labelledBy="dungeon-list-heading"
-        disabled={disabled}
-        selected={selected}
-        drag={dragDrop}
-        accepts={draggedPlaced}
-        onTap={(id) => {
-          tap({ kind: 'creature', id });
-        }}
-      >
-        {unplaced.length === 0 && (
-          <li class="muted">{full ? 'Everyone else is in the team.' : 'No creatures left.'}</li>
-        )}
-      </CreatureTray>
-      {unplaced.length > TRAY_PREVIEW && (
-        <p>
-          <ToggleButton
-            pressed={showAll}
-            onToggle={() => {
-              setShowAll(!showAll);
-            }}
-          >
-            {showAll ? 'Show fewer' : `Show all ${String(unplaced.length)} creatures`}
-          </ToggleButton>
+          {hint}
         </p>
       )}
 
@@ -264,11 +255,32 @@ export function DungeonTeam(props: Props) {
       <DragGhost
         ghostRef={dragDrop.ghostRef}
         creature={
-          draggedCreature === undefined
+          dragged === undefined
             ? undefined
-            : { species: draggedCreature.species, name: creatureName(draggedCreature) }
+            : { species: dragged.species, name: creatureName(dragged) }
         }
       />
+      {picking !== null && (
+        <RosterPicker
+          title={pickerTitle(`the ${ROW_PLACES[picking] ?? ''} slot`)}
+          status={placedLine(placed)}
+          options={dungeonPickerOptions({
+            creatures,
+            slots,
+            slot: picking,
+            showEffects: SHOW_PICKER_EFFECTS,
+          })}
+          showEffects={SHOW_PICKER_EFFECTS}
+          placedNote={IN_TEAM_NOTE}
+          anchor={() =>
+            stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(picking)}"]`) ?? null
+          }
+          onPick={pick}
+          onClose={() => {
+            setPicking(null);
+          }}
+        />
+      )}
     </div>
   );
 }

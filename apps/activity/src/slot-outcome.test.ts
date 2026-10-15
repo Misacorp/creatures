@@ -1,28 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { reduceTap as dungeonTap, resolveDrop as dungeonDrop, type Slots } from './dungeon-team';
+import { resolveDrop as dungeonDrop, type Slots } from './dungeon-team';
 import type { RowSlotView } from './raid-api';
 import { resolveDrop as raidDrop } from './raid-dnd';
 import type { TapContext } from './raid-slots';
-import {
-  CANCEL_ANNOUNCEMENT,
-  dropOutcome,
-  notInRowAnnouncement,
-  pickUpAnnouncement,
-  takenOutAnnouncement,
-  type Tap,
-} from './slot-outcome';
+import { CANCEL_ANNOUNCEMENT, dropOutcome } from './slot-outcome';
 
-describe('the sentences both screens read out', () => {
-  it('explains the keys when a creature is picked up', () => {
-    expect(pickUpAnnouncement('Alpha')).toContain('Alpha picked up');
-    expect(pickUpAnnouncement('Alpha')).toContain('Escape');
-  });
-
-  it('names the creature that left the row or was not in it', () => {
-    expect(takenOutAnnouncement('Alpha')).toBe('Alpha taken out of the row.');
-    expect(notInRowAnnouncement('Alpha')).toBe('Alpha is not in the row.');
-  });
-
+describe('the outcome both screens share', () => {
   it('builds an outcome with its four parts', () => {
     expect(dropOutcome('valid', { type: 'x' }, null, 'Done.')).toEqual({
       status: 'valid',
@@ -57,15 +40,6 @@ describe('the raid and the dungeon rules say the same things', () => {
     expect(dungeonDrop(slots, 'a', null, nameOf).outcome.announce).toBe(CANCEL_ANNOUNCEMENT);
   });
 
-  it('takes a placed creature out on the dungeon tray with the shared sentences', () => {
-    expect(dungeonDrop(slots, 'a', { kind: 'tray' }, nameOf).outcome.announce).toBe(
-      takenOutAnnouncement('Ann'),
-    );
-    expect(dungeonDrop(slots, 'c', { kind: 'tray' }, nameOf).outcome.announce).toBe(
-      notInRowAnnouncement('Cy'),
-    );
-  });
-
   it('swaps two placed creatures, places on a free slot and leaves a creature on its own slot', () => {
     const swap = { kind: 'slot', slot: 1 } as const;
     expect(raidDrop(ctx, 'a', 'Ann', swap).status).toBe('valid');
@@ -81,12 +55,5 @@ describe('the raid and the dungeon rules say the same things', () => {
     const own = { kind: 'slot', slot: 0 } as const;
     expect(raidDrop(ctx, 'a', 'Ann', own).status).toBe('none');
     expect(dungeonDrop(slots, 'a', own, nameOf).outcome.status).toBe('none');
-  });
-
-  it('reads one Tap shape: a creature by id, a slot by number', () => {
-    const creature: Tap = { kind: 'creature', id: 'a' };
-    const slot: Tap = { kind: 'slot', slot: 2 };
-    expect(dungeonTap(slots, null, creature).selected).toBe('a');
-    expect(dungeonTap(slots, 'a', slot).slots).toEqual([null, 'b', 'a']);
   });
 });

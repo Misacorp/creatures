@@ -8,9 +8,7 @@ import {
   hitTest,
   holdMove,
   move,
-  nextIndex,
   pageScrollSpeed,
-  verticalNeighbour,
   press,
   type DragPhase,
   type Rect,
@@ -129,26 +127,6 @@ describe('drag phases', () => {
   });
 });
 
-describe('nextIndex', () => {
-  it('steps by one and stops at the ends', () => {
-    expect(nextIndex(2, 'ArrowRight', 5)).toBe(3);
-    expect(nextIndex(2, 'ArrowLeft', 5)).toBe(1);
-    expect(nextIndex(4, 'ArrowRight', 5)).toBe(4);
-    expect(nextIndex(0, 'ArrowLeft', 5)).toBe(0);
-  });
-
-  it('jumps with Home and End', () => {
-    expect(nextIndex(2, 'Home', 5)).toBe(0);
-    expect(nextIndex(2, 'End', 5)).toBe(4);
-  });
-
-  it('ignores other keys and empty rows', () => {
-    expect(nextIndex(2, 'a', 5)).toBeNull();
-    expect(nextIndex(2, 'Enter', 5)).toBeNull();
-    expect(nextIndex(0, 'ArrowRight', 0)).toBeNull();
-  });
-});
-
 // The zones are rows now: a zone's slots wrap onto several lines, one zone under the other.
 describe('slots laid out as rows', () => {
   // Front zone: two slots on one line; middle zone: three slots wrapped onto two lines.
@@ -167,32 +145,6 @@ describe('slots laid out as rows', () => {
     expect(hitTest(slots, { x: 80, y: 85 })).toBeNull();
     expect(hitTest(slots, { x: 80, y: 85 }, 6)).toBe(0);
     expect(hitTest(slots, { x: 80, y: 87 }, 6)).toBe(2);
-  });
-
-  it('moves up and down to the nearest slot of the next line', () => {
-    expect(verticalNeighbour(slots, 0, 'down')).toBe(2);
-    expect(verticalNeighbour(slots, 1, 'down')).toBe(3);
-    expect(verticalNeighbour(slots, 4, 'down')).toBe(5);
-    expect(verticalNeighbour(slots, 3, 'down')).toBe(5);
-    expect(verticalNeighbour(slots, 5, 'up')).toBe(2);
-    expect(verticalNeighbour(slots, 4, 'up')).toBe(1);
-    expect(verticalNeighbour(slots, 2, 'up')).toBe(0);
-  });
-
-  it('stops at the first and last line', () => {
-    expect(verticalNeighbour(slots, 0, 'up')).toBeNull();
-    expect(verticalNeighbour(slots, 5, 'down')).toBeNull();
-    expect(verticalNeighbour(slots, 99, 'down')).toBeNull();
-    expect(verticalNeighbour([], 0, 'down')).toBeNull();
-  });
-
-  it('does not move sideways in a line', () => {
-    const line = [
-      { id: 'a', rect: rect(0, 0, 50, 50) },
-      { id: 'b', rect: rect(60, 0, 110, 50) },
-    ];
-    expect(verticalNeighbour(line, 'a', 'down')).toBeNull();
-    expect(verticalNeighbour(line, 'b', 'up')).toBeNull();
   });
 });
 
