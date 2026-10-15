@@ -61,7 +61,7 @@ import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-gran
 import type { LedgerStorage } from './ledger';
 import { drawSeed, slotFor } from './raid-resolve';
 import { loadCreatures, type TeamCreature } from './raid-teams';
-import { LastTeamSchema, type RunBody } from './dungeon-schemas';
+import { DraftTeamSchema, LastTeamSchema, type RunBody } from './dungeon-schemas';
 import { addDays, gameDay, gameDayEnd } from './time';
 
 /** Runs (their events and inputs) are kept this long; the summary and rewards stay. */
@@ -175,6 +175,21 @@ export interface DungeonToday {
    * row (left to right), or null before their first run. Only the caller's own run is ever read.
    */
   lastTeam: string[] | null;
+  /**
+   * The row the player saved while setting up (`PUT /api/dungeon/team`), left to right, `teamSize`
+   * entries: each a creature id, or null for an empty slot (and for a creature the player no longer
+   * owns). Null when there is no draft; an explicitly empty draft is all nulls, not null. A run
+   * clears it. Only the caller's own draft is ever read.
+   */
+  draftTeam: (string | null)[] | null;
+}
+
+/** The light read behind the Activity's notification pip (`Dungeon.attention`). */
+export interface DungeonAttention {
+  /** Exactly `DungeonToday.canRun`. */
+  canRun: boolean;
+  /** When the game day ends: the answer can change then on its own. */
+  resetsAt: number;
 }
 
 export interface DungeonRunResponse {
@@ -294,6 +309,58 @@ export class Dungeon {
     }
   }
 
+  /** The ids of the player's creatures, for dropping draft entries they no longer own. */
+  private ownedIds(userId: string): Set<string> {
+    return new Set(
+      this.sql
+        .exec<{ id: string }>('SELECT id FROM creatures WHERE user_id = ?', userId)
+        .toArray()
+        .map((r) => r.id),
+    );
+  }
+
+  /**
+   * The player's saved draft with the creatures they no longer own (fused away, say) as null, or null
+   * when there is no draft. A damaged row gives null, never an error. Only the caller's own row is read.
+   */
+  private draftTeam(userId: string): (string | null)[] | null {
+    const row = this.sql
+      .exec<{ team_json: string }>('SELECT team_json FROM dungeon_drafts WHERE user_id = ?', userId)
+      .toArray()[0];
+    if (row === undefined) return null;
+    let stored: (string | null)[];
+    try {
+      const parsed = v.safeParse(DraftTeamSchema, JSON.parse(row.team_json));
+      if (!parsed.success) return null;
+      stored = parsed.output;
+    } catch {
+      return null;
+    }
+    const owned = this.ownedIds(userId);
+    return stored.map((id) => (id !== null && owned.has(id) ? id : null));
+  }
+
+  /**
+   * Saves the row the player is setting up (already validated: `teamSize` slots, ids all different).
+   * Ids the caller does not own become null, with no error: a creature may have been fused away, and
+   * nothing is revealed about whose it is. Not a spend, so there is no key; an upsert is idempotent.
+   * Answers what was stored.
+   */
+  saveDraft(userId: string, team: readonly (string | null)[]): (string | null)[] {
+    return this.deps.storage.transactionSync(() => {
+      const owned = this.ownedIds(userId);
+      const stored = team.map((id) => (id !== null && owned.has(id) ? id : null));
+      this.sql.exec(
+        `INSERT INTO dungeon_drafts (user_id, team_json, updated_at) VALUES (?, ?, ?)
+         ON CONFLICT(user_id) DO UPDATE SET team_json = excluded.team_json, updated_at = excluded.updated_at`,
+        userId,
+        JSON.stringify(stored),
+        this.deps.now(),
+      );
+      return stored;
+    });
+  }
+
   private runsOn(userId: string, day: string): RunRow[] {
     return this.sql
       .exec<RunRow>(
@@ -384,14 +451,56 @@ export class Dungeon {
     return this.deps.storage.transactionSync(() => this.todayView(userId, day, tz, now));
   }
 
-  private todayView(userId: string, day: string, tz: string, now: number): DungeonToday {
+  /**
+   * The one place that decides whether a player can run now: the allowance of the day, then the
+   * creature count. `today` and `attention` both read it, so they can never disagree.
+   */
+  private availability(
+    userId: string,
+    day: string,
+  ): {
+    progress: ProgressRow;
+    runs: RunRow[];
+    allowed: number;
+    ruleAllows: boolean;
+    needCreatures: boolean;
+    canRun: boolean;
+  } {
     const progress = this.progress(userId);
     const runs = this.runsOn(userId, day);
-    const { allowed, canRun } = this.allowance(progress, day, runs);
+    const { allowed, canRun: ruleAllows } = this.allowance(progress, day, runs);
     const creatures = this.sql
       .exec<{ n: number }>('SELECT COUNT(*) AS n FROM creatures WHERE user_id = ?', userId)
       .one().n;
     const needCreatures = creatures < RULES.dungeon.teamSize;
+    return {
+      progress,
+      runs,
+      allowed,
+      ruleAllows,
+      needCreatures,
+      canRun: ruleAllows && !needCreatures,
+    };
+  }
+
+  /**
+   * Whether the player can start a run now, and when that could change on its own. Like `today`
+   * without the modifiers (no day seed is drawn or stored) and without parsing any summary.
+   */
+  attention(userId: string): DungeonAttention {
+    const tz = this.deps.timezone();
+    const day = gameDay(this.deps.now(), tz, RULES.daily.reset);
+    return this.deps.storage.transactionSync(() => ({
+      canRun: this.availability(userId, day).canRun,
+      resetsAt: gameDayEnd(day, tz, RULES.daily.reset),
+    }));
+  }
+
+  private todayView(userId: string, day: string, tz: string, now: number): DungeonToday {
+    const { progress, runs, allowed, ruleAllows, needCreatures, canRun } = this.availability(
+      userId,
+      day,
+    );
     const last = runs.at(-1);
     // A last day later than `day` (timezone moved west) keeps the streak, it does not break it.
     const alive =
@@ -408,10 +517,11 @@ export class Dungeon {
       modifiers: this.modifierViews(this.modifierIds(day)),
       attemptsToday: runs.length,
       attemptsAllowed: allowed,
-      canRun: canRun && !needCreatures,
-      blocked: !canRun ? 'already_run' : needCreatures ? 'need_creatures' : null,
+      canRun,
+      blocked: !ruleAllows ? 'already_run' : needCreatures ? 'need_creatures' : null,
       last: last === undefined ? null : (JSON.parse(last.summary_json) as DungeonRunSummary),
       lastTeam: this.lastTeam(userId),
+      draftTeam: this.draftTeam(userId),
     };
   }
 
@@ -610,6 +720,8 @@ export class Dungeon {
       JSON.stringify(rewards),
       now,
     );
+    // The row that was just played is now `lastTeam`; the draft it came from is spent.
+    this.sql.exec('DELETE FROM dungeon_drafts WHERE user_id = ?', userId);
     this.log(userId, summary, input, rewards, row);
     return { run: summary, today: this.todayView(userId, day, tz, now) };
   }
@@ -821,5 +933,6 @@ export class Dungeon {
       cutoff,
     );
     this.sql.exec('DELETE FROM dungeon_days WHERE created_at < ?', cutoff);
+    this.sql.exec('DELETE FROM dungeon_drafts WHERE updated_at < ?', cutoff);
   }
 }

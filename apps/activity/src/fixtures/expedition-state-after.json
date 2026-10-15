@@ -336,5 +336,10 @@
     "lastDays": null
   },
   "loungerId": "1464897c-b3a6-4ad3-b05a-f4534c47dea4",
-  "loungeSpot": null
+  "loungeSpot": null,
+  "attention": {
+    "dungeon": true,
+    "raid": true,
+    "recheckAt": 1799840220000
+  }
 }

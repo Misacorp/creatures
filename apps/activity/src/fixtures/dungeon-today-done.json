@@ -31,7 +31,7 @@
   "canRun": false,
   "blocked": "already_run",
   "last": {
-    "id": "4961ffd2-7953-443f-aaf4-1d247819aca0",
+    "id": "c29e1899-1a01-45c7-8cd3-80a9f57d0b10",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -43,7 +43,7 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "baa62d13-a2e3-425c-8832-43aaf1844980",
+        "id": "65ce0708-80e0-4bb0-99b8-5ef9806dbb05",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -53,7 +53,7 @@
         "hpEnd": 302
       },
       {
-        "id": "27ab40f8-6fa4-49b6-993b-8635ac2609ff",
+        "id": "1e5e90cb-3a0d-40b1-8d5f-52ae9a216246",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
@@ -63,7 +63,7 @@
         "hpEnd": 200
       },
       {
-        "id": "f970bcd8-957f-4039-a9c6-39541617505a",
+        "id": "d7437761-2efb-44e0-b989-7ac8ae2f515c",
         "name": "Cindle",
         "speciesId": "cindle",
         "element": "ember",
@@ -146,8 +146,9 @@
     }
   },
   "lastTeam": [
-    "baa62d13-a2e3-425c-8832-43aaf1844980",
-    "27ab40f8-6fa4-49b6-993b-8635ac2609ff",
-    "f970bcd8-957f-4039-a9c6-39541617505a"
-  ]
+    "65ce0708-80e0-4bb0-99b8-5ef9806dbb05",
+    "1e5e90cb-3a0d-40b1-8d5f-52ae9a216246",
+    "d7437761-2efb-44e0-b989-7ac8ae2f515c"
+  ],
+  "draftTeam": null
 }

@@ -176,5 +176,10 @@
   "cancelled": [],
   "supplies": {},
   "loungerId": "a623e389-3d71-4fd5-8f2a-cbb80f7d0c41",
-  "loungeSpot": null
+  "loungeSpot": null,
+  "attention": {
+    "dungeon": true,
+    "raid": true,
+    "recheckAt": 1799840220000
+  }
 }

@@ -216,10 +216,17 @@ export const GEAR_TABLES = [
  * The schema version of a fresh database. Tests that check it use this constant, so a new migration
  * changes one number here (and adds an undo step below), not a dozen tests.
  */
-export const LATEST_SCHEMA_VERSION = 23;
+export const LATEST_SCHEMA_VERSION = 24;
+
+/** Puts a database back to before migration 24 (the saved dungeon team draft). */
+export function undoDungeonDraftMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS dungeon_drafts');
+  sql.exec('DELETE FROM schema_version WHERE version = 24');
+}
 
 /** Puts a database back to before migration 23 (the living room's chosen spot). */
 export function undoLoungeSpotMigration(sql: SqlStorage): void {
+  undoDungeonDraftMigration(sql);
   // Tests that rebuild an older schema may have dropped the table or a column already.
   const columns = sql
     .exec<{ name: string }>("SELECT name FROM pragma_table_info('players')")

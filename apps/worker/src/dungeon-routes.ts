@@ -1,6 +1,6 @@
 import { failure, pathId } from './collection-routes';
 import type { Dungeon } from './dungeon';
-import { RunBodySchema } from './dungeon-schemas';
+import { DraftBodySchema, RunBodySchema } from './dungeon-schemas';
 import { errorResponse, json, parseBody, type Routes } from './http';
 
 /** What these routes need from the request context (GuildCore's context satisfies it). */
@@ -19,6 +19,14 @@ export interface DungeonRouteContext {
 export const dungeonRoutes: Routes<DungeonRouteContext> = {
   '/api/dungeon/today': {
     GET: (_request, ctx) => json(ctx.core.dungeon.today(ctx.user.id)),
+  },
+  '/api/dungeon/team': {
+    // Saves the row the player set up, so it survives a tab switch. Not a spend: no key.
+    PUT: async (request, ctx) => {
+      const body = await parseBody(request, DraftBodySchema);
+      if (body === undefined) return errorResponse('invalid_body', 400);
+      return json({ draftTeam: ctx.core.dungeon.saveDraft(ctx.user.id, body.team) });
+    },
   },
   '/api/dungeon/run': {
     POST: async (request, ctx) => {

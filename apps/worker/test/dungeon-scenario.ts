@@ -74,6 +74,11 @@ export async function runDungeonScenario(ctx: CoreContext): Promise<DungeonCaptu
   });
   const [cindle, sproutle, splashet] = hero.creatureIds as [string, string, string];
   out.responses['dungeon-today'] = (await hero.call('GET', '/api/dungeon/today')).body;
+  // The row is saved while the player sets it up (the run below spends it).
+  await record(hero, 'dungeon-team-draft', 'PUT', '/api/dungeon/team', {
+    team: [splashet, null, cindle],
+  });
+  out.responses['dungeon-today-draft'] = (await hero.call('GET', '/api/dungeon/today')).body;
   const body = hero.body({ team: [sproutle, splashet, cindle] });
   const ran = await record(hero, 'dungeon-run-cleared', 'POST', '/api/dungeon/run', body);
   const runId = ((ran.body['run'] ?? {}) as { id?: string }).id ?? '';
@@ -84,6 +89,7 @@ export async function runDungeonScenario(ctx: CoreContext): Promise<DungeonCaptu
 
   // --- What a player can hit ---
   await refuse(hero, 'POST', '/api/dungeon/run', hero.body()); // already run today
+  await refuse(hero, 'PUT', '/api/dungeon/team', { team: [cindle, cindle, null] }); // the same creature twice
   await refuse(hero, 'POST', '/api/dungeon/run', { ...body, team: [cindle, splashet, sproutle] }); // same key, other team
   const other = await dungeonPlayer(ctx, 2, { level: 12 });
   await refuse(

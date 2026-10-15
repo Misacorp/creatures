@@ -9,12 +9,14 @@ import runLandmark from '../../activity/src/fixtures/dungeon-run-landmark.json';
 import runLost from '../../activity/src/fixtures/dungeon-run-lost.json';
 import runRetry from '../../activity/src/fixtures/dungeon-run-retry.json';
 import runRetryAttempt from '../../activity/src/fixtures/dungeon-run-retry-attempt.json';
+import teamDraft from '../../activity/src/fixtures/dungeon-team-draft.json';
 import today from '../../activity/src/fixtures/dungeon-today.json';
 import todayDone from '../../activity/src/fixtures/dungeon-today-done.json';
+import todayDraft from '../../activity/src/fixtures/dungeon-today-draft.json';
 import todayLandmark from '../../activity/src/fixtures/dungeon-today-landmark.json';
 import todayNeed from '../../activity/src/fixtures/dungeon-today-need-creatures.json';
 import todayRetry from '../../activity/src/fixtures/dungeon-today-retry.json';
-import { RunBodySchema } from '../src/dungeon-schemas';
+import { DraftBodySchema, RunBodySchema } from '../src/dungeon-schemas';
 import { dungeonScenarioOptions, runDungeonScenario } from './dungeon-scenario';
 import { runCore } from './helpers';
 import { nextGuild } from './raid-helpers';
@@ -75,6 +77,8 @@ describe('the dungeon fixtures match what the server sends', () => {
     const r = captured.responses;
     sameShape(r['dungeon-today'], today);
     sameShape(r['dungeon-today-done'], todayDone);
+    sameShape(r['dungeon-today-draft'], todayDraft);
+    sameShape(r['dungeon-team-draft'], teamDraft);
     sameShape(r['dungeon-today-landmark'], todayLandmark);
     sameShape(r['dungeon-today-retry'], todayRetry);
     sameShape(r['dungeon-today-need-creatures'], todayNeed);
@@ -106,6 +110,14 @@ describe('the dungeon fixtures match what the server sends', () => {
     expect(today.lastTeam).toBeNull();
     expect(todayDone.lastTeam).toEqual(runCleared.run.team.map((t) => t.id));
     expect(runCleared.today.lastTeam).toEqual(runCleared.run.team.map((t) => t.id));
+    // The saved draft: none before it is saved, what `PUT /api/dungeon/team` stored after (empty slots
+    // are null), and none once a run has spent it.
+    expect(today.draftTeam).toBeNull();
+    expect(teamDraft.draftTeam).toHaveLength(3);
+    expect(teamDraft.draftTeam.filter((id) => id === null)).toHaveLength(1);
+    expect(todayDraft.draftTeam).toEqual(teamDraft.draftTeam);
+    expect(todayDone.draftTeam).toBeNull();
+    expect(runCleared.today.draftTeam).toBeNull();
     // The retry of a key is the same run.
     expect(runRetry.run).toEqual(runCleared.run);
     // The landmark: a certain gear drop, the streak bonus of day 3, a landmark depth.
@@ -171,6 +183,17 @@ describe('the request bodies the client sends', () => {
         false,
       );
     }
+  });
+
+  it('save the draft with the strict schema, and no extra key gets through', () => {
+    const entry = bodies['dungeon-team-draft'];
+    expect(entry?.method).toBe('PUT');
+    expect(entry?.path).toBe('/api/dungeon/team');
+    expect(v.safeParse(DraftBodySchema, entry?.body).success).toBe(true);
+    expect(v.safeParse(DraftBodySchema, { ...(entry?.body as object), extra: 1 }).success).toBe(
+      false,
+    );
+    expect(entry?.body).toEqual({ team: teamDraft.draftTeam });
   });
 
   it('read the replay from the path of the run', () => {

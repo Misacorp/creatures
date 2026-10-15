@@ -1,9 +1,11 @@
 import { RULES, createCryptoRng, type Rng } from '@creatures/game';
 import * as v from 'valibot';
 import { Analytics } from './analytics';
+import { attentionOf, type Attention } from './attention';
 import { AnalyticsRollup, analyticsRollupMigration, type DailyRow } from './analytics-rollup';
 import { Collection } from './collection';
 import { Dungeon } from './dungeon';
+import { dungeonDraftMigration } from './dungeon-draft-migration';
 import { dungeonMigration } from './dungeon-migration';
 import { dungeonRoutes } from './dungeon-routes';
 import { Gear } from './gear';
@@ -314,6 +316,8 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
     sql.exec('ALTER TABLE players ADD COLUMN lounge_spot TEXT');
     sql.exec('ALTER TABLE players ADD COLUMN lounge_spot_at INTEGER');
   },
+  // Version 24: the saved dungeon team draft (see dungeon-draft-migration.ts).
+  dungeonDraftMigration,
 ];
 
 export interface SessionUser {
@@ -711,6 +715,11 @@ export class GuildCore {
     } else if (stored !== guildId) {
       throw new Error('guild id does not match this Durable Object');
     }
+  }
+
+  /** The player's notification pips and when to look again (see `attention.ts`). Read-only apart from the raid week lookup. */
+  attention(userId: string): Attention {
+    return attentionOf(this, userId, this.timezone(), this.now());
   }
 
   /**

@@ -1,4 +1,5 @@
 import * as v from 'valibot';
+import type { Attention } from './attention';
 import type { Collection, Outcome } from './collection';
 import {
   ClaimBodySchema,
@@ -28,6 +29,8 @@ export interface CollectionRouteContext {
     timezone(): string;
     /** How healthy the leet sync is, so players can see why Bait may be missing. */
     leetSyncStatus(): LeetSyncStatus;
+    /** The notification pips (dungeon, raid) and when to look again. May throw: the route copes. */
+    attention(userId: string): Attention;
   };
 }
 
@@ -50,10 +53,19 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
   '/api/state': {
     GET: async (_request, { user, core }) => {
       await core.syncIfStale();
+      // Only this answer carries `attention` (action answers embed `state` without it; the client
+      // keeps the last one, like `timezone`). A failure here must never take the state down with it.
+      let attention: Attention | null = null;
+      try {
+        attention = core.attention(user.id);
+      } catch (err) {
+        console.error('attention failed', err instanceof Error ? err.name : 'unknown');
+      }
       return json({
         ...core.collection.state(user.id),
         timezone: core.timezone(),
         leetSync: core.leetSyncStatus(),
+        attention,
       });
     },
   },

@@ -226,6 +226,11 @@ export interface RaidView {
 
 const PHASE_ORDER: readonly RaidStatus[] = ['open', 'phase1', 'phase2', 'finale'];
 
+/** The first phase event a week in this status has not run yet (the view's `next`), or undefined. */
+export function nextPendingEvent(status: RaidStatus): RaidPhase | undefined {
+  return RAID_PHASES.find((p) => PHASE_ORDER.indexOf(p) > PHASE_ORDER.indexOf(status));
+}
+
 export function displayNames(sql: SqlStorage): Map<string, string> {
   return new Map(
     sql
@@ -248,9 +253,7 @@ export function buildRaidView(
   const names = displayNames(sql);
   const boss = bossFor(week.bossId);
   const schedule = raid.schedule(week.weekId, tz);
-  const pending = RAID_PHASES.find(
-    (p) => PHASE_ORDER.indexOf(p) > PHASE_ORDER.indexOf(week.status),
-  );
+  const pending = nextPendingEvent(week.status);
 
   const memberRows = sql
     .exec<{ user_id: string; party: number }>(
