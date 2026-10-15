@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import { creatureButtonLabel, type CreatureInfo } from './creature-info';
-import { usePopoverTrigger } from './PopoverHost';
+import { usePopoverTrigger, type CreatureAction } from './PopoverHost';
 import { popupProps } from './ui/Popover';
 
 /**
@@ -21,6 +21,8 @@ export function SmallCreature(props: {
   class?: string;
   /** What assistive technology says instead of the default; keep the creature's name in it. */
   label?: string;
+  /** A button under the creature's facts in the popover (it closes the popover first), for example "Move". */
+  action?: CreatureAction;
   children: ComponentChildren;
 }) {
   const { host, ref, open } = usePopoverTrigger<HTMLButtonElement>();
@@ -34,7 +36,9 @@ export function SmallCreature(props: {
       {...popupProps(open)}
       aria-label={props.label ?? creatureButtonLabel(props.info)}
       onClick={() => {
-        if (ref.current !== null) host.openCreature(props.id, props.info, ref.current);
+        if (ref.current === null) return;
+        if (props.action === undefined) host.openCreature(props.id, props.info, ref.current);
+        else host.openCreature(props.id, props.info, ref.current, props.action);
       }}
     >
       {props.children}

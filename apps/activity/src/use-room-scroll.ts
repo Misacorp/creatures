@@ -3,7 +3,9 @@
  * player's own spot, a mouse can drag it (touch scrolls natively), and left alone for a while it
  * pans slowly back and forth. Any pointer, wheel, key or scroll interaction stops the pan and
  * restarts the wait. No pan under reduced motion or while the page is hidden, and no animation
- * frame loop at all unless the room scrolls.
+ * frame loop at all unless the room scrolls. While the player's own creature is being moved
+ * (`holdStill`) the pan is off, and a mouse press that starts on that creature is its drag, not a scroll
+ * (the creature's drag scrolls the room itself near an edge, see `use-drag-drop.ts`).
  */
 import type { RefObject } from 'preact';
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
@@ -23,6 +25,8 @@ interface Options {
   selfSpotX: number | null;
   roomPixelWidth: number;
   reducedMotion: boolean;
+  /** True while a creature is carried or being placed: no idle pan. */
+  holdStill: boolean;
 }
 
 export function useRoomScroll({
@@ -32,6 +36,7 @@ export function useRoomScroll({
   selfSpotX,
   roomPixelWidth,
   reducedMotion,
+  holdStill,
 }: Options): void {
   const spotRef = useRef(selfSpotX);
   spotRef.current = selfSpotX;
@@ -54,6 +59,9 @@ export function useRoomScroll({
     let swallowClick = false;
     const onDown = (event: PointerEvent): void => {
       if (event.pointerType !== 'mouse' || event.button !== 0) return;
+      // The player's own creature is dragged, not the room.
+      if (event.target instanceof Element && event.target.closest('[data-draggable="true"]'))
+        return;
       press = { x: event.clientX, scroll: el.scrollLeft, id: event.pointerId };
       dragging = false;
       swallowClick = false;
@@ -106,7 +114,7 @@ export function useRoomScroll({
   // The idle pan.
   useEffect(() => {
     const el = viewport.current;
-    if (!scrolling || reducedMotion || el === null) return undefined;
+    if (!scrolling || reducedMotion || holdStill || el === null) return undefined;
     let wait: ReturnType<typeof setTimeout> | undefined;
     let frame = 0;
     // The fractional position and direction of the pan (the element's own scrollLeft is rounded).
@@ -158,5 +166,5 @@ export function useRoomScroll({
       el.removeEventListener('scroll', onScroll);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [scrolling, reducedMotion]);
+  }, [scrolling, reducedMotion, holdStill]);
 }

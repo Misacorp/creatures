@@ -3,6 +3,8 @@
  * (no HTML5 drag API, which does not work on phones). A press becomes a drag after a small
  * movement, so a plain tap still taps. The decisions live in `dnd-core.ts`, `raid-dnd.ts` and `dungeon-team.ts`; this
  * file only connects them to the browser: listeners, the ghost position, hit-testing and scrolling.
+ * The raid board and the dungeon team drop on slots and a tray; the living room passes its own `locate`
+ * and target type (a spot id) and reuses the rest: thresholds, touch hold, ghost, edge scrolling.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { RefObject } from 'preact';
@@ -24,12 +26,12 @@ import type { DropOutcome, DropTarget } from './slot-outcome';
 const SLOT_SLOP = 6;
 const SHAKE_MS = 450;
 
-interface DragState {
+interface DragState<T = DropTarget> {
   creatureId: string;
-  over: DropTarget | null;
+  over: T | null;
 }
 
-interface UseDragDropArgs {
+interface UseDragDropArgs<T = DropTarget> {
   /** No drags can start while true (locked row, or a request in flight). */
   disabled: boolean;
   /** The strip holding the slots (`[data-slot]` buttons): the raid board scrolls sideways. */
@@ -41,12 +43,19 @@ interface UseDragDropArgs {
    * move before that as a scroll. Absent: a touch drags at once, as a mouse does (the dungeon).
    */
   touchHoldMs?: number;
+  /**
+   * What is under this point (client px)? Replaces the hit test of the strip's `[data-slot]` buttons
+   * and the tray; then `T` is the caller's own target type and `sameTarget` should compare it.
+   */
+  locate?: (p: Point) => T | null;
+  /** Whether two targets are the same one (null is a target too); strict equality when `locate` is given. */
+  sameTarget?: (a: T | null, b: T | null) => boolean;
   /** Called when a drag ends: `target` is null for a drop off the row or a cancel. */
-  onDrop: (creatureId: string, target: DropTarget | null) => DropOutcome<unknown>;
+  onDrop: (creatureId: string, target: T | null) => DropOutcome<unknown>;
 }
 
-export interface DragDrop {
-  drag: DragState | null;
+export interface DragDrop<T = DropTarget> {
+  drag: DragState<T> | null;
   /** The slot to shake after a refused drop. */
   shakeSlot: number | null;
   /** Position this element under the pointer while dragging (via CSS custom properties). */
@@ -57,13 +66,20 @@ export interface DragDrop {
   consumeClick: () => boolean;
 }
 
-function sameTarget(a: DropTarget | null, b: DropTarget | null): boolean {
+function sameDropTarget(a: DropTarget | null, b: DropTarget | null): boolean {
   if (a === null || b === null) return a === b;
   return a.kind === b.kind && (a.kind !== 'slot' || (b.kind === 'slot' && a.slot === b.slot));
 }
 
-export function useDragDrop(args: UseDragDropArgs): DragDrop {
-  const [drag, setDrag] = useState<DragState | null>(null);
+/** The slot of a slot target (the raid's and the dungeon's), for the shake; null for any other target. */
+function slotOf(target: unknown): number | null {
+  if (typeof target !== 'object' || target === null) return null;
+  const { kind, slot } = target as { kind?: unknown; slot?: unknown };
+  return kind === 'slot' && typeof slot === 'number' ? slot : null;
+}
+
+export function useDragDrop<T = DropTarget>(args: UseDragDropArgs<T>): DragDrop<T> {
+  const [drag, setDrag] = useState<DragState<T> | null>(null);
   const [shakeSlot, setShakeSlot] = useState<number | null>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
   const latest = useRef(args);
@@ -93,7 +109,20 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
     [],
   );
 
-  function locate(p: Point): DropTarget | null {
+  function locate(p: Point): T | null {
+    const custom = latest.current.locate;
+    if (custom !== undefined) return custom(p);
+    return locateSlot(p) as T | null;
+  }
+
+  function sameTarget(a: T | null, b: T | null): boolean {
+    const custom = latest.current.sameTarget;
+    if (custom !== undefined) return custom(a, b);
+    if (latest.current.locate !== undefined) return a === b;
+    return sameDropTarget(a as DropTarget | null, b as DropTarget | null);
+  }
+
+  function locateSlot(p: Point): DropTarget | null {
     const strip = latest.current.stripRef.current;
     if (strip !== null) {
       const box = strip.getBoundingClientRect();
@@ -130,7 +159,7 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
 
     const pointerId = event.pointerId;
     const source = event.currentTarget as HTMLElement;
-    let state: DragPhase<string, DropTarget> = press(creatureId, {
+    let state: DragPhase<string, T> = press(creatureId, {
       x: event.clientX,
       y: event.clientY,
     });
@@ -151,14 +180,15 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
       );
     };
 
-    const finish = (target: DropTarget | null | 'cancel'): void => {
+    const finish = (target: T | null | 'cancel'): void => {
       const wasDragging = state.phase === 'dragging';
       stop();
       if (!wasDragging) return;
       const outcome = latest.current.onDrop(creatureId, target === 'cancel' ? null : target);
       if (outcome.status === 'invalid' && target !== null && target !== 'cancel') {
-        if (target.kind === 'slot') {
-          setShakeSlot(target.slot);
+        const slot = slotOf(target);
+        if (slot !== null) {
+          setShakeSlot(slot);
           if (shakeTimer.current !== null) clearTimeout(shakeTimer.current);
           shakeTimer.current = setTimeout(() => {
             setShakeSlot(null);
@@ -168,7 +198,7 @@ export function useDragDrop(args: UseDragDropArgs): DragDrop {
     };
 
     /** The press becomes a drag: the creature is lifted, the pointer is captured and the ghost follows. */
-    const lift = (next: DragPhase<string, DropTarget>): void => {
+    const lift = (next: DragPhase<string, T>): void => {
       suppressClick.current = true;
       try {
         source.setPointerCapture(pointerId);

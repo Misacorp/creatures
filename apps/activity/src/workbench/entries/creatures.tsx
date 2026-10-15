@@ -11,7 +11,8 @@ import type { ReadinessBand, RaidView } from '../../raid-api';
 import { READINESS_BANDS } from '../../raid-api';
 import { turnChips } from '../../replay';
 import { Sprite } from '../../sprites/Sprite';
-import type { RoomPhase } from '../../sprites/room-art';
+import type { RoomPhase, RoomScene } from '../../sprites/room-art';
+import type { Resident } from '../../room-data';
 import { creatureSpriteOrFallback } from '../../sprites/creature-sprites';
 import { TurnStrip } from '../../ui/TurnStrip';
 import {
@@ -25,6 +26,8 @@ import {
   creatureInfoFor,
   sampleResidents,
   speciesLabel,
+  withClaims,
+  type RoomClaims,
 } from '../data';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
@@ -317,19 +320,79 @@ const wornItemLine: Entry = {
 const NO_REF = { current: null };
 const ROOM_PHASES: readonly RoomPhase[] = ['day', 'twilight', 'night'];
 
+const ROOM_CLAIMS: readonly RoomClaims[] = ['none', 'collide'];
+
+/**
+ * The living room with your own creature movable: a move is kept here, as the game keeps it in its
+ * state (the claim is the moment you dropped it), and everyone else's claims are fixed.
+ */
+function RoomDemo({
+  residents,
+  movable,
+  titleRow,
+  scene,
+}: {
+  residents: readonly Resident[];
+  movable: boolean;
+  titleRow: boolean;
+  scene: RoomScene;
+}) {
+  const [spot, setSpot] = useState<Resident['spot']>(
+    residents.find((r) => r.userId === ROOM_SELF_ID)?.spot ?? null,
+  );
+  const shown = residents.map((r) => (r.userId === ROOM_SELF_ID ? { ...r, spot } : r));
+  const onMove = movable
+    ? (spotId: string): void => {
+        setSpot({ id: spotId, at: Date.now() });
+      }
+    : undefined;
+  // With the title row it is drawn as the app draws it: a band as wide as the window.
+  return titleRow ? (
+    <AppHead
+      helpRef={NO_REF}
+      onHelp={() => undefined}
+      balances={{ bait: 52, essence: 52 }}
+      room={{
+        residents: shown,
+        selfId: ROOM_SELF_ID,
+        instanceId: 'workbench',
+        scene,
+        ...(onMove === undefined ? {} : { onMove }),
+      }}
+    />
+  ) : (
+    <LivingRoom
+      residents={shown}
+      selfId={ROOM_SELF_ID}
+      instanceId="workbench"
+      scene={scene}
+      {...(onMove === undefined ? {} : { onMove })}
+    />
+  );
+}
+
 const livingRoom: Entry = {
   name: 'LivingRoom',
   file: 'apps/activity/src/LivingRoom.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The pixel living room at the top of the app: every player who has the Activity open sits in a spot with their lounging creature (tap one for its popover), and the title row is laid over the wall. Use the width switcher: wide shows the whole room centred, a phone width scrolls it sideways (mouse drag, or swipe) and pans it slowly when left alone.',
+    'The pixel living room at the top of the app: every player who has the Activity open sits in a spot with their lounging creature (tap one for its popover), and the title row is laid over the wall. Use the width switcher: wide shows the whole room centred, a phone width scrolls it sideways (mouse drag, or swipe) and pans it slowly when left alone. With "movable" on, drag your own creature ("You") to an empty spot (mouse: press and move; touch: hold, then move), or open its popover and use Move to pick a spot with the keyboard.',
   controls: {
     players: { kind: 'number', min: 1, max: 24 },
     oneBusy: { kind: 'toggle' },
     titleRow: { kind: 'toggle' },
     phase: { kind: 'select', options: ROOM_PHASES },
+    movable: { kind: 'toggle' },
+    claims: { kind: 'select', options: ROOM_CLAIMS },
   },
-  defaults: { players: 4, oneBusy: false, titleRow: true, phase: 'night' },
+  defaults: {
+    players: 4,
+    oneBusy: false,
+    titleRow: true,
+    phase: 'night',
+    movable: false,
+    claims: 'none',
+  },
   presets: [
     { name: 'Alone', props: { players: 1 } },
     { name: '4 players', props: {} },
@@ -339,25 +402,24 @@ const livingRoom: Entry = {
     { name: 'Day', props: { phase: 'day' } },
     { name: 'Twilight', props: { phase: 'twilight' } },
     { name: 'No title row', props: { titleRow: false } },
+    { name: 'Drag your own creature', props: { movable: true } },
+    {
+      name: 'Claims collide (older wins)',
+      props: { players: 6, claims: 'collide', movable: true },
+    },
   ],
   render: (p) => {
-    const residents = sampleResidents(num(p, 'players'), bool(p, 'oneBusy'));
+    const claims = ROOM_CLAIMS.find((x) => x === str(p, 'claims')) ?? 'none';
+    const residents = withClaims(sampleResidents(num(p, 'players'), bool(p, 'oneBusy')), claims);
     const phase = ROOM_PHASES.find((x) => x === str(p, 'phase')) ?? 'night';
-    const scene = sceneOf(phase);
-    // With the title row it is drawn as the app draws it: a band as wide as the window.
-    return bool(p, 'titleRow') ? (
-      <AppHead
-        helpRef={NO_REF}
-        onHelp={() => undefined}
-        balances={{ bait: 52, essence: 52 }}
-        room={{ residents, selfId: ROOM_SELF_ID, instanceId: 'workbench', scene }}
-      />
-    ) : (
-      <LivingRoom
+    return (
+      <RoomDemo
+        // A new set of residents starts from their own claims.
+        key={`${String(num(p, 'players'))}:${String(bool(p, 'oneBusy'))}:${claims}`}
         residents={residents}
-        selfId={ROOM_SELF_ID}
-        instanceId="workbench"
-        scene={scene}
+        movable={bool(p, 'movable')}
+        titleRow={bool(p, 'titleRow')}
+        scene={sceneOf(phase)}
       />
     );
   },
