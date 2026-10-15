@@ -415,11 +415,15 @@ function upgradeAll(player: SimPlayer): void {
   }
 }
 
-/** Equip, dismantle and upgrade, in that order (see `GEAR_POLICY`). */
-export function manageGear(player: SimPlayer): void {
+/**
+ * Equip, dismantle and upgrade, in that order (see `GEAR_POLICY`). A player who does not work the gear
+ * at this check-in (`upgrade` false, see `PlayerProfile.craftPercent`) still wears and sorts what they
+ * have but spends no Essence or scrap on upgrades.
+ */
+export function manageGear(player: SimPlayer, upgrade = true): void {
   equipBest(player);
   dismantleExtras(player);
-  upgradeAll(player);
+  if (upgrade) upgradeAll(player);
 }
 
 // --- Starting jobs ---

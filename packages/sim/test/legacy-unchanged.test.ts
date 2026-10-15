@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { legacyDigest, type DigestEntry } from './legacy-digest';
 
@@ -10,7 +12,10 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(
-    readFileSync(new URL('./fixtures/legacy-digest.json', import.meta.url).pathname, 'utf8'),
+    readFileSync(
+      resolve(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'legacy-digest.json'),
+      'utf8',
+    ),
   ) as Record<string, DigestEntry>;
   let actual: Record<string, DigestEntry> = {};
   beforeAll(() => {

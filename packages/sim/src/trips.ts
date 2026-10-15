@@ -53,7 +53,6 @@ import {
   type SupplyDef,
   type TwistEffect,
 } from '@creatures/game';
-import { ARCHETYPE_CONFIG } from './archetypes';
 import { CATCHABLE, speciesOf, type OwnedCreature } from './data';
 import { creditParts, grantItem, learnBlueprint, onJob, type GearContext } from './gear';
 import type { PendingExpedition, SimPlayer } from './state';
@@ -80,10 +79,6 @@ export const TRIP_POLICY = {
   gearLikingBp: 800,
   /** While the second slot is closed, a player who checks in often takes the longest trip claimed within this many hours. */
   quickGapHours: 13,
-  /** A casual's next check-in is this many hours away, whatever the trip's length. */
-  casualGapHours: 84,
-  /** Check-in hours of a player who checks in twice a day. */
-  checkInHours: [9, 20] as const,
   /** A place a creature has begun on, but whose deeper area is still shut, is worth this much more. */
   finishFamiliarity: 2,
   /** What finding a species the player does not own yet is worth in Bait, when supplies are compared. */
@@ -155,11 +150,11 @@ function famOf(player: SimPlayer, creatureId: string, destinationId: string): Fa
 
 // --- Choosing a trip ---
 
-/** The first check-in at or after `hour` of a player who checks in twice a day. */
-function nextCheckIn(hour: number): number {
+/** The first check-in at or after `hour` of a player who checks in daily, at `hours` of the day. */
+function nextCheckIn(hour: number, hours: readonly number[]): number {
   const day = Math.floor(hour / 24);
   for (let d = day; d <= day + 2; d++) {
-    for (const h of TRIP_POLICY.checkInHours) {
+    for (const h of hours) {
       if (d * 24 + h >= hour) return d * 24 + h;
     }
   }
@@ -168,16 +163,23 @@ function nextCheckIn(hour: number): number {
 
 /**
  * The length that pays the most per hour of the slot being busy: a trip ties its slot up until the
- * check-in at which it is claimed. Casuals check in every few days, so they take the longest trip they
+ * check-in at which it is claimed. Players who do not open the game every day (casuals, drop-ins) have
+ * their next check-in 168 / loginDays hours away (84 for a casual), so they take the longest trip they
  * may; the others compare the worth of each length with the time until the check-in that claims it.
  */
 export function chooseLength(player: SimPlayer, rank: number, hour: number): ExpeditionLength {
   const open = EXPEDITION_LENGTHS.filter((l) => lengthOpen(l, rank));
-  const twiceDaily = ARCHETYPE_CONFIG[player.archetype].checkIns === 'twice_daily';
+  const { loginDays, checkInHours } = player.profile;
+  // A player who opens the game every day knows when the next check-in is (its hours); the others
+  // (casuals, drop-ins) only know that logins come about every 168 / loginDays hours.
+  const daily = loginDays >= 7;
+  const loginGapHours = 168 / Math.max(0.5, loginDays);
   // A new player who checks in often does short trips to finish the 3 that open the second slot.
-  if (twiceDaily && slotsOfPlayer(player) < 2) {
+  if (daily && slotsOfPlayer(player) < 2) {
     const quick = open.filter(
-      (l) => nextCheckIn(hour + tripMs(l, rank) / HOUR_MS) - hour <= TRIP_POLICY.quickGapHours,
+      (l) =>
+        nextCheckIn(hour + tripMs(l, rank) / HOUR_MS, checkInHours) - hour <=
+        TRIP_POLICY.quickGapHours,
     );
     const longest = quick.at(-1);
     if (longest !== undefined) return longest;
@@ -186,9 +188,9 @@ export function chooseLength(player: SimPlayer, rank: number, hour: number): Exp
   let bestRate = -1;
   for (const length of open) {
     const ready = hour + tripMs(length, rank) / HOUR_MS;
-    const gap = twiceDaily
-      ? nextCheckIn(ready) - hour
-      : Math.max(TRIP_POLICY.casualGapHours, ready - hour);
+    const gap = daily
+      ? nextCheckIn(ready, checkInHours) - hour
+      : Math.max(loginGapHours, ready - hour);
     const rate = expectedTripWorth(length) / gap;
     if (rate >= bestRate) {
       best = length;

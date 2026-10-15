@@ -10,6 +10,7 @@ import {
   rollDungeonLoot,
   rollRooms,
   roomModifier,
+  rowScore,
   scaledFoe,
   streakBonus,
   type Rng,
@@ -22,7 +23,9 @@ import {
   type DungeonRunInput,
   type FightSlot,
 } from '@creatures/engine';
-import { pickTeam } from './data';
+import { byPowerDesc, creaturePower, pickTeam, TEAM_SIZE, type OwnedCreature } from './data';
+import type { DungeonSkill } from './profiles';
+import { shuffle } from './util';
 import { neutralSupport, studyRules, type RoleStudy } from './role-study';
 import { grantDungeonLoot } from './gear';
 import { slotFor } from './raid';
@@ -54,6 +57,53 @@ export interface DungeonLogEntry {
   cleared: boolean;
 }
 
+/** The three creatures a player takes into the dungeon and whether the row is stood by the game's rule. */
+export interface DungeonTeam {
+  creatures: readonly OwnedCreature[];
+  /** True: `dungeonRowOrder` stands them; false: they stand in the order given. */
+  ordered: boolean;
+}
+
+/** Top creatures (by power) the `best` skill picks its three from. */
+const BEST_POOL = 6;
+
+/** Every way to take `size` of `items`, in order. */
+function combinations<T>(items: readonly T[], size: number): T[][] {
+  if (size === 0) return [[]];
+  const out: T[][] = [];
+  for (let i = 0; i + size <= items.length; i++) {
+    for (const rest of combinations(items.slice(i + 1), size - 1)) {
+      out.push([items[i] as T, ...rest]);
+    }
+  }
+  return out;
+}
+
+/**
+ * The dungeon team of a player of a skill (`DungeonSkill`): `good` is today's (the strongest three, the
+ * game's row order); `best` searches the player's top six for the three whose best row sets off the
+ * most reactions (`rowScore`), then the most power; `reasonable` takes the strongest three strongest
+ * first; `random` takes any three in a random order (drawn from `rng`, which the others never touch).
+ */
+export function chooseDungeonTeam(player: SimPlayer, skill: DungeonSkill, rng: Rng): DungeonTeam {
+  if (skill === 'good') return { creatures: pickTeam(player.creatures), ordered: true };
+  if (skill === 'reasonable') return { creatures: pickTeam(player.creatures), ordered: false };
+  if (skill === 'random') {
+    return { creatures: shuffle(rng, player.creatures).slice(0, TEAM_SIZE), ordered: false };
+  }
+  const pool = byPowerDesc(player.creatures).slice(0, BEST_POOL);
+  let best: { team: OwnedCreature[]; score: number; power: number } | null = null;
+  for (const team of combinations(pool, TEAM_SIZE)) {
+    const row = dungeonRowOrder(team.map((c) => slotFor(player, c.id)));
+    const score = rowScore(row);
+    const power = team.reduce((n, c) => n + creaturePower(c), 0);
+    if (best === null || score > best.score || (score === best.score && power > best.power)) {
+      best = { team, score, power };
+    }
+  }
+  return { creatures: best?.team ?? pickTeam(player.creatures), ordered: true };
+}
+
 /** The modifiers of a day: the same for every player of the server. */
 export function dayModifiers(seed: string, day: number): string[] {
   return rollDayModifiers(createSeededRng(`${seed}:dungeon-day:${String(day)}`));
@@ -66,17 +116,15 @@ export function buildRun(
   modifiers: readonly string[],
   seed: string,
   study: RoleStudy = {},
+  chosen?: DungeonTeam,
 ): DungeonRunInput {
-  const team = pickTeam(player.creatures);
+  const team = chosen?.creatures ?? pickTeam(player.creatures);
   // One row, left to right: the game's rule for a good order (`dungeonRowOrder`: the most reactions, then roles), strongest first.
-  const row = dungeonRowOrder(
-    team.map((c): FightSlot => {
-      const slot = { ...slotFor(player, c.id), ownerId: DUNGEON_PLAYER };
-      return study.neutralSupports === true && slot.role === 'support'
-        ? neutralSupport(slot)
-        : slot;
-    }),
-  );
+  const slots = team.map((c): FightSlot => {
+    const slot = { ...slotFor(player, c.id), ownerId: DUNGEON_PLAYER };
+    return study.neutralSupports === true && slot.role === 'support' ? neutralSupport(slot) : slot;
+  });
+  const row = chosen?.ordered === false ? slots : dungeonRowOrder(slots);
   const plans = rollRooms(createSeededRng(`${seed}:rooms`), modifiers, depth);
   const rooms: DungeonRoomSpec[] = plans.map((plan) => {
     const foe = dungeonFoe(plan.foeId);
@@ -124,6 +172,7 @@ export function playDungeonDay(
   seed: string,
   loot: Rng,
   study: RoleStudy = {},
+  team?: DungeonTeam,
 ): DungeonLogEntry[] {
   if (player.creatures.length < RULES.dungeon.teamSize) return [];
   const d = player.dungeon;
@@ -132,7 +181,7 @@ export function playDungeonDay(
   for (let attempt = 1; attempt <= (first ? 2 : 1); attempt++) {
     const depth = d.depth;
     const runSeed = `${seed}:${String(attempt)}`;
-    const run = buildRun(player, depth, modifiers, runSeed, study);
+    const run = buildRun(player, depth, modifiers, runSeed, study, team);
     const result = simulateDungeon(run, runSeed);
 
     // Progress, the streak (days in a row), and the depth.

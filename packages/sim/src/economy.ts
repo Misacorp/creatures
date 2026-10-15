@@ -13,11 +13,13 @@ import {
   type BossDef,
   type Element,
   type LuckConfig,
+  type RaidStage,
   RULES,
   type Rng,
 } from '@creatures/game';
-import { baitForDay } from '../../../apps/worker/src/economy';
 import { ARCHETYPES, ARCHETYPE_CONFIG, type ArchetypeId, type ArchetypeMix } from './archetypes';
+import { dayIncome, playerIncome, type IncomeModelId } from './income';
+import { proxyArchetype, type PlayerProfile } from './profiles';
 import {
   CATCHABLE,
   STARTERS,
@@ -37,9 +39,10 @@ import {
   manageGear,
   startJobs,
 } from './gear';
-import { dayModifiers, playDungeonDay, type DungeonLogEntry } from './dungeon';
+import { chooseDungeonTeam, dayModifiers, playDungeonDay, type DungeonLogEntry } from './dungeon';
+import type { Setup } from './formations';
 import { POLICY, chooseTrainee, isTrainable, trainCost } from './policy';
-import { openRaidWeek, playStage, summarizeRaid, type RaidSummary } from './raid';
+import { openRaidWeek, playStage, summarizeRaid, type RaidSummary, type RaidWeek } from './raid';
 import { clonePlayer, createPlayer, emptyWeek, type SimPlayer } from './state';
 import {
   claimTrips,
@@ -58,7 +61,14 @@ const RAID_DAY = { phase1: 4, phase2: 5, finale: 6 } as const;
 export interface EconomyOptions {
   seed: string;
   weeks: number;
-  mix: ArchetypeMix;
+  /** Today's archetypes by count. Either `mix` or `roster` is needed; `roster` wins when both are given. */
+  mix?: ArchetypeMix;
+  /** Players by profile (`profiles.ts`), in order: the journey simulator's way to set up a server. */
+  roster?: readonly RosterEntry[];
+  /** How Bait comes in (`income.ts`). Default `current`: Bait only from a leet, as the Worker pays it today. */
+  income?: IncomeModelId;
+  /** Called while the economy plays, for the journey log (`journey.ts`); it must not change the players. */
+  observer?: EconomyObserver;
   /** Weeks (1-based) after which the rosters are snapshotted for the raid sweep. */
   snapshotWeeks: readonly number[];
   /**
@@ -87,6 +97,34 @@ export interface EconomyOptions {
    * the players (clone them first) and the sim draws no random numbers for it.
    */
   onRaidOpen?: (info: RaidOpenInfo) => void;
+}
+
+/** One player of a roster: the dials to play by, and optionally the archetype label for the reports. */
+export interface RosterEntry {
+  profile: PlayerProfile;
+  /** Label for the reports; absent: the closest archetype (`proxyArchetype`). It decides nothing. */
+  archetype?: ArchetypeId;
+}
+
+/** What the observer is told at the end of a simulated day. */
+export interface DayInfo {
+  /** Week (1-based), day index since the start of the sim, and day of the week (Monday = 0). */
+  week: number;
+  day: number;
+  dayOfWeek: number;
+  /** Players who have joined. */
+  active: readonly SimPlayer[];
+  /** Who opened the game that day, who leeted, and how many check-ins each made. */
+  loggedIn: ReadonlySet<string>;
+  leeted: ReadonlySet<string>;
+  checkIns: ReadonlyMap<string, number>;
+}
+
+/** Hooks for a recorder. Everything it is given is live state: read it, do not change it. */
+export interface EconomyObserver {
+  /** A raid stage has just been played (and its loot paid). */
+  onRaidStage?(info: { week: number; day: number; stage: RaidStage; raid: RaidWeek }): void;
+  onDayEnd?(info: DayInfo): void;
 }
 
 /** What `EconomyOptions.onRaidOpen` is told. */
@@ -216,10 +254,32 @@ interface Streams {
   taste: Rng;
   /** Only drawn from when a behaviour percent is below 100. */
   participation: Rng;
+  /** Draws of the profiles' own dials (fractional day counts, craft chance, spread training, the random dungeon team). Never drawn for today's archetypes. */
+  profile: Rng;
 }
 
-function createPlayers(mix: ArchetypeMix): SimPlayer[] {
+function createPlayers(options: EconomyOptions): SimPlayer[] {
   const players: SimPlayer[] = [];
+  if (options.roster !== undefined) {
+    const counts = new Map<string, number>();
+    for (const entry of options.roster) {
+      const n = players.length + 1;
+      const k = (counts.get(entry.profile.id) ?? 0) + 1;
+      counts.set(entry.profile.id, k);
+      players.push(
+        createPlayer(
+          `p${String(n).padStart(2, '0')}`,
+          `${entry.profile.label} ${k}`,
+          entry.archetype ?? proxyArchetype(entry.profile),
+          entry.profile.joinWeek,
+          entry.profile,
+        ),
+      );
+    }
+    return players;
+  }
+  const mix = options.mix;
+  if (mix === undefined) throw new Error('runEconomy needs a mix or a roster');
   for (const archetype of ARCHETYPES) {
     for (let k = 1; k <= mix[archetype]; k++) {
       const n = players.length + 1;
@@ -267,11 +327,46 @@ function join(player: SimPlayer, all: readonly SimPlayer[], taste: Rng): void {
   });
 }
 
-function planLeetDays(rng: Rng, archetype: ArchetypeId, behaviour: Behaviour): boolean[] {
-  const perWeek =
-    behaviour.leetDaysPerWeek?.[archetype] ?? ARCHETYPE_CONFIG[archetype].leetDaysPerWeek;
-  const chosen = new Set(shuffle(rng, [0, 1, 2, 3, 4, 5, 6]).slice(0, perWeek));
-  return Array.from({ length: DAYS }, (_, d) => chosen.has(d));
+/** A day count that may be fractional: the whole part, plus one more day with the chance of the fraction. */
+function wholeDays(count: number, rng: Rng): number {
+  const whole = Math.floor(count);
+  const fraction = count - whole;
+  return fraction > 0 && chance(rng, Math.round(fraction * 1_000), 1_000) ? whole + 1 : whole;
+}
+
+/**
+ * The week's login days and leet days of a player (Monday = 0). One shuffled order of the week decides
+ * both (as it always decided the leet days): the leet days are its first days and the login days a
+ * longer stretch of it, so a leet is always a login. Players who open the game only to leet (login
+ * days not above leet days, like the casual) log in on exactly their leet days. A raid-day bias moves
+ * Friday to Sunday up the order first. Today's archetypes draw exactly what they always drew.
+ */
+function planDays(
+  rng: Rng,
+  dice: Rng,
+  player: SimPlayer,
+  behaviour: Behaviour,
+): { login: boolean[]; leet: boolean[] } {
+  const profile = player.profile;
+  const perWeek = behaviour.leetDaysPerWeek?.[player.archetype] ?? profile.leetDays;
+  let order = shuffle(rng, [0, 1, 2, 3, 4, 5, 6]);
+  if (profile.raidDayBias > 0) {
+    const front = order.filter(
+      (d) => d >= RAID_DAY.phase1 && chance(dice, profile.raidDayBias, 100),
+    );
+    order = [...front, ...order.filter((d) => !front.includes(d))];
+  }
+  const leetCount = wholeDays(perWeek, dice);
+  const loginCount =
+    profile.loginDays <= profile.leetDays
+      ? leetCount
+      : Math.max(wholeDays(profile.loginDays, dice), leetCount);
+  const leet = new Set(order.slice(0, leetCount));
+  const login = new Set(order.slice(0, loginCount));
+  return {
+    login: Array.from({ length: DAYS }, (_, d) => login.has(d)),
+    leet: Array.from({ length: DAYS }, (_, d) => leet.has(d)),
+  };
 }
 
 /** Median over joined players of their highest creature level (the server's median top level). */
@@ -329,32 +424,46 @@ function explorerOrder(player: SimPlayer): (idle: OwnedCreature[]) => OwnedCreat
 /**
  * One check-in: claim trips (and take an end-of-trip goal), claim jobs, evolve, train with what the
  * supplies budget leaves, manage gear, send trips into the free slots and start jobs (see POLICY).
+ * The player's profile sets the dials: how much of the spare Bait supplies may use, whom to train, and
+ * whether the gear is worked at this check-in. `dice` is the stream of the profile's own random
+ * choices (spread training, the craft chance); today's archetypes never draw from it.
  */
 export function checkIn(
   player: SimPlayer,
   medianTopLevel: number,
   ctx: TripContext,
   sendsTrips = true,
+  dice: Rng = createSeededRng(`check-in:${player.id}:${String(ctx.hour)}`),
 ): void {
   const gear = ctx.gear;
+  const profile = player.profile;
   claimTrips(player, ctx);
   if (gear !== undefined) claimJobs(player, gear);
   evolveCreatures(player);
 
-  // The Bait that supplies may use: what is held above the reserve (all of it when nothing can be trained).
+  // The Bait that supplies may use: what is held above the reserve (all of it when nothing can be
+  // trained), as far as the profile spends on supplies.
   const hasTrainable = player.creatures.some(isTrainable);
-  const budget = hasTrainable ? Math.max(0, player.bait - POLICY.supplyReserve) : player.bait;
+  const spare = hasTrainable ? Math.max(0, player.bait - POLICY.supplyReserve) : player.bait;
+  const budget = Math.floor((spare * profile.supplyPercent) / 100);
 
   // Trips go first, with supplies bought from the budget; what is not spent on them trains creatures.
-  if (gear !== undefined) manageGear(player);
+  const worksGear = profile.craftPercent >= 100 || chance(dice, profile.craftPercent, 100);
+  if (gear !== undefined) manageGear(player, worksGear);
   const spent = sendsTrips
     ? sendTrips(player, ctx, Math.min(budget, player.bait), explorerOrder(player))
     : 0;
   player.bait -= spent;
   player.week.baitSpentExpeditions += spent;
 
+  const plan = { focus: profile.trainFocus, evolutionPush: profile.evolutionPush };
   for (;;) {
-    const trainee = chooseTrainee(player.creatures);
+    // Someone who trains whatever they fancy picks among the creatures they can pay for.
+    const candidates =
+      plan.focus === 'spread'
+        ? player.creatures.filter((c) => trainCost(c, medianTopLevel) <= player.bait)
+        : player.creatures;
+    const trainee = chooseTrainee(candidates, plan, dice);
     if (trainee === null) break;
     const cost = trainCost(trainee, medianTopLevel);
     if (cost > player.bait) break;
@@ -364,7 +473,7 @@ export function checkIn(
     trainee.level += 1;
   }
 
-  if (gear !== undefined) {
+  if (gear !== undefined && worksGear) {
     startJobs(player, gear, new Set(player.expeditions.map((e) => e.explorerId)));
   }
 }
@@ -407,6 +516,21 @@ function record(player: SimPlayer, week: number): WeekRecord {
   };
 }
 
+/** The hour of the day at which the raid is signed up for and its stage played. */
+const RAID_HOUR = 12;
+
+/** The signed-up players who arrange their own raid row, grouped by setup (greedy first, then protected). */
+function arrangedGroups(
+  signed: readonly SimPlayer[],
+): { setup: Setup; playerIds: ReadonlySet<string> }[] {
+  const out: { setup: Setup; playerIds: ReadonlySet<string> }[] = [];
+  for (const setup of ['greedy', 'protected'] as const) {
+    const ids = signed.filter((p) => p.profile.raidRow === setup).map((p) => p.id);
+    if (ids.length > 0) out.push({ setup, playerIds: new Set(ids) });
+  }
+  return out;
+}
+
 /** Bosses rotate weekly in content order. */
 export function bossForWeek(week: number): BossDef {
   const boss = content.bosses[(week - 1) % content.bosses.length];
@@ -414,18 +538,16 @@ export function bossForWeek(week: number): BossDef {
   return boss;
 }
 
-/** Sign-up for a raid: casuals with their sign-up chance, everyone else always (in random order). */
+/** Sign-up for a raid: each player with the sign-up chance of their profile (in random order). */
 export function chooseSignUps(
   active: readonly SimPlayer[],
   signup: Rng,
   order: Rng,
-  /** Study: every player signs up with this chance (percent) instead of the archetype's own. */
+  /** Study: every player signs up with this chance (percent) instead of the profile's own. */
   percent?: number,
 ): SimPlayer[] {
   const yes = active.filter(
-    (p) =>
-      chance(signup, percent ?? ARCHETYPE_CONFIG[p.archetype].signUpPercent, 100) &&
-      p.creatures.length > 0,
+    (p) => chance(signup, percent ?? p.profile.signUpPercent, 100) && p.creatures.length > 0,
   );
   return shuffle(order, yes);
 }
@@ -485,13 +607,14 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
     trip: createSeededRng(`${seed}:trip`),
     taste: createSeededRng(`${seed}:taste`),
     participation: createSeededRng(`${seed}:participation`),
+    profile: createSeededRng(`${seed}:profile`),
   };
   const behaviour = options.behaviour ?? {};
-  const tripPercent = behaviour.tripPercent ?? 100;
   const dungeonPercent = behaviour.dungeonPercent ?? 100;
   const takesPart = (percent: number): boolean =>
     percent >= 100 || chance(rng.participation, percent, 100);
-  const players = createPlayers(options.mix);
+  const incomeModel = options.income ?? 'current';
+  const players = createPlayers(options);
   const history = new Map<string, PlayerHistory>(
     players.map((p) => [
       p.id,
@@ -531,7 +654,14 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
       p.week = emptyWeek();
     }
     const active = players.filter((p) => p.joined);
-    for (const p of active) p.leetDays = planLeetDays(rng.leet, p.archetype, behaviour);
+    // The week's login days (a leet is always a login), kept here: they are not part of a player's state.
+    const loginDays = new Map<string, boolean[]>();
+    for (const p of active) {
+      const days = planDays(rng.leet, rng.profile, p, behaviour);
+      p.leetDays = days.leet;
+      loginDays.set(p.id, days.login);
+    }
+    const loggedBeforeRaid = new Set<string>();
     const weekIndex = firstWeekIndex + week - 1;
     const boss = bossForWeek(weekIndex + 1);
     let raid: ReturnType<typeof openRaidWeek> | null = null;
@@ -539,7 +669,6 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
 
     for (let day = 0; day < DAYS; day++) {
       const globalDay = (week - 1) * DAYS + day;
-      // Check-ins happen at 09:00 and 20:00 (casuals only in the morning, on their leet days).
       const tripContext = (hourOfDay: number): TripContext => ({
         hour: globalDay * 24 + hourOfDay,
         day: globalDay,
@@ -550,101 +679,138 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
           ? { gear: { rng: rng.gear, hour: globalDay * 24 + hourOfDay, day: globalDay } }
           : {}),
       });
-      const morning = tripContext(9);
-      const eveningCtx = tripContext(20);
+      const loggedIn = active.filter((p) => loginDays.get(p.id)?.[day] === true);
       const leeters = active.filter((p) => p.leetDays[day] === true);
-      const bait = baitForDay(leeters.length);
-      for (const p of leeters) {
-        p.bait += bait;
-        p.week.baitEarned += bait;
-      }
-      const median = serverMedianTopLevel(active);
+      const loggedSet = new Set(loggedIn.map((p) => p.id));
+      const leetSet = new Set(leeters.map((p) => p.id));
+      if (day <= RAID_DAY.phase1) for (const id of loggedSet) loggedBeforeRaid.add(id);
+      // Income, credited when the day starts: the allowance for opening the game and the leet pay.
+      const income = dayIncome(incomeModel, leeters.length);
       for (const p of active) {
-        const cfg = ARCHETYPE_CONFIG[p.archetype];
-        if (cfg.checkIns === 'twice_daily' || p.leetDays[day] === true) {
-          checkIn(p, median, morning, takesPart(tripPercent));
+        const earned = playerIncome(income, loggedSet.has(p.id), leetSet.has(p.id));
+        if (earned > 0) {
+          p.bait += earned;
+          p.week.baitEarned += earned;
         }
       }
-
-      // The daily dungeon: everybody who checked in runs it (casuals on their leet days).
-      if (dungeonOn) {
-        const modifiers = dayModifiers(seed, globalDay);
-        for (const p of active) {
-          const cfg = ARCHETYPE_CONFIG[p.archetype];
-          if (cfg.checkIns !== 'twice_daily' && p.leetDays[day] !== true) continue;
-          if (!takesPart(dungeonPercent)) continue;
-          const runs = playDungeonDay(
-            p,
-            globalDay,
-            modifiers,
-            `${seed}:dungeon:${p.id}:${String(globalDay)}`,
-            rng.dungeon,
-          );
-          history.get(p.id)?.dungeon.push(...runs);
-        }
-      }
-
-      if (day === RAID_DAY.phase1) {
-        const signed = chooseSignUps(active, rng.signup, rng.order, behaviour.signUpPercent);
-        for (const p of signed) p.week.signedUp = true;
-        if (signed.length > 0) {
-          if (rank === null) {
-            rank = placementRank(signed.flatMap((p) => pickTeam(p.creatures).map((c) => c.level)));
+      const checkIns = new Map<string, number>();
+      const dungeonDone = new Set<string>();
+      // The day runs by the hour: each hour at which somebody checks in, then the raid at midday.
+      const hours = [
+        ...new Set([RAID_HOUR, ...loggedIn.flatMap((p) => p.profile.checkInHours)]),
+      ].sort((a, b) => a - b);
+      for (const hour of hours) {
+        const ctx = tripContext(hour);
+        const present = loggedIn.filter((p) => p.profile.checkInHours.includes(hour));
+        if (present.length > 0) {
+          const median = serverMedianTopLevel(active);
+          for (const p of present) {
+            checkIn(
+              p,
+              median,
+              ctx,
+              takesPart(behaviour.tripPercent ?? p.profile.tripPercent),
+              rng.profile,
+            );
+            checkIns.set(p.id, (checkIns.get(p.id) ?? 0) + 1);
           }
-          plan = raidWeekPlan(weekIndex, rank);
-          options.onRaidOpen?.({
-            week,
-            boss,
-            rank: plan.rank,
-            effectiveRank: plan.effectiveRank,
-            festival: plan.festival,
-            signed,
-          });
-          raid = openRaidWeek(boss, signed, {
-            rank: plan.effectiveRank,
-            reward: { rank: plan.rank, festival: plan.festival },
-            luck,
-          });
-        }
-      }
-      if (raid !== null) {
-        const stage =
-          day === RAID_DAY.phase1
-            ? 'phase1'
-            : day === RAID_DAY.phase2
-              ? 'phase2'
-              : day === RAID_DAY.finale
-                ? 'finale'
-                : null;
-        if (stage !== null) {
-          playStage(raid, stage, rng.fight, rng.loot);
-          if (gearOn && plan !== null && raid.stages[stage]?.cleared === true) {
-            if (stage === 'finale') {
-              const festival = plan.festival ? festivalCreatureFor(weekIndex) : null;
-              grantFinaleLoot(
-                raid.players,
-                plan.rank,
-                festival === null ? null : festival.element,
-                rng.gear,
+          // The daily dungeon: everybody who checked in runs it once, at their first check-in of the day.
+          if (dungeonOn) {
+            const modifiers = dayModifiers(seed, globalDay);
+            for (const p of present) {
+              if (dungeonDone.has(p.id)) continue;
+              dungeonDone.add(p.id);
+              if (!takesPart(dungeonPercent)) continue;
+              const runs = playDungeonDay(
+                p,
+                globalDay,
+                modifiers,
+                `${seed}:dungeon:${p.id}:${String(globalDay)}`,
+                rng.dungeon,
+                {},
+                chooseDungeonTeam(p, p.profile.dungeon, rng.profile),
               );
-            } else {
-              grantPhaseScrap(raid.players, stage);
+              history.get(p.id)?.dungeon.push(...runs);
             }
           }
         }
+        if (hour !== RAID_HOUR) continue;
+
+        if (day === RAID_DAY.phase1) {
+          const eligible = active.filter(
+            (p) => !p.profile.signUpNeedsLogin || loggedBeforeRaid.has(p.id),
+          );
+          const signed = chooseSignUps(eligible, rng.signup, rng.order, behaviour.signUpPercent);
+          for (const p of signed) p.week.signedUp = true;
+          if (signed.length > 0) {
+            if (rank === null) {
+              rank = placementRank(
+                signed.flatMap((p) => pickTeam(p.creatures).map((c) => c.level)),
+              );
+            }
+            plan = raidWeekPlan(weekIndex, rank);
+            options.onRaidOpen?.({
+              week,
+              boss,
+              rank: plan.rank,
+              effectiveRank: plan.effectiveRank,
+              festival: plan.festival,
+              signed,
+            });
+            const arranged = arrangedGroups(signed);
+            raid = openRaidWeek(boss, signed, {
+              rank: plan.effectiveRank,
+              reward: { rank: plan.rank, festival: plan.festival },
+              luck,
+              ...(arranged.length === 0 ? {} : { arranged }),
+            });
+          }
+        }
+        if (raid !== null) {
+          const stage =
+            day === RAID_DAY.phase1
+              ? 'phase1'
+              : day === RAID_DAY.phase2
+                ? 'phase2'
+                : day === RAID_DAY.finale
+                  ? 'finale'
+                  : null;
+          if (stage !== null) {
+            playStage(raid, stage, rng.fight, rng.loot);
+            if (gearOn && plan !== null && raid.stages[stage]?.cleared === true) {
+              if (stage === 'finale') {
+                const festival = plan.festival ? festivalCreatureFor(weekIndex) : null;
+                grantFinaleLoot(
+                  raid.players,
+                  plan.rank,
+                  festival === null ? null : festival.element,
+                  rng.gear,
+                );
+              } else {
+                grantPhaseScrap(raid.players, stage);
+              }
+            }
+            options.observer?.onRaidStage?.({ week, day: globalDay, stage, raid });
+          }
+        }
       }
 
-      const evening = serverMedianTopLevel(active);
       for (const p of active) {
-        if (ARCHETYPE_CONFIG[p.archetype].checkIns === 'twice_daily') {
-          checkIn(p, evening, eveningCtx, takesPart(tripPercent));
-        }
         const h = history.get(p.id);
         const joined = p.gear.joinDay;
         if (gearOn && h !== undefined && joined !== null && globalDay - joined === 29) {
           h.bestSkillDay30 = bestSkillLevel(p);
         }
       }
+      options.observer?.onDayEnd?.({
+        week,
+        day: globalDay,
+        dayOfWeek: day,
+        active,
+        loggedIn: loggedSet,
+        leeted: leetSet,
+        checkIns,
+      });
     }
     if (raid !== null && plan !== null && rank !== null) {
       const summary = summarizeRaid(raid);
