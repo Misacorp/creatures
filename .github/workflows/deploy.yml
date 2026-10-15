@@ -1,31 +1,56 @@
 name: deploy
 
-# Pushes to main deploy production. Pushes to any other branch in this repo
-# deploy staging. Fork pull requests never trigger this workflow (they only
-# trigger `pull_request` in ci.yml), so they never see these secrets.
+# Production: every push to main (a merged PR) deploys production. Nothing else can.
+# Staging: only a manual run. In GitHub, Actions -> deploy -> "Run workflow", pick the branch to put
+# on staging. Pushing a branch no longer deploys anything, so two branches never race for staging.
+# A manual run always deploys staging, even when main is picked (that resets staging to main).
+# Agents may start a manual run only when Misa asks in that session (see CLAUDE.md).
+# Fork pull requests never trigger this workflow (they only trigger `pull_request` in ci.yml), so
+# they never see these secrets.
 on:
   push:
-    branches-ignore:
-      - 'dependabot/**'
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions: {}
 
 jobs:
   deploy:
-    name: deploy (${{ github.ref_name == 'main' && 'production' || 'staging' }})
+    name: deploy (${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'production' || 'staging' }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
     environment:
-      name: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
-      url: ${{ github.ref_name == 'main' && 'https://creatures.misacorp.dev' || 'https://creatures-staging.misacorp.dev' }}
+      name: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      url: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'https://creatures.misacorp.dev' || 'https://creatures-staging.misacorp.dev' }}
     concurrency:
-      group: deploy-${{ github.ref_name == 'main' && 'production' || 'staging' }}
-      cancel-in-progress: ${{ github.ref_name != 'main' }}
+      group: deploy-${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      cancel-in-progress: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     env:
-      TARGET_ENV: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      TARGET_ENV: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'production' || 'staging' }}
     steps:
+      # Belt and braces: the target above can only be production for a push to main. Fail loudly if
+      # that ever stops being true (for example after an edit to the expressions).
+      - name: Guard the target
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+        run: |
+          if [ "$TARGET_ENV" = "production" ] && { [ "$EVENT" != "push" ] || [ "$REF" != "refs/heads/main" ]; }; then
+            echo "::error::Production deploys only from a push to main (got $EVENT on $REF)."
+            exit 1
+          fi
+          if [ "$TARGET_ENV" = "staging" ] && [ "$EVENT" != "workflow_dispatch" ]; then
+            echo "::error::Staging deploys only from a manual run (got $EVENT)."
+            exit 1
+          fi
+          if [ "$TARGET_ENV" != "production" ] && [ "$TARGET_ENV" != "staging" ]; then
+            echo "::error::Unknown target '$TARGET_ENV'."
+            exit 1
+          fi
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -40,7 +65,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Test (production only; PR CI already covers staging)
-        if: github.ref_name == 'main'
+        if: env.TARGET_ENV == 'production'
         run: pnpm test
 
       - run: pnpm build
@@ -56,6 +81,7 @@ jobs:
           # Optional: the ops report endpoint answers 404 until this is set.
           OPS_TOKEN: ${{ secrets.OPS_TOKEN }}
           GIT_SHA: ${{ github.sha }}
+          BRANCH: ${{ github.ref_name }}
         run: |
           missing=""
           for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID DISCORD_CLIENT_SECRET DISCORD_BOT_TOKEN LEET_API_KEY; do
@@ -70,4 +96,7 @@ jobs:
           # OPS_TOKEN is optional: an empty value is left out, so no empty secret is uploaded.
           jq -n --arg cs "$DISCORD_CLIENT_SECRET" --arg bt "$DISCORD_BOT_TOKEN" --arg lk "$LEET_API_KEY" --arg ot "$OPS_TOKEN" \
             '{DISCORD_CLIENT_SECRET: $cs, DISCORD_BOT_TOKEN: $bt, LEET_API_KEY: $lk} + (if $ot == "" then {} else {OPS_TOKEN: $ot} end)' > "$secrets_file"
-          pnpm exec wrangler deploy --env "$TARGET_ENV" --var "VERSION:${GIT_SHA}" --secrets-file "$secrets_file"
+          # The branch shows in the game's footer, so Misa can see what is on staging. Git ref names have
+          # no spaces or colons; anything outside this plain set is shown as "unknown".
+          if ! [[ "$BRANCH" =~ ^[A-Za-z0-9._/-]{1,100}$ ]]; then BRANCH="unknown"; fi
+          pnpm exec wrangler deploy --env "$TARGET_ENV" --var "VERSION:${GIT_SHA}" --var "BRANCH:${BRANCH}" --secrets-file "$secrets_file"

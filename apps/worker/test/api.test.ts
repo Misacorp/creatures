@@ -32,6 +32,7 @@ describe('GET /api/config', () => {
       discordClientId: '000000000000000000',
       environment: 'local',
       version: 'dev',
+      branch: 'dev',
       leetSource: 'mock',
     });
     expectApiHeaders(res);

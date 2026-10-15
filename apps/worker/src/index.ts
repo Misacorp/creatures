@@ -1,4 +1,5 @@
 import { handleAuthSession } from './auth';
+import { shownBranch } from './branch';
 import { createDiscordApi, type DiscordApi } from './discord';
 import { OPS_REPORT_PATH, handleOpsReport } from './ops-report';
 import { isDevPath } from './dev-tools';
@@ -57,15 +58,19 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
       GET: () => json({ ok: true }),
     },
     '/api/config': {
-      GET: (_request, env) =>
-        json({
+      GET: (_request, env) => {
+        // The deployed branch, for the footer; left out when CI did not set a plain branch name.
+        const branch = shownBranch(env.BRANCH);
+        return json({
           discordClientId: env.DISCORD_CLIENT_ID,
           environment: env.ENVIRONMENT,
           version: env.VERSION,
+          ...(branch === undefined ? {} : { branch }),
           leetSource: env.LEET_SOURCE,
           // Staging only: lets the client load the dev panel. Absent (not false) everywhere else.
           ...(env.DEV_TOOLS === 'on' ? { devTools: true } : {}),
-        }),
+        });
+      },
     },
     '/api/auth/session': {
       POST: (request, env) =>

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   createSession,
+  fetchConfig,
   fetchRoom,
   jsonRequest,
   parseGameState,
@@ -277,5 +278,25 @@ describe('the lounger and room requests', () => {
     expect(await fetchRoom(['1', '2'])).toEqual([]);
     expect(sent[sent.length - 1]?.path).toBe('/api/room');
     expect(sent[sent.length - 1]?.init.body).toBe('{"userIds":["1","2"]}');
+  });
+});
+
+describe('the public config', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const base = { discordClientId: '1', environment: 'staging', version: 'abc', leetSource: 'http' };
+
+  it('reads the deployed branch', async () => {
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, branch: 'feature/x' })));
+    expect((await fetchConfig()).branch).toBe('feature/x');
+  });
+
+  it('reads a missing or odd branch as null', async () => {
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json(base)));
+    expect((await fetchConfig()).branch).toBeNull();
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, branch: 7 })));
+    expect((await fetchConfig()).branch).toBeNull();
   });
 });

@@ -214,6 +214,9 @@ export function App() {
               <>
                 <Row label="Environment" value={bootStatus.value.config.environment} />
                 <Row label="Server version" value={bootStatus.value.config.version} />
+                {bootStatus.value.config.branch !== null && (
+                  <Row label="Branch" value={bootStatus.value.config.branch} />
+                )}
                 {bootStatus.value.me !== null && (
                   <Row label="Guild ID" value={bootStatus.value.me.guildId} />
                 )}

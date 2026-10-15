@@ -1131,3 +1131,13 @@ Misa's feedback after trying the dungeon, five changes (Activity only, no server
 - **Left as they were:** a creature ability's own `strike` still lands if its creature is knocked out (an explicit design rule, the source is not a target), and Shield Wall `own` covers the zone of its creature even when it fell (a zone, not a creature).
 
 **Result.** No golden or hand-checked fight changed; one test did (`hit_zone` skips knocked-out creatures: it used to expect no strike once the back zone was wiped out, now it expects the strike on the living Middle). New tests in `packages/engine/test/targets-alive.test.ts`, each with the would-be target already down. Full sim, before (79584b2) to after, seeds leet / leet2 / leet3: typical finale win rate 60.25% / 52.2% / 52.6% to 56.1% / 50.6% / 49.3%; typical Phase 2 clear 82.9% / 79.2% / 81.7% to 79.8% / 75.7% / 77.2%; boss spread 9.8% / 13.2% / 18.1% to 7.0% / 17.2% / 12.2%; `exp-casual-discovery` 0.32 / 0.32 / 0.25 to 0.18 / 0.14 / 0.302. Raids got a little harder, as expected, since bosses lose their flesh wall. No retune: see B-006. **Cost to know:** the Activity's boss warning for a zone attack names the aimed zone; when that zone is empty the hit now lands on another one, so the text is then slightly off (not changed here).
+
+## 2026-10-15: Staging deploys only on request; main locked against agents
+
+**Decision.** Pushing a branch no longer deploys staging. Staging changes only with a manual run of the `deploy` workflow (`workflow_dispatch`) on a chosen branch; a manual run always targets staging, even on `main`. Production still deploys from every push to `main`, and only from that (a guard step fails the job otherwise). The deployed branch shows in the footer (`BRANCH` Worker var, set by CI, validated before `/api/config` shows it).
+
+**Why.** With two sessions working at once, every push redeployed staging, so the branches took turns and it was unclear what Misa was testing. Misa wants control over what is on staging.
+
+**Agents.** An agent starts the staging run only when Misa asks in that session. The `main` ruleset (PR required, no bypass) stops direct pushes from everyone, agents included, so no agent-side push guard is kept (a hook was written and dropped as redundant). Merges are different: the GitHub connection acts as Misa's account, so GitHub cannot tell an agent's merge from Misa's, and `.claude/settings.json` denies the merge and auto-merge tools and `gh pr merge`.
+
+**Considered.** A pinned staging branch in a repo variable (still automatic, but easy to forget to switch) and a second staging slot with its own Discord app (true parallel testing, but much more setup). Either can be added later.

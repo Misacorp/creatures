@@ -25,7 +25,10 @@
       "Bash(pnpm publish*)",
       "Bash(gh secret*)",
       "Bash(curl *)",
-      "Bash(wget *)"
+      "Bash(wget *)",
+      "Bash(gh pr merge*)",
+      "mcp__github__merge_pull_request",
+      "mcp__github__enable_pr_auto_merge"
     ]
   }
 }
