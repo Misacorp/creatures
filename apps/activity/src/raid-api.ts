@@ -51,10 +51,20 @@ export interface TeamCreatureView {
   slot: number | null;
 }
 
+/** The boss's own lines for the moment it retreats at the floor of Phase 1 and of Phase 2. */
+export interface BossRetreat {
+  phase1: string;
+  phase2: string;
+}
+
 export interface PhaseResultView {
   phase: RaidPhaseId;
   at: number;
   cleared: boolean;
+  /** The boss reached the phase's floor and retreated (a cleared phase). Absent: false. */
+  retreated?: boolean;
+  /** The finale ran out of rounds and the boss enraged. Absent: false. */
+  enraged?: boolean;
   rounds: number;
   bossHpMax: number;
   bossHpStart: number;
@@ -103,6 +113,8 @@ export interface RaidReveal {
   /** The caller's party in that finale: with `week`, the key of its after-action stats. */
   party: number;
   cleared: boolean;
+  /** The finale's boss enraged when the rounds ran out. Absent: false. */
+  enraged?: boolean;
   /** Everything the finale paid the caller, as one figure. */
   essence: number;
   /** The ladder's move; null until every party of the server has finished (and for old weeks). */
@@ -138,6 +150,8 @@ export interface RaidView {
     turnOrder: string;
     gimmicks: { id: string; name: string }[];
     finaleRounds: number;
+    /** What the boss says when it retreats at a phase's floor; null or absent: the shared line. */
+    retreat?: BossRetreat | null;
   };
   /** The server's Boss Rank this week; null for a week from before ranks, or while nobody is in. */
   rank: number | null;
@@ -205,9 +219,13 @@ export interface ReplayView {
   party: number;
   phase: RaidPhaseId;
   at: number;
-  boss: { id: string; name: string };
+  boss: { id: string; name: string; retreat?: BossRetreat | null };
   rounds: number;
   cleared: boolean;
+  /** The boss reached the phase's floor and retreated. Absent: false. */
+  retreated?: boolean;
+  /** The boss enraged when the rounds ran out. Absent: false. */
+  enraged?: boolean;
   bossHpMax: number;
   bossHpStart: number;
   bossHpEnd: number;
@@ -270,6 +288,8 @@ function isResult(value: unknown): value is PhaseResultView {
     isPhaseId(value['phase']) &&
     isInt(value['at']) &&
     isBool(value['cleared']) &&
+    isOptBool(value['retreated']) &&
+    isOptBool(value['enraged']) &&
     isInt(value['rounds']) &&
     isInt(value['bossHpMax']) &&
     isInt(value['bossHpStart']) &&
@@ -370,6 +390,7 @@ function isReveal(value: unknown): value is RaidReveal {
     isStr(value['week']) &&
     isInt(value['party']) &&
     isBool(value['cleared']) &&
+    isOptBool(value['enraged']) &&
     isInt(value['essence']) &&
     (value['rankChange'] === null || isRankChange(value['rankChange'])) &&
     (value['festivalGrant'] === null || isFestivalGrant(value['festivalGrant']))
@@ -475,7 +496,16 @@ const EVENT_TYPES: ReadonlySet<string> = new Set([
   'knockout',
   'silence',
   'round_end',
+  // The raid retune (attack patterns, Support Mend, phase floors, enrage).
+  'heal',
+  'cleanse',
+  'charge',
+  'retreat',
+  'enrage',
 ]);
+
+/** Absent, or a boolean: the flags an older server does not send. */
+const isOptBool = (value: unknown): boolean => value === undefined || isBool(value);
 
 export const isEvent = (value: unknown): value is FightEvent =>
   isRecord(value) && isStr(value['t']) && EVENT_TYPES.has(value['t']) && isInt(value['round']);
@@ -518,6 +548,8 @@ export function parseReplayView(data: unknown): ReplayView {
     !(isRecord(data['boss']) && isStr(data['boss']['id']) && isStr(data['boss']['name'])) ||
     !isInt(data['rounds']) ||
     !isBool(data['cleared']) ||
+    !isOptBool(data['retreated']) ||
+    !isOptBool(data['enraged']) ||
     !isInt(data['bossHpMax']) ||
     !isInt(data['bossHpStart']) ||
     !isInt(data['bossHpEnd']) ||
@@ -590,6 +622,10 @@ export interface StatsAdaptation {
 export interface AfterActionStats {
   phase: RaidPhaseId;
   outcome: StatsOutcome;
+  /** The boss reached the phase's floor and retreated. Absent from an older server: false. */
+  retreated?: boolean;
+  /** The finale's boss enraged when the rounds ran out. Absent from an older server: false. */
+  enraged?: boolean;
   /** "Close one!": missed by little, or won with little to spare (the server decides). */
   close: boolean;
   rounds: number;
@@ -670,6 +706,8 @@ export function parseStats(data: unknown): AfterActionStats {
     !isPhaseId(data['phase']) ||
     !isStatsOutcome(data['outcome']) ||
     !isBool(data['close']) ||
+    !isOptBool(data['retreated']) ||
+    !isOptBool(data['enraged']) ||
     !isCount(data['rounds']) ||
     !isCount(data['maxRounds']) ||
     !isCount(data['reactionsTotal']) ||

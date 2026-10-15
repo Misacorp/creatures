@@ -46,7 +46,7 @@ export function bossIcons(
     icons.push({
       key: `gimmick:${g.id}`,
       kind: 'gimmick',
-      glyph: g.op ?? '',
+      glyph: g.glyph ?? '',
       caption: g.name,
       label: `${g.name}: what does this trick do?`,
       title: g.name,

@@ -245,6 +245,33 @@ describe('the glossary text matches the rules', () => {
     expect(text('role-support')).toContain(percent(RULES.combat.supportBuffBp));
   });
 
+  it('describes Guard cover, the Lance stop and the Support element effects with the real numbers', () => {
+    const guard = text('role-guard');
+    expect(guard).toContain(`${percent(RULES.combat.coverBp)} less from hits on many creatures`);
+    expect(guard).toContain('A Lance stops at a Guard');
+    const support = text('role-support');
+    const fx = RULES.combat.supportFx;
+    expect(support).toContain(`Ember boosts ${percent(fx.ember.buffBp)}`);
+    expect(support).toContain('Spark adds reaction damage');
+    expect(fx.spark.reactionBp).toBeGreaterThan(0);
+    expect(support).toContain('Tide and Grove heal');
+    expect(fx.tide.healBp).toBeGreaterThan(0);
+    expect(fx.grove.healBp).toBeGreaterThan(0);
+    expect(fx.tide.cleanse).toBe(true);
+  });
+
+  it('has a pattern entry for every attack pattern, drawn as its own glyph, plus enrage and retreat', () => {
+    for (const op of ['sweep', 'barrage', 'slam', 'lance', 'pincer', 'charge']) {
+      const e = entry(GLOSSARY_IDS.gimmick(op));
+      expect(e.section, op).toBe('raid-week');
+      expect(e.visual, op).toEqual({ kind: 'glyph', id: op });
+    }
+    expect(entry('retreat').section).toBe('raid-week');
+    expect(text('retreat')).toContain('immune');
+    expect(entry('enrage').section).toBe('finale');
+    expect(text('enrage')).toContain('hits every creature');
+  });
+
   it('says it in words, not numbers, for reactions, Payoff and Boss Rank (Misa, 2026-10-13)', () => {
     // The text must not pin a number that RULES or the content could change under it.
     const noNumber = (s: string): void => {

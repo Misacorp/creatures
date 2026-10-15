@@ -439,6 +439,9 @@ export function isKeyEvent(event: FightEvent): boolean {
     case 'gimmick':
     case 'silence':
     case 'adaptation':
+    case 'charge':
+    case 'retreat':
+    case 'enrage':
       return true;
     case 'boss_hit':
       return event.shielded === true;
@@ -467,7 +470,10 @@ function lines(
   const out: FeedLine[] = [];
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i] as FightEvent;
-    if (match(e) && isShown(e)) out.push({ text: describeEvent(e, names), key: isKeyEvent(e) });
+    if (!match(e) || !isShown(e)) continue;
+    // An event this client does not know describes as nothing: it gets no line.
+    const text = describeEvent(e, names);
+    if (text !== '') out.push({ text, key: isKeyEvent(e) });
   }
   return out;
 }
@@ -500,7 +506,7 @@ interface RevealSummary {
 /** Plain words for a finale reveal. */
 export function revealSummary(
   reveal: Pick<RaidReveal, 'cleared' | 'essence'> &
-    Partial<Pick<RaidReveal, 'rankChange' | 'festivalGrant'>>,
+    Partial<Pick<RaidReveal, 'rankChange' | 'festivalGrant' | 'enraged'>>,
 ): RevealSummary {
   const rank = reveal.rankChange == null ? null : rankChangeText(reveal.rankChange);
   const festival =
@@ -511,7 +517,13 @@ export function revealSummary(
           firstOnServer: reveal.festivalGrant.firstOnServer,
         };
   return {
-    outcome: reveal.cleared ? 'The boss fell. Finale cleared!' : 'The boss held on. Not cleared.',
+    outcome: reveal.cleared
+      ? reveal.enraged === true
+        ? 'The boss fell, even enraged. Finale cleared!'
+        : 'The boss fell. Finale cleared!'
+      : reveal.enraged === true
+        ? 'The boss held on. Out of time, it enraged. Not cleared.'
+        : 'The boss held on. Not cleared.',
     cleared: reveal.cleared,
     essence: `You got ${String(reveal.essence)} Essence`,
     rank,

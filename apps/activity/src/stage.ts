@@ -17,7 +17,7 @@
  * after a beat (HP, the mark, who is knocked out, which zones are shielded) always comes from the
  * events themselves.
  */
-import { content, dungeonContent, type BossDef } from '@creatures/game';
+import { RULES, content, dungeonContent, effectiveStats, type BossDef } from '@creatures/game';
 import {
   planRounds,
   zoneOfIndex,
@@ -26,9 +26,11 @@ import {
   type PlaybackOptions,
   type Zone,
 } from '@creatures/engine';
+import { getSpecies } from './game';
+import type { ReplayRowEntry } from './raid-api';
 import { stateAt, turnOrderOfRound, type StepState } from './replay';
 
-type FloatTone = 'hit' | 'hurt' | 'blocked' | 'buff';
+type FloatTone = 'hit' | 'hurt' | 'blocked' | 'buff' | 'heal' | 'cleanse' | 'immune';
 type ZoneEffect = 'shield' | 'rally' | 'hit';
 
 /**
@@ -47,6 +49,12 @@ export type Cue =
       crit: boolean;
       /** Sideways drift in steps (-3 to 3), from the event index. */
       drift: number;
+      /**
+       * Set on a boss hit that was one of more than `CROWDED_HITS` creatures hit by one action: the
+       * damage it did, so the stage can leave out the small ones (`showsNumber`).
+       */
+      crowded?: true;
+      damage?: number;
     }
   | {
       kind: 'burst';
@@ -65,6 +73,8 @@ export type Cue =
   | { kind: 'windup'; i: number; strike: BossStrike }
   | { kind: 'strike'; i: number; strike: BossStrike }
   | { kind: 'silenced'; i: number; creature: string }
+  /** Guard cover softened a hit on this creature: a small shield pip on it. */
+  | { kind: 'cover'; i: number; creature: string; guard: string }
   | { kind: 'banner'; i: number; text: string };
 
 /** What the boss does. `reflect_armed` is the trap being set at the start of a round: it has no wind-up. */
@@ -75,6 +85,15 @@ type StrikeAction =
   | 'silence_ends'
   | 'reflect'
   | 'reflect_armed'
+  | 'sweep'
+  | 'barrage'
+  | 'slam'
+  | 'lance'
+  | 'pincer'
+  /** A charged pattern was announced: its victims stay marked until it lands. */
+  | 'charge'
+  /** The enrage round's hit on every living creature. */
+  | 'enrage'
   | 'other';
 
 /** One boss action, read from the events of its beat. */
@@ -90,6 +109,44 @@ export interface BossStrike {
   blocked: readonly string[];
   /** The creature a guard stepped in for (the guard is the target); null if no guard did. */
   guarded: string | null;
+  /** A sweep's rows, front first (a charge's, when it is announced). Absent for other actions. */
+  rows?: readonly Zone[];
+  /** The creatures a slam's splash reached, beside the impact (which is in `targets`). */
+  splash?: readonly string[];
+  /** A lance's lane: the slot position within a row, from 0. */
+  lane?: number;
+  /** The pattern is a charge that has landed: its victims were marked a round ago. */
+  charged?: true;
+}
+
+/** The most reticles a boss action puts up at once; more targets than this are still hit. */
+export const MAX_RETICLES = 6;
+/** When one action hits more creatures than this, only the big hits get a number. */
+export const CROWDED_HITS = 8;
+/** "Big" for a crowded action: a hit of at least this share of the creature's max HP, in basis points. */
+export const BIG_HIT_BP = 1_000;
+
+/**
+ * The rows an action covers, for the row outline: a sweep's (or a charge's, once announced), or the
+ * one zone of a zone hit. Empty for the actions that mark creatures instead.
+ */
+export function strikeRows(strike: BossStrike): readonly Zone[] {
+  if (strike.rows !== undefined) return strike.rows;
+  return strike.action === 'hit_zone' && strike.zone !== null ? [strike.zone] : [];
+}
+
+/** The creatures an action puts reticles on: its targets, but never more than `MAX_RETICLES`. A row outline has none. */
+export function reticleTargets(strike: BossStrike): readonly string[] {
+  switch (strike.action) {
+    case 'hit_zone':
+    case 'sweep':
+    case 'reflect_armed':
+    case 'charge':
+    case 'enrage':
+      return [];
+    default:
+      return strike.targets.slice(0, MAX_RETICLES);
+  }
 }
 
 export interface Beat {
@@ -181,7 +238,11 @@ const abilityEffects = (abilityId: string) =>
  * after the raid bosses.
  */
 const dungeonGimmicks = [
-  ...dungeonContent.foes.flatMap((f) => f.gimmicks),
+  ...dungeonContent.foes.flatMap((f) => [
+    ...f.gimmicks,
+    // A room boss's landmark signature (a charge): it only comes up at landmark depths.
+    ...(f.signature === undefined ? [] : [f.signature]),
+  ]),
   ...dungeonContent.modifiers.flatMap((m) =>
     m.effects.flatMap((e) => (e.op === 'foe_gimmick' ? [e.gimmick] : [])),
   ),
@@ -215,15 +276,45 @@ const KNOWN_ACTIONS: ReadonlySet<string> = new Set([
   'hit_zone',
   'strike_highest_atk',
   'silence_ends',
-  'reflect_first_reaction',
+  'sweep',
+  'barrage',
+  'slam',
+  'lance',
+  'pincer',
 ]);
+
+/** True for the events that end the run of hits one boss action makes. */
+function endsHitRun(e: FightEvent): boolean {
+  return (
+    e.t === 'gimmick' ||
+    e.t === 'turn' ||
+    e.t === 'skip' ||
+    e.t === 'round_start' ||
+    e.t === 'round_end' ||
+    e.t === 'enrage' ||
+    e.t === 'retreat' ||
+    (e.t === 'boss_hit' && (e.source === 'attack' || e.source === 'enrage'))
+  );
+}
+
+/** The zones the given creatures stand in, front first, once each. */
+function zonesOf(rowIds: readonly string[], ids: readonly string[]): Zone[] {
+  const found = new Set<Zone>();
+  for (const id of ids) {
+    const zone = zoneOfCreature(rowIds, id);
+    if (zone !== null) found.add(zone);
+  }
+  return ZONES.filter((z) => found.has(z));
+}
 
 /**
  * The boss actions in the events [from, to), each with the event index it starts at: a plain attack,
- * a zone hit, a strike on the strongest creature, a silence, a reflected reaction, and the reflect
- * trap being armed. The targets are read from the events themselves (whoever the engine hurt or
- * silenced), so the telegraph shows exactly the affected creatures; only the zone of a zone hit comes
- * from the boss's content (a zone whose creatures are all down still has its outline).
+ * a zone hit, a strike on the strongest creature (with its jumps), a silence, a sweep, a barrage, a
+ * slam, a lance, a pincer, a charge being announced (its marks), the enrage round's hit, a reflected
+ * reaction, and the reflect trap being armed. The targets are read from the events themselves
+ * (whoever the engine hurt or silenced), so the telegraph shows exactly the affected creatures; only
+ * the zone of a zone hit comes from the boss's content (a zone whose creatures are all down still
+ * has its outline).
  */
 export function strikesOf(
   events: readonly FightEvent[],
@@ -234,9 +325,29 @@ export function strikesOf(
 ): { i: number; strike: BossStrike }[] {
   const out: { i: number; strike: BossStrike }[] = [];
   const end = Math.min(to, events.length);
+  // The enrage round's hits on every creature are one action: this is its strike while it is open.
+  let enrage: { targets: string[] } | null = null;
   for (let i = Math.max(0, from); i < end; i++) {
     const e = events[i] as FightEvent;
-    if (e.t === 'boss_hit' && e.source === 'attack') {
+    if (endsHitRun(e) && !(e.t === 'boss_hit' && e.source === 'enrage')) enrage = null;
+    if (e.t === 'boss_hit' && e.source === 'enrage') {
+      if (enrage === null) {
+        const targets: string[] = [];
+        enrage = { targets };
+        out.push({
+          i,
+          strike: {
+            action: 'enrage',
+            gimmick: null,
+            targets,
+            zone: null,
+            blocked: [],
+            guarded: null,
+          },
+        });
+      }
+      if (!enrage.targets.includes(e.target)) enrage.targets.push(e.target);
+    } else if (e.t === 'boss_hit' && e.source === 'attack') {
       out.push({
         i,
         strike: {
@@ -260,6 +371,20 @@ export function strikesOf(
           guarded: null,
         },
       });
+    } else if (e.t === 'charge') {
+      const rows = e.rows === undefined ? [] : ZONES.filter((z) => e.rows?.includes(z) === true);
+      out.push({
+        i,
+        strike: {
+          action: 'charge',
+          gimmick: e.gimmick,
+          targets: e.marks,
+          zone: rows[0] ?? (e.marks[0] === undefined ? null : zoneOfCreature(rowIds, e.marks[0])),
+          blocked: [],
+          guarded: null,
+          ...(rows.length === 0 ? {} : { rows }),
+        },
+      });
     } else if (e.t === 'gimmick') {
       if (e.op === 'reflect_first_reaction') {
         // The engine announces the trap twice a round (when it is armed and at the boss's turn): show it once.
@@ -281,42 +406,54 @@ export function strikesOf(
         }
         continue;
       }
+      const def = gimmickOf(bossId, e.gimmick);
+      // A charge that lands is its pattern: the event may name either (the content says which).
+      const inner = def?.op === 'charge' ? def.then.op : null;
+      const op = e.op === 'charge' && inner !== null ? inner : e.op;
       const targets: string[] = [];
+      const splash: string[] = [];
       const blocked: string[] = [];
+      let guarded: string | null = null;
       for (let k = i + 1; k < end; k++) {
         const next = events[k] as FightEvent;
-        if (
-          next.t === 'gimmick' ||
-          next.t === 'turn' ||
-          next.t === 'skip' ||
-          next.t === 'round_end' ||
-          (next.t === 'boss_hit' && next.source === 'attack')
-        ) {
-          break;
-        }
+        if (endsHitRun(next)) break;
         if (next.t === 'boss_hit' && next.source === 'gimmick') {
-          if (!targets.includes(next.target)) targets.push(next.target);
+          if (next.splash === true) {
+            if (!splash.includes(next.target)) splash.push(next.target);
+          } else {
+            if (targets.length === 0 && next.from !== undefined) guarded = next.from;
+            if (!targets.includes(next.target)) targets.push(next.target);
+          }
           if (next.shielded === true) blocked.push(next.target);
         } else if (next.t === 'silence' && !targets.includes(next.creature)) {
           targets.push(next.creature);
         }
       }
-      const def = gimmickOf(bossId, e.gimmick);
+      const action: StrikeAction = KNOWN_ACTIONS.has(op) ? (op as StrikeAction) : 'other';
+      const sweepRows =
+        action === 'sweep'
+          ? e.rows !== undefined
+            ? ZONES.filter((z) => e.rows?.includes(z) === true)
+            : zonesOf(rowIds, targets)
+          : [];
       const zone =
         def?.op === 'hit_zone'
           ? def.zone
-          : targets[0] === undefined
-            ? null
-            : zoneOfCreature(rowIds, targets[0]);
+          : (sweepRows[0] ??
+            (targets[0] === undefined ? null : zoneOfCreature(rowIds, targets[0])));
       out.push({
         i,
         strike: {
-          action: KNOWN_ACTIONS.has(e.op) ? (e.op as StrikeAction) : 'other',
+          action,
           gimmick: e.gimmick,
           targets,
           zone,
           blocked,
-          guarded: null,
+          guarded: action === 'slam' || action === 'strike_highest_atk' ? guarded : null,
+          ...(action === 'sweep' && sweepRows.length > 0 ? { rows: sweepRows } : {}),
+          ...(action === 'slam' && splash.length > 0 ? { splash } : {}),
+          ...(action === 'lance' && e.lane !== undefined ? { lane: e.lane } : {}),
+          ...(inner === null ? {} : { charged: true as const }),
         },
       });
     }
@@ -333,7 +470,12 @@ export function windupCuesForEvents(
   bossId?: string,
 ): Cue[] {
   return strikesOf(events, from, to, rowIds, bossId)
-    .filter(({ strike }) => strike.action !== 'reflect_armed')
+    .filter(
+      ({ strike }) =>
+        strike.action !== 'reflect_armed' &&
+        strike.action !== 'charge' &&
+        strike.action !== 'enrage',
+    )
     .map(({ i, strike }): Cue => ({ kind: 'windup', i, strike }));
 }
 
@@ -352,6 +494,7 @@ export function cuesForEvents(
   const cues: Cue[] = [];
   const end = Math.min(to, events.length);
   const zoneOf = (id: string): Zone | null => zoneOfCreature(rowIds, id);
+  const crowded = crowdedHits(events, from, end);
   for (let i = Math.max(0, from); i < end; i++) {
     const e = events[i] as FightEvent;
     switch (e.t) {
@@ -435,13 +578,55 @@ export function cuesForEvents(
           tone: e.shielded === true ? 'blocked' : 'hurt',
           crit: e.crit === true,
           drift: driftFor(i),
+          ...(crowded.has(i) ? { crowded: true as const, damage: e.damage } : {}),
         });
+        if (e.covered !== undefined) {
+          cues.push({ kind: 'cover', i, creature: e.target, guard: e.covered.guard });
+        }
         if (zone !== null) {
           cues.push({ kind: 'shake', i, zone });
           if (e.shielded === true) cues.push({ kind: 'zone', i, zone, effect: 'shield' });
         }
         break;
       }
+      case 'heal':
+        // A Support's Mend at round start: a green number on the creature it restored.
+        cues.push({ kind: 'hop', i, creature: e.supporter });
+        cues.push({
+          kind: 'float',
+          i,
+          target: e.target,
+          text: `+${String(e.amount)}`,
+          tone: 'heal',
+          crit: false,
+          drift: driftFor(i),
+        });
+        break;
+      case 'cleanse':
+        // Shown quietly: a small word on the creature whose silence was cleared.
+        cues.push({ kind: 'hop', i, creature: e.supporter });
+        cues.push({
+          kind: 'float',
+          i,
+          target: e.target,
+          text: 'Cleansed',
+          tone: 'cleanse',
+          crit: false,
+          drift: driftFor(i),
+        });
+        break;
+      case 'retreat':
+        // The boss is out of reach: "Immune!" over it (the line that says why is drawn from the state).
+        cues.push({
+          kind: 'float',
+          i,
+          target: null,
+          text: 'Immune!',
+          tone: 'immune',
+          crit: false,
+          drift: driftFor(i),
+        });
+        break;
       case 'knockout':
         cues.push({ kind: 'ko', i, creature: e.creature });
         break;
@@ -454,12 +639,61 @@ export function cuesForEvents(
   }
   for (const { i, strike } of strikesOf(events, from, to, rowIds, bossId)) {
     cues.push({ kind: 'strike', i, strike });
-    // A zone hit is a shockwave over the whole row of its zone.
-    if (strike.action === 'hit_zone' && strike.zone !== null) {
-      cues.push({ kind: 'zone', i, zone: strike.zone, effect: 'hit' });
-    }
+    // A zone hit or a sweep is a shockwave over the whole row it covers (a sweep may cover several).
+    for (const zone of strikeRows(strike)) cues.push({ kind: 'zone', i, zone, effect: 'hit' });
   }
   return cues;
+}
+
+/**
+ * The boss hits in [from, to) that belong to an action which hit more than `CROWDED_HITS` creatures
+ * (a long sweep, a pincer on a big raid, the enrage round): by event index. Their numbers are cut
+ * down to the big hits (`showsNumber`), so a crowded round stays readable. A run of hits is the
+ * events after a gimmick, or the enrage round's hits, up to the next boss action.
+ */
+export function crowdedHits(events: readonly FightEvent[], from: number, to: number): Set<number> {
+  const out = new Set<number>();
+  const end = Math.min(to, events.length);
+  let run: { hits: number[]; targets: Set<string> } | null = null;
+  const close = (): void => {
+    if (run !== null && run.targets.size > CROWDED_HITS) for (const i of run.hits) out.add(i);
+    run = null;
+  };
+  for (let i = Math.max(0, from); i < end; i++) {
+    const e = events[i] as FightEvent;
+    const enrageHit = e.t === 'boss_hit' && e.source === 'enrage';
+    if (endsHitRun(e) && !enrageHit) close();
+    if (e.t === 'gimmick') run = { hits: [], targets: new Set() };
+    if (enrageHit && run === null) run = { hits: [], targets: new Set() };
+    if (e.t === 'boss_hit' && (e.source === 'gimmick' || enrageHit) && run !== null) {
+      run.hits.push(i);
+      run.targets.add(e.target);
+    }
+  }
+  close();
+  return out;
+}
+
+/** The most HP a creature can have, as far as the stage can tell: a Guard has more (the content's rule). */
+export function estimatedMaxHp(
+  creature: Pick<ReplayRowEntry, 'species' | 'level' | 'role'>,
+): number | null {
+  const species = getSpecies(creature.species);
+  if (species === undefined) return null;
+  const level = Math.max(1, Math.min(creature.level, species.levelCap));
+  const hp = effectiveStats(species, level, 0).hp;
+  return creature.role === 'guard'
+    ? Math.floor((hp * (10_000 + RULES.combat.guardHpBp)) / 10_000)
+    : hp;
+}
+
+/**
+ * True when a floating number should show. Only the numbers of a crowded action are ever left out,
+ * and only the ones under `BIG_HIT_BP` of the creature's max HP; with no max HP to judge by, it shows.
+ */
+export function showsNumber(cue: Extract<Cue, { kind: 'float' }>, maxHp: number | null): boolean {
+  if (cue.crowded !== true || maxHp === null || maxHp <= 0) return true;
+  return (cue.damage ?? 0) * 10_000 >= maxHp * BIG_HIT_BP;
 }
 
 // --- Beats ---
@@ -545,11 +779,68 @@ export function stageStateAt(
   return { ...stateAt(events, index, bossHpStart), shielded: shieldedZones(events, index) };
 }
 
+/** A charged pattern that has been announced and has not landed yet. */
+export interface PendingCharge {
+  /** The gimmick's content id. */
+  gimmick: string;
+  /** The round it lands in. */
+  landing: number;
+  /** The creatures marked for it (some may have fallen since: they are skipped when it lands). */
+  marks: readonly string[];
+  /** The rows marked, for a charged sweep; empty otherwise. */
+  rows: readonly Zone[];
+}
+
 /**
- * Each creature's HP after the first `index` events, from the HP it started the fight with. The
- * only thing that costs a creature HP is a boss hit (`boss_hit`, whose `damage` is what got through
- * after guards and Shield Walls), and nothing heals, so the events are all there is to read. It
- * never goes below 0. A creature missing from `start` is left out.
+ * The charges that are on screen after the first `index` events: announced by a `charge` event and
+ * not landed yet. A charge lands when its gimmick fires in (or after) its landing round; if the
+ * log moves past the landing round without it, it is gone (nothing is left marked for a round that
+ * is over). The amber marks on the stage stand for as long as this says so.
+ */
+export function pendingChargesAt(events: readonly FightEvent[], index: number): PendingCharge[] {
+  const end = Math.min(Math.max(0, Math.trunc(index)), events.length);
+  let pending: PendingCharge[] = [];
+  let round = 0;
+  for (let i = 0; i < end; i++) {
+    const e = events[i] as FightEvent;
+    round = e.round;
+    if (e.t === 'charge') {
+      pending = [
+        ...pending.filter((c) => c.gimmick !== e.gimmick),
+        {
+          gimmick: e.gimmick,
+          landing: e.landing,
+          marks: e.marks,
+          rows: e.rows === undefined ? [] : ZONES.filter((z) => e.rows?.includes(z) === true),
+        },
+      ];
+    } else if (e.t === 'gimmick') {
+      pending = pending.filter((c) => !(c.gimmick === e.gimmick && e.round >= c.landing));
+    }
+  }
+  return pending.filter((c) => c.landing >= round);
+}
+
+/** True once the first `enrage` event is among the first `index` events: the boss is enraged. */
+export function enragedAt(events: readonly FightEvent[], index: number): boolean {
+  const end = Math.min(Math.max(0, Math.trunc(index)), events.length);
+  for (let i = 0; i < end; i++) if ((events[i] as FightEvent).t === 'enrage') return true;
+  return false;
+}
+
+/** True once the `retreat` event is among the first `index` events: the boss is out of reach. */
+export function retreatedAt(events: readonly FightEvent[], index: number): boolean {
+  const end = Math.min(Math.max(0, Math.trunc(index)), events.length);
+  for (let i = 0; i < end; i++) if ((events[i] as FightEvent).t === 'retreat') return true;
+  return false;
+}
+
+/**
+ * Each creature's HP after the first `index` events, from the HP it started the fight with. What
+ * costs a creature HP is a boss hit (`boss_hit`, whose `damage` is what got through after guards,
+ * cover and Shield Walls); what gives it back is a Support's `heal` (the HP actually restored, never
+ * more than was missing, and never a revival). It never goes below 0. A creature missing from
+ * `start` is left out.
  */
 export function creatureHpAt(
   events: readonly FightEvent[],
@@ -560,6 +851,12 @@ export function creatureHpAt(
   const end = Math.min(Math.max(0, Math.trunc(index)), events.length);
   for (let i = 0; i < end; i++) {
     const e = events[i] as FightEvent;
+    if (e.t === 'heal') {
+      const before = hp[e.target];
+      // Never a revival: a creature that is down stays down (a heal for one is ignored).
+      if (before !== undefined && before > 0) hp[e.target] = before + e.amount;
+      continue;
+    }
     if (e.t !== 'boss_hit') continue;
     const before = hp[e.target];
     if (before !== undefined) hp[e.target] = Math.max(0, before - e.damage);

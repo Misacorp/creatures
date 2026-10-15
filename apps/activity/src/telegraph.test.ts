@@ -1,4 +1,5 @@
 import { content } from '@creatures/game';
+import { bossWarnings } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import type { BossStrike } from './stage';
 import { forecastNextRound, strikeLabel } from './telegraph';
@@ -87,10 +88,16 @@ describe('the forecast one round ahead', () => {
     // Undertow fires on rounds 3, 6, 9 and 12.
     expect(forecastNextRound('tidal-colossus', 2, 12, row, [], names)).toEqual({
       text: 'Next round: Undertow hits FRONT',
+      lines: ['Next round: Undertow hits FRONT'],
       zones: ['front'],
       ends: [],
     });
-    expect(forecastNextRound('tidal-colossus', 3, 12, row, [], names)).toBeNull();
+    // Nothing is due in round 6 (Undertow is on 3, 6, 9 and 12; Riptide on 4, 8 and 12; the Great
+    // Wave lands on 5 and 10 and is gathering on the round before).
+    expect(forecastNextRound('tidal-colossus', 5, 12, row, [], names)?.text).toBe(
+      'Next round: Undertow hits FRONT',
+    );
+    expect(forecastNextRound('tidal-colossus', 6, 12, row, [], names)).toBeNull();
     expect(forecastNextRound('tidal-colossus', 11, 12, row, [], names)?.zones).toEqual(['front']);
   });
 
@@ -98,6 +105,7 @@ describe('the forecast one round ahead', () => {
     // Front is a and b; with both down, Undertow falls to the nearest zone with someone standing.
     expect(forecastNextRound('tidal-colossus', 2, 12, row, ['a', 'b'], names)).toEqual({
       text: 'Next round: Undertow hits MIDDLE',
+      lines: ['Next round: Undertow hits MIDDLE'],
       zones: ['middle'],
       ends: [],
     });
@@ -107,8 +115,10 @@ describe('the forecast one round ahead', () => {
   });
 
   it('words a strike on the strongest generically, since Attack is not known on the stage', () => {
+    // Lightning Rod jumps twice; Thunderclap (a slam, every 4 rounds) is not due in round 5.
     expect(forecastNextRound('storm-sovereign', 4, 12, row, [], names)).toEqual({
-      text: 'Next round: Lightning Rod strikes your strongest',
+      text: 'Next round: Lightning Rod strikes your strongest, then jumps twice',
+      lines: ['Next round: Lightning Rod strikes your strongest, then jumps twice'],
       zones: [],
       ends: [],
     });
@@ -117,6 +127,7 @@ describe('the forecast one round ahead', () => {
   it('marks the living creatures at both ends of the row for a silence', () => {
     expect(forecastNextRound('thornmother', 1, 12, row, [], names)).toEqual({
       text: 'Next round: Bramble Bind silences both ends',
+      lines: ['Next round: Bramble Bind silences both ends'],
       zones: [],
       ends: ['a', 'f'],
     });
@@ -126,7 +137,10 @@ describe('the forecast one round ahead', () => {
       forecastNextRound('thornmother', 1, 12, row, ['a', 'b', 'c', 'd', 'e'], names)?.ends,
     ).toEqual(['f']);
     expect(forecastNextRound('thornmother', 1, 12, ['solo'], [], names)?.ends).toEqual(['solo']);
-    expect(forecastNextRound('thornmother', 2, 12, row, [], names)).toBeNull();
+    // Round 3 has only the Briar Pincer (the bind is on even rounds): the ends of every row.
+    expect(forecastNextRound('thornmother', 2, 12, row, [], names)?.text).toBe(
+      'Next round: Briar Pincer closes on the ends of every row',
+    );
   });
 
   it('says the reflect trap is coming', () => {
@@ -142,15 +156,24 @@ describe('the forecast one round ahead', () => {
     expect(forecastNextRound('nobody', 3, 12, row, [], names)).toBeNull();
   });
 
-  it('agrees with the content for every boss and round: warned exactly when a gimmick is due', () => {
+  it('agrees with the content for every boss and round: warned exactly when the engine warns, in at most two lines', () => {
     for (const boss of content.bosses) {
       for (let round = 1; round < boss.finaleRounds; round++) {
         const f = forecastNextRound(boss.id, round, boss.finaleRounds, row, [], {});
-        const due = boss.gimmicks.filter((g) =>
-          'every' in g.trigger ? (round + 1) % g.trigger.every === 0 : true,
-        );
-        expect(f === null, `${boss.id} round ${String(round)}`).toBe(due.length === 0);
-        for (const g of due) expect(f?.text).toContain(g.name);
+        const warned = bossWarnings(boss, round + 1);
+        expect(f === null, `${boss.id} round ${String(round)}`).toBe(warned.length === 0);
+        if (f === null) continue;
+        expect(f.lines.length).toBeGreaterThanOrEqual(1);
+        expect(f.lines.length).toBeLessThanOrEqual(2);
+        expect(f.text).toBe(f.lines.join('; '));
+        expect(f.lines[0]).toMatch(/^Next round: /);
+        // Every clause names its move.
+        for (const line of f.lines) {
+          expect(
+            boss.gimmicks.some((g) => line.includes(g.name)),
+            line,
+          ).toBe(true);
+        }
       }
     }
   });
@@ -184,6 +207,7 @@ describe('the wording of a single row (the dungeon)', () => {
     const forecast = forecastNextRound('tidal-colossus', 2, 12, ['a', 'b', 'c'], [], names, 'row');
     expect(forecast).toEqual({
       text: 'Next round: Undertow hits the left creature',
+      lines: ['Next round: Undertow hits the left creature'],
       zones: ['front'],
       ends: [],
     });

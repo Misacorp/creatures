@@ -15,7 +15,8 @@ function boss(id: string) {
 describe('bossIcons', () => {
   it('starts with the turn order, then one icon for each trick', () => {
     const icons = bossIcons(boss('tidal-colossus'));
-    expect(icons.map((i) => i.kind)).toEqual(['turn', 'gimmick']);
+    const tricks = content.bosses.find((b) => b.id === 'tidal-colossus')?.gimmicks ?? [];
+    expect(icons.map((i) => i.kind)).toEqual(['turn', ...tricks.map(() => 'gimmick')]);
     expect(icons[0]).toMatchObject({
       glyph: 'left_to_right',
       caption: 'Left to right',

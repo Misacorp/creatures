@@ -2,7 +2,7 @@ import { describeEvent } from '@creatures/engine';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { errorText } from './game';
 import { fetchReplay, type RaidPhaseId, type ReplayView } from './raid-api';
-import { phaseLine, phaseName } from './raid-text';
+import { phaseLine, phaseName, retreatLine, stageOutcomeNote, stageOutcomeText } from './raid-text';
 import { raidMaxRounds } from './stage-rounds';
 import { keyMoments, mineInRow, personalRecap, type Speed } from './replay';
 import { INTRO_REPLAY_MS } from './stage-fx';
@@ -97,7 +97,11 @@ function Player({ data, showControls }: { data: ReplayView; showControls: boolea
   return (
     <>
       <p>
-        {data.boss.name}: {data.cleared ? 'cleared' : 'not cleared'} after {data.rounds} rounds.
+        {stageOutcomeNote(data) === null
+          ? `${data.boss.name}: ${data.cleared ? 'cleared' : 'not cleared'} after ${String(data.rounds)} rounds.`
+          : `${stageOutcomeText(data)} ${String(data.rounds)} rounds played.`}
+        {data.retreated === true &&
+          ` ${retreatLine(data.boss.id, data.boss.name, data.phase, data.boss.retreat)}`}
       </p>
 
       {showControls && (
@@ -134,13 +138,16 @@ function Player({ data, showControls }: { data: ReplayView; showControls: boolea
         fx={fx}
         intro={intro}
         place={phaseLine(data.phase)}
+        phase={data.phase}
       />
 
       <LogToggle id="replay-log">
         <ol class="replay-log" ref={logRef} tabIndex={0} aria-label="Fight log">
-          {data.events.slice(0, index).map((event, i) => (
-            <li key={i}>{describeEvent(event, data.names)}</li>
-          ))}
+          {data.events.slice(0, index).map((event, i) => {
+            // An event this client does not know describes as nothing: it gets no line.
+            const line = describeEvent(event, data.names);
+            return line === '' ? null : <li key={i}>{line}</li>;
+          })}
         </ol>
       </LogToggle>
 

@@ -25,21 +25,33 @@ export function headline(stats: Pick<AfterActionStats, 'close' | 'outcome'>): st
 
 /** One plain sentence about how the stage ended. */
 export function outcomeLine(
-  stats: Pick<AfterActionStats, 'phase' | 'outcome' | 'rounds' | 'maxRounds' | 'knockouts'>,
+  stats: Pick<AfterActionStats, 'phase' | 'outcome' | 'rounds' | 'maxRounds' | 'knockouts'> &
+    Partial<Pick<AfterActionStats, 'retreated' | 'enraged'>>,
 ): string {
   const name = phaseName(stats.phase);
-  const rounds = `${num(stats.rounds)} / ${num(stats.maxRounds)} rounds`;
+  const enraged = stats.enraged === true;
+  // Enrage rounds are played past the round limit, so "14 / 12" would read as a mistake: say the limit.
+  const rounds = enraged
+    ? `${num(stats.maxRounds)} rounds`
+    : `${num(stats.rounds)} / ${num(stats.maxRounds)} rounds`;
   switch (stats.outcome) {
     case 'cleared':
-      return `${name} cleared after ${rounds}.`;
+      if (stats.retreated === true) return `${name} cleared after ${rounds}: the boss retreated.`;
+      return enraged
+        ? `${name} cleared after ${rounds}, even with the boss enraged.`
+        : `${name} cleared after ${rounds}.`;
     case 'wiped': {
       const last = stats.knockouts.reduce((max, k) => Math.max(max, k.round), 0);
-      return last > 0
-        ? `${name} not cleared. Every creature was knocked out by round ${num(last)}.`
-        : `${name} not cleared. Every creature was knocked out.`;
+      const base =
+        last > 0
+          ? `${name} not cleared. Every creature was knocked out by round ${num(last)}.`
+          : `${name} not cleared. Every creature was knocked out.`;
+      return enraged ? `${base} Out of time, the boss had enraged.` : base;
     }
     default:
-      return `${name} not cleared after ${rounds}.`;
+      return enraged
+        ? `${name} not cleared after ${rounds}. Out of time, the boss enraged.`
+        : `${name} not cleared after ${rounds}.`;
   }
 }
 

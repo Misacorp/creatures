@@ -59,6 +59,11 @@ export interface DungeonToday {
    * first run. The setup opens with them in the same places. Only ever the caller's own.
    */
   lastTeam: string[] | null;
+  /**
+   * Set when the next run is a landmark: the depth and the room boss's content id, announced before
+   * the run. Null otherwise; an older server leaves it out (read as null).
+   */
+  landmarkBoss: { depth: number; foeId: string } | null;
 }
 
 export interface DungeonRewards {

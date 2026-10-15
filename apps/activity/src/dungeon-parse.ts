@@ -118,6 +118,15 @@ function isRunSummary(value: unknown): value is DungeonRunSummary {
   );
 }
 
+/** The announced landmark boss: absent or null, or the depth and the room boss's content id. */
+function isLandmarkBoss(value: unknown): boolean {
+  return (
+    value === undefined ||
+    value === null ||
+    (isRecord(value) && isCount(value['depth']) && isStr(value['foeId']))
+  );
+}
+
 function isToday(value: unknown): value is DungeonToday {
   if (!isRecord(value)) return false;
   const blocked = value['blocked'];
@@ -128,6 +137,7 @@ function isToday(value: unknown): value is DungeonToday {
     isInt(value['resetsAt']) &&
     isCount(value['depth']) &&
     isBool(value['landmark']) &&
+    isLandmarkBoss(value['landmarkBoss']) &&
     isCount(value['streak']) &&
     isArrayOf(
       value['modifiers'],

@@ -43,7 +43,7 @@ export function RevealCard({
   onDismiss,
 }: {
   reveal: Pick<RaidReveal, 'cleared' | 'essence'> &
-    Partial<Pick<RaidReveal, 'week' | 'rankChange' | 'festivalGrant'>>;
+    Partial<Pick<RaidReveal, 'week' | 'rankChange' | 'festivalGrant' | 'enraged'>>;
   busy: boolean;
   /** Where the finale's after-action card is asked for (the caller's party in that finale). */
   afterAction?: { week: string; party: number; onReplay?: () => void };

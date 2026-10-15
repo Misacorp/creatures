@@ -97,8 +97,8 @@
     "lines": [
       "Has 30% more HP than other roles.",
       "A boss hit aimed at one creature goes to a Guard in the same zone (in the dungeon: right beside it).",
-      "Hits on a whole zone still reach everyone in it.",
-      "Best at the front, where the boss attacks first."
+      "Creatures right beside it take 40% less from hits on many creatures.",
+      "A Lance stops at a Guard."
     ],
     "visual": {
       "kind": "species",
@@ -113,8 +113,8 @@
     "lines": [
       "Each round it boosts the creatures right next to it.",
       "Their next hit deals 15% more damage.",
-      "A knocked-out or silenced Support gives no boost.",
-      "Place it between your strongest hitters."
+      "By element: Ember boosts 25%, Spark adds reaction damage, Tide and Grove heal (Tide clears silence too).",
+      "A knocked-out or silenced Support gives nothing. Place it between your strongest hitters."
     ],
     "visual": {
       "kind": "species",
@@ -286,11 +286,77 @@
   {
     "id": "gimmick-strike-highest-atk",
     "title": "Strongest strike",
-    "short": "Targets your top attacker.",
+    "short": "Targets your top attacker, and may jump on.",
     "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "strike_highest_atk"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-sweep",
+    "title": "Sweep",
+    "short": "Rolls through a whole row, a different row each time.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "sweep"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-barrage",
+    "title": "Barrage",
+    "short": "Shells land on random creatures, never the same one twice running.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "barrage"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-slam",
+    "title": "Slam",
+    "short": "A heavy hit. The creatures beside the victim take a share.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "slam"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-lance",
+    "title": "Lance",
+    "short": "Pierces one lane, front to back. A Guard stops it.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "lance"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-pincer",
+    "title": "Pincer",
+    "short": "Hits the first and last creature of every row.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "pincer"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-charge",
+    "title": "Charge",
+    "short": "Gathers a round ahead and marks its victims.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "charge"
     },
     "section": "raid-week"
   },
@@ -518,6 +584,20 @@
     "short": "After Phase 1 the boss resists what worked best.",
     "lines": [],
     "section": "raid-week"
+  },
+  {
+    "id": "retreat",
+    "title": "Retreat",
+    "short": "At its floor the boss goes immune and retreats.",
+    "lines": [],
+    "section": "raid-week"
+  },
+  {
+    "id": "enrage",
+    "title": "Enraged",
+    "short": "Out of time: the boss hits every creature, hard.",
+    "lines": [],
+    "section": "finale"
   },
   {
     "id": "essence",

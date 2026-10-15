@@ -4,7 +4,7 @@
  * is over. Pure.
  */
 import type { PhaseResultView, RaidEventId, RaidPhaseId } from './raid-api';
-import { phaseName } from './raid-text';
+import { phaseName, stageOutcomeNote, stageOutcomeText } from './raid-text';
 
 interface StepMark {
   phase: RaidPhaseId;
@@ -28,7 +28,11 @@ export function stepMark(result: PhaseResultView): StepMark {
     cleared: result.cleared,
     glyph: result.cleared ? CLEARED_GLYPH : MISSED_GLYPH,
     label: `${name}: ${word}. Show result.`,
-    summary: `${name}: ${word}. You got ${String(result.essence)} Essence.`,
+    // A retreat or an enrage says so ("Phase 1 cleared: the boss retreated."); the plain case is as it was.
+    summary:
+      stageOutcomeNote(result) === null
+        ? `${name}: ${word}. You got ${String(result.essence)} Essence.`
+        : `${stageOutcomeText(result)} You got ${String(result.essence)} Essence.`,
   };
 }
 
