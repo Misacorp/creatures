@@ -10,7 +10,7 @@ import {
   type PartsBundle,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { grantRaidFinale, recentGrants, type GrantDeps, type GrantView } from '../src/gear-grants';
+import { grantRaidFinale, recentGrants, type GrantDeps } from '../src/gear-grants';
 import { learnBlueprint } from '../src/gear-store';
 import { runCore, type CoreContext } from './helpers';
 import { nextGuild, rows, seedPlayer } from './raid-helpers';
@@ -134,18 +134,13 @@ describe('the finale reward slot at the server', () => {
       // Even at another rank: the stored grant wins.
       expect(grantRaidFinale(d, player.id, WEEK, 30)).toEqual(first);
       expect(d.drawn()).toBe(drawn);
-      expect(
+      const owned = (table: 'gear_items' | 'blueprints'): number =>
         rows<{ n: number }>(
           ctx.sql,
-          'SELECT COUNT(*) AS n FROM gear_items WHERE user_id = ?',
+          `SELECT COUNT(*) AS n FROM ${table} WHERE user_id = ?`,
           player.id,
-        )[0]?.n +
-          rows<{ n: number }>(
-            ctx.sql,
-            'SELECT COUNT(*) AS n FROM blueprints WHERE user_id = ?',
-            player.id,
-          )[0]?.n,
-      ).toBe(1);
+        )[0]?.n ?? 0;
+      expect(owned('gear_items') + owned('blueprints')).toBe(1);
     });
   });
 
