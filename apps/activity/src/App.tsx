@@ -188,6 +188,7 @@ export function App() {
                   helpRef={helpButton}
                   onHelp={openHowTo}
                   onLeetSync={setLeetSync}
+                  allowance={bootStatus.value.me.allowance}
                   showPractice={bootStatus.value.config.environment !== 'production'}
                   devTools={bootStatus.value.config.devTools || bootStatus.value.me.devTools}
                 />

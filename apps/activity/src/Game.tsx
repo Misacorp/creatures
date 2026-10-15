@@ -8,6 +8,7 @@ import {
   setLounger,
   setLoungeSpot,
   trainCreature,
+  type Allowance,
   type ClaimResult,
   type EvolveResult,
   type GameState,
@@ -16,6 +17,7 @@ import {
   type SessionUser,
 } from './api';
 import { ActionIds } from './actions';
+import { allowanceNotice } from './allowance-text';
 import { AppHead } from './AppHead';
 import { Collection } from './Collection';
 import { claimExpedition, pushOn, sendExpedition, type SendRequest } from './expedition-api';
@@ -59,6 +61,7 @@ export function Game({
   helpRef,
   onHelp,
   onLeetSync,
+  allowance,
   showPractice,
   devTools,
 }: {
@@ -76,6 +79,8 @@ export function Game({
   showPractice: boolean;
   /** Called with the sync status of every state this component loads, so the footer stays current. */
   onLeetSync: (status: LeetSyncStatus) => void;
+  /** The daily Bait allowance the server paid when the Activity opened; null when there is none to tell. */
+  allowance: Allowance | null;
 }) {
   const [current, setCurrent] = useState<Loaded>(() => loaded(initial));
   const [tab, setTab] = useState<Tab>('collection');
@@ -112,6 +117,13 @@ export function Game({
   // The guild's timezone comes with GET /api/state only; the answers of actions leave it out, so it is kept.
   const timezone = useRef<string | null>(null);
   if (game.timezone !== null) timezone.current = game.timezone;
+
+  // The daily allowance lands once (the server tells the player on one request only): say so on the
+  // notice line, which the next action clears.
+  useEffect(() => {
+    const text = allowanceNotice(allowance);
+    if (text !== null) setNotice(text);
+  }, []);
 
   // While the first leet sync is still running, ask again every few seconds (a few times at most)
   // so the balance, the history and the footer update as soon as the credits land.
