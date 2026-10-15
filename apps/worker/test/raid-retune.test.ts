@@ -171,6 +171,10 @@ describe('what a stage result shows', () => {
         delete summary['retreated'];
         delete summary['enraged'];
         for (const key of ['rules', 'bossHpFloor', 'enrage']) delete input[key];
+        // The boss definition in the stored input carries the retreat lines the content has now.
+        const boss: Record<string, unknown> = { ...(input['boss'] as Record<string, unknown>) };
+        delete boss['retreat'];
+        input['boss'] = boss;
         ctx.sql.exec(
           'UPDATE raid_results SET input = ?, result = ?, summary = ? WHERE week_id = ? AND party = ? AND phase = ?',
           JSON.stringify(input),

@@ -170,11 +170,16 @@ describe('phase posts', () => {
         ]);
         const text = all[1]?.content ?? '';
         const run = rows<{ summary: string }>(ctx.sql, 'SELECT summary FROM raid_results')[0];
-        const summary = JSON.parse(run?.summary ?? '{}') as { cleared: boolean };
+        const summary = JSON.parse(run?.summary ?? '{}') as {
+          cleared: boolean;
+          retreated?: boolean;
+        };
         expect(summary.cleared).toBe(true);
+        // A stage's boss does not fall: at its HP floor it retreats, and the post says so.
+        expect(summary.retreated).toBe(true);
         const boss = text.split('\n')[0];
         expect(boss).toMatch(/^\*\*Phase 1: [^*]+\*\*$/);
-        expect(text).toContain('Cleared. The boss has');
+        expect(text).toMatch(/Phase 1 cleared: [^\n]+ retreated\.\nThe boss has \d+% HP left\./);
         expect(text).toContain('Top contributors:');
         expect(text).toContain(
           `Essence: every player earned ${String(flatPaid(ctx, 'phase1'))}, plus a bonus share by contribution.`,

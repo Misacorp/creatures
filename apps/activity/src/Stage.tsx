@@ -203,7 +203,9 @@ function RoundIntro({ intro }: { intro: IntroView }) {
         <span class="ri-label">
           <span>Round</span>
           <span>{intro.round}</span>
-          {intro.rounds !== null && <span class="ri-of">/ {intro.rounds}</span>}
+          {intro.rounds !== null && intro.round <= intro.rounds && (
+            <span class="ri-of">/ {intro.rounds}</span>
+          )}
         </span>
       </PixelHeading>
     </div>

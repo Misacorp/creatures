@@ -151,13 +151,17 @@ describe('discordTime', () => {
 
 describe('describeGimmick', () => {
   it('says what every content gimmick does in plain words', () => {
-    const texts = content.bosses.flatMap((b) => b.gimmicks.map((g) => describeGimmick(g)));
-    expect(texts).toEqual([
-      'hits the front zone every 3 rounds',
-      'throws the first reaction back at your team, every round',
-      'silences the creatures at both ends of the row for 1 turn, every 2 rounds',
-      'strikes your highest Attack creature every round',
-    ]);
+    const gimmicks = content.bosses.flatMap((b) => b.gimmicks);
+    const texts = gimmicks.map((g) => describeGimmick(g));
+    expect(texts.length).toBeGreaterThanOrEqual(4);
+    // Every gimmick gets its own plain sentence with its rhythm; the exact wording of each op is
+    // pinned below with fixed numbers, so tuning the content does not break this.
+    for (const [i, text] of texts.entries()) {
+      const gimmick = gimmicks[i];
+      expect(text, gimmick?.id).toMatch(/^[a-z].* every (round|\d+ rounds)$/);
+      expect(text).not.toContain('undefined');
+      expect(text).not.toContain('NaN');
+    }
   });
 
   it('handles plurals and every op', () => {

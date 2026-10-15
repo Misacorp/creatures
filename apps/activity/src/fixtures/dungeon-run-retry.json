@@ -1,6 +1,6 @@
 {
   "run": {
-    "id": "4961ffd2-7953-443f-aaf4-1d247819aca0",
+    "id": "59fc7009-f442-4a35-ad88-8f94c113d8c4",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -12,7 +12,7 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "baa62d13-a2e3-425c-8832-43aaf1844980",
+        "id": "523aa717-eef0-450c-a8c7-72ab97382499",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -22,24 +22,24 @@
         "hpEnd": 302
       },
       {
-        "id": "27ab40f8-6fa4-49b6-993b-8635ac2609ff",
+        "id": "3549c6bf-564b-4db8-ba06-811d913a6679",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
         "role": "setter",
         "level": 12,
         "hpMax": 200,
-        "hpEnd": 200
+        "hpEnd": 195
       },
       {
-        "id": "f970bcd8-957f-4039-a9c6-39541617505a",
+        "id": "438ab3d5-f00e-4b7c-8c98-4ef0a0d3563b",
         "name": "Cindle",
         "speciesId": "cindle",
         "element": "ember",
         "role": "payoff",
         "level": 12,
         "hpMax": 173,
-        "hpEnd": 173
+        "hpEnd": 166
       }
     ],
     "rooms": [
@@ -148,7 +148,7 @@
     "canRun": false,
     "blocked": "already_run",
     "last": {
-      "id": "4961ffd2-7953-443f-aaf4-1d247819aca0",
+      "id": "59fc7009-f442-4a35-ad88-8f94c113d8c4",
       "day": "2027-01-12",
       "attempt": 1,
       "depth": 1,
@@ -160,7 +160,7 @@
       "createdAt": 1799755200000,
       "team": [
         {
-          "id": "baa62d13-a2e3-425c-8832-43aaf1844980",
+          "id": "523aa717-eef0-450c-a8c7-72ab97382499",
           "name": "Sproutle",
           "speciesId": "sproutle",
           "element": "grove",
@@ -170,24 +170,24 @@
           "hpEnd": 302
         },
         {
-          "id": "27ab40f8-6fa4-49b6-993b-8635ac2609ff",
+          "id": "3549c6bf-564b-4db8-ba06-811d913a6679",
           "name": "Splashet",
           "speciesId": "splashet",
           "element": "tide",
           "role": "setter",
           "level": 12,
           "hpMax": 200,
-          "hpEnd": 200
+          "hpEnd": 195
         },
         {
-          "id": "f970bcd8-957f-4039-a9c6-39541617505a",
+          "id": "438ab3d5-f00e-4b7c-8c98-4ef0a0d3563b",
           "name": "Cindle",
           "speciesId": "cindle",
           "element": "ember",
           "role": "payoff",
           "level": 12,
           "hpMax": 173,
-          "hpEnd": 173
+          "hpEnd": 166
         }
       ],
       "rooms": [
@@ -263,9 +263,9 @@
       }
     },
     "lastTeam": [
-      "baa62d13-a2e3-425c-8832-43aaf1844980",
-      "27ab40f8-6fa4-49b6-993b-8635ac2609ff",
-      "f970bcd8-957f-4039-a9c6-39541617505a"
+      "523aa717-eef0-450c-a8c7-72ab97382499",
+      "3549c6bf-564b-4db8-ba06-811d913a6679",
+      "438ab3d5-f00e-4b7c-8c98-4ef0a0d3563b"
     ]
   }
 }
