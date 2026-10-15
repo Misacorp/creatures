@@ -74,8 +74,21 @@ export const RULES = {
     weakBp: 7_500,
     /** Support: extra damage on each neighbour's next hit. */
     supportBuffBp: 1_500,
-    /** Guard: extra HP, applied to the effective HP stat. */
+    /**
+     * Guard: extra HP, applied to the effective HP stat. This is the value of fights stored without
+     * `rules` (before attack patterns); it stays as it was so those replay exactly. Fights with
+     * `rules` use `guard.hpBp` instead.
+     */
     guardHpBp: 3_000,
+    /**
+     * The Guard of fights with `rules` (copied into `FightInput.rules` as `guardHpBp` and
+     * `guardArmorBp`): `hpBp` is extra HP in basis points of the HP stat (0: none), `armorBp` is the
+     * share of damage the Guard does not take from every hit that reaches it (its own, one it takes
+     * for a neighbour, a splash, an enrage hit, a reflect). Armor is one number per fight for now;
+     * the engine reads it through `guardArmorFor`, so it can scale with level or gear later. The
+     * damage armor prevents on a hit the Guard takes in place of another creature is credited to it.
+     */
+    guard: { hpBp: 0, armorBp: 2_500 },
     /**
      * Setup credit: the share (basis points, rounded down) of a reaction's bonus damage that goes to
      * the creature that set the mark up; the payoff keeps the rest. Credit only: the damage dealt is

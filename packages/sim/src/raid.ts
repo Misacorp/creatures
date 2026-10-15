@@ -236,7 +236,9 @@ export function hasShieldWall(abilityId: string): boolean {
 
 /**
  * The slot of a guard with the guard role taken away (study): it fights as a plain payoff, whose
- * only difference is a bonus on reactions, so it loses the extra HP and the interception.
+ * only difference is a bonus on reactions, so it loses the extra HP, the armor, the interception
+ * (of aimed hits and of reflects) and the cover. The engine keys all of these on the `guard` role,
+ * so this one switch turns them all off.
  */
 export function neutralGuard(slot: FightSlot): FightSlot {
   return { ...slot, role: 'payoff' };
@@ -294,7 +296,7 @@ export function openRaidWeek(
     hpScaleBp?: number;
     /** Study: no Shield Wall effect anywhere (abilities with that effect are left out). */
     dropShield?: boolean;
-    /** Study: guards lose the guard role (no extra HP, no intercepting) and fight as plain payoffs. */
+    /** Study: guards lose the guard role (no extra HP, armor, intercepting or cover) and fight as plain payoffs. */
     neutralGuards?: boolean;
     /** Study: Supports lose the Support role and fight as plain payoffs (no buff, no effect). */
     neutralSupports?: boolean;

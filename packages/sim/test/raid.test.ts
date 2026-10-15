@@ -127,6 +127,31 @@ describe('the fights are built as live play builds them', () => {
   });
 });
 
+describe('the Guard off study switch', () => {
+  const players = () => roster.slice(0, 6).map(clonePlayer);
+
+  it('leaves no Guard in any fight, so there is no armor, no intercept and no reflect intercept', () => {
+    const on = openRaidWeek(boss, players(), { bringRoles: true, keepFinale: true });
+    // The reference rows have Guards to switch off (otherwise the comparison proves nothing).
+    expect(fightFor(on, 'finale').fight.row.some((s) => s.role === 'guard')).toBe(true);
+    const off = openRaidWeek(boss, players(), {
+      bringRoles: true,
+      neutralGuards: true,
+      keepFinale: true,
+    });
+    for (const stage of ['phase1', 'phase2', 'finale'] as const) {
+      expect(fightFor(off, stage).fight.row.some((s) => s.role === 'guard')).toBe(false);
+    }
+    // The rules still carry the armor, but with nobody to wear it nothing is armored or taken over.
+    expect(fightFor(off, 'finale').fight.rules?.guardArmorBp).toBe(RULES.combat.guard.armorBp);
+    playWholeWeek(off, createSeededRng('fight'), createSeededRng('loot'));
+    const hits = (off.finaleEvents ?? []).flatMap((e) => (e.t === 'boss_hit' ? [e] : []));
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits.some((h) => h.armored !== undefined || h.from !== undefined)).toBe(false);
+    expect(hits.some((h) => h.covered !== undefined)).toBe(false);
+  });
+});
+
 describe('abilities in the finale', () => {
   const players = () => roster.slice(0, 6).map(clonePlayer);
 

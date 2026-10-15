@@ -364,7 +364,13 @@ describe('the team stands in one row, left to right', () => {
   it('copies the run rules into every room, and has none when the run has none', () => {
     const plain = run([room(0, foe(), 100, 1)]);
     expect(buildRoomInput(plain, room(0, foe(), 100, 1), null).rules).toBeUndefined();
-    const rules = { coverBp: 4_000, maxHitBp: 5_000, supportFx: { grove: { healBp: 600 } } };
+    const rules = {
+      coverBp: 4_000,
+      maxHitBp: 5_000,
+      guardHpBp: 0,
+      guardArmorBp: 2_500,
+      supportFx: { grove: { healBp: 600 } },
+    };
     const built = buildRoomInput({ ...plain, rules }, room(0, foe(), 100, 1), null);
     expect(built.rules).toEqual(rules);
   });

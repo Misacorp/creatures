@@ -267,6 +267,14 @@ export function simulateFight(
    */
   const patternsOn = boss.gimmicks.some((g) => (PATTERN_OPS as readonly string[]).includes(g.op));
   let patternDice: number[] = [];
+  /**
+   * With `rules` only: one die per slot per round, uniform in [0, `DICE_RANGE`), drawn after every
+   * other die and drawn every round whatever happens. It picks the Guard when several could take a
+   * hit on that slot (`guardFor`). Every hit on the same slot in the same round reuses the same die,
+   * so those hits pick the same position among the candidates (two hits on one slot meet the same
+   * Guard unless one of the Guards fell in between).
+   */
+  let guardDice: number[] = [];
   /** The running Surge (+) or Slump (-) in basis points of team damage, and its last round. */
   let swingNow = 0;
   let swingUntil = 0;
@@ -277,7 +285,11 @@ export function simulateFight(
     const crit = critOn ? creatureCritStats(luck, s.crit) : { chanceBp: 0, damageBp: 0 };
     const maxHp =
       s.role === 'guard'
-        ? Math.floor((stats.hp * (10_000 + RULES.combat.guardHpBp)) / 10_000)
+        ? Math.floor(
+            (stats.hp *
+              (10_000 + (rules === undefined ? RULES.combat.guardHpBp : rules.guardHpBp))) /
+              10_000,
+          )
         : stats.hp;
     if (s.hp !== undefined && !isCount(s.hp, 0))
       fail(`creature "${s.id}" needs an integer hp >= 0`);
@@ -448,14 +460,31 @@ export function simulateFight(
   const besides = (idx: number): number[] =>
     guardReach === 'adjacent' ? neighbours(idx, n) : zoneNeighbours(idx, n);
   function guardFor(target: Creature): Creature | undefined {
-    if (guardReach === 'adjacent') {
-      for (const i of besides(target.idx)) {
-        const c = creatures[i] as Creature;
-        if (c.alive && c.role === 'guard') return c;
-      }
-      return undefined;
-    }
-    return livingIn(zoneOfIndex(target.idx, n)).find((c) => c.role === 'guard');
+    const candidates =
+      guardReach === 'adjacent'
+        ? besides(target.idx)
+            .map((i) => creatures[i] as Creature)
+            .filter((c) => c.alive && c.role === 'guard')
+        : livingIn(zoneOfIndex(target.idx, n)).filter((c) => c.role === 'guard');
+    return pickGuard(candidates, target.idx);
+  }
+
+  /**
+   * One of several Guards that could take a hit on slot `slot`. Without `rules` always the first
+   * (the left one); with `rules` that slot's die picks one, uniformly.
+   */
+  function pickGuard(candidates: Creature[], slot: number): Creature | undefined {
+    if (rules === undefined || candidates.length < 2) return candidates[0];
+    const die = guardDice[slot] ?? 0;
+    return candidates[Math.floor((die * candidates.length) / DICE_RANGE)];
+  }
+
+  /**
+   * The share of damage a Guard does not take (basis points). One number per fight for now
+   * (`FightRules.guardArmorBp`); it takes the creature so it can follow level or gear later.
+   */
+  function guardArmorFor(c: Creature): number {
+    return c.role === 'guard' ? (rules?.guardArmorBp ?? 0) : 0;
   }
 
   /**
@@ -471,19 +500,33 @@ export function simulateFight(
   }
 
   /**
-   * One boss hit on `target`, in one of three modes (docs/design/attack-patterns.md section 1):
+   * One hit on `target`, in one of three modes (docs/design/attack-patterns.md section 1):
    * - `aimed`: a Guard of the target's row (the dungeon: beside it) takes it instead;
    * - `area`: nobody steps in, but (with `rules`) a creature beside a living Guard takes `coverBp`
    *   less, credited to the Guard;
-   * - `direct` (a reflect): nothing intercepts, covers or caps it.
-   * Shield Walls on the target's row apply to all three. With `rules`, an aimed or area hit never
-   * takes more than `maxHitBp` of the victim's max HP. Returns who took the hit.
+   * - `reflect` (a reaction's hit coming back at the hitter, not a boss attack): without `rules`
+   *   nothing intercepts, covers or caps it; with `rules` a Guard takes it as an aimed hit, but it
+   *   is not covered and not capped (the single-hit cap is for the boss's attacks).
+   *
+   * The reductions on one hit, in this order (each works on what the one before left; every
+   * division rounds down, so the damage prevented rounds down):
+   * 1. Shield Walls on the target's row (the hit can be stopped fully).
+   * 2. Intercept (aimed; a reflect with `rules`): the Guard that takes the hit is picked. With
+   *    several candidates a die picks one (`guardDice`).
+   * 3. Armor: the creature taking the hit is a Guard (`guardArmorFor`, `rules` only).
+   * 4. Cover: the creature taking the hit is beside a living Guard and the hit is an area hit
+   *    (`rules` only; never on a Guard, so armor and cover never stack).
+   * 5. The single-hit cap (aimed and area only, `rules` only), on the victim's max HP.
+   *
+   * Credit: a Guard is credited the damage it takes in place of another creature, and with it what
+   * its armor really prevented on that hit; a cover credits the beside Guard with what it prevented.
+   * Prevention that the cap would have made anyway is not credited. Returns who took the hit.
    */
   function hurt(
     target: Creature,
     rawAmount: number,
     source: 'attack' | 'gimmick' | 'reflect' | 'enrage',
-    mode: 'aimed' | 'area' | 'direct',
+    mode: 'aimed' | 'area' | 'reflect',
     /** The boss crit die of this hit (absent: the hit cannot crit). */
     die?: number,
     /** A slam's splash. */
@@ -495,7 +538,7 @@ export function simulateFight(
       Math.floor((rawAmount * (10_000 + bossDamageBp + (crit ? bossCrit.damageBp : 0))) / 10_000),
     );
     const zone = zoneOfIndex(target.idx, n);
-    // Shield Walls on the zone multiply: two 50% walls leave 25% of the damage.
+    // 1. Shield Walls on the zone multiply: two 50% walls leave 25% of the damage.
     let remainingBp = 10_000;
     for (const w of shields) {
       if (w.zone === zone && w.until >= currentRound) {
@@ -516,35 +559,47 @@ export function simulateFight(
     }
     const reducedBp = 10_000 - remainingBp;
     if (reducedBp > 0) amount = Math.floor((amount * remainingBp) / 10_000);
+    // 2. Intercept.
     let victim = target;
-    if (mode === 'aimed' && target.role !== 'guard') {
+    const intercepts = mode === 'aimed' || (mode === 'reflect' && rules !== undefined);
+    if (intercepts && target.role !== 'guard') {
       const guard = guardFor(target);
       if (guard !== undefined) victim = guard;
     }
-    // Cover and the single-hit cap only exist with `rules`. The cover is worked out first, then the
-    // cap on what is left; the damage the Guard is credited for is what the cover really saved
-    // (less than its share when the cap would have cut the hit anyway).
+    // Armor, cover and the single-hit cap only exist with `rules`. The damage they prevent for the
+    // Guard's credit is what they really saved (less than their share when the cap would have cut
+    // the hit anyway). Armor needs a Guard victim and cover a victim that is not one, so at most one
+    // of them applies to a hit.
     let covered: { guard: string; prevented: number } | undefined;
+    let armored = 0;
     let capped = false;
-    if (rules !== undefined && mode !== 'direct') {
+    if (rules !== undefined) {
       const capAt =
-        rules.maxHitBp > 0
+        mode !== 'reflect' && rules.maxHitBp > 0
           ? Math.max(1, Math.floor((victim.maxHp * rules.maxHitBp) / 10_000))
           : Number.POSITIVE_INFINITY;
       let after = amount;
+      // 3. Armor.
+      const armorBp = guardArmorFor(victim);
+      if (armorBp > 0) after = amount - Math.floor((amount * armorBp) / 10_000);
+      // 4. Cover.
       const guard =
         mode === 'area' && rules.coverBp > 0 && victim.role !== 'guard'
           ? coverGuardFor(victim)
           : undefined;
       if (guard !== undefined) after = amount - Math.floor((amount * rules.coverBp) / 10_000);
+      // 5. The single-hit cap.
       capped = after > capAt;
       const final = Math.min(after, capAt);
-      if (guard !== undefined) {
-        const prevented = Math.min(amount, capAt) - final;
-        if (prevented > 0) {
-          covered = { guard: guard.id, prevented };
-          credit(guard, null, 'guardCredit', prevented);
-        }
+      const prevented = Math.min(amount, capAt) - final;
+      if (guard !== undefined && prevented > 0) {
+        covered = { guard: guard.id, prevented };
+        credit(guard, null, 'guardCredit', prevented);
+      }
+      if (armorBp > 0 && prevented > 0) {
+        armored = prevented;
+        // Armor on a hit aimed at the Guard itself is not credited.
+        if (victim !== target) credit(victim, null, 'guardCredit', prevented);
       }
       amount = final;
     }
@@ -568,6 +623,7 @@ export function simulateFight(
       ...(crit && amount > 0 ? { crit: true as const, critBp: bossCrit.damageBp } : {}),
       ...(splash ? { splash: true as const } : {}),
       ...(covered === undefined ? {} : { covered }),
+      ...(armored > 0 ? { armored } : {}),
       ...(capped ? { capped: true as const } : {}),
     });
     if (victim.hp === 0 && victim.alive) {
@@ -779,7 +835,7 @@ export function simulateFight(
         reflected,
       });
       mark = null;
-      if (reflected) hurt(c, hit.reflect, 'reflect', 'direct');
+      if (reflected) hurt(c, hit.reflect, 'reflect', 'reflect');
     } else if (markBefore === null) {
       mark = { element: c.element, creature: c, player: c.ownerId };
       events.push({
@@ -1072,7 +1128,13 @@ export function simulateFight(
       const living = livingIn(zone);
       const first = living[0];
       if (first === undefined) continue;
-      const target = living.find((c) => c.role === 'guard') ?? first;
+      // The zone's Guard takes the plain attack (with `rules` and several, one picked by the die of
+      // the front-most slot's position).
+      const target =
+        pickGuard(
+          living.filter((c) => c.role === 'guard'),
+          first.idx,
+        ) ?? first;
       hurt(
         target,
         Math.floor((input.bossAtk * RULES.combat.bossAttackBp) / 10_000),
@@ -1190,6 +1252,10 @@ export function simulateFight(
     }
     if (patternsOn) {
       patternDice = Array.from({ length: PATTERN_DICE }, () => int(rng, DICE_RANGE));
+    }
+    if (rules !== undefined) {
+      // The very last dice of the round, so they never move any other die.
+      guardDice = creatures.map(() => int(rng, DICE_RANGE));
     }
 
     // Gimmicks rest in enrage rounds: no charge is announced and the reflect trap is not armed.
@@ -1330,6 +1396,8 @@ function checkRules(r: FightRules): void {
   for (const [name, value, max] of [
     ['coverBp', r.coverBp, 10_000],
     ['maxHitBp', r.maxHitBp, 1_000_000],
+    ['guardHpBp', r.guardHpBp, 1_000_000],
+    ['guardArmorBp', r.guardArmorBp, 10_000],
   ] as const) {
     if (!isCount(value, 0) || value > max)
       fail(`rules.${name} must be an integer from 0 to ${max}`);

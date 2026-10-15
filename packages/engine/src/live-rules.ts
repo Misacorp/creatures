@@ -10,6 +10,8 @@ export function liveFightRules(): FightRules {
   return {
     coverBp: c.coverBp,
     maxHitBp: c.maxHitBp,
+    guardHpBp: c.guard.hpBp,
+    guardArmorBp: c.guard.armorBp,
     supportFx: Object.fromEntries(Object.entries(c.supportFx).map(([k, fx]) => [k, { ...fx }])),
   };
 }

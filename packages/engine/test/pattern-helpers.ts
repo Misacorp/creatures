@@ -8,9 +8,19 @@ import {
 } from '../src/index';
 import { TEST_PACK, input, slot } from './helpers';
 
-/** The live rules with an explicit table, for tests that pin their own numbers. */
+/**
+ * An explicit rules table, for tests that pin their own numbers. The Guard is the one of before the
+ * armor change (+30% HP, no armor), so older tests keep their numbers; tests of armor set both.
+ */
 export function rulesOf(partial: Partial<FightRules> = {}): FightRules {
-  return { coverBp: 4_000, maxHitBp: 0, supportFx: {}, ...partial };
+  return {
+    coverBp: 4_000,
+    maxHitBp: 0,
+    guardHpBp: 3_000,
+    guardArmorBp: 0,
+    supportFx: {},
+    ...partial,
+  };
 }
 
 type SlotOptions = NonNullable<Parameters<typeof slot>[1]>;

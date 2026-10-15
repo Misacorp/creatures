@@ -129,6 +129,16 @@ export interface FightRules {
   coverBp: number;
   /** The single-hit cap as a share of the victim's max HP, basis points (`RULES.combat.maxHitBp`). */
   maxHitBp: number;
+  /**
+   * A Guard's extra HP in basis points of its HP stat (`RULES.combat.guard.hpBp`). Fights without
+   * `rules` use `RULES.combat.guardHpBp` instead.
+   */
+  guardHpBp: number;
+  /**
+   * The share of damage a Guard does not take from any hit it takes, basis points
+   * (`RULES.combat.guard.armorBp`). Fights without `rules` have no armor.
+   */
+  guardArmorBp: number;
   /** Support effects by element (`RULES.combat.supportFx`). */
   supportFx: Readonly<Partial<Record<Element, SupportFx>>>;
 }
@@ -270,6 +280,8 @@ export type FightEvent =
       splash?: true;
       /** Guard cover softened this area hit: the Guard and the damage it prevented. */
       covered?: { guard: string; prevented: number };
+      /** A Guard's armor (`FightRules.guardArmorBp`) took this much off a hit the Guard took. */
+      armored?: number;
       /** The single-hit cap (`FightRules.maxHitBp`) cut this hit down. */
       capped?: true;
     }

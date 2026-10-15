@@ -67,6 +67,8 @@ describe('the fight inputs the server builds', () => {
         expect(run?.input.rules).toEqual({
           coverBp: RULES.combat.coverBp,
           maxHitBp: RULES.combat.maxHitBp,
+          guardHpBp: RULES.combat.guard.hpBp,
+          guardArmorBp: RULES.combat.guard.armorBp,
           supportFx: RULES.combat.supportFx,
         });
         expect(run?.input.enrage).toBeUndefined();

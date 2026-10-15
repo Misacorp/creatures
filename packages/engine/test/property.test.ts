@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PATTERN_OPS, RULES } from '@creatures/game';
-import { simulateFight, type FightInput, type FightResult } from '../src/index';
+import { liveFightRules, simulateFight, type FightInput, type FightResult } from '../src/index';
 import { randomInput, rng } from './helpers';
 
 const phases = ['phase1', 'phase2', 'finale'] as const;
@@ -114,6 +114,22 @@ describe('properties over seeded random fights', () => {
       const second = simulateFight(inp, rng());
       expect(JSON.stringify(inp)).toBe(before);
       expect(second).toEqual(first);
+      checkResult(inp, first);
+    }
+  });
+
+  it('hold with the live combat rules (armor, cover, cap, Guard dice): deterministic, consistent totals', () => {
+    // The Support element effects are left out: their reaction credit is not zero-sum with the
+    // damage dealt, which `checkResult` asserts (a gap that predates the Guard rework).
+    for (let i = 0; i < SEEDS; i++) {
+      const phase = phases[i % 3] as (typeof phases)[number];
+      const inp: FightInput = {
+        ...randomInput(`prop-rules-${i}`, 1 + (i % 15), phase),
+        rules: { ...liveFightRules(), supportFx: {} },
+        luck: RULES.combat.luck,
+      };
+      const first = simulateFight(inp, rng());
+      expect(simulateFight(inp, rng())).toEqual(first);
       checkResult(inp, first);
     }
   });

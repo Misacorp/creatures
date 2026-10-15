@@ -264,6 +264,8 @@ describe('describeEvent for the retune events', () => {
         rules: {
           coverBp: 4_000,
           maxHitBp: 5_000,
+          guardHpBp: 0,
+          guardArmorBp: 2_500,
           supportFx: { tide: { healBp: 400, cleanse: true } },
         },
         ...(i % 3 === 0 ? { bossHpFloor: Math.floor(base.bossHpPool.max * 0.9) } : {}),
