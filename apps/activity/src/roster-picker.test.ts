@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { RowSlotView } from './raid-api';
 import {
   BOARD_FULL_REASON,
+  EFFECT_PREFIX,
   MAX_ON_BOARD,
   ON_BOARD_NOTE,
   SHOW_PICKER_EFFECTS,
@@ -75,6 +76,7 @@ describe('the count and the line under the heading', () => {
 
   it('keeps the effect preview switched on (Misa wants to try it)', () => {
     expect(SHOW_PICKER_EFFECTS).toBe(true);
+    expect(EFFECT_PREFIX).toBe('In this slot:');
     expect(MAX_ON_BOARD).toBe(3);
   });
 });

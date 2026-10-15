@@ -127,13 +127,15 @@
   gap: 0.25rem;
 }
 
-/* One quiet line: cut with an ellipsis rather than wrapped, so the list stays short. */
+/* One quiet line, led by a bold "In this slot:". At 360 px a long one wraps to a second line rather than losing its end. */
 .ro-effect {
-  overflow: hidden;
   color: var(--haze);
   font-size: 0.75rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.ro-effect strong {
+  color: var(--bone);
 }
 
 .ro-note {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { ON_BOARD_NOTE, type PickerOption } from '../roster-picker';
+import { EFFECT_PREFIX, ON_BOARD_NOTE, type PickerOption } from '../roster-picker';
 import { ElementChip } from '../sprites/ElementChip';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
@@ -27,7 +27,7 @@ function firstEnabled(options: readonly PickerOption[]): number {
 /**
  * The creature picker of the Raid Roster: a bottom sheet with a listbox of the player's creatures.
  * Each option shows the sprite, name, level, element and role, what it would do in the slot (when
- * `showEffects`), and either "On the board · moves here" or why it cannot be picked. Options that
+ * `showEffects`: a line led by a bold "In this slot:"), and either "On the board · moves here" or why it cannot be picked. Options that
  * cannot be picked stay in the list, so the reason can be read. Up, Down, Home and End move through
  * the list, Enter or Space picks, Escape (or the Close button, or a tap outside) closes, Tab stays in
  * the sheet, and focus goes back to the slot when it closes.
@@ -154,7 +154,9 @@ export function RosterPicker(props: RosterPickerProps) {
                   <ElementChip as="plain" element={o.element} role={o.role} />
                 </span>
                 {props.showEffects && o.effect !== null && (
-                  <span class="ro-effect">{o.effect}</span>
+                  <span class="ro-effect">
+                    <strong>{EFFECT_PREFIX}</strong> {o.effect}
+                  </span>
                 )}
                 {o.onBoard && <span class="ro-note">{ON_BOARD_NOTE}</span>}
                 {o.disabled !== null && <span class="ro-note ro-reason">{o.disabled}</span>}

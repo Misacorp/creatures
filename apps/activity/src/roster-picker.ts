@@ -18,6 +18,9 @@ import { phaseName } from './raid-text';
  */
 export const SHOW_PICKER_EFFECTS: boolean = true;
 
+/** The bold lead of a picker option's effect line: "In this slot: Steam with Hearthshell". Only shown with an effect. */
+export const EFFECT_PREFIX = 'In this slot:';
+
 /** The most creatures one player has on the board. */
 export const MAX_ON_BOARD: number = RULES.raid.teamSize;
 

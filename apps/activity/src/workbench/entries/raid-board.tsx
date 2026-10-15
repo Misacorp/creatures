@@ -302,7 +302,7 @@ const rosterPicker: Entry = {
   file: 'apps/activity/src/ui/RosterPicker.tsx',
   group: 'Slots',
   description:
-    'The creature picker of the Raid Roster: a bottom sheet listing everything you own with its level, element, role and, optionally, one quiet line about what it would do in the slot. Creatures already on the board say they move here; at 3 / 3 the new ones are disabled with the reason.',
+    'The creature picker of the Raid Roster: a bottom sheet listing everything you own with its level, element, role and, optionally, one quiet line led by a bold "In this slot:" about what it would do there. Creatures already on the board say they move here; at 3 / 3 the new ones are disabled with the reason.',
   controls: {
     effects: { kind: 'toggle' },
     placed: { kind: 'number', min: 0, max: 3 },
@@ -312,7 +312,7 @@ const rosterPicker: Entry = {
   },
   defaults: { effects: true, placed: 1, owned: 7, turnOrder: 'left_to_right', open: true },
   presets: [
-    { name: 'Effects on (the line under each creature)', props: { effects: true } },
+    { name: 'Effects on ("In this slot:" line under each creature)', props: { effects: true } },
     { name: 'Effects off (names and tags only)', props: { effects: false } },
     { name: '3 / 3 on the board (new ones disabled)', props: { placed: 3 } },
     { name: 'Nothing on the board yet', props: { placed: 0 } },
