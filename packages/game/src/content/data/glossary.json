@@ -93,12 +93,12 @@
   {
     "id": "role-guard",
     "title": "Guard",
-    "short": "Tough. Takes hits for its zone.",
+    "short": "Tough. Takes the hits aimed at its row.",
     "lines": [
       "Armor: takes 25% less damage from every hit.",
-      "Takes hits on one creature in its zone instead, reflects too (dungeon: right beside it). Two Guards roll.",
-      "Creatures right beside it take 40% less from hits on many creatures.",
-      "A Lance stops at a Guard."
+      "A hit aimed at one creature goes to a Guard in its row instead (dungeon: right beside it). Two Guards roll.",
+      "Creatures right beside it, in its row, take 40% less from hits on many creatures.",
+      "A Lance stops at a Guard. A hit aimed at a Guard never goes on to another."
     ],
     "visual": {
       "kind": "species",
@@ -111,10 +111,10 @@
     "title": "Support",
     "short": "Powers up its neighbours.",
     "lines": [
-      "Each round it boosts the creatures right next to it.",
+      "Each round it boosts the creatures right next to it. In the raid its reach stops at the row's edge.",
       "Their next hit deals 15% more damage.",
       "By element: Ember boosts 25%, Spark adds reaction damage, Tide and Grove heal (Tide clears silence too).",
-      "A knocked-out or silenced Support gives nothing. Place it between your strongest hitters."
+      "Nothing reaches past a knocked-out neighbour. A knocked-out or silenced Support gives nothing."
     ],
     "visual": {
       "kind": "species",
@@ -253,7 +253,7 @@
   {
     "id": "gimmick-hit-zone",
     "title": "Zone attack",
-    "short": "Hits every creature in one zone.",
+    "short": "Hits every creature in one row. An empty row: the nearest row with someone.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -264,7 +264,7 @@
   {
     "id": "gimmick-silence-ends",
     "title": "Silence",
-    "short": "The row's ends skip a turn.",
+    "short": "The leftmost and rightmost creature still standing in the line skip a turn.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -275,7 +275,7 @@
   {
     "id": "gimmick-reflect-first-reaction",
     "title": "Reflect",
-    "short": "Turns a reaction back on you.",
+    "short": "The first reaction each round hits back at who cashed it in, or their Guard.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -297,7 +297,7 @@
   {
     "id": "gimmick-sweep",
     "title": "Sweep",
-    "short": "Rolls through a whole row, a different row each time.",
+    "short": "Hits one row, or every row. A different row each time.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -308,7 +308,7 @@
   {
     "id": "gimmick-barrage",
     "title": "Barrage",
-    "short": "Shells land on random creatures, never the same one twice running.",
+    "short": "Shells hit different random creatures. Not last volley's, if others are left.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -319,7 +319,7 @@
   {
     "id": "gimmick-slam",
     "title": "Slam",
-    "short": "A heavy hit. The creatures beside the victim take a share.",
+    "short": "A heavy hit. The creatures beside whoever took it take a share.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -341,7 +341,7 @@
   {
     "id": "gimmick-pincer",
     "title": "Pincer",
-    "short": "Hits the first and last creature of every row.",
+    "short": "Hits the ends of each row, or of the whole line.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -352,7 +352,7 @@
   {
     "id": "gimmick-charge",
     "title": "Charge",
-    "short": "Gathers a round ahead and marks its victims.",
+    "short": "Marks victims a round ahead. A fallen mark is spared. Never round 1 or overtime.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -370,7 +370,7 @@
   {
     "id": "zone-middle",
     "title": "Middle",
-    "short": "The rest of the row.",
+    "short": "Between Front and Back.",
     "lines": [],
     "section": "raid-week"
   },
@@ -384,7 +384,7 @@
   {
     "id": "turn-left-to-right",
     "title": "Left to right",
-    "short": "The row acts from slot 1 on.",
+    "short": "The line acts from slot 1 on.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -395,7 +395,7 @@
   {
     "id": "turn-right-to-left",
     "title": "Right to left",
-    "short": "The row acts from the last slot.",
+    "short": "The line acts from the last slot.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -588,14 +588,14 @@
   {
     "id": "retreat",
     "title": "Retreat",
-    "short": "At its floor the boss goes immune and retreats.",
+    "short": "Phase 1 or 2 floor: the boss goes immune, the fight ends, extra damage is lost.",
     "lines": [],
     "section": "raid-week"
   },
   {
     "id": "enrage",
     "title": "Enraged",
-    "short": "Out of time: the boss hits every creature, hard.",
+    "short": "Out of time: your creatures act, then the boss attacks and hits every creature.",
     "lines": [],
     "section": "finale"
   },

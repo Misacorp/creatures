@@ -53,6 +53,13 @@ export interface PatternPlan {
   lane?: number;
   /** A slam: the share of the hit's damage that splashes on the creatures beside the impact. */
   splashBp?: number;
+  /**
+   * A chain: every living creature after the first in strength order (`idx`). Jump k goes to the
+   * k-th of these that the chain has not hit yet; the fight resolves it (fights with `rules`),
+   * because a Guard that stepped in for the first hit is only known then. `hits` keeps the jumps'
+   * powers and the creatures as ranked at plan time.
+   */
+  chain?: { rest: number[] };
 }
 
 /** The dice a fight draws per round for patterns, and the window each gimmick reads from. */
@@ -317,8 +324,9 @@ export function planPincer(
 /**
  * Chain (`strike_highest_atk`): the first hit is aimed at the strongest living creature (highest
  * Attack, ties lower slot); jump k (1 to `jumps`) goes to the (k + 1)-th strongest as an area hit at
- * `power x decay^k` (each step floored, in basis points). Nobody is hit twice. With `jumps` 0 it is
- * the plain strike on the strongest.
+ * `power x decay^k` (each step floored, in basis points). With `jumps` 0 it is the plain strike on
+ * the strongest. The plan lists the creatures as ranked now; with `rules` the fight skips a creature
+ * the chain already hit (the Guard that took the first hit) when it plays the jumps (`chain.rest`).
  */
 export function planChain(
   ctx: PatternContext,
@@ -336,7 +344,7 @@ export function planChain(
     power = Math.floor((power * spec.decayBp) / 10_000);
     hits.push(area(next.idx, power));
   }
-  return planned(hits);
+  return planned(hits, { chain: { rest: ranked.slice(1).map((c) => c.idx) } });
 }
 
 /** The default jump decay of a chain (`decayBp` absent), basis points. */

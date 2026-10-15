@@ -53,7 +53,7 @@ Every move is shown before it happens: on the boss card before the fight, in "Ne
 The words are the ones to use in the glossary and the UI. Every number was run in the prototype.
 
 - **Row.** The raid's zone: Front, Middle or Back (the stage draws zones as rows). In the dungeon every row is one creature. A row's creatures stand in slot order, left to right.
-- **Beside.** The slot directly left or right of a creature (`neighbours()` in `zones.ts`; it ignores row edges, as the Support does today).
+- **Beside.** The slot directly left or right of a creature (`neighbours()` in `zones.ts`). _Note: in the raid, beside stops at row edges (`zoneNeighbours`), for the Support and the Guard's cover; only the dungeon uses the plain line. See the 2026-10-14 decision "Raid neighbours stop at row edges" in `decisions.md`, and `combat-rules.md` 1.5._
 - **Lane.** The same slot position in every row: the creature at slot k of Front, of Middle and of Back. In a raid row of `3N` creatures a lane has three creatures.
 - **Aimed hit.** One target: the plain attack, a strike on the strongest, the first hit of a Slam or a Chain. A Guard can take it for the target.
 - **Area hit.** Every other hit: sweeps, shells, splash, the jumps of a chain, a lance, a pincer. A Guard cannot take it, but covers its neighbours.

@@ -163,8 +163,9 @@ export function defaultAbilityRound(
  *
  * Deterministic for a given input, mutator set and RNG: the MVP rules draw no randomness (ties
  * break by position); the RNG is handed to mutator hooks for future content.
- * All maths is integer maths in basis points with floor. Overkill damage on the last hit counts as
- * dealt for credit, but the boss pool never goes below 0.
+ * All maths is integer maths in basis points with floor. Overkill on a killing blow: without `rules`
+ * it counts as dealt for credit (the boss pool never goes below 0); with `rules` damage counts only
+ * up to the HP the boss had left, as at a phase floor.
  *
  * Round order: round start (charge announcements, reflect arming, support buffs, finale abilities),
  * each living and non-silenced creature in turn order, boss gimmicks due this round, the boss's
@@ -509,9 +510,11 @@ export function simulateFight(
    *
    * The reductions on one hit, in this order (each works on what the one before left; every
    * division rounds down, so the damage prevented rounds down):
-   * 1. Shield Walls on the target's row (the hit can be stopped fully).
-   * 2. Intercept (aimed; a reflect with `rules`): the Guard that takes the hit is picked. With
+   * 1. Intercept (aimed; a reflect with `rules`): the Guard that takes the hit is picked. With
    *    several candidates a die picks one (`guardDice`).
+   * 2. Shield Walls (the hit can be stopped fully): with `rules` the walls on the zone of the
+   *    creature that takes the hit (after the Guard stepped in); without `rules` the walls on the
+   *    zone the hit was aimed at. In the raid a Guard is in the target's zone, so it never differs.
    * 3. Armor: the creature taking the hit is a Guard (`guardArmorFor`, `rules` only).
    * 4. Cover: the creature taking the hit is beside a living Guard and the hit is an area hit
    *    (`rules` only; never on a Guard, so armor and cover never stack).
@@ -520,6 +523,10 @@ export function simulateFight(
    * Credit: a Guard is credited the damage it takes in place of another creature, and with it what
    * its armor really prevented on that hit; a cover credits the beside Guard with what it prevented.
    * Prevention that the cap would have made anyway is not credited. Returns who took the hit.
+   *
+   * Overkill (`rules` only): a creature loses at most the HP it has left, and the `boss_hit` event
+   * logs that HP (`damage`), not the proposed amount; credit counts the damage a Guard really took
+   * and the damage its armor or cover really saved (what it prevented, up to the HP that was left).
    */
   function hurt(
     target: Creature,
@@ -536,8 +543,19 @@ export function simulateFight(
       0,
       Math.floor((rawAmount * (10_000 + bossDamageBp + (crit ? bossCrit.damageBp : 0))) / 10_000),
     );
-    const zone = zoneOfIndex(target.idx, n);
-    // 1. Shield Walls on the zone multiply: two 50% walls leave 25% of the damage.
+    // 1. Who takes it (an aimed hit: a Guard steps in, see `guardFor`). The pick uses no state of the
+    // hit, so doing it before the Shield Wall changes nothing for a hit the wall stops.
+    let victim = target;
+    const intercepts = mode === 'aimed' || (mode === 'reflect' && rules !== undefined);
+    if (intercepts && target.role !== 'guard') {
+      const guard = guardFor(target);
+      if (guard !== undefined) victim = guard;
+    }
+    // 2. Shield Walls on the zone multiply: two 50% walls leave 25% of the damage. With `rules` the
+    // wall that counts is the one on the zone of the creature that TAKES the hit (after a Guard
+    // stepped in); without `rules` it is the zone the hit was aimed at (stored fights replay so).
+    const walled = rules === undefined ? target : victim;
+    const zone = zoneOfIndex(walled.idx, n);
     let remainingBp = 10_000;
     for (const w of shields) {
       if (w.zone === zone && w.until >= currentRound) {
@@ -549,22 +567,16 @@ export function simulateFight(
         t: 'boss_hit',
         round: currentRound,
         source,
-        target: target.id,
+        target: walled.id,
         damage: 0,
         shielded: true,
+        ...(walled !== target ? { from: target.id } : {}),
         ...(splash ? { splash: true as const } : {}),
       });
-      return target;
+      return walled;
     }
     const reducedBp = 10_000 - remainingBp;
     if (reducedBp > 0) amount = Math.floor((amount * remainingBp) / 10_000);
-    // 2. Intercept.
-    let victim = target;
-    const intercepts = mode === 'aimed' || (mode === 'reflect' && rules !== undefined);
-    if (intercepts && target.role !== 'guard') {
-      const guard = guardFor(target);
-      if (guard !== undefined) victim = guard;
-    }
     // Armor, cover and the single-hit cap only exist with `rules`. The damage they prevent for the
     // Guard's credit is what they really saved (less than their share when the cap would have cut
     // the hit anyway). Armor needs a Guard victim and cover a victim that is not one, so at most one
@@ -590,7 +602,7 @@ export function simulateFight(
       // 5. The single-hit cap.
       capped = after > capAt;
       const final = Math.min(after, capAt);
-      const prevented = Math.min(amount, capAt) - final;
+      const prevented = Math.min(amount, capAt, victim.hp) - Math.min(final, victim.hp);
       if (guard !== undefined && prevented > 0) {
         covered = { guard: guard.id, prevented };
         credit(guard, null, 'guardCredit', prevented);
@@ -748,9 +760,12 @@ export function simulateFight(
     // The phase floor: a hit that reaches it counts only down to it, so nothing is overkill (the
     // damage, the reaction bonus, the credit and the element totals). The plain hit is counted
     // first, the reaction's bonus gets what is left.
+    // With `rules` the killing blow is trimmed the same way: damage counts only up to the HP the
+    // boss had left (no overkill), though it is a kill, not a retreat.
     const room = Math.max(0, bossHp - bossFloor);
     const reaches = bossFloor > 0 && full.damage >= room;
-    const hit = reaches
+    const trimmed = reaches || (rules !== undefined && full.damage >= room);
+    const hit = trimmed
       ? {
           ...full,
           damage: room,
@@ -774,7 +789,7 @@ export function simulateFight(
     // gains never overlap: together they are at most the hit's damage. A hit cut short by the floor
     // keeps the shares within what was really dealt.
     let supportShare = 0;
-    let budget = reaches ? Math.max(0, hit.damage - setup) : Number.POSITIVE_INFINITY;
+    let budget = trimmed ? Math.max(0, hit.damage - setup) : Number.POSITIVE_INFINITY;
     if (overcharge.length > 0) {
       const gain = Math.min(budget, Math.max(0, hit.damage - calc(totalBp, 0).damage));
       budget -= gain;
@@ -989,14 +1004,27 @@ export function simulateFight(
     };
   }
 
-  /** Plays a plan's hits in order; a slam's splash goes to the living creatures beside the impact. */
+  /**
+   * Plays a plan's hits in order; a slam's splash goes to the living creatures beside the impact.
+   * With `rules`, a chain's jumps skip the creature that took its first hit (a Guard that stepped in
+   * for it): each jump goes to the next strongest creature not yet hit (`plan.chain`).
+   */
   function resolvePlan(plan: PatternPlan): void {
-    for (const h of plan.hits) {
-      const target = creatures[h.target] as Creature;
+    const chain = rules === undefined ? undefined : plan.chain;
+    let jumps = chain?.rest ?? [];
+    for (const [k, h] of plan.hits.entries()) {
+      let targetIdx = h.target;
+      if (chain !== undefined && k > 0) {
+        const next = jumps[k - 1];
+        if (next === undefined) continue;
+        targetIdx = next;
+      }
+      const target = creatures[targetIdx] as Creature;
       // A creature that fell earlier in the same action is not hit again.
       if (!target.alive) continue;
       const raw = Math.floor((input.bossAtk * h.powerBp) / 10_000);
       const impact = hurt(target, raw, 'gimmick', h.kind, bossGimmickDice[target.idx]);
+      if (chain !== undefined && k === 0) jumps = chain.rest.filter((i) => i !== impact.idx);
       if (plan.splashBp !== undefined && h.kind === 'aimed') {
         const splashRaw = Math.floor((raw * plan.splashBp) / 10_000);
         for (const i of besides(impact.idx)) {

@@ -95,6 +95,7 @@ describe('Guard cover (area hits)', () => {
     const fell = fightWith(rowOf(9, { 1: { role: 'guard', hp: 100 } }), [slam], {
       rules: rulesOf(),
     });
+    // The hit is logged at its full damage (300, more than the Guard had left); the splash is 50% of the 300.
     expect(gimmickHits(fell)).toEqual([
       [1, 's1', 300],
       [1, 's0', 150],
