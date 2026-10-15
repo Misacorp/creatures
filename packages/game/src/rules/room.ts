@@ -20,3 +20,36 @@ export function roomPhase(localHour: number): RoomPhase {
   const dusk = hoursSince(localHour, fromHour) <= span;
   return dawn || dusk ? 'twilight' : 'day';
 }
+
+/**
+ * The ids of the living room's 16 spots, in room order (left to right, bay by bay). The Activity's
+ * `ROOM_SPOTS` (apps/activity/src/sprites/room-art.ts) has the same ids in the same order, which a test
+ * there checks. The server stores a player's chosen spot as one of these ids.
+ */
+export const ROOM_SPOT_IDS = [
+  'window-sill',
+  'window-floor',
+  'window-cushion',
+  'couch-left',
+  'couch-middle',
+  'couch-right',
+  'table-chair-left',
+  'table-chair-right',
+  'table-stool',
+  'fire-mantel',
+  'fire-rug-left',
+  'fire-rug-right',
+  'fire-pouf',
+  'shelf-top',
+  'shelf-floor',
+  'shelf-beanbag',
+] as const;
+
+export type RoomSpotId = (typeof ROOM_SPOT_IDS)[number];
+
+const SPOT_ID_SET: ReadonlySet<string> = new Set(ROOM_SPOT_IDS);
+
+/** True for the id of one of the room's spots. */
+export function isRoomSpotId(value: unknown): value is RoomSpotId {
+  return typeof value === 'string' && SPOT_ID_SET.has(value);
+}

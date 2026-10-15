@@ -1,4 +1,4 @@
-import { RULES, createSeededRng, rollGear, type Rng } from '@creatures/game';
+import { ROOM_SPOT_IDS, RULES, createSeededRng, rollGear, type Rng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { createHandler } from '../src/index';
 import { insertItem } from '../src/gear-store';
@@ -10,6 +10,7 @@ import {
   callHandler,
   runCore,
   undoLoungerMigration,
+  undoLoungeSpotMigration,
   LATEST_SCHEMA_VERSION,
   type CoreContext,
 } from './helpers';
@@ -71,6 +72,19 @@ const storedLounger = (ctx: CoreContext, userId: string): string | null =>
     'SELECT lounger_id FROM players WHERE user_id = ?',
     userId,
   )[0]?.lounger_id ?? null;
+
+const storedSpot = (
+  ctx: CoreContext,
+  userId: string,
+): { lounge_spot: string | null; lounge_spot_at: number | null } | undefined =>
+  rows<{ lounge_spot: string | null; lounge_spot_at: number | null }>(
+    ctx.sql,
+    'SELECT lounge_spot, lounge_spot_at FROM players WHERE user_id = ?',
+    userId,
+  )[0];
+
+const spotOf = async (p: Session): Promise<unknown> =>
+  (await p.call('GET', '/api/state')).body['loungeSpot'];
 
 const loungerIdOf = async (p: Session): Promise<string | null> =>
   (await p.call('GET', '/api/state')).body['loungerId'] as string | null;
@@ -134,6 +148,7 @@ interface RoomBody {
         primary: { stat: string; bp: number };
       } | null;
     } | null;
+    spot: { id: string; at: number } | null;
   }[];
 }
 
@@ -403,6 +418,247 @@ describe('PUT /api/lounger', () => {
   });
 });
 
+describe('PUT /api/lounge-spot', () => {
+  it('stores the spot with the core clock, answers { spot } and shows it in the state', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      expect(await spotOf(a)).toBeNull();
+      ctx.clock.t = T0 + 5_000;
+      const res = await a.call('PUT', '/api/lounge-spot', { spotId: 'couch-middle' });
+      expect(res).toEqual({
+        status: 200,
+        body: { spot: { id: 'couch-middle', at: T0 + 5_000 } },
+      });
+      expect(storedSpot(ctx, a.id)).toEqual({
+        lounge_spot: 'couch-middle',
+        lounge_spot_at: T0 + 5_000,
+      });
+      expect(await spotOf(a)).toEqual({ id: 'couch-middle', at: T0 + 5_000 });
+    });
+  });
+
+  it('moves the spot and takes a new time on every claim, even for the same spot', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      await a.call('PUT', '/api/lounge-spot', { spotId: 'couch-left' });
+      ctx.clock.t = T0 + 1_000;
+      expect((await a.call('PUT', '/api/lounge-spot', { spotId: 'shelf-top' })).body).toEqual({
+        spot: { id: 'shelf-top', at: T0 + 1_000 },
+      });
+      ctx.clock.t = T0 + 2_000;
+      expect((await a.call('PUT', '/api/lounge-spot', { spotId: 'shelf-top' })).body).toEqual({
+        spot: { id: 'shelf-top', at: T0 + 2_000 },
+      });
+      expect(await spotOf(a)).toEqual({ id: 'shelf-top', at: T0 + 2_000 });
+    });
+  });
+
+  it('accepts every spot id', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      for (const spotId of ROOM_SPOT_IDS) {
+        const res = await a.call('PUT', '/api/lounge-spot', { spotId });
+        expect(res.status, spotId).toBe(200);
+        expect(res.body).toEqual({ spot: { id: spotId, at: T0 } });
+      }
+    });
+  });
+
+  it('clears both columns with null and answers { spot: null }', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      await a.call('PUT', '/api/lounge-spot', { spotId: 'fire-pouf' });
+      const res = await a.call('PUT', '/api/lounge-spot', { spotId: null });
+      expect(res).toEqual({ status: 200, body: { spot: null } });
+      expect(storedSpot(ctx, a.id)).toEqual({ lounge_spot: null, lounge_spot_at: null });
+      expect(await spotOf(a)).toBeNull();
+      // Clearing again is fine.
+      expect((await a.call('PUT', '/api/lounge-spot', { spotId: null })).status).toBe(200);
+    });
+  });
+
+  it('only changes the spot of the player in the session', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      const b = await member(ctx, 2);
+      await b.call('PUT', '/api/lounge-spot', { spotId: 'table-stool' });
+      await a.call('PUT', '/api/lounge-spot', { spotId: 'couch-left' });
+      expect(storedSpot(ctx, b.id)?.lounge_spot).toBe('table-stool');
+      expect(storedSpot(ctx, a.id)?.lounge_spot).toBe('couch-left');
+      // A user id in the body is an unknown key and is rejected, never obeyed.
+      const res = await a.call('PUT', '/api/lounge-spot', { spotId: 'shelf-top', userId: b.id });
+      expect(res).toEqual({ status: 400, body: { error: 'invalid_body' } });
+      expect(storedSpot(ctx, b.id)?.lounge_spot).toBe('table-stool');
+    });
+  });
+
+  it('rejects unknown spot ids, bad types and unknown keys with 400 invalid_body', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      const bad: unknown[] = [
+        {},
+        { spotId: 'attic' },
+        { spotId: '' },
+        { spotId: 'Couch-Left' },
+        { spotId: ' couch-left' },
+        { spotId: 'constructor' },
+        { spotId: '__proto__' },
+        { spotId: 3 },
+        { spotId: true },
+        { spotId: ['couch-left'] },
+        { spotId: undefined },
+        { spotId: 'couch-left', extra: true },
+        { spotId: null, extra: 1 },
+        { spot: 'couch-left' },
+        ['couch-left'],
+        'couch-left',
+        null,
+      ];
+      for (const body of bad) {
+        expect(await a.call('PUT', '/api/lounge-spot', body), JSON.stringify(body)).toEqual({
+          status: 400,
+          body: { error: 'invalid_body' },
+        });
+      }
+      expect(storedSpot(ctx, a.id)).toEqual({ lounge_spot: null, lounge_spot_at: null });
+    });
+  });
+
+  it('keeps the spot when the lounger changes, goes busy or is fused away', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const a = await member(ctx, 1);
+        ctx.clock.t = T0 + 9_000;
+        await a.call('PUT', '/api/lounge-spot', { spotId: 'window-sill' });
+        const spot = { id: 'window-sill', at: T0 + 9_000 };
+        // Choosing another lounger leaves the spot alone.
+        await a.call('PUT', '/api/lounger', { creatureId: a.creatureIds[2] });
+        expect(await spotOf(a)).toEqual(spot);
+        // The lounger goes on an expedition and a new one is picked: same spot.
+        expect((await sendOnTrip(a, a.creatureIds[2] as string)).status).toBe(200);
+        expect(await loungerIdOf(a)).not.toBe(a.creatureIds[2]);
+        expect(await spotOf(a)).toEqual(spot);
+        // The lounger no longer exists: same spot.
+        const current = (await loungerIdOf(a)) as string;
+        ctx.sql.exec('DELETE FROM creatures WHERE id = ?', current);
+        expect(await loungerIdOf(a)).not.toBe(current);
+        expect(await spotOf(a)).toEqual(spot);
+      },
+      { loungerRng: scriptedRng([0, 0]) },
+    );
+  });
+
+  it('works while every creature of the player is busy', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1, { creatures: 1 });
+      startJob(ctx, a.id, a.creatureIds[0] as string);
+      expect((await a.call('PUT', '/api/lounge-spot', { spotId: 'fire-rug-left' })).status).toBe(
+        200,
+      );
+      expect(await spotOf(a)).toEqual({ id: 'fire-rug-left', at: T0 });
+    });
+  });
+
+  it('only allows PUT', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      expect((await a.call('GET', '/api/lounge-spot')).status).toBe(405);
+      expect((await a.call('POST', '/api/lounge-spot', {})).status).toBe(405);
+      expect((await a.call('DELETE', '/api/lounge-spot')).status).toBe(405);
+    });
+  });
+
+  it('is rate limited per player like the other routes', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      let last = 200;
+      for (let i = 0; i < 60 && last === 200; i++) {
+        last = (await a.call('PUT', '/api/lounge-spot', { spotId: 'couch-left' })).status;
+      }
+      expect(last).toBe(429);
+    });
+  });
+});
+
+describe('the spot in /api/state and /api/room', () => {
+  it('shows loungeSpot in every echoed state', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1, { starter: false });
+      await a.call('PUT', '/api/lounge-spot', { spotId: 'couch-right' });
+      const spot = { id: 'couch-right', at: T0 };
+      const trip = await sendOnTrip(a, a.creatureIds[0] as string);
+      expect((trip.body['state'] as { loungeSpot: unknown }).loungeSpot).toEqual(spot);
+      const nick = await a.call('PATCH', `/api/creatures/${a.creatureIds[1]}`, { nickname: 'Pip' });
+      expect((nick.body['state'] as { loungeSpot: unknown }).loungeSpot).toEqual(spot);
+    });
+  });
+
+  it('shows the spot and its time on each resident, and null for players who never chose', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const a = await member(ctx, 1);
+        const b = await member(ctx, 2);
+        const c = await member(ctx, 3);
+        ctx.clock.t = T0 + 100;
+        await a.call('PUT', '/api/lounge-spot', { spotId: 'fire-mantel' });
+        ctx.clock.t = T0 + 200;
+        await b.call('PUT', '/api/lounge-spot', { spotId: 'couch-middle' });
+        await b.call('PUT', '/api/lounge-spot', { spotId: null });
+        const res = await room(c, [a.id, b.id, c.id]);
+        expect(res.body.residents.map((r) => r.spot)).toEqual([
+          { id: 'fire-mantel', at: T0 + 100 },
+          null,
+          null,
+        ]);
+      },
+      { loungerRng: scriptedRng([0, 0, 0]) },
+    );
+  });
+
+  it('keeps the spot of a resident whose creature is busy', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1, { creatures: 1 });
+      await a.call('PUT', '/api/lounge-spot', { spotId: 'shelf-beanbag' });
+      startJob(ctx, a.id, a.creatureIds[0] as string);
+      const res = await room(a, [a.id]);
+      expect(res.body.residents).toEqual([
+        {
+          userId: a.id,
+          name: a.name,
+          creature: null,
+          spot: { id: 'shelf-beanbag', at: T0 },
+        },
+      ]);
+    });
+  });
+
+  it('reads a stored id that is no longer a spot as null, in the room and in the state', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const a = await member(ctx, 1);
+        ctx.sql.exec(
+          "UPDATE players SET lounge_spot = 'removed-spot', lounge_spot_at = ? WHERE user_id = ?",
+          T0,
+          a.id,
+        );
+        expect((await room(a, [a.id])).body.residents[0]?.spot).toBeNull();
+        expect(await spotOf(a)).toBeNull();
+        // Half-set rows (no time) are also treated as not set.
+        ctx.sql.exec(
+          "UPDATE players SET lounge_spot = 'couch-left', lounge_spot_at = NULL WHERE user_id = ?",
+          a.id,
+        );
+        expect((await room(a, [a.id])).body.residents[0]?.spot).toBeNull();
+        expect(await spotOf(a)).toBeNull();
+      },
+      { loungerRng: scriptedRng([0]) },
+    );
+  });
+});
+
 describe('POST /api/room', () => {
   it('answers the residents in the order asked, with the room view of their lounger', async () => {
     await runCore(
@@ -440,7 +696,7 @@ describe('POST /api/room', () => {
         ];
         expect(rb.name).toBe('Bob');
         expect(ra.name).toBe('Alice');
-        expect(Object.keys(rb).sort()).toEqual(['creature', 'name', 'userId']);
+        expect(Object.keys(rb).sort()).toEqual(['creature', 'name', 'spot', 'userId']);
         expect(rb.creature).toMatchObject({
           id: bobCreature,
           nickname: 'Puddle',
@@ -581,7 +837,9 @@ describe('POST /api/room', () => {
       const b = await member(ctx, 2, { creatures: 2 });
       for (const id of b.creatureIds) startJob(ctx, b.id, id);
       const res = await room(a, [b.id]);
-      expect(res.body.residents).toEqual([{ userId: b.id, name: b.name, creature: null }]);
+      expect(res.body.residents).toEqual([
+        { userId: b.id, name: b.name, creature: null, spot: null },
+      ]);
       expect(storedLounger(ctx, b.id)).toBeNull();
     });
   });
@@ -673,11 +931,12 @@ describe('POST /api/room', () => {
 });
 
 describe('session auth', () => {
-  it('turns away /api/room and /api/lounger without a valid session', async () => {
+  it('turns away /api/room, /api/lounger and /api/lounge-spot without a valid session', async () => {
     const handler = createHandler();
     for (const [method, path, body] of [
       ['POST', '/api/room', { userIds: [USER_ID] }],
       ['PUT', '/api/lounger', { creatureId: '00000000-0000-4000-8000-000000000001' }],
+      ['PUT', '/api/lounge-spot', { spotId: 'couch-left' }],
     ] as const) {
       const none = await callHandler(
         handler,
@@ -700,6 +959,35 @@ describe('session auth', () => {
     await runCore(GUILD_ID, async (ctx) => {
       const res = await ctx.request('nope', '/api/room', 'POST', { userIds: [USER_ID] });
       expect(res.status).toBe(401);
+    });
+  });
+});
+
+describe('migration 23', () => {
+  it('adds nullable lounge_spot and lounge_spot_at to players and backfills nothing', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      const columns = (): { name: string; type: string; notnull: number }[] =>
+        rows<{ name: string; type: string; notnull: number }>(
+          ctx.sql,
+          `SELECT name, type, "notnull" FROM pragma_table_info('players')
+           WHERE name IN ('lounge_spot', 'lounge_spot_at') ORDER BY name`,
+        );
+      expect(columns()).toEqual([
+        { name: 'lounge_spot', type: 'TEXT', notnull: 0 },
+        { name: 'lounge_spot_at', type: 'INTEGER', notnull: 0 },
+      ]);
+      undoLoungeSpotMigration(ctx.sql);
+      expect(columns()).toHaveLength(0);
+      expect(
+        ctx.sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
+      ).toBe(LATEST_SCHEMA_VERSION - 1);
+      ctx.core.migrate();
+      expect(columns()).toHaveLength(2);
+      expect(
+        ctx.sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
+      ).toBe(LATEST_SCHEMA_VERSION);
+      expect(storedSpot(ctx, a.id)).toEqual({ lounge_spot: null, lounge_spot_at: null });
     });
   });
 });

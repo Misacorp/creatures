@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { RULES, isNightHour, roomPhase, type RoomPhase } from '../src/index';
+import {
+  RULES,
+  ROOM_SPOT_IDS,
+  isNightHour,
+  isRoomSpotId,
+  roomPhase,
+  type RoomPhase,
+} from '../src/index';
 
 describe('roomPhase', () => {
   it('is night exactly when isNightHour says so, for every hour', () => {
@@ -29,5 +36,46 @@ describe('roomPhase', () => {
     expect(roomPhase(fromHour - span)).toBe('twilight');
     expect(roomPhase(fromHour - span - 1)).toBe('day');
     expect(roomPhase(fromHour - 1)).toBe('twilight');
+  });
+});
+
+describe('ROOM_SPOT_IDS', () => {
+  it('lists 16 distinct kebab-case ids', () => {
+    expect(ROOM_SPOT_IDS).toHaveLength(16);
+    expect(new Set(ROOM_SPOT_IDS).size).toBe(16);
+    for (const id of ROOM_SPOT_IDS) expect(id).toMatch(/^[a-z]+(-[a-z]+)*$/);
+  });
+
+  it('starts at the window and ends at the beanbag', () => {
+    expect(ROOM_SPOT_IDS[0]).toBe('window-sill');
+    expect(ROOM_SPOT_IDS[15]).toBe('shelf-beanbag');
+  });
+});
+
+describe('isRoomSpotId', () => {
+  it('accepts every spot id', () => {
+    for (const id of ROOM_SPOT_IDS) expect(isRoomSpotId(id)).toBe(true);
+  });
+
+  it('rejects other values, including non-strings and look-alikes', () => {
+    for (const value of [
+      '',
+      'couch',
+      'Couch-Left',
+      ' couch-left',
+      'couch-left ',
+      'constructor',
+      '__proto__',
+      'toString',
+      null,
+      undefined,
+      0,
+      1,
+      true,
+      {},
+      ['couch-left'],
+    ]) {
+      expect(isRoomSpotId(value), JSON.stringify(value) ?? 'undefined').toBe(false);
+    }
   });
 });
