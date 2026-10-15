@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import preact from '@preact/preset-vite';
 import { defineConfig, loadEnv } from 'vite';
 
@@ -27,6 +28,11 @@ export default defineConfig(({ command, mode }) => {
     server: {
       // `pnpm dev` in apps/worker serves the API on 8787.
       proxy: { '/api': 'http://localhost:8787' },
+    },
+    test: {
+      // A few property-style tests loop over many instants and zones. They take about 1 s alone, but
+      // on a busy CI runner (all packages test in parallel) they can pass the 5 s default.
+      testTimeout: 30_000,
     },
   };
 });
