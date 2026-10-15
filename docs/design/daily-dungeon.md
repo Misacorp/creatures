@@ -68,7 +68,7 @@ No real-time backend is needed.
 
 - A **Dungeon** tab or card:
   - today's modifiers;
-  - the team picker: one row of three slots, reusing the drag-and-drop code;
+  - the team: the Raid Roster's board in its single-row mode (three places, left to right), with the same creature picker, popover and drag (see `raid-ux-2.md`, "Dungeon team board");
   - an **Enter** button.
 - **Playback:**
   - The fight stage plays each room with the same pacing and effects as the live finale: shared `roundPlaybackMs`, telegraphs, lingering numbers.

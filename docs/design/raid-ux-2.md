@@ -171,6 +171,17 @@ Status: **built, 2026-10-14**. It follows a production bug (a player with four c
 
 **Server.** `PUT /api/raid/placement` refuses a new fourth creature with 409 `board_full`; a creature already on the board moves. `PUT /api/raid/team` is a validated no-op (the old body still validates, nothing is stored, the answer is the fresh view) and the `raid_teams` table is kept for a later migration. The view still carries `you.team` (the creatures the player brings, with `slot` null for the filled-in ones) and `you.team.mode`, which is always `auto`, for older clients.
 
+## Dungeon team board (Misa, 2026-10-15)
+
+Status: **built, 2026-10-15**. The dungeon's team setup uses the Raid Roster's board and interactions instead of its own slot row and tray. Reasons are in `decisions.md` (2026-10-15: "Dungeon team board and Recommended").
+
+- **Board.** `ui/RaidBoard` in its `single` mode: one row of three places, larger tiles, the slot numbers 1 to 3 on the tiles (the order is the choice), no row labels, no lane header, no sideways scroller. The tiles, the reaction rings and badges, the Support and Guard shading, the single drop outline and the cue rail are the shared ones. The count line is the shared `PlacedCount` ("3 / 3 placed", the green check at 3 / 3), with no board total.
+- **Interactions.** Tapping an empty place (or Enter) opens the creature picker; the picker's "In this slot:" line judges the creature in the dungeon's left-to-right order (`dungeonPickerOptions`; a Guard "Covers its neighbours"), creatures already in the team say "In the team · moves here", and at 3 / 3 new ones would be disabled with "3 / 3 placed, remove one first" (with three places, a full team has no empty place to open the picker from, so the reason is only there for consistency). Tapping a creature opens the standard popover with "Remove from team". Creatures are moved by dragging (a finger needs the 250 ms hold; dropping on another creature swaps them; the popover closes when the drag starts); keyboard users move them with the picker.
+- **Gone.** The "Your creatures" tray list and its "Show all", "Use my strongest three", the "Take out" button, and tap-a-creature-then-a-slot (with the tray, `CreatureTray`, the `SlotRow` component, the selection state and the keyboard "pick up" mode).
+- **The team.** Nothing about the dungeon team is stored: the screen starts with the player's strongest three (`strongestThree`: the server's strength order, set in the row order that sets off the most reactions) and keeps it only while the screen is open. The server still needs all three for a run (`POST /api/dungeon/run`, unchanged), so the Enter button is disabled with fewer than three placed and a line under it says "Place 3 creatures to enter (N / 3 placed). Tap an empty slot to choose one."
+
+**Recommended.** In the creature picker (raid and dungeon) the player's three strongest creatures carry a small "Recommended" tag. It uses the server's automatic-team order (`strongest` and `compareStrength` in `packages/game`: power with gear, then the older creature, then the smaller id), ignores slot rules, gives no reason (Misa: "Let's not offer any context into why it's recommended") and does not change the picker's order. The workbench pages `RosterPicker` and `DungeonTeam` show it.
+
 ## Open questions for Misa
 
 - None open. The raid-structure questions are decided above.
