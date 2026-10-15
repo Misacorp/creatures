@@ -218,7 +218,7 @@ export function arrangeRowPartial(
       if (s >= currentScore) {
         currentScore = s;
       } else {
-        current[b] = current[a] as FightSlot;
+        current[b] = current[a];
         current[a] = t;
       }
     }
