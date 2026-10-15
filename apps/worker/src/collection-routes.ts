@@ -5,6 +5,7 @@ import {
   EvolveBodySchema,
   IdSchema,
   LoungerBodySchema,
+  LoungeSpotBodySchema,
   NicknameBodySchema,
   RoomBodySchema,
   StartExpeditionBodySchema,
@@ -63,6 +64,13 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
       const outcome = core.collection.lounge.choose(user.id, body.creatureId);
       if (!outcome.ok) return failure(outcome);
       return json({ loungerId: outcome.value.loungerId });
+    },
+  },
+  '/api/lounge-spot': {
+    PUT: async (request, { user, core }) => {
+      const body = await parseBody(request, LoungeSpotBodySchema);
+      if (body === undefined) return invalidBody();
+      return json({ spot: core.collection.lounge.chooseSpot(user.id, body.spotId) });
     },
   },
   '/api/room': {

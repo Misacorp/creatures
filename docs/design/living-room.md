@@ -18,7 +18,8 @@ Status: **built 2026-10-14** (planned and revised the same day: lounging choice,
 - If the lounger goes to work (or stops existing, for example fused away), the next read picks a new idle lounger at random and stores it. The choice is not remembered for later: whoever is on the couch is the lounger.
 - If every creature of a player is busy, their spot shows a small note on a cushion ("All out working").
 - **Choosing:** on the Creatures screen, each idle creature's card has a small "Lounge" button; the lounger shows a "Lounging" badge instead; busy creatures show neither. The server checks ownership and idleness (`PUT /api/lounger`).
-- Others see a change the next time their room data refreshes: on a join, or when they switch tabs and the room data is over 60 s old. Both are player activity, so an idle game still sends nothing.
+- **Moving:** a player can drag their lounger to another spot. A mouse lifts it after a small move, a finger after a short hold (a quicker swipe still scrolls the room). While carried, every empty spot shows a glowing marker and the one under the pointer lights up; a drop elsewhere or Escape puts it back. The creature's own popover has a "Move" button for keyboards and anyone who prefers tapping: it turns the empty spots into buttons. The drag reuses `use-drag-drop.ts` (now generic over the target type) and the server call is (`PUT /api/lounge-spot`, `{ spotId }`, or null to clear). The spot belongs to the player and stays when the lounger changes. The server stores the spot with the claim time and does not check occupancy; clients seat claims in `(at, userId)` order and the older claim keeps the spot (see `decisions.md`, 2026-10-15). The spot is in `loungeSpot` of the state and in `spot` of each `POST /api/room` resident.
+- Others see a change within about 45 s: while at least one other participant is present and the page is visible, each client refetches the room every 45 s (Misa approved this low-frequency poll on 2026-10-15). Alone, or with the page hidden, nothing is sent and no timer waits. Joins and the tab-switch refresh still apply.
 
 ## Wide and narrow screens
 
@@ -29,7 +30,7 @@ Status: **built 2026-10-14** (planned and revised the same day: lounging choice,
 
 ## Who counts as here
 
-The Discord Embedded App SDK already knows who is in the Activity: `commands.getInstanceConnectedParticipants()` returns the instance's participants, and the `ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE` event fires on every join and leave. Discord pushes this to each client for free, so the server needs **no presence tracking, no heartbeat, no WebSocket and no polling**.
+The Discord Embedded App SDK already knows who is in the Activity: `commands.getInstanceConnectedParticipants()` returns the instance's participants, and the `ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE` event fires on every join and leave. Discord pushes this to each client for free, so the server needs **no presence tracking and no WebSocket**. The only repeated request is the 45 s room refresh while someone else is here (see "Server load").
 
 Limit: this is per **activity instance**. People who opened the game from different channels of the same server are in different instances and do not see each other. For a 5 to 15 player server that usually plays together this is fine; a guild-wide room would need a server heartbeat and is not worth its cost now.
 
@@ -39,6 +40,7 @@ Limit: this is per **activity instance**. People who opened the game from differ
 - About `n` requests per join across `n` open games. Ten players drifting in over an evening is about 50 small requests in total. No timers, no repeat fetches while idle.
 - Your own creature comes from your own game state, so it updates when you train it without any request.
 - A tab switch refreshes the room data only when it is over 60 s old (one request for everyone present).
+- While others are present: one request every 45 s per open, visible game. Five players for two hours a day is about 800 requests a day (about 24,000 a month), far inside the free plan's 100,000 a day and about 0.2% of the paid plan's monthly Worker requests.
 
 ## Design details (for implementers)
 

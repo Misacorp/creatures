@@ -331,6 +331,7 @@
         "holders": ["Player 2"]
       }
     ],
-    "loungerId": "f4fccd97-fbdc-4952-9ff8-7ef2a2d8a34e"
+    "loungerId": "f4fccd97-fbdc-4952-9ff8-7ef2a2d8a34e",
+    "loungeSpot": null
   }
 }

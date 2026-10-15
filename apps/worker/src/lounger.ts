@@ -4,7 +4,8 @@
  *
  * A creature does one thing at a time: one on an expedition or a workshop job cannot lounge. A raid
  * does not count, raiders can lounge. The lounger is stored on the player (`players.lounger_id`) and
- * re-picked lazily, at random, when a read finds it gone or busy.
+ * re-picked lazily, at random, when a read finds it gone or busy. The spot a player dragged their
+ * lounger to belongs to the player (`players.lounge_spot` and `lounge_spot_at`), not to the creature.
  *
  * Everything is synchronous. The user is always an argument supplied from the verified session; the
  * ids of `room` are only who to look up.
@@ -15,6 +16,7 @@ import {
   quirkText,
   skillLevel,
   createCryptoRng,
+  isRoomSpotId,
   type GearStat,
   type Rng,
 } from '@creatures/game';
@@ -60,10 +62,20 @@ export interface Resident {
   name: string;
   /** The lounger, or null when every creature of the player is busy. */
   creature: RoomCreature | null;
+  /** The spot the player chose and when (server time), or null: the client then uses its own default. */
+  spot: LoungeSpot | null;
+}
+
+/** A player's chosen spot in the room: an id from `ROOM_SPOT_IDS` and the server time of the claim. */
+export interface LoungeSpot {
+  id: string;
+  at: number;
 }
 
 export interface LoungeDeps {
   storage: LedgerStorage;
+  /** The core's clock (UTC epoch ms): the time of a spot claim. */
+  now: () => number;
   /** Live randomness for the pick. Defaults to crypto; tests inject a seeded one. */
   rng?: Rng;
 }
@@ -78,6 +90,19 @@ type DetailRow = {
   nickname: string | null;
   quirk_id: string | null;
 };
+
+type PlayerRow = {
+  user_id: string;
+  display_name: string;
+  lounge_spot: string | null;
+  lounge_spot_at: number | null;
+};
+
+/** A stored spot, or null when unset, half-set or an id the room no longer has. */
+function toSpot(id: string | null | undefined, at: number | null | undefined): LoungeSpot | null {
+  if (typeof id !== 'string' || typeof at !== 'number' || !isRoomSpotId(id)) return null;
+  return { id, at };
+}
 
 const placeholders = (n: number): string => Array.from({ length: n }, () => '?').join(', ');
 
@@ -148,6 +173,43 @@ export class Lounge {
   }
 
   /**
+   * The spot the player chose, or null when never chosen or when the stored id is not a known spot id
+   * any more (the room's spots may change between releases).
+   */
+  spot(userId: string): LoungeSpot | null {
+    const row = this.sql
+      .exec<{ lounge_spot: string | null; lounge_spot_at: number | null }>(
+        'SELECT lounge_spot, lounge_spot_at FROM players WHERE user_id = ?',
+        userId,
+      )
+      .toArray()[0];
+    return toSpot(row?.lounge_spot, row?.lounge_spot_at);
+  }
+
+  /**
+   * Stores the player's spot with the claim time (`now`), or clears both with null. The id has been
+   * checked against the spot list by the route's schema. The server does not know who sits where in an
+   * Activity instance, so it never checks occupancy: the clients seat claims by (at, userId).
+   */
+  chooseSpot(userId: string, spotId: string | null): LoungeSpot | null {
+    if (spotId === null) {
+      this.sql.exec(
+        'UPDATE players SET lounge_spot = NULL, lounge_spot_at = NULL WHERE user_id = ?',
+        userId,
+      );
+      return null;
+    }
+    const at = this.deps.now();
+    this.sql.exec(
+      'UPDATE players SET lounge_spot = ?, lounge_spot_at = ? WHERE user_id = ?',
+      spotId,
+      at,
+      userId,
+    );
+    return { id: spotId, at };
+  }
+
+  /**
    * The residents among `userIds`: players of this guild who have chosen a starter, in the order asked.
    * Everyone else is left out silently. May write (each lookup can re-pick a lounger), so it runs in
    * one transaction.
@@ -157,14 +219,14 @@ export class Lounge {
     return this.deps.storage.transactionSync(() => {
       const players = new Map(
         this.sql
-          .exec<{ user_id: string; display_name: string }>(
-            `SELECT p.user_id, p.display_name FROM players p
+          .exec<PlayerRow>(
+            `SELECT p.user_id, p.display_name, p.lounge_spot, p.lounge_spot_at FROM players p
              JOIN player_progress pr ON pr.user_id = p.user_id
              WHERE pr.starter_species IS NOT NULL AND p.user_id IN (${placeholders(userIds.length)})`,
             ...userIds,
           )
           .toArray()
-          .map((r) => [r.user_id, r.display_name] as const),
+          .map((r) => [r.user_id, r] as const),
       );
       const present = userIds.filter((id) => players.has(id));
       const loungers = new Map(present.map((id) => [id, this.resolve(id)] as const));
@@ -172,10 +234,12 @@ export class Lounge {
       const details = this.details(ids);
       return present.map((userId) => {
         const loungerId = loungers.get(userId) ?? null;
+        const player = players.get(userId);
         return {
           userId,
-          name: players.get(userId) ?? '',
+          name: player?.display_name ?? '',
           creature: loungerId === null ? null : (details.get(loungerId) ?? null),
+          spot: toSpot(player?.lounge_spot, player?.lounge_spot_at),
         };
       });
     });

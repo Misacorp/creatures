@@ -6,11 +6,13 @@ import {
   fetchState,
   renameCreature,
   setLounger,
+  setLoungeSpot,
   trainCreature,
   type ClaimResult,
   type EvolveResult,
   type GameState,
   type LeetSyncStatus,
+  type LoungeSpot,
   type SessionUser,
 } from './api';
 import { ActionIds } from './actions';
@@ -22,9 +24,10 @@ import { Expeditions } from './Expeditions';
 import { fetchGear } from './gear-api';
 import { createGearActions } from './gear-actions';
 import type { GearState, JobResult } from './gear-types';
-import { clockOffset, creatureName, speciesName } from './game';
+import { clockOffset, creatureName, errorText, speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import type { ParticipantSource } from './participants';
+import { settleClaim } from './room-data';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
@@ -223,6 +226,28 @@ export function Game({
   const offsetRef = useRef(offset);
   offsetRef.current = offset;
   const phase = useRoomPhase(offsetRef, timezone.current);
+
+  /**
+   * Moves the player's lounger to a spot of the living room. The creature moves at once (the claim's
+   * time is the local estimate of the server's clock); the server's answer then replaces it, and a
+   * failure puts the old spot back and shows the error. Not a spend: a repeat is harmless, and it does
+   * not take the screen's one-action-at-a-time lock.
+   */
+  function moveLounger(spotId: string): void {
+    const previous = game.loungeSpot;
+    const claim: LoungeSpot = { id: spotId, at: Date.now() + offsetRef.current };
+    const settle = (settled: LoungeSpot | null): void => {
+      setCurrent((now) => ({
+        ...now,
+        game: { ...now.game, loungeSpot: settleClaim(now.game.loungeSpot, claim, settled) },
+      }));
+    };
+    setCurrent((now) => ({ ...now, game: { ...now.game, loungeSpot: claim } }));
+    setLoungeSpot(spotId).then(settle, (err: unknown) => {
+      settle(previous);
+      setError(errorText(err));
+    });
+  }
   const head = (
     <AppHead
       helpRef={helpRef}
@@ -235,6 +260,7 @@ export function Game({
               selfId: user.id,
               instanceId: participants.instanceId,
               scene: sceneOf(phase),
+              onMove: moveLounger,
             },
           }
         : {})}

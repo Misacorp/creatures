@@ -2,7 +2,8 @@
  * The living room's residents as the screen needs them: the player's own lounger built locally from
  * the game state (so it updates the moment they train it), and the others from `POST /api/room`
  * through the loader (see `room-loader.ts` for when it asks). Reacts to Discord's participant
- * updates and nothing else: no intervals, no polling.
+ * updates and to the page being hidden or shown; the loader's single slow poll (every 45 s while
+ * someone else is here and the page is visible) is its only timer.
  */
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { fetchRoom, type GameState } from './api';
@@ -18,7 +19,7 @@ interface RoomInputs {
   selfId: string;
   /** The player's own display name. */
   selfName: string;
-  state: Pick<GameState, 'creatures' | 'loungerId'>;
+  state: Pick<GameState, 'creatures' | 'loungerId' | 'loungeSpot'>;
   /** Crafting level by creature id, once the gear view has loaded. */
   craftingLevels: ReadonlyMap<string, number>;
   /** The gear view's items, once loaded: they give your worn item its main stat. */
@@ -55,7 +56,13 @@ export function useRoom({
       setPresent(ids);
       next.update(ids);
     });
+    // Hidden pages do not poll; a page shown again refetches at once if its data is over 45 s old.
+    const onVisibility = (): void => {
+      next.setHidden(document.hidden);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
       unsubscribe();
       next.dispose();
       loader.current = null;
@@ -68,14 +75,28 @@ export function useRoom({
         present,
         known,
         ownResident(
-          { creatures: state.creatures, loungerId: state.loungerId },
+          {
+            creatures: state.creatures,
+            loungerId: state.loungerId,
+            loungeSpot: state.loungeSpot,
+          },
           selfId,
           selfName,
           craftingLevels,
           gearItems,
         ),
       ),
-    [present, known, state.creatures, state.loungerId, selfId, selfName, craftingLevels, gearItems],
+    [
+      present,
+      known,
+      state.creatures,
+      state.loungerId,
+      state.loungeSpot,
+      selfId,
+      selfName,
+      craftingLevels,
+      gearItems,
+    ],
   );
 
   return {

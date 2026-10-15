@@ -4,8 +4,10 @@ import {
   fetchRoom,
   jsonRequest,
   parseGameState,
+  parseLoungeSpot,
   parseRoom,
   setLounger,
+  setLoungeSpot,
 } from './api';
 
 describe('jsonRequest', () => {
@@ -141,6 +143,66 @@ describe('loungerId in the state', () => {
   });
 });
 
+describe('the chosen lounge spot', () => {
+  it('is null, or an id of the room with the time it was chosen', () => {
+    expect(parseLoungeSpot(null)).toBeNull();
+    expect(parseLoungeSpot({ id: 'couch-left', at: 1234 })).toEqual({ id: 'couch-left', at: 1234 });
+  });
+
+  it('counts a missing field as no choice (an older answer)', () => {
+    expect(parseLoungeSpot(undefined)).toBeNull();
+  });
+
+  it('treats an id the room art does not have as no choice, instead of failing', () => {
+    expect(parseLoungeSpot({ id: 'a-spot-that-was-removed', at: 5 })).toBeNull();
+  });
+
+  it('refuses a wrong shape', () => {
+    expect(() => parseLoungeSpot('couch-left')).toThrow();
+    expect(() => parseLoungeSpot({ id: 'couch-left' })).toThrow();
+    expect(() => parseLoungeSpot({ id: 7, at: 5 })).toThrow();
+    expect(() => parseLoungeSpot({ id: 'couch-left', at: 1.5 })).toThrow();
+    expect(() => parseLoungeSpot({ id: 'couch-left', at: '5' })).toThrow();
+  });
+
+  const base = {
+    serverNow: 5,
+    balances: { bait: 1, essence: 0 },
+    starterChosen: true,
+    creatures: [],
+    expeditions: [],
+    cancelled: [],
+    slots: { total: 3, used: 0, rankSum: 0, tripsFinished: 0, next: null },
+    supplies: {},
+    trainingMedianLevel: null,
+    serverFirsts: [],
+    loungerId: null,
+  };
+
+  it('is read from the state, and a stale id does not break the state', () => {
+    const spot = { id: 'fire-pouf', at: 99 };
+    expect(parseGameState({ ...base, loungeSpot: spot }).loungeSpot).toEqual(spot);
+    expect(parseGameState({ ...base, loungeSpot: null }).loungeSpot).toBeNull();
+    expect(parseGameState(base).loungeSpot).toBeNull();
+    expect(parseGameState({ ...base, loungeSpot: { id: 'gone', at: 1 } }).loungeSpot).toBeNull();
+    expect(() => parseGameState({ ...base, loungeSpot: { id: 'fire-pouf' } })).toThrow();
+  });
+
+  it('is read from each resident of the room', () => {
+    const resident = { userId: '1', name: 'Misa', creature: null };
+    const parsed = parseRoom({
+      residents: [
+        { ...resident, spot: { id: 'couch-left', at: 7 } },
+        { ...resident, userId: '2', spot: null },
+        { ...resident, userId: '3' },
+        { ...resident, userId: '4', spot: { id: 'gone', at: 7 } },
+      ],
+    });
+    expect(parsed.map((r) => r.spot)).toEqual([{ id: 'couch-left', at: 7 }, null, null, null]);
+    expect(() => parseRoom({ residents: [{ ...resident, spot: 'couch-left' }] })).toThrow();
+  });
+});
+
 describe('the lounger and room requests', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -172,6 +234,37 @@ describe('the lounger and room requests', () => {
     expect(sent[sent.length - 1]?.path).toBe('/api/lounger');
     expect(sent[sent.length - 1]?.init.method).toBe('PUT');
     expect(sent[sent.length - 1]?.init.body).toBe('{"creatureId":"c9"}');
+  });
+
+  it('PUTs { spotId } to /api/lounge-spot and returns the stored choice', async () => {
+    await signIn();
+    const sent: { path: string; init: RequestInit }[] = [];
+    vi.stubGlobal('fetch', (path: string, init: RequestInit) => {
+      sent.push({ path, init });
+      return Promise.resolve(Response.json({ spot: { id: 'couch-left', at: 42 } }));
+    });
+    expect(await setLoungeSpot('couch-left')).toEqual({ id: 'couch-left', at: 42 });
+    const last = sent[sent.length - 1];
+    expect(last?.path).toBe('/api/lounge-spot');
+    expect(last?.init.method).toBe('PUT');
+    expect(last?.init.body).toBe('{"spotId":"couch-left"}');
+  });
+
+  it('clears the choice with null and accepts a null answer', async () => {
+    await signIn();
+    const sent: { init: RequestInit }[] = [];
+    vi.stubGlobal('fetch', (_path: string, init: RequestInit) => {
+      sent.push({ init });
+      return Promise.resolve(Response.json({ spot: null }));
+    });
+    expect(await setLoungeSpot(null)).toBeNull();
+    expect(sent[sent.length - 1]?.init.body).toBe('{"spotId":null}');
+  });
+
+  it('refuses a lounge spot answer without the spot', async () => {
+    await signIn();
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({})));
+    await expect(setLoungeSpot('couch-left')).rejects.toThrow();
   });
 
   it('POSTs { userIds } to /api/room and checks the answer', async () => {

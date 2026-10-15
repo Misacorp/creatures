@@ -39,7 +39,7 @@ import {
 } from './gear-store';
 import { getBalances, lookupSpend, spend, type Currency, type LedgerStorage } from './ledger';
 import { settleSpend } from './keyed-action';
-import { Lounge } from './lounger';
+import { Lounge, type LoungeSpot } from './lounger';
 import { GameError, atomically, type Outcome } from './outcome';
 import { recordServerFirst, type ServerFirstKind } from './server-firsts';
 import { speciesOf } from './species';
@@ -143,6 +143,11 @@ export interface PlayerState {
    * when the stored one is busy or gone), or null when every creature is busy or there is none.
    */
   loungerId: string | null;
+  /**
+   * The spot the player chose in the living room and the server time of the claim, or null when never
+   * chosen (or the stored id is no longer a known spot).
+   */
+  loungeSpot: LoungeSpot | null;
 }
 
 export interface CollectionDeps {
@@ -206,6 +211,7 @@ export class Collection {
   constructor(private readonly deps: CollectionDeps) {
     this.lounge = new Lounge({
       storage: deps.storage,
+      now: deps.now,
       ...(deps.loungerRng === undefined ? {} : { rng: deps.loungerRng }),
     });
     this.trips = new Expeditions({
@@ -404,6 +410,7 @@ export class Collection {
       trainingMedianLevel: medianLevel,
       serverFirsts: this.serverFirsts(userId),
       loungerId: this.lounge.resolve(userId),
+      loungeSpot: this.lounge.spot(userId),
     };
   }
 

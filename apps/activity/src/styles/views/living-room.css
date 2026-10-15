@@ -215,3 +215,140 @@ button.room-note {
   opacity: 0.9;
   pointer-events: none;
 }
+
+/*
+  Moving your own creature (drag, or "Move" in its popover): while it is carried, every empty spot
+  shows a soft glowing cushion outline, the spot under the pointer glows brighter, and your own
+  creature stays behind faded. A target sits above the front props so it is never hidden by the table.
+*/
+.room-spot[data-draggable='true'] {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.room-spot[data-draggable='true'] button.room-creature {
+  cursor: grab;
+}
+
+.room-spot[data-lifted='true'] button.room-creature {
+  cursor: grabbing;
+  opacity: 0.35;
+}
+
+.room-target {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  z-index: 2;
+  box-sizing: border-box;
+  width: var(--size);
+  height: var(--size);
+  min-height: 0;
+  padding: 0;
+  border: 3px dashed var(--gold);
+  border-radius: 30%;
+  background: rgb(var(--gold-rgb) / 0.28);
+  /* A dark ring under the glow keeps the marker readable on the bright day scene too. */
+  box-shadow:
+    0 0 0 2px rgb(var(--ink-rgb) / 0.7),
+    0 0 12px 2px rgb(var(--gold-rgb) / 0.7),
+    inset 0 0 10px rgb(var(--gold-rgb) / 0.45);
+  pointer-events: none;
+}
+
+.room-target[data-over='true'],
+button.room-target-pick:hover:not(:disabled),
+button.room-target-pick:focus-visible {
+  border-style: solid;
+  border-color: var(--bone);
+  background: rgb(var(--gold-rgb) / 0.6);
+  box-shadow:
+    0 0 0 2px var(--ink),
+    0 0 18px 4px rgb(var(--gold-rgb) / 0.95),
+    inset 0 0 12px rgb(var(--gold-rgb) / 0.7);
+}
+
+/* The creature you carry: just the picture, so the spot under it stays visible. */
+.room .drag-ghost {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  opacity: 0.9;
+}
+
+.room .drag-ghost-name {
+  display: none;
+}
+
+/* The keyboard way: the same marker, but a real button. */
+button.room-target-pick {
+  pointer-events: auto;
+  cursor: pointer;
+  transition: none;
+}
+
+button.room-target-pick:focus-visible {
+  outline: var(--px) solid var(--bone);
+  outline-offset: var(--px);
+}
+
+/* "Pick a spot" and its Cancel chip: a bar under the room, so it never hides a spot. */
+.room-pick {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  background: var(--ink);
+  box-shadow: inset 0 2px 0 var(--gold);
+  color: var(--bone);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+.room-pick button {
+  min-height: 1.5rem;
+  padding: 0 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .room-target {
+    animation: room-target-glow 1.2s ease-in-out infinite alternate;
+  }
+
+  .room-target[data-over='true'] {
+    animation: none;
+  }
+
+  /* A creature that was just put down (or snapped back) settles with a small squash. */
+  .room-spot[data-landed='true'] button.room-creature {
+    animation: room-land 260ms ease-out;
+  }
+}
+
+@keyframes room-target-glow {
+  from {
+    opacity: 0.65;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes room-land {
+  0% {
+    transform: translateY(-4px) scale(1.08, 0.94);
+  }
+
+  60% {
+    transform: translateY(0) scale(0.94, 1.06);
+  }
+
+  100% {
+    transform: none;
+  }
+}

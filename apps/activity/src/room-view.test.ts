@@ -5,8 +5,11 @@ import {
   allBusyLabel,
   edgePlacements,
   layerPlacements,
+  moveHereLabel,
+  occupiedSpots,
   residentInfo,
   seatResidents,
+  spotName,
 } from './room-view';
 
 const creature = {
@@ -21,9 +24,15 @@ const creature = {
   gear: null,
 };
 
-const resident = (userId: string, name: string, busy = false): Resident => ({
+const resident = (
+  userId: string,
+  name: string,
+  busy = false,
+  spot: Resident['spot'] = null,
+): Resident => ({
   userId,
   name,
+  spot,
   creature: busy ? null : { ...creature, id: `c-${userId}` },
 });
 
@@ -95,6 +104,67 @@ describe('seatResidents', () => {
     const spotOf = (list: typeof a, id: string) =>
       list.find((s) => s.resident.userId === id)?.spot.id;
     for (const id of ['1', '2', '3', '4']) expect(spotOf(a, id)).toBe(spotOf(b, id));
+  });
+});
+
+describe('seatResidents with claims', () => {
+  const spotOf = (list: ReturnType<typeof seatResidents>, id: string) =>
+    list.find((s) => s.resident.userId === id)?.spot.id;
+
+  it('seats a resident on the spot they chose', () => {
+    const seated = seatResidents(
+      'i1',
+      [resident('1', 'Misa', false, { id: 'couch-middle', at: 5 }), resident('2', 'Aino')],
+      ROOM_SPOTS,
+    );
+    expect(spotOf(seated, '1')).toBe('couch-middle');
+    expect(spotOf(seated, '2')).not.toBe('couch-middle');
+  });
+
+  it('shows older-wins: the later claim on the same spot moves to a fallback', () => {
+    const people = [
+      resident('1', 'Misa', false, { id: 'fire-pouf', at: 3000 }),
+      resident('2', 'Aino', false, { id: 'fire-pouf', at: 1000 }),
+      resident('3', 'Bo', false, { id: 'fire-pouf', at: 2000 }),
+    ];
+    const seated = seatResidents('i1', people, ROOM_SPOTS);
+    expect(spotOf(seated, '2')).toBe('fire-pouf');
+    expect(spotOf(seated, '1')).not.toBe('fire-pouf');
+    expect(spotOf(seated, '3')).not.toBe('fire-pouf');
+    expect(seated).toHaveLength(3);
+    expect(new Set(seated.map((s) => s.spot.id)).size).toBe(3);
+    // Same room whatever order the residents come in.
+    const reversed = seatResidents('i1', [...people].reverse(), ROOM_SPOTS);
+    for (const id of ['1', '2', '3']) expect(spotOf(reversed, id)).toBe(spotOf(seated, id));
+  });
+
+  it('seats a busy resident (a note) on their claim too', () => {
+    const seated = seatResidents(
+      'i1',
+      [resident('1', 'Misa', true, { id: 'table-stool', at: 5 })],
+      ROOM_SPOTS,
+    );
+    expect(spotOf(seated, '1')).toBe('table-stool');
+  });
+
+  it('maps spots to who sits there', () => {
+    const seated = seatResidents(
+      'i1',
+      [resident('1', 'Misa', false, { id: 'couch-left', at: 5 })],
+      ROOM_SPOTS,
+    );
+    expect(occupiedSpots(seated)).toEqual(new Map([['couch-left', '1']]));
+  });
+});
+
+describe('spot names', () => {
+  it('has a name for every spot of the room', () => {
+    for (const spot of ROOM_SPOTS) expect(spotName(spot.id)).not.toBe(spot.id);
+  });
+
+  it('labels the move button with the spot', () => {
+    expect(moveHereLabel('couch-left')).toBe('Move here: couch, left seat');
+    expect(moveHereLabel('unknown')).toBe('Move here: unknown');
   });
 });
 
