@@ -17,6 +17,7 @@ import {
   isStaleDungeonError,
   resultHeadline,
   roomLine,
+  streakLabel,
   streakLine,
   streakPips,
 } from './dungeon-text';
@@ -109,6 +110,12 @@ describe('the streak', () => {
         .filter((p) => p.bonus)
         .map((p) => p.day),
     ).toEqual([3, 7]);
+  });
+
+  it('labels the streak row for a screen reader with a spaced slash', () => {
+    expect(streakLabel(0)).toBe('Streak: 0 / 7 days of the cycle');
+    expect(streakLabel(3)).toBe('Streak: 3 / 7 days of the cycle');
+    expect(streakLabel(8)).toBe('Streak: 1 / 7 days of the cycle');
   });
 
   it('says the streak in words', () => {

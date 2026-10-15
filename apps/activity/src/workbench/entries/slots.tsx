@@ -1,7 +1,12 @@
 import { content } from '@creatures/game';
 import { useMemo, useState } from 'preact/hooks';
+import { DungeonSetup } from '../../DungeonSetup';
 import { DungeonTeam } from '../../DungeonTeam';
-import type { Slots } from '../../dungeon-team';
+import stateFixture from '../../fixtures/collection-state.json';
+import todayFixture from '../../fixtures/dungeon-today.json';
+import { parseGameState, type Creature } from '../../api';
+import { parseDungeonToday } from '../../dungeon-parse';
+import { isComplete, type Slots } from '../../dungeon-team';
 import type { PickerCreature } from '../../roster-picker';
 import { CueRail } from '../../ui/CueRail';
 import { PlacedCount } from '../../ui/PlacedCount';
@@ -56,7 +61,11 @@ function TeamDemo({ p }: { p: Props }) {
         slots={slots}
         disabled={bool(p, 'disabled')}
         onChange={setSlots}
-      />
+      >
+        <button type="button" class="primary" disabled={!isComplete(slots)}>
+          Enter the dungeon
+        </button>
+      </DungeonTeam>
     </div>
   );
 }
@@ -119,8 +128,69 @@ function demoEntry(name: string, description: string): Entry {
 
 const dungeonTeam = demoEntry(
   'DungeonTeam',
-  "The team on the dungeon screen: the Raid Roster's board in a single row of three places, left to right, under a count line (a green check at 3 / 3 placed). Tap an empty slot for the creature picker (it ends with the Recommended tag and an In this slot line in the dungeon's order), tap a creature for its popover with Remove from team, drag one onto another to swap them.",
+  "The team at the end of the daily dungeon card: the Raid Roster's board in one centred row of three places, left to right, then the order line, the count (a green check at 3 / 3 placed) and, here, a stand-in Enter button. Tap an empty slot for the creature picker (it ends with the Recommended tag and an In this slot line in the dungeon's order), tap a creature for its popover with Remove from team, drag one onto another to swap them.",
 );
+
+/** The whole pre-run card (title, streak, rooms, depth, team, Enter) on a stand-in for the server. */
+function SetupDemo({ p }: { p: Props }) {
+  // The creatures of a real server answer (fixture), repeated with other species and levels.
+  const creatures = useMemo<Creature[]>(() => {
+    const base = parseGameState(stateFixture).creatures;
+    return Array.from({ length: num(p, 'owned') }, (_, i) => {
+      const from = base[i % base.length] as Creature;
+      const species =
+        i < base.length
+          ? from.species
+          : (SPECIES_IDS[(i * 3) % SPECIES_IDS.length] ?? from.species);
+      return { ...from, id: `demo-${String(i)}`, species, level: 3 + i * 2, caughtAt: 1_000 + i };
+    });
+  }, [num(p, 'owned')]);
+  const today = parseDungeonToday({
+    ...todayFixture,
+    streak: num(p, 'streak'),
+    depth: num(p, 'depth'),
+    lastTeam: creatures.slice(0, num(p, 'placed')).map((c) => c.id),
+  });
+  return (
+    <DungeonSetup
+      today={today}
+      creatures={creatures}
+      busy={bool(p, 'busy')}
+      error={null}
+      onEnter={() => undefined}
+      onSeeLast={() => undefined}
+    />
+  );
+}
+
+const dungeonSetup: Entry = {
+  name: 'DungeonSetup',
+  file: 'apps/activity/src/DungeonSetup.tsx',
+  group: 'Slots',
+  description:
+    'The whole pre-run dungeon card: the big Daily Dungeon title with its question mark and the streak (under the title on a phone), the three rooms, the depth track, then the team board centred, the order line, the count and the Enter button, all in one card. The team starts as the last team.',
+  controls: {
+    owned: { kind: 'number', min: 3, max: 8 },
+    placed: { kind: 'number', min: 1, max: 3 },
+    streak: { kind: 'number', min: 0, max: 30 },
+    depth: { kind: 'number', min: 1, max: 40 },
+    busy: { kind: 'toggle' },
+  },
+  defaults: { owned: 6, placed: 3, streak: 3, depth: 1, busy: false },
+  presets: [
+    { name: '3 / 3 placed, streak at day 3', props: {} },
+    { name: '2 / 3 placed (Enter is off, with the reason)', props: { placed: 2 } },
+    { name: 'No streak yet', props: { streak: 0 } },
+    { name: 'Streak at day 7', props: { streak: 7 } },
+    { name: 'The run is being sent', props: { busy: true } },
+  ],
+  render: (p) => (
+    <SetupDemo
+      key={`${String(num(p, 'owned'))}-${String(num(p, 'placed'))}-${String(num(p, 'streak'))}-${String(num(p, 'depth'))}`}
+      p={p}
+    />
+  ),
+};
 
 const dragGhost = demoEntry(
   'DragGhost',
@@ -288,6 +358,7 @@ const placedCount: Entry = {
 };
 
 export const slotEntries: readonly Entry[] = [
+  dungeonSetup,
   dungeonTeam,
   slotButton,
   placedCount,

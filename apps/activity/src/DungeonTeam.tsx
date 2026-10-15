@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { TOUCH_HOLD_MS } from './dnd-core';
 import {
@@ -45,11 +46,15 @@ interface Props {
   /** True while the run is being sent: the tiles are switched off. */
   disabled: boolean;
   onChange: (slots: Slots) => void;
+  /** What follows the count inside the same block (the Enter button), centred like the rest. */
+  children?: ComponentChildren;
 }
 
 /**
  * The dungeon team on the Raid Roster's board, in its single-row mode: three places, left to right,
- * and the order is the choice. Tapping an empty place (or pressing Enter on it) opens the creature
+ * centred, and the order is the choice. Below the board: the order line (quiet), the count with its
+ * check, then `children`. There is no title or section of its own: it sits at the end of the daily
+ * dungeon card. Tapping an empty place (or pressing Enter on it) opens the creature
  * picker; tapping a creature opens its popover with "Remove from team"; creatures are moved by
  * dragging them (a finger needs a short press and hold, so a swipe still scrolls the page), and
  * dropping one on another swaps the two. Keyboard users move creatures with the picker. The server
@@ -224,12 +229,7 @@ export function DungeonTeam(props: Props) {
   }
 
   return (
-    <div class="placement" onKeyDown={onKeyDown}>
-      <h4 id="dungeon-zones-heading">Your team</h4>
-      <p class="muted dungeon-order-line">
-        <GlossaryTag entry="dungeon-row">{ORDER_LINE}</GlossaryTag>
-      </p>
-      <PlacedCount placed={placed} />
+    <div class="placement dungeon-team" onKeyDown={onKeyDown}>
       <RaidBoard
         single={{ label: 'Your team, left to right' }}
         rows={rows}
@@ -248,6 +248,11 @@ export function DungeonTeam(props: Props) {
           {hint}
         </p>
       )}
+      <p class="muted dungeon-order-line">
+        <GlossaryTag entry="dungeon-row">{ORDER_LINE}</GlossaryTag>
+      </p>
+      <PlacedCount placed={placed} />
+      {props.children}
 
       <LiveRegion>{announcement}</LiveRegion>
       {/* What the order sets off, for a screen reader: the cues are only visual. */}

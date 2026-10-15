@@ -21,8 +21,9 @@ interface Props {
 }
 
 /**
- * The pre-run screen. It leads with the three rooms and the day's modifiers (`DungeonPrerun`), then
- * the team on the Raid Roster's board and the Enter button, or the reason a run is not possible. The
+ * The pre-run screen: one card (`DungeonPrerun`) with the title and streak, the three rooms and the
+ * day's modifiers, the depth track, then the team on the Raid Roster's board and the Enter button
+ * (or, instead of the card's team, the reason a run is not possible). The
  * team starts as the player's last team, each creature in the slot it stood in (`startingTeam`; a
  * creature that is gone leaves its slot empty), or on the first run as their strongest three in the
  * order that sets off the most reactions. Changes are kept only on this screen; the next last team
@@ -58,7 +59,6 @@ export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast
   const complete = isComplete(slots);
   return (
     <>
-      <DungeonPrerun today={today} />
       {isRetryOffer(today) && (
         <section class="raid-section dungeon-retry" aria-labelledby="dungeon-retry-heading">
           <h3 id="dungeon-retry-heading">
@@ -72,35 +72,36 @@ export function DungeonSetup({ today, creatures, busy, error, onEnter, onSeeLast
           </p>
         </section>
       )}
-      <section class="raid-section" aria-labelledby="dungeon-zones-heading">
-        <DungeonTeam creatures={pickable} slots={slots} disabled={busy} onChange={setSlots} />
-      </section>
-      <section class="raid-section dungeon-enter" aria-label="Enter the dungeon">
-        {error !== null && (
-          <p class="error" role="alert">
-            {error}
-          </p>
-        )}
-        <p>
-          <button
-            type="button"
-            class="primary"
-            disabled={busy || !complete}
-            aria-describedby={complete ? undefined : 'dungeon-enter-note'}
-            onClick={() => {
-              onEnter(slots);
-            }}
-          >
-            {busy ? 'Entering...' : 'Enter the dungeon'}
-          </button>
-        </p>
-        {!complete && (
-          <p id="dungeon-enter-note" class="muted">
-            Place 3 creatures to enter ({String(placedCount(slots))} / 3 placed). Tap an empty slot
-            to choose one.
-          </p>
-        )}
-      </section>
+      <DungeonPrerun today={today}>
+        <DungeonTeam creatures={pickable} slots={slots} disabled={busy} onChange={setSlots}>
+          <div class="dungeon-enter">
+            {error !== null && (
+              <p class="error" role="alert">
+                {error}
+              </p>
+            )}
+            <p>
+              <button
+                type="button"
+                class="primary"
+                disabled={busy || !complete}
+                aria-describedby={complete ? undefined : 'dungeon-enter-note'}
+                onClick={() => {
+                  onEnter(slots);
+                }}
+              >
+                {busy ? 'Entering...' : 'Enter the dungeon'}
+              </button>
+            </p>
+            {!complete && (
+              <p id="dungeon-enter-note" class="muted">
+                Place 3 creatures to enter ({String(placedCount(slots))} / 3 placed). Tap an empty
+                slot to choose one.
+              </p>
+            )}
+          </div>
+        </DungeonTeam>
+      </DungeonPrerun>
     </>
   );
 }

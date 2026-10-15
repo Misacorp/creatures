@@ -4,6 +4,52 @@
   box-shadow: inset calc(var(--px) * -1) 0 0 var(--gold);
 }
 
+/*
+  The card: the header has the title and its "?" at the left and the streak at the right; when they
+  do not fit on one line the streak wraps under the title. The team below the depth track is centred.
+*/
+.dungeon-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.dungeon-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.dungeon-title .pixel-heading {
+  margin: 0;
+}
+
+.streak-tag {
+  display: inline-flex;
+  padding: 0.25rem;
+  line-height: 0;
+  text-decoration: none;
+}
+
+.dungeon-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.dungeon-team > .raid-board {
+  align-self: stretch;
+}
+
+.dungeon-team .dungeon-order-line,
+.dungeon-team .roster-count {
+  margin: 0.25rem 0;
+}
+
 /* The streak after a run: its label and line, then the row of days. */
 .dungeon-streak {
   margin: 0.5rem 0;
@@ -104,10 +150,15 @@
   margin: 0.5rem 0;
 }
 
+.dungeon-enter {
+  align-self: stretch;
+  margin-top: 0.5rem;
+}
+
 .dungeon-enter .primary {
   width: 100%;
 }
 
-.dungeon-order-line {
-  margin: 0.25rem 0 0.5rem;
+.dungeon-enter p {
+  margin: 0.25rem 0;
 }

@@ -91,6 +91,13 @@ export function streakPips(
   }));
 }
 
+/** What a screen reader says for the streak row: "Streak: 3 / 7 days of the cycle". */
+export function streakLabel(streak: number): string {
+  const pips = streakPips(streak);
+  const lit = pips.filter((p) => p.on).length;
+  return `Streak: ${String(lit)} / ${String(pips.length)} days of the cycle`;
+}
+
 /** The headline of a finished run. */
 export function resultHeadline(
   run: Pick<DungeonRunSummary, 'cleared' | 'roomsCleared' | 'rooms'>,
