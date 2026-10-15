@@ -50,9 +50,9 @@ Income is a pluggable rule, so the sims can compare today's with the planned rew
 
 - **Current** (shipped): a leet pays `baitForDay(n)` = 7 Bait x leet points, where the points follow the table 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 9, 10 by the number of players n who leeted that day (35 to 70 Bait). No income without a leet.
 - **Planned: allowance plus leet bonus** (Misa, 2026-10-15; final numbers are the lead's, recorded here and in `decisions.md`):
-  - **Daily allowance: 30 Bait** for opening the game that day (once a day, from the game's 13:37 reset; missed days are not paid later).
-  - **Leet bonus: 15 to 25 Bait**, by how many players leeted that day: 15 (1 or 2 leeters), 17 (3), 19 (4), 20 (5), 21 (6), 22 (7), 23 (8), 24 (9), 25 (10 or more). It keeps the existing rules: more leeters never pays anyone less, a solo leet pays the same as a double, each extra leeter adds less.
-  - A day pays 30 to 55 Bait. Compared with today: a top earner on a server where 8 players leet gets 53 a day instead of 56; a player who opens the game every day but leets twice a week gets about 250 a week instead of about 80. Logging in becomes worth it; leeting stays the bigger lever per day.
+  - **Daily allowance: 25 Bait** for opening the game that day (once a day, from the game's 13:37 reset; missed days are not paid later).
+  - **Leet bonus: 15 to 32 Bait**, by how many players leeted that day: 15 (1 or 2 leeters), 17 (3), 19 (4), 21 (5), 23 (6), 25 (7), 27 (8), 29 (9), 32 (10 or more). Misa asked for about 40 for a solo leet and under 60 at 10 leeters. It keeps two of the old leet table's rules: more leeters never pays anyone less, and a solo leet pays the same as a double.
+  - A day pays 25 to 57 Bait (40 for a solo leet). Compared with today: a top earner on a server where 8 players leet gets 52 a day instead of 56; a player who opens the game every day but leets twice a week gets about 210 a week instead of about 80. Logging in becomes worth it; leeting stays the bigger lever per day.
   - Both numbers become `RULES` scalars so the sim tunes them, and the change ships with its own balance pass (training costs, supply prices and the raid ladder move with income).
 
 ## The daily loop and the journey log

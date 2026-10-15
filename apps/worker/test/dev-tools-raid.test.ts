@@ -3,6 +3,7 @@
    each body would only repeat the server's view types. */
 import { RULES, content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
+import { RAID_DIFFICULTY_VERSION } from '../src/raid-difficulty';
 import { ON, player } from './dev-helpers';
 import { runCore } from './helpers';
 import { W02, count, nextGuild, rows, runRaid } from './raid-helpers';
@@ -21,6 +22,7 @@ describe('raid tools', () => {
           rank: 7,
           effectiveRank: 7,
           festival: false,
+          difficultyVersion: RAID_DIFFICULTY_VERSION,
         });
         expect(rows(ctx.sql, 'SELECT rank FROM raid_ladder WHERE id = 1')).toEqual([{ rank: 7 }]);
 

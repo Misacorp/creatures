@@ -1,8 +1,9 @@
-import { content, quirkText } from '@creatures/game';
+import { RULES, content, dailyAllowance, quirkText } from '@creatures/game';
 import { env, exports } from 'cloudflare:workers';
 import { listDurableObjectIds, runInDurableObject } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 import { GuildCore } from '../src/guild-core';
+import { gameDay } from '../src/time';
 import {
   SESSION_ABSOLUTE_MS,
   SESSION_IDLE_MS,
@@ -381,6 +382,7 @@ describe('migration 12 (Boss Rank ladder, seasons, Festival)', () => {
         'ladder_at',
         'ladder_won',
         'rank_after',
+        'difficulty_version',
       ]);
       // The week that was open keeps everything and has no rank or season: it behaves as before.
       expect(
@@ -849,7 +851,12 @@ describe('authenticated routes in the Durable Object', () => {
         user: USER,
         guildId: GUILD_ID,
         timezone: 'Europe/Helsinki',
-        balances: { bait: 0, essence: 0 },
+        // The first request of the game day pays the daily allowance, and tells the player once.
+        balances: { bait: dailyAllowance(), essence: 0 },
+        allowance: {
+          day: gameDay(T0, 'Europe/Helsinki', RULES.daily.reset),
+          amount: dailyAllowance(),
+        },
         // No leet source is configured here, so the status says so.
         leetSync: {
           source: 'disabled',
