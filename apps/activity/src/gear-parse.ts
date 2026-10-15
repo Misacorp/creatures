@@ -123,11 +123,21 @@ const isBlueprintLoot = (value: unknown): value is GrantLoot['blueprints'][numbe
   isRarity(value['rarity']) &&
   typeof value['duplicate'] === 'boolean';
 
+/** The upgrade level a dropped item arrived with: absent on grants from before the finale reward slot. */
+const isLootLevel = (value: unknown): boolean => value === undefined || isCount(value);
+
 const isGearLoot = (value: unknown): value is GrantLoot['gear'][number] =>
-  isRecord(value) && isStr(value['id']) && isStr(value['baseId']) && isRarity(value['rarity']);
+  isRecord(value) &&
+  isStr(value['id']) &&
+  isStr(value['baseId']) &&
+  isRarity(value['rarity']) &&
+  isLootLevel(value['level']);
 
 const isConvertedLoot = (value: unknown): value is GrantLoot['converted'][number] =>
-  isRecord(value) && isStr(value['baseId']) && isRarity(value['rarity']);
+  isRecord(value) &&
+  isStr(value['baseId']) &&
+  isRarity(value['rarity']) &&
+  isLootLevel(value['level']);
 
 /** What a grant gave: the loot of an expedition claim, a finale, a Festival or the welcome kit. */
 export function isGrantLoot(value: unknown): value is GrantLoot {

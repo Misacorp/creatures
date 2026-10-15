@@ -460,11 +460,18 @@ export const RULES = {
       /**
        * Finale win, one roll per participant. Rare and epic chances start at these values at Boss
        * Rank 1, grow by `perRankBp` for every rank above 1 and stop at `maxBp`; the rest is common.
+       *
+       * The reward slot (Misa, 2026-10-15): every participant of a won finale gets exactly one reward,
+       * a gear piece or, with chance `blueprintBp`, a blueprint they do not know yet (gear when they
+       * know them all). Either way its rarity follows the odds above. Gear arrives pre-upgraded: one
+       * level for every `ranksPerUpgrade` Boss Ranks above rank 1, up to `maxLevel`.
        */
       finale: {
         baseBp: { rare: 2_200, epic: 300 },
         perRankBp: { rare: 250, epic: 150 },
         maxBp: { rare: 5_000, epic: 2_500 },
+        blueprintBp: 2_500,
+        ranksPerUpgrade: 2,
       },
       /** Scrap for every participant of a cleared phase 1 or 2. */
       phaseScrap: { phase1: 3, phase2: 4 },

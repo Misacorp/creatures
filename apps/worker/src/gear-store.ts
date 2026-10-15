@@ -126,21 +126,23 @@ export function hasRoom(sql: SqlStorage, userId: string): boolean {
   return countItems(sql, userId) + countPendingCrafts(sql, userId) < RULES.gear.inventoryCap;
 }
 
+/** Inserts an item at `item.level` (default 0: new gear starts un-upgraded; a finale drop arrives pre-upgraded). */
 export function insertItem(
   sql: SqlStorage,
   userId: string,
-  item: { baseId: string; rarity: GearRarity; rolls: GearRolls },
+  item: { baseId: string; rarity: GearRarity; rolls: GearRolls; level?: number },
   source: string,
   now: number,
 ): string {
   const id = crypto.randomUUID();
   sql.exec(
     `INSERT INTO gear_items (id, user_id, base_id, rarity, level, rolls_json, enchant_id, equipped_on, source, created_at)
-     VALUES (?, ?, ?, ?, 0, ?, NULL, NULL, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?)`,
     id,
     userId,
     item.baseId,
     item.rarity,
+    Math.min(RULES.gear.maxLevel, Math.max(0, Math.trunc(item.level ?? 0))),
     JSON.stringify(item.rolls),
     source,
     now,

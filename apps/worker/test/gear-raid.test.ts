@@ -6,7 +6,9 @@ import {
   dismantleYield,
   effectiveStats,
   festivalBaseFor,
-  rollFinaleDrop,
+  droppableBases,
+  finaleUpgradeLevel,
+  rollFinaleReward,
   rollGear,
   type GearRarity,
   type PartKind,
@@ -17,7 +19,7 @@ import { describe, expect, it } from 'vitest';
 import { evaluate, loadLive, roundStartsOf } from '../src/raid-live';
 import { loadCreatures } from '../src/raid-teams';
 import { eventTimes } from '../src/raid-schedule';
-import { insertItem, rowToItem, findItem } from '../src/gear-store';
+import { insertItem, learnBlueprint, rowToItem, findItem } from '../src/gear-store';
 import { runCore, type CoreContext } from './helpers';
 import {
   DAY,
@@ -61,9 +63,16 @@ const grants = (ctx: CoreContext, userId?: string) =>
   );
 
 const itemsOf = (ctx: CoreContext, userId: string) =>
-  rows<{ id: string; base_id: string; rarity: GearRarity; source: string; rolls_json: string }>(
+  rows<{
+    id: string;
+    base_id: string;
+    rarity: GearRarity;
+    level: number;
+    source: string;
+    rolls_json: string;
+  }>(
     ctx.sql,
-    'SELECT id, base_id, rarity, source, rolls_json FROM gear_items WHERE user_id = ? ORDER BY created_at, rowid',
+    'SELECT id, base_id, rarity, level, source, rolls_json FROM gear_items WHERE user_id = ? ORDER BY created_at, rowid',
     userId,
   );
 
@@ -82,7 +91,7 @@ function openWeek(ctx: CoreContext, n: number, level = 15): Seeded[] {
 }
 
 describe('drops from the weekly raid', () => {
-  it('pays scrap for each cleared phase and one gear roll for a won finale, to members only', async () => {
+  it('pays scrap for each cleared phase and one reward (a gear piece or a blueprint) for a won finale, to members only', async () => {
     const gearRng = counting('raid-gear');
     await runRaid(
       (ctx) => {
@@ -107,26 +116,41 @@ describe('drops from the weekly raid', () => {
             `raid:${W02.id}:finale`,
           ]);
           expect(mine.map((g) => g.source)).toEqual(['raid_phase', 'raid_phase', 'raid_finale']);
-          // Scrap for the phases (3 and 4), then exactly one item from the finale.
+          // Scrap for the phases (3 and 4), then exactly one reward from the finale: an item or a blueprint.
           const items = itemsOf(ctx, userId);
-          expect(items).toHaveLength(1);
-          expect(items[0]?.source).toBe('raid_finale');
+          const finale = JSON.parse(mine[2]?.result_json ?? '{}') as {
+            gear: unknown[];
+            blueprints: unknown[];
+          };
+          expect(finale.gear.length + finale.blueprints.length).toBe(1);
+          expect(items).toHaveLength(finale.gear.length);
+          for (const item of items) expect(item.source).toBe('raid_finale');
           expect(scrapOf(ctx, userId)).toBe(
             RULES.gear.drops.phaseScrap.phase1 + RULES.gear.drops.phaseScrap.phase2,
           );
         }
         // The finale rolls came from the injected rng, one after the other in member order, at the
-        // week's Boss Rank.
+        // week's Boss Rank. Nobody knew a blueprint yet, so each is a new one.
+        let gearDrops = 0;
         for (const userId of members) {
-          const expected = rollFinaleDrop(expectRng, rank);
-          const item = itemsOf(ctx, userId)[0];
-          expect(item).toMatchObject({ base_id: expected.baseId, rarity: expected.rarity });
-          expect(JSON.parse(item?.rolls_json ?? '{}')).toEqual(expected.rolls);
+          const expected = rollFinaleReward(expectRng, rank, new Set());
+          const items = itemsOf(ctx, userId);
+          if (expected.kind === 'gear') {
+            gearDrops++;
+            expect(items[0]).toMatchObject({ base_id: expected.baseId, rarity: expected.rarity });
+            expect(items[0]?.level).toBe(finaleUpgradeLevel(rank));
+            expect(JSON.parse(items[0]?.rolls_json ?? '{}')).toEqual(expected.rolls);
+          } else {
+            expect(items).toEqual([]);
+            expect(
+              rows(ctx.sql, 'SELECT base_id, rarity FROM blueprints WHERE user_id = ?', userId),
+            ).toEqual([{ base_id: expected.baseId, rarity: expected.rarity }]);
+          }
         }
         // Nobody outside the party got anything.
         expect(grants(ctx, outsider.id)).toEqual([]);
         expect(count(ctx.sql, 'gear_items', `user_id = '${outsider.id}'`)).toBe(0);
-        expect(count(ctx.sql, 'gear_items')).toBe(5);
+        expect(count(ctx.sql, 'gear_items')).toBe(gearDrops);
         expect(players.length).toBe(5);
 
         // One analytics event per grant, with no actor (a raid payout is guild level).
@@ -156,7 +180,8 @@ describe('drops from the weekly raid', () => {
           events: count(ctx.sql, 'analytics_events', "kind = 'gear_drop'"),
           drawn: gearRng.drawn(),
         };
-        expect(before.items).toBe(4);
+        // One reward each: a gear piece or a blueprint.
+        expect(before.items + count(ctx.sql, 'blueprints')).toBe(4);
         expect(before.drawn).toBeGreaterThan(0);
         const week = ctx.core.raid.week(W02.id) as NonNullable<
           ReturnType<typeof ctx.core.raid.week>
@@ -220,6 +245,10 @@ describe('drops from the weekly raid', () => {
             ctx.clock.t,
           );
         }
+        // They know every blueprint, so the reward slot is gear and has to turn into parts.
+        for (const base of droppableBases()) {
+          learnBlueprint(ctx.sql, first.id, base.id, base.blueprint, ctx.clock.t);
+        }
         forcePool(ctx.sql, 12_000);
         ctx.clock.t = SUNDAY;
         ctx.core.raid.runDue(HELSINKI);
@@ -229,7 +258,7 @@ describe('drops from the weekly raid', () => {
         const grant = grants(ctx, first.id).find((g) => g.key.endsWith(':finale'));
         const view = JSON.parse(grant?.result_json ?? '{}') as {
           gear: unknown[];
-          converted: { baseId: string; rarity: GearRarity }[];
+          converted: { baseId: string; rarity: GearRarity; level?: number }[];
           parts: Record<string, number>;
         };
         expect(view.gear).toEqual([]);
@@ -237,7 +266,7 @@ describe('drops from the weekly raid', () => {
         const yielded = dismantleYield({
           baseId: view.converted[0]?.baseId ?? '',
           rarity: view.converted[0]?.rarity ?? 'common',
-          level: 0,
+          level: view.converted[0]?.level ?? 0,
         });
         expect(view.parts).toEqual(yielded);
         // The parts really arrived: the two phases plus the converted item.
@@ -246,9 +275,14 @@ describe('drops from the weekly raid', () => {
             RULES.gear.drops.phaseScrap.phase2 +
             (yielded.scrap ?? 0),
         );
-        // The others got real items.
+        // The others got their reward: an item or a blueprint.
         for (const userId of membersOf(ctx.sql).filter((id) => id !== first.id)) {
-          expect(itemsOf(ctx, userId)).toHaveLength(1);
+          const other = grants(ctx, userId).find((g) => g.key.endsWith(':finale'));
+          const reward = JSON.parse(other?.result_json ?? '{}') as {
+            gear: unknown[];
+            blueprints: unknown[];
+          };
+          expect(reward.gear.length + reward.blueprints.length).toBe(1);
         }
       },
       { core: { gearRng: createSeededRng('full') } },
@@ -311,7 +345,16 @@ describe('the Festival piece', () => {
 
         for (const userId of membersOf(ctx.sql, 1, row?.week_id)) {
           const items = itemsOf(ctx, userId);
-          expect(items.map((i) => i.source).sort()).toEqual(['festival', 'raid_finale']);
+          // The Festival piece, and the normal reward slot next to it (an item or a blueprint).
+          const reward = grants(ctx, userId).find((g) => g.key.endsWith(':finale'));
+          const slot = JSON.parse(reward?.result_json ?? '{}') as {
+            gear: unknown[];
+            blueprints: unknown[];
+          };
+          expect(slot.gear.length + slot.blueprints.length).toBe(1);
+          expect(items.map((i) => i.source).sort()).toEqual(
+            slot.gear.length === 1 ? ['festival', 'raid_finale'] : ['festival'],
+          );
           const festive = items.find((i) => i.source === 'festival');
           expect(festive).toMatchObject({ base_id: piece.id, rarity: 'festival' });
           expect(

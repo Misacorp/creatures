@@ -13,6 +13,7 @@ import {
   festivalTeaser,
   rankLabel,
   readinessMeter,
+  winPaysText,
 } from './raid-progress';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
@@ -155,6 +156,7 @@ export function BossCard({ view }: { view: RaidView }) {
       </div>
       {banner !== null && <p class="festival-banner">{banner}</p>}
       {teaser !== null && <p class="muted">{teaser}</p>}
+      <p class="boss-pays">{winPaysText(view)}</p>
       <p class="counter-move">
         <GlossaryTag entry="adaptation">
           <strong class="pix">Phase 2 counter-move</strong>

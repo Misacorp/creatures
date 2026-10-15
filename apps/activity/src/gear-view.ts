@@ -557,6 +557,13 @@ export function grantsForWeek(
   };
 }
 
+/** A dropped item's name, with "+N" when it arrived upgraded (a finale drop does; older grants have no level). */
+export function lootItemName(item: { baseId: string; level?: number }): string {
+  return item.level !== undefined && item.level > 0
+    ? itemLabel(item.baseId, item.level)
+    : gearName(item.baseId);
+}
+
 export function lootIsEmpty(loot: GrantLoot): boolean {
   return (
     loot.gear.length === 0 &&
