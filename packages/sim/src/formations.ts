@@ -176,3 +176,56 @@ export function arrangeRow(row: readonly FightSlot[], setup: Setup, mode: TurnOr
   cache.set(key, arranged);
   return arranged;
 }
+
+/**
+ * Arranges only some of the row: the creatures for which `movable` is true are rearranged among the
+ * places they already stand in (so everyone else keeps their place), scored on the whole row. This is
+ * a server where some players arrange their places for a setup and the others take the default
+ * (`autoPlace`). Same seeded hill-climb as `arrangeRow`, over swaps of two movable creatures, from the
+ * row as given and from the movable creatures in reverse; deterministic.
+ */
+export function arrangeRowPartial(
+  row: readonly FightSlot[],
+  movable: (slot: FightSlot) => boolean,
+  setup: Setup,
+  mode: TurnOrder,
+): FightSlot[] {
+  const places = row.flatMap((s, i) => (movable(s) ? [i] : []));
+  if (places.length < 2) return [...row];
+  const score = (r: readonly FightSlot[]): number =>
+    setup === 'greedy' ? greedyScore(r, mode) : protectedScore(r, mode);
+  const key = `${setup}:${mode}:partial:${row
+    .map((s, i) => `${s.id}:${s.speciesId}:${s.stats?.spd ?? 0}${places.includes(i) ? '*' : ''}`)
+    .join(',')}`;
+  const rng = createSeededRng(`setup:${key}`);
+  const reversed = [...row];
+  for (const [k, place] of places.entries()) {
+    reversed[place] = row[places[places.length - 1 - k] as number] as FightSlot;
+  }
+  let best: FightSlot[] = [...row];
+  let bestScore = score(best);
+  for (const from of [[...row], reversed]) {
+    const current = from;
+    let currentScore = score(current);
+    for (let step = 0; step < STEPS_PER_CREATURE * places.length; step++) {
+      const a = places[int(rng, places.length)] as number;
+      const b = places[int(rng, places.length)] as number;
+      if (a === b) continue;
+      const t = current[a] as FightSlot;
+      current[a] = current[b] as FightSlot;
+      current[b] = t;
+      const s = score(current);
+      if (s >= currentScore) {
+        currentScore = s;
+      } else {
+        current[b] = current[a];
+        current[a] = t;
+      }
+    }
+    if (currentScore > bestScore) {
+      best = [...current];
+      bestScore = currentScore;
+    }
+  }
+  return best;
+}

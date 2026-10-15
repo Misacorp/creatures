@@ -562,7 +562,7 @@ function outliersSection(a: Analysis): string {
 }
 
 const POLICY_TEXT = `
-- **Leet credit:** each day, every player who leets earns \`baitForDay(n)\` (n = players who leeted that day). Casuals leet on 2 random days a week, dailies on 6, top earners on all 7, and the newcomer like a daily from week 4.
+- **Income:** each day, every player who opens the game earns the daily allowance (\`dailyAllowance()\`) and every leeter the leet bonus on top (\`leetBonusForDay(n)\`, n = players who leeted that day); \`--income current\` plays the old leet-only pay (\`baitForDay(n)\`) instead. Casuals open the game and leet on 2 random days a week, dailies open it every day and leet on 6, top earners leet on all 7, and the newcomer plays like a daily from week 4.
 - **Starter:** the starter whose element the server owns least (ties in content order). The first expedition brings a Zipmouse (game rule).
 - **Check-ins:** casuals check in once on each leet day (every few days); everyone else twice a day (09:00 and 20:00).
 - **At a check-in:** claim trips (and take an end-of-trip goal), claim jobs, evolve creatures that are at level 15 when there is enough Essence, train, manage gear, send trips into the free slots, start workshop jobs.

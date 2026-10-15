@@ -32,7 +32,7 @@ import {
   type PlayerTotals,
 } from '@creatures/engine';
 import type { ArchetypeId } from './archetypes';
-import { arrangeRow, type Setup } from './formations';
+import { arrangeRow, arrangeRowPartial, type Setup } from './formations';
 import { neutralSupport, studyRules, type RoleStudy } from './role-study';
 import {
   byPowerDesc,
@@ -310,6 +310,12 @@ export function openRaidWeek(
      * `greedy` and `protected` are the setup study's arrangements (`formations.ts`).
      */
     formation?: 'auto' | 'spread' | Setup;
+    /**
+     * Players who arrange their own places (the journey profiles' raid row): each group's creatures are
+     * rearranged among the places the group stands in, for the group's setup, in the order given;
+     * everybody else keeps the `autoPlace` row. Used when `formation` is absent.
+     */
+    arranged?: readonly { setup: Setup; playerIds: ReadonlySet<string> }[];
     /** Study: every player brings a Guard and a Support when they own one (`pickRoleTeam`). */
     bringRoles?: boolean;
   } = {},
@@ -340,12 +346,22 @@ export function openRaidWeek(
   let sparse = autoPlace(new Array<FightSlot | null>(length).fill(null), unplaced);
   if (players.length < 3) sparse = fillWithGuests(sparse, resolveGuests(), avgLevel);
   const compact = sparse.filter((s): s is FightSlot => s !== null);
-  const row =
+  let row =
     options.formation === 'spread'
       ? spreadGuards(compact)
       : options.formation === 'greedy' || options.formation === 'protected'
         ? arrangeRow(compact, options.formation, boss.turnOrder)
         : compact;
+  if (options.formation === undefined || options.formation === 'auto') {
+    for (const group of options.arranged ?? []) {
+      row = arrangeRowPartial(
+        row,
+        (slot) => slot.ownerId !== null && group.playerIds.has(slot.ownerId),
+        group.setup,
+        boss.turnOrder,
+      );
+    }
+  }
 
   const rank = options.rank ?? placementRank(levels);
   const shipped = scaleBoss(boss, players.length, rank);
