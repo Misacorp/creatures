@@ -68,6 +68,16 @@ export const RULES = {
     /** Bait granted for a duplicate once the creature has reached maxFusions. */
     convertBait: { common: 5, rare: 15, epic: 40 } satisfies Record<Rarity, number>,
   },
+  /**
+   * Bait income (docs/design/player-journey-sim.md, decisions 2026-10-15): `dailyAllowance` for
+   * opening the game on a game day, and a leet bonus by how many players leeted that day
+   * (`leetBonusByCount`, index = leeters; past the end, the last value). Solo leet 40 in all, 10 or
+   * more leeters 57.
+   */
+  income: {
+    dailyAllowance: 25,
+    leetBonusByCount: [0, 15, 15, 17, 19, 21, 23, 25, 27, 29, 32] as readonly number[],
+  },
   combat: {
     /** Element matchup multipliers in basis points. */
     strongBp: 15_000,
