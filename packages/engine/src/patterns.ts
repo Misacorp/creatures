@@ -80,6 +80,12 @@ export interface PatternContext {
    * fewer than a volley's count of other creatures live.
    */
   previousVolley?: readonly number[];
+  /**
+   * Fights with `rules` only: the round's Guard dice, one per slot (`fight.ts`, `guardDice`). When
+   * several living Guards could take the same hit, the die of the slot the hit is aimed at picks
+   * one (`pickGuardWith`). Absent: the first (left-most) Guard, as before.
+   */
+  guardDice?: readonly number[];
 }
 
 function living(ctx: PatternContext): PatternCreature[] {
@@ -100,6 +106,19 @@ export function byStrength(creatures: readonly PatternCreature[]): PatternCreatu
 /** The creature a die picks among `list` (uniformly). */
 function pickWith<T>(list: readonly T[], die: number): T | undefined {
   return list[Math.floor((die * list.length) / DICE_RANGE)];
+}
+
+/**
+ * The one rule for choosing among several Guards that could take a hit on slot `slot`: the first
+ * without Guard dice, else the slot's die picks one, uniformly. `fight.ts` uses it for every hit.
+ */
+export function pickGuardWith<T>(
+  candidates: readonly T[],
+  slot: number,
+  guardDice: readonly number[] | undefined,
+): T | undefined {
+  if (guardDice === undefined || candidates.length < 2) return candidates[0];
+  return pickWith(candidates, guardDice[slot] ?? 0);
 }
 
 function area(target: number, powerBp: number): PlannedHit {
@@ -169,13 +188,23 @@ export function planBarrage(
   return planned(picked.map((c) => area(c.idx, spec.power)));
 }
 
-/** The creature the boss's plain attack goes for: its zone's Guard, else the front-most standing. */
+/**
+ * The creature the boss's plain attack goes for: its zone's Guard, else the front-most standing.
+ * With several Guards in that zone and `ctx.guardDice`, the die of the front-most creature's slot
+ * picks one (the same pick the plain attack makes).
+ */
 export function frontTarget(ctx: PatternContext): PatternCreature | undefined {
   for (const zone of ZONES) {
     const standing = livingIn(ctx, zone);
     const first = standing[0];
     if (first === undefined) continue;
-    return standing.find((c) => c.role === 'guard') ?? first;
+    return (
+      pickGuardWith(
+        standing.filter((c) => c.role === 'guard'),
+        first.idx,
+        ctx.guardDice,
+      ) ?? first
+    );
   }
   return undefined;
 }

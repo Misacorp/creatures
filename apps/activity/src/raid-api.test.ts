@@ -523,6 +523,15 @@ describe('parseReplayView', () => {
     expect(() => parseReplayView({ ...replay, bossHpMax: '100' })).toThrow();
   });
 
+  it("reads the Guard numbers of the fight's rules when it has them, and none for an old fight", () => {
+    expect(parseReplayView(replay).rules).toBeUndefined();
+    const rules = { guardHpBp: 0, guardArmorBp: 2_500 };
+    expect(parseReplayView({ ...replay, rules }).rules).toEqual(rules);
+    expect(() => parseReplayView({ ...replay, rules: { guardHpBp: 0 } })).toThrow();
+    expect(() => parseReplayView({ ...replay, rules: { ...rules, extra: 1 } })).toThrow();
+    expect(() => parseReplayView({ ...replay, rules: { ...rules, guardArmorBp: '25' } })).toThrow();
+  });
+
   it('refuses unknown event types and bad names', () => {
     expect(() => parseReplayView({ ...replay, events: [{ t: 'explode', round: 1 }] })).toThrow();
     expect(() =>

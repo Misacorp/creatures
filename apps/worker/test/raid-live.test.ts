@@ -1666,6 +1666,7 @@ describe('the API contract with the client', () => {
     'roundStarts',
     'rounds',
     'row',
+    'rules',
     'serverNow',
     'startsAt',
     'status',

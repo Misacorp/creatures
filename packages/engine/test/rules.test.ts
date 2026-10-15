@@ -243,6 +243,39 @@ describe('Support element effects (rules.supportFx)', () => {
       expect(total(boosted) - total(base)).toBe(gain);
     });
 
+    it('keeps damage, setup and support credit equal to the damage dealt with the live rules', () => {
+      // A Spark Support and an Ember Support (shared buff, Stoke) both beside the payoff, so the
+      // buffs and Overcharge both move credit; once with a phase floor that cuts the hit short.
+      const row = () =>
+        rowOf(4, {
+          0: { role: 'setter', element: 'tide', atk: 100 },
+          1: { role: 'support', element: 'ember', atk: 1 },
+          2: { role: 'payoff', element: 'spark', atk: 100 },
+          3: { role: 'support', element: 'spark', atk: 1 },
+        });
+      const check = (floor: number | undefined): void => {
+        const r = fightWith(row(), [], {
+          rules: liveFightRules(),
+          extra: { ...adjacent, ...(floor === undefined ? {} : { bossHpFloor: floor }) },
+          rounds: 3,
+        });
+        const dealt = eventsOf(r, 'hit').reduce((s, e) => s + e.damage, 0);
+        const credited = Object.values(r.perCreature).reduce(
+          (s, c) => s + c.damage + c.setupCredit + c.supportCredit,
+          0,
+        );
+        expect(dealt).toBeGreaterThan(0);
+        expect(credited).toBe(dealt);
+        // Both Supports were paid, and nobody has negative credit.
+        expect(r.perCreature.s3!.supportCredit).toBeGreaterThan(0);
+        expect(r.perCreature.s1!.supportCredit).toBeGreaterThan(0);
+        for (const c of Object.values(r.perCreature)) expect(c.damage).toBeGreaterThanOrEqual(0);
+      };
+      check(undefined);
+      // The payoff's first hit would take the boss well below this floor.
+      check(1_000_000_000 - 300);
+    });
+
     it('does nothing for a reaction cashed in away from the Support, ', () => {
       const base = fightWith(far(), [], overrides);
       const boosted = fightWith(far(), [], { ...overrides, rules: fx });

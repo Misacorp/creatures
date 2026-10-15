@@ -214,6 +214,16 @@ export interface ReplayRowEntry {
   owner: string | null;
 }
 
+/**
+ * The Guard numbers of the rules a stored fight was played with (the fight input's `rules`): extra
+ * HP and armor, both in basis points. Absent for a fight stored before the Guard rework, which
+ * plays by `RULES.combat.guardHpBp` (extra HP, no armor).
+ */
+export interface FightGuardRules {
+  guardHpBp: number;
+  guardArmorBp: number;
+}
+
 export interface ReplayView {
   weekId: string;
   party: number;
@@ -229,6 +239,8 @@ export interface ReplayView {
   bossHpMax: number;
   bossHpStart: number;
   bossHpEnd: number;
+  /** The Guard numbers the fight was played with; null (or absent) for a fight stored without rules. */
+  rules?: FightGuardRules | null;
   /** The caller's opaque owner key in this fight (see `ReplayRowEntry.owner`), or null if not in it. */
   you: string | null;
   row: ReplayRowEntry[];
@@ -507,6 +519,17 @@ const EVENT_TYPES: ReadonlySet<string> = new Set([
 /** Absent, or a boolean: the flags an older server does not send. */
 const isOptBool = (value: unknown): boolean => value === undefined || isBool(value);
 
+/** The Guard numbers of a fight's rules (strict: both, nothing else). */
+export const isGuardRules = (value: unknown): value is FightGuardRules =>
+  isRecord(value) &&
+  Object.keys(value).every((k) => k === 'guardHpBp' || k === 'guardArmorBp') &&
+  isInt(value['guardHpBp']) &&
+  isInt(value['guardArmorBp']);
+
+/** Absent, null (a fight stored without rules), or the Guard numbers. */
+export const isOptGuardRules = (value: unknown): boolean =>
+  value === undefined || value === null || isGuardRules(value);
+
 export const isEvent = (value: unknown): value is FightEvent =>
   isRecord(value) && isStr(value['t']) && EVENT_TYPES.has(value['t']) && isInt(value['round']);
 
@@ -553,6 +576,7 @@ export function parseReplayView(data: unknown): ReplayView {
     !isInt(data['bossHpMax']) ||
     !isInt(data['bossHpStart']) ||
     !isInt(data['bossHpEnd']) ||
+    !isOptGuardRules(data['rules']) ||
     !isNullableStr(data['you']) ||
     !isArrayOf(data['row'], isReplayRow) ||
     !isArrayOf(data['events'], isEvent) ||

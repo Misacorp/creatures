@@ -66,6 +66,15 @@ describe('parseLiveSnapshot with real server responses', () => {
     expect(lobby(liveLobby)).toMatchObject({ roundMs: null, roundStarts: [] });
   });
 
+  it("reads the Guard numbers of the fight's rules: the numbers, or null when none are known", () => {
+    const rules = { guardHpBp: 0, guardArmorBp: 2_500 };
+    expect(running(liveMid).rules).toEqual(rules);
+    expect(running({ ...liveMid, rules: null }).rules).toBeNull();
+    expect(parseLiveSnapshot(liveNone)).toMatchObject({ status: 'none' });
+    expect(() => parseLiveSnapshot({ ...liveMid, rules: { guardHpBp: 0 } })).toThrow();
+    expect(() => parseLiveSnapshot({ ...liveMid, rules: undefined })).toThrow();
+  });
+
   it('accepts "none", where nearly everything is null or empty', () => {
     expect(liveNone.party).toBe(1);
     expect(liveNone.startsAt).toBeNull();

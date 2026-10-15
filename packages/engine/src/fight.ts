@@ -31,6 +31,7 @@ import {
   PATTERN_DICE,
   diceWindow,
   planChain,
+  pickGuardWith,
   planPattern,
   type PatternContext,
   type PatternPlan,
@@ -474,9 +475,7 @@ export function simulateFight(
    * (the left one); with `rules` that slot's die picks one, uniformly.
    */
   function pickGuard(candidates: Creature[], slot: number): Creature | undefined {
-    if (rules === undefined || candidates.length < 2) return candidates[0];
-    const die = guardDice[slot] ?? 0;
-    return candidates[Math.floor((die * candidates.length) / DICE_RANGE)];
+    return pickGuardWith(candidates, slot, rules === undefined ? undefined : guardDice);
   }
 
   /**
@@ -985,6 +984,7 @@ export function simulateFight(
       n,
       firing: firingIndex(g, atRound),
       dice: diceWindow(patternDice, gimmickIndex),
+      ...(rules === undefined ? {} : { guardDice }),
       ...(lastVolley.has(g.id) ? { previousVolley: lastVolley.get(g.id) as number[] } : {}),
     };
   }

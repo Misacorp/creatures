@@ -11,7 +11,7 @@ import { useElementWidth, usePrefersReducedMotion } from './hooks';
 import { abilityControls, abilityName, abilityTitle } from './live';
 import { scrollToLanes } from './lane-scroll';
 import type { LiveAbility, LiveFight } from './live-api';
-import type { RaidPhaseId, ReplayRowEntry } from './raid-api';
+import type { FightGuardRules, RaidPhaseId, ReplayRowEntry } from './raid-api';
 import { boardRows, laneStates, ownLaneSpan, placeOf } from './raid-board';
 import { stateAt } from './replay';
 import { enrageLine, retreatLine } from './raid-text';
@@ -242,7 +242,7 @@ function strikeGlyph(strike: BossStrike) {
  * creature a slam's splash will reach; when the hit lands a solid red frame, a slash and, on a
  * creature a Shield Wall protected or that a guard stepped in for, a shield (the blocked mark), and
  * a splash ring on the neighbours. A creature a Guard's cover softened a hit for gets a small shield
- * pip. A zone hit or a sweep marks its whole row instead (see the zone frames). The frames are
+ * pip on its right, and a Guard whose armor took damage off a hit gets one on its left. A zone hit or a sweep marks its whole row instead (see the zone frames). The frames are
  * static outlines, so they also read without motion.
  */
 function Marks({ fx, id }: { fx: readonly FxItem[]; id: string }) {
@@ -256,6 +256,19 @@ function Marks({ fx, id }: { fx: readonly FxItem[]; id: string }) {
             <span
               key={`cover-${String(cue.i)}`}
               class="cover-pip"
+              aria-hidden="true"
+              ref={fxRef(item)}
+            >
+              <Sprite sprite={glyphOrUnknown('shield')} scale={1} />
+            </span>
+          );
+        }
+        if (cue.kind === 'armor') {
+          if (cue.creature !== id) return null;
+          return (
+            <span
+              key={`armor-${String(cue.i)}`}
+              class="armor-pip"
               aria-hidden="true"
               ref={fxRef(item)}
             >
@@ -394,6 +407,8 @@ interface StageProps {
   rounds: number | null;
   /** The row, left to right. */
   row: readonly ReplayRowEntry[];
+  /** The Guard numbers of the rules the fight was played with; absent: the content's old Guard. */
+  rules?: FightGuardRules;
   /** The lobby's preview: no round yet, so the head says to get ready instead of "Round 1". */
   lobby?: boolean;
   /** The creatures that are the player's own: they are outlined and marked "you". */
@@ -700,6 +715,7 @@ export function Stage({
   hpStart,
   rounds,
   row,
+  rules,
   lobby,
   mineIds,
   names,
@@ -753,7 +769,7 @@ export function Stage({
     const known = creatureHp?.max[id];
     if (known !== undefined) return known;
     const entry = row.find((c) => c.id === id);
-    return entry === undefined ? null : estimatedMaxHp(entry);
+    return entry === undefined ? null : estimatedMaxHp(entry, rules);
   };
   const fx = allFx.filter(
     (item) =>

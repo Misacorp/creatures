@@ -110,6 +110,20 @@ export function outcomeFlags(result: FightResult): { retreated: boolean; enraged
   return { retreated: stored.retreated === true, enraged: stored.enraged === true };
 }
 
+/**
+ * The Guard numbers of the rules a stored fight was played with, for the client (extra HP and armor
+ * in basis points). A fight stored without `rules` gives null: the client then uses the content's old
+ * Guard bonus.
+ */
+export function guardRulesOf(
+  input: FightInput,
+): { guardHpBp: number; guardArmorBp: number } | null {
+  const rules = input.rules;
+  return rules === undefined
+    ? null
+    : { guardHpBp: rules.guardHpBp, guardArmorBp: rules.guardArmorBp };
+}
+
 /** 128 random bits as 32 lowercase hex characters. */
 export function drawSeed(rng: Rng): string {
   let hex = '';

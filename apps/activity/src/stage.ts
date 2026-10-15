@@ -27,7 +27,7 @@ import {
   type Zone,
 } from '@creatures/engine';
 import { getSpecies } from './game';
-import type { ReplayRowEntry } from './raid-api';
+import type { FightGuardRules, ReplayRowEntry } from './raid-api';
 import { stateAt, turnOrderOfRound, type StepState } from './replay';
 
 type FloatTone = 'hit' | 'hurt' | 'blocked' | 'buff' | 'heal' | 'cleanse' | 'immune';
@@ -75,6 +75,8 @@ export type Cue =
   | { kind: 'silenced'; i: number; creature: string }
   /** Guard cover softened a hit on this creature: a small shield pip on it. */
   | { kind: 'cover'; i: number; creature: string; guard: string }
+  /** A Guard's armor took this much off a hit it took: a small shield pip on the Guard. */
+  | { kind: 'armor'; i: number; creature: string; prevented: number }
   | { kind: 'banner'; i: number; text: string };
 
 /** What the boss does. `reflect_armed` is the trap being set at the start of a round: it has no wind-up. */
@@ -583,6 +585,9 @@ export function cuesForEvents(
         if (e.covered !== undefined) {
           cues.push({ kind: 'cover', i, creature: e.target, guard: e.covered.guard });
         }
+        if (e.armored !== undefined && e.armored > 0) {
+          cues.push({ kind: 'armor', i, creature: e.target, prevented: e.armored });
+        }
         if (zone !== null) {
           cues.push({ kind: 'shake', i, zone });
           if (e.shielded === true) cues.push({ kind: 'zone', i, zone, effect: 'shield' });
@@ -674,16 +679,23 @@ export function crowdedHits(events: readonly FightEvent[], from: number, to: num
   return out;
 }
 
-/** The most HP a creature can have, as far as the stage can tell: a Guard has more (the content's rule). */
+/**
+ * The most HP a creature can have, as far as the stage can tell. A Guard has the extra HP of the
+ * fight's own rules (`rules`; none now, its Guard has armor instead), or the content's old bonus
+ * (`RULES.combat.guardHpBp`) for a fight stored without rules.
+ */
 export function estimatedMaxHp(
   creature: Pick<ReplayRowEntry, 'species' | 'level' | 'role'>,
+  rules?: FightGuardRules,
 ): number | null {
   const species = getSpecies(creature.species);
   if (species === undefined) return null;
   const level = Math.max(1, Math.min(creature.level, species.levelCap));
   const hp = effectiveStats(species, level, 0).hp;
   return creature.role === 'guard'
-    ? Math.floor((hp * (10_000 + RULES.combat.guardHpBp)) / 10_000)
+    ? Math.floor(
+        (hp * (10_000 + (rules === undefined ? RULES.combat.guardHpBp : rules.guardHpBp))) / 10_000,
+      )
     : hp;
 }
 

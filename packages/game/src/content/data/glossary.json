@@ -95,7 +95,7 @@
     "title": "Guard",
     "short": "Tough. Takes hits for its zone.",
     "lines": [
-      "Has 30% more HP than other roles.",
+      "Armor: takes 25% less damage from every hit.",
       "A boss hit aimed at one creature goes to a Guard in the same zone (in the dungeon: right beside it).",
       "Creatures right beside it take 40% less from hits on many creatures.",
       "A Lance stops at a Guard."

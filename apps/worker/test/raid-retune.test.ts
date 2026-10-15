@@ -54,7 +54,8 @@ describe('the floor of a phase', () => {
 describe('the fight inputs the server builds', () => {
   it('carries the combat rules and the floor of Phases 1 and 2, and no enrage', async () => {
     await runRaid((ctx) => {
-      openWeek(ctx, 4);
+      const [me] = openWeek(ctx, 4);
+      if (me === undefined) throw new Error('no player');
       // A pool no party can empty and with a pool max that does not divide evenly.
       forcePool(ctx.sql, 40_001);
       ctx.clock.t = W02.afterPhase2;
@@ -82,6 +83,11 @@ describe('the fight inputs the server builds', () => {
       expect(two?.input.bossHpFloor).toBeLessThan(one?.input.bossHpFloor ?? 0);
       expect(one?.input.bossHpPool.max).toBe(40_001);
       expect(two?.input.bossHpPool.max).toBe(40_001);
+      // The replay tells the client the Guard numbers the fight used (extra HP and armor).
+      expect(ctx.core.raid.replay(me.id, W02.id, 1, 'phase1')?.rules).toEqual({
+        guardHpBp: RULES.combat.guard.hpBp,
+        guardArmorBp: RULES.combat.guard.armorBp,
+      });
     });
   });
 
@@ -203,6 +209,8 @@ describe('what a stage result shows', () => {
       const replay = ctx.core.raid.replay(me.id, W02.id, 1, 'phase1');
       expect(replay).toMatchObject({ retreated: false, enraged: false });
       expect(replay?.boss.retreat).toBeNull();
+      // No rules were stored, so the replay carries none: the client falls back to the old Guard.
+      expect(replay?.rules).toBeNull();
     });
   });
 

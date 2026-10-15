@@ -4,7 +4,7 @@
  * the raid retune can be looked at without a server or the engine. Fixture data only; nothing here
  * calls the API, and the numbers are not the engine's.
  */
-import { content } from '@creatures/game';
+import { RULES, content } from '@creatures/game';
 import type { FightEvent } from '@creatures/engine';
 import type { RaidPhaseId, ReplayRowEntry } from '../raid-api';
 import { estimatedMaxHp } from '../stage';
@@ -20,6 +20,7 @@ export const PATTERN_SCENARIOS = [
   'Charge: creatures marked',
   'Support heal and cleanse',
   'Cover pips (Guard beside)',
+  'Armor pip (a Guard takes less)',
   'Crowded sweep (15 creatures)',
   'Enraged',
   'Retreat, Phase 1',
@@ -206,6 +207,14 @@ export function patternFight(scenario: PatternScenario): PatternFight {
         hit(3, 'c0', 48, { covered: { guard: 'c1', prevented: 32 } }),
         hit(3, 'c1', 80),
       ]);
+    case 'Armor pip (a Guard takes less)':
+      // c0 is a Guard: its armor took a quarter off an 80-damage zone hit (60 got through).
+      return done(colossus, [
+        start(3),
+        gimmick(3, 'undertow', 'hit_zone', { targets: ['c0', 'c1'] }),
+        hit(3, 'c0', 60, { armored: 20 }),
+        hit(3, 'c1', 80),
+      ]);
     case 'Crowded sweep (15 creatures)': {
       const big = patternRow(15);
       const events: FightEvent[] = [
@@ -214,7 +223,11 @@ export function patternFight(scenario: PatternScenario): PatternFight {
       ];
       // Most hits are chip damage; a few are big (over 10% of the creature's HP) and keep their number.
       for (const c of big) {
-        const max = estimatedMaxHp(c) ?? 100;
+        const max =
+          estimatedMaxHp(c, {
+            guardHpBp: RULES.combat.guard.hpBp,
+            guardArmorBp: RULES.combat.guard.armorBp,
+          }) ?? 100;
         const heavy = c.position % 5 === 0;
         events.push(hit(6, c.id, heavy ? Math.floor(max * 0.4) : 2));
       }

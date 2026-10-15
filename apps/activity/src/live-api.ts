@@ -17,9 +17,11 @@ import {
   isEvent,
   isEventNames,
   isFestivalGrant,
+  isGuardRules,
   isRankChange,
   isReplayRow,
   type FestivalGrant,
+  type FightGuardRules,
   type RankChange,
   type ReplayRowEntry,
 } from './raid-api';
@@ -101,6 +103,8 @@ interface LiveShared {
   serverNow: number;
   /** The frozen fighting row, left to right. Empty in the lobby. */
   row: ReplayRowEntry[];
+  /** The Guard numbers the fight is played with; null when unknown (the Guard of the old rules). */
+  rules: FightGuardRules | null;
   abilities: LiveAbility[];
   events: FightEvent[];
   /** Display names of the players who are watching. */
@@ -217,6 +221,7 @@ function hasSharedShape(data: Record<string, unknown>): boolean {
     isInt(data['serverNow']) &&
     isLiveBoss(data['boss']) &&
     isArrayOf(data['row'], isReplayRow) &&
+    (data['rules'] === null || isGuardRules(data['rules'])) &&
     (data['names'] === null || isEventNames(data['names'])) &&
     isArrayOf(data['abilities'], isLiveAbility) &&
     isArrayOf(data['events'], isEvent) &&

@@ -292,6 +292,42 @@ describe('several Guards that could take a hit: a random pick (rules only)', () 
     expect([...picked].sort()).toEqual(['s1', 's2']);
   });
 
+  it('picks among the Guards for a slam aimed at the front, with the same pick as the plain attack', () => {
+    const rules = rulesOf({ guardHpBp: 0, guardArmorBp: 0 });
+    const picked = new Set<string>();
+    for (let i = 0; i < SEEDS; i++) {
+      const r = fightWith(raidRow(), [slamAt('front')], {
+        rules,
+        rng: createSeededRng(`front-${String(i)}`),
+      });
+      const hits = eventsOf(r, 'boss_hit');
+      const slam = hits.find((e) => e.source === 'gimmick')?.target as string;
+      const plain = hits.find((e) => e.source === 'attack')?.target as string;
+      // Both are aimed at the same slot (the front-most creature, s0) and so use one die.
+      expect(slam).toBe(plain);
+      picked.add(slam);
+    }
+    expect([...picked].sort()).toEqual(['s1', 's2']);
+    // Without rules the left Guard takes it, whatever the seed.
+    for (let i = 0; i < 10; i++) {
+      const r = fightWith(raidRow(), [slamAt('front')], {
+        rng: createSeededRng(`front-${String(i)}`),
+      });
+      expect(eventsOf(r, 'boss_hit').find((e) => e.source === 'gimmick')?.target).toBe('s1');
+    }
+  });
+
+  it('picks among the Guards for every other aimed hit: a slam aimed left, the first hit of a chain', () => {
+    const chain: Gimmick = everyRound({ op: 'strike_highest_atk', power: 10_000 });
+    for (const gimmick of [slamAt('left'), chain]) {
+      const picked = new Set<string>();
+      for (let i = 0; i < SEEDS; i++) {
+        picked.add(victims(raidRow(), [gimmick], `aimed-${String(i)}`)[0] as string);
+      }
+      expect([...picked].sort(), JSON.stringify(gimmick.op)).toEqual(['s1', 's2']);
+    }
+  });
+
   it('without rules the left Guard always takes it', () => {
     for (let i = 0; i < 10; i++) {
       const r = fightWith(raidRow(), [slamAt()], { rng: createSeededRng(`left-${String(i)}`) });

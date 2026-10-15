@@ -362,6 +362,7 @@ export function Live({
             hpStart={hpStart}
             rounds={fight.rounds}
             row={fight.row}
+            {...(fight.rules === null ? {} : { rules: fight.rules })}
             lobby={lobby}
             place={phaseLine('finale')}
             mineIds={mineIds}

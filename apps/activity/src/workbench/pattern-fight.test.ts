@@ -85,6 +85,7 @@ describe('the hand-made boss moves of the workbench', () => {
     };
     expect(kinds('Support heal and cleanse').filter((c) => c.kind === 'float')).toHaveLength(3);
     expect(kinds('Cover pips (Guard beside)').some((c) => c.kind === 'cover')).toBe(true);
+    expect(kinds('Armor pip (a Guard takes less)').some((c) => c.kind === 'armor')).toBe(true);
     const enraged = patternFight('Enraged');
     expect(enragedAt(enraged.events, enraged.events.length)).toBe(true);
     for (const name of ['Retreat, Phase 1', 'Retreat, Phase 2'] as const) {

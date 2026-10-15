@@ -68,8 +68,10 @@
   background: rgb(var(--bad-rgb) / 14%);
 }
 
-/* A Guard's cover softened this hit: a small shield on the side of the creature. */
-.cover-pip {
+/* A Guard's cover softened this hit: a small shield on the side of the creature. A Guard's armor
+   took damage off a hit it took: the same shield on the other side. */
+.cover-pip,
+.armor-pip {
   position: absolute;
   top: 45%;
   right: -0.375rem;
@@ -79,6 +81,11 @@
   line-height: 0;
   pointer-events: none;
   will-change: transform, opacity;
+}
+
+.armor-pip {
+  right: auto;
+  left: -0.375rem;
 }
 
 /* A line between two creatures: a chain's jump or a lance's lane, thinner than the boss's own beam. */
@@ -185,7 +192,8 @@
     animation: reticle-out var(--fx-ms) ease-in both;
   }
 
-  .cover-pip {
+  .cover-pip,
+  .armor-pip {
     animation: pip-pop var(--fx-ms) ease-out both;
   }
 

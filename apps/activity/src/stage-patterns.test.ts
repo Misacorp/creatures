@@ -1,4 +1,4 @@
-import { content } from '@creatures/game';
+import { content, RULES } from '@creatures/game';
 import type { FightEvent } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { addFx, FX_MS, staticFx } from './stage-fx';
@@ -239,6 +239,27 @@ describe('the cues of the new events', () => {
     });
   });
 
+  it('puts an armor pip on a Guard whose armor took damage off a hit', () => {
+    const cues = cuesForEvents([bossHit('c', 75, { armored: 25 })], 0, 1, ROW);
+    expect(cues.find((c) => c.kind === 'armor')).toEqual({
+      kind: 'armor',
+      i: 0,
+      creature: 'c',
+      prevented: 25,
+    });
+    // No pip for a hit nothing was taken off, and none for cover.
+    expect(cuesForEvents([bossHit('c', 100)], 0, 1, ROW).some((c) => c.kind === 'armor')).toBe(
+      false,
+    );
+    expect(cues.some((c) => c.kind === 'cover')).toBe(false);
+    const [item] = addFx(
+      [],
+      cues.filter((c) => c.kind === 'armor'),
+      1000,
+    );
+    expect(item?.ms).toBe(FX_MS.callout);
+  });
+
   it('outlines every row a sweep covers and draws no reticles for it', () => {
     const events: FightEvent[] = [
       gimmick(3, 'flood-gate', 'sweep', { rows: ['front', 'back'] }),
@@ -340,6 +361,21 @@ describe('a crowded action shows only its big numbers', () => {
     expect(plain).toBe(species.baseStats.hp);
     expect(guard).toBeGreaterThan(plain ?? 0);
     expect(estimatedMaxHp({ species: 'nobody', level: 1, role: 'setter' })).toBeNull();
+  });
+
+  it("uses the fight's own Guard HP bonus when it has rules, the content's +30% without", () => {
+    const species = content.creatures[0];
+    if (species === undefined) throw new Error('no species');
+    const guard = { species: species.id, level: 1, role: 'guard' };
+    const hp = species.baseStats.hp;
+    expect(estimatedMaxHp(guard)).toBe(
+      Math.floor((hp * (10_000 + RULES.combat.guardHpBp)) / 10_000),
+    );
+    // A fight with rules: the Guard has the rules' extra HP (none now), not the old +30%.
+    expect(estimatedMaxHp(guard, { guardHpBp: 0, guardArmorBp: 2_500 })).toBe(hp);
+    expect(estimatedMaxHp(guard, { guardHpBp: 1_000, guardArmorBp: 0 })).toBe(
+      Math.floor((hp * 11_000) / 10_000),
+    );
   });
 });
 
