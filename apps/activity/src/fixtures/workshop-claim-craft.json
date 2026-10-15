@@ -335,7 +335,8 @@
           {
             "id": "a7abb89b-ce58-416a-ace1-f7ba984349b2",
             "baseId": "cinder-charm",
-            "rarity": "common"
+            "rarity": "common",
+            "level": 1
           }
         ],
         "converted": [],

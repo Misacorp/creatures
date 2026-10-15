@@ -1,7 +1,7 @@
 import { Tag } from './ui/Tag';
 import { GlossaryTag } from './Glossary';
 import { ItemFrame, ItemSprite, PartCount, RarityTag } from './GearArt';
-import { gearName, lootIsEmpty, partsEntries } from './gear-view';
+import { gearName, lootIsEmpty, lootItemName, partsEntries } from './gear-view';
 import type { GrantLoot } from './gear-types';
 
 /**
@@ -31,7 +31,7 @@ export function LootList({
               <ItemFrame rarity={g.rarity} class="pop-in">
                 <ItemSprite baseId={g.baseId} scale={4} />
               </ItemFrame>
-              <span class="loot-name">{gearName(g.baseId)}</span>
+              <span class="loot-name">{lootItemName(g)}</span>
               <RarityTag rarity={g.rarity} />
             </li>
           ))}
@@ -41,8 +41,8 @@ export function LootList({
         <ul class="loot-notes">
           {loot.converted.map((c, i) => (
             <li key={i} class="muted">
-              <GlossaryTag entry="gear">{gearName(c.baseId)}</GlossaryTag> did not fit in the bag.
-              It became parts.
+              <GlossaryTag entry="gear">{lootItemName(c)}</GlossaryTag> did not fit in the bag. It
+              became parts.
             </li>
           ))}
         </ul>
@@ -54,7 +54,7 @@ export function LootList({
               <Tag kind="badge" entry="blueprint">
                 {b.duplicate ? 'Known blueprint' : 'New blueprint'}
               </Tag>{' '}
-              {gearName(b.baseId)}
+              {gearName(b.baseId)} <RarityTag rarity={b.rarity} />
               {b.duplicate && <span class="muted"> (it became scrap)</span>}
             </li>
           ))}

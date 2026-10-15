@@ -20,7 +20,26 @@ import {
   seasonPips,
   seasonText,
   seasonWeekText,
+  winPaysText,
 } from './raid-progress';
+
+describe('what a win pays', () => {
+  it('promises Essence for everyone and a gear piece or blueprint, better at higher ranks', () => {
+    const text = winPaysText({ rank: 1 });
+    expect(text).toBe(
+      'Win: Essence for everyone, plus a gear piece or blueprint, better at higher ranks.',
+    );
+    expect(winPaysText({ rank: null })).toBe(text);
+    expect(winPaysText({ rank: 2 })).toBe(text);
+  });
+
+  it('names the upgrade level the gear arrives at once the rank earns one, up to the cap', () => {
+    expect(winPaysText({ rank: 3 })).toContain("This week's gear arrives at +1.");
+    expect(winPaysText({ rank: 9 })).toContain('+4.');
+    expect(winPaysText({ rank: 11 })).toContain(`+${String(RULES.gear.maxLevel)}.`);
+    expect(winPaysText({ rank: 30 })).toContain(`+${String(RULES.gear.maxLevel)}.`);
+  });
+});
 
 describe('the rank', () => {
   it('is "Rank N", or nothing for a week without one', () => {

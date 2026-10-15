@@ -39,7 +39,7 @@ So gear is not only loot: it is the start of a **crafting world** with long-runn
 - **Dismantle** (was "salvage"): any gear item breaks into **parts**. Parts have a kind (generic plus element-tinted) and a quality by rarity. Confirm in-page; it cannot be undone.
 - **Upgrade:** +0 to +5 with Essence and parts, as in the model above. Never fails.
 - **Improve (reforge):** spend parts to re-roll one secondary stat, or lock one and re-roll the rest. Rolls use live server randomness when the job finishes.
-- **Blueprints (crafting patterns):** found on expeditions (a chance on every trip, higher on longer ones, plus some push-on rewards) and in the welcome kit. Raids, the dungeon and Festivals do not grant blueprints (checked against `apps/worker/src/gear-grants.ts` and `rollBlueprint`, which skips Festival bases). A blueprint is learned once per player and lets a creature craft that base item from parts. Rare blueprints make rare bases. Festival pieces come from a won Festival finale; no source of Festival blueprints exists yet.
+- **Blueprints (crafting patterns):** found on expeditions (a chance on every trip, higher on longer ones, plus some push-on rewards) and in the welcome kit. A won raid finale can also pay one instead of its gear piece (the reward slot, below). The dungeon and Festivals do not grant blueprints (checked against `apps/worker/src/gear-grants.ts`; `rollBlueprint` skips Festival bases). A blueprint is learned once per player and lets a creature craft that base item from parts. Rare blueprints make rare bases. Festival pieces come from a won Festival finale; no source of Festival blueprints exists yet.
 - **Enchanting:** a gear item gets one enchant slot. An enchant uses rare parts (or an enchant scroll drop) and adds one flavoured effect, for example "+5% reaction damage" or "Guard: first hit each fight is halved". Within the same power caps.
 - **Downtime jobs (the idle pillar):**
   - A creature that is not on an expedition can be given a **job**: craft from a blueprint, improve, enchant, or later gather parts. Jobs take hours (for example 2–12 h, longer for rare work) and finish while the player is away.
@@ -56,12 +56,12 @@ So gear is not only loot: it is the start of a **crafting world** with long-runn
 
 ## Sources
 
-| Source              | What drops                                                                                                                                               |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Raid finale win     | One gear roll per participant, with a rarity table by rank. This is visible loot, unlike the hidden jackpot; the jackpot itself stays behind the scenes. |
-| Daily dungeon       | Parts per room, and a chance at gear on a full clear; guaranteed at landmark depths.                                                                     |
-| Expeditions         | Parts (from PR B, on today's expeditions), blueprints and rare gear finds (v2)                                                                           |
-| Festival finale win | A Festival gear piece alongside the Festival creature.                                                                                                   |
+| Source              | What drops                                                                                                                                          |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Raid finale win     | The reward slot: one gear piece (pre-upgraded by rank) or a new blueprint per participant, rarity by rank. Visible loot, unlike the hidden jackpot. |
+| Daily dungeon       | Parts per room, and a chance at gear on a full clear; guaranteed at landmark depths.                                                                |
+| Expeditions         | Parts (from PR B, on today's expeditions), blueprints and rare gear finds (v2)                                                                      |
+| Festival finale win | A Festival gear piece alongside the Festival creature.                                                                                              |
 
 All rolls use live crypto randomness at the moment of the drop. Grants are idempotent per (source, key).
 
@@ -138,7 +138,14 @@ Defaults for the open questions until Misa says otherwise: **one slot** per crea
 
 **Sources (server, live crypto randomness, idempotent per (source, key)):**
 
-- **Raid finale win:** one gear roll per participant. Rarity by Boss Rank: rank 1 is about 75% common, 22% rare and 3% epic; better at higher ranks.
+- **Raid finale win, the reward slot (Misa, 2026-10-15):** every participant of a won finale gets exactly one reward, promised in the UI ("a gear piece or blueprint, better at higher ranks").
+  - **Gear or blueprint.** One draw: with `RULES.gear.drops.finale.blueprintBp` (2,500, a quarter) the slot is a blueprint, otherwise a gear piece.
+  - **Rarity by Boss Rank,** for both: rank 1 is about 75% common, 22% rare and 3% epic; better at higher ranks (`finaleDropOddsBp`).
+  - **Blueprint:** a base the player does not know yet, of the rolled rarity. If they know every blueprint of that rarity it steps down to the next lower rarity, then up. If they know every droppable blueprint, the slot is gear instead. A finale never pays a duplicate blueprint and never pays nothing.
+  - **Gear is pre-upgraded by rank:** upgrade level `min(maxLevel, floor((rank - 1) / ranksPerUpgrade))`, `ranksPerUpgrade` 2: ranks 1-2 are +0, 3-4 +1, 5-6 +2, 7-8 +3, 9-10 +4, 11 and up +5. This ties its power to the boss rank the way the Essence is. The level is an ordinary upgrade level on the same column (`gear_items.level`), so everything downstream reads it: stats (`gearBonus`: roll plus one step per level), the next upgrade price (from that level on), the dismantle yield (scrap plus the refund share of the scrap the levels would have cost, so a +5 piece is worth more scrap), and display ("+2"). It was not paid for, but dismantling returns the refund share anyway; it is a small, intended bonus. Pre-upgraded gear can be worn at once at +5, so reaching the caps is quicker on a high-rank server; the per-creature caps still apply.
+  - **Idempotency and old rows.** The key is the same `raid:<week>:finale`, so a retry pays nothing twice. Grants stored before the reward slot hold one gear item with no `level` field; it reads as +0 everywhere. New grant views carry `level` on gear (and converted) entries only when it is above 0.
+  - **A full bag** turns a dropped gear piece into its dismantle yield at its level (shown as `converted`). A blueprint takes no bag space.
+  - **Festival finales** are unchanged: the reward slot as above, and the Festival piece (key `festival:<week>`) next to it.
 - **Phase 1 and 2 wins:** scrap per participant.
 - **Expedition claim:** scrap by duration (1 h: 1, 6 h: 3, 12 h: 6). It also has a chance of a shard of the explorer's element, and a small chance of a blueprint (higher on longer trips).
 - **Festival finale win:** one Festival gear piece per participant.

@@ -730,6 +730,7 @@
     "lines": [
       "Gear adds to Attack, HP, speed and crits. What it adds in total is capped.",
       "Upgrade an item from +0 to +5 with Essence and scrap. Upgrades never fail.",
+      "A won finale drops gear already upgraded: +1 for every 2 Ranks above 1, up to +5.",
       "Dismantle an item to get parts back. This cannot be undone."
     ],
     "section": "workshop"
@@ -750,7 +751,7 @@
     "title": "Blueprint",
     "short": "Teaches you to craft one kind of item. Learned once.",
     "lines": [
-      "Blueprints come from expeditions (more often on long ones) and the welcome kit.",
+      "Blueprints come from expeditions (more often on long ones), the welcome kit and sometimes a won finale.",
       "A blueprint you already know turns into 5 scrap."
     ],
     "section": "workshop"
