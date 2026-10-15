@@ -219,7 +219,7 @@ const raidBoard: Entry = {
   file: 'apps/activity/src/ui/RaidBoard.tsx',
   group: 'Slots',
   description:
-    "The raid's Raid Roster on the Raid tab: the party as a grid (Front, Middle and Back are three lines, each lane a column, scrolling sideways together) under a count line: how many of your creatures are placed (with a green check at 3 / 3), and how many of all the team slots are filled, on the same line. Tap an empty slot for the creature picker, tap a creature for its popover (yours has Remove from board), drag your own to move them.",
+    "The raid's Raid Roster on the Raid tab: the party as a grid (Front, Middle and Back are three lines, each lane a column, scrolling sideways together) under a count line: how many of your creatures are placed (with a green check at 3 / 3), and how many of all the team slots are filled, on the same line. Tap an empty slot for the creature picker, tap a creature for its popover (yours has Remove from board), drag your own to move them. The same board also has a single-row mode with any number of slots, centred with roomy padding and the same tiles: the dungeon team uses it (see DungeonSetup).",
   controls: {
     players: { kind: 'number', min: 1, max: 15 },
     yourLane: { kind: 'number', min: 1, max: 15 },

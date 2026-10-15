@@ -23,8 +23,9 @@ interface RaidBoardProps extends SlotStripProps {
    */
   rows: readonly BoardRowModel[];
   /**
-   * One plain row of tiles (the dungeon team's three places): no row labels, no lane header and no
-   * sideways scroller, larger tiles. `label` names the group for assistive technology.
+   * One plain row of tiles, as many as `rows[0]` has slots (the dungeon team's three places): no row
+   * labels, no lane header and no sideways scroller, centred. The tiles are the raid's own size.
+   * `label` names the group for assistive technology.
    */
   single?: { label: string };
   /** What the rail under the board says (the "no reaction" mark, the effect line). Absent: no rail. */
@@ -33,11 +34,8 @@ interface RaidBoardProps extends SlotStripProps {
   noneRow?: Zone | null;
 }
 
-/** The sprite scale of a tile: small, so about four lanes fit on a 360 px phone. */
+/** The sprite scale of a tile: small, so about four lanes fit on a 360 px phone. The same in every mode. */
 const TILE_SCALE = 2;
-
-/** The sprite scale of a tile in a single row: only three have to fit. */
-const SINGLE_TILE_SCALE = 3;
 
 /** Scrolls the board sideways to show lanes `first` to `last` (from 0). */
 function showLanes(scroller: HTMLElement | null, first: number, last: number) {
@@ -59,8 +57,9 @@ function showLanes(scroller: HTMLElement | null, first: number, last: number) {
  * The raid's party as a grid: Front, Middle and Back are three lines that never wrap, and a lane is the
  * same position in every line, so column k is slot k of each row. All three rows sit in one sideways
  * scroller, so a lane stays a vertical line. On open the board scrolls to your creatures. The tiles
- * are the shared `SlotButton`. The dungeon team uses the same board in its `single` mode: one row of
- * three larger tiles with nothing around it, so the two screens look and behave alike.
+ * are the shared `SlotButton`. The dungeon team uses the same board in its `single` mode: one centred
+ * row (any number of slots, three there) of the same tiles with nothing around it, so the two screens
+ * look and behave alike.
  */
 export function RaidBoard(props: RaidBoardProps) {
   const { rows, stripRef } = props;
@@ -98,7 +97,7 @@ export function RaidBoard(props: RaidBoardProps) {
               <SlotButton
                 key={slot.index}
                 slot={slot}
-                scale={SINGLE_TILE_SCALE}
+                scale={TILE_SCALE}
                 {...slotState(props, slot)}
               />
             ))}
