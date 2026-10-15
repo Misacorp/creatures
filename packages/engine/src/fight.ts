@@ -112,7 +112,7 @@ function isCount(n: number, min: number): boolean {
 /**
  * The first zone attack of the boss from round 2 on (within `rounds`), or null if it has none: a
  * `hit_zone`, or a sweep of one named row (the row its walk reaches in that round; a sweep of
- * `all` rows names no row and does not count). A charged sweep counts in the round it lands (the
+ * `all` rows or of the Payoff row names no row and does not count). A charged sweep counts in the round it lands (the
  * default Shield Wall goes there, not to the announcement a round earlier).
  */
 function firstZoneHit(boss: BossDef, rounds: number): { round: number; zone: Zone } | null {
@@ -122,7 +122,7 @@ function firstZoneHit(boss: BossDef, rounds: number): { round: number; zone: Zon
       const sweep = g.op === 'charge' ? g.then : g;
       if (sweep.op === 'sweep' && gimmickDue(g, r)) {
         const row = sweepRow(sweep.rows, firingIndex(g, r));
-        if (row !== 'all') return { round: r, zone: row };
+        if (row !== 'all' && row !== 'payoffs') return { round: r, zone: row };
       }
     }
   }
@@ -195,6 +195,10 @@ export function simulateFight(
     fail('bossHpPool needs integers with 0 <= current <= max and max >= 1');
   }
   if (!isCount(input.bossAtk, 1)) fail('bossAtk must be an integer >= 1');
+  const bossAttacks = input.bossAttacks ?? 1;
+  if (!Number.isInteger(bossAttacks) || bossAttacks < 1 || bossAttacks > 3) {
+    fail('bossAttacks must be an integer from 1 to 3');
+  }
   const phaseCfg = RULES.raid.phases.find((p) => p.id === phase);
   if (phaseCfg === undefined) fail(`unknown phase "${phase}"`);
   const rounds = phase === 'finale' ? boss.finaleRounds : phaseCfg.rounds;
@@ -260,6 +264,12 @@ export function simulateFight(
   /** This round's boss crit dice by target slot: one set for its normal attack, one for gimmicks. */
   let bossAttackDice: number[] = [];
   let bossGimmickDice: number[] = [];
+  /**
+   * With `bossAttacks` above 1 (and boss crits on): the crit dice of the 2nd and 3rd plain attacks,
+   * by target slot. Drawn after every other die of the round, and only then, so a fight with one
+   * attack a round (every older one) draws what it always did.
+   */
+  let extraAttackDice: number[][] = [];
   /** This round's dice for a random boss target: whether it applies, and which living creature. */
   let targetDice = { use: 10_000, pick: 0 };
   /**
@@ -1137,7 +1147,11 @@ export function simulateFight(
     }
   }
 
-  function bossAttack(): void {
+  /**
+   * One plain attack: an aimed hit on the front-most row's Guard (else its leftmost creature),
+   * picked from who stands right now. `dice` are this attack's boss crit dice by target slot.
+   */
+  function bossAttack(dice: readonly number[]): void {
     if (randomTargetBp > 0 && targetDice.use < randomTargetBp) {
       const living = creatures.filter((c) => c.alive);
       const target = living[Math.floor((targetDice.pick * living.length) / 1_000_000)];
@@ -1147,7 +1161,7 @@ export function simulateFight(
           Math.floor((input.bossAtk * RULES.combat.bossAttackBp) / 10_000),
           'attack',
           'aimed',
-          bossAttackDice[target.idx],
+          dice[target.idx],
         );
         return;
       }
@@ -1168,9 +1182,21 @@ export function simulateFight(
         Math.floor((input.bossAtk * RULES.combat.bossAttackBp) / 10_000),
         'attack',
         'aimed',
-        bossAttackDice[target.idx],
+        dice[target.idx],
       );
       return;
+    }
+  }
+
+  /**
+   * The boss's plain attack, `bossAttacks` times (1 unless the input says more). Each attack picks
+   * its target afterwards from the creatures standing then, so a creature the first one knocked out
+   * is not aimed at again, and each has its own crit die.
+   */
+  function plainAttacks(): void {
+    for (let k = 0; k < bossAttacks; k++) {
+      if (!creatures.some((c) => c.alive)) return;
+      bossAttack(k === 0 ? bossAttackDice : (extraAttackDice[k - 1] ?? []));
     }
   }
 
@@ -1285,6 +1311,12 @@ export function simulateFight(
       // The very last dice of the round, so they never move any other die.
       guardDice = creatures.map(() => int(rng, DICE_RANGE));
     }
+    if (bossAttacks > 1 && bossCritOn) {
+      // Later than everything else, so a second attack never moves another die.
+      extraAttackDice = Array.from({ length: bossAttacks - 1 }, () =>
+        creatures.map(() => int(rng, 10_000)),
+      );
+    }
 
     // Gimmicks rest in enrage rounds: no charge is announced and the reflect trap is not armed.
     if (!enraging) announceCharges();
@@ -1362,7 +1394,7 @@ export function simulateFight(
       if (!enraging) {
         for (const [gi, g] of boss.gimmicks.entries()) if (gimmickDue(g, round)) fireGimmick(g, gi);
       }
-      bossAttack();
+      plainAttacks();
       if (enraging) enrageStrike();
     }
 

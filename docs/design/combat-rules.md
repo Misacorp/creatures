@@ -7,7 +7,7 @@ Status: written 2026-10-15 from the engine (`packages/engine/src/fight.ts`, `pat
 - Rules are numbered (3.2, 3.2.1). An _Example_ follows each rule that is easy to misread. All example numbers are made up for the example (a boss Attack of 100 and so on), they are not balance values.
 - Every number names the `RULES` field (or content field) it comes from, in `code`. The field is the truth; the number printed next to it is its value on 2026-10-15 and may be retuned. A field set to 0 is "off".
 - All maths is whole numbers. Percentages are basis points in code (10000 = 100%). **Every division rounds down**, so a share that is taken away rounds down and what is left rounds up.
-- **Old fights replay as they were fought.** A fight stored without rules (before the attack-pattern work) has none of these: armor, cover, the hit cap, element effects for Supports, a Guard roll, the Shield Wall of the creature that takes the hit (1.19, 3.3), the chain's "no creature twice" (6.6), and no overkill on the boss (2.4.5). A Guard in such a fight has 30% more HP (`RULES.combat.guardHpBp`). This document describes fights with rules, which is every new fight (`liveFightRules()`).
+- **Old fights replay as they were fought.** A fight stored without rules (before the attack-pattern work) has none of these: armor, cover, the hit cap, element effects for Supports, a Guard roll, the Shield Wall of the creature that takes the hit (1.19, 3.3), the chain's "no creature twice" (6.6), and no overkill on the boss (2.4.5). A Guard in such a fight has 30% more HP (`RULES.combat.guardHpBp`). A fight stored without `bossAttacks` has one plain attack a round, and a fight stores the boss it was fought with (2.5.3), so a rank-gated move added later is not in it. This document describes fights with rules, which is every new fight (`liveFightRules()`).
 - **Words that mean one thing each.** "Row", "line", "hit", "damage", "reduce", "instead" and "beside" are used exactly as defined in section 1.
 - "The boss" means a raid boss or a dungeon foe or room boss, unless a rule says otherwise. It is one engine.
 
@@ -35,7 +35,7 @@ _Example._ 9 slots are 3 / 3 / 3. 10 slots are 3 / 4 / 3. In the dungeon the lin
 
 **1.8 Boss and foe.** The boss is the creature-side's opponent. A raid boss is a boss. A dungeon enemy is a foe; a foe of kind `boss` is a room boss. Foes and bosses follow the same rules.
 
-**1.9 Plain attack and move.** The plain attack is what every boss does every round (`RULES.combat.bossAttackBp`, 100% of its Attack). A move is a special action from the boss's content (its `gimmicks`: Undertow, Cinder Fall, and so on). Moves come due on a schedule (`every: N` or each round).
+**1.9 Plain attack and move.** The plain attack is what every boss does every round (`RULES.combat.bossAttackBp`, 100% of its Attack), once, or two or three times at the higher Boss Ranks (`FightInput.bossAttacks`, 2.5.2). A move is a special action from the boss's content (its `gimmicks`: Undertow, Cinder Fall, and so on). Moves come due on a schedule (`every: N` or each round). A raid boss's move can be **rank-gated**: it only exists in the fight from a Boss Rank on (2.5.3).
 
 **1.10 Attack.** One thing the boss does that can hit creatures: the plain attack, or one move (including a charged move landing). An attack makes zero or more hits. Everything the boss does in one round is its **boss turn** (2.5).
 
@@ -109,6 +109,12 @@ _Example._ The boss has 150 HP left. A creature's plain hit would deal 100 and i
 3. In an enrage round only: the enrage hit (7.2).
 
 So the plain attack comes **after** the moves, and it picks its target after they have done their damage. This is how the game plays, on purpose: a move can knock out the front creature and the plain attack then goes for the next one standing.
+
+2.5.2 **More than one plain attack.** `FightInput.bossAttacks` (1 to 3, absent is 1) is how many times the boss makes its plain attack in step 2, in a row. Each one is a complete plain attack (4.2.5, 6.2): it picks its target when it is made, from the creatures standing at that moment (so a creature the one before knocked out is not aimed at again, and the next one goes for the next front creature or Guard), it is its own aimed hit, and it has its own boss crit die (3.1.1, 9.2). A Guard in the front row takes every one of them (the same Guard die picks among several Guards each time, 4.2.3). Enrage rounds make them too (7.2.1). The input is built from `RULES.raid.scaling.bossAttacksByRank` (`bossAttacksAtRank`, entry 0 is rank 1, the last entry holds above the table); one at every rank today. The input only carries the field when it is above 1, so every stored fight replays as it was.
+
+_Example._ With `bossAttacks` 3, Front is s0 (100 HP), s1 (100 HP), s2 (Guard) and a boss Attack of 100: the first attack goes for the Guard s2 (the front row's Guard takes it), and so do the second and third. Without a Guard: the first knocks out s0, the second knocks out s1, the third hits s2.
+
+2.5.3 **Rank-gated moves.** A raid boss's move may carry `fromRank` (a whole number from 2; absent is always). The worker builds the week's boss with `bossAtRank(boss, rank)` (the rank the boss fights at, `fightRank`): only the moves whose `fromRank` is absent or reached are in `boss.gimmicks`, in content order (so a move keeps its place and its pattern dice window, 9.2). Everything that shows the boss is built from that boss: the fight, the readiness forecast, the boss card, the forecast and the Discord reveal. The fight input stores the boss it was fought with, so a replay never looks at the content again and a later rank or content change never reaches a stored fight. Dungeon foes have no ranks and may not carry `fromRank`. The content limits that go with it: at most six moves in all, at most two damaging moves in any round and none of the attack patterns in round 1 (the content tests check each boss at ranks 1, 4, 7 and 10).
 
 2.5.1 A move is due when its trigger fits the round: `every: N` is due in rounds N, 2N, 3N ... and `eachRound` in every round. The number of times a move has come due up to this round is its **firing** (a move `every: 5` has firing 1 in round 5, firing 2 in round 10).
 
@@ -276,7 +282,9 @@ _Example._ Attack order A (strongest), G (a Guard), C, D. The strike aimed at A 
 
 6.6.2 The `gimmick` event lists the creatures as picked by the ranking, before any Guard stepped in; the hits that follow are the truth.
 
-**6.7 Sweep (`sweep`: Great Wave, Flood Gate).** An area hit on every living creature of one row. `rows` is a walk: firing n hits `rows[(n - 1) mod length]`. A named row with nobody standing falls back like 6.3.1. With `all`, every living creature of every row is hit (a row with nobody is skipped).
+**6.7 Sweep (`sweep`: Great Wave, Flood Gate, Static Field, Spring Tide, Eruption).** An area hit on every living creature of one row. `rows` is a walk: firing n hits `rows[(n - 1) mod length]`. A named row with nobody standing falls back like 6.3.1. With `all`, every living creature of every row is hit (a row with nobody is skipped).
+
+6.7.1 **The Payoff row (`payoffs`).** The row with the most living Payoffs. A tie goes to the front-most row, then the middle one; with no Payoff standing anywhere, every row counts as 0, so it is the front-most row with someone standing. It is worked out from who stands when the sweep is planned (for a charge, when it is announced, 6.12.1). It exists to punish a line that stacks its Payoffs in one row: cover helps only the creatures beside a Guard (4.3) and no Guard steps in for an area hit (1.16). A row of fixed size cannot be "fullest", so the Payoff count is what tells a stacked row from a spread one (the earlier idea of a `fullest` row was dropped for that reason).
 
 **6.8 Barrage (`barrage`: Cinder Fall, Seed Burst, Thorn Rain, Flare Up).** Shells land on distinct living creatures, each an area hit at `power`. Shells cannot be stepped in for, but cover works.
 
@@ -284,9 +292,11 @@ _Example._ Attack order A (strongest), G (a Guard), C, D. The strike aimed at A 
 
 6.8.2 Fairness: no creature is hit twice in one volley. A creature hit by this move's **last volley** is skipped (not "never the same twice running" without exception), **unless fewer than the shell count of other creatures are standing**: then all the others are hit and the rest are taken from the last volley's creatures. The last volley is remembered **per move**: a boss with two barrage moves keeps two memories, and one does not see the other's volley. The picks are a shuffle driven by the round's dice (9.2).
 
-**6.9 Slam (`slam`: Coil Crush, Thunderclap, Root Grab, Anvil Fall).** An aimed hit at `power` on the victim, then a **splash**.
+**6.9 Slam (`slam`: Coil Crush, Thunderclap, Magma Spit, Judgement Bolt, Root Grab, Anvil Fall).** An aimed hit at `power` on the victim, then a **splash**.
 
-6.9.1 The victim: `front` (picked exactly as the plain attack picks, including the Guard and its roll, 4.2.5), `strongest` (highest Attack, ties to the lower slot), `left` (the leftmost living creature), or `random` (one die over the living creatures).
+6.9.1 The victim: `front` (picked exactly as the plain attack picks, including the Guard and its roll, 4.2.5), `strongest` (highest Attack, ties to the lower slot), `left` (the leftmost living creature), `random` (one die over the living creatures), or `payoff` (the living Payoff with the highest Attack, ties to the lower slot; with no Payoff standing, the strongest creature, so the slam is never wasted).
+
+6.9.1.1 **The Payoff slam punishes an exposed Payoff.** It is an aimed hit like any slam, so a living Guard in the Payoff's row takes it instead (4.2): a protected row shrugs it off, a greedy row with no Guard in the Payoff's row loses its carry (and the splash goes beside whoever took it, 6.9.2).
 
 6.9.2 The **impact** is the creature that took the hit: the Guard if one stepped in, else the victim. Every living creature beside the impact takes `splashBp` of the move's damage (worked out as in 3.2's example: from the move's own amount before any reduction) as an **area** hit, so cover and Shield Wall apply to it. The splash goes beside the impact even if the impact was knocked out by the hit.
 
@@ -373,6 +383,6 @@ _Example._ A Shield Wall of `rounds` 1 fired in round 4 covers round 4 only. To 
 
 Off today (`RULES.combat.luck`): damage spread (`spreadBp` 0), Fortune streaks (`surgeChanceBp`, `slumpChanceBp` 0), and a random plain-attack target (`bossRandomTargetBp` 0). Nothing else is random: every other target, order and tie follows a rule above.
 
-**9.2 Dice, not rolls on demand.** Randomness is dice drawn at round start (2.3 step 2), never later. A creature has a crit die per round for its turn and a second for an ability's strike. The boss has a crit die per slot per round for its plain attack and another for its moves. Pattern dice (40 a round) feed barrages, random slams and lanes. One Guard die per slot feeds the roll. Each kind of die is drawn every round whenever its feature is on (crits, patterns, the Guard roll), whether or not a rule uses it, so what one rule does never changes another's dice.
+**9.2 Dice, not rolls on demand.** Randomness is dice drawn at round start (2.3 step 2), never later. A creature has a crit die per round for its turn and a second for an ability's strike. The boss has a crit die per slot per round for its plain attack and another for its moves. Pattern dice (40 a round) feed barrages, random slams and lanes. One Guard die per slot feeds the roll. When the boss makes more than one plain attack (2.5.2), the crit dice of the second and third attack (one per slot each) are drawn after all of these, and only then, so a fight with one attack a round draws exactly what it always did and a second attack never moves another die. Each kind of die is drawn every round whenever its feature is on (crits, patterns, the Guard roll), whether or not a rule uses it, so what one rule does never changes another's dice.
 
 **9.3 Where they come from.** The server draws a fresh seed from `crypto.getRandomValues` at the moment the fight is resolved (a raid stage, a dungeon run). Nobody, including the client, can know it before then. Dice come from that seed. The seed, the fight's input and its rules (`rules`, `luck`, floor, enrage) are stored, so a fight replays exactly, and a later retune never changes an old fight. Tests and the balance simulator use seeded dice.

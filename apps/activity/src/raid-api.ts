@@ -148,7 +148,8 @@ export interface RaidView {
     name: string;
     element: string;
     turnOrder: string;
-    gimmicks: { id: string; name: string }[];
+    /** The moves in play at the week's rank; `fromRank` is set on a rank-gated move. */
+    gimmicks: { id: string; name: string; fromRank?: number }[];
     finaleRounds: number;
     /** What the boss says when it retreats at a phase's floor; null or absent: the shared line. */
     retreat?: BossRetreat | null;
@@ -351,7 +352,11 @@ function isBoss(value: unknown): value is RaidView['boss'] {
     isInt(value['finaleRounds']) &&
     isArrayOf(
       value['gimmicks'],
-      (g): g is { id: string; name: string } => isRecord(g) && isStr(g['id']) && isStr(g['name']),
+      (g): g is { id: string; name: string; fromRank?: number } =>
+        isRecord(g) &&
+        isStr(g['id']) &&
+        isStr(g['name']) &&
+        (g['fromRank'] === undefined || isInt(g['fromRank'])),
     )
   );
 }

@@ -183,7 +183,7 @@ describe('describeGimmick', () => {
     const base = { id: 'g', name: 'G', trigger: { every: 3 } };
     const sweep = {
       op: 'sweep' as const,
-      rows: ['front', 'middle', 'all'] as ('front' | 'middle' | 'back' | 'all')[],
+      rows: ['front', 'middle', 'all'] as ('front' | 'middle' | 'back' | 'all' | 'payoffs')[],
       power: 6000,
     };
     const barrage = {
@@ -219,6 +219,18 @@ describe('describeGimmick', () => {
       [
         { ...base, ...slam, aim: 'random' },
         'slams a random creature, and the blow splashes the creatures beside it every 3 rounds',
+      ],
+      [
+        { ...base, ...slam, aim: 'payoff' },
+        'slams your highest Attack Payoff, and the blow splashes the creatures beside it every 3 rounds',
+      ],
+      [
+        { ...base, ...sweep, rows: ['payoffs'] },
+        'sweeps the row with the most Payoffs every 3 rounds',
+      ],
+      [
+        { ...base, ...sweep, rows: ['back', 'payoffs'] },
+        'sweeps the back row, then the row with the most Payoffs every 3 rounds',
       ],
       [{ ...base, ...lance }, 'drives a lance down a random lane, front to back every 3 rounds'],
       [

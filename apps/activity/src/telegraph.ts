@@ -30,9 +30,21 @@ import type { BossStrike } from './stage';
  * gimmicks the room's modifier gives the foe (Thorns' reflect), which the foe's own content does not
  * list; a gimmick the foe already has is not added twice.
  */
-function bossOrFoe(bossId: string, added: readonly Gimmick[] = []): BossDef | undefined {
+function bossOrFoe(
+  bossId: string,
+  added: readonly Gimmick[] = [],
+  played?: Readonly<Record<string, string>>,
+): BossDef | undefined {
   const boss = content.bosses.find((b) => b.id === bossId);
-  if (boss !== undefined) return boss;
+  if (boss !== undefined) {
+    // A rank-gated move the fight was not played with (`played`: the moves of the stored boss, which
+    // the server names in `EventNames.gimmicks`) is not forecast: it is not in this week's fight.
+    if (played === undefined) return boss;
+    return {
+      ...boss,
+      gimmicks: boss.gimmicks.filter((g) => g.fromRank === undefined || played[g.id] !== undefined),
+    };
+  }
   const foe = dungeonContent.foes.find((f) => f.id === bossId);
   if (foe === undefined) return undefined;
   const gimmicks = [
@@ -267,6 +279,13 @@ function patternClause(target: PatternTarget, op: string, name: string, look: Lo
       for (const z of ZONES) if (livingZone(look, z) === z) mark(look, z);
       return wording === 'row' ? `${name} hits the whole row` : `${name} sweeps every row`;
     }
+    case 'payoffs': {
+      // Which row has the most Payoffs is only known when the sweep lands, so it is worded generically.
+      if (look.living.length === 0) return null;
+      return wording === 'row'
+        ? `${name} hits the creatures of one row`
+        : `${name} sweeps the row with the most Payoffs`;
+    }
     case 'random': {
       // The count depends on who is still up, so it is a range; never more than there are creatures.
       const most = Math.min(target.max, look.living.length);
@@ -279,8 +298,13 @@ function patternClause(target: PatternTarget, op: string, name: string, look: Lo
     }
     case 'slam': {
       const victim = target.aim === 'front' || target.aim === 'left' ? look.living[0] : undefined;
+      // Whoever the aim is, with nobody up there is nothing to slam.
+      if (look.living.length === 0) return null;
       if (target.aim === 'strongest') {
         return `${name} slams your strongest, and splashes its neighbours`;
+      }
+      if (target.aim === 'payoff') {
+        return `${name} slams your strongest Payoff, and splashes its neighbours`;
       }
       if (target.aim === 'random') {
         return `${name} slams a random creature, and splashes its neighbours`;
@@ -353,7 +377,8 @@ function clauseOf(w: BossWarning, name: string, look: Look): string | null {
         for (const z of ZONES) if (livingZone(look, z) === z) mark(look, z);
       }
       return `${name} lands on the marked ${
-        look.wording === 'zones' && (t.inner.kind === 'zone' || t.inner.kind === 'all')
+        look.wording === 'zones' &&
+        (t.inner.kind === 'zone' || t.inner.kind === 'all' || t.inner.kind === 'payoffs')
           ? 'row'
           : 'creatures'
       }`;
@@ -397,7 +422,7 @@ export function forecastNextRound(
   addedGimmicks: readonly Gimmick[] = [],
 ): Forecast | null {
   if (round < 1 || (rounds !== null && round >= rounds)) return null;
-  const boss = bossOrFoe(bossId, addedGimmicks);
+  const boss = bossOrFoe(bossId, addedGimmicks, names.gimmicks);
   if (boss === undefined) return null;
   const warnings = bossWarnings(boss, round + 1);
   if (warnings.length === 0) return null;

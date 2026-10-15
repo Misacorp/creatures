@@ -5,7 +5,7 @@
  *
  * A post never blocks the raid: `queue*` catch every error and log its type only.
  */
-import { RULES, content, scaleEssence } from '@creatures/game';
+import { RULES, bossAtRank, content, scaleEssence } from '@creatures/game';
 import type { FightEvent, FightInput, FightResult } from '@creatures/engine';
 import {
   describeGimmick,
@@ -43,10 +43,12 @@ export function queueBossReveal(
     if (announceChannelId(sql) === null) return;
     const players = count(sql, 'raid_party_members', week.weekId);
     if (players === 0) return;
-    const boss = content.bosses.find((b) => b.id === week.bossId);
-    if (boss === undefined) return;
+    const found = content.bosses.find((b) => b.id === week.bossId);
+    if (found === undefined) return;
     const times = eventTimes(week.weekId, tz);
     const progression = readWeekProgression(sql, week.weekId);
+    // The moves the boss will have at the week's rank (a week from before the ladder is rank 1).
+    const boss = bossAtRank(found, progression?.effectiveRank ?? progression?.rank ?? 1);
     const festivalSpecies =
       progression?.festivalSpecies === null || progression?.festivalSpecies === undefined
         ? undefined

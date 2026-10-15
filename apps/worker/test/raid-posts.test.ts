@@ -110,6 +110,45 @@ describe('the Monday boss reveal', () => {
     );
   });
 
+  it("lists only the moves the boss has at the week's rank", async () => {
+    await runRaid(
+      async (ctx) => {
+        await openWeek(ctx, 4);
+        const week = rows<{ boss_id: string }>(ctx.sql, 'SELECT boss_id FROM raid_weeks')[0];
+        const boss = content.bosses.find((b) => b.id === week?.boss_id);
+        if (boss === undefined) throw new Error('boss');
+        const times = eventTimes(W02.id, HELSINKI);
+        const revealAt = (rank: number): string => {
+          ctx.sql.exec('DELETE FROM discord_posts');
+          ctx.sql.exec("DELETE FROM raid_events WHERE event = 'weekStart'");
+          ctx.sql.exec('UPDATE raid_weeks SET rank = ?, effective_rank = ?', rank, rank);
+          ctx.core.raid.runEvent(
+            { weekId: W02.id, event: 'weekStart', at: times.weekStart },
+            HELSINKI,
+          );
+          return posts(ctx)[0]?.content ?? '';
+        };
+        const gated = boss.gimmicks.filter((g) => g.fromRank !== undefined);
+        expect(gated.map((g) => g.fromRank)).toEqual([4, 7]);
+        const [four, seven] = gated;
+        if (four === undefined || seven === undefined) throw new Error('gated moves');
+        const base = boss.gimmicks.find((g) => g.fromRank === undefined);
+        const atRank1 = revealAt(1);
+        expect(atRank1).toContain(`${base?.name ?? ''}: `);
+        expect(atRank1).not.toContain(four.name);
+        expect(atRank1).not.toContain(seven.name);
+        const atRank4 = revealAt(4);
+        expect(atRank4).toContain(four.name);
+        expect(atRank4).not.toContain(seven.name);
+        const atRank7 = revealAt(7);
+        expect(atRank7).toContain(four.name);
+        expect(atRank7).toContain(seven.name);
+        expect(atRank7.length).toBeLessThanOrEqual(MAX_MESSAGE_CHARS);
+      },
+      { start: W02.monday },
+    );
+  });
+
   it('is skipped without an announcement channel, and when nobody is in', async () => {
     await runRaid(
       async (ctx) => {

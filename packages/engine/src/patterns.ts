@@ -1,4 +1,4 @@
-import type { ChargedPattern, Gimmick, Zone } from '@creatures/game';
+import type { ChargedPattern, Gimmick, SlamAim, SweepRow, Zone } from '@creatures/game';
 import { sweepRow } from './gimmick-schedule';
 import { ZONES, nearestLivingZone, zoneIndices, zoneOfIndex, zoneSizes } from './zones';
 
@@ -140,22 +140,49 @@ function planned(
 }
 
 /**
+ * The row with the most living Payoffs (ties: the front-most, then the middle); a line with no living
+ * Payoff counts every row as 0, so the front-most row with someone standing. Undefined when the whole
+ * line is down. This is what a `payoffs` sweep aims at: a row that stacks its Payoffs.
+ */
+export function payoffRow(ctx: PatternContext): Zone | undefined {
+  let best: Zone | undefined;
+  let most = -1;
+  for (const z of ZONES) {
+    const standing = livingIn(ctx, z);
+    if (standing.length === 0) continue;
+    const payoffs = standing.filter((c) => c.role === 'payoff').length;
+    if (payoffs > most) {
+      best = z;
+      most = payoffs;
+    }
+  }
+  return best;
+}
+
+/**
  * Sweep: every living creature in one row. `rows` is a walk (`sweepRow`): firing n hits
- * `rows[(n - 1) mod length]`; `all` is every row. A named row with nobody standing falls to the
- * nearest row that has someone (as `hit_zone` does); under `all` a wiped row is simply skipped.
+ * `rows[(n - 1) mod length]`; `all` is every row; `payoffs` is the row with the most living Payoffs
+ * (`payoffRow`, picked from who stands when the sweep is planned). A named row with nobody standing
+ * falls to the nearest row that has someone (as `hit_zone` does); under `all` a wiped row is simply
+ * skipped.
  */
 export function planSweep(
   ctx: PatternContext,
-  spec: { rows: readonly ('front' | 'middle' | 'back' | 'all')[]; power: number },
+  spec: { rows: readonly SweepRow[]; power: number },
 ): PatternPlan {
   const named = sweepRow(spec.rows, ctx.firing);
   const zones: Zone[] =
     named === 'all'
       ? ZONES.filter((z) => livingIn(ctx, z).length > 0)
-      : (() => {
-          const z = nearestLivingZone(named, (zone) => livingIn(ctx, zone).length > 0);
-          return z === undefined ? [] : [z];
-        })();
+      : named === 'payoffs'
+        ? (() => {
+            const z = payoffRow(ctx);
+            return z === undefined ? [] : [z];
+          })()
+        : (() => {
+            const z = nearestLivingZone(named, (zone) => livingIn(ctx, zone).length > 0);
+            return z === undefined ? [] : [z];
+          })();
   const hits = zones.flatMap((z) => livingIn(ctx, z).map((c) => area(c.idx, spec.power)));
   return planned(hits, { rows: zones });
 }
@@ -220,11 +247,13 @@ export function frontTarget(ctx: PatternContext): PatternCreature | undefined {
  * Slam: one aimed hit, then `splashBp` of its damage on the creatures beside the impact (the fight
  * resolves the splash, because the impact depends on a Guard stepping in). `aim`: `front` as the
  * plain attack picks, `strongest` (highest Attack, ties lower slot), `left` (the left-most living
- * creature), `random` (one die over the living creatures).
+ * creature), `random` (one die over the living creatures), `payoff` (the living Payoff with the
+ * highest Attack, ties lower slot; with no Payoff standing, the strongest creature, so the slam is
+ * never wasted). A Guard in the victim's row takes it, as with any aimed hit.
  */
 export function planSlam(
   ctx: PatternContext,
-  spec: { aim: 'front' | 'strongest' | 'left' | 'random'; power: number; splashBp: number },
+  spec: { aim: SlamAim; power: number; splashBp: number },
 ): PatternPlan {
   let victim: PatternCreature | undefined;
   switch (spec.aim) {
@@ -239,6 +268,10 @@ export function planSlam(
       break;
     case 'random':
       victim = pickWith(living(ctx), ctx.dice[0] ?? 0);
+      break;
+    case 'payoff':
+      victim =
+        byStrength(ctx.creatures).find((c) => c.role === 'payoff') ?? byStrength(ctx.creatures)[0];
       break;
   }
   const hits: PlannedHit[] =

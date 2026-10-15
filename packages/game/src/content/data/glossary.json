@@ -297,7 +297,7 @@
   {
     "id": "gimmick-sweep",
     "title": "Sweep",
-    "short": "Hits one row, or every row. A different row each time.",
+    "short": "Hits one row, every row, or the row with the most Payoffs.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -319,7 +319,7 @@
   {
     "id": "gimmick-slam",
     "title": "Slam",
-    "short": "A heavy hit. The creatures beside whoever took it take a share.",
+    "short": "A heavy hit, often on your best Payoff. Neighbours of the victim take a share.",
     "lines": [],
     "visual": {
       "kind": "glyph",

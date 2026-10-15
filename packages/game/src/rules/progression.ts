@@ -46,6 +46,17 @@ export function rankAtkFactorBp(rank: number): number {
 }
 
 /**
+ * How many times the boss makes its plain attack each round at `rank` (`FightInput.bossAttacks`),
+ * 1 to 3: the entry of `RULES.raid.scaling.bossAttacksByRank` for the rank (the last entry holds
+ * above the end of the table). The rank is floored and clamped to 1..`maxRank`.
+ */
+export function bossAttacksAtRank(rank: number): number {
+  const table = RULES.raid.scaling.bossAttacksByRank;
+  const entry = table[Math.min(table.length, clampRank(rank)) - 1] ?? 1;
+  return Math.min(3, Math.max(1, Math.floor(entry)));
+}
+
+/**
  * The rank a new server starts at, from the levels of the creatures its players bring to a raid
  * (the 3 team creatures of every signed-up player). It is the rank whose HP factor is closest to
  * what the old rule gave for the average level (1 + 12% per level above 1; ties go to the lower
