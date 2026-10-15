@@ -1,5 +1,5 @@
 import { RULES, content } from '@creatures/game';
-import { liveFightRules, phaseFloorHp } from '@creatures/engine';
+import { liveFightRules, phaseFloorHp, raidEnrage } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { loadLive, scheduleRounds, type LiveRow } from '../src/raid-live';
 import { queuePhasePost } from '../src/raid-posts';
@@ -106,7 +106,7 @@ describe('the fight inputs the server builds', () => {
       );
       expect(JSON.parse(stored?.input ?? '{}')).toMatchObject({
         rules: liveFightRules(),
-        enrage: { rounds: 3, powerBp: 30_000 },
+        enrage: raidEnrage('finale'),
       });
     });
   });
