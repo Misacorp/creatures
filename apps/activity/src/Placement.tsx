@@ -28,6 +28,7 @@ import {
   placedCount,
   placedLine,
   rosterNote,
+  ON_BOARD_NOTE,
   type PickerCreature,
 } from './roster-picker';
 import { Sprite } from './sprites/Sprite';
@@ -292,6 +293,7 @@ export function Placement(props: Props) {
             showEffects: SHOW_PICKER_EFFECTS,
           })}
           showEffects={SHOW_PICKER_EFFECTS}
+          placedNote={ON_BOARD_NOTE}
           anchor={() =>
             stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(picking)}"]`) ?? null
           }

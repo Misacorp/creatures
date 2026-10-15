@@ -4,8 +4,9 @@
  * slot, who is already on the board, what the board refuses). Pure: `ui/RosterPicker.tsx` draws the
  * picker and `Placement.tsx` wires it to the game. The server still decides every placement.
  */
-import { affects } from '@creatures/engine';
-import { RULES, content } from '@creatures/game';
+import { affects, type AffectMode } from '@creatures/engine';
+import { RULES, content, creaturePower, strongest } from '@creatures/game';
+import type { Creature } from './api';
 import { creatureName, getSpecies, speciesName } from './game';
 import type { RaidEventId, RowSlotView } from './raid-api';
 import { boardAffectRow, boardKeys, parseTurnOrder } from './raid-board';
@@ -27,6 +28,15 @@ export const MAX_ON_BOARD: number = RULES.raid.teamSize;
 /** What an option says for a creature that is on the board already (picking it moves it). */
 export const ON_BOARD_NOTE = 'On the board · moves here';
 
+/** The same for the dungeon team. */
+export const IN_TEAM_NOTE = 'In the team · moves here';
+
+/** The word on the small tag of a recommended creature. It gives no reason, on purpose (Misa, 2026-10-15). */
+export const RECOMMENDED_TAG = 'Recommended';
+
+/** How many creatures are recommended: the strongest few, as many as a team holds. */
+export const RECOMMENDED_COUNT: number = RULES.raid.teamSize;
+
 /** Why a new creature cannot be picked when the board holds the most already. */
 export const BOARD_FULL_REASON = `${String(MAX_ON_BOARD)} / ${String(MAX_ON_BOARD)} placed, remove one first`;
 
@@ -36,6 +46,31 @@ export interface PickerCreature {
   species: string;
   nickname: string | null;
   level: number;
+  /** `creaturePower` of the stats a fight uses (gear included): how strong it is. */
+  power: number;
+  /** When it was caught (epoch ms): of two equally strong creatures the older ranks first. */
+  caughtAt: number;
+}
+
+/** A creature of the collection as the picker sees it. Its power counts the item it wears, as the server's does. */
+export function toPickerCreature(c: Creature): PickerCreature {
+  return {
+    id: c.id,
+    species: c.species,
+    nickname: c.nickname,
+    level: c.level,
+    power: creaturePower(c.statsWithGear),
+    caughtAt: c.caughtAt,
+  };
+}
+
+/**
+ * The ids of the player's three strongest creatures: the same ranking as the server's automatic team
+ * (`strongest` of `@creatures/game`, which `autoTeam` uses). It ignores slot rules: it is the same
+ * three whatever slot is being filled.
+ */
+export function recommendedIds(creatures: readonly PickerCreature[]): ReadonlySet<string> {
+  return new Set(strongest(creatures, RECOMMENDED_COUNT).map((c) => c.id));
 }
 
 /** One line of the picker. */
@@ -52,6 +87,8 @@ export interface PickerOption {
   disabled: string | null;
   /** What it would do in this slot (the effect preview), or null for nothing or when the preview is off. */
   effect: string | null;
+  /** One of the player's three strongest: the picker shows a small "Recommended" tag. */
+  recommended: boolean;
 }
 
 /** How many of the player's creatures are on the board. */
@@ -109,10 +146,9 @@ export function effectPreview(args: {
   keys: readonly (string | null)[];
   known: ReadonlyMap<string, { species: string; level: number }>;
   slot: number;
-  turnOrder: string;
+  mode: AffectMode;
 }): string | null {
-  const { keys, known, slot } = args;
-  const mode = { row: 'raid', turnOrder: parseTurnOrder(args.turnOrder) } as const;
+  const { keys, known, slot, mode } = args;
   const list = affects(boardAffectRow(keys, known), slot, mode);
   const occupied = (at: number): boolean => keys[at] !== null && keys[at] !== undefined;
   const parts: string[] = [];
@@ -137,15 +173,17 @@ export function effectPreview(args: {
         : `Buffs ${String(buffed)} neighbour${buffed === 1 ? '' : 's'}`,
     );
   }
-  if (list.some((a) => a.kind === 'cover')) parts.push('Covers its row');
+  if (list.some((a) => a.kind === 'cover')) {
+    parts.push(mode.row === 'dungeon' ? 'Covers its neighbours' : 'Covers its row');
+  }
   return parts.length === 0 ? null : parts.join(' · ');
 }
 
 /**
- * The options for filling the empty `slot`: every creature the player owns. Those that are free
- * come first, then those already on the board (picking moves them), then, when the board is full,
- * the ones that cannot be added (with the reason); each group from the highest level down. With
- * `showEffects`, each option carries what it would do in that slot.
+ * The options for filling the empty `slot` of the raid board: every creature the player owns. Those
+ * that are free come first, then those already on the board (picking moves them), then, when the
+ * board is full, the ones that cannot be added (with the reason); each group from the highest level
+ * down. With `showEffects`, each option carries what it would do in that slot.
  */
 export function pickerOptions(args: {
   creatures: readonly PickerCreature[];
@@ -155,7 +193,7 @@ export function pickerOptions(args: {
   turnOrder: string;
   showEffects: boolean;
 }): PickerOption[] {
-  const { creatures, row, length, slot } = args;
+  const { row, length } = args;
   const onBoard = new Set(
     row.flatMap((s) =>
       s.creature?.mine === true && s.creature.creatureId !== undefined
@@ -163,14 +201,57 @@ export function pickerOptions(args: {
         : [],
     ),
   );
-  const full = onBoard.size >= MAX_ON_BOARD;
-  const baseKeys = boardKeys(row, length);
   const known = new Map<string, { species: string; level: number }>();
   for (const s of row) {
     if (s.creature !== null) {
       known.set(s.creature.creatureId ?? `other:${String(s.slot)}`, s.creature);
     }
   }
+  return optionsFor({
+    creatures: args.creatures,
+    baseKeys: boardKeys(row, length),
+    known,
+    onBoard,
+    slot: args.slot,
+    mode: { row: 'raid', turnOrder: parseTurnOrder(args.turnOrder) },
+    showEffects: args.showEffects,
+  });
+}
+
+/**
+ * The same for the dungeon team's row of three: `slots` holds the creature in each place, left to
+ * right (null: empty). The effect line judges the creature in the dungeon's left-to-right order.
+ */
+export function dungeonPickerOptions(args: {
+  creatures: readonly PickerCreature[];
+  slots: readonly (string | null)[];
+  slot: number;
+  showEffects: boolean;
+}): PickerOption[] {
+  return optionsFor({
+    creatures: args.creatures,
+    baseKeys: args.slots,
+    known: new Map(),
+    onBoard: new Set(args.slots.filter((id): id is string => id !== null)),
+    slot: args.slot,
+    mode: { row: 'dungeon' },
+    showEffects: args.showEffects,
+  });
+}
+
+/** The options of a picker for any row. `baseKeys` is the row as it stands, `onBoard` the player's creatures in it. */
+function optionsFor(args: {
+  creatures: readonly PickerCreature[];
+  baseKeys: readonly (string | null)[];
+  known: Map<string, { species: string; level: number }>;
+  onBoard: ReadonlySet<string>;
+  slot: number;
+  mode: AffectMode;
+  showEffects: boolean;
+}): PickerOption[] {
+  const { creatures, baseKeys, known, onBoard, slot } = args;
+  const full = onBoard.size >= MAX_ON_BOARD;
+  const recommended = recommendedIds(creatures);
   for (const c of creatures) known.set(c.id, c);
 
   const options = creatures.map((c): PickerOption => {
@@ -181,7 +262,7 @@ export function pickerOptions(args: {
       // The creature in this slot; if it was on the board, its old slot is free.
       const keys = baseKeys.map((k) => (k === c.id ? null : k));
       keys[slot] = c.id;
-      effect = effectPreview({ keys, known, slot, turnOrder: args.turnOrder });
+      effect = effectPreview({ keys, known, slot, mode: args.mode });
     }
     return {
       id: c.id,
@@ -193,6 +274,7 @@ export function pickerOptions(args: {
       onBoard: placed,
       disabled: full && !placed ? BOARD_FULL_REASON : null,
       effect,
+      recommended: recommended.has(c.id),
     };
   });
   const rank = (o: PickerOption): number => (o.disabled !== null ? 2 : o.onBoard ? 1 : 0);

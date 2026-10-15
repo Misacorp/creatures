@@ -6,6 +6,7 @@ import type { Intent } from '../../raid-slots';
 import {
   BOARD_FULL_REASON,
   MAX_ON_BOARD,
+  ON_BOARD_NOTE,
   pickerOptions,
   pickerTitle,
   placedCount,
@@ -57,7 +58,16 @@ const rowLength = (players: number): number => (players < 3 ? 9 : players * 3);
 function ownedCreatures(count: number): PickerCreature[] {
   return Array.from({ length: count }, (_, i) => {
     const species = SPECIES_IDS[(i * 5 + 2) % SPECIES_IDS.length] ?? 'splashet';
-    return { id: `mine-${String(i)}`, species, nickname: null, level: 4 + ((i * 7) % 17) };
+    const level = 4 + ((i * 7) % 17);
+    // Power follows the level, with the order caught breaking a tie: the strongest three are tagged Recommended.
+    return {
+      id: `mine-${String(i)}`,
+      species,
+      nickname: null,
+      level,
+      power: level * 3 + (i % 4),
+      caughtAt: 1_000 + i,
+    };
   });
 }
 
@@ -284,6 +294,7 @@ function PickerDemo({ p }: { p: Props }) {
           status={`${String(placedCount(party.row))} / ${String(MAX_ON_BOARD)} placed`}
           options={options}
           showEffects={bool(p, 'effects')}
+          placedNote={ON_BOARD_NOTE}
           anchor={() => null}
           onPick={() => {
             setOpen(false);
@@ -302,7 +313,7 @@ const rosterPicker: Entry = {
   file: 'apps/activity/src/ui/RosterPicker.tsx',
   group: 'Slots',
   description:
-    'The creature picker of the Raid Roster: a bottom sheet listing everything you own with its level, element, role and, optionally, one quiet line led by a bold "In this slot:" about what it would do there. Creatures already on the board say they move here; at 3 / 3 the new ones are disabled with the reason.',
+    'The creature picker of the Raid Roster: a bottom sheet listing everything you own with its level, element, role and, optionally, one quiet line led by a bold "In this slot:" about what it would do there. Your three strongest creatures carry a small "Recommended" tag (no reason given). Creatures already on the board say they move here; at 3 / 3 the new ones are disabled with the reason. The dungeon team uses the same sheet.',
   controls: {
     effects: { kind: 'toggle' },
     placed: { kind: 'number', min: 0, max: 3 },
@@ -312,6 +323,7 @@ const rosterPicker: Entry = {
   },
   defaults: { effects: true, placed: 1, owned: 7, turnOrder: 'left_to_right', open: true },
   presets: [
+    { name: 'Recommended tag on the three strongest (default)', props: {} },
     { name: 'Effects on ("In this slot:" line under each creature)', props: { effects: true } },
     { name: 'Effects off (names and tags only)', props: { effects: false } },
     { name: '3 / 3 placed (new ones disabled)', props: { placed: 3 } },

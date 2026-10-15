@@ -33,6 +33,7 @@ function make(id: string, species: string, level: number, extra: Partial<Creatur
     shiny: false,
     nickname: null,
     away: false,
+    caughtAt: 1_000,
     quirk: null,
     stats: { hp: 100 + level, atk: 10, spd: 10 },
     statsWithGear: { hp: 100 + level, atk: 10, spd: 10 },
