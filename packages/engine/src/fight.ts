@@ -111,15 +111,16 @@ function isCount(n: number, min: number): boolean {
 /**
  * The first zone attack of the boss from round 2 on (within `rounds`), or null if it has none: a
  * `hit_zone`, or a sweep of one named row (the row its walk reaches in that round; a sweep of
- * `all` rows names no row and does not count).
- * (Part 2: a charged sweep will count too, in the round it lands.)
+ * `all` rows names no row and does not count). A charged sweep counts in the round it lands (the
+ * default Shield Wall goes there, not to the announcement a round earlier).
  */
 function firstZoneHit(boss: BossDef, rounds: number): { round: number; zone: Zone } | null {
   for (let r = 2; r <= rounds; r++) {
     for (const g of boss.gimmicks) {
       if (g.op === 'hit_zone' && gimmickDue(g, r)) return { round: r, zone: g.zone };
-      if (g.op === 'sweep' && gimmickDue(g, r)) {
-        const row = sweepRow(g.rows, firingIndex(g, r));
+      const sweep = g.op === 'charge' ? g.then : g;
+      if (sweep.op === 'sweep' && gimmickDue(g, r)) {
+        const row = sweepRow(sweep.rows, firingIndex(g, r));
         if (row !== 'all') return { round: r, zone: row };
       }
     }
@@ -164,9 +165,17 @@ export function defaultAbilityRound(
  * All maths is integer maths in basis points with floor. Overkill damage on the last hit counts as
  * dealt for credit, but the boss pool never goes below 0.
  *
- * Round order: round start (reflect arming, support buffs, finale abilities), each living and
- * non-silenced creature in turn order, boss gimmicks due this round, the boss's normal attack,
- * round end. The fight ends early when the pool reaches 0 (or every creature is knocked out).
+ * Round order: round start (charge announcements, reflect arming, support buffs, finale abilities),
+ * each living and non-silenced creature in turn order, boss gimmicks due this round, the boss's
+ * normal attack, round end. The fight ends early when the pool reaches 0, when it reaches the phase
+ * floor (`bossHpFloor`: the boss retreats) or when every creature is knocked out.
+ *
+ * Enrage (`input.enrage`): when the base rounds run out with the boss and a creature standing, up to
+ * `enrage.rounds` more rounds are played. An enrage round has `round_start`, `enrage`, the creatures'
+ * turns, the boss's plain attack, then a hit on every living creature (`source: 'enrage'`). Gimmicks
+ * do not fire (a charge is never announced to land in one, the reflect trap is not armed) and finale
+ * abilities do not fire (they are kept to the base rounds); rallies and Shield Walls already running
+ * still apply.
  */
 export function simulateFight(
   input: FightInput,
@@ -211,6 +220,21 @@ export function simulateFight(
     if (rule === null) fail(`unknown adaptation rule "${input.adaptation.rule}"`);
   }
   const adaptationTarget = input.adaptation?.target ?? '';
+
+  // ---- the phase floor and enrage (absent: neither) ----
+  const bossFloor = input.bossHpFloor ?? 0;
+  if (!isCount(bossFloor, 0) || bossFloor > pool.max) {
+    fail('bossHpFloor must be an integer from 0 to the pool maximum');
+  }
+  const enrage = input.enrage;
+  if (enrage !== undefined) {
+    if (!isCount(enrage.rounds, 0) || enrage.rounds > 12) {
+      fail('enrage.rounds must be an integer from 0 to 12');
+    }
+    if (!isCount(enrage.powerBp, 0) || enrage.powerBp > 1_000_000) {
+      fail('enrage.powerBp must be an integer from 0 to 1000000');
+    }
+  }
 
   // ---- luck (all off by default) ----
   const luck: LuckConfig = input.luck ?? NO_LUCK;
@@ -300,6 +324,10 @@ export function simulateFight(
 
   let bossHp = pool.current;
   const bossHpStart = bossHp;
+  /** The boss reached its phase floor and retreated: the fight is over. */
+  let retreated = false;
+  /** Enrage rounds were played. */
+  let enraged = false;
   let mark = null as Mark | null;
   let bossDamageBp = 0;
 
@@ -454,7 +482,7 @@ export function simulateFight(
   function hurt(
     target: Creature,
     rawAmount: number,
-    source: 'attack' | 'gimmick' | 'reflect',
+    source: 'attack' | 'gimmick' | 'reflect' | 'enrage',
     mode: 'aimed' | 'area' | 'direct',
     /** The boss crit die of this hit (absent: the hit cannot crit). */
     die?: number,
@@ -661,17 +689,40 @@ export function simulateFight(
 
     const rally = rallyBp();
     const totalBp = supportBp + rally + roundBonusBp + hookBp + luckBp;
-    const hit = calc(totalBp);
+    const full = calc(totalBp);
+    // The phase floor: a hit that reaches it counts only down to it, so nothing is overkill (the
+    // damage, the reaction bonus, the credit and the element totals). The plain hit is counted
+    // first, the reaction's bonus gets what is left.
+    const room = Math.max(0, bossHp - bossFloor);
+    const reaches = bossFloor > 0 && full.damage >= room;
+    const hit = reaches
+      ? {
+          ...full,
+          damage: room,
+          bonus: Math.min(full.bonus, Math.max(0, room - (full.damage - full.bonus))),
+        }
+      : full;
     bossHp = Math.max(0, bossHp - hit.damage);
     damageByElement[c.element] += hit.damage;
+
+    // Setup / payoff split of the reaction bonus: the setter gets the floor of `setupShareBp` of it,
+    // the payoff the rest.
+    let setup = 0;
+    if (reaction !== undefined && !reflected && markBefore !== null) {
+      setup = Math.floor((hit.bonus * RULES.combat.setupShareBp) / 10_000);
+      credit(markBefore.creature, markBefore.player, 'setupCredit', setup);
+    }
 
     // Support credit (zero-sum): the extra damage the buffs made possible moves from the hitter's
     // credit to the supporters, shared between them.
     // The element effect's own gain is credited first (what the hit lost without it), so the two
-    // gains never overlap: together they are at most the hit's damage.
+    // gains never overlap: together they are at most the hit's damage. A hit cut short by the floor
+    // keeps the shares within what was really dealt.
     let supportShare = 0;
+    let budget = reaches ? Math.max(0, hit.damage - setup) : Number.POSITIVE_INFINITY;
     if (overcharge.length > 0) {
-      const gain = Math.max(0, hit.damage - calc(totalBp, 0).damage);
+      const gain = Math.min(budget, Math.max(0, hit.damage - calc(totalBp, 0).damage));
+      budget -= gain;
       supportShare += gain;
       const k = overcharge.length;
       const each = Math.floor(gain / k);
@@ -683,7 +734,10 @@ export function simulateFight(
       }
     }
     if (supportBp > 0) {
-      const gain = Math.max(0, calc(totalBp, 0).damage - calc(totalBp - supportBp, 0).damage);
+      const gain = Math.min(
+        budget,
+        Math.max(0, calc(totalBp, 0).damage - calc(totalBp - supportBp, 0).damage),
+      );
       supportShare += gain;
       const k = buffs.length;
       const each = Math.floor(gain / k);
@@ -695,13 +749,6 @@ export function simulateFight(
       }
     }
 
-    // Setup / payoff split of the reaction bonus: the setter gets the floor of `setupShareBp` of it,
-    // the payoff the rest.
-    let setup = 0;
-    if (reaction !== undefined && !reflected && markBefore !== null) {
-      setup = Math.floor((hit.bonus * RULES.combat.setupShareBp) / 10_000);
-      credit(markBefore.creature, markBefore.player, 'setupCredit', setup);
-    }
     credit(c, null, 'damage', hit.damage - setup - supportShare);
 
     events.push({
@@ -753,6 +800,11 @@ export function simulateFight(
         element: c.element,
         replaced: markBefore.element,
       });
+    }
+
+    if (reaches) {
+      retreated = true;
+      events.push({ t: 'retreat', round: currentRound, bossHp });
     }
   }
 
@@ -829,7 +881,7 @@ export function simulateFight(
           );
           break;
         case 'strike':
-          if (source !== null && bossHp > 0) {
+          if (source !== null && bossHp > 0 && !retreated) {
             hitBoss(source, { atkBp: e.atkBp, ability: def.id, key: choice.key });
           }
           break;
@@ -863,11 +915,19 @@ export function simulateFight(
   /** The creatures hit by each barrage gimmick's last volley (by gimmick id), for the no-repeat rule. */
   const lastVolley = new Map<string, number[]>();
 
-  function patternContext(g: Gimmick, gimmickIndex: number): PatternContext {
+  /** The charges announced and not yet landed, by gimmick index and landing round (a charge due every round has several in the air). */
+  const pendingCharges = new Map<string, PatternPlan>();
+
+  /** `atRound` is the round the pattern fires in (a charge is planned a round before it lands). */
+  function patternContext(
+    g: Gimmick,
+    gimmickIndex: number,
+    atRound = currentRound,
+  ): PatternContext {
     return {
       creatures,
       n,
-      firing: firingIndex(g, currentRound),
+      firing: firingIndex(g, atRound),
       dice: diceWindow(patternDice, gimmickIndex),
       ...(lastVolley.has(g.id) ? { previousVolley: lastVolley.get(g.id) as number[] } : {}),
     };
@@ -891,9 +951,34 @@ export function simulateFight(
     }
   }
 
+  /**
+   * Charges are announced at the start of the round before they land (after the dice, before the
+   * abilities): the inner pattern picks its victims from the creatures standing now, with that
+   * round's pattern dice, and the `charge` event names them. The marks are fixed from then on. A
+   * charge whose landing round is past the base rounds is never announced (no landing in an enrage
+   * round), nor is one that would land in round 1 (there is no round before it).
+   */
+  function announceCharges(): void {
+    const landing = currentRound + 1;
+    if (landing > rounds) return;
+    for (const [gi, g] of boss.gimmicks.entries()) {
+      if (g.op !== 'charge' || !gimmickDue(g, landing)) continue;
+      const plan = planPattern(g.then, patternContext(g, gi, landing));
+      if (g.then.op === 'barrage') lastVolley.set(g.id, plan.targets);
+      pendingCharges.set(`${String(gi)}:${String(landing)}`, plan);
+      events.push({
+        t: 'charge',
+        round: currentRound,
+        landing,
+        gimmick: g.id,
+        op: g.then.op,
+        marks: plan.targets.map((i) => (creatures[i] as Creature).id),
+        ...(plan.rows === undefined ? {} : { rows: plan.rows }),
+      });
+    }
+  }
+
   function fireGimmick(g: Gimmick, gimmickIndex: number): void {
-    // Part 2: a charge is announced a round ahead and lands later; it does nothing here yet.
-    if (g.op === 'charge') return;
     const base = { t: 'gimmick' as const, round: currentRound, gimmick: g.id, op: g.op };
     const named = (plan: PatternPlan): FightEvent => ({
       ...base,
@@ -901,6 +986,24 @@ export function simulateFight(
       ...(plan.rows === undefined ? {} : { rows: plan.rows }),
       ...(plan.lane === undefined ? {} : { lane: plan.lane }),
     });
+    if (g.op === 'charge') {
+      // The marks of the announcement are hit; one that fell since is skipped (nobody is re-aimed).
+      const key = `${String(gimmickIndex)}:${String(currentRound)}`;
+      const pending = pendingCharges.get(key);
+      if (pending === undefined) return;
+      pendingCharges.delete(key);
+      const standing = pending.targets.filter((i) => (creatures[i] as Creature).alive);
+      const rows = pending.rows?.filter((z) => standing.some((i) => zoneOfIndex(i, n) === z));
+      events.push(
+        named({
+          ...pending,
+          targets: standing,
+          ...(rows === undefined ? {} : { rows }),
+        }),
+      );
+      resolvePlan(pending);
+      return;
+    }
     switch (g.op) {
       case 'hit_zone': {
         events.push(base);
@@ -995,10 +1098,31 @@ export function simulateFight(
     });
   }
 
+  /**
+   * Enrage: the boss's hit on every living creature, for `powerBp` of its Attack (area hits: cover,
+   * Shield Walls and the single-hit cap apply).
+   */
+  function enrageStrike(): void {
+    const raw = Math.floor((input.bossAtk * (enrage?.powerBp ?? 0)) / 10_000);
+    for (const c of creatures) {
+      if (c.alive) hurt(c, raw, 'enrage', 'area', bossGimmickDice[c.idx]);
+    }
+  }
+
+  // The base rounds, then (with `enrage`, if both sides are still standing when they run out) the
+  // enrage rounds. The loop stops on a kill, a retreat at the floor or a wipe, so a round past
+  // `rounds` is only ever entered with the boss and a creature standing.
+  const lastRound = rounds + (enrage?.rounds ?? 0);
   let played = 0;
-  for (let round = 1; round <= rounds && bossHp > 0 && creatures.some((c) => c.alive); round++) {
+  for (
+    let round = 1;
+    round <= lastRound && bossHp > 0 && !retreated && creatures.some((c) => c.alive);
+    round++
+  ) {
     played = round;
     currentRound = round;
+    const enraging = round > rounds;
+    if (enraging) enraged = true;
     // A Surge or Slump starts with this chance (one die every round, so the dice never depend on
     // what the players do) and lasts `swingRounds` rounds; a new one cannot start inside one.
     let started: { kind: 'surge' | 'slump'; bp: number; rounds: number } | undefined;
@@ -1026,6 +1150,7 @@ export function simulateFight(
       mark: mark?.element ?? null,
       ...(started === undefined ? {} : { luck: started }),
     });
+    if (enraging) events.push({ t: 'enrage', round, first: round === rounds + 1 });
     roundBonusBp = 0;
     reflectArmed = false;
     reflectUsed = false;
@@ -1067,7 +1192,10 @@ export function simulateFight(
       patternDice = Array.from({ length: PATTERN_DICE }, () => int(rng, DICE_RANGE));
     }
 
-    for (const g of boss.gimmicks) {
+    // Gimmicks rest in enrage rounds: no charge is announced and the reflect trap is not armed.
+    if (!enraging) announceCharges();
+
+    for (const g of enraging ? [] : boss.gimmicks) {
       if (g.op === 'reflect_first_reaction' && gimmickDue(g, round)) {
         reflectArmed = true;
         events.push({ t: 'gimmick', round, gimmick: g.id, op: g.op });
@@ -1117,13 +1245,14 @@ export function simulateFight(
       }
     }
 
-    for (const a of abilitiesByRound.get(round) ?? []) {
-      if (bossHp === 0) break;
+    // Finale abilities are fixed to the base rounds: one set for a round past them never fires.
+    for (const a of enraging ? [] : (abilitiesByRound.get(round) ?? [])) {
+      if (bossHp === 0 || retreated) break;
       fireAbility(a);
     }
 
     for (const idx of order) {
-      if (bossHp === 0) break;
+      if (bossHp === 0 || retreated) break;
       const c = creatures[idx] as Creature;
       if (!c.alive) continue;
       if (c.silenced > 0) {
@@ -1135,9 +1264,12 @@ export function simulateFight(
       hitBoss(c);
     }
 
-    if (bossHp > 0) {
-      for (const [gi, g] of boss.gimmicks.entries()) if (gimmickDue(g, round)) fireGimmick(g, gi);
+    if (bossHp > 0 && !retreated) {
+      if (!enraging) {
+        for (const [gi, g] of boss.gimmicks.entries()) if (gimmickDue(g, round)) fireGimmick(g, gi);
+      }
       bossAttack();
+      if (enraging) enrageStrike();
     }
 
     events.push({ t: 'round_end', round, bossHp });
@@ -1151,7 +1283,9 @@ export function simulateFight(
       totals.damage + totals.setupCredit + totals.supportCredit + totals.guardCredit;
   }
   const lossBp = (pool.max - bossHp) * 10_000;
-  const cleared = lossBp >= phaseCfg.clearAtLossBp * pool.max;
+  // Driving the boss to its floor clears the phase (the worker's floor is the clear threshold, so
+  // the two agree; a floor passed by hand is the clear all the same).
+  const cleared = retreated || lossBp >= phaseCfg.clearAtLossBp * pool.max;
 
   let adaptationSuggestion: AdaptationSuggestion | null = null;
   if (phase === 'phase1') {
@@ -1178,8 +1312,8 @@ export function simulateFight(
     bossHpStart,
     bossHpEnd: bossHp,
     cleared,
-    retreated: false,
-    enraged: false,
+    retreated,
+    enraged,
     events,
     perPlayer,
     perCreature,

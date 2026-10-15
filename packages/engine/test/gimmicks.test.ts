@@ -7,6 +7,24 @@ const withGimmicks = (gimmicks: ReturnType<typeof boss>['gimmicks']) => ({
   gimmicks,
 });
 
+// The first moves of the shipped bosses, frozen here so these mechanic tests do not move when the
+// content is retuned or a boss gains new moves.
+const UNDERTOW: ReturnType<typeof boss>['gimmicks'][number] = {
+  id: 'undertow',
+  name: 'Undertow',
+  trigger: { every: 3 },
+  op: 'hit_zone',
+  zone: 'front',
+  power: 8_000,
+};
+const LIGHTNING_ROD: ReturnType<typeof boss>['gimmicks'][number] = {
+  id: 'lightning-rod',
+  name: 'Lightning Rod',
+  trigger: { eachRound: true },
+  op: 'strike_highest_atk',
+  power: 12_000,
+};
+
 describe('hit_zone (Undertow)', () => {
   it('hits every living creature of the zone on every 3rd round, without interception', () => {
     const r = run(
@@ -18,7 +36,7 @@ describe('hit_zone (Undertow)', () => {
         slot('b4', { atk: 1 }),
         slot('b5', { atk: 1 }),
       ],
-      { boss: boss('tidal-colossus'), bossAtk: 100 },
+      { boss: withGimmicks([UNDERTOW]), bossAtk: 100 },
     );
     const zoneHits = eventsOf(r, 'boss_hit').filter((e) => e.source === 'gimmick');
     expect(zoneHits.map((e) => [e.round, e.target, e.damage])).toEqual(
@@ -158,7 +176,7 @@ describe('reflect_first_reaction (Backdraft)', () => {
 describe('strike_highest_atk (Lightning Rod)', () => {
   it('strikes the highest-Attack living creature, ties by position', () => {
     const r = run([slot('a', { atk: 50 }), slot('b', { atk: 90 }), slot('c', { atk: 90 })], {
-      boss: boss('storm-sovereign'),
+      boss: withGimmicks([LIGHTNING_ROD]),
       bossAtk: 100,
     });
     const strikes = eventsOf(r, 'boss_hit').filter((e) => e.source === 'gimmick');
@@ -170,7 +188,7 @@ describe('strike_highest_atk (Lightning Rod)', () => {
     const r = run(
       [slot('a', { atk: 50 }), slot('b', { atk: 90, hp: 100 }), slot('c', { atk: 10 })],
       {
-        boss: boss('storm-sovereign'),
+        boss: withGimmicks([LIGHTNING_ROD]),
         bossAtk: 100,
       },
     );

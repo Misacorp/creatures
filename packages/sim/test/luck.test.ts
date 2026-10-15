@@ -176,8 +176,10 @@ describe('the study', () => {
   it('calibrates boss Attack so that more knockouts need a harder boss', () => {
     const cases = buildCases({ ...TINY, maxCases: 0, counts: [7] });
     const luck = parseLuck('critChanceBp=500').luck;
-    const low = calibrateKnockouts(cases, luck, 2, TINY);
-    const high = calibrateKnockouts(cases, luck, 6, TINY);
+    // The finale enrages (3 rounds of hits on everyone), so even the shipped Attack knocks out at least
+    // 6 of the 21 creatures on average: the targets sit above that.
+    const low = calibrateKnockouts(cases, luck, 10, TINY);
+    const high = calibrateKnockouts(cases, luck, 14, TINY);
     expect(high).toBeGreaterThan(low);
     expect(low).toBeGreaterThanOrEqual(10_000);
   });

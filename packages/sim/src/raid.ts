@@ -18,6 +18,8 @@ import {
   autoPlace,
   fillWithGuests,
   makeSlot,
+  phaseFloorHp,
+  raidEnrage,
   resolveGuests,
   scaleBoss,
   simulateFight,
@@ -282,6 +284,8 @@ export function fightFor(
     return slot;
   });
   const creatureAbilities = stage === 'finale' ? creatureAbilityChoices(week, row) : [];
+  const floor = phaseFloorHp(week.pool.max, stage);
+  const enrage = raidEnrage(stage);
   const fight: FightInput = {
     boss: week.boss,
     bossAtk: week.bossAtk,
@@ -301,6 +305,9 @@ export function fightFor(
         : [],
     ...(week.luck === undefined || !week.luckStages.includes(stage) ? {} : { luck: week.luck }),
     rules: week.rules,
+    // As live play builds it: a phase's floor (a boss that reaches it retreats), the finale's enrage.
+    ...(floor > 0 ? { bossHpFloor: floor } : {}),
+    ...(enrage === undefined ? {} : { enrage }),
   };
   return { fight, creatureAbilities };
 }
@@ -414,10 +421,14 @@ function measureAbilities(
 ): AbilityImpact {
   const unbeatable = { max: 1_000_000_000_000, current: 1_000_000_000_000 };
   const basicKeys = new Set(week.abilities.map((a) => a.key));
+  // Against a boss that cannot fall the base rounds are what is measured: no floor, no enrage.
+  const plain: FightInput = { ...fight };
+  delete plain.enrage;
+  delete plain.bossHpFloor;
   const run = (abilities: readonly AbilityChoice[]): number =>
     damageDealt(
       simulateFight(
-        { ...fight, bossHpPool: unbeatable, finaleAbilities: abilities },
+        { ...plain, bossHpPool: unbeatable, finaleAbilities: abilities },
         // The fights draw no randomness; this stream is never read.
         createSeededRng('ability-impact'),
       ).events,

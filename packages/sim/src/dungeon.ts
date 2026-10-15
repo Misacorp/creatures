@@ -15,6 +15,7 @@ import {
   type Rng,
 } from '@creatures/game';
 import {
+  dungeonBossEnrage,
   simulateDungeon,
   type AbilityChoice,
   type DungeonRoomSpec,
@@ -97,6 +98,9 @@ export function buildRun(
       creatureId: a.creatureId,
     });
   }
+  // As live play builds it: the boss room enrages, and a landmark depth gives the room boss its
+  // signature (both are part of the stored run input).
+  const enrage = dungeonBossEnrage();
   return {
     team: row,
     player: DUNGEON_PLAYER,
@@ -104,6 +108,8 @@ export function buildRun(
     abilities,
     luck: { ...RULES.combat.luck },
     rules: studyRules(study),
+    depth,
+    ...(enrage === undefined ? {} : { enrage }),
   };
 }
 

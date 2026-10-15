@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RULES } from '@creatures/game';
+import { PATTERN_OPS, RULES } from '@creatures/game';
 import { simulateFight, type FightInput, type FightResult } from '../src/index';
 import { randomInput, rng } from './helpers';
 
@@ -119,7 +119,17 @@ describe('properties over seeded random fights', () => {
   });
 
   it('give the same result for a different RNG (the MVP rules draw no randomness)', () => {
-    const inp = randomInput('rng-independent', 6, 'finale');
+    // Only the attack patterns draw dice (random shells, random lanes); every older move is fixed.
+    const drawn = randomInput('rng-independent', 6, 'finale');
+    const inp = {
+      ...drawn,
+      boss: {
+        ...drawn.boss,
+        gimmicks: drawn.boss.gimmicks.filter(
+          (g) => !(PATTERN_OPS as readonly string[]).includes(g.op),
+        ),
+      },
+    };
     const a = simulateFight(inp, rng());
     const b = simulateFight(inp, { nextU32: () => 12345 });
     expect(b).toEqual(a);

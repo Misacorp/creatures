@@ -21,6 +21,7 @@ import {
   content,
   createSeededRng,
   effectiveStats,
+  isLandmark,
   type BossDef,
   type ContentPack,
   type DungeonFoeDef,
@@ -30,7 +31,14 @@ import {
   type Stats,
 } from '@creatures/game';
 import { simulateFight, type FightOptions } from './fight';
-import type { AbilityChoice, FightInput, FightResult, FightRules, FightSlot } from './types';
+import type {
+  AbilityChoice,
+  EnrageRules,
+  FightInput,
+  FightResult,
+  FightRules,
+  FightSlot,
+} from './types';
 
 /** One room of a run, with its foe and modifier stored in full so a replay never reads content again. */
 export interface DungeonRoomSpec {
@@ -59,6 +67,18 @@ export interface DungeonRunInput {
    * hit cap), so a stored older run replays as it was fought.
    */
   rules?: FightRules;
+  /**
+   * Enrage for the boss room (`dungeonBossEnrage()` when the run was built): when the boss room's
+   * rounds run out with both sides standing, up to `rounds` more rounds are played. It applies to
+   * the boss room only (a room whose foe is of kind `boss`); normal rooms keep the rule that running
+   * out of rounds ends the run. Absent: none, so a stored older run replays as it was fought.
+   */
+  enrage?: EnrageRules;
+  /**
+   * The depth the run was fought at. At a landmark depth (`isLandmark`) the boss room's foe gains
+   * its `signature` gimmick. Absent: no landmark, so a stored older run replays as it was fought.
+   */
+  depth?: number;
 }
 
 export interface DungeonRoomResult {
@@ -129,6 +149,19 @@ export function buildRoomInput(
   let foeAtk = room.atk;
   let luck = run.luck;
   const gimmicks = [...room.foe.gimmicks];
+  // The boss room is where the harder rules live: enrage, and at a landmark depth the foe's
+  // charged signature (after its own moves, before any modifier's gimmick).
+  const bossRoom = room.foe.kind === 'boss';
+  const signature = room.foe.signature;
+  if (
+    bossRoom &&
+    signature !== undefined &&
+    run.depth !== undefined &&
+    isLandmark(run.depth) &&
+    !gimmicks.some((g) => g.id === signature.id)
+  ) {
+    gimmicks.push(signature);
+  }
   for (const e of effects) {
     switch (e.op) {
       case 'foe_stat':
@@ -179,6 +212,7 @@ export function buildRoomInput(
     luck,
     guardReach: 'adjacent',
     ...(run.rules === undefined ? {} : { rules: run.rules }),
+    ...(bossRoom && run.enrage !== undefined ? { enrage: run.enrage } : {}),
   };
 }
 

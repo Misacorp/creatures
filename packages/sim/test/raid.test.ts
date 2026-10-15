@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { content, createSeededRng, type BossDef } from '@creatures/game';
+import { RULES, content, createSeededRng, type BossDef } from '@creatures/game';
+import { phaseFloorHp, raidEnrage } from '@creatures/engine';
 import { DEFAULT_MIX } from '../src/archetypes';
 import { runEconomy } from '../src/economy';
-import { openRaidWeek, playStage, playWholeWeek, summarizeRaid } from '../src/raid';
+import { fightFor, openRaidWeek, playStage, playWholeWeek, summarizeRaid } from '../src/raid';
 import { runSweep } from '../src/sweep';
 import { clonePlayer, type SimPlayer } from '../src/state';
 
@@ -97,6 +98,32 @@ describe('raid week', () => {
     expect(w.stages.finale?.cleared).toBe(true);
     expect(w.jackpot.rolls).toBe(players.length);
     for (const p of players) expect(p.pity === 0 ? p.jackpots === 1 : p.pity === 4).toBe(true);
+  });
+});
+
+describe('the fights are built as live play builds them', () => {
+  it('gives each phase its floor and the finale its enrage, and nothing else', () => {
+    const w = openRaidWeek(boss, roster.slice(0, 5).map(clonePlayer));
+    const { max } = w.pool;
+    expect(fightFor(w, 'phase1').fight.bossHpFloor).toBe(phaseFloorHp(max, 'phase1'));
+    expect(fightFor(w, 'phase2').fight.bossHpFloor).toBe(phaseFloorHp(max, 'phase2'));
+    expect(fightFor(w, 'phase1').fight.enrage).toBeUndefined();
+    expect(fightFor(w, 'phase2').fight.enrage).toBeUndefined();
+    const finale = fightFor(w, 'finale').fight;
+    expect(finale.bossHpFloor).toBeUndefined();
+    expect(finale.enrage).toEqual(raidEnrage('finale'));
+    expect(finale.enrage).toEqual({
+      rounds: RULES.raid.enrage.rounds,
+      powerBp: RULES.raid.enrage.powerBp,
+    });
+  });
+
+  it('never takes the pool below a phase floor, and a phase that is driven to it is cleared', () => {
+    const w = openRaidWeek(boss, roster.slice(0, 8).map(clonePlayer));
+    playStage(w, 'phase1', createSeededRng('floor'), createSeededRng('loot'));
+    const floor = phaseFloorHp(w.pool.max, 'phase1');
+    expect(w.pool.current).toBeGreaterThanOrEqual(floor);
+    if (w.stages.phase1?.cleared === true) expect(w.pool.current).toBe(floor);
   });
 });
 
