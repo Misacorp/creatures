@@ -19,6 +19,7 @@ import { pickTeam } from './data';
 import { ARCHETYPES, type ArchetypeId } from './archetypes';
 import type { EconomyResult, PlayerHistory, WeekRecord } from './economy';
 import { analyseLongRun, type LongRunInput, type LongRunStats } from './ladder';
+import type { RoleStudyResult } from './roles';
 import type { RunRecord, SweepResult } from './sweep';
 import { mean, median, percentile, sum } from './util';
 
@@ -42,6 +43,8 @@ export interface AnalysisInput {
   noDungeonSims?: readonly EconomyResult[];
   /** Long sims (60 weeks) of the default server, for the days slots 3 to 5 open at. */
   tripLongSims?: readonly EconomyResult[];
+  /** The roles ablation (Guard and Support switched off); absent: not run. */
+  roles?: RoleStudyResult;
 }
 
 export interface CellStats {
@@ -152,6 +155,30 @@ export interface AbilityShareRow {
   basicShare: number | null;
 }
 
+/** What a typical group's finale looks like under the phase floors and the enrage. */
+export interface FinaleStats {
+  runs: number;
+  phase1ClearRate: number;
+  phase2ClearRate: number;
+  finaleWinRate: number;
+  /** Mean share of the boss's maximum HP left when the finale began (the floor puts a ceiling of 15% on a cleared Phase 2). */
+  startShare: number;
+  /** Finales that started at the floor (Phase 2 cleared) and the win rate of those and of the others. */
+  winRateFromFloor: number | null;
+  winRateOthers: number | null;
+  /** Share of finales that reached the enrage rounds, and the win rate inside them. */
+  enrageShare: number;
+  enrageWinRate: number | null;
+  /** Enrage rounds played in the finales that reached enrage and were lost (the row was wiped), mean. */
+  enrageLossRounds: number | null;
+  /** Share of the finale's creatures knocked out, all finales and the lost ones. */
+  koShare: number;
+  /** Barrage volleys, the share that broke the no-repeat rule, and the share that repeated a victim only because too few others stood. */
+  volleys: number;
+  repeatShare: number | null;
+  forcedRepeatShare: number | null;
+}
+
 export interface Outliers {
   dominantCreatures: string[];
   weakCreatures: string[];
@@ -184,6 +211,10 @@ export interface Analysis {
   worn: WornRow[];
   dungeon: DungeonStats;
   longRun: LongRunStats[];
+  /** The finale of typical groups: how it starts and ends (informational). */
+  finale: FinaleStats | null;
+  /** The roles ablation; null when not run. */
+  roles: RoleStudyResult | null;
   jackpots: {
     source: string;
     rolls: number;
@@ -192,6 +223,17 @@ export interface Analysis {
     guaranteed: number;
   }[];
   outliers: Outliers;
+}
+
+/** The rounds of a boss's finale before any enrage. */
+function finaleBaseRounds(bossId: string): number {
+  return content.bosses.find((b) => b.id === bossId)?.finaleRounds ?? 0;
+}
+
+/** The Phase 2 floor share of the boss's HP (what a cleared Phase 2 leaves for the finale). */
+function phase2Floor(): number {
+  const p = RULES.raid.phases.find((x) => x.id === 'phase2');
+  return p === undefined ? 0 : (10_000 - p.clearAtLossBp) / 10_000;
 }
 
 const rate = (records: readonly RunRecord[], f: (r: RunRecord) => boolean): number | null =>
@@ -499,6 +541,45 @@ export function analyse(input: AnalysisInput): Analysis {
     (r) => r.win,
   );
 
+  // The finale under the floors and the enrage (informational, plus the KO and fairness targets).
+  const koCreatures = sum(typical.map((r) => r.finaleCreatures));
+  metrics['raid.typical.koShare'] =
+    koCreatures === 0 ? null : sum(typical.map((r) => r.finaleKnockedOut)) / koCreatures;
+  const allVolleys = sum(records.map((r) => r.volleys));
+  metrics['raid.patternFairness'] =
+    allVolleys === 0 ? null : sum(records.map((r) => r.repeatVolleys)) / allVolleys;
+  const enraged = typical.filter((r) => r.finaleEnraged);
+  const fromFloor = typical.filter((r) => r.finaleStartShare <= phase2Floor() + 0.001);
+  const others = typical.filter((r) => r.finaleStartShare > phase2Floor() + 0.001);
+  const finale: FinaleStats | null =
+    typical.length === 0
+      ? null
+      : {
+          runs: typical.length,
+          phase1ClearRate: rate(typical, (r) => r.phase1) ?? 0,
+          phase2ClearRate: rate(typical, (r) => r.phase2) ?? 0,
+          finaleWinRate: rate(typical, (r) => r.win) ?? 0,
+          startShare: mean(typical.map((r) => r.finaleStartShare)) ?? 0,
+          winRateFromFloor: rate(fromFloor, (r) => r.win),
+          winRateOthers: rate(others, (r) => r.win),
+          enrageShare: enraged.length / typical.length,
+          enrageWinRate: rate(enraged, (r) => r.win),
+          enrageLossRounds: mean(
+            enraged.filter((r) => !r.win).map((r) => r.finaleRounds - finaleBaseRounds(r.boss)),
+          ),
+          koShare:
+            koCreatures === 0 ? 0 : sum(typical.map((r) => r.finaleKnockedOut)) / koCreatures,
+          volleys: allVolleys,
+          repeatShare:
+            allVolleys === 0 ? null : sum(records.map((r) => r.repeatVolleys)) / allVolleys,
+          forcedRepeatShare:
+            allVolleys === 0 ? null : sum(records.map((r) => r.forcedRepeatVolleys)) / allVolleys,
+        };
+  metrics['raid.typical.enrageShare'] = finale?.enrageShare ?? null;
+  metrics['raid.typical.enrageWinRate'] = finale?.enrageWinRate ?? null;
+  metrics['raid.typical.finaleStartShare'] = finale?.startShare ?? null;
+  metrics['raid.guardValue'] = input.roles?.guardValue ?? null;
+
   const typicalByBoss: TypicalBossStats[] = [];
   for (const boss of content.bosses) {
     const rs = typical.filter((r) => r.boss === boss.id);
@@ -757,6 +838,8 @@ export function analyse(input: AnalysisInput): Analysis {
     worn: wornItems(defaultSims),
     dungeon: dungeon.stats,
     longRun: longRunResult.stats,
+    finale,
+    roles: input.roles ?? null,
     jackpots,
     outliers,
   };

@@ -187,9 +187,13 @@ export const RULES = {
      * hits every living creature for `powerBp` of its Attack (area hits, under the single-hit cap);
      * its gimmicks rest (a charge never lands in an enrage round). The fight ends on a wipe or a
      * kill; standing at the end is a loss. An enrage loss is a normal
-     * loss. Phases 1 and 2 have no enrage.
+     * loss. Phases 1 and 2 have no enrage. Tuned by the simulator (docs/balance/log.md B-007): 500%
+     * of the boss's Attack on every creature, which the single-hit cap (50% of a creature's max HP)
+     * turns into a wipe in two to three rounds. Beyond about 400% the power hardly matters, because
+     * the cap is what limits the hit; the round count is the lever that decides how often a
+     * last-moment kill is still possible (the creatures act before the enrage hit each round).
      */
-    enrage: { rounds: 3, powerBp: 30_000 },
+    enrage: { rounds: 3, powerBp: 50_000 },
     scaling: {
       /**
        * Boss HP grows with N^(num/den), N = signed-up players. The engine computes
@@ -480,9 +484,11 @@ export const RULES = {
     /**
      * How strong a foe is at depth 1, as a share of the HP and Attack in its content (basis points;
      * 10000 is the content's own numbers). One knob for the whole dungeon, so the foes keep the
-     * relative strengths their content gives them.
+     * relative strengths their content gives them. 11750 is the old 12500 times 0.94: the attack
+     * patterns made foes a few points harder to beat, and 6% less foe HP puts the clear rates back
+     * (docs/design/attack-patterns.md 4.6, docs/balance/log.md B-007).
      */
-    baseHpBp: 12_500,
+    baseHpBp: 11_750,
     baseAtkBp: 10_000,
     /**
      * Every this many depths is a landmark: a better chest, and a fixed room boss (in content order,
@@ -493,9 +499,12 @@ export const RULES = {
      * Boss-room enrage, to teach the mechanic before the Sunday finale: when the boss room's rounds
      * run out with both sides standing, up to `rounds` more rounds in which the boss also hits every
      * creature for `powerBp` of its Attack. Normal rooms keep the old rule (out of rounds ends the
-     * run). `enabled: false` switches it off (Misa may walk it back).
+     * run). `enabled: false` switches it off (Misa may walk it back). Tuned by the simulator
+     * (B-007): 100% of the foe's Attack on every creature, which the single-hit cap makes a wipe in
+     * about two rounds; the power hardly matters above that, and the extra rounds clear about half a
+     * point more runs at the frontier.
      */
-    enrage: { enabled: true, rounds: 2, powerBp: 20_000 },
+    enrage: { enabled: true, rounds: 2, powerBp: 10_000 },
     /** Paid for each room cleared, by room index (the last is the room boss). */
     perRoom: [
       { bait: 1, essence: 0, scrap: 0 },

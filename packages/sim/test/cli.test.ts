@@ -2,7 +2,9 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
+import { content } from '@creatures/game';
 import { main, parseCli, type Io } from '../src/cli';
+import { applyOverrides } from '../src/tune';
 
 const dir = mkdtempSync(join(tmpdir(), 'sim-cli-'));
 afterAll(() => {
@@ -55,10 +57,23 @@ describe('CLI arguments', () => {
   });
 });
 
+/**
+ * Runs `body` with bosses nobody can beat, so a target is certain to fail (the shipped numbers pass
+ * every target, which is the point of the balance passes, so a failing run has to be made).
+ */
+function withUnbeatableBosses<T>(body: () => T): T {
+  const restore = applyOverrides(content.bosses.map((b) => `boss.${b.id}.baseHp=900000`).join(','));
+  try {
+    return body();
+  } finally {
+    restore();
+  }
+}
+
 describe('CLI run', () => {
   it('writes the reports, prints a summary, and exits 0 without --fail-on-violations', () => {
     const { io, out } = capture();
-    const code = main(['--quick', '--weeks', '5', '--out', dir], io);
+    const code = withUnbeatableBosses(() => main(['--quick', '--weeks', '5', '--out', dir], io));
     expect(code).toBe(0);
     expect(out[0]).toMatch(/passed, \d+ failed, \d+ not measured/);
     expect(readFileSync(join(dir, 'report.md'), 'utf8')).toContain('# Balance simulator report');
@@ -70,7 +85,11 @@ describe('CLI run', () => {
 
   it('exits 1 with --fail-on-violations when a target fails', () => {
     const { io } = capture();
-    expect(main(['--quick', '--weeks', '5', '--out', dir, '--fail-on-violations'], io)).toBe(1);
+    expect(
+      withUnbeatableBosses(() =>
+        main(['--quick', '--weeks', '5', '--out', dir, '--fail-on-violations'], io),
+      ),
+    ).toBe(1);
   });
 
   it('exits non-zero on bad arguments', () => {

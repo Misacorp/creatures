@@ -3,7 +3,7 @@
     "id": "tidal-colossus",
     "name": "Tidal Colossus",
     "element": "tide",
-    "baseHp": 7344,
+    "baseHp": 6485,
     "baseAtk": 30,
     "turnOrder": "left_to_right",
     "gimmicks": [
@@ -46,7 +46,7 @@
     "lootTable": "tidal-colossus",
     "finaleRounds": 12,
     "hpExponent": {
-      "num": 107,
+      "num": 104,
       "den": 100
     },
     "retreat": {
@@ -58,7 +58,7 @@
     "id": "cinder-wyrm",
     "name": "Cinder Wyrm",
     "element": "ember",
-    "baseHp": 2916,
+    "baseHp": 2540,
     "baseAtk": 30,
     "turnOrder": "speed",
     "gimmicks": [
@@ -96,7 +96,7 @@
     "lootTable": "cinder-wyrm",
     "finaleRounds": 12,
     "hpExponent": {
-      "num": 123,
+      "num": 126,
       "den": 100
     },
     "retreat": {
@@ -108,7 +108,7 @@
     "id": "thornmother",
     "name": "Thornmother",
     "element": "grove",
-    "baseHp": 6729,
+    "baseHp": 4734,
     "baseAtk": 30,
     "turnOrder": "right_to_left",
     "gimmicks": [
@@ -149,7 +149,7 @@
     "lootTable": "thornmother",
     "finaleRounds": 12,
     "hpExponent": {
-      "num": 104,
+      "num": 113,
       "den": 100
     },
     "retreat": {
@@ -161,7 +161,7 @@
     "id": "storm-sovereign",
     "name": "Storm Sovereign",
     "element": "spark",
-    "baseHp": 5423,
+    "baseHp": 4095,
     "baseAtk": 30,
     "turnOrder": "left_to_right",
     "gimmicks": [
@@ -192,7 +192,7 @@
     "lootTable": "storm-sovereign",
     "finaleRounds": 12,
     "hpExponent": {
-      "num": 115,
+      "num": 118,
       "den": 100
     },
     "retreat": {

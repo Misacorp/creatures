@@ -3,6 +3,7 @@ import { ARCHETYPES, ARCHETYPE_CONFIG, DEFAULT_MIX, DEFAULT_SERVER_SIZE } from '
 import type { Analysis } from './analysis';
 import { WIN_RATE_MAX_DEPTH } from './dungeon-analysis';
 import { POLICY } from './policy';
+import { ROLE_STUDY_HP_BP, ROLE_STUDY_RUNS_FACTOR } from './roles';
 import { TRIP_POLICY } from './trips';
 import { LONG_RUN_WEEKS, LOSS_STREAK_LIMIT } from './ladder';
 import { PITY_WEEKS, bossName, describeMix, type RunOutput } from './run';
@@ -245,6 +246,83 @@ function bossSection(a: Analysis): string {
   return parts.join('\n\n');
 }
 
+function finaleSection(a: Analysis): string {
+  const f = a.finale;
+  if (f === null) return 'Not measured.';
+  return [
+    `Typical groups (5-10 signed up, ${f.runs} raid weeks). A cleared phase leaves its floor (Phase 1: ${pct(1 - (RULES.raid.phases[0]?.clearAtLossBp ?? 0) / 10_000, 0)} of the boss's HP, Phase 2: ${pct(1 - (RULES.raid.phases[1]?.clearAtLossBp ?? 0) / 10_000, 0)}), so a finale that follows a cleared Phase 2 starts at the Phase 2 floor. Enrage: ${String(RULES.raid.enrage.rounds)} rounds at ${pct(RULES.raid.enrage.powerBp / 10_000, 0)} of the boss's Attack on every creature, after the finale's own rounds.`,
+    '',
+    table(
+      ['Measure', 'Value'],
+      [
+        ['Phase 1 clear rate', pct(f.phase1ClearRate)],
+        ['Phase 2 clear rate', pct(f.phase2ClearRate)],
+        ['Finale win rate', pct(f.finaleWinRate)],
+        ['Boss HP left when the finale began (mean share of the maximum)', pct(f.startShare)],
+        ['Finale win rate when it began at the Phase 2 floor', pct(f.winRateFromFloor)],
+        ['Finale win rate when Phase 2 fell short of its floor', pct(f.winRateOthers)],
+        ['Finales that reached the enrage rounds', pct(f.enrageShare)],
+        [
+          'Win rate inside the enrage rounds (of the finales that reached them)',
+          pct(f.enrageWinRate),
+        ],
+        [
+          'Enrage rounds played before the row was wiped (finales that reached enrage and were lost, mean)',
+          num(f.enrageLossRounds, 2),
+        ],
+        ['Creatures knocked out in the finale', pct(f.koShare)],
+        [
+          'Barrage volleys that broke the no-repeat rule (hit a creature the previous volley of the same barrage hit although enough others stood)',
+          `${pct(f.repeatShare, 2)} of ${String(f.volleys)} volleys`,
+        ],
+        [
+          'Barrage volleys that repeated a victim because too few other creatures were left standing (the rule allows it)',
+          pct(f.forcedRepeatShare, 2),
+        ],
+      ],
+    ),
+  ].join('\n');
+}
+
+function rolesSection(a: Analysis): string {
+  const r = a.roles;
+  if (r === null) return 'Not measured.';
+  const rows = (population: 'normal' | 'both'): string[][] =>
+    r.arms
+      .filter((x) => x.population === population)
+      .map((x) => [
+        x.label,
+        String(x.runs),
+        pct(x.winRate),
+        x.deltaPoints === null
+          ? 'n/a'
+          : `${x.deltaPoints > 0 ? '+' : ''}${x.deltaPoints.toFixed(1)}`,
+        pct(x.koShare),
+      ]);
+  const header = [
+    'Switched off',
+    'Raid weeks',
+    'Finale win rate',
+    'Points vs everything on',
+    'Creatures knocked out',
+  ];
+  return [
+    `The same raid weeks played again with a role switched off (Guard: no extra HP, no intercept, no cover; Support: no buff and no element effect; one element: only that Support effect), with the same rosters, sign-ups and dice. Guards are spread through the row (evenly spaced), the formation in which they show; the sim's default formation clumps them in front. The bosses' HP pool is ${pct(ROLE_STUDY_HP_BP / 10_000 - 1, 0)} bigger than in the raid sweep, so the reference wins about 70% of its weeks and a role has room to show (at the sweep's own difficulty a spread row wins about 95% and hides what a Guard saves). Typical groups only (5-10 signed up), ${String(ROLE_STUDY_RUNS_FACTOR)} times the sweep's weeks per cell. The Guard value of the targets is the first table's "Guard off" row, as win points lost. One standard error of a difference is about 1 point; differences under 2 points are noise. Grove has no Support species yet, so its Mend has nothing to switch off (0.0 is expected).`,
+    '',
+    "### Players bring their 3 strongest creatures (the sim's rule)",
+    '',
+    table(header, rows('normal')),
+    '',
+    '### Every player brings a Guard and a Support when they own one',
+    '',
+    'A Support is only 1 to 3% of the creatures in the first table, so its effects hardly show there. This population shows what a Support is worth when one is present.',
+    '',
+    table(header, rows('both')),
+    '',
+    `Guard value (the target): ${num(r.guardValue)} win points.`,
+  ].join('\n');
+}
+
 function progressionSection(a: Analysis): string {
   const parts: string[] = [];
   for (const id of ARCHETYPES) {
@@ -451,6 +529,8 @@ export function buildReportMarkdown(out: RunOutput): string {
     '',
   );
   lines.push(targetsTable(evaluation), '');
+  lines.push('## Finale structure (phase floors and enrage)', '', finaleSection(a), '');
+  lines.push('## Roles (Guard and Support ablation)', '', rolesSection(a), '');
   lines.push('## Bosses', '', bossSection(a), '');
   lines.push('## Fairness and contribution', '');
   lines.push(
@@ -599,6 +679,8 @@ export function buildReportJson(out: RunOutput): string {
     essence: analysis.essence,
     abilityShares: analysis.abilityShares,
     longRun: analysis.longRun,
+    finale: analysis.finale,
+    roles: analysis.roles,
     jackpots: analysis.jackpots,
     outliers: analysis.outliers,
     exampleFight: example,

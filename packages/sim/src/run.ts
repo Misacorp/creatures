@@ -10,6 +10,7 @@ import {
 import { runEconomy, type EconomyResult } from './economy';
 import { LONG_RUN_GROUPS, LONG_RUN_WEEKS } from './ladder';
 import { TARGETS, evaluateTargets, type TargetResult } from './targets';
+import { ROLE_STUDY_RUNS_FACTOR, runRoleStudy } from './roles';
 import { runSweep, type ExampleFight } from './sweep';
 
 /** Everything that decides a run's result (no clock, no git state). */
@@ -175,7 +176,14 @@ export function runSimulation(settings: RunSettings): RunOutput {
     counts: settings.counts,
     snapshots,
   });
+  const roles = runRoleStudy({
+    seed: settings.seed,
+    runs: settings.runsPerCell * ROLE_STUDY_RUNS_FACTOR,
+    counts: settings.counts,
+    snapshots,
+  });
   const analysis = analyse({
+    roles,
     weeks: settings.weeks,
     defaultSims,
     baselineSims,

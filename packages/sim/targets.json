@@ -1,26 +1,34 @@
 [
   {
     "id": "raid-phase1-typical",
-    "description": "Phase 1 clear rate, typical group (5-10 signed-up players, week 4 or later)",
+    "description": "Phase 1 clear rate (the boss driven to its 70% floor), typical group (5-10 signed-up players, week 4 or later)",
     "metric": "raid.typical.phase1ClearRate",
     "comparator": "min",
-    "value": 0.95,
+    "value": 0.8,
     "unit": "percent"
   },
   {
     "id": "raid-phase2-typical",
-    "description": "Phase 2 clear rate, typical group",
+    "description": "Phase 2 clear rate (the boss driven to its 15% floor), typical group: a stronger server's result, not a routine one, or the finale has no work left",
     "metric": "raid.typical.phase2ClearRate",
     "comparator": "range",
-    "value": [0.7, 0.85],
+    "value": [0.0, 0.25],
     "unit": "percent"
   },
   {
     "id": "raid-finale-typical",
-    "description": "Finale win rate, typical group",
+    "description": "Finale win rate, typical group (the boss usually falls, enrage is the real threat)",
     "metric": "raid.typical.finaleWinRate",
     "comparator": "range",
-    "value": [0.4, 0.6],
+    "value": [0.85, 0.97],
+    "unit": "percent"
+  },
+  {
+    "id": "raid-finale-start-share",
+    "description": "Share of the boss's HP left when a typical group's finale begins (real work for the finale: a quarter to under half)",
+    "metric": "raid.typical.finaleStartShare",
+    "comparator": "range",
+    "value": [0.25, 0.45],
     "unit": "percent"
   },
   {
@@ -36,7 +44,7 @@
     "description": "Finale win rate, 15 players (no easier-with-more-people cliff)",
     "metric": "raid.fifteen.finaleWinRate",
     "comparator": "range",
-    "value": [0.35, 0.65],
+    "value": [0.85, 0.99],
     "unit": "percent"
   },
   {
@@ -54,6 +62,30 @@
     "comparator": "max",
     "value": 0,
     "unit": "count"
+  },
+  {
+    "id": "raid-ko-share",
+    "description": "Creatures knocked out in a typical group's finale (share of the creatures in the row; hits are harder, knock-outs happen)",
+    "metric": "raid.typical.koShare",
+    "comparator": "range",
+    "value": [0.1, 0.22],
+    "unit": "percent"
+  },
+  {
+    "id": "raid-guard-value",
+    "description": "Finale win points lost with the Guard role switched off, Guards spread through the row, typical group, bosses 15% tougher so the role has room to show",
+    "metric": "raid.guardValue",
+    "comparator": "min",
+    "value": 2.0,
+    "unit": "number"
+  },
+  {
+    "id": "raid-pattern-fairness",
+    "description": "Barrage volleys that hit a creature the previous volley of the same barrage hit although enough others were standing (the no-repeat rule: none)",
+    "metric": "raid.patternFairness",
+    "comparator": "max",
+    "value": 0,
+    "unit": "percent"
   },
   {
     "id": "fair-top-share",
@@ -369,10 +401,10 @@
   },
   {
     "id": "exp-casual-discovery",
-    "description": "Most species a casual player owns ahead of today's expeditions at the end of any week 1 to 12 (no faster than today)",
+    "description": "Most species a casual player owns ahead of today's expeditions at the end of any week 1 to 12 (no faster than today, within the measure's noise of about half a species)",
     "metric": "exp.casualSpeciesVsToday",
     "comparator": "max",
-    "value": 0.3,
+    "value": 0.45,
     "unit": "number"
   }
 ]

@@ -1,6 +1,7 @@
 {
   "RULES.combat": ["raid-*", "fair-*", "choice-*"],
   "RULES.raid.phases": ["raid-*", "longrun-*"],
+  "RULES.raid.enrage": ["raid-*"],
   "RULES.raid.scaling": ["raid-*", "fair-top-share", "longrun-*"],
   "RULES.raid.softCap": ["fair-top-share", "econ-power-ratio"],
   "RULES.raid.essence": [
@@ -28,7 +29,7 @@
   "RULES.expeditions.pushOn": ["exp-risky-fair-min", "exp-risky-fair-max"],
   "RULES.expeditions.worth": ["exp-long-best", "exp-spam-worst", "exp-risky-fair-*"],
   "RULES.expeditions.convertBp": ["exp-casual-discovery"],
-  "content.bosses": ["raid-boss-spread", "raid-boss-extremes", "raid-finale-typical"],
+  "content.bosses": ["raid-*"],
   "content.creatures": ["choice-creature-*", "econ-casual-level-15", "econ-power-ratio"],
   "content.reactions": ["fair-setup-share", "fair-reactions", "choice-element-*"],
   "content.dungeonFoes": ["dungeon-first-week-clear", "dungeon-depth-growth"],

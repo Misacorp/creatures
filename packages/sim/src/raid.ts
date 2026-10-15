@@ -33,7 +33,14 @@ import {
 } from '@creatures/engine';
 import type { ArchetypeId } from './archetypes';
 import { neutralSupport, studyRules, type RoleStudy } from './role-study';
-import { foldedCreature, pickTeam, speciesOf, TEAM_SIZE } from './data';
+import {
+  byPowerDesc,
+  foldedCreature,
+  pickTeam,
+  speciesOf,
+  TEAM_SIZE,
+  type OwnedCreature,
+} from './data';
 import type { SimPlayer } from './state';
 
 export const STAGES: readonly RaidStage[] = ['phase1', 'phase2', 'finale'];
@@ -49,9 +56,21 @@ export interface RaidPick {
 export interface StageSummary {
   cleared: boolean;
   rounds: number;
-  /** Boss HP left after the stage. */
+  /** Boss HP the pool had when the stage began, and left after it. */
+  hpStart: number;
   hpEnd: number;
   reactions: number;
+  /** The boss retreated at the phase floor (a phase) and enrage rounds were played (the finale). */
+  retreated: boolean;
+  enraged: boolean;
+  /** Creatures in the row and how many of them were knocked out during the stage. */
+  creatures: number;
+  knockedOut: number;
+  /** Barrage volleys of the stage, and those that hit a creature the gimmick's previous volley hit. */
+  volleys: number;
+  /** Volleys that broke the no-repeat rule, and those that repeated a victim because too few others stood. */
+  repeatVolleys: number;
+  forcedRepeatVolleys: number;
 }
 
 export interface RaidWeek {
@@ -111,6 +130,99 @@ export interface AbilityImpact {
   basicOnly: number;
   none: number;
   creatureAbilities: number;
+}
+
+/**
+ * Barrage volleys in an event log, and how many of them hit a creature that the same gimmick's
+ * previous volley had hit. The fairness rule (docs/design/attack-patterns.md 4.5) is "never the same
+ * creature in two volleys running unless fewer creatures than the volley's size are left that the
+ * previous volley did not hit": a repeat that the rule allows is `forced`, any other is a `repeat`
+ * and means the rule is broken (it should be zero). A plain barrage is a `gimmick` event with the
+ * `barrage` op; a charged one is the `charge` event of its announcement (its marks are the volley,
+ * picked then). Picks are compared, not the creatures finally hit, because the rule is about
+ * picking. `rowSize` is the number of creatures in the fight; knock-outs are read from the log.
+ */
+export function volleyRepeats(
+  events: readonly FightEvent[],
+  rowSize: number,
+): { volleys: number; repeats: number; forced: number } {
+  const last = new Map<string, readonly string[]>();
+  const down = new Set<string>();
+  let volleys = 0;
+  let repeats = 0;
+  let forced = 0;
+  for (const e of events) {
+    if (e.t === 'knockout') {
+      down.add(e.creature);
+      continue;
+    }
+    let id: string;
+    let picks: readonly string[];
+    if (e.t === 'gimmick' && e.op === 'barrage' && e.targets !== undefined) {
+      id = e.gimmick;
+      picks = e.targets;
+    } else if (e.t === 'charge' && e.op === 'barrage') {
+      id = e.gimmick;
+      picks = e.marks;
+    } else {
+      continue;
+    }
+    volleys += 1;
+    const before = last.get(id);
+    if (before !== undefined && picks.some((c) => before.includes(c))) {
+      // Creatures standing now that the previous volley did not hit.
+      const others = rowSize - down.size - before.filter((c) => !down.has(c)).length;
+      if (others >= picks.length) repeats += 1;
+      else forced += 1;
+    }
+    last.set(id, picks);
+  }
+  return { volleys, repeats, forced };
+}
+
+/**
+ * Study: moves the Guards of a row to evenly spaced places (Guard k of g stands at the middle of the
+ * k-th g-th of the row), keeping every other creature in its order. The attack-pattern study found
+ * a spread formation worth about 12 win points over `autoPlace`'s clumped front slots, and it is the
+ * formation in which a Guard's cover and intercept can be seen.
+ */
+export function spreadGuards(row: readonly FightSlot[]): FightSlot[] {
+  const guards = row.filter((s) => s.role === 'guard');
+  if (guards.length === 0 || guards.length === row.length) return [...row];
+  const rest = row.filter((s) => s.role !== 'guard');
+  const out: (FightSlot | undefined)[] = new Array<FightSlot | undefined>(row.length).fill(
+    undefined,
+  );
+  for (const [k, g] of guards.entries()) {
+    out[Math.floor(((2 * k + 1) * row.length) / (2 * guards.length))] = g;
+  }
+  let next = 0;
+  return out.map((slot) => slot ?? (rest[next++] as FightSlot));
+}
+
+/**
+ * Study: the creatures a player brings when every player brings a Guard and a Support if they own
+ * one (the attack-pattern study's "both" population): the 3 strongest, with the weakest of them
+ * swapped for the best Guard, then the best Support, when the team has none.
+ */
+export function pickRoleTeam(creatures: readonly OwnedCreature[]): OwnedCreature[] {
+  const team = pickTeam(creatures);
+  const ranked = byPowerDesc(creatures);
+  const roleOf = (c: OwnedCreature): string => speciesOf(c.speciesId).role;
+  for (const role of ['guard', 'support']) {
+    if (team.some((c) => roleOf(c) === role)) continue;
+    const best = ranked.find((c) => roleOf(c) === role);
+    if (best === undefined) continue;
+    // The team is strongest first: swap out the weakest creature that is neither a Guard nor a Support.
+    for (let i = team.length - 1; i >= 0; i--) {
+      const t = team[i];
+      if (t !== undefined && roleOf(t) !== 'guard' && roleOf(t) !== 'support') {
+        team[i] = best;
+        break;
+      }
+    }
+  }
+  return team;
 }
 
 /** True if a finale ability has a Shield Wall effect. */
@@ -188,13 +300,17 @@ export function openRaidWeek(
     neutralSupports?: boolean;
     /** Study: per-element override of the Support effects (`RoleStudy.supportFx`). */
     supportFx?: RoleStudy['supportFx'];
+    /** Study: `spread` puts the Guards at evenly spaced places (`spreadGuards`); `auto` is `autoPlace`'s row. */
+    formation?: 'auto' | 'spread';
+    /** Study: every player brings a Guard and a Support when they own one (`pickRoleTeam`). */
+    bringRoles?: boolean;
   } = {},
 ): RaidWeek {
   if (players.length === 0) throw new RangeError('a raid needs at least one player');
   const picks: RaidPick[] = [];
   const unplaced = new Map<string, FightSlot[]>();
   for (const p of players) {
-    const team = pickTeam(p.creatures);
+    const team = options.bringRoles === true ? pickRoleTeam(p.creatures) : pickTeam(p.creatures);
     unplaced.set(
       p.id,
       team.map((c) => {
@@ -215,7 +331,8 @@ export function openRaidWeek(
   const length = players.length < 3 ? 9 : players.length * TEAM_SIZE;
   let sparse = autoPlace(new Array<FightSlot | null>(length).fill(null), unplaced);
   if (players.length < 3) sparse = fillWithGuests(sparse, resolveGuests(), avgLevel);
-  const row = sparse.filter((s): s is FightSlot => s !== null);
+  const compact = sparse.filter((s): s is FightSlot => s !== null);
+  const row = options.formation === 'spread' ? spreadGuards(compact) : compact;
 
   const rank = options.rank ?? placementRank(levels);
   const shipped = scaleBoss(boss, players.length, rank);
@@ -324,12 +441,22 @@ export function playStage(week: RaidWeek, stage: RaidStage, fightRng: Rng, lootR
   if (stage === 'finale' && week.measureAbilities) {
     week.abilityImpact = measureAbilities(week, fight, creatureAbilities.length);
   }
+  const hpStart = week.pool.current;
   week.pool.current = result.bossHpEnd;
+  const volleys = volleyRepeats(result.events, fight.row.length);
   week.stages[stage] = {
     cleared: result.cleared,
     rounds: result.rounds,
+    hpStart,
     hpEnd: result.bossHpEnd,
     reactions: result.reactions.total,
+    retreated: result.retreated,
+    enraged: result.enraged,
+    creatures: fight.row.length,
+    knockedOut: Object.values(result.perCreature).filter((c) => c.knockedOutRound !== null).length,
+    volleys: volleys.volleys,
+    repeatVolleys: volleys.repeats,
+    forcedRepeatVolleys: volleys.forced,
   };
   if (stage === 'phase1') {
     const s = result.adaptationSuggestion;
@@ -470,6 +597,19 @@ export interface RaidSummary {
   lossAfter: { phase1: number; phase2: number; finale: number };
   rounds: number;
   reactions: number;
+  /** The finale as played: what the boss pool had left when it began (share of the maximum), and so on. */
+  finale: {
+    startShare: number;
+    /** Rounds the finale lasted (the boss's `finaleRounds` plus any enrage rounds). */
+    rounds: number;
+    creatures: number;
+    knockedOut: number;
+    enraged: boolean;
+    /** Barrage volleys of the whole week, and those that repeated a victim of the previous one. */
+    volleys: number;
+    repeatVolleys: number;
+    forcedRepeatVolleys: number;
+  };
   players: Record<string, PlayerRaidResult>;
   jackpot: { rolls: number; hits: number; guaranteed: number };
 }
@@ -511,6 +651,16 @@ export function summarizeRaid(week: RaidWeek): RaidSummary {
     lossAfter: { phase1: loss('phase1'), phase2: loss('phase2'), finale: loss('finale') },
     rounds,
     reactions,
+    finale: {
+      startShare: max === 0 ? 0 : (stage('finale')?.hpStart ?? max) / max,
+      rounds: stage('finale')?.rounds ?? 0,
+      creatures: stage('finale')?.creatures ?? 0,
+      knockedOut: stage('finale')?.knockedOut ?? 0,
+      enraged: stage('finale')?.enraged === true,
+      volleys: STAGES.reduce((n, st) => n + (stage(st)?.volleys ?? 0), 0),
+      repeatVolleys: STAGES.reduce((n, st) => n + (stage(st)?.repeatVolleys ?? 0), 0),
+      forcedRepeatVolleys: STAGES.reduce((n, st) => n + (stage(st)?.forcedRepeatVolleys ?? 0), 0),
+    },
     players,
     jackpot: { ...week.jackpot },
   };
