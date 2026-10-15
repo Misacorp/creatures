@@ -23,6 +23,8 @@ export interface AppConfig {
   discordClientId: string;
   environment: string;
   version: string;
+  /** The deployed branch (shown in the footer, so Misa can see what is on staging); null when unknown. */
+  branch: string | null;
   /** "mock" while leet points are simulated; anything else means a real leet source. */
   leetSource: string;
   /** True only on staging, where the server has the dev tools on (the debug panel loads). */
@@ -176,6 +178,7 @@ export async function fetchConfig(): Promise<AppConfig> {
     discordClientId: data['discordClientId'],
     environment: data['environment'],
     version: data['version'],
+    branch: typeof data['branch'] === 'string' ? data['branch'] : null,
     leetSource: data['leetSource'],
     devTools: data['devTools'] === true,
   };

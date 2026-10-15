@@ -52,7 +52,7 @@ A floating "DEV" button opens a drawer with a section per view and shared contro
 
 ## How to test with the dev panel
 
-The panel exists only on staging (`creatures-staging.misacorp.dev`, any non-`main` branch). Production has neither the routes nor the panel code.
+The panel exists only on staging (`creatures-staging.misacorp.dev`, whichever branch was last put on staging with the `deploy` workflow's manual run). Production has neither the routes nor the panel code.
 
 1. Open the Activity on staging. A small orange **DEV** button sits at the bottom right. Tap it to open the drawer; **Close** shuts it.
 2. At the top is the **Dev clock**: it shows the game time, the game day, how far the clock is shifted and the raid week. Use +1 h, +6 h, +1 day, Next 13:37 or Next phase to move time forward (expeditions, jobs, the daily reset and raid phases follow). Reset clock puts it back to real time. The clock never goes back; use Reset clock and set the state you need again.
