@@ -1,4 +1,4 @@
-import type { BossDef, Gimmick } from '@creatures/game';
+import type { BossDef, Gimmick, SlamAim, SweepRow } from '@creatures/game';
 import type { Zone } from './types';
 
 /** True if a gimmick fires in `round` (`every: N` fires on rounds N, 2N, 3N, ...). */
@@ -12,13 +12,11 @@ export function firingIndex(g: Gimmick, round: number): number {
 }
 
 /**
- * The row a sweep hits in `round`: firing n hits `rows[(n - 1) mod length]` (`all`: every row). The
- * content and the round number name it, so the forecast can say it.
+ * The row a sweep hits in `round`: firing n hits `rows[(n - 1) mod length]` (`all`: every row;
+ * `payoffs`: the row with the most living Payoffs, which only the fight knows). The content and the
+ * round number name it, so the forecast can say it.
  */
-export function sweepRow(
-  rows: readonly ('front' | 'middle' | 'back' | 'all')[],
-  firing: number,
-): Zone | 'all' {
+export function sweepRow(rows: readonly SweepRow[], firing: number): Zone | 'all' | 'payoffs' {
   const row = rows[(((firing - 1) % rows.length) + rows.length) % rows.length];
   if (row === undefined) throw new Error('sweep has no rows');
   return row;
@@ -40,8 +38,10 @@ export function sweepRow(
 export type PatternTarget =
   | { kind: 'zone'; zone: Zone }
   | { kind: 'all' }
+  /** A sweep of the row with the most living Payoffs (picked when the sweep lands or is announced). */
+  | { kind: 'payoffs' }
   | { kind: 'random'; min: number; max: number }
-  | { kind: 'slam'; aim: 'front' | 'strongest' | 'left' | 'random' }
+  | { kind: 'slam'; aim: SlamAim }
   | { kind: 'lane'; lane: 'random' | 'strongest' }
   | { kind: 'pincer'; scope: 'rows' | 'row' };
 
@@ -73,7 +73,8 @@ function patternTarget(p: PatternShape, firing: number): PatternTarget {
   switch (p.op) {
     case 'sweep': {
       const row = sweepRow(p.rows, firing);
-      return row === 'all' ? { kind: 'all' } : { kind: 'zone', zone: row };
+      if (row === 'all') return { kind: 'all' };
+      return row === 'payoffs' ? { kind: 'payoffs' } : { kind: 'zone', zone: row };
     }
     case 'barrage':
       return { kind: 'random', min: p.shells.min, max: p.shells.max };
@@ -86,7 +87,10 @@ function patternTarget(p: PatternShape, firing: number): PatternTarget {
   }
 }
 
-/** The warnings for `round` (1-based). Empty for rounds outside 1..`boss.finaleRounds`. */
+/**
+ * The warnings for `round` (1-based). Empty for rounds outside 1..`boss.finaleRounds`. Pass the boss
+ * as the week fights it (`bossAtRank`): a move of a higher rank is not in its list.
+ */
 export function bossWarnings(boss: BossDef, round: number): BossWarning[] {
   if (!Number.isInteger(round) || round < 1 || round > boss.finaleRounds) return [];
   const out: BossWarning[] = [];

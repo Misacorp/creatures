@@ -1,4 +1,4 @@
-import { content, dungeonContent, type Gimmick } from '@creatures/game';
+import { bossAtRank, content, dungeonContent, type Gimmick } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import {
   enrageLine,
@@ -108,7 +108,7 @@ describe('phaseLine', () => {
 });
 
 const trigger = { every: 4 } as const;
-const sweep = (rows: ('front' | 'middle' | 'back' | 'all')[]): Gimmick => ({
+const sweep = (rows: ('front' | 'middle' | 'back' | 'all' | 'payoffs')[]): Gimmick => ({
   id: 's',
   name: 'S',
   trigger: { every: 5 },
@@ -241,11 +241,40 @@ describe('the attack patterns in plain words', () => {
     expect(gimmickGlyphKey(chain)).toBe('chain');
     expect(gimmickGlyphKey({ ...chain, jumps: 0 })).toBe('strike_highest_atk');
     expect(gimmickGlyphKey(slam)).toBe('slam');
-    const lines = gimmickLines(
-      'storm-sovereign',
-      content.bosses.find((b) => b.id === 'storm-sovereign')?.gimmicks ?? [],
+    const storm = content.bosses.find((b) => b.id === 'storm-sovereign');
+    if (storm === undefined) throw new Error('missing boss');
+    // At rank 1 the Sovereign has only its first two moves; the rank-gated ones come after.
+    const lines = (rank: number) =>
+      gimmickLines('storm-sovereign', bossAtRank(storm, rank).gimmicks);
+    expect(lines(1).map((l) => l.glyph)).toEqual(['chain', 'slam']);
+    expect(lines(7).map((l) => l.glyph)).toEqual(['chain', 'slam', 'sweep', 'slam']);
+  });
+
+  it('says a slam aimed at the Payoff and a sweep of the Payoff row, in words and in short', () => {
+    const payoffSlam: Gimmick = { ...slam, aim: 'payoff' };
+    expect(gimmickText(payoffSlam)).toBe(
+      'Every 4 rounds: hits your highest-attack Payoff for 340% of its attack. The creatures right beside it take 45% of the hit.',
     );
-    expect(lines.map((l) => l.glyph)).toEqual(['chain', 'slam']);
+    expect(gimmickShort(payoffSlam)).toBe(
+      'Slams your best Payoff and the ones beside it, every 4 rounds',
+    );
+    expect(gimmickText(sweep(['payoffs']))).toBe(
+      'Every 5 rounds: hits every creature in the row with the most Payoffs for 320% of its attack.',
+    );
+    expect(gimmickShort(sweep(['payoffs']))).toBe(
+      'Sweeps the row with the most Payoffs, every 5 rounds',
+    );
+    expect(gimmickText(sweep(['back', 'payoffs']))).toContain(
+      'sweeps the back row, then the row with the most Payoffs, one each time',
+    );
+    const charged: Gimmick = {
+      id: 'g',
+      name: 'G',
+      trigger: { every: 9 },
+      op: 'charge',
+      then: { op: 'sweep', rows: ['payoffs'], power: 26000 },
+    };
+    expect(gimmickText(charged)).toContain('in the row with the most Payoffs for 260%');
   });
 });
 

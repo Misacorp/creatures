@@ -83,13 +83,20 @@ const SLAM_AIM_WORDS = {
   strongest: 'your highest Attack creature',
   left: 'the left-most creature',
   random: 'a random creature',
+  payoff: 'your highest Attack Payoff',
 } as const;
 
 /** What a pattern does, without when ("sweeps the front row, then the middle row"). */
 function patternWords(p: PatternBody): string {
   switch (p.op) {
     case 'sweep': {
-      const walk = p.rows.map((r) => (r === 'all' ? 'every row' : `the ${ROW_WORDS[r]} row`));
+      const walk = p.rows.map((r) =>
+        r === 'all'
+          ? 'every row'
+          : r === 'payoffs'
+            ? 'the row with the most Payoffs'
+            : `the ${ROW_WORDS[r]} row`,
+      );
       return `sweeps ${walk.join(', then ')}`;
     }
     case 'barrage': {

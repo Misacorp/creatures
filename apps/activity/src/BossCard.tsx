@@ -54,6 +54,7 @@ function BossIcon({ icon }: { icon: BossIconInfo }) {
       >
         <Sprite sprite={sprite} scale={3} />
         <span class="boss-icon-caption">{icon.caption}</span>
+        {icon.newAtRank !== null && <span class="boss-icon-new">New at rank {icon.newAtRank}</span>}
       </button>
     </li>
   );
@@ -92,7 +93,7 @@ function ReadinessMeter({
  */
 export function BossCard({ view }: { view: RaidView }) {
   const { boss } = view;
-  const icons = bossIcons(boss);
+  const icons = bossIcons(boss, view.effectiveRank);
   const adaptation = view.party?.adaptation ?? null;
   const hp = view.party?.bossHp ?? null;
   const rank = rankLabel(view.rank);

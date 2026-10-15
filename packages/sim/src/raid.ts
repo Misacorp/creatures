@@ -1,6 +1,7 @@
 import {
   abilitiesFor,
   basicAbilities,
+  bossAtRank,
   content,
   contributionWeights,
   essenceForStage,
@@ -366,7 +367,7 @@ export function openRaidWeek(
     essence[p.id] = 0;
   }
   return {
-    boss,
+    boss: bossAtRank(boss, rank),
     players: [...players],
     row,
     bossAtk: scaled.atk,

@@ -40,6 +40,32 @@
           "rows": ["middle", "back", "front"],
           "power": 32000
         }
+      },
+      {
+        "id": "deepwater-spear",
+        "name": "Deepwater Spear",
+        "fromRank": 4,
+        "trigger": {
+          "every": 7
+        },
+        "op": "lance",
+        "lane": "strongest",
+        "power": 22000,
+        "falloffBp": 7500
+      },
+      {
+        "id": "spring-tide",
+        "name": "Spring Tide",
+        "fromRank": 7,
+        "trigger": {
+          "every": 9
+        },
+        "op": "charge",
+        "then": {
+          "op": "sweep",
+          "rows": ["payoffs"],
+          "power": 26000
+        }
       }
     ],
     "adaptation": "resist-top-reaction",
@@ -90,6 +116,32 @@
         "aim": "front",
         "power": 31000,
         "splashBp": 4500
+      },
+      {
+        "id": "magma-spit",
+        "name": "Magma Spit",
+        "fromRank": 4,
+        "trigger": {
+          "every": 5
+        },
+        "op": "slam",
+        "aim": "payoff",
+        "power": 28000,
+        "splashBp": 4000
+      },
+      {
+        "id": "eruption",
+        "name": "Eruption",
+        "fromRank": 7,
+        "trigger": {
+          "every": 7
+        },
+        "op": "charge",
+        "then": {
+          "op": "sweep",
+          "rows": ["all"],
+          "power": 14000
+        }
       }
     ],
     "adaptation": "resist-top-element",
@@ -143,6 +195,28 @@
           "shells": { "min": 3, "max": 6, "shareBp": 1500 },
           "power": 36000
         }
+      },
+      {
+        "id": "choking-vines",
+        "name": "Choking Vines",
+        "fromRank": 4,
+        "trigger": {
+          "every": 6
+        },
+        "op": "silence_ends",
+        "turns": 2
+      },
+      {
+        "id": "thorn-lash",
+        "name": "Thorn Lash",
+        "fromRank": 7,
+        "trigger": {
+          "every": 7
+        },
+        "op": "strike_highest_atk",
+        "power": 20000,
+        "jumps": 3,
+        "decayBp": 6000
       }
     ],
     "adaptation": "resist-top-reaction",
@@ -184,6 +258,29 @@
         },
         "op": "slam",
         "aim": "strongest",
+        "power": 34000,
+        "splashBp": 4500
+      },
+      {
+        "id": "static-field",
+        "name": "Static Field",
+        "fromRank": 4,
+        "trigger": {
+          "every": 5
+        },
+        "op": "sweep",
+        "rows": ["payoffs"],
+        "power": 16000
+      },
+      {
+        "id": "judgement-bolt",
+        "name": "Judgement Bolt",
+        "fromRank": 7,
+        "trigger": {
+          "every": 7
+        },
+        "op": "slam",
+        "aim": "payoff",
         "power": 34000,
         "splashBp": 4500
       }

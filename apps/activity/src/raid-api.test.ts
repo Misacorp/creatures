@@ -93,6 +93,25 @@ const raid = {
   },
 };
 
+describe('parseRaidView and the rank-gated moves', () => {
+  it('reads a move with its fromRank and refuses a fromRank that is not a whole number', () => {
+    const withMoves = (gimmicks: unknown) => ({ ...raid, boss: { ...raid.boss, gimmicks } });
+    const ok = parseRaidView(
+      withMoves([
+        { id: 'undertow', name: 'Undertow' },
+        { id: 'deepwater-spear', name: 'Deepwater Spear', fromRank: 4 },
+      ]),
+    );
+    expect(ok.boss.gimmicks.map((g) => g.fromRank)).toEqual([undefined, 4]);
+    expect(() =>
+      parseRaidView(withMoves([{ id: 'deepwater-spear', name: 'Deepwater Spear', fromRank: 'x' }])),
+    ).toThrow();
+    expect(() =>
+      parseRaidView(withMoves([{ id: 'deepwater-spear', name: 'Deepwater Spear', fromRank: 4.5 }])),
+    ).toThrow();
+  });
+});
+
 describe('parseRaidView with real server responses', () => {
   it('accepts the Raid view of a finale player: the ability, the reveal and a placed creature', () => {
     const parsed = parseRaidView(raidReveal);

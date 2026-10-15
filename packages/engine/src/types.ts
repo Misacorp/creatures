@@ -76,6 +76,12 @@ export interface FightInput {
   boss: BossDef;
   /** Boss Attack for this fight (from `scaleBoss`). */
   bossAtk: number;
+  /**
+   * How many times the boss makes its plain attack each round, 1 to 3 (absent: 1). Each attack
+   * picks its target when it is made, from who stands then, and has its own crit die; the extra
+   * dice are drawn only when this is above 1, so a stored fight without it replays as it was.
+   */
+  bossAttacks?: number;
   phase: PhaseId;
   /** The week's boss HP pool, carried across phases. */
   bossHpPool: { max: number; current: number };

@@ -87,6 +87,47 @@ describe('the dungeon content', () => {
     expect(roomModifier('nothing')).toBeUndefined();
   });
 
+  it('rejects a Boss Rank on a foe move, a signature or a modifier move (raid bosses only)', () => {
+    const withRank = (g: unknown): unknown => ({ ...(g as object), fromRank: 4 });
+    const firstWith = foes().findIndex((f) => (f.gimmicks as unknown[]).length > 0);
+    expect(() =>
+      loadDungeon(
+        foes().map((f, i) =>
+          i === firstWith ? { ...f, gimmicks: (f.gimmicks as unknown[]).map(withRank) } : f,
+        ),
+        mods(),
+        rooms,
+      ),
+    ).toThrow(/fromRank/);
+    const bossIndex = foes().findIndex((f) => f.signature !== undefined);
+    expect(() =>
+      loadDungeon(
+        foes().map((f, i) => (i === bossIndex ? { ...f, signature: withRank(f.signature) } : f)),
+        mods(),
+        rooms,
+      ),
+    ).toThrow(/fromRank/);
+    const modIndex = mods().findIndex((m) =>
+      (m.effects as { op: string }[]).some((e) => e.op === 'foe_gimmick'),
+    );
+    expect(() =>
+      loadDungeon(
+        foes(),
+        mods().map((m, i) =>
+          i === modIndex
+            ? {
+                ...m,
+                effects: (m.effects as { op: string; gimmick?: unknown }[]).map((e) =>
+                  e.op === 'foe_gimmick' ? { ...e, gimmick: withRank(e.gimmick) } : e,
+                ),
+              }
+            : m,
+        ),
+        rooms,
+      ),
+    ).toThrow(/fromRank/);
+  });
+
   it('rejects unknown keys, bad ids, duplicates and too little content', () => {
     const cases: [string, () => unknown][] = [
       [
