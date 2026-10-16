@@ -5,6 +5,10 @@ import {
   content,
   createSeededRng,
   craftCost,
+  craftHours,
+  dismantleHours,
+  dismantleRange,
+  dismantleXp,
   craftItemLevel,
   dismantleYield,
   droppableBases,
@@ -208,12 +212,19 @@ describe('drops', () => {
     grantItem(p, extra);
     expect(p.gear.bag).toHaveLength(RULES.gear.inventoryCap);
     expect(p.gear.parts.scrap - scrap).toBe(dismantleYield(extra).scrap ?? 0);
-    // Every craftable blueprint is known: one that drops is a duplicate and pays scrap.
+    // Every craftable blueprint is known: one that drops is a duplicate and adds a well-thumbed mark.
     p.gear.blueprints = droppableBases().map((b) => b.id);
     const known = p.gear.blueprints.length;
     const before = p.gear.parts.scrap;
     for (const id of [...p.gear.blueprints]) learnBlueprint(p, id);
     expect(p.gear.blueprints).toHaveLength(known);
+    expect(p.gear.parts.scrap).toBe(before);
+    expect(new Set(Object.values(p.gear.marks))).toEqual(new Set([1]));
+    // At the most marks it turns into scrap.
+    for (let i = 0; i < RULES.gear.craft.marks.max; i++) {
+      for (const id of [...p.gear.blueprints]) learnBlueprint(p, id);
+    }
+    expect(new Set(Object.values(p.gear.marks))).toEqual(new Set([RULES.gear.craft.marks.max]));
     expect(p.gear.parts.scrap - before).toBe(known * RULES.gear.drops.duplicateBlueprintScrap);
   });
 });
@@ -273,17 +284,65 @@ describe('equipping and dismantling', () => {
     expect(p.gear.bag).toHaveLength(0);
   });
 
-  it('keeps the best spares and dismantles the rest into parts', () => {
+  it('keeps the best spares in the bag and takes the rest apart in a dismantle job, Commons in a bundle of 5', () => {
     const p = player();
     for (let i = 0; i < 12; i++) {
       p.gear.bag.push(item('trail-cap', 'common', 2, [{ id: 'attack', tier: i % 2 }]));
     }
     manageGear(p);
-    // Three hats are worn (one creature each); of the 9 left, the best 3 stay.
+    // Three hats are worn (one creature each); the 9 left wait for a job.
     expect(p.creatures.flatMap((c) => wornOf(c))).toHaveLength(3);
-    expect(p.gear.bag).toHaveLength(GEAR_POLICY.spares);
-    expect(p.week.gearDismantled).toBe(12 - 3 - GEAR_POLICY.spares);
-    expect(p.gear.parts.scrap).toBeGreaterThan(0);
+    expect(p.gear.bag).toHaveLength(9);
+    expect(p.week.gearDismantled).toBe(0);
+    startJobs(p, ctx(9), new Set());
+    // The first job of a check-in crafts (nothing to craft with): the dismantle takes the slot.
+    const job = p.gear.jobs[0];
+    expect(job?.kind).toBe('dismantle');
+    expect(job?.items).toHaveLength(RULES.gear.dismantle.bundleMax);
+    // The items left the bag now, and the best spares are not among them.
+    expect(p.gear.bag).toHaveLength(9 - RULES.gear.dismantle.bundleMax);
+    expect(p.gear.parts.scrap).toBe(0);
+    expect(job?.endsAtHour).toBeCloseTo(
+      9 + jobDuration(1, 0, dismantleHours('common')) / 3_600_000,
+      6,
+    );
+    // The claim rolls the refund inside the range and pays XP (at least 6).
+    claimJobs(p, ctx(10));
+    const range = dismantleRange(job?.items ?? []);
+    expect(p.gear.parts.scrap).toBeGreaterThanOrEqual(range.scrap.min);
+    expect(p.gear.parts.scrap).toBeLessThanOrEqual(range.scrap.max);
+    expect(p.week.gearDismantled).toBe(RULES.gear.dismantle.bundleMax);
+    expect(p.gear.skillXp[job?.creatureId ?? '']).toBe(dismantleXp('common'));
+  });
+
+  it('waits for 3 Commons, but takes a Rare apart at once and gets its Essence, parts and maybe a blueprint', () => {
+    const p = player();
+    p.gear.bag.push(
+      item('trail-cap', 'common', 2, [{ id: 'attack', tier: 1 }]),
+      item('trail-cap', 'common', 2, [{ id: 'attack', tier: 1 }]),
+    );
+    // Spares: the best 3 stay, so there is nothing extra yet.
+    startJobs(p, ctx(9), new Set());
+    expect(p.gear.jobs).toHaveLength(0);
+    for (let i = 0; i < 4; i++)
+      p.gear.bag.push(
+        item('kelp-cap', 'rare', 8, [
+          { id: 'attack', tier: 0 },
+          { id: 'hp', tier: 0 },
+        ]),
+      );
+    // The weakest items are the extras; a Rare among them is taken alone.
+    p.gear.bag.push(item('kelp-cap', 'rare', 3));
+    startJobs(p, ctx(9), new Set());
+    const job = p.gear.jobs.find((j) => j.kind === 'dismantle');
+    expect(job?.items).toHaveLength(1);
+    expect(job?.items?.[0]?.rarity).toBe('rare');
+    const essence = p.essence;
+    claimJobs(p, ctx(11));
+    expect(p.essence - essence).toBeGreaterThanOrEqual(3);
+    expect(p.essence - essence).toBeLessThanOrEqual(8);
+    expect(p.week.dismantleEssence).toBe(p.essence - essence);
+    expect(p.gear.parts['tide-shard']).toBe(1);
   });
 });
 
@@ -578,5 +637,65 @@ describe('gear in the economy', () => {
         expect(w.skillLevel).toBeLessThanOrEqual(skillLevel(1e12));
       }
     }
+  });
+});
+
+describe('Reach in the simulator', () => {
+  it('aims a craft at the biggest Reach the level, the parts and the Essence above the kept 40 allow', () => {
+    const base = (): SimPlayer => {
+      const p = player();
+      p.gear.blueprints.push('trail-cap');
+      p.gear.marks['trail-cap'] = 3;
+      p.gear.parts.scrap = 100;
+      p.gear.parts['tide-shard'] = 6;
+      p.gear.parts.glimmer = 3;
+      p.essence = 200;
+      const c = three(p)[0];
+      if (c !== undefined) p.gear.skillXp[c.id] = 1_000; // level 6
+      return p;
+    };
+    const epic = base();
+    startJobs(epic, ctx(9), new Set(['p01/sproutle', 'p01/splashet']));
+    expect(epic.gear.jobs[0]).toMatchObject({ kind: 'craft', reach: 'epic', marks: 3 });
+    expect(epic.essence).toBe(200 - 70);
+    expect(epic.gear.parts.glimmer).toBe(2);
+    expect(epic.gear.jobs[0]?.endsAtHour).toBeCloseTo(
+      9 + jobDuration(6, 0, craftHours('epic')) / 3_600_000,
+      6,
+    );
+    // Essence of 100 leaves 30 over the kept 40... not enough for an Epic (70), enough for a Rare (25 + 40 = 65 <= 100).
+    const rare = base();
+    rare.essence = 100;
+    startJobs(rare, ctx(9), new Set(['p01/sproutle', 'p01/splashet']));
+    expect(rare.gear.jobs[0]).toMatchObject({ reach: 'rare' });
+    expect(rare.essence).toBe(75);
+    // Too little Essence above the kept 40, or too low a level: a plain craft.
+    const poor = base();
+    poor.essence = 60;
+    startJobs(poor, ctx(9), new Set(['p01/sproutle', 'p01/splashet']));
+    expect(poor.gear.jobs[0]).toMatchObject({ reach: 'none' });
+    expect(poor.essence).toBe(60);
+    const novice = base();
+    novice.gear.skillXp = {};
+    startJobs(novice, ctx(9), new Set(['p01/sproutle', 'p01/splashet']));
+    expect(novice.gear.jobs[0]).toMatchObject({ reach: 'none' });
+  });
+
+  it('claims a Reach craft with the marks it started with, and counts it', () => {
+    const p = player();
+    p.gear.blueprints.push('trail-cap');
+    p.gear.marks['trail-cap'] = 10;
+    p.gear.parts.scrap = 100;
+    p.gear.parts['spark-shard'] = 6;
+    p.essence = 500;
+    const [cindle] = three(p);
+    if (cindle !== undefined) p.gear.skillXp[cindle.id] = 250; // level 3
+    startJobs(p, ctx(9), new Set(['p01/sproutle', 'p01/splashet']));
+    const job = p.gear.jobs[0];
+    expect(job).toMatchObject({ reach: 'rare', marks: 10 });
+    claimJobs(p, ctx(30));
+    expect(p.week.gearReaches).toBe(1);
+    expect(p.gear.bag.at(-1)?.rarity).not.toBe('common');
+    expect(p.gear.skillXp[job?.creatureId ?? '']).toBe(250 + jobXp(0, craftHours('rare')));
   });
 });

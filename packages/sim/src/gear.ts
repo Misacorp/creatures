@@ -2,9 +2,15 @@ import {
   GEAR_SLOTS,
   RULES,
   addParts,
+  chance,
   craftCost,
+  craftCostFor,
+  craftHours,
   craftItemLevel,
   craftable,
+  dismantleHours,
+  dismantleLearnBp,
+  dismantleXp,
   dismantleYield,
   expeditionContent,
   gearBase,
@@ -14,7 +20,9 @@ import {
   jobXp,
   partsOfSpec,
   planEquipBest,
-  rollCraft,
+  reachMinLevel,
+  rollCraftItem,
+  rollDismantle,
   rollFestivalItem,
   rollFinaleReward,
   rollWelcomeKit,
@@ -23,6 +31,7 @@ import {
   supplyJobMs,
   supplyJobXp,
   type BestCandidate,
+  type DismantleItem,
   type Element,
   type GearItem,
   type GearSlot,
@@ -30,6 +39,7 @@ import {
   type PartKind,
   type PartsBundle,
   type RaidStage,
+  type ReachId,
   type Rng,
   type SupplyDef,
 } from '@creatures/game';
@@ -55,12 +65,18 @@ import type { SimJob, SimPlayer } from './state';
  * 2. Equip best: the game's own `planEquipBest` over the player's 3 strongest creatures (by power
  *    without gear), the bag and what they wear, under the wear rule (slot unlock, item level at most
  *    the creature's level, role-locked Charms).
- * 3. Dismantle: every item that is not worn, except the `spares` best spares (by what they would add
- *    to the pool creature they suit best, whether or not that creature can wear them yet).
- * 4. Start jobs in free workshop slots on creatures that are not exploring: make a supply when fewer
- *    than `supplyStock` are in stock (a new player's first craft comes before any supply), else craft
- *    the blueprint whose plain item would add most to a team creature. The creature with the most
- *    Crafting XP goes first. The gear's Busy paws and Apprentice lines count, as in the worker.
+ * 3. Mark what to dismantle: every item that is not worn, except the `spares` best spares (by what they
+ *    would add to the pool creature they suit best, whether or not that creature can wear them yet).
+ *    Dismantling is a Workshop job now (15 minutes to 2 hours, the items leave the bag when it starts),
+ *    so these wait in the bag until a free slot takes them.
+ * 4. Start jobs in free workshop slots on creatures that are not exploring: the first job of a check-in
+ *    makes a supply when fewer than `supplyStock` are in stock (a new player's first craft comes before
+ *    any supply), else crafts the blueprint whose plain item would add most to a team creature, aimed
+ *    with the biggest Reach the parts and the Essence above `essenceKeep` pay for (and the creature's
+ *    Crafting level allows). The second job takes apart what is marked (a bundle of up to 5 Commons, or
+ *    the best Epic, Festival or Rare piece alone, Essence first) once `dismantleAt` pieces wait or any
+ *    Rare or better does, else it crafts too. The creature with the most Crafting XP goes first. The
+ *    gear's Busy paws and Apprentice lines count, as in the worker.
  *
  * Drops follow the worker: scrap for cleared phases, one reward slot per participant of a won finale
  * (plus the Festival piece in a Festival week), expedition loot and the welcome kit at the start.
@@ -70,6 +86,10 @@ export const GEAR_POLICY = {
   spares: 3,
   /** The workshop makes supplies while fewer than this many are in stock (and in open jobs). */
   supplyStock: 4,
+  /** Essence a Reach never touches: the least kept back for evolutions. */
+  essenceKeep: 40,
+  /** Commons waiting in the bag before a dismantle job is worth a slot (a Rare or better always is). */
+  dismantleAt: 3,
 } as const;
 
 /** What a check-in needs to know about time and randomness for gear. */
@@ -147,12 +167,24 @@ export function grantDungeonLoot(
   for (const item of gear) grantItem(player, item);
 }
 
-/** A blueprint already known turns into scrap. */
+/** Adds a well-thumbed mark to a known blueprint, up to the most. Returns whether one was added. */
+function addMark(player: SimPlayer, baseId: string): boolean {
+  const marks = player.gear.marks[baseId] ?? 0;
+  if (marks >= RULES.gear.craft.marks.max) return false;
+  player.gear.marks[baseId] = marks + 1;
+  return true;
+}
+
+/**
+ * A blueprint find (a trip, the finale, the welcome kit): a new one is learned; one already known adds
+ * a well-thumbed mark, and turns into scrap only at the most marks (like the worker's grants).
+ */
 export function learnBlueprint(player: SimPlayer, baseId: string): void {
-  if (player.gear.blueprints.includes(baseId)) {
-    creditParts(player, { scrap: RULES.gear.drops.duplicateBlueprintScrap });
-  } else {
+  if (!player.gear.blueprints.includes(baseId)) {
     player.gear.blueprints.push(baseId);
+    player.gear.marks[baseId] = 0;
+  } else if (!addMark(player, baseId)) {
+    creditParts(player, { scrap: RULES.gear.drops.duplicateBlueprintScrap });
   }
 }
 
@@ -261,16 +293,20 @@ function claimOne(player: SimPlayer, job: SimJob, ctx: GearContext): void {
   let xp = 0;
   if (job.kind === 'craft' && job.baseId !== undefined) {
     const base = gearBase(job.baseId);
+    const reach = job.reach ?? 'none';
     if (base !== undefined) {
-      player.gear.bag.push(newItem(player, rollCraft(ctx.rng, base.id, level)));
+      const made = rollCraftItem(ctx.rng, base.id, level, { reach, marks: job.marks ?? 0 });
+      player.gear.bag.push(newItem(player, made.item));
       player.gear.crafted += 1;
       player.week.gearCrafts += 1;
       player.week.gearItems += 1;
+      if (reach !== 'none') player.week.gearReaches += 1;
+      if (reach === 'epic') player.week.gearReachEpics += 1;
       if (player.gear.firstCraftAfterDays === null && player.gear.joinDay !== null) {
         player.gear.firstCraftAfterDays = ctx.hour / 24 - player.gear.joinDay;
       }
     }
-    xp = jobXp();
+    xp = jobXp(0, craftHours(reach));
   } else if (job.kind === 'supply') {
     const def = job.supplyId === undefined ? undefined : supplyDef(job.supplyId);
     if (def !== undefined) {
@@ -280,6 +316,26 @@ function claimOne(player: SimPlayer, job: SimJob, ctx: GearContext): void {
       if (def.tier === 'great') player.stats.supplies_crafted_great += def.blueprint.yield;
       xp = supplyJobXp(def);
     }
+  } else if (job.kind === 'dismantle' && job.items !== undefined && job.items.length > 0) {
+    // The refund is rolled now, inside the items' ranges (no Crafting level in it); each item that can
+    // teach a blueprint has the worker's chance to teach it or add a mark.
+    const rolled = rollDismantle(ctx.rng, job.items);
+    creditParts(player, rolled.parts);
+    player.essence += rolled.essence;
+    player.week.dismantleEssence += rolled.essence;
+    player.week.gearDismantled += job.items.length;
+    const learnBp = dismantleLearnBp(level);
+    for (const item of job.items) {
+      const base = gearBase(item.baseId);
+      if (base === undefined || !craftable(base) || !chance(ctx.rng, learnBp, 10_000)) continue;
+      if (!player.gear.blueprints.includes(base.id)) {
+        player.gear.blueprints.push(base.id);
+        player.gear.marks[base.id] = 0;
+      } else {
+        addMark(player, base.id);
+      }
+    }
+    xp = dismantleXp((job.items[0] as DismantleItem).rarity);
   }
   player.gear.skillXp[job.creatureId] =
     (player.gear.skillXp[job.creatureId] ?? 0) +
@@ -340,27 +396,24 @@ function equipBest(player: SimPlayer): void {
   player.gear.bag = items.filter((i) => !worn.has(i));
 }
 
-/** Dismantles the unworn items, keeping the best spares. */
-function dismantleExtras(player: SimPlayer): void {
+/** The unworn items beyond the best spares, in the order the dismantle jobs should take them (lowest score first). */
+function extras(player: SimPlayer): SimItem[] {
   const pool = gearPool(player);
-  const candidates = player.gear.bag
+  const ranked = player.gear.bag
     .map((item) => ({
       item,
       score: Math.max(0, ...pool.map((c) => scoreFor(item, c))),
     }))
     .sort((a, b) => b.score - a.score || a.item.uid - b.item.uid);
-  const drop = candidates.slice(GEAR_POLICY.spares);
-  if (drop.length === 0) return;
-  const gone = new Set(drop.map((d) => d.item.uid));
-  for (const d of drop) creditParts(player, dismantleYield(d.item));
-  player.week.gearDismantled += drop.length;
-  player.gear.bag = player.gear.bag.filter((i) => !gone.has(i.uid));
+  return ranked
+    .slice(GEAR_POLICY.spares)
+    .map((r) => r.item)
+    .reverse();
 }
 
-/** Equip best, then dismantle (see `GEAR_POLICY`). Every player wears and sorts what they have. */
+/** Equip best (see `GEAR_POLICY`): what is left over waits for a dismantle job. Every player wears what they have. */
 export function manageGear(player: SimPlayer): void {
   equipBest(player);
-  dismantleExtras(player);
 }
 
 // --- Starting jobs ---
@@ -368,6 +421,8 @@ export function manageGear(player: SimPlayer): void {
 interface JobPlan {
   job: Omit<SimJob, 'creatureId' | 'endsAtHour'>;
   cost: PartsBundle;
+  /** Essence a Reach pays (taken from the player's Essence). */
+  essence?: number;
 }
 
 /** Supplies in stock and in the workshop's open jobs, all kinds and tiers together. */
@@ -411,24 +466,50 @@ function firstCraftPending(player: SimPlayer): boolean {
 
 /**
  * The blueprint to craft: the base whose plain item (Common, at the item level this crafter makes)
- * adds most to one of the team creatures, among those the parts pay for. Ties go to the base id.
+ * adds most to one of the team creatures, among those the parts pay for. Ties go to the base id. It
+ * is aimed with the biggest Reach the crafter's level, the parts and the Essence above
+ * `GEAR_POLICY.essenceKeep` allow (Reach for Epic, else for Rare, else a plain craft).
  */
 function planCraft(player: SimPlayer, level: number): JobPlan | null {
   if (inventoryUsed(player) >= RULES.gear.inventoryCap) return null;
   const pool = gearPool(player);
-  let best: { plan: JobPlan; score: number; id: string } | null = null;
+  let best: { baseId: string; score: number } | null = null;
   for (const baseId of player.gear.blueprints) {
     const base = gearBase(baseId);
     if (base === undefined || !craftable(base)) continue;
-    const cost = craftCost(baseId);
-    if (!canPay(player, cost)) continue;
+    if (!canPay(player, craftCost(baseId))) continue;
     const plain = itemOf(baseId, 'common', craftItemLevel(level), []);
     const score = Math.max(0, ...pool.map((c) => scoreFor(plain, c)));
     const better =
-      best === null || score > best.score || (score === best.score && baseId < best.id);
-    if (better) best = { plan: { job: { kind: 'craft', baseId }, cost }, score, id: baseId };
+      best === null || score > best.score || (score === best.score && baseId < best.baseId);
+    if (better) best = { baseId, score };
   }
-  return best === null ? null : best.plan;
+  if (best === null) return null;
+  const marks = player.gear.marks[best.baseId] ?? 0;
+  const reaches: readonly ReachId[] = ['epic', 'rare', 'none'];
+  for (const reach of reaches) {
+    if (level < reachMinLevel(reach)) continue;
+    const { parts, essence } = craftCostFor(best.baseId, reach, player.gear.parts);
+    if (!canPay(player, parts)) continue;
+    if (essence > 0 && player.essence - essence < GEAR_POLICY.essenceKeep) continue;
+    return { job: { kind: 'craft', baseId: best.baseId, reach, marks }, cost: parts, essence };
+  }
+  return null;
+}
+
+/**
+ * What to take apart next, if it is worth a slot: the best Epic or Festival piece alone, else a Rare
+ * (they pay Essence), else a bundle of up to 5 Commons once `GEAR_POLICY.dismantleAt` wait. Only items
+ * beyond the best spares are ever taken.
+ */
+function planDismantle(player: SimPlayer): SimItem[] | null {
+  const waiting = extras(player);
+  const rank = (i: SimItem): number => (i.rarity === 'common' ? 0 : i.rarity === 'rare' ? 1 : 2);
+  const top = [...waiting].sort((a, b) => rank(b) - rank(a) || a.uid - b.uid)[0];
+  if (top !== undefined && rank(top) > 0) return [top];
+  const commons = waiting.filter((i) => i.rarity === 'common');
+  if (commons.length < GEAR_POLICY.dismantleAt) return null;
+  return commons.slice(0, RULES.gear.dismantle.bundleMax);
 }
 
 /**
@@ -450,20 +531,47 @@ export function startJobs(
   for (const creature of crafters) {
     if (player.gear.jobs.length >= RULES.gear.workshopSlots) return;
     const level = skillLevel(player.gear.skillXp[creature.id] ?? 0);
-    const plan = firstCraftPending(player)
-      ? (planCraft(player, level) ?? planSupply(player, level))
-      : (planSupply(player, level) ?? planCraft(player, level));
+    const busyBp = foldedCreature(creature).rules.busyPawsBp;
+    const craftPlan = (): JobPlan | null =>
+      firstCraftPending(player)
+        ? (planCraft(player, level) ?? planSupply(player, level))
+        : (planSupply(player, level) ?? planCraft(player, level));
+    // The first job of a check-in crafts; the second takes apart what waits (a slot goes to one
+    // dismantle at a time), and either falls back to the other when it has nothing to do.
+    const dismantleOpen = player.gear.jobs.some((j) => j.kind === 'dismantle');
+    const tryDismantle = (): SimItem[] | null => (dismantleOpen ? null : planDismantle(player));
+    let plan: JobPlan | null = null;
+    let items: SimItem[] | null = null;
+    if (player.gear.jobs.length === 0) {
+      plan = craftPlan();
+      if (plan === null) items = tryDismantle();
+    } else {
+      items = tryDismantle();
+      if (items === null) plan = craftPlan();
+    }
+    if (items !== null) {
+      const rarity = (items[0] as SimItem).rarity;
+      const gone = new Set(items.map((i) => i.uid));
+      player.gear.bag = player.gear.bag.filter((i) => !gone.has(i.uid));
+      player.gear.jobs.push({
+        kind: 'dismantle',
+        creatureId: creature.id,
+        items: items.map((i) => ({ baseId: i.baseId, rarity: i.rarity, itemLevel: i.itemLevel })),
+        endsAtHour: ctx.hour + jobDuration(level, busyBp, dismantleHours(rarity)) / HOUR_MS,
+      });
+      continue;
+    }
     if (plan === null) return;
     pay(player, plan.cost);
+    player.essence -= plan.essence ?? 0;
     const kind: JobKind = plan.job.kind;
-    const busyBp = foldedCreature(creature).rules.busyPawsBp;
     const supply = plan.job.supplyId === undefined ? undefined : supplyDef(plan.job.supplyId);
     const ms =
       kind === 'supply'
         ? supply === undefined
           ? 0
           : minusBp(supplyJobMs(supply, level), busyBp)
-        : jobDuration(level, busyBp);
+        : jobDuration(level, busyBp, craftHours(plan.job.reach ?? 'none'));
     player.gear.jobs.push({
       ...plan.job,
       creatureId: creature.id,

@@ -176,6 +176,11 @@ export interface WeekRecord {
   gearLevels: number;
   /** Crafts claimed so far. */
   crafted: number;
+  /** This week: Reach crafts claimed (of which for an Epic), items dismantled, and the Essence that gave back. */
+  gearReaches: number;
+  gearReachEpics: number;
+  gearDismantled: number;
+  dismantleEssence: number;
   /** Highest Crafting level on any creature. */
   skillLevel: number;
   scrap: number;
@@ -489,6 +494,10 @@ function record(player: SimPlayer, week: number): WeekRecord {
     gearPower: team.reduce((n, c) => n + gearPowerOf(c), 0),
     gearLevels: team.reduce((n, c) => n + wornItemLevels(c), 0),
     crafted: player.gear.crafted,
+    gearReaches: player.week.gearReaches,
+    gearReachEpics: player.week.gearReachEpics,
+    gearDismantled: player.week.gearDismantled,
+    dismantleEssence: player.week.dismantleEssence,
     skillLevel: bestSkillLevel(player),
     scrap: player.gear.parts.scrap,
     dungeonDepth: player.dungeon.depth,

@@ -1,4 +1,6 @@
 import type {
+  DismantleItem,
+  ReachId,
   ExpeditionLength,
   FamiliarityRecord,
   GearSlot,
@@ -97,8 +99,12 @@ export interface WeekCounters {
   gearCrafts: number;
   /** Items that dropped or were crafted. */
   gearItems: number;
-  /** Items dismantled. */
+  /** Items taken apart in dismantle jobs (counted when the job is claimed). */
   gearDismantled: number;
+  /** Crafts claimed that were a Reach for a Rare or an Epic, and the Essence dismantle jobs gave back. */
+  gearReaches: number;
+  gearReachEpics: number;
+  dismantleEssence: number;
   /** Daily dungeon: runs made, runs cleared, and what they paid (Bait, Essence, scrap, gear items). */
   dungeonRuns: number;
   dungeonClears: number;
@@ -120,6 +126,9 @@ export function emptyWeek(): WeekCounters {
     gearCrafts: 0,
     gearItems: 0,
     gearDismantled: 0,
+    gearReaches: 0,
+    gearReachEpics: 0,
+    dismantleEssence: 0,
     dungeonRuns: 0,
     dungeonClears: 0,
     dungeonBait: 0,
@@ -150,8 +159,12 @@ export interface SimJob {
   creatureId: string;
   /** Absolute simulated hour (since the start of the sim) at which the job is done. */
   endsAtHour: number;
-  /** Craft: the base crafted. */
+  /** Craft: the base crafted, what it is aimed at and the blueprint's marks when it started. */
   baseId?: string;
+  reach?: ReachId;
+  marks?: number;
+  /** Dismantle: the items taken apart (they left the bag when the job started). */
+  items?: DismantleItem[];
   /** Supply: the supply crafted. */
   supplyId?: string;
 }
@@ -163,6 +176,8 @@ export interface GearState {
   parts: Record<PartKind, number>;
   /** Base ids of the blueprints learned. */
   blueprints: string[];
+  /** Well-thumbed marks per blueprint base id (0 to the most). */
+  marks: Record<string, number>;
   jobs: SimJob[];
   /** Crafting XP per creature id. */
   skillXp: Record<string, number>;
@@ -181,6 +196,7 @@ export function emptyGearState(): GearState {
     bag: [],
     parts: Object.fromEntries(PART_KINDS.map((k) => [k, 0])) as Record<PartKind, number>,
     blueprints: [],
+    marks: {},
     jobs: [],
     skillXp: {},
     nextUid: 1,
@@ -321,7 +337,11 @@ export function clonePlayer(p: SimPlayer): SimPlayer {
       bag: p.gear.bag.map(cloneItem),
       parts: { ...p.gear.parts },
       blueprints: [...p.gear.blueprints],
-      jobs: p.gear.jobs.map((j) => ({ ...j })),
+      marks: { ...p.gear.marks },
+      jobs: p.gear.jobs.map((j) => ({
+        ...j,
+        ...(j.items === undefined ? {} : { items: [...j.items] }),
+      })),
       skillXp: { ...p.gear.skillXp },
     },
     dungeon: { ...p.dungeon },
