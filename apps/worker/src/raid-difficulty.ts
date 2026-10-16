@@ -16,4 +16,4 @@
  *
  * 0 is what weeks created before this column existed have. Only ever raise it.
  */
-export const RAID_DIFFICULTY_VERSION = 1;
+export const RAID_DIFFICULTY_VERSION = 2;
