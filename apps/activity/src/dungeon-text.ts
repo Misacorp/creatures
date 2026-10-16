@@ -50,6 +50,31 @@ export function landmarkLine(landmark: NonNullable<DungeonToday['landmarkBoss']>
     : `${waits} It winds up ${foe.signature.name} a round ahead.`;
 }
 
+/**
+ * The supply promise on the pre-run card, from the rules (`RULES.dungeon.perRoom` and `supplyTiers`):
+ * which rooms drop a supply, and that deeper runs drop better ones (the tier odds grow with depth, and
+ * good ones start at a depth). Null when no room drops a supply.
+ */
+export function supplyPromiseLine(depth: number): string | null {
+  const per = RULES.dungeon.perRoom;
+  const dropping = per.flatMap((room, i) => (room.supply > 0 ? [i] : []));
+  if (dropping.length === 0) return null;
+  const last = per.length - 1;
+  let promise: string;
+  if (dropping.length === per.length) promise = 'Every room you clear drops a supply.';
+  else if (dropping.length === 1 && dropping[0] === 0) {
+    promise = 'Clear the first room and you take home a supply, guaranteed.';
+  } else if (dropping.length === 1 && dropping[0] === last) {
+    promise = 'Clear the whole dungeon and you take home a supply, guaranteed.';
+  } else promise = 'Clearing rooms drops supplies, guaranteed.';
+  const goodFrom = RULES.dungeon.supplyTiers.good.fromDepth;
+  const better =
+    depth >= goodFrom
+      ? 'The deeper you go, the better they get.'
+      : `Better ones start at depth ${String(goodFrom)}.`;
+  return `${promise} ${better}`;
+}
+
 /** Why a run cannot start now, in words; null when it can. */
 export function blockedText(today: Pick<DungeonToday, 'blocked' | 'canRun'>): string | null {
   switch (today.blocked) {

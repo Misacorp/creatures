@@ -61,6 +61,8 @@ interface Props {
   /** Loads the state again (a trip that ended gets its choice rolled by the server then); true when it started. */
   onRefresh: () => boolean;
   onDismissReveal: () => void;
+  /** Opens the Workshop tab, where supplies are crafted. */
+  onOpenWorkshop?: () => void;
 }
 
 export function Expeditions({
@@ -74,6 +76,7 @@ export function Expeditions({
   onClaim,
   onRefresh,
   onDismissReveal,
+  onOpenWorkshop,
 }: Props) {
   const [screen, setScreen] = useState<Screen>('trips');
   const active = state.expeditions.filter((e) => e.status === 'active');
@@ -159,13 +162,13 @@ export function Expeditions({
               creatures={state.creatures}
               slots={state.slots}
               stock={state.supplies}
-              bait={state.balances.bait}
               busy={busy}
               view={destinations.value}
               viewFailed={destinations.failed}
               timezone={timezone}
               onRetry={destinations.reload}
               onSend={onSend}
+              {...(onOpenWorkshop === undefined ? {} : { onOpenWorkshop })}
             />
           )}
         </>

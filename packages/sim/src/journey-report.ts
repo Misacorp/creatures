@@ -83,8 +83,14 @@ export interface PresetSummary {
   blockedShare: Record<string, number>;
   /** Share of the player-days on which each limit was the binding one. */
   bindingShare: Record<string, number>;
-  /** Supplies used and bought per player and week, medians over the run. */
-  suppliesPerWeek: { used: number; bought: number };
+  /** Supplies used and obtained (by source) per player and week, medians over the run. */
+  suppliesPerWeek: {
+    used: number;
+    found: number;
+    dungeon: number;
+    crafted: number;
+    gift: number;
+  };
 }
 
 export interface ServerWeekSummary {
@@ -272,7 +278,10 @@ export function buildJourneyReport(
       bindingShare: shares(journeys, (d) => [d.limit]),
       suppliesPerWeek: {
         used: perWeek((d) => d.suppliesUsed),
-        bought: perWeek((d) => d.suppliesBought),
+        found: perWeek((d) => d.suppliesFound),
+        dungeon: perWeek((d) => d.suppliesDungeon),
+        crafted: perWeek((d) => d.suppliesCrafted),
+        gift: perWeek((d) => d.suppliesGift),
       },
     };
   }

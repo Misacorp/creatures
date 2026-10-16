@@ -39,12 +39,12 @@ describe('action names', () => {
   it('names a trip the same whatever order its supplies were picked in', () => {
     const base = { creatureId: 'c1', destination: 'tide-pools', duration: 'short' } as const;
     const a = { source: 'owned', id: 'lantern' } as const;
-    const b = { source: 'buy', id: 'rope' } as const;
+    const b = { source: 'owned', id: 'rope' } as const;
     expect(ActionIds.send({ ...base, supplies: [a, b] })).toBe(
       ActionIds.send({ ...base, supplies: [b, a] }),
     );
     expect(ActionIds.send({ ...base, supplies: [a, b] })).toBe(
-      'send:c1:tide-pools:short:buy:rope,owned:lantern',
+      'send:c1:tide-pools:short:owned:lantern,owned:rope',
     );
   });
 

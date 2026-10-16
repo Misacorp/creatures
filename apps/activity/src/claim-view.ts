@@ -74,8 +74,15 @@ export function nothingInLoot(result: Pick<ClaimResult, 'loot'>): boolean {
 export function foundSupplies(
   result: Pick<ClaimResult, 'loot'>,
 ): { id: string; name: string; amount: number }[] {
+  return groupSupplies(result.loot?.supplies ?? []);
+}
+
+/** Supply ids counted by id, in the order they first appear, each with its name. */
+export function groupSupplies(
+  ids: readonly string[],
+): { id: string; name: string; amount: number }[] {
   const counts = new Map<string, number>();
-  for (const id of result.loot?.supplies ?? []) counts.set(id, (counts.get(id) ?? 0) + 1);
+  for (const id of ids) counts.set(id, (counts.get(id) ?? 0) + 1);
   return [...counts].map(([id, amount]) => ({ id, name: supplyName(id), amount }));
 }
 

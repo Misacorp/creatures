@@ -902,16 +902,16 @@ export function expectedTripWorth(length: ExpeditionLength): number {
     (l.loot.shardBp * w.shard) / BP +
     (l.loot.glimmerBp * w.glimmer) / BP +
     (l.loot.blueprintBp * w.blueprint) / BP +
-    (l.loot.supplyBp * averageSupplyPrice()) / BP +
+    (l.loot.supplyBp * averageSupplyWorth()) / BP +
     (l.journalBp * w.journal) / BP +
     (l.xp * w.xpPer10) / 10
   );
 }
 
-/** The mean Bait price of a basic supply (what a found supply is worth at low ranks). */
-export function averageSupplyPrice(): number {
+/** The mean Bait worth of a basic supply (what a found supply is worth at low ranks). */
+export function averageSupplyWorth(): number {
   const basics = expeditionContent.supplies.filter((s) => s.tier === 'basic');
-  return basics.reduce((n, s) => n + s.price, 0) / basics.length;
+  return basics.reduce((n, s) => n + s.worth, 0) / basics.length;
 }
 
 /** The expected worth of what a goal that works out adds. */
@@ -921,7 +921,7 @@ export function goalRewardWorth(goal: PushOnGoalDef, length: ExpeditionLength): 
   return (
     (r.catchRolls ?? 0) * rollWorth(shiftedDefaultOdds(length)) +
     partsWorth(r.parts) +
-    (r.supply === true ? averageSupplyPrice() : 0) +
+    (r.supply === true ? averageSupplyWorth() : 0) +
     (r.gear === undefined ? 0 : w.gear[r.gear]) +
     (r.blueprint === true ? w.blueprint : 0) +
     (r.journal === true ? w.journal : 0) +

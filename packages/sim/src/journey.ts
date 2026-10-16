@@ -247,10 +247,17 @@ export interface DayRecord {
   scrap: number;
   glimmer: number;
   shards: number;
-  /** Supplies in stock, and supplies used and bought so far. */
+  /** Supplies in stock, and supplies used so far. */
   suppliesOwned: number;
   suppliesUsed: number;
-  suppliesBought: number;
+  /** Supplies obtained so far, by source: found on trips, dropped by the dungeon, crafted, rank gifts. */
+  suppliesFound: number;
+  suppliesDungeon: number;
+  suppliesCrafted: number;
+  /** Of the crafted ones, the good and the great tier. */
+  suppliesCraftedGood: number;
+  suppliesCraftedGreat: number;
+  suppliesGift: number;
   /** Gear items owned, worn, the worn ones by rarity, and the upgrade levels on the worn ones. */
   itemsOwned: number;
   itemsWorn: number;
@@ -385,7 +392,12 @@ export function recordDay(
     shards: shardsOf(player),
     suppliesOwned: Object.values(player.supplies).reduce((n, x) => n + x, 0),
     suppliesUsed: player.stats.supplies_used,
-    suppliesBought: player.stats.supplies_bought,
+    suppliesFound: player.stats.supplies_found,
+    suppliesDungeon: player.stats.supplies_dungeon,
+    suppliesCrafted: player.stats.supplies_crafted,
+    suppliesCraftedGood: player.stats.supplies_crafted_good,
+    suppliesCraftedGreat: player.stats.supplies_crafted_great,
+    suppliesGift: player.stats.supplies_gift,
     itemsOwned: items.length,
     itemsWorn: worn.length,
     wornRarity,

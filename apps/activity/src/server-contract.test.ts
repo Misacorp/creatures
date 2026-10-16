@@ -693,14 +693,14 @@ describe('the expedition requests the client sends', () => {
       creatureId: 'c',
       destination: 'tidepools',
       duration: 'day' as const,
-      supplies: [{ id: 'lure-good', source: 'buy' as const, price: 30 }],
+      supplies: [{ id: 'lure-good', source: 'owned' as const, price: 30 }],
       mood: 'happy',
     };
     const body = sendBody(extra, 'k');
     expect(Object.keys(body).sort()).toEqual(
       Object.keys(expeditionRequestBodies['expedition-send'].body).sort(),
     );
-    expect(body.supplies).toEqual([{ id: 'lure-good', source: 'buy' }]);
+    expect(body.supplies).toEqual([{ id: 'lure-good', source: 'owned' }]);
     expect(body.duration).toBe('day');
   });
 
@@ -740,7 +740,7 @@ describe('the expedition requests the client sends', () => {
     expect(failed.result.pushOn).toMatchObject({ risk: 'risky', outcome: 'failed' });
     const worked = parseClaimResponse(expeditionClaimWorked);
     expect(worked.result.slotUnlocked?.total).toBe(2);
-    expect(worked.result.rankGifts?.[0]).toMatchObject({ rank: 4, bait: 15, parts: { scrap: 2 } });
+    expect(worked.result.rankGifts?.[0]).toMatchObject({ rank: 4, bait: 4, parts: { scrap: 2 } });
     expect(worked.result.rankGifts?.[0]?.supplies).toEqual([]);
     expect(worked.result.journal?.[0]?.entryId).toBe('tide-first-pool');
     expect(parseClaimResponse(expeditionClaimRecall).result.recalled).toBe(true);

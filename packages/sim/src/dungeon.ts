@@ -212,6 +212,10 @@ export function playDungeonDay(
     week.dungeonScrap += parts.scrap ?? 0;
     week.dungeonItems += drop.gear.length;
     grantDungeonLoot(player, parts, drop.gear);
+    for (const id of drop.supplies) {
+      player.supplies[id] = (player.supplies[id] ?? 0) + 1;
+      player.stats.supplies_dungeon += 1;
+    }
     const bonus = firstOfDay ? streakBonus(d.streak) : null;
     if (bonus !== null) {
       player.bait += bonus.bait;

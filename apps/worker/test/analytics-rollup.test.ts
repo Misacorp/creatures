@@ -66,12 +66,37 @@ const SEND: AnalyticsEvent = {
   duration: 'short',
   destination: 'unknown-place',
   supplies: ['unknown-supply', 'unknown-supply'],
-  bought: 1,
-  cost: 12,
   rank: 2,
 };
 
 describe('analytics_daily: schema and values', () => {
+  it('still counts supplies bought on trips sent before they stopped being sold', async () => {
+    await runCore(nextGuild(), (ctx) => {
+      ctx.sql.exec(
+        'INSERT INTO analytics_events (id, at, kind, actor_hash, props_json) VALUES (?, ?, ?, ?, ?)',
+        9_000_001,
+        startOf(DAY) + HOUR,
+        'expedition_send',
+        ALICE,
+        JSON.stringify({
+          species: 'splashet',
+          duration: 'short',
+          destination: 'unknown',
+          supplies: ['unknown', 'unknown'],
+          bought: 2,
+          cost: 24,
+          rank: 1,
+        }),
+      );
+      ctx.core.rollup.rollDay(DAY, HELSINKI);
+      const list = daily(ctx, DAY);
+      expect(value(list, 'flow', { currency: 'supplies', dir: 'source', label: 'buy' })).toBe(2);
+      expect(value(list, 'flow', { currency: 'supplies', dir: 'sink', label: 'expedition' })).toBe(
+        2,
+      );
+    });
+  });
+
   it('is created by migration 20', async () => {
     await runCore(nextGuild(), (ctx) => {
       expect(LATEST_SCHEMA_VERSION).toBeGreaterThanOrEqual(20);
@@ -242,7 +267,8 @@ describe('rollDay', () => {
       expect(flow('scrap', 'sink', 'workshop_craft')).toBe(18);
       expect(flow('tide-shard', 'sink', 'workshop_craft')).toBe(1);
       expect(flow('supplies', 'sink', 'expedition')).toBe(4);
-      expect(flow('supplies', 'source', 'buy')).toBe(2);
+      // Nothing is bought any more (new sends have no `bought`); older events still count, see below.
+      expect(flow('supplies', 'source', 'buy')).toBe(0);
       expect(flow('supplies', 'source', 'dungeon')).toBe(2);
       expect(flow('supplies', 'source', 'craft')).toBe(4);
     });

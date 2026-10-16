@@ -211,6 +211,8 @@ const ERROR_TEXT: Record<string, string> = {
   rank_too_low: 'That explorer is not a high enough rank for that.',
   supply_missing: 'You do not have that supply in stock any more.',
   invalid_supplies: 'Those supplies cannot go together: at most two, never two of the same kind.',
+  supplies_not_for_sale:
+    'Supplies cannot be bought any more. Take one from your stock, or craft one in the Workshop.',
   invalid_destination: 'That place does not exist.',
   not_active: 'That trip is already over.',
   no_offer: 'That trip has no choice to make.',

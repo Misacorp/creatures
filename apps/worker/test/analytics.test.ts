@@ -158,7 +158,18 @@ const signIn = (ctx: CoreContext, user: { id: string; displayName: string }) =>
   ctx.core.createSession(ctx.guildId, user);
 
 type Supply = { id: string; source: 'buy' | 'owned' };
-const buy = (id: string): Supply => ({ id, source: 'buy' });
+const own = (id: string): Supply => ({ id, source: 'owned' });
+
+/** Puts supplies in a player's stock (they cannot be bought; trips carry them from stock). */
+function stock(sql: SqlStorage, userId: string, id: string, amount: number): void {
+  sql.exec(
+    `INSERT INTO supplies (user_id, supply_id, amount) VALUES (?, ?, ?)
+     ON CONFLICT(user_id, supply_id) DO UPDATE SET amount = excluded.amount`,
+    userId,
+    id,
+    amount,
+  );
+}
 
 const send = (
   ctx: CoreContext,
@@ -312,6 +323,7 @@ describe('the event writer', () => {
         shards: Number.NaN,
         glimmer: 1,
         gear: 1,
+        supplies: 2,
         landmark: false,
         streakBonusDay: 3,
       }),
@@ -323,6 +335,7 @@ describe('the event writer', () => {
       shards: 0,
       glimmer: 1,
       gear: 1,
+      supplies: 2,
       landmark: false,
       streakBonusDay: 3,
     });
@@ -584,7 +597,8 @@ describe('collection events', () => {
     await runCore(nextGuild(), async (ctx) => {
       const { secret, starterId } = await joinWithStarter(ctx, USER, 100);
       const key = newKey();
-      const first = await send(ctx, secret, starterId, 'medium', [buy('lure-good')], key);
+      stock(ctx.sql, USER_ID, 'lure-good', 2);
+      const first = await send(ctx, secret, starterId, 'medium', [own('lure-good')], key);
       expect(first.status).toBe(200);
       expect(events(ctx.sql, 'expedition_send')).toMatchObject([
         {
@@ -593,19 +607,18 @@ describe('collection events', () => {
             duration: 'medium',
             destination: 'tidepools',
             supplies: ['lure-good'],
-            bought: 1,
-            cost: 30,
             rank: 1,
           },
         },
       ]);
+      expect(events(ctx.sql, 'expedition_send')[0]?.props).not.toHaveProperty('bought');
       // The same key again replays the stored result: no new event.
-      expect((await send(ctx, secret, starterId, 'medium', [buy('lure-good')], key)).status).toBe(
+      expect((await send(ctx, secret, starterId, 'medium', [own('lure-good')], key)).status).toBe(
         200,
       );
       // The explorer is away: refused, nothing logged.
       expect((await send(ctx, secret, starterId)).status).toBe(409);
-      // A broke player: refused, nothing logged.
+      // A player without that supply: refused, nothing logged.
       const broke = await ctx.core.createSession(ctx.guildId, OTHER);
       await call(ctx, broke, 'POST', '/api/starter', {
         species: 'cindle',
@@ -615,7 +628,7 @@ describe('collection events', () => {
         id: string;
       }[];
       const refused = await send(ctx, broke, (state[0] as { id: string }).id, 'long', [
-        buy('lure-great'),
+        own('lure-great'),
       ]);
       expect(refused.status).toBe(409);
       expect(events(ctx.sql, 'expedition_send')).toHaveLength(1);
@@ -716,7 +729,8 @@ describe('collection events', () => {
         const { starterId } = joined;
         let secret = joined.secret;
         ctx.sql.exec('UPDATE player_progress SET expeditions_claimed = 1');
-        const exp = expeditionOf(await send(ctx, secret, starterId, 'long', [buy('lure-good')]));
+        stock(ctx.sql, USER_ID, 'lure-good', 1);
+        const exp = expeditionOf(await send(ctx, secret, starterId, 'long', [own('lure-good')]));
         ctx.clock.t = exp.startedAt + 8 * HOUR; // two thirds of 12 hours
         secret = await signIn(ctx, USER);
         const res = await call(ctx, secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
@@ -1360,8 +1374,9 @@ describe('privacy', () => {
         await call(ctx, a.secret, 'POST', `/api/creatures/${a.starterId}/train`, {
           idempotencyKey: newKey(),
         });
+        stock(ctx.sql, USER_ID, 'lure-good', 1);
         const exp = expeditionOf(
-          await send(ctx, a.secret, a.starterId, 'long', [buy('lure-good')]),
+          await send(ctx, a.secret, a.starterId, 'long', [own('lure-good')]),
         );
         const exp2 = expeditionOf(await send(ctx, b.secret, b.starterId));
         ctx.clock.t = exp.startedAt + 8 * HOUR;

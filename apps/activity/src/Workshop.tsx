@@ -71,6 +71,17 @@ export function Workshop({
       <section class="ws-section" aria-labelledby="ws-parts">
         <h3 id="ws-parts">Parts</h3>
         <PartsRow parts={gear.parts} />
+        <p class="muted">
+          Supplies cannot be bought, so this is where you pick the kind and tier you want.{' '}
+          <button
+            type="button"
+            onClick={() => {
+              document.getElementById('ws-supplies')?.scrollIntoView({ block: 'start' });
+            }}
+          >
+            Craft supplies for your trips
+          </button>
+        </p>
       </section>
       <JobSlots
         gear={gear}

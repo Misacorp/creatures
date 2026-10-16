@@ -1,14 +1,14 @@
 {
   "serverNow": 1799775072000,
   "balances": {
-    "bait": 285,
+    "bait": 300,
     "essence": 0
   },
   "starterChosen": false,
   "starterOptions": ["splashet", "cindle", "sproutle"],
   "creatures": [
     {
-      "id": "1464897c-b3a6-4ad3-b05a-f4534c47dea4",
+      "id": "06a002e2-d493-4a49-97c7-3bba83b7ff01",
       "species": "cindle",
       "line": "cindle",
       "level": 8,
@@ -33,7 +33,7 @@
       "gear": null,
       "busy": {
         "kind": "expedition",
-        "id": "757d0c1a-4566-4bae-bc95-58d47048134f"
+        "id": "f2b66bb0-de0c-4104-b4a0-2a349925aad8"
       },
       "ability": {
         "id": "flare-strike",
@@ -56,7 +56,7 @@
       }
     },
     {
-      "id": "ddcabaa8-4a31-4b66-98cd-94de571b6fbe",
+      "id": "2c75d703-8931-420f-8f85-b46d20f5cbac",
       "species": "splashet",
       "line": "splashet",
       "level": 8,
@@ -101,7 +101,7 @@
       }
     },
     {
-      "id": "3eafad75-f34c-4b7c-a017-0d4f12fcb260",
+      "id": "5cf57332-48ef-4202-a823-da5e5a49cc01",
       "species": "sproutle",
       "line": "sproutle",
       "level": 8,
@@ -148,15 +148,15 @@
   ],
   "expeditions": [
     {
-      "id": "757d0c1a-4566-4bae-bc95-58d47048134f",
-      "creatureId": "1464897c-b3a6-4ad3-b05a-f4534c47dea4",
+      "id": "f2b66bb0-de0c-4104-b4a0-2a349925aad8",
+      "creatureId": "06a002e2-d493-4a49-97c7-3bba83b7ff01",
       "duration": "long",
       "supplies": "great",
       "kit": ["lure-great", "map-scrap-basic"],
       "destination": "tidepools",
       "twist": null,
       "rolls": 2,
-      "cost": 15,
+      "cost": 0,
       "startedAt": 1799733600000,
       "endsAt": 1799775072000,
       "readyAt": 1799775072000,
@@ -198,6 +198,8 @@
   },
   "trainingMedianLevel": 8,
   "serverFirsts": [],
+  "loungerId": "2c75d703-8931-420f-8f85-b46d20f5cbac",
+  "loungeSpot": null,
   "timezone": "Europe/Helsinki",
   "leetSync": {
     "source": "disabled",
@@ -206,8 +208,6 @@
     "lastError": "disabled",
     "lastDays": null
   },
-  "loungerId": "ddcabaa8-4a31-4b66-98cd-94de571b6fbe",
-  "loungeSpot": null,
   "attention": {
     "dungeon": true,
     "raid": true,

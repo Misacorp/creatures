@@ -1,6 +1,6 @@
 /**
  * What the expedition screens say about a trip, as plain functions so it is tested without a browser:
- * the trip lengths a creature can take, the supplies and what they cost (the haul of a trip is in
+ * the trip lengths a creature can take, the supplies (the haul of a trip is in
  * `haul-view.ts`), how far a running trip has got, what the claim button means, an explorer's XP bar and the
  * slot progress line. Names, effects and numbers come from the shared content and rules (never copied
  * here), and every amount that is owned or paid comes from the server's state.
@@ -68,8 +68,6 @@ export interface SupplyOption {
   tier: SupplyDef['tier'];
   name: string;
   flavor: string;
-  /** Bait it costs to buy. */
-  price: number;
   /** How many are in stock. */
   owned: number;
   /** What it does, in a few words and no numbers. */
@@ -96,7 +94,6 @@ function optionOf(def: SupplyDef, stock: Readonly<Record<string, number>>): Supp
     tier: def.tier,
     name: def.name,
     flavor: def.flavor,
-    price: def.price,
     owned: stock[def.id] ?? 0,
     effect: supplyEffect(def),
     choice: def.offerBp >= BP ? 'guaranteed' : 'likely',
@@ -157,13 +154,6 @@ export function canCarry(picks: readonly SupplyPick[], id: string): boolean {
   return sameKind || picks.length < RULES.expeditions.maxSupplies;
 }
 
-/** The Bait the supplies to buy cost. Owned supplies are free. */
-export function kitCost(picks: readonly SupplyPick[]): number {
-  let total = 0;
-  for (const p of picks) if (p.source === 'buy') total += supplyDef(p.id)?.price ?? 0;
-  return total;
-}
-
 /** The choice a kit gives: guaranteed (a best-tier supply), likely (any supply) or none. */
 export function kitChoice(picks: readonly SupplyPick[]): 'guaranteed' | 'likely' | 'none' {
   let any = false;
@@ -185,7 +175,7 @@ export function kitBlocker(
     return 'Supplies: at most two, never two of the same kind.';
   }
   for (const p of picks) {
-    if (p.source === 'owned' && (stock[p.id] ?? 0) < 1) {
+    if ((stock[p.id] ?? 0) < 1) {
       return `You have no ${supplyName(p.id)} in stock.`;
     }
   }

@@ -10,6 +10,7 @@ import {
   jobDuration,
   jobXp,
   skillLevel,
+  supplyDef,
   upgradeCost,
   type GearRarity,
 } from '@creatures/game';
@@ -25,6 +26,7 @@ import {
 import { checkIn, runEconomy } from '../src/economy';
 import {
   allItems,
+  GEAR_POLICY,
   claimJobs,
   grantFinaleLoot,
   grantPhaseScrap,
@@ -32,6 +34,7 @@ import {
   itemScore,
   learnBlueprint,
   manageGear,
+  scrapForNextUpgrade,
   startJobs,
   type GearContext,
 } from '../src/gear';
@@ -43,11 +46,15 @@ function creature(player: string, line: string, level = 10): OwnedCreature {
   return { id: `${player}/${line}`, line, speciesId: line, level, fusionCount: 0 };
 }
 
-/** A player with a payoff (Cindle), a guard (Sproutle) and a setter (Splashet), all level 10. */
+/**
+ * A player with a payoff (Cindle), a guard (Sproutle) and a setter (Splashet), all level 10, with a
+ * full stock of supplies (so the workshop starts no supply job unless a test empties the stock).
+ */
 function player(id = 'p01'): SimPlayer {
   const p = createPlayer(id, 'P', 'daily', 1);
   p.joined = true;
   p.creatures.push(creature(id, 'cindle'), creature(id, 'sproutle'), creature(id, 'splashet'));
+  p.supplies['lure-basic'] = GEAR_POLICY.supplyStock;
   return p;
 }
 
@@ -364,6 +371,142 @@ describe('workshop jobs', () => {
     q.gear.parts.scrap = 100;
     checkIn(q, 10, tripCtx(false));
     expect(q.gear.jobs).toHaveLength(0);
+  });
+});
+
+describe('supplies from the workshop', () => {
+  const stockOf = (p: SimPlayer): number => Object.values(p.supplies).reduce((n, x) => n + x, 0);
+  const empty = (): SimPlayer => {
+    const p = player();
+    p.supplies = {};
+    return p;
+  };
+  const wear = (p: SimPlayer, level = 0): void => {
+    const [cindle] = p.creatures as [OwnedCreature, OwnedCreature, OwnedCreature];
+    cindle.item = item('trail-charm', 'common', 500, { level });
+  };
+
+  it('makes a supply when the stock is low, and none once it is full', () => {
+    const p = empty();
+    p.gear.parts.scrap = 50;
+    startJobs(p, ctx(9), new Set());
+    expect(p.gear.jobs.length).toBeGreaterThan(0);
+    expect(p.gear.jobs.every((j) => j.kind === 'supply')).toBe(true);
+    // The two jobs together bring the stock to its target at most; scrap was paid.
+    expect(p.gear.parts.scrap).toBeLessThan(50);
+    const full = player();
+    full.gear.parts.scrap = 50;
+    startJobs(full, ctx(9), new Set());
+    expect(full.gear.jobs.every((j) => j.kind !== 'supply')).toBe(true);
+  });
+
+  it('counts the supplies of open jobs towards the stock, so the slots do not overshoot the target', () => {
+    const p = empty();
+    p.supplies['lure-basic'] = GEAR_POLICY.supplyStock - 1;
+    p.gear.parts.scrap = 100;
+    startJobs(p, ctx(9), new Set());
+    expect(p.gear.jobs.filter((j) => j.kind === 'supply')).toHaveLength(1);
+    expect(stockOf(p)).toBe(GEAR_POLICY.supplyStock - 1);
+  });
+
+  it('claims a supply job into the stock, counted as crafted by tier, with the Crafting XP of its hours', () => {
+    const p = empty();
+    p.gear.parts.scrap = 3;
+    startJobs(p, ctx(9), new Set());
+    const job = p.gear.jobs[0];
+    expect(job?.kind).toBe('supply');
+    claimJobs(p, ctx(9 + 24));
+    expect(p.gear.jobs).toHaveLength(0);
+    expect(stockOf(p)).toBe(1);
+    expect(p.stats.supplies_crafted).toBe(1);
+    expect(p.stats.supplies_crafted_good).toBe(0);
+    expect(p.gear.skillXp[job?.creatureId ?? '']).toBeGreaterThan(0);
+  });
+
+  it('picks the best tier the Crafting level, scrap and shards allow, then the kind it has the fewest of', () => {
+    const p = empty();
+    p.gear.parts.scrap = 100;
+    p.gear.parts['grove-shard'] = 1;
+    p.gear.parts['tide-shard'] = 1;
+    p.gear.parts['spark-shard'] = 1;
+    p.gear.parts['ember-shard'] = 1;
+    // Level 1 only allows the basic tier (a creature needs Crafting level 3 for the good ones).
+    p.supplies['map-scrap-basic'] = 1;
+    p.supplies['lantern-basic'] = 1;
+    p.supplies['satchel-basic'] = 1;
+    startJobs(p, ctx(9), new Set());
+    expect(p.gear.jobs[0]?.supplyId).toBe('lure-basic');
+    // With Crafting level 3 on a creature the good tier is the better pick (and shards pay for it).
+    const q = empty();
+    q.gear.parts.scrap = 100;
+    q.gear.parts['grove-shard'] = 1;
+    q.gear.skillXp['p01/cindle'] = 10_000;
+    startJobs(q, ctx(9), new Set(['p01/sproutle', 'p01/splashet']));
+    const made = q.gear.jobs[0]?.supplyId;
+    expect(made).toBeDefined();
+    expect(made?.endsWith('-good') || made?.endsWith('-great')).toBe(true);
+  });
+
+  it('leaves the scrap of the next upgrades of the worn items alone, and uses the rest', () => {
+    const p = empty();
+    wear(p);
+    const first = upgradeCost({ rarity: 'common', level: 0 });
+    const second = upgradeCost({ rarity: 'common', level: 1 });
+    if (first === null || second === null) throw new Error('no upgrade cost');
+    // The next `keepUpgrades` levels of the one worn item (the Essence held does not matter).
+    expect(GEAR_POLICY.keepUpgrades).toBe(2);
+    const keep = scrapForNextUpgrade(p);
+    expect(keep).toBe(first.scrap + second.scrap);
+    const price = supplyDef('lure-basic')?.blueprint.parts.scrap ?? 0;
+    p.gear.parts.scrap = keep + price - 1;
+    startJobs(p, ctx(9), new Set());
+    expect(p.gear.jobs).toHaveLength(0);
+    p.gear.parts.scrap = keep + price;
+    startJobs(p, ctx(9), new Set());
+    expect(p.gear.jobs.length).toBeGreaterThan(0);
+    expect(p.gear.parts.scrap).toBeGreaterThanOrEqual(keep);
+    // Nothing worn, or an item at the top level: nothing to keep.
+    expect(scrapForNextUpgrade(empty())).toBe(0);
+    const top = empty();
+    wear(top, RULES.gear.maxLevel);
+    expect(scrapForNextUpgrade(top)).toBe(0);
+    top.gear.parts.scrap = price;
+    startJobs(top, ctx(9), new Set());
+    expect(top.gear.jobs.length).toBeGreaterThan(0);
+  });
+
+  it("makes a new player's first piece of gear before any supply, and supplies first from then on", () => {
+    const p = empty();
+    wear(p);
+    p.essence = 10_000;
+    p.gear.blueprints.push('trail-charm');
+    // Only what one gear craft costs: no scrap is left over for the reserve of the upgrades.
+    p.gear.parts.scrap = craftCost('trail-charm').scrap ?? 0;
+    startJobs(p, ctx(9), new Set());
+    expect(p.gear.jobs.map((j) => j.kind)).toEqual(['craft']);
+    // Once a craft has been made, a low stock comes first.
+    const q = empty();
+    q.gear.blueprints.push('trail-charm');
+    q.gear.crafted = 1;
+    q.gear.parts.scrap = 100;
+    startJobs(q, ctx(9), new Set());
+    expect(q.gear.jobs[0]?.kind).toBe('supply');
+  });
+
+  it('never lets a gear craft eat the scrap of an upgrade the Essence pays for', () => {
+    const p = player();
+    wear(p);
+    p.gear.crafted = 1; // not the first one: that is made before anything else
+    p.essence = 10_000;
+    p.gear.blueprints.push('trail-charm');
+    const keep = scrapForNextUpgrade(p);
+    const price = craftCost('trail-charm').scrap ?? 0;
+    p.gear.parts.scrap = keep + price - 1;
+    startJobs(p, ctx(9), new Set());
+    expect(p.gear.jobs).toHaveLength(0);
+    p.gear.parts.scrap = keep + price;
+    startJobs(p, ctx(9), new Set());
+    expect(p.gear.jobs.some((j) => j.kind === 'craft')).toBe(true);
   });
 });
 

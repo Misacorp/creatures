@@ -30,7 +30,7 @@ Expeditions are about **creatures, not the account**: each creature builds its o
 ### Supplies and trip lengths
 
 - **Trips without supplies are free.** They still cost the creature's time, which could go to Workshop jobs.
-- **Supplies are a meaningful boost.** You can buy them with **Bait**, **craft** them in the Workshop from supply blueprints (higher tiers need a higher Crafting level), or **find** them on trips.
+- **Supplies are a meaningful boost.** They **cannot be bought** (since 2026-10-16, B-011): the daily dungeon drops one on every run that clears its first room (better tiers deeper), trips **find** them, and the Workshop **crafts** them from supply blueprints (higher tiers need a higher Crafting level), the one way to pick the kind and tier you want.
 - Examples:
   - a Lure (rarity odds);
   - a Map scrap (more catch rolls);

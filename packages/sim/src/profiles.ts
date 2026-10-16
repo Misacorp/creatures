@@ -50,8 +50,6 @@ export const ProfileSchema = v.strictObject({
   evolutionPush: v.boolean(),
   /** Percent of check-ins at which idle expedition slots get a trip. */
   tripPercent: percent,
-  /** Percent of the spare Bait (above the training reserve) that may go to trip supplies. */
-  supplyPercent: percent,
   dungeon: v.picklist(DUNGEON_SKILLS),
   signUpPercent: percent,
   /** Signing up needs a login on Monday to Friday of that week (the game must be opened to sign up). */
@@ -99,8 +97,7 @@ export function parseProfiles(raw: unknown): PlayerProfile[] {
 /**
  * Today's archetypes as profiles, with exactly today's behaviour: casuals open the game only on their
  * leet days and check in once (09:00); the others open it every day and check in at 09:00 and 20:00.
- * Everybody trains the top 3 with the evolution push, always sends trips, spends all spare Bait on
- * supplies, runs the dungeon with the strongest three in the game's row order, takes the default
+ * Everybody trains the top 3 with the evolution push, always sends trips, runs the dungeon with the strongest three in the game's row order, takes the default
  * raid row and always works the gear.
  */
 export const LEGACY_PROFILES: Readonly<Record<ArchetypeId, PlayerProfile>> = Object.fromEntries(
@@ -118,7 +115,6 @@ export const LEGACY_PROFILES: Readonly<Record<ArchetypeId, PlayerProfile>> = Obj
       trainFocus: 3,
       evolutionPush: true,
       tripPercent: 100,
-      supplyPercent: 100,
       dungeon: 'good',
       signUpPercent: cfg.signUpPercent,
       signUpNeedsLogin: false,
@@ -156,7 +152,6 @@ export const PRESETS: Readonly<Record<PresetId, PlayerProfile>> = {
     trainFocus: 3,
     evolutionPush: true,
     tripPercent: 100,
-    supplyPercent: 100,
     dungeon: 'best',
     signUpPercent: 100,
     signUpNeedsLogin: true,
@@ -174,7 +169,6 @@ export const PRESETS: Readonly<Record<PresetId, PlayerProfile>> = {
     trainFocus: 6,
     evolutionPush: true,
     tripPercent: 85,
-    supplyPercent: 60,
     dungeon: 'good',
     signUpPercent: 100,
     signUpNeedsLogin: true,
@@ -192,7 +186,6 @@ export const PRESETS: Readonly<Record<PresetId, PlayerProfile>> = {
     trainFocus: 'spread',
     evolutionPush: false,
     tripPercent: 55,
-    supplyPercent: 20,
     dungeon: 'reasonable',
     signUpPercent: 85,
     signUpNeedsLogin: true,
@@ -210,7 +203,6 @@ export const PRESETS: Readonly<Record<PresetId, PlayerProfile>> = {
     trainFocus: 'spread',
     evolutionPush: false,
     tripPercent: 30,
-    supplyPercent: 0,
     dungeon: 'random',
     signUpPercent: 90,
     signUpNeedsLogin: true,
@@ -265,7 +257,6 @@ export function noisyProfile(base: PlayerProfile, rng: Rng, id: string = base.id
     checkInHours: hours,
     trainFocus: focusSteps[moved] as TrainingFocus,
     tripPercent: base.tripPercent === 100 ? 100 : pct(base.tripPercent),
-    supplyPercent: base.supplyPercent === 100 ? 100 : pct(base.supplyPercent),
     signUpPercent: base.signUpPercent === 100 ? 100 : pct(base.signUpPercent, 10),
     craftPercent: base.craftPercent === 100 ? 100 : pct(base.craftPercent),
   };

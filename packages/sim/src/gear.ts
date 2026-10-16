@@ -35,6 +35,7 @@ import {
   type RaidStage,
   type Rng,
   type Role,
+  type SupplyDef,
 } from '@creatures/game';
 import {
   basePower,
@@ -60,8 +61,10 @@ import type { SimJob, SimPlayer } from './state';
  * 4. Upgrade: worn items, whichever adds the most power per Essence, as long as the Essence left
  *    still covers the cheapest evolution the player is close to.
  * 5. Start jobs in free workshop slots on creatures that are not exploring: enchant a worn item,
- *    then improve a worn item's weak secondary (twice at most per item), then craft the best
- *    blueprint the parts pay for. The creature with the most Crafting XP goes first.
+ *    then improve a worn item's weak secondary (twice at most per item), then make a supply when
+ *    fewer than `supplyStock` are in stock, then craft the best blueprint the parts pay for (a new
+ *    player's first craft comes before any supply). Supplies and crafts leave the scrap of the next
+ *    upgrades alone. The creature with the most Crafting XP goes first.
  *
  * Drops follow the worker: scrap for cleared phases, one roll per participant of a won finale (plus
  * the Festival piece in a Festival week), expedition loot and the welcome kit at the start.
@@ -73,6 +76,10 @@ export const GEAR_POLICY = {
   maxImproves: 2,
   /** Levels below the evolution level from which Essence is held back for that evolution. */
   evolutionLookahead: 3,
+  /** The workshop makes supplies while fewer than this many are in stock (and in open jobs). */
+  supplyStock: 4,
+  /** Upgrades ahead (per worn item) whose scrap crafts and supplies leave alone. */
+  keepUpgrades: 2,
 } as const;
 
 /** What a check-in needs to know about time and randomness for gear. */
@@ -303,6 +310,8 @@ function claimOne(player: SimPlayer, job: SimJob, ctx: GearContext): void {
     if (def !== undefined) {
       player.supplies[def.id] = (player.supplies[def.id] ?? 0) + def.blueprint.yield;
       player.stats.supplies_crafted += def.blueprint.yield;
+      if (def.tier === 'good') player.stats.supplies_crafted_good += def.blueprint.yield;
+      if (def.tier === 'great') player.stats.supplies_crafted_great += def.blueprint.yield;
       xp = supplyJobXp(def);
     } else {
       xp = 0;
@@ -499,50 +508,89 @@ function planImprove(player: SimPlayer): JobPlan | null {
 
 /** The gear rarity a supply tier is sized as (its job's XP and length come from the supply itself). */
 const SUPPLY_RARITY = { basic: 'common', good: 'rare', great: 'epic' } as const;
+const TIER_ORDER = { basic: 0, good: 1, great: 2 } as const;
+
+/** Supplies in stock and in the workshop's open jobs, all kinds and tiers together. */
+function supplyStock(player: SimPlayer): number {
+  const made = player.gear.jobs.reduce(
+    (n, j) => n + (j.kind === 'supply' ? (supplyDef(j.supplyId ?? '')?.blueprint.yield ?? 0) : 0),
+    0,
+  );
+  return Object.values(player.supplies).reduce((n, x) => n + x, 0) + made;
+}
 
 /**
- * Supplies the workshop makes when no gear job is wanted: the best supply (by its estimated worth per
- * unit of parts) the creature's Crafting level allows, the parts pay for and fewer than 2 are in stock.
+ * The scrap the next gear upgrades need: of every worn item whose next upgrade would add power, the
+ * scrap of its next `GEAR_POLICY.keepUpgrades` upgrades, together. Scrap below it is not spent on
+ * crafts or supplies (the study's `q1-keep` rule, for the whole worn set and a couple of levels ahead,
+ * since Essence often pays for more than one level between two check-ins), so making things never
+ * starves an upgrade. 0 when nothing is worth upgrading.
+ */
+export function scrapForNextUpgrade(player: SimPlayer): number {
+  let need = 0;
+  for (const creature of player.creatures) {
+    const item = creature.item;
+    if (item === undefined || item === null) continue;
+    const gain =
+      itemScore({ ...item, level: item.level + 1 }, creature) - itemScore(item, creature);
+    if (gain <= 0) continue;
+    for (let ahead = 0; ahead < GEAR_POLICY.keepUpgrades; ahead++) {
+      const cost = upgradeCost({ ...item, level: item.level + ahead });
+      if (cost === null) break;
+      need += cost.scrap;
+    }
+  }
+  return need;
+}
+
+/**
+ * Supplies the workshop makes when the stock is low (fewer than `GEAR_POLICY.supplyStock` in stock and
+ * in open jobs): of the supplies the creature's Crafting level allows and the parts pay for, leaving the
+ * scrap of the next upgrades untouched, the best tier, and of that tier the kind the player has the
+ * fewest of (ties in content order). Supplies cannot be bought, so this is the only way to pick a kind.
  */
 function planSupply(player: SimPlayer, level: number): JobPlan | null {
-  let best: { plan: JobPlan; score: number } | null = null;
-  const stock = Object.values(player.supplies).reduce((n, x) => n + x, 0);
-  if (stock >= SUPPLY_STOCK_TARGET) return null;
+  if (supplyStock(player) >= GEAR_POLICY.supplyStock) return null;
+  const keep = scrapForNextUpgrade(player);
+  let best: { def: SupplyDef; plan: JobPlan } | null = null;
   for (const def of expeditionContent.supplies) {
     if (level < def.blueprint.craftingLevel) continue;
     const cost = partsOfSpec(def.blueprint.parts);
-    // Scrap the upgrades want is left alone: supplies are made from what is spare.
-    if (!canPay(player, { ...cost, scrap: (cost.scrap ?? 0) + SUPPLY_SCRAP_RESERVE })) continue;
-    // Better tiers first (they cost more but are worth more per trip), then by price.
-    const score = def.price;
-    if (best === null || score > best.score) {
+    if (!canPay(player, { ...cost, scrap: (cost.scrap ?? 0) + keep })) continue;
+    const better =
+      best === null ||
+      TIER_ORDER[def.tier] > TIER_ORDER[best.def.tier] ||
+      (def.tier === best.def.tier &&
+        (player.supplies[def.id] ?? 0) < (player.supplies[best.def.id] ?? 0));
+    if (better) {
       best = {
-        score,
-        plan: {
-          job: { kind: 'supply', rarity: SUPPLY_RARITY[def.tier], supplyId: def.id },
-          cost,
-        },
+        def,
+        plan: { job: { kind: 'supply', rarity: SUPPLY_RARITY[def.tier], supplyId: def.id }, cost },
       };
     }
   }
   return best === null ? null : best.plan;
 }
 
-/** The workshop stops making a supply once the player holds this many of it. */
-const SUPPLY_STOCK_TARGET = 2;
-/** Scrap that stays untouched when a supply is made. */
-const SUPPLY_SCRAP_RESERVE = 8;
-
 const RARITY_ORDER: Record<GearRarity, number> = { common: 0, rare: 1, epic: 2, festival: 3 };
+
+/** True until the player has made, or is making, their first piece of gear: that comes before any supply. */
+function firstCraftPending(player: SimPlayer): boolean {
+  return player.gear.crafted === 0 && !player.gear.jobs.some((j) => j.kind === 'craft');
+}
 
 function planCraft(player: SimPlayer): JobPlan | null {
   if (inventoryUsed(player) >= RULES.gear.inventoryCap) return null;
+  // The scrap of the next upgrades is not spent on a new item (see `scrapForNextUpgrade`), except on
+  // the very first one: a new player's first craft is the workshop's welcome (balance target
+  // `gear.dailyFirstCraftDaysP90`).
+  const keep = firstCraftPending(player) ? 0 : scrapForNextUpgrade(player);
   let best: { plan: JobPlan; key: readonly [number, number] } | null = null;
   for (const baseId of player.gear.blueprints) {
     const base = gearBase(baseId);
     if (base === undefined) continue;
     const cost = craftCost(baseId);
-    if (!canPay(player, cost)) continue;
+    if (!canPay(player, { ...cost, scrap: (cost.scrap ?? 0) + keep })) continue;
     const key = [
       RARITY_ORDER[base.blueprint],
       base.primary === 'atk' || base.primary === 'hp' ? 1 : 0,
@@ -575,8 +623,15 @@ export function startJobs(
   for (const creature of crafters) {
     if (player.gear.jobs.length >= RULES.gear.workshopSlots) return;
     const level = skillLevel(player.gear.skillXp[creature.id] ?? 0);
-    const plan =
-      planEnchant(player) ?? planImprove(player) ?? planCraft(player) ?? planSupply(player, level);
+    const plan = firstCraftPending(player)
+      ? (planEnchant(player) ??
+        planImprove(player) ??
+        planCraft(player) ??
+        planSupply(player, level))
+      : (planEnchant(player) ??
+        planImprove(player) ??
+        planSupply(player, level) ??
+        planCraft(player));
     if (plan === null) return;
     pay(player, plan.cost);
     const kind: JobKind = plan.job.kind;

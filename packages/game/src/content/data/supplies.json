@@ -6,7 +6,7 @@
     "name": "Plain Lure",
     "flavor": "A bit of dried fruit on a string. Better than nothing.",
     "blurb": "Draws rarer creatures",
-    "price": 12,
+    "worth": 12,
     "offerBp": 2500,
     "rareUpBp": 600,
     "epicUpBp": 100,
@@ -14,7 +14,7 @@
       "craftingLevel": 1,
       "hours": 2,
       "parts": {
-        "scrap": 3
+        "scrap": 2
       },
       "yield": 1
     }
@@ -26,7 +26,7 @@
     "name": "Sweet Lure",
     "flavor": "Sticky and fragrant. Even shy creatures lean closer.",
     "blurb": "Draws rarer creatures, strongly",
-    "price": 30,
+    "worth": 30,
     "offerBp": 5000,
     "rareUpBp": 1200,
     "epicUpBp": 400,
@@ -34,7 +34,7 @@
       "craftingLevel": 3,
       "hours": 4,
       "parts": {
-        "scrap": 6,
+        "scrap": 4,
         "grove-shard": 1
       },
       "yield": 1
@@ -47,7 +47,7 @@
     "name": "Golden Lure",
     "flavor": "It shines like honey in the sun. Rare creatures cannot resist.",
     "blurb": "Draws the rarest creatures",
-    "price": 70,
+    "worth": 70,
     "offerBp": 10000,
     "rareUpBp": 1800,
     "epicUpBp": 900,
@@ -55,7 +55,7 @@
       "craftingLevel": 5,
       "hours": 6,
       "parts": {
-        "scrap": 10,
+        "scrap": 7,
         "grove-shard": 3
       },
       "yield": 1
@@ -68,14 +68,14 @@
     "name": "Map Scrap",
     "flavor": "A torn corner with a few trails marked in pencil.",
     "blurb": "One more catch",
-    "price": 15,
+    "worth": 15,
     "offerBp": 2500,
     "rollsBp": 3000,
     "blueprint": {
       "craftingLevel": 1,
       "hours": 2,
       "parts": {
-        "scrap": 3
+        "scrap": 2
       },
       "yield": 1
     }
@@ -87,14 +87,14 @@
     "name": "Inked Map",
     "flavor": "A neat map with the good spots circled twice.",
     "blurb": "A few more catches",
-    "price": 40,
+    "worth": 40,
     "offerBp": 5000,
     "rollsBp": 6000,
     "blueprint": {
       "craftingLevel": 3,
       "hours": 4,
       "parts": {
-        "scrap": 6,
+        "scrap": 4,
         "tide-shard": 1
       },
       "yield": 1
@@ -107,14 +107,14 @@
     "name": "Trail Atlas",
     "flavor": "Every path, pool and cave, drawn by someone who went there.",
     "blurb": "Many more catches",
-    "price": 90,
+    "worth": 90,
     "offerBp": 10000,
     "rollsBp": 10000,
     "blueprint": {
       "craftingLevel": 5,
       "hours": 6,
       "parts": {
-        "scrap": 10,
+        "scrap": 7,
         "tide-shard": 3
       },
       "yield": 1
@@ -127,14 +127,14 @@
     "name": "Candle Lantern",
     "flavor": "A small flame in a tin. It shows the next few steps.",
     "blurb": "Lights the way to the deeper area",
-    "price": 15,
+    "worth": 15,
     "offerBp": 2500,
     "deepBp": 1500,
     "blueprint": {
       "craftingLevel": 1,
       "hours": 2,
       "parts": {
-        "scrap": 3
+        "scrap": 2
       },
       "yield": 1
     }
@@ -146,14 +146,14 @@
     "name": "Glow Lantern",
     "flavor": "It glows steady and warm, even in the deepest corners.",
     "blurb": "Lights the deeper area, even at night",
-    "price": 40,
+    "worth": 40,
     "offerBp": 5000,
     "deepBp": 3000,
     "blueprint": {
       "craftingLevel": 3,
       "hours": 4,
       "parts": {
-        "scrap": 6,
+        "scrap": 4,
         "spark-shard": 1
       },
       "yield": 1
@@ -166,14 +166,14 @@
     "name": "Moon Lantern",
     "flavor": "Lit by moonlight itself. The hidden places show their doors.",
     "blurb": "Lights the way at Moonlit Reef",
-    "price": 90,
+    "worth": 90,
     "offerBp": 10000,
     "deepBp": 5000,
     "blueprint": {
       "craftingLevel": 5,
       "hours": 6,
       "parts": {
-        "scrap": 10,
+        "scrap": 7,
         "spark-shard": 3
       },
       "yield": 1
@@ -186,7 +186,7 @@
     "name": "Small Satchel",
     "flavor": "Room for a few extra pebbles and berries.",
     "blurb": "A few more parts",
-    "price": 12,
+    "worth": 12,
     "offerBp": 2500,
     "partsBp": 2500,
     "supplyBp": 1000,
@@ -194,7 +194,7 @@
       "craftingLevel": 1,
       "hours": 2,
       "parts": {
-        "scrap": 3
+        "scrap": 2
       },
       "yield": 1
     }
@@ -206,7 +206,7 @@
     "name": "Sturdy Satchel",
     "flavor": "Plenty of pockets, and every one gets filled.",
     "blurb": "More parts, and more finds",
-    "price": 30,
+    "worth": 30,
     "offerBp": 5000,
     "partsBp": 5000,
     "supplyBp": 2000,
@@ -214,7 +214,7 @@
       "craftingLevel": 3,
       "hours": 4,
       "parts": {
-        "scrap": 6,
+        "scrap": 4,
         "ember-shard": 1
       },
       "yield": 1
@@ -227,7 +227,7 @@
     "name": "Explorer's Pack",
     "flavor": "Straps, pouches and hooks for everything worth carrying home.",
     "blurb": "Packs plenty of parts and finds",
-    "price": 70,
+    "worth": 70,
     "offerBp": 10000,
     "partsBp": 10000,
     "supplyBp": 3500,
@@ -235,7 +235,7 @@
       "craftingLevel": 5,
       "hours": 6,
       "parts": {
-        "scrap": 10,
+        "scrap": 7,
         "ember-shard": 3
       },
       "yield": 1

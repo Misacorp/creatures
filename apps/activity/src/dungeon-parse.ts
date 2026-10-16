@@ -90,6 +90,7 @@ function isRewards(value: unknown): value is DungeonRewards {
       (c): c is DungeonRewards['converted'][number] =>
         isRecord(c) && isStr(c['baseId']) && isRarity(c['rarity']),
     ) &&
+    (value['supplies'] === undefined || isArrayOf(value['supplies'], isStr)) &&
     isBool(value['landmark']) &&
     (streak === null ||
       (isRecord(streak) &&

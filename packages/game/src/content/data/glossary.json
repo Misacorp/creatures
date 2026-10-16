@@ -622,7 +622,7 @@
     "lines": [
       "Open the game each day for an allowance of 25 Bait. The day starts at 13:37; a missed day is not paid later.",
       "Leeting in Discord adds a bonus of 15 to 32 Bait, more when more players leet that day.",
-      "Spend it to train creatures and fund expeditions.",
+      "Spend it to train creatures. Expeditions and supplies cost no Bait.",
       "Extra copies of a fully fused creature turn into Bait."
     ],
     "section": "first-week"
@@ -1051,8 +1051,8 @@
     "short": "One run a day with a team of three of your own.",
     "lines": [
       "Pick three creatures and the order they stand in, in one row. Then enter: the whole run is played out at once.",
-      "Three rooms: two foes, then a room boss. Each creature keeps its HP from room to room.",
-      "Clear all three to go one depth deeper. A lost run keeps your depth.",
+      "Three rooms: two foes, then a room boss. HP carries over. Clear all three to go one depth deeper; a lost run keeps it.",
+      "Clear the first room and you bring home a supply, guaranteed. Deeper runs drop better ones.",
       "One run per day. The day resets at 13:37 in the server's time zone. A lost first run can be retried once."
     ],
     "section": "dungeon"
@@ -1254,7 +1254,7 @@
     "title": "Supplies",
     "short": "Optional boosts for one trip.",
     "lines": [
-      "Buy them with Bait, craft them in the Workshop or find them on trips.",
+      "They cannot be bought. The daily dungeon drops them, trips can find them, and you can craft them in the Workshop.",
       "A trip carries up to 2, never two of the same kind.",
       "Trips without supplies are free.",
       "The best tier of every kind always brings a choice at the end of the trip."

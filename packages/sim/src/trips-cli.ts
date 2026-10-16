@@ -103,14 +103,14 @@ export function main(argv: readonly string[], io: Io = defaultIo): number {
     for (const a of ARCHETYPES) {
       io.out('');
       io.out(
-        `${ARCHETYPE_CONFIG[a].label}: week | rank sum | slots | trips so far | Bait spent on supplies | Bait converted`,
+        `${ARCHETYPE_CONFIG[a].label}: week | rank sum | slots | trips so far | Bait converted`,
       );
       for (let w = 1; w <= weeks; w++) {
         const rs = weekly(econ, a, w);
         if (rs.length === 0) continue;
         const avg = (f: (r: WeekRecord) => number): number => mean(rs.map(f)) ?? 0;
         io.out(
-          `  ${String(w).padStart(2)} | ${avg((r) => r.rankSum).toFixed(1)} | ${avg((r) => r.slots).toFixed(1)} | ${avg((r) => r.trips).toFixed(0)} | ${avg((r) => r.baitSpentExpeditions).toFixed(0)} | ${avg((r) => r.baitConverted).toFixed(0)}`,
+          `  ${String(w).padStart(2)} | ${avg((r) => r.rankSum).toFixed(1)} | ${avg((r) => r.slots).toFixed(1)} | ${avg((r) => r.trips).toFixed(0)} | ${avg((r) => r.baitConverted).toFixed(0)}`,
         );
       }
     }
@@ -120,7 +120,7 @@ export function main(argv: readonly string[], io: Io = defaultIo): number {
       const avg = (key: string): number => mean(group.map((p) => p.tripStats[key] ?? 0)) ?? 0;
       io.out('');
       io.out(
-        `${kind} players over ${String(weeks)} weeks (averages): trips ${avg('trips_finished').toFixed(0)}, failed ${avg('trips_failed').toFixed(1)}, offers ${avg('offers').toFixed(0)}, goals taken ${avg('pushons_taken').toFixed(0)}, won ${avg('pushons_won').toFixed(0)}, supplies used ${avg('supplies_used').toFixed(0)} (bought ${avg('supplies_bought').toFixed(0)}, found ${avg('supplies_found').toFixed(0)}, crafted ${avg('supplies_crafted').toFixed(0)}), journal pages ${avg('journal_pages').toFixed(1)}, places ${avg('places_visited').toFixed(1)}, species found on trips ${avg('species_found').toFixed(1)}, catch rolls ${avg('catch_rolls').toFixed(0)}`,
+        `${kind} players over ${String(weeks)} weeks (averages): trips ${avg('trips_finished').toFixed(0)}, failed ${avg('trips_failed').toFixed(1)}, offers ${avg('offers').toFixed(0)}, goals taken ${avg('pushons_taken').toFixed(0)}, won ${avg('pushons_won').toFixed(0)}, supplies used ${avg('supplies_used').toFixed(0)} (dungeon ${avg('supplies_dungeon').toFixed(0)}, gifts ${avg('supplies_gift').toFixed(0)}, found ${avg('supplies_found').toFixed(0)}, crafted ${avg('supplies_crafted').toFixed(0)}), journal pages ${avg('journal_pages').toFixed(1)}, places ${avg('places_visited').toFixed(1)}, species found on trips ${avg('species_found').toFixed(1)}, catch rolls ${avg('catch_rolls').toFixed(0)}`,
       );
     }
     const dailies = econ.flatMap((s) => s.players.filter((p) => p.archetype === 'daily'));

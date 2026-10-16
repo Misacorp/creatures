@@ -1,6 +1,6 @@
 {
   "run": {
-    "id": "51260d8b-43b3-42a3-9c6c-922354c3ca16",
+    "id": "647af633-6fd1-4561-949f-ee68269b48ef",
     "day": "2027-01-12",
     "attempt": 2,
     "depth": 45,
@@ -12,7 +12,7 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "590b89dc-36bb-42b4-aeb1-b9143868f84d",
+        "id": "7fbcdfd3-4a61-4e6d-a0dc-4f3d0ed71565",
         "name": "Mistnewt",
         "speciesId": "mistnewt",
         "element": "tide",
@@ -22,7 +22,7 @@
         "hpEnd": 0
       },
       {
-        "id": "ffb462b1-f6af-4045-b975-c85ce216e04b",
+        "id": "5742e4c0-422c-4b69-99dd-6c33f98c4fb0",
         "name": "Ashmole",
         "speciesId": "ashmole",
         "element": "ember",
@@ -32,7 +32,7 @@
         "hpEnd": 0
       },
       {
-        "id": "0437a34b-8764-42e3-b811-2500a3690941",
+        "id": "703d32c7-fc74-4b65-b96b-0936c0e26f55",
         "name": "Stormray",
         "speciesId": "stormray",
         "element": "spark",
@@ -107,6 +107,7 @@
       "parts": {},
       "gear": [],
       "converted": [],
+      "supplies": [],
       "landmark": false,
       "streak": null
     }
@@ -145,7 +146,7 @@
     "canRun": false,
     "blocked": "already_run",
     "last": {
-      "id": "51260d8b-43b3-42a3-9c6c-922354c3ca16",
+      "id": "647af633-6fd1-4561-949f-ee68269b48ef",
       "day": "2027-01-12",
       "attempt": 2,
       "depth": 45,
@@ -157,7 +158,7 @@
       "createdAt": 1799755200000,
       "team": [
         {
-          "id": "590b89dc-36bb-42b4-aeb1-b9143868f84d",
+          "id": "7fbcdfd3-4a61-4e6d-a0dc-4f3d0ed71565",
           "name": "Mistnewt",
           "speciesId": "mistnewt",
           "element": "tide",
@@ -167,7 +168,7 @@
           "hpEnd": 0
         },
         {
-          "id": "ffb462b1-f6af-4045-b975-c85ce216e04b",
+          "id": "5742e4c0-422c-4b69-99dd-6c33f98c4fb0",
           "name": "Ashmole",
           "speciesId": "ashmole",
           "element": "ember",
@@ -177,7 +178,7 @@
           "hpEnd": 0
         },
         {
-          "id": "0437a34b-8764-42e3-b811-2500a3690941",
+          "id": "703d32c7-fc74-4b65-b96b-0936c0e26f55",
           "name": "Stormray",
           "speciesId": "stormray",
           "element": "spark",
@@ -252,14 +253,15 @@
         "parts": {},
         "gear": [],
         "converted": [],
+        "supplies": [],
         "landmark": false,
         "streak": null
       }
     },
     "lastTeam": [
-      "590b89dc-36bb-42b4-aeb1-b9143868f84d",
-      "ffb462b1-f6af-4045-b975-c85ce216e04b",
-      "0437a34b-8764-42e3-b811-2500a3690941"
+      "7fbcdfd3-4a61-4e6d-a0dc-4f3d0ed71565",
+      "5742e4c0-422c-4b69-99dd-6c33f98c4fb0",
+      "703d32c7-fc74-4b65-b96b-0936c0e26f55"
     ],
     "draftTeam": null
   }

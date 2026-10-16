@@ -13,6 +13,28 @@ import { parseDungeonRun, parseDungeonTeamSaved, parseDungeonToday } from './dun
 const withoutDraft: Record<string, unknown> = { ...today };
 delete withoutDraft['draftTeam'];
 
+describe('the supplies in a run answer', () => {
+  it('reads the supplies the run dropped, and an older answer with none', () => {
+    const run = parseDungeonRun(runCleared).run;
+    expect(run.rewards.supplies?.length).toBeGreaterThan(0);
+    const older: Record<string, unknown> = { ...runCleared.run.rewards };
+    delete older['supplies'];
+    const parsed = parseDungeonRun({ ...runCleared, run: { ...runCleared.run, rewards: older } });
+    expect(parsed.run.rewards.supplies).toBeUndefined();
+  });
+
+  it('refuses supplies that are not a list of ids', () => {
+    for (const supplies of ['lure-basic', [1], [null], { id: 'lure-basic' }]) {
+      expect(() =>
+        parseDungeonRun({
+          ...runCleared,
+          run: { ...runCleared.run, rewards: { ...runCleared.run.rewards, supplies } },
+        }),
+      ).toThrow();
+    }
+  });
+});
+
 describe('the saved team draft in the dungeon answers', () => {
   it('is null when the server does not send it, or sends null', () => {
     expect(parseDungeonToday(withoutDraft).draftTeam).toBeNull();

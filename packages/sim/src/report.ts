@@ -2,8 +2,8 @@ import { RULES, content } from '@creatures/game';
 import { ARCHETYPES, ARCHETYPE_CONFIG, DEFAULT_MIX, DEFAULT_SERVER_SIZE } from './archetypes';
 import type { Analysis } from './analysis';
 import { curveMarkdown } from './curve-study';
+import { suppliesMarkdown } from './supplies-study';
 import { WIN_RATE_MAX_DEPTH } from './dungeon-analysis';
-import { POLICY } from './policy';
 import { ROLE_STUDY_HP_BP, ROLE_STUDY_RUNS_FACTOR } from './roles';
 import { SETUP_RANK_OFFSETS } from './setup-study';
 import { TRIP_POLICY } from './trips';
@@ -376,6 +376,15 @@ function setupsSection(out: RunOutput): string {
   ].join('\n');
 }
 
+function suppliesSection(out: RunOutput): string {
+  // The study's own Markdown, with its title dropped and its headings one level down.
+  const body = suppliesMarkdown([out.supplies], [1, 4, 8, out.settings.weeks])
+    .split('\n')
+    .slice(2)
+    .join('\n');
+  return body.replace(/^## /gm, '### ');
+}
+
 function curveSection(out: RunOutput): string {
   // The study's own Markdown, with its title dropped and its headings one level down.
   const body = curveMarkdown(out.curve).split('\n').slice(2).join('\n');
@@ -427,7 +436,6 @@ function progressionSection(a: Analysis): string {
           'Players',
           'Bait earned',
           'Bait from duplicates',
-          'Spent on expeditions',
           'Spent on training',
           'Species owned',
           'Top-3 power',
@@ -443,7 +451,6 @@ function progressionSection(a: Analysis): string {
           String(r.players),
           num(r.baitEarned, 0),
           num(r.baitConverted, 0),
-          num(r.baitSpentExpeditions, 0),
           num(r.baitSpentTraining, 0),
           num(r.speciesOwned),
           num(r.top3Power, 0),
@@ -573,7 +580,7 @@ const POLICY_TEXT = `
 - **Starter:** the starter whose element the server owns least (ties in content order). The first expedition brings a Zipmouse (game rule).
 - **Check-ins:** casuals check in once on each leet day (every few days); everyone else twice a day (09:00 and 20:00).
 - **At a check-in:** claim trips (and take an end-of-trip goal), claim jobs, evolve creatures that are at level 15 when there is enough Essence, train, manage gear, send trips into the free slots, start workshop jobs.
-- **Trips (expeditions v2):** slots come from the sum of the explorer ranks above 1 (\`slotsFor\`); a trip is free, only supplies cost Bait. Each free slot sends the idle creature of the highest explorer rank, to the open place (rank, night and Festival gates) where the most unowned species can be found (rarer ones count more, the weekly special place a little extra), for the length that pays the most per hour until the next check-in claims it (casuals: the longest they may). Supplies: those in stock that help, then supplies whose estimated worth is at least ${TRIP_POLICY.buyWorthBp / 100}% of the price, within a budget of the Bait held above ${POLICY.supplyReserve} (all of it when nothing can be trained); at most 2, never two of a kind. When a trip has ended it rolls its end-of-trip offer; a goal is taken when its extra hours (counted from the end of the trip) are over already (no waiting) and its worth ratio is at least ${TRIP_POLICY.minGoalRatioBp / 100}%. The workshop makes supplies from spare parts when no gear job is wanted.
+- **Trips (expeditions v2):** slots come from the sum of the explorer ranks above 1 (\`slotsFor\`); a trip is free and supplies cannot be bought. Each free slot sends the idle creature of the highest explorer rank, to the open place (rank, night and Festival gates) where the most unowned species can be found (rarer ones count more, the weekly special place a little extra), for the length that pays the most per hour until the next check-in claims it (casuals: the longest they may). Supplies: those in stock that help (found on trips, dropped by the dungeon, crafted, or a rank gift); at most 2, never two of a kind. When a trip has ended it rolls its end-of-trip offer; a goal is taken when its extra hours (counted from the end of the trip) are over already (no waiting) and its worth ratio is at least ${TRIP_POLICY.minGoalRatioBp / 100}%. The workshop makes supplies when the stock is low, from the scrap the next gear upgrade does not need.
 - **Training:** the rest of the Bait goes to one creature at a time, at the game's training cost with the catch-up discount: of the 3 strongest trainable creatures (not at their level cap), the furthest-along one that still has to reach its evolution level (players push one creature to its evolution before starting the next); if none of the three is working towards an evolution, the weakest of them. The median top level is computed across the simulated players.
 - **Raids:** everyone active signs up (casuals with 70% probability) and brings their 3 highest-power creatures. Sign-up order is shuffled each week; \`autoPlace\` builds the row in that order; \`fillWithGuests\` fills it to ${RULES.combat.guestRowSize} slots with fewer than 3 players. Phase 1 runs on Friday, Phase 2 on Saturday (with the adaptation Phase 1 suggested) and the finale on Sunday; the boss HP pool carries across them. In the finale each player brings their basic ability (round-robin over the four) plus the creature ability of each team creature at level ${RULES.abilities.unlockLevel} or above; every ability fires at its default round. Bosses rotate in content order by the global week index. Crits are on (5% for +50%, players and boss). The raid sweep fights each boss at the rank the old per-level rule would have chosen for the roster (\`placementRank\`), which is what the boss HP and the head-count exponents are calibrated at; the long-run servers (below) use the ladder.
 - **Boss Rank ladder (long-run servers):** a new server is placed once at its first raid week, a finale win in a normal week adds ${RULES.progression.winRankUp} rank, a loss changes nothing, every ${RULES.progression.seasonWeeks}th week of the global calendar is a Festival (boss ${RULES.progression.festivalEaseRanks} ranks lower, +${RULES.progression.festivalEssenceBp / 100}% Essence, a win grants each participant the season's Festival creature through the duplicate rules) and the rank eases ${RULES.progression.seasonResetRanks} after every Festival. Each long-run server starts at a random point of the 5-week calendar.
@@ -625,6 +632,7 @@ export function buildReportMarkdown(out: RunOutput): string {
   lines.push('## Setups (greedy and protected rows)', '', setupsSection(out), '');
   lines.push('## High Boss Ranks', '', ranksSection(out), '');
   lines.push('## Raid curve by Boss Rank (journey servers)', '', curveSection(out), '');
+  lines.push('## Supplies (journey servers)', '', suppliesSection(out), '');
   lines.push('## Bosses', '', bossSection(a), '');
   lines.push('## Fairness and contribution', '');
   lines.push(
@@ -778,6 +786,7 @@ export function buildReportJson(out: RunOutput): string {
     setups: out.setups.setups,
     ranks: out.ranks.rows,
     curve: { mixes: out.curve.mixes },
+    supplies: out.supplies.profiles,
     jackpots: analysis.jackpots,
     outliers: analysis.outliers,
     exampleFight: example,

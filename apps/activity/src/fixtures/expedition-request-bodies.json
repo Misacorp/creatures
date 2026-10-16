@@ -3,7 +3,7 @@
     "path": "/api/expeditions",
     "method": "POST",
     "body": {
-      "creatureId": "1464897c-b3a6-4ad3-b05a-f4534c47dea4",
+      "creatureId": "06a002e2-d493-4a49-97c7-3bba83b7ff01",
       "destination": "tidepools",
       "duration": "long",
       "supplies": [
@@ -13,26 +13,26 @@
         },
         {
           "id": "map-scrap-basic",
-          "source": "buy"
+          "source": "owned"
         }
       ],
       "idempotencyKey": "trips-fixture-00000001-key"
     }
   },
   "expedition-push-on": {
-    "path": "/api/expeditions/757d0c1a-4566-4bae-bc95-58d47048134f/push-on",
+    "path": "/api/expeditions/f2b66bb0-de0c-4104-b4a0-2a349925aad8/push-on",
     "method": "POST",
     "body": {
       "goalId": "shortcut"
     }
   },
   "expedition-claim-failed": {
-    "path": "/api/expeditions/757d0c1a-4566-4bae-bc95-58d47048134f/claim",
+    "path": "/api/expeditions/f2b66bb0-de0c-4104-b4a0-2a349925aad8/claim",
     "method": "POST",
     "body": {}
   },
   "expedition-claim": {
-    "path": "/api/expeditions/757d0c1a-4566-4bae-bc95-58d47048134f/claim",
+    "path": "/api/expeditions/f2b66bb0-de0c-4104-b4a0-2a349925aad8/claim",
     "method": "POST",
     "body": {}
   },
@@ -40,7 +40,7 @@
     "path": "/api/expeditions",
     "method": "POST",
     "body": {
-      "creatureId": "1464897c-b3a6-4ad3-b05a-f4534c47dea4",
+      "creatureId": "06a002e2-d493-4a49-97c7-3bba83b7ff01",
       "destination": "tidepools",
       "duration": "long",
       "supplies": [
@@ -49,11 +49,11 @@
           "source": "owned"
         }
       ],
-      "idempotencyKey": "trips-fixture-00000010-key"
+      "idempotencyKey": "trips-fixture-00000011-key"
     }
   },
   "expedition-claim-worked": {
-    "path": "/api/expeditions/82e2aeda-0c9a-43fa-af1c-816e70cd6668/claim",
+    "path": "/api/expeditions/96bcbea5-85d7-4510-9d3c-b0f1ee22765b/claim",
     "method": "POST",
     "body": {}
   },
@@ -61,15 +61,15 @@
     "path": "/api/expeditions",
     "method": "POST",
     "body": {
-      "creatureId": "ddcabaa8-4a31-4b66-98cd-94de571b6fbe",
+      "creatureId": "2c75d703-8931-420f-8f85-b46d20f5cbac",
       "destination": "tidepools",
       "duration": "long",
       "supplies": [],
-      "idempotencyKey": "trips-fixture-00000011-key"
+      "idempotencyKey": "trips-fixture-00000012-key"
     }
   },
   "expedition-claim-recall": {
-    "path": "/api/expeditions/a4e0e0e2-961a-4f01-ab39-6c9c2cb4f147/claim",
+    "path": "/api/expeditions/cbf577c8-c899-4fee-b098-2b0a96887785/claim",
     "method": "POST",
     "body": {}
   },
@@ -78,16 +78,16 @@
     "method": "POST",
     "body": {
       "kind": "supply",
-      "creatureId": "1464897c-b3a6-4ad3-b05a-f4534c47dea4",
+      "creatureId": "06a002e2-d493-4a49-97c7-3bba83b7ff01",
       "supplyId": "lure-basic",
-      "idempotencyKey": "trips-fixture-00000012-key"
+      "idempotencyKey": "trips-fixture-00000013-key"
     }
   },
   "workshop-claim-supply": {
-    "path": "/api/workshop/jobs/7f39c74b-56cb-4a49-87b0-751d7b37aa0d/claim",
+    "path": "/api/workshop/jobs/ec4fec19-a233-4214-bc6b-6fb4f7829792/claim",
     "method": "POST",
     "body": {
-      "idempotencyKey": "trips-fixture-00000013-key"
+      "idempotencyKey": "trips-fixture-00000014-key"
     }
   }
 }

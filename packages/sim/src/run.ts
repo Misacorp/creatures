@@ -9,6 +9,7 @@ import {
 } from './archetypes';
 import { namedCurveMixes, runCurveStudy, type CurveResult } from './curve-study';
 import { runEconomy, type EconomyResult } from './economy';
+import { runSuppliesStudy, suppliesMetrics, type SuppliesRun } from './supplies-study';
 import type { IncomeModelId } from './income';
 import { LONG_RUN_GROUPS, LONG_RUN_WEEKS } from './ladder';
 import { journeyRoster } from './profiles';
@@ -40,6 +41,8 @@ export interface RunSettings {
   tripLongSims: number;
   /** Servers per mix of the raid curve study (casual-heavy, default and committed journey servers, `curve-study.ts`). */
   curveServers: number;
+  /** Servers of the supplies study (the default journey server, `supplies-study.ts`, B-011). */
+  suppliesServers: number;
   /** Player counts of the raid sweep. */
   counts: number[];
   /** How Bait comes in (`income.ts`). Absent: the allowance, the shipped income. */
@@ -66,6 +69,7 @@ export function defaultSettings(
     longRunSims: quick ? 6 : 40,
     tripLongSims: quick ? 2 : 8,
     curveServers: quick ? 6 : 60,
+    suppliesServers: quick ? 6 : 30,
     counts: [...SWEEP_COUNTS],
     ...(overrides.income === undefined ? {} : { income: overrides.income }),
   };
@@ -81,6 +85,8 @@ export interface RunOutput {
   ranks: RankCheckResult;
   /** The raid curve study: whole journey servers by week and Boss Rank (docs/balance/log.md B-010). */
   curve: CurveResult;
+  /** The supplies study: where supplies come from and what they are used for, by profile and week (B-011). */
+  supplies: SuppliesRun;
 }
 
 /** Weeks (1-based) at which rosters are snapshotted: 4 and 8, or the last week if the run is shorter. */
@@ -228,6 +234,13 @@ export function runSimulation(settings: RunSettings): RunOutput {
     income,
     mixes: namedCurveMixes(),
   });
+  // The supplies study: the default journey server for `weeks` weeks (supplies are not for sale).
+  const supplies = runSuppliesStudy('shipped', '', {
+    seed: settings.seed,
+    seeds: 1,
+    servers: settings.suppliesServers,
+    weeks: settings.weeks,
+  });
   const analysis = analyse({
     roles,
     weeks: settings.weeks,
@@ -242,11 +255,16 @@ export function runSimulation(settings: RunSettings): RunOutput {
   return {
     settings,
     analysis,
-    evaluation: evaluateTargets(TARGETS, { ...analysis.metrics, ...curve.metrics }),
+    evaluation: evaluateTargets(TARGETS, {
+      ...analysis.metrics,
+      ...curve.metrics,
+      ...suppliesMetrics(supplies),
+    }),
     example: sweep.example,
     setups,
     ranks,
     curve,
+    supplies,
   };
 }
 

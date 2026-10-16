@@ -77,6 +77,11 @@ export interface DungeonRewards {
   gear: { id: string; baseId: string; rarity: GearRarity }[];
   /** Items that did not fit the bag and became parts (already counted in `parts`). */
   converted: { baseId: string; rarity: GearRarity }[];
+  /**
+   * The supplies the run dropped, one content id each (a Lure, a Map scrap...). They are in the stock
+   * now. Absent in runs from before the dungeon dropped supplies (read as none).
+   */
+  supplies?: string[];
   /** A fully cleared landmark depth. */
   landmark: boolean;
   /** The streak bonus of the day (the 3rd and 7th day of a 7 day cycle), or null. Not in the amounts above. */

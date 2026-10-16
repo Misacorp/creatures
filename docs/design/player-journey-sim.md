@@ -29,7 +29,6 @@ A profile is data (`PlayerProfile`, validated by a strict schema; `parseProfile`
 | `trainFocus`       | creatures that share the Bait: the top 3, the top 6, or `spread` (whatever the player fancies: a random trainable)                                                                                                  | 3, 6, spread                      |
 | `evolutionPush`    | rush a creature that is working towards its evolution before levelling the rest                                                                                                                                     | true / false                      |
 | `tripPercent`      | expedition uptime: chance that a check-in sends trips into idle slots                                                                                                                                               | 0 to 100                          |
-| `supplyPercent`    | share of the spare Bait (above the training reserve) that may go to trip supplies                                                                                                                                   | 0 to 100                          |
 | `dungeon`          | `best`: the best three of the top six by row score, in the game's row order; `good`: the strongest three in the game's row order (today's); `reasonable`: the strongest three, strongest first; `random`: any three | best / good / reasonable / random |
 | `signUpPercent`    | chance to sign up each week                                                                                                                                                                                         | 0 to 100                          |
 | `signUpNeedsLogin` | signing up needs a login on Monday to Friday of that week                                                                                                                                                           | true / false                      |
@@ -39,14 +38,14 @@ A profile is data (`PlayerProfile`, validated by a strict schema; `parseProfile`
 
 **Presets** (`PRESETS`; the numbers are the first guess, to be fitted to live data, slice 6):
 
-| Preset    | Login / leet days | Check-ins (hours)           | Training        | Trips / supplies | Dungeon    | Raid (sign-up, row) | Gear |
-| --------- | ----------------- | --------------------------- | --------------- | ---------------- | ---------- | ------------------- | ---- |
-| Min-maxer | 7 / 7             | every 3 hours, 00 to 21     | top 3, push     | 100% / 100%      | best       | 100%, protected row | 100% |
-| Engaged   | 7 / 5.5           | 09 and 20                   | top 6, push     | 85% / 60%        | good       | 100%, auto          | 40%  |
-| Regular   | 4.5 / 2.25        | 18                          | spread, no push | 55% / 20%        | reasonable | 85%, auto           | 10%  |
-| Drop-in   | 1.5 / 0.3         | 20 (60% pull to Fri to Sun) | spread, no push | 30% / 0%         | random     | 90%, auto           | 0%   |
+| Preset    | Login / leet days | Check-ins (hours)           | Training        | Trips | Dungeon    | Raid (sign-up, row) | Gear |
+| --------- | ----------------- | --------------------------- | --------------- | ----- | ---------- | ------------------- | ---- |
+| Min-maxer | 7 / 7             | every 3 hours, 00 to 21     | top 3, push     | 100%  | best       | 100%, protected row | 100% |
+| Engaged   | 7 / 5.5           | 09 and 20                   | top 6, push     | 85%   | good       | 100%, auto          | 40%  |
+| Regular   | 4.5 / 2.25        | 18                          | spread, no push | 55%   | reasonable | 85%, auto           | 10%  |
+| Drop-in   | 1.5 / 0.3         | 20 (60% pull to Fri to Sun) | spread, no push | 30%   | random     | 90%, auto           | 0%   |
 
-**Today's archetypes** are profiles too (`LEGACY_PROFILES`): casuals log in only on their leet days (login days equal leet days) and check in once at 09:00; the others log in every day and check in at 09:00 and 20:00. All train the top 3 with the push, always send trips, spend all spare Bait on supplies, run the dungeon with the strongest three in the game's row order, take the default raid row and always work the gear. A test (`legacy-unchanged.test.ts`, fixture `test/fixtures/legacy-digest.json`, taken from commit 3f31620) pins that the old simulations give identical numbers; `pnpm sim:quick` writes a byte-identical report.
+**Today's archetypes** are profiles too (`LEGACY_PROFILES`): casuals log in only on their leet days (login days equal leet days) and check in once at 09:00; the others log in every day and check in at 09:00 and 20:00. All train the top 3 with the push, always send trips, run the dungeon with the strongest three in the game's row order, take the default raid row and always work the gear. A test (`legacy-unchanged.test.ts`, fixture `test/fixtures/legacy-digest.json`, first taken from commit 3f31620, re-pinned on purpose for the raid curve on 2026-10-16 and for the supplies rework on the same day) pins that the old simulations give identical numbers; `pnpm sim:quick` writes a byte-identical report.
 
 A server is a mix: default 1 min-maxer, 3 engaged, 3 regular, 2 drop-in; `--server-mix casual-heavy` (1 engaged, 4 regular, 4 drop-in) and `committed` (2 min-maxers, 4 engaged, 2 regular, 1 drop-in) are named; `--mix name=count,...` is free.
 
@@ -61,7 +60,7 @@ The journey runs pair the two models on the same seeds (same servers, same dice 
 
 ## The daily loop
 
-Each simulated day, in `runEconomy` (the old and the new simulations are the same code): the week's login and leet days are drawn (one shuffled order of the week decides both: the leet days are its first days and the login days a longer stretch of it, so a leet is always a login; a raid-day bias moves Friday to Sunday up the order), income is credited when the day starts, and then the day runs by the hour. At each hour at which somebody checks in, every such player does a check-in: claim income and expeditions, evolve, work the gear, send trips, buy supplies, train, start jobs. Each player runs the daily dungeon once, at their first check-in of the day. At 12:00 the raid is signed up for (Friday) and its stage played (Friday, Saturday, Sunday). Everything goes through the real rules; no rule is copied into the sim. The game's 13:37 daily reset is not modelled: a sim day is a calendar day.
+Each simulated day, in `runEconomy` (the old and the new simulations are the same code): the week's login and leet days are drawn (one shuffled order of the week decides both: the leet days are its first days and the login days a longer stretch of it, so a leet is always a login; a raid-day bias moves Friday to Sunday up the order), income is credited when the day starts, and then the day runs by the hour. At each hour at which somebody checks in, every such player does a check-in: claim income and expeditions, evolve, work the gear, send trips (with the supplies in stock), train, start jobs (a supply when the stock is low, then gear). Each player runs the daily dungeon once, at their first check-in of the day. At 12:00 the raid is signed up for (Friday) and its stage played (Friday, Saturday, Sunday). Everything goes through the real rules; no rule is copied into the sim. The game's 13:37 daily reset is not modelled: a sim day is a calendar day.
 
 ## The journey log
 
@@ -75,7 +74,7 @@ Each simulated day, in `runEconomy` (the old and the new simulations are the sam
   3. nothing to train or evolve: the gear path's limit (`scrap_for_gear`, `glimmer_for_craft`, `shards_for_craft`, `essence_for_gear`, `craft_timer`); else `max_fusion` (every team creature fully fused) or `nothing_worth_buying`.
      The record also lists everything that applies (`blocked`), including `expedition_slots_full`, and the gear path's own limit (`gearLimit`, null for a player who never works the gear).
 - **Waits:** runs of days with the same binding limit, with a start, a length and a cause. After a check-in a player has always trained until the Bait ran out, so a Bait wait is the stretch between two trainings (a day with a training is not a wait). A limit that is not a wait carries the previous wait on. The gear path has its own waits (same `gearLimit` until any upgrade or craft).
-- **Currencies held** (Bait, Essence, scrap, glimmer, shards), **supplies** in stock, used and bought, **gear** owned and worn with its rarity and upgrade levels.
+- **Currencies held** (Bait, Essence, scrap, glimmer, shards), **supplies** in stock, used, and obtained by source (found on trips, dropped by the dungeon, crafted, rank gifts), **gear** owned and worn with its rarity and upgrade levels.
 
 ## Output
 
@@ -91,7 +90,7 @@ Defaults: 12 weeks, 50 servers, `allowance`, the four presets in the default mix
 
 - per preset: per week, the median and quartiles of power (and the median of each part of the split), top level, team level, Bait, Essence, scrap, glimmer, shards, supplies and worn gear; raid results (share signed up, share whose server won the finale, Essence paid, share of the group's contribution);
 - per preset: for each milestone, the share of players who reached it and the distribution of the day (quartiles, 90th percentile, max);
-- per preset: waits by cause (share of players who waited, days per player, longest wait), the share of days each limit applied, and the supplies used and bought;
+- per preset: waits by cause (share of players who waited, days per player, longest wait), the share of days each limit applied, and the supplies used and obtained by source;
 - per week: the servers' finale win share, boss rank and group size;
 - one example journey per preset (the first player of the first server) day by day.
 
@@ -103,7 +102,7 @@ The raid goes through `raid.ts` and the shipped rules, so a boss retune is follo
 - Signing up needs a login in the sim (the game must be opened), so a drop-in who comes only on Saturday misses the raid.
 - The presets are guesses until they are fitted to the live report (slice 6).
 - The gear path's limit looks only at the price of the cheapest worn upgrade; it ignores the Essence the sim holds back for an evolution (`GEAR_POLICY.evolutionLookahead`), so a player with the Essence but under the reserve shows no limit although nothing is bought.
-- Expedition uptime and the supply share are per check-in, so a player with many check-ins sends more trips than the percentage says.
+- Expedition uptime is per check-in, so a player with many check-ins sends more trips than the percentage says.
 
 ## Calibration against live data
 
@@ -121,3 +120,7 @@ The daily ops report (B-series, `balance-review` skill) has real logins, leets, 
 ## Raid curve study (built, 2026-10-16)
 
 Slice 5 in part: `pnpm sim:curve` (`packages/sim/src/curve-study.ts`) plays whole servers of the named mixes (`casual-heavy`, `default`, `committed`) week by week with the real ladder and Festivals, and groups every raid week by week and by Boss Rank: Phase 1 and 2 cleared, finale won, knock-out share, overtime. It writes `report-curve.json` and `report-curve.md` and takes `--server-mix`, `--mix name=count,...` (a custom server), `--weeks`, `--servers`, `--seed`, `--income` and `--set path=integer,...` (tuning overrides such as `raid.curve.ranks.2.hpBp=30000`, the array index being rank minus 1). The same study runs inside `pnpm sim` (60 servers a mix; 6 in `--quick`) and feeds the `curve-*` targets in `packages/sim/targets.json`; the long-run and pity sims of `pnpm sim` also play the default journey server now. See `docs/balance/log.md` B-010.
+
+## Supplies study (built, 2026-10-16)
+
+`pnpm sim:supplies` (`packages/sim/src/supplies-study.ts`, `supplies-cli.ts`) plays whole journey servers (the default mix, three seeds, 30 weeks) and reports, per profile and week, the supplies used and where they came from (found on trips, dropped by the dungeon, crafted, rank gifts), the supplies in stock, scrap, team power, upgrade levels on worn gear and the other currencies held. One process per variant: `pnpm sim:supplies --label run --set dungeon.perRoom.0.supply=1 --out run.json`, then `pnpm sim:supplies --compare a.json,b.json` lays them side by side. `--set` takes the same overrides as `pnpm sim:curve` (and `supply.<id>.blueprint.parts.scrap=2` for a supply's recipe). Supplies are not for sale since 2026-10-16: the `supplyPercent` dial and the Bait budget are gone, a trip carries the supplies in stock, and the workshop policy makes a supply when fewer than `GEAR_POLICY.supplyStock` are in stock or being made, leaving the scrap of the next `keepUpgrades` upgrades of every worn item alone. See `docs/balance/log.md` B-011.

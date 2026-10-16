@@ -27,7 +27,7 @@ Misa watches production by playing. Agents also need data to understand **how pe
 1. **Event log (append-only, per guild Durable Object).** Add a table, `analytics_events (at, kind, actor_hash, props_json)`, written inside the existing transactions at the moments that matter:
    - session start;
    - starter chosen;
-   - expedition send, claim and recall (v2: place, supplies carried and how many were bought, explorer rank, goal outcome, XP and stars);
+   - expedition send, claim and recall (v2: place, supplies carried (nothing is bought since 2026-10-16; older events carry `bought`), explorer rank, goal outcome, XP and stars);
    - the end-of-trip choice: offered, chosen and its result (goal id, risk, exact odds, worked / failed / declined);
    - journal finds, explorer rank-ups, familiarity stars and slot unlocks (ids and numbers only);
    - train, evolve and fuse;

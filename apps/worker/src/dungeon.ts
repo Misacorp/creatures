@@ -104,6 +104,8 @@ export interface DungeonRewards {
   gear: { id: string; baseId: string; rarity: GearRarity }[];
   /** Items that did not fit the bag and became parts (already counted in `parts`). */
   converted: { baseId: string; rarity: GearRarity }[];
+  /** The supplies the run dropped, one content id each (absent in runs stored before supplies dropped here). */
+  supplies?: string[];
   /** A fully cleared landmark depth: its gear drop was certain. */
   landmark: boolean;
   streak: { day: number; bait: number; essence: number; parts: PartsBundle } | null;
@@ -792,6 +794,7 @@ export class Dungeon {
         return {
           parts: addParts({ scrap: payout.scrap, glimmer: payout.glimmer }, loot.parts),
           gear: loot.gear,
+          supplies: loot.supplies,
         };
       },
       { bait: payout.bait, essence: payout.essence, meta: { day, depth, attempt } },
@@ -817,6 +820,7 @@ export class Dungeon {
       parts: grant.parts,
       gear: grant.gear,
       converted: grant.converted,
+      supplies: grant.supplies ?? [],
       landmark: payout.landmark,
       streak: streakPaid,
     };
@@ -924,7 +928,13 @@ export class Dungeon {
     const bait = rewards.bait + (rewards.streak?.bait ?? 0);
     const essence = rewards.essence + (rewards.streak?.essence ?? 0);
     if (
-      bait + essence + (parts.scrap ?? 0) + shards + (parts.glimmer ?? 0) + rewards.gear.length >
+      bait +
+        essence +
+        (parts.scrap ?? 0) +
+        shards +
+        (parts.glimmer ?? 0) +
+        rewards.gear.length +
+        (rewards.supplies?.length ?? 0) >
       0
     ) {
       analytics.record(
@@ -937,6 +947,7 @@ export class Dungeon {
           shards,
           glimmer: parts.glimmer ?? 0,
           gear: rewards.gear.length + rewards.converted.length,
+          supplies: rewards.supplies?.length ?? 0,
           landmark: rewards.landmark,
           streakBonusDay: rewards.streak?.day ?? 0,
         },
