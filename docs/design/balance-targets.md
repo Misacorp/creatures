@@ -69,16 +69,24 @@ Festival species are compared with the catchable median in the report but are no
 
 Measured on the default server's sims (10 players, 12 weeks), with the same seeds played without gear as "today".
 
-| Target                                                                                                                          | Value       |
-| ------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| Gear's share of a daily player's raid-team power at week 8 (median; the hard ceiling for any player at any time is 25%)         | 10–20%      |
-| Days until a daily player's first crafted item arrives (90th percentile; a player who never crafts counts as 99)                | ≤ 7         |
-| Essence held by daily players at week 12, minus the same sims without gear (never above today's value)                          | ≤ 0         |
-| Weekly growth of daily players' Essence stockpile from week 8 to 12, minus today's growth (no runaway; negative means it falls) | ≤ 0         |
-| Best Crafting level of a daily player 30 days after joining (median)                                                            | 4–6 (aim 5) |
-| Gear power at week 8 of a player who joined in week 4, relative to the median daily player's                                    | ≥ 60%       |
+| Target                                                                                                           | Value       |
+| ---------------------------------------------------------------------------------------------------------------- | ----------- |
+| Days until a daily player's first crafted item arrives (90th percentile; a player who never crafts counts as 99) | ≤ 7         |
+| Best Crafting level of a daily player 30 days after joining (median)                                             | 4–6 (aim 5) |
+| Gear power at week 8 of a player who joined in week 4, relative to the median daily player's                     | ≥ 60%       |
 
-**Gear share** is the power the worn items add to the top 3 creatures (`applyGear`, floored as in the fight slots) over the top-3 power with gear. The raid, long-run, fairness and collection targets above are measured with gear on, so they still hold after gear.
+**Gear's share of the raid team's fight-scored power** (Gear A, 2026-10-16; `gear-and-creatures-v2.md` section 4) is measured by `packages/sim/src/gear-study.ts` on 30 weeks of the default journey server (1 min-maxer, 3 engaged, 3 regular, 2 drop-in): the share is `1 - bare / full`, where `full` is the fight-scored power of the three strongest creatures (`fightPower`, gear on) and `bare` the same three with their gear taken off. Median over the players of a profile, at the end of the week:
+
+| Profile   | Week 2 | Week 8 | Week 20 | Week 30 |
+| --------- | ------ | ------ | ------- | ------- |
+| Min-maxer | 5–10%  | 15–22% | 25–32%  | 33–40%  |
+| Engaged   | 5–10%  | 15–22% | 25–32%  | 33–40%  |
+| Regular   | 3–6%   | 10–15% | 18–24%  | 28–34%  |
+| Drop-in   | 0–3%   | 5–8%   | 10–15%  | 15–20%  |
+
+These are the `gear-share-<profile>-week<N>` targets (16). They are design goals, not tuned values: the first Gear A numbers fall short of most of them (see `docs/balance/log.md` B-012), which is reported, not tuned away. The earlier targets of the stat-power share at week 8 (10–20%) and of the Essence gear no longer sinks (never above today's value; growth) are retired: upgrades are gone, and the Essence now goes to evolution and, later, to the Workshop's Reach.
+
+The old stat-power share (`gearShare`, the power the worn items add to the top 3 over the top-3 power) is still printed in the report. The raid, long-run, fairness and collection targets above are measured with gear on, so they still hold after gear.
 
 ## Daily dungeon
 
@@ -116,15 +124,14 @@ Measured on the default server's sims for the species target and on 60-week sims
 
 Measured on the default journey server (min-maxer, engaged, regular, drop-in; 12 weeks, weeks 3 to 12 for the rates) by `pnpm sim` (`packages/sim/src/supplies-study.ts`). Supplies cannot be bought: they come from the daily dungeon, from trips and from the Workshop.
 
-| Target                                                                                                     | Value  |
-| ---------------------------------------------------------------------------------------------------------- | ------ |
-| Supplies a regular player carries a week                                                                   | ≥ 3    |
-| Supplies a min-maxer carries a week                                                                        | ≥ 8    |
-| Share of a min-maxer's supplies that are crafted                                                           | ≥ 25%  |
-| Share of an engaged player's supplies that are crafted                                                     | ≥ 25%  |
-| A min-maxer's upgrade levels on worn gear at the end of week 12 (making supplies must not starve the gear) | ≥ 10.8 |
+| Target                                                 | Value |
+| ------------------------------------------------------ | ----- |
+| Supplies a regular player carries a week               | ≥ 3   |
+| Supplies a min-maxer carries a week                    | ≥ 8   |
+| Share of a min-maxer's supplies that are crafted       | ≥ 25% |
+| Share of an engaged player's supplies that are crafted | ≥ 25% |
 
-The rework's comparison with the old economy (Bait-bought supplies) is in `docs/balance/log.md` B-011; before it a min-maxer reached 11.5 gear levels at week 12.
+The rework's comparison with the old economy (Bait-bought supplies) is in `docs/balance/log.md` B-011. The upgrade-level check that stood here (`supplies-minmaxer-gear`) was retired in Gear A, because gear has no upgrade levels any more.
 
 ## Informational (no target)
 

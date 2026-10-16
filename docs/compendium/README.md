@@ -61,7 +61,7 @@ These were found while writing the compendium. The Status column says which are 
 | 9   | `docs/design/gear.md` vs `gear.json` and `enchants.json`                     | The design says "about 12 bases" and "about 8 enchants". The data has 19 bases and 9 enchants.                                                                      | Probably fine. Note it in `decisions.md`.                                              | Resolved 2026-10-13: `gear.md` now says 19 bases and 9 enchants.                                                                                                                                                                                                                         |
 | 10  | `docs/design/gear.md` vs `glossary.json` `blueprint`                         | The gear doc lists blueprint sources as raids, the dungeon, expeditions and Festivals. The glossary says only expeditions and the welcome kit.                      | Update the glossary when it is revised.                                                | Resolved 2026-10-13: the code grants blueprints only from expedition claims (and some push-on rewards) and the welcome kit. `gear.md` now says so; the glossary was already right.                                                                                                       |
 | 11  | `species-lore.json` `ancientshell` vs `finale-abilities.json` `moss-bloom-2` | The lore says it shields "its own row". The ability shields its own zone.                                                                                           | Reword the lore to "its own zone", or leave it as a loose phrase.                      | Not a contradiction: zones are rows. No change.                                                                                                                                                                                                                                          |
-| 12  | `glossary.json` enchant entries vs `enchants.json`                           | The glossary gives enchant costs (glimmer and shards). `enchants.json` has the shard type but no cost, and no glimmer item exists in the data.                      | Confirm where costs live.                                                              | Open.                                                                                                                                                                                                                                                                                    |
+| 12  | `glossary.json` enchant entries vs `enchants.json`                           | The glossary gives enchant costs (glimmer and shards). `enchants.json` has the shard type but no cost, and no glimmer item exists in the data.                      | Confirm where costs live.                                                              | Closed 2026-10-16: enchants were removed with Gear A.                                                                                                                                                                                                                                    |
 
 ## Tone and style guide
 
@@ -77,20 +77,20 @@ Distilled from the shipped text (`species-lore.json`, `bosses-lore.json`, `journ
 
 **Naming patterns.**
 
-| Kind              | Pattern                                       | Examples                                                                           |
-| ----------------- | --------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Stage 1 creature  | A made-up word that hints at its nature       | Splashet, Cindle, Sproutle, Zipmouse, Mistnewt, Ashmole                            |
-| Stage 2 creature  | A grown-up form, often a new ending           | Tidewing, Pyrelynx, Thornbuck, Voltaro, Fogwyrm, Magmole, Tempestray, Ancientshell |
-| Solo creature     | A compound of what it is made of              | Solmane, Gaiadrake, Aurorix, Lanternfin, Hearthshell, Coralynx, Stormray           |
-| Raid boss         | An adjective and a noun, or a title           | Tidal Colossus, Cinder Wyrm, Thornmother, Storm Sovereign                          |
-| Room boss and foe | A descriptor and a noun                       | Drowned Warden, Slag Tyrant, Puddle Imp, Drift Wisp, Bramble Hound                 |
-| Mark              | A past-tense state left on a boss             | Soaked, Charged, Overgrown, Scorched                                               |
-| Reaction          | One word for the event                        | Overload, Grounding, Wildfire, Steam                                               |
-| Room modifier     | One word for the condition                    | Flooded, Scorched, Overgrown, Stormy, Dark, Thorns, Brittle, Fog                   |
-| Enchant           | "Owner's Thing" or an effect name             | Payoff's Edge, Guard's Bulwark, Setter's Wit, Tide Flow                            |
-| Journal set       | "The X Ledger / Records / Series", or a theme | The Tide Ledger, Static Letters, Moonlit Verses                                    |
-| Place             | Plain and descriptive                         | Tidepools, Ember Caves, Storm Ridge, Old Crossroads                                |
-| Ability           | A short action name                           | Tidal Mark, Flare Strike, Fog Veil, Hearth Ward                                    |
+| Kind              | Pattern                                       | Examples                                                                            |
+| ----------------- | --------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Stage 1 creature  | A made-up word that hints at its nature       | Splashet, Cindle, Sproutle, Zipmouse, Mistnewt, Ashmole                             |
+| Stage 2 creature  | A grown-up form, often a new ending           | Tidewing, Pyrelynx, Thornbuck, Voltaro, Fogwyrm, Magmole, Tempestray, Ancientshell  |
+| Solo creature     | A compound of what it is made of              | Solmane, Gaiadrake, Aurorix, Lanternfin, Hearthshell, Coralynx, Stormray            |
+| Raid boss         | An adjective and a noun, or a title           | Tidal Colossus, Cinder Wyrm, Thornmother, Storm Sovereign                           |
+| Room boss and foe | A descriptor and a noun                       | Drowned Warden, Slag Tyrant, Puddle Imp, Drift Wisp, Bramble Hound                  |
+| Mark              | A past-tense state left on a boss             | Soaked, Charged, Overgrown, Scorched                                                |
+| Reaction          | One word for the event                        | Overload, Grounding, Wildfire, Steam                                                |
+| Room modifier     | One word for the condition                    | Flooded, Scorched, Overgrown, Stormy, Dark, Thorns, Brittle, Fog                    |
+| Gear line         | The effect in plain words                     | Attack, Sturdy blow, Tide Hunter, Backdraft ward, Guard's shadow, Between-room rest |
+| Journal set       | "The X Ledger / Records / Series", or a theme | The Tide Ledger, Static Letters, Moonlit Verses                                     |
+| Place             | Plain and descriptive                         | Tidepools, Ember Caves, Storm Ridge, Old Crossroads                                 |
+| Ability           | A short action name                           | Tidal Mark, Flare Strike, Fog Veil, Hearth Ward                                     |
 
 Note the overlap on purpose: the Scorched and Overgrown marks share names with two room modifiers (`(content)`, see `world.md`).
 
@@ -127,7 +127,7 @@ Notes (compendium detail, not shipped): <2 to 3 short bullets>
 
 **Dungeon foe, room boss or modifier:** element, turn order or condition, what it does in plain words, flavour line (as shipped), the in-world phenomenon, notes.
 
-**Item (gear base, enchant, supply):** name, kind, flavour (as shipped), who makes it and where it comes from (compendium detail), any link to a place or creature.
+**Item (gear base, gear line, supply):** name, kind, flavour (as shipped), who makes it and where it comes from (compendium detail), any link to a place or creature.
 
 **Journal page:** ID, place, title, set, the text (as shipped), the one-line gist, the mechanic it hints at, and whether that link is `(content)` or `(inferred)`.
 

@@ -519,3 +519,50 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
   - **Shards are the next limit on the higher tiers**: a min-maxer holds 1 shard from week 12 (main 112) because crafting good supplies spends them all, and great supplies are about one in twenty of what is crafted. More shard income if great supplies should be common.
   - **The raid is a little easier than the curve intends in weeks 4 to 12.** Misa's call whether to retune (the curve is live). A tested fix: ranks 2 to 5 HP +5% and Attack +15%, ranks 6 to 15 HP 0% to +4% and Attack +8% to +12%: every `curve-*`, `raid-finale-typical`, `raid-ko-share` and `choice-creature-min` target inside its limit on three seeds, but `longrun-loss-streak` then fails on most seeds (15% to 27% against 10%), so the loss-streak target would need re-basing as well.
   - Watch live: supplies per run (`dungeon_reward.supplies`), crafted supplies (`job_claim`) and the stock of regular players (the sim has them at 2 to 3).
+
+### B-012: Gear A: Hat, Scarf and Charm with item levels and tiered lines (open)
+
+- **Opened:** 2026-10-16, build step 2 of `docs/design/gear-and-creatures-v2.md` (section 14); the targets are section 4 ("Gear's share of power over the journey").
+- **Finding.** Before Gear A, gear was a +5 ladder: the stat-power share of a daily player's raid team was 12.6% at week 8 and stopped growing at week 12 to 18 (the design's "13% at the plateau"). The design wants gear to be the main growth once creature growth slows: 5 to 10% at week 2 and 33 to 40% from week 30 for a committed player, less for the others.
+- **Method.** `pnpm sim` (full) on seeds `leet` and `leet2`, and the same on the branch before Gear A (3387b71, "base") with the same seeds. The new gear study (`packages/sim/src/gear-study.ts`): 20 servers of the default journey mix (1 min-maxer, 3 engaged, 3 regular, 2 drop-in) for 30 weeks; the share is `1 - bare / full`, where `full` is the fight-scored power (`fight-power.ts`) of the three strongest creatures and `bare` the same three with their gear taken off; the median of a profile's players at the end of the week. The sim's policy: Equip best (the game's `planEquipBest`) for the three strongest creatures, dismantle everything unworn except the 3 best spares, a supply when fewer than 4 are in stock, else the craft whose plain item adds most to a team creature; drops, item levels and the trip and Workshop lines as the worker has them (`GEAR_POLICY` in `packages/sim/src/gear.ts`).
+- **What shipped (starting values, `RULES.gear` and the content files).** Items of three slots with 22 bases and about 40 lines (more with the per-element ones); tier bands by item level (I at 1, II at 5, III at 10, IV at 15, V at 20) with roll weights 15 / 30 / 30 / 25 counted down from the best tier; item level by source (finale `3 + Boss Rank`, Festival `5 + Boss Rank`, dungeon by depth, trips twice the explorer rank, crafts twice the Crafting level); the wear rule (Hat 1, Scarf 7, Charm 13, item level at most the creature's level). Upgrades, Improve and enchants are gone. See `decisions.md` 2026-10-16 (Gear A built).
+- **Outcome (sim): gear's share of fight-scored power against the targets.** Seed `leet`, medians; the target range in brackets.
+
+  | Profile   | Week 2         | Week 8           | Week 20          | Week 30          |
+  | --------- | -------------- | ---------------- | ---------------- | ---------------- |
+  | Min-maxer | 6.0% (5 to 10) | 12.3% (15 to 22) | 22.9% (25 to 32) | 25.5% (33 to 40) |
+  | Engaged   | 4.7% (5 to 10) | 9.9% (15 to 22)  | 15.1% (25 to 32) | 18.8% (33 to 40) |
+  | Regular   | 1.6% (3 to 6)  | 6.2% (10 to 15)  | 10.4% (18 to 24) | 13.9% (28 to 34) |
+  | Drop-in   | 1.0% (0 to 3)  | 4.1% (5 to 8)    | 6.7% (10 to 15)  | 9.8% (15 to 20)  |
+
+  Seed `leet2` is within a point of every cell (min-maxer 4.9, 11.8, 22.5 and 25.1%; engaged 4.3, 9.8, 14.9 and 18.6%; regular 1.6, 6.2, 11.1 and 13.4%; drop-in 0.9, 3.1, 7.4 and 10.7%). **14 of the 16 targets fail on `leet` and 15 on `leet2`**: only the week 2 cells of the min-maxer (on `leet`) and the drop-in pass. Every profile is on the right shape (the share grows from week 2 to week 30 and the profiles keep their order), but short of the design by a third at the plateau (a min-maxer 25% against 33 to 40%, a regular 14% against 28 to 34%). Not tuned: these are the first numbers of the rules as designed.
+
+- **Reading.**
+  - The shortfall follows from item levels. A finale piece is `3 + Boss Rank`, so a server that climbs the rank ladder slowly gets pieces of item level 12 to 14: tier III at best (tier IV needs item level 15, V needs 20). What the players wear at week 30 (looked at for the min-maxer and three others) is mostly Rare pieces of item level 12 to 20 with tier II to III lines; the min-maxer wears a few tier IV and V lines (a tier V Attack on a level 20 Hat, a tier V Payoff's pounce).
+  - Crafting adds little yet: a craft is Common at item level twice the Crafting level, and the Reach, the dismantle ranges and the well-thumbed marks of the crafting loop (Gear B) are what make crafting a way to reach good items. The design's plateau ("tier V lines and better-fitting items") assumes both.
+  - The old stat-power share is 7.9% at week 8 (it was 12.6%): most of the new lines are conditional (Hunter, Ward, Reaction, position lines) and show up in fights, not in Attack plus HP. That is why the target moved to the fight-scored share.
+  - Not measured: the three side conditions of section 4 (gear gives at least 70% of a committed player's further raid power growth once the trio is level 30; an upgrade worth at least 2% of team power every two weeks up to week 30; nobody completes a perfect set in 30 weeks). The share table above is the main evidence for them; they need a per-item study.
+- **Outcome (sim): the other targets and the raid drift (report only).** 78 targets: 61 pass on `leet` (base: 62 of 66) and 59 on `leet2` (base 64 of 66); 14 or 15 of the failures are the gear share. Without them, the others, with the value on base:
+
+  | Target                            | base `leet` | Gear A `leet` | base `leet2` | Gear A `leet2` |
+  | --------------------------------- | ----------- | ------------- | ------------ | -------------- |
+  | `raid-finale-typical` (85 to 97%) | 97.5%       | 96.9%         | 97.0%        | 98.3%          |
+  | `raid-ko-share` (10 to 30%)       | 7.1%        | 6.8%          | 7.5%         | 6.1%           |
+  | `curve-r2to5-default` (70 to 85%) | 86.3%       | 88.9%         | 85.3%        | 85.0%          |
+  | `curve-r6up-default` (45 to 65%)  | 61.8%       | 59.7%         | 56.9%        | 68.8%          |
+  | `choice-creature-min` (>= 0.60x)  | 0.598x      | 0.623x        | 0.610x       | 0.619x         |
+  | `exp-casual-discovery` (<= 0.45)  | 0.36        | 0.52          | 0.42         | 0.59           |
+  | `gear-first-craft` (<= 7 days)    | 1.4         | 1.4           | 1.4          | 1.4            |
+  | `gear-newcomer-catchup` (>= 60%)  | 70%         | 92%           | 78%          | 83%            |
+
+  The raid targets already failed on base (`raid-ko-share` and `curve-r2to5-default` on both seeds) and move by one to three points in either direction; the raid is a little easier from the gear (`curve-r6up-default` 68.8% on `leet2`, a fail; 59.7% on `leet`, a pass) and the expected retune comes with the raid and dungeon rebalance (build step 8), as the design says. `exp-casual-discovery` (casual players own up to 0.5 species more than today's expeditions give; the target's own noise is about half a species) crossed its limit on both seeds in the runs with the neutral welcome blueprint (0.38 on `leet` in the run before that change, 0.52 after it): the casual species counts differ by 0.1 to 0.2 species at weeks 9 to 12, which is the measure's noise, but I did not find a cause. No retune was made.
+
+- **Action.**
+  - The welcome kit's blueprint is now always a neutral piece (a Hat, Scarf or Charm, evenly), which costs scrap only: with a random one, about half of the new players needed a shard before their first craft and `gear-first-craft` read 9.8 days (limit 7); with it 1.4.
+  - Targets: 16 added (`gear-share-<profile>-week<N>`); retired `gear-share-week8` (stat-power share), `gear-essence-week12` and `gear-essence-growth` (gear no longer sinks Essence: the Essence a player holds is now whatever evolution leaves, until the Reach and the dungeon's choice rooms use it) and `supplies-minmaxer-gear` (upgrade levels no longer exist). The legacy digest was re-pinned; the scalar files were regenerated.
+- **Expected.** The gear share grows with the crafting loop (Gear B) and with higher Boss Ranks; revisit the numbers (item level by source, tier weights) with the raid and dungeon rebalance rather than before it.
+- **Follow-ups.**
+  - Gear B, then rerun the gear study: the Reach (a crafter can aim for a higher tier) and the dismantle ranges are the missing source of good items; expect the committed profiles to move most.
+  - Decide whether the finale item level should follow the rank faster (`RULES.gear.itemLevel.finale.base`), or the tier bands move down, once the raid curve is retuned: at ranks 9 to 11 the finale cannot give tier IV.
+  - A per-item study for the three side conditions of section 4 (growth share after level 30, upgrade cadence, perfect set).
+  - `Growing` (creature experience from every activity) is not in the first gear release: it needs training by activity (Creatures B).

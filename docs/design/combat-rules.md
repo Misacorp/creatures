@@ -71,6 +71,8 @@ _Example._ 9 slots are 3 / 3 / 3. 10 slots are 3 / 4 / 3. In the dungeon the lin
 
 2.1.2 A dungeon run is **three rooms** (`RULES.dungeon.rooms`): two normal foes, then a room boss. HP carries from room to room, and so does being knocked out. Every room is a fresh fight: no mark carries over, and the room's rounds start at 1.
 
+2.1.2a **Between-room rest.** A creature that wears a Between-room rest line (a Scarf line of gear v2) recovers that share of its maximum HP when a room is won and the next begins (`DungeonRunInput.rest`, by creature id, in basis points; the shares of all its worn lines add). It never goes above its maximum and a knocked-out creature stays out. The raid has no rooms, so the line does nothing there.
+
 2.1.3 Room modifiers (Flooded, Thorns, and so on) are plain changes to the room's numbers or one extra foe move, applied before the fight starts. They add no new rule.
 
 **2.2 Rounds.** A fight is played in numbered rounds, from 1. Each round has the steps in 2.3 to 2.6, in that order. The step order never changes.
