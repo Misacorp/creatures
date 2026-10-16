@@ -2,6 +2,8 @@ import * as v from 'valibot';
 import type { Attention } from './attention';
 import type { Collection, Outcome } from './collection';
 import {
+  CatchChoiceBodySchema,
+  CatchRecommendedBodySchema,
   ClaimBodySchema,
   EvolveBodySchema,
   IdSchema,
@@ -11,6 +13,7 @@ import {
   RoomBodySchema,
   StartExpeditionBodySchema,
   StarterBodySchema,
+  TalentSlotBodySchema,
   TrainBodySchema,
 } from './collection-schemas';
 import type { LeetSyncStatus } from './guild-core';
@@ -117,6 +120,44 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
       if (id === undefined) return invalidId();
       if ((await parseBody(request, ClaimBodySchema)) === undefined) return invalidBody();
       const outcome = ctx.core.collection.claimExpedition(ctx.user.id, id);
+      if (!outcome.ok) return failure(outcome);
+      return json({ result: outcome.value, state: ctx.core.collection.state(ctx.user.id) });
+    },
+  },
+  '/api/catches/recommended': {
+    POST: async (request, { user, core }) => {
+      const body = await parseBody(request, CatchRecommendedBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = core.collection.choices.chooseAllRecommended(user.id, body.idempotencyKey);
+      if (!outcome.ok) return failure(outcome);
+      return json({ results: outcome.value.results, state: core.collection.state(user.id) });
+    },
+  },
+  '/api/catches/:id/choose': {
+    POST: async (request, ctx) => {
+      const id = pathId(ctx);
+      if (id === undefined) return invalidId();
+      const body = await parseBody(request, CatchChoiceBodySchema);
+      if (body === undefined) return invalidBody();
+      const { idempotencyKey, ...input } = body;
+      const outcome = ctx.core.collection.choices.choose(ctx.user.id, id, input, idempotencyKey);
+      if (!outcome.ok) return failure(outcome);
+      return json({ result: outcome.value, state: ctx.core.collection.state(ctx.user.id) });
+    },
+  },
+  '/api/creatures/:id/talents/slot': {
+    POST: async (request, ctx) => {
+      const id = pathId(ctx);
+      if (id === undefined) return invalidId();
+      const body = await parseBody(request, TalentSlotBodySchema);
+      if (body === undefined) return invalidBody();
+      const { idempotencyKey, ...input } = body;
+      const outcome = ctx.core.collection.choices.slotFromBook(
+        ctx.user.id,
+        id,
+        input,
+        idempotencyKey,
+      );
       if (!outcome.ok) return failure(outcome);
       return json({ result: outcome.value, state: ctx.core.collection.state(ctx.user.id) });
     },

@@ -4,6 +4,7 @@ import {
   RULES,
   content,
   expeditionContent,
+  talentContent,
 } from '@creatures/game';
 import * as v from 'valibot';
 import { ROOM_MAX_USERS } from './lounger';
@@ -52,6 +53,39 @@ export const PushOnBodySchema = v.strictObject({ goalId: v.picklist(GOAL_IDS) })
 
 /** Claiming takes no input: the expedition id is in the path and the user is the session's. */
 export const ClaimBodySchema = v.strictObject({});
+
+/**
+ * Settling a pending duplicate (the card is in the path, the player is the session's). Teach and Fuse name
+ * the creature of the line that gets it (and Teach the slot, 1 to 3: the server checks it is open);
+ * `recommended` takes the card's Recommended choice.
+ */
+export const CatchChoiceBodySchema = v.variant('choice', [
+  v.strictObject({
+    choice: v.literal('teach'),
+    creatureId: IdSchema,
+    slot: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(3)),
+    idempotencyKey: IdempotencyKeySchema,
+  }),
+  v.strictObject({
+    choice: v.literal('fuse'),
+    creatureId: IdSchema,
+    idempotencyKey: IdempotencyKeySchema,
+  }),
+  v.strictObject({ choice: v.literal('release'), idempotencyKey: IdempotencyKeySchema }),
+  v.strictObject({ choice: v.literal('keep'), idempotencyKey: IdempotencyKeySchema }),
+  v.strictObject({ choice: v.literal('recommended'), idempotencyKey: IdempotencyKeySchema }),
+]);
+
+/** "Apply Recommended to all": settles every waiting duplicate with its Recommended choice. */
+export const CatchRecommendedBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
+
+/** Slotting a talent from a creature's Talent Book: the creature is in the path. */
+export const TalentSlotBodySchema = v.strictObject({
+  talentId: v.picklist([...talentContent.byId.keys()]),
+  golden: v.boolean(),
+  slot: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(3)),
+  idempotencyKey: IdempotencyKeySchema,
+});
 
 export const TrainBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
 

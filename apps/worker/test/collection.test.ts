@@ -2,7 +2,6 @@ import {
   RULES,
   content,
   createSeededRng,
-  expeditionConvertBait,
   lore,
   pickQuirk,
   quirkText,
@@ -57,10 +56,13 @@ function scriptedRng(values: number[]): Rng & { drawn: () => number } {
   };
 }
 
-/** Draws for one catch of a non-zipmouse common species that is not shiny: [rarity, species, shiny]. */
-const COMMON_SPLASHET_PLAIN = [0, 0, 1];
+/**
+ * Draws for one catch of a non-zipmouse common species that is not shiny: [the roll brings a creature,
+ * rarity, species, shiny].
+ */
+const COMMON_SPLASHET_PLAIN = [0, 0, 0, 1];
 /** Same, but shiny. */
-const COMMON_SPLASHET_SHINY = [0, 0, 0];
+const COMMON_SPLASHET_SHINY = [0, 0, 0, 0];
 
 function countingRng(seed: string): Rng & { drawn: () => number } {
   const inner = createSeededRng(seed);
@@ -105,9 +107,27 @@ interface CatchBody {
   species: string;
   shiny: boolean;
   outcome: string;
-  fusionCount?: number;
-  bait?: number;
+  talent?: {
+    id: string;
+    name: string;
+    golden: boolean;
+    text: string;
+    about: string;
+    idle: boolean;
+  };
+  pendingId?: string;
   firstOnServer: boolean;
+}
+
+interface PendingBody {
+  id: string;
+  species: string;
+  line: string;
+  shiny: boolean;
+  source: string;
+  talent: { id: string; golden: boolean };
+  offered: { teach: string[]; fuse: string[]; release: boolean; keep: boolean };
+  recommended: { choice: string; creatureId?: string; slot?: number };
 }
 
 interface ExpeditionBody {
@@ -126,7 +146,7 @@ interface ExpeditionBody {
   endsAt: number;
   status: string;
   claimedAt: number | null;
-  result: { recalled: boolean; catches: CatchBody[] } | null;
+  result: { recalled: boolean; catches: CatchBody[]; noCatch?: number } | null;
 }
 
 interface StateBody {
@@ -146,6 +166,8 @@ interface StateBody {
   starterChosen: boolean;
   starterOptions?: string[];
   creatures: CreatureBody[];
+  pending: PendingBody[];
+  bookSlotBait: number;
   expeditions: ExpeditionBody[];
   slots: {
     total: number;
@@ -288,8 +310,8 @@ function expeditionOf(res: Json): ExpeditionBody {
   return res.body['expedition'] as ExpeditionBody;
 }
 
-function resultOf(res: Json): { recalled: boolean; catches: CatchBody[] } {
-  return res.body['result'] as { recalled: boolean; catches: CatchBody[] };
+function resultOf(res: Json): { recalled: boolean; catches: CatchBody[]; noCatch?: number } {
+  return res.body['result'] as { recalled: boolean; catches: CatchBody[]; noCatch?: number };
 }
 
 function count(sql: SqlStorage, table: string, where = '1 = 1'): number {
@@ -380,12 +402,14 @@ describe('GET /api/state', () => {
           [
             'attention',
             'balances',
+            'bookSlotBait',
             'cancelled',
             'creatures',
             'expeditions',
             'leetSync',
             'loungeSpot',
             'loungerId',
+            'pending',
             'serverFirsts',
             'serverNow',
             'slots',
@@ -411,6 +435,8 @@ describe('GET /api/state', () => {
         expect(before.starterOptions).toEqual(['splashet', 'cindle', 'sproutle']);
         expect(before.creatures).toEqual([]);
         expect(before.expeditions).toEqual([]);
+        expect(before.pending).toEqual([]);
+        expect(before.bookSlotBait).toBe(RULES.talents.bookSlotBait);
         expect(before.slots).toEqual({
           total: 1,
           used: 0,
@@ -450,6 +476,38 @@ describe('GET /api/state', () => {
           nickname: null,
           away: false,
           quirk: expect.any(String) as string,
+          lineSlot: 1,
+          // The scripted talent draws are the second talent of the Cindle line, not golden.
+          talents: {
+            slots: [
+              {
+                slot: 1,
+                opensAt: 1,
+                open: true,
+                talent: {
+                  id: 'warm-to-the-touch',
+                  name: 'Warm to the Touch',
+                  golden: false,
+                  text: 'Wildfire bonus +13%',
+                  about: expect.any(String) as string,
+                  idle: false,
+                },
+              },
+              { slot: 2, opensAt: 20, open: false, talent: null },
+            ],
+            signature: null,
+            book: [
+              {
+                id: 'warm-to-the-touch',
+                name: 'Warm to the Touch',
+                golden: false,
+                text: 'Wildfire bonus +13%',
+                about: expect.any(String) as string,
+                idle: false,
+                slot: 1,
+              },
+            ],
+          },
           origin: 'starter',
           caughtAt: T0,
           explorer: { rank: 1, xp: 0, nextRankXp: RULES.expeditions.rank.xpForRank[1], trips: 0 },
@@ -468,7 +526,7 @@ describe('GET /api/state', () => {
           },
         });
       },
-      seeded(),
+      { ...seeded(), talentRng: scriptedRng([1, 5]) },
     );
   });
 
@@ -1033,17 +1091,23 @@ describe('POST /api/expeditions/{id}/claim', () => {
         expect(res.status).toBe(200);
         const result = resultOf(res);
         expect(result.recalled).toBe(false);
-        expect(result.catches).toHaveLength(RULES.expeditions.lengths.long.rolls);
+        // Every roll either brought a creature or came up empty (a small find instead).
+        expect(result.catches.length + (result.noCatch ?? 0)).toBe(
+          RULES.expeditions.lengths.long.rolls,
+        );
         const state = res.body['state'] as StateBody;
         expect(state.creatures.find((c) => c.id === p.starterId)?.away).toBe(false);
         expect(state.slots.used).toBe(0);
         const claimed = state.expeditions.find((e) => e.id === exp.id);
         expect(claimed).toMatchObject({ status: 'claimed', claimedAt: exp.endsAt });
         expect(claimed?.result).toEqual(result);
-        // Every catch ends up in the collection, as a new creature or a fusion.
+        // Every catch ends up in the collection (a new creature) or waits as a card (a duplicate).
         for (const c of result.catches) {
           const line = content.creatures.find((s) => s.id === c.species)?.line;
           expect(state.creatures.some((own) => own.line === line)).toBe(true);
+          if (c.outcome === 'duplicate') {
+            expect(state.pending.some((card) => card.id === c.pendingId)).toBe(true);
+          }
         }
       },
       seeded(),
@@ -1259,7 +1323,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
     );
   });
 
-  it('a duplicate fuses into the existing creature', async () => {
+  it('a duplicate waits as a card with the talent it rolled, and changes nothing else', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -1269,20 +1333,28 @@ describe('POST /api/expeditions/{id}/claim', () => {
         const exp = expeditionOf(await send(p, p.starterId));
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
-        expect(resultOf(res).catches).toEqual([
-          {
-            species: 'splashet',
-            shiny: false,
-            outcome: 'fused',
-            fusionCount: 1,
-            firstOnServer: true,
-          },
-        ]);
-        const after = (res.body['state'] as StateBody).creatures;
-        expect(after).toHaveLength(1);
-        expect(after[0]?.fusionCount).toBe(1);
-        // +6% stats on every stat, floored.
-        expect(after[0]?.stats.hp).toBe(Math.floor(((before?.stats.hp ?? 0) * 10600) / 10000));
+        const [dupe] = resultOf(res).catches;
+        expect(dupe).toMatchObject({
+          species: 'splashet',
+          shiny: false,
+          outcome: 'duplicate',
+          firstOnServer: true,
+        });
+        expect(dupe?.talent?.name).toBeTypeOf('string');
+        const state = res.body['state'] as StateBody;
+        // The creature the player owns is untouched: no fusion happened by itself.
+        expect(state.creatures).toHaveLength(1);
+        expect(state.creatures[0]?.fusionCount).toBe(0);
+        expect(state.creatures[0]?.stats).toEqual(before?.stats);
+        // The card is in the state, with the same talent, and four ways to answer.
+        expect(state.pending).toHaveLength(1);
+        expect(state.pending[0]).toMatchObject({
+          id: dupe?.pendingId,
+          species: 'splashet',
+          source: 'expedition',
+          talent: { id: dupe?.talent?.id, golden: dupe?.talent?.golden },
+          offered: { fuse: [p.starterId], release: true, keep: false },
+        });
         expect(
           ctx.sql.exec<{ s: number }>('SELECT dupe_streak AS s FROM player_progress').one().s,
         ).toBe(1);
@@ -1290,8 +1362,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
       { rng: scriptedRng(COMMON_SPLASHET_PLAIN) },
     );
   });
-
-  it('after five fusions a duplicate converts to Bait, exactly once even on a replayed claim', async () => {
+  it('a duplicate of a fully fused creature still waits as a card and pays no Bait, once even on a replayed claim', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -1302,33 +1373,23 @@ describe('POST /api/expeditions/{id}/claim', () => {
         const exp = expeditionOf(await send(p, p.starterId, 'medium', OWNED_ATLAS)); // 2 rolls
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
-        const bait = expeditionConvertBait(RULES.fusion.convertBait.common);
-        expect(resultOf(res).catches.map((c) => [c.outcome, c.bait])).toEqual([
-          ['converted', bait],
-          ['converted', bait],
-        ]);
-        expect(ctx.core.balances(USER_ID).bait).toBe(100 + 2 * bait);
-        const credits = ctx.sql
-          .exec<{
-            amount: number;
-            idempotency_key: string;
-          }>("SELECT amount, idempotency_key FROM ledger WHERE source = 'fusion' ORDER BY id")
-          .toArray();
-        expect(credits).toEqual([
-          { amount: bait, idempotency_key: `fusion:${exp.id}:0` },
-          { amount: bait, idempotency_key: `fusion:${exp.id}:1` },
-        ]);
-        // A replayed claim pays nothing more.
+        expect(resultOf(res).catches.map((c) => c.outcome)).toEqual(['duplicate', 'duplicate']);
+        expect(ctx.core.balances(USER_ID).bait).toBe(100);
+        expect(count(ctx.sql, 'ledger', "source = 'fusion'")).toBe(0);
+        const state = res.body['state'] as StateBody;
+        // Fusing is not offered any more; teaching, releasing are.
+        expect(state.pending).toHaveLength(2);
+        for (const card of state.pending) expect(card.offered.fuse).toEqual([]);
+        // A replayed claim adds nothing: no second card, no Bait.
         const again = await claim(p, exp.id);
         expect(resultOf(again)).toEqual(resultOf(res));
-        expect(ctx.core.balances(USER_ID).bait).toBe(100 + 2 * bait);
-        expect(count(ctx.sql, 'ledger', "source = 'fusion'")).toBe(2);
+        expect(count(ctx.sql, 'pending_catches')).toBe(2);
+        expect(ctx.core.balances(USER_ID).bait).toBe(100);
         expect((await p.state()).creatures[0]?.fusionCount).toBe(5);
       },
       { rng: scriptedRng([...COMMON_SPLASHET_PLAIN, ...COMMON_SPLASHET_PLAIN]) },
     );
   });
-
   it('a shiny duplicate makes the existing creature shiny', async () => {
     await runCore(
       nextGuild(),
@@ -1339,14 +1400,14 @@ describe('POST /api/expeditions/{id}/claim', () => {
         const exp = expeditionOf(await send(p, p.starterId));
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
-        expect(resultOf(res).catches[0]).toMatchObject({ outcome: 'fused', shiny: true });
+        expect(resultOf(res).catches[0]).toMatchObject({ outcome: 'duplicate', shiny: true });
         expect((res.body['state'] as StateBody).creatures[0]?.shiny).toBe(true);
       },
       { rng: scriptedRng(COMMON_SPLASHET_SHINY) },
     );
   });
 
-  it('a shiny new catch is a shiny creature, and a shiny conversion also upgrades', async () => {
+  it('a shiny new catch is a shiny creature, and a shiny duplicate of a fully fused creature also upgrades', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -1378,14 +1439,14 @@ describe('POST /api/expeditions/{id}/claim', () => {
         const exp = expeditionOf(await send(p, p.starterId));
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
-        expect(resultOf(res).catches[0]).toMatchObject({ outcome: 'converted', shiny: true });
+        expect(resultOf(res).catches[0]).toMatchObject({ outcome: 'duplicate', shiny: true });
         expect((res.body['state'] as StateBody).creatures[0]?.shiny).toBe(true);
       },
       { rng: scriptedRng(COMMON_SPLASHET_SHINY) },
     );
   });
 
-  it('a second catch of a species within one claim fuses into the first', async () => {
+  it('a second catch of a species within one claim is a duplicate of the first', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -1395,15 +1456,15 @@ describe('POST /api/expeditions/{id}/claim', () => {
         const exp = expeditionOf(await send(p, p.starterId, 'medium', OWNED_ATLAS));
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
-        expect(resultOf(res).catches).toEqual([
-          { species: 'splashet', shiny: false, outcome: 'new', firstOnServer: true },
-          {
-            species: 'splashet',
-            shiny: false,
-            outcome: 'fused',
-            fusionCount: 1,
-            firstOnServer: false,
-          },
+        const [first, second] = resultOf(res).catches;
+        expect(first).toMatchObject({ species: 'splashet', outcome: 'new', firstOnServer: true });
+        expect(second).toMatchObject({
+          species: 'splashet',
+          outcome: 'duplicate',
+          firstOnServer: false,
+        });
+        expect((res.body['state'] as StateBody).pending.map((c) => c.id)).toEqual([
+          second?.pendingId,
         ]);
         expect((res.body['state'] as StateBody).creatures.map((c) => c.line)).toEqual([
           'cindle',
@@ -1912,7 +1973,7 @@ describe('creature quirks', () => {
     });
   });
 
-  it('gives a caught creature a quirk, and the fusion of a duplicate changes nothing', async () => {
+  it('gives a caught creature a quirk, and a replayed claim changes nothing', async () => {
     const quirkRng = createSeededRng('quirk-catch');
     const replay = createSeededRng('quirk-catch');
     await runCore(
@@ -1938,7 +1999,7 @@ describe('creature quirks', () => {
     );
   });
 
-  it('keeps the quirk of an existing creature when a duplicate fuses, and draws nothing', async () => {
+  it('keeps the quirk of an existing creature when a duplicate arrives, and draws no quirk', async () => {
     const quirkRng = countingRng('quirk-fuse');
     await runCore(
       nextGuild(),
@@ -1951,7 +2012,10 @@ describe('creature quirks', () => {
         const exp = expeditionOf(await send(p, p.starterId));
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
-        expect(resultOf(res).catches[0]).toMatchObject({ species: 'splashet', outcome: 'fused' });
+        expect(resultOf(res).catches[0]).toMatchObject({
+          species: 'splashet',
+          outcome: 'duplicate',
+        });
         expect(quirkOf(ctx, p.starterId)).toBe('hums-quietly');
         expect(quirkRng.drawn()).toBe(drawnAfterStarter);
         expect((await p.state()).creatures[0]?.quirk).toBe('hums-quietly');

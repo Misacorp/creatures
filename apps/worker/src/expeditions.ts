@@ -40,9 +40,7 @@ import {
   milestoneProgress,
   nextRankXp,
   nextSlot,
-  expeditionConvertBait,
   partsOfSpec,
-  pickQuirk,
   rankGiftsBetween,
   rankSum,
   pushWorks,
@@ -98,12 +96,15 @@ import { grantRankGift, grantTripLoot, type DraftItem, type GrantView } from './
 import { gearRulesOf, minusBp } from './gear-worn';
 import { openJobOf } from './gear-store';
 import { devKey, type DevFlags } from './dev-state';
-import { credit, type LedgerStorage } from './ledger';
+import type { LedgerStorage } from './ledger';
 import { runKeyed } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
+import type { CatchChoices, ChoiceResult } from './catch-choices';
 import { weekIdFor, weekIndex } from './raid-schedule';
 import { recordServerFirst } from './server-firsts';
 import { speciesOf } from './species';
+import { insertCreature } from './talent-store';
+import { talentViewOf, type TalentView } from './talent-view';
 import { zonedHour } from './time';
 
 const HOUR_MS = 3_600_000;
@@ -117,10 +118,19 @@ const RECENT_CANCELLED = 3;
 export interface CatchView {
   species: string;
   shiny: boolean;
-  outcome: 'new' | 'fused' | 'converted';
-  /** Only for outcome 'fused': the creature's fusion count after this catch. */
+  /**
+   * `new`: a species the player lacked, now a creature. `duplicate`: it waits as a pending card (see
+   * `pendingId`) for Teach, Fuse, Release or Keep. `fused` and `converted` only appear in results stored
+   * before the duplicate choice (a duplicate then fused by itself, or turned into Bait).
+   */
+  outcome: 'new' | 'duplicate' | 'fused' | 'converted';
+  /** The talent the catch rolled (absent in results stored before talents). */
+  talent?: TalentView;
+  /** Only for outcome 'duplicate': the id of the pending card. */
+  pendingId?: string;
+  /** Only for the old outcome 'fused': the creature's fusion count after this catch. */
   fusionCount?: number;
-  /** Only for outcome 'converted': the Bait granted. */
+  /** Only for the old outcome 'converted': the Bait granted. */
   bait?: number;
   firstOnServer: boolean;
   /** The catch came from the destination's deeper area (absent when it did not). */
@@ -151,6 +161,10 @@ export interface ExpeditionResult {
    * of the scrap that was caught). Absent in results stored before gear existed, and when the trip failed.
    */
   loot?: GrantView;
+  /** Catch rolls that brought no creature this time (each brought a small find of scrap instead). */
+  noCatch?: number;
+  /** Pending duplicates the server settled with Recommended because the queue was full (oldest first). */
+  autoSettled?: ChoiceResult[];
   /** True when a risky push-on goal failed: the whole trip brought nothing back. */
   failed?: boolean;
   /** What became of the push-on choice, if the trip had one. */
@@ -292,6 +306,7 @@ type CreatureLite = {
   id: string;
   species: string;
   line: string;
+  level: number;
   fusion_count: number;
   shiny: number;
   away_expedition_id: string | null;
@@ -308,6 +323,10 @@ export interface ExpeditionsDeps {
   gearRng: Rng;
   /** Live randomness for the quirk of a new creature. */
   quirkRng: Rng;
+  /** Live randomness for the first talent of a new creature (and the pending duplicates' talents). */
+  talentRng: Rng;
+  /** The duplicate choice: a duplicate catch becomes a pending card here. */
+  choices: CatchChoices;
   analytics?: Analytics | undefined;
   /**
    * The dev tools' force flags (staging only, see `dev-state.ts`): a forced push-on offer and result,
@@ -350,7 +369,7 @@ export class Expeditions {
   private ownedCreature(userId: string, creatureId: string): CreatureLite {
     const row = this.sql
       .exec<CreatureLite>(
-        `SELECT id, species, line, fusion_count, shiny, away_expedition_id FROM creatures
+        `SELECT id, species, line, level, fusion_count, shiny, away_expedition_id FROM creatures
          WHERE id = ? AND user_id = ?`,
         creatureId,
         userId,
@@ -981,12 +1000,15 @@ export class Expeditions {
       dupeStreak: progress.dupe_streak,
       firstExpedition: progress.expeditions_claimed === 0,
     });
-    const catches = rolled.results.map((caught, index) =>
-      this.applyCatch(userId, expedition.id, index, caught, now),
-    );
+    const settled: ChoiceResult[] = [];
+    const catches = rolled.results.map((caught) => {
+      const made = this.applyCatch(userId, expedition.id, caught, now);
+      if (made.settled !== null) settled.push(made.settled);
+      return made.view;
+    });
 
     // A claim that brought nothing back (an early recall) must not use up the first-expedition
-    // guarantee, so it is not counted.
+    // guarantee, so it is not counted (a trip whose rolls all came up empty did bring a roll).
     this.sql.exec(
       `INSERT INTO player_progress (user_id, expeditions_claimed, dupe_streak) VALUES (?, ?, ?)
        ON CONFLICT(user_id) DO UPDATE SET
@@ -1022,6 +1044,8 @@ export class Expeditions {
             rank,
             gearPartsBp: gearRules.keenNoseBp,
             gearSupplyBp: gearRules.packerBp,
+            gearGlimmerBp: gearRules.glimmerFindBp,
+            emptyRolls: rolled.empty,
           },
           { completed: finished, caught: count, rolls: expedition.rolls },
         );
@@ -1055,6 +1079,8 @@ export class Expeditions {
     );
 
     const result: ExpeditionResult = { recalled: !finished, catches, loot };
+    if (rolled.empty > 0) result.noCatch = rolled.empty;
+    if (settled.length > 0) result.autoSettled = settled;
     if (push !== null) result.pushOn = this.pushView(expedition, push.goal, push.outcome);
 
     // A recall brings what was caught and nothing more: no XP, no stars, no journal, no stats.
@@ -1271,6 +1297,7 @@ export class Expeditions {
       rarity: speciesOf(c.species).rarity,
       shiny: c.shiny,
       result: c.outcome,
+      ...(c.talent === undefined ? {} : { talent: c.talent.id, golden: c.talent.golden }),
     }));
     const base = {
       duration: expedition.duration,
@@ -1297,26 +1324,31 @@ export class Expeditions {
     }
   }
 
+  /**
+   * Turns one catch into a creature (a species the player lacks) or a pending duplicate card. Either way
+   * the catch has rolled its talent now, from live randomness: a new creature's goes in its first slot, a
+   * duplicate's waits on the card. A shiny duplicate makes the creature the player owns shiny at once.
+   */
   private applyCatch(
     userId: string,
     expeditionId: string,
-    index: number,
     caught: TripCatch,
     now: number,
-  ): CatchView {
+  ): { view: CatchView; settled: ChoiceResult | null } {
     const species = caught.species;
-    const existing = this.sql
+    const owned = this.sql
       .exec<CreatureLite>(
-        `SELECT id, species, line, fusion_count, shiny, away_expedition_id FROM creatures
-         WHERE user_id = ? AND line = ?`,
+        `SELECT id, species, line, level, fusion_count, shiny, away_expedition_id FROM creatures
+         WHERE user_id = ? AND line = ? ORDER BY line_slot`,
         userId,
         species.line,
       )
-      .toArray()[0];
+      .toArray();
+    const existing = owned[0];
     const outcome = applyCatchToCollection(
       existing === undefined
         ? undefined
-        : { fusionCount: existing.fusion_count, shiny: existing.shiny === 1 },
+        : { fusionCount: existing.fusion_count, shiny: owned.some((c) => c.shiny === 1) },
       caught,
     );
     const firstOnServer = recordServerFirst(
@@ -1327,6 +1359,7 @@ export class Expeditions {
       expeditionId,
       now,
     );
+    const wearer = { role: species.role, element: species.element };
     const base = {
       species: species.id,
       shiny: caught.shiny,
@@ -1335,73 +1368,41 @@ export class Expeditions {
     };
 
     switch (outcome.kind) {
-      case 'new':
-        this.sql.exec(
-          `INSERT INTO creatures (id, user_id, line, species, level, shiny, origin, caught_at, quirk_id)
-           VALUES (?, ?, ?, ?, 1, ?, 'expedition', ?, ?)`,
-          crypto.randomUUID(),
-          userId,
-          species.line,
-          species.id,
-          caught.shiny ? 1 : 0,
-          now,
-          // Drawn now from live randomness, after the catch itself is decided; cosmetic only.
-          pickQuirk(species.id, this.deps.quirkRng),
+      case 'new': {
+        // Drawn now from live randomness, after the catch itself is decided: the quirk (cosmetic) and
+        // the talent.
+        const made = insertCreature(
+          this.sql,
+          { quirk: this.deps.quirkRng, talent: this.deps.talentRng },
+          { userId, species: species.id, origin: 'expedition', shiny: caught.shiny, now },
+          this.deps.analytics,
         );
-        return { ...base, outcome: 'new' };
-      case 'fused':
-        if (existing === undefined) throw new Error('fusion without a creature');
-        this.sql.exec(
-          'UPDATE creatures SET fusion_count = ?, shiny = ? WHERE id = ?',
-          outcome.newFusionCount,
-          existing.shiny === 1 || outcome.becameShiny ? 1 : 0,
-          existing.id,
-        );
-        this.deps.analytics?.record(
-          {
-            kind: 'fuse',
-            species: species.id,
-            rarity: species.rarity,
-            converted: false,
-            fusionCount: outcome.newFusionCount,
-            bait: 0,
-          },
-          userId,
-        );
-        return { ...base, outcome: 'fused', fusionCount: outcome.newFusionCount };
-      case 'converted': {
-        if (existing === undefined) throw new Error('conversion without a creature');
+        const talent = talentViewOf(made.talent, wearer);
+        return {
+          view: { ...base, outcome: 'new', ...(talent === null ? {} : { talent }) },
+          settled: null,
+        };
+      }
+      case 'duplicate': {
+        if (existing === undefined) throw new Error('a duplicate without a creature');
         if (outcome.becameShiny) {
           this.sql.exec('UPDATE creatures SET shiny = 1 WHERE id = ?', existing.id);
         }
-        // Nested inside the claim transaction: the credit rolls back with it, and the key makes a
-        // repeat a no-op.
-        // Trips are free, so what a duplicate turns into is a share of the usual Bait (`convertBp`).
-        const bait = expeditionConvertBait(outcome.bait);
-        credit(
-          this.deps.storage,
-          {
-            userId,
-            currency: 'bait',
-            amount: bait,
-            source: 'fusion',
-            idempotencyKey: `fusion:${expeditionId}:${String(index)}`,
-            meta: { species: species.id },
-          },
-          now,
-        );
-        this.deps.analytics?.record(
-          {
-            kind: 'fuse',
-            species: species.id,
-            rarity: species.rarity,
-            converted: true,
-            fusionCount: existing.fusion_count,
-            bait,
-          },
+        const pending = this.deps.choices.addPending(
           userId,
+          { species: species.id, shiny: caught.shiny },
+          { kind: 'expedition', id: expeditionId },
         );
-        return { ...base, outcome: 'converted', bait };
+        const talent = talentViewOf(pending.talent, wearer);
+        return {
+          view: {
+            ...base,
+            outcome: 'duplicate',
+            pendingId: pending.id,
+            ...(talent === null ? {} : { talent }),
+          },
+          settled: pending.settled,
+        };
       }
     }
   }

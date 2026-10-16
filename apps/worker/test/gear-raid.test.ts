@@ -800,6 +800,13 @@ describe('expedition loot', () => {
     (
       (res.body['result'] as { rankGifts?: { parts: { scrap?: number } }[] }).rankGifts ?? []
     ).reduce((n, g) => n + (g.parts.scrap ?? 0), 0);
+  /** The scrap the rolls of a claim that brought no creature found instead (`findScrap` each). */
+  const findScrapOf = (
+    res: { body: Record<string, unknown> },
+    duration: 'short' | 'medium' | 'long' | 'day',
+  ): number =>
+    ((res.body['result'] as { noCatch?: number }).noCatch ?? 0) *
+    RULES.expeditions.lengths[duration].findScrap;
   /** The `gear_drop` events of one source (the rank gift has its own). */
   const dropEvents = (ctx: { sql: SqlStorage }, source: string) =>
     rows<{ props_json: string }>(
@@ -825,8 +832,10 @@ describe('expedition loot', () => {
           const res = await p.call('POST', `/api/expeditions/${exp.id}/claim`, {});
           expect(res.status).toBe(200);
           const loot = lootOf(res);
-          expect(loot.parts.scrap ?? 0).toBe(scrap);
-          expect(scrapOf(ctx, p.id)).toBe(before + scrap + giftScrapOf(res));
+          // The length's scrap, and the small find of every roll that brought no creature.
+          const found = findScrapOf(res, duration);
+          expect(loot.parts.scrap ?? 0).toBe(scrap + found);
+          expect(scrapOf(ctx, p.id)).toBe(before + scrap + found + giftScrapOf(res));
           // The same loot is in the state the client reloads.
           const state = (await p.call('GET', '/api/state')).body as {
             expeditions: { id: string; result: { loot: Loot } | null }[];
@@ -873,9 +882,10 @@ describe('expedition loot', () => {
         const res = await p.call('POST', `/api/expeditions/${exp.id}/claim`, {});
         const loot = lootOf(res);
         const gift = giftScrapOf(res);
-        expect(loot.parts).toEqual({ scrap, 'ember-shard': 1, glimmer: 1 });
+        const found = findScrapOf(res, 'long');
+        expect(loot.parts).toEqual({ scrap: scrap + found, 'ember-shard': 1, glimmer: 1 });
         // The draw of 0 also finds a supply: the explorer is rank 1, so a plain one.
-        expect((loot as { supplies?: string[] }).supplies).toEqual(['lure-basic']);
+        expect((loot as { supplies?: string[] }).supplies).toEqual(['map-scrap-basic']);
         expect(loot.blueprints).toEqual([{ baseId: 'trail-cap', duplicate: false }]);
         expect(rows(ctx.sql, 'SELECT base_id FROM blueprints')).toEqual([{ base_id: 'trail-cap' }]);
         expect(
@@ -883,7 +893,7 @@ describe('expedition loot', () => {
         ).toEqual([
           { kind: 'ember-shard', amount: 1 },
           { kind: 'glimmer', amount: 1 },
-          { kind: 'scrap', amount: scrap + gift },
+          { kind: 'scrap', amount: scrap + found + gift },
         ]);
         // A blueprint the player knows already turns into scrap.
         const again = await p.trip(1, 'long', 'tidepools');
@@ -891,7 +901,9 @@ describe('expedition loot', () => {
         const res2 = await p.call('POST', `/api/expeditions/${again.id}/claim`, {});
         const loot2 = lootOf(res2);
         expect(loot2.blueprints).toEqual([{ baseId: 'trail-cap', duplicate: true }]);
-        expect(loot2.parts.scrap).toBe(scrap + RULES.gear.drops.duplicateBlueprintScrap);
+        expect(loot2.parts.scrap).toBe(
+          scrap + findScrapOf(res2, 'long') + RULES.gear.drops.duplicateBlueprintScrap,
+        );
         expect(count(ctx.sql, 'blueprints')).toBe(1);
         const events = dropEvents(ctx, 'expedition');
         expect(events).toHaveLength(2);
@@ -899,13 +911,13 @@ describe('expedition loot', () => {
           source: 'expedition',
           gear: [],
           converted: 0,
-          scrap,
+          scrap: scrap + found,
           shards: 1,
           glimmer: 1,
           blueprint: 'trail-cap',
           blueprintDuplicate: false,
           supplies: 1,
-          parts: { scrap, 'ember-shard': 1, glimmer: 1 },
+          parts: { scrap: scrap + found, 'ember-shard': 1, glimmer: 1 },
         });
         const actor = rows<{ actor_hash: string | null }>(
           ctx.sql,

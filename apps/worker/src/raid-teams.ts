@@ -15,6 +15,8 @@ import {
 import { speciesOf } from './collection';
 import { equippedByCreature, type WornBySlot } from './gear-store';
 import { foldCreature } from './gear-worn';
+import { booksByCreature, foldTalentsOf } from './talent-store';
+import type { HeldTalent } from '@creatures/game';
 
 export const RAID_PHASE_STATUSES = ['open', 'phase1', 'phase2', 'finale'] as const;
 export type RaidStatus = (typeof RAID_PHASE_STATUSES)[number];
@@ -54,9 +56,13 @@ type CreatureDbRow = {
   caught_at: number;
 };
 
-function toTeamCreature(row: CreatureDbRow, worn: WornBySlot | undefined): TeamCreature {
+function toTeamCreature(
+  row: CreatureDbRow,
+  worn: WornBySlot | undefined,
+  book: readonly HeldTalent[] | undefined,
+): TeamCreature {
   const species = speciesOf(row.species);
-  const folded = foldCreature(row, worn);
+  const folded = foldCreature(row, worn, foldTalentsOf(row, book));
   return {
     id: row.id,
     userId: row.user_id,
@@ -73,16 +79,17 @@ function toTeamCreature(row: CreatureDbRow, worn: WornBySlot | undefined): TeamC
   };
 }
 
-/** All creatures of a player, oldest first, with their gear folded in. */
+/** All creatures of a player, oldest first, with their gear and talents folded in. */
 export function loadCreatures(sql: SqlStorage, userId: string): TeamCreature[] {
   const worn = equippedByCreature(sql, userId);
+  const books = booksByCreature(sql, userId);
   return sql
     .exec<CreatureDbRow>(
       'SELECT id, user_id, species, level, fusion_count, nickname, caught_at FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid',
       userId,
     )
     .toArray()
-    .map((row) => toTeamCreature(row, worn.get(row.id)));
+    .map((row) => toTeamCreature(row, worn.get(row.id), books.get(row.id)));
 }
 
 /**

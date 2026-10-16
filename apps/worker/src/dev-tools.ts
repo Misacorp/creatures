@@ -131,6 +131,7 @@ export interface DevToolsDeps {
   rng: Rng;
   gearRng: Rng;
   quirkRng: Rng;
+  talentRng: Rng;
   offset: { get(): number; set(ms: number): void; invalidate(): void };
   /** Runs after a tool that moved the clock: catches the game up and re-arms the alarm. */
   afterClockChange: () => Promise<void>;
@@ -241,6 +242,7 @@ export class DevTools {
       rng: d.rng,
       gearRng: d.gearRng,
       quirkRng: d.quirkRng,
+      talentRng: d.talentRng,
       offset: {
         get: () => d.offset.get(),
         set: (ms) => {

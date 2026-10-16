@@ -13,8 +13,10 @@ import { Gear } from './gear';
 import { convertPendingGear } from './gear-convert';
 import { gearMigration } from './gear-migration';
 import { gearV2Migration } from './gear-v2-migration';
+import { rollMissingTalents } from './talent-store';
 import { gearRoutes } from './gear-routes';
 import { creatureQuirkMigration } from './creature-quirk-migration';
+import { creaturesAMigration } from './creatures-a-migration';
 import { expeditionRoutes } from './expedition-routes';
 import { expeditionsMigration } from './expedition-migration';
 import { collectionRoutes } from './collection-routes';
@@ -340,6 +342,10 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   // Version 27: gear v2, the new item table, blueprint marks and the conversion list (see
   // gear-v2-migration.ts; the conversion itself runs after the migrations, see gear-convert.ts).
   gearV2Migration,
+  // Version 28: talents, the Talent Book, pending duplicates and two creatures per branching line (see
+  // creatures-a-migration.ts; the existing creatures' talents are rolled after the migrations, see
+  // talent-store.ts).
+  creaturesAMigration,
 ];
 
 export interface SessionUser {
@@ -435,6 +441,15 @@ export interface GuildCoreOptions {
    * never consumes a test's scripted catch draws or a raid's fight seeds.
    */
   quirkRng?: Rng;
+  /**
+   * Live randomness for talents: the first talent of a new creature (catch, starter, Festival grant), the
+   * talent a duplicate's card rolls and the existing creatures' first roll. Defaults to
+   * crypto.getRandomValues. Separate from the others, so a talent never consumes a test's scripted catch
+   * draws, a quirk or a raid's fight seeds.
+   */
+  talentRng?: Rng;
+  /** Test seam: the branches of a line, for the Keep choice (default: the shipped content). */
+  branchesOf?: (line: string) => readonly string[];
   /**
    * Live randomness for the end-of-trip choice, push-on results and the journal of expeditions.
    * Defaults to crypto.getRandomValues. Separate from `rng` and `gearRng`, so none of them ever
@@ -547,6 +562,8 @@ export class GuildCore {
   private readonly manageInFlight = new Map<string, Promise<boolean>>();
   /** Live randomness for gear: drops, crafts and the one-time conversion of old gear. */
   private readonly gearRng: Rng;
+  /** Live randomness for talents: a new creature's, a duplicate's and the first roll of the existing creatures'. */
+  private readonly talentRng: Rng;
 
   constructor(
     private readonly storage: CoreStorage,
@@ -559,6 +576,9 @@ export class GuildCore {
     this.syncBudgetMs = options.syncBudgetMs ?? SYNC_BUDGET_MS;
     this.leetSource = options.createLeetSource?.(() => this.knownPlayers()) ?? null;
     const quirkRng = options.quirkRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+    const talentRng =
+      options.talentRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+    this.talentRng = talentRng;
     // Analytics keeps real time: its events and retention are about the real world.
     this.analytics = new Analytics({
       storage,
@@ -577,7 +597,9 @@ export class GuildCore {
       analytics: this.analytics,
       rng: options.rng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
       quirkRng,
+      talentRng,
       gearRng,
+      branchesOf: options.branchesOf,
       tripRng: options.tripRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
       ...(options.loungerRng === undefined ? {} : { loungerRng: options.loungerRng }),
     });
@@ -598,6 +620,7 @@ export class GuildCore {
       practice: options.raidPractice === true,
       analytics: this.analytics,
       quirkRng,
+      talentRng,
       gearRng,
       ...(options.readinessRng === undefined ? {} : { readinessRng: options.readinessRng }),
     });
@@ -621,6 +644,7 @@ export class GuildCore {
             rng: options.raidRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
             gearRng,
             quirkRng,
+            talentRng,
             offset: {
               get: () => this.devOffset(),
               set: (ms) => {
@@ -688,6 +712,9 @@ export class GuildCore {
       rng: this.gearRng,
       analytics: this.analytics,
     });
+    // The first load after the creatures A migration: every creature without a talent gets the slots its
+    // level has opened rolled, once, with live randomness (idempotent: nothing is waiting later).
+    rollMissingTalents(this.storage, this.talentRng, this.now(), this.analytics);
   }
 
   /**

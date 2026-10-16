@@ -186,6 +186,23 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
     case 'fuse':
       tally.add('collection.fuse', { converted: flag(p, 'converted') });
       break;
+    case 'talent_roll':
+      tally.add('collection.talent_roll', {
+        golden: flag(p, 'golden'),
+        backfill: flag(p, 'backfill'),
+      });
+      break;
+    case 'duplicate_choice':
+      tally.add('collection.duplicate_choice', {
+        choice: str(p, 'choice'),
+        rarity: str(p, 'rarity'),
+        auto: flag(p, 'auto'),
+      });
+      break;
+    case 'talent_slot':
+      tally.add('collection.talent_slot', { slot: num(p, 'slot') });
+      flow(tally, 'bait', 'sink', 'talent_slot', RULES.talents.bookSlotBait);
+      break;
 
     // --- Expeditions ---
     case 'expedition_send': {
@@ -258,6 +275,7 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
       tally.add('workshop.start_base', { job: str(p, 'job'), base: str(p, 'base') });
       for (const [part, n] of partsOf(p) ?? [])
         flow(tally, part, 'sink', `workshop_${str(p, 'job')}`, n);
+      if (num(p, 'bait') > 0) flow(tally, 'bait', 'sink', 'lure', num(p, 'bait'));
       break;
     }
     case 'job_claim':

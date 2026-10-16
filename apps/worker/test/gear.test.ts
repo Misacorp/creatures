@@ -18,7 +18,14 @@ import {
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { creditParts, insertItem } from '../src/gear-store';
-import { T0, runCore, undoGearMigration, type CoreContext, LATEST_SCHEMA_VERSION } from './helpers';
+import {
+  T0,
+  runCore,
+  undoCreaturesAMigration,
+  undoGearMigration,
+  type CoreContext,
+  LATEST_SCHEMA_VERSION,
+} from './helpers';
 import { count, nextGuild, rows, seedPlayer, type SeedOptions } from './raid-helpers';
 
 const HOUR = 3_600_000;
@@ -237,7 +244,7 @@ describe('migration 27', () => {
       expect(rows<{ v: number }>(sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v).toBe(
         LATEST_SCHEMA_VERSION,
       );
-      expect(LATEST_SCHEMA_VERSION).toBe(27);
+      expect(LATEST_SCHEMA_VERSION).toBeGreaterThanOrEqual(27);
       const item = (
         id: string,
         creature: string | null,
@@ -291,8 +298,9 @@ describe('migration 27', () => {
       const p = await player(ctx, 1);
       expect(count(ctx.sql, 'creatures')).toBe(3);
       ctx.sql.exec('DELETE FROM gear_conversion');
-      // Back to the first gear model with one worn item and one blueprint.
+      // Back to the first gear model with one worn item and one blueprint (and before migration 28).
       const sql = ctx.sql;
+      undoCreaturesAMigration(sql);
       sql.exec('DROP TABLE gear_conversion');
       sql.exec('DROP TABLE gear_legacy');
       sql.exec('DROP TABLE gear_items');

@@ -16,7 +16,6 @@ import {
   gearBase,
   gearContent,
   int,
-  pickQuirk,
   rarityFitsBase,
   rollItem,
   skillLevel,
@@ -50,6 +49,7 @@ import {
 } from './gear-store';
 import { credit, getBalance, getBalances, type Currency } from './ledger';
 import { speciesOf } from './species';
+import { insertCreature } from './talent-store';
 
 type Body<S extends v.GenericSchema> = v.InferOutput<S>;
 
@@ -135,19 +135,22 @@ export function grantCreature(ctx: ToolCtx, body: Body<typeof GrantCreatureBodyS
     .toArray()[0];
   let creatureId: string;
   if (existing === undefined) {
-    creatureId = crypto.randomUUID();
+    creatureId = insertCreature(
+      ctx.sql,
+      { quirk: ctx.quirkRng, talent: ctx.talentRng },
+      {
+        userId: ctx.userId,
+        species: species.id,
+        origin: 'dev',
+        shiny: body.shiny === true,
+        now: ctx.now,
+      },
+    ).id;
     ctx.sql.exec(
-      `INSERT INTO creatures (id, user_id, line, species, level, fusion_count, shiny, origin, caught_at, quirk_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'dev', ?, ?)`,
-      creatureId,
-      ctx.userId,
-      species.line,
-      species.id,
+      'UPDATE creatures SET level = ?, fusion_count = ? WHERE id = ?',
       body.level ?? 1,
       body.fusion ?? 0,
-      body.shiny === true ? 1 : 0,
-      ctx.now,
-      pickQuirk(species.id, ctx.quirkRng),
+      creatureId,
     );
   } else {
     creatureId = existing.id;

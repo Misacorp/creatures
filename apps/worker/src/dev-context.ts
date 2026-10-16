@@ -35,6 +35,7 @@ export interface ToolCtx {
   rng: Rng;
   gearRng: Rng;
   quirkRng: Rng;
+  talentRng: Rng;
   /** The dev clock offset: read, and write (a non-negative integer of ms). */
   offset: { get(): number; set(ms: number): void };
 }

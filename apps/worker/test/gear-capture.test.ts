@@ -2,7 +2,7 @@ import { createSeededRng } from '@creatures/game';
 import { describe, it } from 'vitest';
 import { runCore } from './helpers';
 import { runConversionScenario, runExpeditionScenario, runGearScenario } from './gear-scenario';
-import { nextGuild } from './raid-helpers';
+import { nextGuild, scriptedThenSeeded } from './raid-helpers';
 
 /**
  * Re-captures the gear fixtures from real server output. Skipped: it only prints. To use it, change
@@ -27,7 +27,8 @@ describe('capture the gear fixtures', () => {
     let i = 0;
     const rest = createSeededRng('fixture-exp');
     const exp = await runCore(nextGuild(), (ctx) => runExpeditionScenario(ctx), {
-      rng: createSeededRng('fixture-catch'),
+      // A catch that is certain (a new creature), so the claim shows a catch next to the loot.
+      rng: scriptedThenSeeded([0, 0, 0, 1], 'fixture-catch'),
       tripRng: createSeededRng('fixture-trip'),
       gearRng: { nextU32: () => script[i++] ?? rest.nextU32() },
     });

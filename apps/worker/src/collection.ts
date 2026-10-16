@@ -11,7 +11,6 @@ import {
   content,
   discountedTrainingCost,
   effectiveStats,
-  pickQuirk,
   quirkText,
   sanitizeNickname,
   type Rng,
@@ -37,6 +36,10 @@ import {
   type WornGear,
 } from './gear-store';
 import { foldCreature } from './gear-worn';
+import { CatchChoices, type PendingView } from './catch-choices';
+import { booksByCreature, foldTalentsOf, insertCreature } from './talent-store';
+import { creatureTalentsView, type CreatureTalentsView } from './talent-view';
+import type { HeldTalent } from '@creatures/game';
 import { getBalances, lookupSpend, spend, type Currency, type LedgerStorage } from './ledger';
 import { settleSpend } from './keyed-action';
 import { Lounge, type LoungeSpot } from './lounger';
@@ -61,6 +64,7 @@ type CreatureRow = {
   origin: string;
   caught_at: number;
   quirk_id: string | null;
+  line_slot: number;
 };
 
 export interface CreatureView {
@@ -81,6 +85,12 @@ export interface CreatureView {
    * missing or no longer in the data.
    */
   quirk: string | null;
+  /**
+   * 1, or 2 for the second creature of a branching line that the player Kept (at most two of a line).
+   */
+  lineSlot: number;
+  /** The creature's talents: its slots (open at levels 1, 20 and 25), its signature (epics) and its Talent Book. */
+  talents: CreatureTalentsView;
   stats: Stats;
   /**
    * The stats a fight uses: `stats` with the equipped item folded in (capped). Equal to `stats` for a
@@ -128,6 +138,10 @@ export interface PlayerState {
   /** Species ids the player may pick from; only present until a starter is chosen. */
   starterOptions?: string[];
   creatures: CreatureView[];
+  /** Duplicates waiting for Teach, Fuse, Release or Keep, oldest first. */
+  pending: PendingView[];
+  /** What the book slotting costs, so the client shows the price the server charges. */
+  bookSlotBait: number;
   expeditions: ExpeditionView[];
   /** Trips cancelled by the slot wipe when expeditions v2 started (newest first, at most 3). */
   cancelled: CancelledView[];
@@ -160,6 +174,11 @@ export interface CollectionDeps {
    */
   quirkRng: Rng;
   /**
+   * Live randomness for the talent of a new creature and of a duplicate's card. Separate from `rng` and
+   * `quirkRng`, so a talent never consumes the draws of a catch or a quirk.
+   */
+  talentRng: Rng;
+  /**
    * Live randomness for the loot of an expedition (parts, blueprints). Separate from `rng`, so loot
    * never consumes the draws of a catch.
    */
@@ -178,6 +197,8 @@ export interface CollectionDeps {
   analytics?: Analytics;
   /** The dev tools' force flags (staging only); passed on to expeditions. */
   dev?: DevFlags | undefined;
+  /** Test seam: the branches of a line, for the Keep choice (default: the shipped content). */
+  branchesOf?: ((line: string) => readonly string[]) | undefined;
 }
 
 function median(values: number[]): number | null {
@@ -207,12 +228,21 @@ export class Collection {
   readonly trips: Expeditions;
   /** The living room: the lounger of a player and the room data of a set of players. */
   readonly lounge: Lounge;
+  /** The duplicate choice and the Talent Book. */
+  readonly choices: CatchChoices;
 
   constructor(private readonly deps: CollectionDeps) {
     this.lounge = new Lounge({
       storage: deps.storage,
       now: deps.now,
       ...(deps.loungerRng === undefined ? {} : { rng: deps.loungerRng }),
+    });
+    this.choices = new CatchChoices({
+      storage: deps.storage,
+      now: deps.now,
+      rngs: { talent: deps.talentRng, quirk: deps.quirkRng },
+      analytics: deps.analytics,
+      branchesOf: deps.branchesOf,
     });
     this.trips = new Expeditions({
       storage: deps.storage,
@@ -221,6 +251,8 @@ export class Collection {
       tripRng: deps.tripRng,
       gearRng: deps.gearRng,
       quirkRng: deps.quirkRng,
+      talentRng: deps.talentRng,
+      choices: this.choices,
       analytics: deps.analytics,
       dev: deps.dev,
     });
@@ -279,6 +311,7 @@ export class Collection {
     worn: WornBySlot | undefined,
     jobId: string | undefined,
     explorer: ExplorerView,
+    book: readonly HeldTalent[] | undefined,
   ): CreatureView {
     const species = speciesOf(row.species);
     const away = row.away_expedition_id !== null;
@@ -302,8 +335,10 @@ export class Collection {
       origin: row.origin,
       caughtAt: row.caught_at,
       quirk: row.quirk_id !== null && quirkText(row.quirk_id) !== undefined ? row.quirk_id : null,
+      lineSlot: row.line_slot,
+      talents: creatureTalentsView(row, book ?? []),
       stats,
-      statsWithGear: foldCreature(row, worn).stats,
+      statsWithGear: foldCreature(row, worn, foldTalentsOf(row, book)).stats,
       gear: wornRows(worn).map(wornGearView),
       busy: away
         ? { kind: 'expedition', id: row.away_expedition_id as string }
@@ -374,6 +409,7 @@ export class Collection {
     const balances = getBalances(this.sql, userId);
     const trips = this.trips.state(userId);
     const worn = equippedByCreature(this.sql, userId);
+    const books = booksByCreature(this.sql, userId);
     const jobs = openJobsByCreature(this.sql, userId);
     const rows = this.creatureRows(userId);
     const explorers = this.trips.explorerViews(
@@ -395,8 +431,11 @@ export class Collection {
           worn.get(row.id),
           jobs.get(row.id),
           explorers.get(row.id) as ExplorerView,
+          books.get(row.id),
         ),
       ),
+      pending: this.choices.pending(userId),
+      bookSlotBait: RULES.talents.bookSlotBait,
       expeditions: trips.expeditions,
       cancelled: trips.cancelled,
       slots: trips.slots,
@@ -421,16 +460,11 @@ export class Collection {
       if (this.starterSpecies(userId) !== null) {
         throw new GameError(409, 'starter_already_chosen');
       }
-      const creatureId = crypto.randomUUID();
-      this.sql.exec(
-        `INSERT INTO creatures (id, user_id, line, species, level, origin, caught_at, quirk_id)
-         VALUES (?, ?, ?, ?, 1, 'starter', ?, ?)`,
-        creatureId,
-        userId,
-        species.line,
-        species.id,
-        this.deps.now(),
-        pickQuirk(species.id, this.deps.quirkRng),
+      const { id: creatureId } = insertCreature(
+        this.sql,
+        { quirk: this.deps.quirkRng, talent: this.deps.talentRng },
+        { userId, species: species.id, origin: 'starter', now: this.deps.now() },
+        this.deps.analytics,
       );
       this.sql.exec(
         `INSERT INTO player_progress (user_id, starter_species) VALUES (?, ?)

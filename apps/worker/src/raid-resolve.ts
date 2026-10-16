@@ -63,6 +63,8 @@ export interface ResolveDeps {
   rng: Rng;
   /** Live randomness for the quirk of a Festival creature. Defaults to crypto. */
   quirkRng?: Rng;
+  /** Live randomness for the talent of a Festival creature. Defaults to crypto. */
+  talentRng?: Rng;
   /** Live randomness for gear drops (a cleared phase, a won finale, a Festival piece). Defaults to crypto. */
   gearRng?: Rng;
   /** The analytics event log. Optional: without it nothing is logged. */
@@ -556,6 +558,7 @@ export function settleParty(
     const progression = readWeekProgression(sql, week.weekId);
     if (progression?.festival === true && progression.festivalSpecies !== null) {
       const quirkRng = deps.quirkRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+      const talentRng = deps.talentRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
       const festivalSpecies = content.creatures.find((c) => c.id === progression.festivalSpecies);
       const gearDeps: GrantDeps = {
         storage,
@@ -577,7 +580,7 @@ export function settleParty(
         }
         grantFestivalCreature(
           storage,
-          quirkRng,
+          { quirk: quirkRng, talent: talentRng },
           week.weekId,
           userId,
           progression.festivalSpecies,

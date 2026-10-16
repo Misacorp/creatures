@@ -48,7 +48,7 @@ import {
   type WearBlock,
 } from '@creatures/game';
 import type { Analytics } from './analytics';
-import { runKeyed } from './keyed-action';
+import { runKeyed, settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import { addSupply } from './expedition-store';
 import { dismissNotice, pendingNotice, type ConversionNotice } from './gear-convert';
@@ -76,7 +76,7 @@ import {
   type JobRow,
 } from './gear-store';
 import { gearRulesOf, minusBp, plusBp } from './gear-worn';
-import { getBalances, type Currency, type LedgerStorage } from './ledger';
+import { getBalances, spend, type Currency, type LedgerStorage } from './ledger';
 import { speciesOf } from './species';
 
 /** The gear rarity a supply tier is logged as (analytics) and a supply job is sized as. */
@@ -189,6 +189,8 @@ export interface JobView {
   input: { baseId?: string; supplyId?: string };
   /** The parts it cost when it started. */
   cost: PartsBundle;
+  /** The Bait it cost when it started (a lure): 0 for every other job. */
+  bait: number;
   startedAt: number;
   endsAt: number;
   status: 'running' | 'ready' | 'claimed';
@@ -238,6 +240,8 @@ interface StoredInput {
   secondaryIndex?: number;
   supplyId?: string;
   cost: PartsBundle;
+  /** Bait a lure job cost (absent for every other job). */
+  bait?: number;
 }
 
 const sumShards = (bundle: PartsBundle): number =>
@@ -386,6 +390,7 @@ export class Gear {
         ...(input.supplyId === undefined ? {} : { supplyId: input.supplyId }),
       },
       cost: input.cost,
+      bait: input.bait ?? 0,
       startedAt: row.started_at,
       endsAt: row.ends_at,
       status: row.claimed_at !== null ? 'claimed' : now >= row.ends_at ? 'ready' : 'running',
@@ -720,6 +725,8 @@ export class Gear {
 
           let rarity: GearRarity;
           let cost: PartsBundle;
+          // Bait a lure costs besides its parts (the only supply that takes any).
+          let baitCost = 0;
           let baseId: string;
           // A supply craft has its own length (its hours, less the creature's skill).
           let supplyMs: number | null = null;
@@ -749,17 +756,35 @@ export class Gear {
               baseId = def.id;
               rarity = SUPPLY_RARITY[def.tier];
               cost = partsOfSpec(def.blueprint.parts);
+              baitCost = def.blueprint.bait ?? 0;
               supplyMs = minusBp(supplyJobMs(def, level), busyBp);
               stored.supplyId = def.id;
               break;
             }
           }
           if (!debitParts(this.sql, userId, cost)) throw new GameError(409, 'insufficient_parts');
+          if (baitCost > 0) {
+            // Checked, debited and the job created in one transaction: a failure rolls the parts back too.
+            settleSpend(
+              spend(
+                this.deps.storage,
+                {
+                  userId,
+                  currency: 'bait',
+                  amount: baitCost,
+                  purpose: 'lure',
+                  idempotencyKey: input.idempotencyKey,
+                  apply: () => ({ supplyId: input.kind === 'supply' ? input.supplyId : null }),
+                },
+                this.deps.now(),
+              ),
+            );
+          }
 
           const now = this.deps.now();
           const duration = supplyMs ?? jobDuration(level, busyBp);
           const id = crypto.randomUUID();
-          const row: StoredInput = { ...stored, cost };
+          const row: StoredInput = { ...stored, cost, ...(baitCost > 0 ? { bait: baitCost } : {}) };
           this.sql.exec(
             `INSERT INTO workshop_jobs (id, user_id, creature_id, kind, gear_id, input_json, started_at, ends_at)
            VALUES (?, ?, ?, ?, NULL, ?, ?, ?)`,
@@ -781,6 +806,7 @@ export class Gear {
               hours: Math.round(duration / 3_600_000),
               skillLevel: level,
               parts: cost,
+              ...(baitCost > 0 ? { bait: baitCost } : {}),
             },
             userId,
           );
