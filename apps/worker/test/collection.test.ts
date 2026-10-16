@@ -223,7 +223,10 @@ function stock(sql: SqlStorage, userId: string, id: string, amount: number): voi
 /** A map scrap of the best tier: doubles the rolls of a 1-roll trip. */
 const OWNED_ATLAS = [{ id: 'map-scrap-great', source: 'owned' as const }];
 
-/** A supply bought with Bait at send time. */
+/** A supply taken from stock for a trip (the only way to carry one: supplies cannot be bought). */
+const own = (id: string) => ({ id, source: 'owned' as const });
+
+/** The old way to send a supply, which is refused now. */
 const buy = (id: string) => ({ id, source: 'buy' as const });
 
 /** Sends a creature to the Tidepools (open to every explorer) with the given supplies; free without. */
@@ -781,45 +784,54 @@ describe('POST /api/expeditions', () => {
     );
   });
 
-  it('charges once for a bought supply', async () => {
+  it('takes a supply from stock and charges nothing', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100);
-        const price = 30;
-        const res = await send(p, p.starterId, 'medium', [buy('lure-good')]);
+        stock(ctx.sql, USER_ID, 'lure-good', 1);
+        const res = await send(p, p.starterId, 'medium', [own('lure-good')]);
         expect(res.status).toBe(200);
-        expect(expeditionOf(res)).toMatchObject({
-          kit: ['lure-good'],
-          supplies: 'good',
-          cost: price,
-        });
-        expect((res.body['state'] as StateBody).balances.bait).toBe(100 - price);
-        const entry = ctx.sql
-          .exec<{
-            amount: number;
-            source: string;
-          }>("SELECT amount, source FROM ledger WHERE source = 'expedition'")
-          .toArray();
-        expect(entry).toEqual([{ amount: -price, source: 'expedition' }]);
+        expect(expeditionOf(res)).toMatchObject({ kit: ['lure-good'], supplies: 'good', cost: 0 });
+        expect((res.body['state'] as StateBody).balances.bait).toBe(100);
+        expect((res.body['state'] as StateBody).supplies).toEqual({});
+        expect(count(ctx.sql, 'ledger', "source = 'expedition'")).toBe(0);
       },
       seeded(),
     );
   });
 
-  it('replays the same key: same expedition, charged once', async () => {
+  it('refuses to buy a supply (an old client), with a clear error and nothing written', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await joinWithStarter(ctx, USER, 100);
+        const res = await send(p, p.starterId, 'medium', [buy('lure-good')]);
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({ error: 'supplies_not_for_sale' });
+        expect(count(ctx.sql, 'expeditions')).toBe(0);
+        expect(count(ctx.sql, 'ledger', "source = 'expedition'")).toBe(0);
+        expect(ctx.core.balances(USER_ID).bait).toBe(100);
+        expect((await p.state()).creatures[0]?.away).toBe(false);
+      },
+      seeded(),
+    );
+  });
+
+  it('replays the same key: same expedition, the supply taken once', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100);
         const key = newKey();
-        const first = await send(p, p.starterId, 'short', [buy('lure-basic')], key);
+        stock(ctx.sql, USER_ID, 'lure-basic', 2);
+        const first = await send(p, p.starterId, 'short', [own('lure-basic')], key);
         ctx.clock.t += 5000;
-        const second = await send(p, p.starterId, 'short', [buy('lure-basic')], key);
+        const second = await send(p, p.starterId, 'short', [own('lure-basic')], key);
         expect(second.status).toBe(200);
         expect(expeditionOf(second)).toEqual(expeditionOf(first));
         expect(count(ctx.sql, 'expeditions')).toBe(1);
-        expect((second.body['state'] as StateBody).balances.bait).toBe(88);
+        expect((second.body['state'] as StateBody).supplies).toEqual({ 'lure-basic': 1 });
       },
       seeded(),
     );
@@ -831,29 +843,31 @@ describe('POST /api/expeditions', () => {
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100);
         const key = newKey();
-        await send(p, p.starterId, 'short', [buy('lure-basic')], key);
-        const other = await send(p, p.starterId, 'short', [buy('lure-good')], key);
+        stock(ctx.sql, USER_ID, 'lure-basic', 1);
+        stock(ctx.sql, USER_ID, 'lure-good', 1);
+        await send(p, p.starterId, 'short', [own('lure-basic')], key);
+        const other = await send(p, p.starterId, 'short', [own('lure-good')], key);
         expect(other.status).toBe(409);
         expect(other.body).toEqual({ error: 'key_conflict' });
         expect(count(ctx.sql, 'expeditions')).toBe(1);
-        expect(ctx.core.balances(USER_ID).bait).toBe(88);
+        expect((await p.state()).supplies).toEqual({ 'lure-good': 1 });
       },
       seeded(),
     );
   });
 
-  it('writes nothing when the player cannot afford it', async () => {
+  it('writes nothing when the supply is not in stock', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
-        const p = await joinWithStarter(ctx, USER, 9);
+        const p = await joinWithStarter(ctx, USER, 1_000);
         const ledgerBefore = count(ctx.sql, 'ledger');
-        const res = await send(p, p.starterId, 'short', [buy('lure-basic')]);
+        const res = await send(p, p.starterId, 'short', [own('lure-basic')]);
         expect(res.status).toBe(409);
-        expect(res.body).toEqual({ error: 'insufficient_funds' });
+        expect(res.body).toEqual({ error: 'supply_missing', reason: 'lure-basic' });
         expect(count(ctx.sql, 'expeditions')).toBe(0);
         expect(count(ctx.sql, 'ledger')).toBe(ledgerBefore);
-        expect(ctx.core.balances(USER_ID).bait).toBe(9);
+        expect(ctx.core.balances(USER_ID).bait).toBe(1_000);
         expect((await p.state()).creatures[0]?.away).toBe(false);
       },
       seeded(),
@@ -931,7 +945,7 @@ describe('POST /api/expeditions', () => {
 
   it.each([
     ['an unknown duration', { duration: 'forever' }],
-    ['unknown supplies', { supplies: [{ id: 'epic', source: 'buy' }] }],
+    ['unknown supplies', { supplies: [{ id: 'epic', source: 'owned' }] }],
     ['the old supplies tier', { supplies: 'basic' }],
     ['an unknown destination', { destination: 'atlantis' }],
     ['an unknown supply source', { supplies: [{ id: 'lure-basic', source: 'steal' }] }],
@@ -1036,13 +1050,13 @@ describe('POST /api/expeditions/{id}/claim', () => {
     );
   });
 
-  it('before the end recalls with floor(rolls x elapsed / duration) catches and no refund', async () => {
+  it('before the end recalls with floor(rolls x elapsed / duration) catches and gives the supply back to no one', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 200);
-        const exp = expeditionOf(await send(p, p.starterId, 'long', [buy('lure-basic')]));
-        const paid = 12;
+        stock(ctx.sql, USER_ID, 'lure-basic', 1);
+        const exp = expeditionOf(await send(p, p.starterId, 'long', [own('lure-basic')]));
         ctx.clock.t = exp.startedAt + 8 * HOUR; // 8 of 12 hours: floor(rolls * 2/3)
         const expected = recallCatches(exp.rolls, exp.startedAt, exp.endsAt, ctx.clock.t);
         expect(expected).toBe(Math.floor((RULES.expeditions.lengths.long.rolls * 2) / 3));
@@ -1050,7 +1064,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
         expect(res.status).toBe(200);
         expect(resultOf(res).recalled).toBe(true);
         expect(resultOf(res).catches).toHaveLength(expected);
-        expect((res.body['state'] as StateBody).balances.bait).toBe(200 - paid);
+        expect((res.body['state'] as StateBody).balances.bait).toBe(200);
         expect((res.body['state'] as StateBody).slots.used).toBe(0);
       },
       seeded(),

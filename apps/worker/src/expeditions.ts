@@ -8,8 +8,8 @@
  * Idempotency and races:
  * - A send carries the client's key. `gear_actions` stores the result under (player, key) with a
  *   fingerprint of what was asked, so a retry returns the stored trip, and the same key on a different
- *   send is a `key_conflict`. The Bait of bought supplies goes through the ledger's `spend`, so the
- *   balance check, the debit, the supplies taken from stock and the new trip are one transaction.
+ *   send is a `key_conflict`. Supplies cannot be bought (they come from stock): the supplies taken
+ *   from stock and the new trip are one transaction, so a failed send takes nothing.
  * - A claim stores its result and never rolls again; claiming a claimed trip returns it.
  * - The end-of-trip offer is rolled once per trip (`expedition_offers`), so reloading cannot re-roll it.
  *
@@ -97,8 +97,8 @@ import {
 import { grantRankGift, grantTripLoot, type GrantView } from './gear-grants';
 import { openJobOf } from './gear-store';
 import { devKey, type DevFlags } from './dev-state';
-import { credit, spend, type LedgerStorage } from './ledger';
-import { runKeyed, settleSpend } from './keyed-action';
+import { credit, type LedgerStorage } from './ledger';
+import { runKeyed } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import { weekIdFor, weekIndex } from './raid-schedule';
 import { recordServerFirst } from './server-firsts';
@@ -256,7 +256,10 @@ export interface SendInput {
   creatureId: string;
   destination: string;
   duration: ExpeditionLength;
-  /** The supplies to carry: bought for Bait now, or taken from stock. */
+  /**
+   * The supplies to carry, all from stock (`owned`). `buy` is still a valid shape on the wire so an old
+   * client gets a clear refusal (`supplies_not_for_sale`) instead of a schema error.
+   */
   supplies: readonly { id: string; source: 'buy' | 'owned' }[];
   idempotencyKey: string;
 }
@@ -679,8 +682,8 @@ export class Expeditions {
    * Sends a creature to a destination. Checks, in order: the creature is the caller's and free, there
    * is a free slot, the explorer's rank allows the trip length and the place, the place is open (night in
    * the guild's timezone, a Festival week), the supplies are valid. Supplies are optional: a trip without
-   * any is free. Bought supplies are paid in Bait through the ledger, supplies from stock are taken, and
-   * the trip is created, all in one transaction.
+   * any is free. Supplies cannot be bought: they come from stock, are taken, and the trip is created,
+   * all in one transaction. An old client asking to buy one is refused (`supplies_not_for_sale`).
    */
   send(userId: string, input: SendInput, timezone: string): Outcome<ExpeditionView> {
     const fingerprint = JSON.stringify([
@@ -725,84 +728,60 @@ export class Expeditions {
     const reason = closed[0];
     if (reason !== undefined) throw new GameError(409, 'destination_closed', reason);
 
+    // Supplies are not for sale any more (2026-10-16): only stock goes on a trip, whatever was asked.
+    if (input.supplies.some((pick) => pick.source !== 'owned')) {
+      throw new GameError(400, 'supplies_not_for_sale');
+    }
     const ids = input.supplies.map((s) => s.id);
     const problem = kitProblem(ids);
     if (problem !== null) throw new GameError(400, 'invalid_supplies', problem);
     const kit = kitOf(ids);
     const stock = supplyStock(this.sql, userId);
-    let cost = 0;
-    let bought = 0;
-    for (const pick of input.supplies) {
-      if (pick.source === 'buy') {
-        cost += kit.find((s) => s.id === pick.id)?.price ?? 0;
-        bought++;
-      } else if ((stock[pick.id] ?? 0) < 1) {
-        throw new GameError(409, 'supply_missing', pick.id);
-      }
+    for (const id of ids) {
+      if ((stock[id] ?? 0) < 1) throw new GameError(409, 'supply_missing', id);
     }
 
     const special = week.destination === dest.id ? week.twistId : null;
     const rolls = tripRolls(input.duration, kit, twistOf(special));
     const ms = tripMs(input.duration, explorer.rank);
 
-    const create = (): { expeditionId: string } => {
-      // Stock is taken inside the same transaction as the spend, so a failed payment takes nothing.
-      for (const pick of input.supplies) {
-        if (pick.source === 'owned' && !takeSupply(this.sql, userId, pick.id)) {
-          throw new Error('supply vanished inside the send transaction');
-        }
+    for (const pick of input.supplies) {
+      if (!takeSupply(this.sql, userId, pick.id)) {
+        throw new Error('supply vanished inside the send transaction');
       }
-      const id = crypto.randomUUID();
-      this.sql.exec(
-        `INSERT INTO expeditions
-           (id, user_id, creature_id, duration, supplies, rolls, cost, started_at, ends_at, status,
-            destination_id, supplies_json, special_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)`,
-        id,
-        userId,
-        creature.id,
-        input.duration,
-        bestTier(kit),
-        rolls,
-        cost,
-        now,
-        now + ms,
-        dest.id,
-        JSON.stringify(ids),
-        special,
-      );
-      this.sql.exec('UPDATE creatures SET away_expedition_id = ? WHERE id = ?', id, creature.id);
-      bumpStat(this.sql, userId, 'supplies_used', kit.length);
-      this.deps.analytics?.record(
-        {
-          kind: 'expedition_send',
-          species: creature.species,
-          duration: input.duration,
-          destination: dest.id,
-          supplies: ids,
-          bought,
-          cost,
-          rank: explorer.rank,
-        },
-        userId,
-      );
-      return { expeditionId: id };
-    };
-
-    if (cost === 0) return create();
-    const spent = spend(
-      this.deps.storage,
-      {
-        userId,
-        currency: 'bait',
-        amount: cost,
-        purpose: 'expedition',
-        idempotencyKey: input.idempotencyKey,
-        apply: create,
-      },
+    }
+    const id = crypto.randomUUID();
+    this.sql.exec(
+      `INSERT INTO expeditions
+         (id, user_id, creature_id, duration, supplies, rolls, cost, started_at, ends_at, status,
+          destination_id, supplies_json, special_id)
+       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, 'active', ?, ?, ?)`,
+      id,
+      userId,
+      creature.id,
+      input.duration,
+      bestTier(kit),
+      rolls,
       now,
+      now + ms,
+      dest.id,
+      JSON.stringify(ids),
+      special,
     );
-    return settleSpend(spent);
+    this.sql.exec('UPDATE creatures SET away_expedition_id = ? WHERE id = ?', id, creature.id);
+    bumpStat(this.sql, userId, 'supplies_used', kit.length);
+    this.deps.analytics?.record(
+      {
+        kind: 'expedition_send',
+        species: creature.species,
+        duration: input.duration,
+        destination: dest.id,
+        supplies: ids,
+        rank: explorer.rank,
+      },
+      userId,
+    );
+    return { expeditionId: id };
   }
 
   // --- Claiming ---

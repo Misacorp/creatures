@@ -104,10 +104,6 @@ export type AnalyticsEvent =
       destination: string;
       /** The supplies carried (content ids). */
       supplies: readonly string[];
-      /** How many of them were bought for Bait on this send (the rest came from stock). */
-      bought: number;
-      /** The Bait spent. */
-      cost: number;
       /** The explorer's rank when it left. */
       rank: number;
     }
@@ -338,6 +334,8 @@ export type AnalyticsEvent =
       glimmer: number;
       /** Gear items that dropped (and fit, or became parts). */
       gear: number;
+      /** Supplies that dropped. */
+      supplies: number;
       landmark: boolean;
       /** The day of the streak cycle whose bonus was paid (3 or 7), or 0. */
       streakBonusDay: number;
@@ -451,8 +449,6 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         duration: length(event.duration),
         destination: destination(event.destination),
         supplies: supplyIds(event.supplies),
-        bought: int(event.bought, RULES.expeditions.maxSupplies),
-        cost: int(event.cost),
         rank: int(event.rank, 99),
       };
     case 'expedition_claim':
@@ -682,6 +678,7 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         shards: int(event.shards),
         glimmer: int(event.glimmer),
         gear: int(event.gear, 99),
+        supplies: int(event.supplies, 99),
         landmark: bool(event.landmark),
         streakBonusDay: int(event.streakBonusDay, 99),
       };

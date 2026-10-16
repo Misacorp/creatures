@@ -82,8 +82,6 @@ async function seedGuild(guildId: string, userId: string, nickname: string): Pro
         duration: 'short',
         destination: 'tide-pools',
         supplies: [],
-        bought: 0,
-        cost: 0,
         rank: 1,
       },
       userId,
