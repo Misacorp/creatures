@@ -13,13 +13,15 @@
   "durable_objects": {
     "bindings": [
       { "name": "GUILD_WORLD", "class_name": "GuildWorld" },
-      { "name": "GUILD_DIRECTORY", "class_name": "GuildDirectory" }
+      { "name": "GUILD_DIRECTORY", "class_name": "GuildDirectory" },
+      { "name": "FEEDBACK_INBOX", "class_name": "FeedbackInbox" }
     ]
   },
-  // Environments inherit migrations (wrangler treats the key as inheritable), so v2 applies to all three.
+  // Environments inherit migrations (wrangler treats the key as inheritable), so v3 applies to all three.
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["GuildWorld"] },
-    { "tag": "v2", "new_sqlite_classes": ["GuildDirectory"] }
+    { "tag": "v2", "new_sqlite_classes": ["GuildDirectory"] },
+    { "tag": "v3", "new_sqlite_classes": ["FeedbackInbox"] }
   ],
   // Secrets are set by CI (Cloudflare Worker secrets) or in .dev.vars locally; never committed.
   // OPS_TOKEN (the ops report's bearer token) is optional on purpose: without it the report route 404s.
@@ -33,7 +35,11 @@
   // DEV_TOOLS: "on" turns on the dev tools (/api/dev/*, the dev clock; staging only, see
   // docs/design/dev-tools.md); any other value, production included, makes every /api/dev route answer
   // 404 and ignores a stored dev clock offset. A test pins production and the top level to "off".
+  // DISCORD_PUBLIC_KEY: the Discord app's public key (hex, not a secret). The deploy job fills it from
+  // Discord's verify_key; empty (or not 64 hex characters) turns POST /api/discord/interactions off (404),
+  // which also turns off /feedback (docs/design/feedback.md).
   "vars": {
+    "DISCORD_PUBLIC_KEY": "",
     "ENVIRONMENT": "local",
     "DISCORD_CLIENT_ID": "000000000000000000",
     "VERSION": "dev",
@@ -49,12 +55,14 @@
       "durable_objects": {
         "bindings": [
           { "name": "GUILD_WORLD", "class_name": "GuildWorld" },
-          { "name": "GUILD_DIRECTORY", "class_name": "GuildDirectory" }
+          { "name": "GUILD_DIRECTORY", "class_name": "GuildDirectory" },
+          { "name": "FEEDBACK_INBOX", "class_name": "FeedbackInbox" }
         ]
       },
       "secrets": { "required": ["DISCORD_CLIENT_SECRET", "DISCORD_BOT_TOKEN"] },
       "routes": [{ "pattern": "creatures-staging.misacorp.dev", "custom_domain": true }],
       "vars": {
+        "DISCORD_PUBLIC_KEY": "",
         "ENVIRONMENT": "staging",
         "DISCORD_CLIENT_ID": "1558536384380145734",
         "VERSION": "dev",
@@ -70,12 +78,14 @@
       "durable_objects": {
         "bindings": [
           { "name": "GUILD_WORLD", "class_name": "GuildWorld" },
-          { "name": "GUILD_DIRECTORY", "class_name": "GuildDirectory" }
+          { "name": "GUILD_DIRECTORY", "class_name": "GuildDirectory" },
+          { "name": "FEEDBACK_INBOX", "class_name": "FeedbackInbox" }
         ]
       },
       "secrets": { "required": ["DISCORD_CLIENT_SECRET", "DISCORD_BOT_TOKEN"] },
       "routes": [{ "pattern": "creatures.misacorp.dev", "custom_domain": true }],
       "vars": {
+        "DISCORD_PUBLIC_KEY": "",
         "ENVIRONMENT": "production",
         "DISCORD_CLIENT_ID": "1558533284072267896",
         "VERSION": "dev",
