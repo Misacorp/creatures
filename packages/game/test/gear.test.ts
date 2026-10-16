@@ -984,7 +984,8 @@ describe('drops', () => {
     );
   });
 
-  it('the welcome kit is a common level 1 Hat, a blueprint, and scrap that pays for any craft', () => {
+  it('the welcome kit is a common level 1 Hat, the blueprint of a neutral piece, and scrap that pays for its craft', () => {
+    const slots = new Set<string>();
     for (let i = 0; i < 50; i++) {
       const kit = rollWelcomeKit(createSeededRng(`kit-${String(i)}`));
       expect(kit.item.rarity).toBe('common');
@@ -993,10 +994,15 @@ describe('drops', () => {
       expect(kit.item.itemLevel).toBe(1);
       expect(kit.item.lines).toHaveLength(1);
       expect(blueprintBases().map((b) => b.id)).toContain(kit.blueprint);
+      // A neutral base costs scrap only, so the welcome scrap pays for it on day 1.
+      expect(gearBase(kit.blueprint)?.tag).toBe('neutral');
+      expect(Object.keys(craftCost(kit.blueprint))).toEqual(['scrap']);
       expect(RULES.gear.drops.welcomeScrap).toBeGreaterThanOrEqual(
         craftCost(kit.blueprint).scrap ?? 0,
       );
+      slots.add(gearBase(kit.blueprint)?.slot ?? '');
     }
+    expect([...slots].sort()).toEqual(['charm', 'hat', 'scarf']);
   });
 
   it('expedition loot: scrap by duration, a share when recalled, extras only on a completed trip', () => {

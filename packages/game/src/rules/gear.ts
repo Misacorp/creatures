@@ -6,7 +6,13 @@
  */
 import { int, chance, pickWeighted, type Rng } from '../rng';
 import { baseFor, gearBase, gearContent } from '../content/gear';
-import { tagElement, tagRole, type GearBase, type GearRarity } from '../content/gear-schema';
+import {
+  GEAR_SLOTS,
+  tagElement,
+  tagRole,
+  type GearBase,
+  type GearRarity,
+} from '../content/gear-schema';
 import type { Element } from '../content/schema';
 import { RULES, type DurationId } from './config';
 import {
@@ -308,7 +314,11 @@ export function expeditionLoot(
   return { parts, blueprint };
 }
 
-/** The welcome kit's rolls: a Common Hat at item level 1 (the neutral Trail Cap) and a blueprint. */
+/**
+ * The welcome kit's rolls: a Common Hat at item level 1 (the neutral Trail Cap) and the blueprint of a
+ * neutral piece (a Hat, a Scarf or a Charm, evenly), which costs scrap only, so the welcome scrap pays
+ * for the first craft on day 1 (an element piece also needs a shard, which a new player does not have).
+ */
 export function rollWelcomeKit(rng: Rng): { item: GearItem; blueprint: string } {
   const hat = baseFor('hat', 'neutral');
   if (hat === undefined) throw new Error('no neutral hat');
@@ -317,7 +327,13 @@ export function rollWelcomeKit(rng: Rng): { item: GearItem; blueprint: string } 
     rarity: 'common',
     itemLevel: RULES.gear.itemLevel.welcome,
   });
-  return { item, blueprint: rollBlueprint(rng) };
+  const neutral = GEAR_SLOTS.flatMap((slot) => {
+    const base = baseFor(slot, 'neutral');
+    return base === undefined ? [] : [base];
+  });
+  const pick = neutral[int(rng, neutral.length)];
+  if (pick === undefined) throw new Error('no neutral bases');
+  return { item, blueprint: pick.id };
 }
 
 /** Adds two bundles (a new bundle is returned). */
