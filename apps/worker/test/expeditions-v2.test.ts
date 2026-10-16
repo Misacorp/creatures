@@ -22,6 +22,7 @@ import {
   OTHER_USER_ID,
   T0,
   USER_ID,
+  certainCatches,
   runCore,
   undoExpeditionsMigration,
   type CoreContext,
@@ -316,21 +317,27 @@ describe('where a creature may go', () => {
     let start = festival;
     while (weekIdFor(start - HOUR, HELSINKI) === weekIdFor(festival, HELSINKI)) start -= HOUR;
     const festivalSpecies = new Set(['lanternfin', 'hearthshell']);
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        ctx.clock.t = start + HOUR;
-        const p = await join(ctx, USER, 0);
-        const seen = new Set<string>();
-        for (let i = 0; i < 50; i++) {
-          const trip = tripOf(await send(p, p.starterId, 'short', [], 'festival-grounds'));
-          ctx.clock.t = trip.endsAt;
-          for (const c of resultOf(await claim(p, trip.id)).catches) seen.add(c.species);
-        }
-        expect([...seen].some((id) => festivalSpecies.has(id))).toBe(true);
-      },
-      { rng: createSeededRng('festival-catches') },
-    );
+    // Every roll brings a creature, so 50 short trips are 50 catches (the shipped chance is small).
+    const restore = certainCatches(['short']);
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          ctx.clock.t = start + HOUR;
+          const p = await join(ctx, USER, 0);
+          const seen = new Set<string>();
+          for (let i = 0; i < 50; i++) {
+            const trip = tripOf(await send(p, p.starterId, 'short', [], 'festival-grounds'));
+            ctx.clock.t = trip.endsAt;
+            for (const c of resultOf(await claim(p, trip.id)).catches) seen.add(c.species);
+          }
+          expect([...seen].some((id) => festivalSpecies.has(id))).toBe(true);
+        },
+        { rng: createSeededRng('festival-catches') },
+      );
+    } finally {
+      restore();
+    }
   });
 
   it('shows the weekly special, the night flag and the familiarity at GET /api/destinations', async () => {
@@ -1664,29 +1671,35 @@ describe('gear on trips', () => {
   });
 
   it('Keen nose brings back more parts on a finished trip', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await join(ctx, USER, 0, 'cindle');
-        ctx.sql.exec('UPDATE creatures SET level = 15 WHERE id = ?', p.starterId);
-        setRank(ctx.sql, USER_ID, p.starterId, 6);
-        const scrap = RULES.expeditions.lengths.day.loot.scrap;
-        const plain = tripOf(await send(p, p.starterId, 'day'));
-        ctx.clock.t = plain.endsAt;
-        const first = resultOf(await claim(p, plain.id));
-        // Three items with tier IV Keen nose: +60%.
-        wearOn(ctx, p.starterId, 'trail-cap', 15, [['keen-nose', 3]]);
-        wearOn(ctx, p.starterId, 'patch-scarf', 15, [['keen-nose', 3]]);
-        wearOn(ctx, p.starterId, 'trail-charm', 15, [['keen-nose', 3]]);
-        const rich = tripOf(await send(p, p.starterId, 'day'));
-        ctx.clock.t = rich.endsAt;
-        const second = resultOf(await claim(p, rich.id));
-        expect(first.loot.parts['scrap']).toBe(scrap);
-        expect(second.loot.parts['scrap']).toBe(Math.floor((scrap * 16_000) / 10_000));
-        expect(second.loot.parts['scrap'] ?? 0).toBeGreaterThan(scrap);
-      },
-      { tripRng: createSeededRng('keen-nose'), rng: createSeededRng('keen-nose-rng') },
-    );
+    // Every roll brings a creature, so no empty roll adds its small find to the scrap being compared.
+    const restore = certainCatches(['day']);
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await join(ctx, USER, 0, 'cindle');
+          ctx.sql.exec('UPDATE creatures SET level = 15 WHERE id = ?', p.starterId);
+          setRank(ctx.sql, USER_ID, p.starterId, 6);
+          const scrap = RULES.expeditions.lengths.day.loot.scrap;
+          const plain = tripOf(await send(p, p.starterId, 'day'));
+          ctx.clock.t = plain.endsAt;
+          const first = resultOf(await claim(p, plain.id));
+          // Three items with tier IV Keen nose: +60%.
+          wearOn(ctx, p.starterId, 'trail-cap', 15, [['keen-nose', 3]]);
+          wearOn(ctx, p.starterId, 'patch-scarf', 15, [['keen-nose', 3]]);
+          wearOn(ctx, p.starterId, 'trail-charm', 15, [['keen-nose', 3]]);
+          const rich = tripOf(await send(p, p.starterId, 'day'));
+          ctx.clock.t = rich.endsAt;
+          const second = resultOf(await claim(p, rich.id));
+          expect(first.loot.parts['scrap']).toBe(scrap);
+          expect(second.loot.parts['scrap']).toBe(Math.floor((scrap * 16_000) / 10_000));
+          expect(second.loot.parts['scrap'] ?? 0).toBeGreaterThan(scrap);
+        },
+        { tripRng: createSeededRng('keen-nose'), rng: createSeededRng('keen-nose-rng') },
+      );
+    } finally {
+      restore();
+    }
   });
 
   it('a gear find from a push-on is an item of the place’s element at twice the explorer rank, with where it came from', async () => {

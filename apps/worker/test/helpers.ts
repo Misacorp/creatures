@@ -1,4 +1,4 @@
-import { createSeededRng } from '@creatures/game';
+import { RULES, createSeededRng, type ExpeditionLength } from '@creatures/game';
 import { expect } from 'vitest';
 import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
@@ -9,6 +9,23 @@ import { formatSessionToken, getSessionKey } from '../src/session';
 import type { ActivityInstance, DiscordMember, DiscordRole, DiscordUser } from '../src/schemas';
 
 export const ORIGIN = 'https://creatures.test';
+
+/**
+ * Makes every catch roll of these trip lengths bring a creature (the chance is 100%), for a test that
+ * needs a catch on every trip rather than the chance the game shipped with. Returns the function that
+ * puts the shipped chances back; call it in a `finally`.
+ */
+export function certainCatches(lengths: readonly ExpeditionLength[]): () => void {
+  // RULES is frozen by type only; the sim's tuning overrides write into it the same way.
+  const rules = (l: ExpeditionLength) => RULES.expeditions.lengths[l] as { catchBp: number };
+  const before = lengths.map((l) => rules(l).catchBp);
+  for (const l of lengths) rules(l).catchBp = 10_000;
+  return () => {
+    lengths.forEach((l, i) => {
+      rules(l).catchBp = before[i] as number;
+    });
+  };
+}
 
 export const USER_ID = '111111111111111111';
 export const OTHER_USER_ID = '222222222222222222';

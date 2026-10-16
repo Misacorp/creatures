@@ -135,6 +135,8 @@ export async function runCreaturesScenario(ctx: CoreContext, talentRng: Rng): Pr
   await trip('creatures-claim');
   await trip();
   await trip();
+  // Three duplicates in a row is the dupe shield's streak: the fourth catch would be a species the player lacks, so the streak is reset.
+  ctx.sql.exec('UPDATE player_progress SET dupe_streak = 0');
   const fourth = await trip();
   const cards = pendingOf(fourth);
   if (cards.length !== 4)
@@ -198,7 +200,7 @@ export async function runCreaturesScenario(ctx: CoreContext, talentRng: Rng): Pr
     idempotencyKey: newKey(),
   });
 
-  // Two more cards (the dupe shield of four in a row is reset), and one answer for both.
+  // Two more cards (the dupe shield's streak is reset), and one answer for both.
   ctx.sql.exec('UPDATE player_progress SET dupe_streak = 0');
   await trip();
   ctx.sql.exec('UPDATE player_progress SET dupe_streak = 0');

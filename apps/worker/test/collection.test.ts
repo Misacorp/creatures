@@ -15,6 +15,7 @@ import {
   OTHER_USER_ID,
   T0,
   USER_ID,
+  certainCatches,
   callHandler,
   fakeDiscord,
   getWithToken,
@@ -1041,41 +1042,47 @@ describe('Festival species', () => {
       expect(species.catchable).toBe(false);
       expect(species.starter).toBe(false);
     }
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await joinWithStarter(ctx, USER, 1_000_000);
-        // The Old Crossroads need explorer rank 2.
-        ctx.sql.exec(
-          'INSERT INTO explorer_progress (user_id, creature_id, xp, trips) VALUES (?, ?, ?, 0)',
-          USER_ID,
-          p.starterId,
-          RULES.expeditions.rank.xpForRank[1] ?? 0,
-        );
-        const seen = new Set<string>();
-        const places = [
-          'tidepools',
-          'ember-caves',
-          'verdant-hollow',
-          'storm-ridge',
-          'old-crossroads',
-        ];
-        for (let i = 0; i < 100; i++) {
-          const exp = expeditionOf(
-            await send(p, p.starterId, 'long', [], newKey(), places[i % places.length]),
+    // Every roll brings a creature, so 100 long trips are 100 catches (the shipped chance is small).
+    const restore = certainCatches(['long']);
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await joinWithStarter(ctx, USER, 1_000_000);
+          // The Old Crossroads need explorer rank 2.
+          ctx.sql.exec(
+            'INSERT INTO explorer_progress (user_id, creature_id, xp, trips) VALUES (?, ?, ?, 0)',
+            USER_ID,
+            p.starterId,
+            RULES.expeditions.rank.xpForRank[1] ?? 0,
           );
-          ctx.clock.t = exp.endsAt;
-          const res = await claim(p, exp.id);
-          expect(res.status).toBe(200);
-          for (const c of resultOf(res).catches) seen.add(c.species);
-        }
-        // Plenty of the catchable species showed up, and no Festival species did. (A Festival
-        // species comes from a won Festival finale, or from the Festival Grounds in a Festival week.)
-        expect(seen.size).toBeGreaterThan(6);
-        for (const species of festival) expect(seen.has(species.id)).toBe(false);
-      },
-      seeded(),
-    );
+          const seen = new Set<string>();
+          const places = [
+            'tidepools',
+            'ember-caves',
+            'verdant-hollow',
+            'storm-ridge',
+            'old-crossroads',
+          ];
+          for (let i = 0; i < 100; i++) {
+            const exp = expeditionOf(
+              await send(p, p.starterId, 'long', [], newKey(), places[i % places.length]),
+            );
+            ctx.clock.t = exp.endsAt;
+            const res = await claim(p, exp.id);
+            expect(res.status).toBe(200);
+            for (const c of resultOf(res).catches) seen.add(c.species);
+          }
+          // Plenty of the catchable species showed up, and no Festival species did. (A Festival
+          // species comes from a won Festival finale, or from the Festival Grounds in a Festival week.)
+          expect(seen.size).toBeGreaterThan(6);
+          for (const species of festival) expect(seen.has(species.id)).toBe(false);
+        },
+        seeded(),
+      );
+    } finally {
+      restore();
+    }
   });
 });
 

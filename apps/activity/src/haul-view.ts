@@ -122,9 +122,9 @@ function pips(key: keyof Metrics, value: number): number {
 
 /** How often one catch roll brings a creature, in words. */
 function rollWord(bp: number): string {
-  if (bp >= 7000) return 'very often';
-  if (bp >= 4000) return 'often';
-  if (bp >= 2500) return 'sometimes';
+  if (bp >= 5000) return 'very often';
+  if (bp >= 2500) return 'often';
+  if (bp >= 1000) return 'sometimes';
   return 'rarely';
 }
 

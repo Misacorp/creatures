@@ -3,7 +3,7 @@
     "path": "/api/expeditions",
     "method": "POST",
     "body": {
-      "creatureId": "5b471a5d-ed59-4ae7-9abd-bd0bec41f40d",
+      "creatureId": "846140b4-6d3a-434e-9bcd-d1fff7c70fe0",
       "destination": "tidepools",
       "duration": "long",
       "supplies": [
@@ -20,19 +20,19 @@
     }
   },
   "expedition-push-on": {
-    "path": "/api/expeditions/86bc2dab-7d3b-4160-a464-ca09c58e6ccc/push-on",
+    "path": "/api/expeditions/ff08ccff-375a-497a-9b13-a8940b7d60f3/push-on",
     "method": "POST",
     "body": {
       "goalId": "shortcut"
     }
   },
   "expedition-claim-failed": {
-    "path": "/api/expeditions/86bc2dab-7d3b-4160-a464-ca09c58e6ccc/claim",
+    "path": "/api/expeditions/ff08ccff-375a-497a-9b13-a8940b7d60f3/claim",
     "method": "POST",
     "body": {}
   },
   "expedition-claim": {
-    "path": "/api/expeditions/86bc2dab-7d3b-4160-a464-ca09c58e6ccc/claim",
+    "path": "/api/expeditions/ff08ccff-375a-497a-9b13-a8940b7d60f3/claim",
     "method": "POST",
     "body": {}
   },
@@ -40,7 +40,7 @@
     "path": "/api/expeditions",
     "method": "POST",
     "body": {
-      "creatureId": "5b471a5d-ed59-4ae7-9abd-bd0bec41f40d",
+      "creatureId": "846140b4-6d3a-434e-9bcd-d1fff7c70fe0",
       "destination": "tidepools",
       "duration": "long",
       "supplies": [
@@ -53,7 +53,7 @@
     }
   },
   "expedition-claim-worked": {
-    "path": "/api/expeditions/ff6f14a4-dc1d-4de7-aa1a-fd3534a45864/claim",
+    "path": "/api/expeditions/b0210957-275b-490a-a9f1-388a4ab75d56/claim",
     "method": "POST",
     "body": {}
   },
@@ -61,7 +61,7 @@
     "path": "/api/expeditions",
     "method": "POST",
     "body": {
-      "creatureId": "b5cccb35-57e7-4467-b3fa-4daf40f5df57",
+      "creatureId": "df58cec5-1472-484c-b521-e16941e9b3e6",
       "destination": "tidepools",
       "duration": "long",
       "supplies": [],
@@ -69,7 +69,7 @@
     }
   },
   "expedition-claim-recall": {
-    "path": "/api/expeditions/994a35ba-c589-4b05-8830-1fd9490a8532/claim",
+    "path": "/api/expeditions/398940c6-ddc8-4132-b021-a15f96839713/claim",
     "method": "POST",
     "body": {}
   },
@@ -78,13 +78,13 @@
     "method": "POST",
     "body": {
       "kind": "supply",
-      "creatureId": "5b471a5d-ed59-4ae7-9abd-bd0bec41f40d",
+      "creatureId": "846140b4-6d3a-434e-9bcd-d1fff7c70fe0",
       "supplyId": "lure-basic",
       "idempotencyKey": "trips-fixture-00000013-key"
     }
   },
   "workshop-claim-supply": {
-    "path": "/api/workshop/jobs/6f793869-1aba-49a4-8fe3-580d9437dc52/claim",
+    "path": "/api/workshop/jobs/4f149cce-0316-4f49-afdd-c31d1a1827ab/claim",
     "method": "POST",
     "body": {
       "idempotencyKey": "trips-fixture-00000014-key"
