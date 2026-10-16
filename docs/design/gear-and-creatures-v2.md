@@ -36,11 +36,11 @@ An item is `{ base, slot, tag, rarity, itemLevel, implicit, lines[], madeBy, mad
 
 ### 2.2 Slots and when they open
 
-| Slot  | Opens             | Leans to                                    | Only here                                                                                                         |
-| ----- | ----------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Hat   | From the start    | Attack, crits, first hits, element hunting  | Crit damage, First pounce                                                                                         |
-| Scarf | Creature level 7  | HP, damage taken, healing, wards            | All damage taken, Unbothered, Brace, Between-room rest                                                            |
-| Charm | Creature level 13 | Roles, reactions, trips, Workshop, elements | Cover, Boost, Spark-share, Lingering, Adaptation pierce, Quick feet, Lucky find, Packer, Apprentice, Tinker's eye |
+| Slot  | Opens             | Leans to                                    | Only here                                                                                            |
+| ----- | ----------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Hat   | From the start    | Attack, crits, first hits, element hunting  | Crit damage, First pounce                                                                            |
+| Scarf | Creature level 7  | HP, damage taken, healing, wards            | All damage taken, Unbothered, Brace, Between-room rest                                               |
+| Charm | Creature level 13 | Roles, reactions, trips, Workshop, elements | Cover, Boost, Spark-share, Lingering, Adaptation pierce, Quick feet, Lucky find, Packer, Apprentice, |
 
 ### 2.3 Bases
 
@@ -120,7 +120,7 @@ What this means over a journey (committed players): item level about 5 to 7 in w
 | Rare             | 4–8   | 1                                    | 0       | 3–8     |
 | Epic or Festival | 8–14  | 1–2                                  | 0–1     | 10–25   |
 
-Every full 5 item levels add 1 scrap to both ends. The crafter's Crafting level lifts the low end by one step for every 2 levels, never past the top: "2–4 scrap (your Magmole: 3–4)". Essence in the refund means an unwanted Epic from the raid funds the next Reach.
+Every full 5 item levels add 1 scrap to both ends. The refund does not depend on who dismantles (decision 2026-10-16, "Misa's answers to the review page's last questions"): a high-Crafting creature should not become the only one worth using.
 
 **Well-thumbed blueprints.** Every repeat find of a known blueprint (trips, the finale's blueprint slot, dismantle luck) adds a mark, shown as "Kelp Cap, well-thumbed 4 / 10". Today a repeat blueprint is 5 scrap; now it is progress toward better crafts of the item you keep making.
 
@@ -221,7 +221,6 @@ None of these touch combat, so a bench creature that never raids has gear worth 
 | Packer            | Chance of a supply find on its trips +%            | +10%    | +20%  | +30%    | +40%  | +50%  | —   | —     | 20    | C R E  | Rules   | Players who live on supplies                  |
 | Busy paws         | Workshop jobs it runs take −% time                 | −3%     | −5%   | −7%     | −9%   | −12%  | 10  | —     | 30    | C R E  | Rules   | The house crafter                             |
 | Apprentice        | Crafting XP it earns +%                            | +8%     | +14%  | +20%    | +27%  | +35%  | —   | —     | 25    | C R E  | Rules   | A creature being raised as the crafter        |
-| Tinker's eye      | Dismantles it runs: the refund's low end +steps    | +1      | +1    | +2      | +2    | +3    | —   | —     | 15    | C R E  | Rules   | The house crafter                             |
 | Growing           | Creature experience from every activity +%         | +4%     | +6%   | +9%     | +12%  | +15%  | 5   | 10    | 20    | C R E  | Rules   | A second trio catching up                     |
 | Between-room rest | In the dungeon, recovers % of max HP between rooms | +2%     | +3%   | +4%     | +5%   | +7%   | —   | 30    | —     | C R E  | Dungeon | The dungeon creature that takes the most hits |
 
