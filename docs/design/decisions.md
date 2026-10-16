@@ -1317,3 +1317,7 @@ Misa listened to the review episodes and agrees with the changes they proposed u
 - **Weather forecast:** today's and tomorrow's Boon and Omen are shown. In the living room they live on a clickable wall calendar or weather window that pops out of the background, animates and reacts to hover or tap, and now and then shows a speech bubble like the creatures do, as a quick glance at the game's state.
 - **Golden talents (1 in 20):** a golden talent is about 1.5 times a normal one (roughly a tier III gear line, a few percent of power). Every later duplicate of the line rolls a new talent and can Teach it, so any creature can still reach a golden talent; nobody restarts a creature for it.
 - **Unlock ladder:** Scarf at creature level 7, Charm at 13 (evolution stays at 15), talent slot 3 at 25, so a creature has something to look forward to every few levels (`gear-and-creatures-v2.md` 9.3a).
+
+## 2026-10-16: top-tier rolls stay at about 1 line in 7
+
+Misa agrees: at the highest item level about 1 line in 7 rolls tier V. A perfect item needs that on every line, so it stays rare while great items still arrive regularly.
