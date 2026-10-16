@@ -17,6 +17,7 @@
  * push-on result and the journal `tripRng`; each is drawn at the moment it is needed, never earlier.
  */
 import {
+  RULES,
   applyCatchToCollection,
   content,
   destinationDef,
@@ -67,7 +68,6 @@ import {
   type TripCatch,
   type ExpeditionLength,
   type FamiliarityRecord,
-  type GearRarity,
   type PartsBundle,
   type Rng,
   type SupplyDef,
@@ -94,7 +94,8 @@ import {
   takeSupply,
   visitPlace,
 } from './expedition-store';
-import { grantRankGift, grantTripLoot, type GrantView } from './gear-grants';
+import { grantRankGift, grantTripLoot, type DraftItem, type GrantView } from './gear-grants';
+import { gearRulesOf, minusBp } from './gear-worn';
 import { openJobOf } from './gear-store';
 import { devKey, type DevFlags } from './dev-state';
 import { credit, type LedgerStorage } from './ledger';
@@ -743,7 +744,11 @@ export class Expeditions {
 
     const special = week.destination === dest.id ? week.twistId : null;
     const rolls = tripRolls(input.duration, kit, twistOf(special));
-    const ms = tripMs(input.duration, explorer.rank);
+    // Quick feet lines on the explorer's gear shorten the trip (fixed when it is sent).
+    const ms = minusBp(
+      tripMs(input.duration, explorer.rank),
+      gearRulesOf(this.sql, creature).quickFeetBp,
+    );
 
     for (const pick of input.supplies) {
       if (!takeSupply(this.sql, userId, pick.id)) {
@@ -944,6 +949,8 @@ export class Expeditions {
 
     const stats = statsOf(this.sql, userId);
     const milestones = milestoneBonuses(stats);
+    // What the explorer's gear does on trips (Lucky find, Keen nose, Packer, Trail XP), as it is worn now.
+    const gearRules = gearRulesOf(this.sql, explorer);
     const explorerBefore = this.explorerView(userId, explorer.id);
     const famBefore = familiarityOf(this.sql, userId, explorer.id, dest.id);
     const starsBefore = familiarityStars(dest, famBefore);
@@ -968,7 +975,7 @@ export class Expeditions {
       explorer: { element: species.element, role: species.role },
       kit,
       stars: starsBefore,
-      milestoneRarityBp: milestones.rarityBp,
+      milestoneRarityBp: milestones.rarityBp + gearRules.luckyFindBp,
       twist,
       ownedLines: owned,
       dupeStreak: progress.dupe_streak,
@@ -1013,17 +1020,15 @@ export class Expeditions {
             milestonePartsBp: milestones.partsBp,
             twist,
             rank,
+            gearPartsBp: gearRules.keenNoseBp,
+            gearSupplyBp: gearRules.packerBp,
           },
           { completed: finished, caught: count, rolls: expedition.rolls },
         );
         const parts: PartsBundle = { ...drawn.parts };
         const blueprints = drawn.blueprint === null ? [] : [drawn.blueprint];
         const supplies = [...drawn.supplies];
-        const gear: {
-          baseId: string;
-          rarity: GearRarity;
-          rolls: ReturnType<typeof rollGearDrop>['rolls'];
-        }[] = [];
+        const gear: DraftItem[] = [];
         if (worked !== null) {
           for (const [kind, amount] of Object.entries(partsOfSpec(worked.reward.parts)) as [
             keyof PartsBundle,
@@ -1033,7 +1038,17 @@ export class Expeditions {
           }
           if (worked.reward.supply === true) supplies.push(foundSupplyId(rng, rank));
           if (worked.reward.blueprint === true) blueprints.push(rollBlueprint(rng));
-          if (worked.reward.gear !== undefined) gear.push(rollGearDrop(rng, worked.reward.gear));
+          if (worked.reward.gear !== undefined) {
+            // The place's element is the tag, the Old Crossroads gives explorer pieces, and the item
+            // level is twice the finder's explorer rank.
+            const item = rollGearDrop(
+              rng,
+              worked.reward.gear,
+              { element: dest.element ?? null, crossroads: dest.id === RULES.gear.compassPlace },
+              rank,
+            );
+            gear.push({ item, origin: { kind: 'trip', place: dest.id, rank } });
+          }
         }
         return { parts, blueprints, supplies, gear };
       },
@@ -1102,7 +1117,10 @@ export class Expeditions {
     const sumBefore = this.rankSumOf(userId);
     const tripsBefore = p.stats.trips_finished ?? 0;
     const bonusBp =
-      p.milestoneXpBp + (p.twist?.kind === 'xp' ? p.twist.bp : 0) + (p.worked?.reward.xpBp ?? 0);
+      p.milestoneXpBp +
+      (p.twist?.kind === 'xp' ? p.twist.bp : 0) +
+      (p.worked?.reward.xpBp ?? 0) +
+      gearRulesOf(this.sql, explorer).trailXpBp;
     const gained = tripXp(expedition.duration, bonusBp);
     const after = addExplorerTrip(this.sql, userId, explorer.id, gained);
     const rankAfter = explorerRank(after.xp);

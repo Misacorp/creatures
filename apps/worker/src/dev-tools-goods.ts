@@ -8,6 +8,7 @@
  * a species' cap, a rarity a base cannot have, a full bag) is still refused.
  */
 import {
+  blueprintBases,
   RULES,
   allSpecies,
   destinationDef,
@@ -17,7 +18,7 @@ import {
   int,
   pickQuirk,
   rarityFitsBase,
-  rollGear,
+  rollItem,
   skillLevel,
   type GearRarity,
   type PartsBundle,
@@ -105,10 +106,10 @@ export function grantSupplies(ctx: ToolCtx, body: Body<typeof GrantSuppliesBodyS
 
 export function grantBlueprints(ctx: ToolCtx, body: Body<typeof GrantBlueprintsBodySchema>) {
   const bases =
-    'all' in body ? gearContent.bases : gearContent.bases.filter((b) => b.id === body.baseId);
+    'all' in body ? blueprintBases() : blueprintBases().filter((b) => b.id === body.baseId);
   let learned = 0;
   for (const base of bases) {
-    if (learnBlueprint(ctx.sql, ctx.userId, base.id, base.blueprint, ctx.now)) learned++;
+    if (learnBlueprint(ctx.sql, ctx.userId, base.id, ctx.now)) learned++;
   }
   return { learned, known: knownBlueprints(ctx.sql, ctx.userId).length };
 }
@@ -258,25 +259,18 @@ export function finishJobs(ctx: ToolCtx) {
   return { finished: done.length };
 }
 
-/** Gives the caller one item (its rolls drawn now from live randomness). Refused when the bag is full. */
+/** Gives the caller one item (its lines drawn now from live randomness). Refused when the bag is full. */
 export function grantGear(ctx: ToolCtx, body: Body<typeof GrantGearBodySchema>) {
   const base = gearBase(body.baseId);
   if (base === undefined) throw new DevError(400, 'invalid_base');
   if (!rarityFitsBase(base, body.rarity)) throw new DevError(400, 'rarity_mismatch');
   if (!hasRoom(ctx.sql, ctx.userId)) throw new DevError(409, 'bag_full');
-  const gearId = insertItem(
-    ctx.sql,
-    ctx.userId,
-    { baseId: base.id, rarity: body.rarity, rolls: rollGear(ctx.gearRng, base.id, body.rarity) },
-    'dev',
-    ctx.now,
-  );
-  ctx.sql.exec(
-    'UPDATE gear_items SET level = ?, enchant_id = ? WHERE id = ?',
-    body.level ?? 0,
-    body.enchantId ?? null,
-    gearId,
-  );
+  const item = rollItem(ctx.gearRng, {
+    baseId: base.id,
+    rarity: body.rarity,
+    itemLevel: body.itemLevel ?? 1,
+  });
+  const gearId = insertItem(ctx.sql, ctx.userId, item, { source: 'dev', now: ctx.now });
   return { gearId };
 }
 
@@ -291,16 +285,15 @@ export function fillBag(ctx: ToolCtx) {
     const base = bases[int(ctx.gearRng, bases.length)];
     if (base === undefined) break;
     const rarity: GearRarity =
-      base.blueprint === 'festival'
+      base.festival === true
         ? 'festival'
         : (NORMAL_RARITIES[int(ctx.gearRng, NORMAL_RARITIES.length)] ?? 'common');
-    insertItem(
-      ctx.sql,
-      ctx.userId,
-      { baseId: base.id, rarity, rolls: rollGear(ctx.gearRng, base.id, rarity) },
-      'dev',
-      ctx.now,
-    );
+    const item = rollItem(ctx.gearRng, {
+      baseId: base.id,
+      rarity,
+      itemLevel: 1 + int(ctx.gearRng, RULES.gear.maxItemLevel),
+    });
+    insertItem(ctx.sql, ctx.userId, item, { source: 'dev', now: ctx.now });
     added++;
   }
   return { added, items: countItems(ctx.sql, ctx.userId), cap };

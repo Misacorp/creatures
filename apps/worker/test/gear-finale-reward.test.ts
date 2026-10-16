@@ -1,23 +1,25 @@
 import {
   RULES,
+  blueprintBases,
+  content,
   createSeededRng,
-  droppableBases,
   dismantleYield,
-  finaleUpgradeLevel,
+  finaleItemLevel,
   rollFinaleReward,
-  upgradeCost,
-  type GearRarity,
   type PartsBundle,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { grantRaidFinale, recentGrants, type GrantDeps } from '../src/gear-grants';
+import { grantRaidFinale, normaliseGrant, recentGrants, type GrantDeps } from '../src/gear-grants';
 import { learnBlueprint } from '../src/gear-store';
+import { giveItem } from './gear-helpers';
 import { runCore, type CoreContext } from './helpers';
 import { nextGuild, rows, seedPlayer } from './raid-helpers';
 
-/** The finale's reward slot through the real grant, ledger and routes (docs/design/gear.md). */
+/** The finale's reward slot through the real grant, ledger and routes (docs/design/gear-and-creatures-v2.md). */
 
 const WEEK = '2027-W03';
+const BOSS = content.bosses[0]?.id ?? '';
+const ELEMENT = content.bosses[0]?.element ?? 'tide';
 
 function deps(ctx: CoreContext, seed: string): GrantDeps & { drawn: () => number } {
   const inner = createSeededRng(seed);
@@ -38,39 +40,56 @@ function deps(ctx: CoreContext, seed: string): GrantDeps & { drawn: () => number
 /** A player who knows every blueprint, so the slot can only be gear. */
 function seedKnowingAll(ctx: CoreContext, n: number): string {
   const player = seedPlayer(ctx, n, { level: 10 });
-  for (const base of droppableBases()) {
-    learnBlueprint(ctx.sql, player.id, base.id, base.blueprint, ctx.clock.t);
+  for (const base of blueprintBases()) {
+    learnBlueprint(ctx.sql, player.id, base.id, ctx.clock.t);
   }
   return player.id;
 }
 
 describe('the finale reward slot at the server', () => {
-  it('pays gear pre-upgraded by Boss Rank: +0, +0, +1, +4, +5, +5 at ranks 1, 2, 3, 9, 11, 30', async () => {
+  it('pays gear at item level 3 + Boss Rank, at most 20: 5, 10, 15, 20 at ranks 2, 7, 12, 17', async () => {
     await runCore(nextGuild(), (ctx) => {
       const d = deps(ctx, 'finale-levels');
-      const expected = new Map([
-        [1, 0],
-        [2, 0],
-        [3, 1],
-        [9, 4],
-        [11, 5],
-        [30, 5],
-      ]);
       let i = 1;
-      for (const [rank, level] of expected) {
+      for (const [rank, level] of [
+        [1, 4],
+        [2, 5],
+        [7, 10],
+        [12, 15],
+        [17, 20],
+        [30, 20],
+      ] as const) {
         const userId = seedKnowingAll(ctx, i++);
-        const view = grantRaidFinale(d, userId, WEEK, rank);
-        expect(finaleUpgradeLevel(rank)).toBe(level);
+        const view = grantRaidFinale(d, userId, WEEK, rank, BOSS);
+        expect(finaleItemLevel(rank)).toBe(level);
         expect(view.gear).toHaveLength(1);
         expect(view.blueprints).toEqual([]);
-        // The view says "+N" only when N > 0 (older grants have no level at all).
-        expect(view.gear[0]?.level).toBe(level === 0 ? undefined : level);
-        const row = rows<{ level: number }>(
+        expect(view.gear[0]?.itemLevel).toBe(level);
+        const row = rows<{ item_level: number; origin_json: string; source: string }>(
           ctx.sql,
-          'SELECT level FROM gear_items WHERE user_id = ?',
+          'SELECT item_level, origin_json, source FROM gear_items WHERE user_id = ?',
           userId,
         )[0];
-        expect(row?.level).toBe(level);
+        expect(row?.item_level).toBe(level);
+        expect(row?.source).toBe('raid_finale');
+        // Where it came from: the boss and the rank.
+        expect(JSON.parse(row?.origin_json ?? '{}')).toEqual({ kind: 'raid', boss: BOSS, rank });
+      }
+    });
+  });
+
+  it('gives the piece the boss’s element as its tag (a role Charm now and then)', async () => {
+    await runCore(nextGuild(), (ctx) => {
+      const d = deps(ctx, 'finale-tag');
+      for (let i = 1; i <= 120; i++) {
+        const userId = seedKnowingAll(ctx, i);
+        grantRaidFinale(d, userId, WEEK, 5, BOSS);
+      }
+      const tags = rows<{ tag: string; slot: string }>(ctx.sql, 'SELECT tag, slot FROM gear_items');
+      expect(tags).toHaveLength(120);
+      for (const t of tags) {
+        if (['setter', 'payoff', 'support', 'guard'].includes(t.tag)) expect(t.slot).toBe('charm');
+        else expect(t.tag).toBe(ELEMENT);
       }
     });
   });
@@ -89,8 +108,7 @@ describe('the finale reward slot at the server', () => {
             player.id,
           ).map((r) => r.base_id),
         );
-        const view = grantRaidFinale(d, player.id, WEEK, 6);
-        // Exactly one reward, ever.
+        const view = grantRaidFinale(d, player.id, WEEK, 6, BOSS);
         expect(view.gear.length + view.blueprints.length).toBe(1);
         const [bp] = view.blueprints;
         if (bp !== undefined) {
@@ -98,12 +116,12 @@ describe('the finale reward slot at the server', () => {
           expect(bp.duplicate).toBe(false);
           expect(known.has(bp.baseId)).toBe(false);
           expect(view.parts).toEqual({});
-          const learned = rows<{ base_id: string; rarity: GearRarity }>(
+          const learned = rows<{ base_id: string }>(
             ctx.sql,
-            'SELECT base_id, rarity FROM blueprints WHERE user_id = ?',
+            'SELECT base_id FROM blueprints WHERE user_id = ?',
             player.id,
           );
-          expect(learned).toEqual([{ base_id: bp.baseId, rarity: bp.rarity }]);
+          expect(learned).toEqual([{ base_id: bp.baseId }]);
         }
         const keys = rows<{ key: string }>(
           ctx.sql,
@@ -122,17 +140,24 @@ describe('the finale reward slot at the server', () => {
     await runCore(nextGuild(), (ctx) => {
       const player = seedPlayer(ctx, 1, { level: 10 });
       const d = deps(ctx, 'finale-retry');
-      const expected = rollFinaleReward(createSeededRng('finale-retry'), 8, new Set());
-      const first = grantRaidFinale(d, player.id, WEEK, 8);
+      const expected = rollFinaleReward(createSeededRng('finale-retry'), 8, ELEMENT, new Set());
+      const first = grantRaidFinale(d, player.id, WEEK, 8, BOSS);
       const drawn = d.drawn();
       expect(drawn).toBeGreaterThan(0);
-      if (expected.kind === 'gear') expect(first.gear[0]?.baseId).toBe(expected.baseId);
-      else expect(first.blueprints[0]?.baseId).toBe(expected.baseId);
+      if (expected.kind === 'gear') {
+        expect(first.gear[0]?.baseId).toBe(expected.item.baseId);
+        const lines = rows<{ lines_json: string }>(
+          ctx.sql,
+          'SELECT lines_json FROM gear_items WHERE user_id = ?',
+          player.id,
+        )[0]?.lines_json;
+        expect(JSON.parse(lines ?? '[]')).toEqual(expected.item.lines);
+      } else expect(first.blueprints[0]?.baseId).toBe(expected.baseId);
 
-      const again = grantRaidFinale(d, player.id, WEEK, 8);
+      const again = grantRaidFinale(d, player.id, WEEK, 8, BOSS);
       expect(again).toEqual(first);
       // Even at another rank: the stored grant wins.
-      expect(grantRaidFinale(d, player.id, WEEK, 30)).toEqual(first);
+      expect(grantRaidFinale(d, player.id, WEEK, 30, BOSS)).toEqual(first);
       expect(d.drawn()).toBe(drawn);
       const owned = (table: 'gear_items' | 'blueprints'): number =>
         rows<{ n: number }>(
@@ -144,14 +169,15 @@ describe('the finale reward slot at the server', () => {
     });
   });
 
-  it('still reads a grant stored before the reward slot (no level), and shows it next to new ones', async () => {
+  it('still reads a grant stored before gear v2: its old bases map to the new ones, nothing is paid again', async () => {
     await runCore(nextGuild(), (ctx) => {
       const player = seedPlayer(ctx, 1, { level: 10 });
       const old = {
-        gear: [{ id: 'old-item', baseId: 'trail-charm', rarity: 'common' }],
+        // The old Tidepool Charm (an HP charm, Tide) and an old rare blueprint of the Wave Band (speed, Tide).
+        gear: [{ id: 'old-item', baseId: 'tidepool-charm', rarity: 'common', level: 3 }],
         converted: [],
         parts: {},
-        blueprints: [],
+        blueprints: [{ baseId: 'wave-band', rarity: 'rare', duplicate: false }],
       };
       ctx.sql.exec(
         'INSERT INTO gear_grants (user_id, key, source, result_json, created_at) VALUES (?, ?, ?, ?, ?)',
@@ -162,111 +188,81 @@ describe('the finale reward slot at the server', () => {
         ctx.clock.t,
       );
       const d = deps(ctx, 'finale-old');
-      // The old key is never paid again.
-      expect(grantRaidFinale(d, player.id, '2026-W40', 9)).toEqual(old);
+      const shown = grantRaidFinale(d, player.id, '2026-W40', 9, BOSS);
       expect(d.drawn()).toBe(0);
+      // An old HP piece is a Scarf now; an old speed piece is a Charm.
+      expect(shown.gear[0]).toMatchObject({
+        id: 'old-item',
+        baseId: 'seafoam-scarf',
+        itemLevel: 1,
+      });
+      expect(shown.blueprints).toEqual([{ baseId: 'tidepool-charm', duplicate: false }]);
       const listed = recentGrants(ctx.sql, player.id, 10);
       expect(listed).toHaveLength(1);
-      expect(listed[0]?.gear[0]).toEqual(old.gear[0]);
-      expect(listed[0]?.gear[0]?.level).toBeUndefined();
+      expect(listed[0]?.gear[0]?.baseId).toBe('seafoam-scarf');
+      // A grant already in the new shape is left alone.
+      const fresh = {
+        gear: [{ id: 'x', baseId: 'trail-cap', rarity: 'common' as const, itemLevel: 4 }],
+        converted: [],
+        parts: {},
+        blueprints: [{ baseId: 'trail-charm', duplicate: true }],
+      };
+      expect(normaliseGrant(fresh)).toEqual(fresh);
     });
   });
 
-  it('turns an upgraded drop that does not fit into the scrap it is worth, upgrades included', async () => {
+  it('turns a drop that does not fit into the scrap it is worth', async () => {
     await runCore(nextGuild(), (ctx) => {
       const userId = seedKnowingAll(ctx, 1);
       for (let i = 0; i < RULES.gear.inventoryCap; i++) {
-        ctx.sql.exec(
-          `INSERT INTO gear_items (id, user_id, base_id, rarity, level, rolls_json, enchant_id, equipped_on, source, created_at)
-           VALUES (?, ?, 'trail-charm', 'common', 0, '{"primary":300,"secondary":[]}', NULL, NULL, 'test', ?)`,
-          `filler-${String(i)}`,
-          userId,
-          ctx.clock.t,
-        );
+        giveItem(ctx.sql, userId, 'trail-cap', { seed: `filler-${String(i)}`, now: ctx.clock.t });
       }
-      const view = grantRaidFinale(deps(ctx, 'finale-full'), userId, WEEK, 30);
+      const view = grantRaidFinale(deps(ctx, 'finale-full'), userId, WEEK, 30, BOSS);
       expect(view.gear).toEqual([]);
       const [converted] = view.converted;
-      expect(converted?.level).toBe(RULES.gear.maxLevel);
+      expect(converted?.itemLevel).toBe(20);
       expect(view.parts).toEqual(
         dismantleYield({
           baseId: converted?.baseId ?? '',
           rarity: converted?.rarity ?? 'common',
-          level: RULES.gear.maxLevel,
         }),
       );
     });
   });
 
-  it('is a valid item everywhere: stats, the next upgrade price, the upgrade itself and dismantling', async () => {
+  it('is a valid item everywhere: its card, its refund and dismantling', async () => {
     await runCore(nextGuild(), async (ctx) => {
       const userId = seedKnowingAll(ctx, 1);
       const user = { id: userId, displayName: 'Player 1' };
-      // Rank 7 gives +3.
-      const view = grantRaidFinale(deps(ctx, 'finale-valid'), userId, WEEK, 7);
+      const view = grantRaidFinale(deps(ctx, 'finale-valid'), userId, WEEK, 7, BOSS);
       const id = view.gear[0]?.id as string;
-      const rarity = view.gear[0]?.rarity as GearRarity;
+      const rarity = view.gear[0]?.rarity as 'common' | 'rare' | 'epic';
       const baseId = view.gear[0]?.baseId as string;
-      ctx.core.credit({
-        userId,
-        currency: 'essence',
-        amount: 100_000,
-        source: 'test',
-        idempotencyKey: 'finale-valid-essence',
-      });
-      ctx.sql.exec(
-        "INSERT INTO parts (user_id, kind, amount) VALUES (?, 'scrap', 10000) ON CONFLICT(user_id, kind) DO UPDATE SET amount = 10000",
-        userId,
-      );
       const secret = await ctx.core.createSession(ctx.guildId, user);
-      const get = async () => {
-        const res = await ctx.request(secret, '/api/gear');
-        return (
-          await res.json<{
-            items: {
-              id: string;
-              level: number;
-              maxLevel: number;
-              primary: { bp: number };
-              upgradeCost: { essence: number; scrap: number } | null;
-              dismantle: PartsBundle;
-            }[];
-          }>()
-        ).items.find((i) => i.id === id);
-      };
-      const before = await get();
-      expect(before?.level).toBe(3);
-      expect(before?.upgradeCost).toEqual(upgradeCost({ rarity, level: 3 }));
-      expect(before?.dismantle).toEqual(dismantleYield({ baseId, rarity, level: 3 }));
-      // Price and refund count the three levels it came with: it is worth more than a +0 one.
-      expect(before?.dismantle.scrap ?? 0).toBeGreaterThan(
-        dismantleYield({ baseId, rarity, level: 0 }).scrap ?? 0,
-      );
-
-      // The step for each level is added to the roll: the shown main stat is roll + 3 steps.
-      const rolls = JSON.parse(
-        rows<{ rolls_json: string }>(
-          ctx.sql,
-          'SELECT rolls_json FROM gear_items WHERE id = ?',
-          id,
-        )[0]?.rolls_json ?? '{}',
-      ) as { primary: number };
-      const stat = before?.primary.bp;
-      expect(stat).toBeGreaterThan(rolls.primary);
-
-      // Upgrading continues from +3 at +3's price, to +4 and then +5, and stops at the top.
-      for (const level of [4, 5]) {
-        const res = await ctx.request(secret, `/api/gear/${id}/upgrade`, 'POST', {
-          idempotencyKey: `finale-valid-up-${String(level)}-key`,
-        });
-        expect(res.status).toBe(200);
-        expect((await get())?.level).toBe(level);
+      const res = await ctx.request(secret, '/api/gear');
+      const item = (
+        await res.json<{
+          items: {
+            id: string;
+            itemLevel: number;
+            lines: { source: string; tier: number | null; bestTier: number | null }[];
+            dismantle: PartsBundle;
+          }[];
+        }>()
+      ).items.find((i) => i.id === id);
+      expect(item?.itemLevel).toBe(10);
+      expect(item?.dismantle).toEqual(dismantleYield({ baseId, rarity }));
+      // The card says the best tier this item level allows (III at item level 10).
+      const rolled = item?.lines.filter((l) => l.source === 'rolled') ?? [];
+      expect(rolled).toHaveLength(RULES.gear.rolledLines[rarity]);
+      for (const l of rolled) {
+        expect(l.bestTier).toBe(3);
+        expect(l.tier ?? 0).toBeLessThanOrEqual(3);
       }
-      expect((await get())?.upgradeCost).toBeNull();
-      const top = await ctx.request(secret, `/api/gear/${id}/upgrade`, 'POST', {
-        idempotencyKey: 'finale-valid-up-top-key',
+      const out = await ctx.request(secret, `/api/gear/${id}/dismantle`, 'POST', {
+        idempotencyKey: 'finale-valid-dismantle',
       });
-      expect(top.status).toBe(409);
+      expect(out.status).toBe(200);
     });
   });
 });

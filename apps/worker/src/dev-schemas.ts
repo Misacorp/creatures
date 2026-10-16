@@ -63,7 +63,6 @@ const DESTINATION_IDS = expeditionContent.destinations.map((d) => d.id) as [stri
 const GOAL_IDS = expeditionContent.goals.map((g) => g.id) as [string, ...string[]];
 const JOURNAL_IDS = expeditionContent.journal.entries.map((e) => e.id) as [string, ...string[]];
 const BASE_IDS = gearContent.bases.map((b) => b.id) as [string, ...string[]];
-const ENCHANT_IDS = gearContent.enchants.map((e) => e.id) as [string, ...string[]];
 const BOSS_IDS = content.bosses.map((b) => b.id) as [string, ...string[]];
 const MODIFIER_IDS = dungeonContent.modifiers.map((m) => m.id) as [string, ...string[]];
 
@@ -176,8 +175,8 @@ export const SetCraftingXpBodySchema = v.strictObject({
 export const GrantGearBodySchema = v.strictObject({
   baseId: v.picklist(BASE_IDS),
   rarity: v.picklist(['common', 'rare', 'epic', 'festival']),
-  level: v.optional(int(0, RULES.gear.maxLevel)),
-  enchantId: v.optional(v.picklist(ENCHANT_IDS)),
+  /** The item level (1 to 20); default 1. */
+  itemLevel: v.optional(int(1, RULES.gear.maxItemLevel)),
 });
 
 // --- Expeditions ---

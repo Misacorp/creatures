@@ -1004,6 +1004,41 @@ describe('trip loot', () => {
   };
   const done = { completed: true, caught: 1, rolls: 1 };
 
+  it('gear: Keen nose adds to the parts bonus and Packer grows the supply find chance by its share', () => {
+    const plainCtx = {
+      role: base.role,
+      kit: base.kit,
+      stars: base.stars,
+      milestonePartsBp: base.milestonePartsBp,
+      twist: base.twist,
+    };
+    expect(partsBonusBp({ ...plainCtx, gearPartsBp: 1_500 })).toBe(partsBonusBp(plainCtx) + 1_500);
+    expect(partsBonusBp({ ...plainCtx, gearPartsBp: 0 })).toBe(partsBonusBp(plainCtx));
+    // A day trip at rank 1: the supply find chance is 4500 basis points, with Packer +50% it is 6750.
+    const found = (gearSupplyBp: number): number => {
+      let n = 0;
+      for (let i = 0; i < 4_000; i++) {
+        const loot = rollTripLoot(
+          createSeededRng(`packer-${String(i)}`),
+          { ...base, length: 'day', gearSupplyBp },
+          done,
+        );
+        n += loot.supplies.length;
+      }
+      return n / 4_000;
+    };
+    const chance = lengthRules('day').loot.supplyBp / 10_000;
+    expect(found(0)).toBeGreaterThan(chance - 0.04);
+    expect(found(0)).toBeLessThan(chance + 0.04);
+    expect(found(5_000)).toBeGreaterThan(chance * 1.5 - 0.04);
+    expect(found(5_000)).toBeLessThan(chance * 1.5 + 0.04);
+    // The same seed finds a supply with Packer whenever it found one without.
+    expect(
+      rollTripLoot(createSeededRng('same'), { ...base, length: 'day', gearSupplyBp: 5_000 }, done)
+        .parts,
+    ).toEqual(rollTripLoot(createSeededRng('same'), { ...base, length: 'day' }, done).parts);
+  });
+
   it('pays scrap by length, and a recall only the share that was caught', () => {
     for (const length of EXPEDITION_LENGTHS) {
       const loot = rollTripLoot(createSeededRng('scrap'), { ...base, length }, done);

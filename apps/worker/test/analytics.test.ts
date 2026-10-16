@@ -11,7 +11,6 @@ import {
   dungeonContent,
   expeditionContent,
   gearContent,
-  rollGear,
   type Rng,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
@@ -30,7 +29,8 @@ import {
 import { enqueuePost, recordOutcome, type PostSender } from '../src/discord-posts';
 import { getSessionKey } from '../src/session';
 import { grantFestivalCreature } from '../src/raid-festival';
-import { creditParts, insertItem } from '../src/gear-store';
+import { creditParts } from '../src/gear-store';
+import { giveItem } from './gear-helpers';
 import { GEAR_SOURCES } from '../src/analytics';
 import { LIVE_ROUND_MS, evaluate, loadLive, roundStartsOf } from '../src/raid-live';
 import { eventTimes } from '../src/raid-schedule';
@@ -311,7 +311,7 @@ describe('the event writer', () => {
         { species: 'unknown', role: 'setter' },
         { species: 'sproutle', role: 'guard' },
       ],
-      gear: 3,
+      gear: 9,
     });
     expect(
       propsOf({
@@ -1321,13 +1321,16 @@ function vocabulary(): Set<string> {
     ...GEAR_SOURCES,
     'equip',
     'unequip',
+    'hat',
+    'scarf',
+    'charm',
     ...gearContent.bases.map((b) => b.id),
     ...expeditionContent.destinations.map((d) => d.id),
     ...expeditionContent.supplies.map((s) => s.id),
     ...expeditionContent.goals.map((g) => g.id),
     ...expeditionContent.journal.entries.map((e) => e.id),
     ...expeditionContent.journal.sets.map((s) => s.id),
-    ...gearContent.enchants.map((e) => e.id),
+    ...gearContent.lines.map((l) => l.id),
     ...content.creatures.map((c) => c.id),
     ...content.bosses.map((b) => b.id),
     ...content.finaleAbilities.map((a) => a.id),
@@ -1427,8 +1430,7 @@ describe('privacy', () => {
         await call(ctx, a.secret, 'POST', `/api/expeditions/${v2.id}/claim`, {});
         await call(ctx, a.secret, 'GET', '/api/profile');
         await call(ctx, a.secret, 'GET', '/api/destinations');
-        // Gear and the workshop: the welcome kit, equip, upgrade, a craft, an improve, an enchant and
-        // a dismantle. Every one of them is logged with content ids and numbers only.
+        // Gear and the workshop: the welcome kit, equip, a craft and a dismantle. Every one of them is logged with content ids and numbers only.
         const kit = (await call(ctx, a.secret, 'GET', '/api/gear')).body as {
           items: { id: string }[];
         };
@@ -1436,22 +1438,18 @@ describe('privacy', () => {
         await call(ctx, a.secret, 'POST', `/api/gear/${kitItem}/equip`, {
           creatureId: a.starterId,
         });
-        ctx.core.credit({
-          userId: USER_ID,
-          currency: 'essence',
-          amount: 100,
-          source: 'test',
-          idempotencyKey: 'privacy-essence',
-        });
-        await call(ctx, a.secret, 'POST', `/api/gear/${kitItem}/upgrade`, {
-          idempotencyKey: newKey(),
-        });
         const blueprint = rows<{ base_id: string }>(
           ctx.sql,
           'SELECT base_id FROM blueprints WHERE user_id = ?',
           USER_ID,
         )[0]?.base_id as string;
-        creditParts(ctx.sql, USER_ID, { scrap: 30 });
+        creditParts(ctx.sql, USER_ID, {
+          scrap: 30,
+          'tide-shard': 2,
+          'ember-shard': 2,
+          'grove-shard': 2,
+          'spark-shard': 2,
+        });
         const crafting = await call(ctx, a.secret, 'POST', '/api/workshop/jobs', {
           kind: 'craft',
           creatureId: a.starterId,
@@ -1466,35 +1464,11 @@ describe('privacy', () => {
           idempotencyKey: newKey(),
         });
         expect(done.status).toBe(200);
-        const rare = insertItem(
-          ctx.sql,
-          USER_ID,
-          {
-            baseId: 'volt-band',
-            rarity: 'rare',
-            rolls: rollGear(createSeededRng('p'), 'volt-band', 'rare'),
-          },
-          'test',
-          ctx.clock.t,
-        );
-        creditParts(ctx.sql, USER_ID, { scrap: 20, glimmer: 2, 'spark-shard': 6 });
-        for (const body of [
-          { kind: 'improve', gearId: rare, secondaryIndex: 0 },
-          { kind: 'enchant', gearId: rare, enchantId: 'spark-luck' },
-        ]) {
-          const started = await call(ctx, a.secret, 'POST', '/api/workshop/jobs', {
-            ...body,
-            creatureId: a.starterId,
-            idempotencyKey: newKey(),
-          });
-          expect(started.status).toBe(200);
-          ctx.clock.t += 7 * HOUR;
-          a.secret = await ctx.core.createSession(ctx.guildId, USER, '555555555555555555');
-          const id = (started.body['result'] as { jobId: string }).jobId;
-          await call(ctx, a.secret, 'POST', `/api/workshop/jobs/${id}/claim`, {
-            idempotencyKey: newKey(),
-          });
-        }
+        const rare = giveItem(ctx.sql, USER_ID, 'thundercap', {
+          rarity: 'rare',
+          level: 4,
+          now: ctx.clock.t,
+        });
         await call(ctx, a.secret, 'POST', `/api/gear/${rare}/dismantle`, {
           idempotencyKey: newKey(),
         });
@@ -1560,7 +1534,6 @@ describe('privacy', () => {
           'phase_result',
           'gear_drop',
           'gear_equip',
-          'gear_upgrade',
           'gear_dismantle',
           'job_start',
           'job_claim',

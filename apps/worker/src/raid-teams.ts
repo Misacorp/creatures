@@ -4,23 +4,24 @@
  */
 import {
   RULES,
-  applyGear,
   creaturePower,
-  effectiveStats,
   strongest,
   type CreatureSpecies,
   type CritBonus,
+  type GearMods,
+  type GearRules,
   type Stats,
 } from '@creatures/game';
 import { speciesOf } from './collection';
-import { equippedByCreature, rowToItem, type GearRow } from './gear-store';
+import { equippedByCreature, type WornBySlot } from './gear-store';
+import { foldCreature } from './gear-worn';
 
 export const RAID_PHASE_STATUSES = ['open', 'phase1', 'phase2', 'finale'] as const;
 export type RaidStatus = (typeof RAID_PHASE_STATUSES)[number];
 
 /**
- * A creature as a raid sees it: current stats at the moment of reading, with the item it wears folded
- * in (`applyGear`, capped). Fight inputs are built from these at the moment a phase resolves or the
+ * A creature as a raid sees it: current stats at the moment of reading, with the items it wears folded
+ * in (`applyGear`: Attack, HP, crit and the modifier sheet). Fight inputs are built from these at the moment a phase resolves or the
  * live finale starts and then stored, so later gear changes never touch a fight that was built.
  */
 export interface TeamCreature {
@@ -35,6 +36,10 @@ export interface TeamCreature {
   stats: Stats;
   /** The crit bonus a fight uses (the species' plus gear's); absent when it has neither. */
   crit?: CritBonus;
+  /** The modifier sheet its gear fills (`FightSlot.mods`); absent when the gear fills nothing. */
+  mods?: GearMods;
+  /** What its gear does outside the fight (the dungeon's between-room rest reads it). */
+  gearRules: GearRules;
   /** `creaturePower` of `stats` (fusion and gear included). */
   power: number;
 }
@@ -49,15 +54,9 @@ type CreatureDbRow = {
   caught_at: number;
 };
 
-function toTeamCreature(row: CreatureDbRow, worn: GearRow | undefined): TeamCreature {
+function toTeamCreature(row: CreatureDbRow, worn: WornBySlot | undefined): TeamCreature {
   const species = speciesOf(row.species);
-  const folded = applyGear(
-    effectiveStats(species, row.level, row.fusion_count),
-    species.crit,
-    species.role,
-    species.element,
-    worn === undefined ? null : rowToItem(worn),
-  );
+  const folded = foldCreature(row, worn);
   return {
     id: row.id,
     userId: row.user_id,
@@ -68,6 +67,8 @@ function toTeamCreature(row: CreatureDbRow, worn: GearRow | undefined): TeamCrea
     caughtAt: row.caught_at,
     stats: folded.stats,
     ...(folded.crit === undefined ? {} : { crit: folded.crit }),
+    ...(folded.mods === undefined ? {} : { mods: folded.mods }),
+    gearRules: folded.rules,
     power: creaturePower(folded.stats),
   };
 }

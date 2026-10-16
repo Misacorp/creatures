@@ -19,8 +19,7 @@
       },
       "blueprints": [
         {
-          "baseId": "trail-charm",
-          "rarity": "common",
+          "baseId": "trail-cap",
           "duplicate": false
         }
       ],
@@ -35,7 +34,7 @@
     "rankGifts": [
       {
         "rank": 2,
-        "bait": 5,
+        "bait": 2,
         "parts": {
           "scrap": 1
         },
@@ -51,14 +50,14 @@
   "state": {
     "serverNow": 1799776800000,
     "balances": {
-      "bait": 205,
+      "bait": 202,
       "essence": 0
     },
     "starterChosen": false,
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "f4fccd97-fbdc-4952-9ff8-7ef2a2d8a34e",
+        "id": "fb75faf9-829b-42fa-a2f7-a3c42291f9bb",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -80,7 +79,7 @@
           "atk": 61,
           "spd": 42
         },
-        "gear": null,
+        "gear": [],
         "busy": null,
         "ability": {
           "id": "flare-strike",
@@ -103,7 +102,7 @@
         }
       },
       {
-        "id": "90bd306e-c0db-4d9b-8ce9-f63eff02abc7",
+        "id": "ca414449-980a-4a89-ae3e-085cd6af577d",
         "species": "splashet",
         "line": "splashet",
         "level": 8,
@@ -125,7 +124,7 @@
           "atk": 42,
           "spd": 46
         },
-        "gear": null,
+        "gear": [],
         "busy": null,
         "ability": {
           "id": "tidal-mark",
@@ -148,7 +147,7 @@
         }
       },
       {
-        "id": "5cbad59c-70bc-4136-8031-1d6ce57eb229",
+        "id": "e6cc7859-c0a4-4362-9e49-ee9af4071122",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -170,7 +169,7 @@
           "atk": 29,
           "spd": 23
         },
-        "gear": null,
+        "gear": [],
         "busy": null,
         "ability": {
           "id": "bark-guard",
@@ -193,7 +192,7 @@
         }
       },
       {
-        "id": "3896afb6-19ab-4bd3-a627-f1bc7138d298",
+        "id": "fc286444-8ed7-4559-bcc7-5e45a136f5c0",
         "species": "ashmole",
         "line": "ashmole",
         "level": 1,
@@ -204,7 +203,7 @@
         "away": false,
         "origin": "expedition",
         "caughtAt": 1799776800000,
-        "quirk": "polite-bower",
+        "quirk": "ashmole-daydreamer",
         "stats": {
           "hp": 128,
           "atk": 24,
@@ -215,7 +214,7 @@
           "atk": 24,
           "spd": 28
         },
-        "gear": null,
+        "gear": [],
         "busy": null,
         "ability": {
           "id": "warm-glow",
@@ -240,8 +239,8 @@
     ],
     "expeditions": [
       {
-        "id": "a96c95e0-3b2d-4152-893d-4ebd5f4ab1ce",
-        "creatureId": "f4fccd97-fbdc-4952-9ff8-7ef2a2d8a34e",
+        "id": "925139c9-fdff-40f8-a3e8-c1cd3bce6279",
+        "creatureId": "fb75faf9-829b-42fa-a2f7-a3c42291f9bb",
         "duration": "long",
         "supplies": "basic",
         "kit": [],
@@ -274,8 +273,7 @@
             },
             "blueprints": [
               {
-                "baseId": "trail-charm",
-                "rarity": "common",
+                "baseId": "trail-cap",
                 "duplicate": false
               }
             ],
@@ -290,7 +288,7 @@
           "rankGifts": [
             {
               "rank": 2,
-              "bait": 5,
+              "bait": 2,
               "parts": {
                 "scrap": 1
               },
@@ -331,7 +329,7 @@
         "holders": ["Player 2"]
       }
     ],
-    "loungerId": "f4fccd97-fbdc-4952-9ff8-7ef2a2d8a34e",
+    "loungerId": "ca414449-980a-4a89-ae3e-085cd6af577d",
     "loungeSpot": null
   }
 }

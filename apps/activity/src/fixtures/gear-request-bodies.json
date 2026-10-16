@@ -1,30 +1,34 @@
 {
   "equip": {
-    "path": "/api/gear/2e486da1-d4b1-477e-a3b3-c47a33da5703/equip",
+    "path": "/api/gear/05a010a5-6b71-467b-b3eb-802943b3afef/equip",
     "method": "POST",
     "body": {
-      "creatureId": "10d24d35-e868-4bd9-bd9f-4afca979cbcb"
+      "creatureId": "fb547299-1d99-4e91-b913-ed6029135236"
     }
   },
   "unequip": {
-    "path": "/api/gear/2e486da1-d4b1-477e-a3b3-c47a33da5703/equip",
+    "path": "/api/gear/05a010a5-6b71-467b-b3eb-802943b3afef/equip",
     "method": "POST",
     "body": {
       "creatureId": null
     }
   },
-  "upgrade": {
-    "path": "/api/gear/87ee5c5b-2e94-4a97-b049-f91d9ba18398/upgrade",
+  "equip-best": {
+    "path": "/api/gear/equip-best",
     "method": "POST",
     "body": {
-      "idempotencyKey": "fixture-00000001-key"
+      "creatureIds": [
+        "fb547299-1d99-4e91-b913-ed6029135236",
+        "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
+        "a4844dc1-e23f-4059-b04f-1554520a192a"
+      ]
     }
   },
   "dismantle": {
-    "path": "/api/gear/5b9512cc-119d-400c-9876-4b8dbb8c05da/dismantle",
+    "path": "/api/gear/63a8639a-76fa-42ba-8994-eab6bfb4b1d9/dismantle",
     "method": "POST",
     "body": {
-      "idempotencyKey": "fixture-00000013-key"
+      "idempotencyKey": "fixture-00000008-key"
     }
   },
   "job-craft": {
@@ -32,42 +36,25 @@
     "method": "POST",
     "body": {
       "kind": "craft",
-      "creatureId": "fd833d62-33dd-4a90-8c3b-388a26f47176",
-      "blueprintId": "wave-band",
-      "idempotencyKey": "fixture-00000002-key"
-    }
-  },
-  "job-improve": {
-    "path": "/api/workshop/jobs",
-    "method": "POST",
-    "body": {
-      "kind": "improve",
-      "creatureId": "a623e389-3d71-4fd5-8f2a-cbb80f7d0c41",
-      "gearId": "d370f1f6-5940-44bc-9113-ced5efbe8d3e",
-      "secondaryIndex": 0,
-      "idempotencyKey": "fixture-00000003-key"
-    }
-  },
-  "job-enchant": {
-    "path": "/api/workshop/jobs",
-    "method": "POST",
-    "body": {
-      "kind": "enchant",
-      "creatureId": "fd833d62-33dd-4a90-8c3b-388a26f47176",
-      "gearId": "2e486da1-d4b1-477e-a3b3-c47a33da5703",
-      "enchantId": "ember-fury",
-      "idempotencyKey": "fixture-00000011-key"
+      "creatureId": "a4844dc1-e23f-4059-b04f-1554520a192a",
+      "blueprintId": "kelp-cap",
+      "idempotencyKey": "fixture-00000001-key"
     }
   },
   "job-claim": {
-    "path": "/api/workshop/jobs/334ec40f-306c-48a7-89f0-9a485332001b/claim",
+    "path": "/api/workshop/jobs/c19e1cf5-ae2b-44ec-ad04-7456925c05bb/claim",
     "method": "POST",
     "body": {
-      "idempotencyKey": "fixture-00000010-key"
+      "idempotencyKey": "fixture-00000007-key"
     }
   },
   "expedition-claim": {
-    "path": "/api/expeditions/e6733e28-a9b4-4d0e-b8aa-de3d6de8672d/claim",
+    "path": "/api/expeditions/925139c9-fdff-40f8-a3e8-c1cd3bce6279/claim",
+    "method": "POST",
+    "body": {}
+  },
+  "notice-dismiss": {
+    "path": "/api/gear/conversion/dismiss",
     "method": "POST",
     "body": {}
   }

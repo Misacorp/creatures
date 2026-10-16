@@ -588,6 +588,10 @@ export interface TripLootContext {
   milestonePartsBp: number;
   twist: TwistEffect | null;
   rank: number;
+  /** Keen nose lines on the explorer's gear: more parts (basis points on top). Absent: none. */
+  gearPartsBp?: number;
+  /** Packer lines on the explorer's gear: the supply find chance grows by this share. Absent: none. */
+  gearSupplyBp?: number;
 }
 
 export interface TripLoot {
@@ -607,6 +611,7 @@ export function partsBonusBp(
     satchelBonus(ctx.kit).partsBp +
     familiarityBonus(ctx.stars).partsBp +
     ctx.milestonePartsBp +
+    (ctx.gearPartsBp ?? 0) +
     (ctx.twist?.kind === 'parts' ? ctx.twist.bp : 0)
   );
 }
@@ -643,7 +648,10 @@ export function rollTripLoot(
   addPart(parts, shardOf(ctx.shardElement), shards);
   if (chance(rng, Math.min(BP, table.glimmerBp), BP)) addPart(parts, 'glimmer', 1);
   const blueprint = chance(rng, Math.min(BP, table.blueprintBp), BP) ? rollBlueprint(rng) : null;
-  const supplyBp = Math.min(BP, table.supplyBp + satchelBonus(ctx.kit).supplyBp);
+  const supplyBp = Math.min(
+    BP,
+    scaleBp(table.supplyBp + satchelBonus(ctx.kit).supplyBp, ctx.gearSupplyBp ?? 0),
+  );
   const supplies = chance(rng, supplyBp, BP) ? [foundSupplyId(rng, ctx.rank)] : [];
   return { parts, blueprint, supplies };
 }

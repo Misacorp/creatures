@@ -452,6 +452,8 @@ export const RULES = {
      * utility lines up and every combat line down.
      */
     tagWeightBp: { own: 30_000, compassUtility: 30_000, compassCombat: 3_000 },
+    /** The place whose push-on finds are Crossroads Compasses (explorer pieces). */
+    compassPlace: 'old-crossroads',
     /** The slot of a dropped piece: weights (even by default). */
     dropSlotWeights: { hat: 1, scarf: 1, charm: 1 },
     /** A dropped Charm of the finale is role-locked with this chance (1 in 20). */
@@ -541,6 +543,8 @@ export const RULES = {
         multiplierBp: { common: 10_000, rare: 15_000, epic: 20_000, festival: 20_000 },
       },
       enchant: { glimmer: 1, shard: 3 },
+      /** The nominal hours of the two removed jobs (an Improve or Enchant still running pays the XP of these). */
+      jobHours: { improve: 2, enchant: 6 },
       /** What dismantling an old item returned (the rules before v2), by rarity. */
       dismantle: {
         scrap: { common: 2, rare: 5, epic: 10, festival: 10 },

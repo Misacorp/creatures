@@ -1,6 +1,6 @@
 {
   "run": {
-    "id": "6b66682a-0297-4364-9d5e-5595aa1087a6",
+    "id": "caf9a09c-b7eb-4324-bdba-0afaafe03308",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 7,
@@ -12,7 +12,7 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "d899bbfb-713a-4f7f-8a03-1794fa4952c4",
+        "id": "437650ed-ca17-40c4-8ff2-c25268484881",
         "name": "Tidewing",
         "speciesId": "tidewing",
         "element": "tide",
@@ -22,7 +22,7 @@
         "hpEnd": 131
       },
       {
-        "id": "e2e9f310-85e0-4853-9abd-37567f5ec4b7",
+        "id": "746f9350-905f-4d21-b825-f7a5771f5f1e",
         "name": "Pyrelynx",
         "speciesId": "pyrelynx",
         "element": "ember",
@@ -32,7 +32,7 @@
         "hpEnd": 356
       },
       {
-        "id": "74d691f7-8780-4f5b-b1f7-5b61d37e2bb6",
+        "id": "9ac139f8-23fc-474a-8ecf-9906a7a1a247",
         "name": "Thornbuck",
         "speciesId": "thornbuck",
         "element": "grove",
@@ -105,14 +105,15 @@
       "bait": 3,
       "essence": 3,
       "parts": {
-        "scrap": 3,
+        "scrap": 4,
         "glimmer": 1
       },
       "gear": [
         {
-          "id": "9b54dbc0-d77e-49e1-9f67-9fd18cc16a09",
-          "baseId": "cinder-charm",
-          "rarity": "rare"
+          "id": "0d3423aa-bc47-4b95-89b6-3fa360d6a851",
+          "baseId": "kelp-cap",
+          "rarity": "rare",
+          "itemLevel": 7
         }
       ],
       "converted": [],
@@ -162,7 +163,7 @@
     "canRun": false,
     "blocked": "already_run",
     "last": {
-      "id": "6b66682a-0297-4364-9d5e-5595aa1087a6",
+      "id": "caf9a09c-b7eb-4324-bdba-0afaafe03308",
       "day": "2027-01-12",
       "attempt": 1,
       "depth": 7,
@@ -174,7 +175,7 @@
       "createdAt": 1799755200000,
       "team": [
         {
-          "id": "d899bbfb-713a-4f7f-8a03-1794fa4952c4",
+          "id": "437650ed-ca17-40c4-8ff2-c25268484881",
           "name": "Tidewing",
           "speciesId": "tidewing",
           "element": "tide",
@@ -184,7 +185,7 @@
           "hpEnd": 131
         },
         {
-          "id": "e2e9f310-85e0-4853-9abd-37567f5ec4b7",
+          "id": "746f9350-905f-4d21-b825-f7a5771f5f1e",
           "name": "Pyrelynx",
           "speciesId": "pyrelynx",
           "element": "ember",
@@ -194,7 +195,7 @@
           "hpEnd": 356
         },
         {
-          "id": "74d691f7-8780-4f5b-b1f7-5b61d37e2bb6",
+          "id": "9ac139f8-23fc-474a-8ecf-9906a7a1a247",
           "name": "Thornbuck",
           "speciesId": "thornbuck",
           "element": "grove",
@@ -267,14 +268,15 @@
         "bait": 3,
         "essence": 3,
         "parts": {
-          "scrap": 3,
+          "scrap": 4,
           "glimmer": 1
         },
         "gear": [
           {
-            "id": "9b54dbc0-d77e-49e1-9f67-9fd18cc16a09",
-            "baseId": "cinder-charm",
-            "rarity": "rare"
+            "id": "0d3423aa-bc47-4b95-89b6-3fa360d6a851",
+            "baseId": "kelp-cap",
+            "rarity": "rare",
+            "itemLevel": 7
           }
         ],
         "converted": [],
@@ -291,9 +293,9 @@
       }
     },
     "lastTeam": [
-      "d899bbfb-713a-4f7f-8a03-1794fa4952c4",
-      "e2e9f310-85e0-4853-9abd-37567f5ec4b7",
-      "74d691f7-8780-4f5b-b1f7-5b61d37e2bb6"
+      "437650ed-ca17-40c4-8ff2-c25268484881",
+      "746f9350-905f-4d21-b825-f7a5771f5f1e",
+      "9ac139f8-23fc-474a-8ecf-9906a7a1a247"
     ],
     "draftTeam": null
   }

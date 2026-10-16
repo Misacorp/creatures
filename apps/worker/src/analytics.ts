@@ -23,6 +23,7 @@
 import {
   EXPEDITION_LENGTHS,
   GEAR_RARITIES,
+  GEAR_SLOTS,
   GOAL_RISKS,
   JOB_KINDS,
   PART_KINDS,
@@ -235,7 +236,13 @@ export type AnalyticsEvent =
       /** A grant of gear, parts or a blueprint. Content ids and counts only. */
       kind: 'gear_drop';
       source: GearSource;
-      gear: readonly { base: string; rarity: GearRarity }[];
+      gear: readonly {
+        base: string;
+        rarity: GearRarity;
+        /** The item level and the rolled lines (content ids and tiers 0 to 4). */
+        level?: number;
+        lines?: readonly { id: string; tier: number }[];
+      }[];
       /** Items that did not fit in a full inventory and became parts instead. */
       converted: number;
       scrap: number;
@@ -252,7 +259,9 @@ export type AnalyticsEvent =
       kind: 'gear_equip';
       base: string;
       rarity: GearRarity;
+      /** The item level. */
       level: number;
+      slot?: 'hat' | 'scarf' | 'charm';
       /** The species of the creature that got the item (or lost it, for 'unequip'). */
       species: string;
       action: 'equip' | 'unequip';
@@ -298,9 +307,8 @@ export type AnalyticsEvent =
       base: string;
       /** The rarity that came out (a craft) or the item's rarity. */
       rarity: GearRarity;
-      /** A craft that came out one rarity above its blueprint. */
+      /** A craft that came out one rarity above Common. */
       upgraded: boolean;
-      enchant: string | null;
       xp: number;
       skillLevel: number;
       leveledUp: boolean;
@@ -364,7 +372,7 @@ const SPECIES_IDS: ReadonlySet<string> = new Set(content.creatures.map((c) => c.
 const BOSS_IDS: ReadonlySet<string> = new Set(content.bosses.map((b) => b.id));
 const ABILITY_IDS: ReadonlySet<string> = new Set(content.finaleAbilities.map((a) => a.id));
 const GEAR_BASE_IDS: ReadonlySet<string> = new Set(gearContent.bases.map((b) => b.id));
-const ENCHANT_IDS: ReadonlySet<string> = new Set(gearContent.enchants.map((e) => e.id));
+const GEAR_LINE_IDS: ReadonlySet<string> = new Set(gearContent.lines.map((l) => l.id));
 const MODIFIER_IDS: ReadonlySet<string> = new Set(dungeonContent.modifiers.map((m) => m.id));
 const ROLE_IDS = ['setter', 'payoff', 'support', 'guard'] as const;
 const DESTINATION_IDS: ReadonlySet<string> = new Set(
@@ -591,9 +599,19 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
     case 'gear_drop':
       return {
         source: oneOf(GEAR_SOURCES, event.source, 'raid_phase'),
-        gear: event.gear
-          .slice(0, MAX_DROP_ITEMS)
-          .map((g) => ({ base: gearBase(g.base), rarity: gearRarity(g.rarity) })),
+        gear: event.gear.slice(0, MAX_DROP_ITEMS).map((g) => ({
+          base: gearBase(g.base),
+          rarity: gearRarity(g.rarity),
+          ...(g.level === undefined ? {} : { level: int(g.level, RULES.gear.maxItemLevel) }),
+          ...(g.lines === undefined
+            ? {}
+            : {
+                lines: g.lines.slice(0, 3).map((l) => ({
+                  id: fromSet(GEAR_LINE_IDS, l.id),
+                  tier: int(l.tier, 4),
+                })),
+              }),
+        })),
         converted: int(event.converted, 99),
         scrap: int(event.scrap),
         shards: int(event.shards),
@@ -609,7 +627,8 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
       return {
         base: gearBase(event.base),
         rarity: gearRarity(event.rarity),
-        level: int(event.level, RULES.gear.maxLevel),
+        level: int(event.level, RULES.gear.maxItemLevel),
+        ...(event.slot === undefined ? {} : { slot: oneOf(GEAR_SLOTS, event.slot, 'hat') }),
         species: species(event.species),
         action: event.action === 'unequip' ? 'unequip' : 'equip',
         swap: bool(event.swap),
@@ -618,8 +637,8 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
       return {
         base: gearBase(event.base),
         rarity: gearRarity(event.rarity),
-        from: int(event.from, RULES.gear.maxLevel),
-        to: int(event.to, RULES.gear.maxLevel),
+        from: int(event.from, 5),
+        to: int(event.to, 5),
         essence: int(event.essence),
         scrap: int(event.scrap),
       };
@@ -627,7 +646,7 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
       return {
         base: gearBase(event.base),
         rarity: gearRarity(event.rarity),
-        level: int(event.level, RULES.gear.maxLevel),
+        level: int(event.level, RULES.gear.maxItemLevel),
         scrap: int(event.scrap),
         shards: int(event.shards),
         glimmer: int(event.glimmer),
@@ -650,7 +669,6 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         base: fromSet(JOB_BASE_IDS, event.base),
         rarity: gearRarity(event.rarity),
         upgraded: bool(event.upgraded),
-        enchant: event.enchant === null ? null : fromSet(ENCHANT_IDS, event.enchant),
         xp: int(event.xp, 100_000),
         skillLevel: int(event.skillLevel, 99),
         leveledUp: bool(event.leveledUp),
@@ -667,7 +685,7 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         team: event.team
           .slice(0, 3)
           .map((t) => ({ species: species(t.species), role: oneOf(ROLE_IDS, t.role, 'setter') })),
-        gear: int(event.gear, 3),
+        gear: int(event.gear, 9),
       };
     case 'dungeon_reward':
       return {

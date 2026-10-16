@@ -1,4 +1,4 @@
-import { expeditionContent, gearContent } from '@creatures/game';
+import { blueprintBases, expeditionContent } from '@creatures/game';
 import * as v from 'valibot';
 import { IdSchema } from './collection-schemas';
 import { IdempotencyKeySchema } from './schemas';
@@ -6,12 +6,18 @@ import { IdempotencyKeySchema } from './schemas';
 /** Equip (a creature id) or unequip (null). The item is in the path, the player is the session's. */
 export const EquipBodySchema = v.strictObject({ creatureId: v.nullable(IdSchema) });
 
-export const UpgradeBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
+/** Equip best for one creature or a team: the creatures to plan for (at most 24, no repeats needed). */
+export const EquipBestBodySchema = v.strictObject({
+  creatureIds: v.pipe(v.array(IdSchema), v.minLength(1), v.maxLength(24)),
+});
+
+/** Dismisses the one-time conversion card: nothing to say. */
+export const DismissNoticeBodySchema = v.strictObject({});
+
 export const DismantleBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
 export const ClaimJobBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
 
-const BASE_IDS = gearContent.bases.map((b) => b.id);
-const ENCHANT_IDS = gearContent.enchants.map((e) => e.id);
+const BLUEPRINT_IDS = blueprintBases().map((b) => b.id) as [string, ...string[]];
 const SUPPLY_IDS = expeditionContent.supplies.map((s) => s.id);
 
 /** Each kind of job takes exactly its own fields: anything else is rejected. */
@@ -19,21 +25,7 @@ export const StartJobBodySchema = v.variant('kind', [
   v.strictObject({
     kind: v.literal('craft'),
     creatureId: IdSchema,
-    blueprintId: v.picklist(BASE_IDS),
-    idempotencyKey: IdempotencyKeySchema,
-  }),
-  v.strictObject({
-    kind: v.literal('improve'),
-    creatureId: IdSchema,
-    gearId: IdSchema,
-    secondaryIndex: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(1)),
-    idempotencyKey: IdempotencyKeySchema,
-  }),
-  v.strictObject({
-    kind: v.literal('enchant'),
-    creatureId: IdSchema,
-    gearId: IdSchema,
-    enchantId: v.picklist(ENCHANT_IDS),
+    blueprintId: v.picklist(BLUEPRINT_IDS),
     idempotencyKey: IdempotencyKeySchema,
   }),
   v.strictObject({
@@ -43,3 +35,6 @@ export const StartJobBodySchema = v.variant('kind', [
     idempotencyKey: IdempotencyKeySchema,
   }),
 ]);
+
+/** The two job kinds gear v2 removed: an old client that sends one gets a clear answer, not a validation error. */
+export const RemovedJobKindSchema = v.object({ kind: v.picklist(['improve', 'enchant']) });

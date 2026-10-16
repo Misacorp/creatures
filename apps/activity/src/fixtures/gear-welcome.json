@@ -2,7 +2,7 @@
   "serverNow": 1799733600000,
   "balances": {
     "bait": 100,
-    "essence": 179
+    "essence": 0
   },
   "inventory": {
     "cap": 60,
@@ -11,33 +11,57 @@
   },
   "items": [
     {
-      "id": "87ee5c5b-2e94-4a97-b049-f91d9ba18398",
-      "baseId": "trail-charm",
+      "id": "db53d67b-cc26-4419-9c56-31704fa16687",
+      "baseId": "trail-cap",
+      "slot": "hat",
+      "tag": "neutral",
       "rarity": "common",
-      "level": 0,
-      "maxLevel": 5,
-      "primary": {
-        "stat": "atk",
-        "bp": 422
+      "itemLevel": 1,
+      "lines": [
+        {
+          "id": "attack",
+          "name": "Attack",
+          "text": "Attack +2%",
+          "about": "Raises Attack by a share of the creature's own.",
+          "source": "base",
+          "tier": null,
+          "bestTier": null,
+          "active": null
+        },
+        {
+          "id": "grove-hunter",
+          "name": "Grove Hunter",
+          "text": "Grove Hunter +4%",
+          "about": "More damage to bosses and foes that Grove is strong against.",
+          "source": "rolled",
+          "tier": 1,
+          "bestTier": 1,
+          "active": null
+        }
+      ],
+      "needs": {
+        "level": 1,
+        "role": null
       },
-      "secondaries": [],
-      "enchantId": null,
-      "enchantActive": null,
       "equippedOn": null,
-      "jobId": null,
-      "upgradeCost": {
-        "essence": 20,
-        "scrap": 2
-      },
       "dismantle": {
         "scrap": 2
       },
       "source": "welcome",
-      "createdAt": 1799733600000
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": {
+        "kind": "welcome"
+      }
     }
   ],
+  "slotOpens": {
+    "hat": 1,
+    "scarf": 7,
+    "charm": 13
+  },
   "parts": {
-    "scrap": 8,
+    "scrap": 10,
     "tide-shard": 0,
     "ember-shard": 0,
     "grove-shard": 0,
@@ -46,9 +70,9 @@
   },
   "blueprints": [
     {
-      "baseId": "static-charm",
-      "rarity": "common",
-      "learnedAt": 1799733600000
+      "baseId": "trail-charm",
+      "learnedAt": 1799733600000,
+      "marks": 0
     }
   ],
   "jobs": [],
@@ -58,41 +82,41 @@
   },
   "skills": [
     {
-      "creatureId": "10d24d35-e868-4bd9-bd9f-4afca979cbcb",
+      "creatureId": "fb547299-1d99-4e91-b913-ed6029135236",
       "xp": 0,
       "level": 1,
-      "nextLevelXp": 80
+      "nextLevelXp": 100
     },
     {
-      "creatureId": "a623e389-3d71-4fd5-8f2a-cbb80f7d0c41",
+      "creatureId": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
       "xp": 0,
       "level": 1,
-      "nextLevelXp": 80
+      "nextLevelXp": 100
     },
     {
-      "creatureId": "fd833d62-33dd-4a90-8c3b-388a26f47176",
+      "creatureId": "a4844dc1-e23f-4059-b04f-1554520a192a",
       "xp": 0,
       "level": 1,
-      "nextLevelXp": 80
+      "nextLevelXp": 100
     }
   ],
   "grants": [
     {
       "gear": [
         {
-          "id": "87ee5c5b-2e94-4a97-b049-f91d9ba18398",
-          "baseId": "trail-charm",
-          "rarity": "common"
+          "id": "db53d67b-cc26-4419-9c56-31704fa16687",
+          "baseId": "trail-cap",
+          "rarity": "common",
+          "itemLevel": 1
         }
       ],
       "converted": [],
       "parts": {
-        "scrap": 8
+        "scrap": 10
       },
       "blueprints": [
         {
-          "baseId": "static-charm",
-          "rarity": "common",
+          "baseId": "trail-charm",
           "duplicate": false
         }
       ],
@@ -100,5 +124,6 @@
       "source": "welcome",
       "at": 1799733600000
     }
-  ]
+  ],
+  "notice": null
 }

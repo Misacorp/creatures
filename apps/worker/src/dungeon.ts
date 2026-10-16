@@ -666,12 +666,16 @@ export class Dungeon {
       return { index: plan.index, foe, modifier, hp, atk };
     });
     const enrage = dungeonBossEnrage();
+    // Between-room rest (a Scarf line): the share of max HP a standing creature recovers before each room.
+    const rest: Record<string, number> = {};
+    for (const c of standing) if (c.gearRules.restBp > 0) rest[c.id] = c.gearRules.restBp;
     const input: DungeonRunInput = {
       team: row,
       player: PLAYER,
       rooms,
       abilities,
       luck: { ...RULES.combat.luck },
+      ...(Object.keys(rest).length === 0 ? {} : { rest }),
       // The combat rules, the boss room's enrage and the depth (a landmark gives the room boss its
       // signature), stored with the input so a replay is exact.
       rules: liveFightRules(),
@@ -793,7 +797,7 @@ export class Dungeon {
         const loot = rollDungeonLoot(rng, depth, payout, boss?.foe.element ?? 'tide');
         return {
           parts: addParts({ scrap: payout.scrap, glimmer: payout.glimmer }, loot.parts),
-          gear: loot.gear,
+          gear: loot.gear.map((item) => ({ item, origin: { kind: 'dungeon' as const, depth } })),
           supplies: loot.supplies,
         };
       },

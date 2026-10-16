@@ -1,52 +1,57 @@
 /**
  * Gear and the workshop of a guild: the player's items, parts, blueprints, jobs and Crafting skill, and
- * the actions on them (equip, upgrade, dismantle, start and claim a job). Everything is synchronous and
- * runs inside `transactionSync`, so a check and the writes that depend on it can never be interleaved
- * with another request. The user is always an argument from the verified session.
+ * the actions on them (equip, Equip best, dismantle, start and claim a job). Everything is synchronous
+ * and runs inside `transactionSync`, so a check and the writes that depend on it can never be
+ * interleaved with another request. The user is always an argument from the verified session.
  *
- * Idempotency: upgrade, dismantle, start job and claim job carry the client's key. `gear_actions`
- * stores the result under (player, key) with a fingerprint of what the action was, so a retry returns
- * the stored result, and the same key on a different action is a `key_conflict`. The Essence an upgrade
- * costs goes through the ledger's `spend` (balance check, debit and upgrade in one transaction).
+ * Idempotency: dismantle, start job and claim job carry the client's key. `gear_actions` stores the
+ * result under (player, key) with a fingerprint of what the action was, so a retry returns the stored
+ * result, and the same key on a different action is a `key_conflict`. Equip and Equip best change no
+ * balance and repeat harmlessly, so they carry no key.
  *
- * Randomness: improve and craft results are drawn with the live RNG at the moment the job is claimed,
- * never when it starts, and a claimed job stores its result and never rolls again.
+ * Randomness: a craft's rarity, lines and tiers are drawn with the live RNG at the moment the job is
+ * claimed, never when it starts, and a claimed job stores its result and never rolls again.
+ *
+ * Gear v2 (docs/design/gear-and-creatures-v2.md): three slots, items with levels and rolled lines, no
+ * upgrades, Improve or enchants. A creature wears an item only if the wear rule allows it (the slot is
+ * open, the item's level is not above the creature's, a role-locked Charm fits the role).
  */
 import {
   RULES,
   craftCost,
-  craftRarity,
+  craftable,
   dismantleYield,
+  effectiveStats,
   gearBase,
-  enchantCost,
-  enchantDef,
-  improveCost,
-  itemEnchantActive,
+  itemLines,
   jobDuration,
   jobXp,
   nextSkillXp,
-  rerollSecondary,
-  rollGear,
+  partsOfSpec,
+  planEquipBest,
+  rollCraft,
   skillLevel,
   supplyDef,
   supplyJobMs,
   supplyJobXp,
-  partsOfSpec,
-  upgradeCost,
+  wearBlock,
+  wornEffects,
   PART_KINDS,
-  type GearJobKind,
   type GearRarity,
-  type GearStat,
+  type GearSlot,
+  type GearTag,
   type JobKind,
   type PartKind,
   type PartsBundle,
   type Rng,
+  type Role,
+  type WearBlock,
 } from '@creatures/game';
 import type { Analytics } from './analytics';
-import { speciesOf } from './collection';
-import { runKeyed, settleSpend } from './keyed-action';
+import { runKeyed } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import { addSupply } from './expedition-store';
+import { dismissNotice, pendingNotice, type ConversionNotice } from './gear-convert';
 import { grantWelcomeKit, recentGrants, type GrantRecord } from './gear-grants';
 import {
   addCreatureXp,
@@ -56,7 +61,6 @@ import {
   debitParts,
   findItem,
   getParts,
-  hasParts,
   hasRoom,
   insertItem,
   knowsBlueprint,
@@ -64,13 +68,16 @@ import {
   openJobCount,
   openJobOf,
   ownedItems,
-  parseRolls,
-  primaryOf,
+  parseOrigin,
   rowToItem,
+  wearerOf,
   type GearRow,
+  type ItemOrigin,
   type JobRow,
 } from './gear-store';
-import { getBalances, spend, type Currency, type LedgerStorage } from './ledger';
+import { gearRulesOf, minusBp, plusBp } from './gear-worn';
+import { getBalances, type Currency, type LedgerStorage } from './ledger';
+import { speciesOf } from './species';
 
 /** The gear rarity a supply tier is logged as (analytics) and a supply job is sized as. */
 const SUPPLY_RARITY = { basic: 'common', good: 'rare', great: 'epic' } as const;
@@ -85,6 +92,8 @@ const RECENT_CLAIMED_JOBS = 5;
 const RECENT_GRANTS = 20;
 /** Stored action results are kept this long; a retry comes within minutes. */
 const ACTION_RETENTION_MS = 30 * 86_400_000;
+/** Most creatures one Equip best call may plan for. */
+export const EQUIP_BEST_MAX_CREATURES = 24;
 
 export interface GearDeps {
   storage: LedgerStorage;
@@ -96,35 +105,48 @@ export interface GearDeps {
 
 // --- Views ---
 
+/** One line of an item as a card shows it. The text and the numbers are the server's. */
+export interface GearLineView {
+  id: string;
+  name: string;
+  /** "Attack +6%", "Area ward −9%", "Unbothered". */
+  text: string;
+  about: string;
+  source: 'base' | 'fixed' | 'rolled';
+  /** Tier I to V as 1 to 5; null for a base line and lines without tiers. */
+  tier: number | null;
+  /** The best tier this item level could roll (1 to 5); null where tiers do not apply. */
+  bestTier: number | null;
+  /** False when the line does nothing for the wearer; null when nobody wears the item. */
+  active: boolean | null;
+}
+
 export interface GearItemView {
   id: string;
   baseId: string;
+  slot: GearSlot;
+  tag: GearTag;
   rarity: GearRarity;
-  level: number;
-  maxLevel: number;
-  /** The main stat now: the roll plus the upgrade steps, in basis points (crit stats: crit points x 100). */
-  primary: { stat: GearStat; bp: number };
-  secondaries: { stat: GearStat; bp: number }[];
-  enchantId: string | null;
-  /** Whether the enchant works for the wearer; null when nobody wears the item or it has no enchant. */
-  enchantActive: boolean | null;
+  itemLevel: number;
+  lines: GearLineView[];
+  /** What a creature needs to wear it: its level (the slot's opening level or the item's, the higher) and the role of a role-locked Charm. */
+  needs: { level: number; role: Role | null };
   equippedOn: string | null;
-  /** The open workshop job that has this item (improve or enchant), or null. */
-  jobId: string | null;
-  /** The next upgrade's price, or null at the top level. */
-  upgradeCost: { essence: number; scrap: number } | null;
-  /** What dismantling it returns now. */
+  /** What dismantling it returns. */
   dismantle: PartsBundle;
   source: string;
   createdAt: number;
+  /** The creature that made it and when; null for items that were not crafted. */
+  madeBy: { name: string; at: number } | null;
+  origin: ItemOrigin | null;
 }
 
 export interface EquippedSummary {
   id: string;
   baseId: string;
+  slot: GearSlot;
   rarity: GearRarity;
-  level: number;
-  enchantId: string | null;
+  itemLevel: number;
 }
 
 export interface JobCommon {
@@ -142,37 +164,29 @@ export type JobResult =
       gearId: string;
       baseId: string;
       rarity: GearRarity;
-      /** The craft came out one rarity above its blueprint. */
+      itemLevel: number;
+      /** The craft came out one rarity above Common. */
       upgraded: boolean;
     } & JobCommon)
   | ({
-      kind: 'improve';
-      gearId: string;
-      baseId: string;
-      secondaryIndex: number;
-      from: { stat: GearStat; bp: number };
-      to: { stat: GearStat; bp: number };
-    } & JobCommon)
-  | ({ kind: 'enchant'; gearId: string; baseId: string; enchantId: string } & JobCommon)
-  | ({
+      /** A crafted supply for expeditions: `amount` of `supplyId` went into the stock. */
       kind: 'supply';
-      /** The supply crafted and how many came out. */
       supplyId: string;
       amount: number;
+    } & JobCommon)
+  | ({
+      /** An Improve or Enchant job started before gear v2: it paid its XP, and its parts came back. */
+      kind: 'retired';
+      was: 'improve' | 'enchant';
+      refund: PartsBundle;
     } & JobCommon);
 
 export interface JobView {
   id: string;
   creatureId: string;
-  kind: JobKind;
-  /** What the job works on: the base crafted, or the item and the choice made. */
-  input: {
-    baseId?: string;
-    gearId?: string;
-    enchantId?: string;
-    secondaryIndex?: number;
-    supplyId?: string;
-  };
+  kind: JobKind | 'improve' | 'enchant';
+  /** What the job works on: the base crafted, or the supply. */
+  input: { baseId?: string; supplyId?: string };
   /** The parts it cost when it started. */
   cost: PartsBundle;
   startedAt: number;
@@ -195,39 +209,30 @@ export interface GearState {
   balances: Record<Currency, number>;
   inventory: { cap: number; used: number; reserved: number };
   items: GearItemView[];
+  /** The creature level each slot opens at. */
+  slotOpens: Record<GearSlot, number>;
   parts: Record<PartKind, number>;
-  blueprints: { baseId: string; rarity: GearRarity; learnedAt: number }[];
+  blueprints: { baseId: string; learnedAt: number; marks: number }[];
   jobs: JobView[];
   slots: { total: number; used: number };
   skills: SkillView[];
   /** Newest loot first: keys are `raid:<week>:<phase>`, `festival:<week>`, `expedition:<id>` and `welcome`. */
   grants: GrantRecord[];
+  /** The one-time card about the conversion to gear v2, until the player dismisses it. */
+  notice: ConversionNotice | null;
 }
 
 export type StartJobInput =
   | { kind: 'craft'; creatureId: string; blueprintId: string; idempotencyKey: string }
-  | {
-      kind: 'improve';
-      creatureId: string;
-      gearId: string;
-      secondaryIndex: number;
-      idempotencyKey: string;
-    }
-  | {
-      kind: 'enchant';
-      creatureId: string;
-      gearId: string;
-      enchantId: string;
-      idempotencyKey: string;
-    }
   | { kind: 'supply'; creatureId: string; supplyId: string; idempotencyKey: string };
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 
 interface StoredInput {
   baseId?: string;
-  /** The rarity the duration and XP follow: the blueprint's, or the item's. */
-  rarity: GearRarity;
+  /** The rarity a job was sized by before gear v2 (unused now). */
+  rarity?: GearRarity;
+  /** Items of removed jobs (Improve, Enchant) only. */
   gearId?: string;
   enchantId?: string;
   secondaryIndex?: number;
@@ -237,6 +242,18 @@ interface StoredInput {
 
 const sumShards = (bundle: PartsBundle): number =>
   PART_KINDS.filter((k) => k.endsWith('-shard')).reduce((n, k) => n + (bundle[k] ?? 0), 0);
+
+/** The error a wear rule breach answers with. */
+function wearError(block: WearBlock): GameError {
+  switch (block.reason) {
+    case 'role':
+      return new GameError(409, 'wrong_role', block.role);
+    case 'slot_locked':
+      return new GameError(409, 'slot_locked', String(block.needs));
+    case 'item_level':
+      return new GameError(409, 'item_level_too_high', String(block.needs));
+  }
+}
 
 export class Gear {
   constructor(private readonly deps: GearDeps) {}
@@ -277,10 +294,24 @@ export class Gear {
   private ownedCreature(
     userId: string,
     id: string,
-  ): { id: string; species: string; away_expedition_id: string | null } {
+  ): {
+    id: string;
+    species: string;
+    level: number;
+    fusion_count: number;
+    nickname: string | null;
+    away_expedition_id: string | null;
+  } {
     const row = this.sql
-      .exec<{ id: string; species: string; away_expedition_id: string | null }>(
-        'SELECT id, species, away_expedition_id FROM creatures WHERE id = ? AND user_id = ?',
+      .exec<{
+        id: string;
+        species: string;
+        level: number;
+        fusion_count: number;
+        nickname: string | null;
+        away_expedition_id: string | null;
+      }>(
+        'SELECT id, species, level, fusion_count, nickname, away_expedition_id FROM creatures WHERE id = ? AND user_id = ?',
         id,
         userId,
       )
@@ -289,29 +320,56 @@ export class Gear {
     return row;
   }
 
-  private itemView(row: GearRow, jobId: string | null): GearItemView {
+  /** The Ids of lines that do nothing for the wearer of an item (empty when unworn). */
+  private idleLines(row: GearRow): ReadonlySet<string> {
+    if (row.equipped_on === null) return new Set();
+    const wearer = this.sql
+      .exec<{ species: string }>('SELECT species FROM creatures WHERE id = ?', row.equipped_on)
+      .toArray()[0];
+    if (wearer === undefined) throw new Error('item worn by a creature that does not exist');
+    return new Set(wornEffects(wearerOf(speciesOf(wearer.species)), [rowToItem(row)]).idle);
+  }
+
+  private itemView(row: GearRow): GearItemView {
     const item = rowToItem(row);
-    const wearerSpecies =
-      row.equipped_on === null ? null : speciesOf(wearerSpeciesId(this.sql, row.equipped_on));
+    const base = gearBase(row.base_id);
+    if (base === undefined) throw new Error('stored gear has an unknown base');
+    const idle = this.idleLines(row);
+    const worn = row.equipped_on !== null;
+    const role =
+      base.tag === 'setter' ||
+      base.tag === 'payoff' ||
+      base.tag === 'support' ||
+      base.tag === 'guard'
+        ? base.tag
+        : null;
     return {
       id: row.id,
       baseId: row.base_id,
+      slot: row.slot,
+      tag: item.tag,
       rarity: row.rarity,
-      level: row.level,
-      maxLevel: RULES.gear.maxLevel,
-      primary: primaryOf(item),
-      secondaries: item.rolls.secondary.map((s) => ({ ...s })),
-      enchantId: row.enchant_id,
-      enchantActive:
-        row.enchant_id === null || wearerSpecies === null
-          ? null
-          : itemEnchantActive(item, wearerSpecies.role, wearerSpecies.element),
+      itemLevel: row.item_level,
+      lines: itemLines(item).map((l) => ({
+        id: l.id,
+        name: l.name,
+        text: l.text,
+        about: l.about,
+        source: l.source,
+        tier: l.tier,
+        bestTier: l.bestTier,
+        active: worn ? !idle.has(l.id) : null,
+      })),
+      needs: { level: Math.max(RULES.gear.slotUnlockLevel[row.slot], row.item_level), role },
       equippedOn: row.equipped_on,
-      jobId,
-      upgradeCost: upgradeCost(item),
       dismantle: dismantleYield(item),
       source: row.source,
       createdAt: row.created_at,
+      madeBy:
+        row.made_by_name === null || row.made_at === null
+          ? null
+          : { name: row.made_by_name, at: row.made_at },
+      origin: parseOrigin(row.origin_json),
     };
   }
 
@@ -325,9 +383,6 @@ export class Gear {
       kind: row.kind,
       input: {
         ...(input.baseId === undefined ? {} : { baseId: input.baseId }),
-        ...(input.gearId === undefined ? {} : { gearId: input.gearId }),
-        ...(input.enchantId === undefined ? {} : { enchantId: input.enchantId }),
-        ...(input.secondaryIndex === undefined ? {} : { secondaryIndex: input.secondaryIndex }),
         ...(input.supplyId === undefined ? {} : { supplyId: input.supplyId }),
       },
       cost: input.cost,
@@ -357,9 +412,6 @@ export class Gear {
         RECENT_CLAIMED_JOBS,
       )
       .toArray();
-    const jobOfItem = new Map(
-      open.flatMap((j) => (j.gear_id === null ? [] : [[j.gear_id, j.id] as const])),
-    );
     const creatures = this.sql
       .exec<{ id: string }>(
         'SELECT id FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid',
@@ -383,7 +435,8 @@ export class Gear {
         used: rows.length,
         reserved: open.filter((j) => j.kind === 'craft').length,
       },
-      items: rows.map((row) => this.itemView(row, jobOfItem.get(row.id) ?? null)),
+      items: rows.map((row) => this.itemView(row)),
+      slotOpens: { ...RULES.gear.slotUnlockLevel },
       parts: getParts(this.sql, userId),
       blueprints: knownBlueprints(this.sql, userId),
       jobs: [...open, ...claimed].map((row) => this.jobView(row, now)),
@@ -394,14 +447,21 @@ export class Gear {
         return { creatureId: c.id, xp, level, nextLevelXp: nextSkillXp(level) };
       }),
       grants: recentGrants(this.sql, userId, RECENT_GRANTS),
+      notice: pendingNotice(this.sql, userId),
     };
+  }
+
+  /** Dismisses the one-time conversion card. Repeats change nothing. */
+  dismissNotice(userId: string): void {
+    dismissNotice(this.sql, userId, this.deps.now());
   }
 
   // --- The welcome kit ---
 
   /**
-   * Gives the player their welcome kit on their first gear load: a common item, a common blueprint and
-   * scrap. Once per player; later calls change nothing and draw nothing.
+   * Gives the player their welcome kit on their first gear load: a Common Hat (item level 1), a
+   * blueprint and scrap. Once per player; later calls change nothing and draw nothing. A player who
+   * was converted from the first gear model has had their kit already (their grant row stands).
    */
   ensureWelcome(userId: string): void {
     const done = this.sql
@@ -423,10 +483,34 @@ export class Gear {
 
   // --- Equip ---
 
+  private recordEquip(
+    row: GearRow,
+    species: string,
+    action: 'equip' | 'unequip',
+    swap: boolean,
+    userId: string,
+  ): void {
+    this.deps.analytics?.record(
+      {
+        kind: 'gear_equip',
+        base: row.base_id,
+        rarity: row.rarity,
+        level: row.item_level,
+        slot: row.slot,
+        species,
+        action,
+        swap,
+      },
+      userId,
+    );
+  }
+
   /**
-   * Puts an item on a creature, or takes it off with `creatureId` null. One item per creature: the
-   * item that was there goes back to the inventory (a swap). An item that was on another creature
-   * leaves it. Putting an item where it already is changes nothing and logs nothing.
+   * Puts an item on a creature, or takes it off with `creatureId` null. One item per slot per
+   * creature: the item that was in the slot goes back to the inventory (a swap). An item that was on
+   * another creature leaves it. The wear rule is checked on the server: the slot must be open, the
+   * item's level not above the creature's, a role-locked Charm on its role. Putting an item where it
+   * already is changes nothing and logs nothing.
    */
   equip(
     userId: string,
@@ -439,129 +523,123 @@ export class Gear {
       let displaced: GearRow | undefined;
       if (creature === null) {
         if (row.equipped_on !== null) {
-          const was = wearerSpeciesId(this.sql, row.equipped_on);
+          const was = this.sql
+            .exec<{ species: string }>(
+              'SELECT species FROM creatures WHERE id = ?',
+              row.equipped_on,
+            )
+            .toArray()[0];
           this.sql.exec('UPDATE gear_items SET equipped_on = NULL WHERE id = ?', row.id);
-          this.deps.analytics?.record(
-            {
-              kind: 'gear_equip',
-              base: row.base_id,
-              rarity: row.rarity,
-              level: row.level,
-              species: was,
-              action: 'unequip',
-              swap: false,
-            },
-            userId,
-          );
+          this.recordEquip(row, was?.species ?? '', 'unequip', false, userId);
         }
       } else if (row.equipped_on !== creature.id) {
+        const block = wearBlock(rowToItem(row), {
+          level: creature.level,
+          role: speciesOf(creature.species).role,
+        });
+        if (block !== null) throw wearError(block);
         displaced = this.sql
-          .exec<GearRow>('SELECT * FROM gear_items WHERE equipped_on = ?', creature.id)
+          .exec<GearRow>(
+            'SELECT * FROM gear_items WHERE equipped_on = ? AND slot = ?',
+            creature.id,
+            row.slot,
+          )
           .toArray()[0];
-        // Clear first: `equipped_on` is unique, so two items can never wear the same creature.
+        // Clear first: (equipped_on, slot) is unique, so a creature can never wear two items of a slot.
         if (displaced !== undefined) {
           this.sql.exec('UPDATE gear_items SET equipped_on = NULL WHERE id = ?', displaced.id);
         }
         this.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', creature.id, row.id);
-        this.deps.analytics?.record(
-          {
-            kind: 'gear_equip',
-            base: row.base_id,
-            rarity: row.rarity,
-            level: row.level,
-            species: creature.species,
-            action: 'equip',
-            swap: displaced !== undefined,
-          },
-          userId,
-        );
+        this.recordEquip(row, creature.species, 'equip', displaced !== undefined, userId);
       }
       const fresh = this.ownedItem(userId, gearId);
-      const open = openJobIds(this.sql, userId);
       return {
-        item: this.itemView(fresh, open.get(fresh.id) ?? null),
+        item: this.itemView(fresh),
         unequipped:
-          displaced === undefined
-            ? null
-            : this.itemView(this.ownedItem(userId, displaced.id), open.get(displaced.id) ?? null),
+          displaced === undefined ? null : this.itemView(this.ownedItem(userId, displaced.id)),
       };
     });
   }
 
-  // --- Upgrade ---
-
   /**
-   * Raises an item one level for Essence and scrap. Never fails once paid. The balance check, both
-   * debits and the new level happen in one transaction; a retry with the same key returns the stored
-   * result.
+   * "Equip best" for one creature or a team: the server picks, for every slot of every given creature,
+   * the best item it may wear from the bag and from what the given creatures wear now (never from other
+   * creatures), by `itemScore` (see `docs/design/decisions.md`: a deterministic score, not a fight). A
+   * slot changes only for a better item. Returns what changed.
    */
-  upgrade(
+  equipBest(
     userId: string,
-    gearId: string,
-    idempotencyKey: string,
-  ): Outcome<{ gearId: string; level: number }> {
-    return this.atomically(() =>
-      runKeyed(
-        this.sql,
-        this.deps.now,
-        { userId, key: idempotencyKey, kind: 'upgrade', fingerprint: gearId },
-        () => {
-          const row = this.ownedItem(userId, gearId);
-          const item = rowToItem(row);
-          const cost = upgradeCost(item);
-          if (cost === null) throw new GameError(409, 'max_level');
-          if (!hasParts(this.sql, userId, { scrap: cost.scrap })) {
-            throw new GameError(409, 'insufficient_parts');
-          }
-          const spent = spend(
-            this.deps.storage,
-            {
-              userId,
-              currency: 'essence',
-              amount: cost.essence,
-              purpose: 'gear',
-              idempotencyKey,
-              apply: () => {
-                if (!debitParts(this.sql, userId, { scrap: cost.scrap })) {
-                  throw new Error('scrap vanished inside the upgrade transaction');
-                }
-                const updated = this.sql
-                  .exec<{ level: number }>(
-                    'UPDATE gear_items SET level = level + 1 WHERE id = ? AND level = ? RETURNING level',
-                    row.id,
-                    row.level,
-                  )
-                  .toArray()[0];
-                if (updated === undefined) throw new Error('item changed inside the upgrade');
-                this.deps.analytics?.record(
-                  {
-                    kind: 'gear_upgrade',
-                    base: row.base_id,
-                    rarity: row.rarity,
-                    from: row.level,
-                    to: updated.level,
-                    essence: cost.essence,
-                    scrap: cost.scrap,
-                  },
-                  userId,
-                );
-                return { gearId: row.id, level: updated.level };
-              },
-            },
-            this.deps.now(),
+    creatureIds: readonly string[],
+  ): Outcome<{ changes: { creatureId: string; slot: GearSlot; itemId: string }[] }> {
+    return this.atomically(() => {
+      const unique = [...new Set(creatureIds)];
+      if (unique.length === 0 || unique.length > EQUIP_BEST_MAX_CREATURES) {
+        throw new GameError(400, 'invalid_body');
+      }
+      const creatures = unique.map((id) => this.ownedCreature(userId, id));
+      const rows = ownedItems(this.sql, userId);
+      const planned = new Set(unique);
+      const candidates = rows.filter((r) => r.equipped_on === null || planned.has(r.equipped_on));
+      const worn = new Map<string, Partial<Record<GearSlot, string>>>();
+      for (const r of rows) {
+        if (r.equipped_on === null || !planned.has(r.equipped_on)) continue;
+        worn.set(r.equipped_on, { ...worn.get(r.equipped_on), [r.slot]: r.id });
+      }
+      const moves = planEquipBest(
+        creatures.map((c) => {
+          const species = speciesOf(c.species);
+          return {
+            id: c.id,
+            level: c.level,
+            role: species.role,
+            element: species.element,
+            stats: effectiveStats(species, c.level, c.fusion_count),
+            worn: worn.get(c.id) ?? {},
+          };
+        }),
+        candidates.map((r) => ({ id: r.id, item: rowToItem(r) })),
+      );
+      const byId = new Map(rows.map((r) => [r.id, r]));
+      const speciesOfCreature = new Map(creatures.map((c) => [c.id, c.species]));
+      // Take everything that moves off first, so swaps between creatures never meet the unique index.
+      for (const move of moves) {
+        const old = worn.get(move.creatureId)?.[move.slot];
+        if (old !== undefined)
+          this.sql.exec('UPDATE gear_items SET equipped_on = NULL WHERE id = ?', old);
+        if (move.itemId !== null) {
+          this.sql.exec('UPDATE gear_items SET equipped_on = NULL WHERE id = ?', move.itemId);
+        }
+      }
+      const changes: { creatureId: string; slot: GearSlot; itemId: string }[] = [];
+      for (const move of moves) {
+        if (move.itemId === null) continue;
+        this.sql.exec(
+          'UPDATE gear_items SET equipped_on = ? WHERE id = ?',
+          move.creatureId,
+          move.itemId,
+        );
+        changes.push({ creatureId: move.creatureId, slot: move.slot, itemId: move.itemId });
+        const row = byId.get(move.itemId);
+        if (row !== undefined) {
+          this.recordEquip(
+            row,
+            speciesOfCreature.get(move.creatureId) ?? '',
+            'equip',
+            worn.get(move.creatureId)?.[move.slot] !== undefined,
+            userId,
           );
-          return settleSpend(spent);
-        },
-      ),
-    );
+        }
+      }
+      return { changes };
+    });
   }
 
   // --- Dismantle ---
 
   /**
    * Breaks an item into parts. An item that is being worn is taken off first (the in-page
-   * confirmation is the safeguard), but an item in an open workshop job is refused: finish the job
-   * first. Cannot be undone; a retry with the same key returns the stored result.
+   * confirmation is the safeguard). Cannot be undone; a retry with the same key returns the stored
+   * result.
    */
   dismantle(
     userId: string,
@@ -571,7 +649,7 @@ export class Gear {
     gearId: string;
     baseId: string;
     rarity: GearRarity;
-    level: number;
+    itemLevel: number;
     parts: PartsBundle;
     unequipped: boolean;
   }> {
@@ -582,7 +660,6 @@ export class Gear {
         { userId, key: idempotencyKey, kind: 'dismantle', fingerprint: gearId },
         () => {
           const row = this.ownedItem(userId, gearId);
-          if (openJobIds(this.sql, userId).has(row.id)) throw new GameError(409, 'item_busy');
           const item = rowToItem(row);
           const parts = dismantleYield(item);
           this.sql.exec('DELETE FROM gear_items WHERE id = ?', row.id);
@@ -592,7 +669,7 @@ export class Gear {
               kind: 'gear_dismantle',
               base: row.base_id,
               rarity: row.rarity,
-              level: row.level,
+              level: row.item_level,
               scrap: parts.scrap ?? 0,
               shards: sumShards(parts),
               glimmer: parts.glimmer ?? 0,
@@ -605,7 +682,7 @@ export class Gear {
             gearId: row.id,
             baseId: row.base_id,
             rarity: row.rarity,
-            level: row.level,
+            itemLevel: row.item_level,
             parts,
             unequipped: row.equipped_on !== null,
           };
@@ -618,17 +695,14 @@ export class Gear {
 
   /**
    * Starts a job on a creature that is not busy, in a free workshop slot. The parts are paid now (all
-   * or nothing); the result is rolled when the job is claimed. Returns the new job's id.
+   * or nothing); the result is rolled when the job is claimed. Returns the new job's id. Busy paws
+   * lines on the creature shorten it.
    */
   startJob(userId: string, input: StartJobInput): Outcome<{ jobId: string }> {
     const fingerprint = JSON.stringify(
       input.kind === 'craft'
         ? [input.kind, input.creatureId, input.blueprintId]
-        : input.kind === 'improve'
-          ? [input.kind, input.creatureId, input.gearId, input.secondaryIndex]
-          : input.kind === 'supply'
-            ? [input.kind, input.creatureId, input.supplyId]
-            : [input.kind, input.creatureId, input.gearId, input.enchantId],
+        : [input.kind, input.creatureId, input.supplyId],
     );
     return this.atomically(() =>
       runKeyed(
@@ -647,56 +721,24 @@ export class Gear {
           let rarity: GearRarity;
           let cost: PartsBundle;
           let baseId: string;
-          let gearId: string | null = null;
           // A supply craft has its own length (its hours, less the creature's skill).
           let supplyMs: number | null = null;
           const stored: Omit<StoredInput, 'cost' | 'rarity'> = {};
           const level = skillLevel(creatureXp(this.sql, userId, creature.id));
+          const busyBp = gearRulesOf(this.sql, creature).busyPawsBp;
           switch (input.kind) {
             case 'craft': {
               const base = gearBase(input.blueprintId);
-              if (base === undefined) throw new GameError(400, 'invalid_blueprint');
+              if (base === undefined || !craftable(base))
+                throw new GameError(400, 'invalid_blueprint');
               if (!knowsBlueprint(this.sql, userId, base.id)) {
                 throw new GameError(409, 'blueprint_unknown');
               }
               if (!hasRoom(this.sql, userId)) throw new GameError(409, 'inventory_full');
               baseId = base.id;
-              rarity = base.blueprint;
+              rarity = 'common';
               cost = craftCost(base.id);
               stored.baseId = base.id;
-              break;
-            }
-            case 'improve': {
-              const row = this.ownedItem(userId, input.gearId);
-              if (openJobIds(this.sql, userId).has(row.id)) throw new GameError(409, 'item_busy');
-              const price = improveCost(row.rarity);
-              const secondaries = parseRolls(row.rolls_json).secondary.length;
-              if (price === null || secondaries === 0)
-                throw new GameError(409, 'nothing_to_improve');
-              if (input.secondaryIndex >= secondaries)
-                throw new GameError(400, 'invalid_secondary');
-              baseId = row.base_id;
-              rarity = row.rarity;
-              cost = price;
-              gearId = row.id;
-              stored.gearId = row.id;
-              stored.secondaryIndex = input.secondaryIndex;
-              break;
-            }
-            case 'enchant': {
-              const row = this.ownedItem(userId, input.gearId);
-              if (openJobIds(this.sql, userId).has(row.id)) throw new GameError(409, 'item_busy');
-              const price = enchantCost(input.enchantId);
-              if (price === null || enchantDef(input.enchantId) === undefined) {
-                throw new GameError(400, 'invalid_enchant');
-              }
-              if (row.enchant_id === input.enchantId) throw new GameError(409, 'same_enchant');
-              baseId = row.base_id;
-              rarity = row.rarity;
-              cost = price;
-              gearId = row.id;
-              stored.gearId = row.id;
-              stored.enchantId = input.enchantId;
               break;
             }
             case 'supply': {
@@ -707,7 +749,7 @@ export class Gear {
               baseId = def.id;
               rarity = SUPPLY_RARITY[def.tier];
               cost = partsOfSpec(def.blueprint.parts);
-              supplyMs = supplyJobMs(def, level);
+              supplyMs = minusBp(supplyJobMs(def, level), busyBp);
               stored.supplyId = def.id;
               break;
             }
@@ -715,17 +757,16 @@ export class Gear {
           if (!debitParts(this.sql, userId, cost)) throw new GameError(409, 'insufficient_parts');
 
           const now = this.deps.now();
-          const duration = supplyMs ?? jobDuration(input.kind as GearJobKind, rarity, level);
+          const duration = supplyMs ?? jobDuration(level, busyBp);
           const id = crypto.randomUUID();
-          const row: StoredInput = { ...stored, rarity, cost };
+          const row: StoredInput = { ...stored, cost };
           this.sql.exec(
             `INSERT INTO workshop_jobs (id, user_id, creature_id, kind, gear_id, input_json, started_at, ends_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, NULL, ?, ?, ?)`,
             id,
             userId,
             creature.id,
             input.kind,
-            gearId,
             JSON.stringify(row),
             now,
             now + duration,
@@ -751,8 +792,10 @@ export class Gear {
 
   /**
    * Finishes a job that has run its time: rolls the result with live randomness, gives the creature
-   * its Crafting XP and frees it. Claiming again (with any key) returns the stored result and rolls
-   * nothing.
+   * its Crafting XP (more with Apprentice lines) and frees it. A craft is a Common of the blueprint's
+   * base at item level twice the crafter's Crafting level (with the small chance of one rarity up),
+   * made by this creature. Claiming again (with any key) returns the stored result and rolls nothing.
+   * An Improve or Enchant job from before gear v2 still finishes: it pays its XP and returns its parts.
    */
   claimJob(userId: string, jobId: string, idempotencyKey: string): Outcome<JobResult> {
     return this.atomically(() =>
@@ -771,13 +814,14 @@ export class Gear {
           const input = JSON.parse(job.input_json) as StoredInput;
           const creature = this.ownedCreature(userId, job.creature_id);
           const before = skillLevel(creatureXp(this.sql, userId, creature.id));
+          const apprenticeBp = gearRulesOf(this.sql, creature).apprenticeBp;
 
           // Rolled now, at claim time, from the live RNG: nothing was decided when the job started.
           let result: DistributiveOmit<JobResult, keyof JobCommon>;
           let analyticsBase: string;
           let analyticsRarity: GearRarity;
           let upgraded = false;
-          let enchant: string | null = null;
+          let xpBase: number;
           switch (job.kind) {
             case 'craft': {
               const baseId = input.baseId;
@@ -787,46 +831,28 @@ export class Gear {
                 // Cannot happen (a craft holds its place), but never lose the item if it does.
                 throw new GameError(409, 'inventory_full');
               }
-              const rarity = craftRarity(this.deps.rng, base.blueprint, before);
-              upgraded = rarity !== base.blueprint;
-              const rolls = rollGear(this.deps.rng, base.id, rarity);
-              const gearId = insertItem(
-                this.sql,
-                userId,
-                { baseId: base.id, rarity, rolls },
-                'craft',
+              const made = rollCraft(this.deps.rng, base.id, before);
+              upgraded = made.rarity !== 'common';
+              const gearId = insertItem(this.sql, userId, made, {
+                source: 'craft',
                 now,
-              );
-              result = { kind: 'craft', gearId, baseId: base.id, rarity, upgraded };
-              analyticsBase = base.id;
-              analyticsRarity = rarity;
-              break;
-            }
-            case 'improve': {
-              const row =
-                input.gearId === undefined ? undefined : findItem(this.sql, userId, input.gearId);
-              if (row === undefined || input.secondaryIndex === undefined) {
-                throw new GameError(409, 'item_gone');
-              }
-              const rolls = parseRolls(row.rolls_json);
-              const next = rerollSecondary(this.deps.rng, row.base_id, rolls, input.secondaryIndex);
-              this.sql.exec(
-                'UPDATE gear_items SET rolls_json = ? WHERE id = ?',
-                JSON.stringify(next),
-                row.id,
-              );
-              result = {
-                kind: 'improve',
-                gearId: row.id,
-                baseId: row.base_id,
-                secondaryIndex: input.secondaryIndex,
-                from: {
-                  ...(rolls.secondary[input.secondaryIndex] as { stat: GearStat; bp: number }),
+                origin: { kind: 'craft' },
+                madeBy: {
+                  creatureId: creature.id,
+                  name: creature.nickname ?? speciesOf(creature.species).name,
                 },
-                to: { ...(next.secondary[input.secondaryIndex] as { stat: GearStat; bp: number }) },
+              });
+              result = {
+                kind: 'craft',
+                gearId,
+                baseId: base.id,
+                rarity: made.rarity,
+                itemLevel: made.itemLevel,
+                upgraded,
               };
-              analyticsBase = row.base_id;
-              analyticsRarity = row.rarity;
+              analyticsBase = base.id;
+              analyticsRarity = made.rarity;
+              xpBase = jobXp();
               break;
             }
             case 'supply': {
@@ -836,37 +862,24 @@ export class Gear {
               result = { kind: 'supply', supplyId: def.id, amount: def.blueprint.yield };
               analyticsBase = def.id;
               analyticsRarity = SUPPLY_RARITY[def.tier];
+              xpBase = supplyJobXp(supplyDef(input.supplyId ?? '') ?? failSupply());
               break;
             }
+            case 'improve':
             case 'enchant': {
-              const row =
-                input.gearId === undefined ? undefined : findItem(this.sql, userId, input.gearId);
-              if (row === undefined || input.enchantId === undefined) {
-                throw new GameError(409, 'item_gone');
-              }
-              this.sql.exec(
-                'UPDATE gear_items SET enchant_id = ? WHERE id = ?',
-                input.enchantId,
-                row.id,
-              );
-              result = {
-                kind: 'enchant',
-                gearId: row.id,
-                baseId: row.base_id,
-                enchantId: input.enchantId,
-              };
-              analyticsBase = row.base_id;
-              analyticsRarity = row.rarity;
-              enchant = input.enchantId;
+              // Started before gear v2: nothing is left to work on, so the parts come back and the
+              // creature keeps its XP.
+              creditParts(this.sql, userId, input.cost);
+              result = { kind: 'retired', was: job.kind, refund: input.cost };
+              analyticsBase = 'retired';
+              analyticsRarity = 'common';
+              xpBase = RULES.gear.legacy.jobHours[job.kind] * RULES.gear.skill.xpPerHour;
               break;
             }
           }
 
           // XP follows the job's nominal length (the skill shortens the time, not the experience).
-          const xp =
-            job.kind === 'supply'
-              ? supplyJobXp(supplyDef(input.supplyId ?? '') ?? failSupply())
-              : jobXp(job.kind, input.rarity);
+          const xp = plusBp(xpBase, apprenticeBp);
           const skillXp = addCreatureXp(this.sql, userId, creature.id, xp);
           const after = skillLevel(skillXp);
           const full = {
@@ -885,11 +898,10 @@ export class Gear {
           this.deps.analytics?.record(
             {
               kind: 'job_claim',
-              job: job.kind,
+              job: job.kind === 'craft' || job.kind === 'supply' ? job.kind : 'craft',
               base: analyticsBase,
               rarity: analyticsRarity,
               upgraded,
-              enchant,
               xp,
               skillLevel: after,
               leveledUp: after > before,
@@ -904,27 +916,4 @@ export class Gear {
       ),
     );
   }
-}
-
-// --- Small helpers ---
-
-function wearerSpeciesId(sql: SqlStorage, creatureId: string): string {
-  const row = sql
-    .exec<{ species: string }>('SELECT species FROM creatures WHERE id = ?', creatureId)
-    .toArray()[0];
-  if (row === undefined) throw new Error('item worn by a creature that does not exist');
-  return row.species;
-}
-
-/** The player's open job ids by the item they work on. */
-function openJobIds(sql: SqlStorage, userId: string): Map<string, string> {
-  return new Map(
-    sql
-      .exec<{ id: string; gear_id: string }>(
-        'SELECT id, gear_id FROM workshop_jobs WHERE user_id = ? AND claimed_at IS NULL AND gear_id IS NOT NULL',
-        userId,
-      )
-      .toArray()
-      .map((r) => [r.gear_id, r.id]),
-  );
 }

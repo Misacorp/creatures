@@ -4,9 +4,11 @@ import type { Gear } from './gear';
 import {
   ClaimJobBodySchema,
   DismantleBodySchema,
+  DismissNoticeBodySchema,
+  EquipBestBodySchema,
   EquipBodySchema,
+  RemovedJobKindSchema,
   StartJobBodySchema,
-  UpgradeBodySchema,
 } from './gear-schemas';
 import { errorResponse, json, parseBody, type Routes } from './http';
 
@@ -45,16 +47,26 @@ export const gearRoutes: Routes<GearRouteContext> = {
       return json({ result: outcome.value, ...views(ctx) });
     },
   },
-  '/api/gear/:id/upgrade': {
+  '/api/gear/equip-best': {
     POST: async (request, ctx) => {
-      const id = pathId(ctx);
-      if (id === undefined) return invalidId();
-      const body = await parseBody(request, UpgradeBodySchema);
+      const body = await parseBody(request, EquipBestBodySchema);
       if (body === undefined) return invalidBody();
-      const outcome = ctx.core.gear.upgrade(ctx.user.id, id, body.idempotencyKey);
+      const outcome = ctx.core.gear.equipBest(ctx.user.id, body.creatureIds);
       if (!outcome.ok) return failure(outcome);
       return json({ result: outcome.value, ...views(ctx) });
     },
+  },
+  '/api/gear/conversion/dismiss': {
+    POST: async (request, ctx) => {
+      const body = await parseBody(request, DismissNoticeBodySchema);
+      if (body === undefined) return invalidBody();
+      ctx.core.gear.dismissNotice(ctx.user.id);
+      return json({ result: { dismissed: true }, ...views(ctx) });
+    },
+  },
+  // Gear upgrades are gone (gear v2): an old client gets a clear answer, and nothing is charged.
+  '/api/gear/:id/upgrade': {
+    POST: () => errorResponse('gear_upgrade_removed', 410),
   },
   '/api/gear/:id/dismantle': {
     POST: async (request, ctx) => {
@@ -69,6 +81,9 @@ export const gearRoutes: Routes<GearRouteContext> = {
   },
   '/api/workshop/jobs': {
     POST: async (request, ctx) => {
+      // Improve and Enchant are gone (gear v2): an old client gets a clear answer, and nothing is charged.
+      const removed = await parseBody(request.clone(), RemovedJobKindSchema);
+      if (removed !== undefined) return errorResponse('job_kind_removed', 410);
       const body = await parseBody(request, StartJobBodySchema);
       if (body === undefined) return invalidBody();
       const outcome = ctx.core.gear.startJob(ctx.user.id, body);

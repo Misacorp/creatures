@@ -20,8 +20,13 @@
       "reserved": 0
     },
     "items": [],
+    "slotOpens": {
+      "hat": 1,
+      "scarf": 7,
+      "charm": 13
+    },
     "parts": {
-      "scrap": 14,
+      "scrap": 15,
       "tide-shard": 0,
       "ember-shard": 0,
       "grove-shard": 0,
@@ -31,14 +36,14 @@
     "blueprints": [],
     "jobs": [
       {
-        "id": "ec4fec19-a233-4214-bc6b-6fb4f7829792",
-        "creatureId": "06a002e2-d493-4a49-97c7-3bba83b7ff01",
+        "id": "5c3d1e36-8bd3-4905-927c-5e380c33c882",
+        "creatureId": "503a2ab5-97a2-4909-a300-0a437e4a9381",
         "kind": "supply",
         "input": {
           "supplyId": "lure-basic"
         },
         "cost": {
-          "scrap": 3
+          "scrap": 2
         },
         "startedAt": 1799852544002,
         "endsAt": 1799859744002,
@@ -61,25 +66,25 @@
     },
     "skills": [
       {
-        "creatureId": "06a002e2-d493-4a49-97c7-3bba83b7ff01",
+        "creatureId": "503a2ab5-97a2-4909-a300-0a437e4a9381",
         "xp": 24,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "2c75d703-8931-420f-8f85-b46d20f5cbac",
+        "creatureId": "fb2011d8-80a8-4d3a-88a2-2be1cbc8ce24",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "5cf57332-48ef-4202-a823-da5e5a49cc01",
+        "creatureId": "7d22e1ec-dbdc-4bb8-aecf-160aa84702cd",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "c30f9fa8-ea76-43c1-9f09-a1f5c6e5d296",
+        "creatureId": "ac8ffb60-515c-4474-bf59-c11f2f478db9",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
@@ -91,7 +96,7 @@
         "converted": [],
         "parts": {},
         "blueprints": [],
-        "key": "expedition:cbf577c8-c899-4fee-b098-2b0a96887785",
+        "key": "expedition:5379b817-df3d-4e23-8614-21bc7c27082b",
         "source": "expedition",
         "at": 1799852544002
       },
@@ -102,7 +107,7 @@
           "scrap": 2
         },
         "blueprints": [],
-        "key": "rank:06a002e2-d493-4a49-97c7-3bba83b7ff01:4",
+        "key": "rank:503a2ab5-97a2-4909-a300-0a437e4a9381:4",
         "source": "rank_gift",
         "at": 1799830944002
       },
@@ -113,11 +118,12 @@
           "scrap": 5
         },
         "blueprints": [],
-        "key": "expedition:96bcbea5-85d7-4510-9d3c-b0f1ee22765b",
+        "key": "expedition:8433a8fc-83d9-447d-9275-0e1dafd7a8ff",
         "source": "expedition",
         "at": 1799830944002
       }
-    ]
+    ],
+    "notice": null
   },
   "state": {
     "serverNow": 1799881344002,
@@ -129,7 +135,7 @@
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "06a002e2-d493-4a49-97c7-3bba83b7ff01",
+        "id": "503a2ab5-97a2-4909-a300-0a437e4a9381",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -151,7 +157,7 @@
           "atk": 61,
           "spd": 42
         },
-        "gear": null,
+        "gear": [],
         "busy": null,
         "ability": {
           "id": "flare-strike",
@@ -174,7 +180,7 @@
         }
       },
       {
-        "id": "2c75d703-8931-420f-8f85-b46d20f5cbac",
+        "id": "fb2011d8-80a8-4d3a-88a2-2be1cbc8ce24",
         "species": "splashet",
         "line": "splashet",
         "level": 8,
@@ -196,7 +202,7 @@
           "atk": 42,
           "spd": 46
         },
-        "gear": null,
+        "gear": [],
         "busy": null,
         "ability": {
           "id": "tidal-mark",
@@ -219,7 +225,7 @@
         }
       },
       {
-        "id": "5cf57332-48ef-4202-a823-da5e5a49cc01",
+        "id": "7d22e1ec-dbdc-4bb8-aecf-160aa84702cd",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -241,7 +247,7 @@
           "atk": 29,
           "spd": 23
         },
-        "gear": null,
+        "gear": [],
         "busy": null,
         "ability": {
           "id": "bark-guard",
@@ -264,7 +270,7 @@
         }
       },
       {
-        "id": "c30f9fa8-ea76-43c1-9f09-a1f5c6e5d296",
+        "id": "ac8ffb60-515c-4474-bf59-c11f2f478db9",
         "species": "mistnewt",
         "line": "mistnewt",
         "level": 1,
@@ -275,7 +281,7 @@
         "away": false,
         "origin": "expedition",
         "caughtAt": 1799830944002,
-        "quirk": "mistnewt-fusses",
+        "quirk": "stargazer",
         "stats": {
           "hp": 160,
           "atk": 28,
@@ -286,7 +292,7 @@
           "atk": 28,
           "spd": 16
         },
-        "gear": null,
+        "gear": [],
         "busy": null,
         "ability": {
           "id": "fog-veil",
@@ -311,8 +317,8 @@
     ],
     "expeditions": [
       {
-        "id": "cbf577c8-c899-4fee-b098-2b0a96887785",
-        "creatureId": "2c75d703-8931-420f-8f85-b46d20f5cbac",
+        "id": "5379b817-df3d-4e23-8614-21bc7c27082b",
+        "creatureId": "fb2011d8-80a8-4d3a-88a2-2be1cbc8ce24",
         "duration": "long",
         "supplies": "basic",
         "kit": [],
@@ -339,8 +345,8 @@
         "pushOn": null
       },
       {
-        "id": "96bcbea5-85d7-4510-9d3c-b0f1ee22765b",
-        "creatureId": "06a002e2-d493-4a49-97c7-3bba83b7ff01",
+        "id": "8433a8fc-83d9-447d-9275-0e1dafd7a8ff",
+        "creatureId": "503a2ab5-97a2-4909-a300-0a437e4a9381",
         "duration": "long",
         "supplies": "great",
         "kit": ["lure-great"],
@@ -418,8 +424,8 @@
         }
       },
       {
-        "id": "f2b66bb0-de0c-4104-b4a0-2a349925aad8",
-        "creatureId": "06a002e2-d493-4a49-97c7-3bba83b7ff01",
+        "id": "38ba9cba-d38e-4a4a-8ef3-f825bc9efda6",
+        "creatureId": "503a2ab5-97a2-4909-a300-0a437e4a9381",
         "duration": "long",
         "supplies": "great",
         "kit": ["lure-great", "map-scrap-basic"],
@@ -477,7 +483,7 @@
         "holders": ["Player 3"]
       }
     ],
-    "loungerId": "c30f9fa8-ea76-43c1-9f09-a1f5c6e5d296",
+    "loungerId": "7d22e1ec-dbdc-4bb8-aecf-160aa84702cd",
     "loungeSpot": null
   }
 }

@@ -6,7 +6,6 @@
  * The user is always an argument supplied from the verified session, never from a request body.
  */
 import {
-  applyGear,
   canTrain,
   RULES,
   content,
@@ -32,11 +31,12 @@ import {
 import {
   equippedByCreature,
   openJobsByCreature,
-  rowToItem,
   wornGearView,
-  type GearRow,
+  wornRows,
+  type WornBySlot,
   type WornGear,
 } from './gear-store';
+import { foldCreature } from './gear-worn';
 import { getBalances, lookupSpend, spend, type Currency, type LedgerStorage } from './ledger';
 import { settleSpend } from './keyed-action';
 import { Lounge, type LoungeSpot } from './lounger';
@@ -87,8 +87,8 @@ export interface CreatureView {
    * creature without gear. Gear changes nothing else about the creature.
    */
   statsWithGear: Stats;
-  /** The item the creature wears (one slot), or null. The full item is in the gear view. */
-  gear: WornGear | null;
+  /** The items the creature wears, one per slot (Hat, Scarf, Charm). The full items are in the gear view. */
+  gear: WornGear[];
   /**
    * What the creature is doing, or null: on an expedition or on a workshop job. A busy creature
    * cannot start the other; it still fights in raids. `away` is true for an expedition only.
@@ -276,7 +276,7 @@ export class Collection {
     row: CreatureRow,
     medianLevel: number | null,
     essence: number,
-    worn: GearRow | undefined,
+    worn: WornBySlot | undefined,
     jobId: string | undefined,
     explorer: ExplorerView,
   ): CreatureView {
@@ -303,14 +303,8 @@ export class Collection {
       caughtAt: row.caught_at,
       quirk: row.quirk_id !== null && quirkText(row.quirk_id) !== undefined ? row.quirk_id : null,
       stats,
-      statsWithGear: applyGear(
-        stats,
-        species.crit,
-        species.role,
-        species.element,
-        worn === undefined ? null : rowToItem(worn),
-      ).stats,
-      gear: worn === undefined ? null : wornGearView(worn),
+      statsWithGear: foldCreature(row, worn).stats,
+      gear: wornRows(worn).map(wornGearView),
       busy: away
         ? { kind: 'expedition', id: row.away_expedition_id as string }
         : jobId === undefined

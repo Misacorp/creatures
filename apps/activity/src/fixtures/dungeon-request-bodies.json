@@ -3,7 +3,7 @@
     "path": "/api/dungeon/team",
     "method": "PUT",
     "body": {
-      "team": ["a66820a0-b53a-4fea-a64e-bdef1f5b4075", null, "f3a4e314-4688-4100-b0ae-117850bb4c39"]
+      "team": ["8029eb9f-7ca5-429c-99d8-39d91a0b3c12", null, "552e6942-03f2-4e7b-ae35-3c78197c6c90"]
     }
   },
   "dungeon-run-cleared": {
@@ -11,15 +11,15 @@
     "method": "POST",
     "body": {
       "team": [
-        "29e47085-5309-4f73-abbe-ff73ad84d9cd",
-        "a66820a0-b53a-4fea-a64e-bdef1f5b4075",
-        "f3a4e314-4688-4100-b0ae-117850bb4c39"
+        "b39eb88c-33e1-414e-9491-a6c92310a805",
+        "8029eb9f-7ca5-429c-99d8-39d91a0b3c12",
+        "552e6942-03f2-4e7b-ae35-3c78197c6c90"
       ],
       "idempotencyKey": "dungeon-00000001-test"
     }
   },
   "dungeon-replay": {
-    "path": "/api/dungeon/run/8a906b41-a31b-4720-b100-fe11ee159693",
+    "path": "/api/dungeon/run/5d98c5f6-056c-49d5-80ec-355eea903c55",
     "method": "GET",
     "body": null
   },
@@ -28,9 +28,9 @@
     "method": "POST",
     "body": {
       "team": [
-        "29e47085-5309-4f73-abbe-ff73ad84d9cd",
-        "a66820a0-b53a-4fea-a64e-bdef1f5b4075",
-        "f3a4e314-4688-4100-b0ae-117850bb4c39"
+        "b39eb88c-33e1-414e-9491-a6c92310a805",
+        "8029eb9f-7ca5-429c-99d8-39d91a0b3c12",
+        "552e6942-03f2-4e7b-ae35-3c78197c6c90"
       ],
       "idempotencyKey": "dungeon-00000001-test"
     }
@@ -40,9 +40,9 @@
     "method": "POST",
     "body": {
       "team": [
-        "d899bbfb-713a-4f7f-8a03-1794fa4952c4",
-        "e2e9f310-85e0-4853-9abd-37567f5ec4b7",
-        "74d691f7-8780-4f5b-b1f7-5b61d37e2bb6"
+        "437650ed-ca17-40c4-8ff2-c25268484881",
+        "746f9350-905f-4d21-b825-f7a5771f5f1e",
+        "9ac139f8-23fc-474a-8ecf-9906a7a1a247"
       ],
       "idempotencyKey": "dungeon-00000009-test"
     }
@@ -52,9 +52,9 @@
     "method": "POST",
     "body": {
       "team": [
-        "7fbcdfd3-4a61-4e6d-a0dc-4f3d0ed71565",
-        "5742e4c0-422c-4b69-99dd-6c33f98c4fb0",
-        "703d32c7-fc74-4b65-b96b-0936c0e26f55"
+        "7f840a38-1b79-4c60-be21-e26f001e3549",
+        "49e353b0-1e5f-4670-8f3f-49ec7fc7dcc0",
+        "4eec30e7-8eaa-48a1-86fb-419900689525"
       ],
       "idempotencyKey": "dungeon-00000010-test"
     }
@@ -64,9 +64,9 @@
     "method": "POST",
     "body": {
       "team": [
-        "7fbcdfd3-4a61-4e6d-a0dc-4f3d0ed71565",
-        "5742e4c0-422c-4b69-99dd-6c33f98c4fb0",
-        "703d32c7-fc74-4b65-b96b-0936c0e26f55"
+        "7f840a38-1b79-4c60-be21-e26f001e3549",
+        "49e353b0-1e5f-4670-8f3f-49ec7fc7dcc0",
+        "4eec30e7-8eaa-48a1-86fb-419900689525"
       ],
       "idempotencyKey": "dungeon-00000011-test"
     }

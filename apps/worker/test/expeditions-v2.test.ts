@@ -7,6 +7,7 @@ import {
   lengthRules,
   rankGift,
   seasonOf,
+  tripMs,
   tripXp,
   weeklySpecial,
   type Rng,
@@ -14,6 +15,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import { grantRankGift } from '../src/gear-grants';
 import { creditParts } from '../src/gear-store';
+import { giveItem } from './gear-helpers';
 import { weekIdFor, weekIndex } from '../src/raid-schedule';
 import { zonedHour } from '../src/time';
 import {
@@ -1497,6 +1499,168 @@ describe('the analytics of expeditions', () => {
         for (const e of events) expect(e.props_json.length).toBeLessThanOrEqual(1_536);
       },
       { tripRng: constantRng(draw), rng: createSeededRng('analytics-rng') },
+    );
+  });
+});
+
+describe('gear on trips', () => {
+  /** Puts a worn item on a creature straight in the tables, with the lines given. */
+  const wearOn = (
+    ctx: CoreContext,
+    creatureId: string,
+    baseId: string,
+    level: number,
+    lines: [string, number][],
+  ): void => {
+    const id = giveItem(ctx.sql, USER_ID, baseId, { rarity: 'epic', level, lines });
+    ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', creatureId, id);
+  };
+
+  it('Quick feet shorten a trip that is sent, by their share', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0, 'cindle');
+        ctx.sql.exec('UPDATE creatures SET level = 13 WHERE id = ?', p.starterId);
+        const plain = tripOf(await send(p, p.starterId, 'long'));
+        // The same creature again after the first trip is claimed, now wearing a Compass.
+        ctx.clock.t = plain.endsAt;
+        await claim(p, plain.id);
+        wearOn(ctx, p.starterId, 'crossroads-compass', 13, [['quick-feet', 2]]);
+        const rank = (await state(p)).creatures[0]?.explorer.rank ?? 1;
+        const quick = tripOf(await send(p, p.starterId, 'long'));
+        const length = (t: TripBody) => t.endsAt - t.startedAt;
+        // The first trip took the plain time of its rank; Quick feet tier III is -4% of the next one.
+        expect(length(plain)).toBe(tripMs('long', 1));
+        expect(length(quick)).toBe(Math.floor((tripMs('long', rank) * (10_000 - 400)) / 10_000));
+      },
+      { tripRng: createSeededRng('quick-feet'), rng: createSeededRng('quick-feet-rng') },
+    );
+  });
+
+  it('Trail XP raises the explorer XP a finished trip gives, as worn when it is claimed', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0, 'cindle');
+        ctx.sql.exec('UPDATE creatures SET level = 13 WHERE id = ?', p.starterId);
+        const plain = tripOf(await send(p, p.starterId, 'long'));
+        ctx.clock.t = plain.endsAt;
+        const first = resultOf(await claim(p, plain.id));
+        wearOn(ctx, p.starterId, 'crossroads-compass', 13, [['trail-xp', 2]]);
+        const better = tripOf(await send(p, p.starterId, 'long'));
+        ctx.clock.t = better.endsAt;
+        const second = resultOf(await claim(p, better.id));
+        // The compass's own base line (+5% at item level 13) and a tier III Trail XP (+12%).
+        expect(second.xp?.gained).toBeGreaterThan(first.xp?.gained ?? 0);
+        expect(second.xp?.gained).toBe(tripXp('long', 500 + 1200));
+        expect(first.xp?.gained).toBe(tripXp('long', 0));
+      },
+      { tripRng: createSeededRng('trail-xp'), rng: createSeededRng('trail-xp-rng') },
+    );
+  });
+
+  it('Keen nose brings back more parts on a finished trip', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0, 'cindle');
+        ctx.sql.exec('UPDATE creatures SET level = 15 WHERE id = ?', p.starterId);
+        setRank(ctx.sql, USER_ID, p.starterId, 6);
+        const scrap = RULES.expeditions.lengths.day.loot.scrap;
+        const plain = tripOf(await send(p, p.starterId, 'day'));
+        ctx.clock.t = plain.endsAt;
+        const first = resultOf(await claim(p, plain.id));
+        // Three items with tier IV Keen nose: +60%.
+        wearOn(ctx, p.starterId, 'trail-cap', 15, [['keen-nose', 3]]);
+        wearOn(ctx, p.starterId, 'patch-scarf', 15, [['keen-nose', 3]]);
+        wearOn(ctx, p.starterId, 'trail-charm', 15, [['keen-nose', 3]]);
+        const rich = tripOf(await send(p, p.starterId, 'day'));
+        ctx.clock.t = rich.endsAt;
+        const second = resultOf(await claim(p, rich.id));
+        expect(first.loot.parts['scrap']).toBe(scrap);
+        expect(second.loot.parts['scrap']).toBe(Math.floor((scrap * 16_000) / 10_000));
+        expect(second.loot.parts['scrap'] ?? 0).toBeGreaterThan(scrap);
+      },
+      { tripRng: createSeededRng('keen-nose'), rng: createSeededRng('keen-nose-rng') },
+    );
+  });
+
+  it('a gear find from a push-on is an item of the place’s element at twice the explorer rank, with where it came from', async () => {
+    const draw = { v: 0 };
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0);
+        setRank(ctx.sql, USER_ID, p.starterId, 4);
+        const trip = tripOf(await send(p, p.starterId, 'long', [], 'ember-caves'));
+        ctx.clock.t = trip.endsAt;
+        // The Shortcut (a rare gear find) is the offer, stored before the state would roll one.
+        ctx.sql.exec(
+          'INSERT INTO expedition_offers (expedition_id, user_id, goals_json, offered_at) VALUES (?, ?, ?, ?)',
+          trip.id,
+          USER_ID,
+          JSON.stringify(['shortcut']),
+          ctx.clock.t,
+        );
+        const chosen = tripOf(await pushOn(p, trip.id, 'shortcut'));
+        ctx.clock.t = (chosen.pushOn?.endsAt ?? 0) + 1;
+        const result = resultOf(await claim(p, trip.id)); // draws are 0: the chance succeeds
+        expect(result.pushOn?.outcome).toBe('worked');
+        expect(result.loot.gear).toHaveLength(1);
+        const items = rows<{
+          tag: string;
+          slot: string;
+          item_level: number;
+          rarity: string;
+          source: string;
+          origin_json: string;
+        }>(ctx.sql, 'SELECT tag, slot, item_level, rarity, source, origin_json FROM gear_items');
+        expect(items).toHaveLength(1);
+        // Rank 4 explorer: item level 8; the Ember Caves: an Ember (or role) piece.
+        expect(items[0]).toMatchObject({ item_level: 8, rarity: 'rare', source: 'expedition' });
+        expect(['ember', 'guard', 'setter', 'payoff', 'support']).toContain(items[0]?.tag);
+        const origin = JSON.parse(items[0]?.origin_json ?? '{}') as Record<string, unknown>;
+        expect(origin).toMatchObject({ kind: 'trip', place: 'ember-caves' });
+      },
+      {
+        tripRng: constantRng(draw),
+        rng: createSeededRng('find-rng'),
+        gearRng: createSeededRng('find'),
+      },
+    );
+  });
+
+  it('the Old Crossroads gives a Crossroads Compass', async () => {
+    const draw = { v: 0 };
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0);
+        setRank(ctx.sql, USER_ID, p.starterId, 4);
+        const trip = tripOf(await send(p, p.starterId, 'long', [], 'old-crossroads'));
+        ctx.clock.t = trip.endsAt;
+        ctx.sql.exec(
+          'INSERT INTO expedition_offers (expedition_id, user_id, goals_json, offered_at) VALUES (?, ?, ?, ?)',
+          trip.id,
+          USER_ID,
+          JSON.stringify(['shortcut']),
+          ctx.clock.t,
+        );
+        const chosen = tripOf(await pushOn(p, trip.id, 'shortcut'));
+        ctx.clock.t = (chosen.pushOn?.endsAt ?? 0) + 1;
+        await claim(p, trip.id);
+        expect(
+          rows<{ base_id: string }>(ctx.sql, 'SELECT base_id FROM gear_items').map(
+            (r) => r.base_id,
+          ),
+        ).toEqual(['crossroads-compass']);
+      },
+      {
+        tripRng: constantRng(draw),
+        rng: createSeededRng('cross-rng'),
+        gearRng: createSeededRng('cross'),
+      },
     );
   });
 });

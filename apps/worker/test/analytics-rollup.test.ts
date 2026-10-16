@@ -182,7 +182,6 @@ describe('rollDay', () => {
           base: 'unknown-base',
           rarity: 'common',
           upgraded: false,
-          enchant: null,
           xp: 5,
           skillLevel: 3,
           leveledUp: true,

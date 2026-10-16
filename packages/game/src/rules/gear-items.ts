@@ -707,7 +707,7 @@ export interface EquipMove {
  * wear (never what other creatures wear), and every pair a creature may wear (`wearBlock`). Best
  * pair first, by `itemScore`; ties go to the item the creature already wears, then to the smaller
  * ids, so the plan never depends on listing order. A creature's slot changes only when the new item
- * is better than what it holds (or the slot is empty). Returns the moves, empty when nothing is
+ * is better than what it holds (or the slot is empty): a creature's own item goes first on a tie, so it only loses it to a better pair. Returns the moves, empty when nothing is
  * better. Pure.
  */
 export function planEquipBest(
@@ -750,18 +750,12 @@ export function planEquipBest(
     assigned.set(key, pair.candidate.id);
   }
   const moves: EquipMove[] = [];
-  const scoreOf = new Map(pairs.map((p) => [`${p.creature.id}:${p.candidate.id}`, p.score]));
   for (const creature of creatures) {
     for (const slot of GEAR_SLOTS) {
       const key = `${creature.id}:${slot}`;
       const next = assigned.get(key);
       const now = creature.worn[slot];
       if (next === undefined || next === now) continue;
-      if (now !== undefined) {
-        const before = scoreOf.get(`${creature.id}:${now}`) ?? 0;
-        const after = scoreOf.get(`${creature.id}:${next}`) ?? 0;
-        if (after <= before) continue;
-      }
       moves.push({ creatureId: creature.id, slot, itemId: next });
     }
   }

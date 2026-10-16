@@ -1,286 +1,518 @@
 {
-  "serverNow": 1799791201000,
+  "serverNow": 1799744402000,
   "balances": {
     "bait": 100,
-    "essence": 159
+    "essence": 0
   },
   "inventory": {
     "cap": 60,
-    "used": 5,
+    "used": 8,
     "reserved": 1
   },
   "items": [
     {
-      "id": "87ee5c5b-2e94-4a97-b049-f91d9ba18398",
-      "baseId": "trail-charm",
+      "id": "db53d67b-cc26-4419-9c56-31704fa16687",
+      "baseId": "trail-cap",
+      "slot": "hat",
+      "tag": "neutral",
       "rarity": "common",
-      "level": 1,
-      "maxLevel": 5,
-      "primary": {
-        "stat": "atk",
-        "bp": 502
+      "itemLevel": 1,
+      "lines": [
+        {
+          "id": "attack",
+          "name": "Attack",
+          "text": "Attack +2%",
+          "about": "Raises Attack by a share of the creature's own.",
+          "source": "base",
+          "tier": null,
+          "bestTier": null,
+          "active": true
+        },
+        {
+          "id": "grove-hunter",
+          "name": "Grove Hunter",
+          "text": "Grove Hunter +4%",
+          "about": "More damage to bosses and foes that Grove is strong against.",
+          "source": "rolled",
+          "tier": 1,
+          "bestTier": 1,
+          "active": true
+        }
+      ],
+      "needs": {
+        "level": 1,
+        "role": null
       },
-      "secondaries": [],
-      "enchantId": null,
-      "enchantActive": null,
-      "equippedOn": null,
-      "jobId": null,
-      "upgradeCost": {
-        "essence": 30,
-        "scrap": 3
-      },
+      "equippedOn": "a4844dc1-e23f-4059-b04f-1554520a192a",
       "dismantle": {
-        "scrap": 3
-      },
-      "source": "welcome",
-      "createdAt": 1799733600000
-    },
-    {
-      "id": "a7abb89b-ce58-416a-ace1-f7ba984349b2",
-      "baseId": "cinder-charm",
-      "rarity": "common",
-      "level": 0,
-      "maxLevel": 5,
-      "primary": {
-        "stat": "atk",
-        "bp": 371
-      },
-      "secondaries": [],
-      "enchantId": null,
-      "enchantActive": null,
-      "equippedOn": null,
-      "jobId": null,
-      "upgradeCost": {
-        "essence": 20,
         "scrap": 2
       },
+      "source": "welcome",
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": {
+        "kind": "welcome"
+      }
+    },
+    {
+      "id": "3f89c55d-cb0b-42fd-a033-d9f51df2c967",
+      "baseId": "tidepool-charm",
+      "slot": "charm",
+      "tag": "tide",
+      "rarity": "common",
+      "itemLevel": 6,
+      "lines": [
+        {
+          "id": "tide-attunement",
+          "name": "Tide Attunement",
+          "text": "Tide Attunement +3%",
+          "about": "Raises Attack, but only for a Tide creature.",
+          "source": "base",
+          "tier": null,
+          "bestTier": null,
+          "active": false
+        },
+        {
+          "id": "backdraft-ward",
+          "name": "Backdraft ward",
+          "text": "Backdraft ward \u22128%",
+          "about": "Reflected hits on the wearer do less damage.",
+          "source": "rolled",
+          "tier": 1,
+          "bestTier": 2,
+          "active": true
+        }
+      ],
+      "needs": {
+        "level": 13,
+        "role": null
+      },
+      "equippedOn": "fb547299-1d99-4e91-b913-ed6029135236",
       "dismantle": {
         "scrap": 2
       },
       "source": "raid_finale",
-      "createdAt": 1799733600000
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": {
+        "kind": "raid",
+        "boss": "tidal-colossus",
+        "rank": 3
+      }
     },
     {
-      "id": "d370f1f6-5940-44bc-9113-ced5efbe8d3e",
-      "baseId": "volt-band",
-      "rarity": "rare",
-      "level": 0,
-      "maxLevel": 5,
-      "primary": {
-        "stat": "critChance",
-        "bp": 241
-      },
-      "secondaries": [
-        {
-          "stat": "critDamage",
-          "bp": 239
-        }
-      ],
-      "enchantId": null,
-      "enchantActive": null,
-      "equippedOn": null,
-      "jobId": null,
-      "upgradeCost": {
-        "essence": 30,
-        "scrap": 3
-      },
-      "dismantle": {
-        "scrap": 5,
-        "spark-shard": 1
-      },
-      "source": "test",
-      "createdAt": 1799733600000
-    },
-    {
-      "id": "2e486da1-d4b1-477e-a3b3-c47a33da5703",
-      "baseId": "phoenix-trinket",
+      "id": "05a010a5-6b71-467b-b3eb-802943b3afef",
+      "baseId": "coal-warm-cap",
+      "slot": "hat",
+      "tag": "ember",
       "rarity": "epic",
-      "level": 0,
-      "maxLevel": 5,
-      "primary": {
-        "stat": "critDamage",
-        "bp": 882
-      },
-      "secondaries": [
+      "itemLevel": 14,
+      "lines": [
         {
-          "stat": "spd",
-          "bp": 120
+          "id": "attack",
+          "name": "Attack",
+          "text": "Attack +4%",
+          "about": "Raises Attack by a share of the creature's own.",
+          "source": "base",
+          "tier": null,
+          "bestTier": null,
+          "active": true
         },
         {
-          "stat": "critChance",
-          "bp": 71
+          "id": "ember-reaction",
+          "name": "Wildfire bonus",
+          "text": "Wildfire bonus +18%",
+          "about": "The bonus of the reaction Ember creatures set off is bigger.",
+          "source": "rolled",
+          "tier": 4,
+          "bestTier": 3,
+          "active": true
+        },
+        {
+          "id": "crit-damage",
+          "name": "Crit damage",
+          "text": "Crit damage +20 pt",
+          "about": "Crits hit harder, in points (the fight caps the total).",
+          "source": "rolled",
+          "tier": 3,
+          "bestTier": 3,
+          "active": true
+        },
+        {
+          "id": "attack",
+          "name": "Attack",
+          "text": "Attack +6%",
+          "about": "Raises Attack by a share of the creature's own.",
+          "source": "rolled",
+          "tier": 3,
+          "bestTier": 3,
+          "active": true
         }
       ],
-      "enchantId": "ember-fury",
-      "enchantActive": true,
-      "equippedOn": "10d24d35-e868-4bd9-bd9f-4afca979cbcb",
-      "jobId": null,
-      "upgradeCost": {
-        "essence": 40,
-        "scrap": 4
+      "needs": {
+        "level": 14,
+        "role": null
       },
+      "equippedOn": "fb547299-1d99-4e91-b913-ed6029135236",
       "dismantle": {
         "scrap": 10,
         "ember-shard": 2,
         "glimmer": 1
       },
       "source": "test",
-      "createdAt": 1799733600000
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": null
     },
     {
-      "id": "357693dd-2532-40b7-9739-e2332b3a161b",
-      "baseId": "wave-band",
+      "id": "c3a6f419-4100-44cb-969e-fbd533ceec2e",
+      "baseId": "leafknit-scarf",
+      "slot": "scarf",
+      "tag": "grove",
       "rarity": "rare",
-      "level": 0,
-      "maxLevel": 5,
-      "primary": {
-        "stat": "spd",
-        "bp": 416
-      },
-      "secondaries": [
+      "itemLevel": 12,
+      "lines": [
         {
-          "stat": "hp",
-          "bp": 298
+          "id": "hp",
+          "name": "HP",
+          "text": "HP +5%",
+          "about": "Raises HP by a share of the creature's own.",
+          "source": "base",
+          "tier": null,
+          "bestTier": null,
+          "active": true
+        },
+        {
+          "id": "aimed-ward",
+          "name": "Aimed ward",
+          "text": "Aimed ward \u22127%",
+          "about": "Aimed hits do less damage to the wearer.",
+          "source": "rolled",
+          "tier": 3,
+          "bestTier": 3,
+          "active": true
+        },
+        {
+          "id": "hp",
+          "name": "HP",
+          "text": "HP +5%",
+          "about": "Raises HP by a share of the creature's own.",
+          "source": "rolled",
+          "tier": 2,
+          "bestTier": 3,
+          "active": true
         }
       ],
-      "enchantId": null,
-      "enchantActive": null,
-      "equippedOn": null,
-      "jobId": null,
-      "upgradeCost": {
-        "essence": 30,
-        "scrap": 3
+      "needs": {
+        "level": 12,
+        "role": null
       },
+      "equippedOn": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
       "dismantle": {
         "scrap": 5,
-        "tide-shard": 1
+        "grove-shard": 1
+      },
+      "source": "test",
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": null
+    },
+    {
+      "id": "e5b1ea7f-6a33-41f5-91eb-14cdfeb051a0",
+      "baseId": "wardens-bell",
+      "slot": "charm",
+      "tag": "guard",
+      "rarity": "rare",
+      "itemLevel": 13,
+      "lines": [
+        {
+          "id": "armor",
+          "name": "Armor",
+          "text": "Armor +2 pt",
+          "about": "A Guard's armor grows by these points. No effect on other roles.",
+          "source": "base",
+          "tier": null,
+          "bestTier": null,
+          "active": true
+        },
+        {
+          "id": "cover",
+          "name": "Cover",
+          "text": "Cover +7 pt",
+          "about": "A Guard's cover for its neighbours grows by these points.",
+          "source": "rolled",
+          "tier": 3,
+          "bestTier": 3,
+          "active": true
+        },
+        {
+          "id": "armor",
+          "name": "Armor",
+          "text": "Armor +3 pt",
+          "about": "A Guard's armor grows by these points. No effect on other roles.",
+          "source": "rolled",
+          "tier": 2,
+          "bestTier": 3,
+          "active": true
+        }
+      ],
+      "needs": {
+        "level": 13,
+        "role": "guard"
+      },
+      "equippedOn": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
+      "dismantle": {
+        "scrap": 5
+      },
+      "source": "test",
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": null
+    },
+    {
+      "id": "d6a373eb-427b-44b4-87a4-ee72dc676a26",
+      "baseId": "crossroads-compass",
+      "slot": "charm",
+      "tag": "explorer",
+      "rarity": "rare",
+      "itemLevel": 10,
+      "lines": [
+        {
+          "id": "trail-xp",
+          "name": "Trail XP",
+          "text": "Trail XP +5%",
+          "about": "The wearer earns more explorer XP from trips.",
+          "source": "base",
+          "tier": null,
+          "bestTier": null,
+          "active": null
+        },
+        {
+          "id": "quick-feet",
+          "name": "Quick feet",
+          "text": "Quick feet \u22123%",
+          "about": "The wearer's trips take less time.",
+          "source": "rolled",
+          "tier": 2,
+          "bestTier": 3,
+          "active": null
+        },
+        {
+          "id": "lucky-find",
+          "name": "Lucky find",
+          "text": "Lucky find +0.5 pt",
+          "about": "More chance of a rarer catch on the wearer's trips, in points.",
+          "source": "rolled",
+          "tier": 1,
+          "bestTier": 3,
+          "active": null
+        }
+      ],
+      "needs": {
+        "level": 13,
+        "role": null
+      },
+      "equippedOn": null,
+      "dismantle": {
+        "scrap": 5
+      },
+      "source": "test",
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": null
+    },
+    {
+      "id": "1fe24ace-6dc8-446c-bd19-122fad6c35d5",
+      "baseId": "thundercap",
+      "slot": "hat",
+      "tag": "spark",
+      "rarity": "rare",
+      "itemLevel": 16,
+      "lines": [
+        {
+          "id": "attack",
+          "name": "Attack",
+          "text": "Attack +5%",
+          "about": "Raises Attack by a share of the creature's own.",
+          "source": "base",
+          "tier": null,
+          "bestTier": null,
+          "active": null
+        },
+        {
+          "id": "spark-reaction",
+          "name": "Overload bonus",
+          "text": "Overload bonus +18%",
+          "about": "The bonus of the reaction Spark creatures set off is bigger.",
+          "source": "rolled",
+          "tier": 4,
+          "bestTier": 4,
+          "active": null
+        },
+        {
+          "id": "crit-chance",
+          "name": "Crit chance",
+          "text": "Crit chance +3 pt",
+          "about": "More chance to crit, in points (the fight caps the total).",
+          "source": "rolled",
+          "tier": 3,
+          "bestTier": 4,
+          "active": null
+        }
+      ],
+      "needs": {
+        "level": 16,
+        "role": null
+      },
+      "equippedOn": null,
+      "dismantle": {
+        "scrap": 5,
+        "spark-shard": 1
+      },
+      "source": "test",
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": null
+    },
+    {
+      "id": "24b982ca-9098-4c9e-8bcd-8bc1ab397107",
+      "baseId": "kelp-cap",
+      "slot": "hat",
+      "tag": "tide",
+      "rarity": "common",
+      "itemLevel": 2,
+      "lines": [
+        {
+          "id": "attack",
+          "name": "Attack",
+          "text": "Attack +2%",
+          "about": "Raises Attack by a share of the creature's own.",
+          "source": "base",
+          "tier": null,
+          "bestTier": null,
+          "active": null
+        },
+        {
+          "id": "sturdy-blow",
+          "name": "Sturdy blow",
+          "text": "Sturdy blow +2",
+          "about": "Adds a flat amount of Attack, best for gentle hitters and young creatures.",
+          "source": "rolled",
+          "tier": 1,
+          "bestTier": 1,
+          "active": null
+        }
+      ],
+      "needs": {
+        "level": 2,
+        "role": null
+      },
+      "equippedOn": null,
+      "dismantle": {
+        "scrap": 2
       },
       "source": "craft",
-      "createdAt": 1799766001000
+      "createdAt": 1799744402000,
+      "madeBy": {
+        "name": "Zipmouse",
+        "at": 1799744402000
+      },
+      "origin": {
+        "kind": "craft"
+      }
     }
   ],
+  "slotOpens": {
+    "hat": 1,
+    "scarf": 7,
+    "charm": 13
+  },
   "parts": {
-    "scrap": 76,
+    "scrap": 74,
     "tide-shard": 2,
-    "ember-shard": 3,
+    "ember-shard": 6,
     "grove-shard": 0,
     "spark-shard": 4,
-    "glimmer": 3
+    "glimmer": 4
   },
   "blueprints": [
     {
-      "baseId": "static-charm",
-      "rarity": "common",
-      "learnedAt": 1799733600000
+      "baseId": "kelp-cap",
+      "learnedAt": 1799733600000,
+      "marks": 0
     },
     {
-      "baseId": "wave-band",
-      "rarity": "rare",
-      "learnedAt": 1799733600000
+      "baseId": "trail-charm",
+      "learnedAt": 1799733600000,
+      "marks": 0
     }
   ],
   "jobs": [
     {
-      "id": "d10c2fe3-b055-40e4-a5c0-271257df8ddd",
-      "creatureId": "10d24d35-e868-4bd9-bd9f-4afca979cbcb",
+      "id": "0d476c29-7afd-43d2-8684-61f0a8a737cb",
+      "creatureId": "fb547299-1d99-4e91-b913-ed6029135236",
       "kind": "craft",
       "input": {
-        "baseId": "wave-band"
+        "baseId": "kelp-cap"
       },
       "cost": {
-        "scrap": 12,
+        "scrap": 6,
         "tide-shard": 1
       },
-      "startedAt": 1799791201000,
-      "endsAt": 1799820001000,
+      "startedAt": 1799744402000,
+      "endsAt": 1799755202000,
       "status": "running",
       "claimedAt": null,
       "result": null
     },
     {
-      "id": "5f9a3552-bd98-440e-a513-e025683fccdd",
-      "creatureId": "fd833d62-33dd-4a90-8c3b-388a26f47176",
-      "kind": "enchant",
+      "id": "c19e1cf5-ae2b-44ec-ad04-7456925c05bb",
+      "creatureId": "a4844dc1-e23f-4059-b04f-1554520a192a",
+      "kind": "craft",
       "input": {
-        "gearId": "2e486da1-d4b1-477e-a3b3-c47a33da5703",
-        "enchantId": "ember-fury"
+        "baseId": "kelp-cap"
       },
       "cost": {
-        "glimmer": 1,
-        "ember-shard": 3
+        "scrap": 6,
+        "tide-shard": 1
       },
-      "startedAt": 1799766001000,
-      "endsAt": 1799786953000,
+      "startedAt": 1799733601000,
+      "endsAt": 1799744401000,
       "status": "claimed",
-      "claimedAt": 1799791201000,
+      "claimedAt": 1799744402000,
       "result": {
-        "kind": "enchant",
-        "gearId": "2e486da1-d4b1-477e-a3b3-c47a33da5703",
-        "baseId": "phoenix-trinket",
-        "enchantId": "ember-fury",
-        "xp": 60,
-        "skillXp": 140,
-        "skillLevel": 2,
+        "kind": "craft",
+        "gearId": "24b982ca-9098-4c9e-8bcd-8bc1ab397107",
+        "baseId": "kelp-cap",
+        "rarity": "common",
+        "itemLevel": 2,
+        "upgraded": false,
+        "xp": 36,
+        "skillXp": 36,
+        "skillLevel": 1,
         "leveledUp": false
       }
     },
     {
-      "id": "334ec40f-306c-48a7-89f0-9a485332001b",
-      "creatureId": "fd833d62-33dd-4a90-8c3b-388a26f47176",
-      "kind": "craft",
-      "input": {
-        "baseId": "wave-band"
-      },
-      "cost": {
-        "scrap": 12,
-        "tide-shard": 1
-      },
-      "startedAt": 1799733601000,
-      "endsAt": 1799762401000,
-      "status": "claimed",
-      "claimedAt": 1799766001000,
-      "result": {
-        "kind": "craft",
-        "gearId": "357693dd-2532-40b7-9739-e2332b3a161b",
-        "baseId": "wave-band",
-        "rarity": "rare",
-        "upgraded": false,
-        "xp": 80,
-        "skillXp": 80,
-        "skillLevel": 2,
-        "leveledUp": true
-      }
-    },
-    {
-      "id": "6a170eca-a9fb-4ac4-90ac-9e3c5c8c13de",
-      "creatureId": "a623e389-3d71-4fd5-8f2a-cbb80f7d0c41",
+      "id": "00000000-0000-4000-8000-0000000000aa",
+      "creatureId": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
       "kind": "improve",
-      "input": {
-        "gearId": "d370f1f6-5940-44bc-9113-ced5efbe8d3e",
-        "secondaryIndex": 0
-      },
+      "input": {},
       "cost": {
         "scrap": 6
       },
       "startedAt": 1799733601000,
       "endsAt": 1799740801000,
       "status": "claimed",
-      "claimedAt": 1799744401000,
+      "claimedAt": 1799740802000,
       "result": {
-        "kind": "improve",
-        "gearId": "d370f1f6-5940-44bc-9113-ced5efbe8d3e",
-        "baseId": "volt-band",
-        "secondaryIndex": 0,
-        "from": {
-          "stat": "critDamage",
-          "bp": 240
+        "kind": "retired",
+        "was": "improve",
+        "refund": {
+          "scrap": 6
         },
-        "to": {
-          "stat": "critDamage",
-          "bp": 239
-        },
-        "xp": 20,
-        "skillXp": 20,
+        "xp": 24,
+        "skillXp": 24,
         "skillLevel": 1,
         "leveledUp": false
       }
@@ -292,31 +524,32 @@
   },
   "skills": [
     {
-      "creatureId": "10d24d35-e868-4bd9-bd9f-4afca979cbcb",
+      "creatureId": "fb547299-1d99-4e91-b913-ed6029135236",
       "xp": 0,
       "level": 1,
-      "nextLevelXp": 80
+      "nextLevelXp": 100
     },
     {
-      "creatureId": "a623e389-3d71-4fd5-8f2a-cbb80f7d0c41",
-      "xp": 20,
+      "creatureId": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
+      "xp": 24,
       "level": 1,
-      "nextLevelXp": 80
+      "nextLevelXp": 100
     },
     {
-      "creatureId": "fd833d62-33dd-4a90-8c3b-388a26f47176",
-      "xp": 140,
-      "level": 2,
-      "nextLevelXp": 200
+      "creatureId": "a4844dc1-e23f-4059-b04f-1554520a192a",
+      "xp": 36,
+      "level": 1,
+      "nextLevelXp": 100
     }
   ],
   "grants": [
     {
       "gear": [
         {
-          "id": "5b9512cc-119d-400c-9876-4b8dbb8c05da",
-          "baseId": "hearth-band",
-          "rarity": "festival"
+          "id": "63a8639a-76fa-42ba-8994-eab6bfb4b1d9",
+          "baseId": "festival-hearth-scarf",
+          "rarity": "festival",
+          "itemLevel": 8
         }
       ],
       "converted": [],
@@ -329,10 +562,10 @@
     {
       "gear": [
         {
-          "id": "a7abb89b-ce58-416a-ace1-f7ba984349b2",
-          "baseId": "cinder-charm",
+          "id": "3f89c55d-cb0b-42fd-a033-d9f51df2c967",
+          "baseId": "tidepool-charm",
           "rarity": "common",
-          "level": 1
+          "itemLevel": 6
         }
       ],
       "converted": [],
@@ -345,19 +578,19 @@
     {
       "gear": [
         {
-          "id": "87ee5c5b-2e94-4a97-b049-f91d9ba18398",
-          "baseId": "trail-charm",
-          "rarity": "common"
+          "id": "db53d67b-cc26-4419-9c56-31704fa16687",
+          "baseId": "trail-cap",
+          "rarity": "common",
+          "itemLevel": 1
         }
       ],
       "converted": [],
       "parts": {
-        "scrap": 8
+        "scrap": 10
       },
       "blueprints": [
         {
-          "baseId": "static-charm",
-          "rarity": "common",
+          "baseId": "trail-charm",
           "duplicate": false
         }
       ],
@@ -365,5 +598,6 @@
       "source": "welcome",
       "at": 1799733600000
     }
-  ]
+  ],
+  "notice": null
 }

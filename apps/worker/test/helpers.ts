@@ -206,6 +206,8 @@ export function undoAutofireMigration(sql: SqlStorage): void {
 /** Tables created by migration 17 (gear, parts, blueprints, the workshop and the Crafting skill). */
 export const GEAR_TABLES = [
   'gear_items',
+  'gear_legacy',
+  'gear_conversion',
   'parts',
   'blueprints',
   'workshop_jobs',
@@ -218,10 +220,39 @@ export const GEAR_TABLES = [
  * The schema version of a fresh database. Tests that check it use this constant, so a new migration
  * changes one number here (and adds an undo step below), not a dozen tests.
  */
-export const LATEST_SCHEMA_VERSION = 26;
+export const LATEST_SCHEMA_VERSION = 27;
+
+/**
+ * Puts a database back to before migration 27 (gear v2): the new item table goes, the first version's
+ * comes back (empty), and the blueprint marks and the conversion list go.
+ */
+export function undoGearV2Migration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS gear_conversion');
+  sql.exec('DROP TABLE IF EXISTS gear_legacy');
+  sql.exec('DROP TABLE IF EXISTS gear_items');
+  sql.exec(`CREATE TABLE gear_items (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    base_id TEXT NOT NULL,
+    rarity TEXT NOT NULL CHECK (rarity IN ('common', 'rare', 'epic', 'festival')),
+    level INTEGER NOT NULL DEFAULT 0 CHECK (level BETWEEN 0 AND 5),
+    rolls_json TEXT NOT NULL,
+    enchant_id TEXT,
+    equipped_on TEXT UNIQUE,
+    source TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  )`);
+  sql.exec('CREATE INDEX gear_items_user ON gear_items(user_id, created_at)');
+  const hasMarks = sql
+    .exec("SELECT 1 FROM pragma_table_info('blueprints') WHERE name = 'marks'")
+    .toArray();
+  if (hasMarks.length > 0) sql.exec('ALTER TABLE blueprints DROP COLUMN marks');
+  sql.exec('DELETE FROM schema_version WHERE version = 27');
+}
 
 /** Puts a database back to before migration 26 (the saved dungeon team draft). */
 export function undoDungeonDraftMigration(sql: SqlStorage): void {
+  undoGearV2Migration(sql);
   sql.exec('DROP TABLE IF EXISTS dungeon_drafts');
   sql.exec('DELETE FROM schema_version WHERE version = 26');
 }

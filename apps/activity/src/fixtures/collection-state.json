@@ -1,17 +1,17 @@
 {
-  "serverNow": 1799791201000,
+  "serverNow": 1799744402000,
   "balances": {
     "bait": 100,
-    "essence": 159
+    "essence": 0
   },
   "starterChosen": false,
   "starterOptions": ["splashet", "cindle", "sproutle"],
   "creatures": [
     {
-      "id": "10d24d35-e868-4bd9-bd9f-4afca979cbcb",
+      "id": "fb547299-1d99-4e91-b913-ed6029135236",
       "species": "cindle",
       "line": "cindle",
-      "level": 10,
+      "level": 15,
       "levelCap": 15,
       "fusionCount": 0,
       "shiny": false,
@@ -21,25 +21,34 @@
       "caughtAt": 1799733600000,
       "quirk": "name-perker",
       "stats": {
-        "hp": 159,
-        "atk": 67,
-        "spd": 46
+        "hp": 194,
+        "atk": 82,
+        "spd": 56
       },
       "statsWithGear": {
-        "hp": 159,
-        "atk": 67,
-        "spd": 46
+        "hp": 194,
+        "atk": 90,
+        "spd": 56
       },
-      "gear": {
-        "id": "2e486da1-d4b1-477e-a3b3-c47a33da5703",
-        "baseId": "phoenix-trinket",
-        "rarity": "epic",
-        "level": 0,
-        "enchantId": "ember-fury"
-      },
+      "gear": [
+        {
+          "id": "05a010a5-6b71-467b-b3eb-802943b3afef",
+          "baseId": "coal-warm-cap",
+          "slot": "hat",
+          "rarity": "epic",
+          "itemLevel": 14
+        },
+        {
+          "id": "3f89c55d-cb0b-42fd-a033-d9f51df2c967",
+          "baseId": "tidepool-charm",
+          "slot": "charm",
+          "rarity": "common",
+          "itemLevel": 6
+        }
+      ],
       "busy": {
         "kind": "job",
-        "id": "d10c2fe3-b055-40e4-a5c0-271257df8ddd"
+        "id": "0d476c29-7afd-43d2-8684-61f0a8a737cb"
       },
       "ability": {
         "id": "flare-strike",
@@ -47,25 +56,25 @@
         "unlockLevel": 10,
         "nextId": "flare-strike-2"
       },
-      "trainCost": 23,
-      "evolution": {
-        "toSpecies": "pyrelynx",
-        "level": 15,
-        "essence": 20,
-        "available": false
-      },
       "explorer": {
         "rank": 1,
         "xp": 0,
         "nextRankXp": 200,
         "trips": 0
+      },
+      "trainCost": null,
+      "evolution": {
+        "toSpecies": "pyrelynx",
+        "level": 15,
+        "essence": 20,
+        "available": false
       }
     },
     {
-      "id": "a623e389-3d71-4fd5-8f2a-cbb80f7d0c41",
+      "id": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
       "species": "sproutle",
       "line": "sproutle",
-      "level": 10,
+      "level": 14,
       "levelCap": 15,
       "fusionCount": 0,
       "shiny": false,
@@ -75,16 +84,31 @@
       "caughtAt": 1799733600001,
       "quirk": "sproutle-wide-awake",
       "stats": {
-        "hp": 259,
-        "atk": 31,
-        "spd": 25
+        "hp": 303,
+        "atk": 35,
+        "spd": 29
       },
       "statsWithGear": {
-        "hp": 259,
-        "atk": 31,
-        "spd": 25
+        "hp": 333,
+        "atk": 35,
+        "spd": 29
       },
-      "gear": null,
+      "gear": [
+        {
+          "id": "c3a6f419-4100-44cb-969e-fbd533ceec2e",
+          "baseId": "leafknit-scarf",
+          "slot": "scarf",
+          "rarity": "rare",
+          "itemLevel": 12
+        },
+        {
+          "id": "e5b1ea7f-6a33-41f5-91eb-14cdfeb051a0",
+          "baseId": "wardens-bell",
+          "slot": "charm",
+          "rarity": "rare",
+          "itemLevel": 13
+        }
+      ],
       "busy": null,
       "ability": {
         "id": "bark-guard",
@@ -92,25 +116,25 @@
         "unlockLevel": 10,
         "nextId": "bark-guard-2"
       },
-      "trainCost": 23,
-      "evolution": {
-        "toSpecies": "thornbuck",
-        "level": 15,
-        "essence": 20,
-        "available": false
-      },
       "explorer": {
         "rank": 1,
         "xp": 0,
         "nextRankXp": 200,
         "trips": 0
+      },
+      "trainCost": 31,
+      "evolution": {
+        "toSpecies": "thornbuck",
+        "level": 15,
+        "essence": 20,
+        "available": false
       }
     },
     {
-      "id": "fd833d62-33dd-4a90-8c3b-388a26f47176",
+      "id": "a4844dc1-e23f-4059-b04f-1554520a192a",
       "species": "zipmouse",
       "line": "zipmouse",
-      "level": 7,
+      "level": 9,
       "levelCap": 15,
       "fusionCount": 0,
       "shiny": false,
@@ -120,16 +144,24 @@
       "caughtAt": 1799733600002,
       "quirk": "morning-grumbler",
       "stats": {
-        "hp": 160,
-        "atk": 40,
-        "spd": 44
+        "hp": 176,
+        "atk": 44,
+        "spd": 48
       },
       "statsWithGear": {
-        "hp": 160,
-        "atk": 40,
-        "spd": 44
+        "hp": 176,
+        "atk": 44,
+        "spd": 48
       },
-      "gear": null,
+      "gear": [
+        {
+          "id": "db53d67b-cc26-4419-9c56-31704fa16687",
+          "baseId": "trail-cap",
+          "slot": "hat",
+          "rarity": "common",
+          "itemLevel": 1
+        }
+      ],
       "busy": null,
       "ability": {
         "id": "static-zap",
@@ -137,22 +169,23 @@
         "unlockLevel": 10,
         "nextId": "static-zap-2"
       },
-      "trainCost": 17,
-      "evolution": {
-        "toSpecies": "voltaro",
-        "level": 15,
-        "essence": 20,
-        "available": false
-      },
       "explorer": {
         "rank": 1,
         "xp": 0,
         "nextRankXp": 200,
         "trips": 0
+      },
+      "trainCost": 11,
+      "evolution": {
+        "toSpecies": "voltaro",
+        "level": 15,
+        "essence": 20,
+        "available": false
       }
     }
   ],
   "expeditions": [],
+  "cancelled": [],
   "slots": {
     "total": 1,
     "used": 0,
@@ -163,23 +196,22 @@
       "at": 3
     }
   },
-  "trainingMedianLevel": 10,
+  "supplies": {},
+  "trainingMedianLevel": 15,
   "serverFirsts": [],
+  "loungerId": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
+  "loungeSpot": null,
   "timezone": "Europe/Helsinki",
   "leetSync": {
     "source": "disabled",
-    "lastAttemptAt": 1799791201000,
+    "lastAttemptAt": 1799744402000,
     "lastSyncedAt": null,
     "lastError": "disabled",
     "lastDays": null
   },
-  "cancelled": [],
-  "supplies": {},
-  "loungerId": "a623e389-3d71-4fd5-8f2a-cbb80f7d0c41",
-  "loungeSpot": null,
   "attention": {
     "dungeon": true,
     "raid": true,
-    "recheckAt": 1799840220000
+    "recheckAt": 1799753820000
   }
 }

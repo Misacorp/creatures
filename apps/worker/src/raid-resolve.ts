@@ -150,8 +150,8 @@ export function bossFor(bossId: string, rank: number): BossDef {
 export const aliasFor = (index: number): string => `m${index + 1}`;
 
 /**
- * A creature's slot for a fight. The slot carries the final stats (level, fusion and the worn item,
- * capped) and the final crit bonus, so the stored fight input is self-contained: a replay never looks
+ * A creature's slot for a fight. The slot carries the final stats (level, fusion and the worn items),
+ * the final crit bonus and the modifier sheet of its gear, so the stored fight input is self-contained: a replay never looks
  * at gear again, and changing or dismantling the item later cannot change an old fight.
  */
 export function slotFor(creature: TeamCreature, alias: string): FightSlot {
@@ -166,6 +166,7 @@ export function slotFor(creature: TeamCreature, alias: string): FightSlot {
     ...slot,
     stats: creature.stats,
     ...(creature.crit === undefined ? {} : { crit: creature.crit }),
+    ...(creature.mods === undefined ? {} : { mods: creature.mods }),
   };
 }
 
@@ -540,8 +541,9 @@ export function settleParty(
       analytics: deps.analytics,
     };
     for (const userId of memberIds) {
-      if (phase === 'finale') grantRaidFinale(gearDeps, userId, week.weekId, payout.rank);
-      else grantRaidPhase(gearDeps, userId, week.weekId, phase);
+      if (phase === 'finale') {
+        grantRaidFinale(gearDeps, userId, week.weekId, payout.rank, input.boss.id);
+      } else grantRaidPhase(gearDeps, userId, week.weekId, phase);
     }
   }
 
@@ -564,7 +566,14 @@ export function settleParty(
       for (const userId of memberIds) {
         // The Festival piece, in the tint of the Festival creature, next to the creature itself.
         if (festivalSpecies !== undefined) {
-          grantFestivalGear(gearDeps, userId, week.weekId, festivalSpecies.element);
+          grantFestivalGear(
+            gearDeps,
+            userId,
+            week.weekId,
+            festivalSpecies.element,
+            payout.rank,
+            input.boss.id,
+          );
         }
         grantFestivalCreature(
           storage,

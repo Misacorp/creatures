@@ -1,19 +1,21 @@
 /**
- * SQL helpers for gear, parts, blueprints, jobs and skills (tables of migration 17). Everything is
- * synchronous and meant to run inside a `transactionSync`. Nothing here decides game rules: the rules
- * are in `@creatures/game` and the actions in `gear.ts` and `gear-grants.ts`.
+ * SQL helpers for gear, parts, blueprints, jobs and skills (tables of migrations 17 and 27).
+ * Everything is synchronous and meant to run inside a `transactionSync`. Nothing here decides game
+ * rules: the rules are in `@creatures/game` and the actions in `gear.ts` and `gear-grants.ts`.
  */
 import {
-  GEAR_STATS,
-  gearBase,
+  GEAR_SLOTS,
   PART_KINDS,
   RULES,
+  gearBase,
+  gearLine,
+  itemOf,
   type GearItem,
   type GearRarity,
-  type GearRolls,
-  type GearStat,
+  type GearSlot,
   type PartKind,
   type PartsBundle,
+  type Wearer,
 } from '@creatures/game';
 import * as v from 'valibot';
 
@@ -21,72 +23,104 @@ export type GearRow = {
   id: string;
   user_id: string;
   base_id: string;
+  slot: GearSlot;
+  tag: string;
   rarity: GearRarity;
-  level: number;
-  rolls_json: string;
-  enchant_id: string | null;
+  item_level: number;
+  lines_json: string;
+  made_by: string | null;
+  made_by_name: string | null;
+  made_at: number | null;
+  origin_json: string;
   equipped_on: string | null;
   source: string;
   created_at: number;
 };
 
-const RollsSchema = v.strictObject({
-  primary: v.pipe(v.number(), v.integer(), v.minValue(0)),
-  secondary: v.array(
-    v.strictObject({
-      stat: v.picklist(GEAR_STATS),
-      bp: v.pipe(v.number(), v.integer(), v.minValue(0)),
-    }),
-  ),
-});
+const LinesSchema = v.array(
+  v.strictObject({
+    id: v.pipe(
+      v.string(),
+      v.check((id) => gearLine(id) !== undefined, 'unknown gear line'),
+    ),
+    tier: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(4)),
+  }),
+);
 
-/** The rolls stored with an item. Written only by this module; a damaged value throws. */
-export function parseRolls(json: string): GearRolls {
-  const parsed = v.safeParse(RollsSchema, JSON.parse(json));
-  if (!parsed.success) throw new Error('stored gear rolls are invalid');
+/** The rolled lines stored with an item. Written only by this module; a damaged value throws. */
+export function parseLines(json: string): { id: string; tier: number }[] {
+  const parsed = v.safeParse(LinesSchema, JSON.parse(json));
+  if (!parsed.success) throw new Error('stored gear lines are invalid');
   return parsed.output;
 }
 
-export function rowToItem(row: GearRow): GearItem {
-  return {
-    baseId: row.base_id,
-    rarity: row.rarity,
-    level: row.level,
-    rolls: parseRolls(row.rolls_json),
-    enchantId: row.enchant_id,
-  };
+/** Where an item came from besides its source, for the card's "From:" line. Content ids and numbers only. */
+export type ItemOrigin =
+  | { kind: 'raid'; boss: string; rank: number }
+  | { kind: 'festival'; boss: string; rank: number }
+  | { kind: 'dungeon'; depth: number }
+  | { kind: 'trip'; place: string; rank: number }
+  | { kind: 'craft' }
+  | { kind: 'welcome' }
+  | { kind: 'converted' };
+
+const OriginSchema = v.variant('kind', [
+  v.strictObject({
+    kind: v.literal('raid'),
+    boss: v.pipe(v.string(), v.maxLength(32)),
+    rank: v.pipe(v.number(), v.integer()),
+  }),
+  v.strictObject({
+    kind: v.literal('festival'),
+    boss: v.pipe(v.string(), v.maxLength(32)),
+    rank: v.pipe(v.number(), v.integer()),
+  }),
+  v.strictObject({ kind: v.literal('dungeon'), depth: v.pipe(v.number(), v.integer()) }),
+  v.strictObject({
+    kind: v.literal('trip'),
+    place: v.pipe(v.string(), v.maxLength(32)),
+    rank: v.pipe(v.number(), v.integer()),
+  }),
+  v.strictObject({ kind: v.literal('craft') }),
+  v.strictObject({ kind: v.literal('welcome') }),
+  v.strictObject({ kind: v.literal('converted') }),
+]);
+
+/** The origin stored with an item, or null for `{}` (items made before it was recorded). */
+export function parseOrigin(json: string): ItemOrigin | null {
+  const parsed = v.safeParse(OriginSchema, JSON.parse(json));
+  return parsed.success ? parsed.output : null;
 }
 
-/** The primary stat of an item and its value now (the roll plus the upgrade steps). */
-export function primaryOf(item: GearItem): { stat: GearStat; bp: number } {
-  const base = gearBase(item.baseId);
-  if (base === undefined) throw new Error('stored gear has an unknown base');
-  return {
-    stat: base.primary,
-    bp: item.rolls.primary + RULES.gear.upgradeStepBp[base.primary] * item.level,
-  };
+export function rowToItem(row: GearRow): GearItem {
+  return itemOf(row.base_id, row.rarity, row.item_level, parseLines(row.lines_json));
 }
 
 /**
- * The item a creature wears, as the state view and the living room show it. The full item (rolls and
- * bonus) is only in the owner's gear view; this is what any guild-mate may see.
+ * The items a creature wears as the state view and the living room show them. The full lines are
+ * only in the owner's gear view; this is what any guild-mate may see.
  */
 export interface WornGear {
   id: string;
   baseId: string;
+  slot: GearSlot;
   rarity: GearRarity;
-  level: number;
-  enchantId: string | null;
+  itemLevel: number;
 }
 
 export function wornGearView(row: GearRow): WornGear {
   return {
     id: row.id,
     baseId: row.base_id,
+    slot: row.slot,
     rarity: row.rarity,
-    level: row.level,
-    enchantId: row.enchant_id,
+    itemLevel: row.item_level,
   };
+}
+
+/** The wearer facts the gear rules need, from a species. */
+export function wearerOf(species: { role: Wearer['role']; element: Wearer['element'] }): Wearer {
+  return { role: species.role, element: species.element };
 }
 
 // --- Items ---
@@ -126,37 +160,61 @@ export function hasRoom(sql: SqlStorage, userId: string): boolean {
   return countItems(sql, userId) + countPendingCrafts(sql, userId) < RULES.gear.inventoryCap;
 }
 
-/** Inserts an item at `item.level` (default 0: new gear starts un-upgraded; a finale drop arrives pre-upgraded). */
+/** Facts stored with a new item besides the item itself. */
+export interface ItemMeta {
+  source: string;
+  now: number;
+  origin?: ItemOrigin;
+  /** The creature that crafted it, and its name at the time (plain text). */
+  madeBy?: { creatureId: string; name: string };
+  /** Keep this id (the conversion keeps the old item's id). */
+  id?: string;
+}
+
+/** Inserts an item (not worn). Returns its id. */
 export function insertItem(
   sql: SqlStorage,
   userId: string,
-  item: { baseId: string; rarity: GearRarity; rolls: GearRolls; level?: number },
-  source: string,
-  now: number,
+  item: GearItem,
+  meta: ItemMeta,
 ): string {
-  const id = crypto.randomUUID();
+  const id = meta.id ?? crypto.randomUUID();
   sql.exec(
-    `INSERT INTO gear_items (id, user_id, base_id, rarity, level, rolls_json, enchant_id, equipped_on, source, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?)`,
+    `INSERT INTO gear_items
+       (id, user_id, base_id, slot, tag, rarity, item_level, lines_json, made_by, made_by_name, made_at,
+        origin_json, equipped_on, source, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)`,
     id,
     userId,
     item.baseId,
+    item.slot,
+    item.tag,
     item.rarity,
-    Math.min(RULES.gear.maxLevel, Math.max(0, Math.trunc(item.level ?? 0))),
-    JSON.stringify(item.rolls),
-    source,
-    now,
+    item.itemLevel,
+    JSON.stringify(item.lines),
+    meta.madeBy?.creatureId ?? null,
+    meta.madeBy?.name ?? null,
+    meta.madeBy === undefined ? null : meta.now,
+    JSON.stringify(meta.origin ?? {}),
+    meta.source,
+    meta.now,
   );
   return id;
 }
 
-/** The player's equipped items by creature id. */
-export function equippedByCreature(sql: SqlStorage, userId: string): Map<string, GearRow> {
-  const map = new Map<string, GearRow>();
+/** What a creature wears, in each slot. */
+export type WornBySlot = Partial<Record<GearSlot, GearRow>>;
+
+/** The player's equipped items by creature id, then slot. */
+export function equippedByCreature(sql: SqlStorage, userId: string): Map<string, WornBySlot> {
+  const map = new Map<string, WornBySlot>();
   for (const row of sql
     .exec<GearRow>('SELECT * FROM gear_items WHERE user_id = ? AND equipped_on IS NOT NULL', userId)
     .toArray()) {
-    if (row.equipped_on !== null) map.set(row.equipped_on, row);
+    if (row.equipped_on === null) continue;
+    const worn = map.get(row.equipped_on) ?? {};
+    worn[row.slot] = row;
+    map.set(row.equipped_on, worn);
   }
   return map;
 }
@@ -165,8 +223,8 @@ export function equippedByCreature(sql: SqlStorage, userId: string): Map<string,
 export function wornOnCreatures(
   sql: SqlStorage,
   creatureIds: readonly string[],
-): Map<string, GearRow> {
-  const map = new Map<string, GearRow>();
+): Map<string, WornBySlot> {
+  const map = new Map<string, WornBySlot>();
   if (creatureIds.length === 0) return map;
   for (const row of sql
     .exec<GearRow>(
@@ -174,9 +232,31 @@ export function wornOnCreatures(
       ...creatureIds,
     )
     .toArray()) {
-    if (row.equipped_on !== null) map.set(row.equipped_on, row);
+    if (row.equipped_on === null) continue;
+    const worn = map.get(row.equipped_on) ?? {};
+    worn[row.slot] = row;
+    map.set(row.equipped_on, worn);
   }
   return map;
+}
+
+/** The rows a creature wears, in slot order. */
+export function wornRows(worn: WornBySlot | undefined): GearRow[] {
+  if (worn === undefined) return [];
+  return GEAR_SLOTS.flatMap((slot) => {
+    const row = worn[slot];
+    return row === undefined ? [] : [row];
+  });
+}
+
+/** The items a creature wears, as the rules see them. */
+export function wornItems(worn: WornBySlot | undefined): GearItem[] {
+  return wornRows(worn).map(rowToItem);
+}
+
+/** Checks a stored base still exists (content is data; an unknown base is a bug, never silently ignored). */
+export function assertKnownBase(baseId: string): void {
+  if (gearBase(baseId) === undefined) throw new Error('stored gear has an unknown base');
 }
 
 // --- Parts ---
@@ -246,14 +326,14 @@ export function debitParts(sql: SqlStorage, userId: string, bundle: PartsBundle)
 export function knownBlueprints(
   sql: SqlStorage,
   userId: string,
-): { baseId: string; rarity: GearRarity; learnedAt: number }[] {
+): { baseId: string; learnedAt: number; marks: number }[] {
   return sql
-    .exec<{ base_id: string; rarity: GearRarity; learned_at: number }>(
-      'SELECT base_id, rarity, learned_at FROM blueprints WHERE user_id = ? ORDER BY learned_at, base_id',
+    .exec<{ base_id: string; learned_at: number; marks: number }>(
+      'SELECT base_id, learned_at, marks FROM blueprints WHERE user_id = ? ORDER BY learned_at, base_id',
       userId,
     )
     .toArray()
-    .map((r) => ({ baseId: r.base_id, rarity: r.rarity, learnedAt: r.learned_at }));
+    .map((r) => ({ baseId: r.base_id, learnedAt: r.learned_at, marks: r.marks }));
 }
 
 export function knowsBlueprint(sql: SqlStorage, userId: string, baseId: string): boolean {
@@ -263,22 +343,20 @@ export function knowsBlueprint(sql: SqlStorage, userId: string, baseId: string):
   );
 }
 
-/** Learns a blueprint. Returns false if the player already knew it. */
+/** Learns a blueprint. Returns false if the player already knew it. Blueprints have no rarity any more (stored as common). */
 export function learnBlueprint(
   sql: SqlStorage,
   userId: string,
   baseId: string,
-  rarity: GearRarity,
   now: number,
 ): boolean {
   return (
     sql
       .exec(
-        `INSERT INTO blueprints (user_id, base_id, rarity, learned_at) VALUES (?, ?, ?, ?)
+        `INSERT INTO blueprints (user_id, base_id, rarity, learned_at) VALUES (?, ?, 'common', ?)
          ON CONFLICT(user_id, base_id) DO NOTHING RETURNING base_id`,
         userId,
         baseId,
-        rarity,
         now,
       )
       .toArray().length > 0

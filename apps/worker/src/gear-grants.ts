@@ -1,7 +1,8 @@
 /**
  * Every way gear, parts and blueprints enter the game: a cleared raid phase (scrap), a won finale (the
- * reward slot: a pre-upgraded gear piece or a new blueprint), a won Festival finale (a Festival piece),
- * an expedition claim (parts and blueprints) and the welcome kit. Each grant is idempotent per (player, key) through `gear_grants`: the first call
+ * reward slot: a gear piece or a new blueprint), a won Festival finale (a Festival piece), the daily
+ * dungeon, an expedition claim (parts, blueprints and push-on finds) and the welcome kit. Every item
+ * is rolled here with the live RNG at the grant (item level by source, lines and tiers), never before. Each grant is idempotent per (player, key) through `gear_grants`: the first call
  * draws from the live RNG and applies the grant, a repeat returns what the first one gave and draws
  * nothing. Call them inside the transaction of the action they belong to (they nest as savepoints).
  *
@@ -11,14 +12,17 @@
 import {
   RULES,
   addParts,
+  baseForTint,
+  content,
   dismantleYield,
   gearBase,
-  rollFestivalDrop,
+  legacyBase,
+  rollFestivalItem,
   rollFinaleReward,
   rollWelcomeKit,
   type Element,
+  type GearItem,
   type GearRarity,
-  type GearRolls,
   type PartsBundle,
   type RankGift,
   type Rng,
@@ -32,6 +36,7 @@ import {
   knownBlueprints,
   learnBlueprint,
   partsTotal,
+  type ItemOrigin,
 } from './gear-store';
 import { credit, type LedgerStorage } from './ledger';
 
@@ -46,15 +51,15 @@ export interface GrantDeps {
 /** What a grant gave, as shown to the player. */
 export interface GrantView {
   /**
-   * Items now in the inventory. `level` is the upgrade level it arrived with (a finale drop is
-   * pre-upgraded by Boss Rank); absent in grants stored before the reward slot, which means +0.
+   * Items now in the inventory. `itemLevel` is absent on grants stored before gear v2, which
+   * `normaliseGrant` maps onto the new bases.
    */
-  gear: { id: string; baseId: string; rarity: GearRarity; level?: number }[];
+  gear: { id: string; baseId: string; rarity: GearRarity; itemLevel?: number }[];
   /** Items that would not fit and became parts (already counted in `parts`). */
-  converted: { baseId: string; rarity: GearRarity; level?: number }[];
+  converted: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
   /** All the parts the grant paid, including from converted items and duplicate blueprints. */
   parts: PartsBundle;
-  blueprints: { baseId: string; rarity: GearRarity; duplicate: boolean }[];
+  blueprints: { baseId: string; duplicate: boolean }[];
   /** Supplies the grant gave, one id per supply (absent in grants stored before expeditions v2). */
   supplies?: string[];
 }
@@ -66,11 +71,49 @@ export interface GrantRecord extends GrantView {
   at: number;
 }
 
-interface Draft {
-  gear: { baseId: string; rarity: GearRarity; rolls: GearRolls; level?: number }[];
+/** An item a grant gives, rolled and with where it came from. */
+export interface DraftItem {
+  item: GearItem;
+  origin: ItemOrigin;
+}
+
+export interface Draft {
+  gear: DraftItem[];
   parts: PartsBundle;
   blueprints: string[];
   supplies?: string[];
+}
+
+/**
+ * Grants stored before gear v2 name old bases (and a rarity on blueprints). Maps them onto the new
+ * bases (the same slot and tint as the conversion) so history and repeats still show something real.
+ * A grant already in the new shape (items with `itemLevel`, blueprints without `rarity`) is returned as is.
+ */
+export function normaliseGrant(raw: GrantView): GrantView {
+  const mapGear = <T extends { baseId: string; itemLevel?: number | undefined }>(g: T): T => {
+    if (g.itemLevel !== undefined) return g;
+    const old = legacyBase(g.baseId);
+    if (old === undefined) return g;
+    return {
+      ...g,
+      baseId: baseForTint(old.slot, old.tint, old.festival === true).id,
+      itemLevel: 1,
+    };
+  };
+  return {
+    ...raw,
+    gear: raw.gear.map(mapGear),
+    converted: raw.converted.map(mapGear),
+    blueprints: raw.blueprints.map((b) => {
+      const old =
+        (b as { rarity?: unknown }).rarity === undefined ? undefined : legacyBase(b.baseId);
+      return {
+        baseId:
+          old === undefined ? b.baseId : baseForTint(old.slot, old.tint, old.festival === true).id,
+        duplicate: b.duplicate,
+      };
+    }),
+  };
 }
 
 const emptyView = (): GrantView => ({ gear: [], converted: [], parts: {}, blueprints: [] });
@@ -110,39 +153,33 @@ function grantOnce(
         result_json: string;
       }>('SELECT result_json FROM gear_grants WHERE user_id = ? AND key = ?', userId, key)
       .toArray()[0];
-    if (prior !== undefined)
-      return { view: JSON.parse(prior.result_json) as GrantView, fresh: false };
+    if (prior !== undefined) {
+      return { view: normaliseGrant(JSON.parse(prior.result_json) as GrantView), fresh: false };
+    }
 
     const now = deps.now();
     const draft = draw();
     const view = emptyView();
     const parts: PartsBundle = {};
     add(parts, draft.parts);
-    for (const item of draft.gear) {
-      const level = item.level ?? 0;
+    for (const { item, origin } of draft.gear) {
       if (hasRoom(sql, userId)) {
-        const id = insertItem(sql, userId, item, source, now);
-        view.gear.push({
-          id,
-          baseId: item.baseId,
-          rarity: item.rarity,
-          ...(level > 0 ? { level } : {}),
-        });
+        const id = insertItem(sql, userId, item, { source, now, origin });
+        view.gear.push({ id, baseId: item.baseId, rarity: item.rarity, itemLevel: item.itemLevel });
       } else {
-        add(parts, dismantleYield({ baseId: item.baseId, rarity: item.rarity, level }));
+        add(parts, dismantleYield(item));
         view.converted.push({
           baseId: item.baseId,
           rarity: item.rarity,
-          ...(level > 0 ? { level } : {}),
+          itemLevel: item.itemLevel,
         });
       }
     }
     for (const baseId of draft.blueprints) {
-      const base = gearBase(baseId);
-      if (base === undefined) throw new Error('grant of an unknown blueprint');
-      const learned = learnBlueprint(sql, userId, baseId, base.blueprint, now);
+      if (gearBase(baseId) === undefined) throw new Error('grant of an unknown blueprint');
+      const learned = learnBlueprint(sql, userId, baseId, now);
       if (!learned) add(parts, { scrap: RULES.gear.drops.duplicateBlueprintScrap });
-      view.blueprints.push({ baseId, rarity: base.blueprint, duplicate: !learned });
+      view.blueprints.push({ baseId, duplicate: !learned });
     }
     creditParts(sql, userId, parts);
     view.parts = parts;
@@ -169,9 +206,11 @@ function grantOnce(
         {
           kind: 'gear_drop',
           source,
-          gear: [...view.gear, ...view.converted].map((g) => ({
-            base: g.baseId,
-            rarity: g.rarity,
+          gear: [...draft.gear.map((d) => d.item)].map((item) => ({
+            base: item.baseId,
+            rarity: item.rarity,
+            level: item.itemLevel,
+            lines: item.lines.map((l) => ({ id: l.id, tier: l.tier })),
           })),
           converted: view.converted.length,
           scrap: parts.scrap ?? 0,
@@ -204,9 +243,9 @@ export function grantRaidPhase(
 }
 
 /**
- * The finale's reward slot for a player of a party that won it: one gear piece (pre-upgraded by the
- * week's Boss Rank) or one blueprint the player does not know yet, by the week's Boss Rank. Key
- * `raid:<week>:finale`, the same key as when it was one gear roll, so a repeat pays nothing and
+ * The finale's reward slot for a player of a party that won it: one gear piece (item level `3 + Boss
+ * Rank`, the boss's element) or one blueprint the player does not know yet, by the week's Boss Rank.
+ * Key `raid:<week>:finale`, the same key as when it was one gear roll, so a repeat pays nothing and
  * older grant rows stay valid.
  */
 export function grantRaidFinale(
@@ -214,14 +253,27 @@ export function grantRaidFinale(
   userId: string,
   weekId: string,
   rank: number,
+  bossId: string,
 ): GrantView {
   return grantOnce(deps, userId, `raid:${weekId}:finale`, 'raid_finale', () => {
     const owned = new Set(knownBlueprints(deps.storage.sql, userId).map((b) => b.baseId));
-    const reward = rollFinaleReward(deps.rng, rank, owned);
+    const element = bossElement(bossId);
+    const reward = rollFinaleReward(deps.rng, rank, element, owned);
     return reward.kind === 'blueprint'
       ? { gear: [], parts: {}, blueprints: [reward.baseId] }
-      : { gear: [reward], parts: {}, blueprints: [] };
+      : {
+          gear: [{ item: reward.item, origin: { kind: 'raid', boss: bossId, rank } }],
+          parts: {},
+          blueprints: [],
+        };
   }).view;
+}
+
+/** The element of a raid boss (content); the finale and Festival drops take it as their tag. */
+function bossElement(bossId: string): Element {
+  const boss = content.bosses.find((b) => b.id === bossId);
+  if (boss === undefined) throw new Error('grant for an unknown boss');
+  return boss.element;
 }
 
 /** The Festival piece for a player of a party that won a Festival finale. Key `festival:<week>`. */
@@ -230,9 +282,16 @@ export function grantFestivalGear(
   userId: string,
   weekId: string,
   element: Element,
+  rank: number,
+  bossId: string,
 ): GrantView {
   return grantOnce(deps, userId, `festival:${weekId}`, 'festival', () => ({
-    gear: [rollFestivalDrop(deps.rng, element)],
+    gear: [
+      {
+        item: rollFestivalItem(deps.rng, element, rank),
+        origin: { kind: 'festival', boss: bossId, rank },
+      },
+    ],
     parts: {},
     blueprints: [],
   })).view;
@@ -251,7 +310,7 @@ export function grantTripLoot(
     parts: PartsBundle;
     blueprints: string[];
     supplies: string[];
-    gear: { baseId: string; rarity: GearRarity; rolls: GearRolls }[];
+    gear: DraftItem[];
   },
 ): GrantView {
   return grantOnce(
@@ -319,7 +378,7 @@ export function grantRankGift(
 }
 
 /**
- * The welcome kit: a common item, a common blueprint and some scrap, so crafting can start on day 1.
+ * The welcome kit: a common Hat, a blueprint and some scrap, so crafting can start on day 1.
  * Granted once per player (key `welcome`). Returns the grant and whether this call made it.
  */
 export function grantWelcomeKit(
@@ -334,7 +393,7 @@ export function grantWelcomeKit(
     () => {
       const kit = rollWelcomeKit(deps.rng);
       return {
-        gear: [kit.item],
+        gear: [{ item: kit.item, origin: { kind: 'welcome' } }],
         parts: { scrap: RULES.gear.drops.welcomeScrap },
         blueprints: [kit.blueprint],
       };
@@ -449,7 +508,7 @@ export function recentGrants(sql: SqlStorage, userId: string, limit: number): Gr
     )
     .toArray()
     .map((row) => ({
-      ...(JSON.parse(row.result_json) as GrantView),
+      ...normaliseGrant(JSON.parse(row.result_json) as GrantView),
       key: row.key,
       source: row.source,
       at: row.created_at,

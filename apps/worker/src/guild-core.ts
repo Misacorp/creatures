@@ -10,7 +10,9 @@ import { dungeonDraftMigration } from './dungeon-draft-migration';
 import { dungeonMigration } from './dungeon-migration';
 import { dungeonRoutes } from './dungeon-routes';
 import { Gear } from './gear';
+import { convertPendingGear } from './gear-convert';
 import { gearMigration } from './gear-migration';
+import { gearV2Migration } from './gear-v2-migration';
 import { gearRoutes } from './gear-routes';
 import { creatureQuirkMigration } from './creature-quirk-migration';
 import { expeditionRoutes } from './expedition-routes';
@@ -335,6 +337,9 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   },
   // Version 26: the saved dungeon team draft (see dungeon-draft-migration.ts).
   dungeonDraftMigration,
+  // Version 27: gear v2, the new item table, blueprint marks and the conversion list (see
+  // gear-v2-migration.ts; the conversion itself runs after the migrations, see gear-convert.ts).
+  gearV2Migration,
 ];
 
 export interface SessionUser {
@@ -540,6 +545,8 @@ export class GuildCore {
   /** Recent "may manage the server" answers per player, and lookups that are still running. */
   private readonly manageCache = new Map<string, { allowed: boolean; until: number }>();
   private readonly manageInFlight = new Map<string, Promise<boolean>>();
+  /** Live randomness for gear: drops, crafts and the one-time conversion of old gear. */
+  private readonly gearRng: Rng;
 
   constructor(
     private readonly storage: CoreStorage,
@@ -562,6 +569,7 @@ export class GuildCore {
     this.rollup = new AnalyticsRollup({ storage, now: realNow, timezone: () => this.timezone() });
     this.allowance = new DailyAllowance(storage, this.analytics, now, () => this.timezone());
     const gearRng = options.gearRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+    this.gearRng = gearRng;
     this.collection = new Collection({
       storage,
       now,
@@ -672,6 +680,14 @@ export class GuildCore {
         this.sql.exec('INSERT INTO schema_version (version) VALUES (?)', version);
       });
     }
+    // The first load after the gear v2 migration: every player who had gear is converted, once, with
+    // live randomness (idempotent: nothing is waiting on later starts).
+    convertPendingGear({
+      storage: this.storage,
+      now: this.now,
+      rng: this.gearRng,
+      analytics: this.analytics,
+    });
   }
 
   /**

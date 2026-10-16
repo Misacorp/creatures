@@ -456,7 +456,7 @@ describe('GET /api/state', () => {
           stats: { hp: 96, atk: 40, spd: 28 },
           // No gear yet: the fight stats are the same, nothing is worn and nothing is busy.
           statsWithGear: { hp: 96, atk: 40, spd: 28 },
-          gear: null,
+          gear: [],
           busy: null,
           trainCost: trainCostAt(1),
           evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: false },
