@@ -72,13 +72,14 @@ export const ActionIds = {
     const picks = request.supplies.map((p) => `${p.source}:${p.id}`).sort();
     return `send:${request.creatureId}:${request.destination}:${request.duration}:${picks.join(',')}`;
   },
-  dismantle: (gearId: string): ActionId => `dismantle:${gearId}`,
   claimJob: (jobId: string): ActionId => `claim-job:${jobId}`,
-  /** The same job on the same creature is the same action. */
+  /** The same job on the same creature is the same action (a craft aimed differently, or other items, is another). */
   job: (request: JobStart): ActionId => {
     switch (request.kind) {
       case 'craft':
-        return `job:craft:${request.creatureId}:${request.blueprintId}`;
+        return `job:craft:${request.creatureId}:${request.blueprintId}:${request.reach}`;
+      case 'dismantle':
+        return `job:dismantle:${request.creatureId}:${[...request.itemIds].sort().join(',')}`;
       case 'supply':
         return `job:supply:${request.creatureId}:${request.supplyId}`;
     }

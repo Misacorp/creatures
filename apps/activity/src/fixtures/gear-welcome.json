@@ -11,7 +11,7 @@
   },
   "items": [
     {
-      "id": "db53d67b-cc26-4419-9c56-31704fa16687",
+      "id": "230c8d60-8762-4b01-8db8-db8b50350058",
       "baseId": "trail-cap",
       "slot": "hat",
       "tag": "neutral",
@@ -45,7 +45,23 @@
       },
       "equippedOn": null,
       "dismantle": {
-        "scrap": 2
+        "scrap": {
+          "min": 2,
+          "max": 4
+        },
+        "shards": {
+          "min": 0,
+          "max": 0,
+          "element": null
+        },
+        "glimmer": {
+          "min": 0,
+          "max": 0
+        },
+        "essence": {
+          "min": 0,
+          "max": 0
+        }
       },
       "source": "welcome",
       "createdAt": 1799733600000,
@@ -82,19 +98,19 @@
   },
   "skills": [
     {
-      "creatureId": "fb547299-1d99-4e91-b913-ed6029135236",
+      "creatureId": "028e2146-c493-4559-9e6e-e1fe634ec58b",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
+      "creatureId": "c537c501-5ceb-4010-886e-2f27d82f13a7",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "a4844dc1-e23f-4059-b04f-1554520a192a",
+      "creatureId": "446b7b58-5438-4a79-8dec-cfebaa891605",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
@@ -104,7 +120,7 @@
     {
       "gear": [
         {
-          "id": "db53d67b-cc26-4419-9c56-31704fa16687",
+          "id": "230c8d60-8762-4b01-8db8-db8b50350058",
           "baseId": "trail-cap",
           "rarity": "common",
           "itemLevel": 1

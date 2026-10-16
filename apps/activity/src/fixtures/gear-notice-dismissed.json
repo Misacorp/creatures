@@ -57,10 +57,25 @@
           "level": 4,
           "role": null
         },
-        "equippedOn": "9586e545-d913-4026-a157-cbe1bd6a8c2a",
+        "equippedOn": "0a2262ed-6f8a-466c-a7a0-f4230057ee96",
         "dismantle": {
-          "scrap": 5,
-          "ember-shard": 1
+          "scrap": {
+            "min": 4,
+            "max": 8
+          },
+          "shards": {
+            "min": 1,
+            "max": 1,
+            "element": "ember"
+          },
+          "glimmer": {
+            "min": 0,
+            "max": 0
+          },
+          "essence": {
+            "min": 3,
+            "max": 8
+          }
         },
         "source": "converted",
         "createdAt": 1799733600000,
@@ -90,7 +105,7 @@
           {
             "id": "ember-ward",
             "name": "Ember Ward",
-            "text": "Ember Ward \u22127%",
+            "text": "Ember Ward −7%",
             "about": "Less damage from the foes that beat Ember.",
             "source": "rolled",
             "tier": 2,
@@ -110,7 +125,7 @@
           {
             "id": "area-ward",
             "name": "Area ward",
-            "text": "Area ward \u22125%",
+            "text": "Area ward −5%",
             "about": "Area hits do less damage to the wearer.",
             "source": "rolled",
             "tier": 2,
@@ -122,11 +137,25 @@
           "level": 7,
           "role": null
         },
-        "equippedOn": "06967189-03c4-45de-a06f-fb054f2ccc73",
+        "equippedOn": "8f47089b-adbb-48dd-8327-66f00e8610b9",
         "dismantle": {
-          "scrap": 10,
-          "ember-shard": 2,
-          "glimmer": 1
+          "scrap": {
+            "min": 8,
+            "max": 14
+          },
+          "shards": {
+            "min": 1,
+            "max": 2,
+            "element": "ember"
+          },
+          "glimmer": {
+            "min": 0,
+            "max": 1
+          },
+          "essence": {
+            "min": 10,
+            "max": 25
+          }
         },
         "source": "converted",
         "createdAt": 1799733600000,
@@ -170,7 +199,23 @@
         },
         "equippedOn": null,
         "dismantle": {
-          "scrap": 2
+          "scrap": {
+            "min": 2,
+            "max": 4
+          },
+          "shards": {
+            "min": 0,
+            "max": 0,
+            "element": "spark"
+          },
+          "glimmer": {
+            "min": 0,
+            "max": 0
+          },
+          "essence": {
+            "min": 0,
+            "max": 0
+          }
         },
         "source": "converted",
         "createdAt": 1799733600000,
@@ -212,19 +257,19 @@
     },
     "skills": [
       {
-        "creatureId": "9586e545-d913-4026-a157-cbe1bd6a8c2a",
+        "creatureId": "0a2262ed-6f8a-466c-a7a0-f4230057ee96",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "06967189-03c4-45de-a06f-fb054f2ccc73",
+        "creatureId": "8f47089b-adbb-48dd-8327-66f00e8610b9",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "2008d625-8851-45a5-90cb-012521cd0b27",
+        "creatureId": "63dd6e8d-3ef4-4d47-b8ef-f0795cd7a44c",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
@@ -253,7 +298,7 @@
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "9586e545-d913-4026-a157-cbe1bd6a8c2a",
+        "id": "0a2262ed-6f8a-466c-a7a0-f4230057ee96",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -306,7 +351,7 @@
         }
       },
       {
-        "id": "06967189-03c4-45de-a06f-fb054f2ccc73",
+        "id": "8f47089b-adbb-48dd-8327-66f00e8610b9",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -359,7 +404,7 @@
         }
       },
       {
-        "id": "2008d625-8851-45a5-90cb-012521cd0b27",
+        "id": "63dd6e8d-3ef4-4d47-b8ef-f0795cd7a44c",
         "species": "zipmouse",
         "line": "zipmouse",
         "level": 8,
@@ -419,7 +464,7 @@
     "supplies": {},
     "trainingMedianLevel": 8,
     "serverFirsts": [],
-    "loungerId": "06967189-03c4-45de-a06f-fb054f2ccc73",
+    "loungerId": "0a2262ed-6f8a-466c-a7a0-f4230057ee96",
     "loungeSpot": null
   }
 }

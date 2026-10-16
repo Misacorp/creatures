@@ -1,14 +1,14 @@
 {
-  "serverNow": 1799744402000,
+  "serverNow": 1799751603000,
   "balances": {
     "bait": 100,
-    "essence": 0
+    "essence": 85
   },
   "starterChosen": false,
   "starterOptions": ["splashet", "cindle", "sproutle"],
   "creatures": [
     {
-      "id": "fb547299-1d99-4e91-b913-ed6029135236",
+      "id": "028e2146-c493-4559-9e6e-e1fe634ec58b",
       "species": "cindle",
       "line": "cindle",
       "level": 15,
@@ -32,14 +32,14 @@
       },
       "gear": [
         {
-          "id": "05a010a5-6b71-467b-b3eb-802943b3afef",
+          "id": "1d945801-91d8-44c3-bcfb-677e9203b6f9",
           "baseId": "coal-warm-cap",
           "slot": "hat",
           "rarity": "epic",
           "itemLevel": 14
         },
         {
-          "id": "3f89c55d-cb0b-42fd-a033-d9f51df2c967",
+          "id": "0dd478fb-7bbd-4239-af9e-dbfc913b3232",
           "baseId": "tidepool-charm",
           "slot": "charm",
           "rarity": "common",
@@ -48,7 +48,7 @@
       ],
       "busy": {
         "kind": "job",
-        "id": "0d476c29-7afd-43d2-8684-61f0a8a737cb"
+        "id": "399809e6-dabc-4b3b-bbcc-b9933cac4d96"
       },
       "ability": {
         "id": "flare-strike",
@@ -67,11 +67,11 @@
         "toSpecies": "pyrelynx",
         "level": 15,
         "essence": 20,
-        "available": false
+        "available": true
       }
     },
     {
-      "id": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
+      "id": "c537c501-5ceb-4010-886e-2f27d82f13a7",
       "species": "sproutle",
       "line": "sproutle",
       "level": 14,
@@ -95,14 +95,14 @@
       },
       "gear": [
         {
-          "id": "c3a6f419-4100-44cb-969e-fbd533ceec2e",
+          "id": "fac456d6-951b-45d8-ab14-c8acbff6f753",
           "baseId": "leafknit-scarf",
           "slot": "scarf",
           "rarity": "rare",
           "itemLevel": 12
         },
         {
-          "id": "e5b1ea7f-6a33-41f5-91eb-14cdfeb051a0",
+          "id": "cb724bbc-11aa-4d71-b18a-c6f21510e2a1",
           "baseId": "wardens-bell",
           "slot": "charm",
           "rarity": "rare",
@@ -131,7 +131,7 @@
       }
     },
     {
-      "id": "a4844dc1-e23f-4059-b04f-1554520a192a",
+      "id": "446b7b58-5438-4a79-8dec-cfebaa891605",
       "species": "zipmouse",
       "line": "zipmouse",
       "level": 9,
@@ -155,7 +155,7 @@
       },
       "gear": [
         {
-          "id": "db53d67b-cc26-4419-9c56-31704fa16687",
+          "id": "230c8d60-8762-4b01-8db8-db8b50350058",
           "baseId": "trail-cap",
           "slot": "hat",
           "rarity": "common",
@@ -199,12 +199,12 @@
   "supplies": {},
   "trainingMedianLevel": 15,
   "serverFirsts": [],
-  "loungerId": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
+  "loungerId": "c537c501-5ceb-4010-886e-2f27d82f13a7",
   "loungeSpot": null,
   "timezone": "Europe/Helsinki",
   "leetSync": {
     "source": "disabled",
-    "lastAttemptAt": 1799744402000,
+    "lastAttemptAt": 1799751603000,
     "lastSyncedAt": null,
     "lastError": "disabled",
     "lastDays": null

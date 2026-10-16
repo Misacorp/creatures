@@ -59,10 +59,32 @@
     }
   },
   {
-    "route": "POST /api/gear/:id/dismantle",
+    "route": "POST /api/workshop/jobs",
     "status": 409,
     "body": {
       "error": "key_conflict"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "skill_too_low"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 400,
+    "body": {
+      "error": "invalid_bundle",
+      "reason": "mixed"
+    }
+  },
+  {
+    "route": "POST /api/gear/:id/dismantle",
+    "status": 410,
+    "body": {
+      "error": "dismantle_is_a_job"
     }
   },
   {

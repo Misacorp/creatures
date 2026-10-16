@@ -1,4 +1,4 @@
-import { craftCost, jobDuration } from '@creatures/game';
+import { RULES, craftCost, dismantleRange, jobDuration } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { parseGameState, type Creature } from './api';
 import collectionState from './fixtures/collection-state.json';
@@ -10,9 +10,12 @@ import { parseGearState } from './gear-parse';
 import {
   bagText,
   blueprintViews,
+  bulkPick,
   busyReason,
   defaultPick,
   detailLines,
+  dismantleDurationFor,
+  dismantleLines,
   durationFor,
   equipBestText,
   equipChoices,
@@ -29,13 +32,18 @@ import {
   linePips,
   lootIsEmpty,
   lootItemName,
+  marksText,
   missingParts,
   needsText,
   noticeLines,
+  oddsPercent,
+  oddsText,
   openJobs,
   originText,
   partsText,
   pickerOptions,
+  rangeText,
+  reachName,
   pipsLabel,
   slotName,
   sortItems,
@@ -46,7 +54,7 @@ import {
   wornInOrder,
   wornItemOf,
 } from './gear-view';
-import type { GrantLoot } from './gear-types';
+import type { GearItem, GrantLoot } from './gear-types';
 
 const gear = parseGearState(gearState);
 const game = parseGameState(collectionState);
@@ -67,11 +75,11 @@ describe('names', () => {
 
   it('finds what is short of a price', () => {
     expect(missingParts(gear.parts, { scrap: 100, glimmer: 9, 'grove-shard': 1 })).toEqual({
-      scrap: 26,
+      scrap: 25,
       glimmer: 5,
       'grove-shard': 1,
     });
-    expect(missingParts(gear.parts, { scrap: 74 })).toEqual({});
+    expect(missingParts(gear.parts, { scrap: 75 })).toEqual({});
   });
 });
 
@@ -388,6 +396,18 @@ describe('jobs', () => {
     expect(jobTitle({ kind: 'improve', input: {} })).toBe('Old job (its parts come back)');
     expect(jobVerb('craft')).toBe('Craft');
     expect(jobVerb('enchant')).toBe('Old job');
+    expect(jobVerb('dismantle')).toBe('Dismantle');
+    expect(jobTitle({ kind: 'craft', input: { baseId: 'kelp-cap', reach: 'epic' } })).toBe(
+      'Craft Kelp Cap (Reach for Epic)',
+    );
+    expect(jobTitle({ kind: 'craft', input: { baseId: 'kelp-cap', reach: 'none' } })).toBe(
+      'Craft Kelp Cap',
+    );
+    const item = { baseId: 'kelp-cap', rarity: 'common', itemLevel: 3 } as const;
+    expect(jobTitle({ kind: 'dismantle', input: { items: [item] } })).toBe('Dismantle Kelp Cap');
+    expect(jobTitle({ kind: 'dismantle', input: { items: [item, item, item] } })).toBe(
+      'Dismantle 3 items',
+    );
   });
 
   it('frames a finished job with the craft rarity, the supply tier or Common', () => {
@@ -399,10 +419,22 @@ describe('jobs', () => {
         baseId: 'kelp-cap',
         rarity: 'rare',
         itemLevel: 4,
+        reach: 'rare',
         upgraded: true,
         ...common,
       }),
     ).toBe('rare');
+    expect(
+      jobResultRarity({
+        kind: 'dismantle',
+        items: [{ baseId: 'kelp-cap', rarity: 'epic', itemLevel: 8 }],
+        parts: { scrap: 9 },
+        essence: 12,
+        learned: [],
+        marked: [],
+        ...common,
+      }),
+    ).toBe('epic');
     expect(
       jobResultRarity({ kind: 'retired', was: 'improve', refund: { scrap: 6 }, ...common }),
     ).toBe('common');
@@ -433,7 +465,7 @@ describe('starting a job', () => {
     ).toContain('bag is full');
     expect(
       startBlocker(gear, free, { kind: 'craft', cost: { 'grove-shard': 1, scrap: 100 } }),
-    ).toBe('Needs 26 more Scrap and 1 more Grove Shard.');
+    ).toBe('Needs 25 more Scrap and 1 more Grove Shard.');
   });
 
   it('does not stop a supply for a full bag (no new item)', () => {
@@ -538,5 +570,120 @@ describe('wornItemOf', () => {
   it('lists what a creature wears in slot order', () => {
     const worn = [{ slot: 'charm' as const }, { slot: 'hat' as const }, { slot: 'scarf' as const }];
     expect(wornInOrder(worn).map((w) => w.slot)).toEqual(['hat', 'scarf', 'charm']);
+  });
+});
+
+describe("writing the odds, the marks and the refund ranges (the numbers are the server's)", () => {
+  it('writes basis points as exact percentages', () => {
+    expect(oddsPercent(10_000)).toBe('100%');
+    expect(oddsPercent(6_000)).toBe('60%');
+    expect(oddsPercent(3_640)).toBe('36.4%');
+    expect(oddsPercent(405)).toBe('4.05%');
+    expect(oddsPercent(5)).toBe('0.05%');
+    expect(oddsPercent(0)).toBe('0%');
+  });
+
+  it('lists only the rarities that can come out', () => {
+    expect(oddsText({ common: 10_000, rare: 0, epic: 0 })).toBe('Common 100%');
+    expect(oddsText({ common: 4_000, rare: 6_000, epic: 0 })).toBe('Common 40% · Rare 60%');
+    expect(oddsText({ common: 1_365, rare: 5_140, epic: 3_495 })).toBe(
+      'Common 13.65% · Rare 51.4% · Epic 34.95%',
+    );
+  });
+
+  it('names the ways to craft and writes the marks as a count of the most', () => {
+    expect([reachName('none'), reachName('rare'), reachName('epic')]).toEqual([
+      'Plain craft',
+      'Reach for Rare',
+      'Reach for Epic',
+    ]);
+    expect(marksText(4)).toBe(`4 / ${String(RULES.gear.craft.marks.max)}`);
+    expect(marksText(0)).toBe('0 / 10');
+  });
+
+  it('writes a range as one number when both ends are the same', () => {
+    expect(rangeText({ min: 4, max: 8 })).toBe('4 to 8');
+    expect(rangeText({ min: 1, max: 1 })).toBe('1');
+  });
+
+  it('writes what a dismantle can give, leaving out what it never gives', () => {
+    expect(
+      dismantleLines(dismantleRange([{ baseId: 'trail-cap', rarity: 'common', itemLevel: 1 }])),
+    ).toEqual(['2 to 4 scrap']);
+    expect(
+      dismantleLines(dismantleRange([{ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 10 }])),
+    ).toEqual(['6 to 10 scrap', '1 Tide shard', '3 to 8 Essence']);
+    expect(
+      dismantleLines(dismantleRange([{ baseId: 'wardens-bell', rarity: 'epic', itemLevel: 20 }])),
+    ).toEqual(['12 to 18 scrap', '1 to 2 shards (any kind)', '0 to 1 glimmer', '10 to 25 Essence']);
+  });
+
+  it('shows the time of a dismantle for the rarity and the worker', () => {
+    expect(dismantleDurationFor('common', 1)).toBe(15 * 60_000);
+    expect(dismantleDurationFor('rare', 1)).toBe(60 * 60_000);
+    expect(dismantleDurationFor('epic', 1)).toBe(2 * 60 * 60_000);
+    expect(dismantleDurationFor('epic', 5)).toBeLessThan(dismantleDurationFor('epic', 1));
+  });
+});
+
+describe('dismantle several: picking by rarity and item level', () => {
+  const make = (
+    id: string,
+    rarity: GearItem['rarity'],
+    itemLevel: number,
+    on: string | null = null,
+  ) =>
+    ({
+      ...gear.items[0],
+      id,
+      rarity,
+      itemLevel,
+      equippedOn: on,
+      createdAt: 0,
+    }) as GearItem;
+  const bag = [
+    make('c9', 'common', 9),
+    make('c2', 'common', 2),
+    make('c3', 'common', 3),
+    make('c4', 'common', 4),
+    make('c5', 'common', 5),
+    make('c6', 'common', 6),
+    make('c1', 'common', 1, 'worn-by-someone'),
+    make('r3', 'rare', 3),
+    make('r1', 'rare', 1),
+  ];
+
+  it('takes the lowest levels first, at most one bundle of 5 Commons, and counts the rest', () => {
+    const picked = bulkPick(bag, 'common', 20);
+    expect(picked.ids).toEqual(['c2', 'c3', 'c4', 'c5', 'c6']);
+    expect(picked.matching).toBe(6);
+    expect(bulkPick(bag, 'common', 4)).toEqual({ ids: ['c2', 'c3', 'c4'], matching: 3 });
+  });
+
+  it('never picks a worn item, and takes anything above Common one at a time', () => {
+    expect(bulkPick(bag, 'common', 1)).toEqual({ ids: [], matching: 0 });
+    expect(bulkPick(bag, 'rare', 20)).toEqual({ ids: ['r1'], matching: 2 });
+    expect(bulkPick(bag, 'epic', 20)).toEqual({ ids: [], matching: 0 });
+  });
+});
+
+describe('what a start needs besides parts', () => {
+  const free = game.creatures.filter((c) => c.busy === null);
+
+  it('says how much Essence is missing, with the parts that are', () => {
+    const poor = { ...gear, balances: { bait: 0, essence: 10 } };
+    expect(startBlocker(poor, free, { kind: 'craft', cost: {}, essence: 25 })).toBe(
+      'Needs 15 more Essence.',
+    );
+    expect(startBlocker(poor, free, { kind: 'craft', cost: { scrap: 999 }, essence: 25 })).toMatch(
+      /^Needs \d+ more Scrap and 15 more Essence\.$/,
+    );
+    expect(startBlocker(poor, free, { kind: 'craft', cost: {}, essence: 10 })).toBeNull();
+  });
+
+  it('does not ask a dismantle job for room in the bag', () => {
+    const full = { ...gear, inventory: { cap: 60, used: 60, reserved: 0 } };
+    expect(startBlocker(full, free, { kind: 'dismantle', cost: {} })).toBeNull();
+    expect(startBlocker(full, free, { kind: 'craft', cost: {} })).toMatch(/bag is full/);
   });
 });

@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import type { GameState } from './api';
 import { Blueprints } from './Blueprints';
+import { BulkDismantle } from './BulkDismantle';
 import type { GearActions } from './gear-actions';
 import { PartsRow } from './GearArt';
 import type { GearState, JobResult } from './gear-types';
@@ -179,6 +180,7 @@ export function Workshop({
           <ItemDetail
             key={selected.id}
             item={selected}
+            gear={gear}
             creatures={state.creatures}
             busy={busy}
             actions={actions}
@@ -190,13 +192,26 @@ export function Workshop({
         {gear.items.length > 0 && selected === null && (
           <p class="muted">Tap an item to see its lines and what you can do with it.</p>
         )}
+        {gear.items.length > 0 && (
+          <BulkDismantle
+            gear={gear}
+            creatures={state.creatures}
+            busy={busy}
+            actions={actions}
+            onStarted={() => {
+              setSelectedId(null);
+            }}
+          />
+        )}
       </section>
       <Blueprints
         gear={gear}
         creatures={state.creatures}
         busy={busy}
-        onCraft={async (baseId, creatureId) =>
-          (await actions.startJob({ kind: 'craft', creatureId, blueprintId: baseId })) !== undefined
+        loadPreview={actions.previewCraft}
+        onCraft={async (baseId, creatureId, reach) =>
+          (await actions.startJob({ kind: 'craft', creatureId, blueprintId: baseId, reach })) !==
+          undefined
         }
       />
       <SupplyCrafting

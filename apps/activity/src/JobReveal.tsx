@@ -2,7 +2,15 @@ import { glyphOrUnknown } from './glyphs';
 import { ItemFrame, ItemSprite, PartsList, RarityTag } from './GearArt';
 import { GlossaryTag } from './Glossary';
 import type { GearItem, JobResult } from './gear-types';
-import { gearName, jobVerb, partsText, rarityName, slotName } from './gear-view';
+import {
+  gearName,
+  jobVerb,
+  marksText,
+  partsText,
+  rarityName,
+  reachName,
+  slotName,
+} from './gear-view';
 import { ItemLines } from './ItemLines';
 import { Sprite } from './sprites/Sprite';
 import { supplyKindOf, supplyName } from './trip-view';
@@ -24,14 +32,49 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
           </p>
           {item !== undefined && <ItemLines lines={item.lines} />}
           <p>It is in your bag now.</p>
+          {result.reach !== 'none' && <p class="muted">{reachName(result.reach)}.</p>}
           {result.upgraded && (
             <p class="good-note">
-              It came out a rarity better than usual ({rarityName(result.rarity)}).
+              The one-step-up chance paid off: it came out {rarityName(result.rarity)}.
             </p>
           )}
         </>
       );
     }
+    case 'dismantle':
+      return (
+        <>
+          <p>
+            <strong class="pix">
+              {result.items.length === 1 && result.items[0] !== undefined
+                ? gearName(result.items[0].baseId)
+                : `${String(result.items.length)} items`}
+            </strong>{' '}
+            taken apart.
+          </p>
+          <p>
+            You got:{' '}
+            <strong>
+              {[
+                ...(partsText(result.parts) === 'nothing' ? [] : [partsText(result.parts)]),
+                ...(result.essence > 0 ? [`${String(result.essence)} Essence`] : []),
+              ].join(', ') || 'nothing'}
+            </strong>
+            .
+          </p>
+          <PartsList parts={result.parts} />
+          {result.learned.map((baseId) => (
+            <p key={baseId} class="good-note">
+              You learned the blueprint of {gearName(baseId)}.
+            </p>
+          ))}
+          {result.marked.map((m) => (
+            <p key={m.baseId} class="good-note">
+              {gearName(m.baseId)} is well-thumbed {marksText(m.marks)} now.
+            </p>
+          ))}
+        </>
+      );
     case 'supply':
       return (
         <>
@@ -100,6 +143,8 @@ export function JobReveal({
               />
             ) : result.kind === 'craft' ? (
               <ItemSprite baseId={result.baseId} scale={8} />
+            ) : result.kind === 'dismantle' && result.items[0] !== undefined ? (
+              <ItemSprite baseId={result.items[0].baseId} scale={8} />
             ) : (
               <Sprite sprite={glyphOrUnknown('anvil')} scale={8} />
             )}

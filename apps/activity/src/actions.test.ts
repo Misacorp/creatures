@@ -7,7 +7,6 @@ describe('action names', () => {
     expect(ActionIds.starter('splashet')).toBe('starter:splashet');
     expect(ActionIds.train('c1')).toBe('train:c1');
     expect(ActionIds.evolve('c1')).toBe('evolve:c1');
-    expect(ActionIds.dismantle('g1')).toBe('dismantle:g1');
     expect(ActionIds.claimJob('j1')).toBe('claim-job:j1');
     expect(ActionIds.dungeonRun(['a', 'b', 'c'])).toBe('dungeon-run:["a","b","c"]');
     expect(
@@ -21,8 +20,11 @@ describe('action names', () => {
   });
 
   it('names a job start by its kind, creature and target', () => {
-    expect(ActionIds.job({ kind: 'craft', creatureId: 'c', blueprintId: 'b' })).toBe(
-      'job:craft:c:b',
+    expect(ActionIds.job({ kind: 'craft', creatureId: 'c', blueprintId: 'b', reach: 'none' })).toBe(
+      'job:craft:c:b:none',
+    );
+    expect(ActionIds.job({ kind: 'dismantle', creatureId: 'c', itemIds: ['i2', 'i1'] })).toBe(
+      'job:dismantle:c:i1,i2',
     );
     expect(ActionIds.job({ kind: 'supply', creatureId: 'c', supplyId: 's' })).toBe(
       'job:supply:c:s',
@@ -54,12 +56,22 @@ describe('action names', () => {
   });
 
   it('names the same job on two creatures, and two jobs on one creature, differently', () => {
-    const craft = { kind: 'craft', creatureId: 'c1', blueprintId: 'wave-band' } as const;
+    const craft = {
+      kind: 'craft',
+      creatureId: 'c1',
+      blueprintId: 'wave-band',
+      reach: 'none',
+    } as const;
     const names = [
       ActionIds.job(craft),
       ActionIds.job({ ...craft, creatureId: 'c2' }),
       ActionIds.job({ ...craft, blueprintId: 'tide-ring' }),
+      // The same craft aimed differently is another action, with its own key.
+      ActionIds.job({ ...craft, reach: 'rare' }),
+      ActionIds.job({ ...craft, reach: 'epic' }),
       ActionIds.job({ kind: 'supply', creatureId: 'c1', supplyId: 'wave-band' }),
+      ActionIds.job({ kind: 'dismantle', creatureId: 'c1', itemIds: ['a'] }),
+      ActionIds.job({ kind: 'dismantle', creatureId: 'c1', itemIds: ['a', 'b'] }),
     ];
     expect(new Set(names).size).toBe(names.length);
   });
@@ -74,7 +86,6 @@ describe('action names', () => {
     const names = [
       ActionIds.train('x'),
       ActionIds.evolve('x'),
-      ActionIds.dismantle('x'),
       ActionIds.claimJob('x'),
       ActionIds.starter('x'),
     ];

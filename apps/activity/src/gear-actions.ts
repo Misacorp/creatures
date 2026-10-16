@@ -22,7 +22,13 @@ export interface GearDeps {
   /** The server calls, replaceable in tests. */
   server?: Pick<
     typeof api,
-    'equipGear' | 'equipBestGear' | 'dismissGearNotice' | 'dismantleGear' | 'startJob' | 'claimJob'
+    | 'equipGear'
+    | 'equipBestGear'
+    | 'dismissGearNotice'
+    | 'startJob'
+    | 'claimJob'
+    | 'previewCraft'
+    | 'previewDismantle'
   >;
 }
 
@@ -46,16 +52,18 @@ export function createGearActions(deps: GearDeps) {
       applied(deps.run(() => server.equipBestGear(creatureIds))),
     /** Closes the one-time card about the switch to gear v2. */
     dismissNotice: () => applied(deps.run(() => server.dismissGearNotice())),
-    dismantle: (gearId: string) =>
-      applied(
-        deps.runKeyed(ActionIds.dismantle(gearId), (key) => server.dismantleGear(gearId, key)),
-      ),
     startJob: (request: JobStart) =>
       applied(
         deps.runKeyed(ActionIds.job(request), (key) =>
           server.startJob({ ...request, idempotencyKey: key }),
         ),
       ),
+    /** The exact odds, costs and times of a craft with a creature (changes nothing; the screen shows them as they are). */
+    previewCraft: (creatureId: string, blueprintId: string) =>
+      server.previewCraft(creatureId, blueprintId),
+    /** The refund range, time and blueprint chance of taking these items apart with a creature. */
+    previewDismantle: (creatureId: string, itemIds: readonly string[]) =>
+      server.previewDismantle(creatureId, itemIds),
     claimJob: (jobId: string): Promise<JobResult | undefined> =>
       applied(deps.runKeyed(ActionIds.claimJob(jobId), (key) => server.claimJob(jobId, key))),
   };

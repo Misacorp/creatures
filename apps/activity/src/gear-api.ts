@@ -1,5 +1,5 @@
 /**
- * The requests of gear and the Workshop. Every spend (dismantle, starting a job, claiming
+ * The requests of gear and the Workshop. Every spend (starting a job, claiming
  * one) carries the caller's idempotency key; the same key is sent again on a retry, so a repeat can
  * never spend twice. Every action answers `{ result, gear, state }` and both views are returned
  * fresh so the screen can replace what it holds.
@@ -7,7 +7,8 @@
 import { apiFetch, jsonRequest, parseGameState, type GameState } from './api';
 import { isRecord } from './parse-core';
 import {
-  parseDismantleResult,
+  parseCraftPreview,
+  parseDismantlePreview,
   parseDismissResult,
   parseEquipBestResult,
   parseEquipResult,
@@ -16,7 +17,8 @@ import {
   parseStartJobResult,
 } from './gear-parse';
 import type {
-  DismantleResult,
+  CraftPreview,
+  DismantlePreview,
   DismissResult,
   EquipBestResult,
   EquipResult,
@@ -82,17 +84,28 @@ export async function dismissGearNotice(): Promise<GearAction<DismissResult>> {
   );
 }
 
-export async function dismantleGear(
-  gearId: string,
-  idempotencyKey: string,
-): Promise<GearAction<DismantleResult>> {
-  return action(
-    await apiFetch(
-      `/api/gear/${encodeURIComponent(gearId)}/dismantle`,
-      jsonRequest('POST', { idempotencyKey }),
-    ),
-    parseDismantleResult,
+/**
+ * What a craft of a blueprint would give with a creature: the exact odds, parts, Essence, time and XP of
+ * every way to start it. Changes nothing, so it needs no key.
+ */
+export async function previewCraft(creatureId: string, blueprintId: string): Promise<CraftPreview> {
+  const data = await apiFetch(
+    '/api/workshop/preview',
+    jsonRequest('POST', { kind: 'craft', creatureId, blueprintId }),
   );
+  return parseCraftPreview(isRecord(data) ? data['result'] : undefined);
+}
+
+/** What taking these items apart would give with a creature: the refund range, time and blueprint chance. */
+export async function previewDismantle(
+  creatureId: string,
+  itemIds: readonly string[],
+): Promise<DismantlePreview> {
+  const data = await apiFetch(
+    '/api/workshop/preview',
+    jsonRequest('POST', { kind: 'dismantle', creatureId, itemIds }),
+  );
+  return parseDismantlePreview(isRecord(data) ? data['result'] : undefined);
 }
 
 export async function startJob(request: StartJobRequest): Promise<GearAction<StartJobResult>> {

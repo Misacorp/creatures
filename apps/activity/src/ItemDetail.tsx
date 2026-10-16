@@ -4,11 +4,11 @@ import type { Creature } from './api';
 import { creatureName } from './game';
 import type { GearActions } from './gear-actions';
 import { ItemFrame, ItemSprite, RarityTag } from './GearArt';
-import type { GearItem } from './gear-types';
+import type { GearItem, GearState } from './gear-types';
 import { detailLines, gearName, itemElement, needsText, slotName, wearReason } from './gear-view';
 import { GlossaryTag } from './Glossary';
 import { ItemLines } from './ItemLines';
-import { DismantleConfirm } from './ItemPanels';
+import { DismantlePanel } from './ItemPanels';
 import { ElementChip } from './sprites/ElementChip';
 
 type Panel = 'dismantle' | 'equip' | null;
@@ -107,16 +107,18 @@ function EquipPanel({
  */
 export function ItemDetail({
   item,
+  gear,
   creatures,
   busy,
   actions,
   onGone,
 }: {
   item: GearItem;
+  gear: GearState;
   creatures: readonly Creature[];
   busy: boolean;
   actions: GearActions;
-  /** The item no longer exists (dismantled): the screen drops the selection. */
+  /** The item no longer exists (it went into a dismantle job): the screen drops the selection. */
   onGone: () => void;
 }) {
   const [panel, setPanel] = useState<Panel>(null);
@@ -230,15 +232,20 @@ export function ItemDetail({
           />
         )}
         {panel === 'dismantle' && (
-          <DismantleConfirm
-            item={item}
-            wearer={wearer}
+          <DismantlePanel
+            items={[item]}
+            wearers={wearer === undefined ? [] : [wearer]}
+            gear={gear}
+            creatures={creatures}
             busy={busy}
-            onConfirm={() => {
-              void actions.dismantle(item.id).then((result) => {
-                if (result !== undefined) onGone();
-                else setPanel(null);
-              });
+            loadPreview={actions.previewDismantle}
+            onConfirm={(creatureId) => {
+              void actions
+                .startJob({ kind: 'dismantle', creatureId, itemIds: [item.id] })
+                .then((result) => {
+                  if (result !== undefined) onGone();
+                  else setPanel(null);
+                });
             }}
             onCancel={() => {
               setPanel(null);

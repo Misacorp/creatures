@@ -11,8 +11,10 @@ import {
   PART_KINDS,
   baseElement,
   content,
+  RULES,
   craftCost,
   creaturePower,
+  dismantleHours,
   entryView,
   expeditionContent,
   gearBase,
@@ -29,6 +31,8 @@ import { percent } from './progress-math';
 import { destinationName, supplyName } from './trip-view';
 import type {
   ConversionNotice,
+  CraftOdds,
+  DismantleRange,
   EquipBestResult,
   GearItem,
   GearLine,
@@ -43,6 +47,8 @@ import type {
   JobResult,
   PartKind,
   PartsBundle,
+  ReachId,
+  Range,
   WornGear,
 } from './gear-types';
 
@@ -490,14 +496,112 @@ export function openJobs(jobs: readonly Job[]): Job[] {
 }
 
 export function jobVerb(kind: Job['kind']): string {
+  if (kind === 'dismantle') return 'Dismantle';
   return kind === 'craft' || kind === 'supply' ? 'Craft' : 'Old job';
 }
 
-/** "Craft Kelp Cap" or "Craft Basic Lure". A job from before gear v2 has no name to show. */
+/**
+ * "Craft Kelp Cap", "Craft Kelp Cap (Reach for Rare)", "Craft Basic Lure", "Dismantle Kelp Cap" or
+ * "Dismantle 3 items". A job from before gear v2 has no name to show.
+ */
 export function jobTitle(job: Pick<Job, 'kind' | 'input'>): string {
   if (job.kind === 'supply') return `Craft ${supplyName(job.input.supplyId ?? 'supply')}`;
-  if (job.kind === 'craft') return `Craft ${gearName(job.input.baseId ?? 'item')}`;
+  if (job.kind === 'craft') {
+    const reach =
+      job.input.reach === undefined || job.input.reach === 'none'
+        ? ''
+        : ` (${reachName(job.input.reach)})`;
+    return `Craft ${gearName(job.input.baseId ?? 'item')}${reach}`;
+  }
+  if (job.kind === 'dismantle') {
+    const items = job.input.items ?? [];
+    const first = items[0];
+    return items.length === 1 && first !== undefined
+      ? `Dismantle ${gearName(first.baseId)}`
+      : `Dismantle ${String(items.length)} items`;
+  }
   return 'Old job (its parts come back)';
+}
+
+// --- Reach, odds and ranges (the numbers are the server's: this only writes them) ---
+
+/** "Plain craft", "Reach for Rare", "Reach for Epic". */
+export function reachName(reach: ReachId): string {
+  return reach === 'none' ? 'Plain craft' : `Reach for ${capitalize(reach)}`;
+}
+
+/** Basis points as a percentage: 6000 is "60%", 3640 is "36.4%", 405 is "4.05%". */
+export function oddsPercent(bp: number): string {
+  const whole = Math.trunc(bp / 100);
+  const rest = bp % 100;
+  if (rest === 0) return `${String(whole)}%`;
+  const tail = String(rest).padStart(2, '0').replace(/0$/, '');
+  return `${String(whole)}.${tail}%`;
+}
+
+/** "Common 40% · Rare 60%": the rarities that can come out, with the server's exact odds. */
+export function oddsText(odds: CraftOdds): string {
+  return (['common', 'rare', 'epic'] as const)
+    .filter((r) => odds[r] > 0)
+    .map((r) => `${rarityName(r)} ${oddsPercent(odds[r])}`)
+    .join(' · ');
+}
+
+/** "4 / 10", the well-thumbed marks of a blueprint. */
+export function marksText(marks: number): string {
+  return `${String(marks)} / ${String(RULES.gear.craft.marks.max)}`;
+}
+
+/** "6 to 10": one number when both ends are the same. */
+export function rangeText(range: Range): string {
+  return range.min === range.max
+    ? String(range.min)
+    : `${String(range.min)} to ${String(range.max)}`;
+}
+
+/**
+ * What a dismantle can give, one short phrase each, the empty ones left out: "6 to 10 scrap",
+ * "1 Tide shard", "1 to 2 shards (any kind)", "0 to 1 glimmer", "3 to 8 Essence".
+ */
+export function dismantleLines(range: DismantleRange): string[] {
+  const lines: string[] = [];
+  if (range.scrap.max > 0) lines.push(`${rangeText(range.scrap)} scrap`);
+  if (range.shards.max > 0) {
+    const kind =
+      range.shards.element === null
+        ? range.shards.max === 1
+          ? 'shard (any kind)'
+          : 'shards (any kind)'
+        : `${capitalize(range.shards.element)} ${range.shards.max === 1 ? 'shard' : 'shards'}`;
+    lines.push(`${rangeText(range.shards)} ${kind}`);
+  }
+  if (range.glimmer.max > 0) lines.push(`${rangeText(range.glimmer)} glimmer`);
+  if (range.essence.max > 0) lines.push(`${rangeText(range.essence)} Essence`);
+  return lines;
+}
+
+/** The time a dismantle job of these items takes a creature of this Crafting level (the preview gives the server's). */
+export function dismantleDurationFor(rarity: GearRarity, level: number): number {
+  return jobDuration(level, 0, dismantleHours(rarity));
+}
+
+/**
+ * The items a bulk dismantle picks: unworn pieces of one rarity up to an item level, the lowest levels
+ * first (then the oldest). Commons go in bundles of up to 5 in one job, anything else one at a time, so
+ * this returns what the next job takes, and how many more match.
+ */
+export function bulkPick(
+  items: readonly GearItem[],
+  rarity: GearRarity,
+  maxItemLevel: number,
+): { ids: string[]; matching: number } {
+  const matching = items
+    .filter((i) => i.rarity === rarity && i.equippedOn === null && i.itemLevel <= maxItemLevel)
+    .sort(
+      (a, b) => a.itemLevel - b.itemLevel || a.createdAt - b.createdAt || a.id.localeCompare(b.id),
+    );
+  const take = rarity === 'common' ? RULES.gear.dismantle.bundleMax : 1;
+  return { ids: matching.slice(0, take).map((i) => i.id), matching: matching.length };
 }
 
 /**
@@ -505,9 +609,9 @@ export function jobTitle(job: Pick<Job, 'kind' | 'input'>): string {
  * slot, a free creature, room in the bag for a craft and the parts.
  */
 export function startBlocker(
-  gear: Pick<GearState, 'slots' | 'inventory' | 'parts'>,
+  gear: Pick<GearState, 'slots' | 'inventory' | 'parts' | 'balances'>,
   creatures: readonly Creature[],
-  job: { kind: JobKind; cost: PartsBundle },
+  job: { kind: JobKind; cost: PartsBundle; essence?: number },
 ): string | null {
   if (gear.slots.used >= gear.slots.total) {
     return `All ${String(gear.slots.total)} workshop slots are busy. Claim a finished job or wait.`;
@@ -520,9 +624,12 @@ export function startBlocker(
   }
   const missing = missingParts(gear.parts, job.cost);
   const entries = partsEntries(missing);
-  if (entries.length > 0) {
-    return `Needs ${entries.map((e) => `${String(e.amount)} more ${partName(e.kind)}`).join(' and ')}.`;
-  }
+  const lackingEssence = Math.max(0, (job.essence ?? 0) - gear.balances.essence);
+  const lacks = [
+    ...entries.map((e) => `${String(e.amount)} more ${partName(e.kind)}`),
+    ...(lackingEssence > 0 ? [`${String(lackingEssence)} more Essence`] : []),
+  ];
+  if (lacks.length > 0) return `Needs ${lacks.join(' and ')}.`;
   return null;
 }
 
@@ -539,6 +646,7 @@ export function nominalHours(): number {
 /** The rarity to frame a claimed job's item with: the craft's own, else Common. */
 export function jobResultRarity(result: JobResult): GearRarity {
   if (result.kind === 'craft') return result.rarity;
+  if (result.kind === 'dismantle') return result.items[0]?.rarity ?? 'common';
   if (result.kind === 'supply') return supplyRarity(result.supplyId);
   return 'common';
 }
@@ -613,6 +721,8 @@ interface BlueprintView {
   slot: GearSlot;
   element: string | null;
   cost: PartsBundle;
+  /** Well-thumbed marks (finds of it the player already knew), 0 to the most. */
+  marks: number;
 }
 
 /** The blueprints a player knows, by slot and then name, each with the parts a craft costs. */
@@ -630,6 +740,7 @@ export function blueprintViews(blueprints: GearState['blueprints']): BlueprintVi
               slot: base.slot,
               element: baseElement(base),
               cost: craftCost(bp.baseId),
+              marks: bp.marks,
             },
           ];
     })

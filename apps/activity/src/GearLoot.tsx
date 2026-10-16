@@ -1,7 +1,7 @@
 import { Tag } from './ui/Tag';
 import { GlossaryTag } from './Glossary';
 import { ItemFrame, ItemSprite, PartCount, RarityTag } from './GearArt';
-import { gearName, lootIsEmpty, lootItemName, partsEntries } from './gear-view';
+import { gearName, lootIsEmpty, lootItemName, marksText, partsEntries } from './gear-view';
 import type { GrantLoot } from './gear-types';
 
 /**
@@ -55,7 +55,14 @@ export function LootList({
                 {b.duplicate ? 'Known blueprint' : 'New blueprint'}
               </Tag>{' '}
               {gearName(b.baseId)}
-              {b.duplicate && <span class="muted"> (it became scrap)</span>}
+              {b.duplicate && (
+                <span class="muted">
+                  {' '}
+                  {b.marks === undefined
+                    ? '(it became scrap)'
+                    : `(well-thumbed ${marksText(b.marks)})`}
+                </span>
+              )}
             </li>
           ))}
         </ul>

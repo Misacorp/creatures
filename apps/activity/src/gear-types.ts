@@ -6,9 +6,9 @@
  *
  * Every number in the text of a line is the server's own (`lines[].text`); nothing is worked out here.
  */
-import type { GearSlot, GearTag } from '@creatures/game';
+import type { GearSlot, GearTag, ReachId } from '@creatures/game';
 
-export type { GearSlot, GearTag };
+export type { GearSlot, GearTag, ReachId };
 
 export type GearRarity = 'common' | 'rare' | 'epic' | 'festival';
 export type PartKind =
@@ -16,7 +16,29 @@ export type PartKind =
 /** Parts by kind; a kind that is absent is 0. */
 export type PartsBundle = Partial<Record<PartKind, number>>;
 /** The jobs a player can start. Improve and Enchant are gone; jobs started before gear v2 still finish. */
-export type JobKind = 'craft' | 'supply';
+export type JobKind = 'craft' | 'supply' | 'dismantle';
+
+/** An inclusive range of whole numbers. */
+export interface Range {
+  min: number;
+  max: number;
+}
+
+/** What dismantling can return, as the server works it out (the same for every creature). */
+export interface DismantleRange {
+  scrap: Range;
+  /** `element` is the kind of the shards, null for a random kind (or no shards). */
+  shards: Range & { element: string | null };
+  glimmer: Range;
+  essence: Range;
+}
+
+/** What is kept of an item that went into a dismantle job. */
+export interface ItemSnapshot {
+  baseId: string;
+  rarity: GearRarity;
+  itemLevel: number;
+}
 
 /** One line of an item as a card shows it. */
 export interface GearLine {
@@ -58,8 +80,8 @@ export interface GearItem {
   needs: { level: number; role: string | null };
   /** The creature wearing it, or null. */
   equippedOn: string | null;
-  /** What dismantling it would return. */
-  dismantle: PartsBundle;
+  /** What dismantling it can return, as a range. */
+  dismantle: DismantleRange;
   source: string;
   createdAt: number;
   /** The creature that made it and when; null for items that were not crafted. */
@@ -81,7 +103,19 @@ export type JobResult =
       baseId: string;
       rarity: GearRarity;
       itemLevel: number;
+      /** What the craft was aimed at. */
+      reach: ReachId;
+      /** The one-step-up chance raised the rarity the Reach drew. */
       upgraded: boolean;
+    } & JobCommon)
+  /** Items taken apart: what came back, the blueprints learned and the marks added. */
+  | ({
+      kind: 'dismantle';
+      items: ItemSnapshot[];
+      parts: PartsBundle;
+      essence: number;
+      learned: string[];
+      marked: { baseId: string; marks: number }[];
     } & JobCommon)
   /** A crafted supply for expeditions: `amount` of `supplyId` went into the stock. */
   | ({ kind: 'supply'; supplyId: string; amount: number } & JobCommon)
@@ -93,7 +127,7 @@ export interface Job {
   creatureId: string;
   /** `improve` and `enchant` only on jobs started before gear v2. */
   kind: JobKind | 'improve' | 'enchant';
-  input: { baseId?: string; supplyId?: string };
+  input: { baseId?: string; supplyId?: string; reach?: ReachId; items?: ItemSnapshot[] };
   /** The parts it cost when it started. */
   cost: PartsBundle;
   startedAt: number;
@@ -111,7 +145,8 @@ export interface GrantLoot {
   /** Items that did not fit in a full inventory and became parts (already counted in `parts`). */
   converted: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
   parts: PartsBundle;
-  blueprints: { baseId: string; duplicate: boolean }[];
+  /** `marks` is the blueprint's well-thumbed marks after a repeat find added one. */
+  blueprints: { baseId: string; duplicate: boolean; marks?: number }[];
   /** Supply ids an expedition found (absent on every other grant and on trips from before supplies). */
   supplies?: string[];
 }
@@ -184,20 +219,63 @@ export type EquipBestResult = {
   skipped: { creatureId: string; reason: 'away' | 'job' }[];
 };
 export type DismissResult = { dismissed: boolean };
-export type DismantleResult = {
-  gearId: string;
-  baseId: string;
-  rarity: GearRarity;
-  itemLevel: number;
-  parts: PartsBundle;
-  /** The item was worn and has been taken off. */
-  unequipped: boolean;
-};
 export type StartJobResult = { jobId: string };
 
 export type StartJobRequest =
-  | { kind: 'craft'; creatureId: string; blueprintId: string; idempotencyKey: string }
-  | { kind: 'supply'; creatureId: string; supplyId: string; idempotencyKey: string };
+  | {
+      kind: 'craft';
+      creatureId: string;
+      blueprintId: string;
+      reach: ReachId;
+      idempotencyKey: string;
+    }
+  | { kind: 'supply'; creatureId: string; supplyId: string; idempotencyKey: string }
+  | { kind: 'dismantle'; creatureId: string; itemIds: readonly string[]; idempotencyKey: string };
+
+/** Rarity odds in basis points (they add up to 10,000), as the server works them out. */
+export interface CraftOdds {
+  common: number;
+  rare: number;
+  epic: number;
+}
+
+/** One way to start a craft: what it takes and gives with this creature. Every number is the server's. */
+export interface CraftOption {
+  reach: ReachId;
+  unlocked: boolean;
+  minLevel: number;
+  parts: PartsBundle;
+  essence: number;
+  durationMs: number;
+  xp: number;
+  oddsBp: CraftOdds;
+}
+
+/** `POST /api/workshop/preview` for a craft. */
+export interface CraftPreview {
+  kind: 'craft';
+  blueprintId: string;
+  creatureId: string;
+  craftingLevel: number;
+  itemLevel: number;
+  marks: number;
+  marksMax: number;
+  stepUpBp: number;
+  options: CraftOption[];
+}
+
+/** `POST /api/workshop/preview` for a dismantle job. */
+export interface DismantlePreview {
+  kind: 'dismantle';
+  creatureId: string;
+  items: { id: string; baseId: string; rarity: GearRarity; itemLevel: number }[];
+  range: DismantleRange;
+  durationMs: number;
+  xp: number;
+  /** The chance (basis points) each item that can teach its blueprint does, with this creature; null when none can. */
+  learnBp: number | null;
+  teachers: number;
+}
 
 /** A worn item as a creature card shows it: the slot, the rarity and the item level. */
 export interface WornGear {

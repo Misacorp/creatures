@@ -30,9 +30,10 @@ function setup(ids: string[] = ['key-1', 'key-2', 'key-3']) {
     equipGear: vi.fn(),
     equipBestGear: vi.fn(),
     dismissGearNotice: vi.fn(),
-    dismantleGear: vi.fn(),
     startJob: vi.fn(),
     claimJob: vi.fn(),
+    previewCraft: vi.fn(),
+    previewDismantle: vi.fn(),
   };
   const actions = createGearActions({
     run: runner.run,
@@ -44,13 +45,15 @@ function setup(ids: string[] = ['key-1', 'key-2', 'key-3']) {
 }
 
 describe('gear actions', () => {
+  const dismantle = { kind: 'dismantle', creatureId: 'c1', itemIds: ['g'] } as const;
+
   it('applies the gear view and the collection of an answer and returns the result', async () => {
     const { actions, server, applied, answer } = setup();
-    server.dismantleGear.mockResolvedValue(answer({ gearId: 'g', unequipped: false }));
-    expect(await actions.dismantle('g')).toEqual({ gearId: 'g', unequipped: false });
+    server.startJob.mockResolvedValue(answer({ jobId: 'j' }));
+    expect(await actions.startJob(dismantle)).toEqual({ jobId: 'j' });
     expect(applied).toEqual([
       {
-        result: { gearId: 'g', unequipped: false },
+        result: { jobId: 'j' },
         gear: { marker: 'gear' },
         state: { marker: 'state' },
       },
@@ -59,23 +62,25 @@ describe('gear actions', () => {
 
   it('applies nothing and returns nothing when the server says no', async () => {
     const { actions, server, applied } = setup();
-    server.dismantleGear.mockRejectedValue(new ApiError(409, 'item_busy'));
-    expect(await actions.dismantle('g')).toBeUndefined();
+    server.startJob.mockRejectedValue(new ApiError(409, 'creature_on_job'));
+    expect(await actions.startJob(dismantle)).toBeUndefined();
     expect(applied).toEqual([]);
   });
 
   it('sends the same key again after an unknown outcome, and a new one after a definite answer', async () => {
     const { actions, server, answer } = setup();
-    server.dismantleGear
+    server.startJob
       .mockRejectedValueOnce(new Error('network'))
-      .mockResolvedValueOnce(answer({ gearId: 'g' }))
-      .mockRejectedValueOnce(new ApiError(409, 'item_busy'))
-      .mockResolvedValue(answer({ gearId: 'g' }));
-    await actions.dismantle('g'); // network error: unknown outcome
-    await actions.dismantle('g'); // retry: same key, succeeds
-    await actions.dismantle('g'); // next dismantle: a new key, refused
-    await actions.dismantle('g'); // refused is definite: a new key again
-    const keysSent = server.dismantleGear.mock.calls.map((call) => call[1] as string);
+      .mockResolvedValueOnce(answer({ jobId: 'j' }))
+      .mockRejectedValueOnce(new ApiError(409, 'workshop_full'))
+      .mockResolvedValue(answer({ jobId: 'j' }));
+    await actions.startJob(dismantle); // network error: unknown outcome
+    await actions.startJob(dismantle); // retry: same key, succeeds
+    await actions.startJob(dismantle); // next dismantle: a new key, refused
+    await actions.startJob(dismantle); // refused is definite: a new key again
+    const keysSent = server.startJob.mock.calls.map(
+      (call) => (call[0] as Record<string, unknown>)['idempotencyKey'],
+    );
     expect(keysSent).toEqual(['key-1', 'key-1', 'key-2', 'key-3']);
   });
 
@@ -84,23 +89,41 @@ describe('gear actions', () => {
     server.startJob
       .mockRejectedValueOnce(new ApiError(500, 'internal_error'))
       .mockResolvedValue(answer({ jobId: 'j' }));
-    const craft = { kind: 'craft', creatureId: 'c1', blueprintId: 'wave-band' } as const;
+    const craft = {
+      kind: 'craft',
+      creatureId: 'c1',
+      blueprintId: 'wave-band',
+      reach: 'none',
+    } as const;
     await actions.startJob(craft);
     await actions.startJob(craft);
     await actions.startJob({ ...craft, creatureId: 'c2' });
+    // The same craft aimed at a Rare is a different intent: it never reuses the plain craft's key.
+    await actions.startJob({ ...craft, creatureId: 'c2', reach: 'rare' });
     const sent = server.startJob.mock.calls.map((call) => call[0] as Record<string, unknown>);
-    expect(sent.map((r) => r['idempotencyKey'])).toEqual(['key-1', 'key-1', 'key-2']);
+    expect(sent.map((r) => r['idempotencyKey'])).toEqual(['key-1', 'key-1', 'key-2', 'key-3']);
     expect(sent[0]).toEqual({ ...craft, idempotencyKey: 'key-1' });
   });
 
-  it('claims a job and dismantles with their own keys', async () => {
+  it('claims a job and starts another with their own keys', async () => {
     const { actions, server, answer } = setup();
     server.claimJob.mockResolvedValue(answer({ kind: 'craft' }));
-    server.dismantleGear.mockResolvedValue(answer({ gearId: 'g' }));
+    server.startJob.mockResolvedValue(answer({ jobId: 'j' }));
     await actions.claimJob('job-1');
-    await actions.dismantle('g');
+    await actions.startJob(dismantle);
     expect(server.claimJob).toHaveBeenCalledWith('job-1', 'key-1');
-    expect(server.dismantleGear).toHaveBeenCalledWith('g', 'key-2');
+    expect(server.startJob).toHaveBeenCalledWith({ ...dismantle, idempotencyKey: 'key-2' });
+  });
+
+  it('asks for a preview without a key and applies nothing', async () => {
+    const { actions, server, applied } = setup();
+    server.previewCraft.mockResolvedValue({ kind: 'craft' });
+    server.previewDismantle.mockResolvedValue({ kind: 'dismantle' });
+    expect(await actions.previewCraft('c1', 'kelp-cap')).toEqual({ kind: 'craft' });
+    expect(await actions.previewDismantle('c1', ['a', 'b'])).toEqual({ kind: 'dismantle' });
+    expect(server.previewCraft).toHaveBeenCalledWith('c1', 'kelp-cap');
+    expect(server.previewDismantle).toHaveBeenCalledWith('c1', ['a', 'b']);
+    expect(applied).toEqual([]);
   });
 
   it('equips without a key, and takes off with null', async () => {
@@ -127,11 +150,11 @@ describe('gear actions', () => {
   it('turns a second action away while one runs, and applies nothing for it', async () => {
     const { actions, server, applied, answer } = setup();
     let finish: (value: GearAction<never>) => void = () => undefined;
-    server.dismantleGear.mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
-    const first = actions.dismantle('g');
+    server.startJob.mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
+    const first = actions.startJob(dismantle);
     expect(await actions.equipBest(['c'])).toBeUndefined();
     expect(server.equipBestGear).not.toHaveBeenCalled();
-    finish(answer({ gearId: 'g' }));
+    finish(answer({ jobId: 'j' }));
     await first;
     expect(applied).toHaveLength(1);
   });

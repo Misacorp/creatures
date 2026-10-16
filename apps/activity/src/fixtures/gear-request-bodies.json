@@ -24,25 +24,19 @@
       ]
     }
   },
-  "dismantle": {
-    "path": "/api/gear/63a8639a-76fa-42ba-8994-eab6bfb4b1d9/dismantle",
-    "method": "POST",
-    "body": {
-      "idempotencyKey": "fixture-00000008-key"
-    }
-  },
   "job-craft": {
     "path": "/api/workshop/jobs",
     "method": "POST",
     "body": {
       "kind": "craft",
-      "creatureId": "a4844dc1-e23f-4059-b04f-1554520a192a",
+      "creatureId": "446b7b58-5438-4a79-8dec-cfebaa891605",
       "blueprintId": "kelp-cap",
+      "reach": "none",
       "idempotencyKey": "fixture-00000001-key"
     }
   },
   "job-claim": {
-    "path": "/api/workshop/jobs/c19e1cf5-ae2b-44ec-ad04-7456925c05bb/claim",
+    "path": "/api/workshop/jobs/447218b9-d8a2-41c1-8bbd-b56722a80af6/claim",
     "method": "POST",
     "body": {
       "idempotencyKey": "fixture-00000007-key"
@@ -57,5 +51,44 @@
     "path": "/api/gear/conversion/dismiss",
     "method": "POST",
     "body": {}
+  },
+  "job-craft-reach": {
+    "path": "/api/workshop/jobs",
+    "method": "POST",
+    "body": {
+      "kind": "craft",
+      "creatureId": "028e2146-c493-4559-9e6e-e1fe634ec58b",
+      "blueprintId": "kelp-cap",
+      "reach": "rare",
+      "idempotencyKey": "fixture-00000010-key"
+    }
+  },
+  "job-dismantle": {
+    "path": "/api/workshop/jobs",
+    "method": "POST",
+    "body": {
+      "kind": "dismantle",
+      "creatureId": "446b7b58-5438-4a79-8dec-cfebaa891605",
+      "itemIds": ["086d4f4b-c954-42b8-8795-d0f71f057e5d"],
+      "idempotencyKey": "fixture-00000008-key"
+    }
+  },
+  "preview-craft": {
+    "path": "/api/workshop/preview",
+    "method": "POST",
+    "body": {
+      "kind": "craft",
+      "creatureId": "028e2146-c493-4559-9e6e-e1fe634ec58b",
+      "blueprintId": "kelp-cap"
+    }
+  },
+  "preview-dismantle": {
+    "path": "/api/workshop/preview",
+    "method": "POST",
+    "body": {
+      "kind": "dismantle",
+      "creatureId": "446b7b58-5438-4a79-8dec-cfebaa891605",
+      "itemIds": ["086d4f4b-c954-42b8-8795-d0f71f057e5d"]
+    }
   }
 }

@@ -3,10 +3,13 @@
  * a claim). Pure type guards, so they are unit-tested against the real server output in
  * `fixtures/`. A payload that does not match is an error, never a half-drawn screen.
  */
-import { GEAR_RARITIES, GEAR_SLOTS, GEAR_TAGS, PART_KINDS } from '@creatures/game';
+import { GEAR_RARITIES, GEAR_SLOTS, GEAR_TAGS, PART_KINDS, REACH_IDS } from '@creatures/game';
 import type {
   ConversionNotice,
-  DismantleResult,
+  CraftOption,
+  CraftPreview,
+  DismantlePreview,
+  DismantleRange,
   DismissResult,
   EquipBestResult,
   EquipResult,
@@ -16,6 +19,7 @@ import type {
   GearSlot,
   GearState,
   GrantLoot,
+  ItemSnapshot,
   GrantRecord,
   ItemOrigin,
   Job,
@@ -43,6 +47,37 @@ export function isPartsBundle(value: unknown): value is PartsBundle {
 }
 
 const isNullableCount = (value: unknown): boolean => value === null || isCount(value);
+
+const isRange = (value: unknown): boolean =>
+  isRecord(value) && isCount(value['min']) && isCount(value['max']) && value['min'] <= value['max'];
+
+/** What dismantling can return: a range of each part and of Essence. */
+function isDismantleRange(value: unknown): value is DismantleRange {
+  return (
+    isRecord(value) &&
+    isRange(value['scrap']) &&
+    isRange(value['shards']) &&
+    isRecord(value['shards']) &&
+    isNullableStr(value['shards']['element']) &&
+    isRange(value['glimmer']) &&
+    isRange(value['essence'])
+  );
+}
+
+const isReach = (value: unknown): boolean => (REACH_IDS as readonly unknown[]).includes(value);
+
+const isOdds = (value: unknown): boolean =>
+  isRecord(value) &&
+  isCount(value['common']) &&
+  isCount(value['rare']) &&
+  isCount(value['epic']) &&
+  value['common'] + value['rare'] + value['epic'] === 10_000;
+
+const isSnapshot = (value: unknown): value is ItemSnapshot =>
+  isRecord(value) &&
+  isStr(value['baseId']) &&
+  isRarity(value['rarity']) &&
+  isCount(value['itemLevel']);
 
 function isLine(value: unknown): value is GearLine {
   return (
@@ -93,7 +128,7 @@ function isGearItem(value: unknown): value is GearItem {
     isCount(needs['level']) &&
     isNullableStr(needs['role']) &&
     isNullableStr(value['equippedOn']) &&
-    isPartsBundle(value['dismantle']) &&
+    isDismantleRange(value['dismantle']) &&
     isStr(value['source']) &&
     isInt(value['createdAt']) &&
     (madeBy === null || (isRecord(madeBy) && isStr(madeBy['name']) && isInt(madeBy['at']))) &&
@@ -116,7 +151,20 @@ function isJobResult(value: unknown): value is JobResult {
         isStr(value['baseId']) &&
         isRarity(value['rarity']) &&
         isCount(value['itemLevel']) &&
+        isReach(value['reach']) &&
         typeof value['upgraded'] === 'boolean'
+      );
+    case 'dismantle':
+      return (
+        isArrayOf(value['items'], isSnapshot) &&
+        isPartsBundle(value['parts']) &&
+        isCount(value['essence']) &&
+        isArrayOf(value['learned'], isStr) &&
+        isArrayOf(
+          value['marked'],
+          (m): m is { baseId: string; marks: number } =>
+            isRecord(m) && isStr(m['baseId']) && isCount(m['marks']),
+        )
       );
     case 'supply':
       return isStr(value['supplyId']) && isCount(value['amount']);
@@ -133,11 +181,13 @@ function isJobInput(value: unknown): value is Job['input'] {
   return (
     isRecord(value) &&
     (value['baseId'] === undefined || isStr(value['baseId'])) &&
-    (value['supplyId'] === undefined || isStr(value['supplyId']))
+    (value['supplyId'] === undefined || isStr(value['supplyId'])) &&
+    (value['reach'] === undefined || isReach(value['reach'])) &&
+    (value['items'] === undefined || isArrayOf(value['items'], isSnapshot))
   );
 }
 
-const JOB_KINDS_STORED: readonly unknown[] = ['craft', 'supply', 'improve', 'enchant'];
+const JOB_KINDS_STORED: readonly unknown[] = ['craft', 'supply', 'dismantle', 'improve', 'enchant'];
 
 function isJob(value: unknown): value is Job {
   return (
@@ -158,7 +208,10 @@ function isJob(value: unknown): value is Job {
 }
 
 const isBlueprintLoot = (value: unknown): value is GrantLoot['blueprints'][number] =>
-  isRecord(value) && isStr(value['baseId']) && typeof value['duplicate'] === 'boolean';
+  isRecord(value) &&
+  isStr(value['baseId']) &&
+  typeof value['duplicate'] === 'boolean' &&
+  (value['marks'] === undefined || isCount(value['marks']));
 
 /** The item level a dropped item arrived with: absent on grants from before gear v2. */
 const isLootLevel = (value: unknown): boolean => value === undefined || isCount(value);
@@ -339,19 +392,63 @@ export function parseDismissResult(value: unknown): DismissResult {
   return { dismissed: value['dismissed'] };
 }
 
-export function parseDismantleResult(value: unknown): DismantleResult {
+function isCraftOption(value: unknown): value is CraftOption {
+  return (
+    isRecord(value) &&
+    isReach(value['reach']) &&
+    typeof value['unlocked'] === 'boolean' &&
+    isCount(value['minLevel']) &&
+    isPartsBundle(value['parts']) &&
+    isCount(value['essence']) &&
+    isCount(value['durationMs']) &&
+    isCount(value['xp']) &&
+    isOdds(value['oddsBp'])
+  );
+}
+
+/** `POST /api/workshop/preview` for a craft: every way to start it, with the server's exact numbers. */
+export function parseCraftPreview(value: unknown): CraftPreview {
   if (
     !isRecord(value) ||
-    !isStr(value['gearId']) ||
-    !isStr(value['baseId']) ||
-    !isRarity(value['rarity']) ||
+    value['kind'] !== 'craft' ||
+    !isStr(value['blueprintId']) ||
+    !isStr(value['creatureId']) ||
+    !isCount(value['craftingLevel']) ||
     !isCount(value['itemLevel']) ||
-    !isPartsBundle(value['parts']) ||
-    typeof value['unequipped'] !== 'boolean'
+    !isCount(value['marks']) ||
+    !isCount(value['marksMax']) ||
+    !isCount(value['stepUpBp']) ||
+    !isArrayOf(value['options'], isCraftOption)
   ) {
-    throw new Error('the server returned an unexpected dismantle result');
+    throw new Error('the server returned an unexpected craft preview');
   }
-  return value as unknown as DismantleResult;
+  return value as unknown as CraftPreview;
+}
+
+/** `POST /api/workshop/preview` for a dismantle job: the refund range, the time and the blueprint chance. */
+export function parseDismantlePreview(value: unknown): DismantlePreview {
+  if (
+    !isRecord(value) ||
+    value['kind'] !== 'dismantle' ||
+    !isStr(value['creatureId']) ||
+    !isArrayOf(
+      value['items'],
+      (i): i is DismantlePreview['items'][number] =>
+        isRecord(i) &&
+        isStr(i['id']) &&
+        isStr(i['baseId']) &&
+        isRarity(i['rarity']) &&
+        isCount(i['itemLevel']),
+    ) ||
+    !isDismantleRange(value['range']) ||
+    !isCount(value['durationMs']) ||
+    !isCount(value['xp']) ||
+    !isNullableCount(value['learnBp']) ||
+    !isCount(value['teachers'])
+  ) {
+    throw new Error('the server returned an unexpected dismantle preview');
+  }
+  return value as unknown as DismantlePreview;
 }
 
 export function parseStartJobResult(value: unknown): StartJobResult {
