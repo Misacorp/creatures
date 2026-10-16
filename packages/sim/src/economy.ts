@@ -41,7 +41,7 @@ import {
 } from './gear';
 import { chooseDungeonTeam, dayModifiers, playDungeonDay, type DungeonLogEntry } from './dungeon';
 import type { Setup } from './formations';
-import { POLICY, chooseTrainee, isTrainable, trainCost } from './policy';
+import { chooseTrainee, trainCost } from './policy';
 import { openRaidWeek, playStage, summarizeRaid, type RaidSummary, type RaidWeek } from './raid';
 import { clonePlayer, createPlayer, emptyWeek, type SimPlayer } from './state';
 import {
@@ -155,7 +155,6 @@ export interface WeekRecord {
   week: number;
   baitEarned: number;
   baitConverted: number;
-  baitSpentExpeditions: number;
   baitSpentTraining: number;
   bait: number;
   speciesOwned: number;
@@ -422,11 +421,11 @@ function explorerOrder(player: SimPlayer): (idle: OwnedCreature[]) => OwnedCreat
 }
 
 /**
- * One check-in: claim trips (and take an end-of-trip goal), claim jobs, evolve, train with what the
- * supplies budget leaves, manage gear, send trips into the free slots and start jobs (see POLICY).
- * The player's profile sets the dials: how much of the spare Bait supplies may use, whom to train, and
- * whether the gear is worked at this check-in. `dice` is the stream of the profile's own random
- * choices (spread training, the craft chance); today's archetypes never draw from it.
+ * One check-in: claim trips (and take an end-of-trip goal), claim jobs, evolve, manage gear, send trips
+ * into the free slots, train and start jobs (see `policy.ts`). The player's profile sets the dials:
+ * whom to train, and whether the gear is worked at this check-in. `dice` is the stream of the
+ * profile's own random choices (spread training, the craft chance); today's archetypes never draw
+ * from it.
  */
 export function checkIn(
   player: SimPlayer,
@@ -441,20 +440,10 @@ export function checkIn(
   if (gear !== undefined) claimJobs(player, gear);
   evolveCreatures(player);
 
-  // The Bait that supplies may use: what is held above the reserve (all of it when nothing can be
-  // trained), as far as the profile spends on supplies.
-  const hasTrainable = player.creatures.some(isTrainable);
-  const spare = hasTrainable ? Math.max(0, player.bait - POLICY.supplyReserve) : player.bait;
-  const budget = Math.floor((spare * profile.supplyPercent) / 100);
-
-  // Trips go first, with supplies bought from the budget; what is not spent on them trains creatures.
+  // Trips are free and supplies cannot be bought: a trip carries what is in stock.
   const worksGear = profile.craftPercent >= 100 || chance(dice, profile.craftPercent, 100);
   if (gear !== undefined) manageGear(player, worksGear);
-  const spent = sendsTrips
-    ? sendTrips(player, ctx, Math.min(budget, player.bait), explorerOrder(player))
-    : 0;
-  player.bait -= spent;
-  player.week.baitSpentExpeditions += spent;
+  if (sendsTrips) sendTrips(player, ctx, explorerOrder(player));
 
   const plan = { focus: profile.trainFocus, evolutionPush: profile.evolutionPush };
   for (;;) {
@@ -484,7 +473,6 @@ function record(player: SimPlayer, week: number): WeekRecord {
     week,
     baitEarned: player.week.baitEarned,
     baitConverted: player.week.baitConverted,
-    baitSpentExpeditions: player.week.baitSpentExpeditions,
     baitSpentTraining: player.week.baitSpentTraining,
     bait: player.bait,
     speciesOwned: player.creatures.filter((c) => !speciesOf(c.speciesId).festival).length,

@@ -42,9 +42,14 @@ export interface TripStats {
   pushons_taken: number;
   pushons_won: number;
   supplies_used: number;
-  supplies_bought: number;
+  /** Supplies that came from the daily dungeon, and from one-time explorer rank gifts. */
+  supplies_dungeon: number;
+  supplies_gift: number;
   supplies_found: number;
   supplies_crafted: number;
+  /** Of the crafted ones, those of the good and the great tier (they need shards and Crafting level 3 and 5). */
+  supplies_crafted_good: number;
+  supplies_crafted_great: number;
   shinies_found: number;
   offers: number;
   trip_hours: number;
@@ -63,9 +68,12 @@ export const TRIP_STAT_KEYS: readonly (keyof TripStats)[] = [
   'pushons_taken',
   'pushons_won',
   'supplies_used',
-  'supplies_bought',
+  'supplies_dungeon',
+  'supplies_gift',
   'supplies_found',
   'supplies_crafted',
+  'supplies_crafted_good',
+  'supplies_crafted_great',
   'shinies_found',
   'offers',
   'trip_hours',
@@ -80,7 +88,6 @@ export function emptyTripStats(): TripStats {
 export interface WeekCounters {
   baitEarned: number;
   baitConverted: number;
-  baitSpentExpeditions: number;
   baitSpentTraining: number;
   essenceEarned: number;
   trainings: number;
@@ -109,7 +116,6 @@ export function emptyWeek(): WeekCounters {
   return {
     baitEarned: 0,
     baitConverted: 0,
-    baitSpentExpeditions: 0,
     baitSpentTraining: 0,
     essenceEarned: 0,
     trainings: 0,

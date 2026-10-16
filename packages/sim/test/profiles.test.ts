@@ -38,7 +38,6 @@ describe('profiles', () => {
       trainFocus: 3,
       evolutionPush: true,
       tripPercent: 100,
-      supplyPercent: 100,
       dungeon: 'best',
       raidRow: 'protected',
       craftPercent: 100,
@@ -63,7 +62,6 @@ describe('profiles', () => {
     expect(drop).toMatchObject({
       dungeon: 'random',
       craftPercent: 0,
-      supplyPercent: 0,
       raidRow: 'auto',
     });
     expect(drop.leetDays).toBeLessThan(1);
@@ -84,7 +82,6 @@ describe('profiles', () => {
         trainFocus: 3,
         evolutionPush: true,
         tripPercent: 100,
-        supplyPercent: 100,
         dungeon: 'good',
         raidRow: 'auto',
         craftPercent: 100,

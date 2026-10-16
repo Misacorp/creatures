@@ -131,6 +131,26 @@ describe('the dungeon in the simulator', () => {
     expect(p.gear.parts.scrap).toBeGreaterThanOrEqual(payout.scrap);
   });
 
+  it('drops the supplies of the cleared rooms into the stock, counted as dungeon supplies', () => {
+    const p = player(15);
+    const [run] = play(p, 5);
+    const payout = dungeonPayout(1, run?.roomsCleared ?? 0);
+    expect(payout.supplies).toBeGreaterThan(0);
+    const stock = Object.values(p.supplies).reduce((n, x) => n + x, 0);
+    expect(stock).toBe(payout.supplies);
+    expect(p.stats.supplies_dungeon).toBe(payout.supplies);
+    // Depth 1 drops only basic supplies.
+    for (const id of Object.keys(p.supplies)) expect(id.endsWith('-basic')).toBe(true);
+    // A run lost in the first room drops none.
+    const q = player(1, 'p02');
+    q.dungeon.depth = 50;
+    q.dungeon.firstDay = 0;
+    const lost = play(q, 5)[0];
+    expect(lost?.roomsCleared).toBe(0);
+    expect(Object.keys(q.supplies)).toEqual([]);
+    expect(q.stats.supplies_dungeon).toBe(0);
+  });
+
   it('keeps the depth and pays only the cleared rooms after a loss', () => {
     const p = player(1);
     p.dungeon.depth = 50;

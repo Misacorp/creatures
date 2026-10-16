@@ -486,13 +486,11 @@ describe('profile decisions', () => {
     }).players[0]?.weeks ?? [];
   const engaged = { ...PRESETS.engaged, id: 'test', label: 'Test' };
 
-  it('no supplies are bought with a supply share of 0, and some with 100', () => {
-    expect(weeks({ ...engaged, supplyPercent: 0 }).every((w) => w.baitSpentExpeditions === 0)).toBe(
-      true,
-    );
-    expect(weeks({ ...engaged, supplyPercent: 100 }).some((w) => w.baitSpentExpeditions > 0)).toBe(
-      true,
-    );
+  it('no Bait goes to supplies: they are not for sale, and training takes what is spent', () => {
+    for (const w of weeks(engaged)) {
+      expect(w).not.toHaveProperty('baitSpentExpeditions');
+      expect(w.baitSpentTraining).toBeGreaterThanOrEqual(0);
+    }
   });
 
   it('no trips are sent with an uptime of 0', () => {

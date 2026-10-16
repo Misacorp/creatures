@@ -91,7 +91,6 @@ export interface ProgressionRow {
   players: number;
   baitEarned: number;
   baitConverted: number;
-  baitSpentExpeditions: number;
   baitSpentTraining: number;
   speciesOwned: number;
   top3Power: number;
@@ -295,7 +294,6 @@ function progression(
         players: ws.length,
         baitEarned: avg((w) => w.baitEarned),
         baitConverted: avg((w) => w.baitConverted),
-        baitSpentExpeditions: avg((w) => w.baitSpentExpeditions),
         baitSpentTraining: avg((w) => w.baitSpentTraining),
         speciesOwned: avg((w) => w.speciesOwned),
         top3Power: avg((w) => w.top3Power),

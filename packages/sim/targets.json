@@ -486,5 +486,45 @@
     "comparator": "range",
     "value": [0.1, 0.35],
     "unit": "percent"
+  },
+  {
+    "id": "supplies-regular-used",
+    "description": "Supplies: a regular player carries at least about 3 supplies a week (weeks 3 to 12; B-011)",
+    "metric": "supplies.regular.usedPerWeek",
+    "comparator": "min",
+    "value": 3,
+    "unit": "number"
+  },
+  {
+    "id": "supplies-minmaxer-used",
+    "description": "Supplies: a min-maxer carries at least about 8 supplies a week (weeks 3 to 12; B-011)",
+    "metric": "supplies.min-maxer.usedPerWeek",
+    "comparator": "min",
+    "value": 8,
+    "unit": "number"
+  },
+  {
+    "id": "supplies-minmaxer-crafted-share",
+    "description": "Supplies: at least a quarter of a min-maxer's supplies are crafted in the Workshop (weeks 3 to 12)",
+    "metric": "supplies.min-maxer.craftedShare",
+    "comparator": "min",
+    "value": 0.25,
+    "unit": "percent"
+  },
+  {
+    "id": "supplies-engaged-crafted-share",
+    "description": "Supplies: at least a quarter of an engaged player's supplies are crafted in the Workshop (weeks 3 to 12)",
+    "metric": "supplies.engaged.craftedShare",
+    "comparator": "min",
+    "value": 0.25,
+    "unit": "percent"
+  },
+  {
+    "id": "supplies-minmaxer-gear",
+    "description": "Supplies: making supplies does not starve the gear (a min-maxer's upgrade levels on worn gear at the end of week 12 are at least those before the rework, 11.5, less a margin)",
+    "metric": "supplies.min-maxer.gearLevelsEnd",
+    "comparator": "min",
+    "value": 10.8,
+    "unit": "level"
   }
 ]

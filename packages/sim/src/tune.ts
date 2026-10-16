@@ -1,4 +1,4 @@
-import { RULES, content, dungeonContent } from '@creatures/game';
+import { RULES, content, dungeonContent, expeditionContent } from '@creatures/game';
 
 /**
  * Walks `keys` from `start`; an array is indexed by a whole number or searched by `id`, so
@@ -22,7 +22,8 @@ function walk(start: unknown, keys: readonly string[]): unknown {
  * for the length of a run, to try a setting without editing the files. `raid.curve.ranks.3.hpBp=21000`,
  * `boss.thornmother.baseHp=4300`, `boss.cinder-wyrm.gimmicks.cinder-fall.power=9000` (arrays are
  * searched by id; a charged move's own numbers are under `then`), `foe.ember-mite.baseHp=200` and
- * `creature.sproutle.baseStats.atk=24` are examples. Only existing integer numbers can be overridden.
+ * `creature.sproutle.baseStats.atk=24` and `supply.lure-basic.blueprint.parts.scrap=2` are examples.
+ * Only existing integer numbers can be overridden.
  * The shipped values are not touched on disk; the caller restores them with the returned function.
  */
 export function applyOverrides(spec: string): () => void {
@@ -42,6 +43,12 @@ export function applyOverrides(spec: string): () => void {
     } else if (path[0] === 'foe' && path.length >= 2) {
       target = walk(
         dungeonContent.foes.find((f) => f.id === path[1]),
+        path.slice(2),
+      );
+    } else if (path[0] === 'supply' && path.length >= 2) {
+      // `supply.lure-basic.blueprint.parts.scrap=2`: a number inside one supply's content.
+      target = walk(
+        expeditionContent.supplies.find((x) => x.id === path[1]),
         path.slice(2),
       );
     } else if (path[0] === 'creature' && path.length >= 2) {

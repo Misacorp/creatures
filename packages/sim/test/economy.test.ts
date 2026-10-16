@@ -57,7 +57,7 @@ describe('archetype policies over 2 weeks', () => {
           expect(w.essence).toBeGreaterThanOrEqual(0);
           spentTraining += w.baitSpentTraining;
         }
-        // Trips are free: they run whatever the Bait, and supplies are the only expedition spending.
+        // Trips are free and supplies cannot be bought: trips run whatever the Bait.
         expect(weeks[1]?.trips ?? 0).toBeGreaterThan(0);
         expect(spentTraining).toBeGreaterThan(0);
         // Expeditions brought new species or fusions beyond the starter.
@@ -110,12 +110,12 @@ describe('check-in', () => {
     trip: createSeededRng(`${seed}:trip`),
   });
 
-  it('never overspends and accounts for every Bait spent', () => {
+  it('never overspends and accounts for every Bait spent (all of it goes to training)', () => {
     for (const bait of [0, 9, 10, 29, 60, 150, 400, 5000]) {
       const p = player(bait);
       checkIn(p, 1, tripCtx(9, `ci-${String(bait)}`));
       expect(p.bait).toBeGreaterThanOrEqual(0);
-      expect(p.week.baitSpentExpeditions + p.week.baitSpentTraining).toBe(bait - p.bait);
+      expect(p.week.baitSpentTraining).toBe(bait - p.bait);
       expect(p.expeditions.length).toBeLessThanOrEqual(slotsOfPlayer(p));
       const explorers = new Set(p.expeditions.map((e) => e.explorerId));
       expect(explorers.size).toBe(p.expeditions.length);
@@ -130,7 +130,6 @@ describe('check-in', () => {
     checkIn(broke, 1, tripCtx(9, 'broke'));
     expect(broke.expeditions).toHaveLength(1);
     expect(broke.week.trainings).toBe(0);
-    expect(broke.week.baitSpentExpeditions).toBe(0);
   });
 
   it('claims trips, using the first-expedition zipmouse rule and fusing duplicates', () => {

@@ -120,48 +120,57 @@ describe('choosing a trip', () => {
 });
 
 describe('supplies', () => {
-  it('never carries more than the limit or two of a kind, and never spends past the budget', () => {
+  it('carries nothing without stock: supplies cannot be bought', () => {
     const p = player();
     const dest = place('tidepools');
-    for (const budget of [0, 10, 40, 100, 1000]) {
-      const picked = chooseKit(p, { length: 'long', dest, stars: 0 }, budget);
-      expect(picked.cost).toBeLessThanOrEqual(budget);
-      expect(picked.kit.length).toBeLessThanOrEqual(RULES.expeditions.maxSupplies);
-      const kinds = picked.kit.map(
-        (id) => expeditionContent.supplies.find((s) => s.id === id)?.kind,
-      );
-      expect(new Set(kinds).size).toBe(kinds.length);
-      expect(picked.bought.every((id) => picked.kit.includes(id))).toBe(true);
-    }
+    expect(chooseKit(p, { length: 'long', dest, stars: 0 })).toEqual([]);
+    expect(p.bait).toBeGreaterThanOrEqual(0);
   });
 
-  it('uses supplies in stock for nothing', () => {
+  it('never carries more than the limit or two of a kind, and only what is in stock', () => {
+    const p = player();
+    for (const def of expeditionContent.supplies) p.supplies[def.id] = 1;
+    const dest = place('tidepools');
+    const kit = chooseKit(p, { length: 'long', dest, stars: 0 });
+    expect(kit.length).toBeGreaterThan(0);
+    expect(kit.length).toBeLessThanOrEqual(RULES.expeditions.maxSupplies);
+    const kinds = kit.map((id) => expeditionContent.supplies.find((s) => s.id === id)?.kind);
+    expect(new Set(kinds).size).toBe(kinds.length);
+    // Supplies that are not in stock are never carried.
+    const few = player();
+    few.supplies['lure-great'] = 1;
+    const only = chooseKit(few, { length: 'long', dest: place('storm-ridge'), stars: 0 });
+    expect(only).toEqual(['lure-great']);
+  });
+
+  it('uses supplies from stock and takes them out of it', () => {
     const p = player();
     p.supplies['lure-great'] = 1;
-    const dest = place('storm-ridge');
-    const picked = chooseKit(p, { length: 'long', dest, stars: 0 }, 0);
-    expect(picked.kit).toContain('lure-great');
-    expect(picked.cost).toBe(0);
-    expect(picked.bought).toEqual([]);
+    p.stats.trips_finished = 0;
+    sendTrips(p, ctx(9), (idle) => idle);
+    const kit = p.expeditions[0]?.kit ?? [];
+    for (const id of kit) expect(p.supplies[id], id).toBe(0);
+    expect(p.stats.supplies_used).toBe(kit.length);
   });
 });
 
 describe('sending and claiming trips', () => {
-  it('fills only the free slots, with different explorers, and spends within the budget', () => {
+  it('fills only the free slots, with different explorers, and costs no Bait', () => {
     const p = player();
     p.stats.trips_finished = RULES.expeditions.slots.secondAfterTrips;
-    const spent = sendTrips(p, ctx(9), 60, (idle) => idle);
+    const bait = p.bait;
+    sendTrips(p, ctx(9), (idle) => idle);
     expect(p.expeditions).toHaveLength(2);
     expect(new Set(p.expeditions.map((e) => e.explorerId)).size).toBe(2);
-    expect(spent).toBeLessThanOrEqual(60);
+    expect(p.bait).toBe(bait);
     // Nothing is free now.
-    expect(sendTrips(p, ctx(9), 60, (idle) => idle)).toBe(0);
+    sendTrips(p, ctx(9), (idle) => idle);
     expect(p.expeditions).toHaveLength(2);
   });
 
   it('keeps a trip until it ends, then pays catches, XP and familiarity once', () => {
     const p = player();
-    sendTrips(p, ctx(9), 0, (idle) => idle);
+    sendTrips(p, ctx(9), (idle) => idle);
     const trip = p.expeditions[0];
     if (trip === undefined) throw new Error('no trip');
     const explorer = trip.explorerId;

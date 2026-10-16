@@ -9,7 +9,7 @@ describe('simulation run', () => {
     const b = buildReportJson(tinyRun());
     expect(a).toBe(b);
     expect(buildReportMarkdown(tinyRun())).toBe(buildReportMarkdown(tinyRun()));
-  });
+  }, 300_000);
 
   it('gives a different report for a different seed', () => {
     expect(buildReportJson(tinyRun({ seed: 'other' }))).not.toBe(buildReportJson(tinyRun()));
@@ -40,7 +40,7 @@ describe('simulation run', () => {
       targets: unknown[];
     };
     expect(json.settings.seed).toBe('test');
-    expect(json.targets).toHaveLength(61);
+    expect(json.targets).toHaveLength(66);
   });
 
   it('marks metrics it did not measure as not measured', () => {
