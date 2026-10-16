@@ -11,7 +11,21 @@ import {
   convertedItemLevel,
   craftCost,
   craftItemLevel,
+  anyShards,
+  craftCostFor,
+  craftHours,
+  craftOdds,
   craftRarity,
+  dismantleBundleError,
+  dismantleHours,
+  dismantleLearnBp,
+  dismantleRange,
+  dismantleXp,
+  reachMinLevel,
+  rollCraftItem,
+  rollCraftRarity,
+  rollDismantle,
+  stepUpBp,
   createSeededRng,
   dismantleYield,
   dropBase,
@@ -1085,21 +1099,23 @@ describe('costs, yields and jobs', () => {
     expect(() => craftCost('nope')).toThrow(RangeError);
   });
 
-  it('dismantling returns scrap, a shard of the element tag and glimmer; nothing negative or fractional', () => {
+  it('the fallback yield is the bottom of the range: scrap, a shard of the element tag, glimmer; nothing negative or fractional', () => {
     expect(dismantleYield({ baseId: 'trail-cap', rarity: 'common' })).toEqual({ scrap: 2 });
     expect(dismantleYield({ baseId: 'kelp-cap', rarity: 'rare' })).toEqual({
-      scrap: 5,
+      scrap: 4,
       'tide-shard': 1,
     });
     expect(dismantleYield({ baseId: 'coal-warm-cap', rarity: 'epic' })).toEqual({
-      scrap: 10,
-      'ember-shard': 2,
-      glimmer: 1,
+      scrap: 8,
+      'ember-shard': 1,
     });
-    expect(dismantleYield({ baseId: 'wardens-bell', rarity: 'epic' })).toEqual({
-      scrap: 10,
-      glimmer: 1,
+    // Every full 5 item levels add 1 scrap.
+    expect(dismantleYield({ baseId: 'coal-warm-cap', rarity: 'epic', itemLevel: 20 })).toEqual({
+      scrap: 12,
+      'ember-shard': 1,
     });
+    // Neutral, explorer and role pieces give no shard when nothing is rolled.
+    expect(dismantleYield({ baseId: 'wardens-bell', rarity: 'epic' })).toEqual({ scrap: 8 });
     for (const base of gearContent.bases) {
       for (const rarity of ['common', 'rare', 'epic', 'festival'] as const) {
         const parts = dismantleYield({ baseId: base.id, rarity });
@@ -1140,7 +1156,7 @@ describe('costs, yields and jobs', () => {
     expect(nextSkillXp(10)).toBeNull();
   });
 
-  it('a craft is Common, or one rarity higher with 1% per level above 1, and always draws once', () => {
+  it('a plain craft is Common, or one rarity higher with 1% per level above 1, and always draws twice', () => {
     const rng = createSeededRng('craft');
     for (let i = 0; i < 200; i++) expect(craftRarity(rng, 1)).toBe('common');
     let up = 0;
@@ -1151,7 +1167,7 @@ describe('costs, yields and jobs', () => {
     const counting: Rng = { nextU32: () => (draws++, HIGH) };
     craftRarity(counting, 1);
     craftRarity(counting, 7);
-    expect(draws).toBe(2);
+    expect(draws).toBe(4);
   });
 
   it('a craft has item level 2 x the crafter level and the blueprint base', () => {
@@ -1179,5 +1195,262 @@ describe('the one-time conversion helpers', () => {
   it('has an item level for conversion inside the cap and roll floor of the rules', () => {
     expect(RULES.gear.itemLevel.convert.max).toBe(12);
     expect(RULES.gear.itemLevel.convert.minTier).toBe(1);
+  });
+});
+
+describe('the crafting loop: Reach, odds and marks', () => {
+  const sum = (o: { common: number; rare: number; epic: number }): number =>
+    o.common + o.rare + o.epic;
+
+  it('asks a Crafting level, Essence, shards and glimmer for a Reach, and a longer job', () => {
+    expect([reachMinLevel('none'), reachMinLevel('rare'), reachMinLevel('epic')]).toEqual([
+      1, 3, 6,
+    ]);
+    expect([craftHours('none'), craftHours('rare'), craftHours('epic')]).toEqual([3, 6, 10]);
+    // An element base pays the shards of its element.
+    expect(craftCostFor('kelp-cap', 'none', {})).toEqual({
+      parts: { scrap: 6, 'tide-shard': 1 },
+      essence: 0,
+    });
+    expect(craftCostFor('kelp-cap', 'rare', {})).toEqual({
+      parts: { scrap: 6, 'tide-shard': 2 },
+      essence: 25,
+    });
+    expect(craftCostFor('kelp-cap', 'epic', {})).toEqual({
+      parts: { scrap: 6, 'tide-shard': 3, glimmer: 1 },
+      essence: 70,
+    });
+    // Other bases take the extra shards from the biggest piles, scrap only for the plain part.
+    expect(
+      craftCostFor('trail-cap', 'epic', { 'ember-shard': 1, 'grove-shard': 5, 'spark-shard': 4 }),
+    ).toEqual({ parts: { scrap: 8, 'grove-shard': 2, glimmer: 1 }, essence: 70 });
+    expect(craftCostFor('trail-cap', 'epic', { 'grove-shard': 1, 'spark-shard': 1 })).toEqual({
+      parts: { scrap: 8, 'grove-shard': 1, 'spark-shard': 1, glimmer: 1 },
+      essence: 70,
+    });
+  });
+
+  it('puts the missing shards on the biggest pile, so a payment fails visibly', () => {
+    expect(anyShards({ 'tide-shard': 1 }, 2)).toEqual({ 'tide-shard': 2 });
+    expect(anyShards({}, 2)).toEqual({ 'tide-shard': 2 });
+    expect(anyShards({ 'spark-shard': 3 }, 0)).toEqual({});
+  });
+
+  it('shows exact odds for every Reach, Crafting level and number of marks: every input is a whole percent, so nothing is rounded', () => {
+    const inputs = [
+      RULES.gear.skill.rarityUpBpPerLevel,
+      RULES.gear.craft.marks.upBp,
+      ...Object.values(RULES.gear.craft.reach.rare.oddsBp),
+      ...Object.values(RULES.gear.craft.reach.epic.oddsBp),
+    ];
+    for (const bp of inputs) expect(bp % 100).toBe(0);
+    for (const reach of ['none', 'rare', 'epic'] as const) {
+      for (let level = 1; level <= MAX_SKILL_LEVEL; level++) {
+        for (let marks = 0; marks <= 10; marks++) {
+          const odds = craftOdds(reach, level, marks);
+          expect(sum(odds)).toBe(10_000);
+          for (const v of Object.values(odds)) {
+            expect(v).toBeGreaterThanOrEqual(0);
+            expect(Number.isInteger(v)).toBe(true);
+          }
+        }
+      }
+    }
+  });
+
+  it('matches the spec: Reach for Rare 60/40, Reach for Epic 30/55/15, then 1 point per level above 1 and per mark', () => {
+    expect(craftOdds('none', 1, 0)).toEqual({ common: 10_000, rare: 0, epic: 0 });
+    expect(craftOdds('rare', 1, 0)).toEqual({ common: 4_000, rare: 6_000, epic: 0 });
+    expect(craftOdds('epic', 1, 0)).toEqual({ common: 1_500, rare: 5_500, epic: 3_000 });
+    // Level 6 (5 points) and 4 marks: a 9% step up. Rare 60%: 40% Common x 9% rises, 60% Rare x 9% rises.
+    expect(stepUpBp(6, 4)).toBe(900);
+    expect(craftOdds('rare', 6, 4)).toEqual({ common: 3_640, rare: 5_820 + 0, epic: 540 });
+    expect(craftOdds('epic', 6, 4)).toEqual({ common: 1_365, rare: 5_005 + 135, epic: 3_495 });
+    // Marks stop at 10 and the chance at 100%.
+    expect(stepUpBp(1, 25)).toBe(1_000);
+    expect(stepUpBp(10, 10)).toBe(1_900);
+    expect(RULES.gear.craft.marks.max).toBe(10);
+  });
+
+  it('draws the rarity from exactly the shown odds', () => {
+    const rng = createSeededRng('odds');
+    const n = 40_000;
+    for (const [reach, level, marks] of [
+      ['rare', 4, 3],
+      ['epic', 7, 10],
+    ] as const) {
+      const count = { common: 0, rare: 0, epic: 0 };
+      for (let i = 0; i < n; i++) {
+        const { rarity } = rollCraftRarity(rng, reach, level, marks);
+        count[rarity as 'common' | 'rare' | 'epic']++;
+      }
+      const odds = craftOdds(reach, level, marks);
+      for (const key of ['common', 'rare', 'epic'] as const) {
+        expect(Math.abs(count[key] / n - odds[key] / 10_000)).toBeLessThan(0.012);
+      }
+    }
+  });
+
+  it('draws the Reach odds, then the step up, and says whether the step up raised it', () => {
+    // Draw 1 low: Common; draw 2 low: the step up happens.
+    const script = (...values: number[]): Rng => {
+      let i = 0;
+      return { nextU32: () => values[i++] ?? 0 };
+    };
+    const first = rollCraftRarity(script(0, 0), 'rare', 6, 0);
+    expect(first).toEqual({ rarity: 'rare', upgraded: true });
+    const second = rollCraftRarity(script(HIGH, HIGH), 'rare', 6, 0);
+    expect(second).toEqual({ rarity: 'rare', upgraded: false });
+    // An Epic stays Epic.
+    expect(rollCraftRarity(script(HIGH, 0), 'epic', 6, 0).rarity).toBe('epic');
+  });
+
+  it('a craft has the item level of the crafter and can be raised to a floor', () => {
+    const made = rollCraftItem(createSeededRng('floor'), 'kelp-cap', 3, { floor: 'epic' });
+    expect(made.item.rarity).toBe('epic');
+    expect(made.item.itemLevel).toBe(6);
+    expect(rollCraft(createSeededRng('floor'), 'kelp-cap', 3, { floor: 'festival' }).rarity).toBe(
+      'epic',
+    );
+  });
+});
+
+describe('dismantling: ranges, rolls, bundles, time and XP', () => {
+  it('shows each rarity its range, 1 scrap more at both ends for every full 5 item levels', () => {
+    expect(dismantleRange([{ baseId: 'trail-cap', rarity: 'common', itemLevel: 1 }])).toEqual({
+      scrap: { min: 2, max: 4 },
+      shards: { min: 0, max: 0, element: null },
+      glimmer: { min: 0, max: 0 },
+      essence: { min: 0, max: 0 },
+    });
+    expect(dismantleRange([{ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 10 }])).toEqual({
+      scrap: { min: 6, max: 10 },
+      shards: { min: 1, max: 1, element: 'tide' },
+      glimmer: { min: 0, max: 0 },
+      essence: { min: 3, max: 8 },
+    });
+    expect(dismantleRange([{ baseId: 'wardens-bell', rarity: 'epic', itemLevel: 20 }])).toEqual({
+      scrap: { min: 12, max: 18 },
+      shards: { min: 1, max: 2, element: null },
+      glimmer: { min: 0, max: 1 },
+      essence: { min: 10, max: 25 },
+    });
+    // A Festival piece pays like an Epic.
+    expect(
+      dismantleRange([{ baseId: 'festival-lantern-charm', rarity: 'festival' }]).essence,
+    ).toEqual({ min: 10, max: 25 });
+    // A bundle of Commons adds its items' ranges.
+    const bundle = dismantleRange(
+      Array.from({ length: 5 }, () => ({ baseId: 'trail-cap', rarity: 'common' as const })),
+    );
+    expect(bundle.scrap).toEqual({ min: 10, max: 20 });
+  });
+
+  it('does not depend on who dismantles: the range function has no Crafting level to take', () => {
+    expect(dismantleRange.length).toBe(1);
+    expect(rollDismantle.length).toBe(2);
+  });
+
+  it('rolls inside the range, integers only, a shard of the element or a random kind, and is repeatable from a seed', () => {
+    const items = [
+      { baseId: 'coal-warm-cap', rarity: 'epic' as const, itemLevel: 12 },
+      { baseId: 'trail-cap', rarity: 'rare' as const, itemLevel: 7 },
+    ];
+    const range = dismantleRange(items);
+    const seen = new Set<number>();
+    const kinds = new Set<string>();
+    for (let i = 0; i < 400; i++) {
+      const rolled = rollDismantle(createSeededRng(`d${String(i)}`), items);
+      const scrap = rolled.parts.scrap ?? 0;
+      seen.add(scrap);
+      expect(scrap).toBeGreaterThanOrEqual(range.scrap.min);
+      expect(scrap).toBeLessThanOrEqual(range.scrap.max);
+      let shards = 0;
+      for (const [kind, amount] of Object.entries(rolled.parts)) {
+        expect(Number.isInteger(amount)).toBe(true);
+        if (kind.endsWith('-shard')) {
+          shards += amount;
+          kinds.add(kind);
+        }
+      }
+      expect(shards).toBeGreaterThanOrEqual(range.shards.min);
+      expect(shards).toBeLessThanOrEqual(range.shards.max);
+      expect(rolled.parts.glimmer ?? 0).toBeLessThanOrEqual(range.glimmer.max);
+      expect(rolled.essence).toBeGreaterThanOrEqual(range.essence.min);
+      expect(rolled.essence).toBeLessThanOrEqual(range.essence.max);
+    }
+    // Both ends of the scrap range come up, and the neutral hat's shard is any kind.
+    expect(Math.min(...seen)).toBe(range.scrap.min);
+    expect(Math.max(...seen)).toBe(range.scrap.max);
+    expect(kinds.size).toBeGreaterThan(2);
+    expect(rollDismantle(createSeededRng('same'), items)).toEqual(
+      rollDismantle(createSeededRng('same'), items),
+    );
+    // Commons give no shards and no Essence.
+    const commons = rollDismantle(
+      createSeededRng('commons'),
+      Array.from({ length: 5 }, () => ({ baseId: 'kelp-cap', rarity: 'common' as const })),
+    );
+    expect(commons.essence).toBe(0);
+    expect(Object.keys(commons.parts)).toEqual(['scrap']);
+  });
+
+  it('bundles up to 5 Commons; a Rare, an Epic or a Festival piece goes alone', () => {
+    expect(dismantleBundleError([])).toBe('empty');
+    expect(dismantleBundleError(['common', 'common', 'common', 'common', 'common'])).toBeNull();
+    expect(dismantleBundleError(Array(6).fill('common') as GearRarity[])).toBe('too_many');
+    expect(dismantleBundleError(['rare'])).toBeNull();
+    expect(dismantleBundleError(['festival'])).toBeNull();
+    expect(dismantleBundleError(['common', 'rare'])).toBe('mixed');
+    expect(dismantleBundleError(['rare', 'rare'])).toBe('mixed');
+  });
+
+  it('takes 15 minutes, 1 hour or 2 hours, and gives 12 XP an hour, at least 6', () => {
+    expect([15, 60, 120, 120]).toEqual(
+      (['common', 'rare', 'epic', 'festival'] as const).map((r) => dismantleHours(r) * 60),
+    );
+    expect(dismantleXp('common')).toBe(6);
+    expect(dismantleXp('rare')).toBe(12);
+    expect(dismantleXp('epic')).toBe(24);
+    expect(dismantleXp('festival')).toBe(24);
+    expect(dismantleXp('rare', 1_000)).toBe(13);
+    // The skill and Busy paws shorten the time like any job.
+    expect(jobDuration(1, 0, dismantleHours('epic'))).toBe(2 * 3_600_000);
+    expect(jobDuration(2, 0, dismantleHours('common'))).toBe(Math.floor(900_000 * 0.97));
+  });
+
+  it('teaches a blueprint with 6% and 1 point per Crafting level of the worker', () => {
+    expect(dismantleLearnBp(1)).toBe(700);
+    expect(dismantleLearnBp(5)).toBe(1_100);
+    expect(dismantleLearnBp(MAX_SKILL_LEVEL)).toBe(1_600);
+    expect(dismantleLearnBp(99)).toBe(1_600);
+  });
+});
+
+describe('the day modifiers hook (Market Day, built by the Boons step)', () => {
+  it('adds to the one-step-up chance and changes nothing when absent', () => {
+    expect(craftOdds('rare', 3, 0, {})).toEqual(craftOdds('rare', 3, 0));
+    expect(stepUpBp(3, 2, { stepUpBonusBp: 500 })).toBe(stepUpBp(3, 2) + 500);
+    expect(stepUpBp(10, 10, { stepUpBonusBp: 99_999 })).toBe(10_000);
+    const plain = craftOdds('rare', 3, 0);
+    const boosted = craftOdds('rare', 3, 0, { stepUpBonusBp: 500 });
+    expect(boosted.epic).toBeGreaterThan(plain.epic);
+    expect(boosted.common + boosted.rare + boosted.epic).toBe(10_000);
+    const rolled = rollCraftItem(createSeededRng('m'), 'kelp-cap', 3, {
+      reach: 'rare',
+      mods: { stepUpBonusBp: 10_000 },
+    });
+    // A certain step up: Reach for Rare gives Rare (or Epic): never Common.
+    expect(rolled.item.rarity).not.toBe('common');
+  });
+
+  it('can roll the top of every refund range', () => {
+    const items = [{ baseId: 'coal-warm-cap', rarity: 'epic' as const, itemLevel: 12 }];
+    const range = dismantleRange(items);
+    const top = rollDismantle(createSeededRng('top'), items, { dismantleTopOfRange: true });
+    expect(top.parts.scrap).toBe(range.scrap.max);
+    expect(top.parts['ember-shard']).toBe(range.shards.max);
+    expect(top.parts.glimmer).toBe(range.glimmer.max);
+    expect(top.essence).toBe(range.essence.max);
   });
 });

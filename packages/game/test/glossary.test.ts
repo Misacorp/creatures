@@ -548,6 +548,29 @@ describe('the glossary covers gear and crafting', () => {
       `${String(RULES.gear.drops.duplicateBlueprintScrap)} scrap`,
     );
     expect(text('job-craft')).toContain(`Takes ${String(RULES.gear.craft.hours)} hours`);
+    const { rare, epic } = RULES.gear.craft.reach;
+    expect(text('reach')).toContain(
+      `Reach for Rare needs Crafting level ${String(rare.minLevel)} (${String(rare.essence)} Essence, ${String(rare.shard)} more shard, ${String(rare.hours)} hours)`,
+    );
+    expect(text('reach')).toContain(
+      `Reach for Epic needs level ${String(epic.minLevel)} (${String(epic.essence)} Essence, ${String(epic.shard)} more shards, ${String(epic.glimmer)} glimmer, ${String(epic.hours)} hours)`,
+    );
+    expect(text('reach')).toContain(
+      `${percent(RULES.gear.skill.rarityUpBpPerLevel)} for each Crafting level above 1 and for each well-thumbed mark`,
+    );
+    expect(text('well-thumbed')).toContain(`up to ${String(RULES.gear.craft.marks.max)}`);
+    expect(text('well-thumbed')).toContain(`${percent(RULES.gear.craft.marks.upBp)} to the chance`);
+    expect(text('blueprint')).toContain(`up to ${String(RULES.gear.craft.marks.max)}`);
+    const d = RULES.gear.dismantle;
+    expect(text('job-dismantle')).toContain(
+      `bundles of up to ${String(d.bundleMax)} and take ${String(d.minutes.common)} minutes`,
+    );
+    expect(text('job-dismantle')).toContain(
+      `A Rare takes ${String(d.minutes.rare / 60)} hour, an Epic or a Festival piece ${String(d.minutes.epic / 60)} hours`,
+    );
+    expect(text('job-dismantle')).toContain(
+      `${percent(d.learnBp)} and ${percent(d.learnBpPerLevel)} for each Crafting level`,
+    );
     expect(RULES.gear.itemLevel.craftPerLevel).toBe(2);
     expect(text('job-craft')).toContain("twice the creature's Crafting level");
     expect(text('skill-crafting')).toContain(

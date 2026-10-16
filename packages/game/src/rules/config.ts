@@ -478,19 +478,63 @@ export const RULES = {
       convert: { base: 3, max: 12, minTier: 1 },
     },
     /**
-     * What dismantling returns, by rarity (a shard is of the item's tag element; neutral items give
-     * none). Fixed amounts for now: ranges, Essence and time come with the crafting loop (Gear B).
+     * Crafting (spec section 3). A plain craft costs `scrap` and `shard` of the base's element (every
+     * other base takes `plainScrap` and no shard), makes a Common and takes `hours`. Reach pays more
+     * for better odds: Essence, shards (of the base's element; the other bases pay them from the
+     * player's biggest piles), glimmer, a longer job and a Crafting level to ask for it. `oddsBp` is the
+     * rarity drawn before the one-step-up chance (whole percents, so the shown odds are exact).
      */
-    dismantle: {
-      scrap: { common: 2, rare: 5, epic: 10, festival: 10 },
-      shard: { common: 0, rare: 1, epic: 2, festival: 2 },
-      glimmer: { common: 0, rare: 0, epic: 1, festival: 1 },
+    craft: {
+      scrap: 6,
+      shard: 1,
+      plainScrap: 8,
+      hours: 3,
+      reach: {
+        rare: {
+          minLevel: 3,
+          essence: 25,
+          shard: 1,
+          glimmer: 0,
+          hours: 6,
+          oddsBp: { common: 4_000, rare: 6_000, epic: 0 },
+        },
+        epic: {
+          minLevel: 6,
+          essence: 70,
+          shard: 2,
+          glimmer: 1,
+          hours: 10,
+          oddsBp: { common: 1_500, rare: 5_500, epic: 3_000 },
+        },
+      },
+      /** Well-thumbed blueprint marks: at most `max`, each adding `upBp` to the one-step-up chance. */
+      marks: { max: 10, upBp: 100 },
     },
     /**
-     * What a craft costs: an element base takes `scrap` and one shard of its element; every other
-     * base (neutral, explorer) takes `plainScrap` and no shard. The job takes `hours` before the skill.
+     * Dismantling is a Workshop job (spec section 3). The refund of each item is rolled at the claim
+     * inside its rarity's range (each end gets `scrapPerItemLevels` scrap per full 5 item levels) and
+     * does not depend on who works. Commons go in bundles of up to `bundleMax` in one job. A shard is
+     * of the item's element; neutral, explorer and role pieces give a random one.
      */
-    craft: { scrap: 6, shard: 1, plainScrap: 8, hours: 3 },
+    dismantle: {
+      bundleMax: 5,
+      /** Nominal minutes of a job by the rarity of what is taken apart (a bundle of Commons: one job). */
+      minutes: { common: 15, rare: 60, epic: 120, festival: 120 },
+      /** Inclusive ranges per item: `[min, max]`. */
+      ranges: {
+        common: { scrap: [2, 4], shard: [0, 0], glimmer: [0, 0], essence: [0, 0] },
+        rare: { scrap: [4, 8], shard: [1, 1], glimmer: [0, 0], essence: [3, 8] },
+        epic: { scrap: [8, 14], shard: [1, 2], glimmer: [0, 1], essence: [10, 25] },
+        festival: { scrap: [8, 14], shard: [1, 2], glimmer: [0, 1], essence: [10, 25] },
+      },
+      /** Every this many item levels adds 1 scrap to both ends of an item's scrap range. */
+      scrapPerItemLevels: 5,
+      /** The chance (basis points) to learn the item's blueprint (or add a mark): base plus per Crafting level. */
+      learnBp: 600,
+      learnBpPerLevel: 100,
+      /** The least Crafting XP a dismantle job gives (the rest follows `skill.xpPerHour`). */
+      minXp: 6,
+    },
     skill: {
       /** Total XP to reach each level (index 0 is level 1). XP per job is its nominal hours x `xpPerHour`. */
       xpForLevel: [0, 100, 250, 450, 700, 1_000, 1_600, 2_500, 3_800, 5_500],
