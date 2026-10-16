@@ -806,6 +806,52 @@ describe('scoring and Equip best', () => {
     ]);
   });
 
+  it('never leaves a creature with an empty slot or a worse item to hand its item to someone else', () => {
+    const emberLines: [string, number][] = [
+      ['attack', 4],
+      ['ember-attunement', 4],
+    ];
+    const hat = { id: 'h1', item: item('coal-warm-cap', 'rare', 20, emberLines) };
+    const payoff = wearerOf('p', 'payoff', 'ember', 20);
+    const guard = { ...wearerOf('g', 'guard', 'grove', 20), worn: { hat: 'h1' } as const };
+    // The Payoff would get more from the hat than the Guard wearing it, and nothing else is on offer.
+    expect(itemScore(hat.item, payoff)).toBeGreaterThan(itemScore(hat.item, guard));
+    expect(planEquipBest([payoff, guard], [hat])).toEqual([]);
+    // With a worse spare for the Guard, it still keeps its own hat: a slot changes only for a better item.
+    const spare = { id: 'h2', item: item('trail-cap', 'common', 5) };
+    expect(itemScore(spare.item, guard)).toBeLessThan(itemScore(hat.item, guard));
+    expect(planEquipBest([payoff, guard], [hat, spare])).toEqual([
+      { creatureId: 'p', slot: 'hat', itemId: 'h2' },
+    ]);
+  });
+
+  it('swaps two items between creatures when both end up with something better', () => {
+    const emberHat = {
+      id: 'h1',
+      item: item('coal-warm-cap', 'rare', 20, [
+        ['attack', 4],
+        ['ember-attunement', 4],
+      ]),
+    };
+    const groveHat = {
+      id: 'h2',
+      item: item('acorn-cap', 'rare', 20, [
+        ['attack', 4],
+        ['grove-attunement', 4],
+      ]),
+    };
+    const ember = { ...wearerOf('e', 'payoff', 'ember', 20), worn: { hat: 'h2' } as const };
+    const grove = { ...wearerOf('g', 'payoff', 'grove', 20), worn: { hat: 'h1' } as const };
+    expect(itemScore(emberHat.item, ember)).toBeGreaterThan(itemScore(groveHat.item, ember));
+    expect(itemScore(groveHat.item, grove)).toBeGreaterThan(itemScore(emberHat.item, grove));
+    expect(planEquipBest([ember, grove], [emberHat, groveHat])).toEqual(
+      expect.arrayContaining([
+        { creatureId: 'e', slot: 'hat', itemId: 'h1' },
+        { creatureId: 'g', slot: 'hat', itemId: 'h2' },
+      ]),
+    );
+  });
+
   it('shares items across a team, best pair first, each item once, and is the same in any order', () => {
     const a = wearerOf('a', 'payoff', 'ember', 20);
     const b = wearerOf('b', 'guard', 'grove', 20);

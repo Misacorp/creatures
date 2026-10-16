@@ -23,7 +23,14 @@ import {
   type DungeonRunInput,
   type FightSlot,
 } from '@creatures/engine';
-import { byPowerDesc, creaturePower, pickTeam, TEAM_SIZE, type OwnedCreature } from './data';
+import {
+  byPowerDesc,
+  creaturePower,
+  foldedCreature,
+  pickTeam,
+  TEAM_SIZE,
+  type OwnedCreature,
+} from './data';
 import type { DungeonSkill } from './profiles';
 import { shuffle } from './util';
 import { neutralSupport, studyRules, type RoleStudy } from './role-study';
@@ -151,12 +158,19 @@ export function buildRun(
   // As live play builds it: the boss room enrages, and a landmark depth gives the room boss its
   // signature (both are part of the stored run input).
   const enrage = dungeonBossEnrage();
+  // Between-room rest (a Scarf line), from the same folded gear rules as live play.
+  const rest: Record<string, number> = {};
+  for (const c of team) {
+    const restBp = foldedCreature(c).rules.restBp;
+    if (restBp > 0) rest[c.id] = restBp;
+  }
   return {
     team: row,
     player: DUNGEON_PLAYER,
     rooms,
     abilities,
     luck: { ...RULES.combat.luck },
+    ...(Object.keys(rest).length === 0 ? {} : { rest }),
     rules: studyRules(study),
     depth,
     ...(enrage === undefined ? {} : { enrage }),

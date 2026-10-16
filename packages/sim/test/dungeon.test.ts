@@ -96,6 +96,20 @@ describe('the dungeon in the simulator', () => {
     expect(geared).toBeGreaterThan(bare);
   });
 
+  it('carries the Scarf line "Between-room rest" into the run as the worker does, and nothing without it', () => {
+    const p = player(12);
+    expect(buildRun(p, 3, dayModifiers('s', 1), 'run-seed').rest).toBeUndefined();
+    const scarf: SimItem = {
+      ...itemOf('patch-scarf', 'common', 8, [{ id: 'between-room-rest', tier: 2 }]),
+      uid: 2,
+    };
+    const worn = p.creatures[1] as OwnedCreature;
+    worn.items = { scarf };
+    const run = buildRun(p, 3, dayModifiers('s', 1), 'run-seed');
+    // Tier III of the line is 4% of max HP, keyed by the creature's id; nobody else rests.
+    expect(run.rest).toEqual({ [worn.id]: 400 });
+  });
+
   it('does nothing for a player with fewer than three creatures', () => {
     const p = player(10);
     p.creatures.pop();

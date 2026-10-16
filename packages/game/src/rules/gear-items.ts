@@ -739,15 +739,51 @@ export function planEquipBest(
       (a.candidate.id < b.candidate.id ? -1 : a.candidate.id > b.candidate.id ? 1 : 0) ||
       (a.creature.id < b.creature.id ? -1 : a.creature.id > b.creature.id ? 1 : 0),
   );
-  const usedItems = new Set<string>();
-  const taken = new Set<string>();
-  const assigned = new Map<string, string>();
-  for (const pair of pairs) {
-    const key = `${pair.creature.id}:${pair.candidate.item.slot}`;
-    if (usedItems.has(pair.candidate.id) || taken.has(key)) continue;
-    usedItems.add(pair.candidate.id);
-    taken.add(key);
-    assigned.set(key, pair.candidate.id);
+  const scoreOf = new Map<string, number>();
+  for (const pair of pairs) scoreOf.set(`${pair.creature.id}:${pair.candidate.id}`, pair.score);
+  // Best pair first, but a slot that is pinned keeps its current item. A creature's slot changes only
+  // for a better item: when the plan takes a creature's item for someone else and leaves it nothing, or
+  // something worse, that slot is pinned and the plan is made again (each round pins at least one more
+  // slot, so it ends).
+  const pinned = new Set<string>();
+  let assigned: Map<string, string>;
+  for (;;) {
+    const usedItems = new Set<string>();
+    const taken = new Set<string>();
+    assigned = new Map<string, string>();
+    for (const key of pinned) {
+      const [creatureId, slot] = key.split(':') as [string, GearSlot];
+      const id = creatures.find((c) => c.id === creatureId)?.worn[slot];
+      if (id === undefined) continue;
+      usedItems.add(id);
+      taken.add(key);
+      assigned.set(key, id);
+    }
+    for (const pair of pairs) {
+      const key = `${pair.creature.id}:${pair.candidate.item.slot}`;
+      if (usedItems.has(pair.candidate.id) || taken.has(key)) continue;
+      usedItems.add(pair.candidate.id);
+      taken.add(key);
+      assigned.set(key, pair.candidate.id);
+    }
+    let changed = false;
+    for (const creature of creatures) {
+      for (const slot of GEAR_SLOTS) {
+        const key = `${creature.id}:${slot}`;
+        const current = creature.worn[slot];
+        if (current === undefined || pinned.has(key)) continue;
+        const next = assigned.get(key);
+        if (next === current) continue;
+        const keep = scoreOf.get(`${creature.id}:${current}`);
+        // A current item the creature may no longer wear (or that is not a candidate) is not kept.
+        if (keep === undefined) continue;
+        if (next === undefined || (scoreOf.get(`${creature.id}:${next}`) ?? 0) < keep) {
+          pinned.add(key);
+          changed = true;
+        }
+      }
+    }
+    if (!changed) break;
   }
   const moves: EquipMove[] = [];
   for (const creature of creatures) {
