@@ -1318,6 +1318,10 @@ Misa listened to the review episodes and agrees with the changes they proposed u
 - **Golden talents (1 in 20):** a golden talent is about 1.5 times a normal one (roughly a tier III gear line, a few percent of power). Every later duplicate of the line rolls a new talent and can Teach it, so any creature can still reach a golden talent; nobody restarts a creature for it.
 - **Unlock ladder:** Scarf at creature level 7, Charm at 13 (evolution stays at 15), talent slot 3 at 25, so a creature has something to look forward to every few levels (`gear-and-creatures-v2.md` 9.3a).
 
+## 2026-10-16: top-tier rolls stay at about 1 line in 7
+
+Misa agrees: at the highest item level about 1 line in 7 rolls tier V. A perfect item needs that on every line, so it stays rare while great items still arrive regularly.
+
 ## 2026-10-16: groundwork built: the modifier sheet in the engine, the Guard's shadow line, fight-scored power
 
 Step 1 of the build order in `gear-and-creatures-v2.md` (section 14). Nothing is player-facing yet: no gear or talent data fills the sheet. Technical decisions, made by the lead and implementer:
