@@ -31,7 +31,7 @@ import {
 } from '../src/gear-schemas';
 import { runCore } from './helpers';
 import { runConversionScenario, runExpeditionScenario, runGearScenario } from './gear-scenario';
-import { nextGuild } from './raid-helpers';
+import { nextGuild, scriptedThenSeeded } from './raid-helpers';
 
 /**
  * The contract with the client for gear, the workshop and expedition loot. The files in
@@ -109,7 +109,8 @@ describe('the gear fixtures match what the server sends', () => {
     let i = 0;
     const rest = createSeededRng('fixture-exp');
     const captured = await runCore(nextGuild(), (ctx) => runExpeditionScenario(ctx), {
-      rng: createSeededRng('fixture-catch'),
+      // A catch that is certain (a new creature), so the claim shows a catch next to the loot.
+      rng: scriptedThenSeeded([0, 0, 0, 1], 'fixture-catch'),
       tripRng: createSeededRng('fixture-trip'),
       gearRng: { nextU32: () => script[i++] ?? rest.nextU32() },
     });

@@ -9,9 +9,10 @@
 import {
   EXPEDITION_LENGTHS,
   expeditionContent,
+  catchChanceBp,
   kitDeepBp,
   lengthRules,
-  lureShift,
+  lureEffect,
   satchelBonus,
   shardOf,
   tripRolls,
@@ -50,7 +51,10 @@ interface HaulRow {
 }
 
 interface Metrics {
+  /** Creatures the rolls bring, in hundredths (rolls times the chance each brings one). */
   catch: number;
+  /** The chance a creature it brings is of a species the player lacks (a lure's draw), in basis points. */
+  fresh: number;
   xp: number;
   scrap: number;
   shard: number;
@@ -69,9 +73,10 @@ function metricsOf(length: ExpeditionLength, kit: readonly SupplyDef[]): Metrics
   const rules = lengthRules(length);
   // Only the supplies' own part bonus: the explorer's role and stars are not known here.
   const partsBp = satchelBonus(kit).partsBp;
-  const lure = lureShift(kit);
+  const lure = lureEffect(kit);
   return {
-    catch: tripRolls(length, kit, null),
+    catch: Math.round((tripRolls(length, kit, null) * catchChanceBp(length, kit)) / 100),
+    fresh: lure.newBp,
     xp: rules.xp,
     scrap: scale(rules.loot.scrap, partsBp),
     shard: scale(rules.loot.shardBp, partsBp),
@@ -79,7 +84,7 @@ function metricsOf(length: ExpeditionLength, kit: readonly SupplyDef[]): Metrics
     blueprint: rules.loot.blueprintBp,
     supply: Math.min(BP, rules.loot.supplyBp + satchelBonus(kit).supplyBp),
     journal: rules.journalBp,
-    rarity: rules.rarityUpBp + lure.rareUpBp + lure.epicUpBp,
+    rarity: rules.rarityUpBp,
     deep: kitDeepBp(kit),
   };
 }
@@ -115,6 +120,14 @@ function pips(key: keyof Metrics, value: number): number {
   return Math.min(MAX_PIPS, Math.max(1, Math.round((MAX_PIPS * value) / top)));
 }
 
+/** How often one catch roll brings a creature, in words. */
+function rollWord(bp: number): string {
+  if (bp >= 7000) return 'very often';
+  if (bp >= 4000) return 'often';
+  if (bp >= 2500) return 'sometimes';
+  return 'rarely';
+}
+
 const plural = (n: number, one: string, many: string): string =>
   `${String(n)} ${n === 1 ? one : many}`;
 
@@ -135,12 +148,13 @@ export function expectedHaul(
   const boosted = (key: keyof Metrics): boolean => here[key] > plain[key];
   const chance = (key: keyof Metrics, name: string): string =>
     `${name}: ${CHANCE_WORDS[pips(key, here[key])] ?? CHANCE_WORDS[0] ?? ''}`;
+  const rolls = tripRolls(length, kit, null);
   const rows: HaulRow[] = [
     {
       key: 'catch',
       icon: { kind: 'glyph', id: 'paw' },
       label: 'Catches',
-      detail: plural(here.catch, 'catch roll', 'catch rolls'),
+      detail: `${plural(rolls, 'catch roll', 'catch rolls')}, each ${rollWord(catchChanceBp(length, kit))} brings a creature`,
       level: pips('catch', here.catch),
       boosted: boosted('catch'),
     },
@@ -209,6 +223,16 @@ export function expectedHaul(
       boosted: false,
     },
   ];
+  if (here.fresh > 0) {
+    rows.splice(1, 0, {
+      key: 'fresh',
+      icon: { kind: 'glyph', id: 'reticle' },
+      label: 'New faces',
+      detail: 'A lure often draws species you do not have yet',
+      level: pips('fresh', here.fresh),
+      boosted: true,
+    });
+  }
   if (here.deep > 0) {
     rows.push({
       key: 'deep',

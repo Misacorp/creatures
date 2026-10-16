@@ -622,8 +622,8 @@
     "lines": [
       "Open the game each day for an allowance of 25 Bait. The day starts at 13:37; a missed day is not paid later.",
       "Leeting in Discord adds a bonus of 15 to 32 Bait, more when more players leet that day.",
-      "Spend it to train creatures. Expeditions and supplies cost no Bait.",
-      "Extra copies of a fully fused creature turn into Bait."
+      "Spend it to train creatures, to craft lures and to slot a talent from the Talent Book.",
+      "Trips and the other supplies cost no Bait. Releasing a duplicate pays parts, never Bait."
     ],
     "section": "first-week"
   },
@@ -666,13 +666,56 @@
   {
     "id": "fusion",
     "title": "Fusion",
-    "short": "Duplicates make a creature stronger.",
+    "short": "Fuse a duplicate to make a creature stronger.",
     "lines": [
-      "A duplicate catch fuses into the creature you already have.",
+      "A duplicate catch waits as a choice. Fuse it into the creature you already have.",
       "Each fusion adds stats, up to 20% after 5 fusions.",
-      "The stars show your fusions. After 5, a duplicate gives Bait."
+      "The stars show your fusions. After 5, Teach or Release the duplicate instead."
     ],
     "section": "expeditions"
+  },
+  {
+    "id": "talent",
+    "title": "Talent",
+    "short": "A small permanent bonus a creature carries.",
+    "lines": [
+      "Every catch rolls one talent from its species' pool, and the card shows it first.",
+      "A creature has one slot from the start, a second at level 20 and, if rare or epic, a third at 25.",
+      "A talent works like a gear line, in raids, the dungeon and on trips.",
+      "Epic creatures also carry a fixed signature talent."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "golden-talent",
+    "title": "Golden talent",
+    "short": "A rare talent, one and a half times as strong.",
+    "lines": [
+      "About 1 catch in 20 rolls its talent golden, shown in a gold frame.",
+      "A golden talent keeps its gold in the Talent Book."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "talent-book",
+    "title": "Talent Book",
+    "short": "Every talent a creature has held.",
+    "lines": [
+      "A talent a new one replaces goes into the book, so nothing is lost.",
+      "Slot a talent from the book again for 10 Bait, at once."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "duplicate-choice",
+    "title": "Duplicate",
+    "short": "A catch of a creature you own is a choice.",
+    "lines": [
+      "Teach: its talent goes into a slot of your creature. Fuse: one more fusion, up to 5.",
+      "Release: parts, never Bait. Keep: a second creature, for a line with a branch you lack.",
+      "The card marks Recommended. Up to 10 wait, then the oldest takes the Recommended choice."
+    ],
+    "section": "creatures"
   },
   {
     "id": "rarity",
@@ -681,7 +724,7 @@
     "lines": [
       "Common, Rare or Epic.",
       "Rarer creatures turn up less often on expeditions.",
-      "Lures, deeper areas and familiar places improve the odds."
+      "Deeper areas, familiar places and a lucky find improve the odds."
     ],
     "section": "expeditions"
   },
@@ -1251,9 +1294,10 @@
   {
     "id": "supply-lure",
     "title": "Lure",
-    "short": "Draws rarer creatures.",
+    "short": "Draws creatures, and new ones.",
     "lines": [
-      "Tilts one trip's catches towards Rare and Epic.",
+      "Raises the chance that a trip brings a creature, and that it is a species you lack.",
+      "Made in the Workshop from Bait and a little scrap.",
       "Comes in three tiers: Plain, Sweet and Golden."
     ],
     "section": "expeditions"
@@ -1314,8 +1358,8 @@
     "title": "Craft supplies",
     "short": "Makes supplies for expeditions.",
     "lines": [
-      "Takes 2 to 6 hours by tier. The creature needs Crafting level 1, 3 or 5.",
-      "Costs scrap, and shards for the better tiers. One supply per job."
+      "Takes 1 to 6 hours by tier. The creature needs Crafting level 1, 3 or 5.",
+      "Costs scrap, shards for some tiers and, for a lure, Bait. One supply per job."
     ],
     "section": "workshop"
   }

@@ -11,6 +11,7 @@ import {
   dungeonContent,
   expeditionContent,
   gearContent,
+  talentContent,
   type Rng,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
@@ -110,9 +111,12 @@ function scriptedRng(values: number[]): Rng {
     },
   };
 }
-/** Draws for one catch of a common splashet that is not shiny, and the same shiny. */
-const SPLASHET_PLAIN = [0, 0, 1];
-const SPLASHET_SHINY = [0, 0, 0];
+/**
+ * Draws for one catch of a common splashet that is not shiny, and the same shiny: whether the roll
+ * brings a creature at all (0: it does), the rarity, the species and the shiny.
+ */
+const SPLASHET_PLAIN = [0, 0, 0, 1];
+const SPLASHET_SHINY = [0, 0, 0, 0];
 
 type Json = Record<string, unknown>;
 
@@ -635,7 +639,7 @@ describe('collection events', () => {
     });
   });
 
-  it('logs a claim with its catches, and a fuse event for the duplicate, once', async () => {
+  it('logs a claim with its catches and their talents, and a talent roll for the duplicate, once', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -646,6 +650,7 @@ describe('collection events', () => {
         const exp = expeditionOf(await send(ctx, secret, starterId));
         ctx.clock.t = exp.endsAt + 90 * MINUTE;
         secret = await signIn(ctx, USER);
+        const rollsBefore = events(ctx.sql, 'talent_roll').length;
         const res = await call(ctx, secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
         expect(res.status).toBe(200);
         expect(events(ctx.sql, 'expedition_claim')).toMatchObject([
@@ -655,7 +660,9 @@ describe('collection events', () => {
               destination: 'tidepools',
               supplies: [],
               waitedMin: 90,
-              catches: [{ species: 'splashet', rarity: 'common', shiny: true, result: 'fused' }],
+              catches: [
+                { species: 'splashet', rarity: 'common', shiny: true, result: 'duplicate' },
+              ],
               pushOn: 'none',
               xp: RULES.expeditions.lengths.short.xp,
               // The scripted catch is a shiny: a star on its own.
@@ -663,23 +670,24 @@ describe('collection events', () => {
             },
           },
         ]);
-        expect(events(ctx.sql, 'fuse')).toMatchObject([
-          {
-            props: {
-              species: 'splashet',
-              rarity: 'common',
-              converted: false,
-              fusionCount: 1,
-              bait: 0,
-            },
-          },
-        ]);
+        const claimed = events(ctx.sql, 'expedition_claim')[0]?.props as {
+          catches: { talent: string; golden: boolean }[];
+        };
+        const rolls = events(ctx.sql, 'talent_roll');
+        expect(rolls).toHaveLength(rollsBefore + 1);
+        expect(rolls.at(-1)?.props).toMatchObject({
+          species: 'splashet',
+          talent: claimed.catches[0]?.talent,
+          golden: claimed.catches[0]?.golden,
+        });
+        // The duplicate waits: nothing fused, so there is no fuse event yet.
+        expect(events(ctx.sql, 'fuse')).toEqual([]);
         expect(events(ctx.sql, 'expedition_recall')).toEqual([]);
         // Claiming again returns the stored result and logs nothing more.
         const again = await call(ctx, secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
         expect(again.body['result']).toEqual(res.body['result']);
         expect(events(ctx.sql, 'expedition_claim')).toHaveLength(1);
-        expect(events(ctx.sql, 'fuse')).toHaveLength(1);
+        expect(events(ctx.sql, 'talent_roll')).toHaveLength(rollsBefore + 1);
         // An unknown expedition is refused and logs nothing.
         const missing = await call(
           ctx,
@@ -695,7 +703,7 @@ describe('collection events', () => {
     );
   });
 
-  it('logs a fusion that pays Bait as a converted fuse', async () => {
+  it('logs the answer to a duplicate as a choice, and a fusion as a fuse, once', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -703,19 +711,37 @@ describe('collection events', () => {
         const { starterId } = joined;
         let secret = joined.secret;
         ctx.sql.exec('UPDATE player_progress SET expeditions_claimed = 1');
-        ctx.sql.exec('UPDATE creatures SET fusion_count = 5');
         const exp = expeditionOf(await send(ctx, secret, starterId));
         ctx.clock.t = exp.endsAt;
         secret = await signIn(ctx, USER);
-        await call(ctx, secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
-        const [fuse] = events(ctx.sql, 'fuse');
+        const claimed = await call(ctx, secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
+        const card = (claimed.body['state'] as { pending: { id: string }[] }).pending[0];
+        const key = newKey();
+        const choose = () =>
+          call(ctx, secret, 'POST', `/api/catches/${card?.id ?? ''}/choose`, {
+            choice: 'fuse',
+            creatureId: starterId,
+            idempotencyKey: key,
+          });
+        expect((await choose()).status).toBe(200);
+        expect(events(ctx.sql, 'fuse')).toMatchObject([
+          {
+            props: {
+              species: 'splashet',
+              rarity: 'common',
+              converted: false,
+              fusionCount: 1,
+              bait: 0,
+            },
+          },
+        ]);
+        expect(events(ctx.sql, 'duplicate_choice')).toMatchObject([
+          { props: { choice: 'fuse', auto: false, species: 'splashet', rarity: 'common' } },
+        ]);
+        // A retry with the same key returns the stored answer and logs nothing more.
+        expect((await choose()).status).toBe(200);
         expect(events(ctx.sql, 'fuse')).toHaveLength(1);
-        expect(fuse?.props).toMatchObject({ converted: true, fusionCount: 5 });
-        expect(fuse?.props['bait']).toBeGreaterThan(0);
-        expect(events(ctx.sql, 'expedition_claim')[0]?.props).toMatchObject({
-          waitedMin: 0,
-          catches: [{ result: 'converted' }],
-        });
+        expect(events(ctx.sql, 'duplicate_choice')).toHaveLength(1);
       },
       { rng: scriptedRng(SPLASHET_PLAIN) },
     );
@@ -1107,7 +1133,7 @@ describe('live finale events', () => {
       const grant = () =>
         grantFestivalCreature(
           ctx.storage,
-          createSeededRng('festival'),
+          { quirk: createSeededRng('festival'), talent: createSeededRng('festival-talent') },
           W02.id,
           p.id,
           species.id,
@@ -1291,8 +1317,13 @@ function vocabulary(): Set<string> {
     'worked',
     'declined',
     'new',
+    'duplicate',
     'fused',
     'converted',
+    'teach',
+    'fuse',
+    'release',
+    'keep',
     'place',
     'unplace',
     'creature',
@@ -1331,6 +1362,7 @@ function vocabulary(): Set<string> {
     ...expeditionContent.journal.entries.map((e) => e.id),
     ...expeditionContent.journal.sets.map((s) => s.id),
     ...gearContent.lines.map((l) => l.id),
+    ...talentContent.byId.keys(),
     ...content.creatures.map((c) => c.id),
     ...content.bosses.map((b) => b.id),
     ...content.finaleAbilities.map((a) => a.id),

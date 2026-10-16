@@ -1,3 +1,4 @@
+import { createSeededRng } from '@creatures/game';
 import { expect } from 'vitest';
 import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
@@ -180,6 +181,9 @@ export async function runCore<R>(
       guildId: () => guildId,
       // The same secret source as the Worker's, so events carry real actor hashes.
       analyticsSecret: env.DISCORD_CLIENT_SECRET,
+      // Seeded, so the talents of every creature a test makes are the same on every run (talent tests
+      // pass their own `talentRng` through `options`).
+      talentRng: createSeededRng('test-talents'),
       // Off by default so other features' tests keep exact Bait balances; allowance tests turn it on.
       dailyAllowance: false,
       ...(typeof options === 'function' ? options(clock) : options),
@@ -220,10 +224,10 @@ export const GEAR_TABLES = [
  * The schema version of a fresh database. Tests that check it use this constant, so a new migration
  * changes one number here (and adds an undo step below), not a dozen tests.
  */
-export const LATEST_SCHEMA_VERSION = 28;
+export const LATEST_SCHEMA_VERSION = 29;
 
 /**
- * Puts a database back to before migration 28 (the crafting loop): the Workshop jobs table goes back to
+ * Puts a database back to before migration 29 (the crafting loop): the Workshop jobs table goes back to
  * its old kinds (dismantle jobs are dropped) and loses `work_minutes`.
  */
 export function undoWorkshopV2Migration(sql: SqlStorage): void {
@@ -253,6 +257,70 @@ export function undoWorkshopV2Migration(sql: SqlStorage): void {
     'CREATE UNIQUE INDEX workshop_jobs_gear_open ON workshop_jobs(gear_id) WHERE claimed_at IS NULL AND gear_id IS NOT NULL',
   );
   sql.exec('CREATE INDEX workshop_jobs_user ON workshop_jobs(user_id, claimed_at)');
+  sql.exec('DELETE FROM schema_version WHERE version = 29');
+}
+
+/**
+ * Puts a database back to before migration 28 (talents and the duplicate choice): the Talent Book and the
+ * pending duplicates go, `creatures` gets its one-creature-per-line constraint back (a second creature of
+ * a line is dropped, which a database from before the migration never had) and so does the Festival
+ * grants' old outcome check.
+ */
+export function undoCreaturesAMigration(sql: SqlStorage): void {
+  undoWorkshopV2Migration(sql);
+  sql.exec('DROP TABLE IF EXISTS creature_talents');
+  sql.exec('DROP TABLE IF EXISTS pending_catches');
+  sql.exec('DROP INDEX IF EXISTS creatures_user');
+  const columns = sql
+    .exec<{ name: string }>("SELECT name FROM pragma_table_info('creatures')")
+    .toArray()
+    .map((r) => r.name);
+  if (columns.includes('line_slot')) {
+    sql.exec(`CREATE TABLE creatures_old (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      line TEXT NOT NULL,
+      species TEXT NOT NULL,
+      level INTEGER NOT NULL CHECK (level >= 1),
+      fusion_count INTEGER NOT NULL DEFAULT 0 CHECK (fusion_count BETWEEN 0 AND 5),
+      shiny INTEGER NOT NULL DEFAULT 0,
+      nickname TEXT,
+      away_expedition_id TEXT,
+      origin TEXT NOT NULL,
+      caught_at INTEGER NOT NULL,
+      quirk_id TEXT,
+      UNIQUE (user_id, line)
+    )`);
+    sql.exec(`INSERT INTO creatures_old
+      (id, user_id, line, species, level, fusion_count, shiny, nickname, away_expedition_id, origin, caught_at, quirk_id)
+      SELECT id, user_id, line, species, level, fusion_count, shiny, nickname, away_expedition_id, origin, caught_at, quirk_id
+      FROM creatures WHERE line_slot = 1 ORDER BY rowid`);
+    sql.exec('DROP TABLE creatures');
+    sql.exec('ALTER TABLE creatures_old RENAME TO creatures');
+  }
+  const hasTalentJson = sql
+    .exec("SELECT 1 FROM pragma_table_info('raid_festival_grants') WHERE name = 'talent_json'")
+    .toArray();
+  if (hasTalentJson.length > 0) {
+    sql.exec(`CREATE TABLE raid_festival_grants_old (
+      week_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      species TEXT NOT NULL,
+      outcome TEXT NOT NULL CHECK (outcome IN ('new', 'fused', 'converted')),
+      fusion_count INTEGER,
+      bait INTEGER,
+      first_on_server INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (week_id, user_id)
+    )`);
+    sql.exec(`INSERT INTO raid_festival_grants_old
+      SELECT week_id, user_id, species,
+             CASE outcome WHEN 'duplicate' THEN 'fused' ELSE outcome END,
+             fusion_count, bait, first_on_server, created_at
+      FROM raid_festival_grants`);
+    sql.exec('DROP TABLE raid_festival_grants');
+    sql.exec('ALTER TABLE raid_festival_grants_old RENAME TO raid_festival_grants');
+  }
   sql.exec('DELETE FROM schema_version WHERE version = 28');
 }
 
@@ -261,7 +329,7 @@ export function undoWorkshopV2Migration(sql: SqlStorage): void {
  * comes back (empty), and the blueprint marks and the conversion list go.
  */
 export function undoGearV2Migration(sql: SqlStorage): void {
-  undoWorkshopV2Migration(sql);
+  undoCreaturesAMigration(sql);
   sql.exec('DROP TABLE IF EXISTS gear_conversion');
   sql.exec('DROP TABLE IF EXISTS gear_legacy');
   sql.exec('DROP TABLE IF EXISTS gear_items');

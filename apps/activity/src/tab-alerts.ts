@@ -31,6 +31,7 @@ export const ALERT_TEXT = {
   jobReady: 'a job is ready',
   dungeonOpen: "today's run is open",
   raidPlace: 'creatures to place',
+  catchWaiting: 'a catch awaits your choice',
 } as const;
 
 /** A waiting choice is named before a trip that is simply home: it is the one that needs a decision. */
@@ -61,11 +62,13 @@ export function tabAlerts(input: {
   expeditions: readonly Expedition[];
   jobs: readonly Job[] | null;
   attention: Attention | null;
+  /** How many duplicates wait for a choice (the Collection tab holds their cards). Absent: none. */
+  pending?: number;
   serverNow: number;
 }): TabAlerts {
   const { expeditions, jobs, attention, serverNow } = input;
   return {
-    collection: null,
+    collection: (input.pending ?? 0) > 0 ? ALERT_TEXT.catchWaiting : null,
     workshop: workshopAlert(jobs, serverNow),
     expeditions: expeditionsAlert(expeditions, serverNow),
     dungeon: attention?.dungeon === true ? ALERT_TEXT.dungeonOpen : null,

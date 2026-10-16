@@ -4,6 +4,9 @@ import { useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
 import { shinyPalette } from './art';
 import { CardGear } from './CardGear';
+import { CreatureTalents } from './CreatureTalents';
+import type { CatchChoiceActions } from './DuplicateCard';
+import { PendingCatches } from './PendingCatches';
 import { GlossaryTag } from './Glossary';
 import type { EquipBestResult, GearState } from './gear-types';
 import { gearShare } from './gear-view';
@@ -41,6 +44,10 @@ interface Props {
   onRename: (creature: Creature, nickname: string | null) => void;
   /** Makes this creature the one that lounges in the living room. */
   onLounge: (creature: Creature) => void;
+  /** Answers the waiting duplicates. */
+  catchActions: CatchChoiceActions;
+  /** Puts a talent from a creature's Talent Book into a slot (for Bait). */
+  onSlotTalent: (creature: Creature, talentId: string, golden: boolean, slot: number) => void;
 }
 
 function RenameForm({
@@ -141,7 +148,8 @@ function CreatureCard({
   onEvolve,
   onRename,
   onLounge,
-}: { creature: Creature; state: GameState } & Omit<Props, 'state'>) {
+  onSlotTalent,
+}: { creature: Creature; state: GameState } & Omit<Props, 'state' | 'catchActions'>) {
   const species = getSpecies(creature.species);
   const cost = creature.trainCost;
   const canAfford = cost !== null && state.balances.bait >= cost;
@@ -237,6 +245,13 @@ function CreatureCard({
         <StatPart label="ATK" stat="atk" creature={creature} /> ·{' '}
         <StatPart label="SPD" stat="spd" creature={creature} />
       </p>
+      <CreatureTalents
+        creature={creature}
+        bookSlotBait={state.bookSlotBait}
+        bait={state.balances.bait}
+        busy={busy}
+        onSlot={onSlotTalent}
+      />
       <CardGear
         creature={creature}
         creatures={state.creatures}
@@ -326,25 +341,36 @@ export function Collection({
   onEvolve,
   onRename,
   onLounge,
+  catchActions,
+  onSlotTalent,
 }: Props) {
   if (state.creatures.length === 0) return <p class="muted">No creatures yet.</p>;
   return (
-    <ul class="cards">
-      {state.creatures.map((creature) => (
-        <CreatureCard
-          key={creature.id}
-          creature={creature}
-          state={state}
-          gear={gear}
-          busy={busy}
-          onEquip={onEquip}
-          onEquipBest={onEquipBest}
-          onTrain={onTrain}
-          onEvolve={onEvolve}
-          onRename={onRename}
-          onLounge={onLounge}
-        />
-      ))}
-    </ul>
+    <>
+      <PendingCatches
+        cards={state.pending}
+        creatures={state.creatures}
+        busy={busy}
+        actions={catchActions}
+      />
+      <ul class="cards">
+        {state.creatures.map((creature) => (
+          <CreatureCard
+            key={creature.id}
+            creature={creature}
+            state={state}
+            gear={gear}
+            busy={busy}
+            onEquip={onEquip}
+            onEquipBest={onEquipBest}
+            onTrain={onTrain}
+            onEvolve={onEvolve}
+            onRename={onRename}
+            onLounge={onLounge}
+            onSlotTalent={onSlotTalent}
+          />
+        ))}
+      </ul>
+    </>
   );
 }

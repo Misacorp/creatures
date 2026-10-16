@@ -48,6 +48,7 @@ import {
   slotName,
   sortItems,
   startBlocker,
+  supplyCraftViews,
   topCreatureIds,
   unequippedReason,
   wearReason,
@@ -466,6 +467,26 @@ describe('starting a job', () => {
     expect(
       startBlocker(gear, free, { kind: 'craft', cost: { 'grove-shard': 1, scrap: 100 } }),
     ).toBe('Needs 25 more Scrap and 1 more Grove Shard.');
+  });
+
+  it('stops a lure for want of Bait, and says how much more', () => {
+    const poor = { ...gear, balances: { ...gear.balances, bait: 5 } };
+    expect(startBlocker(poor, free, { kind: 'supply', cost: { scrap: 2 }, bait: 12 })).toBe(
+      'Needs 7 more Bait.',
+    );
+    const rich = { ...gear, balances: { ...gear.balances, bait: 12 } };
+    expect(startBlocker(rich, free, { kind: 'supply', cost: { scrap: 2 }, bait: 12 })).toBeNull();
+    // The parts come first in the order of reasons.
+    expect(startBlocker(poor, free, { kind: 'supply', cost: { scrap: 999 }, bait: 12 })).toContain(
+      'more Scrap',
+    );
+  });
+
+  it('shows the Bait of a lure craft, and none for the other supplies', () => {
+    const views = supplyCraftViews({});
+    for (const v of views) {
+      expect(v.bait > 0, v.id).toBe(v.kind === 'lure');
+    }
   });
 
   it('does not stop a supply for a full bag (no new item)', () => {

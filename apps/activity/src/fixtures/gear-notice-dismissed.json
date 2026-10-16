@@ -57,7 +57,7 @@
           "level": 4,
           "role": null
         },
-        "equippedOn": "0a2262ed-6f8a-466c-a7a0-f4230057ee96",
+        "equippedOn": "a00beaf5-a43c-4476-b46b-f48fbc1db580",
         "dismantle": {
           "scrap": {
             "min": 4,
@@ -137,7 +137,7 @@
           "level": 7,
           "role": null
         },
-        "equippedOn": "8f47089b-adbb-48dd-8327-66f00e8610b9",
+        "equippedOn": "b5313712-e7c1-46e4-b610-4acee4f8cb13",
         "dismantle": {
           "scrap": {
             "min": 8,
@@ -257,19 +257,19 @@
     },
     "skills": [
       {
-        "creatureId": "0a2262ed-6f8a-466c-a7a0-f4230057ee96",
+        "creatureId": "a00beaf5-a43c-4476-b46b-f48fbc1db580",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "8f47089b-adbb-48dd-8327-66f00e8610b9",
+        "creatureId": "b5313712-e7c1-46e4-b610-4acee4f8cb13",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "63dd6e8d-3ef4-4d47-b8ef-f0795cd7a44c",
+        "creatureId": "22f165f8-ce9a-477c-8d12-5d024178215a",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
@@ -298,7 +298,7 @@
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "0a2262ed-6f8a-466c-a7a0-f4230057ee96",
+        "id": "a00beaf5-a43c-4476-b46b-f48fbc1db580",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -310,6 +310,25 @@
         "origin": "test",
         "caughtAt": 1799733600000,
         "quirk": "waves-at-everyone",
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            {
+              "slot": 1,
+              "opensAt": 1,
+              "open": true,
+              "talent": null
+            },
+            {
+              "slot": 2,
+              "opensAt": 20,
+              "open": false,
+              "talent": null
+            }
+          ],
+          "signature": null,
+          "book": []
+        },
         "stats": {
           "hp": 145,
           "atk": 61,
@@ -351,7 +370,7 @@
         }
       },
       {
-        "id": "8f47089b-adbb-48dd-8327-66f00e8610b9",
+        "id": "b5313712-e7c1-46e4-b610-4acee4f8cb13",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -363,6 +382,25 @@
         "origin": "test",
         "caughtAt": 1799733600001,
         "quirk": "shadow-racer",
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            {
+              "slot": 1,
+              "opensAt": 1,
+              "open": true,
+              "talent": null
+            },
+            {
+              "slot": 2,
+              "opensAt": 20,
+              "open": false,
+              "talent": null
+            }
+          ],
+          "signature": null,
+          "book": []
+        },
         "stats": {
           "hp": 237,
           "atk": 29,
@@ -404,7 +442,7 @@
         }
       },
       {
-        "id": "63dd6e8d-3ef4-4d47-b8ef-f0795cd7a44c",
+        "id": "22f165f8-ce9a-477c-8d12-5d024178215a",
         "species": "zipmouse",
         "line": "zipmouse",
         "level": 8,
@@ -416,6 +454,25 @@
         "origin": "test",
         "caughtAt": 1799733600002,
         "quirk": "eating-shy",
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            {
+              "slot": 1,
+              "opensAt": 1,
+              "open": true,
+              "talent": null
+            },
+            {
+              "slot": 2,
+              "opensAt": 20,
+              "open": false,
+              "talent": null
+            }
+          ],
+          "signature": null,
+          "book": []
+        },
         "stats": {
           "hp": 168,
           "atk": 42,
@@ -449,6 +506,8 @@
         }
       }
     ],
+    "pending": [],
+    "bookSlotBait": 10,
     "expeditions": [],
     "cancelled": [],
     "slots": {
@@ -464,7 +523,7 @@
     "supplies": {},
     "trainingMedianLevel": 8,
     "serverFirsts": [],
-    "loungerId": "0a2262ed-6f8a-466c-a7a0-f4230057ee96",
+    "loungerId": "a00beaf5-a43c-4476-b46b-f48fbc1db580",
     "loungeSpot": null
   }
 }

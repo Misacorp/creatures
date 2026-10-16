@@ -1,26 +1,44 @@
 /**
  * The Festival creature: a player who takes part in a won Festival finale gets the week's Festival
  * species (`raid_weeks.festival_species`, chosen by the season index). The grant follows the usual
- * collection rules (`festivalGrantOutcome`): a new level-1 creature, or, for a player who owns the
- * line already, a fusion (up to 5) and then Bait by rarity through the ledger. It is never shiny.
+ * collection rules (`festivalGrantOutcome`): a new level-1 creature with its first talent, or, for a
+ * player who owns the line already, a pending duplicate card with the talent it rolled (Teach, Fuse,
+ * Release or Keep, see `catch-choices.ts`). It is never shiny and never turns into Bait.
  *
- * Idempotent per (week, user): `raid_festival_grants` has that primary key, and the Bait credit has
- * an idempotency key as well. Call it inside the transaction that settles the finale.
+ * Idempotent per (week, user): `raid_festival_grants` has that primary key. Call it inside the
+ * transaction that settles the finale.
  */
-import { content, festivalGrantOutcome, pickQuirk, type Rng } from '@creatures/game';
+import { content, festivalGrantOutcome, type Rng } from '@creatures/game';
 import type { Analytics } from './analytics';
-import { credit, type LedgerStorage } from './ledger';
+import { CatchChoices } from './catch-choices';
+import type { LedgerStorage } from './ledger';
 import { recordServerFirst } from './server-firsts';
+import { insertCreature } from './talent-store';
+import { talentViewOf, type TalentView } from './talent-view';
 
 /** What a Festival grant did, as shown to the player who got it. */
 export interface FestivalGrantView {
   species: string;
-  outcome: 'new' | 'fused' | 'converted';
-  /** Only for 'fused': the creature's fusion count after the grant. */
+  /**
+   * `new`: now a creature. `duplicate`: a pending card (see `pendingId`). `fused` and `converted` only
+   * appear in grants stored before the duplicate choice.
+   */
+  outcome: 'new' | 'duplicate' | 'fused' | 'converted';
+  /** The talent it rolled (absent in grants stored before talents). */
+  talent?: TalentView;
+  /** Only for 'duplicate': the id of the pending card, while it waits. */
+  pendingId?: string;
+  /** Only for the old 'fused': the creature's fusion count after the grant. */
   fusionCount?: number;
-  /** Only for 'converted': the Bait granted. */
+  /** Only for the old 'converted': the Bait granted. */
   bait?: number;
   firstOnServer: boolean;
+}
+
+/** The randomness a Festival grant draws from (live, crypto in production). */
+export interface FestivalRngs {
+  quirk: Rng;
+  talent: Rng;
 }
 
 /**
@@ -30,7 +48,7 @@ export interface FestivalGrantView {
  */
 export function grantFestivalCreature(
   storage: LedgerStorage,
-  quirkRng: Rng,
+  rngs: FestivalRngs,
   weekId: string,
   userId: string,
   speciesId: string,
@@ -45,21 +63,22 @@ export function grantFestivalCreature(
     .toArray();
   if (already.length > 0) return null;
 
-  const existing = sql
+  const owned = sql
     .exec<{
       id: string;
       fusion_count: number;
       shiny: number;
     }>(
-      'SELECT id, fusion_count, shiny FROM creatures WHERE user_id = ? AND line = ?',
+      'SELECT id, fusion_count, shiny FROM creatures WHERE user_id = ? AND line = ? ORDER BY line_slot',
       userId,
       species.line,
     )
-    .toArray()[0];
+    .toArray();
+  const existing = owned[0];
   const outcome = festivalGrantOutcome(
     existing === undefined
       ? undefined
-      : { fusionCount: existing.fusion_count, shiny: existing.shiny === 1 },
+      : { fusionCount: existing.fusion_count, shiny: owned.some((c) => c.shiny === 1) },
     species,
   );
   // Everyone who gets it in the same Festival shares the record, like a catch drop.
@@ -71,63 +90,60 @@ export function grantFestivalCreature(
     `festival:${weekId}`,
     now,
   );
+  const wearer = { role: species.role, element: species.element };
 
   let view: FestivalGrantView;
-  let fusionCount: number | null = null;
-  let bait: number | null = null;
   switch (outcome.kind) {
-    case 'new':
-      sql.exec(
-        `INSERT INTO creatures (id, user_id, line, species, level, shiny, origin, caught_at, quirk_id)
-         VALUES (?, ?, ?, ?, 1, 0, 'festival', ?, ?)`,
-        crypto.randomUUID(),
-        userId,
-        species.line,
-        species.id,
-        now,
-        // Drawn now from live randomness; cosmetic only.
-        pickQuirk(species.id, quirkRng),
+    case 'new': {
+      // Drawn now from live randomness: the quirk (cosmetic) and the first talent.
+      const made = insertCreature(
+        sql,
+        { quirk: rngs.quirk, talent: rngs.talent },
+        { userId, species: species.id, origin: 'festival', now },
+        analytics,
       );
-      view = { species: species.id, outcome: 'new', firstOnServer };
+      const talent = talentViewOf(made.talent, wearer);
+      view = {
+        species: species.id,
+        outcome: 'new',
+        ...(talent === null ? {} : { talent }),
+        firstOnServer,
+      };
       break;
-    case 'fused':
-      if (existing === undefined) throw new Error('fusion without a creature');
-      sql.exec(
-        'UPDATE creatures SET fusion_count = ? WHERE id = ?',
-        outcome.newFusionCount,
-        existing.id,
-      );
-      fusionCount = outcome.newFusionCount;
-      view = { species: species.id, outcome: 'fused', fusionCount, firstOnServer };
-      break;
-    case 'converted':
-      bait = outcome.bait;
-      credit(
+    }
+    case 'duplicate': {
+      const choices = new CatchChoices({
         storage,
-        {
-          userId,
-          currency: 'bait',
-          amount: outcome.bait,
-          source: 'festival',
-          idempotencyKey: `festival:${weekId}`,
-          meta: { week: weekId, species: species.id },
-        },
-        now,
+        now: () => now,
+        rngs: { talent: rngs.talent, quirk: rngs.quirk },
+        analytics,
+      });
+      const pending = choices.addPending(
+        userId,
+        { species: species.id, shiny: false },
+        { kind: 'festival', id: weekId },
       );
-      view = { species: species.id, outcome: 'converted', bait, firstOnServer };
+      const talent = talentViewOf(pending.talent, wearer);
+      view = {
+        species: species.id,
+        outcome: 'duplicate',
+        pendingId: pending.id,
+        ...(talent === null ? {} : { talent }),
+        firstOnServer,
+      };
       break;
+    }
   }
   sql.exec(
-    `INSERT INTO raid_festival_grants (week_id, user_id, species, outcome, fusion_count, bait, first_on_server, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO raid_festival_grants (week_id, user_id, species, outcome, fusion_count, bait, first_on_server, created_at, talent_json)
+     VALUES (?, ?, ?, ?, NULL, NULL, ?, ?, ?)`,
     weekId,
     userId,
     species.id,
     view.outcome,
-    fusionCount,
-    bait,
     firstOnServer ? 1 : 0,
     now,
+    JSON.stringify({ talent: view.talent ?? null, pendingId: view.pendingId ?? null }),
   );
   // Guild-level: the grant is logged by species and result, with no player.
   analytics?.record({ kind: 'festival_grant', species: species.id, result: view.outcome });
@@ -143,21 +159,34 @@ export function readFestivalGrant(
   const row = sql
     .exec<{
       species: string;
-      outcome: 'new' | 'fused' | 'converted';
+      outcome: 'new' | 'duplicate' | 'fused' | 'converted';
       fusion_count: number | null;
       bait: number | null;
       first_on_server: number;
+      talent_json: string | null;
     }>(
-      `SELECT species, outcome, fusion_count, bait, first_on_server FROM raid_festival_grants
+      `SELECT species, outcome, fusion_count, bait, first_on_server, talent_json FROM raid_festival_grants
        WHERE week_id = ? AND user_id = ?`,
       weekId,
       userId,
     )
     .toArray()[0];
   if (row === undefined) return null;
+  let stored: { talent?: TalentView | null; pendingId?: string | null } = {};
+  if (row.talent_json !== null) {
+    try {
+      stored = JSON.parse(row.talent_json) as typeof stored;
+    } catch {
+      stored = {};
+    }
+  }
   return {
     species: row.species,
     outcome: row.outcome,
+    ...(stored.talent === null || stored.talent === undefined ? {} : { talent: stored.talent }),
+    ...(row.outcome === 'duplicate' && typeof stored.pendingId === 'string'
+      ? { pendingId: stored.pendingId }
+      : {}),
     ...(row.outcome === 'fused' && row.fusion_count !== null
       ? { fusionCount: row.fusion_count }
       : {}),

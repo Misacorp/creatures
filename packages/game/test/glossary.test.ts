@@ -359,6 +359,24 @@ describe('the glossary text matches the rules', () => {
     expect(text('essence')).toContain('20 Essence (40 for rare');
   });
 
+  it('gives talents, the Talent Book and the duplicate choice the numbers the rules have', () => {
+    const t = RULES.talents;
+    expect(text('talent')).toContain(`level ${String(t.slotLevels[1])}`);
+    expect(text('talent')).toContain(`${String(t.slotLevels[2])}`);
+    expect(text('golden-talent')).toContain(
+      `${String(t.golden.numerator)} catch in ${String(t.golden.denominator)}`,
+    );
+    expect(t.goldenBp).toBe(15_000); // "one and a half times as strong"
+    expect(text('golden-talent')).toContain('one and a half');
+    expect(text('talent-book')).toContain(`${String(t.bookSlotBait)} Bait`);
+    expect(text('duplicate-choice')).toContain(`Up to ${String(t.maxPending)} wait`);
+    expect(text('duplicate-choice')).toContain(`up to ${String(RULES.fusion.maxFusions)}`);
+    expect(text('duplicate-choice')).toContain('never Bait');
+    // Bait pays for training, lures and the book, and nothing turns into Bait.
+    expect(text('bait')).toContain('lures');
+    expect(text('bait')).not.toContain('turn into Bait');
+  });
+
   it('names the counter-move for what it does, without numbers that could drift', () => {
     expect(text('adaptation')).toContain('resists');
     expect(text('adaptation')).not.toMatch(/\d+%/);

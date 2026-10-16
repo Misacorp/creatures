@@ -109,6 +109,8 @@ function creature(over: Partial<Creature>): Creature {
     trainCost: null,
     ability: null,
     explorer: { rank: 3, xp: 10, nextRankXp: null, trips: 2 },
+    lineSlot: 1,
+    talents: { slots: [], signature: null, book: [] },
     ...over,
   };
 }

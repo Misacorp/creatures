@@ -611,7 +611,7 @@ export function bulkPick(
 export function startBlocker(
   gear: Pick<GearState, 'slots' | 'inventory' | 'parts' | 'balances'>,
   creatures: readonly Creature[],
-  job: { kind: JobKind; cost: PartsBundle; essence?: number },
+  job: { kind: JobKind; cost: PartsBundle; essence?: number; bait?: number },
 ): string | null {
   if (gear.slots.used >= gear.slots.total) {
     return `All ${String(gear.slots.total)} workshop slots are busy. Claim a finished job or wait.`;
@@ -630,6 +630,11 @@ export function startBlocker(
     ...(lackingEssence > 0 ? [`${String(lackingEssence)} more Essence`] : []),
   ];
   if (lacks.length > 0) return `Needs ${lacks.join(' and ')}.`;
+  // A lure costs Bait as well as parts.
+  const bait = job.bait ?? 0;
+  if (gear.balances.bait < bait) {
+    return `Needs ${String(bait - gear.balances.bait)} more Bait.`;
+  }
   return null;
 }
 
@@ -666,6 +671,8 @@ interface SupplyCraftView {
   tier: string;
   /** The parts one craft costs. */
   cost: PartsBundle;
+  /** The Bait one craft costs (only a lure costs Bait); 0 for the others. */
+  bait: number;
   /** How many supplies one job makes. */
   yieldCount: number;
   /** The Crafting level a creature needs. */
@@ -684,6 +691,7 @@ export function supplyCraftViews(stock: Readonly<Record<string, number>>): Suppl
     kind: def.kind,
     tier: def.tier,
     cost: partsOfSpec(def.blueprint.parts),
+    bait: def.blueprint.bait ?? 0,
     yieldCount: def.blueprint.yield,
     level: def.blueprint.craftingLevel,
     hours: def.blueprint.hours,

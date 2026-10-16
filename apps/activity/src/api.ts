@@ -14,6 +14,8 @@ import type {
   TripResult,
 } from './expedition-types';
 import { isWornGear } from './gear-parse';
+import { isCreatureTalents, isPendingCatch } from './talent-parse';
+import type { CreatureTalents, PendingCatch } from './talent-types';
 import type { CreatureGearFields, WornGear } from './gear-types';
 import { isArrayOf, isInt, isNullableInt, isRecord, isStr } from './parse-core';
 import { createReauth, type Reauth } from './reauth';
@@ -314,6 +316,10 @@ export interface Creature extends CreatureGearFields {
   ability: CreatureAbility | null;
   /** What it has earned as an explorer (rank, XP and trips). */
   explorer: ExplorerView;
+  /** 1, or 2 for a second creature Kept of a line with two branches. */
+  lineSlot: number;
+  /** Its talent slots, signature (epic species) and Talent Book. */
+  talents: CreatureTalents;
 }
 
 /** A creature's finale ability. `nextId` is the stronger one of its evolved form. */
@@ -359,6 +365,10 @@ export interface GameState {
   leetSync: LeetSyncStatus | null;
   /** The guild's IANA timezone; present on GET /api/state only (null in action responses). */
   timezone: string | null;
+  /** Duplicates waiting for a choice (Teach, Fuse, Release or Keep), oldest first; at most 10. */
+  pending: PendingCatch[];
+  /** What slotting a talent from a creature's Talent Book costs (Bait). */
+  bookSlotBait: number;
   /** The creature that lounges in the living room; null when every creature is busy. */
   loungerId: string | null;
   /** The spot of the living room the player chose for their lounger; null: the room decides. */
@@ -465,6 +475,8 @@ function isCreature(value: unknown): value is Creature {
     (value['trainCost'] === null || isInt(value['trainCost'])) &&
     (value['ability'] === null || isCreatureAbility(value['ability'])) &&
     isExplorerView(value['explorer']) &&
+    isInt(value['lineSlot']) &&
+    isCreatureTalents(value['talents']) &&
     (evolution === undefined ||
       (isRecord(evolution) &&
         isStr(evolution['toSpecies']) &&
@@ -504,6 +516,9 @@ export function parseGameState(data: unknown): GameState {
     !(data['trainingMedianLevel'] === null || typeof data['trainingMedianLevel'] === 'number') ||
     !Array.isArray(data['serverFirsts']) ||
     !data['serverFirsts'].every(isServerFirst) ||
+    !Array.isArray(data['pending']) ||
+    !data['pending'].every(isPendingCatch) ||
+    !isInt(data['bookSlotBait']) ||
     !(data['leetSync'] === undefined || isLeetSyncStatus(data['leetSync'])) ||
     !(data['timezone'] === undefined || isStr(data['timezone'])) ||
     !(data['loungerId'] === null || isStr(data['loungerId'])) ||
@@ -526,6 +541,8 @@ export function parseGameState(data: unknown): GameState {
     supplies: data['supplies'],
     trainingMedianLevel: data['trainingMedianLevel'],
     serverFirsts: data['serverFirsts'],
+    pending: data['pending'],
+    bookSlotBait: data['bookSlotBait'],
     leetSync: data['leetSync'] ?? null,
     timezone: data['timezone'] ?? null,
     loungerId: data['loungerId'],

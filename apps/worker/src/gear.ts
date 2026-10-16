@@ -243,6 +243,8 @@ export interface JobView {
   input: { baseId?: string; supplyId?: string; reach?: ReachId; items?: ItemSnapshot[] };
   /** The parts it cost when it started. */
   cost: PartsBundle;
+  /** The Bait it cost when it started (a lure): 0 for every other job. */
+  bait: number;
   startedAt: number;
   endsAt: number;
   status: 'running' | 'ready' | 'claimed';
@@ -348,6 +350,8 @@ interface StoredInput {
   secondaryIndex?: number;
   supplyId?: string;
   cost: PartsBundle;
+  /** Bait a lure job cost (absent for every other job). */
+  bait?: number;
   /** Craft: what it was aimed at, the blueprint's marks and the Crafting level when it started, the day's mods. */
   reach?: ReachId;
   marks?: number;
@@ -557,6 +561,7 @@ export class Gear {
         ...(input.items === undefined ? {} : { items: input.items }),
       },
       cost: input.cost,
+      bait: input.bait ?? 0,
       startedAt: row.started_at,
       endsAt: row.ends_at,
       status: row.claimed_at !== null ? 'claimed' : now >= row.ends_at ? 'ready' : 'running',
@@ -1089,12 +1094,31 @@ export class Gear {
     if (worker.level < def.blueprint.craftingLevel) throw new GameError(409, 'skill_too_low');
     const cost = partsOfSpec(def.blueprint.parts);
     if (!debitParts(this.sql, userId, cost)) throw new GameError(409, 'insufficient_parts');
+    // A lure costs Bait besides its parts: checked, debited and the job created in one transaction (a
+    // failure rolls the parts back too).
+    const baitCost = def.blueprint.bait ?? 0;
+    if (baitCost > 0) {
+      settleSpend(
+        spend(
+          this.deps.storage,
+          {
+            userId,
+            currency: 'bait',
+            amount: baitCost,
+            purpose: 'lure',
+            idempotencyKey: input.idempotencyKey,
+            apply: () => ({ supplyId: input.supplyId }),
+          },
+          this.deps.now(),
+        ),
+      );
+    }
     const duration = minusBp(supplyJobMs(def, worker.level), worker.busyBp);
     const jobId = this.insertJob(
       userId,
       creature.id,
       'supply',
-      { supplyId: def.id, cost },
+      { supplyId: def.id, cost, ...(baitCost > 0 ? { bait: baitCost } : {}) },
       duration,
     );
     this.deps.analytics?.record(
@@ -1107,6 +1131,7 @@ export class Gear {
         hours: Math.round(duration / 3_600_000),
         skillLevel: worker.level,
         parts: cost,
+        ...(baitCost > 0 ? { bait: baitCost } : {}),
       },
       userId,
     );

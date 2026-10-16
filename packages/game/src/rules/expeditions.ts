@@ -172,11 +172,6 @@ export function rankUnlocks(rank: number): RankUnlocks {
   };
 }
 
-/** Bait a duplicate of a creature at its fusion limit turns into, when caught on an expedition. */
-export function expeditionConvertBait(usualBait: number): number {
-  return Math.max(1, Math.floor((usualBait * RULES.expeditions.convertBp) / BP));
-}
-
 // --- Familiarity ---
 
 /** What a creature has done at one destination. */
@@ -313,17 +308,26 @@ export function tripRolls(
   return rolls;
 }
 
-/** The rarity odds shift of a kit's lures. */
-export function lureShift(kit: readonly SupplyDef[]): { rareUpBp: number; epicUpBp: number } {
-  let rareUpBp = 0;
-  let epicUpBp = 0;
+/**
+ * What a kit's lures do (they are made from Bait, 2026-10-16): the chance, added to every roll of the
+ * trip, that it brings a creature at all, and the chance that a creature it brings is of a species the
+ * player does not own yet. Basis points, summed over the lures (a kit holds one of each kind, so one).
+ */
+export function lureEffect(kit: readonly SupplyDef[]): { catchBp: number; newBp: number } {
+  let catchBp = 0;
+  let newBp = 0;
   for (const s of kit) {
     if (s.kind === 'lure') {
-      rareUpBp += s.rareUpBp;
-      epicUpBp += s.epicUpBp;
+      catchBp += s.catchBp;
+      newBp += s.newBp;
     }
   }
-  return { rareUpBp, epicUpBp };
+  return { catchBp: Math.min(BP, catchBp), newBp: Math.min(BP, newBp) };
+}
+
+/** The chance (basis points) that one catch roll of a trip of this length brings a creature, lures included. */
+export function catchChanceBp(length: ExpeditionLength, kit: readonly SupplyDef[]): number {
+  return Math.min(BP, lengthRules(length).catchBp + lureEffect(kit).catchBp);
 }
 
 /** The extra chance, from a kit's lanterns, that a roll comes from the deeper area. */
@@ -344,11 +348,17 @@ export function satchelBonus(kit: readonly SupplyDef[]): { partsBp: number; supp
   return { partsBp, supplyBp };
 }
 
-/** The tier of a supply found on a trip by an explorer of this rank. */
+/**
+ * The kinds of supply that can be found (on trips, in the dungeon, from a goal): every kind but the
+ * lure, which is made from Bait in the Workshop and nowhere else.
+ */
+export const FOUND_SUPPLY_KINDS = SUPPLY_KINDS.filter((k) => k !== 'lure');
+
+/** The tier of a supply found on a trip by an explorer of this rank (never a lure). */
 export function foundSupplyId(rng: Rng, rank: number): string {
   const { good, great } = RULES.expeditions.foundTier;
   const tier = rank >= great ? 'great' : rank >= good ? 'good' : 'basic';
-  const kind = SUPPLY_KINDS[int(rng, SUPPLY_KINDS.length)] as string;
+  const kind = FOUND_SUPPLY_KINDS[int(rng, FOUND_SUPPLY_KINDS.length)] as string;
   return `${kind}-${tier}`;
 }
 
@@ -373,18 +383,16 @@ function rarityBonus(bp: number): { rareUpBp: number; epicUpBp: number } {
 }
 
 /**
- * The odds of one roll: the destination's, shifted by the trip length (longer trips go deeper), lures,
+ * The odds of one roll: the destination's, shifted by the trip length (longer trips go deeper),
  * familiarity, milestones and the deeper area.
  */
 export function rollOdds(args: {
   destination: DestinationDef;
   length: ExpeditionLength;
-  kit: readonly SupplyDef[];
   stars: number;
   milestoneRarityBp: number;
   deep: boolean;
 }): RarityOdds {
-  const lure = lureShift(args.kit);
   const long = rarityBonus(lengthRules(args.length).rarityUpBp);
   const fam = rarityBonus(familiarityBonus(args.stars).rarityUpBp);
   const mile = rarityBonus(args.milestoneRarityBp);
@@ -393,8 +401,8 @@ export function rollOdds(args: {
     : { rareUpBp: 0, epicUpBp: 0 };
   return shiftOdds(
     baseOdds(args.destination),
-    lure.rareUpBp + long.rareUpBp + fam.rareUpBp + mile.rareUpBp + deep.rareUpBp,
-    lure.epicUpBp + long.epicUpBp + fam.epicUpBp + mile.epicUpBp + deep.epicUpBp,
+    long.rareUpBp + fam.rareUpBp + mile.rareUpBp + deep.rareUpBp,
+    long.epicUpBp + fam.epicUpBp + mile.epicUpBp + deep.epicUpBp,
   );
 }
 
@@ -428,6 +436,9 @@ export interface TripCatch {
   deep: boolean;
 }
 
+/** What one catch roll came to: a creature, or nothing this time (a small find instead). */
+export type TripRoll = { kind: 'catch'; catch: TripCatch } | { kind: 'nothing' };
+
 /** True if the deeper area can be drawn from: stars, or a lantern, and something in it to draw. */
 export function deepOpen(dest: DestinationDef, stars: number, kit: readonly SupplyDef[]): boolean {
   const hasContent = dest.deep.species.length > 0 || dest.deep.rarityUpBp > 0;
@@ -451,26 +462,33 @@ const RARITY_FALLBACK: Record<Rarity, readonly Rarity[]> = {
 };
 
 /**
- * Rolls one catch at a destination. Draw order on `rng`: the deeper-area chance (only when the deeper
- * area is open), the rarity, the species (skipped for the first-expedition guarantee), the shiny.
+ * Rolls one catch at a destination. Draw order on `rng`: whether the roll brings a creature at all
+ * (skipped for the first-expedition guarantee), the deeper-area chance (only when the deeper area is
+ * open), the rarity, the species (skipped for the guarantee), the lure's draw for a species the player
+ * lacks (only with a lure that has one), the shiny. A roll that brings nothing draws once.
  *
- * 1. First-expedition guarantee: a zipmouse, wherever the trip went.
+ * 0. A roll brings a creature with the trip length's chance plus the lures' (`catchChanceBp`).
+ * 1. First-expedition guarantee: a zipmouse, wherever the trip went, and it always comes.
  * 2. Otherwise the rarity from the roll's odds, then a species of that rarity that lives there (the
  *    deeper area's too, on a deeper roll); a rarity nobody there has falls back to the nearest one that
  *    somebody has. Species of the explorer's element weigh 2 (a Setter: 3), the twist's featured
  *    species 2 to 9 times as much.
- * 3. Dupe shield: with a streak of 4 or more, only species the player does not own, if any.
+ * 3. Dupe shield: with a streak of 4 or more, only species the player does not own, if any. A lure's
+ *    `newBp` does the same with its own chance.
  * 4. Shiny: 1 in 500.
  */
 export function rollTripCatch(
   rng: Rng,
   ctx: TripCatchContext,
-): { result: TripCatch; dupeStreak: number; guaranteed: boolean } {
+): { result: TripCatch | null; dupeStreak: number; guaranteed: boolean } {
   const { destination: dest } = ctx;
   const byId = new Map(ctx.content.creatures.map((c) => [c.id, c]));
   let species: CreatureSpecies | undefined;
   let deep = false;
   const guaranteed = ctx.firstExpedition && !ctx.ownedLines.has(RULES.catching.firstExpeditionLine);
+  if (!guaranteed && !chance(rng, catchChanceBp(ctx.length, ctx.kit), BP)) {
+    return { result: null, dupeStreak: ctx.dupeStreak, guaranteed: false };
+  }
 
   if (guaranteed) {
     species = ctx.content.creatures.find(
@@ -492,7 +510,6 @@ export function rollTripCatch(
     const odds = rollOdds({
       destination: dest,
       length: ctx.length,
-      kit: ctx.kit,
       stars: ctx.stars,
       milestoneRarityBp: ctx.milestoneRarityBp,
       deep,
@@ -510,7 +527,11 @@ export function rollTripCatch(
       if (candidates.length > 0) break;
     }
     if (candidates.length === 0) throw new Error(`destination "${dest.id}" has nobody to catch`);
-    if (ctx.dupeStreak >= RULES.catching.dupeShieldStreak) {
+    // The dupe shield, or a lure's draw for a species the player lacks: only the unowned, if any.
+    const newBp = lureEffect(ctx.kit).newBp;
+    const wantsNew =
+      ctx.dupeStreak >= RULES.catching.dupeShieldStreak || (newBp > 0 && chance(rng, newBp, BP));
+    if (wantsNew) {
       const unowned = candidates.filter((c) => !ctx.ownedLines.has(c.line));
       if (unowned.length > 0) candidates = unowned;
     }
@@ -552,16 +573,20 @@ export function featuredSpecies(
   return null;
 }
 
-/** All the catches of one claim in order, carrying owned lines and the dupe streak from roll to roll. */
+/**
+ * All the catch rolls of one claim in order, carrying owned lines and the dupe streak from roll to
+ * roll. `results` are the creatures that came (in order), `empty` the rolls that brought none.
+ */
 export function rollTripCatches(
   rng: Rng,
   count: number,
   ctx: TripCatchContext,
-): { results: TripCatch[]; dupeStreak: number } {
+): { results: TripCatch[]; dupeStreak: number; empty: number } {
   if (!Number.isInteger(count) || count < 0) throw new RangeError('count must be an integer >= 0');
   const owned = new Set(ctx.ownedLines);
   let dupeStreak = ctx.dupeStreak;
   const results: TripCatch[] = [];
+  let empty = 0;
   for (let i = 0; i < count; i++) {
     const roll = rollTripCatch(rng, {
       ...ctx,
@@ -569,11 +594,15 @@ export function rollTripCatches(
       dupeStreak,
       firstExpedition: i === 0 && ctx.firstExpedition,
     });
+    if (roll.result === null) {
+      empty += 1;
+      continue;
+    }
     results.push(roll.result);
     owned.add(roll.result.species.line);
     dupeStreak = roll.dupeStreak;
   }
-  return { results, dupeStreak };
+  return { results, dupeStreak, empty };
 }
 
 // --- Loot ---
@@ -592,6 +621,10 @@ export interface TripLootContext {
   gearPartsBp?: number;
   /** Packer lines on the explorer's gear: the supply find chance grows by this share. Absent: none. */
   gearSupplyBp?: number;
+  /** Glimmer-finding talents of the explorer: the glimmer chance grows by this share. Absent: none. */
+  gearGlimmerBp?: number;
+  /** Catch rolls of a finished trip that brought no creature: each brings a small find of scrap. Absent: none. */
+  emptyRolls?: number;
 }
 
 export interface TripLoot {
@@ -642,11 +675,15 @@ export function rollTripLoot(
       : 0;
   addPart(parts, 'scrap', scrap);
   if (!trip.completed) return { parts, blueprint: null, supplies: [] };
+  // A roll that brought no creature brings a small find instead (a finished trip only).
+  addPart(parts, 'scrap', (ctx.emptyRolls ?? 0) * lengthRules(ctx.length).findScrap);
 
   const shardBp = scaleBp(table.shardBp, bonusBp);
   const shards = Math.floor(shardBp / BP) + (chance(rng, shardBp % BP, BP) ? 1 : 0);
   addPart(parts, shardOf(ctx.shardElement), shards);
-  if (chance(rng, Math.min(BP, table.glimmerBp), BP)) addPart(parts, 'glimmer', 1);
+  if (chance(rng, Math.min(BP, scaleBp(table.glimmerBp, ctx.gearGlimmerBp ?? 0)), BP)) {
+    addPart(parts, 'glimmer', 1);
+  }
   const blueprint = chance(rng, Math.min(BP, table.blueprintBp), BP) ? rollBlueprint(rng) : null;
   const supplyBp = Math.min(
     BP,
@@ -878,10 +915,20 @@ function partsWorth(parts: PartsSpec | undefined): number {
   );
 }
 
-/** The worth of one catch roll at these odds, in Bait. */
+/** The worth of one creature a roll brings at these odds, in Bait. */
 export function rollWorth(odds: RarityOdds): number {
   const w = RULES.expeditions.worth.roll;
   return (odds.common * w.common + odds.rare * w.rare + odds.epic * w.epic) / BP;
+}
+
+/**
+ * The worth of one catch roll of a trip of this length with no lure: the chance it brings a creature
+ * times what the creature is worth, plus the small find of scrap when it does not.
+ */
+export function catchRollWorth(length: ExpeditionLength, odds: RarityOdds): number {
+  const l = lengthRules(length);
+  const p = l.catchBp / BP;
+  return p * rollWorth(odds) + (1 - p) * l.findScrap * RULES.expeditions.worth.scrap;
 }
 
 /** The default odds shifted by a trip length's own bonus (what a roll is worth with no supplies and no stars). */
@@ -906,7 +953,7 @@ export function expectedTripWorth(length: ExpeditionLength): number {
   const l = lengthRules(length);
   const w = RULES.expeditions.worth;
   return (
-    l.rolls * rollWorth(shiftedDefaultOdds(length)) +
+    l.rolls * catchRollWorth(length, shiftedDefaultOdds(length)) +
     l.loot.scrap * w.scrap +
     (l.loot.shardBp * w.shard) / BP +
     (l.loot.glimmerBp * w.glimmer) / BP +
@@ -928,7 +975,7 @@ export function goalRewardWorth(goal: PushOnGoalDef, length: ExpeditionLength): 
   const w = RULES.expeditions.worth;
   const r = goal.reward;
   return (
-    (r.catchRolls ?? 0) * rollWorth(shiftedDefaultOdds(length)) +
+    (r.catchRolls ?? 0) * catchRollWorth(length, shiftedDefaultOdds(length)) +
     partsWorth(r.parts) +
     (r.supply === true ? averageSupplyWorth() : 0) +
     (r.gear === undefined ? 0 : w.gear[r.gear]) +

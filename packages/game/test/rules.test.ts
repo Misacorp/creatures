@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   RULES,
   applyCatchToCollection,
+  fuseOnce,
   canTrain,
   compareStrength,
   content,
@@ -360,35 +361,33 @@ describe('fusion', () => {
     });
   });
 
-  it('fuses duplicates up to 5 times, then converts to Bait', () => {
-    let entry = { fusionCount: 0, shiny: false };
-    for (let n = 1; n <= 5; n++) {
-      const out = applyCatchToCollection(entry, { species: { rarity: 'rare' }, shiny: false });
-      expect(out).toEqual({ kind: 'fused', newFusionCount: n, becameShiny: false });
-      entry = { ...entry, fusionCount: n };
+  it('turns a catch of a line the player owns into a duplicate, never into a fusion or Bait', () => {
+    const rare = { species: { rarity: 'rare' as const }, shiny: false };
+    expect(applyCatchToCollection(undefined, rare)).toEqual({ kind: 'new' });
+    for (let n = 0; n <= 5; n++) {
+      expect(applyCatchToCollection({ fusionCount: n, shiny: false }, rare)).toEqual({
+        kind: 'duplicate',
+        becameShiny: false,
+      });
     }
-    expect(applyCatchToCollection(entry, { species: { rarity: 'common' }, shiny: false })).toEqual({
-      kind: 'converted',
-      bait: 5,
-      becameShiny: false,
-    });
-    expect(
-      applyCatchToCollection(entry, { species: { rarity: 'rare' }, shiny: false }),
-    ).toMatchObject({
-      bait: 15,
-    });
-    expect(
-      applyCatchToCollection(entry, { species: { rarity: 'epic' }, shiny: false }),
-    ).toMatchObject({
-      bait: 40,
-    });
+  });
+
+  it('steps a fusion one at a time up to 5, then offers none', () => {
+    let count = 0;
+    for (let n = 1; n <= 5; n++) {
+      const next = fuseOnce(count);
+      expect(next).toBe(n);
+      count = next as number;
+    }
+    expect(fuseOnce(5)).toBeNull();
+    expect(() => fuseOnce(-1)).toThrow(RangeError);
+    expect(() => fuseOnce(1.5)).toThrow(RangeError);
   });
 
   it('makes the creature shiny from a shiny duplicate, only once', () => {
     const plain = { fusionCount: 2, shiny: false };
     expect(applyCatchToCollection(plain, { species: { rarity: 'epic' }, shiny: true })).toEqual({
-      kind: 'fused',
-      newFusionCount: 3,
+      kind: 'duplicate',
       becameShiny: true,
     });
     const shiny = { fusionCount: 2, shiny: true };
@@ -399,8 +398,7 @@ describe('fusion', () => {
     });
     const maxed = { fusionCount: 5, shiny: false };
     expect(applyCatchToCollection(maxed, { species: { rarity: 'epic' }, shiny: true })).toEqual({
-      kind: 'converted',
-      bait: 40,
+      kind: 'duplicate',
       becameShiny: true,
     });
   });

@@ -17,12 +17,15 @@ import {
   destinationDef,
   expectedTripWorth,
   expeditionContent,
-  expeditionConvertBait,
   explorerRank,
   familiarityBonus,
   familiarityStars,
   featuredSpecies,
   foundSupplyId,
+  FOUND_SUPPLY_KINDS,
+  catchChanceBp,
+  catchRollWorth,
+  lureEffect,
   goalDef,
   goalOddsBp,
   goalWorks,
@@ -49,8 +52,10 @@ import {
   rollJournal,
   rollOdds,
   rollOffer,
+  rollWorth,
   rollTripCatch,
   rollTripCatches,
+  type TripCatch,
   rollTripLoot,
   shiftOdds,
   slotsFor,
@@ -121,12 +126,22 @@ function supply(id: string): SupplyDef {
   return s;
 }
 
+/**
+ * A lure that makes every catch roll bring a creature (and no more): most of the tests below are about
+ * which creature comes, so the roll that decides whether one comes at all is made certain. It draws
+ * once, first, so scripted draws start with a 0.
+ */
+const SURE: SupplyDef = {
+  ...(supplyDef('lure-basic') as SupplyDef & { kind: 'lure' }),
+  catchBp: BP,
+  newBp: 0,
+};
+
 const ctx = (over: Partial<TripCatchContext> = {}): TripCatchContext => ({
   content,
   destination: dest('tidepools'),
   length: 'short',
   explorer: { element: 'ember', role: 'payoff' },
-  kit: [],
   stars: 0,
   milestoneRarityBp: 0,
   twist: null,
@@ -134,7 +149,17 @@ const ctx = (over: Partial<TripCatchContext> = {}): TripCatchContext => ({
   dupeStreak: 0,
   firstExpedition: false,
   ...over,
+  kit: [SURE, ...(over.kit ?? [])],
 });
+
+type SureRoll = Omit<ReturnType<typeof rollTripCatch>, 'result'> & { result: TripCatch };
+
+/** `rollTripCatch` for a roll that must bring a creature (the tests use `SURE` or the guarantee). */
+function rollSure(rng: Rng, c: TripCatchContext): SureRoll {
+  const roll = rollTripCatch(rng, c);
+  if (roll.result === null) throw new Error('the roll brought nothing');
+  return roll as SureRoll;
+}
 
 describe('the shipped expedition content', () => {
   const pack = expeditionContent;
@@ -739,45 +764,46 @@ describe('supplies and the rolls of a trip', () => {
     expect(shiftOdds(base, -5, -5)).toEqual(base);
   });
 
-  it('makes lures raise the rare and epic odds, by tier', () => {
-    const odds = (kit: SupplyDef[]) =>
-      rollOdds({
-        destination: dest('storm-ridge'),
-        length: 'short',
-        kit,
-        stars: 0,
-        milestoneRarityBp: 0,
-        deep: false,
-      });
-    const none = odds([]);
-    const plain = odds([supply('lure-basic')]);
-    const golden = odds([supply('lure-great')]);
-    expect(none).toEqual(RULES.expeditions.defaultOddsBp);
-    expect(plain.rare).toBeGreaterThan(none.rare);
-    expect(golden.rare).toBeGreaterThan(plain.rare);
-    expect(golden.epic).toBeGreaterThan(plain.epic);
-    for (const o of [none, plain, golden]) expect(o.common + o.rare + o.epic).toBe(BP);
-    // A place with its own odds uses them, and longer trips go deeper.
-    expect(odds([]).rare).toBeLessThan(
-      rollOdds({
-        destination: dest('tidepools'),
-        length: 'day',
-        kit: [],
-        stars: 0,
-        milestoneRarityBp: 0,
-        deep: false,
-      }).rare,
+  it('shifts the odds with the trip length, familiarity and the deeper area, and uses a place’s own odds', () => {
+    const odds = (destination: DestinationDef, length: ExpeditionLength) =>
+      rollOdds({ destination, length, stars: 0, milestoneRarityBp: 0, deep: false });
+    expect(odds(dest('storm-ridge'), 'short')).toEqual(RULES.expeditions.defaultOddsBp);
+    expect(odds(dest('storm-ridge'), 'short').rare).toBeLessThan(
+      odds(dest('storm-ridge'), 'day').rare,
     );
-    expect(
-      rollOdds({
-        destination: dest('moonlit-reef'),
-        length: 'short',
-        kit: [],
-        stars: 0,
-        milestoneRarityBp: 0,
-        deep: false,
-      }),
-    ).toEqual(dest('moonlit-reef').odds);
+    for (const length of EXPEDITION_LENGTHS) {
+      const o = odds(dest('storm-ridge'), length);
+      expect(o.common + o.rare + o.epic).toBe(BP);
+    }
+    expect(odds(dest('moonlit-reef'), 'short')).toEqual(dest('moonlit-reef').odds);
+  });
+
+  it('makes lures raise the chance of a creature and of a new species, by tier', () => {
+    expect(lureEffect([])).toEqual({ catchBp: 0, newBp: 0 });
+    const basic = lureEffect([supply('lure-basic')]);
+    const good = lureEffect([supply('lure-good')]);
+    const great = lureEffect([supply('lure-great')]);
+    expect(basic.catchBp).toBeGreaterThan(0);
+    expect(good.catchBp).toBeGreaterThan(basic.catchBp);
+    expect(great.catchBp).toBeGreaterThan(good.catchBp);
+    expect(good.newBp).toBeGreaterThan(basic.newBp);
+    expect(great.newBp).toBeGreaterThan(good.newBp);
+    // Only lures count; the other supplies change nothing here.
+    expect(lureEffect([supply('map-scrap-great'), supply('satchel-great')])).toEqual({
+      catchBp: 0,
+      newBp: 0,
+    });
+    // The trip length's own chance, plus the lure's, at most a sure thing.
+    for (const length of EXPEDITION_LENGTHS) {
+      expect(catchChanceBp(length, [])).toBe(lengthRules(length).catchBp);
+      expect(catchChanceBp(length, [supply('lure-great')])).toBe(
+        Math.min(BP, lengthRules(length).catchBp + great.catchBp),
+      );
+    }
+    expect(catchChanceBp('day', [SURE])).toBe(BP);
+    // Longer trips bring a creature more often than short ones.
+    expect(lengthRules('short').catchBp).toBeLessThan(lengthRules('medium').catchBp);
+    expect(lengthRules('medium').catchBp).toBeLessThan(lengthRules('long').catchBp);
   });
 
   it('chances an end-of-trip choice from the base, the rank and the supplies, the best tier a sure thing', () => {
@@ -800,15 +826,15 @@ describe('supplies and the rolls of a trip', () => {
 });
 
 describe('catching at a destination', () => {
-  it('keeps the draw order of v1 (rarity, species, shiny): 0, 0, 1 is the first common species, not shiny', () => {
-    const rng = scripted([0, 0, 1]);
-    const roll = rollTripCatch(rng, ctx());
+  it('draws whether a creature comes, then the rarity, the species and the shiny: 0, 0, 0, 1 is the first common species, not shiny', () => {
+    const rng = scripted([0, 0, 0, 1]);
+    const roll = rollSure(rng, ctx());
     expect(roll.result.species.id).toBe('splashet');
     expect(roll.result.shiny).toBe(false);
     expect(roll.result.deep).toBe(false);
-    expect(rng.drawn()).toBe(3);
+    expect(rng.drawn()).toBe(4);
     // A shiny one.
-    expect(rollTripCatch(scripted([0, 0, 0]), ctx()).result.shiny).toBe(true);
+    expect(rollSure(scripted([0, 0, 0, 0]), ctx()).result.shiny).toBe(true);
   });
 
   it('only brings back species that live at the destination, and Festival creatures only at the Festival Grounds', () => {
@@ -817,10 +843,7 @@ describe('catching at a destination', () => {
       const here = new Set(d.species);
       const festival = d.access.festival === true;
       for (let i = 0; i < 300; i++) {
-        const { result } = rollTripCatch(
-          rng,
-          ctx({ destination: d, stars: 0, firstExpedition: false }),
-        );
+        const { result } = rollSure(rng, ctx({ destination: d, stars: 0, firstExpedition: false }));
         expect(here.has(result.species.id), `${d.id}: ${result.species.id}`).toBe(true);
         if (result.species.festival === true) expect(festival).toBe(true);
       }
@@ -831,9 +854,7 @@ describe('catching at a destination', () => {
     const rng = createSeededRng('festival');
     const seen = new Set<string>();
     for (let i = 0; i < 500; i++) {
-      seen.add(
-        rollTripCatch(rng, ctx({ destination: dest('festival-grounds') })).result.species.id,
-      );
+      seen.add(rollSure(rng, ctx({ destination: dest('festival-grounds') })).result.species.id);
     }
     expect(seen.has('lanternfin')).toBe(true);
     expect(seen.has('hearthshell')).toBe(true);
@@ -846,10 +867,10 @@ describe('catching at a destination', () => {
     let deepRolls = 0;
     let none = 0;
     for (let i = 0; i < 4_000; i++) {
-      const closed = rollTripCatch(rng, ctx({ destination: ember, stars: 0 })).result;
+      const closed = rollSure(rng, ctx({ destination: ember, stars: 0 })).result;
       if (deepSpecies.has(closed.species.id)) none++;
       expect(closed.deep).toBe(false);
-      const open = rollTripCatch(rng, ctx({ destination: ember, stars: 1 })).result;
+      const open = rollSure(rng, ctx({ destination: ember, stars: 1 })).result;
       if (open.deep) deepRolls++;
     }
     expect(none).toBe(0);
@@ -860,7 +881,7 @@ describe('catching at a destination', () => {
     const lantern = supply('lantern-great');
     let lit = 0;
     for (let i = 0; i < 2_000; i++) {
-      if (rollTripCatch(rng, ctx({ destination: ember, kit: [lantern] })).result.deep) lit++;
+      if (rollSure(rng, ctx({ destination: ember, kit: [lantern] })).result.deep) lit++;
     }
     expect(lit).toBeGreaterThan(0);
   });
@@ -869,7 +890,7 @@ describe('catching at a destination', () => {
     // The Festival Grounds have no Rare species: a Rare roll comes out Common (or Epic), never fails.
     const rng = createSeededRng('fallback');
     for (let i = 0; i < 500; i++) {
-      const s = rollTripCatch(
+      const s = rollSure(
         rng,
         ctx({ destination: dest('festival-grounds'), kit: [supply('lure-great')] }),
       ).result.species;
@@ -883,7 +904,7 @@ describe('catching at a destination', () => {
       let tide = 0;
       const n = 6_000;
       for (let i = 0; i < n; i++) {
-        const s = rollTripCatch(
+        const s = rollSure(
           rng,
           ctx({ destination: dest('old-crossroads'), explorer: { element: 'tide', role } }),
         ).result.species;
@@ -917,10 +938,7 @@ describe('catching at a destination', () => {
     const count = (twist: TripCatchContext['twist']) => {
       let hits = 0;
       for (let i = 0; i < n; i++) {
-        if (
-          rollTripCatch(rng, ctx({ destination: tidepools, twist })).result.species.id ===
-          'coralynx'
-        )
+        if (rollSure(rng, ctx({ destination: tidepools, twist })).result.species.id === 'coralynx')
           hits++;
       }
       return hits;
@@ -934,10 +952,7 @@ describe('catching at a destination', () => {
     const first = (twist: TripCatchContext['twist']) => {
       let hits = 0;
       for (let i = 0; i < n; i++) {
-        if (
-          rollTripCatch(rng, ctx({ destination: crossroads, twist })).result.species.id ===
-          'stormray'
-        )
+        if (rollSure(rng, ctx({ destination: crossroads, twist })).result.species.id === 'stormray')
           hits++;
       }
       return hits;
@@ -947,7 +962,7 @@ describe('catching at a destination', () => {
 
   it('keeps the dupe shield and the first-expedition Zipmouse at every destination', () => {
     for (const d of expeditionContent.destinations) {
-      const roll = rollTripCatch(
+      const roll = rollSure(
         createSeededRng(`z-${d.id}`),
         ctx({ destination: d, firstExpedition: true }),
       );
@@ -955,19 +970,19 @@ describe('catching at a destination', () => {
       expect(roll.guaranteed).toBe(true);
     }
     // A creature the player owns is not forced again.
-    const owned = rollTripCatch(
-      scripted([0, 0, 1]),
+    const owned = rollSure(
+      scripted([0, 0, 0, 1]),
       ctx({ firstExpedition: true, ownedLines: new Set(['zipmouse']) }),
     );
     expect(owned.guaranteed).toBe(false);
     // With a streak of 4 duplicates, an unowned species of the rarity is picked when there is one.
-    const streak = rollTripCatch(
-      scripted([0, 0, 1]),
+    const streak = rollSure(
+      scripted([0, 0, 0, 1]),
       ctx({ ownedLines: new Set(['splashet']), dupeStreak: RULES.catching.dupeShieldStreak }),
     );
     expect(streak.result.species.id).toBe('mistnewt');
-    const noShield = rollTripCatch(
-      scripted([0, 0, 1]),
+    const noShield = rollSure(
+      scripted([0, 0, 0, 1]),
       ctx({ ownedLines: new Set(['splashet']), dupeStreak: 1 }),
     );
     expect(noShield.result.species.id).toBe('splashet');
@@ -988,6 +1003,72 @@ describe('catching at a destination', () => {
     expect(out.dupeStreak).toBe(streak);
     expect(() => rollTripCatches(rng, -1, ctx())).toThrow(RangeError);
     expect(rollTripCatches(rng, 0, ctx()).results).toEqual([]);
+    expect(out.empty).toBe(0);
+  });
+
+  it('brings a creature only with the length’s chance: a roll that misses draws once and brings nothing', () => {
+    const c = ctx({ kit: [] });
+    // `ctx` always adds the sure lure, so build the context without it.
+    const plain = { ...c, kit: [] as SupplyDef[] };
+    const missed = scripted([BP - 1]);
+    const roll = rollTripCatch(missed, plain);
+    expect(roll.result).toBeNull();
+    expect(roll.dupeStreak).toBe(plain.dupeStreak);
+    expect(missed.drawn()).toBe(1);
+    // A draw under the chance brings one (rarity, species and shiny follow).
+    const hit = scripted([0, 0, 0, 1]);
+    expect(rollTripCatch(hit, plain).result?.species.id).toBe('splashet');
+    expect(hit.drawn()).toBe(4);
+    // The first expedition always brings the Zipmouse, with no chance roll.
+    const first = scripted([BP - 1, BP - 1]);
+    const guaranteed = rollTripCatch(first, { ...plain, firstExpedition: true });
+    expect(guaranteed.result?.species.id).toBe('zipmouse');
+    expect(guaranteed.guaranteed).toBe(true);
+    expect(first.drawn()).toBe(1);
+  });
+
+  it('brings a creature about as often as the length and the lures say, and counts the rolls that did not', () => {
+    const n = 4_000;
+    const rate = (kit: SupplyDef[], length: ExpeditionLength): number => {
+      const rng = createSeededRng(`rate-${length}-${String(kit.length)}`);
+      let got = 0;
+      for (let i = 0; i < n; i++) {
+        const base = ctx({ destination: dest('old-crossroads'), length });
+        if (rollTripCatch(rng, { ...base, kit }).result !== null) got++;
+      }
+      return (got * BP) / n;
+    };
+    for (const length of EXPEDITION_LENGTHS) {
+      expect(Math.abs(rate([], length) - catchChanceBp(length, []))).toBeLessThan(300);
+    }
+    expect(rate([supply('lure-great')], 'short')).toBeGreaterThan(rate([], 'short') + 2_000);
+    const out = rollTripCatches(createSeededRng('empties'), 40, {
+      ...ctx(),
+      kit: [],
+      destination: dest('old-crossroads'),
+    });
+    expect(out.results.length + out.empty).toBe(40);
+    expect(out.empty).toBeGreaterThan(10);
+  });
+
+  it('lets a lure turn the roll towards a species the player lacks', () => {
+    const owned = new Set(['splashet', 'cindle', 'sproutle']);
+    const freshShare = (kit: SupplyDef[]): number => {
+      const rng = createSeededRng(`new-${kit.map((k) => k.id).join('+')}`);
+      let fresh = 0;
+      const n = 4_000;
+      for (let i = 0; i < n; i++) {
+        const c = ctx({ destination: dest('old-crossroads'), ownedLines: owned });
+        const roll = rollTripCatch(rng, { ...c, kit: [SURE, ...kit] });
+        if (roll.result !== null && !roll.result.duplicate) fresh++;
+      }
+      return fresh / n;
+    };
+    const none = freshShare([]);
+    const basic = freshShare([supply('lure-basic')]);
+    const great = freshShare([supply('lure-great')]);
+    expect(basic).toBeGreaterThan(none);
+    expect(great).toBeGreaterThan(basic);
   });
 });
 
@@ -1063,7 +1144,7 @@ describe('trip loot', () => {
     expect(loot.parts['tide-shard']).toBe(1);
     expect(loot.parts.glimmer).toBe(1);
     expect(loot.blueprint).not.toBeNull();
-    expect(loot.supplies).toEqual(['lure-basic']);
+    expect(loot.supplies).toEqual(['map-scrap-basic']);
     expect(rng.drawn()).toBe(6);
   });
 
@@ -1094,25 +1175,74 @@ describe('trip loot', () => {
     );
   });
 
-  it('finds supplies of the explorer’s tier: plain, good from rank 4, great from rank 7', () => {
+  it('finds supplies of the explorer’s tier: plain, good from rank 4, great from rank 7, and never a lure', () => {
     const { good, great } = RULES.expeditions.foundTier;
     const tier = (rank: number) => foundSupplyId(scripted([0]), rank);
-    expect(tier(1)).toBe('lure-basic');
-    expect(tier(good - 1)).toBe('lure-basic');
-    expect(tier(good)).toBe('lure-good');
-    expect(tier(great - 1)).toBe('lure-good');
-    expect(tier(great)).toBe('lure-great');
-    expect(foundSupplyId(scripted([SUPPLY_KINDS.length - 1]), 1)).toBe(
-      `${SUPPLY_KINDS.at(-1) as string}-basic`,
+    expect(FOUND_SUPPLY_KINDS).not.toContain('lure');
+    expect(FOUND_SUPPLY_KINDS).toHaveLength(SUPPLY_KINDS.length - 1);
+    const first = FOUND_SUPPLY_KINDS[0] as string;
+    expect(tier(1)).toBe(`${first}-basic`);
+    expect(tier(good - 1)).toBe(`${first}-basic`);
+    expect(tier(good)).toBe(`${first}-good`);
+    expect(tier(great - 1)).toBe(`${first}-good`);
+    expect(tier(great)).toBe(`${first}-great`);
+    expect(foundSupplyId(scripted([FOUND_SUPPLY_KINDS.length - 1]), 1)).toBe(
+      `${FOUND_SUPPLY_KINDS.at(-1) as string}-basic`,
     );
+    const rng = createSeededRng('found-kinds');
+    for (let i = 0; i < 300; i++) expect(foundSupplyId(rng, 9)).not.toMatch(/^lure-/);
   });
 
-  it('turns a duplicate at the fusion limit into a share of the usual Bait', () => {
-    expect(RULES.expeditions.convertBp).toBeLessThan(BP);
-    expect(expeditionConvertBait(RULES.fusion.convertBait.rare)).toBe(
-      Math.floor((RULES.fusion.convertBait.rare * RULES.expeditions.convertBp) / BP),
+  it('pays a small find of scrap for every roll that brought no creature, and nothing for a recall', () => {
+    for (const length of EXPEDITION_LENGTHS) {
+      const plain = rollTripLoot(createSeededRng('find'), { ...base, length }, done);
+      const finds = rollTripLoot(createSeededRng('find'), { ...base, length, emptyRolls: 3 }, done);
+      expect((finds.parts.scrap ?? 0) - (plain.parts.scrap ?? 0)).toBe(
+        3 * lengthRules(length).findScrap,
+      );
+    }
+    const recall = rollTripLoot(
+      scripted([]),
+      { ...base, emptyRolls: 3 },
+      { completed: false, caught: 1, rolls: 4 },
     );
-    expect(expeditionConvertBait(1)).toBe(1); // never less than 1
+    expect(recall.parts.scrap ?? 0).toBe(Math.floor(lengthRules('long').loot.scrap / 4));
+    // It does not use any draw: the same seed gives the same shards and glimmer.
+    const a = rollTripLoot(createSeededRng('same-draws'), { ...base, length: 'day' }, done);
+    const b = rollTripLoot(
+      createSeededRng('same-draws'),
+      { ...base, length: 'day', emptyRolls: 5 },
+      done,
+    );
+    expect({ ...b.parts, scrap: 0 }).toEqual({ ...a.parts, scrap: 0 });
+  });
+
+  it('grows the chance of a glimmer with the explorer’s glimmer-finding talents', () => {
+    const found = (gearGlimmerBp: number): number => {
+      let n = 0;
+      for (let i = 0; i < 6_000; i++) {
+        const loot = rollTripLoot(
+          createSeededRng(`glim-${String(i)}`),
+          { ...base, length: 'day', gearGlimmerBp },
+          done,
+        );
+        n += loot.parts.glimmer ?? 0;
+      }
+      return n;
+    };
+    expect(found(5_000)).toBeGreaterThan(found(0));
+    expect(found(0)).toBeGreaterThan(6_000 * 0.06);
+  });
+
+  it('values a catch roll by its chance, with the scrap find when it brings nothing', () => {
+    const odds = RULES.expeditions.defaultOddsBp;
+    for (const length of EXPEDITION_LENGTHS) {
+      const worth = catchRollWorth(length, odds);
+      expect(worth).toBeGreaterThan(0);
+      expect(worth).toBeLessThan(
+        rollWorth(odds) * 1.0 + lengthRules(length).findScrap * RULES.expeditions.worth.scrap,
+      );
+    }
   });
 });
 

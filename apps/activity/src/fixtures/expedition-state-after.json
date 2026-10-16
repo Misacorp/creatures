@@ -8,7 +8,7 @@
   "starterOptions": ["splashet", "cindle", "sproutle"],
   "creatures": [
     {
-      "id": "503a2ab5-97a2-4909-a300-0a437e4a9381",
+      "id": "5b471a5d-ed59-4ae7-9abd-bd0bec41f40d",
       "species": "cindle",
       "line": "cindle",
       "level": 8,
@@ -20,6 +20,25 @@
       "origin": "test",
       "caughtAt": 1799733600000,
       "quirk": "waves-at-everyone",
+      "lineSlot": 1,
+      "talents": {
+        "slots": [
+          {
+            "slot": 1,
+            "opensAt": 1,
+            "open": true,
+            "talent": null
+          },
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          }
+        ],
+        "signature": null,
+        "book": []
+      },
       "stats": {
         "hp": 145,
         "atk": 61,
@@ -53,7 +72,7 @@
       }
     },
     {
-      "id": "fb2011d8-80a8-4d3a-88a2-2be1cbc8ce24",
+      "id": "b5cccb35-57e7-4467-b3fa-4daf40f5df57",
       "species": "splashet",
       "line": "splashet",
       "level": 8,
@@ -65,6 +84,25 @@
       "origin": "test",
       "caughtAt": 1799733600001,
       "quirk": "shadow-racer",
+      "lineSlot": 1,
+      "talents": {
+        "slots": [
+          {
+            "slot": 1,
+            "opensAt": 1,
+            "open": true,
+            "talent": null
+          },
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          }
+        ],
+        "signature": null,
+        "book": []
+      },
       "stats": {
         "hp": 168,
         "atk": 42,
@@ -98,7 +136,7 @@
       }
     },
     {
-      "id": "7d22e1ec-dbdc-4bb8-aecf-160aa84702cd",
+      "id": "ad8b47e0-26ad-4d55-8db3-89446944eb9d",
       "species": "sproutle",
       "line": "sproutle",
       "level": 8,
@@ -110,6 +148,25 @@
       "origin": "test",
       "caughtAt": 1799733600002,
       "quirk": "eating-shy",
+      "lineSlot": 1,
+      "talents": {
+        "slots": [
+          {
+            "slot": 1,
+            "opensAt": 1,
+            "open": true,
+            "talent": null
+          },
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          }
+        ],
+        "signature": null,
+        "book": []
+      },
       "stats": {
         "hp": 237,
         "atk": 29,
@@ -143,7 +200,7 @@
       }
     },
     {
-      "id": "ac8ffb60-515c-4474-bf59-c11f2f478db9",
+      "id": "ff4fdbef-d078-4bb1-9724-08194e2f2319",
       "species": "mistnewt",
       "line": "mistnewt",
       "level": 1,
@@ -154,7 +211,43 @@
       "away": false,
       "origin": "expedition",
       "caughtAt": 1799830944002,
-      "quirk": "stargazer",
+      "quirk": "big-stretcher",
+      "lineSlot": 1,
+      "talents": {
+        "slots": [
+          {
+            "slot": 1,
+            "opensAt": 1,
+            "open": true,
+            "talent": {
+              "id": "calm-and-patient",
+              "name": "Calm and Patient",
+              "golden": false,
+              "text": "All damage taken −3%",
+              "about": "Every hit on the wearer does less damage.",
+              "idle": false
+            }
+          },
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          }
+        ],
+        "signature": null,
+        "book": [
+          {
+            "id": "calm-and-patient",
+            "name": "Calm and Patient",
+            "golden": false,
+            "text": "All damage taken −3%",
+            "about": "Every hit on the wearer does less damage.",
+            "idle": false,
+            "slot": 1
+          }
+        ]
+      },
       "stats": {
         "hp": 160,
         "atk": 28,
@@ -188,10 +281,12 @@
       }
     }
   ],
+  "pending": [],
+  "bookSlotBait": 10,
   "expeditions": [
     {
-      "id": "8433a8fc-83d9-447d-9275-0e1dafd7a8ff",
-      "creatureId": "503a2ab5-97a2-4909-a300-0a437e4a9381",
+      "id": "ff6f14a4-dc1d-4de7-aa1a-fd3534a45864",
+      "creatureId": "5b471a5d-ed59-4ae7-9abd-bd0bec41f40d",
       "duration": "long",
       "supplies": "great",
       "kit": ["lure-great"],
@@ -211,7 +306,15 @@
             "species": "mistnewt",
             "shiny": false,
             "firstOnServer": true,
-            "outcome": "new"
+            "outcome": "new",
+            "talent": {
+              "id": "calm-and-patient",
+              "name": "Calm and Patient",
+              "golden": false,
+              "text": "All damage taken −3%",
+              "about": "Every hit on the wearer does less damage.",
+              "idle": false
+            }
           }
         ],
         "loot": {
@@ -269,8 +372,8 @@
       }
     },
     {
-      "id": "38ba9cba-d38e-4a4a-8ef3-f825bc9efda6",
-      "creatureId": "503a2ab5-97a2-4909-a300-0a437e4a9381",
+      "id": "86bc2dab-7d3b-4160-a464-ca09c58e6ccc",
+      "creatureId": "5b471a5d-ed59-4ae7-9abd-bd0bec41f40d",
       "duration": "long",
       "supplies": "great",
       "kit": ["lure-great", "map-scrap-basic"],
@@ -327,7 +430,7 @@
       "holders": ["Player 3"]
     }
   ],
-  "loungerId": "fb2011d8-80a8-4d3a-88a2-2be1cbc8ce24",
+  "loungerId": "ad8b47e0-26ad-4d55-8db3-89446944eb9d",
   "loungeSpot": null,
   "timezone": "Europe/Helsinki",
   "leetSync": {

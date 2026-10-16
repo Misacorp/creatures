@@ -132,6 +132,9 @@ export function fusionStars(count: number): string {
 export function catchBadgeTags(entry: CatchResult): { text: string; entry: string | null }[] {
   const badges: { text: string; entry: string | null }[] = [];
   if (entry.outcome === 'new') badges.push({ text: 'New!', entry: null });
+  if (entry.outcome === 'duplicate') {
+    badges.push({ text: 'Duplicate', entry: 'duplicate-choice' });
+  }
   if (entry.outcome === 'fused') {
     badges.push({ text: `Fused ★${String(entry.fusionCount ?? 0)}`, entry: 'fusion' });
   }
@@ -225,6 +228,12 @@ const ERROR_TEXT: Record<string, string> = {
   no_offer: 'That trip has no choice to make.',
   not_offered: 'That goal was not on offer.',
   already_chosen: 'You already chose a goal for that trip.',
+  // Duplicates and the Talent Book.
+  teach_not_offered: 'That creature cannot learn that talent: it has it already.',
+  keep_not_offered: 'You cannot keep that one: there is no second branch to keep it for.',
+  max_fusions: 'That creature is fully fused already.',
+  not_in_book: 'That talent is not in that creature\u2019s Talent Book.',
+  already_slotted: 'That talent is already in that slot.',
   cancelled: 'That trip was called home when the slots were reset.',
   // Any request.
   invalid_body:
@@ -276,6 +285,13 @@ export function errorText(
     }
     if (err.code === 'wrong_role' && err.reason !== null && /^[a-z]{3,10}$/.test(err.reason)) {
       return `Only a ${capitalize(err.reason)} can wear that Charm.`;
+    }
+    // A talent slot opens at a creature level: the reason is `needs_level_N`.
+    if (err.code === 'slot_closed') {
+      const level = /^needs_level_(\d+)$/.exec(err.reason ?? '')?.[1];
+      return level === undefined
+        ? 'That creature has no such talent slot.'
+        : `That talent slot opens at creature level ${level}.`;
     }
     if (err.code === 'rank_too_low' && err.reason === 'length') {
       return 'That explorer is not a high enough rank for a trip that long.';

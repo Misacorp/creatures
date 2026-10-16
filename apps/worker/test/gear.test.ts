@@ -22,8 +22,8 @@ import { creditParts, insertItem } from '../src/gear-store';
 import {
   T0,
   runCore,
+  undoCreaturesAMigration,
   undoGearMigration,
-  undoWorkshopV2Migration,
   type CoreContext,
   LATEST_SCHEMA_VERSION,
 } from './helpers';
@@ -299,9 +299,9 @@ describe('migration 27', () => {
       const p = await player(ctx, 1);
       expect(count(ctx.sql, 'creatures')).toBe(3);
       ctx.sql.exec('DELETE FROM gear_conversion');
-      undoWorkshopV2Migration(ctx.sql);
-      // Back to the first gear model with one worn item and one blueprint.
+      // Back to the first gear model with one worn item and one blueprint (and before migrations 28 and 29).
       const sql = ctx.sql;
+      undoCreaturesAMigration(sql);
       sql.exec('DROP TABLE gear_conversion');
       sql.exec('DROP TABLE gear_legacy');
       sql.exec('DROP TABLE gear_items');

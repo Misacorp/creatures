@@ -289,22 +289,18 @@ describe('Festival creature', () => {
     expect(festivalCreatureFor(4, pack)).toBeNull();
   });
 
-  it('gives the usual duplicate handling: new, fusion, then Bait by rarity, never shiny', () => {
+  it('gives the usual duplicate handling: new, or a duplicate that waits as a choice, never shiny', () => {
     const species = festivalCreatureFor(4);
     if (species === null) throw new Error('no festival creature');
     expect(festivalGrantOutcome(undefined, species)).toEqual({ kind: 'new' });
     expect(festivalGrantOutcome({ fusionCount: 0, shiny: false }, species)).toEqual({
-      kind: 'fused',
-      newFusionCount: 1,
+      kind: 'duplicate',
       becameShiny: false,
     });
+    // Even a fully fused, shiny owner gets a choice, not Bait: a festival grant is never shiny.
     expect(
       festivalGrantOutcome({ fusionCount: RULES.fusion.maxFusions, shiny: true }, species),
-    ).toEqual({
-      kind: 'converted',
-      bait: RULES.fusion.convertBait[species.rarity],
-      becameShiny: false,
-    });
+    ).toEqual({ kind: 'duplicate', becameShiny: false });
   });
 });
 

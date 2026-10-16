@@ -88,18 +88,25 @@ function checkCreatures(pack: ContentPack): void {
       }
     }
 
-    if (c.evolvesTo !== undefined) {
-      const target = byId.get(c.evolvesTo.species);
+    if (c.altEvolvesTo !== undefined && c.evolvesTo === undefined) {
+      fail(`"${c.id}" has a second branch but no first evolution`);
+    }
+    for (const evolution of [c.evolvesTo, c.altEvolvesTo]) {
+      if (evolution === undefined) continue;
+      const target = byId.get(evolution.species);
       if (c.stage !== 1) fail(`only stage-1 species can evolve ("${c.id}")`);
       if (target === undefined) fail(`"${c.id}" evolves into unknown species`);
       if (target.stage !== 2) fail(`"${c.id}" must evolve into a stage-2 species`);
       if (target.line !== c.line) fail(`"${c.id}" must evolve within its own line`);
       if (target.element !== c.element) fail(`"${c.id}" must evolve into the same element`);
       if (target.rarity !== c.rarity) fail(`"${c.id}" must evolve into the same rarity`);
-      if (c.evolvesTo.level > c.levelCap) {
-        fail(`"${c.id}" evolves at level ${c.evolvesTo.level}, above its level cap`);
+      if (evolution.level > c.levelCap) {
+        fail(`"${c.id}" evolves at level ${evolution.level}, above its level cap`);
       }
       evolutionTargets.set(target.id, (evolutionTargets.get(target.id) ?? 0) + 1);
+    }
+    if (c.altEvolvesTo !== undefined && c.altEvolvesTo.species === c.evolvesTo?.species) {
+      fail(`"${c.id}" has the same species for both branches`);
     }
   }
 
@@ -282,19 +289,21 @@ function checkAbilities(pack: ContentPack): void {
     }
   }
 
-  // Evolution lines: both forms have an ability, and the stage-2 one is stronger.
+  // Evolution lines: both forms have an ability, and the stage-2 one is stronger (each branch).
   for (const c of pack.creatures) {
-    if (c.evolvesTo === undefined) continue;
-    const target = pack.creatures.find((s) => s.id === c.evolvesTo?.species);
-    if (target === undefined) continue; // checkCreatures reports this
-    const a1 = c.ability === undefined ? undefined : byId.get(c.ability.id);
-    const a2 = target.ability === undefined ? undefined : byId.get(target.ability.id);
-    if ((a1 === undefined) !== (a2 === undefined)) {
-      fail(`"${c.id}" and "${target.id}" must both have an ability or neither`);
-    }
-    if (a1 !== undefined && a2 !== undefined) {
-      const problem = upgradeProblem(a1, a2);
-      if (problem !== null) fail(`ability "${a2.id}" of "${target.id}" ${problem}`);
+    for (const evolution of [c.evolvesTo, c.altEvolvesTo]) {
+      if (evolution === undefined) continue;
+      const target = pack.creatures.find((s) => s.id === evolution.species);
+      if (target === undefined) continue; // checkCreatures reports this
+      const a1 = c.ability === undefined ? undefined : byId.get(c.ability.id);
+      const a2 = target.ability === undefined ? undefined : byId.get(target.ability.id);
+      if ((a1 === undefined) !== (a2 === undefined)) {
+        fail(`"${c.id}" and "${target.id}" must both have an ability or neither`);
+      }
+      if (a1 !== undefined && a2 !== undefined) {
+        const problem = upgradeProblem(a1, a2);
+        if (problem !== null) fail(`ability "${a2.id}" of "${target.id}" ${problem}`);
+      }
     }
   }
 }

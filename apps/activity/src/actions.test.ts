@@ -19,6 +19,28 @@ describe('action names', () => {
     ).toBe('send:c1:tide-pools:short:owned:lantern');
   });
 
+  it('names the answers of the duplicate choice and the Talent Book', () => {
+    expect(ActionIds.catchChoice('p1', { choice: 'release' })).toBe('catch:p1:release::');
+    expect(ActionIds.catchChoice('p1', { choice: 'fuse', creatureId: 'c1' })).toBe(
+      'catch:p1:fuse:c1:',
+    );
+    expect(ActionIds.catchChoice('p1', { choice: 'teach', creatureId: 'c1', slot: 2 })).toBe(
+      'catch:p1:teach:c1:2',
+    );
+    // The same card answered another way, or into another slot, is another action (another key).
+    const teach = (slot: number) =>
+      ActionIds.catchChoice('p1', { choice: 'teach', creatureId: 'c1', slot });
+    expect(teach(1)).not.toBe(teach(2));
+    expect(ActionIds.catchChoice('p1', { choice: 'recommended' })).not.toBe(
+      ActionIds.catchChoice('p1', { choice: 'release' }),
+    );
+    expect(ActionIds.catchAll()).toBe('catch-all');
+    expect(ActionIds.talentSlot('c1', 'playful', true, 2)).toBe('talent-slot:c1:playful:g:2');
+    expect(ActionIds.talentSlot('c1', 'playful', false, 2)).not.toBe(
+      ActionIds.talentSlot('c1', 'playful', true, 2),
+    );
+  });
+
   it('names a job start by its kind, creature and target', () => {
     expect(ActionIds.job({ kind: 'craft', creatureId: 'c', blueprintId: 'b', reach: 'none' })).toBe(
       'job:craft:c:b:none',

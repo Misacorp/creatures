@@ -1,0 +1,59 @@
+{
+  "creatures-claim": {
+    "path": "/api/expeditions/cdb30860-86bf-4d85-bb0c-ce6cbf41c1f3/claim",
+    "method": "POST",
+    "body": {}
+  },
+  "creatures-choose-teach": {
+    "path": "/api/catches/d92da148-a631-466e-bb89-06d03938e288/choose",
+    "method": "POST",
+    "body": {
+      "choice": "teach",
+      "creatureId": "33f1cc3b-057a-4466-80c0-489e262fec50",
+      "slot": 1,
+      "idempotencyKey": "creatures-fixture-00000005-key"
+    }
+  },
+  "creatures-choose-fuse": {
+    "path": "/api/catches/fef969aa-54ba-4722-81de-c47a2fea4182/choose",
+    "method": "POST",
+    "body": {
+      "choice": "fuse",
+      "creatureId": "33f1cc3b-057a-4466-80c0-489e262fec50",
+      "idempotencyKey": "creatures-fixture-00000006-key"
+    }
+  },
+  "creatures-choose-release": {
+    "path": "/api/catches/9383bfc2-52b8-4979-a603-276e043a721f/choose",
+    "method": "POST",
+    "body": {
+      "choice": "release",
+      "idempotencyKey": "creatures-fixture-00000007-key"
+    }
+  },
+  "creatures-choose-recommended": {
+    "path": "/api/catches/7e9a5087-4b54-477c-8657-f768e95ab339/choose",
+    "method": "POST",
+    "body": {
+      "choice": "recommended",
+      "idempotencyKey": "creatures-fixture-00000013-key"
+    }
+  },
+  "creatures-recommended-all": {
+    "path": "/api/catches/recommended",
+    "method": "POST",
+    "body": {
+      "idempotencyKey": "creatures-fixture-00000016-key"
+    }
+  },
+  "creatures-slot": {
+    "path": "/api/creatures/33f1cc3b-057a-4466-80c0-489e262fec50/talents/slot",
+    "method": "POST",
+    "body": {
+      "talentId": "splashes-first",
+      "golden": false,
+      "slot": 1,
+      "idempotencyKey": "creatures-fixture-00000017-key"
+    }
+  }
+}

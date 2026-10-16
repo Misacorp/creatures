@@ -1,5 +1,5 @@
 /**
- * Migration 28: the crafting loop (Gear B; see `gear.ts` and `docs/design/gear-and-creatures-v2.md`
+ * Migration 29: the crafting loop (Gear B; see `gear.ts` and `docs/design/gear-and-creatures-v2.md`
  * section 3). Never edit a released migration.
  *
  * `workshop_jobs` is rebuilt (SQLite cannot widen a CHECK) so a job can be a dismantle, and gains

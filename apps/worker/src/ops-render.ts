@@ -330,10 +330,12 @@ function expeditionsSection(rows: Rows): string[] {
   out.push('Catches:', '');
   out.push(
     ...table(
-      ['Rarity', 'New', 'Fused', 'Converted'],
+      ['Rarity', 'New', 'Duplicate', 'Fused', 'Converted'],
       rarities.map((rarity) => [
         code(rarity),
-        ...['new', 'fused', 'converted'].map((r) => fmt(catches.get(`${rarity}\u0000${r}`) ?? 0)),
+        ...['new', 'duplicate', 'fused', 'converted'].map((r) =>
+          fmt(catches.get(`${rarity}\u0000${r}`) ?? 0),
+        ),
       ]),
     ),
   );

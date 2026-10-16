@@ -1,7 +1,7 @@
 {
   "result": {
     "item": {
-      "id": "1d945801-91d8-44c3-bcfb-677e9203b6f9",
+      "id": "dffed315-cf3c-4248-8053-4500511586fb",
       "baseId": "coal-warm-cap",
       "slot": "hat",
       "tag": "ember",
@@ -53,7 +53,7 @@
         "level": 14,
         "role": null
       },
-      "equippedOn": "028e2146-c493-4559-9e6e-e1fe634ec58b",
+      "equippedOn": "335dc2aa-476b-458d-976b-c778f3cd47e0",
       "dismantle": {
         "scrap": {
           "min": 10,
@@ -93,7 +93,7 @@
     },
     "items": [
       {
-        "id": "230c8d60-8762-4b01-8db8-db8b50350058",
+        "id": "a38a0dd5-bf22-4729-9d28-cfe1f006d98a",
         "baseId": "trail-cap",
         "slot": "hat",
         "tag": "neutral",
@@ -153,7 +153,7 @@
         }
       },
       {
-        "id": "0dd478fb-7bbd-4239-af9e-dbfc913b3232",
+        "id": "04ed4dbe-c68d-439b-9100-1b0367f30a47",
         "baseId": "tidepool-charm",
         "slot": "charm",
         "tag": "tide",
@@ -215,7 +215,7 @@
         }
       },
       {
-        "id": "086d4f4b-c954-42b8-8795-d0f71f057e5d",
+        "id": "407c9094-7305-437c-975f-2819918bba8b",
         "baseId": "festival-hearth-scarf",
         "slot": "scarf",
         "tag": "ember",
@@ -297,7 +297,7 @@
         }
       },
       {
-        "id": "1d945801-91d8-44c3-bcfb-677e9203b6f9",
+        "id": "dffed315-cf3c-4248-8053-4500511586fb",
         "baseId": "coal-warm-cap",
         "slot": "hat",
         "tag": "ember",
@@ -349,7 +349,7 @@
           "level": 14,
           "role": null
         },
-        "equippedOn": "028e2146-c493-4559-9e6e-e1fe634ec58b",
+        "equippedOn": "335dc2aa-476b-458d-976b-c778f3cd47e0",
         "dismantle": {
           "scrap": {
             "min": 10,
@@ -375,7 +375,7 @@
         "origin": null
       },
       {
-        "id": "fac456d6-951b-45d8-ab14-c8acbff6f753",
+        "id": "2e412796-b868-4d8e-96d9-d42eafa4fe6c",
         "baseId": "leafknit-scarf",
         "slot": "scarf",
         "tag": "grove",
@@ -443,7 +443,7 @@
         "origin": null
       },
       {
-        "id": "cb724bbc-11aa-4d71-b18a-c6f21510e2a1",
+        "id": "7e24a1f1-a1f9-42e5-a34a-4b6f8ae4c550",
         "baseId": "wardens-bell",
         "slot": "charm",
         "tag": "guard",
@@ -511,7 +511,7 @@
         "origin": null
       },
       {
-        "id": "7198005d-33fb-4f75-afb4-d1adfd24e7cd",
+        "id": "352f24a8-f2de-4e36-b021-9cfe67705bb8",
         "baseId": "crossroads-compass",
         "slot": "charm",
         "tag": "explorer",
@@ -579,7 +579,7 @@
         "origin": null
       },
       {
-        "id": "616b192d-2f69-4999-a3d7-257c989d3b36",
+        "id": "4a01c6de-90d0-4428-9662-fb50244c32da",
         "baseId": "thundercap",
         "slot": "hat",
         "tag": "spark",
@@ -679,19 +679,19 @@
     },
     "skills": [
       {
-        "creatureId": "028e2146-c493-4559-9e6e-e1fe634ec58b",
+        "creatureId": "335dc2aa-476b-458d-976b-c778f3cd47e0",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "c537c501-5ceb-4010-886e-2f27d82f13a7",
+        "creatureId": "a22225be-75f3-4445-bcbc-3c2b48eb8ca8",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "446b7b58-5438-4a79-8dec-cfebaa891605",
+        "creatureId": "fefcf2b9-af1b-4a85-bba1-b075ec924ed7",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
@@ -701,7 +701,7 @@
       {
         "gear": [
           {
-            "id": "086d4f4b-c954-42b8-8795-d0f71f057e5d",
+            "id": "407c9094-7305-437c-975f-2819918bba8b",
             "baseId": "festival-hearth-scarf",
             "rarity": "festival",
             "itemLevel": 8
@@ -717,7 +717,7 @@
       {
         "gear": [
           {
-            "id": "0dd478fb-7bbd-4239-af9e-dbfc913b3232",
+            "id": "04ed4dbe-c68d-439b-9100-1b0367f30a47",
             "baseId": "tidepool-charm",
             "rarity": "common",
             "itemLevel": 6
@@ -733,7 +733,7 @@
       {
         "gear": [
           {
-            "id": "230c8d60-8762-4b01-8db8-db8b50350058",
+            "id": "a38a0dd5-bf22-4729-9d28-cfe1f006d98a",
             "baseId": "trail-cap",
             "rarity": "common",
             "itemLevel": 1
@@ -766,7 +766,7 @@
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "028e2146-c493-4559-9e6e-e1fe634ec58b",
+        "id": "335dc2aa-476b-458d-976b-c778f3cd47e0",
         "species": "cindle",
         "line": "cindle",
         "level": 15,
@@ -778,6 +778,25 @@
         "origin": "test",
         "caughtAt": 1799733600000,
         "quirk": "name-perker",
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            {
+              "slot": 1,
+              "opensAt": 1,
+              "open": true,
+              "talent": null
+            },
+            {
+              "slot": 2,
+              "opensAt": 20,
+              "open": false,
+              "talent": null
+            }
+          ],
+          "signature": null,
+          "book": []
+        },
         "stats": {
           "hp": 194,
           "atk": 82,
@@ -790,7 +809,7 @@
         },
         "gear": [
           {
-            "id": "1d945801-91d8-44c3-bcfb-677e9203b6f9",
+            "id": "dffed315-cf3c-4248-8053-4500511586fb",
             "baseId": "coal-warm-cap",
             "slot": "hat",
             "rarity": "epic",
@@ -819,7 +838,7 @@
         }
       },
       {
-        "id": "c537c501-5ceb-4010-886e-2f27d82f13a7",
+        "id": "a22225be-75f3-4445-bcbc-3c2b48eb8ca8",
         "species": "sproutle",
         "line": "sproutle",
         "level": 14,
@@ -831,6 +850,25 @@
         "origin": "test",
         "caughtAt": 1799733600001,
         "quirk": "sproutle-wide-awake",
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            {
+              "slot": 1,
+              "opensAt": 1,
+              "open": true,
+              "talent": null
+            },
+            {
+              "slot": 2,
+              "opensAt": 20,
+              "open": false,
+              "talent": null
+            }
+          ],
+          "signature": null,
+          "book": []
+        },
         "stats": {
           "hp": 303,
           "atk": 35,
@@ -864,7 +902,7 @@
         }
       },
       {
-        "id": "446b7b58-5438-4a79-8dec-cfebaa891605",
+        "id": "fefcf2b9-af1b-4a85-bba1-b075ec924ed7",
         "species": "zipmouse",
         "line": "zipmouse",
         "level": 9,
@@ -876,6 +914,25 @@
         "origin": "test",
         "caughtAt": 1799733600002,
         "quirk": "morning-grumbler",
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            {
+              "slot": 1,
+              "opensAt": 1,
+              "open": true,
+              "talent": null
+            },
+            {
+              "slot": 2,
+              "opensAt": 20,
+              "open": false,
+              "talent": null
+            }
+          ],
+          "signature": null,
+          "book": []
+        },
         "stats": {
           "hp": 176,
           "atk": 44,
@@ -909,6 +966,8 @@
         }
       }
     ],
+    "pending": [],
+    "bookSlotBait": 10,
     "expeditions": [],
     "cancelled": [],
     "slots": {
@@ -924,7 +983,7 @@
     "supplies": {},
     "trainingMedianLevel": 15,
     "serverFirsts": [],
-    "loungerId": "c537c501-5ceb-4010-886e-2f27d82f13a7",
+    "loungerId": "a22225be-75f3-4445-bcbc-3c2b48eb8ca8",
     "loungeSpot": null
   }
 }

@@ -130,6 +130,8 @@ describe('loungerId in the state', () => {
     supplies: {},
     trainingMedianLevel: null,
     serverFirsts: [],
+    pending: [],
+    bookSlotBait: 10,
   };
 
   it('is a creature id or null', () => {
@@ -176,6 +178,8 @@ describe('the chosen lounge spot', () => {
     supplies: {},
     trainingMedianLevel: null,
     serverFirsts: [],
+    pending: [],
+    bookSlotBait: 10,
     loungerId: null,
   };
 

@@ -21,12 +21,14 @@ import { ActionIds } from './actions';
 import { allowanceNotice } from './allowance-text';
 import { AppHead } from './AppHead';
 import { Collection } from './Collection';
+import type { CatchChoiceActions } from './DuplicateCard';
 import { claimExpedition, pushOn, sendExpedition, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
 import { Expeditions } from './Expeditions';
 import { fetchGear } from './gear-api';
 import { createGearActions } from './gear-actions';
 import type { GearState, JobResult } from './gear-types';
+import type { ChoiceResult } from './talent-types';
 import { clockOffset, creatureName, errorText, speciesName } from './game';
 import type { ParticipantSource } from './participants';
 import { settleClaim } from './room-data';
@@ -34,6 +36,8 @@ import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
 import type { Slots } from './dungeon-team';
+import { chooseAllRecommended, chooseCatch, slotTalent } from './talent-api';
+import { choiceResultText } from './talent-view';
 import { DevPanelHost } from './DevPanelHost';
 import { StarterPicker } from './StarterPicker';
 import { TabBar } from './TabBar';
@@ -93,6 +97,9 @@ export function Game({
   const [gear, setGear] = useState<GearState | null>(null);
   const [gearFailed, setGearFailed] = useState(false);
   const [jobReveal, setJobReveal] = useState<JobResult | null>(null);
+  // What each duplicate answered this session became (a card id to a sentence), so a claim reveal can say
+  // what happened to the cards it showed.
+  const [settled, setSettled] = useState<Record<string, string>>({});
   // Bumped by the debug panel after a tool changed something: the view on screen loads afresh.
   const [devNonce, setDevNonce] = useState(0);
   // Counts player actions, so a background refresh that started before one is never applied.
@@ -212,7 +219,13 @@ export function Game({
   // next trip or job to run out (a long wait is capped), and set again after it fires.
   const serverNow = Date.now() + offset;
   const jobs = gear === null ? null : gear.jobs;
-  const alerts = tabAlerts({ expeditions: game.expeditions, jobs, attention, serverNow });
+  const alerts = tabAlerts({
+    expeditions: game.expeditions,
+    jobs,
+    attention,
+    pending: game.pending.length,
+    serverNow,
+  });
   const changeAt = nextChangeAt({ expeditions: game.expeditions, jobs, serverNow });
   useEffect(() => {
     if (changeAt === null) return undefined;
@@ -256,6 +269,42 @@ export function Game({
       setGearFailed(false);
     },
   });
+
+  /** Remembers what answered cards became; Release adds parts, so the bag loads again after it. */
+  function noteChoices(results: readonly ChoiceResult[], next: GameState): void {
+    setSettled((now) => ({
+      ...now,
+      ...Object.fromEntries(
+        results.map((r) => [r.pendingId, choiceResultText(r, next.creatures)] as const),
+      ),
+    }));
+    if (results.some((r) => r.choice === 'release')) loadGear();
+  }
+
+  const catchActions: CatchChoiceActions = {
+    choose: (card, request) => {
+      void runKeyed(ActionIds.catchChoice(card.id, request), (key) =>
+        chooseCatch(card.id, request, key),
+      ).then((done) => {
+        if (done === undefined) return;
+        setCurrent(loaded(done.state));
+        noteChoices([done.result], done.state);
+        setNotice(choiceResultText(done.result, done.state.creatures));
+      });
+    },
+    chooseAll: () => {
+      void runKeyed(ActionIds.catchAll(), (key) => chooseAllRecommended(key)).then((done) => {
+        if (done === undefined) return;
+        setCurrent(loaded(done.state));
+        noteChoices(done.results, done.state);
+        setNotice(
+          done.results.length === 1
+            ? 'Applied Recommended to the waiting catch.'
+            : `Applied Recommended to ${String(done.results.length)} waiting catches.`,
+        );
+      });
+    },
+  };
 
   /** The debug panel changed server state: reload the state and the bag, and rebuild the view. */
   function devRefresh(): void {
@@ -406,6 +455,16 @@ export function Game({
             onRename={(creature, nickname) => {
               void run(() => renameCreature(creature.id, nickname)).then(showState);
             }}
+            catchActions={catchActions}
+            onSlotTalent={(creature, talentId, golden, slot) => {
+              void runKeyed(ActionIds.talentSlot(creature.id, talentId, golden, slot), (key) =>
+                slotTalent(creature.id, { talentId, golden, slot }, key),
+              ).then((done) => {
+                if (done === undefined) return;
+                setCurrent(loaded(done.state));
+                setNotice(`Put the talent in slot ${String(done.result.slot)}.`);
+              });
+            }}
             onLounge={(creature) => {
               // Not a spend, and a repeat is harmless (the server just says the same thing).
               void run(() => setLounger(creature.id)).then((loungerId) => {
@@ -421,6 +480,8 @@ export function Game({
             offset={offset}
             busy={busy}
             reveal={reveal}
+            catchActions={catchActions}
+            settled={settled}
             timezone={timezone.current}
             onSend={async (request: SendRequest) => {
               const answer = await runKeyed(ActionIds.send(request), (key) =>

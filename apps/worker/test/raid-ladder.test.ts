@@ -568,7 +568,7 @@ describe('Festival weeks and the Festival creature', () => {
     );
   });
 
-  it('grants a new level 1 creature, a fusion or Bait to each member of a winning party, once', async () => {
+  it('grants a new level 1 creature with a talent, or a duplicate card to choose from, to each member of a winning party, once', async () => {
     await runRaid(
       (ctx) => {
         const line = (species as NonNullable<typeof species>).line;
@@ -605,18 +605,33 @@ describe('Festival weeks and the Festival creature', () => {
         expect(ofLine(fresh)).toMatchObject([
           { level: 1, fusion_count: 0, shiny: 0, origin: 'festival' },
         ]);
-        // Fused: one more fusion on the creature the player has.
-        expect(ofLine(owner)).toMatchObject([{ level: 3, fusion_count: 3, origin: 'test' }]);
-        // Converted: five fusions already, so Bait by rarity through the ledger, keyed by the week.
+        // A duplicate does not fuse by itself: the creature the player has is untouched, and the grant
+        // waits as a pending card, whatever the creature's fusions (and never turns into Bait).
+        expect(ofLine(owner)).toMatchObject([{ level: 3, fusion_count: 2, origin: 'test' }]);
         expect(ofLine(maxed)).toMatchObject([{ fusion_count: RULES.fusion.maxFusions }]);
-        const bait = RULES.fusion.convertBait[(species as NonNullable<typeof species>).rarity];
-        expect(
-          rows(
+        expect(count(ctx.sql, 'ledger', "currency = 'bait'")).toBe(0);
+        const pendingOf = (p: Seeded) =>
+          rows<{ species: string; source: string; source_id: string }>(
             ctx.sql,
-            "SELECT user_id, amount, source FROM ledger WHERE idempotency_key = ? AND currency = 'bait'",
-            `festival:${festivalWeek.id}`,
+            'SELECT species, source, source_id FROM pending_catches WHERE user_id = ?',
+            p.id,
+          );
+        for (const p of [owner, maxed]) {
+          expect(pendingOf(p)).toEqual([
+            { species: speciesId, source: 'festival', source_id: festivalWeek.id },
+          ]);
+        }
+        expect(pendingOf(fresh)).toEqual([]);
+        // The new creature has its first talent in slot 1.
+        expect(
+          rows<{ slot: number }>(
+            ctx.sql,
+            `SELECT t.slot FROM creature_talents t JOIN creatures c ON c.id = t.creature_id
+             WHERE c.user_id = ? AND c.line = ?`,
+            fresh.id,
+            line,
           ),
-        ).toEqual([{ user_id: maxed.id, amount: bait, source: 'festival' }]);
+        ).toEqual([{ slot: 1 }]);
         // Every member got a grant row; the grants say what happened.
         expect(
           rows<{ user_id: string; outcome: string }>(
@@ -627,8 +642,16 @@ describe('Festival weeks and the Festival creature', () => {
         expect(ofLine(loser)).toHaveLength(1);
         const grantOf = (p: Seeded) => ctx.core.raid.view(p.id, HELSINKI).you.reveal?.festivalGrant;
         expect(grantOf(fresh)).toMatchObject({ species: speciesId, outcome: 'new' });
-        expect(grantOf(owner)).toMatchObject({ outcome: 'fused', fusionCount: 3 });
-        expect(grantOf(maxed)).toMatchObject({ outcome: 'converted', bait });
+        expect(grantOf(owner)).toMatchObject({ outcome: 'duplicate' });
+        expect(grantOf(maxed)).toMatchObject({ outcome: 'duplicate' });
+        expect(grantOf(owner)?.talent?.name).toBeTypeOf('string');
+        expect(grantOf(owner)?.pendingId).toBe(
+          rows<{ id: string }>(
+            ctx.sql,
+            'SELECT id FROM pending_catches WHERE user_id = ?',
+            owner.id,
+          )[0]?.id,
+        );
         // The first Festival win on the server is a shared record of kind festival.
         const firsts = rows<{ user_id: string; kind: string; species: string }>(
           ctx.sql,
@@ -652,7 +675,7 @@ describe('Festival weeks and the Festival creature', () => {
           expect(
             grantFestivalCreature(
               ctx.storage,
-              createSeededRng('festival-again'),
+              { quirk: createSeededRng('festival-again'), talent: createSeededRng('again-talent') },
               festivalWeek.id,
               p.id,
               speciesId,

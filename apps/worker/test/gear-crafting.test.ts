@@ -1002,7 +1002,7 @@ describe('the day modifiers hook', () => {
   });
 });
 
-describe('migration 28', () => {
+describe('migration 29', () => {
   it('rebuilds the Workshop jobs table for dismantle jobs, keeps every row and adds the worked minutes', async () => {
     await runCore(
       nextGuild(),
