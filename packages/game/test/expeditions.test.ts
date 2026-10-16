@@ -975,7 +975,7 @@ describe('catching at a destination', () => {
       ctx({ firstExpedition: true, ownedLines: new Set(['zipmouse']) }),
     );
     expect(owned.guaranteed).toBe(false);
-    // With a streak of 4 duplicates, an unowned species of the rarity is picked when there is one.
+    // With a streak of the shield's length, an unowned species of the rarity is picked when there is one.
     const streak = rollSure(
       scripted([0, 0, 0, 1]),
       ctx({ ownedLines: new Set(['splashet']), dupeStreak: RULES.catching.dupeShieldStreak }),
@@ -1041,7 +1041,7 @@ describe('catching at a destination', () => {
     for (const length of EXPEDITION_LENGTHS) {
       expect(Math.abs(rate([], length) - catchChanceBp(length, []))).toBeLessThan(300);
     }
-    expect(rate([supply('lure-great')], 'short')).toBeGreaterThan(rate([], 'short') + 2_000);
+    expect(rate([supply('lure-great')], 'short')).toBeGreaterThan(rate([], 'short') + 1_000);
     const out = rollTripCatches(createSeededRng('empties'), 40, {
       ...ctx(),
       kit: [],

@@ -190,13 +190,14 @@ describe('rollCatch', () => {
       return picked;
     }
 
-    it('does not trigger at a streak of 3', () => {
-      const picked = commonsAt(3, 2000);
+    it('does not trigger one below the shield streak', () => {
+      const picked = commonsAt(RULES.catching.dupeShieldStreak - 1, 2000);
       expect(picked.some((id) => id !== 'zipmouse')).toBe(true);
     });
 
-    it('triggers at a streak of exactly 4 and above', () => {
-      for (const streak of [4, 5, 20]) {
+    it('triggers at the shield streak and above', () => {
+      const at = RULES.catching.dupeShieldStreak;
+      for (const streak of [at, at + 1, at + 16]) {
         const picked = commonsAt(streak, 2000);
         expect(picked.length).toBeGreaterThan(1000);
         expect(picked.every((id) => id === 'zipmouse')).toBe(true);

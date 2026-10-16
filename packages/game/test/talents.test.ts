@@ -655,7 +655,7 @@ describe('branches in the content', () => {
       adaptations: adaptationsJson,
       finaleAbilities: finaleAbilitiesJson,
       guests: guestsJson,
-    }) as unknown as Mut;
+    });
   const find = (pack: Mut, id: string): Record<string, unknown> => {
     const found = pack.creatures.find((c) => c['id'] === id);
     if (found === undefined) throw new Error(id);

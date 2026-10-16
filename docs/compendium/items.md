@@ -86,6 +86,8 @@ Twelve supplies in four kinds, each in three tiers: basic, good and great. A tri
 
 Crafting a supply is a Workshop job. Basic supplies need the lowest Crafting level, and the great ones need the highest. `(content: glossary.json "job-supply")`
 
+**Lures are the one supply made from Bait** (and a little scrap), since 2026-10-16: Bait's two jobs are treats, which grow creatures, and lures, which find them. A trip no longer always brings a creature; a lure raises the chance that it does, and the chance that the creature is a species the player does not have yet, the better tiers more. Lures are crafted only: trips and the dungeon do not drop them, and rank gifts give the lure tiers of old supplies as map scraps and satchels instead. `(content: supplies.json, glossary.json "supply-lure"; design: gear-and-creatures-v2.md 9.5)`
+
 ## Parts
 
 Parts are the raw material. They pay for crafts. `(content: glossary.json "part-*")`
