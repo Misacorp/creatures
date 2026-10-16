@@ -34,6 +34,20 @@ export function buildNames(
   };
 }
 
+/** "A", "A and B", "A, B and C", and past `max` names "A, B, C and 4 more". */
+function list(names: readonly string[], max = 4): string {
+  if (names.length === 0) return 'nobody';
+  if (names.length === 1) return names[0] as string;
+  if (names.length <= max) return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  return `${names.slice(0, max).join(', ')} and ${names.length - max} more`;
+}
+
+/** " (front row)", " (front and middle rows)"; empty for no rows. */
+function rowsText(rows: readonly string[] | undefined): string {
+  if (rows === undefined || rows.length === 0) return '';
+  return ` (${rows.join(' and ')} ${rows.length === 1 ? 'row' : 'rows'})`;
+}
+
 const lookup = (table: Readonly<Record<string, string>> | undefined, id: string): string =>
   table?.[id] ?? id;
 
@@ -101,26 +115,44 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
         : `${lookup(names.reactions, event.reaction)}! ${creature(event.payoff)} cashes in the mark${
             event.setupCreature === null ? '' : ` set by ${creature(event.setupCreature)}`
           } for ${event.bonus} bonus damage.`;
-    case 'gimmick':
-      return `${names.boss} uses ${lookup(names.gimmicks, event.gimmick)}.`;
+    case 'gimmick': {
+      const name = lookup(names.gimmicks, event.gimmick);
+      if (event.targets === undefined) return `${names.boss} uses ${name}.`;
+      const who = list(event.targets.map(creature));
+      // A charge's landing: the marks the announcement named that are still standing.
+      return event.op === 'charge'
+        ? `${name} lands${rowsText(event.rows)}: ${who} ${event.targets.length > 1 ? 'are' : 'is'} hit.`
+        : `${names.boss} uses ${name}${rowsText(event.rows)} on ${who}.`;
+    }
     case 'boss_hit': {
       const what =
         event.source === 'attack'
           ? 'attacks'
           : event.source === 'gimmick'
             ? 'strikes'
-            : 'reflects damage onto';
+            : event.source === 'enrage'
+              ? 'rages at'
+              : 'reflects damage onto';
       const crit = event.crit === true ? ' Critical!' : '';
+      const capped = event.capped === true ? ' The hit is capped.' : '';
+      const cover =
+        event.covered === undefined
+          ? ''
+          : ` ${creature(event.covered.guard)} covers ${event.covered.prevented} of it.`;
+      const extra = `${cover}${crit}${capped}`;
       if (event.shielded === true) {
         return `${names.boss} ${what} ${creature(event.target)}, but a Shield Wall stops it.`;
       }
+      if (event.splash === true) {
+        return `${creature(event.target)} is caught in the splash for ${event.damage}.${extra}`;
+      }
       if (event.reducedBp !== undefined) {
-        return `${names.boss} ${what} ${creature(event.target)} for ${event.damage} (a Shield Wall softens it by ${event.reducedBp / 100}%).${crit}`;
+        return `${names.boss} ${what} ${creature(event.target)} for ${event.damage} (a Shield Wall softens it by ${event.reducedBp / 100}%).${extra}`;
       }
       if (event.from !== undefined) {
-        return `${creature(event.target)} takes the hit meant for ${creature(event.from)} (${event.damage}).${crit}`;
+        return `${creature(event.target)} takes the hit meant for ${creature(event.from)} (${event.damage}).${extra}`;
       }
-      return `${names.boss} ${what} ${creature(event.target)} for ${event.damage}.${crit}`;
+      return `${names.boss} ${what} ${creature(event.target)} for ${event.damage}.${extra}`;
     }
     case 'knockout':
       return `${creature(event.creature)} is knocked out.`;
@@ -128,5 +160,20 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
       return `${creature(event.creature)} is silenced for ${event.turns} turn${event.turns === 1 ? '' : 's'}.`;
     case 'round_end':
       return `End of round ${event.round}: ${names.boss} has ${event.bossHp} HP.`;
+    case 'heal':
+      return `${creature(event.supporter)} mends ${creature(event.target)} (+${event.amount} HP).`;
+    case 'cleanse':
+      return `${creature(event.supporter)} clears ${creature(event.target)}'s silence.`;
+    case 'charge':
+      return `${names.boss} gathers ${lookup(names.gimmicks, event.gimmick)}${rowsText(event.rows)}, aimed at ${list(event.marks.map(creature))}. It lands in round ${event.landing}.`;
+    case 'retreat':
+      return `${names.boss} reaches its limit at ${event.bossHp} HP and retreats, out of reach. The phase is over.`;
+    case 'enrage':
+      return event.first
+        ? `Out of time: ${names.boss} is enraged!`
+        : `${names.boss} is still enraged.`;
+    default:
+      // A stored fight from a newer engine can carry events this one does not know: skip them.
+      return '';
   }
 }

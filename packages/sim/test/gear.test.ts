@@ -6,6 +6,7 @@ import {
   createSeededRng,
   craftCost,
   droppableBases,
+  finaleUpgradeLevel,
   jobDuration,
   jobXp,
   skillLevel,
@@ -150,13 +151,46 @@ describe('drops', () => {
       RULES.gear.drops.phaseScrap.phase1 + RULES.gear.drops.phaseScrap.phase2,
     );
     expect(b.gear.parts.scrap).toBe(RULES.gear.drops.phaseScrap.phase1);
+    // The reward slot: exactly one gear piece or one new blueprint for each participant.
+    const slot = (x: SimPlayer): number => allItems(x).length + x.gear.blueprints.length;
+    const slotsBefore = [slot(a), slot(b)];
     grantFinaleLoot([a, b], 3, null, createSeededRng('finale'));
-    expect(allItems(a)).toHaveLength(1);
-    expect(allItems(b)).toHaveLength(1);
+    expect(slot(a) - (slotsBefore[0] ?? 0)).toBe(1);
+    expect(slot(b) - (slotsBefore[1] ?? 0)).toBe(1);
     // A Festival week adds the Festival piece.
+    const festivalBefore = allItems(a).filter((i) => i.rarity === 'festival').length;
+    const before = slot(a);
     grantFinaleLoot([a], 3, 'tide', createSeededRng('festival'));
-    expect(allItems(a)).toHaveLength(3);
-    expect(allItems(a).filter((i) => i.rarity === 'festival')).toHaveLength(1);
+    expect(slot(a) - before).toBe(2);
+    expect(allItems(a).filter((i) => i.rarity === 'festival').length - festivalBefore).toBe(1);
+  });
+
+  it('gives finale gear its upgrade level by rank and finale blueprints the player does not know', () => {
+    const drops = RULES.gear.drops.finale;
+    const level = (rank: number): number => finaleUpgradeLevel(rank);
+    expect(level(1)).toBe(0);
+    expect(level(1 + 2 * drops.ranksPerUpgrade)).toBe(2);
+    // Over many seeds at a high rank: gear arrives upgraded, a blueprint is never one already known.
+    let gear = 0;
+    let blueprints = 0;
+    for (let k = 0; k < 200; k++) {
+      const p = player(`f${String(k)}`);
+      const known = new Set(p.gear.blueprints);
+      const bagBefore = p.gear.bag.length;
+      grantFinaleLoot([p], 9, null, createSeededRng(`reward:${String(k)}`));
+      if (p.gear.bag.length > bagBefore) {
+        gear++;
+        expect(p.gear.bag[p.gear.bag.length - 1]?.level).toBe(level(9));
+      } else {
+        blueprints++;
+        const added = p.gear.blueprints.filter((id) => !known.has(id));
+        expect(added).toHaveLength(1);
+        expect(p.gear.blueprints.length).toBe(known.size + 1);
+      }
+    }
+    // About blueprintBp of 10000 draw a blueprint (a quarter): well away from none and from all.
+    expect(blueprints).toBeGreaterThan(20);
+    expect(gear).toBeGreaterThan(100);
   });
 
   it('turns a drop into its dismantle yield when the inventory is full, and a known blueprint into scrap', () => {

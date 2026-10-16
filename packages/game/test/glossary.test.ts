@@ -241,8 +241,37 @@ describe('the glossary text matches the rules', () => {
   });
 
   it('describes the roles with the real numbers', () => {
-    expect(text('role-guard')).toContain(percent(RULES.combat.guardHpBp));
+    expect(text('role-guard')).toContain(
+      `takes ${percent(RULES.combat.guard.armorBp)} less damage`,
+    );
     expect(text('role-support')).toContain(percent(RULES.combat.supportBuffBp));
+  });
+
+  it('describes Guard cover, the Lance stop and the Support element effects with the real numbers', () => {
+    const guard = text('role-guard');
+    expect(guard).toContain(`${percent(RULES.combat.coverBp)} less from hits on many creatures`);
+    expect(guard).toContain('A Lance stops at a Guard');
+    const support = text('role-support');
+    const fx = RULES.combat.supportFx;
+    expect(support).toContain(`Ember boosts ${percent(fx.ember.buffBp)}`);
+    expect(support).toContain('Spark adds reaction damage');
+    expect(fx.spark.reactionBp).toBeGreaterThan(0);
+    expect(support).toContain('Tide and Grove heal');
+    expect(fx.tide.healBp).toBeGreaterThan(0);
+    expect(fx.grove.healBp).toBeGreaterThan(0);
+    expect(fx.tide.cleanse).toBe(true);
+  });
+
+  it('has a pattern entry for every attack pattern, drawn as its own glyph, plus enrage and retreat', () => {
+    for (const op of ['sweep', 'barrage', 'slam', 'lance', 'pincer', 'charge']) {
+      const e = entry(GLOSSARY_IDS.gimmick(op));
+      expect(e.section, op).toBe('raid-week');
+      expect(e.visual, op).toEqual({ kind: 'glyph', id: op });
+    }
+    expect(entry('retreat').section).toBe('raid-week');
+    expect(text('retreat')).toContain('immune');
+    expect(entry('enrage').section).toBe('finale');
+    expect(text('enrage')).toContain('hits every creature');
   });
 
   it('says it in words, not numbers, for reactions, Payoff and Boss Rank (Misa, 2026-10-13)', () => {
@@ -260,7 +289,6 @@ describe('the glossary text matches the rules', () => {
       expect(reaction).not.toContain(`${String(r.multiplierBp / 10_000)} times`);
     }
     expect(text('boss-rank')).toContain('Each Rank makes the boss stronger');
-    expect(text('boss-rank')).not.toContain(percent(RULES.raid.scaling.rankStepBp));
     // The Rank line has no figure; "goes up by 1" is a rank count, which is not a stat.
     expect(text('boss-rank').replace(/goes up by \d+/, '')).not.toMatch(/\d/);
   });
@@ -410,7 +438,6 @@ describe('the How to play text', () => {
     expect(combos).toContain('Payoffs hit even harder');
     expect(combos).not.toMatch(/\d/);
     expect(ranks).toContain('Each Rank makes the boss stronger');
-    expect(ranks).not.toContain(percent(RULES.raid.scaling.rankStepBp));
   });
 
   it('rejects a wrong order, a wrong example and a bad shape', () => {

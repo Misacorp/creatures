@@ -56,6 +56,8 @@ type Ctx = CoreContext;
 const FINALE = eventTimes(W02.id, HELSINKI).finale;
 const ROUND = LIVE_ROUND_MS;
 const ROUNDS = 12;
+/** The unbeatable boss of these tests is never beaten and never wins: the finale runs its enrage rounds too. */
+const CLOCK_ROUNDS = ROUNDS + RULES.raid.enrage.rounds;
 const BIG = 50_000_000;
 /** Below the ability unlock level: every member brings the basic ability only. */
 const BELOW_UNLOCK = RULES.abilities.unlockLevel - 1;
@@ -172,12 +174,14 @@ describe('the live finale lifecycle', () => {
         { round_ms: 22_000, pacing: PACING_CONTENT },
       ]);
       expect(ROUND).toBe(MAX_ROUND_MS);
-      // The longest finale is 12 rounds of 22 s: 4:24, inside the 5 minute cap.
+      // The 12 regular rounds of 22 s are 4:24, inside the 5 minute cap; the enrage rounds come on top.
       expect(12 * ROUND).toBeLessThan(5 * MINUTE);
 
+      // This boss is never beaten, so the clock runs through the enrage rounds as well.
+      expect(scheduleOf(ctx).starts).toHaveLength(CLOCK_ROUNDS);
       let start = FINALE;
       const lengths: number[] = [];
-      for (let r = 1; r <= ROUNDS; r++) {
+      for (let r = 1; r <= CLOCK_ROUNDS; r++) {
         ctx.clock.t = start;
         const s = snap(ctx, player);
         expect(s).toMatchObject({ status: 'live', round: r, roundMs: null });
@@ -200,10 +204,10 @@ describe('the live finale lifecycle', () => {
       expect(last.roundStarts).toEqual(
         lengths.map((_, i) => FINALE + lengths.slice(0, i).reduce((x, y) => x + y, 0)),
       );
-      // The end is the end of round 12 plus its playback: 12 rounds are never under a minute and a
-      // quarter nor over 4:24.
-      expect(start - FINALE).toBeGreaterThanOrEqual(ROUNDS * MIN_ROUND_MS);
-      expect(start - FINALE).toBeLessThanOrEqual(ROUNDS * MAX_ROUND_MS);
+      // The end is the end of the last round (the last enrage round) plus its playback: every round is
+      // between its minimum and maximum.
+      expect(start - FINALE).toBeGreaterThanOrEqual(CLOCK_ROUNDS * MIN_ROUND_MS);
+      expect(start - FINALE).toBeLessThanOrEqual(CLOCK_ROUNDS * MAX_ROUND_MS);
       expect(scheduleOf(ctx).endsAt).toBe(start);
       expect(finaleRows(ctx)).toBe(0);
       ctx.clock.t = start;
@@ -334,8 +338,10 @@ describe('the live finale lifecycle', () => {
         [(starts[1] as number) - 1, 1],
         [starts[1] as number, 2],
         [(starts[2] as number) + 5000, 3],
-        [starts[11] as number, 12],
-        [scheduleOf(ctx).endsAt - FINALE - 1, 12],
+        [starts[ROUNDS - 1] as number, ROUNDS],
+        // The enrage rounds are rounds of the clock too.
+        [starts[ROUNDS] as number, ROUNDS + 1],
+        [scheduleOf(ctx).endsAt - FINALE - 1, CLOCK_ROUNDS],
       ] as const) {
         at(ctx, offset);
         const s = snap(ctx, player);
@@ -345,7 +351,7 @@ describe('the live finale lifecycle', () => {
         expect(s.events.slice(0, before.length)).toEqual(before);
         before = s.events;
       }
-      expect(Math.max(...before.map((e) => e.round))).toBe(12);
+      expect(Math.max(...before.map((e) => e.round))).toBe(CLOCK_ROUNDS);
       expect(finaleRows(ctx)).toBe(0);
     });
   });
@@ -801,7 +807,7 @@ describe('the end of the fight', () => {
       expect(finaleRows(ctx)).toBe(0);
       atEnd(ctx);
       const done = snap(ctx, a);
-      expect(done).toMatchObject({ status: 'done', round: 12 });
+      expect(done).toMatchObject({ status: 'done', round: CLOCK_ROUNDS });
       expect(finaleRows(ctx)).toBe(1);
       const summary = () => ({
         results: count(ctx.sql, 'raid_results'),
@@ -1660,6 +1666,7 @@ describe('the API contract with the client', () => {
     'roundStarts',
     'rounds',
     'row',
+    'rules',
     'serverNow',
     'startsAt',
     'status',
@@ -1701,11 +1708,13 @@ describe('the API contract with the client', () => {
     'bossHpStart',
     'cleared',
     'damage',
+    'enraged',
     'essence',
     'festivalGrant',
     'phase',
     'rankChange',
     'reactions',
+    'retreated',
     'rounds',
     'top',
   ];

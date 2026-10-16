@@ -8,6 +8,7 @@ import {
 } from '@creatures/game';
 import { DEFAULT_MIX } from '../src/archetypes';
 import { creaturePower, type OwnedCreature, type SimItem } from '../src/data';
+import { dungeonBossEnrage } from '@creatures/engine';
 import { buildRun, dayModifiers, playDungeonDay } from '../src/dungeon';
 import { dungeonAnalysis } from '../src/dungeon-analysis';
 import { runEconomy } from '../src/economy';
@@ -75,6 +76,9 @@ describe('the dungeon in the simulator', () => {
     expect(buildRun(p, 3, dayModifiers('s', 1), 'run-seed').rooms.map((r) => r.foe.id)).toEqual(
       run.rooms.map((r) => r.foe.id),
     );
+    // As live play builds it: the depth and the boss-room enrage are part of the run input.
+    expect(run.depth).toBe(3);
+    expect(run.enrage).toEqual(dungeonBossEnrage());
     // A higher depth is stronger.
     const deeper = buildRun(p, 9, dayModifiers('s', 1), 'run-seed');
     expect(deeper.rooms.every((r, i) => r.hp > (run.rooms[i]?.hp ?? 0))).toBe(true);

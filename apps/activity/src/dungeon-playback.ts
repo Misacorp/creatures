@@ -4,7 +4,7 @@
  * touches the DOM, the network or the clock, and the text it returns is plain text (names can carry
  * what players typed).
  */
-import { roomModifier, type Gimmick } from '@creatures/game';
+import { dungeonContent, roomModifier, type Gimmick } from '@creatures/game';
 import { partsEntries, partsText } from './gear-view';
 import type { GrantLoot } from './gear-types';
 import type {
@@ -16,6 +16,7 @@ import type {
   DungeonTeamMember,
 } from './dungeon-types';
 import type { ReplayRowEntry } from './raid-api';
+import { gimmickGlyphKey, gimmickShort } from './raid-text';
 import type { Speed } from './replay';
 
 /**
@@ -55,12 +56,36 @@ export function mineIds(row: readonly { id: string }[]): Set<string> {
 }
 
 /**
- * The gimmicks a room's modifier gives its foe (Thorns' reflect), read from the content by the
- * modifier's id. A modifier the content no longer has (an old run's Fog) adds none.
+ * The gimmicks a room gives its foe beyond the foe's own: the one its modifier adds (Thorns'
+ * reflect), read from the content by the modifier's id (a modifier the content no longer has, an old
+ * run's Fog, adds none), and, in the boss room of a landmark run, the room boss's signature move.
  */
-export function modifierGimmicks(room: Pick<DungeonReplayRoom, 'modifier'>): Gimmick[] {
+export function modifierGimmicks(
+  room: Pick<DungeonReplayRoom, 'modifier'> & Partial<Pick<DungeonReplayRoom, 'kind' | 'foe'>>,
+  landmark = false,
+): Gimmick[] {
   const effects = roomModifier(room.modifier.id)?.effects ?? [];
-  return effects.flatMap((e) => (e.op === 'foe_gimmick' ? [e.gimmick] : []));
+  const added = effects.flatMap((e) => (e.op === 'foe_gimmick' ? [e.gimmick] : []));
+  const signature =
+    landmark && room.kind === 'boss' && room.foe !== undefined
+      ? dungeonContent.foes.find((f) => f.id === room.foe?.id)?.signature
+      : undefined;
+  return signature === undefined ? added : [...added, signature];
+}
+
+/**
+ * The trick the room banner names: the room boss's signature move at a landmark, otherwise the
+ * foe's last trick (for a room boss the pattern it gained, for a foe its only one). Null for a foe
+ * with none (the gentle ones) or one the content does not know.
+ */
+export function roomTrick(
+  room: Pick<DungeonReplayRoom, 'kind' | 'foe'>,
+  landmark = false,
+): Gimmick | null {
+  const foe = dungeonContent.foes.find((f) => f.id === room.foe.id);
+  if (foe === undefined) return null;
+  if (landmark && room.kind === 'boss' && foe.signature !== undefined) return foe.signature;
+  return foe.gimmicks[foe.gimmicks.length - 1] ?? null;
 }
 
 /** The stage's boss for a room: the foe's content id, name and element. */
@@ -204,6 +229,11 @@ interface RoomIntroView {
   element: string;
   modifierName: string;
   modifierDescription: string;
+  /**
+   * The foe's trick: the key of its glyph, its name and one line in the dungeon's row wording ("Hits
+   * one random creature, every 2 rounds"); null when the foe has none.
+   */
+  trick: { glyph: string; name: string; line: string } | null;
   /** The whole banner in one status sentence for a screen reader. */
   spoken: string;
 }
@@ -211,8 +241,18 @@ interface RoomIntroView {
 export function roomIntroView(
   room: Pick<DungeonReplayRoom, 'index' | 'kind' | 'foe' | 'modifier'>,
   total: number,
+  landmark = false,
 ): RoomIntroView {
   const boss = room.kind === 'boss';
+  const gimmick = roomTrick(room, landmark);
+  const trick =
+    gimmick === null
+      ? null
+      : {
+          glyph: gimmickGlyphKey(gimmick),
+          name: gimmick.name,
+          line: gimmickShort(gimmick, 'row'),
+        };
   const place = `${String(room.index + 1)} / ${String(total)}`;
   return {
     heading: boss ? 'ROOM BOSS' : `ROOM ${String(room.index + 1)}`,
@@ -223,7 +263,8 @@ export function roomIntroView(
     element: room.foe.element,
     modifierName: room.modifier.name,
     modifierDescription: room.modifier.description,
-    spoken: `Room ${place}${boss ? ', room boss' : ''}: ${room.foe.name}. ${room.modifier.name}: ${room.modifier.description}`,
+    trick,
+    spoken: `Room ${place}${boss ? ', room boss' : ''}: ${room.foe.name}. ${trick === null ? '' : `${trick.name}: ${trick.line}. `}${room.modifier.name}: ${room.modifier.description}`,
   };
 }
 

@@ -28,6 +28,17 @@ export interface RunRecord {
   lossFinale: number;
   rounds: number;
   reactions: number;
+  /** The finale: boss pool share left when it began, creatures in the row and knocked out, enrage. */
+  finaleStartShare: number;
+  /** Rounds the finale lasted (base rounds plus enrage rounds). */
+  finaleRounds: number;
+  finaleCreatures: number;
+  finaleKnockedOut: number;
+  finaleEnraged: boolean;
+  /** Barrage volleys (all stages) and those that repeated a victim of the previous volley. */
+  volleys: number;
+  repeatVolleys: number;
+  forcedRepeatVolleys: number;
   /** The biggest player's share of the week's total contribution; null if nothing was dealt. */
   topShare: number | null;
   setup: number;
@@ -149,6 +160,14 @@ export function runSweep(options: SweepOptions): SweepResult {
           lossFinale: s.lossAfter.finale,
           rounds: s.rounds,
           reactions: s.reactions,
+          finaleStartShare: s.finale.startShare,
+          finaleRounds: s.finale.rounds,
+          finaleCreatures: s.finale.creatures,
+          finaleKnockedOut: s.finale.knockedOut,
+          finaleEnraged: s.finale.enraged,
+          volleys: s.finale.volleys,
+          repeatVolleys: s.finale.repeatVolleys,
+          forcedRepeatVolleys: s.finale.forcedRepeatVolleys,
           topShare: total === 0 ? null : top / total,
           setup,
           contribution: total,

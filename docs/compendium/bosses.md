@@ -1,6 +1,6 @@
 # Raid bosses
 
-Status: 2026-10-13. Covers the four raid bosses: lore, look and fighting style. The daily dungeon's room bosses are in `dungeon.md`.
+Status: 2026-10-15. Covers the four raid bosses: lore, look and fighting style. The daily dungeon's room bosses are in `dungeon.md`.
 
 Read `README.md` for the tags. Every boss has one element, and the four are the wheel's four forces: Tide, Ember, Grove and Spark.
 
@@ -16,6 +16,8 @@ Read `README.md` for the tags. Every boss has one element, and the four are the 
 | Storm Sovereign | Spark   | Left to right | Lightning Rod: strikes the creature with the highest Attack every round         | Element Resistance       |
 
 `(content: bosses.json, adaptations.json)`
+
+Each boss keeps its trick from the table and has two new moves, listed under its fighting style below. Each boss also has two **rank-gated moves**: they only join the fight when the server's Boss Rank reaches a number (rank 4 and rank 7 today), so a boss changes how it fights as the ranks climb. These are the moves that punish a way of lining up: a Payoff left out in the open, Payoffs stacked in one row, one carry that does everything, or no Guard to cover. `(content: bosses.json fromRank)` Each boss also has two retreat lines, shown when it pulls back at the end of a phase `(content: bosses.json retreat)`.
 
 All four fight for twelve finale rounds. `(content: bosses.json finaleRounds)` All four are sized **huge** in art, which means about 20 to 24 pixels on a 24 by 24 grid. `(content: bosses-lore.json, m6-look.md, creatures.md)`
 
@@ -57,9 +59,14 @@ After Phase 1, the boss adapts to what worked best for the team:
 
 - **Turn order:** left to right, so the creature on the left acts first. `(content)`
 - **Undertow:** every few rounds, a zone attack on the front row. "A Guard cannot take it for the others." A Shield Wall on that zone softens it. The stage warns you one round ahead. `(content: bosses.json, glossary.json "gimmick-hit-zone")`
+- **Riptide:** every fourth round, one lane, picked at random, is hit through every row from front to back, each row a little softer. A Guard in the lane stops it there. `(content: bosses.json)`
+- **Great Wave:** every fifth round, a sweep of the middle row, then the back row, then the front. The row is marked a round ahead. `(content: bosses.json)`
+- **Deepwater Spear (from rank 4):** every seventh round, a lance down the lane of your strongest creature, front to back, each row softer. A Guard in the lane stops it. It finds the carry. `(content: bosses.json)`
+- **Spring Tide (from rank 7):** every ninth round, announced a round ahead. The row with the most Payoffs is marked, then the tide drops on all of it. A team that packs its Payoffs into one row is the one it finds. `(content: bosses.json)`
 - **Adaptation:** Reaction Resistance. A team that leans on one reaction will see it weaken after Phase 1. `(content)`
+- **Retreat:** "Tidal Colossus sinks beneath the waves. It will rise again in Phase 2." After Phase 2: "Tidal Colossus sinks back into the deep. Face it in the finale on Sunday." `(content: bosses.json retreat)`
 
-**In-world reading** `(inferred)`: a boss that is "the whole sea" is best met with a broad team and a Shield Wall on the front. Mixing reactions keeps the Colossus's adaptation from settling on one.
+**In-world reading** `(inferred)`: the spear and the spring tide are the sea getting wiser. It learns where the strongest creature stands and where the Payoffs crowd, and goes there. A boss that is "the whole sea" is best met with a broad team and a Shield Wall on the front. Mixing reactions keeps the Colossus's adaptation from settling on one.
 
 ---
 
@@ -89,9 +96,14 @@ After Phase 1, the boss adapts to what worked best for the team:
 
 - **Turn order:** by speed. The fastest creature acts first. Equal speed goes to the lower slot. `(content: glossary.json "turn-speed")`
 - **Backdraft:** every round, the first reaction is turned back on your team. The boss only takes the normal hit, and the mark is still used up. Later reactions in the same round work as usual. `(content: bosses.json, glossary.json "gimmick-reflect-first-reaction")`
+- **Cinder Fall:** every second round, a shell drops on each of two to six random creatures. How many depends on who is still standing. Cover still applies. `(content: bosses.json)`
+- **Coil Crush:** every fourth round, a heavy hit on the front-most creature, and the creatures beside it take a share. A Guard can take the hit instead. `(content: bosses.json)`
+- **Magma Spit (from rank 4):** every fifth round, a heavy hit on the strongest Payoff, and the creatures beside it take a share. A Guard in that Payoff's row takes it instead. `(content: bosses.json)`
+- **Eruption (from rank 7):** every seventh round, announced a round ahead. The whole line is marked, then the forge breaks open under every row. Only a Guard standing beside someone softens it. `(content: bosses.json)`
 - **Adaptation:** Element Resistance. The element that did the most damage in Phase 1 does a quarter less. `(content)`
+- **Retreat:** "Cinder Wyrm coils down into the cooling stone. It will return in Phase 2." After Phase 2: "Cinder Wyrm slips back into the forge's deep heat. Face it in the finale on Sunday." `(content: bosses.json retreat)`
 
-**In-world reading** `(inferred)`: a team that opens every round with its biggest reaction runs into the Backdraft. Two creatures that can set up a reaction without cashing it, such as a Setter and a Support, can do well here.
+**In-world reading** `(inferred)`: a team that opens every round with its biggest reaction runs into the Backdraft. Two creatures that can set up a reaction without cashing it, such as a Setter and a Support, can do well here. The later spit seeks the Payoff that cashes the reaction in, so that Payoff wants a Guard in its row.
 
 ---
 
@@ -121,7 +133,12 @@ After Phase 1, the boss adapts to what worked best for the team:
 
 - **Turn order:** right to left, so the creature on the right acts first. `(content)`
 - **Bramble Bind:** every second round, the creatures at both ends of the row skip their next turn. A silenced Support gives no boost. The stage warns you one round ahead. `(content: bosses.json, glossary.json "gimmick-silence-ends")`
+- **Briar Pincer:** every third round, the first and the last creature of every row take a hit. `(content: bosses.json)`
+- **Seed Burst:** every fifth round, announced a round ahead. Three to six random creatures are marked, then each takes a hit. `(content: bosses.json)`
+- **Choking Vines (from rank 4):** every sixth round, the creatures at both ends of the row skip their next two turns. The ends are usually where a team parks its Support and its Guard. `(content: bosses.json)`
+- **Thorn Lash (from rank 7):** every seventh round, the strongest creature is struck, and the lash jumps on to the next three strongest. A Guard in the first one's row takes the first blow. A team built around one carry feels it. `(content: bosses.json)`
 - **Adaptation:** Reaction Resistance. `(content)`
+- **Retreat:** "Thornmother draws her vines back into the Hollow. She will return in Phase 2." After Phase 2: "Thornmother sinks her roots back into the Hollow. Face her in the finale on Sunday." `(content: bosses.json retreat)`
 
 "The old queen of thorns binds the creatures at the ends of the line. The ones in the middle are always the ones who get out." `(content: journal.json verdant-both-ends)`
 
@@ -154,15 +171,19 @@ After Phase 1, the boss adapts to what worked best for the team:
 ### Fighting style
 
 - **Turn order:** left to right. `(content)`
-- **Lightning Rod:** every round, the creature with the highest Attack is struck first. A Guard in its zone takes the hit instead. A Shield Wall on that zone softens it. `(content: bosses.json, glossary.json "gimmick-strike-highest-atk")`
+- **Lightning Rod:** every round, the creature with the highest Attack is struck first. A Guard in its zone takes the hit instead. A Shield Wall on that zone softens it. The strike then arcs to the next two strongest creatures, each hit lighter than the last. `(content: bosses.json, glossary.json "gimmick-strike-highest-atk")`
+- **Thunderclap:** every fourth round, a slam on the strongest creature, and the creatures beside it take a share. `(content: bosses.json)`
+- **Static Field (from rank 4):** every fifth round, a sweep of the row with the most Payoffs. Charge builds where the Payoffs stand together. `(content: bosses.json)`
+- **Judgement Bolt (from rank 7):** every seventh round, a slam on the strongest Payoff, and the creatures beside it take a share. A Guard in that Payoff's row takes it instead. `(content: bosses.json)`
 - **Adaptation:** Element Resistance. `(content)`
+- **Retreat:** "Storm Sovereign drifts up into the clouds. It will return in Phase 2." After Phase 2: "Storm Sovereign rolls off over the ridge. Face it in the finale on Sunday." `(content: bosses.json retreat)`
 
-**In-world reading** `(inferred)`: the strongest hitter is always the target. A Guard in the same zone, or a Shield Wall on that zone, is how you protect it.
+**In-world reading** `(inferred)`: the strongest hitter is always the target. A Guard in the same zone, or a Shield Wall on that zone, is how you protect it. From rank 4 the Sovereign also looks for the Payoffs: a Payoff row with no Guard is a lightning rod of its own.
 
 ---
 
 ## Raid bosses as a set
 
-- **Shape of the set** `(inferred)`: each boss uses one of the four ways a fight can change: a zone attack (Undertow), a reflected reaction (Backdraft), a silence (Bramble Bind), and a targeted strike (Lightning Rod). The room bosses in `dungeon.md` reuse the same four ideas on a smaller scale.
+- **Shape of the set** `(inferred)`: each boss keeps one of the four old ways a fight can change: a zone attack (Undertow), a reflected reaction (Backdraft), a silence (Bramble Bind), and a targeted strike (Lightning Rod). The new moves add sweeps across rows, shells on random creatures, splashes, lanes, row ends and moves announced a round ahead. The room bosses in `dungeon.md` reuse these ideas on a smaller scale.
 - **Weekly return** `(content: glossary.json "boss-rank", "season", "festival")`: a boss returns each raid week at a Rank. A win raises the Rank by one. A loss keeps it. A Festival week fights three Ranks lower, and pays half again as much Essence.
 - **Memory** `(content: journal.json any-boss-adapts)`: bosses remember. Use that in any story about them returning.

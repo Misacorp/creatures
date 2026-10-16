@@ -77,3 +77,20 @@
   font-size: 1.0625rem;
   font-weight: 400;
 }
+
+/* The foe's trick: its glyph, its name and one line, above the room's twist. */
+.rb-trick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem 0.375rem;
+  max-width: 20rem;
+  font-size: 0.875rem;
+}
+
+.rb-trick strong {
+  color: var(--bad);
+  font-size: 1.0625rem;
+  font-weight: 400;
+}

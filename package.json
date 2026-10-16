@@ -19,7 +19,9 @@
     "scalars": "node packages/sim/scripts/scalars.mjs",
     "patch-notes": "node packages/sim/scripts/patch-notes.mjs",
     "analyze": "node packages/sim/scripts/analyze.mjs",
-    "sim:live": "node packages/sim/scripts/sim-live.mjs"
+    "sim:live": "node packages/sim/scripts/sim-live.mjs",
+    "sim:journey": "node packages/sim/scripts/journey.mjs",
+    "sim:curve": "node packages/sim/scripts/curve.mjs"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

@@ -13,7 +13,10 @@ import { phaseLine } from '../../raid-text';
 import { raidMaxRounds, roomMaxRounds } from '../../stage-rounds';
 import { StageHead, type StageModifier } from '../../ui/StageHead';
 import { bool, num, str } from '../props';
+import { PATTERN_SCENARIOS, patternFight, type PatternScenario } from '../pattern-fight';
 import { bigRaidFight } from '../raid-fight';
+import { staticFx } from '../../stage-fx';
+import { cuesForEvents, windupCuesForEvents } from '../../stage';
 import type { IntroView } from '../../stage-fx';
 import type { Entry, Props } from '../types';
 
@@ -105,16 +108,30 @@ const stage: Entry = {
   file: 'apps/activity/src/Stage.tsx',
   group: 'Creatures & game pieces',
   description:
-    "The fight stage of the raid replay, the live finale and the dungeon, held still at one moment of a fixture fight: the head (with the room's modifier tags in the dungeon), the foe's name with its element chip after it, its picture (tap it for the foe popover: element, HP, its attack and tricks) and HP bar, the creatures with the order they act in and the one acting now outlined. The raid's party is a grid like the placement board (rows front to back, lanes as columns, scrolling sideways); it opens on your own creatures and follows the one acting. \"Raid, big party\" plays a seeded fight of the party size set below.",
+    'The fight stage of the raid replay, the live finale and the dungeon, held still at one moment of a fixture fight: the head (with the room\'s modifier tags in the dungeon), the foe\'s name with its element chip after it, its picture (tap it for the foe popover: element, HP, its attack and tricks) and HP bar, the creatures with the order they act in and the one acting now outlined. The raid\'s party is a grid like the placement board (rows front to back, lanes as columns, scrolling sideways); it opens on your own creatures and follows the one acting. "Raid, big party" plays a seeded fight of the party size set below. "Boss moves" holds one hand-made boss move still (a sweep, barrage, slam, lance, pincer, chain, a charge with its amber marks, a Support\'s heal, the Enraged banner or a retreat), at its wind-up or as it lands.',
   controls: {
-    fight: { kind: 'select', options: ['Raid', 'Raid, big party', 'Dungeon room'] },
+    fight: {
+      kind: 'select',
+      options: ['Raid', 'Raid, big party', 'Dungeon room', 'Boss moves'],
+    },
+    move: { kind: 'select', options: PATTERN_SCENARIOS },
+    moment: { kind: 'select', options: ['Landed', 'Wind-up'] },
     events: { kind: 'number', min: 0, max: 600 },
     room: { kind: 'number', min: 1, max: 3 },
     players: { kind: 'number', min: 1, max: 15 },
     yourLane: { kind: 'number', min: 1, max: 15 },
     roundIntro: { kind: 'toggle' },
   },
-  defaults: { fight: 'Raid', events: 75, room: 1, players: 11, yourLane: 5, roundIntro: false },
+  defaults: {
+    fight: 'Raid',
+    move: 'Sweep (Great Wave)',
+    moment: 'Landed',
+    events: 75,
+    room: 1,
+    players: 11,
+    yourLane: 5,
+    roundIntro: false,
+  },
   presets: [
     { name: 'Raid, third round, fourth creature acting', props: {} },
     { name: 'Raid, before the first round', props: { events: 0 } },
@@ -133,8 +150,56 @@ const stage: Entry = {
       props: { fight: 'Dungeon room', events: 8 },
     },
     { name: 'Dungeon room 3, the end', props: { fight: 'Dungeon room', events: 200, room: 3 } },
+    ...PATTERN_SCENARIOS.map((move) => ({
+      name: `Boss move: ${move}`,
+      props: { fight: 'Boss moves', move },
+    })),
+    {
+      name: 'Boss move: Barrage, the wind-up',
+      props: { fight: 'Boss moves', move: 'Barrage (Cinder Fall)', moment: 'Wind-up' },
+    },
+    {
+      name: 'Boss move: Slam, the wind-up',
+      props: { fight: 'Boss moves', move: 'Slam (Coil Crush)', moment: 'Wind-up' },
+    },
+    {
+      name: 'Boss move: Sweep, the row outline',
+      props: { fight: 'Boss moves', move: 'Sweep (Great Wave)', moment: 'Wind-up' },
+    },
   ],
   render: (p) => {
+    if (str(p, 'fight') === 'Boss moves') {
+      const move = str(p, 'move') as PatternScenario;
+      const fight = patternFight(move);
+      const ids = fight.row.map((r) => r.id);
+      const windup = str(p, 'moment') === 'Wind-up';
+      // Held still at one moment: the wind-up (reticles, outlines, rings) before the move's first
+      // event, or the landed move with everything after it applied.
+      const index = windup ? fight.moveAt : fight.events.length;
+      const cues = windup
+        ? windupCuesForEvents(fight.events, 0, fight.events.length, ids, fight.boss.id)
+        : cuesForEvents(fight.events, 0, fight.events.length, ids, fight.boss.id);
+      return (
+        <Stage
+          boss={fight.boss}
+          hpMax={fight.hpMax}
+          hpStart={fight.hpMax}
+          rounds={raidMaxRounds('finale', fight.boss.id)}
+          row={fight.row}
+          mineIds={new Set(fight.row.filter((r) => r.owner === 'p1').map((r) => r.id))}
+          names={{
+            boss: fight.boss.name,
+            creatures: Object.fromEntries(fight.row.map((r) => [r.id, r.name])),
+          }}
+          events={fight.events}
+          index={index}
+          anim={null}
+          fx={staticFx(cues)}
+          place={phaseLine(fight.phase ?? 'finale')}
+          {...(fight.phase === undefined ? {} : { phase: fight.phase })}
+        />
+      );
+    }
     if (str(p, 'fight') === 'Dungeon room') {
       const room = REPLAY.rooms[num(p, 'room') - 1] ?? REPLAY.rooms[0];
       if (room === undefined) return <p class="muted">The fixture has no room.</p>;

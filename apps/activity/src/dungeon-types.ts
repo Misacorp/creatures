@@ -60,6 +60,11 @@ export interface DungeonToday {
    * does not send it. A run deletes it.
    */
   draftTeam: (string | null)[] | null;
+  /**
+   * Set when the next run is a landmark: the depth and the room boss's content id, announced before
+   * the run. Null otherwise; an older server leaves it out (read as null).
+   */
+  landmarkBoss: { depth: number; foeId: string } | null;
 }
 
 export interface DungeonRewards {

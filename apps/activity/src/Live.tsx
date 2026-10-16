@@ -37,6 +37,7 @@ import type { RaidView, ReplayRowEntry } from './raid-api';
 import { AbilityPopoverBody, AbilityPopoverSection } from './AbilityPopover';
 import { setRaidAutofire } from './raid-api';
 import { phaseLine } from './raid-text';
+import { enragedAt } from './stage';
 import { RevealCard } from './Reveal';
 import { LiveRegion } from './ui/LiveRegion';
 import { BossHp } from './ui/SegmentBar';
@@ -314,7 +315,10 @@ export function Live({
       {fight.practice && <p class="badge first practice-label">{PRACTICE_LABEL}</p>}
       {fight.status !== 'lobby' && fight.loot !== null && !fight.practice && !dismissed && (
         <RevealCard
-          reveal={fight.loot}
+          reveal={{
+            ...fight.loot,
+            ...(enragedAt(fight.events, fight.events.length) ? { enraged: true } : {}),
+          }}
           busy={false}
           gearWeek={fight.week}
           season={season}
@@ -358,6 +362,7 @@ export function Live({
             hpStart={hpStart}
             rounds={fight.rounds}
             row={fight.row}
+            {...(fight.rules === null ? {} : { rules: fight.rules })}
             lobby={lobby}
             place={phaseLine('finale')}
             mineIds={mineIds}

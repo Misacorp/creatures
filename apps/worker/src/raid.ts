@@ -45,8 +45,10 @@ import {
 } from './raid-live-view';
 import { BASIC_TARGET, loadAutofire, storeAutofire, targetOf } from './raid-autofire';
 import { convertLegacyWeek, ensureWeekRank, seasonColumns } from './raid-ladder';
+import { RAID_DIFFICULTY_VERSION } from './raid-difficulty';
 import { queueBossReveal } from './raid-posts';
 import { ReadinessCache } from './raid-readiness';
+import { redeclareWeek, staleOpenWeeks } from './raid-redeclare';
 import { buildPhaseInput, resolveParty } from './raid-resolve';
 import { markRevealSeen } from './raid-reveal';
 import { readStats, type AfterActionStats } from './raid-stats';
@@ -117,6 +119,12 @@ export interface WeekRow {
 const MAX_EVENTS_PER_RUN = 200;
 
 export class Raid {
+  /**
+   * Set once a scan has found no open week with an older difficulty version. New weeks are created
+   * with the current version, so after that the check costs nothing until the object restarts (a
+   * deploy, which is the only way the version changes).
+   */
+  private difficultyChecked = false;
   /** The next not-done event, cached until its time: most requests then skip the calendar maths. */
   private nextCache: { tz: string; from: number; at: number } | null = null;
   /** When each player last polled the live finale. In memory and best effort: it is only "who is here". */
@@ -185,14 +193,15 @@ export class Raid {
       const now = this.deps.now();
       const season = seasonColumns(weekId);
       this.sql.exec(
-        `INSERT INTO raid_weeks (week_id, boss_id, status, created_at, season_index, festival, festival_species)
-         VALUES (?, ?, 'open', ?, ?, ?, ?)`,
+        `INSERT INTO raid_weeks (week_id, boss_id, status, created_at, season_index, festival, festival_species, difficulty_version)
+         VALUES (?, ?, 'open', ?, ?, ?, ?, ?)`,
         weekId,
         boss.id,
         now,
         season.seasonIndex,
         season.festival,
         season.festivalSpecies,
+        RAID_DIFFICULTY_VERSION,
       );
       createParties(this.sql, weekId, eligiblePlayerIds(this.sql, now), now);
       // The week's rank is fixed now: the server's rank (placed from this roster if it has none
@@ -283,6 +292,7 @@ export class Raid {
    * the alarm retries it later. Returns how many events ran.
    */
   runDue(tz: string, until?: number): number {
+    this.redeclareStaleWeeks();
     const now = this.deps.now();
     if (until === undefined) {
       const cache = this.nextCache;
@@ -307,6 +317,47 @@ export class Raid {
       ran++;
     }
     return ran;
+  }
+
+  /**
+   * Re-declares every open week whose numbers were declared under older difficulty rules, if no stage
+   * of it has resolved (see `raid-redeclare.ts`). Runs first on every path that reads the raid (the
+   * alarm and every authenticated request call `runDue`). Never throws: a failure is logged (type
+   * only) and the scan is tried again on the next call.
+   */
+  redeclareStaleWeeks(): void {
+    if (this.difficultyChecked) return;
+    try {
+      for (const weekId of staleOpenWeeks(this.sql)) this.redeclareOne(weekId);
+      this.difficultyChecked = true;
+    } catch (err) {
+      console.error('raid redeclare failed', err instanceof Error ? err.name : 'unknown');
+    }
+  }
+
+  /** Dev tools and tests: makes the next `runDue` scan for stale weeks again (after a week's version was edited directly). */
+  invalidateDifficultyCheck(): void {
+    this.difficultyChecked = false;
+  }
+
+  /** Re-declares one week in its own transaction (race-safe, idempotent) and logs it. */
+  private redeclareOne(weekId: string): void {
+    this.deps.storage.transactionSync(() => {
+      const done = redeclareWeek(this.sql, weekId);
+      if (done === null) return;
+      this.readinessCache.invalidate();
+      this.deps.analytics?.record({
+        kind: 'raid_week_redeclared',
+        boss: done.bossId,
+        versionBefore: done.versionBefore,
+        versionAfter: done.versionAfter,
+        rankBefore: done.rankBefore,
+        rankAfter: done.rankAfter,
+        effectiveRankBefore: done.effectiveRankBefore,
+        effectiveRankAfter: done.effectiveRankAfter,
+        placedAgain: done.placedAgain,
+      });
+    });
   }
 
   private markDone(weekId: string, event: RaidEvent, outcome: 'ran' | 'skipped'): void {
@@ -395,6 +446,8 @@ export class Raid {
     // that still has no rank).
     if (phase === 'phase1') {
       this.syncRoster(week.weekId);
+      // Whatever happened before, the week's numbers follow the current rules when Phase 1 fixes the pool.
+      this.redeclareOne(week.weekId);
       // A week from before the ladder, with no pool yet, is ranked now (see `convertLegacyWeek`).
       this.deps.storage.transactionSync(() => convertLegacyWeek(this.sql, week.weekId));
     }

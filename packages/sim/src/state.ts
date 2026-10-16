@@ -8,6 +8,7 @@ import type {
 import { PART_KINDS } from '@creatures/game';
 import type { ArchetypeId } from './archetypes';
 import type { OwnedCreature, SimItem } from './data';
+import { LEGACY_PROFILES, type PlayerProfile } from './profiles';
 
 /** A trip that has been sent and not yet claimed. */
 export interface PendingExpedition {
@@ -206,7 +207,13 @@ function cloneItem(item: SimItem): SimItem {
 export interface SimPlayer {
   id: string;
   label: string;
+  /**
+   * Today's archetype, or for a journey player the closest one (a label for the reports only: every
+   * habit and decision comes from `profile`).
+   */
   archetype: ArchetypeId;
+  /** The dials this player plays by (`profiles.ts`). */
+  profile: PlayerProfile;
   joinWeek: number;
   joined: boolean;
   bait: number;
@@ -253,11 +260,13 @@ export function createPlayer(
   label: string,
   archetype: ArchetypeId,
   joinWeek: number,
+  profile: PlayerProfile = LEGACY_PROFILES[archetype],
 ): SimPlayer {
   return {
     id,
     label,
     archetype,
+    profile,
     joinWeek,
     joined: false,
     bait: 0,

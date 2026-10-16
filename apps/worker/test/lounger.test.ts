@@ -982,7 +982,7 @@ describe('migration 23', () => {
       expect(columns()).toHaveLength(0);
       expect(
         ctx.sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
-      ).toBe(LATEST_SCHEMA_VERSION - 2);
+      ).toBe(23 - 1);
       ctx.core.migrate();
       expect(columns()).toHaveLength(2);
       expect(

@@ -13,12 +13,15 @@ import {
   RULES,
   abilitiesFor,
   basicAbilities,
+  bossAtRank,
+  bossAttacksAtRank,
   content,
   contributionWeights,
   createCryptoRng,
   createSeededRng,
   essenceForStage,
   jackpotEssenceFor,
+  luckAtRank,
   rollJackpot,
   type BossDef,
   type Rng,
@@ -28,7 +31,10 @@ import {
   type AbilityChoice,
   compactRow,
   fillWithGuests,
+  liveFightRules,
   makeSlot,
+  phaseFloorHp,
+  raidEnrage,
   resolveGuests,
   scaleBoss,
   simulateFight,
@@ -66,6 +72,13 @@ export interface ResolveDeps {
 /** What the API shows about a resolved phase. Contains user ids: map to names before sending. */
 export interface StoredSummary {
   cleared: boolean;
+  /**
+   * The boss reached the phase floor and retreated (Phases 1 and 2). Absent in a result stored
+   * before phase floors: read it with `summary.retreated === true`.
+   */
+  retreated?: boolean;
+  /** The finale went into enrage rounds. Absent before enrage: read it with `=== true`. */
+  enraged?: boolean;
   rounds: number;
   bossHpMax: number;
   bossHpStart: number;
@@ -91,6 +104,29 @@ type PartyRow = {
   adaptation_target: string | null;
 };
 
+/**
+ * Whether a stored fight's boss retreated and whether it enraged. A result stored before phase
+ * floors and enrage has neither field: both read as false.
+ */
+export function outcomeFlags(result: FightResult): { retreated: boolean; enraged: boolean } {
+  const stored = result as Partial<Pick<FightResult, 'retreated' | 'enraged'>>;
+  return { retreated: stored.retreated === true, enraged: stored.enraged === true };
+}
+
+/**
+ * The Guard numbers of the rules a stored fight was played with, for the client (extra HP and armor
+ * in basis points). A fight stored without `rules` gives null: the client then uses the content's old
+ * Guard bonus.
+ */
+export function guardRulesOf(
+  input: FightInput,
+): { guardHpBp: number; guardArmorBp: number } | null {
+  const rules = input.rules;
+  return rules === undefined
+    ? null
+    : { guardHpBp: rules.guardHpBp, guardArmorBp: rules.guardArmorBp };
+}
+
 /** 128 random bits as 32 lowercase hex characters. */
 export function drawSeed(rng: Rng): string {
   let hex = '';
@@ -98,10 +134,17 @@ export function drawSeed(rng: Rng): string {
   return hex;
 }
 
-export function bossFor(bossId: string): BossDef {
+/**
+ * The week's boss as it fights at Boss Rank `rank` (the week's effective rank): only the moves whose
+ * `fromRank` has been reached (`bossAtRank`). Every fight input and every view of the boss is built
+ * from this, so a rank-gated move is in the fight, the forecast and the boss card together. A stored
+ * fight keeps the boss it was fought with (`FightInput.boss`), so later content changes and rank
+ * changes never reach it.
+ */
+export function bossFor(bossId: string, rank: number): BossDef {
   const boss = content.bosses.find((b) => b.id === bossId);
   if (boss === undefined) throw new Error('week uses an unknown boss');
-  return boss;
+  return bossAtRank(boss, rank);
 }
 
 export const aliasFor = (index: number): string => `m${index + 1}`;
@@ -258,7 +301,8 @@ export function buildPhaseInput(
 ): BuiltPhase | null {
   const memberIds = partyMembers(sql, week.weekId, party);
   if (memberIds.length === 0) return null;
-  const boss = bossFor(week.bossId);
+  const rank = fightRank(sql, week.weekId);
+  const boss = bossFor(week.bossId, rank);
 
   // --- Build the row from the creatures' current stats ---
   const aliases = memberIds.map((_, i) => aliasFor(i));
@@ -311,7 +355,7 @@ export function buildPhaseInput(
   if (hpMax === null || hpCurrent === null || bossAtk === null) {
     // Scaled once, from the head count and the week's stored rank (a Festival's eased rank). A week
     // from before the ladder has no stored rank and fights at rank 1, as it always did.
-    const scaled = scaleBoss(boss, memberIds.length, fightRank(sql, week.weekId));
+    const scaled = scaleBoss(boss, memberIds.length, rank);
     hpMax = scaled.maxHp;
     hpCurrent = scaled.maxHp;
     bossAtk = scaled.atk;
@@ -328,9 +372,15 @@ export function buildPhaseInput(
 
   const rowIds = new Set(row.map((s) => s.id));
   const abilityIds = phase === 'finale' ? abilityIdsFor(sql, week.weekId, memberIds) : [];
+  // The floor of Phases 1 and 2 (the boss retreats there); the finale has none. A pool already below
+  // the floor (a week whose Phase 1 ran under the old rules) floors where it stands.
+  const floor = phaseFloorHp(hpMax, phase);
+  const enrage = raidEnrage(phase);
   const input: FightInput = {
     boss,
     bossAtk,
+    // How often the boss makes its plain attack at this rank; absent (one) keeps old inputs as they were.
+    ...(bossAttacksAtRank(rank) > 1 ? { bossAttacks: bossAttacksAtRank(rank) } : {}),
     phase,
     bossHpPool: { max: hpMax, current: hpCurrent },
     adaptation,
@@ -341,7 +391,11 @@ export function buildPhaseInput(
       memberChoices(aliases[i] as string, abilityId, teams[i] as TeamCreature[], rowIds),
     ),
     // Crits and the rest of the luck rules, stored with the input so a replay is exact.
-    luck: { ...RULES.combat.luck },
+    luck: { ...luckAtRank(RULES.combat.luck, rank) },
+    // The combat rules, the phase floor and the finale's enrage, stored the same way.
+    rules: liveFightRules(),
+    ...(floor > 0 ? { bossHpFloor: Math.min(floor, hpCurrent) } : {}),
+    ...(enrage === undefined ? {} : { enrage }),
   };
   // Auto fire preferences: only the finale has abilities, and only what the owner turned off matters.
   const held = new Set<string>();
@@ -535,6 +589,7 @@ export function settleParty(
     .sort((a, b) => b.contribution - a.contribution || (a.userId < b.userId ? -1 : 1));
   const summary: StoredSummary = {
     cleared: result.cleared,
+    ...outcomeFlags(result),
     rounds: result.rounds,
     bossHpMax: hpMax,
     bossHpStart: result.bossHpStart,

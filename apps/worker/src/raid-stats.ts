@@ -6,7 +6,7 @@
  */
 import type { FightInput, FightResult } from '@creatures/engine';
 import { RULES, content } from '@creatures/game';
-import type { StoredSummary } from './raid-resolve';
+import { outcomeFlags, type StoredSummary } from './raid-resolve';
 import { isWeekId, RAID_PHASES, type RaidPhase } from './raid-schedule';
 
 /** How many of the best creatures are listed (the caller's own are always listed as well). */
@@ -80,6 +80,10 @@ export interface AfterActionStats {
   outcome: StatsOutcome;
   /** The "Close one!" flag (see `isCloseCall`). */
   close: boolean;
+  /** The boss reached the phase floor and retreated (a cleared Phase 1 or 2); false for older results. */
+  retreated: boolean;
+  /** The finale went into enrage rounds; false for older results. */
+  enraged: boolean;
   rounds: number;
   /** The rounds the stage has at most. */
   maxRounds: number;
@@ -126,9 +130,10 @@ export function hpNeeded(phase: RaidPhase, hpMax: number): number {
  * - a stage that was not cleared is close when it missed its target by at most `missBp` of it. For a
  *   phase the target is its clear threshold (HP to take off the pool); for the finale it is the
  *   whole pool, so the boss kept at most that share of its maximum HP;
- * - a cleared phase is close when it took at most `spareBp` of its threshold off the pool beyond it;
- * - a cleared finale is close when the boss fell with at most `spareBp` of the finale's rounds still
- *   to play (the pool is always empty on a win, so rounds are the only spare there is).
+ * - a cleared stage is close when it had at most `spareBp` of its rounds still to play when it was
+ *   cleared (the boss retreated at its floor, or fell in the finale). The pool cannot be taken past
+ *   a phase floor, so there is never HP to spare: rounds are the only spare there is. A finale won in
+ *   enrage rounds has none left at all, so it is close.
  */
 export function isCloseCall(args: {
   phase: RaidPhase;
@@ -143,8 +148,7 @@ export function isCloseCall(args: {
   const needed = hpNeeded(phase, hpMax);
   const lost = hpMax - hpEnd;
   if (!cleared) return (needed - lost) * 10_000 <= missBp * needed;
-  if (phase === 'finale') return (maxRounds - rounds) * 10_000 <= spareBp * maxRounds;
-  return (lost - needed) * 10_000 <= spareBp * needed;
+  return (maxRounds - rounds) * 10_000 <= spareBp * maxRounds;
 }
 
 /**
@@ -289,6 +293,7 @@ export function buildStats(
   return {
     phase,
     outcome,
+    ...outcomeFlags(result),
     close: isCloseCall({
       phase,
       cleared: result.cleared,

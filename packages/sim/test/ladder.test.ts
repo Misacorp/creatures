@@ -213,12 +213,12 @@ describe('tuning CLI', () => {
     const { main } = await import('../src/tune-cli');
     const errors: string[] = [];
     const io = { out: () => undefined, err: (t: string) => errors.push(t) };
-    const before = RULES.raid.scaling.rankStepBp;
+    const before = RULES.raid.curve.beyond.hpStepBp;
     expect(main(['--long', '0'], io)).toBe(2);
-    expect(main(['--set', 'raid.scaling.rankStepBp=abc'], io)).toBe(2);
+    expect(main(['--set', 'raid.curve.beyond.hpStepBp=abc'], io)).toBe(2);
     expect(main(['--set', 'raid.scaling.nothing=5'], io)).toBe(2);
     expect(main(['--calibrate', '0'], io)).toBe(2);
     expect(errors).toHaveLength(4);
-    expect(RULES.raid.scaling.rankStepBp).toBe(before);
+    expect(RULES.raid.curve.beyond.hpStepBp).toBe(before);
   });
 });

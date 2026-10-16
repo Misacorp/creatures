@@ -6,7 +6,11 @@ import {
   content,
   loadContent,
   upgradeProblem,
+  dungeonContent,
+  PATTERN_OPS,
+  bossAtRank,
   type ContentPack,
+  type Gimmick,
 } from '../src/index';
 import creaturesJson from '../src/content/data/creatures.json';
 import elementsJson from '../src/content/data/elements.json';
@@ -324,14 +328,165 @@ describe('raid content', () => {
 
   it('has the four bosses from the design doc', () => {
     expect(
-      content.bosses.map((b) => [b.id, b.element, b.turnOrder, b.gimmicks.map((g) => g.op)]),
+      content.bosses.map((b) => [
+        b.id,
+        b.element,
+        b.turnOrder,
+        bossAtRank(b, 1).gimmicks.map((g) => g.op),
+      ]),
     ).toEqual([
-      ['tidal-colossus', 'tide', 'left_to_right', ['hit_zone']],
-      ['cinder-wyrm', 'ember', 'speed', ['reflect_first_reaction']],
-      ['thornmother', 'grove', 'right_to_left', ['silence_ends']],
-      ['storm-sovereign', 'spark', 'left_to_right', ['strike_highest_atk']],
+      ['tidal-colossus', 'tide', 'left_to_right', ['hit_zone', 'lance', 'charge']],
+      ['cinder-wyrm', 'ember', 'speed', ['reflect_first_reaction', 'barrage', 'slam']],
+      ['thornmother', 'grove', 'right_to_left', ['silence_ends', 'pincer', 'charge']],
+      ['storm-sovereign', 'spark', 'left_to_right', ['strike_highest_atk', 'slam']],
     ]);
     for (const b of content.bosses) expect(b.finaleRounds).toBe(12);
+  });
+
+  // docs/design/attack-patterns.md 3.1: a round stays readable and round 1 is calm. The raid bosses
+  // are checked as they fight at Boss Ranks 1, 4, 7 and 10, so every rank-gated move is counted.
+  const damaging = (g: Gimmick) => g.op !== 'reflect_first_reaction' && g.op !== 'silence_ends';
+  const firesIn = (g: Gimmick, round: number) =>
+    'every' in g.trigger ? round % g.trigger.every === 0 : true;
+  const fighters = [
+    ...[1, 4, 7, 10].flatMap((rank) =>
+      content.bosses.map((b) => ({
+        id: `${b.id} at rank ${String(rank)}`,
+        rounds: b.finaleRounds,
+        gimmicks: bossAtRank(b, rank).gimmicks,
+      })),
+    ),
+    ...dungeonContent.foes.map((f) => ({
+      id: f.id,
+      rounds: f.rounds,
+      gimmicks: f.signature === undefined ? f.gimmicks : [...f.gimmicks, f.signature],
+    })),
+  ];
+
+  it('never has more than two damaging moves in one round', () => {
+    for (const f of fighters) {
+      for (let r = 1; r <= f.rounds; r++) {
+        const n = f.gimmicks.filter((g) => damaging(g) && firesIn(g, r)).length;
+        expect(n, `${f.id} round ${r}`).toBeLessThanOrEqual(2);
+      }
+    }
+  });
+
+  it('never lands an attack pattern in round 1, and a charge lands after its announcement', () => {
+    for (const f of fighters) {
+      for (const g of f.gimmicks) {
+        if (!(PATTERN_OPS as readonly string[]).includes(g.op)) continue;
+        expect('every' in g.trigger, `${f.id} ${g.id}`).toBe(true);
+        if ('every' in g.trigger)
+          expect(g.trigger.every, `${f.id} ${g.id}`).toBeGreaterThanOrEqual(2);
+      }
+    }
+  });
+
+  it('bossAtRank keeps the moves whose fromRank is absent or reached, in content order', () => {
+    const thornmother = content.bosses.find((b) => b.id === 'thornmother');
+    if (thornmother === undefined) throw new Error('missing boss');
+    const names = (rank: number) => bossAtRank(thornmother, rank).gimmicks.map((g) => g.id);
+    const base = ['bramble-bind', 'briar-pincer', 'seed-burst'];
+    expect(names(1)).toEqual(base);
+    expect(names(3)).toEqual(base);
+    expect(names(4)).toEqual([...base, 'choking-vines']);
+    expect(names(6)).toEqual([...base, 'choking-vines']);
+    expect(names(7)).toEqual([...base, 'choking-vines', 'thorn-lash']);
+    expect(names(10)).toEqual([...base, 'choking-vines', 'thorn-lash']);
+    // Odd ranks count as the rank below or as rank 1, never as an error.
+    expect(names(4.9)).toEqual(names(4));
+    expect(names(0)).toEqual(names(1));
+    expect(names(-5)).toEqual(names(1));
+    expect(names(Number.NaN)).toEqual(names(1));
+    // Everything else about the boss is kept, and the original is not touched.
+    expect({ ...bossAtRank(thornmother, 7), gimmicks: [] }).toEqual({
+      ...thornmother,
+      gimmicks: [],
+    });
+    expect(thornmother.gimmicks).toHaveLength(5);
+    // A boss with nothing gated comes back with all its moves at every rank.
+    const plain = { ...thornmother, gimmicks: thornmother.gimmicks.slice(0, 3) };
+    expect(bossAtRank(plain, 1)).toEqual(plain);
+    expect(bossAtRank(plain, 12)).toEqual(plain);
+  });
+
+  it('gives every raid boss two rank-gated moves, from rank 4 and from rank 7', () => {
+    for (const b of content.bosses) {
+      const gated = b.gimmicks.filter((g) => g.fromRank !== undefined);
+      expect(
+        gated.map((g) => g.fromRank),
+        b.id,
+      ).toEqual([4, 7]);
+      expect(b.gimmicks.length, b.id).toBeLessThanOrEqual(6);
+      // The rank-1 moves are what the bosses always had.
+      expect(bossAtRank(b, 1).gimmicks.length, b.id).toBe(b.gimmicks.length - 2);
+      expect(bossAtRank(b, 4).gimmicks.length, b.id).toBe(b.gimmicks.length - 1);
+      expect(bossAtRank(b, 7).gimmicks.length, b.id).toBe(b.gimmicks.length);
+    }
+  });
+
+  it('puts a setup-punishing move in every boss, and varies them', () => {
+    // What a gated move punishes: an exposed Payoff (the Payoff slam), a stack of Payoffs in one
+    // row (the Payoff row sweep), a single carry (the lane or the chain of the strongest creature),
+    // or having no Guard to cover (a charge that lands on every row). Silence only costs turns.
+    const punishes = (g: Gimmick): string => {
+      const body = g.op === 'charge' ? g.then : g;
+      if (body.op === 'slam' && body.aim === 'payoff') return 'exposed-payoff';
+      if (body.op === 'sweep' && body.rows.includes('payoffs')) return 'stacked-payoffs';
+      if (body.op === 'lance' && body.lane === 'strongest') return 'single-carry';
+      if (body.op === 'strike_highest_atk') return 'single-carry';
+      if (body.op === 'sweep' && body.rows.includes('all')) return 'no-guard';
+      return 'other';
+    };
+    const pairs: string[] = [];
+    for (const b of content.bosses) {
+      const mine = b.gimmicks.filter((g) => g.fromRank !== undefined).map(punishes);
+      expect(
+        mine.some((k) => k !== 'other'),
+        b.id,
+      ).toBe(true);
+      pairs.push(mine.join('+'));
+    }
+    // No two bosses get the same pair of kinds, and a boss's own two differ in op.
+    expect(new Set(pairs).size).toBe(pairs.length);
+    for (const b of content.bosses) {
+      const ops = b.gimmicks.filter((g) => g.fromRank !== undefined).map((g) => g.op);
+      expect(new Set(ops).size, b.id).toBe(2);
+    }
+  });
+
+  it('keeps the dice windows of the dice-reading moves apart, at every rank', () => {
+    // A gimmick reads the window (index mod 4) of the round's 40 pattern dice: two that read dice
+    // must not share one, or their picks would be the same die.
+    const dice = (g: Gimmick): boolean => {
+      const body = g.op === 'charge' ? g.then : g;
+      return (
+        body.op === 'barrage' ||
+        (body.op === 'slam' && body.aim === 'random') ||
+        (body.op === 'lance' && body.lane === 'random')
+      );
+    };
+    for (const rank of [1, 4, 7, 10]) {
+      for (const b of content.bosses) {
+        const windows = bossAtRank(b, rank)
+          .gimmicks.map((g, i) => ({ g, window: i % 4 }))
+          .filter((x) => dice(x.g))
+          .map((x) => x.window);
+        expect(new Set(windows).size, `${b.id} rank ${String(rank)}`).toBe(windows.length);
+      }
+    }
+  });
+
+  it('gives landmark signatures to room bosses only, as a charge', () => {
+    for (const f of dungeonContent.foes) {
+      if (f.signature === undefined) continue;
+      expect(f.kind, f.id).toBe('boss');
+      expect(f.signature.op, f.id).toBe('charge');
+    }
+    expect(dungeonContent.foes.filter((f) => f.kind === 'boss').every((f) => f.signature)).toBe(
+      true,
+    );
   });
 
   it('has the four basic abilities and two adaptation rules', () => {
@@ -581,6 +736,46 @@ describe('loadContent rejects invalid raid content', () => {
         mutate((p) => Object.assign(boss(p).gimmicks[0] as object, { trigger: { every: 1 } })),
       ),
     ).toThrow(/schema/);
+  });
+
+  it('fromRank: an integer from 2, on any raid move, and the boss may have six moves', () => {
+    const setRank = (p: ContentPack, fromRank: unknown) =>
+      Object.assign(boss(p).gimmicks[0] as object, { fromRank });
+    expect(() => loadContent(mutate((p) => setRank(p, 2)))).not.toThrow();
+    for (const bad of [0, 1, 1.5, -3, 100, '4', null]) {
+      expect(() => loadContent(mutate((p) => setRank(p, bad)))).toThrow(/schema/);
+    }
+    // Six moves fit, seven do not.
+    const extra = (n: number) => (p: ContentPack) => {
+      const b = boss(p, 'storm-sovereign');
+      while (b.gimmicks.length < n) {
+        b.gimmicks.push({
+          id: `extra-${String(b.gimmicks.length)}`,
+          name: 'Extra',
+          trigger: { every: 7 },
+          op: 'hit_zone',
+          zone: 'front',
+          power: 1000,
+        });
+      }
+    };
+    expect(() => loadContent(mutate(extra(6)))).not.toThrow();
+    expect(() => loadContent(mutate(extra(7)))).toThrow(/schema/);
+  });
+
+  it('slam aims and sweep rows: the new names load, others do not', () => {
+    const slam = (aim: string) => (p: ContentPack) => {
+      const g = boss(p, 'storm-sovereign').gimmicks.find((x) => x.op === 'slam');
+      Object.assign(g as object, { aim });
+    };
+    expect(() => loadContent(mutate(slam('payoff')))).not.toThrow();
+    expect(() => loadContent(mutate(slam('weakest')))).toThrow(/schema/);
+    const sweep = (rows: string[]) => (p: ContentPack) => {
+      const g = boss(p, 'storm-sovereign').gimmicks.find((x) => x.op === 'sweep');
+      Object.assign(g as object, { rows });
+    };
+    expect(() => loadContent(mutate(sweep(['payoffs', 'front'])))).not.toThrow();
+    expect(() => loadContent(mutate(sweep(['fullest'])))).toThrow(/schema/);
   });
 
   it('crit bonuses: optional, strict and in range', () => {

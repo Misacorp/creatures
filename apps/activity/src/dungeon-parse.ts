@@ -122,7 +122,16 @@ function isRunSummary(value: unknown): value is DungeonRunSummary {
 const isDraftTeam = (value: unknown): value is (string | null)[] =>
   isArrayOf(value, (item): item is string | null => item === null || isStr(item));
 
-/** Today as the server sends it: `draftTeam` is optional (absent: none). */
+/** The announced landmark boss: absent or null, or the depth and the room boss's content id. */
+function isLandmarkBoss(value: unknown): boolean {
+  return (
+    value === undefined ||
+    value === null ||
+    (isRecord(value) && isCount(value['depth']) && isStr(value['foeId']))
+  );
+}
+
+/** Today as the server sends it: `draftTeam` and `landmarkBoss` are optional (absent: none). */
 function isToday(value: unknown): boolean {
   if (!isRecord(value)) return false;
   const blocked = value['blocked'];
@@ -133,6 +142,7 @@ function isToday(value: unknown): boolean {
     isInt(value['resetsAt']) &&
     isCount(value['depth']) &&
     isBool(value['landmark']) &&
+    isLandmarkBoss(value['landmarkBoss']) &&
     isCount(value['streak']) &&
     isArrayOf(
       value['modifiers'],
@@ -151,11 +161,11 @@ function isToday(value: unknown): boolean {
   );
 }
 
-/** A checked today, with an absent `draftTeam` made null. */
+/** A checked today, with an absent `draftTeam` or `landmarkBoss` made null. */
 function readToday(value: unknown): DungeonToday | null {
   if (!isToday(value)) return null;
   const today = value as DungeonToday;
-  return { ...today, draftTeam: today.draftTeam ?? null };
+  return { ...today, draftTeam: today.draftTeam ?? null, landmarkBoss: today.landmarkBoss ?? null };
 }
 
 function isReplayRoom(value: unknown): boolean {

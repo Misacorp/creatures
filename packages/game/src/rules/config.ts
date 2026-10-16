@@ -1,4 +1,24 @@
-import type { Rarity } from '../content/schema';
+import type { Element, Rarity } from '../content/schema';
+
+/** A Support's element effect (`RULES.combat.supportFx`); every field optional. */
+export interface SupportFx {
+  /** Replaces the shared next-hit buff (`supportBuffBp`) for the neighbours. */
+  buffBp?: number;
+  /** Extra share of a reaction's bonus damage when a neighbour cashes the reaction in. */
+  reactionBp?: number;
+  /** Heals each neighbour this share of its max HP at round start (capped at what is missing). */
+  healBp?: number;
+  /** Also clears each neighbour's silence at round start. */
+  cleanse?: boolean;
+}
+
+/** One row of the raid difficulty curve (`RULES.raid.curve.ranks`), whole numbers only. */
+export interface RankRow {
+  hpBp: number;
+  atkBp: number;
+  bossAttacks: number;
+  critBonusBp: number;
+}
 
 export type DurationId = 'short' | 'medium' | 'long';
 export type SuppliesId = 'basic' | 'good' | 'great';
@@ -56,14 +76,37 @@ export const RULES = {
     /** Bait granted for a duplicate once the creature has reached maxFusions. */
     convertBait: { common: 5, rare: 15, epic: 40 } satisfies Record<Rarity, number>,
   },
+  /**
+   * Bait income (docs/design/player-journey-sim.md, decisions 2026-10-15): `dailyAllowance` for
+   * opening the game on a game day, and a leet bonus by how many players leeted that day
+   * (`leetBonusByCount`, index = leeters; past the end, the last value). Solo leet 40 in all, 10 or
+   * more leeters 57.
+   */
+  income: {
+    dailyAllowance: 25,
+    leetBonusByCount: [0, 15, 15, 17, 19, 21, 23, 25, 27, 29, 32] as readonly number[],
+  },
   combat: {
     /** Element matchup multipliers in basis points. */
     strongBp: 15_000,
     weakBp: 7_500,
     /** Support: extra damage on each neighbour's next hit. */
     supportBuffBp: 1_500,
-    /** Guard: extra HP, applied to the effective HP stat. */
+    /**
+     * Guard: extra HP, applied to the effective HP stat. This is the value of fights stored without
+     * `rules` (before attack patterns); it stays as it was so those replay exactly. Fights with
+     * `rules` use `guard.hpBp` instead.
+     */
     guardHpBp: 3_000,
+    /**
+     * The Guard of fights with `rules` (copied into `FightInput.rules` as `guardHpBp` and
+     * `guardArmorBp`): `hpBp` is extra HP in basis points of the HP stat (0: none), `armorBp` is the
+     * share of damage the Guard does not take from every hit that reaches it (its own, one it takes
+     * for a neighbour, a splash, an enrage hit, a reflect). Armor is one number per fight for now;
+     * the engine reads it through `guardArmorFor`, so it can scale with level or gear later. The
+     * damage armor prevents on a hit the Guard takes in place of another creature is credited to it.
+     */
+    guard: { hpBp: 0, armorBp: 2_500 },
     /**
      * Setup credit: the share (basis points, rounded down) of a reaction's bonus damage that goes to
      * the creature that set the mark up; the payoff keeps the rest. Credit only: the damage dealt is
@@ -77,6 +120,34 @@ export const RULES = {
     guardOwnCreditBp: 10_000,
     /** Boss normal attack as a share of boss Attack. */
     bossAttackBp: 10_000,
+    /**
+     * Guard cover (docs/design/attack-patterns.md section 1): a creature right beside a living Guard
+     * takes this much less (basis points) from area hits. The prevented damage is credited to the
+     * Guard. Live fights copy it into `FightInput.rules`; absent there means no cover.
+     */
+    coverBp: 4_000,
+    /**
+     * The single-hit cap: no boss hit (aimed or area; not a reflect) takes more than this share of
+     * the victim's maximum HP. 0 means no cap, and it is off (Misa, 2026-10-15: big hits stay big);
+     * the number stays in the fight rules for a mutator or a rollback. Copied into
+     * `FightInput.rules`.
+     */
+    maxHitBp: 0,
+    /**
+     * Support effects by element, on top of the shared `supportBuffBp` (docs/design/attack-patterns.md
+     * section 1): `buffBp` replaces the neighbours' next-hit buff (Ember Stoke); `reactionBp` adds that
+     * share of a reaction's bonus when a neighbour cashes it in (Spark Overcharge); `healBp` heals each
+     * neighbour that share of its max HP at round start, capped at what is missing, never reviving;
+     * `cleanse` also clears its silence (Tide Mend). A living, non-silenced Support only. Ceilings
+     * (the steep ends of the study, checked by a test): `buffBp` 3500, `reactionBp` 2000, `healBp` 800.
+     * Copied into `FightInput.rules`; absent there means no element effects.
+     */
+    supportFx: {
+      ember: { buffBp: 2_500 },
+      spark: { reactionBp: 1_500 },
+      tide: { healBp: 400, cleanse: true },
+      grove: { healBp: 600 },
+    } satisfies Record<Element, SupportFx>,
     /**
      * Luck: small, visible randomness in the player-side damage. Crits (5%, +50%, for players and
      * the boss) are on; Fortune streaks (surge and slump) and the damage spread stay in the code
@@ -132,13 +203,85 @@ export const RULES = {
   raid: {
     /**
      * Phase structure. A phase is cleared when the boss pool is down `clearAtLossBp` of its maximum
-     * (cumulative over the week). The finale's round count comes from the boss (`finaleRounds`).
+     * (cumulative over the week). That is also the phase's floor: the pool cannot go below
+     * `max x (10000 - clearAtLossBp)` in that phase; when it gets there the boss is immune, retreats
+     * and the phase ends, and damage past the floor counts for nothing (no overkill; Misa,
+     * 2026-10-14). Phase 1 leaves 70% of the HP, Phase 2 leaves 15% for the finale. The finale's
+     * round count comes from the boss (`finaleRounds`).
      */
     phases: [
-      { id: 'phase1', rounds: 10, clearAtLossBp: 1_800 },
-      { id: 'phase2', rounds: 10, clearAtLossBp: 5_200 },
+      { id: 'phase1', rounds: 10, clearAtLossBp: 3_000 },
+      { id: 'phase2', rounds: 10, clearAtLossBp: 8_500 },
       { id: 'finale', rounds: 12, clearAtLossBp: 10_000 },
     ],
+    /**
+     * Finale enrage (docs/design/raid-ux-2.md): when the finale's rounds run out with both sides
+     * standing, up to `rounds` more rounds are played in which the boss makes its plain attack and
+     * hits every living creature for `powerBp` of its Attack (area hits, which Guard cover and Shield Wall soften);
+     * its gimmicks rest (a charge never lands in an enrage round). The fight ends on a wipe or a
+     * kill; standing at the end is a loss. An enrage loss is a normal
+     * loss. Phases 1 and 2 have no enrage. Tuned by the simulator (docs/balance/log.md B-008, with the
+     * single-hit cap off): 400% of the boss's Attack on every creature wipes a row that reaches
+     * enrage in two to three rounds (mean 2.75 to 2.8; 55% to 70% of the lost overtimes end in a
+     * wipe, the rest with the row standing after the last round), and about one finale in fourteen
+     * is won in the enrage rounds (the creatures act before the enrage hit each round, so the first
+     * is a free one). A harder enrage would wipe faster and cost those wins.
+     */
+    enrage: { rounds: 3, powerBp: 40_000 },
+    /**
+     * The raid difficulty curve by Boss Rank (Misa, 2026-10-15: "a power curve that isn't just a 40
+     * percent increase week over week ... we can control it and we don't need to be up front about
+     * it"). It replaced a compounding +40% HP (and half that Attack) a rank. One row per rank, rank 1
+     * first; every number is an integer and no float is stored. Players are never told the numbers.
+     * - `hpBp`: the boss's HP pool at this rank in basis points of its own `baseHp` (10000 = the
+     *   calibrated pool; `baseHp` is the sweep's gauge, the curve is the ladder).
+     * - `atkBp`: its Attack the same way, from `baseAtk`. Independent of `hpBp`: later bosses can hit
+     *   harder without lasting longer, or the reverse.
+     * - `bossAttacks`: how many times it makes its plain attack each round (1 to 3).
+     * - `critBonusBp`: extra boss crit chance in basis points on top of `combat.luck.bossCritChanceBp`.
+     * The boss's rank-gated moves (`fromRank` in content, ranks 4 and 7) are the other half of the curve.
+     *
+     * The shape, and why (docs/balance/log.md B-010; the targets are the `curve-*` ones in
+     * `packages/sim/targets.json`, measured on whole journey servers):
+     * - Rank 1 is a tutorial boss (35% of the pool, 65% Attack): a new server's first week is won by
+     *   mostly casual players (about 85% for a server with no engaged player at all, 97% to 100% with
+     *   one or two) so players learn what a raid pays.
+     * - Ranks 2 to 5 climb steeply (1.9x, 3.0x, 3.6x and 4.3x the calibrated pool) while the roster grows fast (levels,
+     *   evolutions, fusions, gear): a default server wins about 80%, a committed one about 97%.
+     * - From rank 6 the pool is nearly flat (4.7x to 4.95x the calibrated pool) because player power stops growing
+     *   quickly after week 6: Attack, boss crit chance (from rank 9) and a second plain attack (from
+     *   rank 14) carry the difficulty, and the rank-gated moves punish setups. A default server wins
+     *   about 55%, a committed one about 87%; luck, positioning and loadouts decide it.
+     * Ranks past 9 are extrapolated from 24 and 36 week runs of committed servers (about 65% to 75%
+     * at ranks 10 to 13), not measured on a live server. Past the last row the numbers grow by `beyond`.
+     */
+    curve: {
+      ranks: [
+        { hpBp: 3_500, atkBp: 6_500, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 19_200, atkBp: 11_000, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 29_800, atkBp: 12_500, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 36_000, atkBp: 14_000, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 43_200, atkBp: 15_500, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 47_000, atkBp: 17_000, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 47_500, atkBp: 18_500, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 48_500, atkBp: 20_000, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 49_500, atkBp: 21_500, bossAttacks: 1, critBonusBp: 250 },
+        { hpBp: 49_500, atkBp: 23_000, bossAttacks: 1, critBonusBp: 250 },
+        { hpBp: 49_500, atkBp: 24_500, bossAttacks: 1, critBonusBp: 500 },
+        { hpBp: 49_500, atkBp: 26_000, bossAttacks: 1, critBonusBp: 500 },
+        { hpBp: 49_500, atkBp: 27_500, bossAttacks: 1, critBonusBp: 500 },
+        { hpBp: 49_500, atkBp: 29_000, bossAttacks: 2, critBonusBp: 750 },
+        { hpBp: 49_500, atkBp: 30_500, bossAttacks: 2, critBonusBp: 750 },
+      ] as RankRow[],
+      /**
+       * Above the table's last rank every rank multiplies the row below it: HP by `hpStepBp` and
+       * Attack by `atkStepBp` more than 10000 (compounding, floored at every step: +5% and +3% a
+       * rank), and the boss attacks and crit bonus stay at the last row's. Gentle on purpose: the
+       * table is where the design lives, the extrapolation only keeps an unexpectedly high rank
+       * sensible.
+       */
+      beyond: { hpStepBp: 500, atkStepBp: 300 },
+    },
     scaling: {
       /**
        * Boss HP grows with N^(num/den), N = signed-up players. The engine computes
@@ -155,21 +298,8 @@ export const RULES = {
        */
       hpExponent: { num: 11, den: 10 },
       /**
-       * Boss Rank: every rank above 1 multiplies boss HP by this many basis points more than the
-       * rank below it, compounding (rank r is 1.40^(r-1) at 4000), floored to integer basis points
-       * at every step (`rankFactorBp`). Compounding rather than linear, so a rank always costs the
-       * same share of the team's damage and a high-ranked server keeps a real ladder instead of
-       * ever smaller steps. Tuned by the simulator (docs/balance/report-2026-10-11-progression.md).
-       */
-      rankStepBp: 4_000,
-      /**
-       * Boss Attack follows the rank factor at this share (10000 = the same factor as HP). Half, as
-       * the old level scaling did (6% against 12% a level), so higher ranks do not knock out the row.
-       */
-      atkRankShareBp: 5_000,
-      /**
-       * Highest rank the ladder reaches. At 20% a step the top factor is about 197x, far beyond what
-       * any roster can beat, so nobody gets there; the cap only keeps every number small and safe.
+       * Highest rank the ladder reaches. A safety cap only: the curve (`RULES.raid.curve`) keeps
+       * growing gently past its table, and nobody is expected anywhere near this high.
        */
       maxRank: 30,
     },
@@ -205,10 +335,11 @@ export const RULES = {
      *   this much. A phase's target is the HP it had to take off the pool (its clear threshold,
      *   `clearAtLossBp` of the maximum); the finale's target is the whole pool, so a finale is close
      *   when the boss kept at most this share of its maximum HP.
-     * - `spareBp`: a cleared stage is close when it had at most this much to spare. A phase's spare
-     *   is the HP taken off beyond its threshold; a finale's spare is the rounds left over (the boss
-     *   fell with at most this share of the finale's rounds still to play), because a win always
-     *   empties the pool.
+     * - `spareBp`: a cleared stage is close when it had at most this much to spare, counted in
+     *   rounds left over: the boss retreated at its floor (a phase) or fell (the finale) with at most
+     *   this share of the stage's rounds still to play. A phase can no longer have HP to spare (the
+     *   pool cannot go below its floor) and a finale win always empties the pool, so rounds are the
+     *   only spare there is; a finale won in enrage rounds has none left and is close.
      */
     closeCall: { missBp: 1_000, spareBp: 1_000 },
     /** Most players in one party; a bigger roster is split into balanced parties. */
@@ -262,11 +393,12 @@ export const RULES = {
     rankRewardBp: 600,
     rankRewardCapBp: 20_000,
     /**
-     * Placement rank for a new server: the rank whose boss is as hard as the old per-level rule would
-     * have made it. `legacyHpPerLevelBp` is that old rule (boss HP +12% per average creature level
-     * above 1), kept only to place a new server once.
+     * Placement of a new server: every server starts at `startRank`, whatever its creatures
+     * (Misa, 2026-10-15: no rank skipping, and a first week that casual players can clear). The old
+     * rule placed a server by its creatures' levels, one rank (or two) up, which made the first
+     * boss a wipe; the curve is built from rank 1 instead (docs/balance/log.md B-010).
      */
-    placement: { legacyHpPerLevelBp: 1_200 },
+    placement: { startRank: 1 },
     /**
      * Readiness band (long shot, even, likely, strong) from the forecast margin: mean finale damage
      * over the boss HP left, in basis points (10000 = exactly enough). Bands start at these margins.
@@ -371,11 +503,18 @@ export const RULES = {
       /**
        * Finale win, one roll per participant. Rare and epic chances start at these values at Boss
        * Rank 1, grow by `perRankBp` for every rank above 1 and stop at `maxBp`; the rest is common.
+       *
+       * The reward slot (Misa, 2026-10-15): every participant of a won finale gets exactly one reward,
+       * a gear piece or, with chance `blueprintBp`, a blueprint they do not know yet (gear when they
+       * know them all). Either way its rarity follows the odds above. Gear arrives pre-upgraded: one
+       * level for every `ranksPerUpgrade` Boss Ranks above rank 1, up to `maxLevel`.
        */
       finale: {
         baseBp: { rare: 2_200, epic: 300 },
         perRankBp: { rare: 250, epic: 150 },
         maxBp: { rare: 5_000, epic: 2_500 },
+        blueprintBp: 2_500,
+        ranksPerUpgrade: 2,
       },
       /** Scrap for every participant of a cleared phase 1 or 2. */
       phaseScrap: { phase1: 3, phase2: 4 },
@@ -428,12 +567,28 @@ export const RULES = {
     /**
      * How strong a foe is at depth 1, as a share of the HP and Attack in its content (basis points;
      * 10000 is the content's own numbers). One knob for the whole dungeon, so the foes keep the
-     * relative strengths their content gives them.
+     * relative strengths their content gives them. 11750 is the old 12500 times 0.94: the attack
+     * patterns made foes a few points harder to beat, and 6% less foe HP puts the clear rates back
+     * (docs/design/attack-patterns.md 4.6, docs/balance/log.md B-007).
      */
-    baseHpBp: 12_500,
+    baseHpBp: 11_750,
     baseAtkBp: 10_000,
-    /** Every this many depths is a landmark: a better chest. */
+    /**
+     * Every this many depths is a landmark: a better chest, and a fixed room boss (in content order,
+     * round again) that also gains its charged `signature` move.
+     */
     landmarkEvery: 7,
+    /**
+     * Boss-room enrage, to teach the mechanic before the Sunday finale: when the boss room's rounds
+     * run out with both sides standing, up to `rounds` more rounds in which the boss also hits every
+     * creature for `powerBp` of its Attack. Normal rooms keep the old rule (out of rounds ends the
+     * run). `enabled: false` switches it off (Misa may walk it back). Tuned by the simulator
+     * (B-008, single-hit cap off): the power hardly matters (5% to 100% of the foe's Attack: a lost
+     * boss room lasts 1.5 to 1.8 enrage rounds, because the boss's own attack finishes a team that is
+     * already hurt), so it is a modest 30%; the extra rounds clear about 1.2 points more runs at the
+     * frontier.
+     */
+    enrage: { enabled: true, rounds: 2, powerBp: 3_000 },
     /** Paid for each room cleared, by room index (the last is the room boss). */
     perRoom: [
       { bait: 1, essence: 0, scrap: 0 },

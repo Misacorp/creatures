@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { RULES } from '@creatures/game';
-import { simulateFight, type FightInput, type FightResult } from '../src/index';
+import { PATTERN_OPS, RULES } from '@creatures/game';
+import { liveFightRules, simulateFight, type FightInput, type FightResult } from '../src/index';
 import { randomInput, rng } from './helpers';
 
 const phases = ['phase1', 'phase2', 'finale'] as const;
@@ -53,14 +53,18 @@ function checkResult(inp: FightInput, r: FightResult): void {
   // except for credits that belong to guests or to finale abilities, which have no creature).
   const dealt = r.events.reduce((sum, e) => (e.t === 'hit' ? sum + e.damage : sum), 0);
   const abilitySetup = Object.values(r.perPlayer).reduce((s, p) => s + p.setupCredit, 0) - setup;
-  // Setup and support credit are zero-sum: they move credit between creatures, never add to it.
-  expect(damage + setup + support + abilitySetup).toBe(dealt);
-  // So all contributions together equal the damage dealt plus what guards absorbed.
+  // Setup credit and the support credit for buffs and Overcharge are zero-sum: they move credit
+  // between creatures, never add to it. Healing is the one support credit that is new credit (the
+  // HP really restored, like what a Guard absorbs), so it is taken off first.
+  const healed = r.events.reduce((sum, e) => (e.t === 'heal' ? sum + e.amount : sum), 0);
+  expect(support).toBeGreaterThanOrEqual(healed);
+  expect(damage + setup + (support - healed) + abilitySetup).toBe(dealt);
+  // So all contributions together equal the damage dealt plus what guards absorbed and Supports healed.
   const contributions = Object.values(r.perPlayer).reduce((sum, p) => sum + p.contribution, 0);
   const guestContributions = Object.values(r.perCreature)
     .filter((c) => c.ownerId === null)
     .reduce((sum, c) => sum + c.contribution, 0);
-  expect(contributions + guestContributions).toBe(dealt + guard);
+  expect(contributions + guestContributions).toBe(dealt + guard + healed);
   expect(Object.values(r.damageByElement).reduce((a, b) => a + b, 0)).toBe(dealt);
   // Player totals never exceed the creature totals that feed them (plus ability setup credit).
   const playerDamage = Object.values(r.perPlayer).reduce((s, p) => s + p.damage, 0);
@@ -118,8 +122,32 @@ describe('properties over seeded random fights', () => {
     }
   });
 
+  it('hold with the live combat rules (armor, cover, cap, Guard dice): deterministic, consistent totals', () => {
+    for (let i = 0; i < SEEDS; i++) {
+      const phase = phases[i % 3] as (typeof phases)[number];
+      const inp: FightInput = {
+        ...randomInput(`prop-rules-${i}`, 1 + (i % 15), phase),
+        rules: liveFightRules(),
+        luck: RULES.combat.luck,
+      };
+      const first = simulateFight(inp, rng());
+      expect(simulateFight(inp, rng())).toEqual(first);
+      checkResult(inp, first);
+    }
+  });
+
   it('give the same result for a different RNG (the MVP rules draw no randomness)', () => {
-    const inp = randomInput('rng-independent', 6, 'finale');
+    // Only the attack patterns draw dice (random shells, random lanes); every older move is fixed.
+    const drawn = randomInput('rng-independent', 6, 'finale');
+    const inp = {
+      ...drawn,
+      boss: {
+        ...drawn.boss,
+        gimmicks: drawn.boss.gimmicks.filter(
+          (g) => !(PATTERN_OPS as readonly string[]).includes(g.op),
+        ),
+      },
+    };
     const a = simulateFight(inp, rng());
     const b = simulateFight(inp, { nextU32: () => 12345 });
     expect(b).toEqual(a);

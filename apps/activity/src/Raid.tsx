@@ -26,7 +26,7 @@ import {
 } from './raid-api';
 import type { Intent } from './raid-slots';
 import { festivalGrantText, rankChangeText } from './raid-progress';
-import { phaseName } from './raid-text';
+import { phaseName, stageOutcomeNote, stageOutcomeText } from './raid-text';
 import { BossCard } from './BossCard';
 import { RaidTimeline } from './RaidTimeline';
 import { needsPlacement, type NowTarget } from './raid-now';
@@ -380,6 +380,7 @@ function ResultCard({
           {result.cleared ? 'Cleared' : 'Not cleared'}
         </span>
       </h4>
+      {stageOutcomeNote(result) !== null && <p>{stageOutcomeText(result)}</p>}
       <p>
         <GlossaryTag entry="essence">Essence</GlossaryTag> you got:{' '}
         <strong>{result.essence}</strong>

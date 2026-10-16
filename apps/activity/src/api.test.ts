@@ -5,6 +5,7 @@ import {
   fetchRoom,
   jsonRequest,
   parseGameState,
+  parseAllowance,
   parseLoungeSpot,
   parseRoom,
   setLounger,
@@ -322,5 +323,32 @@ describe('the public config', () => {
     expect((await fetchConfig()).branch).toBeNull();
     vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, branch: 7 })));
     expect((await fetchConfig()).branch).toBeNull();
+  });
+});
+
+describe('the daily allowance of /api/me', () => {
+  it('parses a well-formed allowance', () => {
+    expect(parseAllowance({ day: '2026-10-20', amount: 25 })).toEqual({
+      day: '2026-10-20',
+      amount: 25,
+    });
+  });
+
+  it('is null when there is nothing new or the shape is wrong', () => {
+    for (const bad of [
+      null,
+      undefined,
+      'x',
+      [],
+      {},
+      { day: '2026-10-20' },
+      { day: '2026-10-20', amount: 0 },
+      { day: '2026-10-20', amount: -5 },
+      { day: '2026-10-20', amount: 2.5 },
+      { day: '2026-10-20', amount: '25' },
+      { day: 'yesterday', amount: 25 },
+    ]) {
+      expect(parseAllowance(bad)).toBeNull();
+    }
   });
 });

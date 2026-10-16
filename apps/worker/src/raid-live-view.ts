@@ -12,12 +12,13 @@ import {
   type FightInput,
 } from '@creatures/engine';
 import { readFestivalGrant, type FestivalGrantView } from './raid-festival';
-import { rankChangeOf, type RankChangeView } from './raid-ladder';
-import { bossFor, type StoredSummary } from './raid-resolve';
+import { fightRank, rankChangeOf, type RankChangeView } from './raid-ladder';
+import { bossFor, guardRulesOf, type StoredSummary } from './raid-resolve';
 import { totalEssenceOf } from './raid-reveal';
 import {
   PACING_CONTENT,
   firedRound,
+  scheduleRounds,
   type AbilityMode,
   type LiveRow,
   type LiveState,
@@ -74,6 +75,10 @@ export interface LiveSnapshot {
    * Rounds are as long as their content now: use `roundStarts` and `nextRoundAt`.
    */
   roundMs: number | null;
+  /**
+   * The finale's regular rounds. In an enrage (`enrage` events) `round` goes past it, by up to the
+   * enrage's rounds; the fight then ends on a wipe or after the last enrage round.
+   */
   rounds: number;
   /** The round that is playing (0 before the start). */
   round: number;
@@ -98,6 +103,8 @@ export interface LiveSnapshot {
   };
   /** The frozen fighting row, left to right (empty before the start). */
   row: ReplayView['row'];
+  /** The Guard numbers the fight is played with. Null: none known (no row yet, or an old fight). */
+  rules: ReplayView['rules'];
   names: EventNames | null;
   abilities: LiveAbilityView[];
   /** Every event of rounds 1..round. */
@@ -126,7 +133,7 @@ export function emptySnapshot(
   status: 'none' | 'lobby',
   startsAt: number | null,
 ): LiveSnapshot {
-  const boss = bossFor(ctx.bossId);
+  const boss = bossFor(ctx.bossId, fightRank(ctx.sql, ctx.weekId));
   const pool =
     ctx.party === null
       ? undefined
@@ -158,6 +165,7 @@ export function emptySnapshot(
       hpStart: status === 'lobby' ? (pool?.hp_current ?? null) : null,
     },
     row: [],
+    rules: null,
     names: null,
     abilities: [],
     events: [],
@@ -254,6 +262,7 @@ export function lobbySnapshot(
       level: s.level,
       owner: s.ownerId,
     })),
+    rules: guardRulesOf(input),
     names: buildNames(input, aliasNames, content),
     abilities: mine,
     events: [],
@@ -298,7 +307,7 @@ export function liveSnapshot(
   const { result } = state;
   const round = done
     ? Math.min(state.clockRound, result.rounds)
-    : Math.min(state.clockRound, row.rounds);
+    : Math.min(state.clockRound, scheduleRounds(row));
   const events = result.events.filter((e) => e.round <= state.clockRound);
   let bossHp: number = row.input.bossHpPool.current;
   for (const e of events) if (e.t === 'round_end') bossHp = e.bossHp;
@@ -365,6 +374,7 @@ export function liveSnapshot(
       level: s.level,
       owner: s.ownerId,
     })),
+    rules: guardRulesOf(row.input),
     names: buildNames(row.input, aliasNames, content),
     abilities,
     events,

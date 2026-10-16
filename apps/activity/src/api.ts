@@ -61,10 +61,20 @@ export interface LeetSyncStatus {
   lastDays: number | null;
 }
 
+/** The daily Bait allowance the server paid on this request; it tells the player once (see allowance.ts in the worker). */
+export interface Allowance {
+  /** The game day it is for, as YYYY-MM-DD. */
+  day: string;
+  /** Whole Bait, more than zero. */
+  amount: number;
+}
+
 export interface Me {
   user: SessionUser;
   guildId: string;
   balances: Balances;
+  /** The allowance this request paid, or null when there is nothing new to tell. */
+  allowance: Allowance | null;
   leetSync: LeetSyncStatus;
   /** True only on staging, where the server has the dev tools on. */
   devTools: boolean;
@@ -229,6 +239,15 @@ function isLeetSyncStatus(value: unknown): value is LeetSyncStatus {
   );
 }
 
+/** A well-formed allowance from `/api/me`, or null (absent or malformed: nothing is shown). */
+export function parseAllowance(value: unknown): Allowance | null {
+  if (!isRecord(value)) return null;
+  const { day, amount } = value;
+  if (typeof day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+  if (typeof amount !== 'number' || !Number.isSafeInteger(amount) || amount <= 0) return null;
+  return { day, amount };
+}
+
 export async function fetchMe(): Promise<Me> {
   const data = await apiFetch('/api/me');
   if (
@@ -244,6 +263,7 @@ export async function fetchMe(): Promise<Me> {
     user: data['user'],
     guildId: data['guildId'],
     balances: data['balances'],
+    allowance: parseAllowance(data['allowance']),
     leetSync: data['leetSync'],
     devTools: data['devTools'] === true,
   };

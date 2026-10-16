@@ -1,7 +1,8 @@
 import { env, exports } from 'cloudflare:workers';
 import { runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ECONOMY, baitForDay, leetPointsForDay } from '../src/economy';
+import { dailyAllowance, leetBonusForDay } from '@creatures/game';
+import { leetPointsForDay } from '../src/economy';
 import { SYNC_BUDGET_MS, type GuildCoreOptions } from '../src/guild-core';
 import {
   DEFAULT_TIMEOUT_MS,
@@ -97,24 +98,97 @@ describe('syncLeet', () => {
       guild,
       async ({ core, sql }) => {
         expect(await core.syncLeet()).toEqual({ daysProcessed: 3, creditsApplied: 4 });
-        expect(core.balances(USER_ID).bait).toBe(baitForDay(1) + baitForDay(3));
-        expect(core.balances(OTHER_USER_ID).bait).toBe(baitForDay(3));
-        expect(core.balances('333333333333333330').bait).toBe(baitForDay(3));
+        expect(core.balances(USER_ID).bait).toBe(leetBonusForDay(1) + leetBonusForDay(3));
+        expect(core.balances(OTHER_USER_ID).bait).toBe(leetBonusForDay(3));
+        expect(core.balances('333333333333333330').bait).toBe(leetBonusForDay(3));
         const mine = baitRows(sql).filter((r) => r.user_id === USER_ID);
         expect(mine.map((r) => [r.amount, r.idempotency_key])).toEqual([
-          [baitForDay(1), `leet:${guild}:2026-10-08`],
-          [baitForDay(3), `leet:${guild}:2026-10-09`],
+          [leetBonusForDay(1), `leet:${guild}:2026-10-08`],
+          [leetBonusForDay(3), `leet:${guild}:2026-10-09`],
         ]);
         expect(JSON.parse(mine[0]?.meta ?? '')).toEqual({
           date: '2026-10-08',
           participants: 1,
           points: leetPointsForDay(1),
+          bonus: leetBonusForDay(1),
         });
         expect(JSON.parse(mine[1]?.meta ?? '')).toEqual({
           date: '2026-10-09',
           participants: 3,
           points: leetPointsForDay(3),
+          bonus: leetBonusForDay(3),
         });
+      },
+      using(source),
+    );
+  });
+
+  it.each([
+    [1, 15],
+    [2, 15],
+    [3, 17],
+    [10, 32],
+    [15, 32],
+  ])(
+    'credits the leet bonus of %i leeters (%i Bait), not the old points Bait',
+    async (n, bonus) => {
+      const guild = nextGuild();
+      const crowd = Array.from({ length: n }, (_, i) => String(500000000000000000n + BigInt(i)));
+      const { source } = scripted(() => ({
+        days: [day(guild, '2026-10-09', crowd)],
+        nextCursor: 'c',
+        hasMore: false,
+      }));
+      await runCore(
+        guild,
+        async ({ core, sql }) => {
+          await core.syncLeet();
+          expect(leetBonusForDay(n)).toBe(bonus);
+          for (const id of crowd) expect(core.balances(id).bait).toBe(bonus);
+          const rows = baitRows(sql);
+          expect(rows).toHaveLength(n);
+          expect(new Set(rows.map((r) => r.amount))).toEqual(new Set([bonus]));
+          // The leet points are still recorded next to the bonus.
+          expect(JSON.parse(rows[0]?.meta ?? '')).toEqual({
+            date: '2026-10-09',
+            participants: n,
+            points: leetPointsForDay(n),
+            bonus,
+          });
+        },
+        using(source),
+      );
+    },
+  );
+
+  it('does not top up earlier leeters when a day is delivered again with more players', async () => {
+    // Days reach the sync finalised, so a day is credited once at its final count. If the source
+    // ever delivered the same day again with more players, the keys keep the first credit per
+    // player and only new leeters are paid (at the new count): nobody is topped up or paid twice.
+    const guild = nextGuild();
+    let call = 0;
+    const { source } = scripted(() => {
+      call++;
+      return {
+        days: [
+          day(
+            guild,
+            '2026-10-09',
+            call === 1 ? [USER_ID] : [USER_ID, OTHER_USER_ID, '333333333333333330'],
+          ),
+        ],
+        nextCursor: `c${String(call)}`,
+        hasMore: false,
+      };
+    });
+    await runCore(
+      guild,
+      async ({ core }) => {
+        await core.syncLeet();
+        expect(core.balances(USER_ID).bait).toBe(leetBonusForDay(1));
+        await core.syncLeet();
+        expect(core.balances(USER_ID).bait).toBe(leetBonusForDay(1));
+        expect(core.balances(OTHER_USER_ID).bait).toBe(leetBonusForDay(3));
       },
       using(source),
     );
@@ -181,7 +255,7 @@ describe('syncLeet', () => {
         expect((await core.syncLeet()).creditsApplied).toBe(2);
         // The source replays the same day even though the cursor was stored (overlapping pulls).
         expect(await core.syncLeet()).toEqual({ daysProcessed: 1, creditsApplied: 0 });
-        expect(core.balances(USER_ID).bait).toBe(baitForDay(2));
+        expect(core.balances(USER_ID).bait).toBe(leetBonusForDay(2));
         expect(baitRows(sql)).toHaveLength(2);
       },
       using(source),
@@ -200,9 +274,9 @@ describe('syncLeet', () => {
       guild,
       async ({ core }) => {
         await core.syncLeet();
-        expect(core.balances(crowd[0] ?? '').bait).toBe(baitForDay(12));
+        expect(core.balances(crowd[0] ?? '').bait).toBe(leetBonusForDay(12));
         // A crowd this size is at the cap: more leeters would not pay more.
-        expect(core.balances(crowd[0] ?? '').bait).toBe(baitForDay(500));
+        expect(core.balances(crowd[0] ?? '').bait).toBe(leetBonusForDay(500));
       },
       using(source),
     );
@@ -223,7 +297,7 @@ describe('syncLeet', () => {
         const secret = await core.createSession(guildId, USER);
         const res = await request(secret);
         expect((await res.json<{ balances: unknown }>()).balances).toEqual({
-          bait: baitForDay(1),
+          bait: leetBonusForDay(1),
           essence: 0,
         });
       },
@@ -289,7 +363,7 @@ describe('syncLeet', () => {
         expect(await core.syncLeet()).toEqual({ daysProcessed: 3, creditsApplied: 3 });
         expect(calls.map((c) => c.opts.after)).toEqual([undefined, 'cur-1', 'cur-2']);
         expect(syncState(sql)[0]?.cursor).toBe('cur-3');
-        expect(core.balances(USER_ID).bait).toBe(3 * baitForDay(1));
+        expect(core.balances(USER_ID).bait).toBe(3 * leetBonusForDay(1));
       },
       using(source),
     );
@@ -353,11 +427,11 @@ describe('syncLeet', () => {
       guild,
       async ({ core, sql }) => {
         await expect(core.syncLeet()).rejects.toBeInstanceOf(LeetSourceError);
-        expect(core.balances(USER_ID).bait).toBe(baitForDay(1));
+        expect(core.balances(USER_ID).bait).toBe(leetBonusForDay(1));
         expect(syncState(sql)[0]?.cursor).toBe('cur-1');
         expect(await core.syncLeet()).toEqual({ daysProcessed: 1, creditsApplied: 1 });
         expect(calls[2]?.opts.after).toBe('cur-1');
-        expect(core.balances(USER_ID).bait).toBe(2 * baitForDay(1));
+        expect(core.balances(USER_ID).bait).toBe(2 * leetBonusForDay(1));
       },
       using(source),
     );
@@ -455,7 +529,7 @@ describe('syncLeet', () => {
         const expected = (userId: string) =>
           history.days
             .filter((d) => d.participants.some((p) => p.userId === userId))
-            .reduce((sum, d) => sum + baitForDay(d.participants.length), 0);
+            .reduce((sum, d) => sum + leetBonusForDay(d.participants.length), 0);
         expect(expected(USER_ID) + expected(OTHER_USER_ID)).toBeGreaterThan(0);
 
         const first = await core.syncLeet();
@@ -564,7 +638,7 @@ describe('GET /api/me sync trigger', () => {
         const res = await request(secret);
         expect(res.status).toBe(200);
         expect((await res.json<{ balances: unknown }>()).balances).toEqual({
-          bait: baitForDay(1),
+          bait: leetBonusForDay(1),
           essence: 0,
         });
         expect(calls).toHaveLength(1);
@@ -636,7 +710,7 @@ describe('GET /api/me sync trigger', () => {
         const secret = await core.createSession(guildId, USER);
         const res = await request(secret);
         expect((await res.json<{ balances: { bait: number } }>()).balances.bait).toBe(
-          baitForDay(1),
+          leetBonusForDay(1),
         );
       },
       using(source),
@@ -668,7 +742,7 @@ describe('GET /api/me sync trigger', () => {
         await core.syncLeet();
         const again = await request(secret);
         expect((await again.json<{ balances: { bait: number } }>()).balances.bait).toBe(
-          baitForDay(1),
+          leetBonusForDay(1),
         );
       },
       { ...using(source), syncBudgetMs: 30 },
@@ -724,7 +798,7 @@ describe('daily alarm', () => {
         clock.t = Date.parse('2027-01-16T11:40:00.200Z');
         await core.alarm();
         expect(calls).toHaveLength(1);
-        expect(core.balances(USER_ID).bait).toBe(baitForDay(1));
+        expect(core.balances(USER_ID).bait).toBe(leetBonusForDay(1));
         expect(await storage.getAlarm()).toBe(Date.parse('2027-01-17T11:40:00Z'));
       },
       using(source),
@@ -804,12 +878,17 @@ describe('real Durable Object with the mock source', () => {
     expectApiHeaders(me);
     const body = await me.json<{ balances: { bait: number; essence: number } }>();
     expect(Number.isInteger(body.balances.bait)).toBe(true);
-    expect(body.balances.bait % ECONOMY.baitPerLeetPoint).toBe(0);
 
     const ledger = await call('/api/ledger?limit=50');
     const entries = (await ledger.json<{ entries: { amount: number; source: string }[] }>())
       .entries;
-    expect(entries.every((e) => e.source === 'leet' && e.amount > 0)).toBe(true);
+    expect(
+      entries.every((e) => (e.source === 'leet' || e.source === 'allowance') && e.amount > 0),
+    ).toBe(true);
+    // The first request of the game day paid the allowance, once.
+    expect(entries.filter((e) => e.source === 'allowance').map((e) => e.amount)).toEqual([
+      dailyAllowance(),
+    ]);
     expect(entries.reduce((sum, e) => sum + e.amount, 0)).toBe(body.balances.bait);
 
     await runInDurableObject(stub, async (_instance, state) => {
@@ -1220,7 +1299,7 @@ describe('leet sync status', () => {
       guild,
       async ({ core }) => {
         await expect(core.syncLeet()).rejects.toThrow();
-        expect(core.balances(USER_ID).bait).toBe(baitForDay(1));
+        expect(core.balances(USER_ID).bait).toBe(leetBonusForDay(1));
         expect(core.leetSyncStatus().lastError).toBe('timeout');
       },
       using(source),

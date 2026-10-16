@@ -5,6 +5,7 @@
   "resetsAt": 1799840220000,
   "depth": 45,
   "landmark": false,
+  "landmarkBoss": null,
   "streak": 1,
   "modifiers": [
     {
@@ -31,7 +32,7 @@
   "canRun": true,
   "blocked": null,
   "last": {
-    "id": "42df5493-16ab-429c-a8b1-c37c91d5a2ff",
+    "id": "79886273-3f5b-4801-8d78-8d19aaf71067",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 45,
@@ -43,17 +44,17 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "cc2aa233-b2d6-43b2-81c4-f9ff8c978fd9",
+        "id": "590b89dc-36bb-42b4-aeb1-b9143868f84d",
         "name": "Mistnewt",
         "speciesId": "mistnewt",
         "element": "tide",
         "role": "guard",
         "level": 1,
-        "hpMax": 208,
+        "hpMax": 160,
         "hpEnd": 0
       },
       {
-        "id": "cc015107-3813-479a-ae97-edc23a8aa15b",
+        "id": "ffb462b1-f6af-4045-b975-c85ce216e04b",
         "name": "Ashmole",
         "speciesId": "ashmole",
         "element": "ember",
@@ -63,7 +64,7 @@
         "hpEnd": 0
       },
       {
-        "id": "c9146ddd-5525-412b-bf6f-fd95c3f56025",
+        "id": "0437a34b-8764-42e3-b811-2500a3690941",
         "name": "Stormray",
         "speciesId": "stormray",
         "element": "spark",
@@ -81,7 +82,7 @@
           "id": "ash-sprite",
           "name": "Ash Sprite",
           "element": "ember",
-          "hpMax": 22551
+          "hpMax": 21178
         },
         "modifier": {
           "id": "dark",
@@ -91,7 +92,7 @@
         "played": true,
         "cleared": false,
         "rounds": 3,
-        "foeHpEnd": 22066
+        "foeHpEnd": 20660
       },
       {
         "index": 1,
@@ -100,7 +101,7 @@
           "id": "ember-mite",
           "name": "Ember Mite",
           "element": "ember",
-          "hpMax": 20744
+          "hpMax": 19515
         },
         "modifier": {
           "id": "brittle",
@@ -110,7 +111,7 @@
         "played": false,
         "cleared": false,
         "rounds": 0,
-        "foeHpEnd": 20744
+        "foeHpEnd": 19515
       },
       {
         "index": 2,
@@ -119,7 +120,7 @@
           "id": "slag-tyrant",
           "name": "Slag Tyrant",
           "element": "ember",
-          "hpMax": 34333
+          "hpMax": 32236
         },
         "modifier": {
           "id": "thorns",
@@ -129,7 +130,7 @@
         "played": false,
         "cleared": false,
         "rounds": 0,
-        "foeHpEnd": 34333
+        "foeHpEnd": 32236
       }
     ],
     "rewards": {
@@ -143,9 +144,9 @@
     }
   },
   "lastTeam": [
-    "cc2aa233-b2d6-43b2-81c4-f9ff8c978fd9",
-    "cc015107-3813-479a-ae97-edc23a8aa15b",
-    "c9146ddd-5525-412b-bf6f-fd95c3f56025"
+    "590b89dc-36bb-42b4-aeb1-b9143868f84d",
+    "ffb462b1-f6af-4045-b975-c85ce216e04b",
+    "0437a34b-8764-42e3-b811-2500a3690941"
   ],
   "draftTeam": null
 }

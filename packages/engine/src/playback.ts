@@ -72,8 +72,18 @@ function startsBeat(e: FightEvent): boolean {
  */
 export function beatEnds(events: readonly FightEvent[]): number[] {
   const ends: number[] = [];
+  // The enraged boss's hits on every creature are one boss action (there is no gimmick event to
+  // start it): the first of a volley starts a beat and the rest belong to it.
+  let inVolley = false;
   for (let i = 1; i < events.length; i++) {
-    if (startsBeat(events[i] as FightEvent)) ends.push(i);
+    const e = events[i] as FightEvent;
+    if (e.t === 'boss_hit' && e.source === 'enrage') {
+      if (!inVolley) ends.push(i);
+      inVolley = true;
+    } else if (startsBeat(e)) {
+      ends.push(i);
+      inVolley = false;
+    }
   }
   if (events.length > 0) ends.push(events.length);
   return ends;
@@ -95,19 +105,30 @@ function isVisibleEvent(e: FightEvent): boolean {
     case 'boss_hit':
     case 'knockout':
     case 'silence':
+    case 'heal':
+    case 'cleanse':
+    case 'charge':
+    case 'retreat':
+    case 'enrage':
       return true;
     default:
       return false;
   }
 }
 
-/** True when the event is a boss action that gets a wind-up (the reflect gimmick only arms a trap). */
+/**
+ * True when the event is a boss action that gets a wind-up (the reflect gimmick only arms a trap).
+ * A `charge` counts: its marks appear and the stage holds a moment before the round goes on. The
+ * enraged boss's hits are one action with no gimmick event, so they count themselves.
+ */
 export function isBossAction(e: FightEvent): boolean {
   switch (e.t) {
     case 'gimmick':
       return e.op !== 'reflect_first_reaction';
+    case 'charge':
+      return true;
     case 'boss_hit':
-      return e.source === 'attack' || e.source === 'reflect';
+      return e.source === 'attack' || e.source === 'reflect' || e.source === 'enrage';
     default:
       return false;
   }
@@ -124,8 +145,8 @@ export interface BeatTiming {
 
 /**
  * The timing of the beat that covers events [from, to): 500 ms for a plain turn, up to 700 ms for a
- * crit, reaction, ability, knockout, boss gimmick or luck banner, plus the 600 ms wind-up of a boss
- * action. A beat with nothing to show takes the minimum.
+ * crit, reaction, ability, knockout, boss gimmick, charge, enrage, retreat or luck banner, plus the
+ * 600 ms wind-up of a boss action (a charge's announcement included). A beat with nothing to show takes the minimum.
  */
 export function beatTiming(events: readonly FightEvent[], from: number, to: number): BeatTiming {
   let visible = false;
@@ -145,8 +166,9 @@ export function beatTiming(events: readonly FightEvent[], from: number, to: numb
     else if (e.t === 'reaction') burst = true;
     else if (e.t === 'ability') ability = true;
     else if (e.t === 'knockout') ko = true;
-    else if (e.t === 'gimmick') gimmick = true;
-    else if (e.t === 'round_start') banner = true;
+    else if (e.t === 'gimmick' || e.t === 'charge') gimmick = true;
+    else if (e.t === 'boss_hit' && e.source === 'enrage') gimmick = true;
+    else if (e.t === 'round_start' || e.t === 'enrage' || e.t === 'retreat') banner = true;
     if (isBossAction(e)) windup = true;
   }
   const windupMs = windup ? WINDUP_MS : 0;

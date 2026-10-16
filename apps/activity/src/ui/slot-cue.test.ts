@@ -221,7 +221,9 @@ describe('effectLine', () => {
     const row = rowOf('splashet', 'sproutle', 'zipmouse');
     const dungeon = effectLine({ row, mode: DUNGEON, focus: 1, nameOf: name });
     expect(dungeon).toContain('beside it');
-    expect(dungeon).toContain(`${String(RULES.combat.guardHpBp / 100)}%`);
+    // The live Guard has armor, not extra HP: the line says "less damage", from the number.
+    expect(dungeon).toContain(`takes ${String(RULES.combat.guard.armorBp / 100)}% less damage`);
+    expect(dungeon).not.toContain('more HP');
     const raid = effectLine({
       row,
       mode: { row: 'raid', turnOrder: 'left_to_right' },
@@ -229,6 +231,24 @@ describe('effectLine', () => {
       nameOf: name,
     });
     expect(raid).toContain('its row');
+  });
+
+  it('describes the bonus from the numbers it is given: armor, extra HP, both or neither', () => {
+    const row = rowOf('splashet', 'sproutle', 'zipmouse');
+    const line = (guard: { hpBp: number; armorBp: number }) =>
+      effectLine({ row, mode: DUNGEON, focus: 1, nameOf: name, guard });
+    expect(line({ hpBp: 0, armorBp: 2_500 })).toBe(
+      "Takes the boss's hits for the creatures beside it, and takes 25% less damage from every hit.",
+    );
+    expect(line({ hpBp: 3_000, armorBp: 0 })).toBe(
+      "Takes the boss's hits for the creatures beside it, and has 30% more HP.",
+    );
+    expect(line({ hpBp: 1_000, armorBp: 1_000 })).toContain(
+      'takes 10% less damage from every hit and has 10% more HP',
+    );
+    expect(line({ hpBp: 0, armorBp: 0 })).toBe(
+      "Takes the boss's hits for the creatures beside it.",
+    );
   });
 
   it('names the reaction and its partner, with its multiplier from the content', () => {

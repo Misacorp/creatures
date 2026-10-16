@@ -20,6 +20,7 @@ import {
   raidWeekPlan,
   seasonOf,
 } from '@creatures/game';
+import { RAID_DIFFICULTY_VERSION } from './raid-difficulty';
 import { weekIndex } from './raid-schedule';
 import { raidTeam } from './raid-teams';
 
@@ -132,25 +133,61 @@ export function ensureWeekRank(sql: SqlStorage, weekId: string): number | null {
   if (progression.rank !== null) return progression.rank;
   let rank = readLadder(sql).rank;
   if (rank === null) {
-    const members = sql
-      .exec<{ user_id: string }>(
-        'SELECT user_id FROM raid_party_members WHERE week_id = ? ORDER BY user_id',
-        weekId,
-      )
-      .toArray();
-    if (members.length === 0) return null;
-    const levels = members.flatMap((m) => raidTeam(sql, weekId, m.user_id).map((c) => c.level));
-    rank = placementRank(levels);
-    sql.exec('UPDATE raid_ladder SET rank = ? WHERE id = 1 AND rank IS NULL', rank);
+    rank = placeServer(sql, weekId);
+    if (rank === null) return null;
   }
+  return declareWeekRank(sql, weekId, rank).rank;
+}
+
+/**
+ * Places the server from the creatures the week's members bring (`placementRank`) and stores the
+ * rank on the ladder, once: a ladder that already has a rank keeps it. Returns the rank, or null if
+ * nobody is in the week yet (nothing is stored then). The one place a server is placed, shared by the
+ * week's opening, the Phase 1 conversion of a legacy week and the re-declaration of a week
+ * (`raid-redeclare.ts`).
+ */
+export function placeServer(sql: SqlStorage, weekId: string): number | null {
+  const rank = placementFor(sql, weekId);
+  if (rank === null) return null;
+  sql.exec('UPDATE raid_ladder SET rank = ? WHERE id = 1 AND rank IS NULL', rank);
+  return rank;
+}
+
+/** `placementRank` of the creatures the week's members bring now, or null with nobody in. */
+export function placementFor(sql: SqlStorage, weekId: string): number | null {
+  const members = sql
+    .exec<{ user_id: string }>(
+      'SELECT user_id FROM raid_party_members WHERE week_id = ? ORDER BY user_id',
+      weekId,
+    )
+    .toArray();
+  if (members.length === 0) return null;
+  return placementRank(
+    members.flatMap((m) => raidTeam(sql, weekId, m.user_id).map((c) => c.level)),
+  );
+}
+
+/**
+ * Fixes a week's Boss Rank numbers from the server's rank: the rank itself and the rank the boss
+ * fights at (`raidWeekPlan` eases a Festival), stamped with the difficulty rules they follow
+ * (`RAID_DIFFICULTY_VERSION`). The one place these columns are written for a normal week; week
+ * opening and re-declaration both end here, so they can never diverge. The boss's HP pool and Attack
+ * are not stored here: they are scaled from these ranks and the head count when Phase 1 resolves.
+ */
+export function declareWeekRank(
+  sql: SqlStorage,
+  weekId: string,
+  rank: number,
+): { rank: number; effectiveRank: number } {
   const plan = raidWeekPlan(weekIndex(weekId), rank);
   sql.exec(
-    'UPDATE raid_weeks SET rank = ?, effective_rank = ? WHERE week_id = ?',
+    'UPDATE raid_weeks SET rank = ?, effective_rank = ?, difficulty_version = ? WHERE week_id = ?',
     plan.rank,
     plan.effectiveRank,
+    RAID_DIFFICULTY_VERSION,
     weekId,
   );
-  return plan.rank;
+  return { rank: plan.rank, effectiveRank: plan.effectiveRank };
 }
 
 /**
@@ -173,33 +210,35 @@ export function convertLegacyWeek(sql: SqlStorage, weekId: string): boolean {
     .exec('SELECT 1 FROM raid_parties WHERE week_id = ? AND hp_max IS NOT NULL LIMIT 1', weekId)
     .toArray();
   if (stored.length > 0) return false;
-  const members = sql
-    .exec<{ user_id: string }>(
-      'SELECT user_id FROM raid_party_members WHERE week_id = ? ORDER BY user_id',
-      weekId,
-    )
-    .toArray();
-  if (members.length === 0) return false;
   let rank = readLadder(sql).rank;
   if (rank === null) {
-    rank = placementRank(
-      members.flatMap((m) => raidTeam(sql, weekId, m.user_id).map((c) => c.level)),
-    );
-    sql.exec('UPDATE raid_ladder SET rank = ? WHERE id = 1 AND rank IS NULL', rank);
+    rank = placeServer(sql, weekId);
+    if (rank === null) return false;
+  } else if (!hasMembers(sql, weekId)) {
+    return false;
   }
   const plan = raidWeekPlan(weekIndex(weekId), rank);
   const season = seasonColumns(weekId);
   sql.exec(
-    `UPDATE raid_weeks SET season_index = ?, festival = ?, festival_species = ?, rank = ?, effective_rank = ?
+    `UPDATE raid_weeks SET season_index = ?, festival = ?, festival_species = ?, rank = ?, effective_rank = ?,
+       difficulty_version = ?
      WHERE week_id = ?`,
     season.seasonIndex,
     season.festival,
     season.festivalSpecies,
     plan.rank,
     plan.effectiveRank,
+    RAID_DIFFICULTY_VERSION,
     weekId,
   );
   return true;
+}
+
+function hasMembers(sql: SqlStorage, weekId: string): boolean {
+  return (
+    sql.exec('SELECT 1 FROM raid_party_members WHERE week_id = ? LIMIT 1', weekId).toArray()
+      .length > 0
+  );
 }
 
 export interface LadderUpdate {

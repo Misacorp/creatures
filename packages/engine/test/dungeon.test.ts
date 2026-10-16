@@ -361,6 +361,20 @@ describe('the team stands in one row, left to right', () => {
     expect(built.row.map((s) => s.id)).toEqual(['guard', 'setter', 'payoff']);
   });
 
+  it('copies the run rules into every room, and has none when the run has none', () => {
+    const plain = run([room(0, foe(), 100, 1)]);
+    expect(buildRoomInput(plain, room(0, foe(), 100, 1), null).rules).toBeUndefined();
+    const rules = {
+      coverBp: 4_000,
+      maxHitBp: 5_000,
+      guardHpBp: 0,
+      guardArmorBp: 2_500,
+      supportFx: { grove: { healBp: 600 } },
+    };
+    const built = buildRoomInput({ ...plain, rules }, room(0, foe(), 100, 1), null);
+    expect(built.rules).toEqual(rules);
+  });
+
   it('a Support in the middle still buffs both neighbours (the row of three has no zone edges)', () => {
     const buffs = play(foe())
       .filter((e) => e.t === 'support_buff' && e.round === 1)
@@ -511,6 +525,142 @@ describe('every shipped foe, room boss and room modifier makes sense on one row 
         `mod-${m.id}`,
       );
       expect(result.rooms).toHaveLength(1);
+    }
+  });
+});
+
+function gimmickOf(id: string): DungeonFoeDef['gimmicks'][number] {
+  return { id, name: id, trigger: { eachRound: true }, op: 'silence_ends', turns: 1 };
+}
+
+describe('the boss room: enrage and the landmark signature', () => {
+  const ENRAGE = { rounds: 2, powerBp: 20_000 };
+  const signature = {
+    id: 'sig',
+    name: 'Sig',
+    trigger: { every: 2 },
+    op: 'charge',
+    then: { op: 'pincer', scope: 'row', power: 10_000 },
+  } as const;
+  const tank = (): FightSlot[] =>
+    ['left', 'mid', 'right'].map((id) => ({
+      ...slot(id, { atk: 1, hp: 1_000_000 }),
+      ownerId: 'p1',
+    }));
+  const bossFoe = (over: Partial<DungeonFoeDef> = {}) =>
+    foe({ id: 'boss-foe', kind: 'boss', rounds: 3, signature, ...over });
+  /** A run of one room against a foe nobody can kill, so its rounds run out. */
+  const oneRoom = (f: DungeonFoeDef, extra: Partial<DungeonRunInput> = {}): DungeonRunInput => ({
+    ...run([room(0, f, 100_000_000, 20)], tank()),
+    ...extra,
+  });
+
+  it('copies the enrage into the boss room only, and has none when the run has none', () => {
+    const boss = room(2, bossFoe(), 100, 1);
+    const normal = room(0, foe(), 100, 1);
+    expect(buildRoomInput(oneRoom(bossFoe(), { enrage: ENRAGE }), boss, null).enrage).toEqual(
+      ENRAGE,
+    );
+    expect(buildRoomInput(oneRoom(foe(), { enrage: ENRAGE }), normal, null).enrage).toBeUndefined();
+    expect(buildRoomInput(oneRoom(bossFoe()), boss, null).enrage).toBeUndefined();
+  });
+
+  it('plays enrage rounds in the boss room when its rounds run out, and not in a normal room', () => {
+    const inBoss = simulateDungeon(oneRoom(bossFoe(), { enrage: ENRAGE }), 'boss-enrage');
+    const result = inBoss.rooms[0]?.result;
+    expect(result?.enraged).toBe(true);
+    expect(result?.rounds).toBe(3 + ENRAGE.rounds);
+    expect(inBoss.cleared).toBe(false);
+    // Each enrage round hits all three creatures for 200% of the foe's Attack (20 x 2 = 40).
+    const rage = (result?.events ?? []).flatMap((e) =>
+      e.t === 'boss_hit' && e.source === 'enrage' ? [e] : [],
+    );
+    expect(rage).toHaveLength(3 * ENRAGE.rounds);
+    // A crit (the live luck rules give the boss a chance) is 50% more.
+    for (const h of rage) expect(h.damage).toBe(h.crit === true ? 60 : 40);
+
+    // A normal room keeps today's rule: out of rounds ends it, whatever the run's enrage says.
+    const inNormal = simulateDungeon(oneRoom(foe({ rounds: 3 }), { enrage: ENRAGE }), 'normal');
+    expect(inNormal.rooms[0]?.result.enraged).toBe(false);
+    expect(inNormal.rooms[0]?.result.rounds).toBe(3);
+  });
+
+  it('a boss that falls in time, and a run without enrage or depth, play exactly as before', () => {
+    const strong = (): FightSlot[] =>
+      ['left', 'mid', 'right'].map((id) => ({
+        ...slot(id, { atk: 200, hp: 1_000_000 }),
+        ownerId: 'p1',
+      }));
+    const plain = run([room(0, bossFoe(), 300, 20)], strong());
+    const withNew: DungeonRunInput = { ...plain, enrage: ENRAGE, depth: 3 };
+    const a = simulateDungeon(plain, 'as-before');
+    expect(a.cleared).toBe(true);
+    expect(simulateDungeon(withNew, 'as-before')).toEqual(a);
+    expect(a.rooms[0]?.result.enraged).toBe(false);
+    // A stored older run (no new fields) is built and replayed exactly as it was.
+    const stored = JSON.parse(JSON.stringify(plain)) as DungeonRunInput;
+    expect('enrage' in stored || 'depth' in stored).toBe(false);
+    expect(simulateDungeon(stored, 'as-before')).toEqual(a);
+    expect(buildRoomInput(stored, stored.rooms[0] as DungeonRoomSpec, null).boss.gimmicks).toEqual(
+      [],
+    );
+  });
+
+  it('gives the room boss its signature at landmark depths only, after its own moves', () => {
+    const every = RULES.dungeon.landmarkEvery;
+    const boss = room(2, bossFoe(), 100, 1);
+    const ids = (depth: number | undefined, b = boss) =>
+      buildRoomInput(
+        { ...oneRoom(bossFoe()), ...(depth === undefined ? {} : { depth }) },
+        b,
+        null,
+      ).boss.gimmicks.map((g) => g.id);
+    expect(ids(every)).toEqual(['sig']);
+    expect(ids(2 * every)).toEqual(['sig']);
+    for (const depth of [1, 2, every - 1, every + 1, 2 * every + 3]) {
+      expect(ids(depth), `depth ${String(depth)}`).toEqual([]);
+    }
+    expect(ids(undefined)).toEqual([]);
+    // After the foe's own gimmicks.
+    const withOwn = room(2, bossFoe({ gimmicks: [gimmickOf('own')] }), 100, 1);
+    expect(ids(every, withOwn)).toEqual(['own', 'sig']);
+    expect(ids(1, withOwn)).toEqual(['own']);
+  });
+
+  it('gives the signature to a room boss only: a normal foe never gains one', () => {
+    const normal = room(0, foe({ signature }), 100, 1);
+    expect(
+      buildRoomInput({ ...oneRoom(foe()), depth: RULES.dungeon.landmarkEvery }, normal, null).boss
+        .gimmicks,
+    ).toEqual([]);
+  });
+
+  it('announces the signature a round ahead on a landmark depth, and not otherwise', () => {
+    const every = RULES.dungeon.landmarkEvery;
+    const charges = (depth: number) =>
+      (simulateDungeon(oneRoom(bossFoe(), { depth }), 'sig').rooms[0]?.result.events ?? []).flatMap(
+        (e) => (e.t === 'charge' ? [[e.round, e.landing]] : []),
+      );
+    // Every 2nd round lands in rounds 2 and 4, but only the landing within the 3 base rounds is
+    // announced (and never one in an enrage round).
+    expect(charges(every)).toEqual([[1, 2]]);
+    expect(charges(every - 1)).toEqual([]);
+    const withEnrage = simulateDungeon(oneRoom(bossFoe(), { depth: every, enrage: ENRAGE }), 'sig');
+    expect((withEnrage.rooms[0]?.result.events ?? []).filter((e) => e.t === 'charge')).toHaveLength(
+      1,
+    );
+  });
+
+  it('every shipped room boss has a signature, and announces it at the landmark depth', () => {
+    for (const f of dungeonContent.foes.filter((x) => x.kind === 'boss')) {
+      expect(f.signature, f.id).toBeDefined();
+      const result = simulateDungeon(
+        oneRoom({ ...f, rounds: 6 }, { depth: RULES.dungeon.landmarkEvery }),
+        `shipped-${f.id}`,
+      );
+      const events = result.rooms[0]?.result.events ?? [];
+      const announced = events.filter((e) => e.t === 'charge' && e.gimmick === f.signature?.id);
+      expect(announced.length, f.id).toBeGreaterThan(0);
     }
   });
 });

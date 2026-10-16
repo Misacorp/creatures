@@ -22,11 +22,18 @@ export interface BossIconInfo {
   detail: string;
   /** The glossary's general line for this kind of trick or order; null when there is none. */
   general: string | null;
+  /** The rank this trick starts at when it is new this week (its `fromRank` is the week's rank); else null. */
+  newAtRank: number | null;
 }
 
-/** The turn order first, then the tricks in the boss's own order. */
+/**
+ * The turn order first, then the tricks in the boss's own order. `boss.gimmicks` are the moves in
+ * play at the week's rank (the server filters them), and a trick whose `fromRank` is the week's
+ * `effectiveRank` is marked new.
+ */
 export function bossIcons(
   boss: Pick<RaidView['boss'], 'id' | 'turnOrder' | 'gimmicks'>,
+  effectiveRank: number | null = null,
 ): BossIconInfo[] {
   const order = entryView(GLOSSARY_IDS.turnOrder(boss.turnOrder));
   const icons: BossIconInfo[] = [
@@ -39,19 +46,27 @@ export function bossIcons(
       title: order?.title ?? 'Turn order',
       detail: turnOrderText(boss.turnOrder),
       general: order?.short ?? null,
+      newAtRank: null,
     },
   ];
+  const fresh = new Map(
+    boss.gimmicks.flatMap((g) =>
+      g.fromRank !== undefined && g.fromRank === effectiveRank ? [[g.id, g.fromRank] as const] : [],
+    ),
+  );
   for (const g of gimmickLines(boss.id, boss.gimmicks)) {
+    const newAtRank = fresh.get(g.id) ?? null;
     const general = g.op === null ? undefined : entryView(GLOSSARY_IDS.gimmick(g.op));
     icons.push({
       key: `gimmick:${g.id}`,
       kind: 'gimmick',
-      glyph: g.op ?? '',
+      glyph: g.glyph ?? '',
       caption: g.name,
-      label: `${g.name}: what does this trick do?`,
+      label: `${g.name}${newAtRank === null ? '' : `, new at rank ${String(newAtRank)}`}: what does this trick do?`,
       title: g.name,
-      detail: g.text !== '' ? g.text : g.short,
+      detail: `${g.text !== '' ? g.text : g.short}${newAtRank === null ? '' : ` New at rank ${String(newAtRank)}.`}`,
       general: general?.short ?? null,
+      newAtRank,
     });
   }
   return icons;

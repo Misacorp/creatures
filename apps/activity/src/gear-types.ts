@@ -91,10 +91,10 @@ export interface Job {
 
 /** What a grant (a raid phase, a finale, a Festival, an expedition claim, the welcome kit) gave. */
 export interface GrantLoot {
-  /** Items now in the inventory. */
-  gear: { id: string; baseId: string; rarity: GearRarity }[];
+  /** Items now in the inventory. `level` is the upgrade level it arrived with (absent: +0, as on older grants). */
+  gear: { id: string; baseId: string; rarity: GearRarity; level?: number }[];
   /** Items that did not fit in a full inventory and became parts (already counted in `parts`). */
-  converted: { baseId: string; rarity: GearRarity }[];
+  converted: { baseId: string; rarity: GearRarity; level?: number }[];
   parts: PartsBundle;
   blueprints: { baseId: string; rarity: GearRarity; duplicate: boolean }[];
   /** Supply ids an expedition found (absent on every other grant and on trips from before supplies). */

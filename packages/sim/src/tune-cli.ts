@@ -26,18 +26,26 @@ const defaultIo: Io = {
   },
 };
 
-const USAGE = `Usage: node packages/sim/scripts/tune.mjs [--set raid.scaling.rankStepBp=3000,progression.seasonResetRanks=1,boss.thornmother.baseHp=4300] [--long N] [--seed <string>] [--full] [--calibrate ROUNDS [--seeds N]]
+const USAGE = `Usage: node packages/sim/scripts/tune.mjs [--set raid.curve.ranks.3.hpBp=21000,progression.seasonResetRanks=1,boss.thornmother.baseHp=4300] [--long N] [--seed <string>] [--full] [--calibrate ROUNDS [--seeds N] [--target 0.5] [--slope 3]]
 Tries tuning overrides without editing files. Default: long-run servers only (N per size, default 20). --full also runs the whole simulator and lists every target; --sweep does the same with small long-run and pity sims (faster, for tuning boss HP).`;
 
 /**
  * Boss HP calibration: fits one base HP per boss and one head-count exponent so every boss wins about
- * half its finales at 5, 10 and 15 players (typical rosters at the rank the old per-level rule would
- * have picked). Each round runs the raid sweep and moves ln(HP) by (win rate - 50%) / 3 per point,
- * the rule of thumb the earlier balance passes found (1% more HP is about 3 points of win rate),
+ * `target` (default half) of its finales at 5, 10 and 15 players (typical rosters at the rank the old
+ * per-level rule would have picked). Each round runs the raid sweep and moves ln(HP) by
+ * (win rate - target) / `slope` per point, the rule of thumb the earlier balance passes found (1% more
+ * HP is about 3 points of win rate near 50%; with phase floors and a high win rate it is about 2),
  * fitted per boss and for the exponent by least squares on the 5, 10 and 15 player cells. Prints the
  * settings to copy into the content and the rules; it does not write any file.
  */
-function calibrate(rounds: number, seed: string, seedCount: number, io: Io): void {
+function calibrate(
+  rounds: number,
+  seed: string,
+  seedCount: number,
+  io: Io,
+  target = 0.5,
+  slope = 3,
+): void {
   const seeds = Array.from({ length: seedCount }, (_, i) => (i === 0 ? seed : `${seed}-${i}`));
   const prepared = seeds.map((sd) => {
     const settings = defaultSettings('full', { seed: sd });
@@ -64,7 +72,12 @@ function calibrate(rounds: number, seed: string, seedCount: number, io: Io): voi
         if (rs.length === 0) continue;
         const win = rs.filter((r) => r.win).length / rs.length;
         const n = rs.reduce((a, r) => a + r.signedUp, 0) / rs.length;
-        rows.push({ boss: boss.id, lnN: Math.log(n), want: Math.log(1 + (win - 0.5) / 3), win });
+        rows.push({
+          boss: boss.id,
+          lnN: Math.log(n),
+          want: Math.log(1 + (win - target) / slope),
+          win,
+        });
       }
     }
     // Per boss: ln m = ln beta + d * ln N over its three sizes. Move the boss's exponent by d and
@@ -117,6 +130,8 @@ export function main(argv: readonly string[], io: Io = defaultIo): number {
         sweep: { type: 'boolean' },
         calibrate: { type: 'string' },
         seeds: { type: 'string' },
+        target: { type: 'string' },
+        slope: { type: 'string' },
         help: { type: 'boolean' },
       },
       strict: true,
@@ -136,7 +151,11 @@ export function main(argv: readonly string[], io: Io = defaultIo): number {
       const seedCount = typeof values['seeds'] === 'string' ? Number(values['seeds']) : 1;
       if (!Number.isInteger(seedCount) || seedCount < 1 || seedCount > 12)
         throw new Error('--seeds must be 1 to 12');
-      calibrate(rounds, seed, seedCount, io);
+      const target = typeof values['target'] === 'string' ? Number(values['target']) : 0.5;
+      if (!(target > 0 && target < 1)) throw new Error('--target must be between 0 and 1');
+      const slope = typeof values['slope'] === 'string' ? Number(values['slope']) : 3;
+      if (!(slope > 0 && slope <= 20)) throw new Error('--slope must be above 0 and at most 20');
+      calibrate(rounds, seed, seedCount, io, target, slope);
       return 0;
     }
 

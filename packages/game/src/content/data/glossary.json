@@ -93,12 +93,12 @@
   {
     "id": "role-guard",
     "title": "Guard",
-    "short": "Tough. Takes hits for its zone.",
+    "short": "Tough. Takes the hits aimed at its row.",
     "lines": [
-      "Has 30% more HP than other roles.",
-      "A boss hit aimed at one creature goes to a Guard in the same zone (in the dungeon: right beside it).",
-      "Hits on a whole zone still reach everyone in it.",
-      "Best at the front, where the boss attacks first."
+      "Armor: takes 25% less damage from every hit.",
+      "A hit aimed at one creature goes to a Guard in its row instead (dungeon: right beside it). Two Guards roll.",
+      "Creatures right beside it, in its row, take 40% less from hits on many creatures.",
+      "A Lance stops at a Guard. A hit aimed at a Guard never goes on to another."
     ],
     "visual": {
       "kind": "species",
@@ -111,10 +111,10 @@
     "title": "Support",
     "short": "Powers up its neighbours.",
     "lines": [
-      "Each round it boosts the creatures right next to it.",
+      "Each round it boosts the creatures right next to it. In the raid its reach stops at the row's edge.",
       "Their next hit deals 15% more damage.",
-      "A knocked-out or silenced Support gives no boost.",
-      "Place it between your strongest hitters."
+      "By element: Ember boosts 25%, Spark adds reaction damage, Tide and Grove heal (Tide clears silence too).",
+      "Nothing reaches past a knocked-out neighbour. A knocked-out or silenced Support gives nothing."
     ],
     "visual": {
       "kind": "species",
@@ -253,7 +253,7 @@
   {
     "id": "gimmick-hit-zone",
     "title": "Zone attack",
-    "short": "Hits every creature in one zone.",
+    "short": "Hits every creature in one row. An empty row: the nearest row with someone.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -264,7 +264,7 @@
   {
     "id": "gimmick-silence-ends",
     "title": "Silence",
-    "short": "The row's ends skip a turn.",
+    "short": "The leftmost and rightmost creature still standing in the line skip a turn.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -275,7 +275,7 @@
   {
     "id": "gimmick-reflect-first-reaction",
     "title": "Reflect",
-    "short": "Turns a reaction back on you.",
+    "short": "The first reaction each round hits back at who cashed it in, or their Guard.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -286,11 +286,77 @@
   {
     "id": "gimmick-strike-highest-atk",
     "title": "Strongest strike",
-    "short": "Targets your top attacker.",
+    "short": "Targets your top attacker, and may jump on.",
     "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "strike_highest_atk"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-sweep",
+    "title": "Sweep",
+    "short": "Hits one row, every row, or the row with the most Payoffs.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "sweep"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-barrage",
+    "title": "Barrage",
+    "short": "Shells hit different random creatures. Not last volley's, if others are left.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "barrage"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-slam",
+    "title": "Slam",
+    "short": "A heavy hit, often on your best Payoff. Neighbours of the victim take a share.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "slam"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-lance",
+    "title": "Lance",
+    "short": "Pierces one lane, front to back. A Guard stops it.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "lance"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-pincer",
+    "title": "Pincer",
+    "short": "Hits the ends of each row, or of the whole line.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "pincer"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "gimmick-charge",
+    "title": "Charge",
+    "short": "Marks victims a round ahead. A fallen mark is spared. Never round 1 or overtime.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "charge"
     },
     "section": "raid-week"
   },
@@ -304,7 +370,7 @@
   {
     "id": "zone-middle",
     "title": "Middle",
-    "short": "The rest of the row.",
+    "short": "Between Front and Back.",
     "lines": [],
     "section": "raid-week"
   },
@@ -318,7 +384,7 @@
   {
     "id": "turn-left-to-right",
     "title": "Left to right",
-    "short": "The row acts from slot 1 on.",
+    "short": "The line acts from slot 1 on.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -329,7 +395,7 @@
   {
     "id": "turn-right-to-left",
     "title": "Right to left",
-    "short": "The row acts from the last slot.",
+    "short": "The line acts from the last slot.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -520,6 +586,20 @@
     "section": "raid-week"
   },
   {
+    "id": "retreat",
+    "title": "Retreat",
+    "short": "Phase 1 or 2 floor: the boss goes immune, the fight ends, extra damage is lost.",
+    "lines": [],
+    "section": "raid-week"
+  },
+  {
+    "id": "enrage",
+    "title": "Enraged",
+    "short": "Out of time: your creatures act, then the boss attacks and hits every creature.",
+    "lines": [],
+    "section": "finale"
+  },
+  {
     "id": "essence",
     "title": "Essence",
     "short": "Raid reward. Evolves creatures.",
@@ -538,9 +618,10 @@
   {
     "id": "bait",
     "title": "Bait",
-    "short": "Currency from leets in Discord.",
+    "short": "Currency from a daily allowance and from leets.",
     "lines": [
-      "Your leets in Discord turn into Bait.",
+      "Open the game each day for an allowance of 25 Bait. The day starts at 13:37; a missed day is not paid later.",
+      "Leeting in Discord adds a bonus of 15 to 32 Bait, more when more players leet that day.",
       "Spend it to train creatures and fund expeditions.",
       "Extra copies of a fully fused creature turn into Bait."
     ],
@@ -650,6 +731,7 @@
     "lines": [
       "Gear adds to Attack, HP, speed and crits. What it adds in total is capped.",
       "Upgrade an item from +0 to +5 with Essence and scrap. Upgrades never fail.",
+      "A won finale drops gear already upgraded: +1 for every 2 Ranks above 1, up to +5.",
       "Dismantle an item to get parts back. This cannot be undone."
     ],
     "section": "workshop"
@@ -670,7 +752,7 @@
     "title": "Blueprint",
     "short": "Teaches you to craft one kind of item. Learned once.",
     "lines": [
-      "Blueprints come from expeditions (more often on long ones) and the welcome kit.",
+      "Blueprints come from expeditions (more often on long ones), the welcome kit and sometimes a won finale.",
       "A blueprint you already know turns into 5 scrap."
     ],
     "section": "workshop"

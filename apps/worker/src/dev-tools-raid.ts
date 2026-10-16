@@ -71,7 +71,11 @@ function weekFlags(ctx: ToolCtx, weekId: string) {
       rank: number | null;
       effective_rank: number | null;
       festival: number | null;
-    }>('SELECT boss_id, rank, effective_rank, festival FROM raid_weeks WHERE week_id = ?', weekId)
+      difficulty_version: number;
+    }>(
+      'SELECT boss_id, rank, effective_rank, festival, difficulty_version FROM raid_weeks WHERE week_id = ?',
+      weekId,
+    )
     .one();
   const poolFixed =
     ctx.sql
@@ -83,6 +87,7 @@ function weekFlags(ctx: ToolCtx, weekId: string) {
     rank: row.rank,
     effectiveRank: row.effective_rank,
     festival: row.festival === 1,
+    difficultyVersion: row.difficulty_version,
     poolFixed,
   };
 }

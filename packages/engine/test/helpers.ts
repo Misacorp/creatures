@@ -1,5 +1,6 @@
 import {
   RULES,
+  bossAtRank,
   content,
   createSeededRng,
   type BossDef,
@@ -186,7 +187,8 @@ export function randomInput(seed: string, playerCount: number, phase: PhaseId): 
   const avg = Math.floor(row.reduce((s, c) => s + c.level, 0) / row.length);
   // The average level stands in for a rank here (random rows of every strength get a boss of a
   // comparable strength); capped so Attack stays sensible.
-  const scaled = scaleBoss(b, playerCount, Math.min(avg, 8));
+  const rank = Math.min(avg, 8);
+  const scaled = scaleBoss(b, playerCount, rank);
   const rule = content.adaptations.find((a) => a.id === b.adaptation);
   const basics = content.finaleAbilities.filter((a) => a.kind === 'basic');
   const abilities: AbilityChoice[] = players.map((playerId, i) => {
@@ -213,7 +215,7 @@ export function randomInput(seed: string, playerCount: number, phase: PhaseId): 
     });
   }
   return {
-    boss: b,
+    boss: bossAtRank(b, rank),
     bossAtk: scaled.atk,
     phase,
     bossHpPool: {

@@ -14,7 +14,7 @@ const GOLD = '#ffd25a';
 const HAZE = '#a69fc8';
 const BAD = '#ff5f6d';
 
-// --- Boss gimmicks (one per gimmick op in the content schema) ---
+// --- Boss gimmicks (one per gimmick op in the content schema, plus the chain's bolt) ---
 
 /** A heavy blow on the ground: an arrow slamming into a floor. */
 const hitZone: SpriteDef = {
@@ -73,6 +73,103 @@ const strikeHighestAtk: SpriteDef = {
     '.ggw....',
     '.kgg....',
     'k..g....',
+  ],
+};
+
+/** Three waves rolling across the rows: a sweep hits a whole row. */
+const sweep: SpriteDef = {
+  palette: { r: BAD },
+  rows: [
+    '.rr..rr.',
+    'r..rr..r',
+    '........',
+    '.rr..rr.',
+    'r..rr..r',
+    '........',
+    '.rr..rr.',
+    'r..rr..r',
+  ],
+};
+
+/** Shells dropping on scattered spots: a barrage on random creatures. */
+const barrage: SpriteDef = {
+  palette: { r: BAD },
+  rows: [
+    '.r......',
+    'rrr...r.',
+    '.r...rrr',
+    '......r.',
+    '........',
+    '...r....',
+    '..rrr...',
+    '...r....',
+  ],
+};
+
+/** A fist with the ripples of its impact: a slam, with a share for the creatures beside the victim. */
+const slam: SpriteDef = {
+  palette: { r: BAD, w: BONE },
+  rows: [
+    '..rrrr..',
+    '..rwwr..',
+    '..rrrr..',
+    '...rr...',
+    'rr.rr.rr',
+    '..r..r..',
+    '.r....r.',
+    '........',
+  ],
+};
+
+/** An arrow driven through three rows: a lance cuts one lane, front to back. */
+const lance: SpriteDef = {
+  palette: { r: BAD, w: BONE },
+  rows: [
+    '...rr...',
+    '..rrrr..',
+    '...rr...',
+    'wwwrrwww',
+    '...rr...',
+    'wwwrrwww',
+    '...rr...',
+    'wwwrrwww',
+  ],
+};
+
+/** A bolt that jumps on: a strike on the strongest that chains to the next. */
+const chain: SpriteDef = {
+  palette: { g: GOLD },
+  rows: [
+    '.....gg.',
+    '....gg..',
+    '...gg...',
+    '..gggg..',
+    '....gg..',
+    '...gg...',
+    '..gg....',
+    '.g......',
+  ],
+};
+
+/** Two arrows closing on the ends of a row: a pincer. */
+const pincer: SpriteDef = {
+  mirror: true,
+  palette: { r: BAD, w: BONE },
+  rows: ['....', 'r...', 'rr..', 'rrrw', 'rrrw', 'rr..', 'r...', '....'],
+};
+
+/** An hourglass: a move that is gathering and lands next round. */
+const charge: SpriteDef = {
+  palette: { w: BONE, g: GOLD },
+  rows: [
+    'wwwwwwww',
+    '.gggggg.',
+    '..gggg..',
+    '...gg...',
+    '...gg...',
+    '..g..g..',
+    '.gggggg.',
+    'wwwwwwww',
   ],
 };
 
@@ -380,6 +477,13 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   silence_ends: silenceEnds,
   reflect_first_reaction: reflectFirstReaction,
   strike_highest_atk: strikeHighestAtk,
+  sweep,
+  barrage,
+  slam,
+  lance,
+  pincer,
+  charge,
+  chain,
   left_to_right: leftToRight,
   right_to_left: rightToLeft,
   speed,
@@ -431,5 +535,17 @@ export const GIMMICK_GLYPH_OPS = [
   'silence_ends',
   'reflect_first_reaction',
   'strike_highest_atk',
+  'sweep',
+  'barrage',
+  'slam',
+  'lance',
+  'pincer',
+  'charge',
 ] as const;
+
+/**
+ * The glyph key of a strike on the strongest that jumps on to more creatures (`jumps` above 0): the
+ * same op as the plain strike, drawn as a bolt so a boss card tells the two apart.
+ */
+export const CHAIN_GLYPH = 'chain';
 export const TURN_ORDER_GLYPHS = ['left_to_right', 'right_to_left', 'speed'] as const;

@@ -5,6 +5,7 @@
   "resetsAt": 1799840220000,
   "depth": 2,
   "landmark": false,
+  "landmarkBoss": null,
   "streak": 1,
   "modifiers": [
     {
@@ -31,7 +32,7 @@
   "canRun": false,
   "blocked": "already_run",
   "last": {
-    "id": "c29e1899-1a01-45c7-8cd3-80a9f57d0b10",
+    "id": "0f630eab-f47e-4887-b5e4-d7e1529cfa94",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -43,17 +44,17 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "65ce0708-80e0-4bb0-99b8-5ef9806dbb05",
+        "id": "6a9fb75e-1bc1-4dd9-965b-0dc8267508b2",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
         "role": "guard",
         "level": 12,
-        "hpMax": 365,
-        "hpEnd": 302
+        "hpMax": 281,
+        "hpEnd": 240
       },
       {
-        "id": "1e5e90cb-3a0d-40b1-8d5f-52ae9a216246",
+        "id": "dafa05f3-b30b-45c0-adf0-885ff3bfe1a4",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
@@ -63,7 +64,7 @@
         "hpEnd": 200
       },
       {
-        "id": "d7437761-2efb-44e0-b989-7ac8ae2f515c",
+        "id": "eb79d11c-7db9-4931-806a-b5d8977924e1",
         "name": "Cindle",
         "speciesId": "cindle",
         "element": "ember",
@@ -81,7 +82,7 @@
           "id": "bramble-hound",
           "name": "Bramble Hound",
           "element": "grove",
-          "hpMax": 337
+          "hpMax": 317
         },
         "modifier": {
           "id": "dark",
@@ -100,7 +101,7 @@
           "id": "drift-wisp",
           "name": "Drift Wisp",
           "element": "tide",
-          "hpMax": 240
+          "hpMax": 225
         },
         "modifier": {
           "id": "brittle",
@@ -119,7 +120,7 @@
           "id": "drowned-warden",
           "name": "Drowned Warden",
           "element": "tide",
-          "hpMax": 525
+          "hpMax": 493
         },
         "modifier": {
           "id": "thorns",
@@ -128,7 +129,7 @@
         },
         "played": true,
         "cleared": true,
-        "rounds": 4,
+        "rounds": 3,
         "foeHpEnd": 0
       }
     ],
@@ -146,9 +147,9 @@
     }
   },
   "lastTeam": [
-    "65ce0708-80e0-4bb0-99b8-5ef9806dbb05",
-    "1e5e90cb-3a0d-40b1-8d5f-52ae9a216246",
-    "d7437761-2efb-44e0-b989-7ac8ae2f515c"
+    "6a9fb75e-1bc1-4dd9-965b-0dc8267508b2",
+    "dafa05f3-b30b-45c0-adf0-885ff3bfe1a4",
+    "eb79d11c-7db9-4931-806a-b5d8977924e1"
   ],
   "draftTeam": null
 }

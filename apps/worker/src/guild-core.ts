@@ -1,5 +1,6 @@
-import { RULES, createCryptoRng, type Rng } from '@creatures/game';
+import { RULES, createCryptoRng, leetBonusForDay, type Rng } from '@creatures/game';
 import * as v from 'valibot';
+import { DailyAllowance } from './allowance';
 import { Analytics } from './analytics';
 import { attentionOf, type Attention } from './attention';
 import { AnalyticsRollup, analyticsRollupMigration, type DailyRow } from './analytics-rollup';
@@ -15,7 +16,7 @@ import { creatureQuirkMigration } from './creature-quirk-migration';
 import { expeditionRoutes } from './expedition-routes';
 import { expeditionsMigration } from './expedition-migration';
 import { collectionRoutes } from './collection-routes';
-import { baitForDay, leetPointsForDay } from './economy';
+import { leetPointsForDay } from './economy';
 import { DevState } from './dev-state';
 import { DevTools, devRoutes, isDevPath } from './dev-tools';
 import { DiscordError, type GuildApi } from './discord';
@@ -49,6 +50,7 @@ import {
 } from './ledger';
 import { Raid } from './raid';
 import { raidAutofireMigration } from './raid-autofire-migration';
+import { raidDifficultyMigration } from './raid-difficulty-migration';
 import { raidLivePacingMigration } from './raid-live-pacing-migration';
 import { raidLiveMigration } from './raid-live-migration';
 import { raidMigration } from './raid-migration';
@@ -316,7 +318,22 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
     sql.exec('ALTER TABLE players ADD COLUMN lounge_spot TEXT');
     sql.exec('ALTER TABLE players ADD COLUMN lounge_spot_at INTEGER');
   },
-  // Version 24: the saved dungeon team draft (see dungeon-draft-migration.ts).
+  // Version 24: the raid difficulty version of each week (see raid-difficulty-migration.ts).
+  raidDifficultyMigration,
+  (sql) => {
+    // Version 25: the daily Bait allowance (see allowance.ts). One row per player and game day that
+    // was paid (the Bait itself is a ledger credit keyed `allowance:<day>`); `announced` is set when
+    // /api/me has told the player, so the client shows the allowance once. Older rows are pruned.
+    sql.exec(`CREATE TABLE daily_allowance (
+      user_id TEXT NOT NULL,
+      day TEXT NOT NULL,
+      amount INTEGER NOT NULL CHECK (amount > 0),
+      granted_at INTEGER NOT NULL,
+      announced INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, day)
+    )`);
+  },
+  // Version 26: the saved dungeon team draft (see dungeon-draft-migration.ts).
   dungeonDraftMigration,
 ];
 
@@ -375,6 +392,8 @@ const routes: Routes<RequestContext> = {
         guildId,
         timezone: core.timezone(),
         balances: core.balances(user.id),
+        // The allowance this request is the first to tell the player about (null on every later one).
+        allowance: core.allowance.takeNotice(user.id),
         leetSync: core.leetSyncStatus(),
         // Staging only: lets the client load the dev panel. Absent (not false) everywhere else.
         ...(core.dev === null ? {} : { devTools: true }),
@@ -440,6 +459,11 @@ export interface GuildCoreOptions {
   createLeetSource?: (knownPlayers: () => string[]) => LeetSource | null;
   /** How long /api/me waits for a sync before answering with stale data. */
   syncBudgetMs?: number;
+  /**
+   * Whether the daily Bait allowance is paid (default true). Only tests turn it off, so that the many
+   * tests of other features keep exact Bait balances; the allowance tests leave it on.
+   */
+  dailyAllowance?: boolean;
   /** Delivers Discord posts. Without one, posts stay queued and the alarm ignores them. */
   postSender?: PostSender | null;
   /**
@@ -504,6 +528,8 @@ export class GuildCore {
   readonly raid: Raid;
   readonly analytics: Analytics;
   readonly rollup: AnalyticsRollup;
+  /** The daily Bait allowance, granted on a player's first authenticated request of a game day. */
+  readonly allowance: DailyAllowance;
   private syncInFlight: Promise<LeetSyncResult> | null = null;
   private postsInFlight: Promise<void> | null = null;
   /** The last analytics prune left old rows behind: the alarm comes back soon to continue. */
@@ -534,6 +560,7 @@ export class GuildCore {
     });
     // Rollups keep real time too, like the events they count.
     this.rollup = new AnalyticsRollup({ storage, now: realNow, timezone: () => this.timezone() });
+    this.allowance = new DailyAllowance(storage, this.analytics, now, () => this.timezone());
     const gearRng = options.gearRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
     this.collection = new Collection({
       storage,
@@ -848,6 +875,8 @@ export class GuildCore {
     // The actor hash is computed here, before any transaction, and used by the events the request logs.
     await this.analytics.prepare(user.id);
     this.analytics.touch(user.id);
+    // The first authenticated request of a game day pays the daily allowance (once, race-safe).
+    if (this.options.dailyAllowance !== false) this.allowance.grant(user.id);
     await this.ensureAlarm();
     const template = matchTemplate(ROUTE_KEYS, pathname);
     return dispatch(routes, request, template?.template ?? pathname, {
@@ -1055,7 +1084,9 @@ export class GuildCore {
         for (const day of data.days) {
           const n = day.participants.length;
           const points = leetPointsForDay(n);
-          const bait = baitForDay(n);
+          // The leet bonus replaces the old points-based Bait (the allowance is paid separately).
+          // `n` is the day's final count: the sync only sees finalised days, so nobody is topped up.
+          const bait = leetBonusForDay(n);
           if (bait === 0) continue;
           for (const participant of day.participants) {
             const credited = this.credit({
@@ -1064,7 +1095,7 @@ export class GuildCore {
               amount: bait,
               source: 'leet',
               idempotencyKey: `leet:${day.id}`,
-              meta: { date: day.date, participants: n, points },
+              meta: { date: day.date, participants: n, points, bonus: bait },
             });
             if (credited.applied) count++;
           }

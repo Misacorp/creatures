@@ -55,6 +55,8 @@ describe('POST /api/auth/session', () => {
       guildId: GUILD_ID,
       timezone: 'Europe/Helsinki',
       balances: { bait: expect.any(Number) as number, essence: 0 },
+      // The first request of the game day paid the allowance.
+      allowance: { day: expect.any(String) as string, amount: 25 },
       leetSync: {
         source: 'mock',
         lastAttemptAt: expect.any(Number) as number,

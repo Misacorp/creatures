@@ -23,7 +23,7 @@ const draftRows = (ctx: CoreContext) =>
     'SELECT user_id, team_json, updated_at FROM dungeon_drafts',
   );
 
-describe('migration 24', () => {
+describe('migration 26', () => {
   it('creates the drafts table, and an older database gets it', async () => {
     await runCore(nextGuild(), async (ctx) => {
       expect(count(ctx.sql, 'dungeon_drafts')).toBe(0);

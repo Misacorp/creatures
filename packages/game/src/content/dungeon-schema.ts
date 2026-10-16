@@ -33,6 +33,11 @@ export const DungeonFoeSchema = v.strictObject({
   baseHp: PositiveInt,
   baseAtk: PositiveInt,
   gimmicks: v.pipe(v.array(GimmickSchema), v.maxLength(3)),
+  /**
+   * A room boss's landmark signature: a `charge` gimmick it gains only at landmark depths (every
+   * `RULES.dungeon.landmarkEvery`-th), announced a round ahead. Room bosses only.
+   */
+  signature: v.optional(GimmickSchema),
   /** Rounds in the room's fight (the fight also ends when the foe falls or the team is knocked out). */
   rounds: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(MAX_ROOM_ROUNDS)),
   crit: v.optional(CritBonusSchema),
@@ -115,12 +120,22 @@ export function loadDungeon(rawFoes: unknown, rawModifiers: unknown, rooms: numb
     for (const g of foe.gimmicks) {
       if (gimmickIds.has(g.id)) fail(`foe "${foe.id}" has duplicate gimmick id "${g.id}"`);
       gimmickIds.add(g.id);
+      // Boss Ranks are a raid idea: a dungeon foe fights with all its moves.
+      if (g.fromRank !== undefined)
+        fail(`foe "${foe.id}" gimmick "${g.id}" cannot have a fromRank`);
     }
+    if (foe.signature?.fromRank !== undefined)
+      fail(`foe "${foe.id}" signature cannot have a fromRank`);
   }
   const modifierIds = new Set<string>();
   for (const m of pack.modifiers) {
     if (modifierIds.has(m.id)) fail(`duplicate modifier id "${m.id}"`);
     modifierIds.add(m.id);
+    for (const e of m.effects) {
+      if (e.op === 'foe_gimmick' && e.gimmick.fromRank !== undefined) {
+        fail(`modifier "${m.id}" gimmick cannot have a fromRank`);
+      }
+    }
     // The same kind of effect on the same thing twice would only be a confusing way to write one.
     const keys = m.effects.map((e) => {
       switch (e.op) {

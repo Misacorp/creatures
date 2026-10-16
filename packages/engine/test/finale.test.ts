@@ -264,7 +264,18 @@ describe('finale abilities', () => {
         ];
         const r = run(guarded, {
           ...plain,
-          boss: { ...input([]).boss, gimmicks: [boss('storm-sovereign').gimmicks[0]!] },
+          boss: {
+            ...input([]).boss,
+            gimmicks: [
+              {
+                id: 'lightning-rod',
+                name: 'Lightning Rod',
+                trigger: { eachRound: true },
+                op: 'strike_highest_atk',
+                power: 12_000,
+              },
+            ],
+          },
           finaleAbilities: [
             { key: 'g', playerId: 'p1', abilityId: 'test-guard', creatureId: 'g', fireAtRound: 1 },
           ],
