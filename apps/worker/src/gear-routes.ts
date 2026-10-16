@@ -10,7 +10,7 @@ import {
   RemovedJobKindSchema,
   StartJobBodySchema,
 } from './gear-schemas';
-import { errorResponse, json, parseBody, type Routes } from './http';
+import { errorResponse, json, parseBody, type Handler, type Routes } from './http';
 
 /** What these routes need from the request context (GuildCore's context satisfies it). */
 export interface GearRouteContext {
@@ -28,7 +28,7 @@ function views(ctx: GearRouteContext): { gear: unknown; state: unknown } {
   return { gear: ctx.core.gear.state(ctx.user.id), state: ctx.core.collection.state(ctx.user.id) };
 }
 
-export const gearRoutes: Routes<GearRouteContext> = {
+const routes: Routes<GearRouteContext> = {
   '/api/gear': {
     // The first gear load gives the welcome kit (once), so crafting can start on day 1.
     GET: (_request, ctx) => {
@@ -103,3 +103,23 @@ export const gearRoutes: Routes<GearRouteContext> = {
     },
   },
 };
+
+/**
+ * A player whose old gear could not be converted yet (one bad legacy row: the conversion rolled back and
+ * they stay pending) gets a clear 503 from every gear and Workshop route instead of a half-converted view.
+ */
+const guarded =
+  (handler: Handler<GearRouteContext>): Handler<GearRouteContext> =>
+  (request, ctx) =>
+    ctx.core.gear.conversionPending(ctx.user.id)
+      ? errorResponse('gear_conversion_pending', 503)
+      : handler(request, ctx);
+
+export const gearRoutes: Routes<GearRouteContext> = Object.fromEntries(
+  Object.entries(routes).map(([path, methods]) => [
+    path,
+    Object.fromEntries(
+      Object.entries(methods).map(([method, handler]) => [method, guarded(handler)]),
+    ),
+  ]),
+);

@@ -165,9 +165,22 @@ export function craftRarity(rng: Rng, level: number): GearRarity {
   return up ? NEXT_RARITY.common : 'common';
 }
 
-/** Crafts an item of a blueprint's base: its rarity (`craftRarity`), item level (2 x Crafting level) and rolled lines. */
-export function rollCraft(rng: Rng, baseId: string, craftingLevel: number): GearItem {
-  const rarity = craftRarity(rng, craftingLevel);
+const RARITY_ORDER: readonly GearRarity[] = ['common', 'rare', 'epic'];
+
+/**
+ * Crafts an item of a blueprint's base: its rarity (`craftRarity`), item level (2 x Crafting level) and
+ * rolled lines. `floor` is the least rarity it may come out as (a craft started before gear v2 was
+ * sized by its blueprint's rarity and keeps that promise; a Festival floor counts as Epic).
+ */
+export function rollCraft(
+  rng: Rng,
+  baseId: string,
+  craftingLevel: number,
+  floor?: GearRarity,
+): GearItem {
+  const drawn = craftRarity(rng, craftingLevel);
+  const min: GearRarity = floor === 'festival' ? 'epic' : (floor ?? 'common');
+  const rarity = RARITY_ORDER.indexOf(min) > RARITY_ORDER.indexOf(drawn) ? min : drawn;
   return rollItem(rng, { baseId, rarity, itemLevel: craftItemLevel(craftingLevel) });
 }
 

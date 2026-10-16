@@ -1,5 +1,29 @@
 [
   {
+    "route": "POST /api/gear/:id/equip",
+    "status": 409,
+    "body": {
+      "error": "item_level_too_high",
+      "reason": "16"
+    }
+  },
+  {
+    "route": "POST /api/gear/:id/equip",
+    "status": 409,
+    "body": {
+      "error": "slot_locked",
+      "reason": "13"
+    }
+  },
+  {
+    "route": "POST /api/gear/:id/equip",
+    "status": 409,
+    "body": {
+      "error": "wrong_role",
+      "reason": "guard"
+    }
+  },
+  {
     "route": "POST /api/workshop/jobs",
     "status": 409,
     "body": {
@@ -25,30 +49,6 @@
     "status": 409,
     "body": {
       "error": "not_ready"
-    }
-  },
-  {
-    "route": "POST /api/gear/:id/equip",
-    "status": 409,
-    "body": {
-      "error": "item_level_too_high",
-      "reason": "16"
-    }
-  },
-  {
-    "route": "POST /api/gear/:id/equip",
-    "status": 409,
-    "body": {
-      "error": "slot_locked",
-      "reason": "13"
-    }
-  },
-  {
-    "route": "POST /api/gear/:id/equip",
-    "status": 409,
-    "body": {
-      "error": "wrong_role",
-      "reason": "guard"
     }
   },
   {

@@ -116,9 +116,9 @@ describe('gear actions', () => {
 
   it('asks Equip best for the creatures it is given, and dismisses the notice, without keys', async () => {
     const { actions, server, answer } = setup();
-    server.equipBestGear.mockResolvedValue(answer({ changes: [] }));
+    server.equipBestGear.mockResolvedValue(answer({ changes: [], skipped: [] }));
     server.dismissGearNotice.mockResolvedValue(answer({ dismissed: true }));
-    expect(await actions.equipBest(['c1', 'c2'])).toEqual({ changes: [] });
+    expect(await actions.equipBest(['c1', 'c2'])).toEqual({ changes: [], skipped: [] });
     expect(await actions.dismissNotice()).toEqual({ dismissed: true });
     expect(server.equipBestGear).toHaveBeenCalledWith(['c1', 'c2']);
     expect(server.dismissGearNotice).toHaveBeenCalledOnce();

@@ -180,6 +180,8 @@ export interface GearState {
 export type EquipResult = { item: GearItem; unequipped: GearItem | null };
 export type EquipBestResult = {
   changes: { creatureId: string; slot: GearSlot; itemId: string }[];
+  /** Creatures left alone because they are away on a trip or on a Workshop job (their gear is frozen). */
+  skipped: { creatureId: string; reason: 'away' | 'job' }[];
 };
 export type DismissResult = { dismissed: boolean };
 export type DismantleResult = {

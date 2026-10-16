@@ -201,6 +201,8 @@ const ERROR_TEXT: Record<string, string> = {
   item_level_too_high: 'That item is higher level than that creature.',
   gear_upgrade_removed: 'Gear is not upgraded any more. Use the new items instead.',
   job_kind_removed: 'That kind of job is not in the Workshop any more.',
+  gear_conversion_pending:
+    'Your old gear is still being converted to the new gear. Try again in a little while.',
   blueprint_unknown: 'You have not learned that blueprint.',
   invalid_blueprint: 'That blueprint cannot be crafted.',
   item_gone: 'The item for that job is gone.',

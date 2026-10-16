@@ -347,8 +347,15 @@ export function topCreatureIds(creatures: readonly Creature[]): string[] {
 /** What "Equip best" did, in words. */
 export function equipBestText(result: EquipBestResult): string {
   const n = result.changes.length;
-  if (n === 0) return 'Your gear is already the best it can be.';
-  return n === 1 ? 'Changed 1 slot.' : `Changed ${String(n)} slots.`;
+  const away = result.skipped.length;
+  const left =
+    away === 0
+      ? ''
+      : away === 1
+        ? ' 1 creature is busy, so its gear stayed.'
+        : ` ${String(away)} creatures are busy, so their gear stayed.`;
+  if (n === 0) return `Your gear is already the best it can be.${left}`;
+  return `${n === 1 ? 'Changed 1 slot.' : `Changed ${String(n)} slots.`}${left}`;
 }
 
 // --- Where an item came from (the details row) ---

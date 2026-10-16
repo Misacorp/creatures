@@ -51,7 +51,13 @@ import type { Analytics } from './analytics';
 import { runKeyed } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import { addSupply } from './expedition-store';
-import { dismissNotice, pendingNotice, type ConversionNotice } from './gear-convert';
+import {
+  conversionPending,
+  dismissNotice,
+  mapBase,
+  pendingNotice,
+  type ConversionNotice,
+} from './gear-convert';
 import { grantWelcomeKit, recentGrants, type GrantRecord } from './gear-grants';
 import {
   addCreatureXp,
@@ -139,6 +145,12 @@ export interface GearItemView {
   /** The creature that made it and when; null for items that were not crafted. */
   madeBy: { name: string; at: number } | null;
   origin: ItemOrigin | null;
+}
+
+/** What "Equip best" did: the slots it changed, and the creatures it left alone because they are busy. */
+export interface EquipBestResult {
+  changes: { creatureId: string; slot: GearSlot; itemId: string }[];
+  skipped: { creatureId: string; reason: 'away' | 'job' }[];
 }
 
 export interface EquippedSummary {
@@ -238,6 +250,43 @@ interface StoredInput {
   secondaryIndex?: number;
   supplyId?: string;
   cost: PartsBundle;
+}
+
+/** True for a stored result of a job claimed before gear v2: a craft without an item level, an Improve or an Enchant. */
+function isLegacyResult(raw: unknown): boolean {
+  const r = raw as { kind?: unknown; itemLevel?: unknown } | null;
+  return (
+    r !== null &&
+    typeof r === 'object' &&
+    (r.kind === 'improve' ||
+      r.kind === 'enchant' ||
+      (r.kind === 'craft' && r.itemLevel === undefined))
+  );
+}
+
+/**
+ * A stored job result as the views show it. Results claimed before gear v2 are mapped: an old craft
+ * names the new base of the same slot and tint at item level 1 (like old grants), an old Improve or
+ * Enchant becomes the display-only retired shape (it refunded nothing then, so the refund is empty).
+ */
+function normaliseJobResult(raw: unknown): JobResult {
+  if (!isLegacyResult(raw)) return raw as JobResult;
+  const r = raw as JobCommon & { kind: 'craft' | 'improve' | 'enchant'; baseId?: string };
+  const common: JobCommon = {
+    xp: r.xp,
+    skillXp: r.skillXp,
+    skillLevel: r.skillLevel,
+    leveledUp: r.leveledUp,
+  };
+  if (r.kind === 'craft') {
+    return {
+      ...(raw as object),
+      kind: 'craft',
+      baseId: mapBase(r.baseId ?? '').id,
+      itemLevel: 1,
+    } as JobResult;
+  }
+  return { kind: 'retired', was: r.kind, refund: {}, ...common };
 }
 
 const sumShards = (bundle: PartsBundle): number =>
@@ -376,7 +425,12 @@ export class Gear {
   private jobView(row: JobRow, now: number): JobView {
     const input = JSON.parse(row.input_json) as StoredInput;
     let result: JobResult | null = null;
-    if (row.result_json !== null) result = JSON.parse(row.result_json) as JobResult;
+    if (row.result_json !== null) {
+      const raw: unknown = JSON.parse(row.result_json);
+      result = normaliseJobResult(raw);
+      // A claimed craft from before gear v2 names an old base: show the new base its result shows.
+      if (isLegacyResult(raw) && result.kind === 'craft') input.baseId = result.baseId;
+    }
     return {
       id: row.id,
       creatureId: row.creature_id,
@@ -451,6 +505,11 @@ export class Gear {
     };
   }
 
+  /** True while the player's old gear is waiting for its conversion (it failed on start; see `convertPendingGear`). */
+  conversionPending(userId: string): boolean {
+    return conversionPending(this.sql, userId);
+  }
+
   /** Dismisses the one-time conversion card. Repeats change nothing. */
   dismissNotice(userId: string): void {
     dismissNotice(this.sql, userId, this.deps.now());
@@ -505,6 +564,21 @@ export class Gear {
     );
   }
 
+  /** Why a creature's gear is frozen, or null: it is on an expedition, or running a Workshop job. */
+  private busyReason(creature: {
+    id: string;
+    away_expedition_id: string | null;
+  }): GameError | null {
+    if (creature.away_expedition_id !== null) return new GameError(409, 'creature_away');
+    if (openJobOf(this.sql, creature.id) !== null) return new GameError(409, 'creature_on_job');
+    return null;
+  }
+
+  private assertNotBusy(creature: { id: string; away_expedition_id: string | null }): void {
+    const reason = this.busyReason(creature);
+    if (reason !== null) throw reason;
+  }
+
   /**
    * Puts an item on a creature, or takes it off with `creatureId` null. One item per slot per
    * creature: the item that was in the slot goes back to the inventory (a swap). An item that was on
@@ -520,6 +594,12 @@ export class Gear {
     return this.atomically(() => {
       const row = this.ownedItem(userId, gearId);
       const creature = creatureId === null ? null : this.ownedCreature(userId, creatureId);
+      // Trip and Workshop lines are read when a trip or job is claimed, so what a creature wears is
+      // frozen while it is away or on a job: neither the new wearer nor the one losing the item may be busy.
+      if (creature !== null && row.equipped_on !== creature.id) this.assertNotBusy(creature);
+      if (row.equipped_on !== null && row.equipped_on !== creature?.id) {
+        this.assertNotBusy(this.ownedCreature(userId, row.equipped_on));
+      }
       let displaced: GearRow | undefined;
       if (creature === null) {
         if (row.equipped_on !== null) {
@@ -567,16 +647,28 @@ export class Gear {
    * creatures), by `itemScore` (see `docs/design/decisions.md`: a deterministic score, not a fight). A
    * slot changes only for a better item. Returns what changed.
    */
-  equipBest(
-    userId: string,
-    creatureIds: readonly string[],
-  ): Outcome<{ changes: { creatureId: string; slot: GearSlot; itemId: string }[] }> {
+  equipBest(userId: string, creatureIds: readonly string[]): Outcome<EquipBestResult> {
     return this.atomically(() => {
-      const unique = [...new Set(creatureIds)];
-      if (unique.length === 0 || unique.length > EQUIP_BEST_MAX_CREATURES) {
+      const requested = [...new Set(creatureIds)];
+      if (requested.length === 0 || requested.length > EQUIP_BEST_MAX_CREATURES) {
         throw new GameError(400, 'invalid_body');
       }
-      const creatures = unique.map((id) => this.ownedCreature(userId, id));
+      // A creature that is away or on a job keeps what it wears (see `equip`): it is skipped, and
+      // its items stay out of the plan.
+      const skipped: EquipBestResult['skipped'] = [];
+      const creatures = requested.flatMap((id) => {
+        const creature = this.ownedCreature(userId, id);
+        const busy = this.busyReason(creature);
+        if (busy !== null) {
+          skipped.push({
+            creatureId: id,
+            reason: busy.message === 'creature_away' ? 'away' : 'job',
+          });
+          return [];
+        }
+        return [creature];
+      });
+      const unique = creatures.map((c) => c.id);
       const rows = ownedItems(this.sql, userId);
       const planned = new Set(unique);
       const candidates = rows.filter((r) => r.equipped_on === null || planned.has(r.equipped_on));
@@ -630,7 +722,7 @@ export class Gear {
           );
         }
       }
-      return { changes };
+      return { changes, skipped };
     });
   }
 
@@ -807,7 +899,7 @@ export class Gear {
           const job = this.jobRow(userId, jobId);
           if (job.claimed_at !== null) {
             if (job.result_json === null) throw new Error('claimed job has no stored result');
-            return JSON.parse(job.result_json) as JobResult;
+            return normaliseJobResult(JSON.parse(job.result_json));
           }
           const now = this.deps.now();
           if (now < job.ends_at) throw new GameError(409, 'not_ready');
@@ -831,8 +923,17 @@ export class Gear {
                 // Cannot happen (a craft holds its place), but never lose the item if it does.
                 throw new GameError(409, 'inventory_full');
               }
-              const made = rollCraft(this.deps.rng, base.id, before);
-              upgraded = made.rarity !== 'common';
+              // A craft started before gear v2 was sized by its blueprint's rarity: it keeps that
+              // promise (never less than the old rarity) and pays the XP of its old hours.
+              const legacyRarity = input.rarity;
+              const made = rollCraft(this.deps.rng, base.id, before, legacyRarity);
+              upgraded =
+                made.rarity !==
+                (legacyRarity === undefined
+                  ? 'common'
+                  : legacyRarity === 'festival'
+                    ? 'epic'
+                    : legacyRarity);
               const gearId = insertItem(this.sql, userId, made, {
                 source: 'craft',
                 now,
@@ -852,7 +953,10 @@ export class Gear {
               };
               analyticsBase = base.id;
               analyticsRarity = made.rarity;
-              xpBase = jobXp();
+              xpBase =
+                legacyRarity === undefined
+                  ? jobXp()
+                  : RULES.gear.legacy.craftHours[legacyRarity] * RULES.gear.skill.xpPerHour;
               break;
             }
             case 'supply': {

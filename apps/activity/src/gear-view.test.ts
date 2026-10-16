@@ -221,18 +221,37 @@ describe('items', () => {
   });
 
   it('says what Equip best did', () => {
-    expect(equipBestText({ changes: [] })).toBe('Your gear is already the best it can be.');
-    expect(equipBestText({ changes: [{ creatureId: 'c', slot: 'hat', itemId: 'i' }] })).toBe(
-      'Changed 1 slot.',
+    expect(equipBestText({ changes: [], skipped: [] })).toBe(
+      'Your gear is already the best it can be.',
     );
+    expect(
+      equipBestText({
+        changes: [{ creatureId: 'c', slot: 'hat', itemId: 'i' }],
+        skipped: [],
+      }),
+    ).toBe('Changed 1 slot.');
     expect(
       equipBestText({
         changes: [
           { creatureId: 'c', slot: 'hat', itemId: 'i' },
           { creatureId: 'c', slot: 'scarf', itemId: 'j' },
         ],
+        skipped: [],
       }),
     ).toBe('Changed 2 slots.');
+    // Busy creatures keep their gear, and the text says so.
+    expect(equipBestText({ changes: [], skipped: [{ creatureId: 'a', reason: 'away' }] })).toBe(
+      'Your gear is already the best it can be. 1 creature is busy, so its gear stayed.',
+    );
+    expect(
+      equipBestText({
+        changes: [{ creatureId: 'c', slot: 'hat', itemId: 'i' }],
+        skipped: [
+          { creatureId: 'a', reason: 'away' },
+          { creatureId: 'b', reason: 'job' },
+        ],
+      }),
+    ).toBe('Changed 1 slot. 2 creatures are busy, so their gear stayed.');
   });
 });
 

@@ -320,6 +320,11 @@ export function parseEquipBestResult(value: unknown): EquipBestResult {
       value['changes'],
       (c): c is EquipBestResult['changes'][number] =>
         isRecord(c) && isStr(c['creatureId']) && isSlot(c['slot']) && isStr(c['itemId']),
+    ) ||
+    !isArrayOf(
+      value['skipped'],
+      (c): c is EquipBestResult['skipped'][number] =>
+        isRecord(c) && isStr(c['creatureId']) && (c['reason'] === 'away' || c['reason'] === 'job'),
     )
   ) {
     throw new Error('the server returned an unexpected equip best result');

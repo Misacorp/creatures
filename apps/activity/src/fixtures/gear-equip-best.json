@@ -26,7 +26,8 @@
         "slot": "hat",
         "itemId": "db53d67b-cc26-4419-9c56-31704fa16687"
       }
-    ]
+    ],
+    "skipped": []
   },
   "gear": {
     "serverNow": 1799733601000,

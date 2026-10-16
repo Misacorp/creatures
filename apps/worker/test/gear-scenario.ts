@@ -158,6 +158,11 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     creatureIds: [cindle, sproutle, zipmouse],
   });
 
+  // The wear rules, as the real errors (before anyone is busy: a busy creature's gear is frozen).
+  await fail('POST', `/api/gear/${high}/equip`, { creatureId: zipmouse }); // item level above the creature
+  await fail('POST', `/api/gear/${compass}/equip`, { creatureId: zipmouse }); // the Charm slot opens at 13
+  await fail('POST', `/api/gear/${bell}/equip`, { creatureId: cindle }); // a Guard's bell on a Payoff
+
   // A job: a craft of the Kelp Cap. And an Improve job from before gear v2 still running.
   const craft = await record('job-start-craft', 'POST', '/api/workshop/jobs', {
     kind: 'craft',
@@ -177,7 +182,7 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
   );
   out.responses['gear-running'] = (await call('GET', '/api/gear')).body;
 
-  // Busy creatures, a full workshop and the wear rules, as the real errors.
+  // Busy creatures and a full workshop, as the real errors.
   await fail('POST', '/api/workshop/jobs', {
     kind: 'craft',
     creatureId: zipmouse,
@@ -199,9 +204,6 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
   });
   const craftJob = (craft.body['result'] as { jobId: string }).jobId;
   await fail('POST', `/api/workshop/jobs/${craftJob}/claim`, { idempotencyKey: newKey() });
-  await fail('POST', `/api/gear/${high}/equip`, { creatureId: zipmouse }); // item level above the creature
-  await fail('POST', `/api/gear/${compass}/equip`, { creatureId: zipmouse }); // the Charm slot opens at 13
-  await fail('POST', `/api/gear/${bell}/equip`, { creatureId: cindle }); // a Guard's bell on a Payoff
 
   // The time passes: the old Improve job (2 h) is ready first, the craft (3 h) a little later.
   ctx.clock.t += 2 * HOUR + 1000;

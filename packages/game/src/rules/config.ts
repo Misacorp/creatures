@@ -545,6 +545,8 @@ export const RULES = {
       enchant: { glimmer: 1, shard: 3 },
       /** The nominal hours of the two removed jobs (an Improve or Enchant still running pays the XP of these). */
       jobHours: { improve: 2, enchant: 6 },
+      /** The nominal hours of a craft by its blueprint's rarity before v2 (a craft running at the switch pays the XP of these). */
+      craftHours: { common: 4, rare: 8, epic: 12, festival: 12 },
       /** What dismantling an old item returned (the rules before v2), by rarity. */
       dismantle: {
         scrap: { common: 2, rare: 5, epic: 10, festival: 10 },

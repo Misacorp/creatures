@@ -140,7 +140,9 @@ describe('converting the first gear model', () => {
       }
       expect(rng.drawn()).toBeGreaterThan(0);
       // Nothing is left to convert, and the notice is stamped.
-      expect(count(ctx.sql, 'gear_legacy')).toBe(0);
+      // The old rows stay (the stamp on `gear_conversion` marks them converted).
+      expect(count(ctx.sql, 'gear_legacy')).toBe(3);
+      expect(count(ctx.sql, 'gear_conversion', 'converted_at IS NOT NULL')).toBe(1);
       expect(noticeOf(ctx, p.id)).toMatchObject({
         converted: 3,
         unequipped: [],
@@ -529,5 +531,220 @@ describe('converting the first gear model', () => {
       },
       {},
     );
+  });
+
+  it('counts only cleared dungeon runs for the best depth: a lost run at a deep depth adds nothing', async () => {
+    await runCore(nextGuild(), (ctx) => {
+      ctx.sql.exec('UPDATE raid_ladder SET rank = 1 WHERE id = 1');
+      const p = player(ctx, 1, { level: 20, species: ['cindle', 'sproutle', 'splashet'] });
+      const run = (depth: number, cleared: 0 | 1, n: number) =>
+        ctx.sql.exec(
+          `INSERT INTO dungeon_runs (id, user_id, day, attempt, idempotency_key, fingerprint, depth, seed, cleared, rooms_cleared, summary_json, rewards_json, created_at)
+           VALUES (?, ?, ?, 1, ?, 'f', ?, 's', ?, 1, '{}', '{}', 0)`,
+          ID(200 + n),
+          p.id,
+          `2027-02-${String(10 + n)}`,
+          `key-${String(n)}-yyyyyyyy`,
+          depth,
+          cleared,
+        );
+      // Depth 4 cleared (drop level 3), depth 30 lost (it would have given 12).
+      run(4, 1, 1);
+      run(30, 0, 2);
+      legacy(ctx, p.id, {
+        id: ID(1),
+        base: 'cinder-charm',
+        rarity: 'common',
+        on: p.creatureIds[0] as string,
+      });
+      convert(ctx, createSeededRng('cleared'));
+      // Rank 1 gives 4; the cleared depth 4 gives 3.
+      expect(itemRows(ctx, p.id)[0]?.item_level).toBe(4);
+      return Promise.resolve();
+    });
+  });
+
+  it('leaves a player pending when their conversion fails, converts the others, and answers 503 for them', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const species = ['cindle', 'sproutle', 'splashet'];
+      const bad = player(ctx, 1, { level: 20, species });
+      const good = player(ctx, 2, { level: 20, species });
+      legacy(ctx, bad.id, {
+        id: ID(1),
+        // A row the rules cannot make sense of (an unknown rarity) fails inside the player's transaction.
+        rarity: 'bogus' as 'common',
+        base: 'cinder-charm',
+        on: bad.creatureIds[0] as string,
+      });
+      legacy(ctx, good.id, {
+        id: ID(2),
+        base: 'cinder-charm',
+        rarity: 'rare',
+        on: good.creatureIds[0] as string,
+      });
+      // The start does not throw: the good player is converted, the bad one is rolled back whole.
+      expect(convert(ctx, createSeededRng('failure'))).toBe(1);
+      expect(count(ctx.sql, 'gear_conversion', 'converted_at IS NULL')).toBe(1);
+      expect(itemRows(ctx, bad.id)).toEqual([]);
+      expect(partsOf(ctx, bad.id)).toEqual({});
+      expect(itemRows(ctx, good.id)).toHaveLength(1);
+      const secret = await ctx.core.createSession(ctx.guildId, {
+        id: bad.id,
+        displayName: bad.name,
+      });
+      const attempts: [string, string, unknown][] = [
+        ['/api/gear', 'GET', undefined],
+        [`/api/gear/${ID(1)}/equip`, 'POST', { creatureId: null }],
+        ['/api/gear/equip-best', 'POST', { creatureIds: [bad.creatureIds[0]] }],
+        [`/api/workshop/jobs/${ID(9)}/claim`, 'POST', { idempotencyKey: 'pending-claim-1' }],
+      ];
+      for (const [path, method, body] of attempts) {
+        const res = await ctx.request(secret, path, method, body);
+        expect(res.status, path).toBe(503);
+        expect(await res.json<{ error: string }>()).toEqual({ error: 'gear_conversion_pending' });
+      }
+      // The other player is not held up.
+      const goodSecret = await ctx.core.createSession(ctx.guildId, {
+        id: good.id,
+        displayName: good.name,
+      });
+      expect((await ctx.request(goodSecret, '/api/gear')).status).toBe(200);
+      // Starting again tries the pending player once more (and fails again without throwing).
+      ctx.core.migrate();
+      expect(count(ctx.sql, 'gear_conversion', 'converted_at IS NULL')).toBe(1);
+    });
+  });
+
+  it('shows jobs claimed before gear v2 in the gear view as the new shapes', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const p = player(ctx, 1, { level: 20 });
+      const [a, b, c] = p.creatureIds as [string, string, string];
+      const common = { xp: 48, skillXp: 48, skillLevel: 1, leveledUp: false };
+      const insert = (
+        id: string,
+        creature: string,
+        kind: string,
+        input: object,
+        result: object,
+        n: number,
+      ) =>
+        ctx.sql.exec(
+          `INSERT INTO workshop_jobs (id, user_id, creature_id, kind, gear_id, input_json, started_at, ends_at, claimed_at, result_json)
+           VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)`,
+          id,
+          p.id,
+          creature,
+          kind,
+          JSON.stringify(input),
+          ctx.clock.t - 9 * 3_600_000,
+          ctx.clock.t - 5 * 3_600_000,
+          ctx.clock.t - 4_000 * n,
+          JSON.stringify({ ...result, ...common }),
+        );
+      insert(
+        ID(1),
+        a,
+        'craft',
+        { baseId: 'bark-band', rarity: 'rare', cost: { scrap: 18 } },
+        { kind: 'craft', gearId: ID(50), baseId: 'bark-band', rarity: 'rare', upgraded: false },
+        1,
+      );
+      insert(
+        ID(2),
+        b,
+        'improve',
+        { gearId: ID(51), secondaryIndex: 0, rarity: 'rare', cost: { scrap: 6 } },
+        {
+          kind: 'improve',
+          gearId: ID(51),
+          baseId: 'bark-band',
+          secondaryIndex: 0,
+          from: { stat: 'atk', bp: 100 },
+          to: { stat: 'atk', bp: 200 },
+        },
+        2,
+      );
+      insert(
+        ID(3),
+        c,
+        'enchant',
+        { gearId: ID(52), enchantId: 'steady-hand', rarity: 'epic', cost: { glimmer: 1 } },
+        { kind: 'enchant', gearId: ID(52), baseId: 'bark-band', enchantId: 'steady-hand' },
+        3,
+      );
+      const secret = await ctx.core.createSession(ctx.guildId, { id: p.id, displayName: p.name });
+      const res = await ctx.request(secret, '/api/gear');
+      expect(res.status).toBe(200);
+      const jobs = (
+        await res.json<{
+          jobs: {
+            id: string;
+            kind: string;
+            input: { baseId?: string };
+            result: Record<string, unknown> | null;
+          }[];
+        }>()
+      ).jobs;
+      const byId = new Map(jobs.map((j) => [j.id, j]));
+      // The old craft names the new base of its slot and tint, at item level 1.
+      expect(byId.get(ID(1))?.result).toMatchObject({
+        kind: 'craft',
+        baseId: 'acorn-cap',
+        itemLevel: 1,
+        xp: 48,
+      });
+      expect(byId.get(ID(1))?.input.baseId).toBe('acorn-cap');
+      // The old Improve and Enchant become the display-only retired shape.
+      for (const [id, was] of [
+        [ID(2), 'improve'],
+        [ID(3), 'enchant'],
+      ] as const) {
+        expect(byId.get(id)?.result).toEqual({ kind: 'retired', was, refund: {}, ...common });
+      }
+      // Claiming a claimed job again returns the same normalised result.
+      const again = await ctx.request(secret, `/api/workshop/jobs/${ID(2)}/claim`, 'POST', {
+        idempotencyKey: 'old-claim-again',
+      });
+      expect((await again.json<{ result: { kind: string } }>()).result.kind).toBe('retired');
+    });
+  });
+
+  it('a craft running at the switch comes out at least as rare as its blueprint was, and pays the old hours of XP', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const p = player(ctx, 1, { level: 20 });
+      const [a, b] = p.creatureIds as [string, string];
+      const start = (id: string, creature: string, rarity: string) =>
+        ctx.sql.exec(
+          `INSERT INTO workshop_jobs (id, user_id, creature_id, kind, gear_id, input_json, started_at, ends_at)
+           VALUES (?, ?, ?, 'craft', NULL, ?, ?, ?)`,
+          id,
+          p.id,
+          creature,
+          JSON.stringify({ baseId: 'bark-band', rarity, cost: { scrap: 18 } }),
+          ctx.clock.t,
+          ctx.clock.t + 8 * 3_600_000,
+        );
+      start(ID(1), a, 'epic');
+      start(ID(2), b, 'rare');
+      ctx.sql.exec('INSERT OR IGNORE INTO gear_conversion (user_id) VALUES (?)', p.id);
+      convert(ctx, createSeededRng('floor'));
+      ctx.clock.t += 13 * 3_600_000;
+      const secret = await ctx.core.createSession(ctx.guildId, { id: p.id, displayName: p.name });
+      const claim = async (id: string, key: string) =>
+        (
+          await (
+            await ctx.request(secret, `/api/workshop/jobs/${id}/claim`, 'POST', {
+              idempotencyKey: key,
+            })
+          ).json<{ result: { rarity: string; xp: number; itemLevel: number } }>()
+        ).result;
+      const epic = await claim(ID(1), 'floor-claim-epic');
+      const rare = await claim(ID(2), 'floor-claim-rare');
+      expect(epic.rarity).toBe('epic');
+      expect(['rare', 'epic']).toContain(rare.rarity);
+      // XP follows the old hours of the blueprint's rarity (12 h and 8 h), not today's 3 h.
+      expect(epic.xp).toBe(RULES.gear.legacy.craftHours.epic * RULES.gear.skill.xpPerHour);
+      expect(rare.xp).toBe(RULES.gear.legacy.craftHours.rare * RULES.gear.skill.xpPerHour);
+    });
   });
 });

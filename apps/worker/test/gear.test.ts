@@ -317,8 +317,16 @@ describe('migration 27', () => {
         LATEST_SCHEMA_VERSION,
       );
       expect(count(sql, 'creatures')).toBe(3);
-      // The conversion ran right after the migration: the old item is a new one, same id.
-      expect(count(sql, 'gear_legacy')).toBe(0);
+      // The conversion ran right after the migration: the old item is a new one, same id. The old row
+      // stays in `gear_legacy` (the player's conversion stamp marks it done).
+      expect(count(sql, 'gear_legacy')).toBe(1);
+      expect(
+        rows<{ done: number }>(
+          sql,
+          'SELECT converted_at IS NOT NULL AS done FROM gear_conversion WHERE user_id = ?',
+          p.id,
+        ),
+      ).toEqual([{ done: 1 }]);
       expect(rows<{ slot: string }>(sql, "SELECT slot FROM gear_items WHERE id = 'old1'")).toEqual([
         { slot: 'hat' },
       ]);
@@ -778,6 +786,7 @@ describe('Equip best', () => {
             { creatureId: cindle, slot: 'hat', itemId: goodHat },
             { creatureId: cindle, slot: 'scarf', itemId: scarf },
           ]) as unknown,
+          skipped: [],
         });
         const worn = rows<{ id: string }>(
           ctx.sql,
@@ -796,7 +805,7 @@ describe('Equip best', () => {
     );
   });
 
-  it('shares the bag across a team, takes nothing from creatures outside it, and moves items between team members', async () => {
+  it('shares the bag across a team, takes nothing from creatures outside it, and never takes a better item away from its wearer', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -833,7 +842,8 @@ describe('Equip best', () => {
           ],
         });
         await p.call('POST', equipPath(keeper), { creatureId: splashet });
-        // The Sproutle (a Guard) wears the better Hat now; the team plan moves it to the Cindle.
+        // The Sproutle (a Guard) wears the better Hat: the team plan never takes it for a worse one
+        // (a slot changes only for a better item), and the Cindle, whose Hat slot is empty, gets the other.
         await p.call('POST', equipPath(attackHat), { creatureId: sproutle });
         const res = await p.call('POST', bestPath, { creatureIds: [cindle, sproutle] });
         expect(res.status).toBe(200);
@@ -844,8 +854,8 @@ describe('Equip best', () => {
             id,
           )[0]?.equipped_on;
         expect(wornBy(keeper)).toBe(splashet);
-        expect(wornBy(attackHat)).toBe(cindle);
-        expect(wornBy(otherHat)).toBe(sproutle);
+        expect(wornBy(attackHat)).toBe(sproutle);
+        expect(wornBy(otherHat)).toBe(cindle);
         // The unique index (creature, slot) held throughout: no creature wears two of a slot.
         expect(
           rows(

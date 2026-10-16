@@ -97,19 +97,19 @@ function serverRank(sql: SqlStorage): number {
   return Math.max(1, readLadder(sql).rank ?? 1);
 }
 
-/** The deepest dungeon depth a player has fought (0: none). */
+/** The deepest dungeon depth a player has cleared (0: none); a lost run does not count. */
 function bestDepth(sql: SqlStorage, userId: string): number {
   return (
     sql
       .exec<{
         depth: number | null;
-      }>('SELECT MAX(depth) AS depth FROM dungeon_runs WHERE user_id = ?', userId)
+      }>('SELECT MAX(depth) AS depth FROM dungeon_runs WHERE user_id = ? AND cleared = 1', userId)
       .toArray()[0]?.depth ?? 0
   );
 }
 
 /** The new base id an old base id maps to (the same slot and tint); a base the table does not know becomes the neutral Hat. */
-function mapBase(oldId: string): { id: string; slot: GearSlot } {
+export function mapBase(oldId: string): { id: string; slot: GearSlot } {
   const old = legacyBase(oldId);
   const base =
     old === undefined
@@ -204,7 +204,8 @@ function convertPlayer(deps: ConvertDeps, userId: string, rank: number): void {
       });
     }
   }
-  sql.exec('DELETE FROM gear_legacy WHERE user_id = ?', userId);
+  // The old rows stay in `gear_legacy` (the player's `gear_conversion` row, stamped below, is what
+  // marks them as converted: they are never read again).
 
   // Blueprints: each old one becomes the base of the same slot and tint; overlaps add a mark.
   const oldBlueprints = sql
@@ -291,12 +292,33 @@ export function convertPendingGear(deps: ConvertDeps): number {
     .toArray();
   if (waiting.length === 0) return 0;
   const rank = serverRank(sql);
+  let converted = 0;
   for (const { user_id: userId } of waiting) {
-    deps.storage.transactionSync(() => {
-      convertPlayer(deps, userId, rank);
-    });
+    // One bad legacy row must not stop the guild from starting: that player stays pending (their
+    // transaction rolled back whole), the gear routes answer 503 `gear_conversion_pending` for them,
+    // and the next start tries again. Nothing about the player goes in the log.
+    try {
+      deps.storage.transactionSync(() => {
+        convertPlayer(deps, userId, rank);
+      });
+      converted += 1;
+    } catch (err) {
+      console.error(
+        'gear conversion failed, player left pending',
+        err instanceof Error ? err.name : 'unknown',
+      );
+    }
   }
-  return waiting.length;
+  return converted;
+}
+
+/** True while a player's old gear has not been converted yet (their gear is not usable until then). */
+export function conversionPending(sql: SqlStorage, userId: string): boolean {
+  return (
+    sql
+      .exec('SELECT 1 FROM gear_conversion WHERE user_id = ? AND converted_at IS NULL', userId)
+      .toArray().length > 0
+  );
 }
 
 /** The notice a player has not dismissed yet, or null. */
