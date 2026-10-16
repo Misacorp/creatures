@@ -1,0 +1,49 @@
+name: feedback
+
+# Player reports to GitHub issues (docs/design/feedback.md). Asks production and staging for reports
+# players sent with /feedback in Discord and opens one public issue per report, labelled
+# `player-report`, authored by github-actions[bot]. Then it marks each report as exported. Runs hourly
+# and on workflow_dispatch.
+#
+# The repository is public, so the issues and this job's log are public. The player's text only ever
+# appears inside a code block in the issue body (nothing in it renders), the title is fixed, and the
+# log shows counts and issue numbers only. Screenshots never leave the game: they stay private in the
+# Worker and the triage skill reads them with a separate read-only token.
+#
+# The job checks out `main` (the `reports` environment is limited to `main`, and the guard below
+# refuses any other ref), installs nothing and runs `node` on apps/worker/scripts/feedback-export.mjs,
+# which has no dependencies. The ops tokens are in the environment of the one step that needs them:
+# OPS_TOKEN_PRODUCTION is sent only to production and OPS_TOKEN_STAGING only to staging. GITHUB_TOKEN
+# gets `issues: write` and nothing else.
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: feedback
+  cancel-in-progress: false
+
+jobs:
+  export:
+    name: export
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    environment: reports
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Export new reports
+        env:
+          OPS_TOKEN_PRODUCTION: ${{ secrets.OPS_TOKEN_PRODUCTION }}
+          OPS_TOKEN_STAGING: ${{ secrets.OPS_TOKEN_STAGING }}
+          GH_TOKEN: ${{ github.token }}
+        run: node apps/worker/scripts/feedback-export.mjs
