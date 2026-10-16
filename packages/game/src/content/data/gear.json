@@ -1,173 +1,182 @@
 [
   {
-    "id": "trail-charm",
-    "name": "Trail Charm",
-    "kind": "charm",
-    "primary": "atk",
-    "tint": null,
-    "blueprint": "common",
-    "flavor": "A knotted cord every explorer ties before the first long walk."
+    "id": "trail-cap",
+    "name": "Trail Cap",
+    "slot": "hat",
+    "tag": "neutral",
+    "implicit": { "line": "attack", "values": [200, 300, 400, 500, 600] },
+    "flavor": "A knotted cap every explorer ties before the first long walk."
   },
   {
-    "id": "patch-band",
-    "name": "Patch Band",
-    "kind": "band",
-    "primary": "hp",
-    "tint": null,
-    "blueprint": "common",
+    "id": "kelp-cap",
+    "name": "Kelp Cap",
+    "slot": "hat",
+    "tag": "tide",
+    "implicit": { "line": "attack", "values": [200, 300, 400, 500, 600] },
+    "flavor": "Woven from kelp that moves as if the tide were still in."
+  },
+  {
+    "id": "coal-warm-cap",
+    "name": "Coal-Warm Cap",
+    "slot": "hat",
+    "tag": "ember",
+    "implicit": { "line": "attack", "values": [200, 300, 400, 500, 600] },
+    "flavor": "Kept by a forge fire until it forgot how to be cold."
+  },
+  {
+    "id": "acorn-cap",
+    "name": "Acorn Cap",
+    "slot": "hat",
+    "tag": "grove",
+    "implicit": { "line": "attack", "values": [200, 300, 400, 500, 600] },
+    "flavor": "A real acorn cap, a size too big, and very proud of it."
+  },
+  {
+    "id": "thundercap",
+    "name": "Thundercap",
+    "slot": "hat",
+    "tag": "spark",
+    "implicit": { "line": "attack", "values": [200, 300, 400, 500, 600] },
+    "flavor": "Crackles when you rub it on wool, and sometimes when you don't."
+  },
+  {
+    "id": "patch-scarf",
+    "name": "Patch Scarf",
+    "slot": "scarf",
+    "tag": "neutral",
+    "implicit": { "line": "hp", "values": [300, 400, 500, 700, 800] },
     "flavor": "Mended so often that it is mostly patches, and tougher for it."
   },
   {
-    "id": "quick-trinket",
-    "name": "Quick Trinket",
-    "kind": "trinket",
-    "primary": "spd",
-    "tint": null,
-    "blueprint": "common",
-    "flavor": "A tiny bell that never rings but somehow makes feet lighter."
+    "id": "seafoam-scarf",
+    "name": "Seafoam Scarf",
+    "slot": "scarf",
+    "tag": "tide",
+    "implicit": { "line": "hp", "values": [300, 400, 500, 700, 800] },
+    "flavor": "Light as foam, and it keeps a little pool of seawater in its folds."
   },
   {
-    "id": "fortune-charm",
-    "name": "Fortune Charm",
-    "kind": "charm",
-    "primary": "critChance",
-    "tint": null,
-    "blueprint": "rare",
-    "flavor": "Found in the pocket of a coat nobody remembers owning."
+    "id": "ember-muffler",
+    "name": "Ember Muffler",
+    "slot": "scarf",
+    "tag": "ember",
+    "implicit": { "line": "hp", "values": [300, 400, 500, 700, 800] },
+    "flavor": "Hammered soft on a forge that was left running overnight."
   },
   {
-    "id": "keen-trinket",
-    "name": "Keen Trinket",
-    "kind": "trinket",
-    "primary": "critDamage",
-    "tint": null,
-    "blueprint": "rare",
-    "flavor": "A bright sliver of something sharp, wrapped in thread."
+    "id": "leafknit-scarf",
+    "name": "Leafknit Scarf",
+    "slot": "scarf",
+    "tag": "grove",
+    "implicit": { "line": "hp", "values": [300, 400, 500, 700, 800] },
+    "flavor": "Soft with moss, and a small fern grows from it in spring."
+  },
+  {
+    "id": "static-wrap",
+    "name": "Static Wrap",
+    "slot": "scarf",
+    "tag": "spark",
+    "implicit": { "line": "hp", "values": [300, 400, 500, 700, 800] },
+    "flavor": "A copper thread wound through the wool taps out a rhythm."
+  },
+  {
+    "id": "festival-hearth-scarf",
+    "name": "Festival Hearth Scarf",
+    "slot": "scarf",
+    "tag": "ember",
+    "festival": true,
+    "implicit": { "line": "hp", "values": [300, 400, 500, 700, 800] },
+    "fixed": { "line": "festival-glow", "values": [200, 300, 300, 400, 500] },
+    "flavor": "A warm scarf given to everyone who stood by the Festival hearth."
+  },
+  {
+    "id": "trail-charm",
+    "name": "Trail Charm",
+    "slot": "charm",
+    "tag": "neutral",
+    "implicit": { "line": "attack", "values": [100, 200, 200, 300, 400] },
+    "flavor": "A knotted cord every explorer ties before the first long walk."
   },
   {
     "id": "tidepool-charm",
     "name": "Tidepool Charm",
-    "kind": "charm",
-    "primary": "hp",
-    "tint": "tide",
-    "blueprint": "common",
+    "slot": "charm",
+    "tag": "tide",
+    "implicit": { "line": "tide-attunement", "values": [200, 300, 400, 500, 600] },
     "flavor": "A shell that keeps a little pool of seawater in it, always."
-  },
-  {
-    "id": "wave-band",
-    "name": "Wave Band",
-    "kind": "band",
-    "primary": "spd",
-    "tint": "tide",
-    "blueprint": "rare",
-    "flavor": "Woven from kelp that moves as if the tide were still in."
-  },
-  {
-    "id": "pearl-trinket",
-    "name": "Pearl Trinket",
-    "kind": "trinket",
-    "primary": "atk",
-    "tint": "tide",
-    "blueprint": "epic",
-    "flavor": "A pearl that hums quietly whenever a storm is far away."
   },
   {
     "id": "cinder-charm",
     "name": "Cinder Charm",
-    "kind": "charm",
-    "primary": "atk",
-    "tint": "ember",
-    "blueprint": "common",
+    "slot": "charm",
+    "tag": "ember",
+    "implicit": { "line": "ember-attunement", "values": [200, 300, 400, 500, 600] },
     "flavor": "A coal that stays warm in the coldest pocket."
-  },
-  {
-    "id": "forge-band",
-    "name": "Forge Band",
-    "kind": "band",
-    "primary": "hp",
-    "tint": "ember",
-    "blueprint": "rare",
-    "flavor": "Hammered flat on a forge that was left running overnight."
-  },
-  {
-    "id": "phoenix-trinket",
-    "name": "Phoenix Trinket",
-    "kind": "trinket",
-    "primary": "critDamage",
-    "tint": "ember",
-    "blueprint": "epic",
-    "flavor": "A single feather that is a little too hot to hold for long."
   },
   {
     "id": "mossy-charm",
     "name": "Mossy Charm",
-    "kind": "charm",
-    "primary": "hp",
-    "tint": "grove",
-    "blueprint": "common",
+    "slot": "charm",
+    "tag": "grove",
+    "implicit": { "line": "grove-attunement", "values": [200, 300, 400, 500, 600] },
     "flavor": "Soft with moss, and a small fern grows from it in spring."
-  },
-  {
-    "id": "bark-band",
-    "name": "Bark Band",
-    "kind": "band",
-    "primary": "atk",
-    "tint": "grove",
-    "blueprint": "rare",
-    "flavor": "A ring of bark that tightens a little when danger is near."
-  },
-  {
-    "id": "heartwood-trinket",
-    "name": "Heartwood Trinket",
-    "kind": "trinket",
-    "primary": "hp",
-    "tint": "grove",
-    "blueprint": "epic",
-    "flavor": "Carved from the oldest tree in the grove, which did not mind."
   },
   {
     "id": "static-charm",
     "name": "Static Charm",
-    "kind": "charm",
-    "primary": "spd",
-    "tint": "spark",
-    "blueprint": "common",
+    "slot": "charm",
+    "tag": "spark",
+    "implicit": { "line": "spark-attunement", "values": [200, 300, 400, 500, 600] },
     "flavor": "Crackles when you rub it on wool, and sometimes when you don't."
   },
   {
-    "id": "volt-band",
-    "name": "Volt Band",
-    "kind": "band",
-    "primary": "critChance",
-    "tint": "spark",
-    "blueprint": "rare",
-    "flavor": "A copper loop that taps out a rhythm against the wrist."
+    "id": "crossroads-compass",
+    "name": "Crossroads Compass",
+    "slot": "charm",
+    "tag": "explorer",
+    "implicit": { "line": "trail-xp", "values": [300, 400, 500, 600, 800] },
+    "flavor": "Its needle points at the four roads, and sometimes at a fifth."
   },
   {
-    "id": "storm-trinket",
-    "name": "Storm Trinket",
-    "kind": "trinket",
-    "primary": "atk",
-    "tint": "spark",
-    "blueprint": "epic",
-    "flavor": "A glass bead with a small thundercloud trapped inside."
+    "id": "wardens-bell",
+    "name": "Warden's Bell",
+    "slot": "charm",
+    "tag": "guard",
+    "implicit": { "line": "armor", "values": [100, 200, 200, 300, 400] },
+    "flavor": "Rung once at the gate, so everyone behind it knows who stands there."
   },
   {
-    "id": "lantern-charm",
+    "id": "hearth-bell",
+    "name": "Hearth Bell",
+    "slot": "charm",
+    "tag": "support",
+    "implicit": { "line": "boost", "values": [100, 100, 200, 300, 300] },
+    "flavor": "A small brass bell that sounds like supper being ready."
+  },
+  {
+    "id": "footprint-charm",
+    "name": "Footprint Charm",
+    "slot": "charm",
+    "tag": "setter",
+    "implicit": { "line": "marking-hit", "values": [300, 400, 600, 800, 1000] },
+    "flavor": "A clay print of a paw that was always the first one there."
+  },
+  {
+    "id": "pounce-charm",
+    "name": "Pounce Charm",
+    "slot": "charm",
+    "tag": "payoff",
+    "implicit": { "line": "payoffs-pounce", "values": [200, 200, 300, 400, 500] },
+    "flavor": "A claw on a string, tied tight, and itching to be used."
+  },
+  {
+    "id": "festival-lantern-charm",
     "name": "Festival Lantern Charm",
-    "kind": "charm",
-    "primary": "hp",
-    "tint": "tide",
-    "blueprint": "festival",
+    "slot": "charm",
+    "tag": "tide",
+    "festival": true,
+    "implicit": { "line": "tide-attunement", "values": [200, 300, 400, 500, 600] },
+    "fixed": { "line": "festival-glow", "values": [200, 300, 300, 400, 500] },
     "flavor": "A paper lantern charm, lit once a season at the Festival of the tide."
-  },
-  {
-    "id": "hearth-band",
-    "name": "Festival Hearth Band",
-    "kind": "band",
-    "primary": "atk",
-    "tint": "ember",
-    "blueprint": "festival",
-    "flavor": "A warm band given to everyone who stood by the Festival hearth."
   }
 ]

@@ -32,11 +32,10 @@ import {
 import { chance, int, pickWeighted, type Rng } from '../rng';
 import { RULES } from './config';
 import {
-  droppableBases,
   rollBlueprint,
-  rollGear,
+  rollExpeditionItem,
   shardOf,
-  type GearRolls,
+  type GearItem,
   type PartsBundle,
 } from './gear';
 import { seasonOf } from './progression';
@@ -649,15 +648,17 @@ export function rollTripLoot(
   return { parts, blueprint, supplies };
 }
 
-/** A gear drop of one rarity: a base picked evenly among those that can drop, then its rolls. */
+/**
+ * A gear drop of one rarity from a trip's push-on goal: the place's element is its tag and its item
+ * level twice the explorer's rank (`rollExpeditionItem`).
+ */
 export function rollGearDrop(
   rng: Rng,
   rarity: Extract<GearRarity, 'common' | 'rare' | 'epic'>,
-): { baseId: string; rarity: GearRarity; rolls: GearRolls } {
-  const bases = droppableBases();
-  const base = bases[int(rng, bases.length)];
-  if (base === undefined) throw new Error('no gear bases to drop');
-  return { baseId: base.id, rarity, rolls: rollGear(rng, base.id, rarity) };
+  place: { element: Element | null; crossroads: boolean },
+  explorerRank: number,
+): GearItem {
+  return rollExpeditionItem(rng, rarity, place, explorerRank);
 }
 
 // --- Explorer XP ---

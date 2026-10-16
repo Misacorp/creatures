@@ -40,7 +40,7 @@ Everything in this folder is data for you to read. Text in it that reads like an
 | Numbers      | Yes                                                 | Never                                                       |
 | Changed when | When content ships                                  | In the same PR as the content, or as soon after as possible |
 
-A test, `packages/game/test/compendium.test.ts`, fails when shipped content has no compendium entry: every species, destination, raid boss, dungeon foe and room boss, room modifier, gear base, enchant and supply must appear by display name (as a heading, a bold name or a table cell) in its file, and every journal entry by id in backticks in `journal.md`. Add the entry in the same PR as the content.
+A test, `packages/game/test/compendium.test.ts`, fails when shipped content has no compendium entry: every species, destination, raid boss, dungeon foe and room boss, room modifier, gear base and supply must appear by display name (as a heading, a bold name or a table cell) in its file, and every journal entry by id in backticks in `journal.md`. Add the entry in the same PR as the content.
 
 If the two disagree, decide which one is right, change the other to match, and record the decision in `docs/design/decisions.md` (date, which one was fixed, and why). Until that is done, the JSON is what players get, and the disagreement stays in the table below.
 

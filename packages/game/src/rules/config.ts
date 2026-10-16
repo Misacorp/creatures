@@ -417,80 +417,78 @@ export const RULES = {
     unlockLevel: 10,
   },
   /**
-   * Gear and crafting v1 (docs/design/gear.md). Starting values, to be tuned by the simulator. All
-   * amounts are integers: percentages and crit points are basis points. Gear never reaches the engine:
-   * `applyGear` folds it into a creature's stats and crit bonus before the fight, with the caps below
-   * (and the engine's own crit caps still apply on top).
+   * Gear and crafting v2 (docs/design/gear-and-creatures-v2.md, "Gear A"). Starting values, tuned
+   * by the simulator at the end of the revamp. All amounts are integers: percentages and points are
+   * basis points. Gear never reaches the engine as items: `wornEffects` folds a creature's items into
+   * its stats, crit bonus and modifier sheet (`SlotMods`) before the fight. Which lines exist, what
+   * they are worth and how heavy they are in each slot is content (`gear-lines.json`); how items roll
+   * is here.
    */
   gear: {
-    /** Upgrade levels: +0 to +5. */
-    maxLevel: 5,
     /** Items one player can own (items in the bag plus crafts still in the workshop). */
     inventoryCap: 60,
     /** Jobs one player can run at the same time. */
     workshopSlots: 2,
-    /** Per rarity: the multiplier (basis points) on the primary roll, and how many secondaries it has. */
-    rarity: {
-      common: { primaryBp: 10_000, secondaries: 0 },
-      rare: { primaryBp: 12_500, secondaries: 1 },
-      epic: { primaryBp: 15_000, secondaries: 2 },
-      // Festival gear has epic power and a look of its own.
-      festival: { primaryBp: 15_000, secondaries: 2 },
-    },
-    /** Roll ranges (inclusive, basis points) per stat: the primary stat of an item and its secondaries. */
-    rolls: {
-      primary: {
-        atk: { min: 520, max: 880 },
-        hp: { min: 760, max: 1_260 },
-        spd: { min: 300, max: 600 },
-        critChance: { min: 150, max: 300 },
-        critDamage: { min: 700, max: 1_300 },
-      },
-      secondary: {
-        atk: { min: 200, max: 500 },
-        hp: { min: 300, max: 700 },
-        spd: { min: 150, max: 300 },
-        critChance: { min: 75, max: 150 },
-        critDamage: { min: 300, max: 600 },
-      },
-    },
-    /** What each upgrade level adds to the primary stat (basis points). */
-    upgradeStepBp: { atk: 250, hp: 260, spd: 70, critChance: 35, critDamage: 200 },
+    /** Item levels run from 1 to this; an item's level is fixed when it drops or is crafted. */
+    maxItemLevel: 20,
     /**
-     * Total bonus caps per creature (basis points): Attack +20%, HP +25%, speed +10%, crit chance
-     * +5 points and crit damage +25 points. The engine's crit caps (`combat.luck`) still apply.
+     * The creature level at which each slot opens (the unlock ladder, v2 spec 9.3a). An item also
+     * needs a wearer whose level is at least the item's level.
      */
-    caps: { atk: 2_000, hp: 2_500, spd: 1_000, critChance: 500, critDamage: 2_500 },
+    slotUnlockLevel: { hat: 1, scarf: 7, charm: 13 },
+    /** Lines an item rolls by rarity (its base line is extra; a Festival piece also has its glow). */
+    rolledLines: { common: 1, rare: 2, epic: 3, festival: 2 },
+    /** The item level that unlocks tiers I to V (also the bands of the base line's value). */
+    tierFromItemLevel: [1, 5, 10, 15, 20],
     /**
-     * Upgrade price from level L to L+1 (index L): Essence and scrap, times the rarity's multiplier
-     * (basis points). Upgrades never fail.
+     * How a tier is rolled: counting down from the best tier the item level allows, these weights
+     * (the best tier first); tiers further down than the list cannot roll. Item level 20: V 15%, IV
+     * 30%, III 30%, II 25%.
      */
-    upgrade: {
-      essence: [20, 30, 45, 65, 90],
-      scrap: [2, 3, 5, 8, 12],
-      multiplierBp: { common: 10_000, rare: 15_000, epic: 20_000, festival: 20_000 },
-      /** Share of the scrap spent on upgrades that dismantling returns (basis points). */
-      refundBp: 5_000,
+    tierWeights: [15, 30, 30, 25],
+    /**
+     * Tag weights, as a multiple of a line's weight (10000 = 1x): an element tag multiplies its own
+     * element's four lines, a role-locked Charm its role's lines, and the Crossroads Compass the
+     * utility lines up and every combat line down.
+     */
+    tagWeightBp: { own: 30_000, compassUtility: 30_000, compassCombat: 3_000 },
+    /** The slot of a dropped piece: weights (even by default). */
+    dropSlotWeights: { hat: 1, scarf: 1, charm: 1 },
+    /** A dropped Charm of the finale is role-locked with this chance (1 in 20). */
+    roleCharmBp: 500,
+    /** Item level of each source (the table of spec 2.4). `rank` is the Boss Rank, 0 above is the base. */
+    itemLevel: {
+      welcome: 1,
+      /** Raid finale reward slot: `base + Boss Rank`. */
+      finale: { base: 3 },
+      /** Festival finale piece: `base + Boss Rank`. */
+      festival: { base: 5 },
+      /** Daily dungeon: `base + floor(depth / depthPerLevel)`, plus `landmarkBonus` at a landmark. */
+      dungeon: { base: 1, depthPerLevel: 2, landmarkBonus: 3 },
+      /** Expedition finds: this times the finder's explorer rank. */
+      expeditionPerRank: 2,
+      /** Crafting: this times the crafter's Crafting level. */
+      craftPerLevel: 2,
+      /**
+       * The conversion of old gear: the higher of `base + Boss Rank` and the best dungeon depth's
+       * drop level, at most `max`. Its lines roll at tier II or better.
+       */
+      convert: { base: 3, max: 12, minTier: 1 },
     },
-    /** What dismantling returns, by rarity (a shard is of the item's tint; neutral items give none). */
+    /**
+     * What dismantling returns, by rarity (a shard is of the item's tag element; neutral items give
+     * none). Fixed amounts for now: ranges, Essence and time come with the crafting loop (Gear B).
+     */
     dismantle: {
       scrap: { common: 2, rare: 5, epic: 10, festival: 10 },
       shard: { common: 0, rare: 1, epic: 2, festival: 2 },
       glimmer: { common: 0, rare: 0, epic: 1, festival: 1 },
     },
-    /** What crafting from a blueprint costs, by the blueprint's rarity (a shard is of the base's tint). */
-    craft: {
-      common: { scrap: 9, shard: 0, glimmer: 0 },
-      rare: { scrap: 18, shard: 1, glimmer: 0 },
-      epic: { scrap: 32, shard: 2, glimmer: 1 },
-      festival: { scrap: 32, shard: 2, glimmer: 2 },
-    },
-    /** Improve (re-roll one secondary) costs scrap by the item's rarity. */
-    improve: { scrap: { rare: 6, epic: 12, festival: 12 } },
-    /** Enchanting costs glimmer and shards (of the enchant's element). */
-    enchant: { glimmer: 1, shard: 3 },
-    /** Job durations in hours before the crafting skill; the craft time follows the blueprint. */
-    jobHours: { craft: { common: 4, rare: 8, epic: 12, festival: 12 }, improve: 2, enchant: 6 },
+    /**
+     * What a craft costs: an element base takes `scrap` and one shard of its element; every other
+     * base (neutral, explorer) takes `plainScrap` and no shard. The job takes `hours` before the skill.
+     */
+    craft: { scrap: 6, shard: 1, plainScrap: 8, hours: 3 },
     skill: {
       /** Total XP to reach each level (index 0 is level 1). XP per job is its nominal hours x `xpPerHour`. */
       xpForLevel: [0, 100, 250, 450, 700, 1_000, 1_600, 2_500, 3_800, 5_500],
@@ -506,15 +504,13 @@ export const RULES = {
        *
        * The reward slot (Misa, 2026-10-15): every participant of a won finale gets exactly one reward,
        * a gear piece or, with chance `blueprintBp`, a blueprint they do not know yet (gear when they
-       * know them all). Either way its rarity follows the odds above. Gear arrives pre-upgraded: one
-       * level for every `ranksPerUpgrade` Boss Ranks above rank 1, up to `maxLevel`.
+       * know them all). The piece's item level follows the Boss Rank (`itemLevel.finale`).
        */
       finale: {
         baseBp: { rare: 2_200, epic: 300 },
         perRankBp: { rare: 250, epic: 150 },
         maxBp: { rare: 5_000, epic: 2_500 },
         blueprintBp: 2_500,
-        ranksPerUpgrade: 2,
       },
       /** Scrap for every participant of a cleared phase 1 or 2. */
       phaseScrap: { phase1: 3, phase2: 4 },
@@ -528,12 +524,29 @@ export const RULES = {
         /** Chance of a blueprint. */
         blueprintBp: { short: 200, medium: 800, long: 1_500 },
       },
-      /** Rarity odds (basis points) of a dropped blueprint; the base is picked evenly among that rarity. */
-      blueprintOddsBp: { common: 6_000, rare: 3_500, epic: 500 },
       /** A blueprint the player already knows turns into this much scrap. */
       duplicateBlueprintScrap: 5,
-      /** The welcome kit: one common item, one common blueprint and this much scrap. */
+      /** The welcome kit: one common Hat (item level 1), one blueprint and this much scrap. */
       welcomeScrap: 10,
+    },
+    /**
+     * The old gear's prices, for the one-time conversion only (upgrades, Improve and enchants are
+     * gone): what an upgrade from level L cost (index L), by rarity multiplier, and an enchant.
+     * Converted players get these back as materials.
+     */
+    legacy: {
+      upgrade: {
+        essence: [20, 30, 45, 65, 90],
+        scrap: [2, 3, 5, 8, 12],
+        multiplierBp: { common: 10_000, rare: 15_000, epic: 20_000, festival: 20_000 },
+      },
+      enchant: { glimmer: 1, shard: 3 },
+      /** What dismantling an old item returned (the rules before v2), by rarity. */
+      dismantle: {
+        scrap: { common: 2, rare: 5, epic: 10, festival: 10 },
+        shard: { common: 0, rare: 1, epic: 2, festival: 2 },
+        glimmer: { common: 0, rare: 0, epic: 1, festival: 1 },
+      },
     },
   },
   /**

@@ -1,0 +1,139 @@
+{
+  "bases": [
+    {
+      "id": "trail-charm",
+      "slot": "hat",
+      "tint": null
+    },
+    {
+      "id": "patch-band",
+      "slot": "scarf",
+      "tint": null
+    },
+    {
+      "id": "quick-trinket",
+      "slot": "charm",
+      "tint": null
+    },
+    {
+      "id": "fortune-charm",
+      "slot": "hat",
+      "tint": null
+    },
+    {
+      "id": "keen-trinket",
+      "slot": "hat",
+      "tint": null
+    },
+    {
+      "id": "tidepool-charm",
+      "slot": "scarf",
+      "tint": "tide"
+    },
+    {
+      "id": "wave-band",
+      "slot": "charm",
+      "tint": "tide"
+    },
+    {
+      "id": "pearl-trinket",
+      "slot": "hat",
+      "tint": "tide"
+    },
+    {
+      "id": "cinder-charm",
+      "slot": "hat",
+      "tint": "ember"
+    },
+    {
+      "id": "forge-band",
+      "slot": "scarf",
+      "tint": "ember"
+    },
+    {
+      "id": "phoenix-trinket",
+      "slot": "hat",
+      "tint": "ember"
+    },
+    {
+      "id": "mossy-charm",
+      "slot": "scarf",
+      "tint": "grove"
+    },
+    {
+      "id": "bark-band",
+      "slot": "hat",
+      "tint": "grove"
+    },
+    {
+      "id": "heartwood-trinket",
+      "slot": "scarf",
+      "tint": "grove"
+    },
+    {
+      "id": "static-charm",
+      "slot": "charm",
+      "tint": "spark"
+    },
+    {
+      "id": "volt-band",
+      "slot": "hat",
+      "tint": "spark"
+    },
+    {
+      "id": "storm-trinket",
+      "slot": "hat",
+      "tint": "spark"
+    },
+    {
+      "id": "lantern-charm",
+      "slot": "charm",
+      "tint": "tide",
+      "festival": true
+    },
+    {
+      "id": "hearth-band",
+      "slot": "scarf",
+      "tint": "ember",
+      "festival": true
+    }
+  ],
+  "enchants": [
+    {
+      "id": "payoffs-edge",
+      "shard": "ember"
+    },
+    {
+      "id": "guards-bulwark",
+      "shard": "grove"
+    },
+    {
+      "id": "setters-wit",
+      "shard": "tide"
+    },
+    {
+      "id": "supports-grace",
+      "shard": "spark"
+    },
+    {
+      "id": "spark-luck",
+      "shard": "spark"
+    },
+    {
+      "id": "ember-fury",
+      "shard": "ember"
+    },
+    {
+      "id": "tide-flow",
+      "shard": "tide"
+    },
+    {
+      "id": "grove-hide",
+      "shard": "grove"
+    },
+    {
+      "id": "steady-hand",
+      "shard": "tide"
+    }
+  ]
+}

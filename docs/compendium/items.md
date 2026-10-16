@@ -1,17 +1,16 @@
-# Items: gear, enchants, supplies, parts and blueprints
+# Items: gear, supplies, parts and blueprints
 
-Status: 2026-10-13. Flavour only. The numbers and rules live in `RULES` and the data files, not here.
+Status: 2026-10-16 (gear v2). Flavour only. The numbers and rules live in `RULES` and the data files, not here.
 
 Read `README.md` for the tags. Flavour lines quoted below are shipped text. Who makes each object, and where it comes from, is `(compendium detail, not shipped)` unless the source says so.
 
-**Source of truth:** `gear.json` (bases), `enchants.json` (enchants), `supplies.json` (supplies), `glossary.json` (parts, blueprints, the Workshop and jobs), and `docs/design/gear.md` (the design). Where the design and the data differ, see `README.md`, contradictions 9, 10 and 12.
+**Source of truth:** `gear.json` (bases), `gear-lines.json` (lines), `supplies.json` (supplies), `glossary.json` (parts, blueprints, the Workshop and jobs), and `docs/design/gear-and-creatures-v2.md` (the design; `gear.md` is the first version). Where the design and the data differ, see `README.md`, contradictions 9, 10 and 12.
 
 ## The world of things
 
 Items come from three places in the world. Explorers find them on trips. Creatures make them in the Workshop, slowly, while the explorer is away. And the Festival gives out its own pieces. `(content: glossary.json "workshop", "gear", "job-craft"; design: gear.md)`
 
-- **Gear** is worn by one creature at a time. It is a charm, a band or a trinket, and it adds to the creature's strength or its crits. `(content: glossary.json "gear")`
-- **Enchants** are a second layer on a piece of gear: one effect for one kind of creature. `(content: glossary.json "enchant-*")`
+- **Gear** is worn by one creature at a time: a Hat, a Scarf and a Charm. Each item has lines that add to the creature's strength, its toughness, its reactions or its trips. `(content: glossary.json "gear")`
 - **Supplies** are for one trip: a lure, a map, a lantern or a satchel. `(content: glossary.json "supplies")`
 - **Parts** are the raw material: scrap, element shards and glimmer. `(content: glossary.json "part-*")`
 - **Blueprints** teach a creature how to craft one kind of item. You learn each one once. `(content: glossary.json "blueprint")`
@@ -22,61 +21,50 @@ Items come from three places in the world. Explorers find them on trips. Creatur
 
 ## Gear bases
 
-Nineteen bases: five neutral, three per element tint, and two Festival pieces. `(content: gear.json)` Each has a main stat that it adds to. The stat names are the glossary's: Attack, HP, speed, crit chance and crit damage.
+Twenty-two bases in three slots: a Hat, a Scarf and a Charm for neutral and each element, a Compass for explorers, four Charms made for one role each, and the Festival pieces. `(content: gear.json)` Every base has one fixed line (its base line, bigger on higher item levels); the rest of an item is rolled from the lines in `gear-lines.json`. The line names are the glossary's.
 
-| Name                   | Kind    | Main stat   | Tint    | Rarity   | Flavour `(content)`                                                     |
-| ---------------------- | ------- | ----------- | ------- | -------- | ----------------------------------------------------------------------- |
-| Trail Charm            | Charm   | Attack      | Neutral | Common   | "A knotted cord every explorer ties before the first long walk."        |
-| Patch Band             | Band    | HP          | Neutral | Common   | "Mended so often that it is mostly patches, and tougher for it."        |
-| Quick Trinket          | Trinket | Speed       | Neutral | Common   | "A tiny bell that never rings but somehow makes feet lighter."          |
-| Fortune Charm          | Charm   | Crit chance | Neutral | Rare     | "Found in the pocket of a coat nobody remembers owning."                |
-| Keen Trinket           | Trinket | Crit damage | Neutral | Rare     | "A bright sliver of something sharp, wrapped in thread."                |
-| Tidepool Charm         | Charm   | HP          | Tide    | Common   | "A shell that keeps a little pool of seawater in it, always."           |
-| Wave Band              | Band    | Speed       | Tide    | Rare     | "Woven from kelp that moves as if the tide were still in."              |
-| Pearl Trinket          | Trinket | Attack      | Tide    | Epic     | "A pearl that hums quietly whenever a storm is far away."               |
-| Cinder Charm           | Charm   | Attack      | Ember   | Common   | "A coal that stays warm in the coldest pocket."                         |
-| Forge Band             | Band    | HP          | Ember   | Rare     | "Hammered flat on a forge that was left running overnight."             |
-| Phoenix Trinket        | Trinket | Crit damage | Ember   | Epic     | "A single feather that is a little too hot to hold for long."           |
-| Mossy Charm            | Charm   | HP          | Grove   | Common   | "Soft with moss, and a small fern grows from it in spring."             |
-| Bark Band              | Band    | Attack      | Grove   | Rare     | "A ring of bark that tightens a little when danger is near."            |
-| Heartwood Trinket      | Trinket | HP          | Grove   | Epic     | "Carved from the oldest tree in the grove, which did not mind."         |
-| Static Charm           | Charm   | Speed       | Spark   | Common   | "Crackles when you rub it on wool, and sometimes when you don't."       |
-| Volt Band              | Band    | Crit chance | Spark   | Rare     | "A copper loop that taps out a rhythm against the wrist."               |
-| Storm Trinket          | Trinket | Attack      | Spark   | Epic     | "A glass bead with a small thundercloud trapped inside."                |
-| Festival Lantern Charm | Charm   | HP          | Tide    | Festival | "A paper lantern charm, lit once a season at the Festival of the tide." |
-| Festival Hearth Band   | Band    | Attack      | Ember   | Festival | "A warm band given to everyone who stood by the Festival hearth."       |
+| Name                   | Slot  | Tag      | Base line         | Flavour `(content)`                                                                  |
+| ---------------------- | ----- | -------- | ----------------- | ------------------------------------------------------------------------------------ |
+| Trail Cap              | Hat   | Neutral  | Attack            | "A knotted cap every explorer ties before the first long walk."                      |
+| Kelp Cap               | Hat   | Tide     | Attack            | "Woven from kelp that moves as if the tide were still in."                           |
+| Coal-Warm Cap          | Hat   | Ember    | Attack            | "Kept by a forge fire until it forgot how to be cold."                               |
+| Acorn Cap              | Hat   | Grove    | Attack            | "A real acorn cap, a size too big, and very proud of it."                            |
+| Thundercap             | Hat   | Spark    | Attack            | "Crackles when you rub it on wool, and sometimes when you don't."                    |
+| Patch Scarf            | Scarf | Neutral  | HP                | "Mended so often that it is mostly patches, and tougher for it."                     |
+| Seafoam Scarf          | Scarf | Tide     | HP                | "Light as foam, and it keeps a little pool of seawater in its folds."                |
+| Ember Muffler          | Scarf | Ember    | HP                | "Hammered soft on a forge that was left running overnight."                          |
+| Leafknit Scarf         | Scarf | Grove    | HP                | "Soft with moss, and a small fern grows from it in spring."                          |
+| Static Wrap            | Scarf | Spark    | HP                | "A copper thread wound through the wool taps out a rhythm."                          |
+| Festival Hearth Scarf  | Scarf | Ember    | HP, Festival glow | "A warm scarf given to everyone who stood by the Festival hearth."                   |
+| Trail Charm            | Charm | Neutral  | Attack            | "A knotted cord every explorer ties before the first long walk."                     |
+| Tidepool Charm         | Charm | Tide     | Tide Attunement   | "A shell that keeps a little pool of seawater in it, always."                        |
+| Cinder Charm           | Charm | Ember    | Ember Attunement  | "A coal that stays warm in the coldest pocket."                                      |
+| Mossy Charm            | Charm | Grove    | Grove Attunement  | "Soft with moss, and a small fern grows from it in spring."                          |
+| Static Charm           | Charm | Spark    | Spark Attunement  | "Crackles when you rub it on wool, and sometimes when you don't."                    |
+| Crossroads Compass     | Charm | Explorer | Trail XP          | "Its needle points at the four roads, and sometimes at a fifth."                     |
+| Warden's Bell          | Charm | Guard    | Armor             | "Rung once at the gate, so everyone behind it knows who stands there."               |
+| Hearth Bell            | Charm | Support  | Boost             | "A small brass bell that sounds like supper being ready."                            |
+| Footprint Charm        | Charm | Setter   | Marking hit       | "A clay print of a paw that was always the first one there."                         |
+| Pounce Charm           | Charm | Payoff   | Payoff's pounce   | "A claw on a string, tied tight, and itching to be used."                            |
+| Festival Lantern Charm | Charm | Tide     | Tide Attunement   | "A paper lantern charm, lit once a season at the Festival of the tide." (and a glow) |
 
-**Gear kinds (content):** charm, band and trinket. **Rarities (content):** common, rare, epic and festival.
+**Gear slots, rarities and tags (content):** hat, scarf and charm; common, rare, epic and festival; neutral, an element, explorer, or a role (only Charms are made for a role).
 
 **Compendium detail, not shipped** (who makes each kind):
 
-- _Trail Charm and the neutral charms:_ camp-knots, made by explorers before a trip.
-- _Patch Band and Forge Band:_ mended bands. The Forge Band was "hammered flat" by a forge-folk. The Patch Band is what a worn band looks like after a long career.
-- _The three Tide pieces:_ shell, kelp and pearl, from the shore.
-- _The three Ember pieces:_ coal, forge metal and a phoenix feather from the caves.
-- _The three Grove pieces:_ moss, bark and heartwood from the Hollow.
-- _The three Spark pieces:_ copper, glass and storm bead from the Ridge.
-- _The Festival pieces:_ given out at the Festival. Festival gear is "won by clearing a Festival finale, and crafted only from Festival blueprints" `(content: glossary.json "gear-rarity-festival")`. The Lantern Charm is lit once a season. The Hearth Band is given to everyone who stood by the Festival hearth.
+- _The neutral pieces and the Trail Charm:_ camp-knots, made by explorers before a trip. The Patch Scarf is what a worn scarf looks like after a long career.
+- _The Tide pieces:_ shell, kelp and seafoam, from the shore. _The Ember pieces:_ coal, forge metal and warm wool from the caves. _The Grove pieces:_ moss, acorn and leaf-knit from the Hollow. _The Spark pieces:_ copper, glass and storm bead from the Ridge.
+- _The Crossroads Compass:_ the cartographers' own, found on the roads out of the Old Crossroads. The four role Charms are older: each was made for one kind of creature by someone who watched them work, which is why only that kind of creature can wear one.
+- _The Festival pieces:_ given out at the Festival. Festival gear is "won by clearing a Festival finale, and crafted only from Festival blueprints" `(content: glossary.json "gear-rarity-festival")`. The Lantern Charm is lit once a season. The Hearth Scarf is given to everyone who stood by the Festival hearth.
+- _The Cap and Scarf makers' tags:_ an Ember piece is warmer to the touch, a Tide piece damp at the edges, a Grove one a little green, a Spark one a little static. That is why the tag matters.
 
-## Enchants
+**What the old gear became.** The charms, bands and trinkets of the first version were converted when gear changed (2026-10-16): an Attack or crit piece became a Hat, an HP piece a Scarf, a speed piece a Charm, with the same tint. The enchants were taken back by their teachers and the materials returned `(compendium detail, not shipped; design: gear-and-creatures-v2.md section 12)`.
 
-Nine enchants. Each one goes on a piece of gear. An item has one enchant slot, and a new enchant replaces the old one `(content: glossary.json "enchant-*")`. Each enchant works for one kind of creature, except Steady Hand, which works for every creature `(content: enchants.json)`.
+## Gear lines
 
-| Name            | Works for       | Adds        | Shard `(content)` | Flavour `(content)`                                           |
-| --------------- | --------------- | ----------- | ----------------- | ------------------------------------------------------------- |
-| Payoff's Edge   | Payoffs         | Attack      | Ember             | "Sharpens the moment a mark is cashed in."                    |
-| Guard's Bulwark | Guards          | HP          | Grove             | "Roots the wearer to the spot, and the spot to the ground."   |
-| Setter's Wit    | Setters         | Speed       | Tide              | "Always one step ahead of the mark."                          |
-| Support's Grace | Supports        | HP          | Spark             | "Keeps the wearer on their feet so the team stays on theirs." |
-| Spark Luck      | Spark creatures | Crit chance | Spark             | "Lightning likes to strike twice for its own."                |
-| Ember Fury      | Ember creatures | Crit damage | Ember             | "Burns brightest on the hardest hit."                         |
-| Tide Flow       | Tide creatures  | Speed       | Tide              | "Moves like water finding its way downhill."                  |
-| Grove Hide      | Grove creatures | HP          | Grove             | "Bark grows thick where it is needed most."                   |
-| Steady Hand     | Any creature    | Attack      | Tide              | "Nothing flashy, just a little more behind every hit."        |
+Every item has its base line and 1 to 3 rolled lines (a Festival piece has 2 and its glow). The lines are in `gear-lines.json`; each has five tiers and a short line of text `(content)`. Names: Attack, Sturdy blow, HP, Thick coat, Crit chance, Crit damage, All damage taken, Area ward, Aimed ward, Well-fed, the four Attunements (Tide, Ember, Grove, Spark), the four Hunters, the four reaction bonuses (Steam, Wildfire, Grounding, Overload), the four Wards, Armor, Cover, Boost, Mend, Spark-share, Marking hit, Payoff's pounce, Strike, Lingering, Marked foe, First pounce, Owner's mark, Backdraft ward, Keen reaction, Adaptation pierce, Unbothered, Brace, Guard's shadow, Trail XP, Quick feet, Keen nose, Lucky find, Packer, Busy paws, Apprentice, Between-room rest and Festival glow.
 
-**Compendium detail, not shipped** (who writes enchants): the Enchant is the Workshop's oldest craft, taught by the elders of each element. The enchant's name is the name of the teacher, which is why most of them are "Owner's Thing". Steady Hand is the only enchant with no teacher, and it is a common, honest craft.
-
-**Enchant costs.** Glossary text names the costs (glimmer plus three shards, in each case) `(content: glossary.json)`. The costs are not in `enchants.json`. See `README.md`, contradiction 12.
+**Compendium detail, not shipped:** the lines are what the makers whisper to a piece as it is finished. A Hunter is a promise to find a certain kind of foe; a Ward is a promise never to be found by one. A Guard's shadow is the oldest line of all: it is simply the warmth of standing near someone steady.
 
 ## Supplies
 
@@ -100,16 +88,16 @@ Crafting a supply is a Workshop job. Basic supplies need the lowest Crafting lev
 
 ## Parts
 
-Parts are the raw material. They pay for upgrades, crafts, improving and enchants. `(content: glossary.json "part-*")`
+Parts are the raw material. They pay for crafts. `(content: glossary.json "part-*")`
 
-| Part        | Shipped text `(content)`                                                                                                                                    | In-world flavour `(compendium detail, not shipped)`                                     |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Scrap       | "Generic parts. They pay for upgrades, crafting and improving." Found by dismantling gear, on expeditions, in cleared raid phases and in the daily dungeon. | The everyday leftovers of any explorer's kit.                                           |
-| Tide Shard  | "A shard of Tide. It pays for Tide crafts and enchants."                                                                                                    | A shard of the tide, which keeps some of the water's pull.                              |
-| Ember Shard | "A shard of Ember. It pays for Ember crafts and enchants."                                                                                                  | A shard of the forge, still warm.                                                       |
-| Grove Shard | "A shard of Grove. It pays for Grove crafts and enchants."                                                                                                  | A shard of heartwood, slow and steady.                                                  |
-| Spark Shard | "A shard of Spark. It pays for Spark crafts and enchants."                                                                                                  | A shard of the storm, still a little charged.                                           |
-| Glimmer     | "A rare part. It pays for Epic crafts and every enchant." Found by dismantling Epic gear, at dungeon landmarks, and rarely on expeditions.                  | The rarest part. It is bright and small, and the explorers who find it are proud of it. |
+| Part        | Shipped text `(content)`                                                                                                                 | In-world flavour `(compendium detail, not shipped)`                                     |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Scrap       | "Generic parts. They pay for crafting." Found by dismantling gear, on expeditions, in cleared raid phases and in the daily dungeon.      | The everyday leftovers of any explorer's kit.                                           |
+| Tide Shard  | "A shard of Tide. It pays for Tide crafts."                                                                                              | A shard of the tide, which keeps some of the water's pull.                              |
+| Ember Shard | "A shard of Ember. It pays for Ember crafts."                                                                                            | A shard of the forge, still warm.                                                       |
+| Grove Shard | "A shard of Grove. It pays for Grove crafts."                                                                                            | A shard of heartwood, slow and steady.                                                  |
+| Spark Shard | "A shard of Spark. It pays for Spark crafts."                                                                                            | A shard of the storm, still a little charged.                                           |
+| Glimmer     | "A rare part. Epic gear and dungeon landmarks give it." Found by dismantling Epic gear, at dungeon landmarks, and rarely on expeditions. | The rarest part. It is bright and small, and the explorers who find it are proud of it. |
 
 ## Blueprints
 
@@ -123,12 +111,10 @@ Sources: expeditions (more often on long ones, and some push-on rewards) and the
 
 The Workshop is where creatures work while the explorer is away. There are two job slots at the start `(content: glossary.json "workshop")`. A creature on a job cannot go on a trip, and the other way round. A creature on a job still fights in raids `(content)`.
 
-| Job            | Shipped text `(content)`                                                                                                  |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Craft          | Makes a new item from a blueprint you know. The parts are paid when the job starts. The item is rolled when you claim it. |
-| Improve        | Re-rolls one extra stat of an item, for scrap. Needs a Rare or better item. The new stat can be better or worse.          |
-| Enchant        | Adds an enchant to an item. Costs glimmer and shards. A new enchant replaces the old one.                                 |
-| Craft supplies | Makes supplies for expeditions. Costs scrap, and shards for the better tiers. One supply per job.                         |
+| Job            | Shipped text `(content)`                                                                                                                 |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Craft          | Makes a new item from a blueprint you know. Takes 3 hours. The parts are paid when the job starts. The item is rolled when you claim it. |
+| Craft supplies | Makes supplies for expeditions. Costs scrap, and shards for the better tiers. One supply per job.                                        |
 
 **Compendium detail, not shipped** (in-world): a job is a creature's slow, patient work. The Workshop smells of hot metal, wet wool and pine. Creatures work at their own pace. The explorer comes back to a finished thing.
 

@@ -103,10 +103,10 @@
       "id": "workshop",
       "title": "The Workshop",
       "lines": [
-        "Gear is one item per creature. It adds a little to its stats in every fight.",
+        "Gear is a Hat, a Scarf and a Charm per creature. Each item has lines that help in fights, on trips and in the Workshop.",
         "A won finale gives each player a gear piece or a blueprint. Expeditions and Festivals drop gear and parts too.",
-        "Spend Essence and scrap to upgrade gear. Dismantle gear to get parts back.",
-        "Creatures work jobs in the Workshop: craft, improve or enchant, even while you are away.",
+        "An item has a level, and a creature wears items up to its own level. Dismantle gear to get parts back.",
+        "Creatures work jobs in the Workshop: crafting gear and supplies, even while you are away.",
         "A creature on a job cannot go on an expedition. It still fights in raids."
       ]
     }

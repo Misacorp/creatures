@@ -727,12 +727,66 @@
   {
     "id": "gear",
     "title": "Gear",
-    "short": "One item per creature, worn into every fight.",
+    "short": "A Hat, a Scarf and a Charm for every creature.",
     "lines": [
-      "Gear adds to Attack, HP, speed and crits. What it adds in total is capped.",
-      "Upgrade an item from +0 to +5 with Essence and scrap. Upgrades never fail.",
-      "A won finale drops gear already upgraded: +1 for every 2 Ranks above 1, up to +5.",
+      "Each item has a base line and 1 to 3 rolled lines, each with five tiers.",
+      "An item has a level. A creature wears items up to its own level.",
+      "Scarves open at creature level 7 and Charms at 13.",
       "Dismantle an item to get parts back. This cannot be undone."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-slot-hat",
+    "title": "Hat",
+    "short": "The first slot. Leans to Attack and crits.",
+    "lines": ["Open from level 1.", "Only Hats roll Crit damage and First pounce."],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-slot-scarf",
+    "title": "Scarf",
+    "short": "Opens at creature level 7. Leans to HP and wards.",
+    "lines": ["Only Scarves roll All damage taken, Unbothered and Brace."],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-slot-charm",
+    "title": "Charm",
+    "short": "Opens at creature level 13. Roles, reactions and trips.",
+    "lines": [
+      "Only Charms roll Cover, Boost, Lingering and the trip lines.",
+      "A few Charms are made for one role and can only be worn by it."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-item-level",
+    "title": "Item level",
+    "short": "Fixed when the item drops or is crafted.",
+    "lines": [
+      "It sets the best tier a line can roll: II from 5, III from 10, IV from 15, V at 20.",
+      "A creature can only wear items up to its own level."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-tier",
+    "title": "Tier",
+    "short": "How strong a line rolled: I to V.",
+    "lines": [
+      "The pips show the tier rolled. The last pip is the best this item level could roll.",
+      "A tier is one fixed number. Nothing re-rolls."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-tag",
+    "title": "Tag",
+    "short": "An element, neutral, explorer or a role.",
+    "lines": [
+      "An element tag makes that element's lines three times as likely to roll.",
+      "A role Charm can only be worn by that role."
     ],
     "section": "workshop"
   },
@@ -758,72 +812,25 @@
     "section": "workshop"
   },
   {
-    "id": "gear-stat-atk",
-    "title": "Attack bonus",
-    "short": "Adds a percentage to a creature's Attack.",
-    "lines": ["Gear adds at most 20% Attack to one creature, however many bonuses it has."],
-    "section": "workshop"
-  },
-  {
-    "id": "gear-stat-hp",
-    "title": "HP bonus",
-    "short": "Adds a percentage to a creature's HP.",
-    "lines": ["Gear adds at most 25% HP to one creature, however many bonuses it has."],
-    "section": "workshop"
-  },
-  {
-    "id": "gear-stat-spd",
-    "title": "Speed bonus",
-    "short": "Adds a percentage to a creature's speed.",
-    "lines": [
-      "Speed decides who acts first against a boss that goes by speed.",
-      "Gear adds at most 10% speed to one creature."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "gear-stat-crit-chance",
-    "title": "Crit chance bonus",
-    "short": "Adds points to the chance of a critical hit.",
-    "lines": [
-      "A creature starts at 5%, and the game caps any creature at 30%.",
-      "Gear adds at most 5 points."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "gear-stat-crit-damage",
-    "title": "Crit damage bonus",
-    "short": "Adds points to the extra damage of a critical hit.",
-    "lines": [
-      "A critical hit adds 50% damage to start with, and the game caps it at 150%.",
-      "Gear adds at most 25 points."
-    ],
-    "section": "workshop"
-  },
-  {
     "id": "gear-rarity-common",
     "title": "Common gear",
-    "short": "A main stat and nothing else.",
-    "lines": ["Common gear is easy to find and cheap to upgrade."],
+    "short": "A base line and 1 rolled line.",
+    "lines": ["Easy to find and craft."],
     "section": "workshop"
   },
   {
     "id": "gear-rarity-rare",
     "title": "Rare gear",
-    "short": "A stronger main stat and one extra stat.",
-    "lines": [
-      "Its main stat roll is 25% higher than Common.",
-      "Rare gear costs more to upgrade and can be improved."
-    ],
+    "short": "A base line and 2 rolled lines.",
+    "lines": ["Can roll All damage taken, Lucky find and Adaptation pierce."],
     "section": "workshop"
   },
   {
     "id": "gear-rarity-epic",
     "title": "Epic gear",
-    "short": "A much stronger main stat and two extra stats.",
+    "short": "A base line and 3 rolled lines.",
     "lines": [
-      "Its main stat roll is 50% higher than Common.",
+      "Can also roll Lingering and Unbothered at item level 15 or more.",
       "Dismantling Epic gear can give glimmer."
     ],
     "section": "workshop"
@@ -834,14 +841,14 @@
     "short": "Epic power with a look of its own.",
     "lines": [
       "Won by clearing a Festival finale. It cannot be crafted.",
-      "It has no extra power over Epic gear."
+      "2 rolled lines and a fixed Festival glow."
     ],
     "section": "workshop"
   },
   {
     "id": "part-scrap",
     "title": "Scrap",
-    "short": "Generic parts. They pay for upgrades, crafting and improving.",
+    "short": "Generic parts. They pay for crafting.",
     "lines": [
       "Found by dismantling gear, on expeditions, in cleared raid phases and in the daily dungeon."
     ],
@@ -850,7 +857,7 @@
   {
     "id": "part-tide-shard",
     "title": "Tide Shard",
-    "short": "A shard of Tide. It pays for Tide crafts and enchants.",
+    "short": "A shard of Tide. It pays for Tide crafts.",
     "lines": [
       "Found on expeditions with a Tide explorer, from Tide room bosses and by dismantling Tide gear."
     ],
@@ -863,7 +870,7 @@
   {
     "id": "part-ember-shard",
     "title": "Ember Shard",
-    "short": "A shard of Ember. It pays for Ember crafts and enchants.",
+    "short": "A shard of Ember. It pays for Ember crafts.",
     "lines": [
       "Found on expeditions with an Ember explorer, from Ember room bosses and by dismantling Ember gear."
     ],
@@ -876,7 +883,7 @@
   {
     "id": "part-grove-shard",
     "title": "Grove Shard",
-    "short": "A shard of Grove. It pays for Grove crafts and enchants.",
+    "short": "A shard of Grove. It pays for Grove crafts.",
     "lines": [
       "Found on expeditions with a Grove explorer, from Grove room bosses and by dismantling Grove gear."
     ],
@@ -889,7 +896,7 @@
   {
     "id": "part-spark-shard",
     "title": "Spark Shard",
-    "short": "A shard of Spark. It pays for Spark crafts and enchants.",
+    "short": "A shard of Spark. It pays for Spark crafts.",
     "lines": [
       "Found on expeditions with a Spark explorer, from Spark room bosses and by dismantling Spark gear."
     ],
@@ -902,108 +909,9 @@
   {
     "id": "part-glimmer",
     "title": "Glimmer",
-    "short": "A rare part. It pays for Epic crafts and every enchant.",
+    "short": "A rare part. Epic gear and dungeon landmarks give it.",
     "lines": [
       "Found by dismantling Epic gear, at dungeon landmarks, and rarely on expeditions (more often on long ones)."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-payoffs-edge",
-    "title": "Payoff's Edge",
-    "short": "+6% Attack for a Payoff.",
-    "lines": [
-      "Only works for a Payoff.",
-      "Costs 1 glimmer and 3 Ember shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-guards-bulwark",
-    "title": "Guard's Bulwark",
-    "short": "+8% HP for a Guard.",
-    "lines": [
-      "Only works for a Guard.",
-      "Costs 1 glimmer and 3 Grove shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-setters-wit",
-    "title": "Setter's Wit",
-    "short": "+5% speed for a Setter.",
-    "lines": [
-      "Only works for a Setter.",
-      "Costs 1 glimmer and 3 Tide shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-supports-grace",
-    "title": "Support's Grace",
-    "short": "+6% HP for a Support.",
-    "lines": [
-      "Only works for a Support.",
-      "Costs 1 glimmer and 3 Spark shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-spark-luck",
-    "title": "Spark Luck",
-    "short": "+3 points crit chance for Spark creatures.",
-    "lines": [
-      "Only works for Spark creatures.",
-      "Costs 1 glimmer and 3 Spark shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-ember-fury",
-    "title": "Ember Fury",
-    "short": "+10 points crit damage for Ember creatures.",
-    "lines": [
-      "Only works for Ember creatures.",
-      "Costs 1 glimmer and 3 Ember shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-tide-flow",
-    "title": "Tide Flow",
-    "short": "+4% speed for Tide creatures.",
-    "lines": [
-      "Only works for Tide creatures.",
-      "Costs 1 glimmer and 3 Tide shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-grove-hide",
-    "title": "Grove Hide",
-    "short": "+7% HP for Grove creatures.",
-    "lines": [
-      "Only works for Grove creatures.",
-      "Costs 1 glimmer and 3 Grove shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-steady-hand",
-    "title": "Steady Hand",
-    "short": "+3% Attack.",
-    "lines": [
-      "Works for every creature.",
-      "Costs 1 glimmer and 3 Tide shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
     ],
     "section": "workshop"
   },
@@ -1012,26 +920,9 @@
     "title": "Craft",
     "short": "Makes a new item from a blueprint you know.",
     "lines": [
-      "Takes 4 hours for Common, 8 for Rare and 12 for Epic or Festival.",
+      "Takes 3 hours. The item level is twice the creature's Crafting level.",
       "The parts are paid when the job starts. The item is rolled when you claim it."
     ],
-    "section": "workshop"
-  },
-  {
-    "id": "job-improve",
-    "title": "Improve",
-    "short": "Re-rolls one extra stat of an item, for scrap.",
-    "lines": [
-      "Takes 2 hours. Needs a Rare or better item.",
-      "The new stat can be better or worse. Claim it to see."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "job-enchant",
-    "title": "Enchant",
-    "short": "Adds an enchant to an item.",
-    "lines": ["Takes 6 hours. Costs glimmer and shards.", "A new enchant replaces the old one."],
     "section": "workshop"
   },
   {

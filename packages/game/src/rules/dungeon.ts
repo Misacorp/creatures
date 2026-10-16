@@ -9,8 +9,7 @@ import { content } from '../content';
 import type { Element, ReactionDef, Role } from '../content/schema';
 import { chance, int, pickWeighted, type Rng } from '../rng';
 import { RULES } from './config';
-import { droppableBases, rollGear, shardOf, type GearRolls, type PartsBundle } from './gear';
-import type { GearRarity } from '../content/gear-schema';
+import { rollDungeonItem, shardOf, type GearItem, type PartsBundle } from './gear';
 import { SUPPLY_KINDS, type SupplyTier } from '../content/expedition-schema';
 
 /** True when `depth` is a landmark: every `RULES.dungeon.landmarkEvery`-th depth. */
@@ -381,7 +380,7 @@ export function rollDungeonSupply(rng: Rng, depth: number): string {
 /** What a run's dice gave: parts, gear and supplies (the grant adds the scrap and glimmer of the payout). */
 export interface DungeonLoot {
   parts: PartsBundle;
-  gear: { baseId: string; rarity: GearRarity; rolls: GearRolls }[];
+  gear: GearItem[];
   /** Supply content ids (`lure-good`), one per supply. */
   supplies: string[];
 }
@@ -409,15 +408,12 @@ export function rollDungeonLoot(
     const lucky = chance(rng, RULES.dungeon.fullClear.gearBp, 10_000);
     if (lucky || payout.landmark) {
       const odds = dungeonGearOddsBp(depth, payout.landmark);
-      const rarity = pickWeighted<{ rarity: GearRarity; weight: number }>(rng, [
+      const rarity = pickWeighted<{ rarity: 'common' | 'rare' | 'epic'; weight: number }>(rng, [
         { rarity: 'common', weight: odds.common },
         { rarity: 'rare', weight: odds.rare },
         { rarity: 'epic', weight: odds.epic },
       ]).rarity;
-      const bases = droppableBases();
-      const base = bases[int(rng, bases.length)];
-      if (base === undefined) throw new Error('no gear bases to drop');
-      gear.push({ baseId: base.id, rarity, rolls: rollGear(rng, base.id, rarity) });
+      gear.push(rollDungeonItem(rng, rarity, depth, payout.landmark, bossElement));
     }
   }
   for (let i = 0; i < payout.supplies; i++) supplies.push(rollDungeonSupply(rng, depth));

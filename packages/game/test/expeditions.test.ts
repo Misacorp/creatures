@@ -1029,7 +1029,7 @@ describe('trip loot', () => {
     expect(loot.parts.glimmer).toBe(1);
     expect(loot.blueprint).not.toBeNull();
     expect(loot.supplies).toEqual(['lure-basic']);
-    expect(rng.drawn()).toBe(7);
+    expect(rng.drawn()).toBe(6);
   });
 
   it('brings more for a Guard, a satchel, stars, milestones and a twist', () => {

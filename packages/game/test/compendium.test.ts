@@ -9,7 +9,7 @@ import { content, dungeonContent, expeditionContent, gearContent } from '../src/
  *
  * Matching rule, one per kind:
  * - Species, destinations, raid bosses, dungeon foes and room bosses, room modifiers, gear bases,
- *   enchants and supplies: the content's display name, as a heading, a bold name, or a table cell.
+ *   and supplies: the content's display name, as a heading, a bold name, or a table cell.
  *   (The compendium uses names for all of these. Species lines are covered by their stage 1 name.)
  * - Journal entries: the entry id in backticks (the journal key is keyed by id).
  *
@@ -65,10 +65,6 @@ describe('compendium is in sync with shipped content', () => {
 
   it('has every gear base in items.md', () => {
     expect(missingNames('items.md', gearContent.bases)).toEqual([]);
-  });
-
-  it('has every enchant in items.md', () => {
-    expect(missingNames('items.md', gearContent.enchants)).toEqual([]);
   });
 
   it('has every supply in items.md', () => {
