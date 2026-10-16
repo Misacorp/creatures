@@ -13,9 +13,9 @@ import type {
   TripCatch,
   TripResult,
 } from './expedition-types';
-import { isRarity, isRoll } from './gear-parse';
-import type { CreatureGearFields, GearStat } from './gear-types';
-import { isInt, isNullableInt, isRecord, isStr } from './parse-core';
+import { isWornGear } from './gear-parse';
+import type { CreatureGearFields, WornGear } from './gear-types';
+import { isArrayOf, isInt, isNullableInt, isRecord, isStr } from './parse-core';
 import { createReauth, type Reauth } from './reauth';
 import { ROOM_SPOTS } from './sprites/room-art';
 
@@ -431,15 +431,7 @@ function isCreatureAbility(value: unknown): value is CreatureAbility {
 }
 
 function isCreatureGear(value: unknown): value is CreatureGearFields['gear'] {
-  return (
-    value === null ||
-    (isRecord(value) &&
-      isStr(value['id']) &&
-      isStr(value['baseId']) &&
-      isStr(value['rarity']) &&
-      isInt(value['level']) &&
-      (value['enchantId'] === null || isStr(value['enchantId'])))
-  );
+  return isArrayOf(value, isWornGear);
 }
 
 function isBusy(value: unknown): value is CreatureGearFields['busy'] {
@@ -624,14 +616,12 @@ export interface RoomCreature {
   quirk: string | null;
   craftingLevel: number;
   explorerRank: number;
-  /** The item it wears (like `Creature.gear`), with the main stat it gives now; null when none. */
-  gear: RoomGear | null;
+  /** The items it wears (like `Creature.gear`), each with the text of its lines. */
+  gear: RoomGear[];
 }
 
-/** A worn item in the living room: the state view's item fields plus its main stat and value. */
-export type RoomGear = NonNullable<CreatureGearFields['gear']> & {
-  primary: { stat: GearStat; bp: number };
-};
+/** A worn item in the living room: the state view's item fields plus the text of its lines ("Attack +6%"). */
+export type RoomGear = WornGear & { lines: string[] };
 
 /** A player in the living room: the name, the lounger (null when all their creatures are busy) and the spot they chose. */
 export interface RoomResident {
@@ -643,15 +633,7 @@ export interface RoomResident {
 }
 
 function isRoomGear(value: unknown): value is RoomGear {
-  return (
-    isRecord(value) &&
-    isStr(value['id']) &&
-    isStr(value['baseId']) &&
-    isRarity(value['rarity']) &&
-    isInt(value['level']) &&
-    (value['enchantId'] === null || isStr(value['enchantId'])) &&
-    isRoll(value['primary'])
-  );
+  return isWornGear(value) && isArrayOf((value as { lines?: unknown }).lines, isStr);
 }
 
 function isRoomCreature(value: unknown): value is RoomCreature {
@@ -665,7 +647,7 @@ function isRoomCreature(value: unknown): value is RoomCreature {
     (value['quirk'] === null || isStr(value['quirk'])) &&
     isInt(value['craftingLevel']) &&
     isInt(value['explorerRank']) &&
-    (value['gear'] === null || isRoomGear(value['gear']))
+    isArrayOf(value['gear'], isRoomGear)
   );
 }
 

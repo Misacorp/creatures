@@ -30,7 +30,7 @@ const creature: Creature = {
   quirk: 'hums-quietly',
   stats: { hp: 1, atk: 1, spd: 1 },
   statsWithGear: { hp: 1, atk: 1, spd: 1 },
-  gear: null,
+  gear: [],
   busy: null,
   trainCost: 15,
   ability: { id: 'tidal-mark', unlocked: false, unlockLevel: 10, nextId: 'tidal-mark-2' },

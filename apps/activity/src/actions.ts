@@ -72,7 +72,6 @@ export const ActionIds = {
     const picks = request.supplies.map((p) => `${p.source}:${p.id}`).sort();
     return `send:${request.creatureId}:${request.destination}:${request.duration}:${picks.join(',')}`;
   },
-  upgrade: (gearId: string): ActionId => `upgrade:${gearId}`,
   dismantle: (gearId: string): ActionId => `dismantle:${gearId}`,
   claimJob: (jobId: string): ActionId => `claim-job:${jobId}`,
   /** The same job on the same creature is the same action. */
@@ -80,10 +79,6 @@ export const ActionIds = {
     switch (request.kind) {
       case 'craft':
         return `job:craft:${request.creatureId}:${request.blueprintId}`;
-      case 'improve':
-        return `job:improve:${request.creatureId}:${request.gearId}:${String(request.secondaryIndex)}`;
-      case 'enchant':
-        return `job:enchant:${request.creatureId}:${request.gearId}:${request.enchantId}`;
       case 'supply':
         return `job:supply:${request.creatureId}:${request.supplyId}`;
     }

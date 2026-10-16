@@ -1,12 +1,12 @@
 import { useState } from 'preact/hooks';
-import { content, gearBase, gearContent } from '@creatures/game';
+import { content, gearBase } from '@creatures/game';
 import { AbilityChip } from '../../AbilityChip';
 import { BossCard } from '../../BossCard';
 import { RaidTimeline } from '../../RaidTimeline';
 import { AppHead } from '../../AppHead';
 import { LivingRoom, sceneOf } from '../../LivingRoom';
 import { SmallCreature } from '../../SmallCreature';
-import { WornItemLine } from '../../WornItemLine';
+import { WornItemLines } from '../../WornItemLine';
 import type { ReadinessBand, RaidView } from '../../raid-api';
 import { READINESS_BANDS } from '../../raid-api';
 import { turnChips } from '../../replay';
@@ -271,47 +271,45 @@ const turnStrip: Entry = {
   render: (p) => turnStripDemo(p),
 };
 
-const wornItemLine: Entry = {
-  name: 'WornItemLine',
+const wornItemLines: Entry = {
+  name: 'WornItemLines',
   file: 'apps/activity/src/WornItemLine.tsx',
   group: 'Creatures & game pieces',
   description:
-    "The item a creature wears: its picture in the rarity frame, its name, level, main stat bonus and enchant. It is the worn-item line of a creature card on the Creatures screen (there the picture is the button that opens the gear picker) and the line in a living room creature's popover.",
+    "What a creature wears in a living room creature's popover: one line per item with its picture in the rarity frame, its name, slot and item level, and the text of its lines. A creature card on the Creatures screen shows the same items as three slots instead.",
   controls: {
     item: { kind: 'select', options: GEAR_BASE_IDS },
     rarity: { kind: 'select', options: RARITIES },
-    level: { kind: 'number', min: 0, max: 5 },
-    bonus: { kind: 'number', min: 0, max: 2000 },
-    enchanted: { kind: 'toggle' },
-    hasBonus: { kind: 'toggle' },
+    itemLevel: { kind: 'number', min: 1, max: 20 },
+    hasLines: { kind: 'toggle' },
   },
   defaults: {
-    item: GEAR_BASE_IDS[0] ?? 'bark-band',
+    item: GEAR_BASE_IDS[0] ?? 'trail-cap',
     rarity: 'rare',
-    level: 0,
-    bonus: 850,
-    enchanted: false,
-    hasBonus: true,
+    itemLevel: 8,
+    hasLines: true,
   },
   presets: [
     { name: 'Plain', props: {} },
-    { name: 'Upgraded and enchanted', props: { level: 5, enchanted: true, rarity: 'epic' } },
+    { name: 'Epic, item level 20', props: { itemLevel: 20, rarity: 'epic' } },
     { name: 'Festival', props: { rarity: 'festival' } },
-    { name: 'Bonus not known yet', props: { hasBonus: false } },
+    { name: 'Lines not known yet', props: { hasLines: false } },
   ],
   render: (p) => {
     const baseId = str(p, 'item');
-    const stat = gearBase(baseId)?.primary ?? 'atk';
+    const slot = gearBase(baseId)?.slot ?? 'hat';
     const rarity = RARITIES.find((r) => r === str(p, 'rarity')) ?? 'common';
     return (
-      <WornItemLine
-        worn={{
-          baseId,
-          rarity,
-          level: num(p, 'level'),
-          enchantId: bool(p, 'enchanted') ? (gearContent.enchants[0]?.id ?? null) : null,
-          ...(bool(p, 'hasBonus') ? { primary: { stat, bp: num(p, 'bonus') } } : {}),
-        }}
+      <WornItemLines
+        worn={[
+          {
+            baseId,
+            slot,
+            rarity,
+            itemLevel: num(p, 'itemLevel'),
+            ...(bool(p, 'hasLines') ? { lines: ['Attack +4%', 'Tide Hunter +7%'] } : {}),
+          },
+        ]}
       />
     );
   },
@@ -432,5 +430,5 @@ export const creatureEntries: readonly Entry[] = [
   abilityChip,
   smallCreature,
   turnStrip,
-  wornItemLine,
+  wornItemLines,
 ];

@@ -1,9 +1,9 @@
 import { useState } from 'preact/hooks';
 import type { Creature } from './api';
-import { CostList, ItemFrame, ItemSprite, RarityTag } from './GearArt';
+import { CostList, ItemFrame, ItemSprite } from './GearArt';
 import { GlossaryTag } from './Glossary';
 import type { GearState } from './gear-types';
-import { blueprintViews, nominalHours } from './gear-view';
+import { blueprintViews, nominalHours, slotName } from './gear-view';
 import { JobStarter } from './JobStarter';
 import { ElementChip } from './sprites/ElementChip';
 
@@ -40,16 +40,16 @@ export function Blueprints({
           {views.map((bp) => (
             <li key={bp.baseId} class="blueprint card-item">
               <div class="bp-row">
-                <ItemFrame rarity={bp.rarity}>
+                <ItemFrame rarity="common">
                   <ItemSprite baseId={bp.baseId} scale={3} />
                 </ItemFrame>
                 <div class="bp-text">
                   <p class="pix bp-name">{bp.name}</p>
                   <p class="tags">
-                    <RarityTag rarity={bp.rarity} />
-                    {bp.tint !== null && <ElementChip element={bp.tint} />}
+                    <span class="slot-tag">{slotName(bp.slot)}</span>
+                    {bp.element !== null && <ElementChip element={bp.element} />}
                   </p>
-                  <p class="muted">Takes about {nominalHours('craft', bp.rarity)} h</p>
+                  <p class="muted">Takes about {nominalHours()} h</p>
                 </div>
               </div>
               <CostList cost={bp.cost} have={gear.parts} />
@@ -58,7 +58,6 @@ export function Blueprints({
                   id={`craft-${bp.baseId}`}
                   kind="craft"
                   title={`Craft ${bp.name}`}
-                  rarity={bp.rarity}
                   cost={bp.cost}
                   gear={gear}
                   creatures={creatures}

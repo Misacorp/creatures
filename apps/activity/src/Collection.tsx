@@ -5,7 +5,7 @@ import type { Creature, GameState } from './api';
 import { shinyPalette } from './art';
 import { CardGear } from './CardGear';
 import { GlossaryTag } from './Glossary';
-import type { GearState } from './gear-types';
+import type { EquipBestResult, GearState } from './gear-types';
 import { gearShare } from './gear-view';
 import { glyphOrUnknown } from './glyphs';
 import { abilityDef } from './live';
@@ -34,6 +34,8 @@ interface Props {
   busy: boolean;
   /** Wears an item or (null) takes it off; resolves true when the server accepted it. */
   onEquip: (gearId: string, creatureId: string | null) => Promise<boolean>;
+  /** The server's "Equip best" for one creature; resolves what it changed (undefined when refused). */
+  onEquipBest: (creatureId: string) => Promise<EquipBestResult | undefined>;
   onTrain: (creature: Creature) => void;
   onEvolve: (creature: Creature) => void;
   onRename: (creature: Creature, nickname: string | null) => void;
@@ -134,6 +136,7 @@ function CreatureCard({
   gear,
   busy,
   onEquip,
+  onEquipBest,
   onTrain,
   onEvolve,
   onRename,
@@ -240,6 +243,7 @@ function CreatureCard({
         gear={gear}
         busy={busy}
         onEquip={onEquip}
+        onEquipBest={onEquipBest}
       />
       {abilityText !== null && (
         <div class="creature-ability">
@@ -317,6 +321,7 @@ export function Collection({
   gear,
   busy,
   onEquip,
+  onEquipBest,
   onTrain,
   onEvolve,
   onRename,
@@ -333,6 +338,7 @@ export function Collection({
           gear={gear}
           busy={busy}
           onEquip={onEquip}
+          onEquipBest={onEquipBest}
           onTrain={onTrain}
           onEvolve={onEvolve}
           onRename={onRename}

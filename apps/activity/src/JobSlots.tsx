@@ -13,21 +13,19 @@ import { TimerBar } from './ui/TimerBar';
 
 function RunningSlot({
   job,
-  gear,
   creature,
   serverNow,
   busy,
   onClaim,
 }: {
   job: Job;
-  gear: GearState;
   creature: Creature | undefined;
   serverNow: number;
   busy: boolean;
   onClaim: (job: Job) => void;
 }) {
   const progress = jobProgress(job, serverNow);
-  const title = jobTitle(job, gear.items);
+  const title = jobTitle(job);
   return (
     <>
       <div class="job-head">
@@ -114,7 +112,6 @@ export function JobSlots({
             <h4 class="label">Slot {index + 1}</h4>
             <RunningSlot
               job={job}
-              gear={gear}
               creature={creatures.find((c) => c.id === job.creatureId)}
               serverNow={serverNow}
               busy={busy}
@@ -125,10 +122,7 @@ export function JobSlots({
         {Array.from({ length: empty }, (_, i) => (
           <li key={`empty-${String(i)}`} class="card-item job-slot empty-slot">
             <h4 class="label">Slot {open.length + i + 1}</h4>
-            <p class="muted">
-              Empty. Craft something from a blueprint or a supply below, or improve or enchant an
-              item.
-            </p>
+            <p class="muted">Empty. Craft something from a blueprint or a supply below.</p>
           </li>
         ))}
       </ul>

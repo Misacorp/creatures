@@ -1,10 +1,10 @@
-import { GLOSSARY_IDS, type GearJobKind } from '@creatures/game';
+import { GLOSSARY_IDS } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { CreaturePicker } from './CreaturePicker';
 import { CostList } from './GearArt';
 import { GlossaryTag } from './Glossary';
-import type { GearItem, GearRarity, GearState, JobKind, PartsBundle } from './gear-types';
+import type { GearState, JobKind, PartsBundle } from './gear-types';
 import { defaultPick, durationFor, pickerOptions, startBlocker } from './gear-view';
 
 interface JobStarterProps {
@@ -13,14 +13,10 @@ interface JobStarterProps {
   kind: JobKind;
   /** What is being worked on: "Craft Wave Band". */
   title: string;
-  /** The rarity that sets the length (the blueprint's for a craft, the item's otherwise). */
-  rarity: GearRarity;
   cost: PartsBundle;
-  /** The item an improve or an enchant works on (it cannot be in another job). */
-  item?: Pick<GearItem, 'jobId'>;
   gear: GearState;
   creatures: readonly Creature[];
-  /** Another reason it cannot start (for example the same enchant again), shown like the others. */
+  /** Another reason it cannot start (the Crafting level a supply needs), shown like the others. */
   extraBlocker?: string | null;
   /** True while any action runs. */
   busy: boolean;
@@ -29,8 +25,6 @@ interface JobStarterProps {
   durationAtLevel?: (level: number) => number;
   /** The Crafting level a creature needs for this job (a supply's blueprint); lower ones cannot be picked. */
   minLevel?: number;
-  /** Extra controls above the creature list (which extra stat, which enchant). */
-  children?: preact.ComponentChildren;
   onStart: (creatureId: string) => void;
   onCancel: () => void;
 }
@@ -41,9 +35,8 @@ interface JobStarterProps {
  * heading when it opens, and Escape closes it.
  */
 export function JobStarter(props: JobStarterProps) {
-  const { gear, creatures, kind, rarity, cost } = props;
-  const durationAt =
-    props.durationAtLevel ?? ((level: number) => durationFor(kind as GearJobKind, rarity, level));
+  const { gear, creatures, kind, cost } = props;
+  const durationAt = props.durationAtLevel ?? durationFor;
   const options = pickerOptions(creatures, gear.skills, durationAt).map((o) =>
     props.minLevel !== undefined && o.busy === null && o.level < props.minLevel
       ? { ...o, busy: `Needs Crafting level ${String(props.minLevel)}` }
@@ -58,14 +51,7 @@ export function JobStarter(props: JobStarterProps) {
     heading.current?.focus();
   }, []);
 
-  const blocker =
-    startBlocker(gear, creatures, {
-      kind,
-      cost,
-      ...(props.item === undefined ? {} : { item: props.item }),
-    }) ??
-    props.extraBlocker ??
-    null;
+  const blocker = startBlocker(gear, creatures, { kind, cost }) ?? props.extraBlocker ?? null;
   const disabled = props.busy || blocker !== null || value === null;
   return (
     <section
@@ -78,7 +64,6 @@ export function JobStarter(props: JobStarterProps) {
       <h4 id={`${props.id}-title`} class="pix" tabIndex={-1} ref={heading}>
         {props.title} <GlossaryTag entry={GLOSSARY_IDS.job(kind)} look="help" />
       </h4>
-      {props.children}
       <p class="label">Cost</p>
       <CostList cost={cost} have={gear.parts} />
       <CreaturePicker

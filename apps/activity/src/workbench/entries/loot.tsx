@@ -69,7 +69,7 @@ const SOURCE_PRESETS = [
   {
     name: 'Everything',
     props: {
-      gear: 'wave-band',
+      gear: 'kelp-cap',
       scrap: 6,
       'ember-shard': 2,
       glimmer: 1,
@@ -175,13 +175,14 @@ const lootList: Entry = {
         id: `g${String(i)}`,
         baseId: base(i),
         rarity,
+        itemLevel: 4 + i,
       })),
-      converted: bool(p, 'converted') ? [{ baseId: base(4), rarity: 'common' }] : [],
+      converted: bool(p, 'converted') ? [{ baseId: base(4), rarity: 'common', itemLevel: 3 }] : [],
       parts: { scrap: num(p, 'scrap'), glimmer: num(p, 'glimmer') },
       blueprints:
         str(p, 'blueprint') === NONE
           ? []
-          : [{ baseId: base(2), rarity: 'rare', duplicate: str(p, 'blueprint') === 'known' }],
+          : [{ baseId: base(2), duplicate: str(p, 'blueprint') === 'known' }],
     };
     return <LootList loot={loot} label="Loot" counted={bool(p, 'counted')} />;
   },
@@ -243,7 +244,7 @@ const costList: Entry = {
   file: 'apps/activity/src/GearArt.tsx',
   group: 'Loot & reveals',
   description:
-    'A price: each part with the amount needed, and a note in words (and a red colour) when the player has too little; it is on craft, improve and enchant buttons in the Workshop.',
+    'A price: each part with the amount needed, and a note in words (and a red colour) when the player has too little; it is on the craft buttons in the Workshop.',
   controls: {
     scrapCost: { kind: 'number', min: 0, max: 99 },
     scrapHave: { kind: 'number', min: 0, max: 99 },
@@ -294,7 +295,7 @@ const itemFrame: Entry = {
     base: { kind: 'select', options: GEAR_BASE_IDS },
     scale: { kind: 'number', min: 1, max: 8 },
   },
-  defaults: { rarity: 'epic', base: 'wave-band', scale: 4 },
+  defaults: { rarity: 'epic', base: 'kelp-cap', scale: 4 },
   presets: RARITIES.map((rarity) => ({ name: rarity, props: { rarity } })),
   render: (p) => (
     <ItemFrame rarity={rarityOf(str(p, 'rarity'))}>
@@ -323,7 +324,7 @@ const revealShell: Entry = {
     cleared: true,
     busy: false,
     ownFooter: false,
-    body: 'You earned 40 Essence and a Wave Band.',
+    body: 'You earned 40 Essence and a Kelp Cap.',
   },
   presets: [
     { name: 'Cleared', props: {} },

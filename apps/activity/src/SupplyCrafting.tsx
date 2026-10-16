@@ -83,7 +83,6 @@ export function SupplyCrafting({
                   id={`supply-${view.id}`}
                   kind="supply"
                   title={`Craft ${view.name}`}
-                  rarity="common"
                   cost={view.cost}
                   gear={gear}
                   creatures={creatures}

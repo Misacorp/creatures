@@ -7,7 +7,6 @@ describe('action names', () => {
     expect(ActionIds.starter('splashet')).toBe('starter:splashet');
     expect(ActionIds.train('c1')).toBe('train:c1');
     expect(ActionIds.evolve('c1')).toBe('evolve:c1');
-    expect(ActionIds.upgrade('g1')).toBe('upgrade:g1');
     expect(ActionIds.dismantle('g1')).toBe('dismantle:g1');
     expect(ActionIds.claimJob('j1')).toBe('claim-job:j1');
     expect(ActionIds.dungeonRun(['a', 'b', 'c'])).toBe('dungeon-run:["a","b","c"]');
@@ -24,12 +23,6 @@ describe('action names', () => {
   it('names a job start by its kind, creature and target', () => {
     expect(ActionIds.job({ kind: 'craft', creatureId: 'c', blueprintId: 'b' })).toBe(
       'job:craft:c:b',
-    );
-    expect(
-      ActionIds.job({ kind: 'improve', creatureId: 'c', gearId: 'g', secondaryIndex: 1 }),
-    ).toBe('job:improve:c:g:1');
-    expect(ActionIds.job({ kind: 'enchant', creatureId: 'c', gearId: 'g', enchantId: 'e' })).toBe(
-      'job:enchant:c:g:e',
     );
     expect(ActionIds.job({ kind: 'supply', creatureId: 'c', supplyId: 's' })).toBe(
       'job:supply:c:s',
@@ -81,7 +74,6 @@ describe('action names', () => {
     const names = [
       ActionIds.train('x'),
       ActionIds.evolve('x'),
-      ActionIds.upgrade('x'),
       ActionIds.dismantle('x'),
       ActionIds.claimJob('x'),
       ActionIds.starter('x'),

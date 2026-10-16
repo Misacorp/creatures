@@ -1,41 +1,34 @@
-import { Tag } from './ui/Tag';
-import { GLOSSARY_IDS, entryView } from '@creatures/game';
-import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
-import { ItemFrame, ItemSprite, RarityTag } from './GearArt';
+import { ItemFrame, ItemSprite, PartsList, RarityTag } from './GearArt';
+import { GlossaryTag } from './Glossary';
 import type { GearItem, JobResult } from './gear-types';
-import { gearName, improveMessage, jobVerb, rarityName } from './gear-view';
+import { gearName, jobVerb, partsText, rarityName, slotName } from './gear-view';
+import { ItemLines } from './ItemLines';
 import { Sprite } from './sprites/Sprite';
 import { supplyKindOf, supplyName } from './trip-view';
 import { RevealLater, RevealShell, RevealStage, useRevealSequence } from './ui/RevealShell';
 
-/** The words of a claimed job, from its result alone. */
+/** The words of a claimed job, from its result alone (and the item it made, for its lines). */
 function Outcome({ result, items }: { result: JobResult; items: readonly GearItem[] }) {
   switch (result.kind) {
-    case 'craft':
+    case 'craft': {
+      const item = items.find((i) => i.id === result.gearId);
       return (
         <>
           <p>
             <strong class="pix">{gearName(result.baseId)}</strong>{' '}
             <RarityTag rarity={result.rarity} />
           </p>
+          <p class="muted">
+            {item === undefined ? '' : `${slotName(item.slot)}, `}item level {result.itemLevel}
+          </p>
+          {item !== undefined && <ItemLines lines={item.lines} />}
           <p>It is in your bag now.</p>
           {result.upgraded && (
             <p class="good-note">
-              It came out a rarity better than the blueprint ({rarityName(result.rarity)}).
+              It came out a rarity better than usual ({rarityName(result.rarity)}).
             </p>
           )}
-        </>
-      );
-    case 'improve': {
-      const message = improveMessage(result);
-      return (
-        <>
-          <p>
-            <strong class="pix">{gearName(result.baseId)}</strong>: extra stat{' '}
-            {result.secondaryIndex + 1} re-rolled
-          </p>
-          <p>{message}</p>
         </>
       );
     }
@@ -44,7 +37,7 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
         <>
           <p>
             <strong class="pix">
-              {result.amount > 1 ? `${String(result.amount)} \u00d7 ` : ''}
+              {result.amount > 1 ? `${String(result.amount)} × ` : ''}
               {supplyName(result.supplyId)}
             </strong>
           </p>
@@ -54,23 +47,17 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
           </p>
         </>
       );
-    case 'enchant': {
-      const item = items.find((i) => i.id === result.gearId);
+    case 'retired':
       return (
         <>
           <p>
-            <strong class="pix">{gearName(result.baseId)}</strong>
-            {item === undefined ? '' : ` +${String(item.level)}`} has a new enchant
+            This {result.was === 'improve' ? 'Improve' : 'Enchant'} job was started before gear
+            changed. It is over, and its parts came back:{' '}
+            <strong>{partsText(result.refund)}</strong>.
           </p>
-          <p>
-            <Tag entry={GLOSSARY_IDS.enchant(result.enchantId)}>
-              {entryView(GLOSSARY_IDS.enchant(result.enchantId))?.title ?? result.enchantId}
-            </Tag>{' '}
-            {entryView(GLOSSARY_IDS.enchant(result.enchantId))?.short}
-          </p>
+          <PartsList parts={result.refund} />
         </>
       );
-    }
   }
 }
 
@@ -87,15 +74,16 @@ export function JobReveal({
 }: {
   result: JobResult;
   items: readonly GearItem[];
-  /** The rarity of the item that was made or worked on, for the frame. */
+  /** The rarity of the item that was made, for the frame. */
   rarity: GearItem['rarity'];
   onDismiss: () => void;
 }) {
   const { frame, done } = useRevealSequence(0);
+  const title = result.kind === 'retired' ? 'Old job over' : `${jobVerb(result.kind)} finished`;
   return (
     <RevealShell
       id="job-reveal-heading"
-      title={`${jobVerb(result.kind)} finished`}
+      title={title}
       class="job-reveal"
       status
       arrive
@@ -110,8 +98,10 @@ export function JobReveal({
                 sprite={glyphOrUnknown(supplyKindOf(result.supplyId) ?? 'unknown')}
                 scale={10}
               />
-            ) : (
+            ) : result.kind === 'craft' ? (
               <ItemSprite baseId={result.baseId} scale={8} />
+            ) : (
+              <Sprite sprite={glyphOrUnknown('anvil')} scale={8} />
             )}
           </ItemFrame>
         }

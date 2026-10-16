@@ -20,7 +20,7 @@ const gameIcon: Entry = {
   presets: [
     { name: 'Glyph', props: { icon: 'glyph: gem' } },
     { name: 'Gear part', props: { icon: 'part: ember-shard' } },
-    { name: 'Gear item', props: { icon: 'gear: wave-band', scale: 4 } },
+    { name: 'Gear item', props: { icon: 'gear: kelp-cap', scale: 4 } },
     { name: 'Element', props: { icon: 'element: grove' } },
     { name: 'Unknown (fallback)', props: { icon: 'glyph: unknown (the fallback)' } },
     { name: 'Small (as in a badge)', props: { scale: 2 } },
@@ -79,9 +79,9 @@ const itemSprite: Entry = {
   },
   defaults: { base: 'tidepool-charm', scale: 6 },
   presets: [
+    { name: 'Hat', props: { base: 'kelp-cap' } },
+    { name: 'Scarf', props: { base: 'ember-muffler' } },
     { name: 'Charm', props: { base: 'tidepool-charm' } },
-    { name: 'Band', props: { base: 'forge-band' } },
-    { name: 'Trinket', props: { base: 'storm-trinket' } },
   ],
   render: (p) => (
     <ItemSprite baseId={str(p, 'base')} scale={num(p, 'scale')} alt={str(p, 'base')} />

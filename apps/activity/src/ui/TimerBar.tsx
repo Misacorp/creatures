@@ -6,7 +6,7 @@ interface TimerBarProps {
   startedAt: number;
   endsAt: number;
   now: number;
-  /** Names the bar for screen readers ("Craft Wave Band: 40% done"). */
+  /** Names the bar for screen readers ("Craft Kelp Cap: 40% done"). */
   label: string;
   /** The line under the bar: the time left, or what is ready. */
   state: ComponentChildren;

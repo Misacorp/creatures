@@ -74,9 +74,9 @@ export interface DungeonRewards {
   /** All the parts the run's grant paid, including those of items that did not fit the bag. */
   parts: PartsBundle;
   /** Gear items now in the inventory. */
-  gear: { id: string; baseId: string; rarity: GearRarity }[];
+  gear: { id: string; baseId: string; rarity: GearRarity; itemLevel?: number }[];
   /** Items that did not fit the bag and became parts (already counted in `parts`). */
-  converted: { baseId: string; rarity: GearRarity }[];
+  converted: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
   /**
    * The supplies the run dropped, one content id each (a Lure, a Map scrap...). They are in the stock
    * now. Absent in runs from before the dungeon dropped supplies (read as none).

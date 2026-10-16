@@ -28,7 +28,8 @@ function setup(ids: string[] = ['key-1', 'key-2', 'key-3']) {
     }) as unknown as GearAction<never>;
   const server = {
     equipGear: vi.fn(),
-    upgradeGear: vi.fn(),
+    equipBestGear: vi.fn(),
+    dismissGearNotice: vi.fn(),
     dismantleGear: vi.fn(),
     startJob: vi.fn(),
     claimJob: vi.fn(),
@@ -45,10 +46,14 @@ function setup(ids: string[] = ['key-1', 'key-2', 'key-3']) {
 describe('gear actions', () => {
   it('applies the gear view and the collection of an answer and returns the result', async () => {
     const { actions, server, applied, answer } = setup();
-    server.upgradeGear.mockResolvedValue(answer({ gearId: 'g', level: 2 }));
-    expect(await actions.upgrade('g')).toEqual({ gearId: 'g', level: 2 });
+    server.dismantleGear.mockResolvedValue(answer({ gearId: 'g', unequipped: false }));
+    expect(await actions.dismantle('g')).toEqual({ gearId: 'g', unequipped: false });
     expect(applied).toEqual([
-      { result: { gearId: 'g', level: 2 }, gear: { marker: 'gear' }, state: { marker: 'state' } },
+      {
+        result: { gearId: 'g', unequipped: false },
+        gear: { marker: 'gear' },
+        state: { marker: 'state' },
+      },
     ]);
   });
 
@@ -61,16 +66,16 @@ describe('gear actions', () => {
 
   it('sends the same key again after an unknown outcome, and a new one after a definite answer', async () => {
     const { actions, server, answer } = setup();
-    server.upgradeGear
+    server.dismantleGear
       .mockRejectedValueOnce(new Error('network'))
-      .mockResolvedValueOnce(answer({ gearId: 'g', level: 1 }))
-      .mockRejectedValueOnce(new ApiError(409, 'insufficient_funds'))
-      .mockResolvedValue(answer({ gearId: 'g', level: 2 }));
-    await actions.upgrade('g'); // network error: unknown outcome
-    await actions.upgrade('g'); // retry: same key, succeeds
-    await actions.upgrade('g'); // next upgrade: a new key, refused
-    await actions.upgrade('g'); // refused is definite: a new key again
-    const keysSent = server.upgradeGear.mock.calls.map((call) => call[1] as string);
+      .mockResolvedValueOnce(answer({ gearId: 'g' }))
+      .mockRejectedValueOnce(new ApiError(409, 'item_busy'))
+      .mockResolvedValue(answer({ gearId: 'g' }));
+    await actions.dismantle('g'); // network error: unknown outcome
+    await actions.dismantle('g'); // retry: same key, succeeds
+    await actions.dismantle('g'); // next dismantle: a new key, refused
+    await actions.dismantle('g'); // refused is definite: a new key again
+    const keysSent = server.dismantleGear.mock.calls.map((call) => call[1] as string);
     expect(keysSent).toEqual(['key-1', 'key-1', 'key-2', 'key-3']);
   });
 
@@ -90,7 +95,7 @@ describe('gear actions', () => {
 
   it('claims a job and dismantles with their own keys', async () => {
     const { actions, server, answer } = setup();
-    server.claimJob.mockResolvedValue(answer({ kind: 'enchant' }));
+    server.claimJob.mockResolvedValue(answer({ kind: 'craft' }));
     server.dismantleGear.mockResolvedValue(answer({ gearId: 'g' }));
     await actions.claimJob('job-1');
     await actions.dismantle('g');
@@ -109,29 +114,24 @@ describe('gear actions', () => {
     ]);
   });
 
-  it('says Essence when an upgrade is refused for money', async () => {
-    const seen: (string | undefined)[] = [];
-    const actions = createGearActions({
-      run: () => Promise.resolve(undefined),
-      runKeyed: (_action, _task, options) => {
-        seen.push(options?.currency);
-        return Promise.resolve(undefined);
-      },
-      apply: () => undefined,
-    });
-    await actions.upgrade('g');
-    await actions.dismantle('g');
-    expect(seen).toEqual(['Essence', undefined]);
+  it('asks Equip best for the creatures it is given, and dismisses the notice, without keys', async () => {
+    const { actions, server, answer } = setup();
+    server.equipBestGear.mockResolvedValue(answer({ changes: [] }));
+    server.dismissGearNotice.mockResolvedValue(answer({ dismissed: true }));
+    expect(await actions.equipBest(['c1', 'c2'])).toEqual({ changes: [] });
+    expect(await actions.dismissNotice()).toEqual({ dismissed: true });
+    expect(server.equipBestGear).toHaveBeenCalledWith(['c1', 'c2']);
+    expect(server.dismissGearNotice).toHaveBeenCalledOnce();
   });
 
   it('turns a second action away while one runs, and applies nothing for it', async () => {
     const { actions, server, applied, answer } = setup();
     let finish: (value: GearAction<never>) => void = () => undefined;
-    server.upgradeGear.mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
-    const first = actions.upgrade('g');
-    expect(await actions.dismantle('g')).toBeUndefined();
-    expect(server.dismantleGear).not.toHaveBeenCalled();
-    finish(answer({ gearId: 'g', level: 2 }));
+    server.dismantleGear.mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
+    const first = actions.dismantle('g');
+    expect(await actions.equipBest(['c'])).toBeUndefined();
+    expect(server.equipBestGear).not.toHaveBeenCalled();
+    finish(answer({ gearId: 'g' }));
     await first;
     expect(applied).toHaveLength(1);
   });

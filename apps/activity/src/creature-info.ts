@@ -23,8 +23,8 @@ export interface CreatureInfo {
   explorerRank?: number;
   /** One short line about what it does for the creatures around it (a board's `effectLine`), when it does something. */
   effect?: string;
-  /** The item it wears, for a creature in the living room (set with `ownerName`); null or missing for none. */
-  gear?: WornItem | null;
+  /** The items it wears, for a creature in the living room (set with `ownerName`); empty or missing for none. */
+  gear?: readonly WornItem[];
 }
 
 /** The popover info of anything that is a creature on screen (a stage unit, a team member, an explorer). */
@@ -61,11 +61,11 @@ export function creatureFacts(info: CreatureInfo, speciesLabel: string): string[
 }
 
 /**
- * The worn item the popover shows: only for a creature in the living room (it has an owner) that wears
- * something. Every other popover (a stage unit, a team member, an explorer) shows no item line.
+ * The worn items the popover shows: only for a creature in the living room (it has an owner) that wears
+ * something. Every other popover (a stage unit, a team member, an explorer) shows no item lines.
  */
-export function shownWornItem(info: CreatureInfo): WornItem | null {
-  return info.ownerName !== undefined && info.gear != null ? info.gear : null;
+export function shownWornItems(info: CreatureInfo): readonly WornItem[] {
+  return info.ownerName !== undefined && info.gear !== undefined ? info.gear : [];
 }
 
 /** The spoken label of a creature that belongs to someone else: "Misa's Splashet, level 12". */

@@ -1,8 +1,9 @@
-import { craftCost, enchantCost, jobDuration } from '@creatures/game';
+import { craftCost, jobDuration } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { parseGameState, type Creature } from './api';
 import collectionState from './fixtures/collection-state.json';
 import expeditionLoot from './fixtures/expedition-claim-loot.json';
+import gearNotice from './fixtures/gear-notice.json';
 import gearState from './fixtures/gear-state.json';
 import gearWelcome from './fixtures/gear-welcome.json';
 import { parseGearState } from './gear-parse';
@@ -11,31 +12,38 @@ import {
   blueprintViews,
   busyReason,
   defaultPick,
+  detailLines,
   durationFor,
-  enchantChoices,
-  enchantStatus,
-  enchantWhen,
+  equipBestText,
   equipChoices,
   expeditionBlocked,
-  formatBonus,
   gearName,
   gearShare,
   grantsForWeek,
-  improveMessage,
   itemLabel,
   jobProgress,
   jobResultRarity,
   jobTitle,
+  jobVerb,
+  lineIdle,
+  linePips,
   lootIsEmpty,
   lootItemName,
   missingParts,
+  needsText,
+  noticeLines,
   openJobs,
+  originText,
   partsText,
   pickerOptions,
+  pipsLabel,
+  slotName,
   sortItems,
   startBlocker,
-  statText,
-  upgradeStatus,
+  topCreatureIds,
+  unequippedReason,
+  wearReason,
+  wornInOrder,
   wornItemOf,
 } from './gear-view';
 import type { GrantLoot } from './gear-types';
@@ -44,20 +52,12 @@ const gear = parseGearState(gearState);
 const game = parseGameState(collectionState);
 const [cindle, sproutle, zipmouse] = game.creatures as [Creature, Creature, Creature];
 
-describe('names and numbers', () => {
-  it('shows percentages for Attack, HP and speed and points for the crit stats', () => {
-    expect(formatBonus('atk', 502)).toBe('+5%');
-    expect(formatBonus('hp', 298)).toBe('+3%');
-    expect(formatBonus('spd', 120)).toBe('+1.2%');
-    expect(formatBonus('critChance', 241)).toBe('+2.4 points');
-    expect(formatBonus('critDamage', 882)).toBe('+8.8 points');
-    expect(statText('atk', 520)).toBe('+5.2% ATK');
-  });
-
+describe('names', () => {
   it('names items from the content and keeps an unknown id readable', () => {
-    expect(gearName('wave-band')).toBe('Wave Band');
+    expect(gearName('kelp-cap')).toBe('Kelp Cap');
     expect(gearName('mystery')).toBe('mystery');
-    expect(itemLabel('wave-band', 2)).toBe('Wave Band +2');
+    expect(itemLabel('kelp-cap', 2)).toBe('Kelp Cap, item level 2');
+    expect(slotName('scarf')).toBe('Scarf');
   });
 
   it('writes parts in words', () => {
@@ -66,67 +66,35 @@ describe('names and numbers', () => {
   });
 
   it('finds what is short of a price', () => {
-    expect(missingParts(gear.parts, { scrap: 100, glimmer: 3, 'grove-shard': 1 })).toEqual({
-      scrap: 24,
+    expect(missingParts(gear.parts, { scrap: 100, glimmer: 9, 'grove-shard': 1 })).toEqual({
+      scrap: 26,
+      glimmer: 5,
       'grove-shard': 1,
     });
-    expect(missingParts(gear.parts, { scrap: 76 })).toEqual({});
-  });
-
-  it('says who an enchant works for', () => {
-    expect(enchantWhen(undefined)).toBe('Works for every creature.');
-    expect(enchantWhen({ role: 'payoff' })).toBe('Only works for a Payoff.');
-    expect(enchantWhen({ element: 'ember' })).toBe('Only works for Ember creatures.');
-    expect(enchantStatus({ enchantId: null, enchantActive: null })).toBeNull();
-    expect(enchantStatus({ enchantId: 'ember-fury', enchantActive: true })).toContain('Active');
-    expect(enchantStatus({ enchantId: 'ember-fury', enchantActive: false })).toContain(
-      'Not active',
-    );
-    expect(enchantStatus({ enchantId: 'ember-fury', enchantActive: null })).toContain('fitting');
-  });
-
-  it('offers every enchant of the content with its shared-rules price', () => {
-    const choices = enchantChoices();
-    expect(choices.length).toBeGreaterThanOrEqual(8);
-    for (const c of choices) {
-      expect(c.cost).toEqual(enchantCost(c.id));
-      expect(c.effect.length).toBeGreaterThan(3);
-    }
+    expect(missingParts(gear.parts, { scrap: 74 })).toEqual({});
   });
 });
 
-describe('upgrade', () => {
-  const rich = { balances: { bait: 0, essence: 500 }, parts: gear.parts };
-
-  it('can be paid when Essence and scrap are enough', () => {
-    const item = gear.items[0];
-    expect(item).toBeDefined();
-    if (item === undefined) return;
-    expect(upgradeStatus(item, rich)).toEqual({ enabled: true, reason: null });
+describe('lines and their tiers', () => {
+  it('draws a rolled line as pips, filled to its tier and open to what the item level could roll', () => {
+    expect(linePips({ tier: 2, bestTier: 3 })).toEqual({ filled: 2, reach: 3, total: 5 });
+    // A tier above the best the item level lists still shows in full.
+    expect(linePips({ tier: 4, bestTier: 3 })).toEqual({ filled: 4, reach: 4, total: 5 });
+    expect(linePips({ tier: 1, bestTier: null })).toEqual({ filled: 1, reach: 1, total: 5 });
+    expect(pipsLabel({ filled: 3, reach: 4, total: 5 })).toBe('Tier 3 / 5');
   });
 
-  it('says what is missing, in words', () => {
-    const cost = { essence: 30, scrap: 3 };
-    const item = { upgradeCost: cost, maxLevel: 5 };
-    expect(
-      upgradeStatus(item, { balances: { bait: 0, essence: 10 }, parts: gear.parts }).reason,
-    ).toBe('Needs 20 more Essence.');
-    expect(
-      upgradeStatus(item, {
-        balances: { bait: 0, essence: 500 },
-        parts: { ...gear.parts, scrap: 1 },
-      }).reason,
-    ).toBe('Needs 2 more scrap.');
-    expect(
-      upgradeStatus(item, { balances: { bait: 0, essence: 0 }, parts: { ...gear.parts, scrap: 0 } })
-        .reason,
-    ).toBe('Needs 30 more Essence and 3 more scrap.');
+  it('draws no pips for a base line or a line without tiers', () => {
+    expect(linePips({ tier: null, bestTier: null })).toBeNull();
   });
 
-  it('is disabled at the top level with a reason', () => {
-    const status = upgradeStatus({ upgradeCost: null, maxLevel: 5 }, rich);
-    expect(status.enabled).toBe(false);
-    expect(status.reason).toContain('+5');
+  it('knows a line that does nothing for the wearer, and one nobody wears yet', () => {
+    expect(lineIdle({ active: false })).toBe(true);
+    expect(lineIdle({ active: true })).toBe(false);
+    expect(lineIdle({ active: null })).toBe(false);
+    // The fixture's Tide Attunement is on a Cindle: an off-element piece, so it does nothing.
+    const idle = gear.items.flatMap((i) => i.lines).filter(lineIdle);
+    expect(idle.map((l) => l.id)).toContain('tide-attunement');
   });
 });
 
@@ -141,15 +109,13 @@ describe('creatures, busy states and the picker', () => {
   });
 
   it('lists free creatures first, best crafter first, and marks the busy one', () => {
-    const options = pickerOptions(game.creatures, gear.skills, (level) =>
-      durationFor('craft', 'rare', level),
-    );
-    expect(options.map((o) => o.creature.id)).toEqual([zipmouse.id, sproutle.id, cindle.id]);
-    expect(options[0]?.level).toBe(2);
-    expect(options[0]?.durationMs).toBe(jobDuration('craft', 'rare', 2));
-    expect(options[0]?.durationMs).toBeLessThan(options[1]?.durationMs ?? 0);
+    const options = pickerOptions(game.creatures, gear.skills, durationFor);
+    expect(options.map((o) => o.creature.id)).toEqual([sproutle.id, zipmouse.id, cindle.id]);
+    expect(options[0]?.durationMs).toBe(jobDuration(1));
     expect(options[2]?.busy).toBe('On a job in the Workshop');
-    expect(defaultPick(options)).toBe(zipmouse.id);
+    expect(defaultPick(options)).toBe(sproutle.id);
+    // A higher Crafting level makes the job shorter.
+    expect(durationFor(3)).toBeLessThan(durationFor(1));
   });
 
   it('has no default when everyone is busy', () => {
@@ -158,7 +124,9 @@ describe('creatures, busy states and the picker', () => {
   });
 
   it('shows the gear share of each stat and nothing when there is none', () => {
-    expect(gearShare(cindle)).toEqual([]);
+    expect(gearShare(zipmouse)).toEqual(
+      gearShare({ stats: zipmouse.stats, statsWithGear: zipmouse.statsWithGear }),
+    );
     expect(
       gearShare({
         stats: { hp: 100, atk: 50, spd: 30 },
@@ -168,6 +136,12 @@ describe('creatures, busy states and the picker', () => {
       { stat: 'atk', amount: 12 },
       { stat: 'spd', amount: 1 },
     ]);
+    expect(
+      gearShare({
+        stats: { hp: 100, atk: 50, spd: 30 },
+        statsWithGear: { hp: 100, atk: 50, spd: 30 },
+      }),
+    ).toEqual([]);
   });
 
   it('blocks an expedition for a creature on a job, with the reason', () => {
@@ -176,29 +150,177 @@ describe('creatures, busy states and the picker', () => {
     expect(blocked[0]?.creature.id).toBe(cindle.id);
     expect(blocked[0]?.reason).toContain('on a job');
   });
+
+  it('picks the three strongest creatures for Equip best from the Workshop', () => {
+    const ids = topCreatureIds(game.creatures);
+    expect(ids).toHaveLength(3);
+    expect(new Set(ids)).toEqual(new Set(game.creatures.map((c) => c.id)));
+    expect(topCreatureIds(game.creatures.slice(0, 1))).toEqual([cindle.id]);
+  });
+});
+
+describe('the wear rule', () => {
+  const item = (slot: 'hat' | 'scarf' | 'charm', itemLevel: number, tag = 'neutral') =>
+    ({ slot, itemLevel, tag }) as Parameters<typeof wearReason>[0];
+
+  it('lets a creature wear what its level allows', () => {
+    expect(wearReason(item('hat', 9), zipmouse)).toBeNull();
+    expect(wearReason(item('scarf', 7), zipmouse)).toBeNull();
+  });
+
+  it('says why not, in words: the item level, the slot level and the role', () => {
+    expect(wearReason(item('hat', 12), zipmouse)).toBe('Needs creature level 12.');
+    expect(wearReason(item('charm', 5), zipmouse)).toBe('Charms open at level 13.');
+    // A Guard's Bell on a Payoff (Cindle).
+    expect(wearReason(item('charm', 6, 'guard'), cindle)).toBe('Only a Guard can wear this.');
+  });
+
+  it('says what an item asks of its wearer', () => {
+    expect(needsText({ needs: { level: 12, role: null } })).toBe('Level 12');
+    expect(needsText({ needs: { level: 13, role: 'guard' } })).toBe('Level 13, Guards only');
+  });
 });
 
 describe('items', () => {
-  it('sorts the rarest and highest level first', () => {
+  it('sorts the rarest and highest item level first', () => {
     const sorted = sortItems(gear.items);
     expect(sorted[0]?.rarity).toBe('epic');
-    expect(sorted.map((i) => i.rarity)).toEqual(['epic', 'rare', 'rare', 'common', 'common']);
-    const commons = sorted.filter((i) => i.rarity === 'common');
-    expect(commons[0]?.level).toBeGreaterThanOrEqual(commons[1]?.level ?? 0);
+    expect(sorted.map((i) => i.rarity)).toEqual([
+      'epic',
+      'rare',
+      'rare',
+      'rare',
+      'rare',
+      'common',
+      'common',
+      'common',
+    ]);
+    const rares = sorted.filter((i) => i.rarity === 'rare');
+    expect(rares.map((i) => i.itemLevel)).toEqual([16, 13, 12, 10]);
   });
 
-  it('offers a creature every item but its own, saying who has each', () => {
-    const choices = equipChoices(gear.items, sproutle, game.creatures);
-    expect(choices).toHaveLength(gear.items.length);
-    expect(choices.find((c) => c.item.baseId === 'phoenix-trinket')?.wornBy).toBe('Cindle');
-    expect(choices.find((c) => c.item.baseId === 'wave-band')?.wornBy).toBeNull();
-    const own = equipChoices(gear.items, cindle, game.creatures);
-    expect(own.some((c) => c.item.baseId === 'phoenix-trinket')).toBe(false);
+  it('offers a creature the items of one slot but its own, the ones it can wear first, saying who has each', () => {
+    const hats = equipChoices(gear.items, zipmouse, game.creatures, 'hat');
+    expect(hats.every((c) => c.item.slot === 'hat')).toBe(true);
+    // Its own hat is not offered; the epic hat on Cindle is, and it is too high a level.
+    expect(hats.some((c) => c.item.baseId === 'trail-cap')).toBe(false);
+    const epic = hats.find((c) => c.item.baseId === 'coal-warm-cap');
+    expect(epic?.wornBy).toBe('Cindle');
+    expect(epic?.blocked).toBe('Needs creature level 14.');
+    // Items it can wear come first.
+    const firstBlocked = hats.findIndex((c) => c.blocked !== null);
+    expect(hats.slice(firstBlocked).every((c) => c.blocked !== null)).toBe(true);
+    const free = hats.find((c) => c.item.baseId === 'kelp-cap');
+    expect(free?.blocked).toBeNull();
+    expect(free?.wornBy).toBeNull();
   });
 
   it('writes the bag as used of cap with held places', () => {
     expect(bagText({ cap: 60, used: 5, reserved: 0 })).toBe('5 / 60');
-    expect(bagText(gear.inventory)).toBe('5 / 60 (1 held for a craft)');
+    expect(bagText(gear.inventory)).toBe('8 / 60 (1 held for a craft)');
+  });
+
+  it('says what Equip best did', () => {
+    expect(equipBestText({ changes: [] })).toBe('Your gear is already the best it can be.');
+    expect(equipBestText({ changes: [{ creatureId: 'c', slot: 'hat', itemId: 'i' }] })).toBe(
+      'Changed 1 slot.',
+    );
+    expect(
+      equipBestText({
+        changes: [
+          { creatureId: 'c', slot: 'hat', itemId: 'i' },
+          { creatureId: 'c', slot: 'scarf', itemId: 'j' },
+        ],
+      }),
+    ).toBe('Changed 2 slots.');
+  });
+});
+
+describe('the details row', () => {
+  it('says where an item came from, by origin and by source', () => {
+    expect(originText({ kind: 'raid', boss: 'tidal-colossus', rank: 3 }, 'raid_finale')).toBe(
+      'Raid finale: Tidal Colossus, rank 3',
+    );
+    expect(originText({ kind: 'dungeon', depth: 7 }, 'dungeon')).toBe('Daily dungeon, depth 7');
+    expect(originText({ kind: 'trip', place: 'ember-caves', rank: 4 }, 'expedition')).toBe(
+      'Expedition to Ember Caves, explorer rank 4',
+    );
+    expect(originText({ kind: 'craft' }, 'craft')).toBe('Crafted in the Workshop');
+    expect(originText({ kind: 'welcome' }, 'welcome')).toBe('Welcome gift');
+    expect(originText({ kind: 'converted' }, 'converted')).toBe('Made from your old gear');
+    // An item from before origins were stored falls back to its source.
+    expect(originText(null, 'raid_finale')).toBe('Raid finale');
+    expect(originText(null, 'something-new')).toBe('');
+  });
+
+  it('adds who made it and when, or the day it arrived', () => {
+    const made = gear.items.find((i) => i.madeBy !== null);
+    expect(made).toBeDefined();
+    if (made === undefined) return;
+    const lines = detailLines(made);
+    expect(lines).toContain('Crafted in the Workshop');
+    expect(lines.at(-1)).toBe('Made by Zipmouse on 2027-01-12');
+    const plain = gear.items.find((i) => i.madeBy === null);
+    expect(plain && detailLines(plain).at(-1)).toMatch(/^Got it on 20\d\d-\d\d-\d\d$/);
+  });
+});
+
+describe('the conversion card', () => {
+  const notice = parseGearState(gearNotice).notice;
+
+  it('says what changed in short lines, and nothing that did not happen', () => {
+    expect(notice).not.toBeNull();
+    if (notice === null) return;
+    const lines = noticeLines(notice);
+    expect(lines[0]).toBe('Your 3 worn items became new items.');
+    expect(lines.some((l) => l.includes('742'))).toBe(true);
+    expect(lines.some((l) => l.includes('Scrap'))).toBe(true);
+    expect(lines.some((l) => l.includes('blueprints'))).toBe(true);
+    expect(lines.some((l) => l.includes('job'))).toBe(false);
+    expect(
+      noticeLines({
+        converted: 0,
+        unequipped: [],
+        refundedItems: 0,
+        parts: {},
+        essence: 0,
+        blueprints: 0,
+        retiredJobs: 2,
+      }),
+    ).toHaveLength(1);
+  });
+
+  it('says why a worn item came off', () => {
+    expect(
+      unequippedReason({
+        id: 'i',
+        baseId: 'static-charm',
+        slot: 'charm',
+        itemLevel: 4,
+        reason: 'slot_locked',
+        needs: 13,
+      }),
+    ).toBe('Charms open at creature level 13');
+    expect(
+      unequippedReason({
+        id: 'i',
+        baseId: 'static-charm',
+        slot: 'charm',
+        itemLevel: 9,
+        reason: 'item_level',
+        needs: 9,
+      }),
+    ).toBe('its creature needs level 9 to wear it');
+    expect(
+      unequippedReason({
+        id: 'i',
+        baseId: 'wardens-bell',
+        slot: 'charm',
+        itemLevel: 9,
+        reason: 'role',
+        needs: null,
+      }),
+    ).toBe('its creature has the wrong role for it');
   });
 });
 
@@ -241,83 +363,33 @@ describe('jobs', () => {
     expect(two.map((j) => j.id)).toEqual(['soon', 'late']);
   });
 
-  it('titles each kind of job', () => {
-    expect(jobTitle({ kind: 'craft', input: { baseId: 'wave-band' } }, gear.items)).toBe(
-      'Craft Wave Band',
-    );
-    expect(
-      jobTitle(
-        { kind: 'improve', input: { gearId: 'd370f1f6-5940-44bc-9113-ced5efbe8d3e' } },
-        gear.items,
-      ),
-    ).toBe('Improve Volt Band');
-    expect(
-      jobTitle(
-        {
-          kind: 'enchant',
-          input: { gearId: '2e486da1-d4b1-477e-a3b3-c47a33da5703', enchantId: 'ember-fury' },
-        },
-        gear.items,
-      ),
-    ).toBe('Enchant Phoenix Trinket: Ember Fury');
-    expect(jobTitle({ kind: 'improve', input: { gearId: 'gone' } }, gear.items)).toBe(
-      'Improve an item',
-    );
+  it('titles each kind of job, and a job from before gear v2 plainly', () => {
+    expect(jobTitle({ kind: 'craft', input: { baseId: 'kelp-cap' } })).toBe('Craft Kelp Cap');
+    expect(jobTitle({ kind: 'supply', input: { supplyId: 'lure-basic' } })).toMatch(/^Craft /);
+    expect(jobTitle({ kind: 'improve', input: {} })).toBe('Old job (its parts come back)');
+    expect(jobVerb('craft')).toBe('Craft');
+    expect(jobVerb('enchant')).toBe('Old job');
   });
 
-  it('says what an improve changed', () => {
-    const base = { stat: 'critDamage', bp: 240 } as const;
-    const result = (to: { stat: 'critDamage' | 'atk'; bp: number }) =>
-      ({
-        kind: 'improve',
-        gearId: 'g',
-        baseId: 'volt-band',
-        secondaryIndex: 0,
-        from: base,
-        to,
-        xp: 20,
-        skillXp: 20,
-        skillLevel: 1,
-        leveledUp: false,
-      }) as const;
-    expect(improveMessage(result({ stat: 'critDamage', bp: 300 }))).toContain('Better!');
-    expect(improveMessage(result({ stat: 'critDamage', bp: 239 }))).toContain('A little lower');
-    expect(improveMessage(result({ stat: 'critDamage', bp: 240 }))).toContain('same roll');
-    expect(improveMessage(result({ stat: 'atk', bp: 400 }))).toContain('different stat');
-  });
-
-  it('frames a finished job with the craft rarity or the item rarity', () => {
+  it('frames a finished job with the craft rarity, the supply tier or Common', () => {
+    const common = { xp: 1, skillXp: 1, skillLevel: 1, leveledUp: false };
     expect(
-      jobResultRarity(
-        {
-          kind: 'craft',
-          gearId: 'x',
-          baseId: 'wave-band',
-          rarity: 'epic',
-          upgraded: true,
-          xp: 1,
-          skillXp: 1,
-          skillLevel: 1,
-          leveledUp: false,
-        },
-        gear.items,
-      ),
-    ).toBe('epic');
+      jobResultRarity({
+        kind: 'craft',
+        gearId: 'x',
+        baseId: 'kelp-cap',
+        rarity: 'rare',
+        itemLevel: 4,
+        upgraded: true,
+        ...common,
+      }),
+    ).toBe('rare');
     expect(
-      jobResultRarity(
-        {
-          kind: 'enchant',
-          gearId: '2e486da1-d4b1-477e-a3b3-c47a33da5703',
-          baseId: 'phoenix-trinket',
-          enchantId: 'ember-fury',
-          xp: 1,
-          skillXp: 1,
-          skillLevel: 1,
-          leveledUp: false,
-        },
-        gear.items,
-      ),
-    ).toBe('epic');
+      jobResultRarity({ kind: 'retired', was: 'improve', refund: { scrap: 6 }, ...common }),
+    ).toBe('common');
+    expect(jobResultRarity({ kind: 'supply', supplyId: 'lure-basic', amount: 1, ...common })).toBe(
+      'common',
+    );
   });
 });
 
@@ -325,7 +397,7 @@ describe('starting a job', () => {
   const free = game.creatures.filter((c) => c.busy === null);
 
   it('can start when a slot, a creature and the parts are there', () => {
-    expect(startBlocker(gear, free, { kind: 'craft', cost: craftCost('wave-band') })).toBeNull();
+    expect(startBlocker(gear, free, { kind: 'craft', cost: craftCost('kelp-cap') })).toBeNull();
   });
 
   it('says why not, in words, in this order', () => {
@@ -333,9 +405,6 @@ describe('starting a job', () => {
     expect(startBlocker(full, free, { kind: 'craft', cost: {} })).toContain('All 2 workshop slots');
     expect(startBlocker(gear, [cindle], { kind: 'craft', cost: {} })).toContain(
       'No creature is free',
-    );
-    expect(startBlocker(gear, free, { kind: 'improve', cost: {}, item: { jobId: 'j' } })).toBe(
-      'This item is already in a job.',
     );
     expect(
       startBlocker({ ...gear, inventory: { cap: 60, used: 59, reserved: 1 } }, free, {
@@ -345,30 +414,27 @@ describe('starting a job', () => {
     ).toContain('bag is full');
     expect(
       startBlocker(gear, free, { kind: 'craft', cost: { 'grove-shard': 1, scrap: 100 } }),
-    ).toBe('Needs 24 more Scrap and 1 more Grove Shard.');
+    ).toBe('Needs 26 more Scrap and 1 more Grove Shard.');
   });
 
-  it('does not stop an improve for a full bag (no new item)', () => {
+  it('does not stop a supply for a full bag (no new item)', () => {
     const fullBag = { ...gear, inventory: { cap: 60, used: 60, reserved: 0 } };
-    expect(startBlocker(fullBag, free, { kind: 'improve', cost: { scrap: 6 } })).toBeNull();
-  });
-
-  it('takes durations and prices from the shared rules', () => {
-    expect(durationFor('enchant', 'epic', 1)).toBe(jobDuration('enchant', 'epic', 1));
+    expect(startBlocker(fullBag, free, { kind: 'supply', cost: { scrap: 3 } })).toBeNull();
   });
 });
 
 describe('blueprints', () => {
-  it('lists the known blueprints, plainest first, with the shared-rules craft price', () => {
+  it('lists the known blueprints by slot and name, with the shared-rules craft price', () => {
     const views = blueprintViews(gear.blueprints);
-    expect(views.map((v) => v.baseId)).toEqual(['static-charm', 'wave-band']);
-    expect(views[1]?.cost).toEqual(craftCost('wave-band'));
-    expect(views[1]?.tint).toBe('tide');
+    expect(views.map((v) => v.baseId)).toEqual(['kelp-cap', 'trail-charm']);
+    expect(views[0]?.cost).toEqual(craftCost('kelp-cap'));
+    expect(views[0]).toMatchObject({ slot: 'hat', element: 'tide' });
+    expect(views[1]?.element).toBeNull();
   });
 
   it('skips a blueprint whose base the content does not have', () => {
     expect(
-      blueprintViews([{ baseId: 'nope', rarity: 'common', learnedAt: 1 }, ...gear.blueprints]),
+      blueprintViews([{ baseId: 'nope', learnedAt: 1, marks: 0 }, ...gear.blueprints]),
     ).toHaveLength(2);
   });
 });
@@ -378,7 +444,7 @@ describe('grants and loot', () => {
     const w1 = grantsForWeek(gear.grants, '2027-W01');
     expect(w1.finale?.key).toBe('raid:2027-W01:finale');
     expect(w1.festival?.key).toBe('festival:2027-W01');
-    expect(w1.festival?.gear[0]?.baseId).toBe('hearth-band');
+    expect(w1.festival?.gear[0]?.baseId).toBe('festival-hearth-scarf');
     const w2 = grantsForWeek(gear.grants, '2027-W02');
     expect(w2).toEqual({ finale: null, festival: null });
     expect(grantsForWeek(parseGearState(gearWelcome).grants, '2027-W01')).toEqual({
@@ -387,25 +453,24 @@ describe('grants and loot', () => {
     });
   });
 
-  it('names a dropped item with "+N" when it arrived upgraded, and plainly otherwise', () => {
-    expect(lootItemName({ baseId: 'trail-charm', level: 3 })).toBe(itemLabel('trail-charm', 3));
-    expect(lootItemName({ baseId: 'trail-charm', level: 3 })).toMatch(/ \+3$/);
-    // A grant stored before the reward slot has no level, and +0 is not shown.
-    expect(lootItemName({ baseId: 'trail-charm' })).toBe(gearName('trail-charm'));
-    expect(lootItemName({ baseId: 'trail-charm', level: 0 })).toBe(gearName('trail-charm'));
+  it('names a dropped item with its item level when it has one, and plainly otherwise', () => {
+    expect(lootItemName({ baseId: 'trail-cap', itemLevel: 3 })).toBe(itemLabel('trail-cap', 3));
+    // A grant stored before gear v2 has no item level.
+    expect(lootItemName({ baseId: 'trail-cap' })).toBe(gearName('trail-cap'));
   });
 
-  it('reads the level a finale item arrived with, and still reads grants without one', () => {
+  it('reads the item level a finale item arrived with, and still reads grants without one', () => {
     const w1 = grantsForWeek(gear.grants, '2027-W01');
     expect(w1.finale?.source).toBe('raid_finale');
-    expect(w1.finale?.gear[0]?.level).toBe(1);
-    expect(w1.festival?.gear[0]?.level).toBeUndefined();
+    expect(w1.finale?.gear[0]?.itemLevel).toBe(6);
     const bad = JSON.parse(JSON.stringify(gearState)) as typeof gearState;
     const record = bad.grants.find((g) => g.source === 'raid_finale');
-    (record?.gear[0] as { level: unknown }).level = -2;
+    (record?.gear[0] as { itemLevel: unknown }).itemLevel = -2;
     expect(() => parseGearState(bad)).toThrow();
-    (record?.gear[0] as { level: unknown }).level = 'two';
+    (record?.gear[0] as { itemLevel: unknown }).itemLevel = 'two';
     expect(() => parseGearState(bad)).toThrow();
+    delete (record?.gear[0] as { itemLevel?: unknown }).itemLevel;
+    expect(() => parseGearState(bad)).not.toThrow();
   });
 
   it('knows an empty grant', () => {
@@ -415,39 +480,44 @@ describe('grants and loot', () => {
 });
 
 describe('wornItemOf', () => {
-  it('takes the main stat from the gear view item with the same id, as the creature card does', () => {
+  it('takes the text of the lines from the gear view item with the same id, as the creature card does', () => {
     const item = gear.items[0];
     if (item === undefined) throw new Error('fixture has no items');
     const worn = {
       id: item.id,
       baseId: item.baseId,
+      slot: item.slot,
       rarity: item.rarity,
-      level: item.level,
-      enchantId: null,
+      itemLevel: item.itemLevel,
     };
     expect(wornItemOf(worn, gear.items)).toEqual({
       baseId: item.baseId,
+      slot: item.slot,
       rarity: item.rarity,
-      level: item.level,
-      enchantId: null,
-      primary: item.primary,
+      itemLevel: item.itemLevel,
+      lines: item.lines.map((l) => l.text),
     });
   });
 
-  it('has no main stat while the gear view has not loaded, or for an item it does not list', () => {
+  it('has no lines while the gear view has not loaded, or for an item it does not list', () => {
     const worn = {
       id: 'nope',
-      baseId: 'bark-band',
+      baseId: 'kelp-cap',
+      slot: 'hat' as const,
       rarity: 'rare' as const,
-      level: 2,
-      enchantId: 'x',
+      itemLevel: 2,
     };
     expect(wornItemOf(worn, undefined)).toEqual({
-      baseId: 'bark-band',
+      baseId: 'kelp-cap',
+      slot: 'hat',
       rarity: 'rare',
-      level: 2,
-      enchantId: 'x',
+      itemLevel: 2,
     });
-    expect(wornItemOf(worn, gear.items)).not.toHaveProperty('primary');
+    expect(wornItemOf(worn, gear.items)).not.toHaveProperty('lines');
+  });
+
+  it('lists what a creature wears in slot order', () => {
+    const worn = [{ slot: 'charm' as const }, { slot: 'hat' as const }, { slot: 'scarf' as const }];
+    expect(wornInOrder(worn).map((w) => w.slot)).toEqual(['hat', 'scarf', 'charm']);
   });
 });

@@ -83,12 +83,19 @@ function isRewards(value: unknown): value is DungeonRewards {
     isArrayOf(
       value['gear'],
       (g): g is DungeonRewards['gear'][number] =>
-        isRecord(g) && isStr(g['id']) && isStr(g['baseId']) && isRarity(g['rarity']),
+        isRecord(g) &&
+        isStr(g['id']) &&
+        isStr(g['baseId']) &&
+        isRarity(g['rarity']) &&
+        (g['itemLevel'] === undefined || isCount(g['itemLevel'])),
     ) &&
     isArrayOf(
       value['converted'],
       (c): c is DungeonRewards['converted'][number] =>
-        isRecord(c) && isStr(c['baseId']) && isRarity(c['rarity']),
+        isRecord(c) &&
+        isStr(c['baseId']) &&
+        isRarity(c['rarity']) &&
+        (c['itemLevel'] === undefined || isCount(c['itemLevel'])),
     ) &&
     (value['supplies'] === undefined || isArrayOf(value['supplies'], isStr)) &&
     isBool(value['landmark']) &&

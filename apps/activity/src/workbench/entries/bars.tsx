@@ -66,7 +66,7 @@ const timerBar: Entry = {
     ready: false,
     tone: 'gold',
     state: '2 h 14 min left',
-    label: 'Craft Wave Band: 40% done',
+    label: 'Craft Kelp Cap: 40% done',
   },
   presets: [
     { name: 'Just started', props: { percent: 2, state: '5 h left' } },

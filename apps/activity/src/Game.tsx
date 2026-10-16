@@ -384,6 +384,7 @@ export function Game({
             onEquip={async (gearId, creatureId) =>
               (await gearActions.equip(gearId, creatureId)) !== undefined
             }
+            onEquipBest={(creatureId) => gearActions.equipBest([creatureId])}
             onTrain={(creature) => {
               void runKeyed(ActionIds.train(creature.id), (key) =>
                 trainCreature(creature.id, key),

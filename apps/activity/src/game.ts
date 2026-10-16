@@ -196,13 +196,13 @@ const ERROR_TEXT: Record<string, string> = {
   inventory_full: 'Your bag is full. Dismantle an item to make room.',
   item_busy: 'That item is in a Workshop job. Claim the job first.',
   not_ready: 'That is not finished yet.',
-  max_level: 'That item is already at its top level.',
-  same_enchant: 'That item already has that enchant.',
+  wrong_role: 'Only a creature of the role that Charm is made for can wear it.',
+  slot_locked: 'That creature is not high enough level for that slot yet.',
+  item_level_too_high: 'That item is higher level than that creature.',
+  gear_upgrade_removed: 'Gear is not upgraded any more. Use the new items instead.',
+  job_kind_removed: 'That kind of job is not in the Workshop any more.',
   blueprint_unknown: 'You have not learned that blueprint.',
-  nothing_to_improve: 'That item has no extra stat to improve.',
-  invalid_secondary: 'That item has no such extra stat.',
   invalid_blueprint: 'That blueprint cannot be crafted.',
-  invalid_enchant: 'That enchant does not exist.',
   item_gone: 'The item for that job is gone.',
   skill_too_low: 'That creature needs a higher Crafting level for this supply.',
   invalid_supply: 'That supply cannot be crafted.',
@@ -259,6 +259,16 @@ export function errorText(
     if (err.code === 'insufficient_funds') return `Not enough ${currency}.`;
     if (err.code === 'destination_closed' && DESTINATION_CLOSED_REASONS[err.reason ?? '']) {
       return DESTINATION_CLOSED_REASONS[err.reason ?? ''] as string;
+    }
+    // The wear rule: the reason is the creature level it needs, or the role of a role-locked Charm.
+    if (err.code === 'slot_locked' && err.reason !== null && /^\d+$/.test(err.reason)) {
+      return `That slot opens at creature level ${err.reason}.`;
+    }
+    if (err.code === 'item_level_too_high' && err.reason !== null && /^\d+$/.test(err.reason)) {
+      return `That item needs creature level ${err.reason}.`;
+    }
+    if (err.code === 'wrong_role' && err.reason !== null && /^[a-z]{3,10}$/.test(err.reason)) {
+      return `Only a ${capitalize(err.reason)} can wear that Charm.`;
     }
     if (err.code === 'rank_too_low' && err.reason === 'length') {
       return 'That explorer is not a high enough rank for a trip that long.';

@@ -104,7 +104,7 @@ function creature(over: Partial<Creature>): Creature {
     quirk: 'hums-quietly',
     stats: { hp: 1, atk: 1, spd: 1 },
     statsWithGear: { hp: 1, atk: 1, spd: 1 },
-    gear: null,
+    gear: [],
     busy: null,
     trainCost: null,
     ability: null,
@@ -135,30 +135,27 @@ describe('ownResident', () => {
         quirk: 'hums-quietly',
         craftingLevel: 4,
         explorerRank: 3,
-        gear: null,
+        gear: [],
       },
     });
   });
 
-  it('shows the worn item, with its main stat once the gear view has loaded', () => {
+  it('shows the worn items, with the text of their lines once the gear view has loaded', () => {
     const worn = {
       id: 'g1',
-      baseId: 'bark-band',
+      baseId: 'kelp-cap',
+      slot: 'hat' as const,
       rarity: 'rare' as const,
-      level: 2,
-      enchantId: null,
+      itemLevel: 2,
     };
-    const wearing = { ...state, creatures: [creature({ id: 'c2', gear: worn })] };
+    const wearing = { ...state, creatures: [creature({ id: 'c2', gear: [worn] })] };
     const before = ownResident(wearing, 'u1', 'Misa', new Map());
-    expect(before.creature?.gear).toEqual({
-      baseId: 'bark-band',
-      rarity: 'rare',
-      level: 2,
-      enchantId: null,
-    });
-    const items = [{ id: 'g1', primary: { stat: 'atk', bp: 850 } }] as unknown as GearItem[];
+    expect(before.creature?.gear).toEqual([
+      { baseId: 'kelp-cap', slot: 'hat', rarity: 'rare', itemLevel: 2 },
+    ]);
+    const items = [{ id: 'g1', lines: [{ text: 'Attack +4%' }] }] as unknown as GearItem[];
     const after = ownResident(wearing, 'u1', 'Misa', new Map(), items);
-    expect(after.creature?.gear?.primary).toEqual({ stat: 'atk', bp: 850 });
+    expect(after.creature?.gear[0]?.lines).toEqual(['Attack +4%']);
   });
 
   it('leaves the Crafting level out until it is known', () => {

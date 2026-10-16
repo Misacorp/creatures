@@ -71,8 +71,8 @@ export const ICONS: Readonly<Record<string, IconRef>> = {
   'part: spark-shard': { kind: 'part', part: 'spark-shard' },
   'part: glimmer': { kind: 'part', part: 'glimmer' },
   'gear: trail-charm': { kind: 'gear', baseId: 'trail-charm' },
-  'gear: wave-band': { kind: 'gear', baseId: 'wave-band' },
-  'gear: storm-trinket': { kind: 'gear', baseId: 'storm-trinket' },
+  'gear: kelp-cap': { kind: 'gear', baseId: 'kelp-cap' },
+  'gear: ember-muffler': { kind: 'gear', baseId: 'ember-muffler' },
   'element: tide': { kind: 'element', element: 'tide' },
   'element: ember': { kind: 'element', element: 'ember' },
   'element: grove': { kind: 'element', element: 'grove' },
@@ -172,24 +172,29 @@ export function withClaims(residents: readonly Resident[], claims: RoomClaims): 
   });
 }
 
-/** The worn item of fixture resident `i`: most wear something, some enchanted, every third nothing. */
-function sampleWorn(i: number): WornItem | null {
-  if (i % 3 === 1) return null;
-  const base = gearContent.bases[(i * 3) % gearContent.bases.length];
-  if (base === undefined) return null;
-  const enchant = gearContent.enchants[i % gearContent.enchants.length];
-  return {
-    baseId: base.id,
-    rarity: RARITIES[i % RARITIES.length] ?? 'common',
-    level: i % 6,
-    enchantId: i % 2 === 0 && enchant !== undefined ? enchant.id : null,
-    primary: { stat: base.primary, bp: 300 + i * 85 },
-  };
+/** The worn items of fixture resident `i`: most wear a hat, some more, every third nothing. */
+function sampleWorn(i: number): WornItem[] {
+  if (i % 3 === 1) return [];
+  const slots = (['hat', 'scarf', 'charm'] as const).slice(0, 1 + (i % 3));
+  return slots.flatMap((slot, k) => {
+    const bases = gearContent.bases.filter((b) => b.slot === slot);
+    const base = bases[(i + k) % bases.length];
+    if (base === undefined) return [];
+    return [
+      {
+        baseId: base.id,
+        slot,
+        rarity: RARITIES[(i + k) % RARITIES.length] ?? 'common',
+        itemLevel: 2 + ((i * 3 + k) % 10),
+        lines: ['Attack +3%', 'Tide Hunter +5%'],
+      },
+    ];
+  });
 }
 
 /**
  * Fixture residents of the living room: "You" first, then others, each with a different species, now
- * and then shiny or nicknamed, most wearing an item (tap one for the popover's worn-item line). With `oneBusy`, the second resident has all creatures out working (no creature).
+ * and then shiny or nicknamed, most wearing some gear (tap one for the popover's worn-item lines). With `oneBusy`, the second resident has all creatures out working (no creature).
  */
 export function sampleResidents(count: number, oneBusy: boolean): Resident[] {
   return Array.from({ length: count }, (_, i) => {

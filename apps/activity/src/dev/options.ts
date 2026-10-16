@@ -17,7 +17,6 @@ export const SUPPLY_OPTIONS = options(expeditionContent.supplies, (s) => s.name)
 export const GOAL_OPTIONS = options(expeditionContent.goals, (g) => g.name);
 export const JOURNAL_OPTIONS = options(expeditionContent.journal.entries, (e) => e.title);
 export const BASE_OPTIONS = options(gearContent.bases, (b) => b.name);
-export const ENCHANT_OPTIONS = options(gearContent.enchants, (e) => e.name);
 export const BOSS_OPTIONS = options(content.bosses, (b) => b.name);
 export const MODIFIER_OPTIONS = options(dungeonContent.modifiers, (m) => m.name);
 
@@ -64,7 +63,7 @@ export const PART_FIELDS: readonly Option[] = [
 /** Limits the schemas have, from the same rules the server reads. */
 export const LIMITS = {
   rooms: RULES.dungeon.rooms,
-  maxGearLevel: RULES.gear.maxLevel,
+  maxItemLevel: RULES.gear.maxItemLevel,
   maxExplorerRank: RULES.expeditions.rank.xpForRank.length,
   maxExplorerXp: (RULES.expeditions.rank.xpForRank.at(-1) ?? 0) * 2,
   maxSlots: 1 + 1 + RULES.expeditions.slots.thresholds.length,

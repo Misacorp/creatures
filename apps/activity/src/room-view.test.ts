@@ -21,7 +21,7 @@ const creature = {
   quirk: null,
   craftingLevel: 3,
   explorerRank: 2,
-  gear: null,
+  gear: [],
 };
 
 const resident = (
@@ -51,15 +51,17 @@ describe('residentInfo', () => {
     });
   });
 
-  it('carries the worn item for the popover, or null when nothing is worn', () => {
-    expect(residentInfo('Misa', creature).gear).toBeNull();
-    const worn = {
-      baseId: 'bark-band',
-      rarity: 'rare' as const,
-      level: 3,
-      enchantId: null,
-      primary: { stat: 'atk' as const, bp: 850 },
-    };
+  it('carries the worn items for the popover, or none when nothing is worn', () => {
+    expect(residentInfo('Misa', creature).gear).toEqual([]);
+    const worn = [
+      {
+        baseId: 'kelp-cap',
+        slot: 'hat' as const,
+        rarity: 'rare' as const,
+        itemLevel: 3,
+        lines: ['Attack +4%'],
+      },
+    ];
     expect(residentInfo('Misa', { ...creature, gear: worn }).gear).toEqual(worn);
   });
 

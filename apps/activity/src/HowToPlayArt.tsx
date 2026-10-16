@@ -40,8 +40,8 @@ import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { elementIcon } from './sprites/element-icons';
 import { PipRow } from './ui/PipRow';
 
-/** One item of each kind (a charm, a band and a trinket), for the Workshop picture. */
-const GEAR_EXAMPLES = ['trail-charm', 'patch-band', 'quick-trinket'] as const;
+/** One item of each slot (a hat, a scarf and a charm), for the Workshop picture. */
+const GEAR_EXAMPLES = ['trail-cap', 'patch-scarf', 'trail-charm'] as const;
 
 const titleOf = (id: string): string => entryView(id)?.title ?? id;
 

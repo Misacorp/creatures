@@ -54,7 +54,7 @@ export function LootList({
               <Tag kind="badge" entry="blueprint">
                 {b.duplicate ? 'Known blueprint' : 'New blueprint'}
               </Tag>{' '}
-              {gearName(b.baseId)} <RarityTag rarity={b.rarity} />
+              {gearName(b.baseId)}
               {b.duplicate && <span class="muted"> (it became scrap)</span>}
             </li>
           ))}

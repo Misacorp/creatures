@@ -198,7 +198,9 @@ describe('the Workshop', () => {
       baseId: firstBase,
       rarity: 'epic',
     });
-    expect(body('grant-gear', 'Grant a gear item', { level: '3' })).toMatchObject({ level: 3 });
+    expect(body('grant-gear', 'Grant a gear item', { itemLevel: '3' })).toMatchObject({
+      itemLevel: 3,
+    });
     expect(problem('grant-gear', 'Grant a gear item', { rarity: 'mythic' })).toMatch(/Rarity/);
   });
 });

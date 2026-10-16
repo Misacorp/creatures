@@ -9,7 +9,6 @@ import {
   BASE_OPTIONS,
   BOSS_OPTIONS,
   DESTINATION_OPTIONS,
-  ENCHANT_OPTIONS,
   GATE_OPTIONS,
   GOAL_OPTIONS,
   JOURNAL_OPTIONS,
@@ -160,8 +159,7 @@ const WORKSHOP_SPECS: readonly ToolSpec[] = [
     fields: [
       pick('baseId', 'Base', BASE_OPTIONS),
       pick('rarity', 'Rarity', RARITY_OPTIONS),
-      int('level', 'Level', 0, LIMITS.maxGearLevel, true),
-      pick('enchantId', 'Enchant', ENCHANT_OPTIONS, true),
+      int('itemLevel', 'Item level', 1, LIMITS.maxItemLevel, true),
     ],
   },
 ];
