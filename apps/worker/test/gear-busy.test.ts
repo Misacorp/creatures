@@ -1,57 +1,13 @@
-import { createSeededRng, type PartsBundle } from '@creatures/game';
+import { createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { creditParts } from '../src/gear-store';
-import { giveItem } from './gear-helpers';
+import { apiPlayer as player, giveItem, giveParts, newKey, skipWelcome } from './gear-helpers';
 import { runCore, type CoreContext } from './helpers';
-import { nextGuild, rows, seedPlayer, type SeedOptions } from './raid-helpers';
+import { nextGuild, rows } from './raid-helpers';
 
 const HOUR = 3_600_000;
 
-let keyCounter = 0;
-/** A valid client idempotency key, unique per call. */
-const newKey = () => `busy-${String(++keyCounter).padStart(8, '0')}-test`;
-
-interface Json {
-  status: number;
-  body: Record<string, unknown>;
-}
-
-interface Api {
-  id: string;
-  creatureIds: string[];
-  call: (method: string, path: string, body?: unknown) => Promise<Json>;
-}
-
-async function player(ctx: CoreContext, n: number, options: SeedOptions = {}): Promise<Api> {
-  const seeded = seedPlayer(ctx, n, { level: 5, ...options });
-  const user = { id: seeded.id, displayName: seeded.name };
-  let secret = await ctx.core.createSession(ctx.guildId, user);
-  let loggedInAt = ctx.clock.t;
-  const call = async (method: string, path: string, body?: unknown): Promise<Json> => {
-    if (ctx.clock.t - loggedInAt >= 30 * 60_000) {
-      secret = await ctx.core.createSession(ctx.guildId, user);
-      loggedInAt = ctx.clock.t;
-    }
-    const res = await ctx.request(secret, path, method, body);
-    return { status: res.status, body: await res.json<Record<string, unknown>>() };
-  };
-  return { id: seeded.id, creatureIds: seeded.creatureIds, call };
-}
-
 const give = (ctx: CoreContext, userId: string, baseId: string, o = {}): string =>
   giveItem(ctx.sql, userId, baseId, { now: ctx.clock.t, ...o });
-
-const parts = (ctx: CoreContext, userId: string, bundle: PartsBundle): void =>
-  creditParts(ctx.sql, userId, bundle);
-
-const skipWelcome = (ctx: CoreContext, userId: string): void => {
-  ctx.sql.exec(
-    "INSERT INTO gear_grants (user_id, key, source, result_json, created_at) VALUES (?, 'welcome', 'welcome', ?, ?)",
-    userId,
-    JSON.stringify({ gear: [], converted: [], parts: {}, blueprints: [] }),
-    ctx.clock.t,
-  );
-};
 
 const equipPath = (id: string) => `/api/gear/${id}/equip`;
 
@@ -71,7 +27,7 @@ async function busyPlayer(ctx: CoreContext) {
     p.id,
     ctx.clock.t,
   );
-  parts(ctx, p.id, { scrap: 100 });
+  giveParts(ctx, p.id, { scrap: 100 });
   const [away, working, idle] = p.creatureIds as [string, string, string];
   const wornAway = give(ctx, p.id, 'trail-cap', { seed: 'away' });
   const wornWorking = give(ctx, p.id, 'coal-warm-cap', { seed: 'working' });

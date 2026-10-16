@@ -1430,7 +1430,7 @@ describe('privacy', () => {
         await call(ctx, a.secret, 'POST', `/api/expeditions/${v2.id}/claim`, {});
         await call(ctx, a.secret, 'GET', '/api/profile');
         await call(ctx, a.secret, 'GET', '/api/destinations');
-        // Gear and the workshop: the welcome kit, equip, a craft and a dismantle. Every one of them is logged with content ids and numbers only.
+        // Gear and the workshop: the welcome kit, equip, a craft and a dismantle job. Every one of them is logged with content ids and numbers only.
         const kit = (await call(ctx, a.secret, 'GET', '/api/gear')).body as {
           items: { id: string }[];
         };
@@ -1469,9 +1469,20 @@ describe('privacy', () => {
           level: 4,
           now: ctx.clock.t,
         });
-        await call(ctx, a.secret, 'POST', `/api/gear/${rare}/dismantle`, {
+        const taking = await call(ctx, a.secret, 'POST', '/api/workshop/jobs', {
+          kind: 'dismantle',
+          creatureId: a.starterId,
+          itemIds: [rare],
           idempotencyKey: newKey(),
         });
+        expect(taking.status).toBe(200);
+        ctx.clock.t += 2 * HOUR;
+        a.secret = await ctx.core.createSession(ctx.guildId, USER, '555555555555555555');
+        const takenJob = (taking.body['result'] as { jobId: string }).jobId;
+        const taken = await call(ctx, a.secret, 'POST', `/api/workshop/jobs/${takenJob}/claim`, {
+          idempotencyKey: newKey(),
+        });
+        expect(taken.status).toBe(200);
         // The daily dungeon: a player with a team of three runs it (with a nickname on one creature).
         const diver = seedPlayer(ctx, 3, { name: 'Diver Dana', level: 8 });
         const diverSecret = await ctx.core.createSession(ctx.guildId, {

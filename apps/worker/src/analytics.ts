@@ -26,6 +26,7 @@ import {
   GEAR_SLOTS,
   GOAL_RISKS,
   JOB_KINDS,
+  REACH_IDS,
   PART_KINDS,
   RARITIES,
   RULES,
@@ -288,6 +289,11 @@ export type AnalyticsEvent =
       unequipped: boolean;
       /** The parts it gave, by kind. */
       parts?: PartsBundle;
+      /** A dismantle job: items taken apart, the Essence it gave, blueprints learned and marks added (left out for older events). */
+      items?: number;
+      essence?: number;
+      learned?: number;
+      marks?: number;
     }
   | {
       kind: 'job_start';
@@ -300,6 +306,11 @@ export type AnalyticsEvent =
       skillLevel: number;
       /** The parts the job cost, by kind. */
       parts?: PartsBundle;
+      /** A craft: what it was aimed at, and the Essence it cost. */
+      reach?: 'none' | 'rare' | 'epic';
+      essence?: number;
+      /** A dismantle: how many items went in. */
+      items?: number;
     }
   | {
       kind: 'job_claim';
@@ -314,6 +325,9 @@ export type AnalyticsEvent =
       leveledUp: boolean;
       /** Supplies a supply job gave (left out for other jobs). */
       yield?: number;
+      /** A craft: what it was aimed at. A dismantle: how many items went in. */
+      reach?: 'none' | 'rare' | 'epic';
+      items?: number;
     }
   | {
       /** A daily dungeon run: how deep, how far it got, what the rooms rolled and who went. */
@@ -652,6 +666,10 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         glimmer: int(event.glimmer),
         unequipped: bool(event.unequipped),
         ...withParts(event.parts),
+        ...(event.items === undefined ? {} : { items: int(event.items, 5) }),
+        ...(event.essence === undefined ? {} : { essence: int(event.essence, 1_000) }),
+        ...(event.learned === undefined ? {} : { learned: int(event.learned, 5) }),
+        ...(event.marks === undefined ? {} : { marks: int(event.marks, 5) }),
       };
     case 'job_start':
       return {
@@ -662,6 +680,9 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         hours: int(event.hours, 99),
         skillLevel: int(event.skillLevel, 99),
         ...withParts(event.parts),
+        ...(event.reach === undefined ? {} : { reach: oneOf(REACH_IDS, event.reach, 'none') }),
+        ...(event.essence === undefined ? {} : { essence: int(event.essence, 1_000) }),
+        ...(event.items === undefined ? {} : { items: int(event.items, 5) }),
       };
     case 'job_claim':
       return {
@@ -673,6 +694,8 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         skillLevel: int(event.skillLevel, 99),
         leveledUp: bool(event.leveledUp),
         ...(event.yield === undefined || event.yield <= 0 ? {} : { yield: int(event.yield, 99) }),
+        ...(event.reach === undefined ? {} : { reach: oneOf(REACH_IDS, event.reach, 'none') }),
+        ...(event.items === undefined ? {} : { items: int(event.items, 5) }),
       };
     case 'dungeon_run':
       return {

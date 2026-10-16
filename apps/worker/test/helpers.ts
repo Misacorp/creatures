@@ -220,13 +220,48 @@ export const GEAR_TABLES = [
  * The schema version of a fresh database. Tests that check it use this constant, so a new migration
  * changes one number here (and adds an undo step below), not a dozen tests.
  */
-export const LATEST_SCHEMA_VERSION = 27;
+export const LATEST_SCHEMA_VERSION = 28;
+
+/**
+ * Puts a database back to before migration 28 (the crafting loop): the Workshop jobs table goes back to
+ * its old kinds (dismantle jobs are dropped) and loses `work_minutes`.
+ */
+export function undoWorkshopV2Migration(sql: SqlStorage): void {
+  sql.exec("DELETE FROM workshop_jobs WHERE kind = 'dismantle'");
+  sql.exec('ALTER TABLE workshop_jobs RENAME TO workshop_jobs_v3');
+  sql.exec(`CREATE TABLE workshop_jobs (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    creature_id TEXT NOT NULL,
+    kind TEXT NOT NULL CHECK (kind IN ('craft', 'improve', 'enchant', 'supply')),
+    gear_id TEXT,
+    input_json TEXT NOT NULL,
+    started_at INTEGER NOT NULL,
+    ends_at INTEGER NOT NULL,
+    claimed_at INTEGER,
+    result_json TEXT
+  )`);
+  sql.exec(`INSERT INTO workshop_jobs
+      (id, user_id, creature_id, kind, gear_id, input_json, started_at, ends_at, claimed_at, result_json)
+    SELECT id, user_id, creature_id, kind, gear_id, input_json, started_at, ends_at, claimed_at, result_json
+    FROM workshop_jobs_v3 ORDER BY rowid`);
+  sql.exec('DROP TABLE workshop_jobs_v3');
+  sql.exec(
+    'CREATE UNIQUE INDEX workshop_jobs_creature_open ON workshop_jobs(creature_id) WHERE claimed_at IS NULL',
+  );
+  sql.exec(
+    'CREATE UNIQUE INDEX workshop_jobs_gear_open ON workshop_jobs(gear_id) WHERE claimed_at IS NULL AND gear_id IS NOT NULL',
+  );
+  sql.exec('CREATE INDEX workshop_jobs_user ON workshop_jobs(user_id, claimed_at)');
+  sql.exec('DELETE FROM schema_version WHERE version = 28');
+}
 
 /**
  * Puts a database back to before migration 27 (gear v2): the new item table goes, the first version's
  * comes back (empty), and the blueprint marks and the conversion list go.
  */
 export function undoGearV2Migration(sql: SqlStorage): void {
+  undoWorkshopV2Migration(sql);
   sql.exec('DROP TABLE IF EXISTS gear_conversion');
   sql.exec('DROP TABLE IF EXISTS gear_legacy');
   sql.exec('DROP TABLE IF EXISTS gear_items');

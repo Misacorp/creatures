@@ -220,10 +220,11 @@ function convertPlayer(deps: ConvertDeps, userId: string, rank: number): void {
     const inserted = sql
       .exec(
         `INSERT INTO blueprints (user_id, base_id, rarity, learned_at, marks) VALUES (?, ?, 'common', ?, 0)
-         ON CONFLICT(user_id, base_id) DO UPDATE SET marks = marks + 1 RETURNING base_id`,
+         ON CONFLICT(user_id, base_id) DO UPDATE SET marks = MIN(marks + 1, ?) RETURNING base_id`,
         userId,
         target.id,
         bp.learned_at,
+        RULES.gear.craft.marks.max,
       )
       .toArray();
     if (inserted.length > 0) notice.blueprints += 1;

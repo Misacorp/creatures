@@ -3,10 +3,10 @@ import { failure, pathId } from './collection-routes';
 import type { Gear } from './gear';
 import {
   ClaimJobBodySchema,
-  DismantleBodySchema,
   DismissNoticeBodySchema,
   EquipBestBodySchema,
   EquipBodySchema,
+  PreviewBodySchema,
   RemovedJobKindSchema,
   StartJobBodySchema,
 } from './gear-schemas';
@@ -68,15 +68,21 @@ const routes: Routes<GearRouteContext> = {
   '/api/gear/:id/upgrade': {
     POST: () => errorResponse('gear_upgrade_removed', 410),
   },
+  // Dismantling is a Workshop job now (gear v2, Gear B): an old client gets a clear answer, and nothing is taken.
   '/api/gear/:id/dismantle': {
+    POST: () => errorResponse('dismantle_is_a_job', 410),
+  },
+  // What a craft or a dismantle job would give, before it starts: exact odds, parts, Essence, time and refund ranges.
+  '/api/workshop/preview': {
     POST: async (request, ctx) => {
-      const id = pathId(ctx);
-      if (id === undefined) return invalidId();
-      const body = await parseBody(request, DismantleBodySchema);
+      const body = await parseBody(request, PreviewBodySchema);
       if (body === undefined) return invalidBody();
-      const outcome = ctx.core.gear.dismantle(ctx.user.id, id, body.idempotencyKey);
+      const outcome =
+        body.kind === 'craft'
+          ? ctx.core.gear.previewCraft(ctx.user.id, body.creatureId, body.blueprintId)
+          : ctx.core.gear.previewDismantle(ctx.user.id, body.creatureId, body.itemIds);
       if (!outcome.ok) return failure(outcome);
-      return json({ result: outcome.value, ...views(ctx) });
+      return json({ result: outcome.value });
     },
   },
   '/api/workshop/jobs': {

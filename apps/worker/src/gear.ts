@@ -18,9 +18,17 @@
  */
 import {
   RULES,
-  craftCost,
+  chance,
+  craftCostFor,
+  craftHours,
+  craftItemLevel,
+  craftOdds,
   craftable,
-  dismantleYield,
+  dismantleBundleError,
+  dismantleHours,
+  dismantleLearnBp,
+  dismantleRange,
+  dismantleXp,
   effectiveStats,
   gearBase,
   itemLines,
@@ -29,26 +37,34 @@ import {
   nextSkillXp,
   partsOfSpec,
   planEquipBest,
-  rollCraft,
+  reachMinLevel,
+  rollCraftItem,
+  rollDismantle,
   skillLevel,
+  stepUpBp,
   supplyDef,
   supplyJobMs,
   supplyJobXp,
   wearBlock,
   wornEffects,
   PART_KINDS,
+  REACH_IDS,
+  type CraftOdds,
+  type DismantleRange,
   type GearRarity,
   type GearSlot,
   type GearTag,
   type JobKind,
   type PartKind,
   type PartsBundle,
+  type ReachId,
   type Rng,
   type Role,
   type WearBlock,
+  type WorkshopMods,
 } from '@creatures/game';
 import type { Analytics } from './analytics';
-import { runKeyed } from './keyed-action';
+import { runKeyed, settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import { addSupply } from './expedition-store';
 import {
@@ -61,15 +77,18 @@ import {
 import { grantWelcomeKit, recentGrants, type GrantRecord } from './gear-grants';
 import {
   addCreatureXp,
+  addMark,
+  blueprintMarks,
   countItems,
   creatureXp,
   creditParts,
   debitParts,
   findItem,
   getParts,
+  hasParts,
   hasRoom,
   insertItem,
-  knowsBlueprint,
+  learnBlueprint,
   knownBlueprints,
   openJobCount,
   openJobOf,
@@ -82,7 +101,7 @@ import {
   type JobRow,
 } from './gear-store';
 import { gearRulesOf, minusBp, plusBp } from './gear-worn';
-import { getBalances, type Currency, type LedgerStorage } from './ledger';
+import { credit, getBalances, spend, type Currency, type LedgerStorage } from './ledger';
 import { speciesOf } from './species';
 
 /** The gear rarity a supply tier is logged as (analytics) and a supply job is sized as. */
@@ -107,6 +126,11 @@ export interface GearDeps {
   /** Live randomness for job results and the welcome kit. Crypto in production. */
   rng: Rng;
   analytics?: Analytics | undefined;
+  /**
+   * The day's Workshop modifiers (Market Day, built by the Boons step): asked when a craft or a
+   * dismantle job is priced, and stored with the job, so what was shown is what is rolled. None today.
+   */
+  workshopMods?: ((userId: string, job: 'craft' | 'dismantle') => WorkshopMods) | undefined;
 }
 
 // --- Views ---
@@ -138,8 +162,8 @@ export interface GearItemView {
   /** What a creature needs to wear it: its level (the slot's opening level or the item's, the higher) and the role of a role-locked Charm. */
   needs: { level: number; role: Role | null };
   equippedOn: string | null;
-  /** What dismantling it returns. */
-  dismantle: PartsBundle;
+  /** What dismantling it can return, as a range (rolled when the job is claimed). */
+  dismantle: DismantleRange;
   source: string;
   createdAt: number;
   /** The creature that made it and when; null for items that were not crafted. */
@@ -177,8 +201,19 @@ export type JobResult =
       baseId: string;
       rarity: GearRarity;
       itemLevel: number;
-      /** The craft came out one rarity above Common. */
+      /** What the craft was aimed at. */
+      reach: ReachId;
+      /** The one-step-up chance raised the rarity the Reach drew. */
       upgraded: boolean;
+    } & JobCommon)
+  | ({
+      /** Items taken apart: what came back, the blueprints learned and the marks added. */
+      kind: 'dismantle';
+      items: ItemSnapshot[];
+      parts: PartsBundle;
+      essence: number;
+      learned: string[];
+      marked: { baseId: string; marks: number }[];
     } & JobCommon)
   | ({
       /** A crafted supply for expeditions: `amount` of `supplyId` went into the stock. */
@@ -193,12 +228,19 @@ export type JobResult =
       refund: PartsBundle;
     } & JobCommon);
 
+/** What is kept of an item that goes into a dismantle job (the item itself is gone). */
+export interface ItemSnapshot {
+  baseId: string;
+  rarity: GearRarity;
+  itemLevel: number;
+}
+
 export interface JobView {
   id: string;
   creatureId: string;
   kind: JobKind | 'improve' | 'enchant';
-  /** What the job works on: the base crafted, or the supply. */
-  input: { baseId?: string; supplyId?: string };
+  /** What the job works on: the base crafted (and the Reach), the supply, or the items taken apart. */
+  input: { baseId?: string; supplyId?: string; reach?: ReachId; items?: ItemSnapshot[] };
   /** The parts it cost when it started. */
   cost: PartsBundle;
   startedAt: number;
@@ -235,8 +277,64 @@ export interface GearState {
 }
 
 export type StartJobInput =
-  | { kind: 'craft'; creatureId: string; blueprintId: string; idempotencyKey: string }
-  | { kind: 'supply'; creatureId: string; supplyId: string; idempotencyKey: string };
+  | {
+      kind: 'craft';
+      creatureId: string;
+      blueprintId: string;
+      reach?: ReachId | undefined;
+      idempotencyKey: string;
+    }
+  | { kind: 'supply'; creatureId: string; supplyId: string; idempotencyKey: string }
+  | { kind: 'dismantle'; creatureId: string; itemIds: string[]; idempotencyKey: string };
+
+/** One way to start a craft, as the screen shows it before the player confirms. All numbers are the server's. */
+export interface CraftOption {
+  reach: ReachId;
+  /** The creature's Crafting level is high enough for it. */
+  unlocked: boolean;
+  /** The Crafting level it asks for. */
+  minLevel: number;
+  /** The parts it takes (exact: shards of a base without an element come from the biggest piles). */
+  parts: PartsBundle;
+  essence: number;
+  /** How long it takes this creature, and the nominal hours the XP follows. */
+  durationMs: number;
+  xp: number;
+  /** The exact chances of each rarity, in basis points; they add up to 10,000. */
+  oddsBp: CraftOdds;
+}
+
+export interface CraftPreview {
+  kind: 'craft';
+  blueprintId: string;
+  creatureId: string;
+  craftingLevel: number;
+  /** The item level of the result: twice the Crafting level. */
+  itemLevel: number;
+  marks: number;
+  marksMax: number;
+  /** The one-step-up chance, in basis points, already counted in the odds. */
+  stepUpBp: number;
+  options: CraftOption[];
+}
+
+export interface DismantlePreview {
+  kind: 'dismantle';
+  creatureId: string;
+  items: { id: string; baseId: string; rarity: GearRarity; itemLevel: number }[];
+  /** The refund as a range, the same for any creature. */
+  range: DismantleRange;
+  durationMs: number;
+  xp: number;
+  /** The chance (basis points) each item that can teach a blueprint does, with this creature; null when none can. */
+  learnBp: number | null;
+  /** How many of the items can teach a blueprint (or add a mark). */
+  teachers: number;
+}
+
+export type PreviewInput =
+  | { kind: 'craft'; creatureId: string; blueprintId: string }
+  | { kind: 'dismantle'; creatureId: string; itemIds: string[] };
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 
@@ -250,6 +348,13 @@ interface StoredInput {
   secondaryIndex?: number;
   supplyId?: string;
   cost: PartsBundle;
+  /** Craft: what it was aimed at, the blueprint's marks and the Crafting level when it started, the day's mods. */
+  reach?: ReachId;
+  marks?: number;
+  level?: number;
+  mods?: WorkshopMods;
+  /** Dismantle: the items taken apart (they are gone from the bag). */
+  items?: ItemSnapshot[];
 }
 
 /** True for a stored result of a job claimed before gear v2: a craft without an item level, an Improve or an Enchant. */
@@ -303,6 +408,16 @@ function wearError(block: WearBlock): GameError {
       return new GameError(409, 'item_level_too_high', String(block.needs));
   }
 }
+
+/** A creature row as the gear code reads it. */
+type CreatureRow = {
+  id: string;
+  species: string;
+  level: number;
+  fusion_count: number;
+  nickname: string | null;
+  away_expedition_id: string | null;
+};
 
 export class Gear {
   constructor(private readonly deps: GearDeps) {}
@@ -411,7 +526,7 @@ export class Gear {
       })),
       needs: { level: Math.max(RULES.gear.slotUnlockLevel[row.slot], row.item_level), role },
       equippedOn: row.equipped_on,
-      dismantle: dismantleYield(item),
+      dismantle: dismantleRange([item]),
       source: row.source,
       createdAt: row.created_at,
       madeBy:
@@ -438,6 +553,8 @@ export class Gear {
       input: {
         ...(input.baseId === undefined ? {} : { baseId: input.baseId }),
         ...(input.supplyId === undefined ? {} : { supplyId: input.supplyId }),
+        ...(input.reach === undefined || input.reach === 'none' ? {} : { reach: input.reach }),
+        ...(input.items === undefined ? {} : { items: input.items }),
       },
       cost: input.cost,
       startedAt: row.started_at,
@@ -726,75 +843,148 @@ export class Gear {
     });
   }
 
-  // --- Dismantle ---
-
-  /**
-   * Breaks an item into parts. An item that is being worn is taken off first (the in-page
-   * confirmation is the safeguard). Cannot be undone; a retry with the same key returns the stored
-   * result.
-   */
-  dismantle(
-    userId: string,
-    gearId: string,
-    idempotencyKey: string,
-  ): Outcome<{
-    gearId: string;
-    baseId: string;
-    rarity: GearRarity;
-    itemLevel: number;
-    parts: PartsBundle;
-    unequipped: boolean;
-  }> {
-    return this.atomically(() =>
-      runKeyed(
-        this.sql,
-        this.deps.now,
-        { userId, key: idempotencyKey, kind: 'dismantle', fingerprint: gearId },
-        () => {
-          const row = this.ownedItem(userId, gearId);
-          const item = rowToItem(row);
-          const parts = dismantleYield(item);
-          this.sql.exec('DELETE FROM gear_items WHERE id = ?', row.id);
-          creditParts(this.sql, userId, parts);
-          this.deps.analytics?.record(
-            {
-              kind: 'gear_dismantle',
-              base: row.base_id,
-              rarity: row.rarity,
-              level: row.item_level,
-              scrap: parts.scrap ?? 0,
-              shards: sumShards(parts),
-              glimmer: parts.glimmer ?? 0,
-              unequipped: row.equipped_on !== null,
-              parts,
-            },
-            userId,
-          );
-          return {
-            gearId: row.id,
-            baseId: row.base_id,
-            rarity: row.rarity,
-            itemLevel: row.item_level,
-            parts,
-            unequipped: row.equipped_on !== null,
-          };
-        },
-      ),
-    );
-  }
-
   // --- Workshop jobs ---
 
+  private mods(userId: string, job: 'craft' | 'dismantle'): WorkshopMods {
+    return this.deps.workshopMods?.(userId, job) ?? {};
+  }
+
+  /** The items of a dismantle request, owned and distinct, and the bundle rule checked (400 `invalid_bundle`). */
+  private dismantleRows(userId: string, itemIds: readonly string[]): GearRow[] {
+    if (new Set(itemIds).size !== itemIds.length) throw new GameError(400, 'invalid_bundle');
+    const rows = itemIds.map((id) => this.ownedItem(userId, id));
+    const error = dismantleBundleError(rows.map((r) => r.rarity));
+    if (error !== null) throw new GameError(400, 'invalid_bundle', error);
+    return rows;
+  }
+
+  /** The Crafting level and the Busy paws and Apprentice shares of a creature. */
+  private workerOf(
+    userId: string,
+    creature: CreatureRow,
+  ): { level: number; busyBp: number; apprenticeBp: number } {
+    const rules = gearRulesOf(this.sql, creature);
+    return {
+      level: skillLevel(creatureXp(this.sql, userId, creature.id)),
+      busyBp: rules.busyPawsBp,
+      apprenticeBp: rules.apprenticeBp,
+    };
+  }
+
   /**
-   * Starts a job on a creature that is not busy, in a free workshop slot. The parts are paid now (all
-   * or nothing); the result is rolled when the job is claimed. Returns the new job's id. Busy paws
-   * lines on the creature shorten it.
+   * What a craft of a blueprint would cost, take and give with this creature, for every way to start it
+   * (plain, Reach for Rare, Reach for Epic): exact parts and Essence, time, XP and the odds of each
+   * rarity. Changes nothing and draws nothing. The screen shows these numbers and never works any out.
+   */
+  previewCraft(userId: string, creatureId: string, blueprintId: string): Outcome<CraftPreview> {
+    return this.atomically(() => {
+      const creature = this.ownedCreature(userId, creatureId);
+      const base = gearBase(blueprintId);
+      if (base === undefined || !craftable(base)) throw new GameError(400, 'invalid_blueprint');
+      const marks = blueprintMarks(this.sql, userId, base.id);
+      if (marks === null) throw new GameError(409, 'blueprint_unknown');
+      const { level, busyBp, apprenticeBp } = this.workerOf(userId, creature);
+      const held = getParts(this.sql, userId);
+      const mods = this.mods(userId, 'craft');
+      return {
+        kind: 'craft' as const,
+        blueprintId: base.id,
+        creatureId: creature.id,
+        craftingLevel: level,
+        itemLevel: craftItemLevel(level),
+        marks,
+        marksMax: RULES.gear.craft.marks.max,
+        stepUpBp: stepUpBp(level, marks, mods),
+        options: REACH_IDS.map((reach): CraftOption => {
+          const cost = craftCostFor(base.id, reach, held);
+          return {
+            reach,
+            unlocked: level >= reachMinLevel(reach),
+            minLevel: reachMinLevel(reach),
+            parts: cost.parts,
+            essence: cost.essence,
+            durationMs: jobDuration(level, busyBp, craftHours(reach)),
+            xp: jobXp(apprenticeBp, craftHours(reach)),
+            oddsBp: craftOdds(reach, level, marks, mods),
+          };
+        }),
+      };
+    });
+  }
+
+  /**
+   * What taking these items apart would give with this creature: the refund range (the same for any
+   * creature), how long it takes this one, the XP, and the chance each item teaches its blueprint.
+   * Changes nothing. Items worn by a creature that is away or on a job are not refused here (starting is).
+   */
+  previewDismantle(
+    userId: string,
+    creatureId: string,
+    itemIds: readonly string[],
+  ): Outcome<DismantlePreview> {
+    return this.atomically(() => {
+      const creature = this.ownedCreature(userId, creatureId);
+      const rows = this.dismantleRows(userId, itemIds);
+      const { level, busyBp, apprenticeBp } = this.workerOf(userId, creature);
+      const rarity = (rows[0] as GearRow).rarity;
+      const teachers = rows.filter((r) => {
+        const base = gearBase(r.base_id);
+        return base !== undefined && craftable(base);
+      }).length;
+      return {
+        kind: 'dismantle' as const,
+        creatureId: creature.id,
+        items: rows.map((r) => ({
+          id: r.id,
+          baseId: r.base_id,
+          rarity: r.rarity,
+          itemLevel: r.item_level,
+        })),
+        range: dismantleRange(rows.map(rowToItem)),
+        durationMs: jobDuration(level, busyBp, dismantleHours(rarity)),
+        xp: dismantleXp(rarity, apprenticeBp),
+        learnBp: teachers === 0 ? null : dismantleLearnBp(level),
+        teachers,
+      };
+    });
+  }
+
+  /** Inserts the open job row; the creature and the slot were checked by the caller. */
+  private insertJob(
+    userId: string,
+    creatureId: string,
+    kind: JobKind,
+    stored: StoredInput,
+    durationMs: number,
+  ): string {
+    const now = this.deps.now();
+    const id = crypto.randomUUID();
+    this.sql.exec(
+      `INSERT INTO workshop_jobs (id, user_id, creature_id, kind, gear_id, input_json, started_at, ends_at)
+       VALUES (?, ?, ?, ?, NULL, ?, ?, ?)`,
+      id,
+      userId,
+      creatureId,
+      kind,
+      JSON.stringify(stored),
+      now,
+      now + durationMs,
+    );
+    return id;
+  }
+
+  /**
+   * Starts a job on a creature that is not busy, in a free workshop slot. A craft pays its parts (and a
+   * Reach's Essence) now, all or nothing; a dismantle takes the items out of the bag now. The result is
+   * rolled when the job is claimed. Busy paws lines on the creature shorten it.
    */
   startJob(userId: string, input: StartJobInput): Outcome<{ jobId: string }> {
     const fingerprint = JSON.stringify(
       input.kind === 'craft'
-        ? [input.kind, input.creatureId, input.blueprintId]
-        : [input.kind, input.creatureId, input.supplyId],
+        ? [input.kind, input.creatureId, input.blueprintId, input.reach ?? 'none']
+        : input.kind === 'supply'
+          ? [input.kind, input.creatureId, input.supplyId]
+          : [input.kind, input.creatureId, [...input.itemIds]],
     );
     return this.atomically(() =>
       runKeyed(
@@ -809,85 +999,177 @@ export class Gear {
           if (openJobCount(this.sql, userId) >= RULES.gear.workshopSlots) {
             throw new GameError(409, 'workshop_full');
           }
-
-          let rarity: GearRarity;
-          let cost: PartsBundle;
-          let baseId: string;
-          // A supply craft has its own length (its hours, less the creature's skill).
-          let supplyMs: number | null = null;
-          const stored: Omit<StoredInput, 'cost' | 'rarity'> = {};
-          const level = skillLevel(creatureXp(this.sql, userId, creature.id));
-          const busyBp = gearRulesOf(this.sql, creature).busyPawsBp;
+          const worker = this.workerOf(userId, creature);
           switch (input.kind) {
-            case 'craft': {
-              const base = gearBase(input.blueprintId);
-              if (base === undefined || !craftable(base))
-                throw new GameError(400, 'invalid_blueprint');
-              if (!knowsBlueprint(this.sql, userId, base.id)) {
-                throw new GameError(409, 'blueprint_unknown');
-              }
-              if (!hasRoom(this.sql, userId)) throw new GameError(409, 'inventory_full');
-              baseId = base.id;
-              rarity = 'common';
-              cost = craftCost(base.id);
-              stored.baseId = base.id;
-              break;
-            }
-            case 'supply': {
-              const def = supplyDef(input.supplyId);
-              if (def === undefined) throw new GameError(400, 'invalid_supply');
-              // The better the supply, the higher the Crafting level its blueprint asks for.
-              if (level < def.blueprint.craftingLevel) throw new GameError(409, 'skill_too_low');
-              baseId = def.id;
-              rarity = SUPPLY_RARITY[def.tier];
-              cost = partsOfSpec(def.blueprint.parts);
-              supplyMs = minusBp(supplyJobMs(def, level), busyBp);
-              stored.supplyId = def.id;
-              break;
-            }
+            case 'craft':
+              return this.startCraft(userId, input, creature, worker);
+            case 'supply':
+              return this.startSupply(userId, input, creature, worker);
+            case 'dismantle':
+              return this.startDismantle(userId, input, creature, worker);
           }
-          if (!debitParts(this.sql, userId, cost)) throw new GameError(409, 'insufficient_parts');
-
-          const now = this.deps.now();
-          const duration = supplyMs ?? jobDuration(level, busyBp);
-          const id = crypto.randomUUID();
-          const row: StoredInput = { ...stored, cost };
-          this.sql.exec(
-            `INSERT INTO workshop_jobs (id, user_id, creature_id, kind, gear_id, input_json, started_at, ends_at)
-           VALUES (?, ?, ?, ?, NULL, ?, ?, ?)`,
-            id,
-            userId,
-            creature.id,
-            input.kind,
-            JSON.stringify(row),
-            now,
-            now + duration,
-          );
-          this.deps.analytics?.record(
-            {
-              kind: 'job_start',
-              job: input.kind,
-              base: baseId,
-              rarity,
-              species: creature.species,
-              hours: Math.round(duration / 3_600_000),
-              skillLevel: level,
-              parts: cost,
-            },
-            userId,
-          );
-          return { jobId: id };
         },
       ),
     );
   }
 
+  private startCraft(
+    userId: string,
+    input: Extract<StartJobInput, { kind: 'craft' }>,
+    creature: CreatureRow,
+    worker: { level: number; busyBp: number },
+  ): { jobId: string } {
+    const base = gearBase(input.blueprintId);
+    if (base === undefined || !craftable(base)) throw new GameError(400, 'invalid_blueprint');
+    const marks = blueprintMarks(this.sql, userId, base.id);
+    if (marks === null) throw new GameError(409, 'blueprint_unknown');
+    if (!hasRoom(this.sql, userId)) throw new GameError(409, 'inventory_full');
+    const reach = input.reach ?? 'none';
+    if (worker.level < reachMinLevel(reach)) throw new GameError(409, 'skill_too_low');
+    const { parts: cost, essence } = craftCostFor(base.id, reach, getParts(this.sql, userId));
+    if (!hasParts(this.sql, userId, cost)) throw new GameError(409, 'insufficient_parts');
+    const mods = this.mods(userId, 'craft');
+    const duration = jobDuration(worker.level, worker.busyBp, craftHours(reach));
+    // The Essence, the parts and the job are one transaction: the ledger's keyed spend carries the
+    // grant. A plain craft has no Essence to spend and just pays its parts.
+    const commit = (): { jobId: string } => {
+      if (!debitParts(this.sql, userId, cost)) throw new GameError(409, 'insufficient_parts');
+      const stored: StoredInput = {
+        baseId: base.id,
+        cost,
+        reach,
+        marks,
+        level: worker.level,
+        ...(Object.keys(mods).length === 0 ? {} : { mods }),
+      };
+      const jobId = this.insertJob(userId, creature.id, 'craft', stored, duration);
+      this.deps.analytics?.record(
+        {
+          kind: 'job_start',
+          job: 'craft',
+          base: base.id,
+          rarity: 'common',
+          species: creature.species,
+          hours: Math.round(duration / 3_600_000),
+          skillLevel: worker.level,
+          parts: cost,
+          reach,
+          essence,
+        },
+        userId,
+      );
+      return { jobId };
+    };
+    if (essence === 0) return commit();
+    const spent = spend(
+      this.deps.storage,
+      {
+        userId,
+        currency: 'essence',
+        amount: essence,
+        purpose: 'craft',
+        idempotencyKey: input.idempotencyKey,
+        apply: commit,
+      },
+      this.deps.now(),
+    );
+    if (spent.status === 'insufficient_funds') throw new GameError(409, 'insufficient_essence');
+    return settleSpend(spent);
+  }
+
+  private startSupply(
+    userId: string,
+    input: Extract<StartJobInput, { kind: 'supply' }>,
+    creature: CreatureRow,
+    worker: { level: number; busyBp: number },
+  ): { jobId: string } {
+    const def = supplyDef(input.supplyId);
+    if (def === undefined) throw new GameError(400, 'invalid_supply');
+    // The better the supply, the higher the Crafting level its blueprint asks for.
+    if (worker.level < def.blueprint.craftingLevel) throw new GameError(409, 'skill_too_low');
+    const cost = partsOfSpec(def.blueprint.parts);
+    if (!debitParts(this.sql, userId, cost)) throw new GameError(409, 'insufficient_parts');
+    const duration = minusBp(supplyJobMs(def, worker.level), worker.busyBp);
+    const jobId = this.insertJob(
+      userId,
+      creature.id,
+      'supply',
+      { supplyId: def.id, cost },
+      duration,
+    );
+    this.deps.analytics?.record(
+      {
+        kind: 'job_start',
+        job: 'supply',
+        base: def.id,
+        rarity: SUPPLY_RARITY[def.tier],
+        species: creature.species,
+        hours: Math.round(duration / 3_600_000),
+        skillLevel: worker.level,
+        parts: cost,
+      },
+      userId,
+    );
+    return { jobId };
+  }
+
+  private startDismantle(
+    userId: string,
+    input: Extract<StartJobInput, { kind: 'dismantle' }>,
+    creature: CreatureRow,
+    worker: { level: number; busyBp: number },
+  ): { jobId: string } {
+    const rows = this.dismantleRows(userId, input.itemIds);
+    // An item worn by a creature that is away or on a job stays where it is (see `equip`).
+    for (const wearer of new Set(
+      rows.flatMap((r) => (r.equipped_on === null ? [] : [r.equipped_on])),
+    )) {
+      this.assertNotBusy(this.ownedCreature(userId, wearer));
+    }
+    const rarity = (rows[0] as GearRow).rarity;
+    const items: ItemSnapshot[] = rows.map((r) => ({
+      baseId: r.base_id,
+      rarity: r.rarity,
+      itemLevel: r.item_level,
+    }));
+    const mods = this.mods(userId, 'dismantle');
+    const duration = jobDuration(worker.level, worker.busyBp, dismantleHours(rarity));
+    // The items leave the bag now: a worn one is taken off with them. Nothing is refunded until the claim.
+    for (const row of rows) this.sql.exec('DELETE FROM gear_items WHERE id = ?', row.id);
+    const stored: StoredInput = {
+      cost: {},
+      items,
+      level: worker.level,
+      ...(Object.keys(mods).length === 0 ? {} : { mods }),
+    };
+    const jobId = this.insertJob(userId, creature.id, 'dismantle', stored, duration);
+    const first = rows[0] as GearRow;
+    this.deps.analytics?.record(
+      {
+        kind: 'job_start',
+        job: 'dismantle',
+        base: first.base_id,
+        rarity,
+        species: creature.species,
+        hours: Math.round(duration / 3_600_000),
+        skillLevel: worker.level,
+        items: items.length,
+      },
+      userId,
+    );
+    return { jobId };
+  }
+
   /**
    * Finishes a job that has run its time: rolls the result with live randomness, gives the creature
-   * its Crafting XP (more with Apprentice lines) and frees it. A craft is a Common of the blueprint's
-   * base at item level twice the crafter's Crafting level (with the small chance of one rarity up),
-   * made by this creature. Claiming again (with any key) returns the stored result and rolls nothing.
-   * An Improve or Enchant job from before gear v2 still finishes: it pays its XP and returns its parts.
+   * its Crafting XP (more with Apprentice lines) and frees it. A craft is the blueprint's base at item
+   * level twice the crafter's Crafting level, its rarity drawn from the Reach's odds and the one-step-up
+   * chance (the odds shown when it started), made by this creature. A dismantle rolls each item's
+   * refund inside its range (nothing about the worker counts), credits the parts and the Essence, and
+   * gives each item that can teach a blueprint its chance to teach it or add a mark. The job also
+   * records the nominal minutes it worked, for the creature experience of the creatures step. Claiming
+   * again (with any key) returns the stored result and rolls nothing. An Improve or Enchant job from
+   * before gear v2 still finishes: it pays its XP and returns its parts.
    */
   claimJob(userId: string, jobId: string, idempotencyKey: string): Outcome<JobResult> {
     return this.atomically(() =>
@@ -914,6 +1196,7 @@ export class Gear {
           let analyticsRarity: GearRarity;
           let upgraded = false;
           let xpBase: number;
+          let workMinutes = 0;
           switch (job.kind) {
             case 'craft': {
               const baseId = input.baseId;
@@ -926,15 +1209,15 @@ export class Gear {
               // A craft started before gear v2 was sized by its blueprint's rarity: it keeps that
               // promise (never less than the old rarity) and pays the XP of its old hours.
               const legacyRarity = input.rarity;
-              const made = rollCraft(this.deps.rng, base.id, before, legacyRarity);
-              upgraded =
-                made.rarity !==
-                (legacyRarity === undefined
-                  ? 'common'
-                  : legacyRarity === 'festival'
-                    ? 'epic'
-                    : legacyRarity);
-              const gearId = insertItem(this.sql, userId, made, {
+              const reach = input.reach ?? 'none';
+              const made = rollCraftItem(this.deps.rng, base.id, input.level ?? before, {
+                reach,
+                marks: input.marks ?? 0,
+                ...(legacyRarity === undefined ? {} : { floor: legacyRarity }),
+                ...(input.mods === undefined ? {} : { mods: input.mods }),
+              });
+              upgraded = made.upgraded;
+              const gearId = insertItem(this.sql, userId, made.item, {
                 source: 'craft',
                 now,
                 origin: { kind: 'craft' },
@@ -947,16 +1230,19 @@ export class Gear {
                 kind: 'craft',
                 gearId,
                 baseId: base.id,
-                rarity: made.rarity,
-                itemLevel: made.itemLevel,
+                rarity: made.item.rarity,
+                itemLevel: made.item.itemLevel,
+                reach,
                 upgraded,
               };
               analyticsBase = base.id;
-              analyticsRarity = made.rarity;
-              xpBase =
+              analyticsRarity = made.item.rarity;
+              const hours =
                 legacyRarity === undefined
-                  ? jobXp()
-                  : RULES.gear.legacy.craftHours[legacyRarity] * RULES.gear.skill.xpPerHour;
+                  ? craftHours(reach)
+                  : RULES.gear.legacy.craftHours[legacyRarity];
+              xpBase = jobXp(0, hours);
+              workMinutes = Math.round(hours * 60);
               break;
             }
             case 'supply': {
@@ -967,6 +1253,57 @@ export class Gear {
               analyticsBase = def.id;
               analyticsRarity = SUPPLY_RARITY[def.tier];
               xpBase = supplyJobXp(supplyDef(input.supplyId ?? '') ?? failSupply());
+              workMinutes = Math.round(def.blueprint.hours * 60);
+              break;
+            }
+            case 'dismantle': {
+              const items = input.items;
+              const first = items?.[0];
+              if (items === undefined || first === undefined) {
+                throw new Error('stored dismantle has no items');
+              }
+              const rolled = rollDismantle(this.deps.rng, items, input.mods ?? {});
+              creditParts(this.sql, userId, rolled.parts);
+              if (rolled.essence > 0) {
+                credit(
+                  this.deps.storage,
+                  {
+                    userId,
+                    currency: 'essence',
+                    amount: rolled.essence,
+                    source: 'dismantle',
+                    idempotencyKey: `dismantle:${job.id}`,
+                    meta: { items: items.length },
+                  },
+                  now,
+                );
+              }
+              // Each item that can teach a blueprint has its chance: the worker's level counts here, not in the refund.
+              const learnBp = dismantleLearnBp(input.level ?? before);
+              const learned: string[] = [];
+              const marked: { baseId: string; marks: number }[] = [];
+              for (const item of items) {
+                const base = gearBase(item.baseId);
+                if (base === undefined || !craftable(base)) continue;
+                if (!chance(this.deps.rng, learnBp, 10_000)) continue;
+                if (learnBlueprint(this.sql, userId, base.id, now)) learned.push(base.id);
+                else {
+                  const marks = addMark(this.sql, userId, base.id);
+                  if (marks !== null) marked.push({ baseId: base.id, marks });
+                }
+              }
+              result = {
+                kind: 'dismantle',
+                items,
+                parts: rolled.parts,
+                essence: rolled.essence,
+                learned,
+                marked,
+              };
+              analyticsBase = first.baseId;
+              analyticsRarity = first.rarity;
+              xpBase = dismantleXp(first.rarity);
+              workMinutes = RULES.gear.dismantle.minutes[first.rarity];
               break;
             }
             case 'improve':
@@ -994,15 +1331,19 @@ export class Gear {
             leveledUp: after > before,
           };
           this.sql.exec(
-            'UPDATE workshop_jobs SET claimed_at = ?, result_json = ? WHERE id = ? AND claimed_at IS NULL',
+            'UPDATE workshop_jobs SET claimed_at = ?, result_json = ?, work_minutes = ? WHERE id = ? AND claimed_at IS NULL',
             now,
             JSON.stringify(full),
+            workMinutes,
             job.id,
           );
           this.deps.analytics?.record(
             {
               kind: 'job_claim',
-              job: job.kind === 'craft' || job.kind === 'supply' ? job.kind : 'craft',
+              job:
+                job.kind === 'craft' || job.kind === 'supply' || job.kind === 'dismantle'
+                  ? job.kind
+                  : 'craft',
               base: analyticsBase,
               rarity: analyticsRarity,
               upgraded,
@@ -1012,9 +1353,32 @@ export class Gear {
               ...(job.kind === 'supply' && result.kind === 'supply'
                 ? { yield: result.amount }
                 : {}),
+              ...(result.kind === 'craft' ? { reach: result.reach } : {}),
+              ...(result.kind === 'dismantle' ? { items: result.items.length } : {}),
             },
             userId,
           );
+          if (result.kind === 'dismantle') {
+            const first = result.items[0] as ItemSnapshot;
+            this.deps.analytics?.record(
+              {
+                kind: 'gear_dismantle',
+                base: first.baseId,
+                rarity: first.rarity,
+                level: first.itemLevel,
+                scrap: result.parts.scrap ?? 0,
+                shards: sumShards(result.parts),
+                glimmer: result.parts.glimmer ?? 0,
+                unequipped: false,
+                parts: result.parts,
+                items: result.items.length,
+                essence: result.essence,
+                learned: result.learned.length,
+                marks: result.marked.length,
+              },
+              userId,
+            );
+          }
           return full;
         },
       ),

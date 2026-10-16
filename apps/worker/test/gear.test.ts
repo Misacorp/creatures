@@ -3,7 +3,7 @@ import {
   RULES,
   createSeededRng,
   craftCost,
-  dismantleYield,
+  dismantleRange,
   gearBase,
   itemOf,
   jobDuration,
@@ -11,6 +11,7 @@ import {
   rollItem,
   rollWelcomeKit,
   skillLevel,
+  type DismantleRange,
   type GearRarity,
   type PartKind,
   type PartsBundle,
@@ -18,7 +19,14 @@ import {
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { creditParts, insertItem } from '../src/gear-store';
-import { T0, runCore, undoGearMigration, type CoreContext, LATEST_SCHEMA_VERSION } from './helpers';
+import {
+  T0,
+  runCore,
+  undoGearMigration,
+  undoWorkshopV2Migration,
+  type CoreContext,
+  LATEST_SCHEMA_VERSION,
+} from './helpers';
 import { count, nextGuild, rows, seedPlayer, type SeedOptions } from './raid-helpers';
 
 const HOUR = 3_600_000;
@@ -53,7 +61,7 @@ interface ItemBody {
   lines: LineBody[];
   needs: { level: number; role: string | null };
   equippedOn: string | null;
-  dismantle: PartsBundle;
+  dismantle: DismantleRange;
   source: string;
   createdAt: number;
   madeBy: { name: string; at: number } | null;
@@ -237,7 +245,7 @@ describe('migration 27', () => {
       expect(rows<{ v: number }>(sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v).toBe(
         LATEST_SCHEMA_VERSION,
       );
-      expect(LATEST_SCHEMA_VERSION).toBe(27);
+      expect(LATEST_SCHEMA_VERSION).toBeGreaterThanOrEqual(27);
       const item = (
         id: string,
         creature: string | null,
@@ -291,6 +299,7 @@ describe('migration 27', () => {
       const p = await player(ctx, 1);
       expect(count(ctx.sql, 'creatures')).toBe(3);
       ctx.sql.exec('DELETE FROM gear_conversion');
+      undoWorkshopV2Migration(ctx.sql);
       // Back to the first gear model with one worn item and one blueprint.
       const sql = ctx.sql;
       sql.exec('DROP TABLE gear_conversion');
@@ -899,110 +908,23 @@ describe('Equip best', () => {
   });
 });
 
-describe('dismantle', () => {
-  it('returns the parts, removes the item and cannot be undone', async () => {
+describe('the old instant dismantle', () => {
+  it('answers with a clear code (dismantling is a Workshop job now) and takes nothing', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await player(ctx, 1);
         skipWelcome(ctx, p.id);
         const id = give(ctx, p.id, 'kelp-cap', { rarity: 'epic', level: 12 });
-        const expected = dismantleYield({ baseId: 'kelp-cap', rarity: 'epic' });
-        expect(expected).toEqual({ scrap: 10, 'tide-shard': 2, glimmer: 1 });
-        const view = (await p.gear()).items[0] as ItemBody;
-        expect(view.dismantle).toEqual(expected);
         const res = await p.call('POST', `/api/gear/${id}/dismantle`, { idempotencyKey: newKey() });
-        expect(res.status).toBe(200);
-        expect(res.body['result']).toEqual({
-          gearId: id,
-          baseId: 'kelp-cap',
-          rarity: 'epic',
-          itemLevel: 12,
-          parts: expected,
-          unequipped: false,
-        });
-        expect(count(ctx.sql, 'gear_items')).toBe(0);
-        expect(partsOf(ctx, p.id)).toMatchObject({ scrap: 10, 'tide-shard': 2, glimmer: 1 });
-        expect(events(ctx, 'gear_dismantle')[0]).toMatchObject({
-          base: 'kelp-cap',
-          rarity: 'epic',
-          level: 12,
-          scrap: 10,
-          shards: 2,
-          glimmer: 1,
-        });
-        // The item is gone: dismantling it again with a new key is a plain not-found.
-        expect(
-          (await p.call('POST', `/api/gear/${id}/dismantle`, { idempotencyKey: newKey() })).status,
-        ).toBe(404);
-      },
-      opts(),
-    );
-  });
-
-  it('gives no shard for neutral, explorer and role items, and takes a worn item off first', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await player(ctx, 1, { level: 13, species: ['sproutle', 'cindle', 'splashet'] });
-        skipWelcome(ctx, p.id);
-        const bell = give(ctx, p.id, 'wardens-bell', { rarity: 'rare' });
-        await p.call('POST', equipPath(bell), { creatureId: p.creatureIds[0] });
-        const res = await p.call('POST', `/api/gear/${bell}/dismantle`, {
-          idempotencyKey: newKey(),
-        });
-        expect(res.body['result']).toMatchObject({ parts: { scrap: 5 }, unequipped: true });
-        expect(count(ctx.sql, 'gear_items', 'equipped_on IS NOT NULL')).toBe(0);
-      },
-      opts(),
-    );
-  });
-
-  it('is idempotent: a retry returns the stored result and credits the parts once', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await player(ctx, 1);
-        skipWelcome(ctx, p.id);
-        const id = give(ctx, p.id, 'trail-cap');
-        const key = newKey();
-        const first = await p.call('POST', `/api/gear/${id}/dismantle`, { idempotencyKey: key });
-        const again = await Promise.all(
-          Array.from({ length: 3 }, () =>
-            p.call('POST', `/api/gear/${id}/dismantle`, { idempotencyKey: key }),
-          ),
+        expect(res).toMatchObject({ status: 410, body: { error: 'dismantle_is_a_job' } });
+        expect(count(ctx.sql, 'gear_items')).toBe(1);
+        expect(partsOf(ctx, p.id).scrap).toBe(0);
+        // The card shows the range the job can give instead of fixed parts.
+        const view = (await p.gear()).items[0] as ItemBody;
+        expect(view.dismantle).toEqual(
+          dismantleRange([{ baseId: 'kelp-cap', rarity: 'epic', itemLevel: 12 }]),
         );
-        for (const r of again) expect(r.body['result']).toEqual(first.body['result']);
-        expect(partsOf(ctx, p.id).scrap).toBe(2);
-        expect(events(ctx, 'gear_dismantle')).toHaveLength(1);
-        // The same key for another item is a conflict.
-        const other = give(ctx, p.id, 'trail-cap', { seed: 'other' });
-        expect(
-          await p.call('POST', `/api/gear/${other}/dismantle`, { idempotencyKey: key }),
-        ).toMatchObject({ status: 409, body: { error: 'key_conflict' } });
-        expect(count(ctx.sql, 'gear_items')).toBe(1);
-      },
-      opts(),
-    );
-  });
-
-  it("refuses someone else's item and malformed bodies", async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await player(ctx, 1);
-        const b = await player(ctx, 2);
-        skipWelcome(ctx, a.id);
-        skipWelcome(ctx, b.id);
-        const theirs = give(ctx, b.id, 'trail-cap');
-        expect(
-          (await a.call('POST', `/api/gear/${theirs}/dismantle`, { idempotencyKey: newKey() }))
-            .status,
-        ).toBe(404);
-        for (const body of [{}, { idempotencyKey: 'x' }, { idempotencyKey: newKey(), extra: 1 }]) {
-          expect((await a.call('POST', `/api/gear/${theirs}/dismantle`, body)).status).toBe(400);
-        }
-        expect(count(ctx.sql, 'gear_items')).toBe(1);
       },
       opts(),
     );
@@ -1128,6 +1050,8 @@ describe('workshop jobs: starting', () => {
             hours: 3,
             skillLevel: 1,
             parts: { scrap: 6, 'tide-shard': 1 },
+            reach: 'none',
+            essence: 0,
           },
         ]);
       },
@@ -1480,6 +1404,7 @@ describe('workshop jobs: claiming', () => {
             xp: 36,
             skillLevel: 2,
             leveledUp: true,
+            reach: 'none',
           },
         ]);
       },
@@ -1745,12 +1670,30 @@ describe('analytics and privacy', () => {
         await p.gear(); // welcome kit
         const a = give(ctx, p.id, 'kelp-cap', { rarity: 'rare', level: 4 });
         await p.call('POST', equipPath(a), { creatureId: p.creatureIds[0] });
-        await p.call('POST', `/api/gear/${a}/dismantle`, { idempotencyKey: newKey() });
+        const started = await p.call('POST', '/api/workshop/jobs', {
+          kind: 'dismantle',
+          creatureId: p.creatureIds[1],
+          itemIds: [a],
+          idempotencyKey: newKey(),
+        });
+        expect(started.status).toBe(200);
+        ctx.clock.t += HOUR + 1000;
+        const jobId = ((started.body['gear'] as GearBody).jobs[0] as JobBody).id;
+        expect(
+          (await p.call('POST', `/api/workshop/jobs/${jobId}/claim`, { idempotencyKey: newKey() }))
+            .status,
+        ).toBe(200);
         const all = rows<{ kind: string; actor_hash: string | null; props_json: string }>(
           ctx.sql,
           "SELECT kind, actor_hash, props_json FROM analytics_events WHERE kind LIKE 'gear_%' OR kind LIKE 'job_%' ORDER BY id",
         );
-        expect(all.map((e) => e.kind)).toEqual(['gear_drop', 'gear_equip', 'gear_dismantle']);
+        expect(all.map((e) => e.kind)).toEqual([
+          'gear_drop',
+          'gear_equip',
+          'job_start',
+          'job_claim',
+          'gear_dismantle',
+        ]);
         const haystack = JSON.stringify(all);
         expect(haystack).not.toContain(p.id);
         expect(haystack).not.toContain('Player 1');

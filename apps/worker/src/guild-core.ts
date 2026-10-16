@@ -13,6 +13,7 @@ import { Gear } from './gear';
 import { convertPendingGear } from './gear-convert';
 import { gearMigration } from './gear-migration';
 import { gearV2Migration } from './gear-v2-migration';
+import { workshopV2Migration } from './workshop-v2-migration';
 import { gearRoutes } from './gear-routes';
 import { creatureQuirkMigration } from './creature-quirk-migration';
 import { expeditionRoutes } from './expedition-routes';
@@ -340,6 +341,9 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   // Version 27: gear v2, the new item table, blueprint marks and the conversion list (see
   // gear-v2-migration.ts; the conversion itself runs after the migrations, see gear-convert.ts).
   gearV2Migration,
+  // Version 28: the crafting loop: dismantle jobs and the nominal minutes a job worked (see
+  // workshop-v2-migration.ts).
+  workshopV2Migration,
 ];
 
 export interface SessionUser {

@@ -168,6 +168,7 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     kind: 'craft',
     creatureId: zipmouse,
     blueprintId: 'kelp-cap',
+    reach: 'none',
     idempotencyKey: newKey(),
   });
   ctx.sql.exec(
@@ -219,20 +220,56 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     idempotencyKey: newKey(),
   });
 
-  // Dismantle the Festival piece, and look at the state again.
+  // What a craft and a dismantle would give, before anything starts (the numbers are the server's).
+  await record('preview-craft', 'POST', '/api/workshop/preview', {
+    kind: 'craft',
+    creatureId: cindle,
+    blueprintId: 'kelp-cap',
+  });
+  // Dismantle the Festival piece in a Workshop job (2 hours), claim it, and look at the state again.
   const festive = (
     (out.responses['gear-loaded'] as { items: { id: string; rarity: string }[] }).items.find(
       (i) => i.rarity === 'festival',
     ) as { id: string }
   ).id;
-  await record('gear-dismantle', 'POST', `/api/gear/${festive}/dismantle`, {
+  await record('preview-dismantle', 'POST', '/api/workshop/preview', {
+    kind: 'dismantle',
+    creatureId: zipmouse,
+    itemIds: [festive],
+  });
+  const taking = await record('job-start-dismantle', 'POST', '/api/workshop/jobs', {
+    kind: 'dismantle',
+    creatureId: zipmouse,
+    itemIds: [festive],
     idempotencyKey: newKey(),
   });
-  // One more craft left running, so the final state has a running job beside the claimed ones.
+  ctx.clock.t += 2 * HOUR + 1000;
+  await record(
+    'job-claim-dismantle',
+    'POST',
+    `/api/workshop/jobs/${(taking.body['result'] as { jobId: string }).jobId}/claim`,
+    { idempotencyKey: newKey() },
+  );
+  // One more craft left running, so the final state has a running job beside the claimed ones: a
+  // Reach for a Rare (it asks for Crafting level 3 and Essence).
+  ctx.sql.exec(
+    `INSERT INTO crafting_skill (user_id, creature_id, xp) VALUES (?, ?, 250)
+     ON CONFLICT(user_id, creature_id) DO UPDATE SET xp = excluded.xp`,
+    seeded.id,
+    cindle,
+  );
+  ctx.core.credit({
+    userId: seeded.id,
+    currency: 'essence',
+    amount: 100,
+    source: 'test',
+    idempotencyKey: 'fixture-essence',
+  });
   await record('job-start-craft-2', 'POST', '/api/workshop/jobs', {
     kind: 'craft',
     creatureId: cindle,
     blueprintId: 'kelp-cap',
+    reach: 'rare',
     idempotencyKey: newKey(),
   });
   out.responses['gear-final'] = (await call('GET', '/api/gear')).body;
@@ -246,9 +283,39 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     idempotencyKey: newKey(),
   }); // blueprint not learned
   const reused = newKey();
-  await call('POST', `/api/gear/${kit}/dismantle`, { idempotencyKey: reused }).then(async () => {
-    await fail('POST', `/api/gear/${hat}/dismantle`, { idempotencyKey: reused }); // key of another action
+  const kitJob = await call('POST', '/api/workshop/jobs', {
+    kind: 'dismantle',
+    creatureId: zipmouse,
+    itemIds: [kit],
+    idempotencyKey: reused,
   });
+  await fail('POST', '/api/workshop/jobs', {
+    kind: 'dismantle',
+    creatureId: zipmouse,
+    itemIds: [hat],
+    idempotencyKey: reused,
+  }); // the key of another action
+  // The kit's job (15 minutes) is claimed, so the creature and the slot are free again.
+  ctx.clock.t += 15 * 60_000 + 1000;
+  await call(
+    'POST',
+    `/api/workshop/jobs/${((kitJob.body['result'] ?? {}) as { jobId?: string }).jobId ?? ''}/claim`,
+    { idempotencyKey: newKey() },
+  );
+  await fail('POST', '/api/workshop/jobs', {
+    kind: 'craft',
+    creatureId: zipmouse,
+    blueprintId: 'kelp-cap',
+    reach: 'epic',
+    idempotencyKey: newKey(),
+  }); // the Crafting level is too low for a Reach for Epic
+  await fail('POST', '/api/workshop/jobs', {
+    kind: 'dismantle',
+    creatureId: zipmouse,
+    itemIds: [hat, bell],
+    idempotencyKey: newKey(),
+  }); // an Epic and a Rare cannot share a job
+  await fail('POST', `/api/gear/${hat}/dismantle`, { idempotencyKey: newKey() }); // dismantling is a job now
   await call('POST', '/api/expeditions', {
     creatureId: sproutle,
     destination: 'tidepools',

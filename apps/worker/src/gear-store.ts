@@ -343,6 +343,35 @@ export function knowsBlueprint(sql: SqlStorage, userId: string, baseId: string):
   );
 }
 
+/** The marks on a blueprint (finds of it the player already knew), or null when the blueprint is not known. */
+export function blueprintMarks(sql: SqlStorage, userId: string, baseId: string): number | null {
+  return (
+    sql
+      .exec<{
+        marks: number;
+      }>('SELECT marks FROM blueprints WHERE user_id = ? AND base_id = ?', userId, baseId)
+      .toArray()[0]?.marks ?? null
+  );
+}
+
+/**
+ * Adds one well-thumbed mark to a known blueprint, at most `RULES.gear.craft.marks.max`. Returns the new
+ * count, or null when the blueprint is unknown or already at the most (nothing changes then).
+ */
+export function addMark(sql: SqlStorage, userId: string, baseId: string): number | null {
+  return (
+    sql
+      .exec<{ marks: number }>(
+        `UPDATE blueprints SET marks = marks + 1
+         WHERE user_id = ? AND base_id = ? AND marks < ? RETURNING marks`,
+        userId,
+        baseId,
+        RULES.gear.craft.marks.max,
+      )
+      .toArray()[0]?.marks ?? null
+  );
+}
+
 /** Learns a blueprint. Returns false if the player already knew it. Blueprints have no rarity any more (stored as common). */
 export function learnBlueprint(
   sql: SqlStorage,
@@ -369,7 +398,7 @@ export type JobRow = {
   id: string;
   user_id: string;
   creature_id: string;
-  kind: 'craft' | 'improve' | 'enchant' | 'supply';
+  kind: 'craft' | 'improve' | 'enchant' | 'supply' | 'dismantle';
   gear_id: string | null;
   input_json: string;
   started_at: number;

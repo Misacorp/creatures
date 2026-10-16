@@ -1,4 +1,4 @@
-import { blueprintBases, expeditionContent } from '@creatures/game';
+import { REACH_IDS, RULES, blueprintBases, expeditionContent } from '@creatures/game';
 import * as v from 'valibot';
 import { IdSchema } from './collection-schemas';
 import { IdempotencyKeySchema } from './schemas';
@@ -14,11 +14,17 @@ export const EquipBestBodySchema = v.strictObject({
 /** Dismisses the one-time conversion card: nothing to say. */
 export const DismissNoticeBodySchema = v.strictObject({});
 
-export const DismantleBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
 export const ClaimJobBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
 
 const BLUEPRINT_IDS = blueprintBases().map((b) => b.id) as [string, ...string[]];
 const SUPPLY_IDS = expeditionContent.supplies.map((s) => s.id);
+
+/** The items of a dismantle job: 1 to the bundle size, each a valid id (the server checks they are the player's and distinct). */
+const ItemIdsSchema = v.pipe(
+  v.array(IdSchema),
+  v.minLength(1),
+  v.maxLength(RULES.gear.dismantle.bundleMax),
+);
 
 /** Each kind of job takes exactly its own fields: anything else is rejected. */
 export const StartJobBodySchema = v.variant('kind', [
@@ -26,6 +32,14 @@ export const StartJobBodySchema = v.variant('kind', [
     kind: v.literal('craft'),
     creatureId: IdSchema,
     blueprintId: v.picklist(BLUEPRINT_IDS),
+    /** What the craft is aimed at; absent means a plain craft (an older client sends none). */
+    reach: v.optional(v.picklist(REACH_IDS)),
+    idempotencyKey: IdempotencyKeySchema,
+  }),
+  v.strictObject({
+    kind: v.literal('dismantle'),
+    creatureId: IdSchema,
+    itemIds: ItemIdsSchema,
     idempotencyKey: IdempotencyKeySchema,
   }),
   v.strictObject({
@@ -38,3 +52,14 @@ export const StartJobBodySchema = v.variant('kind', [
 
 /** The two job kinds gear v2 removed: an old client that sends one gets a clear answer, not a validation error. */
 export const RemovedJobKindSchema = v.object({ kind: v.picklist(['improve', 'enchant']) });
+
+/** The old instant dismantle's body (the route now answers that dismantling is a job): any object is accepted and ignored. */
+/** Asks what a craft or a dismantle job would give, before it is started. Changes nothing. */
+export const PreviewBodySchema = v.variant('kind', [
+  v.strictObject({
+    kind: v.literal('craft'),
+    creatureId: IdSchema,
+    blueprintId: v.picklist(BLUEPRINT_IDS),
+  }),
+  v.strictObject({ kind: v.literal('dismantle'), creatureId: IdSchema, itemIds: ItemIdsSchema }),
+]);

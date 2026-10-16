@@ -3,10 +3,11 @@ import {
   blueprintBases,
   content,
   createSeededRng,
+  dismantleRange,
   dismantleYield,
   finaleItemLevel,
   rollFinaleReward,
-  type PartsBundle,
+  type DismantleRange,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { grantRaidFinale, normaliseGrant, recentGrants, type GrantDeps } from '../src/gear-grants';
@@ -225,6 +226,7 @@ describe('the finale reward slot at the server', () => {
         dismantleYield({
           baseId: converted?.baseId ?? '',
           rarity: converted?.rarity ?? 'common',
+          itemLevel: converted?.itemLevel ?? 1,
         }),
       );
     });
@@ -246,12 +248,12 @@ describe('the finale reward slot at the server', () => {
             id: string;
             itemLevel: number;
             lines: { source: string; tier: number | null; bestTier: number | null }[];
-            dismantle: PartsBundle;
+            dismantle: DismantleRange;
           }[];
         }>()
       ).items.find((i) => i.id === id);
       expect(item?.itemLevel).toBe(10);
-      expect(item?.dismantle).toEqual(dismantleYield({ baseId, rarity }));
+      expect(item?.dismantle).toEqual(dismantleRange([{ baseId, rarity, itemLevel: 10 }]));
       // The card says the best tier this item level allows (III at item level 10).
       const rolled = item?.lines.filter((l) => l.source === 'rolled') ?? [];
       expect(rolled).toHaveLength(RULES.gear.rolledLines[rarity]);
@@ -259,7 +261,16 @@ describe('the finale reward slot at the server', () => {
         expect(l.bestTier).toBe(3);
         expect(l.tier ?? 0).toBeLessThanOrEqual(3);
       }
-      const out = await ctx.request(secret, `/api/gear/${id}/dismantle`, 'POST', {
+      // It can be taken apart in a Workshop job.
+      const creatureId = rows<{ id: string }>(
+        ctx.sql,
+        'SELECT id FROM creatures WHERE user_id = ? LIMIT 1',
+        userId,
+      )[0]?.id;
+      const out = await ctx.request(secret, '/api/workshop/jobs', 'POST', {
+        kind: 'dismantle',
+        creatureId,
+        itemIds: [id],
         idempotencyKey: 'finale-valid-dismantle',
       });
       expect(out.status).toBe(200);

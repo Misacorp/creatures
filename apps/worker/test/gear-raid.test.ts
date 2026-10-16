@@ -885,13 +885,14 @@ describe('expedition loot', () => {
           { kind: 'glimmer', amount: 1 },
           { kind: 'scrap', amount: scrap + gift },
         ]);
-        // A blueprint the player knows already turns into scrap.
+        // A blueprint the player knows already adds a well-thumbed mark, not scrap.
         const again = await p.trip(1, 'long', 'tidepools');
         ctx.clock.t = again.endsAt;
         const res2 = await p.call('POST', `/api/expeditions/${again.id}/claim`, {});
         const loot2 = lootOf(res2);
-        expect(loot2.blueprints).toEqual([{ baseId: 'trail-cap', duplicate: true }]);
-        expect(loot2.parts.scrap).toBe(scrap + RULES.gear.drops.duplicateBlueprintScrap);
+        expect(loot2.blueprints).toEqual([{ baseId: 'trail-cap', duplicate: true, marks: 1 }]);
+        expect(loot2.parts.scrap).toBe(scrap);
+        expect(rows(ctx.sql, 'SELECT marks FROM blueprints')).toEqual([{ marks: 1 }]);
         expect(count(ctx.sql, 'blueprints')).toBe(1);
         const events = dropEvents(ctx, 'expedition');
         expect(events).toHaveLength(2);

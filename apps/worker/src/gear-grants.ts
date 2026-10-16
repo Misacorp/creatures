@@ -7,7 +7,7 @@
  * nothing. Call them inside the transaction of the action they belong to (they nest as savepoints).
  *
  * A full inventory never loses a drop: an item that does not fit becomes its dismantle yield, shown
- * as `converted`. A blueprint the player already knows becomes scrap.
+ * as `converted`. A blueprint the player already knows adds a well-thumbed mark (scrap once it has the most).
  */
 import {
   RULES,
@@ -30,6 +30,7 @@ import {
 import type { Analytics, GearSource } from './analytics';
 import { addSupply } from './expedition-store';
 import {
+  addMark,
   creditParts,
   hasRoom,
   insertItem,
@@ -59,7 +60,8 @@ export interface GrantView {
   converted: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
   /** All the parts the grant paid, including from converted items and duplicate blueprints. */
   parts: PartsBundle;
-  blueprints: { baseId: string; duplicate: boolean }[];
+  /** `marks` is the blueprint's well-thumbed marks after a repeat find added one (absent when it was new or already at the most). */
+  blueprints: { baseId: string; duplicate: boolean; marks?: number }[];
   /** Supplies the grant gave, one id per supply (absent in grants stored before expeditions v2). */
   supplies?: string[];
 }
@@ -111,6 +113,7 @@ export function normaliseGrant(raw: GrantView): GrantView {
         baseId:
           old === undefined ? b.baseId : baseForTint(old.slot, old.tint, old.festival === true).id,
         duplicate: b.duplicate,
+        ...(b.marks === undefined ? {} : { marks: b.marks }),
       };
     }),
   };
@@ -178,8 +181,17 @@ function grantOnce(
     for (const baseId of draft.blueprints) {
       if (gearBase(baseId) === undefined) throw new Error('grant of an unknown blueprint');
       const learned = learnBlueprint(sql, userId, baseId, now);
-      if (!learned) add(parts, { scrap: RULES.gear.drops.duplicateBlueprintScrap });
-      view.blueprints.push({ baseId, duplicate: !learned });
+      // A blueprint the player knows adds a well-thumbed mark; only at the most marks does it turn into scrap.
+      let marks: number | null = null;
+      if (!learned) {
+        marks = addMark(sql, userId, baseId);
+        if (marks === null) add(parts, { scrap: RULES.gear.drops.duplicateBlueprintScrap });
+      }
+      view.blueprints.push({
+        baseId,
+        duplicate: !learned,
+        ...(marks === null ? {} : { marks }),
+      });
     }
     creditParts(sql, userId, parts);
     view.parts = parts;

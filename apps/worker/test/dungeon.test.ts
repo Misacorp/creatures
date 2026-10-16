@@ -1660,8 +1660,14 @@ describe('gear in the dungeon', () => {
         const other = give(ctx, p.id, 'kelp-cap', 'other');
         await p.call('POST', `/api/gear/${other}/equip`, { creatureId: p.creatureIds[0] });
         expect(
-          (await p.call('POST', `/api/gear/${item}/dismantle`, { idempotencyKey: newKey() }))
-            .status,
+          (
+            await p.call('POST', '/api/workshop/jobs', {
+              kind: 'dismantle',
+              creatureId: p.creatureIds[1],
+              itemIds: [item],
+              idempotencyKey: newKey(),
+            })
+          ).status,
         ).toBe(200);
         // The stored run, its replay and the summary are exactly what they were.
         const after = storedRuns(ctx, p.id)[0] as StoredRun;

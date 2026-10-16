@@ -3,7 +3,6 @@ import * as v from 'valibot';
 import { describe, expect, it } from 'vitest';
 import collectionState from '../../activity/src/fixtures/collection-state.json';
 import expeditionClaimLoot from '../../activity/src/fixtures/expedition-claim-loot.json';
-import gearDismantle from '../../activity/src/fixtures/gear-dismantle.json';
 import gearEquip from '../../activity/src/fixtures/gear-equip.json';
 import gearEquipBest from '../../activity/src/fixtures/gear-equip-best.json';
 import gearNotice from '../../activity/src/fixtures/gear-notice.json';
@@ -17,13 +16,17 @@ import gearUnequip from '../../activity/src/fixtures/gear-unequip.json';
 import gearWelcome from '../../activity/src/fixtures/gear-welcome.json';
 import claimCraft from '../../activity/src/fixtures/workshop-claim-craft.json';
 import claimRetired from '../../activity/src/fixtures/workshop-claim-retired.json';
+import claimDismantle from '../../activity/src/fixtures/workshop-claim-dismantle.json';
+import previewCraft from '../../activity/src/fixtures/workshop-preview-craft.json';
+import previewDismantle from '../../activity/src/fixtures/workshop-preview-dismantle.json';
 import startCraft from '../../activity/src/fixtures/workshop-start-craft.json';
+import startDismantle from '../../activity/src/fixtures/workshop-start-dismantle.json';
 import {
   ClaimJobBodySchema,
-  DismantleBodySchema,
   DismissNoticeBodySchema,
   EquipBestBodySchema,
   EquipBodySchema,
+  PreviewBodySchema,
   StartJobBodySchema,
 } from '../src/gear-schemas';
 import { runCore } from './helpers';
@@ -76,10 +79,13 @@ describe('the gear fixtures match what the server sends', () => {
     sameShape(r['gear-equip'], gearEquip);
     sameShape(r['gear-unequip'], gearUnequip);
     sameShape(r['gear-equip-best'], gearEquipBest);
-    sameShape(r['gear-dismantle'], gearDismantle);
     sameShape(r['job-start-craft'], startCraft);
     sameShape(r['job-claim-craft'], claimCraft);
     sameShape(r['job-claim-retired'], claimRetired);
+    sameShape(r['job-start-dismantle'], startDismantle);
+    sameShape(r['job-claim-dismantle'], claimDismantle);
+    sameShape(r['preview-craft'], previewCraft);
+    sameShape(r['preview-dismantle'], previewDismantle);
     // The collection view of the same game: the creature cards carry the gear and the busy state.
     sameShape(r['collection-state'], collectionState);
     // And the errors are the real ones, code for code.
@@ -128,6 +134,13 @@ describe('the gear fixtures match what the server sends', () => {
     // The job results the client has to draw.
     expect(claimCraft.result.kind).toBe('craft');
     expect(claimRetired.result.kind).toBe('retired');
+    expect(claimDismantle.result.kind).toBe('dismantle');
+    // The previews carry every way to craft, each with exact odds that add up, and the refund as a range.
+    expect(previewCraft.result.options.map((o) => o.reach)).toEqual(['none', 'rare', 'epic']);
+    for (const o of previewCraft.result.options) {
+      expect(o.oddsBp.common + o.oddsBp.rare + o.oddsBp.epic).toBe(10_000);
+    }
+    expect(previewDismantle.result.range.scrap.max).toBeGreaterThan(0);
     // Equip best moved things.
     expect(gearEquipBest.result.changes.length).toBeGreaterThan(0);
     // The collection card shows the worn items and the busy job.
@@ -154,6 +167,9 @@ describe('the gear fixtures match what the server sends', () => {
       'slot_locked',
       'wrong_role',
       'gear_upgrade_removed',
+      'dismantle_is_a_job',
+      'invalid_bundle',
+      'skill_too_low',
       'job_kind_removed',
       'invalid_body',
       'not_found',
@@ -169,8 +185,11 @@ describe('the request bodies the client sends', () => {
     equip: EquipBodySchema,
     unequip: EquipBodySchema,
     'equip-best': EquipBestBodySchema,
-    dismantle: DismantleBodySchema,
     'job-craft': StartJobBodySchema,
+    'job-craft-reach': StartJobBodySchema,
+    'job-dismantle': StartJobBodySchema,
+    'preview-craft': PreviewBodySchema,
+    'preview-dismantle': PreviewBodySchema,
     'job-claim': ClaimJobBodySchema,
     'notice-dismiss': DismissNoticeBodySchema,
   };
@@ -196,8 +215,11 @@ describe('the request bodies the client sends', () => {
       equip: /^\/api\/gear\/ID\/equip$/,
       unequip: /^\/api\/gear\/ID\/equip$/,
       'equip-best': /^\/api\/gear\/equip-best$/,
-      dismantle: /^\/api\/gear\/ID\/dismantle$/,
       'job-craft': /^\/api\/workshop\/jobs$/,
+      'job-craft-reach': /^\/api\/workshop\/jobs$/,
+      'job-dismantle': /^\/api\/workshop\/jobs$/,
+      'preview-craft': /^\/api\/workshop\/preview$/,
+      'preview-dismantle': /^\/api\/workshop\/preview$/,
       'notice-dismiss': /^\/api\/gear\/conversion\/dismiss$/,
       'job-claim': /^\/api\/workshop\/jobs\/ID\/claim$/,
       'expedition-claim': /^\/api\/expeditions\/ID\/claim$/,
