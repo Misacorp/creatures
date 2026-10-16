@@ -1,5 +1,5 @@
 /**
- * The requests of expeditions v2. Sending a trip spends Bait (for bought supplies) and carries the
+ * The requests of expeditions v2. Sending a trip is free (supplies come from stock) and carries the
  * caller's idempotency key, which stays the same on a retry. Claiming and pushing on spend nothing and
  * are safe to repeat (the server stores the result), so they carry no key. Every trip answer brings the
  * fresh collection, so the screen replaces what it holds and never changes a number itself.
@@ -40,7 +40,7 @@ interface TripAnswer {
   state: GameState;
 }
 
-/** Sends a creature. Bought supplies are paid in the same transaction as the start (all or nothing). */
+/** Sends a creature. The supplies are taken from stock in the same transaction as the start (all or nothing). */
 export async function sendExpedition(
   request: SendRequest,
   idempotencyKey: string,

@@ -15,7 +15,9 @@ import { formatDuration } from './time-format';
 import { kindName, supplyEffect } from './trip-view';
 
 /**
- * Supply crafting in the Workshop: every supply of the game with what it does, what a craft costs, the
+ * Supply crafting in the Workshop, the one place to choose a supply's kind and tier (the dungeon and
+ * trips drop random ones; supplies cannot be bought): every supply of the game with what it does, what a
+ * craft costs, the
  * Crafting level a creature needs (and the reason shown when none of yours has it yet) and how many are
  * in stock. Crafting opens the same creature picker as gear jobs; the supplies go into the stock when the
  * job is claimed.
@@ -37,14 +39,19 @@ export function SupplyCrafting({
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const views = supplyCraftViews(stock);
+  const totalInStock = views.reduce((n, v) => n + v.owned, 0);
   return (
     <section class="ws-section" aria-labelledby="ws-supplies">
       <h3 id="ws-supplies">
         Supplies <GlossaryTag entry="supplies" look="help" />
       </h3>
       <p class="muted">
-        Supplies boost one expedition. Craft them here from parts, or buy them with Bait when you
-        send a trip.
+        Supplies boost one expedition. They cannot be bought: craft the ones you want here from
+        parts, or collect them from the daily dungeon and from trips.
+      </p>
+      <p class="supply-stock" aria-live="polite">
+        In stock: <strong>{totalInStock}</strong>
+        {totalInStock === 0 && <span class="muted"> (craft some, or run the dungeon)</span>}
       </p>
       <ul class="supply-crafts">
         {views.map((view) => {

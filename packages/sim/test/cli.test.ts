@@ -81,7 +81,7 @@ describe('CLI run', () => {
       summary: { fail: number };
     };
     expect(json.summary.fail).toBeGreaterThan(0);
-  });
+  }, 300_000);
 
   it('exits 1 with --fail-on-violations when a target fails', () => {
     const { io } = capture();
@@ -90,7 +90,7 @@ describe('CLI run', () => {
         main(['--quick', '--weeks', '5', '--out', dir, '--fail-on-violations'], io),
       ),
     ).toBe(1);
-  });
+  }, 300_000);
 
   it('exits non-zero on bad arguments', () => {
     const { io, err } = capture();

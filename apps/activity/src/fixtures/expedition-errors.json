@@ -82,6 +82,13 @@
     }
   },
   {
+    "route": "POST /api/expeditions",
+    "status": 400,
+    "body": {
+      "error": "supplies_not_for_sale"
+    }
+  },
+  {
     "route": "POST /api/workshop/jobs",
     "status": 409,
     "body": {

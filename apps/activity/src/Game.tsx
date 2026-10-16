@@ -450,6 +450,10 @@ export function Game({
             onDismissReveal={() => {
               setReveal(null);
             }}
+            onOpenWorkshop={() => {
+              setTab('workshop');
+              loadGear();
+            }}
           />
         )}
         {tab === 'workshop' && (

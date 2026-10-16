@@ -1,32 +1,23 @@
 import { RULES, discountedTrainingCost, int, type Rng } from '@creatures/game';
 import { CATCHABLE, byPowerDesc, creaturePower, speciesOf, type OwnedCreature } from './data';
 
-/**
+/*
  * The spending policy of a simulated player. Today's archetypes all follow it as it is written here
  * (they differ only in how often they leet and check in); a player profile (`profiles.ts`) turns its
- * parts into dials: the share of the spare Bait that supplies may use, whom to train (`TrainingPlan`),
- * whether to push evolutions, and how often to send trips and work the gear.
+ * parts into dials: whom to train (`TrainingPlan`), whether to push evolutions, and how often to
+ * send trips and work the gear.
  *
  * At each check-in, in this order:
  * 1. Claim finished expeditions and take an end-of-trip goal that costs no waiting (see `trips.ts`).
  * 2. Evolve every creature that is at its evolution level when the player has the Essence.
- * 3. Send trips into the free expedition slots (`trips.ts`) with a supplies budget: the Bait held above
- *    `supplyReserve` (all of it when nothing can be trained). Expeditions themselves are free; the budget
- *    only buys supplies, and a supply is bought only when it is worth enough (`TRIP_POLICY.buyWorthBp`).
+ * 3. Send trips into the free expedition slots (`trips.ts`). Expeditions are free and supplies cannot be
+ *    bought: a trip carries the supplies in stock that help (found on trips, dropped by the dungeon,
+ *    crafted in the workshop, or an explorer rank gift).
  * 4. Train with the Bait that is left: repeatedly pick a creature with `chooseTrainee` and train it
  *    while the (catch-up discounted) cost is affordable. A creature still working towards its
  *    evolution level is trained until it gets there; otherwise the weakest of the 3 strongest
  *    trainable creatures goes first. Creatures at their level cap are not trainable.
  */
-export const POLICY = {
-  /**
-   * Bait a player keeps for training before anything goes to supplies, at check-in time. Chosen so
-   * that the Bait spent on supplies rises with income the way the Bait spent on trips did in v1 (a
-   * small share at low income, a large one at high income): the raid sweep places the boss by the
-   * creatures' levels, so the levels at weeks 4 and 8 must stay where they were.
-   */
-  supplyReserve: 43,
-} as const;
 
 /** True when every catchable species is owned and fully fused: more expeditions only convert to Bait. */
 export function collectionComplete(creatures: readonly OwnedCreature[]): boolean {

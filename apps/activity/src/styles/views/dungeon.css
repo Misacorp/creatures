@@ -136,6 +136,21 @@
   margin-top: 0.125rem;
 }
 
+/* The pre-run card's supply promise: the satchel and one plain line. */
+.supply-promise {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+
+.supply-promise > canvas {
+  flex: none;
+  margin-top: 0.125rem;
+}
+
 .room-panel.unknown .rp-art {
   min-height: 4.5rem;
   background: var(--ink);

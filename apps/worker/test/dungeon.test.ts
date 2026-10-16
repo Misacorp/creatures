@@ -3,7 +3,9 @@ import {
   RULES,
   createSeededRng,
   dungeonContent,
+  dungeonSupplyOddsBp,
   rollGear,
+  supplyDef,
   type PartKind,
   type Rng,
 } from '@creatures/game';
@@ -863,6 +865,174 @@ describe('idempotency', () => {
             `SELECT key FROM gear_grants WHERE user_id = '${p.id}' AND key LIKE 'dungeon:%'`,
           ).length,
         ).toBeGreaterThanOrEqual(1);
+      },
+      opts(),
+    );
+  });
+});
+
+const stockOf = (ctx: CoreContext, userId: string): Record<string, number> =>
+  Object.fromEntries(
+    rows<{ supply_id: string; amount: number }>(
+      ctx.sql,
+      'SELECT supply_id, amount FROM supplies WHERE user_id = ? AND amount > 0',
+      userId,
+    ).map((r) => [r.supply_id, r.amount]),
+  );
+
+const stockTotal = (ctx: CoreContext, userId: string): number =>
+  Object.values(stockOf(ctx, userId)).reduce((n, x) => n + x, 0);
+
+describe('the supply a run drops', () => {
+  it('puts one supply in the stock for a run that clears the first room, and shows it in the rewards', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        ctx.clock.t = AFTER_RESET;
+        const res = await p.run();
+        const run = res.body.run;
+        const dropped = RULES.dungeon.perRoom.reduce((n, r) => n + r.supply, 0);
+        expect(dropped).toBeGreaterThan(0);
+        expect(run.rewards.supplies).toHaveLength(dropped);
+        // Depth 1 drops the basic tier of a kind of the content.
+        for (const id of run.rewards.supplies ?? []) expect(supplyDef(id)?.tier).toBe('basic');
+        // They are in the stock, and the state the client reloads shows them.
+        const stock = stockOf(ctx, p.id);
+        expect(stockTotal(ctx, p.id)).toBe(dropped);
+        for (const id of run.rewards.supplies ?? []) expect(stock[id]).toBeGreaterThan(0);
+        const state = (await p.call('GET', '/api/state')).body as {
+          supplies: Record<string, number>;
+        };
+        expect(state.supplies).toEqual(stock);
+        // The grant row records them (the ledger of dungeon loot), under the run's own key.
+        const grant = rows<{ key: string; source: string; result_json: string }>(
+          ctx.sql,
+          `SELECT key, source, result_json FROM gear_grants WHERE user_id = '${p.id}' AND key = 'dungeon:2027-01-15:1'`,
+        )[0];
+        expect(grant?.source).toBe('dungeon');
+        const stored = JSON.parse(grant?.result_json ?? '{}') as { supplies?: string[] };
+        expect(stored.supplies).toEqual(run.rewards.supplies);
+        // Analytics: the drop is a source of supplies, and the reward event counts it.
+        const drop = events(ctx, 'gear_drop').find((e) => e['source'] === 'dungeon');
+        expect(drop?.['supplies']).toBe(dropped);
+        expect(events(ctx, 'dungeon_reward')[0]?.['supplies']).toBe(dropped);
+      },
+      opts(),
+    );
+  });
+
+  it('drops nothing for a run lost in the first room, and keeps the first room drop of a run lost later', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const lost = await dungeonPlayer(ctx, 1, { level: 1 });
+        setProgress(ctx, lost.id, { depth: 45 });
+        const none = (await lost.run()).body.run;
+        expect(none.roomsCleared).toBe(0);
+        expect(none.rewards.supplies ?? []).toEqual([]);
+        expect(stockOf(ctx, lost.id)).toEqual({});
+        // A run lost in the second room still got past the first one (searched: the dice are fixed).
+        let found = false;
+        let n = 1;
+        for (let depth = 2; depth < 60 && !found; depth++) {
+          for (const level of [8, 10, 12, 15, 20]) {
+            const p = await dungeonPlayer(ctx, ++n, { level });
+            setProgress(ctx, p.id, { depth });
+            const run = (await p.run()).body.run;
+            if (run.roomsCleared !== 1) continue;
+            found = true;
+            expect(run.cleared).toBe(false);
+            const first = RULES.dungeon.perRoom[0]?.supply ?? 0;
+            expect(run.rewards.supplies).toHaveLength(first);
+            expect(stockTotal(ctx, p.id)).toBe(first);
+            break;
+          }
+        }
+        expect(found).toBe(true);
+      },
+      opts(),
+    );
+  });
+
+  it('draws the supply with the live gear rng once, and a retry or a second grant draws and grants nothing', async () => {
+    const gear = counting('supply-gear');
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        ctx.clock.t = AFTER_RESET;
+        const body = p.body();
+        const first = await p.call('POST', '/api/dungeon/run', body);
+        expect(first.status).toBe(200);
+        const firstRun = first.body['run'] as { rewards: { supplies: string[] } };
+        const drawn = gear.drawn();
+        expect(drawn).toBeGreaterThan(0);
+        const stock = stockOf(ctx, p.id);
+        for (let i = 0; i < 3; i++) {
+          const again = await p.call('POST', '/api/dungeon/run', body);
+          expect(again.body['run']).toEqual(first.body['run']);
+        }
+        // The grant itself, asked for again with the run's key: nothing is drawn, nothing is added.
+        const again = grantDungeonRun(
+          { storage: ctx.storage, now: () => ctx.clock.t, rng: gear },
+          p.id,
+          '2027-01-15',
+          1,
+          () => ({ parts: {}, gear: [], supplies: ['lantern-great'] }),
+        );
+        expect(again.supplies).toEqual(firstRun.rewards.supplies);
+        expect(gear.drawn()).toBe(drawn);
+        expect(stockOf(ctx, p.id)).toEqual(stock);
+        // A new day is a new key and a new supply.
+        ctx.clock.t = AFTER_RESET + DAY;
+        expect((await p.run()).status).toBe(200);
+        expect(stockTotal(ctx, p.id)).toBe(2 * (RULES.dungeon.perRoom[0]?.supply ?? 0));
+      },
+      { dungeonRng: createSeededRng('supply-run'), gearRng: gear },
+    );
+  });
+
+  it('drops better tiers deeper: basic only before the first open depth, some good and great ones far down', async () => {
+    const tiers = RULES.dungeon.supplyTiers;
+    expect(dungeonSupplyOddsBp(tiers.good.fromDepth - 1).good).toBe(0);
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const seen = { basic: 0, good: 0, great: 0 };
+        for (let i = 0; i < 60; i++) {
+          const p = await dungeonPlayer(ctx, i + 1, STRONG);
+          setProgress(ctx, p.id, { depth: tiers.great.fromDepth + 2 });
+          const run = (await p.run()).body.run;
+          for (const id of run.rewards.supplies ?? []) {
+            const tier = supplyDef(id)?.tier;
+            if (tier !== undefined) seen[tier] += 1;
+          }
+        }
+        expect(seen.basic + seen.good + seen.great).toBeGreaterThanOrEqual(30);
+        expect(seen.basic).toBeGreaterThan(0);
+        expect(seen.good).toBeGreaterThan(0);
+        expect(seen.great).toBeGreaterThan(0);
+      },
+      opts('tiers'),
+    );
+  });
+
+  it('no longer sells a supply: the send refuses the old buy shape and the ledger has no expedition spend', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const res = await p.call('POST', '/api/expeditions', {
+          creatureId: p.creatureIds[0],
+          destination: 'tidepools',
+          duration: 'short',
+          supplies: [{ id: 'lure-basic', source: 'buy' }],
+          idempotencyKey: newKey(),
+        });
+        expect(res.status).toBe(400);
+        expect(res.body['error']).toBe('supplies_not_for_sale');
+        expect(rows(ctx.sql, "SELECT id FROM ledger WHERE source = 'expedition'")).toEqual([]);
       },
       opts(),
     );

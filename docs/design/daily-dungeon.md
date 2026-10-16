@@ -37,6 +37,7 @@ No real-time backend is needed.
   - This is the "get better over time" loop of the solo mode.
 - **Rewards:**
   - Per cleared room: a little Bait or Essence and **gear materials**.
+  - **A supply (2026-10-16, B-011):** the first room of a run drops one expedition supply, guaranteed once it is cleared (a run lost later keeps it; a run lost in the first room pays none). Its tier is rolled by depth (`RULES.dungeon.supplyTiers`: basic only at first, good from depth 4, great from depth 12, better odds the deeper the run) and its kind evenly, with the live gear RNG, inside the run's grant (key `dungeon:<day>:<attempt>`), so a retry grants nothing twice. The pre-run card promises it; the result screen shows it.
   - A full clear adds a chance at a **gear drop** (see `gear.md`).
   - Landmark depths: a guaranteed gear drop.
   - Daily streaks: a small bonus on the 3rd and 7th day of each 7-day cycle (the cycle length is `RULES.dungeon.streak.cycleDays`); missing a day starts the count again, and depth is kept.

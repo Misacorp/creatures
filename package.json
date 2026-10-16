@@ -21,7 +21,8 @@
     "analyze": "node packages/sim/scripts/analyze.mjs",
     "sim:live": "node packages/sim/scripts/sim-live.mjs",
     "sim:journey": "node packages/sim/scripts/journey.mjs",
-    "sim:curve": "node packages/sim/scripts/curve.mjs"
+    "sim:curve": "node packages/sim/scripts/curve.mjs",
+    "sim:supplies": "node packages/sim/scripts/supplies.mjs"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

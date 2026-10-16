@@ -8,6 +8,7 @@ import {
   dungeonGearOddsBp,
   dungeonPayout,
   dungeonRowOrder,
+  dungeonSupplyOddsBp,
   depthFactorBp,
   int,
   isLandmark,
@@ -17,11 +18,13 @@ import {
   roomPlanValid,
   rollDayModifiers,
   rollDungeonLoot,
+  rollDungeonSupply,
   rollRooms,
   rowReactions,
   rowScore,
   scaledFoe,
   streakBonus,
+  supplyDef,
   streakCycleDay,
   type Element,
   type Role,
@@ -536,7 +539,7 @@ describe('rewards', () => {
   });
 
   it('rolls loot deterministically and in a fixed order', () => {
-    const full = { landmark: false, fullClear: true, bossCleared: true } as const;
+    const full = { landmark: false, fullClear: true, bossCleared: true, supplies: 0 } as const;
     const a = rollDungeonLoot(createSeededRng('loot'), 3, full, 'ember');
     const b = rollDungeonLoot(createSeededRng('loot'), 3, full, 'ember');
     expect(b).toEqual(a);
@@ -546,15 +549,15 @@ describe('rewards', () => {
     const none = rollDungeonLoot(
       counting,
       3,
-      { landmark: false, fullClear: false, bossCleared: false },
+      { landmark: false, fullClear: false, bossCleared: false, supplies: 0 },
       'tide',
     );
-    expect(none).toEqual({ parts: {}, gear: [] });
+    expect(none).toEqual({ parts: {}, gear: [], supplies: [] });
     expect(draws).toBe(0);
   });
 
   it('always drops gear on a landmark, sometimes on other full clears, and a shard of the boss element', () => {
-    const landmark = { landmark: true, fullClear: true, bossCleared: true } as const;
+    const landmark = { landmark: true, fullClear: true, bossCleared: true, supplies: 0 } as const;
     for (let i = 0; i < 40; i++) {
       const loot = rollDungeonLoot(createSeededRng(`lm-${String(i)}`), 7, landmark, 'grove');
       expect(loot.gear).toHaveLength(1);
@@ -567,7 +570,7 @@ describe('rewards', () => {
       const loot = rollDungeonLoot(
         createSeededRng(`nm-${String(i)}`),
         1,
-        { landmark: false, fullClear: true, bossCleared: true },
+        { landmark: false, fullClear: true, bossCleared: true, supplies: 0 },
         'spark',
       );
       drops += loot.gear.length;
@@ -577,6 +580,120 @@ describe('rewards', () => {
     expect(drops / runs).toBeLessThan(RULES.dungeon.fullClear.gearBp / 10_000 + 0.06);
     expect(shards / runs).toBeGreaterThan(RULES.dungeon.bossShardBp / 10_000 - 0.08);
     expect(shards / runs).toBeLessThan(RULES.dungeon.bossShardBp / 10_000 + 0.08);
+  });
+});
+
+describe('supplies from the dungeon', () => {
+  const per = RULES.dungeon.perRoom;
+  const tiers = RULES.dungeon.supplyTiers;
+
+  it('pays the supplies of the rooms that were cleared, and none for a room that was not', () => {
+    expect(dungeonPayout(1, 0).supplies).toBe(0);
+    let expected = 0;
+    for (let cleared = 1; cleared <= rooms; cleared++) {
+      expected += per[cleared - 1]?.supply ?? 0;
+      expect(dungeonPayout(1, cleared).supplies, `${String(cleared)} rooms`).toBe(expected);
+    }
+    // A landmark pays its extra, never an extra supply.
+    expect(dungeonPayout(7, rooms).supplies).toBe(dungeonPayout(1, rooms).supplies);
+    // The shipped rule (B-011): the first room pays the supply, so a lost run that got past it keeps it.
+    expect(dungeonPayout(5, 1).supplies).toBe(1);
+    expect(dungeonPayout(5, 0).supplies).toBe(0);
+  });
+
+  it('has tier odds that are basic only above the open depths, grow with depth, stop at their caps and add up to 100%', () => {
+    let previousGood = 0;
+    let previousGreat = 0;
+    for (let depth = 1; depth <= 80; depth++) {
+      const odds = dungeonSupplyOddsBp(depth);
+      expect(odds.basic + odds.good + odds.great, `depth ${String(depth)}`).toBe(10_000);
+      expect(odds.basic).toBeGreaterThanOrEqual(0);
+      expect(odds.good).toBeGreaterThanOrEqual(depth < tiers.good.fromDepth ? 0 : previousGood);
+      expect(odds.great).toBeGreaterThanOrEqual(previousGreat);
+      expect(odds.good).toBeLessThanOrEqual(tiers.good.maxBp);
+      expect(odds.great).toBeLessThanOrEqual(tiers.great.maxBp);
+      if (depth < tiers.good.fromDepth) expect(odds.good).toBe(0);
+      if (depth < tiers.great.fromDepth) expect(odds.great).toBe(0);
+      previousGood = odds.good;
+      previousGreat = odds.great;
+    }
+    // The first depth is plain basic; a tier opens at its depth with its base odds.
+    expect(dungeonSupplyOddsBp(1)).toEqual({ basic: 10_000, good: 0, great: 0 });
+    expect(dungeonSupplyOddsBp(tiers.good.fromDepth).good).toBe(tiers.good.baseBp);
+    expect(dungeonSupplyOddsBp(tiers.good.fromDepth - 1).good).toBe(0);
+    expect(dungeonSupplyOddsBp(tiers.great.fromDepth).great).toBe(tiers.great.baseBp);
+    expect(dungeonSupplyOddsBp(tiers.great.fromDepth - 1).great).toBe(0);
+    // Deeper really is better: more of the good tiers and less basic.
+    expect(dungeonSupplyOddsBp(20).basic).toBeLessThan(dungeonSupplyOddsBp(5).basic);
+    expect(dungeonSupplyOddsBp(80)).toEqual({
+      basic: 10_000 - tiers.good.maxBp - tiers.great.maxBp,
+      good: tiers.good.maxBp,
+      great: tiers.great.maxBp,
+    });
+  });
+
+  it('rolls a supply of the content, in the odds of its depth, with every kind coming up', () => {
+    const kinds = new Set<string>();
+    const count = { basic: 0, good: 0, great: 0 };
+    const runs = 4_000;
+    const depth = 20;
+    for (let i = 0; i < runs; i++) {
+      const id = rollDungeonSupply(createSeededRng(`supply-${String(i)}`), depth);
+      const def = supplyDef(id);
+      expect(def, id).toBeDefined();
+      if (def === undefined) continue;
+      kinds.add(def.kind);
+      count[def.tier] += 1;
+    }
+    expect(kinds.size).toBe(4);
+    const odds = dungeonSupplyOddsBp(depth);
+    for (const tier of ['basic', 'good', 'great'] as const) {
+      expect(count[tier] / runs, tier).toBeGreaterThan(odds[tier] / 10_000 - 0.04);
+      expect(count[tier] / runs, tier).toBeLessThan(odds[tier] / 10_000 + 0.04);
+    }
+    // Early on only basic ones drop.
+    for (let i = 0; i < 100; i++) {
+      const id = rollDungeonSupply(createSeededRng(`early-${String(i)}`), 1);
+      expect(supplyDef(id)?.tier).toBe('basic');
+    }
+  });
+
+  it('adds the supplies last, so the gear and shard dice are drawn as they were', () => {
+    const full = { landmark: false, fullClear: true, bossCleared: true } as const;
+    for (let i = 0; i < 40; i++) {
+      const seed = `order-${String(i)}`;
+      const without = rollDungeonLoot(createSeededRng(seed), 8, { ...full, supplies: 0 }, 'tide');
+      const withSupply = rollDungeonLoot(
+        createSeededRng(seed),
+        8,
+        { ...full, supplies: 2 },
+        'tide',
+      );
+      expect(withSupply.parts).toEqual(without.parts);
+      expect(withSupply.gear).toEqual(without.gear);
+      expect(without.supplies).toEqual([]);
+      expect(withSupply.supplies).toHaveLength(2);
+      for (const id of withSupply.supplies) expect(supplyDef(id)).toBeDefined();
+    }
+  });
+
+  it('draws nothing for a run that paid no supply, and one supply roll (tier, kind) for one', () => {
+    let draws = 0;
+    const counting = { nextU32: () => (draws += 1) };
+    rollDungeonLoot(
+      counting,
+      3,
+      { landmark: false, fullClear: false, bossCleared: false, supplies: 0 },
+      'tide',
+    );
+    expect(draws).toBe(0);
+    const id = rollDungeonLoot(
+      createSeededRng('one'),
+      3,
+      { landmark: false, fullClear: false, bossCleared: false, supplies: 1 },
+      'tide',
+    ).supplies;
+    expect(id).toHaveLength(1);
   });
 });
 

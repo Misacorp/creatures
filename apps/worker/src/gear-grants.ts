@@ -391,8 +391,9 @@ export function payOnce(
 }
 
 /**
- * What a dungeon run drops: the scrap, glimmer and shard of its rooms and the gear its dice gave, and
- * the run's Bait and Essence. `draw` runs only for a first-time key, inside the transaction, and uses
+ * What a dungeon run drops: the scrap, glimmer and shard of its rooms, the gear its dice gave, the
+ * supplies of its rooms (put in the stock with the same grant, so they are paid once) and the run's
+ * Bait and Essence. `draw` runs only for a first-time key, inside the transaction, and uses
  * the live gear RNG. Key `dungeon:<day>:<attempt>` (credits `...:bait`, `...:essence`), so a player's
  * run of a day is paid once however often it is retried.
  */
@@ -401,14 +402,19 @@ export function grantDungeonRun(
   userId: string,
   day: string,
   attempt: number,
-  draw: (rng: Rng) => { parts: PartsBundle; gear: Draft['gear'] },
+  draw: (rng: Rng) => { parts: PartsBundle; gear: Draft['gear']; supplies?: string[] },
   credits?: PayoutCredits,
 ): GrantView {
   return payOnce(deps, userId, `dungeon:${day}:${String(attempt)}`, {
     source: 'dungeon',
     draw: () => {
       const drawn = draw(deps.rng);
-      return { gear: drawn.gear, parts: addParts({}, drawn.parts), blueprints: [] };
+      return {
+        gear: drawn.gear,
+        parts: addParts({}, drawn.parts),
+        blueprints: [],
+        ...(drawn.supplies === undefined ? {} : { supplies: drawn.supplies }),
+      };
     },
     ...(credits === undefined ? {} : { credits }),
   });

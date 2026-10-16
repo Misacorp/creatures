@@ -89,7 +89,7 @@ function bestKit(): SupplyDef[] {
   const best = new Map<SupplyDef['kind'], SupplyDef>();
   for (const def of expeditionContent.supplies) {
     const have = best.get(def.kind);
-    if (have === undefined || def.price > have.price) best.set(def.kind, def);
+    if (have === undefined || def.worth > have.worth) best.set(def.kind, def);
   }
   return [...best.values()];
 }

@@ -10,7 +10,7 @@ import type { DestinationCard } from './destination-view';
 import type { DestinationsView, ExpeditionLength, Slots, SupplyPick } from './expedition-types';
 import { creatureName, getSpecies } from './game';
 import { busyReason } from './gear-view';
-import { explorerXp, kitBlocker, kitCost, lengthOptions, type ExplorerXp } from './trip-view';
+import { explorerXp, kitBlocker, lengthOptions, type ExplorerXp } from './trip-view';
 
 export interface ExplorerOption {
   creature: Creature;
@@ -117,9 +117,8 @@ export function sendBlocker(args: {
   length: ExpeditionLength;
   picks: readonly SupplyPick[];
   stock: Readonly<Record<string, number>>;
-  bait: number;
 }): string | null {
-  const { slots, explorer, place, length, picks, stock, bait } = args;
+  const { slots, explorer, place, length, picks, stock } = args;
   if (slots.used >= slots.total) {
     return `All ${String(slots.total)} expedition ${slots.total === 1 ? 'slot is' : 'slots are'} in use. Claim a trip first.`;
   }
@@ -131,10 +130,6 @@ export function sendBlocker(args: {
   if (!lengthOpen(length, explorer.rank)) return 'That trip is too long for this explorer.';
   const kit = kitBlocker(picks, stock);
   if (kit !== null) return kit;
-  const cost = kitCost(picks);
-  if (cost > bait) {
-    return `Not enough Bait: the supplies cost ${String(cost)} and you have ${String(bait)}.`;
-  }
   return null;
 }
 

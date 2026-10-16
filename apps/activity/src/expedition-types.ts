@@ -15,13 +15,16 @@ export type ExpeditionLength = 'short' | 'medium' | 'long' | 'day';
 export type SupplyTier = 'basic' | 'good' | 'great';
 export type GoalRisk = 'safe' | 'risky';
 
-/** One supply chosen for a trip: bought with Bait now, or taken from the player's stock. */
+/**
+ * One supply chosen for a trip, taken from the player's stock. Supplies cannot be bought any more
+ * (2026-10-16); the server still parses the old `buy` shape only to refuse it with a clear error.
+ */
 export interface SupplyPick {
   id: string;
-  source: 'buy' | 'owned';
+  source: 'owned';
 }
 
-/** The body of POST /api/expeditions. Supplies are optional: a trip without any is free. */
+/** The body of POST /api/expeditions. Supplies are optional: a trip is always free. */
 export interface SendBody {
   creatureId: string;
   destination: string;
@@ -51,7 +54,7 @@ export interface Trip {
   /** The weekly twist that applies to this trip, or null. */
   twist: string | null;
   rolls: number;
-  /** Bait paid for bought supplies. */
+  /** Bait paid for supplies: 0 for every trip sent since supplies stopped being sold (older trips may have paid). */
   cost: number;
   startedAt: number;
   /** When the trip itself ends. */

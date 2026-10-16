@@ -77,9 +77,9 @@ describe('the expedition fixtures match what the server sends', () => {
   });
 
   it('shows what each fixture is meant to show', () => {
-    // A paid send carries the kit, its cost and the places and ranks of the explorer.
+    // A send carries the kit it took from stock, and costs nothing: supplies cannot be bought.
     expect(send.expedition.kit).toEqual(['lure-great', 'map-scrap-basic']);
-    expect(send.expedition.cost).toBeGreaterThan(0);
+    expect(send.expedition.cost).toBe(0);
     expect(send.expedition.offer).toBeNull();
     expect(send.state.slots.used).toBe(1);
     // The state of a trip that ended carries the offer, a safe and a risky goal, with exact odds.
@@ -133,6 +133,7 @@ describe('the expedition fixtures match what the server sends', () => {
       'rank_too_low',
       'supply_missing',
       'invalid_supplies',
+      'supplies_not_for_sale',
       'skill_too_low',
     ]) {
       expect(codes.has(code), code).toBe(true);

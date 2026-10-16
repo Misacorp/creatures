@@ -8,7 +8,7 @@ Status: 2026-10-13. Canon for names, meaning and tone. Read `README.md` first fo
 
 - **You are an explorer.** You send creatures out on **trips** to **places** (called destinations or expeditions in the game). Trips come home with catches, parts, supplies and journal pages. `(content: destinations.json, glossary.json)`
 - **Creatures are the team.** Each creature has an element, a role and a line that evolves. `(content: creatures.json)`
-- **Bait** is the currency that draws creatures, pays for training and fills supplies. `(content: glossary.json "bait")`
+- **Bait** is the currency that draws creatures and pays for training. Trips and supplies cost no Bait. `(content: glossary.json "bait")`
 - **The Workshop** is where creatures work on jobs (crafting, improving, enchanting) while you are away. `(content: glossary.json "workshop")`
 - **Raids** are weekly fights against a big boss. A **season** is five raid weeks; week five is a **Festival**. `(content: glossary.json "season", "festival")`
 - **The daily dungeon** is a solo run, once a day, with a team of three. `(content: glossary.json "dungeon")`

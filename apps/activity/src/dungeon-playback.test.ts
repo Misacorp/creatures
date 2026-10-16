@@ -10,6 +10,7 @@ import {
   ROOM_BANNER,
   ROOM_END_MS,
   atSpeed,
+  droppedSupplies,
   fightScroll,
   hpLine,
   mineIds,
@@ -186,10 +187,29 @@ describe('the results', () => {
     expect(noRewards(landmark.rewards)).toBe(false);
   });
 
+  it('counts a run that paid only a supply as a run that paid something', () => {
+    const onlySupply = { ...lost.rewards, supplies: ['lure-basic'] };
+    expect(noRewards(onlySupply)).toBe(false);
+    // Runs stored before the dungeon dropped supplies have no list: read as none.
+    expect(noRewards({ ...lost.rewards })).toBe(true);
+    expect(droppedSupplies({})).toEqual([]);
+  });
+
+  it('lists the supplies a run dropped, counted by id with the content names, and puts them in the loot', () => {
+    const rewards = { ...cleared.rewards, supplies: ['lure-basic', 'lantern-good', 'lure-basic'] };
+    expect(droppedSupplies(rewards)).toEqual([
+      { id: 'lure-basic', name: 'Plain Lure', amount: 2 },
+      { id: 'lantern-good', name: 'Glow Lantern', amount: 1 },
+    ]);
+    expect(rewardLoot(rewards).supplies).toEqual(['lure-basic', 'lantern-good', 'lure-basic']);
+    // The fixture of a cleared run (captured from the server) carries its supply.
+    expect(droppedSupplies(cleared.rewards).length).toBeGreaterThan(0);
+  });
+
   it('makes a loot list of the gear and the parts, with no blueprints', () => {
     const loot = rewardLoot(landmark.rewards);
     expect(loot.gear).toHaveLength(1);
-    expect(loot.gear[0]?.baseId).toBe('keen-trinket');
+    expect(loot.gear[0]?.baseId).toBe(landmark.rewards.gear[0]?.baseId);
     expect(loot.blueprints).toEqual([]);
     expect(loot.parts).toEqual(landmark.rewards.parts);
   });

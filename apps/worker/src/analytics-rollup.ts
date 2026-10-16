@@ -198,6 +198,7 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
       for (const id of supplies) tally.add('expedition.supply_used', { supply: id });
       tally.add('expedition.supply_kit', { size: supplies.length });
       flow(tally, 'supplies', 'sink', 'expedition', supplies.length);
+      // Trips sent before 2026-10-16 may carry supplies bought with Bait (`bought`); none are now.
       flow(tally, 'supplies', 'source', 'buy', num(p, 'bought'));
       break;
     }

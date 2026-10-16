@@ -145,6 +145,7 @@ const resultOf = (res: Json): ResultBody => {
 };
 
 type Pick = { id: string; source: 'buy' | 'owned' };
+/** The old way to send a supply: it is refused now (`supplies_not_for_sale`). */
 const buy = (id: string): Pick => ({ id, source: 'buy' });
 const owned = (id: string): Pick => ({ id, source: 'owned' });
 
@@ -390,64 +391,81 @@ describe('where a creature may go', () => {
 });
 
 describe('supplies', () => {
-  it('is free without supplies and charges a bought supply once, even with the same key retried', async () => {
+  it('takes a supply from stock once, even with the same key retried, and charges nothing', async () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await join(ctx, USER, 100);
-      const price = expeditionContent.supplies.find((s) => s.id === 'lure-basic')?.price ?? 0;
+      stock(ctx.sql, USER_ID, 'lure-basic', 2);
       const key = newKey();
       const first = tripOf(
-        await send(p, p.starterId, 'long', [buy('lure-basic')], 'tidepools', key),
+        await send(p, p.starterId, 'long', [owned('lure-basic')], 'tidepools', key),
       );
       const again = tripOf(
-        await send(p, p.starterId, 'long', [buy('lure-basic')], 'tidepools', key),
+        await send(p, p.starterId, 'long', [owned('lure-basic')], 'tidepools', key),
       );
       expect(again.id).toBe(first.id);
       expect(first.kit).toEqual(['lure-basic']);
-      expect(first.cost).toBe(price);
-      expect(ctx.core.balances(USER_ID).bait).toBe(100 - price);
+      expect(first.cost).toBe(0);
+      expect((await state(p)).supplies).toEqual({ 'lure-basic': 1 });
+      expect(ctx.core.balances(USER_ID).bait).toBe(100);
       expect(count(ctx.sql, 'expeditions')).toBe(1);
+      expect(count(ctx.sql, 'ledger', "source = 'expedition'")).toBe(0);
     });
   });
 
-  it('refuses to send with a supply the player cannot afford, and writes nothing', async () => {
+  it('no longer sells supplies: asking to buy one is refused with a clear error and writes nothing', async () => {
     await runCore(nextGuild(), async (ctx) => {
-      const p = await join(ctx, USER, 5);
-      const res = await send(p, p.starterId, 'long', [buy('lure-great')]);
-      expect(res.status).toBe(409);
-      expect(res.body).toEqual({ error: 'insufficient_funds' });
+      const p = await join(ctx, USER, 1_000);
+      // Even one the player has in stock: `buy` is not a way to send any more.
+      stock(ctx.sql, USER_ID, 'lure-basic', 1);
+      for (const supplies of [[buy('lure-basic')], [owned('lure-basic'), buy('map-scrap-basic')]]) {
+        const res = await send(p, p.starterId, 'long', supplies);
+        expect(res.status).toBe(400);
+        expect(res.body['error']).toBe('supplies_not_for_sale');
+      }
       expect(count(ctx.sql, 'expeditions')).toBe(0);
       expect(count(ctx.sql, 'ledger', "source = 'expedition'")).toBe(0);
-      expect(ctx.core.balances(USER_ID).bait).toBe(5);
-      const state1 = await state(p);
-      expect(state1.creatures[0]?.away).toBe(false);
+      expect(ctx.core.balances(USER_ID).bait).toBe(1_000);
+      expect((await state(p)).supplies).toEqual({ 'lure-basic': 1 });
+      expect((await state(p)).creatures[0]?.away).toBe(false);
+      // The refusal is not stored under the key: the same key may send a valid trip.
+      const key = newKey();
+      expect(
+        (await send(p, p.starterId, 'long', [buy('lure-basic')], 'tidepools', key)).status,
+      ).toBe(400);
+      const ok = await send(p, p.starterId, 'long', [owned('lure-basic')], 'tidepools', key);
+      expect(ok.status).toBe(200);
     });
   });
 
-  it('sends a double tap (the same key, at once) as one trip charged once', async () => {
+  it('sends a double tap (the same key, at once) as one trip that takes one supply', async () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await join(ctx, USER, 200);
+      stock(ctx.sql, USER_ID, 'lure-basic', 3);
       const key = newKey();
       const both = await Promise.all([
-        send(p, p.starterId, 'long', [buy('lure-basic')], 'tidepools', key),
-        send(p, p.starterId, 'long', [buy('lure-basic')], 'tidepools', key),
+        send(p, p.starterId, 'long', [owned('lure-basic')], 'tidepools', key),
+        send(p, p.starterId, 'long', [owned('lure-basic')], 'tidepools', key),
       ]);
       expect(both.map((r) => r.status)).toEqual([200, 200]);
       expect(tripOf(both[0]).id).toBe(tripOf(both[1]).id);
       expect(count(ctx.sql, 'expeditions')).toBe(1);
-      expect(count(ctx.sql, 'ledger', "source = 'expedition'")).toBe(1);
+      expect((await state(p)).supplies).toEqual({ 'lure-basic': 2 });
     });
   });
 
-  it('sends two different requests for one creature at once: one trip, one charge, the other refused', async () => {
+  it('sends two different requests for one creature at once: one trip takes its supply, the other is refused and takes none', async () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await join(ctx, USER, 200);
+      stock(ctx.sql, USER_ID, 'lure-basic', 1);
+      stock(ctx.sql, USER_ID, 'map-scrap-basic', 1);
       const both = await Promise.all([
-        send(p, p.starterId, 'long', [buy('lure-basic')]),
-        send(p, p.starterId, 'medium', [buy('map-scrap-basic')]),
+        send(p, p.starterId, 'long', [owned('lure-basic')]),
+        send(p, p.starterId, 'medium', [owned('map-scrap-basic')]),
       ]);
       expect(both.map((r) => r.status).sort()).toEqual([200, 409]);
       expect(count(ctx.sql, 'expeditions')).toBe(1);
-      expect(count(ctx.sql, 'ledger', "source = 'expedition'")).toBe(1);
+      const left = (await state(p)).supplies;
+      expect(Object.values(left).reduce((n, x) => n + x, 0)).toBe(1);
     });
   });
 
@@ -465,20 +483,27 @@ describe('supplies', () => {
     });
   });
 
-  it('refuses two supplies of one kind, too many supplies and unknown ones', async () => {
+  it('refuses two supplies of one kind, too many supplies and unknown ones, taking nothing', async () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await join(ctx, USER, 1_000);
-      const twoLures = await send(p, p.starterId, 'long', [buy('lure-basic'), buy('lure-good')]);
+      for (const id of ['lure-basic', 'lure-good', 'map-scrap-basic', 'satchel-basic']) {
+        stock(ctx.sql, USER_ID, id, 1);
+      }
+      const twoLures = await send(p, p.starterId, 'long', [
+        owned('lure-basic'),
+        owned('lure-good'),
+      ]);
       expect(twoLures.status).toBe(400);
       const three = await send(p, p.starterId, 'long', [
-        buy('lure-basic'),
-        buy('map-scrap-basic'),
-        buy('satchel-basic'),
+        owned('lure-basic'),
+        owned('map-scrap-basic'),
+        owned('satchel-basic'),
       ]);
       expect(three.status).toBe(400);
-      expect((await send(p, p.starterId, 'long', [buy('nope')])).status).toBe(400);
+      expect((await send(p, p.starterId, 'long', [owned('nope')])).status).toBe(400);
       expect(count(ctx.sql, 'expeditions')).toBe(0);
       expect(ctx.core.balances(USER_ID).bait).toBe(1_000);
+      expect(Object.values((await state(p)).supplies).reduce((n, x) => n + x, 0)).toBe(4);
     });
   });
 });
@@ -1428,12 +1453,13 @@ describe('the analytics of expeditions', () => {
         const p = await join(ctx, USER, 500);
         setRank(ctx.sql, USER_ID, p.starterId, 3);
         stock(ctx.sql, USER_ID, 'lure-great', 3);
+        stock(ctx.sql, USER_ID, 'map-scrap-basic', 3);
         const nick = await p.call('PATCH', `/api/creatures/${p.starterId}`, {
           nickname: 'Zorblax',
         });
         expect(nick.status).toBe(200);
         const trip = tripOf(
-          await send(p, p.starterId, 'long', [owned('lure-great'), buy('map-scrap-basic')]),
+          await send(p, p.starterId, 'long', [owned('lure-great'), owned('map-scrap-basic')]),
         );
         ctx.clock.t = trip.endsAt;
         const seen = (await state(p)).expeditions[0];
@@ -1466,8 +1492,8 @@ describe('the analytics of expeditions', () => {
           destination: 'tidepools',
           duration: 'long',
           supplies: ['lure-great', 'map-scrap-basic'],
-          bought: 1,
         });
+        expect(JSON.parse(send1?.props_json ?? '{}')).not.toHaveProperty('bought');
         for (const e of events) expect(e.props_json.length).toBeLessThanOrEqual(1_536);
       },
       { tripRng: constantRng(draw), rng: createSeededRng('analytics-rng') },

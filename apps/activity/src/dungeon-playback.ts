@@ -5,6 +5,7 @@
  * what players typed).
  */
 import { dungeonContent, roomModifier, type Gimmick } from '@creatures/game';
+import { groupSupplies } from './claim-view';
 import { partsEntries, partsText } from './gear-view';
 import type { GrantLoot } from './gear-types';
 import type {
@@ -268,14 +269,22 @@ export function roomIntroView(
   };
 }
 
-/** The rewards as the loot list shows them: gear, bag overflow and parts (the dungeon has no blueprints). */
+/** The rewards as the loot list shows them: gear, bag overflow, parts and supplies (the dungeon has no blueprints). */
 export function rewardLoot(rewards: DungeonRewards): GrantLoot {
   return {
     gear: rewards.gear,
     converted: rewards.converted,
     parts: rewards.parts,
     blueprints: [],
+    supplies: rewards.supplies ?? [],
   };
+}
+
+/** The supplies the run dropped, counted by id ("2 Plain Lure"), for the count badges. */
+export function droppedSupplies(
+  rewards: Pick<DungeonRewards, 'supplies'>,
+): { id: string; name: string; amount: number }[] {
+  return groupSupplies(rewards.supplies ?? []);
 }
 
 /** The streak bonus as a loot list (its parts), or null when the run paid none. */
@@ -292,6 +301,7 @@ export function noRewards(rewards: DungeonRewards): boolean {
     rewards.essence === 0 &&
     partsEntries(rewards.parts).length === 0 &&
     rewards.gear.length === 0 &&
+    (rewards.supplies ?? []).length === 0 &&
     rewards.streak === null
   );
 }

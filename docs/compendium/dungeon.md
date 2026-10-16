@@ -12,6 +12,7 @@ Read `README.md` for the tags. The dungeon has no look brief in the shipped data
 - Three rooms: two foe rooms, then a room boss. Creatures keep their HP from room to room, and knocked-out creatures stay out. `(content: glossary.json "dungeon")`
 - The **day's modifiers are the same for everyone on the server.** Each room has one. `(content: glossary.json "room-modifiers")`
 - Depth: each full clear takes you one level deeper. Every seventh depth is a **landmark**. `(content: glossary.json "depth", "landmark")`
+- **A supply from the dungeon:** a run that clears its first room carries one supply home, a lure, a map scrap, a lantern or a satchel. The first depths give plain ones; the deeper the run, the better the odds of a good or a great one. `(content: glossary.json "dungeon", "supplies")`
 
 **Compendium detail, not shipped** (place feel):
 

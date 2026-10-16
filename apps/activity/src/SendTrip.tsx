@@ -8,35 +8,33 @@ import type { DestinationsView, ExpeditionLength, Slots, SupplyPick } from './ex
 import { ChoiceMark } from './ExpeditionIcons';
 import { ExplorerPicker } from './ExplorerPicker';
 import { getSpecies } from './game';
-import { GlossaryTag } from './Glossary';
 import { HaulStrip } from './HaulStrip';
 import { LengthPicker } from './LengthPicker';
 import { clampLength, defaultExplorer, explorerOptions, sendBlocker } from './send-view';
 import { SupplyPicker } from './SupplyPicker';
-import { kitChoice, kitCost, lengthLabel, supplyName } from './trip-view';
+import { kitChoice, lengthLabel, supplyName } from './trip-view';
 
 /**
  * The send flow: pick a place from the catalogue, who goes, how long and (optionally) supplies, then
- * see the expected haul and send. Everything is shown at once, in that order, so the cost and the
- * reason a Send is disabled are always visible. A trip without supplies is free and says so. The server does the spending; this only
- * collects the choice.
+ * see the expected haul and send. Everything is shown at once, in that order, so the reason a Send is
+ * disabled is always visible. A trip is always free (supplies cannot be bought, they come from stock)
+ * and says so. The server does the work; this only collects the choice.
  */
 export function SendTrip({
   creatures,
   slots,
   stock,
-  bait,
   busy,
   view,
   viewFailed,
   timezone,
   onRetry,
   onSend,
+  onOpenWorkshop,
 }: {
   creatures: readonly Creature[];
   slots: Slots;
   stock: Readonly<Record<string, number>>;
-  bait: number;
   busy: boolean;
   /** The destinations the server listed; null while loading or when it failed. */
   view: DestinationsView | null;
@@ -45,6 +43,8 @@ export function SendTrip({
   onRetry: () => void;
   /** Sends the trip; resolves true when it started (the supplies are then put down). */
   onSend: (request: SendRequest) => Promise<boolean>;
+  /** Opens the Workshop, where supplies are crafted. */
+  onOpenWorkshop?: () => void;
 }) {
   const [placeIndex, setPlaceIndex] = useState(0);
   const [creatureId, setCreatureId] = useState<string | null>(null);
@@ -86,9 +86,7 @@ export function SendTrip({
     length: duration,
     picks,
     stock,
-    bait,
   });
-  const cost = kitCost(picks);
   const choice = kitChoice(picks);
   const names = picks.map((p) => supplyName(p.id));
 
@@ -119,25 +117,21 @@ export function SendTrip({
       <h4 class="step">
         <span class="step-n">4</span> Supplies
       </h4>
-      <SupplyPicker picks={picks} stock={stock} bait={bait} onChange={setPicks} />
+      <SupplyPicker
+        picks={picks}
+        stock={stock}
+        onChange={setPicks}
+        {...(onOpenWorkshop === undefined ? {} : { onOpenWorkshop })}
+      />
 
       <div class="send-summary">
         <p class="cost-line" aria-live="polite">
-          {cost === 0 ? (
-            <>
-              <Tag kind="badge" tone="free">
-                Free
-              </Tag>{' '}
-              {picks.length === 0
-                ? 'This trip costs nothing.'
-                : `Only supplies you already have: ${names.join(' and ')}.`}
-            </>
-          ) : (
-            <>
-              <strong>{cost}</strong> <GlossaryTag entry="bait">Bait</GlossaryTag> for{' '}
-              {names.join(' and ')}
-            </>
-          )}
+          <Tag kind="badge" tone="free">
+            Free
+          </Tag>{' '}
+          {picks.length === 0
+            ? 'This trip costs nothing.'
+            : `Taking ${names.join(' and ')} from your stock.`}
         </p>
         {choice !== 'none' && (
           <p class="choice-line">

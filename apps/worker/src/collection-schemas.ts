@@ -28,9 +28,10 @@ const DESTINATION_IDS = expeditionContent.destinations.map((d) => d.id);
 const SUPPLY_IDS = expeditionContent.supplies.map((s) => s.id);
 
 /**
- * Sending a creature on an expedition. Supplies are optional (a trip without any is free): each is
- * bought with Bait now (`buy`) or taken from stock (`owned`). Which kinds can go together is a rule
- * the server checks (at most `maxSupplies`, never two of one kind).
+ * Sending a creature on an expedition. Supplies are optional (a trip without any is free) and come from
+ * stock (`owned`). `buy` is no longer allowed: it still parses so that an old client gets the clear
+ * `supplies_not_for_sale` answer. Which kinds can go together is a rule the server checks (at most
+ * `maxSupplies`, never two of one kind).
  */
 export const StartExpeditionBodySchema = v.strictObject({
   creatureId: IdSchema,

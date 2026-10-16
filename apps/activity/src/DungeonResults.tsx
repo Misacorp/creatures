@@ -7,6 +7,7 @@ import type { CountItem } from './ui/CountBadge';
 import { OutcomeBadge, RevealLater, RevealShell, useRevealSequence } from './ui/RevealShell';
 import { RewardSummary } from './ui/RewardSummary';
 import {
+  droppedSupplies,
   noRewards,
   rewardLoot,
   roomStrip,
@@ -23,6 +24,7 @@ import { DungeonNext } from './DungeonNext';
 import type { DungeonRunSummary, DungeonToday } from './dungeon-types';
 import { creatureInfoOf } from './creature-info';
 import { SmallCreature } from './SmallCreature';
+import { supplyKindOf } from './trip-view';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 
@@ -88,6 +90,12 @@ export function DungeonResults({
         ]
       : []),
     ...partCountItems(rewards.parts),
+    ...droppedSupplies(rewards).map((s) => ({
+      key: s.id,
+      icon: { kind: 'supply', id: supplyKindOf(s.id) ?? 'unknown' } as const,
+      amount: s.amount,
+      name: s.name,
+    })),
   ];
   return (
     <RevealShell
@@ -121,12 +129,14 @@ export function DungeonResults({
 
       <h4>Rewards</h4>
       {empty ? (
-        <p class="muted">Nothing this time. Clear a room to earn Bait, Essence and parts.</p>
+        <p class="muted">
+          Nothing this time. Clear a room to earn Bait, Essence, parts and a supply.
+        </p>
       ) : (
         <RewardSummary
           source={rewards}
           prefix="Rewards"
-          countsLabel="Bait, Essence and parts"
+          countsLabel="Bait, Essence, parts and supplies"
           counts={counts}
         >
           <RevealLater done={done}>

@@ -68,13 +68,11 @@ import type { PendingExpedition, SimPlayer } from './state';
  * 2. Plans new trips into the free slots (`slotsFor` the rank sum). Each slot takes the creature with
  *    the highest explorer rank (ranks open places, the 24 hour trip and the better goals), the place
  *    where the most unowned species can be found, the length that pays the most per hour until the next
- *    check-in, and supplies: those in stock first, then the ones worth buying within the Bait budget.
+ *    check-in, and the supplies in stock that help (supplies cannot be bought).
  */
 export const TRIP_POLICY = {
   /** A goal is taken when its worth ratio is at least this (basis points of 1). */
   minGoalRatioBp: 9_700,
-  /** A supply is bought when its estimated worth is at least this many basis points of its price. */
-  buyWorthBp: 3_000,
   /** What a goal that gives gear is worth extra when goals are compared, as a ratio (basis points of 1). */
   gearLikingBp: 800,
   /** While the second slot is closed, a player who checks in often takes the longest trip claimed within this many hours. */
@@ -321,57 +319,41 @@ export function supplyGain(
     }
     case 'satchel': {
       const parts = l.loot.scrap * w.scrap + (l.loot.shardBp * w.shard) / 10_000;
-      return (def.partsBp / 10_000) * parts + (def.supplyBp / 10_000) * averagePrice() + offer;
+      return (def.partsBp / 10_000) * parts + (def.supplyBp / 10_000) * averageWorth() + offer;
     }
   }
 }
 
 let cachedAverage: number | null = null;
-function averagePrice(): number {
+function averageWorth(): number {
   cachedAverage ??=
-    expeditionContent.supplies.filter((s) => s.tier === 'basic').reduce((n, s) => n + s.price, 0) /
+    expeditionContent.supplies.filter((s) => s.tier === 'basic').reduce((n, s) => n + s.worth, 0) /
     expeditionContent.supplies.filter((s) => s.tier === 'basic').length;
   return cachedAverage;
 }
 
 /**
- * The supplies a trip carries: those in stock that help, then supplies worth buying while the budget
- * lasts, best first, never two of a kind and at most `maxSupplies`. Returns the kit and the Bait it
- * costs; takes nothing from the player.
+ * The supplies a trip carries: those in stock that help, best first, never two of a kind and at most
+ * `maxSupplies`. Supplies cannot be bought, so only the stock counts. Takes nothing from the player.
  */
 export function chooseKit(
   player: SimPlayer,
   trip: { length: ExpeditionLength; dest: DestinationDef; stars: number },
-  budget: number,
-): { kit: string[]; bought: string[]; cost: number } {
+): string[] {
   const options = expeditionContent.supplies
-    .map((def) => {
-      const owned = (player.supplies[def.id] ?? 0) > 0;
-      const gain = supplyGain(player, def, trip);
-      return { def, owned, gain, score: gain - (owned ? 0 : def.price) };
-    })
-    .filter((o) =>
-      o.owned
-        ? o.gain > 0
-        : o.def.price <= budget && o.gain * 10_000 >= o.def.price * TRIP_POLICY.buyWorthBp,
-    )
-    .sort((a, b) => b.score - a.score || (a.def.id < b.def.id ? -1 : 1));
+    .filter((def) => (player.supplies[def.id] ?? 0) > 0)
+    .map((def) => ({ def, gain: supplyGain(player, def, trip) }))
+    .filter((o) => o.gain > 0)
+    .sort((a, b) => b.gain - a.gain || (a.def.id < b.def.id ? -1 : 1));
   const kit: string[] = [];
-  const bought: string[] = [];
   const kinds = new Set<string>();
-  let cost = 0;
   for (const o of options) {
     if (kit.length >= RULES.expeditions.maxSupplies) break;
     if (kinds.has(o.def.kind)) continue;
-    if (!o.owned && cost + o.def.price > budget) continue;
     kinds.add(o.def.kind);
     kit.push(o.def.id);
-    if (!o.owned) {
-      bought.push(o.def.id);
-      cost += o.def.price;
-    }
   }
-  return { kit, bought, cost };
+  return kit;
 }
 
 // --- Sending ---
@@ -382,17 +364,14 @@ function twistEffect(id: string | null): TwistEffect | null {
 }
 
 /**
- * Sends trips into the free slots with a Bait budget for supplies. Returns the Bait spent on supplies.
- * The explorer is the idle creature of the highest rank (ties by element gap, then id).
+ * Sends trips into the free slots, each with the supplies in stock that help. The explorer is the idle
+ * creature of the highest rank (ties by element gap, then id).
  */
 export function sendTrips(
   player: SimPlayer,
   ctx: TripContext,
-  budget: number,
   explorerOrder: (idle: OwnedCreature[]) => OwnedCreature[],
-): number {
-  let left = budget;
-  let spent = 0;
+): void {
   const away = new Set(player.expeditions.map((e) => e.explorerId));
   const idle = explorerOrder(
     player.creatures.filter((c) => !away.has(c.id) && !onJob(player, c.id)),
@@ -400,41 +379,27 @@ export function sendTrips(
   const free = slotsOfPlayer(player) - player.expeditions.length;
   const special = weeklySpecial(ctx.weekIndex);
   const senders = idle.slice(0, Math.max(0, free));
-  for (const [k, creature] of senders.entries()) {
+  for (const creature of senders) {
     const rank = rankOfCreature(player, creature.id);
     const dest = chooseDestination(player, creature, ctx);
     const length = chooseLength(player, rank, ctx.hour);
     const stars = familiarityStars(dest, famOf(player, creature.id, dest.id));
-    // Each trip may use an equal share of what is left of the budget.
-    const picked = chooseKit(
-      player,
-      { length, dest, stars },
-      Math.floor(left / (senders.length - k)),
-    );
-    for (const id of picked.kit) {
-      if (picked.bought.includes(id)) {
-        player.stats.supplies_bought += 1;
-      } else {
-        player.supplies[id] = (player.supplies[id] ?? 0) - 1;
-      }
-    }
-    player.stats.supplies_used += picked.kit.length;
-    left -= picked.cost;
-    spent += picked.cost;
+    const picked = chooseKit(player, { length, dest, stars });
+    for (const id of picked) player.supplies[id] = (player.supplies[id] ?? 0) - 1;
+    player.stats.supplies_used += picked.length;
     const twist = special.destination === dest.id ? special.twist : null;
-    const kit = kitOf(picked.kit);
+    const kit = kitOf(picked);
     player.expeditions.push({
       explorerId: creature.id,
       length,
       destination: dest.id,
-      kit: picked.kit,
+      kit: picked,
       rolls: tripRolls(length, kit, twist === null ? null : twist.effect),
       twist: twist === null ? null : twist.id,
       startHour: ctx.hour,
       endsAtHour: ctx.hour + tripMs(length, rank) / HOUR_MS,
     });
   }
-  return spent;
 }
 
 // --- Claiming ---
@@ -610,7 +575,9 @@ function payTrip(
     if (ctx.gear !== undefined) {
       addParts(player, gift.parts, ctx);
       for (const id of gift.supplies) {
-        if (supplyDef(id) !== undefined) player.supplies[id] = (player.supplies[id] ?? 0) + 1;
+        if (supplyDef(id) === undefined) continue;
+        player.supplies[id] = (player.supplies[id] ?? 0) + 1;
+        player.stats.supplies_gift += 1;
       }
     }
   }

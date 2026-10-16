@@ -71,7 +71,7 @@ describe('the gift of a new rank', () => {
     expect(view?.rank).toBe(worked.xp?.rank);
     expect(view?.title).toBe(`Rank ${String(worked.xp?.rank)} gift`);
     expect(view?.lines.map((l) => l.key)).toEqual(['bait', 'scrap']);
-    expect(view?.lines.map((l) => l.text)).toEqual(['15 Bait', '2 Scrap']);
+    expect(view?.lines.map((l) => l.text)).toEqual(['4 Bait', '2 Scrap']);
   });
 
   it('has no gift for a trip that did not raise the rank, a recall or a failure', () => {

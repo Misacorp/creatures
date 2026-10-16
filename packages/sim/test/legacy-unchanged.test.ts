@@ -17,6 +17,10 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * the new reward slot (a blueprint or pre-upgraded gear) and the jackpot Essence the worker pays. The profiles, income models and journey
  * recorder still change nothing: only the raid rules moved. The headline numbers in the fixture show
  * the shift (more finales won, more gear and blueprints).
+ *
+ * Re-pinned again on 2026-10-16 (B-011, the supplies rework), on purpose: supplies cannot be bought
+ * (no Bait goes to them, so the archetypes train more), the dungeon drops a supply and a scrap on
+ * every run, the workshop makes supplies and the recipes are cheaper.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

@@ -80,7 +80,7 @@ Nine enchants. Each one goes on a piece of gear. An item has one enchant slot, a
 
 ## Supplies
 
-Twelve supplies in four kinds, each in three tiers: basic, good and great. A trip carries up to two supplies, never two of the same kind `(content: glossary.json "supplies")`. Each supply can be bought, crafted or found `(content)`. The best tier of each kind always brings a choice at the end of the trip `(content)`.
+Twelve supplies in four kinds, each in three tiers: basic, good and great. A trip carries up to two supplies, never two of the same kind `(content: glossary.json "supplies")`. Supplies cannot be bought. A run of the daily dungeon drops one, trips can find them, and the Workshop crafts the kind and tier a player wants `(content: glossary.json "supplies", "dungeon", "job-supply")`. The best tier of each kind always brings a choice at the end of the trip `(content)`.
 
 | Kind      | Basic          | Good           | Great           | Flavour (basic, good, great) `(content)`                                                                                                                                             |
 | --------- | -------------- | -------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

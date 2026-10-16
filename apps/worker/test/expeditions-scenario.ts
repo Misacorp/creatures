@@ -1,5 +1,5 @@
 /**
- * One scripted play-through of expeditions v2 through the real routes: a paid send, the end-of-trip
+ * One scripted play-through of expeditions v2 through the real routes: a send with supplies, the end-of-trip
  * choice, a failed risky goal, a safe goal that works (with a journal page, a new slot and a rank-up gift), a recall,
  * the profile, the destinations and a supply made in the Workshop. `expeditions-fixtures.test.ts` checks
  * that the server still sends the shapes of the files in `apps/activity/src/fixtures`, which were
@@ -71,7 +71,8 @@ export async function runTripsScenario(ctx: CoreContext, draw: { v: number }): P
     RULES.expeditions.slots.secondAfterTrips - 1,
   );
   ctx.sql.exec(
-    "INSERT INTO supplies (user_id, supply_id, amount) VALUES (?, 'lure-great', 3)",
+    "INSERT INTO supplies (user_id, supply_id, amount) VALUES (?, 'lure-great', 3), (?, 'map-scrap-basic', 1)",
+    seeded.id,
     seeded.id,
   );
 
@@ -114,7 +115,7 @@ export async function runTripsScenario(ctx: CoreContext, draw: { v: number }): P
   const idOf = (res: Json): string => (res.body['expedition'] as { id: string }).id;
   const endOf = (res: Json): number => (res.body['expedition'] as { endsAt: number }).endsAt;
 
-  // A paid send: a supply from stock and one bought for Bait.
+  // A send with two supplies from stock (supplies cannot be bought).
   const sent = await record(
     'expedition-send',
     'POST',
@@ -122,7 +123,7 @@ export async function runTripsScenario(ctx: CoreContext, draw: { v: number }): P
     sendBody(explorer, {
       supplies: [
         { id: 'lure-great', source: 'owned' },
-        { id: 'map-scrap-basic', source: 'buy' },
+        { id: 'map-scrap-basic', source: 'owned' },
       ],
     }),
   );
@@ -174,11 +175,17 @@ export async function runTripsScenario(ctx: CoreContext, draw: { v: number }): P
     '/api/expeditions',
     sendBody(second, {
       supplies: [
-        { id: 'lure-basic', source: 'buy' },
-        { id: 'lure-good', source: 'buy' },
+        { id: 'lure-basic', source: 'owned' },
+        { id: 'lure-good', source: 'owned' },
       ],
     }),
   ); // two of a kind
+  // An old client asking to buy a supply is refused with its own error.
+  await fail(
+    'POST',
+    '/api/expeditions',
+    sendBody(second, { supplies: [{ id: 'lure-basic', source: 'buy' }] }),
+  ); // supplies cannot be bought
   // A safe goal that works, with a journal page and the second slot opening.
   const next = await record(
     'expedition-send-2',
