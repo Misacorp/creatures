@@ -9,7 +9,6 @@ import {
   canCarry,
   kitBlocker,
   kitChoice,
-  kitCost,
   lengthLabel,
   lengthOptions,
   needsOfferRefresh,
@@ -54,13 +53,14 @@ describe('trip lengths', () => {
 });
 
 describe('supplies', () => {
-  it('lists every supply of the content with its price, stock and the effect in words', () => {
+  it('lists every supply of the content with its stock and the effect in words', () => {
     const options = supplyOptions({ 'lure-good': 2 });
     expect(options).toHaveLength(expeditionContent.supplies.length);
     const def = supplyDef('lure-good');
     if (def?.kind !== 'lure') throw new Error('no lure-good');
     const lure = options.find((o) => o.id === 'lure-good');
-    expect(lure).toMatchObject({ name: def.name, owned: 2, price: def.price });
+    expect(lure).toMatchObject({ name: def.name, owned: 2 });
+    expect(lure).not.toHaveProperty('price');
     expect(lure?.effect).toBe(def.blurb);
     expect(options.find((o) => o.id === 'lure-basic')?.owned).toBe(0);
   });
@@ -82,48 +82,37 @@ describe('supplies', () => {
   });
 
   it('carries one supply of a kind, replaces it with another tier, and refuses one too many', () => {
-    let picks = setSupply([], 'lure-basic', 'buy');
-    expect(picks).toEqual([{ id: 'lure-basic', source: 'buy' }]);
+    let picks = setSupply([], 'lure-basic', 'owned');
+    expect(picks).toEqual([{ id: 'lure-basic', source: 'owned' }]);
     picks = setSupply(picks, 'lure-good', 'owned');
     expect(picks).toEqual([{ id: 'lure-good', source: 'owned' }]);
     // Fill the places with other kinds, as many as the rules allow.
     const kinds = ['map-scrap', 'lantern', 'satchel'].map((k) => `${k}-basic`);
     for (const id of kinds.slice(0, RULES.expeditions.maxSupplies - 1)) {
-      picks = setSupply(picks, id, 'buy');
+      picks = setSupply(picks, id, 'owned');
     }
     expect(picks).toHaveLength(RULES.expeditions.maxSupplies);
     const extra = kinds[RULES.expeditions.maxSupplies - 1];
     if (extra !== undefined) {
-      expect(setSupply(picks, extra, 'buy')).toEqual(picks);
+      expect(setSupply(picks, extra, 'owned')).toEqual(picks);
       expect(canCarry(picks, extra)).toBe(false);
     }
     // A supply of a kind already carried can still be swapped.
     expect(canCarry(picks, 'lure-great')).toBe(true);
-    expect(setSupply(picks, 'lure-great', 'buy').map((p) => p.id)).toContain('lure-great');
+    expect(setSupply(picks, 'lure-great', 'owned').map((p) => p.id)).toContain('lure-great');
     // Taking it off, and looking it up.
     expect(setSupply(picks, 'lure-good', null).some((p) => p.id === 'lure-good')).toBe(false);
     expect(pickFor(picks, 'lure-good')?.source).toBe('owned');
-    expect(setSupply(picks, 'no-such-supply', 'buy')).toEqual(picks);
-  });
-
-  it('charges Bait only for supplies to buy, from the content prices', () => {
-    expect(kitCost([])).toBe(0);
-    expect(kitCost([{ id: 'lure-good', source: 'owned' }])).toBe(0);
-    expect(
-      kitCost([
-        { id: 'lure-good', source: 'buy' },
-        { id: 'map-scrap-basic', source: 'buy' },
-      ]),
-    ).toBe((supplyDef('lure-good')?.price ?? -1) + (supplyDef('map-scrap-basic')?.price ?? -1));
+    expect(setSupply(picks, 'no-such-supply', 'owned')).toEqual(picks);
   });
 
   it('knows what choice a kit gives', () => {
     expect(kitChoice([])).toBe('none');
-    expect(kitChoice([{ id: 'lure-basic', source: 'buy' }])).toBe('likely');
+    expect(kitChoice([{ id: 'lure-basic', source: 'owned' }])).toBe('likely');
     expect(
       kitChoice([
-        { id: 'lure-basic', source: 'buy' },
-        { id: 'lantern-great', source: 'buy' },
+        { id: 'lure-basic', source: 'owned' },
+        { id: 'lantern-great', source: 'owned' },
       ]),
     ).toBe('guaranteed');
   });
@@ -136,8 +125,8 @@ describe('supplies', () => {
     expect(
       kitBlocker(
         [
-          { id: 'lure-good', source: 'buy' },
-          { id: 'lure-basic', source: 'buy' },
+          { id: 'lure-good', source: 'owned' },
+          { id: 'lure-basic', source: 'owned' },
         ],
         {},
       ),

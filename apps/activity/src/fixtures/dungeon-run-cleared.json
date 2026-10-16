@@ -1,6 +1,6 @@
 {
   "run": {
-    "id": "0f630eab-f47e-4887-b5e4-d7e1529cfa94",
+    "id": "8a906b41-a31b-4720-b100-fe11ee159693",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -12,7 +12,7 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "6a9fb75e-1bc1-4dd9-965b-0dc8267508b2",
+        "id": "29e47085-5309-4f73-abbe-ff73ad84d9cd",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -22,7 +22,7 @@
         "hpEnd": 240
       },
       {
-        "id": "dafa05f3-b30b-45c0-adf0-885ff3bfe1a4",
+        "id": "a66820a0-b53a-4fea-a64e-bdef1f5b4075",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
@@ -32,7 +32,7 @@
         "hpEnd": 200
       },
       {
-        "id": "eb79d11c-7db9-4931-806a-b5d8977924e1",
+        "id": "f3a4e314-4688-4100-b0ae-117850bb4c39",
         "name": "Cindle",
         "speciesId": "cindle",
         "element": "ember",
@@ -110,6 +110,7 @@
       },
       "gear": [],
       "converted": [],
+      "supplies": ["lantern-basic"],
       "landmark": false,
       "streak": null
     }
@@ -148,7 +149,7 @@
     "canRun": false,
     "blocked": "already_run",
     "last": {
-      "id": "0f630eab-f47e-4887-b5e4-d7e1529cfa94",
+      "id": "8a906b41-a31b-4720-b100-fe11ee159693",
       "day": "2027-01-12",
       "attempt": 1,
       "depth": 1,
@@ -160,7 +161,7 @@
       "createdAt": 1799755200000,
       "team": [
         {
-          "id": "6a9fb75e-1bc1-4dd9-965b-0dc8267508b2",
+          "id": "29e47085-5309-4f73-abbe-ff73ad84d9cd",
           "name": "Sproutle",
           "speciesId": "sproutle",
           "element": "grove",
@@ -170,7 +171,7 @@
           "hpEnd": 240
         },
         {
-          "id": "dafa05f3-b30b-45c0-adf0-885ff3bfe1a4",
+          "id": "a66820a0-b53a-4fea-a64e-bdef1f5b4075",
           "name": "Splashet",
           "speciesId": "splashet",
           "element": "tide",
@@ -180,7 +181,7 @@
           "hpEnd": 200
         },
         {
-          "id": "eb79d11c-7db9-4931-806a-b5d8977924e1",
+          "id": "f3a4e314-4688-4100-b0ae-117850bb4c39",
           "name": "Cindle",
           "speciesId": "cindle",
           "element": "ember",
@@ -258,14 +259,15 @@
         },
         "gear": [],
         "converted": [],
+        "supplies": ["lantern-basic"],
         "landmark": false,
         "streak": null
       }
     },
     "lastTeam": [
-      "6a9fb75e-1bc1-4dd9-965b-0dc8267508b2",
-      "dafa05f3-b30b-45c0-adf0-885ff3bfe1a4",
-      "eb79d11c-7db9-4931-806a-b5d8977924e1"
+      "29e47085-5309-4f73-abbe-ff73ad84d9cd",
+      "a66820a0-b53a-4fea-a64e-bdef1f5b4075",
+      "f3a4e314-4688-4100-b0ae-117850bb4c39"
     ],
     "draftTeam": null
   }

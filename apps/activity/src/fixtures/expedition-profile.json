@@ -179,28 +179,28 @@
   },
   "explorers": [
     {
-      "creatureId": "1464897c-b3a6-4ad3-b05a-f4534c47dea4",
+      "creatureId": "06a002e2-d493-4a49-97c7-3bba83b7ff01",
       "rank": 4,
       "xp": 2200,
       "nextRankXp": 4500,
       "trips": 1
     },
     {
-      "creatureId": "ddcabaa8-4a31-4b66-98cd-94de571b6fbe",
+      "creatureId": "2c75d703-8931-420f-8f85-b46d20f5cbac",
       "rank": 1,
       "xp": 0,
       "nextRankXp": 200,
       "trips": 0
     },
     {
-      "creatureId": "3eafad75-f34c-4b7c-a017-0d4f12fcb260",
+      "creatureId": "5cf57332-48ef-4202-a823-da5e5a49cc01",
       "rank": 1,
       "xp": 0,
       "nextRankXp": 200,
       "trips": 0
     },
     {
-      "creatureId": "acbfb960-51ee-46a8-99fe-b27127109826",
+      "creatureId": "c30f9fa8-ea76-43c1-9f09-a1f5c6e5d296",
       "rank": 1,
       "xp": 0,
       "nextRankXp": 200,

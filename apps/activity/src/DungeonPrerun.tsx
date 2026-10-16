@@ -3,7 +3,7 @@ import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from './Glossary';
 import { DepthProgress } from './DepthProgress';
 import { roomPanels } from './dungeon-rooms';
-import { landmarkLine, streakLabel, streakPips } from './dungeon-text';
+import { landmarkLine, streakLabel, streakPips, supplyPromiseLine } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
@@ -29,6 +29,7 @@ export function DungeonPrerun({
   children?: ComponentChildren;
 }) {
   const panels = roomPanels(today.modifiers);
+  const promise = supplyPromiseLine(today.depth);
   return (
     <section class="raid-section dungeon-card" aria-labelledby="dungeon-heading">
       <div class="dungeon-head">
@@ -80,6 +81,16 @@ export function DungeonPrerun({
         <p class="landmark-note">
           <Sprite sprite={glyphOrUnknown('flag')} scale={2} />
           <span>{landmarkLine(today.landmarkBoss)}</span>
+        </p>
+      )}
+      {promise !== null && (
+        <p class="supply-promise">
+          <Sprite sprite={glyphOrUnknown('satchel')} scale={2} />
+          <span>
+            <GlossaryTag entry="supplies" look="text">
+              {promise}
+            </GlossaryTag>
+          </span>
         </p>
       )}
       <DepthProgress depth={today.depth} />

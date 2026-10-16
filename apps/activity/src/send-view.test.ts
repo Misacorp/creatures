@@ -131,7 +131,6 @@ describe('why a trip cannot be sent', () => {
     length: 'long' as const,
     picks: [],
     stock: {},
-    bait: 100,
   };
 
   it('is fine for a free trip', () => {
@@ -159,17 +158,13 @@ describe('why a trip cannot be sent', () => {
     );
   });
 
-  it('says when supplies are missing or too dear', () => {
+  it('says when a supply is missing from the stock, and lets a trip with the supplies in stock go', () => {
     expect(sendBlocker({ ...base, picks: [{ id: 'lure-good', source: 'owned' }] })).toContain(
       'no Sweet Lure',
-    );
-    expect(sendBlocker({ ...base, bait: 5, picks: [{ id: 'lure-good', source: 'buy' }] })).toMatch(
-      /Not enough Bait: the supplies cost \d+ and you have 5/,
     );
     expect(
       sendBlocker({
         ...base,
-        bait: 5,
         picks: [{ id: 'lure-good', source: 'owned' }],
         stock: { 'lure-good': 1 },
       }),

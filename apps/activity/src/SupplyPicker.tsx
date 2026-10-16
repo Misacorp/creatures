@@ -10,18 +10,18 @@ import {
   setSupply,
   supplyOptions,
   type SupplyOption,
-  type SupplySource,
 } from './trip-view';
 
 interface Props {
   picks: readonly SupplyPick[];
   stock: Readonly<Record<string, number>>;
-  bait: number;
   /** Replaces the picks (the caller holds them). */
   onChange: (picks: SupplyPick[]) => void;
+  /** Opens the Workshop, where supplies are crafted; absent: no shortcut is shown. */
+  onOpenWorkshop?: () => void;
 }
 
-/** One supply: what it does, whether it makes the end-of-trip choice likely or certain, and how to take it. */
+/** One supply you have: what it does, whether it makes the end-of-trip choice likely or certain, and a button to take it. */
 function SupplyRow({
   option,
   pick,
@@ -35,9 +35,6 @@ function SupplyRow({
   picks: readonly SupplyPick[];
   onChange: Props['onChange'];
 }) {
-  const choose = (source: SupplySource): void => {
-    onChange(setSupply(picks, option.id, pick?.source === source ? null : source));
-  };
   return (
     <li class={`supply-row${pick === undefined ? '' : ' on'}`}>
       <div class="supply-text">
@@ -46,31 +43,17 @@ function SupplyRow({
         <ChoiceMark choice={option.choice} />
       </div>
       <div class="supply-buttons">
-        {option.owned > 0 && (
-          <button
-            type="button"
-            class={pick?.source === 'owned' ? 'primary' : ''}
-            aria-pressed={pick?.source === 'owned'}
-            disabled={!carriable}
-            aria-label={`Use your ${option.name} (you have ${String(option.owned)})`}
-            onClick={() => {
-              choose('owned');
-            }}
-          >
-            Use ({option.owned})
-          </button>
-        )}
         <button
           type="button"
-          class={pick?.source === 'buy' ? 'primary' : ''}
-          aria-pressed={pick?.source === 'buy'}
+          class={pick === undefined ? '' : 'primary'}
+          aria-pressed={pick !== undefined}
           disabled={!carriable}
-          aria-label={`Buy ${option.name} for ${String(option.price)} Bait`}
+          aria-label={`Take your ${option.name} (you have ${String(option.owned)})`}
           onClick={() => {
-            choose('buy');
+            onChange(setSupply(picks, option.id, pick === undefined ? 'owned' : null));
           }}
         >
-          Buy {option.price} Bait
+          Take ({option.owned})
         </button>
       </div>
     </li>
@@ -78,22 +61,31 @@ function SupplyRow({
 }
 
 /**
- * The optional supplies of a trip, grouped by kind: take one from your stock (free) or buy it with Bait
- * (the price is on the button). A trip carries at most two supplies and never two of a kind; picking the
- * same one again takes it off. A supply that makes the end-of-trip choice certain says "Choice guaranteed".
+ * The optional supplies of a trip: the ones in your stock, grouped by kind. Supplies cannot be bought;
+ * they come from the daily dungeon, from trips and from the Workshop, so with none in stock this says
+ * where to get them. A trip carries at most two supplies and never two of a kind; picking the same
+ * one again takes it off. A supply that makes the end-of-trip choice certain says "Choice guaranteed".
  */
-export function SupplyPicker({ picks, stock, bait, onChange }: Props) {
-  const options = supplyOptions(stock);
+export function SupplyPicker({ picks, stock, onChange, onOpenWorkshop }: Props) {
+  const options = supplyOptions(stock).filter((o) => o.owned > 0);
   const kinds = [...new Set(options.map((o) => o.kind))];
   return (
     <div class="supply-picker">
       <p class="muted">
-        Optional. Trips without supplies are free.{' '}
+        Optional: trips are always free.{' '}
         <GlossaryTag entry="supplies" look="text">
           What are supplies?
         </GlossaryTag>{' '}
-        You have {bait} <GlossaryTag entry="bait">Bait</GlossaryTag>.
+        You get them from the daily dungeon and from trips, or craft them in the Workshop.
       </p>
+      {options.length === 0 && <p class="empty muted">You have no supplies right now.</p>}
+      {onOpenWorkshop !== undefined && (
+        <p>
+          <button type="button" onClick={onOpenWorkshop}>
+            Craft supplies in the Workshop
+          </button>
+        </p>
+      )}
       {kinds.map((kind) => (
         <section key={kind} class="supply-kind" aria-label={kindName(kind)}>
           <h5 class="pix supply-kind-name">
