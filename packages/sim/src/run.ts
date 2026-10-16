@@ -77,7 +77,7 @@ export function defaultSettings(
     curveServers: quick ? 6 : 60,
     suppliesServers: quick ? 6 : 30,
     gearServers: quick ? 4 : 20,
-    creaturesServers: quick ? 4 : 12,
+    creaturesServers: quick ? 2 : 12,
     counts: [...SWEEP_COUNTS],
     ...(overrides.income === undefined ? {} : { income: overrides.income }),
   };
