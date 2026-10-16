@@ -13,7 +13,8 @@
         "name": "Lightning Rod"
       }
     ],
-    "finaleRounds": 12
+    "finaleRounds": 12,
+    "retreat": null
   },
   "rank": 6,
   "effectiveRank": 3,

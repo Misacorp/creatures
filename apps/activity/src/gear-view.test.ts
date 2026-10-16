@@ -27,6 +27,7 @@ import {
   jobResultRarity,
   jobTitle,
   lootIsEmpty,
+  lootItemName,
   missingParts,
   openJobs,
   partsText,
@@ -384,6 +385,27 @@ describe('grants and loot', () => {
       finale: null,
       festival: null,
     });
+  });
+
+  it('names a dropped item with "+N" when it arrived upgraded, and plainly otherwise', () => {
+    expect(lootItemName({ baseId: 'trail-charm', level: 3 })).toBe(itemLabel('trail-charm', 3));
+    expect(lootItemName({ baseId: 'trail-charm', level: 3 })).toMatch(/ \+3$/);
+    // A grant stored before the reward slot has no level, and +0 is not shown.
+    expect(lootItemName({ baseId: 'trail-charm' })).toBe(gearName('trail-charm'));
+    expect(lootItemName({ baseId: 'trail-charm', level: 0 })).toBe(gearName('trail-charm'));
+  });
+
+  it('reads the level a finale item arrived with, and still reads grants without one', () => {
+    const w1 = grantsForWeek(gear.grants, '2027-W01');
+    expect(w1.finale?.source).toBe('raid_finale');
+    expect(w1.finale?.gear[0]?.level).toBe(1);
+    expect(w1.festival?.gear[0]?.level).toBeUndefined();
+    const bad = JSON.parse(JSON.stringify(gearState)) as typeof gearState;
+    const record = bad.grants.find((g) => g.source === 'raid_finale');
+    (record?.gear[0] as { level: unknown }).level = -2;
+    expect(() => parseGearState(bad)).toThrow();
+    (record?.gear[0] as { level: unknown }).level = 'two';
+    expect(() => parseGearState(bad)).toThrow();
   });
 
   it('knows an empty grant', () => {

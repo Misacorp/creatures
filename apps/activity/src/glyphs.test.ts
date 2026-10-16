@@ -2,6 +2,7 @@ import { content, type BossDef } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import {
   BUNDLED_GLYPHS,
+  CHAIN_GLYPH,
   GIMMICK_GLYPH_OPS,
   GLYPH_SIZE,
   TURN_ORDER_GLYPHS,
@@ -19,6 +20,12 @@ const ALL_OPS: Record<GimmickOp, true> = {
   silence_ends: true,
   reflect_first_reaction: true,
   strike_highest_atk: true,
+  sweep: true,
+  barrage: true,
+  slam: true,
+  lance: true,
+  pincer: true,
+  charge: true,
 };
 
 describe('glyph data', () => {
@@ -60,6 +67,11 @@ describe('gimmick glyphs', () => {
         expect(gimmickGlyph(g.op)).toBe(glyph(g.op));
       }
     }
+  });
+
+  it('draws a strike that chains as its own bolt', () => {
+    expect(glyph(CHAIN_GLYPH)).toBeDefined();
+    expect(glyph(CHAIN_GLYPH)).not.toBe(glyph('strike_highest_atk'));
   });
 
   it('falls back to a plain glyph for an op it does not know', () => {

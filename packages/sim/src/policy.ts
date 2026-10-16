@@ -1,9 +1,11 @@
-import { RULES, discountedTrainingCost } from '@creatures/game';
+import { RULES, discountedTrainingCost, int, type Rng } from '@creatures/game';
 import { CATCHABLE, byPowerDesc, creaturePower, speciesOf, type OwnedCreature } from './data';
 
 /**
- * The spending policy every simulated player follows (archetypes differ only in how often they
- * leet and check in, never in how they spend).
+ * The spending policy of a simulated player. Today's archetypes all follow it as it is written here
+ * (they differ only in how often they leet and check in); a player profile (`profiles.ts`) turns its
+ * parts into dials: the share of the spare Bait that supplies may use, whom to train (`TrainingPlan`),
+ * whether to push evolutions, and how often to send trips and work the gear.
  *
  * At each check-in, in this order:
  * 1. Claim finished expeditions and take an end-of-trip goal that costs no waiting (see `trips.ts`).
@@ -44,17 +46,38 @@ export function isPreEvolution(c: OwnedCreature): boolean {
   return evo !== undefined && c.level < evo.level;
 }
 
+/** How a player picks the creature to train next (a profile's training dials). */
+export interface TrainingPlan {
+  /** The creatures that share the Bait: the strongest 3 or 6, or any trainable creature (`spread`). */
+  focus: 3 | 6 | 'spread';
+  /** Rush a creature that is working towards its evolution before levelling the rest. */
+  evolutionPush: boolean;
+}
+
+/** Today's policy: the top 3, with the evolution push. */
+export const LEGACY_TRAINING: TrainingPlan = { focus: 3, evolutionPush: true };
+
 /**
- * The creature to train next, or null if nothing can be trained. Of the player's 3 strongest
- * trainable creatures, the one furthest along (highest level) among those that still have to
- * reach their evolution level goes first: players push one creature to its evolution before
- * starting on the next, so a creature caught today does not take over the training from the one
- * that is almost there. When none of the three is working towards an evolution, the weakest
- * (lowest level) goes first, so the team levels up evenly. Ties go to the stronger creature.
+ * The creature to train next, or null if nothing can be trained. Of the player's `focus` strongest
+ * trainable creatures (3 by default), the one furthest along (highest level) among those that still
+ * have to reach their evolution level goes first when the plan pushes evolutions: players push one
+ * creature to its evolution before starting on the next, so a creature caught today does not take
+ * over the training from the one that is almost there. When none of them is working towards an
+ * evolution (or the plan does not push), the weakest (lowest level) goes first, so the team levels up
+ * evenly. Ties go to the stronger creature. With focus `spread` any trainable creature may be picked:
+ * one drawn from `rng` (the player trains whatever they fancy); without an `rng` the weakest goes.
  */
-export function chooseTrainee(creatures: readonly OwnedCreature[]): OwnedCreature | null {
-  const top = byPowerDesc(creatures.filter(isTrainable)).slice(0, 3);
-  const evolvers = top.filter(isPreEvolution);
+export function chooseTrainee(
+  creatures: readonly OwnedCreature[],
+  plan: TrainingPlan = LEGACY_TRAINING,
+  rng?: Rng,
+): OwnedCreature | null {
+  const trainable = byPowerDesc(creatures.filter(isTrainable));
+  if (plan.focus === 'spread' && rng !== undefined) {
+    return trainable.length === 0 ? null : (trainable[int(rng, trainable.length)] ?? null);
+  }
+  const top = plan.focus === 'spread' ? trainable : trainable.slice(0, plan.focus);
+  const evolvers = plan.evolutionPush ? top.filter(isPreEvolution) : [];
   const pool = evolvers.length > 0 ? evolvers : top;
   const towardsEvolution = evolvers.length > 0;
   let best: OwnedCreature | null = null;

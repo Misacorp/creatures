@@ -2,6 +2,8 @@
   "phase": "phase1",
   "outcome": "cleared",
   "close": true,
+  "retreated": true,
+  "enraged": false,
   "rounds": 10,
   "maxRounds": 10,
   "boss": {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { content } from '@creatures/game';
+import { content, type BossDef } from '@creatures/game';
 import {
   INTRO_LIVE_MS,
   INTRO_REPLAY_MS,
@@ -10,6 +10,7 @@ import {
   beatEnds,
   beatTiming,
   bossWarnings,
+  isBossAction,
   needsCreature,
   planRound,
   planRounds,
@@ -258,12 +259,25 @@ describe('prefix safety of the pacing', () => {
 
 describe('bossWarnings', () => {
   it('says Undertow hits the front zone on rounds 3, 6, 9 and 12', () => {
-    const tidal = boss('tidal-colossus');
+    // A frozen boss with Undertow alone, so the schedule of this one move is what is tested.
+    const undertowOnly: BossDef = {
+      ...boss('tidal-colossus'),
+      gimmicks: [
+        {
+          id: 'undertow',
+          name: 'Undertow',
+          trigger: { every: 3 },
+          op: 'hit_zone',
+          zone: 'front',
+          power: 8_000,
+        },
+      ],
+    };
     const hits = Array.from({ length: 12 }, (_, i) => i + 1).filter(
-      (r) => bossWarnings(tidal, r).length > 0,
+      (r) => bossWarnings(undertowOnly, r).length > 0,
     );
     expect(hits).toEqual([3, 6, 9, 12]);
-    expect(bossWarnings(tidal, 6)).toEqual([
+    expect(bossWarnings(undertowOnly, 6)).toEqual([
       {
         gimmick: 'undertow',
         name: 'Undertow',
@@ -273,12 +287,52 @@ describe('bossWarnings', () => {
     ]);
   });
 
+  it('knows the shipped Tidal Colossus: Undertow, Riptide and the Great Wave gathering and landing', () => {
+    const tidal = boss('tidal-colossus');
+    const ids = (r: number) => bossWarnings(tidal, r).map((w) => w.gimmick);
+    expect(ids(1)).toEqual([]);
+    expect(ids(3)).toEqual(['undertow']);
+    expect(ids(4)).toEqual(['riptide', 'great-wave']);
+    expect(ids(12)).toEqual(['undertow', 'riptide']);
+    expect(bossWarnings(tidal, 4)[0]?.target).toEqual({ kind: 'lane', lane: 'random' });
+    // The charge is gathering in the round it is announced (4) and lands in round 5, on the
+    // sweep's walk: the first firing hits the Middle row, the second the Back row.
+    expect(bossWarnings(tidal, 4)[1]?.target).toEqual({
+      kind: 'charge',
+      stage: 'gathering',
+      inner: { kind: 'zone', zone: 'middle' },
+    });
+    expect(bossWarnings(tidal, 5)[0]?.target).toEqual({
+      kind: 'charge',
+      stage: 'landing',
+      inner: { kind: 'zone', zone: 'middle' },
+    });
+    expect(bossWarnings(tidal, 10)[0]?.target).toEqual({
+      kind: 'charge',
+      stage: 'landing',
+      inner: { kind: 'zone', zone: 'back' },
+    });
+  });
+
   it('knows the other bosses: the strongest every round, both ends every 2nd, the reflect trap', () => {
-    expect(bossWarnings(boss('storm-sovereign'), 1)[0]?.target).toEqual({ kind: 'strongest' });
+    expect(bossWarnings(boss('storm-sovereign'), 1)[0]?.target).toEqual({
+      kind: 'strongest',
+      jumps: 2,
+    });
     expect(bossWarnings(boss('storm-sovereign'), 12)[0]?.op).toBe('strike_highest_atk');
+    expect(bossWarnings(boss('storm-sovereign'), 4)[1]?.target).toEqual({
+      kind: 'slam',
+      aim: 'strongest',
+    });
     const thorn = boss('thornmother');
-    expect([1, 2, 3, 4].map((r) => bossWarnings(thorn, r).length)).toEqual([0, 1, 0, 1]);
+    expect([1, 2, 3, 4].map((r) => bossWarnings(thorn, r).map((w) => w.gimmick))).toEqual([
+      [],
+      ['bramble-bind'],
+      ['briar-pincer'],
+      ['bramble-bind', 'seed-burst'],
+    ]);
     expect(bossWarnings(thorn, 2)[0]?.target).toEqual({ kind: 'ends' });
+    expect(bossWarnings(thorn, 3)[0]?.target).toEqual({ kind: 'pincer', scope: 'rows' });
     expect(bossWarnings(boss('cinder-wyrm'), 5)[0]?.target).toEqual({ kind: 'reaction' });
   });
 
@@ -287,22 +341,163 @@ describe('bossWarnings', () => {
     expect(bossWarnings(tidal, 0)).toEqual([]);
     expect(bossWarnings(tidal, tidal.finaleRounds + 1)).toEqual([]);
     expect(bossWarnings(tidal, 1.5)).toEqual([]);
+    let charges = 0;
     for (const b of content.bosses) {
       const input = { ...randomInput('warnings', 4, 'finale'), boss: b };
       const result = simulateFight({ ...input, finaleAbilities: [] }, rng());
       for (let r = 1; r <= result.rounds; r++) {
         // (The engine announces the reflect trap twice a round: when it arms and at the boss's turn.)
-        const fired = [
-          ...new Set(
-            result.events
-              .filter((e) => e.t === 'gimmick' && e.round === r)
-              .map((e) => (e.t === 'gimmick' ? e.gimmick : '')),
-          ),
-        ];
-        // The boss may fall before it acts, so what fired is a subset of what was warned about.
-        const warned = bossWarnings(b, r).map((w) => w.gimmick);
-        for (const id of fired) expect(warned).toContain(id);
-        if (result.bossHpEnd > 0) expect(fired.sort()).toEqual(warned.sort());
+        // A charge is announced by a `charge` event a round before its `gimmick` event lands it:
+        // the forecast says `gathering` in the first round and `landing` in the second.
+        const landed = new Set(
+          result.events.flatMap((e) => (e.t === 'gimmick' && e.round === r ? [e.gimmick] : [])),
+        );
+        const announced = new Set(
+          result.events.flatMap((e) => (e.t === 'charge' && e.round === r ? [e.gimmick] : [])),
+        );
+        const warnings = bossWarnings(b, r);
+        const warned = (stage?: 'gathering' | 'landing') =>
+          warnings
+            .filter((w) =>
+              stage === undefined
+                ? w.target.kind !== 'charge' || w.target.stage === 'landing'
+                : w.target.kind === 'charge' && w.target.stage === stage,
+            )
+            .map((w) => w.gimmick);
+        // The boss may fall before it acts, so what landed is a subset of what was warned about.
+        for (const id of landed) expect(warned()).toContain(id);
+        for (const id of announced) expect(warned('gathering')).toContain(id);
+        charges += announced.size;
+        if (result.bossHpEnd > 0) {
+          expect([...landed].sort()).toEqual(warned().sort());
+          expect([...announced].sort()).toEqual(warned('gathering').sort());
+        }
+      }
+    }
+    // Not vacuous: charges really were announced.
+    expect(charges).toBeGreaterThan(0);
+  });
+});
+
+describe('playback of the retune events', () => {
+  const start: FightEvent = { t: 'round_start', round: 3, bossHp: 900, mark: null };
+  const charge: FightEvent = {
+    t: 'charge',
+    round: 3,
+    landing: 4,
+    gimmick: 'great-wave',
+    op: 'sweep',
+    marks: ['a', 'b'],
+    rows: ['front'],
+  };
+
+  it('treats a charge as visible, with the 600 ms wind-up in its beat', () => {
+    expect(beatTiming([start, charge], 0, 2)).toEqual({
+      ms: 600 + WINDUP_MS,
+      windupMs: WINDUP_MS,
+      visible: true,
+    });
+    expect(isBossAction(charge)).toBe(true);
+    // The same round without the charge has nothing to show in that beat.
+    expect(beatTiming([start], 0, 1).visible).toBe(false);
+  });
+
+  it('adds the charge announcement to the round: it is longer than the same round without it', () => {
+    const round: FightEvent[] = [
+      start,
+      { t: 'turn', round: 3, creature: 'a' },
+      {
+        t: 'hit',
+        round: 3,
+        creature: 'a',
+        damage: 5,
+        matchupBp: 10_000,
+        bonusBp: 0,
+        mark: null,
+        bossHp: 895,
+      },
+      { t: 'boss_hit', round: 3, source: 'attack', target: 'a', damage: 5 },
+      { t: 'round_end', round: 3, bossHp: 895 },
+    ];
+    const withCharge = [start, charge, ...round.slice(1)];
+    const plan = planRound(withCharge);
+    // The charge sits in the round-start beat, which is now visible and carries the wind-up.
+    expect(plan.beats[0]).toMatchObject({ visible: true, windupMs: WINDUP_MS });
+    expect(plan.beats[0]?.ms).toBe(600 + WINDUP_MS);
+    expect(planRound(round).beats[0]?.visible).toBe(false);
+  });
+
+  it('shows retreat, enrage, heal and cleanse, and gives retreat and enrage a banner weight', () => {
+    const enrage: FightEvent = { t: 'enrage', round: 13, first: true };
+    expect(beatTiming([{ ...start, round: 13 }, enrage], 0, 2)).toEqual({
+      ms: 600,
+      windupMs: 0,
+      visible: true,
+    });
+    const retreat: FightEvent = { t: 'retreat', round: 3, bossHp: 700 };
+    expect(beatTiming([{ t: 'turn', round: 3, creature: 'a' }, retreat], 0, 2)).toMatchObject({
+      visible: true,
+      windupMs: 0,
+    });
+    const heal: FightEvent = { t: 'heal', round: 3, supporter: 's', target: 'a', amount: 4 };
+    const cleanse: FightEvent = { t: 'cleanse', round: 3, supporter: 's', target: 'a' };
+    expect(beatTiming([heal], 0, 1)).toEqual({ ms: 500, windupMs: 0, visible: true });
+    expect(beatTiming([cleanse], 0, 1)).toEqual({ ms: 500, windupMs: 0, visible: true });
+  });
+
+  it('plays the enraged boss as one action: its volley is one beat with a wind-up', () => {
+    const hit = (target: string): FightEvent => ({
+      t: 'boss_hit',
+      round: 13,
+      source: 'enrage',
+      target,
+      damage: 90,
+    });
+    const events: FightEvent[] = [
+      { t: 'round_start', round: 13, bossHp: 10, mark: null },
+      { t: 'enrage', round: 13, first: true },
+      { t: 'boss_hit', round: 13, source: 'attack', target: 'a', damage: 10 },
+      hit('a'),
+      { t: 'knockout', round: 13, creature: 'a' },
+      hit('b'),
+      hit('c'),
+      { t: 'round_end', round: 13, bossHp: 10 },
+    ];
+    // Beats: [round_start, enrage], [attack], [the volley with its knockout], [round_end].
+    expect(beatEnds(events)).toEqual([2, 3, 7, 8]);
+    expect(beatTiming(events, 3, 7)).toMatchObject({ windupMs: WINDUP_MS, visible: true });
+    const plan = planRound(events);
+    expect(plan.totalMs).toBeGreaterThanOrEqual(MIN_ROUND_MS);
+    expect(plan.totalMs).toBeLessThanOrEqual(MAX_ROUND_MS);
+  });
+
+  it('never breaks on an event it does not know', () => {
+    const future = { t: 'from_the_future', round: 3 } as unknown as FightEvent;
+    const events: FightEvent[] = [start, future, { t: 'turn', round: 3, creature: 'a' }, future];
+    expect(() => planRound(events)).not.toThrow();
+    expect(() => planRounds(events)).not.toThrow();
+    expect(beatTiming([future], 0, 1)).toEqual({ ms: 250, windupMs: 0, visible: false });
+    expect(isBossAction(future)).toBe(false);
+    expect(roundPlaybackMs(events)).toBeGreaterThanOrEqual(MIN_ROUND_MS);
+  });
+
+  it('plans a whole fight with charges, a retreat and enrage rounds inside the round limits', () => {
+    for (const bossId of ['tidal-colossus', 'thornmother']) {
+      const base = randomInput('playback-retune', 4, 'finale');
+      const result = simulateFight(
+        {
+          ...base,
+          boss: boss(bossId),
+          finaleAbilities: [],
+          enrage: { rounds: 3, powerBp: 30_000 },
+          bossHpPool: { ...base.bossHpPool, current: base.bossHpPool.max },
+        },
+        rng(),
+      );
+      for (const plan of planRounds(result.events)) {
+        if (plan.round === 0) continue;
+        expect(plan.totalMs).toBeGreaterThanOrEqual(MIN_ROUND_MS);
+        expect(plan.totalMs).toBeLessThanOrEqual(MAX_ROUND_MS);
       }
     }
   });

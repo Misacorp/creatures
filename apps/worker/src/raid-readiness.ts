@@ -18,7 +18,7 @@
  *   The cache is an optimisation only: losing it (the object restarting) just recomputes.
  */
 import { readinessBand, type ReadinessBand, type Rng } from '@creatures/game';
-import { forecastFinale, forecastWeek, type FightInput } from '@creatures/engine';
+import { forecastFinale, forecastWeek, phaseFloorHp, type FightInput } from '@creatures/engine';
 import type { LedgerStorage } from './ledger';
 import { readWeekProgression } from './raid-ladder';
 import { buildPhaseInput } from './raid-resolve';
@@ -99,11 +99,17 @@ export class ReadinessCache {
       // The full pool and no counter-move: the forecast plays the week from the start.
       const built = buildPhaseInput(sql, week, party, 'finale', { practice: true });
       if (built === null) return null;
-      const stage = (phase: 'phase1' | 'phase2'): FightInput => ({
-        ...built.input,
-        phase,
-        finaleAbilities: [],
-      });
+      // Each stage has its own floor and no enrage (only the finale enrages and has no floor).
+      const stage = (phase: 'phase1' | 'phase2'): FightInput => {
+        const input: FightInput = {
+          ...built.input,
+          phase,
+          finaleAbilities: [],
+          bossHpFloor: phaseFloorHp(built.input.bossHpPool.max, phase),
+        };
+        delete input.enrage;
+        return input;
+      };
       return readinessBand(
         forecastWeek(
           { phase1: stage('phase1'), phase2: stage('phase2'), finale: built.input },

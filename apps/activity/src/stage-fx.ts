@@ -47,7 +47,19 @@ const FAST_FX_BP = 7_000;
 /** The effects that stay on screen longer than their beat; the rest are short and only last for the beat. */
 export type FxCue = Extract<
   Cue,
-  { kind: 'float' | 'burst' | 'ko' | 'ability' | 'banner' | 'zone' | 'strike' | 'windup' }
+  {
+    kind:
+      | 'float'
+      | 'burst'
+      | 'ko'
+      | 'ability'
+      | 'banner'
+      | 'zone'
+      | 'strike'
+      | 'windup'
+      | 'cover'
+      | 'armor';
+  }
 >;
 
 export function isFxCue(cue: Cue): cue is FxCue {
@@ -60,6 +72,8 @@ export function isFxCue(cue: Cue): cue is FxCue {
     case 'zone':
     case 'strike':
     case 'windup':
+    case 'cover':
+    case 'armor':
       return true;
     default:
       return false;
@@ -82,6 +96,8 @@ export function cueMs(cue: FxCue, speed: Speed = 1): number {
       return scaled(FX_MS.ability, speed);
     case 'banner':
     case 'strike':
+    case 'cover':
+    case 'armor':
       return scaled(FX_MS.callout, speed);
     case 'zone':
       return scaled(FX_MS.zone, speed);

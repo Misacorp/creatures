@@ -3,8 +3,10 @@ import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from './Glossary';
 import { DepthProgress } from './DepthProgress';
 import { roomPanels } from './dungeon-rooms';
-import { streakLabel, streakPips } from './dungeon-text';
+import { landmarkLine, streakLabel, streakPips } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
+import { glyphOrUnknown } from './glyphs';
+import { Sprite } from './sprites/Sprite';
 import { GameIcon } from './ui/GameIcon';
 import { PixelHeading } from './ui/PixelHeading';
 import { StreakTrack } from './ui/StreakTrack';
@@ -14,7 +16,8 @@ import { StreakTrack } from './ui/StreakTrack';
  * its "?" at the left and the streak (a row of days with a gift on the reward days; tap it for what
  * a streak is) at the right, or under the title on a phone, then the three rooms as a comic strip
  * (room 1, room 2 and the boss), each a "?" until the run, with the day's modifier on it as an icon
- * (tap it for what it does), then the depth progress to the next landmark. `children` carry on
+ * (tap it for what it does), then, at a landmark depth, the line that names the room boss, then the
+ * depth progress to the next landmark. `children` carry on
  * inside the same card (the team and the Enter button). The foes are the server's secret until the
  * run; nothing here says more than the server already shows to everyone.
  */
@@ -73,6 +76,12 @@ export function DungeonPrerun({
           </li>
         ))}
       </ol>
+      {today.landmarkBoss != null && (
+        <p class="landmark-note">
+          <Sprite sprite={glyphOrUnknown('flag')} scale={2} />
+          <span>{landmarkLine(today.landmarkBoss)}</span>
+        </p>
+      )}
       <DepthProgress depth={today.depth} />
       {children}
     </section>

@@ -1,8 +1,11 @@
 import { RULES, content } from '@creatures/game';
 import { ARCHETYPES, ARCHETYPE_CONFIG, DEFAULT_MIX, DEFAULT_SERVER_SIZE } from './archetypes';
 import type { Analysis } from './analysis';
+import { curveMarkdown } from './curve-study';
 import { WIN_RATE_MAX_DEPTH } from './dungeon-analysis';
 import { POLICY } from './policy';
+import { ROLE_STUDY_HP_BP, ROLE_STUDY_RUNS_FACTOR } from './roles';
+import { SETUP_RANK_OFFSETS } from './setup-study';
 import { TRIP_POLICY } from './trips';
 import { LONG_RUN_WEEKS, LOSS_STREAK_LIMIT } from './ladder';
 import { PITY_WEEKS, bossName, describeMix, type RunOutput } from './run';
@@ -245,6 +248,172 @@ function bossSection(a: Analysis): string {
   return parts.join('\n\n');
 }
 
+function finaleSection(a: Analysis): string {
+  const f = a.finale;
+  if (f === null) return 'Not measured.';
+  return [
+    `Typical groups (5-10 signed up, ${f.runs} raid weeks). A cleared phase leaves its floor (Phase 1: ${pct(1 - (RULES.raid.phases[0]?.clearAtLossBp ?? 0) / 10_000, 0)} of the boss's HP, Phase 2: ${pct(1 - (RULES.raid.phases[1]?.clearAtLossBp ?? 0) / 10_000, 0)}), so a finale that follows a cleared Phase 2 starts at the Phase 2 floor. Enrage: ${String(RULES.raid.enrage.rounds)} rounds at ${pct(RULES.raid.enrage.powerBp / 10_000, 0)} of the boss's Attack on every creature, after the finale's own rounds.`,
+    '',
+    table(
+      ['Measure', 'Value'],
+      [
+        ['Phase 1 clear rate', pct(f.phase1ClearRate)],
+        ['Phase 2 clear rate', pct(f.phase2ClearRate)],
+        ['Finale win rate', pct(f.finaleWinRate)],
+        ['Boss HP left when the finale began (mean share of the maximum)', pct(f.startShare)],
+        ['Finale win rate when it began at the Phase 2 floor', pct(f.winRateFromFloor)],
+        ['Finale win rate when Phase 2 fell short of its floor', pct(f.winRateOthers)],
+        ['Finales that reached the enrage rounds', pct(f.enrageShare)],
+        [
+          'Win rate inside the enrage rounds (of the finales that reached them)',
+          pct(f.enrageWinRate),
+        ],
+        [
+          'Enrage rounds played before the row was wiped (finales that reached enrage and were lost, mean)',
+          num(f.enrageLossRounds, 2),
+        ],
+        ['Creatures knocked out in the finale', pct(f.koShare)],
+        [
+          'Barrage volleys that broke the no-repeat rule (hit a creature the previous volley of the same barrage hit although enough others stood)',
+          `${pct(f.repeatShare, 2)} of ${String(f.volleys)} volleys`,
+        ],
+        [
+          'Barrage volleys that repeated a victim because too few other creatures were left standing (the rule allows it)',
+          pct(f.forcedRepeatShare, 2),
+        ],
+      ],
+    ),
+  ].join('\n');
+}
+
+function rolesSection(a: Analysis): string {
+  const r = a.roles;
+  if (r === null) return 'Not measured.';
+  const rows = (population: 'normal' | 'both'): string[][] =>
+    r.arms
+      .filter((x) => x.population === population)
+      .map((x) => [
+        x.label,
+        String(x.runs),
+        pct(x.winRate),
+        x.deltaPoints === null
+          ? 'n/a'
+          : `${x.deltaPoints > 0 ? '+' : ''}${x.deltaPoints.toFixed(1)}`,
+        pct(x.koShare),
+      ]);
+  const header = [
+    'Switched off',
+    'Raid weeks',
+    'Finale win rate',
+    'Points vs everything on',
+    'Creatures knocked out',
+  ];
+  return [
+    `The same raid weeks played again with a role switched off (Guard: no extra HP, no intercept, no cover; Support: no buff and no element effect; one element: only that Support effect), with the same rosters, sign-ups and dice. Guards are spread through the row (evenly spaced), the formation in which they show; the sim's default formation clumps them in front. The bosses' HP pool is ${pct(ROLE_STUDY_HP_BP / 10_000 - 1, 0)} bigger than in the raid sweep, so the reference wins about 70% of its weeks and a role has room to show (at the sweep's own difficulty a spread row wins about 95% and hides what a Guard saves). Typical groups only (5-10 signed up), ${String(ROLE_STUDY_RUNS_FACTOR)} times the sweep's weeks per cell. The Guard value of the targets is the first table's "Guard off" row, as win points lost. One standard error of a difference is about 1 point; differences under 2 points are noise. Grove has no Support species yet, so its Mend has nothing to switch off (0.0 is expected).`,
+    '',
+    "### Players bring their 3 strongest creatures (the sim's rule)",
+    '',
+    table(header, rows('normal')),
+    '',
+    '### Every player brings a Guard and a Support when they own one',
+    '',
+    'A Support is only 1 to 3% of the creatures in the first table, so its effects hardly show there. This population shows what a Support is worth when one is present.',
+    '',
+    table(header, rows('both')),
+    '',
+    `Guard value (the target): ${num(r.guardValue)} win points.`,
+  ].join('\n');
+}
+
+function setupsSection(out: RunOutput): string {
+  const rows = out.setups.setups;
+  const points = (x: number | null): string =>
+    x === null ? 'n/a' : `${x > 0 ? '+' : ''}${x.toFixed(1)}`;
+  return [
+    "The same raid weeks (rosters, sign-ups and dice of the sweep) played with the row arranged three ways. **Default** is the sim's own row (`autoPlace`: Guards in front, payoffs at the back, Supports in the middle). **Greedy** packs setters and payoffs for the most reactions a round and puts Guards and Supports where they cost the fewest, at the edges. **Protected** puts every payoff beside a Guard where it can (adjacency stops at zone edges), Supports between payoffs, and takes whatever reactions remain. The two setups are the best arrangement a seeded hill-climb finds for their own score (`formations.ts`). Typical groups only (5-10 signed up). \"+N ranks\" plays the same weeks against a boss N Boss Ranks above the sweep's (the curve's HP and Attack for that rank): at +0 a typical group wins about 93% and there is little left to lose, +1 and +2 are what a server that keeps winning meets next. **Swing** is the standard deviation of the win rate over the cells (server size, boss, roster week) and of the knock-out share from finale to finale, in points; one standard error of a win rate is about 1.5 points at +0 and 2 points at +1.",
+    '',
+    ...SETUP_RANK_OFFSETS.flatMap((offset) => [
+      `### ${offset === 0 ? 'The shipped bosses (+0 ranks)' : `+${String(offset)} rank${offset === 1 ? '' : 's'}`}`,
+      '',
+      table(
+        [
+          'Row',
+          'Finales',
+          'Win rate',
+          'Points vs default',
+          'Phase 1 cleared',
+          'Boss HP left at the finale',
+          'Reactions a round',
+          'Payoffs beside a Guard',
+          'Knocked out',
+          'Knocked out in wins',
+          'Lost with over half the row down',
+          'Won with over half the row down',
+          'Swing: win rate by cell (points)',
+          'Swing: knock-out share (points)',
+        ],
+        rows
+          .filter((r) => r.rankOffset === offset)
+          .map((r) => [
+            r.label,
+            String(r.runs),
+            pct(r.winRate),
+            points(r.deltaPoints),
+            pct(r.phase1ClearRate),
+            pct(r.finaleStartShare),
+            num(r.reactionsPerRound, 2),
+            pct(r.guardedPayoffShare, 0),
+            pct(r.koShare),
+            pct(r.koShareWon),
+            pct(r.lostMajorityDownShare, 0),
+            pct(r.wonMajorityDownShare, 1),
+            num(r.cellWinRateSd),
+            num(r.koShareSd),
+          ]),
+      ),
+      '',
+    ]),
+  ].join('\n');
+}
+
+function curveSection(out: RunOutput): string {
+  // The study's own Markdown, with its title dropped and its headings one level down.
+  const body = curveMarkdown(out.curve).split('\n').slice(2).join('\n');
+  return body.replace(/^## /gm, '### ');
+}
+
+function ranksSection(out: RunOutput): string {
+  const rows = out.ranks.rows;
+  return [
+    "Typical groups (5-10 signed up) on the sweep's rosters of week 4 and week 8, against every boss at Boss Ranks 1, 3, 5, 7, 9 and 11 with the shipped rank curve (`RULES.raid.curve`; the rank is forced, whatever the roster would have been placed at). It shows where wins collapse for a roster that has stopped growing, not what a server at that rank looks like (a server that reaches rank 9 has been winning, so its creatures are stronger than these).",
+    '',
+    table(
+      [
+        'Boss Rank',
+        'Roster week',
+        'Finales',
+        'Phase 1 cleared',
+        'Phase 2 cleared',
+        'Finale win rate',
+        'Boss HP left at the finale',
+        'Knocked out',
+        'Reached enrage',
+      ],
+      rows.map((r) => [
+        String(r.rank),
+        String(r.rosterWeek),
+        String(r.runs),
+        pct(r.phase1ClearRate),
+        pct(r.phase2ClearRate),
+        pct(r.winRate),
+        pct(r.finaleStartShare),
+        pct(r.koShare),
+        pct(r.enrageShare),
+      ]),
+    ),
+  ].join('\n');
+}
+
 function progressionSection(a: Analysis): string {
   const parts: string[] = [];
   for (const id of ARCHETYPES) {
@@ -400,7 +569,7 @@ function outliersSection(a: Analysis): string {
 }
 
 const POLICY_TEXT = `
-- **Leet credit:** each day, every player who leets earns \`baitForDay(n)\` (n = players who leeted that day). Casuals leet on 2 random days a week, dailies on 6, top earners on all 7, and the newcomer like a daily from week 4.
+- **Income:** each day, every player who opens the game earns the daily allowance (\`dailyAllowance()\`) and every leeter the leet bonus on top (\`leetBonusForDay(n)\`, n = players who leeted that day); \`--income current\` plays the old leet-only pay (\`baitForDay(n)\`) instead. Casuals open the game and leet on 2 random days a week, dailies open it every day and leet on 6, top earners leet on all 7, and the newcomer plays like a daily from week 4.
 - **Starter:** the starter whose element the server owns least (ties in content order). The first expedition brings a Zipmouse (game rule).
 - **Check-ins:** casuals check in once on each leet day (every few days); everyone else twice a day (09:00 and 20:00).
 - **At a check-in:** claim trips (and take an end-of-trip goal), claim jobs, evolve creatures that are at level 15 when there is enough Essence, train, manage gear, send trips into the free slots, start workshop jobs.
@@ -411,7 +580,7 @@ const POLICY_TEXT = `
 - **Rewards:** Essence from \`essenceForStage\` for every cleared stage, weighted by the stage's contribution and scaled by the server's rank and the Festival bonus (\`essenceMultiplierBp\`). Jackpots from \`rollJackpot\` on a finale win. The pity counter advances only on a finale win without a jackpot; a lost finale changes nothing (soft pity from raid ${RULES.raid.jackpot.softPityFromRaid}, hard pity at raid ${RULES.raid.jackpot.hardPityRaid}).
 - **Evolution:** at level 15 (stage 1 level cap) when the player has the Essence from the content; the species switches to its stage 2 form and keeps its fusion count.
 - **Team power** = sum over the top 3 creatures of \`atk + hp / 10\`, using \`effectiveStats\` (fusion and the worn gear included, like the worker's \`power\`).
-- **Gear drops** follow the worker: the welcome kit when a player joins (a Common item, a Common blueprint and scrap), phase scrap for every participant of a cleared Phase 1 or 2, one gear roll per participant of a won finale at the server's rank (and the Festival piece in a Festival week), and the loot of every claimed expedition (scrap, a shard, a glimmer, a blueprint; a blueprint the player knows is scrap). All rolls use the game's pure functions (\`rollFinaleDrop\`, \`rollFestivalDrop\`, \`expeditionLoot\`, \`rollWelcomeKit\`, \`rollGear\`) with a seeded stream of their own.
+- **Gear drops** follow the worker: the welcome kit when a player joins (a Common item, a Common blueprint and scrap), phase scrap for every participant of a cleared Phase 1 or 2, one reward per participant of a won finale at the server's rank (a gear piece pre-upgraded by rank, or a blueprint they do not know yet; and the Festival piece in a Festival week), and the loot of every claimed expedition (scrap, a shard, a glimmer, a blueprint; a blueprint the player knows is scrap). All rolls use the game's pure functions (\`rollFinaleReward\`, \`rollFestivalDrop\`, \`expeditionLoot\`, \`rollWelcomeKit\`, \`rollGear\`) with a seeded stream of their own.
 - **Gear policy**, at every check-in after the claims: claim finished jobs; equip (the 3 strongest creatures by power without gear get the items, best pair first, an item scored by the Attack and HP it adds weighted by the creature's role: payoffs want Attack, guards HP); dismantle every unworn item that no job holds except the 2 best spares; upgrade the worn item that adds the most per Essence, as long as the Essence left covers the cheapest evolution a creature is within 3 levels of; then start jobs in the free workshop slots on creatures that are not exploring (the one with the most Crafting XP first): an enchant of a worn item if glimmer and shards allow, an improve of a worn item's speed or crit secondary (twice per item at most), else a craft of the best blueprint the parts pay for (higher rarity first, Attack or HP items first). Items fold into the fight slots with \`applyGear\`, caps included. A creature on a job does not explore (one busy state) but still fights.
 - **Daily dungeon** (\`docs/design/daily-dungeon.md\`): every player with at least 3 creatures runs it once on each day they check in (casuals on their leet days); on the first day they ever ran, a lost run may be tried once more. The team is the 3 strongest creatures by power (gear included), stood in one row by the game's rule for it (\`dungeonRowOrder\`: the order that sets off the most reactions left to right, ties by setters and supports left, a Guard in the middle, payoffs right); there is no basic ability, and every unlocked creature ability fires at its default round. The day's three room modifiers are shared by the whole server and come from a seed of the day, the foes from the run's seed, and a full clear moves the depth up by 1. Rewards follow the worker: Bait, Essence and scrap for each cleared room, a shard from the boss room, a gear chance on a full clear (certain at a landmark depth), and the streak bonus on the first run of a day, through \`dungeonPayout\`, \`rollDungeonLoot\` and \`streakBonus\`.
 - **Time** for jobs: check-ins at 09:00 and 20:00 (casuals at 09:00 on their leet days); a job is claimed at the first check-in after \`jobDuration\` (the crafter's skill included) has passed.
@@ -451,6 +620,11 @@ export function buildReportMarkdown(out: RunOutput): string {
     '',
   );
   lines.push(targetsTable(evaluation), '');
+  lines.push('## Finale structure (phase floors and enrage)', '', finaleSection(a), '');
+  lines.push('## Roles (Guard and Support ablation)', '', rolesSection(a), '');
+  lines.push('## Setups (greedy and protected rows)', '', setupsSection(out), '');
+  lines.push('## High Boss Ranks', '', ranksSection(out), '');
+  lines.push('## Raid curve by Boss Rank (journey servers)', '', curveSection(out), '');
   lines.push('## Bosses', '', bossSection(a), '');
   lines.push('## Fairness and contribution', '');
   lines.push(
@@ -599,6 +773,11 @@ export function buildReportJson(out: RunOutput): string {
     essence: analysis.essence,
     abilityShares: analysis.abilityShares,
     longRun: analysis.longRun,
+    finale: analysis.finale,
+    roles: analysis.roles,
+    setups: out.setups.setups,
+    ranks: out.ranks.rows,
+    curve: { mixes: out.curve.mixes },
     jackpots: analysis.jackpots,
     outliers: analysis.outliers,
     exampleFight: example,

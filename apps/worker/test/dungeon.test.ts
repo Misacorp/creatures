@@ -7,7 +7,13 @@ import {
   type PartKind,
   type Rng,
 } from '@creatures/game';
-import { simulateDungeon, type DungeonRunInput, type DungeonRunResult } from '@creatures/engine';
+import {
+  dungeonBossEnrage,
+  liveFightRules,
+  simulateDungeon,
+  type DungeonRunInput,
+  type DungeonRunResult,
+} from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { grantDungeonRun } from '../src/gear-grants';
 import { insertItem } from '../src/gear-store';
@@ -221,6 +227,7 @@ describe('GET /api/dungeon/today', () => {
           timezone: 'Europe/Helsinki',
           depth: 1,
           landmark: false,
+          landmarkBoss: null,
           streak: 0,
           attemptsToday: 0,
           attemptsAllowed: 2,
@@ -489,6 +496,10 @@ describe('POST /api/dungeon/run', () => {
         // The fight's row is the team, position i = team[i], and nothing else was stored about it.
         expect(input.team.map((s) => s.id)).toEqual([c, a, b]);
         expect(Object.keys(input)).not.toContain('formation');
+        // The combat rules, the boss room's enrage and the depth are stored for an exact replay.
+        expect(input.rules).toEqual(liveFightRules());
+        expect(input.enrage).toEqual(dungeonBossEnrage());
+        expect(input.depth).toBe(stored.depth);
         const replay = await p.replay(res.body.run.id);
         expect(replay.body.row.map((r) => [r.position, r.id])).toEqual([
           [0, c],
@@ -1188,6 +1199,47 @@ describe('streaks and landmarks', () => {
           )[0]?.source,
         ).toBe('dungeon');
         expect((await p.today()).landmark).toBe(false); // depth 8
+      },
+      opts(),
+    );
+  });
+
+  it('names the fixed room boss of a landmark depth in today, in content order, and fights it', async () => {
+    const bosses = dungeonContent.foes.filter((f) => f.kind === 'boss').map((f) => f.id);
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const every = RULES.dungeon.landmarkEvery;
+        for (const [k, depth] of [
+          [1, every],
+          [2, 2 * every],
+          [bosses.length + 1, (bosses.length + 1) * every],
+        ] as const) {
+          setProgress(ctx, p.id, { depth });
+          const today = await p.today();
+          expect(today.landmark).toBe(true);
+          expect(today.landmarkBoss).toEqual({ depth, foeId: bosses[(k - 1) % bosses.length] });
+        }
+        for (const depth of [1, every - 1, every + 1]) {
+          setProgress(ctx, p.id, { depth });
+          expect((await p.today()).landmarkBoss).toBeNull();
+        }
+        // The run at the landmark fights that boss in the boss room, whatever the seed drew.
+        setProgress(ctx, p.id, { depth: 2 * every });
+        const run = (await p.run()).body.run;
+        expect(run.depth).toBe(2 * every);
+        expect(run.rooms.map((r) => r.kind)).toEqual(['foe', 'foe', 'boss']);
+        expect(run.rooms[2]?.foe.id).toBe(bosses[1]);
+        const stored = rows<{ input_json: string }>(
+          ctx.sql,
+          'SELECT input_json FROM dungeon_runs WHERE id = ?',
+          run.id,
+        )[0];
+        const input = JSON.parse(stored?.input_json ?? '{}') as {
+          rooms: { foe: { id: string } }[];
+        };
+        expect(input.rooms[2]?.foe.id).toBe(bosses[1]);
       },
       opts(),
     );

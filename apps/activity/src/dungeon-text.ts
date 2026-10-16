@@ -3,7 +3,7 @@
  * depth and streak lines, the results headline. Plain text only; creature names and foe names can
  * carry player text and must be rendered as text.
  */
-import { RULES } from '@creatures/game';
+import { RULES, dungeonContent } from '@creatures/game';
 import { ApiError } from './api';
 import type { DungeonErrorCode, DungeonRunSummary, DungeonToday } from './dungeon-types';
 import { errorText } from './game';
@@ -32,6 +32,22 @@ export function dungeonErrorText(err: unknown): string {
  */
 export function isStaleDungeonError(err: unknown): boolean {
   return err instanceof ApiError && (err.code === 'already_run' || err.code === 'not_found');
+}
+
+/**
+ * The line on the pre-run card at a landmark depth, which names the room boss before the run:
+ * "Depth 14, a landmark: the Slag Tyrant waits. It winds up Slag Spill a round ahead." A boss with
+ * no signature move leaves out the second sentence; a boss the content does not know is just "a
+ * room boss". The names come from the content, never from the server's text.
+ */
+export function landmarkLine(landmark: NonNullable<DungeonToday['landmarkBoss']>): string {
+  const foe = dungeonContent.foes.find((f) => f.id === landmark.foeId);
+  const head = `Depth ${String(landmark.depth)}, a landmark`;
+  if (foe === undefined) return `${head}: a room boss waits.`;
+  const waits = `${head}: the ${foe.name} waits.`;
+  return foe.signature === undefined
+    ? waits
+    : `${waits} It winds up ${foe.signature.name} a round ahead.`;
 }
 
 /** Why a run cannot start now, in words; null when it can. */

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RULES, content } from '@creatures/game';
 import {
   defaultAbilityRound,
+  liveFightRules,
   needsCreature,
   simulateFight,
   type AbilityChoice,
@@ -86,6 +87,29 @@ describe('the prefix property', () => {
     }
     // The comparison is not vacuous: crits really happen.
     expect(crits).toBeGreaterThan(0);
+  });
+
+  it('holds with the live combat rules (Guard armor and the Guard dice) and luck switched on', () => {
+    let armored = 0;
+    for (let s = 0; s < 20; s++) {
+      const seed = `prefix-rules-${s}`;
+      const base: FightInput = {
+        ...finaleInput(seed, []),
+        luck: RULES.combat.luck,
+        rules: liveFightRules(),
+      };
+      const baseResult = simulateFight(base, rng());
+      armored += baseResult.events.filter(
+        (e) => e.t === 'boss_hit' && e.armored !== undefined,
+      ).length;
+      for (const k of [2, 5, 9]) {
+        const extra = extraAbility(base, s + k, k);
+        const result = simulateFight({ ...base, finaleAbilities: [extra] }, rng());
+        expect(eventsBefore(result.events, k)).toEqual(eventsBefore(baseResult.events, k));
+      }
+    }
+    // The comparison is not vacuous: Guards really take armored hits.
+    expect(armored).toBeGreaterThan(0);
   });
 
   it('moving a later ability between rounds after k changes nothing up to round k', () => {

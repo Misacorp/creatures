@@ -191,6 +191,23 @@ function times(bp: number): string {
   return Number.isInteger(whole) ? String(whole) : whole.toFixed(1).replace(/\.0$/, '');
 }
 
+/** What a Guard has over the other roles, in basis points: extra HP and a share of damage it does not take. */
+export interface GuardBonus {
+  hpBp: number;
+  armorBp: number;
+}
+
+/**
+ * The Guard's own bonus in words, from the numbers: armor ("takes 25% less damage from every hit
+ * it takes") and, when a fight still gives extra HP, that too. Nothing when it has neither.
+ */
+export function guardBonusText(guard: GuardBonus): string {
+  const parts: string[] = [];
+  if (guard.armorBp > 0) parts.push(`takes ${percent(guard.armorBp)} less damage from every hit`);
+  if (guard.hpBp > 0) parts.push(`has ${percent(guard.hpBp)} more HP`);
+  return parts.join(' and ');
+}
+
 /**
  * One short plain line about what the creature in `focus` does for the row, with the real numbers
  * (`RULES`), or null when it does nothing special. The popover and the row's caption show it. Names are
@@ -203,6 +220,11 @@ export function effectLine(args: {
   /** The name to print for a slot's creature. */
   nameOf: (slot: number) => string;
   reactions?: readonly ReactionDef[];
+  /**
+   * The Guard's bonus to describe. These lines are for the boards, before any fight, so it is
+   * `RULES.combat.guard` unless a caller has a fight's own numbers.
+   */
+  guard?: GuardBonus;
 }): string | null {
   const { row, mode, focus } = args;
   const reactions = args.reactions ?? content.reactions;
@@ -214,9 +236,8 @@ export function effectLine(args: {
     parts.push(`Boosts its neighbours' next hit by ${percent(RULES.combat.supportBuffBp)}.`);
   } else if (role === 'guard') {
     const who = mode.row === 'dungeon' ? 'the creatures beside it' : 'the others in its row';
-    parts.push(
-      `Takes the boss's hits for ${who}, with ${percent(RULES.combat.guardHpBp)} more HP.`,
-    );
+    const bonus = guardBonusText(args.guard ?? RULES.combat.guard);
+    parts.push(`Takes the boss's hits for ${who}${bonus === '' ? '' : `, and ${bonus}`}.`);
   }
   const partners = affects(row, focus, mode, reactions).flatMap((a) =>
     a.kind === 'reaction' ? [a] : [],

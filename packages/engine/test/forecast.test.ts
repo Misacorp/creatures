@@ -54,7 +54,8 @@ describe('forecastFinale', () => {
     const input = finale('forecast-e');
     const one = forecastFinale(input, createSeededRng('x'), 1).damage;
     const many = forecastFinale(input, createSeededRng('x'), 20).damage;
-    expect(Math.abs(one - many) / many).toBeLessThan(0.1);
+    // One run against the mean of twenty: a loose sanity bound (a boss with more moves swings more).
+    expect(Math.abs(one - many) / many).toBeLessThan(0.15);
   });
 
   it('feeds readinessBand: a boss with almost no HP left is strong, one with huge HP a long shot', () => {

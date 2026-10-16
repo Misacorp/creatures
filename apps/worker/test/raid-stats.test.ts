@@ -62,11 +62,14 @@ describe('the close rule', () => {
 
   it('reads its limits from RULES and needs the clear threshold of the stage', () => {
     expect(RULES.raid.closeCall).toEqual({ missBp: 1000, spareBp: 1000 });
-    expect(needed).toBe(180);
+    // Phase 1 leaves 70% of the pool (30% comes off), Phase 2 leaves 15% (85% comes off).
+    expect(RULES.raid.phases.map((p) => p.clearAtLossBp)).toEqual([3000, 8500, 10_000]);
+    expect(needed).toBe(300);
     expect(hpNeeded('phase2', 1000)).toBe(RULES.raid.phases[1].clearAtLossBp / 10);
+    expect(hpNeeded('phase2', 1000)).toBe(850);
     expect(hpNeeded('finale', 1000)).toBe(1000);
-    // Rounded up: 18% of 1001 is 180.18, so 181 HP must come off.
-    expect(hpNeeded('phase1', 1001)).toBe(181);
+    // Rounded up: 30% of 1001 is 300.3, so 301 HP must come off.
+    expect(hpNeeded('phase1', 1001)).toBe(301);
   });
 
   it('phase: a miss by at most 10% of the threshold is close, an HP more is not', () => {
@@ -75,16 +78,26 @@ describe('the close rule', () => {
       cleared: false,
       hpEnd: 1000 - (needed - shortBy),
     });
-    expect(isCloseCall(lostFor(18))).toBe(true); // exactly 10% of 180
-    expect(isCloseCall(lostFor(19))).toBe(false);
+    expect(isCloseCall(lostFor(30))).toBe(true); // exactly 10% of 300
+    expect(isCloseCall(lostFor(31))).toBe(false);
     expect(isCloseCall(lostFor(1))).toBe(true);
   });
 
-  it('phase: a win with at most 10% of the threshold to spare is close, an HP more is not', () => {
-    const wonBy = (spare: number) => ({ ...base, cleared: true, hpEnd: 1000 - (needed + spare) });
-    expect(isCloseCall(wonBy(0))).toBe(true);
-    expect(isCloseCall(wonBy(18))).toBe(true);
-    expect(isCloseCall(wonBy(19))).toBe(false);
+  it('phase: a win is close when at most 10% of the rounds were left, however it ended', () => {
+    // The boss retreats at its floor, so a cleared phase has no HP to spare: the spare is rounds.
+    const wonIn = (rounds: number) => ({
+      ...base,
+      cleared: true,
+      hpEnd: 1000 - needed,
+      rounds,
+    });
+    expect(isCloseCall(wonIn(10))).toBe(true); // no round left
+    expect(isCloseCall(wonIn(9))).toBe(true); // 1 of 10 left, exactly 10%
+    expect(isCloseCall(wonIn(8))).toBe(false); // 2 of 10 left
+    expect(isCloseCall(wonIn(1))).toBe(false);
+    // The HP left in the pool does not matter for a cleared phase any more (even an old result's overkill).
+    expect(isCloseCall({ ...wonIn(5), hpEnd: 0 })).toBe(false);
+    expect(isCloseCall({ ...wonIn(10), hpEnd: 0 })).toBe(true);
   });
 
   it('phase 2 uses its own, cumulative threshold', () => {
@@ -97,10 +110,10 @@ describe('the close rule', () => {
     expect(isCloseCall({ ...args, cleared: false, hpEnd: 1000 - (threshold - tenth - 1) })).toBe(
       false,
     );
-    expect(isCloseCall({ ...args, cleared: true, hpEnd: 1000 - (threshold + tenth) })).toBe(true);
-    expect(isCloseCall({ ...args, cleared: true, hpEnd: 1000 - (threshold + tenth + 1) })).toBe(
-      false,
-    );
+    // A cleared phase 2 is close by its rounds, like phase 1.
+    const won = { ...args, cleared: true, hpEnd: 1000 - threshold };
+    expect(isCloseCall({ ...won, rounds: 9 })).toBe(true);
+    expect(isCloseCall({ ...won, rounds: 8 })).toBe(false);
   });
 
   it('finale loss: close when the boss kept at most 10% of its maximum HP', () => {
@@ -116,12 +129,14 @@ describe('the close rule', () => {
     expect(isCloseCall({ ...args, hpEnd: 1000 })).toBe(false);
   });
 
-  it('finale win: close when it ended with at most 10% of the rounds left', () => {
+  it('finale win: close when it ended with at most 10% of the rounds left, or in the enrage', () => {
     const args = { phase: 'finale', cleared: true, hpMax: 1000, hpEnd: 0, maxRounds: 12 } as const;
     expect(isCloseCall({ ...args, rounds: 12 })).toBe(true);
     expect(isCloseCall({ ...args, rounds: 11 })).toBe(true); // 1 of 12 rounds left, 8.3%
     expect(isCloseCall({ ...args, rounds: 10 })).toBe(false); // 2 of 12 left, 16.7%
     expect(isCloseCall({ ...args, rounds: 3 })).toBe(false);
+    // Won in an enrage round (past the 12 regular rounds): nothing was left, so it was close.
+    expect(isCloseCall({ ...args, rounds: 14 })).toBe(true);
   });
 });
 
@@ -142,10 +157,11 @@ describe('after-action stats of real stored fights', () => {
         hpMax: pool,
         hpStart: pool,
         hpEnd: run.result.bossHpEnd,
-        lost: damage,
-        needed: Math.ceil((pool * 1800) / 10_000),
+        needed: Math.ceil((pool * RULES.raid.phases[0].clearAtLossBp) / 10_000),
         leftBp: Math.floor((run.result.bossHpEnd * 10_000) / pool),
       });
+      // The phase took at least what it needed off the pool (a floor stops it exactly there).
+      expect(res.body.boss.lost).toBeGreaterThanOrEqual(res.body.boss.needed);
       expect(res.body.rounds).toBe(run.result.rounds);
       expect(res.body.maxRounds).toBe(10);
     });
@@ -407,6 +423,7 @@ describe('after-action stats of real stored fights', () => {
             'boss',
             'close',
             'creatures',
+            'enraged',
             'knockouts',
             'maxRounds',
             'outcome',
@@ -414,6 +431,7 @@ describe('after-action stats of real stored fights', () => {
             'players',
             'reactions',
             'reactionsTotal',
+            'retreated',
             'rounds',
           ].sort(),
         );
@@ -452,6 +470,7 @@ describe('the stats contract with the client', () => {
     'boss',
     'close',
     'creatures',
+    'enraged',
     'knockouts',
     'maxRounds',
     'outcome',
@@ -459,6 +478,7 @@ describe('the stats contract with the client', () => {
     'players',
     'reactions',
     'reactionsTotal',
+    'retreated',
     'rounds',
   ];
   const BOSS = ['hpEnd', 'hpMax', 'hpStart', 'leftBp', 'lost', 'needed'];

@@ -355,21 +355,80 @@ export function droppableBases(): GearBase[] {
   return gearContent.bases.filter((b) => b.blueprint !== 'festival');
 }
 
-/** Rolls a finale gear drop for a Boss Rank: the rarity by the rank's odds, a base evenly, then its rolls. */
-export function rollFinaleDrop(
-  rng: Rng,
-  rank: number,
-): { baseId: string; rarity: GearRarity; rolls: GearRolls } {
+/**
+ * The upgrade level finale gear arrives with: one level for every `ranksPerUpgrade` Boss Ranks above 1,
+ * up to `RULES.gear.maxLevel` (ranks 1-2: +0, 3-4: +1, and so on, +5 from rank 11 with the starting values).
+ */
+export function finaleUpgradeLevel(rank: number): number {
+  const above = Math.max(0, Math.trunc(rank) - 1);
+  return Math.min(RULES.gear.maxLevel, Math.floor(above / RULES.gear.drops.finale.ranksPerUpgrade));
+}
+
+/** A gear drop: the base, rarity, rolled numbers and the upgrade level it arrives with. */
+export interface GearDrop {
+  baseId: string;
+  rarity: GearRarity;
+  rolls: GearRolls;
+  level: number;
+}
+
+type DropRarity = 'common' | 'rare' | 'epic';
+
+function rollFinaleRarity(rng: Rng, rank: number): DropRarity {
   const odds = finaleDropOddsBp(rank);
-  const rarity = pickWeighted<{ rarity: GearRarity; weight: number }>(rng, [
+  return pickWeighted<{ rarity: DropRarity; weight: number }>(rng, [
     { rarity: 'common', weight: odds.common },
     { rarity: 'rare', weight: odds.rare },
     { rarity: 'epic', weight: odds.epic },
   ]).rarity;
+}
+
+/**
+ * Rolls a finale gear drop for a Boss Rank: the rarity by the rank's odds, a base evenly, then its
+ * rolls. It arrives pre-upgraded by rank (`finaleUpgradeLevel`).
+ */
+export function rollFinaleDrop(rng: Rng, rank: number): GearDrop {
+  const rarity = rollFinaleRarity(rng, rank);
   const bases = droppableBases();
   const base = bases[int(rng, bases.length)];
   if (base === undefined) throw new Error('no gear bases to drop');
-  return { baseId: base.id, rarity, rolls: rollGear(rng, base.id, rarity) };
+  return {
+    baseId: base.id,
+    rarity,
+    rolls: rollGear(rng, base.id, rarity),
+    level: finaleUpgradeLevel(rank),
+  };
+}
+
+/** What a won finale gives each participant: one gear piece or one blueprint. */
+export type FinaleReward =
+  ({ kind: 'gear' } & GearDrop) | { kind: 'blueprint'; baseId: string; rarity: GearRarity };
+
+const RARITY_FALLBACK: Record<DropRarity, readonly DropRarity[]> = {
+  common: ['common', 'rare', 'epic'],
+  rare: ['rare', 'common', 'epic'],
+  epic: ['epic', 'rare', 'common'],
+};
+
+/**
+ * The finale's reward slot. One draw decides gear or blueprint (`blueprintBp`). A blueprint takes its
+ * rarity from the same rank odds as gear and a base of that rarity the player does not know yet
+ * (`owned` holds the base ids they know). When they know every blueprint of that rarity it steps
+ * down to the next rarity, then up. When they know them all, the reward is gear instead. Always
+ * exactly one gear piece or one blueprint.
+ */
+export function rollFinaleReward(rng: Rng, rank: number, owned: ReadonlySet<string>): FinaleReward {
+  if (chance(rng, RULES.gear.drops.finale.blueprintBp, 10_000)) {
+    const rolled = rollFinaleRarity(rng, rank);
+    const unowned = droppableBases().filter((b) => !owned.has(b.id));
+    for (const rarity of RARITY_FALLBACK[rolled]) {
+      const pool = unowned.filter((b) => b.blueprint === rarity);
+      if (pool.length === 0) continue;
+      const base = pool[int(rng, pool.length)];
+      if (base !== undefined) return { kind: 'blueprint', baseId: base.id, rarity };
+    }
+  }
+  return { kind: 'gear', ...rollFinaleDrop(rng, rank) };
 }
 
 /** The Festival base for a Festival creature's element: the base of that tint, else the first one. */

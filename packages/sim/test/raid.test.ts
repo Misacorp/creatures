@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { content, createSeededRng, type BossDef } from '@creatures/game';
+import { RULES, content, createSeededRng, jackpotEssenceFor, type BossDef } from '@creatures/game';
+import { phaseFloorHp, raidEnrage } from '@creatures/engine';
 import { DEFAULT_MIX } from '../src/archetypes';
 import { runEconomy } from '../src/economy';
-import { openRaidWeek, playStage, playWholeWeek, summarizeRaid } from '../src/raid';
+import { fightFor, openRaidWeek, playStage, playWholeWeek, summarizeRaid } from '../src/raid';
 import { runSweep } from '../src/sweep';
 import { clonePlayer, type SimPlayer } from '../src/state';
 
@@ -97,6 +98,83 @@ describe('raid week', () => {
     expect(w.stages.finale?.cleared).toBe(true);
     expect(w.jackpot.rolls).toBe(players.length);
     for (const p of players) expect(p.pity === 0 ? p.jackpots === 1 : p.pity === 4).toBe(true);
+  });
+
+  it('pays the jackpot Essence as the worker does: the base amount times the rank multiplier, on a hit', () => {
+    const bonus = jackpotEssenceFor({ rank: 6, festival: false });
+    expect(bonus).toBeGreaterThan(RULES.raid.jackpotEssence);
+    const players = roster.slice(0, 4).map(clonePlayer);
+    const w = openRaidWeek(boss, players, { rank: 6 });
+    w.pool = { max: 1, current: 1 };
+    // Pity 9 makes the first player's roll a guaranteed hit.
+    const [lucky] = players;
+    if (lucky === undefined) throw new Error('empty roster');
+    for (const p of players) p.pity = p === lucky ? 9 : 0;
+    const before = new Map(players.map((p) => [p.id, p.essence]));
+    const earnedBefore = new Map(players.map((p) => [p.id, p.week.essenceEarned]));
+    playStage(w, 'finale', createSeededRng('jackpot'), createSeededRng('loot-jackpot'));
+    expect(w.stages.finale?.cleared).toBe(true);
+    expect(lucky.jackpots).toBe(1);
+    for (const p of players) {
+      // What the player gained is what the week's tally says, jackpot included.
+      expect(p.essence - (before.get(p.id) ?? 0)).toBe(w.essence[p.id]);
+      expect(p.week.essenceEarned - (earnedBefore.get(p.id) ?? 0)).toBe(w.essence[p.id]);
+    }
+    // The lucky player's tally holds the bonus on top of the stage pay; a player with no hit has less.
+    const miss = players.filter((p) => p !== lucky && p.jackpots === 0);
+    expect(w.essence[lucky.id] ?? 0).toBeGreaterThanOrEqual(bonus);
+    for (const p of miss) expect(w.essence[p.id] ?? 0).toBeLessThan(bonus);
+  });
+});
+
+describe('the fights are built as live play builds them', () => {
+  it('gives each phase its floor and the finale its enrage, and nothing else', () => {
+    const w = openRaidWeek(boss, roster.slice(0, 5).map(clonePlayer));
+    const { max } = w.pool;
+    expect(fightFor(w, 'phase1').fight.bossHpFloor).toBe(phaseFloorHp(max, 'phase1'));
+    expect(fightFor(w, 'phase2').fight.bossHpFloor).toBe(phaseFloorHp(max, 'phase2'));
+    expect(fightFor(w, 'phase1').fight.enrage).toBeUndefined();
+    expect(fightFor(w, 'phase2').fight.enrage).toBeUndefined();
+    const finale = fightFor(w, 'finale').fight;
+    expect(finale.bossHpFloor).toBeUndefined();
+    expect(finale.enrage).toEqual(raidEnrage('finale'));
+    expect(finale.enrage).toEqual({
+      rounds: RULES.raid.enrage.rounds,
+      powerBp: RULES.raid.enrage.powerBp,
+    });
+  });
+
+  it('never takes the pool below a phase floor, and a phase that is driven to it is cleared', () => {
+    const w = openRaidWeek(boss, roster.slice(0, 8).map(clonePlayer));
+    playStage(w, 'phase1', createSeededRng('floor'), createSeededRng('loot'));
+    const floor = phaseFloorHp(w.pool.max, 'phase1');
+    expect(w.pool.current).toBeGreaterThanOrEqual(floor);
+    if (w.stages.phase1?.cleared === true) expect(w.pool.current).toBe(floor);
+  });
+});
+
+describe('the Guard off study switch', () => {
+  const players = () => roster.slice(0, 6).map(clonePlayer);
+
+  it('leaves no Guard in any fight, so there is no armor, no intercept and no reflect intercept', () => {
+    const on = openRaidWeek(boss, players(), { bringRoles: true, keepFinale: true });
+    // The reference rows have Guards to switch off (otherwise the comparison proves nothing).
+    expect(fightFor(on, 'finale').fight.row.some((s) => s.role === 'guard')).toBe(true);
+    const off = openRaidWeek(boss, players(), {
+      bringRoles: true,
+      neutralGuards: true,
+      keepFinale: true,
+    });
+    for (const stage of ['phase1', 'phase2', 'finale'] as const) {
+      expect(fightFor(off, stage).fight.row.some((s) => s.role === 'guard')).toBe(false);
+    }
+    // The rules still carry the armor, but with nobody to wear it nothing is armored or taken over.
+    expect(fightFor(off, 'finale').fight.rules?.guardArmorBp).toBe(RULES.combat.guard.armorBp);
+    playWholeWeek(off, createSeededRng('fight'), createSeededRng('loot'));
+    const hits = (off.finaleEvents ?? []).flatMap((e) => (e.t === 'boss_hit' ? [e] : []));
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits.some((h) => h.armored !== undefined || h.from !== undefined)).toBe(false);
+    expect(hits.some((h) => h.covered !== undefined)).toBe(false);
   });
 });
 

@@ -73,6 +73,49 @@ function everyWords(trigger: Gimmick['trigger']): string {
   return 'every' in trigger ? `every ${String(trigger.every)} rounds` : 'every round';
 }
 
+type PatternGimmick = Extract<Gimmick, { op: 'sweep' | 'barrage' | 'slam' | 'lance' | 'pincer' }>;
+/** The patterns a charge can carry have the same fields as the plain ones, without id and trigger. */
+type PatternBody = PatternGimmick | Extract<Gimmick, { op: 'charge' }>['then'];
+
+const ROW_WORDS = { front: 'front', middle: 'middle', back: 'back' } as const;
+const SLAM_AIM_WORDS = {
+  front: 'the front creature',
+  strongest: 'your highest Attack creature',
+  left: 'the left-most creature',
+  random: 'a random creature',
+  payoff: 'your highest Attack Payoff',
+} as const;
+
+/** What a pattern does, without when ("sweeps the front row, then the middle row"). */
+function patternWords(p: PatternBody): string {
+  switch (p.op) {
+    case 'sweep': {
+      const walk = p.rows.map((r) =>
+        r === 'all'
+          ? 'every row'
+          : r === 'payoffs'
+            ? 'the row with the most Payoffs'
+            : `the ${ROW_WORDS[r]} row`,
+      );
+      return `sweeps ${walk.join(', then ')}`;
+    }
+    case 'barrage': {
+      const n = p.shells.max;
+      return `rains shells on up to ${String(n)} random ${plural(n, 'creature', 'creatures')}`;
+    }
+    case 'slam':
+      return `slams ${SLAM_AIM_WORDS[p.aim]}, and the blow splashes the creatures beside it`;
+    case 'lance':
+      return p.lane === 'strongest'
+        ? 'drives a lance down the lane of your highest Attack creature'
+        : 'drives a lance down a random lane, front to back';
+    case 'pincer':
+      return p.scope === 'rows'
+        ? 'pinches the first and last creature of every row'
+        : 'pinches the first and last creature of the row';
+  }
+}
+
 /** A boss gimmick in plain words, for example "hits the front zone every 3 rounds". */
 export function describeGimmick(gimmick: Gimmick): string {
   const when = everyWords(gimmick.trigger);
@@ -83,8 +126,19 @@ export function describeGimmick(gimmick: Gimmick): string {
       return `silences the creatures at both ends of the row for ${String(gimmick.turns)} ${plural(gimmick.turns, 'turn', 'turns')}, ${when}`;
     case 'reflect_first_reaction':
       return `throws the first reaction back at your team, ${when}`;
-    case 'strike_highest_atk':
-      return `strikes your highest Attack creature ${when}`;
+    case 'strike_highest_atk': {
+      const jumps = gimmick.jumps ?? 0;
+      const more = jumps > 0 ? `, then jumps on to ${String(jumps)} more` : '';
+      return `strikes your highest Attack creature${more} ${when}`;
+    }
+    case 'sweep':
+    case 'barrage':
+    case 'slam':
+    case 'lance':
+    case 'pincer':
+      return `${patternWords(gimmick)} ${when}`;
+    case 'charge':
+      return `winds up one round ahead, then ${patternWords(gimmick.then)}, ${when}`;
   }
 }
 
@@ -162,6 +216,10 @@ export interface PhasePost {
   /** The party number when the week has more than one party, otherwise null. */
   party: number | null;
   cleared: boolean;
+  /** A cleared Phase 1 or 2: the boss reached its floor and retreated. */
+  retreated?: boolean;
+  /** The finale went into enrage rounds. */
+  enraged?: boolean;
   /** Whole percent of the boss's HP left, 0 to 100. */
   hpLeftPercent: number;
   /** Best first, by contribution (damage plus setup, support and guard credit). */
@@ -211,7 +269,19 @@ function keyMomentLine(moment: KeyMoment): string {
 export function formatPhasePost(post: PhasePost): string {
   const party = post.party === null ? '' : ` (party ${String(post.party)})`;
   const lines = [`**${PHASE_TITLES[post.phase]}: ${escapeMarkdown(post.bossName)}${party}**`];
-  if (post.cleared && post.hpLeftPercent === 0) {
+  const boss = escapeMarkdown(post.bossName);
+  if (post.cleared && post.retreated === true && post.phase !== 'finale') {
+    lines.push(
+      `${PHASE_TITLES[post.phase]} cleared: ${boss} retreated.`,
+      `The boss has ${String(post.hpLeftPercent)}% HP left.`,
+    );
+  } else if (post.enraged === true && post.phase === 'finale') {
+    lines.push(
+      post.cleared
+        ? `Cleared, but only after ${boss} flew into a rage. The boss is defeated.`
+        : `Not cleared. ${boss} flew into a rage when time ran out. The boss has ${String(post.hpLeftPercent)}% HP left.`,
+    );
+  } else if (post.cleared && post.hpLeftPercent === 0) {
     lines.push('Cleared. The boss is defeated.');
   } else {
     lines.push(

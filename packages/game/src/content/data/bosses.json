@@ -3,7 +3,7 @@
     "id": "tidal-colossus",
     "name": "Tidal Colossus",
     "element": "tide",
-    "baseHp": 7344,
+    "baseHp": 5915,
     "baseAtk": 30,
     "turnOrder": "left_to_right",
     "gimmicks": [
@@ -16,21 +16,75 @@
         "op": "hit_zone",
         "zone": "front",
         "power": 8000
+      },
+      {
+        "id": "riptide",
+        "name": "Riptide",
+        "trigger": {
+          "every": 4
+        },
+        "op": "lance",
+        "lane": "random",
+        "power": 20000,
+        "falloffBp": 8000
+      },
+      {
+        "id": "great-wave",
+        "name": "Great Wave",
+        "trigger": {
+          "every": 5
+        },
+        "op": "charge",
+        "then": {
+          "op": "sweep",
+          "rows": ["middle", "back", "front"],
+          "power": 32000
+        }
+      },
+      {
+        "id": "deepwater-spear",
+        "name": "Deepwater Spear",
+        "fromRank": 4,
+        "trigger": {
+          "every": 7
+        },
+        "op": "lance",
+        "lane": "strongest",
+        "power": 22000,
+        "falloffBp": 7500
+      },
+      {
+        "id": "spring-tide",
+        "name": "Spring Tide",
+        "fromRank": 7,
+        "trigger": {
+          "every": 9
+        },
+        "op": "charge",
+        "then": {
+          "op": "sweep",
+          "rows": ["payoffs"],
+          "power": 26000
+        }
       }
     ],
     "adaptation": "resist-top-reaction",
     "lootTable": "tidal-colossus",
     "finaleRounds": 12,
     "hpExponent": {
-      "num": 107,
+      "num": 108,
       "den": 100
+    },
+    "retreat": {
+      "phase1": "Tidal Colossus sinks beneath the waves. It will rise again in Phase 2.",
+      "phase2": "Tidal Colossus sinks back into the deep. Face it in the finale on Sunday."
     }
   },
   {
     "id": "cinder-wyrm",
     "name": "Cinder Wyrm",
     "element": "ember",
-    "baseHp": 2916,
+    "baseHp": 2490,
     "baseAtk": 30,
     "turnOrder": "speed",
     "gimmicks": [
@@ -41,21 +95,72 @@
           "eachRound": true
         },
         "op": "reflect_first_reaction"
+      },
+      {
+        "id": "cinder-fall",
+        "name": "Cinder Fall",
+        "trigger": {
+          "every": 2
+        },
+        "op": "barrage",
+        "shells": { "min": 2, "max": 6, "shareBp": 1200 },
+        "power": 13000
+      },
+      {
+        "id": "coil-crush",
+        "name": "Coil Crush",
+        "trigger": {
+          "every": 4
+        },
+        "op": "slam",
+        "aim": "front",
+        "power": 31000,
+        "splashBp": 4500
+      },
+      {
+        "id": "magma-spit",
+        "name": "Magma Spit",
+        "fromRank": 4,
+        "trigger": {
+          "every": 5
+        },
+        "op": "slam",
+        "aim": "payoff",
+        "power": 28000,
+        "splashBp": 4000
+      },
+      {
+        "id": "eruption",
+        "name": "Eruption",
+        "fromRank": 7,
+        "trigger": {
+          "every": 7
+        },
+        "op": "charge",
+        "then": {
+          "op": "sweep",
+          "rows": ["all"],
+          "power": 14000
+        }
       }
     ],
     "adaptation": "resist-top-element",
     "lootTable": "cinder-wyrm",
     "finaleRounds": 12,
     "hpExponent": {
-      "num": 123,
+      "num": 129,
       "den": 100
+    },
+    "retreat": {
+      "phase1": "Cinder Wyrm coils down into the cooling stone. It will return in Phase 2.",
+      "phase2": "Cinder Wyrm slips back into the forge's deep heat. Face it in the finale on Sunday."
     }
   },
   {
     "id": "thornmother",
     "name": "Thornmother",
     "element": "grove",
-    "baseHp": 6729,
+    "baseHp": 4737,
     "baseAtk": 30,
     "turnOrder": "right_to_left",
     "gimmicks": [
@@ -67,21 +172,70 @@
         },
         "op": "silence_ends",
         "turns": 1
+      },
+      {
+        "id": "briar-pincer",
+        "name": "Briar Pincer",
+        "trigger": {
+          "every": 3
+        },
+        "op": "pincer",
+        "scope": "rows",
+        "power": 22000
+      },
+      {
+        "id": "seed-burst",
+        "name": "Seed Burst",
+        "trigger": {
+          "every": 5
+        },
+        "op": "charge",
+        "then": {
+          "op": "barrage",
+          "shells": { "min": 3, "max": 6, "shareBp": 1500 },
+          "power": 36000
+        }
+      },
+      {
+        "id": "choking-vines",
+        "name": "Choking Vines",
+        "fromRank": 4,
+        "trigger": {
+          "every": 6
+        },
+        "op": "silence_ends",
+        "turns": 2
+      },
+      {
+        "id": "thorn-lash",
+        "name": "Thorn Lash",
+        "fromRank": 7,
+        "trigger": {
+          "every": 7
+        },
+        "op": "strike_highest_atk",
+        "power": 20000,
+        "jumps": 3,
+        "decayBp": 6000
       }
     ],
     "adaptation": "resist-top-reaction",
     "lootTable": "thornmother",
     "finaleRounds": 12,
     "hpExponent": {
-      "num": 104,
+      "num": 113,
       "den": 100
+    },
+    "retreat": {
+      "phase1": "Thornmother draws her vines back into the Hollow. She will return in Phase 2.",
+      "phase2": "Thornmother sinks her roots back into the Hollow. Face her in the finale on Sunday."
     }
   },
   {
     "id": "storm-sovereign",
     "name": "Storm Sovereign",
     "element": "spark",
-    "baseHp": 5423,
+    "baseHp": 3974,
     "baseAtk": 30,
     "turnOrder": "left_to_right",
     "gimmicks": [
@@ -92,15 +246,55 @@
           "eachRound": true
         },
         "op": "strike_highest_atk",
-        "power": 12000
+        "power": 17000,
+        "jumps": 2,
+        "decayBp": 5500
+      },
+      {
+        "id": "thunderclap",
+        "name": "Thunderclap",
+        "trigger": {
+          "every": 4
+        },
+        "op": "slam",
+        "aim": "strongest",
+        "power": 34000,
+        "splashBp": 4500
+      },
+      {
+        "id": "static-field",
+        "name": "Static Field",
+        "fromRank": 4,
+        "trigger": {
+          "every": 5
+        },
+        "op": "sweep",
+        "rows": ["payoffs"],
+        "power": 16000
+      },
+      {
+        "id": "judgement-bolt",
+        "name": "Judgement Bolt",
+        "fromRank": 7,
+        "trigger": {
+          "every": 7
+        },
+        "op": "slam",
+        "aim": "payoff",
+        "power": 34000,
+        "splashBp": 4500
       }
     ],
     "adaptation": "resist-top-element",
     "lootTable": "storm-sovereign",
     "finaleRounds": 12,
     "hpExponent": {
-      "num": 115,
+      "num": 119,
       "den": 100
+    },
+    "retreat": {
+      "phase1": "Storm Sovereign drifts up into the clouds. It will return in Phase 2.",
+      "phase2": "Storm Sovereign rolls off over the ridge. Face it in the finale on Sunday."
     }
   }
 ]

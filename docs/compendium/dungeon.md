@@ -1,6 +1,6 @@
 # The daily dungeon: foes, room bosses and modifiers
 
-Status: 2026-10-13. Covers the foes, the room bosses and the room modifiers of the daily dungeon, as in-world things.
+Status: 2026-10-15. Covers the foes, the room bosses and the room modifiers of the daily dungeon, as in-world things.
 
 Read `README.md` for the tags. The dungeon has no look brief in the shipped data, so every visual line here is `(compendium detail, not shipped)`.
 
@@ -42,10 +42,10 @@ Foes have no turn order of their own: in the dungeon **your creatures always act
 
 ### Ember foes
 
-**Ember Mite** (Flare Up, every third round, hits the back zone)
+**Ember Mite** (Flare Up, every second round, pops on one random creature)
 
 - Shipped flavour `(content)`: "A glowing bug that nests in warm stones and pops like a tiny firework."
-- Compendium detail: a small bug that gathers in warm stone. Its trick reaches the back of the row, so a back creature needs to be ready.
+- Compendium detail: a small bug that gathers in warm stone. Its pop can land on any creature in the row, so no one is safe from it.
 
 **Ash Sprite** (no trick)
 
@@ -59,54 +59,58 @@ Foes have no turn order of their own: in the dungeon **your creatures always act
 - Shipped flavour `(content)`: "A hedge that learned to run. Its bark is mostly twigs."
 - Compendium detail: it is one of the Bramble Matron's children `(inferred)`. Its bark is mostly twigs, which is why it is easy to underestimate.
 
-**Moss Lurker** (Root Grab, every second round, strikes the creature with the highest Attack)
+**Moss Lurker** (Root Grab, every second round, slams the creature with the highest Attack and splashes the creatures beside it)
 
 - Shipped flavour `(content)`: "Looks like a mossy rock until it blinks. It likes the loudest visitor best."
 - Compendium detail: it sits still and waits for the loudest creature to step close, then grabs it. The rule of thumb for a team is: do not walk your strongest creature in front of the rock.
 
 ### Spark foes
 
-**Static Bat** (Zap Dive, every third round, strikes the creature with the highest Attack)
+**Static Bat** (Zap Dive, every third round, strikes the creature with the highest Attack, then arcs to one more)
 
 - Shipped flavour `(content)`: "Hangs from the ceiling crackling, and dives at whoever hits hardest."
 - Compendium detail: a bat that hunts by the static in the air. Its trick follows the strongest hitter, the same way the Storm Sovereign's Lightning Rod does `(inferred)`.
 
-**Flicker Swarm** (Buzz Cloud, every second round, hits the middle zone)
+**Flicker Swarm** (Buzz Cloud, every second round, pesters one random creature)
 
 - Shipped flavour `(content)`: "A hundred sparks that agree on nothing except which creature to pester."
-- Compendium detail: a crowd of sparks that moves as one. The middle of the row is its target, which is the only place it bothers.
+- Compendium detail: a crowd of sparks that moves as one. It does not care where a creature stands, only that it is there to pester.
 
 ---
 
 ## Room bosses
 
-Four room bosses, one per element. Each is the last room's foe, has more HP and hits harder than the foes before it, and has its own trick. `(content: dungeon-foes.json, glossary.json "room-boss")`
+Four room bosses, one per element. Each is the last room's foe, has more HP and hits harder than the foes before it, and has its own trick. At a landmark depth it also gains a signature move, announced a round ahead. `(content: dungeon-foes.json, glossary.json "room-boss")`
 
 Each room boss is a smaller echo of a raid boss `(inferred)`. The raid bosses are in `bosses.md`.
 
-### Drowned Warden (Tide; Flood Gate, every third round, hits the front zone)
+### Drowned Warden (Tide; Flood Gate, every third round, opens the gates on every row)
 
 - Shipped flavour `(content)`: "Guards a sunken door nobody has opened. It opens its own gates for you instead."
 - Compendium detail: a warden of the flooded corridor. It opens the gates for the team, which reads as a helpful boss. This is the dungeon's one "friendly" room boss `(inferred)`, which fits its opening gates.
-- Echo: the Tidal Colossus's Undertow `(inferred)`.
+- Echo: the Tidal Colossus's Undertow and Great Wave `(inferred)`.
+- Landmark signature, **Sluice Surge** (every fourth round, marked a round ahead): the gates open on every row at once, harder than the usual Flood Gate. `(content: dungeon-foes.json)`
 
-### Slag Tyrant (Ember; Molten Shell, reflects the first reaction of every round)
+### Slag Tyrant (Ember; Molten Shell, reflects the first reaction of every round; Anvil Fall, every third round, drops on the left creature and splashes the creatures beside it)
 
 - Shipped flavour `(content)`: "King of a cooled forge, wearing a crown of slag. It turns your best trick back on you."
 - Compendium detail: a king who once ran a forge that has since gone cold. The crown is slag, which is what a forge leaves behind.
 - Echo: the Cinder Wyrm's Backdraft `(inferred)`.
+- Landmark signature, **Slag Spill** (every fourth round, marked a round ahead): a slam on the strongest creature, and the creatures beside it are splashed. `(content: dungeon-foes.json)`
 
-### Bramble Matron (Grove; Tangle, every second round, silences the two ends; Thorn Rain, every fourth round, hits the back zone)
+### Bramble Matron (Grove; Tangle, every second round, silences the two ends; Thorn Rain, every third round, thorns land on two random creatures)
 
 - Shipped flavour `(content)`: "The old hedge that all the little hedges follow. Keep your right flank ready."
-- Compendium detail: the eldest hedge in the dungeon. She has two tricks, which makes her the only room boss with a back-row attack and a silence.
+- Compendium detail: the eldest hedge in the dungeon. She has two tricks: a silence, and thorns that land on two random creatures.
 - Echo: the Thornmother's Bramble Bind `(inferred)`.
+- Landmark signature, **Briar Cage** (every fourth round, marked a round ahead): the first and the last creature of the row take a hit. `(content: dungeon-foes.json)`
 
-### Coil Baron (Spark; Arc Lash, every round, strikes the creature with the highest Attack)
+### Coil Baron (Spark; Arc Lash, every round, strikes the creature with the highest Attack, then arcs to one more)
 
 - Shipped flavour `(content)`: "A bad-tempered tangle of copper and lightning. It always goes for your best fighter."
 - Compendium detail: a tangle of copper wire and lightning, which makes it the dungeon's machine-like foe. Copper and lightning is a cool, wired contrast with the Ember forge of the Slag Tyrant `(inferred)`.
 - Echo: the Storm Sovereign's Lightning Rod `(inferred)`.
+- Landmark signature, **Overload** (every fourth round, marked a round ahead): a slam on the strongest creature, and the creatures beside it are splashed. `(content: dungeon-foes.json)`
 
 ---
 

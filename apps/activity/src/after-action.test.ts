@@ -44,7 +44,7 @@ describe('headline and outcome', () => {
 
   it('describes how the stage ended, with the rounds played', () => {
     expect(outcomeLine(closeWin)).toBe(
-      `Phase 1 cleared after ${String(closeWin.rounds)} / 10 rounds.`,
+      `Phase 1 cleared after ${String(closeWin.rounds)} / 10 rounds: the boss retreated.`,
     );
     expect(outcomeLine(closeLoss)).toBe(
       `Phase 1 not cleared after ${String(closeLoss.rounds)} / 10 rounds.`,

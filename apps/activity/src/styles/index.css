@@ -44,6 +44,7 @@
 @import './stage/abilities.css';
 @import './stage/fx.css';
 @import './stage/motion.css';
+@import './stage/patterns.css';
 @import './stage/ability-auto.css';
 @import './stage/countdown.css';
 @import './views/app.css';

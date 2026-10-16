@@ -125,10 +125,83 @@ export const GimmickTriggerSchema = v.union([
 ]);
 export type GimmickTrigger = v.InferOutput<typeof GimmickTriggerSchema>;
 
+/** A share in basis points, 1 to 10000 (100%). */
+const Share = v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(10_000));
+const Count0to3 = v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(3));
+const Count1to6 = v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(6));
+
+/** The rows a sweep's walk can name. */
+export const SWEEP_ROWS = ['front', 'middle', 'back', 'all', 'payoffs'] as const;
+export type SweepRow = (typeof SWEEP_ROWS)[number];
+/** Whom a slam's main hit is aimed at. */
+export const SLAM_AIMS = ['front', 'strongest', 'left', 'random', 'payoff'] as const;
+export type SlamAim = (typeof SLAM_AIMS)[number];
+
+// Attack patterns (docs/design/attack-patterns.md section 2). Powers are basis points of boss Attack
+// per creature hit. "Aimed" hits can be taken by a Guard; "area" hits cannot, but a Guard's
+// neighbours take less from them (cover, `RULES.combat.coverBp`).
+
+/**
+ * Sweep: every living creature in one row takes `power` (area). `rows` is a walk: firing n hits
+ * `rows[(n - 1) mod length]`; `all` is every row (in the dungeon, the whole row of three);
+ * `payoffs` is the row with the most living Payoffs (ties: the front-most), picked when the sweep
+ * is planned, so it punishes a row that stacks its Payoffs (docs/design/combat-rules.md 6.7).
+ */
+const sweepFields = {
+  rows: v.pipe(v.array(v.picklist(SWEEP_ROWS)), v.minLength(1), v.maxLength(4)),
+  power: BasisPoints,
+};
+/**
+ * Barrage: `clamp(ceil(living x shareBp / 10000), min, max)` distinct living creatures, picked from
+ * the round's dice, each take `power` (area, not interceptable). A creature hit by this gimmick's
+ * last volley is skipped unless fewer than the count others live. At most 6 shells.
+ */
+const barrageFields = {
+  shells: v.strictObject({ min: Count1to6, max: Count1to6, shareBp: Share }),
+  power: BasisPoints,
+};
+/**
+ * Slam: one aimed hit on the victim (`front`: the front-most living creature, as the plain attack;
+ * `strongest`: highest Attack; `left`: the left-most living creature; `random`: one die; `payoff`:
+ * the living Payoff with the highest Attack, else the strongest creature). The creature that takes it (the victim, or a Guard stepping in) is the impact; each living creature
+ * beside the impact takes `splashBp` of the hit's damage as an area hit.
+ */
+const slamFields = {
+  aim: v.picklist(SLAM_AIMS),
+  power: BasisPoints,
+  splashBp: Share,
+};
+/**
+ * Lance: one lane (the same slot position in every row; `random`: one die, `strongest`: the lane of
+ * the highest-Attack creature) takes `power`, then `power x falloffBp`, and so on, front to back
+ * (area). A Guard in the lane takes its hit and stops the lance. In the dungeon it is one creature.
+ */
+const lanceFields = {
+  lane: v.picklist(['random', 'strongest']),
+  power: BasisPoints,
+  falloffBp: Share,
+};
+/**
+ * Pincer: the first and last living creature of every row (`rows`) or of the whole row (`row`, the
+ * dungeon) take `power` (area). A one-creature row is hit once.
+ */
+const pincerFields = {
+  scope: v.picklist(['rows', 'row']),
+  power: BasisPoints,
+};
+
+/**
+ * The first Boss Rank a raid boss move is in play at (absent: always). Raid bosses only: the worker
+ * hands the fight the boss as `bossAtRank` makes it for the week's rank, so a stored fight keeps the
+ * moves it was fought with. A dungeon foe's move may not carry it (`loadDungeon`).
+ */
+export const FromRankSchema = v.pipe(v.number(), v.integer(), v.minValue(2), v.maxValue(99));
+
 const gimmickBase = {
   id: IdSchema,
   name: NameSchema,
   trigger: GimmickTriggerSchema,
+  fromRank: v.optional(FromRankSchema),
 };
 
 /** Gimmick effect operations: a small closed set the engine interprets. Powers are basis points of boss Attack. */
@@ -145,11 +218,50 @@ export const GimmickSchema = v.variant('op', [
     turns: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(3)),
   }),
   v.strictObject({ ...gimmickBase, op: v.literal('reflect_first_reaction') }),
-  v.strictObject({ ...gimmickBase, op: v.literal('strike_highest_atk'), power: BasisPoints }),
+  /**
+   * The strongest living creature (highest Attack, ties: lower slot), an aimed hit; then `jumps`
+   * more (0 to 3, default 0) to the next strongest, each an area hit at `power x decay^k`
+   * (`decayBp`, default 5500). The same creature is never hit twice. Defaults: today's strike.
+   */
+  v.strictObject({
+    ...gimmickBase,
+    op: v.literal('strike_highest_atk'),
+    power: BasisPoints,
+    jumps: v.optional(Count0to3),
+    decayBp: v.optional(Share),
+  }),
+  v.strictObject({ ...gimmickBase, op: v.literal('sweep'), ...sweepFields }),
+  v.strictObject({ ...gimmickBase, op: v.literal('barrage'), ...barrageFields }),
+  v.strictObject({ ...gimmickBase, op: v.literal('slam'), ...slamFields }),
+  v.strictObject({ ...gimmickBase, op: v.literal('lance'), ...lanceFields }),
+  v.strictObject({ ...gimmickBase, op: v.literal('pincer'), ...pincerFields }),
+  /**
+   * A pattern announced a round ahead (docs/design/attack-patterns.md 2.7). `trigger` is the round
+   * it lands (so it needs `every`, at least 2); at the start of the round before, the engine picks
+   * the victims and emits a `charge` event naming them. A victim that fell in between is skipped.
+   */
+  v.strictObject({
+    ...gimmickBase,
+    op: v.literal('charge'),
+    then: v.variant('op', [
+      v.strictObject({ op: v.literal('sweep'), ...sweepFields }),
+      v.strictObject({ op: v.literal('barrage'), ...barrageFields }),
+      v.strictObject({ op: v.literal('slam'), ...slamFields }),
+      v.strictObject({ op: v.literal('lance'), ...lanceFields }),
+      v.strictObject({ op: v.literal('pincer'), ...pincerFields }),
+    ]),
+  }),
 ]);
 export type Gimmick = v.InferOutput<typeof GimmickSchema>;
+export type GimmickOp = Gimmick['op'];
+/** The patterns a `charge` can carry. */
+export type ChargedPattern = Extract<Gimmick, { op: 'charge' }>['then'];
+/** The ops that are attack patterns (they draw the round's pattern dice). */
+export const PATTERN_OPS = ['sweep', 'barrage', 'slam', 'lance', 'pincer', 'charge'] as const;
 
 export const MAX_FINALE_ROUNDS = 30;
+/** The most moves a raid boss has in its content (all ranks together). */
+export const MAX_BOSS_GIMMICKS = 6;
 
 export const BossSchema = v.strictObject({
   id: IdSchema,
@@ -158,7 +270,7 @@ export const BossSchema = v.strictObject({
   baseHp: PositiveInt,
   baseAtk: PositiveInt,
   turnOrder: TurnOrderSchema,
-  gimmicks: v.pipe(v.array(GimmickSchema), v.maxLength(4)),
+  gimmicks: v.pipe(v.array(GimmickSchema), v.maxLength(MAX_BOSS_GIMMICKS)),
   /** Id of the Phase 2 adaptation rule. */
   adaptation: IdSchema,
   /** Id of the loot table (loot tables arrive with the gear step). */
@@ -167,6 +279,11 @@ export const BossSchema = v.strictObject({
   finaleRounds: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(MAX_FINALE_ROUNDS)),
   /** Optional crit bonus over the boss baseline (`RULES.combat.luck`). Inert while luck is off. */
   crit: v.optional(CritBonusSchema),
+  /**
+   * Optional lines for the moment the boss reaches a phase's floor and retreats (it is immune and
+   * the phase ends; docs/design/raid-ux-2.md). Absent: the shared fallback line. Plain text.
+   */
+  retreat: v.optional(v.strictObject({ phase1: Description, phase2: Description })),
   /**
    * Optional head-count exponent of this boss's HP, a fraction `num / den` (absent:
    * `RULES.raid.scaling.hpExponent`). Bosses answer differently to a bigger raid (Backdraft's
@@ -181,6 +298,20 @@ export const BossSchema = v.strictObject({
   ),
 });
 export type BossDef = v.InferOutput<typeof BossSchema>;
+
+/**
+ * The boss as it fights at Boss Rank `rank`: its moves whose `fromRank` is absent or at most `rank`
+ * (in content order, so a move keeps its place and its dice window). Pure. A rank below 1 or a
+ * rank that is not a whole number counts as rank 1. The result is a new object; the boss it came
+ * from is untouched, and a boss with nothing gated comes back unchanged in content.
+ */
+export function bossAtRank(boss: BossDef, rank: number): BossDef {
+  const at = Number.isFinite(rank) ? Math.max(1, Math.floor(rank)) : 1;
+  return {
+    ...boss,
+    gimmicks: boss.gimmicks.filter((g) => g.fromRank === undefined || g.fromRank <= at),
+  };
+}
 
 export const AdaptationSchema = v.strictObject({
   id: IdSchema,

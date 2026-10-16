@@ -110,6 +110,10 @@
       "owner": "m1"
     }
   ],
+  "rules": {
+    "guardHpBp": 0,
+    "guardArmorBp": 2500
+  },
   "names": {
     "boss": "Storm Sovereign",
     "creatures": {

@@ -5,7 +5,7 @@
       "title": "Your first week",
       "lines": [
         "Pick a starter. Your first expedition always brings back a Zipmouse.",
-        "Leet in Discord to earn Bait. Spend Bait to train and to explore.",
+        "Open the game each day for a Bait allowance, and leet in Discord for a bonus. Spend Bait to train and to explore.",
         "Train a creature to level 10 to unlock its finale ability.",
         "You join the weekly raid automatically. You can sit a week out.",
         "On Sunday evening everyone fights the boss together."
@@ -94,9 +94,9 @@
       "lines": [
         "Clear a stage and everyone in the party gets Essence.",
         "Most of it is equal. A share depends on how much you helped.",
-        "Higher Ranks and Festival weeks pay more Essence.",
-        "Spend Essence to evolve your creatures.",
-        "Leets earn Bait. Raids earn Essence."
+        "Win the finale and everyone in the party also gets a gear piece or a blueprint.",
+        "Higher Ranks pay more Essence and better gear. Festival weeks pay more Essence.",
+        "Spend Essence to evolve your creatures. Opening the game and leeting earn Bait."
       ]
     },
     {
@@ -104,7 +104,7 @@
       "title": "The Workshop",
       "lines": [
         "Gear is one item per creature. It adds a little to its stats in every fight.",
-        "Raid finales, expeditions and Festivals drop gear, parts and blueprints.",
+        "A won finale gives each player a gear piece or a blueprint. Expeditions and Festivals drop gear and parts too.",
         "Spend Essence and scrap to upgrade gear. Dismantle gear to get parts back.",
         "Creatures work jobs in the Workshop: craft, improve or enchant, even while you are away.",
         "A creature on a job cannot go on an expedition. It still fights in raids."

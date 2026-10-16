@@ -13,8 +13,8 @@
  *   current one, so the schedule up to the current round never changes. A fight stored before this
  *   pacing (`pacing` 0) keeps its fixed `round_ms` schedule.
  * - Fire, Hold and Unhold (the Auto fire toggle, off and on) are written in a transaction, with the round taken from the clock at that moment.
- * - The fight ends once its last round has played: round `rounds`, or the round the boss falls in, plus
- *   its playback. It then resolves once through `settleParty` (Essence, jackpot rolls with fresh live
+ * - The fight ends once its last round has played: round `rounds` (plus up to the enrage rounds when
+ *   the boss still stands), or the round the boss falls in, plus its playback. It then resolves once through `settleParty` (Essence, jackpot rolls with fresh live
  *   randomness, server firsts, the Discord post). The result row is the done marker.
  *
  * A practice fight (staging only) is the same fight with its own row, no payout and no result.
@@ -210,6 +210,15 @@ export function finaleResolved(sql: SqlStorage, weekId: string, party: number): 
   );
 }
 
+/**
+ * How many rounds the schedule has at most: the finale's rounds plus the enrage rounds of its stored
+ * input (none for a fight stored before enrage). Abilities still live in the regular rounds only
+ * (`row.rounds`); enrage rounds add playback time but nothing to press.
+ */
+export function scheduleRounds(row: Pick<LiveRow, 'rounds' | 'input'>): number {
+  return row.rounds + (row.input.enrage?.rounds ?? 0);
+}
+
 /** The engine's ability list for what the members have done so far. */
 export function engineAbilities(row: LiveRow): AbilityChoice[] {
   return row.abilities.map((a): AbilityChoice => {
@@ -233,7 +242,7 @@ export function engineAbilities(row: LiveRow): AbilityChoice[] {
 }
 
 export interface LiveState {
-  /** The round the clock is in, 1..rounds (rounds that have played are 1..round). */
+  /** The round the clock is in, 1..rounds plus enrage rounds (rounds that have played are 1..round). */
   clockRound: number;
   /** The last round has played and its playback is over. */
   timeUp: boolean;
@@ -303,7 +312,7 @@ function simulate(row: LiveRow): Simulated {
  * (`pacing` 0) have a fixed `roundMs` for every round.
  */
 export function roundStartsOf(
-  row: Pick<LiveRow, 'startedAt' | 'roundMs' | 'rounds' | 'pacing'>,
+  row: Pick<LiveRow, 'startedAt' | 'roundMs' | 'rounds' | 'pacing' | 'input'>,
   result: FightResult,
 ): { starts: number[]; endsAt: number } {
   if (row.pacing < PACING_CONTENT) {
@@ -318,7 +327,7 @@ export function roundStartsOf(
     if (list === undefined) byRound.set(e.round, [e]);
     else list.push(e);
   }
-  const last = Math.max(1, Math.min(row.rounds, result.rounds));
+  const last = Math.max(1, Math.min(scheduleRounds(row), result.rounds));
   const starts: number[] = [];
   let at = row.startedAt;
   for (let r = 1; r <= last; r++) {
@@ -334,7 +343,7 @@ export function evaluate(row: LiveRow, now: number): LiveState {
   const { starts, endsAt } = roundStartsOf(row, result);
   let clockRound = 1;
   while (clockRound < starts.length && (starts[clockRound] as number) <= now) clockRound++;
-  clockRound = Math.min(clockRound, row.rounds);
+  clockRound = Math.min(clockRound, scheduleRounds(row));
   let ended: boolean;
   if (row.pacing < PACING_CONTENT) {
     // The rule fights stored before content pacing were run by: over at the end of the last round,

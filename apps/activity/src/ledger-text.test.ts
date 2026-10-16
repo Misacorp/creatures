@@ -22,6 +22,12 @@ describe('describeEntry', () => {
     );
   });
 
+  it('describes the daily allowance', () => {
+    expect(
+      describeEntry(entry({ amount: 25, source: 'allowance', meta: { day: '2026-10-20' } })),
+    ).toBe('+25 Bait · daily allowance');
+  });
+
   it('calls the gear debit a gear upgrade', () => {
     expect(describeEntry(entry({ currency: 'essence', amount: -30, source: 'gear' }))).toBe(
       '-30 Essence · gear upgrade',

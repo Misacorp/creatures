@@ -4,6 +4,7 @@
  * functions. The server decides every number; the client only phrases them, and never shows a
  * forecast number (the readiness band is four words).
  */
+import { finaleUpgradeLevel } from '@creatures/game';
 import { speciesName } from './game';
 import { compactPair } from './number-format';
 import type { TrackStep, TrackUnlock } from './progress-track';
@@ -120,6 +121,17 @@ export function festivalTeaser(
 ): string | null {
   if (!view.festival || view.festivalCreature === null) return null;
   return `${speciesName(view.festivalCreature)} can only be won in a Festival. It is not found on expeditions.`;
+}
+
+/**
+ * What winning the finale pays, for the boss card: Essence for everyone and the reward slot (a gear
+ * piece or a blueprint), better at higher ranks. Once the rank is high enough for upgraded gear, it
+ * names the level this week's gear arrives at (the server's rank decides it, as it does the drop).
+ */
+export function winPaysText(view: Pick<RaidView, 'rank'>): string {
+  const base = 'Win: Essence for everyone, plus a gear piece or blueprint, better at higher ranks.';
+  const level = view.rank === null ? 0 : finaleUpgradeLevel(view.rank);
+  return level > 0 ? `${base} This week's gear arrives at +${String(level)}.` : base;
 }
 
 /** "Best rank cleared: Rank 5", or null until the server has cleared a normal week. */

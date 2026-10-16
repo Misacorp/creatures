@@ -6,23 +6,32 @@ import { bossArt, elementClass, markPalette } from './art';
 import { cssVars } from './css-vars';
 import { foeButtonLabel, foeInfoOf, foeElement, type FoeInfo } from './foe-info';
 import { GlossaryTag } from './Glossary';
-import { gimmickGlyph, glyphOrUnknown } from './glyphs';
+import { CHAIN_GLYPH, gimmickGlyph, glyphOrUnknown } from './glyphs';
 import { useElementWidth, usePrefersReducedMotion } from './hooks';
 import { abilityControls, abilityName, abilityTitle } from './live';
 import { scrollToLanes } from './lane-scroll';
 import type { LiveAbility, LiveFight } from './live-api';
-import type { ReplayRowEntry } from './raid-api';
+import type { FightGuardRules, RaidPhaseId, ReplayRowEntry } from './raid-api';
 import { boardRows, laneStates, ownLaneSpan, placeOf } from './raid-board';
 import { stateAt } from './replay';
+import { enrageLine, retreatLine } from './raid-text';
 import {
   abilityUsesAt,
   actingSlots,
   cuesForEvents,
   creatureHpAt,
+  enragedAt,
+  estimatedMaxHp,
   groupByZone,
   ordinal,
+  pendingChargesAt,
+  retreatedAt,
+  reticleTargets,
+  showsNumber,
   stageStateAt,
+  strikeRows,
   type AbilityUse,
+  type BossStrike,
 } from './stage';
 import { badgeFor, unitTap, usedBadge, type Badge } from './stage-abilities';
 import { creatureInfoOf } from './creature-info';
@@ -194,7 +203,9 @@ function RoundIntro({ intro }: { intro: IntroView }) {
         <span class="ri-label">
           <span>Round</span>
           <span>{intro.round}</span>
-          {intro.rounds !== null && <span class="ri-of">/ {intro.rounds}</span>}
+          {intro.rounds !== null && intro.round <= intro.rounds && (
+            <span class="ri-of">/ {intro.rounds}</span>
+          )}
         </span>
       </PixelHeading>
     </div>
@@ -202,39 +213,74 @@ function RoundIntro({ intro }: { intro: IntroView }) {
 }
 
 /** The glyph that goes with a boss action's label. */
-function strikeGlyph(action: string) {
-  switch (action) {
+function strikeGlyph(strike: BossStrike) {
+  switch (strike.action) {
     case 'hit_zone':
     case 'silence_ends':
+    case 'sweep':
+    case 'barrage':
+    case 'slam':
+    case 'lance':
+    case 'pincer':
+    case 'charge':
+      return gimmickGlyph(strike.action);
     case 'strike_highest_atk':
-      return gimmickGlyph(action);
+      return strike.targets.length > 1 ? glyphOrUnknown(CHAIN_GLYPH) : gimmickGlyph(strike.action);
     case 'reflect':
     case 'reflect_armed':
       return gimmickGlyph('reflect_first_reaction');
+    case 'enrage':
+      return glyphOrUnknown('warning');
     default:
       return glyphOrUnknown('reticle');
   }
 }
 
-/** True for the boss actions that hit one creature at a time (they get a beam, a slash and reticles). */
-const aimsAtCreatures = (action: string): boolean =>
-  action !== 'hit_zone' && action !== 'reflect_armed';
-
 /**
  * The marks the boss telegraph puts on one creature: during the wind-up red crosshairs over exactly
- * the creatures it will hit; when the hit lands a solid red frame, a slash and, on a creature a
- * Shield Wall protected or that a guard stepped in for, a shield (the blocked mark). A zone hit
- * marks its whole row instead (see `ZoneFx`). The frames are static outlines, so they also read
- * without motion.
+ * the creatures it will hit (never more than six: `reticleTargets`) and a small ring on each
+ * creature a slam's splash will reach; when the hit lands a solid red frame, a slash and, on a
+ * creature a Shield Wall protected or that a guard stepped in for, a shield (the blocked mark), and
+ * a splash ring on the neighbours. A creature a Guard's cover softened a hit for gets a small shield
+ * pip on its right, and a Guard whose armor took damage off a hit gets one on its left. A zone hit or a sweep marks its whole row instead (see the zone frames). The frames are
+ * static outlines, so they also read without motion.
  */
 function Marks({ fx, id }: { fx: readonly FxItem[]; id: string }) {
   return (
     <>
       {fx.map((item) => {
         const { cue } = item;
-        if (cue.kind === 'windup') {
-          if (!aimsAtCreatures(cue.strike.action) || !cue.strike.targets.includes(id)) return null;
+        if (cue.kind === 'cover') {
+          if (cue.creature !== id) return null;
           return (
+            <span
+              key={`cover-${String(cue.i)}`}
+              class="cover-pip"
+              aria-hidden="true"
+              ref={fxRef(item)}
+            >
+              <Sprite sprite={glyphOrUnknown('shield')} scale={1} />
+            </span>
+          );
+        }
+        if (cue.kind === 'armor') {
+          if (cue.creature !== id) return null;
+          return (
+            <span
+              key={`armor-${String(cue.i)}`}
+              class="armor-pip"
+              aria-hidden="true"
+              ref={fxRef(item)}
+            >
+              <Sprite sprite={glyphOrUnknown('shield')} scale={1} />
+            </span>
+          );
+        }
+        if (cue.kind === 'windup') {
+          const reticle = reticleTargets(cue.strike).includes(id);
+          const ring = cue.strike.splash?.includes(id) === true;
+          if (!reticle && !ring) return null;
+          return reticle ? (
             <span
               key={`windup-${String(cue.i)}`}
               class="reticle windup"
@@ -243,17 +289,26 @@ function Marks({ fx, id }: { fx: readonly FxItem[]; id: string }) {
             >
               <Sprite sprite={glyphOrUnknown('reticle')} scale={2} />
             </span>
+          ) : (
+            <span
+              key={`windup-${String(cue.i)}`}
+              class="splash-ring windup"
+              aria-hidden="true"
+              ref={fxRef(item)}
+            />
           );
         }
         if (cue.kind !== 'strike') return null;
         const { strike } = cue;
         const blocked = strike.blocked.includes(id) || strike.guarded === id;
-        const hit = aimsAtCreatures(strike.action) && strike.targets.includes(id);
-        if (!hit && !blocked) return null;
+        const hit = reticleTargets(strike).includes(id);
+        const ring = strike.splash?.includes(id) === true;
+        if (!hit && !blocked && !ring) return null;
         return (
           <Fragment key={`strike-${String(cue.i)}`}>
             {hit && <span class="reticle struck" aria-hidden="true" ref={fxRef(item)} />}
             {hit && <span class="slash" aria-hidden="true" ref={fxRef(item)} />}
+            {ring && <span class="splash-ring struck" aria-hidden="true" ref={fxRef(item)} />}
             {blocked && (
               <span class="block-mark" aria-hidden="true" ref={fxRef(item)}>
                 <Sprite sprite={glyphOrUnknown('shield')} scale={2} />
@@ -277,11 +332,14 @@ function Beam({
   from,
   to,
   ms,
+  between = false,
 }: {
   layer: RefObject<HTMLElement>;
   from: () => HTMLElement | null;
   to: () => HTMLElement | null;
   ms: number;
+  /** From one creature to another (a chain's jump, a lance): the beam starts at the middle of the first. */
+  between?: boolean;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   useLayoutEffect(() => {
@@ -291,7 +349,7 @@ function Beam({
     const b = to()?.getBoundingClientRect();
     if (el === null || base === undefined || a === undefined || b === undefined) return;
     const x1 = a.left + a.width / 2 - base.left;
-    const y1 = a.top + a.height * 0.75 - base.top;
+    const y1 = a.top + a.height * (between ? 0.5 : 0.75) - base.top;
     const x2 = b.left + b.width / 2 - base.left;
     const y2 = b.top + b.height / 2 - base.top;
     el.style.setProperty('--bx', `${String(Math.round(x1))}px`);
@@ -301,7 +359,7 @@ function Beam({
     el.style.setProperty('--fx-ms', `${String(ms)}ms`);
     el.classList.add('placed');
   }, []);
-  return <span ref={ref} class="strike-beam" aria-hidden="true" />;
+  return <span ref={ref} class={`strike-beam${between ? ' between' : ''}`} aria-hidden="true" />;
 }
 
 /** What the live stage needs to put the player's abilities on their creatures. */
@@ -332,7 +390,13 @@ interface StageProps {
    * own is used otherwise). The element shows as a chip after the name; tapping the picture opens its
    * popover.
    */
-  boss: { id: string; name: string; element?: string };
+  boss: {
+    id: string;
+    name: string;
+    element?: string;
+    /** The boss's own retreat lines, when the server sent them. */
+    retreat?: { phase1: string; phase2: string } | null;
+  };
   hpMax: number;
   hpStart: number;
   /**
@@ -343,6 +407,8 @@ interface StageProps {
   rounds: number | null;
   /** The row, left to right. */
   row: readonly ReplayRowEntry[];
+  /** The Guard numbers of the rules the fight was played with; absent: the content's old Guard. */
+  rules?: FightGuardRules;
   /** The lobby's preview: no round yet, so the head says to get ready instead of "Round 1". */
   lobby?: boolean;
   /** The creatures that are the player's own: they are outlined and marked "you". */
@@ -376,6 +442,11 @@ interface StageProps {
   place?: string;
   /** The room's modifiers, as small tags after the place in the head (the dungeon). */
   modifiers?: readonly StageModifier[];
+  /**
+   * The raid phase being shown, for the line the boss says when it retreats at the phase's floor
+   * (Phase 1: "back in Phase 2"). Absent (the finale, the dungeon): the line does not name a phase.
+   */
+  phase?: RaidPhaseId;
   /** Gimmicks the foe has only in this room (the dungeon's modifier), so the forecast names them too. */
   addedGimmicks?: readonly Gimmick[];
   /**
@@ -417,6 +488,39 @@ function AbilityBadge({ badge }: { badge: Badge }) {
       )}
     </span>
   );
+}
+
+/**
+ * The beams a landed boss action draws: from the boss to each creature it hit (the first four), a
+ * chain's arcs from one creature to the next, and a lance's line from its first creature to its last
+ * (the lane runs through them). Sweeps, barrages, pincers, charges and the enrage round draw none:
+ * their outlines and marks say it.
+ */
+function beamsOf(strike: BossStrike): { from: string | null; to: string }[] {
+  const targets = reticleTargets(strike);
+  switch (strike.action) {
+    case 'sweep':
+    case 'barrage':
+    case 'pincer':
+    case 'charge':
+    case 'enrage':
+    case 'hit_zone':
+    case 'reflect_armed':
+      return [];
+    case 'lance': {
+      const first = targets[0];
+      const last = targets[targets.length - 1];
+      return first === undefined || last === undefined || first === last
+        ? []
+        : [{ from: first, to: last }];
+    }
+    case 'strike_highest_atk':
+      return targets
+        .slice(0, 4)
+        .map((to, k) => ({ from: k === 0 ? null : (targets[k - 1] ?? null), to }));
+    default:
+      return targets.slice(0, 4).map((to) => ({ from: null, to }));
+  }
 }
 
 /**
@@ -472,6 +576,8 @@ interface UnitProps {
   boxRef: Ref<HTMLLIElement>;
   /** The boss will silence this creature next round (a warning glyph on it). */
   warned: boolean;
+  /** The creature is marked for a charged attack that lands next round (a persistent amber mark). */
+  charged: boolean;
   /** The creature's HP now and at most (the dungeon); null when the stage shows no creature HP. */
   hp: { current: number; max: number } | null;
   /**
@@ -494,7 +600,7 @@ function StageUnit(props: UnitProps) {
   const icon = elementIcon(c.element);
 
   const spoken =
-    `${props.slot === null ? '' : `Acts ${ordinal(props.slot)}, `}${c.name}${mine ? ', yours' : ''}${ko ? ', knocked out' : ''}` +
+    `${props.slot === null ? '' : `Acts ${ordinal(props.slot)}, `}${c.name}${mine ? ', yours' : ''}${ko ? ', knocked out' : ''}${props.charged ? ", marked for the boss's next attack" : ''}` +
     (props.hp === null || ko ? '' : `, HP ${String(props.hp.current)} / ${String(props.hp.max)}`) +
     (badge === null
       ? ''
@@ -524,6 +630,11 @@ function StageUnit(props: UnitProps) {
         {props.warned && (
           <span class="warn-mark" aria-hidden="true">
             <Sprite sprite={glyphOrUnknown('warning')} scale={2} />
+          </span>
+        )}
+        {props.charged && !ko && (
+          <span class="charge-mark" aria-hidden="true">
+            <Sprite sprite={glyphOrUnknown('charge')} scale={2} />
           </span>
         )}
         <Marks fx={props.fx} id={c.id} />
@@ -604,18 +715,20 @@ export function Stage({
   hpStart,
   rounds,
   row,
+  rules,
   lobby,
   mineIds,
   names,
   events,
   index,
   anim,
-  fx = [],
+  fx: allFx = [],
   intro = null,
   creatureHp,
   layout = 'zones',
   place,
   modifiers,
+  phase,
   addedGimmicks,
   overlay,
   abilities,
@@ -650,6 +763,26 @@ export function Stage({
       : cuesForEvents(events, anim.from, Math.min(anim.to, index), rowIds, boss.id);
   const creatureHpNow =
     creatureHp === undefined ? {} : creatureHpAt(events, index, creatureHp.start);
+  // A crowded action (more than eight creatures hit) shows only its big numbers, judged by each
+  // creature's max HP: the dungeon's own, or an estimate from species and level in the raid.
+  const maxHpOf = (id: string): number | null => {
+    const known = creatureHp?.max[id];
+    if (known !== undefined) return known;
+    const entry = row.find((c) => c.id === id);
+    return entry === undefined ? null : estimatedMaxHp(entry, rules);
+  };
+  const fx = allFx.filter(
+    (item) =>
+      item.cue.kind !== 'float' ||
+      item.cue.target === null ||
+      showsNumber(item.cue, maxHpOf(item.cue.target)),
+  );
+  // Charged attacks that are announced and have not landed: their victims and rows stay marked.
+  const pending = pendingChargesAt(events, index);
+  const chargedIds = new Set(pending.flatMap((c) => c.marks));
+  const chargedRows = new Set(pending.flatMap((c) => c.rows));
+  const enraged = enragedAt(events, index);
+  const retreated = retreatedAt(events, index);
   const previousHp = anim === null ? state.bossHp : stateAt(events, anim.from, hpStart).bossHp;
   const art = bossArt(boss.id);
   // What the foe's popover tells, from the content: its element, HP, line and what it does.
@@ -804,14 +937,14 @@ export function Stage({
     const layoutOf = single ? zoneLayout(row.length, width, ROW_LAYOUT) : null;
     const scale = layoutOf === null ? GRID_SCALE : layoutOf.tier.scale;
     const zoneWindup = fx.filter(
-      (i) =>
-        i.cue.kind === 'windup' && i.cue.strike.action === 'hit_zone' && i.cue.strike.zone === zone,
+      (i) => i.cue.kind === 'windup' && strikeRows(i.cue.strike).includes(zone),
     );
+    const zoneCharged = chargedRows.has(zone);
     const warnedZone = forecast?.zones.includes(zone) === true;
     return (
       <div
         key={zone}
-        class={`stage-zone zone-${zone}${shaking.has(zone) ? ' shake' : ''}${warnedZone ? ' warned' : ''}`}
+        class={`stage-zone zone-${zone}${shaking.has(zone) ? ' shake' : ''}${warnedZone ? ' warned' : ''}${zoneCharged ? ' charged' : ''}`}
         role="group"
         aria-label={single ? zoneName : `${zoneName} zone`}
         {...(layoutOf === null ? {} : { ref: cssVars(layoutVars(layoutOf, ROW_LAYOUT)) })}
@@ -819,6 +952,11 @@ export function Stage({
         {single && warnedZone && (
           <span class="zone-warn" aria-hidden="true">
             <Sprite sprite={glyphOrUnknown('warning')} scale={2} />
+          </span>
+        )}
+        {single && zoneCharged && (
+          <span class="zone-charge" aria-hidden="true">
+            <Sprite sprite={glyphOrUnknown('charge')} scale={2} />
           </span>
         )}
         <ul class="zone-units">
@@ -833,6 +971,7 @@ export function Stage({
             if (hit.has(c.id)) classes.push('hit');
             if (dropped.has(c.id)) classes.push('drop');
             if (silenced.has(c.id)) classes.push('silenced');
+            if (chargedIds.has(c.id) && !ko) classes.push('charged');
 
             // The player's own creature with an ability is a button with a badge; every
             // other creature only shows a "used" mark once its ability has fired.
@@ -874,6 +1013,7 @@ export function Stage({
                 anchorRef={anchorRef(key ?? `none:${c.id}`)}
                 boxRef={boxRef(c.id)}
                 warned={forecast?.ends.includes(c.id) === true}
+                charged={chargedIds.has(c.id)}
                 hp={
                   creatureHp === undefined
                     ? null
@@ -970,7 +1110,7 @@ export function Stage({
       <div class="stage-boss">
         <div
           ref={bossRef}
-          class={`stage-boss-art${hit.has(null) ? ' hit' : ''}${windupItem === undefined ? '' : ' windup'}`}
+          class={`stage-boss-art${hit.has(null) ? ' hit' : ''}${windupItem === undefined ? '' : ' windup'}${retreated ? ' retreated' : ''}${enraged ? ' enraged' : ''}`}
         >
           <FoeFace info={foe}>
             <Sprite sprite={art.sprite} scale={art.scale} />
@@ -1020,11 +1160,33 @@ export function Stage({
           label={`${boss.name} HP: ${String(state.bossHp)} / ${String(hpMax)}`}
           text={compactPair(state.bossHp, hpMax)}
         />
+        {enraged && (
+          <p class="enrage-banner" role="note">
+            <GlossaryTag entry="enrage" class="enrage-title pix">
+              Enraged
+            </GlossaryTag>
+            <span class="enrage-line">{enrageLine(boss.name)}</span>
+          </p>
+        )}
+        {retreated && (
+          <p class="retreat-line" role="note">
+            <GlossaryTag entry="retreat" class="retreat-title pix">
+              Immune
+            </GlossaryTag>
+            <span>{retreatLine(boss.id, boss.name, phase, boss.retreat)}</span>
+          </p>
+        )}
         <div class={`stage-line${strikeItem === undefined ? '' : ' has-strike'}`}>
           {forecast !== null && (
-            <p class="forecast pix" role="note">
+            <p class="forecast pix" role="note" aria-label={forecast.text}>
               <Sprite sprite={glyphOrUnknown('warning')} scale={2} />
-              <span>{forecast.text}</span>
+              <span class="forecast-lines" aria-hidden="true">
+                {forecast.lines.map((line, k) => (
+                  <span key={k} class="forecast-line">
+                    {line}
+                  </span>
+                ))}
+              </span>
             </p>
           )}
           {strikeItem?.cue.kind === 'strike' && (
@@ -1034,7 +1196,7 @@ export function Stage({
               aria-hidden="true"
               ref={fxRef(strikeItem)}
             >
-              <Sprite sprite={strikeGlyph(strikeItem.cue.strike.action)} scale={2} />
+              <Sprite sprite={strikeGlyph(strikeItem.cue.strike)} scale={2} />
               <span>{strikeLabel(strikeItem.cue.strike, names, wording).text}</span>
             </p>
           )}
@@ -1086,6 +1248,11 @@ export function Stage({
                     {warned && (
                       <span class="zone-warn" aria-hidden="true">
                         <Sprite sprite={glyphOrUnknown('warning')} scale={2} />
+                      </span>
+                    )}
+                    {chargedRows.has(zone) && (
+                      <span class="zone-warn charge" aria-hidden="true">
+                        <Sprite sprite={glyphOrUnknown('charge')} scale={2} />
                       </span>
                     )}
                   </p>
@@ -1178,20 +1345,19 @@ export function Stage({
       <div class="stage-strikes" ref={layerRef} aria-hidden="true">
         {strikeItems.map((item) => {
           const { cue } = item;
-          if (cue.kind !== 'strike' || item.ms === 0 || !aimsAtCreatures(cue.strike.action)) {
-            return null;
-          }
-          return cue.strike.targets
-            .slice(0, 4)
-            .map((target) => (
-              <Beam
-                key={`beam-${String(cue.i)}-${target}`}
-                layer={layerRef}
-                from={() => bossRef.current}
-                to={() => boxes.current.get(target) ?? null}
-                ms={item.ms}
-              />
-            ));
+          if (cue.kind !== 'strike' || item.ms === 0) return null;
+          return beamsOf(cue.strike).map((beam) => (
+            <Beam
+              key={`beam-${String(cue.i)}-${beam.from ?? 'boss'}-${beam.to}`}
+              layer={layerRef}
+              from={() =>
+                beam.from === null ? bossRef.current : (boxes.current.get(beam.from) ?? null)
+              }
+              to={() => boxes.current.get(beam.to) ?? null}
+              ms={item.ms}
+              between={beam.from !== null}
+            />
+          ));
         })}
       </div>
       {intro !== null && <RoundIntro intro={intro} />}

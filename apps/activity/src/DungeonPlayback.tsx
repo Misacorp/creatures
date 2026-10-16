@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { bossArt, elementClass } from './art';
 import { cssVars } from './css-vars';
 import { elementName } from './game';
+import { glyphOrUnknown } from './glyphs';
 import {
   ROOM_CARD_MS,
   ROOM_END_MS,
@@ -106,6 +107,7 @@ export function DungeonPlayback({ replay, onDone, showControls = false }: Props)
         key={room}
         room={current}
         total={replay.rooms.length}
+        landmark={replay.summary.landmark}
         row={row}
         speed={speed}
         paused={paused}
@@ -125,15 +127,18 @@ export function DungeonPlayback({ replay, onDone, showControls = false }: Props)
 function RoomBanner({
   room,
   total,
+  landmark,
   ms,
   paused,
 }: {
   room: DungeonReplayRoom;
   total: number;
+  /** The run was at a landmark depth: the boss room's banner names the signature move. */
+  landmark: boolean;
   ms: number;
   paused: boolean;
 }) {
-  const view = roomIntroView(room, total);
+  const view = roomIntroView(room, total, landmark);
   const art = bossArt(view.foeId);
   const icon = elementIcon(view.element);
   return (
@@ -154,6 +159,13 @@ function RoomBanner({
         <span>{view.foeName}</span>
         <span class="rb-element">{elementName(view.element)}</span>
       </p>
+      {view.trick !== null && (
+        <p class="rb-trick">
+          <Sprite sprite={glyphOrUnknown(view.trick.glyph)} scale={2} />
+          <strong class="pix">{view.trick.name}</strong>
+          <span>{view.trick.line}</span>
+        </p>
+      )}
       <p class="rb-twist">
         <strong class="pix">{view.modifierName}</strong>
         <span>{view.modifierDescription}</span>
@@ -165,6 +177,7 @@ function RoomBanner({
 function RoomFight({
   room,
   total,
+  landmark,
   row,
   speed,
   paused,
@@ -172,6 +185,7 @@ function RoomFight({
 }: {
   room: DungeonReplayRoom;
   total: number;
+  landmark: boolean;
   row: ReturnType<typeof stageRow>;
   speed: Speed;
   paused: boolean;
@@ -229,7 +243,7 @@ function RoomFight({
     if (el !== null) el.scrollTop = el.scrollHeight;
   }, [pb.index]);
 
-  const view = roomIntroView(room, total);
+  const view = roomIntroView(room, total, landmark);
   return (
     <>
       <Stage
@@ -249,7 +263,7 @@ function RoomFight({
         layout="row"
         place={roomLine(room.index, total)}
         modifiers={[room.modifier]}
-        addedGimmicks={modifierGimmicks(room)}
+        addedGimmicks={modifierGimmicks(room, landmark)}
         overlay={
           banner ? (
             <RoomBanner
@@ -257,6 +271,7 @@ function RoomFight({
               key={paused ? 'paused' : 'playing'}
               room={room}
               total={total}
+              landmark={landmark}
               ms={atSpeed(ROOM_CARD_MS, speed)}
               paused={paused}
             />
@@ -269,9 +284,11 @@ function RoomFight({
       </p>
       <LogToggle id={`dungeon-log-${String(room.index)}`}>
         <ol class="replay-log" ref={logRef} tabIndex={0} aria-label="Fight log">
-          {room.events.slice(0, pb.index).map((event, i) => (
-            <li key={i}>{describeEvent(event, room.names)}</li>
-          ))}
+          {room.events.slice(0, pb.index).map((event, i) => {
+            // An event this client does not know describes as nothing: it gets no line.
+            const line = describeEvent(event, room.names);
+            return line === '' ? null : <li key={i}>{line}</li>;
+          })}
         </ol>
       </LogToggle>
     </>

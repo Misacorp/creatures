@@ -234,7 +234,14 @@ describe('a round on the stage plays as long as the server gives it', () => {
     // Staggers are 500 to 700 ms, plus the 600 ms wind-up of a boss action (the last beat of a round has the tail).
     const windups = beats.filter((b) => b.windupMs > 0);
     expect(windups.length).toBeGreaterThan(10);
-    expect(windups.every((b) => b.windupMs === WINDUP_MS && b.windup.length > 0)).toBe(true);
+    expect(windups.every((b) => b.windupMs === WINDUP_MS)).toBe(true);
+    // Every wind-up shows reticles on its targets, except a charge announcing itself and the enraged
+    // boss's volley: the engine holds the stage for them too, but there is nothing to aim at yet / everyone is hit.
+    const holds = (b: (typeof beats)[number]): boolean =>
+      events
+        .slice(b.from, b.to)
+        .some((e) => e.t === 'charge' || (e.t === 'boss_hit' && e.source === 'enrage'));
+    expect(windups.filter((b) => b.windup.length === 0 && !holds(b))).toEqual([]);
     expect(beats.filter((b) => b.windupMs === 0).every((b) => b.windup.length === 0)).toBe(true);
   });
 

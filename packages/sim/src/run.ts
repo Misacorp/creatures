@@ -7,9 +7,19 @@ import {
   DEFAULT_SERVER_SIZE,
   scaleMix,
 } from './archetypes';
+import { namedCurveMixes, runCurveStudy, type CurveResult } from './curve-study';
 import { runEconomy, type EconomyResult } from './economy';
+import type { IncomeModelId } from './income';
 import { LONG_RUN_GROUPS, LONG_RUN_WEEKS } from './ladder';
+import { journeyRoster } from './profiles';
 import { TARGETS, evaluateTargets, type TargetResult } from './targets';
+import { ROLE_STUDY_RUNS_FACTOR, runRoleStudy } from './roles';
+import {
+  runRankCheck,
+  runSetupStudy,
+  type RankCheckResult,
+  type SetupStudyResult,
+} from './setup-study';
 import { runSweep, type ExampleFight } from './sweep';
 
 /** Everything that decides a run's result (no clock, no git state). */
@@ -28,8 +38,12 @@ export interface RunSettings {
   longRunSims: number;
   /** 60-week sims of the default server for the days the expedition slots open at. */
   tripLongSims: number;
+  /** Servers per mix of the raid curve study (casual-heavy, default and committed journey servers, `curve-study.ts`). */
+  curveServers: number;
   /** Player counts of the raid sweep. */
   counts: number[];
+  /** How Bait comes in (`income.ts`). Absent: the allowance, the shipped income. */
+  income?: IncomeModelId;
 }
 
 export const PITY_WEEKS = 20;
@@ -39,7 +53,7 @@ export const SWEEP_COUNTS = [1, 5, 10, 15];
 
 export function defaultSettings(
   mode: 'full' | 'quick',
-  overrides: { seed?: string; weeks?: number } = {},
+  overrides: { seed?: string; weeks?: number; income?: IncomeModelId } = {},
 ): RunSettings {
   const quick = mode === 'quick';
   return {
@@ -51,7 +65,9 @@ export function defaultSettings(
     pitySims: quick ? 8 : 40,
     longRunSims: quick ? 6 : 40,
     tripLongSims: quick ? 2 : 8,
+    curveServers: quick ? 6 : 60,
     counts: [...SWEEP_COUNTS],
+    ...(overrides.income === undefined ? {} : { income: overrides.income }),
   };
 }
 
@@ -60,6 +76,11 @@ export interface RunOutput {
   analysis: Analysis;
   evaluation: TargetResult[];
   example: ExampleFight | null;
+  /** The setup study (greedy and protected rows) and the high-rank check (docs/balance/log.md B-008). */
+  setups: SetupStudyResult;
+  ranks: RankCheckResult;
+  /** The raid curve study: whole journey servers by week and Boss Rank (docs/balance/log.md B-010). */
+  curve: CurveResult;
 }
 
 /** Weeks (1-based) at which rosters are snapshotted: 4 and 8, or the last week if the run is shorter. */
@@ -80,6 +101,7 @@ export function runEconomies(
   /** The default server's sims again, with the same seeds, gear and no dungeon. */
   noDungeonSims: EconomyResult[];
 } {
+  const income = settings.income ?? 'allowance';
   const snapshots = new Map<number, EconomyResult['snapshots']>();
   let defaultSims: EconomyResult[] = [];
   let baselineSims: EconomyResult[] = [];
@@ -91,6 +113,7 @@ export function runEconomies(
     for (let k = 0; k < settings.economySims; k++) {
       sims.push(
         runEconomy({
+          income,
           seed: `${settings.seed}:econ:${count}:${k}`,
           weeks: settings.weeks,
           mix,
@@ -106,6 +129,7 @@ export function runEconomies(
       defaultSims = sims;
       baselineSims = (options.baseline === false ? [] : sims).map((_, k) =>
         runEconomy({
+          income,
           seed: `${settings.seed}:econ:${count}:${k}`,
           weeks: settings.weeks,
           mix,
@@ -115,6 +139,7 @@ export function runEconomies(
       );
       noDungeonSims = (options.baseline === false ? [] : sims).map((_, k) =>
         runEconomy({
+          income,
           seed: `${settings.seed}:econ:${count}:${k}`,
           weeks: settings.weeks,
           mix,
@@ -131,15 +156,18 @@ export function runSimulation(settings: RunSettings): RunOutput {
   if (!Number.isInteger(settings.weeks) || settings.weeks < 1 || settings.weeks > 104) {
     throw new RangeError('weeks must be an integer from 1 to 104');
   }
+  const income = settings.income ?? 'allowance';
   const { snapshots, defaultSims, baselineSims, noDungeonSims } = runEconomies(settings);
 
   const pitySims: EconomyResult[] = [];
   for (let k = 0; k < settings.pitySims; k++) {
     pitySims.push(
       runEconomy({
+        income,
         seed: `${settings.seed}:pity:${k}`,
         weeks: PITY_WEEKS,
-        mix: DEFAULT_MIX,
+        // The default journey server (min-maxer, engaged, regular and drop-in players), as the curve is tuned for.
+        roster: journeyRoster(DEFAULT_SERVER_SIZE).map((profile) => ({ profile })),
         snapshotWeeks: [],
       }),
     );
@@ -149,9 +177,11 @@ export function runSimulation(settings: RunSettings): RunOutput {
     id: g.id,
     sims: Array.from({ length: settings.longRunSims }, (_, k) =>
       runEconomy({
+        income,
         seed: `${settings.seed}:long:${g.count}:${k}`,
         weeks: LONG_RUN_WEEKS,
-        mix: g.count === DEFAULT_SERVER_SIZE ? DEFAULT_MIX : scaleMix(g.count),
+        // The default journey server scaled to the group's size, as the curve is tuned for.
+        roster: journeyRoster(g.count).map((profile) => ({ profile })),
         snapshotWeeks: [],
       }),
     ),
@@ -161,6 +191,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
   for (let k = 0; k < settings.tripLongSims; k++) {
     tripLongSims.push(
       runEconomy({
+        income,
         seed: `${settings.seed}:trips-long:${DEFAULT_SERVER_SIZE}:${k}`,
         weeks: TRIP_LONG_WEEKS,
         mix: DEFAULT_MIX,
@@ -175,7 +206,30 @@ export function runSimulation(settings: RunSettings): RunOutput {
     counts: settings.counts,
     snapshots,
   });
+  const roles = runRoleStudy({
+    seed: settings.seed,
+    runs: settings.runsPerCell * ROLE_STUDY_RUNS_FACTOR,
+    counts: settings.counts,
+    snapshots,
+  });
+  const studyOptions = {
+    seed: settings.seed,
+    runs: settings.runsPerCell,
+    counts: settings.counts,
+    snapshots,
+  };
+  const setups = runSetupStudy(studyOptions);
+  const ranks = runRankCheck(studyOptions);
+  // The curve study: whole servers of journey players, week 1 to `weeks`, with the real ladder.
+  const curve = runCurveStudy({
+    seed: settings.seed,
+    weeks: settings.weeks,
+    servers: settings.curveServers,
+    income,
+    mixes: namedCurveMixes(),
+  });
   const analysis = analyse({
+    roles,
     weeks: settings.weeks,
     defaultSims,
     baselineSims,
@@ -188,8 +242,11 @@ export function runSimulation(settings: RunSettings): RunOutput {
   return {
     settings,
     analysis,
-    evaluation: evaluateTargets(TARGETS, analysis.metrics),
+    evaluation: evaluateTargets(TARGETS, { ...analysis.metrics, ...curve.metrics }),
     example: sweep.example,
+    setups,
+    ranks,
+    curve,
   };
 }
 

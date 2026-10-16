@@ -37,9 +37,9 @@ Misa's view: a fight being roughly predictable is fine. The game is about growin
 ### 1. Boss Rank: a visible per-server ladder
 
 - Every week's boss shows a **Rank**, for example "Cinder Wyrm · Rank 7", on the Monday post and the boss card.
-- Each rank multiplies boss HP by 1.4 over the rank below (and Attack by half that excess). The simulator set the number: a smaller step lets a server collect too many wins while it grows (see "Phase 1: what was built").
+- **Superseded (2026-10-15, B-010):** the 1.4x compounding step is gone. Boss HP, Attack, plain attacks a round and boss crit chance now come from a per-rank table, `RULES.raid.curve`, designed from the simulated player progression (the rank-gated moves are the other half). The original step, below, is kept as history: it let a server collect too many wins in weeks 2 to 6 and then outgrew every roster.
 - **Scaling by average level is gone.** Head-count scaling stays (bigger rosters face a bigger boss), so 15-player raids stay fair. Every signed-up player counts once, whatever their level, so one veteran cannot inflate the boss: no per-player cap is needed because there is no per-player weight to cap.
-- A new server gets a starting rank from its current roster once (`placementRank`). After that, only the ladder moves it.
+- A new server starts at rank 1 (`placementRank`, which no longer looks at levels; B-010). After that, only the ladder moves it.
 - Phase 1 stays gentle (clear >= 95%). Rank mostly bites in Phase 2 and the finale.
 
 ### 2. The ladder rule
@@ -135,20 +135,20 @@ Misa's view: a fight being roughly predictable is fine. The game is about growin
 
 Code: `packages/game/src/rules/progression.ts` (rank, seasons, rewards, Festival creature, readiness band), `packages/engine/src/scaling.ts` (`scaleBoss(boss, players, rank)`) and `forecast.ts` (`forecastFinale`, `forecastWeek`), content (two Festival species, per-boss exponents), `packages/sim` (ladder in the economy sim, long-run model, readiness calibration, tuning tools). Numbers are in `RULES.raid.scaling`, `RULES.progression` and `RULES.combat.luck`; the measurements are in `docs/balance/report-2026-10-11-progression.md`.
 
-| Setting                      | Value                                                                                                                                                                               |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Crits                        | On: 5% chance, +50% damage for every creature and for the boss; species bonus (+5% / +25%) kept; caps 30% / +150%. Fortune streaks and spread stay in the code, off. Boss Attack x1 |
-| Boss HP                      | `baseHp x N^e x rankFactor`; `N` = signed-up players; `e` per boss (1.04 to 1.21, see below)                                                                                        |
-| Rank factor                  | Compounding +40% per rank (`rankStepBp` 4000, integer basis points, floored every step), capped at rank 30                                                                          |
-| Boss Attack                  | `baseAtk x (1 + half the rank excess)` (`atkRankShareBp` 5000); not scaled by head count                                                                                            |
-| Placement (new server, once) | The rank whose HP factor is closest to the old rule (+12% per average level above 1); level 1 is rank 1                                                                             |
-| Win / loss                   | Normal week: win +1, loss 0. Never below 1. No Resolve, no demotion                                                                                                                 |
-| Season                       | 5 weeks: 4 normal and a Festival (global week index mod 5 = 4)                                                                                                                      |
-| Festival                     | Boss at rank - 3 (`festivalEaseRanks`), Essence +50% (`festivalEssenceBp` 5000), win grants the creature, no rank gain                                                              |
-| After a Festival             | Rank - 1 (`seasonResetRanks`), never below 1                                                                                                                                        |
-| Rewards                      | Essence and jackpot x (1 + 6% per rank above 1), capped at x2 (`rankRewardBp` 600, `rankRewardCapBp` 20000); Festival on top; follows the server rank, not the eased one            |
-| Phase 2 clear threshold      | 52% of the pool (was 54%), see the report                                                                                                                                           |
-| Readiness band               | Long shot / Even / Likely / Strong from the margin (mean finale damage over HP left) at 8000 / 8800 / 10300 basis points; 5 fresh seeds                                             |
+| Setting                      | Value                                                                                                                                                                                        |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Crits                        | On: 5% chance, +50% damage for every creature and for the boss; species bonus (+5% / +25%) kept; caps 30% / +150%. Fortune streaks and spread stay in the code, off. Boss Attack x1          |
+| Boss HP                      | `baseHp x N^e x rankFactor`; `N` = signed-up players; `e` per boss (1.04 to 1.21, see below)                                                                                                 |
+| Rank factor                  | The curve's `hpBp` for the rank (`RULES.raid.curve`, a table from rank 1; gentle extrapolation past it), capped at rank 30. It was +40% compounding per rank (`rankStepBp` 4000) until B-010 |
+| Boss Attack                  | `baseAtk x` the curve's `atkBp` for the rank (independent of HP); not scaled by head count. The curve also sets the boss's plain attacks a round and a crit bonus                            |
+| Placement (new server, once) | Rank 1 (`RULES.progression.placement.startRank`), whatever the creatures; it was the rank closest to the old per-level rule until B-010                                                      |
+| Win / loss                   | Normal week: win +1, loss 0. Never below 1. No Resolve, no demotion                                                                                                                          |
+| Season                       | 5 weeks: 4 normal and a Festival (global week index mod 5 = 4)                                                                                                                               |
+| Festival                     | Boss at rank - 3 (`festivalEaseRanks`), Essence +50% (`festivalEssenceBp` 5000), win grants the creature, no rank gain                                                                       |
+| After a Festival             | Rank - 1 (`seasonResetRanks`), never below 1                                                                                                                                                 |
+| Rewards                      | Essence and jackpot x (1 + 6% per rank above 1), capped at x2 (`rankRewardBp` 600, `rankRewardCapBp` 20000); Festival on top; follows the server rank, not the eased one                     |
+| Phase 2 clear threshold      | 52% of the pool (was 54%), see the report                                                                                                                                                    |
+| Readiness band               | Long shot / Even / Likely / Strong from the margin (mean finale damage over HP left) at 8000 / 8800 / 10300 basis points; 5 fresh seeds                                                      |
 
 **Why the step is 40%.** In the long run a server's wins are its rank gains plus the resets: over 30 weeks `wins = (final rank - placement) + resets`. A server grows about 3.5 times stronger over its first weeks, and a rank costs the boss's step, so a small step means many ranks to climb and a long unbroken run of wins. At +20% a rank the simulator gave 65% of finales won over 30 weeks and a median of 1 week between rank-ups; at +40% it gives 54% and 2. A big step also makes each rank-up a real event. The cost: after a rank-up the next boss is 40% bigger, so most servers settle on a wall of 5 or 6 within three months, win the Festival, drop one rank and climb back.
 

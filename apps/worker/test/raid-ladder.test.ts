@@ -128,15 +128,16 @@ const setRank = (ctx: CoreContext, rank: number): void => {
 };
 
 describe('placement', () => {
-  it('places a new server once, at its first week, from the levels its roster brings', async () => {
+  it('places a new server once, at its first week, at the start rank whatever its roster brings', async () => {
     await runRaid(
       (ctx) => {
         const players = seedMany(ctx, 5, 12);
         expect(readLadder(ctx.sql)).toEqual({ rank: null, bestRank: null });
         openWeek(ctx, weekAt(0));
         const levels = players.flatMap(() => [12, 12, 12]);
+        // Every new server starts at the same rank, however strong its creatures are.
         const expected = placementRank(levels);
-        expect(expected).toBeGreaterThan(1);
+        expect(expected).toBe(RULES.progression.placement.startRank);
         expect(readLadder(ctx.sql).rank).toBe(expected);
         expect(weekRow(ctx, W02.id)).toMatchObject({
           rank: expected,
@@ -151,9 +152,11 @@ describe('placement', () => {
         ctx.sql.exec('UPDATE creatures SET level = 15');
         const next = weekAt(1);
         openWeek(ctx, next);
-        expect(readLadder(ctx.sql).rank).toBe(expected);
-        expect(weekRow(ctx, next.id).rank).toBe(expected);
-        expect(placementRank(players.flatMap(() => [15, 15, 15]))).toBeGreaterThan(expected);
+        // The ladder may have moved on its own (the first week ran and was won); it is never placed again.
+        const ladderRank = readLadder(ctx.sql).rank;
+        expect(ladderRank).toBeGreaterThanOrEqual(expected);
+        expect(weekRow(ctx, next.id).rank).toBe(ladderRank);
+        expect(placementRank(players.flatMap(() => [15, 15, 15]))).toBe(expected);
       },
       { start: W02.monday },
     );
@@ -749,7 +752,7 @@ describe('a week that was open before the ladder existed', () => {
         ctx.core.raid.runDue(HELSINKI);
         // Placed from the roster, stored on the server and on the week, with the week's plan.
         const expected = placementRank(players.flatMap(() => [12, 12, 12]));
-        expect(expected).toBeGreaterThan(1);
+        expect(expected).toBe(RULES.progression.placement.startRank);
         const plan = raidWeekPlan(weekIndex(W02.id), expected);
         expect(readLadder(ctx.sql).rank).toBe(expected);
         expect(weekRow(ctx, W02.id)).toMatchObject({
@@ -762,9 +765,9 @@ describe('a week that was open before the ladder existed', () => {
         const boss = content.bosses.find((b) => b.id === p1?.input.boss.id) as NonNullable<
           (typeof content.bosses)[number]
         >;
-        // Scaled from the plan, not at rank 1, and carried to phase 2.
+        // Scaled from the plan (the start rank), and carried to phase 2.
         const scaled = scaleBoss(boss, 4, plan.effectiveRank);
-        expect(scaled.maxHp).toBeGreaterThan(scaleBoss(boss, 4, 1).maxHp);
+        expect(scaled).toEqual(scaleBoss(boss, 4, RULES.progression.placement.startRank));
         expect(p1?.input.bossHpPool.max).toBe(scaled.maxHp);
         expect(p2?.input.bossHpPool.max).toBe(scaled.maxHp);
         expect(p1?.input.bossAtk).toBe(scaled.atk);
@@ -784,7 +787,8 @@ describe('a week that was open before the ladder existed', () => {
           rank: expected,
           festival: false,
         });
-        expect(flat).toBeGreaterThan(RULES.raid.essence.flat.finale);
+        // Rank 1 pays the flat amount; the multiplier starts above it.
+        expect(flat).toBeGreaterThanOrEqual(RULES.raid.essence.flat.finale);
         expect(paid.every((x) => x.amount >= flat)).toBe(true);
         expect(finale?.summary.essence).toEqual(
           Object.fromEntries(paid.map((x) => [x.user_id, x.amount])),

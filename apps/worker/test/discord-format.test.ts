@@ -151,13 +151,17 @@ describe('discordTime', () => {
 
 describe('describeGimmick', () => {
   it('says what every content gimmick does in plain words', () => {
-    const texts = content.bosses.flatMap((b) => b.gimmicks.map((g) => describeGimmick(g)));
-    expect(texts).toEqual([
-      'hits the front zone every 3 rounds',
-      'throws the first reaction back at your team, every round',
-      'silences the creatures at both ends of the row for 1 turn, every 2 rounds',
-      'strikes your highest Attack creature every round',
-    ]);
+    const gimmicks = content.bosses.flatMap((b) => b.gimmicks);
+    const texts = gimmicks.map((g) => describeGimmick(g));
+    expect(texts.length).toBeGreaterThanOrEqual(4);
+    // Every gimmick gets its own plain sentence with its rhythm; the exact wording of each op is
+    // pinned below with fixed numbers, so tuning the content does not break this.
+    for (const [i, text] of texts.entries()) {
+      const gimmick = gimmicks[i];
+      expect(text, gimmick?.id).toMatch(/^[a-z].* every (round|\d+ rounds)$/);
+      expect(text).not.toContain('undefined');
+      expect(text).not.toContain('NaN');
+    }
   });
 
   it('handles plurals and every op', () => {
@@ -170,6 +174,89 @@ describe('describeGimmick', () => {
       [
         { ...base, op: 'hit_zone', zone: 'back', power: 5000, trigger: { eachRound: true } },
         'hits the back zone every round',
+      ],
+    ];
+    for (const [gimmick, text] of cases) expect(describeGimmick(gimmick)).toBe(text);
+  });
+
+  it('says the attack patterns, the chain jumps and the charge in plain words', () => {
+    const base = { id: 'g', name: 'G', trigger: { every: 3 } };
+    const sweep = {
+      op: 'sweep' as const,
+      rows: ['front', 'middle', 'all'] as ('front' | 'middle' | 'back' | 'all' | 'payoffs')[],
+      power: 6000,
+    };
+    const barrage = {
+      op: 'barrage',
+      shells: { min: 2, max: 4, shareBp: 3000 },
+      power: 5000,
+    } as const;
+    const slam = { op: 'slam', aim: 'strongest', power: 15_000, splashBp: 4000 } as const;
+    const lance = { op: 'lance', lane: 'random', power: 9000, falloffBp: 6000 } as const;
+    const pincer = { op: 'pincer', scope: 'rows', power: 7000 } as const;
+    const cases: [Gimmick, string][] = [
+      [
+        { ...base, ...sweep },
+        'sweeps the front row, then the middle row, then every row every 3 rounds',
+      ],
+      [{ ...base, ...barrage }, 'rains shells on up to 4 random creatures every 3 rounds'],
+      [
+        { ...base, ...barrage, shells: { min: 1, max: 1, shareBp: 1000 } },
+        'rains shells on up to 1 random creature every 3 rounds',
+      ],
+      [
+        { ...base, ...slam },
+        'slams your highest Attack creature, and the blow splashes the creatures beside it every 3 rounds',
+      ],
+      [
+        { ...base, ...slam, aim: 'front' },
+        'slams the front creature, and the blow splashes the creatures beside it every 3 rounds',
+      ],
+      [
+        { ...base, ...slam, aim: 'left' },
+        'slams the left-most creature, and the blow splashes the creatures beside it every 3 rounds',
+      ],
+      [
+        { ...base, ...slam, aim: 'random' },
+        'slams a random creature, and the blow splashes the creatures beside it every 3 rounds',
+      ],
+      [
+        { ...base, ...slam, aim: 'payoff' },
+        'slams your highest Attack Payoff, and the blow splashes the creatures beside it every 3 rounds',
+      ],
+      [
+        { ...base, ...sweep, rows: ['payoffs'] },
+        'sweeps the row with the most Payoffs every 3 rounds',
+      ],
+      [
+        { ...base, ...sweep, rows: ['back', 'payoffs'] },
+        'sweeps the back row, then the row with the most Payoffs every 3 rounds',
+      ],
+      [{ ...base, ...lance }, 'drives a lance down a random lane, front to back every 3 rounds'],
+      [
+        { ...base, ...lance, lane: 'strongest' },
+        'drives a lance down the lane of your highest Attack creature every 3 rounds',
+      ],
+      [{ ...base, ...pincer }, 'pinches the first and last creature of every row every 3 rounds'],
+      [
+        { ...base, ...pincer, scope: 'row' },
+        'pinches the first and last creature of the row every 3 rounds',
+      ],
+      [
+        { ...base, op: 'strike_highest_atk', power: 12_000, jumps: 2 },
+        'strikes your highest Attack creature, then jumps on to 2 more every 3 rounds',
+      ],
+      [
+        { ...base, op: 'strike_highest_atk', power: 12_000, jumps: 0 },
+        'strikes your highest Attack creature every 3 rounds',
+      ],
+      [
+        { ...base, op: 'charge', then: pincer },
+        'winds up one round ahead, then pinches the first and last creature of every row, every 3 rounds',
+      ],
+      [
+        { ...base, op: 'charge', then: sweep },
+        'winds up one round ahead, then sweeps the front row, then the middle row, then every row, every 3 rounds',
       ],
     ];
     for (const [gimmick, text] of cases) expect(describeGimmick(gimmick)).toBe(text);
@@ -332,6 +419,58 @@ describe('formatPhasePost', () => {
         'Aurorix evolved: Carol',
       ].join('\n'),
     );
+  });
+
+  it('says a phase the boss retreated from, with the boss name escaped', () => {
+    const post = formatPhasePost({
+      ...PHASE,
+      phase: 'phase1',
+      bossName: '*Tidal* @everyone',
+      retreated: true,
+      hpLeftPercent: 70,
+    });
+    const lines = post.split('\n');
+    expect(lines[0]).toBe(`**Phase 1: \\*Tidal\\* @${ZWSP}everyone**`);
+    expect(lines[1]).toBe(`Phase 1 cleared: \\*Tidal\\* @${ZWSP}everyone retreated.`);
+    expect(lines[2]).toBe('The boss has 70% HP left.');
+    expect(post).not.toContain('Cleared. The boss has');
+    const second = formatPhasePost({
+      ...PHASE,
+      phase: 'phase2',
+      retreated: true,
+      hpLeftPercent: 15,
+    });
+    expect(second).toContain('Phase 2 cleared: Tidal Colossus retreated.');
+    expect(second).toContain('The boss has 15% HP left.');
+    // A result without the flag (older posts, a miss) reads as before.
+    expect(formatPhasePost({ ...PHASE, retreated: false })).toContain(
+      'Cleared. The boss has 78% HP left.',
+    );
+    expect(formatPhasePost({ ...PHASE, cleared: false, retreated: true })).toContain(
+      'Not cleared. The boss has 78% HP left.',
+    );
+  });
+
+  it('mentions the enrage in a finale that went into it, won or lost', () => {
+    const base = { ...PHASE, phase: 'finale' as const, counterMove: null, enraged: true };
+    const won = formatPhasePost({ ...base, hpLeftPercent: 0, finale: { firsts: [] } });
+    expect(won).toContain('Cleared, but only after Tidal Colossus flew into a rage.');
+    expect(won).not.toContain('Not cleared');
+    const lost = formatPhasePost({
+      ...base,
+      cleared: false,
+      hpLeftPercent: 12,
+      essenceFlat: null,
+      finale: { firsts: [] },
+    });
+    expect(lost).toContain(
+      'Not cleared. Tidal Colossus flew into a rage when time ran out. The boss has 12% HP left.',
+    );
+    // Without it the lines are the old ones, and a phase never says it.
+    expect(
+      formatPhasePost({ ...base, enraged: false, hpLeftPercent: 0, finale: { firsts: [] } }),
+    ).toContain('Cleared. The boss is defeated.');
+    expect(formatPhasePost({ ...PHASE, enraged: true })).not.toContain('rage');
   });
 
   it('never mentions a jackpot, after a win or a loss', () => {

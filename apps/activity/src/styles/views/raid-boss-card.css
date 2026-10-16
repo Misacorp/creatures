@@ -103,6 +103,18 @@ button.boss-icon.open {
   overflow-wrap: normal;
 }
 
+.boss-pays {
+  margin: 0.75rem 0 0;
+}
+
+.boss-icon-new {
+  max-width: 6rem;
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--gold);
+}
+
 .counter-move {
   margin: 0.75rem 0 0;
 }

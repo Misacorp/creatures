@@ -10,8 +10,12 @@ import {
   jackpotEssenceFor,
   nextRank,
   placementRank,
+  bossAttacksAtRank,
   rankAtkFactorBp,
   rankFactorBp,
+  rankRow,
+  bossCritBonusAtRank,
+  luckAtRank,
   raidWeekPlan,
   readinessBand,
   scaleEssence,
@@ -21,87 +25,122 @@ import {
 
 const P = RULES.progression;
 
-describe('rankFactorBp', () => {
-  it('starts at 10000, compounds the step with a floor at every step, and never goes down', () => {
-    expect(rankFactorBp(1)).toBe(10_000);
-    let expected = 10_000;
-    for (let r = 2; r <= RULES.raid.scaling.maxRank; r++) {
-      expected = Math.floor((expected * (10_000 + RULES.raid.scaling.rankStepBp)) / 10_000);
-      expect(rankFactorBp(r)).toBe(expected);
+describe('the raid curve (RULES.raid.curve)', () => {
+  const { ranks, beyond } = RULES.raid.curve;
+
+  it('has a table from rank 1, whole numbers only, rank 1 without a crit bonus or a second attack', () => {
+    expect(ranks.length).toBeGreaterThanOrEqual(10);
+    expect(ranks.length).toBeLessThanOrEqual(RULES.raid.scaling.maxRank);
+    expect(ranks[0]).toMatchObject({ bossAttacks: 1, critBonusBp: 0 });
+    for (const row of ranks) {
+      for (const n of [row.hpBp, row.atkBp, row.bossAttacks, row.critBonusBp]) {
+        expect(Number.isSafeInteger(n)).toBe(true);
+      }
+      expect([1, 2, 3]).toContain(row.bossAttacks);
+      expect(row.critBonusBp).toBeGreaterThanOrEqual(0);
+      expect(row.hpBp).toBeGreaterThan(0);
+      expect(row.atkBp).toBeGreaterThan(0);
     }
-    for (let r = 2; r <= RULES.raid.scaling.maxRank; r++)
-      expect(rankFactorBp(r)).toBeGreaterThan(rankFactorBp(r - 1));
+  });
+
+  it('never gets easier with rank: HP, Attack, boss attacks and crit bonus never go down', () => {
+    for (let r = 2; r <= RULES.raid.scaling.maxRank; r++) {
+      const a = rankRow(r - 1);
+      const b = rankRow(r);
+      expect(b.hpBp).toBeGreaterThanOrEqual(a.hpBp);
+      expect(b.atkBp).toBeGreaterThanOrEqual(a.atkBp);
+      expect(b.bossAttacks).toBeGreaterThanOrEqual(a.bossAttacks);
+      expect(b.critBonusBp).toBeGreaterThanOrEqual(a.critBonusBp);
+    }
+  });
+
+  it('reads the table by rank, and HP and Attack are independent numbers', () => {
+    ranks.forEach((row, i) => {
+      expect(rankFactorBp(i + 1)).toBe(row.hpBp);
+      expect(rankAtkFactorBp(i + 1)).toBe(row.atkBp);
+      expect(bossAttacksAtRank(i + 1)).toBe(row.bossAttacks);
+      expect(bossCritBonusAtRank(i + 1)).toBe(row.critBonusBp);
+    });
+    expect(ranks.some((row) => row.atkBp !== row.hpBp)).toBe(true);
+  });
+
+  it('grows past the table by the documented steps, compounding with a floor at every step', () => {
+    const last = ranks[ranks.length - 1];
+    expect(last).toBeDefined();
+    let hp = last?.hpBp ?? 0;
+    let atk = last?.atkBp ?? 0;
+    for (let r = ranks.length + 1; r <= RULES.raid.scaling.maxRank; r++) {
+      hp = Math.floor((hp * (10_000 + beyond.hpStepBp)) / 10_000);
+      atk = Math.floor((atk * (10_000 + beyond.atkStepBp)) / 10_000);
+      expect(rankFactorBp(r)).toBe(hp);
+      expect(rankAtkFactorBp(r)).toBe(atk);
+      expect(bossAttacksAtRank(r)).toBe(last?.bossAttacks);
+      expect(bossCritBonusAtRank(r)).toBe(last?.critBonusBp);
+    }
+    // Gentle: far past the table nothing runs away (a step is at most a tenth).
+    expect(beyond.hpStepBp).toBeLessThanOrEqual(1_000);
+    expect(beyond.atkStepBp).toBeLessThanOrEqual(1_000);
   });
 
   it('clamps and floors the rank, and stays a safe integer at the top rank', () => {
-    expect(rankFactorBp(0)).toBe(10_000);
-    expect(rankFactorBp(-4)).toBe(10_000);
-    expect(rankFactorBp(Number.NaN)).toBe(10_000);
+    const rank1 = ranks[0]?.hpBp;
+    expect(rankFactorBp(0)).toBe(rank1);
+    expect(rankFactorBp(-4)).toBe(rank1);
+    expect(rankFactorBp(Number.NaN)).toBe(rank1);
     expect(rankFactorBp(2.9)).toBe(rankFactorBp(2));
+    expect(rankAtkFactorBp(2.9)).toBe(rankAtkFactorBp(2));
+    expect(bossAttacksAtRank(0)).toBe(1);
+    expect(bossAttacksAtRank(2.9)).toBe(bossAttacksAtRank(2));
     expect(rankFactorBp(1000)).toBe(rankFactorBp(RULES.raid.scaling.maxRank));
+    expect(rankAtkFactorBp(1000)).toBe(rankAtkFactorBp(RULES.raid.scaling.maxRank));
     // The factor stays small enough for exact integer products with any boss HP.
     expect(rankFactorBp(1000)).toBeLessThan(1e9);
   });
 
-  it('pins the shipped step: the first ranks (change the row when the step changes)', () => {
-    const pinned: Record<number, number> = {
-      1: 10_000,
-      2: 14_000,
-      3: 19_600,
-      4: 27_440,
-      5: 38_416,
-      6: 53_782,
-      7: 75_294,
-      8: 105_411,
-    };
-    const step: number = RULES.raid.scaling.rankStepBp;
-    if (step !== 4_000) throw new Error('pin the new step here');
-    for (const [rank, bp] of Object.entries(pinned)) expect(rankFactorBp(Number(rank))).toBe(bp);
+  it('a safe default for an emptied table, and returns copies that cannot change the rules', () => {
+    const shipped = RULES.raid.curve.ranks.splice(0);
+    try {
+      expect(rankRow(5)).toEqual({ hpBp: 10_000, atkBp: 10_000, bossAttacks: 1, critBonusBp: 0 });
+    } finally {
+      RULES.raid.curve.ranks.push(...shipped);
+    }
+    const copy = rankRow(2);
+    copy.hpBp = 1;
+    expect(rankFactorBp(2)).not.toBe(1);
   });
 
-  it('gives Attack the share of the excess that the rules say', () => {
-    expect(rankAtkFactorBp(1)).toBe(10_000);
-    const share = RULES.raid.scaling.atkRankShareBp;
-    for (const r of [2, 5, 12]) {
-      expect(rankAtkFactorBp(r)).toBe(
-        10_000 + Math.floor(((rankFactorBp(r) - 10_000) * share) / 10_000),
-      );
-      expect(rankAtkFactorBp(r)).toBeLessThan(rankFactorBp(r));
+  it('adds the crit bonus to the boss crit chance only, and returns the same luck when it is 0', () => {
+    const luck = RULES.combat.luck;
+    expect(luckAtRank(luck, 1)).toBe(luck);
+    for (let r = 1; r <= 20; r++) {
+      const at = luckAtRank(luck, r);
+      expect(at.bossCritChanceBp).toBe((luck.bossCritChanceBp ?? 0) + bossCritBonusAtRank(r));
+      expect({ ...at, bossCritChanceBp: 0 }).toEqual({ ...luck, bossCritChanceBp: 0 });
     }
   });
 });
 
 describe('placementRank', () => {
-  const legacy = (avg: number) => 10_000 + P.placement.legacyHpPerLevelBp * (avg - 1);
-
-  it('is rank 1 for an empty roster and for level-1 creatures', () => {
+  it('puts every new server at the start rank, whatever its creatures', () => {
+    expect(P.placement.startRank).toBe(1);
     expect(placementRank([])).toBe(1);
     expect(placementRank([1, 1, 1])).toBe(1);
     expect(placementRank([0, -3])).toBe(1);
+    expect(placementRank([30, 30, 30])).toBe(1);
+    expect(placementRank([5, 12, 20, 3])).toBe(P.placement.startRank);
   });
 
-  it('gives the rank whose boss is closest to what the old per-level rule gave', () => {
-    for (let avg = 1; avg <= 40; avg++) {
-      const rank = placementRank([avg, avg, avg]);
-      const diff = (r: number) => Math.abs(rankFactorBp(r) - legacy(avg));
-      expect(diff(rank)).toBeLessThanOrEqual(diff(Math.max(1, rank - 1)));
-      expect(diff(rank)).toBeLessThanOrEqual(diff(rank + 1));
+  it('keeps the start rank inside 1..maxRank', () => {
+    const shipped = P.placement.startRank;
+    const placement = P.placement as { startRank: number };
+    try {
+      placement.startRank = 0;
+      expect(placementRank([9])).toBe(1);
+      placement.startRank = 999;
+      expect(placementRank([9])).toBe(RULES.raid.scaling.maxRank);
+    } finally {
+      placement.startRank = shipped;
     }
-  });
-
-  it('is monotone in the average level and floors the average like the old rule', () => {
-    let prev = 1;
-    for (let avg = 1; avg <= 60; avg++) {
-      const r = placementRank([avg]);
-      expect(r).toBeGreaterThanOrEqual(prev);
-      prev = r;
-    }
-    expect(placementRank([10, 11, 11])).toBe(placementRank([10, 10, 10]));
-  });
-
-  it('depends only on the average: one veteran in a roster of newcomers moves it a little', () => {
-    const newcomers = Array.from({ length: 14 }, () => 2);
-    expect(placementRank([...newcomers, 30])).toBeLessThanOrEqual(placementRank([4, 4, 4]) + 1);
   });
 });
 
