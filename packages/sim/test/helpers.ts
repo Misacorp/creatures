@@ -13,6 +13,7 @@ export const TINY: RunSettings = {
   curveServers: 1,
   suppliesServers: 1,
   gearServers: 0,
+  creaturesServers: 0,
   counts: [1, 5],
 };
 

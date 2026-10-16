@@ -29,14 +29,14 @@
     "method": "POST",
     "body": {
       "kind": "craft",
-      "creatureId": "fefcf2b9-af1b-4a85-bba1-b075ec924ed7",
+      "creatureId": "994b66e1-f7c0-4422-8827-c9e071625b0b",
       "blueprintId": "kelp-cap",
       "reach": "none",
       "idempotencyKey": "fixture-00000001-key"
     }
   },
   "job-claim": {
-    "path": "/api/workshop/jobs/5496aa70-3e98-453e-a60a-52c3e061ce44/claim",
+    "path": "/api/workshop/jobs/ab5d2f56-caf5-4a0b-9a6b-2681aac9845b/claim",
     "method": "POST",
     "body": {
       "idempotencyKey": "fixture-00000007-key"
@@ -57,7 +57,7 @@
     "method": "POST",
     "body": {
       "kind": "craft",
-      "creatureId": "335dc2aa-476b-458d-976b-c778f3cd47e0",
+      "creatureId": "be8feaec-e856-4b6d-8db6-6dfae4abf135",
       "blueprintId": "kelp-cap",
       "reach": "rare",
       "idempotencyKey": "fixture-00000010-key"
@@ -68,8 +68,8 @@
     "method": "POST",
     "body": {
       "kind": "dismantle",
-      "creatureId": "fefcf2b9-af1b-4a85-bba1-b075ec924ed7",
-      "itemIds": ["407c9094-7305-437c-975f-2819918bba8b"],
+      "creatureId": "994b66e1-f7c0-4422-8827-c9e071625b0b",
+      "itemIds": ["308b51b6-9c12-45f9-be45-f916d13d0290"],
       "idempotencyKey": "fixture-00000008-key"
     }
   },
@@ -78,7 +78,7 @@
     "method": "POST",
     "body": {
       "kind": "craft",
-      "creatureId": "335dc2aa-476b-458d-976b-c778f3cd47e0",
+      "creatureId": "be8feaec-e856-4b6d-8db6-6dfae4abf135",
       "blueprintId": "kelp-cap"
     }
   },
@@ -87,8 +87,8 @@
     "method": "POST",
     "body": {
       "kind": "dismantle",
-      "creatureId": "fefcf2b9-af1b-4a85-bba1-b075ec924ed7",
-      "itemIds": ["407c9094-7305-437c-975f-2819918bba8b"]
+      "creatureId": "994b66e1-f7c0-4422-8827-c9e071625b0b",
+      "itemIds": ["308b51b6-9c12-45f9-be45-f916d13d0290"]
     }
   }
 }

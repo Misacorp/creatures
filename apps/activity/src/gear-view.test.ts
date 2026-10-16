@@ -76,11 +76,11 @@ describe('names', () => {
 
   it('finds what is short of a price', () => {
     expect(missingParts(gear.parts, { scrap: 100, glimmer: 9, 'grove-shard': 1 })).toEqual({
-      scrap: 25,
-      glimmer: 5,
+      scrap: 100 - gear.parts.scrap,
+      glimmer: 9 - gear.parts.glimmer,
       'grove-shard': 1,
     });
-    expect(missingParts(gear.parts, { scrap: 75 })).toEqual({});
+    expect(missingParts(gear.parts, { scrap: gear.parts.scrap })).toEqual({});
   });
 });
 
@@ -466,7 +466,7 @@ describe('starting a job', () => {
     ).toContain('bag is full');
     expect(
       startBlocker(gear, free, { kind: 'craft', cost: { 'grove-shard': 1, scrap: 100 } }),
-    ).toBe('Needs 25 more Scrap and 1 more Grove Shard.');
+    ).toBe(`Needs ${String(100 - gear.parts.scrap)} more Scrap and 1 more Grove Shard.`);
   });
 
   it('stops a lure for want of Bait, and says how much more', () => {

@@ -365,7 +365,10 @@ export function dungeonSupplyOddsBp(depth: number): Record<SupplyTier, number> {
   return { basic: 10_000 - goodBp - greatBp, good: goodBp, great: greatBp };
 }
 
-/** One supply the dungeon drops at a depth: a tier by `dungeonSupplyOddsBp`, a kind drawn evenly. Returns its content id. */
+/** The kinds the dungeon drops: every kind but the lure, which is made from Bait in the Workshop and nowhere else. */
+const DROPPED_SUPPLY_KINDS = SUPPLY_KINDS.filter((k) => k !== 'lure');
+
+/** One supply the dungeon drops at a depth: a tier by `dungeonSupplyOddsBp`, a kind drawn evenly (never a lure). Returns its content id. */
 export function rollDungeonSupply(rng: Rng, depth: number): string {
   const odds = dungeonSupplyOddsBp(depth);
   const tier = pickWeighted<{ tier: SupplyTier; weight: number }>(rng, [
@@ -373,7 +376,7 @@ export function rollDungeonSupply(rng: Rng, depth: number): string {
     { tier: 'good', weight: odds.good },
     { tier: 'great', weight: odds.great },
   ]).tier;
-  const kind = SUPPLY_KINDS[int(rng, SUPPLY_KINDS.length)] as string;
+  const kind = DROPPED_SUPPLY_KINDS[int(rng, DROPPED_SUPPLY_KINDS.length)] as string;
   return `${kind}-${tier}`;
 }
 

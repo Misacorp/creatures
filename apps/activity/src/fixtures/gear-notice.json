@@ -53,11 +53,11 @@
         "level": 4,
         "role": null
       },
-      "equippedOn": "a00beaf5-a43c-4476-b46b-f48fbc1db580",
+      "equippedOn": "827d9279-97c4-43dc-8345-3c1af8a6eb75",
       "dismantle": {
         "scrap": {
-          "min": 4,
-          "max": 8
+          "min": 2,
+          "max": 3
         },
         "shards": {
           "min": 1,
@@ -133,11 +133,11 @@
         "level": 7,
         "role": null
       },
-      "equippedOn": "b5313712-e7c1-46e4-b610-4acee4f8cb13",
+      "equippedOn": "b230a47b-928e-4d00-aead-8c857e561906",
       "dismantle": {
         "scrap": {
-          "min": 8,
-          "max": 14
+          "min": 2,
+          "max": 3
         },
         "shards": {
           "min": 1,
@@ -196,8 +196,8 @@
       "equippedOn": null,
       "dismantle": {
         "scrap": {
-          "min": 2,
-          "max": 4
+          "min": 1,
+          "max": 2
         },
         "shards": {
           "min": 0,
@@ -253,19 +253,19 @@
   },
   "skills": [
     {
-      "creatureId": "a00beaf5-a43c-4476-b46b-f48fbc1db580",
+      "creatureId": "827d9279-97c4-43dc-8345-3c1af8a6eb75",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "b5313712-e7c1-46e4-b610-4acee4f8cb13",
+      "creatureId": "b230a47b-928e-4d00-aead-8c857e561906",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "22f165f8-ce9a-477c-8d12-5d024178215a",
+      "creatureId": "a6cc1ae1-1f20-42db-9c48-92b69a4f5fc3",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100

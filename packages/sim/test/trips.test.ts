@@ -45,6 +45,7 @@ function ctx(hour: number, seed = 'trips', weekIndex = 0): TripContext {
     day: Math.floor(hour / 24),
     weekIndex,
     catches: createSeededRng(`${seed}:catches`),
+    talents: createSeededRng(`${seed}:talents`),
     trip: createSeededRng(`${seed}:trip`),
   };
 }

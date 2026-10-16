@@ -1,7 +1,7 @@
 {
   "result": {
     "item": {
-      "id": "dffed315-cf3c-4248-8053-4500511586fb",
+      "id": "0b949a23-897a-417d-b766-b876e5471ed7",
       "baseId": "coal-warm-cap",
       "slot": "hat",
       "tag": "ember",
@@ -56,8 +56,8 @@
       "equippedOn": null,
       "dismantle": {
         "scrap": {
-          "min": 10,
-          "max": 16
+          "min": 3,
+          "max": 4
         },
         "shards": {
           "min": 1,
@@ -93,7 +93,7 @@
     },
     "items": [
       {
-        "id": "a38a0dd5-bf22-4729-9d28-cfe1f006d98a",
+        "id": "6fbf59e1-b9bc-41c2-ae0f-d96c63a34553",
         "baseId": "trail-cap",
         "slot": "hat",
         "tag": "neutral",
@@ -129,7 +129,7 @@
         "dismantle": {
           "scrap": {
             "min": 2,
-            "max": 4
+            "max": 3
           },
           "shards": {
             "min": 0,
@@ -153,7 +153,7 @@
         }
       },
       {
-        "id": "04ed4dbe-c68d-439b-9100-1b0367f30a47",
+        "id": "858d9369-feff-4ea1-bb9e-507dcc3f591a",
         "baseId": "tidepool-charm",
         "slot": "charm",
         "tag": "tide",
@@ -188,8 +188,8 @@
         "equippedOn": null,
         "dismantle": {
           "scrap": {
-            "min": 3,
-            "max": 5
+            "min": 1,
+            "max": 2
           },
           "shards": {
             "min": 0,
@@ -215,7 +215,7 @@
         }
       },
       {
-        "id": "407c9094-7305-437c-975f-2819918bba8b",
+        "id": "308b51b6-9c12-45f9-be45-f916d13d0290",
         "baseId": "festival-hearth-scarf",
         "slot": "scarf",
         "tag": "ember",
@@ -270,8 +270,8 @@
         "equippedOn": null,
         "dismantle": {
           "scrap": {
-            "min": 9,
-            "max": 15
+            "min": 3,
+            "max": 4
           },
           "shards": {
             "min": 1,
@@ -297,7 +297,7 @@
         }
       },
       {
-        "id": "dffed315-cf3c-4248-8053-4500511586fb",
+        "id": "0b949a23-897a-417d-b766-b876e5471ed7",
         "baseId": "coal-warm-cap",
         "slot": "hat",
         "tag": "ember",
@@ -352,8 +352,8 @@
         "equippedOn": null,
         "dismantle": {
           "scrap": {
-            "min": 10,
-            "max": 16
+            "min": 3,
+            "max": 4
           },
           "shards": {
             "min": 1,
@@ -375,7 +375,7 @@
         "origin": null
       },
       {
-        "id": "2e412796-b868-4d8e-96d9-d42eafa4fe6c",
+        "id": "7258cd78-1bd1-4616-8e63-abcad49a44ef",
         "baseId": "leafknit-scarf",
         "slot": "scarf",
         "tag": "grove",
@@ -420,8 +420,8 @@
         "equippedOn": null,
         "dismantle": {
           "scrap": {
-            "min": 6,
-            "max": 10
+            "min": 3,
+            "max": 4
           },
           "shards": {
             "min": 1,
@@ -443,7 +443,7 @@
         "origin": null
       },
       {
-        "id": "7e24a1f1-a1f9-42e5-a34a-4b6f8ae4c550",
+        "id": "44040166-6bcf-4d10-a9b1-7bbe3e710548",
         "baseId": "wardens-bell",
         "slot": "charm",
         "tag": "guard",
@@ -488,8 +488,8 @@
         "equippedOn": null,
         "dismantle": {
           "scrap": {
-            "min": 6,
-            "max": 10
+            "min": 3,
+            "max": 4
           },
           "shards": {
             "min": 1,
@@ -511,7 +511,7 @@
         "origin": null
       },
       {
-        "id": "352f24a8-f2de-4e36-b021-9cfe67705bb8",
+        "id": "f4dc3874-1670-481d-9ee2-515b6a361f03",
         "baseId": "crossroads-compass",
         "slot": "charm",
         "tag": "explorer",
@@ -556,8 +556,8 @@
         "equippedOn": null,
         "dismantle": {
           "scrap": {
-            "min": 6,
-            "max": 10
+            "min": 3,
+            "max": 4
           },
           "shards": {
             "min": 1,
@@ -579,7 +579,7 @@
         "origin": null
       },
       {
-        "id": "4a01c6de-90d0-4428-9662-fb50244c32da",
+        "id": "17248c62-ed98-4ed1-8f77-b0c7f3f32ada",
         "baseId": "thundercap",
         "slot": "hat",
         "tag": "spark",
@@ -624,8 +624,8 @@
         "equippedOn": null,
         "dismantle": {
           "scrap": {
-            "min": 7,
-            "max": 11
+            "min": 3,
+            "max": 4
           },
           "shards": {
             "min": 1,
@@ -679,19 +679,19 @@
     },
     "skills": [
       {
-        "creatureId": "335dc2aa-476b-458d-976b-c778f3cd47e0",
+        "creatureId": "be8feaec-e856-4b6d-8db6-6dfae4abf135",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "a22225be-75f3-4445-bcbc-3c2b48eb8ca8",
+        "creatureId": "44cadf11-4957-4e7e-95ae-b12861155c17",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "fefcf2b9-af1b-4a85-bba1-b075ec924ed7",
+        "creatureId": "994b66e1-f7c0-4422-8827-c9e071625b0b",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
@@ -701,7 +701,7 @@
       {
         "gear": [
           {
-            "id": "407c9094-7305-437c-975f-2819918bba8b",
+            "id": "308b51b6-9c12-45f9-be45-f916d13d0290",
             "baseId": "festival-hearth-scarf",
             "rarity": "festival",
             "itemLevel": 8
@@ -717,7 +717,7 @@
       {
         "gear": [
           {
-            "id": "04ed4dbe-c68d-439b-9100-1b0367f30a47",
+            "id": "858d9369-feff-4ea1-bb9e-507dcc3f591a",
             "baseId": "tidepool-charm",
             "rarity": "common",
             "itemLevel": 6
@@ -733,7 +733,7 @@
       {
         "gear": [
           {
-            "id": "a38a0dd5-bf22-4729-9d28-cfe1f006d98a",
+            "id": "6fbf59e1-b9bc-41c2-ae0f-d96c63a34553",
             "baseId": "trail-cap",
             "rarity": "common",
             "itemLevel": 1
@@ -766,7 +766,7 @@
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "335dc2aa-476b-458d-976b-c778f3cd47e0",
+        "id": "be8feaec-e856-4b6d-8db6-6dfae4abf135",
         "species": "cindle",
         "line": "cindle",
         "level": 15,
@@ -830,7 +830,7 @@
         }
       },
       {
-        "id": "a22225be-75f3-4445-bcbc-3c2b48eb8ca8",
+        "id": "44cadf11-4957-4e7e-95ae-b12861155c17",
         "species": "sproutle",
         "line": "sproutle",
         "level": 14,
@@ -894,7 +894,7 @@
         }
       },
       {
-        "id": "fefcf2b9-af1b-4a85-bba1-b075ec924ed7",
+        "id": "994b66e1-f7c0-4422-8827-c9e071625b0b",
         "species": "zipmouse",
         "line": "zipmouse",
         "level": 9,
@@ -975,7 +975,7 @@
     "supplies": {},
     "trainingMedianLevel": 15,
     "serverFirsts": [],
-    "loungerId": "a22225be-75f3-4445-bcbc-3c2b48eb8ca8",
+    "loungerId": "994b66e1-f7c0-4422-8827-c9e071625b0b",
     "loungeSpot": null
   }
 }

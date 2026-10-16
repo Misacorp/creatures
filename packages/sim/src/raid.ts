@@ -39,6 +39,7 @@ import { arrangeRow, arrangeRowPartial, type Setup } from './formations';
 import { sweepRank } from './sweep-rank';
 import { neutralSupport, studyRules, type RoleStudy } from './role-study';
 import {
+  activeTalentsOf,
   byPowerDesc,
   foldedCreature,
   pickTeam,
@@ -269,11 +270,11 @@ export function slotOfCreature(c: OwnedCreature, ownerId: string): FightSlot {
     level: c.level,
     fusionCount: c.fusionCount,
   });
-  if (c.items === undefined) {
+  if (c.items === undefined && activeTalentsOf(c).length === 0) {
     if (c.mods !== undefined) slot.mods = c.mods;
     return slot;
   }
-  // Gear folds into the stats, the crit bonus and the modifier sheet, as the worker's `slotFor` does
+  // Gear and talents fold into the stats, the crit bonus and the modifier sheet, as the worker's `slotFor` does
   // (apps/worker/src/raid-resolve.ts): both come from the one pure fold in `@creatures/game`.
   const folded = foldedCreature(c);
   const withGear: FightSlot = { ...slot, stats: folded.stats };

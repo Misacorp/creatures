@@ -8,7 +8,7 @@
     "blurb": "Draws creatures near",
     "worth": 15,
     "offerBp": 2500,
-    "catchBp": 1000,
+    "catchBp": 500,
     "newBp": 2500,
     "blueprint": {
       "craftingLevel": 1,
@@ -29,7 +29,7 @@
     "blurb": "Draws creatures, and new faces",
     "worth": 36,
     "offerBp": 5000,
-    "catchBp": 2000,
+    "catchBp": 900,
     "newBp": 4500,
     "blueprint": {
       "craftingLevel": 3,
@@ -50,7 +50,7 @@
     "blurb": "Draws creatures, mostly new ones",
     "worth": 72,
     "offerBp": 10000,
-    "catchBp": 3500,
+    "catchBp": 1500,
     "newBp": 7000,
     "blueprint": {
       "craftingLevel": 5,

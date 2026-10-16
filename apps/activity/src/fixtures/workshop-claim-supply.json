@@ -36,8 +36,8 @@
     "blueprints": [],
     "jobs": [
       {
-        "id": "6f793869-1aba-49a4-8fe3-580d9437dc52",
-        "creatureId": "5b471a5d-ed59-4ae7-9abd-bd0bec41f40d",
+        "id": "4f149cce-0316-4f49-afdd-c31d1a1827ab",
+        "creatureId": "846140b4-6d3a-434e-9bcd-d1fff7c70fe0",
         "kind": "supply",
         "input": {
           "supplyId": "lure-basic"
@@ -67,25 +67,25 @@
     },
     "skills": [
       {
-        "creatureId": "5b471a5d-ed59-4ae7-9abd-bd0bec41f40d",
+        "creatureId": "846140b4-6d3a-434e-9bcd-d1fff7c70fe0",
         "xp": 12,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "b5cccb35-57e7-4467-b3fa-4daf40f5df57",
+        "creatureId": "df58cec5-1472-484c-b521-e16941e9b3e6",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "ad8b47e0-26ad-4d55-8db3-89446944eb9d",
+        "creatureId": "9703684f-6f1c-4131-82f8-773b24b42d65",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "ff4fdbef-d078-4bb1-9724-08194e2f2319",
+        "creatureId": "0cecc9f2-afaf-4e74-ac45-f3dc4a1784b9",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
@@ -97,7 +97,7 @@
         "converted": [],
         "parts": {},
         "blueprints": [],
-        "key": "expedition:994a35ba-c589-4b05-8830-1fd9490a8532",
+        "key": "expedition:398940c6-ddc8-4132-b021-a15f96839713",
         "source": "expedition",
         "at": 1799852544002
       },
@@ -108,7 +108,7 @@
           "scrap": 2
         },
         "blueprints": [],
-        "key": "rank:5b471a5d-ed59-4ae7-9abd-bd0bec41f40d:4",
+        "key": "rank:846140b4-6d3a-434e-9bcd-d1fff7c70fe0:4",
         "source": "rank_gift",
         "at": 1799830944002
       },
@@ -119,7 +119,7 @@
           "scrap": 5
         },
         "blueprints": [],
-        "key": "expedition:ff6f14a4-dc1d-4de7-aa1a-fd3534a45864",
+        "key": "expedition:b0210957-275b-490a-a9f1-388a4ab75d56",
         "source": "expedition",
         "at": 1799830944002
       }
@@ -136,7 +136,7 @@
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "5b471a5d-ed59-4ae7-9abd-bd0bec41f40d",
+        "id": "846140b4-6d3a-434e-9bcd-d1fff7c70fe0",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -200,7 +200,7 @@
         }
       },
       {
-        "id": "b5cccb35-57e7-4467-b3fa-4daf40f5df57",
+        "id": "df58cec5-1472-484c-b521-e16941e9b3e6",
         "species": "splashet",
         "line": "splashet",
         "level": 8,
@@ -264,7 +264,7 @@
         }
       },
       {
-        "id": "ad8b47e0-26ad-4d55-8db3-89446944eb9d",
+        "id": "9703684f-6f1c-4131-82f8-773b24b42d65",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -328,7 +328,7 @@
         }
       },
       {
-        "id": "ff4fdbef-d078-4bb1-9724-08194e2f2319",
+        "id": "0cecc9f2-afaf-4e74-ac45-f3dc4a1784b9",
         "species": "mistnewt",
         "line": "mistnewt",
         "level": 1,
@@ -339,7 +339,7 @@
         "away": false,
         "origin": "expedition",
         "caughtAt": 1799830944002,
-        "quirk": "big-stretcher",
+        "quirk": "brave-until-rustle",
         "lineSlot": 1,
         "talents": {
           "slots": [
@@ -413,8 +413,8 @@
     "bookSlotBait": 10,
     "expeditions": [
       {
-        "id": "994a35ba-c589-4b05-8830-1fd9490a8532",
-        "creatureId": "b5cccb35-57e7-4467-b3fa-4daf40f5df57",
+        "id": "398940c6-ddc8-4132-b021-a15f96839713",
+        "creatureId": "df58cec5-1472-484c-b521-e16941e9b3e6",
         "duration": "long",
         "supplies": "basic",
         "kit": [],
@@ -441,8 +441,8 @@
         "pushOn": null
       },
       {
-        "id": "ff6f14a4-dc1d-4de7-aa1a-fd3534a45864",
-        "creatureId": "5b471a5d-ed59-4ae7-9abd-bd0bec41f40d",
+        "id": "b0210957-275b-490a-a9f1-388a4ab75d56",
+        "creatureId": "846140b4-6d3a-434e-9bcd-d1fff7c70fe0",
         "duration": "long",
         "supplies": "great",
         "kit": ["lure-great"],
@@ -528,8 +528,8 @@
         }
       },
       {
-        "id": "86bc2dab-7d3b-4160-a464-ca09c58e6ccc",
-        "creatureId": "5b471a5d-ed59-4ae7-9abd-bd0bec41f40d",
+        "id": "ff08ccff-375a-497a-9b13-a8940b7d60f3",
+        "creatureId": "846140b4-6d3a-434e-9bcd-d1fff7c70fe0",
         "duration": "long",
         "supplies": "great",
         "kit": ["lure-great", "map-scrap-basic"],
@@ -587,7 +587,7 @@
         "holders": ["Player 3"]
       }
     ],
-    "loungerId": "ad8b47e0-26ad-4d55-8db3-89446944eb9d",
+    "loungerId": "9703684f-6f1c-4131-82f8-773b24b42d65",
     "loungeSpot": null
   }
 }

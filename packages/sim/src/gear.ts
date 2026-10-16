@@ -90,6 +90,12 @@ export const GEAR_POLICY = {
   essenceKeep: 40,
   /** Commons waiting in the bag before a dismantle job is worth a slot (a Rare or better always is). */
   dismantleAt: 3,
+  /**
+   * Lures cost Bait as well as parts. A player spends Bait on levels first (training runs before the
+   * workshop at a check-in), and the lures may take at most this share (basis points) of the Bait the
+   * player earned this week, so a lure never starves the training that the raid needs.
+   */
+  lureBaitShareBp: 2_500,
 } as const;
 
 /** What a check-in needs to know about time and randomness for gear. */
@@ -312,6 +318,7 @@ function claimOne(player: SimPlayer, job: SimJob, ctx: GearContext): void {
     if (def !== undefined) {
       player.supplies[def.id] = (player.supplies[def.id] ?? 0) + def.blueprint.yield;
       player.stats.supplies_crafted += def.blueprint.yield;
+      if (def.kind === 'lure') player.stats.lures_crafted += def.blueprint.yield;
       if (def.tier === 'good') player.stats.supplies_crafted_good += def.blueprint.yield;
       if (def.tier === 'great') player.stats.supplies_crafted_great += def.blueprint.yield;
       xp = supplyJobXp(def);
@@ -423,6 +430,14 @@ interface JobPlan {
   cost: PartsBundle;
   /** Essence a Reach pays (taken from the player's Essence). */
   essence?: number;
+  /** The Bait it costs besides the parts (a lure). */
+  bait?: number;
+}
+
+/** Bait the lures may still take this week: their share of the Bait earned this week, less what they cost so far. */
+function lureBudget(player: SimPlayer): number {
+  const earned = player.week.baitEarned + player.week.dungeonBait;
+  return Math.floor((earned * GEAR_POLICY.lureBaitShareBp) / 10_000) - player.week.baitLures;
 }
 
 /** Supplies in stock and in the workshop's open jobs, all kinds and tiers together. */
@@ -449,12 +464,20 @@ function planSupply(player: SimPlayer, level: number): JobPlan | null {
     if (level < def.blueprint.craftingLevel) continue;
     const cost = partsOfSpec(def.blueprint.parts);
     if (!canPay(player, cost)) continue;
+    // A lure also costs Bait: held, and within the share the lures may take.
+    const bait = def.blueprint.bait ?? 0;
+    if (bait > 0 && (player.bait < bait || lureBudget(player) < bait)) continue;
     const better =
       best === null ||
       TIER_ORDER[def.tier] > TIER_ORDER[best.def.tier] ||
       (def.tier === best.def.tier &&
         (player.supplies[def.id] ?? 0) < (player.supplies[best.def.id] ?? 0));
-    if (better) best = { def, plan: { job: { kind: 'supply', supplyId: def.id }, cost } };
+    if (better) {
+      best = {
+        def,
+        plan: { job: { kind: 'supply', supplyId: def.id }, cost, ...(bait > 0 ? { bait } : {}) },
+      };
+    }
   }
   return best === null ? null : best.plan;
 }
@@ -569,6 +592,11 @@ export function startJobs(
     if (plan === null) return;
     pay(player, plan.cost);
     player.essence -= plan.essence ?? 0;
+    if (plan.bait !== undefined) {
+      player.bait -= plan.bait;
+      player.week.baitLures += plan.bait;
+      player.stats.lure_bait += plan.bait;
+    }
     const kind: JobKind = plan.job.kind;
     const supply = plan.job.supplyId === undefined ? undefined : supplyDef(plan.job.supplyId);
     const ms =

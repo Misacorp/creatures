@@ -473,7 +473,7 @@ const RARITY_FALLBACK: Record<Rarity, readonly Rarity[]> = {
  *    deeper area's too, on a deeper roll); a rarity nobody there has falls back to the nearest one that
  *    somebody has. Species of the explorer's element weigh 2 (a Setter: 3), the twist's featured
  *    species 2 to 9 times as much.
- * 3. Dupe shield: with a streak of 4 or more, only species the player does not own, if any. A lure's
+ * 3. Dupe shield: with a streak of `RULES.catching.dupeShieldStreak` (3) or more, only species the player does not own, if any. A lure's
  *    `newBp` does the same with its own chance.
  * 4. Shiny: 1 in 500.
  */

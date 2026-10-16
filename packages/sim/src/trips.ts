@@ -1,7 +1,6 @@
 import {
   EXPEDITION_LENGTHS,
   RULES,
-  applyCatchToCollection,
   chance,
   closedReasons,
   content,
@@ -24,7 +23,6 @@ import {
   lengthOpen,
   lengthRules,
   milestoneBonuses,
-  expeditionConvertBait,
   partsOfSpec,
   rankSum,
   rollBlueprint,
@@ -55,6 +53,7 @@ import {
 } from '@creatures/game';
 import { CATCHABLE, foldedCreature, speciesOf, type OwnedCreature } from './data';
 import { creditParts, grantItem, learnBlueprint, onJob, type GearContext } from './gear';
+import { collect } from './talents';
 import type { PendingExpedition, SimPlayer } from './state';
 
 /**
@@ -99,6 +98,8 @@ export interface TripContext {
   catches: Rng;
   /** Offers, push-on results and the journal. */
   trip: Rng;
+  /** The talents of every creature that arrives (a new species's first, a duplicate's). */
+  talents: Rng;
   /** Parts, supplies and gear: absent in a sim without gear (trips then only bring catches). */
   gear?: GearContext;
 }
@@ -297,12 +298,24 @@ export function supplyGain(
   const offer = (def.offerBp / 10_000) * 12;
   switch (def.kind) {
     case 'lure': {
-      const perRoll =
-        (def.rareUpBp * (w.roll.rare - w.roll.common) +
-          def.epicUpBp * (w.roll.epic - w.roll.common)) /
+      // A lure adds to the chance a roll brings a creature, and to the chance that creature is a species
+      // the player lacks. What a roll with a creature is worth: its rarity and, when new, the species.
+      const fresh =
+        (odds.common * discovery('common') +
+          odds.rare * discovery('rare') +
+          odds.epic * discovery('epic')) /
         10_000;
-      const found = (def.rareUpBp * discovery('rare') + def.epicUpBp * discovery('epic')) / 10_000;
-      return l.rolls * (perRoll + found * TRIP_POLICY.newSpeciesWorth) + offer;
+      const anyNew = (['common', 'rare', 'epic'] as const).some((r) => discovery(r) > 0) ? 1 : 0;
+      const more = Math.min(1, (l.catchBp + def.catchBp) / 10_000);
+      const creature = rollWorth(odds) + fresh * TRIP_POLICY.newSpeciesWorth;
+      const kept = def.catchBp / 10_000;
+      // Extra creatures, and the extra new species the lure's draw finds among all of them.
+      const extraCreatures = l.rolls * kept * creature;
+      const extraNew =
+        l.rolls * more * (def.newBp / 10_000) * (anyNew - fresh) * TRIP_POLICY.newSpeciesWorth;
+      // A roll that brings nothing still brings a small find of scrap, so a creature costs that.
+      const lostFind = l.rolls * kept * l.findScrap * w.scrap;
+      return extraCreatures + extraNew - lostFind + offer;
     }
     case 'map-scrap': {
       const extra = Math.max(1, Math.floor((l.rolls * def.rollsBp) / 10_000));
@@ -387,6 +400,7 @@ export function sendTrips(
     const picked = chooseKit(player, { length, dest, stars });
     for (const id of picked) player.supplies[id] = (player.supplies[id] ?? 0) - 1;
     player.stats.supplies_used += picked.length;
+    player.stats.lures_used += picked.filter((id) => supplyDef(id)?.kind === 'lure').length;
     const twist = special.destination === dest.id ? special.twist : null;
     const kit = kitOf(picked);
     player.expeditions.push({
@@ -501,7 +515,7 @@ function payTrip(
   const famBefore = famOf(player, explorer.id, dest.id);
   const starsBefore = familiarityStars(dest, famBefore);
 
-  const { results, dupeStreak } = rollTripCatches(
+  const { results, dupeStreak, empty } = rollTripCatches(
     ctx.catches,
     trip.rolls + (reward?.catchRolls ?? 0),
     {
@@ -520,28 +534,13 @@ function payTrip(
   );
   player.dupeStreak = dupeStreak;
   player.firstExpeditionDone = true;
-  player.stats.catch_rolls += results.length;
+  player.stats.catch_rolls += results.length + empty;
+  player.stats.empty_rolls += empty;
   for (const caught of results) {
-    const existing = player.creatures.find((c) => c.line === caught.species.line);
-    const outcome = applyCatchToCollection(
-      existing === undefined ? undefined : { fusionCount: existing.fusionCount, shiny: false },
-      caught,
-    );
-    if (outcome.kind === 'new') {
-      player.creatures.push({
-        id: `${player.id}/${caught.species.line}`,
-        line: caught.species.line,
-        speciesId: caught.species.id,
-        level: 1,
-        fusionCount: 0,
-      });
+    // A new species becomes a creature with its first talent; a duplicate is answered with Recommended
+    // (Teach, Fuse or Release), straight away. Nothing turns into Bait any more.
+    if (collect(player, caught.species, ctx.talents, ctx.gear !== undefined) === 'new') {
       player.stats.species_found += 1;
-    } else if (outcome.kind === 'fused') {
-      if (existing !== undefined) existing.fusionCount = outcome.newFusionCount;
-    } else {
-      const bait = expeditionConvertBait(outcome.bait);
-      player.bait += bait;
-      player.week.baitConverted += bait;
     }
     if (caught.shiny) player.stats.shinies_found += 1;
   }
@@ -561,6 +560,8 @@ function payTrip(
         rank,
         gearPartsBp: gearRules.keenNoseBp,
         gearSupplyBp: gearRules.packerBp,
+        gearGlimmerBp: gearRules.glimmerFindBp,
+        emptyRolls: empty,
       },
       { completed: true, caught: results.length, rolls: trip.rolls },
     );

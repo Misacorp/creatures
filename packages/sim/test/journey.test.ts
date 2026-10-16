@@ -323,11 +323,11 @@ describe('the recorder', () => {
         expect(day).toBeGreaterThanOrEqual(1);
         expect(day).toBeLessThanOrEqual(21);
       }
-      // Power hardly falls (a team only gets stronger). Equip best chases the item score (lines, not only
-      // Attack and HP), so this old Attack + HP score may dip by a point when a better item replaces another.
+      // Power does not fall by more than a rounding step: a team only gets stronger, except that Teach
+      // swaps a talent for one that scores better (the score also counts what Attack plus HP cannot see).
       for (let k = 1; k < j.days.length; k++) {
         expect((j.days[k] as { power: number }).power).toBeGreaterThanOrEqual(
-          (j.days[k - 1] as { power: number }).power - 1 - 1e-9,
+          (j.days[k - 1] as { power: number }).power * 0.98 - 1e-9,
         );
       }
       for (const w of j.waits) {

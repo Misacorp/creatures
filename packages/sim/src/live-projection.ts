@@ -80,7 +80,7 @@ export function buildSeries(sims: readonly EconomyResult[], weeks: number): Seri
     essenceStock: each(avg((r) => r.essence)),
     essenceIncome: each(avg((r) => r.essenceEarned)),
     baitStock: each(avg((r) => r.bait)),
-    baitIncome: each(avg((r) => r.baitEarned + r.baitConverted)),
+    baitIncome: each(avg((r) => r.baitEarned)),
     scrapStock: each(avg((r) => r.scrap)),
     species: each(avg((r) => r.speciesOwned)),
     maxLevel: each(avg((r) => r.maxLevel)),

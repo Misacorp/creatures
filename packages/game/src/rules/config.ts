@@ -65,7 +65,7 @@ export const RULES = {
     /** Species weight multiplier when the species has the explorer's element. */
     explorerAffinityWeight: 2,
     /** After this many duplicates in a row the next catch avoids owned species if possible. */
-    dupeShieldStreak: 4,
+    dupeShieldStreak: 3,
     /** The first claim of a player's first expedition starts with this line. */
     firstExpeditionLine: 'zipmouse',
   },
@@ -761,7 +761,7 @@ export const RULES = {
       short: {
         ms: 2 * HOUR_MS,
         rolls: 1,
-        catchBp: 2000,
+        catchBp: 300,
         findScrap: 1,
         rarityUpBp: 0,
         xp: 4,
@@ -772,7 +772,7 @@ export const RULES = {
       medium: {
         ms: 6 * HOUR_MS,
         rolls: 1,
-        catchBp: 3500,
+        catchBp: 600,
         findScrap: 1,
         rarityUpBp: 150,
         xp: 110,
@@ -783,7 +783,7 @@ export const RULES = {
       long: {
         ms: 12 * HOUR_MS,
         rolls: 1,
-        catchBp: 5000,
+        catchBp: 1800,
         findScrap: 2,
         rarityUpBp: 300,
         xp: 300,
@@ -794,7 +794,7 @@ export const RULES = {
       day: {
         ms: 24 * HOUR_MS,
         rolls: 2,
-        catchBp: 4500,
+        catchBp: 1800,
         findScrap: 2,
         rarityUpBp: 600,
         xp: 700,

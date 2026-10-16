@@ -622,5 +622,93 @@
     "comparator": "min",
     "value": 0.25,
     "unit": "percent"
+  },
+  {
+    "id": "creatures-catalogue-min-maxer",
+    "description": "Creatures: a min-maxer owns every species a trip can find (the base catalogue) after about 9 weeks (B-014; the run length plus one when under half got there)",
+    "metric": "creatures.min-maxer.catalogueWeeks",
+    "comparator": "range",
+    "value": [7, 11],
+    "unit": "count"
+  },
+  {
+    "id": "creatures-catalogue-engaged",
+    "description": "Creatures: an engaged player completes the base catalogue after about 14 weeks (B-014)",
+    "metric": "creatures.engaged.catalogueWeeks",
+    "comparator": "range",
+    "value": [11, 17],
+    "unit": "count"
+  },
+  {
+    "id": "creatures-catalogue-regular",
+    "description": "Creatures: a regular player completes the base catalogue after about 24 weeks, and at least half of them by week 30 (B-014)",
+    "metric": "creatures.regular.catalogueWeeks",
+    "comparator": "range",
+    "value": [20, 30],
+    "unit": "count"
+  },
+  {
+    "id": "creatures-catches-min-maxer",
+    "description": "Creatures: a min-maxer brings home 8 to 20 creatures a week (weeks 3 to 30; B-014)",
+    "metric": "creatures.min-maxer.catchesPerWeek",
+    "comparator": "range",
+    "value": [8, 20],
+    "unit": "number"
+  },
+  {
+    "id": "creatures-catches-engaged",
+    "description": "Creatures: an engaged player brings home 5 to 14 creatures a week (weeks 3 to 30; B-014)",
+    "metric": "creatures.engaged.catchesPerWeek",
+    "comparator": "range",
+    "value": [5, 14],
+    "unit": "number"
+  },
+  {
+    "id": "creatures-catches-regular",
+    "description": "Creatures: a regular player brings home 1.5 to 4 creatures a week (weeks 3 to 30; B-014)",
+    "metric": "creatures.regular.catchesPerWeek",
+    "comparator": "range",
+    "value": [1.5, 4],
+    "unit": "number"
+  },
+  {
+    "id": "creatures-dupes-min-maxer",
+    "description": "Creatures: a min-maxer gets 6 to 18 duplicates a week, enough to feed talents and fusion and not a flood (B-014)",
+    "metric": "creatures.min-maxer.dupesPerWeek",
+    "comparator": "range",
+    "value": [6, 18],
+    "unit": "number"
+  },
+  {
+    "id": "creatures-dupes-engaged",
+    "description": "Creatures: an engaged player gets 4 to 12 duplicates a week (B-014)",
+    "metric": "creatures.engaged.dupesPerWeek",
+    "comparator": "range",
+    "value": [4, 12],
+    "unit": "number"
+  },
+  {
+    "id": "creatures-dupes-regular",
+    "description": "Creatures: a regular player gets 1 to 3.5 duplicates a week (B-014)",
+    "metric": "creatures.regular.dupesPerWeek",
+    "comparator": "range",
+    "value": [1, 3.5],
+    "unit": "number"
+  },
+  {
+    "id": "creatures-lure-bait-min-maxer",
+    "description": "Creatures: lures take at most a quarter of the Bait a min-maxer earns, so levels stay the main use of Bait (B-014)",
+    "metric": "creatures.min-maxer.lureBaitShare",
+    "comparator": "max",
+    "value": 0.25,
+    "unit": "percent"
+  },
+  {
+    "id": "creatures-talent-share-min-maxer",
+    "description": "Creatures: talents give a min-maxer's raid team 5 to 20% of its fight-scored power at the end of the run (B-014; not a design target, a guard against a talent that is worth nothing or everything)",
+    "metric": "creatures.min-maxer.talentShareEnd",
+    "comparator": "range",
+    "value": [0.05, 0.2],
+    "unit": "percent"
   }
 ]

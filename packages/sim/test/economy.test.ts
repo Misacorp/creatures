@@ -107,6 +107,7 @@ describe('check-in', () => {
     day: Math.floor(hour / 24),
     weekIndex: 0,
     catches: createSeededRng(`${seed}:catches`),
+    talents: createSeededRng(`${seed}:talents`),
     trip: createSeededRng(`${seed}:trip`),
   });
 

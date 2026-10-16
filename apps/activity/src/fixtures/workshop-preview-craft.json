@@ -2,7 +2,7 @@
   "result": {
     "kind": "craft",
     "blueprintId": "kelp-cap",
-    "creatureId": "335dc2aa-476b-458d-976b-c778f3cd47e0",
+    "creatureId": "be8feaec-e856-4b6d-8db6-6dfae4abf135",
     "craftingLevel": 1,
     "itemLevel": 2,
     "marks": 0,
@@ -32,7 +32,7 @@
         "minLevel": 3,
         "parts": {
           "scrap": 6,
-          "tide-shard": 2
+          "tide-shard": 1
         },
         "essence": 25,
         "durationMs": 21600000,
@@ -49,7 +49,7 @@
         "minLevel": 6,
         "parts": {
           "scrap": 6,
-          "tide-shard": 3,
+          "tide-shard": 1,
           "glimmer": 1
         },
         "essence": 70,

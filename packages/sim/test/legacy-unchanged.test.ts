@@ -30,8 +30,15 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * Reach (Essence, shards, glimmer) and takes unneeded items apart in dismantle jobs (a creature, a
  * slot, time; the refund is a range with Essence) instead of instantly, repeat blueprints add
  * well-thumbed marks, and the week records gained Reach and dismantle counters. Then once more the same day
- * (B-014, no free lottery): a craft's scrap grows with the item level, a dismantle returns under half of it,
+ * (B-015, no free lottery): a craft's scrap grows with the item level, a dismantle returns under half of it,
  * and a Reach takes no extra shards.
+ *
+ * Re-pinned again on 2026-10-16 (Creatures A, B-014), on purpose: a roll on a trip brings a creature
+ * only with a chance (the rest bring a small find), a duplicate is answered with Teach, Fuse or Release
+ * instead of fusing by itself or turning into Bait, every creature carries a talent that adds to its
+ * stats and its sheet, lures cost Bait, the dungeon no longer drops lures and the dupe shield starts at
+ * a streak of 3. The first player's Bait earned is the same; their team power is lower (fewer
+ * creatures, so fewer fusions, and no duplicate Bait).
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(
