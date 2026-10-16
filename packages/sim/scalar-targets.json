@@ -3,6 +3,7 @@
   "RULES.raid.phases": ["raid-*", "longrun-*"],
   "RULES.raid.enrage": ["raid-*"],
   "RULES.raid.scaling": ["raid-*", "fair-top-share", "longrun-*"],
+  "RULES.raid.curve": ["curve-*", "raid-*", "fair-top-share", "longrun-*"],
   "RULES.raid.softCap": ["fair-top-share", "econ-power-ratio"],
   "RULES.raid.essence": [
     "fair-newcomer-essence",

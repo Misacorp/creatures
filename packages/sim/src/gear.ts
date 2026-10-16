@@ -20,7 +20,7 @@ import {
   expeditionContent,
   partsOfSpec,
   rollFestivalDrop,
-  rollFinaleDrop,
+  rollFinaleReward,
   rollGear,
   rollWelcomeKit,
   skillLevel,
@@ -121,15 +121,20 @@ function pay(player: SimPlayer, cost: PartsBundle): void {
   }
 }
 
-function newItem(
-  player: SimPlayer,
-  drop: { baseId: string; rarity: GearRarity; rolls: GearRolls },
-): SimItem {
+/** A drop as the sim grants it: `level` is the upgrade level it arrives with (finale gear, by rank); absent is +0. */
+export interface SimDrop {
+  baseId: string;
+  rarity: GearRarity;
+  rolls: GearRolls;
+  level?: number;
+}
+
+function newItem(player: SimPlayer, drop: SimDrop): SimItem {
   return {
     uid: player.gear.nextUid++,
     baseId: drop.baseId,
     rarity: drop.rarity,
-    level: 0,
+    level: drop.level ?? 0,
     rolls: drop.rolls,
     enchantId: null,
     improves: 0,
@@ -137,13 +142,13 @@ function newItem(
 }
 
 /** A dropped item goes in the bag; with the bag full it turns into its dismantle yield (like the worker). */
-export function grantItem(
-  player: SimPlayer,
-  drop: { baseId: string; rarity: GearRarity; rolls: GearRolls },
-): void {
+export function grantItem(player: SimPlayer, drop: SimDrop): void {
   player.week.gearItems += 1;
   if (inventoryUsed(player) >= RULES.gear.inventoryCap) {
-    creditParts(player, dismantleYield({ baseId: drop.baseId, rarity: drop.rarity, level: 0 }));
+    creditParts(
+      player,
+      dismantleYield({ baseId: drop.baseId, rarity: drop.rarity, level: drop.level ?? 0 }),
+    );
     return;
   }
   player.gear.bag.push(newItem(player, drop));
@@ -188,7 +193,12 @@ export function grantPhaseScrap(players: readonly SimPlayer[], stage: RaidStage)
   for (const p of players) creditParts(p, { scrap: RULES.gear.drops.phaseScrap[stage] });
 }
 
-/** A won finale: one gear roll per participant at the server's rank, and the Festival piece in a Festival week. */
+/**
+ * A won finale: the reward slot of every participant at the server's rank, as the worker grants it
+ * (`rollFinaleReward`): one gear piece, arriving pre-upgraded by rank, or a blueprint the player does
+ * not know yet (a known one is never drawn; gear instead when they know them all). And the Festival
+ * piece in a Festival week.
+ */
 export function grantFinaleLoot(
   players: readonly SimPlayer[],
   rank: number,
@@ -196,7 +206,9 @@ export function grantFinaleLoot(
   rng: Rng,
 ): void {
   for (const p of players) {
-    grantItem(p, rollFinaleDrop(rng, rank));
+    const reward = rollFinaleReward(rng, rank, new Set(p.gear.blueprints));
+    if (reward.kind === 'blueprint') learnBlueprint(p, reward.baseId);
+    else grantItem(p, reward);
     if (festivalElement !== null) grantItem(p, rollFestivalDrop(rng, festivalElement));
   }
 }

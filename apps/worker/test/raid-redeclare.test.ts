@@ -1,4 +1,4 @@
-import { basicAbilities, content, placementRank, raidWeekPlan } from '@creatures/game';
+import { RULES, basicAbilities, content, placementRank, raidWeekPlan } from '@creatures/game';
 import { scaleBoss } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { RAID_DIFFICULTY_VERSION } from '../src/raid-difficulty';
@@ -26,7 +26,8 @@ import {
  */
 
 const LEVEL = 12;
-const STALE_RANK = 1;
+// What the old placement rule gave a roster of level-12 creatures: the curve now starts every server at rank 1.
+const STALE_RANK = 3;
 
 const seedMany = (ctx: CoreContext, n: number, level = LEVEL): Seeded[] =>
   Array.from({ length: n }, (_, i) => seedPlayer(ctx, 1 + i, { level }));
@@ -118,7 +119,9 @@ describe('re-declaring an open week', () => {
     await runRaid((ctx) => {
       const players = openWeekWithChoices(ctx, 4);
       const placed = placementRank(players.flatMap(() => [LEVEL, LEVEL, LEVEL]));
-      expect(placed).toBeGreaterThan(STALE_RANK);
+      // Re-declared under the new rules: the first week's boss is the rank-1 boss, easier than the old placement.
+      expect(placed).toBe(RULES.progression.placement.startRank);
+      expect(placed).toBeLessThan(STALE_RANK);
       const before = kept(ctx);
       const boss = weekState(ctx).boss_id;
       makeStale(ctx);
@@ -156,7 +159,7 @@ describe('re-declaring an open week', () => {
       if (boss === undefined) throw new Error('boss missing');
       const effective = raidWeekPlan(weekIndex(W02.id), placed).effectiveRank;
       const scaled = scaleBoss(boss, 4, effective);
-      expect(scaled.maxHp).toBeGreaterThan(scaleBoss(boss, 4, STALE_RANK).maxHp);
+      expect(scaled.maxHp).toBeLessThan(scaleBoss(boss, 4, STALE_RANK).maxHp);
       expect(run?.input.bossHpPool).toEqual({ max: scaled.maxHp, current: scaled.maxHp });
       expect(run?.input.bossAtk).toBe(scaled.atk);
       // The pool is stored with the first stage and the week keeps its version.

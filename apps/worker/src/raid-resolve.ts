@@ -21,6 +21,7 @@ import {
   createSeededRng,
   essenceForStage,
   jackpotEssenceFor,
+  luckAtRank,
   rollJackpot,
   type BossDef,
   type Rng,
@@ -390,7 +391,7 @@ export function buildPhaseInput(
       memberChoices(aliases[i] as string, abilityId, teams[i] as TeamCreature[], rowIds),
     ),
     // Crits and the rest of the luck rules, stored with the input so a replay is exact.
-    luck: { ...RULES.combat.luck },
+    luck: { ...luckAtRank(RULES.combat.luck, rank) },
     // The combat rules, the phase floor and the finale's enrage, stored the same way.
     rules: liveFightRules(),
     ...(floor > 0 ? { bossHpFloor: Math.min(floor, hpCurrent) } : {}),

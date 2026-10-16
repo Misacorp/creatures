@@ -113,12 +113,12 @@ describe('resolving a week', () => {
         throw new Error('missing runs');
       const boss = content.bosses.find((b) => b.id === p1.input.boss.id);
       if (boss === undefined) throw new Error('boss');
-      // The week's stored effective rank, placed from this roster (level 12 creatures).
+      // The week's stored effective rank: a new server starts at the start rank, whatever its creatures.
       const stored = rows<{ effective_rank: number }>(
         ctx.sql,
         'SELECT effective_rank FROM raid_weeks',
       )[0] as { effective_rank: number };
-      expect(stored.effective_rank).toBeGreaterThan(1);
+      expect(stored.effective_rank).toBe(RULES.progression.placement.startRank);
       const scaled = scaleBoss(boss, 6, stored.effective_rank);
       expect(p1.input.bossHpPool).toEqual({ max: scaled.maxHp, current: scaled.maxHp });
       expect(p1.input.bossAtk).toBe(scaled.atk);
@@ -476,16 +476,19 @@ describe("the boss at the week's rank", () => {
     }
   });
 
-  it("stores the rank's number of plain attacks on the input only when it is above one, and replays", async () => {
-    const scaling = RULES.raid.scaling as { bossAttacksByRank: readonly number[] };
-    const shipped = scaling.bossAttacksByRank;
-    // One attack at rank 1 to 3, two from rank 4, three from rank 7.
-    scaling.bossAttacksByRank = [1, 1, 1, 2, 2, 2, 3];
+  it("stores the curve's plain attacks and boss crit bonus for the rank on the input, and replays", async () => {
+    const curve = RULES.raid.curve.ranks;
+    const shipped = curve.map((row) => ({ ...row }));
+    // One attack at rank 1 to 3, two from rank 4, three from rank 7; +300 boss crit chance from rank 4.
+    curve.forEach((row, i) => {
+      row.bossAttacks = i < 3 ? 1 : i < 6 ? 2 : 3;
+      row.critBonusBp = i < 3 ? 0 : 300;
+    });
     try {
-      for (const [rank, attacks] of [
-        [1, undefined],
-        [4, 2],
-        [9, 3],
+      for (const [rank, attacks, bonus] of [
+        [1, undefined, 0],
+        [4, 2, 300],
+        [9, 3, 300],
       ] as const) {
         await runRaid((ctx) => {
           openWeek(ctx, 4, 10);
@@ -496,12 +499,15 @@ describe("the boss at the week's rank", () => {
           expect(runs).toHaveLength(3);
           for (const run of runs) {
             expect(run.input.bossAttacks).toBe(attacks);
+            expect(run.input.luck?.bossCritChanceBp).toBe(
+              (RULES.combat.luck.bossCritChanceBp ?? 0) + bonus,
+            );
             expect(simulateFight(run.input, createSeededRng(run.seed))).toEqual(run.result);
           }
         });
       }
     } finally {
-      scaling.bossAttacksByRank = shipped;
+      shipped.forEach((row, i) => Object.assign(curve[i] as object, row));
     }
   });
 

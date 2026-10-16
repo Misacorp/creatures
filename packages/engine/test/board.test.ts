@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RULES, content, rankFactorBp } from '@creatures/game';
+import { RULES, content, rankAtkFactorBp, rankFactorBp } from '@creatures/game';
 import {
   autoPlace,
   compactRow,
@@ -161,8 +161,9 @@ describe('scaleBoss', () => {
       expect(expected, `pin the exponent ${num}/${den} here`).toBeDefined();
       for (const [n, bp] of Object.entries(expected ?? {})) {
         const exponent = { num, den };
+        // At rank 1 the HP is the head-count factor times the curve's rank-1 number.
         expect(scaleBoss({ baseHp, baseAtk: 1, hpExponent: exponent }, Number(n), 1).maxHp).toBe(
-          (baseHp * bp) / 10_000,
+          Math.floor((bp * rankFactorBp(1)) / 10_000),
         );
       }
     }
@@ -171,16 +172,18 @@ describe('scaleBoss', () => {
   it('is at least 1 player and rank 1 and uses the rank factor', () => {
     expect(scaleBoss(b, 0, 1)).toEqual(scaleBoss(b, 1, 1));
     expect(scaleBoss(b, -5, 0)).toEqual(scaleBoss(b, 1, 1));
-    expect(scaleBoss(b, 1, 1)).toEqual({ maxHp: b.baseHp, atk: b.baseAtk });
-    // Rank 3: the step compounds twice (floored each time), Attack follows at its share.
-    const step = RULES.raid.scaling.rankStepBp;
-    const f2 = Math.floor((10_000 * (10_000 + step)) / 10_000);
-    const f3 = Math.floor((f2 * (10_000 + step)) / 10_000);
-    expect(rankFactorBp(3)).toBe(f3);
+    expect(scaleBoss(b, 1, 1)).toEqual({
+      maxHp: Math.floor((b.baseHp * rankFactorBp(1)) / 10_000),
+      atk: Math.floor((b.baseAtk * rankAtkFactorBp(1)) / 10_000),
+    });
+    // Rank 3: HP and Attack come from the curve's row for the rank, each on its own.
+    const row = RULES.raid.curve.ranks[2];
+    expect(row).toBeDefined();
+    const f3 = rankFactorBp(3);
+    expect(f3).toBe(row?.hpBp);
     const r3 = scaleBoss({ baseHp: 1000, baseAtk: 100 }, 1, 3);
     expect(r3.maxHp).toBe(Math.floor((1000 * f3) / 10_000));
-    const atkBp = 10_000 + Math.floor(((f3 - 10_000) * RULES.raid.scaling.atkRankShareBp) / 10_000);
-    expect(r3.atk).toBe(Math.floor((100 * atkBp) / 10_000));
+    expect(r3.atk).toBe(Math.floor((100 * (row?.atkBp ?? 0)) / 10_000));
     // The creatures' levels play no part: the signature takes a head count and a rank only.
     expect(scaleBoss.length).toBe(3);
   });
@@ -221,10 +224,12 @@ describe('scaleBoss', () => {
   it("uses the boss's own head-count exponent when it has one, else the rules'", () => {
     expect(
       scaleBoss({ baseHp: 10_000, baseAtk: 1, hpExponent: { num: 1, den: 1 } }, 7, 1).maxHp,
-    ).toBe(70_000);
+    ).toBe(Math.floor((70_000 * rankFactorBp(1)) / 10_000));
     const plain = scaleBoss({ baseHp: 10_000, baseAtk: 1 }, 7, 1).maxHp;
     const { num, den } = RULES.raid.scaling.hpExponent;
-    expect(plain).toBe(Math.floor(Math.pow(7, num / den) * 10_000));
+    expect(plain).toBe(
+      Math.floor((Math.floor(Math.pow(7, num / den) * 10_000) * rankFactorBp(1)) / 10_000),
+    );
     expect(
       scaleBoss({ baseHp: 10_000, baseAtk: 1, hpExponent: { num: 2, den: 1 } }, 7, 1).maxHp,
     ).toBeGreaterThan(plain);
@@ -241,10 +246,12 @@ describe('scaleBoss', () => {
     prev = scaleBoss(b, 5, 1);
     for (let rank = 2; rank <= 30; rank++) {
       const next = scaleBoss(b, 5, rank);
-      expect(next.maxHp).toBeGreaterThan(prev.maxHp);
+      expect(next.maxHp).toBeGreaterThanOrEqual(prev.maxHp);
       expect(next.atk).toBeGreaterThanOrEqual(prev.atk);
       prev = next;
     }
+    expect(prev.maxHp).toBeGreaterThan(scaleBoss(b, 5, 1).maxHp);
+    expect(prev.atk).toBeGreaterThan(scaleBoss(b, 5, 1).atk);
     // Per-player HP follows the exponent: it falls below 1, rises above 1 (bigger servers earn
     // more per player, so their bosses are tougher per head).
     const { num, den } = RULES.raid.scaling.hpExponent;

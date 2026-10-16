@@ -54,8 +54,8 @@ describe('target evaluator', () => {
 });
 
 describe('targets.json', () => {
-  it('is valid, has unique ids and mirrors the 51 documented targets', () => {
-    expect(TARGETS.length).toBe(51);
+  it('is valid, has unique ids and mirrors the 61 documented targets', () => {
+    expect(TARGETS.length).toBe(61);
     expect(new Set(TARGETS.map((t) => t.id)).size).toBe(TARGETS.length);
   });
 
@@ -69,9 +69,10 @@ describe('targets.json', () => {
   });
 
   it('only uses metrics the analysis produces', () => {
-    const { analysis } = tinyRun();
+    const { analysis, curve } = tinyRun();
+    const produced = { ...analysis.metrics, ...curve.metrics };
     for (const t of TARGETS) {
-      expect(analysis.metrics, t.metric).toHaveProperty(t.metric);
+      expect(produced, t.metric).toHaveProperty(t.metric);
     }
   });
 });

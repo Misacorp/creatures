@@ -1,4 +1,5 @@
-import { RULES, content, createSeededRng, placementRank, type BossDef } from '@creatures/game';
+import { RULES, content, createSeededRng, type BossDef } from '@creatures/game';
+import { sweepRank } from './sweep-rank';
 import { chooseSignUps, type Snapshot } from './economy';
 import { pickTeam } from './data';
 import { protection } from './formations';
@@ -137,10 +138,10 @@ function playWeek(
   options: { formation?: SetupId; rank?: number; rankOffset?: number },
 ): PlayedWeek & { rank: number } {
   const signUps = slot.signUps();
-  // The rank the sweep would use (`placementRank` of the creatures brought), moved by the offset.
+  // The rank the sweep would use (`sweepRank` of the creatures brought), moved by the offset.
   const rank =
     options.rank ??
-    placementRank(signUps.flatMap((p) => pickTeam(p.creatures).map((c) => c.level))) +
+    sweepRank(signUps.flatMap((p) => pickTeam(p.creatures).map((c) => c.level))) +
       (options.rankOffset ?? 0);
   const week = openRaidWeek(slot.boss, signUps, {
     luck: RULES.combat.luck,

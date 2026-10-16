@@ -23,7 +23,7 @@ import { mean, percentile } from './util';
 
 /**
  * Calibration of the readiness band (docs/design/progression.md, item 5). For many fixed finale
- * inputs (roster, boss at the placement rank with the pool scaled up and down, Phase 1 and 2
+ * inputs (roster, boss at the sweep rank (`sweepRank`) with the pool scaled up and down, Phase 1 and 2
  * played) it records
  * - the forecast margin the server would show: mean damage over the HP left, `forecastFinale` with
  *   fresh seeds and every ability at its default round;
@@ -44,8 +44,8 @@ export interface ReadinessSettings {
   economySims: number;
   counts: number[];
   /**
-   * Boss HP of each input in basis points of the placement-rank boss (10000: as shipped). A rank is
-   * a 40% step, so ranks alone would leave the middle of the scale nearly empty, where the bands
+   * Boss HP of each input in basis points of the sweep-rank boss (10000: as shipped). A rank is
+   * a big step on the curve, so ranks alone would leave the middle of the scale nearly empty, where the bands
    * are decided; scaling the pool fills it in.
    */
   hpScalesBp: number[];

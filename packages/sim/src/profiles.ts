@@ -292,6 +292,38 @@ export const SERVER_MIXES: Readonly<Record<string, ProfileMix>> = {
 };
 
 /**
+ * A mix scaled to `count` players by largest-remainder apportionment (ties go to the earlier profile
+ * in the mix's own order). The result always sums to `count`; the long-run and pity sims use it to
+ * play the default journey server at 5, 9 and 15 players.
+ */
+export function scaleProfileMix(mix: ProfileMix, count: number): ProfileMix {
+  if (!Number.isInteger(count) || count < 1) throw new RangeError('player count must be >= 1');
+  const entries = Object.entries(mix);
+  const total = entries.reduce((n, [, c]) => n + c, 0);
+  if (total < 1) throw new RangeError('the mix has no players');
+  const parts = entries.map(([id, c], order) => ({
+    id,
+    order,
+    base: Math.floor((c * count) / total),
+    rem: (c * count) % total,
+  }));
+  let left = count - parts.reduce((n, p) => n + p.base, 0);
+  const extra = new Set<string>();
+  for (const p of [...parts].sort((a, b) => b.rem - a.rem || a.order - b.order)) {
+    if (left <= 0) break;
+    extra.add(p.id);
+    left -= 1;
+  }
+  return Object.fromEntries(parts.map((p) => [p.id, p.base + (extra.has(p.id) ? 1 : 0)]));
+}
+
+/** The players of the default journey server scaled to `count` (`DEFAULT_JOURNEY_MIX`), as profiles. */
+export function journeyRoster(count: number): PlayerProfile[] {
+  const presets = PRESET_IDS.map((id) => PRESETS[id]);
+  return rosterProfiles(scaleProfileMix(DEFAULT_JOURNEY_MIX, count), presets);
+}
+
+/**
  * Parses a mix like `min-maxer=1,engaged=3,regular=3,drop-in=2`. Names must be in `known`; counts
  * are whole numbers from 0 to 30 and the server needs at least one player.
  */

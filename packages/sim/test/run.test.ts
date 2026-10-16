@@ -22,6 +22,7 @@ describe('simulation run', () => {
       '# Balance simulator report',
       '## Summary',
       '## Bosses',
+      '## Raid curve by Boss Rank (journey servers)',
       '## Archetype progression',
       '## Long-running servers',
       '## Daily dungeon',
@@ -39,7 +40,7 @@ describe('simulation run', () => {
       targets: unknown[];
     };
     expect(json.settings.seed).toBe('test');
-    expect(json.targets).toHaveLength(51);
+    expect(json.targets).toHaveLength(61);
   });
 
   it('marks metrics it did not measure as not measured', () => {

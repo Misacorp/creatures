@@ -19,7 +19,7 @@ function walk(start: unknown, keys: readonly string[]): unknown {
 
 /**
  * Tuning overrides for the simulator: change a number in `RULES`, a boss, a dungeon foe or a creature
- * for the length of a run, to try a setting without editing the files. `raid.scaling.rankStepBp=3000`,
+ * for the length of a run, to try a setting without editing the files. `raid.curve.ranks.3.hpBp=21000`,
  * `boss.thornmother.baseHp=4300`, `boss.cinder-wyrm.gimmicks.cinder-fall.power=9000` (arrays are
  * searched by id; a charged move's own numbers are under `then`), `foe.ember-mite.baseHp=200` and
  * `creature.sproutle.baseStats.atk=24` are examples. Only existing integer numbers can be overridden.

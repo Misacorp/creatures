@@ -26,7 +26,7 @@ const defaultIo: Io = {
   },
 };
 
-const USAGE = `Usage: node packages/sim/scripts/tune.mjs [--set raid.scaling.rankStepBp=3000,progression.seasonResetRanks=1,boss.thornmother.baseHp=4300] [--long N] [--seed <string>] [--full] [--calibrate ROUNDS [--seeds N] [--target 0.5] [--slope 3]]
+const USAGE = `Usage: node packages/sim/scripts/tune.mjs [--set raid.curve.ranks.3.hpBp=21000,progression.seasonResetRanks=1,boss.thornmother.baseHp=4300] [--long N] [--seed <string>] [--full] [--calibrate ROUNDS [--seeds N] [--target 0.5] [--slope 3]]
 Tries tuning overrides without editing files. Default: long-run servers only (N per size, default 20). --full also runs the whole simulator and lists every target; --sweep does the same with small long-run and pity sims (faster, for tuning boss HP).`;
 
 /**

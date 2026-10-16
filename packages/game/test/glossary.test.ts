@@ -289,7 +289,6 @@ describe('the glossary text matches the rules', () => {
       expect(reaction).not.toContain(`${String(r.multiplierBp / 10_000)} times`);
     }
     expect(text('boss-rank')).toContain('Each Rank makes the boss stronger');
-    expect(text('boss-rank')).not.toContain(percent(RULES.raid.scaling.rankStepBp));
     // The Rank line has no figure; "goes up by 1" is a rank count, which is not a stat.
     expect(text('boss-rank').replace(/goes up by \d+/, '')).not.toMatch(/\d/);
   });
@@ -439,7 +438,6 @@ describe('the How to play text', () => {
     expect(combos).toContain('Payoffs hit even harder');
     expect(combos).not.toMatch(/\d/);
     expect(ranks).toContain('Each Rank makes the boss stronger');
-    expect(ranks).not.toContain(percent(RULES.raid.scaling.rankStepBp));
   });
 
   it('rejects a wrong order, a wrong example and a bad shape', () => {

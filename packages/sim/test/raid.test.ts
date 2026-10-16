@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RULES, content, createSeededRng, type BossDef } from '@creatures/game';
+import { RULES, content, createSeededRng, jackpotEssenceFor, type BossDef } from '@creatures/game';
 import { phaseFloorHp, raidEnrage } from '@creatures/engine';
 import { DEFAULT_MIX } from '../src/archetypes';
 import { runEconomy } from '../src/economy';
@@ -98,6 +98,32 @@ describe('raid week', () => {
     expect(w.stages.finale?.cleared).toBe(true);
     expect(w.jackpot.rolls).toBe(players.length);
     for (const p of players) expect(p.pity === 0 ? p.jackpots === 1 : p.pity === 4).toBe(true);
+  });
+
+  it('pays the jackpot Essence as the worker does: the base amount times the rank multiplier, on a hit', () => {
+    const bonus = jackpotEssenceFor({ rank: 6, festival: false });
+    expect(bonus).toBeGreaterThan(RULES.raid.jackpotEssence);
+    const players = roster.slice(0, 4).map(clonePlayer);
+    const w = openRaidWeek(boss, players, { rank: 6 });
+    w.pool = { max: 1, current: 1 };
+    // Pity 9 makes the first player's roll a guaranteed hit.
+    const [lucky] = players;
+    if (lucky === undefined) throw new Error('empty roster');
+    for (const p of players) p.pity = p === lucky ? 9 : 0;
+    const before = new Map(players.map((p) => [p.id, p.essence]));
+    const earnedBefore = new Map(players.map((p) => [p.id, p.week.essenceEarned]));
+    playStage(w, 'finale', createSeededRng('jackpot'), createSeededRng('loot-jackpot'));
+    expect(w.stages.finale?.cleared).toBe(true);
+    expect(lucky.jackpots).toBe(1);
+    for (const p of players) {
+      // What the player gained is what the week's tally says, jackpot included.
+      expect(p.essence - (before.get(p.id) ?? 0)).toBe(w.essence[p.id]);
+      expect(p.week.essenceEarned - (earnedBefore.get(p.id) ?? 0)).toBe(w.essence[p.id]);
+    }
+    // The lucky player's tally holds the bonus on top of the stage pay; a player with no hit has less.
+    const miss = players.filter((p) => p !== lucky && p.jackpots === 0);
+    expect(w.essence[lucky.id] ?? 0).toBeGreaterThanOrEqual(bonus);
+    for (const p of miss) expect(w.essence[p.id] ?? 0).toBeLessThan(bonus);
   });
 });
 

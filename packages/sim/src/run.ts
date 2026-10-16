@@ -7,9 +7,11 @@ import {
   DEFAULT_SERVER_SIZE,
   scaleMix,
 } from './archetypes';
+import { namedCurveMixes, runCurveStudy, type CurveResult } from './curve-study';
 import { runEconomy, type EconomyResult } from './economy';
 import type { IncomeModelId } from './income';
 import { LONG_RUN_GROUPS, LONG_RUN_WEEKS } from './ladder';
+import { journeyRoster } from './profiles';
 import { TARGETS, evaluateTargets, type TargetResult } from './targets';
 import { ROLE_STUDY_RUNS_FACTOR, runRoleStudy } from './roles';
 import {
@@ -36,6 +38,8 @@ export interface RunSettings {
   longRunSims: number;
   /** 60-week sims of the default server for the days the expedition slots open at. */
   tripLongSims: number;
+  /** Servers per mix of the raid curve study (casual-heavy, default and committed journey servers, `curve-study.ts`). */
+  curveServers: number;
   /** Player counts of the raid sweep. */
   counts: number[];
   /** How Bait comes in (`income.ts`). Absent: the allowance, the shipped income. */
@@ -61,6 +65,7 @@ export function defaultSettings(
     pitySims: quick ? 8 : 40,
     longRunSims: quick ? 6 : 40,
     tripLongSims: quick ? 2 : 8,
+    curveServers: quick ? 6 : 60,
     counts: [...SWEEP_COUNTS],
     ...(overrides.income === undefined ? {} : { income: overrides.income }),
   };
@@ -74,6 +79,8 @@ export interface RunOutput {
   /** The setup study (greedy and protected rows) and the high-rank check (docs/balance/log.md B-008). */
   setups: SetupStudyResult;
   ranks: RankCheckResult;
+  /** The raid curve study: whole journey servers by week and Boss Rank (docs/balance/log.md B-010). */
+  curve: CurveResult;
 }
 
 /** Weeks (1-based) at which rosters are snapshotted: 4 and 8, or the last week if the run is shorter. */
@@ -159,7 +166,8 @@ export function runSimulation(settings: RunSettings): RunOutput {
         income,
         seed: `${settings.seed}:pity:${k}`,
         weeks: PITY_WEEKS,
-        mix: DEFAULT_MIX,
+        // The default journey server (min-maxer, engaged, regular and drop-in players), as the curve is tuned for.
+        roster: journeyRoster(DEFAULT_SERVER_SIZE).map((profile) => ({ profile })),
         snapshotWeeks: [],
       }),
     );
@@ -172,7 +180,8 @@ export function runSimulation(settings: RunSettings): RunOutput {
         income,
         seed: `${settings.seed}:long:${g.count}:${k}`,
         weeks: LONG_RUN_WEEKS,
-        mix: g.count === DEFAULT_SERVER_SIZE ? DEFAULT_MIX : scaleMix(g.count),
+        // The default journey server scaled to the group's size, as the curve is tuned for.
+        roster: journeyRoster(g.count).map((profile) => ({ profile })),
         snapshotWeeks: [],
       }),
     ),
@@ -211,6 +220,14 @@ export function runSimulation(settings: RunSettings): RunOutput {
   };
   const setups = runSetupStudy(studyOptions);
   const ranks = runRankCheck(studyOptions);
+  // The curve study: whole servers of journey players, week 1 to `weeks`, with the real ladder.
+  const curve = runCurveStudy({
+    seed: settings.seed,
+    weeks: settings.weeks,
+    servers: settings.curveServers,
+    income,
+    mixes: namedCurveMixes(),
+  });
   const analysis = analyse({
     roles,
     weeks: settings.weeks,
@@ -225,10 +242,11 @@ export function runSimulation(settings: RunSettings): RunOutput {
   return {
     settings,
     analysis,
-    evaluation: evaluateTargets(TARGETS, analysis.metrics),
+    evaluation: evaluateTargets(TARGETS, { ...analysis.metrics, ...curve.metrics }),
     example: sweep.example,
     setups,
     ranks,
+    curve,
   };
 }
 

@@ -2,11 +2,13 @@ import {
   abilitiesFor,
   basicAbilities,
   bossAtRank,
+  bossAttacksAtRank,
   content,
   contributionWeights,
   essenceForStage,
   jackpotChanceBp,
-  placementRank,
+  jackpotEssenceFor,
+  luckAtRank,
   rollJackpot,
   type BossDef,
   createSeededRng,
@@ -34,6 +36,7 @@ import {
 } from '@creatures/engine';
 import type { ArchetypeId } from './archetypes';
 import { arrangeRow, arrangeRowPartial, type Setup } from './formations';
+import { sweepRank } from './sweep-rank';
 import { neutralSupport, studyRules, type RoleStudy } from './role-study';
 import {
   byPowerDesc,
@@ -286,7 +289,7 @@ export function openRaidWeek(
     measureAbilities?: boolean;
     /**
      * Boss Rank the boss fights at. Absent: the rank the old per-level rule would have chosen for
-     * these creatures (`placementRank`), which is what the raid sweep calibrates the bosses at.
+     * these creatures (`sweepRank`), which is what the raid sweep calibrates the bosses at.
      */
     rank?: number;
     /** The server's rank and Festival flag for payouts. Absent: the same rank, no Festival. */
@@ -364,7 +367,7 @@ export function openRaidWeek(
     }
   }
 
-  const rank = options.rank ?? placementRank(levels);
+  const rank = options.rank ?? sweepRank(levels);
   const shipped = scaleBoss(boss, players.length, rank);
   const scaled = {
     atk: Math.max(1, Math.floor((shipped.atk * (options.bossAtkBp ?? 10_000)) / 10_000)),
@@ -433,6 +436,7 @@ export function fightFor(
   const creatureAbilities = stage === 'finale' ? creatureAbilityChoices(week, row) : [];
   const floor = phaseFloorHp(week.pool.max, stage);
   const enrage = raidEnrage(stage);
+  const bossAttacks = bossAttacksAtRank(week.rank);
   const fight: FightInput = {
     boss: week.boss,
     bossAtk: week.bossAtk,
@@ -450,7 +454,11 @@ export function fightFor(
               return at === undefined ? a : { ...a, fireAtRound: at };
             })
         : [],
-    ...(week.luck === undefined || !week.luckStages.includes(stage) ? {} : { luck: week.luck }),
+    // As live play builds it: the curve's boss attacks and boss crit bonus for the rank.
+    ...(bossAttacks > 1 ? { bossAttacks } : {}),
+    ...(week.luck === undefined || !week.luckStages.includes(stage)
+      ? {}
+      : { luck: luckAtRank(week.luck, week.rank) }),
     rules: week.rules,
     // As live play builds it: a phase's floor (a boss that reaches it retreats), the finale's enrage.
     ...(floor > 0 ? { bossHpFloor: floor } : {}),
@@ -535,6 +543,11 @@ export function playStage(week: RaidWeek, stage: RaidStage, fightRng: Rng, lootR
           p.jackpots += 1;
           week.jackpot.hits += 1;
           if (guaranteed) week.jackpot.guaranteed += 1;
+          // The worker credits the jackpot's Essence (`RULES.raid.jackpotEssence` x the rank multiplier).
+          const bonus = jackpotEssenceFor(week.reward);
+          p.essence += bonus;
+          p.week.essenceEarned += bonus;
+          week.essence[p.id] = (week.essence[p.id] ?? 0) + bonus;
         }
         p.pity = roll.newCounter;
       }

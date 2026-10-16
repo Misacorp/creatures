@@ -193,34 +193,34 @@
   },
   {
     "id": "econ-hard-pity",
-    "description": "Players reaching hard pity (10 raids without a jackpot) over 20 weeks",
+    "description": "Players reaching hard pity (10 raids without a jackpot) over 20 weeks (pity counts finale wins, so a winnable raid reaches it more often than a hard one did)",
     "metric": "econ.hardPityShare20Weeks",
     "comparator": "max",
-    "value": 0.15,
+    "value": 0.25,
     "unit": "percent"
   },
   {
     "id": "longrun-win-small",
-    "description": "Long-run finale win rate per server, Festivals included, small server (5 players, 30 weeks)",
+    "description": "Long-run finale win rate per server (default journey players on the raid curve), Festivals included, small server (5 players, 30 weeks)",
     "metric": "longrun.small.finaleWinRate",
     "comparator": "range",
-    "value": [0.4, 0.6],
+    "value": [0.6, 0.85],
     "unit": "percent"
   },
   {
     "id": "longrun-win-typical",
-    "description": "Long-run finale win rate per server, Festivals included, typical server (10 players, 30 weeks)",
+    "description": "Long-run finale win rate per server (default journey players on the raid curve), Festivals included, typical server (10 players, 30 weeks)",
     "metric": "longrun.typical.finaleWinRate",
     "comparator": "range",
-    "value": [0.4, 0.6],
+    "value": [0.6, 0.85],
     "unit": "percent"
   },
   {
     "id": "longrun-win-fifteen",
-    "description": "Long-run finale win rate per server, Festivals included, 15-player server (30 weeks)",
+    "description": "Long-run finale win rate per server (default journey players on the raid curve), Festivals included, 15-player server (30 weeks)",
     "metric": "longrun.fifteen.finaleWinRate",
     "comparator": "range",
-    "value": [0.4, 0.6],
+    "value": [0.6, 0.85],
     "unit": "percent"
   },
   {
@@ -233,10 +233,10 @@
   },
   {
     "id": "longrun-rankup-gap",
-    "description": "Median weeks between rank-ups, all long-run servers",
+    "description": "Median weeks between rank-ups, all long-run servers (a winnable curve: most wins raise the rank, a loss stalls it a week or two)",
     "metric": "longrun.rankUpGapMedian",
     "comparator": "range",
-    "value": [2, 4],
+    "value": [1, 2],
     "unit": "number"
   },
   {
@@ -406,5 +406,85 @@
     "comparator": "max",
     "value": 0.45,
     "unit": "number"
+  },
+  {
+    "id": "curve-week1-casual",
+    "description": "Raid curve: finale win rate in a new server's first week (rank 1), casual-heavy journey server (1 engaged, 4 regular, 4 drop-in)",
+    "metric": "curve.casual-heavy.week1.finaleWinRate",
+    "comparator": "min",
+    "value": 0.85,
+    "unit": "percent"
+  },
+  {
+    "id": "curve-week1-default",
+    "description": "Raid curve: finale win rate in a new server's first week (rank 1), default journey server",
+    "metric": "curve.default.week1.finaleWinRate",
+    "comparator": "min",
+    "value": 0.9,
+    "unit": "percent"
+  },
+  {
+    "id": "curve-r2to5-default",
+    "description": "Raid curve: finale win rate at Boss Ranks 2 to 5, default journey server (12-week runs, normal weeks)",
+    "metric": "curve.default.r2to5.finaleWinRate",
+    "comparator": "range",
+    "value": [0.7, 0.85],
+    "unit": "percent"
+  },
+  {
+    "id": "curve-r2to5-committed",
+    "description": "Raid curve: finale win rate at Boss Ranks 2 to 5, committed journey server (arranged rows)",
+    "metric": "curve.committed.r2to5.finaleWinRate",
+    "comparator": "min",
+    "value": 0.95,
+    "unit": "percent"
+  },
+  {
+    "id": "curve-r6up-default",
+    "description": "Raid curve: finale win rate at Boss Rank 6 and up, default journey server",
+    "metric": "curve.default.r6up.finaleWinRate",
+    "comparator": "range",
+    "value": [0.45, 0.65],
+    "unit": "percent"
+  },
+  {
+    "id": "curve-r6up-committed",
+    "description": "Raid curve: finale win rate at Boss Rank 6 and up, committed journey server",
+    "metric": "curve.committed.r6up.finaleWinRate",
+    "comparator": "min",
+    "value": 0.8,
+    "unit": "percent"
+  },
+  {
+    "id": "curve-committed-worst-rank",
+    "description": "Raid curve: finale win rate of the hardest rank a committed server reaches within 12 weeks (ranks with at least 40 weeks; never a rank they cannot beat)",
+    "metric": "curve.committed.worstRankWinRate",
+    "comparator": "min",
+    "value": 0.6,
+    "unit": "percent"
+  },
+  {
+    "id": "curve-default-phase1",
+    "description": "Raid curve: Phase 1 (Friday) clear rate over all normal weeks, default journey server (weekday rewards flow)",
+    "metric": "curve.default.normal.phase1ClearRate",
+    "comparator": "min",
+    "value": 0.75,
+    "unit": "percent"
+  },
+  {
+    "id": "curve-default-phase2",
+    "description": "Raid curve: Phase 2 (Saturday) clear rate over all normal weeks, default journey server (sometimes, not routinely)",
+    "metric": "curve.default.normal.phase2ClearRate",
+    "comparator": "range",
+    "value": [0.05, 0.5],
+    "unit": "percent"
+  },
+  {
+    "id": "curve-default-ko",
+    "description": "Raid curve: share of the finale's creatures knocked out over all normal weeks, default journey server (drama without wipes)",
+    "metric": "curve.default.normal.koShare",
+    "comparator": "range",
+    "value": [0.1, 0.35],
+    "unit": "percent"
   }
 ]

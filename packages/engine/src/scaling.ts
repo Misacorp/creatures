@@ -4,8 +4,9 @@ import { RULES, rankAtkFactorBp, rankFactorBp, type BossDef } from '@creatures/g
  * Boss HP and Attack for a fight.
  *
  * HP = baseHp x N^e x rank factor, where N is the number of signed-up players (minimum 1,
- * e = the boss's own `hpExponent` or else `RULES.raid.scaling.hpExponent`) and the rank factor is the Boss Rank ladder (`rankFactorBp`).
- * Attack = baseAtk x the rank's Attack factor (`rankAtkFactorBp`); the head count does not scale
+ * e = the boss's own `hpExponent` or else `RULES.raid.scaling.hpExponent`) and the rank factor is the curve's
+ * HP number for the rank (`rankFactorBp`, `RULES.raid.curve`).
+ * Attack = baseAtk x the curve's Attack number for the rank (`rankAtkFactorBp`; independent of the HP number); the head count does not scale
  * Attack. Every signed-up player counts once, whatever their level (see the note on `hpExponent`),
  * and the creatures' levels no longer move the boss at all.
  *

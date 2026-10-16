@@ -237,3 +237,83 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
 - **Options measured** (finale win weeks 3 / 4 / 5 / 6, then weeks 8 to 12): base 100 / 99 / 99 / 100, 74 to 49. Two ranks per win while rank is at most 4: 74 / 80 / 52 / 56, then about 50 flat. One extra rank when the finale starts with at most 25% of the boss's HP left: 99 / 94 / 84 / 76, then 50 to 63. A slower early level curve (13 + 2 x level, or 3 x level): still 95 to 100 in weeks 3 to 6 (weak: the rank lags, not the levels). A first-week boss 15% weaker (measured for the merge question): week 1 about 63% to 78% won, later weeks untouched.
 - **Hypothesis:** the big-win extra rank plus an easier first week fit Misa's "kill or wipe, exciting" best; and players need sinks for the Essence, shards and glimmer they pile up (the creature progression revamp, roadmap 14) and more scrap for gear.
 - **Outcome:** waiting for Misa.
+
+### B-010: The raid curve by Boss Rank (open)
+
+- **Opened:** 2026-10-16, from Misa's brief: no rank skipping, a custom difficulty curve we control and do not explain, every week winnable by a full tryhard team ("a large percent chance of winning every week, at least up to around week 5"), losing is fine, and a first week that mostly casual players can clear. Before is cd25e20 (compounding +40% HP and half that Attack a rank, placement by creature levels); the merged finale reward slot and the jackpot Essence (sim fixes, below) are in the after numbers only.
+- **Method.** Whole 12-week servers of the journey simulator's players (`pnpm sim:curve`, `packages/sim/src/curve-study.ts`; the same study runs inside `pnpm sim` and feeds the `curve-*` targets). Three server mixes of 9 players: **casual-heavy** (1 engaged, 4 regular, 4 drop-in), **default** (1 min-maxer, 3 engaged, 3 regular, 2 drop-in) and **committed** (2 min-maxers, 4 engaged, 2 regular, 1 drop-in; the min-maxers arrange their rows). Allowance income, the real ladder and Festivals, a random start in the 5-week calendar, 400 servers a mix for the tuning runs (60 in `pnpm sim`). Rates are per raid week; rank tables count normal weeks only (a Festival fights an eased boss). Tuning was by rank: ranks 2 to 5 first, then the high ranks, using per-rank win rates and, to separate the week effect from the rank effect, runs with every rank above 1 set to the same boss.
+- **Finding (before).** The old ladder was a wall at both ends and a walkover in the middle. Default servers: week 1 won 12% (placed at rank 2 on creatures that are not yet strong), weeks 2 to 6 won 93% to 99%, then 81% falling to 52% by week 12 (Phase 1 cleared 55%, 55%, 51% in weeks 10 to 12). Casual-heavy: week 1 won 1%. Committed: week 1 53%, weeks 2 to 6 96% to 100%, week 12 48%. Per rank (normal weeks): default 97% at rank 3, 94% at 4, 79% at 5, 13% at 6, 0% at 7; committed 98%, 100%, 96%, 64% at 6, 3% at 7. A committed server could not beat rank 7, and a new casual server could not beat rank 2. Three things explained it: the placement rank (the first boss was two ranks up), the +40% a rank (boss HP grows faster than player power after week 6, when growth slows to levels only: B-009), and Attack at rank 6 and up that wipes the row.
+- **Findings (while tuning).**
+  - Win rate is steep in boss HP, about 1 to 5 points a percent in the middle of the range, and steeper where player power has stopped growing (ranks 6 and up). A flat boss of rank-2 strength shows the week effect alone: default 39% in weeks 2 to 5, 65% in week 8, 80% by weeks 11 and 12 (committed 44%, then 92% from week 6). Player power keeps growing to week 12; it only slows.
+  - The frontier is biased low: a server at its highest rank is there because it has not won yet, so the win rate at the top rank of a mix is always below the average of its band. The targets use bands (2 to 5, 6 and up) and the worst rank with at least 40 weeks.
+  - Boss Attack matters less than HP in the middle of the table (ranks 7 and up with Attack held at the rank-6 value gave the same win rates), and the rank-7 moves change a committed server's rank-7 win rate by only about 3 points (moves off 59%, on 55% to 62%): the table carries the difficulty today. Phase 1 (Friday, 70% floor) tracks the finale closely, about 3 to 4 points lower.
+  - First week: with a rank-1 boss at 35% of the calibrated pool and 65% Attack, a server with no engaged player at all (only regular and drop-in players) wins 87%; with one or two engaged players 97% to 100%. At 45% of the pool the all-casual servers won 63%.
+- **Options.**
+  - Keep a compounding step but lower it (for example 20%): rejected, one step cannot be right at both ends (rank 2 needs to be about 5x rank 1, rank 7 under 5% above rank 6).
+  - HP only, or Attack only: the table keeps both columns, because Attack adds knock-outs, crits and drama without lengthening the fight; the second plain attack and the boss crit bonus only come in past rank 9.
+  - Move the rank-gated moves (ranks 4 and 7): not needed by the data, left; the table is the lever for now.
+  - Placement by roster strength: rejected by the brief (and it made week 1 a wipe); everyone starts at rank 1.
+- **Action.**
+  - `RULES.raid.curve` (the `rankStepBp`, `atkRankShareBp` and `bossAttacksByRank` fields are gone; `maxRank` stays 30; `placement.legacyHpPerLevelBp` became `startRank` 1). Rows are `hpBp`, `atkBp` (shares of the boss's `baseHp` and `baseAtk`, so rank 1 is 3500 and 6500, not 10000), boss attacks and crit bonus:
+
+    | Rank | HP (bp) | Attack (bp) | Boss attacks | Crit bonus (bp) |
+    | ---- | ------- | ----------- | ------------ | --------------- |
+    | 1    | 3500    | 6500        | 1            | 0               |
+    | 2    | 19200   | 11000       | 1            | 0               |
+    | 3    | 29800   | 12500       | 1            | 0               |
+    | 4    | 36000   | 14000       | 1            | 0               |
+    | 5    | 43200   | 15500       | 1            | 0               |
+    | 6    | 47000   | 17000       | 1            | 0               |
+    | 7    | 47500   | 18500       | 1            | 0               |
+    | 8    | 48500   | 20000       | 1            | 0               |
+    | 9    | 49500   | 21500       | 1            | 250             |
+    | 10   | 49500   | 23000       | 1            | 250             |
+    | 11   | 49500   | 24500       | 1            | 500             |
+    | 12   | 49500   | 26000       | 1            | 500             |
+    | 13   | 49500   | 27500       | 1            | 500             |
+    | 14   | 49500   | 29000       | 2            | 750             |
+    | 15   | 49500   | 30500       | 2            | 750             |
+
+    Above rank 15: HP +5% and Attack +3% a rank (`beyond`), second attack and crit bonus held. Ranks 10 to 13 were checked on 24 and 36 week runs of committed servers (about 65% to 77% won); rank 14 and up are extrapolation (about 50% to 60% in the 36 week runs, then falling).
+
+  - Readers: `scaleBoss` (HP and Attack), the worker's fight input (`bossAttacks`, boss crit chance through `luckAtRank`; the readiness forecast uses the same input), the sim's `fightFor`. `placementRank` returns rank 1. `sweepRank` (sim) keeps the old per-level rule for the raid sweep only, over the new curve, so the sweep fights about the same boss HP as before. Boss `baseHp` and `fromRank` are untouched.
+  - Sim fixes that feed the numbers: the finale reward slot (blueprints and pre-upgraded gear) and the jackpot Essence the worker pays are modelled; the long-run and pity sims play the default journey server instead of the legacy archetype servers (those open the game daily and are much stronger than the journey players the curve is tuned for).
+  - Targets (`packages/sim/targets.json`): new `curve-week1-casual` >= 85%, `curve-week1-default` >= 90%, `curve-r2to5-default` 70% to 85%, `curve-r2to5-committed` >= 95%, `curve-r6up-default` 45% to 65%, `curve-r6up-committed` >= 80%, `curve-committed-worst-rank` >= 60%, `curve-default-phase1` >= 75%, `curve-default-phase2` 5% to 50%, `curve-default-ko` 10% to 35%. Re-based because the population and the ladder changed: `longrun-win-*` 40% to 60% became 60% to 85% (measured 74% to 77%), `longrun-rankup-gap` 2 to 4 became 1 to 2, `econ-hard-pity` 15% became 25% (it counts finale wins; the all-win ceiling is about 22%).
+- **Expected:** every target passes on all three seeds.
+- **Outcome:** 2026-10-16, 400 servers a mix, allowance income (before is cd25e20, 150 servers a mix; "-" is not measured or never played in 12 weeks):
+
+  | Measure (normal weeks)               | casual-heavy before | casual-heavy after | default before | default after | committed before | committed after |
+  | ------------------------------------ | ------------------- | ------------------ | -------------- | ------------- | ---------------- | --------------- |
+  | Week 1 finale won                    | 1%                  | 98%                | 12%            | 100%          | 53%              | 100%            |
+  | Rank 1 finale won                    | 92%                 | 99%                | 100%           | 100%          | 100%             | 100%            |
+  | Ranks 2 to 5 finale won              | 51%                 | 44%                | 81%            | 82%           | 91%              | 97%             |
+  | Rank 6 and up finale won             | -                   | -                  | 12%            | 56%           | 41%              | 86%             |
+  | Worst rank (>= 40 weeks) finale won  | -                   | -                  | -              | 41% (rank 7)  | -                | 68% (rank 8)    |
+  | Phase 1 cleared, all normal weeks    | -                   | 54%                | -              | 76%           | -                | 91%             |
+  | Phase 2 cleared, all normal weeks    | -                   | 14%                | -              | 14%           | -                | 16%             |
+  | Finale knocked out, all normal weeks | -                   | 47%                | -              | 23%           | -                | 9%              |
+  | Finales won in overtime              | -                   | 5%                 | -              | 7% (1 in 14)  | -                | 3%              |
+  | Mean rank after week 12              | 4.8                 | 4.1                | 6.0            | 6.5           | 6.7              | 7.8             |
+
+  Finale win rate by week (weeks 1 to 12):
+
+  | Mix          | Before                               | After                                 |
+  | ------------ | ------------------------------------ | ------------------------------------- |
+  | casual-heavy | 1 34 69 79 77 83 79 73 63 62 57 60   | 98 39 45 60 70 67 67 61 61 67 66 59   |
+  | default      | 12 93 98 93 97 99 81 72 65 56 53 52  | 100 74 85 83 91 92 92 84 85 73 73 76  |
+  | committed    | 53 97 99 99 100 96 88 84 74 63 49 48 | 100 96 98 98 97 95 100 99 98 83 88 86 |
+
+  Phase 1 cleared by week, default: before 14 90 97 93 96 97 79 71 65 55 55 51, after 100 72 86 82 86 86 88 80 81 68 70 75. Finale knock-out share by week, default: before 88 15 5 11 7 8 25 35 41 51 50 52, after 1 31 16 20 14 14 12 19 19 32 28 26. The raid sweep (three seeds): boss spread 4% to 8%, typical finale 92% to 93%, 15 players 90%, knock-outs 11% to 13%. Full `pnpm sim` on leet, leet2 and leet3: 61 of 61 targets pass on each; thinnest margins: `curve-default-phase1` 75.5% to 77.8% (needs 75%), `curve-r2to5-default` up to 83.6% (needs 85%), `econ-hard-pity` 15.8% to 16.5%.
+
+  **Week one of a new server** (rank 1, 300 servers each; this is the live server's first week). Friday is Phase 1 cleared, Saturday Phase 2 cleared, Sunday the finale won:
+
+  | Server (players)                             | Friday | Saturday | Sunday | Knocked out | Reached overtime |
+  | -------------------------------------------- | ------ | -------- | ------ | ----------- | ---------------- |
+  | 5: 1 engaged, 2 regular, 2 drop-in           | 95%    | 66%      | 97%    | 6%          | 2%               |
+  | 8: 1 engaged, 4 regular, 3 drop-in           | 99%    | 54%      | 99%    | 3%          | 1%               |
+  | 12: 2 engaged, 5 regular, 5 drop-in          | 100%   | 50%      | 100%   | 2%          | 0%               |
+  | 5, no engaged player (3 regular, 2 drop-in)  | 91%    | 30%      | 87%    | 20%         | 4%               |
+  | 8, no engaged player (4 regular, 4 drop-in)  | 90%    | 15%      | 87%    | 23%         | 12%              |
+  | 12, no engaged player (6 regular, 6 drop-in) | 89%    | 11%      | 87%    | 20%         | 17%              |
+
+- **Follow-ups:** watch live week 1 and week 2 against these numbers (the presets are guesses until fitted to the live report); a fully casual server loses about half its weeks from rank 2 (44% at ranks 2 to 5), which is Misa's call (see the report); ranks 10 and up are not validated; the committed dip at week 10 (98% to 83%) is where its rows meet rank 6 or 7 as player growth plateaus, worth a look at live data.

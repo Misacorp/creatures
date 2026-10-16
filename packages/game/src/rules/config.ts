@@ -12,6 +12,14 @@ export interface SupportFx {
   cleanse?: boolean;
 }
 
+/** One row of the raid difficulty curve (`RULES.raid.curve.ranks`), whole numbers only. */
+export interface RankRow {
+  hpBp: number;
+  atkBp: number;
+  bossAttacks: number;
+  critBonusBp: number;
+}
+
 export type DurationId = 'short' | 'medium' | 'long';
 export type SuppliesId = 'basic' | 'good' | 'great';
 
@@ -220,6 +228,60 @@ export const RULES = {
      * is a free one). A harder enrage would wipe faster and cost those wins.
      */
     enrage: { rounds: 3, powerBp: 40_000 },
+    /**
+     * The raid difficulty curve by Boss Rank (Misa, 2026-10-15: "a power curve that isn't just a 40
+     * percent increase week over week ... we can control it and we don't need to be up front about
+     * it"). It replaced a compounding +40% HP (and half that Attack) a rank. One row per rank, rank 1
+     * first; every number is an integer and no float is stored. Players are never told the numbers.
+     * - `hpBp`: the boss's HP pool at this rank in basis points of its own `baseHp` (10000 = the
+     *   calibrated pool; `baseHp` is the sweep's gauge, the curve is the ladder).
+     * - `atkBp`: its Attack the same way, from `baseAtk`. Independent of `hpBp`: later bosses can hit
+     *   harder without lasting longer, or the reverse.
+     * - `bossAttacks`: how many times it makes its plain attack each round (1 to 3).
+     * - `critBonusBp`: extra boss crit chance in basis points on top of `combat.luck.bossCritChanceBp`.
+     * The boss's rank-gated moves (`fromRank` in content, ranks 4 and 7) are the other half of the curve.
+     *
+     * The shape, and why (docs/balance/log.md B-010; the targets are the `curve-*` ones in
+     * `packages/sim/targets.json`, measured on whole journey servers):
+     * - Rank 1 is a tutorial boss (35% of the pool, 65% Attack): a new server's first week is won by
+     *   mostly casual players (about 85% for a server with no engaged player at all, 97% to 100% with
+     *   one or two) so players learn what a raid pays.
+     * - Ranks 2 to 5 climb steeply (1.9x, 3.0x, 3.6x and 4.3x the calibrated pool) while the roster grows fast (levels,
+     *   evolutions, fusions, gear): a default server wins about 80%, a committed one about 97%.
+     * - From rank 6 the pool is nearly flat (4.7x to 4.95x the calibrated pool) because player power stops growing
+     *   quickly after week 6: Attack, boss crit chance (from rank 9) and a second plain attack (from
+     *   rank 14) carry the difficulty, and the rank-gated moves punish setups. A default server wins
+     *   about 55%, a committed one about 87%; luck, positioning and loadouts decide it.
+     * Ranks past 9 are extrapolated from 24 and 36 week runs of committed servers (about 65% to 75%
+     * at ranks 10 to 13), not measured on a live server. Past the last row the numbers grow by `beyond`.
+     */
+    curve: {
+      ranks: [
+        { hpBp: 3_500, atkBp: 6_500, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 19_200, atkBp: 11_000, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 29_800, atkBp: 12_500, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 36_000, atkBp: 14_000, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 43_200, atkBp: 15_500, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 47_000, atkBp: 17_000, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 47_500, atkBp: 18_500, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 48_500, atkBp: 20_000, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 49_500, atkBp: 21_500, bossAttacks: 1, critBonusBp: 250 },
+        { hpBp: 49_500, atkBp: 23_000, bossAttacks: 1, critBonusBp: 250 },
+        { hpBp: 49_500, atkBp: 24_500, bossAttacks: 1, critBonusBp: 500 },
+        { hpBp: 49_500, atkBp: 26_000, bossAttacks: 1, critBonusBp: 500 },
+        { hpBp: 49_500, atkBp: 27_500, bossAttacks: 1, critBonusBp: 500 },
+        { hpBp: 49_500, atkBp: 29_000, bossAttacks: 2, critBonusBp: 750 },
+        { hpBp: 49_500, atkBp: 30_500, bossAttacks: 2, critBonusBp: 750 },
+      ] as RankRow[],
+      /**
+       * Above the table's last rank every rank multiplies the row below it: HP by `hpStepBp` and
+       * Attack by `atkStepBp` more than 10000 (compounding, floored at every step: +5% and +3% a
+       * rank), and the boss attacks and crit bonus stay at the last row's. Gentle on purpose: the
+       * table is where the design lives, the extrapolation only keeps an unexpectedly high rank
+       * sensible.
+       */
+      beyond: { hpStepBp: 500, atkStepBp: 300 },
+    },
     scaling: {
       /**
        * Boss HP grows with N^(num/den), N = signed-up players. The engine computes
@@ -236,28 +298,8 @@ export const RULES = {
        */
       hpExponent: { num: 11, den: 10 },
       /**
-       * Boss Rank: every rank above 1 multiplies boss HP by this many basis points more than the
-       * rank below it, compounding (rank r is 1.40^(r-1) at 4000), floored to integer basis points
-       * at every step (`rankFactorBp`). Compounding rather than linear, so a rank always costs the
-       * same share of the team's damage and a high-ranked server keeps a real ladder instead of
-       * ever smaller steps. Tuned by the simulator (docs/balance/report-2026-10-11-progression.md).
-       */
-      rankStepBp: 4_000,
-      /**
-       * Boss Attack follows the rank factor at this share (10000 = the same factor as HP). Half, as
-       * the old level scaling did (6% against 12% a level), so higher ranks do not knock out the row.
-       */
-      atkRankShareBp: 5_000,
-      /**
-       * How many times the boss makes its plain attack each round, by Boss Rank: entry 0 is rank 1,
-       * and the last entry holds for every higher rank (`bossAttacksAtRank`). Each entry is 1 to 3.
-       * One attack at every rank for now; the per-rank difficulty curve sets it
-       * (docs/design/combat-rules.md 2.5).
-       */
-      bossAttacksByRank: [1],
-      /**
-       * Highest rank the ladder reaches. At 20% a step the top factor is about 197x, far beyond what
-       * any roster can beat, so nobody gets there; the cap only keeps every number small and safe.
+       * Highest rank the ladder reaches. A safety cap only: the curve (`RULES.raid.curve`) keeps
+       * growing gently past its table, and nobody is expected anywhere near this high.
        */
       maxRank: 30,
     },
@@ -351,11 +393,12 @@ export const RULES = {
     rankRewardBp: 600,
     rankRewardCapBp: 20_000,
     /**
-     * Placement rank for a new server: the rank whose boss is as hard as the old per-level rule would
-     * have made it. `legacyHpPerLevelBp` is that old rule (boss HP +12% per average creature level
-     * above 1), kept only to place a new server once.
+     * Placement of a new server: every server starts at `startRank`, whatever its creatures
+     * (Misa, 2026-10-15: no rank skipping, and a first week that casual players can clear). The old
+     * rule placed a server by its creatures' levels, one rank (or two) up, which made the first
+     * boss a wipe; the curve is built from rank 1 instead (docs/balance/log.md B-010).
      */
-    placement: { legacyHpPerLevelBp: 1_200 },
+    placement: { startRank: 1 },
     /**
      * Readiness band (long shot, even, likely, strong) from the forecast margin: mean finale damage
      * over the boss HP left, in basis points (10000 = exactly enough). Bands start at these margins.
