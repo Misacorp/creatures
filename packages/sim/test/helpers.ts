@@ -12,6 +12,7 @@ export const TINY: RunSettings = {
   tripLongSims: 1,
   curveServers: 1,
   suppliesServers: 1,
+  gearServers: 0,
   counts: [1, 5],
 };
 

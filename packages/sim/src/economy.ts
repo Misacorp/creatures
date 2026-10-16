@@ -37,6 +37,7 @@ import {
   grantPhaseScrap,
   grantWelcomeKit,
   manageGear,
+  wornItemLevels,
   startJobs,
 } from './gear';
 import { chooseDungeonTeam, dayModifiers, playDungeonDay, type DungeonLogEntry } from './dungeon';
@@ -171,12 +172,10 @@ export interface WeekRecord {
   signedUp: boolean;
   /** Power the worn gear adds to the team (gear included in `top3Power`). */
   gearPower: number;
-  /** Upgrade levels on the team's items. */
+  /** The item levels of the items the team wears, added up. */
   gearLevels: number;
   /** Crafts claimed so far. */
   crafted: number;
-  /** Essence spent on gear upgrades during the week. */
-  essenceSpentGear: number;
   /** Highest Crafting level on any creature. */
   skillLevel: number;
   scrap: number;
@@ -444,7 +443,7 @@ export function checkIn(
 
   // Trips are free and supplies cannot be bought: a trip carries what is in stock.
   const worksGear = profile.craftPercent >= 100 || chance(dice, profile.craftPercent, 100);
-  if (gear !== undefined) manageGear(player, worksGear);
+  if (gear !== undefined) manageGear(player);
   if (sendsTrips) sendTrips(player, ctx, explorerOrder(player));
 
   const plan = { focus: profile.trainFocus, evolutionPush: profile.evolutionPush };
@@ -488,9 +487,8 @@ function record(player: SimPlayer, week: number): WeekRecord {
     pity: player.pity,
     signedUp: player.week.signedUp,
     gearPower: team.reduce((n, c) => n + gearPowerOf(c), 0),
-    gearLevels: team.reduce((n, c) => n + (c.item?.level ?? 0), 0),
+    gearLevels: team.reduce((n, c) => n + wornItemLevels(c), 0),
     crafted: player.gear.crafted,
-    essenceSpentGear: player.week.essenceSpentGear,
     skillLevel: bestSkillLevel(player),
     scrap: player.gear.parts.scrap,
     dungeonDepth: player.dungeon.depth,
@@ -775,6 +773,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
                 grantFinaleLoot(
                   raid.players,
                   plan.rank,
+                  boss.element,
                   festival === null ? null : festival.element,
                   rng.gear,
                 );

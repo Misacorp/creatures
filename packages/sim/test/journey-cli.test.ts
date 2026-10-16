@@ -159,7 +159,7 @@ describe('journey CLI run on a tiny config', () => {
   });
 
   it('is reproducible, and the two income models differ for the same servers', () => {
-    const base = parseJourneyCli(['--weeks', '3', '--servers', '2', '--seed', 'pair']).settings;
+    const base = parseJourneyCli(['--weeks', '4', '--servers', '3', '--seed', 'pair']).settings;
     const a = JSON.stringify(runJourneys(base));
     expect(JSON.stringify(runJourneys(base))).toBe(a);
     const current = runJourneys({ ...base, income: 'current' });

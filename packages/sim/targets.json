@@ -248,35 +248,11 @@
     "unit": "percent"
   },
   {
-    "id": "gear-share-week8",
-    "description": "Gear's share of a daily player's raid-team power at week 8 (median)",
-    "metric": "gear.dailyShareWeek8",
-    "comparator": "range",
-    "value": [0.1, 0.2],
-    "unit": "percent"
-  },
-  {
     "id": "gear-first-craft",
     "description": "Days until a daily player's first crafted item arrives (90th percentile; a player who never crafts counts as 99)",
     "metric": "gear.dailyFirstCraftDaysP90",
     "comparator": "max",
     "value": 7,
-    "unit": "number"
-  },
-  {
-    "id": "gear-essence-week12",
-    "description": "Essence held by daily players at week 12 minus the same sims without gear (today's value; must not be above it)",
-    "metric": "gear.dailyEssenceWeek12VsToday",
-    "comparator": "max",
-    "value": 0,
-    "unit": "number"
-  },
-  {
-    "id": "gear-essence-growth",
-    "description": "Weekly growth of daily players' Essence stockpile from week 8 to 12 minus today's growth (no runaway; negative means it falls)",
-    "metric": "gear.dailyEssenceGrowthVsToday",
-    "comparator": "max",
-    "value": 0,
     "unit": "number"
   },
   {
@@ -293,6 +269,134 @@
     "metric": "gear.newcomerCatchUpWeek8",
     "comparator": "min",
     "value": 0.6,
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-min-maxer-week2",
+    "description": "A min-maxer's gear share of the raid team's fight-scored power at week 2 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.min-maxer.week2",
+    "comparator": "range",
+    "value": [0.05, 0.1],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-min-maxer-week8",
+    "description": "A min-maxer's gear share of the raid team's fight-scored power at week 8 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.min-maxer.week8",
+    "comparator": "range",
+    "value": [0.15, 0.22],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-min-maxer-week20",
+    "description": "A min-maxer's gear share of the raid team's fight-scored power at week 20 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.min-maxer.week20",
+    "comparator": "range",
+    "value": [0.25, 0.32],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-min-maxer-week30",
+    "description": "A min-maxer's gear share of the raid team's fight-scored power at week 30 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.min-maxer.week30",
+    "comparator": "range",
+    "value": [0.33, 0.4],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-engaged-week2",
+    "description": "An engaged player's gear share of the raid team's fight-scored power at week 2 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.engaged.week2",
+    "comparator": "range",
+    "value": [0.05, 0.1],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-engaged-week8",
+    "description": "An engaged player's gear share of the raid team's fight-scored power at week 8 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.engaged.week8",
+    "comparator": "range",
+    "value": [0.15, 0.22],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-engaged-week20",
+    "description": "An engaged player's gear share of the raid team's fight-scored power at week 20 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.engaged.week20",
+    "comparator": "range",
+    "value": [0.25, 0.32],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-engaged-week30",
+    "description": "An engaged player's gear share of the raid team's fight-scored power at week 30 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.engaged.week30",
+    "comparator": "range",
+    "value": [0.33, 0.4],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-regular-week2",
+    "description": "A regular player's gear share of the raid team's fight-scored power at week 2 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.regular.week2",
+    "comparator": "range",
+    "value": [0.03, 0.06],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-regular-week8",
+    "description": "A regular player's gear share of the raid team's fight-scored power at week 8 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.regular.week8",
+    "comparator": "range",
+    "value": [0.1, 0.15],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-regular-week20",
+    "description": "A regular player's gear share of the raid team's fight-scored power at week 20 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.regular.week20",
+    "comparator": "range",
+    "value": [0.18, 0.24],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-regular-week30",
+    "description": "A regular player's gear share of the raid team's fight-scored power at week 30 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.regular.week30",
+    "comparator": "range",
+    "value": [0.28, 0.34],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-drop-in-week2",
+    "description": "A drop-in player's gear share of the raid team's fight-scored power at week 2 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.drop-in.week2",
+    "comparator": "range",
+    "value": [0.0, 0.03],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-drop-in-week8",
+    "description": "A drop-in player's gear share of the raid team's fight-scored power at week 8 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.drop-in.week8",
+    "comparator": "range",
+    "value": [0.05, 0.08],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-drop-in-week20",
+    "description": "A drop-in player's gear share of the raid team's fight-scored power at week 20 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.drop-in.week20",
+    "comparator": "range",
+    "value": [0.1, 0.15],
+    "unit": "percent"
+  },
+  {
+    "id": "gear-share-drop-in-week30",
+    "description": "A drop-in player's gear share of the raid team's fight-scored power at week 30 (median; docs/design/gear-and-creatures-v2.md section 4)",
+    "metric": "gear.share.drop-in.week30",
+    "comparator": "range",
+    "value": [0.15, 0.2],
     "unit": "percent"
   },
   {
@@ -518,13 +622,5 @@
     "comparator": "min",
     "value": 0.25,
     "unit": "percent"
-  },
-  {
-    "id": "supplies-minmaxer-gear",
-    "description": "Supplies: making supplies does not starve the gear (a min-maxer's upgrade levels on worn gear at the end of week 12 are at least those before the rework, 11.5, less a margin)",
-    "metric": "supplies.min-maxer.gearLevelsEnd",
-    "comparator": "min",
-    "value": 10.8,
-    "unit": "level"
   }
 ]

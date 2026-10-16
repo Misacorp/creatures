@@ -21,6 +21,10 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * Re-pinned again on 2026-10-16 (B-011, the supplies rework), on purpose: supplies cannot be bought
  * (no Bait goes to them, so the archetypes train more), the dungeon drops a supply and a scrap on
  * every run, the workshop makes supplies and the recipes are cheaper.
+ *
+ * Re-pinned again on 2026-10-16 (Gear A), on purpose: items are Hat, Scarf and Charm with item levels,
+ * tiers and lines, worn under the wear rule; upgrades, Improve and enchants are gone (gear no longer
+ * costs Essence); the week records lost their upgrade fields; and 12 gear share targets were added.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

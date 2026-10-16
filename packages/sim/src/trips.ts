@@ -53,7 +53,7 @@ import {
   type SupplyDef,
   type TwistEffect,
 } from '@creatures/game';
-import { CATCHABLE, speciesOf, type OwnedCreature } from './data';
+import { CATCHABLE, foldedCreature, speciesOf, type OwnedCreature } from './data';
 import { creditParts, grantItem, learnBlueprint, onJob, type GearContext } from './gear';
 import type { PendingExpedition, SimPlayer } from './state';
 
@@ -397,7 +397,13 @@ export function sendTrips(
       rolls: tripRolls(length, kit, twist === null ? null : twist.effect),
       twist: twist === null ? null : twist.id,
       startHour: ctx.hour,
-      endsAtHour: ctx.hour + tripMs(length, rank) / HOUR_MS,
+      // Quick feet lines on the explorer's gear shorten the trip (fixed when it is sent).
+      endsAtHour:
+        ctx.hour +
+        Math.floor(
+          (tripMs(length, rank) * (10_000 - foldedCreature(creature).rules.quickFeetBp)) / 10_000,
+        ) /
+          HOUR_MS,
     });
   }
 }
@@ -490,6 +496,8 @@ function payTrip(
   const twist = twistEffect(trip.twist);
   const bonuses = milestoneBonuses({ ...player.stats });
   const rank = rankOfCreature(player, explorer.id);
+  // Lines on the explorer's gear (Trail XP, Lucky find, Keen nose, Packer), as the worker reads them.
+  const gearRules = foldedCreature(explorer).rules;
   const famBefore = famOf(player, explorer.id, dest.id);
   const starsBefore = familiarityStars(dest, famBefore);
 
@@ -503,7 +511,7 @@ function payTrip(
       explorer: { element: species.element, role: species.role },
       kit,
       stars: starsBefore,
-      milestoneRarityBp: bonuses.rarityBp,
+      milestoneRarityBp: bonuses.rarityBp + gearRules.luckyFindBp,
       twist,
       ownedLines: ownedLines(player),
       dupeStreak: player.dupeStreak,
@@ -551,6 +559,8 @@ function payTrip(
         milestonePartsBp: bonuses.partsBp,
         twist,
         rank,
+        gearPartsBp: gearRules.keenNoseBp,
+        gearSupplyBp: gearRules.packerBp,
       },
       { completed: true, caught: results.length, rolls: trip.rolls },
     );
@@ -561,12 +571,22 @@ function payTrip(
       addParts(player, partsOfSpec(reward.parts), ctx);
       if (reward.supply === true) addSupply(player, foundSupplyId(ctx.gear.rng, rank));
       if (reward.blueprint === true) learnBlueprint(player, rollBlueprint(ctx.gear.rng));
-      if (reward.gear !== undefined) grantItem(player, rollGearDrop(ctx.gear.rng, reward.gear));
+      if (reward.gear !== undefined) {
+        const place = {
+          element: dest.element ?? null,
+          crossroads: dest.id === RULES.gear.compassPlace,
+        };
+        grantItem(player, rollGearDrop(ctx.gear.rng, reward.gear, place, rank));
+      }
     }
   }
 
   // Explorer XP, familiarity and the journal.
-  const xpBp = bonuses.xpBp + (twist?.kind === 'xp' ? twist.bp : 0) + (reward?.xpBp ?? 0);
+  const xpBp =
+    bonuses.xpBp +
+    (twist?.kind === 'xp' ? twist.bp : 0) +
+    (reward?.xpBp ?? 0) +
+    gearRules.trailXpBp;
   player.explorerXp[explorer.id] =
     (player.explorerXp[explorer.id] ?? 0) + tripXp(trip.length, xpBp);
   // The one-time gift of every rank this trip reached (Bait, and parts and supplies with the gear sim).

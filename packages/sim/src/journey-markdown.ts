@@ -35,7 +35,7 @@ const MILESTONES_SHOWN = [
   'fusion_5',
   'gear_rare',
   'gear_epic',
-  'gear_plus5',
+  'gear_ilvl10',
   'dungeon_depth_10',
   'dungeon_landmark_14',
   'expedition_slot_3',
@@ -80,6 +80,20 @@ export function journeyMarkdown(report: JourneyReport): string {
       shownWeeks(s.weeks).map((w) => [
         String(w),
         ...presets.map((p) => spread(p.weeks[w - 1]?.fightPower)),
+      ]),
+    ),
+  );
+
+  out.push(`## Gear's share of the fight-scored power by week`);
+  out.push(
+    `The share of the damage the team deals that its worn gear gives: the team's fight-scored power with its gear, against the same team without it (percent). The design targets are in \`docs/design/gear-and-creatures-v2.md\` section 4.`,
+  );
+  out.push(
+    table(
+      ['Week', ...presets.map((p) => p.label)],
+      shownWeeks(s.weeks).map((w) => [
+        String(w),
+        ...presets.map((p) => spread(p.weeks[w - 1]?.fightGearShare, 1)),
       ]),
     ),
   );

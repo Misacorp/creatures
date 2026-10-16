@@ -5,12 +5,7 @@
   "RULES.raid.scaling": ["raid-*", "fair-top-share", "longrun-*"],
   "RULES.raid.curve": ["curve-*", "raid-*", "fair-top-share", "longrun-*"],
   "RULES.raid.softCap": ["fair-top-share", "econ-power-ratio"],
-  "RULES.raid.essence": [
-    "fair-newcomer-essence",
-    "gear-essence-week12",
-    "gear-essence-growth",
-    "dungeon-essence-share"
-  ],
+  "RULES.raid.essence": ["fair-newcomer-essence", "dungeon-essence-share"],
   "RULES.raid.jackpot": ["econ-jackpot-rate", "econ-hard-pity"],
   "RULES.raid.jackpotEssence": ["econ-jackpot-rate"],
   "RULES.raid.maxPartySize": ["raid-finale-15"],
@@ -38,5 +33,5 @@
   "content.supplies": ["exp-risky-fair-*", "exp-casual-discovery"],
   "content.pushOnGoals": ["exp-risky-fair-*"],
   "content.destinations": ["exp-casual-discovery", "exp-long-best"],
-  "content.enchants": ["gear-share-week8"]
+  "content.gearLines": ["gear-share-*"]
 }

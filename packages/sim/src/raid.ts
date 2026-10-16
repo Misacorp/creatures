@@ -261,7 +261,7 @@ export function slotFor(player: SimPlayer, creatureId: string): FightSlot {
   return slotOfCreature(c, player.id);
 }
 
-/** The fight slot of an owned creature: its stats with the worn item folded in, and its sheet. */
+/** The fight slot of an owned creature: its stats with the worn items folded in, and its sheet. */
 export function slotOfCreature(c: OwnedCreature, ownerId: string): FightSlot {
   const slot = makeSlot(speciesOf(c.speciesId), {
     id: c.id,
@@ -269,13 +269,18 @@ export function slotOfCreature(c: OwnedCreature, ownerId: string): FightSlot {
     level: c.level,
     fusionCount: c.fusionCount,
   });
-  if (c.mods !== undefined) slot.mods = c.mods;
-  if (c.item === undefined || c.item === null) return slot;
-  // Gear folds into the stats and the crit bonus, as the worker's `slotFor` does (apps/worker/src/raid-resolve.ts).
+  if (c.items === undefined) {
+    if (c.mods !== undefined) slot.mods = c.mods;
+    return slot;
+  }
+  // Gear folds into the stats, the crit bonus and the modifier sheet, as the worker's `slotFor` does
+  // (apps/worker/src/raid-resolve.ts): both come from the one pure fold in `@creatures/game`.
   const folded = foldedCreature(c);
   const withGear: FightSlot = { ...slot, stats: folded.stats };
   if (folded.crit === undefined) delete withGear.crit;
   else withGear.crit = folded.crit;
+  const mods = c.mods ?? folded.mods;
+  if (mods !== undefined) withGear.mods = mods;
   return withGear;
 }
 

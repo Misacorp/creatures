@@ -19,7 +19,7 @@ import {
   type FightSlot,
 } from '@creatures/engine';
 import { DEFAULT_SERVER_SIZE } from './archetypes';
-import { pickTeam, type OwnedCreature } from './data';
+import { pickTeam, wornOf, type OwnedCreature } from './data';
 import { slotOfCreature } from './raid';
 
 /**
@@ -133,7 +133,16 @@ function keyOf(
     seeds,
     seed,
     group,
-    team.map((c) => [c.id, c.speciesId, c.level, c.fusionCount, c.item ?? null, c.mods ?? null]),
+    team.map((c) => [
+      c.id,
+      c.speciesId,
+      c.level,
+      c.fusionCount,
+      c.items === undefined
+        ? null
+        : wornOf(c).map((i) => [i.baseId, i.rarity, i.itemLevel, i.lines]),
+      c.mods ?? null,
+    ]),
   ]);
 }
 

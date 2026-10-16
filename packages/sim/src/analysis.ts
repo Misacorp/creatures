@@ -15,7 +15,7 @@ import {
 } from '@creatures/game';
 import { dungeonAnalysis, type DungeonStats } from './dungeon-analysis';
 import { gearPowerOf } from './gear';
-import { pickTeam } from './data';
+import { pickTeam, wornOf } from './data';
 import { ARCHETYPES, type ArchetypeId } from './archetypes';
 import type { EconomyResult, PlayerHistory, WeekRecord } from './economy';
 import { analyseLongRun, type LongRunInput, type LongRunStats } from './ladder';
@@ -103,10 +103,9 @@ export interface ProgressionRow {
   /** Power the worn gear adds to the top 3, and its share of the top-3 power. */
   gearPower: number;
   gearShare: number;
-  /** Upgrade levels on the team's items, crafts claimed so far, Essence spent on upgrades that week. */
+  /** The item levels the team wears added up, and crafts claimed so far. */
   gearLevels: number;
   crafted: number;
-  essenceSpentGear: number;
   /** Highest Crafting level, and scrap held. */
   skillLevel: number;
   scrap: number;
@@ -128,9 +127,8 @@ export interface WornRow {
   players: number;
   /** Share of the team's items by rarity (0 to 1). */
   rarity: Record<GearRarity, number>;
-  /** Average upgrade level, enchant share and power added per worn item. */
+  /** Average item level and power added per worn item. */
   level: number;
-  enchanted: number;
   power: number;
   /** Average items in the bag, blueprints known, parts (scrap, shards, glimmer) held. */
   bag: number;
@@ -307,7 +305,6 @@ function progression(
         gearShare: avg((w) => (w.top3Power === 0 ? 0 : w.gearPower / w.top3Power)),
         gearLevels: avg((w) => w.gearLevels),
         crafted: avg((w) => w.crafted),
-        essenceSpentGear: avg((w) => w.essenceSpentGear),
         skillLevel: avg((w) => w.skillLevel),
         scrap: avg((w) => w.scrap),
       });
@@ -481,8 +478,8 @@ export function wornItems(sims: readonly EconomyResult[]): WornRow[] {
       .flatMap((s) => s.snapshots.filter((x) => x.week === week).flatMap((x) => x.players))
       .filter((p) => p.archetype === archetype);
     if (players.length === 0) continue;
-    const worn = players.flatMap((p) => pickTeam(p.creatures).filter((c) => c.item));
-    const items = worn.flatMap((c) => (c.item === undefined || c.item === null ? [] : [c.item]));
+    const worn = players.flatMap((p) => pickTeam(p.creatures).filter((c) => wornOf(c).length > 0));
+    const items = worn.flatMap((c) => wornOf(c));
     const share = (r: GearRarity): number =>
       items.length === 0 ? 0 : items.filter((i) => i.rarity === r).length / items.length;
     const avg = (f: (p: (typeof players)[number]) => number): number => mean(players.map(f)) ?? 0;
@@ -496,9 +493,7 @@ export function wornItems(sims: readonly EconomyResult[]): WornRow[] {
         epic: share('epic'),
         festival: share('festival'),
       },
-      level: mean(items.map((i) => i.level)) ?? 0,
-      enchanted:
-        items.length === 0 ? 0 : items.filter((i) => i.enchantId !== null).length / items.length,
+      level: mean(items.map((i) => i.itemLevel)) ?? 0,
       power: mean(worn.map(gearPowerOf)) ?? 0,
       bag: avg((p) => p.gear.bag.length),
       blueprints: avg((p) => p.gear.blueprints.length),

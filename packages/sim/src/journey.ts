@@ -4,12 +4,19 @@ import {
   creaturePower as statsPower,
   craftCost,
   isLandmark,
-  upgradeCost,
   type GearRarity,
   type PartKind,
   type RaidStage,
 } from '@creatures/game';
-import { creatureStats, foldedCreature, pickTeam, speciesOf, type OwnedCreature } from './data';
+import {
+  creatureStats,
+  foldedCreature,
+  pickTeam,
+  speciesOf,
+  withoutGear,
+  wornOf,
+  type OwnedCreature,
+} from './data';
 import { serverMedianTopLevel, type DayInfo, type EconomyObserver } from './economy';
 import { fightPower } from './fight-power';
 import { allItems } from './gear';
@@ -35,9 +42,7 @@ export const LIMITS = [
   'essence_to_evolve',
   'level_cap_waiting_evolution',
   'scrap_for_gear',
-  'glimmer_for_craft',
   'shards_for_craft',
-  'essence_for_gear',
   'craft_timer',
   'max_fusion',
   'nothing_worth_buying',
@@ -58,22 +63,10 @@ export interface LimitState {
   gear: Limit | null;
 }
 
-/** The gear path's limit: what stops the next upgrade or craft. Null when the player does not work the gear. */
+/** The gear path's limit: what stops the next craft. Null when the player does not work the gear. */
 export function gearLimit(player: SimPlayer): Limit | null {
   if (player.profile.craftPercent <= 0) return null;
   const parts = player.gear.parts;
-  // The cheapest worn upgrade (by Essence).
-  let cheapest: { essence: number; scrap: number } | null = null;
-  for (const c of player.creatures) {
-    if (c.item === undefined || c.item === null) continue;
-    const cost = upgradeCost(c.item);
-    if (cost !== null && (cheapest === null || cost.essence < cheapest.essence)) cheapest = cost;
-  }
-  if (cheapest !== null) {
-    if (parts.scrap < cheapest.scrap) return 'scrap_for_gear';
-    if (player.essence < cheapest.essence) return 'essence_for_gear';
-    return null; // affordable: the next check-in does it
-  }
   if (player.gear.jobs.length > 0) return 'craft_timer';
   // The craft the player is closest to: the blueprint with the fewest kinds of parts short.
   let closest: { lacks: PartKind[] } | null = null;
@@ -87,7 +80,6 @@ export function gearLimit(player: SimPlayer): Limit | null {
   }
   if (closest === null) return null;
   if (closest.lacks.includes('scrap')) return 'scrap_for_gear';
-  if (closest.lacks.includes('glimmer')) return 'glimmer_for_craft';
   return 'shards_for_craft';
 }
 
@@ -103,7 +95,7 @@ export function gearLimit(player: SimPlayer): Limit | null {
  *    code therefore counts only days without any training as waiting for Bait.) Affordable but not
  *    yet bought (or an evolution the Essence covers): `next_check_in`.
  * 3. Nothing to train and nothing to evolve (every team creature is at its final level cap): the gear
- *    path's limit if it has one (scrap, glimmer, Essence, a craft timer); otherwise `max_fusion` when
+ *    path's limit if it has one (scrap, glimmer, shards, a craft timer); otherwise `max_fusion` when
  *    every team creature is fully fused, else `nothing_worth_buying` (growth now comes only from
  *    fusion duplicates, which cannot be bought).
  *
@@ -174,14 +166,15 @@ function powerWith(c: OwnedCreature, keep: number): number {
   const speciesId = (keep & 1) !== 0 ? c.speciesId : firstStageOf(c);
   // A level above the first stage's cap only exists with the evolution.
   const level = (keep & 2) !== 0 ? Math.min(c.level, speciesOf(speciesId).levelCap) : 1;
+  const { items, ...bare } = c;
   const state: OwnedCreature = {
-    ...c,
+    ...bare,
     speciesId,
     level,
     fusionCount: (keep & 4) !== 0 ? c.fusionCount : 0,
-    item: (keep & 8) !== 0 ? (c.item ?? null) : null,
   };
-  return state.item === undefined || state.item === null
+  if ((keep & 8) !== 0 && items !== undefined) state.items = items;
+  return state.items === undefined
     ? statsPower(creatureStats(state))
     : statsPower(foldedCreature(state).stats);
 }
@@ -241,6 +234,8 @@ export interface DayRecord {
    */
   fightPower: number | null;
   fightSurvivalBp: number | null;
+  /** The same team with its gear taken off, scored the same way (null when `fightPower` is): its gear's share is `1 - fightPowerBare / fightPower`. */
+  fightPowerBare: number | null;
   base: number;
   levels: number;
   fusion: number;
@@ -307,7 +302,7 @@ export function milestoneCatalogue(): string[] {
   for (let k = 1; k <= RULES.fusion.maxFusions; k++) out.push(`fusion_${String(k)}`);
   for (const level of LEVEL_MILESTONES) out.push(`level_${String(level)}`);
   for (const cap of caps) out.push(`species_cap_${String(cap)}`);
-  out.push('gear_rare', 'gear_epic', 'gear_plus5');
+  out.push('gear_rare', 'gear_epic', 'gear_ilvl10');
   for (const depth of DEPTH_MILESTONES) out.push(`dungeon_depth_${String(depth)}`);
   for (const depth of LANDMARK_DEPTHS) out.push(`dungeon_landmark_${String(depth)}`);
   for (let slot = 2; slot <= 5; slot++) out.push(`expedition_slot_${String(slot)}`);
@@ -344,7 +339,7 @@ export function reachedMilestones(player: SimPlayer): string[] {
   const items = allItems(player);
   if (items.some((i) => i.rarity === 'rare')) out.push('gear_rare');
   if (items.some((i) => i.rarity === 'epic')) out.push('gear_epic');
-  if (items.some((i) => i.level >= 5)) out.push('gear_plus5');
+  if (items.some((i) => i.itemLevel >= 10)) out.push('gear_ilvl10');
   const cleared = player.dungeon.depth - 1;
   for (const depth of DEPTH_MILESTONES)
     if (cleared >= depth) out.push(`dungeon_depth_${String(depth)}`);
@@ -380,11 +375,13 @@ export function recordDay(
 ): DayRecord {
   const split = powerSplit(player.creatures);
   const fights = info.fightRank === undefined ? null : fightPower(player.creatures, info.fightRank);
+  const bare =
+    info.fightRank === undefined
+      ? null
+      : fightPower(pickTeam(player.creatures).map(withoutGear), info.fightRank);
   const team = pickTeam(player.creatures);
   const items = allItems(player);
-  const worn = player.creatures.flatMap((c) =>
-    c.item === undefined || c.item === null ? [] : [c.item],
-  );
+  const worn = player.creatures.flatMap((c) => wornOf(c));
   const wornRarity: Record<GearRarity, number> = { common: 0, rare: 0, epic: 0, festival: 0 };
   for (const item of worn) wornRarity[item.rarity] += 1;
   const limit = bindingLimit(player, medianTopLevel);
@@ -397,6 +394,7 @@ export function recordDay(
     power: split.total,
     fightPower: fights === null ? null : fights.power,
     fightSurvivalBp: fights === null ? null : fights.survivalBp,
+    fightPowerBare: bare === null ? null : bare.power,
     base: split.base,
     levels: split.levels,
     fusion: split.fusion,
@@ -420,7 +418,7 @@ export function recordDay(
     itemsOwned: items.length,
     itemsWorn: worn.length,
     wornRarity,
-    gearLevels: worn.reduce((n, i) => n + i.level, 0),
+    gearLevels: worn.reduce((n, i) => n + i.itemLevel, 0),
     limit: limit.primary,
     blocked: limit.blocked,
     gearLimit: limit.gear,
@@ -532,7 +530,7 @@ export class JourneyRecorder implements EconomyObserver {
         median,
       );
       j.days.push(record);
-      const gearActions = p.week.gearUpgrades + p.week.gearCrafts;
+      const gearActions = p.week.gearCrafts;
       track.waits.step(
         dayNumber,
         record.limit,

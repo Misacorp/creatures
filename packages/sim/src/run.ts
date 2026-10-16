@@ -9,6 +9,7 @@ import {
 } from './archetypes';
 import { namedCurveMixes, runCurveStudy, type CurveResult } from './curve-study';
 import { runEconomy, type EconomyResult } from './economy';
+import { gearShareMetrics, runGearStudy, type GearShareRun } from './gear-study';
 import { runSuppliesStudy, suppliesMetrics, type SuppliesRun } from './supplies-study';
 import type { IncomeModelId } from './income';
 import { LONG_RUN_GROUPS, LONG_RUN_WEEKS } from './ladder';
@@ -43,6 +44,8 @@ export interface RunSettings {
   curveServers: number;
   /** Servers of the supplies study (the default journey server, `supplies-study.ts`, B-011). */
   suppliesServers: number;
+  /** Servers of the gear share study (30 weeks of the default journey server, `gear-study.ts`); 0 skips it. */
+  gearServers: number;
   /** Player counts of the raid sweep. */
   counts: number[];
   /** How Bait comes in (`income.ts`). Absent: the allowance, the shipped income. */
@@ -70,6 +73,7 @@ export function defaultSettings(
     tripLongSims: quick ? 2 : 8,
     curveServers: quick ? 6 : 60,
     suppliesServers: quick ? 6 : 30,
+    gearServers: quick ? 4 : 20,
     counts: [...SWEEP_COUNTS],
     ...(overrides.income === undefined ? {} : { income: overrides.income }),
   };
@@ -87,6 +91,8 @@ export interface RunOutput {
   curve: CurveResult;
   /** The supplies study: where supplies come from and what they are used for, by profile and week (B-011). */
   supplies: SuppliesRun;
+  /** The gear share study: gear's share of the fight-scored power by profile at weeks 2, 8, 20 and 30; null when skipped. */
+  gear: GearShareRun | null;
 }
 
 /** Weeks (1-based) at which rosters are snapshotted: 4 and 8, or the last week if the run is shorter. */
@@ -241,6 +247,11 @@ export function runSimulation(settings: RunSettings): RunOutput {
     servers: settings.suppliesServers,
     weeks: settings.weeks,
   });
+  // The gear share study: 30 weeks of the default journey server, scored in fights.
+  const gear =
+    settings.gearServers > 0
+      ? runGearStudy({ seed: `${settings.seed}:gear`, servers: settings.gearServers })
+      : null;
   const analysis = analyse({
     roles,
     weeks: settings.weeks,
@@ -259,12 +270,14 @@ export function runSimulation(settings: RunSettings): RunOutput {
       ...analysis.metrics,
       ...curve.metrics,
       ...suppliesMetrics(supplies),
+      ...(gear === null ? {} : gearShareMetrics(gear)),
     }),
     example: sweep.example,
     setups,
     ranks,
     curve,
     supplies,
+    gear,
   };
 }
 

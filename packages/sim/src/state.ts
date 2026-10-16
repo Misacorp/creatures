@@ -1,11 +1,11 @@
 import type {
   ExpeditionLength,
   FamiliarityRecord,
-  GearRarity,
+  GearSlot,
   JobKind,
   PartKind,
 } from '@creatures/game';
-import { PART_KINDS } from '@creatures/game';
+import { GEAR_SLOTS, PART_KINDS } from '@creatures/game';
 import type { ArchetypeId } from './archetypes';
 import type { OwnedCreature, SimItem } from './data';
 import { LEGACY_PROFILES, type PlayerProfile } from './profiles';
@@ -93,10 +93,6 @@ export interface WeekCounters {
   trainings: number;
   evolutions: number;
   signedUp: boolean;
-  /** Essence spent on gear upgrades. */
-  essenceSpentGear: number;
-  /** Upgrade levels bought. */
-  gearUpgrades: number;
   /** Crafts claimed. */
   gearCrafts: number;
   /** Items that dropped or were crafted. */
@@ -121,8 +117,6 @@ export function emptyWeek(): WeekCounters {
     trainings: 0,
     evolutions: 0,
     signedUp: false,
-    essenceSpentGear: 0,
-    gearUpgrades: 0,
     gearCrafts: 0,
     gearItems: 0,
     gearDismantled: 0,
@@ -154,18 +148,12 @@ export function emptyDungeonState(): DungeonState {
 export interface SimJob {
   kind: JobKind;
   creatureId: string;
-  /** The nominal rarity: the blueprint's for a craft, the item's otherwise (decides the XP). */
-  rarity: GearRarity;
   /** Absolute simulated hour (since the start of the sim) at which the job is done. */
   endsAtHour: number;
   /** Craft: the base crafted. */
   baseId?: string;
   /** Supply: the supply crafted. */
   supplyId?: string;
-  /** Improve and enchant: the item's uid (the item may be in the bag or worn). */
-  itemUid?: number;
-  secondaryIndex?: number;
-  enchantId?: string;
 }
 
 /** Everything gear related a player has. */
@@ -204,10 +192,7 @@ export function emptyGearState(): GearState {
 }
 
 function cloneItem(item: SimItem): SimItem {
-  return {
-    ...item,
-    rolls: { primary: item.rolls.primary, secondary: item.rolls.secondary.map((s) => ({ ...s })) },
-  };
+  return { ...item, lines: item.lines.map((l) => ({ ...l })) };
 }
 
 export interface SimPlayer {
@@ -304,10 +289,16 @@ export function createPlayer(
 export function clonePlayer(p: SimPlayer): SimPlayer {
   return {
     ...p,
-    creatures: p.creatures.map((c) => ({
-      ...c,
-      ...(c.item === undefined || c.item === null ? {} : { item: cloneItem(c.item) }),
-    })),
+    creatures: p.creatures.map((c) => {
+      const { items, ...rest } = c;
+      if (items === undefined) return { ...rest };
+      const worn: Partial<Record<GearSlot, SimItem>> = {};
+      for (const slot of GEAR_SLOTS) {
+        const item = items[slot];
+        if (item !== undefined) worn[slot] = cloneItem(item);
+      }
+      return { ...rest, items: worn };
+    }),
     expeditions: p.expeditions.map((e) => ({
       ...e,
       kit: [...e.kit],

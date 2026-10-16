@@ -4,9 +4,8 @@ import {
   RULES,
   content,
   craftCost,
-  createSeededRng,
   droppableBases,
-  rollGear,
+  itemOf,
   type CreatureSpecies,
 } from '@creatures/game';
 import { speciesOf, type OwnedCreature, type SimItem } from '../src/data';
@@ -54,17 +53,7 @@ function finalStage(): SimPlayer {
 }
 
 function item(): SimItem {
-  const base = droppableBases()[0];
-  if (base === undefined) throw new Error('no gear bases');
-  return {
-    uid: 1,
-    baseId: base.id,
-    rarity: 'common',
-    level: 0,
-    rolls: rollGear(createSeededRng('item'), base.id, 'common'),
-    enchantId: null,
-    improves: 0,
-  };
+  return { ...itemOf('trail-cap', 'common', 1, [{ id: 'attack', tier: 0 }]), uid: 1 };
 }
 
 describe('the binding limit', () => {
@@ -122,11 +111,9 @@ describe('the binding limit', () => {
     expect(bindingLimit(p, 30).primary).toBe('max_fusion');
   });
 
-  it('scrap, then Essence, for a gear upgrade', () => {
+  it('scrap for a craft the player knows a blueprint for', () => {
     const p = finalStage();
-    const worn = p.creatures[0] as OwnedCreature;
-    worn.item = item();
-    p.essence = 1000;
+    p.gear.blueprints.push('trail-cap');
     p.gear.parts.scrap = 0;
     expect(gearLimit(p)).toBe('scrap_for_gear');
     expect(bindingLimit(p, 30)).toMatchObject({
@@ -134,11 +121,7 @@ describe('the binding limit', () => {
       gear: 'scrap_for_gear',
     });
     p.gear.parts.scrap = 1000;
-    p.essence = 0;
-    expect(gearLimit(p)).toBe('essence_for_gear');
-    expect(bindingLimit(p, 30).primary).toBe('essence_for_gear');
-    p.essence = 1000;
-    expect(gearLimit(p)).toBeNull(); // affordable: the next check-in upgrades it
+    expect(gearLimit(p)).toBeNull(); // affordable: the next check-in crafts it
   });
 
   it('a craft timer when a job is running and nothing is worn', () => {
@@ -146,27 +129,24 @@ describe('the binding limit', () => {
     p.gear.jobs.push({
       kind: 'craft',
       creatureId: (p.creatures[0] as OwnedCreature).id,
-      rarity: 'common',
       endsAtHour: 1_000,
       baseId: 'x',
     });
     expect(bindingLimit(p, 30).primary).toBe('craft_timer');
   });
 
-  it('glimmer, then shards, for a craft the player knows a blueprint for', () => {
+  it('shards for a craft of an element base, then scrap', () => {
     const p = finalStage();
-    const epic = droppableBases().find((b) => b.blueprint === 'epic' && craftCost(b.id).glimmer);
-    if (epic === undefined) throw new Error('no epic base that needs glimmer');
-    p.gear.blueprints.push(epic.id);
+    const element = droppableBases().find((b) =>
+      Object.keys(craftCost(b.id)).some((k) => k.endsWith('-shard')),
+    );
+    if (element === undefined) throw new Error('no base that needs a shard');
+    p.gear.blueprints.push(element.id);
     p.gear.parts.scrap = 1_000;
-    for (const kind of PART_KINDS) if (kind.endsWith('-shard')) p.gear.parts[kind] = 1_000;
-    p.gear.parts.glimmer = 0;
-    expect(gearLimit(p)).toBe('glimmer_for_craft');
-    p.gear.parts.glimmer = 100;
     for (const kind of PART_KINDS) if (kind.endsWith('-shard')) p.gear.parts[kind] = 0;
-    // The base may be neutral (no shard); with a shard cost this is the shards' turn.
-    const needsShard = Object.keys(craftCost(epic.id)).some((k) => k.endsWith('-shard'));
-    expect(gearLimit(p)).toBe(needsShard ? 'shards_for_craft' : null);
+    expect(gearLimit(p)).toBe('shards_for_craft');
+    for (const kind of PART_KINDS) if (kind.endsWith('-shard')) p.gear.parts[kind] = 1_000;
+    expect(gearLimit(p)).toBeNull();
     p.gear.parts.scrap = 0;
     expect(gearLimit(p)).toBe('scrap_for_gear');
   });
@@ -174,7 +154,7 @@ describe('the binding limit', () => {
   it('a player who never works the gear is not held back by it', () => {
     const p = finalStage();
     p.profile = PRESETS['drop-in'];
-    (p.creatures[0] as OwnedCreature).item = item();
+    p.gear.blueprints.push('trail-cap');
     p.gear.parts.scrap = 0;
     expect(gearLimit(p)).toBeNull();
   });
@@ -216,17 +196,17 @@ describe('waits', () => {
     ]);
   });
 
-  it('the gear path has its own waits, ended by any upgrade or craft', () => {
+  it('the gear path has its own waits, ended by any craft', () => {
     const t = new WaitTracker();
     t.step(1, 'bait_to_train', 'scrap_for_gear', false, false);
     t.step(2, 'bait_to_train', 'scrap_for_gear', false, false);
-    t.step(3, 'bait_to_train', 'scrap_for_gear', false, true); // upgraded today
-    t.step(4, 'bait_to_train', 'essence_for_gear', false, false);
+    t.step(3, 'bait_to_train', 'scrap_for_gear', false, true); // crafted today
+    t.step(4, 'bait_to_train', 'shards_for_craft', false, false);
     t.step(5, 'bait_to_train', null, false, false);
     const gear = t.waits.filter((w) => w.track === 'gear');
     expect(gear).toEqual([
       { cause: 'scrap_for_gear', start: 1, length: 2, track: 'gear' },
-      { cause: 'essence_for_gear', start: 4, length: 1, track: 'gear' },
+      { cause: 'shards_for_craft', start: 4, length: 1, track: 'gear' },
     ]);
   });
 });
@@ -238,7 +218,7 @@ describe('power split', () => {
       c.level = 12 + 5 * k;
       c.fusionCount = k;
     }
-    (p.creatures[0] as OwnedCreature).item = item();
+    (p.creatures[0] as OwnedCreature).items = { hat: item() };
     const split = powerSplit(p.creatures);
     expect(split.total).toBeGreaterThan(split.base);
     expect(split.levels).toBeGreaterThan(0);
@@ -274,7 +254,7 @@ describe('milestones', () => {
     p.creatures[0] = { ...(p.creatures[0] as OwnedCreature), fusionCount: 3 };
     p.creatures[1] = {
       ...(p.creatures[1] as OwnedCreature),
-      item: { ...item(), rarity: 'epic', level: 5 },
+      items: { hat: { ...item(), rarity: 'epic', itemLevel: 10 } },
     };
     p.dungeon.depth = 15; // cleared 14: past depth 10 and the first two landmarks
     p.slotDays = [3, null, null, null];
@@ -289,7 +269,7 @@ describe('milestones', () => {
       'level_30',
       'species_cap_30',
       'gear_epic',
-      'gear_plus5',
+      'gear_ilvl10',
       'dungeon_depth_5',
       'dungeon_depth_10',
       'dungeon_landmark_7',
@@ -527,13 +507,10 @@ describe('profile decisions', () => {
     expect(weeks({ ...engaged, tripPercent: 100 }).at(-1)?.trips).toBeGreaterThan(0);
   });
 
-  it('a player who never crafts spends no Essence on gear and crafts nothing', () => {
+  it('a player who never crafts crafts nothing, and one who always does crafts', () => {
     const never = weeks({ ...engaged, craftPercent: 0 }, 6);
-    expect(never.every((w) => w.essenceSpentGear === 0)).toBe(true);
     expect(never.at(-1)?.crafted).toBe(0);
     const always = weeks({ ...engaged, craftPercent: 100 }, 6);
-    expect(always.some((w) => w.essenceSpentGear > 0) || (always.at(-1)?.crafted ?? 0) > 0).toBe(
-      true,
-    );
+    expect(always.at(-1)?.crafted ?? 0).toBeGreaterThan(0);
   });
 });
