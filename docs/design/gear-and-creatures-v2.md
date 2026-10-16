@@ -510,6 +510,8 @@ A duplicate catch arrives as a card with its rolled talent and four buttons. The
 
 ### 8.3 Example talent pools
 
+**Built 2026-10-16:** the pools are content (`packages/game/src/content/data/talents.json`, checked by `talent-schema.ts`; the names are in `docs/compendium/talents.md`). Every line has 7 or 8 talents; the three the engine or the training work cannot carry yet (Shade Napper, Light Sleeper and Gentle but Stubborn) are listed under `deferred` and are in no pool, and each of those lines has stand-in talents (Cindle two, Sproutle and Ashmole one) so every pool still has 7 or 8. Coralynx's "Patrols at Dusk" is the plain Explorer XP talent for now; its Moonlit Reef condition waits for the Rules hook. The tables below are the starting design.
+
 Names come from each line's shipped traits and quirks (`docs/compendium/creatures.md`). Values are normal / golden. The engine column says what each needs.
 
 **Splashet line** (Splashet, Tidewing; Tide Setter)
@@ -670,7 +672,7 @@ Misa: production brings in too many creatures and too many duplicates. Direction
 - **Lures are crafted from Bait** in the Workshop (Bait plus a little scrap, a short job, three tiers). A lure packed on a trip raises the chance that it brings a creature, and the chance that the creature is a species the player does not own yet, higher tiers more. The other supplies (map, lantern, satchel) stay scrap-crafted and dungeon-found.
 - **Why this works now:** Bait-bought supplies were a trap while Bait paid for levels and extra catches were duplicates. With training by activity, Bait is free for other jobs, and with talents, a catch (even a duplicate) matters. Bait gets two clear jobs: treats grow creatures, lures find them.
 - **Numbers are set by the journey sim:** catches per week per profile, new-species pace, duplicates per week (enough to feed talents and fusion, not a flood), Bait split between treats and lures.
-- **Build order:** with Creatures A (talents and the duplicate choice), since both change what a catch is worth.
+- **Build order:** with Creatures A (talents and the duplicate choice), since both change what a catch is worth. **Built 2026-10-16:** a roll brings a creature with a chance per trip length (`catchBp`); a roll that brings none brings a small find of scrap; lures cost Bait (and a little scrap) at the workbench and add to that chance and to the odds of a species the player lacks; the duplicate-to-Bait conversion is gone.
 
 ## 10. Boons and Omens
 
@@ -807,7 +809,7 @@ Each step is simulated on paired seeds before it ships; neighbouring steps can s
 1. **Groundwork** _(built 2026-10-16)_: a fight-scored power in the sim (`packages/sim/src/fight-power.ts`, shown in the journey report next to the old score); the per-creature modifier sheet in the engine (replay-safe, `combat-rules.md` section 10) with the Guard's shadow position line; this design recorded in `decisions.md`.
 2. **Gear A** _(built 2026-10-16)_: Hat, Scarf and Charm; bases and tags; the Ready and Sheet lines; tiers and item level by source; "Equip best"; conversion of existing gear; upgrades, Improve and enchants removed.
 3. **Gear B:** the crafting loop: Reach, dismantle jobs with ranges, blueprint learning and well-thumbed marks, the maker's name on items.
-4. **Creatures A:** talents, the duplicate choice (Teach, Fuse, Release, Keep), the Talent Book, release for parts.
+4. **Creatures A** _(built 2026-10-16, with the expedition change of 9.5)_: talents, the duplicate choice (Teach, Fuse, Release, Keep), the Talent Book, release for parts. Pools for all 14 lines (three talents are held back until their engine or training work exists, see 8.3); Keep is built and tested but no line has a second branch yet, so it is not offered; migration 28. The numbers of 9.5 are in `docs/balance/log.md` B-014.
 5. **Creatures B:** training by activity, treats (a per-creature checkbox), ribbons and slot unlocks.
 6. **Boons and Omens:** mutator and input effects first, sheet effects with them.
 7. **Content:** Sunfawn and Ohmouse, then branches for the other evolving lines; talent pools for every line.

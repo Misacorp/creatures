@@ -31,6 +31,8 @@ Misa watches production by playing. Agents also need data to understand **how pe
    - the end-of-trip choice: offered, chosen and its result (goal id, risk, exact odds, worked / failed / declined);
    - journal finds, explorer rank-ups, familiarity stars and slot unlocks (ids and numbers only);
    - train, evolve and fuse;
+   - talents (2026-10-16, Creatures A): a talent rolled (species, talent id, golden, and whether it was the one-time roll for an existing creature), a duplicate settled (Teach, Fuse, Release or Keep, whether the server chose, species, rarity, talent, golden) and a talent slotted from the book (slot);
+   - lure crafts (the Workshop job start carries the Bait it cost);
    - roster opt-out;
    - team and placement changes;
    - ability pick and auto fire toggles;
