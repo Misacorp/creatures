@@ -140,8 +140,11 @@ const supplyFields = {
    * percentages (discovery is part of the fun).
    */
   blurb: SupplyBlurb,
-  /** Bait price where it can be bought. */
-  price: Int(1, 10_000),
+  /**
+   * What the supply is worth in Bait, for the simulator's fairness checks and its choices only. Never
+   * shown and never charged: supplies cannot be bought (docs/design/decisions.md, 2026-10-16).
+   */
+  worth: Int(1, 10_000),
   /** The chance (basis points) that it makes an end-of-trip choice come up; the best tier guarantees one. */
   offerBp: Bp,
   blueprint: SupplyBlueprintSchema,

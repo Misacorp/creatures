@@ -589,12 +589,27 @@ export const RULES = {
      * frontier.
      */
     enrage: { enabled: true, rounds: 2, powerBp: 3_000 },
-    /** Paid for each room cleared, by room index (the last is the room boss). */
+    /**
+     * Paid for each room cleared, by room index (the last is the room boss). `supply` is the number
+     * of expedition supplies the room drops (its tier and kind are rolled: `supplyTiers`). Only the
+     * first room drops one, with a scrap beside it: a run that clears its first room always takes a
+     * supply home, even if it is lost later, so the promise holds at the depth wall where full clears
+     * are rare (B-011: one per full clear dried up after week 8, one per room piled up unused).
+     */
     perRoom: [
-      { bait: 1, essence: 0, scrap: 0 },
-      { bait: 1, essence: 0, scrap: 0 },
-      { bait: 1, essence: 1, scrap: 1 },
+      { bait: 1, essence: 0, scrap: 1, supply: 1 },
+      { bait: 1, essence: 0, scrap: 0, supply: 0 },
+      { bait: 1, essence: 1, scrap: 1, supply: 0 },
     ],
+    /**
+     * The tier of a supply the dungeon drops, by depth (basis points; the rest is basic). A tier is
+     * closed below `fromDepth`, starts at `baseBp` at `fromDepth`, grows by `perDepthBp` for every depth
+     * past it and stops at `maxBp`: deeper is better. The kind is drawn evenly.
+     */
+    supplyTiers: {
+      good: { fromDepth: 4, baseBp: 1_500, perDepthBp: 400, maxBp: 5_000 },
+      great: { fromDepth: 12, baseBp: 500, perDepthBp: 200, maxBp: 2_500 },
+    },
     /** Chance (basis points) of one shard of the room boss's element when the boss room is cleared. */
     bossShardBp: 6_000,
     /** Extra for clearing every room: Essence, and a chance (basis points) at a gear drop. */

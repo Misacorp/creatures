@@ -201,9 +201,9 @@ describe('the shipped expedition content', () => {
       expect(great.offerBp).toBe(BP);
       expect(basic.offerBp).toBeLessThan(good.offerBp);
       expect(good.offerBp).toBeLessThan(great.offerBp);
-      // Better tiers cost more Bait and need a higher Crafting level.
-      expect(basic.price).toBeLessThan(good.price);
-      expect(good.price).toBeLessThan(great.price);
+      // Better tiers are worth more Bait (to the simulator) and need a higher Crafting level.
+      expect(basic.worth).toBeLessThan(good.worth);
+      expect(good.worth).toBeLessThan(great.worth);
       expect([basic, good, great].map((s) => s.blueprint.craftingLevel)).toEqual([1, 3, 5]);
       for (const s of tiers) {
         expect(s.id).toBe(`${s.kind}-${s.tier}`);
@@ -536,7 +536,7 @@ describe('explorer rank, trip length and slots', () => {
         g.bait +
         3 * (g.parts.scrap ?? 0) +
         10 * (g.parts.glimmer ?? 0) +
-        g.supplies.reduce((sum, id) => sum + (supplyDef(id)?.price ?? 0), 0)
+        g.supplies.reduce((sum, id) => sum + (supplyDef(id)?.worth ?? 0), 0)
       );
     };
     for (let rank = 3; rank <= top; rank++) {

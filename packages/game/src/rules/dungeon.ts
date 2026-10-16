@@ -11,6 +11,7 @@ import { chance, int, pickWeighted, type Rng } from '../rng';
 import { RULES } from './config';
 import { droppableBases, rollGear, shardOf, type GearRolls, type PartsBundle } from './gear';
 import type { GearRarity } from '../content/gear-schema';
+import { SUPPLY_KINDS, type SupplyTier } from '../content/expedition-schema';
 
 /** True when `depth` is a landmark: every `RULES.dungeon.landmarkEvery`-th depth. */
 export function isLandmark(depth: number): boolean {
@@ -256,6 +257,8 @@ export interface DungeonPayout {
   essence: number;
   scrap: number;
   glimmer: number;
+  /** Supplies the cleared rooms drop (each one's tier and kind are rolled by `rollDungeonLoot`). */
+  supplies: number;
   /** The depth is a landmark and every room was cleared: the gear drop is guaranteed. */
   landmark: boolean;
   /** Every room was cleared. */
@@ -276,6 +279,7 @@ export function dungeonPayout(depth: number, roomsCleared: number): DungeonPayou
     essence: 0,
     scrap: 0,
     glimmer: 0,
+    supplies: 0,
     landmark: false,
     fullClear: cleared === rooms,
     bossCleared: cleared === rooms,
@@ -286,6 +290,7 @@ export function dungeonPayout(depth: number, roomsCleared: number): DungeonPayou
     out.bait += room.bait;
     out.essence += room.essence;
     out.scrap += room.scrap;
+    out.supplies += room.supply;
   }
   if (out.fullClear) {
     out.essence += RULES.dungeon.fullClear.essence;
@@ -340,25 +345,63 @@ export function dungeonGearOddsBp(
   return { rare, epic, common: Math.max(0, 10_000 - rare - epic) };
 }
 
-/** What a run's dice gave: parts and gear (the grant adds the scrap and glimmer of the payout). */
+/**
+ * The tier odds (basis points) of a supply the dungeon drops at a depth: each better tier is closed
+ * until its `fromDepth`, then rises with the depth up to its cap (`RULES.dungeon.supplyTiers`); the
+ * rest is basic.
+ */
+export function dungeonSupplyOddsBp(depth: number): Record<SupplyTier, number> {
+  const open = (t: {
+    fromDepth: number;
+    baseBp: number;
+    perDepthBp: number;
+    maxBp: number;
+  }): number =>
+    depth < t.fromDepth
+      ? 0
+      : Math.min(t.maxBp, t.baseBp + t.perDepthBp * (Math.floor(depth) - t.fromDepth));
+  const { good, great } = RULES.dungeon.supplyTiers;
+  const greatBp = open(great);
+  const goodBp = Math.min(open(good), 10_000 - greatBp);
+  return { basic: 10_000 - goodBp - greatBp, good: goodBp, great: greatBp };
+}
+
+/** One supply the dungeon drops at a depth: a tier by `dungeonSupplyOddsBp`, a kind drawn evenly. Returns its content id. */
+export function rollDungeonSupply(rng: Rng, depth: number): string {
+  const odds = dungeonSupplyOddsBp(depth);
+  const tier = pickWeighted<{ tier: SupplyTier; weight: number }>(rng, [
+    { tier: 'basic', weight: odds.basic },
+    { tier: 'good', weight: odds.good },
+    { tier: 'great', weight: odds.great },
+  ]).tier;
+  const kind = SUPPLY_KINDS[int(rng, SUPPLY_KINDS.length)] as string;
+  return `${kind}-${tier}`;
+}
+
+/** What a run's dice gave: parts, gear and supplies (the grant adds the scrap and glimmer of the payout). */
 export interface DungeonLoot {
   parts: PartsBundle;
   gear: { baseId: string; rarity: GearRarity; rolls: GearRolls }[];
+  /** Supply content ids (`lure-good`), one per supply. */
+  supplies: string[];
 }
 
 /**
  * Rolls the dice of a run's loot, always in the same order: the boss room's shard (a shard of the
  * boss's element, if the boss room was cleared), then, for a full clear, the gear chance (a landmark
- * ignores it, its drop is certain) and, if there is a drop, its rarity, base and rolls.
+ * ignores it, its drop is certain) and, if there is a drop, its rarity, base and rolls, and last the
+ * supplies of the cleared rooms (tier, then kind, each). The supplies come last so the dice above
+ * are drawn as they were before the dungeon dropped supplies.
  */
 export function rollDungeonLoot(
   rng: Rng,
   depth: number,
-  payout: Pick<DungeonPayout, 'landmark' | 'fullClear' | 'bossCleared'>,
+  payout: Pick<DungeonPayout, 'landmark' | 'fullClear' | 'bossCleared' | 'supplies'>,
   bossElement: Element,
 ): DungeonLoot {
   const parts: PartsBundle = {};
   const gear: DungeonLoot['gear'] = [];
+  const supplies: string[] = [];
   if (payout.bossCleared && chance(rng, RULES.dungeon.bossShardBp, 10_000)) {
     parts[shardOf(bossElement)] = 1;
   }
@@ -377,5 +420,6 @@ export function rollDungeonLoot(
       gear.push({ baseId: base.id, rarity, rolls: rollGear(rng, base.id, rarity) });
     }
   }
-  return { parts, gear };
+  for (let i = 0; i < payout.supplies; i++) supplies.push(rollDungeonSupply(rng, depth));
+  return { parts, gear, supplies };
 }
