@@ -550,10 +550,10 @@ describe('the glossary covers gear and crafting', () => {
     expect(text('job-craft')).toContain(`Takes ${String(RULES.gear.craft.hours)} hours`);
     const { rare, epic } = RULES.gear.craft.reach;
     expect(text('reach')).toContain(
-      `Reach for Rare needs Crafting level ${String(rare.minLevel)} (${String(rare.essence)} Essence, ${String(rare.shard)} more shard, ${String(rare.hours)} hours)`,
+      `Reach for Rare needs Crafting level ${String(rare.minLevel)} (${String(rare.essence)} Essence, ${String(rare.hours)} hours)`,
     );
     expect(text('reach')).toContain(
-      `Reach for Epic needs level ${String(epic.minLevel)} (${String(epic.essence)} Essence, ${String(epic.shard)} more shards, ${String(epic.glimmer)} glimmer, ${String(epic.hours)} hours)`,
+      `Reach for Epic needs level ${String(epic.minLevel)} (${String(epic.essence)} Essence, ${String(epic.glimmer)} glimmer, ${String(epic.hours)} hours)`,
     );
     expect(text('reach')).toContain(
       `${percent(RULES.gear.skill.rarityUpBpPerLevel)} for each Crafting level above 1 and for each well-thumbed mark`,

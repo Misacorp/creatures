@@ -479,7 +479,10 @@ export const RULES = {
     },
     /**
      * Crafting (spec section 3). A plain craft costs `scrap` and `shard` of the base's element (every
-     * other base takes `plainScrap` and no shard), makes a Common and takes `hours`. Reach pays more
+     * other base takes `plainScrap` and no shard), makes a Common and takes `hours`. The scrap grows by 1
+     * for every `scrapPerItemLevels` item levels the craft makes (a level 10 crafter makes item level 20:
+     * +5), so the price follows the item and a dismantle, which gives back a fraction of it, can never
+     * pay for a craft (Misa: a dismantle returns "a fraction of its costs"). Reach pays more
      * for better odds: Essence, shards (of the base's element; the other bases pay them from the
      * player's biggest piles), glimmer, a longer job and a Crafting level to ask for it. `oddsBp` is the
      * rarity drawn before the one-step-up chance (whole percents, so the shown odds are exact).
@@ -489,11 +492,12 @@ export const RULES = {
       shard: 1,
       plainScrap: 8,
       hours: 3,
+      scrapPerItemLevels: 4,
       reach: {
         rare: {
           minLevel: 3,
           essence: 25,
-          shard: 1,
+          shard: 0,
           glimmer: 0,
           hours: 6,
           oddsBp: { common: 4_000, rare: 6_000, epic: 0 },
@@ -501,7 +505,7 @@ export const RULES = {
         epic: {
           minLevel: 6,
           essence: 70,
-          shard: 2,
+          shard: 0,
           glimmer: 1,
           hours: 10,
           oddsBp: { common: 1_500, rare: 5_500, epic: 3_000 },
@@ -512,8 +516,9 @@ export const RULES = {
     },
     /**
      * Dismantling is a Workshop job (spec section 3). The refund of each item is rolled at the claim
-     * inside its rarity's range (each end gets `scrapPerItemLevels` scrap per full 5 item levels) and
-     * does not depend on who works. Commons go in bundles of up to `bundleMax` in one job. A shard is
+     * inside its rarity's range and does not depend on who works. The scrap range is a share of what
+     * crafting that base at that item level costs in scrap (`craftScrapCost`), never more than half of
+     * it, for crafted and dropped items alike. Commons go in bundles of up to `bundleMax` in one job. A shard is
      * of the item's element; neutral, explorer and role pieces give a random one.
      */
     dismantle: {
@@ -522,13 +527,21 @@ export const RULES = {
       minutes: { common: 15, rare: 60, epic: 120, festival: 120 },
       /** Inclusive ranges per item: `[min, max]`. */
       ranges: {
-        common: { scrap: [2, 4], shard: [0, 0], glimmer: [0, 0], essence: [0, 0] },
-        rare: { scrap: [4, 8], shard: [1, 1], glimmer: [0, 0], essence: [3, 8] },
-        epic: { scrap: [8, 14], shard: [1, 2], glimmer: [0, 1], essence: [10, 25] },
-        festival: { scrap: [8, 14], shard: [1, 2], glimmer: [0, 1], essence: [10, 25] },
+        common: { shard: [0, 0], glimmer: [0, 0], essence: [0, 0] },
+        rare: { shard: [1, 1], glimmer: [0, 0], essence: [3, 8] },
+        epic: { shard: [1, 2], glimmer: [0, 1], essence: [10, 25] },
+        festival: { shard: [1, 2], glimmer: [0, 1], essence: [10, 25] },
       },
-      /** Every this many item levels adds 1 scrap to both ends of an item's scrap range. */
-      scrapPerItemLevels: 5,
+      /**
+       * The scrap range as a share of the item's craft scrap cost, in basis points: `[min, max]`, rounded
+       * down and at least 1. No rarity reaches 5000 (half), so a craft and a dismantle never pay for each other.
+       */
+      scrapShareBp: {
+        common: [2_500, 4_000],
+        rare: [3_500, 4_500],
+        epic: [4_000, 5_000],
+        festival: [4_000, 5_000],
+      },
       /** The chance (basis points) to learn the item's blueprint (or add a mark): base plus per Crafting level. */
       learnBp: 600,
       learnBpPerLevel: 100,

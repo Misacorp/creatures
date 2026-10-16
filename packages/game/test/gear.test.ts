@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  craftScrapCost,
   ELEMENTS,
   GEAR_SLOTS,
   MAX_SKILL_LEVEL,
@@ -1056,9 +1057,9 @@ describe('drops', () => {
       expect(blueprintBases().map((b) => b.id)).toContain(kit.blueprint);
       // A neutral base costs scrap only, so the welcome scrap pays for it on day 1.
       expect(gearBase(kit.blueprint)?.tag).toBe('neutral');
-      expect(Object.keys(craftCost(kit.blueprint))).toEqual(['scrap']);
+      expect(Object.keys(craftCost(kit.blueprint, craftItemLevel(1)))).toEqual(['scrap']);
       expect(RULES.gear.drops.welcomeScrap).toBeGreaterThanOrEqual(
-        craftCost(kit.blueprint).scrap ?? 0,
+        craftCost(kit.blueprint, craftItemLevel(1)).scrap ?? 0,
       );
       slots.add(gearBase(kit.blueprint)?.slot ?? '');
     }
@@ -1091,31 +1092,76 @@ describe('drops', () => {
 });
 
 describe('costs, yields and jobs', () => {
-  it('crafting costs 6 scrap and a shard of the element, or 8 scrap for a neutral or explorer base', () => {
-    expect(craftCost('kelp-cap')).toEqual({ scrap: 6, 'tide-shard': 1 });
-    expect(craftCost('cinder-charm')).toEqual({ scrap: 6, 'ember-shard': 1 });
-    expect(craftCost('trail-cap')).toEqual({ scrap: 8 });
-    expect(craftCost('crossroads-compass')).toEqual({ scrap: 8 });
-    expect(() => craftCost('nope')).toThrow(RangeError);
+  it('crafting costs 6 scrap and a shard of the element, or 8 scrap for a neutral or explorer base, and 1 scrap more for every 4 item levels', () => {
+    expect(craftCost('kelp-cap', 2)).toEqual({ scrap: 6, 'tide-shard': 1 });
+    expect(craftCost('cinder-charm', 2)).toEqual({ scrap: 6, 'ember-shard': 1 });
+    expect(craftCost('trail-cap', 2)).toEqual({ scrap: 8 });
+    expect(craftCost('crossroads-compass', 2)).toEqual({ scrap: 8 });
+    // A level 10 crafter makes item level 20: +5 scrap.
+    expect(craftCost('kelp-cap', 20)).toEqual({ scrap: 11, 'tide-shard': 1 });
+    expect(craftCost('trail-cap', 20)).toEqual({ scrap: 13 });
+    expect(craftCost('trail-cap', 3)).toEqual({ scrap: 8 });
+    expect(craftCost('trail-cap', 4)).toEqual({ scrap: 9 });
+    // Role-locked and Festival bases price like any other base without an element of its own.
+    expect(craftScrapCost('wardens-bell', 8)).toBe(10);
+    expect(() => craftCost('nope', 2)).toThrow(RangeError);
+  });
+
+  it('a dismantle never gives back what the craft cost: scrap under half of it, whatever the base, rarity and item level', () => {
+    for (const base of gearContent.bases) {
+      for (const rarity of ['common', 'rare', 'epic', 'festival'] as const) {
+        for (let itemLevel = 1; itemLevel <= RULES.gear.maxItemLevel; itemLevel++) {
+          const range = dismantleRange([{ baseId: base.id, rarity, itemLevel }]);
+          const cost = craftScrapCost(base.id, itemLevel);
+          expect(range.scrap.min).toBeGreaterThanOrEqual(1);
+          expect(range.scrap.max).toBeGreaterThanOrEqual(range.scrap.min);
+          expect(
+            range.scrap.max * 2,
+            `${base.id} ${rarity} ${String(itemLevel)}`,
+          ).toBeLessThanOrEqual(cost);
+        }
+      }
+    }
+    // A bundle of 5 Commons is 5 items, each under half of its own cost.
+    const bundle = dismantleRange(
+      Array.from({ length: 5 }, () => ({
+        baseId: 'kelp-cap',
+        rarity: 'common' as const,
+        itemLevel: 20,
+      })),
+    );
+    expect(bundle.scrap.max * 2).toBeLessThanOrEqual(5 * craftScrapCost('kelp-cap', 20));
+  });
+
+  it('a Common craft and dismantle loop loses scrap at every item level', () => {
+    // The cheapest loop: a neutral Common (no shard). Its best refund still leaves at least half the cost spent.
+    for (let itemLevel = 2; itemLevel <= RULES.gear.maxItemLevel; itemLevel += 2) {
+      const cost = craftCost('trail-cap', itemLevel).scrap ?? 0;
+      const best = dismantleRange([{ baseId: 'trail-cap', rarity: 'common', itemLevel }]).scrap.max;
+      expect(cost - best).toBeGreaterThanOrEqual(Math.ceil(cost / 2));
+    }
   });
 
   it('the fallback yield is the bottom of the range: scrap, a shard of the element tag, glimmer; nothing negative or fractional', () => {
+    // Craft scrap cost: neutral 8 + 1 per 4 item levels, element 6 + the same. Common keeps 25%, Rare 35%, Epic 40% at the bottom.
     expect(dismantleYield({ baseId: 'trail-cap', rarity: 'common' })).toEqual({ scrap: 2 });
     expect(dismantleYield({ baseId: 'kelp-cap', rarity: 'rare' })).toEqual({
-      scrap: 4,
+      scrap: 2,
       'tide-shard': 1,
     });
     expect(dismantleYield({ baseId: 'coal-warm-cap', rarity: 'epic' })).toEqual({
-      scrap: 8,
+      scrap: 2,
       'ember-shard': 1,
     });
-    // Every full 5 item levels add 1 scrap.
+    // The share grows with the item level because the craft price does.
     expect(dismantleYield({ baseId: 'coal-warm-cap', rarity: 'epic', itemLevel: 20 })).toEqual({
-      scrap: 12,
+      scrap: 4,
       'ember-shard': 1,
     });
     // Neutral, explorer and role pieces give no shard when nothing is rolled.
-    expect(dismantleYield({ baseId: 'wardens-bell', rarity: 'epic' })).toEqual({ scrap: 8 });
+    expect(dismantleYield({ baseId: 'wardens-bell', rarity: 'epic', itemLevel: 20 })).toEqual({
+      scrap: 5,
+    });
     for (const base of gearContent.bases) {
       for (const rarity of ['common', 'rare', 'epic', 'festival'] as const) {
         const parts = dismantleYield({ baseId: base.id, rarity });
@@ -1202,32 +1248,29 @@ describe('the crafting loop: Reach, odds and marks', () => {
   const sum = (o: { common: number; rare: number; epic: number }): number =>
     o.common + o.rare + o.epic;
 
-  it('asks a Crafting level, Essence, shards and glimmer for a Reach, and a longer job', () => {
+  it('asks a Crafting level, Essence and glimmer for a Reach (no extra shard), and a longer job', () => {
     expect([reachMinLevel('none'), reachMinLevel('rare'), reachMinLevel('epic')]).toEqual([
       1, 3, 6,
     ]);
     expect([craftHours('none'), craftHours('rare'), craftHours('epic')]).toEqual([3, 6, 10]);
-    // An element base pays the shards of its element.
-    expect(craftCostFor('kelp-cap', 'none', {})).toEqual({
+    expect(craftCostFor('kelp-cap', 'none', {}, 2)).toEqual({
       parts: { scrap: 6, 'tide-shard': 1 },
       essence: 0,
     });
-    expect(craftCostFor('kelp-cap', 'rare', {})).toEqual({
-      parts: { scrap: 6, 'tide-shard': 2 },
-      essence: 25,
+    // A Reach is the plain craft's parts plus Essence (and a glimmer for an Epic): it never takes more shards.
+    expect(craftCostFor('kelp-cap', 'rare', {}, 6)).toEqual({
+      parts: { scrap: 7, 'tide-shard': 1 },
+      essence: RULES.gear.craft.reach.rare.essence,
     });
-    expect(craftCostFor('kelp-cap', 'epic', {})).toEqual({
-      parts: { scrap: 6, 'tide-shard': 3, glimmer: 1 },
-      essence: 70,
+    expect(craftCostFor('kelp-cap', 'epic', {}, 12)).toEqual({
+      parts: { scrap: 9, 'tide-shard': 1, glimmer: 1 },
+      essence: RULES.gear.craft.reach.epic.essence,
     });
-    // Other bases take the extra shards from the biggest piles, scrap only for the plain part.
-    expect(
-      craftCostFor('trail-cap', 'epic', { 'ember-shard': 1, 'grove-shard': 5, 'spark-shard': 4 }),
-    ).toEqual({ parts: { scrap: 8, 'grove-shard': 2, glimmer: 1 }, essence: 70 });
-    expect(craftCostFor('trail-cap', 'epic', { 'grove-shard': 1, 'spark-shard': 1 })).toEqual({
-      parts: { scrap: 8, 'grove-shard': 1, 'spark-shard': 1, glimmer: 1 },
-      essence: 70,
+    expect(craftCostFor('trail-cap', 'epic', {}, 20)).toEqual({
+      parts: { scrap: 13, glimmer: 1 },
+      essence: RULES.gear.craft.reach.epic.essence,
     });
+    expect(RULES.gear.craft.reach.rare.shard + RULES.gear.craft.reach.epic.shard).toBe(0);
   });
 
   it('puts the missing shards on the biggest pile, so a payment fails visibly', () => {
@@ -1316,21 +1359,21 @@ describe('the crafting loop: Reach, odds and marks', () => {
 });
 
 describe('dismantling: ranges, rolls, bundles, time and XP', () => {
-  it('shows each rarity its range, 1 scrap more at both ends for every full 5 item levels', () => {
+  it('shows each rarity its range, the scrap a share of the craft cost that grows with the item level', () => {
     expect(dismantleRange([{ baseId: 'trail-cap', rarity: 'common', itemLevel: 1 }])).toEqual({
-      scrap: { min: 2, max: 4 },
+      scrap: { min: 2, max: 3 },
       shards: { min: 0, max: 0, element: null },
       glimmer: { min: 0, max: 0 },
       essence: { min: 0, max: 0 },
     });
     expect(dismantleRange([{ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 10 }])).toEqual({
-      scrap: { min: 6, max: 10 },
+      scrap: { min: 2, max: 3 },
       shards: { min: 1, max: 1, element: 'tide' },
       glimmer: { min: 0, max: 0 },
       essence: { min: 3, max: 8 },
     });
     expect(dismantleRange([{ baseId: 'wardens-bell', rarity: 'epic', itemLevel: 20 }])).toEqual({
-      scrap: { min: 12, max: 18 },
+      scrap: { min: 5, max: 6 },
       shards: { min: 1, max: 2, element: null },
       glimmer: { min: 0, max: 1 },
       essence: { min: 10, max: 25 },
@@ -1343,7 +1386,7 @@ describe('dismantling: ranges, rolls, bundles, time and XP', () => {
     const bundle = dismantleRange(
       Array.from({ length: 5 }, () => ({ baseId: 'trail-cap', rarity: 'common' as const })),
     );
-    expect(bundle.scrap).toEqual({ min: 10, max: 20 });
+    expect(bundle.scrap).toEqual({ min: 10, max: 15 });
   });
 
   it('does not depend on who dismantles: the range function has no Crafting level to take', () => {

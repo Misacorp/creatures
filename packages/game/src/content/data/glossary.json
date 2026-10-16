@@ -929,10 +929,10 @@
   {
     "id": "reach",
     "title": "Reach",
-    "short": "Pay Essence and shards for a chance at a Rare or an Epic.",
+    "short": "Pay Essence for a chance at a Rare or an Epic.",
     "lines": [
-      "Reach for Rare needs Crafting level 3 (25 Essence, 1 more shard, 6 hours).",
-      "Reach for Epic needs level 6 (70 Essence, 2 more shards, 1 glimmer, 10 hours).",
+      "Reach for Rare needs Crafting level 3 (25 Essence, 6 hours).",
+      "Reach for Epic needs level 6 (70 Essence, 1 glimmer, 10 hours).",
       "One more chance to be a rarity higher: 1% for each Crafting level above 1 and for each well-thumbed mark.",
       "You see the exact odds first, and there are no rerolls."
     ],
@@ -954,7 +954,7 @@
     "short": "A creature takes items apart for parts, Essence and blueprints.",
     "lines": [
       "Commons go in bundles of up to 5 and take 15 minutes. A Rare takes 1 hour, an Epic or a Festival piece 2 hours.",
-      "The refund is a range shown first and rolled when you claim. It is the same for every creature.",
+      "The refund is a range shown first, a fraction of the craft price, rolled when you claim. Same for every creature.",
       "Each item can teach its blueprint (6% and 1% for each Crafting level of the worker), or add a mark if you know it."
     ],
     "section": "workshop"
