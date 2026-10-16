@@ -55,6 +55,23 @@ export interface TripStats {
   trip_hours: number;
   /** Catch rolls rolled on trips. */
   catch_rolls: number;
+  /** Catch rolls that brought no creature (a small find of scrap instead). */
+  empty_rolls: number;
+  /** Creatures the trips and the Festival brought: new species and duplicates. */
+  catches: number;
+  /** Of those, the duplicates, and what each was answered with (the sim takes Recommended). */
+  dupes: number;
+  dupes_taught: number;
+  dupes_fused: number;
+  dupes_released: number;
+  /** Golden talents rolled (a new creature's first, or a duplicate's). */
+  golden_talents: number;
+  /** Talents put into a slot from the Talent Book for Bait. */
+  talent_slots: number;
+  /** Lures carried on a trip, lures crafted, and the Bait they cost. */
+  lures_used: number;
+  lures_crafted: number;
+  lure_bait: number;
 }
 
 export const TRIP_STAT_KEYS: readonly (keyof TripStats)[] = [
@@ -78,6 +95,17 @@ export const TRIP_STAT_KEYS: readonly (keyof TripStats)[] = [
   'offers',
   'trip_hours',
   'catch_rolls',
+  'empty_rolls',
+  'catches',
+  'dupes',
+  'dupes_taught',
+  'dupes_fused',
+  'dupes_released',
+  'golden_talents',
+  'talent_slots',
+  'lures_used',
+  'lures_crafted',
+  'lure_bait',
 ];
 
 export function emptyTripStats(): TripStats {
@@ -87,7 +115,9 @@ export function emptyTripStats(): TripStats {
 /** Counters reset at the start of every week. */
 export interface WeekCounters {
   baitEarned: number;
-  baitConverted: number;
+  /** Bait spent crafting lures, and putting talents into slots from the Talent Book. */
+  baitLures: number;
+  baitSlots: number;
   baitSpentTraining: number;
   essenceEarned: number;
   trainings: number;
@@ -111,7 +141,8 @@ export interface WeekCounters {
 export function emptyWeek(): WeekCounters {
   return {
     baitEarned: 0,
-    baitConverted: 0,
+    baitLures: 0,
+    baitSlots: 0,
     baitSpentTraining: 0,
     essenceEarned: 0,
     trainings: 0,
@@ -290,14 +321,16 @@ export function clonePlayer(p: SimPlayer): SimPlayer {
   return {
     ...p,
     creatures: p.creatures.map((c) => {
-      const { items, ...rest } = c;
-      if (items === undefined) return { ...rest };
+      const { items, talents, ...rest } = c;
+      const own =
+        talents === undefined ? {} : { talents: { book: talents.book.map((b) => ({ ...b })) } };
+      if (items === undefined) return { ...rest, ...own };
       const worn: Partial<Record<GearSlot, SimItem>> = {};
       for (const slot of GEAR_SLOTS) {
         const item = items[slot];
         if (item !== undefined) worn[slot] = cloneItem(item);
       }
-      return { ...rest, items: worn };
+      return { ...rest, ...own, items: worn };
     }),
     expeditions: p.expeditions.map((e) => ({
       ...e,

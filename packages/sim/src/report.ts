@@ -4,6 +4,7 @@ import type { Analysis } from './analysis';
 import { curveMarkdown } from './curve-study';
 import { gearShareMarkdown } from './gear-study';
 import { suppliesMarkdown } from './supplies-study';
+import { creaturesMarkdown } from './creatures-study';
 import { WIN_RATE_MAX_DEPTH } from './dungeon-analysis';
 import { ROLE_STUDY_HP_BP, ROLE_STUDY_RUNS_FACTOR } from './roles';
 import { SETUP_RANK_OFFSETS } from './setup-study';
@@ -382,6 +383,15 @@ function suppliesSection(out: RunOutput): string {
   return body.replace(/^## /gm, '### ');
 }
 
+function creaturesSection(out: RunOutput): string {
+  if (out.creatures === null) return 'The creatures study was skipped in this run.';
+  const body = creaturesMarkdown([out.creatures], [1, 4, 8, 12, 20, 30])
+    .split('\n')
+    .slice(2)
+    .join('\n');
+  return body.replace(/^## /gm, '### ');
+}
+
 function gearShareSection(out: RunOutput): string {
   if (out.gear === null) return 'The gear share study was skipped in this run.';
   const ranges: Record<string, readonly [number, number]> = {};
@@ -443,7 +453,7 @@ function progressionSection(a: Analysis): string {
           'Week',
           'Players',
           'Bait earned',
-          'Bait from duplicates',
+          'Bait on lures',
           'Spent on training',
           'Species owned',
           'Top-3 power',
@@ -458,7 +468,7 @@ function progressionSection(a: Analysis): string {
           String(r.week),
           String(r.players),
           num(r.baitEarned, 0),
-          num(r.baitConverted, 0),
+          num(r.baitLures, 0),
           num(r.baitSpentTraining, 0),
           num(r.speciesOwned),
           num(r.top3Power, 0),
@@ -642,6 +652,12 @@ export function buildReportMarkdown(out: RunOutput): string {
   lines.push('## Raid curve by Boss Rank (journey servers)', '', curveSection(out), '');
   lines.push('## Supplies (journey servers)', '', suppliesSection(out), '');
   lines.push(
+    '## Creatures: catches, duplicates and talents (journey servers)',
+    '',
+    creaturesSection(out),
+    '',
+  );
+  lines.push(
     '## Gear share of fight-scored power (journey servers)',
     '',
     gearShareSection(out),
@@ -802,6 +818,7 @@ export function buildReportJson(out: RunOutput): string {
     curve: { mixes: out.curve.mixes },
     supplies: out.supplies.profiles,
     gear: out.gear,
+    creaturesStudy: out.creatures === null ? null : out.creatures.profiles,
     jackpots: analysis.jackpots,
     outliers: analysis.outliers,
     exampleFight: example,

@@ -11,6 +11,7 @@ import { namedCurveMixes, runCurveStudy, type CurveResult } from './curve-study'
 import { runEconomy, type EconomyResult } from './economy';
 import { gearShareMetrics, runGearStudy, type GearShareRun } from './gear-study';
 import { runSuppliesStudy, suppliesMetrics, type SuppliesRun } from './supplies-study';
+import { creaturesMetrics, runCreaturesStudy, type CreaturesRun } from './creatures-study';
 import type { IncomeModelId } from './income';
 import { LONG_RUN_GROUPS, LONG_RUN_WEEKS } from './ladder';
 import { journeyRoster } from './profiles';
@@ -46,6 +47,8 @@ export interface RunSettings {
   suppliesServers: number;
   /** Servers of the gear share study (30 weeks of the default journey server, `gear-study.ts`); 0 skips it. */
   gearServers: number;
+  /** Servers of the creatures study (30 weeks of the default journey server, `creatures-study.ts`, B-014); 0 skips it. */
+  creaturesServers: number;
   /** Player counts of the raid sweep. */
   counts: number[];
   /** How Bait comes in (`income.ts`). Absent: the allowance, the shipped income. */
@@ -74,6 +77,7 @@ export function defaultSettings(
     curveServers: quick ? 6 : 60,
     suppliesServers: quick ? 6 : 30,
     gearServers: quick ? 4 : 20,
+    creaturesServers: quick ? 4 : 12,
     counts: [...SWEEP_COUNTS],
     ...(overrides.income === undefined ? {} : { income: overrides.income }),
   };
@@ -93,7 +97,12 @@ export interface RunOutput {
   supplies: SuppliesRun;
   /** The gear share study: gear's share of the fight-scored power by profile at weeks 2, 8, 20 and 30; null when skipped. */
   gear: GearShareRun | null;
+  /** The creatures study: catches, duplicates, the catalogue pace, the Bait split and the talents' share of power (B-014); null when skipped. */
+  creatures: CreaturesRun | null;
 }
+
+/** Weeks the creatures study plays: the slowest profile completes the catalogue in about 25. */
+export const CREATURES_WEEKS = 30;
 
 /** Weeks (1-based) at which rosters are snapshotted: 4 and 8, or the last week if the run is shorter. */
 export function snapshotWeeks(weeks: number): number[] {
@@ -252,6 +261,16 @@ export function runSimulation(settings: RunSettings): RunOutput {
     settings.gearServers > 0
       ? runGearStudy({ seed: `${settings.seed}:gear`, servers: settings.gearServers })
       : null;
+  // The creatures study: the same journey servers for 30 weeks, with the talents' share of fight power.
+  const creatures =
+    settings.creaturesServers > 0
+      ? runCreaturesStudy('shipped', '', {
+          seed: `${settings.seed}:creatures`,
+          seeds: 1,
+          servers: settings.creaturesServers,
+          weeks: CREATURES_WEEKS,
+        })
+      : null;
   const analysis = analyse({
     roles,
     weeks: settings.weeks,
@@ -271,6 +290,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
       ...curve.metrics,
       ...suppliesMetrics(supplies),
       ...(gear === null ? {} : gearShareMetrics(gear)),
+      ...(creatures === null ? {} : creaturesMetrics(creatures)),
     }),
     example: sweep.example,
     setups,
@@ -278,6 +298,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
     curve,
     supplies,
     gear,
+    creatures,
   };
 }
 

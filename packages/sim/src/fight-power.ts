@@ -19,7 +19,7 @@ import {
   type FightSlot,
 } from '@creatures/engine';
 import { DEFAULT_SERVER_SIZE } from './archetypes';
-import { pickTeam, wornOf, type OwnedCreature } from './data';
+import { activeTalentsOf, pickTeam, wornOf, type OwnedCreature } from './data';
 import { slotOfCreature } from './raid';
 
 /**
@@ -142,6 +142,7 @@ function keyOf(
         ? null
         : wornOf(c).map((i) => [i.baseId, i.rarity, i.itemLevel, i.lines]),
       c.mods ?? null,
+      activeTalentsOf(c),
     ]),
   ]);
 }

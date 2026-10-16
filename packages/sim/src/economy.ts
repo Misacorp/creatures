@@ -4,7 +4,6 @@ import {
   content,
   createSeededRng,
   festivalCreatureFor,
-  festivalGrantOutcome,
   int,
   nextRank,
   nextRankXp,
@@ -43,6 +42,7 @@ import {
 import { chooseDungeonTeam, dayModifiers, playDungeonDay, type DungeonLogEntry } from './dungeon';
 import type { Setup } from './formations';
 import { chooseTrainee, trainCost } from './policy';
+import { collect, fillSlots, newCreature } from './talents';
 import { openRaidWeek, playStage, summarizeRaid, type RaidSummary, type RaidWeek } from './raid';
 import { clonePlayer, createPlayer, emptyWeek, type SimPlayer } from './state';
 import {
@@ -157,7 +157,9 @@ export interface Behaviour {
 export interface WeekRecord {
   week: number;
   baitEarned: number;
-  baitConverted: number;
+  /** Bait spent crafting lures, and putting talents into slots from the Talent Book. */
+  baitLures: number;
+  baitSlots: number;
   baitSpentTraining: number;
   bait: number;
   speciesOwned: number;
@@ -256,6 +258,8 @@ interface Streams {
   participation: Rng;
   /** Draws of the profiles' own dials (fractional day counts, craft chance, spread training, the random dungeon team). Never drawn for today's archetypes. */
   profile: Rng;
+  /** The talents of every creature that arrives (separate, so a talent never moves a catch). */
+  talents: Rng;
 }
 
 function createPlayers(options: EconomyOptions): SimPlayer[] {
@@ -313,18 +317,12 @@ function chooseStarter(joined: readonly SimPlayer[]): (typeof STARTERS)[number] 
   return best;
 }
 
-function join(player: SimPlayer, all: readonly SimPlayer[], taste: Rng): void {
+function join(player: SimPlayer, all: readonly SimPlayer[], taste: Rng, talents: Rng): void {
   const starter = chooseStarter(all.filter((p) => p.joined));
   player.joined = true;
   // A liking for each element between 0.8 and 1.2 (in tenths), so players explore different places.
   for (const element of ELEMENTS) player.taste[element] = (8 + int(taste, 5)) / 10;
-  player.creatures.push({
-    id: `${player.id}/${starter.line}`,
-    line: starter.line,
-    speciesId: starter.id,
-    level: 1,
-    fusionCount: 0,
-  });
+  player.creatures.push(newCreature(player, starter, talents));
 }
 
 /** A day count that may be fractional: the whole part, plus one more day with the chance of the fraction. */
@@ -440,6 +438,8 @@ export function checkIn(
   claimTrips(player, ctx);
   if (gear !== undefined) claimJobs(player, gear);
   evolveCreatures(player);
+  // A talent in the Talent Book goes into an open slot (for Bait) before the Bait is spent on training.
+  fillSlots(player, byPowerDesc(player.creatures));
 
   // Trips are free and supplies cannot be bought: a trip carries what is in stock.
   const worksGear = profile.craftPercent >= 100 || chance(dice, profile.craftPercent, 100);
@@ -473,7 +473,8 @@ function record(player: SimPlayer, week: number): WeekRecord {
   return {
     week,
     baitEarned: player.week.baitEarned,
-    baitConverted: player.week.baitConverted,
+    baitLures: player.week.baitLures,
+    baitSlots: player.week.baitSlots,
     baitSpentTraining: player.week.baitSpentTraining,
     bait: player.bait,
     speciesOwned: player.creatures.filter((c) => !speciesOf(c.speciesId).festival).length,
@@ -542,32 +543,18 @@ export function chooseSignUps(
 
 /**
  * A Festival win grants every participant the season's Festival creature through the collection's
- * duplicate rules: new (level 1), fused (+1 fusion) or converted to Bait.
+ * duplicate rules: a new level 1 creature with its first talent, or a duplicate answered with
+ * Recommended (Teach, Fuse or Release, never Bait).
  */
-function grantFestivalCreature(players: readonly SimPlayer[], weekIndex: number): void {
+function grantFestivalCreature(
+  players: readonly SimPlayer[],
+  weekIndex: number,
+  talents: Rng,
+  parts: boolean,
+): void {
   const species = festivalCreatureFor(weekIndex);
   if (species === null) return;
-  for (const p of players) {
-    const existing = p.creatures.find((c) => c.line === species.line);
-    const outcome = festivalGrantOutcome(
-      existing === undefined ? undefined : { fusionCount: existing.fusionCount, shiny: false },
-      species,
-    );
-    if (outcome.kind === 'new') {
-      p.creatures.push({
-        id: `${p.id}/${species.line}`,
-        line: species.line,
-        speciesId: species.id,
-        level: 1,
-        fusionCount: 0,
-      });
-    } else if (outcome.kind === 'fused') {
-      if (existing !== undefined) existing.fusionCount = outcome.newFusionCount;
-    } else {
-      p.bait += outcome.bait;
-      p.week.baitConverted += outcome.bait;
-    }
-  }
+  for (const p of players) collect(p, species, talents, parts);
 }
 
 /**
@@ -598,6 +585,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
     taste: createSeededRng(`${seed}:taste`),
     participation: createSeededRng(`${seed}:participation`),
     profile: createSeededRng(`${seed}:profile`),
+    talents: createSeededRng(`${seed}:talents`),
   };
   const behaviour = options.behaviour ?? {};
   const dungeonPercent = behaviour.dungeonPercent ?? 100;
@@ -638,7 +626,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
   for (let week = 1; week <= weeks; week++) {
     for (const p of players) {
       if (!p.joined && p.joinWeek <= week) {
-        join(p, players, rng.taste);
+        join(p, players, rng.taste, rng.talents);
         if (gearOn) grantWelcomeKit(p, rng.gear, (week - 1) * DAYS);
       }
       p.week = emptyWeek();
@@ -665,6 +653,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
         weekIndex,
         catches: rng.catches,
         trip: rng.trip,
+        talents: rng.talents,
         ...(gearOn
           ? { gear: { rng: rng.gear, hour: globalDay * 24 + hourOfDay, day: globalDay } }
           : {}),
@@ -807,7 +796,8 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
     if (raid !== null && plan !== null && rank !== null) {
       const summary = summarizeRaid(raid);
       const next = nextRank(rank, weekIndex, summary.finaleWon);
-      if (summary.finaleWon && plan.festival) grantFestivalCreature(raid.players, weekIndex);
+      if (summary.finaleWon && plan.festival)
+        grantFestivalCreature(raid.players, weekIndex, rng.talents, gearOn);
       raids.push({
         week,
         summary,

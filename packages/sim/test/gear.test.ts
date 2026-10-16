@@ -13,6 +13,7 @@ import {
   jobDuration,
   jobXp,
   skillLevel,
+  supplyDef,
   wearBlock,
   type GearRarity,
   type ItemLine,
@@ -80,6 +81,7 @@ const tripCtx = (withGear: boolean): TripContext => ({
   day: 0,
   weekIndex: 0,
   catches: createSeededRng('checkin:catches'),
+  talents: createSeededRng('checkin:talents'),
   trip: createSeededRng('checkin:trip'),
   ...(withGear ? { gear: ctx(9) } : {}),
 });
@@ -449,6 +451,9 @@ describe('supplies from the workshop', () => {
     p.supplies['map-scrap-basic'] = 1;
     p.supplies['lantern-basic'] = 1;
     p.supplies['satchel-basic'] = 1;
+    // A lure also costs Bait (held, and within the share of this week's Bait that lures may take).
+    p.bait = 100;
+    p.week.baitEarned = 100;
     startJobs(p, ctx(9), new Set());
     expect(p.gear.jobs[0]?.supplyId).toBe('lure-basic');
     // With Crafting level 3 on a creature the good tier is the better pick (and shards pay for it).
@@ -456,10 +461,48 @@ describe('supplies from the workshop', () => {
     q.gear.parts.scrap = 100;
     q.gear.parts['grove-shard'] = 1;
     q.gear.skillXp['p01/cindle'] = 10_000;
+    q.bait = 100;
+    q.week.baitEarned = 1_000;
     startJobs(q, ctx(9), new Set(['p01/sproutle', 'p01/splashet']));
     const made = q.gear.jobs[0]?.supplyId;
     expect(made).toBeDefined();
     expect(made?.endsWith('-good') || made?.endsWith('-great')).toBe(true);
+  });
+
+  it('pays a lure in Bait as well as parts, keeps it within the weekly share, and never without the Bait', () => {
+    const basic = supplyDef('lure-basic');
+    const cost = basic?.blueprint.bait ?? 0;
+    expect(cost).toBeGreaterThan(0);
+    const setup = (bait: number, earned: number) => {
+      const p = empty();
+      p.gear.parts.scrap = 100;
+      // Only the lure is missing from the stock, so it is the pick when it can be paid.
+      p.supplies['map-scrap-basic'] = 1;
+      p.supplies['lantern-basic'] = 1;
+      p.supplies['satchel-basic'] = 1;
+      p.bait = bait;
+      p.week.baitEarned = earned;
+      return p;
+    };
+    // Paid: the Bait leaves the purse, and the week and the totals count it.
+    const rich = setup(cost + 5, 1_000);
+    startJobs(rich, ctx(9), new Set());
+    expect(rich.gear.jobs[0]?.supplyId).toBe('lure-basic');
+    expect(rich.bait).toBe(5);
+    expect(rich.week.baitLures).toBe(cost);
+    expect(rich.stats.lure_bait).toBe(cost);
+    // No Bait in the purse: no lure.
+    const poor = setup(cost - 1, 1_000);
+    startJobs(poor, ctx(9), new Set());
+    expect(poor.gear.jobs[0]?.supplyId).not.toBe('lure-basic');
+    expect(poor.bait).toBe(cost - 1);
+    expect(poor.week.baitLures).toBe(0);
+    // The Bait is there, but the lures have used their share of what was earned this week.
+    const spent = setup(1_000, 100);
+    spent.week.baitLures = Math.floor((100 * GEAR_POLICY.lureBaitShareBp) / 10_000);
+    startJobs(spent, ctx(9), new Set());
+    expect(spent.gear.jobs[0]?.supplyId).not.toBe('lure-basic');
+    expect(spent.bait).toBe(1_000);
   });
 
   it("makes a new player's first piece of gear before any supply, and supplies first from then on", () => {

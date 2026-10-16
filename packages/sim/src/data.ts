@@ -1,15 +1,18 @@
 import {
   GEAR_SLOTS,
+  activeTalents,
   applyGear,
   content,
   creaturePower as statsPower,
   effectiveStats,
   type CreatureSpecies,
   type CritBonus,
+  type FoldTalent,
   type GearItem,
   type GearMods,
   type GearRules,
   type GearSlot,
+  type HeldTalent,
   type Stats,
   type Wearer,
 } from '@creatures/game';
@@ -47,10 +50,17 @@ export interface OwnedCreature {
   /** The gear it wears, one item per slot; absent: none. */
   items?: Partial<Record<GearSlot, SimItem>>;
   /**
-   * A modifier sheet given to the creature besides its gear's (tests, and later talents and weather):
-   * when set it is the sheet the fight uses, instead of the one its gear fills.
+   * A modifier sheet given to the creature besides its gear's (tests, and later weather): when set it is
+   * the sheet the fight uses, instead of the one its gear fills.
    */
   mods?: SlotMods;
+  /**
+   * Its Talent Book: every talent it has held, with the slot (1 to 3) it sits in now or null. Absent: none
+   * (a creature made by a test; every creature the sim makes has its first talent).
+   */
+  talents?: { book: HeldTalent[] };
+  /** A study switch: the creature fights with no talents at all, not even a signature. */
+  noTalents?: true;
 }
 
 const statCache = new Map<string, Stats>();
@@ -82,10 +92,26 @@ export function wearerOfCreature(c: Pick<OwnedCreature, 'speciesId'>): Wearer {
   return { role: species.role, element: species.element };
 }
 
+/** The talents that are active on a creature now: its signature and the talents in its open slots. */
+export function activeTalentsOf(
+  c: Pick<OwnedCreature, 'speciesId' | 'level' | 'talents' | 'noTalents'>,
+): FoldTalent[] {
+  if (c.noTalents === true) return [];
+  const species = speciesOf(c.speciesId);
+  return activeTalents(species.line, species.rarity, c.level, c.talents?.book ?? []);
+}
+
 /** The same creature with nothing worn (for the share of power its gear gives). */
 export function withoutGear(c: OwnedCreature): OwnedCreature {
   const rest: OwnedCreature = { ...c };
   delete rest.items;
+  return rest;
+}
+
+/** The same creature with its talents taken away (for the share of power its talents give). */
+export function withoutTalents(c: OwnedCreature): OwnedCreature {
+  const rest: OwnedCreature = { ...c, noTalents: true };
+  delete rest.talents;
   return rest;
 }
 
@@ -101,7 +127,18 @@ export function foldedCreature(c: OwnedCreature): {
   rules: GearRules;
 } {
   const species = speciesOf(c.speciesId);
-  return applyGear(creatureStats(c), species.crit, wearerOfCreature(c), wornOf(c));
+  return applyGear(
+    creatureStats(c),
+    species.crit,
+    wearerOfCreature(c),
+    wornOf(c),
+    activeTalentsOf(c),
+  );
+}
+
+/** True when something is folded into the creature's numbers: worn items or active talents. */
+function isFolded(c: OwnedCreature): boolean {
+  return c.items !== undefined || activeTalentsOf(c).length > 0;
 }
 
 /** A creature's power without its gear: Attack + floor(HP / 10), the shared rule from `@creatures/game`. */
@@ -111,7 +148,7 @@ export function basePower(c: Pick<OwnedCreature, 'speciesId' | 'level' | 'fusion
 
 /** A creature's power as the raid sees it: gear included, like the worker's `power`. */
 export function creaturePower(c: OwnedCreature): number {
-  return c.items === undefined ? statsPower(creatureStats(c)) : statsPower(foldedCreature(c).stats);
+  return isFolded(c) ? statsPower(foldedCreature(c).stats) : statsPower(creatureStats(c));
 }
 
 /** Strongest first; ties by line id so the order is deterministic. */

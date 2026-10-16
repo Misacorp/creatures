@@ -1,7 +1,6 @@
 import {
   RULES,
   content,
-  creaturePower as statsPower,
   craftCost,
   isLandmark,
   type GearRarity,
@@ -9,11 +8,12 @@ import {
   type RaidStage,
 } from '@creatures/game';
 import {
-  creatureStats,
-  foldedCreature,
+  CATCHABLE,
+  creaturePower,
   pickTeam,
   speciesOf,
   withoutGear,
+  withoutTalents,
   wornOf,
   type OwnedCreature,
 } from './data';
@@ -174,9 +174,8 @@ function powerWith(c: OwnedCreature, keep: number): number {
     fusionCount: (keep & 4) !== 0 ? c.fusionCount : 0,
   };
   if ((keep & 8) !== 0 && items !== undefined) state.items = items;
-  return state.items === undefined
-    ? statsPower(creatureStats(state))
-    : statsPower(foldedCreature(state).stats);
+  // Whatever is folded in (gear, and the talents the level has opened) counts, as the raid sees it.
+  return creaturePower(state);
 }
 
 /** Shapley weight of adding a factor to a set of `size` others, out of 4: size! (3 - size)! / 4!. */
@@ -236,6 +235,8 @@ export interface DayRecord {
   fightSurvivalBp: number | null;
   /** The same team with its gear taken off, scored the same way (null when `fightPower` is): its gear's share is `1 - fightPowerBare / fightPower`. */
   fightPowerBare: number | null;
+  /** The same team with its talents taken off (the gear stays), scored the same way: the talents' share is `1 - fightPowerNoTalents / fightPower`. */
+  fightPowerNoTalents: number | null;
   base: number;
   levels: number;
   fusion: number;
@@ -261,6 +262,29 @@ export interface DayRecord {
   suppliesCraftedGood: number;
   suppliesCraftedGreat: number;
   suppliesGift: number;
+  /** Base species owned (lines a trip can find), and Festival creatures owned. */
+  speciesOwned: number;
+  /** Creatures the trips and the Festival brought so far; the duplicates among them and what each was answered with. */
+  catches: number;
+  dupes: number;
+  dupesTaught: number;
+  dupesFused: number;
+  dupesReleased: number;
+  /** Catch rolls so far, and the ones that brought no creature. */
+  catchRolls: number;
+  emptyRolls: number;
+  /** Golden talents rolled so far, and talents put into a slot from the book (each costs Bait). */
+  goldenTalents: number;
+  talentSlots: number;
+  /** Lures carried, crafted and the Bait they cost, so far. */
+  luresUsed: number;
+  luresCrafted: number;
+  baitLures: number;
+  /** This week's Bait so far (the last day of a week holds the week): earned (income and the dungeon), and spent on levels, lures and talent slots. */
+  weekBaitEarned: number;
+  weekBaitTraining: number;
+  weekBaitLures: number;
+  weekBaitSlots: number;
   /** Gear items owned, worn, the worn ones by rarity, and the upgrade levels on the worn ones. */
   itemsOwned: number;
   itemsWorn: number;
@@ -302,7 +326,7 @@ export function milestoneCatalogue(): string[] {
   for (let k = 1; k <= RULES.fusion.maxFusions; k++) out.push(`fusion_${String(k)}`);
   for (const level of LEVEL_MILESTONES) out.push(`level_${String(level)}`);
   for (const cap of caps) out.push(`species_cap_${String(cap)}`);
-  out.push('gear_rare', 'gear_epic', 'gear_ilvl10');
+  out.push('gear_rare', 'gear_epic', 'gear_ilvl10', 'catalogue_complete');
   for (const depth of DEPTH_MILESTONES) out.push(`dungeon_depth_${String(depth)}`);
   for (const depth of LANDMARK_DEPTHS) out.push(`dungeon_landmark_${String(depth)}`);
   for (let slot = 2; slot <= 5; slot++) out.push(`expedition_slot_${String(slot)}`);
@@ -336,6 +360,9 @@ export function reachedMilestones(player: SimPlayer): string[] {
     const cap = speciesOf(c.speciesId).levelCap;
     if (c.level >= cap) out.push(`species_cap_${String(cap)}`);
   }
+  // Every species a trip can find is owned: the base catalogue is complete.
+  const lines = new Set(player.creatures.map((c) => c.line));
+  if (CATCHABLE.every((s) => lines.has(s.line))) out.push('catalogue_complete');
   const items = allItems(player);
   if (items.some((i) => i.rarity === 'rare')) out.push('gear_rare');
   if (items.some((i) => i.rarity === 'epic')) out.push('gear_epic');
@@ -379,6 +406,10 @@ export function recordDay(
     info.fightRank === undefined
       ? null
       : fightPower(pickTeam(player.creatures).map(withoutGear), info.fightRank);
+  const noTalents =
+    info.fightRank === undefined
+      ? null
+      : fightPower(pickTeam(player.creatures).map(withoutTalents), info.fightRank);
   const team = pickTeam(player.creatures);
   const items = allItems(player);
   const worn = player.creatures.flatMap((c) => wornOf(c));
@@ -395,6 +426,7 @@ export function recordDay(
     fightPower: fights === null ? null : fights.power,
     fightSurvivalBp: fights === null ? null : fights.survivalBp,
     fightPowerBare: bare === null ? null : bare.power,
+    fightPowerNoTalents: noTalents === null ? null : noTalents.power,
     base: split.base,
     levels: split.levels,
     fusion: split.fusion,
@@ -415,6 +447,23 @@ export function recordDay(
     suppliesCraftedGood: player.stats.supplies_crafted_good,
     suppliesCraftedGreat: player.stats.supplies_crafted_great,
     suppliesGift: player.stats.supplies_gift,
+    speciesOwned: player.creatures.filter((c) => !speciesOf(c.speciesId).festival).length,
+    catches: player.stats.catches,
+    dupes: player.stats.dupes,
+    dupesTaught: player.stats.dupes_taught,
+    dupesFused: player.stats.dupes_fused,
+    dupesReleased: player.stats.dupes_released,
+    catchRolls: player.stats.catch_rolls,
+    emptyRolls: player.stats.empty_rolls,
+    goldenTalents: player.stats.golden_talents,
+    talentSlots: player.stats.talent_slots,
+    luresUsed: player.stats.lures_used,
+    luresCrafted: player.stats.lures_crafted,
+    baitLures: player.stats.lure_bait,
+    weekBaitEarned: player.week.baitEarned + player.week.dungeonBait,
+    weekBaitTraining: player.week.baitSpentTraining,
+    weekBaitLures: player.week.baitLures,
+    weekBaitSlots: player.week.baitSlots,
     itemsOwned: items.length,
     itemsWorn: worn.length,
     wornRarity,

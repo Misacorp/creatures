@@ -25,6 +25,13 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * Re-pinned again on 2026-10-16 (Gear A), on purpose: items are Hat, Scarf and Charm with item levels,
  * tiers and lines, worn under the wear rule; upgrades, Improve and enchants are gone (gear no longer
  * costs Essence); the week records lost their upgrade fields; and 12 gear share targets were added.
+ *
+ * Re-pinned again on 2026-10-16 (Creatures A, B-014), on purpose: a roll on a trip brings a creature
+ * only with a chance (the rest bring a small find), a duplicate is answered with Teach, Fuse or Release
+ * instead of fusing by itself or turning into Bait, every creature carries a talent that adds to its
+ * stats and its sheet, lures cost Bait, the dungeon no longer drops lures and the dupe shield starts at
+ * a streak of 3. The first player's Bait earned is the same; their team power is lower (fewer
+ * creatures, so fewer fusions, and no duplicate Bait).
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(
