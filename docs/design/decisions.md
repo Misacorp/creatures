@@ -1341,3 +1341,10 @@ Step 1 of the build order in `gear-and-creatures-v2.md` (section 14). Nothing is
 - **Treats stay simple:** no treat item to stockpile or spoil. When sending a creature on a trip, into the dungeon team or onto a Workshop job, one toggle "Pack a treat (N Bait)" doubles the experience that activity gives that creature. Raids take no treats. Nothing to hoard, nothing to expire, one line of UI.
 - **Wild Omens: yes**, from Boss Rank 10, one a week, shown a day ahead, never in a Festival week.
 - **Workshop odds: numbers up front** (they depend on the blueprint, its well-thumbed marks, the crafter's Crafting level and the Reach chosen; the server sends the final numbers).
+
+## 2026-10-16: fewer organic catches and Bait-crafted lures; treats as a checkbox; no catch-up bonus; lean UI
+
+- **Expeditions bring fewer creatures** and a wider mix of other finds; new and rarer creatures come less often on their own. **Lures are crafted from Bait** in the Workshop and raise a trip's chance of a creature and of a species the player lacks. Bait's two jobs: treats grow creatures, lures find them. Built with the talents step; numbers from the journey sim (`gear-and-creatures-v2.md` 9.5).
+- **Treats stay**, as a small per-creature "Pack a treat" checkbox on the screens where creatures are sent or assigned.
+- **No catch-up experience bonus:** a bonus tied to the player's highest creature rewards pushing one creature. Low levels stay quick because level costs rise while activity experience is flat. Wider rosters are encouraged by content instead (Boons and Omens favouring elements, bosses and dungeons that want different teams), not by level caps.
+- **UI stays lean by default:** show only what the decision on that screen needs, group related information, keep secondary details one tap away. Misa tests on staging and trims; agents should start smaller rather than larger.

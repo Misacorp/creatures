@@ -619,13 +619,13 @@ A creature's level grows from experience, earned by doing things. Experience to 
 | Raid          | The raid team of 3 | Phase 1: 50 · Phase 2: 50 · finale: 100; x1.5 when the stage is cleared          | 3 creatures a week                  |
 | Workshop job  | The worker         | 4 per hour of the job (plus Crafting XP, as today)                               | Workshop slots (2)                  |
 
-**Catch-up:** a creature more than 10 levels below the player's highest creature earns +50% experience. It replaces the half-price training discount and makes a second trio cheap to raise.
+**No catch-up bonus** (removed 2026-10-16: a bonus tied to the player's highest creature rewards pushing one creature). Low levels still come quickly on their own, because the experience an activity gives is flat while each level costs more than the last.
 
 **The choice.** Experience goes only to creatures in a slot, and slots are few: a committed player has about 3 + 3 + 3 + 2 places a day for a roster of 10 or more. Focus the trio and it reaches 30 sooner; spread the places and a second team is ready for the week the boss or the weather favours it. The quadratic cost and the catch-up make spreading cheaper than it looks, so neither answer always wins.
 
 ### 9.2 Treats
 
-Bait becomes **treats**. When a creature is sent on a trip, put in the dungeon team or given a job, the player can pack a treat: it doubles the experience that activity gives that creature. A treat costs 3 + half the creature's level, rounded up (Bait 4 at level 1, 8 at 10, 13 at 20, 18 at 29). Raids take no treats: the raid is the shared moment and pays everyone the same.
+Bait becomes **treats**. When a creature is sent on a trip, put in the dungeon team or given a job, the player can tick a small per-creature "Pack a treat" checkbox: it doubles the experience that activity gives that creature. A treat costs 3 + half the creature's level, rounded up (Bait 4 at level 1, 8 at 10, 13 at 20, 18 at 29). Raids take no treats: the raid is the shared moment and pays everyone the same.
 
 Starting pace (the sim tunes it): a committed player's trio reaches level 10 in week 1, evolves in week 2, reaches 20 in about week 5 and 30 in about week 11 (today 13); a regular reaches 20 by about week 10 and 30 by about week 24; a drop-in reaches about 18 by week 20 (today 17.8). A committed player cannot treat every activity (a full week of treats for a trio costs about 550 Bait against about 314 earned), so treats are a choice of who grows fastest.
 
@@ -661,6 +661,16 @@ The wear rule (an item's level may not exceed the creature's) makes every level 
 ### 9.4 Where spare Essence goes
 
 Not training. Essence pays for evolution, the Reach in crafting (section 3) and, later, the dungeon's choice rooms ("spend 20 Essence to enter this room"). Dismantled Rares and Epics refund some Essence, so the raid's Essence and its gear feed the same lottery.
+
+### 9.5 Expeditions: fewer catches, Bait lures (added 2026-10-16)
+
+Misa: production brings in too many creatures and too many duplicates. Direction:
+
+- **Fewer organic catches.** A trip no longer always brings a creature; it brings a mix (parts, scrap, shards, supplies, journal pages, and sometimes a creature). New species and rarer creatures become rarer on their own.
+- **Lures are crafted from Bait** in the Workshop (Bait plus a little scrap, a short job, three tiers). A lure packed on a trip raises the chance that it brings a creature, and the chance that the creature is a species the player does not own yet, higher tiers more. The other supplies (map, lantern, satchel) stay scrap-crafted and dungeon-found.
+- **Why this works now:** Bait-bought supplies were a trap while Bait paid for levels and extra catches were duplicates. With training by activity, Bait is free for other jobs, and with talents, a catch (even a duplicate) matters. Bait gets two clear jobs: treats grow creatures, lures find them.
+- **Numbers are set by the journey sim:** catches per week per profile, new-species pace, duplicates per week (enough to feed talents and fusion, not a flood), Bait split between treats and lures.
+- **Build order:** with Creatures A (talents and the duplicate choice), since both change what a catch is worth.
 
 ## 10. Boons and Omens
 
@@ -798,7 +808,7 @@ Each step is simulated on paired seeds before it ships; neighbouring steps can s
 2. **Gear A:** Hat, Scarf and Charm; bases and tags; the Ready and Sheet lines; tiers and item level by source; "Equip best"; conversion of existing gear; upgrades, Improve and enchants removed.
 3. **Gear B:** the crafting loop: Reach, dismantle jobs with ranges, blueprint learning and well-thumbed marks, the maker's name on items.
 4. **Creatures A:** talents, the duplicate choice (Teach, Fuse, Release, Keep), the Talent Book, release for parts.
-5. **Creatures B:** training by activity, treats, ribbons and slot unlocks, catch-up experience.
+5. **Creatures B:** training by activity, treats (a per-creature checkbox), ribbons and slot unlocks.
 6. **Boons and Omens:** mutator and input effects first, sheet effects with them.
 7. **Content:** Sunfawn and Ohmouse, then branches for the other evolving lines; talent pools for every line.
 8. **Raid and dungeon rebalance** with the curve scalars, around the new foundation.
