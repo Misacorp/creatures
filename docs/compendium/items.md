@@ -101,9 +101,9 @@ Parts are the raw material. They pay for crafts. `(content: glossary.json "part-
 
 ## Blueprints
 
-A blueprint teaches a creature to craft one kind of item. You learn each one once. A blueprint you already know turns into scrap `(content: glossary.json "blueprint")`.
+A blueprint teaches a creature to craft one kind of item. You learn each one once. A blueprint you already know is not wasted: each repeat find makes it **well-thumbed**, up to ten marks, and each mark helps the next crafts of that item come out a rarity better (at ten marks a repeat find turns into scrap) `(content: glossary.json "blueprint", "well-thumbed")`. A creature taking an item apart can find the item's blueprint in its working notes, or thumb the one you already own `(content: glossary.json "job-dismantle")`.
 
-Sources: expeditions (more often on long ones, and some push-on rewards) and the welcome kit `(content: glossary.json; design: gear.md, checked against the code)`. Raids, the dungeon and Festivals do not grant blueprints. See `README.md`, contradiction 10 (resolved).
+Sources: expeditions (more often on long ones, and some push-on rewards), the welcome kit, a won finale's reward slot (sometimes a blueprint instead of gear), and taking an item apart in the Workshop `(content: glossary.json; design: gear-and-creatures-v2.md section 3)`. The dungeon and Festivals do not grant blueprints. See `README.md`, contradiction 10 (resolved).
 
 **Compendium detail, not shipped** (in-world): a blueprint is a folded sheet of crafting notes, written in a hand that is neat, dry and a little impatient. Someone wrote them down for the next explorer. The writer is an open thread (see `threads.md`). The **Lost Pages** journal set `(content: journal.json)` might be the same hand.
 
@@ -111,10 +111,12 @@ Sources: expeditions (more often on long ones, and some push-on rewards) and the
 
 The Workshop is where creatures work while the explorer is away. There are two job slots at the start `(content: glossary.json "workshop")`. A creature on a job cannot go on a trip, and the other way round. A creature on a job still fights in raids `(content)`.
 
-| Job            | Shipped text `(content)`                                                                                                                 |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Craft          | Makes a new item from a blueprint you know. Takes 3 hours. The parts are paid when the job starts. The item is rolled when you claim it. |
-| Craft supplies | Makes supplies for expeditions. Costs scrap, and shards for the better tiers. One supply per job.                                        |
+| Job            | Shipped text `(content)`                                                                                                                                                                                             |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Craft          | Makes a new item from a blueprint you know. Takes 3 hours and makes a Common. The parts are paid when the job starts. The item is rolled when you claim it. Reach for a Rare or an Epic costs more and takes longer. |
+| Reach          | Essence and shards on top of a craft for a chance at a Rare or an Epic. Rare needs Crafting level 3, Epic level 6. The odds are shown first; there are no rerolls.                                                   |
+| Dismantle      | A creature takes items apart: Commons in bundles of up to 5 in 15 minutes, a Rare in an hour, an Epic or a Festival piece in two. The refund is a range, rolled at the claim, the same for every creature.           |
+| Craft supplies | Makes supplies for expeditions. Costs scrap, and shards for the better tiers. One supply per job.                                                                                                                    |
 
 **Compendium detail, not shipped** (in-world): a job is a creature's slow, patient work. The Workshop smells of hot metal, wet wool and pine. Creatures work at their own pace. The explorer comes back to a finished thing.
 

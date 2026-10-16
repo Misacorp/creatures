@@ -806,7 +806,7 @@ Each step is simulated on paired seeds before it ships; neighbouring steps can s
 
 1. **Groundwork** _(built 2026-10-16)_: a fight-scored power in the sim (`packages/sim/src/fight-power.ts`, shown in the journey report next to the old score); the per-creature modifier sheet in the engine (replay-safe, `combat-rules.md` section 10) with the Guard's shadow position line; this design recorded in `decisions.md`.
 2. **Gear A** _(built 2026-10-16)_: Hat, Scarf and Charm; bases and tags; the Ready and Sheet lines; tiers and item level by source; "Equip best"; conversion of existing gear; upgrades, Improve and enchants removed.
-3. **Gear B:** the crafting loop: Reach, dismantle jobs with ranges, blueprint learning and well-thumbed marks, the maker's name on items.
+3. **Gear B** _(built 2026-10-16)_: the crafting loop: Reach, dismantle jobs with ranges, blueprint learning and well-thumbed marks, the maker's name on items. Technical decisions and deviations: `decisions.md`, "Gear B built".
 4. **Creatures A:** talents, the duplicate choice (Teach, Fuse, Release, Keep), the Talent Book, release for parts.
 5. **Creatures B:** training by activity, treats (a per-creature checkbox), ribbons and slot unlocks.
 6. **Boons and Omens:** mutator and input effects first, sheet effects with them.

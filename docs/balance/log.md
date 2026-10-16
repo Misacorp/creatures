@@ -566,3 +566,40 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
   - Decide whether the finale item level should follow the rank faster (`RULES.gear.itemLevel.finale.base`), or the tier bands move down, once the raid curve is retuned: at ranks 9 to 11 the finale cannot give tier IV.
   - A per-item study for the three side conditions of section 4 (growth share after level 30, upgrade cadence, perfect set).
   - `Growing` (creature experience from every activity) is not in the first gear release: it needs training by activity (Creatures B).
+
+### B-013: Gear B: Reach, dismantle jobs and well-thumbed marks (open)
+
+- **Opened:** 2026-10-16, build step 3 of `docs/design/gear-and-creatures-v2.md` (section 14); the targets are section 4. It reruns the Gear A gear share study (B-012) with the crafting loop in.
+- **What shipped (starting values, `RULES.gear.craft` and `RULES.gear.dismantle`).** Reach for Rare (Crafting level 3, 25 Essence, 1 more shard, 6 hours: Rare 60%, Common 40%) and Reach for Epic (level 6, 70 Essence, 2 more shards, 1 glimmer, 10 hours: Epic 30%, Rare 55%, Common 15%); the one-step-up chance (1 point per Crafting level above 1, 1 per well-thumbed mark, at most 10 marks); dismantle as a Workshop job (Commons in bundles of 5 in 15 minutes, a Rare 1 hour, an Epic 2 hours; refund ranges with Essence, 1 scrap more at each end per 5 item levels, independent of the worker; 6% and 1 point per Crafting level to learn the blueprint or add a mark); repeat blueprint finds add marks. See `decisions.md` 2026-10-16 (Gear B built).
+- **Method.** The gear study of B-012 unchanged (`packages/sim/src/gear-study.ts`: 20 servers of the default mix, 30 weeks, median `1 - bare / full` of fight-scored power per profile), seeds `leet:gear` and `leet2:gear`, and the same on Gear A (B-012) for the "before" column. The sim's workshop policy now aims each craft with the biggest Reach the creature's level, the parts and the Essence above 40 (kept for evolutions) allow, and takes spare items apart in dismantle jobs (first job of a check-in crafts, the second dismantles: a bundle of up to 5 Commons once 3 wait, or an Epic, Festival or Rare piece alone), instead of dismantling instantly. Per-profile counters from 6 servers of `leet:gear`.
+- **Outcome (sim): gear's share of fight-scored power, before (Gear A) and after (Gear B), against the targets.** Seed `leet`, medians; the target range in brackets.
+
+  | Profile   | Week 2               | Week 8                  | Week 20                 | Week 30                 |
+  | --------- | -------------------- | ----------------------- | ----------------------- | ----------------------- |
+  | Min-maxer | 6.0 → 5.1% (5 to 10) | 12.3 → 11.9% (15 to 22) | 22.9 → 25.7% (25 to 32) | 25.5 → 28.1% (33 to 40) |
+  | Engaged   | 4.7 → 4.9% (5 to 10) | 9.9 → 10.1% (15 to 22)  | 15.1 → 15.3% (25 to 32) | 18.8 → 18.1% (33 to 40) |
+  | Regular   | 1.6 → 1.1% (3 to 6)  | 6.2 → 6.1% (10 to 15)   | 10.4 → 10.1% (18 to 24) | 13.9 → 13.4% (28 to 34) |
+  | Drop-in   | 1.0 → 1.2% (0 to 3)  | 4.1 → 3.2% (5 to 8)     | 6.7 → 8.1% (10 to 15)   | 9.8 → 10.6% (15 to 20)  |
+
+  Seed `leet2` (Gear A → Gear B): min-maxer 4.9 → 4.5, 11.8 → 12.7, 22.5 → 26.2, 25.1 → 27.9%; engaged 4.3 → 4.2, 9.8 → 9.9, 14.9 → 15.6, 18.6 → 18.9%; regular 1.6 → 1.3, 6.2 → 6.3, 11.1 → 10.9, 13.4 → 13.0%; drop-in 0.9 → 0.9, 3.1 → 3.4, 7.4 → 7.2, 10.7 → 9.7%. **3 of the 16 targets pass on `leet` (before: 2) and 2 on `leet2` (before: 1)**: the min-maxer's week 20, the drop-in's and (on `leet`) the min-maxer's week 2. Only the committed profiles move, and only from week 20: a min-maxer gains about 3 points at weeks 20 and 30 on both seeds; the others stay within a point or two (noise). Not tuned: these are the numbers of the rules as designed.
+
+- **Per player over 30 weeks (6 servers of `leet:gear`).**
+
+  | Profile   | Crafts | Reaches (of them Epic) | Items dismantled | Essence from dismantling | Essence unspent at week 30 | Crafting level |
+  | --------- | ------ | ---------------------- | ---------------- | ------------------------ | -------------------------- | -------------- |
+  | Min-maxer | 1,089  | 17.0 (1.0)             | 1,159            | 1,521                    | 3,388                      | 10             |
+  | Engaged   | 37     | 10.3 (3.0)             | 80               | 286                      | 2,073                      | 10             |
+  | Regular   | 8      | 1.9 (0.0)              | 4                | 5                        | 1,560                      | 3              |
+  | Drop-in   | 0      | 0                      | 0                | 0                        | 908                        | 1              |
+
+- **Reading.**
+  - **The Reach is barely used.** A min-maxer reaches 17 times in 30 weeks (one Epic), an engaged player 10: shards and glimmer limit it, not Essence (every profile ends with far more Essence than it spends: 3,388 for a min-maxer, 908 even for a drop-in). A Reach costs one or two shards more than a plain craft, and plain crafts, supplies and the earlier Reaches eat the same shards. So "spare Essence's main sink" does not yet sink much: at these numbers Essence is not scarce and the shard is the real price. The design's own estimate (about one Reach for Epic and one for Rare a week for a committed player) is far above what the sim's shard income allows.
+  - **Plain crafting is nearly free at high item level, and that is what moves the share.** A min-maxer makes about 1,090 crafts and dismantles about 1,160 items in 30 weeks. A neutral Common costs 8 scrap and no shard; dismantled at item level 20 it returns 6 to 10 scrap (the 1 scrap per 5 item levels at both ends), so the loop is close to scrap-neutral, and only slot time limits it. Equip best then picks the best of a very large number of Commons. This is the "free lottery" the design wanted to avoid ("a bad one is dismantled for a fraction of its cost"). A variant that saves shards for the Reach (a player who can aim for a Rare never makes a plain craft) was measured: the min-maxer falls to 5.1, 9.9, 17.0 and 20.1% at weeks 2, 8, 20 and 30 (engaged 4.9, 9.2, 13.7, 17.7; regular 1.1, 5.9, 10.4, 12.3; drop-in 1.2, 2.6, 7.7, 9.8): a Reach, as priced, is worth less than the plain Commons its shards would make. The shipped policy is the greedy one (Reach when it can be paid, a plain craft otherwise).
+  - **Engaged, regular and drop-in players barely move:** their supply of shards and glimmer is small, their Crafting level is 10, 3 and 1, and what they find decides their gear (finale pieces at `3 + Boss Rank`).
+  - Not measured: the three side conditions of section 4 (growth share after level 30, upgrade cadence, perfect set); they need a per-item study.
+- **Action.** None tuned. The shortfall against the targets is mostly outside crafting (item level by source, B-012), and the two crafting findings above are for the lead and Misa to decide, not for a guess here: (1) the Common refund's scrap bonus by item level makes plain crafting free; (2) the Reach's price in shards keeps it from being the sink the design wants.
+- **Expected.** The gear share grows further with the raid and dungeon rebalance (build step 8) and with the creature steps (talents and training by activity change who is worth gearing).
+- **Follow-ups.**
+  - Decide how to make the Reach the better use of a shard: options are no extra shard (Essence and glimmer only), a smaller scrap bonus for Commons (`RULES.gear.dismantle.scrapPerItemLevels`, or none for Commons), or a Common craft cost that rises with item level. Measure with this study (`--set` is not wired for it: change `RULES` and rerun).
+  - A Boons step Market Day effect (`WorkshopMods`) only matters if crafting is a scarce activity; revisit after the point above.
+  - Creature experience from Workshop jobs: the creatures step reads `workshop_jobs.work_minutes` (4 experience per hour).

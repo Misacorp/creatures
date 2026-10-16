@@ -105,8 +105,8 @@
       "lines": [
         "Gear is a Hat, a Scarf and a Charm per creature. Each item has lines that help in fights, on trips and in the Workshop.",
         "A won finale gives each player a gear piece or a blueprint. Expeditions and Festivals drop gear and parts too.",
-        "An item has a level, and a creature wears items up to its own level. Dismantle gear to get parts back.",
-        "Creatures work jobs in the Workshop: crafting gear and supplies, even while you are away.",
+        "An item has a level, and a creature wears items up to its own level.",
+        "Creatures work jobs, even while you are away: craft (Reach for a Rare or Epic) or dismantle for parts and Essence.",
         "A creature on a job cannot go on an expedition. It still fights in raids."
       ]
     }
