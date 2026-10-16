@@ -82,7 +82,20 @@ function itemBase(item: DismantleItem): GearBase {
   return base;
 }
 
-/** One item's ranges: its rarity's, with 1 scrap more at each end for every full 5 item levels. */
+/**
+ * The scrap a craft of this base costs at this item level: the base's own cost (an element base's, or the
+ * plain one of every other base, role-locked and Festival pieces included) plus 1 for every
+ * `scrapPerItemLevels` item levels. Dropped items use the same table, so a piece is worth the same
+ * whoever made it.
+ */
+export function craftScrapCost(baseId: string, itemLevel: number): number {
+  const base = gearBase(baseId);
+  if (base === undefined) throw new RangeError(`unknown gear base "${baseId}"`);
+  const own = tagElement(base.tag) === null ? RULES.gear.craft.plainScrap : RULES.gear.craft.scrap;
+  return own + Math.floor(Math.max(0, itemLevel) / RULES.gear.craft.scrapPerItemLevels);
+}
+
+/** One item's ranges: its rarity's, with the scrap a share (under half) of its craft scrap cost. */
 function itemRange(item: DismantleItem): {
   scrap: readonly [number, number];
   shard: readonly [number, number];
@@ -91,9 +104,11 @@ function itemRange(item: DismantleItem): {
 } {
   const table = RULES.gear.dismantle;
   const r = table.ranges[item.rarity];
-  const bonus = Math.floor(Math.max(0, item.itemLevel ?? 1) / table.scrapPerItemLevels);
+  const cost = craftScrapCost(item.baseId, item.itemLevel ?? 1);
+  const [lo, hi] = table.scrapShareBp[item.rarity];
+  const min = Math.max(1, Math.floor((cost * lo) / 10_000));
   return {
-    scrap: [r.scrap[0] + bonus, r.scrap[1] + bonus],
+    scrap: [min, Math.max(min, Math.floor((cost * hi) / 10_000))],
     shard: r.shard,
     glimmer: r.glimmer,
     essence: r.essence,
@@ -228,20 +243,17 @@ export function dismantleLearnBp(craftingLevel: number): number {
 }
 
 /**
- * The parts a craft costs: an element base takes scrap and one shard of its element; every other base
- * takes more scrap and no shard (choosing a shard for neutral pieces comes with the crafting loop).
+ * The parts a plain craft of an item level costs: an element base takes scrap and one shard of its
+ * element; every other base takes more scrap and no shard. The scrap grows with the item level
+ * (`craftScrapCost`).
  */
-export function craftCost(baseId: string): PartsBundle {
+export function craftCost(baseId: string, itemLevel: number): PartsBundle {
   const base = gearBase(baseId);
   if (base === undefined) throw new RangeError(`unknown gear base "${baseId}"`);
   const out: PartsBundle = {};
+  addPart(out, 'scrap', craftScrapCost(baseId, itemLevel));
   const element = tagElement(base.tag);
-  if (element === null) {
-    addPart(out, 'scrap', RULES.gear.craft.plainScrap);
-  } else {
-    addPart(out, 'scrap', RULES.gear.craft.scrap);
-    addPart(out, shardOf(element), RULES.gear.craft.shard);
-  }
+  if (element !== null) addPart(out, shardOf(element), RULES.gear.craft.shard);
   return out;
 }
 
@@ -302,8 +314,9 @@ export function craftCostFor(
   baseId: string,
   reach: ReachId,
   held: PartsBundle,
+  itemLevel: number,
 ): { parts: PartsBundle; essence: number } {
-  const parts = craftCost(baseId);
+  const parts = craftCost(baseId, itemLevel);
   if (reach === 'none') return { parts, essence: 0 };
   const rules = reachRules(reach);
   const element = tagElement(gearBase(baseId)?.tag ?? 'neutral');

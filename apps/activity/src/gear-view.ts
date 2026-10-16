@@ -13,6 +13,7 @@ import {
   content,
   RULES,
   craftCost,
+  craftItemLevel,
   creaturePower,
   dismantleHours,
   entryView,
@@ -734,7 +735,13 @@ interface BlueprintView {
 }
 
 /** The blueprints a player knows, by slot and then name, each with the parts a craft costs. */
-export function blueprintViews(blueprints: GearState['blueprints']): BlueprintView[] {
+export function blueprintViews(
+  blueprints: GearState['blueprints'],
+  skills: GearState['skills'],
+): BlueprintView[] {
+  // The price of a plain craft grows with the item level, which follows the crafter's level: the card shows
+  // the price for the best crafter (the craft panel shows the exact price for the one you pick).
+  const itemLevel = craftItemLevel(Math.max(1, ...skills.map((s) => s.level)));
   const order: readonly GearSlot[] = ['hat', 'scarf', 'charm'];
   return blueprints
     .flatMap((bp) => {
@@ -747,7 +754,7 @@ export function blueprintViews(blueprints: GearState['blueprints']): BlueprintVi
               name: base.name,
               slot: base.slot,
               element: baseElement(base),
-              cost: craftCost(bp.baseId),
+              cost: craftCost(bp.baseId, itemLevel),
               marks: bp.marks,
             },
           ];

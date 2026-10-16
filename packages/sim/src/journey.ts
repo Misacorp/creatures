@@ -3,6 +3,7 @@ import {
   content,
   creaturePower as statsPower,
   craftCost,
+  craftItemLevel,
   isLandmark,
   type GearRarity,
   type PartKind,
@@ -19,7 +20,7 @@ import {
 } from './data';
 import { serverMedianTopLevel, type DayInfo, type EconomyObserver } from './economy';
 import { fightPower } from './fight-power';
-import { allItems } from './gear';
+import { allItems, bestSkillLevel } from './gear';
 import { isTrainable, trainCost } from './policy';
 import type { RaidWeek } from './raid';
 import type { SimPlayer } from './state';
@@ -71,7 +72,7 @@ export function gearLimit(player: SimPlayer): Limit | null {
   // The craft the player is closest to: the blueprint with the fewest kinds of parts short.
   let closest: { lacks: PartKind[] } | null = null;
   for (const baseId of player.gear.blueprints) {
-    const cost = craftCost(baseId);
+    const cost = craftCost(baseId, craftItemLevel(bestSkillLevel(player)));
     const lacks = (Object.entries(cost) as [PartKind, number][])
       .filter(([kind, need]) => parts[kind] < need)
       .map(([kind]) => kind);

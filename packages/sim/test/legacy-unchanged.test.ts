@@ -29,7 +29,9 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * Re-pinned again on 2026-10-16 (Gear B, the crafting loop), on purpose: the workshop aims crafts with a
  * Reach (Essence, shards, glimmer) and takes unneeded items apart in dismantle jobs (a creature, a
  * slot, time; the refund is a range with Essence) instead of instantly, repeat blueprints add
- * well-thumbed marks, and the week records gained Reach and dismantle counters.
+ * well-thumbed marks, and the week records gained Reach and dismantle counters. Then once more the same day
+ * (B-014, no free lottery): a craft's scrap grows with the item level, a dismantle returns under half of it,
+ * and a Reach takes no extra shards.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

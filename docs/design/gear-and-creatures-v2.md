@@ -112,7 +112,9 @@ What this means over a journey (committed players): item level about 5 to 7 in w
 4. **See the roll** at the claim (live server randomness, idempotent claim). Keep it, or dismantle it.
 5. **Dismantle** is a short Workshop job run by a creature you pick: Commons in bundles of up to 5 in 15 minutes, a Rare in 1 hour, an Epic or Festival piece in 2 hours. It gives Crafting XP (12 per hour, at least 6) and a chance to **learn the item's blueprint** (6% + 1 point per Crafting level). If the blueprint is already known, the same chance adds a well-thumbed mark instead.
 
-**Dismantle refunds, shown before you confirm:**
+> **Amended 2026-10-16 (after B-013, "no free lottery").** The scrap of a craft grows with the item level it makes (+1 for every 4 item levels: a level 10 crafter pays 11 scrap, or 13 for a neutral piece), and a dismantle's scrap is a share of that same price, never half or more of it (Common 25 to 40%, Rare 35 to 45%, Epic and Festival 40 to 50%), for crafted and dropped items alike. The table's scrap column and "every full 5 item levels add 1 scrap" are replaced by this. A Reach no longer takes extra shards: Reach for Rare is +25 Essence, Reach for Epic +70 Essence and 1 glimmer, on top of the plain craft's parts. See `decisions.md`, "Gear B: no free lottery".
+
+**Dismantle refunds, shown before you confirm** (scrap column as first written; see the amendment above):
 
 | Rarity           | Scrap | Shards (of the tag; neutral: random) | Glimmer | Essence |
 | ---------------- | ----- | ------------------------------------ | ------- | ------- |

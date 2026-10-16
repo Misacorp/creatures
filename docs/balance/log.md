@@ -597,9 +597,47 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
   - **Plain crafting is nearly free at high item level, and that is what moves the share.** A min-maxer makes about 1,090 crafts and dismantles about 1,160 items in 30 weeks. A neutral Common costs 8 scrap and no shard; dismantled at item level 20 it returns 6 to 10 scrap (the 1 scrap per 5 item levels at both ends), so the loop is close to scrap-neutral, and only slot time limits it. Equip best then picks the best of a very large number of Commons. This is the "free lottery" the design wanted to avoid ("a bad one is dismantled for a fraction of its cost"). A variant that saves shards for the Reach (a player who can aim for a Rare never makes a plain craft) was measured: the min-maxer falls to 5.1, 9.9, 17.0 and 20.1% at weeks 2, 8, 20 and 30 (engaged 4.9, 9.2, 13.7, 17.7; regular 1.1, 5.9, 10.4, 12.3; drop-in 1.2, 2.6, 7.7, 9.8): a Reach, as priced, is worth less than the plain Commons its shards would make. The shipped policy is the greedy one (Reach when it can be paid, a plain craft otherwise).
   - **Engaged, regular and drop-in players barely move:** their supply of shards and glimmer is small, their Crafting level is 10, 3 and 1, and what they find decides their gear (finale pieces at `3 + Boss Rank`).
   - Not measured: the three side conditions of section 4 (growth share after level 30, upgrade cadence, perfect set); they need a per-item study.
-- **Action.** None tuned. The shortfall against the targets is mostly outside crafting (item level by source, B-012), and the two crafting findings above are for the lead and Misa to decide, not for a guess here: (1) the Common refund's scrap bonus by item level makes plain crafting free; (2) the Reach's price in shards keeps it from being the sink the design wants.
+- **Action.** Superseded by B-014, which closed the free lottery and made the Reach worth its price. As measured here: none tuned. The shortfall against the targets is mostly outside crafting (item level by source, B-012), and the two crafting findings above are for the lead and Misa to decide, not for a guess here: (1) the Common refund's scrap bonus by item level makes plain crafting free; (2) the Reach's price in shards keeps it from being the sink the design wants.
 - **Expected.** The gear share grows further with the raid and dungeon rebalance (build step 8) and with the creature steps (talents and training by activity change who is worth gearing).
 - **Follow-ups.**
   - Decide how to make the Reach the better use of a shard: options are no extra shard (Essence and glimmer only), a smaller scrap bonus for Commons (`RULES.gear.dismantle.scrapPerItemLevels`, or none for Commons), or a Common craft cost that rises with item level. Measure with this study (`--set` is not wired for it: change `RULES` and rerun).
   - A Boons step Market Day effect (`WorkshopMods`) only matters if crafting is a scarce activity; revisit after the point above.
   - Creature experience from Workshop jobs: the creatures step reads `workshop_jobs.work_minutes` (4 experience per hour).
+
+### B-014: Gear B follow-up: no free lottery, and a Reach worth its price (open)
+
+- **Opened:** 2026-10-16, from the lead's decision on B-013 (Misa's rule: a dismantle returns "a fraction of its costs").
+- **Finding (B-013).** A neutral Common cost 8 scrap and no shard, and dismantled at item level 20 returned 6 to 10 scrap, so crafting it was scrap-neutral and only slot time limited it: a min-maxer made about 1,090 crafts and dismantled about 1,160 items in 30 weeks, and Equip best picked the best of all of them. Meanwhile the Reach (Essence plus 1 or 2 more shards) was used 17 times in 30 weeks and a min-maxer ended with 3,388 Essence unspent.
+- **Action (starting values, `RULES.gear.craft` and `RULES.gear.dismantle`).**
+  - A craft's scrap grows with the item level it makes: `6` (element base) or `8` (every other base) `+ floor(itemLevel / 4)`; a level 10 crafter (item level 20) pays 11 or 13. Dropped items use the same table (`craftScrapCost(base, itemLevel)`).
+  - A dismantle's scrap is a share of that price, by rarity: Common 25 to 40%, Rare 35 to 45%, Epic and Festival 40 to 50% (rounded down, at least 1). Never half or more. The "+1 scrap per 5 item levels at both ends" is gone. A test checks every base, rarity and item level.
+  - A Reach takes no extra shard: Reach for Rare is +25 Essence, Reach for Epic +70 Essence and 1 glimmer, on top of the plain craft's parts. Odds, levels and hours are unchanged.
+- **Method.** The gear study of B-012 and B-013 (20 servers, 30 weeks, seeds `leet:gear` and `leet2:gear`), the counters of 6 servers of `leet:gear`, and the full `pnpm sim` alone on both seeds (about 26 minutes each).
+- **Outcome (sim): gear's share of fight-scored power.** Seed `leet`; Gear A (B-012) → Gear B before this change (B-013) → now.
+
+  | Profile   | Week 2           | Week 8              | Week 20             | Week 30             |
+  | --------- | ---------------- | ------------------- | ------------------- | ------------------- |
+  | Min-maxer | 6.0 → 5.1 → 5.1% | 12.3 → 11.9 → 12.6% | 22.9 → 25.7 → 22.4% | 25.5 → 28.1 → 24.6% |
+  | Engaged   | 4.7 → 4.9 → 4.9% | 9.9 → 10.1 → 10.3%  | 15.1 → 15.3 → 16.6% | 18.8 → 18.1 → 20.2% |
+  | Regular   | 1.6 → 1.1 → 1.1% | 6.2 → 6.1 → 5.9%    | 10.4 → 10.1 → 10.5% | 13.9 → 13.4 → 13.7% |
+  | Drop-in   | 1.0 → 1.2 → 1.1% | 4.1 → 3.2 → 2.8%    | 6.7 → 8.1 → 7.1%    | 9.8 → 10.6 → 10.6%  |
+
+  Seed `leet2`, now: min-maxer 4.5, 11.6, 23.1, 27.0%; engaged 4.1, 10.3, 17.2, 20.2%; regular 1.4, 5.8, 9.4, 12.7%; drop-in 0.9, 2.8, 7.2, 10.0%. The targets: 2 of 16 pass on `leet` (the min-maxer's and the drop-in's week 2) and 1 on `leet2` (the drop-in's week 2): the same count as Gear A. The 3 points the free lottery gave the min-maxer are gone, and the engaged player gains 1 to 2 points at weeks 20 and 30 because the Reach now costs no shards. Not tuned further.
+
+- **Per player over 30 weeks (6 servers of `leet:gear`), B-013 → now.**
+
+  | Profile   | Crafts      | Reaches (of them Epic) | Items dismantled | Essence from dismantling | Essence held at week 30 |
+  | --------- | ----------- | ---------------------- | ---------------- | ------------------------ | ----------------------- |
+  | Min-maxer | 1,089 → 174 | 17 (1) → 74 (29)       | 1,159 → 244      | 1,521 → 890              | 3,388 → 130             |
+  | Engaged   | 37 → 34     | 10 (3) → 25 (18)       | 80 → 77          | 286 → 386                | 2,073 → 1,204           |
+  | Regular   | 8 → 8       | 2 (0) → 2 (0)          | 4 → 5            | 5 → 7                    | 1,560 → 1,616           |
+  | Drop-in   | 0 → 0       | 0 → 0                  | 0 → 0            | 0 → 0                    | 908 → 877               |
+
+- **Reading.**
+  - **The lottery is closed.** A min-maxer now makes 174 crafts in 30 weeks (about 6 a week) and is scrap-limited (it ends with about 4 scrap). Plain Commons are no longer free, so the Reach is the better use of a craft: it costs Essence the player has in plenty. A min-maxer reaches 74 times (29 Epics) and ends with 130 Essence (target: under about 500). The "save shards for the Reach" policy and the greedy one are now the same thing: with nothing extra to pay in shards, a Reach is a plain craft plus Essence.
+  - **Engaged players still hold 1,204 Essence.** They make 34 crafts in 30 weeks and are limited by the one shard each craft takes, not by Essence. They are not the committed profile the target speaks of, and the way to spend their Essence is the same as for everybody: more crafts per week (shards) or other sinks (the dungeon's choice rooms, evolution). Regular and drop-in players do not craft at all (their profiles' craft dial), so their Essence is for evolution and later sinks.
+  - **The full sim.** Seed `leet`: 60 pass, 18 fail (14 gear share, `raid-finale-typical` 97.2% against 97.0, `raid-ko-share`, `exp-casual-discovery` 0.56 and `curve-r2to5-default` 88.2%: the last four were already failing in B-012 with 96.9%, 6.8%, 0.52 and 88.9%). Seed `leet2`: 61 pass, 17 fail (15 gear share, `raid-finale-typical` 97.9%, `raid-ko-share` 6.9%); B-012 had 59. The raid targets stay for the raid and dungeon rebalance.
+- **Expected.** The min-maxer's week 30 share (25 to 27%) is still below its target (33 to 40%); with the lottery closed the way to it is item level (finale pieces at `3 + Boss Rank`), the Reach and, later, the creature steps. Scrap now limits a min-maxer's crafts: watch scrap income against the new prices.
+- **Follow-ups.**
+  - If crafting should be faster for committed players, the levers are the scrap price (`scrapPerItemLevels`), the scrap income (trips, the dungeon) and the Reach's odds, not the dismantle refund.
+  - Engaged players' Essence: more crafts a week need more shards (trips) or cheaper element crafts.

@@ -151,7 +151,7 @@ describe('drops', () => {
     expect(p.gear.joinDay).toBe(3);
     // The scrap pays for any craft.
     const blueprint = p.gear.blueprints[0] as string;
-    expect(p.gear.parts.scrap).toBeGreaterThanOrEqual(craftCost(blueprint).scrap ?? 0);
+    expect(p.gear.parts.scrap).toBeGreaterThanOrEqual(craftCost(blueprint, 2).scrap ?? 0);
   });
 
   it('pays phase scrap to participants of a cleared phase, and one roll per finale participant', () => {
@@ -357,7 +357,7 @@ describe('workshop jobs', () => {
     const job = p.gear.jobs[0];
     expect(p.gear.jobs.map((j) => j.creatureId)).not.toContain('p01/cindle');
     expect(job?.kind).toBe('craft');
-    expect(p.gear.parts.scrap).toBe(100 - 2 * (craftCost('trail-cap').scrap ?? 0));
+    expect(p.gear.parts.scrap).toBe(100 - 2 * (craftCost('trail-cap', 2).scrap ?? 0));
     expect(job?.endsAtHour).toBeCloseTo(9 + jobDuration(1) / 3_600_000, 6);
   });
 
@@ -525,7 +525,7 @@ describe('supplies from the workshop', () => {
     const p = empty();
     p.gear.blueprints.push('trail-cap');
     // Only what one craft costs.
-    p.gear.parts.scrap = craftCost('trail-cap').scrap ?? 0;
+    p.gear.parts.scrap = craftCost('trail-cap', 2).scrap ?? 0;
     startJobs(p, ctx(9), new Set());
     expect(p.gear.jobs.map((j) => j.kind)).toEqual(['craft']);
     // Once a craft has been made, a low stock comes first.

@@ -138,7 +138,7 @@ describe('the binding limit', () => {
   it('shards for a craft of an element base, then scrap', () => {
     const p = finalStage();
     const element = droppableBases().find((b) =>
-      Object.keys(craftCost(b.id)).some((k) => k.endsWith('-shard')),
+      Object.keys(craftCost(b.id, 2)).some((k) => k.endsWith('-shard')),
     );
     if (element === undefined) throw new Error('no base that needs a shard');
     p.gear.blueprints.push(element.id);
@@ -323,10 +323,11 @@ describe('the recorder', () => {
         expect(day).toBeGreaterThanOrEqual(1);
         expect(day).toBeLessThanOrEqual(21);
       }
-      // Power never falls (a team only gets stronger).
+      // Power hardly falls (a team only gets stronger). Equip best chases the item score (lines, not only
+      // Attack and HP), so this old Attack + HP score may dip by a point when a better item replaces another.
       for (let k = 1; k < j.days.length; k++) {
         expect((j.days[k] as { power: number }).power).toBeGreaterThanOrEqual(
-          (j.days[k - 1] as { power: number }).power - 1e-9,
+          (j.days[k - 1] as { power: number }).power - 1 - 1e-9,
         );
       }
       for (const w of j.waits) {
