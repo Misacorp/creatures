@@ -150,7 +150,8 @@ How to read the tables:
 - **Rarity:** which rarities can roll it (C Common, R Rare, E Epic and Festival).
 - **Engine:**
   - **Ready**: the engine already models it; `applyGear` folds it into Attack, HP or crit before the fight, as today's gear and enchants do.
-  - **Sheet**: needs the per-creature modifier sheet (section 5.7): plain numbers on `FightSlot`, read at a step `fight.ts` already has.
+  - **Sheet**: needs the per-creature modifier sheet (section 5.7): plain numbers on `FightSlot`, read at a step `fight.ts` already has. **Built** in step 1 of the build order (2026-10-16); `combat-rules.md` section 10 is its reference.
+  - **Ready for Gear A**: a Sheet line that needs nothing more than the sheet and is in the first gear release (5.8).
   - **Dungeon**: a small change to the dungeon runner (`dungeon.ts`), between rooms.
   - **Rules**: not combat; expedition or Workshop rules in `packages/game`.
 
@@ -240,6 +241,47 @@ One small engine change unlocks every **Sheet** line, every combat talent and mo
 
 Plus the forecast, the fight log text (`describe.ts`) and playback. Conditions (wearer element or role, the foe's element) are resolved when the sheet is built, so the engine sees only numbers. Estimated: one engine PR with tests, the replay fixture untouched.
 
+**Built (2026-10-16, build step 1).** The sheet is `FightSlot.mods` (`SlotMods`, `packages/engine/src/types.ts`), every field an optional integer in basis points. Which line fills which field, and where the engine reads it:
+
+| Field                              | Lines that fill it                    | Step                                                    |
+| ---------------------------------- | ------------------------------------- | ------------------------------------------------------- |
+| `vsElementBp` (by boss element)    | X Hunter                              | the creature's hit                                      |
+| `markedFoeBp`                      | Marked foe                            | the creature's hit, on a marked boss without a reaction |
+| `firstHitBp`                       | First pounce                          | the creature's first turn hit                           |
+| `markingHitBp`                     | Marking hit                           | the hit that leaves or replaces a mark                  |
+| `strikeBp`                         | Strike                                | an ability's strike                                     |
+| `besideRoleBp` (by role)           | Guard's shadow (5.8)                  | the creature's hit, from the board                      |
+| `pierceBp`                         | Adaptation pierce                     | the boss's adaptation resist                            |
+| `reactionBp` (by reaction id)      | X Reaction                            | the reaction's bonus                                    |
+| `pounceBp`                         | Payoff's pounce                       | the reaction's multiplier                               |
+| `ownerMarkBp`                      | Owner's mark                          | the reaction's bonus, from the Setter's sheet           |
+| `keenReactionBp`                   | Keen reaction                         | the crit chance of a reaction hit                       |
+| `shareBp`                          | Spark-share                           | the reaction's bonus, from a Support beside             |
+| `wardBp` (by boss element)         | X Ward                                | the taker, step 1                                       |
+| `chargedBp`                        | Brace                                 | the taker, step 2                                       |
+| `areaBp`, `aimedBp`, `reflectedBp` | Area ward, Aimed ward, Backdraft ward | the taker, step 3                                       |
+| `takenBp`                          | All damage taken                      | the taker, step 4                                       |
+| `healReceivedBp`                   | Well-fed                              | a Support's Mend arriving                               |
+| `armorBp`, `coverBp`               | Armor, Cover                          | a Guard's armor and its cover                           |
+| `boostBp`, `mendBp`                | Boost, Mend                           | a Support's boost and heal at round start               |
+| `lingerRounds`                     | Lingering                             | the creature's own Rally, Shield Wall and Purge         |
+| `ignoreSilence`                    | Unbothered                            | a silence landing on it                                 |
+
+The taker's steps run after Shield Wall, armor and cover and before the single-hit cap, in the order ward, charged, shape, every hit (`combat-rules.md` 3.2 and 10.5). Light Sleeper and Gentle but Stubborn ("ignores the first silence in each fight") are a count of silences, not a switch; they need `ignoreSilence` to grow into a count when the talents ship.
+
+### 5.8 Position line for the first gear release
+
+Misa asked that the first gear release holds one line that depends on the board ("rollout fast" decision, 2026-10-16). It is the simplest one the board model already supports: a creature's neighbour is the slot directly left or right in the same row (`combat-rules.md` 1.5), and the engine looks at it when the hit is made, so nothing is cached and a knocked-out Guard stops counting.
+
+| Line                            | Effect                                          | I   | II  | III  | IV   | V    | Hat | Scarf | Charm | Rarity | Engine                                             | Who wants it                                                                                    |
+| ------------------------------- | ----------------------------------------------- | --- | --- | ---- | ---- | ---- | --- | ----- | ----- | ------ | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Guard's shadow _(working name)_ | Attack +% while a living Guard stands beside it | +4% | +7% | +10% | +13% | +17% | 40  | 5     | 25    | C R E  | Ready for Gear A (sheet `besideRoleBp: { guard }`) | Payoffs and Setters in a protected row, the plan the "Protected" setup in the sim already tests |
+
+- **What it asks of the player:** place the creature next to a Guard (placing the row is the raid's core choice already). Beside two Guards counts once, a Guard in the next row does not count, and a Guard that is knocked out stops counting at once.
+- **Why this one:** it rewards the formation that is also the safe one (cover and the Guard's step-in work for the neighbour), so it nudges players toward Guards without a new rule, and it can be tested with and without a neighbour. It is the Guard version of "Lane anchor" and "Beside the mark-maker" in 6.1, using adjacency instead of lanes.
+- **Where the number goes:** the hit's one combined bonus (with the Support boost, Rally and crit), as a share of the plain hit, so +17% is about half again as much as Attack +11% for a creature that stands in the right place, and nothing when it does not. The sim's fight-scored power (`packages/sim/src/fight-power.ts`) plays the team in the row the raid would give it, so it sees this line whenever a Guard stands beside the creature that wears it.
+- **Later:** the same field takes any role (`besideRoleBp: { setter: ... }`), which covers "Beside the mark-maker" in 6.1 and a Support version without engine work.
+
 ## 6. Later lines (design now, build later)
 
 These are clearly **later**: none ships with the first gear release. They use the same tags (elements, roles) as the bridge, and each gets at most one slot on an item (a fourth line on Epics, or a line that replaces one roll). Item-level gating and tiers apply as above.
@@ -262,6 +304,8 @@ Positions are fixed once a fight starts, so most of these can be folded when the
 | Four winds            | Reaction bonus +10% if its row holds four different elements (raid rows of 4+) | Big parties with wide rows                 | Fold                       |
 | Beside the mark-maker | Marked-foe hits +10% while a Setter stands beside it                           | Payoffs placed next to their Setter        | Sheet + per-round check    |
 | Sheltered             | Cover on it +6 pt (stacks with the Guard's)                                    | Fragile creatures next to a Guard          | Sheet                      |
+
+_Promoted to the first gear release:_ **Guard's shadow** (5.8), the adjacency version of "Lane anchor" and "Beside the mark-maker". It reads the board in the engine (`besideRoleBp`), so it is not a fold.
 
 ### 6.2 Set bonuses
 
@@ -751,7 +795,7 @@ The dungeon's room modifiers (Flooded, Thorns and the rest) stay as they are; we
 
 Each step is simulated on paired seeds before it ships; neighbouring steps can share a PR.
 
-1. **Groundwork:** a fight-scored power in the sim; the per-creature modifier sheet in the engine (replay-safe); this design recorded in `decisions.md`.
+1. **Groundwork** _(built 2026-10-16)_: a fight-scored power in the sim (`packages/sim/src/fight-power.ts`, shown in the journey report next to the old score); the per-creature modifier sheet in the engine (replay-safe, `combat-rules.md` section 10) with the Guard's shadow position line; this design recorded in `decisions.md`.
 2. **Gear A:** Hat, Scarf and Charm; bases and tags; the Ready and Sheet lines; tiers and item level by source; "Equip best"; conversion of existing gear; upgrades, Improve and enchants removed.
 3. **Gear B:** the crafting loop: Reach, dismantle jobs with ranges, blueprint learning and well-thumbed marks, the maker's name on items.
 4. **Creatures A:** talents, the duplicate choice (Teach, Fuse, Release, Keep), the Talent Book, release for parts.
