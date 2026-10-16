@@ -68,6 +68,7 @@ function alerts(
     expeditions?: Trip[];
     jobs?: Job[] | null;
     attention?: Attention | null;
+    pending?: number;
     serverNow?: number;
   } = {},
 ) {
@@ -75,6 +76,7 @@ function alerts(
     expeditions: patch.expeditions ?? [],
     jobs: patch.jobs === undefined ? [] : patch.jobs,
     attention: patch.attention === undefined ? quiet : patch.attention,
+    ...(patch.pending === undefined ? {} : { pending: patch.pending }),
     serverNow: patch.serverNow ?? NOW,
   });
 }
@@ -85,13 +87,20 @@ describe('the pips on the tabs', () => {
     expect(alerts({ expeditions: [trip()], jobs: [job()] })).toEqual(NO_ALERTS);
   });
 
-  it('never puts one on Creatures', () => {
+  it('never puts one on Creatures for a trip, the dungeon or the raid', () => {
     expect(
       alerts({
         expeditions: [trip({ endsAt: NOW - 1 })],
         attention: { dungeon: true, raid: true, recheckAt: null },
       }).collection,
     ).toBeNull();
+  });
+
+  it('puts one on Creatures while a duplicate waits for a choice', () => {
+    expect(alerts({ pending: 1 }).collection).toBe(ALERT_TEXT.catchWaiting);
+    expect(alerts({ pending: 4 }).collection).toBe(ALERT_TEXT.catchWaiting);
+    expect(alerts({ pending: 0 }).collection).toBeNull();
+    expect(alerts({}).collection).toBeNull();
   });
 
   describe('Expeditions', () => {

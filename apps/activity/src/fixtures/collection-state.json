@@ -8,7 +8,7 @@
   "starterOptions": ["splashet", "cindle", "sproutle"],
   "creatures": [
     {
-      "id": "fb547299-1d99-4e91-b913-ed6029135236",
+      "id": "affe55f1-0051-4d24-94c7-980b00d4aa7f",
       "species": "cindle",
       "line": "cindle",
       "level": 15,
@@ -20,6 +20,25 @@
       "origin": "test",
       "caughtAt": 1799733600000,
       "quirk": "name-perker",
+      "lineSlot": 1,
+      "talents": {
+        "slots": [
+          {
+            "slot": 1,
+            "opensAt": 1,
+            "open": true,
+            "talent": null
+          },
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          }
+        ],
+        "signature": null,
+        "book": []
+      },
       "stats": {
         "hp": 194,
         "atk": 82,
@@ -32,14 +51,14 @@
       },
       "gear": [
         {
-          "id": "05a010a5-6b71-467b-b3eb-802943b3afef",
+          "id": "63a80e61-0013-4281-a394-297e905805e8",
           "baseId": "coal-warm-cap",
           "slot": "hat",
           "rarity": "epic",
           "itemLevel": 14
         },
         {
-          "id": "3f89c55d-cb0b-42fd-a033-d9f51df2c967",
+          "id": "8e71dfa1-7e6d-42e0-8d0e-27c229d4f121",
           "baseId": "tidepool-charm",
           "slot": "charm",
           "rarity": "common",
@@ -48,7 +67,7 @@
       ],
       "busy": {
         "kind": "job",
-        "id": "0d476c29-7afd-43d2-8684-61f0a8a737cb"
+        "id": "6a4c3857-e8b2-462d-9f4e-bc0c3ecec04d"
       },
       "ability": {
         "id": "flare-strike",
@@ -71,7 +90,7 @@
       }
     },
     {
-      "id": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
+      "id": "79d0c068-df20-42c5-87ad-c455451fb557",
       "species": "sproutle",
       "line": "sproutle",
       "level": 14,
@@ -83,6 +102,25 @@
       "origin": "test",
       "caughtAt": 1799733600001,
       "quirk": "sproutle-wide-awake",
+      "lineSlot": 1,
+      "talents": {
+        "slots": [
+          {
+            "slot": 1,
+            "opensAt": 1,
+            "open": true,
+            "talent": null
+          },
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          }
+        ],
+        "signature": null,
+        "book": []
+      },
       "stats": {
         "hp": 303,
         "atk": 35,
@@ -95,14 +133,14 @@
       },
       "gear": [
         {
-          "id": "c3a6f419-4100-44cb-969e-fbd533ceec2e",
+          "id": "f8e11890-083e-4fb6-b805-15b3f72e8a5e",
           "baseId": "leafknit-scarf",
           "slot": "scarf",
           "rarity": "rare",
           "itemLevel": 12
         },
         {
-          "id": "e5b1ea7f-6a33-41f5-91eb-14cdfeb051a0",
+          "id": "54a893d8-709b-4eb5-ad44-90560117f55c",
           "baseId": "wardens-bell",
           "slot": "charm",
           "rarity": "rare",
@@ -131,7 +169,7 @@
       }
     },
     {
-      "id": "a4844dc1-e23f-4059-b04f-1554520a192a",
+      "id": "fcda97e9-174a-4670-965b-a6b0a390956d",
       "species": "zipmouse",
       "line": "zipmouse",
       "level": 9,
@@ -143,6 +181,25 @@
       "origin": "test",
       "caughtAt": 1799733600002,
       "quirk": "morning-grumbler",
+      "lineSlot": 1,
+      "talents": {
+        "slots": [
+          {
+            "slot": 1,
+            "opensAt": 1,
+            "open": true,
+            "talent": null
+          },
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          }
+        ],
+        "signature": null,
+        "book": []
+      },
       "stats": {
         "hp": 176,
         "atk": 44,
@@ -155,7 +212,7 @@
       },
       "gear": [
         {
-          "id": "db53d67b-cc26-4419-9c56-31704fa16687",
+          "id": "73220551-14f9-4f71-9fe4-ead9780696ec",
           "baseId": "trail-cap",
           "slot": "hat",
           "rarity": "common",
@@ -184,6 +241,8 @@
       }
     }
   ],
+  "pending": [],
+  "bookSlotBait": 10,
   "expeditions": [],
   "cancelled": [],
   "slots": {
@@ -199,7 +258,7 @@
   "supplies": {},
   "trainingMedianLevel": 15,
   "serverFirsts": [],
-  "loungerId": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
+  "loungerId": "79d0c068-df20-42c5-87ad-c455451fb557",
   "loungeSpot": null,
   "timezone": "Europe/Helsinki",
   "leetSync": {

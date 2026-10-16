@@ -10,6 +10,7 @@
  */
 
 import type { GrantLoot, PartKind } from './gear-types';
+import type { ChoiceResult, TalentView } from './talent-types';
 
 export type ExpeditionLength = 'short' | 'medium' | 'long' | 'day';
 export type SupplyTier = 'basic' | 'good' | 'great';
@@ -99,16 +100,27 @@ export interface ExplorerView {
   trips: number;
 }
 
-type CatchOutcome = 'new' | 'fused' | 'converted';
+/**
+ * `new`: a species the player lacked, now a creature. `duplicate`: a waiting card (see `pendingId`) to
+ * answer with Teach, Fuse, Release or Keep. `fused` and `converted` only appear in trips claimed before
+ * the duplicate choice existed (a duplicate then fused by itself, or turned into Bait).
+ */
+type CatchOutcome = 'new' | 'duplicate' | 'fused' | 'converted';
 
 export interface TripCatch {
   species: string;
   shiny: boolean;
   outcome: CatchOutcome;
   firstOnServer: boolean;
-  /** For `fused`: the creature's fusions after. */
+  /** The talent it rolled (absent in trips claimed before talents). */
+  talent?: TalentView;
+  /** For `duplicate`: the id of its waiting card. */
+  pendingId?: string;
+  /** The catch came from the destination's deeper area. */
+  deep?: true;
+  /** For the old `fused`: the creature's fusions after. */
   fusionCount?: number;
-  /** For `converted`: the Bait it became. */
+  /** For the old `converted`: the Bait it became. */
   bait?: number;
 }
 
@@ -126,6 +138,10 @@ export interface JournalFind {
 export interface TripResult {
   recalled: boolean;
   catches: TripCatch[];
+  /** Catch rolls that brought no creature this time (each brought a small find of scrap instead). */
+  noCatch?: number;
+  /** Waiting duplicates the server settled with Recommended because ten were already waiting. */
+  autoSettled?: ChoiceResult[];
   loot?: TripLoot;
   failed?: true;
   pushOn?: {

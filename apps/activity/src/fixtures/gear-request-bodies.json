@@ -1,13 +1,13 @@
 {
   "equip": {
-    "path": "/api/gear/05a010a5-6b71-467b-b3eb-802943b3afef/equip",
+    "path": "/api/gear/63a80e61-0013-4281-a394-297e905805e8/equip",
     "method": "POST",
     "body": {
-      "creatureId": "fb547299-1d99-4e91-b913-ed6029135236"
+      "creatureId": "affe55f1-0051-4d24-94c7-980b00d4aa7f"
     }
   },
   "unequip": {
-    "path": "/api/gear/05a010a5-6b71-467b-b3eb-802943b3afef/equip",
+    "path": "/api/gear/63a80e61-0013-4281-a394-297e905805e8/equip",
     "method": "POST",
     "body": {
       "creatureId": null
@@ -18,14 +18,14 @@
     "method": "POST",
     "body": {
       "creatureIds": [
-        "fb547299-1d99-4e91-b913-ed6029135236",
-        "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
-        "a4844dc1-e23f-4059-b04f-1554520a192a"
+        "affe55f1-0051-4d24-94c7-980b00d4aa7f",
+        "79d0c068-df20-42c5-87ad-c455451fb557",
+        "fcda97e9-174a-4670-965b-a6b0a390956d"
       ]
     }
   },
   "dismantle": {
-    "path": "/api/gear/63a8639a-76fa-42ba-8994-eab6bfb4b1d9/dismantle",
+    "path": "/api/gear/f0c6b1f3-5ce0-4fd9-a628-89a498baf126/dismantle",
     "method": "POST",
     "body": {
       "idempotencyKey": "fixture-00000008-key"
@@ -36,20 +36,20 @@
     "method": "POST",
     "body": {
       "kind": "craft",
-      "creatureId": "a4844dc1-e23f-4059-b04f-1554520a192a",
+      "creatureId": "fcda97e9-174a-4670-965b-a6b0a390956d",
       "blueprintId": "kelp-cap",
       "idempotencyKey": "fixture-00000001-key"
     }
   },
   "job-claim": {
-    "path": "/api/workshop/jobs/c19e1cf5-ae2b-44ec-ad04-7456925c05bb/claim",
+    "path": "/api/workshop/jobs/b650e778-85cd-45d0-a68b-cb40ade42f6e/claim",
     "method": "POST",
     "body": {
       "idempotencyKey": "fixture-00000007-key"
     }
   },
   "expedition-claim": {
-    "path": "/api/expeditions/925139c9-fdff-40f8-a3e8-c1cd3bce6279/claim",
+    "path": "/api/expeditions/ceee3711-ff75-43df-ba16-cfb5a02f872f/claim",
     "method": "POST",
     "body": {}
   },

@@ -57,7 +57,7 @@
           "level": 4,
           "role": null
         },
-        "equippedOn": "9586e545-d913-4026-a157-cbe1bd6a8c2a",
+        "equippedOn": "afdda09f-b0a8-4d01-97e3-e833b09f4319",
         "dismantle": {
           "scrap": 5,
           "ember-shard": 1
@@ -90,7 +90,7 @@
           {
             "id": "ember-ward",
             "name": "Ember Ward",
-            "text": "Ember Ward \u22127%",
+            "text": "Ember Ward −7%",
             "about": "Less damage from the foes that beat Ember.",
             "source": "rolled",
             "tier": 2,
@@ -110,7 +110,7 @@
           {
             "id": "area-ward",
             "name": "Area ward",
-            "text": "Area ward \u22125%",
+            "text": "Area ward −5%",
             "about": "Area hits do less damage to the wearer.",
             "source": "rolled",
             "tier": 2,
@@ -122,7 +122,7 @@
           "level": 7,
           "role": null
         },
-        "equippedOn": "06967189-03c4-45de-a06f-fb054f2ccc73",
+        "equippedOn": "dc26359e-769c-4992-9015-5ccd6aa9c410",
         "dismantle": {
           "scrap": 10,
           "ember-shard": 2,
@@ -212,19 +212,19 @@
     },
     "skills": [
       {
-        "creatureId": "9586e545-d913-4026-a157-cbe1bd6a8c2a",
+        "creatureId": "afdda09f-b0a8-4d01-97e3-e833b09f4319",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "06967189-03c4-45de-a06f-fb054f2ccc73",
+        "creatureId": "dc26359e-769c-4992-9015-5ccd6aa9c410",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "2008d625-8851-45a5-90cb-012521cd0b27",
+        "creatureId": "70dce54d-6dcd-4221-ba40-fc2ae5625ec0",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
@@ -253,7 +253,7 @@
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "9586e545-d913-4026-a157-cbe1bd6a8c2a",
+        "id": "afdda09f-b0a8-4d01-97e3-e833b09f4319",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -265,6 +265,25 @@
         "origin": "test",
         "caughtAt": 1799733600000,
         "quirk": "waves-at-everyone",
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            {
+              "slot": 1,
+              "opensAt": 1,
+              "open": true,
+              "talent": null
+            },
+            {
+              "slot": 2,
+              "opensAt": 20,
+              "open": false,
+              "talent": null
+            }
+          ],
+          "signature": null,
+          "book": []
+        },
         "stats": {
           "hp": 145,
           "atk": 61,
@@ -306,7 +325,7 @@
         }
       },
       {
-        "id": "06967189-03c4-45de-a06f-fb054f2ccc73",
+        "id": "dc26359e-769c-4992-9015-5ccd6aa9c410",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -318,6 +337,25 @@
         "origin": "test",
         "caughtAt": 1799733600001,
         "quirk": "shadow-racer",
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            {
+              "slot": 1,
+              "opensAt": 1,
+              "open": true,
+              "talent": null
+            },
+            {
+              "slot": 2,
+              "opensAt": 20,
+              "open": false,
+              "talent": null
+            }
+          ],
+          "signature": null,
+          "book": []
+        },
         "stats": {
           "hp": 237,
           "atk": 29,
@@ -359,7 +397,7 @@
         }
       },
       {
-        "id": "2008d625-8851-45a5-90cb-012521cd0b27",
+        "id": "70dce54d-6dcd-4221-ba40-fc2ae5625ec0",
         "species": "zipmouse",
         "line": "zipmouse",
         "level": 8,
@@ -371,6 +409,25 @@
         "origin": "test",
         "caughtAt": 1799733600002,
         "quirk": "eating-shy",
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            {
+              "slot": 1,
+              "opensAt": 1,
+              "open": true,
+              "talent": null
+            },
+            {
+              "slot": 2,
+              "opensAt": 20,
+              "open": false,
+              "talent": null
+            }
+          ],
+          "signature": null,
+          "book": []
+        },
         "stats": {
           "hp": 168,
           "atk": 42,
@@ -404,6 +461,8 @@
         }
       }
     ],
+    "pending": [],
+    "bookSlotBait": 10,
     "expeditions": [],
     "cancelled": [],
     "slots": {
@@ -419,7 +478,7 @@
     "supplies": {},
     "trainingMedianLevel": 8,
     "serverFirsts": [],
-    "loungerId": "06967189-03c4-45de-a06f-fb054f2ccc73",
+    "loungerId": "70dce54d-6dcd-4221-ba40-fc2ae5625ec0",
     "loungeSpot": null
   }
 }

@@ -737,7 +737,7 @@ describe('the expedition requests the client sends', () => {
       expect(done.state.expeditions.length).toBeGreaterThan(0);
     }
     const loot = parseClaimResponse(expeditionClaimLoot);
-    expect(loot.result.loot?.supplies).toEqual(['lure-basic']);
+    expect(loot.result.loot?.supplies).toEqual(['map-scrap-basic']);
     expect(loot.result.xp).toMatchObject({ gained: 300, rank: 2, rankBefore: 1 });
     expect(loot.result.familiarity?.trips).toBe(1);
     const failed = parseClaimResponse(expeditionClaimFailed);

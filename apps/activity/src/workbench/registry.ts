@@ -9,6 +9,7 @@ import { raidBoardEntries } from './entries/raid-board';
 import { slotEntries } from './entries/slots';
 import { stageEntries } from './entries/stage';
 import { tagEntries } from './entries/tags';
+import { talentEntries } from './entries/talents';
 import { GROUPS, type Entry, type Group } from './types';
 
 /**
@@ -27,6 +28,7 @@ export const ENTRIES: readonly Entry[] = [
   ...iconEntries,
   ...controlEntries,
   ...creatureEntries,
+  ...talentEntries,
   ...stageEntries,
 ];
 

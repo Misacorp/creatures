@@ -192,6 +192,11 @@ describe('what a finale did', () => {
       }),
     ).toContain('fusion 1 / 5');
     expect(
+      festivalGrantText({ species: 'hearthshell', outcome: 'duplicate', firstOnServer: false }),
+    ).toBe(
+      'You won Hearthshell again! It waits on the Collection tab: Teach its talent, Fuse, Release or Keep it.',
+    );
+    expect(
       festivalGrantText({
         species: 'lanternfin',
         outcome: 'converted',

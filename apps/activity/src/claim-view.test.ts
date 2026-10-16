@@ -94,14 +94,14 @@ describe('the gift of a new rank', () => {
 describe('what the trip brought home', () => {
   it('builds the pile from gear, parts and found supplies, one icon for each kind', () => {
     const source = pileSourceOf(loot);
-    expect(source.supplies).toEqual(['lure-basic']);
+    expect(source.supplies).toEqual(['map-scrap-basic']);
     expect(rewardPileItems(source).map((i) => i.key)).toEqual([
       'scrap',
       'ember-shard',
       'glimmer',
-      'supply-lure',
+      'supply-map-scrap',
     ]);
-    expect(pileLabel(source, 'Loot')).toBe('Loot: Scrap, Ember Shard, Glimmer, Lure');
+    expect(pileLabel(source, 'Loot')).toBe('Loot: Scrap, Ember Shard, Glimmer, Map scrap');
     expect(pileLabel({ bait: 3, essence: 1, parts: { scrap: 1 } }, 'Rewards')).toBe(
       'Rewards: Scrap, Essence, Bait',
     );
@@ -114,7 +114,7 @@ describe('what the trip brought home', () => {
   });
 
   it('counts the supplies found, by kind of supply', () => {
-    expect(foundSupplies(loot)).toEqual([{ id: 'lure-basic', name: 'Plain Lure', amount: 1 }]);
+    expect(foundSupplies(loot)).toEqual([{ id: 'map-scrap-basic', name: 'Map Scrap', amount: 1 }]);
     const two = {
       loot: { ...(loot.loot as object), supplies: ['lure-basic', 'lure-basic', 'lantern-good'] },
     };

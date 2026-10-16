@@ -11,7 +11,7 @@
   },
   "items": [
     {
-      "id": "db53d67b-cc26-4419-9c56-31704fa16687",
+      "id": "73220551-14f9-4f71-9fe4-ead9780696ec",
       "baseId": "trail-cap",
       "slot": "hat",
       "tag": "neutral",
@@ -43,7 +43,7 @@
         "level": 1,
         "role": null
       },
-      "equippedOn": "a4844dc1-e23f-4059-b04f-1554520a192a",
+      "equippedOn": "fcda97e9-174a-4670-965b-a6b0a390956d",
       "dismantle": {
         "scrap": 2
       },
@@ -55,7 +55,7 @@
       }
     },
     {
-      "id": "3f89c55d-cb0b-42fd-a033-d9f51df2c967",
+      "id": "8e71dfa1-7e6d-42e0-8d0e-27c229d4f121",
       "baseId": "tidepool-charm",
       "slot": "charm",
       "tag": "tide",
@@ -75,7 +75,7 @@
         {
           "id": "backdraft-ward",
           "name": "Backdraft ward",
-          "text": "Backdraft ward \u22128%",
+          "text": "Backdraft ward −8%",
           "about": "Reflected hits on the wearer do less damage.",
           "source": "rolled",
           "tier": 1,
@@ -87,7 +87,7 @@
         "level": 13,
         "role": null
       },
-      "equippedOn": "fb547299-1d99-4e91-b913-ed6029135236",
+      "equippedOn": "affe55f1-0051-4d24-94c7-980b00d4aa7f",
       "dismantle": {
         "scrap": 2
       },
@@ -101,7 +101,7 @@
       }
     },
     {
-      "id": "05a010a5-6b71-467b-b3eb-802943b3afef",
+      "id": "63a80e61-0013-4281-a394-297e905805e8",
       "baseId": "coal-warm-cap",
       "slot": "hat",
       "tag": "ember",
@@ -153,7 +153,7 @@
         "level": 14,
         "role": null
       },
-      "equippedOn": "fb547299-1d99-4e91-b913-ed6029135236",
+      "equippedOn": "affe55f1-0051-4d24-94c7-980b00d4aa7f",
       "dismantle": {
         "scrap": 10,
         "ember-shard": 2,
@@ -165,7 +165,7 @@
       "origin": null
     },
     {
-      "id": "c3a6f419-4100-44cb-969e-fbd533ceec2e",
+      "id": "f8e11890-083e-4fb6-b805-15b3f72e8a5e",
       "baseId": "leafknit-scarf",
       "slot": "scarf",
       "tag": "grove",
@@ -185,7 +185,7 @@
         {
           "id": "aimed-ward",
           "name": "Aimed ward",
-          "text": "Aimed ward \u22127%",
+          "text": "Aimed ward −7%",
           "about": "Aimed hits do less damage to the wearer.",
           "source": "rolled",
           "tier": 3,
@@ -207,7 +207,7 @@
         "level": 12,
         "role": null
       },
-      "equippedOn": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
+      "equippedOn": "79d0c068-df20-42c5-87ad-c455451fb557",
       "dismantle": {
         "scrap": 5,
         "grove-shard": 1
@@ -218,7 +218,7 @@
       "origin": null
     },
     {
-      "id": "e5b1ea7f-6a33-41f5-91eb-14cdfeb051a0",
+      "id": "54a893d8-709b-4eb5-ad44-90560117f55c",
       "baseId": "wardens-bell",
       "slot": "charm",
       "tag": "guard",
@@ -260,7 +260,7 @@
         "level": 13,
         "role": "guard"
       },
-      "equippedOn": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
+      "equippedOn": "79d0c068-df20-42c5-87ad-c455451fb557",
       "dismantle": {
         "scrap": 5
       },
@@ -270,7 +270,7 @@
       "origin": null
     },
     {
-      "id": "d6a373eb-427b-44b4-87a4-ee72dc676a26",
+      "id": "1a9965e0-bd3f-45f9-80e5-cf0bd387cc33",
       "baseId": "crossroads-compass",
       "slot": "charm",
       "tag": "explorer",
@@ -290,7 +290,7 @@
         {
           "id": "quick-feet",
           "name": "Quick feet",
-          "text": "Quick feet \u22123%",
+          "text": "Quick feet −3%",
           "about": "The wearer's trips take less time.",
           "source": "rolled",
           "tier": 2,
@@ -322,7 +322,7 @@
       "origin": null
     },
     {
-      "id": "1fe24ace-6dc8-446c-bd19-122fad6c35d5",
+      "id": "ebc69369-7558-4c91-9969-7ea2f9907ae4",
       "baseId": "thundercap",
       "slot": "hat",
       "tag": "spark",
@@ -375,7 +375,7 @@
       "origin": null
     },
     {
-      "id": "24b982ca-9098-4c9e-8bcd-8bc1ab397107",
+      "id": "10bfd752-37d4-4408-a9c2-eff1ebd3ae0b",
       "baseId": "kelp-cap",
       "slot": "hat",
       "tag": "tide",
@@ -449,8 +449,8 @@
   ],
   "jobs": [
     {
-      "id": "0d476c29-7afd-43d2-8684-61f0a8a737cb",
-      "creatureId": "fb547299-1d99-4e91-b913-ed6029135236",
+      "id": "6a4c3857-e8b2-462d-9f4e-bc0c3ecec04d",
+      "creatureId": "affe55f1-0051-4d24-94c7-980b00d4aa7f",
       "kind": "craft",
       "input": {
         "baseId": "kelp-cap"
@@ -459,6 +459,7 @@
         "scrap": 6,
         "tide-shard": 1
       },
+      "bait": 0,
       "startedAt": 1799744402000,
       "endsAt": 1799755202000,
       "status": "running",
@@ -466,8 +467,8 @@
       "result": null
     },
     {
-      "id": "c19e1cf5-ae2b-44ec-ad04-7456925c05bb",
-      "creatureId": "a4844dc1-e23f-4059-b04f-1554520a192a",
+      "id": "b650e778-85cd-45d0-a68b-cb40ade42f6e",
+      "creatureId": "fcda97e9-174a-4670-965b-a6b0a390956d",
       "kind": "craft",
       "input": {
         "baseId": "kelp-cap"
@@ -476,13 +477,14 @@
         "scrap": 6,
         "tide-shard": 1
       },
+      "bait": 0,
       "startedAt": 1799733601000,
       "endsAt": 1799744401000,
       "status": "claimed",
       "claimedAt": 1799744402000,
       "result": {
         "kind": "craft",
-        "gearId": "24b982ca-9098-4c9e-8bcd-8bc1ab397107",
+        "gearId": "10bfd752-37d4-4408-a9c2-eff1ebd3ae0b",
         "baseId": "kelp-cap",
         "rarity": "common",
         "itemLevel": 2,
@@ -495,12 +497,13 @@
     },
     {
       "id": "00000000-0000-4000-8000-0000000000aa",
-      "creatureId": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
+      "creatureId": "79d0c068-df20-42c5-87ad-c455451fb557",
       "kind": "improve",
       "input": {},
       "cost": {
         "scrap": 6
       },
+      "bait": 0,
       "startedAt": 1799733601000,
       "endsAt": 1799740801000,
       "status": "claimed",
@@ -524,19 +527,19 @@
   },
   "skills": [
     {
-      "creatureId": "fb547299-1d99-4e91-b913-ed6029135236",
+      "creatureId": "affe55f1-0051-4d24-94c7-980b00d4aa7f",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "733f1ee8-285f-4d0e-86e6-4ccb540b4ad3",
+      "creatureId": "79d0c068-df20-42c5-87ad-c455451fb557",
       "xp": 24,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "a4844dc1-e23f-4059-b04f-1554520a192a",
+      "creatureId": "fcda97e9-174a-4670-965b-a6b0a390956d",
       "xp": 36,
       "level": 1,
       "nextLevelXp": 100
@@ -546,7 +549,7 @@
     {
       "gear": [
         {
-          "id": "63a8639a-76fa-42ba-8994-eab6bfb4b1d9",
+          "id": "f0c6b1f3-5ce0-4fd9-a628-89a498baf126",
           "baseId": "festival-hearth-scarf",
           "rarity": "festival",
           "itemLevel": 8
@@ -562,7 +565,7 @@
     {
       "gear": [
         {
-          "id": "3f89c55d-cb0b-42fd-a033-d9f51df2c967",
+          "id": "8e71dfa1-7e6d-42e0-8d0e-27c229d4f121",
           "baseId": "tidepool-charm",
           "rarity": "common",
           "itemLevel": 6
@@ -578,7 +581,7 @@
     {
       "gear": [
         {
-          "id": "db53d67b-cc26-4419-9c56-31704fa16687",
+          "id": "73220551-14f9-4f71-9fe4-ead9780696ec",
           "baseId": "trail-cap",
           "rarity": "common",
           "itemLevel": 1

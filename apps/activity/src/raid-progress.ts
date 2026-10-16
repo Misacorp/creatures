@@ -155,6 +155,8 @@ export function festivalGrantText(grant: FestivalGrant): string {
   switch (grant.outcome) {
     case 'new':
       return `You won ${name}! A new level 1 creature for your collection.`;
+    case 'duplicate':
+      return `You won ${name} again! It waits on the Collection tab: Teach its talent, Fuse, Release or Keep it.`;
     case 'fused':
       return `You won ${name} again: it fused with yours (fusion ${String(grant.fusionCount ?? 0)} / 5).`;
     case 'converted':

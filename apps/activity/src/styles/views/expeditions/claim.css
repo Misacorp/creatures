@@ -81,7 +81,7 @@
   list-style: none;
 }
 
-.reveal-catches li {
+.reveal-catches > .catch-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;

@@ -14,6 +14,8 @@ interface JobStarterProps {
   /** What is being worked on: "Craft Wave Band". */
   title: string;
   cost: PartsBundle;
+  /** The Bait it costs besides the parts (a lure); absent: none. */
+  bait?: number;
   gear: GearState;
   creatures: readonly Creature[];
   /** Another reason it cannot start (the Crafting level a supply needs), shown like the others. */
@@ -51,7 +53,8 @@ export function JobStarter(props: JobStarterProps) {
     heading.current?.focus();
   }, []);
 
-  const blocker = startBlocker(gear, creatures, { kind, cost }) ?? props.extraBlocker ?? null;
+  const bait = props.bait ?? 0;
+  const blocker = startBlocker(gear, creatures, { kind, cost, bait }) ?? props.extraBlocker ?? null;
   const disabled = props.busy || blocker !== null || value === null;
   return (
     <section
@@ -66,6 +69,11 @@ export function JobStarter(props: JobStarterProps) {
       </h4>
       <p class="label">Cost</p>
       <CostList cost={cost} have={gear.parts} />
+      {bait > 0 && (
+        <p class={gear.balances.bait >= bait ? 'bait-cost' : 'bait-cost short'}>
+          {bait} Bait <span class="muted">(you have {gear.balances.bait})</span>
+        </p>
+      )}
       <CreaturePicker
         name={`${props.id}-who`}
         options={options}

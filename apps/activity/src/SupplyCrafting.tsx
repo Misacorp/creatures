@@ -47,7 +47,8 @@ export function SupplyCrafting({
       </h3>
       <p class="muted">
         Supplies boost one expedition. They cannot be bought: craft the ones you want here from
-        parts, or collect them from the daily dungeon and from trips.
+        parts, or collect them from the daily dungeon and from trips. A lure is also made from Bait:
+        it draws creatures to an expedition, and the new species among them.
       </p>
       <p class="supply-stock" aria-live="polite">
         In stock: <strong>{totalInStock}</strong>
@@ -77,6 +78,11 @@ export function SupplyCrafting({
                 </div>
               </div>
               <CostList cost={view.cost} have={gear.parts} />
+              {view.bait > 0 && (
+                <p class={gear.balances.bait >= view.bait ? 'bait-cost' : 'bait-cost short'}>
+                  {view.bait} Bait <span class="muted">(you have {gear.balances.bait})</span>
+                </p>
+              )}
               {blocker !== null && <p class="reason">{blocker}</p>}
               {open === view.id ? (
                 <JobStarter
@@ -84,6 +90,7 @@ export function SupplyCrafting({
                   kind="supply"
                   title={`Craft ${view.name}`}
                   cost={view.cost}
+                  bait={view.bait}
                   gear={gear}
                   creatures={creatures}
                   busy={busy}

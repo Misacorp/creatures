@@ -147,6 +147,7 @@ function isJob(value: unknown): value is Job {
     JOB_KINDS_STORED.includes(value['kind']) &&
     isJobInput(value['input']) &&
     isPartsBundle(value['cost']) &&
+    (value['bait'] === undefined || isCount(value['bait'])) &&
     isInt(value['startedAt']) &&
     isInt(value['endsAt']) &&
     (value['status'] === 'running' ||

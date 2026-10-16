@@ -96,6 +96,8 @@ export interface Job {
   input: { baseId?: string; supplyId?: string };
   /** The parts it cost when it started. */
   cost: PartsBundle;
+  /** The Bait it cost when it started (a lure costs Bait; absent on jobs stored before lures did). */
+  bait?: number;
   startedAt: number;
   endsAt: number;
   /** `ready` is a finished job that has not been claimed. */

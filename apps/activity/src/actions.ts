@@ -1,6 +1,7 @@
 import { ApiError } from './api';
 import type { SendRequest } from './expedition-api';
 import type { StartJobRequest } from './gear-types';
+import type { ChoiceRequest } from './talent-types';
 
 /**
  * Idempotency keys for user actions. An action gets one key (`crypto.randomUUID()`), created the
@@ -73,6 +74,17 @@ export const ActionIds = {
     return `send:${request.creatureId}:${request.destination}:${request.duration}:${picks.join(',')}`;
   },
   dismantle: (gearId: string): ActionId => `dismantle:${gearId}`,
+  /** One answer to one waiting duplicate (the same card answered another way is another action). */
+  catchChoice: (pendingId: string, request: ChoiceRequest): ActionId => {
+    const target = 'creatureId' in request ? request.creatureId : '';
+    const slot = 'slot' in request ? String(request.slot) : '';
+    return `catch:${pendingId}:${request.choice}:${target}:${slot}`;
+  },
+  /** "Apply Recommended to all": one action at a time, so one key. */
+  catchAll: (): ActionId => 'catch-all',
+  /** The same talent into the same slot of the same creature is the same slotting. */
+  talentSlot: (creatureId: string, talentId: string, golden: boolean, slot: number): ActionId =>
+    `talent-slot:${creatureId}:${talentId}:${golden ? 'g' : 'n'}:${String(slot)}`,
   claimJob: (jobId: string): ActionId => `claim-job:${jobId}`,
   /** The same job on the same creature is the same action. */
   job: (request: JobStart): ActionId => {

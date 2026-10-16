@@ -1,6 +1,8 @@
-import { Tag } from './ui/Tag';
 import { nextRankXp } from '@creatures/game';
 import type { ClaimResult, Creature } from './api';
+import { CatchList, autoSettledLines, noCatchLine } from './CatchList';
+import type { CatchChoiceActions } from './DuplicateCard';
+import type { PendingCatch } from './talent-types';
 import {
   failureLine,
   foundSupplies,
@@ -18,7 +20,7 @@ import {
 import type { Trip } from './expedition-types';
 import { Stars } from './ExpeditionIcons';
 import { GameIcon } from './ui/GameIcon';
-import { catchBadgeTags, creatureName, getSpecies, speciesName } from './game';
+import { creatureName } from './game';
 import { partCountItems } from './GearArt';
 import { LootList } from './GearLoot';
 import { GlossaryTag } from './Glossary';
@@ -26,7 +28,6 @@ import { glyphOrUnknown } from './glyphs';
 import { explorerInfo } from './send-view';
 import { SmallCreature } from './SmallCreature';
 import { XpBar } from './XpBar';
-import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { destinationName, explorerXp, supplyKindOf } from './trip-view';
@@ -45,6 +46,11 @@ export function TripReveal({
   result,
   trip,
   creature,
+  pending,
+  creatures,
+  busy,
+  catchActions,
+  settled,
   onDismiss,
 }: {
   result: ClaimResult;
@@ -52,6 +58,14 @@ export function TripReveal({
   trip: Trip | undefined;
   /** The explorer, as the fresh state lists it (its new rank and XP). */
   creature: Creature | undefined;
+  /** The duplicates still waiting for an answer (the fresh state's), so the cards can be shown here. */
+  pending: readonly PendingCatch[];
+  /** All the player's creatures (the cards name the ones a talent or a fusion can go to). */
+  creatures: readonly Creature[];
+  busy: boolean;
+  catchActions: CatchChoiceActions;
+  /** What each duplicate answered this session became (a card id to a sentence). */
+  settled: Readonly<Record<string, string>>;
   onDismiss: () => void;
 }) {
   const tone = revealTone(result);
@@ -79,7 +93,9 @@ export function TripReveal({
       : explorerXp(
           creature?.explorer ?? { rank: xp.rank, xp: xp.total, nextRankXp: nextRankXp(xp.rank) },
         );
-  const nothing = result.catches.length === 0 && lootEmpty && tone !== 'failed';
+  const noCatch = noCatchLine(result);
+  const autoSettled = autoSettledLines(result.autoSettled, creatures);
+  const nothing = result.catches.length === 0 && lootEmpty && tone !== 'failed' && noCatch === null;
   return (
     <RevealShell
       id="trip-reveal-heading"
@@ -115,29 +131,20 @@ export function TripReveal({
 
       {nothing && <p>Nothing came back this time.</p>}
 
-      {result.catches.length > 0 && (
-        <ul class="reveal-catches" aria-label="Creatures found">
-          {result.catches.map((entry, index) => {
-            const species = getSpecies(entry.species);
-            return (
-              <li key={index}>
-                <Sprite sprite={creatureSpriteOrFallback(entry.species)} scale={3} bob />
-                <strong>{speciesName(entry.species)}</strong>{' '}
-                {species !== undefined && <ElementChip element={species.element} />}{' '}
-                {catchBadgeTags(entry).map((badge) => (
-                  <Tag
-                    key={badge.text}
-                    kind="badge"
-                    {...(badge.entry === null ? {} : { entry: badge.entry })}
-                  >
-                    {badge.text}
-                  </Tag>
-                ))}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <CatchList
+        result={result}
+        pending={pending}
+        creatures={creatures}
+        busy={busy}
+        actions={catchActions}
+        settled={settled}
+      />
+      {noCatch !== null && <p class="muted no-catch">{noCatch}</p>}
+      {autoSettled.map((line) => (
+        <p key={line} class="muted auto-settled">
+          {line}
+        </p>
+      ))}
 
       {!lootEmpty && loot !== undefined && (
         <div class="trip-loot">
