@@ -68,6 +68,12 @@ export const CreatureSpeciesSchema = v.strictObject({
   growth: GrowthSchema,
   levelCap: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(99)),
   evolvesTo: v.optional(EvolutionSchema),
+  /**
+   * A second branch of the evolution (a stage-1 species whose line grows two ways, for example a Guard
+   * or a Support). Needs `evolvesTo`; the target is another stage-2 species of the same line. A line with
+   * a second branch is the only one a player may Keep a duplicate of (`lineBranches`).
+   */
+  altEvolvesTo: v.optional(EvolutionSchema),
   /** The creature's finale ability (a `kind: 'creature'` entry of `finaleAbilities`). */
   ability: v.optional(v.strictObject({ id: IdSchema })),
   /** Optional crit bonus over the baseline (a high-crit archetype). */

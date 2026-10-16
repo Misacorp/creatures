@@ -5,7 +5,7 @@
       "title": "Your first week",
       "lines": [
         "Pick a starter. Your first expedition always brings back a Zipmouse.",
-        "Open the game each day for a Bait allowance, and leet in Discord for a bonus. Spend Bait to train and to explore.",
+        "Open the game each day for a Bait allowance, and leet in Discord for a bonus. Spend Bait to train and to craft lures.",
         "Train a creature to level 10 to unlock its finale ability.",
         "You join the weekly raid automatically. You can sit a week out.",
         "On Sunday evening everyone fights the boss together."
@@ -15,9 +15,9 @@
       "id": "creatures",
       "title": "Creatures",
       "lines": [
-        "Each creature has an element: Tide, Ember, Grove or Spark.",
-        "Each has a role: Setter, Payoff, Guard or Support.",
+        "Each creature has an element (Tide, Ember, Grove or Spark) and a role (Setter, Payoff, Guard or Support).",
         "Levels raise HP, Attack and Speed. Train with Bait.",
+        "Every catch rolls a talent. A duplicate is a choice: Teach, Fuse, Release or Keep.",
         "At level 10 a creature gets a finale ability. Evolving makes it stronger.",
         "Tap any tag in the game to see what it means."
       ]
@@ -60,7 +60,7 @@
       "title": "Expeditions",
       "lines": [
         "Send a creature to a place for 2, 6 or 12 hours. Longer trips find much more, and a 24 hour trip opens later.",
-        "Trips are free. Supplies give a real boost: the dungeon drops them, trips find them, the Workshop crafts them.",
+        "Trips are free and may bring a creature. Supplies help: lures, made from Bait, raise the odds.",
         "Every creature gets better at exploring: ranks, stars for each place and Journal pages.",
         "A finished trip may offer a push-on choice. Safe goals always work. Risky ones can fail.",
         "You start with 1 slot, and more open as your creatures grow. Recall early to keep what was caught."

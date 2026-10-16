@@ -73,8 +73,33 @@ export const RULES = {
     /** Cumulative stat bonus in basis points after N fusions (index = N). */
     cumulativeBonusBp: [0, 600, 1100, 1500, 1800, 2000],
     maxFusions: 5,
-    /** Bait granted for a duplicate once the creature has reached maxFusions. */
-    convertBait: { common: 5, rare: 15, epic: 40 } satisfies Record<Rarity, number>,
+  },
+  /**
+   * Talents and the duplicate choice (docs/design/gear-and-creatures-v2.md section 8, "Creatures A").
+   * Starting values; the sim reports where they land. A talent's own size is content
+   * (`data/talents.json`); what a catch rolls and what a duplicate may become is here.
+   */
+  talents: {
+    /** One catch in `denominator` rolls its talent golden: `numerator / denominator`. */
+    golden: { numerator: 1, denominator: 20 },
+    /** A golden talent is worth this much of a normal one (1.5x), rounded down to a whole percent or point. */
+    goldenBp: 15_000,
+    /** The creature level at which talent slots 1, 2 and 3 open (the unlock ladder, spec 9.3a). */
+    slotLevels: [1, 20, 25] as readonly number[],
+    /** How many slots a species of each rarity has: commons two, rares and epics three. */
+    slotsByRarity: { common: 2, rare: 3, epic: 3 } satisfies Record<Rarity, number>,
+    /** Slotting a talent from a creature's Talent Book costs this much Bait and is instant. */
+    bookSlotBait: 10,
+    /** A player holds at most this many pending duplicates; one more settles the oldest with Recommended. */
+    maxPending: 10,
+    /** At most this many creatures of one line (a Kept duplicate is the second), and only for a branching line. */
+    maxPerLine: 2,
+    /** What releasing a duplicate pays, by rarity: parts, never Bait (a shard is of the creature's element). */
+    release: {
+      common: { scrap: 3, shard: 0, glimmer: 0 },
+      rare: { scrap: 6, shard: 1, glimmer: 0 },
+      epic: { scrap: 12, shard: 2, glimmer: 1 },
+    } satisfies Record<Rarity, { scrap: number; shard: number; glimmer: number }>,
   },
   /**
    * Bait income (docs/design/player-journey-sim.md, decisions 2026-10-15): `dailyAllowance` for
@@ -665,7 +690,10 @@ export const RULES = {
    */
   expeditions: {
     /**
-     * Per trip length: the time, the catch rolls and what a finished trip brings. Rewards grow faster
+     * Per trip length: the time, the catch rolls and what a finished trip brings. A roll brings a
+     * creature only with chance `catchBp` (2026-10-16: trips brought far too many creatures and
+     * duplicates); a roll that brings none brings a small find, `findScrap` scrap. A lure raises the
+     * chance and the odds of a species the player lacks. Rewards grow faster
      * than the hours (the 12 hour trip pays more than three 4 hour ones would): a short trip is the
      * worst way to progress. `loot` are chances in basis points (a value above 10000 is a sure one plus
      * a chance of another); `scrap` is a flat amount; a recalled trip pays only its share of the scrap.
@@ -674,6 +702,8 @@ export const RULES = {
       short: {
         ms: 2 * HOUR_MS,
         rolls: 1,
+        catchBp: 2000,
+        findScrap: 1,
         rarityUpBp: 0,
         xp: 4,
         minRank: 1,
@@ -683,6 +713,8 @@ export const RULES = {
       medium: {
         ms: 6 * HOUR_MS,
         rolls: 1,
+        catchBp: 3500,
+        findScrap: 1,
         rarityUpBp: 150,
         xp: 110,
         minRank: 1,
@@ -692,6 +724,8 @@ export const RULES = {
       long: {
         ms: 12 * HOUR_MS,
         rolls: 1,
+        catchBp: 5000,
+        findScrap: 2,
         rarityUpBp: 300,
         xp: 300,
         minRank: 1,
@@ -701,6 +735,8 @@ export const RULES = {
       day: {
         ms: 24 * HOUR_MS,
         rolls: 2,
+        catchBp: 4500,
+        findScrap: 2,
         rarityUpBp: 600,
         xp: 700,
         minRank: 5,
@@ -732,9 +768,9 @@ export const RULES = {
         { bait: 4, scrap: 2, glimmer: 0, supplies: [] },
         { bait: 5, scrap: 2, glimmer: 0, supplies: [] },
         { bait: 6, scrap: 3, glimmer: 1, supplies: [] },
-        { bait: 50, scrap: 5, glimmer: 2, supplies: ['lantern-good', 'lure-good'] },
+        { bait: 50, scrap: 5, glimmer: 2, supplies: ['lantern-good', 'satchel-good'] },
         { bait: 75, scrap: 8, glimmer: 3, supplies: ['map-scrap-good', 'satchel-good'] },
-        { bait: 100, scrap: 10, glimmer: 4, supplies: ['lure-great'] },
+        { bait: 100, scrap: 10, glimmer: 4, supplies: ['lantern-great'] },
         { bait: 150, scrap: 15, glimmer: 6, supplies: ['map-scrap-great', 'satchel-great'] },
       ],
     },
@@ -759,12 +795,6 @@ export const RULES = {
      * numbers (about a month, four months and a year of a daily player's trips).
      */
     slots: { secondAfterTrips: 3, thresholds: [26, 72, 103] },
-    /**
-     * A duplicate caught on an expedition after the creature's 5 fusions turns into Bait at this share
-     * (basis points) of the usual `fusion.convertBait`: trips are free now, so what they convert must
-     * not pay for itself (a v1 trip cost about as much Bait as it converted).
-     */
-    convertBp: 6_000,
     /**
      * The end-of-trip choice. A trip offers one with probability `baseOfferBp` plus `perRankBp` for
      * each explorer rank above 1, joined with its supplies' own chances (the best tier is a sure

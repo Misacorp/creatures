@@ -701,6 +701,7 @@ describe('folding worn items', () => {
       busyPawsBp: 1_200,
       apprenticeBp: 800,
       restBp: 700,
+      glimmerFindBp: 0,
     });
     expect(Object.keys(fx.mods)).toEqual([]);
   });

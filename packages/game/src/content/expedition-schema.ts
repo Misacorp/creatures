@@ -118,6 +118,11 @@ const SupplyBlueprintSchema = v.strictObject({
   /** Hours the job takes before the crafting skill shortens it. */
   hours: Int(1, 24),
   parts: PartsSchema,
+  /**
+   * Bait the job costs besides its parts. Only lures take Bait (2026-10-16: Bait's two jobs are treats,
+   * which grow creatures, and lures, which find them); the other supplies are made from parts alone.
+   */
+  bait: v.optional(Int(1, 500)),
   /** How many supplies one job makes. */
   yield: Int(1, 9),
 });
@@ -154,9 +159,13 @@ export const SupplySchema = v.variant('kind', [
   v.strictObject({
     ...supplyFields,
     kind: v.literal('lure'),
-    /** Moves this many basis points of the odds from Common to Rare, and from Common to Epic. */
-    rareUpBp: Bp,
-    epicUpBp: Bp,
+    /** Added to the chance (basis points) that a catch roll of the trip brings a creature at all. */
+    catchBp: Bp,
+    /**
+     * The chance (basis points) that a roll that brings a creature brings one of a species the player
+     * does not own yet, when there is one to find (the roll is drawn again among the unowned).
+     */
+    newBp: Bp,
   }),
   v.strictObject({
     ...supplyFields,
@@ -370,6 +379,9 @@ export function loadExpeditions(raw: unknown, pack: ContentPack): ExpeditionPack
       fail(`supply "${s.id}" must be called "${s.kind}-${s.tier}"`);
     if (supplyIds.has(s.id)) fail(`duplicate supply id "${s.id}"`);
     supplyIds.add(s.id);
+    if ((s.blueprint.bait !== undefined) !== (s.kind === 'lure')) {
+      fail(`supply "${s.id}": only lures cost Bait, and every lure does`);
+    }
     if (s.tier === 'great' && s.offerBp !== 10_000) {
       fail(`supply "${s.id}" is the best tier and must guarantee a choice (offerBp 10000)`);
     }

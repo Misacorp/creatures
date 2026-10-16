@@ -19,6 +19,7 @@ import {
   type GearTag,
 } from '../content/gear-schema';
 import { ELEMENTS, type CritBonus, type Element, type Role, type Stats } from '../content/schema';
+import type { TalentEffect } from '../content/talent-schema';
 import { int, pickWeighted, type Rng } from '../rng';
 import { RULES } from './config';
 
@@ -392,6 +393,8 @@ export interface GearRules {
   apprenticeBp: number;
   /** In the dungeon, the share of max HP it recovers between rooms. */
   restBp: number;
+  /** The chance of a glimmer on its trips, more (a share of the chance; a talent, not a gear line). */
+  glimmerFindBp: number;
 }
 
 export const NO_GEAR_RULES: GearRules = Object.freeze({
@@ -403,6 +406,7 @@ export const NO_GEAR_RULES: GearRules = Object.freeze({
   busyPawsBp: 0,
   apprenticeBp: 0,
   restBp: 0,
+  glimmerFindBp: 0,
 });
 
 const RULE_FIELD = {
@@ -415,6 +419,16 @@ const RULE_FIELD = {
   apprentice: 'apprenticeBp',
 } as const satisfies Record<string, keyof GearRules>;
 
+/**
+ * A talent as the fold sees it: its id, what it does and its value (already golden or normal), in the
+ * unit of its line (`rules/talents.ts` builds these from a creature's slots and signature).
+ */
+export interface FoldTalent {
+  id: string;
+  effect: TalentEffect;
+  value: number;
+}
+
 /** What a creature's worn items add, line by line, before they are applied. */
 export interface WornEffects {
   atkBp: number;
@@ -423,11 +437,15 @@ export interface WornEffects {
   hpFlat: number;
   critChanceBp: number;
   critDamageBp: number;
+  /** Speed, more (a share; only a talent gives it). */
+  spdBp: number;
   /** The modifier sheet; empty when no line fills it. */
   mods: GearMods;
   rules: GearRules;
   /** Ids of lines that do nothing for this wearer (a Guard's armor on a Support, an off-element Attunement). */
   idle: string[];
+  /** Ids of talents that do nothing for this wearer (a Guard's cover on a Setter). */
+  idleTalents: string[];
 }
 
 /** The element that `element` is strong against (Tide beats Ember). */
@@ -496,8 +514,16 @@ function lineApplies(line: GearLine, wearer: Wearer): boolean {
  * an element Ward a reduction against the element that beats it, a reaction line the bonus of that
  * reaction, a position line the bonus beside a role. Pure and deterministic; no caps beyond the ones
  * the engine's sheet checks (a reduction stays below 100%, a pierce at most 100%, Lingering at most 3 rounds).
+ *
+ * The creature's talents (`talents`) go through the same function: a talent whose effect is a gear line
+ * is folded exactly like that line on an item, and the two rules only talents have (Speed, glimmer finds)
+ * add to `spdBp` and the trip rules. Talents add after the items, so the order never matters for the sums.
  */
-export function wornEffects(wearer: Wearer, items: readonly GearItem[]): WornEffects {
+export function wornEffects(
+  wearer: Wearer,
+  items: readonly GearItem[],
+  talents: readonly FoldTalent[] = [],
+): WornEffects {
   const out: WornEffects = {
     atkBp: 0,
     atkFlat: 0,
@@ -505,17 +531,20 @@ export function wornEffects(wearer: Wearer, items: readonly GearItem[]): WornEff
     hpFlat: 0,
     critChanceBp: 0,
     critDamageBp: 0,
+    spdBp: 0,
     mods: {},
     rules: { ...NO_GEAR_RULES },
     idle: [],
+    idleTalents: [],
   };
   const sheet = out.mods;
   const addSheet = (field: SheetNumeric, value: number): void => {
     sheet[field] = (sheet[field] ?? 0) + value;
   };
-  const apply = (line: GearLine, value: number): void => {
+  const apply = (line: GearLine, value: number, talentId: string | null = null): void => {
     if (!lineApplies(line, wearer)) {
-      out.idle.push(line.id);
+      if (talentId === null) out.idle.push(line.id);
+      else out.idleTalents.push(talentId);
       return;
     }
     const effect = line.effect;
@@ -576,6 +605,16 @@ export function wornEffects(wearer: Wearer, items: readonly GearItem[]): WornEff
       if (line !== undefined) apply(line, resolved.value);
     }
   }
+  for (const talent of talents) {
+    if ('line' in talent.effect) {
+      const line = gearLine(talent.effect.line);
+      if (line !== undefined) apply(line, talent.value, talent.id);
+    } else if (talent.effect.rule === 'speed') {
+      out.spdBp += talent.value;
+    } else {
+      out.rules.glimmerFindBp += talent.value;
+    }
+  }
   // Keep within what the engine's sheet accepts.
   for (const field of [
     'pierceBp',
@@ -599,9 +638,9 @@ export function modsEmpty(mods: GearMods): boolean {
 }
 
 /**
- * Folds a creature's worn items into its fight numbers. `stats` are the effective stats (level, fusion)
- * and `crit` the species' crit bonus. The result has Attack and HP raised by the items' percentages
- * and then their flat amounts, the crit lines added to the crit bonus, the sheet for `FightSlot.mods`
+ * Folds a creature's worn items and talents into its fight numbers. `stats` are the effective stats
+ * (level, fusion) and `crit` the species' crit bonus. The result has Attack and HP raised by the
+ * percentages and then the flat amounts of the items and talents, Speed by a talent's share, the crit lines added to the crit bonus, the sheet for `FightSlot.mods`
  * (absent when empty) and the trip, Workshop and dungeon rules. The engine adds the crit bonus to the
  * baseline and applies its own caps, so the bonus is kept inside the room that is left. Integers only;
  * stats never fall. Without items the inputs come back unchanged.
@@ -611,15 +650,18 @@ export function applyGear(
   crit: CritBonus | undefined,
   wearer: Wearer,
   items: readonly GearItem[],
+  talents: readonly FoldTalent[] = [],
 ): { stats: Stats; crit: CritBonus | undefined; mods: GearMods | undefined; rules: GearRules } {
-  if (items.length === 0) return { stats, crit, mods: undefined, rules: NO_GEAR_RULES };
-  const fx = wornEffects(wearer, items);
+  if (items.length === 0 && talents.length === 0) {
+    return { stats, crit, mods: undefined, rules: NO_GEAR_RULES };
+  }
+  const fx = wornEffects(wearer, items, talents);
   const scale = (value: number, bp: number, flat: number): number =>
     Math.floor((value * (10_000 + bp)) / 10_000) + flat;
   const folded: Stats = {
     hp: scale(stats.hp, fx.hpBp, fx.hpFlat),
     atk: scale(stats.atk, fx.atkBp, fx.atkFlat),
-    spd: stats.spd,
+    spd: scale(stats.spd, fx.spdBp, 0),
   };
   const mods = modsEmpty(fx.mods) ? undefined : fx.mods;
   if (crit === undefined && fx.critChanceBp === 0 && fx.critDamageBp === 0) {
@@ -664,18 +706,33 @@ export function itemScore(
   const powerCenti = stats.atk * 100 + stats.hp * 10;
   for (const resolved of itemLines(item)) {
     const line = gearLine(resolved.id);
-    if (line === undefined || line.worth === 0 || !lineApplies(line, wearer)) continue;
-    const value = line.unit === 'once' ? 10_000 : resolved.value;
-    const meant =
-      line.roles.length > 0 && !line.restricted
-        ? line.roles.includes(wearer.role)
-        : line.effect.kind === 'reaction'
-          ? line.element === wearer.element
-          : true;
-    const share = Math.floor((powerCenti * value * line.worth) / 100_000_000);
-    centi += meant ? share : Math.floor(share / 4);
+    if (line !== undefined) centi += lineScore(line, resolved.value, wearer, powerCenti);
   }
   return centi;
+}
+
+/**
+ * The share of a creature's power one line adds, in hundredths of power (see `itemScore`): in full for
+ * the wearer it is meant for, a quarter otherwise, 0 for a line that does nothing for the wearer or
+ * that the fold counts exactly (Attack and HP lines have a `worth` of 0). `powerCenti` is the wearer's
+ * `atk * 100 + hp * 10`.
+ */
+export function lineScore(
+  line: GearLine,
+  value: number,
+  wearer: Wearer,
+  powerCenti: number,
+): number {
+  if (line.worth === 0 || !lineApplies(line, wearer)) return 0;
+  const v = line.unit === 'once' ? 10_000 : value;
+  const meant =
+    line.roles.length > 0 && !line.restricted
+      ? line.roles.includes(wearer.role)
+      : line.effect.kind === 'reaction'
+        ? line.element === wearer.element
+        : true;
+  const share = Math.floor((powerCenti * v * line.worth) / 100_000_000);
+  return meant ? share : Math.floor(share / 4);
 }
 
 /** One creature in an Equip best plan: its level, role, element, stats and what it wears now. */
