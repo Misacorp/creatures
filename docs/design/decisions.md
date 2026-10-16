@@ -1286,3 +1286,15 @@ Answers to the ten questions in `docs/design/systems-review.md`. Where they diff
 10. **No levels past 30** for now.
 
 Also asked: whether using a supply is loosely net positive (not every time; randomness is fine).
+
+## 2026-10-16: Misa's second round on the revamps: weighted slot pools, training by activity, Boons and Omens
+
+1. **Slots: Hat, Scarf, Charm** (Cape kept as a possible future slot). Slots are **not** locked to one kind of stat: each slot's roll pool is **weighted** toward its theme (Hats lean to attack, and so on) and may roll other lines too. A few lines are **exclusive** to one or two slots (Path of Exile style: only boots, rings and amulets roll movement speed), so players know where to hunt for them. Charms are **not** role-locked as a rule; role-locked items may exist, but the interesting choice is finding the item with the right lines for a particular creature.
+2. **Gear upgrades (+1 to +5) go away.** An item's level is fixed when it drops or is crafted.
+3. **Items remember who crafted them and when** (creature and date), for the "this item is mine" feeling and any future gifting.
+4. **Dismantling** may have a small random range, improved by the creature's Crafting level, and may take time. Workshop odds need not be fully shown; showing them is fine.
+5. **Training by activity:** creatures gain experience from expeditions, the dungeon and raids, with limited activity slots making the player choose who goes where; Bait becomes treats that speed it up. Every 10 levels there is a gate, but not one that demands a deep dungeon from a low-level creature: materials at least.
+6. **Both branches of a line can be owned:** keeping a duplicate is a fourth duplicate choice when the player does not yet have that line's other branch.
+7. **Boons and Omens:** positive effects are Boons, negative ones Omens. They change at the **daily reset**, so a well-planned raid can hit bad weather part way through the weekend and players adapt. They may also touch expeditions and the dungeon, and grow stronger at high raid ranks.
+8. **Process:** Misa reviews the gear modifier list and creature talents and choices (all modifiers, example talents, and why each choice is meaningful) as an artifact before they are built. Gear and creatures are the foundation; raids and dungeons are rebalanced around them afterwards with the curve scalars.
+9. **A reference-games log** records what we draw inspiration from, what we looked into, and what works for this game and what does not (`docs/research/reference-games.md`). The Bazaar is added as a key reference.
