@@ -1,4 +1,4 @@
-import { RULES, craftCost, dismantleRange, jobDuration } from '@creatures/game';
+import { RULES, craftCost, craftItemLevel, dismantleRange, jobDuration } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { parseGameState, type Creature } from './api';
 import collectionState from './fixtures/collection-state.json';
@@ -448,7 +448,7 @@ describe('starting a job', () => {
   const free = game.creatures.filter((c) => c.busy === null);
 
   it('can start when a slot, a creature and the parts are there', () => {
-    expect(startBlocker(gear, free, { kind: 'craft', cost: craftCost('kelp-cap') })).toBeNull();
+    expect(startBlocker(gear, free, { kind: 'craft', cost: craftCost('kelp-cap', 2) })).toBeNull();
   });
 
   it('says why not, in words, in this order', () => {
@@ -476,16 +476,22 @@ describe('starting a job', () => {
 
 describe('blueprints', () => {
   it('lists the known blueprints by slot and name, with the shared-rules craft price', () => {
-    const views = blueprintViews(gear.blueprints);
+    const views = blueprintViews(gear.blueprints, gear.skills);
+    // The price follows the item level of the best crafter (twice the Crafting level).
+    const best = craftItemLevel(Math.max(1, ...gear.skills.map((s) => s.level)));
     expect(views.map((v) => v.baseId)).toEqual(['kelp-cap', 'trail-charm']);
-    expect(views[0]?.cost).toEqual(craftCost('kelp-cap'));
+    expect(views[0]?.cost).toEqual(craftCost('kelp-cap', best));
+    const expert = blueprintViews(gear.blueprints, [
+      { ...(gear.skills[0] as (typeof gear.skills)[number]), level: 10 },
+    ]);
+    expect(expert[0]?.cost).toEqual(craftCost('kelp-cap', 20));
     expect(views[0]).toMatchObject({ slot: 'hat', element: 'tide' });
     expect(views[1]?.element).toBeNull();
   });
 
   it('skips a blueprint whose base the content does not have', () => {
     expect(
-      blueprintViews([{ baseId: 'nope', learnedAt: 1, marks: 0 }, ...gear.blueprints]),
+      blueprintViews([{ baseId: 'nope', learnedAt: 1, marks: 0 }, ...gear.blueprints], gear.skills),
     ).toHaveLength(2);
   });
 });
@@ -609,13 +615,13 @@ describe("writing the odds, the marks and the refund ranges (the numbers are the
   it('writes what a dismantle can give, leaving out what it never gives', () => {
     expect(
       dismantleLines(dismantleRange([{ baseId: 'trail-cap', rarity: 'common', itemLevel: 1 }])),
-    ).toEqual(['2 to 4 scrap']);
+    ).toEqual(['2 to 3 scrap']);
     expect(
       dismantleLines(dismantleRange([{ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 10 }])),
-    ).toEqual(['6 to 10 scrap', '1 Tide shard', '3 to 8 Essence']);
+    ).toEqual(['2 to 3 scrap', '1 Tide shard', '3 to 8 Essence']);
     expect(
       dismantleLines(dismantleRange([{ baseId: 'wardens-bell', rarity: 'epic', itemLevel: 20 }])),
-    ).toEqual(['12 to 18 scrap', '1 to 2 shards (any kind)', '0 to 1 glimmer', '10 to 25 Essence']);
+    ).toEqual(['5 to 6 scrap', '1 to 2 shards (any kind)', '0 to 1 glimmer', '10 to 25 Essence']);
   });
 
   it('shows the time of a dismantle for the rarity and the worker', () => {

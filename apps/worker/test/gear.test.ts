@@ -451,7 +451,7 @@ describe('GET /api/gear and the welcome kit', () => {
         expect(first.grants[0]).toMatchObject({ key: 'welcome', source: 'welcome' });
         const drawn = rng.drawn();
         expect(drawn).toBeGreaterThan(0);
-        expect(first.parts.scrap).toBeGreaterThanOrEqual(craftCost(kit.blueprint).scrap ?? 0);
+        expect(first.parts.scrap).toBeGreaterThanOrEqual(craftCost(kit.blueprint, 2).scrap ?? 0);
 
         // Loading again (and again) gives nothing and draws nothing.
         await a.gear();

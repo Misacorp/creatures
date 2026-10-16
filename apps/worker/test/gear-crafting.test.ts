@@ -156,7 +156,7 @@ describe('crafting: the preview', () => {
           reach: 'rare',
           unlocked: false,
           minLevel: 3,
-          parts: { scrap: 6, 'tide-shard': 2 },
+          parts: { scrap: 6, 'tide-shard': 1 },
           essence: 25,
           durationMs: 6 * HOUR,
           xp: 72,
@@ -166,7 +166,7 @@ describe('crafting: the preview', () => {
           reach: 'epic',
           unlocked: false,
           minLevel: 6,
-          parts: { scrap: 6, 'tide-shard': 3, glimmer: 1 },
+          parts: { scrap: 6, 'tide-shard': 1, glimmer: 1 },
           essence: 70,
           durationMs: 10 * HOUR,
           xp: 120,
@@ -185,7 +185,7 @@ describe('crafting: the preview', () => {
         expect(r6).toMatchObject({ craftingLevel: 6, itemLevel: 12, marks: 0, stepUpBp: 500 });
         expect(r6.options.map((o) => o.unlocked)).toEqual([true, true, true]);
         expect(r6.options[2]).toMatchObject({
-          parts: { scrap: 8, 'spark-shard': 2, glimmer: 1 },
+          parts: { scrap: 11, glimmer: 1 },
           essence: 70,
         });
         expect(r6.options[2]?.oddsBp).toEqual(craftOdds('epic', 6, 0));
@@ -237,7 +237,7 @@ describe('crafting: the preview', () => {
 });
 
 describe('crafting: Reach', () => {
-  it('Reach for Rare pays Essence, shards and a longer job, and needs Crafting level 3', async () => {
+  it("Reach for Rare pays Essence and a longer job (and the plain craft's parts), and needs Crafting level 3", async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -258,7 +258,8 @@ describe('crafting: Reach', () => {
         const res = await reach(c2);
         expect(res.status).toBe(200);
         expect(essenceOf(ctx, p.id)).toBe(75);
-        expect(partsOf(ctx, p.id)).toMatchObject({ scrap: 14, 'tide-shard': 3 });
+        // Item level 6: 6 + 1 scrap and one shard (a Reach takes no shard more than a plain craft).
+        expect(partsOf(ctx, p.id)).toMatchObject({ scrap: 13, 'tide-shard': 4 });
         const job = (res.body['gear'] as GearBody).jobs[0] as JobBody;
         expect(job.input).toMatchObject({ baseId: 'kelp-cap', reach: 'rare' });
         expect(job.endsAt - job.startedAt).toBe(jobDuration(3, 0, 6));
@@ -276,7 +277,7 @@ describe('crafting: Reach', () => {
     );
   });
 
-  it('Reach for Epic needs level 6, 70 Essence, 2 more shards and a glimmer, and takes 10 hours', async () => {
+  it('Reach for Epic needs level 6, 70 Essence and a glimmer, and takes 10 hours', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -303,7 +304,8 @@ describe('crafting: Reach', () => {
         const res = await epic(c2);
         expect(res.status).toBe(200);
         expect(essenceOf(ctx, p.id)).toBe(0);
-        expect(partsOf(ctx, p.id)).toMatchObject({ scrap: 14, 'tide-shard': 2 });
+        // Item level 12: 6 + 3 scrap, one shard and the glimmer.
+        expect(partsOf(ctx, p.id)).toMatchObject({ scrap: 11, 'tide-shard': 4 });
         expect(partsOf(ctx, p.id)['glimmer'] ?? 0).toBe(0);
         const job = (res.body['gear'] as GearBody).jobs[0] as JobBody;
         expect(job.endsAt - job.startedAt).toBe(jobDuration(6, 0, 10));
@@ -319,7 +321,7 @@ describe('crafting: Reach', () => {
         const p = await player(ctx, 1);
         skipWelcome(ctx, p.id);
         learnBase(ctx, p.id, 'kelp-cap');
-        giveParts(ctx, p.id, { scrap: 20, 'tide-shard': 1 });
+        giveParts(ctx, p.id, { scrap: 5, 'tide-shard': 1 });
         giveEssence(ctx, p.id, 100);
         setCraftingXp(ctx, p.id, p.creatureIds[0] as string, 250);
         const res = await start(p, {
@@ -517,7 +519,7 @@ describe('dismantling is a Workshop job', () => {
           dismantleRange([{ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 10 }]),
         );
         expect(a.range).toEqual({
-          scrap: { min: 6, max: 10 },
+          scrap: { min: 2, max: 3 },
           shards: { min: 1, max: 1, element: 'tide' },
           glimmer: { min: 0, max: 0 },
           essence: { min: 3, max: 8 },
@@ -578,9 +580,9 @@ describe('dismantling is a Workshop job', () => {
           marked: unknown[];
         };
         expect(result).toMatchObject({ kind: 'dismantle', parts: expected.parts, essence: 0 });
-        // Three Commons: 6 to 12 scrap, and the minimum 6 XP for a 15 minute job.
+        // Three Commons (item level 1, craft scrap cost 8 each): 2 to 3 scrap each, and the minimum 6 XP for a 15 minute job.
         expect(result.parts.scrap).toBeGreaterThanOrEqual(6);
-        expect(result.parts.scrap).toBeLessThanOrEqual(12);
+        expect(result.parts.scrap).toBeLessThanOrEqual(9);
         expect(result.xp).toBe(6);
         expect(partsOf(ctx, p.id)['scrap']).toBe(result.parts.scrap);
         expect(
@@ -615,9 +617,9 @@ describe('dismantling is a Workshop job', () => {
         ctx.clock.t += 2 * HOUR;
         const done = await claim(p, jobIdOf(b));
         const result = done.body['result'] as { parts: PartsBundle; essence: number; xp: number };
-        // Epic at item level 20: 12 to 18 scrap, 1 or 2 tide shards, up to 1 glimmer, 10 to 25 Essence, 24 XP.
-        expect(result.parts.scrap).toBeGreaterThanOrEqual(12);
-        expect(result.parts.scrap).toBeLessThanOrEqual(18);
+        // Epic at item level 20 (craft scrap cost 11): 4 to 5 scrap, 1 or 2 tide shards, up to 1 glimmer, 10 to 25 Essence, 24 XP.
+        expect(result.parts.scrap).toBeGreaterThanOrEqual(4);
+        expect(result.parts.scrap).toBeLessThanOrEqual(5);
         expect(result.essence).toBeGreaterThanOrEqual(10);
         expect(result.essence).toBeLessThanOrEqual(25);
         expect(result.xp).toBe(24);
@@ -671,9 +673,9 @@ describe('dismantling is a Workshop job', () => {
             const values = seen.get(creature) ?? new Set<number>();
             values.add(done.essence);
             seen.set(creature, values);
-            // Rare at item level 5: 5 to 9 scrap, 1 shard, 3 to 8 Essence for everybody.
-            expect(done.parts.scrap).toBeGreaterThanOrEqual(5);
-            expect(done.parts.scrap).toBeLessThanOrEqual(9);
+            // Rare at item level 5 (craft scrap cost 7): 2 to 3 scrap, 1 shard, 3 to 8 Essence for everybody.
+            expect(done.parts.scrap).toBeGreaterThanOrEqual(2);
+            expect(done.parts.scrap).toBeLessThanOrEqual(3);
             expect(done.essence).toBeGreaterThanOrEqual(3);
             expect(done.essence).toBeLessThanOrEqual(8);
           }

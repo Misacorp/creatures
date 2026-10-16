@@ -28,7 +28,7 @@ export function Blueprints({
   onCraft: (baseId: string, creatureId: string, reach: ReachId) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState<string | null>(null);
-  const views = blueprintViews(gear.blueprints);
+  const views = blueprintViews(gear.blueprints, gear.skills);
   return (
     <section class="ws-section" aria-labelledby="ws-blueprints">
       <h3 id="ws-blueprints">

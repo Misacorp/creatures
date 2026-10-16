@@ -896,7 +896,7 @@ export class Gear {
         marksMax: RULES.gear.craft.marks.max,
         stepUpBp: stepUpBp(level, marks, mods),
         options: REACH_IDS.map((reach): CraftOption => {
-          const cost = craftCostFor(base.id, reach, held);
+          const cost = craftCostFor(base.id, reach, held, craftItemLevel(level));
           return {
             reach,
             unlocked: level >= reachMinLevel(reach),
@@ -1026,7 +1026,12 @@ export class Gear {
     if (!hasRoom(this.sql, userId)) throw new GameError(409, 'inventory_full');
     const reach = input.reach ?? 'none';
     if (worker.level < reachMinLevel(reach)) throw new GameError(409, 'skill_too_low');
-    const { parts: cost, essence } = craftCostFor(base.id, reach, getParts(this.sql, userId));
+    const { parts: cost, essence } = craftCostFor(
+      base.id,
+      reach,
+      getParts(this.sql, userId),
+      craftItemLevel(worker.level),
+    );
     if (!hasParts(this.sql, userId, cost)) throw new GameError(409, 'insufficient_parts');
     const mods = this.mods(userId, 'craft');
     const duration = jobDuration(worker.level, worker.busyBp, craftHours(reach));
