@@ -36,11 +36,11 @@ An item is `{ base, slot, tag, rarity, itemLevel, implicit, lines[], madeBy, mad
 
 ### 2.2 Slots and when they open
 
-| Slot  | Opens                            | Leans to                                    | Only here                                                                                                         |
-| ----- | -------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Hat   | From the start                   | Attack, crits, first hits, element hunting  | Crit damage, First pounce                                                                                         |
-| Scarf | Bronze Ribbon (passing level 10) | HP, damage taken, healing, wards            | All damage taken, Unbothered, Brace, Between-room rest                                                            |
-| Charm | Silver Ribbon (passing level 20) | Roles, reactions, trips, Workshop, elements | Cover, Boost, Spark-share, Lingering, Adaptation pierce, Quick feet, Lucky find, Packer, Apprentice, Tinker's eye |
+| Slot  | Opens             | Leans to                                    | Only here                                                                                                         |
+| ----- | ----------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Hat   | From the start    | Attack, crits, first hits, element hunting  | Crit damage, First pounce                                                                                         |
+| Scarf | Creature level 7  | HP, damage taken, healing, wards            | All damage taken, Unbothered, Brace, Between-room rest                                                            |
+| Charm | Creature level 13 | Roles, reactions, trips, Workshop, elements | Cover, Boost, Spark-share, Lingering, Adaptation pierce, Quick feet, Lucky find, Packer, Apprentice, Tinker's eye |
 
 ### 2.3 Bases
 
@@ -445,8 +445,8 @@ _Hat · Common · item level 1 · neutral_
 | Species rarity             | Slot 1   | Slot 2             | Slot 3   | Fixed signature talent |
 | -------------------------- | -------- | ------------------ | -------- | ---------------------- |
 | Common (lines that branch) | At catch | Silver Ribbon (20) | —        | —                      |
-| Rare                       | At catch | Silver Ribbon (20) | Level 30 | —                      |
-| Epic and Festival          | At catch | Silver Ribbon (20) | Level 30 | Yes                    |
+| Rare                       | At catch | Silver Ribbon (20) | Level 25 | —                      |
+| Epic and Festival          | At catch | Silver Ribbon (20) | Level 25 | Yes                    |
 
 Commons get branch evolutions and many duplicates (plenty to teach); rares and epics get a third slot, and epics a signature talent (for example Aurorix's "Watcher Above": its Purge lasts 1 more round).
 
@@ -590,13 +590,30 @@ Starting pace (the sim tunes it): a committed player's trio reaches level 10 in 
 
 A creature stops at levels 10 and 20 until it earns a ribbon. Ribbons cost **materials only**, never a deep dungeon. Experience earned while waiting is banked (up to the next level's need), so nothing is lost.
 
-| Ribbon        | At       | Cost                                                               | Opens                                               |
-| ------------- | -------- | ------------------------------------------------------------------ | --------------------------------------------------- |
-| Bronze Ribbon | Level 10 | 6 scrap, 2 shards of its element                                   | Scarf slot (its ability unlocks at 10, as today)    |
-| Silver Ribbon | Level 20 | 15 scrap, 5 shards of its element, 1 glimmer, and 5 finished trips | Charm slot, talent slot 2                           |
-| Gold Ribbon   | Level 30 | Nothing: it is the reward                                          | Talent slot 3 (rare and epic), a frame in the album |
+| Ribbon        | At       | Cost                                                               | Opens                                                 |
+| ------------- | -------- | ------------------------------------------------------------------ | ----------------------------------------------------- |
+| Bronze Ribbon | Level 10 | 6 scrap, 2 shards of its element                                   | Levels 11 to 20 (its ability unlocks at 10, as today) |
+| Silver Ribbon | Level 20 | 15 scrap, 5 shards of its element, 1 glimmer, and 5 finished trips | Talent slot 2, levels 21 to 30                        |
+| Gold Ribbon   | Level 30 | Nothing: it is the reward                                          | A frame in the album                                  |
 
 Evolution stays at level 15 for 20 or 40 Essence. No levels past 30.
+
+### 9.3a Something to look forward to (amended 2026-10-16)
+
+Misa asked for a creature's own progression to stay interesting, with unlocks staggered so they do not all arrive at once. The ladder:
+
+| Level | What it brings                        |
+| ----- | ------------------------------------- |
+| 1     | Hat slot, first talent                |
+| 7     | Scarf slot                            |
+| 10    | Bronze Ribbon; its ability unlocks    |
+| 13    | Charm slot                            |
+| 15    | Evolution (the branch choice)         |
+| 20    | Silver Ribbon; talent slot 2          |
+| 25    | Talent slot 3 (rare and epic species) |
+| 30    | Gold Ribbon; a frame in the album     |
+
+The wear rule (an item's level may not exceed the creature's) makes every level a small unlock too: a waiting drop becomes wearable. The sim reports the longest stretch without a new unlock for each profile; aim at most 5 levels.
 
 ### 9.4 Where spare Essence goes
 

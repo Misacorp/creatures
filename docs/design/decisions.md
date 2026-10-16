@@ -1309,3 +1309,11 @@ Misa asked whether converted items could get too strong and whether creatures ne
 ## 2026-10-16: Misa agrees with the podcast's points; Market Day boosts only the day's first crafts
 
 Misa listened to the review episodes and agrees with the changes they proposed unless he says otherwise. One change: **Market Day** must not reward hoarding items until it rolls. Its Workshop bonus now applies only to the day's first craft (+5 pt one-step-up chance) and the first 2 dismantle jobs (top of the refund range). The inventory cap of 60 also limits hoarding. The same rule applies to any future Boon that boosts a spend: limit it to the first few actions of the day.
+
+## 2026-10-16: roll out fast, balance at the end; slot ladder, golden talents, the weather calendar
+
+- **Rollout:** the revamp ships in quick succession (several PRs within about a day), not as long-lived releases. Interim states that feel off between two steps are acceptable; balance passes for raids and dungeons happen once the systems are in place, aimed at the final state.
+- **Gear beyond percentages:** yes. The first gear release includes one position-based line (for example "stronger when a Guard stands beside it") as well as the characterful lines (Hunter, Unbothered, Lingering).
+- **Weather forecast:** today's and tomorrow's Boon and Omen are shown. In the living room they live on a clickable wall calendar or weather window that pops out of the background, animates and reacts to hover or tap, and now and then shows a speech bubble like the creatures do, as a quick glance at the game's state.
+- **Golden talents (1 in 20):** a golden talent is about 1.5 times a normal one (roughly a tier III gear line, a few percent of power). Every later duplicate of the line rolls a new talent and can Teach it, so any creature can still reach a golden talent; nobody restarts a creature for it.
+- **Unlock ladder:** Scarf at creature level 7, Charm at 13 (evolution stays at 15), talent slot 3 at 25, so a creature has something to look forward to every few levels (`gear-and-creatures-v2.md` 9.3a).
