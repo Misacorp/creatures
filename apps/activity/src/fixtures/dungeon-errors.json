@@ -7,6 +7,13 @@
     }
   },
   {
+    "route": "PUT /api/dungeon/team",
+    "status": 400,
+    "body": {
+      "error": "invalid_body"
+    }
+  },
+  {
     "route": "POST /api/dungeon/run",
     "status": 409,
     "body": {

@@ -86,6 +86,7 @@ export function TripReveal({
       title={revealTitle(tone)}
       class={`trip-reveal ${tone}`}
       status
+      arrive
       onDismiss={onDismiss}
     >
       {creature !== undefined && (

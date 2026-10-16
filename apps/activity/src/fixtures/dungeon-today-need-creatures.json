@@ -32,5 +32,6 @@
   "canRun": false,
   "blocked": "need_creatures",
   "last": null,
-  "lastTeam": null
+  "lastTeam": null,
+  "draftTeam": null
 }

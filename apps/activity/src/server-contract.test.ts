@@ -41,7 +41,9 @@ import dungeonRunLandmark from './fixtures/dungeon-run-landmark.json';
 import dungeonRunLost from './fixtures/dungeon-run-lost.json';
 import dungeonRunRetry from './fixtures/dungeon-run-retry.json';
 import dungeonRunRetryAttempt from './fixtures/dungeon-run-retry-attempt.json';
+import dungeonTeamDraft from './fixtures/dungeon-team-draft.json';
 import dungeonToday from './fixtures/dungeon-today.json';
+import dungeonTodayDraft from './fixtures/dungeon-today-draft.json';
 import dungeonTodayDone from './fixtures/dungeon-today-done.json';
 import dungeonTodayLandmark from './fixtures/dungeon-today-landmark.json';
 import dungeonTodayNeed from './fixtures/dungeon-today-need-creatures.json';
@@ -72,7 +74,12 @@ import {
   type SendRequest,
 } from './expedition-api';
 import { parseDestinations, parseProfile } from './expedition-parse';
-import { fetchDungeonReplay, fetchDungeonToday, startDungeonRun } from './dungeon-api';
+import {
+  fetchDungeonReplay,
+  fetchDungeonToday,
+  saveDungeonTeam,
+  startDungeonRun,
+} from './dungeon-api';
 import { parseDungeonReplay, parseDungeonRun, parseDungeonToday } from './dungeon-parse';
 import { buildRunRequest, type Slots } from './dungeon-team';
 import { dungeonErrorText } from './dungeon-text';
@@ -371,6 +378,8 @@ describe('the gear responses the server sends', () => {
 
   it('puts gear, statsWithGear and busy on every creature of the collection', () => {
     const game = parseGameState(collectionState);
+    // The attention block of GET /api/state (the tab pips).
+    expect(game.attention).toEqual(collectionState.attention);
     expect(game.creatures.some((c) => c.gear !== null)).toBe(true);
     expect(game.creatures.some((c) => c.busy?.kind === 'job')).toBe(true);
     for (const c of game.creatures) {
@@ -495,12 +504,33 @@ describe('the dungeon requests the client sends', () => {
 
   it('every body has a key of the form the Worker wants, and is retried with the same one', () => {
     for (const key of Object.keys(dungeonRequestBodies) as (keyof typeof dungeonRequestBodies)[]) {
-      const body = dungeonRequestBodies[key].body;
-      if (body === null) continue;
+      const { body, method } = dungeonRequestBodies[key];
+      // Only runs are spends with a key; the team draft (PUT) has none, and a GET has no body.
+      if (body === null || method !== 'POST') continue;
       expect((body as { idempotencyKey: string }).idempotencyKey).toMatch(/^[A-Za-z0-9_-]{8,64}$/);
     }
     // A retry of a run is the same call with the same body, so the key travels along unchanged.
     expect(bodyOf('dungeon-run-retry')).toEqual(bodyOf('dungeon-run-cleared'));
+  });
+
+  it('saves the team draft with the PUT body of the fixture, which has no key, and reads the answer', async () => {
+    apiFetch.mockResolvedValue(dungeonTeamDraft);
+    const { path, method, body } = dungeonRequestBodies['dungeon-team-draft'];
+    const done = await saveDungeonTeam(
+      body as { team: [string | null, string | null, string | null] },
+    );
+    expect(sent()).toEqual({ path, method, body });
+    expect(method).toBe('PUT');
+    expect(Object.keys(body)).toEqual(['team']);
+    expect(done.draftTeam).toEqual(body.team);
+    // A draft keeps its empty places: the middle one is null, not dropped.
+    expect(done.draftTeam).toHaveLength(3);
+    expect(done.draftTeam[1]).toBeNull();
+  });
+
+  it("reads a saved draft from today's state", () => {
+    expect(parseDungeonToday(dungeonTodayDraft).draftTeam).toEqual(dungeonTeamDraft.draftTeam);
+    expect(parseDungeonToday(dungeonToday).draftTeam).toBeNull();
   });
 
   it("asks for today's state and for a run's replay with plain GETs", async () => {

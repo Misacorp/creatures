@@ -1,8 +1,9 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { glyphOrUnknown } from '../glyphs';
 import { usePrefersReducedMotion } from '../hooks';
 import { finalFrame, revealFrames, type RevealFrame } from '../reveal-anim';
+import { arriveScroll, shouldFocusCard, shouldScrollToCard } from '../reveal-arrive';
 import { Sprite } from '../sprites/Sprite';
 import { Tag } from './Tag';
 
@@ -91,6 +92,30 @@ export function OutcomeBadge({ cleared }: { cleared: boolean }) {
 }
 
 /**
+ * When the card mounts: on the next frame, bring it to the top of the screen if its top is out of
+ * view (not at all when it already is, so coming back to a tab with the reveal open does not move
+ * the page), then give it focus when the button that was pressed is gone.
+ */
+function useArrive(ref: { current: HTMLElement | null }, enabled: boolean): void {
+  const reduced = usePrefersReducedMotion();
+  useEffect(() => {
+    const card = ref.current;
+    if (!enabled || card === null) return undefined;
+    const frame = requestAnimationFrame(() => {
+      if (shouldScrollToCard(card.getBoundingClientRect().top, window.innerHeight)) {
+        card.scrollIntoView(arriveScroll(reduced));
+      }
+      if (shouldFocusCard(document.activeElement, document.body)) {
+        card.focus({ preventScroll: true });
+      }
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+}
+
+/**
  * The card every reveal sits in: a heading (with an optional badge after it), the content, and a
  * footer that is a "Got it" button unless the screen brings its own buttons.
  */
@@ -100,6 +125,7 @@ export function RevealShell({
   badge,
   class: extra,
   status = false,
+  arrive = false,
   busy = false,
   onDismiss,
   footer,
@@ -113,16 +139,22 @@ export function RevealShell({
   class?: string;
   /** True when the card is announced as a status as it appears. */
   status?: boolean;
+  /** True when the card appears after the player's own action (a claim): the page brings it into view and focuses it. */
+  arrive?: boolean;
   busy?: boolean;
   /** The "Got it" button's action (leave out when `footer` is given). */
   onDismiss?: () => void;
   footer?: ComponentChildren;
   children: ComponentChildren;
 }) {
+  const card = useRef<HTMLElement>(null);
+  useArrive(card, arrive);
   return (
     <section
+      ref={card}
       class={extra === undefined ? 'reveal-card' : `reveal-card ${extra}`}
       {...(status ? { role: 'status' } : {})}
+      {...(arrive ? { tabIndex: -1 } : {})}
       aria-labelledby={id}
     >
       <h3 id={id}>

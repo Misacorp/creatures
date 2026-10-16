@@ -363,6 +363,37 @@ export interface GameState {
   loungerId: string | null;
   /** The spot of the living room the player chose for their lounger; null: the room decides. */
   loungeSpot: LoungeSpot | null;
+  /** What needs the player (the pips on the tabs); present on GET /api/state only, null otherwise or when unknown. */
+  attention: Attention | null;
+}
+
+/**
+ * What needs the player, as the server works it out: a dungeon run can start now, raid team
+ * creatures are still to be placed this week, and when either could change by itself (server epoch
+ * ms; null: no such time).
+ */
+export interface Attention {
+  dungeon: boolean;
+  raid: boolean;
+  recheckAt: number | null;
+}
+
+/** Checks the attention block: absent or null means unknown (null); any other shape is refused. */
+export function parseAttention(value: unknown): Attention | null {
+  if (value === undefined || value === null) return null;
+  if (
+    !isRecord(value) ||
+    typeof value['dungeon'] !== 'boolean' ||
+    typeof value['raid'] !== 'boolean' ||
+    !(value['recheckAt'] === undefined || value['recheckAt'] === null || isInt(value['recheckAt']))
+  ) {
+    throw new Error('the server returned an unexpected attention block');
+  }
+  return {
+    dungeon: value['dungeon'],
+    raid: value['raid'],
+    recheckAt: value['recheckAt'] ?? null,
+  };
 }
 
 /** A spot of the living room a player chose (`id` is a `ROOM_SPOTS` id) and the server time it was chosen. */
@@ -507,6 +538,7 @@ export function parseGameState(data: unknown): GameState {
     timezone: data['timezone'] ?? null,
     loungerId: data['loungerId'],
     loungeSpot: parseLoungeSpot(data['loungeSpot']),
+    attention: parseAttention(data['attention']),
   };
 }
 

@@ -1,5 +1,6 @@
 /* The loot reveal. The text is always in the page; the animation only delays showing the result. */
 .reveal-card {
+  scroll-margin-top: 0.75rem;
   margin: 0.75rem 0;
   padding: 0.75rem;
   border: 2px solid var(--gold);

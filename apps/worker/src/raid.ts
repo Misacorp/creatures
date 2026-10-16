@@ -56,6 +56,7 @@ import {
   buildRaidView,
   buildReplayView,
   displayNames,
+  nextPendingEvent,
   type RaidView,
   type ReplayView,
 } from './raid-view';
@@ -80,6 +81,8 @@ import {
 import {
   capPlacements,
   loadCreatures,
+  partyPlacements,
+  raidTeam,
   rowLength,
   type PlacementRow,
   type RaidStatus,
@@ -1019,6 +1022,27 @@ export class Raid {
   view(userId: string, tz: string): RaidView {
     this.settleDueLive();
     return buildRaidView(this, this.sql, userId, tz, this.deps.now());
+  }
+
+  /**
+   * The light read behind the Activity's raid pip: whether the Raid tab would tell the caller to set
+   * their team (they are in a party, may still edit, and a creature of their team has no slot), and
+   * when the next raid event is due (`nextAt`, as `view.next.at`: the answer can change then). It looks
+   * the week up the way `view` does (`currentWeek`, then `syncRoster`) but builds none of the view.
+   */
+  needsPlacement(userId: string, tz: string): { needed: boolean; nextAt: number | null } {
+    this.settleDueLive();
+    const week = this.currentWeek(tz);
+    this.syncRoster(week.weekId);
+    const schedule = this.schedule(week.weekId, tz);
+    const nextEvent = nextPendingEvent(week.status);
+    const nextAt = nextEvent === undefined ? null : schedule[nextEvent];
+    const party = partyOf(this.sql, week.weekId, userId);
+    // `canEdit` of the view: in a party, and the finale has not started.
+    if (party === null || week.status === 'finale') return { needed: false, nextAt };
+    const placed = new Set(partyPlacements(this.sql, week.weekId, party).map((p) => p.creature_id));
+    const needed = raidTeam(this.sql, week.weekId, userId).some((c) => !placed.has(c.id));
+    return { needed, nextAt };
   }
 
   /** A resolved phase's stored events, or null if it has not resolved. */

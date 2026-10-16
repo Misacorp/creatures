@@ -133,6 +133,8 @@ interface StateBody {
   serverNow: number;
   /** Only in GET /api/state, not in the `state` echoed by POST routes. */
   timezone: string;
+  /** Only in GET /api/state too. */
+  attention: { dungeon: boolean; raid: boolean; recheckAt: number | null } | null;
   leetSync: {
     source: string;
     lastAttemptAt: number | null;
@@ -373,6 +375,7 @@ describe('GET /api/state', () => {
         const before = await player.state();
         expect(Object.keys(before).sort()).toEqual(
           [
+            'attention',
             'balances',
             'cancelled',
             'creatures',
@@ -418,6 +421,12 @@ describe('GET /api/state', () => {
         expect(before.serverFirsts).toEqual([]);
         expect(before.loungerId).toBeNull();
         expect(before.loungeSpot).toBeNull();
+        // Only the plain GET carries the pips: no creatures yet, so nothing to run or to place.
+        expect(before.attention).toEqual({
+          dungeon: false,
+          raid: false,
+          recheckAt: expect.any(Number) as number,
+        });
 
         await player.call('POST', '/api/starter', { species: 'cindle', idempotencyKey: newKey() });
         const after = await player.state();

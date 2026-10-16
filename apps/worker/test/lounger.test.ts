@@ -977,6 +977,7 @@ describe('migration 23', () => {
         { name: 'lounge_spot', type: 'TEXT', notnull: 0 },
         { name: 'lounge_spot_at', type: 'INTEGER', notnull: 0 },
       ]);
+      // Undoing migration 23 also undoes the later migration 24 (the dungeon draft).
       undoLoungeSpotMigration(ctx.sql);
       expect(columns()).toHaveLength(0);
       expect(

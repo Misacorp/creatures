@@ -32,7 +32,7 @@
   "canRun": true,
   "blocked": null,
   "last": {
-    "id": "fa6894b4-d512-4f4f-92fa-6128c9f58d1e",
+    "id": "79886273-3f5b-4801-8d78-8d19aaf71067",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 45,
@@ -44,7 +44,7 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "b5b39ca2-7dee-4840-9014-8c39ba0107f0",
+        "id": "590b89dc-36bb-42b4-aeb1-b9143868f84d",
         "name": "Mistnewt",
         "speciesId": "mistnewt",
         "element": "tide",
@@ -54,7 +54,7 @@
         "hpEnd": 0
       },
       {
-        "id": "476ff708-f51c-4121-86b4-cdf31261dc43",
+        "id": "ffb462b1-f6af-4045-b975-c85ce216e04b",
         "name": "Ashmole",
         "speciesId": "ashmole",
         "element": "ember",
@@ -64,7 +64,7 @@
         "hpEnd": 0
       },
       {
-        "id": "181458bb-c524-4243-8695-275bb9b51556",
+        "id": "0437a34b-8764-42e3-b811-2500a3690941",
         "name": "Stormray",
         "speciesId": "stormray",
         "element": "spark",
@@ -91,8 +91,8 @@
         },
         "played": true,
         "cleared": false,
-        "rounds": 6,
-        "foeHpEnd": 20130
+        "rounds": 3,
+        "foeHpEnd": 20660
       },
       {
         "index": 1,
@@ -144,8 +144,9 @@
     }
   },
   "lastTeam": [
-    "b5b39ca2-7dee-4840-9014-8c39ba0107f0",
-    "476ff708-f51c-4121-86b4-cdf31261dc43",
-    "181458bb-c524-4243-8695-275bb9b51556"
-  ]
+    "590b89dc-36bb-42b4-aeb1-b9143868f84d",
+    "ffb462b1-f6af-4045-b975-c85ce216e04b",
+    "0437a34b-8764-42e3-b811-2500a3690941"
+  ],
+  "draftTeam": null
 }

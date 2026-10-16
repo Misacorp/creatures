@@ -218,10 +218,17 @@ export const GEAR_TABLES = [
  * The schema version of a fresh database. Tests that check it use this constant, so a new migration
  * changes one number here (and adds an undo step below), not a dozen tests.
  */
-export const LATEST_SCHEMA_VERSION = 25;
+export const LATEST_SCHEMA_VERSION = 26;
+
+/** Puts a database back to before migration 26 (the saved dungeon team draft). */
+export function undoDungeonDraftMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS dungeon_drafts');
+  sql.exec('DELETE FROM schema_version WHERE version = 26');
+}
 
 /** Puts a database back to before migration 25 (the daily Bait allowance). */
 export function undoAllowanceMigration(sql: SqlStorage): void {
+  undoDungeonDraftMigration(sql);
   sql.exec('DROP TABLE IF EXISTS daily_allowance');
   sql.exec('DELETE FROM schema_version WHERE version = 25');
 }

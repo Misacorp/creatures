@@ -29,7 +29,7 @@ import { festivalGrantText, rankChangeText } from './raid-progress';
 import { phaseName, stageOutcomeNote, stageOutcomeText } from './raid-text';
 import { BossCard } from './BossCard';
 import { RaidTimeline } from './RaidTimeline';
-import type { NowTarget } from './raid-now';
+import { needsPlacement, type NowTarget } from './raid-now';
 import { showFullResults } from './raid-timeline';
 import { RaidNews } from './RaidNews';
 import { Placement } from './Placement';
@@ -48,12 +48,15 @@ export function Raid({
   creatures,
   showPractice,
   onBalanceChange,
+  onNeedsPlacementChange,
 }: {
   creatures: Creature[];
   /** True on staging and local runs, where the server can start a practice finale. */
   showPractice: boolean;
   /** Called when the Essence balance may have changed (a finale reveal was seen). */
   onBalanceChange: () => void;
+  /** Whether team creatures are still to be placed, whenever the raid view loads or changes (the tab's pip). */
+  onNeedsPlacementChange: (needed: boolean) => void;
 }) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -96,6 +99,11 @@ export function Raid({
       cancelled = true;
     };
   }, []);
+
+  // The tab's pip follows the raid view on screen.
+  useEffect(() => {
+    if (loaded !== null) onNeedsPlacementChange(needsPlacement(loaded.view));
+  }, [loaded?.view]);
 
   // When the next phase is due, ask again shortly after, so the results appear by themselves.
   const nextAt = loaded?.view.next?.at ?? null;

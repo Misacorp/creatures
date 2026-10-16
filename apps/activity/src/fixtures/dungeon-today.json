@@ -32,5 +32,6 @@
   "canRun": true,
   "blocked": null,
   "last": null,
-  "lastTeam": null
+  "lastTeam": null,
+  "draftTeam": null
 }

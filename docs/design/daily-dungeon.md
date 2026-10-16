@@ -54,6 +54,7 @@ No real-time backend is needed.
 - A retry with the same key returns the stored run.
 - Because the result is final on creation, the client can show it at any pace without the server.
 - `GET /api/dungeon/today` returns today's state: not run yet (with today's modifiers preview, which is safe because it is derived from a separate daily seed used only for room modifiers), or done (the run summary).
+- `PUT /api/dungeon/team { team: [id or null, x3] }` saves the setup row as a draft (ids the caller does not own become null). `GET /api/dungeon/today` returns it as `draftTeam`, and the next run deletes it. The setup opens with the draft, else the last run's team (2026-10-15).
 - `GET /api/dungeon/run/:id` returns the full events for playback. It is owner-only; others can see the summary on a server leaderboard later.
 - **Engine needs:**
   - multi-room runs: chain `simulateFight` calls with the creatures' **current HP carried in** (a new optional `hp` per slot in `FightSlot`);

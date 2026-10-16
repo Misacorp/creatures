@@ -31,3 +31,21 @@ export const LastTeamSchema = v.pipe(
   }),
   v.transform((summary) => summary.team.map((member) => member.id)),
 );
+
+/**
+ * The saved team draft: exactly `teamSize` slots, left to right, each a creature id or null (an empty
+ * slot). The ids that are set must be different. Used for the `PUT /api/dungeon/team` body and for
+ * reading the stored draft back.
+ */
+export const DraftTeamSchema = v.pipe(
+  v.array(v.nullable(IdSchema)),
+  v.length(RULES.dungeon.teamSize),
+  v.check((team) => {
+    const ids = team.filter((id) => id !== null);
+    return new Set(ids).size === ids.length;
+  }, 'creatures must be different'),
+);
+
+/** The body of `PUT /api/dungeon/team`. Strict: unknown keys are rejected. The player is the session's. */
+export const DraftBodySchema = v.strictObject({ team: DraftTeamSchema });
+export type DraftBody = v.InferOutput<typeof DraftBodySchema>;

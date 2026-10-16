@@ -4,7 +4,12 @@ import type { Creature } from './api';
 import { DungeonPlayback } from './DungeonPlayback';
 import { DungeonResults } from './DungeonResults';
 import { DungeonSetup } from './DungeonSetup';
-import { fetchDungeonReplay, fetchDungeonToday, startDungeonRun } from './dungeon-api';
+import {
+  fetchDungeonReplay,
+  fetchDungeonToday,
+  saveDungeonTeam,
+  startDungeonRun,
+} from './dungeon-api';
 import { initialScreen, msUntilReset, RESET_GRACE_MS } from './dungeon-flow';
 import { completeTeam, type Slots } from './dungeon-team';
 import { dungeonErrorText, isStaleDungeonError } from './dungeon-text';
@@ -28,9 +33,21 @@ type View =
  */
 export function Dungeon({
   creatures,
+  draft,
+  onDraftChange,
+  onRunStarted,
+  onCanRunChange,
   onRunFinished,
 }: {
   creatures: readonly Creature[];
+  /** The setup row of this session, kept by the game across tab switches (null: none). */
+  draft: Slots | null;
+  /** The setup row changed. */
+  onDraftChange: (slots: Slots) => void;
+  /** A run was accepted by the server: it deleted the saved draft, so the game forgets its copy. */
+  onRunStarted: () => void;
+  /** Whether a run can start now, whenever today's state is loaded or changes (the tab's pip). */
+  onCanRunChange: (canRun: boolean) => void;
   /** The run's playback ended (or was skipped): balances and the bag changed, so reload them. */
   onRunFinished: () => void;
 }) {
@@ -57,6 +74,11 @@ export function Dungeon({
     },
     [],
   );
+
+  // The tab's pip follows what the server last said about today.
+  useEffect(() => {
+    if (today !== null) onCanRunChange(today.canRun);
+  }, [today]);
 
   function accept(next: DungeonToday, screen: 'keep' | 'initial'): void {
     setToday(next);
@@ -123,6 +145,7 @@ export function Dungeon({
     // One key per distinct run: a retry of the same picks reuses it, other picks get their own.
     await runner.runKeyed(ActionIds.dungeonRun(team), async (key) => {
       const answer = await startDungeonRun({ team, idempotencyKey: key });
+      onRunStarted();
       if (unmounted.current) return;
       accept(answer.today, 'keep');
       replays.current.delete(answer.run.id);
@@ -179,6 +202,9 @@ export function Dungeon({
           creatures={creatures}
           busy={busy}
           error={error}
+          draft={draft}
+          onDraftChange={onDraftChange}
+          saveDraft={(team) => saveDungeonTeam({ team })}
           onEnter={(slots) => {
             void enter(slots);
           }}

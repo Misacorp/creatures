@@ -396,7 +396,7 @@ describe('migration 24', () => {
       // The undo also takes back migration 25 (the daily allowance table), which sits above it.
       expect(
         ctx.sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
-      ).toBe(LATEST_SCHEMA_VERSION - 2);
+      ).toBe(24 - 1);
       expect(() => ctx.sql.exec('SELECT difficulty_version FROM raid_weeks').toArray()).toThrow();
 
       ctx.core.migrate();
