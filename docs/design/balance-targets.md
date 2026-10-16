@@ -95,7 +95,7 @@ The report also lists the clear rate per depth for casual, daily and top players
 
 ## Expeditions v2
 
-Measured on the default server's sims for the species target and on 60-week sims of a daily player (check-ins at 09:00 and 20:00) for the slot targets. "Bait-free" means no supplies bought. The strategies are always 2 h, always 6 h, always 12 h or 24 h trips, each claimed at the first check-in after it ends.
+Measured on the default server's sims for the species target and on 60-week sims of a daily player (check-ins at 09:00 and 20:00) for the slot targets. "Bait-free" meant no supplies bought (supplies cannot be bought now, so every strategy is Bait-free). The strategies are always 2 h, always 6 h, always 12 h or 24 h trips, each claimed at the first check-in after it ends.
 
 | Target                                                                                                   | Value                   |
 | -------------------------------------------------------------------------------------------------------- | ----------------------- |
@@ -111,6 +111,20 @@ Measured on the default server's sims for the species target and on 60-week sims
 | Most species a casual player owns ahead of today's expeditions at the end of any week 1–12 (no faster)   | ≤ 0.3 species           |
 
 "Worth" is the number the sim compares trips by (`RULES.expeditions.worth`, in Bait; never shown to players): catch rolls by rarity, parts, glimmer, blueprints, gear, journal pages and explorer XP. The casual species baseline is the v1 curve (2.7, 4.8, 6.5, 7.9, 8.6, 9.1, 9.5, 9.7, 9.8, 10.0, 10.2, 10.4 species at the end of weeks 1–12), kept in `packages/sim/src/analysis.ts`.
+
+## Supplies (since 2026-10-16, B-011)
+
+Measured on the default journey server (min-maxer, engaged, regular, drop-in; 12 weeks, weeks 3 to 12 for the rates) by `pnpm sim` (`packages/sim/src/supplies-study.ts`). Supplies cannot be bought: they come from the daily dungeon, from trips and from the Workshop.
+
+| Target                                                                                                     | Value  |
+| ---------------------------------------------------------------------------------------------------------- | ------ |
+| Supplies a regular player carries a week                                                                   | ≥ 3    |
+| Supplies a min-maxer carries a week                                                                        | ≥ 8    |
+| Share of a min-maxer's supplies that are crafted                                                           | ≥ 25%  |
+| Share of an engaged player's supplies that are crafted                                                     | ≥ 25%  |
+| A min-maxer's upgrade levels on worn gear at the end of week 12 (making supplies must not starve the gear) | ≥ 10.8 |
+
+The rework's comparison with the old economy (Bait-bought supplies) is in `docs/balance/log.md` B-011; before it a min-maxer reached 11.5 gear levels at week 12.
 
 ## Informational (no target)
 

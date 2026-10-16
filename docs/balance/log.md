@@ -317,3 +317,205 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
   | 12, no engaged player (6 regular, 6 drop-in) | 89%    | 11%      | 87%    | 20%         | 17%              |
 
 - **Follow-ups:** watch live week 1 and week 2 against these numbers (the presets are guesses until fitted to the live report); a fully casual server loses about half its weeks from rank 2 (44% at ranks 2 to 5), which is Misa's call (see the report); ranks 10 and up are not validated; the committed dip at week 10 (98% to 83%) is where its rows meet rank 6 or 7 as player growth plateaus, worth a look at live data.
+
+### B-011: Supplies cannot be bought: the dungeon drops them and the Workshop makes them (open)
+
+- **Opened:** 2026-10-16, from Misa's decision after the progression study (`docs/balance/progression-study-2026-10-16.md`, section 2).
+- **Finding.** Buying supplies with Bait was a trap: a min-maxer who bought them was 13% weaker at week 6 (about a third of a supply's price came back through the duplicates it caught; the collection is complete at the same week with or without them), and in 30 weeks nobody crafted one because crafts and upgrades took the scrap first. Found on trips alone, supplies were 0.7 to 3 a week for a regular and 8 to 20 for a min-maxer.
+- **Decision (Misa).** Remove buying with Bait; owned supplies keep working. Supplies come from elsewhere: a guaranteed supply from the daily dungeon (per clear or per room, the sim decides) with depth setting the tier odds, and crafting becomes a real option (more workshop use, more scrap and resources).
+- **Method.** `pnpm sim:supplies` (`packages/sim/src/supplies-study.ts`): the default journey server (1 min-maxer, 3 engaged, 3 regular, 2 drop-in), 3 seeds x 20 servers x 30 weeks per variant (60 servers: 60 min-maxers, 180 engaged, 180 regular, 120 drop-ins), the same seeds for every variant and for main (paired until the dice diverge), allowance income, the shipped raid rules. Numbers are means per player. "main" is origin/main at c501df7 (Bait buys, nothing crafted) run through the same study. The sim's policy for the new economy: no Bait goes to supplies; a trip carries the supplies in stock that help; the workshop makes a supply (before it crafts gear, except a new player's first craft, which keeps the first-craft target) when fewer than 4 are in stock or being made, of the best tier its Crafting level, scrap and shards allow and, of that tier, the kind the player has least of; crafts and supplies leave alone the scrap of the next two upgrades of every worn item (the study's `q1-keep`, `GEAR_POLICY` in `packages/sim/src/gear.ts`). Variants change `RULES` or the recipes with `--set`.
+- **Options (trigger).** Where the guaranteed supply comes from. Tier odds are the shipped ones, recipes and scrap as before (3, 6, 10 scrap; no scrap in the first room), only the trigger differs. Cells: supplies used a week (b bought, f found on trips, d dungeon, c crafted, g gifts), then scrap held / team power / upgrade levels on worn gear.
+
+  **Min-maxer**: supplies used a week (b bought, f found on trips, d dungeon, c crafted, g gifts)
+
+  | Variant          | w1               | w4                 | w6                 | w12                 | w20                 |
+  | ---------------- | ---------------- | ------------------ | ------------------ | ------------------- | ------------------- |
+  | main (Bait buys) | 12 (5b 8f 0d 0c) | 31 (18b 14f 0d 0c) | 36 (24b 12f 0d 0c) | 31 (18b 12f 0d 0c)  | 49 (27b 19f 0d 0c)  |
+  | per clear        | 20 (7f 5d 8c)    | 31 (13f 2d 15c)    | 29 (12f 1d 16c)    | 35 (13f 0d 22c)     | 51 (19f 0d 28c 3g)  |
+  | per run          | 21 (7f 6d 9c)    | 36 (13f 7d 15c)    | 35 (13f 7d 16c)    | 40 (14f 6d 19c 1g)  | 52 (19f 7d 24c 3g)  |
+  | per room         | 27 (7f 12d 9c)   | 43 (15f 14d 15c)   | 41 (13f 13d 15c)   | 41 (13f 12d 15c 1g) | 53 (20f 13d 18c 3g) |
+
+  **Min-maxer**: scrap held / team power / upgrade levels on worn gear
+
+  | Variant          | w1             | w4             | w6             | w12            | w20            |
+  | ---------------- | -------------- | -------------- | -------------- | -------------- | -------------- |
+  | main (Bait buys) | 3 / 290 / 2.9  | 4 / 628 / 6.7  | 4 / 727 / 9.2  | 5 / 894 / 11.5 | 5 / 942 / 11.7 |
+  | per clear        | 10 / 303 / 2.7 | 34 / 685 / 6.7 | 25 / 817 / 9.6 | 6 / 930 / 11.8 | 4 / 943 / 12.1 |
+  | per run          | 9 / 303 / 2.8  | 34 / 684 / 6.6 | 27 / 817 / 9.3 | 8 / 931 / 11.9 | 4 / 943 / 12.2 |
+  | per room         | 10 / 307 / 2.9 | 37 / 684 / 6.8 | 35 / 821 / 9.3 | 9 / 928 / 11.8 | 4 / 943 / 12.2 |
+
+  **Engaged**: supplies used a week (b bought, f found on trips, d dungeon, c crafted, g gifts)
+
+  | Variant          | w1              | w4              | w6               | w12               | w20                |
+  | ---------------- | --------------- | --------------- | ---------------- | ----------------- | ------------------ |
+  | main (Bait buys) | 5 (1b 4f 0d 0c) | 8 (3b 5f 0d 0c) | 17 (8b 9f 0d 0c) | 19 (9b 10f 0d 0c) | 32 (15b 15f 0d 0c) |
+  | per clear        | 9 (4f 5d 3c)    | 14 (6f 1d 7c)   | 17 (9f 1d 7c)    | 21 (10f 0d 10c)   | 27 (15f 0d 10c 1g) |
+  | per run          | 10 (4f 6d 3c)   | 20 (7f 7d 6c)   | 24 (10f 7d 8c)   | 26 (10f 7d 10c)   | 32 (16f 5d 10c 2g) |
+  | per room         | 14 (4f 11d 2c)  | 25 (7f 13d 5c)  | 29 (10f 12d 7c)  | 32 (10f 12d 9c)   | 35 (16f 8d 9c 2g)  |
+
+  **Engaged**: scrap held / team power / upgrade levels on worn gear
+
+  | Variant          | w1             | w4             | w6             | w12             | w20              |
+  | ---------------- | -------------- | -------------- | -------------- | --------------- | ---------------- |
+  | main (Bait buys) | 9 / 270 / 1.4  | 11 / 532 / 4.4 | 14 / 619 / 7.0 | 19 / 790 / 10.9 | 39 / 937 / 11.7  |
+  | per clear        | 19 / 272 / 1.5 | 47 / 542 / 4.5 | 57 / 642 / 7.1 | 73 / 857 / 11.4 | 339 / 943 / 12.5 |
+  | per run          | 20 / 272 / 1.4 | 44 / 547 / 4.5 | 59 / 649 / 7.2 | 68 / 870 / 11.6 | 305 / 943 / 12.6 |
+  | per room         | 21 / 274 / 1.2 | 47 / 552 / 4.3 | 57 / 654 / 7.0 | 64 / 880 / 11.4 | 258 / 944 / 12.0 |
+
+  **Regular**: supplies used a week (b bought, f found on trips, d dungeon, c crafted, g gifts)
+
+  | Variant          | w1           | w4            | w6           | w12           | w20           |
+  | ---------------- | ------------ | ------------- | ------------ | ------------- | ------------- |
+  | main (Bait buys) | 1 (1f 0d 0c) | 2 (2f 0d 0c)  | 2 (2f 0d 0c) | 2 (2f 0d 0c)  | 3 (3f 0d 0c)  |
+  | per clear        | 1 (1f 1d 0c) | 4 (2f 2d 0c)  | 3 (2f 1d 0c) | 3 (3f 1d 0c)  | 4 (3f 0d 1c)  |
+  | per run          | 1 (1f 1d 0c) | 7 (3f 4d 0c)  | 7 (2f 4d 0c) | 8 (3f 4d 0c)  | 8 (4f 4d 1c)  |
+  | per room         | 1 (1f 3d 0c) | 10 (3f 8d 0c) | 9 (2f 8d 0c) | 12 (4f 7d 0c) | 12 (4f 6d 0c) |
+
+  **Regular**: scrap held / team power / upgrade levels on worn gear
+
+  | Variant          | w1             | w4             | w6             | w12             | w20              |
+  | ---------------- | -------------- | -------------- | -------------- | --------------- | ---------------- |
+  | main (Bait buys) | 17 / 153 / 0.2 | 40 / 308 / 2.8 | 56 / 373 / 4.6 | 104 / 532 / 8.5 | 190 / 675 / 10.9 |
+  | per clear        | 18 / 155 / 0.2 | 48 / 312 / 2.6 | 68 / 378 / 4.8 | 134 / 541 / 8.9 | 271 / 676 / 11.7 |
+  | per run          | 18 / 153 / 0.2 | 49 / 309 / 2.8 | 71 / 378 / 4.7 | 146 / 538 / 8.9 | 285 / 680 / 11.5 |
+  | per room         | 18 / 157 / 0.3 | 50 / 315 / 2.8 | 74 / 382 / 4.8 | 156 / 552 / 8.8 | 277 / 687 / 11.5 |
+
+  **Drop-in**: supplies used a week (b bought, f found on trips, d dungeon, c crafted, g gifts)
+
+  | Variant          | w1           | w4           | w6           | w12          | w20          |
+  | ---------------- | ------------ | ------------ | ------------ | ------------ | ------------ |
+  | main (Bait buys) | 0 (0f 0d 0c) | 0 (0f 0d 0c) | 0 (0f 0d 0c) | 0 (0f 0d 0c) | 0 (0f 0d 0c) |
+  | per clear        | 0 (0f 0d 0c) | 1 (0f 1d 0c) | 1 (0f 1d 0c) | 1 (0f 1d 0c) | 1 (0f 0d 0c) |
+  | per run          | 0 (0f 0d 0c) | 0 (0f 1d 0c) | 1 (0f 1d 0c) | 2 (1f 1d 0c) | 1 (0f 1d 0c) |
+  | per room         | 0 (0f 0d 0c) | 1 (0f 2d 0c) | 1 (0f 2d 0c) | 2 (0f 2d 0c) | 2 (1f 2d 0c) |
+
+  **Drop-in**: scrap held / team power / upgrade levels on worn gear
+
+  | Variant          | w1            | w4             | w6             | w12            | w20             |
+  | ---------------- | ------------- | -------------- | -------------- | -------------- | --------------- |
+  | main (Bait buys) | 14 / 68 / 0.0 | 23 / 168 / 0.1 | 31 / 214 / 0.4 | 59 / 324 / 1.8 | 101 / 422 / 3.7 |
+  | per clear        | 14 / 68 / 0.0 | 23 / 168 / 0.1 | 32 / 217 / 0.4 | 63 / 326 / 1.7 | 108 / 426 / 3.8 |
+  | per run          | 14 / 68 / 0.0 | 24 / 176 / 0.1 | 32 / 223 / 0.3 | 63 / 324 / 1.9 | 111 / 421 / 3.9 |
+  | per room         | 14 / 68 / 0.0 | 24 / 176 / 0.1 | 32 / 223 / 0.4 | 64 / 330 / 1.9 | 112 / 426 / 4.0 |
+
+- **Reading (trigger).**
+  - **Per clear (boss room)** gives a min-maxer 4.6, 2.4, 1.3, 0.2 and 0.1 dungeon supplies a week at weeks 1, 4, 6, 12 and 20, and a regular 1.1, 1.8, 1.1, 0.5 and 0.3: the depth wall (full clears fall to about 1 a week by week 6 and 0.1 after week 12) dries it up, so "a guaranteed supply" would be false for most of a player's life.
+  - **Per room (1, 1, 1)** pays a min-maxer 12 to 14 a week and a regular 7.5 to 8, more than they can carry: a regular's stock sits at 8 to 10 at weeks 4 to 12, a drop-in's climbs to 13 at week 12 and 22 at week 30, and an engaged player's crafted share over weeks 3 to 12 falls to 23% (target 25% or more) because the dungeon keeps the stock full.
+  - **Per run (first room cleared)** pays 6 to 7 a week to a min-maxer and an engaged player (5 after week 20), 4 to a regular and about 1 to a drop-in, every week, because the first room is cleared in almost every run even at the wall. Stocks stay at 1 to 5. Picked. A run lost in the first room pays nothing.
+- **Options (scrap and recipes, on "per run").** More scrap and cheaper recipes: +1 scrap in the first and second room of a run (the dungeon's scrap doubles, about 9 a week for a regular); recipes 2, 4 and 7 scrap instead of 3, 6 and 10 (shards unchanged); and "shipped": the cheaper recipes with +1 scrap in the first room only. Cells as above.
+
+  **Min-maxer**: supplies used a week (b bought, f found on trips, d dungeon, c crafted, g gifts)
+
+  | Variant                                                 | w1               | w4                 | w6                 | w12                | w20                |
+  | ------------------------------------------------------- | ---------------- | ------------------ | ------------------ | ------------------ | ------------------ |
+  | main                                                    | 12 (5b 8f 0d 0c) | 31 (18b 14f 0d 0c) | 36 (24b 12f 0d 0c) | 31 (18b 12f 0d 0c) | 49 (27b 19f 0d 0c) |
+  | per run                                                 | 21 (7f 6d 9c)    | 36 (13f 7d 15c)    | 35 (13f 7d 16c)    | 40 (14f 6d 19c 1g) | 52 (19f 7d 24c 3g) |
+  | per run + 1 scrap in rooms 1 and 2                      | 25 (7f 6d 12c)   | 39 (13f 7d 19c)    | 38 (13f 7d 19c)    | 40 (13f 6d 20c 1g) | 53 (19f 7d 24c 2g) |
+  | per run + cheaper recipes                               | 26 (7f 6d 13c)   | 42 (14f 7d 21c)    | 41 (13f 7d 22c)    | 41 (14f 6d 20c 1g) | 53 (20f 7d 24c 2g) |
+  | per run + cheaper recipes + 1 scrap in room 1 (shipped) | 28 (7f 6d 15c)   | 45 (14f 7d 25c)    | 43 (13f 7d 24c)    | 41 (14f 6d 20c 1g) | 53 (19f 7d 25c 2g) |
+
+  **Min-maxer**: scrap held / team power / upgrade levels on worn gear
+
+  | Variant                                                 | w1             | w4             | w6             | w12            | w20            |
+  | ------------------------------------------------------- | -------------- | -------------- | -------------- | -------------- | -------------- |
+  | main                                                    | 3 / 290 / 2.9  | 4 / 628 / 6.7  | 4 / 727 / 9.2  | 5 / 894 / 11.5 | 5 / 942 / 11.7 |
+  | per run                                                 | 9 / 303 / 2.8  | 34 / 684 / 6.6 | 27 / 817 / 9.3 | 8 / 931 / 11.9 | 4 / 943 / 12.2 |
+  | per run + 1 scrap in rooms 1 and 2                      | 10 / 304 / 2.8 | 34 / 699 / 6.7 | 30 / 829 / 9.2 | 7 / 929 / 11.7 | 5 / 942 / 12.0 |
+  | per run + cheaper recipes                               | 9 / 306 / 2.8  | 31 / 696 / 6.8 | 28 / 824 / 9.2 | 6 / 930 / 11.8 | 4 / 943 / 12.1 |
+  | per run + cheaper recipes + 1 scrap in room 1 (shipped) | 9 / 305 / 2.7  | 34 / 694 / 6.7 | 33 / 822 / 9.1 | 9 / 929 / 11.9 | 4 / 943 / 12.2 |
+
+  **Engaged**: supplies used a week (b bought, f found on trips, d dungeon, c crafted, g gifts)
+
+  | Variant                                                 | w1              | w4              | w6               | w12               | w20                |
+  | ------------------------------------------------------- | --------------- | --------------- | ---------------- | ----------------- | ------------------ |
+  | main                                                    | 5 (1b 4f 0d 0c) | 8 (3b 5f 0d 0c) | 17 (8b 9f 0d 0c) | 19 (9b 10f 0d 0c) | 32 (15b 15f 0d 0c) |
+  | per run                                                 | 10 (4f 6d 3c)   | 20 (7f 7d 6c)   | 24 (10f 7d 8c)   | 26 (10f 7d 10c)   | 32 (16f 5d 10c 2g) |
+  | per run + 1 scrap in rooms 1 and 2                      | 11 (4f 6d 4c)   | 21 (7f 7d 8c)   | 25 (9f 7d 9c)    | 26 (10f 7d 9c)    | 33 (16f 5d 10c 2g) |
+  | per run + cheaper recipes                               | 10 (4f 6d 3c)   | 21 (7f 7d 8c)   | 24 (10f 7d 8c)   | 27 (10f 7d 10c)   | 33 (16f 5d 10c 2g) |
+  | per run + cheaper recipes + 1 scrap in room 1 (shipped) | 11 (4f 6d 4c)   | 21 (6f 7d 8c)   | 25 (10f 7d 9c)   | 26 (10f 7d 10c)   | 32 (16f 5d 9c 2g)  |
+
+  **Engaged**: scrap held / team power / upgrade levels on worn gear
+
+  | Variant                                                 | w1             | w4             | w6             | w12              | w20              |
+  | ------------------------------------------------------- | -------------- | -------------- | -------------- | ---------------- | ---------------- |
+  | main                                                    | 9 / 270 / 1.4  | 11 / 532 / 4.4 | 14 / 619 / 7.0 | 19 / 790 / 10.9  | 39 / 937 / 11.7  |
+  | per run                                                 | 20 / 272 / 1.4 | 44 / 547 / 4.5 | 59 / 649 / 7.2 | 68 / 870 / 11.6  | 305 / 943 / 12.6 |
+  | per run + 1 scrap in rooms 1 and 2                      | 26 / 273 / 1.4 | 63 / 551 / 4.6 | 85 / 650 / 7.1 | 121 / 876 / 11.7 | 448 / 943 / 12.5 |
+  | per run + cheaper recipes                               | 21 / 272 / 1.4 | 55 / 549 / 4.6 | 73 / 650 / 7.4 | 127 / 873 / 11.6 | 516 / 944 / 12.6 |
+  | per run + cheaper recipes + 1 scrap in room 1 (shipped) | 24 / 272 / 1.4 | 67 / 548 / 4.5 | 92 / 648 / 7.0 | 166 / 872 / 11.7 | 604 / 944 / 12.6 |
+
+  **Regular**: supplies used a week (b bought, f found on trips, d dungeon, c crafted, g gifts)
+
+  | Variant                                                 | w1           | w4           | w6           | w12          | w20          |
+  | ------------------------------------------------------- | ------------ | ------------ | ------------ | ------------ | ------------ |
+  | main                                                    | 1 (1f 0d 0c) | 2 (2f 0d 0c) | 2 (2f 0d 0c) | 2 (2f 0d 0c) | 3 (3f 0d 0c) |
+  | per run                                                 | 1 (1f 1d 0c) | 7 (3f 4d 0c) | 7 (2f 4d 0c) | 8 (3f 4d 0c) | 8 (4f 4d 1c) |
+  | per run + 1 scrap in rooms 1 and 2                      | 1 (1f 1d 0c) | 7 (3f 4d 0c) | 7 (2f 4d 0c) | 8 (3f 4d 0c) | 8 (4f 4d 0c) |
+  | per run + cheaper recipes                               | 1 (1f 1d 0c) | 7 (2f 4d 0c) | 6 (2f 4d 0c) | 7 (3f 4d 0c) | 8 (4f 4d 0c) |
+  | per run + cheaper recipes + 1 scrap in room 1 (shipped) | 1 (1f 1d 0c) | 7 (2f 4d 0c) | 6 (2f 4d 0c) | 7 (3f 4d 0c) | 8 (4f 4d 0c) |
+
+  **Regular**: scrap held / team power / upgrade levels on worn gear
+
+  | Variant                                                 | w1             | w4             | w6              | w12             | w20              |
+  | ------------------------------------------------------- | -------------- | -------------- | --------------- | --------------- | ---------------- |
+  | main                                                    | 17 / 153 / 0.2 | 40 / 308 / 2.8 | 56 / 373 / 4.6  | 104 / 532 / 8.5 | 190 / 675 / 10.9 |
+  | per run                                                 | 18 / 153 / 0.2 | 49 / 309 / 2.8 | 71 / 378 / 4.7  | 146 / 538 / 8.9 | 285 / 680 / 11.5 |
+  | per run + 1 scrap in rooms 1 and 2                      | 21 / 154 / 0.2 | 71 / 310 / 3.0 | 107 / 378 / 4.9 | 224 / 544 / 8.9 | 424 / 680 / 11.6 |
+  | per run + cheaper recipes                               | 19 / 154 / 0.2 | 51 / 312 / 2.6 | 71 / 381 / 5.0  | 147 / 542 / 8.9 | 289 / 681 / 11.6 |
+  | per run + cheaper recipes + 1 scrap in room 1 (shipped) | 19 / 153 / 0.2 | 61 / 310 / 3.0 | 93 / 376 / 4.4  | 190 / 541 / 8.7 | 367 / 681 / 11.6 |
+
+  **Drop-in**: supplies used a week (b bought, f found on trips, d dungeon, c crafted, g gifts)
+
+  | Variant                                                 | w1           | w4           | w6           | w12          | w20          |
+  | ------------------------------------------------------- | ------------ | ------------ | ------------ | ------------ | ------------ |
+  | main                                                    | 0 (0f 0d 0c) | 0 (0f 0d 0c) | 0 (0f 0d 0c) | 0 (0f 0d 0c) | 0 (0f 0d 0c) |
+  | per run                                                 | 0 (0f 0d 0c) | 0 (0f 1d 0c) | 1 (0f 1d 0c) | 2 (1f 1d 0c) | 1 (0f 1d 0c) |
+  | per run + 1 scrap in rooms 1 and 2                      | 0 (0f 0d 0c) | 0 (0f 1d 0c) | 1 (0f 1d 0c) | 1 (0f 1d 0c) | 1 (0f 1d 0c) |
+  | per run + cheaper recipes                               | 0 (0f 0d 0c) | 0 (0f 1d 0c) | 1 (0f 1d 0c) | 1 (1f 1d 0c) | 1 (0f 1d 0c) |
+  | per run + cheaper recipes + 1 scrap in room 1 (shipped) | 0 (0f 0d 0c) | 0 (0f 1d 0c) | 1 (0f 1d 0c) | 1 (0f 1d 0c) | 2 (0f 1d 0c) |
+
+  **Drop-in**: scrap held / team power / upgrade levels on worn gear
+
+  | Variant                                                 | w1            | w4             | w6             | w12            | w20             |
+  | ------------------------------------------------------- | ------------- | -------------- | -------------- | -------------- | --------------- |
+  | main                                                    | 14 / 68 / 0.0 | 23 / 168 / 0.1 | 31 / 214 / 0.4 | 59 / 324 / 1.8 | 101 / 422 / 3.7 |
+  | per run                                                 | 14 / 68 / 0.0 | 24 / 176 / 0.1 | 32 / 223 / 0.3 | 63 / 324 / 1.9 | 111 / 421 / 3.9 |
+  | per run + 1 scrap in rooms 1 and 2                      | 14 / 68 / 0.0 | 27 / 174 / 0.1 | 41 / 225 / 0.6 | 86 / 327 / 1.9 | 148 / 424 / 4.0 |
+  | per run + cheaper recipes                               | 14 / 68 / 0.0 | 24 / 170 / 0.1 | 31 / 218 / 0.4 | 62 / 326 / 1.9 | 108 / 423 / 3.9 |
+  | per run + cheaper recipes + 1 scrap in room 1 (shipped) | 14 / 68 / 0.0 | 25 / 173 / 0.1 | 36 / 224 / 0.4 | 76 / 330 / 1.8 | 132 / 430 / 4.5 |
+
+- **Reading (scrap and recipes).**
+  - Scrap is not what limits crafting for engaged, regular and drop-in players: their scrap piles grow whatever is added (engaged 305 at week 20 and regular 285 with no extra scrap at all, against main's 39 and 190), because their workshop turns now make cheap supplies instead of gear that was salvaged back into scrap. What limits a min-maxer's crafting is that supplies and gear compete for the same scrap (scrap blocked the gear path on 82% of a min-maxer's days in main and 65% to 67% in every variant).
+  - Extra scrap and cheaper recipes each raise a min-maxer's crafting by 20% to 45% in weeks 1 to 6 (9, 15, 16 crafted a week at weeks 1, 4, 6 on "per run" against 12, 19, 19 with the extra scrap and 13, 21, 22 with cheaper recipes), and shipped (both, with half the extra scrap) by 50% to 70% (15, 25, 24), all at main's gear pace (2.7, 6.7 and 9.1 levels at weeks 1, 4 and 6 against 2.9, 6.7 and 9.2; 11.9 and 12.2 at weeks 12 and 20 against 11.5 and 11.7). From week 12 a min-maxer's crafting is limited by the stock target (it makes what it uses), not by scrap.
+  - The price is the piles of players who do not craft: shipped adds about 80 scrap to a regular's pile at week 20 (367 against 285 without it, main 190) and 300 to an engaged player's (604 against 305, main 39). The target "no new scrap pile for regulars beyond main's" is not met by any variant (the one with no extra scrap already holds 285 against 190); shipped keeps the extra small.
+- **Action.**
+  - `RULES.dungeon.perRoom[]` gained `supply` (1, 0, 0) and the first room pays 1 scrap (it was 0): a run that clears its first room brings home a supply, a lost run included. `RULES.dungeon.supplyTiers`: good tier from depth 4 (15% at depth 4, +4 points a depth, at most 50%), great from depth 12 (5% at depth 12, +2 points a depth, at most 25%), the rest basic, the kind drawn evenly. A new player gets basic supplies only until depth 4; a min-maxer at the depth wall (about 22) gets about 25% basic, 50% good and 25% great.
+  - Supply recipes: scrap 2, 4 and 7 (`supplies.json`); shards and Crafting levels unchanged. The content field `price` became `worth` (sim only).
+  - Supplies are not for sale: the send refuses `buy` with `supplies_not_for_sale`; the UI sells nothing. See `decisions.md` 2026-10-16.
+  - Sim: the `supplyPercent` dial and the Bait budget are gone; `pnpm sim:supplies`; `pnpm sim` has a supplies study and five targets (`supplies-*`, 66 targets in all); the legacy digest was re-pinned.
+- **Expected.** Every profile uses supplies every week (regular 3 or more, min-maxer 8 or more); at least a quarter of the supplies of engaged and min-maxer players are crafted; a min-maxer's gear levels are not behind main; the `curve-*` raid targets still pass (they did not: see the outcome).
+- **Outcome (sim; the "shipped" rows above, the same run, against main).** Weeks 3 to 12: a regular carries 6.6 supplies a week (main 2), a min-maxer 42 (main 31), an engaged player 25 (main 15), a drop-in 1.0 (0.2); crafted share 55% for a min-maxer and 37% for an engaged player (main 0%); a min-maxer's upgrade levels at week 12 are 11.9 (main 11.5), team power at weeks 4, 6 and 12 is 694, 822 and 929 (main 628, 727 and 894: the Bait that no longer goes to supplies trains creatures). Currencies held, main against shipped (Bait / Essence / glimmer / shards / scrap):
+
+  | Profile   | Week | main: Bait / Essence / glimmer / shards / scrap | shipped                     |
+  | --------- | ---- | ----------------------------------------------- | --------------------------- |
+  | Min-maxer | w12  | 25 / 323 / 33 / 112 / 5                         | 20 / 240 / 32 / 1 / 9       |
+  | Min-maxer | w20  | 26 / 849 / 82 / 251 / 5                         | 3481 / 741 / 79 / 1 / 4     |
+  | Min-maxer | w30  | 4709 / 1566 / 138 / 453 / 4                     | 14814 / 1391 / 130 / 1 / 5  |
+  | Engaged   | w12  | 20 / 214 / 10 / 48 / 19                         | 27 / 196 / 11 / 2 / 166     |
+  | Engaged   | w20  | 18 / 723 / 45 / 139 / 39                        | 22 / 632 / 46 / 6 / 604     |
+  | Engaged   | w30  | 2362 / 1391 / 97 / 302 / 59                     | 7986 / 1267 / 97 / 5 / 1489 |
+  | Regular   | w12  | 7 / 157 / 2 / 14 / 104                          | 7 / 176 / 2 / 14 / 190      |
+  | Regular   | w20  | 12 / 320 / 4 / 25 / 190                         | 10 / 349 / 4 / 25 / 367     |
+  | Regular   | w30  | 14 / 733 / 8 / 43 / 298                         | 17 / 770 / 9 / 39 / 604     |
+  | Drop-in   | w12  | 4 / 310 / 1 / 6 / 59                            | 5 / 342 / 1 / 6 / 76        |
+  | Drop-in   | w20  | 4 / 558 / 2 / 10 / 101                          | 4 / 598 / 2 / 10 / 132      |
+  | Drop-in   | w30  | 4 / 892 / 4 / 15 / 169                          | 4 / 885 / 3 / 15 / 206      |
+
+  Raid targets: the raid targets are NOT all met: players are 5% to 12% stronger at weeks 4 to 12 (the Bait that no longer goes to supplies trains creatures), and the raid curve (B-010, live) was left alone on the lead's instruction. Full `pnpm sim` on seeds leet, leet2 and leet3 (66 targets, 5 of them new): 62, 64 and 62 pass. Failing, with the value before the rework (B-010: 61 of 61 passing): `curve-r2to5-default` 86.3%, 85.3% and 87.0% (limit 85%; before 82%), `curve-r6up-default` 69.3% on leet3 only (limit 65%; 61.8% and 56.9% pass; before 56%), `raid-finale-typical` 97.5% and 97.9% on leet and leet3 (limit 97%; 97.0% passes on leet2; before 92% to 93%), `raid-ko-share` 7.1%, 7.5% and 6.8% (limit 10%; before 11% to 13%) and `choice-creature-min` 0.598x on leet (limit 0.60x). A retune of ranks 2 to 15 that fixes all of them (HP +4% to +6%, Attack +10% to +15%) puts every one of these inside its limit but pushes `longrun-loss-streak` to 15% to 27% on most seeds (limit 10%; 5% to 7.5% before), so it was not shipped (see the follow-ups).
+
+- **Follow-ups.**
+  - **Bait piles up once every creature is at its cap** (min-maxer: 3,481 at week 20 and 14,814 at week 30 against 26 and 4,709; engaged 7,986 at week 30 against 2,362): main spent 250 to 480 a week on supplies, and that was the only Bait sink at the ceiling. This is the "no endgame" finding of the progression study (levels 31 to 40 would use it); not caused by the dungeon or the workshop, but now it is not hidden.
+  - **Scrap has no sink for players who do not craft** (regular 367 and 604 at weeks 20 and 30 against 190 and 298; engaged 604 and 1,489 against 39 and 59): a use for scrap beyond a full set of +5 upgrades, or salvaging scrap into shards, would fix it.
+  - **Shards are the next limit on the higher tiers**: a min-maxer holds 1 shard from week 12 (main 112) because crafting good supplies spends them all, and great supplies are about one in twenty of what is crafted. More shard income if great supplies should be common.
+  - **The raid is a little easier than the curve intends in weeks 4 to 12.** Misa's call whether to retune (the curve is live). A tested fix: ranks 2 to 5 HP +5% and Attack +15%, ranks 6 to 15 HP 0% to +4% and Attack +8% to +12%: every `curve-*`, `raid-finale-typical`, `raid-ko-share` and `choice-creature-min` target inside its limit on three seeds, but `longrun-loss-streak` then fails on most seeds (15% to 27% against 10%), so the loss-streak target would need re-basing as well.
+  - Watch live: supplies per run (`dungeon_reward.supplies`), crafted supplies (`job_claim`) and the stock of regular players (the sim has them at 2 to 3).
