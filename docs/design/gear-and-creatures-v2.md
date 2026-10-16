@@ -102,6 +102,8 @@ All names are _(working names)_. The Charm names reuse today's charms, so conver
 
 What this means over a journey (committed players): item level about 5 to 7 in week 2 (tier II), 10 to 12 by week 8 (III), 15 to 17 by week 20 (IV), and the first V lines from about week 25. Explorer ranks 7 to 10 and Crafting levels 8 to 10, today dead ends, become the way to item level 20 without a deep dungeon.
 
+**Wearing.** A creature can wear an item only if the item's level is not higher than the creature's level (a level 12 creature wears items up to item level 12). Shown on the card ("Needs level 14"). A drop that is too high waits in the bag until the creature grows into it. This stops a fresh catch from skipping the journey in top gear and gives levelling a purpose beyond bigger numbers (added 2026-10-16 after Misa's question on converted items).
+
 ## 3. The crafting loop
 
 1. **Craft.** Pick a known blueprint (a base). Pay 6 scrap and 1 shard of its tag's element (neutral and role bases: any shard you choose; the Compass: 8 scrap, no shard). The job takes 3 hours and always makes a **Common** at item level 2 x the crafter's Crafting level.
@@ -713,7 +715,7 @@ The dungeon's room modifiers (Flooded, Thorns and the rest) stay as they are; we
 
 ## 12. What happens to existing players
 
-- **Gear:** every worn item becomes a new item of the same rarity: Attack and crit items become Hats, HP items Scarves, speed items and trinkets Charms, with the tag from the old tint and item level 4 + 3 x its old upgrade level (a +5 becomes 19). Lines are rolled fresh, once, with live randomness, at tier II or better. Unworn items are refunded: their dismantle yield plus the scrap and Essence their upgrades cost. Enchants refund their glimmer and shards. Known blueprints map to the new base of the same slot and tag; overlaps become well-thumbed marks. Jobs in progress finish under the old rules first.
+- **Gear:** every worn item becomes a new item of the same rarity: Attack and crit items become Hats, HP items Scarves, speed items and trinkets Charms, with the tag from the old tint and the item level a fresh drop would have for that player today: the higher of `3 + Boss Rank` (the finale's rule) and their best dungeon depth's drop level, at most 12 (amended 2026-10-16: the first draft's `4 + 3 x upgrade level` made a +5 item level 19, about week-20 power on day one). Lines are rolled fresh, once, with live randomness, at tier II or better. Unworn items are refunded: their dismantle yield plus the scrap and Essence their upgrades cost. Enchants refund their glimmer and shards. Known blueprints map to the new base of the same slot and tag; overlaps become well-thumbed marks. Jobs in progress finish under the old rules first.
 - **Creatures:** levels, fusions, quirks and nicknames stay. Each creature gets its open talent slots rolled once. Creatures already past 10 or 20 get their ribbons free. Banked Bait stays Bait (treats).
 - **Raid:** retuned in the same step, with the open week re-declared.
 

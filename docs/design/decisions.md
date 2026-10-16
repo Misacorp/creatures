@@ -1298,3 +1298,10 @@ Also asked: whether using a supply is loosely net positive (not every time; rand
 7. **Boons and Omens:** positive effects are Boons, negative ones Omens. They change at the **daily reset**, so a well-planned raid can hit bad weather part way through the weekend and players adapt. They may also touch expeditions and the dungeon, and grow stronger at high raid ranks.
 8. **Process:** Misa reviews the gear modifier list and creature talents and choices (all modifiers, example talents, and why each choice is meaningful) as an artifact before they are built. Gear and creatures are the foundation; raids and dungeons are rebalanced around them afterwards with the curve scalars.
 9. **A reference-games log** records what we draw inspiration from, what we looked into, and what works for this game and what does not (`docs/research/reference-games.md`). The Bazaar is added as a key reference.
+
+## 2026-10-16: converted gear matches a fresh drop, and an item needs its level to be worn
+
+Misa asked whether converted items could get too strong and whether creatures need a level to wear gear. They could: the first draft converted a +5 item to item level 19 (about week-20 power on day one), and nothing limited who wore what. Two rules, recorded in `gear-and-creatures-v2.md`:
+
+- **Conversion:** an old item converts to the item level a fresh drop would have for that player today (the higher of `3 + Boss Rank` and their best dungeon depth's drop level, at most 12), not to its old upgrade count. Players are testers, so fairness is not exact; the aim is that nobody starts the new system ahead of what it would give them.
+- **Wearing:** an item's level may not exceed the wearer's level. A high drop waits in the bag; levelling gains a purpose; a new catch cannot skip the journey in top gear.
