@@ -112,6 +112,8 @@ export interface DayInfo {
   week: number;
   day: number;
   dayOfWeek: number;
+  /** The server's Boss Rank that day (the rank of its last raid week, or the one it was placed at); null before its first raid week. */
+  rank: number | null;
   /** Players who have joined. */
   active: readonly SimPlayer[];
   /** Who opened the game that day, who leeted, and how many check-ins each made. */
@@ -796,6 +798,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
         week,
         day: globalDay,
         dayOfWeek: day,
+        rank,
         active,
         loggedIn: loggedSet,
         leeted: leetSet,

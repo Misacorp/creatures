@@ -258,12 +258,18 @@ function emptyTotals(): PlayerTotals {
 export function slotFor(player: SimPlayer, creatureId: string): FightSlot {
   const c = player.creatures.find((x) => x.id === creatureId);
   if (c === undefined) throw new Error(`player ${player.id} lost creature ${creatureId}`);
+  return slotOfCreature(c, player.id);
+}
+
+/** The fight slot of an owned creature: its stats with the worn item folded in, and its sheet. */
+export function slotOfCreature(c: OwnedCreature, ownerId: string): FightSlot {
   const slot = makeSlot(speciesOf(c.speciesId), {
     id: c.id,
-    ownerId: player.id,
+    ownerId,
     level: c.level,
     fusionCount: c.fusionCount,
   });
+  if (c.mods !== undefined) slot.mods = c.mods;
   if (c.item === undefined || c.item === null) return slot;
   // Gear folds into the stats and the crit bonus, as the worker's `slotFor` does (apps/worker/src/raid-resolve.ts).
   const folded = foldedCreature(c);

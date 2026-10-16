@@ -362,6 +362,35 @@ describe('the recorder', () => {
     expect(mm?.days.at(-1)?.power).toBeGreaterThan(drop?.days.at(-1)?.power ?? 0);
   });
 
+  it('scores the team in fights on the last day of each week, next to the old power', () => {
+    const play = () => {
+      const recorder = new JourneyRecorder();
+      runEconomy({ ...options, income: 'allowance', observer: recorder });
+      return recorder.journeys;
+    };
+    const journeys = play();
+    for (const j of journeys) {
+      for (const [k, d] of j.days.entries()) {
+        if ((k + 1) % 7 === 0) {
+          expect(d.fightPower).toBeGreaterThan(0);
+          expect(d.fightSurvivalBp).toBeGreaterThanOrEqual(0);
+          expect(d.fightSurvivalBp).toBeLessThanOrEqual(10_000);
+          expect(d.power).toBeGreaterThan(0);
+        } else {
+          expect(d.fightPower).toBeNull();
+          expect(d.fightSurvivalBp).toBeNull();
+        }
+      }
+    }
+    // Deterministic: the same run scores the same.
+    expect(play().map((j) => j.days.map((d) => d.fightPower))).toEqual(
+      journeys.map((j) => j.days.map((d) => d.fightPower)),
+    );
+    // The min-maxer is ahead of the drop-in in fights too.
+    const [mm, , , drop] = journeys;
+    expect(mm?.days.at(-1)?.fightPower).toBeGreaterThan(drop?.days.at(-1)?.fightPower ?? 0);
+  });
+
   it('watching changes nothing: the economy plays the same with and without the recorder', () => {
     const plain = runEconomy({ ...options, income: 'allowance' });
     const watched = runEconomy({

@@ -131,6 +131,13 @@ describe('journey CLI run on a tiny config', () => {
     const first = engaged?.weeks[0];
     expect(first?.power?.median).toBeGreaterThan(0);
     expect(first?.power?.p25).toBeLessThanOrEqual(first?.power?.p75 ?? 0);
+    // The fight-scored power sits next to the older score, for every week.
+    for (const w of engaged?.weeks ?? []) {
+      expect(w.fightPower?.median).toBeGreaterThan(0);
+      expect(w.fightPower?.p25).toBeLessThanOrEqual(w.fightPower?.p75 ?? 0);
+      expect(w.fightSurvivalBp?.median).toBeGreaterThan(0);
+      expect(w.fightSurvivalBp?.median).toBeLessThanOrEqual(10_000);
+    }
     for (const id of Object.keys(engaged?.milestones ?? {})) {
       expect(milestoneCatalogue()).toContain(id);
     }
@@ -139,6 +146,7 @@ describe('journey CLI run on a tiny config', () => {
     const md = readFileSync(join(out, 'report-journey.md'), 'utf8');
     expect(md).toContain('# Player journey simulation');
     expect(md).toContain('## Raid team power by week');
+    expect(md).toContain('## Raid team fight-scored power by week');
     expect(md).toContain('## When the milestones land');
     expect(md).toContain('## What holds players back');
     expect(md).toContain('Min-maxer');

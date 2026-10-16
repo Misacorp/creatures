@@ -70,6 +70,20 @@ export function journeyMarkdown(report: JourneyReport): string {
     ),
   );
 
+  out.push(`## Raid team fight-scored power by week`);
+  out.push(
+    `Damage per finale round the three strongest creatures deal against the four bosses at the server's rank, before they fall (\`fightPower\`). It sees crits, reactions and modifiers; the table above is the older Attack + HP score.`,
+  );
+  out.push(
+    table(
+      ['Week', ...presets.map((p) => p.label)],
+      shownWeeks(s.weeks).map((w) => [
+        String(w),
+        ...presets.map((p) => spread(p.weeks[w - 1]?.fightPower)),
+      ]),
+    ),
+  );
+
   const last = s.weeks;
   out.push(`## What the power is made of at week ${String(last)} (median of each part)`);
   out.push(

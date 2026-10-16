@@ -11,6 +11,7 @@ import {
 } from '@creatures/game';
 import { creatureStats, foldedCreature, pickTeam, speciesOf, type OwnedCreature } from './data';
 import { serverMedianTopLevel, type DayInfo, type EconomyObserver } from './economy';
+import { fightPower } from './fight-power';
 import { allItems } from './gear';
 import { isTrainable, trainCost } from './policy';
 import type { RaidWeek } from './raid';
@@ -233,6 +234,13 @@ export interface DayRecord {
   checkIns: number;
   /** Raid team power at the end of the day and its split (`powerSplit`). */
   power: number;
+  /**
+   * The raid team's fight-scored power and survival (`fightPower`) at the server's Boss Rank: only
+   * on the last day of each week (it plays fights), null on the others. `power` is the older
+   * Attack + HP score and stays beside it.
+   */
+  fightPower: number | null;
+  fightSurvivalBp: number | null;
   base: number;
   levels: number;
   fusion: number;
@@ -359,10 +367,19 @@ function shardsOf(player: SimPlayer): number {
 /** One day's record of a player. `medianTopLevel` is the server's, for training costs. */
 export function recordDay(
   player: SimPlayer,
-  info: { day: number; week: number; loggedIn: boolean; leeted: boolean; checkIns: number },
+  info: {
+    day: number;
+    week: number;
+    loggedIn: boolean;
+    leeted: boolean;
+    checkIns: number;
+    /** Set: also score the raid team in fights at this Boss Rank (`fightPower`). */
+    fightRank?: number;
+  },
   medianTopLevel: number,
 ): DayRecord {
   const split = powerSplit(player.creatures);
+  const fights = info.fightRank === undefined ? null : fightPower(player.creatures, info.fightRank);
   const team = pickTeam(player.creatures);
   const items = allItems(player);
   const worn = player.creatures.flatMap((c) =>
@@ -378,6 +395,8 @@ export function recordDay(
     leeted: info.leeted,
     checkIns: info.checkIns,
     power: split.total,
+    fightPower: fights === null ? null : fights.power,
+    fightSurvivalBp: fights === null ? null : fights.survivalBp,
     base: split.base,
     levels: split.levels,
     fusion: split.fusion,
@@ -507,6 +526,8 @@ export class JourneyRecorder implements EconomyObserver {
           loggedIn: info.loggedIn.has(p.id),
           leeted: info.leeted.has(p.id),
           checkIns: info.checkIns.get(p.id) ?? 0,
+          // The week's last day: score the team in fights (it plays 12 of them, so not every day).
+          ...(info.dayOfWeek === 6 ? { fightRank: info.rank ?? 1 } : {}),
         },
         median,
       );

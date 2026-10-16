@@ -8,6 +8,7 @@ import {
   type GearItem,
   type Stats,
 } from '@creatures/game';
+import type { SlotMods } from '@creatures/engine';
 
 const byId = new Map<string, CreatureSpecies>(content.creatures.map((c) => [c.id, c]));
 
@@ -41,6 +42,11 @@ export interface OwnedCreature {
   fusionCount: number;
   /** The gear item it wears (one slot); absent or null: none. */
   item?: SimItem | null;
+  /**
+   * The creature's modifier sheet (`FightSlot.mods`: gear lines, talents and weather folded into
+   * numbers). Nothing in the game fills it yet; fights and the fight-scored power pass it on.
+   */
+  mods?: SlotMods;
 }
 
 const statCache = new Map<string, Stats>();
