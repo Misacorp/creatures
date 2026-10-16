@@ -39,6 +39,7 @@ Sources: docs.github.com/en/actions/reference/security/secure-use · docs.zizmor
 - ✅ CI runs **gitleaks** over the PR's commits.
 - 👤 GitHub **secret scanning** and **push protection** enabled on the repo (free for public repos).
 - ✅ Production secrets (`DISCORD_CLIENT_SECRET`, `DISCORD_BOT_TOKEN`, later `LEET_API_KEY`) live in GitHub environment secrets and are pushed to Cloudflare Worker secrets by the deploy job. The Discord client ID is public and is committed in `wrangler.jsonc`.
+- ✅ **The one agent-held token: `FEEDBACK_READ_TOKEN`** (`docs/design/feedback.md`). Misa stores it in the Claude Code cloud environment as `FEEDBACK_TOKEN_PRODUCTION` (and `_STAGING`) so the triage skill can read player screenshots, which are kept private. It can only read feedback reports and their screenshots (no game data, no writes). Only `apps/worker/scripts/feedback-fetch.mjs` uses it, which sends it only to the fixed game host and never prints it. Agents never put it in prompts, logs, files or tool arguments. Rotate it in both places if it is ever exposed. The Discord public key (`DISCORD_PUBLIC_KEY`) is not a secret; the deploy job reads it from Discord.
 - If a secret ever leaks: rotate it immediately. Removing it from git history is not enough.
 
 Sources: docs.github.com/en/code-security/secret-scanning
