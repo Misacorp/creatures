@@ -91,9 +91,16 @@ async function exportedIssues() {
 
 async function exportTarget(target, known) {
   const res = await ops(target, '/api/ops/feedback/pending');
-  if (res.status === 404) {
+  // 404: the Worker has no OPS_TOKEN (or a different one). 401: the Worker there predates the
+  // feedback routes, so the path falls through to the session check (staging runs whatever branch
+  // was last deployed to it). Neither is this run's failure.
+  if (res.status === 404 || res.status === 401) {
     console.log(
-      `::warning::${target}: the feedback endpoint answered 404. Is OPS_TOKEN set on the ${target} Worker and deployed?`,
+      `::warning::${target}: the feedback endpoint answered ${res.status}. ${
+        res.status === 401
+          ? `The ${target} Worker does not have the feedback routes yet (deploy a branch that has them).`
+          : `Is OPS_TOKEN set on the ${target} Worker and deployed?`
+      } Skipping ${target}.`,
     );
     return { made: 0, failed: 0 };
   }
