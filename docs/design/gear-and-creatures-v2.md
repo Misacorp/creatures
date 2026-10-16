@@ -627,18 +627,18 @@ Values are at x1. Engine: **Mutator** (the engine's existing hooks: fight start,
 
 **Boons**
 
-| Boon             | Raid and dungeon                                 | Trips and Workshop                                                         | Engine         |
-| ---------------- | ------------------------------------------------ | -------------------------------------------------------------------------- | -------------- |
-| Fair Winds       | Every creature's first hit each fight +10%       | Trips 10% shorter                                                          | Sheet, Rules   |
-| Warm Hearth      | Supports' boost +4 pt                            | Workshop jobs 15% faster                                                   | Input, Rules   |
-| Kind Rain        | Every creature heals 2% of max HP at round start | Tidepools and Verdant Hollow trips +25% parts                              | Sheet, Rules   |
-| Clear Skies      | Crit chance +3 pt                                | Catch rarity-up +1 pt                                                      | Input, Rules   |
-| High Water       | Steam and Overload +15%                          | Tidepools and Moonlit Reef: one extra catch roll on 12 h trips and longer  | Mutator, Rules |
-| Bonfire Night    | Wildfire and Grounding +15%                      | Ember Caves and Storm Ridge: one extra catch roll on 12 h trips and longer | Mutator, Rules |
-| Hearty Breakfast | —                                                | Creature experience +25%; treats triple instead of double                  | Rules          |
-| Lantern Light    | Shield Walls last 1 more round                   | Journal pages twice as likely                                              | Sheet, Rules   |
-| Market Day       | Dungeon rooms +1 scrap                           | Dismantles refund the top of their range; one-step-up chance +5 pt         | Rules          |
-| Quiet Night      | The boss's adaptation is 25% weaker              | The Moonlit Reef stays open all day                                        | Input, Rules   |
+| Boon             | Raid and dungeon                                 | Trips and Workshop                                                                                                                                                               | Engine         |
+| ---------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| Fair Winds       | Every creature's first hit each fight +10%       | Trips 10% shorter                                                                                                                                                                | Sheet, Rules   |
+| Warm Hearth      | Supports' boost +4 pt                            | Workshop jobs 15% faster                                                                                                                                                         | Input, Rules   |
+| Kind Rain        | Every creature heals 2% of max HP at round start | Tidepools and Verdant Hollow trips +25% parts                                                                                                                                    | Sheet, Rules   |
+| Clear Skies      | Crit chance +3 pt                                | Catch rarity-up +1 pt                                                                                                                                                            | Input, Rules   |
+| High Water       | Steam and Overload +15%                          | Tidepools and Moonlit Reef: one extra catch roll on 12 h trips and longer                                                                                                        | Mutator, Rules |
+| Bonfire Night    | Wildfire and Grounding +15%                      | Ember Caves and Storm Ridge: one extra catch roll on 12 h trips and longer                                                                                                       | Mutator, Rules |
+| Hearty Breakfast | —                                                | Creature experience +25%; treats triple instead of double                                                                                                                        | Rules          |
+| Lantern Light    | Shield Walls last 1 more round                   | Journal pages twice as likely                                                                                                                                                    | Sheet, Rules   |
+| Market Day       | Dungeon rooms +1 scrap                           | The day's first craft gets +5 pt one-step-up chance, and the first 2 dismantle jobs refund the top of their range (not every dismantle, so hoarding for Market Day does not pay) | Rules          |
+| Quiet Night      | The boss's adaptation is 25% weaker              | The Moonlit Reef stays open all day                                                                                                                                              | Input, Rules   |
 
 **Omens**
 

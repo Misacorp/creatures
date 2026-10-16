@@ -1305,3 +1305,7 @@ Misa asked whether converted items could get too strong and whether creatures ne
 
 - **Conversion:** an old item converts to the item level a fresh drop would have for that player today (the higher of `3 + Boss Rank` and their best dungeon depth's drop level, at most 12), not to its old upgrade count. Players are testers, so fairness is not exact; the aim is that nobody starts the new system ahead of what it would give them.
 - **Wearing:** an item's level may not exceed the wearer's level. A high drop waits in the bag; levelling gains a purpose; a new catch cannot skip the journey in top gear.
+
+## 2026-10-16: Misa agrees with the podcast's points; Market Day boosts only the day's first crafts
+
+Misa listened to the review episodes and agrees with the changes they proposed unless he says otherwise. One change: **Market Day** must not reward hoarding items until it rolls. Its Workshop bonus now applies only to the day's first craft (+5 pt one-step-up chance) and the first 2 dismantle jobs (top of the refund range). The inventory cap of 60 also limits hoarding. The same rule applies to any future Boon that boosts a spend: limit it to the first few actions of the day.
