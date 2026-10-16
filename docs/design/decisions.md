@@ -1269,3 +1269,20 @@ Misa's answers on the progression overview (the forecast page for PR #24), recor
 - **Sim.** The `supplyPercent` dial and the Bait budget are gone; a trip carries the supplies in stock. The workshop makes a supply when fewer than 4 are in stock or being made (before it crafts gear; a new player's first craft still comes first, for the first-craft target) and leaves alone the scrap of the next two upgrades of every worn item (the study's `q1-keep`). `pnpm sim:supplies` runs and compares variants. The legacy digest was re-pinned on purpose (no Bait goes to supplies, the dungeon drops them).
 - **Open.** With nothing to buy, a min-maxer's Bait piles up from about week 13 when every creature is at its level cap (3,481 at week 20 and 14,814 at week 30; before, supplies took 250 to 480 a week): the progression study's levels 31 to 40 would use it, not done here. Scrap piles for engaged and regular players are larger than before (regular 367 at week 20 against 190; engaged 604 against 39) because their workshop turns now make cheap supplies instead of gear that was salvaged back into scrap; scrap has no other use for a player who does not craft (B-011).
 - **Raid curve left alone (open).** Players are 5% to 12% stronger at weeks 4 to 12 now that Bait does not go to supplies, so on the full `pnpm sim` (seeds leet, leet2, leet3) `curve-r2to5-default` is 85.3% to 87.0% (limit 85%), `curve-r6up-default` 69.3% on one seed (limit 65%), and the sweep's `raid-finale-typical`, `raid-ko-share` and `choice-creature-min` are just outside theirs. The curve shipped this morning, so it was not retuned here; a tested retune fixes those but breaks `longrun-loss-streak` (B-011). Misa's call.
+
+## 2026-10-16: Misa's answers to the systems review (they replace parts of its proposals)
+
+Answers to the ten questions in `docs/design/systems-review.md`. Where they differ from the review's proposals, these win.
+
+1. **Three gear slots**, each with its own job and roll pool (not three generic slots).
+2. **Gear's share of power depends on the stage of the journey:** early power comes mostly from creatures; as creature growth slows or caps, gear becomes the way to grow. No single target share.
+3. **Fight-triggered modifiers come later.** Ideas for that design space: modifiers that depend on or are boosted by the creatures next to the wearer, its row, its distance from the edge; set bonuses; chance-based effects whose chances grow with item level and rarity (Path of Exile and ARPGs as references).
+4. **No rerolls, and nothing that only improves an item without risk, for now** (future design space). The crafting loop: find or craft an item with rolled modifiers; a bad one is dismantled in the Workshop for a fraction of its cost, shown up front as a range (for example 2–4 scrap). Dismantling gives the creature Crafting XP and a small chance to learn the item's blueprint; extra finds of the same blueprint stack a small chance of crafting a higher-rarity version. Higher-rarity crafting is gated by Crafting level. **Enchanting is dropped** until the crafting loop is settled.
+5. **Existing gear is converted, not necessarily 100% fairly;** refunding it as scrap and other materials is fine.
+6. **Duplicates become a choice:** teach a talent (or a meaningful skill), fuse, or release. Release pays something other than Bait if it fits better (lead's call).
+7. **Evolution:** no de-evolve or re-evolve; evolved forms are rare or absent in the wild; two sequential evolutions (base, first, final) are welcome for depth. Training should become more than "spend Bait, level up at once", and fusion must stay meaningful.
+8. **Weekly boss rules: yes**, as weather, omens or boons, with plenty of variety, allowed to be extreme at high raid ranks, and possibly affecting dungeons and expeditions too.
+9. **Spare Essence goes into advanced features**, not training: gear crafting, and later dungeon choice rooms ("spend 20 Essence to enter this room").
+10. **No levels past 30** for now.
+
+Also asked: whether using a supply is loosely net positive (not every time; randomness is fine).

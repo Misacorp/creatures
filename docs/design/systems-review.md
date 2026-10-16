@@ -2,6 +2,8 @@
 
 Status: **proposal for Misa's review**, 2026-10-16. Nothing here is built. Asked for in decision 8 of 2026-10-16 ("Misa's direction after the raid retune").
 
+**Misa answered the questions on 2026-10-16** (`decisions.md`, "Misa's answers to the systems review"). Where his answers differ from the proposals below (no rerolls or risk-free upgrades for now, no enchanting, gear share by journey stage, Essence for advanced features rather than training), his answers win.
+
 Sources: a code-checked map of every system on `main`, `docs/balance/progression-study-2026-10-16.md` (the study: paired sims, 100 servers × 30 weeks, 40 × 70 for ceilings), `docs/research/loops-gear-collection.md`, `docs/research/idle-coop-raids.md` and the design docs. Week figures are per-player means for the journey presets **min-maxer / engaged / regular / drop-in** (MM / EN / RE / DI). "Power" is raid-team power (the 3 strongest creatures, `atk + floor(hp/10)` with gear). New numbers are **starting values** for the sim to tune.
 
 ## 1. Summary for Misa
