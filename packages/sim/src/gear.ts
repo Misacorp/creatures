@@ -477,7 +477,7 @@ function planCraft(player: SimPlayer, level: number): JobPlan | null {
   for (const baseId of player.gear.blueprints) {
     const base = gearBase(baseId);
     if (base === undefined || !craftable(base)) continue;
-    if (!canPay(player, craftCost(baseId))) continue;
+    if (!canPay(player, craftCost(baseId, craftItemLevel(level)))) continue;
     const plain = itemOf(baseId, 'common', craftItemLevel(level), []);
     const score = Math.max(0, ...pool.map((c) => scoreFor(plain, c)));
     const better =
@@ -489,7 +489,12 @@ function planCraft(player: SimPlayer, level: number): JobPlan | null {
   const reaches: readonly ReachId[] = ['epic', 'rare', 'none'];
   for (const reach of reaches) {
     if (level < reachMinLevel(reach)) continue;
-    const { parts, essence } = craftCostFor(best.baseId, reach, player.gear.parts);
+    const { parts, essence } = craftCostFor(
+      best.baseId,
+      reach,
+      player.gear.parts,
+      craftItemLevel(level),
+    );
     if (!canPay(player, parts)) continue;
     if (essence > 0 && player.essence - essence < GEAR_POLICY.essenceKeep) continue;
     return { job: { kind: 'craft', baseId: best.baseId, reach, marks }, cost: parts, essence };
