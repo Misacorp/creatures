@@ -79,6 +79,12 @@ export interface DungeonRunInput {
    * its `signature` gimmick. Absent: no landmark, so a stored older run replays as it was fought.
    */
   depth?: number;
+  /**
+   * Between-room rest (a Scarf line): by creature id, the share of its max HP (basis points) it
+   * recovers before each room after the first, if it is still standing. Absent: none, so a stored
+   * older run replays as it was fought.
+   */
+  rest?: Readonly<Record<string, number>>;
 }
 
 export interface DungeonRoomResult {
@@ -141,7 +147,12 @@ export function buildRoomInput(
       if (e.op === 'team_stat' && matches(e, slot))
         stats = { ...stats, [e.stat]: scale(stats[e.stat], e.bp) };
     }
-    const carried = hp?.[slot.id];
+    let carried = hp?.[slot.id];
+    const rest = run.rest?.[slot.id] ?? 0;
+    // A creature that stands recovers its rest share of max HP (never above max); a fallen one stays down.
+    if (carried !== undefined && carried > 0 && rest > 0) {
+      carried = Math.min(stats.hp, carried + Math.floor((stats.hp * rest) / 10_000));
+    }
     return { ...slot, stats, ...(carried === undefined ? {} : { hp: carried }) };
   });
 

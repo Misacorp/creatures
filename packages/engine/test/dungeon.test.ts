@@ -664,3 +664,72 @@ describe('the boss room: enrage and the landmark signature', () => {
     }
   });
 });
+
+describe('between-room rest (a Scarf line)', () => {
+  const survivors = (): FightSlot[] =>
+    ['left', 'mid', 'right'].map((id) => ({
+      ...slot(id, { atk: 5, hp: 1_000 }),
+      ownerId: 'p1',
+    }));
+  const two = (extra: Partial<DungeonRunInput> = {}): DungeonRunInput => ({
+    ...run([room(0, foe(), 100, 1), room(1, foe(), 100, 1)], survivors()),
+    ...extra,
+  });
+
+  it('adds its share of max HP to a standing creature before the next room, never above max', () => {
+    const hp = { left: 400, mid: 990, right: 0 };
+    const plain = buildRoomInput(two(), two().rooms[1] as DungeonRoomSpec, hp);
+    const rested = buildRoomInput(
+      two({ rest: { left: 500, mid: 500, right: 500 } }),
+      two().rooms[1] as DungeonRoomSpec,
+      hp,
+    );
+    const hpOf = (input: ReturnType<typeof buildRoomInput>, id: string) =>
+      input.row.find((s) => s.id === id)?.hp;
+    expect(hpOf(plain, 'left')).toBe(400);
+    expect(hpOf(rested, 'left')).toBe(450);
+    // Never above max HP.
+    expect(hpOf(rested, 'mid')).toBe(1_000);
+    // A fallen creature stays down.
+    expect(hpOf(rested, 'right')).toBe(0);
+  });
+
+  it('does nothing in the first room (everyone starts full) and for creatures without a share', () => {
+    const first = buildRoomInput(
+      two({ rest: { left: 500 } }),
+      two().rooms[0] as DungeonRoomSpec,
+      null,
+    );
+    expect(first.row.every((s) => s.hp === undefined)).toBe(true);
+    const some = buildRoomInput(two({ rest: { left: 500 } }), two().rooms[1] as DungeonRoomSpec, {
+      left: 100,
+      mid: 100,
+      right: 100,
+    });
+    expect(some.row.map((s) => s.hp)).toEqual([150, 100, 100]);
+  });
+
+  it('a stored run without it replays exactly as before, and a rested team ends with more HP', () => {
+    const plain = simulateDungeon(two(), 'rest');
+    const stored = JSON.parse(JSON.stringify(two())) as DungeonRunInput;
+    expect('rest' in stored).toBe(false);
+    expect(simulateDungeon(stored, 'rest')).toEqual(plain);
+    const tough = (): FightSlot[] =>
+      ['left', 'mid', 'right'].map((id) => ({
+        ...slot(id, { atk: 200, hp: 1_000 }),
+        ownerId: 'p1',
+      }));
+    const rooms = [
+      room(0, foe(), 1_500, 150),
+      room(1, foe(), 1_500, 150),
+      room(2, foe(), 1_500, 150),
+    ];
+    const noRest = simulateDungeon(run(rooms, tough()), 'rest-2');
+    const withRest = simulateDungeon(
+      { ...run(rooms, tough()), rest: { left: 1_000, mid: 1_000, right: 1_000 } },
+      'rest-2',
+    );
+    const sum = (r: typeof noRest) => Object.values(r.hpEnd).reduce((a, b) => a + b, 0);
+    expect(sum(withRest)).toBeGreaterThan(sum(noRest));
+  });
+});
