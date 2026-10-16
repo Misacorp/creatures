@@ -1241,3 +1241,17 @@ Misa decided the game feel on 2026-10-14 (`attack-patterns.md` section 7, `raid-
 **Dungeon team draft.** The setup row now survives a tab switch, a reload and another device. Every change is kept in memory at once and sent to `PUT /api/dungeon/team` 800 ms after the last change, and at once when the screen goes away or the page is hidden. `GET /api/dungeon/today` gives it back as `draftTeam` (ids the player no longer owns come back as empty places; an all-empty row stays empty). A run deletes it in the same transaction, so the next setup starts from the team that ran. New table `dungeon_drafts` (migration 26), pruned with the dungeon's other old rows. Not a spend, so no idempotency key; an upsert is harmless to repeat.
 
 **After a claim.** Claiming a trip or a job puts its result card at the top of the tab while the pressed button disappears, and the page used to stay wherever it was. The card now scrolls itself to the top of the screen when its top is out of view (smoothly, at once under `prefers-reduced-motion`) and takes focus when the pressed button is gone (`RevealShell`'s `arrive`). A card already in view is left alone, so coming back to the tab does not move the page.
+
+## 2026-10-16: Misa's direction after the raid retune: supplies now, a systems review, then gear and creature revamps
+
+Misa's answers on the progression overview (the forecast page for PR #24), recorded as decisions:
+
+1. **The week-2 wall for casual-heavy servers stays** (about 39% finale wins in week 2, about 50% in weeks 2–5, then 60–70%).
+2. **Ranks 10 and up are checked only in long simulations**; that is enough, because the game will change a lot in the coming weeks.
+3. **A dungeon depth picker** (choose the depth, with a likelihood-of-success hint like the raid's) comes later, after the reworks.
+4. **Supplies:** no more buying them with Bait. They come as rewards instead (a guaranteed one from the daily dungeon, better tiers deeper), and crafting them in the workshop should be a real, interesting option, with more scrap to make it possible.
+5. **Gear rework, genuinely exciting:** gear levels that raise stat caps; modifiers, more of them on higher rarities; every piece rolls differently, so there is a reason to chase the perfect roll; "gear identities", where the pool of possible rolls is limited by something such as the gear's element, slot or the role that can wear it.
+6. **Currency sinks belong in the crafting and gear rework:** spending spare currency on crafting should feel like a lottery worth joining because the rewards are exciting.
+7. **Collection pacing gets a plan:** are new catches too fast now; what design space new creatures have; what makes a player with a working max-level trio collect and level more.
+8. **Step back before the revamps:** review every system, its currencies, rewards and interactions, what each system is for and whether that identity is good, and learn from games with similar systems. "Let's not be afraid of tearing down what we've built in order to make something better." This is `docs/design/systems-review.md`; Misa reviews it before anything is built.
+9. **Priority:** the gear and creature revamps come first, after the systems review.
