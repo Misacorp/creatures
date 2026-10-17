@@ -428,7 +428,7 @@ describe('the glossary text matches the rules', () => {
 });
 
 describe('the How to play text', () => {
-  it('has the ten sections in the page order, each with 3 to 5 lines', () => {
+  it('has the eleven sections in the page order, each with 3 to 5 lines', () => {
     expect(howToPlay.sections.map((s) => s.id)).toEqual([...GLOSSARY_SECTIONS]);
     for (const s of howToPlay.sections) {
       expect(s.lines.length).toBeGreaterThanOrEqual(3);
@@ -436,13 +436,16 @@ describe('the How to play text', () => {
     }
   });
 
-  it('sends the gear, parts, job and skill entries to the Workshop section', () => {
-    const gearIds = glossary.filter((e) =>
-      /^(gear|workshop|blueprint|part-|job-|skill-)/.test(e.id),
-    );
+  it('sends the gear entries to the Gear section and the parts, job and skill entries to the Workshop', () => {
+    const gearIds = glossary.filter((e) => e.id.startsWith('gear'));
     expect(gearIds.length).toBeGreaterThan(20);
-    for (const e of gearIds) expect(e.section, e.id).toBe('workshop');
-    expect(howToPlay.sections.at(-1)?.id).toBe('workshop');
+    for (const e of gearIds) expect(e.section, e.id).toBe('gear');
+    const workshopIds = glossary.filter((e) =>
+      /^(workshop|blueprint|part-|job-|skill-)/.test(e.id),
+    );
+    expect(workshopIds.length).toBeGreaterThan(8);
+    for (const e of workshopIds) expect(e.section, e.id).toBe('workshop');
+    expect(howToPlay.sections.slice(-2).map((s) => s.id)).toEqual(['gear', 'workshop']);
   });
 
   it('gives every glossary entry a section the page has', () => {
@@ -586,7 +589,7 @@ describe('the glossary covers gear and crafting', () => {
     expect(text('gear-rarity-epic')).toContain(`${String(rolledLines.epic)} rolled lines`);
     // A Festival piece is a base, not a rarity: its entry says it follows the finale's odds.
     expect(text('gear-festival')).toContain('same odds as any finale piece');
-    expect(text('gear-stat')).toContain('Attack or a Scarf');
+    expect(text('gear-stat')).toContain("An item's own Attack and HP");
     expect(text('gear-rarity-epic')).toContain(
       `item level ${String(gearContent.lines.find((l) => l.id === 'lingering')?.minItemLevel)}`,
     );

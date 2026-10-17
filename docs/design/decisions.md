@@ -1636,3 +1636,12 @@ Misa's changes after polish v5, with the lead's decision on item levels.
 - **Role Charms and the Compass get their badge too** (`GearTagBadge`): "Guard" (only a Guard can wear it; Guard lines roll three times as often, no other role's at all) and "Explorer" (trip and Workshop lines three times as often, fight lines much less). Neutral bases show none.
 - **Tags that already differ by context stay as they are:** creature rarity and gear rarity, creature level and item level, Boss Rank and explorer rank, the finale's Festival and Festival gear each have their own entries. Roles, marks, reactions, gimmicks and room modifiers appear in one context only.
 - The glossary's sanity cap goes from 200 to 400 entries (it is now just over 200, counting one generated entry per gear line).
+
+## 2026-10-17: How to play pass for the revamp
+
+- **Misa:** How to play is the player's last resort for how things work: as little text as possible, no exact numbers or niche detail, but nothing new left out. A pass over the new content, Boons and Omens included.
+- **A new Gear section** (between Rewards and the Workshop; eleven sections now) says what an item is: the three slots and when they open, own stats on Hats and Scarves and a fixed line on Charms, lines by rarity and "(this item)", tiers capped by item level, element tags leaning lines. Its picture is a real item card (a Rare Ember Forge Hood at item level 8 with two tier II lines), built from the content by the same rules as any item, nothing rolled. Every `gear-*` glossary entry's "More in How to play" now opens it; the Workshop section keeps jobs, crafting, dismantling and where gear comes from.
+- **Creatures** says how a creature grows (experience by doing, treats, ribbons, evolution, talent slots, the duplicate choice) and its picture adds the level ladder from the rules (`unlockLadder`, plus the finale ability at 10). "Tap any tag" moves to the first week.
+- **Ranks** says a Boon helps and an Omen hinders, with tomorrow's on the wall calendar; its picture gets Boon and Omen tags. **Rewards** says Essence also pays for Reach crafts.
+- **Glossary fixes found on the way:** gear stats ("An item's own Attack and HP", not "a Hat's Attack or a Scarf's HP"), golden talents shimmer (no gold frame), the duplicate choice has no Keep for now, Essence pays for Reach crafts and comes a little from dismantling, and the "Bait no longer buys levels" note is gone.
+- The workbench gets a HowToPlay entry (pick a section).

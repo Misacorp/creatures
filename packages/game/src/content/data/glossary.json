@@ -602,12 +602,12 @@
   {
     "id": "essence",
     "title": "Essence",
-    "short": "Raid reward. Evolves creatures.",
+    "short": "Raid reward. Evolves creatures and pays for Reach crafts.",
     "lines": [
-      "Every raid stage you clear pays Essence.",
+      "Every raid stage you clear pays Essence. Dismantling gear gives a little.",
       "Most of it is the same for all. The rest depends on how much you helped.",
       "Higher Ranks and Festival weeks pay more.",
-      "Evolving costs 20 Essence (40 for rare creatures)."
+      "Evolving costs 20 Essence (40 for rare creatures). Reach crafts cost Essence too."
     ],
     "visual": {
       "kind": "glyph",
@@ -634,8 +634,7 @@
     "lines": [
       "A creature earns experience on trips, in the daily dungeon, in raid stages and on Workshop jobs.",
       "Level 1 to 2 needs 27 experience. Level 10 to 11 needs 450. Level 20 to 21 needs 1,300.",
-      "Only creatures that take part earn it, so who goes where is your choice.",
-      "Bait no longer buys levels."
+      "Only creatures that take part earn it, so who goes where is your choice."
     ],
     "section": "creatures"
   },
@@ -715,7 +714,7 @@
     "title": "Golden talent",
     "short": "A rare talent, one and a half times as strong.",
     "lines": [
-      "About 1 catch in 20 rolls its talent golden, shown in a gold frame.",
+      "About 1 catch in 20 rolls its talent golden, shown with a golden shimmer.",
       "A golden talent keeps its gold in the Talent Book."
     ],
     "section": "creatures"
@@ -736,7 +735,7 @@
     "short": "A catch of a creature you own is a choice.",
     "lines": [
       "Teach: its talent goes into a slot of your creature. Fuse: one more fusion, up to 5.",
-      "Release: parts, never Bait. Keep: a second creature, for a line with a branch you lack.",
+      "Release: parts, never Bait.",
       "The card marks Recommended. Up to 10 wait, then the oldest takes the Recommended choice."
     ],
     "section": "creatures"
@@ -801,21 +800,21 @@
       "Scarves open at creature level 7 and Charms at 13.",
       "Take an item apart in the Workshop for parts and Essence. It takes a little time and cannot be undone."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-slot-hat",
     "title": "Hat",
     "short": "The first slot. Leans to Attack and crits.",
     "lines": ["Open from level 1.", "Only Hats roll Crit damage and First pounce."],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-slot-scarf",
     "title": "Scarf",
     "short": "Opens at creature level 7. Leans to HP and wards.",
     "lines": ["Only Scarves roll All damage taken, Unbothered and Brace."],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-slot-charm",
@@ -825,7 +824,7 @@
       "Only Charms roll Cover, Boost, Lingering and the trip lines.",
       "A few Charms are made for one role and can only be worn by it."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-item-level",
@@ -836,7 +835,7 @@
       "A creature can only wear items up to its own level.",
       "Better Hats and Scarves unlock at item level 5 and 10. A craft needs the Crafting level for the one you pick."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-tier",
@@ -846,7 +845,7 @@
       "The pips show the tier rolled. The last pip is the best this item level could roll.",
       "A tier is one fixed number. Nothing re-rolls."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-tag",
@@ -856,7 +855,7 @@
       "An element tag makes that element's lines three times as likely to roll.",
       "A role Charm can only be worn by that role."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-tag-tide",
@@ -867,7 +866,7 @@
       "Anyone can wear it. Tide Attunement only helps a Tide creature.",
       "Crafting it takes a Tide shard."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-tag-ember",
@@ -878,7 +877,7 @@
       "Anyone can wear it. Ember Attunement only helps an Ember creature.",
       "Crafting it takes an Ember shard."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-tag-grove",
@@ -889,7 +888,7 @@
       "Anyone can wear it. Grove Attunement only helps a Grove creature.",
       "Crafting it takes a Grove shard."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-tag-spark",
@@ -900,7 +899,7 @@
       "Anyone can wear it. Spark Attunement only helps a Spark creature.",
       "Crafting it takes a Spark shard."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "boss-element-tide",
@@ -981,7 +980,7 @@
     "lines": [
       "Guard lines roll three times as often on it, and no other role's lines roll at all."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-tag-support",
@@ -990,7 +989,7 @@
     "lines": [
       "Support lines roll three times as often on it, and no other role's lines roll at all."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-tag-setter",
@@ -999,7 +998,7 @@
     "lines": [
       "Setter lines roll three times as often on it, and no other role's lines roll at all."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-tag-payoff",
@@ -1008,7 +1007,7 @@
     "lines": [
       "Payoff lines roll three times as often on it, and no other role's lines roll at all."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-tag-explorer",
@@ -1018,7 +1017,7 @@
       "Trip and Workshop lines roll three times as often on it, fight lines much less often.",
       "It is found at the Old Crossroads. Crafting it takes no shard."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "workshop",
@@ -1046,14 +1045,14 @@
     "title": "Common gear",
     "short": "A base stat or line and 1 rolled line.",
     "lines": ["Easy to find and craft."],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-rarity-rare",
     "title": "Rare gear",
     "short": "A base stat or line and 2 rolled lines.",
     "lines": ["Can roll All damage taken, Lucky find and Adaptation pierce."],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-rarity-epic",
@@ -1063,7 +1062,7 @@
       "Can also roll Lingering and Unbothered at item level 15 or more.",
       "Dismantling Epic gear can give glimmer."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-festival",
@@ -1074,18 +1073,18 @@
       "Its item level and rarity follow the same odds as any finale piece.",
       "It has one fixed Festival line and rolls from a short list of lines."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-stat",
     "title": "Item stat",
-    "short": "A Hat's Attack or a Scarf's HP. It is added to the creature.",
+    "short": "An item's own Attack and HP (some add crit). It is added to the creature.",
     "lines": [
-      "It grows with the item level.",
-      "The lines marked (this item) change this number: first the flat ones, then the percent ones.",
-      "Charms have no stat."
+      "It grows with the item level, and better bases carry more.",
+      "The lines marked (this item) change these numbers: first the flat ones, then the percent ones.",
+      "Charms have no stats: they carry a fixed line instead."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "gear-local",
@@ -1095,7 +1094,7 @@
       "+60% Attack (this item) makes this Hat's own Attack bigger. It does not change the creature's Attack.",
       "Every other line acts on the creature or on the fight."
     ],
-    "section": "workshop"
+    "section": "gear"
   },
   {
     "id": "part-scrap",

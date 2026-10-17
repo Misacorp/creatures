@@ -7,8 +7,8 @@
         "Pick a starter. Your first expedition always brings back a Zipmouse.",
         "Open the game each day for a Bait allowance, and leet in Discord for a bonus. Spend Bait on treats and lures.",
         "Creatures grow by doing: trips, the dungeon, raids and Workshop jobs. At level 10 one gets its finale ability.",
-        "You join the weekly raid automatically. You can sit a week out.",
-        "On Sunday evening everyone fights the boss together."
+        "You join the weekly raid automatically. On Sunday evening everyone fights the boss together.",
+        "Tap any tag in the game to see what it means."
       ]
     },
     {
@@ -16,10 +16,10 @@
       "title": "Creatures",
       "lines": [
         "Each creature has an element (Tide, Ember, Grove or Spark) and a role (Setter, Payoff, Guard or Support).",
-        "Levels raise HP, Attack and Speed. Whatever a creature does earns it experience; a treat (Bait) doubles it.",
-        "At levels 10 and 20 a creature waits for a ribbon, made from parts, before it grows on.",
-        "Every catch rolls a talent. A duplicate is a choice: Teach, Fuse, Release or Keep.",
-        "Tap any tag in the game to see what it means."
+        "Whatever a creature does earns it experience. A treat (Bait) doubles it for one activity.",
+        "At levels 10 and 20 a creature waits for a ribbon, made from parts. Many evolve at 15 for Essence.",
+        "Every catch rolls a talent. More talent slots open at higher levels, and the Talent Book keeps old ones.",
+        "A duplicate catch is a choice: Teach its talent, Fuse it, or Release it for parts."
       ]
     },
     {
@@ -85,7 +85,7 @@
         "Win the finale and the server's Rank goes up by 1. Lose and it stays.",
         "Every 5th week is a Festival: an easier boss and extra Essence.",
         "Win a Festival to get its special creature. The pips show where you are in the 5-week season.",
-        "Every day has a Boon, and from Rank 3 an Omen, shown a day ahead on the wall calendar. Festivals: Boons only."
+        "Each day has a Boon that helps and, from Rank 3, an Omen that hinders. The wall calendar shows tomorrow's."
       ]
     },
     {
@@ -96,17 +96,28 @@
         "Most of it is equal. A share depends on how much you helped.",
         "Win the finale and everyone in the party also gets a gear piece or a blueprint.",
         "Higher Ranks pay more Essence and better gear. Festival weeks pay more Essence.",
-        "Spend Essence to evolve your creatures. Opening the game and leeting earn Bait."
+        "Essence evolves creatures and pays for Reach crafts. Opening the game and leeting earn Bait."
+      ]
+    },
+    {
+      "id": "gear",
+      "title": "Gear",
+      "lines": [
+        "Each creature wears a Hat, a Scarf from level 7 and a Charm from level 13, each up to its own level.",
+        "Hats and Scarves carry Attack and HP of their own. A Charm carries a fixed line instead.",
+        "A Common has 1 line, a Rare 2 and an Epic 3. Lines marked (this item) grow the item's own stats.",
+        "The pips show how strong a line rolled. The item's level sets the best it can be. Nothing re-rolls.",
+        "An Ember piece rolls Ember lines more often, and so on. Look for the pieces that fit your creature."
       ]
     },
     {
       "id": "workshop",
       "title": "The Workshop",
       "lines": [
-        "Gear is a Hat, a Scarf and a Charm per creature. Each item has lines that help in fights, on trips and in the Workshop.",
-        "A won finale gives each player a gear piece or a blueprint. Expeditions and Festivals drop gear and parts too.",
-        "An item has a level, and a creature wears items up to its own level.",
-        "Creatures work jobs, even while you are away: craft (Reach for a Rare or Epic) or dismantle for parts and Essence.",
+        "Creatures work jobs, even while you are away. You can run 2 at once.",
+        "Craft from a blueprint you know. A plain craft makes a Common; Reach for a Rare or Epic with Essence.",
+        "Dismantle what you do not need for parts and Essence. It can teach you the item's blueprint.",
+        "Gear and blueprints come from won finales, expeditions, the dungeon and Festivals.",
         "A creature on a job cannot go on an expedition. It still fights in raids."
       ]
     }

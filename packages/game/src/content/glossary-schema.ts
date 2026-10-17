@@ -18,6 +18,7 @@ export const GLOSSARY_SECTIONS = [
   'dungeon',
   'ranks',
   'rewards',
+  'gear',
   'workshop',
 ] as const;
 export const GlossarySectionSchema = v.picklist(GLOSSARY_SECTIONS);

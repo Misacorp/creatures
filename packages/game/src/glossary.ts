@@ -37,7 +37,7 @@ function gearLineEntries(): unknown[] {
     title: line.name,
     short: line.about,
     lines: [],
-    section: 'workshop',
+    section: 'gear',
   }));
 }
 
