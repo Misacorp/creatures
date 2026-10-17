@@ -18,6 +18,12 @@ export const DUNGEON_ERROR_TEXT: Readonly<Record<DungeonErrorCode, string>> = {
     'One of those creatures, or that run, could not be found. The screen was out of date, so it was refreshed.',
   already_run: "You already used today's run. A new one opens when the day resets.",
   key_conflict: 'That run clashed with an earlier one. Check your picks and try again.',
+  invalid_treat: 'A treat can only go to a creature in the team, once.',
+  insufficient_funds: 'Not enough Bait for those treats.',
+  run_active: 'Your run is still open. Carry on from the map.',
+  stale_step: 'Your run moved on in another window. The map was refreshed.',
+  invalid_act: "That room can't be picked right now. The map was refreshed.",
+  gone: 'The game was updated. Close and reopen the Activity to play the new dungeon.',
 };
 
 /** The message for a failed dungeon request; any other failure gets the game's usual text. */

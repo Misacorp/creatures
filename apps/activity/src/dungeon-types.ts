@@ -66,6 +66,167 @@ export interface DungeonToday {
    * the run. Null otherwise; an older server leaves it out (read as null).
    */
   landmarkBoss: { depth: number; foeId: string } | null;
+  /**
+   * Today's map (`docs/design/dungeon-paths.md`): the same for everyone on the server, with foe HP at
+   * this player's depth. Absent from an older server (read as null).
+   */
+  map?: DungeonMapView | null;
+  /** The player's run that is still open today, or null. `canRun` is false while one is open. */
+  active?: DungeonRunState | null;
+}
+
+/** What a room on the map is. */
+export type DungeonNodeKind = 'fight' | 'elite' | 'mystery' | 'cache' | 'camp' | 'boss';
+
+/** One room on the map. Ids look like `f2l1` (floor 2, lane 1). */
+export interface DungeonMapNode {
+  id: string;
+  /** 0 (the entrance) to `floors - 1` (the room boss). */
+  floor: number;
+  /** 0 (left) to 2 (right). */
+  lane: number;
+  kind: DungeonNodeKind;
+  /** The rooms on the next floor this room leads to. */
+  next: string[];
+  /** Fights, elites and the boss: the foe at the player's depth (an elite's HP includes its boost). */
+  foe?: {
+    id: string;
+    name: string;
+    element: Element;
+    kind: 'foe' | 'boss';
+    hpMax: number;
+    elite: boolean;
+  };
+  /** Fights, elites and the boss: the room's modifier. */
+  modifier?: { id: string; name: string; description: string };
+  /** A mystery room: its name only; the scene and the options show once the run steps in. */
+  event?: { id: string; name: string };
+}
+
+export interface DungeonMapView {
+  /** 7: floor 3 is the camp, the last floor the room boss. */
+  floors: number;
+  nodes: DungeonMapNode[];
+}
+
+/** Loot carried in the pack: kept whole when the run heads home or clears, half (rounded up) on a defeat. */
+export interface DungeonPack {
+  bait: number;
+  essence: number;
+  scrap: number;
+}
+
+/** A creature in the row of an open run. */
+export interface DungeonRunCreature {
+  id: string;
+  name: string;
+  speciesId: string;
+  element: Element;
+  role: Role;
+  level: number;
+  /** HP now (0: knocked out) and at most. */
+  hp: number;
+  hpMax: number;
+  /** It carries a treat (double experience). A creature swapped in at the camp never does. */
+  treat: boolean;
+}
+
+/** A buff for the rest of the run. `description` is the exact effect, one plain line. */
+export interface DungeonKeepsakeView {
+  id: string;
+  name: string;
+  description: string;
+}
+
+/** A mystery room's scene, once the run is in it. Exactly two options; `description` is the exact outcome. */
+export interface DungeonEventView {
+  id: string;
+  name: string;
+  text: string;
+  options: { label: string; description: string }[];
+}
+
+export type DungeonPending =
+  | null
+  | { kind: 'event'; event: DungeonEventView }
+  | { kind: 'camp'; offers: DungeonKeepsakeView[]; restBp: number };
+
+/** The state of a run, open or done. Every act answers with it. */
+export interface DungeonRunState {
+  id: string;
+  day: string;
+  attempt: number;
+  depth: number;
+  landmark: boolean;
+  status: 'active' | 'done';
+  outcome: DungeonOutcome | null;
+  /** Sent back with the next act; a mismatch is `stale_step`. */
+  step: number;
+  map: DungeonMapView;
+  /** The room the run stands in, or null before the entrance. */
+  at: string | null;
+  /** The rooms visited, in order. */
+  path: string[];
+  /** The rooms a move may go to now (empty while something is pending or the run is done). */
+  reachable: string[];
+  pending: DungeonPending;
+  /** The row now, left to right. */
+  team: DungeonRunCreature[];
+  keepsakes: DungeonKeepsakeView[];
+  /** At risk until the run heads home or clears. */
+  pack: DungeonPack;
+  roomsCleared: number;
+  /** The run's supply is earned (it is safe: never in the pack). */
+  supply: boolean;
+  /** What the last mystery room did, in plain words, or null. */
+  lastEvent: { name: string; option: string; outcome: string } | null;
+}
+
+export type DungeonOutcome = 'cleared' | 'home' | 'defeat';
+
+/** `POST /api/dungeon/start`. */
+export interface DungeonStartRequest {
+  team: [string, string, string];
+  treats?: string[];
+  idempotencyKey: string;
+}
+
+export interface DungeonStartResponse {
+  state: DungeonRunState;
+  today: DungeonToday;
+}
+
+export type DungeonAct =
+  | { type: 'move'; node: string }
+  | { type: 'event'; option: 0 | 1 }
+  | {
+      type: 'camp';
+      choice: 'rest' | 'swap' | 'keepsake';
+      /** The row reordered first (a permutation of the row's ids). */
+      order?: [string, string, string];
+      /** Swap: the creature in the row that goes home, and the player's creature that comes in. */
+      out?: string;
+      in?: string;
+      /** Keepsake: one of the two offers. */
+      keepsake?: string;
+    }
+  | { type: 'home' };
+
+/** `POST /api/dungeon/act`. */
+export interface DungeonActRequest {
+  runId: string;
+  step: number;
+  idempotencyKey: string;
+  act: DungeonAct;
+}
+
+export interface DungeonActResponse {
+  state: DungeonRunState;
+  /** The fight the move just played: play it at once. */
+  room?: DungeonReplayRoom;
+  /** Only when the run ended: the summary (with rewards) and the fresh day. Refresh balances then. */
+  summary?: DungeonRunSummary;
+  today?: DungeonToday;
 }
 
 export interface DungeonRewards {
@@ -97,6 +258,8 @@ export interface DungeonRewards {
 export interface DungeonRoomSummary {
   index: number;
   kind: 'foe' | 'boss';
+  /** A fiercer foe (path runs only; absent otherwise). */
+  elite?: boolean;
   /** `hpMax` is the foe's HP when the room started (after its modifier). */
   foe: { id: string; name: string; element: Element; hpMax: number };
   modifier: { id: string; name: string; description: string };
@@ -140,6 +303,14 @@ export interface DungeonRunSummary {
   /** All the rooms of the run, played or not. */
   rooms: DungeonRoomSummary[];
   rewards: DungeonRewards;
+  /** How a path run ended. Absent in three-room runs from before the map (read: `cleared` decides). */
+  outcome?: DungeonOutcome;
+  /** The node kinds of the path taken, in order. Absent in older runs. */
+  path?: DungeonNodeKind[];
+  /** What the pack held when the run ended, and what of it came home. Absent in older runs. */
+  pack?: { found: DungeonPack; kept: DungeonPack };
+  /** The keepsakes the run held at the end. Absent in older runs. */
+  keepsakes?: DungeonKeepsakeView[];
 }
 
 /** `POST /api/dungeon/run` answers with this. Refresh the collection and gear views afterwards: balances and parts changed. */
@@ -164,6 +335,12 @@ interface DungeonEventNames {
 export interface DungeonReplayRoom {
   index: number;
   kind: 'foe' | 'boss';
+  /** A fiercer foe (path runs only; absent otherwise). */
+  elite?: boolean;
+  /** The map node of the room (path runs only). */
+  node?: string;
+  /** The run's keepsakes in that fight (path runs only). */
+  keepsakes?: DungeonKeepsakeView[];
   foe: { id: string; name: string; element: Element; hpMax: number };
   modifier: { id: string; name: string; description: string };
   cleared: boolean;
@@ -237,5 +414,17 @@ export const DUNGEON_ERRORS = {
   already_run: 409,
   /** 409: the key was used for another request. */
   key_conflict: 409,
+  /** 400: a treat for a creature not in the team, or twice. */
+  invalid_treat: 400,
+  /** 409: not enough Bait for the treats. */
+  insufficient_funds: 409,
+  /** 409: a run is already open today (finish it first). */
+  run_active: 409,
+  /** 409: the run moved on since the client last looked (another tab, a retry): reload today. */
+  stale_step: 409,
+  /** 400: the act is not allowed now (a room not reachable, nothing pending, a bad swap...). */
+  invalid_act: 400,
+  /** 410: `POST /api/dungeon/run` is gone: the Activity is out of date and needs a reload. */
+  gone: 410,
 } as const;
 export type DungeonErrorCode = keyof typeof DUNGEON_ERRORS;
