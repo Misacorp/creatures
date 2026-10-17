@@ -2,7 +2,9 @@
   The Accordion (ui/Accordion.tsx): the one expand and collapse of the game. A raised header button with
   a chevron, the title and an optional note on the right; the body hangs under it inside the same ink
   edge. Closed it reads as "tap to open" (chevron pointing right, raised edge, hover and pressed
-  states); open the header is lit (gold chevron and underline) and the body is attached to it.
+  states); open the header is lit (a brighter background and a gold chevron turned down) and the body
+  is attached to it. There is no line under the open header and none at the top of the body: dividers
+  belong between the items inside (`li + li`), never above the first.
   Three looks: the section (default), compact (inside a card) and nested (inside another accordion,
   lighter). Built for 390 px: the header is the full width and at least 2.5 rem tall.
 */
@@ -115,12 +117,10 @@
   box-shadow: inset 0 0 0 2px var(--gold);
 }
 
-/* Open: the header is lit and the body is attached under it. */
+/* Open: the header is lit (a brighter background, a gold chevron turned down); no underline. */
 .acc-head.open {
   background: var(--mine);
-  box-shadow:
-    inset 0 var(--px) 0 0 #4a4190,
-    inset 0 calc(var(--px) * -1) 0 0 var(--gold);
+  box-shadow: inset 0 var(--px) 0 0 #4a4190;
 }
 
 .acc-head.open .acc-chev-box {
@@ -164,10 +164,6 @@
   box-shadow: none;
 }
 
-.acc-head.compact.open {
-  box-shadow: inset 0 calc(var(--px) * -1) 0 0 var(--gold);
-}
-
 .acc-head.compact:active:not(:disabled) {
   box-shadow: none;
 }
@@ -206,9 +202,9 @@
 }
 
 .acc-head.nested.open {
-  background: transparent;
+  background: var(--dusk-2);
   color: var(--bone);
-  box-shadow: inset 0 -2px 0 0 var(--line);
+  box-shadow: none;
 }
 
 .acc-head.nested .acc-chev-box {
