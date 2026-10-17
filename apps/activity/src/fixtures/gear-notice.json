@@ -60,7 +60,7 @@
         "level": 4,
         "role": null
       },
-      "equippedOn": "e8936442-2f81-4386-9955-84b9b3ad3cd1",
+      "equippedOn": "d11e533d-b101-46b6-aab2-c4f8f2c2a4e9",
       "dismantle": {
         "scrap": {
           "min": 2,
@@ -148,7 +148,7 @@
         "level": 7,
         "role": null
       },
-      "equippedOn": "1fa04674-c7b0-43ae-a86a-b1f4ae4fbab7",
+      "equippedOn": "abaaa122-7d8c-489f-9c72-ea601c2cb57b",
       "dismantle": {
         "scrap": {
           "min": 2,
@@ -274,19 +274,19 @@
   },
   "skills": [
     {
-      "creatureId": "e8936442-2f81-4386-9955-84b9b3ad3cd1",
+      "creatureId": "d11e533d-b101-46b6-aab2-c4f8f2c2a4e9",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "1fa04674-c7b0-43ae-a86a-b1f4ae4fbab7",
+      "creatureId": "abaaa122-7d8c-489f-9c72-ea601c2cb57b",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "b1ca5399-3ecb-4144-ab32-cb9259ccff90",
+      "creatureId": "39d87dd2-c64a-4442-8bfc-579e1034c375",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100

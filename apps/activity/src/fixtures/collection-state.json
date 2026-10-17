@@ -8,7 +8,7 @@
   "starterOptions": ["splashet", "cindle", "sproutle"],
   "creatures": [
     {
-      "id": "2cd61efb-93c2-46d4-a4e6-724091f16cb0",
+      "id": "0006079c-6263-4604-b59e-f1a6a00f42de",
       "species": "cindle",
       "line": "cindle",
       "level": 15,
@@ -51,21 +51,21 @@
       },
       "gear": [
         {
-          "id": "e1a3a2f0-1635-4cfb-b8a3-ac5c5af8e790",
+          "id": "978654ee-5090-4477-a92f-38bff6adbd55",
           "baseId": "emberkeepers-crown",
           "slot": "hat",
           "rarity": "epic",
           "itemLevel": 15
         },
         {
-          "id": "2e2caab8-7f6a-4c02-9e8b-1e2d3c2cd4a1",
+          "id": "e0f699b8-75ab-4aa6-ac9b-abf795fe6a4c",
           "baseId": "bark-shawl",
           "slot": "scarf",
           "rarity": "rare",
           "itemLevel": 12
         },
         {
-          "id": "a7843af3-3424-4fde-9276-457540c53581",
+          "id": "607f3f26-f7cb-484d-b678-14e2a53fee7b",
           "baseId": "crossroads-compass",
           "slot": "charm",
           "rarity": "rare",
@@ -74,7 +74,7 @@
       ],
       "busy": {
         "kind": "job",
-        "id": "1112d9d0-bf43-401d-bc96-2a47c73eec59"
+        "id": "90dec4ac-6505-4df5-8e89-5498d98ae1a8"
       },
       "ability": {
         "id": "flare-strike",
@@ -106,7 +106,7 @@
       }
     },
     {
-      "id": "0d9a83d3-be1f-458d-9e4e-6950fe74dd79",
+      "id": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
       "species": "sproutle",
       "line": "sproutle",
       "level": 14,
@@ -149,14 +149,14 @@
       },
       "gear": [
         {
-          "id": "62661dab-89b7-45e7-a9f4-bc8e9d66112a",
+          "id": "c63062c5-a791-46a5-999d-e944563ea7fa",
           "baseId": "trail-cap",
           "slot": "hat",
           "rarity": "common",
           "itemLevel": 1
         },
         {
-          "id": "cc5cfbfd-9b11-41d0-8eeb-72c82aafff98",
+          "id": "b52c5319-8e07-4816-9ac7-b6af0bef96bb",
           "baseId": "wardens-bell",
           "slot": "charm",
           "rarity": "rare",
@@ -194,7 +194,7 @@
       }
     },
     {
-      "id": "0cd4229b-0f15-4c90-a277-d5c68ef3098b",
+      "id": "32621523-b521-47e9-8f3d-faccb12a7aea",
       "species": "zipmouse",
       "line": "zipmouse",
       "level": 9,
@@ -284,7 +284,7 @@
   },
   "supplies": {},
   "serverFirsts": [],
-  "loungerId": "0cd4229b-0f15-4c90-a277-d5c68ef3098b",
+  "loungerId": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
   "loungeSpot": null,
   "timezone": "Europe/Helsinki",
   "leetSync": {
