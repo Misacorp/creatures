@@ -44,6 +44,12 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * (trips, the dungeon, raid stages, Workshop jobs; treats double it) and wait at levels 10 and 20 for a
  * ribbon, Bait no longer buys levels, and the new-species pity forces a creature or a new species on
  * long dry streaks of trips. The archetypes' levels, so their team power and the raid weeks, moved.
+ *
+ * Re-pinned again on 2026-10-17 (Boons and Omens, B-017), on purpose: every day now has a Boon and, from Boss
+ * Rank 3, an Omen, drawn from a seeded stream of their own and applied to the raid stage, the dungeon runs,
+ * the trips and the Workshop jobs of the day. The draws touch no other stream, so the same players check in
+ * and the same dice are thrown; what moved is what the days do (a trip's time, creature experience, the
+ * fights). Weather off (`weather: false`) plays the economy as it was.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

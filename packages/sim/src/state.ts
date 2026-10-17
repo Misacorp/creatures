@@ -1,11 +1,14 @@
 import type {
   DismantleItem,
+  ExpWeather,
   ReachId,
   ExpeditionLength,
   FamiliarityRecord,
   GearSlot,
   JobKind,
   PartKind,
+  TripWeather,
+  WorkshopMods,
 } from '@creatures/game';
 import { GEAR_SLOTS, PART_KINDS } from '@creatures/game';
 import type { ArchetypeId } from './archetypes';
@@ -32,6 +35,8 @@ export interface PendingExpedition {
   offer?: string[];
   /** The chosen goal and the hour it ends. */
   push?: { goalId: string; endsAtHour: number };
+  /** What the day's weather did to the trip when it was sent (absent: nothing); the claim reads this. */
+  weather?: TripWeather;
 }
 
 /** Counters of everything a player did with expeditions, for the reports and the targets. */
@@ -223,6 +228,10 @@ export interface SimJob {
   supplyId?: string;
   /** A treat was packed (Bait paid when the job started): the worker's experience for it doubles. */
   treat?: boolean;
+  /** The day's Market Day boost on a craft or a dismantle (`WorkshopMods`), fixed when it started. */
+  mods?: WorkshopMods;
+  /** What the day's weather did to the job's experience when it started (absent: nothing). */
+  xp?: ExpWeather;
 }
 
 /** Everything gear related a player has. */
@@ -245,6 +254,11 @@ export interface GearState {
   /** Highest Crafting level on any creature 30 days after joining; null before that. */
   bestSkillDay30: number | null;
   crafted: number;
+  /**
+   * The Workshop jobs the player started on one game day, by kind: Market Day boosts only the first craft and
+   * the first 2 dismantle jobs of a day, and every job counts, boosted or not.
+   */
+  startedToday: { day: number; craft: number; dismantle: number };
 }
 
 export function emptyGearState(): GearState {
@@ -260,6 +274,7 @@ export function emptyGearState(): GearState {
     firstCraftAfterDays: null,
     bestSkillDay30: null,
     crafted: 0,
+    startedToday: { day: -1, craft: 0, dismantle: 0 },
   };
 }
 
@@ -382,6 +397,7 @@ export function clonePlayer(p: SimPlayer): SimPlayer {
       kit: [...e.kit],
       ...(e.offer === undefined ? {} : { offer: [...e.offer] }),
       ...(e.push === undefined ? {} : { push: { ...e.push } }),
+      ...(e.weather === undefined ? {} : { weather: { ...e.weather } }),
     })),
     taste: { ...p.taste },
     explorerXp: { ...p.explorerXp },
@@ -400,9 +416,12 @@ export function clonePlayer(p: SimPlayer): SimPlayer {
       parts: { ...p.gear.parts },
       blueprints: [...p.gear.blueprints],
       marks: { ...p.gear.marks },
+      startedToday: { ...p.gear.startedToday },
       jobs: p.gear.jobs.map((j) => ({
         ...j,
         ...(j.items === undefined ? {} : { items: [...j.items] }),
+        ...(j.mods === undefined ? {} : { mods: { ...j.mods } }),
+        ...(j.xp === undefined ? {} : { xp: { ...j.xp } }),
       })),
       skillXp: { ...p.gear.skillXp },
     },

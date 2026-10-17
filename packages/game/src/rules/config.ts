@@ -46,6 +46,7 @@ export const RULES = {
    * Starting values; the sim reports what they do to the raid (docs/balance/log.md B-017).
    */
   weather: {
+    /** How strong the day's Boon and Omen are, by the server's Boss Rank: the row with the highest `fromRank` reached counts. */
     tiers: [
       { fromRank: 1, boonBp: 10_000, omenBp: 0 },
       { fromRank: 3, boonBp: 10_000, omenBp: 10_000 },
@@ -53,8 +54,11 @@ export const RULES = {
       { fromRank: 10, boonBp: 15_000, omenBp: 20_000 },
       { fromRank: 14, boonBp: 15_000, omenBp: 25_000 },
     ],
+    /** The Boss Rank from which a wild Omen can replace the day's Omen. */
     wildFromRank: 10,
+    /** The chance that a day a wild Omen may be drawn for draws one (basis points). */
     wildChanceBp: 2_000,
+    /** Days of drawn weather the server keeps; older days are forgotten. */
     keepDays: 30,
   },
   /**

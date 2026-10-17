@@ -24,7 +24,7 @@ const defaultIo: Io = {
   },
 };
 
-const USAGE = `Usage: pnpm sim [--seed <string>] [--quick] [--weeks N] [--out <dir>] [--income ${INCOME_MODELS.join('|')}] [--fail-on-violations]`;
+const USAGE = `Usage: pnpm sim [--seed <string>] [--quick] [--weeks N] [--out <dir>] [--income ${INCOME_MODELS.join('|')}] [--no-weather] [--fail-on-violations]`;
 
 export interface CliOptions {
   settings: RunSettings;
@@ -42,6 +42,7 @@ export function parseCli(argv: readonly string[]): CliOptions {
       weeks: { type: 'string' },
       out: { type: 'string' },
       income: { type: 'string' },
+      'no-weather': { type: 'boolean' },
       'fail-on-violations': { type: 'boolean' },
       help: { type: 'boolean' },
     },
@@ -66,8 +67,9 @@ export function parseCli(argv: readonly string[]): CliOptions {
   if (typeof seed === 'string') overrides.seed = seed;
   if (weeks !== undefined) overrides.weeks = weeks;
   const out = values['out'];
+  const settings = defaultSettings(values['quick'] === true ? 'quick' : 'full', overrides);
   return {
-    settings: defaultSettings(values['quick'] === true ? 'quick' : 'full', overrides),
+    settings: values['no-weather'] === true ? { ...settings, weather: false } : settings,
     out: typeof out === 'string' && out !== '' ? out : 'sim-out',
     failOnViolations: values['fail-on-violations'] === true,
   };

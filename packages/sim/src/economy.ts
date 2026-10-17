@@ -10,6 +10,7 @@ import {
   nextRankXp,
   placementRank,
   raidWeekPlan,
+  xpWeather,
   type BossDef,
   type Element,
   type LuckConfig,
@@ -55,6 +56,7 @@ import {
   type TripContext,
 } from './trips';
 import { median, shuffle } from './util';
+import { Sky } from './weather';
 
 const DAYS = 7;
 /** Friday, Saturday and Sunday (Monday = 0) hold Phase 1, Phase 2 and the finale. */
@@ -88,6 +90,12 @@ export interface EconomyOptions {
    * `false` plays the economy as it was before the dungeon existed.
    */
   dungeon?: boolean;
+  /**
+   * Model the valley's weather (default: on, as shipped): each day has a Boon and, from Boss Rank 3, an Omen,
+   * drawn from a seeded stream of their own (`${seed}:weather`) and applied to the raid stage, dungeon runs,
+   * trips and Workshop jobs of the day. `false` plays the economy as it was before the weather existed.
+   */
+  weather?: boolean;
   /**
    * Behaviour knobs for fitting the sim to live data (`pnpm sim:live`); every one defaults to the
    * shipped behaviour, and a run without them draws exactly the same random numbers as before.
@@ -626,6 +634,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
   const luck = options.luck ?? RULES.combat.luck;
   const gearOn = options.gear !== false;
   const dungeonOn = gearOn && options.dungeon !== false;
+  const sky = options.weather === false ? null : new Sky(seed, firstWeekIndex);
   let rank: number | null = null;
 
   for (let week = 1; week <= weeks; week++) {
@@ -652,6 +661,9 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
 
     for (let day = 0; day < DAYS; day++) {
       const globalDay = (week - 1) * DAYS + day;
+      // Each day's weather is drawn a day ahead, at the rank of the moment (today's was drawn yesterday).
+      const weather = sky === null ? null : sky.day(globalDay, rank);
+      if (sky !== null) sky.day(globalDay + 1, rank);
       const tripContext = (hourOfDay: number): TripContext => ({
         hour: globalDay * 24 + hourOfDay,
         day: globalDay,
@@ -659,8 +671,16 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
         catches: rng.catches,
         trip: rng.trip,
         talents: rng.talents,
+        weather,
         ...(gearOn
-          ? { gear: { rng: rng.gear, hour: globalDay * 24 + hourOfDay, day: globalDay } }
+          ? {
+              gear: {
+                rng: rng.gear,
+                hour: globalDay * 24 + hourOfDay,
+                day: globalDay,
+                weather,
+              },
+            }
           : {}),
       });
       const loggedIn = active.filter((p) => loginDays.get(p.id)?.[day] === true);
@@ -712,13 +732,19 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
                 rng.dungeon,
                 {},
                 team,
+                weather,
               );
               for (const run of runs) {
                 for (const c of team.creatures) {
                   giveExperience(
                     p,
                     c,
-                    dungeonExperience(run.roomsCleared, run.cleared, treated.has(c.id)),
+                    dungeonExperience(
+                      run.roomsCleared,
+                      run.cleared,
+                      treated.has(c.id),
+                      xpWeather(weather),
+                    ),
                     'dungeon',
                   );
                 }
@@ -769,6 +795,8 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
                   ? 'finale'
                   : null;
           if (stage !== null) {
+            // The stage fights under the day's weather (the raid's sheets, luck and foe attacks, and the experience).
+            raid.weather[stage] = weather;
             playStage(raid, stage, rng.fight, rng.loot);
             // Every creature that fought is paid the stage's experience (more when it was cleared).
             awardRaidExperience(raid, stage);

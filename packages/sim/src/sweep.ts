@@ -11,6 +11,7 @@ import {
   type RaidWeek,
 } from './raid';
 import { clonePlayer } from './state';
+import { weekSky } from './weather';
 
 /** The numbers kept from one simulated raid week. */
 export interface RunRecord {
@@ -89,6 +90,11 @@ export interface SweepOptions {
   counts: readonly number[];
   /** Roster snapshots per player count (from the economy sims at weeks 4 and 8). */
   snapshots: ReadonlyMap<number, readonly Snapshot[]>;
+  /**
+   * Play the raid weeks under the valley's weather (default: on, as shipped): the three stages draw a Boon and
+   * an Omen of their own from the run's seeded stream (`weekSky`), at the rank the week is fought at.
+   */
+  weather?: boolean;
 }
 
 function describeFinale(week: RaidWeek, labels: Record<string, string>): string[] {
@@ -139,6 +145,12 @@ export function runSweep(options: SweepOptions): SweepResult {
           keepFinale: wantExample,
           measureAbilities: true,
           luck: RULES.combat.luck,
+          ...(options.weather === false
+            ? {}
+            : {
+                weather: (rank: number, festival: boolean) =>
+                  weekSky(createSeededRng(`${base}:weather`), rank, festival),
+              }),
         });
         playWholeWeek(week, createSeededRng(`${base}:fight`), createSeededRng(`${base}:loot`));
         const s = summarizeRaid(week);

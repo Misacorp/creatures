@@ -35,6 +35,8 @@ export interface GearShareRun {
 export interface GearStudySettings {
   seed: string;
   servers: number;
+  /** Play with the valley's weather (default: on, as shipped). */
+  weather?: boolean;
 }
 
 /** The share one player's week-end record shows, or undefined when it has no fight score. */
@@ -63,6 +65,7 @@ export function runGearStudy(
     mix: DEFAULT_JOURNEY_MIX,
     mixName: 'default',
     noise: false,
+    ...(study.weather === false ? { weather: false } : {}),
   };
   const journeys: PlayerJourney[] = [];
   for (let k = 0; k < study.servers; k++) journeys.push(...runJourneyServer(settings, k).journeys);

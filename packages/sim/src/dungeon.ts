@@ -6,6 +6,8 @@ import {
   dungeonFoe,
   dungeonRowOrder,
   dungeonPayout,
+  dungeonScrapPerRoom,
+  mergeMods,
   rollDayModifiers,
   rollDungeonLoot,
   rollRooms,
@@ -13,7 +15,11 @@ import {
   rowScore,
   scaledFoe,
   streakBonus,
+  weatherBossAttacks,
+  weatherLuck,
+  weatherSheet,
   type Rng,
+  type WeatherDay,
 } from '@creatures/game';
 import {
   dungeonBossEnrage,
@@ -126,12 +132,17 @@ export function buildRun(
   seed: string,
   study: RoleStudy = {},
   chosen?: DungeonTeam,
+  weather: WeatherDay | null = null,
 ): DungeonRunInput {
   const team = chosen?.creatures ?? pickTeam(player.creatures);
   // One row, left to right: the game's rule for a good order (`dungeonRowOrder`: the most reactions, then roles), strongest first.
   const slots = team.map((c): FightSlot => {
     const slot = { ...slotFor(player, c.id), ownerId: DUNGEON_PLAYER };
-    return study.neutralSupports === true && slot.role === 'support' ? neutralSupport(slot) : slot;
+    const played =
+      study.neutralSupports === true && slot.role === 'support' ? neutralSupport(slot) : slot;
+    // The day's weather goes on every creature's sheet, as the worker's run builder puts it.
+    const mods = mergeMods(played.mods, weatherSheet(weather, played));
+    return mods === undefined ? played : { ...played, mods };
   });
   const row = chosen?.ordered === false ? slots : dungeonRowOrder(slots);
   const plans = rollRooms(createSeededRng(`${seed}:rooms`), modifiers, depth);
@@ -169,7 +180,8 @@ export function buildRun(
     player: DUNGEON_PLAYER,
     rooms,
     abilities,
-    luck: { ...RULES.combat.luck },
+    luck: { ...weatherLuck(weather, RULES.combat.luck) },
+    ...(weatherBossAttacks(weather, 1) > 1 ? { bossAttacks: weatherBossAttacks(weather, 1) } : {}),
     ...(Object.keys(rest).length === 0 ? {} : { rest }),
     rules: studyRules(study),
     depth,
@@ -189,6 +201,7 @@ export function playDungeonDay(
   loot: Rng,
   study: RoleStudy = {},
   team?: DungeonTeam,
+  weather: WeatherDay | null = null,
 ): DungeonLogEntry[] {
   if (player.creatures.length < RULES.dungeon.teamSize) return [];
   const d = player.dungeon;
@@ -197,7 +210,7 @@ export function playDungeonDay(
   for (let attempt = 1; attempt <= (first ? 2 : 1); attempt++) {
     const depth = d.depth;
     const runSeed = `${seed}:${String(attempt)}`;
-    const run = buildRun(player, depth, modifiers, runSeed, study, team);
+    const run = buildRun(player, depth, modifiers, runSeed, study, team, weather);
     const result = simulateDungeon(run, runSeed);
 
     // Progress, the streak (days in a row), and the depth.
@@ -212,7 +225,12 @@ export function playDungeonDay(
     }
 
     // Pay: the rooms, the loot dice, and the streak bonus on the first run of a day.
-    const payout = dungeonPayout(depth, result.roomsCleared);
+    const base = dungeonPayout(depth, result.roomsCleared);
+    // Market Day: a scrap more for every room cleared.
+    const payout = {
+      ...base,
+      scrap: base.scrap + dungeonScrapPerRoom(weather) * result.roomsCleared,
+    };
     const boss = run.rooms.at(-1);
     const drop = rollDungeonLoot(loot, depth, payout, boss?.foe.element ?? 'tide');
     const parts = addParts({ scrap: payout.scrap, glimmer: payout.glimmer }, drop.parts);

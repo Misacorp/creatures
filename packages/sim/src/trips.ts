@@ -39,9 +39,12 @@ import {
   tripExperience,
   tripMs,
   tripRolls,
+  tripWeather,
   tripXp,
+  weatherTimeMs,
   weeklySpecial,
   allSpecies,
+  NO_TRIP_WEATHER,
   type DestinationDef,
   type ExpeditionLength,
   type FamiliarityRecord,
@@ -50,7 +53,9 @@ import {
   type Rarity,
   type Rng,
   type SupplyDef,
+  type TripWeather,
   type TwistEffect,
+  type WeatherDay,
 } from '@creatures/game';
 import { CATCHABLE, foldedCreature, speciesOf, type OwnedCreature } from './data';
 import { creditParts, grantItem, learnBlueprint, onJob, type GearContext } from './gear';
@@ -104,6 +109,8 @@ export interface TripContext {
   talents: Rng;
   /** Parts, supplies and gear: absent in a sim without gear (trips then only bring catches). */
   gear?: GearContext;
+  /** The weather of the day: a trip is sent under it and keeps what it did. Absent or null: none. */
+  weather?: WeatherDay | null;
 }
 
 // --- Ranks, slots and what is open ---
@@ -257,7 +264,7 @@ function placeScore(
 export function chooseDestination(
   player: SimPlayer,
   creature: OwnedCreature,
-  ctx: Pick<TripContext, 'hour' | 'weekIndex' | 'trip'>,
+  ctx: Pick<TripContext, 'hour' | 'weekIndex' | 'trip' | 'weather'>,
 ): DestinationDef {
   const rank = rankOfCreature(player, creature.id);
   const special = weeklySpecial(ctx.weekIndex).destination;
@@ -269,6 +276,8 @@ export function chooseDestination(
       rank,
       localHour: localHour(ctx.hour),
       festivalWeek: festivalWeek(ctx.weekIndex),
+      nightOpen: tripWeather(ctx.weather ?? null, { destination: dest.id, length: 'short' })
+        .reefOpen,
     });
     if (closed.length > 0) continue;
     const fam = famOf(player, creature.id, dest.id);
@@ -412,22 +421,31 @@ export function sendTrips(
     player.stats.lures_used += picked.filter((id) => supplyDef(id)?.kind === 'lure').length;
     const twist = special.destination === dest.id ? special.twist : null;
     const kit = kitOf(picked);
+    // The day's weather, as the worker stores it with the trip when it is sent.
+    const fx = tripWeather(ctx.weather ?? null, { destination: dest.id, length });
+    const changes = (Object.keys(NO_TRIP_WEATHER) as (keyof TripWeather)[]).some(
+      (k) => fx[k] !== NO_TRIP_WEATHER[k],
+    );
     player.expeditions.push({
       explorerId: creature.id,
       length,
       destination: dest.id,
       ...(treat ? { treat: true } : {}),
       kit: picked,
-      rolls: tripRolls(length, kit, twist === null ? null : twist.effect),
+      rolls: tripRolls(length, kit, twist === null ? null : twist.effect) + fx.extraRolls,
       twist: twist === null ? null : twist.id,
       startHour: ctx.hour,
-      // Quick feet lines on the explorer's gear shorten the trip (fixed when it is sent).
+      // Quick feet lines on the explorer's gear and the day's weather change the time (fixed when it is sent).
       endsAtHour:
         ctx.hour +
-        Math.floor(
-          (tripMs(length, rank) * (10_000 - foldedCreature(creature).rules.quickFeetBp)) / 10_000,
+        weatherTimeMs(
+          Math.floor(
+            (tripMs(length, rank) * (10_000 - foldedCreature(creature).rules.quickFeetBp)) / 10_000,
+          ),
+          fx.timeBp,
         ) /
           HOUR_MS,
+      ...(changes ? { weather: fx } : {}),
     });
   }
 }
@@ -522,6 +540,8 @@ function payTrip(
   const rank = rankOfCreature(player, explorer.id);
   // Lines on the explorer's gear (Trail XP, Lucky find, Keen nose, Packer), as the worker reads them.
   const gearRules = foldedCreature(explorer).rules;
+  // What the day did to this trip when it was sent: the claim reads this, never the weather.
+  const wx = trip.weather ?? NO_TRIP_WEATHER;
   const famBefore = famOf(player, explorer.id, dest.id);
   const starsBefore = familiarityStars(dest, famBefore);
 
@@ -535,7 +555,7 @@ function payTrip(
       explorer: { element: species.element, role: species.role },
       kit,
       stars: starsBefore,
-      milestoneRarityBp: bonuses.rarityBp + gearRules.luckyFindBp,
+      milestoneRarityBp: bonuses.rarityBp + gearRules.luckyFindBp + wx.rarityBp,
       twist,
       ownedLines: ownedLines(player),
       dupeStreak: player.dupeStreak,
@@ -577,6 +597,9 @@ function payTrip(
         gearPartsBp: gearRules.keenNoseBp,
         gearSupplyBp: gearRules.packerBp,
         gearGlimmerBp: gearRules.glimmerFindBp,
+        weatherPartsBp: wx.partsBp,
+        weatherShardsBp: wx.shardsBp,
+        weatherSupplyBp: wx.supplyBp,
         emptyRolls: empty,
       },
       { completed: true, caught: results.length, rolls: trip.rolls },
@@ -607,7 +630,15 @@ function payTrip(
   player.explorerXp[explorer.id] =
     (player.explorerXp[explorer.id] ?? 0) + tripXp(trip.length, xpBp);
   // Creature experience: a finished trip pays its explorer by the length, doubled by a treat.
-  giveExperience(player, explorer, tripExperience(trip.length, trip.treat === true), 'trip');
+  giveExperience(
+    player,
+    explorer,
+    tripExperience(trip.length, trip.treat === true, {
+      bp: wx.xpBp,
+      treatMultiplier: wx.treatMultiplier,
+    }),
+    'trip',
+  );
   // The one-time gift of every rank this trip reached (Bait, and parts and supplies with the gear sim).
   for (const { gift } of rankGiftsBetween(rank, rankOfCreature(player, explorer.id))) {
     player.bait += gift.bait;
@@ -627,7 +658,7 @@ function payTrip(
     found: [...found],
     shiny: famBefore.shiny || results.some((c) => c.shiny),
   };
-  rollPages(player, dest, trip, twist, reward?.journal === true, ctx);
+  rollPages(player, dest, trip, twist, reward?.journal === true, ctx, wx.journalBp);
 
   player.stats.trips_finished += 1;
   recordSlotDays(player, ctx.day);
@@ -652,10 +683,11 @@ function rollPages(
   twist: TwistEffect | null,
   sure: boolean,
   ctx: TripContext,
+  weatherBp: number,
 ): void {
   const entries = expeditionContent.journal.entries;
   const found = new Set(player.journal);
-  const attempts = [chance(ctx.trip, journalChanceBp(trip.length, twist), 10_000)];
+  const attempts = [chance(ctx.trip, journalChanceBp(trip.length, twist, weatherBp), 10_000)];
   if (sure) attempts.push(true);
   for (const wanted of attempts) {
     if (!wanted) continue;

@@ -17,6 +17,7 @@ import {
   itemOf,
   itemScore,
   jobDuration,
+  jobWeather,
   jobXp,
   partsOfSpec,
   planEquipBest,
@@ -30,7 +31,9 @@ import {
   supplyDef,
   supplyJobMs,
   supplyJobXp,
+  weatherTimeMs,
   workshopExperience,
+  workshopMods,
   type BestCandidate,
   type DismantleItem,
   type Element,
@@ -43,6 +46,8 @@ import {
   type ReachId,
   type Rng,
   type SupplyDef,
+  type WeatherDay,
+  type WorkshopMods,
 } from '@creatures/game';
 import {
   basePower,
@@ -55,7 +60,7 @@ import {
   type OwnedCreature,
   type SimItem,
 } from './data';
-import type { SimJob, SimPlayer } from './state';
+import type { GearState, SimJob, SimPlayer } from './state';
 import { giveExperience, packTreat, ribbonReserve } from './training';
 
 /**
@@ -107,6 +112,8 @@ export interface GearContext {
   hour: number;
   /** Day index since the start of the sim. */
   day: number;
+  /** The weather of this day: jobs are started under it and keep what it did. Absent or null: none. */
+  weather?: WeatherDay | null;
 }
 
 const HOUR_MS = 3_600_000;
@@ -313,7 +320,11 @@ function claimOne(player: SimPlayer, job: SimJob, ctx: GearContext): void {
     const base = gearBase(job.baseId);
     const reach = job.reach ?? 'none';
     if (base !== undefined) {
-      const made = rollCraftItem(ctx.rng, base.id, level, { reach, marks: job.marks ?? 0 });
+      const made = rollCraftItem(ctx.rng, base.id, level, {
+        reach,
+        marks: job.marks ?? 0,
+        ...(job.mods === undefined ? {} : { mods: job.mods }),
+      });
       player.gear.bag.push(newItem(player, made.item));
       player.gear.crafted += 1;
       player.week.gearCrafts += 1;
@@ -340,7 +351,7 @@ function claimOne(player: SimPlayer, job: SimJob, ctx: GearContext): void {
   } else if (job.kind === 'dismantle' && job.items !== undefined && job.items.length > 0) {
     // The refund is rolled now, inside the items' ranges (no Crafting level in it); each item that can
     // teach a blueprint has the worker's chance to teach it or add a mark.
-    const rolled = rollDismantle(ctx.rng, job.items);
+    const rolled = rollDismantle(ctx.rng, job.items, job.mods ?? {});
     creditParts(player, rolled.parts);
     player.essence += rolled.essence;
     player.week.dismantleEssence += rolled.essence;
@@ -360,7 +371,12 @@ function claimOne(player: SimPlayer, job: SimJob, ctx: GearContext): void {
     workMinutes = RULES.gear.dismantle.minutes[(job.items[0] as DismantleItem).rarity];
   }
   if (crafter !== undefined && workMinutes > 0) {
-    giveExperience(player, crafter, workshopExperience(workMinutes, job.treat === true), 'job');
+    giveExperience(
+      player,
+      crafter,
+      workshopExperience(workMinutes, job.treat === true, job.xp),
+      'job',
+    );
   }
   player.gear.skillXp[job.creatureId] =
     (player.gear.skillXp[job.creatureId] ?? 0) +
@@ -558,6 +574,27 @@ function planDismantle(player: SimPlayer): SimItem[] | null {
   return commons.slice(0, RULES.gear.dismantle.bundleMax);
 }
 
+/** The player's job counters for this game day, started afresh when the day changes. */
+function startedOn(player: SimPlayer, day: number): GearState['startedToday'] {
+  if (player.gear.startedToday.day !== day) {
+    player.gear.startedToday = { day, craft: 0, dismantle: 0 };
+  }
+  return player.gear.startedToday;
+}
+
+/** What a job started now keeps of the day's weather: Market Day's mods (craft and dismantle) and the experience. */
+function storedFx(
+  fx: ReturnType<typeof jobWeather>,
+  mods: WorkshopMods,
+): Pick<SimJob, 'mods' | 'xp'> {
+  return {
+    ...(Object.keys(mods).length === 0 ? {} : { mods }),
+    ...(fx.xpBp === 0 && fx.treatMultiplier === null
+      ? {}
+      : { xp: { bp: fx.xpBp, treatMultiplier: fx.treatMultiplier } }),
+  };
+}
+
 /**
  * Starts jobs in the free workshop slots, on creatures that are neither exploring (`exploring`) nor
  * already on a job. Creatures with the most Crafting XP go first.
@@ -574,6 +611,8 @@ export function startJobs(
         (player.gear.skillXp[b.id] ?? 0) - (player.gear.skillXp[a.id] ?? 0) ||
         (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
     );
+  const weather = ctx.weather ?? null;
+  const fx = jobWeather(weather);
   for (const creature of crafters) {
     if (player.gear.jobs.length >= RULES.gear.workshopSlots) return;
     const level = skillLevel(player.gear.skillXp[creature.id] ?? 0);
@@ -603,12 +642,19 @@ export function startJobs(
         kind: 'job',
         hours: RULES.gear.dismantle.minutes[rarity] / 60,
       });
+      // Market Day boosts the day's first 2 dismantle jobs; every job of the day counts, boosted or not.
+      const started = startedOn(player, ctx.day);
+      const mods = workshopMods(weather, 'dismantle', started.dismantle);
+      started.dismantle += 1;
       player.gear.jobs.push({
         kind: 'dismantle',
         creatureId: creature.id,
         items: items.map((i) => ({ baseId: i.baseId, rarity: i.rarity, itemLevel: i.itemLevel })),
         ...(treat ? { treat: true } : {}),
-        endsAtHour: ctx.hour + jobDuration(level, busyBp, dismantleHours(rarity)) / HOUR_MS,
+        ...storedFx(fx, mods),
+        endsAtHour:
+          ctx.hour +
+          weatherTimeMs(jobDuration(level, busyBp, dismantleHours(rarity)), fx.timeBp) / HOUR_MS,
       });
       continue;
     }
@@ -622,18 +668,28 @@ export function startJobs(
     }
     const kind: JobKind = plan.job.kind;
     const supply = plan.job.supplyId === undefined ? undefined : supplyDef(plan.job.supplyId);
-    const ms =
+    const ms = weatherTimeMs(
       kind === 'supply'
         ? supply === undefined
           ? 0
           : minusBp(supplyJobMs(supply, level), busyBp)
-        : jobDuration(level, busyBp, craftHours(plan.job.reach ?? 'none'));
+        : jobDuration(level, busyBp, craftHours(plan.job.reach ?? 'none')),
+      fx.timeBp,
+    );
     const nominalHours =
       kind === 'supply' ? (supply?.blueprint.hours ?? 0) : craftHours(plan.job.reach ?? 'none');
     const treat = packTreat(player, creature, { kind: 'job', hours: nominalHours });
+    // Market Day boosts the day's first craft only; every craft of the day counts, boosted or not.
+    let mods: WorkshopMods = {};
+    if (kind === 'craft') {
+      const started = startedOn(player, ctx.day);
+      mods = workshopMods(weather, 'craft', started.craft);
+      started.craft += 1;
+    }
     player.gear.jobs.push({
       ...plan.job,
       ...(treat ? { treat: true } : {}),
+      ...storedFx(fx, mods),
       creatureId: creature.id,
       endsAtHour: ctx.hour + ms / HOUR_MS,
     });
