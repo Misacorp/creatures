@@ -289,7 +289,7 @@ describe('the filter chips', () => {
     expect(needs.getAttribute('aria-pressed')).toBe('true');
     expect(cardNames(root)).toEqual(['Splashet', 'Cindle']);
     expect(visibleText(byClass(root, 'finder-result')[0] as FakeElement)).toContain(
-      'Showing 2 of 12',
+      'Showing 2 / 12',
     );
   });
 

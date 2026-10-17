@@ -101,7 +101,6 @@ const creatureCard: Entry = {
     { name: 'Marked by the finder', props: { found: true } },
     { name: 'More open', props: { open: true } },
   ],
-  covers: ['CreatureSheet'],
   render: (p) => <CardDemo p={p} />,
 };
 

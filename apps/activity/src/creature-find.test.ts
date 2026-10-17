@@ -87,7 +87,7 @@ describe('the words under the chips', () => {
   });
 
   it('count what shows, and explain an empty result', () => {
-    expect(resultLine(3, 12, { ...NO_FILTERS, roles: ['guard'] })).toBe('Showing 3 of 12');
+    expect(resultLine(3, 12, { ...NO_FILTERS, roles: ['guard'] })).toBe('Showing 3 / 12');
     expect(resultLine(0, 12, { ...NO_FILTERS, needs: true })).toBe('Nothing needs you right now.');
     expect(resultLine(0, 12, { ...NO_FILTERS, needs: true, roles: ['guard'] })).toBe(
       'No creature matches these filters.',

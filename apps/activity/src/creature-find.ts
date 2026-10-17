@@ -136,7 +136,7 @@ export function resultLine(shown: number, total: number, filters: Filters): stri
       ? 'Nothing needs you right now.'
       : 'No creature matches these filters.';
   }
-  return `Showing ${String(shown)} of ${String(total)}`;
+  return `Showing ${String(shown)} / ${String(total)}`;
 }
 
 /** The words of the search field's live count, for assistive technology. */
