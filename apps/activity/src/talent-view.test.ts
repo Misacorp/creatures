@@ -12,6 +12,7 @@ import {
   CHOICE_ORDER,
   applyAllText,
   bookActions,
+  bookRows,
   cardsFor,
   choiceHint,
   choiceResultText,
@@ -228,5 +229,35 @@ describe('the number in a talent phrase', () => {
       const p = talentTextParts(t);
       expect(`${p.before}${p.value ?? ''}${p.after}`).toBe(t);
     }
+  });
+});
+
+describe('the Talent Book rows', () => {
+  const card = after.creatures.find((c) => c.species === 'splashet') as Creature;
+
+  it('puts what is in use first, then what is available', () => {
+    const reversed = {
+      ...card,
+      talents: { ...card.talents, book: [...card.talents.book].reverse() },
+    };
+    expect(bookRows(reversed).map((r) => [r.entry.id, r.state, r.slot, r.moves])).toEqual([
+      ['splashes-first', 'in-use', 1, []],
+      ['bigger-splash', 'available', null, [1]],
+    ]);
+  });
+
+  it('offers a slotted talent the other open slots, and marks one with no open slot as blocked', () => {
+    const open = (n: number) => ({ slot: n, opensAt: 1, open: true, talent: null });
+    const two = {
+      ...card,
+      talents: { ...card.talents, slots: [{ ...card.talents.slots[0]!, open: true }, open(2)] },
+    };
+    const used = bookRows(two).find((r) => r.state === 'in-use');
+    expect(used?.moves).toEqual([2]);
+    const shut = {
+      ...card,
+      talents: { ...card.talents, slots: card.talents.slots.map((s) => ({ ...s, open: false })) },
+    };
+    expect(bookRows(shut).find((r) => r.entry.id === 'bigger-splash')?.state).toBe('blocked');
   });
 });

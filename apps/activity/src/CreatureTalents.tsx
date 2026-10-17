@@ -1,13 +1,26 @@
 import type { Creature } from './api';
 import { GlossaryTag } from './Glossary';
 import { TalentChip } from './TalentChip';
-import { bookActions, slotTitle } from './talent-view';
+import { Accordion } from './ui/Accordion';
+import { bookRows, slotTitle, type BookRow } from './talent-view';
+
+/** The words on a book button: "Use" when there is only one open slot, else which slot; "To slot 2" to move a slotted one. */
+function moveLabel(row: BookRow, slot: number, openSlots: number, bait: number): string {
+  const what =
+    row.slot !== null
+      ? `To slot ${String(slot)}`
+      : openSlots === 1
+        ? 'Use'
+        : `Slot ${String(slot)}`;
+  return `${what} \u00b7 ${String(bait)} Bait`;
+}
 
 /**
  * A creature's talents on its page: the signature talent of an epic (always on), then each slot with the
  * talent in it, or "opens at level N" while closed, and a Talent Book that lists every talent it has held,
  * golden or not. A book talent can be put into an open slot for Bait, at once; the talent that sat there
- * stays in the book. Lean: the book is closed until asked for.
+ * stays in the book. The book is an Accordion, closed until asked for. Its rows show what is in use (lit,
+ * with a "Slot 1" mark, first), what is available (a compact "Use" button) and what cannot be used now.
  */
 export function CreatureTalents({
   creature,
@@ -28,10 +41,10 @@ export function CreatureTalents({
   showLabel?: boolean;
 }) {
   const { slots, signature, book } = creature.talents;
-  const actions = bookActions(creature);
+  const rows = bookRows(creature);
+  const openSlots = slots.filter((s) => s.open).length;
   const afford = bait >= bookSlotBait;
   return (
-    // TODO(accordion): the Talent Book below is a plain details element until the shared Accordion lands.
     <div class="creature-talents">
       {showLabel && (
         <p class="label">
@@ -62,40 +75,58 @@ export function CreatureTalents({
         ))}
       </ul>
       {book.length > 0 && (
-        <details class="talent-book">
-          <summary>
+        <Accordion
+          title="Talent Book"
+          meta={String(book.length)}
+          label={`Talent Book, ${String(book.length)} ${book.length === 1 ? 'talent' : 'talents'}`}
+          name="talent-book"
+          class="talent-book"
+        >
+          <p class="muted book-help">
             <GlossaryTag entry="talent-book" look="text">
-              Talent Book
-            </GlossaryTag>{' '}
-            ({book.length})
-          </summary>
+              What is the Talent Book?
+            </GlossaryTag>
+          </p>
           <ul class="book-list">
-            {book.map((entry, index) => {
-              const moves = actions.filter((a) => a.entry === index);
+            {rows.map((row) => {
+              const { entry } = row;
               return (
-                <li key={`${entry.id}-${entry.golden ? 'g' : 'n'}`} class="book-entry">
-                  <TalentChip talent={entry} about />
-                  <span class="muted">
-                    {entry.slot === null ? 'Book only' : `In slot ${String(entry.slot)}`}
-                  </span>
-                  {moves.map((move) => (
+                <li
+                  key={`${entry.id}-${entry.golden ? 'g' : 'n'}`}
+                  class={`book-entry ${row.state}`}
+                >
+                  <div class="book-talent">
+                    <TalentChip talent={entry} about />
+                  </div>
+                  {row.slot !== null && (
+                    <span class="book-slot-mark">
+                      <span class="visually-hidden">In use, </span>
+                      <span aria-hidden="true">{'\u2713'} </span>Slot {row.slot}
+                    </span>
+                  )}
+                  {row.state === 'blocked' && <span class="muted small">No open slot</span>}
+                  {row.moves.map((slot) => (
                     <button
-                      key={move.slot}
+                      key={slot}
                       type="button"
+                      class="book-use"
                       disabled={busy || !afford}
-                      aria-label={`Put ${entry.name} in slot ${String(move.slot)} for ${String(bookSlotBait)} Bait`}
+                      aria-label={`Put ${entry.name} in slot ${String(slot)} for ${String(bookSlotBait)} Bait`}
                       onClick={() => {
-                        onSlot(creature, entry.id, entry.golden, move.slot);
+                        onSlot(creature, entry.id, entry.golden, slot);
                       }}
                     >
-                      Slot {move.slot} ({bookSlotBait} Bait)
+                      {moveLabel(row, slot, openSlots, bookSlotBait)}
                     </button>
                   ))}
                 </li>
               );
             })}
           </ul>
-        </details>
+          {!afford && rows.some((r) => r.moves.length > 0) && (
+            <p class="muted small">Not enough Bait: each swap costs {bookSlotBait}.</p>
+          )}
+        </Accordion>
       )}
     </div>
   );

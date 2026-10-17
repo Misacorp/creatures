@@ -180,6 +180,39 @@ export function bookActions(creature: Creature): BookAction[] {
   return actions;
 }
 
+/**
+ * Where a Talent Book entry stands: `in-use` (it sits in a slot), `available` (not slotted and an open
+ * slot could take it) or `blocked` (not slotted and no open slot to give it).
+ */
+export type BookRowState = 'in-use' | 'available' | 'blocked';
+
+export interface BookRow {
+  /** The entry's index in `creature.talents.book`. */
+  index: number;
+  entry: Creature['talents']['book'][number];
+  state: BookRowState;
+  /** The slot it sits in now (in use), else null. */
+  slot: number | null;
+  /** The open slots it could be put into (never the one it is in). */
+  moves: number[];
+}
+
+/** The Talent Book as rows: the talents in use first (by slot), then those available, then the rest. */
+export function bookRows(creature: Creature): BookRow[] {
+  const rows = creature.talents.book.map<BookRow>((entry, index) => {
+    const moves = bookActions(creature)
+      .filter((a) => a.entry === index)
+      .map((a) => a.slot);
+    const state: BookRowState =
+      entry.slot !== null ? 'in-use' : moves.length > 0 ? 'available' : 'blocked';
+    return { index, entry, state, slot: entry.slot, moves };
+  });
+  const order: Record<BookRowState, number> = { 'in-use': 0, available: 1, blocked: 2 };
+  return rows.sort(
+    (a, b) => order[a.state] - order[b.state] || (a.slot ?? 0) - (b.slot ?? 0) || a.index - b.index,
+  );
+}
+
 /** "Quick to Pounce, First pounce +14%": the talent in a row of text (golden is a tag, never only colour). */
 export function talentLine(talent: TalentView): string {
   return `${talent.name}: ${talent.text}${talent.golden ? ' (golden)' : ''}`;

@@ -29,6 +29,7 @@ import {
 import { GlossaryTag } from './Glossary';
 import { abilityDef } from './live';
 import { ElementChip } from './sprites/ElementChip';
+import { Accordion } from './ui/Accordion';
 import { Tag } from './ui/Tag';
 
 /** What a creature's buttons do; the screen that owns the cards supplies it (one action at a time). */
@@ -59,9 +60,7 @@ export function RenameForm({
   const [draft, setDraft] = useState(creature.nickname ?? '');
   const inputId = `nickname-${creature.id}`;
   return (
-    // TODO(accordion): swap this details element for the shared Accordion once it lands.
-    <details class="rename">
-      <summary>Rename</summary>
+    <Accordion title="Rename" class="rename" keepMounted>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -84,7 +83,7 @@ export function RenameForm({
           Save
         </button>
       </form>
-    </details>
+    </Accordion>
   );
 }
 
@@ -315,9 +314,7 @@ export function CreaturePage({
         </div>
       )}
 
-      {/* TODO(accordion): About and the facts under it can collapse once the shared Accordion lands. */}
-      <div class="cp-block">
-        <h3 class="cp-title">About</h3>
+      <Accordion title="About" headingLevel={3} defaultOpen class="cp-block">
         {about !== null && (
           <>
             <p>{about.description}</p>
@@ -356,7 +353,7 @@ export function CreaturePage({
             </div>
           ))}
         </dl>
-      </div>
+      </Accordion>
 
       <div class="cp-block cp-buttons">
         {creature.busy === null && creature.id !== state.loungerId && (

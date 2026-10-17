@@ -1,7 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Creature } from './api';
 import { CreaturePage, type CardActions } from './CreaturePage';
-import { SAMPLE_GEAR, SAMPLE_STATE, sampleCreature, type SampleKind } from './creature-card-sample';
+import {
+  SAMPLE_GEAR,
+  SAMPLE_STATE,
+  sampleCreature,
+  talentView,
+  type SampleKind,
+} from './creature-card-sample';
 import { cardDomId, type PageFocus } from './creature-card-view';
 import {
   byClass,
@@ -161,7 +167,7 @@ describe('the creature page: what it holds', () => {
     ).toHaveLength(1);
     // Talents: the slots and the book
     expect(text).toContain('Talents');
-    expect(text).toContain('Talent Book (');
+    expect(byName(root, 'button', /^Talent Book/)).toHaveLength(1);
     // Ability, About, fusion, ribbons, explorer
     expect(text).toContain('Flare Strike');
     expect(text).toContain('Evolves into');
@@ -172,9 +178,12 @@ describe('the creature page: what it holds', () => {
     expect(text).toContain('Trips');
     // Lounge and Rename
     expect(byName(root, 'button', 'Lounge')).toHaveLength(1);
-    expect(
-      find(root, (e) => e.localName === 'summary' && visibleText(e) === 'Rename'),
-    ).toHaveLength(1);
+    const rename = byName(root, 'button', 'Rename')[0] as FakeElement;
+    expect(rename.getAttribute('aria-expanded')).toBe('false');
+    // The form stays in the page while closed, so a half-typed nickname survives.
+    expect(find(root, (e) => e.localName === 'input')).toHaveLength(1);
+    // About is an accordion too, open to begin with.
+    expect(byName(root, 'button', 'About')[0]?.getAttribute('aria-expanded')).toBe('true');
   });
 
   it('has the ribbon, evolve and waiting-catch buttons itself, not only on the card', () => {
@@ -272,10 +281,51 @@ describe('the creature page: what it holds', () => {
     const slot = vi.fn();
     const creature = kind('talent to fill');
     const { root, page: p } = draw(creature, { actions: { onSlotTalent: slot } });
+    // The book is an accordion, closed until asked for.
+    expect(byName(root, 'button', /^Put Playful in slot 2/)).toHaveLength(0);
+    p.click(byName(root, 'button', /^Talent Book/)[0] as FakeElement);
     const button = byName(root, 'button', /^Put Playful in slot 2/)[0] as FakeElement;
     expect(button).toBeDefined();
+    expect(visibleText(button)).toBe('Slot 2 \u00b7 10 Bait');
     p.click(button);
     expect(slot).toHaveBeenCalledWith(creature, 'playful', false, 2);
+  });
+
+  it('shows the Talent Book by state: in use first and lit, then available, with no state words', () => {
+    const creature = kind('talent to fill');
+    const { root, page: p } = draw(creature);
+    p.click(byName(root, 'button', /^Talent Book/)[0] as FakeElement);
+    const rows = byClass(root, 'book-entry');
+    expect(rows.map((r) => r.getAttribute('class'))).toEqual([
+      'book-entry in-use',
+      'book-entry available',
+    ]);
+    const used = rows[0] as FakeElement;
+    expect(visibleText(byClass(used, 'book-slot-mark')[0] as FakeElement)).toBe(
+      'In use, \u2713 Slot 1',
+    );
+    expect(byName(used, 'button', /./)).toHaveLength(1);
+    const text = visibleText(root);
+    expect(text).not.toContain('Book only');
+    expect(text).not.toContain('In slot');
+    expect(text).not.toContain('In the book only');
+  });
+
+  it('uses one plain "Use" button when only one slot is open, and says when Bait is short', () => {
+    const creature = kind('growing');
+    const withSpare = {
+      ...creature,
+      talents: {
+        ...creature.talents,
+        book: [...creature.talents.book, { ...talentView('playful', true), slot: null }],
+      },
+    };
+    const { root, page: p } = draw(withSpare, { bait: 3 });
+    p.click(byName(root, 'button', /^Talent Book/)[0] as FakeElement);
+    const button = byName(root, 'button', /^Put Playful/)[0] as FakeElement;
+    expect(visibleText(button)).toBe('Use \u00b7 10 Bait');
+    expect(button.getAttribute('disabled')).not.toBeNull();
+    expect(visibleText(root)).toContain('Not enough Bait: each swap costs 10.');
   });
 
   it('renames: a nickname goes to the server, empty clears it', () => {
