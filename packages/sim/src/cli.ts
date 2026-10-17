@@ -73,8 +73,16 @@ export function parseCli(argv: readonly string[]): CliOptions {
   };
 }
 
-/** Runs the simulator, writes `report.md` and `report.json`, prints a summary. Returns the exit code. */
-export function main(argv: readonly string[], io: Io = defaultIo): number {
+/**
+ * Runs the simulator, writes `report.md` and `report.json`, prints a summary. Returns the exit code.
+ * `adjust` lets tests shrink the run (for example skip the 30-week studies); the command line never
+ * passes it.
+ */
+export function main(
+  argv: readonly string[],
+  io: Io = defaultIo,
+  adjust: (settings: RunSettings) => RunSettings = (settings) => settings,
+): number {
   const started = performance.now();
   let options: CliOptions;
   try {
@@ -83,7 +91,7 @@ export function main(argv: readonly string[], io: Io = defaultIo): number {
     io.err(error instanceof Error ? error.message : String(error));
     return 2;
   }
-  const result = runSimulation(options.settings);
+  const result = runSimulation(adjust(options.settings));
   const dir = resolve(options.out);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'report.md'), `${buildReportMarkdown(result)}\n`);
