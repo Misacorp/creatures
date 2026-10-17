@@ -92,7 +92,13 @@ export interface Draft {
  * A grant already in the new shape (items with `itemLevel`, blueprints without `rarity`) is returned as is.
  */
 export function normaliseGrant(raw: GrantView): GrantView {
-  const mapGear = <T extends { baseId: string; itemLevel?: number | undefined }>(g: T): T => {
+  const mapGear = <
+    T extends { baseId: string; rarity: GearRarity; itemLevel?: number | undefined },
+  >(
+    g: T,
+  ): T => {
+    // Festival used to be a rarity; a stored grant of one reads as Epic (its look is its base's now).
+    if ((g.rarity as string) === 'festival') g = { ...g, rarity: 'epic' };
     if (g.itemLevel !== undefined) return g;
     const old = legacyBase(g.baseId);
     if (old === undefined) return g;

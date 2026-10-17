@@ -8,7 +8,9 @@
  * - **Worn items** become a new item of the same rarity (slot by the old stat focus, tag from the old
  *   tint, the same id), at the item level a fresh drop would have for this player today (the higher of
  *   `3 + Boss Rank` and their best dungeon depth's drop level, at most 12), with lines rolled once at
- *   tier II or better. An item that its wearer cannot wear under the new rules (the wearer's level is
+ *   tier II or better. An old Festival piece (Festival was a rarity then) becomes a Festival base, with
+ *   no extra power: the same item level as any other converted item and a rarity drawn from the finale's
+ *   normal odds at the server's Boss Rank (2026-10-17). An item that its wearer cannot wear under the new rules (the wearer's level is
  *   below the item's level or the slot's opening level) goes into the bag, and the notice says so.
  * - **Unworn items** are refunded: their old dismantle yield, plus the scrap and Essence their upgrades
  *   cost. Enchants refund their glimmer and shards. Worn items get their upgrade and enchant costs back too.
@@ -23,17 +25,19 @@ import {
   RULES,
   addParts,
   baseForTint,
+  bestBaseForTint,
   convertedItemLevel,
   legacyBase,
   legacyDismantleYield,
   legacyEnchant,
   legacyEnchantSpent,
   legacyUpgradeSpent,
+  rollConvertedRarity,
   rollItem,
   wearBlock,
   content,
-  type GearRarity,
   type GearSlot,
+  type LegacyRarity,
   type PartsBundle,
   type Rng,
 } from '@creatures/game';
@@ -84,7 +88,7 @@ type LegacyItem = {
   id: string;
   user_id: string;
   base_id: string;
-  rarity: GearRarity;
+  rarity: LegacyRarity;
   level: number;
   enchant_id: string | null;
   equipped_on: string | null;
@@ -115,6 +119,17 @@ export function mapBase(oldId: string): { id: string; slot: GearSlot } {
     old === undefined
       ? baseForTint('hat', null)
       : baseForTint(old.slot, old.tint, old.festival === true);
+  return { id: base.id, slot: base.slot };
+}
+
+/**
+ * The base a converted item gets: the best base of the same slot and tint that its item level unlocks (the
+ * converted item has the level a fresh drop would have, so it can be one of the better bases too).
+ */
+export function mapBaseAt(oldId: string, itemLevel: number): { id: string; slot: GearSlot } {
+  const old = legacyBase(oldId);
+  if (old === undefined) return mapBase(oldId);
+  const base = bestBaseForTint(old.slot, old.tint, itemLevel, old.festival === true);
   return { id: base.id, slot: base.slot };
 }
 
@@ -174,10 +189,11 @@ function convertPlayer(deps: ConvertDeps, userId: string, rank: number): void {
       notice.refundedItems += 1;
       continue;
     }
-    const target = mapBase(row.base_id);
+    const target = mapBaseAt(row.base_id, level);
     const item = rollItem(deps.rng, {
       baseId: target.id,
-      rarity: row.rarity,
+      // An old Festival piece (it was a rarity) is a Festival base now, and rolls the finale's normal odds.
+      rarity: rollConvertedRarity(deps.rng, rank, row.rarity),
       itemLevel: level,
       minTier: RULES.gear.itemLevel.convert.minTier,
     });
@@ -286,6 +302,9 @@ function convertPlayer(deps: ConvertDeps, userId: string, rank: number): void {
  */
 export function convertPendingGear(deps: ConvertDeps): number {
   const sql = deps.storage.sql;
+  // Festival is a base, not a rarity (2026-10-17). A guild database that already ran migration 27 with
+  // the old rule may hold Festival-rarity items (a staging one); they were worth an Epic, so they are one.
+  sql.exec("UPDATE gear_items SET rarity = 'epic' WHERE rarity = 'festival'");
   const waiting = sql
     .exec<{ user_id: string }>(
       'SELECT user_id FROM gear_conversion WHERE converted_at IS NULL ORDER BY user_id',

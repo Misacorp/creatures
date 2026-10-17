@@ -751,13 +751,15 @@ describe('POST /api/room', () => {
           return id;
         };
         const hat = wear(b.id, b.creatureIds[0] as string, 'acorn-cap', 3, [
-          ['attack', 0],
-          ['sturdy-blow', 0],
+          ['attack-local-pct', 0],
+          ['attack-local-flat', 0],
         ]);
-        const scarf = wear(b.id, b.creatureIds[0] as string, 'patch-scarf', 3, [['hp', 0]]);
+        const scarf = wear(b.id, b.creatureIds[0] as string, 'patch-scarf', 3, [
+          ['hp-local-pct', 0],
+        ]);
         // An unworn item of Bob's, and an item on his other creature, must not show up.
-        wear(b.id, null, 'kelp-cap', 1, [['attack', 0]]);
-        wear(b.id, b.creatureIds[1] as string, 'trail-cap', 1, [['attack', 0]]);
+        wear(b.id, null, 'kelp-cap', 1, [['attack-local-pct', 0]]);
+        wear(b.id, b.creatureIds[1] as string, 'trail-cap', 1, [['attack-local-pct', 0]]);
         const res = await room(a, [a.id, b.id, c.id]);
         const [ra, rb, rc] = res.body.residents as [
           RoomBody['residents'][number],
@@ -773,7 +775,7 @@ describe('POST /api/room', () => {
             slot: 'hat',
             rarity: 'rare',
             itemLevel: 3,
-            lines: ['Attack +2%', 'Attack +2%', 'Sturdy blow +2'],
+            lines: ['+20% Attack (this item)', '+2 Attack (this item)'],
           },
           {
             id: scarf,
@@ -781,7 +783,7 @@ describe('POST /api/room', () => {
             slot: 'scarf',
             rarity: 'rare',
             itemLevel: 3,
-            lines: ['HP +3%', 'HP +3%'],
+            lines: ['+20% HP (this item)'],
           },
         ]);
         // The owner's own state view shows the same items (without the line texts).

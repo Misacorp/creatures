@@ -16,8 +16,9 @@ export function gearV2Migration(sql: SqlStorage): void {
 
   // One row per item a player owns. `equipped_on` is the creature wearing it. The unique index lets a
   // creature wear one item per slot (and an item is on at most one creature because it is one row).
-  // `lines_json` holds the rolled lines (`[{ id, tier }]`, tier 0 to 4); the base line and the Festival
-  // glow come from the base. `made_by` is the creature that crafted it (its name at the time is kept
+  // `lines_json` holds the rolled lines (`[{ id, tier }]`, tier 0 to 4); a Hat's or a Scarf's base stat,
+  // a Charm's base line and a Festival piece's unique line come from the base. Festival is a base, not
+  // a rarity (2026-10-17: Festival gear is special, not stronger). `made_by` is the creature that crafted it (its name at the time is kept
   // as plain text) and `made_at` when; `origin_json` says where else it came from (a boss and rank, a
   // dungeon depth, a trip's place).
   sql.exec(`CREATE TABLE gear_items (
@@ -26,7 +27,7 @@ export function gearV2Migration(sql: SqlStorage): void {
     base_id TEXT NOT NULL,
     slot TEXT NOT NULL CHECK (slot IN ('hat', 'scarf', 'charm')),
     tag TEXT NOT NULL,
-    rarity TEXT NOT NULL CHECK (rarity IN ('common', 'rare', 'epic', 'festival')),
+    rarity TEXT NOT NULL CHECK (rarity IN ('common', 'rare', 'epic')),
     item_level INTEGER NOT NULL CHECK (item_level BETWEEN 1 AND 20),
     lines_json TEXT NOT NULL,
     made_by TEXT,

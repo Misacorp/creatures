@@ -6,8 +6,8 @@ import {
   createSeededRng,
   dismantleYield,
   effectiveStats,
+  finaleItemLevel,
   festivalBaseFor,
-  festivalItemLevel,
   rollFinaleReward,
   type GearRarity,
   type PartKind,
@@ -357,12 +357,13 @@ describe('the Festival piece', () => {
             slot.gear.length === 1 ? ['festival', 'raid_finale'] : ['festival'],
           );
           const festive = items.find((i) => i.source === 'festival');
-          expect(festive).toMatchObject({ base_id: piece.id, rarity: 'festival' });
+          // Special, not stronger: a normal rarity, the lines of that rarity, the finale's item level.
+          expect(festive).toMatchObject({ base_id: piece.id });
+          expect(['common', 'rare', 'epic']).toContain(festive?.rarity);
           expect(JSON.parse(festive?.lines_json ?? '[]')).toHaveLength(
-            RULES.gear.rolledLines.festival,
+            RULES.gear.rolledLines[festive?.rarity as 'common' | 'rare' | 'epic'],
           );
-          // Item level 5 + the week's Boss Rank.
-          expect(festive?.item_level).toBe(festivalItemLevel(weekPayout(ctx.sql).rank));
+          expect(festive?.item_level).toBe(finaleItemLevel(weekPayout(ctx.sql).rank));
         }
         // Idempotent.
         ctx.core.raid.runDue(HELSINKI);
@@ -580,8 +581,8 @@ describe('gear in fights', () => {
         wear(ctx, a.id, weakest.id, 'trail-cap', 'epic', {
           level: 5,
           lines: [
-            ['sturdy-blow', 3],
-            ['attack', 3],
+            ['attack-local-flat', 3],
+            ['attack-local-pct', 3],
           ],
         });
         const geared = loadCreatures(ctx.sql, a.id).find((c) => c.id === weakest.id);

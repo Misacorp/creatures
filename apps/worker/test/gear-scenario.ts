@@ -119,14 +119,14 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
   grantRaidFinale(grantDeps, seeded.id, '2027-W01', 3, boss);
   grantFestivalGear(grantDeps, seeded.id, '2027-W01', 'ember', 3, boss);
   // The great one (an Ember Hat), a Scarf for the Guard, a Guard's bell and a Compass.
-  const hat = give('coal-warm-cap', 'epic', 14, 'fixture-hat', [
+  const hat = give('emberkeepers-crown', 'epic', 15, 'fixture-hat', [
     ['ember-reaction', 3],
-    ['crit-damage', 2],
-    ['attack', 2],
+    ['crit-damage-local-pct', 2],
+    ['attack-local-pct', 2],
   ]);
-  give('leafknit-scarf', 'rare', 12, 'fixture-scarf', [
+  give('bark-shawl', 'rare', 12, 'fixture-scarf', [
     ['aimed-ward', 2],
-    ['hp', 1],
+    ['hp-local-pct', 1],
   ]);
   const bell = give('wardens-bell', 'rare', 13, 'fixture-bell', [
     ['cover', 2],
@@ -147,6 +147,12 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     seeded.id,
     ctx.clock.t,
   );
+  // A better base the Crafting level cannot make yet (a Brine Hood needs item level 8: Crafting level 4).
+  ctx.sql.exec(
+    "INSERT INTO blueprints (user_id, base_id, rarity, learned_at) VALUES (?, 'brine-hood', 'common', ?)",
+    seeded.id,
+    ctx.clock.t,
+  );
   ctx.clock.t += 1000;
   out.responses['gear-loaded'] = (await call('GET', '/api/gear')).body;
 
@@ -162,6 +168,13 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
   await fail('POST', `/api/gear/${high}/equip`, { creatureId: zipmouse }); // item level above the creature
   await fail('POST', `/api/gear/${compass}/equip`, { creatureId: zipmouse }); // the Charm slot opens at 13
   await fail('POST', `/api/gear/${bell}/equip`, { creatureId: cindle }); // a Guard's bell on a Payoff
+
+  await fail('POST', '/api/workshop/jobs', {
+    kind: 'craft',
+    creatureId: zipmouse,
+    blueprintId: 'brine-hood',
+    idempotencyKey: newKey(),
+  }); // a better base needs a higher Crafting level
 
   // A job: a craft of the Kelp Cap. And an Improve job from before gear v2 still running.
   const craft = await record('job-start-craft', 'POST', '/api/workshop/jobs', {
@@ -228,8 +241,8 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
   });
   // Dismantle the Festival piece in a Workshop job (2 hours), claim it, and look at the state again.
   const festive = (
-    (out.responses['gear-loaded'] as { items: { id: string; rarity: string }[] }).items.find(
-      (i) => i.rarity === 'festival',
+    (out.responses['gear-loaded'] as { items: { id: string; festival: boolean }[] }).items.find(
+      (i) => i.festival,
     ) as { id: string }
   ).id;
   await record('preview-dismantle', 'POST', '/api/workshop/preview', {

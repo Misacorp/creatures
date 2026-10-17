@@ -194,11 +194,27 @@ describe('goods tools', () => {
           itemLevel: 12,
           source: 'dev',
         });
-        // The base line and three rolled lines.
-        expect(items.find((i) => i.id === granted.gearId)?.lines).toHaveLength(4);
-        // A rarity the base cannot have is refused.
-        expect((await p.dev('grant-gear', { baseId: base?.id, rarity: 'festival' })).body).toEqual({
-          error: 'rarity_mismatch',
+        // Three rolled lines (a Hat's base is its stat, not a line).
+        expect(items.find((i) => i.id === granted.gearId)?.lines).toHaveLength(3);
+        // Festival is a base, not a rarity any more: the old value is refused.
+        expect((await p.dev('grant-gear', { baseId: base?.id, rarity: 'festival' })).status).toBe(
+          400,
+        );
+        // A Festival piece is granted like any other base, at a normal rarity.
+        const piece = gearContent.bases.find((b) => b.festival === true);
+        const festive = await p.tool('grant-gear', {
+          baseId: piece?.id,
+          rarity: 'rare',
+          itemLevel: 5,
+        });
+        const all = (await p.call('GET', '/api/gear')).body.items as {
+          id: string;
+          rarity: string;
+          festival: boolean;
+        }[];
+        expect(all.find((i) => i.id === festive.gearId)).toMatchObject({
+          rarity: 'rare',
+          festival: true,
         });
 
         // A craft that is running, finished now.
