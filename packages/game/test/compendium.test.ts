@@ -8,6 +8,7 @@ import {
   expeditionContent,
   gearContent,
   talentContent,
+  weatherContent,
 } from '../src/index';
 
 /**
@@ -15,7 +16,8 @@ import {
  *
  * Matching rule, one per kind:
  * - Species, destinations, raid bosses, dungeon foes and room bosses, room modifiers, gear bases,
- *   supplies and talents (the pools, the signatures and the held-back ones): the content's display
+ *   supplies, talents (the pools, the signatures and the held-back ones) and Boons and Omens (the
+ *   planned ones too): the content's display
  *   name, as a heading, a bold name, or a table cell.
  *   (The compendium uses names for all of these. Species lines are covered by their stage 1 name.)
  * - Journal entries: the entry id in backticks (the journal key is keyed by id).
@@ -82,6 +84,11 @@ describe('compendium is in sync with shipped content', () => {
     const all = [...talentContent.byId.values(), ...talentContent.deferred];
     expect(all.length).toBeGreaterThan(100);
     expect(missingNames('talents.md', all)).toEqual([]);
+  });
+
+  it('has every Boon and Omen, live and planned, in weather.md', () => {
+    expect(weatherContent.length).toBeGreaterThanOrEqual(20);
+    expect(missingNames('weather.md', [...weatherContent])).toEqual([]);
   });
 
   it('has every journal entry id in journal.md', () => {

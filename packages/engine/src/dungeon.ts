@@ -85,6 +85,11 @@ export interface DungeonRunInput {
    * older run replays as it was fought.
    */
   rest?: Readonly<Record<string, number>>;
+  /**
+   * How many plain attacks every foe makes each round, 2 or 3 (the day's Stormfront). Absent: one, so a
+   * stored older run replays as it was fought.
+   */
+  bossAttacks?: number;
 }
 
 export interface DungeonRoomResult {
@@ -214,6 +219,9 @@ export function buildRoomInput(
   return {
     boss,
     bossAtk: foeAtk,
+    ...(run.bossAttacks !== undefined && run.bossAttacks > 1
+      ? { bossAttacks: run.bossAttacks }
+      : {}),
     phase: 'finale',
     bossHpPool: { max: foeHp, current: foeHp },
     adaptation: null,

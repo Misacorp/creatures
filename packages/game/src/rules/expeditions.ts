@@ -228,15 +228,17 @@ export function isNightHour(hour: number): boolean {
 /**
  * Whether a creature can go to a destination now: the reasons it cannot (an empty list means open).
  * `localHour` is the guild-local hour of the moment of sending, `festivalWeek` whether it is a
- * Festival raid week.
+ * Festival raid week. `nightOpen` is the day's Boon keeping the night places open (Quiet Night).
  */
 export function closedReasons(
   dest: DestinationDef,
-  ctx: { rank: number; localHour: number; festivalWeek: boolean },
+  ctx: { rank: number; localHour: number; festivalWeek: boolean; nightOpen?: boolean },
 ): ClosedReason[] {
   const out: ClosedReason[] = [];
   if (dest.access.festival === true && !ctx.festivalWeek) out.push('festival');
-  if (dest.access.night === true && !isNightHour(ctx.localHour)) out.push('night');
+  if (dest.access.night === true && !isNightHour(ctx.localHour) && ctx.nightOpen !== true) {
+    out.push('night');
+  }
   if (ctx.rank < dest.access.minRank) out.push('rank');
   return out;
 }
@@ -686,6 +688,12 @@ export interface TripLootContext {
   gearGlimmerBp?: number;
   /** Catch rolls of a finished trip that brought no creature: each brings a small find of scrap. Absent: none. */
   emptyRolls?: number;
+  /** The day's Boon or Omen on parts (basis points on top, stored with the trip). Absent: none. */
+  weatherPartsBp?: number;
+  /** The day's effect on the chance of a shard (a share of the chance, basis points on top). Absent: none. */
+  weatherShardsBp?: number;
+  /** The day's effect on the chance of a supply find (a share of the chance, basis points on top). Absent: none. */
+  weatherSupplyBp?: number;
 }
 
 export interface TripLoot {
@@ -706,6 +714,7 @@ export function partsBonusBp(
     familiarityBonus(ctx.stars).partsBp +
     ctx.milestonePartsBp +
     (ctx.gearPartsBp ?? 0) +
+    (ctx.weatherPartsBp ?? 0) +
     (ctx.twist?.kind === 'parts' ? ctx.twist.bp : 0)
   );
 }
@@ -739,16 +748,22 @@ export function rollTripLoot(
   // A roll that brought no creature brings a small find instead (a finished trip only).
   addPart(parts, 'scrap', (ctx.emptyRolls ?? 0) * lengthRules(ctx.length).findScrap);
 
-  const shardBp = scaleBp(table.shardBp, bonusBp);
+  const shardBp = Math.max(0, scaleBp(scaleBp(table.shardBp, bonusBp), ctx.weatherShardsBp ?? 0));
   const shards = Math.floor(shardBp / BP) + (chance(rng, shardBp % BP, BP) ? 1 : 0);
   addPart(parts, shardOf(ctx.shardElement), shards);
   if (chance(rng, Math.min(BP, scaleBp(table.glimmerBp, ctx.gearGlimmerBp ?? 0)), BP)) {
     addPart(parts, 'glimmer', 1);
   }
   const blueprint = chance(rng, Math.min(BP, table.blueprintBp), BP) ? rollBlueprint(rng) : null;
-  const supplyBp = Math.min(
-    BP,
-    scaleBp(table.supplyBp + satchelBonus(ctx.kit).supplyBp, ctx.gearSupplyBp ?? 0),
+  const supplyBp = Math.max(
+    0,
+    Math.min(
+      BP,
+      scaleBp(
+        scaleBp(table.supplyBp + satchelBonus(ctx.kit).supplyBp, ctx.gearSupplyBp ?? 0),
+        ctx.weatherSupplyBp ?? 0,
+      ),
+    ),
   );
   const supplies = chance(rng, supplyBp, BP) ? [foundSupplyId(rng, ctx.rank)] : [];
   return { parts, blueprint, supplies };
@@ -881,9 +896,14 @@ export function rollJournal(
 }
 
 /** The chance (basis points) of a journal page on a finished trip of this length, with the twist. */
-export function journalChanceBp(length: ExpeditionLength, twist: TwistEffect | null): number {
+export function journalChanceBp(
+  length: ExpeditionLength,
+  twist: TwistEffect | null,
+  weatherBp = 0,
+): number {
   const base = lengthRules(length).journalBp;
-  return Math.min(BP, twist?.kind === 'journal' ? scaleBp(base, twist.bp) : base);
+  const withTwist = twist?.kind === 'journal' ? scaleBp(base, twist.bp) : base;
+  return Math.max(0, Math.min(BP, scaleBp(withTwist, weatherBp)));
 }
 
 // --- Account stats and milestones ---
