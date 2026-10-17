@@ -27,7 +27,8 @@ import type { SimPlayer } from './state';
  *   first talent into slot 1, with the sim's own talent stream (separate from the catch stream, so a
  *   talent never moves a catch).
  * - A duplicate is answered with Recommended, straight away (the sim player never lets a card wait):
- *   Teach when the talent is new to the book and better than what the slot holds, else Fuse until the
+ *   Teach (into the Talent Book, never a slot) when the talent is new to the book and better than what
+ *   the slot holds, else Fuse until the
  *   creature is fully fused, else Release for parts. Keep needs a line with a second branch and the
  *   content has none yet, so the sim never keeps.
  * - When a creature has an open slot with nothing in it and its Talent Book holds a talent, the best one
@@ -105,8 +106,9 @@ export function collect(
   if (roll.golden) player.stats.golden_talents += 1;
   const rec = recommend(roll, [lineView(existing)], false);
   const kept = speciesOf(existing.speciesId);
-  if (rec.choice === 'teach' && rec.slot !== undefined) {
-    holdTalent(existing, roll, rec.slot);
+  if (rec.choice === 'teach') {
+    // Teach fills the Talent Book; `fillSlots` slots it later for Bait.
+    holdTalent(existing, roll, null);
     player.stats.dupes_taught += 1;
   } else if (rec.choice === 'fuse') {
     const next = fuseOnce(existing.fusionCount);
