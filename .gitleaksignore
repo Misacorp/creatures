@@ -1,0 +1,3 @@
+# False positives of the CI secret scan, by fingerprint (commit:file:rule:line). Only test fixtures belong here.
+# A test idempotency key ('pending-claim-1'), not a secret.
+b4dc19abbc593312ad3398266e6b152d4f45c79d:apps/worker/test/gear-convert.test.ts:generic-api-key:599
