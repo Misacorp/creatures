@@ -37,6 +37,7 @@ import {
   knownBlueprints,
   learnBlueprint,
   partsTotal,
+  viewOrSkip,
   type ItemOrigin,
 } from './gear-store';
 import { credit, type LedgerStorage } from './ledger';
@@ -525,10 +526,12 @@ export function recentGrants(sql: SqlStorage, userId: string, limit: number): Gr
       limit,
     )
     .toArray()
-    .map((row) => ({
-      ...normaliseGrant(JSON.parse(row.result_json) as GrantView),
-      key: row.key,
-      source: row.source,
-      at: row.created_at,
-    }));
+    .flatMap((row) =>
+      viewOrSkip('grant', () => ({
+        ...normaliseGrant(JSON.parse(row.result_json) as GrantView),
+        key: row.key,
+        source: row.source,
+        at: row.created_at,
+      })),
+    );
 }

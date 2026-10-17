@@ -13,6 +13,7 @@ import { Gear } from './gear';
 import { convertPendingGear } from './gear-convert';
 import { gearMigration } from './gear-migration';
 import { gearV2Migration } from './gear-v2-migration';
+import { normaliseGearRows } from './gear-normalise';
 import { workshopV2Migration } from './workshop-v2-migration';
 import { rollMissingTalents } from './talent-store';
 import { gearRoutes } from './gear-routes';
@@ -713,6 +714,9 @@ export class GuildCore {
         this.sql.exec('INSERT INTO schema_version (version) VALUES (?)', version);
       });
     }
+    // Rows of an earlier shape of gear v2 (staging ran one before its migration 27 was edited in place) are
+    // brought to today's shape first, so nothing below or in a view meets an item it cannot read.
+    normaliseGearRows(this.storage);
     // The first load after the gear v2 migration: every player who had gear is converted, once, with
     // live randomness (idempotent: nothing is waiting on later starts).
     convertPendingGear({

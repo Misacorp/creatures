@@ -1,5 +1,5 @@
 import { RULES, craftCost, craftItemLevel, dismantleRange, jobDuration } from '@creatures/game';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parseGameState, type Creature } from './api';
 import collectionState from './fixtures/collection-state.json';
 import expeditionLoot from './fixtures/expedition-claim-loot.json';
@@ -58,6 +58,15 @@ import {
   wornItemOf,
 } from './gear-view';
 import type { GearItem, GrantLoot } from './gear-types';
+
+/** Keeps what the parser logs for an entry it leaves out out of the test output, and returns it. */
+function silenceErrors(): { messages: string[]; restore: () => void } {
+  const messages: string[] = [];
+  const spy = vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+    messages.push(args.map(String).join(' '));
+  });
+  return { messages, restore: () => spy.mockRestore() };
+}
 
 const gear = parseGearState(gearState);
 const game = parseGameState(collectionState);
@@ -552,12 +561,15 @@ describe('grants and loot', () => {
     expect(w1.finale?.gear[0]?.itemLevel).toBe(6);
     const bad = JSON.parse(JSON.stringify(gearState)) as typeof gearState;
     const record = bad.grants.find((g) => g.source === 'raid_finale');
+    // A loot record with a nonsense item level is left out (and logged); the others stay.
+    const quiet = silenceErrors();
     (record?.gear[0] as { itemLevel: unknown }).itemLevel = -2;
-    expect(() => parseGearState(bad)).toThrow();
+    expect(parseGearState(bad).grants).toHaveLength(bad.grants.length - 1);
     (record?.gear[0] as { itemLevel: unknown }).itemLevel = 'two';
-    expect(() => parseGearState(bad)).toThrow();
+    expect(parseGearState(bad).grants).toHaveLength(bad.grants.length - 1);
+    quiet.restore();
     delete (record?.gear[0] as { itemLevel?: unknown }).itemLevel;
-    expect(() => parseGearState(bad)).not.toThrow();
+    expect(parseGearState(bad).grants).toHaveLength(bad.grants.length);
   });
 
   it('reads the stats, the local lines and the Festival flag the server sends, and refuses them gone', () => {
@@ -572,17 +584,61 @@ describe('grants and loot', () => {
     for (const line of local) expect(line.text).toContain('(this item)');
     // A Charm has no stats.
     expect(gear.items.find((i) => i.slot === 'charm')?.stats).toEqual([]);
+    // An item without them is not drawn (the rest of the Workshop is): it is left out and logged.
+    const quiet = silenceErrors();
     for (const key of ['stats', 'festival']) {
       const bad = JSON.parse(JSON.stringify(gearState)) as typeof gearState;
       delete (bad.items[0] as unknown as Record<string, unknown>)[key];
-      expect(() => parseGearState(bad), key).toThrow();
+      expect(parseGearState(bad).items, key).toHaveLength(bad.items.length - 1);
     }
     const noLocal = JSON.parse(JSON.stringify(gearState)) as typeof gearState;
     delete (noLocal.items[0]?.lines[0] as unknown as Record<string, unknown>)['local'];
-    expect(() => parseGearState(noLocal)).toThrow();
+    expect(parseGearState(noLocal).items).toHaveLength(noLocal.items.length - 1);
     const oddStat = JSON.parse(JSON.stringify(gearState)) as typeof gearState;
     (oddStat.items[0]?.stats[0] as unknown as { stat: string }).stat = 'armor';
-    expect(() => parseGearState(oddStat)).toThrow();
+    expect(parseGearState(oddStat).items).toHaveLength(oddStat.items.length - 1);
+    quiet.restore();
+  });
+
+  it('shows the rest of the Workshop when one item, job, blueprint or loot record is odd, and logs the odd one', () => {
+    const copy = (): typeof gearState => JSON.parse(JSON.stringify(gearState)) as typeof gearState;
+    const quiet = silenceErrors();
+    const bad = copy();
+    // An item of the old Festival rarity (it was one once), a job with a snapshot of it, a blueprint
+    // without its level, and a loot record that is not a record at all.
+    (bad.items[0] as unknown as { rarity: string }).rarity = 'festival';
+    const job = bad.jobs[0];
+    if (job !== undefined) {
+      (job as unknown as { input: unknown }).input = {
+        items: [{ baseId: 'x', rarity: 'festival' }],
+      };
+    }
+    delete (bad.blueprints[0] as unknown as Record<string, unknown>)['needsCraftingLevel'];
+    (bad.grants as unknown[])[0] = 'garbage';
+    const parsed = parseGearState(bad);
+    expect(parsed.items).toHaveLength(gearState.items.length - 1);
+    expect(parsed.items.some((i) => i.id === gearState.items[0]?.id)).toBe(false);
+    expect(parsed.jobs).toHaveLength(gearState.jobs.length - 1);
+    expect(parsed.blueprints).toHaveLength(gearState.blueprints.length - 1);
+    expect(parsed.grants).toHaveLength(gearState.grants.length - 1);
+    // Everything else comes through as sent.
+    expect(parsed.balances).toEqual(gearState.balances);
+    expect(parsed.parts).toEqual(gearState.parts);
+    // Each odd entry was logged, by number and id and never by contents.
+    expect(quiet.messages.some((m) => m.includes('unreadable item'))).toBe(true);
+    expect(quiet.messages.some((m) => m.includes(gearState.items[0]?.id ?? 'no id'))).toBe(true);
+    expect(quiet.messages.some((m) => m.includes('unreadable job'))).toBe(true);
+    expect(quiet.messages.some((m) => m.includes('unreadable blueprint'))).toBe(true);
+    expect(quiet.messages.some((m) => m.includes('unreadable loot record'))).toBe(true);
+    expect(quiet.messages.some((m) => m.includes('festival'))).toBe(false);
+    quiet.restore();
+    // The view as a whole is still checked: a missing balance or a list that is not a list throws.
+    const noBalances = copy() as unknown as Record<string, unknown>;
+    delete noBalances['balances'];
+    expect(() => parseGearState(noBalances)).toThrow();
+    const noList = copy() as unknown as Record<string, unknown>;
+    noList['items'] = 'nope';
+    expect(() => parseGearState(noList)).toThrow();
   });
 
   it('knows a Festival piece by its base, not by a rarity', () => {

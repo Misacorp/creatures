@@ -31,7 +31,15 @@ import type {
   StartJobResult,
   WornGear,
 } from './gear-types';
-import { isArrayOf, isCount, isInt, isNullableStr, isRecord, isStr } from './parse-core';
+import {
+  isArrayOf,
+  isCount,
+  isInt,
+  isNullableStr,
+  isRecord,
+  isStr,
+  keepReadable,
+} from './parse-core';
 
 export const isRarity = (value: unknown): value is GearRarity =>
   (GEAR_RARITIES as readonly unknown[]).includes(value);
@@ -335,8 +343,19 @@ function isNotice(value: unknown): value is ConversionNotice {
   );
 }
 
-/** Checks `GET /api/gear` (and the `gear` view of every action). Throws when the shape is wrong. */
+/**
+ * Checks `GET /api/gear` (and the `gear` view of every action). Throws when the shape of the view as a
+ * whole is wrong. The four lists a player's own history fills (items, jobs, blueprints and loot records)
+ * degrade per entry: an entry the client cannot read is left out and logged, and the rest of the Workshop
+ * is shown, so one odd old item never blanks the screen.
+ */
 export function parseGearState(data: unknown): GearState {
+  const items = isRecord(data) ? keepReadable(data['items'], isGearItem, 'item') : null;
+  const blueprints = isRecord(data)
+    ? keepReadable(data['blueprints'], isBlueprint, 'blueprint')
+    : null;
+  const jobs = isRecord(data) ? keepReadable(data['jobs'], isJob, 'job') : null;
+  const grants = isRecord(data) ? keepReadable(data['grants'], isGrantRecord, 'loot record') : null;
   if (
     !isRecord(data) ||
     !isInt(data['serverNow']) ||
@@ -347,21 +366,21 @@ export function parseGearState(data: unknown): GearState {
     !isCount(data['inventory']['cap']) ||
     !isCount(data['inventory']['used']) ||
     !isCount(data['inventory']['reserved']) ||
-    !isArrayOf(data['items'], isGearItem) ||
+    items === null ||
     !isSlotOpens(data['slotOpens']) ||
     !isPartCounts(data['parts']) ||
-    !isArrayOf(data['blueprints'], isBlueprint) ||
-    !isArrayOf(data['jobs'], isJob) ||
+    blueprints === null ||
+    jobs === null ||
     !isRecord(data['slots']) ||
     !isCount(data['slots']['total']) ||
     !isCount(data['slots']['used']) ||
     !isArrayOf(data['skills'], isSkill) ||
-    !isArrayOf(data['grants'], isGrantRecord) ||
+    grants === null ||
     !(data['notice'] === null || isNotice(data['notice']))
   ) {
     throw new Error('the server returned an unexpected gear view');
   }
-  return data as unknown as GearState;
+  return { ...data, items, blueprints, jobs, grants } as unknown as GearState;
 }
 
 /** A worn item as the collection view lists it on a creature. */
