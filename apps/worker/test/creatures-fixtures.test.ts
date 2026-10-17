@@ -104,8 +104,8 @@ describe('the creatures fixtures match what the server sends', () => {
     expect(recommendedAll.results.length).toBeGreaterThan(1);
     expect(recommendedAll.results.every((x) => x.auto)).toBe(true);
     expect(recommendedAll.state.pending).toHaveLength(0);
-    // Slotting from the book costs the 10 Bait the rules say, and fills the slot.
-    expect(slot.state.balances.bait).toBe(chooseTeach.state.balances.bait - 10);
+    // Slotting from the book costs the 10 Bait the rules say, and fills the slot (the scenario slots twice).
+    expect(slot.state.balances.bait).toBe(chooseTeach.state.balances.bait - 20);
     expect(slot.result.slot).toBe(1);
     // Creatures carry slots, the book and a golden entry; the Bigger Splash stayed in the book.
     const splashet = stateAfter.creatures.find((c) => c.species === 'splashet');

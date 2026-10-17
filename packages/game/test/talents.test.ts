@@ -511,12 +511,14 @@ describe('the duplicate choice', () => {
     expect(bookHolds(book, roll('hard-to-move'))).toBe(false);
   });
 
-  it('offers Teach when a slot is open and the book lacks the talent (or it is golden and the book has none)', () => {
+  it('offers Teach when the book lacks the talent (or it is golden and the book has only the normal one), slots or not', () => {
     const c = creature({ book: [roll('mossy-bed')] });
     expect(canTeach(c, roll('hard-to-move'))).toBe(true);
     expect(canTeach(c, roll('mossy-bed'))).toBe(false);
     expect(canTeach(c, roll('mossy-bed', true))).toBe(true);
-    expect(canTeach(creature({ slots: [] }), roll('hard-to-move'))).toBe(false);
+    // Teach fills the book, so it does not need an open slot.
+    expect(canTeach(creature({ slots: [] }), roll('hard-to-move'))).toBe(true);
+    expect(canTeach(creature({ slots: [null] }), roll('hard-to-move'))).toBe(true);
     expect(teachOffered([c, creature({ id: 'c2' })], roll('mossy-bed'))).toBe(true);
     expect(teachOffered([c], roll('mossy-bed'))).toBe(false);
   });
@@ -569,7 +571,6 @@ describe('the duplicate choice', () => {
     expect(recommend(roll('hard-to-move'), [open], false)).toEqual({
       choice: 'teach',
       creatureId: 'c1',
-      slot: 1,
     });
   });
 
@@ -577,14 +578,14 @@ describe('the duplicate choice', () => {
     const weak = roll('sunny-nap'); // rest between dungeon rooms
     const strong = roll('hard-to-move'); // a Guard's armor +5 pt
     const held = creature({ slots: [weak], book: [weak] });
-    expect(recommend(strong, [held], false)).toMatchObject({ choice: 'teach', slot: 1 });
+    expect(recommend(strong, [held], false)).toEqual({ choice: 'teach', creatureId: 'c1' });
     // The other way round it is not better: Fuse instead.
     const heldStrong = creature({ slots: [strong], book: [strong] });
     expect(recommend(weak, [heldStrong], false)).toEqual({ choice: 'fuse', creatureId: 'c1' });
     // A golden version of what is held is better than the normal one.
-    expect(recommend(roll('hard-to-move', true), [heldStrong], false)).toMatchObject({
+    expect(recommend(roll('hard-to-move', true), [heldStrong], false)).toEqual({
       choice: 'teach',
-      slot: 1,
+      creatureId: 'c1',
     });
   });
 
@@ -614,18 +615,26 @@ describe('the duplicate choice', () => {
     });
   });
 
-  it('picks the creature and slot that gain most, ties to the earlier', () => {
+  it('picks the creature that gains most, ties to the earlier; Teach carries no slot', () => {
     const a = creature({ id: 'a', slots: [roll('mossy-bed')], book: [roll('mossy-bed')] });
     const b = creature({ id: 'b', slots: [null] });
-    expect(recommend(roll('hard-to-move'), [a, b], false)).toMatchObject({
+    expect(recommend(roll('hard-to-move'), [a, b], false)).toEqual({
       choice: 'teach',
       creatureId: 'b',
-      slot: 1,
     });
     const twin = creature({ id: 'c', slots: [null] });
     expect(recommend(roll('hard-to-move'), [twin, b], false)).toMatchObject({ creatureId: 'c' });
     const two = creature({ slots: [roll('mossy-bed'), null], book: [roll('mossy-bed')] });
-    expect(recommend(roll('hard-to-move'), [two], false)).toMatchObject({ slot: 2 });
+    expect(recommend(roll('hard-to-move'), [two], false)).toEqual({
+      choice: 'teach',
+      creatureId: 'c1',
+    });
+    // A book that already holds the talent is never taught it again.
+    const holder = creature({ id: 'h', slots: [null], book: [roll('hard-to-move')] });
+    expect(recommend(roll('hard-to-move'), [holder], false)).toEqual({
+      choice: 'fuse',
+      creatureId: 'h',
+    });
   });
 
   it('releases for parts of its rarity, a shard of its element, and never Bait', () => {

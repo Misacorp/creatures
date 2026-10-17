@@ -61,14 +61,14 @@ export const DismissLevelResetBodySchema = v.strictObject({});
 
 /**
  * Settling a pending duplicate (the card is in the path, the player is the session's). Teach and Fuse name
- * the creature of the line that gets it (and Teach the slot, 1 to 3: the server checks it is open);
- * `recommended` takes the card's Recommended choice.
+ * the creature of the line that gets it (Teach puts the talent into its Talent Book; a `slot` an old
+ * client still sends is accepted and ignored); `recommended` takes the card's Recommended choice.
  */
 export const CatchChoiceBodySchema = v.variant('choice', [
   v.strictObject({
     choice: v.literal('teach'),
     creatureId: IdSchema,
-    slot: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(3)),
+    slot: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(3))),
     idempotencyKey: IdempotencyKeySchema,
   }),
   v.strictObject({

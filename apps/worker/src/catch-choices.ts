@@ -1,7 +1,7 @@
 /**
  * The duplicate choice (docs/design/gear-and-creatures-v2.md section 8.2) and the Talent Book. A catch
  * of a line the player owns arrives as a pending card with the talent it rolled at the claim; the player
- * answers **Teach** (its talent into a slot of their creature of that line), **Fuse** (one fusion
+ * answers **Teach** (its talent into the Talent Book of their creature of that line), **Fuse** (one fusion
  * step), **Release** (parts, never Bait) or **Keep** (a second creature, only for a line with a branch
  * they do not own). Up to `RULES.talents.maxPending` cards wait; the next one settles the oldest with
  * Recommended. Slotting a talent from a creature's book costs Bait and is instant.
@@ -25,7 +25,6 @@ import {
   rollTalent,
   slotOpensAt,
   slotsOf,
-  slotsOpen,
   type DuplicateChoice,
   lineBranches,
   content,
@@ -106,8 +105,6 @@ export interface ChoiceResult {
   species: string;
   /** Teach and Fuse: the creature that got it. Keep: the new creature. */
   creatureId?: string;
-  /** Teach: the slot. */
-  slot?: number;
   talent: TalentRoll;
   /** Fuse: the creature's fusion count now. */
   fusionCount?: number;
@@ -123,7 +120,7 @@ export interface SlotResult {
 }
 
 export type ChoiceInput =
-  | { choice: 'teach'; creatureId: string; slot: number }
+  | { choice: 'teach'; creatureId: string }
   | { choice: 'fuse'; creatureId: string }
   | { choice: 'release' }
   | { choice: 'keep' }
@@ -290,7 +287,6 @@ export class CatchChoices {
       pendingId,
       input.choice,
       'creatureId' in input ? input.creatureId : null,
-      'slot' in input ? input.slot : null,
     ]);
     return atomically(this.deps.storage, () =>
       runKeyed(
@@ -346,8 +342,8 @@ export class CatchChoices {
     if (input.choice === 'recommended') {
       const rec = recommend(roll, creatures, keep);
       choice =
-        rec.choice === 'teach' && rec.creatureId !== undefined && rec.slot !== undefined
-          ? { choice: 'teach', creatureId: rec.creatureId, slot: rec.slot }
+        rec.choice === 'teach' && rec.creatureId !== undefined
+          ? { choice: 'teach', creatureId: rec.creatureId }
           : rec.choice === 'fuse' && rec.creatureId !== undefined
             ? { choice: 'fuse', creatureId: rec.creatureId }
             : { choice: rec.choice === 'keep' ? 'keep' : 'release' };
@@ -361,24 +357,14 @@ export class CatchChoices {
         if (!canTeach(target, roll)) {
           throw new GameError(409, 'teach_not_offered');
         }
-        const open = slotsOpen(target.rarity, target.level);
-        if (choice.slot < 1 || choice.slot > open) {
-          const opens = slotOpensAt(target.rarity, choice.slot);
-          throw new GameError(
-            409,
-            'slot_closed',
-            opens === null ? 'no_such_slot' : `needs_level_${String(opens)}`,
-          );
-        }
-        // The talent that sat in the slot stays in the book; the new one takes the slot.
-        if (!holdTalent(this.sql, target.id, roll, choice.slot, now)) {
+        // Into the Talent Book, never a slot: the player slots it later from the book (for Bait).
+        if (!holdTalent(this.sql, target.id, roll, null, now)) {
           throw new GameError(409, 'teach_not_offered');
         }
         result = {
           ...base,
           choice: 'teach',
           creatureId: target.id,
-          slot: choice.slot,
         };
         break;
       }

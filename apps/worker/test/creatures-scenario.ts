@@ -1,6 +1,6 @@
 /**
  * One scripted play-through of the duplicate choice and the Talent Book through the real routes: four
- * trips that bring duplicates (with talents the script decides), then Teach (a golden talent into a slot),
+ * trips that bring duplicates (with talents the script decides), then Teach (a golden talent into the book),
  * Fuse, Release and Recommended, "apply Recommended to all", slotting a talent from the book for Bait, and
  * the errors a player can hit. `creatures-fixtures.test.ts` checks that the server still sends the shapes of
  * the files in `apps/activity/src/fixtures`, which were captured from this scenario
@@ -149,11 +149,10 @@ export async function runCreaturesScenario(ctx: CoreContext, talentRng: Rng): Pr
     { id: string },
   ];
 
-  // Teach a golden talent: it takes the Splashet's one slot, and the talent it replaces stays in the book.
+  // Teach a golden talent: it goes into the Splashet's Talent Book, unslotted; the slot is untouched.
   await record('creatures-choose-teach', 'POST', `/api/catches/${golden.id}/choose`, {
     choice: 'teach',
     creatureId: splashet,
-    slot: 1,
     idempotencyKey: newKey(),
   });
   // Fuse one, release one.
@@ -171,7 +170,6 @@ export async function runCreaturesScenario(ctx: CoreContext, talentRng: Rng): Pr
   await fail('POST', `/api/catches/${again.id}/choose`, {
     choice: 'teach',
     creatureId: splashet,
-    slot: 1,
     idempotencyKey: newKey(),
   }); // the book has that talent already
   await fail('POST', `/api/catches/${again.id}/choose`, {
@@ -209,7 +207,16 @@ export async function runCreaturesScenario(ctx: CoreContext, talentRng: Rng): Pr
     idempotencyKey: newKey(),
   });
 
-  // The Talent Book: Splashes First goes back into the slot, for Bait.
+  // The Talent Book: the taught golden Bigger Splash takes the slot (not recorded), then Splashes First
+  // goes back into it, each for Bait.
+  const swap = await call('POST', `/api/creatures/${splashet}/talents/slot`, {
+    talentId: 'bigger-splash',
+    golden: true,
+    slot: 1,
+    idempotencyKey: newKey(),
+  });
+  if (swap.status !== 200)
+    throw new Error(`slotting the golden talent failed: ${JSON.stringify(swap.body)}`);
   await record('creatures-slot', 'POST', `/api/creatures/${splashet}/talents/slot`, {
     talentId: 'splashes-first',
     golden: false,

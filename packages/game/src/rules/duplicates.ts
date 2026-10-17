@@ -1,6 +1,7 @@
 /**
  * The duplicate choice (docs/design/gear-and-creatures-v2.md section 8.2). A duplicate catch arrives as a
- * card with its rolled talent and four buttons: **Teach** its talent to your creature of that line,
+ * card with its rolled talent and four buttons: **Teach** its talent to your creature of that line (it goes
+ * into the creature's Talent Book, never into a slot; slotting it later costs Bait),
  * **Fuse** it (one fusion step, up to 5), **Release** it for parts (never Bait), or **Keep** it as a second
  * creature of a line that has a branch you do not own yet. Pure functions: what is offered and what
  * Recommended is. The server decides, checks and applies every choice (`apps/worker/src/catch-choices.ts`).
@@ -39,9 +40,12 @@ export function bookHolds(book: readonly TalentRoll[], roll: TalentRoll): boolea
   return book.some((b) => b.talentId === roll.talentId && (b.golden || !roll.golden));
 }
 
-/** True if this creature can learn the rolled talent now: it has an open slot and the book lacks it. */
+/**
+ * True if this creature can learn the rolled talent now: its Talent Book lacks it (a golden one is
+ * new to a book that holds only the normal one). Teach never needs an open slot: it fills the book.
+ */
 export function canTeach(creature: LineCreature, roll: TalentRoll): boolean {
-  return creature.slots.length > 0 && !bookHolds(creature.book, roll);
+  return !bookHolds(creature.book, roll);
 }
 
 /** True if any creature of the line can be taught the talent (Teach is offered). */
@@ -70,54 +74,53 @@ export function keepOfferedFor(line: string, owned: readonly string[]): boolean 
   return keepOffered(lineBranches(content, line), owned);
 }
 
-/** What Recommended is: the choice, and for Teach and Fuse the creature (and for Teach the slot). */
+/** What Recommended is: the choice, and for Teach and Fuse the creature (Teach goes to its Talent Book). */
 export interface Recommendation {
   choice: DuplicateChoice;
   creatureId?: string;
-  /** Teach only: the slot (1-based) the talent goes to. */
-  slot?: number;
 }
 
-/** The best slot of a creature for a talent: the one that gains most (an empty slot gains all of it). */
-function bestSlot(creature: LineCreature, roll: TalentRoll): { slot: number; gain: number } | null {
+/**
+ * What a creature would gain from a talent in its best slot (an empty slot gains all of it): the
+ * measure of whether the talent is worth having. Null when the book already holds it.
+ */
+function bestGain(creature: LineCreature, roll: TalentRoll): number | null {
   const def = talentDef(roll.talentId);
   if (def === undefined || !canTeach(creature, roll)) return null;
   const wearer = { role: creature.role, element: creature.element, stats: creature.stats };
   const fresh = talentScore(foldTalent(def, roll.golden), wearer);
-  let best: { slot: number; gain: number } | null = null;
-  creature.slots.forEach((held, i) => {
+  let best: number | null = null;
+  for (const held of creature.slots) {
     let occupied = 0;
     if (held !== null) {
       const heldDef = talentDef(held.talentId);
       occupied = heldDef === undefined ? 0 : talentScore(foldTalent(heldDef, held.golden), wearer);
     }
     const gain = fresh - occupied;
-    if (best === null || gain > best.gain) best = { slot: i + 1, gain };
-  });
+    if (best === null || gain > best) best = gain;
+  }
   return best;
 }
 
 /**
  * The choice the card marks Recommended (and what a pending duplicate falls back to when the queue
- * is full): **Teach** when the talent is new to the book (or golden) and better than what an open slot
- * holds, else **Keep** when a branch is missing, else **Fuse** until the creature has all its fusions,
- * else **Release**. Pure and deterministic: the best gain wins, ties go to the earlier creature and slot.
+ * is full): **Teach** when the talent is new to the book (or golden) and would be better than what a
+ * slot holds (it goes into the Talent Book; the player slots it later), else **Keep** when a branch is missing, else **Fuse** until the creature has all its fusions,
+ * else **Release**. Pure and deterministic: the best gain wins, ties go to the earlier creature.
  */
 export function recommend(
   talent: TalentRoll,
   creatures: readonly LineCreature[],
   keep: boolean,
 ): Recommendation {
-  let best: { creatureId: string; slot: number; gain: number } | null = null;
+  let best: { creatureId: string; gain: number } | null = null;
   for (const creature of creatures) {
-    const found = bestSlot(creature, talent);
-    if (found !== null && (best === null || found.gain > best.gain)) {
-      best = { creatureId: creature.id, slot: found.slot, gain: found.gain };
+    const gain = bestGain(creature, talent);
+    if (gain !== null && (best === null || gain > best.gain)) {
+      best = { creatureId: creature.id, gain };
     }
   }
-  if (best !== null && best.gain > 0) {
-    return { choice: 'teach', creatureId: best.creatureId, slot: best.slot };
-  }
+  if (best !== null && best.gain > 0) return { choice: 'teach', creatureId: best.creatureId };
   if (keep) return { choice: 'keep' };
   const fuser = creatures.find((c) => fuseOnce(c.fusionCount) !== null);
   if (fuser !== undefined) return { choice: 'fuse', creatureId: fuser.id };

@@ -5,7 +5,7 @@
   "starterOptions": ["splashet", "cindle", "sproutle"],
   "creatures": [
     {
-      "id": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+      "id": "d745af61-ac5a-4579-a429-7595c1e017f5",
       "species": "cindle",
       "line": "cindle",
       "level": 8,
@@ -69,7 +69,7 @@
       "evolution": { "toSpecies": "pyrelynx", "level": 15, "essence": 20, "available": false }
     },
     {
-      "id": "7e51c2db-5676-4299-b5a1-d3d6f185c5df",
+      "id": "3b882ba7-ef44-472f-a9cf-8c0fd8d70da5",
       "species": "splashet",
       "line": "splashet",
       "level": 8,
@@ -133,7 +133,7 @@
       "evolution": { "toSpecies": "tidewing", "level": 15, "essence": 20, "available": false }
     },
     {
-      "id": "76418ccf-d014-4bb4-b22c-40f446b61a97",
+      "id": "ee180c2e-86da-4dc4-b714-6fcaedbcf4cc",
       "species": "sproutle",
       "line": "sproutle",
       "level": 8,
@@ -199,7 +199,7 @@
   ],
   "pending": [
     {
-      "id": "bde5101e-15e1-438c-9fdc-6eae9bfee247",
+      "id": "dacc7593-8cc1-4e3c-8036-5b359c9a34c1",
       "species": "splashet",
       "line": "splashet",
       "shiny": false,
@@ -214,20 +214,16 @@
         "idle": false
       },
       "offered": {
-        "teach": ["7e51c2db-5676-4299-b5a1-d3d6f185c5df"],
-        "fuse": ["7e51c2db-5676-4299-b5a1-d3d6f185c5df"],
+        "teach": ["3b882ba7-ef44-472f-a9cf-8c0fd8d70da5"],
+        "fuse": ["3b882ba7-ef44-472f-a9cf-8c0fd8d70da5"],
         "release": true,
         "keep": false
       },
       "releases": { "scrap": 3 },
-      "recommended": {
-        "choice": "teach",
-        "creatureId": "7e51c2db-5676-4299-b5a1-d3d6f185c5df",
-        "slot": 1
-      }
+      "recommended": { "choice": "teach", "creatureId": "3b882ba7-ef44-472f-a9cf-8c0fd8d70da5" }
     },
     {
-      "id": "f310aafb-bace-4420-bf1d-4bf695be64bb",
+      "id": "b380c121-2666-44db-a42a-d6df1b7c17a7",
       "species": "splashet",
       "line": "splashet",
       "shiny": false,
@@ -242,20 +238,16 @@
         "idle": false
       },
       "offered": {
-        "teach": ["7e51c2db-5676-4299-b5a1-d3d6f185c5df"],
-        "fuse": ["7e51c2db-5676-4299-b5a1-d3d6f185c5df"],
+        "teach": ["3b882ba7-ef44-472f-a9cf-8c0fd8d70da5"],
+        "fuse": ["3b882ba7-ef44-472f-a9cf-8c0fd8d70da5"],
         "release": true,
         "keep": false
       },
       "releases": { "scrap": 3 },
-      "recommended": {
-        "choice": "teach",
-        "creatureId": "7e51c2db-5676-4299-b5a1-d3d6f185c5df",
-        "slot": 1
-      }
+      "recommended": { "choice": "teach", "creatureId": "3b882ba7-ef44-472f-a9cf-8c0fd8d70da5" }
     },
     {
-      "id": "3d9f9bb1-cf4b-4a7a-865f-bdbd2ce4f2cf",
+      "id": "65daa282-d653-414c-b544-3c10edaefd9b",
       "species": "splashet",
       "line": "splashet",
       "shiny": false,
@@ -265,21 +257,21 @@
         "id": "puddle-hopper",
         "name": "Puddle Hopper",
         "golden": false,
-        "text": "Area ward −7%",
+        "text": "Area ward \u22127%",
         "about": "Area hits do less damage to the wearer.",
         "idle": false
       },
       "offered": {
-        "teach": ["7e51c2db-5676-4299-b5a1-d3d6f185c5df"],
-        "fuse": ["7e51c2db-5676-4299-b5a1-d3d6f185c5df"],
+        "teach": ["3b882ba7-ef44-472f-a9cf-8c0fd8d70da5"],
+        "fuse": ["3b882ba7-ef44-472f-a9cf-8c0fd8d70da5"],
         "release": true,
         "keep": false
       },
       "releases": { "scrap": 3 },
-      "recommended": { "choice": "fuse", "creatureId": "7e51c2db-5676-4299-b5a1-d3d6f185c5df" }
+      "recommended": { "choice": "fuse", "creatureId": "3b882ba7-ef44-472f-a9cf-8c0fd8d70da5" }
     },
     {
-      "id": "9f0910ea-27b8-4e8f-9c9e-366b0b190fb9",
+      "id": "6553d751-d270-4d5b-9deb-75beedb5022b",
       "species": "splashet",
       "line": "splashet",
       "shiny": false,
@@ -295,19 +287,19 @@
       },
       "offered": {
         "teach": [],
-        "fuse": ["7e51c2db-5676-4299-b5a1-d3d6f185c5df"],
+        "fuse": ["3b882ba7-ef44-472f-a9cf-8c0fd8d70da5"],
         "release": true,
         "keep": false
       },
       "releases": { "scrap": 3 },
-      "recommended": { "choice": "fuse", "creatureId": "7e51c2db-5676-4299-b5a1-d3d6f185c5df" }
+      "recommended": { "choice": "fuse", "creatureId": "3b882ba7-ef44-472f-a9cf-8c0fd8d70da5" }
     }
   ],
   "bookSlotBait": 10,
   "expeditions": [
     {
-      "id": "8af4c928-e52c-4404-af4b-13e9cd21e980",
-      "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+      "id": "ab6d56b9-447e-4dd5-878c-2e9a096f7498",
+      "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
       "duration": "short",
       "supplies": "basic",
       "kit": [],
@@ -329,7 +321,7 @@
             "shiny": false,
             "firstOnServer": false,
             "outcome": "duplicate",
-            "pendingId": "9f0910ea-27b8-4e8f-9c9e-366b0b190fb9",
+            "pendingId": "6553d751-d270-4d5b-9deb-75beedb5022b",
             "talent": {
               "id": "splashes-first",
               "name": "Splashes First",
@@ -343,7 +335,7 @@
         "loot": { "gear": [], "converted": [], "parts": {}, "blueprints": [] },
         "xp": { "gained": 4, "total": 16, "rank": 1, "rankBefore": 1 },
         "experience": {
-          "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+          "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
           "gained": 20,
           "treat": false,
           "levelBefore": 8,
@@ -359,8 +351,8 @@
       "pushOn": null
     },
     {
-      "id": "d296a3b6-de4f-4f7b-8874-1e92ad82226d",
-      "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+      "id": "6444d600-4c27-48fb-8990-84eb2b215fd4",
+      "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
       "duration": "short",
       "supplies": "basic",
       "kit": [],
@@ -382,12 +374,12 @@
             "shiny": false,
             "firstOnServer": false,
             "outcome": "duplicate",
-            "pendingId": "3d9f9bb1-cf4b-4a7a-865f-bdbd2ce4f2cf",
+            "pendingId": "65daa282-d653-414c-b544-3c10edaefd9b",
             "talent": {
               "id": "puddle-hopper",
               "name": "Puddle Hopper",
               "golden": false,
-              "text": "Area ward −7%",
+              "text": "Area ward \u22127%",
               "about": "Area hits do less damage to the wearer.",
               "idle": false
             }
@@ -396,7 +388,7 @@
         "loot": { "gear": [], "converted": [], "parts": {}, "blueprints": [] },
         "xp": { "gained": 4, "total": 12, "rank": 1, "rankBefore": 1 },
         "experience": {
-          "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+          "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
           "gained": 20,
           "treat": false,
           "levelBefore": 8,
@@ -413,8 +405,8 @@
       "pushOn": null
     },
     {
-      "id": "ff0ed4ee-ef0c-40b5-9113-6c58ce2e9c97",
-      "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+      "id": "55d34129-c60e-4f4b-8c72-ecf9af01ee79",
+      "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
       "duration": "short",
       "supplies": "basic",
       "kit": [],
@@ -436,7 +428,7 @@
             "shiny": false,
             "firstOnServer": false,
             "outcome": "duplicate",
-            "pendingId": "f310aafb-bace-4420-bf1d-4bf695be64bb",
+            "pendingId": "b380c121-2666-44db-a42a-d6df1b7c17a7",
             "talent": {
               "id": "bigger-splash",
               "name": "Bigger Splash",
@@ -450,7 +442,7 @@
         "loot": { "gear": [], "converted": [], "parts": {}, "blueprints": [] },
         "xp": { "gained": 4, "total": 8, "rank": 1, "rankBefore": 1 },
         "experience": {
-          "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+          "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
           "gained": 20,
           "treat": false,
           "levelBefore": 8,
@@ -466,8 +458,8 @@
       "pushOn": null
     },
     {
-      "id": "bbf3423e-80a2-450c-ac21-a42b62466568",
-      "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+      "id": "b6c12d85-1085-459e-b886-c8dee12d644f",
+      "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
       "duration": "short",
       "supplies": "basic",
       "kit": [],
@@ -489,7 +481,7 @@
             "shiny": false,
             "firstOnServer": true,
             "outcome": "duplicate",
-            "pendingId": "bde5101e-15e1-438c-9fdc-6eae9bfee247",
+            "pendingId": "dacc7593-8cc1-4e3c-8036-5b359c9a34c1",
             "talent": {
               "id": "wet-footprints",
               "name": "Wet Footprints",
@@ -503,7 +495,7 @@
         "loot": { "gear": [], "converted": [], "parts": {}, "blueprints": [] },
         "xp": { "gained": 4, "total": 4, "rank": 1, "rankBefore": 1 },
         "experience": {
-          "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+          "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
           "gained": 20,
           "treat": false,
           "levelBefore": 8,
@@ -538,7 +530,7 @@
       "holders": ["Player 4"]
     }
   ],
-  "loungerId": "7e51c2db-5676-4299-b5a1-d3d6f185c5df",
+  "loungerId": "ee180c2e-86da-4dc4-b714-6fcaedbcf4cc",
   "loungeSpot": null,
   "timezone": "Europe/Helsinki",
   "leetSync": {

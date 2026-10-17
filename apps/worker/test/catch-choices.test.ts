@@ -1,4 +1,4 @@
-import { RULES, fuseOnce, releaseParts, slotsOpen, talentPool } from '@creatures/game';
+import { RULES, fuseOnce, releaseParts, talentPool } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { bookOf, holdTalent } from '../src/talent-store';
 import { runCore, type CoreContext } from './helpers';
@@ -22,7 +22,7 @@ interface Card {
   species: string;
   talent: { id: string; golden: boolean };
   offered: { teach: string[]; fuse: string[]; release: boolean; keep: boolean };
-  recommended: { choice: string; creatureId?: string; slot?: number };
+  recommended: { choice: string; creatureId?: string };
 }
 
 interface Api {
@@ -168,35 +168,83 @@ describe('a duplicate card', () => {
 });
 
 describe('Teach', () => {
-  it('puts the talent in the slot, keeps the old one in the book and settles the card', async () => {
+  it('puts the talent in the Talent Book, unslotted, leaves the slots as they were and settles the card', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await player(ctx, 1, ['splashet']);
         const [splashet] = p.creatureIds as [string];
         const card = p.addCard('splashet');
-        const res = await choose(p, card.id, { choice: 'teach', creatureId: splashet, slot: 1 });
+        const before = bait(ctx, p.id);
+        const res = await choose(p, card.id, { choice: 'teach', creatureId: splashet });
         expect(res.status).toBe(200);
-        expect(res.body['result']).toMatchObject({
+        expect(res.body['result']).toEqual({
           choice: 'teach',
           auto: false,
+          pendingId: card.id,
+          species: 'splashet',
           creatureId: splashet,
-          slot: 1,
           talent: { talentId: card.talentId, golden: card.golden },
         });
         const book = bookOf(ctx.sql, splashet);
-        expect(book.find((b) => b.slot === 1)?.talentId).toBe(card.talentId);
-        expect(book.find((b) => b.talentId === 'playful')?.slot).toBeNull();
+        expect(book).toHaveLength(2);
+        expect(book.find((b) => b.talentId === card.talentId)?.slot).toBeNull();
+        // Slot 1 still holds what it held.
+        expect(book.find((b) => b.slot === 1)?.talentId).toBe('playful');
         expect(count(ctx.sql, 'pending_catches')).toBe(0);
         expect(await p.pending()).toEqual([]);
         // It cost nothing and paid nothing.
+        expect(bait(ctx, p.id)).toBe(before);
         expect(parts(ctx, p.id)).toEqual({});
       },
       { talentRng: draws([1, 5]) },
     );
   });
 
-  it('is not offered for a talent the creature already has (that quality), but the golden one is', async () => {
+  it('can be slotted later from the book for the usual Bait', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, ['splashet']);
+        const [splashet] = p.creatureIds as [string];
+        give(ctx, p.id, RULES.talents.bookSlotBait);
+        const card = p.addCard('splashet');
+        await choose(p, card.id, { choice: 'teach', creatureId: splashet });
+        const slotted = await p.call('POST', `/api/creatures/${splashet}/talents/slot`, {
+          talentId: card.talentId,
+          golden: card.golden,
+          slot: 1,
+          idempotencyKey: newKey(),
+        });
+        expect(slotted.status).toBe(200);
+        expect(bait(ctx, p.id)).toBe(0);
+        expect(bookOf(ctx.sql, splashet).find((b) => b.slot === 1)?.talentId).toBe(card.talentId);
+      },
+      { talentRng: draws([1, 5]) },
+    );
+  });
+
+  it('still accepts a body that sends a slot (an old client) and ignores it', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, ['splashet']);
+        const [splashet] = p.creatureIds as [string];
+        const card = p.addCard('splashet');
+        // Slot 2 is closed at this level; the old rule refused it. It is ignored now.
+        const res = await choose(p, card.id, { choice: 'teach', creatureId: splashet, slot: 2 });
+        expect(res.status).toBe(200);
+        expect(res.body['result']).not.toHaveProperty('slot');
+        const book = bookOf(ctx.sql, splashet);
+        expect(book.find((b) => b.talentId === card.talentId)?.slot).toBeNull();
+        expect(book.find((b) => b.slot === 1)?.talentId).toBe('playful');
+        expect(book.some((b) => b.slot === 2)).toBe(false);
+      },
+      { talentRng: draws([1, 5]) },
+    );
+  });
+
+  it('is not offered for a talent the book already has (that quality), but the golden one is', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -211,79 +259,90 @@ describe('Teach', () => {
         );
         const plain = p.addCard('splashet');
         const golden = p.addCard('splashet');
+        expect(plain).toMatchObject({ talentId: 'wet-footprints', golden: false });
+        expect(golden).toMatchObject({ talentId: 'wet-footprints', golden: true });
         const cards = await p.pending();
         expect(cards.find((c) => c.id === plain.id)?.offered.teach).toEqual([]);
         expect(cards.find((c) => c.id === golden.id)?.offered.teach).toEqual([splashet]);
-        const refused = await choose(p, plain.id, {
-          choice: 'teach',
-          creatureId: splashet,
-          slot: 1,
-        });
+        const refused = await choose(p, plain.id, { choice: 'teach', creatureId: splashet });
         expect(refused.status).toBe(409);
         expect(refused.body['error']).toBe('teach_not_offered');
-        // The refusal changed nothing: the card still waits, the slot is as it was.
+        // The refusal changed nothing: the card still waits, the book and slot are as they were.
         expect((await p.pending()).map((c) => c.id)).toContain(plain.id);
+        expect(bookOf(ctx.sql, splashet)).toHaveLength(2);
         expect(bookOf(ctx.sql, splashet).find((b) => b.slot === 1)?.talentId).toBe('playful');
-        const ok = await choose(p, golden.id, { choice: 'teach', creatureId: splashet, slot: 1 });
-        expect(ok.status).toBe(200);
       },
       { talentRng: draws([1, 5], [1, 0]) },
     );
   });
 
-  it('refuses a slot the level has not opened, and a slot that does not exist', async () => {
-    await runCore(nextGuild(), async (ctx) => {
-      const p = await player(ctx, 1, ['splashet']);
-      const [splashet] = p.creatureIds as [string];
-      const card = p.addCard('splashet');
-      const early = await choose(p, card.id, { choice: 'teach', creatureId: splashet, slot: 2 });
-      expect(early.status).toBe(409);
-      expect(early.body).toMatchObject({ error: 'slot_closed', reason: 'needs_level_20' });
-      // A common creature has two slots at most.
-      const none = await choose(p, card.id, { choice: 'teach', creatureId: splashet, slot: 3 });
-      expect(none.status).toBe(409);
-      expect(none.body).toMatchObject({ error: 'slot_closed', reason: 'no_such_slot' });
-      expect(count(ctx.sql, 'pending_catches')).toBe(1);
-    });
-  });
-
-  it('opens the second slot at level 20 (the evolved form) and the third of a rare at 25', async () => {
+  it('teaches the golden roll of a talent the book holds only as normal, next to the normal one', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
-        const p = await player(ctx, 1, ['tidewing'], 20);
-        const [tidewing] = p.creatureIds as [string];
-        const card = p.addCard('splashet');
-        const res = await choose(p, card.id, { choice: 'teach', creatureId: tidewing, slot: 2 });
-        expect(res.status).toBe(200);
-        expect(bookOf(ctx.sql, tidewing).find((b) => b.slot === 2)?.talentId).toBe(card.talentId);
-        const none = await choose(p, p.addCard('splashet').id, {
-          choice: 'teach',
-          creatureId: tidewing,
-          slot: 3,
-        });
-        expect(none.body).toMatchObject({ error: 'slot_closed', reason: 'no_such_slot' });
-
-        const rare = await player(ctx, 2, ['coralynx'], 24);
-        const [coralynx] = rare.creatureIds as [string];
-        const first = rare.addCard('coralynx');
-        const early = await choose(rare, first.id, {
-          choice: 'teach',
-          creatureId: coralynx,
-          slot: 3,
-        });
-        expect(early.body).toMatchObject({ error: 'slot_closed', reason: 'needs_level_25' });
-        ctx.sql.exec('UPDATE creatures SET level = 25 WHERE id = ?', coralynx);
-        const late = await choose(rare, first.id, {
-          choice: 'teach',
-          creatureId: coralynx,
-          slot: 3,
-        });
-        expect(late.status).toBe(200);
-        expect(slotsOpen('common', 20)).toBe(2);
-        expect(slotsOpen('rare', 25)).toBe(3);
+        const p = await player(ctx, 1, ['splashet']);
+        const [splashet] = p.creatureIds as [string];
+        holdTalent(
+          ctx.sql,
+          splashet,
+          { talentId: 'wet-footprints', golden: false },
+          null,
+          ctx.clock.t,
+        );
+        const golden = p.addCard('splashet');
+        expect(golden).toMatchObject({ talentId: 'wet-footprints', golden: true });
+        const ok = await choose(p, golden.id, { choice: 'teach', creatureId: splashet });
+        expect(ok.status).toBe(200);
+        const book = bookOf(ctx.sql, splashet);
+        expect(book).toHaveLength(3);
+        expect(
+          book
+            .filter((b) => b.talentId === 'wet-footprints')
+            .map((b) => [b.golden, b.slot])
+            .sort(),
+        ).toEqual([
+          [false, null],
+          [true, null],
+        ]);
+        expect(book.find((b) => b.slot === 1)?.talentId).toBe('playful');
+        // Teaching it again is refused: the book now holds the golden one.
+        const again = p.addCard('splashet');
+        expect(again.golden).toBe(true);
+        const refused = await choose(p, again.id, { choice: 'teach', creatureId: splashet });
+        expect(refused.body['error']).toBe('teach_not_offered');
       },
-      { talentRng: draws([1, 5], [2, 5], [1, 5]) },
+      { talentRng: draws([1, 0], [1, 0]) },
+    );
+  });
+
+  it('settles Recommended Teach into the book too (the card, "recommended" and auto-settle)', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, ['splashet']);
+        const [splashet] = p.creatureIds as [string];
+        // An empty open slot: any talent that does something is worth having.
+        ctx.sql.exec('UPDATE creature_talents SET slot = NULL WHERE creature_id = ?', splashet);
+        const card = p.addCard('splashet');
+        const [view] = await p.pending();
+        expect(view?.recommended).toEqual({ choice: 'teach', creatureId: splashet });
+        const res = await choose(p, card.id, { choice: 'recommended' });
+        expect(res.status).toBe(200);
+        expect(res.body['result']).toEqual({
+          choice: 'teach',
+          auto: false,
+          pendingId: card.id,
+          species: 'splashet',
+          creatureId: splashet,
+          talent: { talentId: card.talentId, golden: card.golden },
+        });
+        const book = bookOf(ctx.sql, splashet);
+        expect(book).toHaveLength(2);
+        // The talent is in the book and the slot is still empty: Teach never slots.
+        expect(book.find((b) => b.talentId === card.talentId)?.slot).toBeNull();
+        expect(book.some((b) => b.slot !== null)).toBe(false);
+      },
+      { talentRng: draws([1, 5]) },
     );
   });
 
@@ -293,16 +352,14 @@ describe('Teach', () => {
       const other = await player(ctx, 2, ['splashet']);
       const [splashet, cindle] = p.creatureIds as [string, string];
       const card = p.addCard('splashet');
-      const wrongLine = await choose(p, card.id, { choice: 'teach', creatureId: cindle, slot: 1 });
+      const wrongLine = await choose(p, card.id, { choice: 'teach', creatureId: cindle });
       const notYours = await choose(p, card.id, {
         choice: 'teach',
         creatureId: other.creatureIds[0],
-        slot: 1,
       });
       const unknown = await choose(p, card.id, {
         choice: 'teach',
         creatureId: crypto.randomUUID(),
-        slot: 1,
       });
       for (const res of [wrongLine, notYours, unknown]) {
         expect(res.status).toBe(404);
@@ -609,7 +666,7 @@ describe('answering is checked', () => {
         { choice: 'release', idempotencyKey: 'bad key!' },
         { choice: 'nonsense', idempotencyKey: newKey() },
         { choice: 'fuse', idempotencyKey: newKey() },
-        { choice: 'teach', creatureId: splashet, idempotencyKey: newKey() },
+        { choice: 'teach', idempotencyKey: newKey() },
         { choice: 'teach', creatureId: splashet, slot: 0, idempotencyKey: newKey() },
         { choice: 'teach', creatureId: splashet, slot: 4, idempotencyKey: newKey() },
         { choice: 'teach', creatureId: 'not-an-id', slot: 1, idempotencyKey: newKey() },
@@ -858,8 +915,8 @@ describe('analytics of the duplicate choice and the Talent Book', () => {
         give(ctx, p.id, 30);
         const a = p.addCard('splashet');
         const key = newKey();
-        await choose(p, a.id, { choice: 'teach', creatureId: splashet, slot: 1 }, key);
-        await choose(p, a.id, { choice: 'teach', creatureId: splashet, slot: 1 }, key);
+        await choose(p, a.id, { choice: 'teach', creatureId: splashet }, key);
+        await choose(p, a.id, { choice: 'teach', creatureId: splashet }, key);
         const b = p.addCard('splashet');
         await choose(p, b.id, { choice: 'release' });
         p.addCard('splashet');
@@ -871,11 +928,11 @@ describe('analytics of the duplicate choice and the Talent Book', () => {
         ]);
         // Three cards rolled a talent each.
         expect(events(ctx, 'talent_roll')).toHaveLength(3);
-        const body = { talentId: 'playful', golden: false, slot: 1, idempotencyKey: newKey() };
+        const body = { talentId: a.talentId, golden: false, slot: 1, idempotencyKey: newKey() };
         await p.call('POST', `/api/creatures/${splashet}/talents/slot`, body);
         await p.call('POST', `/api/creatures/${splashet}/talents/slot`, body);
         expect(events(ctx, 'talent_slot')).toEqual([
-          { species: 'splashet', talent: 'playful', golden: false, slot: 1 },
+          { species: 'splashet', talent: a.talentId, golden: false, slot: 1 },
         ]);
       },
       { talentRng: draws([1, 5], [2, 5], [3, 5]) },
