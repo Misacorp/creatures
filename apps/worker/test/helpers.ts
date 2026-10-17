@@ -203,6 +203,9 @@ export async function runCore<R>(
       talentRng: createSeededRng('test-talents'),
       // Off by default so other features' tests keep exact Bait balances; allowance tests turn it on.
       dailyAllowance: false,
+      // Off by default so other features' tests keep exact trip times, loot and experience; the weather
+      // tests turn it on.
+      weather: false,
       ...(typeof options === 'function' ? options(clock) : options),
     });
     const request = async (secret: string, path = '/api/me', method = 'GET', body?: unknown) =>
@@ -241,13 +244,28 @@ export const GEAR_TABLES = [
  * The schema version of a fresh database. Tests that check it use this constant, so a new migration
  * changes one number here (and adds an undo step below), not a dozen tests.
  */
-export const LATEST_SCHEMA_VERSION = 30;
+export const LATEST_SCHEMA_VERSION = 31;
+
+/**
+ * Puts a database back to before migration 31 (Boons and Omens): the weather table goes and trips lose
+ * the weather stored with them.
+ */
+export function undoWeatherMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS weather_days');
+  // A test may already have dropped a table (the version 3 test does): only what is there goes.
+  const present = sql
+    .exec("SELECT 1 FROM pragma_table_info('expeditions') WHERE name = 'weather_json'")
+    .toArray();
+  if (present.length > 0) sql.exec('ALTER TABLE expeditions DROP COLUMN weather_json');
+  sql.exec('DELETE FROM schema_version WHERE version = 31');
+}
 
 /**
  * Puts a database back to before migration 30 (creature experience and ribbons, the trip treat and the
  * pity counters): the added columns go.
  */
 export function undoCreaturesBMigration(sql: SqlStorage): void {
+  undoWeatherMigration(sql);
   // A test may already have dropped a table (the version 3 test does): only what is there goes.
   const drop = (table: string, column: string): void => {
     const present = sql

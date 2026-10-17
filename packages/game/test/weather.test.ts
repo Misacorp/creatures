@@ -17,7 +17,7 @@ import {
   raidExperience,
   rollTripLoot,
   tripExperience,
-  tripTimeMs,
+  weatherTimeMs,
   tripWeather,
   weatherBossAttacks,
   weatherContent,
@@ -415,10 +415,10 @@ describe('trips', () => {
     expect(
       tripWeather(day('market-day', 'heavy-rain', 10_000, 20_000), trip('tidepools')).timeBp,
     ).toBe(2_000);
-    expect(tripTimeMs(3_600_000, -1_000)).toBe(3_240_000);
-    expect(tripTimeMs(3_600_000, 1_500)).toBe(4_140_000);
-    expect(tripTimeMs(3_600_000, 0)).toBe(3_600_000);
-    expect(tripTimeMs(3_600_000, -20_000)).toBe(60_000);
+    expect(weatherTimeMs(3_600_000, -1_000)).toBe(3_240_000);
+    expect(weatherTimeMs(3_600_000, 1_500)).toBe(4_140_000);
+    expect(weatherTimeMs(3_600_000, 0)).toBe(3_600_000);
+    expect(weatherTimeMs(3_600_000, -20_000)).toBe(60_000);
   });
 
   it('High Water and Bonfire Night: one extra roll on 12 h trips and longer, at their places only', () => {

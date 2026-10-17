@@ -369,8 +369,8 @@ export function tripWeather(
   return out;
 }
 
-/** The time of a trip after the day's effect (`timeBp`), at least a minute. */
-export function tripTimeMs(ms: number, timeBp: number): number {
+/** A time (a trip, a Workshop job) after the day's effect (`timeBp`: negative is shorter), at least a minute. */
+export function weatherTimeMs(ms: number, timeBp: number): number {
   if (timeBp === 0) return ms;
   return Math.max(60_000, Math.floor((ms * Math.max(0, BP + timeBp)) / BP));
 }

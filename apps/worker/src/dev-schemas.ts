@@ -4,7 +4,14 @@
  * picklists of the shipped content, and every number has a range. Nothing here takes a user id: the
  * tools always act on the session's player and guild.
  */
-import { RULES, content, dungeonContent, expeditionContent, gearContent } from '@creatures/game';
+import {
+  RULES,
+  content,
+  dungeonContent,
+  expeditionContent,
+  gearContent,
+  weatherContent,
+} from '@creatures/game';
 import * as v from 'valibot';
 import { IdSchema } from './collection-schemas';
 
@@ -38,6 +45,7 @@ export const DEV_ACTION_TOOLS = [
   'dungeon-retry',
   'dungeon-modifiers',
   'dungeon-seed',
+  'set-weather',
   'raid-phase',
   'raid-resolve',
   'raid-boss',
@@ -65,6 +73,13 @@ const JOURNAL_IDS = expeditionContent.journal.entries.map((e) => e.id) as [strin
 const BASE_IDS = gearContent.bases.map((b) => b.id) as [string, ...string[]];
 const BOSS_IDS = content.bosses.map((b) => b.id) as [string, ...string[]];
 const MODIFIER_IDS = dungeonContent.modifiers.map((m) => m.id) as [string, ...string[]];
+const liveWeather = (kind: 'boon' | 'omen') =>
+  weatherContent.filter((d) => d.kind === kind && d.status === 'live').map((d) => d.id) as [
+    string,
+    ...string[],
+  ];
+const BOON_IDS = liveWeather('boon');
+const OMEN_IDS = liveWeather('omen');
 
 const MAX_AMOUNT = 1_000_000_000;
 const MAX_RANK = RULES.expeditions.rank.xpForRank.length;
@@ -228,6 +243,15 @@ export const DungeonModifiersBodySchema = v.union([
   }),
   v.strictObject({ clear: v.literal(true) }),
 ]);
+
+// --- The weather ---
+
+/** Sets the Boon and Omen of today or tomorrow by hand (staging): to look at each and to test what they do. */
+export const SetWeatherBodySchema = v.strictObject({
+  day: v.picklist(['today', 'tomorrow']),
+  boon: v.picklist(BOON_IDS),
+  omen: v.nullable(v.picklist(OMEN_IDS)),
+});
 
 // --- The raid ---
 

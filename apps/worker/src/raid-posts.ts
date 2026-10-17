@@ -5,7 +5,14 @@
  *
  * A post never blocks the raid: `queue*` catch every error and log its type only.
  */
-import { RULES, bossAtRank, content, scaleEssence } from '@creatures/game';
+import {
+  RULES,
+  bossAtRank,
+  content,
+  scaleEssence,
+  weatherDef,
+  type WeatherDay,
+} from '@creatures/game';
 import type { FightEvent, FightInput, FightResult } from '@creatures/engine';
 import {
   describeGimmick,
@@ -19,6 +26,7 @@ import { festivalWinners } from './raid-festival';
 import { payoutWeek, rankChangeOf, readWeekProgression } from './raid-ladder';
 import type { StoredSummary } from './raid-resolve';
 import { eventTimes, type RaidPhase } from './raid-schedule';
+import { weatherAt } from './weather';
 
 function playerNames(sql: SqlStorage): Map<string, string> {
   return new Map(
@@ -31,6 +39,15 @@ function playerNames(sql: SqlStorage): Map<string, string> {
 
 const count = (sql: SqlStorage, table: 'raid_party_members' | 'raid_parties', weekId: string) =>
   sql.exec<{ n: number }>(`SELECT COUNT(*) AS n FROM ${table} WHERE week_id = ?`, weekId).one().n;
+
+/** The names of the day's Boon and Omen for a post (our own content, never player text), or none. */
+export function skyNames(day: WeatherDay | null): string[] {
+  if (day === null) return [];
+  return [day.boon, day.omen].flatMap((id) => {
+    const def = id === null ? undefined : weatherDef(id);
+    return def === undefined || def.status !== 'live' ? [] : [def.name];
+  });
+}
 
 /** Monday: the boss reveal. Skipped when no announcement channel is known or nobody is in. */
 export function queueBossReveal(
@@ -63,6 +80,7 @@ export function queueBossReveal(
       parties: count(sql, 'raid_parties', week.weekId),
       rank: progression?.rank ?? null,
       festivalCreature: progression?.festival === true ? (festivalSpecies?.name ?? null) : null,
+      sky: skyNames(weatherAt(sql, now, tz)),
     });
     enqueuePost(sql, { key: `raid:${week.weekId}:weekStart:all`, content: text }, now);
   } catch (err) {
@@ -194,6 +212,8 @@ function festivalPost(
 }
 
 export interface PhasePostSource {
+  /** The weather of the day the stage was fought under; null: none. */
+  weather?: WeatherDay | null;
   weekId: string;
   party: number;
   phase: RaidPhase;
@@ -263,6 +283,7 @@ export function queuePhasePost(sql: SqlStorage, src: PhasePostSource): void {
         ? scaleEssence(RULES.raid.essence.flat[phase], payoutWeek(sql, src.weekId))
         : null,
       counterMove: counter ?? null,
+      sky: skyNames(src.weather ?? null),
       ...(phase === 'finale'
         ? {
             finale: {

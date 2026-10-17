@@ -54,6 +54,7 @@ import { Lounge, type LoungeSpot } from './lounger';
 import { GameError, atomically, type Outcome } from './outcome';
 import { recordServerFirst, type ServerFirstKind } from './server-firsts';
 import { speciesOf } from './species';
+import type { Weather } from './weather';
 
 export { speciesOf } from './species';
 export type { ErrorStatus, Outcome } from './outcome';
@@ -240,6 +241,8 @@ export interface CollectionDeps {
    * Separate from `rng`, so a pick never consumes the draws of a catch.
    */
   loungerRng?: Rng;
+  /** The valley's weather: trips are sent under the day's Boon and Omen. Optional: without it, none. */
+  weather?: Weather | undefined;
   /** The analytics event log. Optional: without it nothing is logged. */
   analytics?: Analytics;
   /** The dev tools' force flags (staging only); passed on to expeditions. */
@@ -291,6 +294,7 @@ export class Collection {
       choices: this.choices,
       analytics: deps.analytics,
       dev: deps.dev,
+      weather: deps.weather,
     });
   }
 

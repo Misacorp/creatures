@@ -55,7 +55,10 @@ import {
   tripMs,
   tripExperience,
   tripRolls,
+  tripWeather,
   tripXp,
+  weatherTimeMs,
+  NO_TRIP_WEATHER,
   treatCost,
   weeklySpecial,
   closedReasons,
@@ -72,8 +75,10 @@ import {
   type Rng,
   type SupplyDef,
   type SuppliesId,
+  type TripWeather,
   type TwistEffect,
 } from '@creatures/game';
+import * as v from 'valibot';
 import type { Analytics, CatchProps, PushOnOutcome } from './analytics';
 import {
   addExplorerTrip,
@@ -104,6 +109,7 @@ import { runKeyed, settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import type { CatchChoices, ChoiceResult } from './catch-choices';
 import { weekIdFor, weekIndex } from './raid-schedule';
+import type { Weather } from './weather';
 import { recordServerFirst } from './server-firsts';
 import { speciesOf } from './species';
 import { insertCreature } from './talent-store';
@@ -313,6 +319,7 @@ type ExpeditionRow = {
   push_odds_bp: number | null;
   cancel_reason: string | null;
   treat: number;
+  weather_json: string | null;
 };
 
 type CreatureLite = {
@@ -346,6 +353,8 @@ export interface ExpeditionsDeps {
    * forced night and Festival. Absent in production, where none of them exists.
    */
   dev?: DevFlags | undefined;
+  /** The valley's weather: a trip is sent under the day's Boon and Omen and keeps what they did. */
+  weather?: Weather | undefined;
 }
 
 const TIER_ORDER = ['basic', 'good', 'great'] as const;
@@ -362,8 +371,59 @@ function twistOf(id: string | null): TwistEffect | null {
   return expeditionContent.specials.twists.find((t) => t.id === id)?.effect ?? null;
 }
 
+/** What the day did to a trip, as stored when it was sent: the numbers, and the ids for the log. */
+const StoredTripWeatherSchema = v.strictObject({
+  boon: v.string(),
+  omen: v.nullable(v.string()),
+  timeBp: v.number(),
+  partsBp: v.number(),
+  shardsBp: v.number(),
+  supplyBp: v.number(),
+  extraRolls: v.number(),
+  rarityBp: v.number(),
+  journalBp: v.number(),
+  reefOpen: v.boolean(),
+  xpBp: v.number(),
+  treatMultiplier: v.nullable(v.number()),
+});
+
+/** True when a day's effect changes nothing about a trip. */
+function noTripWeather(fx: TripWeather): boolean {
+  return (Object.keys(NO_TRIP_WEATHER) as (keyof TripWeather)[]).every(
+    (k) => fx[k] === NO_TRIP_WEATHER[k],
+  );
+}
+
 export class Expeditions {
   constructor(private readonly deps: ExpeditionsDeps) {}
+
+  /**
+   * What the weather of the day a trip was sent did to it. A trip from before the weather, or one sent
+   * under none, has nothing stored and reads as no weather at all; a damaged value does too (a claim
+   * never fails on it).
+   */
+  private tripWeatherOf(row: ExpeditionRow): TripWeather {
+    if (row.weather_json === null) return NO_TRIP_WEATHER;
+    try {
+      const parsed = v.safeParse(StoredTripWeatherSchema, JSON.parse(row.weather_json));
+      if (!parsed.success) return NO_TRIP_WEATHER;
+      const o = parsed.output;
+      return {
+        timeBp: o.timeBp,
+        partsBp: o.partsBp,
+        shardsBp: o.shardsBp,
+        supplyBp: o.supplyBp,
+        extraRolls: o.extraRolls,
+        rarityBp: o.rarityBp,
+        journalBp: o.journalBp,
+        reefOpen: o.reefOpen,
+        xpBp: o.xpBp,
+        treatMultiplier: o.treatMultiplier,
+      };
+    } catch {
+      return NO_TRIP_WEATHER;
+    }
+  }
 
   private get sql(): SqlStorage {
     return this.deps.storage.sql;
@@ -757,10 +817,14 @@ export class Expeditions {
       throw new GameError(409, 'rank_too_low', 'length');
     }
     const week = weeklySpecialFor(now, timezone);
+    // The day's weather: fixed now and stored with the trip, so the claim never reads the weather again.
+    const day = this.deps.weather?.at(now) ?? null;
+    const fx = tripWeather(day, { destination: dest.id, length: input.duration });
     const closed = closedReasons(dest, {
       rank: explorer.rank,
       localHour: this.gateHour(userId, now, timezone),
       festivalWeek: this.gateFestival(userId, week.festival),
+      nightOpen: fx.reefOpen,
     });
     const reason = closed[0];
     if (reason !== undefined) throw new GameError(409, 'destination_closed', reason);
@@ -779,12 +843,16 @@ export class Expeditions {
     }
 
     const special = week.destination === dest.id ? week.twistId : null;
-    const rolls = tripRolls(input.duration, kit, twistOf(special));
-    // Quick feet lines on the explorer's gear shorten the trip (fixed when it is sent).
-    const ms = minusBp(
-      tripMs(input.duration, explorer.rank),
-      gearRulesOf(this.sql, creature).quickFeetBp,
+    const rolls = tripRolls(input.duration, kit, twistOf(special)) + fx.extraRolls;
+    // Quick feet lines on the explorer's gear and the day's weather change the time (fixed when it is sent).
+    const ms = weatherTimeMs(
+      minusBp(tripMs(input.duration, explorer.rank), gearRulesOf(this.sql, creature).quickFeetBp),
+      fx.timeBp,
     );
+    const weatherJson =
+      day === null || noTripWeather(fx)
+        ? null
+        : JSON.stringify({ boon: day.boon, omen: day.omen, ...fx });
 
     for (const pick of input.supplies) {
       if (!takeSupply(this.sql, userId, pick.id)) {
@@ -796,8 +864,8 @@ export class Expeditions {
     this.sql.exec(
       `INSERT INTO expeditions
          (id, user_id, creature_id, duration, supplies, rolls, cost, started_at, ends_at, status,
-          destination_id, supplies_json, special_id, treat)
-       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, 'active', ?, ?, ?, ?)`,
+          destination_id, supplies_json, special_id, treat, weather_json)
+       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, 'active', ?, ?, ?, ?, ?)`,
       id,
       userId,
       creature.id,
@@ -810,7 +878,14 @@ export class Expeditions {
       JSON.stringify(ids),
       special,
       treat ? 1 : 0,
+      weatherJson,
     );
+    if (weatherJson !== null && day !== null) {
+      this.deps.analytics?.record(
+        { kind: 'weather_use', where: 'trip', boon: day.boon, omen: day.omen },
+        userId,
+      );
+    }
     if (treat) {
       // The treat is paid with the trip: short Bait fails the whole send, and the key is the trip's own.
       const cost = treatCost(creature.level);
@@ -1000,6 +1075,8 @@ export class Expeditions {
     const species = speciesOf(explorer.species);
     const kit = kitOf(this.kitIds(expedition));
     const twist = twistOf(expedition.special_id);
+    // What the day did to this trip when it was sent: the claim reads this, never the weather.
+    const wx = this.tripWeatherOf(expedition);
     const worked = push?.outcome === 'worked' ? push.goal : null;
     const extraRolls = worked?.reward.catchRolls ?? 0;
     const totalRolls = expedition.rolls + extraRolls;
@@ -1040,7 +1117,7 @@ export class Expeditions {
       explorer: { element: species.element, role: species.role },
       kit,
       stars: starsBefore,
-      milestoneRarityBp: milestones.rarityBp + gearRules.luckyFindBp,
+      milestoneRarityBp: milestones.rarityBp + gearRules.luckyFindBp + wx.rarityBp,
       twist,
       ownedLines: owned,
       dupeStreak: progress.dupe_streak,
@@ -1105,6 +1182,9 @@ export class Expeditions {
             gearPartsBp: gearRules.keenNoseBp,
             gearSupplyBp: gearRules.packerBp,
             gearGlimmerBp: gearRules.glimmerFindBp,
+            weatherPartsBp: wx.partsBp,
+            weatherShardsBp: wx.shardsBp,
+            weatherSupplyBp: wx.supplyBp,
             emptyRolls: rolled.empty,
           },
           { completed: finished, caught: count, rolls: expedition.rolls },
@@ -1218,12 +1298,16 @@ export class Expeditions {
     };
     // Creature experience (training by activity): the explorer earns the trip's by its length, doubled
     // by the treat packed when it was sent. A recall and a failed trip never get here.
+    const wx = this.tripWeatherOf(expedition);
     const experience = awardExperience(
       this.sql,
       analytics,
       userId,
       explorer.id,
-      tripExperience(expedition.duration, expedition.treat === 1),
+      tripExperience(expedition.duration, expedition.treat === 1, {
+        bp: wx.xpBp,
+        treatMultiplier: wx.treatMultiplier,
+      }),
       'trip',
       expedition.treat === 1,
     );
@@ -1321,7 +1405,11 @@ export class Expeditions {
     const found = foundPages(this.sql, userId);
     const finds: JournalFindView[] = [];
     const attempts: boolean[] = [
-      chance(this.deps.tripRng, journalChanceBp(expedition.duration, twist), 10_000),
+      chance(
+        this.deps.tripRng,
+        journalChanceBp(expedition.duration, twist, this.tripWeatherOf(expedition).journalBp),
+        10_000,
+      ),
     ];
     if (sure) attempts.push(true);
     for (const wanted of attempts) {
@@ -1540,6 +1628,7 @@ export class Expeditions {
     const hour = this.gateHour(userId, now, timezone);
     const festival = this.gateFestival(userId, week.festival);
     const twist = expeditionContent.specials.twists.find((t) => t.id === week.twistId);
+    const day = this.deps.weather?.at(now) ?? null;
     return {
       serverNow: now,
       special: {
@@ -1559,6 +1648,7 @@ export class Expeditions {
           rank: d.access.minRank,
           localHour: hour,
           festivalWeek: festival,
+          nightOpen: tripWeather(day, { destination: d.id, length: 'short' }).reefOpen,
         }),
       })),
       familiarity: familiarityRows(this.sql, userId).flatMap((r) => {
