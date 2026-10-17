@@ -16,6 +16,7 @@ import { gearV2Migration } from './gear-v2-migration';
 import { workshopV2Migration } from './workshop-v2-migration';
 import { rollMissingTalents } from './talent-store';
 import { gearRoutes } from './gear-routes';
+import { convertPendingLevels } from './level-reset';
 import { creatureQuirkMigration } from './creature-quirk-migration';
 import { creaturesAMigration } from './creatures-a-migration';
 import { creaturesBMigration } from './creatures-b-migration';
@@ -758,6 +759,11 @@ export class GuildCore {
       rng: this.gearRng,
       analytics: this.analytics,
     });
+    // The first load after the creatures B migration: every creature's level is halved and the Bait the
+    // removed levels cost is refunded, once per player. After the gear conversion (it takes off what the
+    // halved level cannot wear) and before the talent rolls (a creature that has none yet only rolls the
+    // slots its new level opens); see level-reset.ts.
+    convertPendingLevels({ storage: this.storage, now: this.now, analytics: this.analytics });
     // The first load after the creatures A migration: every creature without a talent gets the slots its
     // level has opened rolled, once, with live randomness (idempotent: nothing is waiting later).
     rollMissingTalents(this.storage, this.talentRng, this.now(), this.analytics);

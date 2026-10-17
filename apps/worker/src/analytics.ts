@@ -201,6 +201,18 @@ export type AnalyticsEvent =
     }
   | { kind: 'ribbon'; species: string; ribbon: 'bronze' | 'silver' | 'gold' }
   | {
+      /**
+       * The one-time level reset of a player (levels halved at the switch to training by activity, the
+       * Bait they cost refunded). Counts only.
+       */
+      kind: 'level_reset';
+      creatures: number;
+      levels: number;
+      bait: number;
+      unequipped: number;
+      talentsToBook: number;
+    }
+  | {
       /** The pity made a catch roll bring a creature: `new` a species the player lacked, `creature` any. */
       kind: 'catch_pity';
       pity: 'new' | 'creature';
@@ -646,6 +658,14 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
       return {
         species: species(event.species),
         ribbon: oneOf(['bronze', 'silver', 'gold'] as const, event.ribbon, 'bronze'),
+      };
+    case 'level_reset':
+      return {
+        creatures: int(event.creatures, 10_000),
+        levels: int(event.levels, 1_000_000),
+        bait: int(event.bait, 100_000_000),
+        unequipped: int(event.unequipped, 10_000),
+        talentsToBook: int(event.talentsToBook, 10_000),
       };
     case 'catch_pity':
       return {
