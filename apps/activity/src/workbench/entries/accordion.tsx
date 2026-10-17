@@ -1,8 +1,7 @@
-import { talentContent, talentDef, talentText } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { IconRef } from '../../icon-ref';
-import { TalentChip } from '../../TalentChip';
-import type { TalentView } from '../../talent-types';
+import { CreatureTalents } from '../../CreatureTalents';
+import { SAMPLE_STATE, sampleCreature } from '../../creature-card-sample';
 import { Accordion, AccordionGroup } from '../../ui/Accordion';
 import { ELEMENT_IDS, NONE, PARTS } from '../data';
 import { bool, str } from '../props';
@@ -38,32 +37,23 @@ function iconOf(kind: string): IconRef | undefined {
   }
 }
 
-const SAMPLE_TALENTS: readonly string[] = [...talentContent.byId.keys()].slice(0, 3);
-
-function talentView(id: string, golden: boolean): TalentView {
-  const def = talentDef(id) ?? talentDef('playful');
-  if (def === undefined) throw new Error('the workbench needs the playful talent');
-  const text = talentText(def, golden);
-  return { id: def.id, name: def.name, golden, text: text.text, about: text.about, idle: false };
-}
-
 const LINES = [
   'Fox walks the same path every morning, so the grass stays flat.',
   'Short text: a body can hold anything the place needs.',
 ];
 
+/** The real Talent Book: one talent in use (lit, with its slot), a golden one and a plain one to use. */
 function TalentBookExample() {
+  const creature = sampleCreature('talent book');
   return (
-    <Accordion title="Talent Book" meta="3" variant="compact" name="talent-book">
-      <ul class="book-list">
-        {SAMPLE_TALENTS.map((id, index) => (
-          <li key={id} class="book-entry">
-            <TalentChip talent={talentView(id, index === 1)} about />
-            <span class="muted">{index === 0 ? 'In slot 1' : 'In the book only'}</span>
-          </li>
-        ))}
-      </ul>
-    </Accordion>
+    <CreatureTalents
+      creature={creature}
+      bookSlotBait={SAMPLE_STATE.bookSlotBait}
+      bait={100}
+      busy={false}
+      bookOpen
+      onSlot={() => undefined}
+    />
   );
 }
 
@@ -270,7 +260,7 @@ function Overview() {
       <Scene title="Nested (one level)">
         <NestedExample />
       </Scene>
-      <Scene title="Example: Talent Book (3 talents)">
+      <Scene title="Example: Talent Book (in use, golden, available)">
         <div class="card-item">
           <p class="pix">Cindle</p>
           <TalentBookExample />
@@ -325,7 +315,7 @@ const accordion: Entry = {
   file: 'apps/activity/src/ui/Accordion.tsx',
   group: 'Controls',
   description:
-    'The one expand and collapse of the game: a raised header button with a chevron, a title and an optional count on the right, and a body that hangs under it (also AccordionGroup, for a stack with one open at a time). Tap a header in the preview.',
+    'The one expand and collapse of the game: a raised header button with a chevron, a title and an optional count on the right (the open one is lit, with the chevron turned down, and no line under it), and a body that hangs under it, with dividers only between its items (also AccordionGroup, for a stack with one open at a time). Tap a header in the preview.',
   covers: ['AccordionGroup'],
   controls: {
     scene: { kind: 'select', options: SCENES },

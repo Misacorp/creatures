@@ -152,7 +152,7 @@ const creaturePage: Entry = {
   file: 'apps/activity/src/CreaturePage.tsx',
   group: 'Creatures & game pieces',
   description:
-    'A creature\'s page, opened from its card in the list\'s place: back at the top left (Escape works too), then who it is, growth (ribbon and evolution buttons), stats, gear per slot with the picker and Equip best, talents with the Talent Book, the finale ability, About, fusion, ribbons, explorer facts, Lounge and Rename. "Opens on" shows where it lands when a gear icon or the talent chips were tapped. The back button does nothing here.',
+    'A creature\'s page, opened from its card in the list\'s place: back at the top left (Escape works too), then who it is, growth (ribbon and evolution buttons), stats, gear per slot with the picker and Equip best, talents with the Talent Book (in use, golden and available talents), the finale ability, About (an accordion, open to begin with), fusion, ribbons, explorer facts, Lounge and Rename (an accordion). "Opens on" shows where it lands when a gear icon or the talent chips were tapped. The back button does nothing here.',
   controls: {
     state: { kind: 'select', options: SAMPLE_KINDS },
     opensOn: { kind: 'select', options: PAGE_FOCUS },
@@ -174,6 +174,7 @@ const creaturePage: Entry = {
     { name: 'Ribbon, short of parts', props: { state: 'ribbon short' } },
     { name: 'Ready to evolve', props: { state: 'evolve ready' } },
     { name: 'A talent slot to fill', props: { state: 'talent to fill', opensOn: 'talents' } },
+    { name: 'The Talent Book', props: { state: 'talent book', opensOn: 'talents' } },
     { name: 'A waiting catch', props: { state: 'growing', waitingCatch: true } },
     { name: 'Opened on the Scarf picker', props: { opensOn: 'Scarf picker' } },
     { name: 'Gear still loading', props: { gearLoaded: false, opensOn: 'Hat picker' } },

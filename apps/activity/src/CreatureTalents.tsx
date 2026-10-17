@@ -29,6 +29,7 @@ export function CreatureTalents({
   busy,
   onSlot,
   showLabel = true,
+  bookOpen = false,
 }: {
   creature: Creature;
   /** What slotting from the book costs (the server's number). */
@@ -39,6 +40,8 @@ export function CreatureTalents({
   onSlot: (creature: Creature, talentId: string, golden: boolean, slot: number) => void;
   /** Draw the "Talents" label above the slots (off where a heading already says it). */
   showLabel?: boolean;
+  /** Start with the Talent Book open (the workbench; the game starts it closed). */
+  bookOpen?: boolean;
 }) {
   const { slots, signature, book } = creature.talents;
   const rows = bookRows(creature);
@@ -80,6 +83,7 @@ export function CreatureTalents({
           meta={String(book.length)}
           label={`Talent Book, ${String(book.length)} ${book.length === 1 ? 'talent' : 'talents'}`}
           name="talent-book"
+          defaultOpen={bookOpen}
           class="talent-book"
         >
           <p class="muted book-help">

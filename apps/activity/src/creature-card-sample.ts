@@ -28,6 +28,7 @@ export const SAMPLE_KINDS = [
   'ribbon short',
   'evolve ready',
   'talent to fill',
+  'talent book',
   'top level',
   'nickname and badges',
 ] as const;
@@ -148,6 +149,22 @@ function sampleOf(kind: SampleKind): Creature {
           book: [
             ...(filled === null ? [] : [{ ...filled, slot: 1 }]),
             { ...talentView('playful', false), slot: null },
+          ],
+        },
+      };
+    }
+    case 'talent book': {
+      // One talent in use, a golden one and a plain one waiting in the book; one open slot.
+      const inUse = talentView('quick-to-pounce', false);
+      return {
+        ...creature,
+        talents: {
+          ...creature.talents,
+          slots: creature.talents.slots.map((s) => (s.slot === 1 ? { ...s, talent: inUse } : s)),
+          book: [
+            { ...talentView('playful', false), slot: null },
+            { ...talentView('bigger-splash', true), slot: null },
+            { ...inUse, slot: 1 },
           ],
         },
       };

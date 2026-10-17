@@ -1,6 +1,7 @@
 import { talentContent, talentDef, talentText } from '@creatures/game';
 import { parseGameState, type Creature } from '../../api';
 import { CreatureTalents } from '../../CreatureTalents';
+import { sampleCreature } from '../../creature-card-sample';
 import { DuplicateCard } from '../../DuplicateCard';
 import { LurePicker } from '../../LurePicker';
 import { PendingCatches } from '../../PendingCatches';
@@ -133,6 +134,13 @@ const pendingCatches: Entry = {
   ),
 };
 
+/** The creature whose book the entry shows: the sample with one in use, one golden, one available. */
+function bookCreature(which: string): Creature {
+  if (which === 'splashet') return creatureOf('splashet');
+  const base = sampleCreature(which === 'two open slots' ? 'talent to fill' : 'talent book');
+  return base;
+}
+
 function creatureOf(species: string): Creature {
   const found = AFTER.creatures.find((c) => c.species === species);
   if (found === undefined) throw new Error(`the fixture has no ${species}`);
@@ -144,20 +152,30 @@ const creatureTalents: Entry = {
   file: 'apps/activity/src/CreatureTalents.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The talents on a creature card: its slots (closed ones say at which level they open), the signature talent of an epic, and the Talent Book with a button to put a talent in a slot for Bait.',
-  controls: { bait: { kind: 'number', min: 0, max: 500 }, busy: { kind: 'toggle' } },
-  defaults: { bait: 100, busy: false },
+    'The talents on a creature page: its slots (closed ones say at which level they open), the signature talent of an epic, and the Talent Book (an Accordion). In the book, the talents in use come first, lit, with a Slot mark; the ones that can be used have a compact Use button with the Bait cost; a golden talent shimmers gold.',
+  controls: {
+    bait: { kind: 'number', min: 0, max: 500 },
+    busy: { kind: 'toggle' },
+    creature: { kind: 'select', options: ['talent book', 'two open slots', 'splashet'] },
+    open: { kind: 'toggle' },
+  },
+  defaults: { bait: 100, busy: false, creature: 'talent book', open: true },
   presets: [
-    { name: 'Enough Bait', props: {} },
+    { name: 'In use, golden, available', props: {} },
+    { name: 'Two slots open', props: { creature: 'two open slots' } },
     { name: 'No Bait', props: { bait: 0 } },
+    { name: 'Closed (as in the game)', props: { open: false } },
+    { name: 'The fixture creature', props: { creature: 'splashet' } },
   ],
   render: (p) => (
     <div class="card-item">
       <CreatureTalents
-        creature={creatureOf('splashet')}
+        key={String(bool(p, 'open'))}
+        creature={bookCreature(str(p, 'creature'))}
         bookSlotBait={AFTER.bookSlotBait}
         bait={num(p, 'bait')}
         busy={bool(p, 'busy')}
+        bookOpen={bool(p, 'open')}
         onSlot={() => undefined}
       />
     </div>
