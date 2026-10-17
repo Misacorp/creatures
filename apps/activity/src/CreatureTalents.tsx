@@ -15,6 +15,7 @@ export function CreatureTalents({
   bait,
   busy,
   onSlot,
+  showLabel = true,
 }: {
   creature: Creature;
   /** What slotting from the book costs (the server's number). */
@@ -23,17 +24,21 @@ export function CreatureTalents({
   bait: number;
   busy: boolean;
   onSlot: (creature: Creature, talentId: string, golden: boolean, slot: number) => void;
+  /** Draw the "Talents" label above the slots (off where a heading already says it). */
+  showLabel?: boolean;
 }) {
   const { slots, signature, book } = creature.talents;
   const actions = bookActions(creature);
   const afford = bait >= bookSlotBait;
   return (
     <div class="creature-talents">
-      <p class="label">
-        <GlossaryTag entry="talent" look="text">
-          Talents
-        </GlossaryTag>
-      </p>
+      {showLabel && (
+        <p class="label">
+          <GlossaryTag entry="talent" look="text">
+            Talents
+          </GlossaryTag>
+        </p>
+      )}
       <ul class="talent-slots" aria-label="Talent slots">
         {signature !== null && (
           <li class="talent-slot signature">

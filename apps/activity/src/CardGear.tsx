@@ -21,6 +21,7 @@ export function CardGear({
   busy,
   onEquip,
   onEquipBest,
+  initialOpen = null,
 }: {
   creature: Creature;
   creatures: readonly Creature[];
@@ -31,8 +32,10 @@ export function CardGear({
   onEquip: (gearId: string, creatureId: string | null) => Promise<boolean>;
   /** The server's "Equip best" for this creature; resolves what it changed, or undefined when refused. */
   onEquipBest: (creatureId: string) => Promise<EquipBestResult | undefined>;
+  /** The slot whose picker is open at first (a gear icon of the card opens the sheet on its slot). */
+  initialOpen?: GearSlot | null;
 }) {
-  const [open, setOpen] = useState<GearSlot | null>(null);
+  const [open, setOpen] = useState<GearSlot | null>(initialOpen);
   const [note, setNote] = useState<string | null>(null);
   const opens = gear?.slotOpens ?? RULES.gear.slotUnlockLevel;
 
@@ -50,11 +53,16 @@ export function CardGear({
         {GEAR_SLOTS.map((slot) => {
           const worn = creature.gear.find((g) => g.slot === slot);
           const locked = creature.level < opens[slot];
+          // What the item does (its lines, from the gear view; absent while that view loads).
+          const lines =
+            worn === undefined
+              ? []
+              : (gear?.items.find((i) => i.id === worn.id)?.lines.map((l) => l.text) ?? []);
           const label = locked
             ? `${slotName(slot)} slot: opens at creature level ${String(opens[slot])}.`
             : worn === undefined
               ? `${slotName(slot)} slot: empty. Choose an item to equip.`
-              : `${slotName(slot)} slot: ${itemLabel(worn.baseId, worn.itemLevel)}. Change it.`;
+              : `${slotName(slot)} slot: ${itemLabel(worn.baseId, worn.itemLevel)}${lines.length === 0 ? '' : `, ${lines.join(', ')}`}. Change it.`;
           return (
             <li key={slot} class={locked ? 'gear-cell locked' : 'gear-cell'}>
               <button
@@ -81,6 +89,7 @@ export function CardGear({
                   <>
                     <span class="pix">{gearName(worn.baseId)}</span>
                     <span class="muted"> item level {worn.itemLevel}</span>
+                    {lines.length > 0 && <span class="muted gear-main"> {lines.join(', ')}</span>}
                   </>
                 ) : (
                   <>

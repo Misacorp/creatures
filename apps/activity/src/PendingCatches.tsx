@@ -4,6 +4,9 @@ import { GlossaryTag } from './Glossary';
 import type { PendingCatch } from './talent-types';
 import { applyAllText } from './talent-view';
 
+/** The id of the section, so a creature card's "Answer a waiting catch" can take the player there. */
+export const PENDING_CATCHES_ID = 'pending-catches';
+
 /**
  * The duplicates waiting for an answer, at the top of the Collection tab: one card each (oldest first) and
  * one button that applies Recommended to all of them. At most ten wait; a new one settles the oldest with
@@ -22,7 +25,12 @@ export function PendingCatches({
 }) {
   if (cards.length === 0) return null;
   return (
-    <section class="pending-catches" aria-labelledby="pending-catches-heading">
+    <section
+      id={PENDING_CATCHES_ID}
+      class="pending-catches"
+      tabIndex={-1}
+      aria-labelledby="pending-catches-heading"
+    >
       <h3 id="pending-catches-heading" class="pix">
         <GlossaryTag entry="duplicate-choice" look="text">
           Waiting catches

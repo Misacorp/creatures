@@ -442,6 +442,7 @@ export function Game({
             state={game}
             gear={gear}
             busy={busy}
+            viewerId={user.id}
             onEquip={async (gearId, creatureId) =>
               (await gearActions.equip(gearId, creatureId)) !== undefined
             }

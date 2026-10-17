@@ -35,6 +35,8 @@
 @import './components/raid-board.css';
 @import './components/slot-cue.css';
 @import './components/creature-card.css';
+@import './components/creature-focus.css';
+@import './components/creature-finder.css';
 @import './components/talents.css';
 @import './views/boss-card.css';
 @import './stage/stage.css';

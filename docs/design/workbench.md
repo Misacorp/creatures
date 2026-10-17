@@ -26,4 +26,4 @@ The workbench is a second Vite entry (`apps/activity/workbench.html`, code in `a
 
 ## Not covered
 
-Whole screens and the fight stage (`Stage`, `LiveStage`, `Dungeon`, `Workshop`, `Expeditions` and the like) need a full game state. Also left out: `HaulStrip`, `SlotsStrip`, `InventoryGrid`, `ItemDetail`, `JobSlots`, the pickers and the How to play page. They can be added as entries when feedback asks for them.
+`CreatureCard`, `CreatureFinder` and `Collection` (the Creatures tab with sample creatures, from `creature-card-sample.ts`) are covered since 2026-10-17. Other whole screens and the fight stage (`Stage`, `LiveStage`, `Dungeon`, `Workshop`, `Expeditions` and the like) need a full game state. Also left out: `HaulStrip`, `SlotsStrip`, `InventoryGrid`, `ItemDetail`, `JobSlots`, the pickers and the How to play page. They can be added as entries when feedback asks for them.

@@ -1,5 +1,6 @@
 import { barEntries } from './entries/bars';
 import { controlEntries } from './entries/controls';
+import { creatureCardEntries } from './entries/creature-card';
 import { creatureEntries } from './entries/creatures';
 import { headingEntries } from './entries/headings';
 import { iconEntries } from './entries/icons';
@@ -28,6 +29,7 @@ export const ENTRIES: readonly Entry[] = [
   ...iconEntries,
   ...controlEntries,
   ...creatureEntries,
+  ...creatureCardEntries,
   ...talentEntries,
   ...stageEntries,
 ];

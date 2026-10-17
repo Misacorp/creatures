@@ -1,0 +1,334 @@
+/*
+  The focused creature card of the Creatures tab (Misa's "Option B") and its "More" sheet. The card is
+  small on purpose: sprite, name, element, level, the XP bar with what comes next, the three gear slots as
+  icons, the talents as chips, and one gold button only when something is ready. About 250 px tall at
+  390 px wide. Everything else sits in the sheet that opens under the card.
+*/
+
+/* Two columns of cards at most on a wide screen; one on a phone. An open card takes the whole row. */
+.creature-cards {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  align-items: start;
+}
+
+.creature-card.focused {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+  scroll-margin-top: 0.5rem;
+}
+
+.creature-card.focused.open {
+  grid-column: 1 / -1;
+}
+
+.creature-card.focused:focus {
+  outline: none;
+}
+
+/* The card the finder chose: a gold edge until the player does something else. */
+.creature-card.found {
+  box-shadow:
+    inset 0 0 0 var(--px) var(--gold),
+    0 0 0 var(--px) var(--ink);
+}
+
+.creature-card.focused p {
+  margin: 0;
+}
+
+.cc-head {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 0.625rem;
+  align-items: center;
+}
+
+.creature-card.focused .portrait {
+  width: 56px;
+  height: 56px;
+  margin: 0;
+  padding: 0;
+  background: var(--ink);
+  box-shadow: none;
+}
+
+.cc-id {
+  min-width: 0;
+}
+
+.cc-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.cc-name h3 {
+  min-width: 0;
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.cc-name .lvl-tag {
+  margin-left: auto;
+}
+
+/* The element as a small icon-only chip (its name is the label); the sheet has the full chips. */
+.cc-element {
+  flex: none;
+  padding: 0.125rem 0.3125rem;
+}
+
+.cc-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.125rem 0.5rem;
+  align-items: center;
+  margin-top: 0.125rem;
+  font-size: 0.8125rem;
+}
+
+.cc-id .xpbar-row {
+  margin: 0.3125rem 0 0;
+}
+
+.creature-card.focused .xpbar {
+  height: 1.5rem;
+}
+
+.creature-card.focused .xpbar-text {
+  font-size: 1.125rem;
+}
+
+.cc-next {
+  color: var(--haze);
+  font-size: 0.8125rem;
+}
+
+.cc-next b {
+  color: var(--bone);
+  font-weight: 700;
+}
+
+/* Gear icons on the left, talent chips on the right. */
+.cc-kit {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.cc-gear {
+  display: flex;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cc-gear li {
+  display: flex;
+}
+
+button.cc-slot {
+  display: grid;
+  place-items: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+button.cc-slot:active:not(:disabled) {
+  box-shadow: none;
+}
+
+button.cc-slot .item-frame {
+  margin: 0.1875rem;
+}
+
+.cc-slot-empty {
+  display: grid;
+  place-items: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  outline: 2px dashed var(--haze);
+  outline-offset: -2px;
+  color: var(--haze);
+  font-size: 1.125rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+button.cc-slot.locked .cc-slot-empty {
+  outline-color: var(--line);
+  font-size: 0.9375rem;
+}
+
+button.cc-slot:disabled {
+  opacity: 0.8;
+}
+
+/* The talents: one tap area that opens the sheet on them. */
+button.cc-talents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.125rem;
+  background: none;
+  box-shadow: none;
+}
+
+button.cc-talents:active:not(:disabled) {
+  box-shadow: none;
+}
+
+.cc-chip {
+  max-width: 100%;
+  padding: 0.0625rem 0.375rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 2px var(--line);
+  color: var(--bone);
+  font-size: 1rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.cc-chip.golden {
+  box-shadow:
+    inset 0 0 0 var(--px) var(--gold),
+    0 0 0 2px rgb(var(--gold-rgb) / 35%);
+  color: var(--gold);
+}
+
+.cc-chip.empty,
+.cc-chip.locked-slots {
+  background: transparent;
+  box-shadow: none;
+  outline: 2px dashed var(--line);
+  outline-offset: -2px;
+  color: var(--haze);
+}
+
+.cc-do button {
+  display: block;
+  width: 100%;
+  min-height: 3rem;
+  font-size: 1.2rem;
+  line-height: 1.1;
+}
+
+.cc-do button small {
+  display: block;
+  margin-top: 0.0625rem;
+  font-family: var(--body);
+  font-size: 0.75rem;
+}
+
+.cc-bot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+button.more-button {
+  min-height: 2rem;
+  padding: 0.125rem 0.75rem;
+  font-size: 1.0625rem;
+}
+
+button.ghost {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--line);
+  color: var(--haze);
+}
+
+button.ghost.small {
+  min-height: 2rem;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.9375rem;
+}
+
+/* --- The "More" sheet: it opens under the card and holds everything that is not on it. --- */
+
+.creature-sheet {
+  padding: 0.25rem 0.75rem 0.75rem;
+  background: var(--dusk);
+  box-shadow: var(--frame);
+}
+
+.sheet-block {
+  margin-top: 0.75rem;
+  padding-top: 0.625rem;
+  border-top: 2px solid var(--line);
+}
+
+.sheet-block:first-child {
+  margin-top: 0.5rem;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.sheet-title {
+  margin: 0 0 0.375rem;
+  color: var(--haze);
+  font-size: 1.0625rem;
+  line-height: 1.1;
+}
+
+.sheet-title:focus {
+  outline: none;
+}
+
+.gear-note {
+  font-family: var(--body);
+}
+
+.sheet-stats {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.125rem 0.75rem;
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.sheet-stats dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet-facts {
+  margin: 0.5rem 0 0;
+}
+
+.sheet-fact {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.0625rem 0;
+}
+
+.sheet-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.creature-sheet .rename {
+  margin-top: 0.5rem;
+}
+
+.creature-sheet .gear-cell .gear-main {
+  display: block;
+}
+
+.creature-sheet .card-gear,
+.creature-sheet .creature-talents {
+  margin: 0;
+}
