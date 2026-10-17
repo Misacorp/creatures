@@ -50,6 +50,9 @@ import { useRoomPhase } from './use-room-phase';
 import { sceneOf } from './LivingRoom';
 import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
+import { fetchForecast } from './weather-api';
+import type { Forecast } from './weather-types';
+import { forecastRecheckDelay } from './weather-view';
 
 interface Loaded {
   game: GameState;
@@ -98,6 +101,8 @@ export function Game({
   const [gear, setGear] = useState<GearState | null>(null);
   const [gearFailed, setGearFailed] = useState(false);
   const [jobReveal, setJobReveal] = useState<JobResult | null>(null);
+  // The valley's sky for today and tomorrow (Boons and Omens); null until the first load (or when it failed).
+  const [forecast, setForecast] = useState<Forecast | null>(null);
   // What each duplicate answered this session became (a card id to a sentence), so a claim reveal can say
   // what happened to the cards it showed.
   const [settled, setSettled] = useState<Record<string, string>>({});
@@ -215,6 +220,26 @@ export function Game({
   useEffect(() => {
     if (game.starterChosen) loadGear();
   }, [game.starterChosen]);
+
+  /** Loads the forecast (a plain read: a failure keeps the one on screen, the next call tries again). */
+  function loadForecast(): void {
+    fetchForecast().then(setForecast, () => undefined);
+  }
+
+  // The forecast loads with the game, and again a moment after the day turns over (the server draws the
+  // next one at the daily reset), so the calendar and the cards never show yesterday's sky.
+  useEffect(() => {
+    if (game.starterChosen) loadForecast();
+  }, [game.starterChosen]);
+  const forecastEnds = forecast?.today?.endsAt ?? null;
+  useEffect(() => {
+    const wait = forecastRecheckDelay(forecast, Date.now() + offset);
+    if (wait === null) return undefined;
+    const timer = setTimeout(loadForecast, wait);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [forecastEnds, offset]);
 
   // The pips of the Expeditions and Workshop tabs follow the server's clock: one timer, set for the
   // next trip or job to run out (a long wait is capped), and set again after it fires.
@@ -372,6 +397,7 @@ export function Game({
               selfId: user.id,
               instanceId: participants.instanceId,
               scene: sceneOf(phase),
+              forecast,
               onMove: moveLounger,
             },
           }
@@ -411,6 +437,7 @@ export function Game({
           setNotice(null);
           refreshState();
           room.refreshIfStale();
+          loadForecast();
           if (id === 'workshop' || id === 'collection') loadGear();
         }}
       />
@@ -545,6 +572,7 @@ export function Game({
         {tab === 'raid' && (
           <Raid
             creatures={game.creatures}
+            forecast={forecast}
             showPractice={showPractice}
             onBalanceChange={refreshState}
             onNeedsPlacementChange={(needed) => {
@@ -560,6 +588,7 @@ export function Game({
         {tab === 'dungeon' && (
           <Dungeon
             creatures={game.creatures}
+            forecast={forecast}
             bait={game.balances.bait}
             draft={dungeonDraft.current}
             onDraftChange={(slots) => {

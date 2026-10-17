@@ -1,5 +1,6 @@
 import { RULES, createSeededRng, seasonOf, weatherDef, type Rng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
+import forecastFixture from '../../activity/src/fixtures/weather-forecast.json';
 import { formatBossReveal, formatPhasePost } from '../src/discord-format';
 import { addWeeks, eventTimes, weekIdFor, weekIndex } from '../src/raid-schedule';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
@@ -427,6 +428,38 @@ describe('the forecast', () => {
         ctx.sql.exec("UPDATE weather_days SET boon = 'gone-from-the-content'");
         const body = await (await ctx.request(secret, '/api/weather')).json<ForecastView>();
         expect(body).toEqual({ today: null, tomorrow: null });
+      },
+      { weather: true },
+    );
+  });
+});
+
+describe('the forecast fixture of the client', () => {
+  it('has the shape and the words the server sends (the client parses this file)', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        setRank(ctx, 5);
+        const secret = await ctx.core.createSession(ctx.guildId, USER);
+        const today = dayOf(ctx);
+        ctx.core.weather.force(today, 'fair-winds', 'static-sky');
+        ctx.core.weather.force(addDays(today, 1), 'market-day', null);
+        const live = (await (await ctx.request(secret, '/api/weather')).json()) as Record<
+          string,
+          Record<string, unknown> | null
+        >;
+        const keys = (o: unknown): string[] => Object.keys(o as object).sort();
+        expect(keys(live)).toEqual(keys(forecastFixture));
+        expect(keys(live['today'])).toEqual(keys(forecastFixture.today));
+        expect(keys(live['today']?.['boon'])).toEqual(keys(forecastFixture.today.boon));
+        // Names, lines and bubbles are content: the fixture says what players read at Boss Rank 5.
+        for (const key of ['today', 'tomorrow'] as const) {
+          const want = forecastFixture[key];
+          const got = live[key] as Record<string, unknown>;
+          expect(got['boon']).toEqual(want.boon);
+          expect(got['omen']).toEqual(want.omen);
+          expect(got['wild']).toBe(want.wild);
+        }
       },
       { weather: true },
     );

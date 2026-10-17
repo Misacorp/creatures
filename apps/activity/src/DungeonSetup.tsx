@@ -17,9 +17,12 @@ import { GlossaryTag } from './Glossary';
 import { creatureName } from './game';
 import { toPickerCreature } from './roster-picker';
 import { useDungeonDraft } from './use-dungeon-draft';
+import type { Forecast } from './weather-types';
 
 interface Props {
   today: DungeonToday;
+  /** The valley's sky, for the one line on the card (absent or null: none). */
+  forecast?: Forecast | null;
   creatures: readonly Creature[];
   /** The player's Bait: a treat costs some of it. */
   bait: number;
@@ -52,6 +55,7 @@ interface Props {
  */
 export function DungeonSetup({
   today,
+  forecast = null,
   creatures,
   bait,
   busy,
@@ -95,7 +99,7 @@ export function DungeonSetup({
   if (blocked !== null) {
     return (
       <>
-        <DungeonPrerun today={today} />
+        <DungeonPrerun today={today} forecast={forecast} />
         <section class="raid-section" aria-labelledby="dungeon-blocked-heading">
           <h3 id="dungeon-blocked-heading">Not today</h3>
           <p role="status">{blocked}</p>
@@ -120,7 +124,7 @@ export function DungeonSetup({
           </p>
         </section>
       )}
-      <DungeonPrerun today={today}>
+      <DungeonPrerun today={today} forecast={forecast}>
         <DungeonTeam creatures={pickable} slots={slots} disabled={busy} onChange={change}>
           <div class="dungeon-treats">
             {slots.flatMap((id) => {

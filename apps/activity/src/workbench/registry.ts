@@ -6,6 +6,7 @@ import { iconEntries } from './entries/icons';
 import { lootEntries } from './entries/loot';
 import { popoverEntries } from './entries/popovers';
 import { raidBoardEntries } from './entries/raid-board';
+import { skyEntries } from './entries/sky';
 import { slotEntries } from './entries/slots';
 import { stageEntries } from './entries/stage';
 import { tagEntries } from './entries/tags';
@@ -30,6 +31,7 @@ export const ENTRIES: readonly Entry[] = [
   ...creatureEntries,
   ...talentEntries,
   ...stageEntries,
+  ...skyEntries,
 ];
 
 export function findEntry(name: string | null): Entry | null {

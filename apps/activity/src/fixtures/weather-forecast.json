@@ -1,0 +1,41 @@
+{
+  "today": {
+    "day": "2027-01-13",
+    "startsAt": 1799926620000,
+    "endsAt": 1800013020000,
+    "boon": {
+      "id": "fair-winds",
+      "name": "Fair Winds",
+      "flavor": "The wind sits at everyone's back, and the first step lands harder.",
+      "bubbles": ["Fair winds today!", "Good day to roam"],
+      "fight": ["Every creature's first hit deals 10% more."],
+      "trips": ["Trips take 10% less time."]
+    },
+    "omen": {
+      "id": "static-sky",
+      "name": "Static Sky",
+      "flavor": "Every hair stands up and the sky crackles. Foes find the soft spots.",
+      "bubbles": ["My fur is standing up", "Crackly sky"],
+      "fight": ["Foes' crit chance +4 pt."],
+      "trips": []
+    },
+    "wild": false
+  },
+  "tomorrow": {
+    "day": "2027-01-14",
+    "startsAt": 1800013020000,
+    "endsAt": 1800099420000,
+    "boon": {
+      "id": "market-day",
+      "name": "Market Day",
+      "flavor": "Stalls line the lane, and the first deal of the day is always the fairest.",
+      "bubbles": ["Market day!", "Fair prices today"],
+      "fight": ["Dungeon rooms give +1 scrap."],
+      "trips": [
+        "Your first craft today gets +5 pt one-step-up chance, and your first 2 dismantle jobs refund the top of their range."
+      ]
+    },
+    "omen": null,
+    "wild": false
+  }
+}

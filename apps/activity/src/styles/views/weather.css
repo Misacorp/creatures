@@ -1,0 +1,225 @@
+/*
+  The valley's sky (Boons and Omens): the wall calendar in the living room (WeatherCalendar.tsx), the
+  forecast it opens (ForecastCard.tsx) and the one compact line on the raid card and the dungeon card
+  (SkyLine.tsx). JS sets --x and --y on the calendar with style.setProperty; there are no inline style
+  attributes. Every animation and transition is inside `prefers-reduced-motion: no-preference`: with less
+  motion the calendar is still, and the pointer only changes how it looks (a larger page, a shadow).
+*/
+.room-calendar {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  z-index: 2; /* above the creatures and the front props, below the drag targets and the title row */
+}
+
+/* A plain button: the page is the look. */
+button.calendar-button {
+  position: relative;
+  display: block;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  cursor: pointer;
+  line-height: 0;
+  transition: none;
+}
+
+button.calendar-button:hover:not(:disabled) {
+  filter: none;
+}
+
+button.calendar-button:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
+/* The wall is thin: a bigger tap area than the page looks. */
+button.calendar-button::after {
+  position: absolute;
+  inset: -6px;
+  content: '';
+}
+
+button.calendar-button:focus-visible {
+  outline: var(--px) solid var(--bone);
+  outline-offset: 2px;
+}
+
+button.calendar-button canvas.calendar-page {
+  display: block;
+  transform-origin: 50% 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/*
+  It comes off the wall: a larger page with a shadow under it, for the pointer, the keyboard and while its
+  forecast is open. The page hangs from its top edge, so it grows downwards and a little forward.
+*/
+button.calendar-button:hover canvas.calendar-page,
+button.calendar-button:focus-visible canvas.calendar-page,
+button.calendar-button[aria-expanded='true'] canvas.calendar-page {
+  filter: drop-shadow(0 3px 0 rgb(var(--ink-rgb) / 0.55));
+  transform: scale(1.18);
+}
+
+button.calendar-button:active canvas.calendar-page {
+  transform: scale(1.08);
+}
+
+/* Its line of speech: a pale bubble under the page (the title band is above it), text only. */
+.room-bubble.calendar-bubble {
+  top: 100%;
+  bottom: auto;
+  margin-top: 0.5rem;
+}
+
+.room-bubble.calendar-bubble::after {
+  top: auto;
+  bottom: 100%;
+  transform: scaleY(-1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* It sways a little on its nail, and the page settles when the pointer leaves. */
+  button.calendar-button canvas.calendar-page {
+    animation: calendar-sway 5s ease-in-out infinite alternate;
+    transition:
+      transform 140ms ease-out,
+      filter 140ms ease-out;
+  }
+
+  button.calendar-button:hover canvas.calendar-page,
+  button.calendar-button:focus-visible canvas.calendar-page,
+  button.calendar-button[aria-expanded='true'] canvas.calendar-page {
+    animation: none;
+  }
+
+  /* Opening it turns the page: a quick squash and a flip back. */
+  button.calendar-button[aria-expanded='true'] canvas.calendar-page {
+    animation: calendar-flip 260ms ease-out;
+  }
+
+  .room-bubble.calendar-bubble {
+    animation: calendar-bubble-in 160ms ease-out;
+  }
+}
+
+@keyframes calendar-sway {
+  from {
+    transform: rotate(-1.2deg);
+  }
+
+  to {
+    transform: rotate(1.2deg);
+  }
+}
+
+@keyframes calendar-flip {
+  0% {
+    transform: scale(1.18, 1.18);
+  }
+
+  45% {
+    transform: scale(0.1, 1.18);
+  }
+
+  100% {
+    transform: scale(1.18, 1.18);
+  }
+}
+
+@keyframes calendar-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+}
+
+/* --- The forecast it opens --- */
+
+.sky-days {
+  display: grid;
+  gap: 0.625rem;
+}
+
+.sky-day-title {
+  margin: 0 0 0.125rem;
+  color: var(--gold);
+  font-size: 0.9375rem;
+}
+
+.sky-entry {
+  margin: 0 0 0.25rem;
+}
+
+.sky-name {
+  margin: 0;
+}
+
+.sky-kind {
+  display: inline-block;
+  padding: 0 0.25rem;
+  background: var(--dusk-2);
+  box-shadow: 0 0 0 2px var(--ink);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.sky-boon .sky-kind {
+  color: var(--gold);
+}
+
+.sky-omen .sky-kind {
+  color: var(--bad);
+}
+
+.sky-lines {
+  margin: 0.125rem 0 0;
+  padding-left: 1.125rem;
+  list-style: square;
+  font-size: 0.875rem;
+}
+
+.sky-lines li {
+  margin: 0.0625rem 0;
+}
+
+.sky-none {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.sky-wild {
+  margin: 0.5rem 0 0;
+  color: var(--bad);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+/* --- The compact line on the raid card and the dungeon card --- */
+
+.sky-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+
+.sky-line > canvas {
+  flex: none;
+}
+
+.sky-line > span {
+  min-width: 0;
+}

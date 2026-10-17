@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { DEV_TOOL_IDS, buildBody, initialValues, specId, type ToolSpec } from './forms';
-import { BASE_OPTIONS, BOSS_OPTIONS, LIMITS, SPECIES_OPTIONS } from './options';
+import {
+  BASE_OPTIONS,
+  BOON_OPTIONS,
+  BOSS_OPTIONS,
+  LIMITS,
+  OMEN_OPTIONS,
+  SPECIES_OPTIONS,
+} from './options';
 import { ALL_SPECS, CLOCK_SPECS, GOODS_SPECS, SECTIONS, orderedSections } from './specs';
 
 const CREATURES = [
@@ -306,6 +313,33 @@ describe('analytics and the account', () => {
   });
 });
 
+describe('the weather tool', () => {
+  it('sets today or tomorrow with a Boon, and no Omen unless one is picked', () => {
+    const boon = BOON_OPTIONS[0]?.value ?? '';
+    expect(body('set-weather', "Set today's sky")).toEqual({ day: 'today', boon, omen: null });
+    const omen = OMEN_OPTIONS[1]?.value ?? '';
+    expect(body('set-weather', "Set tomorrow's sky", { omen })).toEqual({
+      day: 'tomorrow',
+      boon,
+      omen,
+    });
+  });
+
+  it('offers the live Boons and Omens only, and no Omen first', () => {
+    expect(BOON_OPTIONS.map((o) => o.value)).not.toContain('kind-rain');
+    expect(OMEN_OPTIONS.map((o) => o.value)).not.toContain('bramble-season');
+    expect(OMEN_OPTIONS[0]).toEqual({ value: 'none', label: 'No Omen' });
+    expect(BOON_OPTIONS.length).toBe(9);
+    expect(OMEN_OPTIONS.length).toBe(1 + 8);
+  });
+
+  it('refuses a Boon that is not on the list', () => {
+    expect(problem('set-weather', "Set today's sky", { boon: 'kind-rain' })).toMatch(
+      /Boon: pick one/,
+    );
+  });
+});
+
 describe('the section order', () => {
   it('puts the current tab first and keeps every section', () => {
     expect(orderedSections('dungeon').map((s) => s.id)).toEqual([
@@ -314,6 +348,7 @@ describe('the section order', () => {
       'workshop',
       'expeditions',
       'raid',
+      'weather',
       'analytics',
     ]);
     expect(orderedSections('collection')[0]?.id).toBe('creatures');

@@ -32,6 +32,7 @@ export const DEV_TOOL_IDS = [
   'dungeon-retry',
   'dungeon-modifiers',
   'dungeon-seed',
+  'set-weather',
   'raid-phase',
   'raid-resolve',
   'raid-boss',

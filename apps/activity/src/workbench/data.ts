@@ -3,7 +3,14 @@
  * taken from the shipped content, and a sample raid week for the pages that need a whole view.
  * Nothing here calls the API.
  */
-import { PART_KINDS, content, expeditionContent, gearContent } from '@creatures/game';
+import {
+  PART_KINDS,
+  content,
+  expeditionContent,
+  gearContent,
+  weatherDef,
+  weatherLines,
+} from '@creatures/game';
 import type { CreatureInfo } from '../creature-info';
 import type { Resident } from '../room-data';
 import raidFestival from '../fixtures/raid-festival.json';
@@ -18,6 +25,7 @@ import {
   BUNDLED_CREATURE_SPRITES,
 } from '../sprites/creature-sprites';
 import type { SpriteDef } from '../sprites/sprite-data';
+import type { Forecast, WeatherDay, WeatherEntry } from '../weather-types';
 
 export const SPECIES_IDS: readonly string[] = content.creatures.map((c) => c.id);
 export const ELEMENT_IDS: readonly string[] = content.elements.map((e) => e.id);
@@ -219,4 +227,78 @@ export function sampleResidents(count: number, oneBusy: boolean): Resident[] {
             },
     };
   });
+}
+
+// --- The valley's sky ---
+
+/** The states of the sky the weather pages can show; "loading" is the blank calendar page. */
+export const SKY_STATES = [
+  'loading',
+  'boon only',
+  'boon and omen',
+  'wild omen tomorrow',
+  'rank 14 (strong)',
+] as const;
+export type SkyState = (typeof SKY_STATES)[number];
+
+const SKY_START = 1_800_000_000_000;
+const DAY_MS = 86_400_000;
+
+/** A Boon or Omen as the server writes it, from the shipped content, at a strength (10000 is x1). */
+function skyEntry(id: string, strengthBp: number): WeatherEntry {
+  const def = weatherDef(id);
+  if (def === undefined) throw new Error(`the workbench sky names unknown "${id}"`);
+  const lines = weatherLines(id, strengthBp);
+  return {
+    id,
+    name: def.name,
+    flavor: def.flavor,
+    bubbles: [...def.bubbles],
+    fight: lines.fight,
+    trips: lines.trips,
+  };
+}
+
+function skyDay(
+  index: number,
+  boon: [string, number],
+  omen: [string, number] | null,
+  wild = false,
+): WeatherDay {
+  return {
+    day: `2027-01-${String(13 + index)}`,
+    startsAt: SKY_START + index * DAY_MS,
+    endsAt: SKY_START + (index + 1) * DAY_MS,
+    boon: skyEntry(...boon),
+    omen: omen === null ? null : skyEntry(...omen),
+    wild,
+  };
+}
+
+/** The forecast of a state of the sky; null is "no forecast yet". Built from the real content and numbers. */
+export function sampleForecast(state: string): Forecast | null {
+  switch (state) {
+    case 'boon only':
+      return {
+        today: skyDay(0, ['fair-winds', 10_000], null),
+        tomorrow: skyDay(1, ['market-day', 10_000], null),
+      };
+    case 'boon and omen':
+      return {
+        today: skyDay(0, ['fair-winds', 12_500], ['static-sky', 15_000]),
+        tomorrow: skyDay(1, ['market-day', 12_500], ['cold-snap', 15_000]),
+      };
+    case 'wild omen tomorrow':
+      return {
+        today: skyDay(0, ['quiet-night', 15_000], ['heatwave', 20_000]),
+        tomorrow: skyDay(1, ['hearty-breakfast', 15_000], ['stormfront', 20_000], true),
+      };
+    case 'rank 14 (strong)':
+      return {
+        today: skyDay(0, ['high-water', 15_000], ['long-shadows', 25_000]),
+        tomorrow: skyDay(1, ['bonfire-night', 15_000], ['muddy-roads', 25_000]),
+      };
+    default:
+      return null;
+  }
 }
