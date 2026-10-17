@@ -1,0 +1,304 @@
+import { useState } from 'preact/hooks';
+import type { Creature } from '../../api';
+import type { GearItem } from '../../gear-types';
+import { CreaturePageV3, type PageV3Actions, type PageV3Open } from '../creature-v3/CreaturePageV3';
+import { HeaderV3 } from '../creature-v3/HeaderV3';
+import type { PickerView } from '../creature-v3/ItemPicker';
+import { GearSlots, TalentSlots } from '../creature-v3/PageSlots';
+import { wornFromBag } from '../creature-v3/bag-sample';
+import type { ItemFilters } from '../creature-v3/picker-view';
+import {
+  V3_ID,
+  V3_KINDS,
+  v3KindOf,
+  v3Scene,
+  type V3Kind,
+  type V3Scene,
+} from '../creature-v3/sample';
+import { bool, str } from '../props';
+import type { Entry, Props } from '../types';
+
+/**
+ * The scenes of the design round, each with the label that is drawn in its banner (and that the
+ * screenshots are named after). `kind` is the sample creature, `view` and `find` pick the picker.
+ */
+interface SceneDef {
+  id: string;
+  label: string;
+  kind: V3Kind;
+  /** What the scene shows: an excerpt of the page, or the whole page with a drawer open. */
+  show: 'header' | 'gear' | 'talents' | 'page' | 'drawer';
+  open?: PageV3Open;
+  view?: PickerView;
+  find?: boolean;
+  filters?: ItemFilters;
+  query?: string;
+  bait?: number;
+}
+
+const SCENE_LIST: readonly SceneDef[] = [
+  { id: 'H1', label: 'H1 · Header', kind: 'level 15', show: 'header' },
+  { id: 'H2', label: 'H2 · Header, long name', kind: 'long name', show: 'header' },
+  { id: 'G1', label: 'G1 · Gear slots (level 2)', kind: 'level 2', show: 'gear' },
+  {
+    id: 'G2',
+    label: 'G2 · Gear slots (level 15, two filled)',
+    kind: 'level 15',
+    show: 'gear',
+  },
+  { id: 'G3', label: 'G3 · Gear slots (level 8, two empty)', kind: 'level 8', show: 'gear' },
+  {
+    id: 'P-A',
+    label: 'P-A · Picker: list',
+    kind: 'level 15',
+    show: 'drawer',
+    open: { kind: 'gear', slot: 'hat' },
+    view: 'list',
+  },
+  {
+    id: 'P-B',
+    label: 'P-B · Picker: grid',
+    kind: 'level 15',
+    show: 'drawer',
+    open: { kind: 'gear', slot: 'hat' },
+    view: 'grid',
+  },
+  {
+    id: 'P-C',
+    label: 'P-C · Picker: find and filter',
+    kind: 'level 15',
+    show: 'drawer',
+    open: { kind: 'gear', slot: 'hat' },
+    view: 'list',
+    find: true,
+    filters: { rarities: ['rare'], elements: [], canWear: true },
+  },
+  {
+    id: 'P-C2',
+    label: 'P-C2 · Picker: find and filter on the grid',
+    kind: 'level 15',
+    show: 'drawer',
+    open: { kind: 'gear', slot: 'hat' },
+    view: 'grid',
+    find: true,
+    query: 'hood',
+  },
+  {
+    id: 'P-D',
+    label: 'P-D · Picker: list, the Charm slot (role pieces)',
+    kind: 'level 15',
+    show: 'drawer',
+    open: { kind: 'gear', slot: 'charm' },
+    view: 'list',
+  },
+  { id: 'T1', label: 'T1 · Talent slots', kind: 'talents: golden and locked', show: 'talents' },
+  {
+    id: 'T1b',
+    label: 'T1b · Talent slots (filled and empty)',
+    kind: 'talents: filled and empty',
+    show: 'talents',
+  },
+  {
+    id: 'T1c',
+    label: 'T1c · Talent slots (three: filled, empty, locked)',
+    kind: 'talents: three slots',
+    show: 'talents',
+  },
+  {
+    id: 'T1d',
+    label: 'T1d · Talent slots (epic: signature and three)',
+    kind: 'talents: epic',
+    show: 'talents',
+  },
+  {
+    id: 'T2',
+    label: 'T2 · Talent Book in the drawer',
+    kind: 'talents: filled and empty',
+    show: 'drawer',
+    open: { kind: 'talent', slot: 2 },
+  },
+  {
+    id: 'T2b',
+    label: 'T2b · Talent Book in the drawer (short of Bait)',
+    kind: 'talents: filled and empty',
+    show: 'drawer',
+    open: { kind: 'talent', slot: 2 },
+    bait: 4,
+  },
+  { id: 'F1', label: 'F1 · Full page top', kind: 'level 15', show: 'page' },
+  { id: 'F2', label: 'F2 · Full page, ribbon ready', kind: 'ribbon ready', show: 'page' },
+  { id: 'F3', label: 'F3 · Full page, ready to evolve', kind: 'evolve ready', show: 'page' },
+];
+
+const SCENE_IDS = SCENE_LIST.map((s) => s.id);
+
+function sceneOf(id: string): SceneDef {
+  return SCENE_LIST.find((s) => s.id === id) ?? (SCENE_LIST[0] as SceneDef);
+}
+
+/** The scene's label as a banner, at its top. */
+function Banner({ label }: { label: string }) {
+  return (
+    <p class="v3-banner" role="note">
+      {label}
+    </p>
+  );
+}
+
+const NO_ACTIONS: Pick<PageV3Actions, 'onRibbon' | 'onEvolve' | 'onRename' | 'onLounge'> = {
+  onRibbon: () => undefined,
+  onEvolve: () => undefined,
+  onRename: () => undefined,
+  onLounge: () => undefined,
+};
+
+/** The page with local state: wearing and taking off change the bag, using a book talent fills the slot. */
+function LivePage({ def, kind, bait }: { def: SceneDef; kind: V3Kind; bait: number }) {
+  const [scene, setScene] = useState<V3Scene>(() => v3Scene(kind, { bait }));
+  const actions: PageV3Actions = {
+    ...NO_ACTIONS,
+    onEquip: (gearId, creatureId) => {
+      setScene((current) => {
+        const target = current.gear.items.find((i) => i.id === gearId);
+        if (target === undefined) return current;
+        const items: GearItem[] = current.gear.items.map((item) => {
+          if (item.id === gearId) return { ...item, equippedOn: creatureId };
+          // Wearing one takes the creature's other item of that slot off.
+          return creatureId !== null && item.slot === target.slot && item.equippedOn === creatureId
+            ? { ...item, equippedOn: null }
+            : item;
+        });
+        const creature: Creature = { ...current.creature, gear: wornFromBag(items, V3_ID) };
+        return {
+          gear: { ...current.gear, items },
+          creature,
+          state: { ...current.state, creatures: [creature, ...current.state.creatures.slice(1)] },
+        };
+      });
+      return Promise.resolve(true);
+    },
+    onSlotTalent: (_creature, talentId, golden, slot) => {
+      setScene((current) => {
+        const entry = current.creature.talents.book.find(
+          (b) => b.id === talentId && b.golden === golden,
+        );
+        if (entry === undefined) return current;
+        const view = {
+          id: entry.id,
+          name: entry.name,
+          golden: entry.golden,
+          text: entry.text,
+          about: entry.about,
+          idle: entry.idle,
+        };
+        const slots = current.creature.talents.slots.map((s) =>
+          s.slot === slot ? { ...s, talent: view } : s,
+        );
+        const book = current.creature.talents.book.map((b) => ({
+          ...b,
+          slot:
+            slots.find((s) => s.talent?.id === b.id && s.talent.golden === b.golden)?.slot ?? null,
+        }));
+        const creature: Creature = {
+          ...current.creature,
+          talents: { ...current.creature.talents, slots, book },
+        };
+        return {
+          gear: current.gear,
+          creature,
+          state: {
+            ...current.state,
+            creatures: [creature, ...current.state.creatures.slice(1)],
+            balances: {
+              ...current.state.balances,
+              bait: Math.max(0, current.state.balances.bait - current.state.bookSlotBait),
+            },
+          },
+        };
+      });
+    },
+  };
+  const page = (
+    <CreaturePageV3
+      creature={scene.creature}
+      state={scene.state}
+      gear={scene.gear}
+      busy={false}
+      actions={actions}
+      picker={def.view ?? 'list'}
+      find={def.find === true}
+      {...(def.filters === undefined ? {} : { initialFilters: def.filters })}
+      {...(def.query === undefined ? {} : { initialQuery: def.query })}
+      initialOpen={def.open ?? null}
+      onBack={() => undefined}
+      onAnswerCatch={() => undefined}
+    />
+  );
+  // A drawer is `position: fixed`: the phone-sized frame holds it, so it stays inside the scene.
+  return def.show === 'drawer' ? (
+    <div class="v3-phone">{page}</div>
+  ) : (
+    <div class="v3-bleed">{page}</div>
+  );
+}
+
+/** An excerpt of the page: the head, and the one block the scene is about, in the page's own card. */
+function Excerpt({ def, bait }: { def: SceneDef; bait: number }) {
+  const { creature, state, gear } = v3Scene(def.kind, { bait });
+  return (
+    <div class="v3-bleed">
+      <section class="creature-page cp-v3" aria-label="Excerpt of the creature page">
+        <div class="cp-block">
+          <HeaderV3 creature={creature} state={state} nameId={`v3-${def.id}-name`} />
+        </div>
+        {def.show === 'gear' && (
+          <div class="cp-block">
+            <h3 class="cp-title">Gear</h3>
+            <GearSlots creature={creature} gear={gear} openSlot={null} onOpen={() => undefined} />
+          </div>
+        )}
+        {def.show === 'talents' && (
+          <div class="cp-block">
+            <h3 class="cp-title">Talents</h3>
+            <TalentSlots creature={creature} openSlot={null} onOpen={() => undefined} />
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function Scene({ p }: { p: Props }) {
+  const def = sceneOf(str(p, 'scene'));
+  const banner = bool(p, 'banner');
+  const kind = v3KindOf(str(p, 'creature') === 'scene' ? def.kind : str(p, 'creature'));
+  const bait = def.bait ?? 100;
+  return (
+    <div class="v3-scenes">
+      {banner && <Banner label={def.label} />}
+      {def.show === 'header' || def.show === 'gear' || def.show === 'talents' ? (
+        <Excerpt def={{ ...def, kind }} bait={bait} />
+      ) : (
+        <LivePage key={`${def.id}-${kind}`} def={def} kind={kind} bait={bait} />
+      )}
+    </div>
+  );
+}
+
+const creaturePageV3: Entry = {
+  name: 'CreaturePageV3',
+  file: 'apps/activity/src/workbench/creature-v3/CreaturePageV3.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    'Creature page v3, a design round (not in the game yet): the head is one centred row, nothing on the page looks forward, gear and talents are slots side by side, and a tap on a slot opens a bottom drawer (an item picker in three options, or the Talent Book). Pick a scene: H = header, G = gear slots, P = item picker (A list, B grid, C find and filter), T = talent slots and Talent Book, F = the full page. The scenes are live: equip, take off and use a talent.',
+  controls: {
+    scene: { kind: 'select', options: SCENE_IDS },
+    banner: { kind: 'toggle' },
+    creature: { kind: 'select', options: ['scene', ...V3_KINDS] },
+  },
+  defaults: { scene: 'F1', banner: true, creature: 'scene' },
+  presets: SCENE_LIST.map((s) => ({ name: s.label, props: { scene: s.id } })),
+  render: (p) => <Scene p={p} />,
+};
+
+export const creaturePageV3Entries: readonly Entry[] = [creaturePageV3];

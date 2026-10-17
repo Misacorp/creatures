@@ -2,6 +2,7 @@ import { accordionEntries } from './entries/accordion';
 import { barEntries } from './entries/bars';
 import { controlEntries } from './entries/controls';
 import { creatureCardEntries } from './entries/creature-card';
+import { creaturePageV3Entries } from './entries/creature-page-v3';
 import { creatureEntries } from './entries/creatures';
 import { headingEntries } from './entries/headings';
 import { iconEntries } from './entries/icons';
@@ -9,6 +10,7 @@ import { lootEntries } from './entries/loot';
 import { popoverEntries } from './entries/popovers';
 import { raidBoardEntries } from './entries/raid-board';
 import { skyEntries } from './entries/sky';
+import { slotDrawerEntries } from './entries/slot-drawer';
 import { slotEntries } from './entries/slots';
 import { stageEntries } from './entries/stage';
 import { tagEntries } from './entries/tags';
@@ -25,6 +27,7 @@ export const ENTRIES: readonly Entry[] = [
   ...tagEntries,
   ...popoverEntries,
   ...slotEntries,
+  ...slotDrawerEntries,
   ...raidBoardEntries,
   ...lootEntries,
   ...headingEntries,
@@ -33,6 +36,7 @@ export const ENTRIES: readonly Entry[] = [
   ...accordionEntries,
   ...creatureEntries,
   ...creatureCardEntries,
+  ...creaturePageV3Entries,
   ...talentEntries,
   ...stageEntries,
   ...skyEntries,

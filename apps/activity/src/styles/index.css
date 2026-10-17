@@ -93,3 +93,5 @@
 @import './views/weather.css';
 @import './components/currency-pile.css';
 @import './components/accordion.css';
+@import './components/slot.css';
+@import './components/drawer.css';

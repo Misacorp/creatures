@@ -27,3 +27,5 @@ The workbench is a second Vite entry (`apps/activity/workbench.html`, code in `a
 ## Not covered
 
 `CreatureCard`, `CreatureFinder` and `Collection` (the Creatures tab with sample creatures, from `creature-card-sample.ts`) are covered since 2026-10-17. Other whole screens and the fight stage (`Stage`, `LiveStage`, `Dungeon`, `Workshop`, `Expeditions` and the like) need a full game state. Also left out: `HaulStrip`, `SlotsStrip`, `InventoryGrid`, `ItemDetail`, `JobSlots`, the pickers and the How to play page. They can be added as entries when feedback asks for them.
+
+`Slot`, `SlotRow` and `Drawer` have pages (2026-10-17), and `CreaturePageV3` shows the creature page design round with scenes (H header, G gear slots, P item picker options, T talents and the Talent Book, F full page); its code is in `src/workbench/creature-v3/` and its stylesheet is imported by the workbench only.

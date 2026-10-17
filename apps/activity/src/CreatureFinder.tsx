@@ -18,7 +18,7 @@ import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 
 /** The magnifying glass of the search field, as crisp pixels. */
-function Magnifier() {
+export function Magnifier() {
   return (
     <svg class="finder-mag" viewBox="0 0 8 8" aria-hidden="true" shape-rendering="crispEdges">
       <rect x="1" y="0" width="3" height="1" />

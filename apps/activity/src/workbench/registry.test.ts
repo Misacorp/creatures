@@ -9,11 +9,14 @@ import { GROUPS } from './types';
  * component under `src/workbench/entries/` (see `docs/design/workbench.md`).
  */
 
-const sources = import.meta.glob<string>(['../*.tsx', '../ui/*.tsx', '../sprites/*.tsx'], {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
+const sources = import.meta.glob<string>(
+  ['../*.tsx', '../ui/*.tsx', '../sprites/*.tsx', './creature-v3/*.tsx'],
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  },
+);
 
 /** Exported names of a source file (functions and constants). */
 function exportsOf(source: string): string[] {
@@ -64,7 +67,7 @@ describe('the entries', () => {
   it('point at a real file that exports the component they are named after', () => {
     for (const entry of ENTRIES) {
       const key = entry.file.replace('apps/activity/src/', '../');
-      const source = sources[key];
+      const source = sources[key] ?? sources[key.replace('../workbench/', './')];
       expect(source, `${entry.name}: ${entry.file} does not exist`).toBeDefined();
       for (const name of [entry.name, ...(entry.covers ?? [])]) {
         expect(
