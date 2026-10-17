@@ -444,10 +444,9 @@ describe('the forecast fixture of the client', () => {
         const today = dayOf(ctx);
         ctx.core.weather.force(today, 'fair-winds', 'static-sky');
         ctx.core.weather.force(addDays(today, 1), 'market-day', null);
-        const live = (await (await ctx.request(secret, '/api/weather')).json()) as Record<
-          string,
-          Record<string, unknown> | null
-        >;
+        const live = await (
+          await ctx.request(secret, '/api/weather')
+        ).json<Record<string, Record<string, unknown> | null>>();
         const keys = (o: unknown): string[] => Object.keys(o as object).sort();
         expect(keys(live)).toEqual(keys(forecastFixture));
         expect(keys(live['today'])).toEqual(keys(forecastFixture.today));
