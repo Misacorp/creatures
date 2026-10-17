@@ -798,7 +798,7 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
   | `longrun-win-typical` (60 to 85%) | 85.8%       | 90.3%              |
   | `choice-creature-min` (>= 0.60x)  | 0.806x      | 0.799x (pass)      |
 
-  The raid is easier everywhere (gear is a bigger share, and a team's gear now grows with the item level), which fixes the long-run target B-016 broke (`curve-r6up-default`) and moves the typical-week targets a few points toward their ranges; `longrun-win-typical` is now 5 points above its limit. Two other targets moved the wrong way: `dungeon-gear-share-week8` is 21.7% (limit 20%) and `gear-newcomer-catchup` 59.7% (limit 60%, was 58%, so it is a point under). The raid retune after the revamps is the place for all of these.
+  The raid is easier everywhere (gear is a bigger share, and a team's gear now grows with the item level), which fixes the long-run target B-016 broke (`curve-r6up-default`) and moves the typical-week targets a few points toward their ranges; `longrun-win-typical` is now 5 points above its limit. One other target moved the wrong way: `dungeon-gear-share-week8` is 21.7% (limit 20%; it passed in B-016). `gear-newcomer-catchup` improved to 59.7% (limit 60%, was 58%). The raid retune after the revamps is the place for all of these.
 
 - **Expected.** Live: a new player's first Hat is worth a few points of Attack (visible on the card as "Attack 2"), the first better make (a Felt Hat at item level 5) is a noticeable jump, and a committed player's best Hat has Attack in the tens by week 8; Festival pieces look special and are not better than any other finale piece of their level.
 - **Follow-ups.**
