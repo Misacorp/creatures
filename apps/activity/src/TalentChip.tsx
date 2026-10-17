@@ -3,7 +3,7 @@ import { talentTextParts } from './talent-view';
 
 /**
  * One talent: its name, its effect in one phrase ("First pounce +14%") and, when asked, one plain sentence
- * about it. A golden talent has a gold frame, its title shimmers gold and so does the number golden
+ * about it. A golden talent has no frame: its title shimmers gold and so does the number golden
  * raised; screen readers hear "golden" after the title, so colour never carries it alone.
  * A talent that does nothing for the creature that holds it says so. Every word comes from the server's
  * view of the content and is drawn as text.

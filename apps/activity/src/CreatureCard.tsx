@@ -152,7 +152,7 @@ export function CreatureCard({
               class={`cc-chip${chip.golden ? ' golden' : ''}${chip.kind === 'empty' ? ' empty' : ''}`}
               aria-hidden="true"
             >
-              <span class="pix">{chip.name}</span>
+              <span class={chip.golden ? 'pix gold-shimmer' : 'pix'}>{chip.name}</span>
             </span>
           ))}
           {kit.locked.length > 0 && (

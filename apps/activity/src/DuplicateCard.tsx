@@ -60,7 +60,7 @@ function optionsFor(
 }
 
 /**
- * A duplicate waiting for an answer: the creature and the talent it rolled (a gold frame when golden), and
+ * A duplicate waiting for an answer: the creature and the talent it rolled (golden: shimmering gold title and number), and
  * four buttons, Teach, Fuse, Release and Keep, with the one the server recommends marked. Teach and Fuse go
  * straight through when there is one place to put it, and open a short list when there are several. A
  * choice the server does not offer (Keep, until a line has a second branch) is not drawn. The talent a

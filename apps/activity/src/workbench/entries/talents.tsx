@@ -38,7 +38,7 @@ const talentChip: Entry = {
   file: 'apps/activity/src/TalentChip.tsx',
   group: 'Tags & chips',
   description:
-    'One talent as text: its name, its effect in a short phrase, and optionally a sentence about it; a golden talent has a gold frame and says Golden, and a talent that does nothing for its creature says so.',
+    'One talent as text: its name, its effect in a short phrase, and optionally a sentence about it; a golden talent has a shimmering gold title and number (no frame; screen readers hear golden), and a talent that does nothing for its creature says so.',
   controls: {
     talent: { kind: 'select', options: TALENT_IDS },
     golden: { kind: 'toggle' },
@@ -83,7 +83,7 @@ const duplicateCard: Entry = {
   file: 'apps/activity/src/DuplicateCard.tsx',
   group: 'Creatures & game pieces',
   description:
-    'A duplicate waiting for an answer, on the Collection tab and in the claim reveal: the creature and the talent it rolled (a gold frame when golden), and the Teach, Fuse, Release and Keep buttons with the recommended one marked. Keep only shows for a line with a second branch.',
+    'A duplicate waiting for an answer, on the Collection tab and in the claim reveal: the creature and the talent it rolled (golden: shimmering gold title and number), and the Teach, Fuse, Release and Keep buttons with the recommended one marked. Keep only shows for a line with a second branch.',
   controls: {
     recommended: { kind: 'select', options: CHOICES },
     golden: { kind: 'toggle' },
