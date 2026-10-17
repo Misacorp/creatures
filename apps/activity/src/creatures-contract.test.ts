@@ -177,7 +177,7 @@ describe('the requests the client sends', () => {
     const { idempotencyKey } = teach.body;
     const done = await chooseCatch(
       chooseTeach.result.pendingId,
-      { choice: 'teach', creatureId: teach.body.creatureId, slot: teach.body.slot },
+      { choice: 'teach', creatureId: teach.body.creatureId },
       idempotencyKey,
     );
     expect(done.result.choice).toBe('teach');

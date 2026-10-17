@@ -1645,3 +1645,26 @@ Misa's changes after polish v5, with the lead's decision on item levels.
 - **Ranks** says a Boon helps and an Omen hinders, with tomorrow's on the wall calendar; its picture gets Boon and Omen tags. **Rewards** says Essence also pays for Reach crafts.
 - **Glossary fixes found on the way:** gear stats ("An item's own Attack and HP", not "a Hat's Attack or a Scarf's HP"), golden talents shimmer (no gold frame), the duplicate choice has no Keep for now, Essence pays for Reach crafts and comes a little from dismantling, and the "Bait no longer buys levels" note is gone.
 - The workbench gets a HowToPlay entry (pick a section).
+
+## 2026-10-18: The trip result screen, and Teach goes to the Talent Book
+
+- **One trip result card** (`TripResult.tsx`, replacing `TripReveal`, `CatchList` and `DuplicateCard`):
+  - the place's banner with the explorer standing on it, then one sentence: "Sproutle spent 12 hours at Tidepools and found…";
+  - one card per creature found (`FindCard`), with the element and the role;
+  - what came home as count badges and item rows;
+  - one progress block (explorer rank and XP, level with the treat, familiarity);
+  - the slot, rank gifts and journal pages (icon on the title's line);
+  - one full-width Claim that confirms every duplicate's pick, in order, and closes the card.
+
+  Misa approved the draft as shown: the banner as a strip (not a faded backdrop), journal pages open, no "Decide later" (Recommended is picked from the start, so Claim is one tap; an unanswered card still waits on the Creatures tab if the app closes).
+
+- **A duplicate chooses with radio rows**, not three buttons:
+  - Fuse and Teach (one row per creature of the line, named only when there are several), then Release (its parts as badges), then Keep when offered.
+  - The recommended row is picked first and carries a small gold star; no yellow button.
+  - A row that cannot be picked is greyed with the reason: "Already in its Talent Book", "Fully fused".
+  - Fuse shows the five fusion stars, the one it adds green and pulsing (with reduced motion: green with a glow, still).
+
+  The Collection tab's waiting catches use the same cards and one full-width Confirm; the "apply Recommended to all" button is gone (Recommended is already picked).
+
+- **The talent a creature rolled sits in a box headed "Discovered talent"**, with a green New when no creature of its line holds it yet (a golden one is new unless a golden one is held). A new species' talent is new by definition.
+- **Teach puts the talent into the creature's Talent Book, never into a slot** (Misa). The player slots it later from the book for the usual `RULES.talents.bookSlotBait` (10 Bait). The server ignores a `slot` an old client still sends. Teach stays within the creature's own line, as before: each line has its own pool of 7 to 8 talents, so a talent can only ever come from a catch of that line, and teaching within the line does not shrink anyone's variety.

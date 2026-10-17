@@ -78,8 +78,7 @@ export const ActionIds = {
   /** One answer to one waiting duplicate (the same card answered another way is another action). */
   catchChoice: (pendingId: string, request: ChoiceRequest): ActionId => {
     const target = 'creatureId' in request ? request.creatureId : '';
-    const slot = 'slot' in request ? String(request.slot) : '';
-    return `catch:${pendingId}:${request.choice}:${target}:${slot}`;
+    return `catch:${pendingId}:${request.choice}:${target}`;
   },
   /** "Apply Recommended to all": one action at a time, so one key. */
   catchAll: (): ActionId => 'catch-all',

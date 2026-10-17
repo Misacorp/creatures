@@ -17,7 +17,7 @@ import { needyIds } from './creature-needs';
 import { CreatureCard } from './CreatureCard';
 import { CreatureFinder } from './CreatureFinder';
 import { CreaturePage, type CardActions } from './CreaturePage';
-import type { CatchChoiceActions } from './DuplicateCard';
+import type { CatchChoiceActions } from './find-view';
 import { PENDING_CATCHES_ID, PendingCatches } from './PendingCatches';
 import type { GearState } from './gear-types';
 import { pageScrollY, scrollAndFocus, scrollPageTo } from './scroll-to';

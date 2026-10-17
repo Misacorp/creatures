@@ -29,7 +29,7 @@ const actions: CardActions = {
   onSlotTalent: () => undefined,
 };
 
-const catchActions = { choose: () => undefined, chooseAll: () => undefined };
+const catchActions = { chooseMany: () => Promise.resolve(true) };
 
 function kindOf(value: string): SampleKind {
   return SAMPLE_KINDS.find((k) => k === value) ?? 'growing';

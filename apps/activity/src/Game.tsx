@@ -22,7 +22,7 @@ import { ActionIds } from './actions';
 import { allowanceNotice } from './allowance-text';
 import { AppHead } from './AppHead';
 import { Collection } from './Collection';
-import type { CatchChoiceActions } from './DuplicateCard';
+import type { CatchChoiceActions } from './find-view';
 import { claimExpedition, pushOn, sendExpedition, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
 import { Expeditions } from './Expeditions';
@@ -38,7 +38,7 @@ import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
 import type { Slots } from './dungeon-team';
-import { chooseAllRecommended, chooseCatch, slotTalent } from './talent-api';
+import { chooseCatch, slotTalent } from './talent-api';
 import { choiceResultText } from './talent-view';
 import { DevPanelHost } from './DevPanelHost';
 import { StarterPicker } from './StarterPicker';
@@ -310,27 +310,28 @@ export function Game({
   }
 
   const catchActions: CatchChoiceActions = {
-    choose: (card, request) => {
-      void runKeyed(ActionIds.catchChoice(card.id, request), (key) =>
-        chooseCatch(card.id, request, key),
-      ).then((done) => {
-        if (done === undefined) return;
-        setCurrent(loaded(done.state));
-        noteChoices([done.result], done.state);
-        setNotice(choiceResultText(done.result, done.state.creatures));
-      });
-    },
-    chooseAll: () => {
-      void runKeyed(ActionIds.catchAll(), (key) => chooseAllRecommended(key)).then((done) => {
-        if (done === undefined) return;
-        setCurrent(loaded(done.state));
-        noteChoices(done.results, done.state);
-        setNotice(
-          done.results.length === 1
-            ? 'Applied Recommended to the waiting catch.'
-            : `Applied Recommended to ${String(done.results.length)} waiting catches.`,
+    chooseMany: async (picks) => {
+      const results: ChoiceResult[] = [];
+      let last: GameState | null = null;
+      for (const { card, request } of picks) {
+        const done = await runKeyed(ActionIds.catchChoice(card.id, request), (key) =>
+          chooseCatch(card.id, request, key),
         );
-      });
+        if (done === undefined) break;
+        results.push(done.result);
+        last = done.state;
+      }
+      if (last !== null) {
+        setCurrent(loaded(last));
+        noteChoices(results, last);
+        const only = results.length === 1 ? results[0] : undefined;
+        setNotice(
+          only !== undefined
+            ? choiceResultText(only, last.creatures)
+            : `Settled ${String(results.length)} catches.`,
+        );
+      }
+      return results.length === picks.length;
     },
   };
 

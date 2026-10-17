@@ -1,8 +1,21 @@
 import { talentContent, talentText } from '@creatures/game';
-import type { TalentView } from '../../talent-types';
-import { TripResult, type Find, type TripResultView } from '../../TripResult';
+import { parseGameState } from '../../api';
+import creaturesState from '../../fixtures/creatures-state.json';
+import { pendingFind, type Find } from '../../find-view';
+import type { PendingCatch, TalentView } from '../../talent-types';
+import { TripResult } from '../../TripResult';
+import type { TripResultView } from '../../trip-result-view';
 import { bool, str } from '../props';
 import type { Entry } from '../types';
+
+/** Real server output (the duplicate-choice scenario): three Splashet duplicates and one Splashet owned. */
+const WAITING = parseGameState(creaturesState);
+const [TEACHABLE, , , KNOWN] = WAITING.pending as [
+  PendingCatch,
+  PendingCatch,
+  PendingCatch,
+  PendingCatch,
+];
 
 /** A talent as the card shows it, found by its name in the content (the first talent if the name moved). */
 function talentNamed(name: string): TalentView {
@@ -20,157 +33,58 @@ function talentNamed(name: string): TalentView {
   };
 }
 
+const MISTNEWT: Find = {
+  key: 'mistnewt',
+  species: 'mistnewt',
+  shiny: false,
+  talent: talentNamed('Slow and Unbothered'),
+  talentNew: true,
+  badges: [
+    { text: 'New!', entry: null },
+    { text: 'First on server!', entry: 'first-on-server' },
+  ],
+  choice: null,
+  answered: null,
+};
+
+/** The Splashet whose talent the owned Splashet already knows: Teach greyed, Fuse recommended. */
+const KNOWN_FIND = pendingFind(KNOWN, WAITING.creatures);
+/** A Splashet with a new talent: Teach recommended. */
+const TEACH_FIND = pendingFind(TEACHABLE, WAITING.creatures);
+/** The same card when Splashet is fully fused: Fuse greyed. */
+const MAXED_FIND = pendingFind(
+  { ...TEACHABLE, id: 'maxed', offered: { ...TEACHABLE.offered, fuse: [] } },
+  WAITING.creatures.map((c) => (c.species === 'splashet' ? { ...c, fusionCount: 5 } : c)),
+);
+
 const scrap = (amount: number) => ({
   key: 'scrap',
   icon: { kind: 'part', part: 'scrap' } as const,
   amount,
   label: 'Scrap',
+  entry: 'part-scrap',
 });
 
-const MISTNEWT: Find = {
-  kind: 'new',
-  key: 'mistnewt',
-  species: 'mistnewt',
-  talent: talentNamed('Slow and Unbothered'),
-  badges: [
-    { text: 'New!', entry: null },
-    { text: 'First on server!', entry: 'first-on-server' },
-  ],
-};
-
-/** A Splashet the player already has: Teach cannot go anywhere (the talent is known), Fuse is recommended. */
-const SPLASHET_KNOWN: Find = {
-  kind: 'duplicate',
-  key: 'splashet',
-  species: 'splashet',
-  talent: talentNamed('First to Say Hello'),
-  options: [
-    {
-      key: 'fuse',
-      label: 'Fuse',
-      detail: 'Splashet: fusion 3 → 4 / 5',
-      blocked: null,
-      recommended: true,
-      request: { choice: 'fuse', creatureId: 'c1' },
-    },
-    {
-      key: 'teach',
-      label: 'Teach',
-      detail: '',
-      blocked: "Already in Splashet's Talent Book",
-      recommended: false,
-      request: { choice: 'teach', creatureId: 'c1', slot: 2 },
-    },
-    {
-      key: 'release',
-      label: 'Release',
-      detail: '',
-      pays: [scrap(3)],
-      blocked: null,
-      recommended: false,
-      request: { choice: 'release' },
-    },
-  ],
-};
-
-/** A Splashet when Splashet is fully fused: Fuse is greyed, and Teach has two places to go. */
-const SPLASHET_FULL: Find = {
-  kind: 'duplicate',
-  key: 'splashet-2',
-  species: 'splashet',
-  talent: talentNamed('First to Say Hello'),
-  options: [
-    {
-      key: 'teach-c1',
-      label: 'Teach',
-      detail: 'Splashet, empty slot 2',
-      blocked: null,
-      recommended: true,
-      request: { choice: 'teach', creatureId: 'c1', slot: 2 },
-    },
-    {
-      key: 'teach-c2',
-      label: 'Teach',
-      detail: 'Tidewing, replaces Playful',
-      blocked: null,
-      recommended: false,
-      request: { choice: 'teach', creatureId: 'c2', slot: 1 },
-    },
-    {
-      key: 'fuse',
-      label: 'Fuse',
-      detail: '',
-      blocked: 'Fully fused (5 / 5)',
-      recommended: false,
-      request: { choice: 'fuse', creatureId: 'c1' },
-    },
-    {
-      key: 'release',
-      label: 'Release',
-      detail: '',
-      pays: [scrap(3)],
-      blocked: null,
-      recommended: false,
-      request: { choice: 'release' },
-    },
-  ],
-};
-
-const CINDLE: Find = {
-  kind: 'duplicate',
-  key: 'cindle',
-  species: 'cindle',
-  talent: talentNamed('Quick to Pounce'),
-  options: [
-    {
-      key: 'fuse',
-      label: 'Fuse',
-      detail: 'Cindle: fusion 1 → 2 / 5',
-      blocked: null,
-      recommended: true,
-      request: { choice: 'fuse', creatureId: 'c3' },
-    },
-    {
-      key: 'teach',
-      label: 'Teach',
-      detail: 'Cindle, replaces Warm Paws',
-      blocked: null,
-      recommended: false,
-      request: { choice: 'teach', creatureId: 'c3', slot: 1 },
-    },
-    {
-      key: 'release',
-      label: 'Release',
-      detail: '',
-      pays: [
-        scrap(3),
-        {
-          key: 'ember',
-          icon: { kind: 'part', part: 'ember-shard' },
-          amount: 1,
-          label: 'Ember shard',
-        },
-      ],
-      blocked: null,
-      recommended: false,
-      request: { choice: 'release' },
-    },
-  ],
-};
-
 const BASE: TripResultView = {
-  explorer: { id: 'sproutle', species: 'sproutle', name: 'Sproutle' },
+  tone: 'home',
+  explorer: { id: 'sproutle', species: 'sproutle', shiny: false, name: 'Sproutle' },
   place: { id: 'tidepools', name: 'Tidepools' },
   hours: 12,
+  failure: null,
+  pushOn: null,
   finds: [],
+  noCatch: null,
+  autoSettled: [],
   counts: [
     scrap(1),
     { key: 'satchel', icon: { kind: 'supply', id: 'satchel' }, amount: 1, name: 'Small Satchel' },
   ],
   loot: null,
-  xp: { gained: 300, value: 412, max: 1200, startCap: 'Rank 3', endCap: 'Rank 4' },
-  growth: { gained: 240, treat: true, from: 8, to: 9 },
+  xp: { gained: 300, rank: 3, rankBefore: 3, rankedUp: false, value: 412, max: 1200 },
+  growth: { gained: 240, treat: true, from: 8, to: 9, note: null },
   stars: { stars: 1, gained: false, trips: 5 },
+  slot: null,
+  gifts: [],
   journal: [],
 };
 
@@ -182,19 +96,21 @@ const SCENES: Record<string, TripResultView> = {
       {
         title: 'A small friend',
         text: 'The mist-newts stand at the back and hum. Everyone in front of them stands a little taller, and nobody can say why.',
+        set: null,
+        setComplete: false,
       },
     ],
   },
   'a duplicate': {
     ...BASE,
-    finds: [SPLASHET_KNOWN],
-    growth: { gained: 240, treat: true, from: 9, to: 9 },
+    finds: [KNOWN_FIND],
+    growth: { gained: 240, treat: true, from: 9, to: 9, note: null },
     stars: { stars: 1, gained: false, trips: 6 },
   },
   'three finds': {
     ...BASE,
     hours: 24,
-    finds: [MISTNEWT, SPLASHET_FULL, CINDLE],
+    finds: [MISTNEWT, TEACH_FIND, MAXED_FIND],
     loot: {
       gear: [{ id: 'g1', baseId: 'kelp-cap', rarity: 'rare', itemLevel: 6 }],
       converted: [],
@@ -203,7 +119,24 @@ const SCENES: Record<string, TripResultView> = {
     },
     stars: { stars: 2, gained: true, trips: 10 },
   },
-  'nothing found': { ...BASE, hours: 2, finds: [] },
+  'called home early': {
+    ...BASE,
+    tone: 'recalled',
+    noCatch: 'No creature came this time, only a small find.',
+    xp: null,
+    growth: null,
+    stars: null,
+  },
+  'the trip failed': {
+    ...BASE,
+    tone: 'failed',
+    failure:
+      'Ancient vault did not work out. Nothing came back, and the explorer learned nothing this time.',
+    counts: [],
+    xp: null,
+    growth: null,
+    stars: null,
+  },
 };
 
 export const tripResult: Entry = {
@@ -211,19 +144,19 @@ export const tripResult: Entry = {
   file: 'apps/activity/src/TripResult.tsx',
   group: 'Creatures & game pieces',
   description:
-    'DRAFT, not used in the game yet. The new expedition result: who went where for how long over the place banner, the creatures found (a duplicate chooses with radio rows, Recommended preselected, impossible choices greyed with the reason), what came home, one progress block, journal pages and one Claim button.',
+    'What a claimed trip brought home, on one card: the place banner with the explorer, one sentence of who went where, the creatures found (a duplicate chooses with radio rows), what came home, one progress block, journal pages and one full-width Claim. The buttons do nothing here.',
   controls: {
     scene: { kind: 'select', options: Object.keys(SCENES) },
-    header: { kind: 'select', options: ['strip', 'backdrop'] },
     journalOpen: { kind: 'toggle' },
+    busy: { kind: 'toggle' },
   },
-  defaults: { scene: 'one new creature', header: 'strip', journalOpen: true },
+  defaults: { scene: 'one new creature', journalOpen: true, busy: false },
   presets: Object.keys(SCENES).map((scene) => ({ name: scene, props: { scene } })),
   render: (p) => (
     <TripResult
       key={str(p, 'scene')}
       view={SCENES[str(p, 'scene')] ?? BASE}
-      header={str(p, 'header') === 'backdrop' ? 'backdrop' : 'strip'}
+      busy={bool(p, 'busy')}
       journalOpen={bool(p, 'journalOpen')}
       onClaim={() => undefined}
     />

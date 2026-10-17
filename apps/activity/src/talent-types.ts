@@ -41,7 +41,7 @@ export interface CreatureTalents {
 
 export type DuplicateChoice = 'teach' | 'fuse' | 'release' | 'keep';
 
-/** What Recommended is: the choice and, for Teach and Fuse, the creature (and for Teach the slot). */
+/** What Recommended is: the choice and, for Teach and Fuse, the creature. (Older servers also sent Teach's slot.) */
 export interface Recommendation {
   choice: DuplicateChoice;
   creatureId?: string;
@@ -66,7 +66,7 @@ export interface PendingCatch {
 
 /** The body of POST /api/catches/:id/choose, without its idempotency key. */
 export type ChoiceRequest =
-  | { choice: 'teach'; creatureId: string; slot: number }
+  | { choice: 'teach'; creatureId: string }
   | { choice: 'fuse'; creatureId: string }
   | { choice: 'release' }
   | { choice: 'keep' }
