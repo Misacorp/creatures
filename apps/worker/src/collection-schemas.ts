@@ -45,6 +45,8 @@ export const StartExpeditionBodySchema = v.strictObject({
     ),
     [],
   ),
+  /** Pack a treat for the explorer (Bait, paid when the trip starts): it doubles the trip's experience. */
+  treat: v.optional(v.boolean(), false),
   idempotencyKey: IdempotencyKeySchema,
 });
 
@@ -87,7 +89,8 @@ export const TalentSlotBodySchema = v.strictObject({
   idempotencyKey: IdempotencyKeySchema,
 });
 
-export const TrainBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
+/** Earning the ribbon a creature waits for: the creature is in the path, the player is the session's. */
+export const RibbonBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
 
 export const EvolveBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
 

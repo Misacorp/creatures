@@ -97,6 +97,79 @@ describe('analytics_daily: schema and values', () => {
     });
   });
 
+  it('tallies experience, treats, ribbons and the pity, with the Bait of a treat taken from the ledger only', async () => {
+    await runCore(nextGuild(), (ctx) => {
+      const at = startOf(DAY) + HOUR;
+      const insert = (id: number, kind: string, props: Record<string, unknown>): void => {
+        ctx.sql.exec(
+          'INSERT INTO analytics_events (id, at, kind, actor_hash, props_json) VALUES (?, ?, ?, ?, ?)',
+          9_100_000 + id,
+          at,
+          kind,
+          ALICE,
+          JSON.stringify(props),
+        );
+      };
+      insert(1, 'creature_exp', {
+        source: 'trip',
+        species: 'splashet',
+        gained: 60,
+        treat: false,
+        levelBefore: 4,
+        level: 5,
+        waiting: false,
+      });
+      insert(2, 'creature_exp', {
+        source: 'dungeon',
+        species: 'splashet',
+        gained: 80,
+        treat: true,
+        levelBefore: 10,
+        level: 10,
+        waiting: true,
+      });
+      insert(3, 'treat', { source: 'trip', species: 'splashet', level: 4, cost: 5 });
+      insert(4, 'ribbon', { species: 'splashet', ribbon: 'bronze' });
+      insert(5, 'catch_pity', { pity: 'new', species: 'cindle' });
+      ctx.core.credit({
+        userId: USER_ID,
+        currency: 'bait',
+        amount: 5,
+        source: 'leet',
+        idempotencyKey: 'leet:treat-test',
+      });
+      ctx.core.spend({
+        userId: USER_ID,
+        currency: 'bait',
+        amount: 1,
+        purpose: 'treat',
+        idempotencyKey: 'treat:trip:x1',
+        apply: () => 'ok',
+      });
+      ctx.sql.exec('UPDATE ledger SET created_at = ?', at);
+      ctx.core.rollup.rollDay(DAY, HELSINKI);
+      const list = daily(ctx, DAY);
+      expect(value(list, 'collection.exp', { source: 'trip', treat: 0 })).toBe(1);
+      expect(value(list, 'collection.exp', { source: 'dungeon', treat: 1 })).toBe(1);
+      expect(value(list, 'collection.exp_sum', { source: 'trip' })).toBe(60);
+      expect(value(list, 'collection.exp_sum', { source: 'dungeon' })).toBe(80);
+      expect(value(list, 'collection.level_up', { source: 'trip' })).toBe(1);
+      expect(value(list, 'collection.level_up', { source: 'dungeon' })).toBe(0);
+      expect(value(list, 'collection.exp_waiting', { level: 10 })).toBe(1);
+      expect(value(list, 'collection.treat', { source: 'trip' })).toBe(1);
+      expect(value(list, 'collection.ribbon', { ribbon: 'bronze' })).toBe(1);
+      expect(value(list, 'expedition.pity', { pity: 'new' })).toBe(1);
+      expect(value(list, 'flow', { currency: 'scrap', dir: 'sink', label: 'ribbon' })).toBe(
+        RULES.experience.ribbons[0]?.scrap,
+      );
+      // The treat's Bait is counted once, from the ledger row: the event adds no flow of its own.
+      const baitSinks = list.filter(
+        (r) => r.metric === 'flow' && r.dims['currency'] === 'bait' && r.dims['label'] === 'treat',
+      );
+      expect(baitSinks.map((r) => r.value)).toEqual([1]);
+    });
+  });
+
   it('is created by migration 20', async () => {
     await runCore(nextGuild(), (ctx) => {
       expect(LATEST_SCHEMA_VERSION).toBeGreaterThanOrEqual(20);

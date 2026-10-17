@@ -18,6 +18,7 @@ import { rollMissingTalents } from './talent-store';
 import { gearRoutes } from './gear-routes';
 import { creatureQuirkMigration } from './creature-quirk-migration';
 import { creaturesAMigration } from './creatures-a-migration';
+import { creaturesBMigration } from './creatures-b-migration';
 import { expeditionRoutes } from './expedition-routes';
 import { expeditionsMigration } from './expedition-migration';
 import { collectionRoutes } from './collection-routes';
@@ -350,6 +351,9 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   // Version 29: the crafting loop: dismantle jobs and the nominal minutes a job worked (see
   // workshop-v2-migration.ts).
   workshopV2Migration,
+  // Version 30: creature experience and ribbons, the trip treat flag and the pity counters (see
+  // creatures-b-migration.ts).
+  creaturesBMigration,
 ];
 
 export interface SessionUser {

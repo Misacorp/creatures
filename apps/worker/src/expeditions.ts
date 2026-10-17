@@ -53,8 +53,10 @@ import {
   rollBlueprint,
   slotsFor,
   tripMs,
+  tripExperience,
   tripRolls,
   tripXp,
+  treatCost,
   weeklySpecial,
   closedReasons,
   chance,
@@ -96,8 +98,9 @@ import { grantRankGift, grantTripLoot, type DraftItem, type GrantView } from './
 import { gearRulesOf, minusBp } from './gear-worn';
 import { openJobOf } from './gear-store';
 import { devKey, type DevFlags } from './dev-state';
-import type { LedgerStorage } from './ledger';
-import { runKeyed } from './keyed-action';
+import { spend, type LedgerStorage } from './ledger';
+import { awardExperience, type ExperienceView } from './creature-exp';
+import { runKeyed, settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import type { CatchChoices, ChoiceResult } from './catch-choices';
 import { weekIdFor, weekIndex } from './raid-schedule';
@@ -171,6 +174,11 @@ export interface ExpeditionResult {
   pushOn?: PushOnResultView;
   /** Explorer XP gained, and the explorer's totals and rank after the trip. */
   xp?: { gained: number; total: number; rank: number; rankBefore: number };
+  /**
+   * Creature experience the trip paid its explorer (doubled by a treat), and what it did to the level.
+   * Absent for a recall, a failed trip and results stored before training by activity.
+   */
+  experience?: ExperienceView;
   /** The explorer's stars at the destination after the trip. */
   familiarity?: { stars: number; starsBefore: number; trips: number };
   /** Journal pages found (usually none or one). */
@@ -212,8 +220,10 @@ export interface ExpeditionView {
   /** The weekly twist that applied, if the trip went to the special destination that week. */
   twist: string | null;
   rolls: number;
-  /** Bait paid for supplies. */
+  /** Bait paid for supplies (always 0 now: supplies cannot be bought). */
   cost: number;
+  /** True when a treat was packed for this trip: it doubles the explorer's creature experience. */
+  treat: boolean;
   startedAt: number;
   endsAt: number;
   /** When the trip can be claimed in full: the end of the push-on once one is chosen, else `endsAt`. */
@@ -276,6 +286,8 @@ export interface SendInput {
    * client gets a clear refusal (`supplies_not_for_sale`) instead of a schema error.
    */
   supplies: readonly { id: string; source: 'buy' | 'owned' }[];
+  /** Pack a treat for the explorer: Bait, paid when the trip starts. Absent: no treat. */
+  treat?: boolean;
   idempotencyKey: string;
 }
 
@@ -300,6 +312,7 @@ type ExpeditionRow = {
   push_ends_at: number | null;
   push_odds_bp: number | null;
   cancel_reason: string | null;
+  treat: number;
 };
 
 type CreatureLite = {
@@ -486,6 +499,7 @@ export class Expeditions {
       twist: row.special_id,
       rolls: row.rolls,
       cost: row.cost,
+      treat: row.treat === 1,
       startedAt: row.started_at,
       endsAt: row.ends_at,
       readyAt: row.push_ends_at ?? row.ends_at,
@@ -703,7 +717,9 @@ export class Expeditions {
    * is a free slot, the explorer's rank allows the trip length and the place, the place is open (night in
    * the guild's timezone, a Festival week), the supplies are valid. Supplies are optional: a trip without
    * any is free. Supplies cannot be bought: they come from stock, are taken, and the trip is created,
-   * all in one transaction. An old client asking to buy one is refused (`supplies_not_for_sale`).
+   * all in one transaction. An old client asking to buy one is refused (`supplies_not_for_sale`). A treat
+   * costs Bait (`treatCost` of the explorer's level), paid in the same transaction under a key derived from
+   * the trip's own id, so a retry of the send never pays it twice.
    */
   send(userId: string, input: SendInput, timezone: string): Outcome<ExpeditionView> {
     const fingerprint = JSON.stringify([
@@ -711,6 +727,7 @@ export class Expeditions {
       input.destination,
       input.duration,
       [...input.supplies].map((s) => `${s.id}:${s.source}`).sort(),
+      input.treat === true,
     ]);
     return atomically(this.deps.storage, () => {
       const sent = runKeyed(
@@ -775,11 +792,12 @@ export class Expeditions {
       }
     }
     const id = crypto.randomUUID();
+    const treat = input.treat === true;
     this.sql.exec(
       `INSERT INTO expeditions
          (id, user_id, creature_id, duration, supplies, rolls, cost, started_at, ends_at, status,
-          destination_id, supplies_json, special_id)
-       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, 'active', ?, ?, ?)`,
+          destination_id, supplies_json, special_id, treat)
+       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, 'active', ?, ?, ?, ?)`,
       id,
       userId,
       creature.id,
@@ -791,7 +809,30 @@ export class Expeditions {
       dest.id,
       JSON.stringify(ids),
       special,
+      treat ? 1 : 0,
     );
+    if (treat) {
+      // The treat is paid with the trip: short Bait fails the whole send, and the key is the trip's own.
+      const cost = treatCost(creature.level);
+      settleSpend(
+        spend(
+          this.deps.storage,
+          {
+            userId,
+            currency: 'bait',
+            amount: cost,
+            purpose: 'treat',
+            idempotencyKey: `treat:trip:${id}`,
+            apply: () => ({ expeditionId: id }),
+          },
+          now,
+        ),
+      );
+      this.deps.analytics?.record(
+        { kind: 'treat', source: 'trip', species: creature.species, level: creature.level, cost },
+        userId,
+      );
+    }
     this.sql.exec('UPDATE creatures SET away_expedition_id = ? WHERE id = ?', id, creature.id);
     bumpStat(this.sql, userId, 'supplies_used', kit.length);
     this.deps.analytics?.record(
@@ -974,11 +1015,16 @@ export class Expeditions {
     const famBefore = familiarityOf(this.sql, userId, explorer.id, dest.id);
     const starsBefore = familiarityStars(dest, famBefore);
     const progress = this.sql
-      .exec<{ expeditions_claimed: number; dupe_streak: number }>(
-        'SELECT expeditions_claimed, dupe_streak FROM player_progress WHERE user_id = ?',
+      .exec<{
+        expeditions_claimed: number;
+        dupe_streak: number;
+        pity_new: number;
+        pity_creature: number;
+      }>(
+        'SELECT expeditions_claimed, dupe_streak, pity_new, pity_creature FROM player_progress WHERE user_id = ?',
         userId,
       )
-      .toArray()[0] ?? { expeditions_claimed: 0, dupe_streak: 0 };
+      .toArray()[0] ?? { expeditions_claimed: 0, dupe_streak: 0, pity_new: 0, pity_creature: 0 };
     const owned = new Set(
       this.sql
         .exec<{ line: string }>('SELECT line FROM creatures WHERE user_id = ?', userId)
@@ -999,6 +1045,8 @@ export class Expeditions {
       ownedLines: owned,
       dupeStreak: progress.dupe_streak,
       firstExpedition: progress.expeditions_claimed === 0,
+      // The pity: the counters move with this claim and are stored below, in the same transaction.
+      pity: { sinceNew: progress.pity_new, sinceCreature: progress.pity_creature },
     });
     const settled: ChoiceResult[] = [];
     const catches = rolled.results.map((caught) => {
@@ -1010,14 +1058,26 @@ export class Expeditions {
     // A claim that brought nothing back (an early recall) must not use up the first-expedition
     // guarantee, so it is not counted (a trip whose rolls all came up empty did bring a roll).
     this.sql.exec(
-      `INSERT INTO player_progress (user_id, expeditions_claimed, dupe_streak) VALUES (?, ?, ?)
+      `INSERT INTO player_progress
+         (user_id, expeditions_claimed, dupe_streak, pity_new, pity_creature) VALUES (?, ?, ?, ?, ?)
        ON CONFLICT(user_id) DO UPDATE SET
          expeditions_claimed = expeditions_claimed + excluded.expeditions_claimed,
-         dupe_streak = excluded.dupe_streak`,
+         dupe_streak = excluded.dupe_streak,
+         pity_new = excluded.pity_new,
+         pity_creature = excluded.pity_creature`,
       userId,
       count > 0 ? 1 : 0,
       rolled.dupeStreak,
+      rolled.pity.sinceNew,
+      rolled.pity.sinceCreature,
     );
+    // What the pity forced is logged by kind (no counters, no player data beyond the species).
+    for (const forced of rolled.forced) {
+      this.deps.analytics?.record(
+        { kind: 'catch_pity', pity: forced.pity, species: forced.species },
+        userId,
+      );
+    }
 
     // Parts, supplies, gear and maybe a blueprint, from their own live RNG (the catches used `rng`).
     const rank = explorerBefore.rank;
@@ -1156,6 +1216,18 @@ export class Expeditions {
       rank: rankAfter,
       rankBefore: p.explorerBefore.rank,
     };
+    // Creature experience (training by activity): the explorer earns the trip's by its length, doubled
+    // by the treat packed when it was sent. A recall and a failed trip never get here.
+    const experience = awardExperience(
+      this.sql,
+      analytics,
+      userId,
+      explorer.id,
+      tripExperience(expedition.duration, expedition.treat === 1),
+      'trip',
+      expedition.treat === 1,
+    );
+    if (experience !== null) p.result.experience = experience;
     if (rankAfter > p.explorerBefore.rank) {
       analytics?.record(
         { kind: 'explorer_rank', species: explorer.species, rank: rankAfter },

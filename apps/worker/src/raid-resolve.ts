@@ -22,6 +22,7 @@ import {
   essenceForStage,
   jackpotEssenceFor,
   luckAtRank,
+  raidExperience,
   rollJackpot,
   type BossDef,
   type Rng,
@@ -44,6 +45,7 @@ import {
   type FightSlot,
 } from '@creatures/engine';
 import type { Analytics } from './analytics';
+import { awardExperience } from './creature-exp';
 import { bumpStat } from './expedition-store';
 import { grantFestivalGear, grantRaidFinale, grantRaidPhase, type GrantDeps } from './gear-grants';
 import { credit, type LedgerStorage } from './ledger';
@@ -532,6 +534,16 @@ export function settleParty(
       );
       essence[userId] = amount;
     }
+  }
+
+  // --- Creature experience: every creature that fought (guests excluded), by the stage; a cleared one pays
+  // half as much again. No treats: the raid pays everyone the same. This runs once per stage, with the
+  // result row. ---
+  const stageExperience = raidExperience(phase, result.cleared);
+  for (const slot of input.row) {
+    const userId = slot.ownerId === null ? undefined : userOf.get(slot.ownerId);
+    if (userId === undefined) continue;
+    awardExperience(sql, deps.analytics, userId, slot.id, stageExperience, 'raid', false);
   }
 
   // --- Gear: scrap for a cleared phase, one gear roll for a won finale (members only) ---

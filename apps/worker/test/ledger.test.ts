@@ -338,7 +338,15 @@ describe('ledger spend', () => {
   it('validates the idempotency key format', async () => {
     await runCore('710000000000000022', ({ core }) => {
       seed(core, 100);
-      const bad = ['', 'short', 'has space 12345', 'semi:colon:123', 'a'.repeat(65), 'ümlaut-1234'];
+      const bad = [
+        '',
+        'short',
+        'has space 12345',
+        'Semi:colon:123',
+        'treat:',
+        'a'.repeat(65),
+        'ümlaut-1234',
+      ];
       for (const idempotencyKey of bad) {
         expect(() =>
           core.spend({
@@ -351,7 +359,13 @@ describe('ledger spend', () => {
           }),
         ).toThrow();
       }
-      for (const idempotencyKey of ['a'.repeat(8), 'A_b-1'.repeat(12) + 'abcd', KEY_C]) {
+      // Server-built keys (a lowercase source, a colon, a scope) are for the server's own spends.
+      for (const idempotencyKey of [
+        'a'.repeat(8),
+        'A_b-1'.repeat(12) + 'abcd',
+        KEY_C,
+        'treat:trip:0f8fad5b-d9cb-469f-a165-70867728950e',
+      ]) {
         expect(
           core.spend({
             userId: USER_ID,

@@ -388,18 +388,17 @@ describe('talents in the numbers a creature fights and trips with', () => {
       const [splashet, cindle] = a.creatureIds as [string, string, string];
       holdTalent(ctx.sql, splashet, { talentId: 'playful', golden: false }, 1, 1);
       holdTalent(ctx.sql, cindle, { talentId: 'quick-to-pounce', golden: false }, 1, 1);
+      // What the fold gives them at the level they fight at (the stages pay experience afterwards).
+      const wantSplashet = expected(ctx, splashet, [{ id: 'playful', golden: false }]);
+      const wantCindle = expected(ctx, cindle, [{ id: 'quick-to-pounce', golden: false }]);
       forcePool(ctx.sql, 50_000_000);
       ctx.clock.t = W02.afterFinale;
       ctx.core.raid.runDue(HELSINKI);
       const runs = storedRuns(ctx.sql);
       expect(runs.length).toBeGreaterThan(0);
       const slotOf = (id: string) => runs[0]?.input.row.find((s) => s.id === id);
-      expect(slotOf(splashet)?.stats).toEqual(
-        expected(ctx, splashet, [{ id: 'playful', golden: false }]).stats,
-      );
-      expect(slotOf(cindle)?.mods).toEqual(
-        expected(ctx, cindle, [{ id: 'quick-to-pounce', golden: false }]).mods,
-      );
+      expect(slotOf(splashet)?.stats).toEqual(wantSplashet.stats);
+      expect(slotOf(cindle)?.mods).toEqual(wantCindle.mods);
       for (const run of runs) {
         expect(simulateFight(run.input, createSeededRng(run.seed))).toEqual(run.result);
       }

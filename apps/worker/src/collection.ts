@@ -6,13 +6,18 @@
  * The user is always an argument supplied from the verified session, never from a request body.
  */
 import {
-  canTrain,
   RULES,
   content,
-  discountedTrainingCost,
   effectiveStats,
+  expToNext,
+  nextUnlock,
   quirkText,
+  ribbonNeeded,
+  ribbonParts,
   sanitizeNickname,
+  treatCost,
+  type PartsBundle,
+  type PartKind,
   type Rng,
   type Stats,
 } from '@creatures/game';
@@ -28,20 +33,23 @@ import {
   type SlotsView,
 } from './expeditions';
 import {
+  debitParts,
   equippedByCreature,
+  getParts,
   openJobsByCreature,
   wornGearView,
   wornRows,
   type WornBySlot,
   type WornGear,
 } from './gear-store';
+import { settleExperience, type ExperienceView } from './creature-exp';
 import { foldCreature } from './gear-worn';
 import { CatchChoices, type PendingView } from './catch-choices';
 import { booksByCreature, foldTalentsOf, insertCreature } from './talent-store';
 import { creatureTalentsView, type CreatureTalentsView } from './talent-view';
 import type { HeldTalent } from '@creatures/game';
 import { getBalances, lookupSpend, spend, type Currency, type LedgerStorage } from './ledger';
-import { settleSpend } from './keyed-action';
+import { runKeyed, settleSpend } from './keyed-action';
 import { Lounge, type LoungeSpot } from './lounger';
 import { GameError, atomically, type Outcome } from './outcome';
 import { recordServerFirst, type ServerFirstKind } from './server-firsts';
@@ -65,6 +73,8 @@ type CreatureRow = {
   caught_at: number;
   quirk_id: string | null;
   line_slot: number;
+  exp: number;
+  ribbons: number;
 };
 
 export interface CreatureView {
@@ -106,8 +116,25 @@ export interface CreatureView {
   busy: { kind: 'expedition' | 'job'; id: string } | null;
   /** The creature's explorer rank, XP and finished trips (expeditions are about creatures, not the account). */
   explorer: ExplorerView;
-  /** Bait for the next level (discount applied), or null at the level cap. */
-  trainCost: number | null;
+  /**
+   * Experience banked towards the next level, and what that level needs (null at the top). Levels come
+   * from experience (trips, the dungeon, raids, Workshop jobs), never from Bait.
+   */
+  exp: number;
+  expNeeded: number | null;
+  /**
+   * True when the creature stands at a level it may not leave yet (a ribbon, or its evolution) and holds
+   * the whole next level's experience.
+   */
+  waiting: boolean;
+  /** Ribbons held: 0 none, 1 Bronze, 2 Silver, 3 Gold. */
+  ribbons: number;
+  /** What its next level brings ("Scarf" at 7), or null at the top. */
+  nextUnlock: { level: number; name: string } | null;
+  /** The ribbon it waits for at its level (with the price and whether the player can pay it now), else null. */
+  ribbon: RibbonView | null;
+  /** Bait a treat costs for this creature now (3 + half its level, rounded up). */
+  treatCost: number;
   /**
    * The evolution this creature could reach. `available` is true when the evolution level is
    * reached and the player holds enough Essence right now.
@@ -119,6 +146,28 @@ export interface CreatureView {
    * creature can still evolve into a species that has one.
    */
   ability: { id: string; unlocked: boolean; unlockLevel: number; nextId?: string } | null;
+}
+
+/** A ribbon a creature waits for. */
+export interface RibbonView {
+  id: 'bronze' | 'silver';
+  /** The level it waits at. */
+  level: number;
+  /** The parts it costs (shards of the creature's own element). */
+  parts: PartsBundle;
+  /** Finished trips of this creature it asks for, and how many it has made. */
+  trips: number;
+  tripsDone: number;
+  /** True when the player holds the parts and the creature has made the trips. */
+  ready: boolean;
+}
+
+/** What earning a ribbon did. */
+export interface RibbonResult {
+  creatureId: string;
+  ribbon: 'bronze' | 'silver';
+  /** The experience the creature had banked, spent now that the way is open. */
+  experience: ExperienceView | null;
 }
 
 export interface ServerFirstView {
@@ -149,8 +198,6 @@ export interface PlayerState {
   slots: SlotsView;
   /** Supplies in stock: supply id to amount. */
   supplies: Record<string, number>;
-  /** Median over players of their highest creature level; null while nobody has a creature. */
-  trainingMedianLevel: number | null;
   serverFirsts: ServerFirstView[];
   /**
    * The creature that lounges in the living room: an idle creature of the player (re-picked at random
@@ -199,17 +246,6 @@ export interface CollectionDeps {
   dev?: DevFlags | undefined;
   /** Test seam: the branches of a line, for the Keep choice (default: the shipped content). */
   branchesOf?: ((line: string) => readonly string[]) | undefined;
-}
-
-function median(values: number[]): number | null {
-  if (values.length === 0) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  const upper = sorted[mid];
-  const lower = sorted[mid - 1];
-  if (upper === undefined) return null;
-  if (sorted.length % 2 === 1 || lower === undefined) return upper;
-  return (lower + upper) / 2;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -295,19 +331,32 @@ export class Collection {
     return row?.starter_species ?? null;
   }
 
-  /** Median of each player's highest creature level, or null when nobody has a creature. */
-  trainingMedianLevel(): number | null {
-    const tops = this.sql
-      .exec<{ top: number }>('SELECT MAX(level) AS top FROM creatures GROUP BY user_id')
-      .toArray()
-      .map((r) => r.top);
-    return median(tops);
+  /** The ribbon a creature waits for, with its price and whether the player can pay it, or null. */
+  private ribbonView(
+    row: CreatureRow,
+    parts: Readonly<Record<PartKind, number>>,
+    trips: number,
+  ): RibbonView | null {
+    const def = ribbonNeeded(row.level, row.ribbons);
+    if (def === null) return null;
+    const cost = ribbonParts(def, speciesOf(row.species).element);
+    const affordable = (Object.entries(cost) as [PartKind, number][]).every(
+      ([kind, need]) => parts[kind] >= need,
+    );
+    return {
+      id: def.id,
+      level: def.level,
+      parts: cost,
+      trips: def.trips,
+      tripsDone: trips,
+      ready: affordable && trips >= def.trips,
+    };
   }
 
   private creatureView(
     row: CreatureRow,
-    medianLevel: number | null,
     essence: number,
+    parts: Readonly<Record<PartKind, number>>,
     worn: WornBySlot | undefined,
     jobId: string | undefined,
     explorer: ExplorerView,
@@ -316,7 +365,8 @@ export class Collection {
     const species = speciesOf(row.species);
     const away = row.away_expedition_id !== null;
     const stats = effectiveStats(species, row.level, row.fusion_count);
-    const trainable = canTrain({ level: row.level, levelCap: species.levelCap, away: false });
+    const atTop = row.level >= RULES.experience.maxLevel;
+    const ribbon = this.ribbonView(row, parts, explorer.trips);
     const abilityId = species.ability?.id;
     const nextAbilityId =
       species.evolvesTo === undefined
@@ -355,9 +405,13 @@ export class Collection {
               ...(nextAbilityId === undefined ? {} : { nextId: nextAbilityId }),
             },
       explorer,
-      trainCost: trainable
-        ? discountedTrainingCost(row.level, medianLevel ?? Number.NEGATIVE_INFINITY)
-        : null,
+      exp: row.exp,
+      expNeeded: atTop ? null : expToNext(row.level),
+      waiting: !atTop && row.exp >= expToNext(row.level),
+      ribbons: row.ribbons,
+      nextUnlock: nextUnlock(row.level, species.rarity, species.evolvesTo?.level),
+      ribbon,
+      treatCost: treatCost(row.level),
       ...(species.evolvesTo === undefined
         ? {}
         : {
@@ -404,9 +458,9 @@ export class Collection {
 
   /** Everything the Activity needs to draw the player's game. Never includes other players' creatures. */
   state(userId: string): PlayerState {
-    const medianLevel = this.trainingMedianLevel();
     const starterChosen = this.starterSpecies(userId) !== null;
     const balances = getBalances(this.sql, userId);
+    const parts = getParts(this.sql, userId);
     const trips = this.trips.state(userId);
     const worn = equippedByCreature(this.sql, userId);
     const books = booksByCreature(this.sql, userId);
@@ -426,8 +480,8 @@ export class Collection {
       creatures: rows.map((row) =>
         this.creatureView(
           row,
-          medianLevel,
           balances.essence,
+          parts,
           worn.get(row.id),
           jobs.get(row.id),
           explorers.get(row.id) as ExplorerView,
@@ -440,7 +494,6 @@ export class Collection {
       cancelled: trips.cancelled,
       slots: trips.slots,
       supplies: trips.supplies,
-      trainingMedianLevel: medianLevel,
       serverFirsts: this.serverFirsts(userId),
       loungerId: this.lounge.resolve(userId),
       loungeSpot: this.lounge.spot(userId),
@@ -500,58 +553,45 @@ export class Collection {
     return recordServerFirst(this.sql, kind, species, userId, dropId, at);
   }
 
-  // --- Training ---
+  // --- Ribbons ---
 
-  train(userId: string, creatureId: string, idempotencyKey: string): Outcome<{ level: number }> {
-    return this.atomically(() => {
-      const creature = this.ownedCreature(userId, creatureId);
-      const species = speciesOf(creature.species);
-      const prior = lookupSpend(this.sql, userId, idempotencyKey);
-      let amount: number;
-      if (prior === null) {
-        if (creature.away_expedition_id !== null) throw new GameError(409, 'creature_away');
-        if (!canTrain({ level: creature.level, levelCap: species.levelCap, away: false })) {
-          throw new GameError(409, 'level_cap');
-        }
-        amount = discountedTrainingCost(
-          creature.level,
-          this.trainingMedianLevel() ?? Number.NEGATIVE_INFINITY,
-        );
-      } else {
-        // A retry is not re-priced: the level (and so the price) has moved on since.
-        amount = prior.amount;
-      }
-      const spent = spend(
-        this.deps.storage,
-        {
-          userId,
-          currency: 'bait',
-          amount,
-          purpose: 'training',
-          idempotencyKey,
-          apply: () => {
-            const row = this.sql
-              .exec<{
-                level: number;
-              }>('UPDATE creatures SET level = level + 1 WHERE id = ? RETURNING level', creature.id)
-              .one();
-            this.deps.analytics?.record(
-              { kind: 'train', species: creature.species, level: row.level, cost: amount },
-              userId,
-            );
-            return { creatureId: creature.id, level: row.level };
-          },
+  /**
+   * Earns the ribbon a creature waits for (at level 10 the Bronze Ribbon, at level 20 the Silver Ribbon):
+   * the parts are taken, the ribbon is recorded and the experience the creature banked while it waited
+   * is spent at once, all in one transaction. Idempotent: a retry with the same key returns the stored
+   * result and takes nothing. Materials only: scrap, shards of the creature's element, glimmer and, for
+   * Silver, finished trips of the creature itself.
+   */
+  ribbon(userId: string, creatureId: string, idempotencyKey: string): Outcome<RibbonResult> {
+    return this.atomically(() =>
+      runKeyed(
+        this.sql,
+        this.deps.now,
+        { userId, key: idempotencyKey, kind: 'ribbon', fingerprint: creatureId },
+        () => {
+          const creature = this.ownedCreature(userId, creatureId);
+          const def = ribbonNeeded(creature.level, creature.ribbons);
+          if (def === null) throw new GameError(409, 'ribbon_not_needed');
+          const trips = this.trips.explorerView(userId, creature.id).trips;
+          if (trips < def.trips) throw new GameError(409, 'ribbon_needs_trips', String(def.trips));
+          const cost = ribbonParts(def, speciesOf(creature.species).element);
+          if (!debitParts(this.sql, userId, cost)) throw new GameError(409, 'insufficient_parts');
+          this.sql.exec('UPDATE creatures SET ribbons = ribbons + 1 WHERE id = ?', creature.id);
+          this.deps.analytics?.record(
+            { kind: 'ribbon', species: creature.species, ribbon: def.id },
+            userId,
+          );
+          const experience = settleExperience(
+            this.sql,
+            this.deps.analytics,
+            userId,
+            creature.id,
+            'ribbon',
+          );
+          return { creatureId: creature.id, ribbon: def.id, experience };
         },
-        this.deps.now(),
-      );
-      return {
-        level: settleSpend(
-          spent,
-          (stored) =>
-            prior?.purpose === 'training' && storedString(stored, 'creatureId') === creature.id,
-        ).level,
-      };
-    });
+      ),
+    );
   }
 
   // --- Evolution ---
@@ -594,6 +634,8 @@ export class Collection {
           apply: () => {
             if (target === null) throw new Error('evolution without a target');
             this.sql.exec('UPDATE creatures SET species = ? WHERE id = ?', target, creature.id);
+            // The higher level cap opens the way: what the creature banked while it waited is spent now.
+            settleExperience(this.sql, this.deps.analytics, userId, creature.id, 'evolve');
             const firstOnServer = this.recordFirst(
               'evolve',
               target,

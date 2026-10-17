@@ -241,13 +241,34 @@ export const GEAR_TABLES = [
  * The schema version of a fresh database. Tests that check it use this constant, so a new migration
  * changes one number here (and adds an undo step below), not a dozen tests.
  */
-export const LATEST_SCHEMA_VERSION = 29;
+export const LATEST_SCHEMA_VERSION = 30;
+
+/**
+ * Puts a database back to before migration 30 (creature experience and ribbons, the trip treat and the
+ * pity counters): the added columns go.
+ */
+export function undoCreaturesBMigration(sql: SqlStorage): void {
+  // A test may already have dropped a table (the version 3 test does): only what is there goes.
+  const drop = (table: string, column: string): void => {
+    const present = sql
+      .exec(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = '${column}'`)
+      .toArray();
+    if (present.length > 0) sql.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
+  };
+  drop('creatures', 'exp');
+  drop('creatures', 'ribbons');
+  drop('expeditions', 'treat');
+  drop('player_progress', 'pity_new');
+  drop('player_progress', 'pity_creature');
+  sql.exec('DELETE FROM schema_version WHERE version = 30');
+}
 
 /**
  * Puts a database back to before migration 29 (the crafting loop): the Workshop jobs table goes back to
  * its old kinds (dismantle jobs are dropped) and loses `work_minutes`.
  */
 export function undoWorkshopV2Migration(sql: SqlStorage): void {
+  undoCreaturesBMigration(sql);
   sql.exec("DELETE FROM workshop_jobs WHERE kind = 'dismantle'");
   sql.exec('ALTER TABLE workshop_jobs RENAME TO workshop_jobs_v3');
   sql.exec(`CREATE TABLE workshop_jobs (

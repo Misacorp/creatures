@@ -10,11 +10,11 @@ import {
   LoungerBodySchema,
   LoungeSpotBodySchema,
   NicknameBodySchema,
+  RibbonBodySchema,
   RoomBodySchema,
   StartExpeditionBodySchema,
   StarterBodySchema,
   TalentSlotBodySchema,
-  TrainBodySchema,
 } from './collection-schemas';
 import type { LeetSyncStatus } from './guild-core';
 import { errorResponse, json, parseBody, type Routes } from './http';
@@ -162,15 +162,19 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
       return json({ result: outcome.value, state: ctx.core.collection.state(ctx.user.id) });
     },
   },
+  // Training is by activity now (Creatures B): an old client gets a clear answer, and nothing is charged.
   '/api/creatures/:id/train': {
+    POST: () => errorResponse('training_is_by_activity', 410),
+  },
+  '/api/creatures/:id/ribbon': {
     POST: async (request, ctx) => {
       const id = pathId(ctx);
       if (id === undefined) return invalidId();
-      const body = await parseBody(request, TrainBodySchema);
+      const body = await parseBody(request, RibbonBodySchema);
       if (body === undefined) return invalidBody();
-      const outcome = ctx.core.collection.train(ctx.user.id, id, body.idempotencyKey);
+      const outcome = ctx.core.collection.ribbon(ctx.user.id, id, body.idempotencyKey);
       if (!outcome.ok) return failure(outcome);
-      return json({ level: outcome.value.level, state: ctx.core.collection.state(ctx.user.id) });
+      return json({ result: outcome.value, state: ctx.core.collection.state(ctx.user.id) });
     },
   },
   '/api/creatures/:id/evolve': {
