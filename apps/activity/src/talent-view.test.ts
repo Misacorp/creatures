@@ -20,6 +20,7 @@ import {
   recommendedText,
   slotTitle,
   talentLine,
+  talentTextParts,
   teachTargets,
 } from './talent-view';
 
@@ -192,5 +193,40 @@ describe('the lines of a claim', () => {
     expect(lines).toEqual([
       'An older waiting catch was settled for you. Released Splashet for 3 Scrap.',
     ]);
+  });
+});
+
+describe('the number in a talent phrase', () => {
+  it('cuts around a percentage, a flat value and a points value', () => {
+    expect(talentTextParts('First pounce +14%')).toEqual({
+      before: 'First pounce ',
+      value: '+14%',
+      after: '',
+    });
+    expect(talentTextParts('Crit chance +3 pt')).toEqual({
+      before: 'Crit chance ',
+      value: '+3 pt',
+      after: '',
+    });
+    expect(talentTextParts('Haste −4.5%')).toEqual({ before: 'Haste ', value: '−4.5%', after: '' });
+  });
+
+  it('handles the local form, where the number comes first', () => {
+    expect(talentTextParts('+60% Attack (this item)')).toEqual({
+      before: '',
+      value: '+60%',
+      after: ' Attack (this item)',
+    });
+  });
+
+  it('leaves a phrase without a number whole', () => {
+    expect(talentTextParts('Unbothered')).toEqual({ before: 'Unbothered', value: null, after: '' });
+  });
+
+  it('always joins back to the server text', () => {
+    for (const t of ['First pounce +14%', '+60% Attack (this item)', 'Unbothered']) {
+      const p = talentTextParts(t);
+      expect(`${p.before}${p.value ?? ''}${p.after}`).toBe(t);
+    }
   });
 });

@@ -185,6 +185,30 @@ export function talentLine(talent: TalentView): string {
   return `${talent.name}: ${talent.text}${talent.golden ? ' (golden)' : ''}`;
 }
 
+/** A talent's phrase cut around its number: "First pounce +14%" is "First pounce ", "+14%" and "". */
+export interface TalentTextParts {
+  before: string;
+  /** The signed number with its unit ("+14%", "-4 pt", "+2"); null for a talent without a number. */
+  value: string | null;
+  after: string;
+}
+
+/**
+ * Finds the number in a talent's phrase, so a golden talent can draw just that number in gold: the value
+ * golden raises. Handles "Name +14%", "Name −4 pt" and the local form "+60% Attack (this item)". The
+ * server's words are only cut, never changed, and the three parts joined are always the original text.
+ */
+export function talentTextParts(text: string): TalentTextParts {
+  const match = /[+\u2212-]\d+(?:\.\d+)?(?:%| pt)?/.exec(text);
+  if (match === null) return { before: text, value: null, after: '' };
+  const at = match.index;
+  return {
+    before: text.slice(0, at),
+    value: match[0],
+    after: text.slice(at + match[0].length),
+  };
+}
+
 /** The waiting cards of a state, or the ones among `ids` (the catches of one claim), oldest first. */
 export function cardsFor(
   state: Pick<GameState, 'pending'>,

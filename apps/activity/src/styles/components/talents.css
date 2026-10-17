@@ -35,8 +35,48 @@
   color: var(--bone);
 }
 
-.talent-chip.golden .talent-name {
+/* A golden talent: the title and the number golden raised are gold text with a slow shine across. */
+.talent-chip.golden .talent-name,
+.gold-shimmer {
   color: var(--gold);
+}
+
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .talent-chip.golden .talent-name,
+  .gold-shimmer {
+    background-image: linear-gradient(
+      100deg,
+      var(--gold-shade) 0%,
+      var(--gold) 35%,
+      #fff3c4 50%,
+      var(--gold) 65%,
+      var(--gold-shade) 100%
+    );
+    background-size: 220% 100%;
+    background-position: 0 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  /* Without a request for less motion the shine drifts; with it the gold stays still. */
+  @media (prefers-reduced-motion: no-preference) {
+    .talent-chip.golden .talent-name,
+    .gold-shimmer {
+      animation: gold-shimmer 3.2s ease-in-out infinite alternate;
+    }
+  }
+}
+
+@keyframes gold-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: 0 0;
+  }
 }
 
 .talent-text {
