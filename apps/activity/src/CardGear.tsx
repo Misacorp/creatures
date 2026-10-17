@@ -47,59 +47,133 @@ export function CardGear({
     open === null || gear === null ? [] : equipChoices(gear.items, creature, creatures, open);
   const wornOpen = open === null ? undefined : creature.gear.find((g) => g.slot === open);
 
+  /** The picker under the row of the open slot: Take off, then the items of the bag. */
+  function picker(slot: GearSlot) {
+    return (
+      <div
+        class="gear-picker"
+        role="group"
+        aria-label={`Choose a ${slotName(slot).toLowerCase()}`}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') setOpen(null);
+        }}
+      >
+        {wornOpen !== undefined && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              void equip(wornOpen.id, null);
+            }}
+          >
+            Take off {gearName(wornOpen.baseId)}
+          </button>
+        )}
+        {gear === null ? (
+          <p class="muted">Loading your gear...</p>
+        ) : choices.length === 0 ? (
+          <p class="muted">
+            No other {slotName(slot).toLowerCase()} in your bag. Clear raid finales, send explorers
+            out or craft in the Workshop.
+          </p>
+        ) : (
+          <ul class="pick-items">
+            {choices.map(({ item, wornBy, blocked }) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  class="pick-item"
+                  disabled={busy || blocked !== null}
+                  aria-label={`Equip ${itemLabel(item.baseId, item.itemLevel)}${wornBy === null ? '' : `, now worn by ${wornBy}`}${blocked === null ? '' : `. ${blocked}`}`}
+                  onClick={() => {
+                    void equip(item.id, creature.id);
+                  }}
+                >
+                  <ItemFrame rarity={item.rarity} baseId={item.baseId}>
+                    <ItemSprite baseId={item.baseId} scale={3} />
+                  </ItemFrame>
+                  <span class="pick-item-text">
+                    <span class="pix">
+                      {gearName(item.baseId)} <span class="muted">item level {item.itemLevel}</span>
+                    </span>
+                    <span class="muted">
+                      {blocked ?? item.lines.map((l) => l.text).join(', ')}
+                      {wornBy === null ? '' : ` \u00b7 worn by ${wornBy}`}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div class="card-gear">
       <ul class="gear-slots">
         {GEAR_SLOTS.map((slot) => {
           const worn = creature.gear.find((g) => g.slot === slot);
           const locked = creature.level < opens[slot];
+          if (locked) {
+            // A closed slot is one short muted row: nothing to tap.
+            return (
+              <li key={slot} class="gear-row locked">
+                <p class="muted">
+                  {slotName(slot)} opens at level {opens[slot]}
+                </p>
+              </li>
+            );
+          }
           // What the item does (its lines, from the gear view; absent while that view loads).
           const lines =
             worn === undefined
               ? []
               : (gear?.items.find((i) => i.id === worn.id)?.lines.map((l) => l.text) ?? []);
-          const label = locked
-            ? `${slotName(slot)} slot: opens at creature level ${String(opens[slot])}.`
-            : worn === undefined
+          const label =
+            worn === undefined
               ? `${slotName(slot)} slot: empty. Choose an item to equip.`
               : `${slotName(slot)} slot: ${itemLabel(worn.baseId, worn.itemLevel)}${lines.length === 0 ? '' : `, ${lines.join(', ')}`}. Change it.`;
           return (
-            <li key={slot} class={locked ? 'gear-cell locked' : 'gear-cell'}>
-              <button
-                type="button"
-                class="gear-slot"
-                disabled={locked}
-                aria-expanded={open === slot}
-                aria-label={label}
-                onClick={() => {
-                  setNote(null);
-                  setOpen(open === slot ? null : slot);
-                }}
-              >
-                {worn === undefined ? (
-                  <span class="item-frame empty" aria-hidden="true">
-                    <span class="slot-plus pix">{locked ? '·' : '+'}</span>
-                  </span>
-                ) : (
-                  <WornItemFrame worn={worn} />
-                )}
-              </button>
-              <p class="gear-text" aria-hidden="true">
-                {worn !== undefined ? (
-                  <>
-                    <span class="pix">{gearName(worn.baseId)}</span>
-                    <span class="muted"> item level {worn.itemLevel}</span>
-                    {lines.length > 0 && <span class="muted gear-main"> {lines.join(', ')}</span>}
-                  </>
-                ) : (
-                  <>
-                    <span class="pix">{slotName(slot)}</span>
-                    <span class="muted">
-                      {locked ? ` opens at level ${String(opens[slot])}` : ' empty'}
+            <li key={slot} class="gear-row">
+              <div class="gear-row-main">
+                <button
+                  type="button"
+                  class="gear-slot"
+                  aria-expanded={open === slot}
+                  aria-label={label}
+                  onClick={() => {
+                    setNote(null);
+                    setOpen(open === slot ? null : slot);
+                  }}
+                >
+                  {worn === undefined ? (
+                    <span class="item-frame empty" aria-hidden="true">
+                      <span class="slot-plus pix">+</span>
                     </span>
-                  </>
-                )}
-              </p>
+                  ) : (
+                    <WornItemFrame worn={worn} />
+                  )}
+                </button>
+                <p class="gear-text" aria-hidden="true">
+                  {worn !== undefined ? (
+                    <>
+                      <span class="gear-title">
+                        <span class="pix">{gearName(worn.baseId)}</span>
+                        <span class="muted"> item level {worn.itemLevel}</span>
+                      </span>
+                      {lines.length > 0 && <span class="muted gear-main">{lines.join(', ')}</span>}
+                    </>
+                  ) : (
+                    <span class="gear-title">
+                      <span class="pix">{slotName(slot)}</span>
+                      <span class="muted"> empty</span>
+                    </span>
+                  )}
+                </p>
+              </div>
+              {open === slot && picker(slot)}
             </li>
           );
         })}
@@ -127,66 +201,6 @@ export function CardGear({
           </span>
         )}
       </p>
-      {open !== null && (
-        <div
-          class="gear-picker"
-          role="group"
-          aria-label={`Choose a ${slotName(open).toLowerCase()}`}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') setOpen(null);
-          }}
-        >
-          {wornOpen !== undefined && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                void equip(wornOpen.id, null);
-              }}
-            >
-              Take off {gearName(wornOpen.baseId)}
-            </button>
-          )}
-          {gear === null ? (
-            <p class="muted">Loading your gear...</p>
-          ) : choices.length === 0 ? (
-            <p class="muted">
-              No other {slotName(open).toLowerCase()} in your bag. Clear raid finales, send
-              explorers out or craft in the Workshop.
-            </p>
-          ) : (
-            <ul class="pick-items">
-              {choices.map(({ item, wornBy, blocked }) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    class="pick-item"
-                    disabled={busy || blocked !== null}
-                    aria-label={`Equip ${itemLabel(item.baseId, item.itemLevel)}${wornBy === null ? '' : `, now worn by ${wornBy}`}${blocked === null ? '' : `. ${blocked}`}`}
-                    onClick={() => {
-                      void equip(item.id, creature.id);
-                    }}
-                  >
-                    <ItemFrame rarity={item.rarity} baseId={item.baseId}>
-                      <ItemSprite baseId={item.baseId} scale={3} />
-                    </ItemFrame>
-                    <span class="pick-item-text">
-                      <span class="pix">
-                        {gearName(item.baseId)}{' '}
-                        <span class="muted">item level {item.itemLevel}</span>
-                      </span>
-                      <span class="muted">
-                        {blocked ?? item.lines.map((l) => l.text).join(', ')}
-                        {wornBy === null ? '' : ` · worn by ${wornBy}`}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
     </div>
   );
 }

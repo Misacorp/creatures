@@ -274,7 +274,13 @@ describe('the More sheet', () => {
     expect(text).toContain('Common');
     // Growth: the experience line, the ribbon button (with cost) and the help
     expect(text).toContain('450 / 450 experience, Bronze Ribbon first');
-    expect(byName(sheet, 'button', /Bronze Ribbon \(6 scrap and 2 Ember shards\)/)).toHaveLength(1);
+    // The gold button is right above on the card, so the sheet says the cost in words only.
+    expect(text).toContain(
+      'Bronze Ribbon: 6 scrap and 2 Ember shards. Ready, the button is above.',
+    );
+    expect(byName(sheet, 'button', /Bronze Ribbon \(/)).toHaveLength(0);
+    // Gear is a list, one row per slot; the closed Charm is a short muted row.
+    expect(text).toContain('Charm opens at level 13');
     // Stats with the gear's share
     expect(text).toContain('HP');
     expect(text).toContain('Attack');
@@ -302,9 +308,34 @@ describe('the More sheet', () => {
     ).toHaveLength(1);
   });
 
-  it('shows the evolution as a button when ready and as a locked line when not', () => {
+  it('does not repeat the gold button the card shows right above, but keeps the words', () => {
     const ready = draw(kind('evolve ready'), { open: true });
-    expect(byName(ready.card, 'button', /^Evolve into Pyrelynx \(20 Essence\)$/)).toHaveLength(1);
+    const sheet = byClass(ready.card, 'creature-sheet')[0] as FakeElement;
+    expect(byName(sheet, 'button', /^Evolve into/)).toHaveLength(0);
+    expect(visibleText(sheet)).toContain(
+      'Evolve into Pyrelynx (20 Essence). Ready, the button is above.',
+    );
+    page?.unmount();
+    // Ribbon and evolution both ready: the card shows the ribbon, so the sheet keeps the evolve button.
+    const both = draw(
+      {
+        ...kind('ribbon ready'),
+        evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: true },
+      },
+      { open: true },
+    );
+    const bothSheet = byClass(both.card, 'creature-sheet')[0] as FakeElement;
+    expect(byName(bothSheet, 'button', /^Evolve into Pyrelynx \(20 Essence\)$/)).toHaveLength(1);
+    expect(byName(bothSheet, 'button', /Bronze Ribbon \(/)).toHaveLength(0);
+    page?.unmount();
+    // A ribbon that is not ready has no gold button on the card, so the sheet shows it, disabled.
+    const short = draw(kind('ribbon short'), { open: true });
+    const disabled = byName(
+      short.card,
+      'button',
+      /Bronze Ribbon \(6 scrap and 2 Ember shards\)/,
+    )[0];
+    expect(disabled?.hasAttribute('disabled')).toBe(true);
     page?.unmount();
     const locked = draw(
       {
@@ -337,6 +368,26 @@ describe('the More sheet', () => {
     p.click(takeOff);
     await Promise.resolve();
     expect(equip).toHaveBeenCalledWith(hat?.id, null);
+  });
+
+  it('lists the gear one row per slot, with the picker under the row that is open', () => {
+    const { card, page: p } = draw(kind('ribbon ready'), { open: true });
+    const rows = byClass(card, 'gear-row');
+    expect(rows).toHaveLength(3);
+    // Hat and Scarf: the name with its item level on one line, the item's lines below.
+    const hat = rows[0] as FakeElement;
+    expect(visibleText(byClass(hat, 'gear-title')[0] as FakeElement)).toBe(
+      "Emberkeeper's Crown item level 15",
+    );
+    expect(visibleText(byClass(hat, 'gear-main')[0] as FakeElement)).toContain('(this item)');
+    // The closed Charm is a muted row without a button.
+    const charm = rows[2] as FakeElement;
+    expect(visibleText(charm)).toBe('Charm opens at level 13');
+    expect(find(charm, (e) => e.localName === 'button')).toHaveLength(0);
+    // The picker opens inside the row of its slot.
+    p.click(find(rows[1] as FakeElement, (e) => e.localName === 'button')[0] as FakeElement);
+    expect(byClass(rows[1] as FakeElement, 'gear-picker')).toHaveLength(1);
+    expect(byClass(rows[0] as FakeElement, 'gear-picker')).toHaveLength(0);
   });
 
   it('opens on the slot whose icon was tapped, with its picker open', () => {

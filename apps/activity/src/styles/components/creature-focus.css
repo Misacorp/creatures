@@ -324,10 +324,6 @@ button.ghost.small {
   margin-top: 0.5rem;
 }
 
-.creature-sheet .gear-cell .gear-main {
-  display: block;
-}
-
 .creature-sheet .card-gear,
 .creature-sheet .creature-talents {
   margin: 0;

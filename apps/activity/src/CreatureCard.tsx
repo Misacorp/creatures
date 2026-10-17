@@ -282,6 +282,7 @@ export function CreatureCard({
           gearSlot={gearSlot}
           gearKey={gearKey}
           actions={actions}
+          shownNeed={first?.kind ?? null}
           onClose={() => {
             setOpen(false);
             setTarget(null);

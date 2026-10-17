@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
 import { CardGear } from './CardGear';
 import { explorerFacts, ribbonsHeldText, speciesSubtitle } from './creature-card-view';
+import type { NeedKind } from './creature-needs';
 import { CreatureTalents } from './CreatureTalents';
 import type { EquipBestResult, GearSlot, GearState } from './gear-types';
 import { gearShare } from './gear-view';
@@ -125,6 +126,7 @@ export function CreatureSheet({
   gearSlot,
   gearKey,
   actions,
+  shownNeed,
   onClose,
 }: {
   /** The sheet's id on the page (the card's More button controls it); section ids are built from it. */
@@ -138,6 +140,8 @@ export function CreatureSheet({
   /** Changes when a gear icon is tapped again, so the picker opens on the new slot. */
   gearKey: number;
   actions: CardActions;
+  /** The need the card's gold button shows right above, so this sheet does not repeat that button. */
+  shownNeed: NeedKind | null;
   onClose: () => void;
 }) {
   const species = getSpecies(creature.species);
@@ -191,9 +195,16 @@ export function CreatureSheet({
         <p class="muted exp-line">
           <GlossaryTag entry="experience">{experienceLine(creature)}</GlossaryTag>
         </p>
-        <RibbonLine creature={creature} busy={busy} onRibbon={actions.onRibbon} />
+        <RibbonLine
+          creature={creature}
+          busy={busy}
+          onRibbon={actions.onRibbon}
+          hideButton={shownNeed === 'ribbon'}
+        />
         {evolve !== null &&
-          (evolve.available ? (
+          (evolve.available && shownNeed === 'evolve' ? (
+            <p class="muted">{evolve.label}. Ready, the button is above.</p>
+          ) : evolve.available ? (
             <p>
               <button
                 type="button"
