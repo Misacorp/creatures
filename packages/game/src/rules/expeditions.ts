@@ -426,7 +426,21 @@ export interface TripCatchContext {
   dupeStreak: number;
   /** True if this is the player's first claim that brings catches back (the first-expedition guarantee). */
   firstExpedition: boolean;
+  /**
+   * The player's pity counters (`RULES.catching.pity`). Absent: no pity (rolls only follow their chances).
+   * `rollTripCatches` advances them from roll to roll; the caller stores what it returns.
+   */
+  pity?: PityCounters;
 }
+
+/** Catch rolls since the player last got a new species, and since they last got any creature. */
+export interface PityCounters {
+  sinceNew: number;
+  sinceCreature: number;
+}
+
+/** What a roll did with the pity: `new` forced a species the player lacks, `creature` forced a creature. */
+export type PityKind = 'new' | 'creature';
 
 export interface TripCatch {
   species: CreatureSpecies;
@@ -480,14 +494,36 @@ const RARITY_FALLBACK: Record<Rarity, readonly Rarity[]> = {
 export function rollTripCatch(
   rng: Rng,
   ctx: TripCatchContext,
-): { result: TripCatch | null; dupeStreak: number; guaranteed: boolean } {
+): { result: TripCatch | null; dupeStreak: number; guaranteed: boolean; pity: PityKind | null } {
   const { destination: dest } = ctx;
   const byId = new Map(ctx.content.creatures.map((c) => [c.id, c]));
   let species: CreatureSpecies | undefined;
   let deep = false;
   const guaranteed = ctx.firstExpedition && !ctx.ownedLines.has(RULES.catching.firstExpeditionLine);
-  if (!guaranteed && !chance(rng, catchChanceBp(ctx.length, ctx.kit), BP)) {
-    return { result: null, dupeStreak: ctx.dupeStreak, guaranteed: false };
+  // The pity (2026-10-17): a roll after `newAfter` rolls without a new species brings a creature and it
+  // is a species the player lacks (when this place has one); the `creatureEvery`-th roll without any
+  // creature brings one. Neither draws anything: the counters are the whole decision.
+  const pity = ctx.pity;
+  const lacking =
+    pity === undefined || pity.sinceNew < RULES.catching.pity.newAfter
+      ? []
+      : allSpecies(dest)
+          .map((id) => byId.get(id))
+          .filter((c): c is CreatureSpecies => c !== undefined && c.catchable)
+          .filter((c) => !ctx.ownedLines.has(c.line));
+  const pityNew = !guaranteed && lacking.length > 0;
+  const pityCreature =
+    !guaranteed &&
+    !pityNew &&
+    pity !== undefined &&
+    pity.sinceCreature + 1 >= RULES.catching.pity.creatureEvery;
+  if (
+    !guaranteed &&
+    !pityNew &&
+    !pityCreature &&
+    !chance(rng, catchChanceBp(ctx.length, ctx.kit), BP)
+  ) {
+    return { result: null, dupeStreak: ctx.dupeStreak, guaranteed: false, pity: null };
   }
 
   if (guaranteed) {
@@ -522,15 +558,19 @@ export function rollTripCatch(
       .map((id) => byId.get(id))
       .filter((c): c is CreatureSpecies => c !== undefined);
     let candidates: CreatureSpecies[] = [];
+    // The pity reaches the whole place, the deeper area too: it takes the drawn rarity first and the
+    // nearest one that still has a species the player lacks after it.
+    const from = pityNew ? lacking : pool;
     for (const r of RARITY_FALLBACK[rarity]) {
-      candidates = pool.filter((c) => c.rarity === r);
+      candidates = from.filter((c) => c.rarity === r);
       if (candidates.length > 0) break;
     }
     if (candidates.length === 0) throw new Error(`destination "${dest.id}" has nobody to catch`);
     // The dupe shield, or a lure's draw for a species the player lacks: only the unowned, if any.
     const newBp = lureEffect(ctx.kit).newBp;
     const wantsNew =
-      ctx.dupeStreak >= RULES.catching.dupeShieldStreak || (newBp > 0 && chance(rng, newBp, BP));
+      !pityNew &&
+      (ctx.dupeStreak >= RULES.catching.dupeShieldStreak || (newBp > 0 && chance(rng, newBp, BP)));
     if (wantsNew) {
       const unowned = candidates.filter((c) => !ctx.ownedLines.has(c.line));
       if (unowned.length > 0) candidates = unowned;
@@ -547,6 +587,9 @@ export function rollTripCatch(
         (featured !== null && c.id === featured.species.id ? featured.weight : 1),
     }));
     species = pickWeighted(rng, weighted).species;
+    if (pityNew && dest.deep.species.includes(species.id) && !dest.species.includes(species.id)) {
+      deep = true;
+    }
   }
 
   const { numerator, denominator } = RULES.catching.shiny;
@@ -556,6 +599,7 @@ export function rollTripCatch(
     result: { species, shiny, duplicate, deep },
     dupeStreak: duplicate ? ctx.dupeStreak + 1 : 0,
     guaranteed,
+    pity: pityNew ? 'new' : pityCreature ? 'creature' : null,
   };
 }
 
@@ -581,28 +625,45 @@ export function rollTripCatches(
   rng: Rng,
   count: number,
   ctx: TripCatchContext,
-): { results: TripCatch[]; dupeStreak: number; empty: number } {
+): {
+  results: TripCatch[];
+  dupeStreak: number;
+  empty: number;
+  /** The pity counters after the last roll (unchanged when the context had none). */
+  pity: PityCounters;
+  /** The rolls the pity forced, in order: a species the player lacked (`new`) or a creature of any kind. */
+  forced: { pity: PityKind; species: string }[];
+} {
   if (!Number.isInteger(count) || count < 0) throw new RangeError('count must be an integer >= 0');
   const owned = new Set(ctx.ownedLines);
   let dupeStreak = ctx.dupeStreak;
+  let pity: PityCounters = ctx.pity ?? { sinceNew: 0, sinceCreature: 0 };
   const results: TripCatch[] = [];
   let empty = 0;
+  const forced: { pity: PityKind; species: string }[] = [];
   for (let i = 0; i < count; i++) {
     const roll = rollTripCatch(rng, {
       ...ctx,
       ownedLines: owned,
       dupeStreak,
       firstExpedition: i === 0 && ctx.firstExpedition,
+      ...(ctx.pity === undefined ? {} : { pity }),
     });
     if (roll.result === null) {
       empty += 1;
+      pity = { sinceNew: pity.sinceNew + 1, sinceCreature: pity.sinceCreature + 1 };
       continue;
     }
+    if (roll.pity !== null) forced.push({ pity: roll.pity, species: roll.result.species.id });
+    // A new species resets both counters, a duplicate only the creature one.
+    pity = roll.result.duplicate
+      ? { sinceNew: pity.sinceNew + 1, sinceCreature: 0 }
+      : { sinceNew: 0, sinceCreature: 0 };
     results.push(roll.result);
     owned.add(roll.result.species.line);
     dupeStreak = roll.dupeStreak;
   }
-  return { results, dupeStreak, empty };
+  return { results, dupeStreak, empty, pity, forced };
 }
 
 // --- Loot ---

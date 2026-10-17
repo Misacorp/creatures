@@ -39,6 +39,11 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * stats and its sheet, lures cost Bait, the dungeon no longer drops lures and the dupe shield starts at
  * a streak of 3. The first player's Bait earned is the same; their team power is lower (fewer
  * creatures, so fewer fusions, and no duplicate Bait).
+ *
+ * Re-pinned again on 2026-10-17 (Creatures B, B-016), on purpose: creatures level up from what they do
+ * (trips, the dungeon, raid stages, Workshop jobs; treats double it) and wait at levels 10 and 20 for a
+ * ribbon, Bait no longer buys levels, and the new-species pity forces a creature or a new species on
+ * long dry streaks of trips. The archetypes' levels, so their team power and the raid weeks, moved.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

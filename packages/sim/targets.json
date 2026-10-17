@@ -625,23 +625,23 @@
   },
   {
     "id": "creatures-catalogue-min-maxer",
-    "description": "Creatures: a min-maxer owns every species a trip can find (the base catalogue) after about 9 weeks (B-014; the run length plus one when under half got there)",
+    "description": "Creatures: a min-maxer owns every species a trip can find (the base catalogue) after about 5 weeks (B-016: the pity floor only speeds players up, so B-014 plan of 9 is out of reach)",
     "metric": "creatures.min-maxer.catalogueWeeks",
     "comparator": "range",
-    "value": [7, 11],
+    "value": [4, 8],
     "unit": "count"
   },
   {
     "id": "creatures-catalogue-engaged",
-    "description": "Creatures: an engaged player completes the base catalogue after about 14 weeks (B-014)",
+    "description": "Creatures: an engaged player completes the base catalogue after about 9 weeks (B-016; B-014 planned 14, pity cannot slow a committed player)",
     "metric": "creatures.engaged.catalogueWeeks",
     "comparator": "range",
-    "value": [11, 17],
+    "value": [7, 12],
     "unit": "count"
   },
   {
     "id": "creatures-catalogue-regular",
-    "description": "Creatures: a regular player completes the base catalogue after about 24 weeks, and at least half of them by week 30 (B-014)",
+    "description": "Creatures: a regular player completes the base catalogue after about 24 weeks (B-016: the pity threshold is set for this), and at least half of them by week 30",
     "metric": "creatures.regular.catalogueWeeks",
     "comparator": "range",
     "value": [20, 30],
@@ -649,7 +649,7 @@
   },
   {
     "id": "creatures-catches-min-maxer",
-    "description": "Creatures: a min-maxer brings home 8 to 20 creatures a week (weeks 3 to 30; B-014)",
+    "description": "Creatures: a min-maxer brings home 8 to 20 creatures a week, with the pity floor counted (weeks 3 to 30; B-016, the plan is 10 to 15)",
     "metric": "creatures.min-maxer.catchesPerWeek",
     "comparator": "range",
     "value": [8, 20],
@@ -697,7 +697,7 @@
   },
   {
     "id": "creatures-lure-bait-min-maxer",
-    "description": "Creatures: lures take at most a quarter of the Bait a min-maxer earns, so levels stay the main use of Bait (B-014)",
+    "description": "Creatures: lures take at most a quarter of the Bait a min-maxer earns; treats are the main use of Bait now (B-016)",
     "metric": "creatures.min-maxer.lureBaitShare",
     "comparator": "max",
     "value": 0.25,
@@ -710,5 +710,29 @@
     "comparator": "range",
     "value": [0.05, 0.2],
     "unit": "percent"
+  },
+  {
+    "id": "creatures-trio-level10-min-maxer",
+    "description": "Creatures: a committed trio reaches level 10 (the Bronze Ribbon gate) in week 1 or 2 (spec 9.2, B-016)",
+    "metric": "creatures.min-maxer.trioLevel10Week",
+    "comparator": "max",
+    "value": 2,
+    "unit": "count"
+  },
+  {
+    "id": "creatures-trio-level30-min-maxer",
+    "description": "Creatures: a committed trio reaches level 30 around week 11 (spec 9.2, B-016)",
+    "metric": "creatures.min-maxer.trioLevel30Week",
+    "comparator": "range",
+    "value": [8, 14],
+    "unit": "count"
+  },
+  {
+    "id": "creatures-unlock-stretch",
+    "description": "Creatures: no gap of more than 6 levels between two unlocks on the ladder (the first gap, Hat at 1 to Scarf at 7, is the widest; spec 9.3a, B-016)",
+    "metric": "creatures.min-maxer.stretchLevels",
+    "comparator": "max",
+    "value": 6,
+    "unit": "count"
   }
 ]

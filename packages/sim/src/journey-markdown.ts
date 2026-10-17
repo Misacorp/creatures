@@ -135,7 +135,7 @@ export function journeyMarkdown(report: JourneyReport): string {
 
   out.push(`## What holds players back`);
   out.push(
-    `A wait is a run of days with the same binding limit; for Bait it is the stretch between two trainings. Days per player over the whole run, and the longest single wait.`,
+    `A wait is a run of days with the same binding limit; for experience it is the stretch between two levels. Days per player over the whole run, and the longest single wait.`,
   );
   for (const p of presets) {
     const rows = Object.entries(p.waits)

@@ -622,20 +622,44 @@
     "lines": [
       "Open the game each day for an allowance of 25 Bait. The day starts at 13:37; a missed day is not paid later.",
       "Leeting in Discord adds a bonus of 15 to 32 Bait, more when more players leet that day.",
-      "Spend it to train creatures, to craft lures and to slot a talent from the Talent Book.",
+      "Spend it on treats, to craft lures and to slot a talent from the Talent Book.",
       "Trips and the other supplies cost no Bait. Releasing a duplicate pays parts, never Bait."
     ],
     "section": "first-week"
   },
   {
-    "id": "training-cost",
-    "title": "Training cost",
-    "short": "Bait to train: 3 + 2 x level.",
+    "id": "experience",
+    "title": "Experience",
+    "short": "Creatures grow by doing things.",
     "lines": [
-      "Going up one level costs 3 + 2 x its level, in Bait.",
-      "Level 1 to 2 costs 5 Bait. Level 10 to 11 costs 23.",
-      "Half price if the creature is more than 5 levels below the server's median.",
-      "A creature away on an expedition cannot train."
+      "A creature earns experience on trips, in the daily dungeon, in raid stages and on Workshop jobs.",
+      "Level 1 to 2 needs 27 experience. Level 10 to 11 needs 450. Level 20 to 21 needs 1,300.",
+      "Only creatures that take part earn it, so who goes where is your choice.",
+      "Bait no longer buys levels."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "treat",
+    "title": "Treat",
+    "short": "Doubles one activity's experience.",
+    "lines": [
+      "Tick Pack a treat when you send a creature on a trip, put it in the dungeon team or give it a Workshop job.",
+      "That activity gives the creature double experience.",
+      "A treat costs 3 + half the creature's level (rounded up) in Bait, paid when the activity starts.",
+      "Raids take no treats."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "ribbon",
+    "title": "Ribbon",
+    "short": "A creature waits at level 10 and 20 for one.",
+    "lines": [
+      "Bronze Ribbon at level 10: 6 scrap and 2 shards of its element.",
+      "Silver Ribbon at level 20: 15 scrap, 5 shards, 1 glimmer and 5 finished trips.",
+      "Experience earned while it waits is kept.",
+      "Gold Ribbon at level 30 is a reward."
     ],
     "section": "creatures"
   },
@@ -644,9 +668,9 @@
     "title": "Level",
     "short": "Higher level, stronger creature.",
     "lines": [
-      "Train a creature with Bait to raise its level.",
+      "A creature levels up from experience: trips, the dungeon, raids and Workshop jobs.",
       "Each level adds HP, Attack and Speed.",
-      "A creature that can evolve stops at level 15 until it does. The top is 30.",
+      "A creature waits at level 10 and 20 for a ribbon, and at 15 until it evolves. The top is 30.",
       "At level 10 a creature gets its finale ability."
     ],
     "section": "creatures"
@@ -748,7 +772,7 @@
     "title": "Away",
     "short": "On an expedition.",
     "lines": [
-      "It cannot be trained until it is back.",
+      "It cannot go on another trip or take a Workshop job until it is back.",
       "Claim or recall the expedition to bring it home."
     ],
     "section": "expeditions"

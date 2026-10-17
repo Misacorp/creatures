@@ -5,8 +5,8 @@
       "title": "Your first week",
       "lines": [
         "Pick a starter. Your first expedition always brings back a Zipmouse.",
-        "Open the game each day for a Bait allowance, and leet in Discord for a bonus. Spend Bait to train and to craft lures.",
-        "Train a creature to level 10 to unlock its finale ability.",
+        "Open the game each day for a Bait allowance, and leet in Discord for a bonus. Spend Bait on treats and lures.",
+        "Creatures grow by doing: trips, the dungeon, raids and Workshop jobs. At level 10 one gets its finale ability.",
         "You join the weekly raid automatically. You can sit a week out.",
         "On Sunday evening everyone fights the boss together."
       ]
@@ -16,9 +16,9 @@
       "title": "Creatures",
       "lines": [
         "Each creature has an element (Tide, Ember, Grove or Spark) and a role (Setter, Payoff, Guard or Support).",
-        "Levels raise HP, Attack and Speed. Train with Bait.",
+        "Levels raise HP, Attack and Speed. Whatever a creature does earns it experience; a treat (Bait) doubles it.",
+        "At levels 10 and 20 a creature waits for a ribbon, made from parts, before it grows on.",
         "Every catch rolls a talent. A duplicate is a choice: Teach, Fuse, Release or Keep.",
-        "At level 10 a creature gets a finale ability. Evolving makes it stronger.",
         "Tap any tag in the game to see what it means."
       ]
     },
@@ -60,7 +60,7 @@
       "title": "Expeditions",
       "lines": [
         "Send a creature to a place for 2, 6 or 12 hours. Longer trips find much more, and a 24 hour trip opens later.",
-        "Trips are free and may bring a creature. Supplies help: lures, made from Bait, raise the odds.",
+        "Trips are free and may bring a creature; a long dry spell always ends with one. Lures (made from Bait) raise the odds.",
         "Every creature gets better at exploring: ranks, stars for each place and Journal pages.",
         "A finished trip may offer a push-on choice. Safe goals always work. Risky ones can fail.",
         "You start with 1 slot, and more open as your creatures grow. Recall early to keep what was caught."

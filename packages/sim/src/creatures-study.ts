@@ -1,3 +1,4 @@
+import { unlockLadder } from '@creatures/game';
 import { DEFAULT_JOURNEY_MIX, PRESET_IDS, type PlayerProfile } from './profiles';
 import type { DayRecord, PlayerJourney } from './journey';
 import { defaultProfiles, runJourneyServer, type JourneySettings } from './journey-run';
@@ -8,7 +9,10 @@ import { mean, median, round } from './util';
  * and week, what the new catching brings (docs/design/gear-and-creatures-v2.md sections 8 and 9.5):
  * creatures per week, duplicates per week and what each was answered with, species owned and the week
  * the base catalogue was complete, Bait split between levels, lures and talent slots, and the share of
- * fight power the talents give. Variants differ by tuning overrides (`applyOverrides`); a report per
+ * fight power the talents give. Creatures B (docs/design/gear-and-creatures-v2.md section 9 and the
+ * new-species pity) adds the pace of the levels (the week the best creature and the raid team reached 10, 15,
+ * 20 and 30, and the longest stretch without an unlock), the experience by source, treats, ribbons and the
+ * pity. Variants differ by tuning overrides (`applyOverrides`); a report per
  * variant is written as JSON and `creaturesMarkdown` lays several side by side.
  */
 
@@ -32,13 +36,27 @@ export interface WeekMetrics {
   /** Lures carried and crafted. */
   luresUsed: number;
   luresCrafted: number;
-  /** The week's Bait: earned, and spent on levels, lures and talent slots. */
+  /** The week's Bait: earned, and spent on treats, lures and talent slots. */
   baitEarned: number;
-  baitTraining: number;
+  baitTreats: number;
   baitLures: number;
   baitSlots: number;
   /** Base species owned at the end of the week. */
   species: number;
+  /** Levels gained, and experience earned by source (a treat's doubling included): trips, dungeon, raids, jobs. */
+  levelUps: number;
+  expTrip: number;
+  expDungeon: number;
+  expRaid: number;
+  expJob: number;
+  /** Treats packed, ribbons bought, and catch rolls the pity forced (a species the player lacked, any creature). */
+  treats: number;
+  ribbons: number;
+  pityNew: number;
+  pityCreature: number;
+  /** The best creature's level and the raid team's lowest, at the end of the week (medians). */
+  topLevel: number;
+  teamMinLevel: number;
   /** Raid team power (Attack + HP score) and the fight-scored power, and the share talents give of it. */
   power: number;
   fightPower: number | null;
@@ -46,11 +64,26 @@ export interface WeekMetrics {
   talentShare: number | null;
 }
 
+/** The levels a profile's players reach: the pace the design asks for (spec 9.2) and the unlock stretches (9.3a). */
+export interface PaceMetrics {
+  /** Median week (since joining) the best creature first reached each level; null when fewer than half did. */
+  best: Record<string, number | null>;
+  /** The same for the raid team's lowest creature (the whole trio). */
+  trio: Record<string, number | null>;
+  /** Median week the first creature evolved. */
+  evolution: number | null;
+  /** Median over players of the longest stretch, in days, the best creature went without reaching an unlock level. */
+  stretchDays: number | null;
+  /** The widest gap, in levels, between two neighbouring unlocks of the ladder (a fact of the ladder). */
+  stretchLevels: number;
+}
+
 export interface ProfileMetrics {
   id: string;
   label: string;
   players: number;
   weeks: WeekMetrics[];
+  pace: PaceMetrics;
   /** The median week (since joining) the base catalogue was complete, over the players who completed it. */
   catalogueWeek: number | null;
   /** Share of the players who completed it within the run. */
@@ -131,9 +164,20 @@ function weekMetrics(week: number, journeys: readonly PlayerJourney[]): WeekMetr
     luresUsed: delta('luresUsed'),
     luresCrafted: delta('luresCrafted'),
     baitEarned: held('weekBaitEarned'),
-    baitTraining: held('weekBaitTraining'),
+    baitTreats: held('weekBaitTreats'),
     baitLures: held('weekBaitLures'),
     baitSlots: held('weekBaitSlots'),
+    levelUps: held('levelUps'),
+    expTrip: delta('expTrip'),
+    expDungeon: delta('expDungeon'),
+    expRaid: delta('expRaid'),
+    expJob: delta('expJob'),
+    treats: delta('treats'),
+    ribbons: delta('ribbons'),
+    pityNew: delta('pityNew'),
+    pityCreature: delta('pityCreature'),
+    topLevel: round(median(rows.map((r) => r.end.topLevel)) ?? 0, 1),
+    teamMinLevel: round(median(rows.map((r) => r.end.teamMinLevel)) ?? 0, 1),
     species: held('speciesOwned'),
     power: held('power'),
     fightPower:
@@ -148,6 +192,58 @@ function weekMetrics(week: number, journeys: readonly PlayerJourney[]): WeekMetr
 export function catalogueWeekOf(journey: PlayerJourney): number | null {
   const day = journey.milestones['catalogue_complete'];
   return day === undefined ? null : Math.ceil(day / 7);
+}
+
+/** The levels a profile's pace is reported at. */
+export const PACE_LEVELS = [10, 15, 20, 30] as const;
+
+/** The day (since joining, 1-based) a journey's value of `key` first reached `level`; null if never. */
+function dayReaching(journey: PlayerJourney, key: 'topLevel' | 'teamMinLevel', level: number) {
+  return journey.days.find((d) => d[key] >= level)?.day ?? null;
+}
+
+/** The levels of the unlock ladder of a creature that evolves (spec 9.3a), and their widest gap. */
+export function ladderLevels(): number[] {
+  return [...new Set(unlockLadder('rare', 15).map((u) => u.level))].sort((a, b) => a - b);
+}
+
+/** The week (since joining) most players of a group reached something; null when fewer than half did. */
+function medianWeek(days: readonly (number | null)[]): number | null {
+  const reached = days.flatMap((d) => (d === null ? [] : [Math.ceil(d / 7)]));
+  return reached.length * 2 < days.length ? null : median(reached);
+}
+
+/** The pace of the levels of a group of journeys (see `PaceMetrics`). */
+export function paceOf(journeys: readonly PlayerJourney[]): PaceMetrics {
+  const best: Record<string, number | null> = {};
+  const trio: Record<string, number | null> = {};
+  for (const level of PACE_LEVELS) {
+    best[String(level)] = medianWeek(journeys.map((j) => dayReaching(j, 'topLevel', level)));
+    trio[String(level)] = medianWeek(journeys.map((j) => dayReaching(j, 'teamMinLevel', level)));
+  }
+  const evolutionDays = journeys.map((j) => j.milestones['first_evolution'] ?? null);
+  const ladder = ladderLevels();
+  const stretches = journeys.map((j) => {
+    // Day 1 is the first unlock (the Hat); then every ladder level the best creature reached.
+    const days = [1, ...ladder.map((level) => dayReaching(j, 'topLevel', level))].flatMap((d) =>
+      d === null ? [] : [d],
+    );
+    let longest = 0;
+    for (let i = 1; i < days.length; i++)
+      longest = Math.max(longest, (days[i] as number) - (days[i - 1] as number));
+    return longest;
+  });
+  const widest = [1, ...ladder].reduce(
+    (w, level, i, all) => (i === 0 ? w : Math.max(w, level - (all[i - 1] as number))),
+    0,
+  );
+  return {
+    best,
+    trio,
+    evolution: medianWeek(evolutionDays),
+    stretchDays: median(stretches),
+    stretchLevels: widest,
+  };
 }
 
 /** Plays the servers of every seed and summarises each profile's journeys. */
@@ -185,6 +281,7 @@ export function runCreaturesStudy(
       label: profiles.find((p) => p.id === id)?.label ?? id,
       players: mine.length,
       weeks: Array.from({ length: study.weeks }, (_, k) => weekMetrics(k + 1, mine)),
+      pace: paceOf(mine),
       catalogueWeek: median(done),
       catalogueDone: round(done.length / mine.length, 3),
     });
@@ -229,6 +326,11 @@ export function creaturesMetrics(run: CreaturesRun, fromWeek = 3): Record<string
     const earned = weeks.reduce((n, w) => n + w.baitEarned, 0);
     out[`creatures.${p.id}.lureBaitShare`] =
       earned === 0 ? 0 : round(weeks.reduce((n, w) => n + w.baitLures, 0) / earned, 4);
+    for (const level of PACE_LEVELS) {
+      const week = p.pace.trio[String(level)];
+      out[`creatures.${p.id}.trioLevel${String(level)}Week`] = week ?? run.weeks + 1;
+    }
+    out[`creatures.${p.id}.stretchLevels`] = p.pace.stretchLevels;
     const last = [...p.weeks].reverse().find((w) => w.talentShare !== null);
     if (last?.talentShare !== null && last?.talentShare !== undefined) {
       out[`creatures.${p.id}.talentShareEnd`] = last.talentShare;
@@ -272,11 +374,28 @@ export function creaturesMarkdown(
       cell: (m) => `${f1(m.taught)} / ${f1(m.fused)} / ${f1(m.released)}`,
     },
     { title: 'New species per week', cell: (m) => f1(m.newSpecies) },
+    {
+      title: 'Catch rolls the pity forced per week: a species the player lacked / any creature',
+      cell: (m) => `${f1(m.pityNew)} / ${f1(m.pityCreature)}`,
+    },
     { title: 'Base species owned', cell: (m) => f1(m.species) },
     {
-      title: 'Bait per week: earned / levels / lures / talent slots',
+      title: 'Best creature level / raid team lowest level (median, end of the week)',
+      cell: (m) => `${f1(m.topLevel)} / ${f1(m.teamMinLevel)}`,
+    },
+    {
+      title: 'Experience per week: trips / dungeon / raids / jobs',
       cell: (m) =>
-        `${m.baitEarned.toFixed(0)} / ${m.baitTraining.toFixed(0)} / ${m.baitLures.toFixed(0)} / ${m.baitSlots.toFixed(0)}`,
+        `${m.expTrip.toFixed(0)} / ${m.expDungeon.toFixed(0)} / ${m.expRaid.toFixed(0)} / ${m.expJob.toFixed(0)}`,
+    },
+    {
+      title: 'Levels gained / treats packed / ribbons bought per week',
+      cell: (m) => `${f1(m.levelUps)} / ${f1(m.treats)} / ${f1(m.ribbons)}`,
+    },
+    {
+      title: 'Bait per week: earned / treats / lures / talent slots',
+      cell: (m) =>
+        `${m.baitEarned.toFixed(0)} / ${m.baitTreats.toFixed(0)} / ${m.baitLures.toFixed(0)} / ${m.baitSlots.toFixed(0)}`,
     },
     {
       title: 'Lures carried / crafted per week',
@@ -303,6 +422,25 @@ export function creaturesMarkdown(
           return `${r.label} ${p?.catalogueWeek === null || p === undefined ? 'never' : String(p.catalogueWeek)} (${String(Math.round((p?.catalogueDone ?? 0) * 100))}%)`;
         })
         .join(', ')}`,
+    );
+    const paces = runs.map((r) => ({ r, pace: r.profiles.find((x) => x.id === id)?.pace }));
+    out.push(
+      '',
+      `**Pace: week (since joining) the best creature / the whole raid trio reached a level (median; "-" when fewer than half did)**`,
+      '',
+      table(
+        ['Variant', ...PACE_LEVELS.map((l) => `level ${String(l)}`), 'evolved', 'longest stretch'],
+        paces.map(({ r, pace }) => [
+          r.label,
+          ...PACE_LEVELS.map(
+            (l) => `${pace?.best[String(l)] ?? '-'} / ${pace?.trio[String(l)] ?? '-'}`,
+          ),
+          String(pace?.evolution ?? '-'),
+          pace === undefined
+            ? '-'
+            : `${String(pace.stretchDays ?? '-')} days (ladder gap at most ${String(pace.stretchLevels)} levels)`,
+        ]),
+      ),
     );
     for (const m of measures) {
       out.push(

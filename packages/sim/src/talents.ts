@@ -71,6 +71,8 @@ export function newCreature(player: SimPlayer, species: CreatureSpecies, rng: Rn
     line: species.line,
     speciesId: species.id,
     level: 1,
+    exp: 0,
+    ribbons: 0,
     fusionCount: 0,
   };
   const roll = rollTalent(rng, species.line);

@@ -18,7 +18,8 @@ import {
   loadGlossary,
   loadHowToPlay,
   requiredGlossaryIds,
-  trainingCost,
+  expToNext,
+  treatCost,
   type ContentPack,
   type GlossaryEntry,
 } from '../src/index';
@@ -333,18 +334,31 @@ describe('the glossary text matches the rules', () => {
     expect(text('level')).toContain(`level ${String(RULES.abilities.unlockLevel)}`);
     const stage1 = content.creatures.filter((c) => c.evolvesTo !== undefined);
     expect(new Set(stage1.map((c) => c.levelCap))).toEqual(new Set([15]));
-    expect(text('level')).toContain('level 15');
+    expect(text('level')).toContain('at 15 until it evolves');
     expect(text('level')).toContain(String(Math.max(...content.creatures.map((c) => c.levelCap))));
 
-    const training = text('training-cost');
-    expect(training).toContain(
-      `${String(RULES.training.baseCost)} + ${String(RULES.training.perLevel)} x`,
+    const experience = text('experience');
+    expect(experience).toContain(`${String(expToNext(1))} experience`);
+    expect(experience).toContain(`Level 10 to 11 needs ${String(expToNext(10))}`);
+    expect(experience).toContain(`Level 20 to 21 needs ${expToNext(20).toLocaleString('en-US')}`);
+    expect(RULES.experience.perLevel).toBe(25); // "25 x level + 2 x level x level" in the design
+    expect(RULES.experience.perLevelSquared).toBe(2);
+
+    const treat = text('treat');
+    expect(treat).toContain(`${String(RULES.experience.treat.baitBase)} + half`);
+    expect(treat).toContain('double experience');
+    expect(RULES.experience.treat.multiplier).toBe(2);
+    expect(treatCost(1)).toBe(4);
+
+    const ribbon = text('ribbon');
+    const [bronze, silver] = RULES.experience.ribbons;
+    expect(ribbon).toContain(
+      `Bronze Ribbon at level ${String(bronze?.level)}: ${String(bronze?.scrap)} scrap and ${String(bronze?.shards)} shards`,
     );
-    expect(training).toContain(`costs ${String(trainingCost(1))} Bait`);
-    expect(training).toContain(`costs ${String(trainingCost(10))}`);
-    expect(training).toContain(
-      `more than ${String(RULES.training.discountLevelsBelowMedian)} levels`,
+    expect(ribbon).toContain(
+      `Silver Ribbon at level ${String(silver?.level)}: ${String(silver?.scrap)} scrap, ${String(silver?.shards)} shards, ${String(silver?.glimmer)} glimmer and ${String(silver?.trips)} finished trips`,
     );
+    expect(ribbon).toContain(`Gold Ribbon at level ${String(RULES.experience.maxLevel)}`);
 
     const bonuses = RULES.fusion.cumulativeBonusBp;
     expect(text('fusion')).toContain(percent(bonuses[RULES.fusion.maxFusions] ?? 0));
@@ -372,7 +386,7 @@ describe('the glossary text matches the rules', () => {
     expect(text('duplicate-choice')).toContain(`Up to ${String(t.maxPending)} wait`);
     expect(text('duplicate-choice')).toContain(`up to ${String(RULES.fusion.maxFusions)}`);
     expect(text('duplicate-choice')).toContain('never Bait');
-    // Bait pays for training, lures and the book, and nothing turns into Bait.
+    // Bait pays for treats, lures and the book, and nothing turns into Bait.
     expect(text('bait')).toContain('lures');
     expect(text('bait')).not.toContain('turn into Bait');
   });

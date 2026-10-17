@@ -23,6 +23,8 @@ export interface PendingExpedition {
   rolls: number;
   /** The weekly twist that applies (content id), if the trip went to the special place that week. */
   twist: string | null;
+  /** A treat was packed (Bait paid when it was sent): the explorer's experience for the trip doubles. */
+  treat?: boolean;
   /** Absolute simulated hours (since the start of the sim) it was sent at and ends at. */
   startHour: number;
   endsAtHour: number;
@@ -74,6 +76,17 @@ export interface TripStats {
   lures_used: number;
   lures_crafted: number;
   lure_bait: number;
+  /** Creature experience earned, by where it came from (a treat's doubling included). */
+  exp_trip: number;
+  exp_dungeon: number;
+  exp_raid: number;
+  exp_job: number;
+  /** Treats packed, and the ribbons bought. */
+  treats: number;
+  ribbons: number;
+  /** Catch rolls the pity forced: a species the player lacked, or a creature of any kind. */
+  pity_new: number;
+  pity_creature: number;
 }
 
 export const TRIP_STAT_KEYS: readonly (keyof TripStats)[] = [
@@ -108,6 +121,14 @@ export const TRIP_STAT_KEYS: readonly (keyof TripStats)[] = [
   'lures_used',
   'lures_crafted',
   'lure_bait',
+  'exp_trip',
+  'exp_dungeon',
+  'exp_raid',
+  'exp_job',
+  'treats',
+  'ribbons',
+  'pity_new',
+  'pity_creature',
 ];
 
 export function emptyTripStats(): TripStats {
@@ -120,9 +141,11 @@ export interface WeekCounters {
   /** Bait spent crafting lures, and putting talents into slots from the Talent Book. */
   baitLures: number;
   baitSlots: number;
-  baitSpentTraining: number;
+  /** Bait spent on treats. */
+  baitTreats: number;
   essenceEarned: number;
-  trainings: number;
+  /** Levels gained this week, from experience. */
+  levelUps: number;
   evolutions: number;
   signedUp: boolean;
   /** Crafts claimed. */
@@ -149,9 +172,9 @@ export function emptyWeek(): WeekCounters {
     baitEarned: 0,
     baitLures: 0,
     baitSlots: 0,
-    baitSpentTraining: 0,
+    baitTreats: 0,
     essenceEarned: 0,
-    trainings: 0,
+    levelUps: 0,
     evolutions: 0,
     signedUp: false,
     gearCrafts: 0,
@@ -198,6 +221,8 @@ export interface SimJob {
   items?: DismantleItem[];
   /** Supply: the supply crafted. */
   supplyId?: string;
+  /** A treat was packed (Bait paid when the job started): the worker's experience for it doubles. */
+  treat?: boolean;
 }
 
 /** Everything gear related a player has. */
@@ -258,6 +283,8 @@ export interface SimPlayer {
   essence: number;
   creatures: OwnedCreature[];
   dupeStreak: number;
+  /** The catch pity's counters (`RULES.catching.pity`): rolls since a new species, and since any creature. */
+  catchPity: { sinceNew: number; sinceCreature: number };
   firstExpeditionDone: boolean;
   /** Raids taken part in without a jackpot (the pity counter). */
   pity: number;
@@ -311,6 +338,7 @@ export function createPlayer(
     essence: 0,
     creatures: [],
     dupeStreak: 0,
+    catchPity: { sinceNew: 0, sinceCreature: 0 },
     firstExpeditionDone: false,
     pity: 0,
     maxPity: 0,
@@ -336,6 +364,7 @@ export function createPlayer(
 export function clonePlayer(p: SimPlayer): SimPlayer {
   return {
     ...p,
+    catchPity: { ...p.catchPity },
     creatures: p.creatures.map((c) => {
       const { items, talents, ...rest } = c;
       const own =

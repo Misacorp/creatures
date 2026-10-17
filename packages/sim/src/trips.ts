@@ -36,6 +36,7 @@ import {
   seasonOf,
   slotsFor,
   supplyDef,
+  tripExperience,
   tripMs,
   tripRolls,
   tripXp,
@@ -54,6 +55,7 @@ import {
 import { CATCHABLE, foldedCreature, speciesOf, type OwnedCreature } from './data';
 import { creditParts, grantItem, learnBlueprint, onJob, type GearContext } from './gear';
 import { collect } from './talents';
+import { giveExperience, packTreat, ribbonShardsWanted } from './training';
 import type { PendingExpedition, SimPlayer } from './state';
 
 /**
@@ -235,6 +237,8 @@ function placeScore(
       (s.festival ? 2 : 1);
   }
   if (dest.id === twistDestination) score += 0.8;
+  // A creature near a ribbon gate needs shards of its element: the place of that element has them.
+  if (dest.element !== null && ribbonShardsWanted(player).has(dest.element)) score += 1.5;
   // A creature that has started on a place keeps at it until the deeper area opens (3 trips there).
   if (stars === 0 && tripsThere > 0 && dest.deep.species.length > 0)
     score += TRIP_POLICY.finishFamiliarity;
@@ -397,6 +401,11 @@ export function sendTrips(
     const dest = chooseDestination(player, creature, ctx);
     const length = chooseLength(player, rank, ctx.hour);
     const stars = familiarityStars(dest, famOf(player, creature.id, dest.id));
+    // A treat for the explorer (Bait, paid now): the policy and the Bait decide.
+    const treat = packTreat(player, creature, {
+      kind: 'trip',
+      hours: lengthRules(length).ms / HOUR_MS,
+    });
     const picked = chooseKit(player, { length, dest, stars });
     for (const id of picked) player.supplies[id] = (player.supplies[id] ?? 0) - 1;
     player.stats.supplies_used += picked.length;
@@ -407,6 +416,7 @@ export function sendTrips(
       explorerId: creature.id,
       length,
       destination: dest.id,
+      ...(treat ? { treat: true } : {}),
       kit: picked,
       rolls: tripRolls(length, kit, twist === null ? null : twist.effect),
       twist: twist === null ? null : twist.id,
@@ -515,7 +525,7 @@ function payTrip(
   const famBefore = famOf(player, explorer.id, dest.id);
   const starsBefore = familiarityStars(dest, famBefore);
 
-  const { results, dupeStreak, empty } = rollTripCatches(
+  const { results, dupeStreak, empty, pity, forced } = rollTripCatches(
     ctx.catches,
     trip.rolls + (reward?.catchRolls ?? 0),
     {
@@ -530,9 +540,15 @@ function payTrip(
       ownedLines: ownedLines(player),
       dupeStreak: player.dupeStreak,
       firstExpedition: !player.firstExpeditionDone,
+      pity: player.catchPity,
     },
   );
   player.dupeStreak = dupeStreak;
+  player.catchPity = pity;
+  for (const f of forced) {
+    if (f.pity === 'new') player.stats.pity_new += 1;
+    else player.stats.pity_creature += 1;
+  }
   player.firstExpeditionDone = true;
   player.stats.catch_rolls += results.length + empty;
   player.stats.empty_rolls += empty;
@@ -590,6 +606,8 @@ function payTrip(
     gearRules.trailXpBp;
   player.explorerXp[explorer.id] =
     (player.explorerXp[explorer.id] ?? 0) + tripXp(trip.length, xpBp);
+  // Creature experience: a finished trip pays its explorer by the length, doubled by a treat.
+  giveExperience(player, explorer, tripExperience(trip.length, trip.treat === true), 'trip');
   // The one-time gift of every rank this trip reached (Bait, and parts and supplies with the gear sim).
   for (const { gift } of rankGiftsBetween(rank, rankOfCreature(player, explorer.id))) {
     player.bait += gift.bait;

@@ -191,6 +191,82 @@ describe('sending and claiming trips', () => {
   });
 });
 
+describe('creature experience from trips', () => {
+  /** A trip of `length` that ended long ago, claimed now, with the first-expedition rule out of the way. */
+  function claimed(length: 'short' | 'medium' | 'long' | 'day', treat: boolean): SimPlayer {
+    const p = player();
+    p.firstExpeditionDone = true;
+    p.expeditions.push({
+      explorerId: 'p01/splashet',
+      length,
+      destination: 'tidepools',
+      kit: [],
+      rolls: 1,
+      twist: null,
+      startHour: 0,
+      endsAtHour: 5,
+      ...(treat ? { treat: true } : {}),
+    });
+    // Far past the end, so a pushed-on goal (if one is offered) has run its time too.
+    claimTrips(p, ctx(1_000, `exp-${length}-${String(treat)}`));
+    return p;
+  }
+
+  it('pays the explorer by the length of a finished trip, and a treat doubles it', () => {
+    for (const length of EXPEDITION_LENGTHS) {
+      const plain = claimed(length, false);
+      const treated = claimed(length, true);
+      // A risky goal that fails brings nothing home (and so no experience): skip those runs.
+      if (plain.stats.trips_finished === 1) {
+        expect(plain.stats.exp_trip, length).toBe(RULES.experience.trip[length]);
+      }
+      if (treated.stats.trips_finished === 1) {
+        expect(treated.stats.exp_trip, length).toBe(2 * RULES.experience.trip[length]);
+      }
+    }
+  });
+
+  it('keeps the experience of a trip that is not done yet out of the explorer', () => {
+    const p = player();
+    p.expeditions.push({
+      explorerId: 'p01/splashet',
+      length: 'long',
+      destination: 'tidepools',
+      kit: [],
+      rolls: 1,
+      twist: null,
+      startHour: 0,
+      endsAtHour: 12,
+    });
+    claimTrips(p, ctx(6));
+    expect(p.stats.exp_trip).toBe(0);
+    expect(p.creatures.find((c) => c.id === 'p01/splashet')?.exp ?? 0).toBe(0);
+  });
+
+  it('counts the pity: every dry roll moves both counters, and a creature resets what it should', () => {
+    const p = player();
+    p.firstExpeditionDone = true;
+    p.catchPity = { sinceNew: RULES.catching.pity.newAfter, sinceCreature: 0 };
+    p.expeditions.push({
+      explorerId: 'p01/splashet',
+      length: 'short',
+      destination: 'tidepools',
+      kit: [],
+      rolls: 1,
+      twist: null,
+      startHour: 0,
+      endsAtHour: 2,
+    });
+    claimTrips(p, ctx(1_000, 'pity'));
+    // The pity forced a species the player lacked (the Tidepools hold three the player does not own).
+    if (p.stats.trips_finished === 1) {
+      expect(p.stats.pity_new).toBe(1);
+      expect(p.catchPity).toEqual({ sinceNew: 0, sinceCreature: 0 });
+      expect(p.creatures.length).toBe(CREATURES.length + 1);
+    }
+  });
+});
+
 describe('trips in the economy', () => {
   const run = (seed: string) => runEconomy({ seed, weeks: 6, mix: DEFAULT_MIX, snapshotWeeks: [] });
 

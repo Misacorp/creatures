@@ -36,16 +36,50 @@ export const RULES = {
    * calendar date on which it starts, so 12:00 on the 14th still belongs to the 13th's game day.
    */
   daily: { reset: { hour: 13, minute: 37 } },
-  training: {
+  /**
+   * Creature experience (docs/design/gear-and-creatures-v2.md section 9, "Creatures B"): levels come from
+   * what a creature does, never from Bait. Experience from level L to L + 1 is `perLevel x L +
+   * perLevelSquared x L x L` (27 at level 1, 450 at 10, 1,300 at 20; about 28,000 from 1 to 30). Starting
+   * values, tuned with the journey sim to the starting pace of the design (docs/balance/log.md B-016): the
+   * design's first numbers were 10 / 30 / 60 / 120 for a trip, 20 and 20 for the dungeon, 50 / 50 / 100 for
+   * the raid and 4 an hour for a job; the pace needs about twice as much from trips and jobs, three times
+   * from the dungeon and four times from the raid. There is no catch-up bonus (2026-10-16).
+   */
+  experience: {
+    perLevel: 25,
+    perLevelSquared: 2,
+    /** No levels past this (the Gold Ribbon is the reward for reaching it). */
+    maxLevel: 30,
+    /** Experience per creature for a finished trip, by length (a recall or a failed trip pays none). */
+    trip: { short: 20, medium: 60, long: 120, day: 240 },
+    /** The daily dungeon: per room cleared, and on top of that for clearing the whole run. Depth adds nothing. */
+    dungeon: { perRoom: 60, fullClear: 60 },
+    /** Raid stages, per creature in the fight: the stage's experience, times `clearedBp` when it was cleared. */
+    raid: { phase1: 200, phase2: 200, finale: 400, clearedBp: 15_000 },
+    /** A Workshop job: experience per hour of its nominal work time. */
+    workshopPerHour: 8,
     /**
-     * Cost to go from level L to L+1 is baseCost + perLevel * L. Tuned by the balance simulator
-     * (docs/balance/report-2026-10-11.md): a casual player can take a first creature to its
-     * evolution level within four weeks.
+     * Treats (a per-creature checkbox when an activity starts): the activity's experience for that
+     * creature is multiplied by `multiplier`, and the treat costs `baitBase + ceil(level / 2)` Bait, paid
+     * when the activity starts. Raids take no treats.
      */
-    baseCost: 3,
-    perLevel: 2,
-    /** Half price while level < serverMedianLevel - discountLevelsBelowMedian. */
-    discountLevelsBelowMedian: 5,
+    treat: { multiplier: 2, baitBase: 3 },
+    /**
+     * The ribbons that gate a creature: it stops at `level` until the ribbon is earned. Materials only:
+     * scrap, shards of the creature's element, glimmer, and finished trips (the creature's own). Gold
+     * is the reward for reaching `maxLevel` and costs nothing.
+     */
+    ribbons: [
+      { id: 'bronze', level: 10, scrap: 6, shards: 2, glimmer: 0, trips: 0 },
+      { id: 'silver', level: 20, scrap: 15, shards: 5, glimmer: 1, trips: 5 },
+    ] as readonly {
+      id: 'bronze' | 'silver';
+      level: number;
+      scrap: number;
+      shards: number;
+      glimmer: number;
+      trips: number;
+    }[],
   },
   expedition: {
     durations: {
@@ -68,6 +102,13 @@ export const RULES = {
     dupeShieldStreak: 3,
     /** The first claim of a player's first expedition starts with this line. */
     firstExpeditionLine: 'zipmouse',
+    /**
+     * New-species pity (2026-10-17): the server counts a player's catch rolls. After `newAfter` rolls
+     * without a new species, the next roll brings a creature, and it is a species the player lacks (when
+     * the place has one). Whatever the species, the `creatureEvery`-th roll in a row without any
+     * creature brings one. Counters are stored per player and move with the trip claim.
+     */
+    pity: { newAfter: 60, creatureEvery: 10 },
   },
   fusion: {
     /** Cumulative stat bonus in basis points after N fusions (index = N). */
