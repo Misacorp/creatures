@@ -1,6 +1,6 @@
 import type { Creature, GameState } from './api';
 import { shinyPalette } from './art';
-import { activityBadges, speciesSubtitle, xpWords } from './creature-card-view';
+import { activityBadges, portraitAlt, speciesSubtitle, xpWords } from './creature-card-view';
 import { experienceLabel } from './CreatureProgress';
 import { creatureName, elementName, getSpecies } from './game';
 import { GlossaryTag } from './Glossary';
@@ -42,12 +42,14 @@ export function CreatureHead({
   const name = creatureName(creature);
   return (
     <div class="cc-head">
-      <div class={sparkleFrame ? 'portrait sparkle-frame' : 'portrait'}>
+      <div
+        class={`portrait${sparkleFrame ? ' sparkle-frame' : ''}${species === undefined ? '' : ` rarity-${species.rarity}`}`}
+      >
         <Sprite
           sprite={creatureSpriteOrFallback(creature.species)}
           scale={4}
           bob
-          alt={`${name}${creature.shiny ? ' (shiny)' : ''}`}
+          alt={portraitAlt(name, creature.shiny, species?.rarity)}
           {...(shinyColours === undefined ? {} : { palette: shinyColours })}
         />
         {sparkleFrame && (

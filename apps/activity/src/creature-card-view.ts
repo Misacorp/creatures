@@ -71,6 +71,11 @@ export function xpWords(creature: Creature): string {
     : `${String(creature.exp)} / ${String(creature.expNeeded)}`;
 }
 
+/** What a portrait says to a screen reader: the name, "(shiny)" and the rarity (its border colour is never alone). */
+export function portraitAlt(name: string, shiny: boolean, rarity: string | undefined): string {
+  return `${name}${shiny ? ' (shiny)' : ''}${rarity === undefined ? '' : `, ${rarity}`}`;
+}
+
 /**
  * Whether a click came from a button inside `boundary` (the card): those do their own thing, while a click
  * anywhere else on the card opens the page. Walks up from the target with plain DOM properties, so it

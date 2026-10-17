@@ -1,5 +1,27 @@
 import type { ComponentChildren, Ref } from 'preact';
 
+/** A rarity a slot's one border can show (the tokens of `gear-tokens.css`). */
+export type SlotRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
+
+/** A small pixel padlock, drawn as an SVG of square cells (no emoji, no picture file). Decorative. */
+function LockIcon({ class: extra }: { class?: string }) {
+  return (
+    <svg
+      class={`lock-icon${extra === undefined ? '' : ` ${extra}`}`}
+      viewBox="0 0 8 9"
+      width="16"
+      height="18"
+      aria-hidden="true"
+      focusable="false"
+      shape-rendering="crispEdges"
+    >
+      <path d="M2 0h4v1h1v4H5V2H3v3H1V1h1z" />
+      <path d="M0 4h8v5H0z" />
+      <path class="lock-hole" d="M3 5h2v3H3z" />
+    </svg>
+  );
+}
+
 /** What a slot holds: `filled` (something is in it), `empty` (open, nothing in it) or `locked` (not open yet). */
 export type SlotState = 'filled' | 'empty' | 'locked';
 
@@ -9,13 +31,15 @@ export interface SlotProps {
   state: SlotState;
   /** What a screen reader says: the slot, what is in it, and (for a tappable slot) that it changes it. */
   label: string;
-  /** Empty: the slot's own name, drawn inside ("Scarf", "Talent"). */
+  /** Empty or locked: the slot's own name, drawn inside ("Scarf", "Talent"). */
   name?: string;
-  /** Locked: the level it opens at, drawn inside as "Lv 7". */
+  /** Locked: the level it opens at, drawn small under the padlock and the name as "Lv 7". */
   opensAt?: number;
+  /** Filled: the rarity of what it holds; the slot's one border takes its colour. */
+  rarity?: SlotRarity;
   /** Filled: what it holds (an item's icon, a talent's name and number). Pass text as text. */
   children?: ComponentChildren;
-  /** Filled: a tiny mark in the bottom corner (an item's level, "Lv 4"). */
+  /** Filled: a tiny mark in the bottom corner (an item's level, "15"). */
   corner?: string;
   /** Tapping it. A locked slot, or a filled one without this, is not a button. */
   onClick?: (event: MouseEvent) => void;
@@ -28,7 +52,8 @@ export interface SlotProps {
 
 /**
  * One slot: the same box for a creature's gear (Hat, Scarf, Charm) and its talents. Filled it shows what
- * it holds, empty it names itself, locked it is muted and says the level it opens at. It is a real button
+ * it holds (its one border in the rarity colour), empty it names itself, locked it is muted: a padlock, its
+ * name and the level it opens at. It is a real button
  * when it can be tapped (it opens a Drawer to fill or change it) and plain content when it cannot. The
  * three states are never told apart by colour alone: the words inside say which one it is.
  */
@@ -38,6 +63,7 @@ export function Slot({
   label,
   name,
   opensAt,
+  rarity,
   children,
   corner,
   onClick,
@@ -45,10 +71,14 @@ export function Slot({
   buttonRef,
   disabled = false,
 }: SlotProps) {
-  const classes = `slot ${kind} ${state}`;
+  const classes = `slot ${kind} ${state}${rarity === undefined ? '' : ` rarity-${rarity}`}`;
   const inside =
     state === 'locked' ? (
-      <span class="slot-lock pix">Lv {opensAt}</span>
+      <>
+        <LockIcon />
+        {name !== undefined && <span class="slot-word pix">{name}</span>}
+        <span class="slot-lock pix">Lv {opensAt}</span>
+      </>
     ) : state === 'empty' ? (
       <span class="slot-word pix">{name}</span>
     ) : (

@@ -2,9 +2,17 @@
 
 :root {
   --gear: #7fe0d0; /* the gear's own share of a stat */
-  --rarity-common: var(--haze);
-  --rarity-rare: #b48cff;
-  --rarity-epic: var(--gold);
+
+  /*
+    Rarity colours, defined once and used everywhere a rarity is shown: gear frames, slots, the picker,
+    item cards, loot, the Workshop, and the border of a creature's portrait. Common is grey, Rare blue,
+    Epic pink. Legendary (gold) and Mythic (crimson) are reserved for later; nothing uses them yet.
+  */
+  --rarity-common: #a8a8b8;
+  --rarity-rare: #4da3ff;
+  --rarity-epic: #ff6fbf;
+  --rarity-legendary: var(--gold);
+  --rarity-mythic: #dc143c;
   --rarity-festival: #ffc86b; /* lantern gold: a Festival piece's own look */
 }
 
@@ -18,4 +26,12 @@
 
 .rarity-epic {
   --rar: var(--rarity-epic);
+}
+
+.rarity-legendary {
+  --rar: var(--rarity-legendary);
+}
+
+.rarity-mythic {
+  --rar: var(--rarity-mythic);
 }

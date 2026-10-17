@@ -1,7 +1,7 @@
 /*
   The Slot (ui/Slot.tsx): one box for a creature's gear and its talents, side by side across the full width.
   Filled: raised, holds the item's icon or the talent's name and number. Empty: a dashed outline with the
-  slot's own name. Locked: flat and muted, with "Lv 7". The words inside tell the states apart, never the
+  slot's own name. Locked: flat and muted, a padlock over the slot's name and "Lv 7". The words inside tell the states apart, never the
   colour alone. Built for 390 px: two or three equal columns.
 */
 
@@ -78,6 +78,15 @@ button.slot.filled:active:not(:disabled) {
   box-shadow: 0 0 0 var(--px) var(--ink);
 }
 
+/*
+  A gear slot has one border only, in the rarity colour (--rar, from gear-tokens.css), drawn inside the box.
+  The item's sprite stands in it with no frame of its own.
+*/
+.slot.gear.filled,
+button.slot.gear.filled:active:not(:disabled) {
+  box-shadow: inset 0 0 0 var(--px) var(--rar, var(--line));
+}
+
 .slot.empty {
   background: transparent;
   box-shadow: none;
@@ -97,11 +106,24 @@ button.slot.empty:active:not(:disabled) {
   box-shadow: none;
 }
 
+/* Locked: a padlock, the slot's name and the level it opens at, stacked and centred. */
 .slot.locked {
+  align-content: center;
+  justify-items: center;
+  gap: 0.125rem;
   background: rgb(var(--ink-rgb) / 55%);
   font-style: normal;
   box-shadow: inset 0 0 0 2px var(--line);
   color: var(--haze);
+}
+
+.lock-icon {
+  display: block;
+  fill: currentcolor;
+}
+
+.lock-icon .lock-hole {
+  fill: var(--ink);
 }
 
 button.slot[aria-expanded='true'] {
@@ -115,9 +137,13 @@ button.slot[aria-expanded='true'] {
 }
 
 .slot-lock {
-  font-size: 1.25rem;
+  font-size: 0.9375rem;
   line-height: 1;
   opacity: 0.85;
+}
+
+.slot.locked .slot-word {
+  font-size: 1.25rem;
 }
 
 .slot-content {
@@ -127,18 +153,13 @@ button.slot[aria-expanded='true'] {
   max-width: 100%;
 }
 
-/* The icon of a gear slot sits a little bigger than on the card. */
-.slot.gear .item-frame {
-  margin: 0.5rem;
-}
-
-/* The item level in the corner: tiny, and outlined so it reads on any item colour. */
+/* The item level in the corner: a small number (no "Lv", so it is never taken for a lock level), outlined so it reads on any item colour. */
 .slot-corner {
   position: absolute;
   right: 0.3125rem;
   bottom: 0.1875rem;
-  color: var(--haze);
-  font-size: 0.875rem;
+  color: var(--bone);
+  font-size: 1rem;
   line-height: 1;
   text-shadow: var(--ink-outline-thin);
 }
