@@ -71,9 +71,9 @@ export function xpWords(creature: Creature): string {
     : `${String(creature.exp)} / ${String(creature.expNeeded)}`;
 }
 
-/** What a portrait says to a screen reader: the name, "(shiny)" and the rarity (its border colour is never alone). */
-export function portraitAlt(name: string, shiny: boolean, rarity: string | undefined): string {
-  return `${name}${shiny ? ' (shiny)' : ''}${rarity === undefined ? '' : `, ${rarity}`}`;
+/** What a portrait says to a screen reader: the name and "(shiny)". The rarity is said with the name (a hidden word after it). */
+export function portraitAlt(name: string, shiny: boolean): string {
+  return `${name}${shiny ? ' (shiny)' : ''}`;
 }
 
 /**
@@ -160,6 +160,8 @@ export interface Badge {
   tone: 'festival' | 'shiny' | 'away' | 'busy' | 'good' | 'first';
   /** The glossary entry it explains, or null. */
   entry: string | null;
+  /** A small pixel picture before the words (`armchair` for Lounging), or none. */
+  icon?: 'armchair';
 }
 
 /** The badges worth a glance on the card itself: what the creature is doing now (it changes what you can do). */
@@ -169,7 +171,8 @@ export function activityBadges(creature: Creature, state: Pick<GameState, 'loung
   if (creature.busy?.kind === 'job') {
     badges.push({ text: 'On a job', tone: 'busy', entry: 'workshop' });
   }
-  if (creature.id === state.loungerId) badges.push({ text: 'Lounging', tone: 'good', entry: null });
+  if (creature.id === state.loungerId)
+    badges.push({ text: 'Lounging', tone: 'good', entry: null, icon: 'armchair' });
   return badges;
 }
 

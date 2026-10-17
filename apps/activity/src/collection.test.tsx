@@ -447,8 +447,9 @@ describe('a creature page', () => {
     const opened = pageOf(root) as FakeElement;
     expect(opened).toBeDefined();
     expect(opened.getAttribute('id')).toBe(`${cardDomId(target.id)}-page`);
+    // The heading reads the name and then the rarity (a visually hidden word).
     expect(nameOf(find(opened, (e) => e.localName === 'h2')[0] as FakeElement)).toBe(
-      cardNames(root)[3],
+      `${cardNames(root)[3] ?? ''}, common`,
     );
     // The list is out of sight (and of the accessibility tree), not gone.
     expect(listOf(root).hasAttribute('hidden')).toBe(true);

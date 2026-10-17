@@ -16,6 +16,26 @@ const MARKERS = ['DEV_PANEL_MARKER_7f3a', 'dev-drawer', '/api/dev/'];
  */
 const WORKBENCH_MARKERS = ['WORKBENCH_MARKER_5c1e', 'wb-frame-stage'];
 
+/** A `#rrggbb` token's value in whitespace-free CSS. */
+function cssColour(css: string, name: string): string {
+  const match = new RegExp(`${name}:(#[0-9a-fA-F]{6})`).exec(css);
+  if (match?.[1] === undefined) throw new Error(`no colour for ${name}`);
+  return match[1];
+}
+
+function luminance(hex: string): number {
+  const [r = 0, g = 0, b = 0] = [1, 3, 5]
+    .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** The WCAG contrast ratio of two colours. */
+function contrast(a: string, b: string): number {
+  const [hi = 0, lo = 0] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
 type Output = Rollup.RollupOutput | Rollup.RollupOutput[] | Rollup.RollupWatcher;
 
 async function buildFiles(targetEnv: string): Promise<{ name: string; text: string }[]> {
@@ -51,7 +71,7 @@ describe('the debug panel and the production build', () => {
     for (const marker of WORKBENCH_MARKERS) {
       expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
     }
-    // The rarity colours are defined once, as tokens (grey, blue, pink; gold and crimson reserved).
+    // The rarity colours are defined once, as tokens (grey, blue, pink; gold and crimson reserved), with a lighter text variant each for names.
     const css = files
       .filter((f) => f.name.endsWith('.css'))
       .map((f) => f.text)
@@ -63,8 +83,22 @@ describe('the debug panel and the production build', () => {
       '--rarity-epic:#ff6fbf',
       '--rarity-legendary:var(--gold)',
       '--rarity-mythic:#dc143c',
+      '--rarity-common-text:#c2c2d0',
+      '--rarity-rare-text:#7ebcff',
+      '--rarity-epic-text:#f397ff',
     ]) {
       expect(css).toContain(token);
+    }
+    // A creature's name is drawn in its rarity's text colour: at least 4.5:1 (WCAG AA) on the page ground,
+    // the card, a hovered card and a pressed card.
+    for (const rarity of ['common', 'rare', 'epic', 'mythic']) {
+      const text = cssColour(css, `--rarity-${rarity}-text`);
+      for (const bg of ['night', 'dusk', 'dusk-2', 'line']) {
+        expect(
+          contrast(text, cssColour(css, `--${bg}`)),
+          `${rarity} on ${bg}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
     }
     // The item picker's list and find-and-filter options were dropped from the game: only the grid ships.
     const js = files.filter((f) => f.name.endsWith('.js'));

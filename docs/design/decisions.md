@@ -1594,3 +1594,12 @@ Misa approved v3 (with changes) from the screenshots. It replaces the live `Crea
 - **Item picker (drawer).** The grid only. Cells have one rarity border each (the worn item first, marked "Worn"; the selected cell is lit from inside, not outlined twice). The detail panel is all pixel font: name, level and rarity, then a white base-stat block with a row per stat ("Attack 26 +15": the base number, then what its local lines add; "HP 32"), a divider, then the modifiers with values and tier pips. The same size for every row. "Loading..." shows while the gear view loads. Base and bonus come from the server's `base` and `value`; a stat in points (crit) keeps the server's text.
 - **Talent Book (drawer).** The talent in the tapped slot is lit ("Slot N"), free ones have "Use · 10 Bait", and a talent already in another slot is greyed with its "Slot N" mark and no button (slots are equivalent, so there is no move).
 - **Removed.** `CardGear`, `CreatureTalents` (the Talent Book accordion), their styles and workbench pages, and `onEquipBest` on the page's actions.
+
+## 2026-10-17: creature rarity by name colour; gear rarity by one border (polish v5)
+
+Misa's changes after trying v3 live.
+
+- **Creatures show rarity by the colour of their name**, not a portrait border (page header and list cards): common grey, rare blue, epic pink-purple, from the rarity tokens. Because colour is never alone, a visually hidden word follows the name ("Cindle, rare"), and the card's name button reads "Open Cindle, rare". The portrait's spoken label is just the name (and "(shiny)").
+- **Contrast.** Names use a lighter `--rarity-*-text` variant (`--rar-text` on `.rarity-*`): common `#c2c2d0`, rare `#7ebcff`, epic `#f397ff` (leans purple), reserved mythic `#ff9db0`. Each is at least 4.5:1 (WCAG AA) on the page ground, the card, a hovered card and a pressed card; the plain tokens failed on the pressed card (3.5 to 3.9). `dev-build.test.ts` reads the colours from the built stylesheet and checks it.
+- **Gear rarity is one single border** in the rarity colour everywhere (item frames on cards, loot, the Workshop, like the slots and picker grid). The old double and triple edges are gone; the pips still say rarity without colour.
+- **Smaller changes.** The card's level badge has no "?" and uses the pixel font (a tap still opens the explanation). Gear slots show "Lv 2" in the corner again (pixel font). The Lounge button and the "Lounging" badge have a small pixel armchair (`ui/ArmchairIcon.tsx`, an SVG in the text colour).

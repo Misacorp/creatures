@@ -305,7 +305,7 @@ const itemFrame: Entry = {
   file: 'apps/activity/src/GearArt.tsx',
   group: 'Loot & reveals',
   description:
-    'The frame around a gear item: each rarity has its own edge style and its own pips, so rarity never depends on colour alone; it is on every item card and loot reveal.',
+    'The frame around a gear item: one single border in the rarity colour (grey, blue, pink) and the rarity pips, so rarity never depends on colour alone; it is on every item card and loot reveal.',
   controls: {
     rarity: { kind: 'select', options: RARITIES },
     base: { kind: 'select', options: GEAR_BASE_IDS },

@@ -9,7 +9,7 @@ import { Slot, SlotRow } from '../ui/Slot';
 
 /**
  * A creature's three gear slots, side by side across the full width. Filled: the item's sprite, large and
- * on its own, inside the slot's one border in the rarity colour, with the item level as a tiny number in the
+ * on its own, inside the slot's one border in the rarity colour, with the item level ("Lv 2") as a tiny number in the
  * corner (the words are in the spoken label). Open and empty: the slot's name. Not open yet: muted, a
  * padlock over the slot's name and the level it opens at. Tapping an open one asks for its picker.
  */
@@ -64,7 +64,7 @@ export function GearSlots({
             kind="gear"
             state="filled"
             rarity={worn.rarity}
-            corner={String(worn.itemLevel)}
+            corner={`Lv ${String(worn.itemLevel)}`}
             label={`${name}: ${itemLabel(worn.baseId, worn.itemLevel)}, ${rarityName(worn.rarity)}. Change`}
             expanded={openSlot === slot}
             onClick={open}

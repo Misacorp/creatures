@@ -153,7 +153,7 @@ button.slot[aria-expanded='true'] {
   max-width: 100%;
 }
 
-/* The item level in the corner: a small number (no "Lv", so it is never taken for a lock level), outlined so it reads on any item colour. */
+/* The item level in the corner ("Lv 2", in the pixel font), outlined so it reads on any item colour. */
 .slot-corner {
   position: absolute;
   right: 0.3125rem;

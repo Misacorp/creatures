@@ -1,6 +1,7 @@
 import { ItemSprite } from '../../GearArt';
 import { shinyPalette } from '../../art';
 import { Sprite } from '../../sprites/Sprite';
+import { ArmchairIcon } from '../../ui/ArmchairIcon';
 import { GameIcon } from '../../ui/GameIcon';
 import { GEAR_BASE_IDS, ICON_NAMES, SPRITES, SPRITE_NAMES, iconOf } from '../data';
 import { bool, num, str } from '../props';
@@ -88,4 +89,29 @@ const itemSprite: Entry = {
   ),
 };
 
-export const iconEntries: readonly Entry[] = [gameIcon, sprite, itemSprite];
+const armchairIcon: Entry = {
+  name: 'ArmchairIcon',
+  file: 'apps/activity/src/ui/ArmchairIcon.tsx',
+  group: 'Icons',
+  description:
+    'A small pixel armchair in the text colour that marks the lounge: it is before the Lounge button on the creature page and the Lounging badge on cards.',
+  controls: { label: { kind: 'select', options: ['Lounge', 'Lounging'] } },
+  defaults: { label: 'Lounge' },
+  presets: [
+    { name: 'Lounge button', props: { label: 'Lounge' } },
+    { name: 'Lounging badge', props: { label: 'Lounging' } },
+  ],
+  render: (p) =>
+    str(p, 'label') === 'Lounge' ? (
+      <button type="button" class="lounge-button">
+        <ArmchairIcon /> Lounge
+      </button>
+    ) : (
+      <span class="badge good">
+        <ArmchairIcon />
+        Lounging
+      </span>
+    ),
+};
+
+export const iconEntries: readonly Entry[] = [gameIcon, sprite, itemSprite, armchairIcon];

@@ -7,6 +7,7 @@ import { GlossaryTag } from '../Glossary';
 import { glyphOrUnknown } from '../glyphs';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
+import { ArmchairIcon } from '../ui/ArmchairIcon';
 import { GameIcon } from '../ui/GameIcon';
 import { Tag } from '../ui/Tag';
 import { XpBar } from '../XpBar';
@@ -16,7 +17,8 @@ import { XpBar } from '../XpBar';
  * level, all centred on the same line, then the experience bar. A name that is too long for the row wraps
  * to a second line (two at most, then it is cut with an ellipsis; the whole name is in the Rename field and
  * read out in full by screen readers) and the icon and the level stay centred against the whole name. The
- * portrait has one border in the creature's rarity colour (the rarity is in its spoken label). The level
+ * name is in the creature's rarity colour (a visually hidden word says the rarity aloud; the portrait has no
+ * border). The level
  * badge is a hidden interaction: a tap still opens its explanation, with no "?" drawn. There is no
  * "Next: ..." line, and the species name of a nicknamed creature is a tag on the page, not here.
  */
@@ -37,14 +39,12 @@ export function PageHeader({
   const name = creatureName(creature);
   return (
     <div class="v3-head">
-      <div
-        class={`portrait${sparkleFrame ? ' sparkle-frame' : ''}${species === undefined ? '' : ` rarity-${species.rarity}`}`}
-      >
+      <div class={`portrait${sparkleFrame ? ' sparkle-frame' : ''}`}>
         <Sprite
           sprite={creatureSpriteOrFallback(creature.species)}
           scale={4}
           bob
-          alt={portraitAlt(name, creature.shiny, species?.rarity)}
+          alt={portraitAlt(name, creature.shiny)}
           {...(shinyColours === undefined ? {} : { palette: shinyColours })}
         />
         {sparkleFrame && (
@@ -56,8 +56,12 @@ export function PageHeader({
       </div>
       <div class="v3-id">
         <div class="v3-name-row">
-          <h2 id={nameId} class="v3-name">
+          <h2
+            id={nameId}
+            class={`v3-name${species === undefined ? '' : ` rarity-name rarity-${species.rarity}`}`}
+          >
             <span class="v3-name-text">{name}</span>
+            {species !== undefined && <span class="visually-hidden">, {species.rarity}</span>}
           </h2>
           {species !== undefined && (
             <span
@@ -81,6 +85,7 @@ export function PageHeader({
                 tone={badge.tone}
                 {...(badge.entry === null ? {} : { entry: badge.entry })}
               >
+                {badge.icon === 'armchair' && <ArmchairIcon />}
                 {badge.text}
               </Tag>
             ))}

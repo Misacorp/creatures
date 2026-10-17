@@ -162,7 +162,7 @@ describe('the creature page: top row and back', () => {
   it('is named by the creature and takes the focus when it opens at the top', () => {
     const { root } = draw('level 15');
     expect(root.getAttribute('aria-labelledby')).toBe(`${root.getAttribute('id') ?? ''}-name`);
-    expect(nameOf(first(find(root, (e) => e.localName === 'h2')))).toBe('Cindle');
+    expect(nameOf(first(find(root, (e) => e.localName === 'h2')))).toBe('Cindle, common');
     expect(root.focused).toBe(1);
   });
 });
@@ -175,10 +175,12 @@ describe('the creature page: the head and tags', () => {
     page?.unmount();
 
     const named = draw('nickname');
-    expect(visibleText(first(find(named.root, (e) => e.localName === 'h2')))).toBe('Sparky');
+    expect(visibleText(first(find(named.root, (e) => e.localName === 'h2')))).toBe(
+      'Sparky, common',
+    );
     expect(visibleText(first(byClass(named.root, 'tags')))).toContain('Cindle');
     // The name row holds the name, the element and the level, not the species.
-    expect(visibleText(first(byClass(named.root, 'v3-name-row')))).toBe('SparkyLv 15');
+    expect(visibleText(first(byClass(named.root, 'v3-name-row')))).toBe('Sparky, commonLv 15');
     page?.unmount();
 
     // A nickname equal to the species name (any case) adds no tag.
@@ -186,14 +188,29 @@ describe('the creature page: the head and tags', () => {
     expect(byClass(first(byClass(same.root, 'tags')), 'tag')).toHaveLength(0);
   });
 
-  it('has no rarity tag; the portrait border is the rarity, with a spoken label', () => {
+  it('has no rarity tag and no portrait border; the name is in the rarity colour and the rarity is spoken', () => {
     const { root } = draw('level 15');
     const tags = visibleText(first(byClass(root, 'tags')));
     expect(tags).not.toMatch(/Common|Rare|Epic/);
     const portrait = first(byClass(root, 'portrait'));
-    expect(portrait.getAttribute('class')).toContain('rarity-common');
+    expect(portrait.getAttribute('class')).not.toContain('rarity-');
     const sprite = first(find(portrait, (e) => e.localName === 'canvas'));
-    expect(sprite.getAttribute('aria-label') ?? sprite.getAttribute('alt')).toBe('Cindle, common');
+    expect(sprite.getAttribute('aria-label') ?? sprite.getAttribute('alt')).toBe('Cindle');
+    const name = first(find(root, (e) => e.localName === 'h2'));
+    const classes = (name.getAttribute('class') ?? '').split(' ');
+    expect(classes).toContain('rarity-name');
+    expect(classes).toContain('rarity-common');
+    // The word is in the page for screen readers, drawn off screen.
+    const word = first(byClass(name, 'visually-hidden'));
+    expect(word.textContent).toBe(', common');
+  });
+
+  it('puts an armchair before the Lounge button words', () => {
+    const { root } = draw('level 15');
+    const button = first(byClass(root, 'lounge-button'));
+    expect(visibleText(button)).toBe('Lounge');
+    expect(byClass(button, 'armchair-icon')).toHaveLength(1);
+    expect(first(byClass(button, 'armchair-icon')).getAttribute('aria-hidden')).toBe('true');
   });
 
   it('draws the level badge in the pixel font with no "?" mark', () => {
@@ -330,15 +347,15 @@ describe('the creature page: gear slots', () => {
     expect(byClass(first(byClass(root, 'slot-row')), 'empty')).toHaveLength(2);
   });
 
-  it('shows a worn item as its bare sprite in the rarity colour, with the level as a plain number', () => {
+  it('shows a worn item as its bare sprite in the rarity colour, with "Lv" and the level in the corner', () => {
     const { root } = draw('level 15');
     const [hat, scarf] = byClass(first(byClass(root, 'slot-row')), 'slot');
     // One border only: the slot's own, no inner frame round the sprite.
     expect(byClass(root, 'item-frame')).toHaveLength(0);
     expect(hat?.getAttribute('class')).toContain('rarity-epic');
     expect(scarf?.getAttribute('class')).toContain('rarity-rare');
-    expect(first(byClass(hat as FakeElement, 'slot-corner')).textContent).toBe('15');
-    expect(first(byClass(scarf as FakeElement, 'slot-corner')).textContent).toBe('12');
+    expect(first(byClass(hat as FakeElement, 'slot-corner')).textContent).toBe('Lv 15');
+    expect(first(byClass(scarf as FakeElement, 'slot-corner')).textContent).toBe('Lv 12');
     expect(find(hat as FakeElement, (e) => e.localName === 'canvas')).toHaveLength(1);
     expect(nameOf(hat as FakeElement)).toBe(
       "Hat: Emberkeeper's Crown, item level 15, Epic. Change",

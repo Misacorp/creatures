@@ -1,4 +1,4 @@
-/* The frame of an item: every rarity has its own edge, and the pips say the rarity without colour. */
+/* The frame of an item: one single border in the rarity colour (like the creature page's slots and picker), and the pips say the rarity without colour. */
 .item-frame {
   position: relative;
   display: inline-grid;
@@ -6,20 +6,7 @@
   margin: 6px;
   padding: 3px;
   background: var(--ink);
-  box-shadow: 0 0 0 2px var(--rar, var(--haze));
-}
-
-.item-frame.rarity-rare {
-  box-shadow:
-    0 0 0 2px var(--rar),
-    0 0 0 4px var(--ink),
-    0 0 0 6px var(--rar);
-}
-
-.item-frame.rarity-epic {
-  box-shadow:
-    0 0 0 3px var(--rar),
-    0 0 0 5px var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--rar, var(--haze));
 }
 
 /* A Festival piece keeps its rarity's edge and adds a lantern-gold dashed outline of its own. */

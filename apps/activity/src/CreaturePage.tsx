@@ -26,6 +26,7 @@ import { GlossaryTag } from './Glossary';
 import { abilityDef } from './live';
 import { ElementChip } from './sprites/ElementChip';
 import { Accordion } from './ui/Accordion';
+import { ArmchairIcon } from './ui/ArmchairIcon';
 import { Tag } from './ui/Tag';
 
 /** What a creature's buttons do; the screen that owns the cards supplies it (one action at a time). */
@@ -129,7 +130,7 @@ export function startingDrawer(
 /**
  * A creature's page: everything about it in one place that takes the list's spot on the Creatures tab.
  * Back (top left, or Escape) returns to the list; Lounge sits at the top right of the same row. Top to
- * bottom: who it is (one row of name, element and level; a portrait with a border in its rarity colour;
+ * bottom: who it is (one row of name, element and level; the name in its rarity colour;
  * the experience bar; tags) with the buttons for what is ready (the ribbon once the creature waits for
  * one, evolution, a waiting catch), stats with the gear's share, the finale ability (once unlocked), gear
  * and talents as slots (a tap opens a bottom drawer: the item picker, or the Talent Book), About and
@@ -239,7 +240,7 @@ export function CreaturePage({
               actions.onLounge(creature);
             }}
           >
-            Lounge
+            <ArmchairIcon /> Lounge
           </button>
         )}
       </div>

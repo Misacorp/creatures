@@ -1,6 +1,6 @@
 /*
-  The creature page (CreaturePage.tsx and creature-page/): the one-row head with a portrait whose single
-  border is the creature's rarity colour, the top row (back at the left, Lounge at the right), the item
+  The creature page (CreaturePage.tsx and creature-page/): the one-row head (the creature's rarity is the
+  colour of its name), the top row (back at the left, Lounge at the right), the item
   picker's icon grid and detail panel inside the Drawer, and the Talent Book rows. Built for 390 px. Comes
   after the Slot, Drawer and creature-focus rules on purpose.
 */
@@ -11,6 +11,21 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+}
+
+/* The pixel armchair: in the text's colour, a little gap before the words. */
+.armchair-icon {
+  display: inline-block;
+  flex: none;
+  margin-right: 0.3125rem;
+  vertical-align: -0.1875rem;
+  fill: currentcolor;
+}
+
+button.lounge-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cp-top button.lounge-button {
@@ -35,13 +50,6 @@
   padding: 0;
   background: var(--ink);
   box-shadow: none;
-}
-
-/* The creature's rarity as the portrait's one border (grey, blue, pink; gold and crimson are reserved). */
-.portrait[class*='rarity-'],
-.creature-card.focused .portrait[class*='rarity-'],
-.creature-page .portrait[class*='rarity-'] {
-  box-shadow: 0 0 0 var(--px) var(--rar);
 }
 
 .v3-id {

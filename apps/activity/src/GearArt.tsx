@@ -40,7 +40,7 @@ const RARITY_MARK: Readonly<Record<GearRarity, string>> = {
 };
 
 /**
- * The frame around an item sprite: each rarity has its own edge style and its own pips. A Festival piece
+ * The frame around an item sprite: one single border in the rarity colour and the rarity's pips. A Festival piece
  * (it is a base, not a rarity: pass its `baseId`) also gets a lantern-gold dashed outline and a star.
  */
 export function ItemFrame({

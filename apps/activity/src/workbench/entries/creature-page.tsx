@@ -108,7 +108,7 @@ const SCENE_LIST: readonly SceneDef[] = [
   },
   { id: 'F4', label: 'F4 · Page, ribbon ready', kind: 'ribbon ready', show: 'page' },
   { id: 'F5', label: 'F5 · Page, ready to evolve', kind: 'evolve ready', show: 'page' },
-  { id: 'C1', label: 'C1 · Cards: rarity borders', kind: 'level 15', show: 'cards' },
+  { id: 'C1', label: 'C1 · Cards: rarity name colours', kind: 'level 15', show: 'cards' },
   {
     id: 'R1',
     label: 'R1 · Rarity colours: common, rare, epic',
@@ -255,10 +255,10 @@ function Excerpt({ def, bait }: { def: SceneDef; bait: number }) {
   );
 }
 
-/** One creature card for each rarity, to show the portrait borders. */
+/** One creature card for each rarity (Sproutle, Stormray, Solmane), to show the name colours. */
 function RarityCards() {
-  const picks = (['common', 'rare', 'epic'] as const).flatMap((rarity) => {
-    const species = content.creatures.find((c) => c.rarity === rarity && c.festival !== true);
+  const picks = ['sproutle', 'stormray', 'solmane'].flatMap((id) => {
+    const species = content.creatures.find((c) => c.id === id);
     return species === undefined ? [] : [species];
   });
   const state = pageScene('level 15').state;
@@ -342,7 +342,7 @@ const creaturePage: Entry = {
   file: 'apps/activity/src/CreaturePage.tsx',
   group: 'Creatures & game pieces',
   description:
-    "A creature's page, opened from its card in the list's place: back at the top left and Lounge at the top right, one head row (portrait with a border in its rarity colour, name, element, level, the experience bar), tags (the species name of a nicknamed creature, element and role), the ribbon, evolve and waiting-catch buttons when ready, stats, the finale ability, gear and talents as slots (a tap opens a bottom drawer: the item picker grid with its detail panel, or the Talent Book), About and Rename. Pick a scene: H = header, G = gear slots, P = item picker, T = talent slots and Talent Book, F = the full page, C = cards, R = rarity colours. The scenes are live: equip, take off and use a talent.",
+    "A creature's page, opened from its card in the list's place: back at the top left and Lounge at the top right, one head row (portrait, the name in its rarity colour, element, level, the experience bar), tags (the species name of a nicknamed creature, element and role), the ribbon, evolve and waiting-catch buttons when ready, stats, the finale ability, gear and talents as slots (a tap opens a bottom drawer: the item picker grid with its detail panel, or the Talent Book), About and Rename. Pick a scene: H = header, G = gear slots, P = item picker, T = talent slots and Talent Book, F = the full page, C = cards, R = rarity colours. The scenes are live: equip, take off and use a talent.",
   controls: {
     scene: { kind: 'select', options: SCENE_IDS },
     banner: { kind: 'toggle' },

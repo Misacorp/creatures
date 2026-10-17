@@ -105,6 +105,36 @@ describe('the small card', () => {
     expect(visibleText(byClass(card, 'cc-next')[0] as FakeElement)).toBe('Next: Scarf at 7');
   });
 
+  it('draws the level badge in the pixel font with no "?" (the tap still opens its explanation)', () => {
+    const { card } = draw(kind('growing'));
+    const badge = byClass(card, 'lvl-tag')[0] as FakeElement;
+    const classes = (badge.getAttribute('class') ?? '').split(' ');
+    expect(classes).toContain('pix');
+    // No popover host in this test, so the tag is plain text; with one it is a button with `gtag-bare`
+    // (the "?" of a tag is drawn by `.gtag-chip::after`, which `gtag-bare` turns off).
+    expect(visibleText(badge)).toBe('Lv 6');
+  });
+
+  it('shows the rarity by the colour of the name, not by a portrait border, and says it aloud', () => {
+    const { card } = draw(kind('growing'));
+    const portrait = byClass(card, 'portrait')[0] as FakeElement;
+    expect(portrait.getAttribute('class')).not.toContain('rarity-');
+    const name = find(card, (e) => e.localName === 'h3')[0] as FakeElement;
+    const classes = (name.getAttribute('class') ?? '').split(' ');
+    expect(classes).toContain('rarity-name');
+    expect(classes).toContain('rarity-common');
+    const open = find(card, (e) => e.localName === 'button' && /^Open /.test(nameOf(e)))[0];
+    expect(nameOf(open as FakeElement)).toBe('Open Cindle, common');
+  });
+
+  it('puts the armchair before the Lounging badge', () => {
+    const creature = kind('growing');
+    const { card } = draw(creature, { loungerId: creature.id });
+    const badge = byClass(card, 'badge').find((b) => visibleText(b).includes('Lounging'));
+    expect(badge).toBeDefined();
+    expect(byClass(badge as FakeElement, 'armchair-icon')).toHaveLength(1);
+  });
+
   it('has the three gear slots as icons and the talents as chips', () => {
     const { card } = draw(kind('ribbon ready'));
     const slots = find(
@@ -245,7 +275,10 @@ describe('the one gold button', () => {
 describe('opening the page', () => {
   it('has the name as a button that opens the page at the top, and an arrow that says so', () => {
     const { card, page: p, onOpen } = draw(kind('growing'));
-    const open = find(card, (e) => e.localName === 'button' && nameOf(e) === 'Open Cindle')[0];
+    const open = find(
+      card,
+      (e) => e.localName === 'button' && nameOf(e) === 'Open Cindle, common',
+    )[0];
     expect(open).toBeDefined();
     // The button is the heading's text, so the heading still reads as the name.
     expect(nameOf(find(card, (e) => e.localName === 'h3')[0] as FakeElement)).toBe('Cindle');

@@ -7,6 +7,7 @@ import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
+import { ArmchairIcon } from './ui/ArmchairIcon';
 import { GameIcon } from './ui/GameIcon';
 import { Tag } from './ui/Tag';
 import { XpBar } from './XpBar';
@@ -42,14 +43,12 @@ export function CreatureHead({
   const name = creatureName(creature);
   return (
     <div class="cc-head">
-      <div
-        class={`portrait${sparkleFrame ? ' sparkle-frame' : ''}${species === undefined ? '' : ` rarity-${species.rarity}`}`}
-      >
+      <div class={`portrait${sparkleFrame ? ' sparkle-frame' : ''}`}>
         <Sprite
           sprite={creatureSpriteOrFallback(creature.species)}
           scale={4}
           bob
-          alt={portraitAlt(name, creature.shiny, species?.rarity)}
+          alt={portraitAlt(name, creature.shiny)}
           {...(shinyColours === undefined ? {} : { palette: shinyColours })}
         />
         {sparkleFrame && (
@@ -61,11 +60,22 @@ export function CreatureHead({
       </div>
       <div class="cc-id">
         <div class="cc-name">
-          <Heading id={nameId}>
+          <Heading
+            id={nameId}
+            {...(species === undefined ? {} : { class: `rarity-name rarity-${species.rarity}` })}
+          >
             {onOpen === undefined ? (
-              name
+              <>
+                {name}
+                {species !== undefined && <span class="visually-hidden">, {species.rarity}</span>}
+              </>
             ) : (
-              <button type="button" class="cc-open" aria-label={`Open ${name}`} onClick={onOpen}>
+              <button
+                type="button"
+                class="cc-open"
+                aria-label={`Open ${name}${species === undefined ? '' : `, ${species.rarity}`}`}
+                onClick={onOpen}
+              >
                 {name}
               </button>
             )}
@@ -79,7 +89,7 @@ export function CreatureHead({
               <GameIcon icon={{ kind: 'element', element: species.element }} scale={2} />
             </span>
           )}
-          <GlossaryTag entry="level" look="chip" class="lvl-tag pix">
+          <GlossaryTag entry="level" look="chip" bare class="lvl-tag pix">
             Lv {creature.level}
           </GlossaryTag>
         </div>
@@ -93,6 +103,7 @@ export function CreatureHead({
                 tone={badge.tone}
                 {...(badge.entry === null ? {} : { entry: badge.entry })}
               >
+                {badge.icon === 'armchair' && <ArmchairIcon />}
                 {badge.text}
               </Tag>
             ))}
