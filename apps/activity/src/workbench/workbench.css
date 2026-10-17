@@ -369,3 +369,13 @@
     min-width: 0;
   }
 }
+
+/* The Accordion page: its scenes stacked with a title each. */
+.wb-acc-scenes {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.wb-acc-scene h3 {
+  margin: 0 0 0.375rem;
+}
