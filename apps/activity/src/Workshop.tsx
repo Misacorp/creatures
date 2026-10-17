@@ -115,15 +115,14 @@ export function Workshop({
       <section class="ws-section" aria-labelledby="ws-parts">
         <h3 id="ws-parts">Parts</h3>
         <PartsRow parts={gear.parts} />
-        <p class="muted">
-          Supplies cannot be bought, so this is where you pick the kind and tier you want.{' '}
+        <p>
           <button
             type="button"
             onClick={() => {
               document.getElementById('ws-supplies')?.scrollIntoView({ block: 'start' });
             }}
           >
-            Craft supplies for your trips
+            Craft supplies
           </button>
         </p>
       </section>
@@ -164,10 +163,7 @@ export function Workshop({
           </p>
         )}
         {gear.items.length === 0 ? (
-          <p class="empty muted">
-            Your bag is empty. Clear a raid finale or send explorers out to find gear and parts, or
-            craft something from a blueprint.
-          </p>
+          <p class="empty muted">Your bag is empty.</p>
         ) : (
           <InventoryGrid
             items={gear.items}
@@ -188,9 +184,6 @@ export function Workshop({
               setSelectedId(null);
             }}
           />
-        )}
-        {gear.items.length > 0 && selected === null && (
-          <p class="muted">Tap an item to see its lines and what you can do with it.</p>
         )}
         {gear.items.length > 0 && (
           <BulkDismantle

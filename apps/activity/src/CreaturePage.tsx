@@ -1,12 +1,20 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
 import { CardGear } from './CardGear';
-import { explorerFacts, ribbonsHeldText, speciesSubtitle } from './creature-card-view';
-import type { NeedKind } from './creature-needs';
+import {
+  cardDomId,
+  explorerFacts,
+  nextParts,
+  ribbonsHeldText,
+  type PageFocus,
+} from './creature-card-view';
+import { creatureNeeds } from './creature-needs';
+import { CreatureHead } from './CreatureHead';
 import { CreatureTalents } from './CreatureTalents';
-import type { EquipBestResult, GearSlot, GearState } from './gear-types';
+import type { EquipBestResult, GearState } from './gear-types';
 import { gearShare } from './gear-view';
-import { RibbonLine, experienceLine } from './CreatureProgress';
+import { RibbonLine } from './CreatureProgress';
+import { scrollAndFocus, scrollToTop } from './scroll-to';
 import {
   capitalize,
   creatureAbilityText,
@@ -17,7 +25,6 @@ import {
   isFirstOnServer,
   personalityLine,
   speciesAbout,
-  speciesName,
 } from './game';
 import { GlossaryTag } from './Glossary';
 import { abilityDef } from './live';
@@ -52,6 +59,7 @@ export function RenameForm({
   const [draft, setDraft] = useState(creature.nickname ?? '');
   const inputId = `nickname-${creature.id}`;
   return (
+    // TODO(accordion): swap this details element for the shared Accordion once it lands.
     <details class="rename">
       <summary>Rename</summary>
       <form
@@ -61,7 +69,7 @@ export function RenameForm({
           onRename(creature, draft.trim() === '' ? null : draft);
         }}
       >
-        <label for={inputId}>Nickname for {speciesName(creature.species)}</label>
+        <label for={inputId}>Nickname</label>
         <input
           id={inputId}
           type="text"
@@ -73,7 +81,7 @@ export function RenameForm({
           }}
         />
         <button type="submit" disabled={busy}>
-          Save nickname
+          Save
         </button>
       </form>
     </details>
@@ -110,40 +118,37 @@ function StatRow({
 }
 
 /**
- * Everything about a creature that is not on its small card, in one place that opens under the card
- * ("More"): who it is (element, role, rarity, badges), growth (experience line, the ribbon button with its
- * cost and what is missing, evolution), stats with the gear's share, the three gear slots (equip, take
- * off, Equip best, item lines), talents (slots and the Talent Book with slotting for Bait), the finale
- * ability, a short About, fusion, ribbons held, explorer rank, Lounge and Rename. Nothing is hidden by
- * design: it is the whole of what a creature card used to show.
+ * A creature's page: everything about it in one place that takes the list's spot on the Creatures tab.
+ * Back (top left, or Escape) returns to the list. Top to bottom: who it is (the card's head, what
+ * comes next) with the buttons for what is ready (ribbon, evolution, a waiting catch), stats with the gear's share, gear
+ * (the three slots, the picker, Equip best), talents (slots and the Talent Book with slotting for Bait),
+ * the finale ability, About, fusion, ribbons held, explorer rank, Lounge and Rename. It opens at the top,
+ * or on the gear or the talents when the card's icon or chips were tapped.
  */
-export function CreatureSheet({
-  id,
+export function CreaturePage({
   creature,
   state,
   gear,
   busy,
-  gearSlot,
-  gearKey,
   actions,
-  shownNeed,
-  onClose,
+  focus,
+  onBack,
+  onAnswerCatch,
 }: {
-  /** The sheet's id on the page (the card's More button controls it); section ids are built from it. */
-  id: string;
   creature: Creature;
   state: GameState;
   gear: GearState | null;
   busy: boolean;
-  /** The gear slot whose picker is open at first (the card's gear icon that was tapped). */
-  gearSlot: GearSlot | null;
-  /** Changes when a gear icon is tapped again, so the picker opens on the new slot. */
-  gearKey: number;
   actions: CardActions;
-  /** The need the card's gold button shows right above, so this sheet does not repeat that button. */
-  shownNeed: NeedKind | null;
-  onClose: () => void;
+  /** Where to land when the page opens. */
+  focus: PageFocus;
+  /** Back to the list. */
+  onBack: () => void;
+  /** Back to the list, at the waiting catches at the top. */
+  onAnswerCatch: () => void;
 }) {
+  const id = `${cardDomId(creature.id)}-page`;
+  const rootRef = useRef<HTMLElement>(null);
   const species = getSpecies(creature.species);
   const about = speciesAbout(creature.species);
   const personality = personalityLine(creature.quirk);
@@ -153,14 +158,49 @@ export function CreatureSheet({
       : evolutionText(creature.level, creature.evolution, state.balances.essence);
   const abilityText = creatureAbilityText(creature, abilityDef);
   const abilityInfo = creature.ability === null ? undefined : abilityDef(creature.ability.id);
-  const subtitle = speciesSubtitle(creature);
+  const waitingCatch = creatureNeeds(creature, state).find((n) => n.kind === 'duplicate');
+  const next = nextParts(creature);
+  const hasActions = creature.ribbon !== null || evolve !== null || waitingCatch !== undefined;
+
+  // Opening: the top of the page (focus on the page itself, so a screen reader starts at the name), or
+  // straight to the gear or the talents. A jump, not a glide: the list that was here is gone.
+  useEffect(() => {
+    if (focus === null) {
+      scrollToTop();
+      rootRef.current?.focus({ preventScroll: true });
+    } else {
+      scrollAndFocus(document.getElementById(`${id}-${focus.part}`), 'auto');
+    }
+  }, [id, focus]);
+
   return (
     <section
       id={id}
-      class="creature-sheet"
-      aria-label={`More about ${creature.nickname ?? speciesName(creature.species)}`}
+      ref={rootRef}
+      class="creature-page"
+      tabIndex={-1}
+      aria-labelledby={`${id}-name`}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || event.defaultPrevented) return;
+        // A text field (Rename) keeps Escape for itself; the gear picker stops it before it gets here.
+        const target = event.target;
+        if (target !== null && 'localName' in target && target.localName === 'input') return;
+        onBack();
+      }}
     >
-      <div class="sheet-block">
+      <div class="cp-top">
+        <button type="button" class="ghost cp-back" onClick={onBack}>
+          <span aria-hidden="true">‹</span> Creatures
+        </button>
+      </div>
+
+      <div class="cp-block">
+        <CreatureHead creature={creature} state={state} heading="h2" nameId={`${id}-name`} />
+        {next.length > 0 && (
+          <p class="cc-next">
+            {next.map((part) => (part.strong ? <b key={part.text}>{part.text}</b> : part.text))}
+          </p>
+        )}
         <p class="tags">
           {species !== undefined && (
             <>
@@ -184,48 +224,42 @@ export function CreatureSheet({
             </Tag>
           )}
         </p>
-        {subtitle !== null && <p class="muted">{subtitle}</p>}
         {isFestivalSpecies(creature.species) && (
-          <p class="muted">Won in a Festival week. It is not found on expeditions.</p>
+          <p class="muted">Festival prize, not found on expeditions.</p>
+        )}
+        {hasActions && (
+          <div class="cp-actions">
+            <RibbonLine creature={creature} busy={busy} onRibbon={actions.onRibbon} />
+            {evolve !== null &&
+              (evolve.available ? (
+                <p>
+                  <button
+                    type="button"
+                    class="primary"
+                    disabled={busy}
+                    onClick={() => {
+                      actions.onEvolve(creature);
+                    }}
+                  >
+                    {evolve.label}
+                  </button>
+                </p>
+              ) : (
+                <p class="locked">{evolve.label}</p>
+              ))}
+            {waitingCatch !== undefined && (
+              <p>
+                <button type="button" class="primary" disabled={busy} onClick={onAnswerCatch}>
+                  {waitingCatch.label}
+                </button>
+              </p>
+            )}
+          </div>
         )}
       </div>
 
-      <div class="sheet-block">
-        <h4 class="sheet-title">Growth</h4>
-        <p class="muted exp-line">
-          <GlossaryTag entry="experience">{experienceLine(creature)}</GlossaryTag>
-        </p>
-        <RibbonLine
-          creature={creature}
-          busy={busy}
-          onRibbon={actions.onRibbon}
-          hideButton={shownNeed === 'ribbon'}
-        />
-        {evolve !== null &&
-          (evolve.available && shownNeed === 'evolve' ? (
-            <p class="muted">{evolve.label}. Ready, the button is above.</p>
-          ) : evolve.available ? (
-            <p>
-              <button
-                type="button"
-                class="primary"
-                disabled={busy}
-                onClick={() => {
-                  actions.onEvolve(creature);
-                }}
-              >
-                {evolve.label}
-              </button>
-            </p>
-          ) : (
-            <p class="locked">{evolve.label}</p>
-          ))}
-      </div>
-
-      <div class="sheet-block">
-        <h4 class="sheet-title">
-          Stats <span class="muted gear-note">(gear included)</span>
-        </h4>
+      <div class="cp-block">
+        <h3 class="cp-title">Stats</h3>
         <dl class="sheet-stats">
           <StatRow label="HP" stat="hp" creature={creature} />
           <StatRow label="Attack" stat="atk" creature={creature} />
@@ -233,28 +267,27 @@ export function CreatureSheet({
         </dl>
       </div>
 
-      <div class="sheet-block">
-        <h4 id={`${id}-gear`} class="sheet-title" tabIndex={-1}>
+      <div class="cp-block">
+        <h3 id={`${id}-gear`} class="cp-title" tabIndex={-1}>
           Gear
-        </h4>
+        </h3>
         <CardGear
-          key={gearKey}
           creature={creature}
           creatures={state.creatures}
           gear={gear}
           busy={busy}
           onEquip={actions.onEquip}
           onEquipBest={actions.onEquipBest}
-          initialOpen={gearSlot}
+          initialOpen={focus?.part === 'gear' ? focus.slot : null}
         />
       </div>
 
-      <div class="sheet-block">
-        <h4 id={`${id}-talents`} class="sheet-title" tabIndex={-1}>
+      <div class="cp-block">
+        <h3 id={`${id}-talents`} class="cp-title" tabIndex={-1}>
           <GlossaryTag entry="talent" look="text">
             Talents
           </GlossaryTag>
-        </h4>
+        </h3>
         <CreatureTalents
           creature={creature}
           bookSlotBait={state.bookSlotBait}
@@ -266,8 +299,8 @@ export function CreatureSheet({
       </div>
 
       {abilityText !== null && (
-        <div class="sheet-block creature-ability">
-          <h4 class="sheet-title">Finale ability</h4>
+        <div class="cp-block creature-ability">
+          <h3 class="cp-title">Finale ability</h3>
           <p class={abilityText.unlocked ? undefined : 'locked'}>
             {abilityText.unlocked && abilityInfo !== undefined ? (
               <>
@@ -282,8 +315,9 @@ export function CreatureSheet({
         </div>
       )}
 
-      <div class="sheet-block">
-        <h4 class="sheet-title">About</h4>
+      {/* TODO(accordion): About and the facts under it can collapse once the shared Accordion lands. */}
+      <div class="cp-block">
+        <h3 class="cp-title">About</h3>
         {about !== null && (
           <>
             <p>{about.description}</p>
@@ -324,7 +358,7 @@ export function CreatureSheet({
         </dl>
       </div>
 
-      <div class="sheet-block sheet-buttons">
+      <div class="cp-block cp-buttons">
         {creature.busy === null && creature.id !== state.loungerId && (
           <button
             type="button"
@@ -337,9 +371,6 @@ export function CreatureSheet({
             Lounge
           </button>
         )}
-        <button type="button" class="ghost" onClick={onClose}>
-          Show less
-        </button>
       </div>
       <RenameForm creature={creature} busy={busy} onRename={actions.onRename} />
     </section>

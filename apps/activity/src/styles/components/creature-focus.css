@@ -1,11 +1,14 @@
 /*
-  The focused creature card of the Creatures tab (Misa's "Option B") and its "More" sheet. The card is
-  small on purpose: sprite, name, element, level, the XP bar with what comes next, the three gear slots as
-  icons, the talents as chips, and one gold button only when something is ready. About 250 px tall at
-  390 px wide. Everything else sits in the sheet that opens under the card.
+  The focused creature card of the Creatures tab (Misa's "Option B") and the creature page it opens. The
+  card is small on purpose: sprite, name, element, level, the XP bar with what comes next, the three gear
+  slots as icons, the talents as chips, and one gold button only when something is ready. About 250 px
+  tall at 390 px wide. Everything else is on the page.
+
+  The whole card is one tap target (the card handles the click; the name is a real button for the
+  keyboard and screen readers). The card's own buttons keep their own actions.
 */
 
-/* Two columns of cards at most on a wide screen; one on a phone. An open card takes the whole row. */
+/* Two columns of cards at most on a wide screen; one on a phone. */
 .creature-cards {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
   align-items: start;
@@ -18,12 +21,64 @@
   scroll-margin-top: 0.5rem;
 }
 
-.creature-card.focused.open {
-  grid-column: 1 / -1;
-}
-
 .creature-card.focused:focus {
   outline: none;
+}
+
+/*
+  A card says it can be tapped: it lights up under a pointer and dips when pressed (not while the pointer
+  is on one of the card's own buttons, which do their own thing).
+*/
+.creature-card.focused {
+  position: relative;
+  cursor: pointer;
+}
+
+.creature-card.focused:hover:not(:has(button:hover)) {
+  background: var(--dusk);
+}
+
+.creature-card.focused:active:not(:has(button:active)) {
+  background: var(--line);
+}
+
+.creature-card.focused:has(.cc-open:focus-visible) {
+  outline: var(--px) solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* The name button: the keyboard's and the screen reader's way in; it looks like the heading. */
+button.cc-open {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+button.cc-open:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
+button.cc-open:focus-visible {
+  outline: none;
+}
+
+.creature-card.focused button:not(.cc-open) {
+  cursor: pointer;
+}
+
+/* The small arrow at the right edge. */
+.cc-chev {
+  color: var(--haze);
+  font-size: 2rem;
+  line-height: 1;
 }
 
 /* The card the finder chose: a gold edge until the player does something else. */
@@ -44,13 +99,18 @@
   align-items: center;
 }
 
-.creature-card.focused .portrait {
+.creature-card.focused .portrait,
+.creature-page .portrait {
   width: 56px;
   height: 56px;
   margin: 0;
   padding: 0;
   background: var(--ink);
   box-shadow: none;
+}
+
+.cc-head:has(> .cc-chev) {
+  grid-template-columns: 56px minmax(0, 1fr) auto;
 }
 
 .cc-id {
@@ -95,12 +155,18 @@
   margin: 0.3125rem 0 0;
 }
 
-.creature-card.focused .xpbar {
+.creature-card.focused .xpbar,
+.creature-page .xpbar {
   height: 1.5rem;
 }
 
-.creature-card.focused .xpbar-text {
+.creature-card.focused .xpbar-text,
+.creature-page .xpbar-text {
   font-size: 1.125rem;
+}
+
+.creature-page .cc-next {
+  margin: 0.375rem 0 0;
 }
 
 .cc-next {
@@ -233,17 +299,6 @@ button.cc-talents:active:not(:disabled) {
   font-size: 0.75rem;
 }
 
-.cc-bot {
-  display: flex;
-  justify-content: flex-end;
-}
-
-button.more-button {
-  min-height: 2rem;
-  padding: 0.125rem 0.75rem;
-  font-size: 1.0625rem;
-}
-
 button.ghost {
   background: transparent;
   box-shadow: inset 0 0 0 2px var(--line);
@@ -256,39 +311,70 @@ button.ghost.small {
   font-size: 0.9375rem;
 }
 
-/* --- The "More" sheet: it opens under the card and holds everything that is not on it. --- */
+/* --- The creature page: it takes the list's place and holds everything that is not on the card. --- */
 
-.creature-sheet {
+.creature-page {
   padding: 0.25rem 0.75rem 0.75rem;
   background: var(--dusk);
   box-shadow: var(--frame);
 }
 
-.sheet-block {
+.creature-page:focus {
+  outline: none;
+}
+
+.cp-top {
+  display: flex;
+  margin: 0.25rem 0 0.5rem;
+}
+
+button.cp-back {
+  min-height: 2.75rem;
+  padding: 0.125rem 0.875rem 0.125rem 0.625rem;
+  font-size: 1.25rem;
+}
+
+.cp-actions {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+}
+
+.cp-actions p {
+  margin: 0;
+}
+
+.cp-block {
   margin-top: 0.75rem;
   padding-top: 0.625rem;
   border-top: 2px solid var(--line);
 }
 
-.sheet-block:first-child {
+.cp-top + .cp-actions {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+}
+
+.cp-actions p {
+  margin: 0;
+}
+
+.cp-block {
   margin-top: 0.5rem;
   padding-top: 0;
   border-top: 0;
 }
 
-.sheet-title {
+.cp-title {
   margin: 0 0 0.375rem;
   color: var(--haze);
   font-size: 1.0625rem;
   line-height: 1.1;
 }
 
-.sheet-title:focus {
+.cp-title:focus {
   outline: none;
-}
-
-.gear-note {
-  font-family: var(--body);
 }
 
 .sheet-stats {
@@ -314,17 +400,17 @@ button.ghost.small {
   padding: 0.0625rem 0;
 }
 
-.sheet-buttons {
+.cp-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.creature-sheet .rename {
+.creature-page .rename {
   margin-top: 0.5rem;
 }
 
-.creature-sheet .card-gear,
-.creature-sheet .creature-talents {
+.creature-page .card-gear,
+.creature-page .creature-talents {
   margin: 0;
 }

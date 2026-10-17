@@ -111,9 +111,9 @@ export function ribbonBlocker(ribbon: RibbonView): string | null {
   if (ribbon.ready) return null;
   if (ribbon.tripsDone < ribbon.trips) {
     const left = ribbon.trips - ribbon.tripsDone;
-    return `Needs ${String(left)} more finished ${left === 1 ? 'trip' : 'trips'} by this creature.`;
+    return `Needs ${String(left)} more ${left === 1 ? 'trip' : 'trips'}.`;
   }
-  return 'Not enough parts yet.';
+  return 'Short of parts.';
 }
 
 /** "+120 experience, level 4 to 5" for one award; a treat, a gate and a Gold Ribbon say so. */

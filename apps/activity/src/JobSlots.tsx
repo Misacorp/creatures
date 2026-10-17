@@ -43,9 +43,7 @@ function RunningSlot({
             </GlossaryTag>
             {title.slice(jobVerb(job.kind).length)}
           </p>
-          <p class="muted">
-            {creature === undefined ? 'A creature' : creatureName(creature)} is working
-          </p>
+          <p class="muted">{creature === undefined ? 'A creature' : creatureName(creature)}</p>
         </div>
       </div>
       <TimerBar
@@ -58,7 +56,7 @@ function RunningSlot({
         state={
           progress.ready ? (
             <>
-              <strong>Ready</strong> to claim
+              <strong>Ready</strong>
             </>
           ) : (
             `${formatCountdown(progress.remainingMs, 'hms')} left`
@@ -73,7 +71,7 @@ function RunningSlot({
           onClaim(job);
         }}
       >
-        {progress.ready ? 'Claim' : 'Claim when ready'}
+        Claim
       </button>
     </>
   );
@@ -122,7 +120,7 @@ export function JobSlots({
         {Array.from({ length: empty }, (_, i) => (
           <li key={`empty-${String(i)}`} class="card-item job-slot empty-slot">
             <h4 class="label">Slot {open.length + i + 1}</h4>
-            <p class="muted">Empty. Craft something from a blueprint or a supply below.</p>
+            <p class="muted">Empty</p>
           </li>
         ))}
       </ul>

@@ -35,9 +35,7 @@ export function Blueprints({
         Blueprints <GlossaryTag entry="blueprint" look="help" />
       </h3>
       {views.length === 0 ? (
-        <p class="empty muted">
-          You do not know any blueprints yet. Expeditions and raids can bring one home.
-        </p>
+        <p class="empty muted">No blueprints yet.</p>
       ) : (
         <ul class="blueprints">
           {views.map((bp) => (

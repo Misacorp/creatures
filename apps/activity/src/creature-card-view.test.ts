@@ -19,17 +19,15 @@ describe('the line under the bar', () => {
   });
 
   it('says what a full creature waits for, and what is missing', () => {
-    expect(nextText(sampleCreature('ribbon ready'))).toBe(
-      'Full: earn the Bronze Ribbon to keep growing',
-    );
+    expect(nextText(sampleCreature('ribbon ready'))).toBe('Next: the Bronze Ribbon');
     expect(nextText(sampleCreature('ribbon short'))).toBe(
-      'Full: earn the Bronze Ribbon to keep growing. Not enough parts yet.',
+      'Next: the Bronze Ribbon · Short of parts.',
     );
-    expect(nextText(sampleCreature('evolve ready'))).toBe('Full: evolve to keep growing');
+    expect(nextText(sampleCreature('evolve ready'))).toBe('Next: evolve');
   });
 
   it('says so at the top level', () => {
-    expect(nextText(sampleCreature('top level'))).toBe('Top level reached');
+    expect(nextText(sampleCreature('top level'))).toBe('Top level');
   });
 
   it('marks the thing to do or to look forward to as the strong part', () => {
@@ -37,7 +35,7 @@ describe('the line under the bar', () => {
       { text: 'Scarf at 7', strong: true },
     ]);
     expect(nextParts(sampleCreature('ribbon ready')).filter((p) => p.strong)).toEqual([
-      { text: 'earn the Bronze Ribbon', strong: true },
+      { text: 'the Bronze Ribbon', strong: true },
     ]);
   });
 
@@ -54,9 +52,7 @@ describe('the talents of a card', () => {
       { key: 'slot-1', kind: 'talent', name: 'Quick to Pounce', golden: true },
     ]);
     expect(kit.locked).toEqual([20]);
-    expect(kit.label).toBe(
-      'Talents: Quick to Pounce (golden), slot 2 opens at level 20. Show details.',
-    );
+    expect(kit.label).toBe('Talents: Quick to Pounce (golden), slot 2 opens at level 20');
   });
 
   it('shows an open slot with nothing in it as Empty, and several closed levels as one', () => {

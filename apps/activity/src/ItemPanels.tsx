@@ -108,34 +108,31 @@ export function DismantlePanel({
       />
       {state.status === 'loading' && !noCreature && (
         <p class="muted" role="status">
-          Working out what it can give...
+          Loading...
         </p>
       )}
       {state.status === 'failed' && (
         <p class="error" role="alert">
-          The refund could not be loaded. Pick the creature again to retry.
+          Could not load the refund. Pick again to retry.
         </p>
       )}
       {preview !== null && (
         <>
           <p>
-            It can give: <strong>{dismantleLines(preview.range).join(', ') || 'nothing'}</strong>.
-            You get it when the job is claimed, in {formatDuration(preview.durationMs)}.
+            Gives <strong>{dismantleLines(preview.range).join(', ') || 'nothing'}</strong> in{' '}
+            {formatDuration(preview.durationMs)}.
           </p>
           {preview.learnBp !== null && (
             <p class="muted">
-              Each piece has a {oddsPercent(preview.learnBp)} chance to teach its blueprint (or add
-              a well-thumbed mark).
+              {oddsPercent(preview.learnBp)} per piece to teach its blueprint or add a well-thumbed
+              mark.
             </p>
           )}
         </>
       )}
-      <p class="reason">This cannot be undone. The items leave your bag now.</p>
+      <p class="reason">Cannot be undone.</p>
       {wearers.length > 0 && (
-        <p class="muted">
-          {wearers.map((w) => creatureName(w)).join(' and ')} {wearers.length === 1 ? 'is' : 'are'}{' '}
-          wearing {items.length === 1 ? 'it' : 'some'}. It comes off first.
-        </p>
+        <p class="muted">Comes off {wearers.map((w) => creatureName(w)).join(' and ')} first.</p>
       )}
       <p class="actions">
         <button

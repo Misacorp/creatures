@@ -32,13 +32,8 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
             {item === undefined ? '' : `${slotName(item.slot)}, `}item level {result.itemLevel}
           </p>
           {item !== undefined && <ItemLines lines={item.lines} />}
-          <p>It is in your bag now.</p>
           {result.reach !== 'none' && <p class="muted">{reachName(result.reach)}.</p>}
-          {result.upgraded && (
-            <p class="good-note">
-              The one-step-up chance paid off: it came out {rarityName(result.rarity)}.
-            </p>
-          )}
+          {result.upgraded && <p class="good-note">Stepped up to {rarityName(result.rarity)}.</p>}
         </>
       );
     }
@@ -54,24 +49,22 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
             taken apart.
           </p>
           <p>
-            You got:{' '}
             <strong>
               {[
                 ...(partsText(result.parts) === 'nothing' ? [] : [partsText(result.parts)]),
                 ...(result.essence > 0 ? [`${String(result.essence)} Essence`] : []),
               ].join(', ') || 'nothing'}
             </strong>
-            .
           </p>
           <PartsList parts={result.parts} />
           {result.learned.map((baseId) => (
             <p key={baseId} class="good-note">
-              You learned the blueprint of {gearName(baseId)}.
+              Learned the {gearName(baseId)} blueprint.
             </p>
           ))}
           {result.marked.map((m) => (
             <p key={m.baseId} class="good-note">
-              {gearName(m.baseId)} is well-thumbed {marksText(m.marks)} now.
+              {gearName(m.baseId)} is well-thumbed {marksText(m.marks)}.
             </p>
           ))}
         </>
@@ -85,18 +78,13 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
               {supplyName(result.supplyId)}
             </strong>
           </p>
-          <p>
-            {result.amount === 1 ? 'It is' : 'They are'} in your supplies now, ready for the next
-            trip.
-          </p>
         </>
       );
     case 'retired':
       return (
         <>
           <p>
-            This {result.was === 'improve' ? 'Improve' : 'Enchant'} job was started before gear
-            changed. It is over, and its parts came back:{' '}
+            Old {result.was === 'improve' ? 'Improve' : 'Enchant'} job over. Parts back:{' '}
             <strong>{partsText(result.refund)}</strong>.
           </p>
           <PartsList parts={result.refund} />

@@ -47,7 +47,7 @@ describe('what a creature needs', () => {
     };
     const [need] = creatureNeeds(target, state);
     expect(need?.kind).toBe('duplicate');
-    expect(need?.detail).toBe('A Splashet waits at the top');
+    expect(need?.detail).toBe('Splashet');
     expect(creatureNeeds(other, state)).toEqual([]);
   });
 
@@ -64,7 +64,7 @@ describe('what a creature needs', () => {
     expect(need).toEqual({
       kind: 'duplicate',
       label: 'Answer waiting catches',
-      detail: '3 catches wait at the top',
+      detail: '3 waiting',
     });
   });
 
@@ -74,7 +74,7 @@ describe('what a creature needs', () => {
     expect(need).toEqual({
       kind: 'talent',
       label: 'Fill talent slot 2',
-      detail: 'From the Talent Book, 10 Bait',
+      detail: '10 Bait',
     });
     const poor = { ...plainState, balances: { ...plainState.balances, bait: 9 } };
     expect(creatureNeeds(creature, poor)).toEqual([]);

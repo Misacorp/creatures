@@ -94,11 +94,9 @@ describe('the ribbon words', () => {
 
   it('says what is missing, and nothing when it is ready', () => {
     expect(ribbonBlocker({ ...bronze, ready: true })).toBeNull();
-    expect(ribbonBlocker(bronze)).toBe('Not enough parts yet.');
-    expect(ribbonBlocker(silver)).toBe('Needs 3 more finished trips by this creature.');
-    expect(ribbonBlocker({ ...silver, tripsDone: 4 })).toBe(
-      'Needs 1 more finished trip by this creature.',
-    );
+    expect(ribbonBlocker(bronze)).toBe('Short of parts.');
+    expect(ribbonBlocker(silver)).toBe('Needs 3 more trips.');
+    expect(ribbonBlocker({ ...silver, tripsDone: 4 })).toBe('Needs 1 more trip.');
   });
 });
 

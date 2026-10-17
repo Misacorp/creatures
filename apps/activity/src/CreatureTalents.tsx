@@ -4,7 +4,7 @@ import { TalentChip } from './TalentChip';
 import { bookActions, slotTitle } from './talent-view';
 
 /**
- * A creature's talents on its card: the signature talent of an epic (always on), then each slot with the
+ * A creature's talents on its page: the signature talent of an epic (always on), then each slot with the
  * talent in it, or "opens at level N" while closed, and a Talent Book that lists every talent it has held,
  * golden or not. A book talent can be put into an open slot for Bait, at once; the talent that sat there
  * stays in the book. Lean: the book is closed until asked for.
@@ -31,6 +31,7 @@ export function CreatureTalents({
   const actions = bookActions(creature);
   const afford = bait >= bookSlotBait;
   return (
+    // TODO(accordion): the Talent Book below is a plain details element until the shared Accordion lands.
     <div class="creature-talents">
       {showLabel && (
         <p class="label">
@@ -75,7 +76,7 @@ export function CreatureTalents({
                 <li key={`${entry.id}-${entry.golden ? 'g' : 'n'}`} class="book-entry">
                   <TalentChip talent={entry} about />
                   <span class="muted">
-                    {entry.slot === null ? 'In the book only' : `In slot ${String(entry.slot)}`}
+                    {entry.slot === null ? 'Book only' : `In slot ${String(entry.slot)}`}
                   </span>
                   {moves.map((move) => (
                     <button
@@ -94,9 +95,6 @@ export function CreatureTalents({
               );
             })}
           </ul>
-          {!afford && actions.length > 0 && (
-            <p class="muted">Putting a talent in a slot costs {bookSlotBait} Bait.</p>
-          )}
         </details>
       )}
     </div>

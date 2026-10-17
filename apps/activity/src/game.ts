@@ -115,10 +115,9 @@ export function evolutionText(
   const needs: string[] = [];
   if (level < evolution.level) needs.push(`level ${String(evolution.level)}`);
   if (essence < evolution.essence) needs.push(`${String(evolution.essence)} Essence`);
-  const raids = essence < evolution.essence ? ' (Essence comes from raids)' : '';
   return {
     available: false,
-    label: `Locked: evolving into ${target} needs ${needs.length === 0 ? 'more progress' : needs.join(' and ')}${raids}`,
+    label: `Evolve into ${target}: needs ${needs.length === 0 ? 'more progress' : needs.join(' and ')}`,
   };
 }
 

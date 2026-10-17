@@ -194,7 +194,7 @@ describe('the wear rule', () => {
     expect(wearReason(item('hat', 12), zipmouse)).toBe('Needs creature level 12.');
     expect(wearReason(item('charm', 5), zipmouse)).toBe('Charms open at level 13.');
     // A Guard's Bell on a Payoff (Cindle).
-    expect(wearReason(item('charm', 6, 'guard'), cindle)).toBe('Only a Guard can wear this.');
+    expect(wearReason(item('charm', 6, 'guard'), cindle)).toBe('Guards only.');
   });
 
   it('says what an item asks of its wearer', () => {
@@ -243,9 +243,7 @@ describe('items', () => {
   });
 
   it('says what Equip best did', () => {
-    expect(equipBestText({ changes: [], skipped: [] })).toBe(
-      'Your gear is already the best it can be.',
-    );
+    expect(equipBestText({ changes: [], skipped: [] })).toBe('Already the best.');
     expect(
       equipBestText({
         changes: [{ creatureId: 'c', slot: 'hat', itemId: 'i' }],
@@ -261,9 +259,9 @@ describe('items', () => {
         skipped: [],
       }),
     ).toBe('Changed 2 slots.');
-    // Busy creatures keep their gear, and the text says so.
+    // Busy creatures keep their gear, and the text says they were skipped.
     expect(equipBestText({ changes: [], skipped: [{ creatureId: 'a', reason: 'away' }] })).toBe(
-      'Your gear is already the best it can be. 1 creature is busy, so its gear stayed.',
+      'Already the best. 1 busy creature skipped.',
     );
     expect(
       equipBestText({
@@ -273,7 +271,7 @@ describe('items', () => {
           { creatureId: 'b', reason: 'job' },
         ],
       }),
-    ).toBe('Changed 1 slot. 2 creatures are busy, so their gear stayed.');
+    ).toBe('Changed 1 slot. 2 busy creatures skipped.');
   });
 });
 
@@ -467,7 +465,7 @@ describe('starting a job', () => {
 
   it('says why not, in words, in this order', () => {
     const full = { ...gear, slots: { total: 2, used: 2 } };
-    expect(startBlocker(full, free, { kind: 'craft', cost: {} })).toContain('All 2 workshop slots');
+    expect(startBlocker(full, free, { kind: 'craft', cost: {} })).toContain('All 2 slots');
     expect(startBlocker(gear, [cindle], { kind: 'craft', cost: {} })).toContain(
       'No creature is free',
     );

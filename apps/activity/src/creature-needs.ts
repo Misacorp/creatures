@@ -47,9 +47,7 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
       kind: 'duplicate',
       label: waiting.length === 1 ? 'Answer a waiting catch' : 'Answer waiting catches',
       detail:
-        waiting.length === 1
-          ? `A ${speciesName(first.species)} waits at the top`
-          : `${String(waiting.length)} catches wait at the top`,
+        waiting.length === 1 ? speciesName(first.species) : `${String(waiting.length)} waiting`,
     });
   }
   const emptySlot = creature.talents.slots.find((s) => s.open && s.talent === null);
@@ -61,7 +59,7 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
     needs.push({
       kind: 'talent',
       label: `Fill talent slot ${String(emptySlot.slot)}`,
-      detail: `From the Talent Book, ${String(state.bookSlotBait)} Bait`,
+      detail: `${String(state.bookSlotBait)} Bait`,
     });
   }
   return needs;

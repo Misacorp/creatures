@@ -92,12 +92,10 @@ export function BulkDismantle({
       </p>
       <p role="status">
         {picked.matching === 0
-          ? 'Nothing in the bag matches (worn items are left alone).'
-          : `${String(picked.matching)} match. ${String(items.length)} go in this job${
-              picked.matching > perJob
-                ? `, the lowest item levels first; the rest wait for the next job`
-                : ''
-            }.`}
+          ? 'Nothing matches.'
+          : `${String(picked.matching)} match · ${String(items.length)} in this job${
+              picked.matching > perJob ? ' (lowest levels first)' : ''
+            }`}
       </p>
       {confirming && items.length > 0 ? (
         <DismantlePanel

@@ -278,7 +278,7 @@ export function wearReason(
   if (block === null) return null;
   switch (block.reason) {
     case 'role':
-      return `Only a ${capitalize(block.role)} can wear this.`;
+      return `${capitalize(block.role)}s only.`;
     case 'slot_locked':
       return `${slotName(item.slot)}s open at level ${String(block.needs)}.`;
     case 'item_level':
@@ -364,9 +364,9 @@ export function equipBestText(result: EquipBestResult): string {
     away === 0
       ? ''
       : away === 1
-        ? ' 1 creature is busy, so its gear stayed.'
-        : ` ${String(away)} creatures are busy, so their gear stayed.`;
-  if (n === 0) return `Your gear is already the best it can be.${left}`;
+        ? ' 1 busy creature skipped.'
+        : ` ${String(away)} busy creatures skipped.`;
+  if (n === 0) return `Already the best.${left}`;
   return `${n === 1 ? 'Changed 1 slot.' : `Changed ${String(n)} slots.`}${left}`;
 }
 
@@ -620,13 +620,13 @@ export function startBlocker(
   job: { kind: JobKind; cost: PartsBundle; essence?: number; bait?: number },
 ): string | null {
   if (gear.slots.used >= gear.slots.total) {
-    return `All ${String(gear.slots.total)} workshop slots are busy. Claim a finished job or wait.`;
+    return `All ${String(gear.slots.total)} slots are busy.`;
   }
   if (!creatures.some(isFree)) {
-    return 'No creature is free. Creatures on an expedition or a job cannot start another one.';
+    return 'No creature is free.';
   }
   if (job.kind === 'craft' && gear.inventory.used + gear.inventory.reserved >= gear.inventory.cap) {
-    return 'The bag is full. Dismantle an item first to make room.';
+    return 'The bag is full.';
   }
   const missing = missingParts(gear.parts, job.cost);
   const entries = partsEntries(missing);
@@ -724,7 +724,7 @@ export function supplyLevelBlocker(
   const levels = creatures.map((c) => skillLevelOf(skills, c.id));
   const best = levels.length === 0 ? 1 : Math.max(...levels);
   if (best >= level) return null;
-  return `Needs Crafting level ${String(level)} (your best crafter is level ${String(best)}).`;
+  return `Needs Crafting level ${String(level)}.`;
 }
 
 // --- Blueprints ---

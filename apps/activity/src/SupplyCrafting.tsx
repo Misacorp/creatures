@@ -45,14 +45,8 @@ export function SupplyCrafting({
       <h3 id="ws-supplies">
         Supplies <GlossaryTag entry="supplies" look="help" />
       </h3>
-      <p class="muted">
-        Supplies boost one expedition. They cannot be bought: craft the ones you want here from
-        parts, or collect them from the daily dungeon and from trips. A lure is also made from Bait:
-        it draws creatures to an expedition, and the new species among them.
-      </p>
       <p class="supply-stock" aria-live="polite">
         In stock: <strong>{totalInStock}</strong>
-        {totalInStock === 0 && <span class="muted"> (craft some, or run the dungeon)</span>}
       </p>
       <ul class="supply-crafts">
         {views.map((view) => {

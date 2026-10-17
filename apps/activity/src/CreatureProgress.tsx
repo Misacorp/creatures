@@ -71,27 +71,14 @@ export function RibbonLine({
   creature,
   busy,
   onRibbon,
-  hideButton = false,
 }: {
   creature: Creature;
   busy: boolean;
   onRibbon: (creature: Creature) => void;
-  /** The ready button is already on screen right above (the card's gold button): say the cost in words only. */
-  hideButton?: boolean;
 }) {
   const ribbon = creature.ribbon;
   if (ribbon === null) return null;
   const missing = ribbonBlocker(ribbon);
-  if (hideButton && ribbon.ready) {
-    return (
-      <div class="ribbon-line">
-        <p class="muted">
-          {ribbonName(ribbon.id)}: {ribbonCostText(ribbon)}. Ready, the button is above.{' '}
-          <GlossaryTag entry="ribbon" look="help" class="ribbon-help" />
-        </p>
-      </div>
-    );
-  }
   return (
     <div class="ribbon-line">
       <p>

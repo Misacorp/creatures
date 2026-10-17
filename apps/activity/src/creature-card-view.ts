@@ -1,12 +1,19 @@
 /**
  * What the focused creature card says, as plain functions: the line under the XP bar, the talent chips,
- * the status badges and the lines of the "More" sheet. Pure; `CreatureCard.tsx` and `CreatureSheet.tsx`
+ * the status badges and the lines of the creature page. Pure; `CreatureCard.tsx` and `CreaturePage.tsx`
  * draw it. The server decides every number; nothing here computes game rules.
  */
 import type { Creature, GameState } from './api';
 import { ribbonBlocker, ribbonName } from './experience';
 import { speciesName } from './game';
+import type { GearSlot } from './gear-types';
 import { slotTitle } from './talent-view';
+
+/**
+ * Where a creature's page should land when it opens: on one gear slot's picker (a gear icon of the
+ * card), on the talents (the chips, or the "fill a slot" button), or (null) at the top.
+ */
+export type PageFocus = { part: 'gear'; slot: GearSlot } | { part: 'talents' } | null;
 
 /** A piece of the "Next" line; the strong part is the thing to do or to look forward to. */
 export interface NextPart {
@@ -15,30 +22,29 @@ export interface NextPart {
 }
 
 /**
- * The one line under the XP bar: what the creature waits for ("Full: earn the Bronze Ribbon to keep
- * growing", with what is missing when it cannot yet), or what its next level brings ("Next: Scarf at 7").
- * Empty when there is nothing to say.
+ * The one line under the XP bar: what the creature waits for ("Next: the Bronze Ribbon", with what is
+ * missing when it cannot yet), or what its next level brings ("Next: Scarf at 7"). Empty when there is
+ * nothing to say.
  */
 export function nextParts(creature: Creature): NextPart[] {
-  if (creature.expNeeded === null) return [{ text: 'Top level reached', strong: false }];
+  if (creature.expNeeded === null) return [{ text: 'Top level', strong: false }];
   if (creature.waiting) {
     const ribbon = creature.ribbon;
     if (ribbon !== null) {
       const missing = ribbonBlocker(ribbon);
       return [
-        { text: 'Full: ', strong: false },
-        { text: `earn the ${ribbonName(ribbon.id)}`, strong: true },
-        { text: ` to keep growing${missing === null ? '' : `. ${missing}`}`, strong: false },
+        { text: 'Next: ', strong: false },
+        { text: `the ${ribbonName(ribbon.id)}`, strong: true },
+        { text: missing === null ? '' : ` · ${missing}`, strong: false },
       ];
     }
     if (creature.evolution !== undefined) {
       return [
-        { text: 'Full: ', strong: false },
+        { text: 'Next: ', strong: false },
         { text: 'evolve', strong: true },
-        { text: ' to keep growing', strong: false },
       ];
     }
-    return [{ text: 'Waiting at this level', strong: false }];
+    return [{ text: 'Waiting', strong: false }];
   }
   return creature.nextUnlock === null
     ? []
@@ -63,6 +69,20 @@ export function xpWords(creature: Creature): string {
   return creature.expNeeded === null
     ? 'Top level'
     : `${String(creature.exp)} / ${String(creature.expNeeded)}`;
+}
+
+/**
+ * Whether a click came from a button inside `boundary` (the card): those do their own thing, while a click
+ * anywhere else on the card opens the page. Walks up from the target with plain DOM properties, so it
+ * also works on the tests' fake DOM.
+ */
+export function clickedButton(target: unknown, boundary: unknown): boolean {
+  let node: unknown = target;
+  while (typeof node === 'object' && node !== null && node !== boundary) {
+    if ('localName' in node && node.localName === 'button') return true;
+    node = 'parentNode' in node ? node.parentNode : null;
+  }
+  return false;
 }
 
 /** The id of a card's element on the page (the finder scrolls to it); only characters safe for an id. */
@@ -120,7 +140,7 @@ export function talentKit(creature: Creature): TalentKit {
       : `${c.name}${c.golden ? ' (golden)' : ''}${c.kind === 'signature' ? ' (signature)' : ''}`,
   );
   const closed = slots.filter((s) => !s.open).map((s) => slotTitle(s).toLowerCase());
-  const label = `Talents: ${[...parts, ...closed].join(', ') || 'none'}. Show details.`;
+  const label = `Talents: ${[...parts, ...closed].join(', ') || 'none'}`;
   return { chips, locked, label };
 }
 
@@ -129,7 +149,7 @@ export function lockedText(levels: readonly number[]): string {
   return levels.map(String).join(' · ');
 }
 
-/** A status badge of the card or its sheet. */
+/** A status badge of the card or its page. */
 export interface Badge {
   text: string;
   tone: 'festival' | 'shiny' | 'away' | 'busy' | 'good' | 'first';
@@ -154,7 +174,7 @@ export function ribbonsHeldText(count: number): string {
   return ids.length === 0 ? 'None yet' : ids.map(ribbonName).join(', ');
 }
 
-/** The explorer facts of the sheet: rank, experience towards the next rank, and trips made. */
+/** The explorer facts of the page: rank, experience towards the next rank, and trips made. */
 export function explorerFacts(explorer: Creature['explorer']): { label: string; value: string }[] {
   return [
     { label: 'Explorer rank', value: String(explorer.rank) },

@@ -8,7 +8,7 @@ import { GlossaryTag } from './Glossary';
 import { WornItemFrame } from './WornItemLine';
 
 /**
- * A creature card's gear: three slots (Hat, Scarf, Charm), each the worn item as a 12x12 sprite in its
+ * A creature's gear on its page: three slots (Hat, Scarf, Charm), each the worn item as a 12x12 sprite in its
  * rarity frame with its name and item level, an empty frame, or a locked one that says the creature
  * level it opens at. Tapping a slot opens a picker under it to equip, swap or take off, with the
  * reason in words for an item this creature cannot wear. "Equip best" lets the server pick for every
@@ -32,7 +32,7 @@ export function CardGear({
   onEquip: (gearId: string, creatureId: string | null) => Promise<boolean>;
   /** The server's "Equip best" for this creature; resolves what it changed, or undefined when refused. */
   onEquipBest: (creatureId: string) => Promise<EquipBestResult | undefined>;
-  /** The slot whose picker is open at first (a gear icon of the card opens the sheet on its slot). */
+  /** The slot whose picker is open at first (a gear icon of the card opens the page on its slot). */
   initialOpen?: GearSlot | null;
 }) {
   const [open, setOpen] = useState<GearSlot | null>(initialOpen);
@@ -55,7 +55,11 @@ export function CardGear({
         role="group"
         aria-label={`Choose a ${slotName(slot).toLowerCase()}`}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') setOpen(null);
+          if (event.key === 'Escape') {
+            // Closes the picker only: the creature page around it must not also go back.
+            event.stopPropagation();
+            setOpen(null);
+          }
         }}
       >
         {wornOpen !== undefined && (
@@ -70,12 +74,9 @@ export function CardGear({
           </button>
         )}
         {gear === null ? (
-          <p class="muted">Loading your gear...</p>
+          <p class="muted">Loading...</p>
         ) : choices.length === 0 ? (
-          <p class="muted">
-            No other {slotName(slot).toLowerCase()} in your bag. Clear raid finales, send explorers
-            out or craft in the Workshop.
-          </p>
+          <p class="muted">No other {slotName(slot).toLowerCase()} in your bag.</p>
         ) : (
           <ul class="pick-items">
             {choices.map(({ item, wornBy, blocked }) => (
@@ -133,8 +134,8 @@ export function CardGear({
               : (gear?.items.find((i) => i.id === worn.id)?.lines.map((l) => l.text) ?? []);
           const label =
             worn === undefined
-              ? `${slotName(slot)} slot: empty. Choose an item to equip.`
-              : `${slotName(slot)} slot: ${itemLabel(worn.baseId, worn.itemLevel)}${lines.length === 0 ? '' : `, ${lines.join(', ')}`}. Change it.`;
+              ? `${slotName(slot)} slot: empty`
+              : `${slotName(slot)} slot: ${itemLabel(worn.baseId, worn.itemLevel)}${lines.length === 0 ? '' : `, ${lines.join(', ')}`}`;
           return (
             <li key={slot} class="gear-row">
               <div class="gear-row-main">

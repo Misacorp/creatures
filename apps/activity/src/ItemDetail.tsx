@@ -38,7 +38,7 @@ function EquipPanel({
   return (
     <section class="equip-panel" aria-label="Equip">
       {target === undefined ? (
-        <p class="muted">No creature can wear this yet.</p>
+        <p class="muted">No creature can wear this.</p>
       ) : (
         <>
           <label for={selectId}>Equip on</label>
@@ -58,11 +58,7 @@ function EquipPanel({
               </option>
             ))}
           </select>
-          {slotWorn !== undefined && (
-            <p class="muted">
-              {creatureName(target)} gives up {gearName(slotWorn.baseId)}. It goes back in the bag.
-            </p>
-          )}
+          {slotWorn !== undefined && <p class="muted">Replaces {gearName(slotWorn.baseId)}.</p>}
         </>
       )}
       {options.some((o) => o.blocked !== null) && (
@@ -103,7 +99,7 @@ function EquipPanel({
 /**
  * One item of the bag: its slot, item level and lines with their tiers, who wears it and what you
  * can do with it (Equip or Take off, Dismantle). Where it came from and who made it sit one tap away
- * under "Details". A button that cannot be used says why in words under it.
+ * under "Details".
  */
 export function ItemDetail({
   item,
@@ -159,13 +155,11 @@ export function ItemDetail({
       <ItemStats stats={item.stats} />
       <ItemLines lines={item.lines} />
       <p>
-        {wearer === undefined ? (
-          'Not worn by anyone.'
-        ) : (
+        {wearer !== undefined && (
           <>
-            Worn by <strong>{creatureName(wearer)}</strong>.
+            Worn by <strong>{creatureName(wearer)}</strong>.{' '}
           </>
-        )}{' '}
+        )}
         <span class="muted">Needs {needsText(item).toLowerCase()}.</span>
       </p>
 

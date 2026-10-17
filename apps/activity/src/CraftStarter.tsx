@@ -135,12 +135,12 @@ export function CraftStarter({
       )}
       {state.status === 'loading' && creatureId !== null && (
         <p class="muted" role="status">
-          Working out the odds...
+          Loading the odds...
         </p>
       )}
       {state.status === 'failed' && (
         <p class="error" role="alert">
-          The odds could not be loaded. Pick the creature again to retry.
+          Could not load the odds. Pick again to retry.
         </p>
       )}
       {preview !== null && (
@@ -189,21 +189,18 @@ export function CraftStarter({
           <details class="reach-details">
             <summary>Details</summary>
             <p class="muted">
-              Item level {preview.itemLevel}, twice this creature&apos;s Crafting level{' '}
-              {preview.craftingLevel}.
+              Item level {preview.itemLevel} (2 × Crafting level {preview.craftingLevel})
             </p>
             <p class="muted">
-              After the rarity is drawn there is one more chance, {oddsPercent(preview.stepUpBp)},
-              to come out a rarity higher: 1% for each Crafting level above 1 and for each
-              well-thumbed mark ({marksText(preview.marks)}).
+              Step-up chance {oddsPercent(preview.stepUpBp)}: 1% per Crafting level above 1 and per
+              well-thumbed mark ({marksText(preview.marks)})
             </p>
           </details>
         </fieldset>
       )}
       {baseLocked && preview !== null && (
         <p class="reason" role="status">
-          This creature cannot make {name} yet: it needs Crafting level {preview.needsCraftingLevel}
-          . Pick a creature with more Crafting.
+          {name} needs Crafting level {preview.needsCraftingLevel}.
         </p>
       )}
       {blocker !== null && (
