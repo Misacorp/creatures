@@ -7,7 +7,7 @@
         "shiny": false,
         "firstOnServer": true,
         "outcome": "duplicate",
-        "pendingId": "16428cdb-2887-4b1d-ab50-fa3959067782",
+        "pendingId": "84fc62c1-fd04-4242-9eba-2f542ca1ce4b",
         "talent": {
           "id": "proud-ember",
           "name": "Proud Ember",
@@ -21,52 +21,33 @@
     "loot": {
       "gear": [],
       "converted": [],
-      "parts": {
-        "scrap": 1,
-        "ember-shard": 1,
-        "glimmer": 1
-      },
-      "blueprints": [
-        {
-          "baseId": "trail-cap",
-          "duplicate": false
-        }
-      ],
+      "parts": { "scrap": 1, "ember-shard": 1, "glimmer": 1 },
+      "blueprints": [{ "baseId": "trail-cap", "duplicate": false }],
       "supplies": ["map-scrap-basic"]
     },
-    "xp": {
-      "gained": 300,
-      "total": 300,
-      "rank": 2,
-      "rankBefore": 1
+    "xp": { "gained": 300, "total": 300, "rank": 2, "rankBefore": 1 },
+    "experience": {
+      "creatureId": "b43ff190-9c14-4591-8df3-7a5c237075c2",
+      "gained": 120,
+      "treat": false,
+      "levelBefore": 8,
+      "level": 8,
+      "exp": 120,
+      "needed": 328,
+      "waiting": false,
+      "gold": false
     },
-    "rankGifts": [
-      {
-        "rank": 2,
-        "bait": 2,
-        "parts": {
-          "scrap": 1
-        },
-        "supplies": []
-      }
-    ],
-    "familiarity": {
-      "stars": 0,
-      "starsBefore": 0,
-      "trips": 1
-    }
+    "rankGifts": [{ "rank": 2, "bait": 2, "parts": { "scrap": 1 }, "supplies": [] }],
+    "familiarity": { "stars": 0, "starsBefore": 0, "trips": 1 }
   },
   "state": {
     "serverNow": 1799776800000,
-    "balances": {
-      "bait": 202,
-      "essence": 0
-    },
+    "balances": { "bait": 202, "essence": 0 },
     "starterChosen": false,
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "58edc28a-0e99-43ce-b232-4a5ed4aff59a",
+        "id": "b43ff190-9c14-4591-8df3-7a5c237075c2",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -81,32 +62,14 @@
         "lineSlot": 1,
         "talents": {
           "slots": [
-            {
-              "slot": 1,
-              "opensAt": 1,
-              "open": true,
-              "talent": null
-            },
-            {
-              "slot": 2,
-              "opensAt": 20,
-              "open": false,
-              "talent": null
-            }
+            { "slot": 1, "opensAt": 1, "open": true, "talent": null },
+            { "slot": 2, "opensAt": 20, "open": false, "talent": null }
           ],
           "signature": null,
           "book": []
         },
-        "stats": {
-          "hp": 145,
-          "atk": 61,
-          "spd": 42
-        },
-        "statsWithGear": {
-          "hp": 145,
-          "atk": 61,
-          "spd": 42
-        },
+        "stats": { "hp": 145, "atk": 61, "spd": 42 },
+        "statsWithGear": { "hp": 145, "atk": 61, "spd": 42 },
         "gear": [],
         "busy": null,
         "ability": {
@@ -115,22 +78,18 @@
           "unlockLevel": 10,
           "nextId": "flare-strike-2"
         },
-        "explorer": {
-          "rank": 2,
-          "xp": 300,
-          "nextRankXp": 800,
-          "trips": 1
-        },
-        "trainCost": 19,
-        "evolution": {
-          "toSpecies": "pyrelynx",
-          "level": 15,
-          "essence": 20,
-          "available": false
-        }
+        "explorer": { "rank": 2, "xp": 300, "nextRankXp": 800, "trips": 1 },
+        "exp": 120,
+        "expNeeded": 328,
+        "waiting": false,
+        "ribbons": 0,
+        "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+        "ribbon": null,
+        "treatCost": 7,
+        "evolution": { "toSpecies": "pyrelynx", "level": 15, "essence": 20, "available": false }
       },
       {
-        "id": "be93565e-0aa1-4b20-be8b-747be222dd24",
+        "id": "60f56223-6005-44d4-847f-e8c86ea2fedc",
         "species": "splashet",
         "line": "splashet",
         "level": 8,
@@ -145,32 +104,14 @@
         "lineSlot": 1,
         "talents": {
           "slots": [
-            {
-              "slot": 1,
-              "opensAt": 1,
-              "open": true,
-              "talent": null
-            },
-            {
-              "slot": 2,
-              "opensAt": 20,
-              "open": false,
-              "talent": null
-            }
+            { "slot": 1, "opensAt": 1, "open": true, "talent": null },
+            { "slot": 2, "opensAt": 20, "open": false, "talent": null }
           ],
           "signature": null,
           "book": []
         },
-        "stats": {
-          "hp": 168,
-          "atk": 42,
-          "spd": 46
-        },
-        "statsWithGear": {
-          "hp": 168,
-          "atk": 42,
-          "spd": 46
-        },
+        "stats": { "hp": 168, "atk": 42, "spd": 46 },
+        "statsWithGear": { "hp": 168, "atk": 42, "spd": 46 },
         "gear": [],
         "busy": null,
         "ability": {
@@ -179,22 +120,18 @@
           "unlockLevel": 10,
           "nextId": "tidal-mark-2"
         },
-        "explorer": {
-          "rank": 1,
-          "xp": 0,
-          "nextRankXp": 200,
-          "trips": 0
-        },
-        "trainCost": 19,
-        "evolution": {
-          "toSpecies": "tidewing",
-          "level": 15,
-          "essence": 20,
-          "available": false
-        }
+        "explorer": { "rank": 1, "xp": 0, "nextRankXp": 200, "trips": 0 },
+        "exp": 0,
+        "expNeeded": 328,
+        "waiting": false,
+        "ribbons": 0,
+        "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+        "ribbon": null,
+        "treatCost": 7,
+        "evolution": { "toSpecies": "tidewing", "level": 15, "essence": 20, "available": false }
       },
       {
-        "id": "6feaa8cd-604e-457d-b873-a9f23a17bddd",
+        "id": "f4a2631d-6dfe-48e1-aefc-0c8aa9572310",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -209,32 +146,14 @@
         "lineSlot": 1,
         "talents": {
           "slots": [
-            {
-              "slot": 1,
-              "opensAt": 1,
-              "open": true,
-              "talent": null
-            },
-            {
-              "slot": 2,
-              "opensAt": 20,
-              "open": false,
-              "talent": null
-            }
+            { "slot": 1, "opensAt": 1, "open": true, "talent": null },
+            { "slot": 2, "opensAt": 20, "open": false, "talent": null }
           ],
           "signature": null,
           "book": []
         },
-        "stats": {
-          "hp": 237,
-          "atk": 29,
-          "spd": 23
-        },
-        "statsWithGear": {
-          "hp": 237,
-          "atk": 29,
-          "spd": 23
-        },
+        "stats": { "hp": 237, "atk": 29, "spd": 23 },
+        "statsWithGear": { "hp": 237, "atk": 29, "spd": 23 },
         "gear": [],
         "busy": null,
         "ability": {
@@ -243,24 +162,20 @@
           "unlockLevel": 10,
           "nextId": "bark-guard-2"
         },
-        "explorer": {
-          "rank": 1,
-          "xp": 0,
-          "nextRankXp": 200,
-          "trips": 0
-        },
-        "trainCost": 19,
-        "evolution": {
-          "toSpecies": "thornbuck",
-          "level": 15,
-          "essence": 20,
-          "available": false
-        }
+        "explorer": { "rank": 1, "xp": 0, "nextRankXp": 200, "trips": 0 },
+        "exp": 0,
+        "expNeeded": 328,
+        "waiting": false,
+        "ribbons": 0,
+        "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+        "ribbon": null,
+        "treatCost": 7,
+        "evolution": { "toSpecies": "thornbuck", "level": 15, "essence": 20, "available": false }
       }
     ],
     "pending": [
       {
-        "id": "16428cdb-2887-4b1d-ab50-fa3959067782",
+        "id": "84fc62c1-fd04-4242-9eba-2f542ca1ce4b",
         "species": "cindle",
         "line": "cindle",
         "shiny": false,
@@ -275,17 +190,15 @@
           "idle": false
         },
         "offered": {
-          "teach": ["58edc28a-0e99-43ce-b232-4a5ed4aff59a"],
-          "fuse": ["58edc28a-0e99-43ce-b232-4a5ed4aff59a"],
+          "teach": ["b43ff190-9c14-4591-8df3-7a5c237075c2"],
+          "fuse": ["b43ff190-9c14-4591-8df3-7a5c237075c2"],
           "release": true,
           "keep": false
         },
-        "releases": {
-          "scrap": 3
-        },
+        "releases": { "scrap": 3 },
         "recommended": {
           "choice": "teach",
-          "creatureId": "58edc28a-0e99-43ce-b232-4a5ed4aff59a",
+          "creatureId": "b43ff190-9c14-4591-8df3-7a5c237075c2",
           "slot": 1
         }
       }
@@ -293,8 +206,8 @@
     "bookSlotBait": 10,
     "expeditions": [
       {
-        "id": "88ffb59a-50d1-46c6-9965-2afcaf68ad9d",
-        "creatureId": "58edc28a-0e99-43ce-b232-4a5ed4aff59a",
+        "id": "e15f4351-3f4a-454f-a44c-866a04f6a6cd",
+        "creatureId": "b43ff190-9c14-4591-8df3-7a5c237075c2",
         "duration": "long",
         "supplies": "basic",
         "kit": [],
@@ -302,6 +215,7 @@
         "twist": null,
         "rolls": 1,
         "cost": 0,
+        "treat": false,
         "startedAt": 1799733600000,
         "endsAt": 1799776800000,
         "readyAt": 1799776800000,
@@ -315,7 +229,7 @@
               "shiny": false,
               "firstOnServer": true,
               "outcome": "duplicate",
-              "pendingId": "16428cdb-2887-4b1d-ab50-fa3959067782",
+              "pendingId": "84fc62c1-fd04-4242-9eba-2f542ca1ce4b",
               "talent": {
                 "id": "proud-ember",
                 "name": "Proud Ember",
@@ -329,40 +243,24 @@
           "loot": {
             "gear": [],
             "converted": [],
-            "parts": {
-              "scrap": 1,
-              "ember-shard": 1,
-              "glimmer": 1
-            },
-            "blueprints": [
-              {
-                "baseId": "trail-cap",
-                "duplicate": false
-              }
-            ],
+            "parts": { "scrap": 1, "ember-shard": 1, "glimmer": 1 },
+            "blueprints": [{ "baseId": "trail-cap", "duplicate": false }],
             "supplies": ["map-scrap-basic"]
           },
-          "xp": {
-            "gained": 300,
-            "total": 300,
-            "rank": 2,
-            "rankBefore": 1
+          "xp": { "gained": 300, "total": 300, "rank": 2, "rankBefore": 1 },
+          "experience": {
+            "creatureId": "b43ff190-9c14-4591-8df3-7a5c237075c2",
+            "gained": 120,
+            "treat": false,
+            "levelBefore": 8,
+            "level": 8,
+            "exp": 120,
+            "needed": 328,
+            "waiting": false,
+            "gold": false
           },
-          "rankGifts": [
-            {
-              "rank": 2,
-              "bait": 2,
-              "parts": {
-                "scrap": 1
-              },
-              "supplies": []
-            }
-          ],
-          "familiarity": {
-            "stars": 0,
-            "starsBefore": 0,
-            "trips": 1
-          }
+          "rankGifts": [{ "rank": 2, "bait": 2, "parts": { "scrap": 1 }, "supplies": [] }],
+          "familiarity": { "stars": 0, "starsBefore": 0, "trips": 1 }
         },
         "offer": null,
         "pushOn": null
@@ -374,15 +272,9 @@
       "used": 0,
       "rankSum": 1,
       "tripsFinished": 1,
-      "next": {
-        "kind": "trips",
-        "at": 3
-      }
+      "next": { "kind": "trips", "at": 3 }
     },
-    "supplies": {
-      "map-scrap-basic": 1
-    },
-    "trainingMedianLevel": 8,
+    "supplies": { "map-scrap-basic": 1 },
     "serverFirsts": [
       {
         "kind": "catch",
@@ -392,7 +284,7 @@
         "holders": ["Player 2"]
       }
     ],
-    "loungerId": "6feaa8cd-604e-457d-b873-a9f23a17bddd",
+    "loungerId": "f4a2631d-6dfe-48e1-aefc-0c8aa9572310",
     "loungeSpot": null
   }
 }

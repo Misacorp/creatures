@@ -25,7 +25,7 @@ export function Blueprints({
   busy: boolean;
   loadPreview: (creatureId: string, blueprintId: string) => Promise<CraftPreview>;
   /** Starts the craft; resolves true when it started (the panel then closes). */
-  onCraft: (baseId: string, creatureId: string, reach: ReachId) => Promise<boolean>;
+  onCraft: (baseId: string, creatureId: string, reach: ReachId, treat: boolean) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const views = blueprintViews(gear.blueprints, gear.skills);
@@ -69,8 +69,8 @@ export function Blueprints({
                   creatures={creatures}
                   busy={busy}
                   loadPreview={loadPreview}
-                  onStart={(creatureId, reach) => {
-                    void onCraft(bp.baseId, creatureId, reach).then((started) => {
+                  onStart={(creatureId, reach, treat) => {
+                    void onCraft(bp.baseId, creatureId, reach, treat).then((started) => {
                       if (started) setOpen(null);
                     });
                   }}

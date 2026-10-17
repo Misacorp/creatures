@@ -3,6 +3,17 @@
     "kind": "supply",
     "supplyId": "lure-basic",
     "amount": 1,
+    "experience": {
+      "creatureId": "be62544c-7446-4c3e-ae3f-f8e80f3e8bba",
+      "gained": 8,
+      "treat": false,
+      "levelBefore": 8,
+      "level": 8,
+      "exp": 128,
+      "needed": 328,
+      "waiting": false,
+      "gold": false
+    },
     "xp": 12,
     "skillXp": 12,
     "skillLevel": 1,
@@ -10,21 +21,10 @@
   },
   "gear": {
     "serverNow": 1799881344002,
-    "balances": {
-      "bait": 292,
-      "essence": 0
-    },
-    "inventory": {
-      "cap": 60,
-      "used": 0,
-      "reserved": 0
-    },
+    "balances": { "bait": 292, "essence": 0 },
+    "inventory": { "cap": 60, "used": 0, "reserved": 0 },
     "items": [],
-    "slotOpens": {
-      "hat": 1,
-      "scarf": 7,
-      "charm": 13
-    },
+    "slotOpens": { "hat": 1, "scarf": 7, "charm": 13 },
     "parts": {
       "scrap": 15,
       "tide-shard": 0,
@@ -36,16 +36,13 @@
     "blueprints": [],
     "jobs": [
       {
-        "id": "4f149cce-0316-4f49-afdd-c31d1a1827ab",
-        "creatureId": "846140b4-6d3a-434e-9bcd-d1fff7c70fe0",
+        "id": "40f4f106-778b-48de-89a9-aba20ba8caea",
+        "creatureId": "be62544c-7446-4c3e-ae3f-f8e80f3e8bba",
         "kind": "supply",
-        "input": {
-          "supplyId": "lure-basic"
-        },
-        "cost": {
-          "scrap": 2
-        },
+        "input": { "supplyId": "lure-basic" },
+        "cost": { "scrap": 2 },
         "bait": 12,
+        "treat": false,
         "startedAt": 1799852544002,
         "endsAt": 1799856144002,
         "status": "claimed",
@@ -54,6 +51,17 @@
           "kind": "supply",
           "supplyId": "lure-basic",
           "amount": 1,
+          "experience": {
+            "creatureId": "be62544c-7446-4c3e-ae3f-f8e80f3e8bba",
+            "gained": 8,
+            "treat": false,
+            "levelBefore": 8,
+            "level": 8,
+            "exp": 128,
+            "needed": 328,
+            "waiting": false,
+            "gold": false
+          },
           "xp": 12,
           "skillXp": 12,
           "skillLevel": 1,
@@ -61,31 +69,28 @@
         }
       }
     ],
-    "slots": {
-      "total": 2,
-      "used": 0
-    },
+    "slots": { "total": 2, "used": 0 },
     "skills": [
       {
-        "creatureId": "846140b4-6d3a-434e-9bcd-d1fff7c70fe0",
+        "creatureId": "be62544c-7446-4c3e-ae3f-f8e80f3e8bba",
         "xp": 12,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "df58cec5-1472-484c-b521-e16941e9b3e6",
+        "creatureId": "589c1ed0-4bce-40b5-ae1f-ed7ec8423765",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "9703684f-6f1c-4131-82f8-773b24b42d65",
+        "creatureId": "870602df-233b-4080-8115-b7b3a3ca9671",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "0cecc9f2-afaf-4e74-ac45-f3dc4a1784b9",
+        "creatureId": "894034bd-f122-4861-8bc5-f0ba65684f36",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
@@ -97,29 +102,25 @@
         "converted": [],
         "parts": {},
         "blueprints": [],
-        "key": "expedition:398940c6-ddc8-4132-b021-a15f96839713",
+        "key": "expedition:e2e80551-ce9d-44ba-b71c-7383e679ae8b",
         "source": "expedition",
         "at": 1799852544002
       },
       {
         "gear": [],
         "converted": [],
-        "parts": {
-          "scrap": 2
-        },
+        "parts": { "scrap": 2 },
         "blueprints": [],
-        "key": "rank:846140b4-6d3a-434e-9bcd-d1fff7c70fe0:4",
+        "key": "rank:be62544c-7446-4c3e-ae3f-f8e80f3e8bba:4",
         "source": "rank_gift",
         "at": 1799830944002
       },
       {
         "gear": [],
         "converted": [],
-        "parts": {
-          "scrap": 5
-        },
+        "parts": { "scrap": 5 },
         "blueprints": [],
-        "key": "expedition:b0210957-275b-490a-a9f1-388a4ab75d56",
+        "key": "expedition:1608d903-0840-473b-86c1-c0cc18862ee6",
         "source": "expedition",
         "at": 1799830944002
       }
@@ -128,15 +129,12 @@
   },
   "state": {
     "serverNow": 1799881344002,
-    "balances": {
-      "bait": 292,
-      "essence": 0
-    },
+    "balances": { "bait": 292, "essence": 0 },
     "starterChosen": false,
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "846140b4-6d3a-434e-9bcd-d1fff7c70fe0",
+        "id": "be62544c-7446-4c3e-ae3f-f8e80f3e8bba",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -151,32 +149,14 @@
         "lineSlot": 1,
         "talents": {
           "slots": [
-            {
-              "slot": 1,
-              "opensAt": 1,
-              "open": true,
-              "talent": null
-            },
-            {
-              "slot": 2,
-              "opensAt": 20,
-              "open": false,
-              "talent": null
-            }
+            { "slot": 1, "opensAt": 1, "open": true, "talent": null },
+            { "slot": 2, "opensAt": 20, "open": false, "talent": null }
           ],
           "signature": null,
           "book": []
         },
-        "stats": {
-          "hp": 145,
-          "atk": 61,
-          "spd": 42
-        },
-        "statsWithGear": {
-          "hp": 145,
-          "atk": 61,
-          "spd": 42
-        },
+        "stats": { "hp": 145, "atk": 61, "spd": 42 },
+        "statsWithGear": { "hp": 145, "atk": 61, "spd": 42 },
         "gear": [],
         "busy": null,
         "ability": {
@@ -185,22 +165,18 @@
           "unlockLevel": 10,
           "nextId": "flare-strike-2"
         },
-        "explorer": {
-          "rank": 4,
-          "xp": 2200,
-          "nextRankXp": 4500,
-          "trips": 1
-        },
-        "trainCost": 19,
-        "evolution": {
-          "toSpecies": "pyrelynx",
-          "level": 15,
-          "essence": 20,
-          "available": false
-        }
+        "explorer": { "rank": 4, "xp": 2200, "nextRankXp": 4500, "trips": 1 },
+        "exp": 128,
+        "expNeeded": 328,
+        "waiting": false,
+        "ribbons": 0,
+        "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+        "ribbon": null,
+        "treatCost": 7,
+        "evolution": { "toSpecies": "pyrelynx", "level": 15, "essence": 20, "available": false }
       },
       {
-        "id": "df58cec5-1472-484c-b521-e16941e9b3e6",
+        "id": "589c1ed0-4bce-40b5-ae1f-ed7ec8423765",
         "species": "splashet",
         "line": "splashet",
         "level": 8,
@@ -215,32 +191,14 @@
         "lineSlot": 1,
         "talents": {
           "slots": [
-            {
-              "slot": 1,
-              "opensAt": 1,
-              "open": true,
-              "talent": null
-            },
-            {
-              "slot": 2,
-              "opensAt": 20,
-              "open": false,
-              "talent": null
-            }
+            { "slot": 1, "opensAt": 1, "open": true, "talent": null },
+            { "slot": 2, "opensAt": 20, "open": false, "talent": null }
           ],
           "signature": null,
           "book": []
         },
-        "stats": {
-          "hp": 168,
-          "atk": 42,
-          "spd": 46
-        },
-        "statsWithGear": {
-          "hp": 168,
-          "atk": 42,
-          "spd": 46
-        },
+        "stats": { "hp": 168, "atk": 42, "spd": 46 },
+        "statsWithGear": { "hp": 168, "atk": 42, "spd": 46 },
         "gear": [],
         "busy": null,
         "ability": {
@@ -249,22 +207,18 @@
           "unlockLevel": 10,
           "nextId": "tidal-mark-2"
         },
-        "explorer": {
-          "rank": 1,
-          "xp": 0,
-          "nextRankXp": 200,
-          "trips": 0
-        },
-        "trainCost": 19,
-        "evolution": {
-          "toSpecies": "tidewing",
-          "level": 15,
-          "essence": 20,
-          "available": false
-        }
+        "explorer": { "rank": 1, "xp": 0, "nextRankXp": 200, "trips": 0 },
+        "exp": 0,
+        "expNeeded": 328,
+        "waiting": false,
+        "ribbons": 0,
+        "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+        "ribbon": null,
+        "treatCost": 7,
+        "evolution": { "toSpecies": "tidewing", "level": 15, "essence": 20, "available": false }
       },
       {
-        "id": "9703684f-6f1c-4131-82f8-773b24b42d65",
+        "id": "870602df-233b-4080-8115-b7b3a3ca9671",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -279,32 +233,14 @@
         "lineSlot": 1,
         "talents": {
           "slots": [
-            {
-              "slot": 1,
-              "opensAt": 1,
-              "open": true,
-              "talent": null
-            },
-            {
-              "slot": 2,
-              "opensAt": 20,
-              "open": false,
-              "talent": null
-            }
+            { "slot": 1, "opensAt": 1, "open": true, "talent": null },
+            { "slot": 2, "opensAt": 20, "open": false, "talent": null }
           ],
           "signature": null,
           "book": []
         },
-        "stats": {
-          "hp": 237,
-          "atk": 29,
-          "spd": 23
-        },
-        "statsWithGear": {
-          "hp": 237,
-          "atk": 29,
-          "spd": 23
-        },
+        "stats": { "hp": 237, "atk": 29, "spd": 23 },
+        "statsWithGear": { "hp": 237, "atk": 29, "spd": 23 },
         "gear": [],
         "busy": null,
         "ability": {
@@ -313,22 +249,18 @@
           "unlockLevel": 10,
           "nextId": "bark-guard-2"
         },
-        "explorer": {
-          "rank": 1,
-          "xp": 0,
-          "nextRankXp": 200,
-          "trips": 0
-        },
-        "trainCost": 19,
-        "evolution": {
-          "toSpecies": "thornbuck",
-          "level": 15,
-          "essence": 20,
-          "available": false
-        }
+        "explorer": { "rank": 1, "xp": 0, "nextRankXp": 200, "trips": 0 },
+        "exp": 0,
+        "expNeeded": 328,
+        "waiting": false,
+        "ribbons": 0,
+        "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+        "ribbon": null,
+        "treatCost": 7,
+        "evolution": { "toSpecies": "thornbuck", "level": 15, "essence": 20, "available": false }
       },
       {
-        "id": "0cecc9f2-afaf-4e74-ac45-f3dc4a1784b9",
+        "id": "894034bd-f122-4861-8bc5-f0ba65684f36",
         "species": "mistnewt",
         "line": "mistnewt",
         "level": 1,
@@ -339,7 +271,7 @@
         "away": false,
         "origin": "expedition",
         "caughtAt": 1799830944002,
-        "quirk": "brave-until-rustle",
+        "quirk": "cloud-follower",
         "lineSlot": 1,
         "talents": {
           "slots": [
@@ -356,12 +288,7 @@
                 "idle": false
               }
             },
-            {
-              "slot": 2,
-              "opensAt": 20,
-              "open": false,
-              "talent": null
-            }
+            { "slot": 2, "opensAt": 20, "open": false, "talent": null }
           ],
           "signature": null,
           "book": [
@@ -376,16 +303,8 @@
             }
           ]
         },
-        "stats": {
-          "hp": 160,
-          "atk": 28,
-          "spd": 16
-        },
-        "statsWithGear": {
-          "hp": 160,
-          "atk": 28,
-          "spd": 16
-        },
+        "stats": { "hp": 160, "atk": 28, "spd": 16 },
+        "statsWithGear": { "hp": 160, "atk": 28, "spd": 16 },
         "gear": [],
         "busy": null,
         "ability": {
@@ -394,27 +313,23 @@
           "unlockLevel": 10,
           "nextId": "fog-veil-2"
         },
-        "explorer": {
-          "rank": 1,
-          "xp": 0,
-          "nextRankXp": 200,
-          "trips": 0
-        },
-        "trainCost": 3,
-        "evolution": {
-          "toSpecies": "fogwyrm",
-          "level": 15,
-          "essence": 20,
-          "available": false
-        }
+        "explorer": { "rank": 1, "xp": 0, "nextRankXp": 200, "trips": 0 },
+        "exp": 0,
+        "expNeeded": 27,
+        "waiting": false,
+        "ribbons": 0,
+        "nextUnlock": { "level": 7, "name": "Scarf" },
+        "ribbon": null,
+        "treatCost": 4,
+        "evolution": { "toSpecies": "fogwyrm", "level": 15, "essence": 20, "available": false }
       }
     ],
     "pending": [],
     "bookSlotBait": 10,
     "expeditions": [
       {
-        "id": "398940c6-ddc8-4132-b021-a15f96839713",
-        "creatureId": "df58cec5-1472-484c-b521-e16941e9b3e6",
+        "id": "e2e80551-ce9d-44ba-b71c-7383e679ae8b",
+        "creatureId": "589c1ed0-4bce-40b5-ae1f-ed7ec8423765",
         "duration": "long",
         "supplies": "basic",
         "kit": [],
@@ -422,6 +337,7 @@
         "twist": null,
         "rolls": 1,
         "cost": 0,
+        "treat": false,
         "startedAt": 1799830944002,
         "endsAt": 1799874144002,
         "readyAt": 1799874144002,
@@ -430,19 +346,14 @@
         "result": {
           "recalled": true,
           "catches": [],
-          "loot": {
-            "gear": [],
-            "converted": [],
-            "parts": {},
-            "blueprints": []
-          }
+          "loot": { "gear": [], "converted": [], "parts": {}, "blueprints": [] }
         },
         "offer": null,
         "pushOn": null
       },
       {
-        "id": "b0210957-275b-490a-a9f1-388a4ab75d56",
-        "creatureId": "846140b4-6d3a-434e-9bcd-d1fff7c70fe0",
+        "id": "1608d903-0840-473b-86c1-c0cc18862ee6",
+        "creatureId": "be62544c-7446-4c3e-ae3f-f8e80f3e8bba",
         "duration": "long",
         "supplies": "great",
         "kit": ["lure-great"],
@@ -450,6 +361,7 @@
         "twist": null,
         "rolls": 1,
         "cost": 0,
+        "treat": false,
         "startedAt": 1799782272001,
         "endsAt": 1799823744001,
         "readyAt": 1799830944001,
@@ -473,51 +385,24 @@
               }
             }
           ],
-          "loot": {
-            "gear": [],
-            "converted": [],
-            "parts": {
-              "scrap": 5
-            },
-            "blueprints": []
+          "loot": { "gear": [], "converted": [], "parts": { "scrap": 5 }, "blueprints": [] },
+          "pushOn": { "goalId": "forage", "risk": "safe", "oddsBp": 10000, "outcome": "worked" },
+          "xp": { "gained": 300, "total": 2200, "rank": 4, "rankBefore": 3 },
+          "experience": {
+            "creatureId": "be62544c-7446-4c3e-ae3f-f8e80f3e8bba",
+            "gained": 120,
+            "treat": false,
+            "levelBefore": 8,
+            "level": 8,
+            "exp": 120,
+            "needed": 328,
+            "waiting": false,
+            "gold": false
           },
-          "pushOn": {
-            "goalId": "forage",
-            "risk": "safe",
-            "oddsBp": 10000,
-            "outcome": "worked"
-          },
-          "xp": {
-            "gained": 300,
-            "total": 2200,
-            "rank": 4,
-            "rankBefore": 3
-          },
-          "rankGifts": [
-            {
-              "rank": 4,
-              "bait": 4,
-              "parts": {
-                "scrap": 2
-              },
-              "supplies": []
-            }
-          ],
-          "slotUnlocked": {
-            "total": 2
-          },
-          "familiarity": {
-            "stars": 0,
-            "starsBefore": 0,
-            "trips": 1
-          },
-          "journal": [
-            {
-              "entryId": "tide-first-pool",
-              "set": "tide-ledger",
-              "setComplete": false
-            }
-          ]
+          "rankGifts": [{ "rank": 4, "bait": 4, "parts": { "scrap": 2 }, "supplies": [] }],
+          "slotUnlocked": { "total": 2 },
+          "familiarity": { "stars": 0, "starsBefore": 0, "trips": 1 },
+          "journal": [{ "entryId": "tide-first-pool", "set": "tide-ledger", "setComplete": false }]
         },
         "offer": null,
         "pushOn": {
@@ -528,8 +413,8 @@
         }
       },
       {
-        "id": "ff08ccff-375a-497a-9b13-a8940b7d60f3",
-        "creatureId": "846140b4-6d3a-434e-9bcd-d1fff7c70fe0",
+        "id": "e899d8ae-df64-409e-a68a-3fe361799d9c",
+        "creatureId": "be62544c-7446-4c3e-ae3f-f8e80f3e8bba",
         "duration": "long",
         "supplies": "great",
         "kit": ["lure-great", "map-scrap-basic"],
@@ -537,6 +422,7 @@
         "twist": null,
         "rolls": 2,
         "cost": 0,
+        "treat": false,
         "startedAt": 1799733600000,
         "endsAt": 1799775072000,
         "readyAt": 1799782272000,
@@ -546,12 +432,7 @@
           "recalled": false,
           "catches": [],
           "failed": true,
-          "pushOn": {
-            "goalId": "shortcut",
-            "risk": "risky",
-            "oddsBp": 6100,
-            "outcome": "failed"
-          }
+          "pushOn": { "goalId": "shortcut", "risk": "risky", "oddsBp": 6100, "outcome": "failed" }
         },
         "offer": null,
         "pushOn": {
@@ -568,16 +449,9 @@
       "used": 0,
       "rankSum": 3,
       "tripsFinished": 3,
-      "next": {
-        "kind": "rank_sum",
-        "at": 26
-      }
+      "next": { "kind": "rank_sum", "at": 26 }
     },
-    "supplies": {
-      "lure-basic": 1,
-      "lure-great": 1
-    },
-    "trainingMedianLevel": 8,
+    "supplies": { "lure-basic": 1, "lure-great": 1 },
     "serverFirsts": [
       {
         "kind": "catch",
@@ -587,7 +461,7 @@
         "holders": ["Player 3"]
       }
     ],
-    "loungerId": "9703684f-6f1c-4131-82f8-773b24b42d65",
+    "loungerId": "870602df-233b-4080-8115-b7b3a3ca9671",
     "loungeSpot": null
   }
 }

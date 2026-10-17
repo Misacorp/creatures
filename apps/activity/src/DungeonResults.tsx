@@ -235,6 +235,7 @@ function TeamBreakdown({ team }: { team: readonly TeamEntry[] }) {
               <span class="tm-name pix">{m.name}</span>
             </SmallCreature>
             <span class="tm-hp pix">{m.hp}</span>
+            {m.experience !== null && <span class="tm-exp muted">{m.experience}</span>}
           </li>
         ))}
       </ul>

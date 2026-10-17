@@ -301,7 +301,14 @@ export function completeTeam(slots: Slots): DungeonRunRequest['team'] | null {
 }
 
 /** The body of `POST /api/dungeon/run`, or null when the team is not complete. The key is the caller's. */
-export function buildRunRequest(slots: Slots, idempotencyKey: string): DungeonRunRequest | null {
+export function buildRunRequest(
+  slots: Slots,
+  idempotencyKey: string,
+  treats: ReadonlySet<string> = new Set(),
+): DungeonRunRequest | null {
   const team = completeTeam(slots);
-  return team === null ? null : { team, idempotencyKey };
+  if (team === null) return null;
+  // Only creatures of the team can have a treat; they go in the order they stand.
+  const picked = team.filter((id) => treats.has(id));
+  return picked.length === 0 ? { team, idempotencyKey } : { team, treats: picked, idempotencyKey };
 }

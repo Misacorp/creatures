@@ -9,20 +9,8 @@
   "festivalWeek": false,
   "night": false,
   "destinations": [
-    {
-      "id": "tidepools",
-      "minRank": 1,
-      "nightOnly": false,
-      "festivalOnly": false,
-      "closed": []
-    },
-    {
-      "id": "ember-caves",
-      "minRank": 1,
-      "nightOnly": false,
-      "festivalOnly": false,
-      "closed": []
-    },
+    { "id": "tidepools", "minRank": 1, "nightOnly": false, "festivalOnly": false, "closed": [] },
+    { "id": "ember-caves", "minRank": 1, "nightOnly": false, "festivalOnly": false, "closed": [] },
     {
       "id": "verdant-hollow",
       "minRank": 1,
@@ -30,13 +18,7 @@
       "festivalOnly": false,
       "closed": []
     },
-    {
-      "id": "storm-ridge",
-      "minRank": 1,
-      "nightOnly": false,
-      "festivalOnly": false,
-      "closed": []
-    },
+    { "id": "storm-ridge", "minRank": 1, "nightOnly": false, "festivalOnly": false, "closed": [] },
     {
       "id": "old-crossroads",
       "minRank": 2,
@@ -61,7 +43,7 @@
   ],
   "familiarity": [
     {
-      "creatureId": "846140b4-6d3a-434e-9bcd-d1fff7c70fe0",
+      "creatureId": "be62544c-7446-4c3e-ae3f-f8e80f3e8bba",
       "destination": "tidepools",
       "trips": 1,
       "found": ["mistnewt"],

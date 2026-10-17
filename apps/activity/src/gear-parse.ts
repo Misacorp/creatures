@@ -4,6 +4,7 @@
  * `fixtures/`. A payload that does not match is an error, never a half-drawn screen.
  */
 import { GEAR_RARITIES, GEAR_SLOTS, GEAR_TAGS, PART_KINDS, REACH_IDS } from '@creatures/game';
+import { isExperienceView } from './experience';
 import type {
   ConversionNotice,
   CraftOption,
@@ -142,7 +143,8 @@ function isJobResult(value: unknown): value is JobResult {
     isCount(value['xp']) &&
     isCount(value['skillXp']) &&
     isCount(value['skillLevel']) &&
-    typeof value['leveledUp'] === 'boolean';
+    typeof value['leveledUp'] === 'boolean' &&
+    (value['experience'] === undefined || isExperienceView(value['experience']));
   if (!common) return false;
   switch (value['kind']) {
     case 'craft':
@@ -198,6 +200,7 @@ function isJob(value: unknown): value is Job {
     isJobInput(value['input']) &&
     isPartsBundle(value['cost']) &&
     (value['bait'] === undefined || isCount(value['bait'])) &&
+    (value['treat'] === undefined || typeof value['treat'] === 'boolean') &&
     isInt(value['startedAt']) &&
     isInt(value['endsAt']) &&
     (value['status'] === 'running' ||

@@ -11,6 +11,7 @@
  * `GET /api/dungeon/run/:id`. Amounts are integers. The seed of a run is never sent.
  */
 import type { FightEvent } from '@creatures/engine';
+import type { ExperienceView } from './experience';
 import type { GearRarity, PartsBundle } from './gear-types';
 
 export type Element = 'tide' | 'ember' | 'grove' | 'spark';
@@ -82,6 +83,11 @@ export interface DungeonRewards {
    * now. Absent in runs from before the dungeon dropped supplies (read as none).
    */
   supplies?: string[];
+  /**
+   * What the run paid each creature of the team in creature experience (a treat doubles it) and what it
+   * did to their levels. Absent in runs from before training by activity.
+   */
+  experience?: ExperienceView[];
   /** A fully cleared landmark depth. */
   landmark: boolean;
   /** The streak bonus of the day (the 3rd and 7th day of a 7 day cycle), or null. Not in the amounts above. */
@@ -198,6 +204,11 @@ export interface DungeonRunRequest {
    * creature abilities fire at their default round.
    */
   team: [string, string, string];
+  /**
+   * The creatures of the team that get a treat (Bait, paid with the run): they earn double experience.
+   * Each is in `team`, once. Left out when there are none.
+   */
+  treats?: string[];
   /** A fresh key for every new run (8 to 64 characters of A-Z a-z 0-9 _ -); a retry reuses it. */
   idempotencyKey: string;
 }

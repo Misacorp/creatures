@@ -22,6 +22,7 @@ import type {
   TripCatch,
   TripResult,
 } from './expedition-types';
+import { isExperienceView } from './experience';
 import { isGrantLoot, isPartsBundle } from './gear-parse';
 import { isArrayOf, isBool, isCount, isInt, isRecord, isStr } from './parse-core';
 import { isChoiceResult, isTalentView } from './talent-parse';
@@ -134,6 +135,7 @@ export function isTripResult(value: unknown): value is TripResult {
         isCount(familiarity['trips']))) &&
     (value['journal'] === undefined || isArrayOf(value['journal'], isJournalFind)) &&
     (value['rankGifts'] === undefined || isArrayOf(value['rankGifts'], isRankGift)) &&
+    (value['experience'] === undefined || isExperienceView(value['experience'])) &&
     (unlocked === undefined || (isRecord(unlocked) && isCount(unlocked['total'])))
   );
 }
@@ -163,6 +165,7 @@ export function isTrip(value: unknown): value is Trip {
     (value['twist'] === null || isStr(value['twist'])) &&
     isCount(value['rolls']) &&
     isCount(value['cost']) &&
+    isBool(value['treat']) &&
     isInt(value['startedAt']) &&
     isInt(value['endsAt']) &&
     isInt(value['readyAt']) &&

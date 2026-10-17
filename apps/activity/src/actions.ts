@@ -64,14 +64,16 @@ export type JobStart = StartJobRequest extends infer R
  */
 export const ActionIds = {
   starter: (species: string): ActionId => `starter:${species}`,
-  train: (creatureId: string): ActionId => `train:${creatureId}`,
+  /** Earning the ribbon a creature waits for: one creature, one ribbon at a time. */
+  ribbon: (creatureId: string): ActionId => `ribbon:${creatureId}`,
   evolve: (creatureId: string): ActionId => `evolve:${creatureId}`,
-  /** The same creature, place, length and supplies (in any order) is the same trip. */
+  /** The same creature, place, length, supplies (in any order) and treat is the same trip. */
   send: (
-    request: Pick<SendRequest, 'creatureId' | 'destination' | 'duration' | 'supplies'>,
+    request: Pick<SendRequest, 'creatureId' | 'destination' | 'duration' | 'supplies' | 'treat'>,
   ): ActionId => {
     const picks = request.supplies.map((p) => `${p.source}:${p.id}`).sort();
-    return `send:${request.creatureId}:${request.destination}:${request.duration}:${picks.join(',')}`;
+    const treat = request.treat === true ? ':treat' : '';
+    return `send:${request.creatureId}:${request.destination}:${request.duration}:${picks.join(',')}${treat}`;
   },
   /** One answer to one waiting duplicate (the same card answered another way is another action). */
   catchChoice: (pendingId: string, request: ChoiceRequest): ActionId => {
@@ -89,14 +91,19 @@ export const ActionIds = {
   job: (request: JobStart): ActionId => {
     switch (request.kind) {
       case 'craft':
-        return `job:craft:${request.creatureId}:${request.blueprintId}:${request.reach}`;
+        return `job:craft:${request.creatureId}:${request.blueprintId}:${request.reach}${treatSuffix(request)}`;
       case 'dismantle':
-        return `job:dismantle:${request.creatureId}:${[...request.itemIds].sort().join(',')}`;
+        return `job:dismantle:${request.creatureId}:${[...request.itemIds].sort().join(',')}${treatSuffix(request)}`;
       case 'supply':
-        return `job:supply:${request.creatureId}:${request.supplyId}`;
+        return `job:supply:${request.creatureId}:${request.supplyId}${treatSuffix(request)}`;
     }
   },
   /** The same three creatures in the same order are the same run; other picks get their own key. */
-  dungeonRun: (team: readonly [string, string, string]): ActionId =>
-    `dungeon-run:${JSON.stringify(team)}`,
+  dungeonRun: (team: readonly [string, string, string], treats: readonly string[] = []): ActionId =>
+    `dungeon-run:${JSON.stringify(team)}${treats.length === 0 ? '' : `:treats:${[...treats].sort().join(',')}`}`,
 };
+
+/** A treat makes a job another action (the same job without one is not the same request). */
+function treatSuffix(request: { treat?: boolean | undefined }): string {
+  return request.treat === true ? ':treat' : '';
+}

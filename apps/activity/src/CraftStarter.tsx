@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { CreaturePicker } from './CreaturePicker';
 import { CostList } from './GearArt';
+import { creatureName } from './game';
 import { GlossaryTag } from './Glossary';
+import { TreatBox } from './TreatBox';
 import type { CraftOption, CraftPreview, GearState, ReachId } from './gear-types';
 import {
   defaultPick,
@@ -45,7 +47,8 @@ export function CraftStarter({
   creatures: readonly Creature[];
   busy: boolean;
   loadPreview: (creatureId: string, blueprintId: string) => Promise<CraftPreview>;
-  onStart: (creatureId: string, reach: ReachId) => void;
+  /** Starts the craft; `treat` is true when the player packed a treat for the crafter. */
+  onStart: (creatureId: string, reach: ReachId, treat: boolean) => void;
   onCancel: () => void;
 }) {
   const options = pickerOptions(creatures, gear.skills, durationFor);
@@ -53,6 +56,7 @@ export function CraftStarter({
   const valid = options.find((o) => o.creature.id === picked && o.busy === null);
   const creatureId = valid === undefined ? defaultPick(options) : picked;
   const [reach, setReach] = useState<ReachId>('none');
+  const [treat, setTreat] = useState(false);
   const [state, setState] = useState<PreviewState>({ status: 'loading' });
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -76,6 +80,8 @@ export function CraftStarter({
     };
   }, [creatureId, baseId, gear.serverNow]);
 
+  const crafter = options.find((o) => o.creature.id === creatureId)?.creature;
+  const packing = treat && crafter !== undefined && gear.balances.bait >= crafter.treatCost;
   const preview = state.status === 'ready' ? state.preview : null;
   const chosen: CraftOption | undefined =
     preview?.options.find((o) => o.reach === reach && o.unlocked) ??
@@ -111,6 +117,16 @@ export function CraftStarter({
           setState({ status: 'loading' });
         }}
       />
+      {crafter !== undefined && (
+        <TreatBox
+          cost={crafter.treatCost}
+          bait={gear.balances.bait}
+          checked={packing}
+          disabled={busy}
+          who={creatureName(crafter)}
+          onChange={setTreat}
+        />
+      )}
       {state.status === 'loading' && creatureId !== null && (
         <p class="muted" role="status">
           Working out the odds...
@@ -189,7 +205,8 @@ export function CraftStarter({
           class="primary"
           disabled={disabled}
           onClick={() => {
-            if (creatureId !== null && chosen !== undefined) onStart(creatureId, chosen.reach);
+            if (creatureId !== null && chosen !== undefined)
+              onStart(creatureId, chosen.reach, packing);
           }}
         >
           {chosen === undefined || chosen.reach === 'none'

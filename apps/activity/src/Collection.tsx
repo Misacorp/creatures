@@ -1,5 +1,4 @@
 import { Tag } from './ui/Tag';
-import { trainingCost } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
 import { shinyPalette } from './art';
@@ -12,7 +11,7 @@ import type { EquipBestResult, GearState } from './gear-types';
 import { gearShare } from './gear-view';
 import { glyphOrUnknown } from './glyphs';
 import { abilityDef } from './live';
-import { Bar } from './ui/Bar';
+import { CreatureProgress } from './CreatureProgress';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -39,7 +38,8 @@ interface Props {
   onEquip: (gearId: string, creatureId: string | null) => Promise<boolean>;
   /** The server's "Equip best" for one creature; resolves what it changed (undefined when refused). */
   onEquipBest: (creatureId: string) => Promise<EquipBestResult | undefined>;
-  onTrain: (creature: Creature) => void;
+  /** Earns the ribbon the creature waits for (materials only). */
+  onRibbon: (creature: Creature) => void;
   onEvolve: (creature: Creature) => void;
   onRename: (creature: Creature, nickname: string | null) => void;
   /** Makes this creature the one that lounges in the living room. */
@@ -144,28 +144,19 @@ function CreatureCard({
   busy,
   onEquip,
   onEquipBest,
-  onTrain,
+  onRibbon,
   onEvolve,
   onRename,
   onLounge,
   onSlotTalent,
 }: { creature: Creature; state: GameState } & Omit<Props, 'state' | 'catchActions'>) {
   const species = getSpecies(creature.species);
-  const cost = creature.trainCost;
-  const canAfford = cost !== null && state.balances.bait >= cost;
-  const discounted = cost !== null && cost < trainingCost(creature.level);
   const evolve =
     creature.evolution === undefined
       ? null
       : evolutionText(creature.level, creature.evolution, state.balances.essence);
   const abilityText = creatureAbilityText(creature, abilityDef);
   const abilityInfo = creature.ability === null ? undefined : abilityDef(creature.ability.id);
-  const trainLabel =
-    cost === null
-      ? 'Max level'
-      : creature.away
-        ? `Train (${String(cost)} Bait), away`
-        : `Train (${String(cost)} Bait)`;
   const shinyColours = creature.shiny ? shinyPalette(creature.species) : undefined;
   // A shiny without its own palette gets a sparkle frame instead.
   const sparkleFrame = creature.shiny && shinyColours === undefined;
@@ -235,11 +226,7 @@ function CreatureCard({
       {isFestivalSpecies(creature.species) && (
         <p class="muted">Won in a Festival week. It is not found on expeditions.</p>
       )}
-      <Bar
-        value={creature.level}
-        max={creature.levelCap}
-        label={`Training progress: level ${String(creature.level)} / ${String(creature.levelCap)}`}
-      />
+      <CreatureProgress creature={creature} busy={busy} onRibbon={onRibbon} />
       <p class="stats">
         <StatPart label="HP" stat="hp" creature={creature} /> ·{' '}
         <StatPart label="ATK" stat="atk" creature={creature} /> ·{' '}
@@ -279,20 +266,6 @@ function CreatureCard({
         <GlossaryTag entry="fusion" label={`Fusion ${String(creature.fusionCount)} / 5`}>
           <span aria-hidden="true">{fusionStars(creature.fusionCount)}</span>
         </GlossaryTag>
-      </p>
-      <p>
-        <button
-          type="button"
-          class="primary"
-          disabled={busy || creature.away || cost === null || !canAfford}
-          onClick={() => {
-            onTrain(creature);
-          }}
-        >
-          {trainLabel}
-        </button>
-        <GlossaryTag entry="training-cost" look="help" class="train-help" />
-        {discounted && <span class="muted"> Catch-up discount</span>}
       </p>
       {evolve !== null &&
         (evolve.available ? (
@@ -337,7 +310,7 @@ export function Collection({
   busy,
   onEquip,
   onEquipBest,
-  onTrain,
+  onRibbon,
   onEvolve,
   onRename,
   onLounge,
@@ -363,7 +336,7 @@ export function Collection({
             busy={busy}
             onEquip={onEquip}
             onEquipBest={onEquipBest}
-            onTrain={onTrain}
+            onRibbon={onRibbon}
             onEvolve={onEvolve}
             onRename={onRename}
             onLounge={onLounge}

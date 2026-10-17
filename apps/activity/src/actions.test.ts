@@ -5,7 +5,7 @@ import { ApiError } from './api';
 describe('action names', () => {
   it('pins the name of every keyed action', () => {
     expect(ActionIds.starter('splashet')).toBe('starter:splashet');
-    expect(ActionIds.train('c1')).toBe('train:c1');
+    expect(ActionIds.ribbon('c1')).toBe('ribbon:c1');
     expect(ActionIds.evolve('c1')).toBe('evolve:c1');
     expect(ActionIds.claimJob('j1')).toBe('claim-job:j1');
     expect(ActionIds.dungeonRun(['a', 'b', 'c'])).toBe('dungeon-run:["a","b","c"]');
@@ -17,6 +17,33 @@ describe('action names', () => {
         supplies: [{ source: 'owned', id: 'lantern' }],
       }),
     ).toBe('send:c1:tide-pools:short:owned:lantern');
+  });
+
+  it('makes a treat another action: the same trip, job or run with one is not the same request', () => {
+    const trip = {
+      creatureId: 'c1',
+      destination: 'tide-pools',
+      duration: 'short' as const,
+      supplies: [],
+    };
+    expect(ActionIds.send({ ...trip, treat: true })).toBe(`${ActionIds.send(trip)}:treat`);
+    expect(ActionIds.send({ ...trip, treat: false })).toBe(ActionIds.send(trip));
+    const craft = {
+      kind: 'craft' as const,
+      creatureId: 'c1',
+      blueprintId: 'kelp-cap',
+      reach: 'none' as const,
+    };
+    expect(ActionIds.job({ ...craft, treat: true })).toBe(`${ActionIds.job(craft)}:treat`);
+    const supply = { kind: 'supply' as const, creatureId: 'c1', supplyId: 'lure-basic' };
+    expect(ActionIds.job({ ...supply, treat: true })).not.toBe(ActionIds.job(supply));
+    // A run is named by its team and by who got a treat, whatever order the treats came in.
+    expect(ActionIds.dungeonRun(['a', 'b', 'c'], ['b', 'a'])).toBe(
+      ActionIds.dungeonRun(['a', 'b', 'c'], ['a', 'b']),
+    );
+    expect(ActionIds.dungeonRun(['a', 'b', 'c'], ['a'])).not.toBe(
+      ActionIds.dungeonRun(['a', 'b', 'c']),
+    );
   });
 
   it('names the answers of the duplicate choice and the Talent Book', () => {
@@ -106,7 +133,7 @@ describe('action names', () => {
   it('never gives two kinds of intent the same name, even for the same id', () => {
     // Different kinds of action on the same id must not share a key.
     const names = [
-      ActionIds.train('x'),
+      ActionIds.ribbon('x'),
       ActionIds.evolve('x'),
       ActionIds.claimJob('x'),
       ActionIds.starter('x'),

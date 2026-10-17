@@ -209,9 +209,14 @@ export function Workshop({
         creatures={state.creatures}
         busy={busy}
         loadPreview={actions.previewCraft}
-        onCraft={async (baseId, creatureId, reach) =>
-          (await actions.startJob({ kind: 'craft', creatureId, blueprintId: baseId, reach })) !==
-          undefined
+        onCraft={async (baseId, creatureId, reach, treat) =>
+          (await actions.startJob({
+            kind: 'craft',
+            creatureId,
+            blueprintId: baseId,
+            reach,
+            ...(treat ? { treat: true } : {}),
+          })) !== undefined
         }
       />
       <SupplyCrafting
@@ -219,8 +224,13 @@ export function Workshop({
         creatures={state.creatures}
         stock={state.supplies}
         busy={busy}
-        onCraft={async (supplyId, creatureId) =>
-          (await actions.startJob({ kind: 'supply', creatureId, supplyId })) !== undefined
+        onCraft={async (supplyId, creatureId, treat) =>
+          (await actions.startJob({
+            kind: 'supply',
+            creatureId,
+            supplyId,
+            ...(treat ? { treat: true } : {}),
+          })) !== undefined
         }
       />
     </div>

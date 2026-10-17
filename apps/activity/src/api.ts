@@ -13,6 +13,7 @@ import type {
   TripCatch,
   TripResult,
 } from './expedition-types';
+import { isExperienceView, isRibbonView, type ExperienceView, type RibbonView } from './experience';
 import { isWornGear } from './gear-parse';
 import { isCreatureTalents, isPendingCatch } from './talent-parse';
 import type { CreatureTalents, PendingCatch } from './talent-types';
@@ -309,8 +310,22 @@ export interface Creature extends CreatureGearFields {
   /** Id of the creature's cosmetic personality quirk (text is in the shared lore data); null if unknown. */
   quirk: string | null;
   stats: { hp: number; atk: number; spd: number };
-  /** Bait for the next level with the discount applied; null at the level cap. */
-  trainCost: number | null;
+  /**
+   * Experience banked towards the next level, and what that level needs (null at the top). Levels come
+   * from what the creature does (trips, the dungeon, raids, Workshop jobs), never from Bait.
+   */
+  exp: number;
+  expNeeded: number | null;
+  /** It stands at a level it may not leave yet (a ribbon, or its evolution) holding the next level's experience. */
+  waiting: boolean;
+  /** Ribbons held: 0 none, 1 Bronze, 2 Silver, 3 Gold. */
+  ribbons: number;
+  /** What its next level brings ("Scarf" at 7); null at the top. */
+  nextUnlock: { level: number; name: string } | null;
+  /** The ribbon it waits for at its level, with the price; null when it is not at a gate. */
+  ribbon: RibbonView | null;
+  /** Bait a treat costs for this creature now (3 + half its level, rounded up). */
+  treatCost: number;
   evolution?: { toSpecies: string; level: number; essence: number; available: boolean };
   /** The creature's finale ability; null for a species without one. */
   ability: CreatureAbility | null;
@@ -359,7 +374,6 @@ export interface GameState {
   slots: Slots;
   /** Supplies in stock: supply id to amount. */
   supplies: Record<string, number>;
-  trainingMedianLevel: number | null;
   serverFirsts: ServerFirst[];
   /** Present on GET /api/state only; action responses leave it out. */
   leetSync: LeetSyncStatus | null;
@@ -472,7 +486,16 @@ function isCreature(value: unknown): value is Creature {
     typeof value['away'] === 'boolean' &&
     (value['quirk'] === null || isStr(value['quirk'])) &&
     isStats(value['stats']) &&
-    (value['trainCost'] === null || isInt(value['trainCost'])) &&
+    isInt(value['exp']) &&
+    (value['expNeeded'] === null || isInt(value['expNeeded'])) &&
+    typeof value['waiting'] === 'boolean' &&
+    isInt(value['ribbons']) &&
+    (value['nextUnlock'] === null ||
+      (isRecord(value['nextUnlock']) &&
+        isInt(value['nextUnlock']['level']) &&
+        isStr(value['nextUnlock']['name']))) &&
+    (value['ribbon'] === null || isRibbonView(value['ribbon'])) &&
+    isInt(value['treatCost']) &&
     (value['ability'] === null || isCreatureAbility(value['ability'])) &&
     isExplorerView(value['explorer']) &&
     isInt(value['lineSlot']) &&
@@ -513,7 +536,6 @@ export function parseGameState(data: unknown): GameState {
     !data['cancelled'].every(isCancelledTrip) ||
     !isSlots(data['slots']) ||
     !isSupplyStock(data['supplies']) ||
-    !(data['trainingMedianLevel'] === null || typeof data['trainingMedianLevel'] === 'number') ||
     !Array.isArray(data['serverFirsts']) ||
     !data['serverFirsts'].every(isServerFirst) ||
     !Array.isArray(data['pending']) ||
@@ -539,7 +561,6 @@ export function parseGameState(data: unknown): GameState {
     cancelled: data['cancelled'],
     slots: data['slots'],
     supplies: data['supplies'],
-    trainingMedianLevel: data['trainingMedianLevel'],
     serverFirsts: data['serverFirsts'],
     pending: data['pending'],
     bookSlotBait: data['bookSlotBait'],
@@ -565,13 +586,37 @@ export async function chooseStarter(species: string, idempotencyKey: string): Pr
   );
 }
 
-export async function trainCreature(
+/** What earning a ribbon did: the ribbon, and the experience the creature had banked, spent now. */
+export interface RibbonResult {
+  creatureId: string;
+  ribbon: 'bronze' | 'silver';
+  experience: ExperienceView | null;
+}
+
+function isRibbonResult(value: unknown): value is RibbonResult {
+  return (
+    isRecord(value) &&
+    isStr(value['creatureId']) &&
+    (value['ribbon'] === 'bronze' || value['ribbon'] === 'silver') &&
+    (value['experience'] === null || isExperienceView(value['experience']))
+  );
+}
+
+/**
+ * Earns the ribbon a creature waits for (level 10 Bronze, level 20 Silver): materials only. The key makes
+ * a retry return the same result and take nothing twice.
+ */
+export async function earnRibbon(
   creatureId: string,
   idempotencyKey: string,
-): Promise<GameState> {
-  return stateFrom(
-    await apiFetch(`/api/creatures/${creatureId}/train`, jsonRequest('POST', { idempotencyKey })),
+): Promise<{ result: RibbonResult; state: GameState }> {
+  const data = await apiFetch(
+    `/api/creatures/${creatureId}/ribbon`,
+    jsonRequest('POST', { idempotencyKey }),
   );
+  const result = isRecord(data) ? data['result'] : undefined;
+  if (!isRibbonResult(result)) throw new Error('the server returned an unexpected ribbon result');
+  return { result, state: stateFrom(data) };
 }
 
 export async function renameCreature(

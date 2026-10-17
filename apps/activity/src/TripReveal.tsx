@@ -27,6 +27,7 @@ import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { explorerInfo } from './send-view';
 import { SmallCreature } from './SmallCreature';
+import { experienceText } from './experience';
 import { XpBar } from './XpBar';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -180,6 +181,11 @@ export function TripReveal({
                 Rank up!
               </GlossaryTag>{' '}
               Rank {xp.rankBefore} to rank {xp.rank}
+            </p>
+          )}
+          {result.experience !== undefined && (
+            <p class="trip-exp">
+              <GlossaryTag entry="experience">{`${name}: ${experienceText(result.experience)}`}</GlossaryTag>
             </p>
           )}
           <XpBar

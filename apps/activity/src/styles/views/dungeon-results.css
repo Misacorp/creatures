@@ -158,3 +158,10 @@
 .team-member.ko .tm-hp {
   color: var(--bad);
 }
+
+/* What the run paid a creature in experience, under its HP line. */
+.tm-exp {
+  font-size: 0.8125rem;
+  line-height: 1.15;
+  text-align: center;
+}

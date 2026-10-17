@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
+import { TreatBox } from './TreatBox';
 import type { Creature } from './api';
 import { DungeonPrerun } from './DungeonPrerun';
 import { DungeonTeam } from './DungeonTeam';
@@ -13,12 +14,15 @@ import {
 import { blockedText, isRetryOffer, RETRY_TEXT } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
 import { GlossaryTag } from './Glossary';
+import { creatureName } from './game';
 import { toPickerCreature } from './roster-picker';
 import { useDungeonDraft } from './use-dungeon-draft';
 
 interface Props {
   today: DungeonToday;
   creatures: readonly Creature[];
+  /** The player's Bait: a treat costs some of it. */
+  bait: number;
   /** True while the run is being sent. */
   busy: boolean;
   error: string | null;
@@ -28,8 +32,8 @@ interface Props {
   onDraftChange: (slots: Slots) => void;
   /** Saves the row on the server (`PUT /api/dungeon/team`), debounced; leave out to save nothing. */
   saveDraft?: (team: Slots) => Promise<unknown>;
-  /** The player pressed Enter with a complete team. */
-  onEnter: (slots: Slots) => void;
+  /** The player pressed Enter with a complete team, and the creatures they packed a treat for. */
+  onEnter: (slots: Slots, treats: ReadonlySet<string>) => void;
   /** Opens the summary of today's earlier run (the first-day retry offer). */
   onSeeLast: () => void;
 }
@@ -49,6 +53,7 @@ interface Props {
 export function DungeonSetup({
   today,
   creatures,
+  bait,
   busy,
   error,
   draft,
@@ -59,6 +64,8 @@ export function DungeonSetup({
 }: Props) {
   const pickable = useMemo(() => creatures.map(toPickerCreature), [creatures]);
   const saver = useDungeonDraft(saveDraft);
+  // The creatures that get a treat on this run (not kept for the next one: each run pays for its own).
+  const [treats, setTreats] = useState<ReadonlySet<string>>(new Set());
   const [slots, setSlots] = useState<Slots>(() =>
     setupTeam({
       memory: draft,
@@ -115,6 +122,34 @@ export function DungeonSetup({
       )}
       <DungeonPrerun today={today}>
         <DungeonTeam creatures={pickable} slots={slots} disabled={busy} onChange={change}>
+          <div class="dungeon-treats">
+            {slots.flatMap((id) => {
+              const creature = creatures.find((c) => c.id === id);
+              if (creature === undefined) return [];
+              // A treat is paid up front: the boxes cannot add up to more Bait than the player has.
+              const others = [...treats]
+                .filter((t) => t !== creature.id)
+                .reduce((n, t) => n + (creatures.find((c) => c.id === t)?.treatCost ?? 0), 0);
+              return [
+                <TreatBox
+                  key={creature.id}
+                  cost={creature.treatCost}
+                  bait={bait - others}
+                  checked={treats.has(creature.id)}
+                  disabled={busy}
+                  who={creatureName(creature)}
+                  onChange={(on) => {
+                    setTreats((now) => {
+                      const next = new Set(now);
+                      if (on) next.add(creature.id);
+                      else next.delete(creature.id);
+                      return next;
+                    });
+                  }}
+                />,
+              ];
+            })}
+          </div>
           <div class="dungeon-enter">
             {error !== null && (
               <p class="error" role="alert">
@@ -130,7 +165,7 @@ export function DungeonSetup({
                 onClick={() => {
                   // The run deletes the draft on the server, so a save still waiting is not sent.
                   saver.cancel();
-                  onEnter(slots);
+                  onEnter(slots, new Set([...treats].filter((id) => slots.includes(id))));
                 }}
               >
                 {busy ? 'Entering...' : 'Enter the dungeon'}

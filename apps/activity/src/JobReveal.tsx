@@ -1,3 +1,4 @@
+import { experienceText } from './experience';
 import { glyphOrUnknown } from './glyphs';
 import { ItemFrame, ItemSprite, PartsList, RarityTag } from './GearArt';
 import { GlossaryTag } from './Glossary';
@@ -123,6 +124,7 @@ export function JobReveal({
 }) {
   const { frame, done } = useRevealSequence(0);
   const title = result.kind === 'retired' ? 'Old job over' : `${jobVerb(result.kind)} finished`;
+  const worked = result.experience === undefined ? null : experienceText(result.experience);
   return (
     <RevealShell
       id="job-reveal-heading"
@@ -162,6 +164,11 @@ export function JobReveal({
             </>
           )}
         </p>
+        {worked !== null && (
+          <p class="muted">
+            <GlossaryTag entry="experience">{`The worker: ${worked}`}</GlossaryTag>
+          </p>
+        )}
       </RevealLater>
     </RevealShell>
   );

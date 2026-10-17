@@ -21,6 +21,8 @@ export interface SendRequest {
   destination: string;
   duration: SendBody['duration'];
   supplies: SupplyPick[];
+  /** Pack a treat for the explorer (Bait); absent: none. */
+  treat?: boolean;
 }
 
 /** The body of POST /api/expeditions: exactly the keys the Worker's strict schema takes. */
@@ -30,6 +32,8 @@ export function sendBody(request: SendRequest, idempotencyKey: string): SendBody
     destination: request.destination,
     duration: request.duration,
     supplies: request.supplies.map((pick) => ({ id: pick.id, source: pick.source })),
+    // Only sent when asked for: a request without a treat is the body the server always took.
+    ...(request.treat === true ? { treat: true } : {}),
     idempotencyKey,
   };
 }

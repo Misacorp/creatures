@@ -5,6 +5,7 @@
  * understand; nothing here repairs or guesses.
  */
 import { GEAR_RARITIES } from '@creatures/game';
+import { isExperienceView } from './experience';
 import { isPartsBundle } from './gear-parse';
 import { isEvent, isEventNames } from './raid-api';
 import { isArrayOf, isBool, isCount, isInt, isRecord, isStr } from './parse-core';
@@ -98,6 +99,7 @@ function isRewards(value: unknown): value is DungeonRewards {
         (c['itemLevel'] === undefined || isCount(c['itemLevel'])),
     ) &&
     (value['supplies'] === undefined || isArrayOf(value['supplies'], isStr)) &&
+    (value['experience'] === undefined || isArrayOf(value['experience'], isExperienceView)) &&
     isBool(value['landmark']) &&
     (streak === null ||
       (isRecord(streak) &&

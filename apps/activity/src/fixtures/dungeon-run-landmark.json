@@ -1,6 +1,6 @@
 {
   "run": {
-    "id": "caf9a09c-b7eb-4324-bdba-0afaafe03308",
+    "id": "79928259-dc33-4717-bf3e-a62b079780fa",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 7,
@@ -12,7 +12,7 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "437650ed-ca17-40c4-8ff2-c25268484881",
+        "id": "da7f026d-17a5-4ca4-b42f-d1df1713d054",
         "name": "Tidewing",
         "speciesId": "tidewing",
         "element": "tide",
@@ -22,7 +22,7 @@
         "hpEnd": 131
       },
       {
-        "id": "746f9350-905f-4d21-b825-f7a5771f5f1e",
+        "id": "419bd75c-d468-4f59-96b7-6da42dfc6617",
         "name": "Pyrelynx",
         "speciesId": "pyrelynx",
         "element": "ember",
@@ -32,7 +32,7 @@
         "hpEnd": 356
       },
       {
-        "id": "9ac139f8-23fc-474a-8ecf-9906a7a1a247",
+        "id": "5d823542-944e-48ed-a255-5caca80eaf6a",
         "name": "Thornbuck",
         "speciesId": "thornbuck",
         "element": "grove",
@@ -46,12 +46,7 @@
       {
         "index": 0,
         "kind": "foe",
-        "foe": {
-          "id": "puddle-imp",
-          "name": "Puddle Imp",
-          "element": "tide",
-          "hpMax": 1183
-        },
+        "foe": { "id": "puddle-imp", "name": "Puddle Imp", "element": "tide", "hpMax": 1183 },
         "modifier": {
           "id": "dark",
           "name": "Dark",
@@ -65,12 +60,7 @@
       {
         "index": 1,
         "kind": "foe",
-        "foe": {
-          "id": "ash-sprite",
-          "name": "Ash Sprite",
-          "element": "ember",
-          "hpMax": 908
-        },
+        "foe": { "id": "ash-sprite", "name": "Ash Sprite", "element": "ember", "hpMax": 908 },
         "modifier": {
           "id": "brittle",
           "name": "Brittle",
@@ -104,29 +94,54 @@
     "rewards": {
       "bait": 3,
       "essence": 3,
-      "parts": {
-        "scrap": 4,
-        "glimmer": 1
-      },
+      "parts": { "scrap": 4, "glimmer": 1 },
       "gear": [
         {
-          "id": "0d3423aa-bc47-4b95-89b6-3fa360d6a851",
+          "id": "3bc557df-1c50-481c-8972-75b969b58d49",
           "baseId": "kelp-cap",
           "rarity": "rare",
           "itemLevel": 7
         }
       ],
       "converted": [],
-      "supplies": ["lure-basic"],
+      "supplies": ["satchel-basic"],
       "landmark": true,
-      "streak": {
-        "day": 3,
-        "bait": 0,
-        "essence": 0,
-        "parts": {
-          "scrap": 1
+      "streak": { "day": 3, "bait": 0, "essence": 0, "parts": { "scrap": 1 } },
+      "experience": [
+        {
+          "creatureId": "da7f026d-17a5-4ca4-b42f-d1df1713d054",
+          "gained": 240,
+          "treat": false,
+          "levelBefore": 30,
+          "level": 30,
+          "exp": 0,
+          "needed": null,
+          "waiting": false,
+          "gold": false
+        },
+        {
+          "creatureId": "419bd75c-d468-4f59-96b7-6da42dfc6617",
+          "gained": 240,
+          "treat": false,
+          "levelBefore": 30,
+          "level": 30,
+          "exp": 0,
+          "needed": null,
+          "waiting": false,
+          "gold": false
+        },
+        {
+          "creatureId": "5d823542-944e-48ed-a255-5caca80eaf6a",
+          "gained": 240,
+          "treat": false,
+          "levelBefore": 30,
+          "level": 30,
+          "exp": 0,
+          "needed": null,
+          "waiting": false,
+          "gold": false
         }
-      }
+      ]
     }
   },
   "today": {
@@ -163,7 +178,7 @@
     "canRun": false,
     "blocked": "already_run",
     "last": {
-      "id": "caf9a09c-b7eb-4324-bdba-0afaafe03308",
+      "id": "79928259-dc33-4717-bf3e-a62b079780fa",
       "day": "2027-01-12",
       "attempt": 1,
       "depth": 7,
@@ -175,7 +190,7 @@
       "createdAt": 1799755200000,
       "team": [
         {
-          "id": "437650ed-ca17-40c4-8ff2-c25268484881",
+          "id": "da7f026d-17a5-4ca4-b42f-d1df1713d054",
           "name": "Tidewing",
           "speciesId": "tidewing",
           "element": "tide",
@@ -185,7 +200,7 @@
           "hpEnd": 131
         },
         {
-          "id": "746f9350-905f-4d21-b825-f7a5771f5f1e",
+          "id": "419bd75c-d468-4f59-96b7-6da42dfc6617",
           "name": "Pyrelynx",
           "speciesId": "pyrelynx",
           "element": "ember",
@@ -195,7 +210,7 @@
           "hpEnd": 356
         },
         {
-          "id": "9ac139f8-23fc-474a-8ecf-9906a7a1a247",
+          "id": "5d823542-944e-48ed-a255-5caca80eaf6a",
           "name": "Thornbuck",
           "speciesId": "thornbuck",
           "element": "grove",
@@ -209,12 +224,7 @@
         {
           "index": 0,
           "kind": "foe",
-          "foe": {
-            "id": "puddle-imp",
-            "name": "Puddle Imp",
-            "element": "tide",
-            "hpMax": 1183
-          },
+          "foe": { "id": "puddle-imp", "name": "Puddle Imp", "element": "tide", "hpMax": 1183 },
           "modifier": {
             "id": "dark",
             "name": "Dark",
@@ -228,12 +238,7 @@
         {
           "index": 1,
           "kind": "foe",
-          "foe": {
-            "id": "ash-sprite",
-            "name": "Ash Sprite",
-            "element": "ember",
-            "hpMax": 908
-          },
+          "foe": { "id": "ash-sprite", "name": "Ash Sprite", "element": "ember", "hpMax": 908 },
           "modifier": {
             "id": "brittle",
             "name": "Brittle",
@@ -267,35 +272,60 @@
       "rewards": {
         "bait": 3,
         "essence": 3,
-        "parts": {
-          "scrap": 4,
-          "glimmer": 1
-        },
+        "parts": { "scrap": 4, "glimmer": 1 },
         "gear": [
           {
-            "id": "0d3423aa-bc47-4b95-89b6-3fa360d6a851",
+            "id": "3bc557df-1c50-481c-8972-75b969b58d49",
             "baseId": "kelp-cap",
             "rarity": "rare",
             "itemLevel": 7
           }
         ],
         "converted": [],
-        "supplies": ["lure-basic"],
+        "supplies": ["satchel-basic"],
         "landmark": true,
-        "streak": {
-          "day": 3,
-          "bait": 0,
-          "essence": 0,
-          "parts": {
-            "scrap": 1
+        "streak": { "day": 3, "bait": 0, "essence": 0, "parts": { "scrap": 1 } },
+        "experience": [
+          {
+            "creatureId": "da7f026d-17a5-4ca4-b42f-d1df1713d054",
+            "gained": 240,
+            "treat": false,
+            "levelBefore": 30,
+            "level": 30,
+            "exp": 0,
+            "needed": null,
+            "waiting": false,
+            "gold": false
+          },
+          {
+            "creatureId": "419bd75c-d468-4f59-96b7-6da42dfc6617",
+            "gained": 240,
+            "treat": false,
+            "levelBefore": 30,
+            "level": 30,
+            "exp": 0,
+            "needed": null,
+            "waiting": false,
+            "gold": false
+          },
+          {
+            "creatureId": "5d823542-944e-48ed-a255-5caca80eaf6a",
+            "gained": 240,
+            "treat": false,
+            "levelBefore": 30,
+            "level": 30,
+            "exp": 0,
+            "needed": null,
+            "waiting": false,
+            "gold": false
           }
-        }
+        ]
       }
     },
     "lastTeam": [
-      "437650ed-ca17-40c4-8ff2-c25268484881",
-      "746f9350-905f-4d21-b825-f7a5771f5f1e",
-      "9ac139f8-23fc-474a-8ecf-9906a7a1a247"
+      "da7f026d-17a5-4ca4-b42f-d1df1713d054",
+      "419bd75c-d468-4f59-96b7-6da42dfc6617",
+      "5d823542-944e-48ed-a255-5caca80eaf6a"
     ],
     "draftTeam": null
   }
