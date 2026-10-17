@@ -4,6 +4,7 @@ import { controlEntries } from './entries/controls';
 import { creatureCardEntries } from './entries/creature-card';
 import { creaturePageEntries } from './entries/creature-page';
 import { creatureEntries } from './entries/creatures';
+import { dungeonMapEntries } from './entries/dungeon-map';
 import { headingEntries } from './entries/headings';
 import { iconEntries } from './entries/icons';
 import { lootEntries } from './entries/loot';
@@ -40,6 +41,7 @@ export const ENTRIES: readonly Entry[] = [
   ...talentEntries,
   ...stageEntries,
   ...skyEntries,
+  ...dungeonMapEntries,
 ];
 
 export function findEntry(name: string | null): Entry | null {

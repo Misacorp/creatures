@@ -66,6 +66,7 @@
 @import './views/dungeon.css';
 @import './views/dungeon-banner.css';
 @import './views/dungeon-results.css';
+@import './views/dungeon-map.css';
 @import './stage/unit-hp.css';
 @import './components/creature-pop.css';
 @import './stage/single-row.css';
