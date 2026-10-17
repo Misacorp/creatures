@@ -37,6 +37,31 @@ export const RULES = {
    */
   daily: { reset: { hour: 13, minute: 37 } },
   /**
+   * Boons and Omens (docs/design/gear-and-creatures-v2.md section 10): at every daily reset the valley
+   * gets one Boon and, from Boss Rank 3, one Omen, drawn a day ahead. `tiers` give their strength by the
+   * server's Boss Rank (the last row whose `fromRank` is reached): `boonBp` and `omenBp` are the multiplier
+   * on every number of the day's Boon and Omen in basis points (10000 is x1; `omenBp` 0 means no Omen). A
+   * wild Omen (rank `wildFromRank` and up, at most one a raid week, never in a Festival week, drawn a day
+   * ahead) replaces the day's Omen with chance `wildChanceBp`. Days older than `keepDays` are forgotten.
+   * Starting values; the sim reports what they do to the raid (docs/balance/log.md B-017).
+   */
+  weather: {
+    /** How strong the day's Boon and Omen are, by the server's Boss Rank: the row with the highest `fromRank` reached counts. */
+    tiers: [
+      { fromRank: 1, boonBp: 10_000, omenBp: 0 },
+      { fromRank: 3, boonBp: 10_000, omenBp: 10_000 },
+      { fromRank: 6, boonBp: 12_500, omenBp: 15_000 },
+      { fromRank: 10, boonBp: 15_000, omenBp: 20_000 },
+      { fromRank: 14, boonBp: 15_000, omenBp: 25_000 },
+    ],
+    /** The Boss Rank from which a wild Omen can replace the day's Omen. */
+    wildFromRank: 10,
+    /** The chance that a day a wild Omen may be drawn for draws one (basis points). */
+    wildChanceBp: 2_000,
+    /** Days of drawn weather the server keeps; older days are forgotten. */
+    keepDays: 30,
+  },
+  /**
    * Creature experience (docs/design/gear-and-creatures-v2.md section 9, "Creatures B"): levels come from
    * what a creature does, never from Bait. Experience from level L to L + 1 is `perLevel x L +
    * perLevelSquared x L x L` (27 at level 1, 450 at 10, 1,300 at 20; about 28,000 from 1 to 30). Starting

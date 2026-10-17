@@ -17,3 +17,4 @@ export * from './expeditions';
 export * from './lounger';
 export * from './room';
 export * from './income';
+export * from './weather';

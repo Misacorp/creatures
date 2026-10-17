@@ -50,6 +50,12 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * levels 5 and 10, local lines change an item's own stats, and Festival gear is a normal-level,
  * normal-rarity piece with a unique line. The archetypes' team power moved a little (first player's
  * top-3 power 376 to 361 and 198 to 261 in two of the pinned runs); Bait earned and the runs without gear are the same.
+ *
+ * Re-pinned again on 2026-10-17 (Boons and Omens, B-017), on purpose: every day now has a Boon and, from Boss
+ * Rank 3, an Omen, drawn from a seeded stream of their own and applied to the raid stage, the dungeon runs,
+ * the trips and the Workshop jobs of the day. The draws touch no other stream, so the same players check in
+ * and the same dice are thrown; what moved is what the days do (a trip's time, creature experience, the
+ * fights). Weather off (`weather: false`) plays the economy as it was.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

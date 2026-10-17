@@ -34,6 +34,7 @@ import { showFullResults } from './raid-timeline';
 import { RaidNews } from './RaidNews';
 import { Placement } from './Placement';
 import { toPickerCreature } from './roster-picker';
+import type { Forecast } from './weather-types';
 
 interface Loaded {
   view: RaidView;
@@ -46,11 +47,14 @@ const REFRESH_GRACE_MS = 3000;
 
 export function Raid({
   creatures,
+  forecast,
   showPractice,
   onBalanceChange,
   onNeedsPlacementChange,
 }: {
   creatures: Creature[];
+  /** The valley's sky for today and tomorrow, for the one line on the boss card (null: none loaded). */
+  forecast: Forecast | null;
   /** True on staging and local runs, where the server can start a practice finale. */
   showPractice: boolean;
   /** Called when the Essence balance may have changed (a finale reveal was seen). */
@@ -298,7 +302,7 @@ export function Raid({
           </button>
         </details>
       )}
-      <BossCard view={view} />
+      <BossCard view={view} forecast={forecast} />
       {party !== null && (
         <Placement
           party={party}

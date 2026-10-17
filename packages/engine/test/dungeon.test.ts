@@ -733,3 +733,53 @@ describe('between-room rest (a Scarf line)', () => {
     expect(sum(withRest)).toBeGreaterThan(sum(noRest));
   });
 });
+
+describe('more boss attacks in a run (the Stormfront)', () => {
+  const tough = (): FightSlot[] =>
+    ['left', 'mid', 'right'].map((id) => ({
+      ...slot(id, { atk: 100, hp: 1_000 }),
+      ownerId: 'p1',
+    }));
+  const one = (extra: Partial<DungeonRunInput> = {}): DungeonRunInput => ({
+    ...run([room(0, foe(), 5_000, 40)], tough()),
+    ...extra,
+  });
+
+  it('puts the count into every room fight, and a count of one or none changes nothing', () => {
+    const at = (input: DungeonRunInput) =>
+      buildRoomInput(input, input.rooms[0] as DungeonRoomSpec, null);
+    expect(at(one()).bossAttacks).toBeUndefined();
+    expect(at(one({ bossAttacks: 1 })).bossAttacks).toBeUndefined();
+    expect(at(one({ bossAttacks: 2 })).bossAttacks).toBe(2);
+    expect(at(one({ bossAttacks: 3 })).bossAttacks).toBe(3);
+  });
+
+  it('a stored run without it replays exactly as before, and a stormier room hurts the team more', () => {
+    const plain = simulateDungeon(one(), 'storm');
+    const stored = JSON.parse(JSON.stringify(one())) as DungeonRunInput;
+    expect('bossAttacks' in stored).toBe(false);
+    expect(simulateDungeon(stored, 'storm')).toEqual(plain);
+    const stormy = simulateDungeon(one({ bossAttacks: 2 }), 'storm');
+    const sum = (r: typeof plain) => Object.values(r.hpEnd).reduce((a, b) => a + b, 0);
+    expect(sum(stormy)).toBeLessThan(sum(plain));
+  });
+});
+
+describe("the day's sheet on a dungeon team", () => {
+  it("a creature with a day's modifier sheet fights with it in every room (Fair Winds, first hit)", () => {
+    const base = (mods?: FightSlot['mods']): DungeonRunInput =>
+      run(
+        [room(0, foe(), 100_000, 1), room(1, foe(), 100_000, 1)],
+        ['a', 'b', 'c'].map((id) => ({
+          ...slot(id, { atk: 100, hp: 100_000 }),
+          ownerId: 'p1',
+          ...(mods === undefined ? {} : { mods }),
+        })),
+      );
+    const damage = (r: ReturnType<typeof simulateDungeon>) =>
+      r.rooms.reduce((n, x) => n + (x.result.perPlayer.p1?.damage ?? 0), 0);
+    const plain = simulateDungeon(base(), 'sheet');
+    const lucky = simulateDungeon(base({ firstHitBp: 5_000 }), 'sheet');
+    expect(damage(lucky)).toBeGreaterThan(damage(plain));
+  });
+});

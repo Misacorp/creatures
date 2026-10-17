@@ -148,6 +148,9 @@ export const FIXED_GLOSSARY_IDS = [
   'expedition-slot',
   'milestone',
   'destination',
+  'boon',
+  'omen',
+  'forecast',
 ] as const;
 
 /** What a popover shows. An entry is one; an ability is built from its content (`abilityView`). */

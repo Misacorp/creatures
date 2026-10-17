@@ -49,8 +49,11 @@ import {
   supplyJobMs,
   supplyJobXp,
   treatCost,
+  jobWeather,
+  weatherTimeMs,
   wearBlock,
   workshopExperience,
+  workshopMods,
   wornEffects,
   PART_KINDS,
   REACH_IDS,
@@ -111,6 +114,7 @@ import { fixFestivalRarity } from './gear-normalise';
 import { gearRulesOf, minusBp, plusBp } from './gear-worn';
 import { credit, getBalances, spend, type Currency, type LedgerStorage } from './ledger';
 import { speciesOf } from './species';
+import type { Weather } from './weather';
 
 /** The gear rarity a supply tier is logged as (analytics) and a supply job is sized as. */
 const SUPPLY_RARITY = { basic: 'common', good: 'rare', great: 'epic' } as const;
@@ -139,6 +143,11 @@ export interface GearDeps {
    * dismantle job is priced, and stored with the job, so what was shown is what is rolled. None today.
    */
   workshopMods?: ((userId: string, job: 'craft' | 'dismantle') => WorkshopMods) | undefined;
+  /**
+   * The valley's weather: a job is started under the day's Boon and Omen (time, experience and Market Day's
+   * first-of-the-day boosts) and keeps what they did. Without one, none. `workshopMods`, when given, wins.
+   */
+  weather?: Weather | undefined;
 }
 
 // --- Views ---
@@ -416,8 +425,21 @@ interface StoredInput {
   marks?: number;
   level?: number;
   mods?: WorkshopMods;
+  /**
+   * What the day's weather did to the job when it started (absent: nothing): the Boon and Omen for the log,
+   * and the numbers its claim uses for the experience. The time is already in `ends_at`.
+   */
+  weather?: StoredJobWeather;
   /** Dismantle: the items taken apart (they are gone from the bag). */
   items?: ItemSnapshot[];
+}
+
+interface StoredJobWeather {
+  boon: string;
+  omen: string | null;
+  timeBp: number;
+  xpBp: number;
+  treatMultiplier: number | null;
 }
 
 /**
@@ -933,7 +955,49 @@ export class Gear {
   // --- Workshop jobs ---
 
   private mods(userId: string, job: 'craft' | 'dismantle'): WorkshopMods {
-    return this.deps.workshopMods?.(userId, job) ?? {};
+    const injected = this.deps.workshopMods?.(userId, job);
+    if (injected !== undefined) return injected;
+    const weather = this.deps.weather;
+    const day = weather?.at() ?? null;
+    if (weather === undefined || day === null) return {};
+    // Market Day boosts only the day's first craft and first dismantle jobs: every job of that kind the
+    // player started this game day counts, boosted or not (so saving up for the day pays nothing).
+    const { startsAt, endsAt } = weather.dayBounds();
+    const before = this.sql
+      .exec<{ n: number }>(
+        `SELECT COUNT(*) AS n FROM workshop_jobs
+         WHERE user_id = ? AND kind = ? AND started_at >= ? AND started_at < ?`,
+        userId,
+        job,
+        startsAt,
+        endsAt,
+      )
+      .one().n;
+    return workshopMods(day, job, before);
+  }
+
+  /** What the day's weather does to a job started now: its time and experience. Nothing without weather. */
+  private weatherNow(): StoredJobWeather | null {
+    const day = this.deps.weather?.at() ?? null;
+    if (day === null) return null;
+    const fx = jobWeather(day);
+    return { boon: day.boon, omen: day.omen, ...fx };
+  }
+
+  /** A job's time under the day's weather (the screens show this one and the job is started with it). */
+  private weatherMs(ms: number): number {
+    return weatherTimeMs(ms, this.weatherNow()?.timeBp ?? 0);
+  }
+
+  /** The weather to store with a job, or nothing to store when the day changes nothing about it. */
+  private storedWeather(userId: string): { weather: StoredJobWeather } | Record<string, never> {
+    const w = this.weatherNow();
+    if (w === null || (w.timeBp === 0 && w.xpBp === 0 && w.treatMultiplier === null)) return {};
+    this.deps.analytics?.record(
+      { kind: 'weather_use', where: 'job', boon: w.boon, omen: w.omen },
+      userId,
+    );
+    return { weather: w };
   }
 
   /** The items of a dismantle request, owned and distinct, and the bundle rule checked (400 `invalid_bundle`). */
@@ -992,7 +1056,7 @@ export class Gear {
             minLevel: reachMinLevel(reach),
             parts: cost.parts,
             essence: cost.essence,
-            durationMs: jobDuration(level, busyBp, craftHours(reach)),
+            durationMs: this.weatherMs(jobDuration(level, busyBp, craftHours(reach))),
             xp: jobXp(apprenticeBp, craftHours(reach)),
             oddsBp: craftOdds(reach, level, marks, mods),
           };
@@ -1030,7 +1094,7 @@ export class Gear {
           itemLevel: r.item_level,
         })),
         range: dismantleRange(rows.map(rowToItem)),
-        durationMs: jobDuration(level, busyBp, dismantleHours(rarity)),
+        durationMs: this.weatherMs(jobDuration(level, busyBp, dismantleHours(rarity))),
         xp: dismantleXp(rarity, apprenticeBp),
         learnBp: teachers === 0 ? null : dismantleLearnBp(level),
         teachers,
@@ -1161,7 +1225,7 @@ export class Gear {
     );
     if (!hasParts(this.sql, userId, cost)) throw new GameError(409, 'insufficient_parts');
     const mods = this.mods(userId, 'craft');
-    const duration = jobDuration(worker.level, worker.busyBp, craftHours(reach));
+    const duration = this.weatherMs(jobDuration(worker.level, worker.busyBp, craftHours(reach)));
     // The Essence, the parts and the job are one transaction: the ledger's keyed spend carries the
     // grant. A plain craft has no Essence to spend and just pays its parts.
     const commit = (): { jobId: string } => {
@@ -1173,6 +1237,7 @@ export class Gear {
         marks,
         level: worker.level,
         ...(Object.keys(mods).length === 0 ? {} : { mods }),
+        ...this.storedWeather(userId),
       };
       const jobId = this.insertJob(userId, creature.id, 'craft', stored, duration);
       this.deps.analytics?.record(
@@ -1240,12 +1305,17 @@ export class Gear {
         ),
       );
     }
-    const duration = minusBp(supplyJobMs(def, worker.level), worker.busyBp);
+    const duration = this.weatherMs(minusBp(supplyJobMs(def, worker.level), worker.busyBp));
     const jobId = this.insertJob(
       userId,
       creature.id,
       'supply',
-      { supplyId: def.id, cost, ...(baitCost > 0 ? { bait: baitCost } : {}) },
+      {
+        supplyId: def.id,
+        cost,
+        ...(baitCost > 0 ? { bait: baitCost } : {}),
+        ...this.storedWeather(userId),
+      },
       duration,
     );
     this.deps.analytics?.record(
@@ -1285,7 +1355,9 @@ export class Gear {
       itemLevel: r.item_level,
     }));
     const mods = this.mods(userId, 'dismantle');
-    const duration = jobDuration(worker.level, worker.busyBp, dismantleHours(rarity));
+    const duration = this.weatherMs(
+      jobDuration(worker.level, worker.busyBp, dismantleHours(rarity)),
+    );
     // The items leave the bag now: a worn one is taken off with them. Nothing is refunded until the claim.
     for (const row of rows) this.sql.exec('DELETE FROM gear_items WHERE id = ?', row.id);
     const stored: StoredInput = {
@@ -1293,6 +1365,7 @@ export class Gear {
       items,
       level: worker.level,
       ...(Object.keys(mods).length === 0 ? {} : { mods }),
+      ...this.storedWeather(userId),
     };
     const jobId = this.insertJob(userId, creature.id, 'dismantle', stored, duration);
     const first = rows[0] as GearRow;
@@ -1479,7 +1552,14 @@ export class Gear {
           const after = skillLevel(skillXp);
           // Creature experience (training by activity): 4 an hour of nominal work, doubled by a treat.
           const treat = input.treat === true;
-          const gainedExp = workshopExperience(workMinutes, treat);
+          // The day the job started under (Hearty Breakfast, Cold Snap) is what it stored, never today's.
+          const gainedExp = workshopExperience(
+            workMinutes,
+            treat,
+            input.weather === undefined
+              ? undefined
+              : { bp: input.weather.xpBp, treatMultiplier: input.weather.treatMultiplier },
+          );
           const experience =
             gainedExp > 0
               ? awardExperience(

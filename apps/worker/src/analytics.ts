@@ -35,6 +35,7 @@ import {
   expeditionContent,
   gearContent,
   talentContent,
+  weatherContent,
   type ExpeditionLength,
   type GearRarity,
   type GoalRisk,
@@ -444,6 +445,25 @@ export type AnalyticsEvent =
       attempts: number;
     }
   | {
+      /** The valley's weather of a game day was drawn, a day ahead (a guild event: no player). */
+      kind: 'weather_draw';
+      boon: string;
+      omen: string | null;
+      wild: boolean;
+      /** The Boss Rank it was drawn at, whether the day is in a Festival week, and the strengths (10000 is x1). */
+      rank: number;
+      festival: boolean;
+      boonBp: number;
+      omenBp: number;
+    }
+  | {
+      /** Something started or fought under a day's weather: a trip, a Workshop job, a dungeon run or a raid stage. */
+      kind: 'weather_use';
+      where: 'trip' | 'job' | 'dungeon' | 'raid';
+      boon: string;
+      omen: string | null;
+    }
+  | {
       /**
        * A staging dev tool was used (`docs/design/dev-tools.md`). Reports must exclude this kind: staging
        * data is never mixed into production numbers, and these events are not player behaviour.
@@ -464,6 +484,7 @@ const GEAR_BASE_IDS: ReadonlySet<string> = new Set(gearContent.bases.map((b) => 
 const GEAR_LINE_IDS: ReadonlySet<string> = new Set(gearContent.lines.map((l) => l.id));
 const TALENT_IDS: ReadonlySet<string> = new Set(talentContent.byId.keys());
 const MODIFIER_IDS: ReadonlySet<string> = new Set(dungeonContent.modifiers.map((m) => m.id));
+const WEATHER_IDS: ReadonlySet<string> = new Set(weatherContent.map((d) => d.id));
 const ROLE_IDS = ['setter', 'payoff', 'support', 'guard'] as const;
 const DESTINATION_IDS: ReadonlySet<string> = new Set(
   expeditionContent.destinations.map((d) => d.id),
@@ -864,6 +885,22 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         supplies: int(event.supplies, 99),
         landmark: bool(event.landmark),
         streakBonusDay: int(event.streakBonusDay, 99),
+      };
+    case 'weather_draw':
+      return {
+        boon: fromSet(WEATHER_IDS, event.boon),
+        omen: event.omen === null ? null : fromSet(WEATHER_IDS, event.omen),
+        wild: bool(event.wild),
+        rank: int(event.rank, 99),
+        festival: bool(event.festival),
+        boonBp: int(event.boonBp, 100_000),
+        omenBp: int(event.omenBp, 100_000),
+      };
+    case 'weather_use':
+      return {
+        where: oneOf(['trip', 'job', 'dungeon', 'raid'] as const, event.where, 'trip'),
+        boon: fromSet(WEATHER_IDS, event.boon),
+        omen: event.omen === null ? null : fromSet(WEATHER_IDS, event.omen),
       };
     case 'dev_action':
       return { tool: oneOf(DEV_ACTION_TOOLS, event.tool, 'clock') };

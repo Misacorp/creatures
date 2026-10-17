@@ -1409,5 +1409,37 @@
       "Costs scrap, shards for some tiers and, for a lure, Bait. One supply per job."
     ],
     "section": "workshop"
+  },
+  {
+    "id": "boon",
+    "title": "Boon",
+    "short": "A good turn of the weather, for the whole valley.",
+    "lines": [
+      "Every day has one Boon. It lasts from the daily reset to the next one.",
+      "It touches that day's raid stage, every dungeon run, and trips and Workshop jobs you start that day.",
+      "Higher Boss Ranks make Boons stronger."
+    ],
+    "section": "ranks"
+  },
+  {
+    "id": "omen",
+    "title": "Omen",
+    "short": "A bad turn of the weather, shown a day ahead.",
+    "lines": [
+      "From Boss Rank 3 every day also has one Omen, never the same one two days running.",
+      "Festival weeks have Boons only. A wild Omen can come from Boss Rank 10, at most once a week.",
+      "Higher Boss Ranks make Omens stronger, faster than Boons."
+    ],
+    "section": "ranks"
+  },
+  {
+    "id": "forecast",
+    "title": "Forecast",
+    "short": "Today's and tomorrow's Boon and Omen.",
+    "lines": [
+      "Tap the wall calendar in the living room to read it.",
+      "A well-planned raid can meet a bad Saturday. Plan the team, or the dungeon run, for the day."
+    ],
+    "section": "ranks"
   }
 ]

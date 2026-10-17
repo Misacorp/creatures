@@ -21,6 +21,9 @@ import { convertPendingLevels } from './level-reset';
 import { creatureQuirkMigration } from './creature-quirk-migration';
 import { creaturesAMigration } from './creatures-a-migration';
 import { creaturesBMigration } from './creatures-b-migration';
+import { weatherMigration } from './weather-migration';
+import { Weather } from './weather';
+import { weatherRoutes } from './weather-routes';
 import { expeditionRoutes } from './expedition-routes';
 import { expeditionsMigration } from './expedition-migration';
 import { collectionRoutes } from './collection-routes';
@@ -356,6 +359,9 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   // Version 30: creature experience and ribbons, the trip treat flag and the pity counters (see
   // creatures-b-migration.ts).
   creaturesBMigration,
+  // Version 31: Boons and Omens, the drawn days and the weather stored on trips (see
+  // weather-migration.ts).
+  weatherMigration,
 ];
 
 export interface SessionUser {
@@ -404,6 +410,7 @@ const routes: Routes<RequestContext> = {
   ...dungeonRoutes,
   ...expeditionRoutes,
   ...raidRoutes,
+  ...weatherRoutes,
   ...devRoutes,
   '/api/me': {
     GET: async (_request, { user, guildId, core }) => {
@@ -483,6 +490,16 @@ export interface GuildCoreOptions {
    * Separate from the others, so a pick never consumes a test's scripted draws.
    */
   loungerRng?: Rng;
+  /**
+   * Live randomness for the valley's weather: the Boon and Omen of a day, drawn a day ahead. Defaults to
+   * crypto.getRandomValues. Separate from the others, so a draw never consumes a test's scripted draws.
+   */
+  weatherRng?: Rng;
+  /**
+   * Whether the valley has weather (default true). Only tests turn it off, so that the many tests of
+   * other features keep exact trip times, loot and experience; the weather tests leave it on.
+   */
+  weather?: boolean;
   /** Fallback guild id (the Durable Object's name), used only until one is stored. */
   guildId?: () => string | undefined;
   /** Builds the leet source. Returning null disables syncing (fail closed). */
@@ -556,6 +573,8 @@ export class GuildCore {
   readonly gear: Gear;
   readonly dungeon: Dungeon;
   readonly raid: Raid;
+  /** The valley's daily Boon and Omen, drawn a day ahead (see `weather.ts`). */
+  readonly weather: Weather;
   readonly analytics: Analytics;
   readonly rollup: AnalyticsRollup;
   /** The daily Bait allowance, granted on a player's first authenticated request of a game day. */
@@ -595,6 +614,15 @@ export class GuildCore {
       now: realNow,
       ...(options.analyticsSecret === undefined ? {} : { secret: options.analyticsSecret }),
     });
+    // The weather draws with live randomness at the moment a day is drawn, on the game clock.
+    this.weather = new Weather({
+      storage,
+      now,
+      rng: options.weatherRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+      timezone: () => this.timezone(),
+      analytics: this.analytics,
+      enabled: options.weather !== false,
+    });
     // Rollups keep real time too, like the events they count.
     this.rollup = new AnalyticsRollup({ storage, now: realNow, timezone: () => this.timezone() });
     this.allowance = new DailyAllowance(storage, this.analytics, now, () => this.timezone());
@@ -612,8 +640,15 @@ export class GuildCore {
       branchesOf: options.branchesOf,
       tripRng: options.tripRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
       ...(options.loungerRng === undefined ? {} : { loungerRng: options.loungerRng }),
+      weather: this.weather,
     });
-    this.gear = new Gear({ storage, now, rng: gearRng, analytics: this.analytics });
+    this.gear = new Gear({
+      storage,
+      now,
+      rng: gearRng,
+      analytics: this.analytics,
+      weather: this.weather,
+    });
     this.dungeon = new Dungeon({
       storage,
       now,
@@ -622,6 +657,7 @@ export class GuildCore {
       timezone: () => this.timezone(),
       analytics: this.analytics,
       dev: this.devState ?? undefined,
+      weather: this.weather,
     });
     this.raid = new Raid({
       storage,
@@ -651,6 +687,7 @@ export class GuildCore {
             timezone: () => this.timezone(),
             analytics: this.analytics,
             raid: this.raid,
+            weather: this.weather,
             rng: options.raidRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
             gearRng,
             quirkRng,
@@ -666,6 +703,7 @@ export class GuildCore {
             },
             afterClockChange: async () => {
               // The game catches up to the new time and the alarm is set for it (real time).
+              this.weather.ensure();
               this.catchUpRaid();
               this.kickPosts();
               await this.rearmAlarm(this.now() + ALARM_REARM_SKEW_MS);
@@ -1318,6 +1356,11 @@ export class GuildCore {
       const offset = this.devOffset();
       candidates.push(this.nextRollupAt(from - offset) + offset);
     }
+    // The valley's weather of the next game day is drawn at the daily reset (13:37 guild-local).
+    if (this.weather.enabled && this.storedGuildId() !== null) {
+      const { hour, minute } = RULES.daily.reset;
+      candidates.push(nextOccurrence(from, hour, minute, this.timezone()));
+    }
     return candidates.length === 0 ? null : Math.min(...candidates);
   }
 
@@ -1401,6 +1444,8 @@ export class GuildCore {
    * past. Cheap: one `getAlarm` plus a cached calendar lookup.
    */
   async ensureAlarm(): Promise<void> {
+    // The days' weather first: a raid stage that is due now fights under the weather of its day.
+    this.weather.ensure();
     this.catchUpRaid();
     this.kickPosts();
     const at = this.desiredAlarmAt(this.now());
@@ -1425,6 +1470,8 @@ export class GuildCore {
    * duplicate or late alarm changes nothing.
    */
   async alarm(): Promise<void> {
+    // At the daily reset: today's weather is known (it was drawn yesterday) and tomorrow's is drawn now.
+    this.weather.ensure();
     const now = this.now();
     const slot = this.dueSyncSlot(now + ALARM_REARM_SKEW_MS);
     // Raid events that came before the sync slot run first, then the sync, then the rest.

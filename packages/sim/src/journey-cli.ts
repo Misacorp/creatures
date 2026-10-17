@@ -34,7 +34,7 @@ const defaultIo: Io = {
 
 const USAGE = `Usage: pnpm sim:journey [--profiles <names or file.json>] [--weeks N] [--seed <string>] [--servers N]
   [--income ${INCOME_MODELS.join('|')}] [--mix name=count,...] [--server-mix ${Object.keys(SERVER_MIXES).join('|')}]
-  [--noise] [--out <dir>]`;
+  [--noise] [--no-weather] [--out <dir>]`;
 
 export interface JourneyCliOptions {
   settings: JourneySettings;
@@ -61,6 +61,7 @@ export function parseJourneyCli(argv: readonly string[]): JourneyCliOptions {
       mix: { type: 'string' },
       'server-mix': { type: 'string' },
       noise: { type: 'boolean' },
+      'no-weather': { type: 'boolean' },
       out: { type: 'string' },
       help: { type: 'boolean' },
     },
@@ -133,6 +134,7 @@ export function parseJourneyCli(argv: readonly string[]): JourneyCliOptions {
       mix,
       mixName,
       noise: values['noise'] === true,
+      ...(values['no-weather'] === true ? { weather: false } : {}),
     },
     out: str('out') !== undefined && str('out') !== '' ? (str('out') as string) : 'journey-out',
   };

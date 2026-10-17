@@ -16,6 +16,7 @@ import { dungeonErrorText, isStaleDungeonError } from './dungeon-text';
 import type { DungeonReplay, DungeonRunSummary, DungeonToday } from './dungeon-types';
 import { clockOffset } from './game';
 import { useActionRunner } from './use-action-runner';
+import type { Forecast } from './weather-types';
 
 type View =
   | { kind: 'loading' }
@@ -33,6 +34,7 @@ type View =
  */
 export function Dungeon({
   creatures,
+  forecast,
   bait,
   draft,
   onDraftChange,
@@ -41,6 +43,8 @@ export function Dungeon({
   onRunFinished,
 }: {
   creatures: readonly Creature[];
+  /** The valley's sky for today and tomorrow, for the one line on the pre-run card (null: none loaded). */
+  forecast: Forecast | null;
   /** The player's Bait: a treat for a creature of the team costs some of it. */
   bait: number;
   /** The setup row of this session, kept by the game across tab switches (null: none). */
@@ -208,6 +212,7 @@ export function Dungeon({
       {view.kind === 'setup' && (
         <DungeonSetup
           today={today}
+          forecast={forecast}
           creatures={creatures}
           bait={bait}
           busy={busy}

@@ -22,8 +22,13 @@ import {
   essenceForStage,
   jackpotEssenceFor,
   luckAtRank,
+  mergeMods,
   raidExperience,
   rollJackpot,
+  weatherBossAttacks,
+  weatherLuck,
+  weatherSheet,
+  xpWeather,
   type BossDef,
   type Rng,
 } from '@creatures/game';
@@ -57,6 +62,7 @@ import { queuePhasePost } from './raid-posts';
 import type { RaidPhase } from './raid-schedule';
 import { partyPlacements, raidTeam, rowLength, type TeamCreature } from './raid-teams';
 import { recordServerFirst } from './server-firsts';
+import { stageWeather } from './weather';
 
 export interface ResolveDeps {
   storage: LedgerStorage;
@@ -343,7 +349,13 @@ export function buildPhaseInput(
   if (memberIds.length < RULES.combat.guestsBelowPlayers) {
     placed = fillWithGuests(placed, resolveGuests(), avgLevel);
   }
-  const row = compactRow(placed);
+  // The weather of the day the stage is scheduled in (Boon and Omen): for every creature in the row, guests
+  // included, as numbers on its sheet. The stored input keeps them, so a replay never reads the weather.
+  const day = stageWeather(sql, week.weekId, phase);
+  const row = compactRow(placed).map((slot): FightSlot => {
+    const mods = mergeMods(slot.mods, weatherSheet(day, slot));
+    return mods === undefined ? slot : { ...slot, mods };
+  });
 
   // --- The boss: scaled once at phase 1, then carried ---
   const partyRow = sql
@@ -385,7 +397,9 @@ export function buildPhaseInput(
     boss,
     bossAtk,
     // How often the boss makes its plain attack at this rank; absent (one) keeps old inputs as they were.
-    ...(bossAttacksAtRank(rank) > 1 ? { bossAttacks: bossAttacksAtRank(rank) } : {}),
+    ...(weatherBossAttacks(day, bossAttacksAtRank(rank)) > 1
+      ? { bossAttacks: weatherBossAttacks(day, bossAttacksAtRank(rank)) }
+      : {}),
     phase,
     bossHpPool: { max: hpMax, current: hpCurrent },
     adaptation,
@@ -396,7 +410,7 @@ export function buildPhaseInput(
       memberChoices(aliases[i] as string, abilityId, teams[i] as TeamCreature[], rowIds),
     ),
     // Crits and the rest of the luck rules, stored with the input so a replay is exact.
-    luck: { ...luckAtRank(RULES.combat.luck, rank) },
+    luck: { ...weatherLuck(day, luckAtRank(RULES.combat.luck, rank)) },
     // The combat rules, the phase floor and the finale's enrage, stored the same way.
     rules: liveFightRules(),
     ...(floor > 0 ? { bossHpFloor: Math.min(floor, hpCurrent) } : {}),
@@ -539,7 +553,8 @@ export function settleParty(
   // --- Creature experience: every creature that fought (guests excluded), by the stage; a cleared one pays
   // half as much again. No treats: the raid pays everyone the same. This runs once per stage, with the
   // result row. ---
-  const stageExperience = raidExperience(phase, result.cleared);
+  const day = stageWeather(sql, week.weekId, phase);
+  const stageExperience = raidExperience(phase, result.cleared, xpWeather(day));
   for (const slot of input.row) {
     const userId = slot.ownerId === null ? undefined : userOf.get(slot.ownerId);
     if (userId === undefined) continue;
@@ -638,6 +653,9 @@ export function settleParty(
     now,
   );
   logPhaseResult(deps.analytics, sql, week.weekId, phase, input, result, summary);
+  if (day !== null) {
+    deps.analytics?.record({ kind: 'weather_use', where: 'raid', boon: day.boon, omen: day.omen });
+  }
   // The profile counts the reactions every member has seen in raids.
   for (const userId of memberIds) bumpStat(sql, userId, 'reactions_seen', result.reactions.total);
   // The ladder moves once the finale has resolved for every party (the last one to settle does it),
@@ -665,6 +683,7 @@ export function settleParty(
     input,
     result,
     summary,
+    weather: day,
   });
 }
 

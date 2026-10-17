@@ -39,6 +39,8 @@ export * from './dungeon-schema';
 export * from './dungeon';
 export * from './expedition-schema';
 export * from './talent-schema';
+export * from './weather-schema';
+export * from './weather';
 
 /** The shipped content pack, validated at module load. */
 export const content = loadContent({
