@@ -43,7 +43,7 @@ export function InventoryGrid({
                 onSelect(item.id);
               }}
             >
-              <ItemFrame rarity={item.rarity}>
+              <ItemFrame rarity={item.rarity} baseId={item.baseId}>
                 <ItemSprite baseId={item.baseId} scale={4} />
               </ItemFrame>
               <span class="item-level pix" aria-hidden="true">

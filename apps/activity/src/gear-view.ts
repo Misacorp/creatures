@@ -56,7 +56,12 @@ import type {
 // --- Names ---
 
 /** Rarities from the plainest to the rarest. */
-export const RARITY_ORDER: readonly GearRarity[] = ['common', 'rare', 'epic', 'festival'];
+export const RARITY_ORDER: readonly GearRarity[] = ['common', 'rare', 'epic'];
+
+/** True for a Festival piece (a base with a unique line, a narrow roll pool and a look of its own). */
+export function isFestivalBase(baseId: string): boolean {
+  return gearBase(baseId)?.festival === true;
+}
 
 export function rarityName(rarity: GearRarity): string {
   return capitalize(rarity);
@@ -732,6 +737,8 @@ interface BlueprintView {
   cost: PartsBundle;
   /** Well-thumbed marks (finds of it the player already knew), 0 to the most. */
   marks: number;
+  /** The Crafting level a craft of it asks for (a better base unlocks at a higher item level); 1 for the plain ones. */
+  needsCraftingLevel: number;
 }
 
 /** The blueprints a player knows, by slot and then name, each with the parts a craft costs. */
@@ -756,6 +763,7 @@ export function blueprintViews(
               element: baseElement(base),
               cost: craftCost(bp.baseId, itemLevel),
               marks: bp.marks,
+              needsCraftingLevel: bp.needsCraftingLevel,
             },
           ];
     })

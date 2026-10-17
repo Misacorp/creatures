@@ -23,7 +23,9 @@ import {
   gearName,
   gearShare,
   grantsForWeek,
+  isFestivalBase,
   itemLabel,
+  RARITY_ORDER,
   jobProgress,
   jobResultRarity,
   jobTitle,
@@ -101,9 +103,11 @@ describe('lines and their tiers', () => {
     expect(lineIdle({ active: false })).toBe(true);
     expect(lineIdle({ active: true })).toBe(false);
     expect(lineIdle({ active: null })).toBe(false);
-    // The fixture's Tide Attunement is on a Cindle: an off-element piece, so it does nothing.
-    const idle = gear.items.flatMap((i) => i.lines).filter(lineIdle);
-    expect(idle.map((l) => l.id)).toContain('tide-attunement');
+    // Every line of the worn fixture items is at work; one marked as not is idle (an off-element Attunement).
+    const lines = gear.items.flatMap((i) => i.lines);
+    expect(lines.filter(lineIdle)).toEqual([]);
+    const off = { ...(lines[0] as (typeof lines)[number]), id: 'tide-attunement', active: false };
+    expect([...lines, off].filter(lineIdle).map((l) => l.id)).toEqual(['tide-attunement']);
   });
 });
 
@@ -211,11 +215,11 @@ describe('items', () => {
   it('offers a creature the items of one slot but its own, the ones it can wear first, saying who has each', () => {
     const hats = equipChoices(gear.items, zipmouse, game.creatures, 'hat');
     expect(hats.every((c) => c.item.slot === 'hat')).toBe(true);
-    // Its own hat is not offered; the epic hat on Cindle is, and it is too high a level.
-    expect(hats.some((c) => c.item.baseId === 'trail-cap')).toBe(false);
-    const epic = hats.find((c) => c.item.baseId === 'coal-warm-cap');
+    // The Hat Sproutle wears is offered with its wearer; the epic Hat on Cindle is too high a level.
+    expect(hats.find((c) => c.item.baseId === 'trail-cap')?.wornBy).toBe('Sproutle');
+    const epic = hats.find((c) => c.item.baseId === 'emberkeepers-crown');
     expect(epic?.wornBy).toBe('Cindle');
-    expect(epic?.blocked).toBe('Needs creature level 14.');
+    expect(epic?.blocked).toBe('Needs creature level 15.');
     // Items it can wear come first.
     const firstBlocked = hats.findIndex((c) => c.blocked !== null);
     expect(hats.slice(firstBlocked).every((c) => c.blocked !== null)).toBe(true);
@@ -500,20 +504,25 @@ describe('blueprints', () => {
     const views = blueprintViews(gear.blueprints, gear.skills);
     // The price follows the item level of the best crafter (twice the Crafting level).
     const best = craftItemLevel(Math.max(1, ...gear.skills.map((s) => s.level)));
-    expect(views.map((v) => v.baseId)).toEqual(['kelp-cap', 'trail-charm']);
-    expect(views[0]?.cost).toEqual(craftCost('kelp-cap', best));
+    expect(views.map((v) => v.baseId)).toEqual(['brine-hood', 'kelp-cap', 'trail-charm']);
+    expect(views[1]?.cost).toEqual(craftCost('kelp-cap', best));
+    // A better base asks for a Crafting level (a Brine Hood is item level 5: Crafting level 3).
+    expect(views.map((v) => v.needsCraftingLevel)).toEqual([3, 1, 1]);
     const expert = blueprintViews(gear.blueprints, [
       { ...(gear.skills[0] as (typeof gear.skills)[number]), level: 10 },
     ]);
-    expect(expert[0]?.cost).toEqual(craftCost('kelp-cap', 20));
-    expect(views[0]).toMatchObject({ slot: 'hat', element: 'tide' });
-    expect(views[1]?.element).toBeNull();
+    expect(expert[1]?.cost).toEqual(craftCost('kelp-cap', 20));
+    expect(views[1]).toMatchObject({ slot: 'hat', element: 'tide' });
+    expect(views[2]?.element).toBeNull();
   });
 
   it('skips a blueprint whose base the content does not have', () => {
     expect(
-      blueprintViews([{ baseId: 'nope', learnedAt: 1, marks: 0 }, ...gear.blueprints], gear.skills),
-    ).toHaveLength(2);
+      blueprintViews(
+        [{ baseId: 'nope', learnedAt: 1, marks: 0, needsCraftingLevel: 1 }, ...gear.blueprints],
+        gear.skills,
+      ),
+    ).toHaveLength(3);
   });
 });
 
@@ -549,6 +558,39 @@ describe('grants and loot', () => {
     expect(() => parseGearState(bad)).toThrow();
     delete (record?.gear[0] as { itemLevel?: unknown }).itemLevel;
     expect(() => parseGearState(bad)).not.toThrow();
+  });
+
+  it('reads the stats, the local lines and the Festival flag the server sends, and refuses them gone', () => {
+    const crown = gear.items.find((i) => i.baseId === 'emberkeepers-crown');
+    // A Hat: Attack first, then HP, then its crit stat; the server's text is what the card shows.
+    expect(crown?.stats.map((s) => s.stat)).toEqual(['atk', 'hp', 'critDamage']);
+    expect(crown?.stats[0]?.text).toMatch(/^Attack \d+$/);
+    expect(crown?.festival).toBe(false);
+    // Local lines say so, in the server's words, and are flagged.
+    const local = crown?.lines.filter((l) => l.local) ?? [];
+    expect(local.length).toBeGreaterThan(0);
+    for (const line of local) expect(line.text).toContain('(this item)');
+    // A Charm has no stats.
+    expect(gear.items.find((i) => i.slot === 'charm')?.stats).toEqual([]);
+    for (const key of ['stats', 'festival']) {
+      const bad = JSON.parse(JSON.stringify(gearState)) as typeof gearState;
+      delete (bad.items[0] as unknown as Record<string, unknown>)[key];
+      expect(() => parseGearState(bad), key).toThrow();
+    }
+    const noLocal = JSON.parse(JSON.stringify(gearState)) as typeof gearState;
+    delete (noLocal.items[0]?.lines[0] as unknown as Record<string, unknown>)['local'];
+    expect(() => parseGearState(noLocal)).toThrow();
+    const oddStat = JSON.parse(JSON.stringify(gearState)) as typeof gearState;
+    (oddStat.items[0]?.stats[0] as unknown as { stat: string }).stat = 'armor';
+    expect(() => parseGearState(oddStat)).toThrow();
+  });
+
+  it('knows a Festival piece by its base, not by a rarity', () => {
+    expect(isFestivalBase('festival-hearth-scarf')).toBe(true);
+    expect(isFestivalBase('festival-lantern-charm')).toBe(true);
+    expect(isFestivalBase('ember-muffler')).toBe(false);
+    expect(isFestivalBase('nope')).toBe(false);
+    expect(RARITY_ORDER).toEqual(['common', 'rare', 'epic']);
   });
 
   it('knows an empty grant', () => {

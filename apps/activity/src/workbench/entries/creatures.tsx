@@ -296,7 +296,7 @@ const wornItemLines: Entry = {
   presets: [
     { name: 'Plain', props: {} },
     { name: 'Epic, item level 20', props: { itemLevel: 20, rarity: 'epic' } },
-    { name: 'Festival', props: { rarity: 'festival' } },
+    { name: 'Festival', props: { item: 'festival-hearth-scarf' } },
     { name: 'Lines not known yet', props: { hasLines: false } },
   ],
   render: (p) => {

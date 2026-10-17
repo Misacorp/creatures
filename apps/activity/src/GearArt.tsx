@@ -4,7 +4,7 @@ import { GLOSSARY_IDS, PART_KINDS, type PartKind } from '@creatures/game';
 import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from './Glossary';
 import { itemArt } from './gear-sprites';
-import { partName, partsEntries, rarityName } from './gear-view';
+import { isFestivalBase, partName, partsEntries, rarityName } from './gear-view';
 import type { GearRarity, PartsBundle } from './gear-types';
 import { Sprite } from './sprites/Sprite';
 
@@ -32,31 +32,48 @@ export function ItemSprite({
   );
 }
 
-/** The marks that tell the rarities apart without colour: one pip to three, and a star for Festival. */
+/** The marks that tell the rarities apart without colour: one pip to three. A Festival piece adds a star. */
 const RARITY_MARK: Readonly<Record<GearRarity, string>> = {
   common: '●',
   rare: '●●',
   epic: '●●●',
-  festival: '★',
 };
 
-/** The frame around an item sprite: each rarity has its own edge style and its own pips. */
+/**
+ * The frame around an item sprite: each rarity has its own edge style and its own pips. A Festival piece
+ * (it is a base, not a rarity: pass its `baseId`) also gets a lantern-gold dashed outline and a star.
+ */
 export function ItemFrame({
   rarity,
+  baseId,
   children,
   class: extra,
 }: {
   rarity: GearRarity;
+  baseId?: string;
   children: ComponentChildren;
   class?: string;
 }) {
+  const festival = baseId !== undefined && isFestivalBase(baseId);
   return (
-    <span class={`item-frame rarity-${rarity}${extra === undefined ? '' : ` ${extra}`}`}>
+    <span
+      class={`item-frame rarity-${rarity}${festival ? ' festival' : ''}${extra === undefined ? '' : ` ${extra}`}`}
+    >
       {children}
       <span class="rarity-mark" aria-hidden="true">
         {RARITY_MARK[rarity]}
+        {festival ? '★' : ''}
       </span>
     </span>
+  );
+}
+
+/** "Festival", for a Festival piece: it explains what makes the piece special (and that it is not stronger). */
+export function FestivalTag() {
+  return (
+    <Tag entry="gear-festival" class="festival-tag">
+      Festival
+    </Tag>
   );
 }
 

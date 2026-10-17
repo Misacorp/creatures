@@ -16,6 +16,7 @@ import type {
   EquipResult,
   GearItem,
   GearLine,
+  GearStat,
   GearRarity,
   GearSlot,
   GearState,
@@ -90,7 +91,20 @@ function isLine(value: unknown): value is GearLine {
     (value['source'] === 'base' || value['source'] === 'fixed' || value['source'] === 'rolled') &&
     isNullableCount(value['tier']) &&
     isNullableCount(value['bestTier']) &&
+    typeof value['local'] === 'boolean' &&
     (value['active'] === null || typeof value['active'] === 'boolean')
+  );
+}
+
+const STAT_KINDS: readonly unknown[] = ['atk', 'hp', 'critChance', 'critDamage'];
+
+function isStat(value: unknown): value is GearStat {
+  return (
+    isRecord(value) &&
+    STAT_KINDS.includes(value['stat']) &&
+    isCount(value['value']) &&
+    isCount(value['base']) &&
+    isStr(value['text'])
   );
 }
 
@@ -123,7 +137,9 @@ function isGearItem(value: unknown): value is GearItem {
     isSlot(value['slot']) &&
     isTag(value['tag']) &&
     isRarity(value['rarity']) &&
+    typeof value['festival'] === 'boolean' &&
     isCount(value['itemLevel']) &&
+    isArrayOf(value['stats'], isStat) &&
     isArrayOf(value['lines'], isLine) &&
     isRecord(needs) &&
     isCount(needs['level']) &&
@@ -283,7 +299,8 @@ function isBlueprint(value: unknown): value is GearState['blueprints'][number] {
     isRecord(value) &&
     isStr(value['baseId']) &&
     isInt(value['learnedAt']) &&
-    isCount(value['marks'])
+    isCount(value['marks']) &&
+    isCount(value['needsCraftingLevel'])
   );
 }
 
@@ -419,6 +436,8 @@ export function parseCraftPreview(value: unknown): CraftPreview {
     !isStr(value['creatureId']) ||
     !isCount(value['craftingLevel']) ||
     !isCount(value['itemLevel']) ||
+    !isCount(value['needsCraftingLevel']) ||
+    typeof value['locked'] !== 'boolean' ||
     !isCount(value['marks']) ||
     !isCount(value['marksMax']) ||
     !isCount(value['stepUpBp']) ||

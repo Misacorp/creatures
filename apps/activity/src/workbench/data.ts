@@ -27,7 +27,8 @@ export const DESTINATION_IDS: readonly string[] = expeditionContent.destinations
 export const SUPPLY_IDS: readonly string[] = expeditionContent.supplies.map((s) => s.id);
 export const GEAR_BASE_IDS: readonly string[] = gearContent.bases.map((b) => b.id);
 export const PARTS: readonly PartKind[] = PART_KINDS;
-export const RARITIES: readonly GearRarity[] = ['common', 'rare', 'epic', 'festival'];
+/** Festival is a base (a look and a line of its own), not a rarity: the Festival presets pick its base. */
+export const RARITIES: readonly GearRarity[] = ['common', 'rare', 'epic'];
 export const GLYPH_IDS: readonly string[] = Object.keys(BUNDLED_GLYPHS);
 
 /** "None" in a select; the one word every optional select uses. */

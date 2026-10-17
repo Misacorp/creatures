@@ -22,8 +22,9 @@
     0 0 0 5px var(--ink);
 }
 
-.item-frame.rarity-festival {
-  outline: 2px dashed var(--rar);
+/* A Festival piece keeps its rarity's edge and adds a lantern-gold dashed outline of its own. */
+.item-frame.festival {
+  outline: 2px dashed var(--rarity-festival);
   outline-offset: 2px;
 }
 
@@ -64,6 +65,10 @@
 
 .rarity-tag {
   color: var(--rar);
+}
+
+.festival-tag {
+  color: var(--rarity-festival);
 }
 
 .gear-bonus {

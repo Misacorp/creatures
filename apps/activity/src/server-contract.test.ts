@@ -944,6 +944,7 @@ describe('the expedition errors the server sends', () => {
       'invalid_destination',
       'invalid_supply',
       'skill_too_low',
+      'base_locked',
       'creature_on_job',
     ]) {
       expect(errorText(new ApiError(409, code)), code).not.toMatch(GENERIC);

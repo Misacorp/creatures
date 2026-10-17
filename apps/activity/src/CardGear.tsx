@@ -158,7 +158,7 @@ export function CardGear({
                       void equip(item.id, creature.id);
                     }}
                   >
-                    <ItemFrame rarity={item.rarity}>
+                    <ItemFrame rarity={item.rarity} baseId={item.baseId}>
                       <ItemSprite baseId={item.baseId} scale={3} />
                     </ItemFrame>
                     <span class="pick-item-text">

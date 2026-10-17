@@ -63,6 +63,7 @@ const GAME_MESSAGES: Readonly<Record<string, string>> = {
   invalid_blueprint: 'That blueprint cannot be crafted.',
   item_gone: 'The item for that job is gone.',
   skill_too_low: 'That creature needs a higher Crafting level for this supply.',
+  base_locked: 'That creature needs a higher Crafting level to make this item.',
   invalid_supply: 'That supply cannot be crafted.',
   destination_closed: 'That place is closed to this explorer right now.',
   rank_too_low: 'That explorer is not a high enough rank for that.',
@@ -99,7 +100,7 @@ describe('error messages', () => {
   });
 
   it('pins every code of the table', () => {
-    expect(Object.keys(GAME_MESSAGES)).toHaveLength(66);
+    expect(Object.keys(GAME_MESSAGES)).toHaveLength(67);
   });
 
   it('says the same words for every dungeon code', () => {

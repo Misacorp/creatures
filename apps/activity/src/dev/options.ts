@@ -20,12 +20,10 @@ export const BASE_OPTIONS = options(gearContent.bases, (b) => b.name);
 export const BOSS_OPTIONS = options(content.bosses, (b) => b.name);
 export const MODIFIER_OPTIONS = options(dungeonContent.modifiers, (m) => m.name);
 
-export const RARITY_OPTIONS: readonly Option[] = ['common', 'rare', 'epic', 'festival'].map(
-  (r) => ({
-    value: r,
-    label: r,
-  }),
-);
+export const RARITY_OPTIONS: readonly Option[] = ['common', 'rare', 'epic'].map((r) => ({
+  value: r,
+  label: r,
+}));
 
 export const GATE_OPTIONS: readonly Option[] = ['on', 'off', 'auto'].map((g) => ({
   value: g,
