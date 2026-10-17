@@ -42,7 +42,6 @@ afterEach(() => {
 const noop = (): void => undefined;
 const actions = {
   onEquip: () => Promise.resolve(true),
-  onEquipBest: () => Promise.resolve(undefined),
   onRibbon: noop,
   onEvolve: noop,
   onRename: noop,
@@ -513,12 +512,10 @@ describe('a creature page', () => {
     )[0] as FakeElement;
     p.click(hat);
     const opened = pageOf(root) as FakeElement;
-    expect(byClass(opened, 'gear-picker')).toHaveLength(1);
-    const heading = p.document.getElementById(`${opened.getAttribute('id') ?? ''}-gear`);
-    expect(heading?.focused).toBe(1);
-    expect(heading?.scrolled).toBe(1);
-    // A jump to the part, not a scroll to the top.
-    expect(win.scrollTo).not.toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'auto' });
+    // The picker is a drawer (a dialog) for that slot, open with the page.
+    const dialog = byRole(opened, 'dialog');
+    expect(dialog).toHaveLength(1);
+    expect(dialog[0]?.textContent).toContain('Hat');
     p.click(backButton(root));
     expect(pageOf(root)).toBeUndefined();
 
@@ -526,7 +523,7 @@ describe('a creature page', () => {
     const again = pageOf(root) as FakeElement;
     const talents = p.document.getElementById(`${again.getAttribute('id') ?? ''}-talents`);
     expect(talents?.focused).toBe(1);
-    expect(byClass(again, 'gear-picker')).toHaveLength(0);
+    expect(byRole(again, 'dialog')).toHaveLength(0);
   });
 
   it('opens each creature at its own page, one at a time', () => {

@@ -1,16 +1,17 @@
 import { GEAR_SLOTS, RULES } from '@creatures/game';
-import type { Creature } from '../../api';
-import { ItemFrame, ItemSprite } from '../../GearArt';
-import type { GearSlot, GearState } from '../../gear-types';
-import { itemLabel, slotName } from '../../gear-view';
-import type { TalentView } from '../../talent-types';
-import { talentTextParts } from '../../talent-view';
-import { Slot, SlotRow } from '../../ui/Slot';
+import type { Creature } from '../api';
+import { ItemSprite } from '../GearArt';
+import type { GearSlot, GearState } from '../gear-types';
+import { itemLabel, rarityName, slotName } from '../gear-view';
+import type { TalentView } from '../talent-types';
+import { talentTextParts } from '../talent-view';
+import { Slot, SlotRow } from '../ui/Slot';
 
 /**
- * A creature's three gear slots, side by side across the full width. Filled: the item's icon in its rarity
- * frame with the item level tiny in the corner (the words are in the spoken label). Open and empty: the
- * slot's name. Not open yet: muted, with the level it opens at. Tapping an open one asks for its picker.
+ * A creature's three gear slots, side by side across the full width. Filled: the item's sprite, large and
+ * on its own, inside the slot's one border in the rarity colour, with the item level as a tiny number in the
+ * corner (the words are in the spoken label). Open and empty: the slot's name. Not open yet: muted, a
+ * padlock over the slot's name and the level it opens at. Tapping an open one asks for its picker.
  */
 export function GearSlots({
   creature,
@@ -38,6 +39,7 @@ export function GearSlots({
               key={slot}
               kind="gear"
               state="locked"
+              name={name}
               opensAt={opens[slot]}
               label={`${name}: opens at level ${String(opens[slot])}`}
             />
@@ -61,14 +63,13 @@ export function GearSlots({
             key={slot}
             kind="gear"
             state="filled"
-            corner={`Lv ${String(worn.itemLevel)}`}
-            label={`${name}: ${itemLabel(worn.baseId, worn.itemLevel)}. Change`}
+            rarity={worn.rarity}
+            corner={String(worn.itemLevel)}
+            label={`${name}: ${itemLabel(worn.baseId, worn.itemLevel)}, ${rarityName(worn.rarity)}. Change`}
             expanded={openSlot === slot}
             onClick={open}
           >
-            <ItemFrame rarity={worn.rarity} baseId={worn.baseId}>
-              <ItemSprite baseId={worn.baseId} scale={4} />
-            </ItemFrame>
+            <ItemSprite baseId={worn.baseId} scale={6} />
           </Slot>
         );
       })}
@@ -137,6 +138,7 @@ export function TalentSlots({
                 key={slot.slot}
                 kind="talent"
                 state="locked"
+                name="Talent"
                 opensAt={slot.opensAt}
                 label={`Talent slot ${String(slot.slot)}: opens at level ${String(slot.opensAt)}`}
               />

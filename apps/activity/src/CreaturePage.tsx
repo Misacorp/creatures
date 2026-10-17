@@ -1,22 +1,17 @@
+import { RULES } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
-import { CardGear } from './CardGear';
-import {
-  cardDomId,
-  explorerFacts,
-  nextParts,
-  ribbonsHeldText,
-  type PageFocus,
-} from './creature-card-view';
+import { cardDomId, explorerFacts, ribbonsHeldText, type PageFocus } from './creature-card-view';
 import { creatureNeeds } from './creature-needs';
-import { CreatureHead } from './CreatureHead';
-import { CreatureTalents } from './CreatureTalents';
-import type { EquipBestResult, GearState } from './gear-types';
+import { ItemPickerDrawer } from './creature-page/ItemPicker';
+import { PageHeader } from './creature-page/PageHeader';
+import { GearSlots, TalentSlots } from './creature-page/PageSlots';
+import { TalentBookDrawer } from './creature-page/TalentBookDrawer';
+import type { GearItem, GearSlot, GearState } from './gear-types';
 import { gearShare } from './gear-view';
 import { RibbonLine } from './CreatureProgress';
 import { scrollAndFocus, scrollToTop } from './scroll-to';
 import {
-  capitalize,
   creatureAbilityText,
   evolutionText,
   fusionStars,
@@ -25,6 +20,7 @@ import {
   isFirstOnServer,
   personalityLine,
   speciesAbout,
+  speciesName,
 } from './game';
 import { GlossaryTag } from './Glossary';
 import { abilityDef } from './live';
@@ -36,8 +32,6 @@ import { Tag } from './ui/Tag';
 export interface CardActions {
   /** Wears an item or (null) takes it off; resolves true when the server accepted it. */
   onEquip: (gearId: string, creatureId: string | null) => Promise<boolean>;
-  /** The server's "Equip best" for one creature; resolves what it changed (undefined when refused). */
-  onEquipBest: (creatureId: string) => Promise<EquipBestResult | undefined>;
   /** Earns the ribbon the creature waits for (materials only). */
   onRibbon: (creature: Creature) => void;
   onEvolve: (creature: Creature) => void;
@@ -116,13 +110,31 @@ function StatRow({
   );
 }
 
+/** Which drawer is up: an item picker for a gear slot, the Talent Book for a talent slot, or none. */
+export type PageOpen = { kind: 'gear'; slot: GearSlot } | { kind: 'talent'; slot: number } | null;
+
+/**
+ * The drawer a page opens with. A gear icon of the card opens that slot's picker (when the slot is open;
+ * a locked one has nothing to pick); everything else opens none.
+ */
+export function startingDrawer(
+  focus: PageFocus,
+  creature: Pick<Creature, 'level'>,
+  slotOpens: Readonly<Record<GearSlot, number>>,
+): PageOpen {
+  if (focus?.part !== 'gear') return null;
+  return creature.level >= slotOpens[focus.slot] ? { kind: 'gear', slot: focus.slot } : null;
+}
+
 /**
  * A creature's page: everything about it in one place that takes the list's spot on the Creatures tab.
- * Back (top left, or Escape) returns to the list. Top to bottom: who it is (the card's head, what
- * comes next) with the buttons for what is ready (ribbon, evolution, a waiting catch), stats with the gear's share, gear
- * (the three slots, the picker, Equip best), talents (slots and the Talent Book with slotting for Bait),
- * the finale ability, About, fusion, ribbons held, explorer rank, Lounge and Rename. It opens at the top,
- * or on the gear or the talents when the card's icon or chips were tapped.
+ * Back (top left, or Escape) returns to the list; Lounge sits at the top right of the same row. Top to
+ * bottom: who it is (one row of name, element and level; a portrait with a border in its rarity colour;
+ * the experience bar; tags) with the buttons for what is ready (the ribbon once the creature waits for
+ * one, evolution, a waiting catch), stats with the gear's share, the finale ability (once unlocked), gear
+ * and talents as slots (a tap opens a bottom drawer: the item picker, or the Talent Book), About and
+ * Rename. Nothing on it looks forward: a locked slot says its own level, nothing else does. It opens at
+ * the top, or on the picker or the talents when the card's icon or chips were tapped.
  */
 export function CreaturePage({
   creature,
@@ -131,16 +143,20 @@ export function CreaturePage({
   busy,
   actions,
   focus,
+  initialOpen,
   onBack,
   onAnswerCatch,
 }: {
   creature: Creature;
   state: GameState;
+  /** The gear view; null until it has loaded (the picker then says "Loading..."). */
   gear: GearState | null;
   busy: boolean;
   actions: CardActions;
   /** Where to land when the page opens. */
   focus: PageFocus;
+  /** The drawer that is up when the page opens (the workbench shows one; the game derives it from `focus`). */
+  initialOpen?: PageOpen;
   /** Back to the list. */
   onBack: () => void;
   /** Back to the list, at the waiting catches at the top. */
@@ -155,22 +171,45 @@ export function CreaturePage({
     creature.evolution === undefined
       ? null
       : evolutionText(creature.level, creature.evolution, state.balances.essence);
+  const readyEvolve = evolve !== null && evolve.available ? evolve : null;
   const abilityText = creatureAbilityText(creature, abilityDef);
   const abilityInfo = creature.ability === null ? undefined : abilityDef(creature.ability.id);
+  const showAbility = abilityText !== null && abilityText.unlocked && abilityInfo !== undefined;
   const waitingCatch = creatureNeeds(creature, state).find((n) => n.kind === 'duplicate');
-  const next = nextParts(creature);
-  const hasActions = creature.ribbon !== null || evolve !== null || waitingCatch !== undefined;
+  // The server sends a ribbon only for a creature that stands at the level that asks for one.
+  const hasActions = creature.ribbon !== null || readyEvolve !== null || waitingCatch !== undefined;
+  const slotOpens = gear?.slotOpens ?? RULES.gear.slotUnlockLevel;
+
+  const start = initialOpen ?? startingDrawer(focus, creature, slotOpens);
+  const [gearOpen, setGearOpen] = useState<GearSlot | null>(
+    start?.kind === 'gear' ? start.slot : null,
+  );
+  const [talentOpen, setTalentOpen] = useState<number | null>(
+    start?.kind === 'talent' ? start.slot : null,
+  );
+  // The slot that was tapped gets the focus back when its drawer closes.
+  const opener = useRef<HTMLElement | null>(null);
 
   // Opening: the top of the page (focus on the page itself, so a screen reader starts at the name), or
-  // straight to the gear or the talents. A jump, not a glide: the list that was here is gone.
+  // on the talents. A jump, not a glide: the list that was here is gone. A drawer that opens with the
+  // page takes the focus itself.
   useEffect(() => {
-    if (focus === null) {
-      scrollToTop();
-      rootRef.current?.focus({ preventScroll: true });
+    if (focus?.part === 'talents') {
+      scrollAndFocus(document.getElementById(`${id}-talents`), 'auto');
     } else {
-      scrollAndFocus(document.getElementById(`${id}-${focus.part}`), 'auto');
+      scrollToTop();
+      if (start === null) rootRef.current?.focus({ preventScroll: true });
     }
   }, [id, focus]);
+
+  async function equip(gearId: string, creatureId: string | null): Promise<void> {
+    if (await actions.onEquip(gearId, creatureId)) setGearOpen(null);
+  }
+
+  const speciesLabel = speciesName(creature.species);
+  const nickname = creature.nickname?.trim().toLowerCase();
+  const showSpeciesName =
+    nickname !== undefined && nickname !== '' && nickname !== speciesLabel.toLowerCase();
 
   return (
     <section
@@ -181,7 +220,7 @@ export function CreaturePage({
       aria-labelledby={`${id}-name`}
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || event.defaultPrevented) return;
-        // A text field (Rename) keeps Escape for itself; the gear picker stops it before it gets here.
+        // A text field (Rename) keeps Escape for itself; a drawer stops it before it gets here.
         const target = event.target;
         if (target !== null && 'localName' in target && target.localName === 'input') return;
         onBack();
@@ -191,22 +230,25 @@ export function CreaturePage({
         <button type="button" class="ghost cp-back" onClick={onBack}>
           <span aria-hidden="true">‹</span> Creatures
         </button>
+        {creature.busy === null && creature.id !== state.loungerId && (
+          <button
+            type="button"
+            class="lounge-button"
+            disabled={busy}
+            onClick={() => {
+              actions.onLounge(creature);
+            }}
+          >
+            Lounge
+          </button>
+        )}
       </div>
 
       <div class="cp-block">
-        <CreatureHead creature={creature} state={state} heading="h2" nameId={`${id}-name`} />
-        {next.length > 0 && (
-          <p class="cc-next">
-            {next.map((part) => (part.strong ? <b key={part.text}>{part.text}</b> : part.text))}
-          </p>
-        )}
+        <PageHeader creature={creature} state={state} nameId={`${id}-name`} />
         <p class="tags">
-          {species !== undefined && (
-            <>
-              <ElementChip element={species.element} role={species.role} />
-              <Tag entry="rarity">{capitalize(species.rarity)}</Tag>
-            </>
-          )}
+          {showSpeciesName && <Tag>{speciesLabel}</Tag>}
+          {species !== undefined && <ElementChip element={species.element} role={species.role} />}
           {isFestivalSpecies(creature.species) && (
             <Tag kind="badge" tone="festival" entry="festival">
               Festival
@@ -223,29 +265,23 @@ export function CreaturePage({
             </Tag>
           )}
         </p>
-        {isFestivalSpecies(creature.species) && (
-          <p class="muted">Festival prize, not found on expeditions.</p>
-        )}
         {hasActions && (
           <div class="cp-actions">
             <RibbonLine creature={creature} busy={busy} onRibbon={actions.onRibbon} />
-            {evolve !== null &&
-              (evolve.available ? (
-                <p>
-                  <button
-                    type="button"
-                    class="primary"
-                    disabled={busy}
-                    onClick={() => {
-                      actions.onEvolve(creature);
-                    }}
-                  >
-                    {evolve.label}
-                  </button>
-                </p>
-              ) : (
-                <p class="locked">{evolve.label}</p>
-              ))}
+            {readyEvolve !== null && (
+              <p>
+                <button
+                  type="button"
+                  class="primary"
+                  disabled={busy}
+                  onClick={() => {
+                    actions.onEvolve(creature);
+                  }}
+                >
+                  {readyEvolve.label}
+                </button>
+              </p>
+            )}
             {waitingCatch !== undefined && (
               <p>
                 <button type="button" class="primary" disabled={busy} onClick={onAnswerCatch}>
@@ -266,18 +302,30 @@ export function CreaturePage({
         </dl>
       </div>
 
+      {showAbility && (
+        <div class="cp-block creature-ability">
+          <h3 class="cp-title">Finale ability</h3>
+          <p>
+            <GlossaryTag ability={abilityInfo.id}>{abilityInfo.name}</GlossaryTag>:{' '}
+            {abilityInfo.description}
+          </p>
+        </div>
+      )}
+
       <div class="cp-block">
-        <h3 id={`${id}-gear`} class="cp-title" tabIndex={-1}>
-          Gear
+        <h3 id={`${id}-gear`} class="cp-title">
+          <GlossaryTag entry="gear" look="text">
+            Gear
+          </GlossaryTag>
         </h3>
-        <CardGear
+        <GearSlots
           creature={creature}
-          creatures={state.creatures}
           gear={gear}
-          busy={busy}
-          onEquip={actions.onEquip}
-          onEquipBest={actions.onEquipBest}
-          initialOpen={focus?.part === 'gear' ? focus.slot : null}
+          openSlot={gearOpen}
+          onOpen={(slot, button) => {
+            opener.current = button;
+            setGearOpen(slot);
+          }}
         />
       </div>
 
@@ -287,32 +335,15 @@ export function CreaturePage({
             Talents
           </GlossaryTag>
         </h3>
-        <CreatureTalents
+        <TalentSlots
           creature={creature}
-          bookSlotBait={state.bookSlotBait}
-          bait={state.balances.bait}
-          busy={busy}
-          onSlot={actions.onSlotTalent}
-          showLabel={false}
+          openSlot={talentOpen}
+          onOpen={(slot, button) => {
+            opener.current = button;
+            setTalentOpen(slot);
+          }}
         />
       </div>
-
-      {abilityText !== null && (
-        <div class="cp-block creature-ability">
-          <h3 class="cp-title">Finale ability</h3>
-          <p class={abilityText.unlocked ? undefined : 'locked'}>
-            {abilityText.unlocked && abilityInfo !== undefined ? (
-              <>
-                <GlossaryTag ability={abilityInfo.id}>{abilityInfo.name}</GlossaryTag>:{' '}
-                {abilityInfo.description}
-              </>
-            ) : (
-              <GlossaryTag entry="creature-ability">{abilityText.line}</GlossaryTag>
-            )}
-          </p>
-          {abilityText.teaser !== null && <p class="muted">{abilityText.teaser}</p>}
-        </div>
-      )}
 
       <Accordion title="About" headingLevel={3} defaultOpen class="cp-block">
         {about !== null && (
@@ -355,21 +386,48 @@ export function CreaturePage({
         </dl>
       </Accordion>
 
-      <div class="cp-block cp-buttons">
-        {creature.busy === null && creature.id !== state.loungerId && (
-          <button
-            type="button"
-            class="lounge-button"
-            disabled={busy}
-            onClick={() => {
-              actions.onLounge(creature);
-            }}
-          >
-            Lounge
-          </button>
-        )}
-      </div>
       <RenameForm creature={creature} busy={busy} onRename={actions.onRename} />
+
+      {gearOpen !== null && (
+        <ItemPickerDrawer
+          key={gearOpen}
+          open
+          onClose={() => {
+            setGearOpen(null);
+          }}
+          slot={gearOpen}
+          creature={creature}
+          creatures={state.creatures}
+          items={gear === null ? null : gear.items}
+          busy={busy}
+          onEquip={(item: GearItem) => {
+            void equip(item.id, creature.id);
+          }}
+          onTakeOff={(item: GearItem) => {
+            void equip(item.id, null);
+          }}
+          returnFocusTo={opener.current ?? rootRef.current}
+        />
+      )}
+      {talentOpen !== null && (
+        <TalentBookDrawer
+          key={talentOpen}
+          open
+          onClose={() => {
+            setTalentOpen(null);
+          }}
+          creature={creature}
+          slot={talentOpen}
+          bookSlotBait={state.bookSlotBait}
+          bait={state.balances.bait}
+          busy={busy}
+          onSlot={(c, talentId, golden, slot) => {
+            actions.onSlotTalent(c, talentId, golden, slot);
+            setTalentOpen(null);
+          }}
+          returnFocusTo={opener.current ?? rootRef.current}
+        />
+      )}
     </section>
   );
 }

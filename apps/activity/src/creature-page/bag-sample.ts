@@ -5,8 +5,8 @@
  * pure formula from a short table, so every scene shows the same bag. Fixture data only.
  */
 import { gearBase } from '@creatures/game';
-import type { WornGear } from '../../gear-types';
-import type { GearItem, GearLine, GearRarity, GearSlot, GearStat, GearTag } from '../../gear-types';
+import type { WornGear } from '../gear-types';
+import type { GearItem, GearLine, GearRarity, GearSlot, GearStat, GearTag } from '../gear-types';
 
 /** One row of the table: the base, the rarity, the item level, who wears it. */
 type Spec = readonly [baseId: string, rarity: GearRarity, itemLevel: number, wornBy?: string];
@@ -107,8 +107,9 @@ function lineOf(baseId: string, index: number, text: string, local: boolean): Ge
   };
 }
 
-function statOf(stat: 'atk' | 'hp', value: number): GearStat {
-  return { stat, value, base: value, text: `${stat === 'atk' ? 'Attack' : 'HP'} ${String(value)}` };
+/** One stat: its base number and, when a local line raised it, the total (the server's text shows the total). */
+function statOf(stat: 'atk' | 'hp', base: number, value: number = base): GearStat {
+  return { stat, value, base, text: `${stat === 'atk' ? 'Attack' : 'HP'} ${String(value)}` };
 }
 
 /** One bag item from a table row: stats by slot and rarity, lines by tag and rarity. */
@@ -123,11 +124,17 @@ function build(
   const base = gearBase(baseId);
   const tag: GearTag = base?.tag ?? 'neutral';
   const factor = RARITY_FACTOR[rarity];
+  // An epic's local line ("+55% Attack (this item)") raises its own Attack above the base.
+  const localPct = rarity === 'epic' ? 40 + itemLevel : 0;
+  const hatAttack = Math.round(itemLevel * factor * 1.2) + 1;
   const stats: GearStat[] =
     slot === 'charm'
       ? []
       : slot === 'hat'
-        ? [statOf('atk', Math.round(itemLevel * factor * 1.2) + 1), statOf('hp', itemLevel * 2 + 2)]
+        ? [
+            statOf('atk', hatAttack, hatAttack + Math.floor((hatAttack * localPct) / 100)),
+            statOf('hp', itemLevel * 2 + 2),
+          ]
         : [
             statOf('hp', Math.round(itemLevel * factor * 2.4) + 4),
             statOf('atk', Math.round(itemLevel * 0.3) + 1),

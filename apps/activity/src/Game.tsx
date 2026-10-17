@@ -473,7 +473,6 @@ export function Game({
             onEquip={async (gearId, creatureId) =>
               (await gearActions.equip(gearId, creatureId)) !== undefined
             }
-            onEquipBest={(creatureId) => gearActions.equipBest([creatureId])}
             onRibbon={(creature) => {
               void runKeyed(ActionIds.ribbon(creature.id), (key) =>
                 earnRibbon(creature.id, key),

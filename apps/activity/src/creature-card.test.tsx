@@ -25,7 +25,6 @@ afterEach(() => {
 function actionsWith(overrides: Partial<CardActions> = {}): CardActions {
   return {
     onEquip: vi.fn(() => Promise.resolve(true)),
-    onEquipBest: vi.fn(() => Promise.resolve(undefined)),
     onRibbon: vi.fn(),
     onEvolve: vi.fn(),
     onRename: vi.fn(),

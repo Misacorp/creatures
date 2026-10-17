@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { IconRef } from '../../icon-ref';
-import { CreatureTalents } from '../../CreatureTalents';
-import { SAMPLE_STATE, sampleCreature } from '../../creature-card-sample';
 import { Accordion, AccordionGroup } from '../../ui/Accordion';
 import { ELEMENT_IDS, NONE, PARTS } from '../data';
 import { bool, str } from '../props';
@@ -17,7 +15,6 @@ const SCENES = [
   'compact',
   'group',
   'nested',
-  'talent-book',
   'bait-activity',
   'item-details',
 ] as const;
@@ -41,21 +38,6 @@ const LINES = [
   'Fox walks the same path every morning, so the grass stays flat.',
   'Short text: a body can hold anything the place needs.',
 ];
-
-/** The real Talent Book: one talent in use (lit, with its slot), a golden one and a plain one to use. */
-function TalentBookExample() {
-  const creature = sampleCreature('talent book');
-  return (
-    <CreatureTalents
-      creature={creature}
-      bookSlotBait={SAMPLE_STATE.bookSlotBait}
-      bait={100}
-      busy={false}
-      bookOpen
-      onSlot={() => undefined}
-    />
-  );
-}
 
 const LEDGER = [
   '+30 Bait · leet on 2026-10-16 with 3 players',
@@ -260,12 +242,6 @@ function Overview() {
       <Scene title="Nested (one level)">
         <NestedExample />
       </Scene>
-      <Scene title="Example: Talent Book (in use, golden, available)">
-        <div class="card-item">
-          <p class="pix">Cindle</p>
-          <TalentBookExample />
-        </div>
-      </Scene>
       <Scene title="Example: Recent Bait activity (loads on first open)">
         <BaitActivityExample />
       </Scene>
@@ -294,13 +270,6 @@ function renderScene(p: Props) {
       return <GroupExample />;
     case 'nested':
       return <NestedExample />;
-    case 'talent-book':
-      return (
-        <div class="card-item">
-          <p class="pix">Cindle</p>
-          <TalentBookExample />
-        </div>
-      );
     case 'bait-activity':
       return <BaitActivityExample />;
     case 'item-details':
@@ -346,7 +315,6 @@ const accordion: Entry = {
     { name: 'Compact in a card', props: { scene: 'compact' } },
     { name: 'One open at a time', props: { scene: 'group' } },
     { name: 'Nested', props: { scene: 'nested' } },
-    { name: 'Talent Book', props: { scene: 'talent-book' } },
     { name: 'Recent Bait activity', props: { scene: 'bait-activity' } },
     { name: 'Item details', props: { scene: 'item-details' } },
     { name: 'Try your own', props: { scene: 'playground', open: true } },

@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks';
 import { Collection } from '../../Collection';
 import { CreatureCard } from '../../CreatureCard';
 import { CreatureFinder } from '../../CreatureFinder';
-import { CreaturePage, type CardActions } from '../../CreaturePage';
+import type { CardActions } from '../../CreaturePage';
 import {
   GEAR_STATE,
   SAMPLE_GEAR,
@@ -14,7 +14,6 @@ import {
 } from '../../creature-card-sample';
 import { NO_FILTERS, applyFilters, type Filters } from '../../creature-find';
 import { needyIds } from '../../creature-needs';
-import type { PageFocus } from '../../creature-card-view';
 import { creatureName } from '../../game';
 import type { GearActions } from '../../gear-actions';
 import { Workshop } from '../../Workshop';
@@ -23,7 +22,6 @@ import type { Entry, Props } from '../types';
 
 const actions: CardActions = {
   onEquip: () => Promise.resolve(true),
-  onEquipBest: () => Promise.resolve(undefined),
   onRibbon: () => undefined,
   onEvolve: () => undefined,
   onRename: () => undefined,
@@ -102,85 +100,6 @@ const creatureCard: Entry = {
     { name: 'Marked by the finder', props: { found: true } },
   ],
   render: (p) => <CardDemo p={p} />,
-};
-
-const PAGE_FOCUS = ['top', 'Hat picker', 'Scarf picker', 'talents'] as const;
-
-function pageFocus(value: string): PageFocus {
-  switch (value) {
-    case 'Hat picker':
-      return { part: 'gear', slot: 'hat' };
-    case 'Scarf picker':
-      return { part: 'gear', slot: 'scarf' };
-    case 'talents':
-      return { part: 'talents' };
-    default:
-      return null;
-  }
-}
-
-function PageDemo({ p }: { p: Props }) {
-  const creature = sampleCreature(kindOf(str(p, 'state')));
-  const state = {
-    ...SAMPLE_STATE,
-    creatures: [creature],
-    pending: bool(p, 'waitingCatch')
-      ? SAMPLE_STATE.pending.slice(0, 1).map((card) => ({
-          ...card,
-          offered: { ...card.offered, teach: [creature.id], fuse: [creature.id] },
-        }))
-      : [],
-    loungerId: bool(p, 'lounging') ? creature.id : null,
-  };
-  return (
-    <CreaturePage
-      key={`${str(p, 'state')}-${str(p, 'opensOn')}`}
-      creature={creature}
-      state={state}
-      gear={bool(p, 'gearLoaded') ? SAMPLE_GEAR : null}
-      busy={bool(p, 'busy')}
-      actions={actions}
-      focus={pageFocus(str(p, 'opensOn'))}
-      onBack={() => undefined}
-      onAnswerCatch={() => undefined}
-    />
-  );
-}
-
-const creaturePage: Entry = {
-  name: 'CreaturePage',
-  file: 'apps/activity/src/CreaturePage.tsx',
-  group: 'Creatures & game pieces',
-  description:
-    'A creature\'s page, opened from its card in the list\'s place: back at the top left (Escape works too), then who it is, growth (ribbon and evolution buttons), stats, gear per slot with the picker and Equip best, talents with the Talent Book (in use, golden and available talents), the finale ability, About (an accordion, open to begin with), fusion, ribbons, explorer facts, Lounge and Rename (an accordion). "Opens on" shows where it lands when a gear icon or the talent chips were tapped. The back button does nothing here.',
-  controls: {
-    state: { kind: 'select', options: SAMPLE_KINDS },
-    opensOn: { kind: 'select', options: PAGE_FOCUS },
-    waitingCatch: { kind: 'toggle' },
-    gearLoaded: { kind: 'toggle' },
-    lounging: { kind: 'toggle' },
-    busy: { kind: 'toggle' },
-  },
-  defaults: {
-    state: 'ribbon ready',
-    opensOn: 'top',
-    waitingCatch: false,
-    gearLoaded: true,
-    lounging: false,
-    busy: false,
-  },
-  presets: [
-    { name: 'Ribbon ready', props: {} },
-    { name: 'Ribbon, short of parts', props: { state: 'ribbon short' } },
-    { name: 'Ready to evolve', props: { state: 'evolve ready' } },
-    { name: 'A talent slot to fill', props: { state: 'talent to fill', opensOn: 'talents' } },
-    { name: 'The Talent Book', props: { state: 'talent book', opensOn: 'talents' } },
-    { name: 'A waiting catch', props: { state: 'growing', waitingCatch: true } },
-    { name: 'Opened on the Scarf picker', props: { opensOn: 'Scarf picker' } },
-    { name: 'Gear still loading', props: { gearLoaded: false, opensOn: 'Hat picker' } },
-    { name: 'Nickname, shiny and away', props: { state: 'nickname and badges' } },
-  ],
-  render: (p) => <PageDemo p={p} />,
 };
 
 /** The Workshop's buttons do nothing here; the odds and refunds stay on "Loading". */
@@ -314,7 +233,6 @@ const creaturesTab: Entry = {
 
 export const creatureCardEntries: readonly Entry[] = [
   creatureCard,
-  creaturePage,
   creatureFinder,
   creaturesTab,
   workshop,

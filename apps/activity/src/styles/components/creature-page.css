@@ -1,0 +1,298 @@
+/*
+  The creature page (CreaturePage.tsx and creature-page/): the one-row head with a portrait whose single
+  border is the creature's rarity colour, the top row (back at the left, Lounge at the right), the item
+  picker's icon grid and detail panel inside the Drawer, and the Talent Book rows. Built for 390 px. Comes
+  after the Slot, Drawer and creature-focus rules on purpose.
+*/
+
+/* --- The top row: back at the left, Lounge at the right. --- */
+
+.cp-top {
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cp-top button.lounge-button {
+  min-height: 2.75rem;
+  padding: 0.125rem 0.875rem;
+  font-size: 1.25rem;
+}
+
+/* --- The head: portrait, then name, element icon and level on one centred row, then the bar. --- */
+
+.v3-head {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 0.625rem;
+  align-items: center;
+}
+
+.v3-head .portrait {
+  width: 56px;
+  height: 56px;
+  margin: 0;
+  padding: 0;
+  background: var(--ink);
+  box-shadow: none;
+}
+
+/* The creature's rarity as the portrait's one border (grey, blue, pink; gold and crimson are reserved). */
+.portrait[class*='rarity-'],
+.creature-card.focused .portrait[class*='rarity-'],
+.creature-page .portrait[class*='rarity-'] {
+  box-shadow: 0 0 0 var(--px) var(--rar);
+}
+
+.v3-id {
+  min-width: 0;
+}
+
+.v3-name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  min-width: 0;
+}
+
+/*
+  The name grows to fill the row. A name that fits leaves room for the icon and the level on the same
+  line, all centred on it. A name too long for that takes the whole row (it may use two lines) and the
+  icon and the level move to a line of their own under it.
+*/
+.v3-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.05;
+}
+
+/* Two lines at most; the rest is cut with an ellipsis. */
+.v3-name-text {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.v3-element {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+}
+
+/* The level badge: the pixel font like the other badges (a tappable tag resets its font, this sets it back). */
+.v3-level {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  font-family: var(--display);
+  font-size: 1rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.v3-head .cc-sub {
+  margin: 0.125rem 0 0;
+}
+
+.v3-head .xpbar-row {
+  margin: 0.3125rem 0 0;
+}
+
+.v3-head .xpbar {
+  height: 1.5rem;
+}
+
+.v3-head .xpbar-text {
+  font-size: 1.125rem;
+}
+
+/* --- The item picker's grid (in the Drawer): one border per cell, in the rarity colour. --- */
+
+.ip-none {
+  margin: 0.5rem 0;
+}
+
+.ip-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ip-grid > li {
+  display: flex;
+}
+
+button.ip-cell {
+  position: relative;
+  display: grid;
+  flex: 1 1 auto;
+  place-items: center;
+  min-height: 5.5rem;
+  padding: 0.5rem 0.25rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--rar);
+}
+
+button.ip-cell:active:not(:disabled) {
+  box-shadow: inset 0 0 0 var(--px) var(--rar);
+}
+
+button.ip-cell.blocked canvas.sprite {
+  opacity: 0.45;
+}
+
+button.ip-cell.blocked {
+  background: rgb(var(--ink-rgb) / 55%);
+}
+
+/* The selected cell is lit from inside (no second outline). */
+button.ip-cell.selected {
+  background: #4a4180;
+}
+
+.ip-cell-level,
+.ip-cell-worn {
+  position: absolute;
+  line-height: 1;
+  text-shadow: var(--ink-outline-thin);
+}
+
+.ip-cell-level {
+  right: 0.3125rem;
+  bottom: 0.1875rem;
+  color: var(--bone);
+  font-size: 1rem;
+}
+
+.ip-cell-worn {
+  top: 0.1875rem;
+  left: 0.3125rem;
+  color: var(--gold);
+  font-size: 0.875rem;
+}
+
+/* --- The detail panel: all in the pixel font, the same size for every stat row. --- */
+
+.ip-detail {
+  font-size: 1.125rem;
+  line-height: 1.15;
+}
+
+.ip-detail-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ip-detail-title {
+  min-width: 0;
+}
+
+.ip-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.5rem;
+  align-items: baseline;
+  margin: 0;
+}
+
+.ip-name {
+  font-size: 1.375rem;
+  line-height: 1.05;
+}
+
+.ip-level {
+  color: var(--bone);
+}
+
+.ip-rarity {
+  color: var(--rar);
+}
+
+.ip-on {
+  margin: 0.0625rem 0 0;
+  color: var(--haze);
+  font-size: 1rem;
+}
+
+button.ip-act {
+  min-width: 3.75rem;
+  min-height: 2.5rem;
+  padding-inline: 0.5rem;
+  font-size: 1.125rem;
+}
+
+.ip-reason {
+  max-width: 5.25rem;
+  color: var(--haze);
+  font-size: 1rem;
+  line-height: 1.1;
+  text-align: right;
+}
+
+/* The base stats: white, one row each ("Attack 26 +15"), the bonus in the gear colour after the base. */
+.ip-base {
+  display: grid;
+  gap: 0.125rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  color: var(--bone);
+  list-style: none;
+}
+
+.ip-stat-bonus {
+  color: var(--gear);
+}
+
+.ip-divider {
+  height: 0;
+  margin: 0.5rem 0;
+  border: 0;
+  border-top: 2px solid var(--line);
+}
+
+.ip-detail .line-list {
+  margin: 0.375rem 0 0;
+  gap: 0.125rem;
+}
+
+.ip-detail .line-list .line-text,
+.ip-detail .line-list .line {
+  font-size: 1.125rem;
+}
+
+.ip-detail .line-note {
+  font-size: 1rem;
+}
+
+/* --- The Talent Book in the drawer. --- */
+
+/* A talent that sits in another slot: greyed out, with its slot mark and no button. */
+.book-entry.elsewhere {
+  opacity: 0.5;
+}
+
+.book-entry.elsewhere .book-slot-mark {
+  color: var(--haze);
+  box-shadow: inset 0 0 0 2px var(--haze);
+}
+
+.book-short {
+  margin: 0.375rem 0 0;
+}

@@ -1,17 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Creature } from './api';
-import { CreaturePage, type CardActions } from './CreaturePage';
-import {
-  SAMPLE_GEAR,
-  SAMPLE_STATE,
-  sampleCreature,
-  talentView,
-  type SampleKind,
-} from './creature-card-sample';
+import type { Creature, GameState } from './api';
+import { CreaturePage, startingDrawer, type CardActions } from './CreaturePage';
+import { SAMPLE_STATE } from './creature-card-sample';
 import { cardDomId, type PageFocus } from './creature-card-view';
+import { pageScene, type SceneKind } from './creature-page/sample';
 import {
   byClass,
   byName,
+  byRole,
   createPage,
   find,
   nameOf,
@@ -30,7 +26,6 @@ afterEach(() => {
 function actionsWith(overrides: Partial<CardActions> = {}): CardActions {
   return {
     onEquip: vi.fn(() => Promise.resolve(true)),
-    onEquipBest: vi.fn(() => Promise.resolve(undefined)),
     onRibbon: vi.fn(),
     onEvolve: vi.fn(),
     onRename: vi.fn(),
@@ -44,30 +39,39 @@ interface Drawn {
   page: Page;
   root: FakeElement;
   actions: CardActions;
+  creature: Creature;
   onBack: ReturnType<typeof vi.fn>;
   onAnswerCatch: ReturnType<typeof vi.fn>;
 }
 
-/** Draws one creature's page and returns the page and its handlers. */
+/** Draws one sample creature's page (the real component, wired as the Creatures tab wires it). */
 function draw(
-  creature: Creature,
+  kind: SceneKind,
   options: {
     focus?: PageFocus;
-    pending?: boolean;
     bait?: number;
     loungerId?: string | null;
     busy?: boolean;
+    gearLoaded?: boolean;
+    pending?: boolean;
+    change?: (creature: Creature) => Creature;
     actions?: Partial<CardActions>;
   } = {},
 ): Drawn {
   page = createPage();
+  const scene = pageScene(kind, { bait: options.bait ?? 100 });
+  const creature = options.change === undefined ? scene.creature : options.change(scene.creature);
   const actions = actionsWith(options.actions);
   const onBack = vi.fn();
   const onAnswerCatch = vi.fn();
   const pendingCard = SAMPLE_STATE.pending[0];
-  const state = {
-    ...SAMPLE_STATE,
-    creatures: [creature],
+  const base: GameState = {
+    ...scene.state,
+    creatures: [creature, ...scene.state.creatures.slice(1)],
+    loungerId: options.loungerId ?? null,
+  };
+  const state: GameState = {
+    ...base,
     pending:
       options.pending === true && pendingCard !== undefined
         ? [
@@ -76,15 +80,13 @@ function draw(
               offered: { ...pendingCard.offered, teach: [creature.id], fuse: [creature.id] },
             },
           ]
-        : [],
-    balances: { ...SAMPLE_STATE.balances, bait: options.bait ?? 100 },
-    loungerId: options.loungerId ?? null,
+        : base.pending,
   };
   page.draw(
     <CreaturePage
       creature={creature}
       state={state}
-      gear={SAMPLE_GEAR}
+      gear={options.gearLoaded === false ? null : scene.gear}
       busy={options.busy ?? false}
       actions={actions}
       focus={options.focus ?? null}
@@ -97,244 +99,492 @@ function draw(
     (el) => el.getAttribute('id') === `${cardDomId(creature.id)}-page`,
   )[0];
   if (root === undefined) throw new Error('the page was not drawn');
-  return { page, root, actions, onBack, onAnswerCatch };
+  return { page, root, actions, creature, onBack, onAnswerCatch };
 }
 
-const kind = (name: SampleKind): Creature => sampleCreature(name);
+function first(list: FakeElement[]): FakeElement {
+  const [el] = list;
+  if (el === undefined) throw new Error('not found');
+  return el;
+}
 
-describe('the creature page: back', () => {
-  it('has a back button at the top left that says where it goes', () => {
-    const { root, page: p, onBack } = draw(kind('growing'));
-    const top = byClass(root, 'cp-top')[0] as FakeElement;
+function slotButton(root: FakeElement, name: RegExp): FakeElement {
+  return first(find(root, (e) => e.localName === 'button' && name.test(nameOf(e))));
+}
+
+function headings(root: FakeElement): string[] {
+  return byClass(root, 'cp-title').map((h) => visibleText(h));
+}
+
+describe('the creature page: top row and back', () => {
+  it('has back at the top left and Lounge at the top right of the same row', () => {
+    const { root, page: p, onBack, actions, creature } = draw('level 15');
+    const top = first(byClass(root, 'cp-top'));
     expect(root.childNodes[0]).toBe(top);
-    const back = byName(top, 'button', '‹ Creatures')[0] as FakeElement;
-    expect(back).toBeDefined();
-    expect(back.getAttribute('type')).toBe('button');
-    p.click(back);
+    const buttons = find(top, (e) => e.localName === 'button');
+    expect(buttons.map((b) => visibleText(b))).toEqual(['‹ Creatures', 'Lounge']);
+    p.click(first(buttons));
     expect(onBack).toHaveBeenCalledTimes(1);
+    p.click(buttons[1] as FakeElement);
+    expect(actions.onLounge).toHaveBeenCalledWith(creature);
   });
 
-  it('goes back on Escape, but not from a text field or after the gear picker took it', () => {
-    const { root, page: p, onBack } = draw(kind('ribbon ready'));
+  it('has no Lounge button for the lounger or a creature that is busy', () => {
+    const creature = pageScene('level 15').creature;
+    const already = draw('level 15', { loungerId: creature.id });
+    expect(byName(already.root, 'button', 'Lounge')).toHaveLength(0);
+    page?.unmount();
+    const busy = draw('level 15', {
+      change: (c) => ({ ...c, busy: { kind: 'job', id: 'job-1' } }),
+    });
+    expect(byName(busy.root, 'button', 'Lounge')).toHaveLength(0);
+  });
+
+  it('goes back on Escape, but not from a text field or after a drawer took it', () => {
+    const { root, page: p, onBack } = draw('level 15');
     p.key(root, 'Enter');
     expect(onBack).not.toHaveBeenCalled();
     p.key(root, 'Escape');
     expect(onBack).toHaveBeenCalledTimes(1);
 
     // Escape in the Rename field belongs to the field.
-    const input = find(root, (e) => e.localName === 'input')[0] as FakeElement;
-    p.key(input, 'Escape');
+    p.key(first(find(root, (e) => e.localName === 'input')), 'Escape');
     expect(onBack).toHaveBeenCalledTimes(1);
 
-    // Escape inside the open gear picker closes the picker only.
-    p.click(
-      find(root, (e) => e.localName === 'button' && /^Hat slot:/.test(nameOf(e)))[0] as FakeElement,
-    );
-    const picker = byClass(root, 'gear-picker')[0] as FakeElement;
-    p.key(picker, 'Escape');
-    expect(byClass(root, 'gear-picker')).toHaveLength(0);
+    // Escape inside an open drawer closes the drawer only.
+    p.click(slotButton(root, /^Hat: /));
+    const dialog = first(byRole(root, 'dialog'));
+    p.key(dialog, 'Escape');
+    expect(byRole(root, 'dialog')).toHaveLength(0);
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
   it('is named by the creature and takes the focus when it opens at the top', () => {
-    const { root } = draw(kind('growing'));
+    const { root } = draw('level 15');
     expect(root.getAttribute('aria-labelledby')).toBe(`${root.getAttribute('id') ?? ''}-name`);
-    expect(nameOf(find(root, (e) => e.localName === 'h2')[0] as FakeElement)).toBe('Cindle');
+    expect(nameOf(first(find(root, (e) => e.localName === 'h2')))).toBe('Cindle');
     expect(root.focused).toBe(1);
   });
 });
 
-describe('the creature page: what it holds', () => {
-  it('holds everything the card used to keep under "More"', () => {
-    const { root } = draw(kind('ribbon ready'));
-    const text = visibleText(root);
-    // Who it is
-    expect(text).toContain('Ember');
-    expect(text).toContain('Common');
-    expect(text).toContain('Lv 10');
-    // The ribbon button with its cost, and the way to earn it
-    expect(byName(root, 'button', /Bronze Ribbon \(6 scrap and 2 Ember shards\)/)).toHaveLength(1);
-    // Gear is a list, one row per slot; the closed Charm is a short muted row.
-    expect(text).toContain('Charm opens at level 13');
-    // Stats with the gear's share
-    expect(text).toContain('HP');
-    expect(text).toContain('Attack');
-    expect(text).toContain('Speed');
-    // Gear: the three slots and Equip best
-    expect(text).toContain('Equip best');
-    expect(
-      find(root, (e) => e.localName === 'button' && /^Hat slot:/.test(nameOf(e))),
-    ).toHaveLength(1);
-    // Talents: the slots and the book
-    expect(text).toContain('Talents');
-    expect(byName(root, 'button', /^Talent Book/)).toHaveLength(1);
-    // Ability, About, fusion, ribbons, explorer
-    expect(text).toContain('Flare Strike');
-    expect(text).toContain('Evolves into');
-    expect(text).toContain('Fusion');
-    expect(text).toContain('0 / 5');
-    expect(text).toContain('Ribbons');
-    expect(text).toContain('Explorer rank');
-    expect(text).toContain('Trips');
-    // Lounge and Rename
-    expect(byName(root, 'button', 'Lounge')).toHaveLength(1);
-    const rename = byName(root, 'button', 'Rename')[0] as FakeElement;
-    expect(rename.getAttribute('aria-expanded')).toBe('false');
-    // The form stays in the page while closed, so a half-typed nickname survives.
-    expect(find(root, (e) => e.localName === 'input')).toHaveLength(1);
-    // About is an accordion too, open to begin with.
-    expect(byName(root, 'button', 'About')[0]?.getAttribute('aria-expanded')).toBe('true');
-  });
-
-  it('has the ribbon, evolve and waiting-catch buttons itself, not only on the card', () => {
-    const ready = draw(kind('ribbon ready'));
-    const ribbon = byName(ready.root, 'button', /^Bronze Ribbon \(/)[0] as FakeElement;
-    expect(ribbon.hasAttribute('disabled')).toBe(false);
-    ready.page.click(ribbon);
-    expect(ready.actions.onRibbon).toHaveBeenCalledTimes(1);
+describe('the creature page: the head and tags', () => {
+  it('shows the species name as a tag only when a nickname differs from it', () => {
+    const plain = draw('level 15');
+    const tags = first(byClass(plain.root, 'tags'));
+    expect(visibleText(tags)).not.toContain('Cindle');
     page?.unmount();
 
-    const evolve = draw(kind('evolve ready'));
-    const button = byName(evolve.root, 'button', 'Evolve into Pyrelynx (20 Essence)')[0];
-    evolve.page.click(button as FakeElement);
+    const named = draw('nickname');
+    expect(visibleText(first(find(named.root, (e) => e.localName === 'h2')))).toBe('Sparky');
+    expect(visibleText(first(byClass(named.root, 'tags')))).toContain('Cindle');
+    // The name row holds the name, the element and the level, not the species.
+    expect(visibleText(first(byClass(named.root, 'v3-name-row')))).toBe('SparkyLv 15');
+    page?.unmount();
+
+    // A nickname equal to the species name (any case) adds no tag.
+    const same = draw('level 15', { change: (c) => ({ ...c, nickname: 'cindle' }) });
+    expect(byClass(first(byClass(same.root, 'tags')), 'tag')).toHaveLength(0);
+  });
+
+  it('has no rarity tag; the portrait border is the rarity, with a spoken label', () => {
+    const { root } = draw('level 15');
+    const tags = visibleText(first(byClass(root, 'tags')));
+    expect(tags).not.toMatch(/Common|Rare|Epic/);
+    const portrait = first(byClass(root, 'portrait'));
+    expect(portrait.getAttribute('class')).toContain('rarity-common');
+    const sprite = first(find(portrait, (e) => e.localName === 'canvas'));
+    expect(sprite.getAttribute('aria-label') ?? sprite.getAttribute('alt')).toBe('Cindle, common');
+  });
+
+  it('draws the level badge in the pixel font with no "?" mark', () => {
+    const { root } = draw('level 15');
+    const badge = first(byClass(root, 'v3-level'));
+    const classes = (badge.getAttribute('class') ?? '').split(' ');
+    expect(classes).toContain('lvl-tag');
+    expect(classes).toContain('pix');
+    expect(visibleText(badge)).toBe('Lv 15');
+  });
+
+  it('draws names as text, never as markup', () => {
+    const { root } = draw('level 15', {
+      change: (c) => ({ ...c, nickname: '<img src=x onerror=alert(1)>' }),
+    });
+    expect(find(root, (e) => e.localName === 'img')).toHaveLength(0);
+    expect(visibleText(root)).toContain('<img src=x onerror=alert(1)>');
+  });
+});
+
+describe('the creature page: order and what it leaves out', () => {
+  it('puts the finale ability right under Stats, before Gear and Talents', () => {
+    const { root } = draw('level 15');
+    expect(headings(root)).toEqual(['Stats', 'Finale ability', 'Gear', 'Talents']);
+    expect(visibleText(root)).toContain('Flare Strike');
+  });
+
+  it('leaves out the finale ability until it is unlocked', () => {
+    const { root } = draw('level 2');
+    expect(headings(root)).toEqual(['Stats', 'Gear', 'Talents']);
+  });
+
+  const FORBIDDEN = [
+    /Next:/,
+    /opens at/i,
+    /unlocks at/i,
+    /needs level/i,
+    /Evolves into/i,
+    /Equip best/i,
+    /\bempty\b/i,
+    /Festival prize/i,
+    /What is the Talent Book/i,
+  ];
+  const KINDS: SceneKind[] = ['level 2', 'level 8', 'level 15', 'ribbon ready', 'talents: epic'];
+  for (const kind of KINDS) {
+    it(`says nothing forward-looking or hand-holding (${kind})`, () => {
+      const { root } = draw(kind);
+      const text = visibleText(root);
+      for (const pattern of FORBIDDEN) expect(text, String(pattern)).not.toMatch(pattern);
+    });
+  }
+
+  it('has no Equip best button and no Talent Book accordion', () => {
+    const { root } = draw('level 15');
+    expect(byName(root, 'button', /Equip best/)).toHaveLength(0);
+    expect(byName(root, 'button', /Talent Book/)).toHaveLength(0);
+  });
+
+  it('says what evolution needs nowhere while it is locked', () => {
+    const { root } = draw('level 15', {
+      change: (c) => ({
+        ...c,
+        evolution: { toSpecies: 'pyrelynx', level: 20, essence: 20, available: false },
+      }),
+    });
+    expect(visibleText(root)).not.toContain('Evolve into');
+    expect(byName(root, 'button', /^Evolve into/)).toHaveLength(0);
+  });
+});
+
+describe('the creature page: the buttons for what is ready', () => {
+  it('shows the ribbon only when the creature waits for one, with its cost and what is missing', () => {
+    // Not at a ribbon level: no ribbon element at all.
+    const none = draw('level 15');
+    expect(byName(none.root, 'button', /Ribbon/)).toHaveLength(0);
+    expect(byClass(none.root, 'ribbon-line')).toHaveLength(0);
+    page?.unmount();
+
+    // At the level, short of parts: the cost and what is missing, the button off.
+    const short = draw('ribbon waiting');
+    const off = first(byName(short.root, 'button', /Bronze Ribbon \(6 scrap and 2 Ember shards\)/));
+    expect(off.hasAttribute('disabled')).toBe(true);
+    expect(visibleText(first(byClass(short.root, 'ribbon-line')))).toContain('Short of parts');
+    page?.unmount();
+
+    // At the level with the parts: a gold button that earns it.
+    const ready = draw('ribbon ready');
+    const on = first(byName(ready.root, 'button', /^Bronze Ribbon \(/));
+    expect(on.hasAttribute('disabled')).toBe(false);
+    expect(on.getAttribute('class')).toContain('primary');
+    ready.page.click(on);
+    expect(ready.actions.onRibbon).toHaveBeenCalledTimes(1);
+  });
+
+  it('has a gold evolve button when evolution is ready, and answers a waiting catch', () => {
+    const evolve = draw('evolve ready');
+    const button = first(byName(evolve.root, 'button', 'Evolve into Pyrelynx (20 Essence)'));
+    expect(button.getAttribute('class')).toContain('primary');
+    evolve.page.click(button);
     expect(evolve.actions.onEvolve).toHaveBeenCalledTimes(1);
     page?.unmount();
 
-    const waiting = draw(
-      { ...kind('ribbon ready'), ribbon: null, waiting: false },
-      { pending: true },
-    );
-    waiting.page.click(byName(waiting.root, 'button', 'Answer a waiting catch')[0] as FakeElement);
+    const waiting = draw('level 15', { pending: true });
+    waiting.page.click(first(byName(waiting.root, 'button', 'Answer a waiting catch')));
     expect(waiting.onAnswerCatch).toHaveBeenCalledTimes(1);
     page?.unmount();
 
-    // No catch waiting for this creature: no such button.
-    const none = draw(kind('growing'));
+    const none = draw('level 15');
     expect(byName(none.root, 'button', /Answer/)).toHaveLength(0);
   });
+});
 
-  it('shows a ribbon that is not ready as a disabled button with what is missing', () => {
-    const { root } = draw(kind('ribbon short'));
-    const disabled = byName(root, 'button', /Bronze Ribbon \(6 scrap and 2 Ember shards\)/)[0];
-    expect(disabled?.hasAttribute('disabled')).toBe(true);
-    expect(visibleText(byClass(root, 'ribbon-line')[0] as FakeElement)).toContain('Short of parts');
+describe('the creature page: gear slots', () => {
+  it('shows locked slots as a padlock over the name with the level under it', () => {
+    const { root } = draw('level 2');
+    const locked = byClass(first(byClass(root, 'slot-row')), 'locked');
+    expect(locked).toHaveLength(2);
+    for (const slot of locked) {
+      expect(byClass(slot, 'lock-icon')).toHaveLength(1);
+      expect(slot.localName).toBe('div');
+    }
+    expect(locked.map((s) => visibleText(s))).toEqual(['ScarfLv 7', 'CharmLv 13']);
+    // The stacking order is the padlock, the name, then the level.
+    const parts = locked[1]?.childNodes.map((n) => (n as FakeElement).getAttribute('class') ?? '');
+    expect(parts?.map((c) => c.split(' ')[0])).toEqual(['lock-icon', 'slot-word', 'slot-lock']);
   });
 
-  it('says what evolution needs while it is locked, without a button', () => {
-    const { root } = draw({
-      ...kind('evolve ready'),
-      evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: false },
-      level: 12,
-    });
-    expect(visibleText(root)).toContain('Evolve into Pyrelynx: needs level 15');
-    expect(byName(root, 'button', /^Evolve into/)).toHaveLength(0);
+  it('shows an empty open slot with only its name', () => {
+    const { root } = draw('level 8');
+    const [hat, scarf, charm] = byClass(first(byClass(root, 'slot-row')), 'slot');
+    expect(visibleText(scarf as FakeElement)).toBe('Scarf');
+    expect(visibleText(hat as FakeElement)).toBe('Hat');
+    expect(charm?.getAttribute('class')).toContain('locked');
+    expect(byClass(first(byClass(root, 'slot-row')), 'empty')).toHaveLength(2);
   });
 
-  it('does not repeat the experience numbers the bar and the next line already say', () => {
-    const { root } = draw(kind('growing'));
-    expect(visibleText(root)).not.toContain('experience');
-    expect(visibleText(byClass(root, 'cc-next')[0] as FakeElement)).toBe('Next: Scarf at 7');
-  });
-
-  it('lists the gear one row per slot, with the picker under the row that is open', () => {
-    const { root, page: p } = draw(kind('ribbon ready'));
-    const rows = byClass(root, 'gear-row');
-    expect(rows).toHaveLength(3);
-    // Hat and Scarf: the name with its item level on one line, the item's lines below.
-    const hat = rows[0] as FakeElement;
-    expect(visibleText(byClass(hat, 'gear-title')[0] as FakeElement)).toBe(
-      "Emberkeeper's Crown item level 15",
+  it('shows a worn item as its bare sprite in the rarity colour, with the level as a plain number', () => {
+    const { root } = draw('level 15');
+    const [hat, scarf] = byClass(first(byClass(root, 'slot-row')), 'slot');
+    // One border only: the slot's own, no inner frame round the sprite.
+    expect(byClass(root, 'item-frame')).toHaveLength(0);
+    expect(hat?.getAttribute('class')).toContain('rarity-epic');
+    expect(scarf?.getAttribute('class')).toContain('rarity-rare');
+    expect(first(byClass(hat as FakeElement, 'slot-corner')).textContent).toBe('15');
+    expect(first(byClass(scarf as FakeElement, 'slot-corner')).textContent).toBe('12');
+    expect(find(hat as FakeElement, (e) => e.localName === 'canvas')).toHaveLength(1);
+    expect(nameOf(hat as FakeElement)).toBe(
+      "Hat: Emberkeeper's Crown, item level 15, Epic. Change",
     );
-    expect(visibleText(byClass(hat, 'gear-main')[0] as FakeElement)).toContain('(this item)');
-    // The closed Charm is a muted row without a button.
-    const charm = rows[2] as FakeElement;
-    expect(visibleText(charm)).toBe('Charm opens at level 13');
-    expect(find(charm, (e) => e.localName === 'button')).toHaveLength(0);
-    // The picker opens inside the row of its slot.
-    p.click(find(rows[1] as FakeElement, (e) => e.localName === 'button')[0] as FakeElement);
-    expect(byClass(rows[1] as FakeElement, 'gear-picker')).toHaveLength(1);
-    expect(byClass(rows[0] as FakeElement, 'gear-picker')).toHaveLength(0);
   });
 
-  it('wears and takes off gear, and can use Equip best', async () => {
-    const creature = kind('ribbon ready');
-    const hat = creature.gear.find((g) => g.slot === 'hat');
-    const equipBest = vi.fn(() => Promise.resolve(undefined));
-    const equip = vi.fn(() => Promise.resolve(true));
-    const { root, page: p } = draw(creature, {
-      actions: { onEquipBest: equipBest, onEquip: equip },
+  it('uses the one rarity colour tokens, grey, blue and pink, everywhere', () => {
+    const { root } = draw('rarities');
+    const [hat, scarf, charm] = byClass(first(byClass(root, 'slot-row')), 'slot');
+    expect(hat?.getAttribute('class')).toContain('rarity-common');
+    expect(scarf?.getAttribute('class')).toContain('rarity-rare');
+    expect(charm?.getAttribute('class')).toContain('rarity-epic');
+  });
+});
+
+describe('the creature page: the item picker drawer', () => {
+  it('opens from a slot as a dialog with an icon grid and no list or find bar', () => {
+    const { root, page: p } = draw('level 15');
+    p.click(slotButton(root, /^Hat: /));
+    const dialog = first(byRole(root, 'dialog'));
+    expect(dialog.textContent).toContain('Hat');
+    expect(byClass(dialog, 'ip-grid')).toHaveLength(1);
+    expect(byClass(dialog, 'ip-cell').length).toBeGreaterThan(10);
+    expect(byClass(dialog, 'item-find')).toHaveLength(0);
+    expect(byClass(dialog, 'ip-row')).toHaveLength(0);
+    // No framed box round an item inside the drawer: one outline per cell.
+    expect(byClass(dialog, 'item-frame')).toHaveLength(0);
+  });
+
+  it('puts the worn item first and selected, with Take off, and takes it off', async () => {
+    const { root, page: p, actions } = draw('level 15');
+    p.click(slotButton(root, /^Hat: /));
+    const dialog = first(byRole(root, 'dialog'));
+    const cells = byClass(dialog, 'ip-cell');
+    expect(cells[0]?.getAttribute('class')).toContain('worn');
+    expect(cells[0]?.getAttribute('aria-pressed')).toBe('true');
+    p.click(first(byName(dialog, 'button', 'Take off')));
+    await vi.waitFor(() => {
+      expect(actions.onEquip).toHaveBeenCalledTimes(1);
     });
-    p.click(byName(root, 'button', 'Equip best')[0] as FakeElement);
-    expect(equipBest).toHaveBeenCalledWith(creature.id);
-    // Tapping the Hat slot opens its picker with "Take off".
-    p.click(
-      find(root, (e) => e.localName === 'button' && /^Hat slot:/.test(nameOf(e)))[0] as FakeElement,
-    );
-    const takeOff = byName(root, 'button', /^Take off/)[0] as FakeElement;
-    expect(takeOff).toBeDefined();
-    p.click(takeOff);
+    const call: unknown[] = (actions.onEquip as ReturnType<typeof vi.fn>).mock.calls[0] ?? [];
+    expect(call[1]).toBeNull();
+    // Accepted: the drawer closes.
+    await vi.waitFor(() => {
+      expect(byRole(root, 'dialog')).toHaveLength(0);
+    });
+  });
+
+  it('selects another item and equips it', async () => {
+    const { root, page: p, actions, creature } = draw('level 15');
+    p.click(slotButton(root, /^Charm: /));
+    const dialog = first(byRole(root, 'dialog'));
+    const cell = first(byName(dialog, 'button', /^Cinder Charm, item level 14/));
+    p.click(cell);
+    expect(cell.getAttribute('aria-pressed')).toBe('true');
+    p.click(first(byName(dialog, 'button', 'Equip')));
+    await vi.waitFor(() => {
+      expect(actions.onEquip).toHaveBeenCalledTimes(1);
+    });
+    const call: unknown[] = (actions.onEquip as ReturnType<typeof vi.fn>).mock.calls[0] ?? [];
+    expect(String(call[0])).toContain('bag-charm');
+    expect(call[1]).toBe(creature.id);
+  });
+
+  it('keeps the drawer open when the server refuses', async () => {
+    const equip = vi.fn(() => Promise.resolve(false));
+    const { root, page: p } = draw('level 15', { actions: { onEquip: equip } });
+    p.click(slotButton(root, /^Hat: /));
+    p.click(first(byName(first(byRole(root, 'dialog')), 'button', 'Take off')));
+    await vi.waitFor(() => {
+      expect(equip).toHaveBeenCalledTimes(1);
+    });
     await Promise.resolve();
-    expect(equip).toHaveBeenCalledWith(hat?.id, null);
+    expect(byRole(root, 'dialog')).toHaveLength(1);
   });
 
-  it('slots a talent from the Talent Book', () => {
-    const slot = vi.fn();
-    const creature = kind('talent to fill');
-    const { root, page: p } = draw(creature, { actions: { onSlotTalent: slot } });
-    // The book is an accordion, closed until asked for.
-    expect(byName(root, 'button', /^Put Playful in slot 2/)).toHaveLength(0);
-    p.click(byName(root, 'button', /^Talent Book/)[0] as FakeElement);
-    const button = byName(root, 'button', /^Put Playful in slot 2/)[0] as FakeElement;
-    expect(button).toBeDefined();
-    expect(visibleText(button)).toBe('Slot 2 \u00b7 10 Bait');
-    p.click(button);
-    expect(slot).toHaveBeenCalledWith(creature, 'playful', false, 2);
+  it('shows the reason an item cannot be worn instead of an Equip button', () => {
+    const { root, page: p } = draw('level 15');
+    p.click(slotButton(root, /^Hat: /));
+    const dialog = first(byRole(root, 'dialog'));
+    p.click(first(byName(dialog, 'button', /^Thundercap, item level 16/)));
+    expect(byName(dialog, 'button', 'Equip')).toHaveLength(0);
+    expect(visibleText(first(byClass(dialog, 'ip-reason')))).toBe('Needs Lv 16');
   });
 
-  it('shows the Talent Book by state: in use first and lit, then available, with no state words', () => {
-    const creature = kind('talent to fill');
-    const { root, page: p } = draw(creature);
-    p.click(byName(root, 'button', /^Talent Book/)[0] as FakeElement);
-    const rows = byClass(root, 'book-entry');
-    expect(rows.map((r) => r.getAttribute('class'))).toEqual([
-      'book-entry in-use',
-      'book-entry available',
-    ]);
-    const used = rows[0] as FakeElement;
-    expect(visibleText(byClass(used, 'book-slot-mark')[0] as FakeElement)).toBe(
-      'In use, \u2713 Slot 1',
+  it('says Loading... while the gear loads, and offers nothing to pick', () => {
+    const { root, page: p } = draw('level 15', { gearLoaded: false });
+    p.click(slotButton(root, /^Hat: /));
+    const dialog = first(byRole(root, 'dialog'));
+    expect(visibleText(dialog)).toContain('Loading...');
+    expect(byClass(dialog, 'ip-cell')).toHaveLength(0);
+    expect(byClass(dialog, 'ip-detail')).toHaveLength(0);
+  });
+
+  it('opens with the page on the slot whose icon was tapped on the card, if that slot is open', () => {
+    const open = draw('level 15', { focus: { part: 'gear', slot: 'scarf' } });
+    expect(first(byRole(open.root, 'dialog')).textContent).toContain('Scarf');
+    page?.unmount();
+    // A locked slot opens nothing.
+    const locked = draw('level 2', { focus: { part: 'gear', slot: 'charm' } });
+    expect(byRole(locked.root, 'dialog')).toHaveLength(0);
+    expect(locked.root.focused).toBe(1);
+    expect(startingDrawer(null, { level: 15 }, { hat: 1, scarf: 7, charm: 13 })).toBeNull();
+    expect(
+      startingDrawer({ part: 'talents' }, { level: 15 }, { hat: 1, scarf: 7, charm: 13 }),
+    ).toBeNull();
+  });
+});
+
+describe('the creature page: the item detail panel', () => {
+  it('is all pixel font: base stats first, then a divider, then the modifiers with their pips', () => {
+    const { root, page: p } = draw('level 15');
+    p.click(slotButton(root, /^Hat: /));
+    const detail = first(byClass(first(byRole(root, 'dialog')), 'ip-detail'));
+    expect(detail.getAttribute('class')).toContain('pix');
+    const kids = find(detail, (e) =>
+      ['ip-base', 'ip-divider', 'line-list'].some((c) =>
+        (e.getAttribute('class') ?? '').split(' ').includes(c),
+      ),
+    ).map((e) => (e.getAttribute('class') ?? '').split(' ')[0]);
+    expect(kids).toEqual(['ip-base', 'ip-divider', 'line-list']);
+    // One row per stat: the base value and its local bonus after it.
+    const rows = byClass(first(byClass(detail, 'ip-base')), 'ip-row-stat').map((r) =>
+      visibleText(r),
     );
-    expect(byName(used, 'button', /./)).toHaveLength(1);
-    const text = visibleText(root);
-    expect(text).not.toContain('Book only');
-    expect(text).not.toContain('In slot');
-    expect(text).not.toContain('In the book only');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatch(/^Attack \d+ \+\d+$/);
+    expect(rows[1]).toMatch(/^HP \d+$/);
+    // The modifiers keep their values and tier pips.
+    expect(visibleText(detail)).toContain('(this item)');
+    expect(byClass(detail, 'pips').length).toBeGreaterThan(0);
+    // The bonus is a distinct element, so a stat with none shows the base alone.
+    expect(byClass(detail, 'ip-stat-bonus')).toHaveLength(1);
   });
 
-  it('uses one plain "Use" button when only one slot is open, and says when Bait is short', () => {
-    const creature = kind('growing');
-    const withSpare = {
-      ...creature,
-      talents: {
-        ...creature.talents,
-        book: [...creature.talents.book, { ...talentView('playful', true), slot: null }],
-      },
-    };
-    const { root, page: p } = draw(withSpare, { bait: 3 });
-    p.click(byName(root, 'button', /^Talent Book/)[0] as FakeElement);
-    const button = byName(root, 'button', /^Put Playful/)[0] as FakeElement;
-    expect(visibleText(button)).toBe('Use \u00b7 10 Bait');
-    expect(button.getAttribute('disabled')).not.toBeNull();
-    expect(visibleText(root)).toContain('Not enough Bait: each swap costs 10.');
+  it('has no divider for a Charm, which has no base stats', () => {
+    const { root, page: p } = draw('level 15');
+    p.click(slotButton(root, /^Charm: /));
+    const detail = first(byClass(first(byRole(root, 'dialog')), 'ip-detail'));
+    expect(byClass(detail, 'ip-base')).toHaveLength(0);
+    expect(byClass(detail, 'ip-divider')).toHaveLength(0);
+  });
+});
+
+describe('the creature page: talent slots and the Talent Book', () => {
+  it('opens the book for the slot that was tapped and slots a free talent for Bait', () => {
+    const { root, page: p, actions, creature } = draw('talents: filled and empty');
+    p.click(slotButton(root, /^Talent slot 2: empty/));
+    const dialog = first(byRole(root, 'dialog'));
+    expect(dialog.textContent).toContain('Talent Book');
+    const use = first(byName(dialog, 'button', /^Put Warm to the Touch in slot 2 for 10 Bait/));
+    expect(visibleText(use)).toBe('Use · 10 Bait');
+    p.click(use);
+    expect(actions.onSlotTalent).toHaveBeenCalledWith(creature, 'warm-to-the-touch', false, 2);
+    // The drawer closes once it is asked.
+    expect(byRole(root, 'dialog')).toHaveLength(0);
+  });
+
+  it('greys out a talent that is already in another slot, with its slot mark and no button', () => {
+    const { root, page: p } = draw('talents: filled and empty');
+    p.click(slotButton(root, /^Talent slot 2: empty/));
+    const dialog = first(byRole(root, 'dialog'));
+    const rows = byClass(dialog, 'book-entry');
+    const elsewhere = byClass(dialog, 'elsewhere');
+    expect(elsewhere).toHaveLength(1);
+    const row = first(elsewhere);
+    expect(visibleText(first(byClass(row, 'book-slot-mark')))).toBe('Already in Slot 1');
+    // No "move to slot" option: slots are equivalent.
+    expect(find(row, (e) => e.localName === 'button')).toHaveLength(0);
+    expect(visibleText(dialog)).not.toContain('To slot');
+    // It comes last, after the talents that can be used.
+    expect(rows[rows.length - 1]).toBe(row);
+    expect(rows.slice(0, -1).every((r) => byName(r, 'button', /Bait/).length === 1)).toBe(true);
+  });
+
+  it('lights the talent that is in the tapped slot, with no button', () => {
+    const { root, page: p } = draw('talents: filled and empty');
+    p.click(slotButton(root, /^Talent slot 1: /));
+    const dialog = first(byRole(root, 'dialog'));
+    const here = first(byClass(dialog, 'in-use'));
+    expect(visibleText(first(byClass(here, 'book-slot-mark')))).toBe('In use, ✓ Slot 1');
+    expect(find(here, (e) => e.localName === 'button')).toHaveLength(0);
+    expect(byClass(dialog, 'book-entry')[0]).toBe(here);
+  });
+
+  it('turns the buttons off and says so when the Bait is short', () => {
+    const { root, page: p } = draw('talents: filled and empty', { bait: 4 });
+    p.click(slotButton(root, /^Talent slot 2: empty/));
+    const dialog = first(byRole(root, 'dialog'));
+    const buttons = byClass(dialog, 'book-use');
+    expect(buttons.length).toBeGreaterThan(0);
+    for (const button of buttons) expect(button.hasAttribute('disabled')).toBe(true);
+    expect(visibleText(dialog)).toContain('Not enough Bait.');
+  });
+
+  it('shows locked talent slots like locked gear slots, and the signature talent without a button', () => {
+    const { root } = draw('talents: epic');
+    const slots = byClass(
+      first(find(root, (e) => e.localName === 'ul' && e.getAttribute('aria-label') === 'Talents')),
+      'slot',
+    );
+    expect(slots).toHaveLength(4);
+    expect(visibleText(slots[0] as FakeElement)).toContain('Signature');
+    expect(slots[0]?.localName).toBe('div');
+    const locked = first(byClass(root, 'locked'));
+    expect(visibleText(locked)).toBe('TalentLv 25');
+  });
+
+  it('opens on the talents when the chips were tapped', () => {
+    const { root, page: p } = draw('talents: filled and empty', { focus: { part: 'talents' } });
+    const heading = p.document.getElementById(`${root.getAttribute('id') ?? ''}-talents`);
+    expect(heading?.focused).toBe(1);
+    expect(heading?.scrolled).toBe(1);
+    expect(root.focused).toBe(0);
+    expect(byRole(root, 'dialog')).toHaveLength(0);
+  });
+});
+
+describe('the creature page: About and Rename', () => {
+  it('holds the facts the card used to keep under "More"', () => {
+    const { root } = draw('level 15');
+    const text = visibleText(root);
+    for (const word of [
+      'Fusion',
+      '0 / 5',
+      'Ribbons',
+      'Explorer rank',
+      'Trips',
+      'HP',
+      'Attack',
+      'Speed',
+    ]) {
+      expect(text).toContain(word);
+    }
+    expect(byName(root, 'button', 'About')[0]?.getAttribute('aria-expanded')).toBe('true');
+    const rename = first(byName(root, 'button', 'Rename'));
+    expect(rename.getAttribute('aria-expanded')).toBe('false');
+    // The form stays in the page while closed, so a half-typed nickname survives.
+    expect(find(root, (e) => e.localName === 'input')).toHaveLength(1);
   });
 
   it('renames: a nickname goes to the server, empty clears it', () => {
     const rename = vi.fn();
-    const creature = kind('growing');
-    const { root, page: p } = draw(creature, { actions: { onRename: rename } });
-    const input = find(root, (e) => e.localName === 'input')[0] as FakeElement;
-    p.type(input, 'Sparky');
-    const form = find(root, (e) => e.localName === 'form')[0] as FakeElement;
+    const { root, page: p, creature } = draw('level 15', { actions: { onRename: rename } });
+    p.type(first(find(root, (e) => e.localName === 'input')), 'Sparky');
+    const form = first(find(root, (e) => e.localName === 'form'));
     p.update(() => {
       for (const l of form.listeners.get('submit') ?? []) {
         l.call(form, {
@@ -348,48 +598,5 @@ describe('the creature page: what it holds', () => {
       }
     });
     expect(rename).toHaveBeenCalledWith(creature, 'Sparky');
-  });
-
-  it('lounges, unless it is already the lounger or is busy', () => {
-    const lounge = vi.fn();
-    const creature = kind('growing');
-    const { root, page: p } = draw(creature, { actions: { onLounge: lounge } });
-    p.click(byName(root, 'button', 'Lounge')[0] as FakeElement);
-    expect(lounge).toHaveBeenCalledWith(creature);
-    page?.unmount();
-    const already = draw(creature, { loungerId: creature.id });
-    expect(byName(already.root, 'button', 'Lounge')).toHaveLength(0);
-    page?.unmount();
-    const busy = draw({ ...creature, busy: { kind: 'job', id: 'job-1' } });
-    expect(byName(busy.root, 'button', 'Lounge')).toHaveLength(0);
-  });
-
-  it('draws names as text, never as markup', () => {
-    const creature = { ...kind('growing'), nickname: '<img src=x onerror=alert(1)>' };
-    const { root } = draw(creature);
-    expect(find(root, (e) => e.localName === 'img')).toHaveLength(0);
-    expect(visibleText(root)).toContain('<img src=x onerror=alert(1)>');
-  });
-});
-
-describe('the creature page: where it opens', () => {
-  it('opens on the gear picker of the slot whose icon was tapped', () => {
-    const { root, page: p } = draw(kind('ribbon ready'), {
-      focus: { part: 'gear', slot: 'scarf' },
-    });
-    expect(
-      find(root, (e) => e.getAttribute('role') === 'group' && /Choose a scarf/.test(nameOf(e))),
-    ).toHaveLength(1);
-    const heading = p.document.getElementById(`${root.getAttribute('id') ?? ''}-gear`);
-    expect(heading?.focused).toBe(1);
-    expect(heading?.scrolled).toBe(1);
-  });
-
-  it('opens on the talents when the chips were tapped', () => {
-    const { root, page: p } = draw(kind('talent to fill'), { focus: { part: 'talents' } });
-    const heading = p.document.getElementById(`${root.getAttribute('id') ?? ''}-talents`);
-    expect(heading?.focused).toBe(1);
-    expect(heading?.scrolled).toBe(1);
-    expect(root.focused).toBe(0);
   });
 });

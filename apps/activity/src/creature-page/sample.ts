@@ -3,14 +3,14 @@
  * creature card's own samples (`creature-card-sample.ts`, real server output) with levels, gear, talents
  * and the bag changed one thing at a time. Fixture data only.
  */
-import type { Creature, GameState } from '../../api';
-import { SAMPLE_GEAR, SAMPLE_STATE, sampleCreature, talentView } from '../../creature-card-sample';
-import type { GearSlot, GearState } from '../../gear-types';
-import type { CreatureTalents, TalentSlotView } from '../../talent-types';
+import type { Creature, GameState } from '../api';
+import { SAMPLE_GEAR, SAMPLE_STATE, sampleCreature, talentView } from '../creature-card-sample';
+import type { GearSlot, GearState } from '../gear-types';
+import type { CreatureTalents, TalentSlotView } from '../talent-types';
 import { OTHER_WEARER, allBagItems, wornFromBag, type WornRows } from './bag-sample';
 
 /** The creature of every v3 scene. */
-export const V3_ID = 'v3-cindle';
+export const PAGE_SAMPLE_ID = 'v3-cindle';
 
 /** A creature that wears an item in the bag (the picker says "On Pebble" for it). */
 const OTHER: Creature = {
@@ -21,33 +21,39 @@ const OTHER: Creature = {
 };
 
 /** The shapes of a creature the scenes use. */
-export type V3Kind =
+export type SceneKind =
   | 'level 2'
   | 'level 8'
   | 'level 15'
+  | 'rarities'
   | 'long name'
   | 'talents: golden and locked'
   | 'talents: filled and empty'
   | 'talents: three slots'
   | 'talents: epic'
   | 'ribbon ready'
+  | 'ribbon waiting'
+  | 'nickname'
   | 'evolve ready';
 
-export const V3_KINDS: readonly V3Kind[] = [
+export const SCENE_KINDS: readonly SceneKind[] = [
   'level 2',
   'level 8',
   'level 15',
+  'rarities',
   'long name',
   'talents: golden and locked',
   'talents: filled and empty',
   'talents: three slots',
   'talents: epic',
   'ribbon ready',
+  'ribbon waiting',
+  'nickname',
   'evolve ready',
 ];
 
-export function v3KindOf(value: string): V3Kind {
-  return V3_KINDS.find((k) => k === value) ?? 'level 15';
+export function sceneKindOf(value: string): SceneKind {
+  return SCENE_KINDS.find((k) => k === value) ?? 'level 15';
 }
 
 function slotsOf(...parts: readonly Omit<TalentSlotView, 'slot'>[]): TalentSlotView[] {
@@ -81,7 +87,7 @@ interface Shape {
   expNeeded: number | null;
 }
 
-function shapeOf(kind: V3Kind): Shape {
+function shapeOf(kind: SceneKind): Shape {
   const twoSlots = (first: TalentSlotView['talent'], opens: boolean) =>
     slotsOf({ opensAt: 1, open: true, talent: first }, { opensAt: 20, open: opens, talent: null });
   switch (kind) {
@@ -156,6 +162,7 @@ function shapeOf(kind: V3Kind): Shape {
         expNeeded: 1000,
       };
     case 'ribbon ready':
+    case 'ribbon waiting':
       return {
         level: 10,
         worn: { hat: 7, scarf: 5 },
@@ -171,6 +178,24 @@ function shapeOf(kind: V3Kind): Shape {
         exp: 825,
         expNeeded: 825,
       };
+    case 'rarities':
+      // A common Hat, a rare Scarf and an epic Charm: one of each, side by side.
+      return {
+        level: 20,
+        worn: { hat: 13, scarf: 0, charm: 11 },
+        talents: talentsOf(twoSlots(GOLDEN, true)),
+        exp: 100,
+        expNeeded: 1000,
+      };
+    case 'nickname':
+      return {
+        level: 15,
+        worn: { hat: 0, scarf: 0 },
+        talents: talentsOf(twoSlots(GOLDEN, false)),
+        nickname: 'Sparky',
+        exp: 310,
+        expNeeded: 825,
+      };
     case 'level 15':
       return {
         level: 15,
@@ -182,30 +207,36 @@ function shapeOf(kind: V3Kind): Shape {
   }
 }
 
-export interface V3Scene {
+export interface PageScene {
   creature: Creature;
   state: GameState;
   gear: GearState;
 }
 
 /** One creature with its bag, the state around it and the gear view the picker reads. */
-export function v3Scene(kind: V3Kind, options: { bait?: number } = {}): V3Scene {
+export function pageScene(kind: SceneKind, options: { bait?: number } = {}): PageScene {
   const shape = shapeOf(kind);
-  const items = allBagItems(V3_ID, shape.worn);
+  const items = allBagItems(PAGE_SAMPLE_ID, shape.worn);
   const base = sampleCreature(
-    kind === 'ribbon ready' ? 'ribbon ready' : kind === 'evolve ready' ? 'evolve ready' : 'growing',
+    kind === 'ribbon ready'
+      ? 'ribbon ready'
+      : kind === 'ribbon waiting'
+        ? 'ribbon short'
+        : kind === 'evolve ready'
+          ? 'evolve ready'
+          : 'growing',
   );
   const creature: Creature = {
     ...base,
-    id: V3_ID,
+    id: PAGE_SAMPLE_ID,
     level: shape.level,
     exp: shape.exp,
     expNeeded: shape.expNeeded,
     nickname: shape.nickname ?? null,
-    gear: wornFromBag(items, V3_ID),
+    gear: wornFromBag(items, PAGE_SAMPLE_ID),
     talents: shape.talents,
-    ribbon: kind === 'ribbon ready' ? base.ribbon : null,
-    waiting: kind === 'ribbon ready' || kind === 'evolve ready',
+    ribbon: kind === 'ribbon ready' || kind === 'ribbon waiting' ? base.ribbon : null,
+    waiting: kind === 'ribbon ready' || kind === 'ribbon waiting' || kind === 'evolve ready',
     nextUnlock: null,
     explorer: { rank: 3, xp: 120, nextRankXp: 400, trips: 7 },
     ability:

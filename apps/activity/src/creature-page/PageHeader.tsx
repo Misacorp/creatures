@@ -1,24 +1,26 @@
-import type { Creature, GameState } from '../../api';
-import { shinyPalette } from '../../art';
-import { activityBadges, speciesSubtitle, xpWords } from '../../creature-card-view';
-import { experienceLabel } from '../../CreatureProgress';
-import { creatureName, elementName, getSpecies } from '../../game';
-import { GlossaryTag } from '../../Glossary';
-import { glyphOrUnknown } from '../../glyphs';
-import { Sprite } from '../../sprites/Sprite';
-import { creatureSpriteOrFallback } from '../../sprites/creature-sprites';
-import { GameIcon } from '../../ui/GameIcon';
-import { Tag } from '../../ui/Tag';
-import { XpBar } from '../../XpBar';
+import type { Creature, GameState } from '../api';
+import { shinyPalette } from '../art';
+import { activityBadges, portraitAlt, xpWords } from '../creature-card-view';
+import { experienceLabel } from '../CreatureProgress';
+import { creatureName, elementName, getSpecies } from '../game';
+import { GlossaryTag } from '../Glossary';
+import { glyphOrUnknown } from '../glyphs';
+import { Sprite } from '../sprites/Sprite';
+import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
+import { GameIcon } from '../ui/GameIcon';
+import { Tag } from '../ui/Tag';
+import { XpBar } from '../XpBar';
 
 /**
  * The creature page's head (v3): the portrait, then one row that holds the name, the element icon and the
  * level, all centred on the same line, then the experience bar. A name that is too long for the row wraps
  * to a second line (two at most, then it is cut with an ellipsis; the whole name is in the Rename field and
  * read out in full by screen readers) and the icon and the level stay centred against the whole name. The
- * "Next: ..." line of the old head is gone.
+ * portrait has one border in the creature's rarity colour (the rarity is in its spoken label). The level
+ * badge is a hidden interaction: a tap still opens its explanation, with no "?" drawn. There is no
+ * "Next: ..." line, and the species name of a nicknamed creature is a tag on the page, not here.
  */
-export function HeaderV3({
+export function PageHeader({
   creature,
   state,
   nameId,
@@ -28,7 +30,6 @@ export function HeaderV3({
   nameId: string;
 }) {
   const species = getSpecies(creature.species);
-  const subtitle = speciesSubtitle(creature);
   const badges = activityBadges(creature, state);
   const shinyColours = creature.shiny ? shinyPalette(creature.species) : undefined;
   const sparkleFrame = creature.shiny && shinyColours === undefined;
@@ -36,12 +37,14 @@ export function HeaderV3({
   const name = creatureName(creature);
   return (
     <div class="v3-head">
-      <div class={sparkleFrame ? 'portrait sparkle-frame' : 'portrait'}>
+      <div
+        class={`portrait${sparkleFrame ? ' sparkle-frame' : ''}${species === undefined ? '' : ` rarity-${species.rarity}`}`}
+      >
         <Sprite
           sprite={creatureSpriteOrFallback(creature.species)}
           scale={4}
           bob
-          alt={`${name}${creature.shiny ? ' (shiny)' : ''}`}
+          alt={portraitAlt(name, creature.shiny, species?.rarity)}
           {...(shinyColours === undefined ? {} : { palette: shinyColours })}
         />
         {sparkleFrame && (
@@ -65,13 +68,12 @@ export function HeaderV3({
               <GameIcon icon={{ kind: 'element', element: species.element }} scale={2} />
             </span>
           )}
-          <GlossaryTag entry="level" look="chip" class="lvl-tag v3-level pix">
+          <GlossaryTag entry="level" look="chip" bare class="lvl-tag v3-level pix">
             Lv {creature.level}
           </GlossaryTag>
         </div>
-        {(subtitle !== null || badges.length > 0) && (
+        {badges.length > 0 && (
           <p class="cc-sub">
-            {subtitle !== null && <span class="muted">{subtitle}</span>}
             {badges.map((badge) => (
               <Tag
                 key={badge.text}

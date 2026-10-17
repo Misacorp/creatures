@@ -1,38 +1,38 @@
+import { content } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import type { Creature } from '../../api';
-import type { GearItem } from '../../gear-types';
-import { CreaturePageV3, type PageV3Actions, type PageV3Open } from '../creature-v3/CreaturePageV3';
-import { HeaderV3 } from '../creature-v3/HeaderV3';
-import type { PickerView } from '../creature-v3/ItemPicker';
-import { GearSlots, TalentSlots } from '../creature-v3/PageSlots';
-import { wornFromBag } from '../creature-v3/bag-sample';
-import type { ItemFilters } from '../creature-v3/picker-view';
+import { CreatureCard } from '../../CreatureCard';
+import { CreaturePage, type CardActions, type PageOpen } from '../../CreaturePage';
+import { sampleCreature } from '../../creature-card-sample';
+import { PageHeader } from '../../creature-page/PageHeader';
+import { GearSlots, TalentSlots } from '../../creature-page/PageSlots';
+import { wornFromBag } from '../../creature-page/bag-sample';
 import {
-  V3_ID,
-  V3_KINDS,
-  v3KindOf,
-  v3Scene,
-  type V3Kind,
-  type V3Scene,
-} from '../creature-v3/sample';
+  PAGE_SAMPLE_ID,
+  SCENE_KINDS,
+  pageScene,
+  sceneKindOf,
+  type PageScene,
+  type SceneKind,
+} from '../../creature-page/sample';
+import { ItemFrame, ItemSprite } from '../../GearArt';
+import type { GearItem } from '../../gear-types';
 import { bool, str } from '../props';
 import type { Entry, Props } from '../types';
 
 /**
- * The scenes of the design round, each with the label that is drawn in its banner (and that the
- * screenshots are named after). `kind` is the sample creature, `view` and `find` pick the picker.
+ * The scenes of the page, each with the label that is drawn in its banner (and that the screenshots are
+ * named after). `kind` is the sample creature; `show` is an excerpt of the page, the whole page, or the
+ * whole page with a drawer open.
  */
 interface SceneDef {
   id: string;
   label: string;
-  kind: V3Kind;
-  /** What the scene shows: an excerpt of the page, or the whole page with a drawer open. */
-  show: 'header' | 'gear' | 'talents' | 'page' | 'drawer';
-  open?: PageV3Open;
-  view?: PickerView;
-  find?: boolean;
-  filters?: ItemFilters;
-  query?: string;
+  kind: SceneKind;
+  show: 'header' | 'gear' | 'talents' | 'page' | 'drawer' | 'cards' | 'rarities';
+  open?: PageOpen;
+  /** The gear view has not loaded yet. */
+  loading?: boolean;
   bait?: number;
 }
 
@@ -40,56 +40,29 @@ const SCENE_LIST: readonly SceneDef[] = [
   { id: 'H1', label: 'H1 · Header', kind: 'level 15', show: 'header' },
   { id: 'H2', label: 'H2 · Header, long name', kind: 'long name', show: 'header' },
   { id: 'G1', label: 'G1 · Gear slots (level 2)', kind: 'level 2', show: 'gear' },
-  {
-    id: 'G2',
-    label: 'G2 · Gear slots (level 15, two filled)',
-    kind: 'level 15',
-    show: 'gear',
-  },
+  { id: 'G2', label: 'G2 · Gear slots (level 15, two filled)', kind: 'level 15', show: 'gear' },
   { id: 'G3', label: 'G3 · Gear slots (level 8, two empty)', kind: 'level 8', show: 'gear' },
   {
-    id: 'P-A',
-    label: 'P-A · Picker: list',
-    kind: 'level 15',
-    show: 'drawer',
-    open: { kind: 'gear', slot: 'hat' },
-    view: 'list',
-  },
-  {
     id: 'P-B',
-    label: 'P-B · Picker: grid',
+    label: 'P-B · Item picker: grid and detail',
     kind: 'level 15',
     show: 'drawer',
     open: { kind: 'gear', slot: 'hat' },
-    view: 'grid',
   },
   {
     id: 'P-C',
-    label: 'P-C · Picker: find and filter',
-    kind: 'level 15',
-    show: 'drawer',
-    open: { kind: 'gear', slot: 'hat' },
-    view: 'list',
-    find: true,
-    filters: { rarities: ['rare'], elements: [], canWear: true },
-  },
-  {
-    id: 'P-C2',
-    label: 'P-C2 · Picker: find and filter on the grid',
-    kind: 'level 15',
-    show: 'drawer',
-    open: { kind: 'gear', slot: 'hat' },
-    view: 'grid',
-    find: true,
-    query: 'hood',
-  },
-  {
-    id: 'P-D',
-    label: 'P-D · Picker: list, the Charm slot (role pieces)',
+    label: 'P-C · Item picker: the Charm slot (role pieces)',
     kind: 'level 15',
     show: 'drawer',
     open: { kind: 'gear', slot: 'charm' },
-    view: 'list',
+  },
+  {
+    id: 'P-L',
+    label: 'P-L · Item picker while the gear loads',
+    kind: 'level 15',
+    show: 'drawer',
+    open: { kind: 'gear', slot: 'hat' },
+    loading: true,
   },
   { id: 'T1', label: 'T1 · Talent slots', kind: 'talents: golden and locked', show: 'talents' },
   {
@@ -112,22 +85,36 @@ const SCENE_LIST: readonly SceneDef[] = [
   },
   {
     id: 'T2',
-    label: 'T2 · Talent Book in the drawer',
+    label: 'T2 · Talent Book for slot 2 (one is in slot 1)',
     kind: 'talents: filled and empty',
     show: 'drawer',
     open: { kind: 'talent', slot: 2 },
   },
   {
     id: 'T2b',
-    label: 'T2b · Talent Book in the drawer (short of Bait)',
+    label: 'T2b · Talent Book (short of Bait)',
     kind: 'talents: filled and empty',
     show: 'drawer',
     open: { kind: 'talent', slot: 2 },
     bait: 4,
   },
-  { id: 'F1', label: 'F1 · Full page top', kind: 'level 15', show: 'page' },
-  { id: 'F2', label: 'F2 · Full page, ribbon ready', kind: 'ribbon ready', show: 'page' },
-  { id: 'F3', label: 'F3 · Full page, ready to evolve', kind: 'evolve ready', show: 'page' },
+  { id: 'F1', label: 'F1 · Page top', kind: 'level 15', show: 'page' },
+  { id: 'F2', label: 'F2 · Page, nicknamed (species tag)', kind: 'nickname', show: 'page' },
+  {
+    id: 'F3',
+    label: 'F3 · Page, ribbon waiting (cost and what is missing)',
+    kind: 'ribbon waiting',
+    show: 'page',
+  },
+  { id: 'F4', label: 'F4 · Page, ribbon ready', kind: 'ribbon ready', show: 'page' },
+  { id: 'F5', label: 'F5 · Page, ready to evolve', kind: 'evolve ready', show: 'page' },
+  { id: 'C1', label: 'C1 · Cards: rarity borders', kind: 'level 15', show: 'cards' },
+  {
+    id: 'R1',
+    label: 'R1 · Rarity colours: common, rare, epic',
+    kind: 'rarities',
+    show: 'rarities',
+  },
 ];
 
 const SCENE_IDS = SCENE_LIST.map((s) => s.id);
@@ -145,7 +132,7 @@ function Banner({ label }: { label: string }) {
   );
 }
 
-const NO_ACTIONS: Pick<PageV3Actions, 'onRibbon' | 'onEvolve' | 'onRename' | 'onLounge'> = {
+const NO_ACTIONS: Omit<CardActions, 'onEquip' | 'onSlotTalent'> = {
   onRibbon: () => undefined,
   onEvolve: () => undefined,
   onRename: () => undefined,
@@ -153,9 +140,9 @@ const NO_ACTIONS: Pick<PageV3Actions, 'onRibbon' | 'onEvolve' | 'onRename' | 'on
 };
 
 /** The page with local state: wearing and taking off change the bag, using a book talent fills the slot. */
-function LivePage({ def, kind, bait }: { def: SceneDef; kind: V3Kind; bait: number }) {
-  const [scene, setScene] = useState<V3Scene>(() => v3Scene(kind, { bait }));
-  const actions: PageV3Actions = {
+function LivePage({ def, kind, bait }: { def: SceneDef; kind: SceneKind; bait: number }) {
+  const [scene, setScene] = useState<PageScene>(() => pageScene(kind, { bait }));
+  const actions: CardActions = {
     ...NO_ACTIONS,
     onEquip: (gearId, creatureId) => {
       setScene((current) => {
@@ -168,7 +155,10 @@ function LivePage({ def, kind, bait }: { def: SceneDef; kind: V3Kind; bait: numb
             ? { ...item, equippedOn: null }
             : item;
         });
-        const creature: Creature = { ...current.creature, gear: wornFromBag(items, V3_ID) };
+        const creature: Creature = {
+          ...current.creature,
+          gear: wornFromBag(items, PAGE_SAMPLE_ID),
+        };
         return {
           gear: { ...current.gear, items },
           creature,
@@ -219,16 +209,13 @@ function LivePage({ def, kind, bait }: { def: SceneDef; kind: V3Kind; bait: numb
     },
   };
   const page = (
-    <CreaturePageV3
+    <CreaturePage
       creature={scene.creature}
       state={scene.state}
-      gear={scene.gear}
+      gear={def.loading === true ? null : scene.gear}
       busy={false}
       actions={actions}
-      picker={def.view ?? 'list'}
-      find={def.find === true}
-      {...(def.filters === undefined ? {} : { initialFilters: def.filters })}
-      {...(def.query === undefined ? {} : { initialQuery: def.query })}
+      focus={null}
       initialOpen={def.open ?? null}
       onBack={() => undefined}
       onAnswerCatch={() => undefined}
@@ -244,12 +231,12 @@ function LivePage({ def, kind, bait }: { def: SceneDef; kind: V3Kind; bait: numb
 
 /** An excerpt of the page: the head, and the one block the scene is about, in the page's own card. */
 function Excerpt({ def, bait }: { def: SceneDef; bait: number }) {
-  const { creature, state, gear } = v3Scene(def.kind, { bait });
+  const { creature, state, gear } = pageScene(def.kind, { bait });
   return (
     <div class="v3-bleed">
-      <section class="creature-page cp-v3" aria-label="Excerpt of the creature page">
+      <section class="creature-page" aria-label="Excerpt of the creature page">
         <div class="cp-block">
-          <HeaderV3 creature={creature} state={state} nameId={`v3-${def.id}-name`} />
+          <PageHeader creature={creature} state={state} nameId={`page-${def.id}-name`} />
         </div>
         {def.show === 'gear' && (
           <div class="cp-block">
@@ -268,16 +255,81 @@ function Excerpt({ def, bait }: { def: SceneDef; bait: number }) {
   );
 }
 
+/** One creature card for each rarity, to show the portrait borders. */
+function RarityCards() {
+  const picks = (['common', 'rare', 'epic'] as const).flatMap((rarity) => {
+    const species = content.creatures.find((c) => c.rarity === rarity && c.festival !== true);
+    return species === undefined ? [] : [species];
+  });
+  const state = pageScene('level 15').state;
+  return (
+    <ul class="cards creature-cards">
+      {picks.map((species, index) => {
+        const creature: Creature = {
+          ...sampleCreature('growing'),
+          id: `rarity-card-${String(index)}`,
+          species: species.id,
+          line: species.line,
+          nickname: null,
+        };
+        return (
+          <CreatureCard
+            key={creature.id}
+            creature={creature}
+            state={{ ...state, creatures: [creature] }}
+            gear={null}
+            busy={false}
+            found={false}
+            actions={{ onRibbon: () => undefined, onEvolve: () => undefined }}
+            onAnswerCatch={() => undefined}
+            onOpen={() => undefined}
+          />
+        );
+      })}
+    </ul>
+  );
+}
+
+/** A common, a rare and an epic item as slots and as the frames the Workshop and the loot use. */
+function Rarities({ def }: { def: SceneDef }) {
+  const { creature, gear } = pageScene(def.kind);
+  const worn = creature.gear;
+  return (
+    <div class="v3-bleed">
+      <section class="creature-page" aria-label="Rarity colours">
+        <div class="cp-block">
+          <h3 class="cp-title">Gear slots</h3>
+          <GearSlots creature={creature} gear={gear} openSlot={null} onOpen={() => undefined} />
+        </div>
+        <div class="cp-block">
+          <h3 class="cp-title">Item frames</h3>
+          <div class="v3-rarities">
+            {worn.map((item) => (
+              <ItemFrame key={item.id} rarity={item.rarity} baseId={item.baseId}>
+                <ItemSprite baseId={item.baseId} scale={5} />
+              </ItemFrame>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function Scene({ p }: { p: Props }) {
   const def = sceneOf(str(p, 'scene'));
   const banner = bool(p, 'banner');
-  const kind = v3KindOf(str(p, 'creature') === 'scene' ? def.kind : str(p, 'creature'));
+  const kind = sceneKindOf(str(p, 'creature') === 'scene' ? def.kind : str(p, 'creature'));
   const bait = def.bait ?? 100;
   return (
     <div class="v3-scenes">
       {banner && <Banner label={def.label} />}
       {def.show === 'header' || def.show === 'gear' || def.show === 'talents' ? (
         <Excerpt def={{ ...def, kind }} bait={bait} />
+      ) : def.show === 'cards' ? (
+        <RarityCards />
+      ) : def.show === 'rarities' ? (
+        <Rarities def={{ ...def, kind }} />
       ) : (
         <LivePage key={`${def.id}-${kind}`} def={def} kind={kind} bait={bait} />
       )}
@@ -285,20 +337,20 @@ function Scene({ p }: { p: Props }) {
   );
 }
 
-const creaturePageV3: Entry = {
-  name: 'CreaturePageV3',
-  file: 'apps/activity/src/workbench/creature-v3/CreaturePageV3.tsx',
+const creaturePage: Entry = {
+  name: 'CreaturePage',
+  file: 'apps/activity/src/CreaturePage.tsx',
   group: 'Creatures & game pieces',
   description:
-    'Creature page v3, a design round (not in the game yet): the head is one centred row, nothing on the page looks forward, gear and talents are slots side by side, and a tap on a slot opens a bottom drawer (an item picker in three options, or the Talent Book). Pick a scene: H = header, G = gear slots, P = item picker (A list, B grid, C find and filter), T = talent slots and Talent Book, F = the full page. The scenes are live: equip, take off and use a talent.',
+    "A creature's page, opened from its card in the list's place: back at the top left and Lounge at the top right, one head row (portrait with a border in its rarity colour, name, element, level, the experience bar), tags (the species name of a nicknamed creature, element and role), the ribbon, evolve and waiting-catch buttons when ready, stats, the finale ability, gear and talents as slots (a tap opens a bottom drawer: the item picker grid with its detail panel, or the Talent Book), About and Rename. Pick a scene: H = header, G = gear slots, P = item picker, T = talent slots and Talent Book, F = the full page, C = cards, R = rarity colours. The scenes are live: equip, take off and use a talent.",
   controls: {
     scene: { kind: 'select', options: SCENE_IDS },
     banner: { kind: 'toggle' },
-    creature: { kind: 'select', options: ['scene', ...V3_KINDS] },
+    creature: { kind: 'select', options: ['scene', ...SCENE_KINDS] },
   },
   defaults: { scene: 'F1', banner: true, creature: 'scene' },
   presets: SCENE_LIST.map((s) => ({ name: s.label, props: { scene: s.id } })),
   render: (p) => <Scene p={p} />,
 };
 
-export const creaturePageV3Entries: readonly Entry[] = [creaturePageV3];
+export const creaturePageEntries: readonly Entry[] = [creaturePage];

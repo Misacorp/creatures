@@ -182,55 +182,19 @@
   min-width: 0;
 }
 
-/* The talents of a creature card. */
-.creature-talents {
-  margin: 0.5rem 0;
-}
-
-.talent-slots,
 .book-list {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.talent-slot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 0.5rem;
-}
-
-.talent-slot.closed {
-  color: var(--haze);
-}
-
-.slot-name {
-  min-width: 4.5rem;
-  color: var(--haze);
-  font-size: 0.875rem;
-}
-
 /*
-  The Talent Book (an Accordion). Rows: in use first, lit, with a "Slot 1" mark; then the ones that can be
+  The Talent Book (in a Drawer). Rows: in use first, lit, with a "Slot 1" mark; then the ones that can be
   used, each with a compact button; then any that cannot (muted). Dividers sit between rows, never above
   the first.
 */
-.talent-book {
-  margin-top: 0.5rem;
-}
-
-.book-help {
-  margin: 0 0 0.375rem;
-}
-
-.book-list {
-  gap: 0;
-}
-
 .book-entry {
   display: flex;
   flex-wrap: wrap;

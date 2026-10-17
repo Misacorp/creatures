@@ -51,6 +51,26 @@ describe('the debug panel and the production build', () => {
     for (const marker of WORKBENCH_MARKERS) {
       expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
     }
+    // The rarity colours are defined once, as tokens (grey, blue, pink; gold and crimson reserved).
+    const css = files
+      .filter((f) => f.name.endsWith('.css'))
+      .map((f) => f.text)
+      .join('\n')
+      .replace(/\s+/g, '');
+    for (const token of [
+      '--rarity-common:#a8a8b8',
+      '--rarity-rare:#4da3ff',
+      '--rarity-epic:#ff6fbf',
+      '--rarity-legendary:var(--gold)',
+      '--rarity-mythic:#dc143c',
+    ]) {
+      expect(css).toContain(token);
+    }
+    // The item picker's list and find-and-filter options were dropped from the game: only the grid ships.
+    const js = files.filter((f) => f.name.endsWith('.js'));
+    for (const gone of ['Find an item', 'ip-pinned', 'item-find']) {
+      expect(js.filter((f) => f.text.includes(gone)).map((f) => f.name)).toEqual([]);
+    }
   }, 60_000);
 
   it('is not in a build that does not say it is for staging', async () => {

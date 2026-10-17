@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks';
 import { ItemFrame, ItemSprite } from '../../GearArt';
 import { Drawer } from '../../ui/Drawer';
 import { Slot, SlotRow } from '../../ui/Slot';
-import { TalentInSlot } from '../creature-v3/PageSlots';
+import { TalentInSlot } from '../../creature-page/PageSlots';
 import { talentView } from '../../creature-card-sample';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
