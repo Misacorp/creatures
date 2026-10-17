@@ -37,6 +37,9 @@
 }
 
 .idc-badge {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
   margin: 0.25rem 0 0;
 }
 
@@ -168,13 +171,6 @@ button.danger {
 .pip.lock {
   color: var(--line);
   opacity: 0.5;
-}
-
-.slot-tag {
-  display: inline-block;
-  padding: 0 0.375rem;
-  background: var(--dusk);
-  box-shadow: 0 0 0 var(--px) var(--ink);
 }
 
 /* Where an item came from: one tap away. */

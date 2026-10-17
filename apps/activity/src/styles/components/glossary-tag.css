@@ -73,8 +73,8 @@ button.gtag:active:not(:disabled) {
   inset: -0.5rem;
 }
 
-/* The rarity badge of an item is tappable but, like the level badge, shows no "?". */
-.rarity-tag.gtag-chip::after {
+/* An item's badges (slot, rarity, element) are tappable but, like the level badge, show no "?". */
+.item-badge.gtag-chip::after {
   content: none;
 }
 

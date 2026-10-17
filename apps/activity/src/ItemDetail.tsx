@@ -3,13 +3,10 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { creatureName } from './game';
 import type { GearActions } from './gear-actions';
-import { FestivalTag } from './GearArt';
 import type { GearItem, GearState } from './gear-types';
-import { detailLines, gearName, itemElement, needsText, slotName, wearReason } from './gear-view';
-import { GlossaryTag } from './Glossary';
+import { detailLines, gearName, needsText, wearReason } from './gear-view';
 import { ItemCard } from './ItemCard';
 import { DismantlePanel } from './ItemPanels';
-import { ElementChip } from './sprites/ElementChip';
 import { Accordion } from './ui/Accordion';
 
 type Panel = 'dismantle' | 'equip' | null;
@@ -126,11 +123,10 @@ export function ItemDetail({
   }, [item.id]);
 
   const base = gearBase(item.baseId);
-  const element = itemElement(item.baseId);
   const wearer = creatures.find((c) => c.id === item.equippedOn);
 
   return (
-    <section class="item-detail card-item" aria-labelledby={`item-${item.id}-name`}>
+    <section class="item-detail" aria-labelledby={`item-${item.id}-name`}>
       <ItemCard
         item={item}
         heading
@@ -138,13 +134,6 @@ export function ItemDetail({
         nameRef={heading}
         spriteScale={6}
       />
-      <p class="tags item-tags">
-        {item.festival && <FestivalTag />}
-        <GlossaryTag entry={`gear-slot-${item.slot}`} class="slot-tag pix">
-          {slotName(item.slot)}
-        </GlossaryTag>
-        {element !== null && <ElementChip element={element} />}
-      </p>
       <p>
         {wearer !== undefined && (
           <>

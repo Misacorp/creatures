@@ -1,18 +1,10 @@
 import { useState } from 'preact/hooks';
 import type { GameState } from './api';
 import { Blueprints } from './Blueprints';
-import { BulkDismantle } from './BulkDismantle';
 import type { GearActions } from './gear-actions';
 import { PartsRow } from './GearArt';
 import type { GearState, JobResult } from './gear-types';
-import {
-  bagText,
-  equipBestText,
-  jobResultRarity,
-  noticeLines,
-  topCreatureIds,
-  unequippedReason,
-} from './gear-view';
+import { bagText, jobResultRarity, noticeLines, unequippedReason } from './gear-view';
 import { GlossaryTag } from './Glossary';
 import { InventoryGrid } from './InventoryGrid';
 import { gearName } from './gear-view';
@@ -21,10 +13,11 @@ import { JobReveal } from './JobReveal';
 import { JobSlots } from './JobSlots';
 import { SupplyCrafting } from './SupplyCrafting';
 import { Accordion } from './ui/Accordion';
+import { Drawer } from './ui/Drawer';
 
 /**
- * The Workshop tab: your parts, the job slots (with timers and claims), the bag of gear with
- * an item's details and actions, and the blueprints you can craft from. Everything shown comes from
+ * The Workshop tab: your parts, the job slots (with timers and claims), the bag of gear (an item's
+ * details and actions open in a bottom drawer), and the blueprints you can craft from. Everything shown comes from
  * the server's gear view; every action goes back to the server, which decides.
  */
 export function Workshop({
@@ -53,7 +46,6 @@ export function Workshop({
   onDismissReveal: () => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [bestNote, setBestNote] = useState<string | null>(null);
   if (gear === null) {
     return failed ? (
       <section class="ws-section">
@@ -138,30 +130,12 @@ export function Workshop({
         }}
       />
       <section class="ws-section" aria-labelledby="ws-gear">
-        <h3 id="ws-gear">
-          Gear <GlossaryTag entry="gear" look="help" />
-        </h3>
-        <p class="muted">Bag: {bagText(gear.inventory)}</p>
-        {gear.items.length > 0 && (
-          <p class="actions">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                void actions.equipBest(topCreatureIds(state.creatures)).then((result) => {
-                  if (result !== undefined) setBestNote(equipBestText(result));
-                });
-              }}
-            >
-              Equip best on your top 3
-            </button>
-            {bestNote !== null && (
-              <span class="muted" role="status">
-                {bestNote}
-              </span>
-            )}
-          </p>
-        )}
+        <div class="ws-head">
+          <h3 id="ws-gear">
+            Gear <GlossaryTag entry="gear" look="help" />
+          </h3>
+          <span class="muted">Bag: {bagText(gear.inventory)}</span>
+        </div>
         {gear.items.length === 0 ? (
           <p class="empty muted">Your bag is empty.</p>
         ) : (
@@ -169,33 +143,34 @@ export function Workshop({
             items={gear.items}
             creatures={state.creatures}
             selectedId={selected?.id ?? null}
-            onSelect={setSelectedId}
-          />
-        )}
-        {selected !== null && (
-          <ItemDetail
-            key={selected.id}
-            item={selected}
-            gear={gear}
-            creatures={state.creatures}
-            busy={busy}
-            actions={actions}
-            onGone={() => {
-              setSelectedId(null);
+            onSelect={(id) => {
+              setSelectedId(id === selectedId ? null : id);
             }}
           />
         )}
-        {gear.items.length > 0 && (
-          <BulkDismantle
-            gear={gear}
-            creatures={state.creatures}
-            busy={busy}
-            actions={actions}
-            onStarted={() => {
-              setSelectedId(null);
-            }}
-          />
-        )}
+        <Drawer
+          open={selected !== null}
+          title={selected === null ? 'Item' : gearName(selected.baseId)}
+          titleHidden
+          class="item-drawer"
+          onClose={() => {
+            setSelectedId(null);
+          }}
+        >
+          {selected !== null && (
+            <ItemDetail
+              key={selected.id}
+              item={selected}
+              gear={gear}
+              creatures={state.creatures}
+              busy={busy}
+              actions={actions}
+              onGone={() => {
+                setSelectedId(null);
+              }}
+            />
+          )}
+        </Drawer>
       </section>
       <Blueprints
         gear={gear}

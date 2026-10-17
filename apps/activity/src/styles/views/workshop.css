@@ -13,6 +13,28 @@
   gap: 0.375rem;
 }
 
+/* A section heading with a short count on the same line, at the right (the bag's "Bag: 3 / 60"). */
+.ws-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ws-head h3 {
+  margin: 0;
+}
+
+.ws-head + * {
+  margin-top: 0.5rem;
+}
+
+/* An item from the bag in its drawer. */
+.item-drawer .item-detail {
+  margin: 0;
+  padding: 0 0.75rem 0.75rem;
+}
+
 .empty {
   padding: 0.5rem 0.75rem;
   border: 2px dashed var(--line);

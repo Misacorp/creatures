@@ -135,7 +135,7 @@ const workshop: Entry = {
   file: 'apps/activity/src/Workshop.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The Workshop tab with sample gear: parts, job slots, the bag with an item\'s details, blueprints and supplies. The buttons do nothing here and the craft odds stay on "Loading".',
+    'The Workshop tab with sample gear: parts, job slots, the bag (tap an item: its details open in a bottom drawer), blueprints and supplies. The buttons do nothing here and the craft odds stay on "Loading".',
   controls: { loaded: { kind: 'toggle' }, busy: { kind: 'toggle' } },
   defaults: { loaded: true, busy: false },
   presets: [

@@ -1,11 +1,14 @@
 import { CountBadge, type CountBadgeProps, type CountItem } from './ui/CountBadge';
+import { GameIcon } from './ui/GameIcon';
 import { Tag } from './ui/Tag';
 import { GLOSSARY_IDS, PART_KINDS, type PartKind } from '@creatures/game';
 import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from './Glossary';
 import { itemArt } from './gear-sprites';
-import { isFestivalBase, partName, partsEntries, rarityName } from './gear-view';
-import type { GearRarity, PartsBundle } from './gear-types';
+import { isFestivalBase, partName, partsEntries, rarityName, slotName } from './gear-view';
+import { glyphOrUnknown } from './glyphs';
+import { elementName } from './game';
+import type { GearRarity, GearSlot, PartsBundle } from './gear-types';
 import { Sprite } from './sprites/Sprite';
 
 /** An item's pixel sprite (12x12), tinted by its element. Decorative unless `alt` is given. */
@@ -56,6 +59,7 @@ export function ItemFrame({
   rarity,
   baseId,
   level,
+  slot,
   children,
   class: extra,
 }: {
@@ -63,6 +67,8 @@ export function ItemFrame({
   baseId?: string;
   /** The item's level; leave out when the item does not exist yet (a blueprint) or the level is not known. */
   level?: number;
+  /** The item's slot, as a small icon in the top-left corner: where a list mixes slots (the bag). */
+  slot?: GearSlot;
   children: ComponentChildren;
   class?: string;
 }) {
@@ -72,8 +78,46 @@ export function ItemFrame({
       class={`item-frame rarity-${rarity}${festival ? ' festival' : ''}${extra === undefined ? '' : ` ${extra}`}`}
     >
       {children}
+      {slot !== undefined && <SlotIcon slot={slot} class="item-slot" />}
       {level !== undefined && <ItemLevel level={level} />}
     </span>
+  );
+}
+
+/** A gear slot's silhouette (a cap, a scarf, a charm). Decoration: the slot is also said in words. */
+export function SlotIcon({ slot, class: extra }: { slot: GearSlot; class?: string }) {
+  return (
+    <Sprite
+      sprite={glyphOrUnknown(`slot-${slot}`)}
+      scale={2}
+      {...(extra === undefined ? {} : { class: extra })}
+    />
+  );
+}
+
+/** The slot as a badge next to the rarity: its icon and name ("Hat"). Tapping it explains the slot. */
+export function SlotTag({ slot, plain = false }: { slot: GearSlot; plain?: boolean }) {
+  return (
+    <Tag {...(plain ? {} : { entry: GLOSSARY_IDS.gearSlot(slot) })} class="item-badge slot-tag pix">
+      <SlotIcon slot={slot} />
+      {slotName(slot)}
+    </Tag>
+  );
+}
+
+/**
+ * An item's element tag as a badge (the element's icon and name, "Ember"). Tapping it says what the
+ * element means on an item (its lines lean that way), not what it means for a creature.
+ */
+export function GearElementTag({ element, plain = false }: { element: string; plain?: boolean }) {
+  return (
+    <Tag
+      {...(plain ? {} : { entry: GLOSSARY_IDS.gearElement(element) })}
+      class="item-badge element-tag pix"
+    >
+      <GameIcon icon={{ kind: 'element', element }} scale={2} />
+      {elementName(element)}
+    </Tag>
   );
 }
 
@@ -94,7 +138,7 @@ export function RarityTag({ rarity, plain = false }: { rarity: GearRarity; plain
   return (
     <Tag
       {...(plain ? {} : { entry: GLOSSARY_IDS.gearRarity(rarity) })}
-      class={`rarity-tag pix rarity-${rarity}`}
+      class={`item-badge rarity-tag pix rarity-${rarity}`}
     >
       {rarityName(rarity)}
     </Tag>

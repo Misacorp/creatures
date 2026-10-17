@@ -9,7 +9,6 @@ import {
 } from '@creatures/game';
 import {
   CostList,
-  FestivalTag,
   ItemFrame,
   ItemSprite,
   PartCount,
@@ -451,10 +450,10 @@ const itemCard: Entry = {
     });
     return (
       <section class="item-detail card-item">
-        {base?.festival === true && <FestivalTag />}
         <ItemCard
           item={{
             baseId: id,
+            slot: base?.slot ?? 'hat',
             rarity: rolled.rarity,
             itemLevel: level,
             stats: itemStats(rolled).map((s) => ({

@@ -17,7 +17,6 @@ import {
   dismantleDurationFor,
   dismantleLines,
   durationFor,
-  equipBestText,
   equipChoices,
   expeditionBlocked,
   gearName,
@@ -51,7 +50,6 @@ import {
   sortItems,
   startBlocker,
   supplyCraftViews,
-  topCreatureIds,
   unequippedReason,
   wearReason,
   wornInOrder,
@@ -172,13 +170,6 @@ describe('creatures, busy states and the picker', () => {
     expect(blocked[0]?.creature.id).toBe(cindle.id);
     expect(blocked[0]?.reason).toContain('on a job');
   });
-
-  it('picks the three strongest creatures for Equip best from the Workshop', () => {
-    const ids = topCreatureIds(game.creatures);
-    expect(ids).toHaveLength(3);
-    expect(new Set(ids)).toEqual(new Set(game.creatures.map((c) => c.id)));
-    expect(topCreatureIds(game.creatures.slice(0, 1))).toEqual([cindle.id]);
-  });
 });
 
 describe('the wear rule', () => {
@@ -240,38 +231,6 @@ describe('items', () => {
   it('writes the bag as used of cap with held places', () => {
     expect(bagText({ cap: 60, used: 5, reserved: 0 })).toBe('5 / 60');
     expect(bagText(gear.inventory)).toBe('8 / 60 (1 held for a craft)');
-  });
-
-  it('says what Equip best did', () => {
-    expect(equipBestText({ changes: [], skipped: [] })).toBe('Already the best.');
-    expect(
-      equipBestText({
-        changes: [{ creatureId: 'c', slot: 'hat', itemId: 'i' }],
-        skipped: [],
-      }),
-    ).toBe('Changed 1 slot.');
-    expect(
-      equipBestText({
-        changes: [
-          { creatureId: 'c', slot: 'hat', itemId: 'i' },
-          { creatureId: 'c', slot: 'scarf', itemId: 'j' },
-        ],
-        skipped: [],
-      }),
-    ).toBe('Changed 2 slots.');
-    // Busy creatures keep their gear, and the text says they were skipped.
-    expect(equipBestText({ changes: [], skipped: [{ creatureId: 'a', reason: 'away' }] })).toBe(
-      'Already the best. 1 busy creature skipped.',
-    );
-    expect(
-      equipBestText({
-        changes: [{ creatureId: 'c', slot: 'hat', itemId: 'i' }],
-        skipped: [
-          { creatureId: 'a', reason: 'away' },
-          { creatureId: 'b', reason: 'job' },
-        ],
-      }),
-    ).toBe('Changed 1 slot. 2 busy creatures skipped.');
   });
 });
 

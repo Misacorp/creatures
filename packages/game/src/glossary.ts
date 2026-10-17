@@ -79,6 +79,8 @@ export const GLOSSARY_IDS = {
   gearSlot: (slot: string): string => `gear-slot-${slot}`,
   /** A gear line such as `tide-attunement`. */
   gearLine: (id: string): string => `gear-line-${id}`,
+  /** What an element tag means on an item (`ember`: Ember gear leans to Ember lines). */
+  gearElement: (element: string): string => `gear-tag-${element}`,
   /** A gear rarity such as `epic`. */
   gearRarity: (rarity: string): string => `gear-rarity-${rarity}`,
   /** A part kind such as `tide-shard`. */
@@ -234,10 +236,11 @@ export function requiredGlossaryIds(pack: ContentPack): string[] {
   for (const a of pack.finaleAbilities) for (const e of a.effects) effects.add(e.op);
   for (const op of effects) ids.push(GLOSSARY_IDS.abilityEffect(op));
   for (const a of pack.finaleAbilities) ids.push(...abilityEntryIds(a));
-  // Gear: every slot, line, rarity, part kind and job kind the rules know, and the Crafting skill.
+  // Gear: every slot, line, rarity, element tag, part kind and job kind the rules know, and the Crafting skill.
   for (const slot of GEAR_SLOTS) ids.push(GLOSSARY_IDS.gearSlot(slot));
   for (const line of gearContent.lines) ids.push(GLOSSARY_IDS.gearLine(line.id));
   for (const rarity of GEAR_RARITIES) ids.push(GLOSSARY_IDS.gearRarity(rarity));
+  for (const e of pack.elements) ids.push(GLOSSARY_IDS.gearElement(e.id));
   for (const kind of PART_KINDS) ids.push(GLOSSARY_IDS.part(kind));
   for (const kind of JOB_KINDS) ids.push(GLOSSARY_IDS.job(kind));
   ids.push(GLOSSARY_IDS.skill('crafting'));

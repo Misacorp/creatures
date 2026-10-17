@@ -9,6 +9,8 @@ export interface DrawerProps {
   onClose: () => void;
   /** The heading of the sheet; it also names the dialog for screen readers. Plain text. */
   title: string;
+  /** The heading is only spoken, not shown (the body starts with its own name, an item card). */
+  titleHidden?: boolean | undefined;
   /** A short note on the right of the heading ("12 / 20"). Optional. */
   meta?: string | undefined;
   /** Pinned under the heading, does not scroll (a search field and its chips). */
@@ -49,6 +51,7 @@ export function Drawer({ open, ...rest }: DrawerProps) {
 function DrawerSheet({
   onClose,
   title,
+  titleHidden = false,
   meta,
   toolbar,
   children,
@@ -138,7 +141,7 @@ function DrawerSheet({
         }}
       />
       <div
-        class={`drawer-panel${extra === undefined ? '' : ` ${extra}`}`}
+        class={`drawer-panel${titleHidden ? ' title-hidden' : ''}${extra === undefined ? '' : ` ${extra}`}`}
         ref={panel}
         role="dialog"
         aria-modal="true"
@@ -166,7 +169,7 @@ function DrawerSheet({
             <span class="drawer-grip" />
           </button>
           <div class="drawer-head">
-            <h2 id={titleId} class="drawer-title">
+            <h2 id={titleId} class={titleHidden ? 'visually-hidden' : 'drawer-title'}>
               {title}
             </h2>
             {meta !== undefined && <span class="drawer-meta muted">{meta}</span>}

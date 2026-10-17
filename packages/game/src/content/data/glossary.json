@@ -796,7 +796,7 @@
     "title": "Gear",
     "short": "A Hat, a Scarf and a Charm for every creature.",
     "lines": [
-      "A Hat carries Attack and a Scarf HP as its own stat. A Charm has a base line instead.",
+      "Hats and Scarves carry Attack and HP as their own stats. A Charm has a base line instead.",
       "Every item also rolls 1 to 3 lines, each with five tiers. A creature wears items up to its own level.",
       "Scarves open at creature level 7 and Charms at 13.",
       "Take an item apart in the Workshop for parts and Essence. It takes a little time and cannot be undone."
@@ -855,6 +855,50 @@
     "lines": [
       "An element tag makes that element's lines three times as likely to roll.",
       "A role Charm can only be worn by that role."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-tag-tide",
+    "title": "Tide gear",
+    "short": "Its lines lean Tide.",
+    "lines": [
+      "Tide lines roll three times as often on it: Tide Attunement, Hunter and Ward, and the Tide reaction bonus.",
+      "Anyone can wear it. Tide Attunement only helps a Tide creature.",
+      "Crafting it takes a Tide shard."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-tag-ember",
+    "title": "Ember gear",
+    "short": "Its lines lean Ember.",
+    "lines": [
+      "Ember lines roll three times as often on it: Ember Attunement, Hunter and Ward, and the Ember reaction bonus.",
+      "Anyone can wear it. Ember Attunement only helps an Ember creature.",
+      "Crafting it takes an Ember shard."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-tag-grove",
+    "title": "Grove gear",
+    "short": "Its lines lean Grove.",
+    "lines": [
+      "Grove lines roll three times as often on it: Grove Attunement, Hunter and Ward, and the Grove reaction bonus.",
+      "Anyone can wear it. Grove Attunement only helps a Grove creature.",
+      "Crafting it takes a Grove shard."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-tag-spark",
+    "title": "Spark gear",
+    "short": "Its lines lean Spark.",
+    "lines": [
+      "Spark lines roll three times as often on it: Spark Attunement, Hunter and Ward, and the Spark reaction bonus.",
+      "Anyone can wear it. Spark Attunement only helps a Spark creature.",
+      "Crafting it takes a Spark shard."
     ],
     "section": "workshop"
   },

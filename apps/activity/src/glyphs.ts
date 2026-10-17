@@ -472,6 +472,53 @@ const flag: SpriteDef = {
   ],
 };
 
+// --- Gear slots: one silhouette each, for the slot tag and the corner of an item in the bag ---
+
+/** A cap with a brim: the Hat slot. */
+const slotHat: SpriteDef = {
+  palette: { w: BONE, k: HAZE },
+  rows: [
+    '........',
+    '...ww...',
+    '..wwww..',
+    '.wwwwww.',
+    '.wwwwww.',
+    'kkkkkkkk',
+    '........',
+    '........',
+  ],
+};
+
+/** A scarf wrapped round once, one end hanging: the Scarf slot. */
+const slotScarf: SpriteDef = {
+  palette: { w: BONE, k: HAZE },
+  rows: [
+    '........',
+    '.wwwwww.',
+    'ww....ww',
+    '.wwwwww.',
+    '...kk...',
+    '...kk...',
+    '...k.k..',
+    '........',
+  ],
+};
+
+/** A gem hanging on a cord: the Charm slot. */
+const slotCharm: SpriteDef = {
+  palette: { w: BONE, k: HAZE },
+  rows: [
+    'k......k',
+    '.k....k.',
+    '..k..k..',
+    '...ww...',
+    '..wwww..',
+    '.wwwwww.',
+    '..wwww..',
+    '...ww...',
+  ],
+};
+
 export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   hit_zone: hitZone,
   silence_ends: silenceEnds,
@@ -507,6 +554,9 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   bait,
   flag,
   gift,
+  'slot-hat': slotHat,
+  'slot-scarf': slotScarf,
+  'slot-charm': slotCharm,
   ...EXPEDITION_GLYPHS,
 };
 

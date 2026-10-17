@@ -14,7 +14,6 @@ import {
   RULES,
   craftCost,
   craftItemLevel,
-  creaturePower,
   dismantleHours,
   entryView,
   expeditionContent,
@@ -34,7 +33,6 @@ import type {
   ConversionNotice,
   CraftOdds,
   DismantleRange,
-  EquipBestResult,
   GearItem,
   GearLine,
   GearRarity,
@@ -343,31 +341,6 @@ export function equipChoices(
     ...choices.filter((c) => c.blocked === null),
     ...choices.filter((c) => c.blocked !== null),
   ];
-}
-
-/** The creatures "Equip best" plans for from the Workshop: the three strongest (gear included). */
-export function topCreatureIds(creatures: readonly Creature[]): string[] {
-  return [...creatures]
-    .sort(
-      (a, b) =>
-        creaturePower(b.statsWithGear) - creaturePower(a.statsWithGear) || a.id.localeCompare(b.id),
-    )
-    .slice(0, 3)
-    .map((c) => c.id);
-}
-
-/** What "Equip best" did, in words. */
-export function equipBestText(result: EquipBestResult): string {
-  const n = result.changes.length;
-  const away = result.skipped.length;
-  const left =
-    away === 0
-      ? ''
-      : away === 1
-        ? ' 1 busy creature skipped.'
-        : ` ${String(away)} busy creatures skipped.`;
-  if (n === 0) return `Already the best.${left}`;
-  return `${n === 1 ? 'Changed 1 slot.' : `Changed ${String(n)} slots.`}${left}`;
 }
 
 // --- Where an item came from (the details row) ---
