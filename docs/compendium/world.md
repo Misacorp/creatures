@@ -8,7 +8,8 @@ Status: 2026-10-13. Canon for names, meaning and tone. Read `README.md` first fo
 
 - **You are an explorer.** You send creatures out on **trips** to **places** (called destinations or expeditions in the game). Trips come home with catches, parts, supplies and journal pages. `(content: destinations.json, glossary.json)`
 - **Creatures are the team.** Each creature has an element, a role and a line that evolves. `(content: creatures.json)`
-- **Bait** is the currency that draws creatures and pays for training. Trips and supplies cost no Bait. `(content: glossary.json "bait")`
+- **Bait** is the currency that buys lures, treats and talent slots. It no longer buys levels. Trips and supplies cost no Bait. `(content: glossary.json "bait")`
+- **Creatures grow by doing.** A creature earns **experience** on trips, in the daily dungeon, in raid stages and on Workshop jobs. A **treat** (a little Bait, packed when the activity starts) doubles one activity's experience for that creature. At levels 10 and 20 a creature waits for a **ribbon** (Bronze, then Silver), made from parts; Gold at level 30 is a reward. `(content: glossary.json "experience", "treat", "ribbon")`
 - **The Workshop** is where creatures work on jobs (crafting gear and supplies) while you are away. `(content: glossary.json "workshop")`
 - **Raids** are weekly fights against a big boss. A **season** is five raid weeks; week five is a **Festival**. `(content: glossary.json "season", "festival")`
 - **The daily dungeon** is a solo run, once a day, with a team of three. `(content: glossary.json "dungeon")`
@@ -16,6 +17,8 @@ Status: 2026-10-13. Canon for names, meaning and tone. Read `README.md` first fo
 
 ### What we infer
 
+- The ribbons read as a rite of passage: a creature that has seen a lot of the wild is given a token of it, made at the Workshop from the things it brought home. Bronze marks its first real season, Silver its first long road. Treats are a small kindness before a hard day, not a purchase. `(inferred)`
+- The explorers say a long dry spell always ends: the wild owes you a creature. The game keeps a count of trips since your last new species and, after a long drought, the next place you visit shows you one you have not met. `(inferred, content: how-to-play.json "expeditions")`
 - A Discord server is a single **valley** or region, with its own sky, calendar and boss. The raid boss and the Festival belong to that region, not to one player. `(inferred)`
 - The explorers' base is a **Workshop** at the edge of the wild, and the Old Crossroads is the nearest meeting point to it. `(inferred)` The Crossroads banner shows "a worn dirt crossing" and "travellers' campfire ashes", which fits. `(content: destinations.json)`
 

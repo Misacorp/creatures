@@ -695,3 +695,69 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
 - **Follow-ups.**
   - If crafting should be faster for committed players, the levers are the scrap price (`scrapPerItemLevels`), the scrap income (trips, the dungeon) and the Reach's odds, not the dismantle refund.
   - Engaged players' Essence: more crafts a week need more shards (trips) or cheaper element crafts.
+
+### B-016: Creatures B: training by activity, treats, ribbons and the new-species pity (open)
+
+- **Opened:** 2026-10-17, build step 5 of `docs/design/gear-and-creatures-v2.md` (section 14), with the lead's new-species pity (the follow-up of B-014).
+- **Finding.** Bait bought every level, so a committed player's creatures were at level 30 in about 4 weeks and levels said nothing about what a player did (spec 9.1). The base catalogue had no friction except a lower catch chance (B-014: complete in 7, 12 and 28 weeks for a min-maxer, an engaged player and a regular, against the review target of 9, 14 and 24).
+- **Action (starting values, `RULES.experience` and `RULES.catching.pity`).**
+  - Experience from level L to L + 1 is `25 L + 2 L^2`. Per creature that takes part: a trip by length 20 / 60 / 120 / 240, the dungeon 60 a room cleared plus 60 for a full clear, a raid stage 200 / 200 / 400 (times 1.5 cleared), a Workshop job 8 an hour of nominal work. The spec's first numbers (10 / 30 / 60 / 120, 20 + 20, 50 / 50 / 100, 4 an hour) were about half of what the pace needs from trips and jobs, a third from the dungeon and a quarter from the raid, found in about 20 sim runs (`--set experience.*`); with the final numbers a min-maxer's experience is 56% trips, 20% raids, 17% the dungeon and 8% jobs.
+  - Treats: double the experience of one activity for one creature, `3 + ceil(level / 2)` Bait, paid at the start. Ribbons: Bronze at 10 (6 scrap, 2 shards), Silver at 20 (15 scrap, 5 shards, 1 glimmer, 5 finished trips); a stage-1 creature with an evolution also waits at 15. No catch-up bonus.
+  - Pity: after 60 catch rolls without a new species the next roll brings one the player lacks; every 10th roll without any creature brings one. Server counters, no randomness drawn for a forced roll.
+- **Method.** The creatures study (`pnpm sim:creatures`, seed `creatures`, 2 seeds x 6 servers x 30 weeks; weeks 3 to 30 averaged), the journey server of 1 min-maxer, 3 engaged, 3 regular and 2 drop-in; the full `pnpm sim` alone on seed `leet` (92 targets, 36 minutes) for the drift. The sim plays the same pure functions as the worker. Raids were not tuned.
+- **Outcome (sim): the pace of the levels.** Weeks since joining (median) at which the best creature / the whole raid trio reached a level ("-" when under half did within 30 weeks); the plan of 9.2 in the last column.
+
+  | Profile   | Level 10 | Level 15 (evolved) | Level 20 | Level 30 | Plan of 9.2                                                                  |
+  | --------- | -------- | ------------------ | -------- | -------- | ---------------------------------------------------------------------------- |
+  | Min-maxer | 1 / 1    | 1 / 3 (week 1)     | 2 / 4    | 8 / 10   | trio: level 10 in week 1, evolve week 2, level 20 about 5, level 30 about 11 |
+  | Engaged   | 1 / 1    | 2 / 4 (week 2)     | 3 / 6    | 11 / 17  | between the committed trio and the regular                                   |
+  | Regular   | 2 / 2    | 4.5 / 10 (week 5)  | 8 / 13   | 24 / -   | level 20 about week 10, level 30 about week 24                               |
+  | Drop-in   | 4 / 6    | 13 / 23 (week 15)  | 21.5 / - | - / -    | about level 18 by week 20                                                    |
+
+  The committed trio matches the plan from week 3 on; evolving happens in week 1, not 2, because a min-maxer's trips and jobs pay a lot. The regular's best creature matches (20 at week 8, 30 at 24), its raid trio lags by about 3 weeks. The drop-in is at level 18.5 by week 20 on its best creature. Levels of the best creature / the raid team's lowest, end of week, weeks 2, 4, 8, 12, 20, 30: min-maxer 20 / 13, 21.5 / 20, 30 / 25, 30 / 30, 30 / 30, 30 / 30; engaged 17.5 / 10, 20 / 16.5, 25 / 20, 30 / 23, 30 / 30, 30 / 30; regular 10 / 10, 14.5 / 10, 20 / 10.5, 20 / 19, 26 / 20, 30 / 25.5; drop-in 5 / 1, 10 / 7.5, 11 / 10, 14 / 10, 18.5 / 10, 20 / 17.
+
+- **Outcome (sim): the longest stretch without an unlock.** The ladder (Hat 1, Scarf 7, ability and Bronze 10, Charm 13, evolution 15, Silver and talent slot 2 at 20, slot 3 at 25, Gold 30) has a widest gap of 6 levels (Hat to Scarf, the start; every other gap is 5 or fewer), against the aim of 5 (the spec itself puts Scarf at 7). In days the best creature goes without any unlock: min-maxer 22 (median over players of their longest), engaged 33, regular 72, drop-in 63; for the regular and the drop-in it is the ribbon gates and the evolution (a creature waits for parts) as much as the experience.
+- **Outcome (sim): the catalogue and the pity** (weeks to own every species a trip can find: min-maxer / engaged / regular, share of regulars who finish in 30 weeks; creatures a week, min-maxer / engaged / regular):
+
+  | Variant                      | Catalogue (weeks)   | Creatures a week (min-maxer / engaged / regular) |
+  | ---------------------------- | ------------------- | ------------------------------------------------ |
+  | No pity (Creatures A, B-014) | 7 / 12 / 28 (19%)   | 13.5 / 9.3 / 2.2                                 |
+  | Floor of 10 only             | 7 / 11 / 28.5 (28%) | 14.9 / 10.9 / 2.4                                |
+  | New after 20                 | 3 / 6 / 17.5 (100%) | 15.3 / 10.9 / 2.5                                |
+  | New after 30                 | 4 / 7 / 20.5 (100%) | 15.2 / 11.0 / 2.4                                |
+  | New after 40                 | 4 / 8 / 22 (97%)    | 15.1 / 10.9 / 2.5                                |
+  | New after 50                 | 5 / 9 / 23 (94%)    | 15.1 / 10.8 / 2.5                                |
+  | **New after 60 (shipped)**   | 5 / 9 / 24 (81%)    | 14.9 / 10.9 / 2.4                                |
+  | New after 70                 | 5.5 / 9 / 27 (92%)  | 15.3 / 10.7 / 2.5                                |
+
+  The regular's 24 weeks is reachable and shipped. **The review targets of 9 and 14 weeks for the committed profiles are not reachable with pity**: it can only make players faster, and a min-maxer already needs 7. The `creatures-catalogue-*` targets now say 4 to 8 and 7 to 12 weeks. A creature a week stays at 10 to 15 for the committed (14.9, 10.9), so there is no return of the old flood (84 a week before B-014); the floor of 10 is what adds about 1.5 a week. Pity forces a creature 2.4 times a week for a min-maxer, 1.7 for an engaged player, 0.3 for a regular, and a new species about 0.1 a week.
+
+- **Outcome (sim): Bait.** Bait earned a week (weeks 3 to 30) and where it went, treats / lures / talent slots (the sum can pass the earned: rank gifts and the starting Bait are not counted as earned): min-maxer 326 (300 / 63 / 4), engaged 299 (287 / 44 / 4), regular 168 (0 / 4 / 0.5), drop-in 46 (0 / 0 / 0.1). A committed player packs about 22 treats a week and spends nine tenths of its Bait on them; a lure is 19% of a min-maxer's Bait (the target is at most a quarter). **Regular and drop-in players do not pack treats in the sim and let Bait pile up** (168 a week earned, about 5 spent): whether real regulars would use treats is for the live data, and the treat price (`3 + ceil(level / 2)`) is the lever.
+- **Outcome (sim): experience by source** (a week, weeks 3 to 30): min-maxer trips 9,140, raids 3,205, dungeon 2,708, jobs 1,324; engaged 7,416, 3,205, 2,980 and 293; regular 801, 2,716, 1,597 and 12; drop-in 97, 1,491, 430 and 0. Level-ups a week: 10.7, 9.8, 5.3, 2.4. Ribbons earned a week: 0.8, 0.8, 0.3, 0.1.
+- **Outcome (sim): drift of the other targets (report only; the raid is not tuned in this step).** `pnpm sim` (full) on seed `leet`: 92 targets, 63 pass, 29 fail (Creatures A: 66 of 89). The raid targets, B-014 (Creatures A) `leet` → now:
+
+  | Target                            | Creatures A | Creatures B |
+  | --------------------------------- | ----------- | ----------- |
+  | `raid-phase1-typical` (>= 80%)    | 55.2%       | 65.5%       |
+  | `raid-finale-typical` (85 to 97%) | 60.7%       | 66.8%       |
+  | `raid-finale-15` (85 to 99%)      | 63.4%       | 61.4%       |
+  | `raid-boss-spread` (<= 15 points) | 14.9 (pass) | 9.3 (pass)  |
+  | `raid-ko-share` (10 to 30%)       | 36.4%       | 35.2%       |
+  | `curve-r2to5-default` (70 to 85%) | 74.4%       | 72.0%       |
+  | `curve-r6up-default` (45 to 65%)  | 53.5%       | 39.6%       |
+  | `curve-default-phase1` (>= 75%)   | 72.2%       | 68.5%       |
+  | `longrun-win-typical` (60 to 85%) | 86.1%       | 85.8%       |
+  | `choice-creature-min` (>= 0.60x)  | 0.710x      | 0.806x      |
+
+  The raid is a little easier at the start (more levels early for the committed) and harder in the long run (`curve-r6up-default` 53.5% to 39.6%: the teams now stop at 10 and 20 for ribbons and evolve at their own pace). Not tuned: the raid and dungeon rebalance (step 8) is the place. **Targets that passed after Creatures A and fail now**, all from how the sim player now spends its trips and Bait or from the level pace, not from a rule: `econ-casual-level-15` 11.5 (a casual player's best creature at the end of week 4, needs 15: the regular reaches 15 at week 4.5, and Bronze at 10 needs parts), `econ-power-ratio` 1.81x (<= 1.6: the top earner pulls ahead), `exp-slot-3` 56 days (23 to 37), `exp-slot-4` 308 (90 to 150) and `exp-slot-5` 999 (330 to 400): the policy now sends the creatures it trains first, so explorer ranks gather on three creatures and the rank-sum slots open later (the slots count the ranks above 1 of all creatures), `gear-newcomer-catchup` 58% (78%), `dungeon-first-week-clear` 79.1% (>= 80), `curve-r2to5-committed` 87.9% (>= 95), `choice-element-min` 13.9% (>= 15). The 14 gear share targets are as in B-015 (the engaged player lower at week 2 and 8).
+
+- **Reading.**
+  - **Trips are over half of a committed player's experience, which makes the trip the main way to level.** That is the design (spec 9.1: trips by length) but it also means a committed player's weeks are decided by how many long trips run; drop-in players get about three quarters of their experience from raids (1,491 of 2,018 a week).
+  - **The ribbons, not the experience, are what regulars wait for.** A regular's best creature reaches 10 at week 2 and 20 at week 8, with a stretch of 72 days at the same levels, and the Silver Ribbon's 5 shards and 5 finished trips take weeks. The sim player now spends trips on places of the shard it needs.
+  - **Pity does little for committed players and the most for regulars:** 4 weeks sooner (28 to 24) and 81% instead of 19% finishing.
+  - **Evolving in week 1 for a committed player** (the plan says week 2) is the first number to look at in live data: it follows right after the Bronze Ribbon (level 10), and 15 is a short climb when trips pay what they do.
+- **Expected.** Live: a new player reaches level 10 within the first week, the Bronze Ribbon button is the first thing they see on a creature card, and treats are used by the committed.
+- **Follow-ups.**
+  - Decide whether the sim's regular and drop-in should pack treats (their Bait piles up) and whether the exp-slot targets should follow the explorer's new order or the policy should spread trips.
+  - The raid and dungeon rebalance (step 8): the finale and Phase 1 targets, `curve-r6up-default`, around the new level pace.
+  - The Shade Napper talent and a "Growing" gear line (they wait on a number pass); raid experience in the raid result views; a treat for dismantle jobs in the UI.
