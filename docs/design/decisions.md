@@ -1553,3 +1553,12 @@ Step 6 of the build order in `gear-and-creatures-v2.md` (section 14), per sectio
 **The card is one tap target.** The card handles the click (anywhere except its own buttons: the gold button, gear icons and talent chips keep their actions; the last two now open the page on their part). The name inside the card is a real button for the keyboard and screen readers. The card lights up under a pointer and dips when pressed, and has a small "›" at the right edge. A stretched-link overlay was tried and dropped: a press that lands on the bobbing sprite and releases elsewhere sent the click to a common ancestor and lost the tap.
 
 **Text pass.** Cut explanations the player can infer; keep requirements ("Needs Crafting level 5") and short refusal reasons. The page drops the experience line and the "Growth" heading (the bar and the "Next:" line already say it).
+
+## 2026-10-17: one Accordion for every expand and collapse
+
+Misa: the open and close pattern (Workshop, creature card "More", Talent Book, "Recent Bait activity", Rename, item Details) looked different in each place, so players could not tell what opens what. `ui/Accordion.tsx` is the one component for all of them (plus `AccordionGroup`, optionally one open at a time). Built and shown in the workbench first; existing views move to it in later changes.
+
+- **Header** is a real `<button>` (`aria-expanded`, `aria-controls`, full width, at least 2.5 rem tall, Enter and Space from the native button) with a pixel chevron that turns when open, the title, an optional short note on the right ("3", "2 new" in gold, "Ready") and an optional icon. The body is `role="region"` labelled by the header. Open: lit header with a gold underline, body inside the same ink edge.
+- **Looks:** default (a page section) and compact (inside a card); an accordion inside another is drawn lighter automatically, one level deep.
+- **State:** controlled (`open` and `onToggle`) or uncontrolled (`defaultOpen`). `persistKey` keeps the state in `localStorage` (guarded; callers put the viewer id in the key; it is ignored for controlled accordions). In an exclusive group the group holds the open name (and can remember it).
+- **Motion:** a 150 ms height and fade (grid rows 0fr to 1fr) when `prefers-reduced-motion: no-preference`; with reduced motion the body is removed at once and no timers run. A closed body is not rendered unless `keepMounted`.
