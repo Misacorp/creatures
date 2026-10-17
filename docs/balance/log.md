@@ -761,3 +761,65 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
   - Decide whether the sim's regular and drop-in should pack treats (their Bait piles up) and whether the exp-slot targets should follow the explorer's new order or the policy should spread trips.
   - The raid and dungeon rebalance (step 8): the finale and Phase 1 targets, `curve-r6up-default`, around the new level pace.
   - The Shade Napper talent and a "Growing" gear line (they wait on a number pass); raid experience in the raid result views; a treat for dismantle jobs in the UI.
+
+### B-017: Boons and Omens: the valley's weather (open)
+
+- **Opened:** 2026-10-17, build step 6 of `docs/design/gear-and-creatures-v2.md` (section 14, rules in section 10).
+- **Finding.** Nothing varied from one day to the next: the same raid, the same dungeon and the same trips every day. The design adds a daily Boon and (from Boss Rank 3) an Omen, server-wide, drawn a day ahead, stronger at higher ranks (x1 to x1.5 for Boons, x1 to x2.5 for Omens), that touch the raid stage of the day, every dungeon run, trips and Workshop jobs.
+- **Hypothesis.** Boons and Omens should roughly cancel on the raid, so the raid targets should not move much. The Omens' raid effects are small by design, and half of them (Cold Snap, Muddy Roads, the trip and Workshop halves) never touch a fight.
+- **Action (starting values, `RULES.weather`).** The tiers of 10.1 (`boonBp` / `omenBp` 10000 / 0 from rank 1, 10000 / 10000 from 3, 12500 / 15000 from 6, 15000 / 20000 from 10, 15000 / 25000 from 14), a wild Omen from rank 10 with chance 2000 bp (at most one a raid week, known a day ahead, never in a Festival week). 9 of the 10 Boons and 8 of the 10 Omens are live (Kind Rain, Morning Haze and Bramble Season wait for engine work). No raid number was tuned.
+- **Method.** The sim draws the days from a seeded stream of its own, a day ahead at the rank of the moment, and applies the game's own pure functions (`weather.ts`, `gear.ts`, `trips.ts`, `dungeon.ts`, `raid.ts`); the raid sweep draws three days in a row for each week. Weather is on by default; `--no-weather` plays the same seeds without it (it reproduces B-016 exactly: 63 of 92 targets pass, `curve-r6up-default` 39.6%). Two reads: the full `pnpm sim` on seed `leet`, with and without weather, and the weather study (`pnpm sim:weather`, seed `weather`): 40 rosters from economy sims at weeks 4 and 8, every boss, played at Boss Rank 4 on the same seeds with one weather on all three stages (320 weeks a row, so one point is about 3 weeks; read differences under 3 points as noise), and the default journey server for 30 weeks, 20 servers, with and without weather.
+- **Outcome (sim): what each weather does to a raid week** (one weather on all three stages, the strongest a week can be; a real week has a different sky each day). Finale win rate and the share of the boss's pool dealt, as points against no weather (38.1% and 85.2%), at the strength of the fight's rank 4 (x1) and at rank 14 (Boons x1.5, Omens x2.5):
+
+  | Weather          | Kind | Phase 1 (x1) | Finale won (x1) | Finale delta (x1) | Pool delta (x1) | Finale delta (rank 14) | Pool delta (rank 14) |
+  | ---------------- | ---- | ------------ | --------------- | ----------------- | --------------- | ---------------------- | -------------------- |
+  | No weather       | none | 33.1%        | 38.1%           | -                 | -               | -                      | -                    |
+  | Fair Winds       | boon | 35.3%        | 39.7%           | +1.6              | +0.3            | +2.2                   | +0.5                 |
+  | Warm Hearth      | boon | 34.4%        | 40.3%           | +2.2              | +0.3            | +2.8                   | +0.4                 |
+  | Clear Skies      | boon | 35.6%        | 41.6%           | +3.4              | +0.7            | +4.7                   | +1.0                 |
+  | High Water       | boon | 37.8%        | 42.5%           | +4.4              | +1.2            | +6.3                   | +1.8                 |
+  | Bonfire Night    | boon | 35.3%        | 39.1%           | +0.9              | +0.5            | +1.6                   | +0.7                 |
+  | Hearty Breakfast | boon | 33.1%        | 38.1%           | +0.0              | +0.0            | +0.0                   | +0.0                 |
+  | Lantern Light    | boon | 33.1%        | 44.4%           | +6.3              | +1.4            | +6.3                   | +1.4                 |
+  | Market Day       | boon | 33.1%        | 38.1%           | +0.0              | +0.0            | +0.0                   | +0.0                 |
+  | Quiet Night      | boon | 33.1%        | 41.9%           | +3.8              | +0.7            | +5.0                   | +1.1                 |
+  | Heatwave         | omen | 31.6%        | 37.2%           | -0.9              | -0.5            | -3.1                   | -1.2                 |
+  | Static Sky       | omen | 32.5%        | 38.1%           | +0.0              | -0.1            | -0.3                   | -0.2                 |
+  | Heavy Rain       | omen | 32.5%        | 37.8%           | -0.3              | -0.3            | -1.6                   | -0.8                 |
+  | Long Shadows     | omen | 32.5%        | 37.2%           | -0.9              | -0.3            | -0.9                   | -0.8                 |
+  | Restless Wind    | omen | 33.1%        | 38.1%           | +0.0              | +0.0            | +0.0                   | -0.0                 |
+  | Cold Snap        | omen | 33.1%        | 38.1%           | +0.0              | +0.0            | +0.0                   | +0.0                 |
+  | Muddy Roads      | omen | 33.1%        | 38.1%           | +0.0              | +0.0            | +0.0                   | +0.0                 |
+  | Stormfront       | omen | 32.2%        | 38.1%           | +0.0              | -0.2            | +0.0                   | -0.2                 |
+
+  Lantern Light (a Shield Wall lasts one more round) and High Water (Steam and Overload +15%) are the Boons that matter in a fight; Market Day, Hearty Breakfast and the trip halves do nothing there, as designed. On the Omen side only Heatwave, Heavy Rain and Long Shadows bite, and only a little: -3 points at the strongest. **Stormfront barely moves the raid** (-0.2 points of the pool, no change in the win rate): one more plain attack a round is small next to a team of 9 to 15 creatures. If the wild Omen is meant to be a day to fear, it needs a stronger effect than one more plain attack.
+
+- **Outcome (sim): whole servers** (the default journey server, 20 servers x 30 weeks, same seeds, normal weeks, 480 raids): Phase 1 79.0% to 77.5%, finale 82.5% to 84.2%, finale creatures knocked out 21.6% to 20.6%, overtime 23.1% to 23.3% (no weather to weather). The raid is a little easier overall: the Boons help every day, while an Omen only appears from rank 3 and most of them are about trips and experience.
+- **Outcome (sim): the targets** (`pnpm sim` full, seed `leet`, 92 targets; weather off is B-016): **64 pass with weather, 63 without.** The raid, no weather to weather:
+
+  | Target                            | No weather | Weather                |
+  | --------------------------------- | ---------- | ---------------------- |
+  | `raid-phase1-typical` (>= 80%)    | 65.5%      | 65.0%                  |
+  | `raid-finale-typical` (85 to 97%) | 66.8%      | 67.6%                  |
+  | `raid-finale-15` (85 to 99%)      | 61.4%      | 63.9%                  |
+  | `raid-boss-spread` (<= 15 points) | 9.3 (pass) | 10.0 (pass)            |
+  | `raid-ko-share` (10 to 30%)       | 35.2%      | 35.0%                  |
+  | `curve-r2to5-default` (70 to 85%) | 72.0%      | 73.2%                  |
+  | `curve-r2to5-committed` (>= 95%)  | 87.9%      | 89.9%                  |
+  | `curve-r6up-default` (45 to 65%)  | 39.6%      | **49.1% (now passes)** |
+  | `curve-r6up-committed`            | 84.2%      | 88.1%                  |
+  | `curve-default-phase1` (>= 75%)   | 68.5%      | 70.1%                  |
+  | `longrun-win-typical` (60 to 85%) | 85.8%      | 85.5%                  |
+  | `choice-creature-min` (>= 0.60x)  | 0.806x     | 0.798x                 |
+
+  The raid moves toward easier by 1 to 3 points everywhere and by 9 points at ranks 6 and up (`curve-r6up-default` 39.6% to 49.1%, which is back inside its range), where the Boons are x1.25 and x1.5 and the Omens x1.5 and x2. Nothing failed that passed before in the raid. The one target that moved the wrong way is `dungeon-first-week-clear` (79.1% to 76.8%, a target of 80% that was already failing): at rank 1 only Boons exist and none of them makes the dungeon harder, so this looks like the chaos of different levels downstream (a first week is a handful of runs), not a weather effect; check it on a second seed before acting.
+
+- **Reading.**
+  - The sky is a small net help for raids and a bigger one for rank 6 and up. That is the opposite of "Omens are the risk": the raid-side Omens are weak, the trip-side ones (Muddy Roads, Cold Snap, Morning Haze when it ships) are what a player feels, and those change time and experience, not the raid.
+  - Stormfront needs a stronger effect or a different one to be the wild day the design wants.
+  - The raid and dungeon rebalance (step 8) should start from the sim with weather on, which is the shipped game; `--no-weather` is for paired comparisons.
+- **Expected.** Live: players notice the calendar and plan trips and crafts around Fair Winds, Warm Hearth and Market Day; the raid win rate rises by a point or two. If the Saturday after a bad Omen feels unfair in feedback, the Omen raid effects (Heatwave, Heavy Rain, Long Shadows) are the first to soften.
+- **Follow-ups.**
+  - Stormfront's effect (above), and the three planned entries (Kind Rain, Morning Haze, Bramble Season) once the engine has the hooks.
+  - Check `dungeon-first-week-clear` on a second seed.
+  - Live: the share of days with an Omen at each rank, trips sent on Market Day, and the raid win rate by Omen (`weather_draw` and `weather_use` events).

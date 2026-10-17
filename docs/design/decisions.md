@@ -1488,6 +1488,7 @@ Misa's decision, for the testers who already hold levels bought with Bait. Done 
 - **Notice.** `GET /api/state` carries `levelReset` (counts only: creatures, Bait, items unequipped, talents booked) until the player dismisses it with `POST /api/level-reset/dismiss` (the server remembers it); a player whose creatures were all level 1 gets no card. The card says: "Creatures now grow by doing things. Every creature's level was halved and you got back the Bait those levels cost: N Bait." plus a line for unequipped items or booked talents when there were some.
 - **Analytics:** `level_reset` once per converted player (creatures, levels removed, Bait, unequipped, talents booked; no names). The Bait reaches the daily flows from the ledger (label `level_reset`).
 - **Sim.** The journey sim starts every player fresh (no "existing player" scenario), so it has nothing to convert.
+
 ## 2026-10-17: Boons and Omens built: the valley's weather (migration 31)
 
 Step 6 of the build order in `gear-and-creatures-v2.md` (section 14), per section 10 and the 2026-10-16 decisions (the wall calendar, "lean UI", Market Day's limits). Technical decisions by the lead and implementer. The numbers are starting values in `RULES.weather`; the sim reports what they do to the raid (`docs/balance/log.md` B-017) and the raid was not tuned.
