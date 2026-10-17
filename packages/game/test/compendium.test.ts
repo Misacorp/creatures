@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 import {
   content,
   dungeonContent,
+  dungeonEvents,
+  dungeonKeepsakes,
   expeditionContent,
   gearContent,
   talentContent,
@@ -15,7 +17,8 @@ import {
  * Sync check between shipped content and the dev-only compendium (`docs/compendium/`).
  *
  * Matching rule, one per kind:
- * - Species, destinations, raid bosses, dungeon foes and room bosses, room modifiers, gear bases,
+ * - Species, destinations, raid bosses, dungeon foes and room bosses, room modifiers, keepsakes and
+ *   mystery-room events, gear bases,
  *   supplies, talents (the pools, the signatures and the held-back ones) and Boons and Omens (the
  *   planned ones too): the content's display
  *   name, as a heading, a bold name, or a table cell.
@@ -70,6 +73,14 @@ describe('compendium is in sync with shipped content', () => {
 
   it('has every room modifier in dungeon.md', () => {
     expect(missingNames('dungeon.md', dungeonContent.modifiers)).toEqual([]);
+  });
+
+  it('has every dungeon keepsake in dungeon.md', () => {
+    expect(missingNames('dungeon.md', [...dungeonKeepsakes])).toEqual([]);
+  });
+
+  it('has every mystery-room event in dungeon.md', () => {
+    expect(missingNames('dungeon.md', [...dungeonEvents])).toEqual([]);
   });
 
   it('has every gear base in items.md', () => {

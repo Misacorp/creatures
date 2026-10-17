@@ -1,0 +1,180 @@
+[
+  {
+    "id": "glowing-pool",
+    "name": "Glowing Pool",
+    "text": "A small pool glows softly at the bottom of the room. The water smells like warm tea.",
+    "options": [
+      {
+        "label": "Drink",
+        "description": "Every creature heals 25% of its max HP.",
+        "effects": [{ "op": "heal", "bp": 2500 }]
+      },
+      {
+        "label": "Fill a flask",
+        "description": "You gain 1 Bait.",
+        "effects": [{ "op": "pack", "bait": 1 }]
+      }
+    ]
+  },
+  {
+    "id": "loose-stones",
+    "name": "Loose Stones",
+    "text": "The floor here is a patchwork of loose stones. Something shiny winks from under one of them.",
+    "options": [
+      {
+        "label": "Dig",
+        "description": "60%: 2 scrap. 40%: every creature loses 15% HP.",
+        "effects": [
+          {
+            "op": "gamble",
+            "chanceBp": 6000,
+            "win": [{ "op": "pack", "scrap": 2 }],
+            "lose": [{ "op": "hurt", "bp": 1500 }]
+          }
+        ]
+      },
+      {
+        "label": "Walk on",
+        "description": "You gain 1 Bait.",
+        "effects": [{ "op": "pack", "bait": 1 }]
+      }
+    ]
+  },
+  {
+    "id": "sleeping-beetle",
+    "name": "Sleeping Beetle",
+    "text": "A round beetle snores on a small pile of coins. One of its legs twitches in a dream.",
+    "options": [
+      {
+        "label": "Take one coin",
+        "description": "You gain 1 scrap.",
+        "effects": [{ "op": "pack", "scrap": 1 }]
+      },
+      {
+        "label": "Take the pile",
+        "description": "50%: 3 scrap. 50%: every creature loses 20% HP.",
+        "effects": [
+          {
+            "op": "gamble",
+            "chanceBp": 5000,
+            "win": [{ "op": "pack", "scrap": 3 }],
+            "lose": [{ "op": "hurt", "bp": 2000 }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "old-shrine",
+    "name": "Old Shrine",
+    "text": "A tiny shrine of stacked stones, with an empty cup at its foot. It looks like it is waiting for something.",
+    "options": [
+      {
+        "label": "Make an offering",
+        "description": "Every creature loses 15% HP. You gain a keepsake.",
+        "effects": [{ "op": "hurt", "bp": 1500 }, { "op": "keepsake" }]
+      },
+      {
+        "label": "Bow and walk on",
+        "description": "Nothing happens.",
+        "effects": [{ "op": "nothing" }]
+      }
+    ]
+  },
+  {
+    "id": "lost-satchel",
+    "name": "Lost Satchel",
+    "text": "A small satchel sits on a ledge, its strap tied in a knot. Someone's lunch, maybe.",
+    "options": [
+      {
+        "label": "Peek inside",
+        "description": "You gain 1 Bait.",
+        "effects": [{ "op": "pack", "bait": 1 }]
+      },
+      {
+        "label": "Shake it out",
+        "description": "50%: 2 Bait and 1 scrap. 50%: nothing.",
+        "effects": [
+          {
+            "op": "gamble",
+            "chanceBp": 5000,
+            "win": [{ "op": "pack", "bait": 2, "scrap": 1 }],
+            "lose": [{ "op": "nothing" }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "echoing-well",
+    "name": "Echoing Well",
+    "text": "A deep, round well. When you call down it, it calls back a moment later, and a little kinder.",
+    "options": [
+      {
+        "label": "Call down",
+        "description": "Every creature heals 20% of its max HP.",
+        "effects": [{ "op": "heal", "bp": 2000 }]
+      },
+      {
+        "label": "Drop in a coin",
+        "description": "30%: a keepsake. 70%: nothing.",
+        "effects": [
+          {
+            "op": "gamble",
+            "chanceBp": 3000,
+            "win": [{ "op": "keepsake" }],
+            "lose": [{ "op": "nothing" }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mossy-bridge",
+    "name": "Mossy Bridge",
+    "text": "A narrow bridge of mossy planks crosses a dark gap. A sign, mostly moss, says: Probably fine.",
+    "options": [
+      {
+        "label": "Cross slowly",
+        "description": "You gain 1 Bait.",
+        "effects": [{ "op": "pack", "bait": 1 }]
+      },
+      {
+        "label": "Run across",
+        "description": "60%: 1 Essence. 40%: every creature loses 20% HP.",
+        "effects": [
+          {
+            "op": "gamble",
+            "chanceBp": 6000,
+            "win": [{ "op": "pack", "essence": 1 }],
+            "lose": [{ "op": "hurt", "bp": 2000 }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mushroom-ring",
+    "name": "Mushroom Ring",
+    "text": "A ring of small mushrooms hums a tune. One of them is plainly out of key, and proud of it.",
+    "options": [
+      {
+        "label": "Pick a few",
+        "description": "You gain 1 scrap.",
+        "effects": [{ "op": "pack", "scrap": 1 }]
+      },
+      {
+        "label": "Dance in the ring",
+        "description": "50%: every creature heals 30% HP. 50%: every creature loses 10% HP.",
+        "effects": [
+          {
+            "op": "gamble",
+            "chanceBp": 5000,
+            "win": [{ "op": "heal", "bp": 3000 }],
+            "lose": [{ "op": "hurt", "bp": 1000 }]
+          }
+        ]
+      }
+    ]
+  }
+]

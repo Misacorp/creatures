@@ -804,6 +804,58 @@ export const RULES = {
         { day: 7, bait: 0, essence: 1, scrap: 1, glimmer: 0 },
       ],
     },
+    /**
+     * The map redesign (docs/design/dungeon-paths.md). The keys above stay for stored three-room
+     * runs; a map run uses the keys below. A run is `floors` floors from an entrance (floor 0) to a
+     * room boss (the last floor), with the camp on `campFloor`.
+     */
+    floors: 7,
+    /** The camp: every path meets on this floor, in the middle lane. */
+    campFloor: 3,
+    /**
+     * How a day's map is drawn (`generateDungeonMap`). Floors other than the camp and the boss have
+     * three nodes, or two with chance `twoNodeFloorBp`. Floor 0 is all fights; the other floors roll
+     * each node by `kinds` (weights, which add up to 10000). The rest are caps and floors that keep
+     * every map worth playing: some risk (an elite), some surprise (a mystery), a few different
+     * elements to fight, and no more than one free chest.
+     */
+    map: {
+      twoNodeFloorBp: 3_500,
+      kinds: { fight: 5_500, mystery: 2_500, cache: 1_000, elite: 1_000 },
+      /** Elites can only stand on these floors, one per floor at most. */
+      eliteFloors: [2, 4, 5],
+      maxElites: 2,
+      minElites: 1,
+      maxCaches: 1,
+      minMysteries: 1,
+      maxMysteries: 3,
+      /** The fights of one map (elites too) use at least this many different elements. */
+      minElements: 3,
+    },
+    /**
+     * An elite is a normal foe at the player's depth with this on top (basis points of its numbers:
+     * 14000 is 140%, so +40% HP and +20% Attack).
+     */
+    elite: { hpBp: 14_000, atkBp: 12_000 },
+    /** The camp: Rest heals standing creatures this share of max HP; a camp offers this many keepsakes. */
+    camp: { restBp: 4_000, offers: 2 },
+    /**
+     * What each kind of room puts in the run's pack when it is cleared (the pack is at risk; the
+     * run's supply never goes in it). Mystery rooms pay by the option picked. `boss` is the boss
+     * chest's Essence and scrap; its shard and gear chances are the keys above. Starting values: the
+     * simulator tunes them so a full clear pays about what a three-room run did.
+     */
+    loot: {
+      fight: { bait: 1, essence: 0, scrap: 0 },
+      elite: { bait: 1, essence: 0, scrap: 1 },
+      cache: { bait: 1, essence: 0, scrap: 1 },
+      boss: { bait: 0, essence: 1, scrap: 1 },
+    },
+    /**
+     * A defeat keeps this share of the pack, each amount rounded up (1 Bait stays 1, 3 scrap becomes
+     * 2): generous on purpose, so an early defeat costs almost nothing and a late one costs more.
+     */
+    defeatKeepBp: 5_000,
   },
   /**
    * Expeditions v2 (docs/design/expeditions-v2.md): trip lengths, explorer ranks, familiarity, slots,
