@@ -178,10 +178,13 @@ describe('journey CLI run on a tiny config', () => {
     expect(JSON.stringify(runJourneys(base))).toBe(a);
     const current = runJourneys({ ...base, income: 'current' });
     const allowance = JSON.parse(a) as JourneyReport;
-    // Drop-ins and regulars open the game more often than they leet: the allowance pays them more Bait,
-    // so they end up stronger.
+    // The two income models give different games for the same servers. (This used to assert that regulars
+    // end stronger on the allowance, which paid them more Bait; since Bait no longer buys levels (B-016)
+    // and with only 3 servers over 4 weeks, which of the two is ahead is gear luck, not a rule.)
+    expect(JSON.stringify(current)).not.toBe(JSON.stringify(allowance));
     const power = (r: JourneyReport, id: string): number =>
       r.presets[id]?.weeks.at(-1)?.power?.median ?? 0;
-    expect(power(allowance, 'regular')).toBeGreaterThan(power(current, 'regular'));
+    expect(power(allowance, 'regular')).toBeGreaterThan(0);
+    expect(power(current, 'regular')).toBeGreaterThan(0);
   });
 });

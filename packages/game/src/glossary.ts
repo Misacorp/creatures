@@ -79,7 +79,7 @@ export const GLOSSARY_IDS = {
   gearSlot: (slot: string): string => `gear-slot-${slot}`,
   /** A gear line such as `tide-attunement`. */
   gearLine: (id: string): string => `gear-line-${id}`,
-  /** A gear rarity such as `festival`. */
+  /** A gear rarity such as `epic`. */
   gearRarity: (rarity: string): string => `gear-rarity-${rarity}`,
   /** A part kind such as `tide-shard`. */
   part: (kind: string): string => `part-${kind}`,
@@ -125,6 +125,9 @@ export const FIXED_GLOSSARY_IDS = [
   'gear-item-level',
   'gear-tier',
   'gear-tag',
+  'gear-stat',
+  'gear-local',
+  'gear-festival',
   'workshop',
   'blueprint',
   'dungeon',

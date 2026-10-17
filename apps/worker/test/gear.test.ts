@@ -57,7 +57,9 @@ interface ItemBody {
   slot: string;
   tag: string;
   rarity: GearRarity;
+  festival: boolean;
   itemLevel: number;
+  stats: { stat: string; value: number; base: number; text: string }[];
   lines: LineBody[];
   needs: { level: number; role: string | null };
   equippedOn: string | null;
@@ -395,6 +397,7 @@ describe('GET /api/gear and the welcome kit', () => {
             'createdAt',
             'dismantle',
             'equippedOn',
+            'festival',
             'id',
             'itemLevel',
             'lines',
@@ -404,6 +407,7 @@ describe('GET /api/gear and the welcome kit', () => {
             'rarity',
             'slot',
             'source',
+            'stats',
             'tag',
           ].sort(),
         );
@@ -419,10 +423,16 @@ describe('GET /api/gear and the welcome kit', () => {
           origin: { kind: 'welcome' },
           needs: { level: 1, role: null },
         });
-        // The base line and one rolled line, with tier pips for the rolled one.
-        expect(item?.lines).toHaveLength(2);
-        expect(item?.lines[0]).toMatchObject({ source: 'base', text: 'Attack +2%', tier: null });
-        expect(item?.lines[1]).toMatchObject({ source: 'rolled', tier: 1, bestTier: 1 });
+        // Its fixed base stats (Attack first, then HP) and one rolled line, with tier pips.
+        expect(item?.festival).toBe(false);
+        expect(item?.stats.map((x) => [x.stat, x.base])).toEqual([
+          ['atk', 2],
+          ['hp', 4],
+        ]);
+        expect(item?.stats[0]?.text).toMatch(/^Attack \d+$/);
+        expect(item?.stats[1]?.text).toMatch(/^HP \d+$/);
+        expect(item?.lines).toHaveLength(1);
+        expect(item?.lines[0]).toMatchObject({ source: 'rolled', tier: 1, bestTier: 1 });
       },
       opts(),
     );
@@ -1739,7 +1749,7 @@ describe('analytics and privacy', () => {
         kind: 'job_claim',
         job: 'sing' as never,
         base: 'x',
-        rarity: 'festival',
+        rarity: 'festival' as never,
         upgraded: false,
         xp: -1,
         skillLevel: 1000,
@@ -1748,7 +1758,8 @@ describe('analytics and privacy', () => {
     ).toEqual({
       job: 'craft',
       base: 'unknown',
-      rarity: 'festival',
+      // Festival is not a rarity (2026-10-17): an old value is reported as Common.
+      rarity: 'common',
       upgraded: false,
       xp: 0,
       skillLevel: 99,

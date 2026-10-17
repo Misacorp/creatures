@@ -45,6 +45,12 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * ribbon, Bait no longer buys levels, and the new-species pity forces a creature or a new species on
  * long dry streaks of trips. The archetypes' levels, so their team power and the raid weeks, moved.
  *
+ * Re-pinned again on 2026-10-17 (B-018, items carry base stats), on purpose: a Hat and a Scarf have fixed
+ * base stats (Attack and HP, some a crit stat) instead of percentage implicits, better bases unlock at item
+ * levels 5 and 10, local lines change an item's own stats, and Festival gear is a normal-level,
+ * normal-rarity piece with a unique line. The archetypes' team power moved a little (first player's
+ * top-3 power 376 to 361 and 198 to 261 in two of the pinned runs); Bait earned and the runs without gear are the same.
+ *
  * Re-pinned again on 2026-10-17 (Boons and Omens, B-017), on purpose: every day now has a Boon and, from Boss
  * Rank 3, an Omen, drawn from a seeded stream of their own and applied to the raid stage, the dungeon runs,
  * the trips and the Workshop jobs of the day. The draws touch no other stream, so the same players check in

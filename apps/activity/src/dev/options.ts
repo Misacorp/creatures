@@ -35,12 +35,10 @@ export const OMEN_OPTIONS: readonly Option[] = [
   ...options(liveWeather('omen'), (d) => d.name),
 ];
 
-export const RARITY_OPTIONS: readonly Option[] = ['common', 'rare', 'epic', 'festival'].map(
-  (r) => ({
-    value: r,
-    label: r,
-  }),
-);
+export const RARITY_OPTIONS: readonly Option[] = ['common', 'rare', 'epic'].map((r) => ({
+  value: r,
+  label: r,
+}));
 
 export const GATE_OPTIONS: readonly Option[] = ['on', 'off', 'auto'].map((g) => ({
   value: g,

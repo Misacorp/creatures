@@ -527,8 +527,11 @@ export const RULES = {
      * needs a wearer whose level is at least the item's level.
      */
     slotUnlockLevel: { hat: 1, scarf: 7, charm: 13 },
-    /** Lines an item rolls by rarity (its base line is extra; a Festival piece also has its glow). */
-    rolledLines: { common: 1, rare: 2, epic: 3, festival: 2 },
+    /**
+     * Lines an item rolls by rarity (its base stat or base line is extra; a Festival piece is only a
+     * different base, so it rolls the same number, from its narrow pool, and has its unique line on top).
+     */
+    rolledLines: { common: 1, rare: 2, epic: 3 },
     /** The item level that unlocks tiers I to V (also the bands of the base line's value). */
     tierFromItemLevel: [1, 5, 10, 15, 20],
     /**
@@ -554,8 +557,6 @@ export const RULES = {
       welcome: 1,
       /** Raid finale reward slot: `base + Boss Rank`. */
       finale: { base: 3 },
-      /** Festival finale piece: `base + Boss Rank`. */
-      festival: { base: 5 },
       /** Daily dungeon: `base + floor(depth / depthPerLevel)`, plus `landmarkBonus` at a landmark. */
       dungeon: { base: 1, depthPerLevel: 2, landmarkBonus: 3 },
       /** Expedition finds: this times the finder's explorer rank. */
@@ -615,13 +616,12 @@ export const RULES = {
     dismantle: {
       bundleMax: 5,
       /** Nominal minutes of a job by the rarity of what is taken apart (a bundle of Commons: one job). */
-      minutes: { common: 15, rare: 60, epic: 120, festival: 120 },
+      minutes: { common: 15, rare: 60, epic: 120 },
       /** Inclusive ranges per item: `[min, max]`. */
       ranges: {
         common: { shard: [0, 0], glimmer: [0, 0], essence: [0, 0] },
         rare: { shard: [1, 1], glimmer: [0, 0], essence: [3, 8] },
         epic: { shard: [1, 2], glimmer: [0, 1], essence: [10, 25] },
-        festival: { shard: [1, 2], glimmer: [0, 1], essence: [10, 25] },
       },
       /**
        * The scrap range as a share of the item's craft scrap cost, in basis points: `[min, max]`, rounded
@@ -631,7 +631,6 @@ export const RULES = {
         common: [2_500, 4_000],
         rare: [3_500, 4_500],
         epic: [4_000, 5_000],
-        festival: [4_000, 5_000],
       },
       /** The chance (basis points) to learn the item's blueprint (or add a mark): base plus per Crafting level. */
       learnBp: 600,

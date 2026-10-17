@@ -4,6 +4,7 @@ import {
   RULES,
   content,
   expeditionContent,
+  gearBase,
   expectedTripWorth,
   goalWorthRatio,
   lengthRules,
@@ -127,6 +128,8 @@ export interface WornRow {
   players: number;
   /** Share of the team's items by rarity (0 to 1). */
   rarity: Record<GearRarity, number>;
+  /** Share of the team's items that are Festival pieces (a base, not a rarity; they have a rarity too). */
+  festival: number;
   /** Average item level and power added per worn item. */
   level: number;
   power: number;
@@ -491,8 +494,11 @@ export function wornItems(sims: readonly EconomyResult[]): WornRow[] {
         common: share('common'),
         rare: share('rare'),
         epic: share('epic'),
-        festival: share('festival'),
       },
+      festival:
+        items.length === 0
+          ? 0
+          : items.filter((i) => gearBase(i.baseId)?.festival === true).length / items.length,
       level: mean(items.map((i) => i.itemLevel)) ?? 0,
       power: mean(worn.map(gearPowerOf)) ?? 0,
       bag: avg((p) => p.gear.bag.length),

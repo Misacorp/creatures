@@ -189,7 +189,7 @@ export const SetCraftingXpBodySchema = v.strictObject({
 
 export const GrantGearBodySchema = v.strictObject({
   baseId: v.picklist(BASE_IDS),
-  rarity: v.picklist(['common', 'rare', 'epic', 'festival']),
+  rarity: v.picklist(['common', 'rare', 'epic']),
   /** The item level (1 to 20); default 1. */
   itemLevel: v.optional(int(1, RULES.gear.maxItemLevel)),
 });

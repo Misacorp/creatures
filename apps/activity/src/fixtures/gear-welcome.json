@@ -1,52 +1,87 @@
 {
   "serverNow": 1799733600000,
-  "balances": { "bait": 100, "essence": 0 },
-  "inventory": { "cap": 60, "used": 1, "reserved": 0 },
+  "balances": {
+    "bait": 100,
+    "essence": 0
+  },
+  "inventory": {
+    "cap": 60,
+    "used": 1,
+    "reserved": 0
+  },
   "items": [
     {
-      "id": "6dfc2ef8-a6ad-4a1c-be87-fa8bac979933",
+      "id": "c63062c5-a791-46a5-999d-e944563ea7fa",
       "baseId": "trail-cap",
       "slot": "hat",
       "tag": "neutral",
       "rarity": "common",
+      "festival": false,
       "itemLevel": 1,
-      "lines": [
+      "stats": [
         {
-          "id": "attack",
-          "name": "Attack",
-          "text": "Attack +2%",
-          "about": "Raises Attack by a share of the creature's own.",
-          "source": "base",
-          "tier": null,
-          "bestTier": null,
-          "active": null
+          "stat": "atk",
+          "value": 2,
+          "base": 2,
+          "text": "Attack 2"
         },
         {
-          "id": "grove-hunter",
-          "name": "Grove Hunter",
-          "text": "Grove Hunter +4%",
-          "about": "More damage to bosses and foes that Grove is strong against.",
+          "stat": "hp",
+          "value": 4,
+          "base": 4,
+          "text": "HP 4"
+        }
+      ],
+      "lines": [
+        {
+          "id": "crit-damage",
+          "name": "Crit damage",
+          "text": "Crit damage +8 pt",
+          "about": "Crits hit harder, in points (the fight caps the total).",
           "source": "rolled",
           "tier": 1,
           "bestTier": 1,
+          "local": false,
           "active": null
         }
       ],
-      "needs": { "level": 1, "role": null },
+      "needs": {
+        "level": 1,
+        "role": null
+      },
       "equippedOn": null,
       "dismantle": {
-        "scrap": { "min": 2, "max": 3 },
-        "shards": { "min": 0, "max": 0, "element": null },
-        "glimmer": { "min": 0, "max": 0 },
-        "essence": { "min": 0, "max": 0 }
+        "scrap": {
+          "min": 2,
+          "max": 3
+        },
+        "shards": {
+          "min": 0,
+          "max": 0,
+          "element": null
+        },
+        "glimmer": {
+          "min": 0,
+          "max": 0
+        },
+        "essence": {
+          "min": 0,
+          "max": 0
+        }
       },
       "source": "welcome",
       "createdAt": 1799733600000,
       "madeBy": null,
-      "origin": { "kind": "welcome" }
+      "origin": {
+        "kind": "welcome"
+      }
     }
   ],
-  "slotOpens": { "hat": 1, "scarf": 7, "charm": 13 },
+  "slotOpens": {
+    "hat": 1,
+    "scarf": 7,
+    "charm": 13
+  },
   "parts": {
     "scrap": 10,
     "tide-shard": 0,
@@ -55,24 +90,34 @@
     "spark-shard": 0,
     "glimmer": 0
   },
-  "blueprints": [{ "baseId": "trail-charm", "learnedAt": 1799733600000, "marks": 0 }],
+  "blueprints": [
+    {
+      "baseId": "trail-charm",
+      "learnedAt": 1799733600000,
+      "marks": 0,
+      "needsCraftingLevel": 1
+    }
+  ],
   "jobs": [],
-  "slots": { "total": 2, "used": 0 },
+  "slots": {
+    "total": 2,
+    "used": 0
+  },
   "skills": [
     {
-      "creatureId": "67ae8ca0-7584-462f-b07b-5db447a6c414",
+      "creatureId": "0006079c-6263-4604-b59e-f1a6a00f42de",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "f62479ee-d2d4-4751-92ef-c8867c404892",
+      "creatureId": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "17cdcd16-864e-4bd2-8e97-7a8f3e4f097d",
+      "creatureId": "32621523-b521-47e9-8f3d-faccb12a7aea",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
@@ -82,15 +127,22 @@
     {
       "gear": [
         {
-          "id": "6dfc2ef8-a6ad-4a1c-be87-fa8bac979933",
+          "id": "c63062c5-a791-46a5-999d-e944563ea7fa",
           "baseId": "trail-cap",
           "rarity": "common",
           "itemLevel": 1
         }
       ],
       "converted": [],
-      "parts": { "scrap": 10 },
-      "blueprints": [{ "baseId": "trail-charm", "duplicate": false }],
+      "parts": {
+        "scrap": 10
+      },
+      "blueprints": [
+        {
+          "baseId": "trail-charm",
+          "duplicate": false
+        }
+      ],
       "key": "welcome",
       "source": "welcome",
       "at": 1799733600000

@@ -22,6 +22,7 @@ import {
   craftCostFor,
   craftHours,
   craftItemLevel,
+  craftLevelNeeded,
   craftOdds,
   craftable,
   dismantleBundleError,
@@ -32,6 +33,8 @@ import {
   effectiveStats,
   gearBase,
   itemLines,
+  itemStats,
+  statText,
   jobDuration,
   jobXp,
   nextSkillXp,
@@ -159,8 +162,23 @@ export interface GearLineView {
   tier: number | null;
   /** The best tier this item level could roll (1 to 5); null where tiers do not apply. */
   bestTier: number | null;
+  /** A line of this item only ("(this item)"): it changes the item's own stat, not the creature. */
+  local: boolean;
   /** False when the line does nothing for the wearer; null when nobody wears the item. */
   active: boolean | null;
+}
+
+/**
+ * One of the item's own stats for the card (a Hat: Attack, HP, maybe a crit stat; a Scarf: HP, Attack, ...).
+ * `value` is what it adds to its wearer, `(base + flat local lines) x (1 + percent local lines)`; `base`
+ * is the base type's fixed number, so the card can say "base 5" under a bigger number. Crit stats are in
+ * basis points; `text` is the line as written ("Attack 35", "Crit chance 4.4 pt").
+ */
+export interface GearStatView {
+  stat: 'atk' | 'hp' | 'critChance' | 'critDamage';
+  value: number;
+  base: number;
+  text: string;
 }
 
 export interface GearItemView {
@@ -169,7 +187,11 @@ export interface GearItemView {
   slot: GearSlot;
   tag: GearTag;
   rarity: GearRarity;
+  /** A Festival piece (a base with a unique line, a narrow roll pool and a look of its own, not a rarity). */
+  festival: boolean;
   itemLevel: number;
+  /** Its own stats in card order (empty for a Charm). */
+  stats: GearStatView[];
   lines: GearLineView[];
   /** What a creature needs to wear it: its level (the slot's opening level or the item's, the higher) and the role of a role-locked Charm. */
   needs: { level: number; role: Role | null };
@@ -287,7 +309,13 @@ export interface GearState {
   /** The creature level each slot opens at. */
   slotOpens: Record<GearSlot, number>;
   parts: Record<PartKind, number>;
-  blueprints: { baseId: string; learnedAt: number; marks: number }[];
+  blueprints: {
+    baseId: string;
+    learnedAt: number;
+    marks: number;
+    /** The Crafting level a craft of this base asks for (a better base unlocks at a higher item level). */
+    needsCraftingLevel: number;
+  }[];
   jobs: JobView[];
   slots: { total: number; used: number };
   skills: SkillView[];
@@ -346,6 +374,9 @@ export interface CraftPreview {
   craftingLevel: number;
   /** The item level of the result: twice the Crafting level. */
   itemLevel: number;
+  /** The Crafting level this base asks for (a better base unlocks at a higher item level); `locked` when the creature is below it. */
+  needsCraftingLevel: number;
+  locked: boolean;
   marks: number;
   marksMax: number;
   /** The one-step-up chance, in basis points, already counted in the odds. */
@@ -551,6 +582,7 @@ export class Gear {
     const base = gearBase(row.base_id);
     if (base === undefined) throw new Error('stored gear has an unknown base');
     const idle = this.idleLines(row);
+    const stats = itemStats(item);
     const worn = row.equipped_on !== null;
     const role =
       base.tag === 'setter' ||
@@ -565,7 +597,14 @@ export class Gear {
       slot: row.slot,
       tag: item.tag,
       rarity: row.rarity,
+      festival: base.festival === true,
       itemLevel: row.item_level,
+      stats: stats.map((s) => ({
+        stat: s.stat,
+        value: s.value,
+        base: s.base,
+        text: statText(s.stat, s.value),
+      })),
       lines: itemLines(item).map((l) => ({
         id: l.id,
         name: l.name,
@@ -574,6 +613,7 @@ export class Gear {
         source: l.source,
         tier: l.tier,
         bestTier: l.bestTier,
+        local: l.local,
         active: worn ? !idle.has(l.id) : null,
       })),
       needs: { level: Math.max(RULES.gear.slotUnlockLevel[row.slot], row.item_level), role },
@@ -663,7 +703,10 @@ export class Gear {
       items: rows.map((row) => this.itemView(row)),
       slotOpens: { ...RULES.gear.slotUnlockLevel },
       parts: getParts(this.sql, userId),
-      blueprints: knownBlueprints(this.sql, userId),
+      blueprints: knownBlueprints(this.sql, userId).map((b) => ({
+        ...b,
+        needsCraftingLevel: craftLevelNeeded(b.baseId),
+      })),
       jobs: [...open, ...claimed].map((row) => this.jobView(row, now)),
       slots: { total: RULES.gear.workshopSlots, used: open.length },
       skills: creatures.map((c) => {
@@ -988,6 +1031,8 @@ export class Gear {
         creatureId: creature.id,
         craftingLevel: level,
         itemLevel: craftItemLevel(level),
+        needsCraftingLevel: craftLevelNeeded(base.id),
+        locked: level < craftLevelNeeded(base.id),
         marks,
         marksMax: RULES.gear.craft.marks.max,
         stepUpBp: stepUpBp(level, marks, mods),
@@ -1156,6 +1201,8 @@ export class Gear {
     const marks = blueprintMarks(this.sql, userId, base.id);
     if (marks === null) throw new GameError(409, 'blueprint_unknown');
     if (!hasRoom(this.sql, userId)) throw new GameError(409, 'inventory_full');
+    // A better base unlocks at its item level: this creature's Crafting level has to make an item that high.
+    if (worker.level < craftLevelNeeded(base.id)) throw new GameError(409, 'base_locked');
     const reach = input.reach ?? 'none';
     if (worker.level < reachMinLevel(reach)) throw new GameError(409, 'skill_too_low');
     const { parts: cost, essence } = craftCostFor(

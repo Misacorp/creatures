@@ -823,3 +823,47 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
   - Stormfront's effect (above), and the three planned entries (Kind Rain, Morning Haze, Bramble Season) once the engine has the hooks.
   - Check `dungeon-first-week-clear` on a second seed.
   - Live: the share of days with an Omen at each rank, trips sent on Market Day, and the raid win rate by Omen (`weather_draw` and `weather_use` events).
+
+### B-018: Items carry base stats; local and global lines; Festival gear is special, not stronger (open)
+
+- **Opened:** 2026-10-17, from Misa's direction of the same day ("Path of Exile style": base stats on items, local lines "this item", Festival at the normal level and rarity), and the lead's update the same afternoon (fixed base stats per base type, two or more stats, better bases unlocking at higher item levels). Design: `gear-and-creatures-v2.md` section 2.5; decision entry of 2026-10-17. (B-017 was left free for a parallel branch.)
+- **Finding.** After B-016 the gear share sat far under the section 4 targets for everyone but the min-maxer's first 20 weeks (20 servers of `leet:gear`: engaged 3.0 / 9.7 / 16.6 / 20.0%, regular 0.9 / 6.3 / 12.0 / 16.7%, drop-in 1.0 / 2.0 / 7.4 / 11.6% at weeks 2 / 8 / 20 / 30). Gear was a few percent on top of a creature's own stats, and a drop only got better through the tiers of its lines.
+- **Action (starting values; `gear.json`, `gear-lines.json`).**
+  - **Base stats**, fixed per base, no item level scaling. Hats (Attack / HP): 2 / 4 at item level 1, 12 / 24 at 5, 24 / 48 at 10 (neutral and Tide); Scarves (HP / Attack): 12 / 1, 70 / 5, 150 / 12. Element bases lean a little (Ember Hats +20% Attack and 20% less HP, Grove Hats the other way and the sturdy Grove Scarf +20% HP, Spark a little glassy); the finer Hats and some Scarves add 1 to 3 points of crit chance or, on the Ember Hat of item level 10, 20 points of crit damage. The Festival Hearth Scarf has the plain first-make Scarf's stats.
+  - **Better bases unlock at item levels 1, 5 and 10** (levels are content, `minItemLevel`); a craft needs Crafting level 1, 3 and 5.
+  - **Local lines**, tiers I to V: share +20 / 40 / 60 / 90 / 120% (Attack, HP, crit chance, crit damage of the item), flat Attack +2 / 4 / 6 / 9 / 12, flat HP +12 / 25 / 40 / 55 / 75. Hats favour the Attack lines (weight 100 against 40), Scarves the HP lines. Creature Attack and HP: weight 6 on Charms only, values as the old Attack and HP lines (2 to 11%, 3 to 15%).
+  - **Festival**: the finale's item level and rarity odds, one fixed unique line (Hearth warmth 2 to 4% dungeon rest, Lantern luck 0.5 to 1.5 points of Lucky find), a pool of five lines.
+- **Method.** The gear study of B-012 to B-016 (`packages/sim/src/gear-study.ts`: 20 servers of the default mix, 30 weeks, median `1 - bare / full` of fight-scored power, seed `leet:gear`), then the full `pnpm sim` alone on seed `leet` (92 targets, 47 minutes) for the drift. The fold, the policies and the drops are the game's own pure functions; the only policy change is that the Workshop skips blueprints the crafter's level cannot make. Tuning was 8 runs of 6 servers varying the three make levels and the stat sizes, then the 20-server run below. Tried: the first model (stats growing with item level, Hat Attack 4 + level, Scarf HP 20 + 4 x level) gave a week 2 share of 8 to 10% for every profile (the stats were too big against level 1 to 5 creatures) and 26 / 22 / 17 / 14% at week 30; makes at levels 1, 8 and 15 left regulars and drop-ins on plain bases (week 20 regular 9.6%, drop-in 7.3%); makes at 1, 5 and 12 pushed the min-maxer's week 8 to 25%.
+- **Outcome (sim): gear's share of fight-scored power**, 20 servers of `leet:gear`, before (B-016 branch head) → now, with the range of `gear-and-creatures-v2.md` section 4 (the engaged profile has the min-maxer's range in `targets.json`):
+
+  | Profile   | Week 2 (range)          | Week 8 (range)         | Week 20 (range)            | Week 30 (range)        |
+  | --------- | ----------------------- | ---------------------- | -------------------------- | ---------------------- |
+  | Min-maxer | 5.5 → **9.6** (5 to 10) | 16.6 → 24.3 (15 to 22) | 26.0 → **30.6** (25 to 32) | 26.3 → 32.8 (33 to 40) |
+  | Engaged   | 3.0 → 5.0 (5 to 10)     | 9.7 → 12.9 (15 to 22)  | 16.6 → 23.3 (25 to 32)     | 20.0 → 26.9 (33 to 40) |
+  | Regular   | 0.9 → **3.5** (3 to 6)  | 6.3 → 9.1 (10 to 15)   | 12.0 → 17.4 (18 to 24)     | 16.7 → 23.7 (28 to 34) |
+  | Drop-in   | 1.0 → 4.6 (0 to 3)      | 2.0 → **5.6** (5 to 8) | 7.4 → **14.0** (10 to 15)  | 11.6 → 21.9 (15 to 20) |
+
+  Passing: 4 of 16 before, 6 now (bold, and the engaged week 2 is 5.0 against a limit of 5.0). Every cell moved toward its range except the drop-in's week 2 (the welcome Hat alone is worth 4 to 5% of a level 3 creature) and week 30 (over the range now). **What is not reachable with these rules alone**: the committed profiles and the regulars want opposite things (the min-maxer is over at week 8 while the engaged player is 2 points under; the drop-in is over at week 30 while the regular is 4 points under), because they differ in how many items they craft and how high a Crafting level they have, which the gear formulas cannot separate. The next levers are not formulas: the finale's item level by Boss Rank, the Reach odds and the crafting rate. Not tuned further on purpose; the numbers above are what to look at in live data.
+
+- **Outcome (sim): drift of the other targets (report only; the raid is not tuned).** `pnpm sim` (full) on seed `leet`: 92 targets, 65 pass and 27 fail (B-016: 63 and 29). The raid targets, Creatures B (B-016) → now:
+
+  | Target                            | Creatures B | Now                |
+  | --------------------------------- | ----------- | ------------------ |
+  | `raid-phase1-typical` (>= 80%)    | 65.5%       | 68.9%              |
+  | `raid-finale-typical` (85 to 97%) | 66.8%       | 69.9%              |
+  | `raid-finale-15` (85 to 99%)      | 61.4%       | 66.5%              |
+  | `raid-boss-spread` (<= 15 points) | 9.3 (pass)  | 8.7 (pass)         |
+  | `raid-ko-share` (10 to 30%)       | 35.2%       | 29.4% (now passes) |
+  | `curve-r2to5-default` (70 to 85%) | 72.0%       | 77.9% (pass)       |
+  | `curve-r6up-default` (45 to 65%)  | 39.6%       | 62.0% (now passes) |
+  | `curve-default-phase1` (>= 75%)   | 68.5%       | 74.3%              |
+  | `longrun-win-typical` (60 to 85%) | 85.8%       | 90.3%              |
+  | `choice-creature-min` (>= 0.60x)  | 0.806x      | 0.799x (pass)      |
+
+  The raid is easier everywhere (gear is a bigger share, and a team's gear now grows with the item level), which fixes the long-run target B-016 broke (`curve-r6up-default`) and moves the typical-week targets a few points toward their ranges; `longrun-win-typical` is now 5 points above its limit. One other target moved the wrong way: `dungeon-gear-share-week8` is 21.7% (limit 20%; it passed in B-016). `gear-newcomer-catchup` improved to 59.7% (limit 60%, was 58%). The raid retune after the revamps is the place for all of these.
+
+- **Expected.** Live: a new player's first Hat is worth a few points of Attack (visible on the card as "Attack 2"), the first better make (a Felt Hat at item level 5) is a noticeable jump, and a committed player's best Hat has Attack in the tens by week 8; Festival pieces look special and are not better than any other finale piece of their level.
+- **Follow-ups.**
+  - Look at the week 2 share of drop-ins and regulars in live data: the welcome Hat's size is the lever (a first make of 1 Attack would read oddly on a card).
+  - The item level of finale drops by Boss Rank and the crafting rate decide the spread between committed players and regulars, not the stat formulas.
+  - A fourth make at item level 15 (and a Hat or Scarf for each element with its own third stat) would give the late game more to chase; it is a data change.

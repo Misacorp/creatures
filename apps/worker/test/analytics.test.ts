@@ -7,6 +7,7 @@ import {
   RARITIES,
   RULES,
   content,
+  craftLevelNeeded,
   createSeededRng,
   dungeonContent,
   expeditionContent,
@@ -1453,11 +1454,12 @@ describe('privacy', () => {
         await call(ctx, a.secret, 'POST', `/api/gear/${kitItem}/equip`, {
           creatureId: a.starterId,
         });
+        // A base this Crafting level can make (a better base needs a higher level).
         const blueprint = rows<{ base_id: string }>(
           ctx.sql,
-          'SELECT base_id FROM blueprints WHERE user_id = ?',
+          'SELECT base_id FROM blueprints WHERE user_id = ? ORDER BY base_id',
           USER_ID,
-        )[0]?.base_id as string;
+        ).find((r) => craftLevelNeeded(r.base_id) === 1)?.base_id as string;
         creditParts(ctx.sql, USER_ID, {
           scrap: 30,
           'tide-shard': 2,

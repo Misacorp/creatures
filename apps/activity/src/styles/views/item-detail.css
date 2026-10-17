@@ -80,6 +80,30 @@ button.danger {
   margin: 0 0 0.25rem;
 }
 
+/* The item's own stats: big numbers above the lines (the first one is the headline). */
+.item-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item-stat .stat-text {
+  font-size: 1rem;
+}
+
+.item-stat.head .stat-text {
+  color: var(--gear);
+  font-size: 1.5rem;
+}
+
+.stat-base {
+  font-size: 0.8125rem;
+}
+
 /* The lines of an item, with their tiers as pips. */
 .line-list {
   display: grid;

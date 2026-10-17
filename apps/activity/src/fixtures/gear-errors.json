@@ -2,45 +2,152 @@
   {
     "route": "POST /api/gear/:id/equip",
     "status": 409,
-    "body": { "error": "item_level_too_high", "reason": "16" }
+    "body": {
+      "error": "item_level_too_high",
+      "reason": "16"
+    }
   },
   {
     "route": "POST /api/gear/:id/equip",
     "status": 409,
-    "body": { "error": "slot_locked", "reason": "13" }
+    "body": {
+      "error": "slot_locked",
+      "reason": "13"
+    }
   },
   {
     "route": "POST /api/gear/:id/equip",
     "status": 409,
-    "body": { "error": "wrong_role", "reason": "guard" }
+    "body": {
+      "error": "wrong_role",
+      "reason": "guard"
+    }
   },
-  { "route": "POST /api/workshop/jobs", "status": 409, "body": { "error": "creature_on_job" } },
-  { "route": "POST /api/workshop/jobs", "status": 409, "body": { "error": "workshop_full" } },
-  { "route": "POST /api/expeditions", "status": 409, "body": { "error": "creature_on_job" } },
-  { "route": "POST /api/workshop/jobs/:id/claim", "status": 409, "body": { "error": "not_ready" } },
-  { "route": "POST /api/workshop/jobs", "status": 409, "body": { "error": "blueprint_unknown" } },
-  { "route": "POST /api/workshop/jobs", "status": 409, "body": { "error": "key_conflict" } },
-  { "route": "POST /api/workshop/jobs", "status": 409, "body": { "error": "skill_too_low" } },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "base_locked"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "creature_on_job"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "workshop_full"
+    }
+  },
+  {
+    "route": "POST /api/expeditions",
+    "status": 409,
+    "body": {
+      "error": "creature_on_job"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs/:id/claim",
+    "status": 409,
+    "body": {
+      "error": "not_ready"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "blueprint_unknown"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "key_conflict"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "skill_too_low"
+    }
+  },
   {
     "route": "POST /api/workshop/jobs",
     "status": 400,
-    "body": { "error": "invalid_bundle", "reason": "mixed" }
+    "body": {
+      "error": "invalid_bundle",
+      "reason": "mixed"
+    }
   },
   {
     "route": "POST /api/gear/:id/dismantle",
     "status": 410,
-    "body": { "error": "dismantle_is_a_job" }
+    "body": {
+      "error": "dismantle_is_a_job"
+    }
   },
-  { "route": "POST /api/workshop/jobs", "status": 409, "body": { "error": "creature_away" } },
-  { "route": "POST /api/workshop/jobs", "status": 409, "body": { "error": "insufficient_parts" } },
-  { "route": "POST /api/workshop/jobs", "status": 409, "body": { "error": "inventory_full" } },
-  { "route": "POST /api/gear/:id/equip", "status": 400, "body": { "error": "invalid_body" } },
-  { "route": "POST /api/gear/:id/equip", "status": 404, "body": { "error": "not_found" } },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "creature_away"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "insufficient_parts"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "inventory_full"
+    }
+  },
+  {
+    "route": "POST /api/gear/:id/equip",
+    "status": 400,
+    "body": {
+      "error": "invalid_body"
+    }
+  },
+  {
+    "route": "POST /api/gear/:id/equip",
+    "status": 404,
+    "body": {
+      "error": "not_found"
+    }
+  },
   {
     "route": "POST /api/gear/:id/upgrade",
     "status": 410,
-    "body": { "error": "gear_upgrade_removed" }
+    "body": {
+      "error": "gear_upgrade_removed"
+    }
   },
-  { "route": "POST /api/workshop/jobs", "status": 410, "body": { "error": "job_kind_removed" } },
-  { "route": "POST /api/gear/equip-best", "status": 400, "body": { "error": "invalid_body" } }
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 410,
+    "body": {
+      "error": "job_kind_removed"
+    }
+  },
+  {
+    "route": "POST /api/gear/equip-best",
+    "status": 400,
+    "body": {
+      "error": "invalid_body"
+    }
+  }
 ]

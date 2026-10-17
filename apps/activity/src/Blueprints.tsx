@@ -52,6 +52,9 @@ export function Blueprints({
                     <span class="slot-tag">{slotName(bp.slot)}</span>
                     {bp.element !== null && <ElementChip element={bp.element} />}
                   </p>
+                  {bp.needsCraftingLevel > 1 && (
+                    <p class="muted">Needs Crafting level {bp.needsCraftingLevel}</p>
+                  )}
                   <p class="muted">
                     Takes about {nominalHours()} h ·{' '}
                     <GlossaryTag entry="well-thumbed">Well-thumbed</GlossaryTag>{' '}

@@ -533,6 +533,9 @@ describe('the glossary covers gear and crafting', () => {
       'gear-item-level',
       'gear-tier',
       'gear-tag',
+      'gear-stat',
+      'gear-local',
+      'gear-festival',
       'workshop',
       'blueprint',
     ]) {
@@ -546,7 +549,9 @@ describe('the glossary covers gear and crafting', () => {
       'gear-slot-charm',
       'gear-line-attack',
       'gear-line-tide-attunement',
-      'gear-rarity-festival',
+      'gear-festival',
+      'gear-stat',
+      'gear-local',
       'part-glimmer',
       'part-tide-shard',
       'job-craft',
@@ -568,10 +573,20 @@ describe('the glossary covers gear and crafting', () => {
     expect(text('gear-item-level')).toContain(
       `II from ${String(tiers[1])}, III from ${String(tiers[2])}, IV from ${String(tiers[3])}, V at ${String(tiers[4])}`,
     );
+    // The levels the better bases unlock at are the content's own.
+    const unlocks = [...new Set(gearContent.bases.map((b) => b.minItemLevel ?? 1))].filter(
+      (n) => n > 1,
+    );
+    expect(unlocks).toEqual([5, 10]);
+    expect(text('gear-item-level')).toContain(
+      `item level ${String(unlocks[0])} and ${String(unlocks[1])}`,
+    );
     expect(text('gear-rarity-common')).toContain(`${String(rolledLines.common)} rolled line`);
     expect(text('gear-rarity-rare')).toContain(`${String(rolledLines.rare)} rolled lines`);
     expect(text('gear-rarity-epic')).toContain(`${String(rolledLines.epic)} rolled lines`);
-    expect(text('gear-rarity-festival')).toContain(`${String(rolledLines.festival)} rolled lines`);
+    // A Festival piece is a base, not a rarity: its entry says it follows the finale's odds.
+    expect(text('gear-festival')).toContain('same odds as any finale piece');
+    expect(text('gear-stat')).toContain('Attack or a Scarf');
     expect(text('gear-rarity-epic')).toContain(
       `item level ${String(gearContent.lines.find((l) => l.id === 'lingering')?.minItemLevel)}`,
     );

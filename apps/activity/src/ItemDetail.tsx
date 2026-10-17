@@ -3,11 +3,11 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { creatureName } from './game';
 import type { GearActions } from './gear-actions';
-import { ItemFrame, ItemSprite, RarityTag } from './GearArt';
+import { FestivalTag, ItemFrame, ItemSprite, RarityTag } from './GearArt';
 import type { GearItem, GearState } from './gear-types';
 import { detailLines, gearName, itemElement, needsText, slotName, wearReason } from './gear-view';
 import { GlossaryTag } from './Glossary';
-import { ItemLines } from './ItemLines';
+import { ItemLines, ItemStats } from './ItemLines';
 import { DismantlePanel } from './ItemPanels';
 import { ElementChip } from './sprites/ElementChip';
 
@@ -136,7 +136,7 @@ export function ItemDetail({
   return (
     <section class="item-detail card-item" aria-labelledby={`item-${item.id}-name`}>
       <div class="item-head">
-        <ItemFrame rarity={item.rarity} class="big">
+        <ItemFrame rarity={item.rarity} baseId={item.baseId} class="big">
           <ItemSprite baseId={item.baseId} scale={6} />
         </ItemFrame>
         <div class="item-title">
@@ -145,6 +145,7 @@ export function ItemDetail({
           </h3>
           <p class="tags">
             <RarityTag rarity={item.rarity} />
+            {item.festival && <FestivalTag />}
             <GlossaryTag entry={`gear-slot-${item.slot}`} class="slot-tag">
               {slotName(item.slot)}
             </GlossaryTag>
@@ -155,6 +156,7 @@ export function ItemDetail({
           </p>
         </div>
       </div>
+      <ItemStats stats={item.stats} />
       <ItemLines lines={item.lines} />
       <p>
         {wearer === undefined ? (

@@ -122,7 +122,7 @@ function gearSection(a: Analysis): string {
           pct(r.rarity.common, 0),
           pct(r.rarity.rare, 0),
           pct(r.rarity.epic, 0),
-          pct(r.rarity.festival, 0),
+          pct(r.festival, 0),
           num(r.level),
           num(r.power),
           num(r.bag),

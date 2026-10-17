@@ -5,13 +5,21 @@
  * rules; and "Equip best". Everything is pure over `RULES.gear` and the gear content, and randomness
  * is injected (`Rng`): the server passes its live crypto source, tests and the simulator a seeded one.
  * Nothing here touches the engine: the sheet it builds is plain numbers in the shape of `SlotMods`.
+ *
+ * Items carry base stats (2026-10-17): a base type has fixed base stats (a Hat: Attack and HP, a Scarf: HP
+ * and Attack, some a crit stat too), the same on every item of the base and not scaled by item level;
+ * better bases unlock at higher item levels (`minItemLevel`). "Local" lines change one of that item's own
+ * stats only, so each stat of an item is `(base + flat local) x (1 + percent local)` (`itemStats`).
+ * Everything else a line does is global: it acts on the creature or on the fight (crit, elements,
+ * reactions, wards, roles, utility).
  */
 import { content } from '../content';
-import { baseFor, gearBase, gearContent, gearLine } from '../content/gear';
+import { baseFor, eligibleBases, gearBase, gearContent, gearLine } from '../content/gear';
 import {
   GEAR_SLOTS,
   tagElement,
   tagRole,
+  type BaseStatKind,
   type GearBase,
   type GearLine,
   type GearRarity,
@@ -31,7 +39,10 @@ export interface ItemLine {
   tier: number;
 }
 
-/** An item as the rules see it. The base line and the Festival glow come from the base, not from here. */
+/**
+ * An item as the rules see it. The base stat (a Hat's Attack, a Scarf's HP), the Charm's base line and a
+ * Festival piece's unique line come from the base, not from here.
+ */
 export interface GearItem {
   baseId: string;
   slot: GearSlot;
@@ -85,12 +96,12 @@ export function lineValue(line: GearLine, tier: number): number {
   return line.values[i] as number;
 }
 
-/** The value of a base's fixed line (its implicit, the Festival glow) at an item level. */
+/** The value of a base's fixed line (a Charm's implicit, a Festival piece's unique line) at an item level. */
 export function fixedValue(values: readonly number[], itemLevel: number): number {
   return values[tierCap(itemLevel)] as number;
 }
 
-const RARITY_RANK: Record<GearRarity, number> = { common: 0, rare: 1, epic: 2, festival: 2 };
+const RARITY_RANK: Record<GearRarity, number> = { common: 0, rare: 1, epic: 2 };
 const LINE_RANK = { common: 0, rare: 1, epic: 2 } as const;
 
 /** True if a rarity may roll a line that needs `min` or better. */
@@ -122,11 +133,6 @@ export function itemOf(
   };
 }
 
-/** True if a rarity fits a base: Festival pieces only Festival, the rest never. */
-export function rarityFitsBase(base: Pick<GearBase, 'festival'>, rarity: GearRarity): boolean {
-  return (base.festival === true) === (rarity === 'festival');
-}
-
 // --- The roll pool ---
 
 /** A line with the weight it has on a given item. */
@@ -139,11 +145,12 @@ export interface PoolLine {
  * The lines an item of this base, rarity and item level can roll, with their weights: the slot's
  * pool, the lines this rarity and item level reach, times the tag (an element tag multiplies its own
  * element's lines, a role-locked Charm its role's lines and drops the other roles', the Crossroads
- * Compass raises utility lines and lowers combat lines). The weights are 10 times the content's, so
- * the 0.3 multiplier stays an integer.
+ * Compass raises utility lines and lowers combat lines). A base with a narrow pool (a Festival piece)
+ * rolls only the lines it names. The weights are 10 times the content's, so the 0.3 multiplier stays
+ * an integer.
  */
 export function linePool(
-  base: Pick<GearBase, 'slot' | 'tag'>,
+  base: Pick<GearBase, 'slot' | 'tag' | 'pool' | 'stats'>,
   rarity: GearRarity,
   itemLevel: number,
 ): PoolLine[] {
@@ -154,7 +161,15 @@ export function linePool(
   const out: PoolLine[] = [];
   for (const line of gearContent.lines) {
     const raw = line.weights[base.slot];
-    if (raw <= 0) continue;
+    if (raw <= 0 || line.fixedOnly) continue;
+    if (base.pool !== undefined && !base.pool.includes(line.id)) continue;
+    // A local line changes one of the item's own stats, so it only rolls where the base has that stat.
+    if (
+      line.effect.kind === 'local' &&
+      !(base.stats ?? []).some((s) => line.effect.kind === 'local' && s.stat === line.effect.stat)
+    ) {
+      continue;
+    }
     if (!rarityReaches(rarity, line.minRarity)) continue;
     if (level < line.minItemLevel) continue;
     let mulBp = 10_000;
@@ -180,7 +195,7 @@ export function linePool(
  */
 export function rollLines(
   rng: Rng,
-  base: Pick<GearBase, 'slot' | 'tag'>,
+  base: Pick<GearBase, 'slot' | 'tag' | 'pool' | 'stats'>,
   rarity: GearRarity,
   itemLevel: number,
   minTier = 0,
@@ -199,15 +214,12 @@ export function rollLines(
   return out;
 }
 
-/** Rolls a whole item of a base. Throws RangeError for an unknown base or a rarity the base cannot have. */
+/** Rolls a whole item of a base. Throws RangeError for an unknown base. Any base can be of any rarity. */
 export function rollItem(
   rng: Rng,
   spec: { baseId: string; rarity: GearRarity; itemLevel: number; minTier?: number },
 ): GearItem {
   const base = baseOrThrow(spec.baseId);
-  if (!rarityFitsBase(base, spec.rarity)) {
-    throw new RangeError(`base "${spec.baseId}" cannot be ${spec.rarity}`);
-  }
   const level = clampItemLevel(spec.itemLevel);
   return itemOf(
     base.id,
@@ -245,9 +257,13 @@ export function formatLineValue(line: GearLine, value: number): string {
   }
 }
 
-/** A line as one phrase: "Attack +6%", "Unbothered". */
+/**
+ * A line as one phrase: "Crit chance +3 pt", "Unbothered". A local line (it changes only this item's
+ * own stat) reads the other way round and says so: "+60% Attack (this item)".
+ */
 export function lineText(line: GearLine, value: number): string {
   const number = formatLineValue(line, value);
+  if (line.local) return `${number} ${line.name} (this item)`;
   return number === '' ? line.name : `${line.name} ${number}`;
 }
 
@@ -267,9 +283,11 @@ export interface ResolvedLine {
   /** The best tier this item level could roll (1 to 5), or null where tiers do not apply. */
   bestTier: number | null;
   unit: GearLine['unit'];
+  /** A line of this item only ("(this item)"): it changes the item's own stat, not the creature. */
+  local: boolean;
 }
 
-/** Every line of an item in card order: the base line, the Festival glow, then the rolled lines. */
+/** Every line of an item in card order: the Charm's base line, a Festival piece's unique line, then the rolled lines. */
 export function itemLines(item: GearItem): ResolvedLine[] {
   const base = baseOrThrow(item.baseId);
   const out: ResolvedLine[] = [];
@@ -291,6 +309,7 @@ export function itemLines(item: GearItem): ResolvedLine[] {
       tier: null,
       bestTier: null,
       unit: line.unit,
+      local: line.local,
     });
   };
   fixed(base.implicit, 'base');
@@ -310,9 +329,81 @@ export function itemLines(item: GearItem): ResolvedLine[] {
       tier: line.single ? null : rolled.tier + 1,
       bestTier: line.single ? null : best,
       unit: line.unit,
+      local: line.local,
     });
   }
   return out;
+}
+
+// --- The item's own stats ---
+
+/** One of an item's own stats as the card shows it. */
+export interface ItemStat {
+  stat: BaseStatKind;
+  /**
+   * What the item adds to its wearer: `(base + flat local lines) x (1 + percent local lines)`, rounded
+   * down. Attack and HP are points, crit chance and crit damage basis points.
+   */
+  value: number;
+  /** The base alone, as the base type has it. */
+  base: number;
+  /** The flat amount of the item's local lines for this stat. */
+  flat: number;
+  /** The percentage of the item's local lines for this stat, in basis points. */
+  pctBp: number;
+}
+
+/**
+ * The item's own stats in the order its base lists them (a Hat: Attack, HP, then a third if it has one;
+ * a Scarf: HP, Attack, ...); empty for a Charm. Each is the base's fixed number (the same on every item
+ * of the base: it never rolls and the item level does not scale it), plus the flat local lines for that
+ * stat, times one plus the percent local lines for it (added together, so two percentages never
+ * multiply). Integers only. A local line for a stat the base does not have changes nothing (it cannot
+ * roll there).
+ */
+export function itemStats(item: GearItem): ItemStat[] {
+  const base = baseOrThrow(item.baseId);
+  const out: ItemStat[] = [];
+  for (const own of base.stats ?? []) {
+    let flat = 0;
+    let pctBp = 0;
+    for (const rolled of item.lines) {
+      const line = gearLine(rolled.id);
+      if (line === undefined || line.effect.kind !== 'local' || line.effect.stat !== own.stat) {
+        continue;
+      }
+      const value = lineValue(line, rolled.tier);
+      if (line.effect.mode === 'flat') flat += value;
+      else pctBp += value;
+    }
+    out.push({
+      stat: own.stat,
+      value: Math.floor(((own.value + flat) * (10_000 + pctBp)) / 10_000),
+      base: own.value,
+      flat,
+      pctBp,
+    });
+  }
+  return out;
+}
+
+/** One stat of an item by kind, or undefined when its base does not have it. */
+export function itemStat(item: GearItem, stat: BaseStatKind): ItemStat | undefined {
+  return itemStats(item).find((s) => s.stat === stat);
+}
+
+/** A stat as text: "Attack 35", "Crit chance 5 pt" (crit numbers are shown in points). */
+export function statText(stat: BaseStatKind, value: number): string {
+  switch (stat) {
+    case 'atk':
+      return `Attack ${String(value)}`;
+    case 'hp':
+      return `HP ${String(value)}`;
+    case 'critChance':
+      return `Crit chance ${formatBp(value)} pt`;
+    case 'critDamage':
+      return `Crit damage ${formatBp(value)} pt`;
+  }
 }
 
 // --- The wear rule ---
@@ -431,10 +522,14 @@ export interface FoldTalent {
 
 /** What a creature's worn items add, line by line, before they are applied. */
 export interface WornEffects {
+  /** Attack and HP of the creature's own, more by a share or a flat amount (Charm lines and talents; global). */
   atkBp: number;
   atkFlat: number;
   hpBp: number;
   hpFlat: number;
+  /** What the worn items' own Attack and HP add (`itemStats`), added after the shares above. */
+  atkItem: number;
+  hpItem: number;
   critChanceBp: number;
   critDamageBp: number;
   /** Speed, more (a share; only a talent gives it). */
@@ -529,6 +624,8 @@ export function wornEffects(
     atkFlat: 0,
     hpBp: 0,
     hpFlat: 0,
+    atkItem: 0,
+    hpItem: 0,
     critChanceBp: 0,
     critDamageBp: 0,
     spdBp: 0,
@@ -562,9 +659,8 @@ export function wornEffects(
       case 'attune':
         out.atkBp += value;
         break;
-      case 'glow':
-        out.atkBp += value;
-        out.hpBp += value;
+      case 'local':
+        // Counted in the item's own stats (`itemStats`), not on the creature.
         break;
       case 'hunter': {
         const foe = beatenBy(line.element as Element);
@@ -600,6 +696,12 @@ export function wornEffects(
     }
   };
   for (const item of items) {
+    for (const own of itemStats(item)) {
+      if (own.stat === 'atk') out.atkItem += own.value;
+      else if (own.stat === 'hp') out.hpItem += own.value;
+      else if (own.stat === 'critChance') out.critChanceBp += own.value;
+      else out.critDamageBp += own.value;
+    }
     for (const resolved of itemLines(item)) {
       const line = gearLine(resolved.id);
       if (line !== undefined) apply(line, resolved.value);
@@ -640,7 +742,8 @@ export function modsEmpty(mods: GearMods): boolean {
 /**
  * Folds a creature's worn items and talents into its fight numbers. `stats` are the effective stats
  * (level, fusion) and `crit` the species' crit bonus. The result has Attack and HP raised by the
- * percentages and then the flat amounts of the items and talents, Speed by a talent's share, the crit lines added to the crit bonus, the sheet for `FightSlot.mods`
+ * percentages and then the flat amounts of the talents, then the worn items' own Attack and HP (`itemStats`, each already
+ * counting its local lines, so no global percentage multiplies it; their crit stats join the crit lines), Speed by a talent's share, the crit lines added to the crit bonus, the sheet for `FightSlot.mods`
  * (absent when empty) and the trip, Workshop and dungeon rules. The engine adds the crit bonus to the
  * baseline and applies its own caps, so the bonus is kept inside the room that is left. Integers only;
  * stats never fall. Without items the inputs come back unchanged.
@@ -656,12 +759,12 @@ export function applyGear(
     return { stats, crit, mods: undefined, rules: NO_GEAR_RULES };
   }
   const fx = wornEffects(wearer, items, talents);
-  const scale = (value: number, bp: number, flat: number): number =>
-    Math.floor((value * (10_000 + bp)) / 10_000) + flat;
+  const scale = (value: number, bp: number, flat: number, item: number): number =>
+    Math.floor((value * (10_000 + bp)) / 10_000) + flat + item;
   const folded: Stats = {
-    hp: scale(stats.hp, fx.hpBp, fx.hpFlat),
-    atk: scale(stats.atk, fx.atkBp, fx.atkFlat),
-    spd: scale(stats.spd, fx.spdBp, 0),
+    hp: scale(stats.hp, fx.hpBp, fx.hpFlat, fx.hpItem),
+    atk: scale(stats.atk, fx.atkBp, fx.atkFlat, fx.atkItem),
+    spd: scale(stats.spd, fx.spdBp, 0, 0),
   };
   const mods = modsEmpty(fx.mods) ? undefined : fx.mods;
   if (crit === undefined && fx.critChanceBp === 0 && fx.critDamageBp === 0) {
@@ -688,7 +791,7 @@ export function applyGear(
 /**
  * What an item is worth to a wearer, as a whole number in hundredths of the creature's power
  * (`creaturePower`: Attack + HP / 10), for choosing between items. The Attack and HP an item adds are
- * counted exactly (percent, flat, an Attunement of the wearer's element, the Festival glow); every
+ * counted exactly (the item's own stat, Creature Attack and HP lines, an Attunement of the wearer's element); every
  * other line adds a share of the creature's power by its content `worth`, in full for the wearer it
  * is meant for and a quarter of it otherwise. This is a deterministic stand-in, not a fight: it
  * cannot see positions or this week's boss, so "Equip best" is a good first pick and the player's
@@ -701,8 +804,8 @@ export function itemScore(
 ): number {
   const fx = wornEffects(wearer, [item]);
   const stats = wearer.stats;
-  let centi = Math.floor((stats.atk * fx.atkBp + fx.atkFlat * 10_000) / 100);
-  centi += Math.floor((stats.hp * fx.hpBp + fx.hpFlat * 10_000) / 1_000);
+  let centi = Math.floor((stats.atk * fx.atkBp + (fx.atkFlat + fx.atkItem) * 10_000) / 100);
+  centi += Math.floor((stats.hp * fx.hpBp + (fx.hpFlat + fx.hpItem) * 10_000) / 1_000);
   const powerCenti = stats.atk * 100 + stats.hp * 10;
   for (const resolved of itemLines(item)) {
     const line = gearLine(resolved.id);
@@ -857,14 +960,9 @@ export function planEquipBest(
 
 // --- Item levels by source ---
 
-/** The item level of a raid finale piece at a Boss Rank. */
+/** The item level of a raid finale piece at a Boss Rank (a Festival piece has the same: it is only a different base). */
 export function finaleItemLevel(rank: number): number {
   return clampItemLevel(RULES.gear.itemLevel.finale.base + Math.trunc(rank));
-}
-
-/** The item level of a Festival finale piece at a Boss Rank. */
-export function festivalItemLevel(rank: number): number {
-  return clampItemLevel(RULES.gear.itemLevel.festival.base + Math.trunc(rank));
 }
 
 /** The item level of a daily dungeon drop at a depth (a landmark adds a bonus). */
@@ -904,11 +1002,13 @@ export function convertedItemLevel(rank: number, bestDepth: number): number {
 /**
  * A drop's base: the slot by `dropSlotWeights`, then the base of that slot and tag (`element`; null
  * is neutral). A Charm is role-locked with `roleCharmBp` when `roleCharm` is on, for a role drawn
- * evenly. Draws the slot, then (for a Charm, when allowed) the role chance.
+ * evenly. Then the base among those of that slot and tag the item level unlocks (`minItemLevel`), evenly.
+ * Draws the slot, then (for a Charm, when allowed) the role chance, then the base.
  */
 export function dropBase(
   rng: Rng,
   element: Element | null,
+  itemLevel: number,
   options: { roleCharm?: boolean } = {},
 ): GearBase {
   const weights = RULES.gear.dropSlotWeights;
@@ -925,7 +1025,10 @@ export function dropBase(
       if (base !== undefined) return base;
     }
   }
-  const base = baseFor(slot, element ?? 'neutral');
+  // Any base of the slot and tag that the item level unlocks, evenly (Path of Exile style: a high
+  // level drop can still be a plain base, and the plain base's lines can still be great).
+  const eligible = eligibleBases(slot, element ?? 'neutral', clampItemLevel(itemLevel));
+  const base = eligible[int(rng, Math.max(1, eligible.length))];
   if (base === undefined) throw new Error(`no ${slot} for ${element ?? 'neutral'}`);
   return base;
 }

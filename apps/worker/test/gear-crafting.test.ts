@@ -871,7 +871,7 @@ describe('dismantling teaches blueprints and adds well-thumbed marks', () => {
         skipWelcome(ctx, p.id);
         const [c1] = p.creatureIds as [string];
         const bell = give(ctx, p.id, 'wardens-bell', { rarity: 'rare' });
-        const lantern = give(ctx, p.id, 'festival-lantern-charm', { rarity: 'festival' });
+        const lantern = give(ctx, p.id, 'festival-lantern-charm', { rarity: 'epic' });
         const ask = async (itemId: string) =>
           (
             await p.call('POST', '/api/workshop/preview', {

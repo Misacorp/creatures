@@ -13,6 +13,7 @@ import {
   dismantleYield,
   droppableBases,
   finaleItemLevel,
+  gearBase,
   itemOf,
   jobDuration,
   jobXp,
@@ -173,11 +174,12 @@ describe('drops', () => {
     expect(slot(a) - (slotsBefore[0] ?? 0)).toBe(1);
     expect(slot(b) - (slotsBefore[1] ?? 0)).toBe(1);
     // A Festival week adds the Festival piece.
-    const festivalBefore = allItems(a).filter((i) => i.rarity === 'festival').length;
+    const isFestival = (i: { baseId: string }): boolean => gearBase(i.baseId)?.festival === true;
+    const festivalBefore = allItems(a).filter(isFestival).length;
     const before = slot(a);
     grantFinaleLoot([a], 3, 'ember', 'tide', createSeededRng('festival'));
     expect(slot(a) - before).toBe(2);
-    expect(allItems(a).filter((i) => i.rarity === 'festival').length - festivalBefore).toBe(1);
+    expect(allItems(a).filter(isFestival).length - festivalBefore).toBe(1);
   });
 
   it('gives finale gear its item level by rank and blueprints the player does not know', () => {

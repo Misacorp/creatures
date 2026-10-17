@@ -137,7 +137,10 @@ export function JobReveal({
       <RevealStage
         frame={frame}
         opened={
-          <ItemFrame rarity={rarity}>
+          <ItemFrame
+            rarity={rarity}
+            {...(result.kind === 'craft' ? { baseId: result.baseId } : {})}
+          >
             {result.kind === 'supply' ? (
               <Sprite
                 sprite={glyphOrUnknown(supplyKindOf(result.supplyId) ?? 'unknown')}

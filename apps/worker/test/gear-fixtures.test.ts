@@ -129,8 +129,16 @@ describe('the gear fixtures match what the server sends', () => {
     expect(gearState.items.some((i) => i.equippedOn !== null)).toBe(true);
     expect(gearState.items.some((i) => i.madeBy !== null)).toBe(true);
     expect(gearState.skills.some((s) => s.xp > 0)).toBe(true);
-    // Every slot and the Festival rarity are on show, with tier pips.
+    // Every slot and a Festival piece are on show, with their stats and tier pips; a local line says so.
     expect(new Set(gearState.items.map((i) => i.slot))).toEqual(new Set(['hat', 'scarf', 'charm']));
+    expect(gearReady.items.some((i) => i.festival)).toBe(true);
+    expect(gearState.items.some((i) => i.stats.length >= 3)).toBe(true);
+    expect(gearState.items.every((i) => (i.slot === 'charm') === (i.stats.length === 0))).toBe(
+      true,
+    );
+    expect(gearState.items.some((i) => i.lines.some((l) => l.local))).toBe(true);
+    // A better base asks for a Crafting level.
+    expect(gearState.blueprints.some((b) => b.needsCraftingLevel > 1)).toBe(true);
     expect(gearState.items.some((i) => i.lines.some((l) => l.tier !== null))).toBe(true);
     // The job results the client has to draw.
     expect(claimCraft.result.kind).toBe('craft');
@@ -171,6 +179,7 @@ describe('the gear fixtures match what the server sends', () => {
       'dismantle_is_a_job',
       'invalid_bundle',
       'skill_too_low',
+      'base_locked',
       'job_kind_removed',
       'invalid_body',
       'not_found',

@@ -400,7 +400,7 @@ describe('converting the first gear model', () => {
     });
   });
 
-  it('turns an old Festival piece into the Festival piece of its slot', async () => {
+  it('turns an old Festival piece into the Festival piece of its slot: the normal item level and the finale rarity odds', async () => {
     await runCore(nextGuild(), (ctx) => {
       const p = player(ctx, 1, { level: 20, species: ['cindle', 'sproutle', 'splashet'] });
       legacy(
@@ -410,11 +410,62 @@ describe('converting the first gear model', () => {
         { id: ID(2), base: 'hearth-band', rarity: 'festival' },
       );
       convert(ctx, createSeededRng('festival'));
-      expect(itemRows(ctx, p.id).map((i) => [i.base_id, i.rarity])).toEqual([
-        ['festival-lantern-charm', 'festival'],
-      ]);
+      const items = itemRows(ctx, p.id);
+      expect(items.map((i) => i.base_id)).toEqual(['festival-lantern-charm']);
+      // Special, not stronger: a normal rarity (no Festival rarity exists), the level of any converted item.
+      expect(['common', 'rare', 'epic']).toContain(items[0]?.rarity);
+      expect(items[0]?.item_level).toBe(convertedItemLevel(1, 0));
+      expect(JSON.parse(items[0]?.lines_json ?? '[]')).toHaveLength(
+        RULES.gear.rolledLines[items[0]?.rarity as 'common' | 'rare' | 'epic'],
+      );
       // The unworn Hearth Band is refunded like any unworn item.
       expect(noticeOf(ctx, p.id).refundedItems).toBe(1);
+      return Promise.resolve();
+    });
+  });
+
+  it('gives converted Festival pieces no rarity floor: across seeds they are mostly Common at low ranks', async () => {
+    const seen: Record<string, number> = { common: 0, rare: 0, epic: 0 };
+    for (let k = 0; k < 12; k++) {
+      await runCore(nextGuild(), (ctx) => {
+        const p = player(ctx, 1, { level: 20, species: ['cindle', 'sproutle', 'splashet'] });
+        legacy(ctx, p.id, {
+          id: ID(1),
+          base: 'lantern-charm',
+          rarity: 'festival',
+          on: p.creatureIds[2] as string,
+        });
+        convert(ctx, createSeededRng(`festival-${String(k)}`));
+        const rarity = itemRows(ctx, p.id)[0]?.rarity ?? 'none';
+        seen[rarity] = (seen[rarity] ?? 0) + 1;
+        return Promise.resolve();
+      });
+    }
+    expect(seen['common']).toBeGreaterThan(seen['epic'] ?? 0);
+    expect(seen['common']).toBeGreaterThan(0);
+  });
+
+  it('converts a worn item to the best base its item level unlocks, and a Festival piece to its own base', async () => {
+    await runCore(nextGuild(), (ctx) => {
+      const p = player(ctx, 1, { level: 20, species: ['cindle', 'sproutle', 'splashet'] });
+      // A deep dungeon run gives a converted item level above 8, where the second-tier bases unlock.
+      ctx.sql.exec(
+        `INSERT INTO dungeon_runs (id, user_id, day, attempt, idempotency_key, fingerprint, depth, seed, cleared, rooms_cleared, summary_json, rewards_json, created_at)
+         VALUES (?, ?, '2027-01-11', 1, 'key-1-xxxxxxxx', 'f', 18, 's', 1, 3, '{}', '{}', 0)`,
+        ID(100),
+        p.id,
+      );
+      legacy(ctx, p.id, {
+        id: ID(1),
+        base: 'forge-band',
+        rarity: 'common',
+        on: p.creatureIds[1] as string,
+      });
+      convert(ctx, createSeededRng('best-base'));
+      const items = itemRows(ctx, p.id);
+      expect(items[0]?.item_level).toBe(10);
+      // Item level 10 unlocks all three Ember scarves; the conversion gives the best.
+      expect(items[0]?.base_id).toBe('emberkeepers-mantle');
       return Promise.resolve();
     });
   });

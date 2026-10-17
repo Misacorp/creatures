@@ -444,7 +444,7 @@ export function recordDay(
   const team = pickTeam(player.creatures);
   const items = allItems(player);
   const worn = player.creatures.flatMap((c) => wornOf(c));
-  const wornRarity: Record<GearRarity, number> = { common: 0, rare: 0, epic: 0, festival: 0 };
+  const wornRarity: Record<GearRarity, number> = { common: 0, rare: 0, epic: 0 };
   for (const item of worn) wornRarity[item.rarity] += 1;
   const limit = bindingLimit(player);
   return {

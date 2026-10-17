@@ -8,6 +8,7 @@
  * a species' cap, a rarity a base cannot have, a full bag) is still refused.
  */
 import {
+  baseMinLevel,
   blueprintBases,
   RULES,
   allSpecies,
@@ -16,7 +17,6 @@ import {
   gearBase,
   gearContent,
   int,
-  rarityFitsBase,
   ribbonsForLevel,
   rollItem,
   skillLevel,
@@ -270,13 +270,11 @@ export function finishJobs(ctx: ToolCtx) {
 export function grantGear(ctx: ToolCtx, body: Body<typeof GrantGearBodySchema>) {
   const base = gearBase(body.baseId);
   if (base === undefined) throw new DevError(400, 'invalid_base');
-  if (!rarityFitsBase(base, body.rarity)) throw new DevError(400, 'rarity_mismatch');
   if (!hasRoom(ctx.sql, ctx.userId)) throw new DevError(409, 'bag_full');
-  const item = rollItem(ctx.gearRng, {
-    baseId: base.id,
-    rarity: body.rarity,
-    itemLevel: body.itemLevel ?? 1,
-  });
+  // A better base only exists from its item level; the default is the lowest level it can have.
+  const itemLevel = body.itemLevel ?? baseMinLevel(base);
+  if (itemLevel < baseMinLevel(base)) throw new DevError(400, 'item_level_too_low');
+  const item = rollItem(ctx.gearRng, { baseId: base.id, rarity: body.rarity, itemLevel });
   const gearId = insertItem(ctx.sql, ctx.userId, item, { source: 'dev', now: ctx.now });
   return { gearId };
 }
@@ -292,13 +290,11 @@ export function fillBag(ctx: ToolCtx) {
     const base = bases[int(ctx.gearRng, bases.length)];
     if (base === undefined) break;
     const rarity: GearRarity =
-      base.festival === true
-        ? 'festival'
-        : (NORMAL_RARITIES[int(ctx.gearRng, NORMAL_RARITIES.length)] ?? 'common');
+      NORMAL_RARITIES[int(ctx.gearRng, NORMAL_RARITIES.length)] ?? 'common';
     const item = rollItem(ctx.gearRng, {
       baseId: base.id,
       rarity,
-      itemLevel: 1 + int(ctx.gearRng, RULES.gear.maxItemLevel),
+      itemLevel: Math.max(baseMinLevel(base), 1 + int(ctx.gearRng, RULES.gear.maxItemLevel)),
     });
     insertItem(ctx.sql, ctx.userId, item, { source: 'dev', now: ctx.now });
     added++;

@@ -11,7 +11,10 @@ import type { ExperienceView } from './experience';
 
 export type { GearSlot, GearTag, ReachId };
 
-export type GearRarity = 'common' | 'rare' | 'epic' | 'festival';
+/** Festival is not a rarity: a Festival piece is a base (`GearItem.festival`) of a normal rarity. */
+export type GearRarity = 'common' | 'rare' | 'epic';
+/** The kinds of base stat: Attack and HP, and the crit stats (in basis points). */
+export type StatKind = 'atk' | 'hp' | 'critChance' | 'critDamage';
 export type PartKind =
   'scrap' | 'tide-shard' | 'ember-shard' | 'grove-shard' | 'spark-shard' | 'glimmer';
 /** Parts by kind; a kind that is absent is 0. */
@@ -55,8 +58,19 @@ export interface GearLine {
   tier: number | null;
   /** The best tier this item level could roll (1 to 5); null where tiers do not apply. */
   bestTier: number | null;
+  /** A line of this item only ("+60% Attack (this item)"): it changes the item's own stat, not the creature. */
+  local: boolean;
   /** False when the line does nothing for the wearer; null when nobody wears the item. */
   active: boolean | null;
+}
+
+/** One of an item's own stats: the number it adds (its local lines counted), and the base type's number. */
+export interface GearStat {
+  stat: StatKind;
+  value: number;
+  base: number;
+  /** "Attack 35", "Crit chance 4.4 pt". */
+  text: string;
 }
 
 /** Where an item came from, for its details row. Content ids and numbers only. */
@@ -75,7 +89,11 @@ export interface GearItem {
   slot: GearSlot;
   tag: GearTag;
   rarity: GearRarity;
+  /** A Festival piece: a unique line, a narrow roll pool and a look of its own (not a rarity). */
+  festival: boolean;
   itemLevel: number;
+  /** Its own stats, the big numbers on the card (empty for a Charm). */
+  stats: GearStat[];
   lines: GearLine[];
   /** What a creature needs to wear it: its level, and the role of a role-locked Charm (null: any role). */
   needs: { level: number; role: string | null };
@@ -208,7 +226,13 @@ export interface GearState {
   /** The creature level each slot opens at. */
   slotOpens: Record<GearSlot, number>;
   parts: Record<PartKind, number>;
-  blueprints: { baseId: string; learnedAt: number; marks: number }[];
+  blueprints: {
+    baseId: string;
+    learnedAt: number;
+    marks: number;
+    /** The Crafting level a craft of this base asks for. */
+    needsCraftingLevel: number;
+  }[];
   /** Open jobs first (soonest end first), then the last few claimed ones. */
   jobs: Job[];
   slots: { total: number; used: number };
@@ -279,6 +303,9 @@ export interface CraftPreview {
   creatureId: string;
   craftingLevel: number;
   itemLevel: number;
+  /** The Crafting level this base asks for; `locked` when the creature is below it. */
+  needsCraftingLevel: number;
+  locked: boolean;
   marks: number;
   marksMax: number;
   stepUpBp: number;

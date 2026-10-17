@@ -33,7 +33,6 @@ import {
   dungeonItemLevel,
   expeditionItemLevel,
   expeditionLoot,
-  festivalItemLevel,
   finaleDropOddsBp,
   finaleItemLevel,
   formatBp,
@@ -43,6 +42,16 @@ import {
   itemLines,
   itemOf,
   itemScore,
+  itemStat,
+  itemStats,
+  statText,
+  basesFor,
+  eligibleBases,
+  bestBaseForTint,
+  craftLevelNeeded,
+  BASE_STAT_KINDS,
+  rollConvertedRarity,
+  rollFinaleRarity,
   jobDuration,
   jobHours,
   jobXp,
@@ -118,10 +127,13 @@ describe('the gear content', () => {
     expect(gearContent.bases.filter((b) => b.festival === true).length).toBeGreaterThanOrEqual(2);
     for (const role of ROLES) expect(baseFor('charm', role)?.slot).toBe('charm');
     expect(gearContent.bases.some((b) => b.tag === 'explorer')).toBe(true);
-    expect(gearContent.bases).toHaveLength(22);
+    // 5 tags x 3 tiers of Hats and of Scarves, the Festival pieces and 11 Charms.
+    expect(gearContent.bases.filter((b) => b.slot === 'hat')).toHaveLength(15);
+    expect(gearContent.bases.filter((b) => b.slot === 'scarf')).toHaveLength(16);
+    expect(gearContent.bases.filter((b) => b.slot === 'charm')).toHaveLength(11);
   });
 
-  it('expands the element lines into 16 lines and keeps every line weighted somewhere (but the glow)', () => {
+  it('expands the element lines into 16 lines and keeps every line weighted somewhere (but the fixed-only ones)', () => {
     for (const family of ['attunement', 'hunter', 'reaction', 'ward']) {
       for (const element of ELEMENTS) expect(gearLine(`${element}-${family}`)).toBeDefined();
     }
@@ -130,7 +142,8 @@ describe('the gear content', () => {
     expect(gearLine('tide-hunter')?.name).toBe('Tide Hunter');
     for (const line of gearContent.lines) {
       const w = line.weights;
-      if (line.effect.kind !== 'glow') expect(w.hat + w.scarf + w.charm).toBeGreaterThan(0);
+      if (line.fixedOnly) expect(w.hat + w.scarf + w.charm).toBe(0);
+      else expect(w.hat + w.scarf + w.charm).toBeGreaterThan(0);
       for (let i = 1; i < 5; i++) {
         expect(line.values[i] as number).toBeGreaterThanOrEqual(line.values[i - 1] as number);
       }
@@ -191,7 +204,132 @@ describe('the gear content', () => {
         ['an unknown tag', (b) => ((b[0] as Record<string, unknown>)['tag'] = 'void')],
         [
           'a base line that does not exist',
-          (b) => ((b[0] as { implicit: { line: string } }).implicit.line = 'nope'),
+          (b) => {
+            const charm = b.find((x) => x['slot'] === 'charm') as { implicit: { line: string } };
+            charm.implicit.line = 'nope';
+          },
+        ],
+        [
+          'a Hat without base stats',
+          (b) => delete (b.find((x) => x['slot'] === 'hat') as Record<string, unknown>)['stats'],
+        ],
+        [
+          'a Hat with only one base stat',
+          (b) => {
+            const hat = b.find((x) => x['slot'] === 'hat') as { stats: unknown[] };
+            hat.stats.pop();
+          },
+        ],
+        [
+          'a Scarf that lists Attack before HP',
+          (b) => {
+            const scarf = b.find((x) => x['slot'] === 'scarf') as { stats: unknown[] };
+            scarf.stats.reverse();
+          },
+        ],
+        [
+          'a base stat listed twice',
+          (b) => {
+            const hat = b.find((x) => x['slot'] === 'hat') as { stats: { stat: string }[] };
+            hat.stats.push({ stat: 'atk' });
+          },
+        ],
+        [
+          'a base stat of a kind that does not exist',
+          (b) => {
+            const hat = b.find((x) => x['slot'] === 'hat') as { stats: { stat: string }[] };
+            hat.stats.push({ stat: 'armor' });
+          },
+        ],
+        [
+          'a base stat nothing can change',
+          (_, l) => {
+            for (let i = l.length - 1; i >= 0; i--) {
+              const effect = (l[i] as { effect: { kind: string; stat?: string } }).effect;
+              if (effect.kind === 'local' && effect.stat === 'critDamage') l.splice(i, 1);
+            }
+          },
+        ],
+        [
+          'two bases of one slot and tag at the same item level',
+          (b) => {
+            const second = b.filter((x) => x['slot'] === 'hat' && x['tag'] === 'neutral')[1] as {
+              minItemLevel: number;
+            };
+            second.minItemLevel = 1;
+          },
+        ],
+        [
+          'an element tag with no base from item level 1',
+          (b) => {
+            for (const x of b) {
+              if (x['slot'] === 'hat' && x['tag'] === 'tide' && x['minItemLevel'] === undefined) {
+                x['minItemLevel'] = 3;
+              }
+            }
+          },
+        ],
+        [
+          'a Festival piece that needs a high item level',
+          (b) =>
+            ((b.find((x) => x['festival'] === true) as Record<string, unknown>)['minItemLevel'] =
+              5),
+        ],
+        [
+          'a Charm with a minimum item level',
+          (b) =>
+            ((b.find((x) => x['slot'] === 'charm') as Record<string, unknown>)['minItemLevel'] = 8),
+        ],
+        [
+          'a Hat with an implicit line as well',
+          (b) => {
+            const hat = b.find((x) => x['slot'] === 'hat') as Record<string, unknown>;
+            hat['implicit'] = { line: 'attack', values: [100, 100, 100, 100, 100] };
+          },
+        ],
+        [
+          'a Charm with a base stat',
+          (b) => {
+            const charm = b.find((x) => x['slot'] === 'charm') as Record<string, unknown>;
+            charm['stats'] = [
+              { stat: 'atk', value: 1 },
+              { stat: 'hp', value: 1 },
+            ];
+          },
+        ],
+        [
+          'a base stat that is not whole',
+          (b) => {
+            const hat = b.find((x) => x['slot'] === 'hat') as { stats: { value: number }[] };
+            (hat.stats[0] as { value: number }).value = 1.5;
+          },
+        ],
+        [
+          'a Festival piece with no narrow pool',
+          (b) => delete (b.find((x) => x['festival'] === true) as Record<string, unknown>)['pool'],
+        ],
+        [
+          'a pool that names a line that cannot roll in the slot',
+          (b) => {
+            const piece = b.find((x) => x['festival'] === true) as { pool: string[] };
+            piece.pool = ['crit-damage', 'boost', 'hp-local-pct'];
+          },
+        ],
+        [
+          'a local line that rolls on a Charm',
+          (_, l) => {
+            const line = l.find((x) => x['id'] === 'attack-local-pct') as {
+              weights: { charm: number };
+            };
+            line.weights.charm = 10;
+          },
+        ],
+        [
+          'a fixed line that can also roll',
+          (b) => {
+            const piece = b.find((x) => x['festival'] === true) as { fixed: { line: string } };
+            piece.fixed.line = 'area-ward';
+          },
         ],
         ['four tier values', (_, l) => (l[0] as { values: number[] }).values.pop()],
         [
@@ -310,9 +448,9 @@ describe('tiers', () => {
 });
 
 describe('rolling items', () => {
-  it('rolls 1 / 2 / 3 lines by rarity and 2 for a Festival piece, never the same line twice', () => {
+  it('rolls 1 / 2 / 3 lines by rarity (a Festival piece too), never the same line twice', () => {
     const rng = createSeededRng('lines');
-    const expected: Record<GearRarity, number> = { common: 1, rare: 2, epic: 3, festival: 2 };
+    const expected: Record<GearRarity, number> = { common: 1, rare: 2, epic: 3 };
     for (const rarity of ['common', 'rare', 'epic'] as const) {
       for (let i = 0; i < 200; i++) {
         const base = gearContent.bases.filter((b) => b.festival !== true)[i % 17] as {
@@ -323,10 +461,14 @@ describe('rolling items', () => {
         expect(new Set(rolled.lines.map((l) => l.id)).size).toBe(rolled.lines.length);
       }
     }
-    const festival = gearContent.bases.find((b) => b.festival === true);
-    expect(
-      rollItem(rng, { baseId: festival?.id ?? '', rarity: 'festival', itemLevel: 18 }).lines,
-    ).toHaveLength(2);
+    for (const festival of gearContent.bases.filter((b) => b.festival === true)) {
+      for (const rarity of ['common', 'rare', 'epic'] as const) {
+        const rolled = rollItem(rng, { baseId: festival.id, rarity, itemLevel: 18 });
+        expect(rolled.lines).toHaveLength(expected[rarity]);
+        // Only the lines of the narrow pool, never the unique line (it comes from the base).
+        for (const l of rolled.lines) expect(festival.pool).toContain(l.id);
+      }
+    }
   });
 
   it('keeps every tier inside what the item level allows and every line inside its slot and rarity', () => {
@@ -371,9 +513,30 @@ describe('rolling items', () => {
 
   it('weights a slot by its pool: Hats lean to Attack, Scarves to HP, and some lines never roll in a slot', () => {
     const weight = (slot: GearSlot, id: string): number =>
-      linePool({ slot, tag: 'neutral' }, 'epic', 20).find((p) => p.line.id === id)?.weight ?? 0;
-    expect(weight('hat', 'attack')).toBeGreaterThan(weight('scarf', 'attack'));
-    expect(weight('scarf', 'hp')).toBeGreaterThan(weight('hat', 'hp'));
+      linePool(baseFor(slot, 'neutral') ?? { slot, tag: 'neutral' }, 'epic', 20).find(
+        (p) => p.line.id === id,
+      )?.weight ?? 0;
+    // Both can roll either local line, but each leans to its own stat.
+    expect(weight('hat', 'attack-local-pct')).toBeGreaterThan(weight('scarf', 'attack-local-pct'));
+    expect(weight('scarf', 'attack-local-pct')).toBeGreaterThan(0);
+    expect(weight('scarf', 'hp-local-pct')).toBeGreaterThan(weight('hat', 'hp-local-pct'));
+    expect(weight('hat', 'hp-local-pct')).toBeGreaterThan(0);
+    expect(weight('hat', 'hp-local-flat')).toBeGreaterThan(0);
+    expect(weight('scarf', 'attack-local-flat')).toBeGreaterThan(0);
+    // Local lines never roll on a Charm (it has no stats).
+    for (const id of ['attack-local-pct', 'attack-local-flat', 'hp-local-pct', 'hp-local-flat']) {
+      expect(weight('charm', id)).toBe(0);
+    }
+    // A crit local line only rolls on a base that has the crit stat.
+    const pool = (id: string) =>
+      linePool(gearBase(id) as NonNullable<ReturnType<typeof gearBase>>, 'epic', 20).map(
+        (p) => p.line.id,
+      );
+    expect(pool('trail-cap')).not.toContain('crit-chance-local-pct');
+    expect(pool('wayfarers-hood')).toContain('crit-chance-local-pct');
+    expect(pool('wayfarers-hood')).not.toContain('crit-damage-local-pct');
+    expect(pool('emberkeepers-crown')).toContain('crit-damage-local-pct');
+    expect(pool('emberkeepers-crown')).not.toContain('crit-chance-local-pct');
     expect(weight('hat', 'crit-damage')).toBeGreaterThan(0);
     expect(weight('scarf', 'crit-damage')).toBe(0);
     expect(weight('charm', 'crit-damage')).toBe(0);
@@ -406,6 +569,7 @@ describe('rolling items', () => {
     expect(guard.find((p) => p.line.id === 'attack')?.weight).toBe(
       plain.find((p) => p.line.id === 'attack')?.weight,
     );
+    expect(guard.find((p) => p.line.id === 'attack')?.weight).toBeGreaterThan(0);
   });
 
   it('the Crossroads Compass multiplies utility lines by 3 and combat lines by 0.3', () => {
@@ -434,17 +598,11 @@ describe('rolling items', () => {
     expect(a.tag).toBe('tide');
   });
 
-  it('refuses unknown bases and rarities the base cannot have', () => {
+  it('refuses unknown bases', () => {
     const rng = createSeededRng('bad');
     expect(() => rollItem(rng, { baseId: 'nope', rarity: 'common', itemLevel: 1 })).toThrow(
       RangeError,
     );
-    expect(() => rollItem(rng, { baseId: 'kelp-cap', rarity: 'festival', itemLevel: 1 })).toThrow(
-      RangeError,
-    );
-    expect(() =>
-      rollItem(rng, { baseId: 'festival-hearth-scarf', rarity: 'epic', itemLevel: 1 }),
-    ).toThrow(RangeError);
   });
 
   it('rollLines can draw every line of a slot given enough rolls (the pool is reachable)', () => {
@@ -460,34 +618,38 @@ describe('rolling items', () => {
 });
 
 describe('what a card shows', () => {
-  it('lists the base line first, then the Festival glow, then the rolled lines with tiers', () => {
+  it('lists a Charm base line first, then a Festival piece unique line, then the rolled lines with tiers', () => {
     const lines = itemLines(
-      item('festival-lantern-charm', 'festival', 18, [
-        ['ember-reaction', 3],
-        ['spark-share', 2],
+      item('festival-lantern-charm', 'epic', 18, [
+        ['tide-reaction', 3],
+        ['tide-attunement', 2],
       ]),
     );
     expect(lines.map((l) => l.source)).toEqual(['base', 'fixed', 'rolled', 'rolled']);
     expect(lines[0]?.text).toBe('Tide Attunement +5%');
-    expect(lines[1]?.text).toBe('Festival glow +4%');
-    expect(lines[2]?.text).toBe('Wildfire bonus +18%');
+    expect(lines[1]?.text).toBe('Lantern luck +1 pt');
+    expect(lines[2]?.text).toBe('Steam bonus +18%');
     expect(lines[2]?.tier).toBe(4);
     expect(lines[2]?.bestTier).toBe(4);
     expect(lines[3]?.tier).toBe(3);
   });
 
-  it('shows the example Coal-Warm Cap numbers of the spec', () => {
+  it('a Hat or a Scarf has no base line: its base is the stat, and the local lines say (this item)', () => {
     const cap = item('coal-warm-cap', 'epic', 20, [
       ['ember-reaction', 4],
-      ['crit-damage', 3],
-      ['attack', 3],
+      ['attack-local-pct', 3],
+      ['attack-local-flat', 4],
     ]);
-    expect(itemLines(cap).map((l) => l.text)).toEqual([
-      'Attack +6%',
+    const lines = itemLines(cap);
+    expect(lines.map((l) => l.source)).toEqual(['rolled', 'rolled', 'rolled']);
+    expect(lines.map((l) => l.text)).toEqual([
       'Wildfire bonus +24%',
-      'Crit damage +27 pt',
-      'Attack +8%',
+      '+90% Attack (this item)',
+      '+12 Attack (this item)',
     ]);
+    expect(lines.map((l) => l.local)).toEqual([false, true, true]);
+    const scarf = itemLines(item('patch-scarf', 'rare', 12, [['hp-local-pct', 2]]));
+    expect(scarf.map((l) => l.text)).toEqual(['+60% HP (this item)']);
   });
 
   it('writes reductions with a minus and once-only lines without a number or tier', () => {
@@ -497,14 +659,9 @@ describe('what a card shows', () => {
       ['brace', 2],
     ]);
     const lines = itemLines(scarf);
-    expect(lines.map((l) => l.text)).toEqual([
-      'HP +7%',
-      'Unbothered',
-      'Area ward −9%',
-      'Brace −14%',
-    ]);
-    expect(lines[1]?.tier).toBeNull();
-    expect(lines[2]?.bestTier).toBe(4);
+    expect(lines.map((l) => l.text)).toEqual(['Unbothered', 'Area ward −9%', 'Brace −14%']);
+    expect(lines[0]?.tier).toBeNull();
+    expect(lines[1]?.bestTier).toBe(4);
   });
 
   it('formats basis points without trailing zeros', () => {
@@ -514,17 +671,179 @@ describe('what a card shows', () => {
     expect(formatBp(5)).toBe('0.05');
   });
 
-  it('has the spec base values per item level band', () => {
+  it('has the spec Charm base values per item level band', () => {
     const at = (id: string, level: number) => itemLines(item(id, 'common', level))[0]?.text;
-    expect(at('trail-cap', 1)).toBe('Attack +2%');
-    expect(at('trail-cap', 20)).toBe('Attack +6%');
-    expect(at('patch-scarf', 15)).toBe('HP +7%');
-    expect(at('trail-charm', 10)).toBe('Attack +2%');
+    expect(at('trail-charm', 10)).toBe('Creature Attack +2%');
     expect(at('crossroads-compass', 20)).toBe('Trail XP +8%');
     expect(at('wardens-bell', 20)).toBe('Armor +4 pt');
     expect(at('hearth-bell', 15)).toBe('Boost +3 pt');
     expect(at('footprint-charm', 10)).toBe('Marking hit +6%');
     expect(at('pounce-charm', 20)).toBe("Payoff's pounce +5%");
+  });
+});
+
+describe('the item stats', () => {
+  const stats = (id: string, lines: [string, number][] = [], level = 20) =>
+    itemStats(item(id, 'epic', level, lines));
+
+  it('are fixed per base: the same on every item of the base, whatever its level', () => {
+    expect(stats('trail-cap', [], 1)).toEqual(stats('trail-cap', [], 20));
+    expect(stats('trail-cap').map((s) => [s.stat, s.value])).toEqual([
+      ['atk', 2],
+      ['hp', 4],
+    ]);
+    expect(stats('patch-scarf').map((s) => [s.stat, s.value])).toEqual([
+      ['hp', 12],
+      ['atk', 1],
+    ]);
+    // A Charm has none.
+    expect(stats('trail-charm')).toEqual([]);
+  });
+
+  it('give a Hat Attack first and a Scarf HP first, both of them two stats at least, some a crit stat', () => {
+    for (const base of gearContent.bases) {
+      if (base.slot === 'charm') continue;
+      const kinds = (base.stats ?? []).map((s) => s.stat);
+      expect(kinds.length, base.id).toBeGreaterThanOrEqual(2);
+      expect(kinds[0], base.id).toBe(base.slot === 'hat' ? 'atk' : 'hp');
+      expect(kinds[1], base.id).toBe(base.slot === 'hat' ? 'hp' : 'atk');
+      for (const k of kinds) expect(BASE_STAT_KINDS).toContain(k);
+    }
+    expect(gearContent.bases.some((b) => b.stats?.some((s) => s.stat === 'critChance'))).toBe(true);
+    expect(gearContent.bases.some((b) => b.stats?.some((s) => s.stat === 'critDamage'))).toBe(true);
+  });
+
+  it('lean to the slot: a Hat is Attack-heavy, a Scarf HP-heavy (in the same tier and tag)', () => {
+    for (const base of gearContent.bases) {
+      if (base.slot !== 'hat' && base.slot !== 'scarf') continue;
+      const [a, b] = base.stats ?? [];
+      if (a === undefined || b === undefined) throw new Error(base.id);
+      // Attack counts for more than HP point for point; "heavy" means the first stat's share of power is larger.
+      expect(a.value * (a.stat === 'atk' ? 10 : 1)).toBeGreaterThan(
+        b.value * (b.stat === 'atk' ? 10 : 1),
+      );
+    }
+  });
+
+  it('grow over the item levels by better bases, each a fixed set of stats', () => {
+    for (const slot of ['hat', 'scarf'] as const) {
+      for (const tag of ['neutral', ...ELEMENTS] as const) {
+        const tiers = basesFor(slot, tag);
+        expect(
+          tiers.map((b) => b.minItemLevel ?? 1),
+          `${tag} ${slot}`,
+        ).toEqual([1, 5, 10]);
+        const first = (b: (typeof tiers)[number]) => b.stats?.[0]?.value ?? 0;
+        expect(first(tiers[0] as (typeof tiers)[number])).toBeLessThan(
+          first(tiers[1] as (typeof tiers)[number]),
+        );
+        expect(first(tiers[1] as (typeof tiers)[number])).toBeLessThan(
+          first(tiers[2] as (typeof tiers)[number]),
+        );
+      }
+    }
+    expect(eligibleBases('hat', 'tide', 4).map((b) => b.id)).toEqual(['kelp-cap']);
+    expect(eligibleBases('hat', 'tide', 5).map((b) => b.id)).toEqual(['kelp-cap', 'brine-hood']);
+    expect(eligibleBases('hat', 'tide', 20)).toHaveLength(3);
+    expect(bestBaseForTint('hat', 'tide', 7).id).toBe('brine-hood');
+    expect(bestBaseForTint('scarf', null, 3).id).toBe('patch-scarf');
+    expect(bestBaseForTint('scarf', null, 10).id).toBe('travellers-mantle');
+  });
+
+  it('are (base + flat local) x (1 + percent local) for each stat, rounded down', () => {
+    const none = stats('trail-cap', [], 10);
+    expect(none[0]).toMatchObject({ stat: 'atk', value: 2, base: 2, flat: 0, pctBp: 0 });
+    const both = stats('trail-cap', [
+      ['attack-local-flat', 4], // +12
+      ['attack-local-pct', 4], // +120%
+      ['crit-chance', 0],
+    ]);
+    expect(both[0]).toMatchObject({
+      value: Math.floor((14 * 22_000) / 10_000),
+      flat: 12,
+      pctBp: 12_000,
+    });
+    expect(both[0]?.value).toBe(30);
+    // HP is its own stat: an Attack line does not touch it.
+    expect(both[1]).toMatchObject({ stat: 'hp', value: 4, flat: 0, pctBp: 0 });
+    const hp = stats('patch-scarf', [
+      ['hp-local-pct', 2], // +60%
+      ['hp-local-flat', 2], // +40
+      ['attack-local-flat', 0], // +2 Attack on the scarf
+    ]);
+    expect(hp[0]).toMatchObject({ stat: 'hp', value: Math.floor((52 * 16_000) / 10_000) });
+    expect(hp[1]).toMatchObject({ stat: 'atk', value: 3 });
+    // Two percentage lines add; they never multiply (not reachable by rolling, but safe).
+    const two = stats('trail-cap', [
+      ['attack-local-pct', 1],
+      ['attack-local-pct', 2],
+    ]);
+    expect(two[0]?.value).toBe(Math.floor((2 * 20_000) / 10_000));
+  });
+
+  it('can be a crit stat: crit chance and crit damage are in basis points and take local percentages', () => {
+    const hood = stats('wayfarers-hood', [['crit-chance-local-pct', 4]]);
+    expect(hood.find((s) => s.stat === 'critChance')).toMatchObject({
+      base: 200,
+      value: Math.floor((200 * 22_000) / 10_000),
+    });
+    const crown = stats('emberkeepers-crown', [['crit-damage-local-pct', 2]]);
+    expect(crown.find((s) => s.stat === 'critDamage')?.value).toBe(
+      Math.floor((2_000 * 16_000) / 10_000),
+    );
+    expect(statText('critChance', 440)).toBe('Crit chance 4.4 pt');
+    expect(statText('atk', 35)).toBe('Attack 35');
+    expect(statText('hp', 140)).toBe('HP 140');
+  });
+
+  it('can be looked up by kind', () => {
+    const cap = item('trail-cap', 'common', 3);
+    expect(itemStat(cap, 'atk')?.value).toBe(2);
+    expect(itemStat(cap, 'critChance')).toBeUndefined();
+  });
+
+  it('ignore a local line for a stat the base does not have', () => {
+    // Not reachable by rolling (the pool never offers it) but safe if it ever happens.
+    const odd = stats('trail-cap', [['crit-chance-local-pct', 4]]);
+    expect(odd.map((s) => s.stat)).toEqual(['atk', 'hp']);
+    expect(odd.map((s) => s.value)).toEqual([2, 4]);
+    expect(itemStats(item('trail-charm', 'epic', 20, [['attack-local-pct', 4]]))).toEqual([]);
+  });
+
+  it('never spill a local line into a creature stat: it adds nothing outside the item', () => {
+    const fx = wornEffects({ role: 'payoff', element: 'ember' }, [
+      item('trail-cap', 'epic', 20, [
+        ['attack-local-pct', 4],
+        ['attack-local-flat', 4],
+      ]),
+    ]);
+    expect(fx.atkBp).toBe(0);
+    expect(fx.atkFlat).toBe(0);
+    expect(fx.atkItem).toBe(30);
+    expect(fx.hpItem).toBe(4);
+    expect(fx.idle).toEqual([]);
+  });
+
+  it('carry crit stats into the crit bonus, with the crit lines', () => {
+    const fx = wornEffects({ role: 'payoff', element: 'ember' }, [
+      item('emberkeepers-crown', 'epic', 15, [['crit-damage', 0]]),
+      item('forge-hood', 'epic', 15, [['crit-chance', 0]]),
+    ]);
+    expect(fx.critDamageBp).toBe(2_000 + 800);
+    expect(fx.critChanceBp).toBe(100 + 100);
+  });
+
+  it('need a Crafting level for a better base: item level 5 is Crafting level 3, 10 is 5', () => {
+    expect(craftLevelNeeded('kelp-cap')).toBe(1);
+    expect(craftLevelNeeded('brine-hood')).toBe(3);
+    expect(craftLevelNeeded('tidecallers-crown')).toBe(5);
+    expect(craftLevelNeeded('trail-charm')).toBe(1);
+    expect(() => craftLevelNeeded('nope')).toThrow(RangeError);
+    for (const base of gearContent.bases) {
+      expect(craftItemLevel(craftLevelNeeded(base.id)), base.id).toBeGreaterThanOrEqual(
+        base.minItemLevel ?? 1,
+      );
+    }
   });
 });
 
@@ -583,18 +902,49 @@ describe('folding worn items', () => {
     expect(out.mods).toBeUndefined();
   });
 
-  it('raises Attack and HP by percent, then flat, and never touches speed', () => {
+  it('adds the Hat Attack and the Scarf HP of the items to the creature, and never touches speed', () => {
     const out = applyGear(STATS, undefined, payoff, [
-      item('trail-cap', 'rare', 20, [['sturdy-blow', 4]]),
-      item('patch-scarf', 'rare', 20, [['thick-coat', 4]]),
+      item('trail-cap', 'rare', 20, [['attack-local-flat', 4]]),
+      item('patch-scarf', 'rare', 20, [['hp-local-pct', 4]]),
     ]);
-    // Attack +6% base, +12 flat; HP +8% base, +75 flat.
-    expect(out.stats).toEqual({
-      atk: Math.floor((50 * 10_600) / 10_000) + 12,
-      hp: Math.floor((200 * 10_800) / 10_000) + 75,
-      spd: 40,
-    });
+    // Hat: (2 + 12) Attack and 4 HP. Scarf: 12 HP x 2.2 and 1 Attack.
+    expect(out.stats).toEqual({ atk: 50 + 14 + 1, hp: 200 + 4 + 26, spd: 40 });
     expect(out.mods).toBeUndefined();
+  });
+
+  it('adds a bare item its base stats, the same at any item level', () => {
+    for (const level of [1, 7, 20]) {
+      const out = applyGear(STATS, undefined, payoff, [
+        item('trail-cap', 'common', level),
+        item('patch-scarf', 'common', level),
+      ]);
+      expect(out.stats).toEqual({ atk: 50 + 2 + 1, hp: 200 + 4 + 12, spd: 40 });
+    }
+  });
+
+  it('applies a Creature Attack or HP line to the creature only, before the item stats are added', () => {
+    const out = applyGear(STATS, undefined, payoff, [
+      item('trail-cap', 'common', 20, [['attack-local-pct', 4]]),
+      item('trail-charm', 'epic', 20, [
+        ['attack', 4],
+        ['hp', 4],
+      ]),
+    ]);
+    // Charm implicit +4% and Creature Attack +11% act on the creature's 50, not on the hat's 4 (2 x 2.2).
+    expect(out.stats.atk).toBe(Math.floor((50 * (10_000 + 400 + 1_100)) / 10_000) + 4);
+    expect(out.stats.hp).toBe(Math.floor((200 * 11_500) / 10_000) + 4);
+  });
+
+  it('keeps Creature Attack and HP rare: only Charms roll them', () => {
+    for (const id of ['attack', 'hp']) {
+      const w = gearLine(id)?.weights;
+      expect(w?.hat).toBe(0);
+      expect(w?.scarf).toBe(0);
+      expect(w?.charm).toBeGreaterThan(0);
+      expect(w?.charm).toBeLessThanOrEqual(10);
+    }
+    expect(gearLine('thick-coat')?.fixedOnly).toBe(true);
+    expect(gearLine('sturdy-blow')).toBeUndefined();
   });
 
   it('adds an Attunement only for a wearer of its element', () => {
@@ -606,11 +956,25 @@ describe('folding worn items', () => {
     expect(wornEffects(guard, [cinder]).idle).toEqual(['ember-attunement']);
   });
 
-  it('adds the Festival glow to Attack and HP', () => {
-    const lantern = item('festival-lantern-charm', 'festival', 20);
+  it('gives a Festival piece no raw power: its unique line is a small utility effect, not Attack or HP', () => {
+    const lantern = item('festival-lantern-charm', 'epic', 20);
     const fx = wornEffects({ role: 'payoff', element: 'tide' }, [lantern]);
-    expect(fx.atkBp).toBe(600 + 500);
-    expect(fx.hpBp).toBe(500);
+    // Only the Tide Attunement implicit, as on any Tide Charm; the Lantern luck is a trip rule.
+    expect(fx.atkBp).toBe(600);
+    expect(fx.hpBp).toBe(0);
+    expect(fx.rules.luckyFindBp).toBe(150);
+    const scarf = wornEffects({ role: 'guard', element: 'ember' }, [
+      item('festival-hearth-scarf', 'epic', 20),
+    ]);
+    expect(scarf.rules.restBp).toBe(400);
+    expect(scarf.hpBp).toBe(0);
+    // Its base stats are those of the plain first-tier Ember Muffler, no more.
+    const muffler = wornEffects({ role: 'guard', element: 'ember' }, [
+      item('ember-muffler', 'epic', 20),
+    ]);
+    expect(scarf.hpItem).toBe(muffler.hpItem);
+    expect(scarf.atkItem).toBe(muffler.atkItem);
+    expect(gearBase('festival-hearth-scarf')?.stats).toEqual(gearBase('ember-muffler')?.stats);
   });
 
   it('adds crit chance and damage to the species bonus inside the engine room', () => {
@@ -775,7 +1139,7 @@ describe('scoring and Equip best', () => {
 
   it('scores an Attack hat higher for an attacker than a Guard-only Armor charm for a Payoff', () => {
     const w = { role: 'payoff', element: 'ember', stats: { atk: 60, hp: 300 } } as const;
-    const attack = item('trail-cap', 'rare', 20, [['attack', 4]]);
+    const attack = item('trail-cap', 'rare', 20, [['attack-local-pct', 4]]);
     const bell = item('wardens-bell', 'rare', 20, [['armor', 4]]);
     expect(itemScore(attack, w)).toBeGreaterThan(itemScore(bell, w));
     expect(itemScore(bell, { ...w, role: 'guard' })).toBeGreaterThan(itemScore(bell, w));
@@ -783,8 +1147,8 @@ describe('scoring and Equip best', () => {
 
   it('scores a better tier higher, and an Attunement of the wrong element as base only', () => {
     const w = { role: 'payoff', element: 'ember', stats: { atk: 60, hp: 300 } } as const;
-    const low = item('trail-cap', 'common', 20, [['attack', 1]]);
-    const high = item('trail-cap', 'common', 20, [['attack', 4]]);
+    const low = item('trail-cap', 'common', 20, [['attack-local-pct', 1]]);
+    const high = item('trail-cap', 'common', 20, [['attack-local-pct', 4]]);
     expect(itemScore(high, w)).toBeGreaterThan(itemScore(low, w));
     const tide = item('tidepool-charm', 'common', 20);
     const ember = item('cinder-charm', 'common', 20);
@@ -795,8 +1159,11 @@ describe('scoring and Equip best', () => {
   it('puts the best wearable item on a creature, one per slot, and takes nothing it cannot wear', () => {
     const creature = wearerOf('c1', 'payoff', 'ember', 12);
     const weak = { id: 'i1', item: item('trail-cap', 'common', 5) };
-    const strong = { id: 'i2', item: item('coal-warm-cap', 'epic', 10, [['attack', 2]]) };
-    const tooHigh = { id: 'i3', item: item('coal-warm-cap', 'epic', 13, [['attack', 2]]) };
+    const strong = { id: 'i2', item: item('coal-warm-cap', 'epic', 10, [['attack-local-pct', 2]]) };
+    const tooHigh = {
+      id: 'i3',
+      item: item('coal-warm-cap', 'epic', 13, [['attack-local-pct', 2]]),
+    };
     const scarf = { id: 'i4', item: item('patch-scarf', 'common', 6) };
     const charm = { id: 'i5', item: item('trail-charm', 'common', 6) };
     const moves = planEquipBest([creature], [weak, strong, tooHigh, scarf, charm]);
@@ -812,7 +1179,7 @@ describe('scoring and Equip best', () => {
   });
 
   it('changes a slot only for a better item and is empty when nothing is better', () => {
-    const best = { id: 'i1', item: item('coal-warm-cap', 'epic', 10, [['attack', 2]]) };
+    const best = { id: 'i1', item: item('coal-warm-cap', 'epic', 10, [['attack-local-pct', 2]]) };
     const worse = { id: 'i2', item: item('trail-cap', 'common', 5) };
     const creature = { ...wearerOf('c1', 'payoff', 'ember', 12), worn: { hat: 'i1' } as const };
     expect(planEquipBest([creature], [best, worse])).toEqual([]);
@@ -824,7 +1191,7 @@ describe('scoring and Equip best', () => {
 
   it('never leaves a creature with an empty slot or a worse item to hand its item to someone else', () => {
     const emberLines: [string, number][] = [
-      ['attack', 4],
+      ['attack-local-pct', 4],
       ['ember-attunement', 4],
     ];
     const hat = { id: 'h1', item: item('coal-warm-cap', 'rare', 20, emberLines) };
@@ -845,14 +1212,14 @@ describe('scoring and Equip best', () => {
     const emberHat = {
       id: 'h1',
       item: item('coal-warm-cap', 'rare', 20, [
-        ['attack', 4],
+        ['attack-local-pct', 4],
         ['ember-attunement', 4],
       ]),
     };
     const groveHat = {
       id: 'h2',
       item: item('acorn-cap', 'rare', 20, [
-        ['attack', 4],
+        ['attack-local-pct', 4],
         ['grove-attunement', 4],
       ]),
     };
@@ -875,15 +1242,15 @@ describe('scoring and Equip best', () => {
       {
         id: 'h1',
         item: item('coal-warm-cap', 'epic', 20, [
-          ['attack', 4],
+          ['attack-local-pct', 4],
           ['crit-damage', 4],
         ]),
       },
-      { id: 'h2', item: item('acorn-cap', 'rare', 20, [['attack', 2]]) },
+      { id: 'h2', item: item('acorn-cap', 'rare', 20, [['attack-local-pct', 2]]) },
       {
         id: 's1',
         item: item('leafknit-scarf', 'epic', 20, [
-          ['hp', 4],
+          ['hp-local-pct', 4],
           ['aimed-ward', 4],
         ]),
       },
@@ -911,8 +1278,6 @@ describe('item levels by source', () => {
   it('follows the spec table', () => {
     expect([2, 7, 12, 17].map(finaleItemLevel)).toEqual([5, 10, 15, 20]);
     expect(finaleItemLevel(40)).toBe(20);
-    expect(festivalItemLevel(1)).toBe(6);
-    expect(festivalItemLevel(30)).toBe(20);
     expect([8, 18, 29, 38].map((d) => dungeonItemLevel(d, false))).toEqual([5, 10, 15, 20]);
     expect(dungeonItemLevel(7, true)).toBe(7);
     expect(dungeonItemLevel(60, true)).toBe(20);
@@ -949,7 +1314,6 @@ describe('drops', () => {
       expect(piece.itemLevel).toBe(10);
       expect(['spark', 'setter', 'payoff', 'support', 'guard']).toContain(piece.tag);
       expect(gearBase(piece.baseId)?.festival).not.toBe(true);
-      expect(piece.rarity).not.toBe('festival');
     }
   });
 
@@ -958,7 +1322,7 @@ describe('drops', () => {
     let charms = 0;
     let locked = 0;
     for (let i = 0; i < 30_000; i++) {
-      const base = dropBase(rng, 'tide', { roleCharm: true });
+      const base = dropBase(rng, 'tide', 20, { roleCharm: true });
       if (base.slot === 'charm') {
         charms++;
         if (['setter', 'payoff', 'support', 'guard'].includes(base.tag)) locked++;
@@ -970,9 +1334,38 @@ describe('drops', () => {
     expect(locked / charms).toBeLessThan(0.06);
     // Without the option no Charm is ever locked.
     for (let i = 0; i < 2_000; i++) {
-      expect(['tide']).toContain(dropBase(rng, 'tide').tag);
+      expect(['tide']).toContain(dropBase(rng, 'tide', 20).tag);
     }
-    expect(dropBase(rng, null).tag).toBe('neutral');
+    expect(dropBase(rng, null, 20).tag).toBe('neutral');
+  });
+
+  it('a drop is any base its item level unlocks: better bases only appear from their item level', () => {
+    const rng = createSeededRng('unlock');
+    const seen = (level: number): Set<string> => {
+      const out = new Set<string>();
+      for (let i = 0; i < 3_000; i++) out.add(dropBase(rng, 'ember', level).id);
+      return out;
+    };
+    const low = seen(4);
+    expect(low.has('forge-hood')).toBe(false);
+    expect(low.has('emberkeepers-crown')).toBe(false);
+    expect(low.has('coal-warm-cap')).toBe(true);
+    const mid = seen(5);
+    expect(mid.has('forge-hood')).toBe(true);
+    expect(mid.has('forge-scarf')).toBe(true);
+    expect(mid.has('emberkeepers-crown')).toBe(false);
+    const high = seen(10);
+    for (const id of ['coal-warm-cap', 'forge-hood', 'emberkeepers-crown', 'emberkeepers-mantle']) {
+      expect(high.has(id), id).toBe(true);
+    }
+    // Every finale, dungeon and trip piece respects it.
+    for (let i = 0; i < 400; i++) {
+      const piece = rollDungeonItem(rng, 'common', 8, false, 'tide');
+      const base = gearBase(piece.baseId);
+      expect(base?.minItemLevel ?? 1).toBeLessThanOrEqual(piece.itemLevel);
+      const found = rollExpeditionItem(rng, 'rare', { element: 'grove', crossroads: false }, 3);
+      expect(gearBase(found.baseId)?.minItemLevel ?? 1).toBeLessThanOrEqual(found.itemLevel);
+    }
   });
 
   it('splits gear and blueprints at blueprintBp, always exactly one of them', () => {
@@ -1013,16 +1406,82 @@ describe('drops', () => {
     }
   });
 
-  it('a Festival piece is of the creature element, Festival rarity, item level 5 + rank', () => {
+  it('a Festival piece is special, not stronger: the finale item level (3 + rank) and the finale rarity odds', () => {
     const rng = createSeededRng('fest');
     const lantern = rollFestivalItem(rng, 'tide', 8);
     expect(lantern.baseId).toBe('festival-lantern-charm');
-    expect(lantern.rarity).toBe('festival');
-    expect(lantern.itemLevel).toBe(13);
-    expect(lantern.lines).toHaveLength(2);
+    expect(lantern.itemLevel).toBe(finaleItemLevel(8));
+    expect(lantern.itemLevel).toBe(11);
+    expect(['common', 'rare', 'epic']).toContain(lantern.rarity);
     expect(rollFestivalItem(rng, 'ember', 1).baseId).toBe('festival-hearth-scarf');
     // An element with no Festival piece of its own still gets one.
     expect(gearBase(rollFestivalItem(rng, 'grove', 1).baseId)?.festival).toBe(true);
+    // Never a higher level than the same rank's finale piece, at any rank.
+    for (let rank = 1; rank <= 40; rank++) {
+      expect(rollFestivalItem(rng, 'tide', rank).itemLevel).toBe(finaleItemLevel(rank));
+    }
+  });
+
+  it('a Festival piece rolls its rarity at the finale odds: no floor, a Common at low ranks', () => {
+    const rng = createSeededRng('fest-rarity');
+    const at = (rank: number): Record<GearRarity, number> => {
+      const out: Record<GearRarity, number> = { common: 0, rare: 0, epic: 0 };
+      for (let i = 0; i < 20_000; i++) out[rollFestivalItem(rng, 'ember', rank).rarity] += 1;
+      return out;
+    };
+    const odds = finaleDropOddsBp(1);
+    const low = at(1);
+    expect(low.common / 20_000).toBeCloseTo(odds.common / 10_000, 1);
+    expect(low.epic / 20_000).toBeCloseTo(odds.epic / 10_000, 1);
+    expect(low.common).toBeGreaterThan(low.rare);
+    // The same odds as the finale's own rarity draw.
+    const a = createSeededRng('same-draw');
+    const b = createSeededRng('same-draw');
+    expect(rollFestivalItem(a, 'tide', 6).rarity).toBe(rollFinaleRarity(b, 6));
+  });
+
+  it('a Festival piece rolls only from its narrow pool and always carries its unique line', () => {
+    const rng = createSeededRng('fest-pool');
+    for (const element of ['tide', 'ember'] as const) {
+      const seen = new Set<string>();
+      for (let i = 0; i < 400; i++) {
+        const piece = rollFestivalItem(rng, element, 1 + (i % 17));
+        const base = gearBase(piece.baseId);
+        for (const l of piece.lines) {
+          expect(base?.pool).toContain(l.id);
+          seen.add(l.id);
+        }
+        const lines = itemLines(piece);
+        expect(lines.some((l) => l.source === 'fixed')).toBe(true);
+        expect(lines.filter((l) => l.source === 'fixed')).toHaveLength(1);
+      }
+      expect(seen.size).toBeGreaterThan(1);
+      expect(seen.size).toBeLessThanOrEqual(5);
+    }
+    // The unique line is not in anyone's roll pool.
+    for (const slot of GEAR_SLOTS) {
+      const ids = linePool({ slot, tag: 'neutral' }, 'epic', 20).map((p) => p.line.id);
+      expect(ids).not.toContain('hearth-warmth');
+      expect(ids).not.toContain('lantern-luck');
+      expect(ids).not.toContain('thick-coat');
+    }
+  });
+
+  it('an old Festival rarity converts at the finale odds, and the other rarities stay as they were', () => {
+    const rng = createSeededRng('conv-rarity');
+    expect(rollConvertedRarity(rng, 5, 'common')).toBe('common');
+    expect(rollConvertedRarity(rng, 5, 'epic')).toBe('epic');
+    const seen = new Set<string>();
+    for (let i = 0; i < 400; i++) seen.add(rollConvertedRarity(rng, 12, 'festival'));
+    expect(seen.has('common')).toBe(true);
+    expect(seen.has('rare')).toBe(true);
+    // It drew nothing for a rarity that stays.
+    let draws = 0;
+    const counting: Rng = { nextU32: () => (draws++, HIGH) };
+    rollConvertedRarity(counting, 5, 'rare');
+    expect(draws).toBe(0);
+    rollConvertedRarity(counting, 5, 'festival');
+    expect(draws).toBeGreaterThan(0);
   });
 
   it('a dungeon piece has the room boss element and a level by depth, landmark bonus included', () => {
@@ -1110,7 +1569,7 @@ describe('costs, yields and jobs', () => {
 
   it('a dismantle never gives back what the craft cost: scrap under half of it, whatever the base, rarity and item level', () => {
     for (const base of gearContent.bases) {
-      for (const rarity of ['common', 'rare', 'epic', 'festival'] as const) {
+      for (const rarity of ['common', 'rare', 'epic'] as const) {
         for (let itemLevel = 1; itemLevel <= RULES.gear.maxItemLevel; itemLevel++) {
           const range = dismantleRange([{ baseId: base.id, rarity, itemLevel }]);
           const cost = craftScrapCost(base.id, itemLevel);
@@ -1164,7 +1623,7 @@ describe('costs, yields and jobs', () => {
       scrap: 5,
     });
     for (const base of gearContent.bases) {
-      for (const rarity of ['common', 'rare', 'epic', 'festival'] as const) {
+      for (const rarity of ['common', 'rare', 'epic'] as const) {
         const parts = dismantleYield({ baseId: base.id, rarity });
         for (const [kind, amount] of Object.entries(parts)) {
           expect(PART_KINDS as readonly string[]).toContain(kind);
@@ -1326,7 +1785,7 @@ describe('the crafting loop: Reach, odds and marks', () => {
       const count = { common: 0, rare: 0, epic: 0 };
       for (let i = 0; i < n; i++) {
         const { rarity } = rollCraftRarity(rng, reach, level, marks);
-        count[rarity as 'common' | 'rare' | 'epic']++;
+        count[rarity]++;
       }
       const odds = craftOdds(reach, level, marks);
       for (const key of ['common', 'rare', 'epic'] as const) {
@@ -1353,6 +1812,7 @@ describe('the crafting loop: Reach, odds and marks', () => {
     const made = rollCraftItem(createSeededRng('floor'), 'kelp-cap', 3, { floor: 'epic' });
     expect(made.item.rarity).toBe('epic');
     expect(made.item.itemLevel).toBe(6);
+    // A craft started before gear v2 may carry the old Festival floor, which counts as Epic.
     expect(rollCraft(createSeededRng('floor'), 'kelp-cap', 3, { floor: 'festival' }).rarity).toBe(
       'epic',
     );
@@ -1379,10 +1839,14 @@ describe('dismantling: ranges, rolls, bundles, time and XP', () => {
       glimmer: { min: 0, max: 1 },
       essence: { min: 10, max: 25 },
     });
-    // A Festival piece pays like an Epic.
+    // A Festival piece pays by its rarity, like any other base.
+    expect(dismantleRange([{ baseId: 'festival-lantern-charm', rarity: 'epic' }]).essence).toEqual({
+      min: 10,
+      max: 25,
+    });
     expect(
-      dismantleRange([{ baseId: 'festival-lantern-charm', rarity: 'festival' }]).essence,
-    ).toEqual({ min: 10, max: 25 });
+      dismantleRange([{ baseId: 'festival-lantern-charm', rarity: 'common' }]).essence,
+    ).toEqual({ min: 0, max: 0 });
     // A bundle of Commons adds its items' ranges.
     const bundle = dismantleRange(
       Array.from({ length: 5 }, () => ({ baseId: 'trail-cap', rarity: 'common' as const })),
@@ -1444,19 +1908,18 @@ describe('dismantling: ranges, rolls, bundles, time and XP', () => {
     expect(dismantleBundleError(['common', 'common', 'common', 'common', 'common'])).toBeNull();
     expect(dismantleBundleError(Array(6).fill('common') as GearRarity[])).toBe('too_many');
     expect(dismantleBundleError(['rare'])).toBeNull();
-    expect(dismantleBundleError(['festival'])).toBeNull();
+    expect(dismantleBundleError(['epic'])).toBeNull();
     expect(dismantleBundleError(['common', 'rare'])).toBe('mixed');
     expect(dismantleBundleError(['rare', 'rare'])).toBe('mixed');
   });
 
   it('takes 15 minutes, 1 hour or 2 hours, and gives 12 XP an hour, at least 6', () => {
-    expect([15, 60, 120, 120]).toEqual(
-      (['common', 'rare', 'epic', 'festival'] as const).map((r) => dismantleHours(r) * 60),
+    expect([15, 60, 120]).toEqual(
+      (['common', 'rare', 'epic'] as const).map((r) => dismantleHours(r) * 60),
     );
     expect(dismantleXp('common')).toBe(6);
     expect(dismantleXp('rare')).toBe(12);
     expect(dismantleXp('epic')).toBe(24);
-    expect(dismantleXp('festival')).toBe(24);
     expect(dismantleXp('rare', 1_000)).toBe(13);
     // The skill and Busy paws shorten the time like any job.
     expect(jobDuration(1, 0, dismantleHours('epic'))).toBe(2 * 3_600_000);

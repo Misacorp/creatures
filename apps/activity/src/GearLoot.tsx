@@ -1,7 +1,14 @@
 import { Tag } from './ui/Tag';
 import { GlossaryTag } from './Glossary';
-import { ItemFrame, ItemSprite, PartCount, RarityTag } from './GearArt';
-import { gearName, lootIsEmpty, lootItemName, marksText, partsEntries } from './gear-view';
+import { FestivalTag, ItemFrame, ItemSprite, PartCount, RarityTag } from './GearArt';
+import {
+  gearName,
+  isFestivalBase,
+  lootIsEmpty,
+  lootItemName,
+  marksText,
+  partsEntries,
+} from './gear-view';
 import type { GrantLoot } from './gear-types';
 
 /**
@@ -28,11 +35,12 @@ export function LootList({
         <ul class="loot-items">
           {loot.gear.map((g) => (
             <li key={g.id} class="loot-item">
-              <ItemFrame rarity={g.rarity} class="pop-in">
+              <ItemFrame rarity={g.rarity} baseId={g.baseId} class="pop-in">
                 <ItemSprite baseId={g.baseId} scale={4} />
               </ItemFrame>
               <span class="loot-name">{lootItemName(g)}</span>
               <RarityTag rarity={g.rarity} />
+              {isFestivalBase(g.baseId) && <FestivalTag />}
             </li>
           ))}
         </ul>

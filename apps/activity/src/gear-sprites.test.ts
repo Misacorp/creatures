@@ -82,7 +82,7 @@ describe('item sprites', () => {
   });
 
   it('has a rarity list the gear content agrees with', () => {
-    expect(GEAR_RARITIES).toEqual(['common', 'rare', 'epic', 'festival']);
+    expect(GEAR_RARITIES).toEqual(['common', 'rare', 'epic']);
   });
 });
 

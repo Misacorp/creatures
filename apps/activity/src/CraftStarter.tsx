@@ -94,8 +94,14 @@ export function CraftStarter({
           cost: chosen.parts,
           essence: chosen.essence,
         });
+  const baseLocked = preview?.locked === true;
   const disabled =
-    busy || creatureId === null || chosen === undefined || blocker !== null || preview === null;
+    busy ||
+    creatureId === null ||
+    chosen === undefined ||
+    blocker !== null ||
+    preview === null ||
+    baseLocked;
 
   return (
     <section
@@ -193,6 +199,12 @@ export function CraftStarter({
             </p>
           </details>
         </fieldset>
+      )}
+      {baseLocked && preview !== null && (
+        <p class="reason" role="status">
+          This creature cannot make {name} yet: it needs Crafting level {preview.needsCraftingLevel}
+          . Pick a creature with more Crafting.
+        </p>
       )}
       {blocker !== null && (
         <p class="reason" role="status">

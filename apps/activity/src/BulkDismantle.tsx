@@ -7,7 +7,7 @@ import { bulkPick, rarityName } from './gear-view';
 import { GlossaryTag } from './Glossary';
 import { DismantlePanel } from './ItemPanels';
 
-const RARITIES: readonly GearRarity[] = ['common', 'rare', 'epic', 'festival'];
+const RARITIES: readonly GearRarity[] = ['common', 'rare', 'epic'];
 
 /**
  * Dismantle by rarity and item level: pick a rarity and the highest item level to take, and the Workshop

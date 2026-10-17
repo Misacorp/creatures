@@ -4,7 +4,7 @@ import { gearName, slotName, wornInOrder, type WornItem } from './gear-view';
 /** The worn item's 12x12 sprite in its rarity frame. */
 export function WornItemFrame({ worn }: { worn: WornItem }) {
   return (
-    <ItemFrame rarity={worn.rarity}>
+    <ItemFrame rarity={worn.rarity} baseId={worn.baseId}>
       <ItemSprite baseId={worn.baseId} scale={3} />
     </ItemFrame>
   );
