@@ -5,13 +5,14 @@
  * Crafting skill, and every way an item drops. Randomness is injected (`Rng`).
  */
 import { int, chance, pickWeighted, type Rng } from '../rng';
-import { baseFor, gearBase, gearContent } from '../content/gear';
+import { baseFor, baseMinLevel, gearBase, gearContent } from '../content/gear';
 import {
   GEAR_SLOTS,
   tagElement,
   tagRole,
   type GearBase,
   type GearRarity,
+  type LegacyRarity,
 } from '../content/gear-schema';
 import { ELEMENTS, type Element } from '../content/schema';
 import { RULES, type DurationId } from './config';
@@ -20,7 +21,6 @@ import {
   dropBase,
   dungeonItemLevel,
   expeditionItemLevel,
-  festivalItemLevel,
   finaleItemLevel,
   rollItem,
   type GearItem,
@@ -381,6 +381,16 @@ export function craftable(base: Pick<GearBase, 'festival' | 'tag'>): boolean {
   return base.festival !== true && tagRole(base.tag) === null;
 }
 
+/**
+ * The Crafting level a base asks for: a craft makes an item of level `craftPerLevel` x the crafter's
+ * Crafting level, and a better base only unlocks at its `minItemLevel` (a Felt Hat at 8 is Crafting level 4).
+ */
+export function craftLevelNeeded(baseId: string): number {
+  const base = gearBase(baseId);
+  if (base === undefined) throw new RangeError(`unknown gear base "${baseId}"`);
+  return Math.max(1, Math.ceil(baseMinLevel(base) / RULES.gear.itemLevel.craftPerLevel));
+}
+
 /** The bases that can be learned as blueprints (everything craftable). */
 export function blueprintBases(): GearBase[] {
   return gearContent.bases.filter(craftable);
@@ -441,7 +451,6 @@ const NEXT_RARITY: Record<GearRarity, GearRarity> = {
   common: 'rare',
   rare: 'epic',
   epic: 'epic',
-  festival: 'festival',
 };
 
 /**
@@ -477,8 +486,8 @@ const RARITY_ORDER: readonly GearRarity[] = ['common', 'rare', 'epic'];
 export interface CraftOptions {
   reach?: ReachId;
   marks?: number;
-  /** The least rarity it may come out as (a craft started before gear v2 was sized by its blueprint's rarity; a Festival floor counts as Epic). */
-  floor?: GearRarity;
+  /** The least rarity it may come out as (a craft started before gear v2 was sized by its blueprint's rarity; an old Festival floor counts as Epic). */
+  floor?: LegacyRarity;
   /** The day's Workshop modifiers (the Boons step). */
   mods?: WorkshopMods;
 }
@@ -532,7 +541,8 @@ export function finaleDropOddsBp(rank: number): { rare: number; epic: number; co
   return { rare, epic, common: 10_000 - rare - epic };
 }
 
-function rollFinaleRarity(rng: Rng, rank: number): DropRarity {
+/** The rarity of a finale drop at a Boss Rank (`finaleDropOddsBp`). Draws once. */
+export function rollFinaleRarity(rng: Rng, rank: number): DropRarity {
   const odds = finaleDropOddsBp(rank);
   return pickWeighted<{ rarity: DropRarity; weight: number }>(rng, [
     { rarity: 'common', weight: odds.common },
@@ -547,8 +557,9 @@ function rollFinaleRarity(rng: Rng, rank: number): DropRarity {
  */
 export function rollFinaleItem(rng: Rng, rank: number, element: Element): GearItem {
   const rarity = rollFinaleRarity(rng, rank);
-  const base = dropBase(rng, element, { roleCharm: true });
-  return rollItem(rng, { baseId: base.id, rarity, itemLevel: finaleItemLevel(rank) });
+  const itemLevel = finaleItemLevel(rank);
+  const base = dropBase(rng, element, itemLevel, { roleCharm: true });
+  return rollItem(rng, { baseId: base.id, rarity, itemLevel });
 }
 
 /** What a won finale gives each participant: one gear piece or one blueprint. */
@@ -581,10 +592,27 @@ export function festivalBaseFor(element: Element): GearBase {
   return base;
 }
 
-/** Rolls the Festival piece for an element: Festival rarity, item level `5 + Boss Rank` (at most 20). */
+/**
+ * Rolls the Festival piece for an element. It is special, not stronger (2026-10-17): the rarity comes from
+ * the finale's own odds at the Boss Rank (`finaleDropOddsBp`, no floor) and the item level is the finale's
+ * (`3 + Boss Rank`). What makes it a Festival piece is its base: the fixed unique line, the narrow roll
+ * pool and its look. Draws the rarity, then the lines.
+ */
 export function rollFestivalItem(rng: Rng, element: Element, rank: number): GearItem {
   const base = festivalBaseFor(element);
-  return rollItem(rng, { baseId: base.id, rarity: 'festival', itemLevel: festivalItemLevel(rank) });
+  return rollItem(rng, {
+    baseId: base.id,
+    rarity: rollFinaleRarity(rng, rank),
+    itemLevel: finaleItemLevel(rank),
+  });
+}
+
+/**
+ * The rarity a converted item gets: the old rarity, except that an old Festival piece (the Festival was a
+ * fourth rarity) rolls the finale's normal odds at the server's Boss Rank. Draws only for a Festival piece.
+ */
+export function rollConvertedRarity(rng: Rng, rank: number, old: LegacyRarity): GearRarity {
+  return old === 'festival' ? rollFinaleRarity(rng, rank) : old;
 }
 
 /** A dungeon piece: the room boss's element as its tag, item level by depth, then its lines. */
@@ -595,8 +623,9 @@ export function rollDungeonItem(
   landmark: boolean,
   element: Element,
 ): GearItem {
-  const base = dropBase(rng, element);
-  return rollItem(rng, { baseId: base.id, rarity, itemLevel: dungeonItemLevel(depth, landmark) });
+  const itemLevel = dungeonItemLevel(depth, landmark);
+  const base = dropBase(rng, element, itemLevel);
+  return rollItem(rng, { baseId: base.id, rarity, itemLevel });
 }
 
 /** Rolls a blueprint's base evenly among the bases that can be crafted. */
@@ -623,7 +652,7 @@ export function rollExpeditionItem(
     if (compass === undefined) throw new Error('no explorer base');
     return rollItem(rng, { baseId: compass.id, rarity, itemLevel });
   }
-  const base = dropBase(rng, place.element);
+  const base = dropBase(rng, place.element, itemLevel);
   return rollItem(rng, { baseId: base.id, rarity, itemLevel });
 }
 
@@ -695,7 +724,7 @@ export function addParts(a: PartsBundle, b: PartsBundle): PartsBundle {
 
 /** What an old item cost to upgrade to its level: the Essence and scrap its upgrades took (refunded in full). */
 export function legacyUpgradeSpent(
-  rarity: GearRarity,
+  rarity: LegacyRarity,
   level: number,
 ): { essence: number; scrap: number } {
   const t = RULES.gear.legacy.upgrade;
@@ -710,7 +739,7 @@ export function legacyUpgradeSpent(
 }
 
 /** What dismantling an old item returned (the rules before v2), with the shard of its tint. */
-export function legacyDismantleYield(rarity: GearRarity, tint: Element | null): PartsBundle {
+export function legacyDismantleYield(rarity: LegacyRarity, tint: Element | null): PartsBundle {
   const t = RULES.gear.legacy.dismantle;
   const out: PartsBundle = {};
   addPart(out, 'scrap', t.scrap[rarity]);

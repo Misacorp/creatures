@@ -796,8 +796,8 @@
     "title": "Gear",
     "short": "A Hat, a Scarf and a Charm for every creature.",
     "lines": [
-      "Each item has a base line and 1 to 3 rolled lines, each with five tiers.",
-      "An item has a level. A creature wears items up to its own level.",
+      "A Hat carries Attack and a Scarf HP as its own stat. A Charm has a base line instead.",
+      "Every item also rolls 1 to 3 lines, each with five tiers. A creature wears items up to its own level.",
       "Scarves open at creature level 7 and Charms at 13.",
       "Take an item apart in the Workshop for parts and Essence. It takes a little time and cannot be undone."
     ],
@@ -833,7 +833,8 @@
     "short": "Fixed when the item drops or is crafted.",
     "lines": [
       "It sets the best tier a line can roll: II from 5, III from 10, IV from 15, V at 20.",
-      "A creature can only wear items up to its own level."
+      "A creature can only wear items up to its own level.",
+      "Better Hats and Scarves unlock at item level 5 and 10. A craft needs the Crafting level for the one you pick."
     ],
     "section": "workshop"
   },
@@ -881,21 +882,21 @@
   {
     "id": "gear-rarity-common",
     "title": "Common gear",
-    "short": "A base line and 1 rolled line.",
+    "short": "A base stat or line and 1 rolled line.",
     "lines": ["Easy to find and craft."],
     "section": "workshop"
   },
   {
     "id": "gear-rarity-rare",
     "title": "Rare gear",
-    "short": "A base line and 2 rolled lines.",
+    "short": "A base stat or line and 2 rolled lines.",
     "lines": ["Can roll All damage taken, Lucky find and Adaptation pierce."],
     "section": "workshop"
   },
   {
     "id": "gear-rarity-epic",
     "title": "Epic gear",
-    "short": "A base line and 3 rolled lines.",
+    "short": "A base stat or line and 3 rolled lines.",
     "lines": [
       "Can also roll Lingering and Unbothered at item level 15 or more.",
       "Dismantling Epic gear can give glimmer."
@@ -903,12 +904,34 @@
     "section": "workshop"
   },
   {
-    "id": "gear-rarity-festival",
+    "id": "gear-festival",
     "title": "Festival gear",
-    "short": "Epic power with a look of its own.",
+    "short": "Special, not stronger. A look and a line of its own.",
     "lines": [
       "Won by clearing a Festival finale. It cannot be crafted.",
-      "2 rolled lines and a fixed Festival glow."
+      "Its item level and rarity follow the same odds as any finale piece.",
+      "It has one fixed Festival line and rolls from a short list of lines."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-stat",
+    "title": "Item stat",
+    "short": "A Hat's Attack or a Scarf's HP. It is added to the creature.",
+    "lines": [
+      "It grows with the item level.",
+      "The lines marked (this item) change this number: first the flat ones, then the percent ones.",
+      "Charms have no stat."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-local",
+    "title": "(this item)",
+    "short": "A line that only changes this item's own stat.",
+    "lines": [
+      "+60% Attack (this item) makes this Hat's own Attack bigger. It does not change the creature's Attack.",
+      "Every other line acts on the creature or on the fight."
     ],
     "section": "workshop"
   },

@@ -1,8 +1,9 @@
 /**
  * Gear content (`data/gear.json`, `data/gear-lines.json`, `data/gear-legacy.json`): schemas and
  * load-time checks (docs/design/gear-and-creatures-v2.md). An item is a base (the kind of thing: a
- * Kelp Cap, a Warden's Bell) with a slot, a tag and a fixed base line (its implicit), plus rolled
- * lines drawn from the slot's weighted pool. Everything about WHICH lines exist, what they do and
+ * Kelp Cap, a Warden's Bell) with a slot, a tag and fixed base stats (a Hat or a Scarf) or a fixed base
+ * line (a Charm's implicit), an item level it unlocks at, plus rolled lines drawn from the slot's
+ * weighted pool. Local lines change the item's own base stats; all others are global. Everything about WHICH lines exist, what they do and
  * how heavy they are in each slot is data here; everything about how items roll (tiers, item levels,
  * line counts, tag weights, costs) lives in `RULES.gear`. The engine never reads this: gear is folded
  * into a creature's stats and modifier sheet before a fight (`wornEffects`).
@@ -10,9 +11,18 @@
 import * as v from 'valibot';
 import { ElementSchema, ELEMENTS, IdSchema, RoleSchema, type Element, type Role } from './schema';
 
-export const GEAR_RARITIES = ['common', 'rare', 'epic', 'festival'] as const;
+/**
+ * The rarities of an item: Common, Rare and Epic decide how many lines it rolls. A Festival piece is not
+ * a fourth rarity: it is a base (`festival: true`) that drops at the normal item level and rarity odds
+ * of its source, with a fixed unique line, a narrow roll pool and its own look (2026-10-17).
+ */
+export const GEAR_RARITIES = ['common', 'rare', 'epic'] as const;
 export const GearRaritySchema = v.picklist(GEAR_RARITIES);
 export type GearRarity = v.InferOutput<typeof GearRaritySchema>;
+
+/** The rarities old (pre-v2) gear had, for the one-time conversion: the three above and the Festival rarity. */
+export const LEGACY_RARITIES = [...GEAR_RARITIES, 'festival'] as const;
+export type LegacyRarity = (typeof LEGACY_RARITIES)[number];
 
 /** The three slots. A creature wears one item in each. */
 export const GEAR_SLOTS = ['hat', 'scarf', 'charm'] as const;
@@ -63,6 +73,28 @@ export type TierValues = readonly [number, number, number, number, number];
 const FixedLineSchema = v.strictObject({ line: IdSchema, values: Values });
 export type FixedLine = v.InferOutput<typeof FixedLineSchema>;
 
+/**
+ * The kinds of base stat an item can carry. Every kind already exists in the engine's numbers: Attack
+ * and HP are the creature's, crit chance and crit damage are added to its crit bonus (in basis points).
+ * More kinds can be added here later (a kind needs a fold in `wornEffects` and at least one local line
+ * in `gear-lines.json`); nothing that the engine does not have yet (a universal armor) belongs here.
+ */
+export const BASE_STAT_KINDS = ['atk', 'hp', 'critChance', 'critDamage'] as const;
+export const BaseStatKindSchema = v.picklist(BASE_STAT_KINDS);
+export type BaseStatKind = v.InferOutput<typeof BaseStatKindSchema>;
+
+/**
+ * One base stat of a base: a fixed number, the same on every item of the base (never rolled, never
+ * scaled by item level). Attack and HP are whole points, crit chance and crit damage basis points.
+ * It is part of the item, not a line: the item's local lines (`kind: 'local'`) change it, and the whole
+ * item adds to its wearer (`itemStats`).
+ */
+export const BaseStatSchema = v.strictObject({
+  stat: BaseStatKindSchema,
+  value: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(10_000)),
+});
+export type BaseStat = v.InferOutput<typeof BaseStatSchema>;
+
 export const GearBaseSchema = v.strictObject({
   id: IdSchema,
   name: Name,
@@ -70,10 +102,23 @@ export const GearBaseSchema = v.strictObject({
   tag: GearTagSchema,
   /** A Festival piece: only a Festival finale drops it, and it carries its `fixed` line. */
   festival: v.optional(v.boolean()),
-  /** The base line every item of this base has, sized by the item level's band. */
-  implicit: FixedLineSchema,
-  /** A second fixed line (the Festival glow). */
+  /**
+   * The fixed base stats of a Hat (Attack and HP, Attack first) or a Scarf (HP and Attack, HP first), and
+   * optionally a third (crit chance or crit damage). Charms have none: they are the mechanics slot.
+   */
+  stats: v.optional(v.pipe(v.array(BaseStatSchema), v.minLength(2), v.maxLength(4))),
+  /**
+   * The lowest item level this base can drop or be crafted at (default 1). A better base unlocks at a
+   * higher item level, as in Path of Exile: growth over the journey is the local lines' tiers and these
+   * better bases, not a stat that scales with the item level.
+   */
+  minItemLevel: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(20))),
+  /** The base line of a Charm (its mechanic), sized by the item level's band. Hats and Scarves have base stats instead. */
+  implicit: v.optional(FixedLineSchema),
+  /** The unique line of a Festival piece, sized by the item level's band. */
   fixed: v.optional(FixedLineSchema),
+  /** A narrow roll pool: the only lines this base can roll (Festival pieces). Absent: the slot's whole pool. */
+  pool: v.optional(v.pipe(v.array(IdSchema), v.minLength(3), v.maxLength(12))),
   flavor: Flavor,
 });
 export type GearBase = v.InferOutput<typeof GearBaseSchema>;
@@ -83,7 +128,9 @@ export type GearBase = v.InferOutput<typeof GearBaseSchema>;
  * Attack for a wearer of the line's element; `hunter`, `ward` and `reaction` are the element lines
  * (resolved to the boss's element or the reaction id); `sheet` fills a field of the fight's modifier
  * sheet (`SlotMods`); `besideRole` is a position line; `rule` is a trip, Workshop or XP rule outside
- * combat; `rest` is the dungeon's between-room rest; `glow` is the Festival glow (Attack and HP).
+ * combat; `rest` is the dungeon's between-room rest; `local` is a line of the item itself: it changes
+ * one of the item's own base stats (`BASE_STAT_KINDS`), by a percentage or a flat amount, and nothing
+ * else. It can only roll on an item whose base has that stat.
  */
 export const LineEffectSchema = v.variant('kind', [
   v.strictObject({
@@ -135,7 +182,11 @@ export const LineEffectSchema = v.variant('kind', [
     ]),
   }),
   v.strictObject({ kind: v.literal('rest') }),
-  v.strictObject({ kind: v.literal('glow') }),
+  v.strictObject({
+    kind: v.literal('local'),
+    stat: BaseStatKindSchema,
+    mode: v.picklist(['pct', 'flat']),
+  }),
 ]);
 export type LineEffect = v.InferOutput<typeof LineEffectSchema>;
 
@@ -143,7 +194,16 @@ export const LINE_UNITS = ['pct', 'pt', 'flat', 'once'] as const;
 export const LineUnitSchema = v.picklist(LINE_UNITS);
 export type LineUnit = v.InferOutput<typeof LineUnitSchema>;
 
-export const LINE_GROUPS = ['core', 'element', 'role', 'mark', 'position', 'utility'] as const;
+export const LINE_GROUPS = [
+  'core',
+  'local',
+  'element',
+  'role',
+  'mark',
+  'position',
+  'utility',
+  'festival',
+] as const;
 export type LineGroup = (typeof LINE_GROUPS)[number];
 
 /** A line as written in `data/gear-lines.json`. `perElement` lines expand into one line per element. */
@@ -168,6 +228,11 @@ export const LineSchema = v.strictObject({
   minRarity: v.picklist(['common', 'rare', 'epic']),
   /** Roll weight in each slot's pool; 0 never rolls there. */
   weights: v.strictObject({ hat: Weight, scarf: Weight, charm: Weight }),
+  /**
+   * A line that never rolls on an item: only a talent (a flat HP talent) or a base's fixed line (a
+   * Festival piece's unique line) uses it, so its weights may all be 0.
+   */
+  fixedOnly: v.optional(v.boolean()),
   /** The roles it is about: a role-locked Charm favours its role's lines and rolls no other role's. */
   roles: v.optional(v.array(RoleSchema)),
   /** The effect only exists for a wearer of one of `roles` (a Guard's armor). */
@@ -197,6 +262,10 @@ export interface GearLine {
   minItemLevel: number;
   minRarity: 'common' | 'rare' | 'epic';
   weights: { hat: number; scarf: number; charm: number };
+  /** True for a line of the item itself (`kind: 'local'`): it shows as "(this item)" and changes one of the item's base stats. */
+  local: boolean;
+  /** True when no item rolls it (talents and fixed lines use it). */
+  fixedOnly: boolean;
   roles: readonly Role[];
   restricted: boolean;
   worth: number;
@@ -280,6 +349,8 @@ export function expandLines(
       minItemLevel: def.minItemLevel ?? 1,
       minRarity: def.minRarity,
       weights: def.weights,
+      local: def.effect.kind === 'local',
+      fixedOnly: def.fixedOnly === true,
       roles: def.roles ?? [],
       restricted: def.restricted === true,
       worth: def.worth,
@@ -344,8 +415,16 @@ export function loadGear(
       fail(`restricted line "${line.id}" needs the roles it works for`);
     }
     const w = line.weights;
-    if (w.hat + w.scarf + w.charm === 0 && line.effect.kind !== 'glow') {
+    if (line.fixedOnly) {
+      if (w.hat + w.scarf + w.charm !== 0)
+        fail(`fixed-only line "${line.id}" must have no weights`);
+    } else if (w.hat + w.scarf + w.charm === 0) {
       fail(`line "${line.id}" can roll in no slot`);
+    }
+    if (line.effect.kind === 'local') {
+      // A local line is about the item's own stats, which only Hats and Scarves have.
+      if (w.charm > 0) fail(`local line "${line.id}" cannot roll on a charm`);
+      if (line.worth !== 0) fail(`local line "${line.id}" is counted by the item's stat (worth 0)`);
     }
   }
 
@@ -354,15 +433,64 @@ export function loadGear(
   for (const base of bases.output) {
     if (baseIds.has(base.id)) fail(`duplicate base id "${base.id}"`);
     baseIds.add(base.id);
-    const key = `${base.slot}:${base.tag}:${base.festival === true ? 'festival' : 'plain'}`;
-    if (seenKey.has(key)) fail(`two ${base.slot} bases with the tag ${base.tag}`);
+    const key = `${base.slot}:${base.tag}:${base.festival === true ? 'festival' : 'plain'}:${String(base.minItemLevel ?? 1)}`;
+    if (seenKey.has(key)) {
+      fail(`two ${base.slot} bases with the tag ${base.tag} unlock at the same item level`);
+    }
     seenKey.add(key);
     for (const fixed of [base.implicit, base.fixed]) {
       if (fixed === undefined) continue;
       if (!lineIds.has(fixed.line)) fail(`base "${base.id}" uses unknown line "${fixed.line}"`);
     }
+    // Hats and Scarves have base stats (and no implicit line), Charms a mechanic line (and no stats).
+    if (base.slot === 'charm') {
+      if (base.stats !== undefined) fail(`Charm "${base.id}" cannot have base stats`);
+      if (base.implicit === undefined) fail(`Charm "${base.id}" needs its implicit`);
+      if (base.minItemLevel !== undefined && base.minItemLevel > 1) {
+        fail(`Charm "${base.id}" has no better versions, so it cannot have a minimum item level`);
+      }
+    } else {
+      const stats = base.stats;
+      if (stats === undefined) fail(`${base.slot} "${base.id}" needs base stats`);
+      if (base.implicit !== undefined)
+        fail(`${base.slot} "${base.id}" has base stats, not an implicit`);
+      const kinds = stats.map((x) => x.stat);
+      if (new Set(kinds).size !== kinds.length) fail(`base "${base.id}" repeats a base stat`);
+      // A Hat is Attack first, a Scarf HP first, and both carry both.
+      const head = base.slot === 'hat' ? 'atk' : 'hp';
+      const other = base.slot === 'hat' ? 'hp' : 'atk';
+      if (kinds[0] !== head || kinds[1] !== other) {
+        fail(`${base.slot} "${base.id}" must list ${head} then ${other} first`);
+      }
+      // Every base stat is a target for at least one local line.
+      for (const kind of kinds) {
+        if (!lines.some((l) => l.effect.kind === 'local' && l.effect.stat === kind)) {
+          fail(`base "${base.id}" has the stat ${kind}, which no local line can change`);
+        }
+      }
+    }
+    if (base.pool !== undefined) {
+      if (new Set(base.pool).size !== base.pool.length)
+        fail(`base "${base.id}" repeats a pool line`);
+      for (const id of base.pool) {
+        const line = lines.find((l) => l.id === id);
+        if (line === undefined) fail(`base "${base.id}" pools unknown line "${id}"`);
+        if (line.fixedOnly || line.weights[base.slot] <= 0) {
+          fail(`base "${base.id}" pools "${id}", which cannot roll in ${base.slot}`);
+        }
+      }
+    }
     if (base.festival === true && base.fixed === undefined) {
       fail(`festival base "${base.id}" needs its fixed line`);
+    }
+    if (base.festival === true && base.pool === undefined) {
+      fail(`festival base "${base.id}" needs its narrow roll pool`);
+    }
+    if (
+      base.fixed !== undefined &&
+      lines.find((l) => l.id === base.fixed?.line)?.fixedOnly !== true
+    ) {
+      fail(`base "${base.id}" fixes a line that is not fixed-only`);
     }
     if (base.festival !== true && base.fixed !== undefined) {
       fail(`base "${base.id}" has a fixed line but is not a Festival piece`);
@@ -371,12 +499,24 @@ export function loadGear(
       fail(`only Charms can be role-locked ("${base.id}")`);
     }
   }
-  // Every element and the neutral tag have a base in each slot; there is a Festival piece.
+  // Every element and the neutral tag have a base in each slot that is there from item level 1 (a
+  // better one may unlock later); there is a Festival piece.
   for (const slot of GEAR_SLOTS) {
     for (const tag of ['neutral', ...ELEMENTS] as const) {
-      if (!bases.output.some((b) => b.slot === slot && b.tag === tag && b.festival !== true)) {
-        fail(`no ${tag} ${slot}`);
+      const mine = bases.output.filter(
+        (b) => b.slot === slot && b.tag === tag && b.festival !== true,
+      );
+      if (mine.length === 0) fail(`no ${tag} ${slot}`);
+      if (!mine.some((b) => (b.minItemLevel ?? 1) === 1)) {
+        fail(`no ${tag} ${slot} from item level 1`);
       }
+    }
+  }
+  for (const base of bases.output) {
+    if (base.festival === true && (base.minItemLevel ?? 1) !== 1) {
+      fail(
+        `festival base "${base.id}" must be there from item level 1 (it drops at a normal level)`,
+      );
     }
   }
   if (!bases.output.some((b) => b.festival === true)) fail('no festival base');

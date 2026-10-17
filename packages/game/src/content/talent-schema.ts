@@ -135,7 +135,9 @@ export function loadTalents(
       if (line.reduction && line.unit !== 'once' && talent.value >= 10_000) {
         fail(`talent "${talent.id}" would cut damage by 100% or more`);
       }
-      if (line.effect.kind === 'glow') fail(`talent "${talent.id}" cannot be a Festival glow`);
+      if (line.local) fail(`talent "${talent.id}" cannot be a line of an item's own stat`);
+      if (line.group === 'festival')
+        fail(`talent "${talent.id}" cannot be a Festival piece's line`);
     } else if (talent.value >= 10_000) {
       fail(`talent "${talent.id}" is too large for a rule`);
     }

@@ -49,17 +49,53 @@ export function legacyEnchant(id: string): { id: string; shard: Element } | unde
   return LEGACY_ENCHANTS.get(id);
 }
 
-/** The base of a slot and tag (a Festival piece when `festival`), or undefined. */
-export function baseFor(slot: GearSlot, tag: GearTag, festival = false): GearBase | undefined {
-  return gearContent.bases.find(
-    (b) => b.slot === slot && b.tag === tag && (b.festival === true) === festival,
-  );
+/** The lowest item level a base can drop or be crafted at (1 for the plain ones). */
+export function baseMinLevel(base: Pick<GearBase, 'minItemLevel'>): number {
+  return base.minItemLevel ?? 1;
 }
 
-/** The base of a slot and element tint (neutral: null): where a converted item and blueprint go. */
+/** Every base of a slot and tag (a Festival piece when `festival`), the plainest first. */
+export function basesFor(slot: GearSlot, tag: GearTag, festival = false): GearBase[] {
+  return gearContent.bases
+    .filter((b) => b.slot === slot && b.tag === tag && (b.festival === true) === festival)
+    .sort((a, b) => baseMinLevel(a) - baseMinLevel(b));
+}
+
+/**
+ * The first base of a slot and tag (the one there from item level 1; a Festival piece when `festival`),
+ * or undefined. Where something has no item level yet (a blueprint of an old base, the welcome kit) it
+ * is the base to use.
+ */
+export function baseFor(slot: GearSlot, tag: GearTag, festival = false): GearBase | undefined {
+  return basesFor(slot, tag, festival)[0];
+}
+
+/** The bases of a slot and tag an item of this level can be: those that are unlocked by it (`minItemLevel`). */
+export function eligibleBases(
+  slot: GearSlot,
+  tag: GearTag,
+  itemLevel: number,
+  festival = false,
+): GearBase[] {
+  return basesFor(slot, tag, festival).filter((b) => baseMinLevel(b) <= itemLevel);
+}
+
+/** The base of a slot and element tint (neutral: null): where a converted blueprint goes (the first base). */
 export function baseForTint(slot: GearSlot, tint: Element | null, festival = false): GearBase {
   const base = baseFor(slot, tint ?? 'neutral', festival);
   if (base === undefined) throw new Error(`no gear base for ${slot} ${tint ?? 'neutral'}`);
+  return base;
+}
+
+/** The best base of a slot and element tint an item of this level can be (the highest unlocked): where a converted item goes. */
+export function bestBaseForTint(
+  slot: GearSlot,
+  tint: Element | null,
+  itemLevel: number,
+  festival = false,
+): GearBase {
+  const list = eligibleBases(slot, tint ?? 'neutral', itemLevel, festival);
+  const base = list[list.length - 1] ?? baseForTint(slot, tint, festival);
   return base;
 }
 
