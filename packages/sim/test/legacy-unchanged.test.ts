@@ -44,6 +44,12 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * (trips, the dungeon, raid stages, Workshop jobs; treats double it) and wait at levels 10 and 20 for a
  * ribbon, Bait no longer buys levels, and the new-species pity forces a creature or a new species on
  * long dry streaks of trips. The archetypes' levels, so their team power and the raid weeks, moved.
+ *
+ * Re-pinned again on 2026-10-17 (B-018, items carry base stats), on purpose: a Hat and a Scarf have fixed
+ * base stats (Attack and HP, some a crit stat) instead of percentage implicits, better bases unlock at item
+ * levels 5 and 10, local lines change an item's own stats, and Festival gear is a normal-level,
+ * normal-rarity piece with a unique line. The archetypes' team power moved a little (first player's
+ * top-3 power 376 to 361 and 198 to 261 in two of the pinned runs); Bait earned and the runs without gear are the same.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

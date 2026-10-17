@@ -95,7 +95,7 @@ export function main(argv: readonly string[], io: Io = defaultIo): number {
     for (const r of wornItems(on)) {
       const p = (x: number): string => `${(x * 100).toFixed(0)}%`;
       io.out(
-        `  ${r.archetype.padEnd(8)} common ${p(r.rarity.common)} rare ${p(r.rarity.rare)} epic ${p(r.rarity.epic)} festival ${p(r.rarity.festival)} | level ${r.level.toFixed(1)} | power +${r.power.toFixed(1)} | bag ${r.bag.toFixed(1)} | blueprints ${r.blueprints.toFixed(1)} | scrap ${r.scrap.toFixed(0)} shards ${r.shards.toFixed(0)} glimmer ${r.glimmer.toFixed(1)}`,
+        `  ${r.archetype.padEnd(8)} common ${p(r.rarity.common)} rare ${p(r.rarity.rare)} epic ${p(r.rarity.epic)} festival ${p(r.festival)} | level ${r.level.toFixed(1)} | power +${r.power.toFixed(1)} | bag ${r.bag.toFixed(1)} | blueprints ${r.blueprints.toFixed(1)} | scrap ${r.scrap.toFixed(0)} shards ${r.shards.toFixed(0)} glimmer ${r.glimmer.toFixed(1)}`,
       );
     }
     for (const a of ARCHETYPES) {

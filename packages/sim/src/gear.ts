@@ -7,6 +7,7 @@ import {
   craftCostFor,
   craftHours,
   craftItemLevel,
+  craftLevelNeeded,
   craftable,
   dismantleHours,
   dismantleLearnBp,
@@ -518,6 +519,8 @@ function planCraft(player: SimPlayer, level: number): JobPlan | null {
   for (const baseId of player.gear.blueprints) {
     const base = gearBase(baseId);
     if (base === undefined || !craftable(base)) continue;
+    // A better base only unlocks at its item level: the crafter's Crafting level has to make it.
+    if (level < craftLevelNeeded(baseId)) continue;
     if (!canSpare(player, craftCost(baseId, craftItemLevel(level)))) continue;
     const plain = itemOf(baseId, 'common', craftItemLevel(level), []);
     const score = Math.max(0, ...pool.map((c) => scoreFor(plain, c)));

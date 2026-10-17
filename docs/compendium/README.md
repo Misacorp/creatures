@@ -77,20 +77,20 @@ Distilled from the shipped text (`species-lore.json`, `bosses-lore.json`, `journ
 
 **Naming patterns.**
 
-| Kind              | Pattern                                       | Examples                                                                            |
-| ----------------- | --------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Stage 1 creature  | A made-up word that hints at its nature       | Splashet, Cindle, Sproutle, Zipmouse, Mistnewt, Ashmole                             |
-| Stage 2 creature  | A grown-up form, often a new ending           | Tidewing, Pyrelynx, Thornbuck, Voltaro, Fogwyrm, Magmole, Tempestray, Ancientshell  |
-| Solo creature     | A compound of what it is made of              | Solmane, Gaiadrake, Aurorix, Lanternfin, Hearthshell, Coralynx, Stormray            |
-| Raid boss         | An adjective and a noun, or a title           | Tidal Colossus, Cinder Wyrm, Thornmother, Storm Sovereign                           |
-| Room boss and foe | A descriptor and a noun                       | Drowned Warden, Slag Tyrant, Puddle Imp, Drift Wisp, Bramble Hound                  |
-| Mark              | A past-tense state left on a boss             | Soaked, Charged, Overgrown, Scorched                                                |
-| Reaction          | One word for the event                        | Overload, Grounding, Wildfire, Steam                                                |
-| Room modifier     | One word for the condition                    | Flooded, Scorched, Overgrown, Stormy, Dark, Thorns, Brittle, Fog                    |
-| Gear line         | The effect in plain words                     | Attack, Sturdy blow, Tide Hunter, Backdraft ward, Guard's shadow, Between-room rest |
-| Journal set       | "The X Ledger / Records / Series", or a theme | The Tide Ledger, Static Letters, Moonlit Verses                                     |
-| Place             | Plain and descriptive                         | Tidepools, Ember Caves, Storm Ridge, Old Crossroads                                 |
-| Ability           | A short action name                           | Tidal Mark, Flare Strike, Fog Veil, Hearth Ward                                     |
+| Kind              | Pattern                                       | Examples                                                                           |
+| ----------------- | --------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Stage 1 creature  | A made-up word that hints at its nature       | Splashet, Cindle, Sproutle, Zipmouse, Mistnewt, Ashmole                            |
+| Stage 2 creature  | A grown-up form, often a new ending           | Tidewing, Pyrelynx, Thornbuck, Voltaro, Fogwyrm, Magmole, Tempestray, Ancientshell |
+| Solo creature     | A compound of what it is made of              | Solmane, Gaiadrake, Aurorix, Lanternfin, Hearthshell, Coralynx, Stormray           |
+| Raid boss         | An adjective and a noun, or a title           | Tidal Colossus, Cinder Wyrm, Thornmother, Storm Sovereign                          |
+| Room boss and foe | A descriptor and a noun                       | Drowned Warden, Slag Tyrant, Puddle Imp, Drift Wisp, Bramble Hound                 |
+| Mark              | A past-tense state left on a boss             | Soaked, Charged, Overgrown, Scorched                                               |
+| Reaction          | One word for the event                        | Overload, Grounding, Wildfire, Steam                                               |
+| Room modifier     | One word for the condition                    | Flooded, Scorched, Overgrown, Stormy, Dark, Thorns, Brittle, Fog                   |
+| Gear line         | The effect in plain words                     | Attack (this item), Tide Hunter, Backdraft ward, Guard's shadow, Between-room rest |
+| Journal set       | "The X Ledger / Records / Series", or a theme | The Tide Ledger, Static Letters, Moonlit Verses                                    |
+| Place             | Plain and descriptive                         | Tidepools, Ember Caves, Storm Ridge, Old Crossroads                                |
+| Ability           | A short action name                           | Tidal Mark, Flare Strike, Fog Veil, Hearth Ward                                    |
 
 Note the overlap on purpose: the Scorched and Overgrown marks share names with two room modifiers (`(content)`, see `world.md`).
 

@@ -8,7 +8,7 @@ Every number is a **starting value**. The balance sim tunes them after a fight-s
 
 ## 1. Summary for Misa
 
-**Gear.** Three slots: **Hat, Scarf, Charm**. Every item has a fixed base line (its implicit) and 1, 2 or 3 rolled lines by rarity (Common, Rare, Epic; Festival is 2 rolled plus a fixed Festival line). Each slot rolls from its own **weighted pool**: Hats lean to attack, Scarves to toughness, Charms to roles, elements and trips. A few lines roll in only one slot, so players know where to hunt (crit damage only on Hats, silence immunity only on Scarves, trip speed only on Charms). Each line has **five tiers (I to V)**. An item's **level** is fixed when it drops or is crafted and decides the best tier it can roll, as in Path of Exile. No upgrades, no rerolls, no enchants: the chase is finding the item whose lines fit _this_ creature.
+**Gear.** Three slots: **Hat, Scarf, Charm**. Hats and Scarves carry fixed **base stats** (Attack and HP, some a crit stat), Charms a fixed base line; every item has 1, 2 or 3 rolled lines by rarity (Common, Rare, Epic). Some lines are **local** ("+60% Attack (this item)": they change only that item's own stats), the rest are **global** (they act on the creature or the fight). A **Festival** piece is special, not stronger: normal item level and rarity, one fixed Festival line, a narrow roll pool and its own look (amended 2026-10-17, section 2.5). Each slot rolls from its own **weighted pool**: Hats lean to attack, Scarves to toughness, Charms to roles, elements and trips. A few lines roll in only one slot, so players know where to hunt (crit damage only on Hats, silence immunity only on Scarves, trip speed only on Charms). Each line has **five tiers (I to V)**. An item's **level** is fixed when it drops or is crafted and decides the best tier it can roll, as in Path of Exile. No upgrades, no rerolls, no enchants: the chase is finding the item whose lines fit _this_ creature.
 
 **Crafting.** Craft from a blueprint for scrap and shards (always a Common), or **Reach** for Rare or Epic with Essence (gated by Crafting level, odds shown). See the roll; keep it or **dismantle** it in a short Workshop job for a refund shown as a range. Dismantling trains Crafting and can teach the item's blueprint; finding a blueprint you know again makes it **well-thumbed**, a small stacking chance to craft one rarity higher.
 
@@ -26,11 +26,11 @@ Every number is a **starting value**. The balance sim tunes them after a fight-s
 
 ### 2.1 Anatomy
 
-An item is `{ base, slot, tag, rarity, itemLevel, implicit, lines[], madeBy, madeAt, source }`.
+An item is `{ base, slot, tag, rarity, itemLevel, lines[], madeBy, madeAt, source }`; its base gives the base stats (Hat, Scarf) or the implicit line (Charm). _(Amended 2026-10-17, section 2.5.)_
 
 - **Slot:** Hat, Scarf or Charm. A creature wears one of each. Cape is kept for a later fourth slot.
 - **Base and tag:** a base is the kind of thing (Kelp Cap, Leafknit Scarf, Crossroads Compass). Its **tag** is an element (Tide, Ember, Grove, Spark), neutral, explorer, or a role (role-locked Charms only). The tag is the Bazaar-style bridge: it triples the weight of its own element's lines and gives the implicit.
-- **Implicit:** a fixed line from the base, its size set by the item level band. It is the sure part of every item, so even a Common is never empty.
+- **Base stats and implicit:** a Hat or a Scarf has fixed **base stats** from its base (the same on every item of the base, not scaled by item level; section 2.5). A Charm has an **implicit**, a fixed mechanic line from the base whose size is set by the item level band. Either way it is the sure part of every item, so even a Common is never empty.
 - **Rolled lines:** 1 / 2 / 3 by rarity, drawn by weight from the slot's pool (times the tag), never two of the same line on one item. Each line rolls one tier; a tier is one fixed number (no range inside a tier), so an item has exactly two layers of randomness: which lines, and which tier.
 - **Provenance:** "Made by Magmole · 2 Nov 2026", "From the Cinder Wyrm, Boss Rank 13", "Found in the dungeon, depth 28". Stored on the item for the "this one is mine" feeling and future gifting.
 
@@ -50,16 +50,14 @@ An item is `{ base, slot, tag, rarity, itemLevel, implicit, lines[], madeBy, mad
 | Scarf | Patch Scarf | Seafoam Scarf  | Ember Muffler | Leafknit Scarf | Static Wrap  | Festival Hearth Scarf (Ember, Festival)                                                                                                         |
 | Charm | Trail Charm | Tidepool Charm | Cinder Charm  | Mossy Charm    | Static Charm | Crossroads Compass (explorer); Warden's Bell, Hearth Bell, Footprint Charm, Pounce Charm (role-locked); Festival Lantern Charm (Tide, Festival) |
 
-All names are _(working names)_. The Charm names reuse today's charms, so converted items keep familiar names.
+All names are _(working names)_. The Charm names reuse today's charms, so converted items keep familiar names. The table lists the first make of each Hat and Scarf; each has a better make from item level 5 and a fine one from 10 (section 2.5).
 
-**Implicits by item-level band** (band I is item level 1 to 4, II 5 to 9, III 10 to 14, IV 15 to 19, V 20):
+**Charm implicits by item-level band** (band I is item level 1 to 4, II 5 to 9, III 10 to 14, IV 15 to 19, V 20). _(Hats and Scarves have base stats instead of an implicit since 2026-10-17: the old Hat Attack +2% to +6% and Scarf HP +3% to +8% rows are gone, section 2.5.)_
 
 | Base kind                              | I     | II    | III   | IV    | V     |
 | -------------------------------------- | ----- | ----- | ----- | ----- | ----- |
-| Hat: Attack                            | +2%   | +3%   | +4%   | +5%   | +6%   |
-| Scarf: HP                              | +3%   | +4%   | +5%   | +7%   | +8%   |
 | Element Charm: its Attunement          | +2%   | +3%   | +4%   | +5%   | +6%   |
-| Trail Charm: Attack                    | +1%   | +2%   | +2%   | +3%   | +4%   |
+| Trail Charm: Creature Attack           | +1%   | +2%   | +2%   | +3%   | +4%   |
 | Crossroads Compass: Trail XP           | +3%   | +4%   | +5%   | +6%   | +8%   |
 | Warden's Bell (Guard): Armor           | +1 pt | +2 pt | +2 pt | +3 pt | +4 pt |
 | Hearth Bell (Support): Boost           | +1 pt | +1 pt | +2 pt | +3 pt | +3 pt |
@@ -70,12 +68,12 @@ All names are _(working names)_. The Charm names reuse today's charms, so conver
 
 ### 2.4 Rarity, item level and tiers
 
-| Rarity   | Rolled lines              | Lines that need this rarity or better           | Look                       |
-| -------- | ------------------------- | ----------------------------------------------- | -------------------------- |
-| Common   | 1                         |                                                 | Plain frame                |
-| Rare     | 2                         | All damage taken, Lucky find, Adaptation pierce | Blue frame                 |
-| Epic     | 3                         | the above, plus Lingering and Unbothered        | Violet frame               |
-| Festival | 2 + 1 fixed Festival line | as Epic                                         | Its own lantern-gold frame |
+| Rarity     | Rolled lines                                                                                                           | Lines that need this rarity or better           | Look                                                         |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------ |
+| Common     | 1                                                                                                                      |                                                 | Plain frame                                                  |
+| Rare       | 2                                                                                                                      | All damage taken, Lucky find, Adaptation pierce | Blue frame                                                   |
+| Epic       | 3                                                                                                                      | the above, plus Lingering and Unbothered        | Violet frame                                                 |
+| (Festival) | not a rarity: it rolls 1, 2 or 3 lines by its own Common, Rare or Epic, from a narrow pool, plus 1 fixed Festival line | by its rarity                                   | A lantern-gold dashed outline and a star on its normal frame |
 
 **Item level** runs from 1 to 20 and is fixed at the drop or the craft. It unlocks tiers, Path of Exile style:
 
@@ -91,18 +89,62 @@ All names are _(working names)_. The Charm names reuse today's charms, so conver
 
 **Item level by source:**
 
-| Source                                                                      | Item level                                                                              | Rarity                                      | Tag                                                       |
-| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------- | --------------------------------------------------------- |
-| Welcome kit                                                                 | 1                                                                                       | Common Hat                                  | Neutral                                                   |
-| Raid finale reward slot (a quarter of the time a blueprint)                 | 3 + Boss Rank (rank 2: 5, rank 7: 10, rank 12: 15, rank 17: 20)                         | By Boss Rank, as today (`finaleDropOddsBp`) | The boss's element; 1 Charm in 20 is role-locked          |
-| Festival finale piece                                                       | 5 + Boss Rank, at most 20                                                               | Festival                                    | The Festival's                                            |
-| Daily dungeon full clear (15% chance; landmarks guaranteed)                 | 1 + floor(depth / 2), +3 at a landmark, at most 20 (depth 8: 5, 18: 10, 29: 15, 38: 20) | By depth, as today (`gearOdds`)             | The room boss's element                                   |
-| Expedition finds (Shortcut and Ancient vault push-ons, rare day-trip finds) | 2 x the finder's explorer rank (rank 3: 6, rank 6: 12, rank 10: 20)                     | Rare and Epic, as today                     | The place's element; Old Crossroads gives explorer pieces |
-| Crafting                                                                    | 2 x the crafter's Crafting level (level 5: 10, level 8: 16, level 10: 20)               | Common, or Reach (section 3)                | The blueprint's                                           |
+| Source                                                                      | Item level                                                                              | Rarity                                                     | Tag                                                       |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------- |
+| Welcome kit                                                                 | 1                                                                                       | Common Hat                                                 | Neutral                                                   |
+| Raid finale reward slot (a quarter of the time a blueprint)                 | 3 + Boss Rank (rank 2: 5, rank 7: 10, rank 12: 15, rank 17: 20)                         | By Boss Rank, as today (`finaleDropOddsBp`)                | The boss's element; 1 Charm in 20 is role-locked          |
+| Festival finale piece                                                       | 3 + Boss Rank, at most 20 (as the finale reward slot: no higher)                        | By Boss Rank, as the finale (`finaleDropOddsBp`; no floor) | The Festival's                                            |
+| Daily dungeon full clear (15% chance; landmarks guaranteed)                 | 1 + floor(depth / 2), +3 at a landmark, at most 20 (depth 8: 5, 18: 10, 29: 15, 38: 20) | By depth, as today (`gearOdds`)                            | The room boss's element                                   |
+| Expedition finds (Shortcut and Ancient vault push-ons, rare day-trip finds) | 2 x the finder's explorer rank (rank 3: 6, rank 6: 12, rank 10: 20)                     | Rare and Epic, as today                                    | The place's element; Old Crossroads gives explorer pieces |
+| Crafting                                                                    | 2 x the crafter's Crafting level (level 5: 10, level 8: 16, level 10: 20)               | Common, or Reach (section 3)                               | The blueprint's                                           |
 
 What this means over a journey (committed players): item level about 5 to 7 in week 2 (tier II), 10 to 12 by week 8 (III), 15 to 17 by week 20 (IV), and the first V lines from about week 25. Explorer ranks 7 to 10 and Crafting levels 8 to 10, today dead ends, become the way to item level 20 without a deep dungeon.
 
 **Wearing.** A creature can wear an item only if the item's level is not higher than the creature's level (a level 12 creature wears items up to item level 12). Shown on the card ("Needs level 14"). A drop that is too high waits in the bag until the creature grows into it. This stops a fresh catch from skipping the journey in top gear and gives levelling a purpose beyond bigger numbers (added 2026-10-16 after Misa's question on converted items).
+
+### 2.5 Base stats, local and global lines, and Festival gear (amended 2026-10-17)
+
+_Misa's direction of 2026-10-17 ("items carry base stats; local and global lines; Festival gear is special, not stronger"), in the path-of-exile style the rest of this design follows. It replaces the percentage implicits of Hats and Scarves, the Attack / HP / Sturdy blow / Thick coat lines and the Festival glow. Decision entry: `decisions.md`, 2026-10-17; numbers and their tuning: `docs/balance/log.md` B-018._
+
+**Base stats.** A Hat or a Scarf has **fixed base stats**, set by its base type: every Trail Cap has exactly the same numbers, whatever its item level. They are never rolled and are **not scaled by item level**. A Hat carries Attack and HP (Attack-heavy), a Scarf HP and Attack (HP-heavy); the finer bases carry a third stat that the engine already has (crit chance or crit damage, in points). Charms are the mechanics slot and have no stats: a Charm keeps its implicit line. The kinds of base stat are a list in the content schema (`BASE_STAT_KINDS`: Attack, HP, crit chance, crit damage); a new kind (say a resistance) later needs a fold in `wornEffects` and at least one local line, and nothing the engine does not already have.
+
+**Growth comes from two places**, not from a stat that scales: the **tiers of the local lines**, which the item level gates as before (I from 1, II from 5, III from 10, IV from 15, V at 20), and **better bases that unlock at higher item levels**, as in Path of Exile. Each slot and tag has three makes (the table below): a plain one from item level 1, a better one from 5 and a fine one from 10. A drop picks evenly among the bases its item level unlocks, and a craft needs a known blueprint whose base the crafter's item level (2 x Crafting level) unlocks (Crafting level 3 for the better make, 5 for the fine one; the Workshop says so). `minItemLevel` is content, so a fourth make or other levels are a data change.
+
+| Hat (Attack / HP / extra) | Item level 1 | Item level 5               | Item level 10               |
+| ------------------------- | ------------ | -------------------------- | --------------------------- |
+| Neutral, Tide             | 2 / 4        | 12 / 24                    | 24 / 48, +2 pt crit chance  |
+| Ember (hot, glassy)       | 2 / 3        | 14 / 19, +1 pt crit chance | 28 / 38, +20 pt crit damage |
+| Grove (sturdy)            | 1 / 5        | 9 / 33                     | 19 / 67, +2 pt crit chance  |
+| Spark                     | 2 / 3        | 12 / 19, +2 pt crit chance | 24 / 38, +3 pt crit chance  |
+
+| Scarf (HP / Attack / extra)    | Item level 1 | Item level 5              | Item level 10               |
+| ------------------------------ | ------------ | ------------------------- | --------------------------- |
+| Neutral, Tide, Ember           | 12 / 1       | 70 / 5                    | 150 / 12                    |
+| Grove (the sturdy Guard scarf) | 14 / 1       | 84 / 2                    | 180 / 6                     |
+| Spark                          | 11 / 1       | 66 / 5, +1 pt crit chance | 142 / 12, +2 pt crit chance |
+
+(The names are in `docs/compendium/items.md`. Starting values, tuned with the gear share study.)
+
+**Local lines** change one of the item's own stats ("this item"). Each is shown as "+60% Attack (this item)". The item's stat is `(base + flat local) x (1 + percent local)`, rounded down, with the percentages of one stat added together (an item never rolls the same line twice, so in practice there is one). They roll only where the base has the stat: a crit local line only on a base with that crit stat.
+
+| Local line                    | I    | II   | III  | IV   | V     | Hat | Scarf |
+| ----------------------------- | ---- | ---- | ---- | ---- | ----- | --- | ----- |
+| Attack as a share (this item) | +20% | +40% | +60% | +90% | +120% | 100 | 40    |
+| Attack, flat (this item)      | +2   | +4   | +6   | +9   | +12   | 80  | 30    |
+| HP as a share (this item)     | +20% | +40% | +60% | +90% | +120% | 40  | 100   |
+| HP, flat (this item)          | +12  | +25  | +40  | +55  | +75   | 30  | 80    |
+| Crit chance share (this item) | +20% | +40% | +60% | +90% | +120% | 40  | 15    |
+| Crit damage share (this item) | +20% | +40% | +60% | +90% | +120% | 25  | 10    |
+
+Hats favour the local Attack lines and Scarves the local HP lines, and both can roll either. Charms never roll local lines.
+
+**Global lines** act on the creature or the fight and are unchanged: crit chance and crit damage, the element, reaction, ward and Hunter lines, the role lines, Guard's shadow, the utility lines. They intentionally touch game mechanics. A global percentage on Attack or HP exists only as **Creature Attack** and **Creature HP** (the old Attack and HP lines, renamed): they raise the whole creature's stat, roll only on Charms and rarely (weight 6 where an Attunement is 40), and are what the creature talents of the same names use. The Trail Charm's implicit is Creature Attack. **Sturdy blow is gone**, and **Thick coat** is now only a flat-HP creature talent (no item rolls it).
+
+**The fold.** A creature's Attack is `floor(base x (1 + global %)) + flat talents + the worn items' Attack`, its HP likewise: the items' own stats are added after the global shares, so a global percentage never multiplies an item's stat and a local percentage never multiplies the creature's. The items' crit stats join the crit lines before the engine's caps.
+
+**The card** shows the item's final stats big ("Attack 35", then "HP 12"), then its lines, with local lines marked "(this item)". "Equip best" counts an item's stats exactly.
+
+**Festival gear is special, not stronger.** A Festival piece drops at the **normal item level** of its source (the finale's `3 + Boss Rank`) and with the **normal rarity odds** (`finaleDropOddsBp`, no floor): a Common one at low ranks. It is a base, not a rarity: it rolls the 1, 2 or 3 lines of its rarity from a **narrow pool** of five lines (the Hearth Scarf: the local HP lines, Area ward, Ember Ward, Well-fed; the Lantern Charm: the Tide Attunement, Reaction, Hunter and Ward lines and Well-fed), its base stats are those of a plain first-make piece of the same slot and tag, and it carries **one fixed unique Festival line**, a small effect and not raw power: Hearth warmth (the dungeon rest between rooms, +2 to +4%) on the scarf and Lantern luck (a little more chance of a rarer catch on trips, +0.5 to +1.5 points) on the charm. Its look is its own: a lantern-gold dashed outline and a star on the frame of its rarity, and a Festival tag. Old Festival items convert into Festival bases at the converted item level with a rarity drawn from the finale's odds.
 
 ## 3. The crafting loop
 
@@ -110,17 +152,17 @@ What this means over a journey (committed players): item level about 5 to 7 in w
 2. **Reach** (optional, on top). **Reach for Rare** (Crafting level 3+): +25 Essence and +1 shard, 6 hours: Rare 60%, Common 40%. **Reach for Epic** (Crafting level 6+): +70 Essence, +2 shards and 1 glimmer, 10 hours: Epic 30%, Rare 55%, Common 15%.
 3. **One step up.** After the rarity is drawn, a craft has a chance to come out one rarity higher (Common to Rare, Rare to Epic): +1 point per Crafting level above 1 (as today's `rarityUpBpPerLevel`) plus +1 point per **well-thumbed** mark on the blueprint (at most 10).
 4. **See the roll** at the claim (live server randomness, idempotent claim). Keep it, or dismantle it.
-5. **Dismantle** is a short Workshop job run by a creature you pick: Commons in bundles of up to 5 in 15 minutes, a Rare in 1 hour, an Epic or Festival piece in 2 hours. It gives Crafting XP (12 per hour, at least 6) and a chance to **learn the item's blueprint** (6% + 1 point per Crafting level). If the blueprint is already known, the same chance adds a well-thumbed mark instead.
+5. **Dismantle** is a short Workshop job run by a creature you pick: Commons in bundles of up to 5 in 15 minutes, a Rare in 1 hour, an Epic in 2 hours (a Festival piece pays by its own rarity). It gives Crafting XP (12 per hour, at least 6) and a chance to **learn the item's blueprint** (6% + 1 point per Crafting level). If the blueprint is already known, the same chance adds a well-thumbed mark instead.
 
 > **Amended 2026-10-16 (after B-013, "no free lottery").** The scrap of a craft grows with the item level it makes (+1 for every 4 item levels: a level 10 crafter pays 11 scrap, or 13 for a neutral piece), and a dismantle's scrap is a share of that same price, never half or more of it (Common 25 to 40%, Rare 35 to 45%, Epic and Festival 40 to 50%), for crafted and dropped items alike. The table's scrap column and "every full 5 item levels add 1 scrap" are replaced by this. A Reach no longer takes extra shards: Reach for Rare is +25 Essence, Reach for Epic +70 Essence and 1 glimmer, on top of the plain craft's parts. See `decisions.md`, "Gear B: no free lottery".
 
 **Dismantle refunds, shown before you confirm** (scrap column as first written; see the amendment above):
 
-| Rarity           | Scrap | Shards (of the tag; neutral: random) | Glimmer | Essence |
-| ---------------- | ----- | ------------------------------------ | ------- | ------- |
-| Common           | 2–4   | 0                                    | 0       | 0       |
-| Rare             | 4–8   | 1                                    | 0       | 3–8     |
-| Epic or Festival | 8–14  | 1–2                                  | 0–1     | 10–25   |
+| Rarity | Scrap | Shards (of the tag; neutral: random) | Glimmer | Essence |
+| ------ | ----- | ------------------------------------ | ------- | ------- |
+| Common | 2–4   | 0                                    | 0       | 0       |
+| Rare   | 4–8   | 1                                    | 0       | 3–8     |
+| Epic   | 8–14  | 1–2                                  | 0–1     | 10–25   |
 
 Every full 5 item levels add 1 scrap to both ends. The refund does not depend on who dismantles (decision 2026-10-16, "Misa's answers to the review page's last questions"): a high-Crafting creature should not become the only one worth using.
 
@@ -159,18 +201,17 @@ How to read the tables:
 
 ### 5.1 Core stats
 
-| Line             | Effect                         | I     | II    | III   | IV    | V     | Hat | Scarf | Charm | Rarity | Engine | Who wants it                                                  |
-| ---------------- | ------------------------------ | ----- | ----- | ----- | ----- | ----- | --- | ----- | ----- | ------ | ------ | ------------------------------------------------------------- |
-| Attack           | Attack +%                      | +2%   | +4%   | +6%   | +8%   | +11%  | 100 | 10    | 20    | C R E  | Ready  | High-Attack Payoffs (Pyrelynx, Tempestray, Gaiadrake)         |
-| Sturdy blow      | Attack + a flat amount         | +2    | +4    | +6    | +9    | +12   | 80  | 15    | 20    | C R E  | Ready  | Low-Attack creatures (Guards, Supports) and young creatures   |
-| HP               | HP +%                          | +3%   | +5%   | +8%   | +11%  | +15%  | 10  | 100   | 20    | C R E  | Ready  | Big-HP Guards (Thornbuck, Fogwyrm, Hearthshell)               |
-| Thick coat       | HP + a flat amount             | +12   | +25   | +40   | +55   | +75   | 15  | 80    | 20    | C R E  | Ready  | Fragile Payoffs and anyone young                              |
-| Crit chance      | Crit chance +pt                | +1 pt | +2 pt | +3 pt | +4 pt | +5 pt | 60  | —     | 30    | C R E  | Ready  | Crit-built Payoffs (Cindle and Stormray lines)                |
-| Crit damage      | Crit damage +pt                | +8    | +14   | +20   | +27   | +35   | 50  | —     | —     | C R E  | Ready  | The same, once crit chance is up                              |
-| All damage taken | Damage taken from every hit −% | −2%   | −3%   | −4%   | −6%   | −8%   | —   | 25    | —     | R E    | Sheet  | Anyone the boss reaches every round                           |
-| Area ward        | Area hits −%                   | −3%   | −5%   | −7%   | −9%   | −12%  | —   | 60    | 10    | C R E  | Sheet  | Creatures not beside a Guard; rows that get swept             |
-| Aimed ward       | Aimed hits −%                  | −3%   | −5%   | −7%   | −9%   | −12%  | —   | 50    | 10    | C R E  | Sheet  | Guards (they take aimed hits for the row); the front creature |
-| Well-fed         | Healing received +%            | +8%   | +14%  | +20%  | +27%  | +35%  | —   | 40    | 15    | C R E  | Sheet  | A creature beside a Tide or Grove Support                     |
+| Line                            | Effect                                    | I       | II    | III   | IV    | V     | Hat | Scarf | Charm | Rarity | Engine | Who wants it                                                                  |
+| ------------------------------- | ----------------------------------------- | ------- | ----- | ----- | ----- | ----- | --- | ----- | ----- | ------ | ------ | ----------------------------------------------------------------------------- |
+| Creature Attack                 | The creature's Attack +% (all of it)      | +2%     | +4%   | +6%   | +8%   | +11%  | —   | —     | 6     | C R E  | Ready  | (Rare, Charms only; the Trail Charm's implicit. The old Attack line, see 2.5) |
+| HP (Creature HP)                | The creature's HP +% (all of it)          | +3%     | +5%   | +8%   | +11%  | +15%  | —   | —     | 6     | C R E  | Ready  | (Rare, Charms only. The old HP line, see 2.5)                                 |
+| Local Attack, HP and crit lines | Change the item's own stats ("this item") | see 2.5 |       |       |       |       | 100 | 100   | —     | C R E  | Ready  | Every Hat and Scarf: the item's own Attack, HP and crit stats                 |
+| Crit chance                     | Crit chance +pt                           | +1 pt   | +2 pt | +3 pt | +4 pt | +5 pt | 60  | —     | 30    | C R E  | Ready  | Crit-built Payoffs (Cindle and Stormray lines)                                |
+| Crit damage                     | Crit damage +pt                           | +8      | +14   | +20   | +27   | +35   | 50  | —     | —     | C R E  | Ready  | The same, once crit chance is up                                              |
+| All damage taken                | Damage taken from every hit −%            | −2%     | −3%   | −4%   | −6%   | −8%   | —   | 25    | —     | R E    | Sheet  | Anyone the boss reaches every round                                           |
+| Area ward                       | Area hits −%                              | −3%     | −5%   | −7%   | −9%   | −12%  | —   | 60    | 10    | C R E  | Sheet  | Creatures not beside a Guard; rows that get swept                             |
+| Aimed ward                      | Aimed hits −%                             | −3%     | −5%   | −7%   | −9%   | −12%  | —   | 50    | 10    | C R E  | Sheet  | Guards (they take aimed hits for the row); the front creature                 |
+| Well-fed                        | Healing received +%                       | +8%     | +14%  | +20%  | +27%  | +35%  | —   | 40    | 15    | C R E  | Sheet  | A creature beside a Tide or Grove Support                                     |
 
 ### 5.2 Element lines
 
@@ -228,7 +269,7 @@ None of these touch combat, so a bench creature that never raids has gear worth 
 
 ### 5.6 Festival lines
 
-A Festival piece has one fixed line of its own, at its band's value: **Festival glow**, Attack and HP +2 / +3 / +3 / +4 / +5% (Ready). It looks distinct and has no power beyond Epic, as today.
+_Amended 2026-10-17 (section 2.5)._ A Festival piece has one fixed line of its own, at its band's value, and it is a small effect, not raw power: **Hearth warmth** on the Hearth Scarf (between-room rest +2 / +2 / +3 / +3 / +4%, Dungeon) and **Lantern luck** on the Lantern Charm (Lucky find +0.5 / +0.5 / +1 / +1 / +1.5 pt, Rules). The old Festival glow (Attack and HP +2 to +5%) is gone, and so is Festival as a rarity: it drops at the normal item level and rarity odds.
 
 ### 5.7 What the engine needs: the modifier sheet
 
@@ -364,32 +405,56 @@ Each names a defined moment from `combat-rules.md` and writes a log line when it
 
 ## 7. Example items
 
-Cards as they would read in the Workshop. Pips: ● rolled, ○ not; the best tier the item level allows is the last pip shown. Dismantle ranges follow section 3.
+Cards as they would read in the Workshop (amended 2026-10-17: the item's stats first, then its lines; "(this item)" marks a local line). Pips: ● rolled, ○ not; the best tier the item level allows is the last pip shown. Dismantle ranges follow section 3. Numbers are from the shipped content, on a level 15 Cindle (Attack 82) or Sproutle (HP 314) where "adds" is given.
 
-#### Coal-Warm Cap
+#### Emberkeeper's Crown
 
-_Hat · Epic · item level 20 · Ember_
+_Hat · Epic · item level 15 · Ember_
 
-- Base: Attack +6%
-- Wildfire bonus +24% (V)
-- Crit damage +27 (IV)
-- Attack +8% (IV)
+- **Attack 64**, HP 38, Crit damage 20 pt (base stats 28 / 38 / +20 pt; the 64 is `(28 + 6) x 1.9`)
+- Wildfire bonus +18% (IV)
+- +90% Attack (this item) (IV)
+- +6 Attack (this item) (III)
 - From: made by Magmole · 2 Nov 2026
-- Dismantle: 12–18 scrap, 1–2 Ember shards, 0–1 glimmer, 10–25 Essence
+- Dismantle: 11–17 scrap, 1–2 Ember shards, 0–1 glimmer, 10–25 Essence
 
-**The great one.** Three lines that all fit a Pyrelynx cashing Wildfire on a Grove Setter's Overgrown mark. A top-tier roll on the line that matters most. Keep it for years.
+**The great one.** Three lines that all fit a Pyrelynx cashing Wildfire on a Grove Setter's Overgrown mark, and a hat that adds 64 Attack to a creature whose own is 82 (the same lines on the old model added 10). Keep it for years.
 
-#### Patch Scarf
+#### Bark Shawl
 
-_Scarf · Rare · item level 7 · neutral_
+_Scarf · Rare · item level 12 · Grove_
 
-- Base: HP +4%
-- Trail XP +5% (I)
-- Well-fed +8% (I)
+- **HP 134**, Attack 2 (base stats 84 / 2; the 134 is `(84 + 0) x 1.6`)
+- Aimed ward −7% (III)
+- +60% HP (this item) (III)
 - From: found in the dungeon, depth 12 · 20 Oct 2026
 - Dismantle: 5–9 scrap, 1 shard, 3–8 Essence
 
-**The dud.** Low tiers, and lines a raider barely uses (healing received only matters beside a healer). Dismantle it: the Essence goes toward the next Reach.
+**A Guard's solid mid-game scarf.** It adds 134 HP to a level 15 Sproutle (314), where the old Leafknit Scarf added 55. The Aimed ward is the global half: it stays the same on any scarf.
+
+#### Trail Cap
+
+_Hat · Common · item level 1 · neutral_
+
+- **Attack 2**, HP 4
+- +2 Attack (this item) (I)
+- From: welcome kit
+- Dismantle: 2–4 scrap
+
+**Everyone's first hat.** Gone by the end of week one, as it should be (the better makes unlock at item level 5).
+
+#### Greenwarden's Mantle
+
+_Scarf · Epic · item level 18 · Grove_
+
+- **HP 446**, Attack 6 (base stats 180 / 6; the 446 is `(180 + 55) x 1.9`)
+- Armor +7 pt (IV)
+- +90% HP (this item) (IV)
+- +55 HP (this item) (IV)
+- From: made by Ancientshell · 15 Nov 2026
+- Dismantle: 11–17 scrap, 1–2 Grove shards, 0–1 glimmer, 10–25 Essence
+
+**A Guard's keeper.** Thornbuck at the front of the row: 446 HP from one scarf (the old one added 111), and Armor for a Guard.
 
 #### Hearth Bell
 
@@ -402,45 +467,32 @@ _Charm · Epic · item level 16 · Support only_
 - From: from the Cinder Wyrm, Boss Rank 13 · 8 Nov 2026
 - Dismantle: 11–17 scrap, 1–2 shards, 0–1 glimmer, 10–25 Essence
 
-**The niche one, perfect for one creature.** On Magmole it is everything: Magma Glow rallies for three rounds instead of two, an Ember Support that never healed now mends its neighbours, and it hits harder. On anyone else it cannot even be worn.
-
-#### Leafknit Scarf
-
-_Scarf · Epic · item level 18 · Grove_
-
-- Base: HP +7%
-- Armor +7 pt (IV)
-- Aimed ward −9% (IV)
-- Backdraft ward −20% (III)
-- From: made by Ancientshell · 15 Nov 2026
-- Dismantle: 11–17 scrap, 1–2 Grove shards, 0–1 glimmer, 10–25 Essence
-
-**A Guard's keeper.** Thornbuck at the front of the row, taking every plain attack and the reflects it steps in for.
+**The niche one, perfect for one creature.** On Magmole it is everything: Magma Glow rallies for three rounds instead of two, an Ember Support that never healed now mends its neighbours, and it hits harder. On anyone else it cannot even be worn. A Charm has no stats: it is the mechanics slot.
 
 #### Seafoam Scarf
 
 _Scarf · Epic · item level 15 · Tide_
 
-- Base: HP +7%
+- **HP 12**, Attack 1
 - Unbothered: ignores silence
 - Area ward −9% (IV)
 - Brace −14% (III)
 - From: found in the dungeon, depth 29 · 12 Nov 2026
 - Dismantle: 11–17 scrap, 1–2 Tide shards, 0–1 glimmer, 10–25 Essence
 
-**The edge piece.** For whoever stands at the end of the line, where Bramble Bind and Choking Vines land. A Support there keeps boosting through the Thornmother's silences.
+**The edge piece, in a plain make.** For whoever stands at the end of the line, where Bramble Bind and Choking Vines land. A Support there keeps boosting through the Thornmother's silences. Its stats are small because it is a first make; it rolled all global lines, so it does something no stat can.
 
-#### Thundercap
+#### Storm Cowl
 
 _Hat · Rare · item level 11 · Spark_
 
-- Base: Attack +4%
+- **Attack 24**, HP 38, Crit chance 3 pt (base stats; no local line rolled)
 - Crit chance +3 pt (III)
 - Overload bonus +13% (III)
 - From: from the Storm Sovereign, Boss Rank 8 · 25 Oct 2026
 - Dismantle: 6–10 scrap, 1 Spark shard, 3–8 Essence
 
-**Solid mid-game.** Both lines fit a Tempestray; it will be replaced by a higher-level Hat, which is the point.
+**Solid mid-game.** The fine make's stats with two global lines that fit a Tempestray; it will be replaced by a Hat with local lines, which is the point.
 
 #### Crossroads Compass
 
@@ -456,27 +508,15 @@ _Charm · Rare · item level 12 · explorer_
 
 #### Festival Lantern Charm
 
-_Charm · Festival · item level 18 · Tide_
+_Charm · Common · item level 8 · Tide · Festival_
 
-- Base: Tide Attunement +5%
-- Festival glow: Attack and HP +4%
-- Steam bonus +18% (IV)
-- Spark-share +9% (III)
-- From: Festival finale, Boss Rank 13 · 16 Nov 2026
-- Dismantle: 11–17 scrap, 1–2 Tide shards, 0–1 glimmer, 10–25 Essence
-
-**A Festival keepsake that earns its place.** Made for Lanternfin beside a Tide Payoff.
-
-#### Trail Cap
-
-_Hat · Common · item level 1 · neutral_
-
-- Base: Attack +2%
-- Sturdy blow +2 (I)
-- From: welcome kit
+- Base: Tide Attunement +3%
+- **Lantern luck +0.5 pt** (the Festival line, fixed)
+- Steam bonus +9% (II)
+- From: Festival finale, Boss Rank 5 · 16 Nov 2026
 - Dismantle: 2–4 scrap
 
-**Everyone's first hat.** Gone by the end of week one, as it should be.
+**A Festival keepsake, not a stronger charm.** The same item level and rarity odds as any finale piece (this one came out Common), a narrow set of lines to roll from and a small line only it has. Its look, a lantern-gold outline, is what makes it special.
 
 ## 8. Creatures: talents and the duplicate choice
 
