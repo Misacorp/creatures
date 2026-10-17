@@ -22,8 +22,10 @@ import type {
   TripCatch,
   TripResult,
 } from './expedition-types';
+import { isExperienceView } from './experience';
 import { isGrantLoot, isPartsBundle } from './gear-parse';
 import { isArrayOf, isBool, isCount, isInt, isRecord, isStr } from './parse-core';
+import { isChoiceResult, isTalentView } from './talent-parse';
 
 const isExpeditionLength = (value: unknown): value is ExpeditionLength =>
   (EXPEDITION_LENGTHS as readonly unknown[]).includes(value);
@@ -63,8 +65,12 @@ function isCatch(value: unknown): value is TripCatch {
     isStr(value['species']) &&
     isBool(value['shiny']) &&
     (value['outcome'] === 'new' ||
+      value['outcome'] === 'duplicate' ||
       value['outcome'] === 'fused' ||
       value['outcome'] === 'converted') &&
+    (value['talent'] === undefined || isTalentView(value['talent'])) &&
+    (value['pendingId'] === undefined || isStr(value['pendingId'])) &&
+    (value['deep'] === undefined || value['deep'] === true) &&
     (value['fusionCount'] === undefined || isCount(value['fusionCount'])) &&
     (value['bait'] === undefined || isCount(value['bait'])) &&
     isBool(value['firstOnServer'])
@@ -111,6 +117,8 @@ export function isTripResult(value: unknown): value is TripResult {
   return (
     isBool(value['recalled']) &&
     isArrayOf(value['catches'], isCatch) &&
+    (value['noCatch'] === undefined || isCount(value['noCatch'])) &&
+    (value['autoSettled'] === undefined || isArrayOf(value['autoSettled'], isChoiceResult)) &&
     (value['loot'] === undefined || isGrantLoot(value['loot'])) &&
     (value['failed'] === undefined || value['failed'] === true) &&
     (value['pushOn'] === undefined || isPushOnResult(value['pushOn'])) &&
@@ -127,6 +135,7 @@ export function isTripResult(value: unknown): value is TripResult {
         isCount(familiarity['trips']))) &&
     (value['journal'] === undefined || isArrayOf(value['journal'], isJournalFind)) &&
     (value['rankGifts'] === undefined || isArrayOf(value['rankGifts'], isRankGift)) &&
+    (value['experience'] === undefined || isExperienceView(value['experience'])) &&
     (unlocked === undefined || (isRecord(unlocked) && isCount(unlocked['total'])))
   );
 }
@@ -156,6 +165,7 @@ export function isTrip(value: unknown): value is Trip {
     (value['twist'] === null || isStr(value['twist'])) &&
     isCount(value['rolls']) &&
     isCount(value['cost']) &&
+    isBool(value['treat']) &&
     isInt(value['startedAt']) &&
     isInt(value['endsAt']) &&
     isInt(value['readyAt']) &&

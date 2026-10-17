@@ -5,7 +5,7 @@
   --rarity-common: var(--haze);
   --rarity-rare: #b48cff;
   --rarity-epic: var(--gold);
-  --rarity-festival: #ff8ad8;
+  --rarity-festival: #ffc86b; /* lantern gold: a Festival piece's own look */
 }
 
 .rarity-common {
@@ -18,8 +18,4 @@
 
 .rarity-epic {
   --rar: var(--rarity-epic);
-}
-
-.rarity-festival {
-  --rar: var(--rarity-festival);
 }

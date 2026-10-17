@@ -48,6 +48,7 @@ import {
   RaidRosterBodySchema,
   RaidSimulateBodySchema,
   ResetAccountBodySchema,
+  SetWeatherBodySchema,
   SetBalancesBodySchema,
   SetCraftingXpBodySchema,
   SetCreatureBodySchema,
@@ -58,6 +59,7 @@ import {
 } from './dev-schemas';
 import { devKey, type DevState } from './dev-state';
 import { clockState, clockTool } from './dev-tools-clock';
+import { setWeather } from './dev-tools-weather';
 import {
   fillBag,
   finishJobs,
@@ -105,6 +107,7 @@ import {
 } from './http';
 import type { LedgerStorage } from './ledger';
 import type { Raid } from './raid';
+import type { Weather } from './weather';
 import { weekIdFor } from './raid-schedule';
 import type { Rng } from '@creatures/game';
 
@@ -127,10 +130,13 @@ export interface DevToolsDeps {
   timezone: () => string;
   analytics: Analytics;
   raid: Raid;
+  /** The valley's weather, for the `set-weather` tool. */
+  weather: Weather;
   /** Crypto randomness for what the tools roll. */
   rng: Rng;
   gearRng: Rng;
   quirkRng: Rng;
+  talentRng: Rng;
   offset: { get(): number; set(ms: number): void; invalidate(): void };
   /** Runs after a tool that moved the clock: catches the game up and re-arms the alarm. */
   afterClockChange: () => Promise<void>;
@@ -194,6 +200,7 @@ const TOOLS: Record<DevActionTool, Tool> = {
   'dungeon-retry': tool(NoBodySchema, dungeonRetry),
   'dungeon-modifiers': tool(DungeonModifiersBodySchema, dungeonModifiers),
   'dungeon-seed': tool(NoBodySchema, dungeonSeed),
+  'set-weather': tool(SetWeatherBodySchema, setWeather),
   'raid-phase': tool(RaidPhaseBodySchema, raidPhase, { movesClock: true }),
   'raid-resolve': tool(RaidResolveBodySchema, raidResolve),
   'raid-boss': tool(RaidBossBodySchema, raidBoss),
@@ -238,9 +245,11 @@ export class DevTools {
       tz: d.timezone(),
       state: d.state,
       raid: d.raid,
+      weather: d.weather,
       rng: d.rng,
       gearRng: d.gearRng,
       quirkRng: d.quirkRng,
+      talentRng: d.talentRng,
       offset: {
         get: () => d.offset.get(),
         set: (ms) => {

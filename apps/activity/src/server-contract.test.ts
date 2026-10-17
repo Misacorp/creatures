@@ -17,7 +17,6 @@ import expeditionStateAfter from './fixtures/expedition-state-after.json';
 import expeditionStateOffer from './fixtures/expedition-state-offer.json';
 import workshopClaimSupply from './fixtures/workshop-claim-supply.json';
 import workshopStartSupply from './fixtures/workshop-start-supply.json';
-import gearDismantle from './fixtures/gear-dismantle.json';
 import gearEquip from './fixtures/gear-equip.json';
 import gearErrors from './fixtures/gear-errors.json';
 import gearReady from './fixtures/gear-ready.json';
@@ -25,14 +24,17 @@ import gearRequestBodies from './fixtures/gear-request-bodies.json';
 import gearRunning from './fixtures/gear-running.json';
 import gearState from './fixtures/gear-state.json';
 import gearUnequip from './fixtures/gear-unequip.json';
-import gearUpgrade from './fixtures/gear-upgrade.json';
+import gearEquipBest from './fixtures/gear-equip-best.json';
+import gearNotice from './fixtures/gear-notice.json';
+import gearNoticeDismissed from './fixtures/gear-notice-dismissed.json';
 import gearWelcome from './fixtures/gear-welcome.json';
 import workshopClaimCraft from './fixtures/workshop-claim-craft.json';
-import workshopClaimEnchant from './fixtures/workshop-claim-enchant.json';
-import workshopClaimImprove from './fixtures/workshop-claim-improve.json';
+import workshopClaimDismantle from './fixtures/workshop-claim-dismantle.json';
+import workshopPreviewCraft from './fixtures/workshop-preview-craft.json';
+import workshopPreviewDismantle from './fixtures/workshop-preview-dismantle.json';
+import workshopStartDismantle from './fixtures/workshop-start-dismantle.json';
+import workshopClaimRetired from './fixtures/workshop-claim-retired.json';
 import workshopStartCraft from './fixtures/workshop-start-craft.json';
-import workshopStartEnchant from './fixtures/workshop-start-enchant.json';
-import workshopStartImprove from './fixtures/workshop-start-improve.json';
 import dungeonErrors from './fixtures/dungeon-errors.json';
 import dungeonReplay from './fixtures/dungeon-replay.json';
 import dungeonRequestBodies from './fixtures/dungeon-request-bodies.json';
@@ -84,8 +86,17 @@ import { parseDungeonReplay, parseDungeonRun, parseDungeonToday } from './dungeo
 import { buildRunRequest, type Slots } from './dungeon-team';
 import { dungeonErrorText } from './dungeon-text';
 import type { DungeonRunRequest } from './dungeon-types';
-import { claimJob, dismantleGear, equipGear, fetchGear, startJob, upgradeGear } from './gear-api';
-import { parseGearState } from './gear-parse';
+import {
+  claimJob,
+  dismissGearNotice,
+  equipBestGear,
+  equipGear,
+  fetchGear,
+  previewCraft,
+  previewDismantle,
+  startJob,
+} from './gear-api';
+import { parseGearState, parseJobResult } from './gear-parse';
 import type { StartJobRequest } from './gear-types';
 import { errorText } from './game';
 import { autoFireTarget, buildAction } from './live';
@@ -262,33 +273,67 @@ describe('the gear requests the client sends', () => {
     expect(sent()).toEqual(expected('unequip'));
   });
 
-  it('upgrade and dismantle send only the idempotency key', async () => {
-    apiFetch.mockResolvedValue(gearUpgrade);
-    const up = gearRequestBodies.upgrade;
-    await upgradeGear(up.path.split('/')[3] as string, up.body.idempotencyKey);
-    expect(sent()).toEqual(expected('upgrade'));
-
-    apiFetch.mockClear();
-    apiFetch.mockResolvedValue(gearDismantle);
-    const dis = gearRequestBodies.dismantle;
-    await dismantleGear(dis.path.split('/')[3] as string, dis.body.idempotencyKey);
-    expect(sent()).toEqual(expected('dismantle'));
+  it('equip best sends the creature ids', async () => {
+    apiFetch.mockResolvedValue(gearEquipBest);
+    await equipBestGear(gearRequestBodies['equip-best'].body.creatureIds);
+    expect(sent()).toEqual(expected('equip-best'));
   });
 
-  it('a craft, an improve and an enchant each send exactly their fields and a key', async () => {
+  it('dismissing the conversion notice sends an empty object', async () => {
+    apiFetch.mockResolvedValue(gearNoticeDismissed);
+    await dismissGearNotice();
+    expect(sent()).toEqual(expected('notice-dismiss'));
+  });
+
+  it('a craft sends exactly its fields, what it is aimed at and a key', async () => {
     apiFetch.mockResolvedValue(workshopStartCraft);
     await startJob(gearRequestBodies['job-craft'].body as StartJobRequest);
     expect(sent()).toEqual(expected('job-craft'));
-
+    expect(gearRequestBodies['job-craft'].body.reach).toBe('none');
     apiFetch.mockClear();
-    apiFetch.mockResolvedValue(workshopStartImprove);
-    await startJob(gearRequestBodies['job-improve'].body as StartJobRequest);
-    expect(sent()).toEqual(expected('job-improve'));
+    await startJob(gearRequestBodies['job-craft-reach'].body as StartJobRequest);
+    expect(sent()).toEqual(expected('job-craft-reach'));
+    expect(gearRequestBodies['job-craft-reach'].body.reach).toBe('rare');
+  });
 
+  it('a dismantle job sends the creature, the items and a key', async () => {
+    apiFetch.mockResolvedValue(workshopStartDismantle);
+    await startJob(gearRequestBodies['job-dismantle'].body as StartJobRequest);
+    expect(sent()).toEqual(expected('job-dismantle'));
+  });
+
+  it('asks for a preview with the creature and the blueprint or the items, and reads the answer', async () => {
+    apiFetch.mockResolvedValue(workshopPreviewCraft);
+    const craft = gearRequestBodies['preview-craft'].body;
+    const crafted = await previewCraft(craft.creatureId, craft.blueprintId);
+    expect(sent()).toEqual(expected('preview-craft'));
+    // The odds are the server's: this client only carries them.
+    expect(crafted.options.map((o) => o.reach)).toEqual(['none', 'rare', 'epic']);
+    for (const o of crafted.options) {
+      expect(o.oddsBp.common + o.oddsBp.rare + o.oddsBp.epic).toBe(10_000);
+    }
     apiFetch.mockClear();
-    apiFetch.mockResolvedValue(workshopStartEnchant);
-    await startJob(gearRequestBodies['job-enchant'].body as StartJobRequest);
-    expect(sent()).toEqual(expected('job-enchant'));
+    apiFetch.mockResolvedValue(workshopPreviewDismantle);
+    const dis = gearRequestBodies['preview-dismantle'].body;
+    const taken = await previewDismantle(dis.creatureId, dis.itemIds);
+    expect(sent()).toEqual(expected('preview-dismantle'));
+    expect(taken.range.scrap.max).toBeGreaterThan(0);
+    expect(taken.items).toHaveLength(dis.itemIds.length);
+    // A payload that is not the shape the server sends is an error, never a half-drawn screen.
+    apiFetch.mockResolvedValue({ result: { ...workshopPreviewCraft.result, options: [{}] } });
+    await expect(previewCraft('c', 'b')).rejects.toThrow('craft preview');
+    apiFetch.mockResolvedValue({
+      result: {
+        ...workshopPreviewCraft.result,
+        options: workshopPreviewCraft.result.options.map((o) => ({
+          ...o,
+          oddsBp: { common: 1, rare: 0, epic: 0 },
+        })),
+      },
+    });
+    await expect(previewCraft('c', 'b')).rejects.toThrow('craft preview');
+    apiFetch.mockResolvedValue({ result: { ...workshopPreviewDismantle.result, learnBp: 'x' } });
+    await expect(previewDismantle('c', ['i'])).rejects.toThrow('dismantle preview');
   });
 
   it('claiming a job sends the key; claiming an expedition still sends an empty object', async () => {
@@ -317,7 +362,7 @@ describe('the gear responses the server sends', () => {
   });
 
   it('parses every GET /api/gear fixture', () => {
-    for (const fixture of [gearState, gearReady, gearRunning, gearWelcome]) {
+    for (const fixture of [gearState, gearReady, gearRunning, gearWelcome, gearNotice]) {
       const parsed = parseGearState(fixture);
       expect(parsed.slots.total).toBeGreaterThan(0);
       expect(Object.keys(parsed.parts)).toHaveLength(6);
@@ -330,24 +375,26 @@ describe('the gear responses the server sends', () => {
     expect(parseGearState(gearReady).jobs.some((j) => j.status === 'ready')).toBe(true);
   });
 
+  it('reads the one-time conversion notice, and none once it is dismissed', () => {
+    expect(parseGearState(gearNotice).notice?.converted).toBeGreaterThan(0);
+    expect(parseGearState(gearState).notice).toBeNull();
+    expect(parseGearState(gearNoticeDismissed.gear).notice).toBeNull();
+  });
+
   it('parses the result, the gear view and the collection of every action', async () => {
     const calls = [
       [gearEquip, () => equipGear('g', 'c')],
       [gearUnequip, () => equipGear('g', null)],
-      [gearUpgrade, () => upgradeGear('g', 'k')],
-      [gearDismantle, () => dismantleGear('g', 'k')],
+      [gearEquipBest, () => equipBestGear(['c'])],
+      [gearNoticeDismissed, () => dismissGearNotice()],
+      [
+        workshopStartDismantle,
+        () => startJob(gearRequestBodies['job-dismantle'].body as StartJobRequest),
+      ],
+      [workshopClaimDismantle, () => claimJob('j', 'k')],
       [workshopStartCraft, () => startJob(gearRequestBodies['job-craft'].body as StartJobRequest)],
-      [
-        workshopStartImprove,
-        () => startJob(gearRequestBodies['job-improve'].body as StartJobRequest),
-      ],
-      [
-        workshopStartEnchant,
-        () => startJob(gearRequestBodies['job-enchant'].body as StartJobRequest),
-      ],
       [workshopClaimCraft, () => claimJob('j', 'k')],
-      [workshopClaimImprove, () => claimJob('j', 'k')],
-      [workshopClaimEnchant, () => claimJob('j', 'k')],
+      [workshopClaimRetired, () => claimJob('j', 'k')],
     ] as const;
     for (const [fixture, call] of calls) {
       apiFetch.mockResolvedValue(fixture);
@@ -358,29 +405,40 @@ describe('the gear responses the server sends', () => {
     }
   });
 
-  it('reads the claim results of the three kinds of job', async () => {
+  it('reads the claim results of a craft, a dismantle, a supply and a job from before gear v2', async () => {
     apiFetch.mockResolvedValue(workshopClaimCraft);
     expect((await claimJob('j', 'k')).result.kind).toBe('craft');
-    apiFetch.mockResolvedValue(workshopClaimImprove);
-    expect((await claimJob('j', 'k')).result.kind).toBe('improve');
-    apiFetch.mockResolvedValue(workshopClaimEnchant);
-    expect((await claimJob('j', 'k')).result.kind).toBe('enchant');
+    apiFetch.mockResolvedValue(workshopClaimDismantle);
+    const taken = (await claimJob('j', 'k')).result;
+    expect(taken.kind).toBe('dismantle');
+    expect(taken.kind === 'dismantle' ? taken.items.length : 0).toBeGreaterThan(0);
+    apiFetch.mockResolvedValue(workshopClaimSupply);
+    expect((await claimJob('j', 'k')).result.kind).toBe('supply');
+    apiFetch.mockResolvedValue(workshopClaimRetired);
+    expect((await claimJob('j', 'k')).result.kind).toBe('retired');
   });
 
   it('refuses a payload that is not the shape the server sends', async () => {
     expect(() => parseGearState({ ...gearState, parts: { scrap: 1 } })).toThrow();
-    expect(() => parseGearState({ ...gearState, items: [{ id: 'x' }] })).toThrow();
-    apiFetch.mockResolvedValue({ ...gearUpgrade, result: { gearId: 5 } });
-    await expect(upgradeGear('g', 'k')).rejects.toThrow('upgrade result');
+    // An item that is not the shape is left out (and logged), the view as a whole is still read.
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    expect(parseGearState({ ...gearState, items: [{ id: 'x' }] }).items).toEqual([]);
+    quiet.mockRestore();
+    expect(() => parseGearState({ ...gearState, items: 'x' })).toThrow();
+    apiFetch.mockResolvedValue({
+      ...workshopClaimDismantle,
+      result: { kind: 'dismantle', items: 5 },
+    });
+    await expect(claimJob('j', 'k')).rejects.toThrow('job result');
     apiFetch.mockResolvedValue({ result: {}, gear: gearState });
-    await expect(upgradeGear('g', 'k')).rejects.toThrow();
+    await expect(claimJob('j', 'k')).rejects.toThrow();
   });
 
   it('puts gear, statsWithGear and busy on every creature of the collection', () => {
     const game = parseGameState(collectionState);
     // The attention block of GET /api/state (the tab pips).
     expect(game.attention).toEqual(collectionState.attention);
-    expect(game.creatures.some((c) => c.gear !== null)).toBe(true);
+    expect(game.creatures.some((c) => c.gear.length > 0)).toBe(true);
     expect(game.creatures.some((c) => c.busy?.kind === 'job')).toBe(true);
     for (const c of game.creatures) {
       expect(c.statsWithGear.atk).toBeGreaterThanOrEqual(c.stats.atk);
@@ -435,22 +493,27 @@ describe('the gear errors the server sends', () => {
       'inventory_full',
       'item_busy',
       'not_ready',
-      'max_level',
-      'same_enchant',
+      'wrong_role',
+      'slot_locked',
+      'item_level_too_high',
+      'gear_upgrade_removed',
       'blueprint_unknown',
-      'nothing_to_improve',
-      'invalid_secondary',
       'invalid_blueprint',
-      'invalid_enchant',
       'item_gone',
     ]) {
       expect(errorText(new ApiError(409, code)), code).not.toMatch(GENERIC);
     }
   });
 
-  it('names Essence when an upgrade is refused for money', () => {
-    expect(errorText(new ApiError(409, 'insufficient_funds'), 'Essence')).toBe(
-      'Not enough Essence.',
+  it('says what the wear rule needs, from the reason the server gives', () => {
+    expect(errorText(new ApiError(409, 'slot_locked', '13'))).toBe(
+      'That slot opens at creature level 13.',
+    );
+    expect(errorText(new ApiError(409, 'item_level_too_high', '16'))).toBe(
+      'That item needs creature level 16.',
+    );
+    expect(errorText(new ApiError(409, 'wrong_role', 'guard'))).toBe(
+      'Only a Guard can wear that Charm.',
     );
   });
 
@@ -732,7 +795,7 @@ describe('the expedition requests the client sends', () => {
       expect(done.state.expeditions.length).toBeGreaterThan(0);
     }
     const loot = parseClaimResponse(expeditionClaimLoot);
-    expect(loot.result.loot?.supplies).toEqual(['lure-basic']);
+    expect(loot.result.loot?.supplies).toEqual(['map-scrap-basic']);
     expect(loot.result.xp).toMatchObject({ gained: 300, rank: 2, rankBefore: 1 });
     expect(loot.result.familiarity?.trips).toBe(1);
     const failed = parseClaimResponse(expeditionClaimFailed);
@@ -885,6 +948,7 @@ describe('the expedition errors the server sends', () => {
       'invalid_destination',
       'invalid_supply',
       'skill_too_low',
+      'base_locked',
       'creature_on_job',
     ]) {
       expect(errorText(new ApiError(409, code)), code).not.toMatch(GENERIC);
@@ -935,14 +999,18 @@ describe('supply crafts in the Workshop', () => {
     expect(claimed.state.supplies).toEqual({ 'lure-basic': 1, 'lure-great': 1 });
   });
 
-  it('refuses a supply result without a supply', () => {
+  it('leaves out a job whose supply result has no supply, and keeps the rest', () => {
     const broken = structuredClone(workshopClaimSupply.gear) as unknown as {
       jobs: { result: unknown }[];
     };
     const job = broken.jobs[0];
     if (job === undefined) throw new Error('the fixture has no job');
     job.result = { kind: 'supply', xp: 1, skillXp: 1, skillLevel: 1, leveledUp: false };
-    expect(() => parseGearState(broken)).toThrow('gear view');
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    expect(parseGearState(broken).jobs).toHaveLength(broken.jobs.length - 1);
+    quiet.mockRestore();
+    // A job result that is read on its own (the claim answer) is still refused.
+    expect(() => parseJobResult(job.result)).toThrow('job result');
   });
 });
 

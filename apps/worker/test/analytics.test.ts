@@ -7,11 +7,12 @@ import {
   RARITIES,
   RULES,
   content,
+  craftLevelNeeded,
   createSeededRng,
   dungeonContent,
   expeditionContent,
   gearContent,
-  rollGear,
+  talentContent,
   type Rng,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
@@ -30,7 +31,8 @@ import {
 import { enqueuePost, recordOutcome, type PostSender } from '../src/discord-posts';
 import { getSessionKey } from '../src/session';
 import { grantFestivalCreature } from '../src/raid-festival';
-import { creditParts, insertItem } from '../src/gear-store';
+import { creditParts } from '../src/gear-store';
+import { giveItem } from './gear-helpers';
 import { GEAR_SOURCES } from '../src/analytics';
 import { LIVE_ROUND_MS, evaluate, loadLive, roundStartsOf } from '../src/raid-live';
 import { eventTimes } from '../src/raid-schedule';
@@ -63,7 +65,8 @@ const DAY = 86_400_000;
 const USER = { id: USER_ID, displayName: 'Misa the Mighty' };
 const OTHER = { id: OTHER_USER_ID, displayName: 'Other Person' };
 const FINALE = eventTimes(W02.id, HELSINKI).finale;
-const BELOW_UNLOCK = RULES.abilities.unlockLevel - 1;
+// Well below, so the experience of the two raid stages before the finale does not carry a creature to the unlock.
+const BELOW_UNLOCK = RULES.abilities.unlockLevel - 4;
 
 interface EventRow {
   id: number;
@@ -110,9 +113,12 @@ function scriptedRng(values: number[]): Rng {
     },
   };
 }
-/** Draws for one catch of a common splashet that is not shiny, and the same shiny. */
-const SPLASHET_PLAIN = [0, 0, 1];
-const SPLASHET_SHINY = [0, 0, 0];
+/**
+ * Draws for one catch of a common splashet that is not shiny, and the same shiny: whether the roll
+ * brings a creature at all (0: it does), the rarity, the species and the shiny.
+ */
+const SPLASHET_PLAIN = [0, 0, 0, 1];
+const SPLASHET_SHINY = [0, 0, 0, 0];
 
 type Json = Record<string, unknown>;
 
@@ -311,7 +317,7 @@ describe('the event writer', () => {
         { species: 'unknown', role: 'setter' },
         { species: 'sproutle', role: 'guard' },
       ],
-      gear: 3,
+      gear: 9,
     });
     expect(
       propsOf({
@@ -635,7 +641,7 @@ describe('collection events', () => {
     });
   });
 
-  it('logs a claim with its catches, and a fuse event for the duplicate, once', async () => {
+  it('logs a claim with its catches and their talents, and a talent roll for the duplicate, once', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -646,6 +652,7 @@ describe('collection events', () => {
         const exp = expeditionOf(await send(ctx, secret, starterId));
         ctx.clock.t = exp.endsAt + 90 * MINUTE;
         secret = await signIn(ctx, USER);
+        const rollsBefore = events(ctx.sql, 'talent_roll').length;
         const res = await call(ctx, secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
         expect(res.status).toBe(200);
         expect(events(ctx.sql, 'expedition_claim')).toMatchObject([
@@ -655,7 +662,9 @@ describe('collection events', () => {
               destination: 'tidepools',
               supplies: [],
               waitedMin: 90,
-              catches: [{ species: 'splashet', rarity: 'common', shiny: true, result: 'fused' }],
+              catches: [
+                { species: 'splashet', rarity: 'common', shiny: true, result: 'duplicate' },
+              ],
               pushOn: 'none',
               xp: RULES.expeditions.lengths.short.xp,
               // The scripted catch is a shiny: a star on its own.
@@ -663,23 +672,24 @@ describe('collection events', () => {
             },
           },
         ]);
-        expect(events(ctx.sql, 'fuse')).toMatchObject([
-          {
-            props: {
-              species: 'splashet',
-              rarity: 'common',
-              converted: false,
-              fusionCount: 1,
-              bait: 0,
-            },
-          },
-        ]);
+        const claimed = events(ctx.sql, 'expedition_claim')[0]?.props as {
+          catches: { talent: string; golden: boolean }[];
+        };
+        const rolls = events(ctx.sql, 'talent_roll');
+        expect(rolls).toHaveLength(rollsBefore + 1);
+        expect(rolls.at(-1)?.props).toMatchObject({
+          species: 'splashet',
+          talent: claimed.catches[0]?.talent,
+          golden: claimed.catches[0]?.golden,
+        });
+        // The duplicate waits: nothing fused, so there is no fuse event yet.
+        expect(events(ctx.sql, 'fuse')).toEqual([]);
         expect(events(ctx.sql, 'expedition_recall')).toEqual([]);
         // Claiming again returns the stored result and logs nothing more.
         const again = await call(ctx, secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
         expect(again.body['result']).toEqual(res.body['result']);
         expect(events(ctx.sql, 'expedition_claim')).toHaveLength(1);
-        expect(events(ctx.sql, 'fuse')).toHaveLength(1);
+        expect(events(ctx.sql, 'talent_roll')).toHaveLength(rollsBefore + 1);
         // An unknown expedition is refused and logs nothing.
         const missing = await call(
           ctx,
@@ -695,7 +705,7 @@ describe('collection events', () => {
     );
   });
 
-  it('logs a fusion that pays Bait as a converted fuse', async () => {
+  it('logs the answer to a duplicate as a choice, and a fusion as a fuse, once', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -703,19 +713,37 @@ describe('collection events', () => {
         const { starterId } = joined;
         let secret = joined.secret;
         ctx.sql.exec('UPDATE player_progress SET expeditions_claimed = 1');
-        ctx.sql.exec('UPDATE creatures SET fusion_count = 5');
         const exp = expeditionOf(await send(ctx, secret, starterId));
         ctx.clock.t = exp.endsAt;
         secret = await signIn(ctx, USER);
-        await call(ctx, secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
-        const [fuse] = events(ctx.sql, 'fuse');
+        const claimed = await call(ctx, secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
+        const card = (claimed.body['state'] as { pending: { id: string }[] }).pending[0];
+        const key = newKey();
+        const choose = () =>
+          call(ctx, secret, 'POST', `/api/catches/${card?.id ?? ''}/choose`, {
+            choice: 'fuse',
+            creatureId: starterId,
+            idempotencyKey: key,
+          });
+        expect((await choose()).status).toBe(200);
+        expect(events(ctx.sql, 'fuse')).toMatchObject([
+          {
+            props: {
+              species: 'splashet',
+              rarity: 'common',
+              converted: false,
+              fusionCount: 1,
+              bait: 0,
+            },
+          },
+        ]);
+        expect(events(ctx.sql, 'duplicate_choice')).toMatchObject([
+          { props: { choice: 'fuse', auto: false, species: 'splashet', rarity: 'common' } },
+        ]);
+        // A retry with the same key returns the stored answer and logs nothing more.
+        expect((await choose()).status).toBe(200);
         expect(events(ctx.sql, 'fuse')).toHaveLength(1);
-        expect(fuse?.props).toMatchObject({ converted: true, fusionCount: 5 });
-        expect(fuse?.props['bait']).toBeGreaterThan(0);
-        expect(events(ctx.sql, 'expedition_claim')[0]?.props).toMatchObject({
-          waitedMin: 0,
-          catches: [{ result: 'converted' }],
-        });
+        expect(events(ctx.sql, 'duplicate_choice')).toHaveLength(1);
       },
       { rng: scriptedRng(SPLASHET_PLAIN) },
     );
@@ -763,34 +791,6 @@ describe('collection events', () => {
         ),
       },
     );
-  });
-
-  it('logs a training once per paid level and nothing for a retry or a refusal', async () => {
-    await runCore(nextGuild(), async (ctx) => {
-      const { secret, starterId } = await joinWithStarter(ctx, USER, 100);
-      const key = newKey();
-      const train = (k: string, id = starterId) =>
-        call(ctx, secret, 'POST', `/api/creatures/${id}/train`, { idempotencyKey: k });
-      expect((await train(key)).status).toBe(200);
-      expect(events(ctx.sql, 'train')).toMatchObject([
-        {
-          props: {
-            species: 'splashet',
-            level: 2,
-            cost: RULES.training.baseCost + RULES.training.perLevel,
-          },
-        },
-      ]);
-      expect((await train(key)).status).toBe(200); // retry: replayed
-      expect(events(ctx.sql, 'train')).toHaveLength(1);
-      // Someone else's creature, and a broke player.
-      expect((await train(newKey(), '00000000-0000-4000-8000-000000000000')).status).toBe(404);
-      ctx.sql.exec("UPDATE balances SET amount = 0 WHERE currency = 'bait'");
-      expect((await train(newKey())).status).toBe(409);
-      expect(events(ctx.sql, 'train')).toHaveLength(1);
-      expect((await train(newKey())).status).toBe(409);
-      expect(events(ctx.sql, 'train')).toHaveLength(1);
-    });
   });
 
   it('logs an evolution once and nothing for a retry or a refusal', async () => {
@@ -1107,7 +1107,7 @@ describe('live finale events', () => {
       const grant = () =>
         grantFestivalCreature(
           ctx.storage,
-          createSeededRng('festival'),
+          { quirk: createSeededRng('festival'), talent: createSeededRng('festival-talent') },
           W02.id,
           p.id,
           species.id,
@@ -1291,8 +1291,13 @@ function vocabulary(): Set<string> {
     'worked',
     'declined',
     'new',
+    'duplicate',
     'fused',
     'converted',
+    'teach',
+    'fuse',
+    'release',
+    'keep',
     'place',
     'unplace',
     'creature',
@@ -1321,13 +1326,17 @@ function vocabulary(): Set<string> {
     ...GEAR_SOURCES,
     'equip',
     'unequip',
+    'hat',
+    'scarf',
+    'charm',
     ...gearContent.bases.map((b) => b.id),
     ...expeditionContent.destinations.map((d) => d.id),
     ...expeditionContent.supplies.map((s) => s.id),
     ...expeditionContent.goals.map((g) => g.id),
     ...expeditionContent.journal.entries.map((e) => e.id),
     ...expeditionContent.journal.sets.map((s) => s.id),
-    ...gearContent.enchants.map((e) => e.id),
+    ...gearContent.lines.map((l) => l.id),
+    ...talentContent.byId.keys(),
     ...content.creatures.map((c) => c.id),
     ...content.bosses.map((b) => b.id),
     ...content.finaleAbilities.map((a) => a.id),
@@ -1336,6 +1345,16 @@ function vocabulary(): Set<string> {
     'payoff',
     'support',
     'guard',
+    // Where experience came from, the ribbons and the pity kinds (Creatures B).
+    'trip',
+    'dungeon',
+    'raid',
+    'job',
+    'ribbon',
+    'evolve',
+    'bronze',
+    'silver',
+    'gold',
   ]);
 }
 
@@ -1427,8 +1446,7 @@ describe('privacy', () => {
         await call(ctx, a.secret, 'POST', `/api/expeditions/${v2.id}/claim`, {});
         await call(ctx, a.secret, 'GET', '/api/profile');
         await call(ctx, a.secret, 'GET', '/api/destinations');
-        // Gear and the workshop: the welcome kit, equip, upgrade, a craft, an improve, an enchant and
-        // a dismantle. Every one of them is logged with content ids and numbers only.
+        // Gear and the workshop: the welcome kit, equip, a craft and a dismantle job. Every one of them is logged with content ids and numbers only.
         const kit = (await call(ctx, a.secret, 'GET', '/api/gear')).body as {
           items: { id: string }[];
         };
@@ -1436,22 +1454,19 @@ describe('privacy', () => {
         await call(ctx, a.secret, 'POST', `/api/gear/${kitItem}/equip`, {
           creatureId: a.starterId,
         });
-        ctx.core.credit({
-          userId: USER_ID,
-          currency: 'essence',
-          amount: 100,
-          source: 'test',
-          idempotencyKey: 'privacy-essence',
-        });
-        await call(ctx, a.secret, 'POST', `/api/gear/${kitItem}/upgrade`, {
-          idempotencyKey: newKey(),
-        });
+        // A base this Crafting level can make (a better base needs a higher level).
         const blueprint = rows<{ base_id: string }>(
           ctx.sql,
-          'SELECT base_id FROM blueprints WHERE user_id = ?',
+          'SELECT base_id FROM blueprints WHERE user_id = ? ORDER BY base_id',
           USER_ID,
-        )[0]?.base_id as string;
-        creditParts(ctx.sql, USER_ID, { scrap: 30 });
+        ).find((r) => craftLevelNeeded(r.base_id) === 1)?.base_id as string;
+        creditParts(ctx.sql, USER_ID, {
+          scrap: 30,
+          'tide-shard': 2,
+          'ember-shard': 2,
+          'grove-shard': 2,
+          'spark-shard': 2,
+        });
         const crafting = await call(ctx, a.secret, 'POST', '/api/workshop/jobs', {
           kind: 'craft',
           creatureId: a.starterId,
@@ -1466,38 +1481,25 @@ describe('privacy', () => {
           idempotencyKey: newKey(),
         });
         expect(done.status).toBe(200);
-        const rare = insertItem(
-          ctx.sql,
-          USER_ID,
-          {
-            baseId: 'volt-band',
-            rarity: 'rare',
-            rolls: rollGear(createSeededRng('p'), 'volt-band', 'rare'),
-          },
-          'test',
-          ctx.clock.t,
-        );
-        creditParts(ctx.sql, USER_ID, { scrap: 20, glimmer: 2, 'spark-shard': 6 });
-        for (const body of [
-          { kind: 'improve', gearId: rare, secondaryIndex: 0 },
-          { kind: 'enchant', gearId: rare, enchantId: 'spark-luck' },
-        ]) {
-          const started = await call(ctx, a.secret, 'POST', '/api/workshop/jobs', {
-            ...body,
-            creatureId: a.starterId,
-            idempotencyKey: newKey(),
-          });
-          expect(started.status).toBe(200);
-          ctx.clock.t += 7 * HOUR;
-          a.secret = await ctx.core.createSession(ctx.guildId, USER, '555555555555555555');
-          const id = (started.body['result'] as { jobId: string }).jobId;
-          await call(ctx, a.secret, 'POST', `/api/workshop/jobs/${id}/claim`, {
-            idempotencyKey: newKey(),
-          });
-        }
-        await call(ctx, a.secret, 'POST', `/api/gear/${rare}/dismantle`, {
+        const rare = giveItem(ctx.sql, USER_ID, 'thundercap', {
+          rarity: 'rare',
+          level: 4,
+          now: ctx.clock.t,
+        });
+        const taking = await call(ctx, a.secret, 'POST', '/api/workshop/jobs', {
+          kind: 'dismantle',
+          creatureId: a.starterId,
+          itemIds: [rare],
           idempotencyKey: newKey(),
         });
+        expect(taking.status).toBe(200);
+        ctx.clock.t += 2 * HOUR;
+        a.secret = await ctx.core.createSession(ctx.guildId, USER, '555555555555555555');
+        const takenJob = (taking.body['result'] as { jobId: string }).jobId;
+        const taken = await call(ctx, a.secret, 'POST', `/api/workshop/jobs/${takenJob}/claim`, {
+          idempotencyKey: newKey(),
+        });
+        expect(taken.status).toBe(200);
         // The daily dungeon: a player with a team of three runs it (with a nickname on one creature).
         const diver = seedPlayer(ctx, 3, { name: 'Diver Dana', level: 8 });
         const diverSecret = await ctx.core.createSession(ctx.guildId, {
@@ -1553,14 +1555,13 @@ describe('privacy', () => {
           'push_on_offer',
           'push_on_choose',
           'push_on_result',
-          'train',
+          'creature_exp',
           'placement',
           'autofire_toggle',
           'ability_pick',
           'phase_result',
           'gear_drop',
           'gear_equip',
-          'gear_upgrade',
           'gear_dismantle',
           'job_start',
           'job_claim',

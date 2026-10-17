@@ -16,6 +16,11 @@ import { IdempotencyKeySchema } from './schemas';
  */
 export const RunBodySchema = v.strictObject({
   team: v.pipe(v.array(IdSchema), v.length(RULES.dungeon.teamSize)),
+  /**
+   * The creatures of the team that get a treat (Bait, paid with the run): they earn double experience.
+   * Each is a creature of `team`, once; the server checks that. Absent: no treats.
+   */
+  treats: v.optional(v.pipe(v.array(IdSchema), v.maxLength(RULES.dungeon.teamSize)), []),
   idempotencyKey: IdempotencyKeySchema,
 });
 export type RunBody = v.InferOutput<typeof RunBodySchema>;

@@ -34,6 +34,8 @@ import { showFullResults } from './raid-timeline';
 import { RaidNews } from './RaidNews';
 import { Placement } from './Placement';
 import { toPickerCreature } from './roster-picker';
+import type { Forecast } from './weather-types';
+import { Accordion } from './ui/Accordion';
 
 interface Loaded {
   view: RaidView;
@@ -46,11 +48,14 @@ const REFRESH_GRACE_MS = 3000;
 
 export function Raid({
   creatures,
+  forecast,
   showPractice,
   onBalanceChange,
   onNeedsPlacementChange,
 }: {
   creatures: Creature[];
+  /** The valley's sky for today and tomorrow, for the one line on the boss card (null: none loaded). */
+  forecast: Forecast | null;
   /** True on staging and local runs, where the server can start a practice finale. */
   showPractice: boolean;
   /** Called when the Essence balance may have changed (a finale reveal was seen). */
@@ -290,15 +295,14 @@ export function Raid({
         }}
       />
       {showPractice && !practiceGone && (
-        <details class="practice">
-          <summary>Testing tools</summary>
+        <Accordion title="Testing tools" class="practice">
           <p class="muted">Practice fights only exist on the test server and give no rewards.</p>
           <button type="button" disabled={busy} onClick={startPracticeFight}>
             Start practice fight
           </button>
-        </details>
+        </Accordion>
       )}
-      <BossCard view={view} />
+      <BossCard view={view} forecast={forecast} />
       {party !== null && (
         <Placement
           party={party}

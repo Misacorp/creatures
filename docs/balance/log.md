@@ -519,3 +519,352 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
   - **Shards are the next limit on the higher tiers**: a min-maxer holds 1 shard from week 12 (main 112) because crafting good supplies spends them all, and great supplies are about one in twenty of what is crafted. More shard income if great supplies should be common.
   - **The raid is a little easier than the curve intends in weeks 4 to 12.** Misa's call whether to retune (the curve is live). A tested fix: ranks 2 to 5 HP +5% and Attack +15%, ranks 6 to 15 HP 0% to +4% and Attack +8% to +12%: every `curve-*`, `raid-finale-typical`, `raid-ko-share` and `choice-creature-min` target inside its limit on three seeds, but `longrun-loss-streak` then fails on most seeds (15% to 27% against 10%), so the loss-streak target would need re-basing as well.
   - Watch live: supplies per run (`dungeon_reward.supplies`), crafted supplies (`job_claim`) and the stock of regular players (the sim has them at 2 to 3).
+
+### B-012: Gear A: Hat, Scarf and Charm with item levels and tiered lines (open)
+
+- **Opened:** 2026-10-16, build step 2 of `docs/design/gear-and-creatures-v2.md` (section 14); the targets are section 4 ("Gear's share of power over the journey").
+- **Finding.** Before Gear A, gear was a +5 ladder: the stat-power share of a daily player's raid team was 12.6% at week 8 and stopped growing at week 12 to 18 (the design's "13% at the plateau"). The design wants gear to be the main growth once creature growth slows: 5 to 10% at week 2 and 33 to 40% from week 30 for a committed player, less for the others.
+- **Method.** `pnpm sim` (full) on seeds `leet` and `leet2`, and the same on the branch before Gear A (3387b71, "base") with the same seeds. The new gear study (`packages/sim/src/gear-study.ts`): 20 servers of the default journey mix (1 min-maxer, 3 engaged, 3 regular, 2 drop-in) for 30 weeks; the share is `1 - bare / full`, where `full` is the fight-scored power (`fight-power.ts`) of the three strongest creatures and `bare` the same three with their gear taken off; the median of a profile's players at the end of the week. The sim's policy: Equip best (the game's `planEquipBest`) for the three strongest creatures, dismantle everything unworn except the 3 best spares, a supply when fewer than 4 are in stock, else the craft whose plain item adds most to a team creature; drops, item levels and the trip and Workshop lines as the worker has them (`GEAR_POLICY` in `packages/sim/src/gear.ts`).
+- **What shipped (starting values, `RULES.gear` and the content files).** Items of three slots with 22 bases and about 40 lines (more with the per-element ones); tier bands by item level (I at 1, II at 5, III at 10, IV at 15, V at 20) with roll weights 15 / 30 / 30 / 25 counted down from the best tier; item level by source (finale `3 + Boss Rank`, Festival `5 + Boss Rank`, dungeon by depth, trips twice the explorer rank, crafts twice the Crafting level); the wear rule (Hat 1, Scarf 7, Charm 13, item level at most the creature's level). Upgrades, Improve and enchants are gone. See `decisions.md` 2026-10-16 (Gear A built).
+- **Outcome (sim): gear's share of fight-scored power against the targets.** Seed `leet`, medians; the target range in brackets.
+
+  | Profile   | Week 2         | Week 8           | Week 20          | Week 30          |
+  | --------- | -------------- | ---------------- | ---------------- | ---------------- |
+  | Min-maxer | 6.0% (5 to 10) | 12.3% (15 to 22) | 22.9% (25 to 32) | 25.5% (33 to 40) |
+  | Engaged   | 4.7% (5 to 10) | 9.9% (15 to 22)  | 15.1% (25 to 32) | 18.8% (33 to 40) |
+  | Regular   | 1.6% (3 to 6)  | 6.2% (10 to 15)  | 10.4% (18 to 24) | 13.9% (28 to 34) |
+  | Drop-in   | 1.0% (0 to 3)  | 4.1% (5 to 8)    | 6.7% (10 to 15)  | 9.8% (15 to 20)  |
+
+  Seed `leet2` is within a point of every cell (min-maxer 4.9, 11.8, 22.5 and 25.1%; engaged 4.3, 9.8, 14.9 and 18.6%; regular 1.6, 6.2, 11.1 and 13.4%; drop-in 0.9, 3.1, 7.4 and 10.7%). **14 of the 16 targets fail on `leet` and 15 on `leet2`**: only the week 2 cells of the min-maxer (on `leet`) and the drop-in pass. Every profile is on the right shape (the share grows from week 2 to week 30 and the profiles keep their order), but short of the design by a third at the plateau (a min-maxer 25% against 33 to 40%, a regular 14% against 28 to 34%). Not tuned: these are the first numbers of the rules as designed.
+
+- **Reading.**
+  - The shortfall follows from item levels. A finale piece is `3 + Boss Rank`, so a server that climbs the rank ladder slowly gets pieces of item level 12 to 14: tier III at best (tier IV needs item level 15, V needs 20). What the players wear at week 30 (looked at for the min-maxer and three others) is mostly Rare pieces of item level 12 to 20 with tier II to III lines; the min-maxer wears a few tier IV and V lines (a tier V Attack on a level 20 Hat, a tier V Payoff's pounce).
+  - Crafting adds little yet: a craft is Common at item level twice the Crafting level, and the Reach, the dismantle ranges and the well-thumbed marks of the crafting loop (Gear B) are what make crafting a way to reach good items. The design's plateau ("tier V lines and better-fitting items") assumes both.
+  - The old stat-power share is 7.9% at week 8 (it was 12.6%): most of the new lines are conditional (Hunter, Ward, Reaction, position lines) and show up in fights, not in Attack plus HP. That is why the target moved to the fight-scored share.
+  - Not measured: the three side conditions of section 4 (gear gives at least 70% of a committed player's further raid power growth once the trio is level 30; an upgrade worth at least 2% of team power every two weeks up to week 30; nobody completes a perfect set in 30 weeks). The share table above is the main evidence for them; they need a per-item study.
+- **Outcome (sim): the other targets and the raid drift (report only).** 78 targets: 61 pass on `leet` (base: 62 of 66) and 59 on `leet2` (base 64 of 66); 14 or 15 of the failures are the gear share. Without them, the others, with the value on base:
+
+  | Target                            | base `leet` | Gear A `leet` | base `leet2` | Gear A `leet2` |
+  | --------------------------------- | ----------- | ------------- | ------------ | -------------- |
+  | `raid-finale-typical` (85 to 97%) | 97.5%       | 96.9%         | 97.0%        | 98.3%          |
+  | `raid-ko-share` (10 to 30%)       | 7.1%        | 6.8%          | 7.5%         | 6.1%           |
+  | `curve-r2to5-default` (70 to 85%) | 86.3%       | 88.9%         | 85.3%        | 85.0%          |
+  | `curve-r6up-default` (45 to 65%)  | 61.8%       | 59.7%         | 56.9%        | 68.8%          |
+  | `choice-creature-min` (>= 0.60x)  | 0.598x      | 0.623x        | 0.610x       | 0.619x         |
+  | `exp-casual-discovery` (<= 0.45)  | 0.36        | 0.52          | 0.42         | 0.59           |
+  | `gear-first-craft` (<= 7 days)    | 1.4         | 1.4           | 1.4          | 1.4            |
+  | `gear-newcomer-catchup` (>= 60%)  | 70%         | 92%           | 78%          | 83%            |
+
+  The raid targets already failed on base (`raid-ko-share` and `curve-r2to5-default` on both seeds) and move by one to three points in either direction; the raid is a little easier from the gear (`curve-r6up-default` 68.8% on `leet2`, a fail; 59.7% on `leet`, a pass) and the expected retune comes with the raid and dungeon rebalance (build step 8), as the design says. `exp-casual-discovery` (casual players own up to 0.5 species more than today's expeditions give; the target's own noise is about half a species) crossed its limit on both seeds in the runs with the neutral welcome blueprint (0.38 on `leet` in the run before that change, 0.52 after it): the casual species counts differ by 0.1 to 0.2 species at weeks 9 to 12, which is the measure's noise, but I did not find a cause. No retune was made.
+
+- **Action.**
+  - The welcome kit's blueprint is now always a neutral piece (a Hat, Scarf or Charm, evenly), which costs scrap only: with a random one, about half of the new players needed a shard before their first craft and `gear-first-craft` read 9.8 days (limit 7); with it 1.4.
+  - Targets: 16 added (`gear-share-<profile>-week<N>`); retired `gear-share-week8` (stat-power share), `gear-essence-week12` and `gear-essence-growth` (gear no longer sinks Essence: the Essence a player holds is now whatever evolution leaves, until the Reach and the dungeon's choice rooms use it) and `supplies-minmaxer-gear` (upgrade levels no longer exist). The legacy digest was re-pinned; the scalar files were regenerated.
+- **Expected.** The gear share grows with the crafting loop (Gear B) and with higher Boss Ranks; revisit the numbers (item level by source, tier weights) with the raid and dungeon rebalance rather than before it.
+- **Follow-ups.**
+  - Gear B, then rerun the gear study: the Reach (a crafter can aim for a higher tier) and the dismantle ranges are the missing source of good items; expect the committed profiles to move most.
+  - Decide whether the finale item level should follow the rank faster (`RULES.gear.itemLevel.finale.base`), or the tier bands move down, once the raid curve is retuned: at ranks 9 to 11 the finale cannot give tier IV.
+  - A per-item study for the three side conditions of section 4 (growth share after level 30, upgrade cadence, perfect set).
+  - `Growing` (creature experience from every activity) is not in the first gear release: it needs training by activity (Creatures B).
+
+### B-013: Gear B: Reach, dismantle jobs and well-thumbed marks (open)
+
+- **Opened:** 2026-10-16, build step 3 of `docs/design/gear-and-creatures-v2.md` (section 14); the targets are section 4. It reruns the Gear A gear share study (B-012) with the crafting loop in.
+- **What shipped (starting values, `RULES.gear.craft` and `RULES.gear.dismantle`).** Reach for Rare (Crafting level 3, 25 Essence, 1 more shard, 6 hours: Rare 60%, Common 40%) and Reach for Epic (level 6, 70 Essence, 2 more shards, 1 glimmer, 10 hours: Epic 30%, Rare 55%, Common 15%); the one-step-up chance (1 point per Crafting level above 1, 1 per well-thumbed mark, at most 10 marks); dismantle as a Workshop job (Commons in bundles of 5 in 15 minutes, a Rare 1 hour, an Epic 2 hours; refund ranges with Essence, 1 scrap more at each end per 5 item levels, independent of the worker; 6% and 1 point per Crafting level to learn the blueprint or add a mark); repeat blueprint finds add marks. See `decisions.md` 2026-10-16 (Gear B built).
+- **Method.** The gear study of B-012 unchanged (`packages/sim/src/gear-study.ts`: 20 servers of the default mix, 30 weeks, median `1 - bare / full` of fight-scored power per profile), seeds `leet:gear` and `leet2:gear`, and the same on Gear A (B-012) for the "before" column. The sim's workshop policy now aims each craft with the biggest Reach the creature's level, the parts and the Essence above 40 (kept for evolutions) allow, and takes spare items apart in dismantle jobs (first job of a check-in crafts, the second dismantles: a bundle of up to 5 Commons once 3 wait, or an Epic, Festival or Rare piece alone), instead of dismantling instantly. Per-profile counters from 6 servers of `leet:gear`.
+- **Outcome (sim): gear's share of fight-scored power, before (Gear A) and after (Gear B), against the targets.** Seed `leet`, medians; the target range in brackets.
+
+  | Profile   | Week 2               | Week 8                  | Week 20                 | Week 30                 |
+  | --------- | -------------------- | ----------------------- | ----------------------- | ----------------------- |
+  | Min-maxer | 6.0 → 5.1% (5 to 10) | 12.3 → 11.9% (15 to 22) | 22.9 → 25.7% (25 to 32) | 25.5 → 28.1% (33 to 40) |
+  | Engaged   | 4.7 → 4.9% (5 to 10) | 9.9 → 10.1% (15 to 22)  | 15.1 → 15.3% (25 to 32) | 18.8 → 18.1% (33 to 40) |
+  | Regular   | 1.6 → 1.1% (3 to 6)  | 6.2 → 6.1% (10 to 15)   | 10.4 → 10.1% (18 to 24) | 13.9 → 13.4% (28 to 34) |
+  | Drop-in   | 1.0 → 1.2% (0 to 3)  | 4.1 → 3.2% (5 to 8)     | 6.7 → 8.1% (10 to 15)   | 9.8 → 10.6% (15 to 20)  |
+
+  Seed `leet2` (Gear A → Gear B): min-maxer 4.9 → 4.5, 11.8 → 12.7, 22.5 → 26.2, 25.1 → 27.9%; engaged 4.3 → 4.2, 9.8 → 9.9, 14.9 → 15.6, 18.6 → 18.9%; regular 1.6 → 1.3, 6.2 → 6.3, 11.1 → 10.9, 13.4 → 13.0%; drop-in 0.9 → 0.9, 3.1 → 3.4, 7.4 → 7.2, 10.7 → 9.7%. **3 of the 16 targets pass on `leet` (before: 2) and 2 on `leet2` (before: 1)**: the min-maxer's week 20, the drop-in's and (on `leet`) the min-maxer's week 2. Only the committed profiles move, and only from week 20: a min-maxer gains about 3 points at weeks 20 and 30 on both seeds; the others stay within a point or two (noise). Not tuned: these are the numbers of the rules as designed.
+
+- **Per player over 30 weeks (6 servers of `leet:gear`).**
+
+  | Profile   | Crafts | Reaches (of them Epic) | Items dismantled | Essence from dismantling | Essence unspent at week 30 | Crafting level |
+  | --------- | ------ | ---------------------- | ---------------- | ------------------------ | -------------------------- | -------------- |
+  | Min-maxer | 1,089  | 17.0 (1.0)             | 1,159            | 1,521                    | 3,388                      | 10             |
+  | Engaged   | 37     | 10.3 (3.0)             | 80               | 286                      | 2,073                      | 10             |
+  | Regular   | 8      | 1.9 (0.0)              | 4                | 5                        | 1,560                      | 3              |
+  | Drop-in   | 0      | 0                      | 0                | 0                        | 908                        | 1              |
+
+- **Reading.**
+  - **The Reach is barely used.** A min-maxer reaches 17 times in 30 weeks (one Epic), an engaged player 10: shards and glimmer limit it, not Essence (every profile ends with far more Essence than it spends: 3,388 for a min-maxer, 908 even for a drop-in). A Reach costs one or two shards more than a plain craft, and plain crafts, supplies and the earlier Reaches eat the same shards. So "spare Essence's main sink" does not yet sink much: at these numbers Essence is not scarce and the shard is the real price. The design's own estimate (about one Reach for Epic and one for Rare a week for a committed player) is far above what the sim's shard income allows.
+  - **Plain crafting is nearly free at high item level, and that is what moves the share.** A min-maxer makes about 1,090 crafts and dismantles about 1,160 items in 30 weeks. A neutral Common costs 8 scrap and no shard; dismantled at item level 20 it returns 6 to 10 scrap (the 1 scrap per 5 item levels at both ends), so the loop is close to scrap-neutral, and only slot time limits it. Equip best then picks the best of a very large number of Commons. This is the "free lottery" the design wanted to avoid ("a bad one is dismantled for a fraction of its cost"). A variant that saves shards for the Reach (a player who can aim for a Rare never makes a plain craft) was measured: the min-maxer falls to 5.1, 9.9, 17.0 and 20.1% at weeks 2, 8, 20 and 30 (engaged 4.9, 9.2, 13.7, 17.7; regular 1.1, 5.9, 10.4, 12.3; drop-in 1.2, 2.6, 7.7, 9.8): a Reach, as priced, is worth less than the plain Commons its shards would make. The shipped policy is the greedy one (Reach when it can be paid, a plain craft otherwise).
+  - **Engaged, regular and drop-in players barely move:** their supply of shards and glimmer is small, their Crafting level is 10, 3 and 1, and what they find decides their gear (finale pieces at `3 + Boss Rank`).
+  - Not measured: the three side conditions of section 4 (growth share after level 30, upgrade cadence, perfect set); they need a per-item study.
+- **Action.** Superseded by B-015, which closed the free lottery and made the Reach worth its price. As measured here: none tuned. The shortfall against the targets is mostly outside crafting (item level by source, B-012), and the two crafting findings above are for the lead and Misa to decide, not for a guess here: (1) the Common refund's scrap bonus by item level makes plain crafting free; (2) the Reach's price in shards keeps it from being the sink the design wants.
+- **Expected.** The gear share grows further with the raid and dungeon rebalance (build step 8) and with the creature steps (talents and training by activity change who is worth gearing).
+- **Follow-ups.**
+  - Decide how to make the Reach the better use of a shard: options are no extra shard (Essence and glimmer only), a smaller scrap bonus for Commons (`RULES.gear.dismantle.scrapPerItemLevels`, or none for Commons), or a Common craft cost that rises with item level. Measure with this study (`--set` is not wired for it: change `RULES` and rerun).
+  - A Boons step Market Day effect (`WorkshopMods`) only matters if crafting is a scarce activity; revisit after the point above.
+  - Creature experience from Workshop jobs: the creatures step reads `workshop_jobs.work_minutes` (4 experience per hour).
+
+### B-014: Creatures A: talents, the duplicate choice and fewer catches with Bait lures (open)
+
+- **Opened:** 2026-10-16, build step 4 of `docs/design/gear-and-creatures-v2.md` (section 14) with the expedition change of 9.5. (The id is B-014 because Gear B took B-013 on its branch.)
+- **Finding.** Before this step a trip always brought a creature: a min-maxer got about 84 creatures and 84 duplicates a week (an engaged player 60, a regular 11.5), nearly all duplicates fused or, at five fusions, turned into Bait, and the base catalogue (all 12 species a trip can find) was complete in week 3 for a min-maxer, 5 for an engaged player and 16 for a regular (the study with every roll bringing a creature; the brief's "today 6/12/40" comes from another measure, and the review target is about 9, 14 and 24). Misa asked for fewer catches and fewer duplicates, a mix of other finds, lures crafted from Bait, and a catch (even a duplicate) that matters through talents.
+- **Method.** The new creatures study (`packages/sim/src/creatures-study.ts`, `pnpm sim:creatures`): the default journey server (1 min-maxer, 3 engaged, 3 regular, 2 drop-in), 3 seeds x 8 servers x 30 weeks, seeds `creatures` and `other`; weeks 3 to 30 averaged. "Before" is the same study with every roll bringing a creature (`catchBp` 10000), no lure effect and the old dupe shield of 4; duplicates are answered with Recommended in both. The sim player takes Recommended for every duplicate at once, fills open talent slots from the Talent Book for 10 Bait, and crafts a lure only with Bait in the purse and within a quarter of the week's Bait earned (training runs first). The talents' share of power is `1 - fightPowerNoTalents / fightPower` (the raid team's fight-scored power with its talents taken away, signature talents too, gear kept). The numbers were found with `--set` variants (about 20 runs of the study): catch chances by length, lure chances, and the dupe shield streak.
+- **What shipped (starting values).** A catch roll brings a creature with chance Short 3%, Medium 6%, Long 18%, Day 18% (`RULES.expeditions.lengths.<length>.catchBp`), else a small find of 1 or 2 scrap (`findScrap`); the first expedition still guarantees the Zipmouse; the dupe shield starts at a streak of 3. Lures: Plain +5% to the roll and 25% to draw a species the player lacks, Sweet +9% and 45%, Golden +15% and 70%; they cost 12, 30 and 60 Bait and a little scrap (`supplies.json`). Talents: 1 in 20 golden at 1.5 times, slots at level 1, 20 and 25, 10 Bait to slot from the book, at most 10 cards waiting, Release pays 3, 6 or 12 scrap by rarity (`RULES.talents`). Lures are no longer dropped by trips or the dungeon.
+- **Outcome (sim): what catching brings now** (seed `creatures`; seed `other` is within a few percent of every cell).
+
+  | Profile   | Creatures a week (before) | Duplicates a week (before) | Taught / fused / released a week | Catalogue complete (week, share who did; before) |
+  | --------- | ------------------------- | -------------------------- | -------------------------------- | ------------------------------------------------ |
+  | Min-maxer | 15.2 (83.6)               | 15.0 (83.5)                | 1.4 / 2.0 / 11.6                 | 6, 100% (3, 100%)                                |
+  | Engaged   | 10.4 (60.4)               | 10.1 (60.3)                | 1.4 / 2.1 / 6.7                  | 12, 100% (5, 100%)                               |
+  | Regular   | 2.2 (11.5)                | 1.8 (11.2)                 | 0.6 / 0.9 / 0.4                  | 28, 29% (16, 97%)                                |
+  | Drop-in   | 0.4 (1.5)                 | 0.2 (1.2)                  | 0.1 / 0.1 / 0                    | never, 0% (21, 2%)                               |
+
+  Seed `other`: catalogue weeks 7, 12 and 26.5 (33% of regulars). The catalogue is complete in 6 to 7, 12 and 26 to 28 weeks for a min-maxer, an engaged player and a regular, against the review target of 9, 14 and 24: **the catalogue is 2 to 3 times slower than with a creature on every roll, and still short of the review target at both ends: the min-maxer is a little too fast and the regular too slow** (only a third of regulars finish within 30 weeks). Creatures a week fall 5 to 6 times for the committed profiles and regular (4 times for the drop-in), and the duplicates fall by the same factor.
+
+- **Outcome (sim): Bait and talents.** Bait earned a week (levels, lures, talent slots): min-maxer 326 (330, 50, 4), engaged 299 (310, 27, 3), regular 169 (172, 1, 2), drop-in 47 (47, 0, 0): a min-maxer puts 15% of its Bait into lures (3 lures made and carried a week), an engaged player 9%, the others nothing; levels stay the main use of Bait for everybody. Talents' share of the raid team's fight-scored power at weeks 2, 8, 20 and 30: min-maxer 3.8%, 7.4%, 9.8% and 12.0%; engaged 2.3%, 3.9%, 7.5% and 11.5%; regular 2.1%, 3.3%, 4.0% and 4.8%; drop-in 1.1%, 2.3%, 3.7% and 3.8%. Golden talents rolled a week: 0.7 for a min-maxer, 0.5 for an engaged player.
+- **Reading.**
+  - **Most duplicates of a committed player are released.** With every species owned by week 6 to 12, a min-maxer's 15 duplicates a week are 1.4 taught, 2.0 fused and 11.6 released (before: 80.6 of 83.5 released): the 5 fusions of 12 lines and the talents it needs are done in about a month, and Release pays only scrap (3 for a Common). Release is the sink the design wanted, but 11.6 a week is a lot of scrap (about 35, against a Common craft costing a few). Either the catch chances for the committed fall further or Release pays something that does not flood the Workshop.
+  - **The catalogue pace does not follow the catch chances much below a point.** A min-maxer rolls 80 times a week and an engaged player 56, so both complete the catalogue after about 70 to 100 creatures whatever the chance, because each place's deep and rarer species are what is missing; the regular rolls 11 times a week and is held back by the volume. In the variants tried, a min-maxer's week was 5 to 8.5 for 12 to 22 creatures a week, and a regular's 24 to 30 for 2 to 3.3 a week. Lures move the pace little (a min-maxer makes 3 a week; the dupe shield streak 2, 3 or 4 changed the weeks by about one). Getting both the min-maxer to 9 and the regular to 24 needs a different lever than the chance per roll (a "new species" pity for players with few rolls, or deeper species weighted by rank) and is left to Misa's review.
+  - **Talents give a committed player about 10% of their raid power at week 30, and a regular 5%.** They start small (a talent is about a tier III line) and grow with the number of slots opened (level 20) and with golden ones; the share before week 20 is mostly slot 1.
+  - **Fewer duplicates mean fewer fusions, and the raids feel it** (below): fusion was +20% stats on every creature of a player by week 2 to 3; now a min-maxer fuses 2 a week.
+- **Outcome (sim): drift of the other targets (report only; the raid is not tuned in this step).** `pnpm sim` (full) on seeds `leet` and `leet2`: 89 targets, 66 pass and 23 fail on both (Gear A: 61 of 78 on `leet`, 59 of 78 on `leet2`). The gear share targets are as in B-012 (14 fail; engaged and regular a point or two higher or lower). A dash is a target B-012 did not list. The raid targets moved a lot, because the team is weaker without free fusions (the pinned legacy run's first player's top-3 power at week 8 is 430, was 595) and Bait no longer comes back from duplicates:
+
+  | Target                            | Gear A `leet` | Creatures A `leet` | Gear A `leet2` | Creatures A `leet2` |
+  | --------------------------------- | ------------- | ------------------ | -------------- | ------------------- |
+  | `raid-phase1-typical` (>= 80%)    | -             | 55.2%              | -              | 59.1%               |
+  | `raid-finale-typical` (85 to 97%) | 96.9%         | 60.7%              | 98.3%          | 65.8%               |
+  | `raid-finale-15` (85 to 99%)      | -             | 63.4%              | -              | 63.6%               |
+  | `raid-boss-spread` (<= 15 points) | -             | 14.9 (pass)        | -              | 24.4 (fail)         |
+  | `raid-ko-share` (10 to 30%)       | 6.8%          | 36.4%              | 6.1%           | 33.6%               |
+  | `curve-r2to5-default` (70 to 85%) | 88.9%         | 74.4%              | 85.0%          | 70.9%               |
+  | `curve-r6up-default` (45 to 65%)  | 59.7%         | 53.5%              | 68.8%          | 47.5%               |
+  | `curve-default-phase1` (>= 75%)   | -             | 72.2%              | -              | 69.0%               |
+  | `longrun-win-typical` (60 to 85%) | -             | 86.1%              | -              | 85.2%               |
+  | `choice-creature-min` (>= 0.60x)  | 0.623x        | 0.710x             | 0.619x         | 0.703x              |
+  | `exp-casual-discovery` (<= 0.45)  | 0.52          | -0.71              | 0.59           | -0.71               |
+  | `gear-first-craft` (<= 7 days)    | 1.4           | 1.4                | 1.4            | 1.4                 |
+  | `gear-newcomer-catchup` (>= 60%)  | 92%           | 78%                | 83%            | 64%                 |
+
+  (`exp-casual-discovery` is how many species a casual player owns ahead of the old expeditions: -0.71 means 0.7 fewer.) `econ-daily-species` (8 of 12 by week 6) still passes at 10; the two supplies targets and the supplies-crafted-share targets pass. The raid is clearly harder (finale 61% instead of 97%): the right fix is the raid and dungeon rebalance of build step 8 with the curve scalars, not a change here, as the design says. Two sources move it, not separated here: the free fusions (+20% stats on a creature by about week 3 for a committed player, now about 2 a week) and the Bait the old duplicate-to-Bait conversion paid (the old reports' "Bait from duplicates" column; the Bait earned counter did not include it, so the pinned run's `firstPlayerBaitEarned` is unchanged at 910 while its power fell).
+
+- **Action.**
+  - Targets: 11 `creatures-*` targets added (89 in all): catalogue weeks (min-maxer 7 to 11, engaged 11 to 17, regular 20 to 30), creatures and duplicates a week per profile, lures at most a quarter of a min-maxer's Bait, and the talents' share of a min-maxer's power at the end of the run between 5% and 20%. The min-maxer (6.5) and regular (31, since under half finish) catalogue targets fail on purpose: they record the review target against the shipped numbers. The scalar files and the legacy digest were regenerated; the `luck` study test compares knockouts without the retune now (the retune can lower them, as it keeps the mean damage); the journey test lets team power fall by up to 2% (Teach swaps a talent for a better-scoring one).
+  - Sim: duplicates are answered with Recommended, lures need Bait, talents fold into every fight (`slotOfCreature`, `foldedCreature`, `creaturePower`), `baitConverted` is gone (`baitLures` and `baitSlots` replace it).
+- **Expected.** More duplicates are worth less than fewer ones, so the next numbers to look at are what Release pays (scrap per Common) and the catalogue pace of the committed profiles, after the first staging week with real players. The min-maxer catalogue target needs a source of friction that is not a lower chance (see Reading).
+- **Follow-ups.**
+  - Decide the lever for the catalogue pace (min-maxer 9 weeks, regular 24): a pity counter for new species, deeper species by explorer rank, or fewer rolls for the committed (longer trips).
+  - Decide Release's value once the Workshop (Gear B) is in: the scrap should matter without flooding.
+  - Raid and dungeon rebalance (step 8): the finale and Phase 1 targets, around the new foundation of fusion by choice.
+  - Keep: no line has a second branch yet; the first (Sunfawn for the Sproutle line) lights up the mechanism and the card's fourth button.
+  - The deferred talents (Shade Napper, Light Sleeper, Gentle but Stubborn) and the Moonlit Reef condition of Patrols at Dusk.
+
+### B-015: Gear B follow-up: no free lottery, and a Reach worth its price (open)
+
+- **Opened:** 2026-10-16, from the lead's decision on B-013 (Misa's rule: a dismantle returns "a fraction of its costs").
+- **Finding (B-013).** A neutral Common cost 8 scrap and no shard, and dismantled at item level 20 returned 6 to 10 scrap, so crafting it was scrap-neutral and only slot time limited it: a min-maxer made about 1,090 crafts and dismantled about 1,160 items in 30 weeks, and Equip best picked the best of all of them. Meanwhile the Reach (Essence plus 1 or 2 more shards) was used 17 times in 30 weeks and a min-maxer ended with 3,388 Essence unspent.
+- **Action (starting values, `RULES.gear.craft` and `RULES.gear.dismantle`).**
+  - A craft's scrap grows with the item level it makes: `6` (element base) or `8` (every other base) `+ floor(itemLevel / 4)`; a level 10 crafter (item level 20) pays 11 or 13. Dropped items use the same table (`craftScrapCost(base, itemLevel)`).
+  - A dismantle's scrap is a share of that price, by rarity: Common 25 to 40%, Rare 35 to 45%, Epic and Festival 40 to 50% (rounded down, at least 1). Never half or more. The "+1 scrap per 5 item levels at both ends" is gone. A test checks every base, rarity and item level.
+  - A Reach takes no extra shard: Reach for Rare is +25 Essence, Reach for Epic +70 Essence and 1 glimmer, on top of the plain craft's parts. Odds, levels and hours are unchanged.
+- **Method.** The gear study of B-012 and B-013 (20 servers, 30 weeks, seeds `leet:gear` and `leet2:gear`), the counters of 6 servers of `leet:gear`, and the full `pnpm sim` alone on both seeds (about 26 minutes each).
+- **Outcome (sim): gear's share of fight-scored power.** Seed `leet`; Gear A (B-012) → Gear B before this change (B-013) → now.
+
+  | Profile   | Week 2           | Week 8              | Week 20             | Week 30             |
+  | --------- | ---------------- | ------------------- | ------------------- | ------------------- |
+  | Min-maxer | 6.0 → 5.1 → 5.1% | 12.3 → 11.9 → 12.6% | 22.9 → 25.7 → 22.4% | 25.5 → 28.1 → 24.6% |
+  | Engaged   | 4.7 → 4.9 → 4.9% | 9.9 → 10.1 → 10.3%  | 15.1 → 15.3 → 16.6% | 18.8 → 18.1 → 20.2% |
+  | Regular   | 1.6 → 1.1 → 1.1% | 6.2 → 6.1 → 5.9%    | 10.4 → 10.1 → 10.5% | 13.9 → 13.4 → 13.7% |
+  | Drop-in   | 1.0 → 1.2 → 1.1% | 4.1 → 3.2 → 2.8%    | 6.7 → 8.1 → 7.1%    | 9.8 → 10.6 → 10.6%  |
+
+  Seed `leet2`, now: min-maxer 4.5, 11.6, 23.1, 27.0%; engaged 4.1, 10.3, 17.2, 20.2%; regular 1.4, 5.8, 9.4, 12.7%; drop-in 0.9, 2.8, 7.2, 10.0%. The targets: 2 of 16 pass on `leet` (the min-maxer's and the drop-in's week 2) and 1 on `leet2` (the drop-in's week 2): the same count as Gear A. The 3 points the free lottery gave the min-maxer are gone, and the engaged player gains 1 to 2 points at weeks 20 and 30 because the Reach now costs no shards. Not tuned further.
+
+- **Per player over 30 weeks (6 servers of `leet:gear`), B-013 → now.**
+
+  | Profile   | Crafts      | Reaches (of them Epic) | Items dismantled | Essence from dismantling | Essence held at week 30 |
+  | --------- | ----------- | ---------------------- | ---------------- | ------------------------ | ----------------------- |
+  | Min-maxer | 1,089 → 174 | 17 (1) → 74 (29)       | 1,159 → 244      | 1,521 → 890              | 3,388 → 130             |
+  | Engaged   | 37 → 34     | 10 (3) → 25 (18)       | 80 → 77          | 286 → 386                | 2,073 → 1,204           |
+  | Regular   | 8 → 8       | 2 (0) → 2 (0)          | 4 → 5            | 5 → 7                    | 1,560 → 1,616           |
+  | Drop-in   | 0 → 0       | 0 → 0                  | 0 → 0            | 0 → 0                    | 908 → 877               |
+
+- **Reading.**
+  - **The lottery is closed.** A min-maxer now makes 174 crafts in 30 weeks (about 6 a week) and is scrap-limited (it ends with about 4 scrap). Plain Commons are no longer free, so the Reach is the better use of a craft: it costs Essence the player has in plenty. A min-maxer reaches 74 times (29 Epics) and ends with 130 Essence (target: under about 500). The "save shards for the Reach" policy and the greedy one are now the same thing: with nothing extra to pay in shards, a Reach is a plain craft plus Essence.
+  - **Engaged players still hold 1,204 Essence.** They make 34 crafts in 30 weeks and are limited by the one shard each craft takes, not by Essence. They are not the committed profile the target speaks of, and the way to spend their Essence is the same as for everybody: more crafts per week (shards) or other sinks (the dungeon's choice rooms, evolution). Regular and drop-in players do not craft at all (their profiles' craft dial), so their Essence is for evolution and later sinks.
+  - **The full sim.** Seed `leet`: 60 pass, 18 fail (14 gear share, `raid-finale-typical` 97.2% against 97.0, `raid-ko-share`, `exp-casual-discovery` 0.56 and `curve-r2to5-default` 88.2%: the last four were already failing in B-012 with 96.9%, 6.8%, 0.52 and 88.9%). Seed `leet2`: 61 pass, 17 fail (15 gear share, `raid-finale-typical` 97.9%, `raid-ko-share` 6.9%); B-012 had 59. The raid targets stay for the raid and dungeon rebalance.
+- **Expected.** The min-maxer's week 30 share (25 to 27%) is still below its target (33 to 40%); with the lottery closed the way to it is item level (finale pieces at `3 + Boss Rank`), the Reach and, later, the creature steps. Scrap now limits a min-maxer's crafts: watch scrap income against the new prices.
+- **Follow-ups.**
+  - If crafting should be faster for committed players, the levers are the scrap price (`scrapPerItemLevels`), the scrap income (trips, the dungeon) and the Reach's odds, not the dismantle refund.
+  - Engaged players' Essence: more crafts a week need more shards (trips) or cheaper element crafts.
+
+### B-016: Creatures B: training by activity, treats, ribbons and the new-species pity (open)
+
+- **Opened:** 2026-10-17, build step 5 of `docs/design/gear-and-creatures-v2.md` (section 14), with the lead's new-species pity (the follow-up of B-014).
+- **Finding.** Bait bought every level, so a committed player's creatures were at level 30 in about 4 weeks and levels said nothing about what a player did (spec 9.1). The base catalogue had no friction except a lower catch chance (B-014: complete in 7, 12 and 28 weeks for a min-maxer, an engaged player and a regular, against the review target of 9, 14 and 24).
+- **Action (starting values, `RULES.experience` and `RULES.catching.pity`).**
+  - Experience from level L to L + 1 is `25 L + 2 L^2`. Per creature that takes part: a trip by length 20 / 60 / 120 / 240, the dungeon 60 a room cleared plus 60 for a full clear, a raid stage 200 / 200 / 400 (times 1.5 cleared), a Workshop job 8 an hour of nominal work. The spec's first numbers (10 / 30 / 60 / 120, 20 + 20, 50 / 50 / 100, 4 an hour) were about half of what the pace needs from trips and jobs, a third from the dungeon and a quarter from the raid, found in about 20 sim runs (`--set experience.*`); with the final numbers a min-maxer's experience is 56% trips, 20% raids, 17% the dungeon and 8% jobs.
+  - Treats: double the experience of one activity for one creature, `3 + ceil(level / 2)` Bait, paid at the start. Ribbons: Bronze at 10 (6 scrap, 2 shards), Silver at 20 (15 scrap, 5 shards, 1 glimmer, 5 finished trips); a stage-1 creature with an evolution also waits at 15. No catch-up bonus.
+  - Pity: after 60 catch rolls without a new species the next roll brings one the player lacks; every 10th roll without any creature brings one. Server counters, no randomness drawn for a forced roll.
+- **Method.** The creatures study (`pnpm sim:creatures`, seed `creatures`, 2 seeds x 6 servers x 30 weeks; weeks 3 to 30 averaged), the journey server of 1 min-maxer, 3 engaged, 3 regular and 2 drop-in; the full `pnpm sim` alone on seed `leet` (92 targets, 36 minutes) for the drift. The sim plays the same pure functions as the worker. Raids were not tuned.
+- **Outcome (sim): the pace of the levels.** Weeks since joining (median) at which the best creature / the whole raid trio reached a level ("-" when under half did within 30 weeks); the plan of 9.2 in the last column.
+
+  | Profile   | Level 10 | Level 15 (evolved) | Level 20 | Level 30 | Plan of 9.2                                                                  |
+  | --------- | -------- | ------------------ | -------- | -------- | ---------------------------------------------------------------------------- |
+  | Min-maxer | 1 / 1    | 1 / 3 (week 1)     | 2 / 4    | 8 / 10   | trio: level 10 in week 1, evolve week 2, level 20 about 5, level 30 about 11 |
+  | Engaged   | 1 / 1    | 2 / 4 (week 2)     | 3 / 6    | 11 / 17  | between the committed trio and the regular                                   |
+  | Regular   | 2 / 2    | 4.5 / 10 (week 5)  | 8 / 13   | 24 / -   | level 20 about week 10, level 30 about week 24                               |
+  | Drop-in   | 4 / 6    | 13 / 23 (week 15)  | 21.5 / - | - / -    | about level 18 by week 20                                                    |
+
+  The committed trio matches the plan from week 3 on; evolving happens in week 1, not 2, because a min-maxer's trips and jobs pay a lot. The regular's best creature matches (20 at week 8, 30 at 24), its raid trio lags by about 3 weeks. The drop-in is at level 18.5 by week 20 on its best creature. Levels of the best creature / the raid team's lowest, end of week, weeks 2, 4, 8, 12, 20, 30: min-maxer 20 / 13, 21.5 / 20, 30 / 25, 30 / 30, 30 / 30, 30 / 30; engaged 17.5 / 10, 20 / 16.5, 25 / 20, 30 / 23, 30 / 30, 30 / 30; regular 10 / 10, 14.5 / 10, 20 / 10.5, 20 / 19, 26 / 20, 30 / 25.5; drop-in 5 / 1, 10 / 7.5, 11 / 10, 14 / 10, 18.5 / 10, 20 / 17.
+
+- **Outcome (sim): the longest stretch without an unlock.** The ladder (Hat 1, Scarf 7, ability and Bronze 10, Charm 13, evolution 15, Silver and talent slot 2 at 20, slot 3 at 25, Gold 30) has a widest gap of 6 levels (Hat to Scarf, the start; every other gap is 5 or fewer), against the aim of 5 (the spec itself puts Scarf at 7). In days the best creature goes without any unlock: min-maxer 22 (median over players of their longest), engaged 33, regular 72, drop-in 63; for the regular and the drop-in it is the ribbon gates and the evolution (a creature waits for parts) as much as the experience.
+- **Outcome (sim): the catalogue and the pity** (weeks to own every species a trip can find: min-maxer / engaged / regular, share of regulars who finish in 30 weeks; creatures a week, min-maxer / engaged / regular):
+
+  | Variant                      | Catalogue (weeks)   | Creatures a week (min-maxer / engaged / regular) |
+  | ---------------------------- | ------------------- | ------------------------------------------------ |
+  | No pity (Creatures A, B-014) | 7 / 12 / 28 (19%)   | 13.5 / 9.3 / 2.2                                 |
+  | Floor of 10 only             | 7 / 11 / 28.5 (28%) | 14.9 / 10.9 / 2.4                                |
+  | New after 20                 | 3 / 6 / 17.5 (100%) | 15.3 / 10.9 / 2.5                                |
+  | New after 30                 | 4 / 7 / 20.5 (100%) | 15.2 / 11.0 / 2.4                                |
+  | New after 40                 | 4 / 8 / 22 (97%)    | 15.1 / 10.9 / 2.5                                |
+  | New after 50                 | 5 / 9 / 23 (94%)    | 15.1 / 10.8 / 2.5                                |
+  | **New after 60 (shipped)**   | 5 / 9 / 24 (81%)    | 14.9 / 10.9 / 2.4                                |
+  | New after 70                 | 5.5 / 9 / 27 (92%)  | 15.3 / 10.7 / 2.5                                |
+
+  The regular's 24 weeks is reachable and shipped. **The review targets of 9 and 14 weeks for the committed profiles are not reachable with pity**: it can only make players faster, and a min-maxer already needs 7. The `creatures-catalogue-*` targets now say 4 to 8 and 7 to 12 weeks. A creature a week stays at 10 to 15 for the committed (14.9, 10.9), so there is no return of the old flood (84 a week before B-014); the floor of 10 is what adds about 1.5 a week. Pity forces a creature 2.4 times a week for a min-maxer, 1.7 for an engaged player, 0.3 for a regular, and a new species about 0.1 a week.
+
+- **Outcome (sim): Bait.** Bait earned a week (weeks 3 to 30) and where it went, treats / lures / talent slots (the sum can pass the earned: rank gifts and the starting Bait are not counted as earned): min-maxer 326 (300 / 63 / 4), engaged 299 (287 / 44 / 4), regular 168 (0 / 4 / 0.5), drop-in 46 (0 / 0 / 0.1). A committed player packs about 22 treats a week and spends nine tenths of its Bait on them; a lure is 19% of a min-maxer's Bait (the target is at most a quarter). **Regular and drop-in players do not pack treats in the sim and let Bait pile up** (168 a week earned, about 5 spent): whether real regulars would use treats is for the live data, and the treat price (`3 + ceil(level / 2)`) is the lever.
+- **Outcome (sim): experience by source** (a week, weeks 3 to 30): min-maxer trips 9,140, raids 3,205, dungeon 2,708, jobs 1,324; engaged 7,416, 3,205, 2,980 and 293; regular 801, 2,716, 1,597 and 12; drop-in 97, 1,491, 430 and 0. Level-ups a week: 10.7, 9.8, 5.3, 2.4. Ribbons earned a week: 0.8, 0.8, 0.3, 0.1.
+- **Outcome (sim): drift of the other targets (report only; the raid is not tuned in this step).** `pnpm sim` (full) on seed `leet`: 92 targets, 63 pass, 29 fail (Creatures A: 66 of 89). The raid targets, B-014 (Creatures A) `leet` → now:
+
+  | Target                            | Creatures A | Creatures B |
+  | --------------------------------- | ----------- | ----------- |
+  | `raid-phase1-typical` (>= 80%)    | 55.2%       | 65.5%       |
+  | `raid-finale-typical` (85 to 97%) | 60.7%       | 66.8%       |
+  | `raid-finale-15` (85 to 99%)      | 63.4%       | 61.4%       |
+  | `raid-boss-spread` (<= 15 points) | 14.9 (pass) | 9.3 (pass)  |
+  | `raid-ko-share` (10 to 30%)       | 36.4%       | 35.2%       |
+  | `curve-r2to5-default` (70 to 85%) | 74.4%       | 72.0%       |
+  | `curve-r6up-default` (45 to 65%)  | 53.5%       | 39.6%       |
+  | `curve-default-phase1` (>= 75%)   | 72.2%       | 68.5%       |
+  | `longrun-win-typical` (60 to 85%) | 86.1%       | 85.8%       |
+  | `choice-creature-min` (>= 0.60x)  | 0.710x      | 0.806x      |
+
+  The raid is a little easier at the start (more levels early for the committed) and harder in the long run (`curve-r6up-default` 53.5% to 39.6%: the teams now stop at 10 and 20 for ribbons and evolve at their own pace). Not tuned: the raid and dungeon rebalance (step 8) is the place. **Targets that passed after Creatures A and fail now**, all from how the sim player now spends its trips and Bait or from the level pace, not from a rule: `econ-casual-level-15` 11.5 (a casual player's best creature at the end of week 4, needs 15: the regular reaches 15 at week 4.5, and Bronze at 10 needs parts), `econ-power-ratio` 1.81x (<= 1.6: the top earner pulls ahead), `exp-slot-3` 56 days (23 to 37), `exp-slot-4` 308 (90 to 150) and `exp-slot-5` 999 (330 to 400): the policy now sends the creatures it trains first, so explorer ranks gather on three creatures and the rank-sum slots open later (the slots count the ranks above 1 of all creatures), `gear-newcomer-catchup` 58% (78%), `dungeon-first-week-clear` 79.1% (>= 80), `curve-r2to5-committed` 87.9% (>= 95), `choice-element-min` 13.9% (>= 15). The 14 gear share targets are as in B-015 (the engaged player lower at week 2 and 8).
+
+- **Reading.**
+  - **Trips are over half of a committed player's experience, which makes the trip the main way to level.** That is the design (spec 9.1: trips by length) but it also means a committed player's weeks are decided by how many long trips run; drop-in players get about three quarters of their experience from raids (1,491 of 2,018 a week).
+  - **The ribbons, not the experience, are what regulars wait for.** A regular's best creature reaches 10 at week 2 and 20 at week 8, with a stretch of 72 days at the same levels, and the Silver Ribbon's 5 shards and 5 finished trips take weeks. The sim player now spends trips on places of the shard it needs.
+  - **Pity does little for committed players and the most for regulars:** 4 weeks sooner (28 to 24) and 81% instead of 19% finishing.
+  - **Evolving in week 1 for a committed player** (the plan says week 2) is the first number to look at in live data: it follows right after the Bronze Ribbon (level 10), and 15 is a short climb when trips pay what they do.
+- **Expected.** Live: a new player reaches level 10 within the first week, the Bronze Ribbon button is the first thing they see on a creature card, and treats are used by the committed.
+- **Follow-ups.**
+  - Decide whether the sim's regular and drop-in should pack treats (their Bait piles up) and whether the exp-slot targets should follow the explorer's new order or the policy should spread trips.
+  - The raid and dungeon rebalance (step 8): the finale and Phase 1 targets, `curve-r6up-default`, around the new level pace.
+  - The Shade Napper talent and a "Growing" gear line (they wait on a number pass); raid experience in the raid result views; a treat for dismantle jobs in the UI.
+
+### B-017: Boons and Omens: the valley's weather (open)
+
+- **Opened:** 2026-10-17, build step 6 of `docs/design/gear-and-creatures-v2.md` (section 14, rules in section 10).
+- **Finding.** Nothing varied from one day to the next: the same raid, the same dungeon and the same trips every day. The design adds a daily Boon and (from Boss Rank 3) an Omen, server-wide, drawn a day ahead, stronger at higher ranks (x1 to x1.5 for Boons, x1 to x2.5 for Omens), that touch the raid stage of the day, every dungeon run, trips and Workshop jobs.
+- **Hypothesis.** Boons and Omens should roughly cancel on the raid, so the raid targets should not move much: half of the Omens (Cold Snap, Muddy Roads, the trip and Workshop halves) never touch a fight.
+- **Action (starting values, `RULES.weather`).** The tiers of 10.1 (`boonBp` / `omenBp` 10000 / 0 from rank 1, 10000 / 10000 from 3, 12500 / 15000 from 6, 15000 / 20000 from 10, 15000 / 25000 from 14), a wild Omen from rank 10 with chance 2000 bp (at most one a raid week, known a day ahead, never in a Festival week). 9 of the 10 Boons and 8 of the 10 Omens are live (Kind Rain, Morning Haze and Bramble Season wait for engine work). No raid number was tuned.
+- **Method.** The sim draws the days from a seeded stream of its own, a day ahead at the rank of the moment, and applies the game's own pure functions (`weather.ts`, `gear.ts`, `trips.ts`, `dungeon.ts`, `raid.ts`); the raid sweep draws three days in a row for each week. Weather is on by default; `--no-weather` plays the same seeds without it (before the base-stat gear of B-018 it reproduced B-016 exactly: 63 of 92 targets pass, `curve-r6up-default` 39.6%). Two reads, both on the code with B-018's gear: the full `pnpm sim` on seed `leet`, with and without weather, and the weather study (`pnpm sim:weather`, seed `weather`): 40 rosters from economy sims at weeks 4 and 8, every boss, played at Boss Rank 4 on the same seeds with one weather on all three stages (320 weeks a row, so one point is about 3 weeks: read differences under 3 points as noise), and the default journey server for 30 weeks, 20 servers, with and without weather.
+- **Outcome (sim): what each weather does to a raid week** (one weather on all three stages, the strongest a week can be; a real week has a different sky each day). Finale win rate and the share of the boss's pool dealt, as points against no weather (48.1% and 88.1% without weather), at the strength of the fight's rank 4 (x1) and at rank 14 (Boons x1.5, Omens x2.5):
+
+  | Weather          | Kind | Phase 1 (x1) | Finale won (x1) | Finale delta (x1) | Pool delta (x1) | Finale delta (rank 14) | Pool delta (rank 14) |
+  | ---------------- | ---- | ------------ | --------------- | ----------------- | --------------- | ---------------------- | -------------------- |
+  | No weather       | none | 44.4%        | 48.1%           | -                 | -               | -                      | -                    |
+  | Fair Winds       | boon | 45.0%        | 48.8%           | +0.6              | +0.3            | +0.9                   | +0.4                 |
+  | Warm Hearth      | boon | 45.0%        | 48.1%           | +0.0              | +0.2            | +0.6                   | +0.4                 |
+  | Clear Skies      | boon | 45.0%        | 49.4%           | +1.3              | +0.6            | +2.2                   | +0.9                 |
+  | High Water       | boon | 45.9%        | 50.0%           | +1.9              | +1.0            | +2.2                   | +1.5                 |
+  | Bonfire Night    | boon | 45.0%        | 49.4%           | +1.3              | +0.5            | +1.9                   | +0.7                 |
+  | Hearty Breakfast | boon | 44.4%        | 48.1%           | +0.0              | +0.0            | +0.0                   | +0.0                 |
+  | Lantern Light    | boon | 44.4%        | 50.6%           | +2.5              | +1.2            | +2.5                   | +1.2                 |
+  | Market Day       | boon | 44.4%        | 48.1%           | +0.0              | +0.0            | +0.0                   | +0.0                 |
+  | Quiet Night      | boon | 44.4%        | 50.0%           | +1.9              | +0.7            | +2.5                   | +1.0                 |
+  | Heatwave         | omen | 43.1%        | 47.2%           | -0.9              | -0.5            | -1.9                   | -1.1                 |
+  | Static Sky       | omen | 44.4%        | 48.1%           | +0.0              | -0.1            | +0.0                   | -0.2                 |
+  | Heavy Rain       | omen | 44.1%        | 48.1%           | +0.0              | -0.3            | -0.6                   | -0.7                 |
+  | Long Shadows     | omen | 44.1%        | 48.1%           | +0.0              | -0.3            | -1.3                   | -0.6                 |
+  | Restless Wind    | omen | 44.4%        | 48.1%           | +0.0              | +0.0            | +0.0                   | -0.0                 |
+  | Cold Snap        | omen | 44.4%        | 48.1%           | +0.0              | +0.0            | +0.0                   | +0.0                 |
+  | Muddy Roads      | omen | 44.4%        | 48.1%           | +0.0              | +0.0            | +0.0                   | +0.0                 |
+  | Stormfront       | omen | 43.8%        | 47.5%           | -0.6              | -0.1            | -0.6                   | -0.1                 |
+
+  Lantern Light (a Shield Wall lasts one more round), Quiet Night (the boss's adaptation 25% weaker), High Water (Steam and Overload +15%) and Clear Skies (crit +3 points) are the Boons that matter in a fight, each worth a point or two on its own; Market Day, Hearty Breakfast and the trip halves do nothing there, as designed. On the Omen side only Heatwave, Heavy Rain and Long Shadows bite, and only a little: about -2 points at the strongest. **Stormfront barely moves the raid** (-0.1 points of the pool, within noise on the win rate): one more plain attack a round is small next to a team of 9 to 15 creatures. If the wild Omen is meant to be a day to fear, it needs a stronger effect than one more plain attack.
+
+- **Outcome (sim): whole servers** (the default journey server, 20 servers x 30 weeks, same seeds, normal weeks, 480 raids): Phase 1 83.1% to 82.3%, finale 87.1% to 89.8%, finale creatures knocked out 16.0% to 15.1%, overtime 18.8% to 18.1% (no weather to weather).
+- **Outcome (sim): the targets** (`pnpm sim` full, seed `leet`, 92 targets). **64 pass with weather and 65 without.** The raid, no weather to weather:
+
+  | Target                            | No weather   | Weather                |
+  | --------------------------------- | ------------ | ---------------------- |
+  | `raid-phase1-typical` (>= 80%)    | 68.9%        | 72.4%                  |
+  | `raid-finale-typical` (85 to 97%) | 69.9%        | 74.9%                  |
+  | `raid-finale-15` (85 to 99%)      | 66.5%        | 76.5%                  |
+  | `raid-boss-spread` (<= 15 points) | 8.7 (pass)   | 8.8 (pass)             |
+  | `raid-ko-share` (10 to 30%)       | 29.4% (pass) | 26.7% (pass)           |
+  | `curve-r2to5-default` (70 to 85%) | 77.9%        | 78.5%                  |
+  | `curve-r2to5-committed` (>= 95%)  | 89.9%        | **95.6% (now passes)** |
+  | `curve-r6up-default` (45 to 65%)  | 62.0%        | **70.9% (now above)**  |
+  | `curve-r6up-committed`            | 91.0%        | 93.2%                  |
+  | `curve-default-phase1` (>= 75%)   | 74.3%        | **75.5% (now passes)** |
+  | `longrun-win-typical` (60 to 85%) | 90.3%        | 92.4%                  |
+  | `choice-creature-min` (>= 0.60x)  | 0.799x       | 0.848x                 |
+
+  The raid gets easier: about 5 points on the typical finale, 10 on the 15-player finale, 9 at ranks 6 and up, and the committed servers at ranks 2 to 5 reach their target. Three targets that passed now fail, none of them a weather rule gone wrong: `curve-r6up-default` is now too easy (70.9% against a range of 45 to 65%), and `gear-share-drop-in-week8` and `gear-share-drop-in-week20` moved by 0.7 and 1.2 points across their edges (weather moves the drop-in's creature levels, which moves the share). `dungeon-first-week-clear` (78.6% to 77.4%, a target of 80% that already failed) is the other one that went down: at rank 1 only Boons exist and none of them makes the dungeon harder, so this looks like different levels downstream (a first week is a handful of runs), not a weather effect; check it on a second seed before acting.
+
+- **Reading.**
+  - The Boons help every day and half of them touch a fight; the Omens come only from rank 3 and most of them are about trips and experience. So the sky is a net help for raids, of about 5 points on the finale, more than the hypothesis expected. That is the opposite of "Omens are the risk": the raid-side Omens are weak, the trip-side ones (Muddy Roads, Cold Snap, Morning Haze when it ships) are what a player feels, and those change time and experience, not the raid.
+  - Stormfront needs a stronger or a different effect to be the wild day the design wants.
+  - The raid and dungeon rebalance (step 8) should start from the sim with weather on, which is the shipped game; `--no-weather` is for paired comparisons. With weather on, the finale targets are 5 to 10 points closer than without it, and `curve-r6up-default` needs the boss a little stronger at ranks 6 and up.
+- **Expected.** Live: players notice the calendar and plan trips and crafts around Fair Winds, Warm Hearth and Market Day; the raid win rate rises by a few points. If the Saturday after a bad Omen feels unfair in feedback, the Omen raid effects (Heatwave, Heavy Rain, Long Shadows) are the first to soften.
+- **Follow-ups.**
+  - Stormfront's effect (above), and the three planned entries (Kind Rain, Morning Haze, Bramble Season) once the engine has the hooks.
+  - The raid rebalance with weather on (step 8), starting from `curve-r6up-default` and the finale targets.
+  - Check `dungeon-first-week-clear` on a second seed.
+  - Live: the share of days with an Omen at each rank, trips sent on Market Day, and the raid win rate by Omen (`weather_draw` and `weather_use` events).
+
+### B-018: Items carry base stats; local and global lines; Festival gear is special, not stronger (open)
+
+- **Opened:** 2026-10-17, from Misa's direction of the same day ("Path of Exile style": base stats on items, local lines "this item", Festival at the normal level and rarity), and the lead's update the same afternoon (fixed base stats per base type, two or more stats, better bases unlocking at higher item levels). Design: `gear-and-creatures-v2.md` section 2.5; decision entry of 2026-10-17. (B-017 was left free for a parallel branch.)
+- **Finding.** After B-016 the gear share sat far under the section 4 targets for everyone but the min-maxer's first 20 weeks (20 servers of `leet:gear`: engaged 3.0 / 9.7 / 16.6 / 20.0%, regular 0.9 / 6.3 / 12.0 / 16.7%, drop-in 1.0 / 2.0 / 7.4 / 11.6% at weeks 2 / 8 / 20 / 30). Gear was a few percent on top of a creature's own stats, and a drop only got better through the tiers of its lines.
+- **Action (starting values; `gear.json`, `gear-lines.json`).**
+  - **Base stats**, fixed per base, no item level scaling. Hats (Attack / HP): 2 / 4 at item level 1, 12 / 24 at 5, 24 / 48 at 10 (neutral and Tide); Scarves (HP / Attack): 12 / 1, 70 / 5, 150 / 12. Element bases lean a little (Ember Hats +20% Attack and 20% less HP, Grove Hats the other way and the sturdy Grove Scarf +20% HP, Spark a little glassy); the finer Hats and some Scarves add 1 to 3 points of crit chance or, on the Ember Hat of item level 10, 20 points of crit damage. The Festival Hearth Scarf has the plain first-make Scarf's stats.
+  - **Better bases unlock at item levels 1, 5 and 10** (levels are content, `minItemLevel`); a craft needs Crafting level 1, 3 and 5.
+  - **Local lines**, tiers I to V: share +20 / 40 / 60 / 90 / 120% (Attack, HP, crit chance, crit damage of the item), flat Attack +2 / 4 / 6 / 9 / 12, flat HP +12 / 25 / 40 / 55 / 75. Hats favour the Attack lines (weight 100 against 40), Scarves the HP lines. Creature Attack and HP: weight 6 on Charms only, values as the old Attack and HP lines (2 to 11%, 3 to 15%).
+  - **Festival**: the finale's item level and rarity odds, one fixed unique line (Hearth warmth 2 to 4% dungeon rest, Lantern luck 0.5 to 1.5 points of Lucky find), a pool of five lines.
+- **Method.** The gear study of B-012 to B-016 (`packages/sim/src/gear-study.ts`: 20 servers of the default mix, 30 weeks, median `1 - bare / full` of fight-scored power, seed `leet:gear`), then the full `pnpm sim` alone on seed `leet` (92 targets, 47 minutes) for the drift. The fold, the policies and the drops are the game's own pure functions; the only policy change is that the Workshop skips blueprints the crafter's level cannot make. Tuning was 8 runs of 6 servers varying the three make levels and the stat sizes, then the 20-server run below. Tried: the first model (stats growing with item level, Hat Attack 4 + level, Scarf HP 20 + 4 x level) gave a week 2 share of 8 to 10% for every profile (the stats were too big against level 1 to 5 creatures) and 26 / 22 / 17 / 14% at week 30; makes at levels 1, 8 and 15 left regulars and drop-ins on plain bases (week 20 regular 9.6%, drop-in 7.3%); makes at 1, 5 and 12 pushed the min-maxer's week 8 to 25%.
+- **Outcome (sim): gear's share of fight-scored power**, 20 servers of `leet:gear`, before (B-016 branch head) → now, with the range of `gear-and-creatures-v2.md` section 4 (the engaged profile has the min-maxer's range in `targets.json`):
+
+  | Profile   | Week 2 (range)          | Week 8 (range)         | Week 20 (range)            | Week 30 (range)        |
+  | --------- | ----------------------- | ---------------------- | -------------------------- | ---------------------- |
+  | Min-maxer | 5.5 → **9.6** (5 to 10) | 16.6 → 24.3 (15 to 22) | 26.0 → **30.6** (25 to 32) | 26.3 → 32.8 (33 to 40) |
+  | Engaged   | 3.0 → 5.0 (5 to 10)     | 9.7 → 12.9 (15 to 22)  | 16.6 → 23.3 (25 to 32)     | 20.0 → 26.9 (33 to 40) |
+  | Regular   | 0.9 → **3.5** (3 to 6)  | 6.3 → 9.1 (10 to 15)   | 12.0 → 17.4 (18 to 24)     | 16.7 → 23.7 (28 to 34) |
+  | Drop-in   | 1.0 → 4.6 (0 to 3)      | 2.0 → **5.6** (5 to 8) | 7.4 → **14.0** (10 to 15)  | 11.6 → 21.9 (15 to 20) |
+
+  Passing: 4 of 16 before, 6 now (bold, and the engaged week 2 is 5.0 against a limit of 5.0). Every cell moved toward its range except the drop-in's week 2 (the welcome Hat alone is worth 4 to 5% of a level 3 creature) and week 30 (over the range now). **What is not reachable with these rules alone**: the committed profiles and the regulars want opposite things (the min-maxer is over at week 8 while the engaged player is 2 points under; the drop-in is over at week 30 while the regular is 4 points under), because they differ in how many items they craft and how high a Crafting level they have, which the gear formulas cannot separate. The next levers are not formulas: the finale's item level by Boss Rank, the Reach odds and the crafting rate. Not tuned further on purpose; the numbers above are what to look at in live data.
+
+- **Outcome (sim): drift of the other targets (report only; the raid is not tuned).** `pnpm sim` (full) on seed `leet`: 92 targets, 65 pass and 27 fail (B-016: 63 and 29). The raid targets, Creatures B (B-016) → now:
+
+  | Target                            | Creatures B | Now                |
+  | --------------------------------- | ----------- | ------------------ |
+  | `raid-phase1-typical` (>= 80%)    | 65.5%       | 68.9%              |
+  | `raid-finale-typical` (85 to 97%) | 66.8%       | 69.9%              |
+  | `raid-finale-15` (85 to 99%)      | 61.4%       | 66.5%              |
+  | `raid-boss-spread` (<= 15 points) | 9.3 (pass)  | 8.7 (pass)         |
+  | `raid-ko-share` (10 to 30%)       | 35.2%       | 29.4% (now passes) |
+  | `curve-r2to5-default` (70 to 85%) | 72.0%       | 77.9% (pass)       |
+  | `curve-r6up-default` (45 to 65%)  | 39.6%       | 62.0% (now passes) |
+  | `curve-default-phase1` (>= 75%)   | 68.5%       | 74.3%              |
+  | `longrun-win-typical` (60 to 85%) | 85.8%       | 90.3%              |
+  | `choice-creature-min` (>= 0.60x)  | 0.806x      | 0.799x (pass)      |
+
+  The raid is easier everywhere (gear is a bigger share, and a team's gear now grows with the item level), which fixes the long-run target B-016 broke (`curve-r6up-default`) and moves the typical-week targets a few points toward their ranges; `longrun-win-typical` is now 5 points above its limit. One other target moved the wrong way: `dungeon-gear-share-week8` is 21.7% (limit 20%; it passed in B-016). `gear-newcomer-catchup` improved to 59.7% (limit 60%, was 58%). The raid retune after the revamps is the place for all of these.
+
+- **Expected.** Live: a new player's first Hat is worth a few points of Attack (visible on the card as "Attack 2"), the first better make (a Felt Hat at item level 5) is a noticeable jump, and a committed player's best Hat has Attack in the tens by week 8; Festival pieces look special and are not better than any other finale piece of their level.
+- **Follow-ups.**
+  - Look at the week 2 share of drop-ins and regulars in live data: the welcome Hat's size is the lever (a first make of 1 Attack would read oddly on a card).
+  - The item level of finale drops by Boss Rank and the crafting rate decide the spread between committed players and regulars, not the stat formulas.
+  - A fourth make at item level 15 (and a Hat or Scarf for each element with its own third stat) would give the late game more to chase; it is a data change.

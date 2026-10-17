@@ -67,6 +67,7 @@ These are the rules as the engine implements them; keep them exact.
   - Every 5th week is a Festival: the boss fights 3 Ranks lower, Essence pays +50%, a Festival win gives +0 Rank, and after any Festival the Rank eases by 1.
   - Jackpot and pity stay hidden from players (Misa).
 - **Expeditions, training, evolution and fusion:** a short version of `m2-collection.md`, plus expeditions v2 when it ships.
+- **Talents and duplicates** (2026-10-16): every creature has a talent (one in twenty is golden, with a gold frame) and gains slots at level 20 and 25; a creature caught again is a card with Teach, Fuse, Release and Keep, and the recommended one is marked; Release pays parts, never Bait; lures are made from Bait and make a trip likelier to bring a creature, and a new species. The text is the glossary entries `talent`, `golden-talent`, `talent-book`, `duplicate-choice` and the first-week, creatures and expeditions lines of `how-to-play.json`.
 
 ## "How to play" page
 

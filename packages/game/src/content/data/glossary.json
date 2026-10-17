@@ -622,20 +622,44 @@
     "lines": [
       "Open the game each day for an allowance of 25 Bait. The day starts at 13:37; a missed day is not paid later.",
       "Leeting in Discord adds a bonus of 15 to 32 Bait, more when more players leet that day.",
-      "Spend it to train creatures. Expeditions and supplies cost no Bait.",
-      "Extra copies of a fully fused creature turn into Bait."
+      "Spend it on treats, to craft lures and to slot a talent from the Talent Book.",
+      "Trips and the other supplies cost no Bait. Releasing a duplicate pays parts, never Bait."
     ],
     "section": "first-week"
   },
   {
-    "id": "training-cost",
-    "title": "Training cost",
-    "short": "Bait to train: 3 + 2 x level.",
+    "id": "experience",
+    "title": "Experience",
+    "short": "Creatures grow by doing things.",
     "lines": [
-      "Going up one level costs 3 + 2 x its level, in Bait.",
-      "Level 1 to 2 costs 5 Bait. Level 10 to 11 costs 23.",
-      "Half price if the creature is more than 5 levels below the server's median.",
-      "A creature away on an expedition cannot train."
+      "A creature earns experience on trips, in the daily dungeon, in raid stages and on Workshop jobs.",
+      "Level 1 to 2 needs 27 experience. Level 10 to 11 needs 450. Level 20 to 21 needs 1,300.",
+      "Only creatures that take part earn it, so who goes where is your choice.",
+      "Bait no longer buys levels."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "treat",
+    "title": "Treat",
+    "short": "Doubles one activity's experience.",
+    "lines": [
+      "Tick Pack a treat when you send a creature on a trip, put it in the dungeon team or give it a Workshop job.",
+      "That activity gives the creature double experience.",
+      "A treat costs 3 + half the creature's level (rounded up) in Bait, paid when the activity starts.",
+      "Raids take no treats."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "ribbon",
+    "title": "Ribbon",
+    "short": "A creature waits at level 10 and 20 for one.",
+    "lines": [
+      "Bronze Ribbon at level 10: 6 scrap and 2 shards of its element.",
+      "Silver Ribbon at level 20: 15 scrap, 5 shards, 1 glimmer and 5 finished trips.",
+      "Experience earned while it waits is kept.",
+      "Gold Ribbon at level 30 is a reward."
     ],
     "section": "creatures"
   },
@@ -644,9 +668,9 @@
     "title": "Level",
     "short": "Higher level, stronger creature.",
     "lines": [
-      "Train a creature with Bait to raise its level.",
+      "A creature levels up from experience: trips, the dungeon, raids and Workshop jobs.",
       "Each level adds HP, Attack and Speed.",
-      "A creature that can evolve stops at level 15 until it does. The top is 30.",
+      "A creature waits at level 10 and 20 for a ribbon, and at 15 until it evolves. The top is 30.",
       "At level 10 a creature gets its finale ability."
     ],
     "section": "creatures"
@@ -666,13 +690,56 @@
   {
     "id": "fusion",
     "title": "Fusion",
-    "short": "Duplicates make a creature stronger.",
+    "short": "Fuse a duplicate to make a creature stronger.",
     "lines": [
-      "A duplicate catch fuses into the creature you already have.",
+      "A duplicate catch waits as a choice. Fuse it into the creature you already have.",
       "Each fusion adds stats, up to 20% after 5 fusions.",
-      "The stars show your fusions. After 5, a duplicate gives Bait."
+      "The stars show your fusions. After 5, Teach or Release the duplicate instead."
     ],
     "section": "expeditions"
+  },
+  {
+    "id": "talent",
+    "title": "Talent",
+    "short": "A small permanent bonus a creature carries.",
+    "lines": [
+      "Every catch rolls one talent from its species' pool, and the card shows it first.",
+      "A creature has one slot from the start, a second at level 20 and, if rare or epic, a third at 25.",
+      "A talent works like a gear line, in raids, the dungeon and on trips.",
+      "Epic creatures also carry a fixed signature talent."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "golden-talent",
+    "title": "Golden talent",
+    "short": "A rare talent, one and a half times as strong.",
+    "lines": [
+      "About 1 catch in 20 rolls its talent golden, shown in a gold frame.",
+      "A golden talent keeps its gold in the Talent Book."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "talent-book",
+    "title": "Talent Book",
+    "short": "Every talent a creature has held.",
+    "lines": [
+      "A talent a new one replaces goes into the book, so nothing is lost.",
+      "Slot a talent from the book again for 10 Bait, at once."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "duplicate-choice",
+    "title": "Duplicate",
+    "short": "A catch of a creature you own is a choice.",
+    "lines": [
+      "Teach: its talent goes into a slot of your creature. Fuse: one more fusion, up to 5.",
+      "Release: parts, never Bait. Keep: a second creature, for a line with a branch you lack.",
+      "The card marks Recommended. Up to 10 wait, then the oldest takes the Recommended choice."
+    ],
+    "section": "creatures"
   },
   {
     "id": "rarity",
@@ -681,7 +748,7 @@
     "lines": [
       "Common, Rare or Epic.",
       "Rarer creatures turn up less often on expeditions.",
-      "Lures, deeper areas and familiar places improve the odds."
+      "Deeper areas, familiar places and a lucky find improve the odds."
     ],
     "section": "expeditions"
   },
@@ -705,7 +772,7 @@
     "title": "Away",
     "short": "On an expedition.",
     "lines": [
-      "It cannot be trained until it is back.",
+      "It cannot go on another trip or take a Workshop job until it is back.",
       "Claim or recall the expedition to bring it home."
     ],
     "section": "expeditions"
@@ -727,12 +794,67 @@
   {
     "id": "gear",
     "title": "Gear",
-    "short": "One item per creature, worn into every fight.",
+    "short": "A Hat, a Scarf and a Charm for every creature.",
     "lines": [
-      "Gear adds to Attack, HP, speed and crits. What it adds in total is capped.",
-      "Upgrade an item from +0 to +5 with Essence and scrap. Upgrades never fail.",
-      "A won finale drops gear already upgraded: +1 for every 2 Ranks above 1, up to +5.",
-      "Dismantle an item to get parts back. This cannot be undone."
+      "A Hat carries Attack and a Scarf HP as its own stat. A Charm has a base line instead.",
+      "Every item also rolls 1 to 3 lines, each with five tiers. A creature wears items up to its own level.",
+      "Scarves open at creature level 7 and Charms at 13.",
+      "Take an item apart in the Workshop for parts and Essence. It takes a little time and cannot be undone."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-slot-hat",
+    "title": "Hat",
+    "short": "The first slot. Leans to Attack and crits.",
+    "lines": ["Open from level 1.", "Only Hats roll Crit damage and First pounce."],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-slot-scarf",
+    "title": "Scarf",
+    "short": "Opens at creature level 7. Leans to HP and wards.",
+    "lines": ["Only Scarves roll All damage taken, Unbothered and Brace."],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-slot-charm",
+    "title": "Charm",
+    "short": "Opens at creature level 13. Roles, reactions and trips.",
+    "lines": [
+      "Only Charms roll Cover, Boost, Lingering and the trip lines.",
+      "A few Charms are made for one role and can only be worn by it."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-item-level",
+    "title": "Item level",
+    "short": "Fixed when the item drops or is crafted.",
+    "lines": [
+      "It sets the best tier a line can roll: II from 5, III from 10, IV from 15, V at 20.",
+      "A creature can only wear items up to its own level.",
+      "Better Hats and Scarves unlock at item level 5 and 10. A craft needs the Crafting level for the one you pick."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-tier",
+    "title": "Tier",
+    "short": "How strong a line rolled: I to V.",
+    "lines": [
+      "The pips show the tier rolled. The last pip is the best this item level could roll.",
+      "A tier is one fixed number. Nothing re-rolls."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-tag",
+    "title": "Tag",
+    "short": "An element, neutral, explorer or a role.",
+    "lines": [
+      "An element tag makes that element's lines three times as likely to roll.",
+      "A role Charm can only be worn by that role."
     ],
     "section": "workshop"
   },
@@ -753,95 +875,70 @@
     "short": "Teaches you to craft one kind of item. Learned once.",
     "lines": [
       "Blueprints come from expeditions (more often on long ones), the welcome kit and sometimes a won finale.",
-      "A blueprint you already know turns into 5 scrap."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "gear-stat-atk",
-    "title": "Attack bonus",
-    "short": "Adds a percentage to a creature's Attack.",
-    "lines": ["Gear adds at most 20% Attack to one creature, however many bonuses it has."],
-    "section": "workshop"
-  },
-  {
-    "id": "gear-stat-hp",
-    "title": "HP bonus",
-    "short": "Adds a percentage to a creature's HP.",
-    "lines": ["Gear adds at most 25% HP to one creature, however many bonuses it has."],
-    "section": "workshop"
-  },
-  {
-    "id": "gear-stat-spd",
-    "title": "Speed bonus",
-    "short": "Adds a percentage to a creature's speed.",
-    "lines": [
-      "Speed decides who acts first against a boss that goes by speed.",
-      "Gear adds at most 10% speed to one creature."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "gear-stat-crit-chance",
-    "title": "Crit chance bonus",
-    "short": "Adds points to the chance of a critical hit.",
-    "lines": [
-      "A creature starts at 5%, and the game caps any creature at 30%.",
-      "Gear adds at most 5 points."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "gear-stat-crit-damage",
-    "title": "Crit damage bonus",
-    "short": "Adds points to the extra damage of a critical hit.",
-    "lines": [
-      "A critical hit adds 50% damage to start with, and the game caps it at 150%.",
-      "Gear adds at most 25 points."
+      "A blueprint you know becomes a well-thumbed mark (up to 10). At 10 marks it turns into 5 scrap."
     ],
     "section": "workshop"
   },
   {
     "id": "gear-rarity-common",
     "title": "Common gear",
-    "short": "A main stat and nothing else.",
-    "lines": ["Common gear is easy to find and cheap to upgrade."],
+    "short": "A base stat or line and 1 rolled line.",
+    "lines": ["Easy to find and craft."],
     "section": "workshop"
   },
   {
     "id": "gear-rarity-rare",
     "title": "Rare gear",
-    "short": "A stronger main stat and one extra stat.",
-    "lines": [
-      "Its main stat roll is 25% higher than Common.",
-      "Rare gear costs more to upgrade and can be improved."
-    ],
+    "short": "A base stat or line and 2 rolled lines.",
+    "lines": ["Can roll All damage taken, Lucky find and Adaptation pierce."],
     "section": "workshop"
   },
   {
     "id": "gear-rarity-epic",
     "title": "Epic gear",
-    "short": "A much stronger main stat and two extra stats.",
+    "short": "A base stat or line and 3 rolled lines.",
     "lines": [
-      "Its main stat roll is 50% higher than Common.",
+      "Can also roll Lingering and Unbothered at item level 15 or more.",
       "Dismantling Epic gear can give glimmer."
     ],
     "section": "workshop"
   },
   {
-    "id": "gear-rarity-festival",
+    "id": "gear-festival",
     "title": "Festival gear",
-    "short": "Epic power with a look of its own.",
+    "short": "Special, not stronger. A look and a line of its own.",
     "lines": [
       "Won by clearing a Festival finale. It cannot be crafted.",
-      "It has no extra power over Epic gear."
+      "Its item level and rarity follow the same odds as any finale piece.",
+      "It has one fixed Festival line and rolls from a short list of lines."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-stat",
+    "title": "Item stat",
+    "short": "A Hat's Attack or a Scarf's HP. It is added to the creature.",
+    "lines": [
+      "It grows with the item level.",
+      "The lines marked (this item) change this number: first the flat ones, then the percent ones.",
+      "Charms have no stat."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-local",
+    "title": "(this item)",
+    "short": "A line that only changes this item's own stat.",
+    "lines": [
+      "+60% Attack (this item) makes this Hat's own Attack bigger. It does not change the creature's Attack.",
+      "Every other line acts on the creature or on the fight."
     ],
     "section": "workshop"
   },
   {
     "id": "part-scrap",
     "title": "Scrap",
-    "short": "Generic parts. They pay for upgrades, crafting and improving.",
+    "short": "Generic parts. They pay for crafting.",
     "lines": [
       "Found by dismantling gear, on expeditions, in cleared raid phases and in the daily dungeon."
     ],
@@ -850,7 +947,7 @@
   {
     "id": "part-tide-shard",
     "title": "Tide Shard",
-    "short": "A shard of Tide. It pays for Tide crafts and enchants.",
+    "short": "A shard of Tide. It pays for Tide crafts.",
     "lines": [
       "Found on expeditions with a Tide explorer, from Tide room bosses and by dismantling Tide gear."
     ],
@@ -863,7 +960,7 @@
   {
     "id": "part-ember-shard",
     "title": "Ember Shard",
-    "short": "A shard of Ember. It pays for Ember crafts and enchants.",
+    "short": "A shard of Ember. It pays for Ember crafts.",
     "lines": [
       "Found on expeditions with an Ember explorer, from Ember room bosses and by dismantling Ember gear."
     ],
@@ -876,7 +973,7 @@
   {
     "id": "part-grove-shard",
     "title": "Grove Shard",
-    "short": "A shard of Grove. It pays for Grove crafts and enchants.",
+    "short": "A shard of Grove. It pays for Grove crafts.",
     "lines": [
       "Found on expeditions with a Grove explorer, from Grove room bosses and by dismantling Grove gear."
     ],
@@ -889,7 +986,7 @@
   {
     "id": "part-spark-shard",
     "title": "Spark Shard",
-    "short": "A shard of Spark. It pays for Spark crafts and enchants.",
+    "short": "A shard of Spark. It pays for Spark crafts.",
     "lines": [
       "Found on expeditions with a Spark explorer, from Spark room bosses and by dismantling Spark gear."
     ],
@@ -902,108 +999,9 @@
   {
     "id": "part-glimmer",
     "title": "Glimmer",
-    "short": "A rare part. It pays for Epic crafts and every enchant.",
+    "short": "A rare part. Epic gear and dungeon landmarks give it.",
     "lines": [
       "Found by dismantling Epic gear, at dungeon landmarks, and rarely on expeditions (more often on long ones)."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-payoffs-edge",
-    "title": "Payoff's Edge",
-    "short": "+6% Attack for a Payoff.",
-    "lines": [
-      "Only works for a Payoff.",
-      "Costs 1 glimmer and 3 Ember shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-guards-bulwark",
-    "title": "Guard's Bulwark",
-    "short": "+8% HP for a Guard.",
-    "lines": [
-      "Only works for a Guard.",
-      "Costs 1 glimmer and 3 Grove shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-setters-wit",
-    "title": "Setter's Wit",
-    "short": "+5% speed for a Setter.",
-    "lines": [
-      "Only works for a Setter.",
-      "Costs 1 glimmer and 3 Tide shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-supports-grace",
-    "title": "Support's Grace",
-    "short": "+6% HP for a Support.",
-    "lines": [
-      "Only works for a Support.",
-      "Costs 1 glimmer and 3 Spark shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-spark-luck",
-    "title": "Spark Luck",
-    "short": "+3 points crit chance for Spark creatures.",
-    "lines": [
-      "Only works for Spark creatures.",
-      "Costs 1 glimmer and 3 Spark shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-ember-fury",
-    "title": "Ember Fury",
-    "short": "+10 points crit damage for Ember creatures.",
-    "lines": [
-      "Only works for Ember creatures.",
-      "Costs 1 glimmer and 3 Ember shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-tide-flow",
-    "title": "Tide Flow",
-    "short": "+4% speed for Tide creatures.",
-    "lines": [
-      "Only works for Tide creatures.",
-      "Costs 1 glimmer and 3 Tide shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-grove-hide",
-    "title": "Grove Hide",
-    "short": "+7% HP for Grove creatures.",
-    "lines": [
-      "Only works for Grove creatures.",
-      "Costs 1 glimmer and 3 Grove shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
-    ],
-    "section": "workshop"
-  },
-  {
-    "id": "enchant-steady-hand",
-    "title": "Steady Hand",
-    "short": "+3% Attack.",
-    "lines": [
-      "Works for every creature.",
-      "Costs 1 glimmer and 3 Tide shards.",
-      "An item has one enchant slot: a new enchant replaces the old one."
     ],
     "section": "workshop"
   },
@@ -1012,26 +1010,43 @@
     "title": "Craft",
     "short": "Makes a new item from a blueprint you know.",
     "lines": [
-      "Takes 4 hours for Common, 8 for Rare and 12 for Epic or Festival.",
-      "The parts are paid when the job starts. The item is rolled when you claim it."
+      "Takes 3 hours and makes a Common. The item level is twice the creature's Crafting level.",
+      "The parts are paid when the job starts. The item is rolled when you claim it.",
+      "Reach for a Rare or an Epic costs more and takes longer. The Workshop shows the exact odds."
     ],
     "section": "workshop"
   },
   {
-    "id": "job-improve",
-    "title": "Improve",
-    "short": "Re-rolls one extra stat of an item, for scrap.",
+    "id": "reach",
+    "title": "Reach",
+    "short": "Pay Essence for a chance at a Rare or an Epic.",
     "lines": [
-      "Takes 2 hours. Needs a Rare or better item.",
-      "The new stat can be better or worse. Claim it to see."
+      "Reach for Rare needs Crafting level 3 (25 Essence, 6 hours).",
+      "Reach for Epic needs level 6 (70 Essence, 1 glimmer, 10 hours).",
+      "One more chance to be a rarity higher: 1% for each Crafting level above 1 and for each well-thumbed mark.",
+      "You see the exact odds first, and there are no rerolls."
     ],
     "section": "workshop"
   },
   {
-    "id": "job-enchant",
-    "title": "Enchant",
-    "short": "Adds an enchant to an item.",
-    "lines": ["Takes 6 hours. Costs glimmer and shards.", "A new enchant replaces the old one."],
+    "id": "well-thumbed",
+    "title": "Well-thumbed",
+    "short": "A blueprint you keep finding crafts better items.",
+    "lines": [
+      "Each repeat find of a blueprint you know adds a mark, up to 10. A dismantle that finds one adds a mark too.",
+      "Each mark adds 1% to the chance that a craft of that item comes out one rarity higher."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "job-dismantle",
+    "title": "Dismantle",
+    "short": "A creature takes items apart for parts, Essence and blueprints.",
+    "lines": [
+      "Commons go in bundles of up to 5 and take 15 minutes. A Rare takes 1 hour, an Epic or a Festival piece 2 hours.",
+      "The refund is a range shown first, a fraction of the craft price, rolled when you claim. Same for every creature.",
+      "Each item can teach its blueprint (6% and 1% for each Crafting level of the worker), or add a mark if you know it."
+    ],
     "section": "workshop"
   },
   {
@@ -1326,9 +1341,10 @@
   {
     "id": "supply-lure",
     "title": "Lure",
-    "short": "Draws rarer creatures.",
+    "short": "Draws creatures, and new ones.",
     "lines": [
-      "Tilts one trip's catches towards Rare and Epic.",
+      "Raises the chance that a trip brings a creature, and that it is a species you lack.",
+      "Made in the Workshop from Bait and a little scrap.",
       "Comes in three tiers: Plain, Sweet and Golden."
     ],
     "section": "expeditions"
@@ -1389,9 +1405,41 @@
     "title": "Craft supplies",
     "short": "Makes supplies for expeditions.",
     "lines": [
-      "Takes 2 to 6 hours by tier. The creature needs Crafting level 1, 3 or 5.",
-      "Costs scrap, and shards for the better tiers. One supply per job."
+      "Takes 1 to 6 hours by tier. The creature needs Crafting level 1, 3 or 5.",
+      "Costs scrap, shards for some tiers and, for a lure, Bait. One supply per job."
     ],
     "section": "workshop"
+  },
+  {
+    "id": "boon",
+    "title": "Boon",
+    "short": "A good turn of the weather, for the whole valley.",
+    "lines": [
+      "Every day has one Boon. It lasts from the daily reset to the next one.",
+      "It touches that day's raid stage, every dungeon run, and trips and Workshop jobs you start that day.",
+      "Higher Boss Ranks make Boons stronger."
+    ],
+    "section": "ranks"
+  },
+  {
+    "id": "omen",
+    "title": "Omen",
+    "short": "A bad turn of the weather, shown a day ahead.",
+    "lines": [
+      "From Boss Rank 3 every day also has one Omen, never the same one two days running.",
+      "Festival weeks have Boons only. A wild Omen can come from Boss Rank 10, at most once a week.",
+      "Higher Boss Ranks make Omens stronger, faster than Boons."
+    ],
+    "section": "ranks"
+  },
+  {
+    "id": "forecast",
+    "title": "Forecast",
+    "short": "Today's and tomorrow's Boon and Omen.",
+    "lines": [
+      "Tap the wall calendar in the living room to read it.",
+      "A well-planned raid can meet a bad Saturday. Plan the team, or the dungeon run, for the day."
+    ],
+    "section": "ranks"
   }
 ]

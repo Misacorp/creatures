@@ -2,14 +2,14 @@ import { content, entryView } from '@creatures/game';
 import type { GlossarySection, GlossaryView } from '@creatures/game';
 import { createContext, type ComponentChildren, type RefObject } from 'preact';
 import { useContext, useMemo, useRef, useState } from 'preact/hooks';
-import { backLabel, creatureFacts, shownWornItem, type CreatureInfo } from './creature-info';
+import { backLabel, creatureFacts, shownWornItems, type CreatureInfo } from './creature-info';
 import { bossArt, shinyPalette } from './art';
 import type { FoeInfo } from './foe-info';
 import { speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { compactCount } from './number-format';
 import { MORE_LABEL, resolveTag, tagKey, visualPlan, type TagRef } from './glossary-ui';
-import { WornItemLine } from './WornItemLine';
+import { WornItemLines } from './WornItemLine';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -166,7 +166,7 @@ function CreaturePopover({
   onMore: (section: GlossarySection) => void;
 }) {
   const { info } = open;
-  const worn = shownWornItem(info);
+  const worn = shownWornItems(info);
   const nav = usePopoverNav<string | null>(null, open);
   const entry = nav.view === null ? undefined : entryView(nav.view);
   // An entry the content does not know shows the creature instead.
@@ -207,7 +207,7 @@ function CreaturePopover({
             </p>
           }
         >
-          {worn !== null && <WornItemLine worn={worn} />}
+          {worn.length > 0 && <WornItemLines worn={worn} />}
           {open.action !== undefined && (
             <button
               type="button"

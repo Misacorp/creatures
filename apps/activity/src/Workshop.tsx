@@ -1,16 +1,26 @@
 import { useState } from 'preact/hooks';
 import type { GameState } from './api';
 import { Blueprints } from './Blueprints';
+import { BulkDismantle } from './BulkDismantle';
 import type { GearActions } from './gear-actions';
 import { PartsRow } from './GearArt';
 import type { GearState, JobResult } from './gear-types';
-import { bagText, jobResultRarity } from './gear-view';
+import {
+  bagText,
+  equipBestText,
+  jobResultRarity,
+  noticeLines,
+  topCreatureIds,
+  unequippedReason,
+} from './gear-view';
 import { GlossaryTag } from './Glossary';
 import { InventoryGrid } from './InventoryGrid';
+import { gearName } from './gear-view';
 import { ItemDetail } from './ItemDetail';
 import { JobReveal } from './JobReveal';
 import { JobSlots } from './JobSlots';
 import { SupplyCrafting } from './SupplyCrafting';
+import { Accordion } from './ui/Accordion';
 
 /**
  * The Workshop tab: your parts, the job slots (with timers and claims), the bag of gear with
@@ -43,6 +53,7 @@ export function Workshop({
   onDismissReveal: () => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [bestNote, setBestNote] = useState<string | null>(null);
   if (gear === null) {
     return failed ? (
       <section class="ws-section">
@@ -60,26 +71,58 @@ export function Workshop({
   const selected = gear.items.find((i) => i.id === selectedId) ?? null;
   return (
     <div class="workshop">
+      {gear.notice !== null && (
+        <section class="ws-section card-item notice-card" aria-labelledby="ws-notice">
+          <h3 id="ws-notice">Gear has changed</h3>
+          <ul>
+            {noticeLines(gear.notice).map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+          {gear.notice.unequipped.length > 0 && (
+            <Accordion title="Why some items are in the bag" variant="compact">
+              <ul>
+                {gear.notice.unequipped.map((note) => (
+                  <li key={note.id}>
+                    {gearName(note.baseId)} came off: {unequippedReason(note)}.
+                  </li>
+                ))}
+              </ul>
+            </Accordion>
+          )}
+          <p class="actions">
+            <button
+              type="button"
+              class="primary"
+              disabled={busy}
+              onClick={() => {
+                void actions.dismissNotice();
+              }}
+            >
+              Got it
+            </button>
+          </p>
+        </section>
+      )}
       {reveal !== null && (
         <JobReveal
           result={reveal}
           items={gear.items}
-          rarity={jobResultRarity(reveal, gear.items)}
+          rarity={jobResultRarity(reveal)}
           onDismiss={onDismissReveal}
         />
       )}
       <section class="ws-section" aria-labelledby="ws-parts">
         <h3 id="ws-parts">Parts</h3>
         <PartsRow parts={gear.parts} />
-        <p class="muted">
-          Supplies cannot be bought, so this is where you pick the kind and tier you want.{' '}
+        <p>
           <button
             type="button"
             onClick={() => {
               document.getElementById('ws-supplies')?.scrollIntoView({ block: 'start' });
             }}
           >
-            Craft supplies for your trips
+            Craft supplies
           </button>
         </p>
       </section>
@@ -99,11 +142,28 @@ export function Workshop({
           Gear <GlossaryTag entry="gear" look="help" />
         </h3>
         <p class="muted">Bag: {bagText(gear.inventory)}</p>
-        {gear.items.length === 0 ? (
-          <p class="empty muted">
-            Your bag is empty. Clear a raid finale or send explorers out to find gear and parts, or
-            craft something from a blueprint.
+        {gear.items.length > 0 && (
+          <p class="actions">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                void actions.equipBest(topCreatureIds(state.creatures)).then((result) => {
+                  if (result !== undefined) setBestNote(equipBestText(result));
+                });
+              }}
+            >
+              Equip best on your top 3
+            </button>
+            {bestNote !== null && (
+              <span class="muted" role="status">
+                {bestNote}
+              </span>
+            )}
           </p>
+        )}
+        {gear.items.length === 0 ? (
+          <p class="empty muted">Your bag is empty.</p>
         ) : (
           <InventoryGrid
             items={gear.items}
@@ -125,16 +185,31 @@ export function Workshop({
             }}
           />
         )}
-        {gear.items.length > 0 && selected === null && (
-          <p class="muted">Tap an item to see its stats and what you can do with it.</p>
+        {gear.items.length > 0 && (
+          <BulkDismantle
+            gear={gear}
+            creatures={state.creatures}
+            busy={busy}
+            actions={actions}
+            onStarted={() => {
+              setSelectedId(null);
+            }}
+          />
         )}
       </section>
       <Blueprints
         gear={gear}
         creatures={state.creatures}
         busy={busy}
-        onCraft={async (baseId, creatureId) =>
-          (await actions.startJob({ kind: 'craft', creatureId, blueprintId: baseId })) !== undefined
+        loadPreview={actions.previewCraft}
+        onCraft={async (baseId, creatureId, reach, treat) =>
+          (await actions.startJob({
+            kind: 'craft',
+            creatureId,
+            blueprintId: baseId,
+            reach,
+            ...(treat ? { treat: true } : {}),
+          })) !== undefined
         }
       />
       <SupplyCrafting
@@ -142,8 +217,13 @@ export function Workshop({
         creatures={state.creatures}
         stock={state.supplies}
         busy={busy}
-        onCraft={async (supplyId, creatureId) =>
-          (await actions.startJob({ kind: 'supply', creatureId, supplyId })) !== undefined
+        onCraft={async (supplyId, creatureId, treat) =>
+          (await actions.startJob({
+            kind: 'supply',
+            creatureId,
+            supplyId,
+            ...(treat ? { treat: true } : {}),
+          })) !== undefined
         }
       />
     </div>

@@ -56,6 +56,6 @@
   accent-color: var(--gold);
 }
 
-.after-action details {
+.after-action .acc {
   margin: 0.25rem 0;
 }

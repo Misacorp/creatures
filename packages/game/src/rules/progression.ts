@@ -188,9 +188,9 @@ export function festivalCreatureFor(
 
 /**
  * What winning a Festival finale does to a participant's collection. Owning the creature already
- * is the usual duplicate: it fuses (+stats) up to 5 fusions and then converts to Bait by rarity
- * (`applyCatchToCollection`). A festival grant is never shiny. Pass the participant's entry for the
- * Festival creature's line, or undefined if they do not own it.
+ * is the usual duplicate: it arrives as a pending choice (`applyCatchToCollection`). A festival grant
+ * is never shiny. Pass the participant's entry for the Festival creature's line, or undefined if they
+ * do not own it.
  */
 export function festivalGrantOutcome(
   entry: CollectionEntry | undefined,

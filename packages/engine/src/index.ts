@@ -6,6 +6,7 @@ export * from './scaling';
 export * from './forecast';
 export * from './row';
 export * from './mutators';
+export { resolveMods, type ResolvedMods } from './mods';
 export * from './describe';
 export * from './gimmick-schedule';
 export * from './playback';

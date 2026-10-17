@@ -11,7 +11,7 @@ import { creditParts } from '../src/gear-store';
 import type { Captured } from './gear-scenario';
 import { SCENARIO_START } from './gear-scenario';
 import type { CoreContext } from './helpers';
-import { seedPlayer } from './raid-helpers';
+import { scriptedThenSeeded, seedPlayer } from './raid-helpers';
 
 const HOUR = 3_600_000;
 
@@ -24,7 +24,8 @@ let keyCounter = 0;
 const newKey = (): string => `trips-fixture-${String(++keyCounter).padStart(8, '0')}-key`;
 
 /**
- * The randomness the scenario needs: catches are seeded, and the trip rng is a switch (every draw 0 makes
+ * The randomness the scenario needs: catches are seeded (the first roll is a sure catch of the first
+ * common species, so a claim shows a creature next to its loot), and the trip rng is a switch (every draw 0 makes
  * every chance succeed, 9999 makes the goal's chance fail), so the captured outcomes are known.
  */
 export function tripsScenarioOptions() {
@@ -33,7 +34,7 @@ export function tripsScenarioOptions() {
   return {
     draw,
     options: {
-      rng: createSeededRng('trips-fixture-catch'),
+      rng: scriptedThenSeeded([0, 0, 0, 1], 'trips-fixture-catch'),
       gearRng: createSeededRng('trips-fixture-gear'),
       tripRng,
     },

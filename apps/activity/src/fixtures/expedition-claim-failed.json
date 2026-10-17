@@ -3,24 +3,16 @@
     "recalled": false,
     "catches": [],
     "failed": true,
-    "pushOn": {
-      "goalId": "shortcut",
-      "risk": "risky",
-      "oddsBp": 6100,
-      "outcome": "failed"
-    }
+    "pushOn": { "goalId": "shortcut", "risk": "risky", "oddsBp": 6100, "outcome": "failed" }
   },
   "state": {
     "serverNow": 1799782272001,
-    "balances": {
-      "bait": 300,
-      "essence": 0
-    },
+    "balances": { "bait": 300, "essence": 0 },
     "starterChosen": false,
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "06a002e2-d493-4a49-97c7-3bba83b7ff01",
+        "id": "be62544c-7446-4c3e-ae3f-f8e80f3e8bba",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -32,17 +24,18 @@
         "origin": "test",
         "caughtAt": 1799733600000,
         "quirk": "waves-at-everyone",
-        "stats": {
-          "hp": 145,
-          "atk": 61,
-          "spd": 42
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            { "slot": 1, "opensAt": 1, "open": true, "talent": null },
+            { "slot": 2, "opensAt": 20, "open": false, "talent": null }
+          ],
+          "signature": null,
+          "book": []
         },
-        "statsWithGear": {
-          "hp": 145,
-          "atk": 61,
-          "spd": 42
-        },
-        "gear": null,
+        "stats": { "hp": 145, "atk": 61, "spd": 42 },
+        "statsWithGear": { "hp": 145, "atk": 61, "spd": 42 },
+        "gear": [],
         "busy": null,
         "ability": {
           "id": "flare-strike",
@@ -50,22 +43,18 @@
           "unlockLevel": 10,
           "nextId": "flare-strike-2"
         },
-        "explorer": {
-          "rank": 3,
-          "xp": 1900,
-          "nextRankXp": 2000,
-          "trips": 0
-        },
-        "trainCost": 19,
-        "evolution": {
-          "toSpecies": "pyrelynx",
-          "level": 15,
-          "essence": 20,
-          "available": false
-        }
+        "explorer": { "rank": 3, "xp": 1900, "nextRankXp": 2000, "trips": 0 },
+        "exp": 0,
+        "expNeeded": 328,
+        "waiting": false,
+        "ribbons": 0,
+        "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+        "ribbon": null,
+        "treatCost": 7,
+        "evolution": { "toSpecies": "pyrelynx", "level": 15, "essence": 20, "available": false }
       },
       {
-        "id": "2c75d703-8931-420f-8f85-b46d20f5cbac",
+        "id": "589c1ed0-4bce-40b5-ae1f-ed7ec8423765",
         "species": "splashet",
         "line": "splashet",
         "level": 8,
@@ -77,17 +66,18 @@
         "origin": "test",
         "caughtAt": 1799733600001,
         "quirk": "shadow-racer",
-        "stats": {
-          "hp": 168,
-          "atk": 42,
-          "spd": 46
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            { "slot": 1, "opensAt": 1, "open": true, "talent": null },
+            { "slot": 2, "opensAt": 20, "open": false, "talent": null }
+          ],
+          "signature": null,
+          "book": []
         },
-        "statsWithGear": {
-          "hp": 168,
-          "atk": 42,
-          "spd": 46
-        },
-        "gear": null,
+        "stats": { "hp": 168, "atk": 42, "spd": 46 },
+        "statsWithGear": { "hp": 168, "atk": 42, "spd": 46 },
+        "gear": [],
         "busy": null,
         "ability": {
           "id": "tidal-mark",
@@ -95,22 +85,18 @@
           "unlockLevel": 10,
           "nextId": "tidal-mark-2"
         },
-        "explorer": {
-          "rank": 1,
-          "xp": 0,
-          "nextRankXp": 200,
-          "trips": 0
-        },
-        "trainCost": 19,
-        "evolution": {
-          "toSpecies": "tidewing",
-          "level": 15,
-          "essence": 20,
-          "available": false
-        }
+        "explorer": { "rank": 1, "xp": 0, "nextRankXp": 200, "trips": 0 },
+        "exp": 0,
+        "expNeeded": 328,
+        "waiting": false,
+        "ribbons": 0,
+        "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+        "ribbon": null,
+        "treatCost": 7,
+        "evolution": { "toSpecies": "tidewing", "level": 15, "essence": 20, "available": false }
       },
       {
-        "id": "5cf57332-48ef-4202-a823-da5e5a49cc01",
+        "id": "870602df-233b-4080-8115-b7b3a3ca9671",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -122,17 +108,18 @@
         "origin": "test",
         "caughtAt": 1799733600002,
         "quirk": "eating-shy",
-        "stats": {
-          "hp": 237,
-          "atk": 29,
-          "spd": 23
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            { "slot": 1, "opensAt": 1, "open": true, "talent": null },
+            { "slot": 2, "opensAt": 20, "open": false, "talent": null }
+          ],
+          "signature": null,
+          "book": []
         },
-        "statsWithGear": {
-          "hp": 237,
-          "atk": 29,
-          "spd": 23
-        },
-        "gear": null,
+        "stats": { "hp": 237, "atk": 29, "spd": 23 },
+        "statsWithGear": { "hp": 237, "atk": 29, "spd": 23 },
+        "gear": [],
         "busy": null,
         "ability": {
           "id": "bark-guard",
@@ -140,25 +127,23 @@
           "unlockLevel": 10,
           "nextId": "bark-guard-2"
         },
-        "explorer": {
-          "rank": 1,
-          "xp": 0,
-          "nextRankXp": 200,
-          "trips": 0
-        },
-        "trainCost": 19,
-        "evolution": {
-          "toSpecies": "thornbuck",
-          "level": 15,
-          "essence": 20,
-          "available": false
-        }
+        "explorer": { "rank": 1, "xp": 0, "nextRankXp": 200, "trips": 0 },
+        "exp": 0,
+        "expNeeded": 328,
+        "waiting": false,
+        "ribbons": 0,
+        "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+        "ribbon": null,
+        "treatCost": 7,
+        "evolution": { "toSpecies": "thornbuck", "level": 15, "essence": 20, "available": false }
       }
     ],
+    "pending": [],
+    "bookSlotBait": 10,
     "expeditions": [
       {
-        "id": "f2b66bb0-de0c-4104-b4a0-2a349925aad8",
-        "creatureId": "06a002e2-d493-4a49-97c7-3bba83b7ff01",
+        "id": "e899d8ae-df64-409e-a68a-3fe361799d9c",
+        "creatureId": "be62544c-7446-4c3e-ae3f-f8e80f3e8bba",
         "duration": "long",
         "supplies": "great",
         "kit": ["lure-great", "map-scrap-basic"],
@@ -166,6 +151,7 @@
         "twist": null,
         "rolls": 2,
         "cost": 0,
+        "treat": false,
         "startedAt": 1799733600000,
         "endsAt": 1799775072000,
         "readyAt": 1799782272000,
@@ -175,12 +161,7 @@
           "recalled": false,
           "catches": [],
           "failed": true,
-          "pushOn": {
-            "goalId": "shortcut",
-            "risk": "risky",
-            "oddsBp": 6100,
-            "outcome": "failed"
-          }
+          "pushOn": { "goalId": "shortcut", "risk": "risky", "oddsBp": 6100, "outcome": "failed" }
         },
         "offer": null,
         "pushOn": {
@@ -192,22 +173,17 @@
       }
     ],
     "cancelled": [],
+    "levelReset": null,
     "slots": {
       "total": 1,
       "used": 0,
       "rankSum": 2,
       "tripsFinished": 2,
-      "next": {
-        "kind": "trips",
-        "at": 3
-      }
+      "next": { "kind": "trips", "at": 3 }
     },
-    "supplies": {
-      "lure-great": 2
-    },
-    "trainingMedianLevel": 8,
+    "supplies": { "lure-great": 2 },
     "serverFirsts": [],
-    "loungerId": "2c75d703-8931-420f-8f85-b46d20f5cbac",
+    "loungerId": "870602df-233b-4080-8115-b7b3a3ca9671",
     "loungeSpot": null
   }
 }

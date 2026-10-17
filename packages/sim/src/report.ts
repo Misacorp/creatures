@@ -2,14 +2,16 @@ import { RULES, content } from '@creatures/game';
 import { ARCHETYPES, ARCHETYPE_CONFIG, DEFAULT_MIX, DEFAULT_SERVER_SIZE } from './archetypes';
 import type { Analysis } from './analysis';
 import { curveMarkdown } from './curve-study';
+import { gearShareMarkdown } from './gear-study';
 import { suppliesMarkdown } from './supplies-study';
+import { creaturesMarkdown } from './creatures-study';
 import { WIN_RATE_MAX_DEPTH } from './dungeon-analysis';
 import { ROLE_STUDY_HP_BP, ROLE_STUDY_RUNS_FACTOR } from './roles';
 import { SETUP_RANK_OFFSETS } from './setup-study';
 import { TRIP_POLICY } from './trips';
 import { LONG_RUN_WEEKS, LOSS_STREAK_LIMIT } from './ladder';
 import { PITY_WEEKS, bossName, describeMix, type RunOutput } from './run';
-import { describeRequirement, formatValue, type TargetResult } from './targets';
+import { TARGETS, describeRequirement, formatValue, type TargetResult } from './targets';
 import { round } from './util';
 
 const pct = (x: number | null, digits = 1): string =>
@@ -63,10 +65,9 @@ function gearSection(a: Analysis): string {
           'Week',
           'Gear power',
           'Gear share',
-          'Upgrade levels (team)',
+          'Item levels (team)',
           'Crafts claimed',
           'Crafting level (best)',
-          'Essence spent on gear',
           'Essence held',
           'Scrap held',
         ],
@@ -77,7 +78,6 @@ function gearSection(a: Analysis): string {
           num(r.gearLevels),
           num(r.crafted),
           num(r.skillLevel),
-          num(r.essenceSpentGear, 0),
           num(r.essence, 0),
           num(r.scrap),
         ]),
@@ -109,8 +109,7 @@ function gearSection(a: Analysis): string {
           'Rare',
           'Epic',
           'Festival',
-          'Average level',
-          'Enchanted',
+          'Average item level',
           'Power added per item',
           'Bag',
           'Blueprints',
@@ -123,9 +122,8 @@ function gearSection(a: Analysis): string {
           pct(r.rarity.common, 0),
           pct(r.rarity.rare, 0),
           pct(r.rarity.epic, 0),
-          pct(r.rarity.festival, 0),
+          pct(r.festival, 0),
           num(r.level),
-          pct(r.enchanted, 0),
           num(r.power),
           num(r.bag),
           num(r.blueprints),
@@ -385,6 +383,26 @@ function suppliesSection(out: RunOutput): string {
   return body.replace(/^## /gm, '### ');
 }
 
+function creaturesSection(out: RunOutput): string {
+  if (out.creatures === null) return 'The creatures study was skipped in this run.';
+  const body = creaturesMarkdown([out.creatures], [1, 4, 8, 12, 20, 30])
+    .split('\n')
+    .slice(2)
+    .join('\n');
+  return body.replace(/^## /gm, '### ');
+}
+
+function gearShareSection(out: RunOutput): string {
+  if (out.gear === null) return 'The gear share study was skipped in this run.';
+  const ranges: Record<string, readonly [number, number]> = {};
+  for (const t of TARGETS) {
+    if (t.metric.startsWith('gear.share.') && typeof t.value !== 'number') {
+      ranges[t.metric] = t.value;
+    }
+  }
+  return gearShareMarkdown(out.gear, ranges);
+}
+
 function curveSection(out: RunOutput): string {
   // The study's own Markdown, with its title dropped and its headings one level down.
   const body = curveMarkdown(out.curve).split('\n').slice(2).join('\n');
@@ -435,8 +453,8 @@ function progressionSection(a: Analysis): string {
           'Week',
           'Players',
           'Bait earned',
-          'Bait from duplicates',
-          'Spent on training',
+          'Bait on lures',
+          'Spent on treats',
           'Species owned',
           'Top-3 power',
           'Top level',
@@ -450,8 +468,8 @@ function progressionSection(a: Analysis): string {
           String(r.week),
           String(r.players),
           num(r.baitEarned, 0),
-          num(r.baitConverted, 0),
-          num(r.baitSpentTraining, 0),
+          num(r.baitLures, 0),
+          num(r.baitTreats, 0),
           num(r.speciesOwned),
           num(r.top3Power, 0),
           num(r.maxLevel),
@@ -577,18 +595,19 @@ function outliersSection(a: Analysis): string {
 
 const POLICY_TEXT = `
 - **Income:** each day, every player who opens the game earns the daily allowance (\`dailyAllowance()\`) and every leeter the leet bonus on top (\`leetBonusForDay(n)\`, n = players who leeted that day); \`--income current\` plays the old leet-only pay (\`baitForDay(n)\`) instead. Casuals open the game and leet on 2 random days a week, dailies open it every day and leet on 6, top earners leet on all 7, and the newcomer plays like a daily from week 4.
+- **Weather:** every day has a Boon and, from Boss Rank 3, an Omen (\`drawWeather\`, from a seeded stream of its own, drawn a day ahead at the server's rank), applied to the raid stage, the dungeon runs, the trips and the Workshop jobs of the day exactly as the server applies them; \`--no-weather\` plays without it, and \`pnpm sim:weather\` reads what each Boon and Omen does to the raid (docs/balance/log.md B-017).
 - **Starter:** the starter whose element the server owns least (ties in content order). The first expedition brings a Zipmouse (game rule).
 - **Check-ins:** casuals check in once on each leet day (every few days); everyone else twice a day (09:00 and 20:00).
-- **At a check-in:** claim trips (and take an end-of-trip goal), claim jobs, evolve creatures that are at level 15 when there is enough Essence, train, manage gear, send trips into the free slots, start workshop jobs.
-- **Trips (expeditions v2):** slots come from the sum of the explorer ranks above 1 (\`slotsFor\`); a trip is free and supplies cannot be bought. Each free slot sends the idle creature of the highest explorer rank, to the open place (rank, night and Festival gates) where the most unowned species can be found (rarer ones count more, the weekly special place a little extra), for the length that pays the most per hour until the next check-in claims it (casuals: the longest they may). Supplies: those in stock that help (found on trips, dropped by the dungeon, crafted, or a rank gift); at most 2, never two of a kind. When a trip has ended it rolls its end-of-trip offer; a goal is taken when its extra hours (counted from the end of the trip) are over already (no waiting) and its worth ratio is at least ${TRIP_POLICY.minGoalRatioBp / 100}%. The workshop makes supplies when the stock is low, from the scrap the next gear upgrade does not need.
-- **Training:** the rest of the Bait goes to one creature at a time, at the game's training cost with the catch-up discount: of the 3 strongest trainable creatures (not at their level cap), the furthest-along one that still has to reach its evolution level (players push one creature to its evolution before starting the next); if none of the three is working towards an evolution, the weakest of them. The median top level is computed across the simulated players.
+- **At a check-in:** claim trips (and take an end-of-trip goal), claim jobs, evolve creatures that are at level 15 when there is enough Essence, buy the ribbons of creatures waiting at level 10 or 20, manage gear, send trips into the free slots, start workshop jobs.
+- **Trips (expeditions v2):** slots come from the sum of the explorer ranks above 1 (\`slotsFor\`); a trip is free and supplies cannot be bought. Each free slot sends the idle creature of the highest explorer rank, to the open place (rank, night and Festival gates) where the most unowned species can be found (rarer ones count more, the weekly special place a little extra), for the length that pays the most per hour until the next check-in claims it (casuals: the longest they may). Supplies: those in stock that help (found on trips, dropped by the dungeon, crafted, or a rank gift); at most 2, never two of a kind. When a trip has ended it rolls its end-of-trip offer; a goal is taken when its extra hours (counted from the end of the trip) are over already (no waiting) and its worth ratio is at least ${TRIP_POLICY.minGoalRatioBp / 100}%. The workshop makes supplies when the stock is low.
+- **Training by activity:** levels come from experience (\`@creatures/game\` \`experience.ts\`, curve 25 x L + 2 x L x L): a finished trip pays its explorer by its length, a dungeon run pays its three creatures per room cleared and for a full clear, a raid stage pays every creature that fought (one and a half times when cleared) and a Workshop job pays its worker 4 an hour. A creature stops at level 10 and 20 until its ribbon (materials only) is bought, and at 15 until it evolves; experience earned while it waits is banked. A player with a training focus (the strongest 3 or 6) sends those creatures on trips first; a profile's treat policy packs a treat (3 + half the level in Bait, double experience for that creature) for the long trips, the dungeon and the longer jobs while the Bait lasts. There is no catch-up bonus and Bait buys no levels.
 - **Raids:** everyone active signs up (casuals with 70% probability) and brings their 3 highest-power creatures. Sign-up order is shuffled each week; \`autoPlace\` builds the row in that order; \`fillWithGuests\` fills it to ${RULES.combat.guestRowSize} slots with fewer than 3 players. Phase 1 runs on Friday, Phase 2 on Saturday (with the adaptation Phase 1 suggested) and the finale on Sunday; the boss HP pool carries across them. In the finale each player brings their basic ability (round-robin over the four) plus the creature ability of each team creature at level ${RULES.abilities.unlockLevel} or above; every ability fires at its default round. Bosses rotate in content order by the global week index. Crits are on (5% for +50%, players and boss). The raid sweep fights each boss at the rank the old per-level rule would have chosen for the roster (\`placementRank\`), which is what the boss HP and the head-count exponents are calibrated at; the long-run servers (below) use the ladder.
 - **Boss Rank ladder (long-run servers):** a new server is placed once at its first raid week, a finale win in a normal week adds ${RULES.progression.winRankUp} rank, a loss changes nothing, every ${RULES.progression.seasonWeeks}th week of the global calendar is a Festival (boss ${RULES.progression.festivalEaseRanks} ranks lower, +${RULES.progression.festivalEssenceBp / 100}% Essence, a win grants each participant the season's Festival creature through the duplicate rules) and the rank eases ${RULES.progression.seasonResetRanks} after every Festival. Each long-run server starts at a random point of the 5-week calendar.
 - **Rewards:** Essence from \`essenceForStage\` for every cleared stage, weighted by the stage's contribution and scaled by the server's rank and the Festival bonus (\`essenceMultiplierBp\`). Jackpots from \`rollJackpot\` on a finale win. The pity counter advances only on a finale win without a jackpot; a lost finale changes nothing (soft pity from raid ${RULES.raid.jackpot.softPityFromRaid}, hard pity at raid ${RULES.raid.jackpot.hardPityRaid}).
 - **Evolution:** at level 15 (stage 1 level cap) when the player has the Essence from the content; the species switches to its stage 2 form and keeps its fusion count.
 - **Team power** = sum over the top 3 creatures of \`atk + hp / 10\`, using \`effectiveStats\` (fusion and the worn gear included, like the worker's \`power\`).
-- **Gear drops** follow the worker: the welcome kit when a player joins (a Common item, a Common blueprint and scrap), phase scrap for every participant of a cleared Phase 1 or 2, one reward per participant of a won finale at the server's rank (a gear piece pre-upgraded by rank, or a blueprint they do not know yet; and the Festival piece in a Festival week), and the loot of every claimed expedition (scrap, a shard, a glimmer, a blueprint; a blueprint the player knows is scrap). All rolls use the game's pure functions (\`rollFinaleReward\`, \`rollFestivalDrop\`, \`expeditionLoot\`, \`rollWelcomeKit\`, \`rollGear\`) with a seeded stream of their own.
-- **Gear policy**, at every check-in after the claims: claim finished jobs; equip (the 3 strongest creatures by power without gear get the items, best pair first, an item scored by the Attack and HP it adds weighted by the creature's role: payoffs want Attack, guards HP); dismantle every unworn item that no job holds except the 2 best spares; upgrade the worn item that adds the most per Essence, as long as the Essence left covers the cheapest evolution a creature is within 3 levels of; then start jobs in the free workshop slots on creatures that are not exploring (the one with the most Crafting XP first): an enchant of a worn item if glimmer and shards allow, an improve of a worn item's speed or crit secondary (twice per item at most), else a craft of the best blueprint the parts pay for (higher rarity first, Attack or HP items first). Items fold into the fight slots with \`applyGear\`, caps included. A creature on a job does not explore (one busy state) but still fights.
+- **Gear drops** follow the worker: the welcome kit when a player joins (a Common Trail Cap at item level 1, a blueprint and scrap), phase scrap for every participant of a cleared Phase 1 or 2, one reward per participant of a won finale at the server's rank (a gear piece of the boss's element at item level 3 + Boss Rank, or a blueprint they do not know yet; and the Festival piece in a Festival week), the dungeon's gear chance, and the loot of every claimed expedition (scrap, a shard, a glimmer, a blueprint; a blueprint the player knows is a well-thumbed mark, scrap at the most marks) and of a push-on gear find. All rolls use the game's pure functions (\`rollFinaleReward\`, \`rollFestivalItem\`, \`rollDungeonItem\`, \`expeditionLoot\`, \`rollExpeditionItem\`, \`rollWelcomeKit\`, \`rollCraft\`) with a seeded stream of their own.
+- **Gear policy**, at every check-in after the claims: claim finished jobs; Equip best (the game's \`planEquipBest\` over the 3 strongest creatures by power without gear, the bag and what they wear, under the wear rule: a Hat from creature level 1, a Scarf from 7, a Charm from 13, an item level at most the creature's level, a role-locked Charm only on its role); keep the 3 best unworn items as spares; then start jobs in the free workshop slots on creatures that are not exploring (the one with the most Crafting XP first): the first job crafts (a supply when fewer than 4 are in stock, a first craft before any supply, else the blueprint whose plain item adds the most to a team creature, aimed with the biggest Reach the creature's level, the parts and the Essence above 40 allow), the second takes apart the extras (a bundle of up to 5 Commons once 3 wait, or an Epic, Festival or Rare piece alone) as a dismantle job, which pays its refund range, Essence and a blueprint chance when it is claimed. Items fold into the fight slots with \`applyGear\` (stats, crit, the modifier sheet, and the trip and Workshop lines the sim also reads: Quick feet, Trail XP, Lucky find, Keen nose, Packer, Busy paws, Apprentice). A creature on a job does not explore (one busy state) but still fights.
 - **Daily dungeon** (\`docs/design/daily-dungeon.md\`): every player with at least 3 creatures runs it once on each day they check in (casuals on their leet days); on the first day they ever ran, a lost run may be tried once more. The team is the 3 strongest creatures by power (gear included), stood in one row by the game's rule for it (\`dungeonRowOrder\`: the order that sets off the most reactions left to right, ties by setters and supports left, a Guard in the middle, payoffs right); there is no basic ability, and every unlocked creature ability fires at its default round. The day's three room modifiers are shared by the whole server and come from a seed of the day, the foes from the run's seed, and a full clear moves the depth up by 1. Rewards follow the worker: Bait, Essence and scrap for each cleared room, a shard from the boss room, a gear chance on a full clear (certain at a landmark depth), and the streak bonus on the first run of a day, through \`dungeonPayout\`, \`rollDungeonLoot\` and \`streakBonus\`.
 - **Time** for jobs: check-ins at 09:00 and 20:00 (casuals at 09:00 on their leet days); a job is claimed at the first check-in after \`jobDuration\` (the crafter's skill included) has passed.
 - **Typical group:** a raid week with 5 to 10 signed-up players, on rosters from the end of week 4 or 8.
@@ -633,6 +652,18 @@ export function buildReportMarkdown(out: RunOutput): string {
   lines.push('## High Boss Ranks', '', ranksSection(out), '');
   lines.push('## Raid curve by Boss Rank (journey servers)', '', curveSection(out), '');
   lines.push('## Supplies (journey servers)', '', suppliesSection(out), '');
+  lines.push(
+    '## Creatures: catches, duplicates and talents (journey servers)',
+    '',
+    creaturesSection(out),
+    '',
+  );
+  lines.push(
+    '## Gear share of fight-scored power (journey servers)',
+    '',
+    gearShareSection(out),
+    '',
+  );
   lines.push('## Bosses', '', bossSection(a), '');
   lines.push('## Fairness and contribution', '');
   lines.push(
@@ -787,6 +818,8 @@ export function buildReportJson(out: RunOutput): string {
     ranks: out.ranks.rows,
     curve: { mixes: out.curve.mixes },
     supplies: out.supplies.profiles,
+    gear: out.gear,
+    creaturesStudy: out.creatures === null ? null : out.creatures.profiles,
     jackpots: analysis.jackpots,
     outliers: analysis.outliers,
     exampleFight: example,

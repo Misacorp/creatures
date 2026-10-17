@@ -632,7 +632,7 @@ describe('supplies from the dungeon', () => {
     });
   });
 
-  it('rolls a supply of the content, in the odds of its depth, with every kind coming up', () => {
+  it('rolls a supply of the content, in the odds of its depth, with every kind but the lure coming up', () => {
     const kinds = new Set<string>();
     const count = { basic: 0, good: 0, great: 0 };
     const runs = 4_000;
@@ -645,7 +645,8 @@ describe('supplies from the dungeon', () => {
       kinds.add(def.kind);
       count[def.tier] += 1;
     }
-    expect(kinds.size).toBe(4);
+    // A lure is made from Bait in the Workshop and never dropped.
+    expect([...kinds].sort()).toEqual(['lantern', 'map-scrap', 'satchel']);
     const odds = dungeonSupplyOddsBp(depth);
     for (const tier of ['basic', 'good', 'great'] as const) {
       expect(count[tier] / runs, tier).toBeGreaterThan(odds[tier] / 10_000 - 0.04);

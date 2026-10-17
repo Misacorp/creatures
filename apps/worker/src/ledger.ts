@@ -9,6 +9,12 @@ export type Currency = (typeof CURRENCIES)[number];
 
 /** Spend idempotency keys are client-generated (a UUID): 8-64 characters of this set. */
 export const SPEND_KEY_RE = /^[A-Za-z0-9_-]{8,64}$/;
+/**
+ * Server-built spend keys (`treat:trip:<expedition id>`): a lowercase source, a `:` and a scope. A client
+ * key can never contain `:`, so the two namespaces cannot collide. A spend that belongs to an action the
+ * client already keyed (a treat packed with a trip) uses one of these, derived from the id the action got.
+ */
+export const SERVER_SPEND_KEY_RE = /^[a-z]+:[A-Za-z0-9_:.-]{1,100}$/;
 /** Credit keys are server-built (for example `leet:<day id>`), so they may contain more. */
 const CREDIT_KEY_RE = /^[A-Za-z0-9_:.-]{1,128}$/;
 const MAX_META_CHARS = 1000;
@@ -172,7 +178,9 @@ export function spend<T>(
   assertPositiveInt(input.amount);
   assertCurrency(input.currency);
   assertSource(input.purpose);
-  if (!SPEND_KEY_RE.test(input.idempotencyKey)) throw new Error('invalid idempotency key');
+  if (!SPEND_KEY_RE.test(input.idempotencyKey) && !SERVER_SPEND_KEY_RE.test(input.idempotencyKey)) {
+    throw new Error('invalid idempotency key');
+  }
 
   return storage.transactionSync((): SpendResult<T> => {
     const sql = storage.sql;

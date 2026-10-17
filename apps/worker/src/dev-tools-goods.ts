@@ -8,6 +8,8 @@
  * a species' cap, a rarity a base cannot have, a full bag) is still refused.
  */
 import {
+  baseMinLevel,
+  blueprintBases,
   RULES,
   allSpecies,
   destinationDef,
@@ -15,9 +17,8 @@ import {
   gearBase,
   gearContent,
   int,
-  pickQuirk,
-  rarityFitsBase,
-  rollGear,
+  ribbonsForLevel,
+  rollItem,
   skillLevel,
   type GearRarity,
   type PartsBundle,
@@ -49,6 +50,7 @@ import {
 } from './gear-store';
 import { credit, getBalance, getBalances, type Currency } from './ledger';
 import { speciesOf } from './species';
+import { insertCreature } from './talent-store';
 
 type Body<S extends v.GenericSchema> = v.InferOutput<S>;
 
@@ -105,10 +107,10 @@ export function grantSupplies(ctx: ToolCtx, body: Body<typeof GrantSuppliesBodyS
 
 export function grantBlueprints(ctx: ToolCtx, body: Body<typeof GrantBlueprintsBodySchema>) {
   const bases =
-    'all' in body ? gearContent.bases : gearContent.bases.filter((b) => b.id === body.baseId);
+    'all' in body ? blueprintBases() : blueprintBases().filter((b) => b.id === body.baseId);
   let learned = 0;
   for (const base of bases) {
-    if (learnBlueprint(ctx.sql, ctx.userId, base.id, base.blueprint, ctx.now)) learned++;
+    if (learnBlueprint(ctx.sql, ctx.userId, base.id, ctx.now)) learned++;
   }
   return { learned, known: knownBlueprints(ctx.sql, ctx.userId).length };
 }
@@ -134,19 +136,23 @@ export function grantCreature(ctx: ToolCtx, body: Body<typeof GrantCreatureBodyS
     .toArray()[0];
   let creatureId: string;
   if (existing === undefined) {
-    creatureId = crypto.randomUUID();
+    creatureId = insertCreature(
+      ctx.sql,
+      { quirk: ctx.quirkRng, talent: ctx.talentRng },
+      {
+        userId: ctx.userId,
+        species: species.id,
+        origin: 'dev',
+        shiny: body.shiny === true,
+        now: ctx.now,
+      },
+    ).id;
     ctx.sql.exec(
-      `INSERT INTO creatures (id, user_id, line, species, level, fusion_count, shiny, origin, caught_at, quirk_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'dev', ?, ?)`,
-      creatureId,
-      ctx.userId,
-      species.line,
-      species.id,
+      'UPDATE creatures SET level = ?, fusion_count = ?, exp = 0, ribbons = ? WHERE id = ?',
       body.level ?? 1,
       body.fusion ?? 0,
-      body.shiny === true ? 1 : 0,
-      ctx.now,
-      pickQuirk(species.id, ctx.quirkRng),
+      ribbonsForLevel(body.level ?? 1),
+      creatureId,
     );
   } else {
     creatureId = existing.id;
@@ -177,11 +183,13 @@ export function setCreature(ctx: ToolCtx, body: Body<typeof SetCreatureBodySchem
   if (target.line !== row.line) throw new DevError(400, 'wrong_line');
   const level = body.level ?? row.level;
   if (level > target.levelCap) throw new DevError(400, 'level_cap');
+  // A level set by hand comes with the ribbons the level is past, and no banked experience.
   ctx.sql.exec(
-    'UPDATE creatures SET species = ?, level = ?, fusion_count = ? WHERE id = ?',
+    'UPDATE creatures SET species = ?, level = ?, fusion_count = ?, exp = 0, ribbons = ? WHERE id = ?',
     target.id,
     level,
     body.fusion ?? row.fusion_count,
+    ribbonsForLevel(level),
     row.id,
   );
   return { creatureId: row.id, species: target.id, level, fusion: body.fusion ?? row.fusion_count };
@@ -258,25 +266,16 @@ export function finishJobs(ctx: ToolCtx) {
   return { finished: done.length };
 }
 
-/** Gives the caller one item (its rolls drawn now from live randomness). Refused when the bag is full. */
+/** Gives the caller one item (its lines drawn now from live randomness). Refused when the bag is full. */
 export function grantGear(ctx: ToolCtx, body: Body<typeof GrantGearBodySchema>) {
   const base = gearBase(body.baseId);
   if (base === undefined) throw new DevError(400, 'invalid_base');
-  if (!rarityFitsBase(base, body.rarity)) throw new DevError(400, 'rarity_mismatch');
   if (!hasRoom(ctx.sql, ctx.userId)) throw new DevError(409, 'bag_full');
-  const gearId = insertItem(
-    ctx.sql,
-    ctx.userId,
-    { baseId: base.id, rarity: body.rarity, rolls: rollGear(ctx.gearRng, base.id, body.rarity) },
-    'dev',
-    ctx.now,
-  );
-  ctx.sql.exec(
-    'UPDATE gear_items SET level = ?, enchant_id = ? WHERE id = ?',
-    body.level ?? 0,
-    body.enchantId ?? null,
-    gearId,
-  );
+  // A better base only exists from its item level; the default is the lowest level it can have.
+  const itemLevel = body.itemLevel ?? baseMinLevel(base);
+  if (itemLevel < baseMinLevel(base)) throw new DevError(400, 'item_level_too_low');
+  const item = rollItem(ctx.gearRng, { baseId: base.id, rarity: body.rarity, itemLevel });
+  const gearId = insertItem(ctx.sql, ctx.userId, item, { source: 'dev', now: ctx.now });
   return { gearId };
 }
 
@@ -291,16 +290,13 @@ export function fillBag(ctx: ToolCtx) {
     const base = bases[int(ctx.gearRng, bases.length)];
     if (base === undefined) break;
     const rarity: GearRarity =
-      base.blueprint === 'festival'
-        ? 'festival'
-        : (NORMAL_RARITIES[int(ctx.gearRng, NORMAL_RARITIES.length)] ?? 'common');
-    insertItem(
-      ctx.sql,
-      ctx.userId,
-      { baseId: base.id, rarity, rolls: rollGear(ctx.gearRng, base.id, rarity) },
-      'dev',
-      ctx.now,
-    );
+      NORMAL_RARITIES[int(ctx.gearRng, NORMAL_RARITIES.length)] ?? 'common';
+    const item = rollItem(ctx.gearRng, {
+      baseId: base.id,
+      rarity,
+      itemLevel: Math.max(baseMinLevel(base), 1 + int(ctx.gearRng, RULES.gear.maxItemLevel)),
+    });
+    insertItem(ctx.sql, ctx.userId, item, { source: 'dev', now: ctx.now });
     added++;
   }
   return { added, items: countItems(ctx.sql, ctx.userId), cap };

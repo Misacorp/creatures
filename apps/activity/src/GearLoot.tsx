@@ -1,7 +1,14 @@
 import { Tag } from './ui/Tag';
 import { GlossaryTag } from './Glossary';
-import { ItemFrame, ItemSprite, PartCount, RarityTag } from './GearArt';
-import { gearName, lootIsEmpty, lootItemName, partsEntries } from './gear-view';
+import { FestivalTag, ItemFrame, ItemSprite, PartCount, RarityTag } from './GearArt';
+import {
+  gearName,
+  isFestivalBase,
+  lootIsEmpty,
+  lootItemName,
+  marksText,
+  partsEntries,
+} from './gear-view';
 import type { GrantLoot } from './gear-types';
 
 /**
@@ -28,11 +35,12 @@ export function LootList({
         <ul class="loot-items">
           {loot.gear.map((g) => (
             <li key={g.id} class="loot-item">
-              <ItemFrame rarity={g.rarity} class="pop-in">
+              <ItemFrame rarity={g.rarity} baseId={g.baseId} class="pop-in">
                 <ItemSprite baseId={g.baseId} scale={4} />
               </ItemFrame>
               <span class="loot-name">{lootItemName(g)}</span>
               <RarityTag rarity={g.rarity} />
+              {isFestivalBase(g.baseId) && <FestivalTag />}
             </li>
           ))}
         </ul>
@@ -54,8 +62,15 @@ export function LootList({
               <Tag kind="badge" entry="blueprint">
                 {b.duplicate ? 'Known blueprint' : 'New blueprint'}
               </Tag>{' '}
-              {gearName(b.baseId)} <RarityTag rarity={b.rarity} />
-              {b.duplicate && <span class="muted"> (it became scrap)</span>}
+              {gearName(b.baseId)}
+              {b.duplicate && (
+                <span class="muted">
+                  {' '}
+                  {b.marks === undefined
+                    ? '(it became scrap)'
+                    : `(well-thumbed ${marksText(b.marks)})`}
+                </span>
+              )}
             </li>
           ))}
         </ul>

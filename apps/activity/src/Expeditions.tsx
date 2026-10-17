@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { ClaimResult, GameState } from './api';
+import type { CatchChoiceActions } from './DuplicateCard';
 import { ExplorerProfile } from './ExplorerProfile';
 import { fetchDestinations, fetchProfile, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
@@ -54,6 +55,10 @@ interface Props {
   timezone: string | null;
   /** What the last claim brought home, with the trip and the fresh state. */
   reveal: { result: ClaimResult; trip: Trip | undefined } | null;
+  /** Answers the waiting duplicates the reveal shows. */
+  catchActions: CatchChoiceActions;
+  /** What each duplicate answered this session became (a card id to a sentence). */
+  settled: Readonly<Record<string, string>>;
   /** Sends a trip; resolves true when it started. */
   onSend: (request: SendRequest) => Promise<boolean>;
   onPushOn: (trip: Trip, goalId: string) => void;
@@ -71,6 +76,8 @@ export function Expeditions({
   busy,
   timezone,
   reveal,
+  catchActions,
+  settled,
   onSend,
   onPushOn,
   onClaim,
@@ -111,6 +118,11 @@ export function Expeditions({
           result={reveal.result}
           trip={reveal.trip}
           creature={revealCreature}
+          pending={state.pending}
+          creatures={state.creatures}
+          busy={busy}
+          catchActions={catchActions}
+          settled={settled}
           onDismiss={onDismissReveal}
         />
       )}
@@ -162,6 +174,7 @@ export function Expeditions({
               creatures={state.creatures}
               slots={state.slots}
               stock={state.supplies}
+              bait={state.balances.bait}
               busy={busy}
               view={destinations.value}
               viewFailed={destinations.failed}

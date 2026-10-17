@@ -34,3 +34,26 @@ export const isNullableStr = (value: unknown): value is string | null =>
 /** An array in which every item passes `guard`. */
 export const isArrayOf = <T>(value: unknown, guard: (item: unknown) => item is T): value is T[] =>
   Array.isArray(value) && value.every(guard);
+
+/**
+ * The entries of a list that pass `guard`, for a screen that should show what it can read: an entry that
+ * does not pass is left out and logged (what it is called, its position and its id when it has one; never
+ * its contents), so one odd item never blanks the whole screen. Null when `value` is not a list at all.
+ */
+export function keepReadable<T>(
+  value: unknown,
+  guard: (item: unknown) => item is T,
+  what: string,
+): T[] | null {
+  if (!Array.isArray(value)) return null;
+  const kept: T[] = [];
+  value.forEach((entry: unknown, index) => {
+    if (guard(entry)) {
+      kept.push(entry);
+      return;
+    }
+    const id = isRecord(entry) && isStr(entry['id']) ? ` ${entry['id'].slice(0, 40)}` : '';
+    console.error(`skipped an unreadable ${what} (number ${String(index + 1)}${id})`);
+  });
+  return kept;
+}

@@ -1,5 +1,15 @@
 import {
+  baseMinLevel,
+  createSeededRng,
+  gearBase,
+  itemLines,
+  itemStats,
+  rollItem,
+  statText,
+} from '@creatures/game';
+import {
   CostList,
+  FestivalTag,
   ItemFrame,
   ItemSprite,
   PartCount,
@@ -7,6 +17,7 @@ import {
   partCountItems,
 } from '../../GearArt';
 import { LootList } from '../../GearLoot';
+import { ItemLines, ItemStats } from '../../ItemLines';
 import { pileLabel } from '../../claim-view';
 import type { GearRarity, GrantLoot, PartKind, PartsBundle } from '../../gear-types';
 import type { RevealFrame } from '../../reveal-anim';
@@ -69,7 +80,7 @@ const SOURCE_PRESETS = [
   {
     name: 'Everything',
     props: {
-      gear: 'wave-band',
+      gear: 'kelp-cap',
       scrap: 6,
       'ember-shard': 2,
       glimmer: 1,
@@ -143,6 +154,7 @@ const lootList: Entry = {
   controls: {
     gear: { kind: 'number', min: 0, max: 3 },
     rarity: { kind: 'select', options: RARITIES },
+    festival: { kind: 'toggle' },
     converted: { kind: 'toggle' },
     blueprint: { kind: 'select', options: [NONE, 'new', 'known'] },
     scrap: { kind: 'number', min: 0, max: 99 },
@@ -152,6 +164,7 @@ const lootList: Entry = {
   defaults: {
     gear: 2,
     rarity: 'rare',
+    festival: false,
     converted: false,
     blueprint: NONE,
     scrap: 3,
@@ -160,7 +173,7 @@ const lootList: Entry = {
   },
   presets: [
     { name: 'Two items and scrap', props: {} },
-    { name: 'Festival item', props: { gear: 1, rarity: 'festival', scrap: 0 } },
+    { name: 'Festival item', props: { gear: 1, festival: true, scrap: 0 } },
     { name: 'Bag full (converted)', props: { gear: 0, converted: true, scrap: 5 } },
     { name: 'New blueprint', props: { gear: 0, blueprint: 'new', scrap: 0 } },
     { name: 'Known blueprint', props: { gear: 0, blueprint: 'known', scrap: 0 } },
@@ -169,19 +182,23 @@ const lootList: Entry = {
   render: (p) => {
     const rarity = rarityOf(str(p, 'rarity'));
     const bases = GEAR_BASE_IDS;
-    const base = (i: number): string => bases[(i * 5) % bases.length] ?? 'trail-charm';
+    const base = (i: number): string =>
+      bool(p, 'festival')
+        ? 'festival-hearth-scarf'
+        : (bases[(i * 5) % bases.length] ?? 'trail-charm');
     const loot: GrantLoot = {
       gear: Array.from({ length: num(p, 'gear') }, (_, i) => ({
         id: `g${String(i)}`,
         baseId: base(i),
         rarity,
+        itemLevel: 4 + i,
       })),
-      converted: bool(p, 'converted') ? [{ baseId: base(4), rarity: 'common' }] : [],
+      converted: bool(p, 'converted') ? [{ baseId: base(4), rarity: 'common', itemLevel: 3 }] : [],
       parts: { scrap: num(p, 'scrap'), glimmer: num(p, 'glimmer') },
       blueprints:
         str(p, 'blueprint') === NONE
           ? []
-          : [{ baseId: base(2), rarity: 'rare', duplicate: str(p, 'blueprint') === 'known' }],
+          : [{ baseId: base(2), duplicate: str(p, 'blueprint') === 'known' }],
     };
     return <LootList loot={loot} label="Loot" counted={bool(p, 'counted')} />;
   },
@@ -243,7 +260,7 @@ const costList: Entry = {
   file: 'apps/activity/src/GearArt.tsx',
   group: 'Loot & reveals',
   description:
-    'A price: each part with the amount needed, and a note in words (and a red colour) when the player has too little; it is on craft, improve and enchant buttons in the Workshop.',
+    'A price: each part with the amount needed, and a note in words (and a red colour) when the player has too little; it is on the craft buttons in the Workshop.',
   controls: {
     scrapCost: { kind: 'number', min: 0, max: 99 },
     scrapHave: { kind: 'number', min: 0, max: 99 },
@@ -294,10 +311,10 @@ const itemFrame: Entry = {
     base: { kind: 'select', options: GEAR_BASE_IDS },
     scale: { kind: 'number', min: 1, max: 8 },
   },
-  defaults: { rarity: 'epic', base: 'wave-band', scale: 4 },
+  defaults: { rarity: 'epic', base: 'kelp-cap', scale: 4 },
   presets: RARITIES.map((rarity) => ({ name: rarity, props: { rarity } })),
   render: (p) => (
-    <ItemFrame rarity={rarityOf(str(p, 'rarity'))}>
+    <ItemFrame rarity={rarityOf(str(p, 'rarity'))} baseId={str(p, 'base')}>
       <ItemSprite baseId={str(p, 'base')} scale={num(p, 'scale')} />
     </ItemFrame>
   ),
@@ -323,7 +340,7 @@ const revealShell: Entry = {
     cleared: true,
     busy: false,
     ownFooter: false,
-    body: 'You earned 40 Essence and a Wave Band.',
+    body: 'You earned 40 Essence and a Kelp Cap.',
   },
   presets: [
     { name: 'Cleared', props: {} },
@@ -397,6 +414,58 @@ const revealLater: Entry = {
   ),
 };
 
+const itemCard: Entry = {
+  name: 'ItemStats',
+  file: 'apps/activity/src/ItemLines.tsx',
+  group: 'Loot & reveals',
+  description:
+    'The body of an item card: its own stats as big numbers ("Attack 35"; a Charm has none), then its lines, with a line that only changes this item marked "(this item)" and each line\'s tier as pips. Rolled from a seed, so the same words give the same item; a Festival piece shows its unique line and its own frame.',
+  controls: {
+    base: { kind: 'select', options: GEAR_BASE_IDS },
+    rarity: { kind: 'select', options: RARITIES },
+    itemLevel: { kind: 'number', min: 1, max: 20 },
+    seed: { kind: 'text', maxLength: 24 },
+  },
+  defaults: { base: 'brine-hood', rarity: 'epic', itemLevel: 15, seed: 'card' },
+  presets: [
+    { name: 'A Hat, Epic', props: {} },
+    { name: 'A Scarf, Rare', props: { base: 'forge-scarf', rarity: 'rare', itemLevel: 10 } },
+    { name: 'A Hat with a crit stat', props: { base: 'storm-cowl', itemLevel: 20 } },
+    { name: 'A Charm (no stats)', props: { base: 'cinder-charm', itemLevel: 12 } },
+    {
+      name: 'A Festival piece',
+      props: { base: 'festival-hearth-scarf', rarity: 'rare', itemLevel: 8 },
+    },
+  ],
+  render: (p) => {
+    const id = str(p, 'base');
+    const base = gearBase(id);
+    const level = Math.max(num(p, 'itemLevel'), base === undefined ? 1 : baseMinLevel(base));
+    const rolled = rollItem(createSeededRng(str(p, 'seed')), {
+      baseId: id,
+      rarity: rarityOf(str(p, 'rarity')),
+      itemLevel: level,
+    });
+    return (
+      <section class="item-detail card-item">
+        <ItemFrame rarity={rolled.rarity} baseId={id}>
+          <ItemSprite baseId={id} scale={4} />
+        </ItemFrame>
+        {base?.festival === true && <FestivalTag />}
+        <ItemStats
+          stats={itemStats(rolled).map((s) => ({
+            stat: s.stat,
+            value: s.value,
+            base: s.base,
+            text: statText(s.stat, s.value),
+          }))}
+        />
+        <ItemLines lines={itemLines(rolled).map((l) => ({ ...l, active: null }))} />
+      </section>
+    );
+  },
+};
+
 export const lootEntries: readonly Entry[] = [
   rewardPile,
   rewardSummary,
@@ -405,6 +474,7 @@ export const lootEntries: readonly Entry[] = [
   partsRow,
   costList,
   itemFrame,
+  itemCard,
   revealShell,
   revealStage,
   revealLater,

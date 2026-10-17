@@ -13,9 +13,12 @@ import type {
   TripCatch,
   TripResult,
 } from './expedition-types';
-import { isRarity, isRoll } from './gear-parse';
-import type { CreatureGearFields, GearStat } from './gear-types';
-import { isInt, isNullableInt, isRecord, isStr } from './parse-core';
+import { isExperienceView, isRibbonView, type ExperienceView, type RibbonView } from './experience';
+import { isWornGear } from './gear-parse';
+import { isCreatureTalents, isPendingCatch } from './talent-parse';
+import type { CreatureTalents, PendingCatch } from './talent-types';
+import type { CreatureGearFields, WornGear } from './gear-types';
+import { isArrayOf, isInt, isNullableInt, isRecord, isStr } from './parse-core';
 import { createReauth, type Reauth } from './reauth';
 import { ROOM_SPOTS } from './sprites/room-art';
 
@@ -307,13 +310,31 @@ export interface Creature extends CreatureGearFields {
   /** Id of the creature's cosmetic personality quirk (text is in the shared lore data); null if unknown. */
   quirk: string | null;
   stats: { hp: number; atk: number; spd: number };
-  /** Bait for the next level with the discount applied; null at the level cap. */
-  trainCost: number | null;
+  /**
+   * Experience banked towards the next level, and what that level needs (null at the top). Levels come
+   * from what the creature does (trips, the dungeon, raids, Workshop jobs), never from Bait.
+   */
+  exp: number;
+  expNeeded: number | null;
+  /** It stands at a level it may not leave yet (a ribbon, or its evolution) holding the next level's experience. */
+  waiting: boolean;
+  /** Ribbons held: 0 none, 1 Bronze, 2 Silver, 3 Gold. */
+  ribbons: number;
+  /** What its next level brings ("Scarf" at 7); null at the top. */
+  nextUnlock: { level: number; name: string } | null;
+  /** The ribbon it waits for at its level, with the price; null when it is not at a gate. */
+  ribbon: RibbonView | null;
+  /** Bait a treat costs for this creature now (3 + half its level, rounded up). */
+  treatCost: number;
   evolution?: { toSpecies: string; level: number; essence: number; available: boolean };
   /** The creature's finale ability; null for a species without one. */
   ability: CreatureAbility | null;
   /** What it has earned as an explorer (rank, XP and trips). */
   explorer: ExplorerView;
+  /** 1, or 2 for a second creature Kept of a line with two branches. */
+  lineSlot: number;
+  /** Its talent slots, signature (epic species) and Talent Book. */
+  talents: CreatureTalents;
 }
 
 /** A creature's finale ability. `nextId` is the stronger one of its evolved form. */
@@ -341,6 +362,28 @@ export interface ServerFirst {
   holders: string[];
 }
 
+/** The one-time card about the level reset (counts only): levels were halved and the Bait they cost came back. */
+export interface LevelResetNotice {
+  /** How many creatures had their level halved. */
+  creatures: number;
+  /** The Bait given back. */
+  bait: number;
+  /** Worn items that went back to the bag because their creature may no longer wear them. */
+  unequipped: number;
+  /** Talents that went back to a Talent Book because their slot is not open any more. */
+  talentsToBook: number;
+}
+
+function isLevelResetNotice(value: unknown): value is LevelResetNotice {
+  return (
+    isRecord(value) &&
+    isInt(value['creatures']) &&
+    isInt(value['bait']) &&
+    isInt(value['unequipped']) &&
+    isInt(value['talentsToBook'])
+  );
+}
+
 export interface GameState {
   serverNow: number;
   balances: Balances;
@@ -350,15 +393,20 @@ export interface GameState {
   expeditions: Expedition[];
   /** Trips called home when the slots were reset (expeditions v2). */
   cancelled: CancelledTrip[];
+  /** The level reset card until the player dismisses it, else null. */
+  levelReset: LevelResetNotice | null;
   slots: Slots;
   /** Supplies in stock: supply id to amount. */
   supplies: Record<string, number>;
-  trainingMedianLevel: number | null;
   serverFirsts: ServerFirst[];
   /** Present on GET /api/state only; action responses leave it out. */
   leetSync: LeetSyncStatus | null;
   /** The guild's IANA timezone; present on GET /api/state only (null in action responses). */
   timezone: string | null;
+  /** Duplicates waiting for a choice (Teach, Fuse, Release or Keep), oldest first; at most 10. */
+  pending: PendingCatch[];
+  /** What slotting a talent from a creature's Talent Book costs (Bait). */
+  bookSlotBait: number;
   /** The creature that lounges in the living room; null when every creature is busy. */
   loungerId: string | null;
   /** The spot of the living room the player chose for their lounger; null: the room decides. */
@@ -431,15 +479,7 @@ function isCreatureAbility(value: unknown): value is CreatureAbility {
 }
 
 function isCreatureGear(value: unknown): value is CreatureGearFields['gear'] {
-  return (
-    value === null ||
-    (isRecord(value) &&
-      isStr(value['id']) &&
-      isStr(value['baseId']) &&
-      isStr(value['rarity']) &&
-      isInt(value['level']) &&
-      (value['enchantId'] === null || isStr(value['enchantId'])))
-  );
+  return isArrayOf(value, isWornGear);
 }
 
 function isBusy(value: unknown): value is CreatureGearFields['busy'] {
@@ -470,9 +510,20 @@ function isCreature(value: unknown): value is Creature {
     typeof value['away'] === 'boolean' &&
     (value['quirk'] === null || isStr(value['quirk'])) &&
     isStats(value['stats']) &&
-    (value['trainCost'] === null || isInt(value['trainCost'])) &&
+    isInt(value['exp']) &&
+    (value['expNeeded'] === null || isInt(value['expNeeded'])) &&
+    typeof value['waiting'] === 'boolean' &&
+    isInt(value['ribbons']) &&
+    (value['nextUnlock'] === null ||
+      (isRecord(value['nextUnlock']) &&
+        isInt(value['nextUnlock']['level']) &&
+        isStr(value['nextUnlock']['name']))) &&
+    (value['ribbon'] === null || isRibbonView(value['ribbon'])) &&
+    isInt(value['treatCost']) &&
     (value['ability'] === null || isCreatureAbility(value['ability'])) &&
     isExplorerView(value['explorer']) &&
+    isInt(value['lineSlot']) &&
+    isCreatureTalents(value['talents']) &&
     (evolution === undefined ||
       (isRecord(evolution) &&
         isStr(evolution['toSpecies']) &&
@@ -507,11 +558,18 @@ export function parseGameState(data: unknown): GameState {
     !data['expeditions'].every(isTrip) ||
     !Array.isArray(data['cancelled']) ||
     !data['cancelled'].every(isCancelledTrip) ||
+    !(
+      data['levelReset'] === undefined ||
+      data['levelReset'] === null ||
+      isLevelResetNotice(data['levelReset'])
+    ) ||
     !isSlots(data['slots']) ||
     !isSupplyStock(data['supplies']) ||
-    !(data['trainingMedianLevel'] === null || typeof data['trainingMedianLevel'] === 'number') ||
     !Array.isArray(data['serverFirsts']) ||
     !data['serverFirsts'].every(isServerFirst) ||
+    !Array.isArray(data['pending']) ||
+    !data['pending'].every(isPendingCatch) ||
+    !isInt(data['bookSlotBait']) ||
     !(data['leetSync'] === undefined || isLeetSyncStatus(data['leetSync'])) ||
     !(data['timezone'] === undefined || isStr(data['timezone'])) ||
     !(data['loungerId'] === null || isStr(data['loungerId'])) ||
@@ -530,10 +588,12 @@ export function parseGameState(data: unknown): GameState {
     creatures: data['creatures'],
     expeditions: data['expeditions'],
     cancelled: data['cancelled'],
+    levelReset: data['levelReset'] ?? null,
     slots: data['slots'],
     supplies: data['supplies'],
-    trainingMedianLevel: data['trainingMedianLevel'],
     serverFirsts: data['serverFirsts'],
+    pending: data['pending'],
+    bookSlotBait: data['bookSlotBait'],
     leetSync: data['leetSync'] ?? null,
     timezone: data['timezone'] ?? null,
     loungerId: data['loungerId'],
@@ -550,19 +610,48 @@ export async function fetchState(): Promise<GameState> {
   return parseGameState(await apiFetch('/api/state'));
 }
 
+/** Dismisses the one-time level reset card for good; answers with the new state. */
+export async function dismissLevelReset(): Promise<GameState> {
+  return stateFrom(await apiFetch('/api/level-reset/dismiss', jsonRequest('POST', {})));
+}
+
 export async function chooseStarter(species: string, idempotencyKey: string): Promise<GameState> {
   return stateFrom(
     await apiFetch('/api/starter', jsonRequest('POST', { species, idempotencyKey })),
   );
 }
 
-export async function trainCreature(
+/** What earning a ribbon did: the ribbon, and the experience the creature had banked, spent now. */
+export interface RibbonResult {
+  creatureId: string;
+  ribbon: 'bronze' | 'silver';
+  experience: ExperienceView | null;
+}
+
+function isRibbonResult(value: unknown): value is RibbonResult {
+  return (
+    isRecord(value) &&
+    isStr(value['creatureId']) &&
+    (value['ribbon'] === 'bronze' || value['ribbon'] === 'silver') &&
+    (value['experience'] === null || isExperienceView(value['experience']))
+  );
+}
+
+/**
+ * Earns the ribbon a creature waits for (level 10 Bronze, level 20 Silver): materials only. The key makes
+ * a retry return the same result and take nothing twice.
+ */
+export async function earnRibbon(
   creatureId: string,
   idempotencyKey: string,
-): Promise<GameState> {
-  return stateFrom(
-    await apiFetch(`/api/creatures/${creatureId}/train`, jsonRequest('POST', { idempotencyKey })),
+): Promise<{ result: RibbonResult; state: GameState }> {
+  const data = await apiFetch(
+    `/api/creatures/${creatureId}/ribbon`,
+    jsonRequest('POST', { idempotencyKey }),
   );
+  const result = isRecord(data) ? data['result'] : undefined;
+  if (!isRibbonResult(result)) throw new Error('the server returned an unexpected ribbon result');
+  return { result, state: stateFrom(data) };
 }
 
 export async function renameCreature(
@@ -624,14 +713,12 @@ export interface RoomCreature {
   quirk: string | null;
   craftingLevel: number;
   explorerRank: number;
-  /** The item it wears (like `Creature.gear`), with the main stat it gives now; null when none. */
-  gear: RoomGear | null;
+  /** The items it wears (like `Creature.gear`), each with the text of its lines. */
+  gear: RoomGear[];
 }
 
-/** A worn item in the living room: the state view's item fields plus its main stat and value. */
-export type RoomGear = NonNullable<CreatureGearFields['gear']> & {
-  primary: { stat: GearStat; bp: number };
-};
+/** A worn item in the living room: the state view's item fields plus the text of its lines ("Attack +6%"). */
+export type RoomGear = WornGear & { lines: string[] };
 
 /** A player in the living room: the name, the lounger (null when all their creatures are busy) and the spot they chose. */
 export interface RoomResident {
@@ -643,15 +730,7 @@ export interface RoomResident {
 }
 
 function isRoomGear(value: unknown): value is RoomGear {
-  return (
-    isRecord(value) &&
-    isStr(value['id']) &&
-    isStr(value['baseId']) &&
-    isRarity(value['rarity']) &&
-    isInt(value['level']) &&
-    (value['enchantId'] === null || isStr(value['enchantId'])) &&
-    isRoll(value['primary'])
-  );
+  return isWornGear(value) && isArrayOf((value as { lines?: unknown }).lines, isStr);
 }
 
 function isRoomCreature(value: unknown): value is RoomCreature {
@@ -665,7 +744,7 @@ function isRoomCreature(value: unknown): value is RoomCreature {
     (value['quirk'] === null || isStr(value['quirk'])) &&
     isInt(value['craftingLevel']) &&
     isInt(value['explorerRank']) &&
-    (value['gear'] === null || isRoomGear(value['gear']))
+    isArrayOf(value['gear'], isRoomGear)
   );
 }
 

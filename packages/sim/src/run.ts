@@ -9,7 +9,9 @@ import {
 } from './archetypes';
 import { namedCurveMixes, runCurveStudy, type CurveResult } from './curve-study';
 import { runEconomy, type EconomyResult } from './economy';
+import { gearShareMetrics, runGearStudy, type GearShareRun } from './gear-study';
 import { runSuppliesStudy, suppliesMetrics, type SuppliesRun } from './supplies-study';
+import { creaturesMetrics, runCreaturesStudy, type CreaturesRun } from './creatures-study';
 import type { IncomeModelId } from './income';
 import { LONG_RUN_GROUPS, LONG_RUN_WEEKS } from './ladder';
 import { journeyRoster } from './profiles';
@@ -43,11 +45,24 @@ export interface RunSettings {
   curveServers: number;
   /** Servers of the supplies study (the default journey server, `supplies-study.ts`, B-011). */
   suppliesServers: number;
+  /** Servers of the gear share study (30 weeks of the default journey server, `gear-study.ts`); 0 skips it. */
+  gearServers: number;
+  /** Servers of the creatures study (30 weeks of the default journey server, `creatures-study.ts`, B-014); 0 skips it. */
+  creaturesServers: number;
   /** Player counts of the raid sweep. */
   counts: number[];
   /** How Bait comes in (`income.ts`). Absent: the allowance, the shipped income. */
   income?: IncomeModelId;
+  /**
+   * Play with the valley's weather (default: on, as shipped); `false` is the run without it, to read what the
+   * weather does to the targets. The raid-week what-if studies (roles, setups, rank check) never use weather.
+   */
+  weather?: boolean;
 }
+
+/** The weather option the economies and studies are played with: only an explicit off is passed on. */
+const weatherOf = (settings: RunSettings): { weather?: false } =>
+  settings.weather === false ? { weather: false } : {};
 
 export const PITY_WEEKS = 20;
 /** Weeks the slot-opening sims run: a bit more than a year. */
@@ -70,6 +85,8 @@ export function defaultSettings(
     tripLongSims: quick ? 2 : 8,
     curveServers: quick ? 6 : 60,
     suppliesServers: quick ? 6 : 30,
+    gearServers: quick ? 4 : 20,
+    creaturesServers: quick ? 2 : 12,
     counts: [...SWEEP_COUNTS],
     ...(overrides.income === undefined ? {} : { income: overrides.income }),
   };
@@ -87,7 +104,14 @@ export interface RunOutput {
   curve: CurveResult;
   /** The supplies study: where supplies come from and what they are used for, by profile and week (B-011). */
   supplies: SuppliesRun;
+  /** The gear share study: gear's share of the fight-scored power by profile at weeks 2, 8, 20 and 30; null when skipped. */
+  gear: GearShareRun | null;
+  /** The creatures study: catches, duplicates, the catalogue pace, the Bait split and the talents' share of power (B-014); null when skipped. */
+  creatures: CreaturesRun | null;
 }
+
+/** Weeks the creatures study plays: the slowest profile completes the catalogue in about 25. */
+export const CREATURES_WEEKS = 30;
 
 /** Weeks (1-based) at which rosters are snapshotted: 4 and 8, or the last week if the run is shorter. */
 export function snapshotWeeks(weeks: number): number[] {
@@ -124,6 +148,7 @@ export function runEconomies(
           weeks: settings.weeks,
           mix,
           snapshotWeeks: snapshotWeeks(settings.weeks),
+          ...weatherOf(settings),
         }),
       );
     }
@@ -141,6 +166,7 @@ export function runEconomies(
           mix,
           snapshotWeeks: [],
           gear: false,
+          ...weatherOf(settings),
         }),
       );
       noDungeonSims = (options.baseline === false ? [] : sims).map((_, k) =>
@@ -151,6 +177,7 @@ export function runEconomies(
           mix,
           snapshotWeeks: [],
           dungeon: false,
+          ...weatherOf(settings),
         }),
       );
     }
@@ -175,6 +202,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
         // The default journey server (min-maxer, engaged, regular and drop-in players), as the curve is tuned for.
         roster: journeyRoster(DEFAULT_SERVER_SIZE).map((profile) => ({ profile })),
         snapshotWeeks: [],
+        ...weatherOf(settings),
       }),
     );
   }
@@ -189,6 +217,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
         // The default journey server scaled to the group's size, as the curve is tuned for.
         roster: journeyRoster(g.count).map((profile) => ({ profile })),
         snapshotWeeks: [],
+        ...weatherOf(settings),
       }),
     ),
   }));
@@ -202,6 +231,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
         weeks: TRIP_LONG_WEEKS,
         mix: DEFAULT_MIX,
         snapshotWeeks: [],
+        ...weatherOf(settings),
       }),
     );
   }
@@ -211,6 +241,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
     runs: settings.runsPerCell,
     counts: settings.counts,
     snapshots,
+    ...weatherOf(settings),
   });
   const roles = runRoleStudy({
     seed: settings.seed,
@@ -233,6 +264,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
     servers: settings.curveServers,
     income,
     mixes: namedCurveMixes(),
+    ...weatherOf(settings),
   });
   // The supplies study: the default journey server for `weeks` weeks (supplies are not for sale).
   const supplies = runSuppliesStudy('shipped', '', {
@@ -240,7 +272,28 @@ export function runSimulation(settings: RunSettings): RunOutput {
     seeds: 1,
     servers: settings.suppliesServers,
     weeks: settings.weeks,
+    ...weatherOf(settings),
   });
+  // The gear share study: 30 weeks of the default journey server, scored in fights.
+  const gear =
+    settings.gearServers > 0
+      ? runGearStudy({
+          seed: `${settings.seed}:gear`,
+          servers: settings.gearServers,
+          ...weatherOf(settings),
+        })
+      : null;
+  // The creatures study: the same journey servers for 30 weeks, with the talents' share of fight power.
+  const creatures =
+    settings.creaturesServers > 0
+      ? runCreaturesStudy('shipped', '', {
+          seed: `${settings.seed}:creatures`,
+          seeds: 1,
+          servers: settings.creaturesServers,
+          weeks: CREATURES_WEEKS,
+          ...weatherOf(settings),
+        })
+      : null;
   const analysis = analyse({
     roles,
     weeks: settings.weeks,
@@ -259,12 +312,16 @@ export function runSimulation(settings: RunSettings): RunOutput {
       ...analysis.metrics,
       ...curve.metrics,
       ...suppliesMetrics(supplies),
+      ...(gear === null ? {} : gearShareMetrics(gear)),
+      ...(creatures === null ? {} : creaturesMetrics(creatures)),
     }),
     example: sweep.example,
     setups,
     ranks,
     curve,
     supplies,
+    gear,
+    creatures,
   };
 }
 

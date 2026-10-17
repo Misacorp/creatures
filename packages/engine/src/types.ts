@@ -42,6 +42,80 @@ export interface FightSlot {
    * HP, plus the Guard bonus); 0 means the creature starts knocked out and never acts. Absent: full HP.
    */
   hp?: number;
+  /**
+   * The creature's modifier sheet (gear, talents, the day's weather folded into plain numbers before
+   * the fight; see `SlotMods`). Absent: no modifiers, so a stored fight replays exactly as it was.
+   */
+  mods?: SlotMods;
+}
+
+/**
+ * A creature's modifier sheet: plain integers, each read at one step of the fight
+ * (docs/design/combat-rules.md, section 10). Every field is optional and 0 when absent. Conditions
+ * (the wearer's element or role, which boss is this week's) are resolved by whoever builds the
+ * sheet, so the engine sees numbers only. Basis points (bp) unless the name says otherwise; a
+ * negative bonus is a penalty and a negative reduction makes the creature take more.
+ */
+export interface SlotMods {
+  // --- The creature's hit on the boss: added to the hit's one combined bonus (2.4.3). ---
+  /** Extra damage against a boss of that element (a Hunter line, resolved to the boss's element). */
+  vsElementBp?: Partial<Record<Element, number>>;
+  /** Hits on a marked boss that do not set off a reaction. */
+  markedFoeBp?: number;
+  /** The creature's first turn hit in each fight (an ability's strike is not a first hit). */
+  firstHitBp?: number;
+  /** The hit that leaves a mark or replaces one. */
+  markingHitBp?: number;
+  /** An ability's strike (`strike` effect). */
+  strikeBp?: number;
+  /** Extra damage while a living creature of that role stands beside it (position line, 10.4). */
+  besideRoleBp?: Partial<Record<Role, number>>;
+  /** The boss's adaptation resists this creature's hits this much less (0 to 10000). */
+  pierceBp?: number;
+
+  // --- The reaction it sets off or has set up. ---
+  /** The bonus of each reaction it sets off (by reaction id: steam, wildfire, ...). */
+  reactionBp?: Partial<Record<string, number>>;
+  /** Added to the reaction multiplier's percentage (on top of a Payoff's own bonus). */
+  pounceBp?: number;
+  /** Reactions that others set off on a mark this creature left (the setter's sheet counts). */
+  ownerMarkBp?: number;
+  /** Crit chance on hits that set off a reaction (still under the crit cap). */
+  keenReactionBp?: number;
+  /** A Support's: the reaction bonus of the creatures beside it. */
+  shareBp?: number;
+
+  // --- The taker: each reduces what this creature takes, after armor and cover (3.2). ---
+  /** Every hit. */
+  takenBp?: number;
+  /** Area hits. */
+  areaBp?: number;
+  /** Aimed hits. */
+  aimedBp?: number;
+  /** Reflected hits. */
+  reflectedBp?: number;
+  /** Hits of a charged move landing. */
+  chargedBp?: number;
+  /** Hits from a boss of that element (a Ward line, resolved to the boss's element). */
+  wardBp?: Partial<Record<Element, number>>;
+  /** Healing it receives (a Support's Mend), in either direction. */
+  healReceivedBp?: number;
+
+  // --- Roles. ---
+  /** A Guard's armor, added to the rules' armor. */
+  armorBp?: number;
+  /** A Guard's cover for the creatures beside it, added to the rules' cover. */
+  coverBp?: number;
+  /** A Support's boost on the creatures beside it, added to the boost. */
+  boostBp?: number;
+  /** A Support's Mend: the share of max HP the creatures beside it heal at round start, added to the element's. */
+  mendBp?: number;
+
+  // --- Abilities and silence. ---
+  /** Rounds added to the Rally, Shield Wall and Purge of the creature's own ability (0 to 3). */
+  lingerRounds?: number;
+  /** 1: silence does nothing to it. */
+  ignoreSilence?: 0 | 1;
 }
 
 export interface AbilityChoice {
@@ -230,6 +304,8 @@ export type FightEvent =
       crit?: true;
       /** The extra damage of that crit in basis points of the plain hit (this creature's crit damage). */
       critBp?: number;
+      /** The creature's sheet added this much to the hit's damage bonus (basis points); absent if none. */
+      sheetBp?: number;
     }
   | {
       t: 'mark';
@@ -250,6 +326,8 @@ export type FightEvent =
       /** Bonus damage of the reaction (dealt to the boss, or to the payoff creature if reflected). */
       bonus: number;
       reflected: boolean;
+      /** The sheets' share of the reaction: per-reaction and owner's mark bonus plus the pounce, in basis points; absent if none. */
+      sheetBp?: number;
     }
   | {
       t: 'gimmick';
@@ -290,6 +368,8 @@ export type FightEvent =
       armored?: number;
       /** The single-hit cap (`FightRules.maxHitBp`) cut this hit down. */
       capped?: true;
+      /** The taker's sheet reductions took this much off the hit (negative: its sheet made the hit bigger). */
+      warded?: number;
     }
   | { t: 'knockout'; round: number; creature: string }
   | { t: 'silence'; round: number; creature: string; turns: number }

@@ -3,12 +3,14 @@ import { failure, pathId } from './collection-routes';
 import type { Gear } from './gear';
 import {
   ClaimJobBodySchema,
-  DismantleBodySchema,
+  DismissNoticeBodySchema,
+  EquipBestBodySchema,
   EquipBodySchema,
+  PreviewBodySchema,
+  RemovedJobKindSchema,
   StartJobBodySchema,
-  UpgradeBodySchema,
 } from './gear-schemas';
-import { errorResponse, json, parseBody, type Routes } from './http';
+import { errorResponse, json, parseBody, type Handler, type Routes } from './http';
 
 /** What these routes need from the request context (GuildCore's context satisfies it). */
 export interface GearRouteContext {
@@ -26,7 +28,7 @@ function views(ctx: GearRouteContext): { gear: unknown; state: unknown } {
   return { gear: ctx.core.gear.state(ctx.user.id), state: ctx.core.collection.state(ctx.user.id) };
 }
 
-export const gearRoutes: Routes<GearRouteContext> = {
+const routes: Routes<GearRouteContext> = {
   '/api/gear': {
     // The first gear load gives the welcome kit (once), so crafting can start on day 1.
     GET: (_request, ctx) => {
@@ -45,30 +47,49 @@ export const gearRoutes: Routes<GearRouteContext> = {
       return json({ result: outcome.value, ...views(ctx) });
     },
   },
-  '/api/gear/:id/upgrade': {
+  '/api/gear/equip-best': {
     POST: async (request, ctx) => {
-      const id = pathId(ctx);
-      if (id === undefined) return invalidId();
-      const body = await parseBody(request, UpgradeBodySchema);
+      const body = await parseBody(request, EquipBestBodySchema);
       if (body === undefined) return invalidBody();
-      const outcome = ctx.core.gear.upgrade(ctx.user.id, id, body.idempotencyKey);
+      const outcome = ctx.core.gear.equipBest(ctx.user.id, body.creatureIds);
       if (!outcome.ok) return failure(outcome);
       return json({ result: outcome.value, ...views(ctx) });
     },
   },
-  '/api/gear/:id/dismantle': {
+  '/api/gear/conversion/dismiss': {
     POST: async (request, ctx) => {
-      const id = pathId(ctx);
-      if (id === undefined) return invalidId();
-      const body = await parseBody(request, DismantleBodySchema);
+      const body = await parseBody(request, DismissNoticeBodySchema);
       if (body === undefined) return invalidBody();
-      const outcome = ctx.core.gear.dismantle(ctx.user.id, id, body.idempotencyKey);
+      ctx.core.gear.dismissNotice(ctx.user.id);
+      return json({ result: { dismissed: true }, ...views(ctx) });
+    },
+  },
+  // Gear upgrades are gone (gear v2): an old client gets a clear answer, and nothing is charged.
+  '/api/gear/:id/upgrade': {
+    POST: () => errorResponse('gear_upgrade_removed', 410),
+  },
+  // Dismantling is a Workshop job now (gear v2, Gear B): an old client gets a clear answer, and nothing is taken.
+  '/api/gear/:id/dismantle': {
+    POST: () => errorResponse('dismantle_is_a_job', 410),
+  },
+  // What a craft or a dismantle job would give, before it starts: exact odds, parts, Essence, time and refund ranges.
+  '/api/workshop/preview': {
+    POST: async (request, ctx) => {
+      const body = await parseBody(request, PreviewBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome =
+        body.kind === 'craft'
+          ? ctx.core.gear.previewCraft(ctx.user.id, body.creatureId, body.blueprintId)
+          : ctx.core.gear.previewDismantle(ctx.user.id, body.creatureId, body.itemIds);
       if (!outcome.ok) return failure(outcome);
-      return json({ result: outcome.value, ...views(ctx) });
+      return json({ result: outcome.value });
     },
   },
   '/api/workshop/jobs': {
     POST: async (request, ctx) => {
+      // Improve and Enchant are gone (gear v2): an old client gets a clear answer, and nothing is charged.
+      const removed = await parseBody(request.clone(), RemovedJobKindSchema);
+      if (removed !== undefined) return errorResponse('job_kind_removed', 410);
       const body = await parseBody(request, StartJobBodySchema);
       if (body === undefined) return invalidBody();
       const outcome = ctx.core.gear.startJob(ctx.user.id, body);
@@ -88,3 +109,23 @@ export const gearRoutes: Routes<GearRouteContext> = {
     },
   },
 };
+
+/**
+ * A player whose old gear could not be converted yet (one bad legacy row: the conversion rolled back and
+ * they stay pending) gets a clear 503 from every gear and Workshop route instead of a half-converted view.
+ */
+const guarded =
+  (handler: Handler<GearRouteContext>): Handler<GearRouteContext> =>
+  (request, ctx) =>
+    ctx.core.gear.conversionPending(ctx.user.id)
+      ? errorResponse('gear_conversion_pending', 503)
+      : handler(request, ctx);
+
+export const gearRoutes: Routes<GearRouteContext> = Object.fromEntries(
+  Object.entries(routes).map(([path, methods]) => [
+    path,
+    Object.fromEntries(
+      Object.entries(methods).map(([method, handler]) => [method, guarded(handler)]),
+    ),
+  ]),
+);

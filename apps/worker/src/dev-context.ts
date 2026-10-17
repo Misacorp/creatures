@@ -6,6 +6,7 @@ import type { Rng } from '@creatures/game';
 import type { DevState } from './dev-state';
 import type { LedgerStorage } from './ledger';
 import type { Raid } from './raid';
+import type { Weather } from './weather';
 
 /** A tool that refuses: rolls the tool's transaction back and becomes `{ error }` with this status. */
 export class DevError extends Error {
@@ -31,10 +32,13 @@ export interface ToolCtx {
   tz: string;
   state: DevState;
   raid: Raid;
+  /** The valley's weather (the `set-weather` tool). */
+  weather: Weather;
   /** Crypto randomness for the things the tools roll (guest teams, gear, the day's seed). */
   rng: Rng;
   gearRng: Rng;
   quirkRng: Rng;
+  talentRng: Rng;
   /** The dev clock offset: read, and write (a non-negative integer of ms). */
   offset: { get(): number; set(ms: number): void };
 }

@@ -6,7 +6,7 @@
  * "resolve now" and "simulate the week" resolve the phases directly, with the engine and live
  * randomness exactly as the scheduler would, and mark the events done so they never run twice.
  */
-import { RULES, content, festivalCreatureFor, int, pickQuirk } from '@creatures/game';
+import { RULES, content, festivalCreatureFor, int, ribbonsForLevel } from '@creatures/game';
 import type * as v from 'valibot';
 import { advanceTo, phaseTarget } from './dev-tools-clock';
 import { DevError, purgeUser, type ToolCtx } from './dev-context';
@@ -23,6 +23,7 @@ import { readWeekProgression } from './raid-ladder';
 import { joinSmallestParty, leaveParty, partyOf } from './raid-roster';
 import { RAID_PHASES, weekIndex } from './raid-schedule';
 import { autoTeam, loadCreatures } from './raid-teams';
+import { insertCreature } from './talent-store';
 
 type Body<S extends v.GenericSchema> = v.InferOutput<S>;
 
@@ -178,16 +179,17 @@ function createGuest(ctx: ToolCtx, n: number, level: number): void {
     if (lines.has(species.line)) continue;
     lines.add(species.line);
     const spread = int(ctx.rng, 5) - 2;
+    const made = insertCreature(
+      ctx.sql,
+      { quirk: ctx.quirkRng, talent: ctx.talentRng },
+      { userId: id, species: species.id, origin: 'dev', now: ctx.now },
+    );
+    const guestLevel = Math.min(species.levelCap, Math.max(1, level + spread));
     ctx.sql.exec(
-      `INSERT INTO creatures (id, user_id, line, species, level, fusion_count, shiny, origin, caught_at, quirk_id)
-       VALUES (?, ?, ?, ?, ?, 0, 0, 'dev', ?, ?)`,
-      crypto.randomUUID(),
-      id,
-      species.line,
-      species.id,
-      Math.min(species.levelCap, Math.max(1, level + spread)),
-      ctx.now,
-      pickQuirk(species.id, ctx.quirkRng),
+      'UPDATE creatures SET level = ?, ribbons = ? WHERE id = ?',
+      guestLevel,
+      ribbonsForLevel(guestLevel),
+      made.id,
     );
   }
 }

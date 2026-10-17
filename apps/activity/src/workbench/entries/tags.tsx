@@ -220,7 +220,7 @@ const rarityTag: Entry = {
   file: 'apps/activity/src/GearArt.tsx',
   group: 'Tags & chips',
   description:
-    'The rarity of a gear item (Common, Rare, Epic or Festival) as a tag with its own colour; it is on item cards and in loot lists.',
+    'The rarity of a gear item (Common, Rare or Epic) as a tag with its own colour; it is on item cards and in loot lists. A Festival piece also carries its own Festival tag.',
   controls: { rarity: { kind: 'select', options: RARITIES } },
   defaults: { rarity: 'rare' },
   presets: RARITIES.map((rarity) => ({ name: rarity, props: { rarity } })),

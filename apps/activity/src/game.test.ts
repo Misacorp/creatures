@@ -30,11 +30,19 @@ const creature: Creature = {
   quirk: 'hums-quietly',
   stats: { hp: 1, atk: 1, spd: 1 },
   statsWithGear: { hp: 1, atk: 1, spd: 1 },
-  gear: null,
+  gear: [],
   busy: null,
-  trainCost: 15,
+  exp: 0,
+  expNeeded: 27,
+  waiting: false,
+  ribbons: 0,
+  nextUnlock: { level: 7, name: 'Scarf' },
+  ribbon: null,
+  treatCost: 4,
   ability: { id: 'tidal-mark', unlocked: false, unlockLevel: 10, nextId: 'tidal-mark-2' },
   explorer: { rank: 1, xp: 0, nextRankXp: 200, trips: 0 },
+  lineSlot: 1,
+  talents: { slots: [], signature: null, book: [] },
 };
 
 describe('display helpers', () => {
@@ -58,6 +66,8 @@ describe('display helpers', () => {
       catchBadgeTags(entry).map((b) => b.text);
     const base = { species: 'zipmouse', shiny: false, firstOnServer: false };
     expect(badgeTexts({ ...base, outcome: 'new' })).toEqual(['New!']);
+    expect(badgeTexts({ ...base, outcome: 'duplicate' })).toEqual(['Duplicate']);
+    expect(catchBadgeTags({ ...base, outcome: 'duplicate' })[0]?.entry).toBe('duplicate-choice');
     expect(badgeTexts({ ...base, outcome: 'fused', fusionCount: 3 })).toEqual(['Fused ★3']);
     expect(badgeTexts({ ...base, outcome: 'converted', bait: 5 })).toEqual(['+5 Bait']);
     expect(badgeTexts({ ...base, outcome: 'new', shiny: true, firstOnServer: true })).toEqual([
@@ -214,6 +224,8 @@ describe('parseGameState', () => {
     supplies: {},
     trainingMedianLevel: null,
     serverFirsts: [],
+    pending: [],
+    bookSlotBait: 10,
     loungerId: null,
   };
 
@@ -299,6 +311,8 @@ describe('quirks and species lore in the client', () => {
       supplies: {},
       trainingMedianLevel: null,
       serverFirsts: [],
+      pending: [],
+      bookSlotBait: 10,
       loungerId: null,
     });
     expect(state.creatures[0]?.quirk).toBeNull();

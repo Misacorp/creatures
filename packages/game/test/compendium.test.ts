@@ -2,14 +2,23 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { content, dungeonContent, expeditionContent, gearContent } from '../src/index';
+import {
+  content,
+  dungeonContent,
+  expeditionContent,
+  gearContent,
+  talentContent,
+  weatherContent,
+} from '../src/index';
 
 /**
  * Sync check between shipped content and the dev-only compendium (`docs/compendium/`).
  *
  * Matching rule, one per kind:
  * - Species, destinations, raid bosses, dungeon foes and room bosses, room modifiers, gear bases,
- *   enchants and supplies: the content's display name, as a heading, a bold name, or a table cell.
+ *   supplies, talents (the pools, the signatures and the held-back ones) and Boons and Omens (the
+ *   planned ones too): the content's display
+ *   name, as a heading, a bold name, or a table cell.
  *   (The compendium uses names for all of these. Species lines are covered by their stage 1 name.)
  * - Journal entries: the entry id in backticks (the journal key is keyed by id).
  *
@@ -67,12 +76,19 @@ describe('compendium is in sync with shipped content', () => {
     expect(missingNames('items.md', gearContent.bases)).toEqual([]);
   });
 
-  it('has every enchant in items.md', () => {
-    expect(missingNames('items.md', gearContent.enchants)).toEqual([]);
-  });
-
   it('has every supply in items.md', () => {
     expect(missingNames('items.md', expeditionContent.supplies)).toEqual([]);
+  });
+
+  it('has every talent, signature and held-back talent in talents.md', () => {
+    const all = [...talentContent.byId.values(), ...talentContent.deferred];
+    expect(all.length).toBeGreaterThan(100);
+    expect(missingNames('talents.md', all)).toEqual([]);
+  });
+
+  it('has every Boon and Omen, live and planned, in weather.md', () => {
+    expect(weatherContent.length).toBeGreaterThanOrEqual(20);
+    expect(missingNames('weather.md', [...weatherContent])).toEqual([]);
   });
 
   it('has every journal entry id in journal.md', () => {

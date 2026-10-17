@@ -45,7 +45,7 @@ describe('the living room answers', () => {
       quirk: null,
       craftingLevel: 3,
       explorerRank: 2,
-      gear: null,
+      gear: [],
     },
   };
 
@@ -58,35 +58,33 @@ describe('the living room answers', () => {
     expect(parseRoom({ residents: [] })).toEqual([]);
   });
 
-  it('parses a worn item with its main stat', () => {
+  it('parses the worn items with the text of their lines', () => {
     const gear = {
       id: 'g1',
-      baseId: 'bark-band',
+      baseId: 'kelp-cap',
+      slot: 'hat',
       rarity: 'rare',
-      level: 3,
-      enchantId: 'steady-hand',
-      primary: { stat: 'atk', bp: 850 },
+      itemLevel: 7,
+      lines: ['Attack +2%', 'Tide Hunter +7%'],
     };
     const parsed = parseRoom({
-      residents: [{ ...resident, creature: { ...resident.creature, gear } }],
+      residents: [{ ...resident, creature: { ...resident.creature, gear: [gear] } }],
     });
-    expect(parsed[0]?.creature?.gear).toEqual(gear);
+    expect(parsed[0]?.creature?.gear).toEqual([gear]);
     const plain = parseRoom({
-      residents: [
-        { ...resident, creature: { ...resident.creature, gear: { ...gear, enchantId: null } } },
-      ],
+      residents: [{ ...resident, creature: { ...resident.creature, gear: [] } }],
     });
-    expect(plain[0]?.creature?.gear?.enchantId).toBeNull();
+    expect(plain[0]?.creature?.gear).toEqual([]);
   });
 
   it('refuses a missing or malformed worn item', () => {
     const gear = {
       id: 'g1',
-      baseId: 'bark-band',
+      baseId: 'kelp-cap',
+      slot: 'hat',
       rarity: 'rare',
-      level: 3,
-      enchantId: null,
-      primary: { stat: 'atk', bp: 850 },
+      itemLevel: 7,
+      lines: ['Attack +2%'],
     };
     const withGear = (g: unknown) => ({
       residents: [{ ...resident, creature: { ...resident.creature, gear: g } }],
@@ -95,13 +93,13 @@ describe('the living room answers', () => {
     delete noGear.gear;
     expect(() => parseRoom({ residents: [{ ...resident, creature: noGear }] })).toThrow();
     expect(() => parseRoom(withGear(undefined))).toThrow();
-    expect(() => parseRoom(withGear({ ...gear, rarity: 'mythic' }))).toThrow();
-    expect(() => parseRoom(withGear({ ...gear, level: 1.5 }))).toThrow();
-    expect(() => parseRoom(withGear({ ...gear, enchantId: 4 }))).toThrow();
-    expect(() => parseRoom(withGear({ ...gear, id: 7 }))).toThrow();
-    expect(() => parseRoom(withGear({ ...gear, primary: undefined }))).toThrow();
-    expect(() => parseRoom(withGear({ ...gear, primary: { stat: 'luck', bp: 1 } }))).toThrow();
-    expect(() => parseRoom(withGear({ ...gear, primary: { stat: 'atk', bp: 0.5 } }))).toThrow();
+    expect(() => parseRoom(withGear(null))).toThrow();
+    expect(() => parseRoom(withGear([{ ...gear, rarity: 'mythic' }]))).toThrow();
+    expect(() => parseRoom(withGear([{ ...gear, slot: 'boots' }]))).toThrow();
+    expect(() => parseRoom(withGear([{ ...gear, itemLevel: 1.5 }]))).toThrow();
+    expect(() => parseRoom(withGear([{ ...gear, id: 7 }]))).toThrow();
+    expect(() => parseRoom(withGear([{ ...gear, lines: undefined }]))).toThrow();
+    expect(() => parseRoom(withGear([{ ...gear, lines: [4] }]))).toThrow();
   });
 
   it('refuses a shape that is wrong', () => {
@@ -132,6 +130,8 @@ describe('loungerId in the state', () => {
     supplies: {},
     trainingMedianLevel: null,
     serverFirsts: [],
+    pending: [],
+    bookSlotBait: 10,
   };
 
   it('is a creature id or null', () => {
@@ -178,6 +178,8 @@ describe('the chosen lounge spot', () => {
     supplies: {},
     trainingMedianLevel: null,
     serverFirsts: [],
+    pending: [],
+    bookSlotBait: 10,
     loungerId: null,
   };
 

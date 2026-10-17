@@ -4,10 +4,6 @@
   box-shadow: inset calc(var(--px) * -1) 0 0 var(--haze);
 }
 
-.train-help {
-  margin-left: 0.5rem;
-}
-
 /* The page header: the title with its "sigma" mark (a joke: the app is not even in alpha), and the "?" that opens How to play. */
 .app-head {
   display: flex;
@@ -52,4 +48,21 @@ button.howto-open {
 
 body.howto-open {
   overflow: hidden;
+}
+
+/* "Pack a treat": one compact line where a creature is sent, put in the dungeon team or given a job. */
+.treat-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.375rem;
+  margin: 0.25rem 0;
+}
+
+.treat-box label {
+  cursor: pointer;
+}
+
+.treat-help {
+  margin-left: 0.25rem;
 }

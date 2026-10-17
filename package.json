@@ -22,7 +22,9 @@
     "sim:live": "node packages/sim/scripts/sim-live.mjs",
     "sim:journey": "node packages/sim/scripts/journey.mjs",
     "sim:curve": "node packages/sim/scripts/curve.mjs",
-    "sim:supplies": "node packages/sim/scripts/supplies.mjs"
+    "sim:supplies": "node packages/sim/scripts/supplies.mjs",
+    "sim:weather": "node packages/sim/scripts/weather.mjs",
+    "sim:creatures": "node packages/sim/scripts/creatures.mjs"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

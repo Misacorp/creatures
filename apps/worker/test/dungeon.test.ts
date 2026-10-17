@@ -4,7 +4,7 @@ import {
   createSeededRng,
   dungeonContent,
   dungeonSupplyOddsBp,
-  rollGear,
+  rollItem,
   supplyDef,
   type PartKind,
   type Rng,
@@ -18,7 +18,7 @@ import {
 } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { grantDungeonRun } from '../src/gear-grants';
-import { insertItem } from '../src/gear-store';
+import { giveItem } from './gear-helpers';
 import { drawSeed } from '../src/raid-resolve';
 import { dungeonPlayer, newKey, type DungeonPlayer } from './dungeon-helpers';
 import {
@@ -761,13 +761,19 @@ describe('idempotency', () => {
           currency: 'bait',
           amount: 50,
           source: 'test',
-          idempotencyKey: 'bait-for-train',
+          idempotencyKey: 'bait-for-spend',
         });
         const key = newKey();
-        const trained = await q.call('POST', `/api/creatures/${q.creatureIds[0] as string}/train`, {
+        // The same key used by a Bait spend (a Talent Book slotting, a treat, a ledger debit of any kind).
+        const spent = ctx.core.spend({
+          userId: q.id,
+          currency: 'bait',
+          amount: 5,
+          purpose: 'treat',
           idempotencyKey: key,
+          apply: () => ({ ok: true }),
         });
-        expect(trained.status, JSON.stringify(trained.body)).toBe(200);
+        expect(spent.status).toBe('ok');
         const reused = await q.run({ idempotencyKey: key });
         expect(reused.status).toBe(409);
         expect(reused.body).toEqual({ error: 'key_conflict' });
@@ -850,9 +856,12 @@ describe('idempotency', () => {
           parts: { scrap: 999 },
           gear: [
             {
-              baseId: 'trail-charm',
-              rarity: 'epic' as const,
-              rolls: rollGear(createSeededRng('x'), 'trail-charm', 'common'),
+              item: rollItem(createSeededRng('x'), {
+                baseId: 'trail-cap',
+                rarity: 'epic',
+                itemLevel: 5,
+              }),
+              origin: { kind: 'dungeon' as const, depth: 3 },
             },
           ],
         }));
@@ -1422,17 +1431,7 @@ describe('streaks and landmarks', () => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         setProgress(ctx, p.id, { depth: 7 });
         for (let i = 0; i < RULES.gear.inventoryCap; i++) {
-          insertItem(
-            ctx.sql,
-            p.id,
-            {
-              baseId: 'trail-charm',
-              rarity: 'common',
-              rolls: rollGear(createSeededRng(`bag-${String(i)}`), 'trail-charm', 'common'),
-            },
-            'test',
-            ctx.clock.t,
-          );
+          giveItem(ctx.sql, p.id, 'trail-cap', { seed: `bag-${String(i)}`, now: ctx.clock.t });
         }
         const run = (await p.run()).body.run;
         expect(run.rewards.gear).toEqual([]);
@@ -1608,21 +1607,27 @@ describe('GET /api/dungeon/run/:id', () => {
 });
 
 describe('gear in the dungeon', () => {
-  const give = (ctx: CoreContext, userId: string, baseId: string, seed: string): string =>
-    insertItem(
-      ctx.sql,
-      userId,
-      { baseId, rarity: 'rare', rolls: rollGear(createSeededRng(seed), baseId, 'rare') },
-      'test',
-      ctx.clock.t,
-    );
+  const give = (
+    ctx: CoreContext,
+    userId: string,
+    baseId: string,
+    seed: string,
+    lines?: [string, number][],
+  ): string =>
+    giveItem(ctx.sql, userId, baseId, {
+      rarity: 'rare',
+      level: 5,
+      seed,
+      now: ctx.clock.t,
+      ...(lines === undefined ? {} : { lines }),
+    });
 
   it('folds the worn item into the slot stats, as in a raid', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const geared = await dungeonPlayer(ctx, 1, { level: 10 });
-        const item = give(ctx, geared.id, 'trail-charm', 'fold');
+        const item = give(ctx, geared.id, 'trail-cap', 'fold');
         const equip = await geared.call('POST', `/api/gear/${item}/equip`, {
           creatureId: geared.creatureIds[0],
         });
@@ -1649,35 +1654,26 @@ describe('gear in the dungeon', () => {
       nextGuild(),
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
-        const item = give(ctx, p.id, 'trail-charm', 'later');
+        const item = give(ctx, p.id, 'trail-cap', 'later');
         await p.call('POST', `/api/gear/${item}/equip`, { creatureId: p.creatureIds[0] });
-        ctx.core.credit({
-          userId: p.id,
-          currency: 'essence',
-          amount: 500,
-          source: 'test',
-          idempotencyKey: 'essence-for-upgrades',
-        });
         const run = (await p.run()).body.run;
         const stored = storedRuns(ctx, p.id)[0] as StoredRun;
         const replay = (await p.replay(run.id)).body;
         const input = stored.input_json;
         const result = stored.result_json;
-        // Upgrade it, take it off, put another on, then dismantle it.
-        ctx.sql.exec(
-          'UPDATE parts SET amount = amount + 50 WHERE user_id = ? AND kind = ?',
-          p.id,
-          'scrap',
-        );
-        expect(
-          (await p.call('POST', `/api/gear/${item}/upgrade`, { idempotencyKey: newKey() })).status,
-        ).toBe(200);
+        // Take it off, put another on, then dismantle it.
         await p.call('POST', `/api/gear/${item}/equip`, { creatureId: null });
-        const other = give(ctx, p.id, 'patch-band', 'other');
+        const other = give(ctx, p.id, 'kelp-cap', 'other');
         await p.call('POST', `/api/gear/${other}/equip`, { creatureId: p.creatureIds[0] });
         expect(
-          (await p.call('POST', `/api/gear/${item}/dismantle`, { idempotencyKey: newKey() }))
-            .status,
+          (
+            await p.call('POST', '/api/workshop/jobs', {
+              kind: 'dismantle',
+              creatureId: p.creatureIds[1],
+              itemIds: [item],
+              idempotencyKey: newKey(),
+            })
+          ).status,
         ).toBe(200);
         // The stored run, its replay and the summary are exactly what they were.
         const after = storedRuns(ctx, p.id)[0] as StoredRun;
@@ -1687,6 +1683,64 @@ describe('gear in the dungeon', () => {
         expect(
           simulateDungeon(JSON.parse(after.input_json as string) as DungeonRunInput, after.seed),
         ).toEqual(JSON.parse(result as string));
+      },
+      opts(),
+    );
+  });
+});
+
+describe('the modifier sheet and the rest of gear in the dungeon', () => {
+  it('stores the sheet its gear fills on the slot and the Scarf rest in the run input', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, { level: 10 });
+        const [a, b] = p.creatureIds as [string, string, string];
+        const hat = giveItem(ctx.sql, p.id, 'trail-cap', {
+          rarity: 'rare',
+          level: 5,
+          lines: [
+            ['guards-shadow', 1],
+            ['first-pounce', 1],
+          ],
+          now: ctx.clock.t,
+        });
+        const scarf = giveItem(ctx.sql, p.id, 'patch-scarf', {
+          rarity: 'rare',
+          level: 5,
+          lines: [
+            ['between-room-rest', 2],
+            ['area-ward', 2],
+          ],
+          now: ctx.clock.t,
+        });
+        await p.call('POST', `/api/gear/${hat}/equip`, { creatureId: a });
+        await p.call('POST', `/api/gear/${scarf}/equip`, { creatureId: b });
+        await p.run();
+        const input = JSON.parse(storedRuns(ctx, p.id)[0]?.input_json ?? '{}') as DungeonRunInput;
+        const slotA = input.team.find((x) => x.id === a);
+        const slotB = input.team.find((x) => x.id === b);
+        expect(slotA?.mods).toEqual({ besideRoleBp: { guard: 700 }, firstHitBp: 1_400 });
+        expect(slotB?.mods).toEqual({ areaBp: 700 });
+        // Tier III between-room rest is +4% of max HP.
+        expect(input.rest).toEqual({ [b]: 400 });
+        // The third creature wears nothing: no sheet, no rest.
+        const third = input.team.find((x) => x.id !== a && x.id !== b);
+        expect(third?.mods).toBeUndefined();
+      },
+      opts(),
+    );
+  });
+
+  it('a team without gear stores neither', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        await p.run();
+        const input = JSON.parse(storedRuns(ctx, p.id)[0]?.input_json ?? '{}') as DungeonRunInput;
+        expect('rest' in input).toBe(false);
+        expect(input.team.every((x) => x.mods === undefined)).toBe(true);
       },
       opts(),
     );
@@ -1789,17 +1843,10 @@ describe('analytics', () => {
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         for (const [i, id] of p.creatureIds.slice(0, 2).entries()) {
-          const item = insertItem(
-            ctx.sql,
-            p.id,
-            {
-              baseId: 'trail-charm',
-              rarity: 'common',
-              rolls: rollGear(createSeededRng(`w${String(i)}`), 'trail-charm', 'common'),
-            },
-            'test',
-            ctx.clock.t,
-          );
+          const item = giveItem(ctx.sql, p.id, 'trail-cap', {
+            seed: `w${String(i)}`,
+            now: ctx.clock.t,
+          });
           await p.call('POST', `/api/gear/${item}/equip`, { creatureId: id });
         }
         await p.run();

@@ -2,16 +2,20 @@ import * as v from 'valibot';
 import type { Attention } from './attention';
 import type { Collection, Outcome } from './collection';
 import {
+  CatchChoiceBodySchema,
+  CatchRecommendedBodySchema,
   ClaimBodySchema,
+  DismissLevelResetBodySchema,
   EvolveBodySchema,
   IdSchema,
   LoungerBodySchema,
   LoungeSpotBodySchema,
   NicknameBodySchema,
+  RibbonBodySchema,
   RoomBodySchema,
   StartExpeditionBodySchema,
   StarterBodySchema,
-  TrainBodySchema,
+  TalentSlotBodySchema,
 } from './collection-schemas';
 import type { LeetSyncStatus } from './guild-core';
 import { errorResponse, json, parseBody, type Routes } from './http';
@@ -69,6 +73,14 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
       });
     },
   },
+  '/api/level-reset/dismiss': {
+    POST: async (request, { user, core }) => {
+      const body = await parseBody(request, DismissLevelResetBodySchema);
+      if (body === undefined) return invalidBody();
+      core.collection.dismissLevelReset(user.id);
+      return json({ state: core.collection.state(user.id) });
+    },
+  },
   '/api/lounger': {
     PUT: async (request, { user, core }) => {
       const body = await parseBody(request, LoungerBodySchema);
@@ -121,15 +133,57 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
       return json({ result: outcome.value, state: ctx.core.collection.state(ctx.user.id) });
     },
   },
-  '/api/creatures/:id/train': {
+  '/api/catches/recommended': {
+    POST: async (request, { user, core }) => {
+      const body = await parseBody(request, CatchRecommendedBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = core.collection.choices.chooseAllRecommended(user.id, body.idempotencyKey);
+      if (!outcome.ok) return failure(outcome);
+      return json({ results: outcome.value.results, state: core.collection.state(user.id) });
+    },
+  },
+  '/api/catches/:id/choose': {
     POST: async (request, ctx) => {
       const id = pathId(ctx);
       if (id === undefined) return invalidId();
-      const body = await parseBody(request, TrainBodySchema);
+      const body = await parseBody(request, CatchChoiceBodySchema);
       if (body === undefined) return invalidBody();
-      const outcome = ctx.core.collection.train(ctx.user.id, id, body.idempotencyKey);
+      const { idempotencyKey, ...input } = body;
+      const outcome = ctx.core.collection.choices.choose(ctx.user.id, id, input, idempotencyKey);
       if (!outcome.ok) return failure(outcome);
-      return json({ level: outcome.value.level, state: ctx.core.collection.state(ctx.user.id) });
+      return json({ result: outcome.value, state: ctx.core.collection.state(ctx.user.id) });
+    },
+  },
+  '/api/creatures/:id/talents/slot': {
+    POST: async (request, ctx) => {
+      const id = pathId(ctx);
+      if (id === undefined) return invalidId();
+      const body = await parseBody(request, TalentSlotBodySchema);
+      if (body === undefined) return invalidBody();
+      const { idempotencyKey, ...input } = body;
+      const outcome = ctx.core.collection.choices.slotFromBook(
+        ctx.user.id,
+        id,
+        input,
+        idempotencyKey,
+      );
+      if (!outcome.ok) return failure(outcome);
+      return json({ result: outcome.value, state: ctx.core.collection.state(ctx.user.id) });
+    },
+  },
+  // Training is by activity now (Creatures B): an old client gets a clear answer, and nothing is charged.
+  '/api/creatures/:id/train': {
+    POST: () => errorResponse('training_is_by_activity', 410),
+  },
+  '/api/creatures/:id/ribbon': {
+    POST: async (request, ctx) => {
+      const id = pathId(ctx);
+      if (id === undefined) return invalidId();
+      const body = await parseBody(request, RibbonBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = ctx.core.collection.ribbon(ctx.user.id, id, body.idempotencyKey);
+      if (!outcome.ok) return failure(outcome);
+      return json({ result: outcome.value, state: ctx.core.collection.state(ctx.user.id) });
     },
   },
   '/api/creatures/:id/evolve': {

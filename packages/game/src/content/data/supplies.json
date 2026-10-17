@@ -5,17 +5,18 @@
     "tier": "basic",
     "name": "Plain Lure",
     "flavor": "A bit of dried fruit on a string. Better than nothing.",
-    "blurb": "Draws rarer creatures",
-    "worth": 12,
+    "blurb": "Draws creatures near",
+    "worth": 15,
     "offerBp": 2500,
-    "rareUpBp": 600,
-    "epicUpBp": 100,
+    "catchBp": 500,
+    "newBp": 2500,
     "blueprint": {
       "craftingLevel": 1,
-      "hours": 2,
+      "hours": 1,
       "parts": {
         "scrap": 2
       },
+      "bait": 12,
       "yield": 1
     }
   },
@@ -25,18 +26,18 @@
     "tier": "good",
     "name": "Sweet Lure",
     "flavor": "Sticky and fragrant. Even shy creatures lean closer.",
-    "blurb": "Draws rarer creatures, strongly",
-    "worth": 30,
+    "blurb": "Draws creatures, and new faces",
+    "worth": 36,
     "offerBp": 5000,
-    "rareUpBp": 1200,
-    "epicUpBp": 400,
+    "catchBp": 900,
+    "newBp": 4500,
     "blueprint": {
       "craftingLevel": 3,
-      "hours": 4,
+      "hours": 2,
       "parts": {
-        "scrap": 4,
-        "grove-shard": 1
+        "scrap": 3
       },
+      "bait": 30,
       "yield": 1
     }
   },
@@ -46,18 +47,18 @@
     "tier": "great",
     "name": "Golden Lure",
     "flavor": "It shines like honey in the sun. Rare creatures cannot resist.",
-    "blurb": "Draws the rarest creatures",
-    "worth": 70,
+    "blurb": "Draws creatures, mostly new ones",
+    "worth": 72,
     "offerBp": 10000,
-    "rareUpBp": 1800,
-    "epicUpBp": 900,
+    "catchBp": 1500,
+    "newBp": 7000,
     "blueprint": {
       "craftingLevel": 5,
-      "hours": 6,
+      "hours": 3,
       "parts": {
-        "scrap": 7,
-        "grove-shard": 3
+        "scrap": 4
       },
+      "bait": 60,
       "yield": 1
     }
   },

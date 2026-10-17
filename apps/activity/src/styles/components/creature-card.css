@@ -92,3 +92,12 @@ button.lounge-button {
     opacity: 0.3;
   }
 }
+
+/* The experience line under the bar and the ribbon button (Creatures B). */
+.exp-line {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.ribbon-help {
+  margin-left: 0.5rem;
+}

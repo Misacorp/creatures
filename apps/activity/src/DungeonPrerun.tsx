@@ -9,6 +9,8 @@ import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
 import { GameIcon } from './ui/GameIcon';
 import { PixelHeading } from './ui/PixelHeading';
+import { SkyLine } from './SkyLine';
+import type { Forecast } from './weather-types';
 import { StreakTrack } from './ui/StreakTrack';
 
 /**
@@ -23,9 +25,12 @@ import { StreakTrack } from './ui/StreakTrack';
  */
 export function DungeonPrerun({
   today,
+  forecast = null,
   children,
 }: {
   today: DungeonToday;
+  /** The valley's sky: one line under the title (absent or null: none). */
+  forecast?: Forecast | null;
   children?: ComponentChildren;
 }) {
   const panels = roomPanels(today.modifiers);
@@ -49,6 +54,7 @@ export function DungeonPrerun({
           <StreakTrack pips={streakPips(today.streak)} label={streakLabel(today.streak)} />
         </GlossaryTag>
       </div>
+      <SkyLine forecast={forecast} />
       <ol class="room-strip prerun" aria-label="Today's rooms, first to last">
         {panels.map((panel) => (
           <li key={panel.room} class="room-panel unknown">

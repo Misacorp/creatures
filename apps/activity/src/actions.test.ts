@@ -5,10 +5,8 @@ import { ApiError } from './api';
 describe('action names', () => {
   it('pins the name of every keyed action', () => {
     expect(ActionIds.starter('splashet')).toBe('starter:splashet');
-    expect(ActionIds.train('c1')).toBe('train:c1');
+    expect(ActionIds.ribbon('c1')).toBe('ribbon:c1');
     expect(ActionIds.evolve('c1')).toBe('evolve:c1');
-    expect(ActionIds.upgrade('g1')).toBe('upgrade:g1');
-    expect(ActionIds.dismantle('g1')).toBe('dismantle:g1');
     expect(ActionIds.claimJob('j1')).toBe('claim-job:j1');
     expect(ActionIds.dungeonRun(['a', 'b', 'c'])).toBe('dungeon-run:["a","b","c"]');
     expect(
@@ -21,15 +19,61 @@ describe('action names', () => {
     ).toBe('send:c1:tide-pools:short:owned:lantern');
   });
 
-  it('names a job start by its kind, creature and target', () => {
-    expect(ActionIds.job({ kind: 'craft', creatureId: 'c', blueprintId: 'b' })).toBe(
-      'job:craft:c:b',
+  it('makes a treat another action: the same trip, job or run with one is not the same request', () => {
+    const trip = {
+      creatureId: 'c1',
+      destination: 'tide-pools',
+      duration: 'short' as const,
+      supplies: [],
+    };
+    expect(ActionIds.send({ ...trip, treat: true })).toBe(`${ActionIds.send(trip)}:treat`);
+    expect(ActionIds.send({ ...trip, treat: false })).toBe(ActionIds.send(trip));
+    const craft = {
+      kind: 'craft' as const,
+      creatureId: 'c1',
+      blueprintId: 'kelp-cap',
+      reach: 'none' as const,
+    };
+    expect(ActionIds.job({ ...craft, treat: true })).toBe(`${ActionIds.job(craft)}:treat`);
+    const supply = { kind: 'supply' as const, creatureId: 'c1', supplyId: 'lure-basic' };
+    expect(ActionIds.job({ ...supply, treat: true })).not.toBe(ActionIds.job(supply));
+    // A run is named by its team and by who got a treat, whatever order the treats came in.
+    expect(ActionIds.dungeonRun(['a', 'b', 'c'], ['b', 'a'])).toBe(
+      ActionIds.dungeonRun(['a', 'b', 'c'], ['a', 'b']),
     );
-    expect(
-      ActionIds.job({ kind: 'improve', creatureId: 'c', gearId: 'g', secondaryIndex: 1 }),
-    ).toBe('job:improve:c:g:1');
-    expect(ActionIds.job({ kind: 'enchant', creatureId: 'c', gearId: 'g', enchantId: 'e' })).toBe(
-      'job:enchant:c:g:e',
+    expect(ActionIds.dungeonRun(['a', 'b', 'c'], ['a'])).not.toBe(
+      ActionIds.dungeonRun(['a', 'b', 'c']),
+    );
+  });
+
+  it('names the answers of the duplicate choice and the Talent Book', () => {
+    expect(ActionIds.catchChoice('p1', { choice: 'release' })).toBe('catch:p1:release::');
+    expect(ActionIds.catchChoice('p1', { choice: 'fuse', creatureId: 'c1' })).toBe(
+      'catch:p1:fuse:c1:',
+    );
+    expect(ActionIds.catchChoice('p1', { choice: 'teach', creatureId: 'c1', slot: 2 })).toBe(
+      'catch:p1:teach:c1:2',
+    );
+    // The same card answered another way, or into another slot, is another action (another key).
+    const teach = (slot: number) =>
+      ActionIds.catchChoice('p1', { choice: 'teach', creatureId: 'c1', slot });
+    expect(teach(1)).not.toBe(teach(2));
+    expect(ActionIds.catchChoice('p1', { choice: 'recommended' })).not.toBe(
+      ActionIds.catchChoice('p1', { choice: 'release' }),
+    );
+    expect(ActionIds.catchAll()).toBe('catch-all');
+    expect(ActionIds.talentSlot('c1', 'playful', true, 2)).toBe('talent-slot:c1:playful:g:2');
+    expect(ActionIds.talentSlot('c1', 'playful', false, 2)).not.toBe(
+      ActionIds.talentSlot('c1', 'playful', true, 2),
+    );
+  });
+
+  it('names a job start by its kind, creature and target', () => {
+    expect(ActionIds.job({ kind: 'craft', creatureId: 'c', blueprintId: 'b', reach: 'none' })).toBe(
+      'job:craft:c:b:none',
+    );
+    expect(ActionIds.job({ kind: 'dismantle', creatureId: 'c', itemIds: ['i2', 'i1'] })).toBe(
+      'job:dismantle:c:i1,i2',
     );
     expect(ActionIds.job({ kind: 'supply', creatureId: 'c', supplyId: 's' })).toBe(
       'job:supply:c:s',
@@ -61,12 +105,22 @@ describe('action names', () => {
   });
 
   it('names the same job on two creatures, and two jobs on one creature, differently', () => {
-    const craft = { kind: 'craft', creatureId: 'c1', blueprintId: 'wave-band' } as const;
+    const craft = {
+      kind: 'craft',
+      creatureId: 'c1',
+      blueprintId: 'wave-band',
+      reach: 'none',
+    } as const;
     const names = [
       ActionIds.job(craft),
       ActionIds.job({ ...craft, creatureId: 'c2' }),
       ActionIds.job({ ...craft, blueprintId: 'tide-ring' }),
+      // The same craft aimed differently is another action, with its own key.
+      ActionIds.job({ ...craft, reach: 'rare' }),
+      ActionIds.job({ ...craft, reach: 'epic' }),
       ActionIds.job({ kind: 'supply', creatureId: 'c1', supplyId: 'wave-band' }),
+      ActionIds.job({ kind: 'dismantle', creatureId: 'c1', itemIds: ['a'] }),
+      ActionIds.job({ kind: 'dismantle', creatureId: 'c1', itemIds: ['a', 'b'] }),
     ];
     expect(new Set(names).size).toBe(names.length);
   });
@@ -79,10 +133,8 @@ describe('action names', () => {
   it('never gives two kinds of intent the same name, even for the same id', () => {
     // Different kinds of action on the same id must not share a key.
     const names = [
-      ActionIds.train('x'),
+      ActionIds.ribbon('x'),
       ActionIds.evolve('x'),
-      ActionIds.upgrade('x'),
-      ActionIds.dismantle('x'),
       ActionIds.claimJob('x'),
       ActionIds.starter('x'),
     ];

@@ -1,0 +1,458 @@
+{
+  "result": {
+    "auto": false,
+    "pendingId": "9f0910ea-27b8-4e8f-9c9e-366b0b190fb9",
+    "species": "splashet",
+    "talent": { "talentId": "splashes-first", "golden": false },
+    "choice": "fuse",
+    "creatureId": "7e51c2db-5676-4299-b5a1-d3d6f185c5df",
+    "fusionCount": 2
+  },
+  "state": {
+    "serverNow": 1799762400000,
+    "balances": { "bait": 100, "essence": 0 },
+    "starterChosen": false,
+    "starterOptions": ["splashet", "cindle", "sproutle"],
+    "creatures": [
+      {
+        "id": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+        "species": "cindle",
+        "line": "cindle",
+        "level": 8,
+        "levelCap": 15,
+        "fusionCount": 0,
+        "shiny": false,
+        "nickname": null,
+        "away": false,
+        "origin": "test",
+        "caughtAt": 1799733600000,
+        "quirk": "loud-cheerer",
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            {
+              "slot": 1,
+              "opensAt": 1,
+              "open": true,
+              "talent": {
+                "id": "quick-to-pounce",
+                "name": "Quick to Pounce",
+                "golden": false,
+                "text": "First pounce +14%",
+                "about": "The wearer's first hit in each fight does more damage.",
+                "idle": false
+              }
+            },
+            { "slot": 2, "opensAt": 20, "open": false, "talent": null }
+          ],
+          "signature": null,
+          "book": [
+            {
+              "id": "quick-to-pounce",
+              "name": "Quick to Pounce",
+              "golden": false,
+              "text": "First pounce +14%",
+              "about": "The wearer's first hit in each fight does more damage.",
+              "idle": false,
+              "slot": 1
+            }
+          ]
+        },
+        "stats": { "hp": 145, "atk": 61, "spd": 42 },
+        "statsWithGear": { "hp": 145, "atk": 61, "spd": 42 },
+        "gear": [],
+        "busy": null,
+        "ability": {
+          "id": "flare-strike",
+          "unlocked": false,
+          "unlockLevel": 10,
+          "nextId": "flare-strike-2"
+        },
+        "explorer": { "rank": 1, "xp": 16, "nextRankXp": 200, "trips": 4 },
+        "exp": 80,
+        "expNeeded": 328,
+        "waiting": false,
+        "ribbons": 0,
+        "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+        "ribbon": null,
+        "treatCost": 7,
+        "evolution": { "toSpecies": "pyrelynx", "level": 15, "essence": 20, "available": false }
+      },
+      {
+        "id": "7e51c2db-5676-4299-b5a1-d3d6f185c5df",
+        "species": "splashet",
+        "line": "splashet",
+        "level": 8,
+        "levelCap": 15,
+        "fusionCount": 2,
+        "shiny": false,
+        "nickname": null,
+        "away": false,
+        "origin": "test",
+        "caughtAt": 1799733600001,
+        "quirk": "weather-prophet",
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            {
+              "slot": 1,
+              "opensAt": 1,
+              "open": true,
+              "talent": {
+                "id": "bigger-splash",
+                "name": "Bigger Splash",
+                "golden": true,
+                "text": "Marking hit +19%",
+                "about": "The hit that leaves or replaces a mark is stronger.",
+                "idle": false
+              }
+            },
+            { "slot": 2, "opensAt": 20, "open": false, "talent": null }
+          ],
+          "signature": null,
+          "book": [
+            {
+              "id": "splashes-first",
+              "name": "Splashes First",
+              "golden": false,
+              "text": "First pounce +14%",
+              "about": "The wearer's first hit in each fight does more damage.",
+              "idle": false,
+              "slot": null
+            },
+            {
+              "id": "bigger-splash",
+              "name": "Bigger Splash",
+              "golden": true,
+              "text": "Marking hit +19%",
+              "about": "The hit that leaves or replaces a mark is stronger.",
+              "idle": false,
+              "slot": 1
+            }
+          ]
+        },
+        "stats": { "hp": 186, "atk": 46, "spd": 51 },
+        "statsWithGear": { "hp": 186, "atk": 46, "spd": 51 },
+        "gear": [],
+        "busy": null,
+        "ability": {
+          "id": "tidal-mark",
+          "unlocked": false,
+          "unlockLevel": 10,
+          "nextId": "tidal-mark-2"
+        },
+        "explorer": { "rank": 1, "xp": 0, "nextRankXp": 200, "trips": 0 },
+        "exp": 0,
+        "expNeeded": 328,
+        "waiting": false,
+        "ribbons": 0,
+        "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+        "ribbon": null,
+        "treatCost": 7,
+        "evolution": { "toSpecies": "tidewing", "level": 15, "essence": 20, "available": false }
+      },
+      {
+        "id": "76418ccf-d014-4bb4-b22c-40f446b61a97",
+        "species": "sproutle",
+        "line": "sproutle",
+        "level": 8,
+        "levelCap": 15,
+        "fusionCount": 0,
+        "shiny": false,
+        "nickname": null,
+        "away": false,
+        "origin": "test",
+        "caughtAt": 1799733600002,
+        "quirk": "easy-giggler",
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            {
+              "slot": 1,
+              "opensAt": 1,
+              "open": true,
+              "talent": {
+                "id": "stands-close",
+                "name": "Stands Close",
+                "golden": false,
+                "text": "Cover +7 pt",
+                "about": "A Guard's cover for its neighbours grows by these points.",
+                "idle": false
+              }
+            },
+            { "slot": 2, "opensAt": 20, "open": false, "talent": null }
+          ],
+          "signature": null,
+          "book": [
+            {
+              "id": "stands-close",
+              "name": "Stands Close",
+              "golden": false,
+              "text": "Cover +7 pt",
+              "about": "A Guard's cover for its neighbours grows by these points.",
+              "idle": false,
+              "slot": 1
+            }
+          ]
+        },
+        "stats": { "hp": 237, "atk": 29, "spd": 23 },
+        "statsWithGear": { "hp": 237, "atk": 29, "spd": 23 },
+        "gear": [],
+        "busy": null,
+        "ability": {
+          "id": "bark-guard",
+          "unlocked": false,
+          "unlockLevel": 10,
+          "nextId": "bark-guard-2"
+        },
+        "explorer": { "rank": 1, "xp": 0, "nextRankXp": 200, "trips": 0 },
+        "exp": 0,
+        "expNeeded": 328,
+        "waiting": false,
+        "ribbons": 0,
+        "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+        "ribbon": null,
+        "treatCost": 7,
+        "evolution": { "toSpecies": "thornbuck", "level": 15, "essence": 20, "available": false }
+      }
+    ],
+    "pending": [],
+    "bookSlotBait": 10,
+    "expeditions": [
+      {
+        "id": "8af4c928-e52c-4404-af4b-13e9cd21e980",
+        "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+        "duration": "short",
+        "supplies": "basic",
+        "kit": [],
+        "destination": "tidepools",
+        "twist": null,
+        "rolls": 1,
+        "cost": 0,
+        "treat": false,
+        "startedAt": 1799755200000,
+        "endsAt": 1799762400000,
+        "readyAt": 1799762400000,
+        "status": "claimed",
+        "claimedAt": 1799762400000,
+        "result": {
+          "recalled": false,
+          "catches": [
+            {
+              "species": "splashet",
+              "shiny": false,
+              "firstOnServer": false,
+              "outcome": "duplicate",
+              "pendingId": "9f0910ea-27b8-4e8f-9c9e-366b0b190fb9",
+              "talent": {
+                "id": "splashes-first",
+                "name": "Splashes First",
+                "golden": false,
+                "text": "First pounce +14%",
+                "about": "The wearer's first hit in each fight does more damage.",
+                "idle": false
+              }
+            }
+          ],
+          "loot": { "gear": [], "converted": [], "parts": {}, "blueprints": [] },
+          "xp": { "gained": 4, "total": 16, "rank": 1, "rankBefore": 1 },
+          "experience": {
+            "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+            "gained": 20,
+            "treat": false,
+            "levelBefore": 8,
+            "level": 8,
+            "exp": 80,
+            "needed": 328,
+            "waiting": false,
+            "gold": false
+          },
+          "familiarity": { "stars": 1, "starsBefore": 0, "trips": 4 }
+        },
+        "offer": null,
+        "pushOn": null
+      },
+      {
+        "id": "d296a3b6-de4f-4f7b-8874-1e92ad82226d",
+        "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+        "duration": "short",
+        "supplies": "basic",
+        "kit": [],
+        "destination": "tidepools",
+        "twist": null,
+        "rolls": 1,
+        "cost": 0,
+        "treat": false,
+        "startedAt": 1799748000000,
+        "endsAt": 1799755200000,
+        "readyAt": 1799755200000,
+        "status": "claimed",
+        "claimedAt": 1799755200000,
+        "result": {
+          "recalled": false,
+          "catches": [
+            {
+              "species": "splashet",
+              "shiny": false,
+              "firstOnServer": false,
+              "outcome": "duplicate",
+              "pendingId": "3d9f9bb1-cf4b-4a7a-865f-bdbd2ce4f2cf",
+              "talent": {
+                "id": "puddle-hopper",
+                "name": "Puddle Hopper",
+                "golden": false,
+                "text": "Area ward −7%",
+                "about": "Area hits do less damage to the wearer.",
+                "idle": false
+              }
+            }
+          ],
+          "loot": { "gear": [], "converted": [], "parts": {}, "blueprints": [] },
+          "xp": { "gained": 4, "total": 12, "rank": 1, "rankBefore": 1 },
+          "experience": {
+            "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+            "gained": 20,
+            "treat": false,
+            "levelBefore": 8,
+            "level": 8,
+            "exp": 60,
+            "needed": 328,
+            "waiting": false,
+            "gold": false
+          },
+          "slotUnlocked": { "total": 2 },
+          "familiarity": { "stars": 0, "starsBefore": 0, "trips": 3 }
+        },
+        "offer": null,
+        "pushOn": null
+      },
+      {
+        "id": "ff0ed4ee-ef0c-40b5-9113-6c58ce2e9c97",
+        "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+        "duration": "short",
+        "supplies": "basic",
+        "kit": [],
+        "destination": "tidepools",
+        "twist": null,
+        "rolls": 1,
+        "cost": 0,
+        "treat": false,
+        "startedAt": 1799740800000,
+        "endsAt": 1799748000000,
+        "readyAt": 1799748000000,
+        "status": "claimed",
+        "claimedAt": 1799748000000,
+        "result": {
+          "recalled": false,
+          "catches": [
+            {
+              "species": "splashet",
+              "shiny": false,
+              "firstOnServer": false,
+              "outcome": "duplicate",
+              "pendingId": "f310aafb-bace-4420-bf1d-4bf695be64bb",
+              "talent": {
+                "id": "bigger-splash",
+                "name": "Bigger Splash",
+                "golden": true,
+                "text": "Marking hit +19%",
+                "about": "The hit that leaves or replaces a mark is stronger.",
+                "idle": false
+              }
+            }
+          ],
+          "loot": { "gear": [], "converted": [], "parts": {}, "blueprints": [] },
+          "xp": { "gained": 4, "total": 8, "rank": 1, "rankBefore": 1 },
+          "experience": {
+            "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+            "gained": 20,
+            "treat": false,
+            "levelBefore": 8,
+            "level": 8,
+            "exp": 40,
+            "needed": 328,
+            "waiting": false,
+            "gold": false
+          },
+          "familiarity": { "stars": 0, "starsBefore": 0, "trips": 2 }
+        },
+        "offer": null,
+        "pushOn": null
+      },
+      {
+        "id": "bbf3423e-80a2-450c-ac21-a42b62466568",
+        "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+        "duration": "short",
+        "supplies": "basic",
+        "kit": [],
+        "destination": "tidepools",
+        "twist": null,
+        "rolls": 1,
+        "cost": 0,
+        "treat": false,
+        "startedAt": 1799733600000,
+        "endsAt": 1799740800000,
+        "readyAt": 1799740800000,
+        "status": "claimed",
+        "claimedAt": 1799740800000,
+        "result": {
+          "recalled": false,
+          "catches": [
+            {
+              "species": "splashet",
+              "shiny": false,
+              "firstOnServer": true,
+              "outcome": "duplicate",
+              "pendingId": "bde5101e-15e1-438c-9fdc-6eae9bfee247",
+              "talent": {
+                "id": "wet-footprints",
+                "name": "Wet Footprints",
+                "golden": false,
+                "text": "Owner's mark +10%",
+                "about": "Reactions set off on a mark the wearer left do more damage.",
+                "idle": false
+              }
+            }
+          ],
+          "loot": { "gear": [], "converted": [], "parts": {}, "blueprints": [] },
+          "xp": { "gained": 4, "total": 4, "rank": 1, "rankBefore": 1 },
+          "experience": {
+            "creatureId": "a653e00a-457f-4830-9fd7-cfa66c8f86a0",
+            "gained": 20,
+            "treat": false,
+            "levelBefore": 8,
+            "level": 8,
+            "exp": 20,
+            "needed": 328,
+            "waiting": false,
+            "gold": false
+          },
+          "familiarity": { "stars": 0, "starsBefore": 0, "trips": 1 }
+        },
+        "offer": null,
+        "pushOn": null
+      }
+    ],
+    "cancelled": [],
+    "levelReset": null,
+    "slots": {
+      "total": 2,
+      "used": 0,
+      "rankSum": 0,
+      "tripsFinished": 4,
+      "next": { "kind": "rank_sum", "at": 26 }
+    },
+    "supplies": {},
+    "serverFirsts": [
+      {
+        "kind": "catch",
+        "species": "splashet",
+        "at": 1799740800000,
+        "mine": true,
+        "holders": ["Player 4"]
+      }
+    ],
+    "loungerId": "7e51c2db-5676-4299-b5a1-d3d6f185c5df",
+    "loungeSpot": null
+  }
+}

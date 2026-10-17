@@ -130,7 +130,7 @@ Expeditions should **grow with the player**:
 5. **Trip events (light, idle-friendly).**
    - On claim, a trip may include one small event from content. Examples:
      - a found item (Bait or gear materials);
-     - a "lost and found" creature (a duplicate converted to Bait);
+     - a "lost and found" creature (a duplicate converted to Bait; superseded 2026-10-16: a duplicate is a card with Teach, Fuse, Release and Keep);
      - a lore snippet that fills a **Journal** of places;
      - rarely, a **choice** shown when you claim: "A shimmering pool: rest here (+1 catch roll, +2 h) or move on".
    - Events are rolled on the server at claim time with live randomness, as catches are today.

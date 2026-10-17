@@ -300,13 +300,43 @@ describe('the team breakdown of the end report', () => {
   it('marks a knocked-out creature, and says so out loud', () => {
     const member = lost.team[0];
     if (member === undefined) throw new Error('fixture has a team');
-    const down = teamBreakdown({ team: [{ ...member, hpEnd: 0 }] })[0];
+    const down = teamBreakdown({ team: [{ ...member, hpEnd: 0 }], rewards: lost.rewards })[0];
     expect(down?.knockedOut).toBe(true);
     expect(down?.hp.startsWith('0 / ')).toBe(true);
     expect(down?.spoken).toContain('knocked out');
-    const up = teamBreakdown({ team: [{ ...member, hpEnd: 5 }] })[0];
+    const up = teamBreakdown({ team: [{ ...member, hpEnd: 5 }], rewards: lost.rewards })[0];
     expect(up?.knockedOut).toBe(false);
     expect(up?.spoken).not.toContain('knocked out');
+  });
+
+  it('says what the run paid each creature in experience, and nothing for a run from before it', () => {
+    const member = cleared.team[0];
+    if (member === undefined) throw new Error('fixture has a team');
+    const paid = {
+      creatureId: member.id,
+      gained: 180,
+      treat: true,
+      levelBefore: 4,
+      level: 5,
+      exp: 20,
+      needed: 175,
+      waiting: false,
+      gold: false,
+    };
+    const withExp = teamBreakdown({
+      team: [member],
+      rewards: { ...cleared.rewards, experience: [paid] },
+    })[0];
+    expect(withExp?.experience).toBe('+180 experience (treat), level 4 to 5');
+    // Another creature's award is not this one's.
+    const other = teamBreakdown({
+      team: [member],
+      rewards: { ...cleared.rewards, experience: [{ ...paid, creatureId: 'someone-else' }] },
+    })[0];
+    expect(other?.experience).toBeNull();
+    const old = { ...cleared.rewards };
+    delete old.experience;
+    expect(teamBreakdown({ team: [member], rewards: old })[0]?.experience).toBeNull();
   });
 
   it('carries what the small-creature popover needs, and no more than the creature', () => {

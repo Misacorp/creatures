@@ -1,71 +1,77 @@
 import { useState } from 'preact/hooks';
 import type { Creature } from './api';
-import { CostList, ItemFrame, ItemSprite, RarityTag } from './GearArt';
+import { CraftStarter } from './CraftStarter';
+import { CostList, ItemFrame, ItemSprite } from './GearArt';
 import { GlossaryTag } from './Glossary';
-import type { GearState } from './gear-types';
-import { blueprintViews, nominalHours } from './gear-view';
-import { JobStarter } from './JobStarter';
+import type { CraftPreview, GearState, ReachId } from './gear-types';
+import { blueprintViews, marksText, nominalHours, slotName } from './gear-view';
 import { ElementChip } from './sprites/ElementChip';
 
 /**
- * The blueprints a player has learned, each with the parts a craft costs and a Craft button that
- * opens the creature picker. A craft takes hours; the parts are paid when it starts and the item
- * is rolled when the job is claimed.
+ * The blueprints a player has learned, each with its well-thumbed marks, the parts a plain craft costs
+ * and a Craft button that opens the craft panel (who does it, how hard to reach, the exact odds). A craft
+ * takes hours; the parts and Essence are paid when it starts and the item is rolled when the job is
+ * claimed.
  */
 export function Blueprints({
   gear,
   creatures,
   busy,
+  loadPreview,
   onCraft,
 }: {
   gear: GearState;
   creatures: readonly Creature[];
   busy: boolean;
-  /** Starts the craft; resolves true when it started (the picker then closes). */
-  onCraft: (baseId: string, creatureId: string) => Promise<boolean>;
+  loadPreview: (creatureId: string, blueprintId: string) => Promise<CraftPreview>;
+  /** Starts the craft; resolves true when it started (the panel then closes). */
+  onCraft: (baseId: string, creatureId: string, reach: ReachId, treat: boolean) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState<string | null>(null);
-  const views = blueprintViews(gear.blueprints);
+  const views = blueprintViews(gear.blueprints, gear.skills);
   return (
     <section class="ws-section" aria-labelledby="ws-blueprints">
       <h3 id="ws-blueprints">
         Blueprints <GlossaryTag entry="blueprint" look="help" />
       </h3>
       {views.length === 0 ? (
-        <p class="empty muted">
-          You do not know any blueprints yet. Expeditions and raids can bring one home.
-        </p>
+        <p class="empty muted">No blueprints yet.</p>
       ) : (
         <ul class="blueprints">
           {views.map((bp) => (
             <li key={bp.baseId} class="blueprint card-item">
               <div class="bp-row">
-                <ItemFrame rarity={bp.rarity}>
+                <ItemFrame rarity="common">
                   <ItemSprite baseId={bp.baseId} scale={3} />
                 </ItemFrame>
                 <div class="bp-text">
                   <p class="pix bp-name">{bp.name}</p>
                   <p class="tags">
-                    <RarityTag rarity={bp.rarity} />
-                    {bp.tint !== null && <ElementChip element={bp.tint} />}
+                    <span class="slot-tag">{slotName(bp.slot)}</span>
+                    {bp.element !== null && <ElementChip element={bp.element} />}
                   </p>
-                  <p class="muted">Takes about {nominalHours('craft', bp.rarity)} h</p>
+                  {bp.needsCraftingLevel > 1 && (
+                    <p class="muted">Needs Crafting level {bp.needsCraftingLevel}</p>
+                  )}
+                  <p class="muted">
+                    Takes about {nominalHours()} h ·{' '}
+                    <GlossaryTag entry="well-thumbed">Well-thumbed</GlossaryTag>{' '}
+                    {marksText(bp.marks)}
+                  </p>
                 </div>
               </div>
               <CostList cost={bp.cost} have={gear.parts} />
               {open === bp.baseId ? (
-                <JobStarter
+                <CraftStarter
                   id={`craft-${bp.baseId}`}
-                  kind="craft"
-                  title={`Craft ${bp.name}`}
-                  rarity={bp.rarity}
-                  cost={bp.cost}
+                  name={bp.name}
+                  baseId={bp.baseId}
                   gear={gear}
                   creatures={creatures}
                   busy={busy}
-                  startLabel="Start crafting"
-                  onStart={(creatureId) => {
-                    void onCraft(bp.baseId, creatureId).then((started) => {
+                  loadPreview={loadPreview}
+                  onStart={(creatureId, reach, treat) => {
+                    void onCraft(bp.baseId, creatureId, reach, treat).then((started) => {
                       if (started) setOpen(null);
                     });
                   }}

@@ -1,76 +1,95 @@
-import { Tag } from './ui/Tag';
-import { GLOSSARY_IDS, entryView } from '@creatures/game';
-import { GlossaryTag } from './Glossary';
+import { experienceText } from './experience';
 import { glyphOrUnknown } from './glyphs';
-import { ItemFrame, ItemSprite, RarityTag } from './GearArt';
+import { ItemFrame, ItemSprite, PartsList, RarityTag } from './GearArt';
+import { GlossaryTag } from './Glossary';
 import type { GearItem, JobResult } from './gear-types';
-import { gearName, improveMessage, jobVerb, rarityName } from './gear-view';
+import {
+  gearName,
+  jobVerb,
+  marksText,
+  partsText,
+  rarityName,
+  reachName,
+  slotName,
+} from './gear-view';
+import { ItemLines } from './ItemLines';
 import { Sprite } from './sprites/Sprite';
 import { supplyKindOf, supplyName } from './trip-view';
 import { RevealLater, RevealShell, RevealStage, useRevealSequence } from './ui/RevealShell';
 
-/** The words of a claimed job, from its result alone. */
+/** The words of a claimed job, from its result alone (and the item it made, for its lines). */
 function Outcome({ result, items }: { result: JobResult; items: readonly GearItem[] }) {
   switch (result.kind) {
-    case 'craft':
+    case 'craft': {
+      const item = items.find((i) => i.id === result.gearId);
       return (
         <>
           <p>
             <strong class="pix">{gearName(result.baseId)}</strong>{' '}
             <RarityTag rarity={result.rarity} />
           </p>
-          <p>It is in your bag now.</p>
-          {result.upgraded && (
-            <p class="good-note">
-              It came out a rarity better than the blueprint ({rarityName(result.rarity)}).
-            </p>
-          )}
-        </>
-      );
-    case 'improve': {
-      const message = improveMessage(result);
-      return (
-        <>
-          <p>
-            <strong class="pix">{gearName(result.baseId)}</strong>: extra stat{' '}
-            {result.secondaryIndex + 1} re-rolled
+          <p class="muted">
+            {item === undefined ? '' : `${slotName(item.slot)}, `}item level {result.itemLevel}
           </p>
-          <p>{message}</p>
+          {item !== undefined && <ItemLines lines={item.lines} />}
+          {result.reach !== 'none' && <p class="muted">{reachName(result.reach)}.</p>}
+          {result.upgraded && <p class="good-note">Stepped up to {rarityName(result.rarity)}.</p>}
         </>
       );
     }
+    case 'dismantle':
+      return (
+        <>
+          <p>
+            <strong class="pix">
+              {result.items.length === 1 && result.items[0] !== undefined
+                ? gearName(result.items[0].baseId)
+                : `${String(result.items.length)} items`}
+            </strong>{' '}
+            taken apart.
+          </p>
+          <p>
+            <strong>
+              {[
+                ...(partsText(result.parts) === 'nothing' ? [] : [partsText(result.parts)]),
+                ...(result.essence > 0 ? [`${String(result.essence)} Essence`] : []),
+              ].join(', ') || 'nothing'}
+            </strong>
+          </p>
+          <PartsList parts={result.parts} />
+          {result.learned.map((baseId) => (
+            <p key={baseId} class="good-note">
+              Learned the {gearName(baseId)} blueprint.
+            </p>
+          ))}
+          {result.marked.map((m) => (
+            <p key={m.baseId} class="good-note">
+              {gearName(m.baseId)} is well-thumbed {marksText(m.marks)}.
+            </p>
+          ))}
+        </>
+      );
     case 'supply':
       return (
         <>
           <p>
             <strong class="pix">
-              {result.amount > 1 ? `${String(result.amount)} \u00d7 ` : ''}
+              {result.amount > 1 ? `${String(result.amount)} × ` : ''}
               {supplyName(result.supplyId)}
             </strong>
           </p>
-          <p>
-            {result.amount === 1 ? 'It is' : 'They are'} in your supplies now, ready for the next
-            trip.
-          </p>
         </>
       );
-    case 'enchant': {
-      const item = items.find((i) => i.id === result.gearId);
+    case 'retired':
       return (
         <>
           <p>
-            <strong class="pix">{gearName(result.baseId)}</strong>
-            {item === undefined ? '' : ` +${String(item.level)}`} has a new enchant
+            Old {result.was === 'improve' ? 'Improve' : 'Enchant'} job over. Parts back:{' '}
+            <strong>{partsText(result.refund)}</strong>.
           </p>
-          <p>
-            <Tag entry={GLOSSARY_IDS.enchant(result.enchantId)}>
-              {entryView(GLOSSARY_IDS.enchant(result.enchantId))?.title ?? result.enchantId}
-            </Tag>{' '}
-            {entryView(GLOSSARY_IDS.enchant(result.enchantId))?.short}
-          </p>
+          <PartsList parts={result.refund} />
         </>
       );
-    }
   }
 }
 
@@ -87,15 +106,17 @@ export function JobReveal({
 }: {
   result: JobResult;
   items: readonly GearItem[];
-  /** The rarity of the item that was made or worked on, for the frame. */
+  /** The rarity of the item that was made, for the frame. */
   rarity: GearItem['rarity'];
   onDismiss: () => void;
 }) {
   const { frame, done } = useRevealSequence(0);
+  const title = result.kind === 'retired' ? 'Old job over' : `${jobVerb(result.kind)} finished`;
+  const worked = result.experience === undefined ? null : experienceText(result.experience);
   return (
     <RevealShell
       id="job-reveal-heading"
-      title={`${jobVerb(result.kind)} finished`}
+      title={title}
       class="job-reveal"
       status
       arrive
@@ -104,14 +125,21 @@ export function JobReveal({
       <RevealStage
         frame={frame}
         opened={
-          <ItemFrame rarity={rarity}>
+          <ItemFrame
+            rarity={rarity}
+            {...(result.kind === 'craft' ? { baseId: result.baseId } : {})}
+          >
             {result.kind === 'supply' ? (
               <Sprite
                 sprite={glyphOrUnknown(supplyKindOf(result.supplyId) ?? 'unknown')}
                 scale={10}
               />
-            ) : (
+            ) : result.kind === 'craft' ? (
               <ItemSprite baseId={result.baseId} scale={8} />
+            ) : result.kind === 'dismantle' && result.items[0] !== undefined ? (
+              <ItemSprite baseId={result.items[0].baseId} scale={8} />
+            ) : (
+              <Sprite sprite={glyphOrUnknown('anvil')} scale={8} />
             )}
           </ItemFrame>
         }
@@ -127,6 +155,11 @@ export function JobReveal({
             </>
           )}
         </p>
+        {worked !== null && (
+          <p class="muted">
+            <GlossaryTag entry="experience">{`The worker: ${worked}`}</GlossaryTag>
+          </p>
+        )}
       </RevealLater>
     </RevealShell>
   );

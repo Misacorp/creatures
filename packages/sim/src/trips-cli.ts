@@ -103,14 +103,14 @@ export function main(argv: readonly string[], io: Io = defaultIo): number {
     for (const a of ARCHETYPES) {
       io.out('');
       io.out(
-        `${ARCHETYPE_CONFIG[a].label}: week | rank sum | slots | trips so far | Bait converted`,
+        `${ARCHETYPE_CONFIG[a].label}: week | rank sum | slots | trips so far | Bait on lures`,
       );
       for (let w = 1; w <= weeks; w++) {
         const rs = weekly(econ, a, w);
         if (rs.length === 0) continue;
         const avg = (f: (r: WeekRecord) => number): number => mean(rs.map(f)) ?? 0;
         io.out(
-          `  ${String(w).padStart(2)} | ${avg((r) => r.rankSum).toFixed(1)} | ${avg((r) => r.slots).toFixed(1)} | ${avg((r) => r.trips).toFixed(0)} | ${avg((r) => r.baitConverted).toFixed(0)}`,
+          `  ${String(w).padStart(2)} | ${avg((r) => r.rankSum).toFixed(1)} | ${avg((r) => r.slots).toFixed(1)} | ${avg((r) => r.trips).toFixed(0)} | ${avg((r) => r.baitLures).toFixed(0)}`,
         );
       }
     }

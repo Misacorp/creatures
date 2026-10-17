@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument --
    These tests read parts of many different response bodies (`Json.body` is `any` on purpose): typing
    each body would only repeat the server's view types. */
-import { RULES, expeditionContent, gearContent } from '@creatures/game';
+import { RULES, blueprintBases, expeditionContent, gearContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { ON, newKey, player } from './dev-helpers';
 import { runCore } from './helpers';
@@ -51,14 +51,14 @@ describe('goods tools', () => {
         const supply = expeditionContent.supplies[0]?.id as string;
         await p.tool('grant-supplies', { supply, amount: 3 });
         expect((await p.call('GET', '/api/state')).body.supplies).toEqual({ [supply]: 3 });
-        const base = gearContent.bases[0]?.id as string;
+        const base = blueprintBases()[0]?.id as string;
         expect(await p.tool('grant-blueprints', { baseId: base })).toMatchObject({
           learned: 1,
           known: 1,
         });
         expect(await p.tool('grant-blueprints', { all: true })).toMatchObject({
-          learned: gearContent.bases.length - 1,
-          known: gearContent.bases.length,
+          learned: blueprintBases().length - 1,
+          known: blueprintBases().length,
         });
         // Nothing for nothing, and no unknown kinds.
         expect((await p.dev('grant-parts', {})).status).toBe(400);
@@ -176,30 +176,45 @@ describe('goods tools', () => {
       nextGuild(),
       async (ctx) => {
         const p = await player(ctx);
-        const base = gearContent.bases.find((b) => b.blueprint !== 'festival');
-        const enchant = gearContent.enchants[0]?.id as string;
+        const base = gearContent.bases.find((b) => b.festival !== true);
         const granted = await p.tool('grant-gear', {
           baseId: base?.id,
           rarity: 'epic',
-          level: 3,
-          enchantId: enchant,
+          itemLevel: 12,
         });
         const items = (await p.call('GET', '/api/gear')).body.items as {
           id: string;
           rarity: string;
-          level: number;
-          enchantId: string | null;
+          itemLevel: number;
+          lines: unknown[];
           source: string;
         }[];
         expect(items.find((i) => i.id === granted.gearId)).toMatchObject({
           rarity: 'epic',
-          level: 3,
-          enchantId: enchant,
+          itemLevel: 12,
           source: 'dev',
         });
-        // A rarity the base cannot have is refused.
-        expect((await p.dev('grant-gear', { baseId: base?.id, rarity: 'festival' })).body).toEqual({
-          error: 'rarity_mismatch',
+        // Three rolled lines (a Hat's base is its stat, not a line).
+        expect(items.find((i) => i.id === granted.gearId)?.lines).toHaveLength(3);
+        // Festival is a base, not a rarity any more: the old value is refused.
+        expect((await p.dev('grant-gear', { baseId: base?.id, rarity: 'festival' })).status).toBe(
+          400,
+        );
+        // A Festival piece is granted like any other base, at a normal rarity.
+        const piece = gearContent.bases.find((b) => b.festival === true);
+        const festive = await p.tool('grant-gear', {
+          baseId: piece?.id,
+          rarity: 'rare',
+          itemLevel: 5,
+        });
+        const all = (await p.call('GET', '/api/gear')).body.items as {
+          id: string;
+          rarity: string;
+          festival: boolean;
+        }[];
+        expect(all.find((i) => i.id === festive.gearId)).toMatchObject({
+          rarity: 'rare',
+          festival: true,
         });
 
         // A craft that is running, finished now.

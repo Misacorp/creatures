@@ -206,7 +206,8 @@ Read `README.md` for the tags. Every thread names its source. Ideas are `(compen
 
 ### T27. Who taught the enchants?
 
-- **Seed:** most enchants are named "Owner's Thing": Payoff's Edge, Guard's Bulwark, Setter's Wit, Support's Grace `(content: enchants.json)`.
+- **Note (2026-10-16):** enchants were removed from the game with Gear A; the thread stays as lore for the lines that replaced them (the Owner's Thing names are gone from the content).
+- **Seed:** most enchants were named "Owner's Thing": Payoff's Edge, Guard's Bulwark, Setter's Wit, Support's Grace `(content: enchants.json, removed 2026-10-16)`.
 - **Open:** who are the owners? Are they the teachers of each role?
 - **Ideas:** the enchant is named for the teacher, and the Steady Hand, which has no owner, is the first enchant ever made `(compendium detail, not shipped)`.
 - **Status:** open.

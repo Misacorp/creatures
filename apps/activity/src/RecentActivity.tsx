@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { fetchLedger, type LedgerEntry } from './api';
 import { describeEntry } from './ledger-text';
+import { Accordion } from './ui/Accordion';
 
 /** The latest Bait movements, fetched each time the section is opened so it is never stale. */
 export function RecentActivity({ refreshKey }: { refreshKey: number | null }) {
@@ -23,14 +24,14 @@ export function RecentActivity({ refreshKey }: { refreshKey: number | null }) {
     if (open.current) load();
   }, [refreshKey]);
   return (
-    <details
+    <Accordion
+      title="Recent Bait activity"
       class="recent-activity"
-      onToggle={(event) => {
-        open.current = event.currentTarget.open;
-        if (open.current) load();
+      onToggle={(next) => {
+        open.current = next;
+        if (next) load();
       }}
     >
-      <summary>Recent Bait activity</summary>
       {failed ? (
         <p class="error">Could not load the history.</p>
       ) : entries === null ? (
@@ -44,6 +45,6 @@ export function RecentActivity({ refreshKey }: { refreshKey: number | null }) {
           ))}
         </ul>
       )}
-    </details>
+    </Accordion>
   );
 }

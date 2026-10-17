@@ -3,7 +3,14 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import * as v from 'valibot';
-import { RULES, content, dungeonContent, expeditionContent, gearContent } from '@creatures/game';
+import {
+  RULES,
+  content,
+  dungeonContent,
+  expeditionContent,
+  gearContent,
+  talentContent,
+} from '@creatures/game';
 import targetMapJson from '../scalar-targets.json';
 import {
   collectScalars,
@@ -89,7 +96,8 @@ export function contentCollections(): ContentCollection[] {
       system: 'content/room-modifiers.json',
       items: dungeonContent.modifiers,
     },
-    { name: 'enchants', system: 'content/enchants.json', items: gearContent.enchants },
+    { name: 'gearLines', system: 'content/gear-lines.json', items: gearContent.lines },
+    { name: 'talents', system: 'content/talents.json', items: [...talentContent.byId.values()] },
     {
       name: 'destinations',
       system: 'content/destinations.json',
@@ -113,7 +121,8 @@ export function idSections(): IdSection[] {
     { title: 'Dungeon foes', items: dungeonContent.foes },
     { title: 'Room modifiers', items: dungeonContent.modifiers },
     { title: 'Gear bases', items: gearContent.bases },
-    { title: 'Enchants', items: gearContent.enchants },
+    { title: 'Gear lines', items: gearContent.lines },
+    { title: 'Talents', items: [...talentContent.byId.values()] },
     { title: 'Supplies', items: expeditionContent.supplies },
     { title: 'Destinations', items: expeditionContent.destinations },
     { title: 'Push-on goals', items: expeditionContent.goals },

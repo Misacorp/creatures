@@ -1,5 +1,5 @@
 /**
- * The requests of gear and the Workshop. Every spend (upgrade, dismantle, starting a job, claiming
+ * The requests of gear and the Workshop. Every spend (starting a job, claiming
  * one) carries the caller's idempotency key; the same key is sent again on a retry, so a repeat can
  * never spend twice. Every action answers `{ result, gear, state }` and both views are returned
  * fresh so the screen can replace what it holds.
@@ -7,21 +7,25 @@
 import { apiFetch, jsonRequest, parseGameState, type GameState } from './api';
 import { isRecord } from './parse-core';
 import {
-  parseDismantleResult,
+  parseCraftPreview,
+  parseDismantlePreview,
+  parseDismissResult,
+  parseEquipBestResult,
   parseEquipResult,
   parseGearState,
   parseJobResult,
   parseStartJobResult,
-  parseUpgradeResult,
 } from './gear-parse';
 import type {
-  DismantleResult,
+  CraftPreview,
+  DismantlePreview,
+  DismissResult,
+  EquipBestResult,
   EquipResult,
   GearState,
   JobResult,
   StartJobRequest,
   StartJobResult,
-  UpgradeResult,
 } from './gear-types';
 
 /** An action's result with the gear view and the collection, both fresh. */
@@ -59,30 +63,49 @@ export async function equipGear(
   );
 }
 
-export async function upgradeGear(
-  gearId: string,
-  idempotencyKey: string,
-): Promise<GearAction<UpgradeResult>> {
+/**
+ * "Equip best" for one creature or a team (at most 24): the server picks the best item each slot may
+ * wear from the bag and from what these creatures wear now, and says what changed. Instant, so no key.
+ */
+export async function equipBestGear(
+  creatureIds: readonly string[],
+): Promise<GearAction<EquipBestResult>> {
   return action(
-    await apiFetch(
-      `/api/gear/${encodeURIComponent(gearId)}/upgrade`,
-      jsonRequest('POST', { idempotencyKey }),
-    ),
-    parseUpgradeResult,
+    await apiFetch('/api/gear/equip-best', jsonRequest('POST', { creatureIds })),
+    parseEquipBestResult,
   );
 }
 
-export async function dismantleGear(
-  gearId: string,
-  idempotencyKey: string,
-): Promise<GearAction<DismantleResult>> {
+/** Dismisses the one-time card about the switch to gear v2. */
+export async function dismissGearNotice(): Promise<GearAction<DismissResult>> {
   return action(
-    await apiFetch(
-      `/api/gear/${encodeURIComponent(gearId)}/dismantle`,
-      jsonRequest('POST', { idempotencyKey }),
-    ),
-    parseDismantleResult,
+    await apiFetch('/api/gear/conversion/dismiss', jsonRequest('POST', {})),
+    parseDismissResult,
   );
+}
+
+/**
+ * What a craft of a blueprint would give with a creature: the exact odds, parts, Essence, time and XP of
+ * every way to start it. Changes nothing, so it needs no key.
+ */
+export async function previewCraft(creatureId: string, blueprintId: string): Promise<CraftPreview> {
+  const data = await apiFetch(
+    '/api/workshop/preview',
+    jsonRequest('POST', { kind: 'craft', creatureId, blueprintId }),
+  );
+  return parseCraftPreview(isRecord(data) ? data['result'] : undefined);
+}
+
+/** What taking these items apart would give with a creature: the refund range, time and blueprint chance. */
+export async function previewDismantle(
+  creatureId: string,
+  itemIds: readonly string[],
+): Promise<DismantlePreview> {
+  const data = await apiFetch(
+    '/api/workshop/preview',
+    jsonRequest('POST', { kind: 'dismantle', creatureId, itemIds }),
+  );
+  return parseDismantlePreview(isRecord(data) ? data['result'] : undefined);
 }
 
 export async function startJob(request: StartJobRequest): Promise<GearAction<StartJobResult>> {

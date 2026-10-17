@@ -47,15 +47,23 @@ const GAME_MESSAGES: Readonly<Record<string, string>> = {
   inventory_full: 'Your bag is full. Dismantle an item to make room.',
   item_busy: 'That item is in a Workshop job. Claim the job first.',
   not_ready: 'That is not finished yet.',
-  max_level: 'That item is already at its top level.',
-  same_enchant: 'That item already has that enchant.',
+  wrong_role: 'Only a creature of the role that Charm is made for can wear it.',
+  slot_locked: 'That creature is not high enough level for that slot yet.',
+  item_level_too_high: 'That item is higher level than that creature.',
+  gear_upgrade_removed: 'Gear is not upgraded any more. Use the new items instead.',
+  job_kind_removed: 'That kind of job is not in the Workshop any more.',
+  dismantle_is_a_job:
+    'Dismantling is a Workshop job now. Pick the items and a creature in the Workshop.',
+  invalid_bundle:
+    'Up to 5 Commons can go in one dismantle job; anything rarer goes alone, and an item cannot repeat.',
+  insufficient_essence: 'You do not have enough Essence for that.',
+  gear_conversion_pending:
+    'Your old gear is still being converted to the new gear. Try again in a little while.',
   blueprint_unknown: 'You have not learned that blueprint.',
-  nothing_to_improve: 'That item has no extra stat to improve.',
-  invalid_secondary: 'That item has no such extra stat.',
   invalid_blueprint: 'That blueprint cannot be crafted.',
-  invalid_enchant: 'That enchant does not exist.',
   item_gone: 'The item for that job is gone.',
   skill_too_low: 'That creature needs a higher Crafting level for this supply.',
+  base_locked: 'That creature needs a higher Crafting level to make this item.',
   invalid_supply: 'That supply cannot be crafted.',
   destination_closed: 'That place is closed to this explorer right now.',
   rank_too_low: 'That explorer is not a high enough rank for that.',
@@ -92,7 +100,7 @@ describe('error messages', () => {
   });
 
   it('pins every code of the table', () => {
-    expect(Object.keys(GAME_MESSAGES)).toHaveLength(62);
+    expect(Object.keys(GAME_MESSAGES)).toHaveLength(67);
   });
 
   it('says the same words for every dungeon code', () => {

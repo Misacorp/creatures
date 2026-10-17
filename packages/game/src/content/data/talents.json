@@ -1,0 +1,618 @@
+{
+  "pools": {
+    "splashet": [
+      {
+        "id": "splashes-first",
+        "name": "Splashes First",
+        "effect": { "line": "first-pounce" },
+        "value": 1400
+      },
+      {
+        "id": "wet-footprints",
+        "name": "Wet Footprints",
+        "effect": { "line": "owners-mark" },
+        "value": 1000
+      },
+      {
+        "id": "bigger-splash",
+        "name": "Bigger Splash",
+        "effect": { "line": "marking-hit" },
+        "value": 1300
+      },
+      {
+        "id": "puddle-hopper",
+        "name": "Puddle Hopper",
+        "effect": { "line": "area-ward" },
+        "value": 700
+      },
+      { "id": "playful", "name": "Playful", "effect": { "line": "attack" }, "value": 600 },
+      {
+        "id": "first-to-say-hello",
+        "name": "First to Say Hello",
+        "effect": { "line": "trail-xp" },
+        "value": 1200
+      },
+      {
+        "id": "easily-distracted",
+        "name": "Easily Distracted",
+        "effect": { "rule": "glimmerFind" },
+        "value": 2500
+      },
+      {
+        "id": "glides-on-a-breeze",
+        "name": "Glides on a Breeze",
+        "effect": { "line": "quick-feet" },
+        "value": 400
+      }
+    ],
+    "cindle": [
+      {
+        "id": "quick-to-pounce",
+        "name": "Quick to Pounce",
+        "effect": { "line": "first-pounce" },
+        "value": 1400
+      },
+      {
+        "id": "warm-to-the-touch",
+        "name": "Warm to the Touch",
+        "effect": { "line": "ember-reaction" },
+        "value": 1300
+      },
+      {
+        "id": "chases-flickers",
+        "name": "Chases Flickers",
+        "effect": { "line": "crit-chance" },
+        "value": 300
+      },
+      {
+        "id": "proud-ember",
+        "name": "Proud Ember",
+        "effect": { "line": "crit-damage" },
+        "value": 2000
+      },
+      {
+        "id": "waits-for-the-moment",
+        "name": "Waits for the Moment",
+        "effect": { "line": "marked-foe" },
+        "value": 900
+      },
+      {
+        "id": "purrs-like-a-campfire",
+        "name": "Purrs Like a Campfire",
+        "effect": { "line": "busy-paws" },
+        "value": 700
+      },
+      {
+        "id": "pounces-when-perfect",
+        "name": "Pounces When Perfect",
+        "effect": { "line": "payoffs-pounce" },
+        "value": 800
+      },
+      {
+        "id": "fiercely-loyal",
+        "name": "Fiercely Loyal",
+        "effect": { "line": "guards-shadow" },
+        "value": 1000
+      }
+    ],
+    "sproutle": [
+      { "id": "stands-close", "name": "Stands Close", "effect": { "line": "cover" }, "value": 700 },
+      { "id": "hard-to-move", "name": "Hard to Move", "effect": { "line": "armor" }, "value": 500 },
+      {
+        "id": "shy-around-strangers",
+        "name": "Shy Around Strangers",
+        "effect": { "line": "aimed-ward" },
+        "value": 700
+      },
+      {
+        "id": "perks-up-in-the-rain",
+        "name": "Perks Up in the Rain",
+        "effect": { "line": "well-fed" },
+        "value": 2000
+      },
+      {
+        "id": "sunny-nap",
+        "name": "Sunny Nap",
+        "effect": { "line": "between-room-rest" },
+        "value": 400
+      },
+      { "id": "mossy-bed", "name": "Mossy Bed", "effect": { "line": "hp" }, "value": 800 },
+      {
+        "id": "shares-the-sun",
+        "name": "Shares the Sun",
+        "effect": { "line": "mend" },
+        "value": 200
+      },
+      {
+        "id": "steady-under-pressure",
+        "name": "Steady Under Pressure",
+        "effect": { "line": "brace" },
+        "value": 1000
+      }
+    ],
+    "zipmouse": [
+      { "id": "zoomies", "name": "Zoomies", "effect": { "rule": "speed" }, "value": 1200 },
+      {
+        "id": "static-fizz",
+        "name": "Static Fizz",
+        "effect": { "line": "spark-reaction" },
+        "value": 1300
+      },
+      {
+        "id": "charged-up",
+        "name": "Charged Up",
+        "effect": { "line": "marking-hit" },
+        "value": 1300
+      },
+      {
+        "id": "trail-of-sparks",
+        "name": "Trail of Sparks",
+        "effect": { "line": "owners-mark" },
+        "value": 1000
+      },
+      {
+        "id": "races-anything",
+        "name": "Races Anything",
+        "effect": { "line": "first-pounce" },
+        "value": 1400
+      },
+      {
+        "id": "scurries-off-first",
+        "name": "Scurries Off First",
+        "effect": { "line": "quick-feet" },
+        "value": 400
+      },
+      {
+        "id": "freezes-like-a-statue",
+        "name": "Freezes Like a Statue",
+        "effect": { "line": "aimed-ward" },
+        "value": 700
+      },
+      { "id": "big-ears", "name": "Big Ears", "effect": { "line": "armor" }, "value": 500 }
+    ],
+    "mistnewt": [
+      {
+        "id": "slow-and-unbothered",
+        "name": "Slow and Unbothered",
+        "effect": { "line": "brace" },
+        "value": 1000
+      },
+      {
+        "id": "hides-friends-in-mist",
+        "name": "Hides Friends in Mist",
+        "effect": { "line": "cover" },
+        "value": 700
+      },
+      {
+        "id": "damp-cool-mornings",
+        "name": "Damp, Cool Mornings",
+        "effect": { "line": "tide-ward" },
+        "value": 700
+      },
+      {
+        "id": "calm-and-patient",
+        "name": "Calm and Patient",
+        "effect": { "line": "all-damage-taken" },
+        "value": 300
+      },
+      {
+        "id": "drifts-without-a-sound",
+        "name": "Drifts Without a Sound",
+        "effect": { "line": "quick-feet" },
+        "value": 400
+      },
+      { "id": "thick-fog", "name": "Thick Fog", "effect": { "line": "aimed-ward" }, "value": 700 },
+      {
+        "id": "misty-mornings",
+        "name": "Misty Mornings",
+        "effect": { "line": "trail-xp" },
+        "value": 1200
+      },
+      { "id": "steady-mist", "name": "Steady Mist", "effect": { "line": "armor" }, "value": 500 }
+    ],
+    "ashmole": [
+      { "id": "warm-burrow", "name": "Warm Burrow", "effect": { "line": "boost" }, "value": 400 },
+      { "id": "toasty-paws", "name": "Toasty Paws", "effect": { "line": "mend" }, "value": 200 },
+      {
+        "id": "cheerful-in-ash",
+        "name": "Cheerful in Ash",
+        "effect": { "line": "well-fed" },
+        "value": 2000
+      },
+      {
+        "id": "busy-and-hardworking",
+        "name": "Busy and Hardworking",
+        "effect": { "line": "busy-paws" },
+        "value": 700
+      },
+      {
+        "id": "digs-for-friends",
+        "name": "Digs for Friends",
+        "effect": { "line": "apprentice" },
+        "value": 2000
+      },
+      {
+        "id": "hoards-cosy-things",
+        "name": "Hoards Cosy Things",
+        "effect": { "line": "keen-nose" },
+        "value": 1500
+      },
+      {
+        "id": "tunnels-through-anything",
+        "name": "Tunnels Through Anything",
+        "effect": { "line": "adaptation-pierce" },
+        "value": 1000
+      }
+    ],
+    "stormray": [
+      {
+        "id": "bold-and-showy",
+        "name": "Bold and Showy",
+        "effect": { "line": "attack" },
+        "value": 600
+      },
+      {
+        "id": "rides-the-storms-edge",
+        "name": "Rides the Storm's Edge",
+        "effect": { "line": "spark-reaction" },
+        "value": 1300
+      },
+      {
+        "id": "loud-flashy-entrance",
+        "name": "Loud, Flashy Entrance",
+        "effect": { "line": "first-pounce" },
+        "value": 1400
+      },
+      {
+        "id": "fast-to-strike",
+        "name": "Fast to Strike",
+        "effect": { "line": "strike" },
+        "value": 1400
+      },
+      {
+        "id": "calm-in-the-eye",
+        "name": "Calm in the Eye",
+        "effect": { "line": "all-damage-taken" },
+        "value": 300
+      },
+      {
+        "id": "lazy-wingbeats",
+        "name": "Lazy Wingbeats",
+        "effect": { "line": "quick-feet" },
+        "value": 400
+      },
+      {
+        "id": "proud-wings",
+        "name": "Proud Wings",
+        "effect": { "line": "crit-damage" },
+        "value": 2000
+      },
+      {
+        "id": "storm-chaser",
+        "name": "Storm Chaser",
+        "effect": { "line": "spark-hunter" },
+        "value": 1000
+      }
+    ],
+    "mossback": [
+      {
+        "id": "tends-the-garden",
+        "name": "Tends the Garden",
+        "effect": { "line": "grove-reaction" },
+        "value": 1300
+      },
+      {
+        "id": "patient-and-thoughtful",
+        "name": "Patient and Thoughtful",
+        "effect": { "line": "marking-hit" },
+        "value": 1300
+      },
+      {
+        "id": "remembers-everything",
+        "name": "Remembers Everything",
+        "effect": { "line": "owners-mark" },
+        "value": 1000
+      },
+      {
+        "id": "loves-sunny-rocks",
+        "name": "Loves Sunny Rocks",
+        "effect": { "line": "between-room-rest" },
+        "value": 400
+      },
+      {
+        "id": "hosts-small-creatures",
+        "name": "Hosts Small Creatures",
+        "effect": { "line": "area-ward" },
+        "value": 700
+      },
+      {
+        "id": "forgives-most-things",
+        "name": "Forgives Most Things",
+        "effect": { "line": "backdraft-ward" },
+        "value": 2000
+      },
+      {
+        "id": "wise-and-patient",
+        "name": "Wise and Patient",
+        "effect": { "line": "adaptation-pierce" },
+        "value": 1000
+      },
+      { "id": "sturdy-shell", "name": "Sturdy Shell", "effect": { "line": "hp" }, "value": 800 }
+    ],
+    "coralynx": [
+      {
+        "id": "quiet-sudden-bursts",
+        "name": "Quiet, Sudden Bursts",
+        "effect": { "line": "first-pounce" },
+        "value": 1400
+      },
+      {
+        "id": "coral-crown",
+        "name": "Coral Crown",
+        "effect": { "line": "tide-reaction" },
+        "value": 1300
+      },
+      {
+        "id": "strikes-from-the-shadows",
+        "name": "Strikes from the Shadows",
+        "effect": { "line": "crit-damage" },
+        "value": 2000
+      },
+      {
+        "id": "fierce-about-its-territory",
+        "name": "Fierce About Its Territory",
+        "effect": { "line": "tide-hunter" },
+        "value": 1000
+      },
+      {
+        "id": "lance-practice",
+        "name": "Lance Practice",
+        "effect": { "line": "strike" },
+        "value": 1400
+      },
+      { "id": "elegant", "name": "Elegant", "effect": { "line": "attack" }, "value": 600 },
+      {
+        "id": "patrols-at-dusk",
+        "name": "Patrols at Dusk",
+        "effect": { "line": "trail-xp" },
+        "value": 1200
+      }
+    ],
+    "solmane": [
+      { "id": "warm-hearted", "name": "Warm-Hearted", "effect": { "line": "hp" }, "value": 800 },
+      {
+        "id": "leads-from-the-front",
+        "name": "Leads from the Front",
+        "effect": { "line": "first-pounce" },
+        "value": 1400
+      },
+      {
+        "id": "regal-bearing",
+        "name": "Regal Bearing",
+        "effect": { "line": "ember-attunement" },
+        "value": 800
+      },
+      {
+        "id": "mane-aglow",
+        "name": "Mane Aglow",
+        "effect": { "line": "ember-hunter" },
+        "value": 1000
+      },
+      {
+        "id": "crown-of-embers",
+        "name": "Crown of Embers",
+        "effect": { "line": "ember-reaction" },
+        "value": 1300
+      },
+      {
+        "id": "generous-with-warmth",
+        "name": "Generous with Its Warmth",
+        "effect": { "line": "owners-mark" },
+        "value": 1000
+      },
+      { "id": "warm-steps", "name": "Warm Steps", "effect": { "line": "quick-feet" }, "value": 400 }
+    ],
+    "gaiadrake": [
+      {
+        "id": "ancient-and-gentle",
+        "name": "Ancient and Gentle",
+        "effect": { "line": "hp" },
+        "value": 800
+      },
+      {
+        "id": "ecosystem-on-its-back",
+        "name": "Ecosystem on Its Back",
+        "effect": { "line": "grove-reaction" },
+        "value": 1300
+      },
+      {
+        "id": "slow-to-move",
+        "name": "Slow to Move",
+        "effect": { "line": "thick-coat" },
+        "value": 40
+      },
+      {
+        "id": "protects-everything-it-carries",
+        "name": "Protects Everything It Carries",
+        "effect": { "line": "area-ward" },
+        "value": 700
+      },
+      {
+        "id": "mossy-shoulders",
+        "name": "Mossy Shoulders",
+        "effect": { "line": "grove-attunement" },
+        "value": 800
+      },
+      {
+        "id": "steady-footfalls",
+        "name": "Steady Footfalls",
+        "effect": { "line": "payoffs-pounce" },
+        "value": 800
+      },
+      {
+        "id": "ancient-strength",
+        "name": "Ancient Strength",
+        "effect": { "line": "attack" },
+        "value": 600
+      },
+      {
+        "id": "roots-run-deep",
+        "name": "Roots Run Deep",
+        "effect": { "line": "grove-hunter" },
+        "value": 1000
+      }
+    ],
+    "aurorix": [
+      { "id": "graceful", "name": "Graceful", "effect": { "line": "quick-feet" }, "value": 400 },
+      {
+        "id": "drifts-above-the-noise",
+        "name": "Drifts Above the Noise",
+        "effect": { "line": "aimed-ward" },
+        "value": 700
+      },
+      {
+        "id": "starry-nights",
+        "name": "Starry Nights",
+        "effect": { "line": "boost" },
+        "value": 400
+      },
+      {
+        "id": "looks-after-friends",
+        "name": "Looks After Friends",
+        "effect": { "line": "mend" },
+        "value": 200
+      },
+      { "id": "dreamy", "name": "Dreamy", "effect": { "line": "spark-share" }, "value": 900 },
+      {
+        "id": "ribbon-trails",
+        "name": "Ribbon Trails",
+        "effect": { "line": "spark-attunement" },
+        "value": 800
+      },
+      { "id": "quiet-gaze", "name": "Quiet Gaze", "effect": { "line": "area-ward" }, "value": 700 },
+      { "id": "star-wishes", "name": "Star Wishes", "effect": { "line": "packer" }, "value": 2000 }
+    ],
+    "lanternfin": [
+      { "id": "gentle", "name": "Gentle", "effect": { "line": "mend" }, "value": 200 },
+      { "id": "festive", "name": "Festive", "effect": { "line": "spark-share" }, "value": 900 },
+      {
+        "id": "guides-through-the-dark",
+        "name": "Guides Through the Dark",
+        "effect": { "line": "area-ward" },
+        "value": 700
+      },
+      {
+        "id": "hums-happily",
+        "name": "Hums Happily",
+        "effect": { "line": "well-fed" },
+        "value": 2000
+      },
+      {
+        "id": "early-sleeper",
+        "name": "Early Sleeper",
+        "effect": { "line": "between-room-rest" },
+        "value": 400
+      },
+      { "id": "lantern-glow", "name": "Lantern Glow", "effect": { "line": "hp" }, "value": 800 },
+      {
+        "id": "bright-lantern",
+        "name": "Bright Lantern",
+        "effect": { "line": "tide-attunement" },
+        "value": 800
+      },
+      { "id": "warm-hum", "name": "Warm Hum", "effect": { "line": "trail-xp" }, "value": 1200 }
+    ],
+    "hearthshell": [
+      {
+        "id": "calm-and-warm",
+        "name": "Calm and Warm",
+        "effect": { "line": "brace" },
+        "value": 1000
+      },
+      {
+        "id": "banked-embers",
+        "name": "Banked Embers",
+        "effect": { "line": "ember-attunement" },
+        "value": 800
+      },
+      { "id": "reliable", "name": "Reliable", "effect": { "line": "armor" }, "value": 500 },
+      {
+        "id": "hosts-friends",
+        "name": "Hosts Friends",
+        "effect": { "line": "cover" },
+        "value": 700
+      },
+      {
+        "id": "slow-and-steady",
+        "name": "Slow and Steady",
+        "effect": { "line": "hp" },
+        "value": 800
+      },
+      {
+        "id": "shares-its-warmth",
+        "name": "Shares Its Warmth",
+        "effect": { "line": "well-fed" },
+        "value": 2000
+      },
+      {
+        "id": "fireside-tales",
+        "name": "Fireside Tales",
+        "effect": { "line": "apprentice" },
+        "value": 2000
+      },
+      { "id": "cosy-shell", "name": "Cosy Shell", "effect": { "line": "thick-coat" }, "value": 40 }
+    ]
+  },
+  "signatures": {
+    "solmane": {
+      "id": "lights-up-a-room",
+      "name": "Lights Up a Room",
+      "effect": { "line": "marking-hit" },
+      "value": 1800
+    },
+    "gaiadrake": {
+      "id": "impossible-to-stop",
+      "name": "Impossible to Stop",
+      "effect": { "line": "unbothered" },
+      "value": 1
+    },
+    "aurorix": {
+      "id": "watcher-above",
+      "name": "Watcher Above",
+      "effect": { "line": "lingering" },
+      "value": 1
+    },
+    "lanternfin": {
+      "id": "guiding-light",
+      "name": "Guiding Light",
+      "effect": { "line": "boost" },
+      "value": 600
+    },
+    "hearthshell": {
+      "id": "fire-that-lasts",
+      "name": "Fire That Lasts",
+      "effect": { "line": "lingering" },
+      "value": 1
+    }
+  },
+  "deferred": [
+    {
+      "id": "shade-napper",
+      "line": "cindle",
+      "name": "Shade Napper",
+      "needs": "creature experience (training by activity, Creatures B)"
+    },
+    {
+      "id": "light-sleeper",
+      "line": "sproutle",
+      "name": "Light Sleeper",
+      "needs": "the engine counting silences (ignore the first one in each fight)"
+    },
+    {
+      "id": "gentle-but-stubborn",
+      "line": "ashmole",
+      "name": "Gentle but Stubborn",
+      "needs": "the engine counting silences (ignore the first one in each fight)"
+    }
+  ]
+}

@@ -24,7 +24,7 @@ const defaultIo: Io = {
   },
 };
 
-const USAGE = `Usage: pnpm sim [--seed <string>] [--quick] [--weeks N] [--out <dir>] [--income ${INCOME_MODELS.join('|')}] [--fail-on-violations]`;
+const USAGE = `Usage: pnpm sim [--seed <string>] [--quick] [--weeks N] [--out <dir>] [--income ${INCOME_MODELS.join('|')}] [--no-weather] [--fail-on-violations]`;
 
 export interface CliOptions {
   settings: RunSettings;
@@ -42,6 +42,7 @@ export function parseCli(argv: readonly string[]): CliOptions {
       weeks: { type: 'string' },
       out: { type: 'string' },
       income: { type: 'string' },
+      'no-weather': { type: 'boolean' },
       'fail-on-violations': { type: 'boolean' },
       help: { type: 'boolean' },
     },
@@ -66,15 +67,24 @@ export function parseCli(argv: readonly string[]): CliOptions {
   if (typeof seed === 'string') overrides.seed = seed;
   if (weeks !== undefined) overrides.weeks = weeks;
   const out = values['out'];
+  const settings = defaultSettings(values['quick'] === true ? 'quick' : 'full', overrides);
   return {
-    settings: defaultSettings(values['quick'] === true ? 'quick' : 'full', overrides),
+    settings: values['no-weather'] === true ? { ...settings, weather: false } : settings,
     out: typeof out === 'string' && out !== '' ? out : 'sim-out',
     failOnViolations: values['fail-on-violations'] === true,
   };
 }
 
-/** Runs the simulator, writes `report.md` and `report.json`, prints a summary. Returns the exit code. */
-export function main(argv: readonly string[], io: Io = defaultIo): number {
+/**
+ * Runs the simulator, writes `report.md` and `report.json`, prints a summary. Returns the exit code.
+ * `adjust` lets tests shrink the run (for example skip the 30-week studies); the command line never
+ * passes it.
+ */
+export function main(
+  argv: readonly string[],
+  io: Io = defaultIo,
+  adjust: (settings: RunSettings) => RunSettings = (settings) => settings,
+): number {
   const started = performance.now();
   let options: CliOptions;
   try {
@@ -83,7 +93,7 @@ export function main(argv: readonly string[], io: Io = defaultIo): number {
     io.err(error instanceof Error ? error.message : String(error));
     return 2;
   }
-  const result = runSimulation(options.settings);
+  const result = runSimulation(adjust(options.settings));
   const dir = resolve(options.out);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'report.md'), `${buildReportMarkdown(result)}\n`);

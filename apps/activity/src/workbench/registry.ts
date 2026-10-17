@@ -1,14 +1,20 @@
+import { accordionEntries } from './entries/accordion';
 import { barEntries } from './entries/bars';
 import { controlEntries } from './entries/controls';
+import { creatureCardEntries } from './entries/creature-card';
+import { creaturePageV3Entries } from './entries/creature-page-v3';
 import { creatureEntries } from './entries/creatures';
 import { headingEntries } from './entries/headings';
 import { iconEntries } from './entries/icons';
 import { lootEntries } from './entries/loot';
 import { popoverEntries } from './entries/popovers';
 import { raidBoardEntries } from './entries/raid-board';
+import { skyEntries } from './entries/sky';
+import { slotDrawerEntries } from './entries/slot-drawer';
 import { slotEntries } from './entries/slots';
 import { stageEntries } from './entries/stage';
 import { tagEntries } from './entries/tags';
+import { talentEntries } from './entries/talents';
 import { GROUPS, type Entry, type Group } from './types';
 
 /**
@@ -21,13 +27,19 @@ export const ENTRIES: readonly Entry[] = [
   ...tagEntries,
   ...popoverEntries,
   ...slotEntries,
+  ...slotDrawerEntries,
   ...raidBoardEntries,
   ...lootEntries,
   ...headingEntries,
   ...iconEntries,
   ...controlEntries,
+  ...accordionEntries,
   ...creatureEntries,
+  ...creatureCardEntries,
+  ...creaturePageV3Entries,
+  ...talentEntries,
   ...stageEntries,
+  ...skyEntries,
 ];
 
 export function findEntry(name: string | null): Entry | null {

@@ -1,9 +1,9 @@
-import { GEAR_RARITIES, PART_KINDS, gearContent } from '@creatures/game';
+import { GEAR_RARITIES, PART_KINDS, baseElement, gearContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import {
   BUNDLED_ITEM_SPRITES,
   BUNDLED_PART_ICONS,
-  GEAR_KIND_IDS,
+  GEAR_SLOT_IDS,
   ITEM_SIZE,
   PART_SIZE,
   itemArt,
@@ -17,31 +17,32 @@ import { expandRows, swapPalette, validateSprite } from './sprites/sprite-data';
 const shape = (rows: readonly string[]): string => rows.join('/');
 
 describe('item sprites', () => {
-  it('has a well-formed 12x12 sprite for each kind of item in the content', () => {
-    const kinds = new Set(gearContent.bases.map((b) => b.kind));
-    expect([...kinds].sort()).toEqual([...GEAR_KIND_IDS].sort());
-    for (const kind of GEAR_KIND_IDS) {
-      const def = BUNDLED_ITEM_SPRITES[kind];
+  it('has a well-formed 12x12 sprite for each slot of the content', () => {
+    const slots = new Set(gearContent.bases.map((b) => b.slot));
+    expect([...slots].sort()).toEqual([...GEAR_SLOT_IDS].sort());
+    for (const slot of GEAR_SLOT_IDS) {
+      const def = BUNDLED_ITEM_SPRITES[slot];
       expect(() => {
         validateSprite(def, ITEM_SIZE);
-      }, kind).not.toThrow();
-      expect(expandRows(def).join('').replaceAll('.', '').length, kind).toBeGreaterThan(30);
+      }, slot).not.toThrow();
+      expect(expandRows(def).join('').replaceAll('.', '').length, slot).toBeGreaterThan(30);
     }
   });
 
-  it('gives each kind its own shape', () => {
-    const shapes = GEAR_KIND_IDS.map((kind) => shape(expandRows(BUNDLED_ITEM_SPRITES[kind])));
-    expect(new Set(shapes).size).toBe(GEAR_KIND_IDS.length);
+  it('gives each slot its own shape', () => {
+    const shapes = GEAR_SLOT_IDS.map((slot) => shape(expandRows(BUNDLED_ITEM_SPRITES[slot])));
+    expect(new Set(shapes).size).toBe(GEAR_SLOT_IDS.length);
   });
 
   it('draws every base of the content, tinted by its element and grey when it has none', () => {
     for (const base of gearContent.bases) {
       const art = itemArt(base.id);
-      expect(art.sprite, base.id).toBe(BUNDLED_ITEM_SPRITES[base.kind]);
-      if (base.tint === null) {
+      expect(art.sprite, base.id).toBe(BUNDLED_ITEM_SPRITES[base.slot]);
+      const element = baseElement(base);
+      if (element === null) {
         expect(art.palette, base.id).toBeUndefined();
       } else {
-        expect(art.palette, base.id).toBe(tintPalette(base.tint));
+        expect(art.palette, base.id).toBe(tintPalette(element));
         expect(art.palette, base.id).toBeDefined();
       }
     }
@@ -53,19 +54,20 @@ describe('item sprites', () => {
       const palette = tintPalette(tint);
       expect(palette, tint).toBeDefined();
       if (palette === undefined) continue;
-      const swapped = swapPalette(BUNDLED_ITEM_SPRITES.band, palette);
+      const swapped = swapPalette(BUNDLED_ITEM_SPRITES.hat, palette);
       expect(() => {
         validateSprite(swapped, ITEM_SIZE);
       }).not.toThrow();
       colours.add(palette['t'] ?? '');
     }
-    colours.add(BUNDLED_ITEM_SPRITES.band.palette['t'] ?? '');
+    colours.add(BUNDLED_ITEM_SPRITES.hat.palette['t'] ?? '');
     expect(colours.size).toBe(5);
   });
 
   it('knows a tint for every element of the content, and none for neutral or unknown', () => {
     for (const base of gearContent.bases) {
-      if (base.tint !== null) expect(elementIcon(base.tint), base.tint).toBeDefined();
+      const element = baseElement(base);
+      if (element !== null) expect(elementIcon(element), element).toBeDefined();
     }
     expect(tintPalette(null)).toBeUndefined();
     expect(tintPalette('void')).toBeUndefined();
@@ -80,7 +82,7 @@ describe('item sprites', () => {
   });
 
   it('has a rarity list the gear content agrees with', () => {
-    expect(GEAR_RARITIES).toEqual(['common', 'rare', 'epic', 'festival']);
+    expect(GEAR_RARITIES).toEqual(['common', 'rare', 'epic']);
   });
 });
 

@@ -37,6 +37,8 @@ import { PopoverCard, popupProps } from './ui/Popover';
 import { useDragDrop } from './use-drag-drop';
 import { useRoomBubbles } from './use-room-bubbles';
 import { useRoomScroll } from './use-room-scroll';
+import { WeatherCalendar } from './WeatherCalendar';
+import type { Forecast } from './weather-types';
 
 const scenes = new Map<RoomPhase, RoomScene>();
 
@@ -211,6 +213,11 @@ interface LivingRoomProps {
   instanceId: string;
   /** The room's art in the light of the moment (see `roomScene`); night by default. */
   scene?: RoomScene;
+  /**
+   * The forecast for the wall calendar (Boons and Omens): null while it loads (the page is blank). Absent:
+   * the room has no calendar (the workbench, tests).
+   */
+  forecast?: Forecast | null;
   /** The title row, laid over the top wall band; it does not scroll with the room. */
   children?: ComponentChildren;
   /**
@@ -238,6 +245,7 @@ export function LivingRoom({
   selfId,
   instanceId,
   scene = sceneOf('night'),
+  forecast,
   children,
   onMove,
 }: LivingRoomProps) {
@@ -433,6 +441,9 @@ export function LivingRoom({
             width={stageWidth}
             layer="front"
           />
+          {forecast !== undefined && (
+            <WeatherCalendar forecast={forecast} scale={scale} originX={originX} />
+          )}
           {carrying &&
             ROOM_SPOTS.filter((spot) => targets.includes(spot.id)).map((spot) => (
               <div

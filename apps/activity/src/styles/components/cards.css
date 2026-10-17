@@ -56,13 +56,6 @@
   font-size: 0.875rem;
 }
 
-.about summary,
-.rename summary,
-.recent-activity summary {
-  cursor: pointer;
-  color: var(--haze);
-}
-
 .recent {
   margin: 0;
   padding-left: 1.25rem;

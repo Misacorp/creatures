@@ -79,6 +79,17 @@ export interface DungeonRunInput {
    * its `signature` gimmick. Absent: no landmark, so a stored older run replays as it was fought.
    */
   depth?: number;
+  /**
+   * Between-room rest (a Scarf line): by creature id, the share of its max HP (basis points) it
+   * recovers before each room after the first, if it is still standing. Absent: none, so a stored
+   * older run replays as it was fought.
+   */
+  rest?: Readonly<Record<string, number>>;
+  /**
+   * How many plain attacks every foe makes each round, 2 or 3 (the day's Stormfront). Absent: one, so a
+   * stored older run replays as it was fought.
+   */
+  bossAttacks?: number;
 }
 
 export interface DungeonRoomResult {
@@ -141,7 +152,12 @@ export function buildRoomInput(
       if (e.op === 'team_stat' && matches(e, slot))
         stats = { ...stats, [e.stat]: scale(stats[e.stat], e.bp) };
     }
-    const carried = hp?.[slot.id];
+    let carried = hp?.[slot.id];
+    const rest = run.rest?.[slot.id] ?? 0;
+    // A creature that stands recovers its rest share of max HP (never above max); a fallen one stays down.
+    if (carried !== undefined && carried > 0 && rest > 0) {
+      carried = Math.min(stats.hp, carried + Math.floor((stats.hp * rest) / 10_000));
+    }
     return { ...slot, stats, ...(carried === undefined ? {} : { hp: carried }) };
   });
 
@@ -203,6 +219,9 @@ export function buildRoomInput(
   return {
     boss,
     bossAtk: foeAtk,
+    ...(run.bossAttacks !== undefined && run.bossAttacks > 1
+      ? { bossAttacks: run.bossAttacks }
+      : {}),
     phase: 'finale',
     bossHpPool: { max: foeHp, current: foeHp },
     adaptation: null,

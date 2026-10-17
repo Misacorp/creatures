@@ -2,11 +2,11 @@ import {
   RULES,
   createSeededRng,
   expeditionContent,
-  expeditionConvertBait,
   explorerRank,
   lengthRules,
   rankGift,
   seasonOf,
+  tripMs,
   tripXp,
   weeklySpecial,
   type Rng,
@@ -14,6 +14,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import { grantRankGift } from '../src/gear-grants';
 import { creditParts } from '../src/gear-store';
+import { giveItem } from './gear-helpers';
 import { weekIdFor, weekIndex } from '../src/raid-schedule';
 import { zonedHour } from '../src/time';
 import {
@@ -21,6 +22,7 @@ import {
   OTHER_USER_ID,
   T0,
   USER_ID,
+  certainCatches,
   runCore,
   undoExpeditionsMigration,
   type CoreContext,
@@ -98,6 +100,7 @@ interface TripBody {
 interface ResultBody {
   recalled: boolean;
   failed?: boolean;
+  noCatch?: number;
   catches: { species: string; outcome: string }[];
   loot: {
     parts: Record<string, number>;
@@ -314,21 +317,27 @@ describe('where a creature may go', () => {
     let start = festival;
     while (weekIdFor(start - HOUR, HELSINKI) === weekIdFor(festival, HELSINKI)) start -= HOUR;
     const festivalSpecies = new Set(['lanternfin', 'hearthshell']);
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        ctx.clock.t = start + HOUR;
-        const p = await join(ctx, USER, 0);
-        const seen = new Set<string>();
-        for (let i = 0; i < 50; i++) {
-          const trip = tripOf(await send(p, p.starterId, 'short', [], 'festival-grounds'));
-          ctx.clock.t = trip.endsAt;
-          for (const c of resultOf(await claim(p, trip.id)).catches) seen.add(c.species);
-        }
-        expect([...seen].some((id) => festivalSpecies.has(id))).toBe(true);
-      },
-      { rng: createSeededRng('festival-catches') },
-    );
+    // Every roll brings a creature, so 50 short trips are 50 catches (the shipped chance is small).
+    const restore = certainCatches(['short']);
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          ctx.clock.t = start + HOUR;
+          const p = await join(ctx, USER, 0);
+          const seen = new Set<string>();
+          for (let i = 0; i < 50; i++) {
+            const trip = tripOf(await send(p, p.starterId, 'short', [], 'festival-grounds'));
+            ctx.clock.t = trip.endsAt;
+            for (const c of resultOf(await claim(p, trip.id)).catches) seen.add(c.species);
+          }
+          expect([...seen].some((id) => festivalSpecies.has(id))).toBe(true);
+        },
+        { rng: createSeededRng('festival-catches') },
+      );
+    } finally {
+      restore();
+    }
   });
 
   it('shows the weekly special, the night flag and the familiarity at GET /api/destinations', async () => {
@@ -1112,25 +1121,25 @@ describe('the profile', () => {
 });
 
 describe('what a finished trip brings', () => {
-  it('turns a duplicate of a fully fused creature into a reduced amount of Bait', async () => {
+  it('never turns a duplicate into Bait: it waits as a card, even for a fully fused creature', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await join(ctx, USER, 0);
-        // Everything the Tidepools hold is owned and fused five times: the next catch converts.
+        // The starter is fused five times already; every catch of its line is a duplicate.
         ctx.sql.exec('UPDATE creatures SET fusion_count = 5');
         ctx.sql.exec('UPDATE player_progress SET expeditions_claimed = 1');
         const trip = tripOf(await send(p, p.starterId, 'long'));
         ctx.clock.t = trip.endsAt;
         const result = resultOf(await claim(p, trip.id));
-        const converted = result.catches.filter((c) => c.outcome === 'converted');
-        const bait = ctx.core.balances(USER_ID).bait;
-        const unit = expeditionConvertBait(RULES.fusion.convertBait.common);
-        expect(converted.length + (result.catches.length - converted.length)).toBe(
-          result.catches.length,
-        );
-        if (converted.length > 0) expect(bait).toBeGreaterThanOrEqual(converted.length * unit);
-        expect(unit).toBeLessThan(RULES.fusion.convertBait.common);
+        for (const c of result.catches) expect(['new', 'duplicate']).toContain(c.outcome);
+        // No Bait from duplicates (what the explorer's rank-up gift paid is the only Bait there is).
+        expect(count(ctx.sql, 'ledger', "source = 'fusion'")).toBe(0);
+        expect(
+          count(ctx.sql, 'ledger', "currency = 'bait' AND amount > 0 AND source != 'rank_gift'"),
+        ).toBe(0);
+        const duplicates = result.catches.filter((c) => c.outcome === 'duplicate').length;
+        expect(count(ctx.sql, 'pending_catches')).toBe(duplicates);
       },
       { rng: createSeededRng('convert-rng') },
     );
@@ -1301,7 +1310,8 @@ describe('migration 19 and the slot wipe', () => {
         // The finished trip still pays out its catches.
         const result = resultOf(await claim(a, TRIP_A));
         expect(result.recalled).toBe(false);
-        expect(result.catches).toHaveLength(3);
+        // The trip's three rolls each brought a creature or came up empty.
+        expect(result.catches.length + (result.noCatch ?? 0)).toBe(3);
         // With it claimed, the one running trip fills the single slot.
         expect((await state(a)).slots).toMatchObject({ total: 1, used: 1 });
       },
@@ -1320,7 +1330,7 @@ describe('migration 19 and the slot wipe', () => {
         ctx.clock.t = T0 + 13 * HOUR;
         const result = resultOf(await claim(a, OLD_KEPT));
         expect(result.recalled).toBe(false);
-        expect(result.catches).toHaveLength(3);
+        expect(result.catches.length + (result.noCatch ?? 0)).toBe(3);
         expect((await state(a)).creatures[0]?.away).toBe(false);
       },
       { rng: createSeededRng('kept'), tripRng: createSeededRng('kept-trip') },
@@ -1350,11 +1360,23 @@ describe('supplies from the Workshop', () => {
       idempotencyKey: key,
     });
 
+  const baitOf = (ctx: CoreContext): number => ctx.core.balances(USER_ID).bait;
+  let giftCounter = 0;
+  const giveBait = (ctx: CoreContext, amount: number): void => {
+    ctx.core.credit({
+      userId: USER_ID,
+      currency: 'bait',
+      amount,
+      source: 'test',
+      idempotencyKey: `lure-bait:${String(++giftCounter)}`,
+    });
+  };
+
   it('makes a basic supply at Crafting level 1: the parts are paid now and the supply comes when claimed', async () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await crafter(ctx, 1);
-      const def = expeditionContent.supplies.find((s) => s.id === 'lure-basic');
-      if (def === undefined) throw new Error('no lure-basic');
+      const def = expeditionContent.supplies.find((s) => s.id === 'map-scrap-basic');
+      if (def === undefined) throw new Error('no map-scrap-basic');
       creditParts(ctx.sql, USER_ID, { scrap: 20 });
       const scrapBefore = rows<{ amount: number }>(
         ctx.sql,
@@ -1362,11 +1384,11 @@ describe('supplies from the Workshop', () => {
         USER_ID,
       )[0]?.amount;
       const key = newKey();
-      const started = await startSupply(p, 'lure-basic', key);
+      const started = await startSupply(p, 'map-scrap-basic', key);
       expect(started.status).toBe(200);
       const jobId = (started.body['result'] as { jobId: string }).jobId;
       // The same key is the same job, paid once.
-      const retry = await startSupply(p, 'lure-basic', key);
+      const retry = await startSupply(p, 'map-scrap-basic', key);
       expect((retry.body['result'] as { jobId: string }).jobId).toBe(jobId);
       const scrapAfter = rows<{ amount: number }>(
         ctx.sql,
@@ -1381,10 +1403,10 @@ describe('supplies from the Workshop', () => {
         idempotencyKey: newKey(),
       });
       expect(done.status).toBe(200);
-      expect((await state(p)).supplies).toEqual({ 'lure-basic': def.blueprint.yield });
+      expect((await state(p)).supplies).toEqual({ 'map-scrap-basic': def.blueprint.yield });
       // A repeated claim adds nothing.
       await p.call('POST', `/api/workshop/jobs/${jobId}/claim`, { idempotencyKey: newKey() });
-      expect((await state(p)).supplies).toEqual({ 'lure-basic': def.blueprint.yield });
+      expect((await state(p)).supplies).toEqual({ 'map-scrap-basic': def.blueprint.yield });
       // The creature gained Crafting XP.
       expect(
         rows<{ xp: number }>(
@@ -1403,16 +1425,100 @@ describe('supplies from the Workshop', () => {
           )[0]?.props_json ?? '{}',
         ) as Record<string, unknown>;
       expect(logged('job_start')['parts']).toEqual(def.blueprint.parts);
+      expect(logged('job_start')['bait']).toBeUndefined();
       expect(logged('job_claim')['yield']).toBe(def.blueprint.yield);
+    });
+  });
+
+  it('makes a lure from Bait and scrap: both are paid now, once, and nothing is paid when either is short', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const p = await crafter(ctx, 1);
+      const def = expeditionContent.supplies.find((s) => s.id === 'lure-basic');
+      if (def === undefined || def.blueprint.bait === undefined) throw new Error('no lure-basic');
+      const bait = def.blueprint.bait;
+      const scrapOf = (): number =>
+        rows<{ amount: number }>(
+          ctx.sql,
+          "SELECT amount FROM parts WHERE user_id = ? AND kind = 'scrap'",
+          USER_ID,
+        )[0]?.amount ?? 0;
+      // No Bait at all: refused, and the scrap is not taken.
+      creditParts(ctx.sql, USER_ID, { scrap: 20 });
+      const noBait = await startSupply(p, 'lure-basic');
+      expect(noBait.status).toBe(409);
+      expect(noBait.body['error']).toBe('insufficient_funds');
+      expect(scrapOf()).toBe(20);
+      expect(rows(ctx.sql, 'SELECT * FROM workshop_jobs')).toHaveLength(0);
+      // Not enough Bait: the same.
+      giveBait(ctx, bait - 1);
+      expect((await startSupply(p, 'lure-basic')).status).toBe(409);
+      expect(baitOf(ctx)).toBe(bait - 1);
+      expect(scrapOf()).toBe(20);
+      // Enough: Bait and scrap go, one job is made, and the same key does not pay twice.
+      giveBait(ctx, 1 + 3 * bait);
+      const key = newKey();
+      const started = await startSupply(p, 'lure-basic', key);
+      expect(started.status).toBe(200);
+      const jobId = (started.body['result'] as { jobId: string }).jobId;
+      expect(baitOf(ctx)).toBe(3 * bait);
+      expect(scrapOf()).toBe(20 - (def.blueprint.parts.scrap ?? 0));
+      const retry = await startSupply(p, 'lure-basic', key);
+      expect((retry.body['result'] as { jobId: string }).jobId).toBe(jobId);
+      expect(baitOf(ctx)).toBe(3 * bait);
+      expect(scrapOf()).toBe(20 - (def.blueprint.parts.scrap ?? 0));
+      expect(rows(ctx.sql, 'SELECT * FROM workshop_jobs')).toHaveLength(1);
+      // The ledger has one lure debit, under the client's key.
+      expect(
+        rows<{ amount: number; source: string; idempotency_key: string }>(
+          ctx.sql,
+          "SELECT amount, source, idempotency_key FROM ledger WHERE source = 'lure'",
+        ),
+      ).toEqual([{ amount: -bait, source: 'lure', idempotency_key: key }]);
+      // The log says what it cost, and the supply comes when the job is claimed.
+      const logged = JSON.parse(
+        rows<{ props_json: string }>(
+          ctx.sql,
+          "SELECT props_json FROM analytics_events WHERE kind = 'job_start' ORDER BY id",
+        )[0]?.props_json ?? '{}',
+      ) as Record<string, unknown>;
+      expect(logged['bait']).toBe(bait);
+      expect(logged['parts']).toEqual(def.blueprint.parts);
+      ctx.clock.t += def.blueprint.hours * HOUR;
+      const done = await p.call('POST', `/api/workshop/jobs/${jobId}/claim`, {
+        idempotencyKey: newKey(),
+      });
+      expect(done.status).toBe(200);
+      expect((await state(p)).supplies).toEqual({ 'lure-basic': def.blueprint.yield });
+      // The Workshop's view of the job shows the Bait it cost.
+      const view = (await p.call('GET', '/api/gear')).body as {
+        jobs: { id: string; bait: number }[];
+      };
+      expect(view.jobs.find((j) => j.id === jobId)?.bait).toBe(bait);
+    });
+  });
+
+  it('refuses a key that was used for another job, without taking any Bait', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const p = await crafter(ctx, 1);
+      creditParts(ctx.sql, USER_ID, { scrap: 20 });
+      giveBait(ctx, 200);
+      const key = newKey();
+      expect((await startSupply(p, 'lure-basic', key)).status).toBe(200);
+      const baitAfter = baitOf(ctx);
+      // The same key for a different lure is a conflict, and costs nothing.
+      const clash = await startSupply(p, 'lure-good', key);
+      expect(clash.status).toBe(409);
+      expect(clash.body['error']).toBe('key_conflict');
+      expect(baitOf(ctx)).toBe(baitAfter);
     });
   });
 
   it('asks for the Crafting level of the tier, and for the parts', async () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await crafter(ctx, 1);
-      creditParts(ctx.sql, USER_ID, { scrap: 100, 'grove-shard': 10 });
-      const good = expeditionContent.supplies.find((s) => s.id === 'lure-good');
-      const low = await startSupply(p, 'lure-good');
+      creditParts(ctx.sql, USER_ID, { scrap: 100, 'tide-shard': 10 });
+      const good = expeditionContent.supplies.find((s) => s.id === 'map-scrap-good');
+      const low = await startSupply(p, 'map-scrap-good');
       expect(low.status).toBe(409);
       expect(low.body['error']).toBe('skill_too_low');
       // At the level it asks for it works; without the parts it does not.
@@ -1422,12 +1528,18 @@ describe('supplies from the Workshop', () => {
         RULES.gear.skill.xpForLevel[level - 1] ?? 0,
         p.starterId,
       );
-      ctx.sql.exec("DELETE FROM parts WHERE kind = 'grove-shard'");
-      const poor = await startSupply(p, 'lure-good');
+      ctx.sql.exec("DELETE FROM parts WHERE kind = 'tide-shard'");
+      const poor = await startSupply(p, 'map-scrap-good');
       expect(poor.status).toBe(409);
       expect(poor.body['error']).toBe('insufficient_parts');
-      creditParts(ctx.sql, USER_ID, { 'grove-shard': 10 });
-      expect((await startSupply(p, 'lure-good')).status).toBe(200);
+      // A lure of a higher tier asks for its Crafting level too, before any Bait is taken.
+      giveBait(ctx, 500);
+      const great = await startSupply(p, 'lure-great');
+      expect(great.status).toBe(409);
+      expect(great.body['error']).toBe('skill_too_low');
+      expect(baitOf(ctx)).toBe(500);
+      creditParts(ctx.sql, USER_ID, { 'tide-shard': 10 });
+      expect((await startSupply(p, 'map-scrap-good')).status).toBe(200);
     });
   });
 
@@ -1437,7 +1549,7 @@ describe('supplies from the Workshop', () => {
       creditParts(ctx.sql, USER_ID, { scrap: 50 });
       expect((await startSupply(p, 'lure-platinum')).status).toBe(400);
       tripOf(await send(p, p.starterId, 'long'));
-      const away = await startSupply(p, 'lure-basic');
+      const away = await startSupply(p, 'map-scrap-basic');
       expect(away.status).toBe(409);
       expect(away.body['error']).toBe('creature_away');
     });
@@ -1497,6 +1609,174 @@ describe('the analytics of expeditions', () => {
         for (const e of events) expect(e.props_json.length).toBeLessThanOrEqual(1_536);
       },
       { tripRng: constantRng(draw), rng: createSeededRng('analytics-rng') },
+    );
+  });
+});
+
+describe('gear on trips', () => {
+  /** Puts a worn item on a creature straight in the tables, with the lines given. */
+  const wearOn = (
+    ctx: CoreContext,
+    creatureId: string,
+    baseId: string,
+    level: number,
+    lines: [string, number][],
+  ): void => {
+    const id = giveItem(ctx.sql, USER_ID, baseId, { rarity: 'epic', level, lines });
+    ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', creatureId, id);
+  };
+
+  it('Quick feet shorten a trip that is sent, by their share', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0, 'cindle');
+        ctx.sql.exec('UPDATE creatures SET level = 13 WHERE id = ?', p.starterId);
+        const plain = tripOf(await send(p, p.starterId, 'long'));
+        // The same creature again after the first trip is claimed, now wearing a Compass.
+        ctx.clock.t = plain.endsAt;
+        await claim(p, plain.id);
+        wearOn(ctx, p.starterId, 'crossroads-compass', 13, [['quick-feet', 2]]);
+        const rank = (await state(p)).creatures[0]?.explorer.rank ?? 1;
+        const quick = tripOf(await send(p, p.starterId, 'long'));
+        const length = (t: TripBody) => t.endsAt - t.startedAt;
+        // The first trip took the plain time of its rank; Quick feet tier III is -4% of the next one.
+        expect(length(plain)).toBe(tripMs('long', 1));
+        expect(length(quick)).toBe(Math.floor((tripMs('long', rank) * (10_000 - 400)) / 10_000));
+      },
+      { tripRng: createSeededRng('quick-feet'), rng: createSeededRng('quick-feet-rng') },
+    );
+  });
+
+  it('Trail XP raises the explorer XP a finished trip gives, as worn when it is claimed', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0, 'cindle');
+        ctx.sql.exec('UPDATE creatures SET level = 13 WHERE id = ?', p.starterId);
+        const plain = tripOf(await send(p, p.starterId, 'long'));
+        ctx.clock.t = plain.endsAt;
+        const first = resultOf(await claim(p, plain.id));
+        wearOn(ctx, p.starterId, 'crossroads-compass', 13, [['trail-xp', 2]]);
+        const better = tripOf(await send(p, p.starterId, 'long'));
+        ctx.clock.t = better.endsAt;
+        const second = resultOf(await claim(p, better.id));
+        // The compass's own base line (+5% at item level 13) and a tier III Trail XP (+12%).
+        expect(second.xp?.gained).toBeGreaterThan(first.xp?.gained ?? 0);
+        expect(second.xp?.gained).toBe(tripXp('long', 500 + 1200));
+        expect(first.xp?.gained).toBe(tripXp('long', 0));
+      },
+      { tripRng: createSeededRng('trail-xp'), rng: createSeededRng('trail-xp-rng') },
+    );
+  });
+
+  it('Keen nose brings back more parts on a finished trip', async () => {
+    // Every roll brings a creature, so no empty roll adds its small find to the scrap being compared.
+    const restore = certainCatches(['day']);
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await join(ctx, USER, 0, 'cindle');
+          ctx.sql.exec('UPDATE creatures SET level = 15 WHERE id = ?', p.starterId);
+          setRank(ctx.sql, USER_ID, p.starterId, 6);
+          const scrap = RULES.expeditions.lengths.day.loot.scrap;
+          const plain = tripOf(await send(p, p.starterId, 'day'));
+          ctx.clock.t = plain.endsAt;
+          const first = resultOf(await claim(p, plain.id));
+          // Three items with tier IV Keen nose: +60%.
+          wearOn(ctx, p.starterId, 'trail-cap', 15, [['keen-nose', 3]]);
+          wearOn(ctx, p.starterId, 'patch-scarf', 15, [['keen-nose', 3]]);
+          wearOn(ctx, p.starterId, 'trail-charm', 15, [['keen-nose', 3]]);
+          const rich = tripOf(await send(p, p.starterId, 'day'));
+          ctx.clock.t = rich.endsAt;
+          const second = resultOf(await claim(p, rich.id));
+          expect(first.loot.parts['scrap']).toBe(scrap);
+          expect(second.loot.parts['scrap']).toBe(Math.floor((scrap * 16_000) / 10_000));
+          expect(second.loot.parts['scrap'] ?? 0).toBeGreaterThan(scrap);
+        },
+        { tripRng: createSeededRng('keen-nose'), rng: createSeededRng('keen-nose-rng') },
+      );
+    } finally {
+      restore();
+    }
+  });
+
+  it('a gear find from a push-on is an item of the place’s element at twice the explorer rank, with where it came from', async () => {
+    const draw = { v: 0 };
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0);
+        setRank(ctx.sql, USER_ID, p.starterId, 4);
+        const trip = tripOf(await send(p, p.starterId, 'long', [], 'ember-caves'));
+        ctx.clock.t = trip.endsAt;
+        // The Shortcut (a rare gear find) is the offer, stored before the state would roll one.
+        ctx.sql.exec(
+          'INSERT INTO expedition_offers (expedition_id, user_id, goals_json, offered_at) VALUES (?, ?, ?, ?)',
+          trip.id,
+          USER_ID,
+          JSON.stringify(['shortcut']),
+          ctx.clock.t,
+        );
+        const chosen = tripOf(await pushOn(p, trip.id, 'shortcut'));
+        ctx.clock.t = (chosen.pushOn?.endsAt ?? 0) + 1;
+        const result = resultOf(await claim(p, trip.id)); // draws are 0: the chance succeeds
+        expect(result.pushOn?.outcome).toBe('worked');
+        expect(result.loot.gear).toHaveLength(1);
+        const items = rows<{
+          tag: string;
+          slot: string;
+          item_level: number;
+          rarity: string;
+          source: string;
+          origin_json: string;
+        }>(ctx.sql, 'SELECT tag, slot, item_level, rarity, source, origin_json FROM gear_items');
+        expect(items).toHaveLength(1);
+        // Rank 4 explorer: item level 8; the Ember Caves: an Ember (or role) piece.
+        expect(items[0]).toMatchObject({ item_level: 8, rarity: 'rare', source: 'expedition' });
+        expect(['ember', 'guard', 'setter', 'payoff', 'support']).toContain(items[0]?.tag);
+        const origin = JSON.parse(items[0]?.origin_json ?? '{}') as Record<string, unknown>;
+        expect(origin).toMatchObject({ kind: 'trip', place: 'ember-caves' });
+      },
+      {
+        tripRng: constantRng(draw),
+        rng: createSeededRng('find-rng'),
+        gearRng: createSeededRng('find'),
+      },
+    );
+  });
+
+  it('the Old Crossroads gives a Crossroads Compass', async () => {
+    const draw = { v: 0 };
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0);
+        setRank(ctx.sql, USER_ID, p.starterId, 4);
+        const trip = tripOf(await send(p, p.starterId, 'long', [], 'old-crossroads'));
+        ctx.clock.t = trip.endsAt;
+        ctx.sql.exec(
+          'INSERT INTO expedition_offers (expedition_id, user_id, goals_json, offered_at) VALUES (?, ?, ?, ?)',
+          trip.id,
+          USER_ID,
+          JSON.stringify(['shortcut']),
+          ctx.clock.t,
+        );
+        const chosen = tripOf(await pushOn(p, trip.id, 'shortcut'));
+        ctx.clock.t = (chosen.pushOn?.endsAt ?? 0) + 1;
+        await claim(p, trip.id);
+        expect(
+          rows<{ base_id: string }>(ctx.sql, 'SELECT base_id FROM gear_items').map(
+            (r) => r.base_id,
+          ),
+        ).toEqual(['crossroads-compass']);
+      },
+      {
+        tripRng: constantRng(draw),
+        rng: createSeededRng('cross-rng'),
+        gearRng: createSeededRng('cross'),
+      },
     );
   });
 });

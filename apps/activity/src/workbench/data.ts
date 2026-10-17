@@ -3,7 +3,14 @@
  * taken from the shipped content, and a sample raid week for the pages that need a whole view.
  * Nothing here calls the API.
  */
-import { PART_KINDS, content, expeditionContent, gearContent } from '@creatures/game';
+import {
+  PART_KINDS,
+  content,
+  expeditionContent,
+  gearContent,
+  weatherDef,
+  weatherLines,
+} from '@creatures/game';
 import type { CreatureInfo } from '../creature-info';
 import type { Resident } from '../room-data';
 import raidFestival from '../fixtures/raid-festival.json';
@@ -18,6 +25,7 @@ import {
   BUNDLED_CREATURE_SPRITES,
 } from '../sprites/creature-sprites';
 import type { SpriteDef } from '../sprites/sprite-data';
+import type { Forecast, WeatherDay, WeatherEntry } from '../weather-types';
 
 export const SPECIES_IDS: readonly string[] = content.creatures.map((c) => c.id);
 export const ELEMENT_IDS: readonly string[] = content.elements.map((e) => e.id);
@@ -27,7 +35,8 @@ export const DESTINATION_IDS: readonly string[] = expeditionContent.destinations
 export const SUPPLY_IDS: readonly string[] = expeditionContent.supplies.map((s) => s.id);
 export const GEAR_BASE_IDS: readonly string[] = gearContent.bases.map((b) => b.id);
 export const PARTS: readonly PartKind[] = PART_KINDS;
-export const RARITIES: readonly GearRarity[] = ['common', 'rare', 'epic', 'festival'];
+/** Festival is a base (a look and a line of its own), not a rarity: the Festival presets pick its base. */
+export const RARITIES: readonly GearRarity[] = ['common', 'rare', 'epic'];
 export const GLYPH_IDS: readonly string[] = Object.keys(BUNDLED_GLYPHS);
 
 /** "None" in a select; the one word every optional select uses. */
@@ -71,8 +80,8 @@ export const ICONS: Readonly<Record<string, IconRef>> = {
   'part: spark-shard': { kind: 'part', part: 'spark-shard' },
   'part: glimmer': { kind: 'part', part: 'glimmer' },
   'gear: trail-charm': { kind: 'gear', baseId: 'trail-charm' },
-  'gear: wave-band': { kind: 'gear', baseId: 'wave-band' },
-  'gear: storm-trinket': { kind: 'gear', baseId: 'storm-trinket' },
+  'gear: kelp-cap': { kind: 'gear', baseId: 'kelp-cap' },
+  'gear: ember-muffler': { kind: 'gear', baseId: 'ember-muffler' },
   'element: tide': { kind: 'element', element: 'tide' },
   'element: ember': { kind: 'element', element: 'ember' },
   'element: grove': { kind: 'element', element: 'grove' },
@@ -172,24 +181,29 @@ export function withClaims(residents: readonly Resident[], claims: RoomClaims): 
   });
 }
 
-/** The worn item of fixture resident `i`: most wear something, some enchanted, every third nothing. */
-function sampleWorn(i: number): WornItem | null {
-  if (i % 3 === 1) return null;
-  const base = gearContent.bases[(i * 3) % gearContent.bases.length];
-  if (base === undefined) return null;
-  const enchant = gearContent.enchants[i % gearContent.enchants.length];
-  return {
-    baseId: base.id,
-    rarity: RARITIES[i % RARITIES.length] ?? 'common',
-    level: i % 6,
-    enchantId: i % 2 === 0 && enchant !== undefined ? enchant.id : null,
-    primary: { stat: base.primary, bp: 300 + i * 85 },
-  };
+/** The worn items of fixture resident `i`: most wear a hat, some more, every third nothing. */
+function sampleWorn(i: number): WornItem[] {
+  if (i % 3 === 1) return [];
+  const slots = (['hat', 'scarf', 'charm'] as const).slice(0, 1 + (i % 3));
+  return slots.flatMap((slot, k) => {
+    const bases = gearContent.bases.filter((b) => b.slot === slot);
+    const base = bases[(i + k) % bases.length];
+    if (base === undefined) return [];
+    return [
+      {
+        baseId: base.id,
+        slot,
+        rarity: RARITIES[(i + k) % RARITIES.length] ?? 'common',
+        itemLevel: 2 + ((i * 3 + k) % 10),
+        lines: ['Attack +3%', 'Tide Hunter +5%'],
+      },
+    ];
+  });
 }
 
 /**
  * Fixture residents of the living room: "You" first, then others, each with a different species, now
- * and then shiny or nicknamed, most wearing an item (tap one for the popover's worn-item line). With `oneBusy`, the second resident has all creatures out working (no creature).
+ * and then shiny or nicknamed, most wearing some gear (tap one for the popover's worn-item lines). With `oneBusy`, the second resident has all creatures out working (no creature).
  */
 export function sampleResidents(count: number, oneBusy: boolean): Resident[] {
   return Array.from({ length: count }, (_, i) => {
@@ -214,4 +228,78 @@ export function sampleResidents(count: number, oneBusy: boolean): Resident[] {
             },
     };
   });
+}
+
+// --- The valley's sky ---
+
+/** The states of the sky the weather pages can show; "loading" is the blank calendar page. */
+export const SKY_STATES = [
+  'loading',
+  'boon only',
+  'boon and omen',
+  'wild omen tomorrow',
+  'rank 14 (strong)',
+] as const;
+export type SkyState = (typeof SKY_STATES)[number];
+
+const SKY_START = 1_800_000_000_000;
+const DAY_MS = 86_400_000;
+
+/** A Boon or Omen as the server writes it, from the shipped content, at a strength (10000 is x1). */
+function skyEntry(id: string, strengthBp: number): WeatherEntry {
+  const def = weatherDef(id);
+  if (def === undefined) throw new Error(`the workbench sky names unknown "${id}"`);
+  const lines = weatherLines(id, strengthBp);
+  return {
+    id,
+    name: def.name,
+    flavor: def.flavor,
+    bubbles: [...def.bubbles],
+    fight: lines.fight,
+    trips: lines.trips,
+  };
+}
+
+function skyDay(
+  index: number,
+  boon: [string, number],
+  omen: [string, number] | null,
+  wild = false,
+): WeatherDay {
+  return {
+    day: `2027-01-${String(13 + index)}`,
+    startsAt: SKY_START + index * DAY_MS,
+    endsAt: SKY_START + (index + 1) * DAY_MS,
+    boon: skyEntry(...boon),
+    omen: omen === null ? null : skyEntry(...omen),
+    wild,
+  };
+}
+
+/** The forecast of a state of the sky; null is "no forecast yet". Built from the real content and numbers. */
+export function sampleForecast(state: string): Forecast | null {
+  switch (state) {
+    case 'boon only':
+      return {
+        today: skyDay(0, ['fair-winds', 10_000], null),
+        tomorrow: skyDay(1, ['market-day', 10_000], null),
+      };
+    case 'boon and omen':
+      return {
+        today: skyDay(0, ['fair-winds', 12_500], ['static-sky', 15_000]),
+        tomorrow: skyDay(1, ['market-day', 12_500], ['cold-snap', 15_000]),
+      };
+    case 'wild omen tomorrow':
+      return {
+        today: skyDay(0, ['quiet-night', 15_000], ['heatwave', 20_000]),
+        tomorrow: skyDay(1, ['hearty-breakfast', 15_000], ['stormfront', 20_000], true),
+      };
+    case 'rank 14 (strong)':
+      return {
+        today: skyDay(0, ['high-water', 15_000], ['long-shadows', 25_000]),
+        tomorrow: skyDay(1, ['bonfire-night', 15_000], ['muddy-roads', 25_000]),
+      };
+    default:
+      return null;
+  }
 }

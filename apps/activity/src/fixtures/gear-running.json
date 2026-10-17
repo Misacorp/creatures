@@ -2,170 +2,643 @@
   "serverNow": 1799733601000,
   "balances": {
     "bait": 100,
-    "essence": 159
+    "essence": 0
   },
   "inventory": {
     "cap": 60,
-    "used": 5,
+    "used": 8,
     "reserved": 1
   },
   "items": [
     {
-      "id": "87ee5c5b-2e94-4a97-b049-f91d9ba18398",
-      "baseId": "trail-charm",
+      "id": "c63062c5-a791-46a5-999d-e944563ea7fa",
+      "baseId": "trail-cap",
+      "slot": "hat",
+      "tag": "neutral",
       "rarity": "common",
-      "level": 1,
-      "maxLevel": 5,
-      "primary": {
-        "stat": "atk",
-        "bp": 502
-      },
-      "secondaries": [],
-      "enchantId": null,
-      "enchantActive": null,
-      "equippedOn": null,
-      "jobId": null,
-      "upgradeCost": {
-        "essence": 30,
-        "scrap": 3
-      },
-      "dismantle": {
-        "scrap": 3
-      },
-      "source": "welcome",
-      "createdAt": 1799733600000
-    },
-    {
-      "id": "a7abb89b-ce58-416a-ace1-f7ba984349b2",
-      "baseId": "cinder-charm",
-      "rarity": "common",
-      "level": 0,
-      "maxLevel": 5,
-      "primary": {
-        "stat": "atk",
-        "bp": 371
-      },
-      "secondaries": [],
-      "enchantId": null,
-      "enchantActive": null,
-      "equippedOn": null,
-      "jobId": null,
-      "upgradeCost": {
-        "essence": 20,
-        "scrap": 2
-      },
-      "dismantle": {
-        "scrap": 2
-      },
-      "source": "raid_finale",
-      "createdAt": 1799733600000
-    },
-    {
-      "id": "5b9512cc-119d-400c-9876-4b8dbb8c05da",
-      "baseId": "hearth-band",
-      "rarity": "festival",
-      "level": 0,
-      "maxLevel": 5,
-      "primary": {
-        "stat": "atk",
-        "bp": 739
-      },
-      "secondaries": [
+      "festival": false,
+      "itemLevel": 1,
+      "stats": [
         {
-          "stat": "spd",
-          "bp": 188
+          "stat": "atk",
+          "value": 2,
+          "base": 2,
+          "text": "Attack 2"
         },
         {
           "stat": "hp",
-          "bp": 294
+          "value": 4,
+          "base": 4,
+          "text": "HP 4"
         }
       ],
-      "enchantId": null,
-      "enchantActive": null,
-      "equippedOn": null,
-      "jobId": null,
-      "upgradeCost": {
-        "essence": 40,
-        "scrap": 4
-      },
-      "dismantle": {
-        "scrap": 10,
-        "ember-shard": 2,
-        "glimmer": 1
-      },
-      "source": "festival",
-      "createdAt": 1799733600000
-    },
-    {
-      "id": "d370f1f6-5940-44bc-9113-ced5efbe8d3e",
-      "baseId": "volt-band",
-      "rarity": "rare",
-      "level": 0,
-      "maxLevel": 5,
-      "primary": {
-        "stat": "critChance",
-        "bp": 241
-      },
-      "secondaries": [
+      "lines": [
         {
-          "stat": "critDamage",
-          "bp": 240
+          "id": "crit-damage",
+          "name": "Crit damage",
+          "text": "Crit damage +8 pt",
+          "about": "Crits hit harder, in points (the fight caps the total).",
+          "source": "rolled",
+          "tier": 1,
+          "bestTier": 1,
+          "local": false,
+          "active": true
         }
       ],
-      "enchantId": null,
-      "enchantActive": null,
-      "equippedOn": null,
-      "jobId": "6a170eca-a9fb-4ac4-90ac-9e3c5c8c13de",
-      "upgradeCost": {
-        "essence": 30,
-        "scrap": 3
+      "needs": {
+        "level": 1,
+        "role": null
       },
+      "equippedOn": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
       "dismantle": {
-        "scrap": 5,
-        "spark-shard": 1
+        "scrap": {
+          "min": 2,
+          "max": 3
+        },
+        "shards": {
+          "min": 0,
+          "max": 0,
+          "element": null
+        },
+        "glimmer": {
+          "min": 0,
+          "max": 0
+        },
+        "essence": {
+          "min": 0,
+          "max": 0
+        }
       },
-      "source": "test",
-      "createdAt": 1799733600000
+      "source": "welcome",
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": {
+        "kind": "welcome"
+      }
     },
     {
-      "id": "2e486da1-d4b1-477e-a3b3-c47a33da5703",
-      "baseId": "phoenix-trinket",
-      "rarity": "epic",
-      "level": 0,
-      "maxLevel": 5,
-      "primary": {
-        "stat": "critDamage",
-        "bp": 882
-      },
-      "secondaries": [
+      "id": "cc35ae7d-1c2b-44da-b320-58447fe68ce9",
+      "baseId": "tidepool-charm",
+      "slot": "charm",
+      "tag": "tide",
+      "rarity": "common",
+      "festival": false,
+      "itemLevel": 6,
+      "stats": [],
+      "lines": [
         {
-          "stat": "spd",
-          "bp": 120
+          "id": "tide-attunement",
+          "name": "Tide Attunement",
+          "text": "Tide Attunement +3%",
+          "about": "Raises Attack, but only for a Tide creature.",
+          "source": "base",
+          "tier": null,
+          "bestTier": null,
+          "local": false,
+          "active": null
         },
         {
-          "stat": "critChance",
-          "bp": 71
+          "id": "cover",
+          "name": "Cover",
+          "text": "Cover +3 pt",
+          "about": "A Guard's cover for its neighbours grows by these points.",
+          "source": "rolled",
+          "tier": 1,
+          "bestTier": 2,
+          "local": false,
+          "active": null
         }
       ],
-      "enchantId": null,
-      "enchantActive": null,
-      "equippedOn": "10d24d35-e868-4bd9-bd9f-4afca979cbcb",
-      "jobId": null,
-      "upgradeCost": {
-        "essence": 40,
-        "scrap": 4
+      "needs": {
+        "level": 13,
+        "role": null
       },
+      "equippedOn": null,
       "dismantle": {
-        "scrap": 10,
-        "ember-shard": 2,
-        "glimmer": 1
+        "scrap": {
+          "min": 1,
+          "max": 2
+        },
+        "shards": {
+          "min": 0,
+          "max": 0,
+          "element": "tide"
+        },
+        "glimmer": {
+          "min": 0,
+          "max": 0
+        },
+        "essence": {
+          "min": 0,
+          "max": 0
+        }
+      },
+      "source": "raid_finale",
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": {
+        "kind": "raid",
+        "boss": "tidal-colossus",
+        "rank": 3
+      }
+    },
+    {
+      "id": "2226b699-5d95-45ff-b03f-79218c276f13",
+      "baseId": "festival-hearth-scarf",
+      "slot": "scarf",
+      "tag": "ember",
+      "rarity": "epic",
+      "festival": true,
+      "itemLevel": 6,
+      "stats": [
+        {
+          "stat": "hp",
+          "value": 16,
+          "base": 12,
+          "text": "HP 16"
+        },
+        {
+          "stat": "atk",
+          "value": 1,
+          "base": 1,
+          "text": "Attack 1"
+        }
+      ],
+      "lines": [
+        {
+          "id": "hearth-warmth",
+          "name": "Hearth warmth",
+          "text": "Hearth warmth +2%",
+          "about": "A Festival scarf's warmth: a little HP back between dungeon rooms.",
+          "source": "fixed",
+          "tier": null,
+          "bestTier": null,
+          "local": false,
+          "active": true
+        },
+        {
+          "id": "hp-local-pct",
+          "name": "HP",
+          "text": "+40% HP (this item)",
+          "about": "Raises this item's own HP by a share (not the creature's).",
+          "source": "rolled",
+          "tier": 2,
+          "bestTier": 2,
+          "local": true,
+          "active": true
+        },
+        {
+          "id": "ember-ward",
+          "name": "Ember Ward",
+          "text": "Ember Ward −4%",
+          "about": "Less damage from the foes that beat Ember.",
+          "source": "rolled",
+          "tier": 1,
+          "bestTier": 2,
+          "local": false,
+          "active": true
+        },
+        {
+          "id": "well-fed",
+          "name": "Well-fed",
+          "text": "Well-fed +8%",
+          "about": "Healing the wearer receives is bigger.",
+          "source": "rolled",
+          "tier": 1,
+          "bestTier": 2,
+          "local": false,
+          "active": true
+        }
+      ],
+      "needs": {
+        "level": 7,
+        "role": null
+      },
+      "equippedOn": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
+      "dismantle": {
+        "scrap": {
+          "min": 2,
+          "max": 3
+        },
+        "shards": {
+          "min": 1,
+          "max": 2,
+          "element": "ember"
+        },
+        "glimmer": {
+          "min": 0,
+          "max": 1
+        },
+        "essence": {
+          "min": 10,
+          "max": 25
+        }
+      },
+      "source": "festival",
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": {
+        "kind": "festival",
+        "boss": "tidal-colossus",
+        "rank": 3
+      }
+    },
+    {
+      "id": "978654ee-5090-4477-a92f-38bff6adbd55",
+      "baseId": "emberkeepers-crown",
+      "slot": "hat",
+      "tag": "ember",
+      "rarity": "epic",
+      "festival": false,
+      "itemLevel": 15,
+      "stats": [
+        {
+          "stat": "atk",
+          "value": 44,
+          "base": 28,
+          "text": "Attack 44"
+        },
+        {
+          "stat": "hp",
+          "value": 38,
+          "base": 38,
+          "text": "HP 38"
+        },
+        {
+          "stat": "critDamage",
+          "value": 3200,
+          "base": 2000,
+          "text": "Crit damage 32 pt"
+        }
+      ],
+      "lines": [
+        {
+          "id": "ember-reaction",
+          "name": "Wildfire bonus",
+          "text": "Wildfire bonus +18%",
+          "about": "The bonus of the reaction Ember creatures set off is bigger.",
+          "source": "rolled",
+          "tier": 4,
+          "bestTier": 4,
+          "local": false,
+          "active": true
+        },
+        {
+          "id": "crit-damage-local-pct",
+          "name": "Crit damage",
+          "text": "+60% Crit damage (this item)",
+          "about": "Raises this item's own crit damage by a share. Only on items that have it.",
+          "source": "rolled",
+          "tier": 3,
+          "bestTier": 4,
+          "local": true,
+          "active": true
+        },
+        {
+          "id": "attack-local-pct",
+          "name": "Attack",
+          "text": "+60% Attack (this item)",
+          "about": "Raises this item's own Attack by a share (not the creature's).",
+          "source": "rolled",
+          "tier": 3,
+          "bestTier": 4,
+          "local": true,
+          "active": true
+        }
+      ],
+      "needs": {
+        "level": 15,
+        "role": null
+      },
+      "equippedOn": "0006079c-6263-4604-b59e-f1a6a00f42de",
+      "dismantle": {
+        "scrap": {
+          "min": 3,
+          "max": 4
+        },
+        "shards": {
+          "min": 1,
+          "max": 2,
+          "element": "ember"
+        },
+        "glimmer": {
+          "min": 0,
+          "max": 1
+        },
+        "essence": {
+          "min": 10,
+          "max": 25
+        }
       },
       "source": "test",
-      "createdAt": 1799733600000
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": null
+    },
+    {
+      "id": "e0f699b8-75ab-4aa6-ac9b-abf795fe6a4c",
+      "baseId": "bark-shawl",
+      "slot": "scarf",
+      "tag": "grove",
+      "rarity": "rare",
+      "festival": false,
+      "itemLevel": 12,
+      "stats": [
+        {
+          "stat": "hp",
+          "value": 117,
+          "base": 84,
+          "text": "HP 117"
+        },
+        {
+          "stat": "atk",
+          "value": 2,
+          "base": 2,
+          "text": "Attack 2"
+        }
+      ],
+      "lines": [
+        {
+          "id": "aimed-ward",
+          "name": "Aimed ward",
+          "text": "Aimed ward −7%",
+          "about": "Aimed hits do less damage to the wearer.",
+          "source": "rolled",
+          "tier": 3,
+          "bestTier": 3,
+          "local": false,
+          "active": true
+        },
+        {
+          "id": "hp-local-pct",
+          "name": "HP",
+          "text": "+40% HP (this item)",
+          "about": "Raises this item's own HP by a share (not the creature's).",
+          "source": "rolled",
+          "tier": 2,
+          "bestTier": 3,
+          "local": true,
+          "active": true
+        }
+      ],
+      "needs": {
+        "level": 12,
+        "role": null
+      },
+      "equippedOn": "0006079c-6263-4604-b59e-f1a6a00f42de",
+      "dismantle": {
+        "scrap": {
+          "min": 3,
+          "max": 4
+        },
+        "shards": {
+          "min": 1,
+          "max": 1,
+          "element": "grove"
+        },
+        "glimmer": {
+          "min": 0,
+          "max": 0
+        },
+        "essence": {
+          "min": 3,
+          "max": 8
+        }
+      },
+      "source": "test",
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": null
+    },
+    {
+      "id": "b52c5319-8e07-4816-9ac7-b6af0bef96bb",
+      "baseId": "wardens-bell",
+      "slot": "charm",
+      "tag": "guard",
+      "rarity": "rare",
+      "festival": false,
+      "itemLevel": 13,
+      "stats": [],
+      "lines": [
+        {
+          "id": "armor",
+          "name": "Armor",
+          "text": "Armor +2 pt",
+          "about": "A Guard's armor grows by these points. No effect on other roles.",
+          "source": "base",
+          "tier": null,
+          "bestTier": null,
+          "local": false,
+          "active": true
+        },
+        {
+          "id": "cover",
+          "name": "Cover",
+          "text": "Cover +7 pt",
+          "about": "A Guard's cover for its neighbours grows by these points.",
+          "source": "rolled",
+          "tier": 3,
+          "bestTier": 3,
+          "local": false,
+          "active": true
+        },
+        {
+          "id": "armor",
+          "name": "Armor",
+          "text": "Armor +3 pt",
+          "about": "A Guard's armor grows by these points. No effect on other roles.",
+          "source": "rolled",
+          "tier": 2,
+          "bestTier": 3,
+          "local": false,
+          "active": true
+        }
+      ],
+      "needs": {
+        "level": 13,
+        "role": "guard"
+      },
+      "equippedOn": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
+      "dismantle": {
+        "scrap": {
+          "min": 3,
+          "max": 4
+        },
+        "shards": {
+          "min": 1,
+          "max": 1,
+          "element": null
+        },
+        "glimmer": {
+          "min": 0,
+          "max": 0
+        },
+        "essence": {
+          "min": 3,
+          "max": 8
+        }
+      },
+      "source": "test",
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": null
+    },
+    {
+      "id": "607f3f26-f7cb-484d-b678-14e2a53fee7b",
+      "baseId": "crossroads-compass",
+      "slot": "charm",
+      "tag": "explorer",
+      "rarity": "rare",
+      "festival": false,
+      "itemLevel": 10,
+      "stats": [],
+      "lines": [
+        {
+          "id": "trail-xp",
+          "name": "Trail XP",
+          "text": "Trail XP +5%",
+          "about": "The wearer earns more explorer XP from trips.",
+          "source": "base",
+          "tier": null,
+          "bestTier": null,
+          "local": false,
+          "active": true
+        },
+        {
+          "id": "quick-feet",
+          "name": "Quick feet",
+          "text": "Quick feet −3%",
+          "about": "The wearer's trips take less time.",
+          "source": "rolled",
+          "tier": 2,
+          "bestTier": 3,
+          "local": false,
+          "active": true
+        },
+        {
+          "id": "lucky-find",
+          "name": "Lucky find",
+          "text": "Lucky find +0.5 pt",
+          "about": "More chance of a rarer catch on the wearer's trips, in points.",
+          "source": "rolled",
+          "tier": 1,
+          "bestTier": 3,
+          "local": false,
+          "active": true
+        }
+      ],
+      "needs": {
+        "level": 13,
+        "role": null
+      },
+      "equippedOn": "0006079c-6263-4604-b59e-f1a6a00f42de",
+      "dismantle": {
+        "scrap": {
+          "min": 3,
+          "max": 4
+        },
+        "shards": {
+          "min": 1,
+          "max": 1,
+          "element": null
+        },
+        "glimmer": {
+          "min": 0,
+          "max": 0
+        },
+        "essence": {
+          "min": 3,
+          "max": 8
+        }
+      },
+      "source": "test",
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": null
+    },
+    {
+      "id": "3cc98493-ae5e-4084-957e-508b9c98339a",
+      "baseId": "thundercap",
+      "slot": "hat",
+      "tag": "spark",
+      "rarity": "rare",
+      "festival": false,
+      "itemLevel": 16,
+      "stats": [
+        {
+          "stat": "atk",
+          "value": 2,
+          "base": 2,
+          "text": "Attack 2"
+        },
+        {
+          "stat": "hp",
+          "value": 3,
+          "base": 3,
+          "text": "HP 3"
+        }
+      ],
+      "lines": [
+        {
+          "id": "spark-reaction",
+          "name": "Overload bonus",
+          "text": "Overload bonus +18%",
+          "about": "The bonus of the reaction Spark creatures set off is bigger.",
+          "source": "rolled",
+          "tier": 4,
+          "bestTier": 4,
+          "local": false,
+          "active": null
+        },
+        {
+          "id": "crit-chance",
+          "name": "Crit chance",
+          "text": "Crit chance +3 pt",
+          "about": "More chance to crit, in points (the fight caps the total).",
+          "source": "rolled",
+          "tier": 3,
+          "bestTier": 4,
+          "local": false,
+          "active": null
+        }
+      ],
+      "needs": {
+        "level": 16,
+        "role": null
+      },
+      "equippedOn": null,
+      "dismantle": {
+        "scrap": {
+          "min": 3,
+          "max": 4
+        },
+        "shards": {
+          "min": 1,
+          "max": 1,
+          "element": "spark"
+        },
+        "glimmer": {
+          "min": 0,
+          "max": 0
+        },
+        "essence": {
+          "min": 3,
+          "max": 8
+        }
+      },
+      "source": "test",
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": null
     }
   ],
+  "slotOpens": {
+    "hat": 1,
+    "scarf": 7,
+    "charm": 13
+  },
   "parts": {
-    "scrap": 48,
+    "scrap": 64,
     "tide-shard": 3,
     "ember-shard": 4,
     "grove-shard": 0,
@@ -174,28 +647,35 @@
   },
   "blueprints": [
     {
-      "baseId": "static-charm",
-      "rarity": "common",
-      "learnedAt": 1799733600000
+      "baseId": "brine-hood",
+      "learnedAt": 1799733600000,
+      "marks": 0,
+      "needsCraftingLevel": 3
     },
     {
-      "baseId": "wave-band",
-      "rarity": "rare",
-      "learnedAt": 1799733600000
+      "baseId": "kelp-cap",
+      "learnedAt": 1799733600000,
+      "marks": 0,
+      "needsCraftingLevel": 1
+    },
+    {
+      "baseId": "trail-charm",
+      "learnedAt": 1799733600000,
+      "marks": 0,
+      "needsCraftingLevel": 1
     }
   ],
   "jobs": [
     {
-      "id": "6a170eca-a9fb-4ac4-90ac-9e3c5c8c13de",
-      "creatureId": "a623e389-3d71-4fd5-8f2a-cbb80f7d0c41",
+      "id": "00000000-0000-4000-8000-0000000000aa",
+      "creatureId": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
       "kind": "improve",
-      "input": {
-        "gearId": "d370f1f6-5940-44bc-9113-ced5efbe8d3e",
-        "secondaryIndex": 0
-      },
+      "input": {},
       "cost": {
         "scrap": 6
       },
+      "bait": 0,
+      "treat": false,
       "startedAt": 1799733601000,
       "endsAt": 1799740801000,
       "status": "running",
@@ -203,18 +683,20 @@
       "result": null
     },
     {
-      "id": "334ec40f-306c-48a7-89f0-9a485332001b",
-      "creatureId": "fd833d62-33dd-4a90-8c3b-388a26f47176",
+      "id": "d3416840-648a-45cb-aa29-b74d117c67be",
+      "creatureId": "32621523-b521-47e9-8f3d-faccb12a7aea",
       "kind": "craft",
       "input": {
-        "baseId": "wave-band"
+        "baseId": "kelp-cap"
       },
       "cost": {
-        "scrap": 12,
+        "scrap": 6,
         "tide-shard": 1
       },
+      "bait": 0,
+      "treat": false,
       "startedAt": 1799733601000,
-      "endsAt": 1799762401000,
+      "endsAt": 1799744401000,
       "status": "running",
       "claimedAt": null,
       "result": null
@@ -226,31 +708,32 @@
   },
   "skills": [
     {
-      "creatureId": "10d24d35-e868-4bd9-bd9f-4afca979cbcb",
+      "creatureId": "0006079c-6263-4604-b59e-f1a6a00f42de",
       "xp": 0,
       "level": 1,
-      "nextLevelXp": 80
+      "nextLevelXp": 100
     },
     {
-      "creatureId": "a623e389-3d71-4fd5-8f2a-cbb80f7d0c41",
+      "creatureId": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
       "xp": 0,
       "level": 1,
-      "nextLevelXp": 80
+      "nextLevelXp": 100
     },
     {
-      "creatureId": "fd833d62-33dd-4a90-8c3b-388a26f47176",
+      "creatureId": "32621523-b521-47e9-8f3d-faccb12a7aea",
       "xp": 0,
       "level": 1,
-      "nextLevelXp": 80
+      "nextLevelXp": 100
     }
   ],
   "grants": [
     {
       "gear": [
         {
-          "id": "5b9512cc-119d-400c-9876-4b8dbb8c05da",
-          "baseId": "hearth-band",
-          "rarity": "festival"
+          "id": "2226b699-5d95-45ff-b03f-79218c276f13",
+          "baseId": "festival-hearth-scarf",
+          "rarity": "epic",
+          "itemLevel": 6
         }
       ],
       "converted": [],
@@ -263,10 +746,10 @@
     {
       "gear": [
         {
-          "id": "a7abb89b-ce58-416a-ace1-f7ba984349b2",
-          "baseId": "cinder-charm",
+          "id": "cc35ae7d-1c2b-44da-b320-58447fe68ce9",
+          "baseId": "tidepool-charm",
           "rarity": "common",
-          "level": 1
+          "itemLevel": 6
         }
       ],
       "converted": [],
@@ -279,19 +762,19 @@
     {
       "gear": [
         {
-          "id": "87ee5c5b-2e94-4a97-b049-f91d9ba18398",
-          "baseId": "trail-charm",
-          "rarity": "common"
+          "id": "c63062c5-a791-46a5-999d-e944563ea7fa",
+          "baseId": "trail-cap",
+          "rarity": "common",
+          "itemLevel": 1
         }
       ],
       "converted": [],
       "parts": {
-        "scrap": 8
+        "scrap": 10
       },
       "blueprints": [
         {
-          "baseId": "static-charm",
-          "rarity": "common",
+          "baseId": "trail-charm",
           "duplicate": false
         }
       ],
@@ -299,5 +782,6 @@
       "source": "welcome",
       "at": 1799733600000
     }
-  ]
+  ],
+  "notice": null
 }

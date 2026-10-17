@@ -131,6 +131,13 @@ describe('journey CLI run on a tiny config', () => {
     const first = engaged?.weeks[0];
     expect(first?.power?.median).toBeGreaterThan(0);
     expect(first?.power?.p25).toBeLessThanOrEqual(first?.power?.p75 ?? 0);
+    // The fight-scored power sits next to the older score, for every week.
+    for (const w of engaged?.weeks ?? []) {
+      expect(w.fightPower?.median).toBeGreaterThan(0);
+      expect(w.fightPower?.p25).toBeLessThanOrEqual(w.fightPower?.p75 ?? 0);
+      expect(w.fightSurvivalBp?.median).toBeGreaterThan(0);
+      expect(w.fightSurvivalBp?.median).toBeLessThanOrEqual(10_000);
+    }
     for (const id of Object.keys(engaged?.milestones ?? {})) {
       expect(milestoneCatalogue()).toContain(id);
     }
@@ -139,9 +146,15 @@ describe('journey CLI run on a tiny config', () => {
     const md = readFileSync(join(out, 'report-journey.md'), 'utf8');
     expect(md).toContain('# Player journey simulation');
     expect(md).toContain('## Raid team power by week');
+    expect(md).toContain('## Raid team fight-scored power by week');
     expect(md).toContain('## When the milestones land');
     expect(md).toContain('## What holds players back');
     expect(md).toContain('Min-maxer');
+  });
+
+  it('plays with the weather unless told not to', () => {
+    expect(parseJourneyCli([]).settings.weather).toBeUndefined();
+    expect(parseJourneyCli(['--no-weather']).settings.weather).toBe(false);
   });
 
   it('reports a bad argument and exits with 2', () => {
@@ -151,15 +164,27 @@ describe('journey CLI run on a tiny config', () => {
   });
 
   it('is reproducible, and the two income models differ for the same servers', () => {
-    const base = parseJourneyCli(['--weeks', '3', '--servers', '2', '--seed', 'pair']).settings;
+    // Without weather: on a sample this small the sky's noise can swamp the Bait that the comparison is about.
+    const base = parseJourneyCli([
+      '--weeks',
+      '4',
+      '--servers',
+      '3',
+      '--seed',
+      'pair',
+      '--no-weather',
+    ]).settings;
     const a = JSON.stringify(runJourneys(base));
     expect(JSON.stringify(runJourneys(base))).toBe(a);
     const current = runJourneys({ ...base, income: 'current' });
     const allowance = JSON.parse(a) as JourneyReport;
-    // Drop-ins and regulars open the game more often than they leet: the allowance pays them more Bait,
-    // so they end up stronger.
+    // The two income models give different games for the same servers. (This used to assert that regulars
+    // end stronger on the allowance, which paid them more Bait; since Bait no longer buys levels (B-016)
+    // and with only 3 servers over 4 weeks, which of the two is ahead is gear luck, not a rule.)
+    expect(JSON.stringify(current)).not.toBe(JSON.stringify(allowance));
     const power = (r: JourneyReport, id: string): number =>
       r.presets[id]?.weeks.at(-1)?.power?.median ?? 0;
-    expect(power(allowance, 'regular')).toBeGreaterThan(power(current, 'regular'));
+    expect(power(allowance, 'regular')).toBeGreaterThan(0);
+    expect(power(current, 'regular')).toBeGreaterThan(0);
   });
 });

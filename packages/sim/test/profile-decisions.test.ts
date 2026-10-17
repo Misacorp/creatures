@@ -3,7 +3,6 @@ import { content, createSeededRng, rowScore } from '@creatures/game';
 import { byPowerDesc, pickTeam, type OwnedCreature } from '../src/data';
 import { chooseDungeonTeam } from '../src/dungeon';
 import { protection } from '../src/formations';
-import { LEGACY_TRAINING, chooseTrainee } from '../src/policy';
 import { openRaidWeek, slotFor } from '../src/raid';
 import { createPlayer, type SimPlayer } from '../src/state';
 
@@ -21,59 +20,6 @@ function make(id: string, levels: number[], lines: string[] = LINES): SimPlayer 
 
 const known = (lines: string[]): string[] =>
   lines.filter((l) => content.creatures.some((s) => s.id === l));
-
-describe('training plans', () => {
-  const lines = known(LINES);
-  const levels = [3, 9, 8, 7, 6, 5, 4].slice(0, lines.length);
-
-  it('today is the default: the top 3, with the evolution push', () => {
-    const p = make('p01', levels, lines);
-    expect(chooseTrainee(p.creatures)).toBe(chooseTrainee(p.creatures, LEGACY_TRAINING));
-    const top = byPowerDesc(p.creatures).slice(0, 3);
-    expect(top).toContain(chooseTrainee(p.creatures));
-  });
-
-  it('focus 6 reaches a weak creature that focus 3 never trains', () => {
-    const p = make('p01', [10, 10, 10, 10, 10, 1], lines.slice(0, 6));
-    const weak = p.creatures[5] as OwnedCreature;
-    expect(chooseTrainee(p.creatures, { focus: 3, evolutionPush: false })?.level).toBe(10);
-    expect(chooseTrainee(p.creatures, { focus: 6, evolutionPush: false })).toBe(weak);
-  });
-
-  it('without the push the weakest of the top goes first; with it the creature nearest its evolution', () => {
-    const p = make('p01', [14, 3, 9], lines.slice(0, 3));
-    const evens = chooseTrainee(p.creatures, { focus: 3, evolutionPush: false });
-    expect(evens?.level).toBe(3);
-    const pushed = chooseTrainee(p.creatures, { focus: 3, evolutionPush: true });
-    expect(pushed?.level).toBe(14);
-  });
-
-  it('spread trains any creature, drawn from the stream; without a stream the weakest goes', () => {
-    const p = make('p01', levels, lines);
-    const rng = createSeededRng('spread');
-    const seen = new Set<string>();
-    for (let k = 0; k < 80; k++) {
-      const c = chooseTrainee(p.creatures, { focus: 'spread', evolutionPush: false }, rng);
-      if (c !== null) seen.add(c.id);
-    }
-    expect(seen.size).toBe(p.creatures.length);
-    const again = [createSeededRng('a'), createSeededRng('a')].map(
-      (r) => chooseTrainee(p.creatures, { focus: 'spread', evolutionPush: false }, r)?.id,
-    );
-    expect(again[0]).toBe(again[1]);
-    expect(chooseTrainee(p.creatures, { focus: 'spread', evolutionPush: false })?.level).toBe(
-      Math.min(...levels),
-    );
-  });
-
-  it('creatures at their cap are never trained', () => {
-    const p = make('p01', [15, 15], lines.slice(0, 2));
-    expect(chooseTrainee(p.creatures, { focus: 6, evolutionPush: true })).toBeNull();
-    expect(
-      chooseTrainee(p.creatures, { focus: 'spread', evolutionPush: false }, createSeededRng('x')),
-    ).toBeNull();
-  });
-});
 
 describe('dungeon teams', () => {
   const lines = known(LINES);

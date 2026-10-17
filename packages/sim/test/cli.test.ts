@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { content } from '@creatures/game';
 import { main, parseCli, type Io } from '../src/cli';
+import type { RunSettings } from '../src/run';
 import { applyOverrides } from '../src/tune';
 
 const dir = mkdtempSync(join(tmpdir(), 'sim-cli-'));
@@ -70,10 +71,21 @@ function withUnbeatableBosses<T>(body: () => T): T {
   }
 }
 
+/** The CLI tests check the command, not the balance: skip the 30-week studies so they stay fast. */
+const small = (settings: RunSettings): RunSettings => ({
+  ...settings,
+  gearServers: 0,
+  creaturesServers: 0,
+  curveServers: 1,
+  suppliesServers: 1,
+});
+
 describe('CLI run', () => {
   it('writes the reports, prints a summary, and exits 0 without --fail-on-violations', () => {
     const { io, out } = capture();
-    const code = withUnbeatableBosses(() => main(['--quick', '--weeks', '5', '--out', dir], io));
+    const code = withUnbeatableBosses(() =>
+      main(['--quick', '--weeks', '5', '--out', dir], io, small),
+    );
     expect(code).toBe(0);
     expect(out[0]).toMatch(/passed, \d+ failed, \d+ not measured/);
     expect(readFileSync(join(dir, 'report.md'), 'utf8')).toContain('# Balance simulator report');
@@ -87,7 +99,7 @@ describe('CLI run', () => {
     const { io } = capture();
     expect(
       withUnbeatableBosses(() =>
-        main(['--quick', '--weeks', '5', '--out', dir, '--fail-on-violations'], io),
+        main(['--quick', '--weeks', '5', '--out', dir, '--fail-on-violations'], io, small),
       ),
     ).toBe(1);
   }, 300_000);

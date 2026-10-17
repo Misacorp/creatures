@@ -115,10 +115,9 @@ export function evolutionText(
   const needs: string[] = [];
   if (level < evolution.level) needs.push(`level ${String(evolution.level)}`);
   if (essence < evolution.essence) needs.push(`${String(evolution.essence)} Essence`);
-  const raids = essence < evolution.essence ? ' (Essence comes from raids)' : '';
   return {
     available: false,
-    label: `Locked: evolving into ${target} needs ${needs.length === 0 ? 'more progress' : needs.join(' and ')}${raids}`,
+    label: `Evolve into ${target}: needs ${needs.length === 0 ? 'more progress' : needs.join(' and ')}`,
   };
 }
 
@@ -132,6 +131,9 @@ export function fusionStars(count: number): string {
 export function catchBadgeTags(entry: CatchResult): { text: string; entry: string | null }[] {
   const badges: { text: string; entry: string | null }[] = [];
   if (entry.outcome === 'new') badges.push({ text: 'New!', entry: null });
+  if (entry.outcome === 'duplicate') {
+    badges.push({ text: 'Duplicate', entry: 'duplicate-choice' });
+  }
   if (entry.outcome === 'fused') {
     badges.push({ text: `Fused ★${String(entry.fusionCount ?? 0)}`, entry: 'fusion' });
   }
@@ -196,15 +198,23 @@ const ERROR_TEXT: Record<string, string> = {
   inventory_full: 'Your bag is full. Dismantle an item to make room.',
   item_busy: 'That item is in a Workshop job. Claim the job first.',
   not_ready: 'That is not finished yet.',
-  max_level: 'That item is already at its top level.',
-  same_enchant: 'That item already has that enchant.',
+  wrong_role: 'Only a creature of the role that Charm is made for can wear it.',
+  slot_locked: 'That creature is not high enough level for that slot yet.',
+  item_level_too_high: 'That item is higher level than that creature.',
+  gear_upgrade_removed: 'Gear is not upgraded any more. Use the new items instead.',
+  job_kind_removed: 'That kind of job is not in the Workshop any more.',
+  dismantle_is_a_job:
+    'Dismantling is a Workshop job now. Pick the items and a creature in the Workshop.',
+  invalid_bundle:
+    'Up to 5 Commons can go in one dismantle job; anything rarer goes alone, and an item cannot repeat.',
+  insufficient_essence: 'You do not have enough Essence for that.',
+  gear_conversion_pending:
+    'Your old gear is still being converted to the new gear. Try again in a little while.',
   blueprint_unknown: 'You have not learned that blueprint.',
-  nothing_to_improve: 'That item has no extra stat to improve.',
-  invalid_secondary: 'That item has no such extra stat.',
   invalid_blueprint: 'That blueprint cannot be crafted.',
-  invalid_enchant: 'That enchant does not exist.',
   item_gone: 'The item for that job is gone.',
   skill_too_low: 'That creature needs a higher Crafting level for this supply.',
+  base_locked: 'That creature needs a higher Crafting level to make this item.',
   invalid_supply: 'That supply cannot be crafted.',
   // Expeditions.
   destination_closed: 'That place is closed to this explorer right now.',
@@ -218,6 +228,12 @@ const ERROR_TEXT: Record<string, string> = {
   no_offer: 'That trip has no choice to make.',
   not_offered: 'That goal was not on offer.',
   already_chosen: 'You already chose a goal for that trip.',
+  // Duplicates and the Talent Book.
+  teach_not_offered: 'That creature cannot learn that talent: it has it already.',
+  keep_not_offered: 'You cannot keep that one: there is no second branch to keep it for.',
+  max_fusions: 'That creature is fully fused already.',
+  not_in_book: 'That talent is not in that creature\u2019s Talent Book.',
+  already_slotted: 'That talent is already in that slot.',
   cancelled: 'That trip was called home when the slots were reset.',
   // Any request.
   invalid_body:
@@ -259,6 +275,23 @@ export function errorText(
     if (err.code === 'insufficient_funds') return `Not enough ${currency}.`;
     if (err.code === 'destination_closed' && DESTINATION_CLOSED_REASONS[err.reason ?? '']) {
       return DESTINATION_CLOSED_REASONS[err.reason ?? ''] as string;
+    }
+    // The wear rule: the reason is the creature level it needs, or the role of a role-locked Charm.
+    if (err.code === 'slot_locked' && err.reason !== null && /^\d+$/.test(err.reason)) {
+      return `That slot opens at creature level ${err.reason}.`;
+    }
+    if (err.code === 'item_level_too_high' && err.reason !== null && /^\d+$/.test(err.reason)) {
+      return `That item needs creature level ${err.reason}.`;
+    }
+    if (err.code === 'wrong_role' && err.reason !== null && /^[a-z]{3,10}$/.test(err.reason)) {
+      return `Only a ${capitalize(err.reason)} can wear that Charm.`;
+    }
+    // A talent slot opens at a creature level: the reason is `needs_level_N`.
+    if (err.code === 'slot_closed') {
+      const level = /^needs_level_(\d+)$/.exec(err.reason ?? '')?.[1];
+      return level === undefined
+        ? 'That creature has no such talent slot.'
+        : `That talent slot opens at creature level ${level}.`;
     }
     if (err.code === 'rank_too_low' && err.reason === 'length') {
       return 'That explorer is not a high enough rank for a trip that long.';
