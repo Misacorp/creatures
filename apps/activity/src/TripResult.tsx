@@ -1,20 +1,20 @@
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
-import { Banner } from '../Banner';
-import { Stars } from '../ExpeditionIcons';
-import { getSpecies, speciesName } from '../game';
-import { LootList } from '../GearLoot';
-import type { GrantLoot } from '../gear-types';
-import { glyphOrUnknown } from '../glyphs';
-import { ElementChip } from '../sprites/ElementChip';
-import { Sprite } from '../sprites/Sprite';
-import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
-import { TalentChip } from '../TalentChip';
-import type { ChoiceRequest, TalentView } from '../talent-types';
-import { Accordion } from '../ui/Accordion';
-import { CountBadge, type CountItem } from '../ui/CountBadge';
-import { Tag } from '../ui/Tag';
-import { XpBar } from '../XpBar';
+import { Banner } from './Banner';
+import { Stars } from './ExpeditionIcons';
+import { getSpecies, speciesName } from './game';
+import { LootList } from './GearLoot';
+import type { GrantLoot } from './gear-types';
+import { glyphOrUnknown } from './glyphs';
+import { ElementChip } from './sprites/ElementChip';
+import { Sprite } from './sprites/Sprite';
+import { creatureSpriteOrFallback } from './sprites/creature-sprites';
+import { TalentChip } from './TalentChip';
+import type { ChoiceRequest, TalentView } from './talent-types';
+import { Accordion } from './ui/Accordion';
+import { CountBadge, type CountItem } from './ui/CountBadge';
+import { Tag } from './ui/Tag';
+import { XpBar } from './XpBar';
 
 /** One way a duplicate can go, as a radio option: what it does, and why not when it cannot. */
 export interface FindOption {

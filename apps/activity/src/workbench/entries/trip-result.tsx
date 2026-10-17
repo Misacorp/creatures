@@ -1,6 +1,6 @@
 import { talentContent, talentText } from '@creatures/game';
 import type { TalentView } from '../../talent-types';
-import { TripResult, type Find, type TripResultView } from '../../trip-result/TripResult';
+import { TripResult, type Find, type TripResultView } from '../../TripResult';
 import { bool, str } from '../props';
 import type { Entry } from '../types';
 
@@ -208,7 +208,7 @@ const SCENES: Record<string, TripResultView> = {
 
 export const tripResult: Entry = {
   name: 'TripResult',
-  file: 'apps/activity/src/trip-result/TripResult.tsx',
+  file: 'apps/activity/src/TripResult.tsx',
   group: 'Creatures & game pieces',
   description:
     'DRAFT, not used in the game yet. The new expedition result: who went where for how long over the place banner, the creatures found (a duplicate chooses with radio rows, Recommended preselected, impossible choices greyed with the reason), what came home, one progress block, journal pages and one Claim button.',
