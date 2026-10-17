@@ -484,6 +484,7 @@
       }
     ],
     "cancelled": [],
+    "levelReset": null,
     "slots": {
       "total": 2,
       "used": 0,

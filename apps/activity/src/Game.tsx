@@ -2,6 +2,7 @@ import type { RefObject } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   chooseStarter,
+  dismissLevelReset,
   evolveCreature,
   fetchState,
   renameCreature,
@@ -48,6 +49,7 @@ import { useActionRunner } from './use-action-runner';
 import { useRoom } from './use-room';
 import { useRoomPhase } from './use-room-phase';
 import { sceneOf } from './LivingRoom';
+import { LevelResetCard } from './LevelResetCard';
 import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
 
@@ -415,6 +417,15 @@ export function Game({
         }}
       />
       <WipeNotice key={devNonce} cancelled={game.cancelled} creatures={game.creatures} />
+      {game.levelReset !== null && (
+        <LevelResetCard
+          notice={game.levelReset}
+          busy={busy}
+          onDismiss={() => {
+            void run(() => dismissLevelReset()).then(showState);
+          }}
+        />
+      )}
       {error !== null && (
         <p class="error" role="alert">
           {error}
