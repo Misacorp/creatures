@@ -83,6 +83,7 @@ import {
   startDungeonRun,
 } from './dungeon-api';
 import { parseDungeonReplay, parseDungeonRun, parseDungeonToday } from './dungeon-parse';
+import { sampleState, sampleToday } from './dungeon-path-samples';
 import { buildRunRequest, type Slots } from './dungeon-team';
 import { dungeonErrorText } from './dungeon-text';
 import type { DungeonRunRequest } from './dungeon-types';
@@ -538,7 +539,9 @@ describe('the dungeon requests the client sends', () => {
   const bodyOf = (key: keyof typeof dungeonRequestBodies): DungeonRunRequest =>
     dungeonRequestBodies[key].body as unknown as DungeonRunRequest;
 
-  it('a run sends exactly the strict body the Worker accepts, at POST /api/dungeon/run', async () => {
+  // The captured bodies are those of the old run route; the start route takes the same strict body
+  // (team, treats, key). The worker's new captures replace them (docs/design/dungeon-paths.md).
+  it('entering sends exactly the strict body the Worker accepts, at POST /api/dungeon/start', async () => {
     for (const key of [
       'dungeon-run-cleared',
       'dungeon-run-retry',
@@ -547,10 +550,10 @@ describe('the dungeon requests the client sends', () => {
       'dungeon-run-retry-attempt',
     ] as const) {
       apiFetch.mockReset();
-      apiFetch.mockResolvedValue(dungeonRunCleared);
+      apiFetch.mockResolvedValue({ state: sampleState(), today: sampleToday() });
       await startDungeonRun(bodyOf(key));
-      const { path, method, body } = dungeonRequestBodies[key];
-      expect(sent(), key).toEqual({ path, method, body });
+      const { method, body } = dungeonRequestBodies[key];
+      expect(sent(), key).toEqual({ path: '/api/dungeon/start', method, body });
     }
   });
 
@@ -639,7 +642,7 @@ describe('the dungeon responses the server sends', () => {
     expect(states[2]?.lastTeam).toEqual(dungeonRunCleared.run.team.map((t) => t.id));
   });
 
-  it('parses the run and the new state of every POST /api/dungeon/run fixture', async () => {
+  it('parses the run and the new state of every captured old-route run fixture', () => {
     for (const fixture of [
       dungeonRunCleared,
       dungeonRunLost,
@@ -647,9 +650,12 @@ describe('the dungeon responses the server sends', () => {
       dungeonRunRetry,
       dungeonRunRetryAttempt,
     ]) {
-      apiFetch.mockResolvedValue(fixture);
-      const done = await startDungeonRun(bodyOf0());
+      const done = parseDungeonRun(fixture);
       expect(done.run.rooms).toHaveLength(3);
+      // An old run has no path fields: they read as absent, and the map and open run as null.
+      expect(done.run.outcome).toBeUndefined();
+      expect(done.today.map).toBeNull();
+      expect(done.today.active).toBeNull();
       expect(done.today.last?.id).toBe(done.run.id);
     }
     expect(parseDungeonRun(dungeonRunLandmark).run.rewards.gear).toHaveLength(1);
@@ -699,11 +705,6 @@ describe('the dungeon errors the server sends', () => {
     }
   });
 });
-
-/** Any run body: the answer fixtures do not depend on what is asked. */
-function bodyOf0(): DungeonRunRequest {
-  return dungeonRequestBodies['dungeon-run-cleared'].body as unknown as DungeonRunRequest;
-}
 
 describe('the expedition requests the client sends', () => {
   beforeEach(() => {

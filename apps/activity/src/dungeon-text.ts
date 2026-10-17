@@ -5,7 +5,13 @@
  */
 import { RULES, dungeonContent } from '@creatures/game';
 import { ApiError } from './api';
-import type { DungeonErrorCode, DungeonRunSummary, DungeonToday } from './dungeon-types';
+import type {
+  DungeonErrorCode,
+  DungeonPack,
+  DungeonRunState,
+  DungeonRunSummary,
+  DungeonToday,
+} from './dungeon-types';
 import { errorText } from './game';
 
 /** One short plain message for every error code the dungeon routes send. */
@@ -17,12 +23,12 @@ export const DUNGEON_ERROR_TEXT: Readonly<Record<DungeonErrorCode, string>> = {
   not_found:
     'One of those creatures, or that run, could not be found. The screen was out of date, so it was refreshed.',
   already_run: "You already used today's run. A new one opens when the day resets.",
-  key_conflict: 'That run clashed with an earlier one. Check your picks and try again.',
+  key_conflict: 'That clashed with an earlier request. Check your picks and try again.',
   invalid_treat: 'A treat can only go to a creature in the team, once.',
   insufficient_funds: 'Not enough Bait for those treats.',
   run_active: 'Your run is still open. Carry on from the map.',
   stale_step: 'Your run moved on in another window. The map was refreshed.',
-  invalid_act: "That room can't be picked right now. The map was refreshed.",
+  invalid_act: "That can't be done right now. The map was refreshed.",
   gone: 'The game was updated. Close and reopen the Activity to play the new dungeon.',
 };
 
@@ -31,13 +37,22 @@ export function dungeonErrorText(err: unknown): string {
   return errorText(err, 'Bait', DUNGEON_ERROR_TEXT);
 }
 
+/** The codes that say the screen showed an old state: load today again and show what is there. */
+const STALE_CODES: readonly (string | null)[] = [
+  'already_run',
+  'not_found',
+  'stale_step',
+  'invalid_act',
+  'run_active',
+];
+
 /**
  * True when the failure says the dungeon screen was out of date, so today's state should be loaded
- * again. Narrower than `isStaleError`: it goes by the error code, not the status (a clashing key is
- * a 409 too, but the screen is not stale then).
+ * again (the open run, if there is one, shows again). Narrower than `isStaleError`: it goes by the
+ * error code, not the status (a clashing key is a 409 too, but the screen is not stale then).
  */
 export function isStaleDungeonError(err: unknown): boolean {
-  return err instanceof ApiError && (err.code === 'already_run' || err.code === 'not_found');
+  return err instanceof ApiError && STALE_CODES.includes(err.code);
 }
 
 /**
@@ -145,10 +160,30 @@ export function streakLabel(streak: number): string {
   return `Streak: ${String(lit)} / ${String(pips.length)} days of the cycle`;
 }
 
-/** The headline of a finished run. */
+/** Foes' names get "Fierce" in front when they are the elite of a room (once: a name that has it keeps it). */
+export function fierceName(name: string, elite: boolean | undefined): string {
+  return elite === true && !name.startsWith('Fierce ') ? `Fierce ${name}` : name;
+}
+
+/**
+ * The headline of a finished run. A path run says how it ended: cleared (one depth deeper), home
+ * (the whole pack kept) or defeated (half the pack kept). A run from before the map has no outcome,
+ * and keeps the old words about its three rooms.
+ */
 export function resultHeadline(
-  run: Pick<DungeonRunSummary, 'cleared' | 'roomsCleared' | 'rooms'>,
+  run: Pick<DungeonRunSummary, 'cleared' | 'roomsCleared' | 'rooms'> &
+    Partial<Pick<DungeonRunSummary, 'outcome' | 'depth' | 'newDepth'>>,
 ): string {
+  switch (run.outcome) {
+    case 'cleared':
+      return `Cleared! Depth ${String(run.depth ?? 0)} to ${String(run.newDepth ?? 0)}`;
+    case 'home':
+      return 'Home safe with your whole pack';
+    case 'defeat':
+      return 'Defeated: half your pack made it home';
+    case undefined:
+      break;
+  }
   if (run.cleared) return 'Dungeon cleared!';
   const total = run.rooms.length;
   return run.roomsCleared === 0
@@ -157,13 +192,132 @@ export function resultHeadline(
 }
 
 /** What the run did to the depth. */
-export function depthChangeText(run: Pick<DungeonRunSummary, 'depth' | 'newDepth'>): string {
-  return run.newDepth > run.depth
-    ? `Depth ${String(run.depth)} to ${String(run.newDepth)}`
-    : `Still at depth ${String(run.depth)}. Clear all three rooms to go deeper.`;
+export function depthChangeText(
+  run: Pick<DungeonRunSummary, 'depth' | 'newDepth'> & Partial<Pick<DungeonRunSummary, 'outcome'>>,
+): string {
+  if (run.newDepth > run.depth) return `Depth ${String(run.depth)} to ${String(run.newDepth)}`;
+  const again = run.outcome === undefined ? 'Clear all three rooms' : 'Beat the room boss';
+  return `Still at depth ${String(run.depth)}. ${again} to go deeper.`;
 }
+
+// --- The pack and the run strip ---
+
+const PACK_KINDS = [
+  ['bait', 'Bait'],
+  ['essence', 'Essence'],
+  ['scrap', 'Scrap'],
+] as const;
+
+/** True when the pack holds nothing. */
+export function isPackEmpty(pack: DungeonPack): boolean {
+  return pack.bait === 0 && pack.essence === 0 && pack.scrap === 0;
+}
+
+/** What a pack holds, without the empty kinds: "2 Bait · 1 Scrap". Empty: "nothing". */
+export function packText(pack: DungeonPack): string {
+  const parts = PACK_KINDS.filter(([kind]) => pack[kind] > 0).map(
+    ([kind, name]) => `${String(pack[kind])} ${name}`,
+  );
+  return parts.length === 0 ? 'nothing' : parts.join(' · ');
+}
+
+/** The pack on the run strip: "In your pack: 2 Bait · 1 Scrap", or that it is empty. */
+export function packLine(pack: DungeonPack): string {
+  return isPackEmpty(pack) ? 'Your pack is empty.' : `In your pack: ${packText(pack)}`;
+}
+
+/** The end report's pack line: "Found: 3 Bait · 2 Scrap · Kept: 2 Bait · 1 Scrap". */
+export function packSummaryLine(pack: { found: DungeonPack; kept: DungeonPack }): string {
+  return `Found: ${packText(pack.found)} · Kept: ${packText(pack.kept)}`;
+}
+
+/** The floor of a node id ("f2l1" is floor 2), or null for an id that is not one. */
+export function nodeFloor(node: string): number | null {
+  const found = /^f(\d+)l\d+$/.exec(node);
+  return found === null ? null : Number(found[1]);
+}
+
+/** "Floor 3 / 7": a floor counted from 1. */
+export function floorLine(floor: number, floors: number): string {
+  return `Floor ${String(floor + 1)} / ${String(floors)}`;
+}
+
+/**
+ * Where the run is, for the run strip: "Depth 3 · At the entrance", "Depth 3 · Floor 3 / 7", and at
+ * the camp "Depth 3 · At the camp". `landmark` is added by the screen as a chip.
+ */
+export function runStatusLine(
+  state: Pick<DungeonRunState, 'at' | 'depth' | 'map' | 'pending'>,
+): string {
+  const depth = `Depth ${String(state.depth)}`;
+  if (state.at === null) return `${depth} · At the entrance`;
+  const node = state.map.nodes.find((n) => n.id === state.at);
+  const floor = nodeFloor(state.at);
+  if (node?.kind === 'camp') return `${depth} · At the camp`;
+  return floor === null ? depth : `${depth} · ${floorLine(floor, state.map.floors)}`;
+}
+
+/** What the last mystery room did: its name and the choice, then the plain outcome. */
+export function lastEventText(event: { name: string; option: string; outcome: string }): {
+  title: string;
+  outcome: string;
+} {
+  const outcome = event.outcome.trim();
+  return {
+    title: `${event.name}: ${event.option}`,
+    outcome: /[.!?]$/.test(outcome) ? outcome : `${outcome}.`,
+  };
+}
+
+/** A creature's HP in the run strip and the camp: "340 / 391 HP", or "Knocked out". */
+export function runHpText(creature: { hp: number; hpMax: number }): string {
+  return creature.hp <= 0 ? 'Knocked out' : `${String(creature.hp)} / ${String(creature.hpMax)} HP`;
+}
+
+// --- The camp ---
+
+/** Basis points as a percentage in words: 4000 is "40%", 1250 is "12.5%". */
+export function percentText(bp: number): string {
+  return `${String(Math.round(bp) / 100)}%`;
+}
+
+export const CAMP_TITLE = 'The camp';
+export const CAMP_INTRO = 'Pick one. You can also change the order for free.';
+export const CAMP_HOME_BUTTON = 'Head home with your pack';
+export const CAMP_HOME_LINE = 'Push on and a defeat keeps only half your pack.';
+
+/** The three choices of the camp, each with its exact effect (the rest's number is the server's). */
+export function campChoiceLines(restBp: number): {
+  rest: { label: string; line: string };
+  keepsake: { label: string; line: string };
+  swap: { label: string; line: string };
+} {
+  return {
+    rest: { label: 'Rest', line: `Standing creatures recover ${percentText(restBp)} HP.` },
+    keepsake: { label: 'Take a keepsake', line: 'Choose one of two. It lasts the whole run.' },
+    swap: {
+      label: 'Swap a creature',
+      line: 'Bring in a fresh creature at full HP. One goes home.',
+    },
+  };
+}
+
+/** Why Swap is not possible: the player has no creature outside the row. */
+export const NO_SWAP_LINE = 'You have no other creatures to bring in.';
 
 /** The room's place in the run, for the stage header: "Room 3 / 3, room boss". */
 export function roomLine(index: number, total: number): string {
   return `Room ${String(index + 1)} / ${String(total)}`;
+}
+
+/**
+ * The place of a fight in the stage header. A room of a path (it has a map node) reads by its floor,
+ * "Floor 3 / 7" (`total` is the map's floors); a room of an old three-room run reads "Room 2 / 3".
+ */
+export function roomPlaceLine(
+  room: { index: number; node?: string | undefined },
+  total: number,
+): string {
+  const floor = room.node === undefined ? null : nodeFloor(room.node);
+  return floor === null ? roomLine(room.index, total) : floorLine(floor, total);
 }

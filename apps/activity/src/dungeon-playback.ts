@@ -14,9 +14,11 @@ import type {
   DungeonReplayRoom,
   DungeonRewards,
   DungeonRoomSummary,
+  DungeonRunCreature,
   DungeonRunSummary,
   DungeonTeamMember,
 } from './dungeon-types';
+import { fierceName, floorLine, nodeFloor, resultHeadline } from './dungeon-text';
 import type { ReplayRowEntry } from './raid-api';
 import { gimmickGlyphKey, gimmickShort } from './raid-text';
 import type { Speed } from './replay';
@@ -34,6 +36,58 @@ export const ROOM_END_MS = 1_600;
 /** A time at the chosen speed: 2x halves everything, the same as the engine's replay pacing. */
 export function atSpeed(ms: number, speed: Speed): number {
   return speed === 2 ? Math.round(ms / 2) : ms;
+}
+
+/**
+ * What `DungeonPlayback` plays: the fighting row, the rooms in order and the run's landmark flag.
+ * `total` is what the head counts the place against: the rooms of an old three-room run, or the
+ * floors of a path.
+ */
+export interface PlaybackInput {
+  row: DungeonReplay['row'];
+  rooms: DungeonReplayRoom[];
+  landmark: boolean;
+  total: number;
+}
+
+/**
+ * How many floors a path has. The map says so itself (`DungeonMapView.floors`); the replay of a
+ * finished run has no map, so it counts against the same seven (`docs/design/dungeon-paths.md`).
+ */
+export const PATH_FLOORS = 7;
+
+/** Every room of a stored run, to watch again. A path run counts its places in floors. */
+export function replayInput(replay: DungeonReplay): PlaybackInput {
+  const path = replay.rooms.some((r) => r.node !== undefined);
+  return {
+    row: replay.row,
+    rooms: replay.rooms,
+    landmark: replay.summary.landmark,
+    total: path ? PATH_FLOORS : replay.rooms.length,
+  };
+}
+
+/** The row of a run's creatures as the replay writes it (the position is the place in the row). */
+export function rowOfCreatures(team: readonly DungeonRunCreature[]): DungeonReplay['row'] {
+  return team.map((c, position) => ({
+    position,
+    id: c.id,
+    name: c.name,
+    species: c.speciesId,
+    element: c.element,
+    role: c.role,
+    level: c.level,
+  }));
+}
+
+/** One fight just played by an open run: its row now, the room, and the floors it counts against. */
+export function roomInput(
+  team: readonly DungeonRunCreature[],
+  room: DungeonReplayRoom,
+  landmark: boolean,
+  floors: number,
+): PlaybackInput {
+  return { row: rowOfCreatures(team), rooms: [room], landmark, total: floors };
 }
 
 /** The fight stage's row for a dungeon replay: the team front to back, every creature the player's own. */
@@ -91,12 +145,18 @@ export function roomTrick(
 }
 
 /** The stage's boss for a room: the foe's content id, name and element. */
-export function roomBoss(room: Pick<DungeonReplayRoom, 'foe'>): {
+export function roomBoss(
+  room: Pick<DungeonReplayRoom, 'foe'> & Partial<Pick<DungeonReplayRoom, 'elite'>>,
+): {
   id: string;
   name: string;
   element: string;
 } {
-  return { id: room.foe.id, name: room.foe.name, element: room.foe.element };
+  return {
+    id: room.foe.id,
+    name: fierceName(room.foe.name, room.elite),
+    element: room.foe.element,
+  };
 }
 
 /**
@@ -108,8 +168,11 @@ export function nextRoom(replay: Pick<DungeonReplay, 'rooms'>, index: number): n
 }
 
 /** The line under the stage when a room's fight has played out. */
-export function roomResultLine(room: Pick<DungeonReplayRoom, 'cleared' | 'foe'>): string {
-  return room.cleared ? `${room.foe.name} defeated.` : `Your team could not beat ${room.foe.name}.`;
+export function roomResultLine(
+  room: Pick<DungeonReplayRoom, 'cleared' | 'foe'> & Partial<Pick<DungeonReplayRoom, 'elite'>>,
+): string {
+  const name = fierceName(room.foe.name, room.elite);
+  return room.cleared ? `${name} defeated.` : `Your team could not beat ${name}.`;
 }
 
 /** How a room ended, for the results card. */
@@ -146,8 +209,9 @@ export interface StripRoom {
   foeName: string;
   state: RoomState;
   banner: string;
-  /** "Room 1", or "Room boss" for the last. */
+  /** "Room 1", or "Room boss" for the last ("Elite" for a fierce foe of a path). */
   title: string;
+  elite: boolean;
   modifierName: string;
   /** The foe's HP left when the team lost to it ("251 / 351 HP"), otherwise null. */
   foeHp: string | null;
@@ -155,30 +219,43 @@ export interface StripRoom {
   spoken: string;
 }
 
-/** The rooms of a run as the strip's panels. Names are plain text (render them as text). */
-export function roomStrip(run: Pick<DungeonRunSummary, 'rooms'>): StripRoom[] {
-  return [...run.rooms]
-    .sort((a, b) => a.index - b.index)
-    .map((room) => {
-      const state = roomState(room);
-      const title = room.kind === 'boss' ? 'Room boss' : `Room ${String(room.index + 1)}`;
-      const foeHp =
-        state === 'defeat' ? `${String(room.foeHpEnd)} / ${String(room.foe.hpMax)} HP left` : null;
-      const result =
-        state === 'cleared' ? 'cleared' : state === 'defeat' ? 'defeat' : 'not reached';
-      return {
-        index: room.index,
-        kind: room.kind,
-        foeId: room.foe.id,
-        foeName: room.foe.name,
-        state,
-        banner: ROOM_BANNER[state],
-        title,
-        modifierName: room.modifier.name,
-        foeHp,
-        spoken: `${title}: ${room.foe.name}, ${room.modifier.name}. ${result}.`,
-      };
-    });
+/**
+ * The rooms of a run as the strip's panels. Names are plain text (render them as text). A path run
+ * shows the rooms it actually played, in the order it played them (the rooms it never reached are
+ * left out); an old three-room run shows all three, the unreached ones locked.
+ */
+export function roomStrip(
+  run: Pick<DungeonRunSummary, 'rooms'> & Partial<Pick<DungeonRunSummary, 'outcome'>>,
+): StripRoom[] {
+  const sorted = [...run.rooms].sort((a, b) => a.index - b.index);
+  const rooms = run.outcome === undefined ? sorted : sorted.filter((r) => r.played);
+  return rooms.map((room, place) => {
+    const state = roomState(room);
+    const elite = room.elite === true;
+    const title =
+      room.kind === 'boss'
+        ? 'Room boss'
+        : elite
+          ? 'Elite'
+          : `Room ${String(run.outcome === undefined ? room.index + 1 : place + 1)}`;
+    const name = fierceName(room.foe.name, elite);
+    const foeHp =
+      state === 'defeat' ? `${String(room.foeHpEnd)} / ${String(room.foe.hpMax)} HP left` : null;
+    const result = state === 'cleared' ? 'cleared' : state === 'defeat' ? 'defeat' : 'not reached';
+    return {
+      index: room.index,
+      kind: room.kind,
+      foeId: room.foe.id,
+      foeName: name,
+      state,
+      banner: ROOM_BANNER[state],
+      title,
+      elite,
+      modifierName: room.modifier.name,
+      foeHp,
+      spoken: `${title}: ${name}, ${room.modifier.name}. ${result}.`,
+    };
+  });
 }
 
 /** A creature's HP under it in the team breakdown: "340 / 391 HP" (0 when it was knocked out). */
@@ -225,12 +302,15 @@ export function teamBreakdown(run: Pick<DungeonRunSummary, 'team' | 'rewards'>):
 
 /** What the banner over the stage says when a room opens. Names and descriptions are plain text. */
 interface RoomIntroView {
-  /** "ROOM 2" in big letters, or "ROOM BOSS" for the last room. */
+  /** "ROOM 2" in big letters, "ROOM BOSS" for the last room, "FIGHT" for a room of a path. */
   heading: string;
-  /** "2 / 3" (the room's place in the run). */
+  /** "2 / 3" (the room's place in an old run), or "Floor 3 / 7" (a room of a path). */
   place: string;
   boss: boolean;
+  /** A fiercer foe of a path: the banner adds an Elite tag. */
+  elite: boolean;
   foeId: string;
+  /** The foe's name, "Fierce ..." for an elite. */
   foeName: string;
   element: string;
   modifierName: string;
@@ -245,11 +325,13 @@ interface RoomIntroView {
 }
 
 export function roomIntroView(
-  room: Pick<DungeonReplayRoom, 'index' | 'kind' | 'foe' | 'modifier'>,
+  room: Pick<DungeonReplayRoom, 'index' | 'kind' | 'foe' | 'modifier'> &
+    Partial<Pick<DungeonReplayRoom, 'elite' | 'node'>>,
   total: number,
   landmark = false,
 ): RoomIntroView {
   const boss = room.kind === 'boss';
+  const elite = room.elite === true;
   const gimmick = roomTrick(room, landmark);
   const trick =
     gimmick === null
@@ -259,18 +341,24 @@ export function roomIntroView(
           name: gimmick.name,
           line: gimmickShort(gimmick, 'row'),
         };
-  const place = `${String(room.index + 1)} / ${String(total)}`;
+  const floor = room.node === undefined ? null : nodeFloor(room.node);
+  const place =
+    floor === null ? `${String(room.index + 1)} / ${String(total)}` : floorLine(floor, total);
+  const heading = boss ? 'ROOM BOSS' : floor !== null ? 'FIGHT' : `ROOM ${String(room.index + 1)}`;
+  const foeName = fierceName(room.foe.name, elite);
+  const where = floor === null ? `Room ${place}` : place;
   return {
-    heading: boss ? 'ROOM BOSS' : `ROOM ${String(room.index + 1)}`,
+    heading,
     place,
     boss,
+    elite,
     foeId: room.foe.id,
-    foeName: room.foe.name,
+    foeName,
     element: room.foe.element,
     modifierName: room.modifier.name,
     modifierDescription: room.modifier.description,
     trick,
-    spoken: `Room ${place}${boss ? ', room boss' : ''}: ${room.foe.name}. ${trick === null ? '' : `${trick.name}: ${trick.line}. `}${room.modifier.name}: ${room.modifier.description}`,
+    spoken: `${where}${boss ? ', room boss' : ''}${elite ? ', elite' : ''}: ${foeName}. ${trick === null ? '' : `${trick.name}: ${trick.line}. `}${room.modifier.name}: ${room.modifier.description}`,
   };
 }
 
@@ -325,6 +413,10 @@ export function streakBonusText(rewards: DungeonRewards): string | null {
 
 /** The whole run in one sentence for a screen reader, and for the summary line on the card. */
 export function runSentence(run: DungeonRunSummary): string {
+  if (run.outcome !== undefined) {
+    const fights = run.rooms.filter((r) => r.played).length;
+    return `${resultHeadline(run)}. ${String(run.roomsCleared)} / ${String(fights)} fights cleared at depth ${String(run.depth)}.`;
+  }
   const rooms = `${String(run.roomsCleared)} / ${String(run.rooms.length)} rooms cleared`;
   return run.cleared
     ? `Cleared at depth ${String(run.depth)}: ${rooms}.`

@@ -8,16 +8,35 @@ import todayDone from './fixtures/dungeon-today-done.json';
 import todayNeed from './fixtures/dungeon-today-need-creatures.json';
 import todayRetry from './fixtures/dungeon-today-retry.json';
 import { ApiError } from './api';
+import { EMPTY_PACK, sampleState, sampleSummary } from './dungeon-path-samples';
 import {
+  CAMP_HOME_BUTTON,
+  CAMP_HOME_LINE,
+  CAMP_INTRO,
+  CAMP_TITLE,
   DUNGEON_ERROR_TEXT,
+  NO_SWAP_LINE,
   ORDER_LINE,
   blockedText,
+  campChoiceLines,
   depthChangeText,
   dungeonErrorText,
+  fierceName,
+  floorLine,
+  isPackEmpty,
   isRetryOffer,
   isStaleDungeonError,
+  lastEventText,
+  nodeFloor,
+  packLine,
+  packSummaryLine,
+  packText,
+  percentText,
   resultHeadline,
   roomLine,
+  roomPlaceLine,
+  runHpText,
+  runStatusLine,
   streakLabel,
   supplyPromiseLine,
   streakLine,
@@ -51,9 +70,10 @@ describe('the dungeon error texts', () => {
       const text = dungeonErrorText(new ApiError(status, body.error));
       expect(text, `${route} ${body.error}`).not.toMatch(GENERIC);
     }
-    expect(new Set(errors.map((e) => e.body.error))).toEqual(
-      new Set(Object.keys(DUNGEON_ERROR_TEXT)),
-    );
+    // The captures are of the old route; the path codes (stale_step, invalid_act, run_active, gone,
+    // invalid_treat, insufficient_funds) join them when the worker re-captures.
+    const captured = new Set(errors.map((e) => e.body.error));
+    for (const code of captured) expect(Object.keys(DUNGEON_ERROR_TEXT)).toContain(code);
   });
 
   it('keeps the dungeon meaning of not_found and says what to do about the others', () => {
@@ -72,7 +92,13 @@ describe('the dungeon error texts', () => {
   it('knows which refusals mean the screen was out of date', () => {
     expect(isStaleDungeonError(new ApiError(409, 'already_run'))).toBe(true);
     expect(isStaleDungeonError(new ApiError(404, 'not_found'))).toBe(true);
+    // A step the run has moved past, an act it cannot take and a run already open: look again.
+    for (const code of ['stale_step', 'invalid_act', 'run_active']) {
+      expect(isStaleDungeonError(new ApiError(409, code)), code).toBe(true);
+    }
     expect(isStaleDungeonError(new ApiError(400, 'invalid_body'))).toBe(false);
+    expect(isStaleDungeonError(new ApiError(410, 'gone'))).toBe(false);
+    expect(isStaleDungeonError(new ApiError(409, 'key_conflict'))).toBe(false);
     expect(isStaleDungeonError(new Error('x'))).toBe(false);
   });
 });
@@ -168,5 +194,140 @@ describe('the supply promise on the pre-run card', () => {
 
   it('is plain text with no markup, whatever the depth', () => {
     for (const depth of [1, 7, 50]) expect(supplyPromiseLine(depth)).not.toMatch(/[<>{}]/);
+  });
+});
+
+describe('the headline of a path run', () => {
+  const cleared = sampleSummary('cleared');
+  const home = sampleSummary('home');
+  const defeat = sampleSummary('defeat');
+
+  it('says how the run ended', () => {
+    expect(resultHeadline(cleared)).toBe('Cleared! Depth 3 to 4');
+    expect(resultHeadline(home)).toBe('Home safe with your whole pack');
+    expect(resultHeadline(defeat)).toBe('Defeated: half your pack made it home');
+  });
+
+  it('keeps the old words for a run from before the map', () => {
+    const old = (runCleared as unknown as DungeonRunResponse).run;
+    expect(old.outcome).toBeUndefined();
+    expect(resultHeadline(old)).toBe('Dungeon cleared!');
+  });
+
+  it('says what the depth did, and what takes the run deeper', () => {
+    expect(depthChangeText(cleared)).toBe('Depth 3 to 4');
+    expect(depthChangeText(home)).toBe('Still at depth 3. Beat the room boss to go deeper.');
+    expect(depthChangeText(defeat)).toContain('Beat the room boss');
+    const old = (runLost as unknown as DungeonRunResponse).run;
+    expect(depthChangeText(old)).toContain('Clear all three rooms');
+  });
+});
+
+describe('the pack words', () => {
+  it('lists what the pack holds without the empty kinds', () => {
+    expect(packText({ bait: 2, essence: 0, scrap: 1 })).toBe('2 Bait · 1 Scrap');
+    expect(packText({ bait: 0, essence: 1, scrap: 0 })).toBe('1 Essence');
+    expect(packText(EMPTY_PACK)).toBe('nothing');
+    expect(isPackEmpty(EMPTY_PACK)).toBe(true);
+    expect(isPackEmpty({ bait: 0, essence: 0, scrap: 1 })).toBe(false);
+  });
+
+  it('says it on the strip, empty or not', () => {
+    expect(packLine({ bait: 2, essence: 0, scrap: 1 })).toBe('In your pack: 2 Bait · 1 Scrap');
+    expect(packLine(EMPTY_PACK)).toBe('Your pack is empty.');
+  });
+
+  it('says what was found and what was kept', () => {
+    expect(
+      packSummaryLine({
+        found: { bait: 3, essence: 0, scrap: 3 },
+        kept: { bait: 2, essence: 0, scrap: 2 },
+      }),
+    ).toBe('Found: 3 Bait · 3 Scrap · Kept: 2 Bait · 2 Scrap');
+    expect(packSummaryLine({ found: EMPTY_PACK, kept: EMPTY_PACK })).toBe(
+      'Found: nothing · Kept: nothing',
+    );
+  });
+});
+
+describe('where the run is', () => {
+  it('reads the floor from a node id', () => {
+    expect(nodeFloor('f0l0')).toBe(0);
+    expect(nodeFloor('f6l1')).toBe(6);
+    expect(nodeFloor('x')).toBeNull();
+    expect(nodeFloor('f2l1; drop')).toBeNull();
+  });
+
+  it('counts floors from 1', () => {
+    expect(floorLine(2, 7)).toBe('Floor 3 / 7');
+    expect(floorLine(6, 7)).toBe('Floor 7 / 7');
+  });
+
+  it('reads the place of a fight by its floor on a path and by its room in an old run', () => {
+    expect(roomPlaceLine({ index: 2, node: 'f2l1' }, 7)).toBe('Floor 3 / 7');
+    expect(roomPlaceLine({ index: 1 }, 3)).toBe('Room 2 / 3');
+    expect(roomPlaceLine({ index: 1, node: 'weird' }, 3)).toBe('Room 2 / 3');
+  });
+
+  it('says the status of the run on the strip', () => {
+    const state = sampleState();
+    expect(runStatusLine(state)).toBe('Depth 3 · At the entrance');
+    expect(runStatusLine({ ...state, at: 'f1l2' })).toBe('Depth 3 · Floor 2 / 7');
+    expect(runStatusLine({ ...state, at: 'f3l1' })).toBe('Depth 3 · At the camp');
+  });
+
+  it('puts "Fierce" before an elite foe once', () => {
+    expect(fierceName('Flicker Swarm', true)).toBe('Fierce Flicker Swarm');
+    expect(fierceName('Fierce Flicker Swarm', true)).toBe('Fierce Flicker Swarm');
+    expect(fierceName('Flicker Swarm', false)).toBe('Flicker Swarm');
+    expect(fierceName('Flicker Swarm', undefined)).toBe('Flicker Swarm');
+  });
+
+  it('writes what the last event did as plain sentences', () => {
+    expect(
+      lastEventText({ name: 'Glowing Pool', option: 'Drink', outcome: 'Everyone healed 25%' }),
+    ).toEqual({ title: 'Glowing Pool: Drink', outcome: 'Everyone healed 25%.' });
+    expect(lastEventText({ name: 'A', option: 'B', outcome: 'Nothing happened.' }).outcome).toBe(
+      'Nothing happened.',
+    );
+  });
+
+  it('says HP in words, and knocked out when it is gone', () => {
+    expect(runHpText({ hp: 240, hpMax: 281 })).toBe('240 / 281 HP');
+    expect(runHpText({ hp: 0, hpMax: 281 })).toBe('Knocked out');
+  });
+});
+
+describe('the camp words', () => {
+  it('turns basis points into a percentage', () => {
+    expect(percentText(4000)).toBe('40%');
+    expect(percentText(1250)).toBe('12.5%');
+  });
+
+  it('says each choice with its exact effect', () => {
+    const lines = campChoiceLines(4000);
+    expect(lines.rest.line).toBe('Standing creatures recover 40% HP.');
+    expect(lines.keepsake.label).toBe('Take a keepsake');
+    expect(lines.swap.line).toContain('full HP');
+  });
+
+  it('names the way home and what it risks, plainly', () => {
+    expect(CAMP_HOME_BUTTON).toBe('Head home with your pack');
+    expect(CAMP_HOME_LINE).toBe('Push on and a defeat keeps only half your pack.');
+  });
+
+  it('keeps every line short and free of markup', () => {
+    const lines = [
+      CAMP_TITLE,
+      CAMP_INTRO,
+      CAMP_HOME_BUTTON,
+      CAMP_HOME_LINE,
+      NO_SWAP_LINE,
+      ...Object.values(campChoiceLines(4000)).flatMap((c) => [c.label, c.line]),
+    ];
+    for (const line of lines) {
+      expect(line.length, line).toBeLessThan(70);
+      expect(line, line).not.toMatch(/[<>{}]/);
+    }
   });
 });

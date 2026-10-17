@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import replayFixture from './fixtures/dungeon-replay.json';
 import runCleared from './fixtures/dungeon-run-cleared.json';
 import today from './fixtures/dungeon-today.json';
 const apiFetch = vi.hoisted(() => vi.fn());
@@ -7,8 +8,28 @@ vi.mock('./api', async (importOriginal) => ({
   apiFetch,
 }));
 
-import { saveDungeonTeam } from './dungeon-api';
-import { parseDungeonRun, parseDungeonTeamSaved, parseDungeonToday } from './dungeon-parse';
+import { dungeonAct, saveDungeonTeam, startDungeonRun } from './dungeon-api';
+import {
+  parseDungeonAct,
+  parseDungeonReplay,
+  parseDungeonRun,
+  parseDungeonStart,
+  parseDungeonTeamSaved,
+  parseDungeonToday,
+} from './dungeon-parse';
+import {
+  SAMPLE_EVENT,
+  sampleActFight,
+  sampleMap,
+  sampleRoom,
+  sampleState,
+  sampleStateCamp,
+  sampleStateEvent,
+  sampleStateMid,
+  sampleSummary,
+  sampleToday,
+} from './dungeon-path-samples';
+import type { DungeonRunState } from './dungeon-types';
 
 const withoutDraft: Record<string, unknown> = { ...today };
 delete withoutDraft['draftTeam'];
@@ -97,5 +118,295 @@ describe('saveDungeonTeam', () => {
   it('refuses an answer that is not a draft', async () => {
     apiFetch.mockResolvedValue({ nope: true });
     await expect(saveDungeonTeam({ team: [null, null, null] })).rejects.toThrow();
+  });
+});
+
+/** A copy of a sample with one field changed, to see the parser refuse it. */
+function without<T extends object>(value: T, key: string): unknown {
+  const copy: Record<string, unknown> = { ...(value as Record<string, unknown>) };
+  delete copy[key];
+  return copy;
+}
+
+describe('the map and the open run in today', () => {
+  it('read as null when an older server does not send them', () => {
+    const parsed = parseDungeonToday(today);
+    expect(parsed.map).toBeNull();
+    expect(parsed.active).toBeNull();
+  });
+
+  it('reads the map and the open run', () => {
+    const open = sampleStateMid();
+    const parsed = parseDungeonToday({ ...sampleToday(), active: open });
+    expect(parsed.map?.floors).toBe(7);
+    expect(parsed.map?.nodes).toHaveLength(16);
+    expect(parsed.active?.id).toBe(open.id);
+    expect(parseDungeonToday({ ...today, map: null, active: null }).active).toBeNull();
+  });
+
+  it('refuses a map or a run that is not the shape the server sends', () => {
+    expect(() => parseDungeonToday({ ...sampleToday(), map: { floors: 7 } })).toThrow();
+    expect(() => parseDungeonToday({ ...sampleToday(), active: { id: 'x' } })).toThrow();
+    const node = { ...sampleMap().nodes[0], kind: 'treasure' };
+    expect(() =>
+      parseDungeonToday({ ...sampleToday(), map: { floors: 7, nodes: [node] } }),
+    ).toThrow();
+  });
+});
+
+describe('the map', () => {
+  const nodes = sampleMap().nodes;
+  const withNode = (change: Record<string, unknown>) =>
+    parseDungeonToday({
+      ...sampleToday(),
+      map: { floors: 7, nodes: [{ ...nodes[0], ...change }] },
+    });
+
+  it('keeps a fight, an elite, a mystery, a cache, the camp and the boss', () => {
+    const kinds = new Set(parseDungeonToday(sampleToday()).map?.nodes.map((n) => n.kind));
+    expect([...kinds].sort()).toEqual(['boss', 'cache', 'camp', 'elite', 'fight', 'mystery']);
+  });
+
+  it('refuses a node with a wrong id, floor, edge list, foe, modifier or event', () => {
+    expect(() => withNode({ id: 3 })).toThrow();
+    expect(() => withNode({ floor: -1 })).toThrow();
+    expect(() => withNode({ lane: 1.5 })).toThrow();
+    expect(() => withNode({ next: ['f1l0', 4] })).toThrow();
+    expect(() => withNode({ foe: { id: 'x' } })).toThrow();
+    expect(() => withNode({ foe: { ...nodes[0]?.foe, element: 'void' } })).toThrow();
+    expect(() => withNode({ foe: { ...nodes[0]?.foe, elite: 'yes' } })).toThrow();
+    expect(() => withNode({ modifier: { id: 'dark' } })).toThrow();
+    expect(() => withNode({ event: { id: 1 } })).toThrow();
+  });
+});
+
+describe('the state of a run', () => {
+  const start = (state: unknown) => parseDungeonStart({ state, today: sampleToday() });
+
+  it('reads a fresh run, a run mid-way, a mystery room and the camp', () => {
+    for (const state of [sampleState(), sampleStateMid(), sampleStateEvent(), sampleStateCamp()]) {
+      expect(start(state).state.id).toBe(state.id);
+    }
+    expect(start(sampleStateEvent()).state.pending?.kind).toBe('event');
+    const camp = start(sampleStateCamp()).state.pending;
+    expect(camp?.kind === 'camp' ? camp.offers : []).toHaveLength(2);
+  });
+
+  it('reads a finished run with its outcome, and a last event of null or text', () => {
+    expect(start({ ...sampleState(), status: 'done', outcome: 'home' }).state.outcome).toBe('home');
+    expect(start({ ...sampleState(), lastEvent: null }).state.lastEvent).toBeNull();
+    expect(start(sampleStateMid()).state.lastEvent?.name).toBe('Glowing Pool');
+  });
+
+  it('refuses a state with a field missing or of the wrong kind', () => {
+    const base: DungeonRunState = sampleStateMid();
+    for (const key of Object.keys(base)) {
+      expect(() => start(without(base, key)), `without ${key}`).toThrow();
+    }
+    const bad: Record<string, unknown>[] = [
+      { status: 'paused' },
+      { outcome: 'won' },
+      { step: -1 },
+      { step: 1.5 },
+      { at: 3 },
+      { path: [1] },
+      { reachable: 'f0l0' },
+      { team: [{ id: 'a' }] },
+      { keepsakes: [{ id: 'a' }] },
+      { pack: { bait: -1, essence: 0, scrap: 0 } },
+      { pack: { bait: 1, essence: 0 } },
+      { supply: 'yes' },
+      { lastEvent: { name: 'a' } },
+      { pending: { kind: 'fight' } },
+      { pending: { kind: 'camp', offers: [], restBp: -1 } },
+      {
+        pending: { kind: 'event', event: { ...SAMPLE_EVENT, options: [SAMPLE_EVENT.options[0]] } },
+      },
+      { pending: { kind: 'event', event: { ...SAMPLE_EVENT, text: 4 } } },
+    ];
+    for (const change of bad) {
+      expect(() => start({ ...base, ...change }), JSON.stringify(change)).toThrow();
+    }
+  });
+
+  it('refuses a creature with an HP or a flag that is not right', () => {
+    const base = sampleState();
+    const hurt = (change: Record<string, unknown>) =>
+      start({ ...base, team: [{ ...base.team[0], ...change }, base.team[1], base.team[2]] });
+    expect(hurt({}).state.team).toHaveLength(3);
+    expect(() => hurt({ hp: -5 })).toThrow();
+    expect(() => hurt({ hpMax: 1.5 })).toThrow();
+    expect(() => hurt({ treat: 'no' })).toThrow();
+    expect(() => hurt({ element: 'void' })).toThrow();
+    expect(() => hurt({ role: 'boss' })).toThrow();
+  });
+});
+
+describe('the answer to entering', () => {
+  it('has the run and today, with a run open', () => {
+    const open = sampleState();
+    const answer = parseDungeonStart({ state: open, today: { ...sampleToday(), active: open } });
+    expect(answer.state.step).toBe(0);
+    expect(answer.today.active?.id).toBe(open.id);
+  });
+
+  it('refuses an answer without its state or its today', () => {
+    expect(() => parseDungeonStart({ today: sampleToday() })).toThrow('dungeon run');
+    expect(() => parseDungeonStart({ state: sampleState() })).toThrow();
+    expect(() => parseDungeonStart({ state: sampleState(), today: { day: 1 } })).toThrow();
+    expect(() => parseDungeonStart(null)).toThrow();
+  });
+});
+
+describe('the answer to a step', () => {
+  it('reads a step that only moved the run', () => {
+    const answer = parseDungeonAct({ state: sampleStateEvent() });
+    expect(answer.room).toBeUndefined();
+    expect(answer.summary).toBeUndefined();
+    expect(answer.today).toBeUndefined();
+  });
+
+  it('reads the fight a move played, with the path fields of its room', () => {
+    const answer = parseDungeonAct(sampleActFight());
+    expect(answer.room?.node).toBe('f0l2');
+    expect(answer.room?.keepsakes).toEqual([]);
+    const elite = parseDungeonAct({
+      state: sampleState(),
+      room: sampleRoom({ elite: true, keepsakes: [{ id: 'k', name: 'K', description: 'D' }] }),
+    });
+    expect(elite.room?.elite).toBe(true);
+    expect(elite.room?.keepsakes).toHaveLength(1);
+  });
+
+  it('reads the summary and today of a run that ended', () => {
+    const answer = parseDungeonAct({
+      state: { ...sampleState(), status: 'done', outcome: 'defeat' },
+      room: sampleRoom(),
+      summary: sampleSummary('defeat'),
+      today: sampleToday(),
+    });
+    expect(answer.summary?.outcome).toBe('defeat');
+    expect(answer.today?.map?.floors).toBe(7);
+  });
+
+  it('refuses a room, a summary or a today that is not the shape the server sends', () => {
+    const state = sampleState();
+    const room = sampleRoom();
+    expect(() => parseDungeonAct({ state, room: { ...room, events: [{ t: 'nope' }] } })).toThrow(
+      'dungeon step',
+    );
+    expect(() => parseDungeonAct({ state, room: { ...room, node: 4 } })).toThrow();
+    expect(() => parseDungeonAct({ state, room: { ...room, elite: 'yes' } })).toThrow();
+    expect(() => parseDungeonAct({ state, room: { ...room, keepsakes: [{ id: 1 }] } })).toThrow();
+    expect(() => parseDungeonAct({ state, summary: { id: 'x' } })).toThrow();
+    expect(() => parseDungeonAct({ state, today: { day: 1 } })).toThrow();
+    expect(() => parseDungeonAct({ summary: sampleSummary('home') })).toThrow();
+    expect(() => parseDungeonAct(undefined)).toThrow();
+  });
+});
+
+describe('the new fields of a summary and of a replayed room', () => {
+  const summaryIn = (change: Record<string, unknown>) =>
+    parseDungeonAct({
+      state: sampleState(),
+      summary: { ...sampleSummary('home'), ...change },
+      today: sampleToday(),
+    }).summary;
+
+  it('are optional: an old run has none of them', () => {
+    const old = parseDungeonRun(runCleared).run;
+    expect(old.outcome).toBeUndefined();
+    expect(old.path).toBeUndefined();
+    expect(old.pack).toBeUndefined();
+    expect(old.keepsakes).toBeUndefined();
+    expect(old.rooms[0]?.elite).toBeUndefined();
+  });
+
+  it('read the outcome, the path, the pack and the keepsakes', () => {
+    const summary = summaryIn({});
+    expect(summary?.outcome).toBe('home');
+    expect(summary?.path).toEqual(['fight', 'mystery', 'elite', 'camp']);
+    expect(summary?.pack?.kept).toEqual({ bait: 3, essence: 1, scrap: 2 });
+    expect(summary?.keepsakes).toHaveLength(1);
+    expect(summary?.rooms.some((r) => r.elite === true)).toBe(true);
+  });
+
+  it('refuse values that are not allowed', () => {
+    expect(() => summaryIn({ outcome: 'won' })).toThrow();
+    expect(() => summaryIn({ path: ['fight', 'lava'] })).toThrow();
+    expect(() => summaryIn({ pack: { found: { bait: 1, essence: 0, scrap: 0 } } })).toThrow();
+    expect(() =>
+      summaryIn({
+        pack: {
+          found: { bait: -1, essence: 0, scrap: 0 },
+          kept: { bait: 0, essence: 0, scrap: 0 },
+        },
+      }),
+    ).toThrow();
+    expect(() => summaryIn({ keepsakes: [{ id: 'a', name: 'b' }] })).toThrow();
+    const rooms = sampleSummary('home').rooms.map((r) => ({ ...r, elite: 1 }));
+    expect(() => summaryIn({ rooms })).toThrow();
+  });
+
+  it('are in a replay too', () => {
+    const rooms = replayFixture.rooms.map((r) => ({ ...r, node: 'f1l0', elite: false }));
+    const replay = parseDungeonReplay({ ...replayFixture, rooms });
+    expect(replay.rooms[0]?.node).toBe('f1l0');
+    expect(replay.rooms[0]?.elite).toBe(false);
+    expect(() =>
+      parseDungeonReplay({ ...replayFixture, rooms: [{ ...rooms[0], node: 1 }] }),
+    ).toThrow();
+  });
+});
+
+describe('the requests of a run', () => {
+  const sent = (): { path: string; init: RequestInit } => {
+    const [path, init] = apiFetch.mock.calls.at(-1) as unknown as [string, RequestInit];
+    return { path, init };
+  };
+
+  it('enters with a POST to /api/dungeon/start and reads the run', async () => {
+    const open = sampleState();
+    apiFetch.mockResolvedValue({ state: open, today: { ...sampleToday(), active: open } });
+    const answer = await startDungeonRun({
+      team: ['a', 'b', 'c'],
+      treats: ['b'],
+      idempotencyKey: 'key-12345678',
+    });
+    const { path, init } = sent();
+    expect(path).toBe('/api/dungeon/start');
+    expect(init.method).toBe('POST');
+    expect(init.body).toBe('{"team":["a","b","c"],"treats":["b"],"idempotencyKey":"key-12345678"}');
+    expect(answer.state.id).toBe(open.id);
+  });
+
+  it('takes a step with a POST to /api/dungeon/act and reads the answer', async () => {
+    apiFetch.mockResolvedValue(sampleActFight());
+    const answer = await dungeonAct({
+      runId: 'run-sample-1',
+      step: 0,
+      idempotencyKey: 'key-12345678',
+      act: { type: 'move', node: 'f0l2' },
+    });
+    const { path, init } = sent();
+    expect(path).toBe('/api/dungeon/act');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body as string)).toEqual({
+      runId: 'run-sample-1',
+      step: 0,
+      idempotencyKey: 'key-12345678',
+      act: { type: 'move', node: 'f0l2' },
+    });
+    expect(answer.room?.node).toBe('f0l2');
+  });
+
+  it('refuses answers that are not the shape the server sends', async () => {
+    apiFetch.mockResolvedValue({ nope: true });
+    await expect(
+      startDungeonRun({ team: ['a', 'b', 'c'], idempotencyKey: 'key-12345678' }),
+    ).rejects.toThrow();
+    await expect(
+      dungeonAct({ runId: 'r', step: 0, idempotencyKey: 'key-12345678', act: { type: 'home' } }),
+    ).rejects.toThrow();
   });
 });

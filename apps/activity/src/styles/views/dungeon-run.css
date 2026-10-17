@@ -1,0 +1,219 @@
+/* --- The open run: the strip above the map, a mystery room's card and the camp --- */
+
+.dungeon-run {
+  min-width: 0;
+}
+
+.dungeon-run-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.run-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin: 0;
+  color: var(--bone);
+  font-size: 1.125rem;
+}
+
+/* The row: three tiles like the end report's, with an HP bar under each. */
+.run-row {
+  margin: 0;
+}
+
+.run-tile {
+  gap: 0.25rem;
+}
+
+.run-hp {
+  width: 100%;
+  max-width: 6rem;
+}
+
+.run-hp > span {
+  background: var(--good);
+}
+
+.run-tile.low .run-hp > span {
+  background: var(--bad);
+}
+
+.run-tile.ko .tm-name {
+  color: var(--haze);
+}
+
+/* Keepsakes: chips you can tap. */
+.run-keepsakes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button.run-keepsake {
+  min-height: 2.25rem;
+  padding: 0.125rem 0.5rem 0.125rem 0.375rem;
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--gold);
+}
+
+/* The pack: label, icons with numbers, and the "At risk" tag. */
+.run-pack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin: 0;
+}
+
+.run-pack-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.run-event {
+  margin: 0;
+  padding-left: 0.5rem;
+  border-left: 3px solid var(--gold);
+  font-size: 0.9375rem;
+}
+
+.dungeon-run-map {
+  padding: 0.5rem;
+}
+
+.dungeon-preview {
+  margin: 0.5rem 0;
+}
+
+.dungeon-preview > p {
+  margin: 0.375rem 0 0;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* A mystery room and the camp: a card with big buttons that say what they do. */
+.event-scene {
+  margin: 0.25rem 0 0.75rem;
+}
+
+.event-options,
+.camp-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.event-option,
+.camp-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--body);
+  text-align: left;
+}
+
+.event-option strong,
+.camp-choice strong {
+  color: var(--gold);
+  font-size: 1.125rem;
+  font-weight: normal;
+}
+
+.event-option span,
+.camp-choice span {
+  font-size: 0.9375rem;
+  line-height: 1.3;
+}
+
+.camp-choice.camp-out.ko strong {
+  color: var(--bad);
+}
+
+/* Left and Right under a creature at the camp. */
+.run-move {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+}
+
+button.run-move-button {
+  min-height: 2.25rem;
+  min-width: 2.75rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.875rem;
+}
+
+/* Heading home sits apart from the three choices, and says what it risks. */
+.camp-home {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: var(--px) solid var(--line);
+  text-align: center;
+}
+
+.camp-home p {
+  margin: 0.375rem 0 0;
+}
+
+.camp-home .confirm {
+  text-align: center;
+}
+
+.camp-home .button-row {
+  justify-content: center;
+}
+
+button.camp-home-button {
+  width: 100%;
+  background: transparent;
+  color: var(--bad);
+  box-shadow: inset 0 0 0 var(--px) var(--bad);
+}
+
+/* The end report of a path run. */
+.dungeon-pack-line {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.dungeon-keepsake-list {
+  text-align: left;
+}
+
+/* Up to six rooms: the strip wraps, and the step arrows are left off the end of a line. */
+.room-strip.path .room-panel:nth-child(3n)::after {
+  display: none;
+}
+
+.room-panel.elite .rp-title {
+  color: var(--bad);
+}
+
+/* The Elite tag in the room banner, next to the floor. */
+.rb-place .rb-elite {
+  vertical-align: middle;
+  padding: 0.0625rem 0.375rem;
+  background: var(--bad);
+  color: var(--ink);
+  font-size: 0.875rem;
+}
+
+.pack-line-part {
+  display: block;
+}

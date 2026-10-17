@@ -34,6 +34,13 @@ import type { DungeonRunResponse, DungeonRunSummary } from './dungeon-types';
 import { turnOrderOfRound } from './replay';
 import { buildBeats, creatureHpAt, ordinal, stageStateAt } from './stage';
 import { forecastNextRound } from './telegraph';
+import { rowOfCreatures, roomInput, replayInput, PATH_FLOORS } from './dungeon-playback';
+import {
+  sampleActFight,
+  sampleRoom,
+  sampleRunCreatures,
+  sampleSummary,
+} from './dungeon-path-samples';
 
 const replay = parseDungeonReplay(replayFixture);
 const cleared = (clearedFixture as unknown as DungeonRunResponse).run;
@@ -498,5 +505,132 @@ describe('the scroll to the fight when a run starts', () => {
 
   it('is instant under prefers-reduced-motion', () => {
     expect(fightScroll(true)).toEqual({ behavior: 'auto', block: 'start' });
+  });
+});
+
+describe('the fights of a path', () => {
+  const room = sampleRoom();
+
+  it('plays the one room an open run just played, in the row of the run', () => {
+    const answer = sampleActFight();
+    const input = roomInput(answer.state.team, room, false, 7);
+    expect(input.rooms).toEqual([room]);
+    expect(input.total).toBe(7);
+    expect(input.landmark).toBe(false);
+    expect(stageRow(input).map((r) => r.name)).toEqual(['Sproutle', 'Splashet', 'Cindle']);
+    expect(stageRow(input).map((r) => r.position)).toEqual([0, 1, 2]);
+    expect(nextRoom(input, 0)).toBeNull();
+  });
+
+  it('writes the row of the run the way a replay writes it', () => {
+    const row = rowOfCreatures(sampleRunCreatures());
+    expect(row.map((r) => r.species)).toEqual(['sproutle', 'splashet', 'cindle']);
+    expect(row.map((r) => r.id)).toEqual(sampleRunCreatures().map((c) => c.id));
+    // The same three creatures as the replay fixture's row: the stage reads them the same.
+    expect(row).toEqual(replay.row);
+  });
+
+  it('watches a stored three-room run against its rooms, and a path run against its floors', () => {
+    expect(replayInput(replay)).toMatchObject({ total: 3, landmark: false });
+    expect(replayInput(replay).rooms).toHaveLength(3);
+    const path = {
+      ...replay,
+      rooms: replay.rooms.map((r, i) => ({ ...r, node: `f${String(i)}l0` })),
+    };
+    expect(replayInput(path).total).toBe(PATH_FLOORS);
+    expect(PATH_FLOORS).toBe(7);
+    expect(
+      replayInput({ ...replay, summary: { ...replay.summary, landmark: true } }).landmark,
+    ).toBe(true);
+  });
+
+  it('opens a fight with FIGHT and its floor, an elite with "Fierce" and the Elite flag', () => {
+    const fight = roomIntroView(room, 7);
+    expect(fight).toMatchObject({
+      heading: 'FIGHT',
+      place: 'Floor 1 / 7',
+      elite: false,
+      boss: false,
+      foeName: 'Bramble Hound',
+    });
+    const elite = roomIntroView({ ...room, node: 'f2l1', elite: true }, 7);
+    expect(elite).toMatchObject({
+      heading: 'FIGHT',
+      place: 'Floor 3 / 7',
+      elite: true,
+      foeName: 'Fierce Bramble Hound',
+    });
+    expect(elite.spoken).toContain('Floor 3 / 7, elite: Fierce Bramble Hound.');
+  });
+
+  it('names the boss room of a path by its floor', () => {
+    const boss = roomIntroView({ ...room, kind: 'boss', node: 'f6l1' }, 7);
+    expect(boss.heading).toBe('ROOM BOSS');
+    expect(boss.place).toBe('Floor 7 / 7');
+    expect(boss.spoken).toContain('Floor 7 / 7, room boss');
+  });
+
+  it('puts "Fierce" on the stage boss and in the result line of an elite, once', () => {
+    expect(roomBoss({ ...room, elite: true }).name).toBe('Fierce Bramble Hound');
+    expect(roomBoss(room).name).toBe('Bramble Hound');
+    expect(roomResultLine({ ...room, elite: true })).toBe('Fierce Bramble Hound defeated.');
+    expect(roomResultLine({ ...room, cleared: false, elite: true })).toBe(
+      'Your team could not beat Fierce Bramble Hound.',
+    );
+    const named = { ...room, foe: { ...room.foe, name: 'Fierce Bramble Hound' }, elite: true };
+    expect(roomBoss(named).name).toBe('Fierce Bramble Hound');
+  });
+
+  it('keeps the old banner for a room of a three-room run', () => {
+    expect(
+      roomIntroView(replay.rooms[0] as NonNullable<(typeof replay.rooms)[0]>, 3),
+    ).toMatchObject({
+      heading: 'ROOM 1',
+      place: '1 / 3',
+      elite: false,
+    });
+  });
+});
+
+describe('the end report of a path run', () => {
+  it('shows only the fights that were played, named by their order, an elite as Elite', () => {
+    const home = roomStrip(sampleSummary('home'));
+    expect(home.map((r) => r.title)).toEqual(['Room 1', 'Elite']);
+    expect(home.map((r) => r.state)).toEqual(['cleared', 'cleared']);
+    expect(home[1]?.foeName).toBe('Fierce Drift Wisp');
+    expect(home[1]?.elite).toBe(true);
+    expect(home[0]?.elite).toBe(false);
+    const cleared = roomStrip(sampleSummary('cleared'));
+    expect(cleared.map((r) => r.title)).toEqual(['Room 1', 'Elite', 'Room boss']);
+  });
+
+  it('leaves the rooms never reached out, and marks the lost one', () => {
+    const base = sampleSummary('cleared');
+    const withUnplayed = {
+      ...base,
+      rooms: base.rooms.map((r, i) => (i === 2 ? { ...r, played: false, cleared: false } : r)),
+    };
+    expect(roomStrip(withUnplayed)).toHaveLength(2);
+    const lost = roomStrip(sampleSummary('defeat'));
+    expect(lost.map((r) => r.state)).toEqual(['cleared', 'defeat']);
+    expect(lost[1]?.foeHp).toBe(
+      `120 / ${String(sampleSummary('defeat').rooms[1]?.foe.hpMax)} HP left`,
+    );
+    expect(lost[1]?.spoken).toMatch(/defeat\.$/);
+  });
+
+  it('still shows all three rooms of an old run, the unreached ones locked', () => {
+    expect(roomStrip(lost)).toHaveLength(3);
+  });
+
+  it('says the run in one sentence by its outcome', () => {
+    expect(runSentence(sampleSummary('home'))).toBe(
+      'Home safe with your whole pack. 2 / 2 fights cleared at depth 3.',
+    );
+    expect(runSentence(sampleSummary('defeat'))).toBe(
+      'Defeated: half your pack made it home. 1 / 2 fights cleared at depth 3.',
+    );
+    expect(runSentence(sampleSummary('cleared'))).toContain('Cleared! Depth 3 to 4.');
+    expect(runSentence(cleared)).toContain('Cleared at depth');
   });
 });

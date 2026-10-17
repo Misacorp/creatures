@@ -5,7 +5,7 @@ import { Stage } from '../../Stage';
 import dungeonReplay from '../../fixtures/dungeon-replay.json';
 import liveMid from '../../fixtures/live-mid.json';
 import { parseDungeonReplay } from '../../dungeon-parse';
-import { mineIds, modifierGimmicks, roomBoss, stageRow } from '../../dungeon-playback';
+import { mineIds, modifierGimmicks, replayInput, roomBoss, stageRow } from '../../dungeon-playback';
 import { roomLine } from '../../dungeon-text';
 import { parseLiveSnapshot } from '../../live-api';
 import { finaleProgress } from '../../raid-progress';
@@ -278,7 +278,7 @@ const dungeonPlayback: Entry = {
   render: (p) => (
     <DungeonPlayback
       key={String(bool(p, 'showControls'))}
-      replay={REPLAY}
+      input={replayInput(REPLAY)}
       onDone={() => undefined}
       showControls={bool(p, 'showControls')}
     />

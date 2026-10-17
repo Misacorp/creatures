@@ -1,4 +1,4 @@
-import { LandmarkChip } from './ui/Tag';
+import { LandmarkChip, Tag } from './ui/Tag';
 import { GlossaryTag } from './Glossary';
 import { LootList } from './GearLoot';
 import { glyphOrUnknown } from './glyphs';
@@ -19,7 +19,7 @@ import {
   type TeamEntry,
 } from './dungeon-playback';
 import { bossArt } from './art';
-import { depthChangeText, resultHeadline } from './dungeon-text';
+import { depthChangeText, packText, resultHeadline } from './dungeon-text';
 import { DungeonNext } from './DungeonNext';
 import type { DungeonRunSummary, DungeonToday } from './dungeon-types';
 import { creatureInfoOf } from './creature-info';
@@ -46,9 +46,11 @@ interface Props {
 }
 
 /**
- * The end of a run: cleared or not, what it did to the depth, the rewards first (a small pile with
+ * The end of a run: how it ended (cleared, home with the pack, or defeated with half of it), what it
+ * did to the depth, the rewards first (a small pile with
  * one icon for each kind earned, and the counts right beside it: the Essence counts up, and the gear
- * then pops in), then the three rooms and the team. "Watch again" plays the run once more from the
+ * then pops in), then, for a path run, what the pack held and the keepsakes, then the rooms it played
+ * and the team. "Watch again" plays the run once more from the
  * server's stored events. All names are drawn as text.
  */
 export function DungeonResults({
@@ -101,7 +103,7 @@ export function DungeonResults({
     <RevealShell
       id="dungeon-result-heading"
       title={resultHeadline(run)}
-      badge={<OutcomeBadge cleared={run.cleared} />}
+      badge={<ResultBadge run={run} />}
       class="dungeon-result"
       footer={
         <p class="button-row dungeon-result-buttons">
@@ -118,7 +120,7 @@ export function DungeonResults({
     >
       <p role="status">
         <span class="visually-hidden">{runSentence(run)} </span>
-        {depthChangeText(run)}
+        {run.outcome === 'cleared' ? null : depthChangeText(run)}
         {run.landmark && (
           <>
             {' '}
@@ -151,7 +153,32 @@ export function DungeonResults({
         </RewardSummary>
       )}
 
-      <RoomStrip rooms={roomStrip(run)} />
+      {run.pack !== undefined && (
+        <>
+          <h4>Your pack</h4>
+          <p class="dungeon-pack-line">
+            <GlossaryTag entry="dungeon-pack">
+              <span class="pack-line-part">Found: {packText(run.pack.found)}</span>
+              <span class="visually-hidden"> · </span>
+              <span class="pack-line-part">Kept: {packText(run.pack.kept)}</span>
+            </GlossaryTag>
+          </p>
+        </>
+      )}
+      {run.keepsakes !== undefined && run.keepsakes.length > 0 && (
+        <>
+          <h4>Keepsakes</h4>
+          <ul class="plain-list dungeon-keepsake-list">
+            {run.keepsakes.map((k) => (
+              <li key={k.id}>
+                <strong>{k.name}</strong>: {k.description}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      <RoomStrip rooms={roomStrip(run)} path={run.outcome !== undefined} />
       <TeamBreakdown team={teamBreakdown(run)} />
       <DungeonNext today={today} offset={offset} />
 
@@ -164,6 +191,17 @@ export function DungeonResults({
   );
 }
 
+/** How the run ended as a badge: a path run says Cleared, Home or Defeated; an old run Cleared or Not cleared. */
+function ResultBadge({ run }: { run: DungeonRunSummary }) {
+  if (run.outcome === undefined) return <OutcomeBadge cleared={run.cleared} />;
+  const words = { cleared: 'Cleared', home: 'Home', defeat: 'Defeated' } as const;
+  return (
+    <Tag kind="badge" tone={run.outcome === 'defeat' ? 'bad' : 'good'}>
+      {words[run.outcome]}
+    </Tag>
+  );
+}
+
 /**
  * The rooms of the run as a strip of panels, left to right like a comic: each shows its foe's
  * sprite. A cleared room is muted with a green CLEARED banner across it, the room that was lost
@@ -171,15 +209,19 @@ export function DungeonResults({
  * states are classes (`cleared`, `defeat`, `locked`) that the stylesheet turns into filters; the
  * words say the same, so colour is never the only cue.
  */
-function RoomStrip({ rooms }: { rooms: readonly StripRoom[] }) {
+function RoomStrip({ rooms, path }: { rooms: readonly StripRoom[]; path: boolean }) {
   return (
     <>
-      <h4>Rooms</h4>
-      <ol class="room-strip" aria-label="Rooms, first to last">
+      <h4>{path ? 'Fights' : 'Rooms'}</h4>
+      <ol class={path ? 'room-strip path' : 'room-strip'} aria-label="Rooms, first to last">
         {rooms.map((room) => {
           const art = bossArt(room.foeId);
           return (
-            <li key={room.index} class={`room-panel ${room.state}`} aria-label={room.spoken}>
+            <li
+              key={room.index}
+              class={`room-panel ${room.state}${room.elite ? ' elite' : ''}`}
+              aria-label={room.spoken}
+            >
               <span class="rp-title pix" aria-hidden="true">
                 {room.title}
               </span>
