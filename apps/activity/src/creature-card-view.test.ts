@@ -5,40 +5,13 @@ import {
   cardDomId,
   explorerFacts,
   lockedText,
-  nextParts,
-  nextText,
   ribbonsHeldText,
   speciesSubtitle,
   talentKit,
   xpWords,
 } from './creature-card-view';
 
-describe('the line under the bar', () => {
-  it('says what the next level brings', () => {
-    expect(nextText(sampleCreature('growing'))).toBe('Next: Scarf at 7');
-  });
-
-  it('says what a full creature waits for, and what is missing', () => {
-    expect(nextText(sampleCreature('ribbon ready'))).toBe('Next: the Bronze Ribbon');
-    expect(nextText(sampleCreature('ribbon short'))).toBe(
-      'Next: the Bronze Ribbon · Short of parts.',
-    );
-    expect(nextText(sampleCreature('evolve ready'))).toBe('Next: evolve');
-  });
-
-  it('says so at the top level', () => {
-    expect(nextText(sampleCreature('top level'))).toBe('Top level');
-  });
-
-  it('marks the thing to do or to look forward to as the strong part', () => {
-    expect(nextParts(sampleCreature('growing')).filter((p) => p.strong)).toEqual([
-      { text: 'Scarf at 7', strong: true },
-    ]);
-    expect(nextParts(sampleCreature('ribbon ready')).filter((p) => p.strong)).toEqual([
-      { text: 'the Bronze Ribbon', strong: true },
-    ]);
-  });
-
+describe('the bar', () => {
   it('words the bar', () => {
     expect(xpWords(sampleCreature('growing'))).toBe('140 / 222');
     expect(xpWords(sampleCreature('top level'))).toBe('Top level');

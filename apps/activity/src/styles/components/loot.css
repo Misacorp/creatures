@@ -4,18 +4,42 @@
 }
 
 .loot-items {
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
 }
 
-.loot-item {
+/* One compact item row (ItemRow.tsx): the image on the left, name and rarity badge on the right. No stats. */
+.item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+  text-align: left;
+}
+
+.item-row .item-frame {
+  flex: none;
+  margin: 0;
+}
+
+.item-row-text {
   display: grid;
-  justify-items: center;
-  gap: 0.25rem;
-  text-align: center;
+  gap: 0.125rem;
+  min-width: 0;
 }
 
-.loot-name {
-  font-family: var(--display);
+.item-row-name {
+  font-size: 1.25rem;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.item-row-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
 }
 
 .loot-parts {

@@ -28,9 +28,7 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
             <strong class="pix">{gearName(result.baseId)}</strong>{' '}
             <RarityTag rarity={result.rarity} />
           </p>
-          <p class="muted">
-            {item === undefined ? '' : `${slotName(item.slot)}, `}item level {result.itemLevel}
-          </p>
+          {item !== undefined && <p class="muted">{slotName(item.slot)}</p>}
           {item !== undefined && <ItemLines lines={item.lines} />}
           {result.reach !== 'none' && <p class="muted">{reachName(result.reach)}.</p>}
           {result.upgraded && <p class="good-note">Stepped up to {rarityName(result.rarity)}.</p>}
@@ -127,7 +125,10 @@ export function JobReveal({
         opened={
           <ItemFrame
             rarity={rarity}
-            {...(result.kind === 'craft' ? { baseId: result.baseId } : {})}
+            {...(result.kind === 'craft' ? { baseId: result.baseId, level: result.itemLevel } : {})}
+            {...(result.kind === 'dismantle' && result.items[0] !== undefined
+              ? { level: result.items[0].itemLevel }
+              : {})}
           >
             {result.kind === 'supply' ? (
               <Sprite

@@ -165,16 +165,6 @@ button.cc-open:focus-visible {
   font-size: 1.125rem;
 }
 
-.cc-next {
-  color: var(--haze);
-  font-size: 0.8125rem;
-}
-
-.cc-next b {
-  color: var(--bone);
-  font-weight: 700;
-}
-
 /* Gear icons on the left, talent chips on the right. */
 .cc-kit {
   display: grid;
@@ -210,7 +200,9 @@ button.cc-slot:active:not(:disabled) {
 }
 
 button.cc-slot .item-frame {
-  margin: 0.1875rem;
+  --lv-size: 0.75rem;
+
+  margin: 0.125rem;
 }
 
 .cc-slot-empty {

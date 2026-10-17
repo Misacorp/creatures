@@ -1,35 +1,23 @@
-import { ItemFrame, ItemSprite } from './GearArt';
-import { gearName, slotName, wornInOrder, type WornItem } from './gear-view';
-
-/** The worn item's 12x12 sprite in its rarity frame. */
-export function WornItemFrame({ worn }: { worn: WornItem }) {
-  return (
-    <ItemFrame rarity={worn.rarity} baseId={worn.baseId}>
-      <ItemSprite baseId={worn.baseId} scale={3} />
-    </ItemFrame>
-  );
-}
+import { ItemRow } from './ItemRow';
+import { slotName, wornInOrder, type WornItem } from './gear-view';
 
 /**
- * The read-only list of what a creature wears, one line per item: the framed sprite and the words
- * (name, slot, item level and, when known, the text of its lines). The living room's popover uses it.
+ * The read-only list of what a creature wears, as compact item rows (image with its level in the corner, name,
+ * rarity badge and the slot's name; no stats). The living room's popover uses it.
  */
 export function WornItemLines({ worn }: { worn: readonly WornItem[] }) {
   return (
     <ul class="worn-items" aria-label="Worn gear">
       {wornInOrder(worn).map((item) => (
-        <li key={item.slot} class="gear-line worn-item-line">
-          <WornItemFrame worn={item} />
-          <p class="gear-text">
-            <span class="pix">{gearName(item.baseId)}</span>{' '}
-            <span class="muted">
-              {slotName(item.slot)}, item level {item.itemLevel}
-            </span>
-            {item.lines !== undefined && item.lines.length > 0 && (
-              <span class="muted gear-main"> · {item.lines.join(', ')}</span>
-            )}
-          </p>
-        </li>
+        <ItemRow
+          key={item.slot}
+          baseId={item.baseId}
+          rarity={item.rarity}
+          level={item.itemLevel}
+          scale={3}
+        >
+          <span class="muted pix item-row-slot">{slotName(item.slot)}</span>
+        </ItemRow>
       ))}
     </ul>
   );

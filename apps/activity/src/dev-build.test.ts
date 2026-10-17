@@ -100,6 +100,12 @@ describe('the debug panel and the production build', () => {
         ).toBeGreaterThanOrEqual(4.5);
       }
     }
+    // An item's level is the pixel "Lv 15" label in the image's corner (`.item-lv`); the rarity pips are gone.
+    expect(css).toContain('.item-lv{');
+    expect(css).not.toContain('rarity-mark');
+    // The armchair has a clear gap (at least half a rem) before the Lounge and Lounging words.
+    const gap = /\.armchair-icon\{[^}]*margin-right:([\d.]+)rem/.exec(css);
+    expect(Number(gap?.[1])).toBeGreaterThanOrEqual(0.5);
     // The item picker's list and find-and-filter options were dropped from the game: only the grid ships.
     const js = files.filter((f) => f.name.endsWith('.js'));
     for (const gone of ['Find an item', 'ip-pinned', 'item-find']) {

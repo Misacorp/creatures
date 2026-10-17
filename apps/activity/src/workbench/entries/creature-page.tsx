@@ -15,8 +15,12 @@ import {
   type PageScene,
   type SceneKind,
 } from '../../creature-page/sample';
+import type { GearActions } from '../../gear-actions';
 import { ItemFrame, ItemSprite } from '../../GearArt';
-import type { GearItem } from '../../gear-types';
+import { LootList } from '../../GearLoot';
+import type { GearItem, GrantLoot } from '../../gear-types';
+import { InventoryGrid } from '../../InventoryGrid';
+import { ItemDetail } from '../../ItemDetail';
 import { bool, str } from '../props';
 import type { Entry, Props } from '../types';
 
@@ -29,7 +33,19 @@ interface SceneDef {
   id: string;
   label: string;
   kind: SceneKind;
-  show: 'header' | 'gear' | 'talents' | 'page' | 'drawer' | 'cards' | 'rarities';
+  show:
+    | 'header'
+    | 'gear'
+    | 'talents'
+    | 'page'
+    | 'drawer'
+    | 'cards'
+    | 'rarities'
+    | 'item'
+    | 'loot'
+    | 'bag';
+  /** `item`: the bag item the card shows (its base id and level in the sample bag). */
+  pick?: string;
   open?: PageOpen;
   /** The gear view has not loaded yet. */
   loading?: boolean;
@@ -109,6 +125,22 @@ const SCENE_LIST: readonly SceneDef[] = [
   { id: 'F4', label: 'F4 · Page, ribbon ready', kind: 'ribbon ready', show: 'page' },
   { id: 'F5', label: 'F5 · Page, ready to evolve', kind: 'evolve ready', show: 'page' },
   { id: 'C1', label: 'C1 · Cards: rarity name colours', kind: 'level 15', show: 'cards' },
+  {
+    id: 'W1',
+    label: 'W1 · Item detail (Workshop): an epic hat with a local bonus',
+    kind: 'level 15',
+    show: 'item',
+    pick: 'hat:0',
+  },
+  {
+    id: 'W2',
+    label: 'W2 · Item detail: a charm (no stats)',
+    kind: 'level 15',
+    show: 'item',
+    pick: 'charm:1',
+  },
+  { id: 'L1', label: 'L1 · Loot list, compact rows', kind: 'level 15', show: 'loot' },
+  { id: 'B1', label: 'B1 · Workshop bag', kind: 'level 15', show: 'bag' },
   {
     id: 'R1',
     label: 'R1 · Rarity colours: common, rare, epic',
@@ -305,13 +337,90 @@ function Rarities({ def }: { def: SceneDef }) {
           <h3 class="cp-title">Item frames</h3>
           <div class="v3-rarities">
             {worn.map((item) => (
-              <ItemFrame key={item.id} rarity={item.rarity} baseId={item.baseId}>
+              <ItemFrame
+                key={item.id}
+                rarity={item.rarity}
+                baseId={item.baseId}
+                level={item.itemLevel}
+              >
                 <ItemSprite baseId={item.baseId} scale={5} />
               </ItemFrame>
             ))}
           </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+const NO_JOB_ACTIONS: GearActions = {
+  equip: () => Promise.resolve(undefined),
+  equipBest: () => Promise.resolve(undefined),
+  dismissNotice: () => Promise.resolve(undefined),
+  startJob: () => Promise.resolve(undefined),
+  previewCraft: () => new Promise(() => undefined),
+  previewDismantle: () => new Promise(() => undefined),
+  claimJob: () => Promise.resolve(undefined),
+};
+
+/** The Workshop's item card for one item of the sample bag ("hat:0" is the first hat of the table). */
+function ItemScene({ def }: { def: SceneDef }) {
+  const { gear, state } = pageScene(def.kind);
+  const [slot, index] = (def.pick ?? 'hat:0').split(':');
+  const item = gear.items.filter((i) => i.slot === slot)[Number(index)];
+  if (item === undefined) return null;
+  return (
+    <div>
+      <div class="workshop">
+        <ItemDetail
+          item={item}
+          gear={gear}
+          creatures={state.creatures}
+          busy={false}
+          actions={NO_JOB_ACTIONS}
+          onGone={() => undefined}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** A loot list of five items of mixed rarity (as the expedition claim, the dungeon results and the finale show it). */
+function LootScene() {
+  const loot: GrantLoot = {
+    gear: [
+      { id: 'a', baseId: 'emberkeepers-crown', rarity: 'epic', itemLevel: 15 },
+      { id: 'b', baseId: 'forge-scarf', rarity: 'rare', itemLevel: 14 },
+      { id: 'c', baseId: 'trail-charm', rarity: 'common', itemLevel: 8 },
+      { id: 'd', baseId: 'festival-hearth-scarf', rarity: 'rare', itemLevel: 13 },
+      { id: 'e', baseId: 'kelp-cap', rarity: 'common', itemLevel: 2 },
+    ],
+    converted: [],
+    parts: {},
+    blueprints: [],
+  };
+  return (
+    <div>
+      <section class="card-item">
+        <LootList loot={loot} label="Loot" />
+      </section>
+    </div>
+  );
+}
+
+/** The Workshop's bag grid. */
+function BagScene({ def }: { def: SceneDef }) {
+  const { gear, state } = pageScene(def.kind);
+  return (
+    <div>
+      <div class="workshop">
+        <InventoryGrid
+          items={gear.items.slice(0, 18)}
+          creatures={state.creatures}
+          selectedId={gear.items[0]?.id ?? null}
+          onSelect={() => undefined}
+        />
+      </div>
     </div>
   );
 }
@@ -328,6 +437,12 @@ function Scene({ p }: { p: Props }) {
         <Excerpt def={{ ...def, kind }} bait={bait} />
       ) : def.show === 'cards' ? (
         <RarityCards />
+      ) : def.show === 'item' ? (
+        <ItemScene def={{ ...def, kind }} />
+      ) : def.show === 'loot' ? (
+        <LootScene />
+      ) : def.show === 'bag' ? (
+        <BagScene def={{ ...def, kind }} />
       ) : def.show === 'rarities' ? (
         <Rarities def={{ ...def, kind }} />
       ) : (
@@ -342,7 +457,7 @@ const creaturePage: Entry = {
   file: 'apps/activity/src/CreaturePage.tsx',
   group: 'Creatures & game pieces',
   description:
-    "A creature's page, opened from its card in the list's place: back at the top left and Lounge at the top right, one head row (portrait, the name in its rarity colour, element, level, the experience bar), tags (the species name of a nicknamed creature, element and role), the ribbon, evolve and waiting-catch buttons when ready, stats, the finale ability, gear and talents as slots (a tap opens a bottom drawer: the item picker grid with its detail panel, or the Talent Book), About and Rename. Pick a scene: H = header, G = gear slots, P = item picker, T = talent slots and Talent Book, F = the full page, C = cards, R = rarity colours. The scenes are live: equip, take off and use a talent.",
+    "A creature's page, opened from its card in the list's place: back at the top left and Lounge at the top right, one head row (portrait, the name in its rarity colour, element, level, the experience bar), tags (the species name of a nicknamed creature, element and role), the ribbon, evolve and waiting-catch buttons when ready, stats, the finale ability, gear and talents as slots (a tap opens a bottom drawer: the item picker grid with its detail panel, or the Talent Book), About and Rename. Pick a scene: H = header, G = gear slots, P = item picker, T = talent slots and Talent Book, F = the full page, C = cards, R = rarity colours, W = the Workshop's item detail, L = a compact loot list, B = the Workshop bag. The scenes are live: equip, take off and use a talent.",
   controls: {
     scene: { kind: 'select', options: SCENE_IDS },
     banner: { kind: 'toggle' },

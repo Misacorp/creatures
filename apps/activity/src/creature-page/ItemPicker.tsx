@@ -1,11 +1,11 @@
 import { useState } from 'preact/hooks';
 import type { Creature } from '../api';
-import { ItemSprite } from '../GearArt';
-import type { GearItem, GearRarity, GearSlot } from '../gear-types';
-import { gearName, itemLabel, rarityName, slotName } from '../gear-view';
-import { ItemLines } from '../ItemLines';
+import { ItemLevel, ItemSprite } from '../GearArt';
+import type { GearItem, GearSlot } from '../gear-types';
+import { itemLabel, rarityName, slotName } from '../gear-view';
+import { ItemCard } from '../ItemCard';
 import { Drawer } from '../ui/Drawer';
-import { compactReason, firstPick, pickerChoices, statRows } from './picker-view';
+import { compactReason, firstPick, pickerChoices } from './picker-view';
 
 export interface ItemPickerProps {
   open: boolean;
@@ -58,22 +58,16 @@ function ItemCell({
             Worn
           </span>
         )}
-        <span class="ip-cell-level pix" aria-hidden="true">
-          {item.itemLevel}
-        </span>
+        <ItemLevel level={item.itemLevel} />
       </button>
     </li>
   );
 }
 
-function RarityWord({ rarity }: { rarity: GearRarity }) {
-  return <span class={`ip-rarity pix rarity-${rarity}`}>{rarityName(rarity)}</span>;
-}
-
 /**
- * The panel pinned at the bottom of the drawer: the selected item. All of it is in the pixel font. First
- * its name, level, rarity and button, then a white block of base stats (one row each: the base number and
- * the bonus its local lines add, "Attack 26 +15"), a divider, and the modifiers with their values and tier pips.
+ * The panel pinned at the bottom of the drawer: the selected item as the one item card (image with its level at
+ * the top left, name, rarity badge and base stats, a divider, the modifiers), with Equip, Take off or the reason
+ * it cannot be worn at the top right. All of it is in the pixel font.
  */
 function DetailPanel({
   cell,
@@ -87,67 +81,41 @@ function DetailPanel({
   onTakeOff: (item: GearItem) => void;
 }) {
   const { item, worn, wornBy, blocked } = cell;
-  const rows = statRows(item.stats);
   return (
-    <section class="ip-detail pix" aria-label="Selected item">
-      <div class="ip-detail-head">
-        <ItemSprite baseId={item.baseId} scale={4} />
-        <div class="ip-detail-title">
-          <p class="ip-title">
-            <span class="ip-name">{gearName(item.baseId)}</span>
-            <span class="ip-level">Lv {item.itemLevel}</span>
-            <RarityWord rarity={item.rarity} />
-          </p>
-          {wornBy !== null && <p class="ip-on">On {wornBy}</p>}
-        </div>
-        {worn ? (
-          <button
-            type="button"
-            class="ip-act"
-            disabled={busy}
-            onClick={() => {
-              onTakeOff(item);
-            }}
-          >
-            Take off
-          </button>
-        ) : blocked !== null ? (
-          <span class="ip-reason">{blocked}</span>
-        ) : (
-          <button
-            type="button"
-            class="ip-act primary"
-            disabled={busy}
-            onClick={() => {
-              onEquip(item);
-            }}
-          >
-            Equip
-          </button>
-        )}
-      </div>
-      {rows.length > 0 && (
-        <ul class="ip-base" aria-label="Base stats">
-          {rows.map((row) => (
-            <li key={row.stat} class="ip-row-stat">
-              <span class="ip-stat-label">{row.label}</span> <span>{row.base}</span>
-              {row.bonus !== null && (
-                <>
-                  {' '}
-                  <span
-                    class="ip-stat-bonus"
-                    aria-label={`plus ${row.bonus.slice(1)} from its lines`}
-                  >
-                    {row.bonus}
-                  </span>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      {rows.length > 0 && item.lines.length > 0 && <hr class="ip-divider" />}
-      <ItemLines lines={item.lines} />
+    <section class="ip-detail" aria-label="Selected item">
+      <ItemCard
+        item={item}
+        plainRarity
+        spriteScale={4}
+        {...(wornBy === null ? {} : { note: <p class="ip-on">On {wornBy}</p> })}
+        aside={
+          worn ? (
+            <button
+              type="button"
+              class="ip-act"
+              disabled={busy}
+              onClick={() => {
+                onTakeOff(item);
+              }}
+            >
+              Take off
+            </button>
+          ) : blocked !== null ? (
+            <span class="ip-reason">{blocked}</span>
+          ) : (
+            <button
+              type="button"
+              class="ip-act primary"
+              disabled={busy}
+              onClick={() => {
+                onEquip(item);
+              }}
+            >
+              Equip
+            </button>
+          )
+        }
+      />
     </section>
   );
 }

@@ -32,25 +32,37 @@ export function ItemSprite({
   );
 }
 
-/** The marks that tell the rarities apart without colour: one pip to three. A Festival piece adds a star. */
-const RARITY_MARK: Readonly<Record<GearRarity, string>> = {
-  common: '●',
-  rare: '●●',
-  epic: '●●●',
-};
+/**
+ * An item's level, the one way it is shown everywhere: a small pixel "Lv 15" in the bottom-right corner of the
+ * item's image (outlined so it reads on any item colour). The creature's level keeps its own yellow badge, so
+ * the two never look alike. The printed label is hidden from assistive technology: whatever holds the image
+ * says the item level in its own spoken label or after the item's name.
+ */
+export function ItemLevel({ level }: { level: number }) {
+  return (
+    <span class="item-lv pix" aria-hidden="true">
+      Lv {level}
+    </span>
+  );
+}
 
 /**
- * The frame around an item sprite: one single border in the rarity colour and the rarity's pips. A Festival piece
- * (it is a base, not a rarity: pass its `baseId`) also gets a lantern-gold dashed outline and a star.
+ * The frame around an item sprite: one single border in the rarity colour and, when the level is known, the
+ * item level in the corner (`ItemLevel`). Rarity is the border colour (and a rarity badge where there is
+ * room), never pips. A Festival piece (it is a base, not a rarity: pass its `baseId`) also gets a
+ * lantern-gold dashed outline.
  */
 export function ItemFrame({
   rarity,
   baseId,
+  level,
   children,
   class: extra,
 }: {
   rarity: GearRarity;
   baseId?: string;
+  /** The item's level; leave out when the item does not exist yet (a blueprint) or the level is not known. */
+  level?: number;
   children: ComponentChildren;
   class?: string;
 }) {
@@ -60,10 +72,7 @@ export function ItemFrame({
       class={`item-frame rarity-${rarity}${festival ? ' festival' : ''}${extra === undefined ? '' : ` ${extra}`}`}
     >
       {children}
-      <span class="rarity-mark" aria-hidden="true">
-        {RARITY_MARK[rarity]}
-        {festival ? '★' : ''}
-      </span>
+      {level !== undefined && <ItemLevel level={level} />}
     </span>
   );
 }
@@ -77,10 +86,16 @@ export function FestivalTag() {
   );
 }
 
-/** The rarity as a tappable tag ("Rare"), with its explanation. */
-export function RarityTag({ rarity }: { rarity: GearRarity }) {
+/**
+ * The rarity as a small badge in the pixel font and the rarity's colour ("Rare"). Tappable (it opens the
+ * rarity's explanation) unless `plain`, which a badge inside a dialog or a button should be.
+ */
+export function RarityTag({ rarity, plain = false }: { rarity: GearRarity; plain?: boolean }) {
   return (
-    <Tag entry={GLOSSARY_IDS.gearRarity(rarity)} class={`rarity-tag rarity-${rarity}`}>
+    <Tag
+      {...(plain ? {} : { entry: GLOSSARY_IDS.gearRarity(rarity) })}
+      class={`rarity-tag pix rarity-${rarity}`}
+    >
       {rarityName(rarity)}
     </Tag>
   );

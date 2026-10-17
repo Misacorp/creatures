@@ -280,24 +280,21 @@ const wornItemLines: Entry = {
   file: 'apps/activity/src/WornItemLine.tsx',
   group: 'Creatures & game pieces',
   description:
-    "What a creature wears in a living room creature's popover: one line per item with its picture in the rarity frame, its name, slot and item level, and the text of its lines. A creature card on the Creatures screen shows the same items as three slots instead.",
+    "What a creature wears in a living room creature's popover: one compact row per item with its picture (rarity border, item level in the corner), its name, a rarity badge and the slot. No stats. The Creatures screen shows the same items as three slots instead.",
   controls: {
     item: { kind: 'select', options: GEAR_BASE_IDS },
     rarity: { kind: 'select', options: RARITIES },
     itemLevel: { kind: 'number', min: 1, max: 20 },
-    hasLines: { kind: 'toggle' },
   },
   defaults: {
     item: GEAR_BASE_IDS[0] ?? 'trail-cap',
     rarity: 'rare',
     itemLevel: 8,
-    hasLines: true,
   },
   presets: [
     { name: 'Plain', props: {} },
     { name: 'Epic, item level 20', props: { itemLevel: 20, rarity: 'epic' } },
     { name: 'Festival', props: { item: 'festival-hearth-scarf' } },
-    { name: 'Lines not known yet', props: { hasLines: false } },
   ],
   render: (p) => {
     const baseId = str(p, 'item');
@@ -311,7 +308,6 @@ const wornItemLines: Entry = {
             slot,
             rarity,
             itemLevel: num(p, 'itemLevel'),
-            ...(bool(p, 'hasLines') ? { lines: ['Attack +4%', 'Tide Hunter +7%'] } : {}),
           },
         ]}
       />

@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { ItemFrame, ItemSprite } from '../../GearArt';
+import { ItemLevel, ItemSprite } from '../../GearArt';
 import { Drawer } from '../../ui/Drawer';
 import { Slot, SlotRow } from '../../ui/Slot';
 import { TalentInSlot } from '../../creature-page/PageSlots';
@@ -21,13 +21,12 @@ function GearFilled({ level }: { level: number }) {
     <Slot
       kind="gear"
       state="filled"
-      corner={`Lv ${String(level)}`}
+      rarity="rare"
       label={`Hat: Kelp Cap, item level ${String(level)}. Change`}
       onClick={NOTHING}
     >
-      <ItemFrame rarity="rare" baseId="kelp-cap">
-        <ItemSprite baseId="kelp-cap" scale={4} />
-      </ItemFrame>
+      <ItemSprite baseId="kelp-cap" scale={6} />
+      <ItemLevel level={level} />
     </Slot>
   );
 }
@@ -121,13 +120,15 @@ function SlotDemo({ p }: { p: Props }) {
         kind={kind}
         state="filled"
         label="Filled slot"
-        {...(corner === '' ? {} : { corner })}
+        {...(kind === 'gear' ? { rarity: 'rare' as const } : {})}
+        {...(kind === 'talent' && corner !== '' ? { corner } : {})}
         onClick={NOTHING}
       >
         {kind === 'gear' ? (
-          <ItemFrame rarity="rare" baseId="kelp-cap">
-            <ItemSprite baseId="kelp-cap" scale={4} />
-          </ItemFrame>
+          <>
+            <ItemSprite baseId="kelp-cap" scale={6} />
+            <ItemLevel level={4} />
+          </>
         ) : (
           <TalentInSlot talent={bool(p, 'golden') ? GOLDEN : PLAIN} />
         )}
@@ -141,7 +142,7 @@ const slot: Entry = {
   file: 'apps/activity/src/ui/Slot.tsx',
   group: 'Slots',
   description:
-    'One slot for a creature\'s gear (Hat, Scarf, Charm) and its talents, side by side across the full width: filled it shows the item icon (with its level tiny in the corner) or the talent name and number (golden ones shimmer), empty it names itself ("Scarf", "Talent"), locked it is muted with the level it opens at ("Lv 7"). A tappable one is a button that opens a Drawer (also SlotRow, the row they stand in).',
+    'One slot for a creature\'s gear (Hat, Scarf, Charm) and its talents, side by side across the full width: filled it shows the item icon (with its level, "Lv 4", in the corner) or the talent name and number (golden ones shimmer), empty it names itself ("Scarf", "Talent"), locked it is muted with the level it opens at ("Lv 7"). A tappable one is a button that opens a Drawer (also SlotRow, the row they stand in).',
   covers: ['SlotRow'],
   controls: {
     layout: { kind: 'select', options: LAYOUTS },
@@ -158,7 +159,7 @@ const slot: Entry = {
     state: 'filled',
     name: 'Scarf',
     opensAt: 7,
-    corner: 'Lv 4',
+    corner: '',
     golden: true,
   },
   presets: [

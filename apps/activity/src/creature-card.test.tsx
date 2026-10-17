@@ -95,14 +95,16 @@ function draw(
 const kind = (name: SampleKind): Creature => sampleCreature(name);
 
 describe('the small card', () => {
-  it('shows who it is, the level, the bar with its words and what comes next', () => {
+  it('shows who it is, the level and the bar with its words, and nothing forward-looking', () => {
     const creature = kind('growing');
     const { card } = draw(creature);
     expect(nameOf(find(card, (e) => e.localName === 'h3')[0] as FakeElement)).toBe('Cindle');
     expect(visibleText(card)).toContain('Lv 6');
     const bar = find(card, (e) => e.getAttribute('role') === 'progressbar')[0];
     expect(bar?.getAttribute('aria-valuetext')).toBe('140 / 222');
-    expect(visibleText(byClass(card, 'cc-next')[0] as FakeElement)).toBe('Next: Scarf at 7');
+    expect(byClass(card, 'cc-next')).toHaveLength(0);
+    expect(visibleText(card)).not.toContain('Next');
+    expect(visibleText(card)).not.toContain('Scarf at 7');
   });
 
   it('draws the level badge in the pixel font with no "?" (the tap still opens its explanation)', () => {
@@ -220,12 +222,11 @@ describe('the one gold button', () => {
     expect(actions.onRibbon).toHaveBeenCalledTimes(1);
   });
 
-  it('says what is missing and has no button while the ribbon is not ready', () => {
+  it('has no button and no "Next" line while the ribbon is not ready', () => {
     const { card } = draw(kind('ribbon short'));
     expect(byClass(card, 'cc-do')).toHaveLength(0);
-    expect(visibleText(byClass(card, 'cc-next')[0] as FakeElement)).toBe(
-      'Next: the Bronze Ribbon · Short of parts.',
-    );
+    expect(byClass(card, 'cc-next')).toHaveLength(0);
+    expect(visibleText(card)).not.toContain('Next');
   });
 
   it('evolves when evolution is ready', () => {
@@ -291,10 +292,10 @@ describe('opening the page', () => {
 
   it('opens the page on a tap anywhere on the card, but not on its own buttons', () => {
     const { card, page: p, onOpen } = draw(kind('ribbon ready'));
-    // The picture, the experience bar, the line under it and the card itself are all part of the tap.
+    // The picture, the name block, the experience bar and the card itself are all part of the tap.
     for (const part of [
       byClass(card, 'portrait')[0],
-      byClass(card, 'cc-next')[0],
+      byClass(card, 'cc-id')[0],
       find(card, (e) => e.getAttribute('role') === 'progressbar')[0],
       card,
     ]) {

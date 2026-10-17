@@ -4,7 +4,6 @@ import {
   cardDomId,
   clickedButton,
   lockedText,
-  nextParts,
   talentKit,
   type PageFocus,
 } from './creature-card-view';
@@ -17,7 +16,7 @@ import { gearName, itemLabel, slotName } from './gear-view';
 import { ItemFrame, ItemSprite } from './GearArt';
 
 /**
- * One creature, small: sprite, name, element, level, the XP bar with what comes next, the three gear
+ * One creature, small: sprite, name, element, level, the XP bar, the three gear
  * slots as icons, the talents as chips and, only when something is ready, one gold button (the ribbon,
  * the evolution, a waiting catch to answer or a talent slot to fill). Tapping anywhere else on the card
  * opens the creature's page (`CreaturePage`): the card handles the click, and the name is a real button for
@@ -93,11 +92,6 @@ export function CreatureCard({
           onOpen(null);
         }}
       />
-      <p class="cc-next">
-        {nextParts(creature).map((part) =>
-          part.strong ? <b key={part.text}>{part.text}</b> : part.text,
-        )}
-      </p>
       <div class="cc-kit">
         <ul class="cc-gear" aria-label="Gear">
           {GEAR_SLOTS.map((slot) => {
@@ -125,8 +119,8 @@ export function CreatureCard({
                   }}
                 >
                   {worn !== undefined ? (
-                    <ItemFrame rarity={worn.rarity} baseId={worn.baseId}>
-                      <ItemSprite baseId={worn.baseId} scale={2} />
+                    <ItemFrame rarity={worn.rarity} baseId={worn.baseId} level={worn.itemLevel}>
+                      <ItemSprite baseId={worn.baseId} scale={3} />
                     </ItemFrame>
                   ) : (
                     <span class="cc-slot-empty pix" aria-hidden="true">

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { CreaturePicker } from './CreaturePicker';
 import { creatureName } from './game';
+import { ItemFrame, ItemSprite } from './GearArt';
 import { GlossaryTag } from './Glossary';
 import type { DismantlePreview, GearItem, GearState } from './gear-types';
 import {
@@ -82,7 +83,7 @@ export function DismantlePanel({
   const preview = state.status === 'ready' ? state.preview : null;
   const title =
     items.length === 1
-      ? `Dismantle ${gearName(first.baseId)} (item level ${String(first.itemLevel)})?`
+      ? `Dismantle ${gearName(first.baseId)}?`
       : `Dismantle ${String(items.length)} ${rarity} items?`;
   const noCreature = creatureId === null;
   return (
@@ -97,6 +98,15 @@ export function DismantlePanel({
       <h4 id={`dismantle-${first.id}-q`} class="pix">
         {title} <GlossaryTag entry="job-dismantle" look="help" />
       </h4>
+      <ul class="dismantle-items" aria-label="Items to take apart">
+        {items.map((item) => (
+          <li key={item.id}>
+            <ItemFrame rarity={item.rarity} baseId={item.baseId} level={item.itemLevel}>
+              <ItemSprite baseId={item.baseId} scale={4} />
+            </ItemFrame>
+          </li>
+        ))}
+      </ul>
       <CreaturePicker
         name={`dismantle-${first.id}-who`}
         options={options}

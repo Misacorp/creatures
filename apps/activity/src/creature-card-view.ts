@@ -1,10 +1,10 @@
 /**
- * What the focused creature card says, as plain functions: the line under the XP bar, the talent chips,
+ * What the focused creature card says, as plain functions: the talent chips,
  * the status badges and the lines of the creature page. Pure; `CreatureCard.tsx` and `CreaturePage.tsx`
  * draw it. The server decides every number; nothing here computes game rules.
  */
 import type { Creature, GameState } from './api';
-import { ribbonBlocker, ribbonName } from './experience';
+import { ribbonName } from './experience';
 import { speciesName } from './game';
 import type { GearSlot } from './gear-types';
 import { slotTitle } from './talent-view';
@@ -14,55 +14,6 @@ import { slotTitle } from './talent-view';
  * card), on the talents (the chips, or the "fill a slot" button), or (null) at the top.
  */
 export type PageFocus = { part: 'gear'; slot: GearSlot } | { part: 'talents' } | null;
-
-/** A piece of the "Next" line; the strong part is the thing to do or to look forward to. */
-export interface NextPart {
-  text: string;
-  strong: boolean;
-}
-
-/**
- * The one line under the XP bar: what the creature waits for ("Next: the Bronze Ribbon", with what is
- * missing when it cannot yet), or what its next level brings ("Next: Scarf at 7"). Empty when there is
- * nothing to say.
- */
-export function nextParts(creature: Creature): NextPart[] {
-  if (creature.expNeeded === null) return [{ text: 'Top level', strong: false }];
-  if (creature.waiting) {
-    const ribbon = creature.ribbon;
-    if (ribbon !== null) {
-      const missing = ribbonBlocker(ribbon);
-      return [
-        { text: 'Next: ', strong: false },
-        { text: `the ${ribbonName(ribbon.id)}`, strong: true },
-        { text: missing === null ? '' : ` · ${missing}`, strong: false },
-      ];
-    }
-    if (creature.evolution !== undefined) {
-      return [
-        { text: 'Next: ', strong: false },
-        { text: 'evolve', strong: true },
-      ];
-    }
-    return [{ text: 'Waiting', strong: false }];
-  }
-  return creature.nextUnlock === null
-    ? []
-    : [
-        { text: 'Next: ', strong: false },
-        {
-          text: `${creature.nextUnlock.name} at ${String(creature.nextUnlock.level)}`,
-          strong: true,
-        },
-      ];
-}
-
-/** The text of the line, as one string (for tests and spoken labels). */
-export function nextText(creature: Creature): string {
-  return nextParts(creature)
-    .map((p) => p.text)
-    .join('');
-}
 
 /** The words drawn over the XP bar: "140 / 222", or "Top level". */
 export function xpWords(creature: Creature): string {

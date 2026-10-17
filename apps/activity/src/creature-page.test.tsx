@@ -354,8 +354,8 @@ describe('the creature page: gear slots', () => {
     expect(byClass(root, 'item-frame')).toHaveLength(0);
     expect(hat?.getAttribute('class')).toContain('rarity-epic');
     expect(scarf?.getAttribute('class')).toContain('rarity-rare');
-    expect(first(byClass(hat as FakeElement, 'slot-corner')).textContent).toBe('Lv 15');
-    expect(first(byClass(scarf as FakeElement, 'slot-corner')).textContent).toBe('Lv 12');
+    expect(visibleText(first(byClass(hat as FakeElement, 'item-lv')))).toBe('Lv 15');
+    expect(visibleText(first(byClass(scarf as FakeElement, 'item-lv')))).toBe('Lv 12');
     expect(find(hat as FakeElement, (e) => e.localName === 'canvas')).toHaveLength(1);
     expect(nameOf(hat as FakeElement)).toBe(
       "Hat: Emberkeeper's Crown, item level 15, Epic. Change",
@@ -381,8 +381,10 @@ describe('the creature page: the item picker drawer', () => {
     expect(byClass(dialog, 'ip-cell').length).toBeGreaterThan(10);
     expect(byClass(dialog, 'item-find')).toHaveLength(0);
     expect(byClass(dialog, 'ip-row')).toHaveLength(0);
-    // No framed box round an item inside the drawer: one outline per cell.
-    expect(byClass(dialog, 'item-frame')).toHaveLength(0);
+    // No framed box round an item inside the grid: one outline per cell, with the level in its corner.
+    expect(byClass(first(byClass(dialog, 'ip-grid')), 'item-frame')).toHaveLength(0);
+    const cell = first(byClass(dialog, 'ip-cell'));
+    expect(visibleText(first(byClass(cell, 'item-lv')))).toMatch(/^Lv \d+$/);
   });
 
   it('puts the worn item first and selected, with Take off, and takes it off', async () => {
@@ -466,37 +468,51 @@ describe('the creature page: the item picker drawer', () => {
 });
 
 describe('the creature page: the item detail panel', () => {
-  it('is all pixel font: base stats first, then a divider, then the modifiers with their pips', () => {
+  it('is the item card: image with its level, name, badge and stats, then a divider and the modifiers', () => {
     const { root, page: p } = draw('level 15');
     p.click(slotButton(root, /^Hat: /));
     const detail = first(byClass(first(byRole(root, 'dialog')), 'ip-detail'));
-    expect(detail.getAttribute('class')).toContain('pix');
-    const kids = find(detail, (e) =>
-      ['ip-base', 'ip-divider', 'line-list'].some((c) =>
+    const card = first(byClass(detail, 'idc'));
+    expect(card.getAttribute('class')).toContain('pix');
+    const kids = find(card, (e) =>
+      ['idc-head', 'idc-divider', 'line-list'].some((c) =>
         (e.getAttribute('class') ?? '').split(' ').includes(c),
       ),
     ).map((e) => (e.getAttribute('class') ?? '').split(' ')[0]);
-    expect(kids).toEqual(['ip-base', 'ip-divider', 'line-list']);
+    expect(kids).toEqual(['idc-head', 'idc-divider', 'line-list']);
+    // The image is first in the head and carries the item level in its corner; no pips, no level text beside it.
+    const head = first(byClass(card, 'idc-head'));
+    expect(first(head.childNodes as FakeElement[]).getAttribute('class')).toContain('item-frame');
+    expect(visibleText(first(byClass(head, 'item-lv')))).toBe('Lv 15');
+    expect(byClass(card, 'rarity-mark')).toHaveLength(0);
+    expect(byClass(first(byClass(head, 'idc-info')), 'item-lv')).toHaveLength(0);
+    // The name (the level is only spoken) and a plain (not tappable) rarity badge are in the info column.
+    expect(visibleText(first(byClass(head, 'idc-name')))).toBe(
+      "Emberkeeper's Crown, item level 15",
+    );
+    expect(byClass(first(byClass(head, 'idc-name')), 'visually-hidden')).toHaveLength(1);
+    expect(visibleText(first(byClass(head, 'rarity-tag')))).toBe('Epic');
     // One row per stat: the base value and its local bonus after it.
-    const rows = byClass(first(byClass(detail, 'ip-base')), 'ip-row-stat').map((r) =>
+    const rows = find(first(byClass(card, 'idc-stats')), (e) => e.localName === 'li').map((r) =>
       visibleText(r),
     );
     expect(rows).toHaveLength(2);
     expect(rows[0]).toMatch(/^Attack \d+ \+\d+$/);
     expect(rows[1]).toMatch(/^HP \d+$/);
     // The modifiers keep their values and tier pips.
-    expect(visibleText(detail)).toContain('(this item)');
-    expect(byClass(detail, 'pips').length).toBeGreaterThan(0);
+    expect(visibleText(card)).toContain('(this item)');
+    expect(byClass(card, 'pips').length).toBeGreaterThan(0);
     // The bonus is a distinct element, so a stat with none shows the base alone.
-    expect(byClass(detail, 'ip-stat-bonus')).toHaveLength(1);
+    expect(byClass(card, 'idc-stat-bonus')).toHaveLength(1);
   });
 
-  it('has no divider for a Charm, which has no base stats', () => {
+  it('has no stat rows for a Charm: name, badge, divider, modifiers', () => {
     const { root, page: p } = draw('level 15');
     p.click(slotButton(root, /^Charm: /));
     const detail = first(byClass(first(byRole(root, 'dialog')), 'ip-detail'));
-    expect(byClass(detail, 'ip-base')).toHaveLength(0);
-    expect(byClass(detail, 'ip-divider')).toHaveLength(0);
+    expect(byClass(detail, 'idc-stats')).toHaveLength(0);
+    expect(byClass(detail, 'idc-divider')).toHaveLength(1);
+    expect(byClass(detail, 'line-list')).toHaveLength(1);
   });
 });
 

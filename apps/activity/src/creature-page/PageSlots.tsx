@@ -1,6 +1,6 @@
 import { GEAR_SLOTS, RULES } from '@creatures/game';
 import type { Creature } from '../api';
-import { ItemSprite } from '../GearArt';
+import { ItemLevel, ItemSprite } from '../GearArt';
 import type { GearSlot, GearState } from '../gear-types';
 import { itemLabel, rarityName, slotName } from '../gear-view';
 import type { TalentView } from '../talent-types';
@@ -9,8 +9,8 @@ import { Slot, SlotRow } from '../ui/Slot';
 
 /**
  * A creature's three gear slots, side by side across the full width. Filled: the item's sprite, large and
- * on its own, inside the slot's one border in the rarity colour, with the item level ("Lv 2") as a tiny number in the
- * corner (the words are in the spoken label). Open and empty: the slot's name. Not open yet: muted, a
+ * on its own, inside the slot's one border in the rarity colour, with the item level ("Lv 2", `ItemLevel`, the same
+ * label as on every item image) in the corner (the words are in the spoken label). Open and empty: the slot's name. Not open yet: muted, a
  * padlock over the slot's name and the level it opens at. Tapping an open one asks for its picker.
  */
 export function GearSlots({
@@ -64,12 +64,12 @@ export function GearSlots({
             kind="gear"
             state="filled"
             rarity={worn.rarity}
-            corner={`Lv ${String(worn.itemLevel)}`}
             label={`${name}: ${itemLabel(worn.baseId, worn.itemLevel)}, ${rarityName(worn.rarity)}. Change`}
             expanded={openSlot === slot}
             onClick={open}
           >
             <ItemSprite baseId={worn.baseId} scale={6} />
+            <ItemLevel level={worn.itemLevel} />
           </Slot>
         );
       })}

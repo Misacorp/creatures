@@ -3,11 +3,11 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { creatureName } from './game';
 import type { GearActions } from './gear-actions';
-import { FestivalTag, ItemFrame, ItemSprite, RarityTag } from './GearArt';
+import { FestivalTag } from './GearArt';
 import type { GearItem, GearState } from './gear-types';
 import { detailLines, gearName, itemElement, needsText, slotName, wearReason } from './gear-view';
 import { GlossaryTag } from './Glossary';
-import { ItemLines, ItemStats } from './ItemLines';
+import { ItemCard } from './ItemCard';
 import { DismantlePanel } from './ItemPanels';
 import { ElementChip } from './sprites/ElementChip';
 import { Accordion } from './ui/Accordion';
@@ -97,7 +97,7 @@ function EquipPanel({
 }
 
 /**
- * One item of the bag: its slot, item level and lines with their tiers, who wears it and what you
+ * One item of the bag: its card (image with its level, name, rarity, base stats, modifiers with their tiers), who wears it and what you
  * can do with it (Equip or Take off, Dismantle). Where it came from and who made it sit one tap away
  * under "Details".
  */
@@ -131,29 +131,20 @@ export function ItemDetail({
 
   return (
     <section class="item-detail card-item" aria-labelledby={`item-${item.id}-name`}>
-      <div class="item-head">
-        <ItemFrame rarity={item.rarity} baseId={item.baseId} class="big">
-          <ItemSprite baseId={item.baseId} scale={6} />
-        </ItemFrame>
-        <div class="item-title">
-          <h3 id={`item-${item.id}-name`} tabIndex={-1} ref={heading}>
-            {gearName(item.baseId)}
-          </h3>
-          <p class="tags">
-            <RarityTag rarity={item.rarity} />
-            {item.festival && <FestivalTag />}
-            <GlossaryTag entry={`gear-slot-${item.slot}`} class="slot-tag">
-              {slotName(item.slot)}
-            </GlossaryTag>
-            <GlossaryTag entry="gear-item-level" class="lvl">
-              Item level {item.itemLevel}
-            </GlossaryTag>
-            {element !== null && <ElementChip element={element} />}
-          </p>
-        </div>
-      </div>
-      <ItemStats stats={item.stats} />
-      <ItemLines lines={item.lines} />
+      <ItemCard
+        item={item}
+        heading
+        nameId={`item-${item.id}-name`}
+        nameRef={heading}
+        spriteScale={6}
+      />
+      <p class="tags item-tags">
+        {item.festival && <FestivalTag />}
+        <GlossaryTag entry={`gear-slot-${item.slot}`} class="slot-tag pix">
+          {slotName(item.slot)}
+        </GlossaryTag>
+        {element !== null && <ElementChip element={element} />}
+      </p>
       <p>
         {wearer !== undefined && (
           <>

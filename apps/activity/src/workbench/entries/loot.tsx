@@ -17,7 +17,7 @@ import {
   partCountItems,
 } from '../../GearArt';
 import { LootList } from '../../GearLoot';
-import { ItemLines, ItemStats } from '../../ItemLines';
+import { ItemCard } from '../../ItemCard';
 import { pileLabel } from '../../claim-view';
 import type { GearRarity, GrantLoot, PartKind, PartsBundle } from '../../gear-types';
 import type { RevealFrame } from '../../reveal-anim';
@@ -150,10 +150,10 @@ const lootList: Entry = {
   file: 'apps/activity/src/GearLoot.tsx',
   group: 'Loot & reveals',
   description:
-    'What a grant gave, with pictures: each gear item in its rarity frame, items that did not fit the bag, new blueprints and parts; it is on the loot reveals and claim screens.',
+    'What a grant gave, with pictures: each gear item as a compact row (image with its level in the corner and rarity border, name, rarity badge; no stats), items that did not fit the bag, new blueprints and parts. It is on the expedition claim, the dungeon results and the finale reveal.',
   controls: {
-    gear: { kind: 'number', min: 0, max: 3 },
-    rarity: { kind: 'select', options: RARITIES },
+    gear: { kind: 'number', min: 0, max: 5 },
+    rarity: { kind: 'select', options: [...RARITIES, 'mixed'] },
     festival: { kind: 'toggle' },
     converted: { kind: 'toggle' },
     blueprint: { kind: 'select', options: [NONE, 'new', 'known'] },
@@ -173,6 +173,7 @@ const lootList: Entry = {
   },
   presets: [
     { name: 'Two items and scrap', props: {} },
+    { name: 'Four items, mixed rarity', props: { gear: 4, rarity: 'mixed', scrap: 0 } },
     { name: 'Festival item', props: { gear: 1, festival: true, scrap: 0 } },
     { name: 'Bag full (converted)', props: { gear: 0, converted: true, scrap: 5 } },
     { name: 'New blueprint', props: { gear: 0, blueprint: 'new', scrap: 0 } },
@@ -180,6 +181,7 @@ const lootList: Entry = {
     { name: 'Empty (draws nothing)', props: { gear: 0, scrap: 0 } },
   ],
   render: (p) => {
+    const mixed = str(p, 'rarity') === 'mixed';
     const rarity = rarityOf(str(p, 'rarity'));
     const bases = GEAR_BASE_IDS;
     const base = (i: number): string =>
@@ -190,8 +192,8 @@ const lootList: Entry = {
       gear: Array.from({ length: num(p, 'gear') }, (_, i) => ({
         id: `g${String(i)}`,
         baseId: base(i),
-        rarity,
-        itemLevel: 4 + i,
+        rarity: mixed ? (RARITIES[(i + 1) % RARITIES.length] ?? 'common') : rarity,
+        itemLevel: mixed ? ([15, 9, 21, 4, 12][i % 5] ?? 4) : 4 + i,
       })),
       converted: bool(p, 'converted') ? [{ baseId: base(4), rarity: 'common', itemLevel: 3 }] : [],
       parts: { scrap: num(p, 'scrap'), glimmer: num(p, 'glimmer') },
@@ -305,16 +307,17 @@ const itemFrame: Entry = {
   file: 'apps/activity/src/GearArt.tsx',
   group: 'Loot & reveals',
   description:
-    'The frame around a gear item: one single border in the rarity colour (grey, blue, pink) and the rarity pips, so rarity never depends on colour alone; it is on every item card and loot reveal.',
+    'The frame around a gear item: one single border in the rarity colour (grey, blue, pink) and the item level, "Lv 15", in the bottom-right corner. It is the same on every item image: slots, the picker, item cards, the Workshop bag, loot lists and reveals.',
   controls: {
     rarity: { kind: 'select', options: RARITIES },
     base: { kind: 'select', options: GEAR_BASE_IDS },
     scale: { kind: 'number', min: 1, max: 8 },
+    level: { kind: 'number', min: 1, max: 40 },
   },
-  defaults: { rarity: 'epic', base: 'kelp-cap', scale: 4 },
+  defaults: { rarity: 'epic', base: 'kelp-cap', scale: 4, level: 15 },
   presets: RARITIES.map((rarity) => ({ name: rarity, props: { rarity } })),
   render: (p) => (
-    <ItemFrame rarity={rarityOf(str(p, 'rarity'))} baseId={str(p, 'base')}>
+    <ItemFrame rarity={rarityOf(str(p, 'rarity'))} baseId={str(p, 'base')} level={num(p, 'level')}>
       <ItemSprite baseId={str(p, 'base')} scale={num(p, 'scale')} />
     </ItemFrame>
   ),
@@ -415,11 +418,11 @@ const revealLater: Entry = {
 };
 
 const itemCard: Entry = {
-  name: 'ItemStats',
-  file: 'apps/activity/src/ItemLines.tsx',
+  name: 'ItemCard',
+  file: 'apps/activity/src/ItemCard.tsx',
   group: 'Loot & reveals',
   description:
-    'The body of an item card: its own stats as big numbers ("Attack 35"; a Charm has none), then its lines, with a line that only changes this item marked "(this item)" and each line\'s tier as pips. Rolled from a seed, so the same words give the same item; a Festival piece shows its unique line and its own frame.',
+    'An item\'s full details, the one layout wherever they show (the Workshop item and the picker\'s detail panel): the image at the top left with its level in the corner, to its right the name, a small rarity badge and the base stats (one row each, "Attack 41 +22" with the bonus its own lines add), then a full-width divider and the modifiers with their values and tier pips. A Charm has no stats. Rolled from a seed, so the same words give the same item.',
   controls: {
     base: { kind: 'select', options: GEAR_BASE_IDS },
     rarity: { kind: 'select', options: RARITIES },
@@ -448,19 +451,21 @@ const itemCard: Entry = {
     });
     return (
       <section class="item-detail card-item">
-        <ItemFrame rarity={rolled.rarity} baseId={id}>
-          <ItemSprite baseId={id} scale={4} />
-        </ItemFrame>
         {base?.festival === true && <FestivalTag />}
-        <ItemStats
-          stats={itemStats(rolled).map((s) => ({
-            stat: s.stat,
-            value: s.value,
-            base: s.base,
-            text: statText(s.stat, s.value),
-          }))}
+        <ItemCard
+          item={{
+            baseId: id,
+            rarity: rolled.rarity,
+            itemLevel: level,
+            stats: itemStats(rolled).map((s) => ({
+              stat: s.stat,
+              value: s.value,
+              base: s.base,
+              text: statText(s.stat, s.value),
+            })),
+            lines: itemLines(rolled).map((l) => ({ ...l, active: null })),
+          }}
         />
-        <ItemLines lines={itemLines(rolled).map((l) => ({ ...l, active: null }))} />
       </section>
     );
   },

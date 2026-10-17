@@ -5,7 +5,7 @@ import type { GearItem } from './gear-types';
 import { gearName, rarityName, slotName, sortItems } from './gear-view';
 
 /**
- * The bag as a grid of item sprites with rarity frames and their item level. Each cell is a real button
+ * The bag as a grid of item sprites with rarity frames and the item level in each image's corner. Each cell is a real button
  * (arrow-free, Tab and Enter work); its spoken label has the name, slot, item level, rarity and who wears it.
  */
 export function InventoryGrid({
@@ -43,12 +43,9 @@ export function InventoryGrid({
                 onSelect(item.id);
               }}
             >
-              <ItemFrame rarity={item.rarity} baseId={item.baseId}>
+              <ItemFrame rarity={item.rarity} baseId={item.baseId} level={item.itemLevel}>
                 <ItemSprite baseId={item.baseId} scale={4} />
               </ItemFrame>
-              <span class="item-level pix" aria-hidden="true">
-                Lv {item.itemLevel}
-              </span>
               {wearer !== undefined && (
                 <span class="item-flag worn pix" aria-hidden="true">
                   worn

@@ -23,8 +23,7 @@
 .cost-list,
 .loot-parts,
 .loot-notes,
-.loot-items,
-.stat-list {
+.loot-items {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem 0.625rem;

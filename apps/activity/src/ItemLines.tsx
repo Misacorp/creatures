@@ -1,5 +1,5 @@
 import { GlossaryTag } from './Glossary';
-import type { GearLine, GearStat } from './gear-types';
+import type { GearLine } from './gear-types';
 import { lineEntry, lineIdle, linePips, pipsLabel } from './gear-view';
 
 /**
@@ -17,27 +17,6 @@ function TierPips({ line }: { line: GearLine }) {
         </span>
       ))}
     </span>
-  );
-}
-
-/**
- * The item's own stats as the card's big numbers ("Attack 35", "HP 40"): the server's text, with the
- * local lines already counted. The first is the headline; a Charm has none. A stat that the local lines
- * raised says what its base is, in words.
- */
-export function ItemStats({ stats }: { stats: readonly GearStat[] }) {
-  if (stats.length === 0) return null;
-  return (
-    <ul class="item-stats" aria-label="Stats">
-      {stats.map((stat, i) => (
-        <li key={stat.stat} class={i === 0 ? 'item-stat head' : 'item-stat'}>
-          <GlossaryTag entry="gear-stat" class="stat-text pix">
-            {stat.text}
-          </GlossaryTag>
-          {stat.value !== stat.base && <span class="muted stat-base"> (base {stat.base})</span>}
-        </li>
-      ))}
-    </ul>
   );
 }
 

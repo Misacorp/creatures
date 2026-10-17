@@ -1,4 +1,8 @@
-/* The frame of an item: one single border in the rarity colour (like the creature page's slots and picker), and the pips say the rarity without colour. */
+/*
+  The frame of an item: one single border in the rarity colour (like the creature page's slots and picker).
+  The item's level is the small pixel "Lv 15" in the bottom-right corner (`.item-lv`), the same everywhere.
+  There are no rarity pips: rarity is the border colour and, where there is room, a rarity badge.
+*/
 .item-frame {
   position: relative;
   display: inline-grid;
@@ -19,17 +23,35 @@
   position: relative;
 }
 
-.rarity-mark {
+/*
+  The item level in the image's corner ("Lv 15", pixel font, outlined so it reads on any item colour). Alone in a
+  slot or picker cell it is 1rem; inside a frame it is a little smaller (`--lv-size`), and 1rem again in the big frame
+  of an item card. It never takes taps (the image's own button does).
+*/
+.item-lv {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  padding: 1px 2px;
-  background: var(--ink);
-  color: var(--rar, var(--haze));
-  font-family: var(--display);
-  font-size: 0.5rem;
+  right: 0.3125rem;
+  bottom: 0.1875rem;
+  color: var(--bone);
+  font-size: var(--lv-size, 1rem);
   line-height: 1;
-  letter-spacing: 0;
+  text-shadow: var(--ink-outline-thin);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.item-frame {
+  --lv-size: 0.875rem;
+}
+
+.item-frame .item-lv {
+  right: 2px;
+  bottom: 1px;
+}
+
+.item-frame.big,
+.job-reveal .item-frame {
+  --lv-size: 1rem;
 }
 
 .item-frame.empty {
@@ -51,7 +73,11 @@
 }
 
 .rarity-tag {
-  color: var(--rar);
+  padding: 0 0.375rem;
+  color: var(--rar-text, var(--rar));
+  font-family: var(--display);
+  font-size: 1rem;
+  line-height: 1.2;
 }
 
 .festival-tag {
