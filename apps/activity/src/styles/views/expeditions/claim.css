@@ -219,3 +219,14 @@
 .journal-place {
   margin: 0.5rem 0;
 }
+
+/* The level row fits one phone line: smaller level badges than a card's. */
+.tr-level .lvl-tag {
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  font-size: 0.875rem;
+}
+
+.tr-level {
+  gap: 0.25rem;
+}
