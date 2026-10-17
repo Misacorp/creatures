@@ -50,6 +50,7 @@ import { creatureTalentsView, type CreatureTalentsView } from './talent-view';
 import type { HeldTalent } from '@creatures/game';
 import { getBalances, lookupSpend, spend, type Currency, type LedgerStorage } from './ledger';
 import { runKeyed, settleSpend } from './keyed-action';
+import { dismissLevelReset, pendingLevelReset, type LevelResetNotice } from './level-reset';
 import { Lounge, type LoungeSpot } from './lounger';
 import { GameError, atomically, type Outcome } from './outcome';
 import { recordServerFirst, type ServerFirstKind } from './server-firsts';
@@ -194,6 +195,8 @@ export interface PlayerState {
   expeditions: ExpeditionView[];
   /** Trips cancelled by the slot wipe when expeditions v2 started (newest first, at most 3). */
   cancelled: CancelledView[];
+  /** The one-time level reset card (levels halved, Bait refunded) until the player dismisses it, else null. */
+  levelReset: LevelResetNotice | null;
   /** Expedition slots: how many there are, how many are used and what opens the next one. */
   slots: SlotsView;
   /** Supplies in stock: supply id to amount. */
@@ -492,12 +495,18 @@ export class Collection {
       bookSlotBait: RULES.talents.bookSlotBait,
       expeditions: trips.expeditions,
       cancelled: trips.cancelled,
+      levelReset: pendingLevelReset(this.sql, userId),
       slots: trips.slots,
       supplies: trips.supplies,
       serverFirsts: this.serverFirsts(userId),
       loungerId: this.lounge.resolve(userId),
       loungeSpot: this.lounge.spot(userId),
     };
+  }
+
+  /** Dismisses the one-time level reset card (repeats change nothing). */
+  dismissLevelReset(userId: string): void {
+    dismissLevelReset(this.sql, userId, this.deps.now());
   }
 
   // --- Starter ---

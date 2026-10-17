@@ -210,6 +210,11 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
       }
       break;
     }
+    case 'level_reset':
+      // The refunded Bait is a ledger row (source `level_reset`) and reaches the flows from there.
+      tally.add('collection.level_reset', {});
+      tally.add('collection.level_reset_levels', {}, num(p, 'levels'));
+      break;
     case 'catch_pity':
       tally.add('expedition.pity', { pity: str(p, 'pity') });
       break;

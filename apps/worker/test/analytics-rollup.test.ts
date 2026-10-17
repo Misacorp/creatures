@@ -170,6 +170,37 @@ describe('analytics_daily: schema and values', () => {
     });
   });
 
+  it('tallies the one-time level reset, with its Bait taken from the ledger only', async () => {
+    await runCore(nextGuild(), (ctx) => {
+      const at = startOf(DAY) + HOUR;
+      ctx.sql.exec(
+        'INSERT INTO analytics_events (id, at, kind, actor_hash, props_json) VALUES (?, ?, ?, ?, ?)',
+        9_200_001,
+        at,
+        'level_reset',
+        ALICE,
+        JSON.stringify({ creatures: 3, levels: 21, bait: 825, unequipped: 1, talentsToBook: 2 }),
+      );
+      ctx.core.credit({
+        userId: USER_ID,
+        currency: 'bait',
+        amount: 825,
+        source: 'level_reset',
+        idempotencyKey: `level-reset:${USER_ID}`,
+      });
+      ctx.sql.exec('UPDATE ledger SET created_at = ?', at);
+      ctx.core.rollup.rollDay(DAY, HELSINKI);
+      const list = daily(ctx, DAY);
+      expect(value(list, 'collection.level_reset', {})).toBe(1);
+      expect(value(list, 'collection.level_reset_levels', {})).toBe(21);
+      const refunds = list.filter(
+        (r) =>
+          r.metric === 'flow' && r.dims['currency'] === 'bait' && r.dims['label'] === 'level_reset',
+      );
+      expect(refunds.map((r) => r.value)).toEqual([825]);
+    });
+  });
+
   it('is created by migration 20', async () => {
     await runCore(nextGuild(), (ctx) => {
       expect(LATEST_SCHEMA_VERSION).toBeGreaterThanOrEqual(20);

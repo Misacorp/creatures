@@ -56,6 +56,9 @@ export const PushOnBodySchema = v.strictObject({ goalId: v.picklist(GOAL_IDS) })
 /** Claiming takes no input: the expedition id is in the path and the user is the session's. */
 export const ClaimBodySchema = v.strictObject({});
 
+/** Dismissing the one-time level reset card carries nothing. */
+export const DismissLevelResetBodySchema = v.strictObject({});
+
 /**
  * Settling a pending duplicate (the card is in the path, the player is the session's). Teach and Fuse name
  * the creature of the line that gets it (and Teach the slot, 1 to 3: the server checks it is open);
