@@ -147,7 +147,14 @@ function resetPlayer(deps: LevelResetDeps, userId: string): void {
       .exec<GearRow>('SELECT * FROM gear_items WHERE equipped_on = ?', creature.id)
       .toArray();
     for (const row of worn) {
-      if (wearBlock(rowToItem(row), { level, role: species.role }) === null) continue;
+      // An item that cannot be read (a row of an earlier shape the gear normalisation could not fix) comes off too.
+      let blocked = true;
+      try {
+        blocked = wearBlock(rowToItem(row), { level, role: species.role }) !== null;
+      } catch {
+        // stays blocked
+      }
+      if (!blocked) continue;
       sql.exec('UPDATE gear_items SET equipped_on = NULL WHERE id = ?', row.id);
       notice.unequipped += 1;
     }

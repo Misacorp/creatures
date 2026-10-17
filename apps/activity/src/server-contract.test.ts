@@ -96,7 +96,7 @@ import {
   previewDismantle,
   startJob,
 } from './gear-api';
-import { parseGearState } from './gear-parse';
+import { parseGearState, parseJobResult } from './gear-parse';
 import type { StartJobRequest } from './gear-types';
 import { errorText } from './game';
 import { autoFireTarget, buildAction } from './live';
@@ -420,7 +420,11 @@ describe('the gear responses the server sends', () => {
 
   it('refuses a payload that is not the shape the server sends', async () => {
     expect(() => parseGearState({ ...gearState, parts: { scrap: 1 } })).toThrow();
-    expect(() => parseGearState({ ...gearState, items: [{ id: 'x' }] })).toThrow();
+    // An item that is not the shape is left out (and logged), the view as a whole is still read.
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    expect(parseGearState({ ...gearState, items: [{ id: 'x' }] }).items).toEqual([]);
+    quiet.mockRestore();
+    expect(() => parseGearState({ ...gearState, items: 'x' })).toThrow();
     apiFetch.mockResolvedValue({
       ...workshopClaimDismantle,
       result: { kind: 'dismantle', items: 5 },
@@ -995,14 +999,18 @@ describe('supply crafts in the Workshop', () => {
     expect(claimed.state.supplies).toEqual({ 'lure-basic': 1, 'lure-great': 1 });
   });
 
-  it('refuses a supply result without a supply', () => {
+  it('leaves out a job whose supply result has no supply, and keeps the rest', () => {
     const broken = structuredClone(workshopClaimSupply.gear) as unknown as {
       jobs: { result: unknown }[];
     };
     const job = broken.jobs[0];
     if (job === undefined) throw new Error('the fixture has no job');
     job.result = { kind: 'supply', xp: 1, skillXp: 1, skillLevel: 1, leveledUp: false };
-    expect(() => parseGearState(broken)).toThrow('gear view');
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    expect(parseGearState(broken).jobs).toHaveLength(broken.jobs.length - 1);
+    quiet.mockRestore();
+    // A job result that is read on its own (the claim answer) is still refused.
+    expect(() => parseJobResult(job.result)).toThrow('job result');
   });
 });
 

@@ -104,11 +104,13 @@ import {
   ownedItems,
   parseOrigin,
   rowToItem,
+  viewOrSkip,
   wearerOf,
   type GearRow,
   type ItemOrigin,
   type JobRow,
 } from './gear-store';
+import { fixFestivalRarity } from './gear-normalise';
 import { gearRulesOf, minusBp, plusBp } from './gear-worn';
 import { credit, getBalances, spend, type Currency, type LedgerStorage } from './ledger';
 import { speciesOf } from './species';
@@ -440,6 +442,16 @@ interface StoredJobWeather {
   treatMultiplier: number | null;
 }
 
+/**
+ * A job's stored input. Item snapshots of a dismantle job started under the first gear v2 may name the
+ * rarity `festival` (it was one then); it reads as Epic, as the normalisation at start makes it.
+ */
+function parseStoredInput(json: string): StoredInput {
+  const input = JSON.parse(json) as StoredInput;
+  fixFestivalRarity(input);
+  return input;
+}
+
 /** True for a stored result of a job claimed before gear v2: a craft without an item level, an Improve or an Enchant. */
 function isLegacyResult(raw: unknown): boolean {
   const r = raw as { kind?: unknown; itemLevel?: unknown } | null;
@@ -630,10 +642,11 @@ export class Gear {
   }
 
   private jobView(row: JobRow, now: number): JobView {
-    const input = JSON.parse(row.input_json) as StoredInput;
+    const input = parseStoredInput(row.input_json);
     let result: JobResult | null = null;
     if (row.result_json !== null) {
       const raw: unknown = JSON.parse(row.result_json);
+      fixFestivalRarity(raw);
       result = normaliseJobResult(raw);
       // A claimed craft from before gear v2 names an old base: show the new base its result shows.
       if (isLegacyResult(raw) && result.kind === 'craft') input.baseId = result.baseId;
@@ -700,14 +713,13 @@ export class Gear {
         used: rows.length,
         reserved: open.filter((j) => j.kind === 'craft').length,
       },
-      items: rows.map((row) => this.itemView(row)),
+      items: rows.flatMap((row) => viewOrSkip('item', () => this.itemView(row))),
       slotOpens: { ...RULES.gear.slotUnlockLevel },
       parts: getParts(this.sql, userId),
-      blueprints: knownBlueprints(this.sql, userId).map((b) => ({
-        ...b,
-        needsCraftingLevel: craftLevelNeeded(b.baseId),
-      })),
-      jobs: [...open, ...claimed].map((row) => this.jobView(row, now)),
+      blueprints: knownBlueprints(this.sql, userId).flatMap((b) =>
+        viewOrSkip('blueprint', () => ({ ...b, needsCraftingLevel: craftLevelNeeded(b.baseId) })),
+      ),
+      jobs: [...open, ...claimed].flatMap((row) => viewOrSkip('job', () => this.jobView(row, now))),
       slots: { total: RULES.gear.workshopSlots, used: open.length },
       skills: creatures.map((c) => {
         const xp = xps.get(c.id) ?? 0;
@@ -1394,11 +1406,13 @@ export class Gear {
           const job = this.jobRow(userId, jobId);
           if (job.claimed_at !== null) {
             if (job.result_json === null) throw new Error('claimed job has no stored result');
-            return normaliseJobResult(JSON.parse(job.result_json));
+            const stored: unknown = JSON.parse(job.result_json);
+            fixFestivalRarity(stored);
+            return normaliseJobResult(stored);
           }
           const now = this.deps.now();
           if (now < job.ends_at) throw new GameError(409, 'not_ready');
-          const input = JSON.parse(job.input_json) as StoredInput;
+          const input = parseStoredInput(job.input_json);
           const creature = this.ownedCreature(userId, job.creature_id);
           const before = skillLevel(creatureXp(this.sql, userId, creature.id));
           const apprenticeBp = gearRulesOf(this.sql, creature).apprenticeBp;

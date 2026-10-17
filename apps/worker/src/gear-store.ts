@@ -18,6 +18,7 @@ import {
   type Wearer,
 } from '@creatures/game';
 import * as v from 'valibot';
+import { normaliseRarity } from './gear-normalise';
 
 export type GearRow = {
   id: string;
@@ -39,19 +40,20 @@ export type GearRow = {
 
 const LinesSchema = v.array(
   v.strictObject({
-    id: v.pipe(
-      v.string(),
-      v.check((id) => gearLine(id) !== undefined, 'unknown gear line'),
-    ),
+    id: v.pipe(v.string(), v.maxLength(64)),
     tier: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(4)),
   }),
 );
 
-/** The rolled lines stored with an item. Written only by this module; a damaged value throws. */
+/**
+ * The rolled lines stored with an item. Written only by this module; a damaged value throws. A line whose
+ * id the content no longer has (a database from an earlier shape that was not normalised yet, see
+ * `gear-normalise.ts`) is left out, so one old line never makes the whole item or view unreadable.
+ */
 export function parseLines(json: string): { id: string; tier: number }[] {
   const parsed = v.safeParse(LinesSchema, JSON.parse(json));
   if (!parsed.success) throw new Error('stored gear lines are invalid');
-  return parsed.output;
+  return parsed.output.filter((line) => gearLine(line.id) !== undefined);
 }
 
 /** Where an item came from besides its source, for the card's "From:" line. Content ids and numbers only. */
@@ -93,7 +95,13 @@ export function parseOrigin(json: string): ItemOrigin | null {
 }
 
 export function rowToItem(row: GearRow): GearItem {
-  return itemOf(row.base_id, row.rarity, row.item_level, parseLines(row.lines_json));
+  return itemOf(
+    row.base_id,
+    // A row not normalised yet may still say `festival` (it was a rarity once); it reads as Epic.
+    normaliseRarity(row.rarity),
+    row.item_level,
+    parseLines(row.lines_json),
+  );
 }
 
 /**
@@ -113,7 +121,7 @@ export function wornGearView(row: GearRow): WornGear {
     id: row.id,
     baseId: row.base_id,
     slot: row.slot,
-    rarity: row.rarity,
+    rarity: normaliseRarity(row.rarity),
     itemLevel: row.item_level,
   };
 }
@@ -123,18 +131,40 @@ export function wearerOf(species: { role: Wearer['role']; element: Wearer['eleme
   return { role: species.role, element: species.element };
 }
 
+/**
+ * Builds one entry of a view, or nothing when its stored row cannot be read: the rest of the view still
+ * goes out (one odd row must never take a whole screen down). The kind and the error name are logged,
+ * never anything about the player.
+ */
+export function viewOrSkip<T>(kind: string, make: () => T): T[] {
+  try {
+    return [make()];
+  } catch (err) {
+    console.error(`gear view: ${kind} skipped`, err instanceof Error ? err.name : 'unknown');
+    return [];
+  }
+}
+
 // --- Items ---
+
+/** A row with a rarity today's code knows (a row of an earlier shape not normalised yet may say `festival`). */
+const withKnownRarity = (row: GearRow): GearRow => ({
+  ...row,
+  rarity: normaliseRarity(row.rarity),
+});
 
 export function ownedItems(sql: SqlStorage, userId: string): GearRow[] {
   return sql
     .exec<GearRow>('SELECT * FROM gear_items WHERE user_id = ? ORDER BY created_at, rowid', userId)
-    .toArray();
+    .toArray()
+    .map(withKnownRarity);
 }
 
 export function findItem(sql: SqlStorage, userId: string, id: string): GearRow | undefined {
-  return sql
+  const row = sql
     .exec<GearRow>('SELECT * FROM gear_items WHERE id = ? AND user_id = ?', id, userId)
     .toArray()[0];
+  return row === undefined ? undefined : withKnownRarity(row);
 }
 
 export function countItems(sql: SqlStorage, userId: string): number {
@@ -251,7 +281,15 @@ export function wornRows(worn: WornBySlot | undefined): GearRow[] {
 
 /** The items a creature wears, as the rules see them. */
 export function wornItems(worn: WornBySlot | undefined): GearItem[] {
-  return wornRows(worn).map(rowToItem);
+  return wornRows(worn).flatMap((row) => {
+    try {
+      return [rowToItem(row)];
+    } catch (err) {
+      // An item that cannot be read adds nothing to its wearer; it must not break a fight or a view.
+      console.error('worn gear skipped', err instanceof Error ? err.name : 'unknown');
+      return [];
+    }
+  });
 }
 
 /** Checks a stored base still exists (content is data; an unknown base is a bug, never silently ignored). */

@@ -23,6 +23,7 @@ import {
 import {
   openJobsByCreature,
   rowToItem,
+  viewOrSkip,
   wornGearView,
   wornOnCreatures,
   wornRows,
@@ -288,10 +289,13 @@ export class Lounge {
               row.quirk_id !== null && quirkText(row.quirk_id) !== undefined ? row.quirk_id : null,
             craftingLevel: skillLevel(crafting.get(row.id) ?? 0),
             explorerRank: explorerRank(explorer.get(row.id) ?? 0),
-            gear: wornRows(worn.get(row.id)).map((item) => ({
-              ...wornGearView(item),
-              lines: itemLines(rowToItem(item)).map((l) => l.text),
-            })),
+            // An item the content cannot read is left out of the room, not the whole room.
+            gear: wornRows(worn.get(row.id)).flatMap((item) =>
+              viewOrSkip('worn item', () => ({
+                ...wornGearView(item),
+                lines: itemLines(rowToItem(item)).map((l) => l.text),
+              })),
+            ),
           },
         ] as const;
       }),
