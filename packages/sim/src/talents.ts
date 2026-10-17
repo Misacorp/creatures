@@ -122,9 +122,11 @@ export function collect(
 }
 
 /**
- * Fills every open, empty talent slot from the creature's Talent Book with the best talent it holds that
- * is not in a slot, for `RULES.talents.bookSlotBait` Bait each, while the player can pay. Strongest
- * creatures first (the ones that fight), so a short purse goes where it counts.
+ * Puts the best of a creature's Talent Book to work, as a player who reads the book would: first each
+ * open, empty slot takes the best talent not in a slot, then the weakest slotted talent is swapped for a
+ * better one waiting (the old one stays in the book), each move for `RULES.talents.bookSlotBait` Bait,
+ * while the player can pay. Strongest creatures first (the ones that fight), so a short purse goes where
+ * it counts.
  */
 export function fillSlots(player: SimPlayer, order: readonly OwnedCreature[]): void {
   for (const c of order) {
@@ -133,22 +135,46 @@ export function fillSlots(player: SimPlayer, order: readonly OwnedCreature[]): v
     const species = speciesOf(c.speciesId);
     const open = slotsOpen(species.rarity, c.level);
     const wearer = { ...wearerOfCreature(c), stats: creatureStats(c) };
-    for (let slot = 1; slot <= open; slot++) {
-      if (book.some((b) => b.slot === slot)) continue;
-      if (player.bait < RULES.talents.bookSlotBait) return;
+    const scoreOf = (entry: (typeof book)[number]): number => {
+      const def = talentDef(entry.talentId);
+      return def === undefined ? 0 : talentScore(foldTalent(def, entry.golden), wearer);
+    };
+    const bestWaiting = (): { entry: (typeof book)[number]; score: number } | null => {
       let best: { entry: (typeof book)[number]; score: number } | null = null;
       for (const entry of book) {
         if (entry.slot !== null) continue;
-        const def = talentDef(entry.talentId);
-        if (def === undefined) continue;
-        const score = talentScore(foldTalent(def, entry.golden), wearer);
+        const score = scoreOf(entry);
         if (best === null || score > best.score) best = { entry, score };
       }
-      if (best === null || best.score <= 0) continue;
-      best.entry.slot = slot;
+      return best;
+    };
+    const pay = (): void => {
       player.bait -= RULES.talents.bookSlotBait;
       player.week.baitSlots += RULES.talents.bookSlotBait;
       player.stats.talent_slots += 1;
+    };
+    for (let slot = 1; slot <= open; slot++) {
+      if (book.some((b) => b.slot === slot)) continue;
+      if (player.bait < RULES.talents.bookSlotBait) return;
+      const best = bestWaiting();
+      if (best === null || best.score <= 0) continue;
+      best.entry.slot = slot;
+      pay();
+    }
+    // Every slot is full now (or nothing waits): swap the weakest for a better one while there is one.
+    for (let moves = 0; moves < open; moves++) {
+      if (player.bait < RULES.talents.bookSlotBait) return;
+      const best = bestWaiting();
+      let weakest: { entry: (typeof book)[number]; score: number } | null = null;
+      for (const entry of book) {
+        if (entry.slot === null || entry.slot > open) continue;
+        const score = scoreOf(entry);
+        if (weakest === null || score < weakest.score) weakest = { entry, score };
+      }
+      if (best === null || weakest === null || best.score <= weakest.score) break;
+      best.entry.slot = weakest.entry.slot;
+      weakest.entry.slot = null;
+      pay();
     }
   }
 }

@@ -58,10 +58,10 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * fights). Weather off (`weather: false`) plays the economy as it was.
  *
  * Re-pinned again on 2026-10-17 (Teach goes to the Talent Book), on purpose: a talent taught from a
- * duplicate no longer takes a slot, it waits in the creature's book until the sim player slots it for
- * Bait into an empty slot. A taught talent no longer replaces a weaker slotted one, so the first
- * player's top-3 power is lower in the pinned runs (333 to 280, 361 to 356, 261 to 209, 203 to 189);
- * Bait earned is the same.
+ * duplicate no longer takes a slot, it waits in the creature's book, and the sim player slots it for Bait:
+ * into an empty slot, or in place of a weaker slotted talent (as a player reading the book would). The
+ * first player's top-3 power and raids won are what they were before the change (333, 361, 261, 203);
+ * Bait earned is the same, and some Bait now goes to slotting.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

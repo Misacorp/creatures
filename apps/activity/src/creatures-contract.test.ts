@@ -227,7 +227,8 @@ describe('the requests the client sends', () => {
       put.body.idempotencyKey,
     );
     expect(slotted.result.slot).toBe(1);
-    expect(slotted.state.balances.bait).toBe(chooseTeach.state.balances.bait - 10);
+    // The scenario slots the taught Bigger Splash first (not recorded), then puts Splashes First back: two slottings.
+    expect(slotted.state.balances.bait).toBe(chooseTeach.state.balances.bait - 20);
     expect(lastRequest()).toEqual({ path: put.path, method: 'POST', body: put.body });
   });
 

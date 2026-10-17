@@ -24,7 +24,7 @@ describe('what Recommended says and what happened', () => {
   it('tells each result in a sentence', () => {
     const creatures = after.creatures;
     expect(choiceResultText(chooseTeach.result as never, creatures)).toBe(
-      'Taught Bigger Splash (golden) to Splashet, slot 1.',
+      'Taught Bigger Splash (golden) to Splashet: it is in the Talent Book.',
     );
     expect(choiceResultText(chooseFuse.result as never, creatures)).toBe(
       'Fused Splashet into Splashet: fusion 1 / 5.',
@@ -156,6 +156,7 @@ describe('the Talent Book rows', () => {
     };
     expect(bookRows(reversed).map((r) => [r.entry.id, r.state, r.slot, r.moves])).toEqual([
       ['splashes-first', 'in-use', 1, []],
+      ['wet-footprints', 'available', null, [1]],
       ['bigger-splash', 'available', null, [1]],
     ]);
   });

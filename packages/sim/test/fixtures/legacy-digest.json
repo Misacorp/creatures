@@ -1,38 +1,38 @@
 {
   "default-8w": {
-    "hash": "1e2c83dcac425c",
+    "hash": "1080672dbc05ed",
     "headline": {
       "raidsWon": 7,
-      "firstPlayerTop3Power": 280,
+      "firstPlayerTop3Power": 333,
       "firstPlayerBaitEarned": 910
     }
   },
   "five-nogear": {
-    "hash": "17e1271c678fd5",
+    "hash": "1d3a6a9f24f7bc",
     "headline": {
       "raidsWon": 5,
-      "firstPlayerTop3Power": 356,
+      "firstPlayerTop3Power": 361,
       "firstPlayerBaitEarned": 518
     }
   },
   "behaviour": {
-    "hash": "14e02e975eaf1d",
+    "hash": "2f5c5f116d105",
     "headline": {
-      "raidsWon": 4,
-      "firstPlayerTop3Power": 209,
+      "raidsWon": 5,
+      "firstPlayerTop3Power": 261,
       "firstPlayerBaitEarned": 826
     }
   },
   "fifteen-nodungeon": {
-    "hash": "18deeeae59e0f6",
+    "hash": "10be8610577fdc",
     "headline": {
       "raidsWon": 4,
-      "firstPlayerTop3Power": 189,
+      "firstPlayerTop3Power": 203,
       "firstPlayerBaitEarned": 798
     }
   },
   "run-tiny": {
-    "hash": "64fd1ce90dade",
+    "hash": "17de5691b6d4a2",
     "headline": {
       "targets": 92
     }
