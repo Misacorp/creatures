@@ -1,35 +1,34 @@
 {
   "creatures-claim": {
-    "path": "/api/expeditions/bbf3423e-80a2-450c-ac21-a42b62466568/claim",
+    "path": "/api/expeditions/b6c12d85-1085-459e-b886-c8dee12d644f/claim",
     "method": "POST",
     "body": {}
   },
   "creatures-choose-teach": {
-    "path": "/api/catches/f310aafb-bace-4420-bf1d-4bf695be64bb/choose",
+    "path": "/api/catches/b380c121-2666-44db-a42a-d6df1b7c17a7/choose",
     "method": "POST",
     "body": {
       "choice": "teach",
-      "creatureId": "7e51c2db-5676-4299-b5a1-d3d6f185c5df",
-      "slot": 1,
+      "creatureId": "3b882ba7-ef44-472f-a9cf-8c0fd8d70da5",
       "idempotencyKey": "creatures-fixture-00000005-key"
     }
   },
   "creatures-choose-fuse": {
-    "path": "/api/catches/bde5101e-15e1-438c-9fdc-6eae9bfee247/choose",
+    "path": "/api/catches/dacc7593-8cc1-4e3c-8036-5b359c9a34c1/choose",
     "method": "POST",
     "body": {
       "choice": "fuse",
-      "creatureId": "7e51c2db-5676-4299-b5a1-d3d6f185c5df",
+      "creatureId": "3b882ba7-ef44-472f-a9cf-8c0fd8d70da5",
       "idempotencyKey": "creatures-fixture-00000006-key"
     }
   },
   "creatures-choose-release": {
-    "path": "/api/catches/3d9f9bb1-cf4b-4a7a-865f-bdbd2ce4f2cf/choose",
+    "path": "/api/catches/65daa282-d653-414c-b544-3c10edaefd9b/choose",
     "method": "POST",
     "body": { "choice": "release", "idempotencyKey": "creatures-fixture-00000007-key" }
   },
   "creatures-choose-recommended": {
-    "path": "/api/catches/9f0910ea-27b8-4e8f-9c9e-366b0b190fb9/choose",
+    "path": "/api/catches/6553d751-d270-4d5b-9deb-75beedb5022b/choose",
     "method": "POST",
     "body": { "choice": "recommended", "idempotencyKey": "creatures-fixture-00000013-key" }
   },
@@ -39,13 +38,13 @@
     "body": { "idempotencyKey": "creatures-fixture-00000016-key" }
   },
   "creatures-slot": {
-    "path": "/api/creatures/7e51c2db-5676-4299-b5a1-d3d6f185c5df/talents/slot",
+    "path": "/api/creatures/3b882ba7-ef44-472f-a9cf-8c0fd8d70da5/talents/slot",
     "method": "POST",
     "body": {
       "talentId": "splashes-first",
       "golden": false,
       "slot": 1,
-      "idempotencyKey": "creatures-fixture-00000017-key"
+      "idempotencyKey": "creatures-fixture-00000018-key"
     }
   }
 }

@@ -56,6 +56,12 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * the trips and the Workshop jobs of the day. The draws touch no other stream, so the same players check in
  * and the same dice are thrown; what moved is what the days do (a trip's time, creature experience, the
  * fights). Weather off (`weather: false`) plays the economy as it was.
+ *
+ * Re-pinned again on 2026-10-17 (Teach goes to the Talent Book), on purpose: a talent taught from a
+ * duplicate no longer takes a slot, it waits in the creature's book until the sim player slots it for
+ * Bait into an empty slot. A taught talent no longer replaces a weaker slotted one, so the first
+ * player's top-3 power is lower in the pinned runs (333 to 280, 361 to 356, 261 to 209, 203 to 189);
+ * Bait earned is the same.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

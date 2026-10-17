@@ -543,12 +543,14 @@ A duplicate catch arrives as a card with its rolled talent and four buttons. The
 
 | Choice      | What happens                                                                                                 | When it is offered                                                   |
 | ----------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| **Teach**   | Its talent goes into a slot of your creature of that line; the replaced talent goes to the Talent Book       | Always (a talent already in the book only if this one is golden)     |
+| **Teach**   | Its talent goes into the Talent Book of your creature of that line (never a slot; slot it later for Bait)    | Always (a talent already in the book only if this one is golden)     |
 | **Fuse**    | One fusion step, as today (+6, +11, +15, +18, +20% stats at 1 to 5)                                          | Until 5 fusions                                                      |
 | **Release** | Parts, not Bait: Common 3 scrap; Rare 6 scrap and 1 shard of its element; Epic 12 scrap, 2 shards, 1 glimmer | Always                                                               |
 | **Keep**    | It stays as a second creature of the line, to evolve into the other branch                                   | Only while the line has a branch you do not own (at most 2 per line) |
 
-**Recommended** (shown on the card, and what a drop-in's pending duplicates fall back to): Teach if the talent is golden or new to the book and better than an occupied slot's; else Keep if a branch is missing; else Fuse until 5; else Release.
+Teach never fills a slot by itself (owner decision, 2026-10-17): the talent joins the creature's Talent Book and the player slots it later from the book (8.1), for the usual 10 Bait. Teach only goes to a creature of the duplicate's own line.
+
+**Recommended** (shown on the card, and what a drop-in's pending duplicates fall back to): Teach if the talent is golden or new to the book and would be better than a slot's (it goes into the book); else Keep if a branch is missing; else Fuse until 5; else Release.
 
 ### 8.3 Example talent pools
 
