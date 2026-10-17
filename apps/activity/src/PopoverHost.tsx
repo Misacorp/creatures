@@ -273,6 +273,7 @@ function FoePopover({
               <ElementChip
                 as="button"
                 element={info.element}
+                context="boss"
                 onOpen={(id) => {
                   nav.open(id);
                 }}

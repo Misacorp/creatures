@@ -39,7 +39,7 @@ export interface SlotProps {
   rarity?: SlotRarity;
   /** Filled: what it holds (an item's icon, a talent's name and number). Pass text as text. */
   children?: ComponentChildren;
-  /** Filled: a tiny mark in the bottom corner ("Signature"). An item's level is not this: it is `ItemLevel` inside the children. */
+  /** Filled: a tiny mark in the bottom corner ("Signature"). An item's level is not this: it is `ItemCorners` inside the children. */
   corner?: string;
   /** Tapping it. A locked slot, or a filled one without this, is not a button. */
   onClick?: (event: MouseEvent) => void;

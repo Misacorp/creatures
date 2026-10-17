@@ -36,7 +36,7 @@ export function ItemRow({
         <ItemSprite baseId={baseId} scale={scale} />
       </ItemFrame>
       <span class="item-row-text">
-        <span class="item-row-name pix">
+        <span class={`item-row-name pix rarity-name rarity-${rarity}`}>
           {gearName(baseId)}
           {level !== undefined && <span class="visually-hidden">, item level {level}</span>}
         </span>

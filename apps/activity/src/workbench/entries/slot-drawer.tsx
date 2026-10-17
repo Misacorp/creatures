@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { ItemLevel, ItemSprite } from '../../GearArt';
+import { ItemCorners, ItemSprite } from '../../GearArt';
 import { Drawer } from '../../ui/Drawer';
 import { Slot, SlotRow } from '../../ui/Slot';
 import { TalentInSlot } from '../../creature-page/PageSlots';
@@ -26,7 +26,7 @@ function GearFilled({ level }: { level: number }) {
       onClick={NOTHING}
     >
       <ItemSprite baseId="kelp-cap" scale={6} />
-      <ItemLevel level={level} />
+      <ItemCorners level={level} baseId="kelp-cap" />
     </Slot>
   );
 }
@@ -127,7 +127,7 @@ function SlotDemo({ p }: { p: Props }) {
         {kind === 'gear' ? (
           <>
             <ItemSprite baseId="kelp-cap" scale={6} />
-            <ItemLevel level={4} />
+            <ItemCorners level={4} baseId="kelp-cap" />
           </>
         ) : (
           <TalentInSlot talent={bool(p, 'golden') ? GOLDEN : PLAIN} />

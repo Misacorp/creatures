@@ -62,7 +62,7 @@ export const GlossaryEntrySchema = v.strictObject({
 });
 export type GlossaryEntry = v.InferOutput<typeof GlossaryEntrySchema>;
 
-export const GlossarySchema = v.pipe(v.array(GlossaryEntrySchema), v.maxLength(200));
+export const GlossarySchema = v.pipe(v.array(GlossaryEntrySchema), v.maxLength(400));
 export type Glossary = v.InferOutput<typeof GlossarySchema>;
 
 export const HowToPlaySectionSchema = v.strictObject({

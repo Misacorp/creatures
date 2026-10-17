@@ -48,7 +48,7 @@ export function Blueprints({
                   <p class="pix bp-name">{bp.name}</p>
                   <p class="tags">
                     <span class="slot-tag">{slotName(bp.slot)}</span>
-                    {bp.element !== null && <ElementChip element={bp.element} />}
+                    {bp.element !== null && <ElementChip element={bp.element} context="gear" />}
                   </p>
                   {bp.needsCraftingLevel > 1 && (
                     <p class="muted">Needs Crafting level {bp.needsCraftingLevel}</p>

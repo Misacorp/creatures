@@ -347,7 +347,7 @@ describe('the creature page: gear slots', () => {
     expect(byClass(first(byClass(root, 'slot-row')), 'empty')).toHaveLength(2);
   });
 
-  it('shows a worn item as its bare sprite in the rarity colour, with "Lv" and the level in the corner', () => {
+  it('shows a worn item as its bare sprite in the rarity colour, with its slot icon and "Lv" and the level in the corners', () => {
     const { root } = draw('level 15');
     const [hat, scarf] = byClass(first(byClass(root, 'slot-row')), 'slot');
     // One border only: the slot's own, no inner frame round the sprite.
@@ -356,7 +356,9 @@ describe('the creature page: gear slots', () => {
     expect(scarf?.getAttribute('class')).toContain('rarity-rare');
     expect(visibleText(first(byClass(hat as FakeElement, 'item-lv')))).toBe('Lv 15');
     expect(visibleText(first(byClass(scarf as FakeElement, 'item-lv')))).toBe('Lv 12');
-    expect(find(hat as FakeElement, (e) => e.localName === 'canvas')).toHaveLength(1);
+    // The item's sprite, and the slot's icon in the top-left corner.
+    expect(find(hat as FakeElement, (e) => e.localName === 'canvas')).toHaveLength(2);
+    expect(byClass(hat as FakeElement, 'item-slot')).toHaveLength(1);
     expect(nameOf(hat as FakeElement)).toBe(
       "Hat: Emberkeeper's Crown, item level 15, Epic. Change",
     );

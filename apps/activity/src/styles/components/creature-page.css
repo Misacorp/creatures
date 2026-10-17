@@ -176,7 +176,7 @@ button.ip-cell.selected {
 .ip-cell-worn {
   position: absolute;
   top: 0.1875rem;
-  left: 0.3125rem;
+  right: 0.3125rem;
   color: var(--gold);
   font-size: 0.875rem;
   line-height: 1;

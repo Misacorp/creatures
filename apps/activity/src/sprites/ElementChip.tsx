@@ -15,8 +15,31 @@ export function RoleChip({ role }: { role: string }) {
   );
 }
 
+/**
+ * Whose element it is, which decides what tapping it explains: a creature's (who it beats), a boss's or a
+ * room boss's (who hits it hardest), an expedition place's (who lives there, what is found) or an item's (its
+ * lines lean that way).
+ */
+export type ElementContext = 'creature' | 'boss' | 'place' | 'gear';
+
+/** The glossary entry of an element in one context. */
+export function elementEntry(element: string, context: ElementContext): string {
+  switch (context) {
+    case 'creature':
+      return GLOSSARY_IDS.element(element);
+    case 'boss':
+      return GLOSSARY_IDS.bossElement(element);
+    case 'place':
+      return GLOSSARY_IDS.placeElement(element);
+    case 'gear':
+      return GLOSSARY_IDS.gearTag(element);
+  }
+}
+
 interface ElementChipProps {
   element: string;
+  /** Whose element it is (default a creature's): the entry a tap opens. */
+  context?: ElementContext;
   /** A role id (`guard`...): shows the role as a second chip. */
   role?: string | undefined;
   /**
@@ -30,8 +53,15 @@ interface ElementChipProps {
 }
 
 /** An element's icon and name as a chip, plus the role as a second one when it is known. Colour is never the only cue. */
-export function ElementChip({ element, role, as = 'tag', onOpen }: ElementChipProps) {
+export function ElementChip({
+  element,
+  context = 'creature',
+  role,
+  as = 'tag',
+  onOpen,
+}: ElementChipProps) {
   const safe = elementSlug(element);
+  const entry = elementEntry(safe, context);
   const icon: IconRef | undefined =
     elementIcon(element) === undefined ? undefined : { kind: 'element', element };
   if (as === 'button') {
@@ -44,7 +74,7 @@ export function ElementChip({ element, role, as = 'tag', onOpen }: ElementChipPr
           type="button"
           class={`gtag gtag-chip chip t-${safe}`}
           aria-haspopup="dialog"
-          onClick={open(GLOSSARY_IDS.element(safe))}
+          onClick={open(entry)}
         >
           {icon !== undefined && <GameIcon icon={icon} scale={2} />}
           <span class="chip-text">{elementName(element)}</span>
@@ -78,7 +108,7 @@ export function ElementChip({ element, role, as = 'tag', onOpen }: ElementChipPr
   }
   return (
     <>
-      <Tag kind="chip" tone={`t-${safe}`} entry={GLOSSARY_IDS.element(safe)} icon={icon}>
+      <Tag kind="chip" tone={`t-${safe}`} entry={entry} icon={icon}>
         {elementName(element)}
       </Tag>
       {role !== undefined && role !== '' && <RoleChip role={role} />}

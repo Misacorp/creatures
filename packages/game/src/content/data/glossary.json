@@ -903,6 +903,124 @@
     "section": "workshop"
   },
   {
+    "id": "boss-element-tide",
+    "title": "Tide boss",
+    "short": "Spark creatures deal it 50% more damage, Ember creatures 25% less.",
+    "lines": [],
+    "section": "raid-week"
+  },
+  {
+    "id": "boss-element-ember",
+    "title": "Ember boss",
+    "short": "Tide creatures deal it 50% more damage, Grove creatures 25% less.",
+    "lines": [],
+    "section": "raid-week"
+  },
+  {
+    "id": "boss-element-grove",
+    "title": "Grove boss",
+    "short": "Ember creatures deal it 50% more damage, Spark creatures 25% less.",
+    "lines": [],
+    "section": "raid-week"
+  },
+  {
+    "id": "boss-element-spark",
+    "title": "Spark boss",
+    "short": "Grove creatures deal it 50% more damage, Tide creatures 25% less.",
+    "lines": [],
+    "section": "raid-week"
+  },
+  {
+    "id": "place-element-tide",
+    "title": "Tide place",
+    "short": "Tide creatures live here.",
+    "lines": [
+      "Most creatures that live here are Tide.",
+      "Shards found here are Tide shards.",
+      "Gear found here is Tide gear: its lines lean Tide."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "place-element-ember",
+    "title": "Ember place",
+    "short": "Ember creatures live here.",
+    "lines": [
+      "Most creatures that live here are Ember.",
+      "Shards found here are Ember shards.",
+      "Gear found here is Ember gear: its lines lean Ember."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "place-element-grove",
+    "title": "Grove place",
+    "short": "Grove creatures live here.",
+    "lines": [
+      "Most creatures that live here are Grove.",
+      "Shards found here are Grove shards.",
+      "Gear found here is Grove gear: its lines lean Grove."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "place-element-spark",
+    "title": "Spark place",
+    "short": "Spark creatures live here.",
+    "lines": [
+      "Most creatures that live here are Spark.",
+      "Shards found here are Spark shards.",
+      "Gear found here is Spark gear: its lines lean Spark."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "gear-tag-guard",
+    "title": "Guard Charm",
+    "short": "Only a Guard can wear it.",
+    "lines": [
+      "Guard lines roll three times as often on it, and no other role's lines roll at all."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-tag-support",
+    "title": "Support Charm",
+    "short": "Only a Support can wear it.",
+    "lines": [
+      "Support lines roll three times as often on it, and no other role's lines roll at all."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-tag-setter",
+    "title": "Setter Charm",
+    "short": "Only a Setter can wear it.",
+    "lines": [
+      "Setter lines roll three times as often on it, and no other role's lines roll at all."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-tag-payoff",
+    "title": "Payoff Charm",
+    "short": "Only a Payoff can wear it.",
+    "lines": [
+      "Payoff lines roll three times as often on it, and no other role's lines roll at all."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "gear-tag-explorer",
+    "title": "Explorer gear",
+    "short": "Made for trips, not fights.",
+    "lines": [
+      "Trip and Workshop lines roll three times as often on it, fight lines much less often.",
+      "It is found at the Old Crossroads. Crafting it takes no shard."
+    ],
+    "section": "workshop"
+  },
+  {
     "id": "workshop",
     "title": "Workshop",
     "short": "Your creatures work on jobs here, even while you are away.",

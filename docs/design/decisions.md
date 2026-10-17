@@ -1621,3 +1621,18 @@ Misa's changes after polish v5, with the lead's decision on item levels.
 - **Item card.** The name is in its rarity's text colour (as creature names), the image keeps the rarity border (players glance at gear pictures for rarity; creatures' art is too expressive for a border). Under the name, one row of same-looking badges: slot (a small pixel silhouette plus "Hat"), rarity, element (its icon plus "Ember"), and Festival when it is one. None shows a "?", all are tappable. The old dotted "Hat" tag and the element chip under the modifiers are gone.
 - **Element on gear has its own glossary entry** (`gear-tag-<element>`, "Ember gear: its lines lean Ember"): the creature entry ("hits Grove bosses harder") made no sense on an item. The coverage check requires one per element.
 - **Slot icons.** Three 8x8 glyphs (`slot-hat`, `slot-scarf`, `slot-charm`) used in the slot badge and in the top-left corner of every image in the Workshop bag, which mixes slots (the picker is one slot, so it has none).
+
+## 2026-10-17: Item corners everywhere, and tags that explain themselves by context
+
+- **Every item image that shows its level also shows its slot** (Misa). One component, `ItemCorners` (`GearArt.tsx`), draws both: the slot icon top left, "Lv N" bottom right; the slot comes from the item's base. `ItemFrame` uses it, and so do the creature page slots and the picker cells; a test fails if `ItemLevel` is drawn on its own anywhere else. The picker's "Worn" flag moves to the top right to make room. Loot-list names take their rarity colour too, like the item card.
+- **An element explains itself by whose it is** (Misa: "the Ember help on items is super good, do the same elsewhere"). `ElementChip` takes a `context`:
+  - **creature** (default): the existing entry (who it beats, its mark).
+  - **boss** (raid boss card, the stage's foe line, the foe popover; dungeon room bosses too): "Tide creatures deal it 50% more damage, Grove creatures 25% less." One line only, keeping the rule that raid popups show only a description (2026-10-14).
+  - **place** (expedition places): most creatures there are that element, shards found there are its shards, gear found there leans to it.
+  - **gear** (blueprints, and the item card's badge): its lines lean that element.
+
+  The coverage check needs all four per element, so a new element cannot ship without them.
+
+- **Role Charms and the Compass get their badge too** (`GearTagBadge`): "Guard" (only a Guard can wear it; Guard lines roll three times as often, no other role's at all) and "Explorer" (trip and Workshop lines three times as often, fight lines much less). Neutral bases show none.
+- **Tags that already differ by context stay as they are:** creature rarity and gear rarity, creature level and item level, Boss Rank and explorer rank, the finale's Festival and Festival gear each have their own entries. Roles, marks, reactions, gimmicks and room modifiers appear in one context only.
+- The glossary's sanity cap goes from 200 to 400 entries (it is now just over 200, counting one generated entry per gear line).

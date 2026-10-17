@@ -39,7 +39,7 @@ describe('the traits on the fight stage', () => {
   it("puts the foe's element chip on the same row, right after its name", () => {
     const line = stage.indexOf('class="stage-foe-line"');
     const name = stage.indexOf('class="stage-foe-name pix"');
-    const chip = stage.indexOf('<ElementChip element={foe.element} />');
+    const chip = stage.indexOf('<ElementChip element={foe.element} context="boss" />');
     expect(line).toBeGreaterThan(-1);
     expect(name).toBeGreaterThan(line);
     expect(chip).toBeGreaterThan(name);

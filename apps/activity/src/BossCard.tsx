@@ -147,7 +147,7 @@ export function BossCard({
               </Tag>
             )}
             {readiness !== null && <ReadinessMeter band={readiness} />}
-            <ElementChip element={boss.element} />
+            <ElementChip element={boss.element} context="boss" />
             {view.festival && (
               <Tag kind="badge" tone="festival" entry="festival">
                 Festival week

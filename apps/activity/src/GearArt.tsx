@@ -1,13 +1,13 @@
 import { CountBadge, type CountBadgeProps, type CountItem } from './ui/CountBadge';
 import { GameIcon } from './ui/GameIcon';
 import { Tag } from './ui/Tag';
-import { GLOSSARY_IDS, PART_KINDS, type PartKind } from '@creatures/game';
+import { GLOSSARY_IDS, PART_KINDS, gearBase, tagElement, type PartKind } from '@creatures/game';
 import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from './Glossary';
 import { itemArt } from './gear-sprites';
 import { isFestivalBase, partName, partsEntries, rarityName, slotName } from './gear-view';
 import { glyphOrUnknown } from './glyphs';
-import { elementName } from './game';
+import { capitalize, elementName } from './game';
 import type { GearRarity, GearSlot, PartsBundle } from './gear-types';
 import { Sprite } from './sprites/Sprite';
 
@@ -50,8 +50,24 @@ export function ItemLevel({ level }: { level: number }) {
 }
 
 /**
+ * The two corners of an item's image, the one way they are drawn everywhere an item level shows: the slot's
+ * icon at the top left (`SlotIcon`) and the item level at the bottom right (`ItemLevel`). The slot comes from
+ * the item's base; an unknown base shows only the level. Put it inside the positioned box that holds the
+ * sprite (an `ItemFrame` does this itself, a picker cell or a creature page slot places it by hand).
+ */
+export function ItemCorners({ level, baseId }: { level: number; baseId: string }) {
+  const slot = gearBase(baseId)?.slot;
+  return (
+    <>
+      {slot !== undefined && <SlotIcon slot={slot} class="item-slot" />}
+      <ItemLevel level={level} />
+    </>
+  );
+}
+
+/**
  * The frame around an item sprite: one single border in the rarity colour and, when the level is known, the
- * item level in the corner (`ItemLevel`). Rarity is the border colour (and a rarity badge where there is
+ * item's corners (`ItemCorners`: the slot's icon at the top left, the item level at the bottom right). Rarity is the border colour (and a rarity badge where there is
  * room), never pips. A Festival piece (it is a base, not a rarity: pass its `baseId`) also gets a
  * lantern-gold dashed outline.
  */
@@ -59,7 +75,6 @@ export function ItemFrame({
   rarity,
   baseId,
   level,
-  slot,
   children,
   class: extra,
 }: {
@@ -67,8 +82,6 @@ export function ItemFrame({
   baseId?: string;
   /** The item's level; leave out when the item does not exist yet (a blueprint) or the level is not known. */
   level?: number;
-  /** The item's slot, as a small icon in the top-left corner: where a list mixes slots (the bag). */
-  slot?: GearSlot;
   children: ComponentChildren;
   class?: string;
 }) {
@@ -78,8 +91,12 @@ export function ItemFrame({
       class={`item-frame rarity-${rarity}${festival ? ' festival' : ''}${extra === undefined ? '' : ` ${extra}`}`}
     >
       {children}
-      {slot !== undefined && <SlotIcon slot={slot} class="item-slot" />}
-      {level !== undefined && <ItemLevel level={level} />}
+      {level !== undefined &&
+        (baseId === undefined ? (
+          <ItemLevel level={level} />
+        ) : (
+          <ItemCorners level={level} baseId={baseId} />
+        ))}
     </span>
   );
 }
@@ -106,17 +123,21 @@ export function SlotTag({ slot, plain = false }: { slot: GearSlot; plain?: boole
 }
 
 /**
- * An item's element tag as a badge (the element's icon and name, "Ember"). Tapping it says what the
- * element means on an item (its lines lean that way), not what it means for a creature.
+ * An item's tag as a badge: its element (the element's icon and name, "Ember"), its role ("Guard", a role
+ * Charm) or "Explorer" (the Compass). Tapping it says what the tag means on an item (its lines lean that
+ * way, who can wear it), not what an element means for a creature. A neutral base has no badge.
  */
-export function GearElementTag({ element, plain = false }: { element: string; plain?: boolean }) {
+export function GearTagBadge({ baseId, plain = false }: { baseId: string; plain?: boolean }) {
+  const tag = gearBase(baseId)?.tag;
+  if (tag === undefined || tag === 'neutral') return null;
+  const element = tagElement(tag);
   return (
     <Tag
-      {...(plain ? {} : { entry: GLOSSARY_IDS.gearElement(element) })}
-      class="item-badge element-tag pix"
+      {...(plain ? {} : { entry: GLOSSARY_IDS.gearTag(tag) })}
+      class="item-badge gear-tag-badge pix"
     >
-      <GameIcon icon={{ kind: 'element', element }} scale={2} />
-      {elementName(element)}
+      {element !== null && <GameIcon icon={{ kind: 'element', element }} scale={2} />}
+      {element !== null ? elementName(element) : capitalize(tag)}
     </Tag>
   );
 }

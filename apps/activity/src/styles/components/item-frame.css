@@ -49,6 +49,12 @@
   bottom: 1px;
 }
 
+.item-frame .item-slot,
+.item-frame canvas.sprite.item-slot {
+  top: 2px;
+  left: 2px;
+}
+
 .item-frame.big,
 .job-reveal .item-frame {
   --lv-size: 1rem;
@@ -88,12 +94,15 @@
   color: var(--rar-text, var(--rar));
 }
 
-/* An item's slot as a small icon in the top-left corner of its image (the bag mixes slots). */
+/*
+  An item's slot as a small icon in the top-left corner of its image (`ItemCorners`), opposite the "Lv 15"; like
+  it, outlined in ink, inset a little in a slot or picker cell and tight in a frame.
+*/
 .item-slot,
 canvas.sprite.item-slot {
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: 0.3125rem;
+  left: 0.3125rem;
   filter: drop-shadow(1px 0 0 var(--ink)) drop-shadow(-1px 0 0 var(--ink))
     drop-shadow(0 1px 0 var(--ink)) drop-shadow(0 -1px 0 var(--ink));
   pointer-events: none;

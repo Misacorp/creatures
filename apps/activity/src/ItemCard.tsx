@@ -1,8 +1,8 @@
 import type { ComponentChildren, Ref } from 'preact';
 import { statRows } from './creature-page/picker-view';
-import { FestivalTag, GearElementTag, ItemFrame, ItemSprite, RarityTag, SlotTag } from './GearArt';
+import { FestivalTag, GearTagBadge, ItemFrame, ItemSprite, RarityTag, SlotTag } from './GearArt';
 import type { GearItem } from './gear-types';
-import { gearName, isFestivalBase, itemElement } from './gear-view';
+import { gearName, isFestivalBase } from './gear-view';
 import { ItemLines } from './ItemLines';
 
 /** What the card needs of an item: the part of a `GearItem` that is drawn. */
@@ -14,7 +14,7 @@ export type ItemCardItem = Pick<
 /**
  * An item's full details, the one layout wherever they show (the Workshop's item card, the picker's
  * detail panel): the item's image at the top left (rarity border, item level in its corner), to its right the
- * name (in its rarity's colour), small badges for the slot, rarity and element, and the base stats, one row each in the same size ("Attack 14", "HP 24", the
+ * name (in its rarity's colour), small badges for the slot, rarity and tag (element, role or explorer), and the base stats, one row each in the same size ("Attack 14", "HP 24", the
  * bonus its own lines add after it: "Attack 41 +22"); then a full-width divider and the modifiers with their
  * values and tier pips. Everything is in the pixel font. A Charm has no stats, so it is name, badge, divider,
  * modifiers. `aside` is a spot at the top right (a button), `note` a line under the badge.
@@ -46,7 +46,6 @@ export function ItemCard({
 }) {
   const rows = statRows(item.stats);
   const name = gearName(item.baseId);
-  const element = itemElement(item.baseId);
   const nameClass = `idc-name rarity-name rarity-${item.rarity}`;
   return (
     <div class={`idc pix${extra === undefined ? '' : ` ${extra}`}`}>
@@ -74,7 +73,7 @@ export function ItemCard({
           <p class="idc-badge">
             <SlotTag slot={item.slot} plain={plainRarity} />
             <RarityTag rarity={item.rarity} plain={plainRarity} />
-            {element !== null && <GearElementTag element={element} plain={plainRarity} />}
+            <GearTagBadge baseId={item.baseId} plain={plainRarity} />
             {isFestivalBase(item.baseId) && <FestivalTag />}
           </p>
           {note}

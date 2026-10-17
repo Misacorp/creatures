@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import type { Creature } from '../api';
-import { ItemLevel, ItemSprite } from '../GearArt';
+import { ItemCorners, ItemSprite } from '../GearArt';
 import type { GearItem, GearSlot } from '../gear-types';
 import { itemLabel, rarityName, slotName } from '../gear-view';
 import { ItemCard } from '../ItemCard';
@@ -58,7 +58,7 @@ function ItemCell({
             Worn
           </span>
         )}
-        <ItemLevel level={item.itemLevel} />
+        <ItemCorners level={item.itemLevel} baseId={item.baseId} />
       </button>
     </li>
   );

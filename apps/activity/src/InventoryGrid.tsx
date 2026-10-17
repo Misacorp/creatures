@@ -44,12 +44,7 @@ export function InventoryGrid({
                 onSelect(item.id);
               }}
             >
-              <ItemFrame
-                rarity={item.rarity}
-                baseId={item.baseId}
-                level={item.itemLevel}
-                slot={item.slot}
-              >
+              <ItemFrame rarity={item.rarity} baseId={item.baseId} level={item.itemLevel}>
                 <ItemSprite baseId={item.baseId} scale={4} />
               </ItemFrame>
               {wearer !== undefined && (
