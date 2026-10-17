@@ -10,6 +10,7 @@ import { GlossaryTag } from './Glossary';
 import { ItemLines, ItemStats } from './ItemLines';
 import { DismantlePanel } from './ItemPanels';
 import { ElementChip } from './sprites/ElementChip';
+import { Accordion } from './ui/Accordion';
 
 type Panel = 'dismantle' | 'equip' | null;
 
@@ -62,8 +63,7 @@ function EquipPanel({
         </>
       )}
       {options.some((o) => o.blocked !== null) && (
-        <details class="blocked-note">
-          <summary>Who cannot wear it</summary>
+        <Accordion title="Who cannot wear it" variant="compact" class="blocked-note">
           <ul>
             {options
               .filter((o) => o.blocked !== null)
@@ -73,7 +73,7 @@ function EquipPanel({
                 </li>
               ))}
           </ul>
-        </details>
+        </Accordion>
       )}
       <p class="actions">
         {target !== undefined && (
@@ -250,8 +250,7 @@ export function ItemDetail({
         )}
       </div>
 
-      <details class="item-details">
-        <summary>Details</summary>
+      <Accordion title="Details" variant="compact" class="item-details">
         {base !== undefined && <p class="muted flavor">{base.flavor}</p>}
         <ul class="detail-list">
           {detailLines(item).map((line) => (
@@ -260,7 +259,7 @@ export function ItemDetail({
             </li>
           ))}
         </ul>
-      </details>
+      </Accordion>
     </section>
   );
 }

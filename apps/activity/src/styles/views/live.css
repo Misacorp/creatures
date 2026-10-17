@@ -4,11 +4,6 @@
   margin-bottom: 0.75rem;
 }
 
-.practice summary {
-  cursor: pointer;
-  color: var(--haze);
-}
-
 .practice-label {
   margin: 0.25rem 0;
 }
@@ -37,7 +32,6 @@
   font-weight: 600;
 }
 
-.live-earlier summary {
-  cursor: pointer;
-  color: var(--haze);
+.live-earlier {
+  margin: 0.25rem 0;
 }

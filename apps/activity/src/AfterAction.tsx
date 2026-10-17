@@ -20,6 +20,7 @@ import { errorText } from './game';
 import { fetchStats, type AfterActionStats, type RaidPhaseId } from './raid-api';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
+import { Accordion } from './ui/Accordion';
 
 /** Longer lists show this many lines and keep the rest behind "Show all". */
 const VISIBLE_LINES = 6;
@@ -87,14 +88,13 @@ function Lines({ lines }: { lines: readonly string[] }) {
         ))}
       </ul>
       {rest.length > 0 && (
-        <details>
-          <summary>Show all {lines.length}</summary>
+        <Accordion title={`Show all ${String(lines.length)}`} variant="compact">
           <ul class="plain-list">
             {rest.map((line, index) => (
               <li key={index}>{line}</li>
             ))}
           </ul>
-        </details>
+        </Accordion>
       )}
     </>
   );

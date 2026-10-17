@@ -5,16 +5,16 @@ import { glyphOrUnknown } from './glyphs';
 import { journalPlaces, journalProgressText, type JournalPlace } from './journal-view';
 import { Sprite } from './sprites/Sprite';
 import { Bar } from './ui/Bar';
+import { Accordion } from './ui/Accordion';
 
 function PlaceGroup({ place, open }: { place: JournalPlace; open: boolean }) {
   return (
-    <details class="journal-place" open={open}>
-      <summary>
-        <span class="pix">{place.name}</span>{' '}
-        <span class="muted">
-          {place.found} / {place.total}
-        </span>
-      </summary>
+    <Accordion
+      title={<span class="pix">{place.name}</span>}
+      meta={`${String(place.found)} / ${String(place.total)}`}
+      class="journal-place"
+      defaultOpen={open}
+    >
       {place.sets.length > 0 && (
         <ul class="journal-sets" aria-label="Sets">
           {place.sets.map((set) => (
@@ -46,7 +46,7 @@ function PlaceGroup({ place, open }: { place: JournalPlace; open: boolean }) {
           </li>
         ))}
       </ul>
-    </details>
+    </Accordion>
   );
 }
 

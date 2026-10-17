@@ -25,6 +25,7 @@ import type { CreatureChoice, ToolSpec } from './forms';
 import { CLOCK_SPECS, GOODS_SPECS, RESET_ACCOUNT_SPEC, orderedSections } from './specs';
 import { ToolForm } from './ToolForm';
 import { WORKBENCH_URL } from './workbench-link';
+import { Accordion } from '../ui/Accordion';
 
 /** A string only this module tree contains: the production build test searches the output for it. */
 const DEV_PANEL_MARKER = 'DEV_PANEL_MARKER_7f3a';
@@ -46,16 +47,9 @@ function Section({
   children: ComponentChildren;
 }): JSX.Element {
   return (
-    <details
-      class="dev-section"
-      open={open}
-      onToggle={(event) => {
-        onToggle(event.currentTarget.open);
-      }}
-    >
-      <summary>{title}</summary>
+    <Accordion title={title} variant="compact" class="dev-section" open={open} onToggle={onToggle}>
       <div class="dev-section-body">{children}</div>
-    </details>
+    </Accordion>
   );
 }
 

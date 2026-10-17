@@ -35,6 +35,7 @@ import { RaidNews } from './RaidNews';
 import { Placement } from './Placement';
 import { toPickerCreature } from './roster-picker';
 import type { Forecast } from './weather-types';
+import { Accordion } from './ui/Accordion';
 
 interface Loaded {
   view: RaidView;
@@ -294,13 +295,12 @@ export function Raid({
         }}
       />
       {showPractice && !practiceGone && (
-        <details class="practice">
-          <summary>Testing tools</summary>
+        <Accordion title="Testing tools" class="practice">
           <p class="muted">Practice fights only exist on the test server and give no rewards.</p>
           <button type="button" disabled={busy} onClick={startPracticeFight}>
             Start practice fight
           </button>
-        </details>
+        </Accordion>
       )}
       <BossCard view={view} forecast={forecast} />
       {party !== null && (

@@ -20,6 +20,7 @@ import { ItemDetail } from './ItemDetail';
 import { JobReveal } from './JobReveal';
 import { JobSlots } from './JobSlots';
 import { SupplyCrafting } from './SupplyCrafting';
+import { Accordion } from './ui/Accordion';
 
 /**
  * The Workshop tab: your parts, the job slots (with timers and claims), the bag of gear with
@@ -79,8 +80,7 @@ export function Workshop({
             ))}
           </ul>
           {gear.notice.unequipped.length > 0 && (
-            <details>
-              <summary>Why some items are in the bag</summary>
+            <Accordion title="Why some items are in the bag" variant="compact">
               <ul>
                 {gear.notice.unequipped.map((note) => (
                   <li key={note.id}>
@@ -88,7 +88,7 @@ export function Workshop({
                   </li>
                 ))}
               </ul>
-            </details>
+            </Accordion>
           )}
           <p class="actions">
             <button

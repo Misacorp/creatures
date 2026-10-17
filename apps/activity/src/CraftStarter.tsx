@@ -17,6 +17,7 @@ import {
   startBlocker,
 } from './gear-view';
 import { formatDuration } from './time-format';
+import { Accordion } from './ui/Accordion';
 
 type PreviewState =
   { status: 'loading' } | { status: 'failed' } | { status: 'ready'; preview: CraftPreview };
@@ -186,8 +187,7 @@ export function CraftStarter({
               </label>
             );
           })}
-          <details class="reach-details">
-            <summary>Details</summary>
+          <Accordion title="Details" variant="compact" class="reach-details">
             <p class="muted">
               Item level {preview.itemLevel} (2 × Crafting level {preview.craftingLevel})
             </p>
@@ -195,7 +195,7 @@ export function CraftStarter({
               Step-up chance {oddsPercent(preview.stepUpBp)}: 1% per Crafting level above 1 and per
               well-thumbed mark ({marksText(preview.marks)})
             </p>
-          </details>
+          </Accordion>
         </fieldset>
       )}
       {baseLocked && preview !== null && (

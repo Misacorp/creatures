@@ -44,6 +44,7 @@ import { BossHp } from './ui/SegmentBar';
 import type { Badge } from './stage-abilities';
 import { LiveStage, LogToggle } from './Stage';
 import { useRemaining } from './use-countdown';
+import { Accordion } from './ui/Accordion';
 
 /**
  * The live Sunday finale: the lobby and the fight, with the boss HP, the row, the round's events
@@ -437,8 +438,7 @@ function LiveDetails({ fight }: { fight: LiveRunning }) {
   return (
     <>
       {others.length > 0 && (
-        <details class="others">
-          <summary>{othersSummary(others)}</summary>
+        <Accordion title={othersSummary(others)} variant="compact" class="others">
           <ul class="plain-list">
             {others.map((usage) => (
               <li key={usage.alias} class="live-ability">
@@ -447,7 +447,7 @@ function LiveDetails({ fight }: { fight: LiveRunning }) {
               </li>
             ))}
           </ul>
-        </details>
+        </Accordion>
       )}
       <LogToggle id="live-log">
         <h4>This round</h4>
@@ -464,12 +464,11 @@ function LiveDetails({ fight }: { fight: LiveRunning }) {
           </ol>
         )}
         {earlier.length > 0 && (
-          <details class="live-earlier">
-            <summary>Earlier rounds</summary>
+          <Accordion title="Earlier rounds" variant="compact" class="live-earlier">
             <ol class="live-feed">
               <FeedItems lines={earlier} />
             </ol>
-          </details>
+          </Accordion>
         )}
       </LogToggle>
     </>
