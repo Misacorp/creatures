@@ -2,6 +2,8 @@
 
 Status: **built** (engine, content, server, balance model and Activity UI), 2026-10-13. Numbers and choices as built: `decisions.md`, 2026-10-13, "Daily dungeon v1" and, for the single row, "Daily dungeon: one row, a constant stage and a fuller end report". Roadmap item 3.
 
+**Superseded in part (2026-10-18):** the run is now a path on a daily map with a camp and a pack, played room by room: `dungeon-paths.md`. The three-room run below, played all at once, is what runs from before that change replay as.
+
 ## Idea (Misa)
 
 A solo daily mode in which a player takes **their own team of three creatures** into a dungeon:
