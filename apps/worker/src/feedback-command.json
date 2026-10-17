@@ -1,0 +1,7 @@
+{
+  "name": "feedback",
+  "type": 1,
+  "description": "Send a bug report or an idea to the game's maker",
+  "contexts": [0],
+  "integration_types": [0]
+}

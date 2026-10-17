@@ -43,7 +43,7 @@ export async function tokenMatches(presented: string, expected: string): Promise
 }
 
 /** The token of an `Authorization: Bearer <token>` header, or null. */
-function bearerToken(request: Request): string | null {
+export function bearerToken(request: Request): string | null {
   const header = request.headers.get('Authorization');
   if (header === null) return null;
   const match = /^Bearer ([^\s]{1,512})$/.exec(header);
@@ -123,7 +123,7 @@ export interface OpsDeps {
 }
 
 /** A short, non-identifying key for the rate limiter: a hash of the connecting IP. */
-async function limiterKey(request: Request): Promise<string> {
+export async function limiterKey(request: Request): Promise<string> {
   const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
   const digest = await sha256(`ops-limit:${ip}`);
   return Array.from(digest.subarray(0, 8), (b) => b.toString(16).padStart(2, '0')).join('');

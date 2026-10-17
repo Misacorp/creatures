@@ -70,6 +70,15 @@ jobs:
 
       - run: pnpm build
 
+      # The app's public key (`verify_key`, not a secret) checks the signatures of /feedback
+      # interactions. Read from Discord with the bot token, so nobody copies it by hand. A failure is
+      # a warning: the Worker then deploys with the key empty and the feedback command off.
+      - name: Read the Discord public key
+        id: discord
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: node apps/worker/scripts/discord-app.mjs public-key "$TARGET_ENV"
+
       - name: Deploy Worker
         working-directory: apps/worker
         env:
@@ -80,6 +89,9 @@ jobs:
           LEET_API_KEY: ${{ secrets.LEET_API_KEY }}
           # Optional: the ops report endpoint answers 404 until this is set.
           OPS_TOKEN: ${{ secrets.OPS_TOKEN }}
+          # Optional: the read-only feedback routes (report text, screenshots) answer 404 until this is set.
+          FEEDBACK_READ_TOKEN: ${{ secrets.FEEDBACK_READ_TOKEN }}
+          DISCORD_PUBLIC_KEY: ${{ steps.discord.outputs.public_key }}
           GIT_SHA: ${{ github.sha }}
           BRANCH: ${{ github.ref_name }}
         run: |
@@ -93,10 +105,21 @@ jobs:
           fi
           secrets_file="$(mktemp -p "$RUNNER_TEMP" secrets.XXXXXX.json)"
           trap 'rm -f "$secrets_file"' EXIT
-          # OPS_TOKEN is optional: an empty value is left out, so no empty secret is uploaded.
-          jq -n --arg cs "$DISCORD_CLIENT_SECRET" --arg bt "$DISCORD_BOT_TOKEN" --arg lk "$LEET_API_KEY" --arg ot "$OPS_TOKEN" \
-            '{DISCORD_CLIENT_SECRET: $cs, DISCORD_BOT_TOKEN: $bt, LEET_API_KEY: $lk} + (if $ot == "" then {} else {OPS_TOKEN: $ot} end)' > "$secrets_file"
+          # OPS_TOKEN and FEEDBACK_READ_TOKEN are optional: an empty value is left out, so no empty
+          # secret is uploaded.
+          jq -n --arg cs "$DISCORD_CLIENT_SECRET" --arg bt "$DISCORD_BOT_TOKEN" --arg lk "$LEET_API_KEY" --arg ot "$OPS_TOKEN" --arg fr "$FEEDBACK_READ_TOKEN" \
+            '{DISCORD_CLIENT_SECRET: $cs, DISCORD_BOT_TOKEN: $bt, LEET_API_KEY: $lk} + (if $ot == "" then {} else {OPS_TOKEN: $ot} end) + (if $fr == "" then {} else {FEEDBACK_READ_TOKEN: $fr} end)' > "$secrets_file"
           # The branch shows in the game's footer, so Misa can see what is on staging. Git ref names have
           # no spaces or colons; anything outside this plain set is shown as "unknown".
           if ! [[ "$BRANCH" =~ ^[A-Za-z0-9._/-]{1,100}$ ]]; then BRANCH="unknown"; fi
-          pnpm exec wrangler deploy --env "$TARGET_ENV" --var "VERSION:${GIT_SHA}" --var "BRANCH:${BRANCH}" --secrets-file "$secrets_file"
+          # The public key is 64 hex characters or nothing (then wrangler.jsonc's empty value stays).
+          key_var=()
+          if [[ "$DISCORD_PUBLIC_KEY" =~ ^[0-9a-f]{64}$ ]]; then key_var=(--var "DISCORD_PUBLIC_KEY:${DISCORD_PUBLIC_KEY}"); fi
+          pnpm exec wrangler deploy --env "$TARGET_ENV" --var "VERSION:${GIT_SHA}" --var "BRANCH:${BRANCH}" "${key_var[@]}" --secrets-file "$secrets_file"
+
+      # Creates or updates the /feedback command. Never fails the deploy (the script only warns).
+      - name: Register the /feedback command
+        if: steps.discord.outputs.public_key != ''
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: node apps/worker/scripts/discord-app.mjs register "$TARGET_ENV"

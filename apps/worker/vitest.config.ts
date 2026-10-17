@@ -1,5 +1,5 @@
 import { cloudflareTest } from '@cloudflare/vitest-plugin';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 // Node's process exists here (vitest config runs in Node) but the Worker tsconfig has no Node types.
 declare const process: { env: Record<string, string | undefined> };
@@ -16,5 +16,7 @@ export default defineConfig({
     // They take well under 2 s alone, but on a busy CI runner (all packages test in parallel) they
     // can pass the 5 s default, so allow more time, as the engine and game packages do.
     testTimeout: 30_000,
+    // scripts/*.test.mjs are node:test files (plain Node scripts), run by `node --test`.
+    exclude: [...configDefaults.exclude, 'scripts/**'],
   },
 });

@@ -1,6 +1,9 @@
 import { handleAuthSession } from './auth';
 import { shownBranch } from './branch';
 import { createDiscordApi, type DiscordApi } from './discord';
+import { INTERACTIONS_PATH, handleInteraction } from './discord-interactions';
+import { handleFeedbackRoute, isFeedbackOpsPath } from './feedback-routes';
+import type { FetchAttachment } from './feedback-screenshot';
 import { OPS_REPORT_PATH, handleOpsReport } from './ops-report';
 import { isDevPath } from './dev-tools';
 import {
@@ -17,11 +20,14 @@ import { formatSessionToken, getSessionKey, parseAuthorization, verifyTokenMac }
 
 export { GuildDirectory } from './guild-directory';
 export { GuildWorld } from './guild-world';
+export { FeedbackInbox } from './feedback-inbox';
 
 export interface HandlerDeps {
   /** Builds the Discord client from the Worker's env. Tests inject a fake. */
   createDiscord(env: Env): DiscordApi;
   now(): number;
+  /** Fetches a screenshot from Discord's CDN for `/feedback`. Tests inject a fake so none hit the network. */
+  fetchAttachment: FetchAttachment;
 }
 
 const defaultDeps: HandlerDeps = {
@@ -32,6 +38,7 @@ const defaultDeps: HandlerDeps = {
       botToken: env.DISCORD_BOT_TOKEN,
     }),
   now: () => Date.now(),
+  fetchAttachment: (url, init) => fetch(url, init),
 };
 
 /** Builds the Worker's fetch handler. The default export uses the real Discord client and clock. */
@@ -49,6 +56,16 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
   const opsLimiter = new TokenBucketLimiter({
     capacity: 5,
     refillPerSecond: 0.1,
+    now: deps.now,
+    maxKeys: 1000,
+  });
+
+  // The feedback ops routes have their own limiter, so they cannot use up the report's budget. One
+  // export run makes up to 2 calls per target plus one per report (20 at most), and a triage session two
+  // per report, so the burst is larger: a burst of 60, then one request every 2 seconds.
+  const feedbackLimiter = new TokenBucketLimiter({
+    capacity: 60,
+    refillPerSecond: 0.5,
     now: deps.now,
     maxKeys: 1000,
   });
@@ -90,9 +107,23 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
   };
 
   /** Every route that is not public goes to the guild's Durable Object, which verifies the session. */
-  async function handleApi(request: Request, env: Env, pathname: string): Promise<Response> {
+  async function handleApi(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+    pathname: string,
+  ): Promise<Response> {
     // Bearer OPS_TOKEN only; session tokens are not looked at here.
     if (pathname === OPS_REPORT_PATH) return handleOpsReport(request, env, { limiter: opsLimiter });
+    // Bearer OPS_TOKEN or FEEDBACK_READ_TOKEN, by route; session tokens are not looked at here either.
+    if (isFeedbackOpsPath(pathname)) {
+      return handleFeedbackRoute(pathname, request, env, {
+        limiter: feedbackLimiter,
+        now: deps.now,
+      });
+    }
+    // Discord's interactions endpoint: authenticated by Discord's signature, not a session.
+    if (pathname === INTERACTIONS_PATH) return handleInteraction(request, env, ctx, deps);
     // The dev routes do not exist unless the dev tools are on (staging): checked before anything else, with
     // a plain 404. The Durable Object checks again.
     if (isDevPath(pathname) && env.DEV_TOOLS !== 'on') return notFound();
@@ -111,11 +142,11 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
   }
 
   return {
-    async fetch(request, env): Promise<Response> {
+    async fetch(request, env, ctx): Promise<Response> {
       const { pathname } = new URL(request.url);
       if (pathname === '/api' || pathname.startsWith('/api/')) {
         try {
-          return await handleApi(request, env, pathname);
+          return await handleApi(request, env, ctx, pathname);
         } catch (err) {
           // Log only the error type: messages could carry upstream data.
           console.error('unhandled error', err instanceof Error ? err.name : 'unknown');
