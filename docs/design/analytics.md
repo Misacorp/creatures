@@ -105,6 +105,7 @@ Misa's goal: "understand where players are spending their resources", then "extr
      - Expeditions: destination, length and supply mix; push-on offered, chosen and failed; journal finds; explorer rank distribution; slots.
      - Dungeon: runs, clears by depth, depth distribution, retries, streaks.
      - Gear: drops by source and rarity; equip, upgrade and dismantle.
+     - Collection: the one-time `level_reset` (once per converted player: creatures, levels removed, Bait refunded, items unequipped, talents booked; counts only, 2026-10-17). The refunded Bait is the ledger source `level_reset`.
    - **Raid:**
      - clear rates by rank;
      - finale attendance;

@@ -362,6 +362,28 @@ export interface ServerFirst {
   holders: string[];
 }
 
+/** The one-time card about the level reset (counts only): levels were halved and the Bait they cost came back. */
+export interface LevelResetNotice {
+  /** How many creatures had their level halved. */
+  creatures: number;
+  /** The Bait given back. */
+  bait: number;
+  /** Worn items that went back to the bag because their creature may no longer wear them. */
+  unequipped: number;
+  /** Talents that went back to a Talent Book because their slot is not open any more. */
+  talentsToBook: number;
+}
+
+function isLevelResetNotice(value: unknown): value is LevelResetNotice {
+  return (
+    isRecord(value) &&
+    isInt(value['creatures']) &&
+    isInt(value['bait']) &&
+    isInt(value['unequipped']) &&
+    isInt(value['talentsToBook'])
+  );
+}
+
 export interface GameState {
   serverNow: number;
   balances: Balances;
@@ -371,6 +393,8 @@ export interface GameState {
   expeditions: Expedition[];
   /** Trips called home when the slots were reset (expeditions v2). */
   cancelled: CancelledTrip[];
+  /** The level reset card until the player dismisses it, else null. */
+  levelReset: LevelResetNotice | null;
   slots: Slots;
   /** Supplies in stock: supply id to amount. */
   supplies: Record<string, number>;
@@ -534,6 +558,11 @@ export function parseGameState(data: unknown): GameState {
     !data['expeditions'].every(isTrip) ||
     !Array.isArray(data['cancelled']) ||
     !data['cancelled'].every(isCancelledTrip) ||
+    !(
+      data['levelReset'] === undefined ||
+      data['levelReset'] === null ||
+      isLevelResetNotice(data['levelReset'])
+    ) ||
     !isSlots(data['slots']) ||
     !isSupplyStock(data['supplies']) ||
     !Array.isArray(data['serverFirsts']) ||
@@ -559,6 +588,7 @@ export function parseGameState(data: unknown): GameState {
     creatures: data['creatures'],
     expeditions: data['expeditions'],
     cancelled: data['cancelled'],
+    levelReset: data['levelReset'] ?? null,
     slots: data['slots'],
     supplies: data['supplies'],
     serverFirsts: data['serverFirsts'],
@@ -578,6 +608,11 @@ export function stateFrom(data: unknown): GameState {
 
 export async function fetchState(): Promise<GameState> {
   return parseGameState(await apiFetch('/api/state'));
+}
+
+/** Dismisses the one-time level reset card for good; answers with the new state. */
+export async function dismissLevelReset(): Promise<GameState> {
+  return stateFrom(await apiFetch('/api/level-reset/dismiss', jsonRequest('POST', {})));
 }
 
 export async function chooseStarter(species: string, idempotencyKey: string): Promise<GameState> {

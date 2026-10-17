@@ -5,6 +5,7 @@ import {
   CatchChoiceBodySchema,
   CatchRecommendedBodySchema,
   ClaimBodySchema,
+  DismissLevelResetBodySchema,
   EvolveBodySchema,
   IdSchema,
   LoungerBodySchema,
@@ -70,6 +71,14 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
         leetSync: core.leetSyncStatus(),
         attention,
       });
+    },
+  },
+  '/api/level-reset/dismiss': {
+    POST: async (request, { user, core }) => {
+      const body = await parseBody(request, DismissLevelResetBodySchema);
+      if (body === undefined) return invalidBody();
+      core.collection.dismissLevelReset(user.id);
+      return json({ state: core.collection.state(user.id) });
     },
   },
   '/api/lounger': {

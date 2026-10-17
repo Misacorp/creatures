@@ -410,6 +410,7 @@ describe('GET /api/state', () => {
             'creatures',
             'expeditions',
             'leetSync',
+            'levelReset',
             'loungeSpot',
             'loungerId',
             'pending',
