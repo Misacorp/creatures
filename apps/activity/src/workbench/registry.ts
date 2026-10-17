@@ -15,6 +15,7 @@ import { slotEntries } from './entries/slots';
 import { stageEntries } from './entries/stage';
 import { tagEntries } from './entries/tags';
 import { talentEntries } from './entries/talents';
+import { tripResult } from './entries/trip-result';
 import { GROUPS, type Entry, type Group } from './types';
 
 /**
@@ -38,6 +39,7 @@ export const ENTRIES: readonly Entry[] = [
   ...creatureCardEntries,
   ...creaturePageEntries,
   ...talentEntries,
+  tripResult,
   ...stageEntries,
   ...skyEntries,
 ];
