@@ -81,9 +81,9 @@ describe('the creatures study', () => {
     expect(runCreaturesStudy('test', '', STUDY)).toEqual(run);
   });
 
-  it('answers a tuning override: nothing caught when no roll brings a creature', () => {
+  it('answers a tuning override: nothing caught when no roll brings a creature (and the pity is off)', () => {
     const set =
-      'expeditions.lengths.short.catchBp=0,expeditions.lengths.medium.catchBp=0,expeditions.lengths.long.catchBp=0,expeditions.lengths.day.catchBp=0';
+      'expeditions.lengths.short.catchBp=0,expeditions.lengths.medium.catchBp=0,expeditions.lengths.long.catchBp=0,expeditions.lengths.day.catchBp=0,catching.pity.newAfter=1000000,catching.pity.creatureEvery=1000000';
     const restore = applyOverrides(set);
     try {
       const none = runCreaturesStudy('none', set, STUDY);
@@ -116,7 +116,7 @@ describe('the creatures study', () => {
     expect(md).toContain('## Min-maxer');
     expect(md).toContain('## Drop-in');
     expect(md).toContain('Weeks to complete the base catalogue');
-    expect(md).toContain('Bait per week: earned / levels / lures / talent slots');
+    expect(md).toContain('Bait per week: earned / treats / lures / talent slots');
     expect(md).toContain("Talents' share of fight power");
     expect(md).toMatch(/\| second \|/);
   });

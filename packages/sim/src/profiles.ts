@@ -12,6 +12,14 @@ export const TRAINING_FOCUS = [3, 6, 'spread'] as const;
 export type TrainingFocus = (typeof TRAINING_FOCUS)[number];
 
 /**
+ * Which activities a player packs a treat for (a per-creature checkbox, 3 + half the level in Bait, double
+ * experience): `none`; `long` the 12 hour and 24 hour trips and the dungeon; `all` every trip of 6 hours and
+ * more, the dungeon and the Workshop jobs of 3 hours and more. Only the training focus gets treats.
+ */
+export const TREAT_POLICIES = ['none', 'long', 'all'] as const;
+export type TreatPolicy = (typeof TREAT_POLICIES)[number];
+
+/**
  * How good the daily dungeon team is:
  * - `best`: the best three of the player's top six by the sim's row score (most reactions, then
  *   power), stood in the game's row order;
@@ -48,6 +56,8 @@ export const ProfileSchema = v.strictObject({
   trainFocus: v.picklist(TRAINING_FOCUS),
   /** Rush a creature that is working towards its evolution before levelling the rest. */
   evolutionPush: v.boolean(),
+  /** Which activities get a treat (Bait, double experience). Absent in a profile written before treats: `none`. */
+  treats: v.optional(v.picklist(TREAT_POLICIES), 'none'),
   /** Percent of check-ins at which idle expedition slots get a trip. */
   tripPercent: percent,
   dungeon: v.picklist(DUNGEON_SKILLS),
@@ -114,6 +124,7 @@ export const LEGACY_PROFILES: Readonly<Record<ArchetypeId, PlayerProfile>> = Obj
       checkInHours: onceOnLeetDays ? [9] : [9, 20],
       trainFocus: 3,
       evolutionPush: true,
+      treats: 'none',
       tripPercent: 100,
       dungeon: 'good',
       signUpPercent: cfg.signUpPercent,
@@ -151,6 +162,7 @@ export const PRESETS: Readonly<Record<PresetId, PlayerProfile>> = {
     checkInHours: [0, 3, 6, 9, 12, 15, 18, 21],
     trainFocus: 3,
     evolutionPush: true,
+    treats: 'all',
     tripPercent: 100,
     dungeon: 'best',
     signUpPercent: 100,
@@ -168,6 +180,7 @@ export const PRESETS: Readonly<Record<PresetId, PlayerProfile>> = {
     checkInHours: [9, 20],
     trainFocus: 6,
     evolutionPush: true,
+    treats: 'long',
     tripPercent: 85,
     dungeon: 'good',
     signUpPercent: 100,
@@ -185,6 +198,7 @@ export const PRESETS: Readonly<Record<PresetId, PlayerProfile>> = {
     checkInHours: [18],
     trainFocus: 'spread',
     evolutionPush: false,
+    treats: 'none',
     tripPercent: 55,
     dungeon: 'reasonable',
     signUpPercent: 85,
@@ -202,6 +216,7 @@ export const PRESETS: Readonly<Record<PresetId, PlayerProfile>> = {
     checkInHours: [20],
     trainFocus: 'spread',
     evolutionPush: false,
+    treats: 'none',
     tripPercent: 30,
     dungeon: 'random',
     signUpPercent: 90,

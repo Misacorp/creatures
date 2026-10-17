@@ -27,6 +27,7 @@ function trip(patch: Partial<Trip> = {}): Trip {
     twist: null,
     rolls: 2,
     cost: 0,
+    treat: false,
     startedAt: NOW - HOUR,
     endsAt: NOW + HOUR,
     readyAt: NOW + HOUR,

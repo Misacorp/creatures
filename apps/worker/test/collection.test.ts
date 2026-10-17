@@ -30,9 +30,6 @@ import { createHandler } from '../src/index';
 
 const HOUR = 3_600_000;
 
-/** Bait to train from `level` to the next one (the game's rule, so retuning does not break tests). */
-const trainCostAt = (level: number): number =>
-  RULES.training.baseCost + RULES.training.perLevel * level;
 const USER = { id: USER_ID, displayName: 'Misa' };
 const OTHER = { id: OTHER_USER_ID, displayName: 'Other' };
 
@@ -99,7 +96,13 @@ interface CreatureBody {
   away: boolean;
   quirk: string | null;
   stats: { hp: number; atk: number; spd: number };
-  trainCost: number | null;
+  exp: number;
+  expNeeded: number | null;
+  waiting: boolean;
+  ribbons: number;
+  nextUnlock: { level: number; name: string } | null;
+  ribbon: { id: string; level: number } | null;
+  treatCost: number;
   evolution?: { toSpecies: string; level: number; essence: number; available: boolean };
   ability: { id: string; unlocked: boolean; unlockLevel: number; nextId?: string } | null;
 }
@@ -179,7 +182,6 @@ interface StateBody {
   };
   supplies: Record<string, number>;
   cancelled: { id: string; reason: string }[];
-  trainingMedianLevel: number | null;
   serverFirsts: { kind: string; species: string; at: number; mine: boolean; holders: string[] }[];
   loungerId: string | null;
   loungeSpot: { id: string; at: number } | null;
@@ -418,7 +420,6 @@ describe('GET /api/state', () => {
             'starterOptions',
             'supplies',
             'timezone',
-            'trainingMedianLevel',
           ].sort(),
         );
         expect(before.serverNow).toBe(T0);
@@ -447,7 +448,6 @@ describe('GET /api/state', () => {
         });
         expect(before.supplies).toEqual({});
         expect(before.cancelled).toEqual([]);
-        expect(before.trainingMedianLevel).toBeNull();
         expect(before.serverFirsts).toEqual([]);
         expect(before.loungerId).toBeNull();
         expect(before.loungeSpot).toBeNull();
@@ -462,7 +462,6 @@ describe('GET /api/state', () => {
         const after = await player.state();
         expect(after.starterChosen).toBe(true);
         expect('starterOptions' in after).toBe(false);
-        expect(after.trainingMedianLevel).toBe(1);
         const [cindle] = after.creatures;
         // The only creature is the one that lounges.
         expect(after.loungerId).toBe(cindle?.id);
@@ -517,7 +516,13 @@ describe('GET /api/state', () => {
           statsWithGear: { hp: 96, atk: 40, spd: 28 },
           gear: [],
           busy: null,
-          trainCost: trainCostAt(1),
+          exp: 0,
+          expNeeded: 27,
+          waiting: false,
+          ribbons: 0,
+          nextUnlock: { level: 7, name: 'Scarf' },
+          ribbon: null,
+          treatCost: 4,
           evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: false },
           ability: {
             id: 'flare-strike',
@@ -1218,9 +1223,19 @@ describe('POST /api/expeditions/{id}/claim', () => {
     const single = await run(1);
     const many = await run(5);
     expect(many.drawn).toBe(single.drawn);
+    // The creature ids are random per database: everything else in the result is the same.
+    const plain = (r: Json) => {
+      const { experience, ...rest } = resultOf(r) as ReturnType<typeof resultOf> & {
+        experience?: Record<string, unknown>;
+      };
+      const exp = { ...(experience ?? {}) };
+      delete exp['creatureId'];
+      return { ...rest, experience: exp };
+    };
     for (const r of many.results) {
       expect(r.status).toBe(200);
-      expect(resultOf(r)).toEqual(resultOf(single.results[0] as Json));
+      expect(plain(r)).toEqual(plain(single.results[0] as Json));
+      expect(resultOf(r)).toEqual(resultOf(many.results[0] as Json));
     }
   });
 
@@ -1573,198 +1588,22 @@ describe('POST /api/expeditions/{id}/claim', () => {
 });
 
 describe('POST /api/creatures/{id}/train', () => {
-  const train = (p: Player, id: string, key = newKey()) =>
-    p.call('POST', `/api/creatures/${id}/train`, { idempotencyKey: key });
-
-  it('charges the cost and raises the level by one', async () => {
+  it('is gone: levels come from experience, and an old client gets a clear answer and pays nothing', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100);
-        const res = await train(p, p.starterId);
-        expect(res.status).toBe(200);
-        expect(res.body['level']).toBe(2);
-        const state = res.body['state'] as StateBody;
-        expect(state.balances.bait).toBe(100 - trainCostAt(1));
-        expect(state.creatures[0]).toMatchObject({ level: 2, trainCost: trainCostAt(2) });
-        expect(
-          ctx.sql
-            .exec<{ amount: number }>("SELECT amount FROM ledger WHERE source = 'training'")
-            .toArray(),
-        ).toEqual([{ amount: -trainCostAt(1) }]);
-      },
-      seeded(),
-    );
-  });
-
-  it('replaying the key charges once and does not level twice', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await joinWithStarter(ctx, USER, 100);
-        const key = newKey();
-        await train(p, p.starterId, key);
-        const again = await train(p, p.starterId, key);
-        expect(again.status).toBe(200);
-        expect(again.body['level']).toBe(2);
-        expect((again.body['state'] as StateBody).balances.bait).toBe(100 - trainCostAt(1));
-        expect((again.body['state'] as StateBody).creatures[0]?.level).toBe(2);
-        expect(count(ctx.sql, 'ledger', "source = 'training'")).toBe(1);
-      },
-      seeded(),
-    );
-  });
-
-  it('refuses a key that was used for another creature', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await joinWithStarter(ctx, USER, 100);
-        ctx.sql.exec(
-          `INSERT INTO creatures (id, user_id, line, species, level, origin, caught_at)
-           VALUES ('00000000-0000-4000-8000-000000000008', ?, 'cindle', 'cindle', 1, 'test', ?)`,
-          USER_ID,
-          T0,
-        );
-        const key = newKey();
-        await train(p, p.starterId, key);
-        const res = await train(p, '00000000-0000-4000-8000-000000000008', key);
-        expect(res.status).toBe(409);
-        expect(res.body).toEqual({ error: 'key_conflict' });
-        expect(ctx.core.balances(USER_ID).bait).toBe(100 - trainCostAt(1));
-      },
-      seeded(),
-    );
-  });
-
-  it('409s when the creature is at its level cap', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await joinWithStarter(ctx, USER, 1000);
-        ctx.sql.exec('UPDATE creatures SET level = 15');
-        const res = await train(p, p.starterId);
-        expect(res.status).toBe(409);
-        expect(res.body).toEqual({ error: 'level_cap' });
+        const res = await p.call('POST', `/api/creatures/${p.starterId}/train`, {
+          idempotencyKey: newKey(),
+        });
+        expect(res.status).toBe(410);
+        expect(res.body).toEqual({ error: 'training_is_by_activity' });
+        // Whatever the body (or none), nothing is charged and the level does not move.
+        expect((await p.call('POST', `/api/creatures/${p.starterId}/train`, {})).status).toBe(410);
         const state = await p.state();
-        expect(state.creatures[0]).toMatchObject({ level: 15, trainCost: null });
-        expect(state.balances.bait).toBe(1000);
-      },
-      seeded(),
-    );
-  });
-
-  it('409s while the creature is away', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await joinWithStarter(ctx, USER, 100);
-        await send(p, p.starterId);
-        const res = await train(p, p.starterId);
-        expect(res.status).toBe(409);
-        expect(res.body).toEqual({ error: 'creature_away' });
-        expect(ctx.core.balances(USER_ID).bait).toBe(100);
-      },
-      seeded(),
-    );
-  });
-
-  it('409s without funds and writes nothing', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await joinWithStarter(ctx, USER, trainCostAt(1) - 1);
-        const ledger = count(ctx.sql, 'ledger');
-        const res = await train(p, p.starterId);
-        expect(res.status).toBe(409);
-        expect(res.body).toEqual({ error: 'insufficient_funds' });
-        expect(count(ctx.sql, 'ledger')).toBe(ledger);
-        expect((await p.state()).creatures[0]?.level).toBe(1);
-      },
-      seeded(),
-    );
-  });
-
-  it('applies the catch-up discount when far below the server median', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await joinWithStarter(ctx, USER, 100);
-        await joinWithStarter(ctx, OTHER, 500, 'cindle');
-        ctx.sql.exec('UPDATE creatures SET level = 15 WHERE user_id = ?', OTHER_USER_ID);
-        // Top levels are 1 and 15: median 8, so level 1 < 8 - 5 gets half price (rounded up).
-        const state = await a.state();
-        expect(state.trainingMedianLevel).toBe(8);
-        expect(state.creatures[0]?.trainCost).toBe(Math.ceil(trainCostAt(1) / 2));
-        const res = await train(a, a.starterId);
-        expect(res.status).toBe(200);
-        expect((res.body['state'] as StateBody).balances.bait).toBe(
-          100 - Math.ceil(trainCostAt(1) / 2),
-        );
-        // Level 2 is still more than 5 below 8 (2 < 3): half price again.
-        expect((res.body['state'] as StateBody).creatures[0]?.trainCost).toBe(
-          Math.ceil(trainCostAt(2) / 2),
-        );
-      },
-      seeded(),
-    );
-  });
-
-  it('charges full price near the median', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await joinWithStarter(ctx, USER, 100);
-        await joinWithStarter(ctx, OTHER, 100, 'cindle');
-        ctx.sql.exec('UPDATE creatures SET level = 6 WHERE user_id = ?', OTHER_USER_ID);
-        // Tops 1 and 6: median 3.5; 1 < -1.5 is false.
-        const state = await a.state();
-        expect(state.trainingMedianLevel).toBe(3.5);
-        expect(state.creatures[0]?.trainCost).toBe(trainCostAt(1));
-      },
-      seeded(),
-    );
-  });
-
-  it("uses each player's highest creature, and ignores players without creatures", async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await joinWithStarter(ctx, USER, 100);
-        await join(ctx, OTHER); // no starter: not part of the median
-        ctx.sql.exec(
-          `INSERT INTO creatures (id, user_id, line, species, level, origin, caught_at)
-           VALUES ('00000000-0000-4000-8000-000000000007', ?, 'zipmouse', 'zipmouse', 9, 'test', ?)`,
-          USER_ID,
-          T0,
-        );
-        expect((await a.state()).trainingMedianLevel).toBe(9);
-      },
-      seeded(),
-    );
-  });
-
-  it('404s for creatures that are not yours and 400s for malformed ids and bodies', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await joinWithStarter(ctx, USER, 100);
-        const b = await joinWithStarter(ctx, OTHER, 100, 'cindle');
-        const res = await train(b, a.starterId);
-        expect(res.status).toBe(404);
-        expect(res.body).toEqual({ error: 'not_found' });
-        expect((await train(a, 'nope')).status).toBe(400);
-        expect((await a.call('POST', `/api/creatures/${a.starterId}/train`, {})).status).toBe(400);
-        expect(
-          (
-            await a.call('POST', `/api/creatures/${a.starterId}/train`, {
-              idempotencyKey: newKey(),
-              amount: 0,
-            })
-          ).status,
-        ).toBe(400);
-        expect(ctx.core.balances(OTHER_USER_ID).bait).toBe(100);
-        expect(ctx.core.balances(USER_ID).bait).toBe(100);
+        expect(state.balances.bait).toBe(100);
+        expect(state.creatures[0]).toMatchObject({ level: 1, exp: 0 });
+        expect(count(ctx.sql, 'ledger', "source = 'training'")).toBe(0);
       },
       seeded(),
     );

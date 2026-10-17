@@ -7,6 +7,7 @@
  * Every number in the text of a line is the server's own (`lines[].text`); nothing is worked out here.
  */
 import type { GearSlot, GearTag, ReachId } from '@creatures/game';
+import type { ExperienceView } from './experience';
 
 export type { GearSlot, GearTag, ReachId };
 
@@ -90,6 +91,8 @@ export interface GearItem {
 }
 
 export interface JobCommon {
+  /** Creature experience the job paid its worker (doubled by a treat); absent in older results and for a retired job. */
+  experience?: ExperienceView;
   xp: number;
   skillXp: number;
   skillLevel: number;
@@ -132,6 +135,8 @@ export interface Job {
   cost: PartsBundle;
   /** The Bait it cost when it started (a lure costs Bait; absent on jobs stored before lures did). */
   bait?: number;
+  /** A treat was packed for the worker: the job pays double creature experience. */
+  treat?: boolean;
   startedAt: number;
   endsAt: number;
   /** `ready` is a finished job that has not been claimed. */
@@ -229,10 +234,24 @@ export type StartJobRequest =
       creatureId: string;
       blueprintId: string;
       reach: ReachId;
+      /** Pack a treat for the worker (Bait, paid when the job starts): double experience for the job. */
+      treat?: boolean | undefined;
       idempotencyKey: string;
     }
-  | { kind: 'supply'; creatureId: string; supplyId: string; idempotencyKey: string }
-  | { kind: 'dismantle'; creatureId: string; itemIds: readonly string[]; idempotencyKey: string };
+  | {
+      kind: 'supply';
+      creatureId: string;
+      supplyId: string;
+      treat?: boolean | undefined;
+      idempotencyKey: string;
+    }
+  | {
+      kind: 'dismantle';
+      creatureId: string;
+      itemIds: readonly string[];
+      treat?: boolean | undefined;
+      idempotencyKey: string;
+    };
 
 /** Rarity odds in basis points (they add up to 10,000), as the server works them out. */
 export interface CraftOdds {

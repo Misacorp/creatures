@@ -9,6 +9,7 @@ import {
   type CreatureSpecies,
 } from '@creatures/game';
 import { speciesOf, type OwnedCreature, type SimItem } from '../src/data';
+import { expToNext } from '@creatures/game';
 import { runEconomy, type DayInfo, type EconomyObserver } from '../src/economy';
 import {
   JourneyRecorder,
@@ -23,7 +24,16 @@ import { PRESETS, type PlayerProfile } from '../src/profiles';
 import { createPlayer, type SimPlayer } from '../src/state';
 
 function owned(player: string, line: string, level: number, speciesId = line): OwnedCreature {
-  return { id: `${player}/${line}`, line, speciesId, level, fusionCount: 0 };
+  // A stage 1 creature of level 10 or lower has no ribbon yet; the ones above have the ribbons they are past.
+  return {
+    id: `${player}/${line}`,
+    line,
+    speciesId,
+    level,
+    fusionCount: 0,
+    exp: 0,
+    ribbons: level > 20 ? 2 : level > 10 ? 1 : 0,
+  };
 }
 
 /** A player holding three stage-1 creatures at the given levels. */
@@ -64,37 +74,42 @@ describe('the binding limit', () => {
     }
   });
 
-  it('Bait to train: a trainable team and not enough Bait', () => {
-    const p = stageOne([10, 10, 10]);
+  it('experience: a team that can still grow is held back by what its activities pay, not by Bait', () => {
+    const p = stageOne([5, 5, 5]);
     p.bait = 0;
-    expect(bindingLimit(p, 10)).toMatchObject({
-      primary: 'bait_to_train',
-      blocked: ['bait_to_train'],
-    });
+    expect(bindingLimit(p)).toMatchObject({ primary: 'experience', blocked: ['experience'] });
+    // Bait changes nothing: it buys no levels.
+    p.bait = 10_000;
+    expect(bindingLimit(p).primary).toBe('experience');
   });
 
-  it('next check-in: the Bait is there but not spent yet', () => {
+  it('ribbon materials: a team creature waits at level 10 and the player cannot pay its ribbon yet', () => {
     const p = stageOne([10, 10, 10]);
-    p.bait = 10_000;
-    expect(bindingLimit(p, 10).primary).toBe('next_check_in');
+    for (const c of p.creatures) c.exp = expToNext(10);
+    expect(bindingLimit(p)).toMatchObject({ primary: 'ribbon_materials' });
+    // With the materials in the purse the ribbon is only waiting for the next check-in.
+    p.gear.parts.scrap = 100;
+    for (const kind of PART_KINDS) if (kind.endsWith('-shard')) p.gear.parts[kind] = 100;
+    expect(bindingLimit(p).primary).toBe('next_check_in');
   });
 
   it('Essence to evolve: a team creature at its evolution level, the rest still trainable', () => {
-    const p = stageOne([15, 10, 10]);
+    const p = stageOne([15, 5, 5]);
     p.bait = 0;
     p.essence = 0;
-    const limit = bindingLimit(p, 10);
+    const limit = bindingLimit(p);
     expect(limit.primary).toBe('essence_to_evolve');
     expect(limit.blocked).toContain('essence_to_evolve');
   });
 
   it('level cap waiting on evolution: every team creature is held at the stage-1 cap', () => {
     const p = stageOne([15, 15, 15]);
+    for (const c of p.creatures) c.exp = expToNext(15); // the bank is full: nothing more can be earned
     p.essence = RULES.fusion.maxFusions; // a few Essence, not the 20 an evolution costs
-    expect(bindingLimit(p, 15).primary).toBe('level_cap_waiting_evolution');
+    expect(bindingLimit(p).primary).toBe('level_cap_waiting_evolution');
     // With the Essence in hand the evolution is only waiting for the next check-in.
     p.essence = 1000;
-    expect(bindingLimit(p, 15).primary).toBe('next_check_in');
+    expect(bindingLimit(p).primary).toBe('next_check_in');
   });
 
   it('nothing worth buying: the whole team at the final cap, fusion not maxed, no gear to work on', () => {
@@ -102,13 +117,13 @@ describe('the binding limit', () => {
     expect(p.creatures).toHaveLength(3);
     p.bait = 500;
     p.essence = 500;
-    expect(bindingLimit(p, 30)).toMatchObject({ primary: 'nothing_worth_buying', gear: null });
+    expect(bindingLimit(p)).toMatchObject({ primary: 'nothing_worth_buying', gear: null });
   });
 
   it('max fusion: the same team, fully fused', () => {
     const p = finalStage();
     for (const c of p.creatures) c.fusionCount = RULES.fusion.maxFusions;
-    expect(bindingLimit(p, 30).primary).toBe('max_fusion');
+    expect(bindingLimit(p).primary).toBe('max_fusion');
   });
 
   it('scrap for a craft the player knows a blueprint for', () => {
@@ -116,7 +131,7 @@ describe('the binding limit', () => {
     p.gear.blueprints.push('trail-cap');
     p.gear.parts.scrap = 0;
     expect(gearLimit(p)).toBe('scrap_for_gear');
-    expect(bindingLimit(p, 30)).toMatchObject({
+    expect(bindingLimit(p)).toMatchObject({
       primary: 'scrap_for_gear',
       gear: 'scrap_for_gear',
     });
@@ -132,7 +147,7 @@ describe('the binding limit', () => {
       endsAtHour: 1_000,
       baseId: 'x',
     });
-    expect(bindingLimit(p, 30).primary).toBe('craft_timer');
+    expect(bindingLimit(p).primary).toBe('craft_timer');
   });
 
   it('shards for a craft of an element base, then scrap', () => {
@@ -160,7 +175,7 @@ describe('the binding limit', () => {
   });
 
   it('full expedition slots are listed as blocked but do not become the binding limit', () => {
-    const p = stageOne([10, 10, 10]);
+    const p = stageOne([5, 5, 5]);
     p.bait = 0;
     p.expeditions.push({
       explorerId: 'p01/cindle',
@@ -172,25 +187,25 @@ describe('the binding limit', () => {
       startHour: 0,
       endsAtHour: 10,
     });
-    const limit = bindingLimit(p, 10);
-    expect(limit.primary).toBe('bait_to_train');
+    const limit = bindingLimit(p);
+    expect(limit.primary).toBe('experience');
     expect(limit.blocked).toContain('expedition_slots_full');
   });
 });
 
 describe('waits', () => {
-  it('a Bait wait is the stretch between two trainings; other limits run until they change', () => {
+  it('an experience wait is the stretch between two levels; other limits run until they change', () => {
     const t = new WaitTracker();
-    t.step(1, 'bait_to_train', null, true, false); // trained: progress
-    t.step(2, 'bait_to_train', null, false, false); // wait begins
-    t.step(3, 'bait_to_train', null, false, false);
-    t.step(4, 'bait_to_train', null, true, false); // trained again: wait over
+    t.step(1, 'experience', null, true, false); // a level gained: progress
+    t.step(2, 'experience', null, false, false); // wait begins
+    t.step(3, 'experience', null, false, false);
+    t.step(4, 'experience', null, true, false); // a level again: wait over
     t.step(5, 'essence_to_evolve', null, false, false);
     t.step(6, 'next_check_in', null, false, false); // not a wait: the Essence wait carries on
     t.step(7, 'essence_to_evolve', null, true, false);
     t.step(8, 'level_cap_waiting_evolution', null, false, false);
     expect(t.waits).toEqual([
-      { cause: 'bait_to_train', start: 2, length: 2, track: 'growth' },
+      { cause: 'experience', start: 2, length: 2, track: 'growth' },
       { cause: 'essence_to_evolve', start: 5, length: 3, track: 'growth' },
       { cause: 'level_cap_waiting_evolution', start: 8, length: 1, track: 'growth' },
     ]);
@@ -198,11 +213,11 @@ describe('waits', () => {
 
   it('the gear path has its own waits, ended by any craft', () => {
     const t = new WaitTracker();
-    t.step(1, 'bait_to_train', 'scrap_for_gear', false, false);
-    t.step(2, 'bait_to_train', 'scrap_for_gear', false, false);
-    t.step(3, 'bait_to_train', 'scrap_for_gear', false, true); // crafted today
-    t.step(4, 'bait_to_train', 'shards_for_craft', false, false);
-    t.step(5, 'bait_to_train', null, false, false);
+    t.step(1, 'experience', 'scrap_for_gear', false, false);
+    t.step(2, 'experience', 'scrap_for_gear', false, false);
+    t.step(3, 'experience', 'scrap_for_gear', false, true); // crafted today
+    t.step(4, 'experience', 'shards_for_craft', false, false);
+    t.step(5, 'experience', null, false, false);
     const gear = t.waits.filter((w) => w.track === 'gear');
     expect(gear).toEqual([
       { cause: 'scrap_for_gear', start: 1, length: 2, track: 'gear' },
@@ -496,10 +511,10 @@ describe('profile decisions', () => {
     }).players[0]?.weeks ?? [];
   const engaged = { ...PRESETS.engaged, id: 'test', label: 'Test' };
 
-  it('no Bait goes to supplies: they are not for sale, and training takes what is spent', () => {
+  it('no Bait goes to supplies: they are not for sale, and treats take what is spent on levels', () => {
     for (const w of weeks(engaged)) {
       expect(w).not.toHaveProperty('baitSpentExpeditions');
-      expect(w.baitSpentTraining).toBeGreaterThanOrEqual(0);
+      expect(w.baitTreats).toBeGreaterThanOrEqual(0);
     }
   });
 

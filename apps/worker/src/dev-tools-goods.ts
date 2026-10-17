@@ -17,6 +17,7 @@ import {
   gearContent,
   int,
   rarityFitsBase,
+  ribbonsForLevel,
   rollItem,
   skillLevel,
   type GearRarity,
@@ -147,9 +148,10 @@ export function grantCreature(ctx: ToolCtx, body: Body<typeof GrantCreatureBodyS
       },
     ).id;
     ctx.sql.exec(
-      'UPDATE creatures SET level = ?, fusion_count = ? WHERE id = ?',
+      'UPDATE creatures SET level = ?, fusion_count = ?, exp = 0, ribbons = ? WHERE id = ?',
       body.level ?? 1,
       body.fusion ?? 0,
+      ribbonsForLevel(body.level ?? 1),
       creatureId,
     );
   } else {
@@ -181,11 +183,13 @@ export function setCreature(ctx: ToolCtx, body: Body<typeof SetCreatureBodySchem
   if (target.line !== row.line) throw new DevError(400, 'wrong_line');
   const level = body.level ?? row.level;
   if (level > target.levelCap) throw new DevError(400, 'level_cap');
+  // A level set by hand comes with the ribbons the level is past, and no banked experience.
   ctx.sql.exec(
-    'UPDATE creatures SET species = ?, level = ?, fusion_count = ? WHERE id = ?',
+    'UPDATE creatures SET species = ?, level = ?, fusion_count = ?, exp = 0, ribbons = ? WHERE id = ?',
     target.id,
     level,
     body.fusion ?? row.fusion_count,
+    ribbonsForLevel(level),
     row.id,
   );
   return { creatureId: row.id, species: target.id, level, fusion: body.fusion ?? row.fusion_count };

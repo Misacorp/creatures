@@ -1,33 +1,20 @@
 {
   "result": {
     "kind": "dismantle",
-    "creatureId": "994b66e1-f7c0-4422-8827-c9e071625b0b",
+    "creatureId": "17cdcd16-864e-4bd2-8e97-7a8f3e4f097d",
     "items": [
       {
-        "id": "308b51b6-9c12-45f9-be45-f916d13d0290",
+        "id": "178d2128-aeab-4968-b827-b28221fb1c43",
         "baseId": "festival-hearth-scarf",
         "rarity": "festival",
         "itemLevel": 8
       }
     ],
     "range": {
-      "scrap": {
-        "min": 3,
-        "max": 4
-      },
-      "shards": {
-        "min": 1,
-        "max": 2,
-        "element": "ember"
-      },
-      "glimmer": {
-        "min": 0,
-        "max": 1
-      },
-      "essence": {
-        "min": 10,
-        "max": 25
-      }
+      "scrap": { "min": 3, "max": 4 },
+      "shards": { "min": 1, "max": 2, "element": "ember" },
+      "glimmer": { "min": 0, "max": 1 },
+      "essence": { "min": 10, "max": 25 }
     },
     "durationMs": 7200000,
     "xp": 24,

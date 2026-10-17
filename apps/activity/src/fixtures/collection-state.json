@@ -1,14 +1,11 @@
 {
   "serverNow": 1799751603000,
-  "balances": {
-    "bait": 100,
-    "essence": 85
-  },
+  "balances": { "bait": 100, "essence": 85 },
   "starterChosen": false,
   "starterOptions": ["splashet", "cindle", "sproutle"],
   "creatures": [
     {
-      "id": "be8feaec-e856-4b6d-8db6-6dfae4abf135",
+      "id": "67ae8ca0-7584-462f-b07b-5db447a6c414",
       "species": "cindle",
       "line": "cindle",
       "level": 15,
@@ -23,74 +20,49 @@
       "lineSlot": 1,
       "talents": {
         "slots": [
-          {
-            "slot": 1,
-            "opensAt": 1,
-            "open": true,
-            "talent": null
-          },
-          {
-            "slot": 2,
-            "opensAt": 20,
-            "open": false,
-            "talent": null
-          }
+          { "slot": 1, "opensAt": 1, "open": true, "talent": null },
+          { "slot": 2, "opensAt": 20, "open": false, "talent": null }
         ],
         "signature": null,
         "book": []
       },
-      "stats": {
-        "hp": 194,
-        "atk": 82,
-        "spd": 56
-      },
-      "statsWithGear": {
-        "hp": 194,
-        "atk": 90,
-        "spd": 56
-      },
+      "stats": { "hp": 194, "atk": 82, "spd": 56 },
+      "statsWithGear": { "hp": 194, "atk": 90, "spd": 56 },
       "gear": [
         {
-          "id": "0b949a23-897a-417d-b766-b876e5471ed7",
+          "id": "90640c7c-d19b-4307-8d60-c98358777cb6",
           "baseId": "coal-warm-cap",
           "slot": "hat",
           "rarity": "epic",
           "itemLevel": 14
         },
         {
-          "id": "858d9369-feff-4ea1-bb9e-507dcc3f591a",
+          "id": "d9a6dbde-1802-43c0-9e0d-e39e7bb52670",
           "baseId": "tidepool-charm",
           "slot": "charm",
           "rarity": "common",
           "itemLevel": 6
         }
       ],
-      "busy": {
-        "kind": "job",
-        "id": "8f25cf9b-7014-43a5-82d3-e364c634235f"
-      },
+      "busy": { "kind": "job", "id": "fd555f23-196d-426b-af6a-23f81779234d" },
       "ability": {
         "id": "flare-strike",
         "unlocked": true,
         "unlockLevel": 10,
         "nextId": "flare-strike-2"
       },
-      "explorer": {
-        "rank": 1,
-        "xp": 0,
-        "nextRankXp": 200,
-        "trips": 0
-      },
-      "trainCost": null,
-      "evolution": {
-        "toSpecies": "pyrelynx",
-        "level": 15,
-        "essence": 20,
-        "available": true
-      }
+      "explorer": { "rank": 1, "xp": 0, "nextRankXp": 200, "trips": 0 },
+      "exp": 0,
+      "expNeeded": 825,
+      "waiting": false,
+      "ribbons": 1,
+      "nextUnlock": { "level": 20, "name": "Silver Ribbon" },
+      "ribbon": null,
+      "treatCost": 11,
+      "evolution": { "toSpecies": "pyrelynx", "level": 15, "essence": 20, "available": true }
     },
     {
-      "id": "44cadf11-4957-4e7e-95ae-b12861155c17",
+      "id": "f62479ee-d2d4-4751-92ef-c8867c404892",
       "species": "sproutle",
       "line": "sproutle",
       "level": 14,
@@ -105,42 +77,24 @@
       "lineSlot": 1,
       "talents": {
         "slots": [
-          {
-            "slot": 1,
-            "opensAt": 1,
-            "open": true,
-            "talent": null
-          },
-          {
-            "slot": 2,
-            "opensAt": 20,
-            "open": false,
-            "talent": null
-          }
+          { "slot": 1, "opensAt": 1, "open": true, "talent": null },
+          { "slot": 2, "opensAt": 20, "open": false, "talent": null }
         ],
         "signature": null,
         "book": []
       },
-      "stats": {
-        "hp": 303,
-        "atk": 35,
-        "spd": 29
-      },
-      "statsWithGear": {
-        "hp": 333,
-        "atk": 35,
-        "spd": 29
-      },
+      "stats": { "hp": 303, "atk": 35, "spd": 29 },
+      "statsWithGear": { "hp": 333, "atk": 35, "spd": 29 },
       "gear": [
         {
-          "id": "7258cd78-1bd1-4616-8e63-abcad49a44ef",
+          "id": "8f7aa070-e554-425d-8432-942e2b3df33e",
           "baseId": "leafknit-scarf",
           "slot": "scarf",
           "rarity": "rare",
           "itemLevel": 12
         },
         {
-          "id": "44040166-6bcf-4d10-a9b1-7bbe3e710548",
+          "id": "d8a87226-fbff-4386-a173-21049abc8d36",
           "baseId": "wardens-bell",
           "slot": "charm",
           "rarity": "rare",
@@ -154,22 +108,18 @@
         "unlockLevel": 10,
         "nextId": "bark-guard-2"
       },
-      "explorer": {
-        "rank": 1,
-        "xp": 0,
-        "nextRankXp": 200,
-        "trips": 0
-      },
-      "trainCost": 31,
-      "evolution": {
-        "toSpecies": "thornbuck",
-        "level": 15,
-        "essence": 20,
-        "available": false
-      }
+      "explorer": { "rank": 1, "xp": 0, "nextRankXp": 200, "trips": 0 },
+      "exp": 0,
+      "expNeeded": 742,
+      "waiting": false,
+      "ribbons": 1,
+      "nextUnlock": { "level": 15, "name": "Evolution" },
+      "ribbon": null,
+      "treatCost": 10,
+      "evolution": { "toSpecies": "thornbuck", "level": 15, "essence": 20, "available": false }
     },
     {
-      "id": "994b66e1-f7c0-4422-8827-c9e071625b0b",
+      "id": "17cdcd16-864e-4bd2-8e97-7a8f3e4f097d",
       "species": "zipmouse",
       "line": "zipmouse",
       "level": 9,
@@ -184,35 +134,17 @@
       "lineSlot": 1,
       "talents": {
         "slots": [
-          {
-            "slot": 1,
-            "opensAt": 1,
-            "open": true,
-            "talent": null
-          },
-          {
-            "slot": 2,
-            "opensAt": 20,
-            "open": false,
-            "talent": null
-          }
+          { "slot": 1, "opensAt": 1, "open": true, "talent": null },
+          { "slot": 2, "opensAt": 20, "open": false, "talent": null }
         ],
         "signature": null,
         "book": []
       },
-      "stats": {
-        "hp": 176,
-        "atk": 44,
-        "spd": 48
-      },
-      "statsWithGear": {
-        "hp": 176,
-        "atk": 44,
-        "spd": 48
-      },
+      "stats": { "hp": 176, "atk": 44, "spd": 48 },
+      "statsWithGear": { "hp": 176, "atk": 44, "spd": 48 },
       "gear": [
         {
-          "id": "6fbf59e1-b9bc-41c2-ae0f-d96c63a34553",
+          "id": "6dfc2ef8-a6ad-4a1c-be87-fa8bac979933",
           "baseId": "trail-cap",
           "slot": "hat",
           "rarity": "common",
@@ -226,19 +158,15 @@
         "unlockLevel": 10,
         "nextId": "static-zap-2"
       },
-      "explorer": {
-        "rank": 1,
-        "xp": 0,
-        "nextRankXp": 200,
-        "trips": 0
-      },
-      "trainCost": 11,
-      "evolution": {
-        "toSpecies": "voltaro",
-        "level": 15,
-        "essence": 20,
-        "available": false
-      }
+      "explorer": { "rank": 1, "xp": 0, "nextRankXp": 200, "trips": 0 },
+      "exp": 40,
+      "expNeeded": 387,
+      "waiting": false,
+      "ribbons": 1,
+      "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+      "ribbon": null,
+      "treatCost": 8,
+      "evolution": { "toSpecies": "voltaro", "level": 15, "essence": 20, "available": false }
     }
   ],
   "pending": [],
@@ -250,15 +178,11 @@
     "used": 0,
     "rankSum": 0,
     "tripsFinished": 0,
-    "next": {
-      "kind": "trips",
-      "at": 3
-    }
+    "next": { "kind": "trips", "at": 3 }
   },
   "supplies": {},
-  "trainingMedianLevel": 15,
   "serverFirsts": [],
-  "loungerId": "44cadf11-4957-4e7e-95ae-b12861155c17",
+  "loungerId": "f62479ee-d2d4-4751-92ef-c8867c404892",
   "loungeSpot": null,
   "timezone": "Europe/Helsinki",
   "leetSync": {
@@ -268,9 +192,5 @@
     "lastError": "disabled",
     "lastDays": null
   },
-  "attention": {
-    "dungeon": true,
-    "raid": true,
-    "recheckAt": 1799753820000
-  }
+  "attention": { "dungeon": true, "raid": true, "recheckAt": 1799753820000 }
 }

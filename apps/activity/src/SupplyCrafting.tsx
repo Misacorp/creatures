@@ -35,7 +35,7 @@ export function SupplyCrafting({
   stock: Readonly<Record<string, number>>;
   busy: boolean;
   /** Starts the craft; resolves true when it started (the picker then closes). */
-  onCraft: (supplyId: string, creatureId: string) => Promise<boolean>;
+  onCraft: (supplyId: string, creatureId: string, treat: boolean) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const views = supplyCraftViews(stock);
@@ -98,8 +98,8 @@ export function SupplyCrafting({
                   minLevel={view.level}
                   durationAtLevel={(level) => supplyDurationFor(view.id, level)}
                   extraBlocker={blocker}
-                  onStart={(creatureId) => {
-                    void onCraft(view.id, creatureId).then((started) => {
+                  onStart={(creatureId, treat) => {
+                    void onCraft(view.id, creatureId, treat).then((started) => {
                       if (started) setOpen(null);
                     });
                   }}

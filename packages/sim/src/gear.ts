@@ -30,6 +30,7 @@ import {
   supplyDef,
   supplyJobMs,
   supplyJobXp,
+  workshopExperience,
   type BestCandidate,
   type DismantleItem,
   type Element,
@@ -55,6 +56,7 @@ import {
   type SimItem,
 } from './data';
 import type { SimJob, SimPlayer } from './state';
+import { giveExperience, packTreat, ribbonReserve } from './training';
 
 /**
  * Gear and crafting in the simulator. Every formula comes from `@creatures/game` (rolls, folding,
@@ -134,13 +136,21 @@ export function creditParts(player: SimPlayer, bundle: PartsBundle): void {
   }
 }
 
-function canPay(player: SimPlayer, cost: PartsBundle): boolean {
+/** True when the player can pay `cost` and still keep the parts the ribbons of creatures near a gate need. */
+function canSpare(player: SimPlayer, cost: PartsBundle): boolean {
+  const reserve = ribbonReserve(player);
+  return (Object.entries(cost) as [PartKind, number][]).every(
+    ([kind, amount]) => player.gear.parts[kind] - (reserve[kind] ?? 0) >= amount,
+  );
+}
+
+export function canPay(player: SimPlayer, cost: PartsBundle): boolean {
   return (Object.entries(cost) as [PartKind, number][]).every(
     ([kind, amount]) => player.gear.parts[kind] >= amount,
   );
 }
 
-function pay(player: SimPlayer, cost: PartsBundle): void {
+export function pay(player: SimPlayer, cost: PartsBundle): void {
   for (const [kind, amount] of Object.entries(cost) as [PartKind, number][]) {
     player.gear.parts[kind] -= amount;
   }
@@ -297,6 +307,8 @@ function claimOne(player: SimPlayer, job: SimJob, ctx: GearContext): void {
   const crafter = player.creatures.find((c) => c.id === job.creatureId);
   const apprenticeBp = crafter === undefined ? 0 : foldedCreature(crafter).rules.apprenticeBp;
   let xp = 0;
+  // The nominal minutes the job worked: creature experience is 4 an hour of them (the worker records the same).
+  let workMinutes = 0;
   if (job.kind === 'craft' && job.baseId !== undefined) {
     const base = gearBase(job.baseId);
     const reach = job.reach ?? 'none';
@@ -313,6 +325,7 @@ function claimOne(player: SimPlayer, job: SimJob, ctx: GearContext): void {
       }
     }
     xp = jobXp(0, craftHours(reach));
+    workMinutes = Math.round(craftHours(reach) * 60);
   } else if (job.kind === 'supply') {
     const def = job.supplyId === undefined ? undefined : supplyDef(job.supplyId);
     if (def !== undefined) {
@@ -322,6 +335,7 @@ function claimOne(player: SimPlayer, job: SimJob, ctx: GearContext): void {
       if (def.tier === 'good') player.stats.supplies_crafted_good += def.blueprint.yield;
       if (def.tier === 'great') player.stats.supplies_crafted_great += def.blueprint.yield;
       xp = supplyJobXp(def);
+      workMinutes = Math.round(def.blueprint.hours * 60);
     }
   } else if (job.kind === 'dismantle' && job.items !== undefined && job.items.length > 0) {
     // The refund is rolled now, inside the items' ranges (no Crafting level in it); each item that can
@@ -343,6 +357,10 @@ function claimOne(player: SimPlayer, job: SimJob, ctx: GearContext): void {
       }
     }
     xp = dismantleXp((job.items[0] as DismantleItem).rarity);
+    workMinutes = RULES.gear.dismantle.minutes[(job.items[0] as DismantleItem).rarity];
+  }
+  if (crafter !== undefined && workMinutes > 0) {
+    giveExperience(player, crafter, workshopExperience(workMinutes, job.treat === true), 'job');
   }
   player.gear.skillXp[job.creatureId] =
     (player.gear.skillXp[job.creatureId] ?? 0) +
@@ -463,7 +481,7 @@ function planSupply(player: SimPlayer, level: number): JobPlan | null {
   for (const def of expeditionContent.supplies) {
     if (level < def.blueprint.craftingLevel) continue;
     const cost = partsOfSpec(def.blueprint.parts);
-    if (!canPay(player, cost)) continue;
+    if (!canSpare(player, cost)) continue;
     // A lure also costs Bait: held, and within the share the lures may take.
     const bait = def.blueprint.bait ?? 0;
     if (bait > 0 && (player.bait < bait || lureBudget(player) < bait)) continue;
@@ -500,7 +518,7 @@ function planCraft(player: SimPlayer, level: number): JobPlan | null {
   for (const baseId of player.gear.blueprints) {
     const base = gearBase(baseId);
     if (base === undefined || !craftable(base)) continue;
-    if (!canPay(player, craftCost(baseId, craftItemLevel(level)))) continue;
+    if (!canSpare(player, craftCost(baseId, craftItemLevel(level)))) continue;
     const plain = itemOf(baseId, 'common', craftItemLevel(level), []);
     const score = Math.max(0, ...pool.map((c) => scoreFor(plain, c)));
     const better =
@@ -518,7 +536,7 @@ function planCraft(player: SimPlayer, level: number): JobPlan | null {
       player.gear.parts,
       craftItemLevel(level),
     );
-    if (!canPay(player, parts)) continue;
+    if (!canSpare(player, parts)) continue;
     if (essence > 0 && player.essence - essence < GEAR_POLICY.essenceKeep) continue;
     return { job: { kind: 'craft', baseId: best.baseId, reach, marks }, cost: parts, essence };
   }
@@ -581,10 +599,15 @@ export function startJobs(
       const rarity = (items[0] as SimItem).rarity;
       const gone = new Set(items.map((i) => i.uid));
       player.gear.bag = player.gear.bag.filter((i) => !gone.has(i.uid));
+      const treat = packTreat(player, creature, {
+        kind: 'job',
+        hours: RULES.gear.dismantle.minutes[rarity] / 60,
+      });
       player.gear.jobs.push({
         kind: 'dismantle',
         creatureId: creature.id,
         items: items.map((i) => ({ baseId: i.baseId, rarity: i.rarity, itemLevel: i.itemLevel })),
+        ...(treat ? { treat: true } : {}),
         endsAtHour: ctx.hour + jobDuration(level, busyBp, dismantleHours(rarity)) / HOUR_MS,
       });
       continue;
@@ -605,8 +628,12 @@ export function startJobs(
           ? 0
           : minusBp(supplyJobMs(supply, level), busyBp)
         : jobDuration(level, busyBp, craftHours(plan.job.reach ?? 'none'));
+    const nominalHours =
+      kind === 'supply' ? (supply?.blueprint.hours ?? 0) : craftHours(plan.job.reach ?? 'none');
+    const treat = packTreat(player, creature, { kind: 'job', hours: nominalHours });
     player.gear.jobs.push({
       ...plan.job,
+      ...(treat ? { treat: true } : {}),
       creatureId: creature.id,
       endsAtHour: ctx.hour + ms / HOUR_MS,
     });

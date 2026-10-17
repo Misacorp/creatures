@@ -1,5 +1,9 @@
-import { useState } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 import { content, gearBase } from '@creatures/game';
+import stateFixture from '../../fixtures/collection-state.json';
+import { parseGameState, type Creature } from '../../api';
+import { CreatureProgress } from '../../CreatureProgress';
+import { TreatBox } from '../../TreatBox';
 import { AbilityChip } from '../../AbilityChip';
 import { BossCard } from '../../BossCard';
 import { RaidTimeline } from '../../RaidTimeline';
@@ -423,12 +427,179 @@ const livingRoom: Entry = {
   },
 };
 
+const PROGRESS_STATES = [
+  'growing',
+  'waiting for Bronze (ready)',
+  'waiting for Bronze (short)',
+  'waiting for Silver (trips)',
+  'evolution',
+  'top level',
+] as const;
+
+/** A creature of a real server answer, put at the state of growth the page asks for. */
+function progressCreature(p: Props): Creature {
+  const base = parseGameState(stateFixture).creatures[0] as Creature;
+  const state = str(p, 'state');
+  const level = num(p, 'level');
+  const exp = num(p, 'exp');
+  const plain = {
+    ...base,
+    level,
+    exp,
+    ribbon: null,
+    waiting: false,
+    treatCost: 3 + Math.ceil(level / 2),
+  };
+  const bronze = {
+    id: 'bronze',
+    level: 10,
+    parts: { scrap: 6, 'tide-shard': 2 },
+    trips: 0,
+    tripsDone: 0,
+  } as const;
+  const silver = {
+    id: 'silver',
+    level: 20,
+    parts: { scrap: 15, 'tide-shard': 5, glimmer: 1 },
+    trips: 5,
+    tripsDone: 2,
+  } as const;
+  switch (state) {
+    case 'waiting for Bronze (ready)':
+      return {
+        ...plain,
+        level: 10,
+        expNeeded: 340,
+        waiting: true,
+        nextUnlock: { level: 13, name: 'Charm' },
+        ribbon: { ...bronze, ready: true },
+      };
+    case 'waiting for Bronze (short)':
+      return {
+        ...plain,
+        level: 10,
+        expNeeded: 340,
+        waiting: true,
+        nextUnlock: { level: 13, name: 'Charm' },
+        ribbon: { ...bronze, ready: false },
+      };
+    case 'waiting for Silver (trips)':
+      return {
+        ...plain,
+        level: 20,
+        expNeeded: 1_000,
+        waiting: true,
+        nextUnlock: { level: 25, name: 'Talent slot 3' },
+        ribbon: { ...silver, ready: false },
+      };
+    case 'evolution':
+      return {
+        ...plain,
+        level: 15,
+        expNeeded: 600,
+        waiting: true,
+        nextUnlock: { level: 20, name: 'Talent slot 2' },
+        evolution: { toSpecies: 'cindle', level: 15, essence: 0, available: false },
+      };
+    case 'top level':
+      return { ...plain, level: 30, expNeeded: null, exp: 0, nextUnlock: null };
+    default:
+      return { ...plain, expNeeded: 100 + level * 20, nextUnlock: { level: 7, name: 'Scarf' } };
+  }
+}
+
+function ProgressDemo({ p }: { p: Props }) {
+  const creature = useMemo(
+    () => progressCreature(p),
+    [str(p, 'state'), num(p, 'level'), num(p, 'exp')],
+  );
+  return (
+    <div class="creature-card" style={{ maxWidth: '390px' }}>
+      <CreatureProgress creature={creature} busy={bool(p, 'busy')} onRibbon={() => undefined} />
+    </div>
+  );
+}
+
+const creatureProgress: Entry = {
+  name: 'CreatureProgress',
+  file: 'apps/activity/src/CreatureProgress.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    'A creature growth block on its card: the experience bar towards the next level, one line under it with what the next level brings ("Scarf at 7"), and at level 10 or 20 the ribbon button with its cost in materials and what is still missing. Shown here at the width of a phone.',
+  controls: {
+    state: { kind: 'select', options: PROGRESS_STATES },
+    level: { kind: 'number', min: 1, max: 30 },
+    exp: { kind: 'number', min: 0, max: 400 },
+    busy: { kind: 'toggle' },
+  },
+  defaults: { state: 'growing', level: 5, exp: 60, busy: false },
+  presets: [
+    { name: 'Growing', props: {} },
+    {
+      name: 'Waiting for the Bronze Ribbon, ready',
+      props: { state: 'waiting for Bronze (ready)' },
+    },
+    {
+      name: 'Waiting for the Bronze Ribbon, short of parts',
+      props: { state: 'waiting for Bronze (short)' },
+    },
+    {
+      name: 'Waiting for the Silver Ribbon, needs trips',
+      props: { state: 'waiting for Silver (trips)' },
+    },
+    { name: 'Waiting to evolve', props: { state: 'evolution' } },
+    { name: 'Top level', props: { state: 'top level' } },
+  ],
+  render: (p) => <ProgressDemo p={p} />,
+};
+
+function TreatDemo({ p }: { p: Props }) {
+  const [checked, setChecked] = useState(false);
+  const who = str(p, 'who');
+  return (
+    <div style={{ maxWidth: '390px' }}>
+      <TreatBox
+        cost={num(p, 'cost')}
+        bait={num(p, 'bait')}
+        checked={checked}
+        disabled={bool(p, 'disabled')}
+        onChange={setChecked}
+        {...(who === '' ? {} : { who })}
+      />
+    </div>
+  );
+}
+
+const treatBox: Entry = {
+  name: 'TreatBox',
+  file: 'apps/activity/src/TreatBox.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    'The one compact line "Pack a treat for Cindle (5 Bait)" where a creature is sent on a trip, put in the dungeon team or given a Workshop job. A treat doubles the experience of that one activity. The box cannot be ticked without the Bait, and says so.',
+  controls: {
+    cost: { kind: 'number', min: 1, max: 30 },
+    bait: { kind: 'number', min: 0, max: 100 },
+    who: { kind: 'text', maxLength: 20 },
+    disabled: { kind: 'toggle' },
+  },
+  defaults: { cost: 5, bait: 40, who: 'Cindle', disabled: false },
+  presets: [
+    { name: 'Enough Bait', props: {} },
+    { name: 'Not enough Bait', props: { bait: 2 } },
+    { name: 'No name (a single creature screen)', props: { who: '' } },
+    { name: 'Disabled while an action runs', props: { disabled: true } },
+  ],
+  render: (p) => <TreatDemo p={p} />,
+};
+
 export const creatureEntries: readonly Entry[] = [
   livingRoom,
   bossCard,
   raidTimeline,
   abilityChip,
   smallCreature,
+  creatureProgress,
+  treatBox,
   turnStrip,
   wornItemLines,
 ];

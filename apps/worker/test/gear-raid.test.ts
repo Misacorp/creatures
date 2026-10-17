@@ -474,6 +474,14 @@ describe('gear in fights', () => {
         expect(expected.mods).toEqual({ areaBp: 700, takenBp: 400 });
         expect(expected.stats.atk).toBeGreaterThan(effectiveStats(species, row.level, 0).atk);
 
+        const otherRow = rows<{ species: string; level: number; fusion_count: number }>(
+          ctx.sql,
+          'SELECT species, level, fusion_count FROM creatures WHERE id = ?',
+          a.creatureIds[1] as string,
+        )[0] as { species: string; level: number; fusion_count: number };
+        const otherSpecies = content.creatures.find((c) => c.id === otherRow.species);
+        if (otherSpecies === undefined) throw new Error('species');
+
         forcePool(ctx.sql, BIG);
         ctx.clock.t = W02.afterFinale;
         ctx.core.raid.runDue(HELSINKI);
@@ -486,13 +494,6 @@ describe('gear in fights', () => {
         expect(slot?.mods).toEqual(expected.mods);
         // A creature without gear keeps exactly what it always had.
         const other = p1?.input.row.find((s) => s.id === a.creatureIds[1]);
-        const otherRow = rows<{ species: string; level: number; fusion_count: number }>(
-          ctx.sql,
-          'SELECT species, level, fusion_count FROM creatures WHERE id = ?',
-          a.creatureIds[1] as string,
-        )[0] as { species: string; level: number; fusion_count: number };
-        const otherSpecies = content.creatures.find((c) => c.id === otherRow.species);
-        if (otherSpecies === undefined) throw new Error('species');
         expect(other?.stats).toEqual(
           effectiveStats(otherSpecies, otherRow.level, otherRow.fusion_count),
         );

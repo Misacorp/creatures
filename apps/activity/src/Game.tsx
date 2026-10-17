@@ -7,7 +7,7 @@ import {
   renameCreature,
   setLounger,
   setLoungeSpot,
-  trainCreature,
+  earnRibbon,
   type Allowance,
   type Attention,
   type ClaimResult,
@@ -29,6 +29,7 @@ import { fetchGear } from './gear-api';
 import { createGearActions } from './gear-actions';
 import type { GearState, JobResult } from './gear-types';
 import type { ChoiceResult } from './talent-types';
+import { ribbonName } from './experience';
 import { clockOffset, creatureName, errorText, speciesName } from './game';
 import type { ParticipantSource } from './participants';
 import { settleClaim } from './room-data';
@@ -434,10 +435,17 @@ export function Game({
               (await gearActions.equip(gearId, creatureId)) !== undefined
             }
             onEquipBest={(creatureId) => gearActions.equipBest([creatureId])}
-            onTrain={(creature) => {
-              void runKeyed(ActionIds.train(creature.id), (key) =>
-                trainCreature(creature.id, key),
-              ).then(showState);
+            onRibbon={(creature) => {
+              void runKeyed(ActionIds.ribbon(creature.id), (key) =>
+                earnRibbon(creature.id, key),
+              ).then((done) => {
+                if (done === undefined) return;
+                setCurrent(loaded(done.state));
+                const level = done.result.experience?.level;
+                setNotice(
+                  `${creatureName(creature)} earned the ${ribbonName(done.result.ribbon)}${level === undefined ? '' : ` and is level ${String(level)}`}!`,
+                );
+              });
             }}
             onEvolve={(creature) => {
               void runKeyed(
@@ -552,6 +560,7 @@ export function Game({
         {tab === 'dungeon' && (
           <Dungeon
             creatures={game.creatures}
+            bait={game.balances.bait}
             draft={dungeonDraft.current}
             onDraftChange={(slots) => {
               dungeonDraft.current = slots;

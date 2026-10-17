@@ -25,6 +25,7 @@ import {
   abilitiesFor,
   addParts,
   createSeededRng,
+  dungeonExperience,
   dungeonFoe,
   dungeonPayout,
   isLandmark,
@@ -35,6 +36,7 @@ import {
   roomModifier,
   scaledFoe,
   streakBonus,
+  treatCost,
   type Element,
   type GearRarity,
   type PartsBundle,
@@ -58,10 +60,11 @@ import {
 import * as v from 'valibot';
 import type { Analytics } from './analytics';
 import { devKey, type DevFlags } from './dev-state';
-import { keyTaken } from './keyed-action';
+import { awardExperience, type ExperienceView } from './creature-exp';
+import { keyTaken, settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-grants';
-import type { LedgerStorage } from './ledger';
+import { spend, type LedgerStorage } from './ledger';
 import { drawSeed, slotFor } from './raid-resolve';
 import { loadCreatures, type TeamCreature } from './raid-teams';
 import { DraftTeamSchema, LastTeamSchema, type RunBody } from './dungeon-schemas';
@@ -106,6 +109,11 @@ export interface DungeonRewards {
   converted: { baseId: string; rarity: GearRarity }[];
   /** The supplies the run dropped, one content id each (absent in runs stored before supplies dropped here). */
   supplies?: string[];
+  /**
+   * The creature experience the run paid each creature of the team (a treat doubles it) and what it did
+   * to their levels. Absent in runs stored before training by activity.
+   */
+  experience?: ExperienceView[];
   /** A fully cleared landmark depth: its gear drop was certain. */
   landmark: boolean;
   streak: { day: number; bait: number; essence: number; parts: PartsBundle } | null;
@@ -277,7 +285,12 @@ const FRESH_PROGRESS: ProgressRow = {
 
 /** The text of a request that decides a run, for telling a retry from a different request under one key. */
 function fingerprintOf(body: RunBody): string {
-  return JSON.stringify({ team: body.team });
+  // The treats are part of what was asked, whatever order they came in. A request without any hashes
+  // like one before treats existed.
+  return JSON.stringify({
+    team: body.team,
+    ...(body.treats.length === 0 ? {} : { treats: [...body.treats].sort() }),
+  });
 }
 
 export class Dungeon {
@@ -648,10 +661,52 @@ export class Dungeon {
     if (!team.every((c): c is TeamCreature => c !== undefined)) {
       throw new GameError(404, 'not_found');
     }
+    // The treats: each names a creature of the team, once. They are paid below, with the run.
+    if (new Set(body.treats).size !== body.treats.length) throw new GameError(400, 'invalid_treat');
+    if (!body.treats.every((id) => body.team.includes(id))) {
+      throw new GameError(400, 'invalid_treat');
+    }
     // `team[i]` is position i, left to right: the row is the order of the request.
     const standing = team;
     const row: FightSlot[] = standing.map((c) => slotFor(c, PLAYER));
     const abilities = this.abilityChoices(standing);
+
+    // --- The treats cost Bait, paid when the run starts and with it: short Bait takes nothing ---
+    const id = crypto.randomUUID();
+    const treated = new Set(body.treats);
+    const treatBait = standing.reduce(
+      (n, c) => n + (treated.has(c.id) ? treatCost(c.level) : 0),
+      0,
+    );
+    if (treatBait > 0) {
+      settleSpend(
+        spend(
+          this.deps.storage,
+          {
+            userId,
+            currency: 'bait',
+            amount: treatBait,
+            purpose: 'treat',
+            idempotencyKey: `treat:dungeon:${id}`,
+            apply: () => ({ runId: id }),
+          },
+          now,
+        ),
+      );
+      for (const c of standing) {
+        if (!treated.has(c.id)) continue;
+        this.deps.analytics?.record(
+          {
+            kind: 'treat',
+            source: 'dungeon',
+            species: c.species.id,
+            level: c.level,
+            cost: treatCost(c.level),
+          },
+          userId,
+        );
+      }
+    }
 
     // --- The seed is drawn now, and the rooms and the fights follow from it ---
     const seed = drawSeed(this.deps.rng);
@@ -710,9 +765,24 @@ export class Dungeon {
     const rewards = this.pay(userId, day, attempt, depth, result, rooms, newStreak, {
       firstOfDay: progress.last_day !== day,
     });
+    // --- Creature experience: every creature of the team, by rooms cleared (a treat doubles it) ---
+    const experience: ExperienceView[] = [];
+    for (const c of standing) {
+      const gained = dungeonExperience(result.roomsCleared, result.cleared, treated.has(c.id));
+      const view = awardExperience(
+        this.sql,
+        this.deps.analytics,
+        userId,
+        c.id,
+        gained,
+        'dungeon',
+        treated.has(c.id),
+      );
+      if (view !== null) experience.push(view);
+    }
+    rewards.experience = experience;
 
     // --- Store ---
-    const id = crypto.randomUUID();
     const summary = this.summarise({
       id,
       day,

@@ -64,7 +64,8 @@ const DAY = 86_400_000;
 const USER = { id: USER_ID, displayName: 'Misa the Mighty' };
 const OTHER = { id: OTHER_USER_ID, displayName: 'Other Person' };
 const FINALE = eventTimes(W02.id, HELSINKI).finale;
-const BELOW_UNLOCK = RULES.abilities.unlockLevel - 1;
+// Well below, so the experience of the two raid stages before the finale does not carry a creature to the unlock.
+const BELOW_UNLOCK = RULES.abilities.unlockLevel - 4;
 
 interface EventRow {
   id: number;
@@ -791,34 +792,6 @@ describe('collection events', () => {
     );
   });
 
-  it('logs a training once per paid level and nothing for a retry or a refusal', async () => {
-    await runCore(nextGuild(), async (ctx) => {
-      const { secret, starterId } = await joinWithStarter(ctx, USER, 100);
-      const key = newKey();
-      const train = (k: string, id = starterId) =>
-        call(ctx, secret, 'POST', `/api/creatures/${id}/train`, { idempotencyKey: k });
-      expect((await train(key)).status).toBe(200);
-      expect(events(ctx.sql, 'train')).toMatchObject([
-        {
-          props: {
-            species: 'splashet',
-            level: 2,
-            cost: RULES.training.baseCost + RULES.training.perLevel,
-          },
-        },
-      ]);
-      expect((await train(key)).status).toBe(200); // retry: replayed
-      expect(events(ctx.sql, 'train')).toHaveLength(1);
-      // Someone else's creature, and a broke player.
-      expect((await train(newKey(), '00000000-0000-4000-8000-000000000000')).status).toBe(404);
-      ctx.sql.exec("UPDATE balances SET amount = 0 WHERE currency = 'bait'");
-      expect((await train(newKey())).status).toBe(409);
-      expect(events(ctx.sql, 'train')).toHaveLength(1);
-      expect((await train(newKey())).status).toBe(409);
-      expect(events(ctx.sql, 'train')).toHaveLength(1);
-    });
-  });
-
   it('logs an evolution once and nothing for a retry or a refusal', async () => {
     await runRaid(async (ctx) => {
       const p = seedPlayer(ctx, 1, { creatures: 2, level: 15, species: ['splashet', 'stormray'] });
@@ -1371,6 +1344,16 @@ function vocabulary(): Set<string> {
     'payoff',
     'support',
     'guard',
+    // Where experience came from, the ribbons and the pity kinds (Creatures B).
+    'trip',
+    'dungeon',
+    'raid',
+    'job',
+    'ribbon',
+    'evolve',
+    'bronze',
+    'silver',
+    'gold',
   ]);
 }
 
@@ -1570,7 +1553,7 @@ describe('privacy', () => {
           'push_on_offer',
           'push_on_choose',
           'push_on_result',
-          'train',
+          'creature_exp',
           'placement',
           'autofire_toggle',
           'ability_pick',

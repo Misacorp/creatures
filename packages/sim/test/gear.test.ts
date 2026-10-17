@@ -442,7 +442,7 @@ describe('workshop jobs', () => {
     p.bait = 500;
     p.gear.blueprints.push('trail-cap');
     p.gear.parts.scrap = 100;
-    checkIn(p, 10, tripCtx(true));
+    checkIn(p, tripCtx(true));
     const exploring = new Set(p.expeditions.map((e) => e.explorerId));
     for (const job of p.gear.jobs) expect(exploring.has(job.creatureId)).toBe(false);
     // With gear off, the same check-in starts no job.
@@ -450,7 +450,7 @@ describe('workshop jobs', () => {
     q.bait = 500;
     q.gear.blueprints.push('trail-cap');
     q.gear.parts.scrap = 100;
-    checkIn(q, 10, tripCtx(false));
+    checkIn(q, tripCtx(false));
     expect(q.gear.jobs).toHaveLength(0);
   });
 });

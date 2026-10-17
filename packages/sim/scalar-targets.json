@@ -10,7 +10,7 @@
   "RULES.raid.jackpotEssence": ["econ-jackpot-rate"],
   "RULES.raid.maxPartySize": ["raid-finale-15"],
   "RULES.raid.teamSize": ["raid-*"],
-  "RULES.training": ["econ-casual-level-15", "econ-power-ratio"],
+  "RULES.experience": ["econ-casual-level-15", "econ-power-ratio", "creatures-*"],
   "RULES.catching": ["econ-daily-species", "exp-casual-discovery", "creatures-*"],
   "RULES.fusion": ["econ-daily-species", "econ-power-ratio", "creatures-dupes-*"],
   "RULES.progression": ["longrun-*", "raid-finale-typical"],

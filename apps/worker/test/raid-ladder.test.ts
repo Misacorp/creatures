@@ -607,7 +607,9 @@ describe('Festival weeks and the Festival creature', () => {
         ]);
         // A duplicate does not fuse by itself: the creature the player has is untouched, and the grant
         // waits as a pending card, whatever the creature's fusions (and never turns into Bait).
-        expect(ofLine(owner)).toMatchObject([{ level: 3, fusion_count: 2, origin: 'test' }]);
+        // (Its level moved: the raid stages paid it experience, which is not the grant's doing.)
+        expect(ofLine(owner)).toMatchObject([{ fusion_count: 2, origin: 'test' }]);
+        expect(ofLine(owner)).toHaveLength(1);
         expect(ofLine(maxed)).toMatchObject([{ fusion_count: RULES.fusion.maxFusions }]);
         expect(count(ctx.sql, 'ledger', "currency = 'bait'")).toBe(0);
         const pendingOf = (p: Seeded) =>

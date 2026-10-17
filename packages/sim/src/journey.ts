@@ -4,6 +4,8 @@ import {
   craftCost,
   craftItemLevel,
   isLandmark,
+  ribbonNeeded,
+  ribbonParts,
   type GearRarity,
   type PartKind,
   type RaidStage,
@@ -18,12 +20,12 @@ import {
   wornOf,
   type OwnedCreature,
 } from './data';
-import { serverMedianTopLevel, type DayInfo, type EconomyObserver } from './economy';
+import type { DayInfo, EconomyObserver } from './economy';
 import { fightPower } from './fight-power';
 import { allItems, bestSkillLevel } from './gear';
-import { isTrainable, trainCost } from './policy';
 import type { RaidWeek } from './raid';
 import type { SimPlayer } from './state';
+import { canGrow, creatureTrips, ribbonsOf } from './training';
 import { slotsOfPlayer } from './trips';
 
 /**
@@ -39,7 +41,8 @@ import { slotsOfPlayer } from './trips';
  * evolution), the second about gear, the third what is left.
  */
 export const LIMITS = [
-  'bait_to_train',
+  'experience',
+  'ribbon_materials',
   'essence_to_evolve',
   'level_cap_waiting_evolution',
   'scrap_for_gear',
@@ -89,20 +92,22 @@ export function gearLimit(player: SimPlayer): Limit | null {
  * what holds back raid power). In order:
  *
  * 1. A team creature at its evolution level without the Essence for it: `level_cap_waiting_evolution`
- *    when no team creature can be trained at all (the stage cap holds them all), `essence_to_evolve`
- *    when the rest of the team can still be trained.
- * 2. A trainable team creature whose next level costs more Bait than held: `bait_to_train`. (After a
- *    check-in this is almost always true, since a player trains until the Bait runs out; the waits
- *    code therefore counts only days without any training as waiting for Bait.) Affordable but not
- *    yet bought (or an evolution the Essence covers): `next_check_in`.
- * 3. Nothing to train and nothing to evolve (every team creature is at its final level cap): the gear
+ *    when no team creature can still grow (the stage cap holds them all), `essence_to_evolve` when the
+ *    rest of the team can still grow.
+ * 2. A team creature waiting at a ribbon gate (level 10 or 20) that the player cannot pay yet (scrap,
+ *    shards of its element, glimmer, and for Silver five trips of its own): `ribbon_materials`.
+ * 3. A team creature that can still grow (its way is open, or its bank has room): `experience`. Levels
+ *    come from what the creatures do, so this is the common state: the player has nothing to buy, the
+ *    activities pay (the waits code counts only days without a level gained as waiting for it).
+ *    Affordable ribbons and evolutions not yet bought: `next_check_in`.
+ * 4. Nothing to grow and nothing to evolve (every team creature is at its final level cap): the gear
  *    path's limit if it has one (scrap, glimmer, shards, a craft timer); otherwise `max_fusion` when
  *    every team creature is fully fused, else `nothing_worth_buying` (growth now comes only from
  *    fusion duplicates, which cannot be bought).
  *
  * `blocked` lists every limit that applies, including the gear path's and full expedition slots.
  */
-export function bindingLimit(player: SimPlayer, medianTopLevel: number): LimitState {
+export function bindingLimit(player: SimPlayer): LimitState {
   const team = pickTeam(player.creatures);
   const gear = gearLimit(player);
   const blocked: Limit[] = [];
@@ -114,15 +119,28 @@ export function bindingLimit(player: SimPlayer, medianTopLevel: number): LimitSt
     const evo = speciesOf(c.speciesId).evolvesTo;
     return evo !== undefined && c.level >= evo.level && player.essence >= evo.essence;
   });
-  const trainable = team.filter(isTrainable);
+  const growing = team.filter(canGrow);
+  // Waiting at a ribbon gate: short of the materials (a limit), or able to pay at the next check-in.
+  const waiting = team.flatMap((c) => {
+    const def = ribbonNeeded(c.level, ribbonsOf(c));
+    return def === null ? [] : [{ c, def }];
+  });
+  const ribbonShort = waiting.filter(({ c, def }) => {
+    const cost = ribbonParts(def, speciesOf(c.speciesId).element);
+    const lacks = (Object.entries(cost) as [PartKind, number][]).some(
+      ([kind, need]) => player.gear.parts[kind] < need,
+    );
+    return lacks || creatureTrips(player, c.id) < def.trips;
+  });
 
   let growth: Limit | null = null;
   if (evoShort.length > 0) {
-    growth = trainable.length === 0 ? 'level_cap_waiting_evolution' : 'essence_to_evolve';
-  } else if (trainable.length > 0) {
-    const cheapest = Math.min(...trainable.map((c) => trainCost(c, medianTopLevel)));
-    growth = player.bait < cheapest ? 'bait_to_train' : 'next_check_in';
-  } else if (evoReady.length > 0) {
+    growth = growing.length === 0 ? 'level_cap_waiting_evolution' : 'essence_to_evolve';
+  } else if (ribbonShort.length > 0) {
+    growth = 'ribbon_materials';
+  } else if (growing.length > 0) {
+    growth = 'experience';
+  } else if (evoReady.length > 0 || waiting.length > 0) {
     growth = 'next_check_in';
   }
   if (growth !== null) blocked.push(growth);
@@ -243,9 +261,22 @@ export interface DayRecord {
   fusion: number;
   evolution: number;
   gear: number;
-  /** The highest creature level, and the average level of the raid team. */
+  /** The highest creature level, and the average and the lowest level of the raid team. */
   topLevel: number;
   teamLevel: number;
+  teamMinLevel: number;
+  /** Levels gained this week so far (the last day of a week holds the week). */
+  levelUps: number;
+  /** Creature experience earned so far by where it came from (a treat's doubling included), treats packed and ribbons bought. */
+  expTrip: number;
+  expDungeon: number;
+  expRaid: number;
+  expJob: number;
+  treats: number;
+  ribbons: number;
+  /** Catch rolls so far that the pity forced: a species the player lacked, or a creature of any kind. */
+  pityNew: number;
+  pityCreature: number;
   /** Currencies held at the end of the day. */
   bait: number;
   essence: number;
@@ -281,9 +312,9 @@ export interface DayRecord {
   luresUsed: number;
   luresCrafted: number;
   baitLures: number;
-  /** This week's Bait so far (the last day of a week holds the week): earned (income and the dungeon), and spent on levels, lures and talent slots. */
+  /** This week's Bait so far (the last day of a week holds the week): earned (income and the dungeon), and spent on treats, lures and talent slots. */
   weekBaitEarned: number;
-  weekBaitTraining: number;
+  weekBaitTreats: number;
   weekBaitLures: number;
   weekBaitSlots: number;
   /** Gear items owned, worn, the worn ones by rarity, and the upgrade levels on the worn ones. */
@@ -387,7 +418,7 @@ function shardsOf(player: SimPlayer): number {
     .reduce((n, [, amount]) => n + amount, 0);
 }
 
-/** One day's record of a player. `medianTopLevel` is the server's, for training costs. */
+/** One day's record of a player. */
 export function recordDay(
   player: SimPlayer,
   info: {
@@ -399,7 +430,6 @@ export function recordDay(
     /** Set: also score the raid team in fights at this Boss Rank (`fightPower`). */
     fightRank?: number;
   },
-  medianTopLevel: number,
 ): DayRecord {
   const split = powerSplit(player.creatures);
   const fights = info.fightRank === undefined ? null : fightPower(player.creatures, info.fightRank);
@@ -416,7 +446,7 @@ export function recordDay(
   const worn = player.creatures.flatMap((c) => wornOf(c));
   const wornRarity: Record<GearRarity, number> = { common: 0, rare: 0, epic: 0, festival: 0 };
   for (const item of worn) wornRarity[item.rarity] += 1;
-  const limit = bindingLimit(player, medianTopLevel);
+  const limit = bindingLimit(player);
   return {
     day: info.day,
     week: info.week,
@@ -435,6 +465,16 @@ export function recordDay(
     gear: split.gear,
     topLevel: Math.max(0, ...player.creatures.map((c) => c.level)),
     teamLevel: team.length === 0 ? 0 : team.reduce((n, c) => n + c.level, 0) / team.length,
+    teamMinLevel: team.length === 0 ? 0 : Math.min(...team.map((c) => c.level)),
+    levelUps: player.week.levelUps,
+    expTrip: player.stats.exp_trip,
+    expDungeon: player.stats.exp_dungeon,
+    expRaid: player.stats.exp_raid,
+    expJob: player.stats.exp_job,
+    treats: player.stats.treats,
+    ribbons: player.stats.ribbons,
+    pityNew: player.stats.pity_new,
+    pityCreature: player.stats.pity_creature,
     bait: player.bait,
     essence: player.essence,
     scrap: player.gear.parts.scrap,
@@ -462,7 +502,7 @@ export function recordDay(
     luresCrafted: player.stats.lures_crafted,
     baitLures: player.stats.lure_bait,
     weekBaitEarned: player.week.baitEarned + player.week.dungeonBait,
-    weekBaitTraining: player.week.baitSpentTraining,
+    weekBaitTreats: player.week.baitTreats,
     weekBaitLures: player.week.baitLures,
     weekBaitSlots: player.week.baitSlots,
     itemsOwned: items.length,
@@ -477,8 +517,8 @@ export function recordDay(
 
 /**
  * Turns the daily limits of a player into waits. A wait is a run of days with the same primary limit;
- * a day on which the player trained at least once while the limit is Bait is a day of progress, not a
- * wait (a level is bought almost every day, so a Bait wait is the stretch between two trainings). A
+ * a day on which a team creature gained a level while the limit is experience is a day of progress, not a
+ * wait (the activities pay all the time, so an experience wait is the stretch between two levels). A
  * limit that is not a wait (`next_check_in`, full expedition slots) carries the previous wait on. The
  * gear path has its own waits: runs of the same `gearLimit`, ended by any upgrade or craft.
  */
@@ -487,9 +527,9 @@ export class WaitTracker {
   private gearRun: Wait | null = null;
   readonly waits: Wait[] = [];
 
-  step(day: number, limit: Limit, gear: Limit | null, trained: boolean, geared: boolean): void {
+  step(day: number, limit: Limit, gear: Limit | null, leveled: boolean, geared: boolean): void {
     if (!NOT_A_WAIT.has(limit)) {
-      if (limit === 'bait_to_train' && trained) {
+      if (limit === 'experience' && leveled) {
         this.growth = null;
       } else if (this.growth !== null && this.growth.cause === limit) {
         this.growth.length += 1;
@@ -517,7 +557,7 @@ interface Track {
   journey: PlayerJourney;
   waits: WaitTracker;
   /** Counters of the current week as of the previous day, to see what changed today. */
-  trainings: number;
+  levelUps: number;
   gearActions: number;
 }
 
@@ -540,7 +580,6 @@ export class JourneyRecorder implements EconomyObserver {
   }
 
   onDayEnd(info: DayInfo): void {
-    const median = serverMedianTopLevel(info.active);
     for (const p of info.active) {
       let track = this.tracks.get(p.id);
       if (track === undefined) {
@@ -555,7 +594,7 @@ export class JourneyRecorder implements EconomyObserver {
             waits: [],
           },
           waits: new WaitTracker(),
-          trainings: 0,
+          levelUps: 0,
           gearActions: 0,
         };
         this.tracks.set(p.id, track);
@@ -563,32 +602,28 @@ export class JourneyRecorder implements EconomyObserver {
       const j = track.journey;
       const dayNumber = info.day - j.joinDay + 1;
       if (info.dayOfWeek === 0) {
-        track.trainings = 0;
+        track.levelUps = 0;
         track.gearActions = 0;
       }
-      const record = recordDay(
-        p,
-        {
-          day: dayNumber,
-          week: info.week,
-          loggedIn: info.loggedIn.has(p.id),
-          leeted: info.leeted.has(p.id),
-          checkIns: info.checkIns.get(p.id) ?? 0,
-          // The week's last day: score the team in fights (it plays 12 of them, so not every day).
-          ...(info.dayOfWeek === 6 ? { fightRank: info.rank ?? 1 } : {}),
-        },
-        median,
-      );
+      const record = recordDay(p, {
+        day: dayNumber,
+        week: info.week,
+        loggedIn: info.loggedIn.has(p.id),
+        leeted: info.leeted.has(p.id),
+        checkIns: info.checkIns.get(p.id) ?? 0,
+        // The week's last day: score the team in fights (it plays 12 of them, so not every day).
+        ...(info.dayOfWeek === 6 ? { fightRank: info.rank ?? 1 } : {}),
+      });
       j.days.push(record);
       const gearActions = p.week.gearCrafts;
       track.waits.step(
         dayNumber,
         record.limit,
         record.gearLimit,
-        p.week.trainings > track.trainings,
+        p.week.levelUps > track.levelUps,
         gearActions > track.gearActions,
       );
-      track.trainings = p.week.trainings;
+      track.levelUps = p.week.levelUps;
       track.gearActions = gearActions;
       for (const id of reachedMilestones(p)) {
         if (j.milestones[id] === undefined) j.milestones[id] = dayNumber;

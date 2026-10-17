@@ -45,7 +45,9 @@ import {
   supplyDef,
   supplyJobMs,
   supplyJobXp,
+  treatCost,
   wearBlock,
+  workshopExperience,
   wornEffects,
   PART_KINDS,
   REACH_IDS,
@@ -64,6 +66,7 @@ import {
   type WorkshopMods,
 } from '@creatures/game';
 import type { Analytics } from './analytics';
+import { awardExperience, type ExperienceView } from './creature-exp';
 import { runKeyed, settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import { addSupply } from './expedition-store';
@@ -186,6 +189,11 @@ export interface EquippedSummary {
 }
 
 export interface JobCommon {
+  /**
+   * Creature experience the job paid its worker (4 an hour of nominal work, doubled by a treat) and what it
+   * did to the level. Absent in results stored before training by activity, and for a retired job.
+   */
+  experience?: ExperienceView;
   /** XP this job gave to the creature's Crafting skill. */
   xp: number;
   /** Total Crafting XP and level after it. */
@@ -245,6 +253,8 @@ export interface JobView {
   cost: PartsBundle;
   /** The Bait it cost when it started (a lure): 0 for every other job. */
   bait: number;
+  /** True when a treat was packed for the worker (the job's creature experience is doubled). */
+  treat: boolean;
   startedAt: number;
   endsAt: number;
   status: 'running' | 'ready' | 'claimed';
@@ -284,10 +294,24 @@ export type StartJobInput =
       creatureId: string;
       blueprintId: string;
       reach?: ReachId | undefined;
+      /** Pack a treat for the worker (Bait, paid when the job starts): it doubles the job's creature experience. */
+      treat?: boolean | undefined;
       idempotencyKey: string;
     }
-  | { kind: 'supply'; creatureId: string; supplyId: string; idempotencyKey: string }
-  | { kind: 'dismantle'; creatureId: string; itemIds: string[]; idempotencyKey: string };
+  | {
+      kind: 'supply';
+      creatureId: string;
+      supplyId: string;
+      treat?: boolean | undefined;
+      idempotencyKey: string;
+    }
+  | {
+      kind: 'dismantle';
+      creatureId: string;
+      itemIds: string[];
+      treat?: boolean | undefined;
+      idempotencyKey: string;
+    };
 
 /** One way to start a craft, as the screen shows it before the player confirms. All numbers are the server's. */
 export interface CraftOption {
@@ -352,6 +376,8 @@ interface StoredInput {
   cost: PartsBundle;
   /** Bait a lure job cost (absent for every other job). */
   bait?: number;
+  /** A treat was packed when the job started (absent: none). */
+  treat?: boolean;
   /** Craft: what it was aimed at, the blueprint's marks and the Crafting level when it started, the day's mods. */
   reach?: ReachId;
   marks?: number;
@@ -562,6 +588,7 @@ export class Gear {
       },
       cost: input.cost,
       bait: input.bait ?? 0,
+      treat: input.treat === true,
       startedAt: row.started_at,
       endsAt: row.ends_at,
       status: row.claimed_at !== null ? 'claimed' : now >= row.ends_at ? 'ready' : 'running',
@@ -984,13 +1011,14 @@ export class Gear {
    * rolled when the job is claimed. Busy paws lines on the creature shorten it.
    */
   startJob(userId: string, input: StartJobInput): Outcome<{ jobId: string }> {
-    const fingerprint = JSON.stringify(
-      input.kind === 'craft'
+    const fingerprint = JSON.stringify([
+      ...(input.kind === 'craft'
         ? [input.kind, input.creatureId, input.blueprintId, input.reach ?? 'none']
         : input.kind === 'supply'
           ? [input.kind, input.creatureId, input.supplyId]
-          : [input.kind, input.creatureId, [...input.itemIds]],
-    );
+          : [input.kind, input.creatureId, [...input.itemIds]]),
+      ...(input.treat === true ? ['treat'] : []),
+    ]);
     return this.atomically(() =>
       runKeyed(
         this.sql,
@@ -1005,16 +1033,51 @@ export class Gear {
             throw new GameError(409, 'workshop_full');
           }
           const worker = this.workerOf(userId, creature);
-          switch (input.kind) {
-            case 'craft':
-              return this.startCraft(userId, input, creature, worker);
-            case 'supply':
-              return this.startSupply(userId, input, creature, worker);
-            case 'dismantle':
-              return this.startDismantle(userId, input, creature, worker);
-          }
+          const started = ((): { jobId: string } => {
+            switch (input.kind) {
+              case 'craft':
+                return this.startCraft(userId, input, creature, worker);
+              case 'supply':
+                return this.startSupply(userId, input, creature, worker);
+              case 'dismantle':
+                return this.startDismantle(userId, input, creature, worker);
+            }
+          })();
+          if (input.treat === true) this.packTreat(userId, creature, started.jobId);
+          return started;
         },
       ),
+    );
+  }
+
+  /**
+   * Pays the treat of a job that was just started and marks the job: the Bait is spent in the start's own
+   * transaction under a key derived from the job's id, so a retry of the start never pays it twice and short
+   * Bait fails the whole start.
+   */
+  private packTreat(userId: string, creature: CreatureRow, jobId: string): void {
+    const cost = treatCost(creature.level);
+    settleSpend(
+      spend(
+        this.deps.storage,
+        {
+          userId,
+          currency: 'bait',
+          amount: cost,
+          purpose: 'treat',
+          idempotencyKey: `treat:job:${jobId}`,
+          apply: () => ({ jobId }),
+        },
+        this.deps.now(),
+      ),
+    );
+    this.sql.exec(
+      "UPDATE workshop_jobs SET input_json = json_set(input_json, '$.treat', json('true')) WHERE id = ?",
+      jobId,
+    );
+    this.deps.analytics?.record(
+      { kind: 'treat', source: 'job', species: creature.species, level: creature.level, cost },
+      userId,
     );
   }
 
@@ -1353,8 +1416,24 @@ export class Gear {
           const xp = plusBp(xpBase, apprenticeBp);
           const skillXp = addCreatureXp(this.sql, userId, creature.id, xp);
           const after = skillLevel(skillXp);
+          // Creature experience (training by activity): 4 an hour of nominal work, doubled by a treat.
+          const treat = input.treat === true;
+          const gainedExp = workshopExperience(workMinutes, treat);
+          const experience =
+            gainedExp > 0
+              ? awardExperience(
+                  this.sql,
+                  this.deps.analytics,
+                  userId,
+                  creature.id,
+                  gainedExp,
+                  'job',
+                  treat,
+                )
+              : null;
           const full = {
             ...result,
+            ...(experience === null ? {} : { experience }),
             xp,
             skillXp,
             skillLevel: after,

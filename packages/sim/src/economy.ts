@@ -3,6 +3,7 @@ import {
   chance,
   content,
   createSeededRng,
+  dungeonExperience,
   festivalCreatureFor,
   int,
   nextRank,
@@ -41,8 +42,8 @@ import {
 } from './gear';
 import { chooseDungeonTeam, dayModifiers, playDungeonDay, type DungeonLogEntry } from './dungeon';
 import type { Setup } from './formations';
-import { chooseTrainee, trainCost } from './policy';
 import { collect, fillSlots, newCreature } from './talents';
+import { awardRaidExperience, buyRibbons, focusFirst, giveExperience, packTreat } from './training';
 import { openRaidWeek, playStage, summarizeRaid, type RaidSummary, type RaidWeek } from './raid';
 import { clonePlayer, createPlayer, emptyWeek, type SimPlayer } from './state';
 import {
@@ -160,12 +161,15 @@ export interface WeekRecord {
   /** Bait spent crafting lures, and putting talents into slots from the Talent Book. */
   baitLures: number;
   baitSlots: number;
-  baitSpentTraining: number;
+  /** Bait spent on treats. */
+  baitTreats: number;
   bait: number;
   speciesOwned: number;
   top3Power: number;
   top3Levels: number[];
   maxLevel: number;
+  /** Levels gained this week, from experience. */
+  levelUps: number;
   evolved: number;
   essence: number;
   essenceEarned: number;
@@ -389,6 +393,8 @@ function evolveCreatures(player: SimPlayer): void {
     player.essence -= evo.essence;
     c.speciesId = evo.species;
     player.week.evolutions += 1;
+    // The higher level cap opens the way: what the creature banked while it waited is spent now.
+    giveExperience(player, c, 0, null);
   }
 }
 
@@ -412,28 +418,32 @@ function explorerOrder(player: SimPlayer): (idle: OwnedCreature[]) => OwnedCreat
     return next === null ? Number.POSITIVE_INFINITY : next - (player.explorerXp[c.id] ?? 0);
   };
   return (idle) =>
-    [...idle].sort((a, b) => {
-      const primary = unlocked
-        ? toNext(a) - toNext(b)
-        : rankOfCreature(player, b.id) - rankOfCreature(player, a.id);
-      if (primary !== 0 && Number.isFinite(primary)) return primary;
-      const gap =
-        elementGapScore(player, speciesOf(b.speciesId).element) -
-        elementGapScore(player, speciesOf(a.speciesId).element);
-      return gap !== 0 ? gap : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
-    });
+    // A player with a training plan sends the creatures it trains first (they earn the trip's experience).
+    focusFirst(
+      player,
+      [...idle].sort((a, b) => {
+        const primary = unlocked
+          ? toNext(a) - toNext(b)
+          : rankOfCreature(player, b.id) - rankOfCreature(player, a.id);
+        if (primary !== 0 && Number.isFinite(primary)) return primary;
+        const gap =
+          elementGapScore(player, speciesOf(b.speciesId).element) -
+          elementGapScore(player, speciesOf(a.speciesId).element);
+        return gap !== 0 ? gap : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+      }),
+    );
 }
 
 /**
- * One check-in: claim trips (and take an end-of-trip goal), claim jobs, evolve, manage gear, send trips
- * into the free slots, train and start jobs (see `policy.ts`). The player's profile sets the dials:
- * whom to train, and whether the gear is worked at this check-in. `dice` is the stream of the
- * profile's own random choices (spread training, the craft chance); today's archetypes never draw
- * from it.
+ * One check-in: claim trips (and take an end-of-trip goal), claim jobs, evolve, buy ribbons, manage gear,
+ * send trips into the free slots and start jobs (see `policy.ts` and `training.ts`: levels come from
+ * the activities, so there is nothing to buy but the ribbons and the treats). The player's profile sets
+ * the dials: whom to train, which activities get a treat, and whether the gear is worked at this check-in.
+ * `dice` is the stream of the profile's own random choices (the craft chance); today's archetypes never
+ * draw from it.
  */
 export function checkIn(
   player: SimPlayer,
-  medianTopLevel: number,
   ctx: TripContext,
   sendsTrips = true,
   dice: Rng = createSeededRng(`check-in:${player.id}:${String(ctx.hour)}`),
@@ -443,30 +453,15 @@ export function checkIn(
   claimTrips(player, ctx);
   if (gear !== undefined) claimJobs(player, gear);
   evolveCreatures(player);
-  // A talent in the Talent Book goes into an open slot (for Bait) before the Bait is spent on training.
+  // A creature waiting at a ribbon gate gets its ribbon when the player has the materials.
+  buyRibbons(player, gear !== undefined);
+  // A talent in the Talent Book goes into an open slot (for Bait) before the Bait goes to treats and lures.
   fillSlots(player, byPowerDesc(player.creatures));
 
   // Trips are free and supplies cannot be bought: a trip carries what is in stock.
   const worksGear = profile.craftPercent >= 100 || chance(dice, profile.craftPercent, 100);
   if (gear !== undefined) manageGear(player);
   if (sendsTrips) sendTrips(player, ctx, explorerOrder(player));
-
-  const plan = { focus: profile.trainFocus, evolutionPush: profile.evolutionPush };
-  for (;;) {
-    // Someone who trains whatever they fancy picks among the creatures they can pay for.
-    const candidates =
-      plan.focus === 'spread'
-        ? player.creatures.filter((c) => trainCost(c, medianTopLevel) <= player.bait)
-        : player.creatures;
-    const trainee = chooseTrainee(candidates, plan, dice);
-    if (trainee === null) break;
-    const cost = trainCost(trainee, medianTopLevel);
-    if (cost > player.bait) break;
-    player.bait -= cost;
-    player.week.baitSpentTraining += cost;
-    player.week.trainings += 1;
-    trainee.level += 1;
-  }
 
   if (gear !== undefined && worksGear) {
     startJobs(player, gear, new Set(player.expeditions.map((e) => e.explorerId)));
@@ -480,7 +475,8 @@ function record(player: SimPlayer, week: number): WeekRecord {
     baitEarned: player.week.baitEarned,
     baitLures: player.week.baitLures,
     baitSlots: player.week.baitSlots,
-    baitSpentTraining: player.week.baitSpentTraining,
+    baitTreats: player.week.baitTreats,
+    levelUps: player.week.levelUps,
     bait: player.bait,
     speciesOwned: player.creatures.filter((c) => !speciesOf(c.speciesId).festival).length,
     top3Power: teamPower(player.creatures),
@@ -691,15 +687,8 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
         const ctx = tripContext(hour);
         const present = loggedIn.filter((p) => p.profile.checkInHours.includes(hour));
         if (present.length > 0) {
-          const median = serverMedianTopLevel(active);
           for (const p of present) {
-            checkIn(
-              p,
-              median,
-              ctx,
-              takesPart(behaviour.tripPercent ?? p.profile.tripPercent),
-              rng.profile,
-            );
+            checkIn(p, ctx, takesPart(behaviour.tripPercent ?? p.profile.tripPercent), rng.profile);
             checkIns.set(p.id, (checkIns.get(p.id) ?? 0) + 1);
           }
           // The daily dungeon: everybody who checked in runs it once, at their first check-in of the day.
@@ -709,6 +698,12 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
               if (dungeonDone.has(p.id)) continue;
               dungeonDone.add(p.id);
               if (!takesPart(dungeonPercent)) continue;
+              const team = chooseDungeonTeam(p, p.profile.dungeon, rng.profile);
+              // A treat for each of the three (Bait paid as the run starts), then the run, then the
+              // experience: per room cleared and for a full clear, doubled for a treated creature.
+              const treated = new Set(
+                team.creatures.filter((c) => packTreat(p, c, { kind: 'dungeon' })).map((c) => c.id),
+              );
               const runs = playDungeonDay(
                 p,
                 globalDay,
@@ -716,8 +711,18 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
                 `${seed}:dungeon:${p.id}:${String(globalDay)}`,
                 rng.dungeon,
                 {},
-                chooseDungeonTeam(p, p.profile.dungeon, rng.profile),
+                team,
               );
+              for (const run of runs) {
+                for (const c of team.creatures) {
+                  giveExperience(
+                    p,
+                    c,
+                    dungeonExperience(run.roomsCleared, run.cleared, treated.has(c.id)),
+                    'dungeon',
+                  );
+                }
+              }
               history.get(p.id)?.dungeon.push(...runs);
             }
           }
@@ -765,6 +770,8 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
                   : null;
           if (stage !== null) {
             playStage(raid, stage, rng.fight, rng.loot);
+            // Every creature that fought is paid the stage's experience (more when it was cleared).
+            awardRaidExperience(raid, stage);
             if (gearOn && plan !== null && raid.stages[stage]?.cleared === true) {
               if (stage === 'finale') {
                 const festival = plan.festival ? festivalCreatureFor(weekIndex) : null;

@@ -9,6 +9,7 @@
  * looked up by id; the server sends ids and numbers only.
  */
 
+import type { ExperienceView } from './experience';
 import type { GrantLoot, PartKind } from './gear-types';
 import type { ChoiceResult, TalentView } from './talent-types';
 
@@ -31,6 +32,8 @@ export interface SendBody {
   destination: string;
   duration: ExpeditionLength;
   supplies: SupplyPick[];
+  /** Pack a treat for the explorer (Bait, paid when the trip starts): double experience for the trip. */
+  treat?: boolean;
   idempotencyKey: string;
 }
 
@@ -57,6 +60,8 @@ export interface Trip {
   rolls: number;
   /** Bait paid for supplies: 0 for every trip sent since supplies stopped being sold (older trips may have paid). */
   cost: number;
+  /** A treat was packed for the explorer: the trip pays double creature experience. */
+  treat: boolean;
   startedAt: number;
   /** When the trip itself ends. */
   endsAt: number;
@@ -152,6 +157,8 @@ export interface TripResult {
   };
   /** Only for a finished trip (not a recall or a failure). */
   xp?: { gained: number; total: number; rank: number; rankBefore: number };
+  /** The creature experience the trip paid its explorer (a finished trip only; absent in older results). */
+  experience?: ExperienceView;
   familiarity?: { stars: number; starsBefore: number; trips: number };
   journal?: JournalFind[];
   /** Set when this trip opened another slot. */

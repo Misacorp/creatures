@@ -26,6 +26,9 @@ const ItemIdsSchema = v.pipe(
   v.maxLength(RULES.gear.dismantle.bundleMax),
 );
 
+/** Pack a treat for the worker (Bait, paid when the job starts): it doubles the job's creature experience. */
+const TreatSchema = v.optional(v.boolean());
+
 /** Each kind of job takes exactly its own fields: anything else is rejected. */
 export const StartJobBodySchema = v.variant('kind', [
   v.strictObject({
@@ -34,18 +37,21 @@ export const StartJobBodySchema = v.variant('kind', [
     blueprintId: v.picklist(BLUEPRINT_IDS),
     /** What the craft is aimed at; absent means a plain craft (an older client sends none). */
     reach: v.optional(v.picklist(REACH_IDS)),
+    treat: TreatSchema,
     idempotencyKey: IdempotencyKeySchema,
   }),
   v.strictObject({
     kind: v.literal('dismantle'),
     creatureId: IdSchema,
     itemIds: ItemIdsSchema,
+    treat: TreatSchema,
     idempotencyKey: IdempotencyKeySchema,
   }),
   v.strictObject({
     kind: v.literal('supply'),
     creatureId: IdSchema,
     supplyId: v.picklist(SUPPLY_IDS),
+    treat: TreatSchema,
     idempotencyKey: IdempotencyKeySchema,
   }),
 ]);

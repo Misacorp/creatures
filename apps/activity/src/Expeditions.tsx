@@ -174,6 +174,7 @@ export function Expeditions({
               creatures={state.creatures}
               slots={state.slots}
               stock={state.supplies}
+              bait={state.balances.bait}
               busy={busy}
               view={destinations.value}
               viewFailed={destinations.failed}

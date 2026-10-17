@@ -761,13 +761,19 @@ describe('idempotency', () => {
           currency: 'bait',
           amount: 50,
           source: 'test',
-          idempotencyKey: 'bait-for-train',
+          idempotencyKey: 'bait-for-spend',
         });
         const key = newKey();
-        const trained = await q.call('POST', `/api/creatures/${q.creatureIds[0] as string}/train`, {
+        // The same key used by a Bait spend (a Talent Book slotting, a treat, a ledger debit of any kind).
+        const spent = ctx.core.spend({
+          userId: q.id,
+          currency: 'bait',
+          amount: 5,
+          purpose: 'treat',
           idempotencyKey: key,
+          apply: () => ({ ok: true }),
         });
-        expect(trained.status, JSON.stringify(trained.body)).toBe(200);
+        expect(spent.status).toBe('ok');
         const reused = await q.run({ idempotencyKey: key });
         expect(reused.status).toBe(409);
         expect(reused.body).toEqual({ error: 'key_conflict' });

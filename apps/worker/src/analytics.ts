@@ -179,6 +179,32 @@ export type AnalyticsEvent =
   | { kind: 'familiarity_star'; destination: string; stars: number }
   | { kind: 'slot_unlock'; slots: number; rankSum: number }
   | { kind: 'train'; species: string; level: number; cost: number }
+  | {
+      /** An activity paid a creature experience (or a ribbon or evolution spent what it had banked). */
+      kind: 'creature_exp';
+      source: 'trip' | 'dungeon' | 'raid' | 'job' | 'ribbon' | 'evolve';
+      species: string;
+      gained: number;
+      treat: boolean;
+      levelBefore: number;
+      level: number;
+      waiting: boolean;
+    }
+  | {
+      /** A treat was packed when a trip, a dungeon run or a Workshop job started. */
+      kind: 'treat';
+      source: 'trip' | 'dungeon' | 'job';
+      species: string;
+      level: number;
+      cost: number;
+    }
+  | { kind: 'ribbon'; species: string; ribbon: 'bronze' | 'silver' | 'gold' }
+  | {
+      /** The pity made a catch roll bring a creature: `new` a species the player lacked, `creature` any. */
+      kind: 'catch_pity';
+      pity: 'new' | 'creature';
+      species: string;
+    }
   | { kind: 'evolve'; from: string; to: string; cost: number }
   | {
       /** A catch that fused into a creature the player already had (or paid Bait at the limit). */
@@ -574,6 +600,37 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
       return { slots: int(event.slots, 99), rankSum: int(event.rankSum, 9_999) };
     case 'train':
       return { species: species(event.species), level: int(event.level), cost: int(event.cost) };
+    case 'creature_exp':
+      return {
+        source: oneOf(
+          ['trip', 'dungeon', 'raid', 'job', 'ribbon', 'evolve'] as const,
+          event.source,
+          'trip',
+        ),
+        species: species(event.species),
+        gained: int(event.gained, 1_000_000),
+        treat: bool(event.treat),
+        levelBefore: int(event.levelBefore, 99),
+        level: int(event.level, 99),
+        waiting: bool(event.waiting),
+      };
+    case 'treat':
+      return {
+        source: oneOf(['trip', 'dungeon', 'job'] as const, event.source, 'trip'),
+        species: species(event.species),
+        level: int(event.level, 99),
+        cost: int(event.cost, 1_000),
+      };
+    case 'ribbon':
+      return {
+        species: species(event.species),
+        ribbon: oneOf(['bronze', 'silver', 'gold'] as const, event.ribbon, 'bronze'),
+      };
+    case 'catch_pity':
+      return {
+        pity: oneOf(['new', 'creature'] as const, event.pity, 'creature'),
+        species: species(event.species),
+      };
     case 'evolve':
       return { from: species(event.from), to: species(event.to), cost: int(event.cost) };
     case 'fuse':

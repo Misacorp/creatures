@@ -47,6 +47,12 @@ export interface OwnedCreature {
   speciesId: string;
   level: number;
   fusionCount: number;
+  /**
+   * Experience banked towards the next level, and the ribbons held (0 none, 1 Bronze, 2 Silver, 3 Gold).
+   * Absent: nothing banked, and the ribbons its level is past (a creature a test made at a level).
+   */
+  exp?: number;
+  ribbons?: number;
   /** The gear it wears, one item per slot; absent: none. */
   items?: Partial<Record<GearSlot, SimItem>>;
   /**
