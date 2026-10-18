@@ -1,10 +1,12 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from '../api';
 import { ItemCorners, ItemSprite } from '../GearArt';
 import type { GearItem, GearSlot } from '../gear-types';
 import { itemLabel, rarityName, setPiecesWith, slotName } from '../gear-view';
 import { ItemCard } from '../ItemCard';
 import { Drawer } from '../ui/Drawer';
+import { flipOver } from '../ui/flip-logic';
+import { FlipArea } from '../ui/Flipper';
 import { compactReason, firstPick, pickerChoices } from './picker-view';
 
 export interface ItemPickerProps {
@@ -43,9 +45,17 @@ function ItemCell({
   onSelect: () => void;
 }) {
   const { item, worn, blocked } = cell;
+  const button = useRef<HTMLButtonElement>(null);
+  // A flip can pick an item below the fold of the grid: the picked cell scrolls into view.
+  useEffect(() => {
+    if (selected && typeof button.current?.scrollIntoView === 'function') {
+      button.current.scrollIntoView({ block: 'nearest' });
+    }
+  }, [selected]);
   return (
     <li>
       <button
+        ref={button}
         type="button"
         class={`ip-cell rarity-${item.rarity}${selected ? ' selected' : ''}${blocked === null ? '' : ' blocked'}${worn ? ' worn' : ''}`}
         aria-pressed={selected}
@@ -159,25 +169,41 @@ export function ItemPickerDrawer({
     cells.find((c) => c.worn) ??
     cells.find((c) => c.item.id === firstPick(choices)) ??
     cells[0];
+  // The detail flips through this slot's grid, in the grid's order; the arrows and the count then say
+  // where the picked item is (so the "in the bag" count gives way to them).
+  const flip = flipOver({
+    list: cells,
+    at: cells.findIndex((c) => c.item.id === selected?.item.id),
+    noun: 'item',
+    nameOf: (cell) => itemLabel(cell.item.baseId, cell.item.itemLevel),
+    pick: (cell) => {
+      setPicked(cell.item.id);
+    },
+  });
   return (
     <Drawer
       open={open}
       onClose={onClose}
       title={slotName(slot)}
       meta={
-        items === null || choices.length === 0 ? undefined : `${String(choices.length)} in the bag`
+        flip !== undefined || items === null || choices.length === 0
+          ? undefined
+          : `${String(choices.length)} in the bag`
       }
+      flip={flip}
       {...(returnFocusTo === undefined ? {} : { returnFocusTo })}
       class="picker-drawer"
       footer={
         selected === undefined ? undefined : (
-          <DetailPanel
-            cell={selected}
-            creature={creature}
-            busy={busy}
-            onEquip={onEquip}
-            onTakeOff={onTakeOff}
-          />
+          <FlipArea flip={flip}>
+            <DetailPanel
+              cell={selected}
+              creature={creature}
+              busy={busy}
+              onEquip={onEquip}
+              onTakeOff={onTakeOff}
+            />
+          </FlipArea>
         )
       }
     >

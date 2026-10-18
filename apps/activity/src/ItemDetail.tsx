@@ -104,6 +104,7 @@ export function ItemDetail({
   creatures,
   busy,
   actions,
+  focusName = true,
   onGone,
 }: {
   item: GearItem;
@@ -111,6 +112,8 @@ export function ItemDetail({
   creatures: readonly Creature[];
   busy: boolean;
   actions: GearActions;
+  /** Move the focus to the item's name when it is shown (not after a flip, which keeps the arrows' focus). */
+  focusName?: boolean;
   /** The item no longer exists (it went into a dismantle job): the screen drops the selection. */
   onGone: () => void;
 }) {
@@ -119,7 +122,7 @@ export function ItemDetail({
   // Choosing another item starts clean and moves focus to its name.
   useEffect(() => {
     setPanel(null);
-    heading.current?.focus();
+    if (focusName) heading.current?.focus({ preventScroll: true });
   }, [item.id]);
 
   const base = gearBase(item.baseId);

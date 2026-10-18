@@ -27,6 +27,9 @@ import { abilityDef } from './live';
 import { ElementChip } from './sprites/ElementChip';
 import { Accordion } from './ui/Accordion';
 import { ArmchairIcon } from './ui/ArmchairIcon';
+import { handleFlipKey } from './ui/flip-keys';
+import type { FlipProps } from './ui/flip-logic';
+import { FlipArea, FlipNav } from './ui/Flipper';
 import { Tag } from './ui/Tag';
 
 /** What a creature's buttons do; the screen that owns the cards supplies it (one action at a time). */
@@ -151,6 +154,7 @@ export function CreaturePage({
   initialOpen,
   onBack,
   onAnswerCatch,
+  flip,
 }: {
   creature: Creature;
   state: GameState;
@@ -166,6 +170,12 @@ export function CreaturePage({
   onBack: () => void;
   /** Back to the list, at the waiting catches at the top. */
   onAnswerCatch: () => void;
+  /**
+   * Flip between the creatures of the list the player came from: the arrows with the position at the top,
+   * a swipe on the page, Left and Right. Without it (one creature, the workbench) the page does not flip.
+   * The owner draws the next creature's page anew, so scroll, drawers and expansions start clean.
+   */
+  flip?: FlipProps | undefined;
 }) {
   const id = `${cardDomId(creature.id)}-page`;
   const rootRef = useRef<HTMLElement>(null);
@@ -203,7 +213,10 @@ export function CreaturePage({
       scrollAndFocus(document.getElementById(`${id}-talents`), 'auto');
     } else {
       scrollToTop();
-      if (start === null) rootRef.current?.focus({ preventScroll: true });
+      // After a flip with a button, that button (drawn anew with the page) keeps the focus instead.
+      if (start === null && (flip?.focusButton ?? null) === null) {
+        rootRef.current?.focus({ preventScroll: true });
+      }
     }
   }, [id, focus]);
 
@@ -224,6 +237,8 @@ export function CreaturePage({
       tabIndex={-1}
       aria-labelledby={`${id}-name`}
       onKeyDown={(event) => {
+        // Left and Right flip to the previous and next creature (a drawer keeps them for itself).
+        if (handleFlipKey(event, flip)) return;
         if (event.key !== 'Escape' || event.defaultPrevented) return;
         // A text field (Rename) keeps Escape for itself; a drawer stops it before it gets here.
         const target = event.target;
@@ -235,6 +250,7 @@ export function CreaturePage({
         <button type="button" class="ghost cp-back" onClick={onBack}>
           <span aria-hidden="true">‹</span> Creatures
         </button>
+        {flip !== undefined && <FlipNav flip={flip} />}
         {creature.busy === null && creature.id !== state.loungerId && (
           <button
             type="button"
@@ -249,149 +265,151 @@ export function CreaturePage({
         )}
       </div>
 
-      <div class="cp-block">
-        <PageHeader creature={creature} state={state} nameId={`${id}-name`} />
-        <p class="tags">
-          {showSpeciesName && <Tag>{speciesLabel}</Tag>}
-          {species !== undefined && <ElementChip element={species.element} role={species.role} />}
-          {isFestivalSpecies(creature.species) && (
-            <Tag kind="badge" tone="festival" entry="festival">
-              Festival
-            </Tag>
-          )}
-          {creature.shiny && (
-            <Tag kind="badge" tone="shiny" entry="shiny">
-              Shiny
-            </Tag>
-          )}
-          {isFirstOnServer(creature, state.serverFirsts) && (
-            <Tag kind="badge" tone="first" entry="first-on-server">
-              First on server
-            </Tag>
-          )}
-        </p>
-        {hasActions && (
-          <div class="cp-actions">
-            <RibbonLine creature={creature} busy={busy} onRibbon={actions.onRibbon} />
-            {readyEvolve !== null && (
-              <p>
-                <button
-                  type="button"
-                  class="primary"
-                  disabled={busy}
-                  onClick={() => {
-                    actions.onEvolve(creature);
-                  }}
-                >
-                  {readyEvolve.label}
-                </button>
-              </p>
+      <FlipArea flip={flip}>
+        <div class="cp-block">
+          <PageHeader creature={creature} state={state} nameId={`${id}-name`} />
+          <p class="tags">
+            {showSpeciesName && <Tag>{speciesLabel}</Tag>}
+            {species !== undefined && <ElementChip element={species.element} role={species.role} />}
+            {isFestivalSpecies(creature.species) && (
+              <Tag kind="badge" tone="festival" entry="festival">
+                Festival
+              </Tag>
             )}
-            {waitingCatch !== undefined && (
-              <p>
-                <button type="button" class="primary" disabled={busy} onClick={onAnswerCatch}>
-                  {waitingCatch.label}
-                </button>
-              </p>
+            {creature.shiny && (
+              <Tag kind="badge" tone="shiny" entry="shiny">
+                Shiny
+              </Tag>
             )}
-          </div>
-        )}
-      </div>
-
-      <div class="cp-block">
-        <h3 class="cp-title">Stats</h3>
-        <dl class="sheet-stats">
-          <StatRow label="HP" stat="hp" creature={creature} />
-          <StatRow label="Attack" stat="atk" creature={creature} />
-          <StatRow label="Speed" stat="spd" creature={creature} />
-        </dl>
-      </div>
-
-      {showAbility && (
-        <div class="cp-block creature-ability">
-          <h3 class="cp-title">Finale ability</h3>
-          <p>
-            <GlossaryTag ability={abilityInfo.id}>{abilityInfo.name}</GlossaryTag>:{' '}
-            {abilityInfo.description}
+            {isFirstOnServer(creature, state.serverFirsts) && (
+              <Tag kind="badge" tone="first" entry="first-on-server">
+                First on server
+              </Tag>
+            )}
           </p>
-        </div>
-      )}
-
-      <div class="cp-block">
-        <h3 id={`${id}-gear`} class="cp-title">
-          <GlossaryTag entry="gear" look="text">
-            Gear
-          </GlossaryTag>
-        </h3>
-        <GearSlots
-          creature={creature}
-          gear={gear}
-          openSlot={gearOpen}
-          onOpen={(slot, button) => {
-            opener.current = button;
-            setGearOpen(slot);
-          }}
-        />
-      </div>
-
-      <div class="cp-block">
-        <h3 id={`${id}-talents`} class="cp-title" tabIndex={-1}>
-          <GlossaryTag entry="talent" look="text">
-            Talents
-          </GlossaryTag>
-        </h3>
-        <TalentSlots
-          creature={creature}
-          openSlot={talentOpen}
-          onOpen={(slot, button) => {
-            opener.current = button;
-            setTalentOpen(slot);
-          }}
-        />
-      </div>
-
-      <Accordion title="About" headingLevel={3} defaultOpen class="cp-block">
-        {about !== null && (
-          <>
-            <p>{about.description}</p>
-            <ul class="tags traits" aria-label="Traits">
-              {about.traits.map((trait) => (
-                <li class="tag" key={trait}>
-                  {trait}
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-        {personality !== null && <p class="muted">{personality}</p>}
-        <dl class="sheet-facts">
-          <div class="sheet-fact">
-            <dt>
-              <GlossaryTag entry="fusion">Fusion</GlossaryTag>
-            </dt>
-            <dd>
-              <span class="stars" aria-hidden="true">
-                {fusionStars(creature.fusionCount)}
-              </span>{' '}
-              {creature.fusionCount} / 5
-            </dd>
-          </div>
-          <div class="sheet-fact">
-            <dt>
-              <GlossaryTag entry="ribbon">Ribbons</GlossaryTag>
-            </dt>
-            <dd>{ribbonsHeldText(creature.ribbons)}</dd>
-          </div>
-          {explorerFacts(creature.explorer).map((fact) => (
-            <div class="sheet-fact" key={fact.label}>
-              <dt>{fact.label}</dt>
-              <dd>{fact.value}</dd>
+          {hasActions && (
+            <div class="cp-actions">
+              <RibbonLine creature={creature} busy={busy} onRibbon={actions.onRibbon} />
+              {readyEvolve !== null && (
+                <p>
+                  <button
+                    type="button"
+                    class="primary"
+                    disabled={busy}
+                    onClick={() => {
+                      actions.onEvolve(creature);
+                    }}
+                  >
+                    {readyEvolve.label}
+                  </button>
+                </p>
+              )}
+              {waitingCatch !== undefined && (
+                <p>
+                  <button type="button" class="primary" disabled={busy} onClick={onAnswerCatch}>
+                    {waitingCatch.label}
+                  </button>
+                </p>
+              )}
             </div>
-          ))}
-        </dl>
-      </Accordion>
+          )}
+        </div>
 
-      <RenameForm creature={creature} busy={busy} onRename={actions.onRename} />
+        <div class="cp-block">
+          <h3 class="cp-title">Stats</h3>
+          <dl class="sheet-stats">
+            <StatRow label="HP" stat="hp" creature={creature} />
+            <StatRow label="Attack" stat="atk" creature={creature} />
+            <StatRow label="Speed" stat="spd" creature={creature} />
+          </dl>
+        </div>
+
+        {showAbility && (
+          <div class="cp-block creature-ability">
+            <h3 class="cp-title">Finale ability</h3>
+            <p>
+              <GlossaryTag ability={abilityInfo.id}>{abilityInfo.name}</GlossaryTag>:{' '}
+              {abilityInfo.description}
+            </p>
+          </div>
+        )}
+
+        <div class="cp-block">
+          <h3 id={`${id}-gear`} class="cp-title">
+            <GlossaryTag entry="gear" look="text">
+              Gear
+            </GlossaryTag>
+          </h3>
+          <GearSlots
+            creature={creature}
+            gear={gear}
+            openSlot={gearOpen}
+            onOpen={(slot, button) => {
+              opener.current = button;
+              setGearOpen(slot);
+            }}
+          />
+        </div>
+
+        <div class="cp-block">
+          <h3 id={`${id}-talents`} class="cp-title" tabIndex={-1}>
+            <GlossaryTag entry="talent" look="text">
+              Talents
+            </GlossaryTag>
+          </h3>
+          <TalentSlots
+            creature={creature}
+            openSlot={talentOpen}
+            onOpen={(slot, button) => {
+              opener.current = button;
+              setTalentOpen(slot);
+            }}
+          />
+        </div>
+
+        <Accordion title="About" headingLevel={3} defaultOpen class="cp-block">
+          {about !== null && (
+            <>
+              <p>{about.description}</p>
+              <ul class="tags traits" aria-label="Traits">
+                {about.traits.map((trait) => (
+                  <li class="tag" key={trait}>
+                    {trait}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {personality !== null && <p class="muted">{personality}</p>}
+          <dl class="sheet-facts">
+            <div class="sheet-fact">
+              <dt>
+                <GlossaryTag entry="fusion">Fusion</GlossaryTag>
+              </dt>
+              <dd>
+                <span class="stars" aria-hidden="true">
+                  {fusionStars(creature.fusionCount)}
+                </span>{' '}
+                {creature.fusionCount} / 5
+              </dd>
+            </div>
+            <div class="sheet-fact">
+              <dt>
+                <GlossaryTag entry="ribbon">Ribbons</GlossaryTag>
+              </dt>
+              <dd>{ribbonsHeldText(creature.ribbons)}</dd>
+            </div>
+            {explorerFacts(creature.explorer).map((fact) => (
+              <div class="sheet-fact" key={fact.label}>
+                <dt>{fact.label}</dt>
+                <dd>{fact.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </Accordion>
+
+        <RenameForm creature={creature} busy={busy} onRename={actions.onRename} />
+      </FlipArea>
 
       {gearOpen !== null && (
         <ItemPickerDrawer
