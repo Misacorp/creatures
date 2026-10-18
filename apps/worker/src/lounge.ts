@@ -18,6 +18,8 @@ export const LOUNGE_DEBOUNCE_MS = 15_000;
 export const LOUNGE_TICK_MS = 60_000;
 /** How long message work stops after Discord says we may not post. */
 export const LOUNGE_BLOCK_MS = 30 * 60 * 1000;
+/** With nobody playing, the quiet message is looked at this long after each raid boundary. */
+export const LOUNGE_BOUNDARY_DELAY_MS = 2 * 60 * 1000;
 /** Failed syncs in a row before the check gives up until the next session. */
 export const LOUNGE_MAX_FAILURES = 5;
 /** Names shown before "and N more". */
@@ -236,9 +238,43 @@ export interface LoungeView {
   lastVisit: { name: string | null; at: number } | null;
 }
 
+/**
+ * The raid weekend's line under the lounge text. Times are real epoch ms (Discord timestamps).
+ * `boss` is our own content name, escaped when rendered.
+ */
+export type RaidLine =
+  | { boss: string; stage: 'phase2' | 'finale'; at: number }
+  | { boss: string; stage: 'live' }
+  | { boss: string; stage: 'over'; fell: boolean };
+
+export interface LoungeInput extends LoungeView {
+  /** The raid weekend line, or none. */
+  raid?: RaidLine | null;
+}
+
+/** The lounge as a Discord embed plus the button label. */
 export interface RenderedLounge {
-  content: string;
+  title: string;
+  description: string;
+  color: number;
   label: string;
+}
+
+const COLOR_PLAYING = 0xef6a3a;
+const COLOR_QUIET = 0x6b3fa0;
+
+function raidText(raid: RaidLine): string {
+  const head = `⚔️ Raid weekend: **${safeName(raid.boss)}**`;
+  switch (raid.stage) {
+    case 'phase2':
+      return `${head} · Phase 2 <t:${String(Math.floor(raid.at / 1000))}:R>`;
+    case 'finale':
+      return `${head} · Finale <t:${String(Math.floor(raid.at / 1000))}:R>`;
+    case 'live':
+      return `${head} · Finale under way`;
+    case 'over':
+      return raid.fell ? `${head} fell!` : `${head} held on.`;
+  }
 }
 
 const byName = (a: string, b: string): number => {
@@ -247,7 +283,14 @@ const byName = (a: string, b: string): number => {
   return x < y ? -1 : x > y ? 1 : a < b ? -1 : a > b ? 1 : 0;
 };
 
-export function renderLounge(view: LoungeView): RenderedLounge {
+export function renderLounge(view: LoungeInput): RenderedLounge {
+  const base = renderBase(view);
+  return view.raid == null
+    ? base
+    : { ...base, description: `${base.description}\n\n${raidText(view.raid)}` };
+}
+
+function renderBase(view: LoungeView): RenderedLounge {
   const total = view.names.length + view.unknown;
   if (total === 0) {
     const visit = view.lastVisit;
@@ -256,7 +299,12 @@ export function renderLounge(view: LoungeView): RenderedLounge {
       visit === null
         ? ''
         : ` Last visit: ${visit.name === null ? '' : `${safeName(visit.name)}, `}<t:${seconds}:t>.`;
-    return { content: `🌙 **Leet Creatures**\nThe lounge is quiet.${last}`, label: 'Play' };
+    return {
+      title: '🌙 Leet Creatures',
+      description: `The lounge is quiet.${last}`,
+      color: COLOR_QUIET,
+      label: 'Play',
+    };
   }
   const shown = [...view.names]
     .sort(byName)
@@ -265,12 +313,17 @@ export function renderLounge(view: LoungeView): RenderedLounge {
   const more = total - shown.length;
   const list =
     shown.length === 0 ? '' : `: ${shown.join(', ')}${more > 0 ? ` and ${String(more)} more` : ''}`;
-  return { content: `🔥 **Leet Creatures**\n${String(total)} in the lounge${list}`, label: 'Join' };
+  return {
+    title: '🔥 Leet Creatures',
+    description: `${String(total)} in the lounge${list}`,
+    color: COLOR_PLAYING,
+    label: 'Join',
+  };
 }
 
-/** What is stored to tell whether the message changed (the button label is part of it). */
+/** What is stored to tell whether the message changed (all four fields; the icon is not part of it). */
 export function renderedSignature(r: RenderedLounge): string {
-  return `${r.label}\n${r.content}`;
+  return JSON.stringify([r.title, r.description, r.color, r.label]);
 }
 
 export function loungeComponents(label: string) {

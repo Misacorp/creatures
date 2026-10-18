@@ -72,6 +72,7 @@ import { TokenBucketLimiter } from './ratelimit';
 import { SNOWFLAKE_RE } from './schemas';
 import {
   LOUNGE_BLOCK_MS,
+  LOUNGE_BOUNDARY_DELAY_MS,
   LOUNGE_DEBOUNCE_MS,
   LOUNGE_MAX_FAILURES,
   LOUNGE_TICK_MS,
@@ -84,6 +85,7 @@ import {
   readLounge,
   recordInstance,
   renderLounge,
+  type RaidLine,
   renderedSignature,
   setFailures,
   setLastVisit,
@@ -94,6 +96,7 @@ import {
   trackedInstances,
 } from './lounge';
 import type { LoungeClient, LoungeResult } from './lounge-discord';
+import { nextRaidBoundary, raidStageAt } from './lounge-raid';
 import {
   SESSION_ABSOLUTE_MS,
   SESSION_IDLE_MS,
@@ -1525,7 +1528,12 @@ export class GuildCore {
       if (retry !== null && state.failures < LOUNGE_MAX_FAILURES) {
         setNextCheck(this.sql, t + Math.max(retry, LOUNGE_DEBOUNCE_MS));
       } else if (trackedInstances(this.sql).length === 0) {
-        setNextCheck(this.sql, null);
+        // A quiet message stays fresh at raid boundaries; with no message there is nothing to keep.
+        const boundary =
+          readLounge(this.sql).messageId === null
+            ? null
+            : this.realAt(nextRaidBoundary(this.now(), this.timezone()) + LOUNGE_BOUNDARY_DELAY_MS);
+        setNextCheck(this.sql, boundary);
         if (retry !== null) setFailures(this.sql, 0);
       }
     } catch (err) {
@@ -1587,6 +1595,7 @@ export class GuildCore {
         state.lastVisitUserId === null || state.lastVisitAt === null
           ? null
           : { name: lastName, at: state.lastVisitAt },
+      raid: this.loungeRaidLine(),
     });
     const signature = renderedSignature(rendered);
     const channel = announceChannelId(this.sql);
@@ -1595,6 +1604,13 @@ export class GuildCore {
     if (state.messageId === null && state.lastVisitUserId === null) return null;
 
     let messageId = state.messageId;
+    // A message posted before the embed (plain text, SUPPRESS_EMBEDS set, its signature not JSON) cannot
+    // be edited into an embed: an edit cannot clear that flag reliably, so it is replaced once.
+    if (messageId !== null && state.content !== null && !state.content.startsWith('[')) {
+      await client.deleteMessage(state.channelId ?? channel, messageId);
+      clearMessage(this.sql);
+      messageId = null;
+    }
     if (messageId !== null && state.channelId !== channel) {
       await client.deleteMessage(state.channelId ?? '', messageId);
       clearMessage(this.sql);
@@ -1613,7 +1629,8 @@ export class GuildCore {
 
     if (messageId !== null) {
       if (state.content === signature && state.channelId === channel) return null;
-      const edited = await client.editMessage(channel, messageId, rendered);
+      const body = { ...rendered, iconUrl: await client.appIconUrl() };
+      const edited = await client.editMessage(channel, messageId, body);
       if (edited.kind === 'ok') {
         storeSignature(this.sql, signature);
         return null;
@@ -1621,12 +1638,32 @@ export class GuildCore {
       if (edited.kind !== 'not_found') return this.loungeFailure(edited, t);
       clearMessage(this.sql);
     }
-    const created = await client.createMessage(channel, rendered);
+    const created = await client.createMessage(channel, {
+      ...rendered,
+      iconUrl: await client.appIconUrl(),
+    });
     if (created.kind === 'ok') {
       storeMessage(this.sql, channel, created.value, signature);
       return null;
     }
     return this.loungeFailure(created, t);
+  }
+
+  /**
+   * The raid weekend line for the lounge message, from the game clock; Discord timestamps are real
+   * time. Never throws: any error means no line.
+   */
+  private loungeRaidLine(): RaidLine | null {
+    try {
+      const stage = raidStageAt(this.sql, this.now(), this.timezone());
+      if (stage === null) return null;
+      return stage.stage === 'phase2' || stage.stage === 'finale'
+        ? { ...stage, at: this.realAt(stage.at) }
+        : stage;
+    } catch (err) {
+      console.error('lounge raid line failed', err instanceof Error ? err.name : 'unknown');
+      return null;
+    }
   }
 
   /** Records a failed Discord call (kind only in the log); returns the wait before a retry, or null. */

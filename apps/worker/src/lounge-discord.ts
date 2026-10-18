@@ -8,13 +8,12 @@ import * as v from 'valibot';
 import { createDiscordApi } from './discord';
 import {
   API_BASE,
-  FLAG_SUPPRESS_EMBEDS,
   TIMEOUT_MS,
   discard,
   readRetryAfter,
   type PostFailureKind,
 } from './discord-posts';
-import { loungeComponents } from './lounge';
+import { loungeComponents, type RenderedLounge } from './lounge';
 import { SNOWFLAKE_RE, type ActivityInstance } from './schemas';
 
 /** SUPPRESS_NOTIFICATIONS: a new post is "@silent". */
@@ -27,9 +26,9 @@ export type LoungeResult<T> =
   | { kind: 'retry'; error: PostFailureKind; afterMs: number | null }
   | { kind: 'failed'; error: PostFailureKind };
 
-export interface LoungeMessageBody {
-  content: string;
-  label: string;
+export interface LoungeMessageBody extends RenderedLounge {
+  /** The app's icon, shown as the embed's thumbnail; none when null or missing. */
+  iconUrl?: string | null;
 }
 
 export interface LoungeClient {
@@ -43,6 +42,8 @@ export interface LoungeClient {
     body: LoungeMessageBody,
   ): Promise<LoungeResult<null>>;
   deleteMessage(channelId: string, messageId: string): Promise<LoungeResult<null>>;
+  /** The app's icon URL (fetched once per client), or null when there is none or Discord fails. */
+  appIconUrl(): Promise<string | null>;
   /** The ids of the channel's latest messages (up to 10). */
   recentMessageIds(channelId: string): Promise<LoungeResult<string[]>>;
 }
@@ -56,6 +57,10 @@ export interface LoungeClientConfig {
 
 const MessageIdSchema = v.object({ id: v.pipe(v.string(), v.regex(SNOWFLAKE_RE)) });
 const MessageListSchema = v.pipe(v.array(MessageIdSchema), v.maxLength(100));
+const AppSchema = v.object({
+  id: v.pipe(v.string(), v.regex(SNOWFLAKE_RE)),
+  icon: v.nullish(v.pipe(v.string(), v.regex(/^(a_)?[0-9a-f]{32}$/))),
+});
 
 export function createLoungeClient(config: LoungeClientConfig): LoungeClient {
   const doFetch = config.fetch ?? fetch;
@@ -120,12 +125,23 @@ export function createLoungeClient(config: LoungeClientConfig): LoungeClient {
     return { kind: 'ok', value: null };
   };
 
-  const payload = (b: LoungeMessageBody, flags: number) => ({
-    content: b.content,
+  // The text is an embed (so no SUPPRESS_EMBEDS); `flags` is only set on a new post.
+  const payload = (b: LoungeMessageBody, flags?: number) => ({
+    content: '',
+    embeds: [
+      {
+        title: b.title,
+        description: b.description,
+        color: b.color,
+        ...(b.iconUrl == null ? {} : { thumbnail: { url: b.iconUrl } }),
+      },
+    ],
     allowed_mentions: { parse: [] },
-    flags,
+    ...(flags === undefined ? {} : { flags }),
     components: loungeComponents(b.label),
   });
+
+  let cachedIcon: string | null = null;
 
   const rejected: LoungeResult<never> = { kind: 'failed', error: 'rejected' };
   const valid = (...ids: string[]): boolean => ids.every((id) => SNOWFLAKE_RE.test(id));
@@ -138,7 +154,7 @@ export function createLoungeClient(config: LoungeClientConfig): LoungeClient {
       return run(
         `/channels/${channelId}/messages`,
         'POST',
-        payload(body, FLAG_SUPPRESS_EMBEDS | FLAG_SUPPRESS_NOTIFICATIONS),
+        payload(body, FLAG_SUPPRESS_NOTIFICATIONS),
         async (res) => {
           try {
             const parsed = v.safeParse(MessageIdSchema, await res.json());
@@ -153,12 +169,25 @@ export function createLoungeClient(config: LoungeClientConfig): LoungeClient {
 
     editMessage(channelId, messageId, body) {
       if (!valid(channelId, messageId)) return Promise.resolve(rejected);
-      return run(
-        `/channels/${channelId}/messages/${messageId}`,
-        'PATCH',
-        payload(body, FLAG_SUPPRESS_EMBEDS),
-        ok,
-      );
+      return run(`/channels/${channelId}/messages/${messageId}`, 'PATCH', payload(body), ok);
+    },
+
+    async appIconUrl() {
+      if (cachedIcon !== null) return cachedIcon;
+      try {
+        const sent = await call('/applications/@me', 'GET');
+        if ('fail' in sent) return null;
+        if (!sent.res.ok) {
+          await discard(sent.res);
+          return null;
+        }
+        const parsed = v.safeParse(AppSchema, await sent.res.json());
+        if (!parsed.success || parsed.output.icon == null) return null;
+        cachedIcon = `https://cdn.discordapp.com/app-icons/${parsed.output.id}/${parsed.output.icon}.png?size=128`;
+        return cachedIcon;
+      } catch {
+        return null;
+      }
     },
 
     deleteMessage(channelId, messageId) {
