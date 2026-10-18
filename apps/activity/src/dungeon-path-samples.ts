@@ -187,6 +187,8 @@ export function sampleState(over: Partial<DungeonRunState> = {}): DungeonRunStat
     outcome: null,
     step: 0,
     map: sampleMap(),
+    level: 0,
+    undercroft: null,
     at: null,
     path: [],
     reachable: ['f0l0', 'f0l1', 'f0l2'],

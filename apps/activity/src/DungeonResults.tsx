@@ -262,7 +262,12 @@ function RouteSection({ run, initialView }: { run: DungeonRunSummary; initialVie
         strip
       ) : (
         <div class="dungeon-result-map">
-          <DungeonMap map={route.map} state={route.run} landmark={run.landmark} />
+          <DungeonMap
+            map={route.map}
+            undercroft={route.undercroft}
+            state={route.run}
+            landmark={run.landmark}
+          />
         </div>
       )}
     </>
@@ -285,7 +290,7 @@ function RoomStrip({ rooms, path }: { rooms: readonly StripRoom[]; path: boolean
           return (
             <li
               key={room.index}
-              class={`room-panel ${room.state}${room.elite ? ' elite' : ''}`}
+              class={`room-panel ${room.state}${room.elite ? ' elite' : ''}${room.level > 0 ? ' undercroft' : ''}${room.epic ? ' epic' : ''}`}
               aria-label={room.spoken}
             >
               <span class="rp-title pix" aria-hidden="true">

@@ -1,4 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
+import actDescendPending from './fixtures/dungeon-act-descend-pending.json';
+import actDescend from './fixtures/dungeon-act-descend.json';
+import actDoor from './fixtures/dungeon-act-door.json';
+import actKeeper from './fixtures/dungeon-act-keeper.json';
 import replayFixture from './fixtures/dungeon-replay.json';
 import runCleared from './fixtures/dungeon-run-cleared.json';
 import today from './fixtures/dungeon-today.json';
@@ -525,5 +529,192 @@ describe('the requests of a run', () => {
     await expect(
       dungeonAct({ runId: 'r', step: 0, idempotencyKey: 'key-12345678', act: { type: 'home' } }),
     ).rejects.toThrow();
+  });
+});
+
+describe('the Undercroft in the dungeon answers', () => {
+  const door = actDoor as unknown as { state: Record<string, unknown> };
+  const pendingAnswer = actDescendPending as unknown as { state: Record<string, unknown> };
+  const down = actDescend as unknown as { state: Record<string, unknown> };
+  const withState = (
+    answer: { state: Record<string, unknown> },
+    over: Record<string, unknown>,
+  ) => ({
+    ...answer,
+    state: { ...answer.state, ...over },
+  });
+
+  it('reads the new node kinds, the level fields of a map and the Undercroft of a state', () => {
+    const state = parseDungeonAct(actDescend).state;
+    const level = state.undercroft?.maps[0];
+    expect(level?.level).toBe(1);
+    expect(level?.label).toBeTruthy();
+    expect(level?.crack).toBeUndefined();
+    expect(state.map.nodes.some((n) => n.kind === 'door')).toBe(true);
+    const crack = {
+      ...down.state,
+      undercroft: {
+        marks: 1,
+        maps: [{ ...(state.undercroft?.maps[0] as object), crack: true }],
+      },
+    };
+    expect(parseDungeonAct({ state: crack }).state.undercroft?.maps[0]?.crack).toBe(true);
+    const epicNodes = (state.map.nodes as object[]).map((n, i) =>
+      i === 0 ? { ...n, kind: 'epic' } : n,
+    );
+    const epic = { ...down.state, map: { ...(down.state['map'] as object), nodes: epicNodes } };
+    expect(parseDungeonAct({ state: epic }).state.map.nodes[0]?.kind).toBe('epic');
+  });
+
+  it('refuses a state without its level or with a broken Undercroft', () => {
+    const lacking = { ...down.state };
+    delete lacking['level'];
+    expect(() => parseDungeonAct({ state: lacking })).toThrow();
+    delete lacking['undercroft'];
+    expect(() => parseDungeonAct({ state: { ...down.state, undercroft: undefined } })).toThrow();
+    expect(() => parseDungeonAct(withState(down, { level: -1 }))).toThrow();
+    expect(() =>
+      parseDungeonAct(withState(down, { undercroft: { maps: [], marks: 'two' } })),
+    ).toThrow();
+    expect(() =>
+      parseDungeonAct(withState(down, { undercroft: { maps: [{}], marks: 1 } })),
+    ).toThrow();
+    expect(() => parseDungeonAct(withState(down, { undercroft: [] }))).toThrow();
+    const bad = (over: object) => ({
+      ...(down.state['undercroft'] as { maps: object[] }),
+      maps: [{ ...(down.state['undercroft'] as { maps: object[] }).maps[0], ...over }],
+    });
+    for (const over of [{ level: 'one' }, { label: 7 }, { crack: 'yes' }]) {
+      expect(() => parseDungeonAct(withState(down, { undercroft: bad(over) }))).toThrow();
+    }
+  });
+
+  it('refuses a node kind the client does not know', () => {
+    const nodes = (door.state['map'] as { nodes: object[] }).nodes.map((n, i) =>
+      i === 0 ? { ...n, kind: 'portal' } : n,
+    );
+    expect(() =>
+      parseDungeonAct(withState(door, { map: { ...(door.state['map'] as object), nodes } })),
+    ).toThrow();
+  });
+
+  it('reads the descent card and refuses a broken one', () => {
+    const state = parseDungeonAct(actDescendPending).state;
+    expect(state.pending?.kind).toBe('descend');
+    const card = pendingAnswer.state['pending'] as Record<string, unknown>;
+    expect(() =>
+      parseDungeonAct(withState(pendingAnswer, { pending: { ...card, floors: 'four' } })),
+    ).toThrow();
+    expect(() =>
+      parseDungeonAct(withState(pendingAnswer, { pending: { ...card, newDepth: -1 } })),
+    ).toThrow();
+    const banked = card['banked'] as Record<string, unknown>;
+    for (const broken of [
+      null,
+      { ...banked, gear: [{ baseId: 'x', rarity: 'mythic' }] },
+      { ...banked, supplies: [1] },
+      { ...banked, parts: { scrap: -1 } },
+      { gear: [], supplies: [] },
+    ]) {
+      expect(() =>
+        parseDungeonAct(withState(pendingAnswer, { pending: { ...card, banked: broken } })),
+      ).toThrow();
+    }
+    expect(() =>
+      parseDungeonAct(withState(pendingAnswer, { pending: { kind: 'portal' } })),
+    ).toThrow();
+  });
+
+  it('reads the new history entries and refuses malformed ones', () => {
+    const history = parseDungeonAct(actDescendPending).state.history ?? [];
+    expect(history.map((e) => `${e.kind}:${e.result}`).slice(-4)).toEqual([
+      'door:door',
+      'boss:fight',
+      'boss:chest',
+      'descend:pending',
+    ]);
+    const raw = pendingAnswer.state['history'] as Record<string, unknown>[];
+    const swap = (kind: string, over: Record<string, unknown>) =>
+      raw.map((e) =>
+        `${String(e['kind'])}:${String(e['result'])}` === kind ? { ...e, ...over } : e,
+      );
+    for (const [kind, over] of [
+      ['door:door', { added: 'yes' }],
+      ['boss:chest', { level: 'zero' }],
+      ['boss:chest', { gear: [{ baseId: 1 }] }],
+      ['boss:chest', { loot: { bait: 1 } }],
+      ['descend:pending', { level: 'one' }],
+    ] as const) {
+      expect(() =>
+        parseDungeonAct(withState(pendingAnswer, { history: swap(kind, over) })),
+      ).toThrow();
+    }
+    // The way down and the way home.
+    const downHistory = parseDungeonAct(actDescend).state.history ?? [];
+    expect(downHistory.at(-1)).toMatchObject({ kind: 'descend', result: 'descend', healed: 140 });
+    const home = raw.map((e) => (e['kind'] === 'descend' ? { ...e, result: 'home' } : e));
+    expect(
+      parseDungeonAct(withState(pendingAnswer, { history: home })).state.history?.at(-1),
+    ).toMatchObject({
+      kind: 'descend',
+      result: 'home',
+    });
+    const noHeal = (down.state['history'] as Record<string, unknown>[]).map((e) =>
+      e['result'] === 'descend' ? { ...e, healed: 'a lot' } : e,
+    );
+    expect(() => parseDungeonAct(withState(down, { history: noHeal }))).toThrow();
+  });
+
+  it('reads an epic fight in a log, a room summary and a replay room', () => {
+    const keeper = actKeeper as unknown as {
+      state: { history: Record<string, unknown>[] };
+      summary: Record<string, unknown> & { rooms: Record<string, unknown>[] };
+      room: Record<string, unknown>;
+      today: unknown;
+    };
+    const epicLog = keeper.state.history.map((e) =>
+      e['kind'] === 'elite' ? { ...e, kind: 'epic' } : e,
+    );
+    expect(
+      parseDungeonAct({
+        ...keeper,
+        state: { ...keeper.state, history: epicLog },
+      }).state.history?.some((e) => e.kind === 'epic'),
+    ).toBe(true);
+    const rooms = keeper.summary.rooms.map((r, i) => (i === 5 ? { ...r, epic: true } : r));
+    expect(
+      parseDungeonAct({ ...keeper, summary: { ...keeper.summary, rooms } }).summary?.rooms[5]?.epic,
+    ).toBe(true);
+    expect(() =>
+      parseDungeonAct({
+        ...keeper,
+        summary: { ...keeper.summary, rooms: rooms.map((r) => ({ ...r, epic: 'yes' })) },
+      }),
+    ).toThrow();
+    expect(parseDungeonAct({ ...keeper, room: { ...keeper.room, epic: true } }).room?.epic).toBe(
+      true,
+    );
+    expect(() => parseDungeonAct({ ...keeper, room: { ...keeper.room, epic: 1 } })).toThrow();
+  });
+
+  it('reads deepest and the Undercroft levels of a route, and refuses them broken', () => {
+    const keeper = actKeeper as unknown as {
+      summary: { route: Record<string, unknown> } & Record<string, unknown>;
+    };
+    const summary = parseDungeonAct(actKeeper).summary;
+    expect(summary?.deepest).toBe(1);
+    expect(summary?.route?.undercroft?.[0]?.level).toBe(1);
+    const old: Record<string, unknown> = { ...keeper.summary };
+    delete old['deepest'];
+    expect(parseDungeonAct({ ...actKeeper, summary: old }).summary?.deepest).toBeUndefined();
+    expect(() =>
+      parseDungeonAct({ ...actKeeper, summary: { ...keeper.summary, deepest: 'one' } }),
+    ).toThrow();
+    expect(() =>
+      parseDungeonAct({
+        ...actKeeper,
+        summary: { ...keeper.summary, route: { ...keeper.summary.route, undercroft: [{}] } },
+      }),
+    ).toThrow();
   });
 });

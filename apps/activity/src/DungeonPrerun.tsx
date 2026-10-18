@@ -3,6 +3,7 @@ import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from './Glossary';
 import { DepthProgress } from './DepthProgress';
 import { DungeonMap } from './DungeonMap';
+import { lockedBandShown } from './dungeon-flow';
 import { roomPanels } from './dungeon-rooms';
 import { landmarkLine, streakLabel, streakPips, supplyPromiseLine } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
@@ -57,7 +58,12 @@ export function DungeonPrerun({
       <SkyLine forecast={forecast} />
       {today.map != null ? (
         <div class="dungeon-preview">
-          <DungeonMap map={today.map} state={null} landmark={today.landmark} />
+          <DungeonMap
+            map={today.map}
+            state={null}
+            landmark={today.landmark}
+            lockedBand={lockedBandShown({ depth: today.depth })}
+          />
           <p class="muted">
             Today's map, the same for everyone on the server. Tap a room to see what is there.
           </p>

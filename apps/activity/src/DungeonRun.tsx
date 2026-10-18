@@ -1,17 +1,18 @@
 import { useEffect, useRef } from 'preact/hooks';
 import type { Creature } from './api';
 import { DungeonCamp } from './DungeonCamp';
+import { DungeonDescend } from './DungeonDescend';
 import { DungeonEvent } from './DungeonEvent';
 import { DungeonMap } from './DungeonMap';
 import { DungeonRunStrip } from './DungeonRunStrip';
-import { runScreenOf } from './dungeon-flow';
+import { lockedBandShown, runScreenOf } from './dungeon-flow';
 import type { DungeonAct, DungeonRunState } from './dungeon-types';
 import { usePrefersReducedMotion } from './hooks';
 import { arriveScroll, shouldScrollToCard } from './reveal-arrive';
 
 /**
  * An open run: the strip (the row with its HP, the keepsakes, the pack), then what the run stands at:
- * a mystery room's card, the camp's card, or the map with its rooms to go to. Every choice is an act
+ * a mystery room's card, the camp's card, the descent card (the boss fell) or the map with its rooms to go to. Every choice is an act
  * the screen above sends; nothing here changes the run. Coming back to the map (after a fight, an
  * event or the camp) brings the top of the run into view when it is not.
  */
@@ -70,10 +71,21 @@ export function DungeonRun({
           onAct={onAct}
         />
       )}
+      {state.pending?.kind === 'descend' && (
+        <DungeonDescend
+          key={state.step}
+          descent={state.pending}
+          pack={state.pack}
+          busy={busy}
+          onAct={onAct}
+        />
+      )}
       {screen === 'run' && (
         <section class="raid-section dungeon-run-map" aria-label="The map">
           <DungeonMap
             map={state.map}
+            undercroft={state.undercroft?.maps}
+            lockedBand={lockedBandShown(state)}
             state={state}
             busy={busy}
             landmark={state.landmark}

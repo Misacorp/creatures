@@ -8,6 +8,10 @@ import actCampPending from './fixtures/dungeon-act-camp-pending.json';
 import actCamp from './fixtures/dungeon-act-camp.json';
 import actCleared from './fixtures/dungeon-act-cleared.json';
 import actDefeat from './fixtures/dungeon-act-defeat.json';
+import actDescendPending from './fixtures/dungeon-act-descend-pending.json';
+import actDescend from './fixtures/dungeon-act-descend.json';
+import actDoor from './fixtures/dungeon-act-door.json';
+import actKeeper from './fixtures/dungeon-act-keeper.json';
 import actEventPending from './fixtures/dungeon-act-event-pending.json';
 import actEvent from './fixtures/dungeon-act-event.json';
 import actFight from './fixtures/dungeon-act-fight.json';
@@ -18,6 +22,7 @@ import startFixture from './fixtures/dungeon-start.json';
 import todayActive from './fixtures/dungeon-today-active.json';
 import todayMap from './fixtures/dungeon-today-map.json';
 import { nodeLabel } from './dungeon-map';
+import { undercroftState } from './dungeon-undercroft-sample';
 import {
   parseDungeonAct,
   parseDungeonReplay,
@@ -146,7 +151,9 @@ const escapeRe = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '
 
 /** The map's button for a room, by the label the map gives it. */
 function room(state: DungeonRunState, id: string, root: FakeElement): FakeElement {
-  const node = state.map.nodes.find((n) => n.id === id);
+  const node = [state.map, ...(state.undercroft?.maps ?? [])]
+    .flatMap((m) => m.nodes)
+    .find((n) => n.id === id);
   if (node === undefined) throw new Error(`no room ${id}`);
   return button(root, new RegExp(`^${escapeRe(nodeLabel(node))}\\.`));
 }
@@ -664,5 +671,142 @@ describe('the route and what happened in each room, with the real answers', () =
     expect(room(answer.state, stranded.id, root).getAttribute('class')).toContain('s-unreachable');
     page?.click(room(answer.state, stranded.id, root));
     expect(visibleText(dialogOf(root))).toContain("You can't reach this room any more.");
+  });
+});
+
+describe('the Undercroft, with the real answers', () => {
+  const dialogOf = (root: FakeElement): FakeElement => byRole(root, 'dialog')[0] as FakeElement;
+
+  async function openRunAt(open: DungeonRunState, answers: DungeonActResponse[]) {
+    vi.useFakeTimers();
+    api.fetchDungeonToday.mockResolvedValue({ ...parseDungeonToday(todayActive), active: open });
+    for (const answer of answers) api.dungeonAct.mockResolvedValueOnce(answer);
+    const { root } = drawTab();
+    await settle();
+    return root;
+  }
+
+  it('door, boss, descent card, descend: each move is the captured act, and the card says what is at stake', async () => {
+    const ahead = undercroftState('door-ahead');
+    const pending = parseDungeonAct(actDescendPending);
+    const root = await openRunAt(ahead, [
+      parseDungeonAct(actDoor),
+      pending,
+      parseDungeonAct(actDescend),
+    ]);
+    // Before the boss the Undercroft waits above it, quietly.
+    expect(visibleText(root)).toContain('The Undercroft · beat the boss to descend');
+    const body = (key: keyof Bodies) => ({
+      runId: bodyOf(key).runId,
+      step: bodyOf(key).step,
+      act: bodyOf(key).act,
+    });
+
+    // The carved door says what it could add; walking through says only that a room was added.
+    page?.click(room(ahead, 'f5l1', root));
+    expect(visibleText(dialogOf(root))).toContain('Step through to add one room to the Undercroft');
+    page?.click(button(root, /^Go/));
+    await settle();
+    expect(sentAct(0).body).toEqual(body('dungeon-act-door'));
+    expect(byClass(root, 'dungeon-playback')).toHaveLength(0);
+    expect(byClass(root, 'dungeon-run-map')).toHaveLength(1);
+    const walked = parseDungeonAct(actDoor).state;
+    page?.click(room(walked, 'f5l1', root));
+    expect(visibleText(dialogOf(root))).toContain('Added a room to the Undercroft.');
+    page?.click(button(root, 'Close'));
+
+    // The room boss: its fight plays, then the descent card takes the place of the map.
+    await goTo(walked, 'f6l1', root);
+    expect(sentAct(1).body).toEqual(body('dungeon-act-descend-pending'));
+    expect(byClass(root, 'dungeon-playback')).toHaveLength(1);
+    await playOut(root);
+    expect(byClass(root, 'dungeon-descend')).toHaveLength(1);
+    expect(byClass(root, 'dungeon-run-map')).toHaveLength(0);
+    const card = visibleText(root);
+    expect(card).toContain('Depth 15 is yours');
+    expect(card).toContain('Banked now');
+    expect(card).toContain('Cinder Charm');
+    expect(card).toContain('Still at risk');
+    expect(byName(root, 'span', 'Essence: 3')).toHaveLength(2);
+    expect(card).toContain('The Undercroft · foes are fiercer here');
+    expect(card).toContain('4 floors, with a keeper on the last.');
+    expect(card).toContain('Your creatures catch their breath (20% HP).');
+    expect(card).toContain('Depth 15 · The room boss is down');
+    expect(byName(root, 'button', 'Descend')).toHaveLength(1);
+    expect(byName(root, 'button', 'Head home with everything')).toHaveLength(1);
+
+    // Descend: the captured act, then the level above the boss, labelled, with its entrance next.
+    page?.click(button(root, 'Descend'));
+    await settle();
+    expect(sentAct(2).body).toEqual(body('dungeon-act-descend'));
+    expect(byClass(root, 'dungeon-descend')).toHaveLength(0);
+    expect(byClass(root, 'dungeon-run-map')).toHaveLength(1);
+    const text = visibleText(root);
+    expect(text).toContain('Undercroft 1 · At the entrance');
+    expect(text).toContain('Undercroft · foes are fiercer here');
+    const down = parseDungeonAct(actDescend).state;
+    const nodes = byClass(root, 'dmap-node');
+    expect(nodes).toHaveLength(
+      down.map.nodes.length + (down.undercroft?.maps[0]?.nodes.length ?? 0),
+    );
+    const lit = nodes.filter((n) => (n.getAttribute('class') ?? '').includes('s-reachable'));
+    expect(lit.map((n) => n.getAttribute('aria-label'))).toEqual([
+      expect.stringContaining('Fight: Ember Mite'),
+      expect.stringContaining('Fight: Puddle Imp'),
+    ]);
+    // The day's rooms the run did not walk are out of reach now, and their drawer says so.
+    const gone = nodes.filter((n) => (n.getAttribute('aria-label') ?? '').includes('Out of reach'));
+    expect(gone.length).toBeGreaterThan(0);
+    page?.click(gone[0] as FakeElement);
+    expect(visibleText(dialogOf(root))).toContain("You can't reach this room any more.");
+  });
+
+  it('heading home from the descent card is the captured home act, and keeps the pack', async () => {
+    const pending = parseDungeonAct(actDescendPending).state;
+    const home = parseDungeonAct(actHome);
+    const root = await openRunAt(pending, [home]);
+    expect(byClass(root, 'dungeon-descend')).toHaveLength(1);
+    page?.click(button(root, 'Head home with everything'));
+    await settle();
+    expect(sentAct().body['act']).toEqual({ type: 'home' });
+    expect(sentAct().body['runId']).toBe(pending.id);
+    expect(visibleText(root)).toContain('Home safe with your whole pack');
+  });
+
+  it('the keeper: the fight plays, then "Cleared! ... Undercroft 1 cleared" with the levels on the route map', async () => {
+    const keeper = parseDungeonAct(actKeeper);
+    const open = undercroftState('keeper');
+    const root = await openRunAt(open, [keeper]);
+    expect(visibleText(root)).toContain('Undercroft 1 · Floor 3 / 4');
+    await goTo(open, 'u1f3l1', root);
+    expect(sentAct().body).toEqual({
+      runId: bodyOf('dungeon-act-keeper').runId,
+      step: bodyOf('dungeon-act-keeper').step,
+      act: bodyOf('dungeon-act-keeper').act,
+    });
+    expect(byClass(root, 'dungeon-playback')).toHaveLength(1);
+    // The banner names the level and its floors, and the keeper as the keeper.
+    expect(visibleText(root)).toContain('Undercroft 1 · Floor 4 / 4');
+    await playOut(root);
+    const text = visibleText(root);
+    expect(text).toContain('Cleared! Depth 14 to 15 · Undercroft 1 cleared');
+    expect(text).toMatch(/Pack\s*:\s*all kept/);
+    // The fights of the Undercroft are on the strip, the keeper last.
+    expect(byClass(root, 'room-panel')).toHaveLength(7);
+    expect(visibleText(byClass(root, 'room-panel')[6] as FakeElement)).toContain('Keeper');
+    // The route map has the level above the day's map, with every room the run walked visited.
+    page?.click(button(root, 'Map'));
+    expect(byClass(root, 'dmap-node')).toHaveLength(
+      keeper.state.map.nodes.length + (keeper.state.undercroft?.maps[0]?.nodes.length ?? 0),
+    );
+    const visited = byClass(root, 'dmap-node').filter((n) =>
+      (n.getAttribute('class') ?? '').includes('s-visited'),
+    );
+    expect(visited).toHaveLength(keeper.state.path.length);
+    // The keeper's chest says what it paid.
+    page?.click(button(root, /^Undercroft keeper: Slag Tyrant\./));
+    const drawer = visibleText(dialogOf(root));
+    expect(drawer).toContain("The keeper's chest opened.");
+    expect(drawer).toContain('Cleared');
   });
 });

@@ -131,6 +131,8 @@ function dungeonActKey(act: DungeonAct): string {
       ].join(':');
     case 'home':
       return 'home';
+    case 'descend':
+      return 'descend';
   }
 }
 

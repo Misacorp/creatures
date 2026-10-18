@@ -174,6 +174,14 @@ export function DungeonRunStrip({ state }: { state: DungeonRunState }) {
             <LandmarkChip />
           </>
         )}
+        {state.level > 0 && (
+          <>
+            {' '}
+            <Tag kind="chip" tone="bad" entry="undercroft" class="run-undercroft-chip">
+              Foes are fiercer here
+            </Tag>
+          </>
+        )}
       </p>
       <RunRow team={state.team} />
       <RunKeepsakes keepsakes={state.keepsakes} />

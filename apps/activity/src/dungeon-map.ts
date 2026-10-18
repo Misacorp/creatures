@@ -27,6 +27,8 @@ import type {
 export type MapRun = Pick<DungeonRunState, 'status' | 'at' | 'path' | 'reachable' | 'landmark'> & {
   /** What each room visited did (absent from an older server). */
   history?: readonly DungeonStepLog[] | undefined;
+  /** The level the run stands in (0: the day's map, 1 and up: the Undercroft). Absent: 0. */
+  level?: number | undefined;
 };
 
 /** The width of the map's coordinate space, in units (one pixel on the narrowest phone). */
@@ -42,7 +44,15 @@ const NODE_SIZE: Readonly<Record<DungeonNodeKind, number>> = {
   cache: MIN_NODE,
   camp: 54,
   boss: 62,
+  door: MIN_NODE,
+  epic: 56,
 };
+
+/** The level of a room by its id: `u2f1l0` is on Undercroft level 2; every other id is on the day's map (0). */
+export function nodeLevel(id: string): number {
+  const found = /^u(\d+)f\d+l\d+$/.exec(id);
+  return found === null ? 0 : Number(found[1]);
+}
 
 interface MapLayoutOptions {
   /** The width of the coordinate space (default `MAP_WIDTH`). */
@@ -56,6 +66,8 @@ interface MapLayoutOptions {
 /** A room placed on the picture. `x` and `y` are its centre; `size` its diameter. */
 export interface LaidNode {
   id: string;
+  /** 0 on the day's map, 1 and up on an Undercroft level. */
+  level: number;
   floor: number;
   lane: number;
   kind: DungeonNodeKind;
@@ -105,6 +117,7 @@ export function mapLayout(map: DungeonMapView, opts: MapLayoutOptions = {}): Map
 
   const nodes: LaidNode[] = map.nodes.map((node) => ({
     id: node.id,
+    level: nodeLevel(node.id),
     floor: node.floor,
     lane: node.lane,
     kind: node.kind,
@@ -127,6 +140,104 @@ export function mapLayout(map: DungeonMapView, opts: MapLayoutOptions = {}): Map
     }
   }
   return { width, height, nodes, edges };
+}
+
+/** The space between two stacked levels, in units: room for the label of the level above. */
+export const LEVEL_SEAM = 16;
+/** The height of the locked band above the room boss (before the run has gone down), in units. */
+export const LOCKED_BAND = 56;
+
+/** A darker band of the stacked picture: an Undercroft level (with its label), or the locked one above the boss. */
+export interface LaidBand {
+  kind: 'undercroft' | 'locked';
+  /** The Undercroft level it holds (0 for the locked band). */
+  level: number;
+  y: number;
+  height: number;
+  /** Where the label stands (its centre), in units. */
+  labelY: number;
+  label: string;
+  /** The level's keeper stands on a cracked floor. */
+  crack: boolean;
+}
+
+export interface StackLayout extends MapLayout {
+  bands: LaidBand[];
+}
+
+/** What the locked band says before the run has gone down: the Undercroft is there, and how to get in. */
+export const LOCKED_BAND_LABEL = 'The Undercroft · beat the boss to descend';
+
+/** The label of an Undercroft level: the server's own, or a plain one when it sent none. */
+export function levelLabel(map: Pick<DungeonMapView, 'level' | 'label'>): string {
+  return map.label ?? `Undercroft ${String(map.level ?? 1)}`;
+}
+
+interface StackOptions extends MapLayoutOptions {
+  /** Show the locked band above the room boss (the Undercroft is open to the player but not entered yet). */
+  locked?: boolean;
+}
+
+/**
+ * The day's map with the Undercroft levels drawn so far stacked above its room boss (the map grows
+ * upward): each level is laid out like the day's map (its own entrance floor at the bottom, its keeper
+ * at the top), the highest level on top, with a seam between two levels that holds the label of the one
+ * above. `locked` adds a plain band above the boss before any level is drawn. Without either it is the
+ * day's map exactly as `mapLayout` draws it. A level's `level` number does not matter: the order of the
+ * list is the order of the stack.
+ */
+export function stackLayout(
+  main: DungeonMapView,
+  undercroft: readonly DungeonMapView[],
+  opts: StackOptions = {},
+): StackLayout {
+  const locked = opts.locked === true && undercroft.length === 0;
+  const parts = [main, ...undercroft].map((m) => mapLayout(m, opts));
+  const width = parts[0]?.width ?? opts.width ?? MAP_WIDTH;
+  if (undercroft.length === 0 && !locked) return { ...(parts[0] as MapLayout), bands: [] };
+  const height =
+    parts.reduce((sum, p) => sum + p.height, 0) +
+    LEVEL_SEAM * undercroft.length +
+    (locked ? LOCKED_BAND : 0);
+  const nodes: LaidNode[] = [];
+  const edges: LaidEdge[] = [];
+  const bands: LaidBand[] = [];
+  let y = 0;
+  if (locked) {
+    bands.push({
+      kind: 'locked',
+      level: 0,
+      y: 0,
+      height: LOCKED_BAND,
+      labelY: LOCKED_BAND / 2,
+      label: LOCKED_BAND_LABEL,
+      crack: false,
+    });
+    y = LOCKED_BAND;
+  }
+  // From the top: the highest level first, the day's map last.
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const part = parts[i] as MapLayout;
+    const map = i === 0 ? main : (undercroft[i - 1] as DungeonMapView);
+    for (const n of part.nodes) nodes.push({ ...n, y: n.y + y });
+    for (const e of part.edges) edges.push({ ...e, y1: e.y1 + y, y2: e.y2 + y });
+    if (i > 0) {
+      bands.push({
+        kind: 'undercroft',
+        level: map.level ?? i,
+        y,
+        height: part.height + LEVEL_SEAM,
+        labelY: y + part.height + LEVEL_SEAM / 2,
+        label: levelLabel(map),
+        crack: map.crack === true,
+      });
+      y += LEVEL_SEAM;
+    }
+    y += part.height;
+  }
+  // The day's map first in the list (the order of the rooms is the order of the picture, bottom up).
+  nodes.sort((a, b) => a.level - b.level);
+  return { width, height, nodes, edges, bands };
 }
 
 /** The SVG path of an edge: a gentle S that leaves a room straight up and arrives straight up. */
@@ -169,6 +280,20 @@ export function reachableAhead(map: Pick<DungeonMapView, 'nodes'>, at: string | 
     for (const next of byId.get(id)?.next ?? []) queue.push(next);
   }
   return ahead;
+}
+
+/**
+ * `reachableAhead` for a run on stacked maps (`levels[0]` is the day's map, then the Undercroft levels in
+ * order): by the map the run stands in, or, before the entrance of a level (`at` null), the map of the level
+ * it is on. A room of another level is never in it, so the levels the run has left are out of reach.
+ */
+export function reachableAheadAcross(
+  levels: readonly Pick<DungeonMapView, 'nodes'>[],
+  at: string | null,
+  level: number,
+): Set<string> {
+  const own = at === null ? levels[level] : levels.find((m) => m.nodes.some((n) => n.id === at));
+  return own === undefined ? new Set() : reachableAhead(own, at);
 }
 
 /**
@@ -245,7 +370,10 @@ export function foeDisplayName(node: Pick<DungeonMapNode, 'foe'>): string {
 
 /** The element that tints a room (fights, elites and the room boss), or null. */
 export function nodeElement(node: Pick<DungeonMapNode, 'kind' | 'foe'>): Element | null {
-  return node.kind === 'fight' || node.kind === 'elite' || node.kind === 'boss'
+  return node.kind === 'fight' ||
+    node.kind === 'elite' ||
+    node.kind === 'boss' ||
+    node.kind === 'epic'
     ? (node.foe?.element ?? null)
     : null;
 }
@@ -253,6 +381,16 @@ export function nodeElement(node: Pick<DungeonMapNode, 'kind' | 'foe'>): Element
 /** The glyph id of a kind of room (`glyphs.ts`). */
 export function nodeGlyph(kind: DungeonNodeKind): string {
   return `map-${kind}`;
+}
+
+/** True for the keeper of an Undercroft level: a room boss on an Undercroft map. */
+export function isKeeper(node: Pick<DungeonMapNode, 'id' | 'kind'>): boolean {
+  return node.kind === 'boss' && nodeLevel(node.id) > 0;
+}
+
+/** The glyph of a room: the keeper has a crown of its own (darker), every other room the one of its kind. */
+export function nodeGlyphOf(node: Pick<DungeonMapNode, 'id' | 'kind'>): string {
+  return isKeeper(node) ? 'map-keeper' : nodeGlyph(node.kind);
 }
 
 /**
@@ -276,7 +414,12 @@ export function nodeLabel(node: DungeonMapNode): string {
     case 'camp':
       return 'Camp';
     case 'boss':
+      if (isKeeper(node)) return name === '' ? 'Undercroft keeper' : `Undercroft keeper: ${name}`;
       return name === '' ? 'Room boss' : `Room boss: ${name}`;
+    case 'door':
+      return 'Carved door';
+    case 'epic':
+      return name === '' ? 'Epic fight' : `${name} (epic fight)`;
   }
 }
 
@@ -290,15 +433,17 @@ const STATUS_WORDS: Readonly<Record<NodeStatus, string>> = {
   preview: '',
 };
 
-export function nodeAriaLabel(node: DungeonMapNode, status: NodeStatus): string {
+/** The words for a keeper whose floor is cracked. */
+export const CRACKED_WORD = 'Cracked floor';
+
+export function nodeAriaLabel(node: DungeonMapNode, status: NodeStatus, crack = false): string {
   const word = STATUS_WORDS[status];
-  return word === ''
-    ? `${nodeLabel(node)}. Show details`
-    : `${nodeLabel(node)}. ${word}. Show details`;
+  const parts = [nodeLabel(node), ...(crack ? [CRACKED_WORD] : []), ...(word === '' ? [] : [word])];
+  return `${parts.join('. ')}. Show details`;
 }
 
 /** The title of a room's drawer. The foe's own name is in the body. */
-export function nodeTitle(node: Pick<DungeonMapNode, 'kind'>): string {
+export function nodeTitle(node: Pick<DungeonMapNode, 'id' | 'kind'>): string {
   switch (node.kind) {
     case 'fight':
       return 'Fight';
@@ -311,7 +456,11 @@ export function nodeTitle(node: Pick<DungeonMapNode, 'kind'>): string {
     case 'camp':
       return 'Camp';
     case 'boss':
-      return 'Room boss';
+      return isKeeper(node) ? 'Undercroft keeper' : 'Room boss';
+    case 'door':
+      return 'Carved door';
+    case 'epic':
+      return 'Epic fight';
   }
 }
 
@@ -319,6 +468,15 @@ export const MYSTERY_LINE = "Something stirs. You'll see when you step in.";
 export const CACHE_LINE = 'Free loot: Bait and scrap for your pack.';
 export const CAMP_LINE =
   'Rest, swap a creature or take a keepsake, then push on or head home with your pack.';
+/** A carved door: what stepping through could add (the six kinds), never which. */
+export const DOOR_LINE =
+  'A carved door. Step through to add one room to the Undercroft: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight. You find out which when you descend.';
+/** A keeper whose floor is cracked. */
+export const CRACK_LINE = 'A cracked floor: beat the keeper to go deeper still.';
+/** The line of every room of the Undercroft that says it is harder. */
+export const FIERCER_LINE = 'The Undercroft · foes are fiercer here.';
+/** A room that looked like a mystery and held nothing (a carved door below depth 8). */
+export const QUIET_LINE = 'Nothing stirred here. It was a quiet room.';
 export const NO_TRICK_LINE = 'No tricks. It just attacks.';
 export const LOCKED_LINE = 'Not on your path.';
 export const UNREACHABLE_LINE = "You can't reach this room any more.";
@@ -337,6 +495,8 @@ export function nodeLines(node: Pick<DungeonMapNode, 'kind'>): string[] {
       return [CACHE_LINE];
     case 'camp':
       return [CAMP_LINE];
+    case 'door':
+      return [DOOR_LINE];
     default:
       return [];
   }
@@ -363,6 +523,10 @@ export function nodeGlossaryEntry(kind: DungeonNodeKind): string | null {
       return 'cache';
     case 'camp':
       return 'dungeon-camp';
+    case 'door':
+      return 'carved-door';
+    case 'epic':
+      return 'epic-fight';
     default:
       return null;
   }

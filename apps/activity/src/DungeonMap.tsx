@@ -5,12 +5,13 @@ import {
   EDGE_ORDER,
   edgePath,
   edgeStatus,
-  mapLayout,
   nodeAriaLabel,
   nodeElement,
-  nodeGlyph,
+  nodeGlyphOf,
+  nodeLevel,
   nodeStatus,
-  reachableAhead,
+  reachableAheadAcross,
+  stackLayout,
   type LaidNode,
   type MapRun,
 } from './dungeon-map';
@@ -20,7 +21,15 @@ import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
 
 interface Props {
+  /** The day's map. */
   map: DungeonMapView;
+  /**
+   * The Undercroft levels drawn so far, in order (`state.undercroft.maps`): stacked above the room boss in a
+   * darker palette, each under a band with its label. Absent or empty: the day's map alone.
+   */
+  undercroft?: readonly DungeonMapView[] | undefined;
+  /** A quiet band above the boss that says the Undercroft is there to descend into (open to the player, no level drawn yet). */
+  lockedBand?: boolean | undefined;
   /**
    * The run on this map, or null for the preview before the player enters (no room is lit, none can be gone
    * to). A finished run's route is a run too (`routeRun`): its rooms are visited or not, with no Go.
@@ -40,7 +49,10 @@ const PERCENT = (n: number, of: number): string =>
   `${String(Math.round((n / of) * 10_000) / 100)}%`;
 
 /**
- * The day's map: a vertical picture with the room boss at the top and the entrance floor at the bottom.
+ * The day's map: a vertical picture with the room boss at the top and the entrance floor at the bottom. Once
+ * the run has gone down, the Undercroft levels it drew stand above the boss (the map grows upward), each in a
+ * darker band with its label, a keeper with a pale crown (and a crack mark on a cracked floor); a run in
+ * the Undercroft is lit across the levels by the server's own list of rooms it may go to.
  * One SVG layer draws the paths (gold where the run walked, bright where it may go next, dim elsewhere);
  * every room is a real round button on top of it (so it takes the focus and has a label), with the icon
  * of its kind (crossed blades, a horned skull, a "?", a chest, a campfire, a crown), tinted by the foe's
@@ -51,19 +63,49 @@ const PERCENT = (n: number, of: number): string =>
  * room opens its drawer, which has Go when the run can go there and, for a room the run has been through,
  * what happened there.
  */
-export function DungeonMap({ map, state, onGo, busy = false, landmark, initialOpen }: Props) {
-  const layout = useMemo(() => mapLayout(map), [map]);
+export function DungeonMap({
+  map,
+  undercroft,
+  lockedBand = false,
+  state,
+  onGo,
+  busy = false,
+  landmark,
+  initialOpen,
+}: Props) {
+  const levels = useMemo(() => [map, ...(undercroft ?? [])], [map, undercroft]);
+  const layout = useMemo(
+    () => stackLayout(map, undercroft ?? [], { locked: lockedBand }),
+    [map, undercroft, lockedBand],
+  );
   const [openId, setOpenId] = useState<string | null>(initialOpen ?? null);
   const [opener, setOpener] = useState<HTMLElement | null>(null);
-  const opened = openId === null ? null : (map.nodes.find((n) => n.id === openId) ?? null);
-  const nodes = [...map.nodes].sort((a, b) => a.floor - b.floor || a.lane - b.lane);
+  const allNodes = useMemo(() => levels.flatMap((m) => m.nodes), [levels]);
+  const opened = openId === null ? null : (allNodes.find((n) => n.id === openId) ?? null);
+  const nodes = [...allNodes].sort(
+    (a, b) => nodeLevel(a.id) - nodeLevel(b.id) || a.floor - b.floor || a.lane - b.lane,
+  );
   const placed = new Map<string, LaidNode>(layout.nodes.map((n) => [n.id, n]));
-  const camp = layout.nodes.find((n) => n.kind === 'camp');
+  const camp = layout.nodes.find((n) => n.kind === 'camp' && n.level === 0);
+  // The keepers whose floor is cracked.
+  const cracked = useMemo(
+    () =>
+      new Set(
+        levels.flatMap((m) =>
+          m.crack === true ? m.nodes.filter((n) => n.kind === 'boss').map((n) => n.id) : [],
+        ),
+      ),
+    [levels],
+  );
   // Which rooms an open run can still get to; a finished run or the preview has no room out of reach.
   const ahead = useMemo(
-    () => (state !== null && state.status === 'active' ? reachableAhead(map, state.at) : null),
-    [map, state?.status, state?.at],
+    () =>
+      state !== null && state.status === 'active'
+        ? reachableAheadAcross(levels, state.at, state.level ?? 0)
+        : null,
+    [levels, state?.status, state?.at, state?.level],
   );
+  const deeper = levels.length > 1;
   const edges = EDGE_ORDER.flatMap((status) =>
     layout.edges
       .filter((e) => edgeStatus(e, state, ahead) === status)
@@ -75,7 +117,11 @@ export function DungeonMap({ map, state, onGo, busy = false, landmark, initialOp
       <div
         class="dmap-board"
         role="group"
-        aria-label="Dungeon map. The entrance is at the bottom, the room boss at the top."
+        aria-label={
+          deeper
+            ? "Dungeon map. The entrance is at the bottom, the room boss above it, then the Undercroft's levels going up."
+            : 'Dungeon map. The entrance is at the bottom, the room boss at the top.'
+        }
         ref={cssVars({ '--dm-ratio': `${String(layout.width)} / ${String(layout.height)}` })}
       >
         <svg
@@ -93,24 +139,55 @@ export function DungeonMap({ map, state, onGo, busy = false, landmark, initialOp
               height={camp.size + 20}
             />
           )}
+          {layout.bands.map((band) => (
+            <g key={`${band.kind}-${String(band.level)}`}>
+              <rect
+                class={band.kind === 'locked' ? 'dmap-uband lockedband' : 'dmap-uband'}
+                x="0"
+                y={band.y}
+                width={layout.width}
+                height={band.height}
+              />
+              <line
+                class="dmap-useam"
+                x1="0"
+                x2={layout.width}
+                y1={band.y + band.height}
+                y2={band.y + band.height}
+              />
+            </g>
+          ))}
           {edges.map(({ edge, status }) => (
             <path
               key={`${edge.from}-${edge.to}`}
-              class={`dmap-edge ${status}`}
+              class={`dmap-edge ${status}${nodeLevel(edge.from) > 0 ? ' u' : ''}`}
               d={edgePath(edge)}
             />
           ))}
         </svg>
+        {layout.bands.map((band) => (
+          <p
+            key={`${band.kind}-${String(band.level)}`}
+            class={band.kind === 'locked' ? 'dmap-label pix lockedband' : 'dmap-label pix'}
+            ref={cssVars({ '--y': PERCENT(band.labelY, layout.height) })}
+          >
+            {band.label}
+            {band.crack && <span class="visually-hidden">. The keeper's floor is cracked.</span>}
+          </p>
+        ))}
         <ol class="dmap-nodes">
           {nodes.map((node) => {
             const at = placed.get(node.id);
             if (at === undefined) return null;
             const status = nodeStatus(node, state, ahead);
             const element = nodeElement(node);
+            const crack = cracked.has(node.id);
             const classes = [
               'dmap-node',
               `k-${node.kind}`,
               `s-${status}`,
+              nodeLevel(node.id) > 0 ? 'u' : '',
+              crack ? 'cracked' : '',
               element === null ? '' : elementClass(element),
             ]
               .filter(Boolean)
@@ -128,7 +205,7 @@ export function DungeonMap({ map, state, onGo, busy = false, landmark, initialOp
                 <button
                   type="button"
                   class={classes}
-                  aria-label={nodeAriaLabel(node, status)}
+                  aria-label={nodeAriaLabel(node, status, crack)}
                   aria-haspopup="dialog"
                   {...(status === 'current' ? { 'aria-current': 'step' as const } : {})}
                   onClick={(event) => {
@@ -137,9 +214,14 @@ export function DungeonMap({ map, state, onGo, busy = false, landmark, initialOp
                   }}
                 >
                   <Sprite
-                    sprite={glyphOrUnknown(nodeGlyph(node.kind))}
+                    sprite={glyphOrUnknown(nodeGlyphOf(node))}
                     scale={node.kind === 'boss' ? 4 : 3}
                   />
+                  {crack && (
+                    <span class="dmap-crack" aria-hidden="true">
+                      <Sprite sprite={glyphOrUnknown('map-crack')} scale={2} />
+                    </span>
+                  )}
                   {status === 'visited' && (
                     <span class="dmap-check" aria-hidden="true">
                       <Sprite sprite={glyphOrUnknown('check')} scale={2} />
@@ -155,6 +237,7 @@ export function DungeonMap({ map, state, onGo, busy = false, landmark, initialOp
         node={opened}
         state={state}
         ahead={ahead}
+        crack={opened !== null && cracked.has(opened.id)}
         {...(landmark === undefined ? {} : { landmark })}
         {...(onGo === undefined ? {} : { onGo })}
         busy={busy}

@@ -1,16 +1,21 @@
-import { GLOSSARY_IDS } from '@creatures/game';
+import { GLOSSARY_IDS, QUIET_ROOM, RULES } from '@creatures/game';
 import type { ComponentChildren } from 'preact';
 import { bossArt, elementClass } from './art';
 import {
+  CRACK_LINE,
+  FIERCER_LINE,
   LOCKED_LINE,
   NOT_VISITED_LINE,
   NO_TRICK_LINE,
+  QUIET_LINE,
   UNREACHABLE_LINE,
   canGo,
   foeDisplayName,
   hpLine,
+  isKeeper,
   nodeGlossaryEntry,
   nodeLabel,
+  nodeLevel,
   nodeLines,
   nodeStatus,
   nodeTitle,
@@ -18,19 +23,24 @@ import {
   type NodeStatus,
 } from './dungeon-map';
 import {
+  CHEST_GEAR_LABEL,
   LOOT_LABEL,
   NO_LOOT_LINE,
   PENDING_CAMP_LINE,
   PENDING_EVENT_LINE,
   SUPPLY_LINE,
+  chestLine,
+  descendLine,
+  doorLine,
   fightResultWord,
   foeHpOutcomeLine,
   lootOf,
   pickedLine,
   roundsLine,
-  stepAt,
+  stepsAt,
 } from './dungeon-history';
 import { packBadges } from './dungeon-run';
+import { LootList } from './GearLoot';
 import { modifierIcon } from './dungeon-rooms';
 import { roomTrick } from './dungeon-playback';
 import type {
@@ -60,6 +70,8 @@ interface Props {
   busy?: boolean | undefined;
   /** The depth is a landmark (the boss names its signature move). The run's own flag wins. */
   landmark?: boolean | undefined;
+  /** The room is an Undercroft keeper on a cracked floor (the level's own flag, which the room does not carry). */
+  crack?: boolean | undefined;
   onClose: () => void;
   /** The map button that was tapped, so the focus goes back to it. */
   returnFocusTo?: HTMLElement | null | undefined;
@@ -81,14 +93,17 @@ export function DungeonNodeDrawer({
   onGo,
   busy = false,
   landmark,
+  crack = false,
   onClose,
   returnFocusTo,
 }: Props) {
   if (node === null) return null;
   const status = nodeStatus(node, state, ahead);
   const go = onGo !== undefined && canGo(node, state);
-  const entry =
-    status === 'visited' || status === 'current' ? stepAt(state?.history, node.id) : undefined;
+  const entries =
+    status === 'visited' || status === 'current' ? stepsAt(state?.history, node.id) : [];
+  const entry = entries[0];
+  const visited = status === 'visited' || status === 'current';
   const why = whyNot(status, state);
   const footer = go ? (
     <button
@@ -119,13 +134,14 @@ export function DungeonNodeDrawer({
         <FoeBody
           node={node}
           landmark={state?.landmark ?? landmark ?? false}
+          crack={crack}
           entry={entry?.result === 'fight' ? entry : undefined}
         >
-          {entry !== undefined && <Outcome entry={entry} />}
+          <Outcomes entries={entries} />
         </FoeBody>
       ) : (
-        <PlainBody node={node} entry={entry}>
-          {entry !== undefined && <Outcome entry={entry} />}
+        <PlainBody node={node} entry={entry} visited={visited}>
+          <Outcomes entries={entries} />
         </PlainBody>
       )}
     </Drawer>
@@ -168,16 +184,73 @@ function KeepsakeLine({ keepsake }: { keepsake: DungeonKeepsakeView }) {
   );
 }
 
-/** What happened in a room the run has been through, from its history entry. */
-function Outcome({ entry }: { entry: DungeonStepLog }) {
+/**
+ * What happened in a room the run has been through: its history entries in order. A boss that fell has
+ * its fight, then its chest (and what the chest paid replaces the fight's own loot line), then the descent.
+ */
+function Outcomes({ entries }: { entries: readonly DungeonStepLog[] }) {
+  const chest = entries.some((e) => e.result === 'chest');
+  return (
+    <>
+      {entries.map((entry, i) => (
+        <Outcome key={i} entry={entry} chest={chest} />
+      ))}
+    </>
+  );
+}
+
+/** What happened in a room the run has been through, from one history entry. */
+function Outcome({ entry, chest }: { entry: DungeonStepLog; chest: boolean }) {
   if (entry.result === 'pending') {
     return (
       <p class="dnd-line dnd-pending">
-        {entry.kind === 'camp' ? PENDING_CAMP_LINE : PENDING_EVENT_LINE}
+        {entry.kind === 'camp'
+          ? PENDING_CAMP_LINE
+          : entry.kind === 'descend'
+            ? descendLine(entry)
+            : PENDING_EVENT_LINE}
       </p>
     );
   }
-  const loot = lootOf(entry);
+  if (entry.kind === 'descend') {
+    return (
+      <div class="dnd-outcome">
+        <p class="dnd-line">{descendLine(entry)}</p>
+      </div>
+    );
+  }
+  if (entry.result === 'door') {
+    return (
+      <div class="dnd-outcome">
+        <p class="dnd-line">{doorLine(entry)}</p>
+      </div>
+    );
+  }
+  if (entry.result === 'chest') {
+    const chestLoot = lootOf(entry);
+    return (
+      <div class="dnd-outcome">
+        <p class="dnd-line">{chestLine(entry)}</p>
+        {chestLoot !== null && <LootRow pack={chestLoot} />}
+        {entry.gear.length > 0 && (
+          <div class="dnd-gear">
+            <span>{CHEST_GEAR_LABEL}:</span>
+            <LootList
+              label={CHEST_GEAR_LABEL}
+              loot={{
+                gear: entry.gear.map((g, i) => ({ id: `chest-${String(i)}`, ...g })),
+                converted: [],
+                parts: {},
+                blueprints: [],
+              }}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+  // A fight whose boss chest follows says its loot there, so the pack is not counted twice.
+  const loot = chest && entry.result === 'fight' ? null : lootOf(entry);
   return (
     <div class="dnd-outcome">
       {entry.result === 'fight' && <p class="dnd-line">{roundsLine(entry)}</p>}
@@ -191,13 +264,13 @@ function Outcome({ entry }: { entry: DungeonStepLog }) {
       {loot !== null ? (
         <LootRow pack={loot} />
       ) : (
+        !chest &&
         (entry.result === 'cache' || entry.result === 'fight') && (
           <p class="muted dnd-line">{NO_LOOT_LINE}</p>
         )
       )}
-      {entry.result !== 'cache' && entry.keepsake !== undefined && (
-        <KeepsakeLine keepsake={entry.keepsake} />
-      )}
+      {(entry.result === 'fight' || entry.result === 'event' || entry.result === 'camp') &&
+        entry.keepsake !== undefined && <KeepsakeLine keepsake={entry.keepsake} />}
       {entry.result === 'fight' && entry.supply === true && <p class="dnd-line">{SUPPLY_LINE}</p>}
     </div>
   );
@@ -206,25 +279,31 @@ function Outcome({ entry }: { entry: DungeonStepLog }) {
 function PlainBody({
   node,
   entry,
+  visited,
   children,
 }: {
   node: DungeonMapNode;
   entry: DungeonStepLog | undefined;
+  /** The run has been here (or stands here). */
+  visited: boolean;
   children?: ComponentChildren;
 }) {
   const help = nodeGlossaryEntry(node.kind);
+  // A carved door below depth 8 is a mystery room named "Quiet room": once the run has been in it, it says so.
+  const quiet = node.kind === 'mystery' && node.event?.id === QUIET_ROOM.id;
+  const lines =
+    quiet && visited ? [QUIET_LINE] : entry === undefined || quiet ? nodeLines(node) : [];
   return (
     <div class="dnd-plain">
       {node.kind === 'mystery' && node.event !== undefined && (
         <p class="dnd-event pix">{node.event.name}</p>
       )}
       {/* A room the run has been in says what happened there, not what it might be. */}
-      {entry === undefined &&
-        nodeLines(node).map((line) => (
-          <p key={line} class="dnd-line">
-            {line}
-          </p>
-        ))}
+      {lines.map((line) => (
+        <p key={line} class="dnd-line">
+          {line}
+        </p>
+      ))}
       {children}
       {help !== null && (
         <p class="dnd-help">
@@ -238,11 +317,14 @@ function PlainBody({
 function FoeBody({
   node,
   landmark,
+  crack,
   entry,
   children,
 }: {
   node: DungeonMapNode;
   landmark: boolean;
+  /** The keeper's floor is cracked. */
+  crack: boolean;
   /** How the run's fight here ended: the HP line and a Cleared or Defeat tag follow it. */
   entry: Extract<DungeonStepLog, { result: 'fight' }> | undefined;
   children?: ComponentChildren;
@@ -252,7 +334,12 @@ function FoeBody({
   const art = bossArt(foe.id);
   const trick = roomTrick({ kind: foe.kind, foe }, landmark);
   const modifier = node.modifier;
-  const elite = node.kind === 'elite' || foe.elite;
+  const epic = node.kind === 'epic';
+  const elite = (node.kind === 'elite' || foe.elite) && !epic;
+  const keeper = isKeeper(node);
+  const deeper = nodeLevel(node.id) > 0;
+  const chest = RULES.dungeon.undercroft.chest;
+  const epicLoot = RULES.dungeon.undercroft.epic.loot;
   return (
     <div class="dnd-foe">
       <div class={`dnd-top ${elementClass(foe.element)}`}>
@@ -262,9 +349,19 @@ function FoeBody({
         <div class="dnd-who">
           <p class="dnd-name pix">{foeDisplayName(node)}</p>
           <p class="dnd-tags">
+            {deeper && (
+              <Tag kind="badge" entry="undercroft">
+                {keeper ? 'Keeper' : 'Undercroft'}
+              </Tag>
+            )}
             {elite && (
               <Tag tone="bad" entry="elite">
                 Elite
+              </Tag>
+            )}
+            {epic && (
+              <Tag tone="bad" entry="epic-fight">
+                Epic
               </Tag>
             )}
             <ElementChip element={foe.element} context="boss" />
@@ -279,6 +376,7 @@ function FoeBody({
           </p>
         </div>
       </div>
+      {deeper && <p class="dnd-line dnd-fiercer">{FIERCER_LINE}</p>}
       {elite && entry === undefined && (
         <p class="dnd-line">
           A fiercer fight. Win it to earn a{' '}
@@ -288,6 +386,23 @@ function FoeBody({
           .
         </p>
       )}
+      {epic && entry === undefined && (
+        <p class="dnd-line">
+          One fierce foe at boss strength. Win it to earn {epicLoot.essence} Essence,{' '}
+          {epicLoot.scrap} scrap and a{' '}
+          <GlossaryTag entry="keepsake" look="text">
+            keepsake
+          </GlossaryTag>
+          .
+        </p>
+      )}
+      {keeper && entry === undefined && (
+        <p class="dnd-line">
+          Beat the keeper to open the Undercroft chest: {chest.essence} Essence, {chest.scrap} scrap
+          and a {Math.round(chest.gearBp / 100)}% chance of a gear piece.
+        </p>
+      )}
+      {keeper && crack && <p class="dnd-line dnd-crack">{CRACK_LINE}</p>}
       {children}
       <p class="dnd-trick">
         {trick === null ? (

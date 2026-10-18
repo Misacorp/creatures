@@ -218,6 +218,7 @@ export function Dungeon({
               answer.room,
               answer.state.landmark,
               answer.state.map.floors,
+              answer.state.undercroft?.maps ?? [],
             ),
             state: answer.state,
             summary: answer.summary ?? null,

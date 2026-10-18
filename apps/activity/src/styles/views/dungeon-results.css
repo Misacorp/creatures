@@ -123,6 +123,7 @@
 .rp-hp {
   font-size: 0.6875rem;
   line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
 /* The word across the picture, tilted like a stamp. It is a label, not an animation. */

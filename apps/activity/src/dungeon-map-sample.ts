@@ -201,6 +201,8 @@ function state(
     outcome: null,
     step: path.length,
     map: SAMPLE_MAP,
+    level: 0,
+    undercroft: null,
     at: path.length === 0 ? null : (path[path.length - 1] ?? null),
     path,
     reachable,

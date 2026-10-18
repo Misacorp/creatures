@@ -13,6 +13,7 @@ import {
   mineIds,
   modifierGimmicks,
   nextRoom,
+  placeTotal,
   roomBoss,
   roomIntroView,
   roomResultLine,
@@ -109,7 +110,7 @@ export function DungeonPlayback({ input, onDone, showControls = false }: Props) 
       <RoomFight
         key={room}
         room={current}
-        total={input.total}
+        total={placeTotal(input, current)}
         landmark={input.landmark}
         row={row}
         speed={speed}
@@ -163,6 +164,14 @@ function RoomBanner({
             {' '}
             <Tag tone="bad" class="rb-elite">
               Elite
+            </Tag>
+          </>
+        )}
+        {view.epic && (
+          <>
+            {' '}
+            <Tag tone="bad" class="rb-elite">
+              Epic
             </Tag>
           </>
         )}

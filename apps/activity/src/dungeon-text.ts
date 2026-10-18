@@ -12,6 +12,7 @@ import type {
   DungeonRunSummary,
   DungeonToday,
 } from './dungeon-types';
+import { nodeLevel } from './dungeon-map';
 import { errorText } from './game';
 
 /** One short plain message for every error code the dungeon routes send. */
@@ -166,24 +167,30 @@ export function fierceName(name: string, elite: boolean | undefined): string {
 }
 
 /**
- * The headline of a finished run. A path run says how it ended: cleared (one depth deeper), home
- * (the whole pack kept) or defeated (half the pack kept). A run from before the map has no outcome,
- * and keeps the old words about its three rooms.
+ * The headline of a finished run. A path run says how it ended: cleared (one depth deeper, and how many
+ * Undercroft levels it cleared), home (the whole pack kept) or defeated (half the pack kept; below the
+ * room boss it is "Lost in the Undercroft", since the boss fell and the depth went up). A run from before
+ * the map has no outcome, and keeps the old words about its three rooms.
  */
 export function resultHeadline(
   run: Pick<DungeonRunSummary, 'cleared' | 'roomsCleared' | 'rooms'> &
-    Partial<Pick<DungeonRunSummary, 'outcome' | 'depth' | 'newDepth' | 'pack'>>,
+    Partial<Pick<DungeonRunSummary, 'outcome' | 'depth' | 'newDepth' | 'pack' | 'deepest'>>,
 ): string {
   switch (run.outcome) {
-    case 'cleared':
-      return `Cleared! Depth ${String(run.depth ?? 0)} to ${String(run.newDepth ?? 0)}`;
+    case 'cleared': {
+      const depth = `Cleared! Depth ${String(run.depth ?? 0)} to ${String(run.newDepth ?? 0)}`;
+      const deepest = run.deepest ?? 0;
+      return deepest > 0 ? `${depth} · Undercroft ${String(deepest)} cleared` : depth;
+    }
     case 'home':
       return 'Home safe with your whole pack';
-    case 'defeat':
+    case 'defeat': {
       // A defeat with nothing in the pack had nothing to halve: do not promise what did not happen.
-      return run.pack !== undefined && isPackEmpty(run.pack.found)
-        ? 'Defeated: your pack was empty'
-        : 'Defeated: half your pack made it home';
+      const empty = run.pack !== undefined && isPackEmpty(run.pack.found);
+      // The room boss fell first (`cleared` stays true), so this was a loss in the Undercroft.
+      const lead = run.cleared ? 'Lost in the Undercroft' : 'Defeated';
+      return empty ? `${lead}: your pack was empty` : `${lead}: half your pack made it home`;
+    }
     case undefined:
       break;
   }
@@ -194,11 +201,21 @@ export function resultHeadline(
     : `Your team fell in room ${String(run.roomsCleared + 1)} / ${String(total)}.`;
 }
 
-/** What the run did to the depth. */
+/**
+ * What the run did to the depth. A run lost below the room boss still went one deeper: it says so (the
+ * boss fell first, so the depth stays) and how many Undercroft levels it had cleared.
+ */
 export function depthChangeText(
-  run: Pick<DungeonRunSummary, 'depth' | 'newDepth'> & Partial<Pick<DungeonRunSummary, 'outcome'>>,
+  run: Pick<DungeonRunSummary, 'depth' | 'newDepth'> &
+    Partial<Pick<DungeonRunSummary, 'outcome' | 'cleared' | 'deepest'>>,
 ): string {
-  if (run.newDepth > run.depth) return `Depth ${String(run.depth)} to ${String(run.newDepth)}`;
+  if (run.newDepth > run.depth) {
+    const change = `Depth ${String(run.depth)} to ${String(run.newDepth)}`;
+    if (run.outcome !== 'defeat') return change;
+    const levels = run.deepest ?? 0;
+    const cleared = levels > 0 ? ` Undercroft ${String(levels)} cleared.` : '';
+    return `${change}.${cleared} The room boss fell first, so the new depth stays.`;
+  }
   const again = run.outcome === undefined ? 'Clear all three rooms' : 'Beat the room boss';
   return `Still at depth ${String(run.depth)}. ${again} to go deeper.`;
 }
@@ -229,10 +246,15 @@ export function packLine(pack: DungeonPack): string {
   return isPackEmpty(pack) ? 'Your pack is empty.' : `In your pack: ${packText(pack)}`;
 }
 
-/** The floor of a node id ("f2l1" is floor 2), or null for an id that is not one. */
+/** The floor of a node id ("f2l1" is floor 2; "u1f0l0" is floor 0 of Undercroft level 1), or null for an id that is not one. */
 export function nodeFloor(node: string): number | null {
-  const found = /^f(\d+)l\d+$/.exec(node);
+  const found = /^(?:u\d+)?f(\d+)l\d+$/.exec(node);
   return found === null ? null : Number(found[1]);
+}
+
+/** "Undercroft 1": a level's name on the strip and the stage banner. */
+export function undercroftName(level: number): string {
+  return `Undercroft ${String(level)}`;
 }
 
 /** "Floor 3 / 7": a floor counted from 1. */
@@ -242,17 +264,27 @@ export function floorLine(floor: number, floors: number): string {
 
 /**
  * Where the run is, for the run strip: "Depth 3 · At the entrance", "Depth 3 · Floor 3 / 7", and at
- * the camp "Depth 3 · At the camp". `landmark` is added by the screen as a chip.
+ * the camp "Depth 3 · At the camp". Once the room boss has fallen: "Depth 9 · The room boss is down" (the
+ * depth it locked in) and, below, "Undercroft 1 · Floor 2 / 4". `landmark` is added by the screen as a chip.
  */
 export function runStatusLine(
-  state: Pick<DungeonRunState, 'at' | 'depth' | 'map' | 'pending'>,
+  state: Pick<DungeonRunState, 'at' | 'depth' | 'map' | 'pending'> &
+    Partial<Pick<DungeonRunState, 'level' | 'undercroft'>>,
 ): string {
-  const depth = `Depth ${String(state.depth)}`;
+  const level = state.level ?? 0;
+  const maps = [state.map, ...(state.undercroft?.maps ?? [])];
+  if (state.pending?.kind === 'descend') {
+    return `Depth ${String(state.pending.newDepth)} · ${level === 0 ? 'The room boss is down' : 'The keeper is down'}`;
+  }
+  // Below the room boss the depth is not the question: the level is.
+  const depth = level > 0 ? undercroftName(level) : `Depth ${String(state.depth)}`;
   if (state.at === null) return `${depth} · At the entrance`;
-  const node = state.map.nodes.find((n) => n.id === state.at);
-  const floor = nodeFloor(state.at);
+  const at = state.at;
+  const node = maps.flatMap((m) => m.nodes).find((n) => n.id === at);
+  const floor = nodeFloor(at);
   if (node?.kind === 'camp') return `${depth} · At the camp`;
-  return floor === null ? depth : `${depth} · ${floorLine(floor, state.map.floors)}`;
+  const own = maps[nodeLevel(at)] ?? state.map;
+  return floor === null ? depth : `${depth} · ${floorLine(floor, own.floors)}`;
 }
 
 /** What the last mystery room did: its name and the choice, then the plain outcome. */
@@ -317,5 +349,70 @@ export function roomPlaceLine(
   total: number,
 ): string {
   const floor = room.node === undefined ? null : nodeFloor(room.node);
-  return floor === null ? roomLine(room.index, total) : floorLine(floor, total);
+  if (floor === null) return roomLine(room.index, total);
+  const level = room.node === undefined ? 0 : nodeLevel(room.node);
+  return level > 0
+    ? `${undercroftName(level)} · ${floorLine(floor, total)}`
+    : floorLine(floor, total);
 }
+
+// --- The descent card ---
+
+/** The pending descent of a run: what the card shows (`DungeonRunState.pending` of kind `descend`). */
+type Descent = Extract<NonNullable<DungeonRunState['pending']>, { kind: 'descend' }>;
+
+export const DESCEND_BUTTON = 'Descend';
+export const DESCEND_HOME_BUTTON = 'Head home with everything';
+export const DESCEND_TITLE_KEEPER = 'The keeper is down';
+
+/** "Depth 15 is yours" after the room boss; "The keeper is down" after an Undercroft keeper (a cracked floor). */
+export function descendTitle(descent: Pick<Descent, 'level' | 'newDepth'>): string {
+  return descent.level <= 1 ? `Depth ${String(descent.newDepth)} is yours` : DESCEND_TITLE_KEEPER;
+}
+
+/** The line under the title: the depth is locked in (after the room boss), or the floor has cracked (after a keeper). */
+export function descendIntro(descent: Pick<Descent, 'level' | 'newDepth'>): string {
+  return descent.level <= 1
+    ? 'The room boss is down and your new depth is locked in, whatever happens next.'
+    : 'The floor cracks open: an even deeper Undercroft.';
+}
+
+/** The heading of the Undercroft part of the card. */
+export function descendUnderHeading(descent: Pick<Descent, 'level'>): string {
+  return descent.level <= 1
+    ? 'The Undercroft · foes are fiercer here'
+    : 'A deeper Undercroft · foes are fiercer still';
+}
+
+/** "20% HP": the breath the creatures catch on the way down. */
+export function catchBreathText(catchBreathBp: number): string {
+  return `${percentText(catchBreathBp)} HP`;
+}
+
+/**
+ * What the Undercroft below holds, one plain line each, from the descent the server sent and the rules:
+ * its floors and how much fiercer its foes are, the breath the row catches, the loot there and the way
+ * home. The numbers are the server's (the loot multiplier is the rules').
+ */
+export function descendLines(
+  descent: Pick<Descent, 'level' | 'floors' | 'depthBonus' | 'catchBreathBp'>,
+  lootMultiplier: number = RULES.dungeon.undercroft.lootMultiplier,
+): string[] {
+  const floors = `${String(descent.floors)} floors, with a keeper on the last.`;
+  const fiercer = `Foes fight ${String(descent.depthBonus * descent.level)} depths deeper than yours.`;
+  const loot =
+    lootMultiplier === 2
+      ? 'Fights there put twice their loot in your pack.'
+      : `Fights there put ${String(lootMultiplier)} times their loot in your pack.`;
+  return [
+    `${floors} ${fiercer}`,
+    `Your creatures catch their breath (${catchBreathText(descent.catchBreathBp)}).`,
+    loot,
+    'Once down, you can head home only from a camp, if you find one.',
+  ];
+}
+
+/** Under the Descend button: what a loss below costs. */
+export const DESCEND_RISK_LINE = 'A defeat below keeps only half your pack, rounded up.';
+/** Under the home button. */
+export const DESCEND_HOME_LINE = 'You keep your whole pack, and everything banked stays yours.';

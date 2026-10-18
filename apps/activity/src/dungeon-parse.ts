@@ -36,7 +36,16 @@ const ELEMENTS: readonly unknown[] = ['tide', 'ember', 'grove', 'spark'];
 const ROLES: readonly unknown[] = ['setter', 'payoff', 'support', 'guard'];
 const isElement = (value: unknown): boolean => ELEMENTS.includes(value);
 const isRole = (value: unknown): boolean => ROLES.includes(value);
-const NODE_KINDS: readonly unknown[] = ['fight', 'elite', 'mystery', 'cache', 'camp', 'boss'];
+const NODE_KINDS: readonly unknown[] = [
+  'fight',
+  'elite',
+  'mystery',
+  'cache',
+  'camp',
+  'boss',
+  'door',
+  'epic',
+];
 const isNodeKind = (value: unknown): value is DungeonNodeKind => NODE_KINDS.includes(value);
 const isRarity = (value: unknown): boolean => (GEAR_RARITIES as readonly unknown[]).includes(value);
 
@@ -80,6 +89,7 @@ function isRoomSummary(value: unknown): value is DungeonRoomSummary {
     isCount(value['index']) &&
     (value['kind'] === 'foe' || value['kind'] === 'boss') &&
     (value['elite'] === undefined || isBool(value['elite'])) &&
+    (value['epic'] === undefined || isBool(value['epic'])) &&
     isFoe(value['foe']) &&
     isModifierText(value['modifier']) &&
     isBool(value['played']) &&
@@ -158,13 +168,46 @@ function isEventView(value: unknown): value is DungeonEventView {
   );
 }
 
+/** A gear piece of a chest: its base id, rarity and, when it has one, item level. */
+function isGearPiece(value: unknown): value is { baseId: string; rarity: string } {
+  return (
+    isRecord(value) &&
+    isStr(value['baseId']) &&
+    isRarity(value['rarity']) &&
+    (value['itemLevel'] === undefined || isCount(value['itemLevel']))
+  );
+}
+
+/** What the boss chest banked, as the descent card shows it. */
+function isBanked(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isArrayOf(value['gear'], isGearPiece) &&
+    isArrayOf(value['supplies'], isStr) &&
+    isPartsBundle(value['parts'])
+  );
+}
+
 function isPending(value: unknown): value is DungeonPending {
   if (value === null) return true;
   if (!isRecord(value)) return false;
-  if (value['kind'] === 'event') return isEventView(value['event']);
-  return (
-    value['kind'] === 'camp' && isArrayOf(value['offers'], isKeepsake) && isCount(value['restBp'])
-  );
+  switch (value['kind']) {
+    case 'event':
+      return isEventView(value['event']);
+    case 'camp':
+      return isArrayOf(value['offers'], isKeepsake) && isCount(value['restBp']);
+    case 'descend':
+      return (
+        isCount(value['level']) &&
+        isCount(value['floors']) &&
+        isCount(value['depthBonus']) &&
+        isCount(value['catchBreathBp']) &&
+        isCount(value['newDepth']) &&
+        isBanked(value['banked'])
+      );
+    default:
+      return false;
+  }
 }
 
 /** An optional keepsake: absent, or a whole one. */
@@ -177,7 +220,7 @@ function isStepLog(value: unknown): value is DungeonStepLog {
   switch (value['result']) {
     case 'fight':
       return (
-        (kind === 'fight' || kind === 'elite' || kind === 'boss') &&
+        (kind === 'fight' || kind === 'elite' || kind === 'boss' || kind === 'epic') &&
         isBool(value['cleared']) &&
         isCount(value['rounds']) &&
         isCount(value['foeHpEnd']) &&
@@ -208,7 +251,24 @@ function isStepLog(value: unknown): value is DungeonStepLog {
         isOptionalKeepsake(value['keepsake'])
       );
     case 'pending':
-      return kind === 'camp' || (kind === 'mystery' && isStr(value['event']));
+      return (
+        kind === 'camp' ||
+        (kind === 'mystery' && isStr(value['event'])) ||
+        (kind === 'descend' && isCount(value['level']))
+      );
+    case 'door':
+      return kind === 'door' && isBool(value['added']);
+    case 'chest':
+      return (
+        kind === 'boss' &&
+        isCount(value['level']) &&
+        isPack(value['loot']) &&
+        isArrayOf(value['gear'], isGearPiece)
+      );
+    case 'descend':
+      return kind === 'descend' && isCount(value['level']) && isCount(value['healed']);
+    case 'home':
+      return kind === 'descend' && isCount(value['level']);
     default:
       return false;
   }
@@ -238,7 +298,22 @@ function isMapNode(value: unknown): value is DungeonMapNode {
 }
 
 function isMapView(value: unknown): value is DungeonMapView {
-  return isRecord(value) && isCount(value['floors']) && isArrayOf(value['nodes'], isMapNode);
+  return (
+    isRecord(value) &&
+    isCount(value['floors']) &&
+    isArrayOf(value['nodes'], isMapNode) &&
+    (value['level'] === undefined || isCount(value['level'])) &&
+    (value['label'] === undefined || isStr(value['label'])) &&
+    (value['crack'] === undefined || isBool(value['crack']))
+  );
+}
+
+/** The Undercroft of a run: the levels drawn so far and how many rooms the carved door added. */
+function isUndercroft(value: unknown): boolean {
+  return (
+    value === null ||
+    (isRecord(value) && isArrayOf(value['maps'], isMapView) && isCount(value['marks']))
+  );
 }
 
 function isRunCreature(value: unknown): value is DungeonRunCreature {
@@ -270,6 +345,8 @@ function isRunState(value: unknown): value is DungeonRunState {
     (value['outcome'] === null || isOutcome(value['outcome'])) &&
     isCount(value['step']) &&
     isMapView(value['map']) &&
+    isCount(value['level']) &&
+    isUndercroft(value['undercroft']) &&
     (value['at'] === null || isStr(value['at'])) &&
     isArrayOf(value['path'], isStr) &&
     isArrayOf(value['reachable'], isStr) &&
@@ -298,7 +375,8 @@ function isRoute(value: unknown): boolean {
     isRecord(value) &&
     isMapView(value['map']) &&
     isArrayOf(value['path'], isStr) &&
-    isArrayOf(value['history'], isStepLog)
+    isArrayOf(value['history'], isStepLog) &&
+    (value['undercroft'] === undefined || isArrayOf(value['undercroft'], isMapView))
   );
 }
 
@@ -311,6 +389,7 @@ function isRunSummary(value: unknown): value is DungeonRunSummary {
     isCount(value['depth']) &&
     isCount(value['newDepth']) &&
     isBool(value['cleared']) &&
+    (value['deepest'] === undefined || isCount(value['deepest'])) &&
     isCount(value['roomsCleared']) &&
     isBool(value['landmark']) &&
     isCount(value['streak']) &&
@@ -393,6 +472,7 @@ function isReplayRoom(value: unknown): boolean {
     isCount(value['index']) &&
     (value['kind'] === 'foe' || value['kind'] === 'boss') &&
     (value['elite'] === undefined || isBool(value['elite'])) &&
+    (value['epic'] === undefined || isBool(value['epic'])) &&
     (value['node'] === undefined || isStr(value['node'])) &&
     (value['keepsakes'] === undefined || isArrayOf(value['keepsakes'], isKeepsake)) &&
     (value['row'] === undefined || isArrayOf(value['row'], isReplayRowEntry)) &&

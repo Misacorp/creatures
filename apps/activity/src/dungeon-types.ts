@@ -76,9 +76,14 @@ export interface DungeonToday {
 }
 
 /** What a room on the map is. */
-export type DungeonNodeKind = 'fight' | 'elite' | 'mystery' | 'cache' | 'camp' | 'boss';
+export type DungeonNodeKind =
+  'fight' | 'elite' | 'mystery' | 'cache' | 'camp' | 'boss' | 'door' | 'epic';
 
-/** One room on the map. Ids look like `f2l1` (floor 2, lane 1). */
+/**
+ * One room on the map. Ids look like `f2l1` (floor 2, lane 1), or `u1f0l0` on an Undercroft level (level
+ * 1, floor 0, lane 0). A `door` is a carved door (no foe, no modifier); an `epic` room is a fierce foe at
+ * boss strength (its foe is `elite` too).
+ */
 export interface DungeonMapNode {
   id: string;
   /** 0 (the entrance) to `floors - 1` (the room boss). */
@@ -104,9 +109,15 @@ export interface DungeonMapNode {
 }
 
 export interface DungeonMapView {
-  /** 7: floor 3 is the camp, the last floor the room boss. */
+  /** 7 on the day's map (floor 3 is the camp, the last floor the room boss); an Undercroft level has its own count, the keeper's floor included. */
   floors: number;
   nodes: DungeonMapNode[];
+  /** An Undercroft level only: 1 to 3 (absent on the day's map). */
+  level?: number;
+  /** An Undercroft level only: its name on the map ("Undercroft · foes are fiercer here"). Server text, drawn as text. */
+  label?: string;
+  /** An Undercroft level only: the keeper's floor is cracked (present only when true). Beating it opens a deeper level. */
+  crack?: boolean;
 }
 
 /** Loot carried in the pack: kept whole when the run heads home or clears, half (rounded up) on a defeat. */
@@ -146,10 +157,34 @@ export interface DungeonEventView {
   options: { label: string; description: string }[];
 }
 
+/** What the boss chest already gave (the descent card shows it): gear and supplies are in the player's stock, shards and glimmer in their parts. */
+export interface DungeonBanked {
+  gear: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
+  /** Supply content ids, one each. */
+  supplies: string[];
+  parts: PartsBundle;
+}
+
 export type DungeonPending =
   | null
   | { kind: 'event'; event: DungeonEventView }
-  | { kind: 'camp'; offers: DungeonKeepsakeView[]; restBp: number };
+  | { kind: 'camp'; offers: DungeonKeepsakeView[]; restBp: number }
+  | {
+      /**
+       * The room boss (or an Undercroft keeper with a cracked floor) is down: head home with the pack
+       * (`{type:'home'}`) or go down (`{type:'descend'}`). `level` is the level it opens (1, or 2 and 3
+       * after a cracked floor), `floors` its floors with the keeper's, `depthBonus` how many depths
+       * harder its foes are, `catchBreathBp` the HP the standing creatures recover on the way, `newDepth`
+       * the player's depth now (locked in) and `banked` what the chest already paid.
+       */
+      kind: 'descend';
+      level: number;
+      floors: number;
+      depthBonus: number;
+      catchBreathBp: number;
+      newDepth: number;
+      banked: DungeonBanked;
+    };
 
 /** The state of a run, open or done. Every act answers with it. */
 export interface DungeonRunState {
@@ -162,8 +197,16 @@ export interface DungeonRunState {
   outcome: DungeonOutcome | null;
   /** Sent back with the next act; a mismatch is `stale_step`. */
   step: number;
+  /** The day's main map (always). */
   map: DungeonMapView;
-  /** The room the run stands in, or null before the entrance. */
+  /** The level the run stands in: 0 is the main map, 1 and up the Undercroft's (the last of `undercroft.maps`). */
+  level: number;
+  /**
+   * The Undercroft levels drawn so far, in order, each with its `label` (and `crack`). Null until a carved
+   * door added a room or the run went down. `marks` is how many rooms the carved door added (not which).
+   */
+  undercroft: { maps: DungeonMapView[]; marks: number } | null;
+  /** The room the run stands in, or null before the entrance (of the main map or of a level just entered). */
   at: string | null;
   /** The rooms visited, in order. */
   path: string[];
@@ -191,7 +234,7 @@ export interface DungeonRunState {
 export type DungeonStepLog =
   | {
       node: string;
-      kind: 'fight' | 'elite' | 'boss';
+      kind: 'fight' | 'elite' | 'boss' | 'epic';
       result: 'fight';
       cleared: boolean;
       rounds: number;
@@ -199,7 +242,7 @@ export type DungeonStepLog =
       foeHpEnd: number;
       foeHpMax: number;
       loot: DungeonPack;
-      /** An elite's keepsake. */
+      /** An elite's or an epic fight's keepsake. */
       keepsake?: DungeonKeepsakeView;
       /** This fight earned the run's supply (the first fight cleared). */
       supply?: boolean;
@@ -229,7 +272,24 @@ export type DungeonStepLog =
   /** The run stepped into the camp and its choice is still waiting. */
   | { node: string; kind: 'camp'; result: 'pending' }
   /** The run stepped into a mystery room and its choice is still waiting. */
-  | { node: string; kind: 'mystery'; result: 'pending'; event: string };
+  | { node: string; kind: 'mystery'; result: 'pending'; event: string }
+  /** A carved door was walked through. `added`: it added a room to the Undercroft (false past the limit). Which room is not said. */
+  | { node: string; kind: 'door'; result: 'door'; added: boolean }
+  /** A boss chest opened: the main boss's (level 0) or an Undercroft keeper's. `loot` went into the pack, `gear` is banked. */
+  | {
+      node: string;
+      kind: 'boss';
+      result: 'chest';
+      level: number;
+      loot: DungeonPack;
+      gear: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
+    }
+  /** The descent card is waiting at a boss that fell (`level` is the level it opens). */
+  | { node: string; kind: 'descend'; result: 'pending'; level: number }
+  /** The run went down; `healed` is the HP the row recovered on the way, all creatures together. */
+  | { node: string; kind: 'descend'; result: 'descend'; level: number; healed: number }
+  /** The run headed home from the descent card. */
+  | { node: string; kind: 'descend'; result: 'home'; level: number };
 
 export type DungeonOutcome = 'cleared' | 'home' | 'defeat';
 
@@ -271,7 +331,9 @@ export type DungeonAct =
       /** Keepsake: one of the two offers. */
       keepsake?: string;
     }
-  | { type: 'home' };
+  | { type: 'home' }
+  /** Only while the descent card is pending: go down into the Undercroft. */
+  | { type: 'descend' };
 
 /** `POST /api/dungeon/act`. */
 export interface DungeonActRequest {
@@ -319,8 +381,10 @@ export interface DungeonRewards {
 export interface DungeonRoomSummary {
   index: number;
   kind: 'foe' | 'boss';
-  /** A fiercer foe (path runs only; absent otherwise). */
+  /** A fiercer foe (path runs only; absent otherwise). An epic fight is one too. */
   elite?: boolean;
+  /** An Undercroft epic fight (one fierce foe at boss strength; also `elite`). */
+  epic?: boolean;
   /** `hpMax` is the foe's HP when the room started (after its modifier). */
   foe: { id: string; name: string; element: Element; hpMax: number };
   modifier: { id: string; name: string; description: string };
@@ -350,10 +414,12 @@ export interface DungeonRunSummary {
   /** 1, or 2 for the retry of a first day. */
   attempt: number;
   depth: number;
-  /** The depth after this run: one deeper after a full clear, otherwise the same. */
+  /** The depth after this run: one deeper after the room boss fell (also when the run was then lost in the Undercroft), otherwise the same. */
   newDepth: number;
-  /** All rooms were cleared. */
+  /** The room boss was beaten (all rooms for an old three-room run). It stays true when the run was lost below. */
   cleared: boolean;
+  /** Undercroft levels cleared (keepers beaten): 0 for a run that never went down. Absent in older runs (read as 0). */
+  deepest?: number;
   roomsCleared: number;
   landmark: boolean;
   /** Days in a row after this run. */
@@ -378,7 +444,13 @@ export interface DungeonRunSummary {
    * The map of the run, the nodes visited in order and what each did: the results screen can show the
    * route. Absent in older runs.
    */
-  route?: { map: DungeonMapView; path: string[]; history: DungeonStepLog[] };
+  route?: {
+    map: DungeonMapView;
+    path: string[];
+    history: DungeonStepLog[];
+    /** The Undercroft levels the run went down into, in order (absent when it never did). */
+    undercroft?: DungeonMapView[];
+  };
 }
 
 /**
@@ -418,8 +490,10 @@ export interface DungeonReplayRowEntry {
 export interface DungeonReplayRoom {
   index: number;
   kind: 'foe' | 'boss';
-  /** A fiercer foe (path runs only; absent otherwise). */
+  /** A fiercer foe (path runs only; absent otherwise). An epic fight is one too. */
   elite?: boolean;
+  /** An Undercroft epic fight (also `elite`). */
+  epic?: boolean;
   /** The map node of the room (path runs only). */
   node?: string;
   /** The run's keepsakes in that fight (path runs only). */

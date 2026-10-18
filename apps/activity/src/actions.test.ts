@@ -139,6 +139,7 @@ describe('action names', () => {
     expect(at(2, { type: 'move', node: 'f1l0' })).toBe('dungeon-act:run1:2:move:f1l0');
     expect(at(3, { type: 'event', option: 1 })).toBe('dungeon-act:run1:3:event:1');
     expect(at(4, { type: 'home' })).toBe('dungeon-act:run1:4:home');
+    expect(at(4, { type: 'descend' })).toBe('dungeon-act:run1:4:descend');
     // The same act at the same step is the same action (a retry keeps its key)...
     expect(at(2, { type: 'move', node: 'f1l0' })).toBe(at(2, { type: 'move', node: 'f1l0' }));
     // ...and anything else is another one.
@@ -157,6 +158,7 @@ describe('action names', () => {
       at(2, { type: 'event', option: 0 }),
       at(2, { type: 'event', option: 1 }),
       at(2, { type: 'home' }),
+      at(2, { type: 'descend' }),
       at(2, { type: 'camp', choice: 'rest' }),
       at(2, { type: 'camp', choice: 'keepsake', keepsake: 'k1' }),
       at(2, { type: 'camp', choice: 'keepsake', keepsake: 'k2' }),

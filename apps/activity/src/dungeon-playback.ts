@@ -16,9 +16,11 @@ import type {
   DungeonRoomSummary,
   DungeonRunCreature,
   DungeonRunSummary,
+  DungeonStepLog,
   DungeonTeamMember,
 } from './dungeon-types';
-import { fierceName, floorLine, nodeFloor, resultHeadline } from './dungeon-text';
+import { nodeLevel } from './dungeon-map';
+import { fierceName, floorLine, nodeFloor, resultHeadline, undercroftName } from './dungeon-text';
 import type { ReplayRowEntry } from './raid-api';
 import { gimmickGlyphKey, gimmickShort } from './raid-text';
 import type { Speed } from './replay';
@@ -48,6 +50,17 @@ export interface PlaybackInput {
   rooms: DungeonReplayRoom[];
   landmark: boolean;
   total: number;
+  /** The floors of each Undercroft level the run went down into (level 1 first), for the place of its rooms. Absent: none. */
+  undercroftFloors?: readonly number[];
+}
+
+/** What a room's place is counted against: the floors of its own level (the day's map, or an Undercroft level). */
+export function placeTotal(
+  input: Pick<PlaybackInput, 'total' | 'undercroftFloors'>,
+  room: Pick<DungeonReplayRoom, 'node'>,
+): number {
+  const level = room.node === undefined ? 0 : nodeLevel(room.node);
+  return level > 0 ? (input.undercroftFloors?.[level - 1] ?? input.total) : input.total;
 }
 
 /**
@@ -59,11 +72,13 @@ export const PATH_FLOORS = 7;
 /** Every room of a stored run, to watch again. A path run counts its places in floors. */
 export function replayInput(replay: DungeonReplay): PlaybackInput {
   const path = replay.rooms.some((r) => r.node !== undefined);
+  const levels = replay.summary.route?.undercroft;
   return {
     row: replay.row,
     rooms: replay.rooms,
     landmark: replay.summary.landmark,
     total: path ? PATH_FLOORS : replay.rooms.length,
+    ...(levels === undefined ? {} : { undercroftFloors: levels.map((m) => m.floors) }),
   };
 }
 
@@ -89,8 +104,15 @@ export function roomInput(
   room: DungeonReplayRoom,
   landmark: boolean,
   floors: number,
+  undercroft: readonly { floors: number }[] = [],
 ): PlaybackInput {
-  return { row: room.row ?? rowOfCreatures(team), rooms: [room], landmark, total: floors };
+  return {
+    row: room.row ?? rowOfCreatures(team),
+    rooms: [room],
+    landmark,
+    total: floors,
+    ...(undercroft.length === 0 ? {} : { undercroftFloors: undercroft.map((m) => m.floors) }),
+  };
 }
 
 /**
@@ -218,12 +240,16 @@ export function roomState(room: Pick<DungeonRoomSummary, 'played' | 'cleared'>):
 export interface StripRoom {
   index: number;
   kind: 'foe' | 'boss';
+  /** The Undercroft level the room was on (0: the day's map). */
+  level: number;
+  /** An epic fight of the Undercroft. */
+  epic: boolean;
   /** The foe's content id, for its sprite. */
   foeId: string;
   foeName: string;
   state: RoomState;
   banner: string;
-  /** "Room 1", or "Room boss" for the last ("Fight 1" and "Elite" on a path run). */
+  /** "Room 1", or "Room boss" for the last ("Fight 1" and "Elite" on a path run; "Undercroft", "Epic" and "Keeper" below). */
   title: string;
   elite: boolean;
   modifierName: string;
@@ -239,21 +265,32 @@ export interface StripRoom {
  * left out); an old three-room run shows all three, the unreached ones locked.
  */
 export function roomStrip(
-  run: Pick<DungeonRunSummary, 'rooms'> & Partial<Pick<DungeonRunSummary, 'outcome'>>,
+  run: Pick<DungeonRunSummary, 'rooms'> & Partial<Pick<DungeonRunSummary, 'outcome' | 'route'>>,
 ): StripRoom[] {
   const sorted = [...run.rooms].sort((a, b) => a.index - b.index);
   const rooms = run.outcome === undefined ? sorted : sorted.filter((r) => r.played);
+  const levels = roomLevels(rooms.length, run.route?.history);
   return rooms.map((room, place) => {
     const state = roomState(room);
     const elite = room.elite === true;
-    const title =
-      room.kind === 'boss'
-        ? 'Room boss'
-        : elite
-          ? 'Elite'
-          : run.outcome === undefined
-            ? `Room ${String(room.index + 1)}`
-            : `Fight ${String(place + 1)}`;
+    const epic = room.epic === true;
+    const level = levels[place] ?? 0;
+    const keeper = room.kind === 'boss' && level > 0;
+    const title = keeper
+      ? 'Keeper'
+      : epic
+        ? 'Epic'
+        : room.kind === 'boss'
+          ? 'Room boss'
+          : level > 0
+            ? elite
+              ? 'Undercroft elite'
+              : undercroftName(level)
+            : elite
+              ? 'Elite'
+              : run.outcome === undefined
+                ? `Room ${String(room.index + 1)}`
+                : `Fight ${String(place + 1)}`;
     const name = fierceName(room.foe.name, elite);
     const foeHp =
       state === 'defeat' ? `${String(room.foeHpEnd)} / ${String(room.foe.hpMax)} HP left` : null;
@@ -261,6 +298,8 @@ export function roomStrip(
     return {
       index: room.index,
       kind: room.kind,
+      level,
+      epic,
       foeId: room.foe.id,
       foeName: name,
       state,
@@ -272,6 +311,21 @@ export function roomStrip(
       spoken: `${title}: ${name}, ${room.modifier.name}. ${result}.`,
     };
   });
+}
+
+/**
+ * The Undercroft level of each room a run played, in order: the played rooms are the fights of the route's
+ * history in the same order, and a fight's node id says its level. All 0 when there is no route (an older
+ * run) or its fights do not match the rooms one for one.
+ */
+export function roomLevels(
+  played: number,
+  history: readonly DungeonStepLog[] | undefined,
+): number[] {
+  const nodes = (history ?? []).flatMap((e) => (e.result === 'fight' ? [e.node] : []));
+  return nodes.length === played
+    ? nodes.map((n) => nodeLevel(n))
+    : Array.from({ length: played }, () => 0);
 }
 
 /** A creature's HP under it in the team breakdown: "340 / 391 HP" (0 when it was knocked out). */
@@ -318,13 +372,17 @@ export function teamBreakdown(run: Pick<DungeonRunSummary, 'team' | 'rewards'>):
 
 /** What the banner over the stage says when a room opens. Names and descriptions are plain text. */
 interface RoomIntroView {
-  /** "ROOM 2" in big letters, "ROOM BOSS" for the last room, "FIGHT" for a room of a path. */
+  /** "ROOM 2" in big letters, "ROOM BOSS" for the last room, "FIGHT" for a room of a path ("KEEPER" and "EPIC" below). */
   heading: string;
-  /** "2 / 3" (the room's place in an old run), or "Floor 3 / 7" (a room of a path). */
+  /** "2 / 3" (the room's place in an old run), "Floor 3 / 7" (a room of a path) or "Undercroft 1 · Floor 2 / 4". */
   place: string;
   boss: boolean;
-  /** A fiercer foe of a path: the banner adds an Elite tag. */
+  /** A fiercer foe of a path: the banner adds an Elite tag (an epic fight has its own, `epic`). */
   elite: boolean;
+  /** An epic fight of the Undercroft: the banner adds an Epic tag instead. */
+  epic: boolean;
+  /** The Undercroft level the room is on (0: the day's map). */
+  level: number;
   foeId: string;
   /** The foe's name, "Fierce ..." for an elite. */
   foeName: string;
@@ -342,12 +400,15 @@ interface RoomIntroView {
 
 export function roomIntroView(
   room: Pick<DungeonReplayRoom, 'index' | 'kind' | 'foe' | 'modifier'> &
-    Partial<Pick<DungeonReplayRoom, 'elite' | 'node'>>,
+    Partial<Pick<DungeonReplayRoom, 'elite' | 'epic' | 'node'>>,
   total: number,
   landmark = false,
 ): RoomIntroView {
   const boss = room.kind === 'boss';
-  const elite = room.elite === true;
+  const epic = room.epic === true;
+  const elite = room.elite === true && !epic;
+  const level = room.node === undefined ? 0 : nodeLevel(room.node);
+  const keeper = boss && level > 0;
   const gimmick = roomTrick(room, landmark);
   const trick =
     gimmick === null
@@ -359,22 +420,36 @@ export function roomIntroView(
         };
   const floor = room.node === undefined ? null : nodeFloor(room.node);
   const place =
-    floor === null ? `${String(room.index + 1)} / ${String(total)}` : floorLine(floor, total);
-  const heading = boss ? 'ROOM BOSS' : floor !== null ? 'FIGHT' : `ROOM ${String(room.index + 1)}`;
-  const foeName = fierceName(room.foe.name, elite);
+    floor === null
+      ? `${String(room.index + 1)} / ${String(total)}`
+      : level > 0
+        ? `${undercroftName(level)} · ${floorLine(floor, total)}`
+        : floorLine(floor, total);
+  const heading = keeper
+    ? 'KEEPER'
+    : boss
+      ? 'ROOM BOSS'
+      : epic
+        ? 'EPIC FIGHT'
+        : floor !== null
+          ? 'FIGHT'
+          : `ROOM ${String(room.index + 1)}`;
+  const foeName = fierceName(room.foe.name, elite || epic);
   const where = floor === null ? `Room ${place}` : place;
   return {
     heading,
     place,
     boss,
     elite,
+    epic,
+    level,
     foeId: room.foe.id,
     foeName,
     element: room.foe.element,
     modifierName: room.modifier.name,
     modifierDescription: room.modifier.description,
     trick,
-    spoken: `${where}${boss ? ', room boss' : ''}${elite ? ', elite' : ''}: ${foeName}. ${trick === null ? '' : `${trick.name}: ${trick.line}. `}${room.modifier.name}: ${room.modifier.description}`,
+    spoken: `${where}${keeper ? ', Undercroft keeper' : boss ? ', room boss' : ''}${elite ? ', elite' : ''}${epic ? ', epic fight' : ''}: ${foeName}. ${trick === null ? '' : `${trick.name}: ${trick.line}. `}${room.modifier.name}: ${room.modifier.description}`,
   };
 }
 

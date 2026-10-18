@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DungeonMap } from './DungeonMap';
 import { SAMPLE_MAP, sampleHistory, sampleState } from './dungeon-map-sample';
+import { lockedBandShown } from './dungeon-flow';
 import { omitKey } from './dungeon-path-samples';
+import { undercroftState, type UndercroftStage } from './dungeon-undercroft-sample';
 import type { DungeonRunState } from './dungeon-types';
 import {
   byClass,
@@ -272,5 +274,193 @@ describe('DungeonMap: what happened in a room the run has been through', () => {
     const text = visibleText(first(byRole(p.root, 'dialog')));
     expect(text).toContain('HP 330');
     expect(text).not.toContain('Cleared');
+  });
+});
+
+describe('DungeonMap with the Undercroft', () => {
+  const drawStage = (
+    stage: UndercroftStage,
+    props: { initialOpen?: string; locked?: boolean } = {},
+  ) => {
+    const run = undercroftState(stage);
+    return draw(
+      <DungeonMap
+        map={run.map}
+        undercroft={run.undercroft?.maps}
+        lockedBand={props.locked ?? lockedBandShown(run)}
+        state={run}
+        onGo={() => undefined}
+        {...(props.initialOpen === undefined ? {} : { initialOpen: props.initialOpen })}
+      />,
+    );
+  };
+  const dialogText = (p: Page): string => visibleText(first(byRole(p.root, 'dialog')));
+
+  it('draws the day alone as before, with no band, when there is nothing to show', () => {
+    const p = draw(<DungeonMap map={SAMPLE_MAP} state={null} />);
+    expect(byClass(p.root, 'dmap-label')).toHaveLength(0);
+    expect(byClass(p.root, 'dmap-uband')).toHaveLength(0);
+  });
+
+  it('shows the quiet locked band above the boss, and no extra room, before the run goes down', () => {
+    const p = drawStage('locked');
+    expect(visibleText(first(byClass(p.root, 'dmap-label')))).toBe(
+      'The Undercroft · beat the boss to descend',
+    );
+    expect(byClass(p.root, 'dmap-uband')).toHaveLength(1);
+    expect(byClass(p.root, 'dmap-node')).toHaveLength(undercroftState('locked').map.nodes.length);
+  });
+
+  it('stacks the level with its label, the rooms in the darker style, and lights across levels', () => {
+    const run = undercroftState('entrance');
+    const p = drawStage('entrance');
+    expect(byClass(p.root, 'dmap-label').map((l) => visibleText(l))).toEqual([
+      run.undercroft?.maps[0]?.label,
+    ]);
+    const nodes = byClass(p.root, 'dmap-node');
+    const deep = nodes.filter((n) => /\bu\b/.test(n.getAttribute('class') ?? ''));
+    expect(deep).toHaveLength(run.undercroft?.maps[0]?.nodes.length ?? -1);
+    // The keeper is a crown of its own, not the room boss's.
+    const keeper = first(byName(p.root, 'button', /^Undercroft keeper: Slag Tyrant/));
+    expect(keeper.getAttribute('class')).toContain('k-boss');
+    expect(keeper.getAttribute('class')).not.toContain('cracked');
+    expect(byClass(keeper, 'dmap-crack')).toHaveLength(0);
+    // The entrance floor of the level is what the run may go to; the day's boss is behind it.
+    const reachable = nodes.filter((n) => (n.getAttribute('class') ?? '').includes('s-reachable'));
+    expect(reachable).toHaveLength(2);
+    expect(
+      first(byName(p.root, 'button', /^Room boss: Slag Tyrant/)).getAttribute('class'),
+    ).toContain('s-visited');
+    // A path of the level is drawn in its own colours.
+    expect(
+      byClass(p.root, 'dmap-edge').filter((e) => (e.getAttribute('class') ?? '').includes(' u')),
+    ).not.toHaveLength(0);
+  });
+
+  it('marks a keeper on a cracked floor on the map and in its label and drawer', () => {
+    const p = drawStage('cracked');
+    const keeper = first(byName(p.root, 'button', /^Undercroft keeper: Slag Tyrant/));
+    expect(keeper.getAttribute('class')).toContain('cracked');
+    expect(byClass(keeper, 'dmap-crack')).toHaveLength(1);
+    expect(keeper.getAttribute('aria-label')).toContain('Cracked floor');
+    p.click(keeper);
+    expect(dialogText(p)).toContain('A cracked floor: beat the keeper to go deeper still.');
+    expect(dialogText(p)).toContain('Keeper');
+    expect(dialogText(p)).toContain('The Undercroft · foes are fiercer here');
+    expect(dialogText(p)).toContain(
+      'Undercroft chest: 1 Essence, 2 scrap and a 40% chance of a gear piece.',
+    );
+  });
+
+  it('an uncracked keeper has no cracked-floor line', () => {
+    const plain = drawStage('keeper', { initialOpen: 'u1f3l1' });
+    expect(dialogText(plain)).not.toContain('cracked floor');
+    expect(dialogText(plain)).toContain('Undercroft chest');
+  });
+
+  it('stacks a second level above the first, the cracked keeper behind it', () => {
+    const p = drawStage('cracked-deeper');
+    expect(byClass(p.root, 'dmap-label')).toHaveLength(2);
+    const labels = byClass(p.root, 'dmap-label').map((l) => visibleText(l));
+    expect(labels[0]).toContain('Undercroft II');
+    expect(labels[1]).toContain('Undercroft');
+    expect(labels[1]).toContain("The keeper's floor is cracked.");
+    const lit = byClass(p.root, 'dmap-node').filter((n) =>
+      (n.getAttribute('class') ?? '').includes('s-reachable'),
+    );
+    expect(lit).toHaveLength(2);
+  });
+
+  it('opens a carved door that says what it could add, with its glossary tag and a Go', () => {
+    const p = drawStage('door-ahead', { initialOpen: 'f5l1' });
+    const text = dialogText(p);
+    expect(text).toContain('Carved door');
+    expect(text).toContain(
+      'A carved door. Step through to add one room to the Undercroft: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight. You find out which when you descend.',
+    );
+    expect(byName(first(byRole(p.root, 'dialog')), 'button', /^Go to Carved door/)).toHaveLength(1);
+  });
+
+  it('says what a door did once walked through', () => {
+    const walked = drawStage('door-walked', { initialOpen: 'f5l1' });
+    expect(dialogText(walked)).toContain('Added a room to the Undercroft.');
+    expect(dialogText(walked)).not.toContain('Step through');
+  });
+
+  it('says "Nothing more to add." for a door past the limit', () => {
+    const none = undercroftState('door-walked');
+    page = draw(
+      <DungeonMap
+        map={none.map}
+        state={{
+          ...none,
+          history: (none.history ?? []).map((e) =>
+            e.result === 'door' ? { ...e, added: false } : e,
+          ),
+        }}
+        initialOpen="f5l1"
+      />,
+    );
+    expect(dialogText(page)).toContain('Nothing more to add.');
+  });
+
+  it('a door below depth 8 is a mystery room named "Quiet room", which says it was quiet once walked into', () => {
+    const quiet = drawStage('quiet-room', { initialOpen: 'f5l1' });
+    expect(dialogText(quiet)).toContain('Quiet room');
+    expect(dialogText(quiet)).toContain("Something stirs. You'll see when you step in.");
+  });
+
+  it('says a quiet room was quiet after the run stepped into it', () => {
+    const run = undercroftState('quiet-room');
+    page = draw(
+      <DungeonMap
+        map={run.map}
+        state={{ ...run, at: 'f5l1', path: [...run.path, 'f5l1'], reachable: [] }}
+        initialOpen="f5l1"
+      />,
+    );
+    expect(dialogText(page)).toContain('Nothing stirred here. It was a quiet room.');
+    expect(dialogText(page)).not.toContain('Something stirs');
+  });
+
+  it('opens an epic fight as an Epic, with its loot and no Elite tag', () => {
+    const p = drawStage('epic', { initialOpen: 'u1f2l1' });
+    const text = dialogText(p);
+    expect(text).toContain('Epic fight');
+    expect(text).toContain('Fierce Ember Mite');
+    expect(text).toContain('Epic');
+    expect(text).not.toContain('Elite');
+    expect(text).toContain(
+      'One fierce foe at boss strength. Win it to earn 1 Essence, 2 scrap and a keepsake.',
+    );
+    expect(text).toContain('The Undercroft · foes are fiercer here');
+  });
+
+  it('tells the story of a boss that fell and went down: the fight, the chest and the way down', () => {
+    const run = undercroftState('entrance');
+    const p = draw(
+      <DungeonMap map={run.map} undercroft={run.undercroft?.maps} state={run} initialOpen="f6l1" />,
+    );
+    const text = dialogText(p);
+    expect(text).toContain('Won in 5 rounds.');
+    expect(text).toContain('The boss chest opened.');
+    expect(text).toContain('Banked at once');
+    expect(text).toContain('Cinder Charm');
+    expect(text).toContain('You went down into Undercroft 1.');
+    // The chest's loot is not counted twice: the fight itself added nothing to the pack.
+    expect(text).not.toContain('Nothing went into the pack.');
+  });
+
+  it("tells the story of a keeper that fell: the fight and the keeper's chest", () => {
+    const done = undercroftState('done');
+    page = draw(
+      <DungeonMap
+        map={done.map}
+        undercroft={done.undercroft?.maps}
+        state={done}
+        initialOpen="u1f3l1"
+      />,
+    );
+    expect(dialogText(page)).toContain("The keeper's chest opened.");
   });
 });

@@ -5,11 +5,13 @@
  * - `setup`: the pre-run screen (the map in preview, the team, Enter), also when there is nothing to
  *   show yet (not enough creatures);
  * - `run`: an open run on its map, which is also where a stored run resumes after a reload;
- * - `event`, `camp`: the run stands in a mystery room or at the camp, and that choice comes first;
+ * - `event`, `camp`, `descend`: the run stands in a mystery room, at the camp or at the descent card
+ *   (the boss fell), and that choice comes first;
  * - `fight`: the playback of the one room a move just played (the screen only knows this one from
  *   the answer of the move, never from today);
  * - `results`: the summary of the day's run when it is over.
  */
+import { RULES } from '@creatures/game';
 import type {
   DungeonActResponse,
   DungeonRunState,
@@ -18,12 +20,15 @@ import type {
 } from './dungeon-types';
 
 /** The screens the Dungeon tab moves between (`loading` is before today arrived). */
-export type DungeonScreen = 'loading' | 'setup' | 'run' | 'fight' | 'event' | 'camp' | 'results';
+export type DungeonScreen =
+  'loading' | 'setup' | 'run' | 'fight' | 'event' | 'camp' | 'descend' | 'results';
 
 /** The screen of an open run: what is pending comes first, else the map. */
-export function runScreenOf(state: Pick<DungeonRunState, 'pending'>): 'run' | 'event' | 'camp' {
+export function runScreenOf(
+  state: Pick<DungeonRunState, 'pending'>,
+): 'run' | 'event' | 'camp' | 'descend' {
   if (state.pending === null) return 'run';
-  return state.pending.kind === 'event' ? 'event' : 'camp';
+  return state.pending.kind;
 }
 
 /** The run that is open, or null: only a state that is still `active` counts. */
@@ -53,7 +58,7 @@ export function initialScreen(
  */
 export function screenAfterAct(
   answer: Pick<DungeonActResponse, 'state' | 'room' | 'summary'>,
-): 'fight' | 'results' | 'run' | 'event' | 'camp' {
+): 'fight' | 'results' | 'run' | 'event' | 'camp' | 'descend' {
   if (answer.room !== undefined) return 'fight';
   if (answer.summary !== undefined) return 'results';
   return runScreenOf(answer.state);
@@ -66,7 +71,7 @@ export function screenAfterAct(
 export function screenAfterFight(
   summary: DungeonRunSummary | undefined,
   state: Pick<DungeonRunState, 'pending'>,
-): 'results' | 'run' | 'event' | 'camp' {
+): 'results' | 'run' | 'event' | 'camp' | 'descend' {
   return summary === undefined ? runScreenOf(state) : 'results';
 }
 
@@ -81,3 +86,15 @@ export function msUntilReset(
 
 /** How long after the reset to ask again: a moment, so the server's day has really turned. */
 export const RESET_GRACE_MS = 1_500;
+
+/**
+ * Whether the map shows its quiet "the Undercroft waits" band above the room boss: the player's depth
+ * opens the Undercroft (`RULES.dungeon.undercroft.fromDepth`) and the run has not gone down yet (no level
+ * is drawn). A run that already went down shows its levels instead.
+ */
+export function lockedBandShown(
+  state: Pick<DungeonRunState, 'depth'> & Partial<Pick<DungeonRunState, 'undercroft'>>,
+  fromDepth: number = RULES.dungeon.undercroft.fromDepth,
+): boolean {
+  return state.depth >= fromDepth && (state.undercroft?.maps.length ?? 0) === 0;
+}

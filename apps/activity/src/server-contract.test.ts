@@ -39,6 +39,10 @@ import dungeonActCampPending from './fixtures/dungeon-act-camp-pending.json';
 import dungeonActCamp from './fixtures/dungeon-act-camp.json';
 import dungeonActCleared from './fixtures/dungeon-act-cleared.json';
 import dungeonActDefeat from './fixtures/dungeon-act-defeat.json';
+import dungeonActDescendPending from './fixtures/dungeon-act-descend-pending.json';
+import dungeonActDescend from './fixtures/dungeon-act-descend.json';
+import dungeonActDoor from './fixtures/dungeon-act-door.json';
+import dungeonActKeeper from './fixtures/dungeon-act-keeper.json';
 import dungeonActEventPending from './fixtures/dungeon-act-event-pending.json';
 import dungeonActEvent from './fixtures/dungeon-act-event.json';
 import dungeonActFight from './fixtures/dungeon-act-fight.json';
@@ -570,6 +574,10 @@ describe('the dungeon requests the client sends', () => {
     'dungeon-act-home',
     'dungeon-act-defeat',
     'dungeon-act-cleared',
+    'dungeon-act-door',
+    'dungeon-act-descend-pending',
+    'dungeon-act-descend',
+    'dungeon-act-keeper',
   ] as const satisfies readonly BodyKey[];
 
   it('entering sends exactly the strict body the Worker accepts, at POST /api/dungeon/start', async () => {
@@ -641,6 +649,10 @@ describe('the dungeon requests the client sends', () => {
       ['dungeon-act-home', dungeonActHome],
       ['dungeon-act-defeat', dungeonActDefeat],
       ['dungeon-act-cleared', dungeonActCleared],
+      ['dungeon-act-door', dungeonActDoor],
+      ['dungeon-act-descend-pending', dungeonActDescendPending],
+      ['dungeon-act-descend', dungeonActDescend],
+      ['dungeon-act-keeper', dungeonActKeeper],
     ] as const;
     for (const [key, answer] of pairs) {
       const body = actBodyOf(key);
@@ -840,9 +852,53 @@ describe('the dungeon responses the server sends', () => {
     }
   });
 
+  it('parses the Undercroft answers: the door, the descent card, the way down and the keeper', () => {
+    // A carved door: nothing pending, no fight, a history line that says only that a room was added.
+    const door = parseDungeonAct(dungeonActDoor);
+    expect(door.room).toBeUndefined();
+    expect(door.state.pending).toBeNull();
+    expect(door.state.history?.at(-1)).toMatchObject({ kind: 'door', result: 'door', added: true });
+    expect(door.state.map.nodes.some((n) => n.kind === 'door')).toBe(true);
+    expect(door.state.undercroft).toEqual({ maps: [], marks: 1 });
+    expect(door.state.level).toBe(0);
+
+    // The room boss falls: its fight plays, the descent card waits, nothing can be moved to.
+    const pending = parseDungeonAct(dungeonActDescendPending);
+    expect(pending.room?.kind).toBe('boss');
+    expect(pending.state.reachable).toEqual([]);
+    expect(pending.summary).toBeUndefined();
+    if (pending.state.pending?.kind !== 'descend') throw new Error('the descent card is pending');
+    const card = pending.state.pending;
+    expect(card).toMatchObject({ level: 1, floors: 4, depthBonus: 3, catchBreathBp: 2000 });
+    expect(card.newDepth).toBe(pending.state.depth + 1);
+    expect(card.banked.gear.length).toBeGreaterThan(0);
+    expect(card.banked.supplies.length).toBeGreaterThan(0);
+    expect(pending.state.history?.map((e) => e.result).slice(-3)).toEqual([
+      'fight',
+      'chest',
+      'pending',
+    ]);
+
+    // Descending draws the level (labelled), stands the run before its first floor and heals the row.
+    const down = parseDungeonAct(dungeonActDescend);
+    expect(down.state).toMatchObject({ level: 1, at: null, pending: null });
+    const level = down.state.undercroft?.maps[0];
+    expect(level).toMatchObject({ level: 1, floors: 4 });
+    expect(level?.label).toContain('Undercroft');
+    expect(down.state.reachable.every((id) => id.startsWith('u1f0'))).toBe(true);
+    expect(down.state.history?.at(-1)).toMatchObject({ result: 'descend', level: 1 });
+
+    // The keeper ends the run: cleared, and the summary counts the level cleared with its route.
+    const keeper = parseDungeonAct(dungeonActKeeper);
+    expect(keeper.summary).toMatchObject({ outcome: 'cleared', cleared: true, deepest: 1 });
+    expect(keeper.summary?.route?.undercroft).toHaveLength(1);
+    expect(keeper.state.history?.at(-1)).toMatchObject({ result: 'chest', level: 1 });
+    expect(keeper.summary?.path).toContain('door');
+  });
+
   it('a defeat keeps half the pack, rounded up, and the others keep all of it', () => {
     const half = (n: number): number => Math.ceil(n / 2);
-    for (const answer of [dungeonActHome, dungeonActDefeat, dungeonActCleared]) {
+    for (const answer of [dungeonActHome, dungeonActDefeat, dungeonActCleared, dungeonActKeeper]) {
       const { summary } = parseDungeonAct(answer);
       const pack = summary?.pack;
       if (summary === undefined || pack === undefined) throw new Error('summary');

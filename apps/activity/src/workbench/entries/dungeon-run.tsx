@@ -1,5 +1,6 @@
 import { dungeonEvents, dungeonKeepsakes } from '@creatures/game';
 import { DungeonCamp } from '../../DungeonCamp';
+import { DungeonDescend } from '../../DungeonDescend';
 import { DungeonEvent } from '../../DungeonEvent';
 import { DungeonResults } from '../../DungeonResults';
 import { DungeonRun } from '../../DungeonRun';
@@ -22,12 +23,24 @@ import {
   sampleToday,
   omitKey,
 } from '../../dungeon-path-samples';
+import {
+  undercroftLostSummary,
+  undercroftState,
+  undercroftSummary,
+} from '../../dungeon-undercroft-sample';
 import type { DungeonRunState, DungeonRunSummary } from '../../dungeon-types';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 
 const EVENT_IDS = dungeonEvents.map((e) => e.id);
-const OUTCOMES = ['cleared', 'home', 'defeat', 'an older run (no outcome)'] as const;
+const OUTCOMES = [
+  'cleared',
+  'home',
+  'defeat',
+  'cleared an Undercroft level',
+  'lost in the Undercroft',
+  'an older run (no outcome)',
+] as const;
 
 /** The summary of a run's end as a real server answered it (`fixtures/dungeon-act-*.json`). */
 function captured(outcome: 'cleared' | 'home' | 'defeat'): DungeonRunSummary {
@@ -209,10 +222,62 @@ const dungeonCamp: Entry = {
   render: (p) => <CampDemo p={p} />,
 };
 
+function DescendDemo({ p }: { p: Props }) {
+  const base = undercroftState('descent');
+  const variant = str(p, 'card');
+  if (base.pending?.kind !== 'descend') return <p class="muted">The capture has a descent.</p>;
+  const descent =
+    variant === 'a cracked floor (level 2)'
+      ? { ...base.pending, level: 2, floors: 3, banked: { gear: [], supplies: [], parts: {} } }
+      : variant === 'nothing banked'
+        ? { ...base.pending, banked: { gear: [], supplies: [], parts: {} } }
+        : base.pending;
+  return (
+    <DungeonDescend
+      key={variant}
+      descent={descent}
+      pack={bool(p, 'emptyPack') ? { bait: 0, essence: 0, scrap: 0 } : base.pack}
+      busy={bool(p, 'busy')}
+      onAct={() => undefined}
+    />
+  );
+}
+
+const dungeonDescend: Entry = {
+  name: 'DungeonDescend',
+  file: 'apps/activity/src/DungeonDescend.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    'The descent card, after the room boss (or a keeper on a cracked floor) has fallen. It says the new depth is locked in, what the boss chest already banked (gear as item rows, supplies and parts as icons with numbers), what stays at risk (the pack), what the Undercroft below is like (its floors, how much fiercer its foes are, the breath the creatures catch, the double loot, and that the only way home is a camp) and two choices: Descend, or head home with everything. Made from the captured answer; the buttons go nowhere here.',
+  controls: {
+    card: {
+      kind: 'select',
+      options: ['the room boss fell (level 1)', 'a cracked floor (level 2)', 'nothing banked'],
+    },
+    emptyPack: { kind: 'toggle' },
+    busy: { kind: 'toggle' },
+  },
+  defaults: { card: 'the room boss fell (level 1)', emptyPack: false, busy: false },
+  presets: [
+    { name: 'The room boss fell', props: {} },
+    { name: 'A cracked floor: a deeper Undercroft', props: { card: 'a cracked floor (level 2)' } },
+    { name: 'Nothing banked, an empty pack', props: { card: 'nothing banked', emptyPack: true } },
+    { name: 'A step is on its way', props: { busy: true } },
+  ],
+  render: (p) => <DescendDemo p={p} />,
+};
+
 function ResultsDemo({ p }: { p: Props }) {
   const outcome = str(p, 'outcome');
   const kind = outcome === 'home' || outcome === 'defeat' ? outcome : 'cleared';
-  const base = bool(p, 'capture') ? captured(kind) : sampleSummary(kind);
+  const base =
+    outcome === 'cleared an Undercroft level'
+      ? undercroftSummary()
+      : outcome === 'lost in the Undercroft'
+        ? undercroftLostSummary()
+        : bool(p, 'capture')
+          ? captured(kind)
+          : sampleSummary(kind);
   const run: typeof base =
     outcome === 'an older run (no outcome)'
       ? (() => {
@@ -268,6 +333,22 @@ const dungeonResults: Entry = {
       props: { outcome: 'defeat', capture: true, canRetry: true },
     },
     { name: 'Cleared, the route as a map', props: { view: 'map' } },
+    {
+      name: 'Cleared an Undercroft level (as the server sent it)',
+      props: { outcome: 'cleared an Undercroft level' },
+    },
+    {
+      name: 'Cleared an Undercroft level, the route as a map',
+      props: { outcome: 'cleared an Undercroft level', view: 'map' },
+    },
+    {
+      name: 'Lost in the Undercroft (half the pack)',
+      props: { outcome: 'lost in the Undercroft' },
+    },
+    {
+      name: 'Lost in the Undercroft, the route as a map',
+      props: { outcome: 'lost in the Undercroft', view: 'map' },
+    },
     { name: 'Defeated, the route as a map', props: { outcome: 'defeat', view: 'map' } },
     { name: 'A run with no route (no Fights / Map switch)', props: { route: false } },
     { name: 'An older three-room run', props: { outcome: 'an older run (no outcome)' } },
@@ -287,6 +368,28 @@ const SCENES = {
   'after the mystery room': () => parseDungeonAct(actEvent).state,
   'at the camp': () => parseDungeonAct(actCampPending).state,
   'after the camp (swapped)': () => parseDungeonAct(actCamp).state,
+  'the descent card (the boss fell)': () => undercroftState('descent'),
+  'a cracked floor: the descent card again': () => {
+    const base = undercroftState('descent');
+    return {
+      ...base,
+      pending:
+        base.pending?.kind === 'descend'
+          ? {
+              ...base.pending,
+              level: 2,
+              floors: 3,
+              banked: { gear: [], supplies: [], parts: {} },
+            }
+          : null,
+    };
+  },
+  'before the boss, the Undercroft waits (quiet band)': () => undercroftState('locked'),
+  'a carved door ahead': () => undercroftState('door-ahead'),
+  'in the Undercroft: the entrance': () => undercroftState('entrance'),
+  'in the Undercroft: midway': () => undercroftState('midway'),
+  'in the Undercroft: a cracked keeper next': () => undercroftState('cracked'),
+  'a second level (below a cracked floor)': () => undercroftState('cracked-deeper'),
   'the boss is next': () => {
     const done = parseDungeonAct(actCleared).state;
     return {
@@ -340,6 +443,26 @@ const dungeonRun: Entry = {
       props: { scene: 'after the camp (swapped)' },
     },
     { name: 'The boss is next', props: { scene: 'the boss is next' } },
+    { name: 'The descent card', props: { scene: 'the descent card (the boss fell)' } },
+    {
+      name: 'The descent card of a cracked floor',
+      props: { scene: 'a cracked floor: the descent card again' },
+    },
+    {
+      name: 'Before the boss: the quiet band above it',
+      props: { scene: 'before the boss, the Undercroft waits (quiet band)' },
+    },
+    { name: 'A carved door ahead', props: { scene: 'a carved door ahead' } },
+    {
+      name: 'In the Undercroft: the entrance',
+      props: { scene: 'in the Undercroft: the entrance' },
+    },
+    { name: 'In the Undercroft: midway', props: { scene: 'in the Undercroft: midway' } },
+    {
+      name: 'A cracked keeper next',
+      props: { scene: 'in the Undercroft: a cracked keeper next' },
+    },
+    { name: 'A second level', props: { scene: 'a second level (below a cracked floor)' } },
     { name: 'An act is on its way', props: { busy: true } },
     { name: 'With an error line', props: { error: true } },
   ],
@@ -351,5 +474,6 @@ export const dungeonRunEntries: readonly Entry[] = [
   dungeonRunStrip,
   dungeonEvent,
   dungeonCamp,
+  dungeonDescend,
   dungeonResults,
 ];
