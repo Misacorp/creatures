@@ -7,7 +7,6 @@ import {
   GEAR_SLOTS,
   PART_KINDS,
   RULES,
-  gearBase,
   gearLine,
   itemOf,
   type GearItem,
@@ -292,11 +291,6 @@ export function wornItems(worn: WornBySlot | undefined): GearItem[] {
   });
 }
 
-/** Checks a stored base still exists (content is data; an unknown base is a bug, never silently ignored). */
-export function assertKnownBase(baseId: string): void {
-  if (gearBase(baseId) === undefined) throw new Error('stored gear has an unknown base');
-}
-
 // --- Parts ---
 
 export function getParts(sql: SqlStorage, userId: string): Record<PartKind, number> {
@@ -372,13 +366,6 @@ export function knownBlueprints(
     )
     .toArray()
     .map((r) => ({ baseId: r.base_id, learnedAt: r.learned_at, marks: r.marks }));
-}
-
-export function knowsBlueprint(sql: SqlStorage, userId: string, baseId: string): boolean {
-  return (
-    sql.exec('SELECT 1 FROM blueprints WHERE user_id = ? AND base_id = ?', userId, baseId).toArray()
-      .length > 0
-  );
 }
 
 /** The marks on a blueprint (finds of it the player already knew), or null when the blueprint is not known. */

@@ -1,5 +1,5 @@
-import { RULES, evolutionsOf, type Evolution } from '@creatures/game';
-import { CATCHABLE, pickTeam, speciesOf, type OwnedCreature } from './data';
+import { evolutionsOf, type Evolution } from '@creatures/game';
+import { pickTeam, speciesOf, type OwnedCreature } from './data';
 
 /*
  * The spending policy of a simulated player. Today's archetypes all follow it as it is written here
@@ -21,20 +21,6 @@ import { CATCHABLE, pickTeam, speciesOf, type OwnedCreature } from './data';
  *    by the dungeon, crafted in the workshop, or an explorer rank gift). A treat packed as an activity
  *    starts costs Bait and doubles one creature's experience for it.
  */
-
-/** True when every catchable species is owned and fully fused (the collection is done). */
-export function collectionComplete(creatures: readonly OwnedCreature[]): boolean {
-  return CATCHABLE.every((s) => {
-    const owned = creatures.find((c) => c.line === s.line);
-    return owned !== undefined && owned.fusionCount >= RULES.fusion.maxFusions;
-  });
-}
-
-/** True while the creature still has to reach the level at which it evolves. */
-export function isPreEvolution(c: OwnedCreature): boolean {
-  const evo = speciesOf(c.speciesId).evolvesTo;
-  return evo !== undefined && c.level < evo.level;
-}
 
 /** Chooses the form a ready creature grows into (undefined: it cannot evolve). */
 export type BranchPick = (

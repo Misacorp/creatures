@@ -74,6 +74,10 @@ describe('isWeekId', () => {
     expect(isWeekId('2027-W53')).toBe(false); // 2027 has 52 weeks
     expect(isWeekId('2027-W00')).toBe(false);
     expect(isWeekId('2027-W54')).toBe(false);
+    // Mondays that fall outside years 0000-9999 are no week (and must not throw).
+    expect(isWeekId('9999-W53')).toBe(false);
+    expect(isWeekId('9999-W99')).toBe(false);
+    expect(isWeekId('0000-W01')).toBe(false);
     for (const bad of [
       '2027-2',
       '2027W02',

@@ -1,15 +1,10 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import { RULES } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { serializeProps, type AnalyticsEvent } from '../src/analytics';
 import { MAX_CATCH_UP_DAYS, canonicalDims } from '../src/analytics-rollup';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
-import {
-  OTHER_USER_ID,
-  USER_ID,
-  LATEST_SCHEMA_VERSION,
-  runCore,
-  type CoreContext,
-} from './helpers';
+import { OTHER_USER_ID, USER_ID, runCore, type CoreContext } from './helpers';
 import { HELSINKI, count, nextGuild, rows } from './raid-helpers';
 
 const ALICE = 'a'.repeat(32);
@@ -203,7 +198,7 @@ describe('analytics_daily: schema and values', () => {
 
   it('is created by migration 20', async () => {
     await runCore(nextGuild(), (ctx) => {
-      expect(LATEST_SCHEMA_VERSION).toBeGreaterThanOrEqual(20);
+      expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(20);
       expect(
         rows(ctx.sql, "SELECT 1 FROM sqlite_master WHERE name = 'analytics_daily'"),
       ).toHaveLength(1);

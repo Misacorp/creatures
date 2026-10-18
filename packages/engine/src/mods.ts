@@ -160,9 +160,6 @@ const EMPTY: ResolvedMods = Object.freeze({
   sharedWarmthBp: 0,
 });
 
-/** The sheet of a creature without one. */
-export const NO_MODS: ResolvedMods = EMPTY;
-
 function bad(id: string, message: string): never {
   throw new RangeError(`invalid fight input: creature "${id}" mods: ${message}`);
 }

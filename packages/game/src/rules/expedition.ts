@@ -1,18 +1,3 @@
-import { RULES, type DurationId, type SuppliesId } from './config';
-
-export function expeditionRolls(duration: DurationId): number {
-  return RULES.expedition.durations[duration].rolls;
-}
-
-export function expeditionDurationMs(duration: DurationId): number {
-  return RULES.expedition.durations[duration].ms;
-}
-
-/** Bait cost of an expedition: rolls x cost per roll of the supply level. */
-export function expeditionCost(duration: DurationId, supplies: SuppliesId): number {
-  return expeditionRolls(duration) * RULES.expedition.supplies[supplies].costPerRoll;
-}
-
 /**
  * Catches earned when an expedition is claimed at `now`: floor(rolls x elapsed / total), with
  * elapsed clamped to [0, total]. A clock before the start gives 0, after the end gives all rolls.

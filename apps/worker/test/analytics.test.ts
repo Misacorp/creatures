@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import {
   EXPEDITION_LENGTHS,
   GEAR_RARITIES,
@@ -46,7 +47,6 @@ import {
   undoAnalyticsMigration,
   undoPacingMigration,
   type CoreContext,
-  LATEST_SCHEMA_VERSION,
 } from './helpers';
 import {
   HELSINKI,
@@ -608,7 +608,7 @@ describe('migration 16 (the analytics event log)', () => {
           .toArray()
           .map((i) => i.name),
       ).toContain('analytics_events_at');
-      expect(version(sql)).toBe(LATEST_SCHEMA_VERSION);
+      expect(version(sql)).toBe(SCHEMA_VERSION);
       return Promise.resolve();
     });
   });
@@ -621,16 +621,14 @@ describe('migration 16 (the analytics event log)', () => {
       expect(version(sql)).toBe(14);
       expect(tables(sql)).not.toContain('analytics_events');
       core.migrate();
-      expect(version(sql)).toBe(LATEST_SCHEMA_VERSION);
+      expect(version(sql)).toBe(SCHEMA_VERSION);
       expect(tables(sql)).toContain('analytics_events');
       expect(sql.exec('SELECT announce_channel_id FROM guild_meta').one()).toEqual({
         announce_channel_id: '555555555555555555',
       });
       expect(sql.exec('SELECT user_id FROM players').toArray()).toEqual([{ user_id: USER_ID }]);
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(
-        LATEST_SCHEMA_VERSION,
-      );
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(SCHEMA_VERSION);
     });
   });
 
@@ -640,7 +638,7 @@ describe('migration 16 (the analytics event log)', () => {
       undoAnalyticsMigration(sql);
       expect(version(sql)).toBe(15);
       core.migrate();
-      expect(version(sql)).toBe(LATEST_SCHEMA_VERSION);
+      expect(version(sql)).toBe(SCHEMA_VERSION);
       sql.exec(
         "INSERT INTO analytics_events (at, kind, actor_hash, props_json) VALUES (1, 'x', NULL, '{}')",
       );

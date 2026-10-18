@@ -1,3 +1,4 @@
+import { derivedHmacKey, toHex } from './keys';
 import { SNOWFLAKE_RE } from './schemas';
 
 /** Sliding idle expiry: a session unused for this long is dead. */
@@ -24,20 +25,20 @@ export function base64Url(bytes: Uint8Array): string {
   return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
 }
 
-function toHex(bytes: Uint8Array): string {
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 export function generateSessionSecret(): string {
   return base64Url(crypto.getRandomValues(new Uint8Array(SECRET_BYTES)));
 }
 
 const encoder = new TextEncoder();
 
-// Cache of the derived key for the most recent client secret, per isolate. Keyed on the secret
-// value, so a rotated secret derives a new key. Rotating DISCORD_CLIENT_SECRET therefore
-// invalidates every outstanding session token (players just sign in again), which is acceptable.
-let cachedKey: { secret: string; key: Promise<CryptoKey> } | null = null;
+// The derived key is cached per isolate, keyed on the secret value, so a rotated secret derives a
+// new key. Rotating DISCORD_CLIENT_SECRET therefore invalidates every outstanding session token
+// (players just sign in again), which is acceptable.
+const sessionKey = derivedHmacKey({
+  salt: 'leet-creatures/session',
+  info: 'session-token-v1',
+  usages: ['sign', 'verify'],
+});
 
 /**
  * HKDF-SHA256 over the Discord client secret gives a non-extractable HMAC key used only to make
@@ -48,37 +49,7 @@ export function getSessionKey(clientSecret: string): Promise<CryptoKey> {
   if (clientSecret === '') {
     return Promise.reject(new Error('missing client secret'));
   }
-  if (cachedKey?.secret === clientSecret) {
-    return cachedKey.key;
-  }
-  const key = (async () => {
-    const material = await crypto.subtle.importKey(
-      'raw',
-      encoder.encode(clientSecret),
-      'HKDF',
-      false,
-      ['deriveKey'],
-    );
-    return crypto.subtle.deriveKey(
-      {
-        name: 'HKDF',
-        hash: 'SHA-256',
-        salt: encoder.encode('leet-creatures/session'),
-        info: encoder.encode('session-token-v1'),
-      },
-      material,
-      { name: 'HMAC', hash: 'SHA-256', length: 256 },
-      false,
-      ['sign', 'verify'],
-    );
-  })();
-  const entry = { secret: clientSecret, key };
-  cachedKey = entry;
-  // Do not cache a failure.
-  key.catch(() => {
-    if (cachedKey === entry) cachedKey = null;
-  });
-  return key;
+  return sessionKey(clientSecret);
 }
 
 function macInput(guildId: string, secret: string): Uint8Array {

@@ -1,12 +1,6 @@
-import {
-  EXPEDITION_LENGTHS,
-  ROOM_SPOT_IDS,
-  RULES,
-  content,
-  expeditionContent,
-  talentContent,
-} from '@creatures/game';
+import { EXPEDITION_LENGTHS, ROOM_SPOT_IDS, RULES, content, talentContent } from '@creatures/game';
 import * as v from 'valibot';
+import { DESTINATION_IDS, GOAL_IDS, SPECIES_IDS, SUPPLY_IDS } from './content-ids';
 import { ROOM_MAX_USERS } from './lounger';
 import { IdempotencyKeySchema, SNOWFLAKE_RE } from './schemas';
 
@@ -15,11 +9,7 @@ const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export const IdSchema = v.pipe(v.string(), v.regex(ID_RE));
 
-const GOAL_IDS = expeditionContent.goals.map((g) => g.id);
-
-/** Every species id: the schema of a field that names one (the server then checks it is a branch). */
-const SPECIES_IDS = content.creatures.map((c) => c.id);
-
+/** `SPECIES_IDS` is every species id: the schema of a field that names one (the server then checks it is a branch). */
 const STARTER_IDS = content.creatures.filter((c) => c.starter).map((c) => c.id);
 
 export const StarterBodySchema = v.strictObject({
@@ -27,9 +17,6 @@ export const StarterBodySchema = v.strictObject({
   species: v.picklist(STARTER_IDS),
   idempotencyKey: IdempotencyKeySchema,
 });
-
-const DESTINATION_IDS = expeditionContent.destinations.map((d) => d.id);
-const SUPPLY_IDS = expeditionContent.supplies.map((s) => s.id);
 
 /**
  * Sending a creature on an expedition. Supplies are optional (a trip without any is free) and come from

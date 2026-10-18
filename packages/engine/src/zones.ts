@@ -57,11 +57,6 @@ export function zoneSizes(shape: RowShape): ZoneSizes {
   return { front: side, middle: length - 2 * side, back: side };
 }
 
-/** The number of slots on the board row of this shape (empty ones included). */
-export function shapeLength(shape: RowShape): number {
-  return lengthOf(shape);
-}
-
 /**
  * The shape a fight's row has: the input's `board` when it carries one (checked: one strictly
  * increasing board slot below `length` per creature of the row), otherwise the dense row, so a

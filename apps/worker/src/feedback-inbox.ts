@@ -1,4 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
+import { DAY_MS } from './time';
 
 /** The inbox is one object: every caller addresses it by this fixed name. */
 export const FEEDBACK_INBOX_NAME = 'feedback-inbox';
@@ -12,7 +13,6 @@ const KINDS: readonly string[] = ['bug', 'idea', 'other'];
 const SHOT_TYPES: readonly string[] = ['image/png', 'image/jpeg', 'image/webp'];
 
 const MINUTE_MS = 60_000;
-const DAY_MS = 24 * 60 * MINUTE_MS;
 
 export const PER_REPORTER_PER_DAY = 3;
 export const PER_GUILD_PER_DAY = 20;

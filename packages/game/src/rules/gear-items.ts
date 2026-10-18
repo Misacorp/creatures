@@ -30,14 +30,7 @@ import {
   type GearSlot,
   type GearTag,
 } from '../content/gear-schema';
-import {
-  ELEMENTS,
-  type CritBonus,
-  type Element,
-  type Role,
-  type Stats,
-  type Zone,
-} from '../content/schema';
+import type { CritBonus, Element, Role, Stats, Zone } from '../content/schema';
 import type { TalentEffect } from '../content/talent-schema';
 import { int, pickWeighted, type Rng } from '../rng';
 import { RULES } from './config';
@@ -1298,6 +1291,3 @@ export function dropBase(
   if (base === undefined) throw new Error(`no ${slot} for ${element ?? 'neutral'}`);
   return base;
 }
-
-/** The tags an element can have, for tests and the sim. */
-export const ELEMENT_TAGS: readonly Element[] = ELEMENTS;

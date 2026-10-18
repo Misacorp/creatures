@@ -1,7 +1,6 @@
 import {
   loadGear,
   tagElement,
-  tagRole,
   type GearBase,
   type GearLine,
   type GearSet,
@@ -13,7 +12,7 @@ import linesJson from './data/gear-lines.json';
 import legacyJson from './data/gear-legacy.json';
 import setsJson from './data/gear-sets.json';
 import reactionsJson from './data/reactions.json';
-import type { Element, Role } from './schema';
+import type { Element } from './schema';
 
 /** The shipped gear bases, lines and the old-gear table of the conversion, validated at module load. */
 export const gearContent = loadGear(
@@ -43,11 +42,6 @@ export function gearLine(id: string): GearLine | undefined {
 /** A gear set by id, or undefined. */
 export function gearSet(id: string): GearSet | undefined {
   return SETS.get(id);
-}
-
-/** The set a base belongs to, or undefined (most bases are in none). */
-export function baseSet(base: Pick<GearBase, 'set'>): GearSet | undefined {
-  return base.set === undefined ? undefined : SETS.get(base.set);
 }
 
 /** The three pieces of a set, Hat first, then Scarf, then Charm. */
@@ -146,9 +140,4 @@ export function bestBaseForTint(
 /** The element a base is tied to, or null (neutral, explorer, role-locked). */
 export function baseElement(base: Pick<GearBase, 'tag'>): Element | null {
   return tagElement(base.tag);
-}
-
-/** The role a role-locked base is for, or null. */
-export function baseRole(base: Pick<GearBase, 'tag'>): Role | null {
-  return tagRole(base.tag);
 }

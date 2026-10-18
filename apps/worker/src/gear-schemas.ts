@@ -1,6 +1,7 @@
-import { REACH_IDS, RULES, blueprintBases, expeditionContent } from '@creatures/game';
+import { REACH_IDS, RULES, blueprintBases } from '@creatures/game';
 import * as v from 'valibot';
 import { IdSchema } from './collection-schemas';
+import { SUPPLY_IDS } from './content-ids';
 import { IdempotencyKeySchema } from './schemas';
 
 /** Equip (a creature id) or unequip (null). The item is in the path, the player is the session's. */
@@ -17,7 +18,6 @@ export const DismissNoticeBodySchema = v.strictObject({});
 export const ClaimJobBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
 
 const BLUEPRINT_IDS = blueprintBases().map((b) => b.id) as [string, ...string[]];
-const SUPPLY_IDS = expeditionContent.supplies.map((s) => s.id);
 
 /** The items of a dismantle job: 1 to the bundle size, each a valid id (the server checks they are the player's and distinct). */
 const ItemIdsSchema = v.pipe(

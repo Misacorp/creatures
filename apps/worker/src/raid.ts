@@ -6,16 +6,10 @@
  * depend on it can never be interleaved with another request. The user is always an argument from
  * the verified session. The guild's timezone is always passed in, never defaulted.
  */
-import {
-  basicAbilities,
-  content,
-  createCryptoRng,
-  RULES,
-  type ReadinessBand,
-  type Rng,
-} from '@creatures/game';
+import { basicAbilities, content, RULES, type ReadinessBand, type Rng } from '@creatures/game';
 import type { Analytics } from './analytics';
 import { GameError, atomically, type Outcome } from './outcome';
+import { liveRng } from './rng';
 import type { LedgerStorage } from './ledger';
 import {
   LATE_START_LIMIT_MS,
@@ -139,7 +133,7 @@ export class Raid {
     this.readinessCache = new ReadinessCache({
       storage: deps.storage,
       now: deps.now,
-      rng: deps.readinessRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+      rng: deps.readinessRng ?? liveRng(),
     });
   }
 

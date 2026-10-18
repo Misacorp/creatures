@@ -1,7 +1,15 @@
-import { failure, pathId } from './collection-routes';
 import type { Dungeon } from './dungeon';
 import { ActBodySchema, DraftBodySchema, StartBodySchema } from './dungeon-schemas';
-import { errorResponse, json, parseBody, type Routes } from './http';
+import {
+  errorResponse,
+  failure,
+  invalidBody,
+  invalidId,
+  json,
+  parseBody,
+  pathId,
+  type Routes,
+} from './http';
 
 /** What these routes need from the request context (GuildCore's context satisfies it). */
 export interface DungeonRouteContext {
@@ -26,14 +34,14 @@ export const dungeonRoutes: Routes<DungeonRouteContext> = {
     // Saves the row the player set up, so it survives a tab switch. Not a spend: no key.
     PUT: async (request, ctx) => {
       const body = await parseBody(request, DraftBodySchema);
-      if (body === undefined) return errorResponse('invalid_body', 400);
+      if (body === undefined) return invalidBody();
       return json({ draftTeam: ctx.core.dungeon.saveDraft(ctx.user.id, body.team) });
     },
   },
   '/api/dungeon/start': {
     POST: async (request, ctx) => {
       const body = await parseBody(request, StartBodySchema);
-      if (body === undefined) return errorResponse('invalid_body', 400);
+      if (body === undefined) return invalidBody();
       const outcome = ctx.core.dungeon.start(ctx.user.id, body);
       if (!outcome.ok) return failure(outcome);
       return json(outcome.value);
@@ -42,7 +50,7 @@ export const dungeonRoutes: Routes<DungeonRouteContext> = {
   '/api/dungeon/act': {
     POST: async (request, ctx) => {
       const body = await parseBody(request, ActBodySchema);
-      if (body === undefined) return errorResponse('invalid_body', 400);
+      if (body === undefined) return invalidBody();
       const outcome = ctx.core.dungeon.act(ctx.user.id, body);
       if (!outcome.ok) return failure(outcome);
       return json(outcome.value);
@@ -55,7 +63,7 @@ export const dungeonRoutes: Routes<DungeonRouteContext> = {
   '/api/dungeon/run/:id': {
     GET: (_request, ctx) => {
       const id = pathId(ctx);
-      if (id === undefined) return errorResponse('invalid_id', 400);
+      if (id === undefined) return invalidId();
       const replay = ctx.core.dungeon.replay(ctx.user.id, id);
       if (replay === null) return errorResponse('not_found', 404);
       return json(replay);

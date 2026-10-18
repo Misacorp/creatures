@@ -256,8 +256,6 @@ export interface AppliedSetting {
   hpScaleBp: number;
 }
 
-export const SHIPPED: AppliedSetting = { luck: undefined, bossAtkBp: 10_000, hpScaleBp: 10_000 };
-
 /** The finale input with boss Attack and the HP pool scaled (the pool keeps 1 <= current <= max). */
 export function scaleFight(fight: FightInput, a: Pick<AppliedSetting, 'bossAtkBp' | 'hpScaleBp'>) {
   const hp = (n: number): number => Math.max(1, Math.floor((n * a.hpScaleBp) / 10_000));

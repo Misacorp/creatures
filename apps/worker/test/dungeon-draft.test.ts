@@ -1,12 +1,8 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import { RULES, createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { dungeonPlayer, newKey } from './dungeon-helpers';
-import {
-  LATEST_SCHEMA_VERSION,
-  runCore,
-  undoDungeonDraftMigration,
-  type CoreContext,
-} from './helpers';
+import { runCore, undoDungeonDraftMigration, type CoreContext } from './helpers';
 import { count, nextGuild, rows } from './raid-helpers';
 
 /** Wednesday 14:00 in Helsinki, after the daily reset. */
@@ -37,7 +33,7 @@ describe('migration 26', () => {
       ).toEqual([]);
       ctx.core.migrate();
       ctx.core.migrate();
-      expect(count(ctx.sql, 'schema_version')).toBe(LATEST_SCHEMA_VERSION);
+      expect(count(ctx.sql, 'schema_version')).toBe(SCHEMA_VERSION);
       expect(count(ctx.sql, 'dungeon_drafts')).toBe(0);
       expect((await p.today()).draftTeam).toBeNull();
     });

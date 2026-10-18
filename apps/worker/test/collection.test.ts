@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import {
   RULES,
   allSpecies,
@@ -26,7 +27,6 @@ import {
   tokenFor,
   undoRaidMigration,
   type CoreContext,
-  LATEST_SCHEMA_VERSION,
 } from './helpers';
 import { createHandler } from '../src/index';
 
@@ -363,7 +363,7 @@ describe('migration 4', () => {
 
       core.migrate();
       expect(sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v).toBe(
-        LATEST_SCHEMA_VERSION,
+        SCHEMA_VERSION,
       );
       expect(core.balances(USER_ID).bait).toBe(42);
       const res = await ctx.request(secret, '/api/state');

@@ -1,13 +1,11 @@
-import * as v from 'valibot';
 import type { Attention } from './attention';
-import type { Collection, Outcome } from './collection';
+import type { Collection } from './collection';
 import {
   CatchChoiceBodySchema,
   CatchRecommendedBodySchema,
   ClaimBodySchema,
   DismissLevelResetBodySchema,
   EvolveBodySchema,
-  IdSchema,
   LoungerBodySchema,
   LoungeSpotBodySchema,
   NicknameBodySchema,
@@ -18,7 +16,16 @@ import {
   TalentSlotBodySchema,
 } from './collection-schemas';
 import type { LeetSyncStatus } from './guild-core';
-import { errorResponse, json, parseBody, type Routes } from './http';
+import {
+  errorResponse,
+  failure,
+  invalidBody,
+  invalidId,
+  json,
+  parseBody,
+  pathId,
+  type Routes,
+} from './http';
 
 /** What these routes need from the request context (GuildCore's context satisfies it). */
 export interface CollectionRouteContext {
@@ -37,21 +44,6 @@ export interface CollectionRouteContext {
     attention(userId: string): Attention;
   };
 }
-
-export function pathId(ctx: { params: Record<string, string> }): string | undefined {
-  const parsed = v.safeParse(IdSchema, ctx.params['id']);
-  return parsed.success ? parsed.output : undefined;
-}
-
-export function failure(outcome: Extract<Outcome<unknown>, { ok: false }>): Response {
-  if (outcome.reason !== undefined) {
-    return json({ error: outcome.error, reason: outcome.reason }, outcome.status);
-  }
-  return errorResponse(outcome.error, outcome.status);
-}
-
-const invalidBody = (): Response => errorResponse('invalid_body', 400);
-const invalidId = (): Response => errorResponse('invalid_id', 400);
 
 export const collectionRoutes: Routes<CollectionRouteContext> = {
   '/api/state': {

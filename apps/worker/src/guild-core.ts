@@ -1,38 +1,21 @@
-import {
-  RULES,
-  createCryptoRng,
-  leetBonusForDay,
-  leetPointsForDay,
-  type Rng,
-} from '@creatures/game';
+import { RULES, leetBonusForDay, leetPointsForDay, type Rng } from '@creatures/game';
 import * as v from 'valibot';
 import { DailyAllowance } from './allowance';
 import { Analytics } from './analytics';
 import { attentionOf, type Attention } from './attention';
-import { AnalyticsRollup, analyticsRollupMigration, type DailyRow } from './analytics-rollup';
+import { AnalyticsRollup, type DailyRow } from './analytics-rollup';
 import { Collection } from './collection';
 import { Dungeon } from './dungeon';
-import { dungeonDraftMigration } from './dungeon-draft-migration';
-import { dungeonMigration } from './dungeon-migration';
-import { dungeonPathMigration } from './dungeon-path-migration';
 import { dungeonRoutes } from './dungeon-routes';
 import { Gear } from './gear';
 import { convertPendingGear } from './gear-convert';
-import { gearMigration } from './gear-migration';
-import { gearV2Migration } from './gear-v2-migration';
 import { normaliseGearRows } from './gear-normalise';
-import { workshopV2Migration } from './workshop-v2-migration';
 import { rollMissingTalents } from './talent-store';
 import { gearRoutes } from './gear-routes';
 import { convertPendingLevels } from './level-reset';
-import { creatureQuirkMigration } from './creature-quirk-migration';
-import { creaturesAMigration } from './creatures-a-migration';
-import { creaturesBMigration } from './creatures-b-migration';
-import { weatherMigration } from './weather-migration';
 import { Weather } from './weather';
 import { weatherRoutes } from './weather-routes';
 import { expeditionRoutes } from './expedition-routes';
-import { expeditionsMigration } from './expedition-migration';
 import { collectionRoutes } from './collection-routes';
 import { DevState } from './dev-state';
 import { DevTools, devRoutes, isDevPath } from './dev-tools';
@@ -66,13 +49,6 @@ import {
   type SpendResult,
 } from './ledger';
 import { Raid } from './raid';
-import { raidAutofireMigration } from './raid-autofire-migration';
-import { raidDifficultyMigration } from './raid-difficulty-migration';
-import { raidLivePacingMigration } from './raid-live-pacing-migration';
-import { raidLiveMigration } from './raid-live-migration';
-import { raidMigration } from './raid-migration';
-import { raidPlacementCapMigration } from './raid-placement-cap-migration';
-import { raidProgressionMigration } from './raid-progression-migration';
 import { raidRoutes } from './raid-routes';
 import { TokenBucketLimiter } from './ratelimit';
 import { SNOWFLAKE_RE } from './schemas';
@@ -101,6 +77,8 @@ import {
   storeSignature,
   trackedInstances,
 } from './lounge';
+import { MIGRATIONS } from './migrations';
+import { liveRng } from './rng';
 import type { LoungeClient, LoungeResult } from './lounge-discord';
 import { nextRaidBoundary, raidStageAt } from './lounge-raid';
 import {
@@ -158,256 +136,6 @@ const MANAGE_CACHE_MAX = 200;
 
 const LEDGER_DEFAULT_LIMIT = 20;
 const LEDGER_MAX_LIMIT = 50;
-
-/** Versioned schema migrations; index 0 is version 1. Never edit a released migration. */
-const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
-  (sql) => {
-    sql.exec(`CREATE TABLE players (
-      user_id TEXT PRIMARY KEY,
-      display_name TEXT NOT NULL,
-      created_at INTEGER NOT NULL,
-      last_seen_at INTEGER NOT NULL
-    )`);
-    sql.exec(`CREATE TABLE sessions (
-      token_hash TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES players(user_id),
-      created_at INTEGER NOT NULL,
-      last_used_at INTEGER NOT NULL,
-      expires_at INTEGER NOT NULL
-    )`);
-    sql.exec('CREATE INDEX sessions_user_id ON sessions(user_id)');
-  },
-  (sql) => {
-    // No foreign key to players: leet credits can arrive for Discord users who have not opened
-    // the game yet, and they see the balance on first login.
-    sql.exec(`CREATE TABLE ledger (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id TEXT NOT NULL,
-      currency TEXT NOT NULL CHECK (currency IN ('bait', 'essence')),
-      amount INTEGER NOT NULL CHECK (amount <> 0),
-      source TEXT NOT NULL,
-      idempotency_key TEXT NOT NULL,
-      meta TEXT,
-      result TEXT,
-      created_at INTEGER NOT NULL,
-      UNIQUE (user_id, idempotency_key)
-    )`);
-    sql.exec('CREATE INDEX ledger_user_id_id ON ledger(user_id, id)');
-    sql.exec(`CREATE TABLE balances (
-      user_id TEXT NOT NULL,
-      currency TEXT NOT NULL,
-      amount INTEGER NOT NULL CHECK (amount >= 0),
-      PRIMARY KEY (user_id, currency)
-    )`);
-    sql.exec(`CREATE TABLE leet_sync (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      cursor TEXT,
-      since_date TEXT NOT NULL,
-      last_synced_at INTEGER
-    )`);
-  },
-  (sql) => {
-    // The guild this object serves, written on first session creation. The Worker verifies the
-    // guild with Discord, so the Durable Object does not rely on `ctx.id.name`.
-    sql.exec(`CREATE TABLE guild_meta (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      guild_id TEXT NOT NULL
-    )`);
-  },
-  (sql) => {
-    // One creature per (player, line): duplicates fuse into it. No foreign keys, as in the ledger:
-    // rows are only written by this module, always inside a transaction.
-    sql.exec(`CREATE TABLE creatures (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      line TEXT NOT NULL,
-      species TEXT NOT NULL,
-      level INTEGER NOT NULL CHECK (level >= 1),
-      fusion_count INTEGER NOT NULL DEFAULT 0 CHECK (fusion_count BETWEEN 0 AND 5),
-      shiny INTEGER NOT NULL DEFAULT 0,
-      nickname TEXT,
-      away_expedition_id TEXT,
-      origin TEXT NOT NULL,
-      caught_at INTEGER NOT NULL,
-      UNIQUE (user_id, line)
-    )`);
-    sql.exec(`CREATE TABLE expeditions (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      creature_id TEXT NOT NULL,
-      duration TEXT NOT NULL,
-      supplies TEXT NOT NULL,
-      rolls INTEGER NOT NULL,
-      cost INTEGER NOT NULL,
-      started_at INTEGER NOT NULL,
-      ends_at INTEGER NOT NULL,
-      status TEXT NOT NULL CHECK (status IN ('active', 'claimed')),
-      claimed_at INTEGER,
-      result TEXT
-    )`);
-    sql.exec('CREATE INDEX expeditions_user_status ON expeditions(user_id, status)');
-    sql.exec(`CREATE TABLE player_progress (
-      user_id TEXT PRIMARY KEY,
-      starter_species TEXT,
-      expeditions_claimed INTEGER NOT NULL DEFAULT 0,
-      dupe_streak INTEGER NOT NULL DEFAULT 0
-    )`);
-    // "First on server": every user who got the species in the drop that first produced it.
-    sql.exec(`CREATE TABLE server_firsts (
-      kind TEXT NOT NULL CHECK (kind IN ('catch', 'evolve')),
-      species TEXT NOT NULL,
-      user_id TEXT NOT NULL,
-      drop_id TEXT NOT NULL,
-      at INTEGER NOT NULL,
-      PRIMARY KEY (kind, species, user_id)
-    )`);
-  },
-  (sql) => {
-    // The guild's IANA timezone. The default is written out (not interpolated) because a released
-    // migration must never change; it equals DEFAULT_GUILD_TIMEZONE.
-    sql.exec("ALTER TABLE guild_meta ADD COLUMN timezone TEXT NOT NULL DEFAULT 'Europe/Helsinki'");
-  },
-  (sql) => {
-    // Sync health, shown to players. `last_error` is an error kind only (never a message, URL or
-    // key); `last_days` is the number of days processed by the last successful run.
-    sql.exec('ALTER TABLE leet_sync ADD COLUMN last_attempt_at INTEGER');
-    sql.exec('ALTER TABLE leet_sync ADD COLUMN last_error TEXT');
-    sql.exec('ALTER TABLE leet_sync ADD COLUMN last_days INTEGER');
-  },
-  (sql) => {
-    // Which kind of leet source ('http' or 'mock') the stored cursor belongs to. When the
-    // configured source changes, the cursor from the old source is meaningless and is reset.
-    sql.exec('ALTER TABLE leet_sync ADD COLUMN source TEXT');
-  },
-  // Version 8: the weekly raid (see raid-migration.ts).
-  raidMigration,
-  (sql) => {
-    // The channel the Activity was most recently launched from (Discord's verified location), and
-    // the queue of posts to it. `key` is unique per announced thing, so a post is queued once.
-    sql.exec('ALTER TABLE guild_meta ADD COLUMN announce_channel_id TEXT');
-    sql.exec(`CREATE TABLE discord_posts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      key TEXT NOT NULL UNIQUE,
-      channel_id TEXT NOT NULL,
-      content TEXT NOT NULL,
-      status TEXT NOT NULL CHECK (status IN ('pending', 'sent', 'failed')),
-      attempts INTEGER NOT NULL DEFAULT 0,
-      next_attempt_at INTEGER NOT NULL,
-      created_at INTEGER NOT NULL
-    )`);
-    sql.exec('CREATE INDEX discord_posts_due ON discord_posts(status, next_attempt_at)');
-  },
-  // Version 10: the live finale (see raid-live-migration.ts).
-  raidLiveMigration,
-  (sql) => {
-    // A server admin can pin the announcement channel: while pinned, logins no longer change
-    // `announce_channel_id`. Each session also remembers the channel it was launched from (Discord's
-    // verified location; null for sessions made before this migration).
-    sql.exec(
-      'ALTER TABLE guild_meta ADD COLUMN announce_channel_pinned INTEGER NOT NULL DEFAULT 0',
-    );
-    sql.exec('ALTER TABLE sessions ADD COLUMN channel_id TEXT');
-  },
-  // Version 12: the Boss Rank ladder, seasons and Festival weeks (see raid-progression-migration.ts).
-  raidProgressionMigration,
-  // Version 13: a personality quirk for every creature (see creature-quirk-migration.ts).
-  creatureQuirkMigration,
-  // Version 14: auto fire preferences for the finale (see raid-autofire-migration.ts).
-  raidAutofireMigration,
-  // Version 15: content-paced live rounds (see raid-live-pacing-migration.ts).
-  raidLivePacingMigration,
-  (sql) => {
-    // Version 16: the analytics event log (see analytics.ts and docs/design/analytics.md). Events hold
-    // ids from content, enums, integers and booleans only, and a hashed actor; never names or text.
-    sql.exec(`CREATE TABLE analytics_events (
-      id INTEGER PRIMARY KEY,
-      at INTEGER NOT NULL,
-      kind TEXT NOT NULL,
-      actor_hash TEXT,
-      props_json TEXT NOT NULL
-    )`);
-    sql.exec('CREATE INDEX analytics_events_at ON analytics_events(at)');
-    // Session detection: when each (hashed) player was last seen.
-    sql.exec(`CREATE TABLE analytics_seen (
-      actor_hash TEXT PRIMARY KEY,
-      last_at INTEGER NOT NULL
-    )`);
-    // Once-only marks (for example one live join per player per finale), keyed by a hashed label.
-    sql.exec(`CREATE TABLE analytics_once (
-      key TEXT PRIMARY KEY,
-      at INTEGER NOT NULL
-    )`);
-  },
-  // Version 17: gear, parts, blueprints, the workshop and the Crafting skill (see gear-migration.ts).
-  gearMigration,
-  // Version 18: the daily dungeon's runs, personal progress and day seeds (see dungeon-migration.ts).
-  dungeonMigration,
-  // Version 19: expeditions v2, explorer ranks, familiarity, the journal, account stats, supplies and the
-  // slot wipe (see expedition-migration.ts).
-  expeditionsMigration,
-  // Version 20: the daily analytics rollups (see analytics-rollup.ts).
-  analyticsRollupMigration,
-  (sql) => {
-    // Version 21: the living room's lounger (see lounger.ts and docs/design/living-room.md). The
-    // creature that lounges for each player; NULL until first needed (picked lazily, no backfill).
-    sql.exec('ALTER TABLE players ADD COLUMN lounger_id TEXT');
-  },
-  // Version 22: repairs raid boards with more than three creatures of one player (see
-  // raid-placement-cap-migration.ts).
-  raidPlacementCapMigration,
-  (sql) => {
-    // Version 23: the spot a player has chosen in the living room (see lounger.ts and
-    // docs/design/living-room.md). An id from the shared spot list and the server time of the claim;
-    // both NULL until the player drags their creature somewhere (no backfill).
-    sql.exec('ALTER TABLE players ADD COLUMN lounge_spot TEXT');
-    sql.exec('ALTER TABLE players ADD COLUMN lounge_spot_at INTEGER');
-  },
-  // Version 24: the raid difficulty version of each week (see raid-difficulty-migration.ts).
-  raidDifficultyMigration,
-  (sql) => {
-    // Version 25: the daily Bait allowance (see allowance.ts). One row per player and game day that
-    // was paid (the Bait itself is a ledger credit keyed `allowance:<day>`); `announced` is set when
-    // /api/me has told the player, so the client shows the allowance once. Older rows are pruned.
-    sql.exec(`CREATE TABLE daily_allowance (
-      user_id TEXT NOT NULL,
-      day TEXT NOT NULL,
-      amount INTEGER NOT NULL CHECK (amount > 0),
-      granted_at INTEGER NOT NULL,
-      announced INTEGER NOT NULL DEFAULT 0,
-      PRIMARY KEY (user_id, day)
-    )`);
-  },
-  // Version 26: the saved dungeon team draft (see dungeon-draft-migration.ts).
-  dungeonDraftMigration,
-  // Version 27: gear v2, the new item table, blueprint marks and the conversion list (see
-  // gear-v2-migration.ts; the conversion itself runs after the migrations, see gear-convert.ts).
-  gearV2Migration,
-  // Version 28: talents, the Talent Book, pending duplicates and two creatures per branching line (see
-  // creatures-a-migration.ts; the existing creatures' talents are rolled after the migrations, see
-  // talent-store.ts).
-  creaturesAMigration,
-  // Version 29: the crafting loop: dismantle jobs and the nominal minutes a job worked (see
-  // workshop-v2-migration.ts).
-  workshopV2Migration,
-  // Version 30: creature experience and ribbons, the trip treat flag and the pity counters (see
-  // creatures-b-migration.ts).
-  creaturesBMigration,
-  // Version 31: Boons and Omens, the drawn days and the weather stored on trips (see
-  // weather-migration.ts).
-  weatherMigration,
-  (sql) => {
-    // Version 32: who put each raid placement on the board. NULL is the owner; otherwise the teammate
-    // who moved it for a player who was away (see raid-assist.ts). Existing rows are the owners'.
-    sql.exec('ALTER TABLE raid_placements ADD COLUMN placed_by TEXT');
-  },
-  // Version 33: the lounge message and the Activity instances it tracks (see lounge.ts).
-  loungeMigration,
-  // Version 34: the daily dungeon on a map: run status and state, the day's map and the steps of a run
-  // (see dungeon-path-migration.ts). Staging ran it first as 32 and then as 33, before the raid's
-  // `placed_by` and the lounge took those numbers, so it checks every step and also makes sure those two
-  // migrations' tables and column exist.
-  dungeonPathMigration,
-];
 
 export interface SessionUser {
   id: string;
@@ -652,9 +380,8 @@ export class GuildCore {
     this.now = now;
     this.syncBudgetMs = options.syncBudgetMs ?? SYNC_BUDGET_MS;
     this.leetSource = options.createLeetSource?.(() => this.knownPlayers()) ?? null;
-    const quirkRng = options.quirkRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
-    const talentRng =
-      options.talentRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+    const quirkRng = options.quirkRng ?? liveRng();
+    const talentRng = options.talentRng ?? liveRng();
     this.talentRng = talentRng;
     // Analytics keeps real time: its events and retention are about the real world.
     this.analytics = new Analytics({
@@ -666,7 +393,7 @@ export class GuildCore {
     this.weather = new Weather({
       storage,
       now,
-      rng: options.weatherRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+      rng: options.weatherRng ?? liveRng(),
       timezone: () => this.timezone(),
       analytics: this.analytics,
       enabled: options.weather !== false,
@@ -674,19 +401,19 @@ export class GuildCore {
     // Rollups keep real time too, like the events they count.
     this.rollup = new AnalyticsRollup({ storage, now: realNow, timezone: () => this.timezone() });
     this.allowance = new DailyAllowance(storage, this.analytics, now, () => this.timezone());
-    const gearRng = options.gearRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+    const gearRng = options.gearRng ?? liveRng();
     this.gearRng = gearRng;
     this.collection = new Collection({
       storage,
       now,
       dev: this.devState ?? undefined,
       analytics: this.analytics,
-      rng: options.rng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+      rng: options.rng ?? liveRng(),
       quirkRng,
       talentRng,
       gearRng,
       branchesOf: options.branchesOf,
-      tripRng: options.tripRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+      tripRng: options.tripRng ?? liveRng(),
       ...(options.loungerRng === undefined ? {} : { loungerRng: options.loungerRng }),
       weather: this.weather,
     });
@@ -700,7 +427,7 @@ export class GuildCore {
     this.dungeon = new Dungeon({
       storage,
       now,
-      rng: options.dungeonRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+      rng: options.dungeonRng ?? liveRng(),
       gearRng,
       timezone: () => this.timezone(),
       analytics: this.analytics,
@@ -710,7 +437,7 @@ export class GuildCore {
     this.raid = new Raid({
       storage,
       now,
-      rng: options.raidRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+      rng: options.raidRng ?? liveRng(),
       practice: options.raidPractice === true,
       analytics: this.analytics,
       quirkRng,
@@ -736,7 +463,7 @@ export class GuildCore {
             analytics: this.analytics,
             raid: this.raid,
             weather: this.weather,
-            rng: options.raidRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+            rng: options.raidRng ?? liveRng(),
             gearRng,
             quirkRng,
             talentRng,

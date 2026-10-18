@@ -13,7 +13,6 @@ export const AuthSessionBodySchema = v.strictObject({
   code: v.pipe(v.string(), v.minLength(1), v.maxLength(512)),
   instanceId: v.pipe(v.string(), v.minLength(1), v.maxLength(128)),
 });
-export type AuthSessionBody = v.InferOutput<typeof AuthSessionBodySchema>;
 
 // Discord responses below are lenient about extra keys (Discord adds fields over time) but strict
 // about the fields we rely on.

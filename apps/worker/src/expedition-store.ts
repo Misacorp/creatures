@@ -283,12 +283,6 @@ export function takeSupply(sql: SqlStorage, userId: string, supplyId: string): b
 
 // --- Offers ---
 
-export interface OfferRow {
-  expedition_id: string;
-  goals_json: string;
-  offered_at: number;
-}
-
 export function offerOf(sql: SqlStorage, expeditionId: string): string[] | null {
   const row = sql
     .exec<{ goals_json: string }>(
