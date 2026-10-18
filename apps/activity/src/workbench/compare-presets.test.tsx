@@ -45,7 +45,7 @@ const switchOf = (p: Page): FakeElement | undefined => byClass(p.root, 'ip-switc
 
 /** What the picker has selected. */
 function selected(p: Page): { name: string; worn: boolean; equip: boolean } {
-  const cell = byClass(p.root, 'ip-cell').find((c) => c.getAttribute('aria-pressed') === 'true');
+  const cell = byClass(p.root, 'item-tile').find((c) => c.getAttribute('aria-pressed') === 'true');
   if (cell === undefined) throw new Error('nothing selected');
   return {
     name: visibleText(first(byClass(p.root, 'idc-name'))),

@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useState } from 'preact/hooks';
 import type { Creature } from '../api';
-import { ItemCorners, ItemSprite } from '../GearArt';
 import type { GearItem, GearSlot } from '../gear-types';
 import { itemLabel, rarityName, setPiecesWith, slotName } from '../gear-view';
 import { ItemCard } from '../ItemCard';
+import { ItemTile } from '../ItemTile';
 import { Drawer } from '../ui/Drawer';
 import { flipOver } from '../ui/flip-logic';
 import { FlipArea } from '../ui/Flipper';
@@ -40,49 +40,6 @@ interface Cell {
   worn: boolean;
   wornBy: string | null;
   blocked: string | null;
-}
-
-/** One icon of the grid: the sprite on its own, the cell's one border in the rarity colour, the level in the corner. */
-function ItemCell({
-  cell,
-  selected,
-  last = false,
-  onSelect,
-}: {
-  cell: Cell;
-  selected: boolean;
-  /** The item whose details were just closed: still marked, and scrolled into view. */
-  last?: boolean;
-  onSelect: () => void;
-}) {
-  const { item, worn, blocked } = cell;
-  const button = useRef<HTMLButtonElement>(null);
-  // A flip can pick an item below the fold of the grid: the picked cell scrolls into view.
-  useEffect(() => {
-    if ((selected || last) && typeof button.current?.scrollIntoView === 'function') {
-      button.current.scrollIntoView({ block: 'nearest' });
-    }
-  }, [selected, last]);
-  return (
-    <li>
-      <button
-        ref={button}
-        type="button"
-        class={`ip-cell rarity-${item.rarity}${selected || last ? ' selected' : ''}${blocked === null ? '' : ' blocked'}${worn ? ' worn' : ''}`}
-        aria-pressed={selected}
-        aria-label={`${itemLabel(item.baseId, item.itemLevel)}, ${rarityName(item.rarity)}${worn ? ', worn now' : ''}${blocked === null ? '' : `. ${blocked}`}`}
-        onClick={onSelect}
-      >
-        <ItemSprite baseId={item.baseId} scale={5} />
-        {worn && (
-          <span class="ip-cell-worn pix" aria-hidden="true">
-            Worn
-          </span>
-        )}
-        <ItemCorners level={item.itemLevel} baseId={item.baseId} />
-      </button>
-    </li>
-  );
 }
 
 /**
@@ -259,13 +216,16 @@ export function ItemPickerDrawer({
       ) : cells.length === 0 ? (
         <p class="muted ip-none">No {slotName(slot).toLowerCase()}s.</p>
       ) : (
-        <ul class="ip-grid" aria-label={`${slotName(slot)}s`}>
+        <ul class="item-grid" aria-label={`${slotName(slot)}s`}>
           {cells.map((cell) => (
-            <ItemCell
+            <ItemTile
               key={cell.item.id}
-              cell={cell}
-              selected={cell.item.id === selected?.item.id}
-              last={selected === undefined && cell.item.id === shown?.item.id}
+              item={cell.item}
+              label={`${itemLabel(cell.item.baseId, cell.item.itemLevel)}, ${rarityName(cell.item.rarity)}${cell.worn ? ', worn now' : ''}${cell.blocked === null ? '' : `. ${cell.blocked}`}`}
+              selected={cell.item.id === shown?.item.id}
+              pressed={cell.item.id === selected?.item.id}
+              blocked={cell.blocked !== null}
+              flag={cell.worn ? 'Worn' : null}
               onSelect={() => {
                 if (cell.item.id === selected?.item.id) {
                   setDetailOpen(false);

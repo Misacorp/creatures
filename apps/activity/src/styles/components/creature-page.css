@@ -132,66 +132,6 @@ button.lounge-button {
   margin: 0.5rem 0;
 }
 
-.ip-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.ip-grid > li {
-  display: flex;
-}
-
-button.ip-cell {
-  position: relative;
-  display: grid;
-  flex: 1 1 auto;
-  place-items: center;
-  aspect-ratio: 1;
-  padding: 0.25rem;
-  overflow: hidden;
-  background: var(--dusk-2);
-  box-shadow: inset 0 0 0 var(--px) var(--rar);
-}
-
-button.ip-cell:active:not(:disabled) {
-  box-shadow: inset 0 0 0 var(--px) var(--rar);
-}
-
-button.ip-cell.blocked canvas.sprite {
-  opacity: 0.45;
-}
-
-button.ip-cell.blocked {
-  background: rgb(var(--ink-rgb) / 55%);
-}
-
-/*
-  The item shown (or shown last, after its details closed): lit from inside with a light edge inside the
-  rarity edge, so the player always sees which one they were looking at. Same look as the creature list's
-  last viewed card.
-*/
-button.ip-cell.selected,
-button.ip-cell.selected:active:not(:disabled) {
-  background: #4a4180;
-  box-shadow:
-    inset 0 0 0 var(--px) var(--rar),
-    inset 0 0 0 calc(var(--px) * 2) var(--bone);
-}
-
-.ip-cell-worn {
-  position: absolute;
-  top: 0.1875rem;
-  right: 0.3125rem;
-  color: var(--gold);
-  font-size: 0.875rem;
-  line-height: 1;
-  text-shadow: var(--ink-outline-thin);
-}
-
 /* --- The detail panel: the item card (item-detail.css) in the drawer's footer, all in the pixel font. --- */
 
 .ip-detail {

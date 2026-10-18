@@ -58,8 +58,8 @@ describe('one item-level indicator everywhere', () => {
       const labels = byClass(cell, 'item-lv');
       expect(labels).toHaveLength(1);
       expect(visibleText(first(labels))).toBe(`Lv ${String(bag[i]?.itemLevel)}`);
-      // The label is inside the item's frame (its bottom-right corner), and the rarity pips are gone.
-      expect(byClass(first(byClass(cell, 'item-frame')), 'item-lv')).toHaveLength(1);
+      // The label sits in the tile itself (one grid look everywhere: no inner frame), and the rarity pips are gone.
+      expect(byClass(cell, 'item-frame')).toHaveLength(0);
       expect(byClass(cell, 'rarity-mark')).toHaveLength(0);
     });
   });

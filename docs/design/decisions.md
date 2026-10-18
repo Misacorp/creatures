@@ -1891,3 +1891,7 @@ Misa asked how a player gets back to the grid once an item's details fill the bo
 ## 2026-10-18: Item grid cells are square
 
 Misa expected square item cells. The picker grid (`.ip-cell`) and the Workshop bag (`.inv-cell`) now take `aspect-ratio: 1` instead of a minimum height, so every cell is as tall as it is wide whatever the screen width (about 72 px and 78 px at 390 px).
+
+## 2026-10-18: One item grid
+
+Misa did not want two item grids. The item picker's look won (lead's call, Misa asked which): the rarity is the tile's single edge (the bag drew a dark tile and a framed image inside it, two edges, against the "one border" rule of 2026-10-17), the art fills the square, a gold "Worn" flag sits at the top right, and the selected tile is lit with a light edge. `ItemTile.tsx` is the one tile and `.item-grid` the one grid (`styles/components/item-tile.css`); the picker and the Workshop bag (`InventoryGrid`) both use them. A selected tile scrolls itself into view. The bag's own styles (`views/inventory.css`) are gone.

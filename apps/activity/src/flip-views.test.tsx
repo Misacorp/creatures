@@ -324,7 +324,7 @@ describe('the Workshop item drawer flips through the bag in the grid order', () 
   }
 
   function cells(p: Page): FakeElement[] {
-    return find(first(byClass(p.root, 'inv-grid')), (e) => e.localName === 'button');
+    return find(first(byClass(p.root, 'item-grid')), (e) => e.localName === 'button');
   }
 
   function dialog(p: Page): FakeElement {
@@ -488,7 +488,7 @@ describe('the item picker flips through the slot grid', () => {
 
   it('shows arrows in the heading row with the position among the grid cells', () => {
     const { dialog } = drawPicker();
-    const total = byClass(dialog, 'ip-cell').length;
+    const total = byClass(dialog, 'item-tile').length;
     expect(total).toBeGreaterThan(3);
     const nav = first(byClass(dialog, 'flip-nav'));
     expect(nav.getAttribute('aria-label')).toBe('Flip between items');
@@ -501,7 +501,7 @@ describe('the item picker flips through the slot grid', () => {
 
   it('selects the next cell in grid order and shows its detail, with the buttons and the keys', () => {
     const { page: p, dialog } = drawPicker();
-    const cells = byClass(dialog, 'ip-cell');
+    const cells = byClass(dialog, 'item-tile');
     const start = cells.findIndex((c) => c.getAttribute('aria-pressed') === 'true');
     const next = cells[start + 1] as FakeElement;
     p.click(first(byName(dialog, 'button', /^Next item/)));
@@ -516,7 +516,7 @@ describe('the item picker flips through the slot grid', () => {
 
   it('stops at the last cell', () => {
     const { page: p, dialog } = drawPicker();
-    const cells = byClass(dialog, 'ip-cell');
+    const cells = byClass(dialog, 'item-tile');
     p.click(cells[cells.length - 1] as FakeElement);
     p.key(dialog, 'ArrowRight');
     expect((cells[cells.length - 1] as FakeElement).getAttribute('aria-pressed')).toBe('true');
@@ -533,7 +533,7 @@ describe('the item picker flips through the slot grid', () => {
       dialog,
       (e) =>
         e.getAttribute('aria-pressed') === 'true' &&
-        e.getAttribute('class')?.includes('ip-cell') === true,
+        e.getAttribute('class')?.includes('item-tile') === true,
     )[0] as FakeElement;
     const label = nameOf(shown);
     p.click(first(byName(dialog, 'button', 'Equip')));

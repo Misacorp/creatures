@@ -60,7 +60,7 @@ function drawWorkshop(): Page {
 }
 
 function bagCells(p: Page): FakeElement[] {
-  return find(first(byClass(p.root, 'inv-grid')), (e) => e.localName === 'button');
+  return find(first(byClass(p.root, 'item-grid')), (e) => e.localName === 'button');
 }
 
 describe('the Workshop bag', () => {
@@ -113,7 +113,7 @@ describe('slot and element on items', () => {
       />,
     );
     for (const cell of find(page.root, (e) => e.localName === 'button')) {
-      expect(byClass(first(byClass(cell, 'item-frame')), 'item-slot')).toHaveLength(1);
+      expect(byClass(cell, 'item-slot')).toHaveLength(1);
     }
   });
 

@@ -294,12 +294,12 @@ describe('closing the details with a second tap', () => {
     const p = draw('compare: plain gear', 'hat', KELP);
     expect(byClass(p.root, 'ip-detail')).toHaveLength(1);
     const pressed = first(
-      byClass(p.root, 'ip-cell').filter((c) => c.getAttribute('aria-pressed') === 'true'),
+      byClass(p.root, 'item-tile').filter((c) => c.getAttribute('aria-pressed') === 'true'),
     );
     p.click(pressed);
     expect(byClass(p.root, 'ip-detail')).toHaveLength(0);
     expect(
-      byClass(p.root, 'ip-cell').filter((c) => c.getAttribute('aria-pressed') === 'true'),
+      byClass(p.root, 'item-tile').filter((c) => c.getAttribute('aria-pressed') === 'true'),
     ).toHaveLength(0);
     // No item shown: no arrows either.
     expect(byClass(p.root, 'flip-nav')).toHaveLength(0);
@@ -310,10 +310,10 @@ describe('closing the details with a second tap', () => {
   it('keeps the item that was shown marked after its details close', () => {
     const p = draw('compare: plain gear', 'hat', KELP);
     const pressed = first(
-      byClass(p.root, 'ip-cell').filter((c) => c.getAttribute('aria-pressed') === 'true'),
+      byClass(p.root, 'item-tile').filter((c) => c.getAttribute('aria-pressed') === 'true'),
     );
     p.click(pressed);
-    const marked = byClass(p.root, 'ip-cell').filter((c) =>
+    const marked = byClass(p.root, 'item-tile').filter((c) =>
       byClass(p.root, 'selected').includes(c),
     );
     expect(marked).toEqual([pressed]);

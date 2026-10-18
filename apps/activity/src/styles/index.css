@@ -57,7 +57,6 @@
 @import './components/item-frame.css';
 @import './components/count-badge.css';
 @import './views/workshop.css';
-@import './views/inventory.css';
 @import './views/item-detail.css';
 @import './components/picker.css';
 @import './components/scroll-hint.css';
@@ -97,5 +96,6 @@
 @import './components/slot.css';
 @import './components/drawer.css';
 @import './components/creature-page.css';
+@import './components/item-tile.css';
 @import './components/evolve.css';
 @import './components/flip.css';

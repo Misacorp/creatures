@@ -379,13 +379,13 @@ describe('the creature page: the item picker drawer', () => {
     p.click(slotButton(root, /^Hat: /));
     const dialog = first(byRole(root, 'dialog'));
     expect(dialog.textContent).toContain('Hat');
-    expect(byClass(dialog, 'ip-grid')).toHaveLength(1);
-    expect(byClass(dialog, 'ip-cell').length).toBeGreaterThan(10);
+    expect(byClass(dialog, 'item-grid')).toHaveLength(1);
+    expect(byClass(dialog, 'item-tile').length).toBeGreaterThan(10);
     expect(byClass(dialog, 'item-find')).toHaveLength(0);
     expect(byClass(dialog, 'ip-row')).toHaveLength(0);
     // No framed box round an item inside the grid: one outline per cell, with the level in its corner.
-    expect(byClass(first(byClass(dialog, 'ip-grid')), 'item-frame')).toHaveLength(0);
-    const cell = first(byClass(dialog, 'ip-cell'));
+    expect(byClass(first(byClass(dialog, 'item-grid')), 'item-frame')).toHaveLength(0);
+    const cell = first(byClass(dialog, 'item-tile'));
     expect(visibleText(first(byClass(cell, 'item-lv')))).toMatch(/^Lv \d+$/);
   });
 
@@ -393,8 +393,8 @@ describe('the creature page: the item picker drawer', () => {
     const { root, page: p, actions } = draw('level 15');
     p.click(slotButton(root, /^Hat: /));
     const dialog = first(byRole(root, 'dialog'));
-    const cells = byClass(dialog, 'ip-cell');
-    expect(cells[0]?.getAttribute('class')).toContain('worn');
+    const cells = byClass(dialog, 'item-tile');
+    expect(visibleText(first(byClass(cells[0] as FakeElement, 'item-tile-flag')))).toBe('Worn');
     expect(cells[0]?.getAttribute('aria-pressed')).toBe('true');
     p.click(first(byName(dialog, 'button', 'Take off')));
     await vi.waitFor(() => {
@@ -450,7 +450,7 @@ describe('the creature page: the item picker drawer', () => {
     p.click(slotButton(root, /^Hat: /));
     const dialog = first(byRole(root, 'dialog'));
     expect(visibleText(dialog)).toContain('Loading...');
-    expect(byClass(dialog, 'ip-cell')).toHaveLength(0);
+    expect(byClass(dialog, 'item-tile')).toHaveLength(0);
     expect(byClass(dialog, 'ip-detail')).toHaveLength(0);
   });
 
