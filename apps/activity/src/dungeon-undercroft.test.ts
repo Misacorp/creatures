@@ -35,7 +35,9 @@ import {
   descendIntro,
   descendLines,
   descendTitle,
-  descendUnderHeading,
+  DESCEND_UNDER_HEADING,
+  DESCEND_RISK_LINE,
+  DESCEND_HOME_LINE,
   nodeFloor,
   resultHeadline,
   roomPlaceLine,
@@ -59,42 +61,41 @@ const descent = (() => {
 
 describe('the descent card words', () => {
   it('titles the card by what fell', () => {
-    expect(descendTitle(descent)).toBe('Depth 15 is yours');
-    expect(descendTitle({ level: 2, newDepth: 15 })).toBe('The keeper is down');
-    expect(descendIntro(descent)).toContain('locked in');
-    expect(descendIntro({ level: 2, newDepth: 15 })).toBe(
-      'The floor cracks open: an even deeper Undercroft.',
+    expect(descendTitle(descent)).toBe('Depth 15 Unlocked');
+    expect(descendTitle({ level: 2, newDepth: 15 })).toBe('The floor cracks open');
+    expect(descendIntro(descent)).toBe(
+      'You beat the boss and achieved a new depth. Do you dare delve deeper?',
     );
-    expect(descendUnderHeading(descent)).toBe('The Undercroft · foes are fiercer here');
-    expect(descendUnderHeading({ level: 2 })).toContain('fiercer still');
+    expect(descendIntro({ level: 2, newDepth: 15 })).toBe(
+      'An even deeper Undercroft waits. Do you dare delve deeper?',
+    );
+    expect(DESCEND_UNDER_HEADING).toBe('The Undercroft');
   });
 
-  it("says the level's floors, how much fiercer it is, the breath and the loot, from what the server sent", () => {
+  it("says the level's rooms, the foes' depth, the breath and the loot, from what the server sent", () => {
     expect(catchBreathText(2000)).toBe('20% HP');
     expect(reviveText(1000)).toBe('10% HP');
-    expect(descendLines(descent)).toEqual([
-      '4 floors, with a keeper on the last. Foes fight 1 depth deeper than yours.',
-      'Your creatures catch their breath (20% HP), and fallen ones get back up (10% HP).',
-      'Fights there put twice their loot in your pack.',
-      'Once down, you can head home only from a camp, if you find one.',
+    // The sample run fights at depth 14; one level of depthBonus 1 puts the foes at depth level 15.
+    expect(descendLines(descent, 14)).toEqual([
+      '4 rooms with a boss in the end. Foes are from depth level 15.',
+      'Your creatures catch their breath and heal 20% HP. Downed creatures revive to 10% HP.',
+      'Fights in the Undercroft reward double loot.',
+      "Once you go down, you fight to the end. If you're lucky, finding a camp may give you a chance to return safely.",
     ]);
-    // A deeper level is fiercer again; a different multiplier is said as such.
-    expect(descendLines({ ...descent, level: 2, floors: 3 })[0]).toBe(
-      '3 floors, with a keeper on the last. Foes fight 2 depths deeper than yours.',
+    // A deeper level is fiercer again: depth plus the bonus for each level, as the server scales it.
+    expect(descendLines({ ...descent, level: 2, floors: 3 }, 14)[0]).toBe(
+      '3 rooms with a boss in the end. Foes are from depth level 16.',
     );
-    // One depth is singular; a bigger bonus (the rules' number can change) is plural.
-    expect(descendLines({ ...descent, depthBonus: 1, level: 1 })[0]).toContain(
-      'Foes fight 1 depth deeper than yours.',
+    expect(descendLines({ ...descent, depthBonus: 3, level: 2 }, 10)[0]).toContain(
+      'Foes are from depth level 16.',
     );
-    expect(descendLines({ ...descent, depthBonus: 3, level: 1 })[0]).toContain(
-      'Foes fight 3 depths deeper than yours.',
-    );
-    expect(descendLines({ ...descent, depthBonus: 1, level: 2 })[0]).toContain(
-      'Foes fight 2 depths deeper than yours.',
-    );
-    expect(descendLines(descent, 3)[2]).toBe('Fights there put 3 times their loot in your pack.');
+    expect(descendLines({ ...descent, floors: 1 }, 14)[0]).toContain('1 room with a boss');
+    // A different multiplier is said as such.
+    expect(descendLines(descent, 14, 3)[2]).toBe('Fights in the Undercroft reward 3× loot.');
     expect(DESCEND_BUTTON).toBe('Descend');
-    expect(DESCEND_HOME_BUTTON).toBe('Head home with everything');
+    expect(DESCEND_HOME_BUTTON).toBe('Head Home');
+    expect(DESCEND_RISK_LINE).toBe('Keep half of your pack if you are defeated.');
+    expect(DESCEND_HOME_LINE).toBe('Keep your full pack.');
   });
 });
 

@@ -76,6 +76,7 @@ export function DungeonRun({
           key={state.step}
           descent={state.pending}
           pack={state.pack}
+          depth={state.depth}
           busy={busy}
           onAct={onAct}
         />

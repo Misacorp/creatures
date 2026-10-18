@@ -239,6 +239,7 @@ function DescendDemo({ p }: { p: Props }) {
       key={variant}
       descent={descent}
       pack={bool(p, 'emptyPack') ? { bait: 0, essence: 0, scrap: 0 } : base.pack}
+      depth={base.depth}
       busy={bool(p, 'busy')}
       onAct={() => undefined}
     />
@@ -250,7 +251,7 @@ const dungeonDescend: Entry = {
   file: 'apps/activity/src/DungeonDescend.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The descent card, after the room boss (or a keeper on a cracked floor) has fallen. It says the new depth is locked in, what the boss chest already banked (gear as item rows, supplies and parts as icons with numbers), what stays at risk (the pack), what the Undercroft below is like (its floors, how much fiercer its foes are, the breath the creatures catch, the double loot, and that the only way home is a camp) and two choices: Descend, or head home with everything. Made from the captured answer; the buttons go nowhere here.',
+    'The descent card, after the room boss (or a keeper on a cracked floor) has fallen. It says the new depth is unlocked, asks if the player dares delve deeper, what the boss chest already banked (gear as item rows, supplies and parts as icons with numbers), what stays at risk (the pack) side by side, what the Undercroft below is like (its rooms, the depth its foes are from, the breath the creatures catch, the double loot, and that the only way home is a camp) and two choices side by side: Descend, or Head Home. Made from the captured answer; the buttons go nowhere here.',
   controls: {
     card: {
       kind: 'select',

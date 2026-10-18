@@ -337,27 +337,32 @@ export function roomPlaceLine(
 type Descent = Extract<NonNullable<DungeonRunState['pending']>, { kind: 'descend' }>;
 
 export const DESCEND_BUTTON = 'Descend';
-export const DESCEND_HOME_BUTTON = 'Head home with everything';
-export const DESCEND_TITLE_KEEPER = 'The keeper is down';
+export const DESCEND_HOME_BUTTON = 'Head Home';
+export const DESCEND_TITLE_CRACKED = 'The floor cracks open';
 
-/** "Depth 15 is yours" after the room boss; "The keeper is down" after an Undercroft keeper (a cracked floor). */
+/** "Depth 15 Unlocked" after the room boss; "The floor cracks open" after an Undercroft keeper (a cracked floor). */
 export function descendTitle(descent: Pick<Descent, 'level' | 'newDepth'>): string {
-  return descent.level <= 1 ? `Depth ${String(descent.newDepth)} is yours` : DESCEND_TITLE_KEEPER;
+  return descent.level <= 1 ? `Depth ${String(descent.newDepth)} Unlocked` : DESCEND_TITLE_CRACKED;
 }
 
-/** The line under the title: the depth is locked in (after the room boss), or the floor has cracked (after a keeper). */
+/** The line under the title: a new depth was won (after the room boss), or the floor has cracked (after a keeper). */
 export function descendIntro(descent: Pick<Descent, 'level' | 'newDepth'>): string {
   return descent.level <= 1
-    ? 'The room boss is down and your new depth is locked in, whatever happens next.'
-    : 'The floor cracks open: an even deeper Undercroft.';
+    ? 'You beat the boss and achieved a new depth. Do you dare delve deeper?'
+    : 'An even deeper Undercroft waits. Do you dare delve deeper?';
 }
 
-/** The heading of the Undercroft part of the card. */
-export function descendUnderHeading(descent: Pick<Descent, 'level'>): string {
-  return descent.level <= 1
-    ? 'The Undercroft · foes are fiercer here'
-    : 'A deeper Undercroft · foes are fiercer still';
-}
+/** The title of the Undercroft part of the card. */
+export const DESCEND_UNDER_HEADING = 'The Undercroft';
+
+/** Under "Banked now": what is safe. */
+export const DESCEND_BANKED_HELP =
+  'Experience gained by creatures and the following items are yours, no matter what happens below.';
+/** Under "Still at risk": the pack. */
+export const DESCEND_RISK_HELP =
+  'Your pack contains the following items and you risk losing some of them by delving deeper.';
+/** Under "Still at risk" when the pack is empty. */
+export const DESCEND_EMPTY_PACK_HELP = 'Your pack is empty, so there is nothing to lose.';
 
 /** "20% HP": the breath the creatures catch on the way down. */
 export function catchBreathText(catchBreathBp: number): string {
@@ -371,29 +376,27 @@ export function reviveText(reviveBp: number): string {
 
 /**
  * What the Undercroft below holds, one plain line each, from the descent the server sent and the rules:
- * its floors and how much fiercer its foes are, the breath the row catches, the loot there and the way
- * home. The numbers are the server's (the loot multiplier is the rules').
+ * its rooms (one per floor, the keeper's last) and the depth its foes fight at (the run's `depth` plus
+ * `depthBonus` for each level, as `undercroftDepth` scales them), the breath the row catches, the loot
+ * there and the way home. The numbers are the server's (the loot multiplier is the rules').
  */
 export function descendLines(
   descent: Pick<Descent, 'level' | 'floors' | 'depthBonus' | 'catchBreathBp' | 'reviveBp'>,
+  depth: number,
   lootMultiplier: number = RULES.dungeon.undercroft.lootMultiplier,
 ): string[] {
-  const floors = `${String(descent.floors)} floors, with a keeper on the last.`;
-  const deeper = descent.depthBonus * descent.level;
-  const fiercer = `Foes fight ${String(deeper)} ${deeper === 1 ? 'depth' : 'depths'} deeper than yours.`;
-  const loot =
-    lootMultiplier === 2
-      ? 'Fights there put twice their loot in your pack.'
-      : `Fights there put ${String(lootMultiplier)} times their loot in your pack.`;
+  const foeDepth = depth + descent.depthBonus * descent.level;
+  const rooms = `${String(descent.floors)} ${descent.floors === 1 ? 'room' : 'rooms'}`;
+  const loot = lootMultiplier === 2 ? 'double' : `${String(lootMultiplier)}×`;
   return [
-    `${floors} ${fiercer}`,
-    `Your creatures catch their breath (${catchBreathText(descent.catchBreathBp)}), and fallen ones get back up (${reviveText(descent.reviveBp)}).`,
-    loot,
-    'Once down, you can head home only from a camp, if you find one.',
+    `${rooms} with a boss in the end. Foes are from depth level ${String(foeDepth)}.`,
+    `Your creatures catch their breath and heal ${catchBreathText(descent.catchBreathBp)}. Downed creatures revive to ${reviveText(descent.reviveBp)}.`,
+    `Fights in the Undercroft reward ${loot} loot.`,
+    "Once you go down, you fight to the end. If you're lucky, finding a camp may give you a chance to return safely.",
   ];
 }
 
 /** Under the Descend button: what a loss below costs. */
-export const DESCEND_RISK_LINE = 'A defeat below keeps only half your pack, rounded up.';
+export const DESCEND_RISK_LINE = 'Keep half of your pack if you are defeated.';
 /** Under the home button. */
-export const DESCEND_HOME_LINE = 'You keep your whole pack, and everything banked stays yours.';
+export const DESCEND_HOME_LINE = 'Keep your full pack.';

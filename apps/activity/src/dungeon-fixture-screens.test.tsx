@@ -724,19 +724,18 @@ describe('the Undercroft, with the real answers', () => {
     expect(byClass(root, 'dungeon-descend')).toHaveLength(1);
     expect(byClass(root, 'dungeon-run-map')).toHaveLength(0);
     const card = visibleText(root);
-    expect(card).toContain('Depth 15 is yours');
+    expect(card).toContain('Depth 15 Unlocked');
     expect(card).toContain('Banked now');
     expect(card).toContain('Cinder Charm');
     expect(card).toContain('Still at risk');
     expect(byName(root, 'span', 'Essence: 3')).toHaveLength(2);
-    expect(card).toContain('The Undercroft · foes are fiercer here');
-    expect(card).toContain('4 floors, with a keeper on the last.');
+    expect(card).toContain('4 rooms with a boss in the end. Foes are from depth level 15.');
     expect(card).toContain(
-      'Your creatures catch their breath (20% HP), and fallen ones get back up (10% HP).',
+      'Your creatures catch their breath and heal 20% HP. Downed creatures revive to 10% HP.',
     );
     expect(card).toContain('Depth 15 · The room boss is down');
     expect(byName(root, 'button', 'Descend')).toHaveLength(1);
-    expect(byName(root, 'button', 'Head home with everything')).toHaveLength(1);
+    expect(byName(root, 'button', 'Head Home')).toHaveLength(1);
 
     // Descend: the captured act, then the level above the boss, labelled, with its entrance next.
     page?.click(button(root, 'Descend'));
@@ -769,7 +768,7 @@ describe('the Undercroft, with the real answers', () => {
     const home = parseDungeonAct(actHome);
     const root = await openRunAt(pending, [home]);
     expect(byClass(root, 'dungeon-descend')).toHaveLength(1);
-    page?.click(button(root, 'Head home with everything'));
+    page?.click(button(root, 'Head Home'));
     await settle();
     expect(sentAct().body['act']).toEqual({ type: 'home' });
     expect(sentAct().body['runId']).toBe(pending.id);

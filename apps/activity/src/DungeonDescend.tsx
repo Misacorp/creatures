@@ -1,23 +1,27 @@
 import { useMemo } from 'preact/hooks';
 import { groupSupplies } from './claim-view';
+import { GlossaryTag } from './Glossary';
 import { partCountItems } from './GearArt';
 import { LootList } from './GearLoot';
 import {
+  DESCEND_BANKED_HELP,
   DESCEND_BUTTON,
+  DESCEND_EMPTY_PACK_HELP,
   DESCEND_HOME_BUTTON,
   DESCEND_HOME_LINE,
+  DESCEND_RISK_HELP,
   DESCEND_RISK_LINE,
+  DESCEND_UNDER_HEADING,
   descendIntro,
   descendLines,
   descendTitle,
-  descendUnderHeading,
-  isPackEmpty,
   packLine,
 } from './dungeon-text';
 import { packItems } from './dungeon-run';
 import type { DungeonAct, DungeonPack, DungeonPending } from './dungeon-types';
 import { supplyKindOf } from './trip-view';
 import { CountBadge, type CountItem } from './ui/CountBadge';
+import { GameIcon } from './ui/GameIcon';
 import { RevealShell } from './ui/RevealShell';
 import { Tag } from './ui/Tag';
 
@@ -50,17 +54,20 @@ export function nothingBanked(banked: Descent['banked']): boolean {
 export function DungeonDescend({
   descent,
   pack,
+  depth,
   busy,
   onAct,
 }: {
   descent: Descent;
   pack: DungeonPack;
+  /** The run's depth (`state.depth`): the Undercroft's foes fight this much deeper (`depthBonus` a level). */
+  depth: number;
   busy: boolean;
   onAct: (act: DungeonAct) => void;
 }) {
   const counts = useMemo(() => bankedCounts(descent.banked), [descent.banked]);
   const items = packItems(pack);
-  const lines = descendLines(descent);
+  const lines = descendLines(descent, depth);
   return (
     <RevealShell
       id="dungeon-descend-heading"
@@ -71,58 +78,62 @@ export function DungeonDescend({
     >
       <p class="muted">{descendIntro(descent)}</p>
 
-      <section class="descend-part" aria-label="Banked now">
-        <h4>Banked now</h4>
-        {nothingBanked(descent.banked) ? (
-          <p class="muted">Nothing new this time.</p>
-        ) : (
-          <>
-            <p class="muted">Already yours, whatever happens below.</p>
-            <LootList
-              label="Banked by the chest"
-              loot={{
-                gear: descent.banked.gear.map((g, i) => ({ id: `banked-${String(i)}`, ...g })),
-                converted: [],
-                parts: {},
-                blueprints: [],
-              }}
-            />
-            {counts.length > 0 && (
-              <ul class="descend-counts plain-list" aria-label="Supplies and parts banked">
-                {counts.map(({ key, ...badge }) => (
+      <div class="descend-ledger">
+        <section class="descend-part" aria-label="Banked now">
+          <h4>Banked now</h4>
+          <p class="muted">{DESCEND_BANKED_HELP}</p>
+          {nothingBanked(descent.banked) ? (
+            <p class="muted">Nothing new this time.</p>
+          ) : (
+            <>
+              <LootList
+                label="Banked by the chest"
+                loot={{
+                  gear: descent.banked.gear.map((g, i) => ({ id: `banked-${String(i)}`, ...g })),
+                  converted: [],
+                  parts: {},
+                  blueprints: [],
+                }}
+              />
+              {counts.length > 0 && (
+                <ul class="descend-counts plain-list" aria-label="Supplies and parts banked">
+                  {counts.map(({ key, ...badge }) => (
+                    <li key={key}>
+                      <CountBadge {...badge} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+        </section>
+
+        <section class="descend-part" aria-label="Still at risk">
+          <h4>
+            Still at risk <GlossaryTag entry="dungeon-pack" look="help" />
+          </h4>
+          {items.length === 0 ? (
+            <p class="muted">{DESCEND_EMPTY_PACK_HELP}</p>
+          ) : (
+            <>
+              <p class="muted">{DESCEND_RISK_HELP}</p>
+              <ul class="run-pack-items" aria-label={packLine(pack)}>
+                {items.map(({ key, ...badge }) => (
                   <li key={key}>
                     <CountBadge {...badge} />
                   </li>
                 ))}
               </ul>
-            )}
-          </>
-        )}
-      </section>
-
-      <section class="descend-part" aria-label="Still at risk">
-        <h4>Still at risk</h4>
-        {items.length === 0 ? (
-          <p class="muted">{packLine(pack)}</p>
-        ) : (
-          <div class="run-pack">
-            <span class="run-pack-label">In your pack:</span>
-            <ul class="run-pack-items" aria-label={packLine(pack)}>
-              {items.map(({ key, ...badge }) => (
-                <li key={key}>
-                  <CountBadge {...badge} />
-                </li>
-              ))}
-            </ul>
-            <Tag kind="badge" tone="bad" entry="dungeon-pack">
-              At risk
-            </Tag>
-          </div>
-        )}
-      </section>
+            </>
+          )}
+        </section>
+      </div>
 
       <section class="descend-part descend-under" aria-label="The Undercroft below">
-        <h4 class="descend-under-heading">{descendUnderHeading(descent)}</h4>
+        <h4 class="descend-under-heading">
+          <GameIcon icon={{ kind: 'glyph', id: 'map-descend' }} scale={2} />
+          <span>{DESCEND_UNDER_HEADING}</span>
+        </h4>
         <ul class="descend-lines">
           {lines.map((line) => (
             <li key={line}>{line}</li>
@@ -136,30 +147,32 @@ export function DungeonDescend({
       </section>
 
       <div class="descend-choices">
-        <button
-          type="button"
-          class="primary descend-go"
-          disabled={busy}
-          onClick={() => {
-            onAct({ type: 'descend' });
-          }}
-        >
-          {DESCEND_BUTTON}
-        </button>
-        <p class="muted">
-          {isPackEmpty(pack) ? 'Your pack is empty, so little is at stake.' : DESCEND_RISK_LINE}
-        </p>
-        <button
-          type="button"
-          class="descend-home"
-          disabled={busy}
-          onClick={() => {
-            onAct({ type: 'home' });
-          }}
-        >
-          {DESCEND_HOME_BUTTON}
-        </button>
-        <p class="muted">{DESCEND_HOME_LINE}</p>
+        <div class="descend-choice">
+          <button
+            type="button"
+            class="primary descend-go"
+            disabled={busy}
+            onClick={() => {
+              onAct({ type: 'descend' });
+            }}
+          >
+            {DESCEND_BUTTON}
+          </button>
+          <p class="muted">{DESCEND_RISK_LINE}</p>
+        </div>
+        <div class="descend-choice">
+          <button
+            type="button"
+            class="descend-home"
+            disabled={busy}
+            onClick={() => {
+              onAct({ type: 'home' });
+            }}
+          >
+            {DESCEND_HOME_BUTTON}
+          </button>
+          <p class="muted">{DESCEND_HOME_LINE}</p>
+        </div>
       </div>
     </RevealShell>
   );

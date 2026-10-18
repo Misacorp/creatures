@@ -249,12 +249,30 @@ button.camp-home-button {
   margin: 0.25rem 0;
 }
 
+/* Banked now and still at risk: two columns, one under the other on the narrowest phones. */
+.descend-ledger {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.descend-ledger .descend-part {
+  min-width: 0;
+  margin: 0;
+}
+
+.descend-ledger .run-pack-items {
+  margin-top: 0.375rem;
+}
+
 .descend-counts {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem;
   margin: 0.25rem 0 0;
   padding: 0;
+  list-style: none;
 }
 
 /* The Undercroft part: its own darker panel, in the map's violet. */
@@ -265,6 +283,9 @@ button.camp-home-button {
 }
 
 .descend-under-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
   color: #b7a9f5;
   font-size: 1.125rem;
 }
@@ -283,28 +304,43 @@ button.camp-home-button {
   margin: 0.375rem 0 0;
 }
 
+/* Descend and Head Home side by side, each with its help text under it. */
 .descend-choices {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
   margin-top: 0.75rem;
   text-align: center;
 }
 
-.descend-choices p {
-  margin: 0 0 0.5rem;
+.descend-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-button.descend-go {
+.descend-choice p {
+  margin: 0 0 0.25rem;
+  font-size: 0.875rem;
+}
+
+button.descend-go,
+button.descend-home {
   width: 100%;
   min-height: 3rem;
-  font-size: 1.25rem;
+  padding-inline: 0.5rem;
+  font-size: 1.125rem;
 }
 
 button.descend-home {
-  width: 100%;
-  min-height: 2.75rem;
   background: transparent;
   color: var(--bone);
   box-shadow: inset 0 0 0 var(--px) var(--haze);
+}
+
+/* The narrowest phones: banked and at risk stack. */
+@media (max-width: 340px) {
+  .descend-ledger {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

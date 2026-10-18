@@ -38,6 +38,7 @@ function draw(over: Partial<Parameters<typeof DungeonDescend>[0]> = {}): {
     <DungeonDescend
       descent={descent}
       pack={run.pack}
+      depth={run.depth}
       busy={false}
       onAct={(a) => acts.push(a)}
       {...over}
@@ -63,34 +64,47 @@ describe('DungeonDescend', () => {
   it('says the new depth, what is banked, what is at risk and what lies below', () => {
     const { page: p } = draw();
     const text = visibleText(p.root);
-    expect(text).toContain('Depth 15 is yours');
+    expect(text).toContain('Depth 15 Unlocked');
+    expect(text).toContain('You beat the boss and achieved a new depth. Do you dare delve deeper?');
+    expect(text).toContain('Banked now');
+    expect(text).toContain(
+      'Experience gained by creatures and the following items are yours, no matter what happens below.',
+    );
     expect(text).toContain('Cinder Charm');
     expect(text).toContain('Sturdy Satchel');
     expect(byName(p.root, 'span', 'Bait: 2')).toHaveLength(1);
     expect(byName(p.root, 'span', 'Essence: 3')).toHaveLength(1);
     expect(byName(p.root, 'span', 'Scrap: 3')).toHaveLength(1);
-    expect(text).toContain('At risk');
-    expect(text).toContain('The Undercroft · foes are fiercer here');
+    expect(text).toContain('Still at risk');
     expect(text).toContain(
-      '4 floors, with a keeper on the last. Foes fight 1 depth deeper than yours.',
+      'Your pack contains the following items and you risk losing some of them by delving deeper.',
     );
+    expect(text).not.toContain('In your pack:');
+    expect(text).toContain('The Undercroft');
+    expect(text).not.toContain('foes are fiercer');
+    expect(text).toContain('4 rooms with a boss in the end. Foes are from depth level 15.');
     expect(text).toContain(
-      'Your creatures catch their breath (20% HP), and fallen ones get back up (10% HP).',
+      'Your creatures catch their breath and heal 20% HP. Downed creatures revive to 10% HP.',
     );
-    expect(text).toContain('A defeat below keeps only half your pack, rounded up.');
+    expect(text).toContain('Fights in the Undercroft reward double loot.');
+    expect(text).toContain("Once you go down, you fight to the end. If you're lucky,");
+    expect(text).toContain('Keep half of your pack if you are defeated.');
+    expect(text).toContain('Keep your full pack.');
     expect(byClass(p.root, 'dungeon-descend')).toHaveLength(1);
+    expect(byClass(p.root, 'descend-ledger')).toHaveLength(1);
+    expect(byClass(p.root, 'descend-choice')).toHaveLength(2);
   });
 
   it('Descend and heading home are the two acts', () => {
     const { page: p, acts } = draw();
     p.click(byName(p.root, 'button', 'Descend')[0] as FakeElement);
-    p.click(byName(p.root, 'button', 'Head home with everything')[0] as FakeElement);
+    p.click(byName(p.root, 'button', 'Head Home')[0] as FakeElement);
     expect(acts).toEqual([{ type: 'descend' }, { type: 'home' }]);
   });
 
   it('waits while an act is on its way', () => {
     const { page: p, acts } = draw({ busy: true });
-    for (const name of ['Descend', 'Head home with everything']) {
+    for (const name of ['Descend', 'Head Home']) {
       const b = byName(p.root, 'button', name)[0] as FakeElement;
       expect(b.getAttribute('disabled')).not.toBeNull();
       p.click(b);
@@ -104,14 +118,10 @@ describe('DungeonDescend', () => {
       pack: { bait: 0, essence: 0, scrap: 0 },
     });
     const text = visibleText(p.root);
-    expect(text).toContain('The keeper is down');
-    expect(text).toContain('The floor cracks open: an even deeper Undercroft.');
+    expect(text).toContain('The floor cracks open');
+    expect(text).toContain('An even deeper Undercroft waits. Do you dare delve deeper?');
     expect(text).toContain('Nothing new this time.');
-    expect(text).toContain('Your pack is empty.');
-    expect(text).toContain('A deeper Undercroft · foes are fiercer still');
-    expect(text).toContain(
-      '3 floors, with a keeper on the last. Foes fight 2 depths deeper than yours.',
-    );
-    expect(text).toContain('Your pack is empty, so little is at stake.');
+    expect(text).toContain('Your pack is empty, so there is nothing to lose.');
+    expect(text).toContain('3 rooms with a boss in the end. Foes are from depth level 16.');
   });
 });
