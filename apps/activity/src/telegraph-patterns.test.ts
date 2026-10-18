@@ -220,12 +220,26 @@ describe('the forecast of the attack patterns in the raid', () => {
     const f = forecastNextRound('thornmother', 5, 12, row, [], {});
     expect(f?.lines).toEqual([
       'Next round: Briar Pincer closes on the ends of every row',
-      'Bramble Bind silences both ends',
+      'Bramble Bind silences both ends of each row',
     ]);
     expect(f?.ends).toEqual(['a', 'b', 'c', 'd', 'e', 'f']);
     // With the first of each row down, the next one standing is the end.
     const hurt = forecastNextRound('thornmother', 5, 12, row, ['a', 'c', 'e'], {});
     expect(hurt?.ends).toEqual(['b', 'd', 'f']);
+  });
+
+  it("reads the rows from the fight's zone sizes, and says the silence is the whole line", () => {
+    // Six creatures cut 1/4/1 by the board: the pincer's row ends are a, b, e, f (the middle is b to e).
+    const f = forecastNextRound('thornmother', 5, 12, row, [], {}, 'zones', [], {
+      front: 1,
+      middle: 4,
+      back: 1,
+    });
+    expect(f?.ends).toEqual(['a', 'b', 'e', 'f']);
+    // Bramble Bind marks the two ends of the whole line, and the words say so.
+    expect(f?.lines[1]).toBe('Bramble Bind silences both ends of each row');
+    const byFormula = forecastNextRound('thornmother', 5, 12, row, [], {});
+    expect(byFormula?.ends).toEqual(['a', 'b', 'c', 'd', 'e', 'f']);
   });
 
   it('says a charged barrage lands on the marked creatures', () => {
@@ -235,7 +249,7 @@ describe('the forecast of the attack patterns in the raid', () => {
     ]);
     expect(forecastNextRound('thornmother', 3, 12, row, [], {})?.lines).toEqual([
       'Next round: Seed Burst is gathering',
-      'Bramble Bind silences both ends',
+      'Bramble Bind silences both ends of each row',
     ]);
   });
 

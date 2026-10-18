@@ -72,6 +72,7 @@ const PINNED_BOSSES: BossDef[] = [
         name: 'Bramble Bind',
         trigger: { every: 2 },
         op: 'silence_ends',
+        scope: 'row',
         turns: 1,
       },
     ],

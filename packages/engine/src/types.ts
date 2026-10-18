@@ -162,6 +162,13 @@ export interface FightInput {
   adaptation: ActiveAdaptation | null;
   /** The row, left to right. */
   row: readonly FightSlot[];
+  /**
+   * How many creatures of the row stand in each zone (Front, then Middle, then Back; they add up to
+   * the row's length). A raid fight carries the board's own zone sizes here, so the fight's rows are
+   * the rows the board shows even when the board has empty slots. Absent: the length formula
+   * (floor(n / 3) Front and Back, the rest Middle), so a stored input replays as it did.
+   */
+  zones?: { front: number; middle: number; back: number };
   /** Signed-up player ids. */
   players: readonly string[];
   finaleAbilities: readonly AbilityChoice[];

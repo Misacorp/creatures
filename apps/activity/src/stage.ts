@@ -21,6 +21,7 @@ import { RULES, content, dungeonContent, effectiveStats, type BossDef } from '@c
 import {
   planRounds,
   zoneOfIndex,
+  type ZoneSizes,
   ZONES,
   type FightEvent,
   type PlaybackOptions,
@@ -180,9 +181,13 @@ export function driftFor(eventIndex: number): number {
 // --- Zones ---
 
 /** The zone a creature stands in, from the row (ids, left to right); null if it is not in the row. */
-export function zoneOfCreature(rowIds: readonly string[], id: string): Zone | null {
+export function zoneOfCreature(
+  rowIds: readonly string[],
+  id: string,
+  zones?: ZoneSizes,
+): Zone | null {
   const index = rowIds.indexOf(id);
-  return index < 0 ? null : zoneOfIndex(index, rowIds.length);
+  return index < 0 ? null : zoneOfIndex(index, zones ?? rowIds.length);
 }
 
 /** "1st", "2nd", "3rd", "4th", "11th", "21st": a place in an order (the dungeon's acting order under each creature). */
@@ -209,13 +214,17 @@ export function actingSlots(
   return new Map(order.map((id, i) => [id, i + 1]));
 }
 
-/** The row cut into its zones, front first. Zones without a creature are left out. */
+/**
+ * The row cut into its zones, front first. Zones without a creature are left out. `zones` is the
+ * fight's own zone sizes (absent: the length formula).
+ */
 export function groupByZone<T extends { id: string }>(
   row: readonly T[],
+  zones?: ZoneSizes,
 ): { zone: Zone; items: T[] }[] {
   const groups = ZONES.map((zone) => ({ zone, items: [] as T[] }));
   for (const [index, item] of row.entries()) {
-    const zone = zoneOfIndex(index, row.length);
+    const zone = zoneOfIndex(index, zones ?? row.length);
     groups.find((g) => g.zone === zone)?.items.push(item);
   }
   return groups.filter((g) => g.items.length > 0);
@@ -300,10 +309,10 @@ function endsHitRun(e: FightEvent): boolean {
 }
 
 /** The zones the given creatures stand in, front first, once each. */
-function zonesOf(rowIds: readonly string[], ids: readonly string[]): Zone[] {
+function zonesOf(rowIds: readonly string[], ids: readonly string[], zoneSizes?: ZoneSizes): Zone[] {
   const found = new Set<Zone>();
   for (const id of ids) {
-    const zone = zoneOfCreature(rowIds, id);
+    const zone = zoneOfCreature(rowIds, id, zoneSizes);
     if (zone !== null) found.add(zone);
   }
   return ZONES.filter((z) => found.has(z));
@@ -324,6 +333,7 @@ export function strikesOf(
   to: number,
   rowIds: readonly string[],
   bossId?: string,
+  zoneSizes?: ZoneSizes,
 ): { i: number; strike: BossStrike }[] {
   const out: { i: number; strike: BossStrike }[] = [];
   const end = Math.min(to, events.length);
@@ -356,7 +366,7 @@ export function strikesOf(
           action: 'attack',
           gimmick: null,
           targets: [e.target],
-          zone: zoneOfCreature(rowIds, e.target),
+          zone: zoneOfCreature(rowIds, e.target, zoneSizes),
           blocked: e.shielded === true ? [e.target] : [],
           guarded: e.from ?? null,
         },
@@ -368,7 +378,7 @@ export function strikesOf(
           action: 'reflect',
           gimmick: reflectGimmick(bossId),
           targets: [e.target],
-          zone: zoneOfCreature(rowIds, e.target),
+          zone: zoneOfCreature(rowIds, e.target, zoneSizes),
           blocked: e.shielded === true ? [e.target] : [],
           guarded: null,
         },
@@ -381,7 +391,9 @@ export function strikesOf(
           action: 'charge',
           gimmick: e.gimmick,
           targets: e.marks,
-          zone: rows[0] ?? (e.marks[0] === undefined ? null : zoneOfCreature(rowIds, e.marks[0])),
+          zone:
+            rows[0] ??
+            (e.marks[0] === undefined ? null : zoneOfCreature(rowIds, e.marks[0], zoneSizes)),
           blocked: [],
           guarded: null,
           ...(rows.length === 0 ? {} : { rows }),
@@ -436,13 +448,13 @@ export function strikesOf(
         action === 'sweep'
           ? e.rows !== undefined
             ? ZONES.filter((z) => e.rows?.includes(z) === true)
-            : zonesOf(rowIds, targets)
+            : zonesOf(rowIds, targets, zoneSizes)
           : [];
       const zone =
         def?.op === 'hit_zone'
           ? def.zone
           : (sweepRows[0] ??
-            (targets[0] === undefined ? null : zoneOfCreature(rowIds, targets[0])));
+            (targets[0] === undefined ? null : zoneOfCreature(rowIds, targets[0], zoneSizes)));
       out.push({
         i,
         strike: {
@@ -470,8 +482,9 @@ export function windupCuesForEvents(
   to: number,
   rowIds: readonly string[],
   bossId?: string,
+  zoneSizes?: ZoneSizes,
 ): Cue[] {
-  return strikesOf(events, from, to, rowIds, bossId)
+  return strikesOf(events, from, to, rowIds, bossId, zoneSizes)
     .filter(
       ({ strike }) =>
         strike.action !== 'reflect_armed' &&
@@ -482,8 +495,8 @@ export function windupCuesForEvents(
 }
 
 /**
- * The cues of the events [from, to). `rowIds` is the row, left to right (it decides which zone a
- * creature is in). Events that show nothing (the end of a round, an adaptation) give no cue; the
+ * The cues of the events [from, to). `rowIds` is the row, left to right; with `zoneSizes` (the fight's own
+ * zones) or else its length it decides which zone a creature is in. Events that show nothing (the end of a round, an adaptation) give no cue; the
  * text log has them.
  */
 export function cuesForEvents(
@@ -492,10 +505,11 @@ export function cuesForEvents(
   to: number,
   rowIds: readonly string[],
   bossId?: string,
+  zoneSizes?: ZoneSizes,
 ): Cue[] {
   const cues: Cue[] = [];
   const end = Math.min(to, events.length);
-  const zoneOf = (id: string): Zone | null => zoneOfCreature(rowIds, id);
+  const zoneOf = (id: string): Zone | null => zoneOfCreature(rowIds, id, zoneSizes);
   const crowded = crowdedHits(events, from, end);
   for (let i = Math.max(0, from); i < end; i++) {
     const e = events[i] as FightEvent;
@@ -642,7 +656,7 @@ export function cuesForEvents(
         break;
     }
   }
-  for (const { i, strike } of strikesOf(events, from, to, rowIds, bossId)) {
+  for (const { i, strike } of strikesOf(events, from, to, rowIds, bossId, zoneSizes)) {
     cues.push({ kind: 'strike', i, strike });
     // A zone hit or a sweep is a shockwave over the whole row it covers (a sweep may cover several).
     for (const zone of strikeRows(strike)) cues.push({ kind: 'zone', i, zone, effect: 'hit' });
@@ -721,6 +735,7 @@ export function buildBeats(
   rowIds: readonly string[],
   bossId?: string,
   options: PlaybackOptions = {},
+  zoneSizes?: ZoneSizes,
 ): Beat[] {
   const beats: Beat[] = [];
   const first = Math.max(0, from);
@@ -733,9 +748,11 @@ export function buildBeats(
         from: start,
         to: b.to,
         round: (events[start] as FightEvent).round,
-        cues: cuesForEvents(events, start, b.to, rowIds, bossId),
+        cues: cuesForEvents(events, start, b.to, rowIds, bossId, zoneSizes),
         windup:
-          whole && b.windupMs > 0 ? windupCuesForEvents(events, start, b.to, rowIds, bossId) : [],
+          whole && b.windupMs > 0
+            ? windupCuesForEvents(events, start, b.to, rowIds, bossId, zoneSizes)
+            : [],
         windupMs: whole ? b.windupMs : 0,
         ms: b.ms,
         introMs: whole && k === 0 ? plan.introMs : 0,

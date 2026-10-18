@@ -74,6 +74,7 @@ function Player({ data, showControls }: { data: ReplayView; showControls: boolea
   const { pos, total, index, finished, playing, setPlaying, move, anim, fx, intro } = usePlayback({
     events: data.events,
     rowIds,
+    ...(data.zones === undefined || data.zones === null ? {} : { zones: data.zones }),
     bossId: data.boss.id,
     rounds: maxRounds,
     introMs: INTRO_REPLAY_MS,
@@ -131,6 +132,7 @@ function Player({ data, showControls }: { data: ReplayView; showControls: boolea
         rounds={maxRounds}
         row={data.row}
         {...(data.rules === undefined || data.rules === null ? {} : { rules: data.rules })}
+        {...(data.zones === undefined || data.zones === null ? {} : { zones: data.zones })}
         mineIds={mineIds}
         names={data.names}
         events={data.events}

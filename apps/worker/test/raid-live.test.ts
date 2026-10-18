@@ -1674,6 +1674,7 @@ describe('the API contract with the client', () => {
     'watching',
     'week',
     'you',
+    'zones',
   ];
   const BOSS_KEYS = ['element', 'hpMax', 'hpStart', 'id', 'name'];
   const ABILITY_KEYS = [

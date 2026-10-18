@@ -105,6 +105,8 @@ export interface LiveSnapshot {
   row: ReplayView['row'];
   /** The Guard numbers the fight is played with. Null: none known (no row yet, or an old fight). */
   rules: ReplayView['rules'];
+  /** The board's zone sizes the fight is played with. Null: none stored (no row yet, or an old fight). */
+  zones: { front: number; middle: number; back: number } | null;
   names: EventNames | null;
   abilities: LiveAbilityView[];
   /** Every event of rounds 1..round. */
@@ -166,6 +168,7 @@ export function emptySnapshot(
     },
     row: [],
     rules: null,
+    zones: null,
     names: null,
     abilities: [],
     events: [],
@@ -263,6 +266,7 @@ export function lobbySnapshot(
       owner: s.ownerId,
     })),
     rules: guardRulesOf(input),
+    zones: input.zones === undefined ? null : { ...input.zones },
     names: buildNames(input, aliasNames, content),
     abilities: mine,
     events: [],
@@ -375,6 +379,7 @@ export function liveSnapshot(
       owner: s.ownerId,
     })),
     rules: guardRulesOf(row.input),
+    zones: row.input.zones === undefined ? null : { ...row.input.zones },
     names: buildNames(row.input, aliasNames, content),
     abilities,
     events,

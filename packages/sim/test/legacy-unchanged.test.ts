@@ -62,6 +62,11 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * into an empty slot, or in place of a weaker slotted talent (as a player reading the book would). The
  * first player's top-3 power and raids won are what they were before the change (333, 361, 261, 203);
  * Bait earned is the same, and some Bait now goes to slotting.
+ *
+ * Re-pinned again on 2026-10-18 (silence by row), on purpose: the raid bosses' silences (Bramble Bind,
+ * Choking Vines) now silence the ends of each row instead of the two ends of the line, so Thornmother
+ * weeks play out differently. Checked by setting both back to the whole line: the old fixture matched.
+ * The fight input carrying the board's row sizes moved nothing here (the sim's rows are full).
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

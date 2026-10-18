@@ -171,6 +171,7 @@
           "every": 2
         },
         "op": "silence_ends",
+        "scope": "rows",
         "turns": 1
       },
       {
@@ -204,6 +205,7 @@
           "every": 6
         },
         "op": "silence_ends",
+        "scope": "rows",
         "turns": 2
       },
       {

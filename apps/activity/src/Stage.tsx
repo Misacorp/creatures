@@ -1,7 +1,7 @@
 import { GLOSSARY_IDS, content, type Gimmick } from '@creatures/game';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { Fragment, type ComponentChildren, type Ref, type RefObject } from 'preact';
-import type { EventNames, FightEvent, Zone } from '@creatures/engine';
+import type { EventNames, FightEvent, Zone, ZoneSizes } from '@creatures/engine';
 import { bossArt, elementClass, markPalette } from './art';
 import { cssVars } from './css-vars';
 import { foeButtonLabel, foeInfoOf, foeElement, type FoeInfo } from './foe-info';
@@ -409,6 +409,8 @@ interface StageProps {
   row: readonly ReplayRowEntry[];
   /** The Guard numbers of the rules the fight was played with; absent: the content's old Guard. */
   rules?: FightGuardRules;
+  /** How many creatures of the row are in each zone (the fight's own); absent: the length formula. */
+  zones?: ZoneSizes;
   /** The lobby's preview: no round yet, so the head says to get ready instead of "Round 1". */
   lobby?: boolean;
   /** The creatures that are the player's own: they are outlined and marked "you". */
@@ -716,6 +718,7 @@ export function Stage({
   rounds,
   row,
   rules,
+  zones,
   lobby,
   mineIds,
   names,
@@ -760,7 +763,7 @@ export function Stage({
   const cues =
     anim === null
       ? []
-      : cuesForEvents(events, anim.from, Math.min(anim.to, index), rowIds, boss.id);
+      : cuesForEvents(events, anim.from, Math.min(anim.to, index), rowIds, boss.id, zones);
   const creatureHpNow =
     creatureHp === undefined ? {} : creatureHpAt(events, index, creatureHp.start);
   // A crowded action (more than eight creatures hit) shows only its big numbers, judged by each
@@ -824,6 +827,7 @@ export function Stage({
     names,
     wording,
     addedGimmicks,
+    zones,
   );
 
   // The abilities that have been played so far, by key and by creature.
@@ -884,9 +888,9 @@ export function Stage({
 
   const parity = anim === null ? 0 : anim.seq % 2;
   // The raid's rows are the board's rows (the engine's zones, slot k of each row in lane k).
-  const rows = boardRows(row.length);
+  const rows = boardRows(zones ?? row.length);
   const groups = single
-    ? groupByZone(row)
+    ? groupByZone(row, zones)
     : rows.map(({ zone, slots }) => ({ zone, items: slots.flatMap((i) => row[i] ?? []) }));
   const lanes = rows.reduce((most, r) => Math.max(most, r.slots.length), 0);
 
@@ -1383,6 +1387,7 @@ export function LiveStage(
     props.rounds,
     reduced,
     hold === true,
+    props.zones,
   );
   return <Stage {...rest} index={view.index} anim={view.anim} fx={view.fx} intro={view.intro} />;
 }

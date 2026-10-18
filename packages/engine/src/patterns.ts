@@ -1,6 +1,14 @@
 import type { ChargedPattern, Gimmick, SlamAim, SweepRow, Zone } from '@creatures/game';
 import { sweepRow } from './gimmick-schedule';
-import { ZONES, nearestLivingZone, zoneIndices, zoneOfIndex, zoneSizes } from './zones';
+import {
+  ZONES,
+  nearestLivingZone,
+  zoneIndices,
+  zoneOfIndex,
+  zoneSizes,
+  type RowShape,
+  type ZoneSizes,
+} from './zones';
 
 /**
  * Target selection for the boss's attack patterns (docs/design/attack-patterns.md section 2). Pure:
@@ -78,6 +86,8 @@ export interface PatternContext {
   creatures: readonly PatternCreature[];
   /** The row's length (the creatures array's length). */
   n: number;
+  /** The board's zone sizes when the fight carries them (absent: the length formula on `n`). */
+  zones?: ZoneSizes;
   /** How many times the gimmick has fired up to this round (`firingIndex`); a sweep's walk. */
   firing: number;
   /** This gimmick's dice window (`diceWindow`). */
@@ -95,12 +105,16 @@ export interface PatternContext {
   guardDice?: readonly number[];
 }
 
+function shapeOf(ctx: PatternContext): RowShape {
+  return ctx.zones ?? ctx.n;
+}
+
 function living(ctx: PatternContext): PatternCreature[] {
   return ctx.creatures.filter((c) => c.alive);
 }
 
 function livingIn(ctx: PatternContext, zone: Zone): PatternCreature[] {
-  return zoneIndices(zone, ctx.n)
+  return zoneIndices(zone, shapeOf(ctx))
     .map((i) => ctx.creatures[i] as PatternCreature)
     .filter((c) => c.alive);
 }
@@ -298,7 +312,7 @@ export function planLance(
   ctx: PatternContext,
   spec: { lane: 'random' | 'strongest'; power: number; falloffBp: number },
 ): PatternPlan {
-  const rowsIdx = ZONES.map((z) => zoneIndices(z, ctx.n));
+  const rowsIdx = ZONES.map((z) => zoneIndices(z, shapeOf(ctx)));
   const width = Math.max(...rowsIdx.map((r) => r.length));
   const standingAt = (zoneRow: number, lane: number): PatternCreature | undefined => {
     const idx = rowsIdx[zoneRow]?.[lane];
@@ -313,7 +327,7 @@ export function planLance(
   if (spec.lane === 'strongest') {
     const top = byStrength(ctx.creatures)[0];
     if (top !== undefined) {
-      const row = ZONES.indexOf(zoneOfIndex(top.idx, ctx.n));
+      const row = ZONES.indexOf(zoneOfIndex(top.idx, shapeOf(ctx)));
       lane = rowsIdx[row]?.indexOf(top.idx);
     }
   } else {
@@ -400,7 +414,7 @@ export function planPattern(spec: PatternSpec, ctx: PatternContext): PatternPlan
 }
 
 /** The widest row of a row of `length` slots (a lance's lane count). */
-export function laneCount(length: number): number {
-  const s = zoneSizes(length);
+export function laneCount(shape: RowShape): number {
+  const s = zoneSizes(shape);
   return Math.max(s.front, s.middle, s.back);
 }

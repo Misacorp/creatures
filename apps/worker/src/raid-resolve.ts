@@ -36,6 +36,7 @@ import {
   autoPlace,
   type AbilityChoice,
   compactRow,
+  sparseZones,
   fillWithGuests,
   liveFightRules,
   makeSlot,
@@ -135,6 +136,16 @@ export function guardRulesOf(
   return rules === undefined
     ? null
     : { guardHpBp: rules.guardHpBp, guardArmorBp: rules.guardArmorBp };
+}
+
+/**
+ * The board's zone sizes a stored fight was played with, as a spread for a view: empty for a fight
+ * stored before the input carried them (the client then uses the length formula).
+ */
+export function zonesOf(input: FightInput): {
+  zones?: { front: number; middle: number; back: number };
+} {
+  return input.zones === undefined ? {} : { zones: { ...input.zones } };
 }
 
 /** 128 random bits as 32 lowercase hex characters. */
@@ -352,6 +363,7 @@ export function buildPhaseInput(
   // The weather of the day the stage is scheduled in (Boon and Omen): for every creature in the row, guests
   // included, as numbers on its sheet. The stored input keeps them, so a replay never reads the weather.
   const day = stageWeather(sql, week.weekId, phase);
+  const zones = sparseZones(placed);
   const row = compactRow(placed).map((slot): FightSlot => {
     const mods = mergeMods(slot.mods, weatherSheet(day, slot));
     return mods === undefined ? slot : { ...slot, mods };
@@ -404,6 +416,8 @@ export function buildPhaseInput(
     bossHpPool: { max: hpMax, current: hpCurrent },
     adaptation,
     row,
+    // The board's own row sizes, so the fight's rows are the rows the board shows (empty slots included).
+    zones,
     players: aliases,
     // Each member's basic pick plus the abilities of their (frozen) team's unlocked creatures.
     finaleAbilities: abilityIds.flatMap((abilityId, i) =>

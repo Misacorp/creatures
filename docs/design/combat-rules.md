@@ -271,7 +271,7 @@ _Example._ Undertow aims Front. Front is knocked out, Middle and Back stand. It 
 
 6.3.2 In the dungeon every row is one slot: a row attack hits the creature at that place, and passes to the next one if it is down.
 
-**6.4 Silence (`silence_ends`: Bramble Bind, Sea Mist, Thorn Snap, Tangle).** No damage. The leftmost and the rightmost living creature of the whole line (not of each row) are silenced: they skip their next `turns` turns (1 for every boss today). One creature standing is silenced once. A silence already running is not added to, it lasts as long as the longer one. A silenced creature skips its turn when it would have acted, and the count goes down then. A silenced Support gives nothing (4.5.5). A Tide Support beside a silenced creature clears it at the next round start (4.5.3).
+**6.4 Silence (`silence_ends`: Bramble Bind, Sea Mist, Thorn Snap, Tangle).** No damage. With `scope` `rows` (the raid: Bramble Bind, Choking Vines) the leftmost and the rightmost living creature of each row (Front first, the board's rows, see 1.4) are silenced; a row with one creature standing silences it once, an empty row is skipped. With `scope` `row` (the dungeon) it is the two ends of the whole line, as in 6.11. A silenced creature skips its next `turns` turns (1 or 2 today). A silence already running is not added to, it lasts as long as the longer one. A silenced creature skips its turn when it would have acted, and the count goes down then. A silenced Support gives nothing (4.5.5). A Tide Support beside a silenced creature clears it at the next round start (4.5.3).
 
 6.4.1 Silence is applied after the creatures act, so it first bites in the next round.
 
@@ -309,7 +309,7 @@ _Example._ Attack order A (strongest), G (a Guard), C, D. The strike aimed at A 
 
 6.10.2 With a line that is not a multiple of three, Middle is the widest row, and a lane past the end of a shorter row has nobody there.
 
-**6.11 Pincer (`pincer`: Briar Pincer, Briar Cage).** An area hit on the first and the last living creature of each row (`scope` `rows`, Front first) or of the whole line (`scope` `row`, used by Briar Cage in the dungeon). A group with one creature is hit once. A group with nobody is skipped.
+**6.11 Pincer (`pincer`: Briar Pincer, Briar Cage).** (Silence, 6.4, picks its ends the same way.) An area hit on the first and the last living creature of each row (`scope` `rows`, Front first) or of the whole line (`scope` `row`, used by Briar Cage in the dungeon). A group with one creature is hit once. A group with nobody is skipped.
 
 **6.12 Charge (`charge`: Great Wave, Seed Burst, and the dungeon bosses' signature moves).** A charge wraps a sweep, barrage, slam, lance or pincer. Its trigger is the **landing** round.
 
@@ -451,6 +451,6 @@ The order matters only through rounding, and it is fixed. _Example._ A hit of 11
 **10.7 Abilities and silence.**
 
 - `lingerRounds` adds rounds to the Rally, Shield Wall and timed Purge of the creature's **own** ability (8.2, 8.3, 8.5; an ability with a creature, `AbilityChoice.creatureId`). A Purge without `rounds` already lasts to the end. A basic ability belongs to no creature and is never lengthened.
-- `ignoreSilence: 1` makes silence (6.4) do nothing to it. The silence still picks the two ends of the line as always, so it is wasted on this creature, and no `silence` event is written for it.
+- `ignoreSilence: 1` makes silence (6.4) do nothing to it. The silence still picks the ends (of each row in the raid, of the line in the dungeon) as always, so it is wasted on this creature, and no `silence` event is written for it.
 
 **10.8 In the log.** `describeEvent` mentions the sheet in plain text where a player would ask why: a hit or a reaction that carries `sheetBp` ("(+12% from modifiers)"), and a boss hit that carries `warded` ("Its modifiers take off 20."). Names are text only.

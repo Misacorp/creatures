@@ -117,6 +117,11 @@
     "guardHpBp": 0,
     "guardArmorBp": 2500
   },
+  "zones": {
+    "front": 3,
+    "middle": 3,
+    "back": 3
+  },
   "names": {
     "boss": "Storm Sovereign",
     "creatures": {

@@ -4,7 +4,14 @@
  * (`packages/engine/src/zones.ts`), never worked out again here; this file turns them into rows,
  * lanes, plain words for a place ("Middle, lane 1"), the keyboard map and the scroll positions. `ui/RaidBoard.tsx` draws it, `Placement.tsx` wires it to the game.
  */
-import { ZONES, zoneIndices, type AffectSlot, type TurnOrder, type Zone } from '@creatures/engine';
+import {
+  ZONES,
+  zoneIndices,
+  type AffectSlot,
+  type RowShape,
+  type TurnOrder,
+  type Zone,
+} from '@creatures/engine';
 import { effectiveStats } from '@creatures/game';
 import type { CreatureInfo } from './creature-info';
 import { getSpecies, speciesName } from './game';
@@ -28,7 +35,7 @@ export interface BoardRow {
 }
 
 /** The rows of a party row of `length` slots, front to back. A zone with no slots has no row. */
-export function boardRows(length: number): BoardRow[] {
+export function boardRows(length: RowShape): BoardRow[] {
   return ZONES.map((zone) => ({ zone, slots: zoneIndices(zone, length) })).filter(
     (row) => row.slots.length > 0,
   );
@@ -40,7 +47,7 @@ export function laneCount(rows: readonly BoardRow[]): number {
 }
 
 /** The row and the lane (from 1) of a slot, or null for a slot number that is not on the board. */
-export function placeOf(slot: number, length: number): { zone: Zone; lane: number } | null {
+export function placeOf(slot: number, length: RowShape): { zone: Zone; lane: number } | null {
   for (const row of boardRows(length)) {
     const column = row.slots.indexOf(slot);
     if (column >= 0) return { zone: row.zone, lane: column + 1 };
@@ -49,7 +56,7 @@ export function placeOf(slot: number, length: number): { zone: Zone; lane: numbe
 }
 
 /** A place in plain words: "Middle, lane 1". Empty for a slot that is not on the board. */
-export function placeText(slot: number, length: number): string {
+export function placeText(slot: number, length: RowShape): string {
   const place = placeOf(slot, length);
   return place === null ? '' : `${ROW_NAMES[place.zone]}, lane ${String(place.lane)}`;
 }

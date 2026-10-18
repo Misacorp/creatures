@@ -39,7 +39,7 @@ describe('strike labels', () => {
         strike({ action: 'silence_ends', gimmick: 'bramble-bind', targets: ['b', 'd'] }),
         names,
       ).text,
-    ).toBe('Bramble Bind · both ends');
+    ).toBe('Bramble Bind · both ends of each row');
     expect(strikeLabel(strike({ action: 'attack', targets: ['c'] }), names).text).toBe(
       'Attack · Zip',
     );
@@ -124,23 +124,46 @@ describe('the forecast one round ahead', () => {
     });
   });
 
-  it('marks the living creatures at both ends of the row for a silence', () => {
+  it('marks the first and last living creature of each row for a silence', () => {
+    // Six creatures in rows of 2: every creature is the end of its row.
     expect(forecastNextRound('thornmother', 1, 12, row, [], names)).toEqual({
-      text: 'Next round: Bramble Bind silences both ends',
-      lines: ['Next round: Bramble Bind silences both ends'],
+      text: 'Next round: Bramble Bind silences both ends of each row',
+      lines: ['Next round: Bramble Bind silences both ends of each row'],
       zones: [],
-      ends: ['a', 'f'],
+      ends: ['a', 'b', 'c', 'd', 'e', 'f'],
     });
-    // A fallen end creature passes the silence to the next one standing, as the engine does.
-    expect(forecastNextRound('thornmother', 1, 12, row, ['a'], names)?.ends).toEqual(['b', 'f']);
+    // The board's rows 1 / 4 / 1: a, b and e, f.
     expect(
-      forecastNextRound('thornmother', 1, 12, row, ['a', 'b', 'c', 'd', 'e'], names)?.ends,
-    ).toEqual(['f']);
+      forecastNextRound('thornmother', 1, 12, row, [], names, 'zones', [], {
+        front: 1,
+        middle: 4,
+        back: 1,
+      })?.ends,
+    ).toEqual(['a', 'b', 'e', 'f']);
+    // A fallen end creature passes the silence to the next one standing in its row.
+    expect(
+      forecastNextRound('thornmother', 1, 12, row, ['b'], names, 'zones', [], {
+        front: 1,
+        middle: 4,
+        back: 1,
+      })?.ends,
+    ).toEqual(['a', 'c', 'e', 'f']);
+    // A row with one creature standing is marked once.
     expect(forecastNextRound('thornmother', 1, 12, ['solo'], [], names)?.ends).toEqual(['solo']);
     // Round 3 has only the Briar Pincer (the bind is on even rounds): the ends of every row.
     expect(forecastNextRound('thornmother', 2, 12, row, [], names)?.text).toBe(
       'Next round: Briar Pincer closes on the ends of every row',
     );
+  });
+
+  it('marks the two ends of the whole line for a dungeon silence', () => {
+    const f = forecastNextRound('thornmother', 1, 12, row, [], names, 'row');
+    expect(f?.text).toBe('Next round: Bramble Bind silences both ends');
+    expect(f?.ends).toEqual(['a', 'f']);
+    expect(forecastNextRound('thornmother', 1, 12, row, ['a'], names, 'row')?.ends).toEqual([
+      'b',
+      'f',
+    ]);
   });
 
   it('says the reflect trap is coming', () => {
@@ -193,13 +216,14 @@ describe('the wording of a single row (the dungeon)', () => {
     expect(strikeLabel(strike({ action: 'hit_zone' }), names, 'row').area).toBe('a creature');
   });
 
-  it('leaves every other kind of action as it was', () => {
+  it("words the dungeon's silence as both ends of its one row", () => {
     const silence = strike({
       action: 'silence_ends',
       gimmick: 'bramble-bind',
       targets: ['b', 'd'],
     });
-    expect(strikeLabel(silence, names, 'row').text).toBe(strikeLabel(silence, names).text);
+    // The dungeon's row is one row: its silence is plainly both ends.
+    expect(strikeLabel(silence, names, 'row').text).toBe('Bramble Bind · both ends');
   });
 
   it('warns about the creature at the place in the forecast, and still marks the zone', () => {

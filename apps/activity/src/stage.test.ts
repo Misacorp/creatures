@@ -126,6 +126,22 @@ describe('zones of the row', () => {
     expect(groupByZone([{ id: 'x' }]).map((g) => g.zone)).toEqual(['middle']);
     expect(groupByZone([])).toEqual([]);
   });
+
+  it("cuts the row by the fight's own zone sizes when it has them", () => {
+    // Six creatures: the length formula is 2/2/2, the board's rows here are 3/1/2.
+    const zones = { front: 3, middle: 1, back: 2 };
+    const groups = groupByZone(
+      ROW.map((id) => ({ id })),
+      zones,
+    );
+    expect(groups.map((g) => [g.zone, g.items.map((i) => i.id)])).toEqual([
+      ['front', ['a', 'b', 'c']],
+      ['middle', ['d']],
+      ['back', ['e', 'f']],
+    ]);
+    expect(zoneOfCreature(ROW, 'c', zones)).toBe('front');
+    expect(zoneOfCreature(ROW, 'c')).toBe('middle');
+  });
 });
 
 describe('driftFor', () => {

@@ -92,7 +92,14 @@ describe('zone strike (hit_zone) only hits the living, and falls to the nearest 
 });
 
 describe('row ends (silence_ends) are the leftmost and rightmost LIVING creatures', () => {
-  const silence: Gimmick = { id: 's', name: 'S', ...each, op: 'silence_ends', turns: 1 };
+  const silence: Gimmick = {
+    id: 's',
+    name: 'S',
+    ...each,
+    op: 'silence_ends',
+    scope: 'row',
+    turns: 1,
+  };
   const silenced = (row: FightSlot[]) =>
     eventsOf(run(row, { boss: withGimmicks([silence]), bossAtk: 1 }), 'silence')
       .filter((e) => e.round === 1)

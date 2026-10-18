@@ -31,6 +31,7 @@ import {
   bossFor,
   creatureKey,
   guardRulesOf,
+  zonesOf,
   outcomeFlags,
   type StoredSummary,
 } from './raid-resolve';
@@ -518,6 +519,8 @@ export interface ReplayView {
   bossHpEnd: number;
   /** The Guard numbers the fight was played with. Null for a fight stored before the Guard rework. */
   rules: { guardHpBp: number; guardArmorBp: number } | null;
+  /** The board's zone sizes the fight was played with; absent for a fight stored before the input carried them. */
+  zones?: { front: number; middle: number; back: number };
   /** The caller's opaque owner key in this fight (see `row[].owner`), or null if they were not in it. */
   you: string | null;
   /** The fighting row, left to right (guests included). */
@@ -583,6 +586,7 @@ export function buildReplayView(
     bossHpStart: result.bossHpStart,
     bossHpEnd: result.bossHpEnd,
     rules: guardRulesOf(input),
+    ...zonesOf(input),
     you: summary.members.find((m) => m.userId === userId)?.alias ?? null,
     row: input.row.map((s, position) => ({
       position,

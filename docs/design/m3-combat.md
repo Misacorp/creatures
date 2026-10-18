@@ -58,7 +58,7 @@ Gimmicks are data, built from effect operations. Examples for the four MVP bosse
 | --------------- | ------- | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | Tidal Colossus  | Tide    | left to right | _Undertow_: every 3rd round (`every: N` fires on rounds N, 2N, 3N, ...), hits the whole front zone                         |
 | Cinder Wyrm     | Ember   | speed         | _Backdraft_: the first reaction each round is reflected and damages the triggering creature instead of giving bonus damage |
-| Thornmother     | Grove   | right to left | _Bramble Bind_: every 2nd round, the creatures at both ends of the row are silenced for their next turn                    |
+| Thornmother     | Grove   | right to left | _Bramble Bind_: every 2nd round, the creatures at both ends of each row are silenced for their next turn                   |
 | Storm Sovereign | Spark   | left to right | _Lightning Rod_: every round, strikes the creature with the highest Attack                                                 |
 
 - **Normal boss attack** (each round, after any gimmick): hits one creature, picked by a rule (front zone first, guards first).
