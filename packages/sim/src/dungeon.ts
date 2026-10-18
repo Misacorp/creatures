@@ -6,6 +6,7 @@ import {
   addParts,
   campOffers,
   campRest,
+  catchBreath,
   content,
   createSeededRng,
   dungeonKeepsake,
@@ -13,8 +14,10 @@ import {
   dungeonRowOrder,
   dungeonScrapPerRoom,
   dungeonEvent,
+  drawMark,
   emptyPack,
   generateDungeonMap,
+  generateUndercroftMap,
   int,
   isLandmark,
   keptOnDefeat,
@@ -26,8 +29,12 @@ import {
   resolveEvent,
   roomSpecForNode,
   rollDungeonLoot,
+  rollUndercroftChest,
   rowScore,
   streakBonus,
+  undercroftBaseFloors,
+  undercroftFloorCount,
+  undercroftOpen,
   weatherBossAttacks,
   weatherLuck,
   weatherSheet,
@@ -37,8 +44,11 @@ import {
   type Element,
   type EventOptionDef,
   type KeepsakeDef,
+  type GearItem,
   type MapNode,
+  type NodeKind,
   type Rng,
+  type UndercroftMark,
   type WeatherDay,
 } from '@creatures/game';
 import {
@@ -84,10 +94,21 @@ import type { SimPlayer } from './state';
  *   rest when hurt, else take a keepsake, and head home when two creatures are down or the row is
  *   worn out. `random` players choose everything at random; `best` looks one floor ahead and picks
  *   the better keepsake. `good` and `reasonable` play the plain policy.
+ * - From depth 8 (`RULES.dungeon.undercroft.fromDepth`) the day's map may hold a carved door (the sim's
+ *   maps are drawn with `{ doors: true }`, as the worker's are). The policy steps through a door when the
+ *   route reaches it (it costs no fight, so no risk): it adds a room of a random kind (`drawMark`) to the
+ *   Undercroft, and below depth 8 it is a quiet room that does nothing. When the main boss falls at depth
+ *   8 or over, the chest is banked (its gear, shard and supply are paid for good), depth + 1 is locked and
+ *   the player chooses (`wantsDescend`): home with the pack, or down into the Undercroft, if the row is
+ *   healthy after catching its breath. Below, the walk is the same walk: rooms with twice the loot,
+ *   epic fights, camps (the only place to head home, under the main camp's rule), then the keeper and its
+ *   chest (gear rolled by `rollUndercroftChest`); a cracked floor offers the next level under the same
+ *   rule. A defeat below keeps half of the pack but the depth stays.
  * - A run is paid as the worker pays it: the kept pack (all of it at home or when cleared, half
- *   rounded up after a defeat), the boss chest and its dice on a clear, the supply once a fight has
- *   been cleared (safe), experience per creature by the fights it stood in the row for (in the
- *   economy), the streak bonus, and the depth.
+ *   rounded up after a defeat; Market Day's scrap is in the pack), the boss chest and its dice once the
+ *   boss has fallen, the keepers' chests, the supply once a fight has been cleared (safe), experience
+ *   per creature by the fights it stood in the row for (in the economy; the full clear bonus goes to the
+ *   row that beat the main boss), the streak bonus, and the depth (a defeat below the boss keeps it).
  */
 export const DUNGEON_PLAYER = 'p1';
 
@@ -111,8 +132,12 @@ export interface DungeonLogEntry {
   roomsCleared: number;
   /** Fights played, a lost one included. */
   fights: number;
-  /** Beat the room boss. */
+  /** Beat the main room boss (depth + 1 is locked in, whatever happens below it). */
   cleared: boolean;
+  /**
+   * How the run ended, as the worker's `outcome`: a run that beat the main boss ends `cleared` when it
+   * heads home or is done, `defeat` when it is lost in the Undercroft (half the pack, the depth stays).
+   */
   outcome: DungeonOutcome;
   /** Elites cleared, keepsakes held at the end, and the camp choice (null: the run never reached the camp). */
   elites: number;
@@ -126,8 +151,30 @@ export interface DungeonLogEntry {
   packKept: DungeonRunPack;
   /** Fights cleared by each creature that stood in the row for them: the experience is paid on these. */
   fightsBy: Record<string, number>;
-  /** The creature ids in the row at the end (a full clear's experience goes to these). */
+  /** The creature ids in the row at the end. */
   finalRow: string[];
+  /** The row that beat the main boss (the full clear's experience goes to these); empty when it did not. */
+  fullClearRow: string[];
+  /** Fights played before the Undercroft (`fights` minus the Undercroft's). */
+  mainFights: number;
+  /** The Undercroft: see `UndercroftRun`. */
+  under: UndercroftRun;
+}
+
+/** What a run did below the room boss. */
+export interface UndercroftRun {
+  /** The main boss fell at a depth that opens the Undercroft with someone standing: the descent was offered. */
+  offered: boolean;
+  /** The player went down at least once. */
+  descended: boolean;
+  /** Levels entered, and keepers beaten. */
+  entered: number;
+  levels: number;
+  /** Fights played down there (a lost one included), and the rooms a carved door added to the Undercroft. */
+  fights: number;
+  marks: UndercroftMark[];
+  /** The choice made at the last Undercroft camp, null when the run reached none. */
+  camp: CampChoice | null;
 }
 
 /** The three creatures a player takes into the dungeon and whether the row is stood by the game's rule. */
@@ -189,7 +236,11 @@ export function dayMap(seed: string, day: number): DungeonMap {
   const key = `${seed}|${String(day)}`;
   let map = mapCache.get(key);
   if (map === undefined) {
-    map = generateDungeonMap(createSeededRng(`${seed}:dungeon-map:${String(day)}`));
+    // With doors, as the worker draws the day's map: the door is drawn last, so a map without one is the
+    // map the sim always drew.
+    map = generateDungeonMap(createSeededRng(`${seed}:dungeon-map:${String(day)}`), undefined, {
+      doors: true,
+    });
     if (mapCache.size > 2_000) mapCache.clear();
     mapCache.set(key, map);
   }
@@ -285,6 +336,14 @@ export const POLICY = {
    * still down, or an average HP below this, and the player takes the pack home.
    */
   wary: { homeDown: 1, homeHp: 0.75 },
+  /**
+   * The descent card (docs/design/dungeon-paths.md, "The Undercroft"): go down when, after catching its
+   * breath, the row's average HP is over this with nobody down. `best` looks at the length of the
+   * level too: with `longFloors` floors or more and no camp among them it wants `longHp` instead.
+   */
+  descendHp: 0.6,
+  longFloors: 4,
+  longHp: 0.75,
 } as const;
 
 /** True when `attacker` is strong against `defender` (the elements' wheel, from content). */
@@ -325,9 +384,14 @@ export function routeScore(
       return hurt ? 4 : 1.5;
     case 'cache':
       return hurt ? 4.5 : 2;
-    case 'camp':
-    case 'door': // the Undercroft's carved door and epic rooms: the simulator does not play them yet
     case 'epic':
+      // Only a carved door's room can be one (a floor of one room: there is no choice to make).
+      return view.avgHp > POLICY.eliteHp && view.down === 0 ? 3 + adv : -10;
+    case 'door':
+      // A carved door costs no fight, so it is no risk: taken when the route reaches it, ahead of a plain
+      // fight (below depth 8 it is a quiet room, which costs nothing either).
+      return 3.2;
+    case 'camp':
       return 0;
   }
 }
@@ -384,10 +448,11 @@ export function pickRoute(
   row: Element[],
   skill: DungeonSkill,
   rng: Rng,
+  level = 0,
 ): string {
   if (skill === 'random') return options[int(rng, options.length)] as string;
   const scoreOf = (node: MapNode): number =>
-    routeScore(node, nodeFoe(node, depth)?.element, row, view);
+    routeScore(node, nodeFoe(node, depth, level)?.element, row, view);
   let best: { id: string; score: number } | null = null;
   for (const id of options) {
     const node = mapNode(map, id) as MapNode;
@@ -434,26 +499,75 @@ export function wantsHome(after: RunView, wary: boolean): boolean {
   return after.down >= limit.homeDown || after.avgHp < limit.homeHp;
 }
 
+/**
+ * What the policy does at the descent card, with the row as it will be after catching its breath
+ * (`after`): the Undercroft is entered only when the row is healthy (average HP over `POLICY.descendHp`,
+ * nobody down). `plan` is the level it would open: its floors and whether a camp is among them (a carved
+ * door can add one); `best` wants a healthier row for a long level with no camp. `random` players go
+ * down or home with equal chance, whatever their health.
+ */
+export function wantsDescend(
+  after: RunView,
+  plan: { floors: number; camp: boolean },
+  skill: DungeonSkill,
+  rng: Rng,
+): boolean {
+  if (skill === 'random') return int(rng, 2) === 1;
+  if (after.down > 0 || after.avgHp <= POLICY.descendHp) return false;
+  if (skill === 'best' && plan.floors >= POLICY.longFloors && !plan.camp) {
+    return after.avgHp > POLICY.longHp;
+  }
+  return true;
+}
+
+/**
+ * What clearing a room puts in the pack, as the worker's `packLoot`: `nodeLoot` for the level, and for a
+ * fight Market Day's scrap (doubled with the rest of a fight, elite or cache in the Undercroft).
+ */
+export function roomLoot(
+  kind: NodeKind,
+  level: number,
+  weather: WeatherDay | null,
+  fight: boolean,
+): DungeonRunPack {
+  const loot = nodeLoot(kind, level);
+  const doubled =
+    level > 0 && (kind === 'fight' || kind === 'elite' || kind === 'cache')
+      ? RULES.dungeon.undercroft.lootMultiplier
+      : 1;
+  return { ...loot, scrap: loot.scrap + (fight ? dungeonScrapPerRoom(weather) * doubled : 0) };
+}
+
 // --- One run ---
 
 /** What a run did. */
 export interface RunResult {
   outcome: DungeonOutcome;
+  /** The main boss was beaten (depth + 1 is locked in, whatever happens below it). */
+  bossCleared: boolean;
   /** Fights cleared, played, elites cleared. */
   fightsCleared: number;
   fights: number;
   elites: number;
   keepsakes: string[];
+  /** The main camp's choice (null: the run never reached it). */
   camp: CampChoice | null;
-  /** The row's state as it reached the camp (average HP 0 to 1, creatures down); null if it never did. */
+  /** The row's state as it reached the main camp (average HP 0 to 1, creatures down); null if it never did. */
   atCamp: RunView | null;
+  /** The pack at the end, before a defeat halves it. */
   pack: DungeonRunPack;
   /** Fights cleared per creature id (the row at each fight's start). */
   fightsBy: Record<string, number>;
   /** The creature ids in the row at the end. */
   finalRow: string[];
+  /** The row that stood when the main boss fell (empty when it did not). */
+  fullClearRow: string[];
   /** The room boss's element (the shard of a clear is of it). */
   boss: { element: Element };
+  /** What happened below the room boss. */
+  under: UndercroftRun;
+  /** The elements of the keepers beaten (each one's chest rolls gear of it). */
+  keepers: Element[];
 }
 
 const percentOf = (
@@ -474,10 +588,11 @@ const percentOf = (
 };
 
 /**
- * Walks the day's map once with a team, at a depth, and returns what happened. `seed` is the run's seed
- * (the fights' dice come from it, one stream per fight); everything else that is random (events, camp
- * offers, an elite's keepsake, a `random` player's choices) comes from a stream of it too. Nothing is
- * paid here: `playDungeonDay` pays.
+ * Walks the day's map once with a team, at a depth, and returns what happened, the Undercroft included
+ * (see the header). `seed` is the run's seed (the fights' dice come from it, one stream per fight);
+ * everything else that is random (events, camp offers, an elite's keepsake, what a door adds, the
+ * Undercroft's maps, a `random` player's choices) comes from a stream of it too. Nothing is paid here:
+ * `playDungeonDay` pays.
  */
 export function walkMap(options: {
   player: SimPlayer;
@@ -505,6 +620,8 @@ export function walkMap(options: {
   const rowIds = (): string[] => input.team.map((s) => s.id);
   const rowElements = (): Element[] =>
     input.team.filter((s) => (hp?.[s.id] ?? 1) > 0).map((s) => s.element);
+  /** Every creature that has stood in the row: one that left at a camp does not come back. */
+  const everyone = new Set(rowIds());
 
   const held: KeepsakeDef[] = [];
   let pack = emptyPack();
@@ -516,6 +633,22 @@ export function walkMap(options: {
   let camp: CampChoice | null = null;
   let atCamp: RunView | null = null;
   let outcome: DungeonOutcome | null = null;
+
+  // The Undercroft: the map the run stands on (the day's, then the levels drawn on the way down).
+  let current: DungeonMap = map;
+  let level = 0;
+  let bossCleared = false;
+  let fullClearRow: string[] = [];
+  const keepers: Element[] = [];
+  const under: UndercroftRun = {
+    offered: false,
+    descended: false,
+    entered: 0,
+    levels: 0,
+    fights: 0,
+    marks: [],
+    camp: null,
+  };
 
   const bossNode = map.nodes.find((n) => n.kind === 'boss') as MapNode;
   const bossFoe = nodeFoe(bossNode, depth);
@@ -539,21 +672,46 @@ export function walkMap(options: {
 
   const standingCount = (): number => rowIds().filter((id) => (hp?.[id] ?? 1) > 0).length;
 
+  /** The way down after a boss: the level it would open, and the choice of the player. */
+  const goesDown = (next: number): boolean => {
+    const after = catchBreath(hp as Record<string, number>, neutralMax());
+    const marks = next === 1 ? under.marks : [];
+    const floors = undercroftBaseFloors(depth, next);
+    const plan = {
+      floors: undercroftFloorCount({ level: next, floors, marks }),
+      camp: marks.includes('camp'),
+    };
+    if (!wantsDescend(percentOf(after, neutralMax(), rowIds()), plan, skill, rng)) return false;
+    hp = after;
+    current = generateUndercroftMap(rng, { level: next, floors, marks: [...marks] });
+    level = next;
+    at = null;
+    under.descended = true;
+    under.entered = next;
+    return true;
+  };
+
   while (outcome === null) {
-    const options = reachableNodes(map, at);
+    const options = reachableNodes(current, at);
     if (options.length === 0) break;
-    const id = pickRoute(map, depth, options, view(), rowElements(), skill, rng);
-    const node = mapNode(map, id) as MapNode;
+    const id = pickRoute(current, depth, options, view(), rowElements(), skill, rng, level);
+    const node = mapNode(current, id) as MapNode;
     at = id;
 
-    if (node.kind === 'fight' || node.kind === 'elite' || node.kind === 'boss') {
+    if (
+      node.kind === 'fight' ||
+      node.kind === 'elite' ||
+      node.kind === 'epic' ||
+      node.kind === 'boss'
+    ) {
       const room: DungeonRoomSpec = {
-        ...roomSpecForNode(map, id, depth, fights),
+        ...roomSpecForNode(current, id, depth, fights),
         ...(held.length === 0 ? {} : { keepsakes: [...held] }),
       };
       const standing = rowIds();
       const played = simulateDungeonRoom(input, room, hp, seed);
       fights += 1;
+      if (level > 0) under.fights += 1;
       hp = { ...played.result.hpEnd };
       if (!played.cleared || (node.kind !== 'boss' && standingCount() === 0)) {
         outcome = 'defeat';
@@ -561,18 +719,50 @@ export function walkMap(options: {
       }
       fightsCleared += 1;
       tally = addFightsCleared(tally, standing);
-      if (node.kind === 'boss') {
-        outcome = 'cleared';
-        break;
-      }
-      pack = addPack(pack, nodeLoot(node.kind));
-      if (node.kind === 'elite') {
-        elites += 1;
+      pack = addPack(pack, roomLoot(node.kind, level, weather, true));
+      if (node.kind === 'elite' || node.kind === 'epic') {
+        if (node.kind === 'elite') elites += 1;
         const left = dungeonKeepsakes.filter((k) => !held.some((h) => h.id === k.id));
         gain(left[int(rng, left.length || 1)]);
       }
+      if (node.kind === 'boss') {
+        if (level === 0) {
+          // The main boss: depth + 1 is won. Its full clear Essence and the landmark's extras come into the
+          // pack with the boss's loot.
+          bossCleared = true;
+          fullClearRow = rowIds();
+          const landmark = isLandmark(depth);
+          pack = addPack(pack, {
+            bait: 0,
+            essence:
+              RULES.dungeon.fullClear.essence + (landmark ? RULES.dungeon.landmark.essence : 0),
+            scrap: landmark ? RULES.dungeon.landmark.scrap : 0,
+          });
+          if (!undercroftOpen(depth) || standingCount() === 0) {
+            outcome = 'cleared';
+            break;
+          }
+          under.offered = true;
+          if (!goesDown(1)) outcome = 'cleared';
+        } else {
+          // A keeper: its chest rolls gear (paid in `playDungeonDay`); a cracked floor offers another level.
+          under.levels = level;
+          keepers.push(nodeFoe(node, depth, level)?.element ?? bossFoe.element);
+          const deeper =
+            current.crack === true &&
+            level < RULES.dungeon.undercroft.maxLevels &&
+            standingCount() > 0;
+          if (!deeper || !goesDown(level + 1)) outcome = 'cleared';
+        }
+      }
     } else if (node.kind === 'cache') {
-      pack = addPack(pack, nodeLoot('cache'));
+      pack = addPack(pack, roomLoot('cache', level, weather, false));
+    } else if (node.kind === 'door') {
+      // Below depth 8 a quiet room. From it, a room is added to the Undercroft, of a kind drawn now
+      // (never more than `maxMarks`).
+      if (undercroftOpen(depth) && under.marks.length < RULES.dungeon.undercroft.maxMarks) {
+        under.marks.push(drawMark(rng));
+      }
     } else if (node.kind === 'mystery') {
       const event = node.eventId === undefined ? undefined : dungeonEvent(node.eventId);
       if (event === undefined || hp === null) continue;
@@ -595,9 +785,9 @@ export function walkMap(options: {
         .filter((k): k is KeepsakeDef => k !== undefined);
       const rowNow = rowIds();
       const down = rowNow.filter((rid) => (hp?.[rid] ?? 1) <= 0);
-      const fresh = byPowerDesc(player.creatures.filter((c) => !rowNow.includes(c.id)))[0];
+      const fresh = byPowerDesc(player.creatures.filter((c) => !everyone.has(c.id)))[0];
       const v = view();
-      atCamp = v;
+      if (level === 0) atCamp = v;
       const canSwap = down.length > 0 && fresh !== undefined;
       const choice = chooseCamp(v, { swap: canSwap, keepsake: offers.length > 0 }, skill, rng);
       const apply = (c: CampChoice): void => {
@@ -614,29 +804,36 @@ export function walkMap(options: {
           const out = down[0];
           creatures = creatures.filter((x) => x.id !== out);
           creatures.push(fresh);
+          everyone.add(fresh.id);
           const next = { ...(hp as Record<string, number>) };
           delete next[out];
           hp = next;
           input = buildRunInput(player, depth, study, { creatures, ordered }, weather);
         }
       };
+      // Heading home keeps the whole pack: `home` before the main boss, `cleared` once it has fallen.
+      const home = (): void => {
+        if (level === 0) camp = 'home';
+        else under.camp = 'home';
+        outcome = bossCleared ? 'cleared' : 'home';
+      };
       if (choice === 'home') {
-        camp = 'home';
-        outcome = 'home';
+        home();
         break;
       }
       apply(choice);
-      camp = choice;
+      if (level === 0) camp = choice;
+      else under.camp = choice;
       const after = view();
       if (!random && wantsHome(after, wary)) {
-        camp = 'home';
-        outcome = 'home';
+        home();
         break;
       }
     }
   }
   return {
     outcome: outcome ?? 'defeat',
+    bossCleared,
     fightsCleared,
     fights,
     elites,
@@ -646,7 +843,10 @@ export function walkMap(options: {
     pack,
     fightsBy: tally,
     finalRow: rowIds(),
+    fullClearRow,
     boss: { element: bossFoe.element },
+    under,
+    keepers,
   };
 }
 
@@ -688,7 +888,8 @@ export function playDungeonDay(
       study,
       weather,
     });
-    const cleared = run.outcome === 'cleared';
+    // The main boss was beaten: depth + 1 is won and stays, even if the Undercroft below is lost.
+    const cleared = run.bossCleared;
 
     // Progress, the streak (days in a row), and the depth.
     if (d.firstDay === null) d.firstDay = day;
@@ -696,31 +897,22 @@ export function playDungeonDay(
     d.streak = d.lastDay === day ? d.streak : d.lastDay === day - 1 ? d.streak + 1 : 1;
     d.lastDay = day;
     d.runs += 1;
-    d.lostAt = run.outcome === 'defeat' ? depth : null;
+    // A run lost below the boss is not lost at this depth (the depth was won): only a defeat before it is.
+    d.lostAt = run.outcome === 'defeat' && !cleared ? depth : null;
     if (cleared) {
       d.clears += 1;
       d.depth += 1;
     }
 
-    // Pay: the kept pack, on a clear the boss chest and its dice, the supply of the first fight cleared
-    // (safe), Market Day's scrap, and the streak bonus on the first run of a day.
+    // Pay: the kept pack (Market Day's scrap, the boss chest's Essence and scrap and the keepers' are in
+    // it), the chests' dice (the main boss's shard, gear and landmark glimmer, each keeper's gear), the
+    // supply of the first fight cleared (safe), and the streak bonus on the first run of a day.
     const kept = run.outcome === 'defeat' ? keptOnDefeat(run.pack) : run.pack;
     const landmark = cleared && isLandmark(depth);
-    let bait = kept.bait;
-    let essence = kept.essence;
-    let scrap = kept.scrap + dungeonScrapPerRoom(weather) * run.fightsCleared;
-    let glimmer = 0;
-    if (cleared) {
-      const chest = nodeLoot('boss');
-      bait += chest.bait;
-      essence += chest.essence + RULES.dungeon.fullClear.essence;
-      scrap += chest.scrap;
-      if (landmark) {
-        essence += RULES.dungeon.landmark.essence;
-        scrap += RULES.dungeon.landmark.scrap;
-        glimmer += RULES.dungeon.landmark.glimmer;
-      }
-    }
+    const bait = kept.bait;
+    const essence = kept.essence;
+    const scrap = kept.scrap;
+    const glimmer = landmark ? RULES.dungeon.landmark.glimmer : 0;
     const drop = rollDungeonLoot(
       loot,
       depth,
@@ -732,6 +924,8 @@ export function playDungeonDay(
       },
       run.boss.element,
     );
+    const gear: GearItem[] = [...drop.gear];
+    for (const element of run.keepers) gear.push(...rollUndercroftChest(loot, depth, element));
     const parts = addParts({ scrap, glimmer }, drop.parts);
     player.bait += bait;
     player.essence += essence;
@@ -741,8 +935,8 @@ export function playDungeonDay(
     week.dungeonBait += bait;
     week.dungeonEssence += essence;
     week.dungeonScrap += parts.scrap ?? 0;
-    week.dungeonItems += drop.gear.length;
-    grantDungeonLoot(player, parts, drop.gear);
+    week.dungeonItems += gear.length;
+    grantDungeonLoot(player, parts, gear);
     for (const id of drop.supplies) {
       player.supplies[id] = (player.supplies[id] ?? 0) + 1;
       player.stats.supplies_dungeon += 1;
@@ -774,6 +968,9 @@ export function playDungeonDay(
       packKept: { ...kept },
       fightsBy: { ...run.fightsBy },
       finalRow: [...run.finalRow],
+      fullClearRow: [...run.fullClearRow],
+      mainFights: run.fights - run.under.fights,
+      under: { ...run.under, marks: [...run.under.marks] },
     });
     // A retry is for a first run lost to a defeat only: a run that headed home or cleared is done.
     if (run.outcome !== 'defeat') break;

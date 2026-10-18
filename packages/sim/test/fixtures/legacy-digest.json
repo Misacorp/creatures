@@ -1,9 +1,9 @@
 {
   "default-8w": {
-    "hash": "aff7fbd632ca4",
+    "hash": "59bd90ba25c96",
     "headline": {
       "raidsWon": 6,
-      "firstPlayerTop3Power": 431,
+      "firstPlayerTop3Power": 327,
       "firstPlayerBaitEarned": 910
     }
   },
@@ -16,10 +16,10 @@
     }
   },
   "behaviour": {
-    "hash": "14401d57797f55",
+    "hash": "25195df5b29f5",
     "headline": {
       "raidsWon": 4,
-      "firstPlayerTop3Power": 248,
+      "firstPlayerTop3Power": 257,
       "firstPlayerBaitEarned": 826
     }
   },
@@ -32,9 +32,9 @@
     }
   },
   "run-tiny": {
-    "hash": "3676b58eef459",
+    "hash": "1a379aade202d5",
     "headline": {
-      "targets": 94
+      "targets": 96
     }
   }
 }

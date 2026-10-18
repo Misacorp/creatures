@@ -741,7 +741,8 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
                 for (const [id, fights] of Object.entries(run.fightsBy)) {
                   const c = p.creatures.find((x) => x.id === id);
                   if (c === undefined) continue;
-                  const beatBoss = run.cleared && run.finalRow.includes(id);
+                  // The full clear bonus is for the row that beat the main boss, whatever happens below it.
+                  const beatBoss = run.fullClearRow.includes(id);
                   giveExperience(
                     p,
                     c,

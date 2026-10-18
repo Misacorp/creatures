@@ -448,6 +448,22 @@
     "unit": "number"
   },
   {
+    "id": "dungeon-descent-rate",
+    "description": "Daily dungeon: share of a daily player's runs that beat the room boss at depth 8 or over (the Undercroft is offered) and go down into it (a real choice: not 20% below, not 80% above)",
+    "metric": "dungeon.undercroftDescentRate",
+    "comparator": "range",
+    "value": [0.2, 0.8],
+    "unit": "percent"
+  },
+  {
+    "id": "dungeon-eligible-run-fights",
+    "description": "Daily dungeon: fights played per run (the Undercroft's included, a lost one too) by a daily player at depth 8 or over, when the Undercroft is open to them (runs must not get too long: at most 7)",
+    "metric": "dungeon.eligibleMeanFights",
+    "comparator": "max",
+    "value": 7,
+    "unit": "number"
+  },
+  {
     "id": "exp-slot-2",
     "description": "Day a daily player's 2nd expedition slot opens, after joining (median; the first day)",
     "metric": "exp.dailySlot2Day",

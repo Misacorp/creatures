@@ -60,7 +60,7 @@ describe('the Undercroft rules', () => {
     expect(u).toMatchObject({
       fromDepth: 8,
       catchBreathBp: 2_000,
-      depthBonus: 3,
+      depthBonus: 1,
       baseFloors: 2,
       perLandmark: 1,
       maxFloors: 5,
@@ -95,10 +95,10 @@ describe('the Undercroft rules', () => {
     expect(undercroftBaseFloors(8, 3)).toBe(u.deeperFloors);
   });
 
-  it('scales foes three depths higher for each level', () => {
+  it('scales foes `depthBonus` depths higher for each level', () => {
     expect(undercroftDepth(8, 0)).toBe(8);
-    expect(undercroftDepth(8, 1)).toBe(11);
-    expect(undercroftDepth(8, 2)).toBe(14);
+    expect(undercroftDepth(8, 1)).toBe(8 + u.depthBonus);
+    expect(undercroftDepth(8, 2)).toBe(8 + 2 * u.depthBonus);
     expect(undercroftLabel(1)).toContain('Undercroft');
     expect(undercroftLabel(1)).toContain('fiercer');
     expect(undercroftLabel(2)).not.toBe(undercroftLabel(1));
@@ -407,14 +407,14 @@ describe('rooms of an Undercroft map', () => {
     const fight = map.nodes.find((n) => n.kind === 'fight') as MapNode;
     const room = roomSpecForNode(map, fight.id, 8, 0);
     const foe = dungeonFoe(fight.foeId as string)!;
-    expect(room.hp).toBe(scaledFoe(foe, 11).hp);
-    expect(room.atk).toBe(scaledFoe(foe, 11).atk);
+    expect(room.hp).toBe(scaledFoe(foe, 8 + u.depthBonus).hp);
+    expect(room.atk).toBe(scaledFoe(foe, 8 + u.depthBonus).atk);
     expect(room.elite).toBeUndefined();
     expect(room.signature).toBeUndefined();
     const deeper = generateUndercroftMap(createSeededRng('rooms'), { ...spec, level: 2 });
     const f2 = deeper.nodes.find((n) => n.kind === 'fight') as MapNode;
     expect(roomSpecForNode(deeper, f2.id, 8, 0).hp).toBe(
-      scaledFoe(dungeonFoe(f2.foeId as string)!, 14).hp,
+      scaledFoe(dungeonFoe(f2.foeId as string)!, 8 + 2 * u.depthBonus).hp,
     );
   });
 
@@ -422,7 +422,7 @@ describe('rooms of an Undercroft map', () => {
     const epic = node('epic');
     const room = roomSpecForNode(map, epic.id, 8, 3);
     const foe = dungeonFoe(epic.foeId as string)!;
-    const scaled = scaledFoe(foe, 11);
+    const scaled = scaledFoe(foe, 8 + u.depthBonus);
     expect(room.hp).toBe(Math.floor((scaled.hp * u.epic.hpBp) / 10_000));
     expect(room.atk).toBe(Math.floor((scaled.atk * u.epic.atkBp) / 10_000));
     expect(room).toMatchObject({ epic: true, elite: true, index: 3 });
@@ -437,7 +437,7 @@ describe('rooms of an Undercroft map', () => {
     expect(room.foe.id).toBe(keeper.foeId);
     expect(room.signature).toBe(true);
     expect(room.foe.signature).toBeDefined();
-    expect(room.hp).toBe(scaledFoe(room.foe, 11).hp);
+    expect(room.hp).toBe(scaledFoe(room.foe, 8 + u.depthBonus).hp);
     // At a landmark depth the main map's boss is swapped; the keeper is not.
     const landmark = RULES.dungeon.landmarkEvery * 3;
     expect(landmarkBossId(landmark)).not.toBeNull();

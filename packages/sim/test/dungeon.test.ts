@@ -9,12 +9,15 @@ import {
   dungeonMapValid,
   isLandmark,
   itemOf,
+  dungeonScrapPerRoom,
   keptOnDefeat,
   nodeLoot,
   streakBonus,
+  undercroftOpen,
   type DungeonMap,
   type MapNode,
   type NodeKind,
+  type WeatherDay,
 } from '@creatures/game';
 import { dungeonBossEnrage } from '@creatures/engine';
 import { DEFAULT_MIX } from '../src/archetypes';
@@ -31,17 +34,21 @@ import {
   optionKind,
   pickRoute,
   playDungeonDay,
+  roomLoot,
   routeScore,
   walkMap,
+  wantsDescend,
   wantsHome,
   type DungeonLogEntry,
   type DungeonTeam,
   type RunView,
 } from '../src/dungeon';
 import { dungeonAnalysis } from '../src/dungeon-analysis';
+import type { DungeonSkill } from '../src/profiles';
 import { runEconomy } from '../src/economy';
 import { clonePlayer, createPlayer, type SimPlayer } from '../src/state';
 import { TARGETS } from '../src/targets';
+import { applyOverrides } from '../src/tune';
 import { tinyRun } from './helpers';
 
 function creature(player: string, line: string, level: number): OwnedCreature {
@@ -476,15 +483,15 @@ describe('a day in the simulator', () => {
     );
     expect(entry).toMatchObject({ depth: 1, cleared: true, outcome: 'cleared' });
     expect(p.dungeon).toMatchObject({ depth: 2, runs: 1, clears: 1, lostAt: null });
-    // A cleared run keeps the whole pack and opens the chest: the boss's Essence and scrap, the full clear's Essence.
+    // A cleared run keeps the whole pack, and the boss's Essence and scrap (and the full clear's Essence) are in it.
     expect(entry.packKept).toEqual(entry.packFound);
     const chest = nodeLoot('boss');
     expect(isLandmark(1)).toBe(false);
-    expect(p.bait - before.bait).toBe(entry.packFound.bait + chest.bait);
-    expect(p.essence - before.essence).toBe(
-      entry.packFound.essence + chest.essence + RULES.dungeon.fullClear.essence,
-    );
-    expect(p.gear.parts.scrap).toBeGreaterThanOrEqual(entry.packFound.scrap + chest.scrap);
+    expect(entry.packFound.essence).toBeGreaterThanOrEqual(chest.essence);
+    expect(entry.packFound.scrap).toBeGreaterThanOrEqual(chest.scrap);
+    expect(p.bait - before.bait).toBe(entry.packFound.bait);
+    expect(p.essence - before.essence).toBe(entry.packFound.essence);
+    expect(p.gear.parts.scrap).toBeGreaterThanOrEqual(entry.packFound.scrap);
     expect(p.week.dungeonRuns).toBe(1);
     expect(p.week.dungeonClears).toBe(1);
     expect(p.week.dungeonBait).toBe(p.bait - before.bait);
@@ -583,9 +590,7 @@ describe('a day in the simulator', () => {
     }
     expect(p.dungeon.streak).toBe(3);
     const entry = last[0] as DungeonLogEntry;
-    expect(p.bait - baitBefore).toBe(
-      entry.packKept.bait + (entry.cleared ? nodeLoot('boss').bait : 0) + (bonus?.bait ?? 0),
-    );
+    expect(p.bait - baitBefore).toBe(entry.packKept.bait + (bonus?.bait ?? 0));
     play(p, 6); // missed days 3 to 5
     expect(p.dungeon.streak).toBe(1);
     expect(p.dungeon.depth).toBeGreaterThan(1); // the depth is kept
@@ -635,7 +640,7 @@ describe('the dungeon in the economy', () => {
           (m, [id, f]) =>
             m +
             RULES.experience.dungeon.perRoom * f +
-            (r.cleared && r.finalRow.includes(id) ? RULES.experience.dungeon.fullClear : 0),
+            (r.fullClearRow.includes(id) ? RULES.experience.dungeon.fullClear : 0),
           0,
         ),
       0,
@@ -672,11 +677,17 @@ describe('the dungeon in the economy', () => {
       'dungeon.dailyDepthGrowthPerWeek',
       'dungeon.dailyHomeRate',
       'dungeon.meanFights',
+      'dungeon.eligibleMeanFights',
       'dungeon.dailyEssenceShare',
       'dungeon.dailyGearShareWeek8',
     ]) {
       expect(metrics[key], key).not.toBeNull();
     }
+    // The Undercroft's measures exist (a 9-week default server has daily players past depth 8).
+    expect(stats.undercroft.eligible).toBeGreaterThan(0);
+    expect(stats.undercroft.offered).toBeLessThanOrEqual(stats.undercroft.eligible);
+    expect(stats.undercroft.descended).toBeLessThanOrEqual(stats.undercroft.offered);
+    expect(stats.undercroft.cleared).toBeLessThanOrEqual(stats.undercroft.descended);
     expect(stats.winRates.daily[0]?.runs).toBeGreaterThan(0);
     expect(stats.depthAfter.daily.length).toBe(9);
     expect(stats.flow.daily.runs).toBeGreaterThan(5);
@@ -686,6 +697,345 @@ describe('the dungeon in the economy', () => {
     expect(shape.cleared + shape.home + shape.defeat).toBeCloseTo(1, 6);
     expect(shape.fights).toBeGreaterThan(1);
     expect(shape.packKept).toBeLessThanOrEqual(shape.packFound);
+  });
+});
+
+/** Runs `body` with tuning overrides (as the tune CLI applies them) and puts the shipped numbers back after. */
+function withRules<T>(spec: string, body: () => T): T {
+  const undo = applyOverrides(spec);
+  try {
+    return body();
+  } finally {
+    undo();
+  }
+}
+
+/** Foes so weak that a level 15 row beats every room: the Undercroft is then a matter of the policy and the rules, not of luck. */
+const EASY = 'dungeon.baseHpBp=300,dungeon.baseAtkBp=300';
+/** Every chest drops its gear (a landmark's is certain anyway), the main boss's included: off, so only a keeper's counts. */
+const KEEPER_GEAR = 'dungeon.undercroft.chest.gearBp=10000,dungeon.fullClear.gearBp=0';
+
+/** A daily player of three level 15 creatures at `depth`, past their first day (one run, no retry). */
+function deepPlayer(depth: number, day: number): SimPlayer {
+  const p = player(15);
+  p.dungeon.depth = depth;
+  p.dungeon.firstDay = day - 1;
+  return p;
+}
+
+function playOne(
+  depth: number,
+  day: number,
+  skill: DungeonSkill = 'good',
+  seed = 'under',
+): { entry: DungeonLogEntry; p: SimPlayer; before: { bait: number; essence: number } } {
+  const p = deepPlayer(depth, day);
+  const before = { bait: p.bait, essence: p.essence };
+  const [entry] = playDungeonDay(
+    p,
+    day,
+    dayMap(seed, day),
+    `${seed}:${String(day)}`,
+    createSeededRng(`${seed}-loot:${String(day)}`),
+    {},
+    undefined,
+    null,
+    skill,
+  );
+  if (entry === undefined) throw new Error('no run');
+  return { entry, p, before };
+}
+
+describe('the day map with doors', () => {
+  it('has a carved door on floor 4 or 5 on about a third of the days, never two, and draws the map the sim always drew otherwise', () => {
+    let doors = 0;
+    const days = 150;
+    for (let day = 0; day < days; day++) {
+      const map = dayMap('doors', day);
+      expect(dungeonMapValid(map)).toBe(true);
+      const found = map.nodes.filter((n) => n.kind === 'door');
+      expect(found.length).toBeLessThanOrEqual(1);
+      for (const n of found) {
+        expect(RULES.dungeon.undercroft.doorFloors).toContain(n.floor);
+        // A door holds no foe, no modifier and no event.
+        expect(n.foeId).toBeUndefined();
+        expect(n.modifierId).toBeUndefined();
+        expect(n.eventId).toBeUndefined();
+      }
+      doors += found.length;
+    }
+    const share = doors / days;
+    expect(share).toBeGreaterThan(RULES.dungeon.undercroft.doorBp / 10_000 - 0.15);
+    expect(share).toBeLessThan(RULES.dungeon.undercroft.doorBp / 10_000 + 0.15);
+  });
+
+  it('scores a door above a plain fight, so a route that reaches one steps through it', () => {
+    const fight = node('f4l0', 'fight');
+    const door = node('f4l1', 'door');
+    const foe = dungeonContent.foes.find((f) => f.kind === 'foe');
+    if (foe === undefined) throw new Error('no foe');
+    // Against a foe the row does not beat, and one it is neutral to.
+    expect(routeScore(door, undefined, [], healthy)).toBeGreaterThan(
+      routeScore(fight, foe.element, [], healthy),
+    );
+    const map: DungeonMap = {
+      floors: 7,
+      nodes: [node('f3l1', 'camp', ['f4l0', 'f4l1']), fight, door],
+    };
+    const rng = createSeededRng('door');
+    expect(pickRoute(map, 8, ['f4l0', 'f4l1'], healthy, [], 'good', rng)).toBe('f4l1');
+    // A hurt row still takes it: nothing to fear in a door.
+    expect(pickRoute(map, 8, ['f4l0', 'f4l1'], { avgHp: 0.3, down: 1 }, [], 'good', rng)).toBe(
+      'f4l1',
+    );
+  });
+
+  it('adds a room to the Undercroft from depth 8 and does nothing below it', () => {
+    let stepped = 0;
+    for (let day = 0; day < 120 && stepped < 3; day++) {
+      const map = dayMap('doors', day);
+      if (!map.nodes.some((n) => n.kind === 'door')) continue;
+      withRules(EASY, () => {
+        const run = (depth: number) =>
+          walkMap({
+            player: deepPlayer(depth, day),
+            map,
+            depth,
+            seed: `door:${String(day)}`,
+            team: { creatures: deepPlayer(depth, day).creatures, ordered: true },
+            skill: 'good',
+          });
+        const deep = run(8);
+        if (deep.under.marks.length === 0) return; // the route did not pass the door
+        stepped += 1;
+        expect(deep.under.marks).toHaveLength(1);
+        expect(RULES.dungeon.undercroft.markOdds).toHaveProperty(deep.under.marks[0] as string);
+        // The same walk below depth 8: a quiet room, nothing added, no Undercroft offered.
+        const shallow = run(3);
+        expect(shallow.under.marks).toEqual([]);
+        expect(shallow.under.offered).toBe(false);
+      });
+    }
+    expect(stepped).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('the descent', () => {
+  const at = (avgHp: number, down = 0): RunView => ({ avgHp, down });
+  const plan = (floors: number, camp = false) => ({ floors, camp });
+  const rng = createSeededRng('descend');
+
+  it('goes down when healthy after catching its breath: over 60% HP and nobody down', () => {
+    expect(wantsDescend(at(0.9), plan(3), 'good', rng)).toBe(true);
+    expect(wantsDescend(at(0.61), plan(3), 'good', rng)).toBe(true);
+    expect(wantsDescend(at(POLICY.descendHp), plan(3), 'good', rng)).toBe(false);
+    expect(wantsDescend(at(0.95, 1), plan(3), 'good', rng)).toBe(false);
+    expect(wantsDescend(at(0.95, 1), plan(3), 'reasonable', rng)).toBe(false);
+    expect(POLICY.descendHp).toBe(0.6);
+  });
+
+  it('has the best player want more health for a long level with no camp, and a random one flip a coin', () => {
+    const long = plan(POLICY.longFloors);
+    expect(wantsDescend(at(0.7), long, 'good', rng)).toBe(true);
+    expect(wantsDescend(at(0.7), long, 'best', rng)).toBe(false);
+    expect(wantsDescend(at(POLICY.longHp + 0.01), long, 'best', rng)).toBe(true);
+    // A camp among the rooms (a door added one) makes it worth the risk again.
+    expect(wantsDescend(at(0.7), plan(POLICY.longFloors, true), 'best', rng)).toBe(true);
+    expect(wantsDescend(at(0.7), plan(POLICY.longFloors - 1), 'best', rng)).toBe(true);
+    // Never when somebody is down, whatever the level.
+    expect(wantsDescend(at(0.99, 1), plan(2), 'best', rng)).toBe(false);
+    // Random players: either answer comes up whatever their health, and the same stream gives the same ones.
+    const picks = (seed: string) => {
+      const r = createSeededRng(seed);
+      return Array.from({ length: 40 }, () => wantsDescend(at(0.1, 2), long, 'random', r));
+    };
+    expect(picks('d')).toEqual(picks('d'));
+    expect(new Set(picks('d'))).toEqual(new Set([true, false]));
+  });
+
+  it("has no Undercroft below depth 8: the boss ends the run cleared, the chest is the run's own", () => {
+    expect(undercroftOpen(7)).toBe(false);
+    withRules(EASY, () => {
+      for (let day = 0; day < 10; day++) {
+        const { entry, p } = playOne(7, day);
+        expect(entry.under).toMatchObject({ offered: false, descended: false, entered: 0 });
+        expect(entry).toMatchObject({ cleared: true, outcome: 'cleared' });
+        expect(p.dungeon.depth).toBe(8);
+      }
+    });
+  });
+});
+
+describe('the Undercroft in the simulator', () => {
+  it("pays a descent the way the worker does: depth + 1, the whole pack at home, and the keeper chest's gear", () => {
+    withRules(`${EASY},dungeon.undercroft.crackBp=0,${KEEPER_GEAR}`, () => {
+      for (let day = 0; day < 8; day++) {
+        const { entry, p, before } = playOne(8, day);
+        // The boss fell, the row went down, beat the keeper and the run ended cleared (the level has no crack).
+        expect(entry).toMatchObject({ cleared: true, outcome: 'cleared', depth: 8 });
+        expect(entry.under).toMatchObject({
+          offered: true,
+          descended: true,
+          entered: 1,
+          levels: 1,
+        });
+        // A path takes one room of each floor (a cache or a mystery room is no fight): at least the first floor's fight and
+        // the keeper, at most every floor, the added rooms and the keeper.
+        expect(entry.under.fights).toBeGreaterThanOrEqual(2);
+        expect(entry.under.fights).toBeLessThanOrEqual(
+          RULES.dungeon.undercroft.baseFloors + RULES.dungeon.undercroft.maxMarks + 1,
+        );
+        expect(entry.mainFights + entry.under.fights).toBe(entry.fights);
+        expect(p.dungeon).toMatchObject({ depth: 9, clears: 1, lostAt: null });
+        // Cleared keeps the whole pack, which holds the boss chest's and the keeper chest's Essence and scrap.
+        expect(entry.packKept).toEqual(entry.packFound);
+        expect(entry.packFound.essence).toBeGreaterThanOrEqual(
+          nodeLoot('boss').essence + nodeLoot('boss', 1).essence,
+        );
+        expect(entry.packFound.scrap).toBeGreaterThanOrEqual(
+          nodeLoot('boss').scrap + nodeLoot('boss', 1).scrap,
+        );
+        expect(p.bait - before.bait).toBe(entry.packFound.bait);
+        expect(p.essence - before.essence).toBe(entry.packFound.essence);
+        // The keeper's chest rolled its gear (certain here); the main chest's gear chance is off.
+        expect(p.week.dungeonItems).toBe(1);
+        // Everyone in the row at the boss gets the full clear bonus: nobody swapped, so the row is the same.
+        expect(entry.fullClearRow).toHaveLength(3);
+        expect(new Set(entry.fullClearRow)).toEqual(new Set(entry.finalRow));
+      }
+    });
+  });
+
+  it("puts twice the loot in the pack for the Undercroft's fights, elites and caches, and not for the keeper or an epic fight", () => {
+    const u = RULES.dungeon.undercroft;
+    expect(roomLoot('fight', 0, null, true)).toEqual(nodeLoot('fight'));
+    expect(roomLoot('fight', 1, null, true)).toEqual({
+      bait: nodeLoot('fight').bait * u.lootMultiplier,
+      essence: nodeLoot('fight').essence * u.lootMultiplier,
+      scrap: nodeLoot('fight').scrap * u.lootMultiplier,
+    });
+    expect(roomLoot('cache', 2, null, false)).toEqual(nodeLoot('cache', 2));
+    expect(nodeLoot('cache', 2).bait).toBe(RULES.dungeon.loot.cache.bait * u.lootMultiplier);
+    expect(roomLoot('elite', 1, null, true).scrap).toBe(RULES.dungeon.loot.elite.scrap * 2);
+    expect(roomLoot('epic', 1, null, true)).toEqual({ ...u.epic.loot });
+    expect(roomLoot('boss', 1, null, true)).toEqual({
+      bait: 0,
+      essence: u.chest.essence,
+      scrap: u.chest.scrap,
+    });
+    // The camp, a door and a mystery room put nothing in it.
+    for (const kind of ['camp', 'door', 'mystery'] as const) {
+      expect(roomLoot(kind, 1, null, false)).toEqual({ bait: 0, essence: 0, scrap: 0 });
+    }
+  });
+
+  it("adds Market Day's scrap to the pack, doubled with the fight's in the Undercroft", () => {
+    const market: WeatherDay = {
+      day: '2026-10-18',
+      boon: 'market-day',
+      omen: null,
+      wild: false,
+      boonBp: 10_000,
+      omenBp: 0,
+    };
+    // Market Day pays 1 scrap a fight at base boon strength.
+    expect(dungeonScrapPerRoom(market)).toBe(1);
+    expect(roomLoot('fight', 0, market, true).scrap).toBe(nodeLoot('fight').scrap + 1);
+    expect(roomLoot('fight', 1, market, true).scrap).toBe(
+      (nodeLoot('fight').scrap + 1) * RULES.dungeon.undercroft.lootMultiplier,
+    );
+    // The keeper pays its chest's scrap and Market Day's, not doubled; a cache gets nothing from Market Day.
+    expect(roomLoot('boss', 1, market, true).scrap).toBe(RULES.dungeon.undercroft.chest.scrap + 1);
+    expect(roomLoot('cache', 0, market, false)).toEqual(nodeLoot('cache'));
+  });
+
+  it('goes on down a cracked floor, at most three levels, and every keeper opens its own chest', () => {
+    withRules(`${EASY},dungeon.undercroft.crackBp=10000,${KEEPER_GEAR}`, () => {
+      for (let day = 0; day < 4; day++) {
+        const { entry, p } = playOne(8, day);
+        expect(entry.under).toMatchObject({
+          descended: true,
+          entered: RULES.dungeon.undercroft.maxLevels,
+          levels: RULES.dungeon.undercroft.maxLevels,
+        });
+        // A chest for each keeper: three pieces of gear, the main boss's chance being off.
+        expect(p.week.dungeonItems).toBe(RULES.dungeon.undercroft.maxLevels);
+        expect(entry).toMatchObject({ cleared: true, outcome: 'cleared' });
+        // The deeper levels have their own two floors and keeper: the Undercroft is longer, never endless.
+        expect(entry.under.fights).toBeLessThan(30);
+      }
+    });
+  });
+
+  it('keeps the depth and half the pack (rounded up) when the run is lost below the boss', () => {
+    // The boss falls easily, the Undercroft's foes are fierce: the row goes down and is lost there.
+    withRules(
+      `${EASY},dungeon.undercroft.depthBonus=52,dungeon.hpStepBp=40000,dungeon.atkStepBp=40000`,
+      () => {
+        let lost = 0;
+        for (let day = 0; day < 40; day++) {
+          const { entry, p, before } = playOne(8, day);
+          if (!(entry.under.descended && entry.outcome === 'defeat')) continue;
+          lost += 1;
+          // The main boss was beaten, so the depth moved and the run counts as a clear of depth 8.
+          expect(entry.cleared).toBe(true);
+          expect(p.dungeon).toMatchObject({ depth: 9, clears: 1, lostAt: null });
+          expect(entry.under.levels).toBe(0);
+          expect(entry.packKept).toEqual(keptOnDefeat(entry.packFound));
+          for (const k of ['bait', 'essence', 'scrap'] as const) {
+            expect(entry.packKept[k]).toBe(Math.ceil(entry.packFound[k] / 2));
+          }
+          expect(p.bait - before.bait).toBe(entry.packKept.bait);
+          expect(p.essence - before.essence).toBe(entry.packKept.essence);
+          // The full clear's experience bonus still goes to the row that beat the main boss.
+          expect(entry.fullClearRow).toHaveLength(3);
+        }
+        expect(lost).toBeGreaterThan(5);
+      },
+    );
+  });
+
+  it('keeps the whole pack when a run heads home from an Undercroft camp', () => {
+    // A carved door that always adds a camp, a player who picks everything at random: some runs stop at that camp.
+    const camp = [
+      'dungeon.undercroft.markOdds.fight=0',
+      'dungeon.undercroft.markOdds.elite=0',
+      'dungeon.undercroft.markOdds.mystery=0',
+      'dungeon.undercroft.markOdds.cache=0',
+      'dungeon.undercroft.markOdds.epic=0',
+      'dungeon.undercroft.markOdds.camp=10000',
+    ].join(',');
+    withRules(`${EASY},${camp}`, () => {
+      let found: ReturnType<typeof playOne> | undefined;
+      for (let day = 0; day < 600 && found === undefined; day++) {
+        const run = playOne(8, day, 'random');
+        if (run.entry.under.camp === 'home') found = run;
+      }
+      if (found === undefined) throw new Error('no run headed home from an Undercroft camp');
+      const { entry, p, before } = found;
+      // Heading home after the boss is `cleared` (the depth was won), with the whole pack.
+      expect(entry).toMatchObject({ cleared: true, outcome: 'cleared' });
+      expect(entry.camp).not.toBe('home'); // the main camp's choice is its own
+      expect(entry.under.marks).toContain('camp');
+      expect(entry.packKept).toEqual(entry.packFound);
+      expect(p.dungeon).toMatchObject({ depth: 9, lostAt: null });
+      expect(p.bait - before.bait).toBe(entry.packFound.bait);
+      expect(p.essence - before.essence).toBe(entry.packFound.essence);
+    });
+  });
+
+  it('is deterministic, and every skill finishes the same map', () => {
+    withRules(EASY, () => {
+      const a = playOne(8, 3, 'best');
+      const b = playOne(8, 3, 'best');
+      expect(a.entry).toEqual(b.entry);
+      for (const skill of ['good', 'reasonable', 'best', 'random'] as const) {
+        const { entry } = playOne(8, 5, skill);
+        expect(['cleared', 'home', 'defeat']).toContain(entry.outcome);
+        expect(entry.under.levels).toBeLessThanOrEqual(entry.under.entered);
+        expect(entry.under.entered).toBeLessThanOrEqual(RULES.dungeon.undercroft.maxLevels);
+      }
+    });
   });
 });
 
@@ -706,6 +1056,17 @@ describe('the dungeon targets', () => {
       value: [3, 5.5],
       metric: 'dungeon.meanFights',
     });
+    // The Undercroft is a real choice (20 to 80% of the runs that are offered it go down) and runs stay short.
+    expect(byId.get('dungeon-descent-rate')).toMatchObject({
+      comparator: 'range',
+      value: [0.2, 0.8],
+      metric: 'dungeon.undercroftDescentRate',
+    });
+    expect(byId.get('dungeon-eligible-run-fights')).toMatchObject({
+      comparator: 'max',
+      value: 7,
+      metric: 'dungeon.eligibleMeanFights',
+    });
   });
 
   it('are measured by a run, and the report has a dungeon section', () => {
@@ -717,6 +1078,7 @@ describe('the dungeon targets', () => {
       'dungeon-gear-share-week8',
       'dungeon-home-rate',
       'dungeon-run-fights',
+      'dungeon-eligible-run-fights',
     ]) {
       expect(out.evaluation.find((t) => t.id === id)?.status, id).not.toBe('not_measured');
     }

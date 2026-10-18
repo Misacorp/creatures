@@ -57,8 +57,8 @@ describe('target evaluator', () => {
 });
 
 describe('targets.json', () => {
-  it('is valid, has unique ids and mirrors the 94 documented targets', () => {
-    expect(TARGETS.length).toBe(94);
+  it('is valid, has unique ids and mirrors the 96 documented targets', () => {
+    expect(TARGETS.length).toBe(96);
     expect(new Set(TARGETS.map((t) => t.id)).size).toBe(TARGETS.length);
   });
 

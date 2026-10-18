@@ -726,7 +726,7 @@ export const RULES = {
      * strength, which keeps every number small and safe.
      */
     hpStepBp: 4_500,
-    hpCurveBp: 300,
+    hpCurveBp: 340,
     atkStepBp: 2_000,
     atkCurveBp: 150,
     maxScaledDepth: 60,
@@ -739,6 +739,9 @@ export const RULES = {
      * fights a run instead of 3 and a first-day team has to win all of them, so the foe's HP at depth 1
      * comes down to 6500 and `hpStepBp` rises to 4500 to keep the ladder as steep as before (a first
      * week clears depth 1 about 90% of the time, a median daily player gains about 1.7 depths a week).
+     * The carved door (B-020) is a free room on 35% of the maps, which lifts that by about 0.1 (a median of
+     * 1.9 to 2.0, the target's limit): `hpCurveBp` rises from 300 to 340 (the later depths, not the first:
+     * the second depth stays under 1.5 times the first) and brings it back to about 1.8.
      */
     baseHpBp: 6_500,
     baseAtkBp: 10_000,
@@ -869,13 +872,18 @@ export const RULES = {
      * 10000) when the player steps through, at most `maxMarks` a run; the player is told only what it could be. A level's keeper
      * has a cracked floor with chance `crackBp`, which opens another level (a deeper one has
      * `deeperFloors` floors), at most `maxLevels` in a run. Fights there put `lootMultiplier` times their
-     * loot in the pack; standing creatures recover `catchBreathBp` of max HP on the way down. All
-     * starting values for the simulator to tune.
+     * loot in the pack; standing creatures recover `catchBreathBp` of max HP on the way down. Tuned by the
+     * simulator (docs/balance/log.md B-020). `depthBonus` was 3: the keeper (a room boss with its
+     * signature, met after two fights and no rest by a row that has just beaten the boss) was beaten 32% of
+     * the time and a descent cleared its first keeper 17% of the time, so five of six went home with half a
+     * pack. At 1 the keeper is beaten about 48% of the time and a descent clears 33%; at 0, 45%. The
+     * rest are the design's numbers (the descent rate, 23 to 27% of the offers, is decided by a creature
+     * being knocked out on the way, not by these).
      */
     undercroft: {
       fromDepth: 8,
       catchBreathBp: 2_000,
-      depthBonus: 3,
+      depthBonus: 1,
       baseFloors: 2,
       perLandmark: 1,
       maxFloors: 5,

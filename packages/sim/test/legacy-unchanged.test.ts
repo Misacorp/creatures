@@ -69,6 +69,16 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * is paid per fight cleared (35, not 60), and the run log gained its outcome, pack and fights. Re-pinned
  * once more when the branch took in the Teach change above, so every hash moved (the first player's top-3
  * power in the first pinned run is 431).
+ *
+ * Re-pinned again on 2026-10-18 (the Undercroft, B-020), on purpose: the sim draws the day's map with carved
+ * doors (a free room on about a third of the maps, which the policy takes when its route passes it), a run
+ * that beats the boss at depth 8 or over banks the chest, locks depth + 1 and may go down into the
+ * Undercroft (rooms with twice the loot, epic fights, camps, a keeper and its chest), Market Day's scrap
+ * is in the pack (halved after a defeat) and the full clear bonus goes to the row that beat the main boss.
+ * The run log gained its Undercroft fields and two targets were added (96). Two foe numbers were tuned with
+ * it (`RULES.dungeon.hpCurveBp` 300 to 340, `undercroft.depthBonus` 3 to 1). Bait earned and the pinned
+ * runs without the dungeon are the same; the first player's top-3 power in the first pinned run moved
+ * from 431 to 327 (a different path through the same levels and ribbons).
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(
